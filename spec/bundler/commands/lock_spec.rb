@@ -2295,6 +2295,10 @@ RSpec.describe "bundle lock" do
 
     bundle("lock --add-checksums", artifice: "endpoint")
 
+    checksums = checksums_section_when_enabled do |c|
+      c.no_checksum "warning", "18.0.0"
+    end
+
     expect(lockfile).to eq <<~L
       GEM
         remote: https://gem.repo4/
@@ -2306,10 +2310,7 @@ RSpec.describe "bundle lock" do
 
       DEPENDENCIES
         warning
-
-      CHECKSUMS
-        warning (18.0.0)
-
+      #{checksums}
       BUNDLED WITH
         #{Bundler::VERSION}
     L

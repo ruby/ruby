@@ -56,7 +56,7 @@ jobs:
           mkdir -p .downloaded-cache
           for data in bundled_gems.json default_gems.json; do
             ln -s .downloaded-cache/$data .
-            curl -O -R -z ./$data https://stdgems.org/$data
+            curl --retry 5 --retry-connrefused --retry-delay 2 --retry-max-time 60 -O -R -z ./$data https://stdgems.org/$data
           done
 
       - name: Update bundled gems list

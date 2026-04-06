@@ -11,6 +11,9 @@ on:
         required: true
         default: '3.3.4'
 
+permissions:
+  contents: read
+
 jobs:
   release:
     runs-on: ubuntu-latest

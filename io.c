@@ -5652,7 +5652,7 @@ static void
 free_io_buffer(rb_io_buffer_t *buf)
 {
     if (buf->ptr) {
-        ruby_sized_xfree(buf->ptr, (size_t)buf->capa);
+        ruby_xfree_sized(buf->ptr, (size_t)buf->capa);
         buf->ptr = NULL;
     }
 }

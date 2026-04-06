@@ -989,14 +989,14 @@ vm_get_const_key_cref(const VALUE *ep)
     const rb_cref_t *key_cref = cref;
 
     while (cref) {
-        if (RCLASS_SINGLETON_P(CREF_CLASS(cref)) ||
-                RCLASS_CLONED_P(CREF_CLASS(cref)) ) {
+        if (CREF_DYNAMIC(cref) ||
+                RCLASS_CLONED_P(CREF_CLASS(cref))) {
             return key_cref;
         }
         cref = CREF_NEXT(cref);
     }
 
-    /* does not include singleton class */
+    /* no dynamic singleton class or cloned class found */
     return NULL;
 }
 
@@ -3219,7 +3219,7 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
     if (UNLIKELY(!ISEQ_BODY(iseq)->param.flags.use_block &&
                  calling->block_handler != VM_BLOCK_HANDLER_NONE &&
                  !(vm_ci_flag(calling->cd->ci) & (VM_CALL_OPT_SEND | VM_CALL_SUPER)))) {
-        warn_unused_block(vm_cc_cme(cc), iseq, (void *)ec->cfp->pc);
+        warn_unused_block(vm_cc_cme(cc), iseq, (void *)CFP_PC(ec->cfp));
     }
 
     if (LIKELY(!(vm_ci_flag(ci) & VM_CALL_KW_SPLAT))) {
@@ -6048,7 +6048,9 @@ vm_define_method(const rb_execution_context_t *ec, VALUE obj, ID id, VALUE iseqv
 
     rb_add_method_iseq(klass, id, (const rb_iseq_t *)iseqval, cref, visi);
     // Set max_iv_count on klasses based on number of ivar sets that are in the initialize method
-    if (id == idInitialize && klass != rb_cObject &&  RB_TYPE_P(klass, T_CLASS) && (rb_get_alloc_func(klass) == rb_class_allocate_instance)) {
+    if (id == idInitialize && klass != rb_cObject && RB_TYPE_P(klass, T_CLASS) &&
+        !RCLASS_SINGLETON_P(klass) &&
+        (rb_get_alloc_func(klass) == rb_class_allocate_instance)) {
         RCLASS_SET_MAX_IV_COUNT(klass, rb_estimate_iv_count(klass, (const rb_iseq_t *)iseqval));
     }
 

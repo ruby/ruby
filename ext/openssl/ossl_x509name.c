@@ -53,13 +53,14 @@ static const rb_data_type_t ossl_x509name_type = {
  * Public
  */
 VALUE
-ossl_x509name_new(X509_NAME *name)
+ossl_x509name_new(const X509_NAME *name)
 {
     X509_NAME *new;
     VALUE obj;
 
     obj = NewX509Name(cX509Name);
-    new = X509_NAME_dup(name);
+    /* OpenSSL 1.1.1 takes a non-const pointer */
+    new = X509_NAME_dup((X509_NAME *)name);
     if (!new)
         ossl_raise(eX509NameError, "X509_NAME_dup");
     SetX509Name(obj, new);

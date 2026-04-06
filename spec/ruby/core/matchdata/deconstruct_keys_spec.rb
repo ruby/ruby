@@ -60,4 +60,19 @@ describe "MatchData#deconstruct_keys" do
     m = /(?<f>foo)(?<b>bar)/.match("foobar")
     m.deconstruct_keys([:f, :b, :c]).should == {}
   end
+
+  it "includes non-participating captures as nil for nil argument" do
+    m = "hello".match(/(?<a>hello)(?<b>world)?/)
+    m.deconstruct_keys(nil).should == { a: "hello", b: nil }
+  end
+
+  it "includes non-participating captures as nil for explicit keys" do
+    m = "hello".match(/(?<a>hello)(?<b>world)?/)
+    m.deconstruct_keys([:a, :b]).should == { a: "hello", b: nil }
+  end
+
+  it "does not stop iterating at a non-participating capture" do
+    m = "hello!".match(/(?<a>hello)(?<b>world)?(?<c>!)/)
+    m.deconstruct_keys([:b, :c, :a]).should == { b: nil, c: "!", a: "hello" }
+  end
 end

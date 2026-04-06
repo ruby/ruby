@@ -1419,9 +1419,7 @@ RSpec.describe "bundle update --ruby" do
          #{lockfile_platforms}
 
        DEPENDENCIES
-
-       CHECKSUMS
-
+       #{checksums_section_when_enabled}
        RUBY VERSION
          #{Bundler::RubyVersion.system}
 
@@ -1708,6 +1706,7 @@ RSpec.describe "bundle update --bundler" do
     checksums = checksums_section_when_enabled do |c|
       c.checksum(gem_repo4, "myrack", "1.0")
     end
+    checksums.delete("bundler")
 
     expect(lockfile).to eq <<~L
         GEM

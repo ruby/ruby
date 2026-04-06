@@ -28,7 +28,6 @@ module Prism
     # - on_lbracket
     # - on_lparen
     # - on_nl
-    # - on_op
     # - on_operator_ambiguous
     # - on_rbrace
     # - on_rbracket
@@ -606,6 +605,9 @@ module Prism
       # alias foo bar
       # ^^^^^^^^^^^^^
       def visit_alias_method_node(node)
+        bounds(node.keyword_loc)
+        on_kw("alias")
+
         new_name = visit(node.new_name)
         old_name = visit(node.old_name)
 
@@ -616,6 +618,9 @@ module Prism
       # alias $foo $bar
       # ^^^^^^^^^^^^^^^
       def visit_alias_global_variable_node(node)
+        bounds(node.keyword_loc)
+        on_kw("alias")
+
         new_name = visit_alias_global_variable_node_value(node.new_name)
         old_name = visit_alias_global_variable_node_value(node.old_name)
 
@@ -641,6 +646,10 @@ module Prism
       #        ^^^^^^^^^
       def visit_alternation_pattern_node(node)
         left = visit_pattern_node(node.left)
+
+        bounds(node.operator_loc)
+        on_op("|")
+
         right = visit_pattern_node(node.right)
 
         bounds(node.location)
@@ -661,6 +670,14 @@ module Prism
       # ^^^^^^^
       def visit_and_node(node)
         left = visit(node.left)
+
+        bounds(node.operator_loc)
+        if node.operator == "and"
+          on_kw("and")
+        else
+          on_op("&&")
+        end
+
         right = visit(node.right)
 
         bounds(node.location)
@@ -834,6 +851,9 @@ module Prism
         requireds = visit_all(node.requireds) if node.requireds.any?
         rest =
           if (rest_node = node.rest).is_a?(SplatNode)
+            bounds(rest_node.operator_loc)
+            on_op("*")
+
             if rest_node.expression.nil?
               bounds(rest_node.location)
               on_var_field(nil)
@@ -859,6 +879,12 @@ module Prism
       #   ^^^^
       def visit_assoc_node(node)
         key = visit(node.key)
+
+        if node.operator_loc
+          bounds(node.operator_loc)
+          on_op("=>")
+        end
+
         value = visit(node.value)
 
         bounds(node.location)
@@ -871,6 +897,9 @@ module Prism
       # { **foo }
       #   ^^^^^
       def visit_assoc_splat_node(node)
+        bounds(node.operator_loc)
+        on_op("**")
+
         value = visit(node.value)
 
         bounds(node.location)
@@ -887,7 +916,17 @@ module Prism
       # begin end
       # ^^^^^^^^^
       def visit_begin_node(node)
+        if node.begin_keyword_loc
+          bounds(node.begin_keyword_loc)
+          on_kw("begin")
+        end
+
         clauses = visit_begin_node_clauses(node.begin_keyword_loc, node, false)
+
+        if node.end_keyword_loc
+          bounds(node.end_keyword_loc)
+          on_kw("end")
+        end
 
         bounds(node.location)
         on_begin(clauses)
@@ -909,6 +948,9 @@ module Prism
         rescue_clause = visit(node.rescue_clause)
         else_clause =
           unless (else_clause_node = node.else_clause).nil?
+            bounds(else_clause_node.else_keyword_loc)
+            on_kw("else")
+
             else_statements =
               if else_clause_node.statements.nil?
                 [nil]
@@ -951,6 +993,8 @@ module Prism
       # foo(&bar)
       #     ^^^^
       def visit_block_argument_node(node)
+        bounds(node.operator_loc)
+        on_op("&")
         visit(node.expression)
       end
 
@@ -964,6 +1008,11 @@ module Prism
       # Visit a BlockNode.
       def visit_block_node(node)
         braces = node.opening == "{"
+        unless braces
+          bounds(node.opening_loc)
+          on_kw("do")
+        end
+
         parameters = visit(node.parameters)
 
         body =
@@ -987,6 +1036,11 @@ module Prism
             raise
           end
 
+        unless braces
+          bounds(node.closing_loc)
+          on_kw("end")
+        end
+
         if braces
           bounds(node.location)
           on_brace_block(parameters, body)
@@ -999,6 +1053,9 @@ module Prism
       # def foo(&bar); end
       #         ^^^^
       def visit_block_parameter_node(node)
+        bounds(node.operator_loc)
+        on_op("&")
+
         if node.name_loc.nil?
           bounds(node.location)
           on_blockarg(nil)
@@ -1013,6 +1070,9 @@ module Prism
 
       # A block's parameters.
       def visit_block_parameters_node(node)
+        bounds(node.opening_loc)
+        on_op("|")
+
         parameters =
           if node.parameters.nil?
             on_params(nil, nil, nil, nil, nil, nil, nil)
@@ -1027,6 +1087,9 @@ module Prism
             false
           end
 
+        bounds(node.closing_loc)
+        on_op("|")
+
         bounds(node.location)
         on_block_var(parameters, locals)
       end
@@ -1037,6 +1100,9 @@ module Prism
       # break foo
       # ^^^^^^^^^
       def visit_break_node(node)
+        bounds(node.keyword_loc)
+        on_kw("break")
+
         if node.arguments.nil?
           bounds(node.location)
           on_break(on_args_new)
@@ -1090,6 +1156,9 @@ module Prism
                 end
               end
 
+            bounds(node.equal_loc)
+            on_op("=")
+
             bounds(node.location)
             call = on_aref_field(receiver, arguments)
             value = visit_write_value(last_argument)
@@ -1097,12 +1166,17 @@ module Prism
             bounds(last_argument.location)
             on_assign(call, value)
           when :-@, :+@, :~
-            receiver = visit(node.receiver)
+            bounds(node.message_loc)
+            on_op(node.message)
 
+            receiver = visit(node.receiver)
             bounds(node.location)
             on_unary(node.name, receiver)
           when :!
+            bounds(node.message_loc)
             if node.message == "not"
+              on_kw("not")
+
               receiver =
                 if !node.receiver.is_a?(ParenthesesNode) || !node.receiver.body.nil?
                   visit(node.receiver)
@@ -1111,6 +1185,8 @@ module Prism
               bounds(node.location)
               on_unary(:not, receiver)
             else
+              on_op("!")
+
               receiver = visit(node.receiver)
 
               bounds(node.location)
@@ -1118,6 +1194,10 @@ module Prism
             end
           when *BINARY_OPERATORS
             receiver = visit(node.receiver)
+
+            bounds(node.message_loc)
+            on_op(node.message)
+
             value = visit(node.arguments.arguments.first)
 
             bounds(node.location)
@@ -1163,6 +1243,11 @@ module Prism
               bounds(node.message_loc)
               visit_token(node.message, false)
             end
+
+          if node.equal_loc
+            bounds(node.equal_loc)
+            on_op("=")
+          end
 
           if node.name.end_with?("=") && !node.message.end_with?("=") && !node.arguments.nil? && node.block.nil?
             value = visit_write_value(node.arguments.arguments.first)
@@ -1315,6 +1400,9 @@ module Prism
         if node.call_operator == "::"
           receiver = visit(node.receiver)
 
+          bounds(node.call_operator_loc)
+          on_op("::")
+
           bounds(node.message_loc)
           message = visit_token(node.message)
 
@@ -1338,6 +1426,10 @@ module Prism
       #        ^^^^^^^^^^
       def visit_capture_pattern_node(node)
         value = visit(node.value)
+
+        bounds(node.operator_loc)
+        on_op("=>")
+
         target = visit(node.target)
 
         bounds(node.location)
@@ -1347,10 +1439,21 @@ module Prism
       # case foo; when bar; end
       # ^^^^^^^^^^^^^^^^^^^^^^^
       def visit_case_node(node)
+        bounds(node.case_keyword_loc)
+        on_kw("case")
+
         predicate = visit(node.predicate)
+        visited_conditions = node.conditions.map { |condition| visit(condition) }
+        visited_else_clause = visit(node.else_clause)
+
+        if !node.else_clause
+          bounds(node.end_keyword_loc)
+          on_kw("end")
+        end
+
         clauses =
-          node.conditions.reverse_each.inject(visit(node.else_clause)) do |current, condition|
-            on_when(*visit(condition), current)
+          visited_conditions.reverse_each.inject(visited_else_clause) do |current, condition|
+            on_when(*condition, current)
           end
 
         bounds(node.location)
@@ -1360,10 +1463,23 @@ module Prism
       # case foo; in bar; end
       # ^^^^^^^^^^^^^^^^^^^^^
       def visit_case_match_node(node)
+        bounds(node.case_keyword_loc)
+        on_kw("case")
+
         predicate = visit(node.predicate)
+        visited_conditions = node.conditions.map do | condition|
+          visit(condition)
+        end
+        visited_else_clause = visit(node.else_clause)
+
+        if !node.else_clause
+          bounds(node.end_keyword_loc)
+          on_kw("end")
+        end
+
         clauses =
-          node.conditions.reverse_each.inject(visit(node.else_clause)) do |current, condition|
-            on_in(*visit(condition), current)
+          visited_conditions.reverse_each.inject(visited_else_clause) do |current, condition|
+            on_in(*condition, current)
           end
 
         bounds(node.location)
@@ -1373,6 +1489,9 @@ module Prism
       # class Foo; end
       # ^^^^^^^^^^^^^^
       def visit_class_node(node)
+        bounds(node.class_keyword_loc)
+        on_kw("class")
+
         constant_path =
           if node.constant_path.is_a?(ConstantReadNode)
             bounds(node.constant_path.location)
@@ -1381,8 +1500,16 @@ module Prism
             visit(node.constant_path)
           end
 
+        if node.inheritance_operator_loc
+          bounds(node.inheritance_operator_loc)
+          on_op("<")
+        end
+
         superclass = visit(node.superclass)
         bodystmt = visit_body_node(node.superclass&.location || node.constant_path.location, node.body, node.superclass.nil?)
+
+        bounds(node.end_keyword_loc)
+        on_kw("end")
 
         bounds(node.location)
         on_class(constant_path, superclass, bodystmt)
@@ -1403,6 +1530,10 @@ module Prism
       def visit_class_variable_write_node(node)
         bounds(node.name_loc)
         target = on_var_field(on_cvar(node.name.to_s))
+
+        bounds(node.operator_loc)
+        on_op("=")
+
         value = visit_write_value(node.value)
 
         bounds(node.location)
@@ -1473,6 +1604,10 @@ module Prism
       def visit_constant_write_node(node)
         bounds(node.name_loc)
         target = on_var_field(on_const(node.name.to_s))
+
+        bounds(node.operator_loc)
+        on_op("=")
+
         value = visit_write_value(node.value)
 
         bounds(node.location)
@@ -1532,6 +1667,11 @@ module Prism
       # ^^^^^^^^
       def visit_constant_path_node(node)
         if node.parent.nil?
+          if node.delimiter_loc
+            bounds(node.delimiter_loc)
+            on_op("::")
+          end
+
           bounds(node.name_loc)
           child = on_const(node.name.to_s)
 
@@ -1539,6 +1679,9 @@ module Prism
           on_top_const_ref(child)
         else
           parent = visit(node.parent)
+
+          bounds(node.delimiter_loc)
+          on_op("::")
 
           bounds(node.name_loc)
           child = on_const(node.name.to_s)
@@ -1555,6 +1698,10 @@ module Prism
       # ^^^^^^^^  ^^^^^^^^
       def visit_constant_path_write_node(node)
         target = visit_constant_path_write_node_target(node.target)
+
+        bounds(node.operator_loc)
+        on_op("=")
+
         value = visit_write_value(node.value)
 
         bounds(node.location)
@@ -1564,6 +1711,11 @@ module Prism
       # Visit a constant path that is part of a write node.
       private def visit_constant_path_write_node_target(node)
         if node.parent.nil?
+          if node.delimiter_loc
+            bounds(node.delimiter_loc)
+            on_op("::")
+          end
+
           bounds(node.name_loc)
           child = on_const(node.name.to_s)
 
@@ -1571,6 +1723,9 @@ module Prism
           on_top_const_field(child)
         else
           parent = visit(node.parent)
+
+          bounds(node.delimiter_loc)
+          on_op("::")
 
           bounds(node.name_loc)
           child = on_const(node.name.to_s)
@@ -1631,6 +1786,9 @@ module Prism
       # def self.foo; end
       # ^^^^^^^^^^^^^^^^^
       def visit_def_node(node)
+        bounds(node.def_keyword_loc)
+        on_kw("def")
+
         receiver = visit(node.receiver)
         operator =
           if !node.operator_loc.nil?
@@ -1654,6 +1812,11 @@ module Prism
           parameters = on_paren(parameters)
         end
 
+        if node.equal_loc
+          bounds(node.equal_loc)
+          on_op("=")
+        end
+
         bodystmt =
           if node.equal_loc.nil?
             visit_body_node(node.rparen_loc || node.end_keyword_loc, node.body)
@@ -1663,6 +1826,11 @@ module Prism
             bounds(node.body.location)
             on_bodystmt(body, nil, nil, nil)
           end
+
+        if node.end_keyword_loc
+          bounds(node.end_keyword_loc)
+          on_kw("end")
+        end
 
         bounds(node.location)
         if receiver
@@ -1678,6 +1846,9 @@ module Prism
       # defined?(a)
       # ^^^^^^^^^^^
       def visit_defined_node(node)
+        bounds(node.keyword_loc)
+        on_kw("defined?")
+
         expression = visit(node.value)
 
         # Very weird circumstances here where something like:
@@ -1700,6 +1871,9 @@ module Prism
       # if foo then bar else baz end
       #                 ^^^^^^^^^^^^
       def visit_else_node(node)
+        bounds(node.else_keyword_loc)
+        on_kw("else")
+
         statements =
           if node.statements.nil?
             [nil]
@@ -1709,8 +1883,12 @@ module Prism
             body
           end
 
+        else_statements = visit_statements_node_body(statements)
+
+        bounds(node.end_keyword_loc)
+        on_kw("end")
         bounds(node.location)
-        on_else(visit_statements_node_body(statements))
+        on_else(else_statements)
       end
 
       # "foo #{bar}"
@@ -1748,6 +1926,9 @@ module Prism
 
       # Visit an EnsureNode node.
       def visit_ensure_node(node)
+        bounds(node.ensure_keyword_loc)
+        on_kw("ensure")
+
         statements =
           if node.statements.nil?
             [nil]
@@ -1774,6 +1955,10 @@ module Prism
       #        ^^^^^^^^^^^
       def visit_find_pattern_node(node)
         constant = visit(node.constant)
+
+        bounds(node.left.operator_loc)
+        on_op("*")
+
         left =
           if node.left.expression.nil?
             bounds(node.left.location)
@@ -1783,6 +1968,10 @@ module Prism
           end
 
         requireds = visit_all(node.requireds) if node.requireds.any?
+
+        bounds(node.right.operator_loc)
+        on_op("*")
+
         right =
           if node.right.expression.nil?
             bounds(node.right.location)
@@ -1799,6 +1988,10 @@ module Prism
       #    ^^^^^^^^^^
       def visit_flip_flop_node(node)
         left = visit(node.left)
+
+        bounds(node.operator_loc)
+        on_op(node.operator)
+
         right = visit(node.right)
 
         bounds(node.location)
@@ -1818,8 +2011,18 @@ module Prism
       # for foo in bar do end
       # ^^^^^^^^^^^^^^^^^^^^^
       def visit_for_node(node)
+        bounds(node.for_keyword_loc)
+        on_kw("for")
+
         index = visit(node.index)
+        bounds(node.in_keyword_loc)
+        on_kw("in")
+
         collection = visit(node.collection)
+        if node.do_keyword_loc
+          bounds(node.do_keyword_loc)
+          on_kw("do")
+        end
         statements =
           if node.statements.nil?
             bounds(node.location)
@@ -1827,6 +2030,9 @@ module Prism
           else
             visit(node.statements)
           end
+
+        bounds(node.end_keyword_loc)
+        on_kw("end")
 
         bounds(node.location)
         on_for(index, collection, statements)
@@ -1836,6 +2042,7 @@ module Prism
       #                   ^^^
       def visit_forwarding_arguments_node(node)
         bounds(node.location)
+        on_op("...")
         on_args_forward
       end
 
@@ -1843,6 +2050,7 @@ module Prism
       #         ^^^
       def visit_forwarding_parameter_node(node)
         bounds(node.location)
+        on_op("...")
         on_args_forward
       end
 
@@ -1852,6 +2060,9 @@ module Prism
       # super {}
       # ^^^^^^^^
       def visit_forwarding_super_node(node)
+        bounds(node.keyword_loc)
+        on_kw("super")
+
         if node.block.nil?
           bounds(node.location)
           on_zsuper
@@ -1878,6 +2089,10 @@ module Prism
       def visit_global_variable_write_node(node)
         bounds(node.name_loc)
         target = on_var_field(on_gvar(node.name.to_s))
+
+        bounds(node.operator_loc)
+        on_op("=")
+
         value = visit_write_value(node.value)
 
         bounds(node.location)
@@ -1974,6 +2189,8 @@ module Prism
         rest =
           case node.rest
           when AssocSplatNode
+            bounds(node.rest.operator_loc)
+            on_op("**")
             visit(node.rest.value)
           when NoKeywordsParameterNode
             bounds(node.rest.location)
@@ -1995,13 +2212,27 @@ module Prism
       def visit_if_node(node)
         if node.then_keyword == "?"
           predicate = visit(node.predicate)
+
+          bounds(node.then_keyword_loc)
+          on_op("?")
+
           truthy = visit(node.statements.body.first)
+
+          bounds(node.subsequent.else_keyword_loc)
+          on_op(":")
+
           falsy = visit(node.subsequent.statements.body.first)
 
           bounds(node.location)
           on_ifop(predicate, truthy, falsy)
         elsif node.statements.nil? || (node.predicate.location.start_offset < node.statements.location.start_offset)
+          bounds(node.if_keyword_loc)
+          on_kw(node.if_keyword)
           predicate = visit(node.predicate)
+          if node.then_keyword_loc && node.then_keyword != "?"
+            bounds(node.then_keyword_loc)
+            on_kw("then")
+          end
           statements =
             if node.statements.nil?
               bounds(node.location)
@@ -2011,6 +2242,11 @@ module Prism
             end
           subsequent = visit(node.subsequent)
 
+          if node.end_keyword_loc && !node.subsequent
+            bounds(node.end_keyword_loc)
+            on_kw("end")
+          end
+
           bounds(node.location)
           if node.if_keyword == "if"
             on_if(predicate, statements, subsequent)
@@ -2019,6 +2255,8 @@ module Prism
           end
         else
           statements = visit(node.statements.body.first)
+          bounds(node.if_keyword_loc)
+          on_kw(node.if_keyword)
           predicate = visit(node.predicate)
 
           bounds(node.location)
@@ -2050,7 +2288,14 @@ module Prism
         # This is a special case where we're not going to call on_in directly
         # because we don't have access to the subsequent. Instead, we'll return
         # the component parts and let the parent node handle it.
+        bounds(node.in_loc)
+        on_kw("in")
+
         pattern = visit_pattern_node(node.pattern)
+        if node.then_loc
+          bounds(node.then_loc)
+          on_kw("then")
+        end
         statements =
           if node.statements.nil?
             bounds(node.location)
@@ -2135,6 +2380,10 @@ module Prism
       def visit_instance_variable_write_node(node)
         bounds(node.name_loc)
         target = on_var_field(on_ivar(node.name.to_s))
+
+        bounds(node.operator_loc)
+        on_op("=")
+
         value = visit_write_value(node.value)
 
         bounds(node.location)
@@ -2338,6 +2587,9 @@ module Prism
       # def foo(**); end
       #         ^^
       def visit_keyword_rest_parameter_node(node)
+        bounds(node.operator_loc)
+        on_op("**")
+
         if node.name_loc.nil?
           bounds(node.location)
           on_kwrest_param(nil)
@@ -2386,6 +2638,11 @@ module Prism
           on_tlambeg(node.opening)
         end
 
+        unless braces
+          bounds(node.opening_loc)
+          on_kw("do")
+        end
+
         body =
           case node.body
           when nil
@@ -2407,6 +2664,11 @@ module Prism
             raise
           end
 
+        unless braces
+          bounds(node.closing_loc)
+          on_kw("end")
+        end
+
         bounds(node.location)
         on_lambda(parameters, body)
       end
@@ -2423,6 +2685,10 @@ module Prism
       def visit_local_variable_write_node(node)
         bounds(node.name_loc)
         target = on_var_field(on_ident(node.name_loc.slice))
+
+        bounds(node.operator_loc)
+        on_op("=")
+
         value = visit_write_value(node.value)
 
         bounds(node.location)
@@ -2497,6 +2763,8 @@ module Prism
       # ^^^^^^^^^^
       def visit_match_predicate_node(node)
         value = visit(node.value)
+        bounds(node.operator_loc)
+        on_kw("in")
         pattern = on_in(visit_pattern_node(node.pattern), nil, nil)
 
         on_case(value, pattern)
@@ -2506,6 +2774,10 @@ module Prism
       # ^^^^^^^^^^
       def visit_match_required_node(node)
         value = visit(node.value)
+
+        bounds(node.operator_loc)
+        on_op("=>")
+
         pattern = on_in(visit_pattern_node(node.pattern), nil, nil)
 
         on_case(value, pattern)
@@ -2526,6 +2798,9 @@ module Prism
       # module Foo; end
       # ^^^^^^^^^^^^^^^
       def visit_module_node(node)
+        bounds(node.module_keyword_loc)
+        on_kw("module")
+
         constant_path =
           if node.constant_path.is_a?(ConstantReadNode)
             bounds(node.constant_path.location)
@@ -2535,6 +2810,9 @@ module Prism
           end
 
         bodystmt = visit_body_node(node.constant_path.location, node.body, true)
+
+        bounds(node.end_keyword_loc)
+        on_kw("end")
 
         bounds(node.location)
         on_module(constant_path, bodystmt)
@@ -2600,6 +2878,9 @@ module Prism
         bounds(node.location)
         targets = visit_multi_target_node_targets(node.lefts, node.rest, node.rights, true)
 
+        bounds(node.operator_loc)
+        on_op("=")
+
         unless node.lparen_loc.nil?
           bounds(node.lparen_loc)
           targets = on_mlhs_paren(targets)
@@ -2617,6 +2898,9 @@ module Prism
       # next foo
       # ^^^^^^^^
       def visit_next_node(node)
+        bounds(node.keyword_loc)
+        on_kw("next")
+
         if node.arguments.nil?
           bounds(node.location)
           on_next(on_args_new)
@@ -2638,6 +2922,10 @@ module Prism
       # def foo(&nil); end
       #         ^^^^
       def visit_no_block_parameter_node(node)
+        bounds(node.operator_loc)
+        on_op("&")
+        bounds(node.keyword_loc)
+        on_kw("nil")
         bounds(node.location)
         on_blockarg(:nil)
       end
@@ -2645,6 +2933,10 @@ module Prism
       # def foo(**nil); end
       #         ^^^^^
       def visit_no_keywords_parameter_node(node)
+        bounds(node.operator_loc)
+        on_op("**")
+        bounds(node.keyword_loc)
+        on_kw("nil")
         bounds(node.location)
         on_nokw_param(nil)
 
@@ -2678,6 +2970,10 @@ module Prism
       def visit_optional_parameter_node(node)
         bounds(node.name_loc)
         name = visit_token(node.name.to_s)
+
+        bounds(node.operator_loc)
+        on_op("=")
+
         value = visit(node.value)
 
         [name, value]
@@ -2687,6 +2983,14 @@ module Prism
       # ^^^^^^
       def visit_or_node(node)
         left = visit(node.left)
+
+        bounds(node.operator_loc)
+        if node.operator == "or"
+          on_kw("or")
+        else
+          on_op("||")
+        end
+
         right = visit(node.right)
 
         bounds(node.location)
@@ -2737,6 +3041,9 @@ module Prism
       # foo => ^(bar)
       #        ^^^^^^
       def visit_pinned_expression_node(node)
+        bounds(node.operator_loc)
+        on_op("^")
+
         expression = visit(node.expression)
 
         bounds(node.location)
@@ -2746,12 +3053,18 @@ module Prism
       # foo = 1 and bar => ^foo
       #                    ^^^^
       def visit_pinned_variable_node(node)
+        bounds(node.operator_loc)
+        on_op("^")
+
         visit(node.variable)
       end
 
       # END {}
       # ^^^^^^
       def visit_post_execution_node(node)
+        bounds(node.keyword_loc)
+        on_kw("END")
+
         statements =
           if node.statements.nil?
             bounds(node.location)
@@ -2767,6 +3080,9 @@ module Prism
       # BEGIN {}
       # ^^^^^^^^
       def visit_pre_execution_node(node)
+        bounds(node.keyword_loc)
+        on_kw("BEGIN")
+
         statements =
           if node.statements.nil?
             bounds(node.location)
@@ -2793,6 +3109,10 @@ module Prism
       # ^^^^
       def visit_range_node(node)
         left = visit(node.left)
+
+        bounds(node.operator_loc)
+        on_op(node.operator)
+
         right = visit(node.right)
 
         bounds(node.location)
@@ -2813,6 +3133,7 @@ module Prism
       # ^^^^
       def visit_redo_node(node)
         bounds(node.location)
+        on_kw("redo")
         on_redo
       end
 
@@ -2855,6 +3176,9 @@ module Prism
       # foo rescue bar
       # ^^^^^^^^^^^^^^
       def visit_rescue_modifier_node(node)
+        bounds(node.keyword_loc)
+        on_kw("rescue")
+
         expression = visit_write_value(node.expression)
         rescue_expression = visit(node.rescue_expression)
 
@@ -2865,6 +3189,9 @@ module Prism
       # begin; rescue; end
       #        ^^^^^^^
       def visit_rescue_node(node)
+        bounds(node.keyword_loc)
+        on_kw("rescue")
+
         exceptions =
           case node.exceptions.length
           when 0
@@ -2902,6 +3229,11 @@ module Prism
             end
           end
 
+        if node.operator_loc
+          bounds(node.operator_loc)
+          on_op("=>")
+        end
+
         reference = visit(node.reference)
         statements =
           if node.statements.nil?
@@ -2923,6 +3255,9 @@ module Prism
       # def foo(*); end
       #         ^
       def visit_rest_parameter_node(node)
+        bounds(node.operator_loc)
+        on_op("*")
+
         if node.name_loc.nil?
           bounds(node.location)
           on_rest_param(nil)
@@ -2936,6 +3271,7 @@ module Prism
       # ^^^^^
       def visit_retry_node(node)
         bounds(node.location)
+        on_kw("retry")
         on_retry
       end
 
@@ -2945,6 +3281,9 @@ module Prism
       # return 1
       # ^^^^^^^^
       def visit_return_node(node)
+        bounds(node.keyword_loc)
+        on_kw("return")
+
         if node.arguments.nil?
           bounds(node.location)
           on_return0
@@ -2971,8 +3310,16 @@ module Prism
       # class << self; end
       # ^^^^^^^^^^^^^^^^^^
       def visit_singleton_class_node(node)
+        bounds(node.class_keyword_loc)
+        on_kw("class")
+        bounds(node.operator_loc)
+        on_op("<<")
+
         expression = visit(node.expression)
         bodystmt = visit_body_node(node.body&.location || node.end_keyword_loc, node.body)
+
+        bounds(node.end_keyword_loc)
+        on_kw("end")
 
         bounds(node.location)
         on_sclass(expression, bodystmt)
@@ -3008,6 +3355,8 @@ module Prism
       # def foo(*); bar(*); end
       #                 ^
       def visit_splat_node(node)
+        bounds(node.operator_loc)
+        on_op("*")
         visit(node.expression)
       end
 
@@ -3180,6 +3529,9 @@ module Prism
       # super(foo)
       # ^^^^^^^^^^
       def visit_super_node(node)
+        bounds(node.keyword_loc)
+        on_kw("super")
+
         arguments, block, has_ripper_block = visit_call_node_arguments(node.arguments, node.block, trailing_comma?(node.arguments&.location || node.location, node.rparen_loc || node.location))
 
         if !node.lparen_loc.nil?
@@ -3233,6 +3585,9 @@ module Prism
       # undef foo
       # ^^^^^^^^^
       def visit_undef_node(node)
+        bounds(node.keyword_loc)
+        on_kw("undef")
+
         names = visit_all(node.names)
 
         bounds(node.location)
@@ -3246,7 +3601,13 @@ module Prism
       # ^^^^^^^^^^^^^^
       def visit_unless_node(node)
         if node.statements.nil? || (node.predicate.location.start_offset < node.statements.location.start_offset)
+          bounds(node.keyword_loc)
+          on_kw("unless")
           predicate = visit(node.predicate)
+          if node.then_keyword_loc
+            bounds(node.then_keyword_loc)
+            on_kw("then")
+          end
           statements =
             if node.statements.nil?
               bounds(node.location)
@@ -3256,10 +3617,17 @@ module Prism
             end
           else_clause = visit(node.else_clause)
 
+          if node.end_keyword_loc && !node.else_clause
+            bounds(node.end_keyword_loc)
+            on_kw("end")
+          end
+
           bounds(node.location)
           on_unless(predicate, statements, else_clause)
         else
           statements = visit(node.statements.body.first)
+          bounds(node.keyword_loc)
+          on_kw("unless")
           predicate = visit(node.predicate)
 
           bounds(node.location)
@@ -3273,7 +3641,14 @@ module Prism
       # bar until foo
       # ^^^^^^^^^^^^^
       def visit_until_node(node)
+        bounds(node.keyword_loc)
+        on_kw("until")
+
         if node.statements.nil? || (node.predicate.location.start_offset < node.statements.location.start_offset)
+          if node.do_keyword_loc
+            bounds(node.do_keyword_loc)
+            on_kw("do")
+          end
           predicate = visit(node.predicate)
           statements =
             if node.statements.nil?
@@ -3282,6 +3657,11 @@ module Prism
             else
               visit(node.statements)
             end
+
+          if node.closing_loc
+            bounds(node.closing_loc)
+            on_kw("end")
+          end
 
           bounds(node.location)
           on_until(predicate, statements)
@@ -3300,7 +3680,14 @@ module Prism
         # This is a special case where we're not going to call on_when directly
         # because we don't have access to the subsequent. Instead, we'll return
         # the component parts and let the parent node handle it.
+        bounds(node.keyword_loc)
+        on_kw("when")
+
         conditions = visit_arguments(node.conditions)
+        if node.then_keyword_loc
+          bounds(node.then_keyword_loc)
+          on_kw("then")
+        end
         statements =
           if node.statements.nil?
             bounds(node.location)
@@ -3319,7 +3706,17 @@ module Prism
       # ^^^^^^^^^^^^^
       def visit_while_node(node)
         if node.statements.nil? || (node.predicate.location.start_offset < node.statements.location.start_offset)
+          bounds(node.keyword_loc)
+          on_kw("while")
+          if node.do_keyword_loc
+            bounds(node.do_keyword_loc)
+            on_kw("do")
+          end
           predicate = visit(node.predicate)
+          if node.closing_loc
+            bounds(node.closing_loc)
+            on_kw("end")
+          end
           statements =
             if node.statements.nil?
               bounds(node.location)
@@ -3332,6 +3729,8 @@ module Prism
           on_while(predicate, statements)
         else
           statements = visit(node.statements.body.first)
+          bounds(node.keyword_loc)
+          on_kw("while")
           predicate = visit(node.predicate)
 
           bounds(node.location)
@@ -3367,6 +3766,9 @@ module Prism
       # yield 1
       # ^^^^^^^
       def visit_yield_node(node)
+        bounds(node.keyword_loc)
+        on_kw("yield")
+
         if node.arguments.nil? && node.lparen_loc.nil?
           bounds(node.location)
           on_yield0
@@ -3445,6 +3847,9 @@ module Prism
         location = node.location
 
         if slice[0] == "-"
+          bounds(location.copy(length: 1))
+          on_op("-")
+
           bounds(location.copy(start_offset: location.start_offset + 1))
           value = yield slice[1..-1]
 

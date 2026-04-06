@@ -557,6 +557,11 @@ describe "Encoding.compatible? String, Regexp" do
       [Encoding, "\x82\xa0".dup.force_encoding("shift_jis"),  Encoding::Shift_JIS],
     ].should be_computed_by(:compatible?, /abc/)
   end
+
+  it "returns the Regexp's Encoding if the String is ASCII only and the Regexp is not" do
+    r = Regexp.new("\xa4\xa2".dup.force_encoding("euc-jp"))
+    Encoding.compatible?("hello".dup.force_encoding("utf-8"), r).should == Encoding::EUC_JP
+  end
 end
 
 describe "Encoding.compatible? String, Symbol" do
@@ -619,6 +624,15 @@ describe "Encoding.compatible? Regexp, String" do
     Encoding.compatible?(/abc/, str).should == Encoding::US_ASCII
   end
 
+  it "returns the String's Encoding when the String is ASCII only with a different encoding" do
+    r = Regexp.new("\xa4\xa2".dup.force_encoding("euc-jp"))
+    Encoding.compatible?(r, "hello".dup.force_encoding("utf-8")).should == Encoding::UTF_8
+  end
+
+  it "returns the Regexp's Encoding if the String has the same non-ASCII encoding" do
+    r = Regexp.new("\xa4\xa2".dup.force_encoding("euc-jp"))
+    Encoding.compatible?(r, "hello".dup.force_encoding("euc-jp")).should == Encoding::EUC_JP
+  end
 end
 
 describe "Encoding.compatible? Regexp, Regexp" do

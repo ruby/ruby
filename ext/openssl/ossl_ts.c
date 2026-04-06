@@ -706,7 +706,7 @@ ossl_ts_resp_get_tsa_certificate(VALUE self)
     TS_RESP *resp;
     PKCS7 *p7;
     PKCS7_SIGNER_INFO *ts_info;
-    X509 *cert;
+    const X509 *cert;
 
     GetTSResponse(self, resp);
     if (!(p7 = TS_RESP_get_token(resp)))

@@ -452,6 +452,27 @@ impl IseqProfile {
         entry.profiles_remaining == 0
     }
 
+    /// Profile self for a shape guard exit at runtime.
+    /// This may be called on an instruction that was already profiled by YARV,
+    /// so we reset the counter to re-profile with the new shapes seen at runtime.
+    /// Returns true if enough profiles have been gathered and the ISEQ should be recompiled.
+    pub fn profile_self_at(&mut self, iseq: IseqPtr, insn_idx: usize, self_val: VALUE) -> bool {
+        let entry = self.entry_mut(insn_idx);
+        // Reset profiling if the previous round already finished (stale YARV profiles).
+        // This ensures we collect num_profiles samples of the new shapes before recompiling.
+        if entry.profiles_remaining == 0 {
+            entry.profiles_remaining = get_option!(num_profiles);
+        }
+        if entry.opnd_types.is_empty() {
+            entry.opnd_types.resize(1, TypeDistribution::new());
+        }
+        let ty = ProfiledType::new(self_val);
+        VALUE::from(iseq).write_barrier(ty.class());
+        entry.opnd_types[0].observe(ty);
+        entry.profiles_remaining = entry.profiles_remaining.saturating_sub(1);
+        entry.profiles_remaining == 0
+    }
+
     /// Get profiled operand types for a given instruction index
     pub fn get_operand_types(&self, insn_idx: usize) -> Option<&[TypeDistribution]> {
         self.entry(insn_idx).map(|e| e.opnd_types.as_slice()).filter(|s| !s.is_empty())

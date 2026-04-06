@@ -157,6 +157,14 @@ describe "Integer#<=>" do
       end
     end
 
+    describe "with a Float" do
+      it "does not lose precision for values that don't fit in a double" do
+        (bignum_value(1) <=> bignum_value.to_f).should == 1
+        (bignum_value <=> bignum_value.to_f).should == 0
+        ((bignum_value - 1) <=> bignum_value.to_f).should == -1
+      end
+    end
+
     # The tests below are taken from matz's revision 23730 for Ruby trunk
     it "returns 1 when self is Infinity and other is a Bignum" do
       (infinity_value <=> Float::MAX.to_i*2).should == 1

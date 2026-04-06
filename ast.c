@@ -404,6 +404,19 @@ rest_arg(VALUE ast_value, const NODE *rest_arg)
     return NODE_NAMED_REST_P(rest_arg) ? NEW_CHILD(ast_value, rest_arg) : no_name_rest();
 }
 
+static ID
+node_colon_name(const NODE *node)
+{
+    switch (nd_type(node)) {
+      case NODE_COLON2:
+        return RNODE_COLON2(node)->nd_mid;
+      case NODE_COLON3:
+        return RNODE_COLON3(node)->nd_mid;
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+    }
+}
+
 static VALUE
 node_children(VALUE ast_value, const NODE *node)
 {
@@ -497,7 +510,7 @@ node_children(VALUE ast_value, const NODE *node)
         if (RNODE_CDECL(node)->nd_vid) {
             return rb_ary_new_from_args(2, ID2SYM(RNODE_CDECL(node)->nd_vid), NEW_CHILD(ast_value, RNODE_CDECL(node)->nd_value));
         }
-        return rb_ary_new_from_args(3, NEW_CHILD(ast_value, RNODE_CDECL(node)->nd_else), ID2SYM(RNODE_COLON2(RNODE_CDECL(node)->nd_else)->nd_mid), NEW_CHILD(ast_value, RNODE_CDECL(node)->nd_value));
+        return rb_ary_new_from_args(3, NEW_CHILD(ast_value, RNODE_CDECL(node)->nd_else), ID2SYM(node_colon_name(RNODE_CDECL(node)->nd_else)), NEW_CHILD(ast_value, RNODE_CDECL(node)->nd_value));
       case NODE_OP_ASGN1:
         return rb_ary_new_from_args(4, NEW_CHILD(ast_value, RNODE_OP_ASGN1(node)->nd_recv),
                                     ID2SYM(RNODE_OP_ASGN1(node)->nd_mid),

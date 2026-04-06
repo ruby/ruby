@@ -50,6 +50,57 @@ class TestRactor < Test::Unit::TestCase
     assert_unshareable(x, "can not make shareable object for #<Method: String#to_s()> because it refers unshareable objects", exception: Ractor::Error)
   end
 
+  def test_sending_exception_with_backtrace
+    assert_ractor(<<~'RUBY')
+      def build_error
+        raise "Test"
+      rescue => error
+        error
+      end
+
+      error = build_error
+      refute_empty error.backtrace
+      refute_empty error.backtrace_locations
+
+      backtrace, backtrace_locations = Ractor.new(error) do |error2|
+        [error2.backtrace, error2.backtrace_locations]
+      end.value
+
+      assert_equal error.backtrace, backtrace
+      refute_empty backtrace_locations
+    RUBY
+  end
+
+  def test_sending_exception_with_array_backtrace
+    assert_ractor(<<~'RUBY')
+      error = StandardError.new
+      error.set_backtrace(["foo", "bar"])
+      refute_empty error.backtrace
+      assert_nil error.backtrace_locations
+
+      backtrace, backtrace_locations = Ractor.new(error) do |error2|
+        [error2.backtrace, error2.backtrace_locations]
+      end.value
+
+      assert_equal error.backtrace, backtrace
+      assert_nil backtrace_locations
+    RUBY
+  end
+
+  def test_sending_object_with_broken_clone
+    assert_ractor(<<~'RUBY')
+      o = Object.new
+      def o.clone
+        self
+      end
+      ractor = Ractor.new { Ractor.receive }
+      error = assert_raise Ractor::Error do
+        ractor.send(o)
+      end
+      assert_match "#clone returned self", error.message
+    RUBY
+  end
+
   def test_default_thread_group
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
@@ -219,7 +270,7 @@ class TestRactor < Test::Unit::TestCase
       err = assert_raise(Ractor::Error) do
         Ractor.new(pr) {}.join
       end
-      assert_match(/can not copy unshareable object/, err.message)
+      assert_match(/can not copy Proc object/, err.message)
     RUBY
   end
 

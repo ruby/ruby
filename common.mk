@@ -1578,7 +1578,7 @@ no-test-bundled-gems-precheck:
 
 update-default-gemspecs: $(TEST_RUNNABLE)-update-default-gemspecs
 no-update-default-gemspecs:
-yes-update-default-gemspecs: $(PRECHECK_BUNDLED_GEMS:yes=main)
+yes-update-default-gemspecs: $(PRECHECK_BUNDLED_GEMS:yes=main) $(PROGRAM)
 	@$(MAKEDIRS) $(srcdir)/.bundle/specifications
 	@$(XRUBY) -W0 -C "$(srcdir)" -rrubygems \
 	    -e "destdir = ARGV.shift" \

@@ -115,32 +115,108 @@ class TestGemCommandsPushCommand < Gem::TestCase
     assert_equal Gem::Net::HTTP::Post, @fetcher.last_request.class
     content_length = @fetcher.last_request["Content-Length"].to_i
     assert_equal content_length, @fetcher.last_request.body.length
-    assert_equal "multipart", @fetcher.last_request.main_type, @fetcher.last_request.content_type
-    assert_equal "form-data", @fetcher.last_request.sub_type
-    assert_include @fetcher.last_request.type_params, "boundary"
-    boundary = @fetcher.last_request.type_params["boundary"]
+    assert_attestation_multipart Gem.read_binary("#{@path}.sigstore.json")
+  end
 
-    parts = @fetcher.last_request.body.split(/(?:\r\n|\A)--#{Regexp.quote(boundary)}(?:\r\n|--)/m)
-    refute_empty parts
-    assert_empty parts[0]
-    parts.shift # remove the first empty part
+  def test_execute_attestation_auto
+    omit if RUBY_ENGINE == "jruby"
 
-    p1 = parts.shift
-    p2 = parts.shift
-    assert_equal "\r\n", parts.shift
-    assert_empty parts
+    ENV["GITHUB_ACTIONS"] = "true"
+    begin
+      @response = "Successfully registered gem: freewill (1.0.0)"
+      @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
 
-    assert_equal [
-      "Content-Disposition: form-data; name=\"gem\"; filename=\"#{@path}\"",
-      "Content-Type: application/octet-stream",
-      nil,
-      Gem.read_binary(@path),
-    ].join("\r\n").b, p1
-    assert_equal [
-      "Content-Disposition: form-data; name=\"attestations\"",
-      nil,
-      "[#{Gem.read_binary("#{@path}.sigstore.json")}]",
-    ].join("\r\n").b, p2
+      attestation_path = "#{@path}.sigstore.json"
+      attestation_content = "auto-attestation"
+      File.write(attestation_path, attestation_content)
+      @cmd.options[:args] = [@path]
+
+      @cmd.stub(:attest!, attestation_path) do
+        @cmd.execute
+      end
+
+      assert_equal Gem::Net::HTTP::Post, @fetcher.last_request.class
+      content_length = @fetcher.last_request["Content-Length"].to_i
+      assert_equal content_length, @fetcher.last_request.body.length
+      assert_attestation_multipart attestation_content
+    ensure
+      ENV.delete("GITHUB_ACTIONS")
+    end
+  end
+
+  def test_execute_attestation_fallback
+    omit if RUBY_ENGINE == "jruby"
+
+    ENV["GITHUB_ACTIONS"] = "true"
+    begin
+      @response = "Successfully registered gem: freewill (1.0.0)"
+      @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
+
+      @cmd.options[:args] = [@path]
+
+      @cmd.stub(:attest!, proc { raise Gem::Exception, "boom" }) do
+        use_ui @ui do
+          @cmd.execute
+        end
+      end
+
+      assert_match "Failed to push with attestation, retrying without attestation.", @ui.error
+      assert_equal Gem::Net::HTTP::Post, @fetcher.last_request.class
+      assert_equal Gem.read_binary(@path), @fetcher.last_request.body
+      assert_equal "application/octet-stream",
+                   @fetcher.last_request["Content-Type"]
+    ensure
+      ENV.delete("GITHUB_ACTIONS")
+    end
+  end
+
+  def test_execute_attestation_skipped_on_non_rubygems_host
+    @spec, @path = util_gem "freebird", "1.0.1" do |spec|
+      spec.metadata["allowed_push_host"] = "https://privategemserver.example"
+    end
+
+    @response = "Successfully registered gem: freebird (1.0.1)"
+    @fetcher.data["#{@spec.metadata["allowed_push_host"]}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
+
+    @cmd.options[:args] = [@path]
+
+    attest_called = false
+    @cmd.stub(:attest!, proc { attest_called = true }) do
+      @cmd.execute
+    end
+
+    refute attest_called, "attest! should not be called for non-rubygems.org hosts"
+    assert_equal Gem::Net::HTTP::Post, @fetcher.last_request.class
+    assert_equal Gem.read_binary(@path), @fetcher.last_request.body
+    assert_equal "application/octet-stream",
+                 @fetcher.last_request["Content-Type"]
+  end
+
+  def test_execute_attestation_skipped_on_jruby
+    @response = "Successfully registered gem: freewill (1.0.0)"
+    @fetcher.data["#{Gem.host}/api/v1/gems"] = HTTPResponseFactory.create(body: @response, code: 200, msg: "OK")
+
+    @cmd.options[:args] = [@path]
+
+    attest_called = false
+    engine = RUBY_ENGINE
+    Object.send :remove_const, :RUBY_ENGINE
+    Object.const_set :RUBY_ENGINE, "jruby"
+
+    begin
+      @cmd.stub(:attest!, proc { attest_called = true }) do
+        @cmd.execute
+      end
+
+      refute attest_called, "attest! should not be called on JRuby"
+      assert_equal Gem::Net::HTTP::Post, @fetcher.last_request.class
+      assert_equal Gem.read_binary(@path), @fetcher.last_request.body
+      assert_equal "application/octet-stream",
+                   @fetcher.last_request["Content-Type"]
+    ensure
+      Object.send :remove_const, :RUBY_ENGINE
+      Object.const_set :RUBY_ENGINE, engine
+    end
   end
 
   def test_execute_allowed_push_host
@@ -642,6 +718,35 @@ class TestGemCommandsPushCommand < Gem::TestCase
   end
 
   private
+
+  def assert_attestation_multipart(attestation_payload)
+    assert_equal "multipart", @fetcher.last_request.main_type, @fetcher.last_request.content_type
+    assert_equal "form-data", @fetcher.last_request.sub_type
+    assert_include @fetcher.last_request.type_params, "boundary"
+    boundary = @fetcher.last_request.type_params["boundary"]
+
+    parts = @fetcher.last_request.body.split(/(?:\r\n|\A)--#{Regexp.quote(boundary)}(?:\r\n|--)/m)
+    refute_empty parts
+    assert_empty parts[0]
+    parts.shift # remove the first empty part
+
+    p1 = parts.shift
+    p2 = parts.shift
+    assert_equal "\r\n", parts.shift
+    assert_empty parts
+
+    assert_equal [
+      "Content-Disposition: form-data; name=\"gem\"; filename=\"#{@path}\"",
+      "Content-Type: application/octet-stream",
+      nil,
+      Gem.read_binary(@path),
+    ].join("\r\n").b, p1
+    assert_equal [
+      "Content-Disposition: form-data; name=\"attestations\"",
+      nil,
+      "[#{attestation_payload}]",
+    ].join("\r\n").b, p2
+  end
 
   def singleton_gem_class
     class << Gem; self; end

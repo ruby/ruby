@@ -19,6 +19,9 @@ on:
         description: 'Gem commit SHA after sync'
         type: string
 
+permissions:
+  contents: read
+
 jobs:
   sync_default_gems:
     name: Sync default gem ${{ github.event.inputs.gem }}

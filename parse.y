@@ -829,7 +829,7 @@ pop_end_expect_token_locations(struct parser_params *p)
     if(!p->end_expect_token_locations) return;
 
     end_expect_token_locations_t *locations = p->end_expect_token_locations->prev;
-    ruby_sized_xfree(p->end_expect_token_locations, sizeof(end_expect_token_locations_t));
+    ruby_xfree_sized(p->end_expect_token_locations, sizeof(end_expect_token_locations_t));
     p->end_expect_token_locations = locations;
 
     debug_end_expect_token_locations(p, "pop_end_expect_token_locations");
@@ -7040,7 +7040,7 @@ token_info_pop(struct parser_params *p, const char *token, const rb_code_locatio
     token_info_warn(p, token, ptinfo_beg, 1, loc);
 
     p->token_info = ptinfo_beg->next;
-    ruby_sized_xfree(ptinfo_beg, sizeof(*ptinfo_beg));
+    ruby_xfree_sized(ptinfo_beg, sizeof(*ptinfo_beg));
 }
 
 static void
@@ -7060,7 +7060,7 @@ token_info_drop(struct parser_params *p, const char *token, rb_code_position_t b
                       ptinfo_beg->token);
     }
 
-    ruby_sized_xfree(ptinfo_beg, sizeof(*ptinfo_beg));
+    ruby_xfree_sized(ptinfo_beg, sizeof(*ptinfo_beg));
 }
 
 static void
@@ -7312,9 +7312,9 @@ vtable_free_gen(struct parser_params *p, int line, const char *name,
 #endif
     if (!DVARS_TERMINAL_P(tbl)) {
         if (tbl->tbl) {
-            ruby_sized_xfree(tbl->tbl, tbl->capa * sizeof(ID));
+            ruby_xfree_sized(tbl->tbl, tbl->capa * sizeof(ID));
         }
-        ruby_sized_xfree(tbl, sizeof(*tbl));
+        ruby_xfree_sized(tbl, sizeof(*tbl));
     }
 }
 #define vtable_free(tbl) vtable_free_gen(p, __LINE__, #tbl, tbl)
@@ -14917,7 +14917,7 @@ local_free(struct parser_params *p, struct local_vars *local)
     vtable_chain_free(p, local->args);
     vtable_chain_free(p, local->vars);
 
-    ruby_sized_xfree(local, sizeof(struct local_vars));
+    ruby_xfree_sized(local, sizeof(struct local_vars));
 }
 
 static void
@@ -15176,7 +15176,7 @@ dyna_pop(struct parser_params *p, const struct vtable *lvargs)
         dyna_pop_1(p);
         if (!p->lvtbl->args) {
             struct local_vars *local = p->lvtbl->prev;
-            ruby_sized_xfree(p->lvtbl, sizeof(*p->lvtbl));
+            ruby_xfree_sized(p->lvtbl, sizeof(*p->lvtbl));
             p->lvtbl = local;
         }
     }
@@ -15566,7 +15566,7 @@ rb_ruby_parser_free(void *ptr)
 #endif
 
     if (p->tokenbuf) {
-        ruby_sized_xfree(p->tokenbuf, p->toksiz);
+        ruby_xfree_sized(p->tokenbuf, p->toksiz);
     }
 
     for (local = p->lvtbl; local; local = prev) {

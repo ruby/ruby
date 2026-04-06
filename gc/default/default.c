@@ -1046,8 +1046,18 @@ total_final_slots_count(rb_objspace_t *objspace)
 #define is_full_marking(objspace)        ((objspace)->flags.during_minor_gc == FALSE)
 #define is_incremental_marking(objspace) ((objspace)->flags.during_incremental_marking != FALSE)
 #define will_be_incremental_marking(objspace) ((objspace)->rgengc.need_major_gc != GPR_FLAG_NONE)
-#define GC_INCREMENTAL_SWEEP_SLOT_COUNT 2048
-#define GC_INCREMENTAL_SWEEP_POOL_SLOT_COUNT 1024
+/*
+ * Byte budget for incremental sweep steps. Each step sweeps at most
+ * this many bytes worth of slots before yielding. The effective slot
+ * count per step is GC_INCREMENTAL_SWEEP_BYTES / heap->slot_size,
+ * so larger slot pools (which are less heavily used) naturally get
+ * fewer slots swept per step.
+ *
+ * Baseline: 2048 slots * RVALUE_SLOT_SIZE = 2048 * 40 = 81920 bytes,
+ * preserving the historical behavior for the smallest heap.
+ */
+#define GC_INCREMENTAL_SWEEP_BYTES           (2048 * RVALUE_SLOT_SIZE)
+#define GC_INCREMENTAL_SWEEP_POOL_BYTES      (1024 * RVALUE_SLOT_SIZE)
 #define is_lazy_sweeping(objspace)           (GC_ENABLE_LAZY_SWEEP && has_sweeping_pages(objspace))
 /* In lazy sweeping or the previous incremental marking finished and did not yield a free page. */
 #define needs_continue_sweeping(objspace, heap) \
@@ -3877,6 +3887,8 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
     struct heap_page *sweep_page = heap->sweeping_page;
     int swept_slots = 0;
     int pooled_slots = 0;
+    int sweep_budget = GC_INCREMENTAL_SWEEP_BYTES / heap->slot_size;
+    int pool_budget = GC_INCREMENTAL_SWEEP_POOL_BYTES / heap->slot_size;
 
     if (sweep_page == NULL) return FALSE;
 
@@ -3922,14 +3934,14 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
             heap->freed_slots += ctx.freed_slots;
             heap->empty_slots += ctx.empty_slots;
 
-            if (pooled_slots < GC_INCREMENTAL_SWEEP_POOL_SLOT_COUNT) {
+            if (pooled_slots < pool_budget) {
                 heap_add_poolpage(objspace, heap, sweep_page);
                 pooled_slots += free_slots;
             }
             else {
                 heap_add_freepage(heap, sweep_page);
                 swept_slots += free_slots;
-                if (swept_slots > GC_INCREMENTAL_SWEEP_SLOT_COUNT) {
+                if (swept_slots > sweep_budget) {
                     break;
                 }
             }

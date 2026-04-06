@@ -253,9 +253,6 @@ struct rb_gc_object_metadata_entry *rb_gc_object_metadata(VALUE obj);
 void rb_gc_mark_values(long n, const VALUE *values);
 void rb_gc_mark_vm_stack_values(long n, const VALUE *values);
 void rb_gc_update_values(long n, VALUE *values);
-void *ruby_sized_xrealloc(void *ptr, size_t new_size, size_t old_size) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2));
-void *ruby_sized_xrealloc2(void *ptr, size_t new_count, size_t element_size, size_t old_count) RUBY_ATTR_RETURNS_NONNULL RUBY_ATTR_ALLOC_SIZE((2, 3));
-void ruby_sized_xfree(void *x, size_t size);
 
 const char *rb_gc_active_gc_name(void);
 int rb_gc_modular_gc_loaded_p(void);
@@ -288,15 +285,15 @@ const char *rb_obj_info(VALUE obj);
 void ruby_annotate_mmap(const void *addr, unsigned long size, const char *name);
 
 # define SIZED_REALLOC_N(v, T, m, n) \
-    ((v) = (T *)ruby_sized_xrealloc2((void *)(v), (m), sizeof(T), (n)))
+    ((v) = (T *)ruby_xrealloc2_sized((void *)(v), (m), sizeof(T), (n)))
 
-# define SIZED_FREE(v) ruby_sized_xfree((void *)(v), sizeof(*(v)))
-# define SIZED_FREE_N(v, n) ruby_sized_xfree((void *)(v), sizeof(*(v)) * (n))
+# define SIZED_FREE(v) ruby_xfree_sized((void *)(v), sizeof(*(v)))
+# define SIZED_FREE_N(v, n) ruby_xfree_sized((void *)(v), sizeof(*(v)) * (n))
 
 static inline void *
 ruby_sized_realloc_n(void *ptr, size_t new_count, size_t element_size, size_t old_count)
 {
-    return ruby_sized_xrealloc2(ptr, new_count, element_size, old_count);
+    return ruby_xrealloc2_sized(ptr, new_count, element_size, old_count);
 }
 
 void rb_gc_verify_shareable(VALUE);

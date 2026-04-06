@@ -535,6 +535,41 @@ RSpec.describe "bundle install with specific platforms" do
     expect(err).to include(error_message).once
   end
 
+  it "shows a platform mismatch hint when the current platform is not in the lockfile's platforms" do
+    build_repo4 do
+      build_gem("sorbet-static", "0.5.6433") {|s| s.platform = "x86_64-linux-musl" }
+    end
+
+    gemfile <<~G
+      source "https://gem.repo4"
+
+      gem "sorbet-static", "0.5.6433"
+    G
+
+    lockfile <<~L
+      GEM
+        remote: https://gem.repo4/
+        specs:
+          sorbet-static (0.5.6433-x86_64-linux-musl)
+
+      PLATFORMS
+        x86_64-linux-musl
+
+      DEPENDENCIES
+        sorbet-static (= 0.5.6433)
+
+      BUNDLED WITH
+        #{Bundler::VERSION}
+    L
+
+    simulate_platform "x86_64-linux" do
+      bundle "install", raise_on_error: false
+    end
+
+    expect(err).to include("Your current platform (x86_64-linux) is not included in the lockfile's platforms (x86_64-linux-musl)")
+    expect(err).to include("bundle lock --add-platform x86_64-linux")
+  end
+
   it "does not resolve if the current platform does not match any of available platform specific variants for a transitive dependency" do
     build_repo4 do
       build_gem("sorbet", "0.5.6433") {|s| s.add_dependency "sorbet-static", "= 0.5.6433" }

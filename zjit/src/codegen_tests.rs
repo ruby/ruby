@@ -2400,6 +2400,39 @@ fn test_opt_duparray_send_include_p_redefined() {
 }
 
 #[test]
+fn test_opt_newarray_send_pack() {
+    eval(r#"
+        def test(num)
+          [num].pack('C')
+        end
+        test(65)
+    "#);
+    assert_contains_opcode("test", YARVINSN_opt_newarray_send);
+    assert_snapshot!(assert_compiles(r#"
+        [test(65), test(66), test(67)]
+    "#), @r#"["A", "B", "C"]"#);
+}
+
+#[test]
+fn test_opt_newarray_send_pack_redefined() {
+    eval(r#"
+        class Array
+          alias_method :old_pack, :pack
+          def pack(fmt, buffer: nil)
+            "override:#{old_pack(fmt, buffer: buffer)}"
+          end
+        end
+        def test(num)
+          [num].pack('C')
+        end
+    "#);
+    assert_contains_opcode("test", YARVINSN_opt_newarray_send);
+    assert_snapshot!(assert_compiles(r#"
+        [test(65), test(66), test(67)]
+    "#), @r#"["override:A", "override:B", "override:C"]"#);
+}
+
+#[test]
 fn test_opt_newarray_send_pack_buffer() {
     eval(r#"
         def test(num, buffer)
@@ -3588,6 +3621,97 @@ fn test_attr_accessor_getivar() {
     ");
     assert_contains_opcode("test", YARVINSN_opt_send_without_block);
     assert_snapshot!(assert_compiles("c = C.new; [test(c), test(c)]"), @"[4, 4]");
+}
+
+#[test]
+fn test_getivar_t_data_then_string() {
+    // This is a regression test for a type confusion miscomp where
+    // we end up reading the fields object using an offset off of a
+    // string, assuming that it has a the same layout as a T_DATA object.
+    // At the time of writing the fields object of strings are stored
+    // in a global table, out-of-line of each string.
+    // The string and the thread end up sharing one shape ID.
+    set_call_threshold(2);
+    eval(r#"
+      module GetThousand
+        def test = @var1000
+      end
+      class Thread
+        include GetThousand
+      end
+      class String
+        include GetThousand
+      end
+      OBJ = Thread.new { }
+      OBJ.join
+      STR = +''
+      (0..1000).each do |i|
+        ivar_name = :"@var#{i}"
+        OBJ.instance_variable_set(ivar_name, i)
+        STR.instance_variable_set(ivar_name, i)
+      end
+      OBJ.test; OBJ.test # profile and compile for Thread (T_DATA)
+    "#);
+    assert_snapshot!(assert_compiles("[STR.test, STR.test]"), @"[1000, 1000]");
+}
+
+#[test]
+fn test_getivar_t_object_then_string() {
+    // This test construct an object and a string that have the same set of ivars.
+    // They wouldn't share the same shape ID, though, and we rely on this fact in
+    // our guards.
+    set_call_threshold(2);
+    eval(r#"
+      module GetThousand
+        def test = @var1000
+      end
+      class MyObject
+        include GetThousand
+      end
+      class String
+        include GetThousand
+      end
+      OBJ = MyObject.new
+      STR = +''
+      (0..1000).each do |i|
+        ivar_name = :"@var#{i}"
+        OBJ.instance_variable_set(ivar_name, i)
+        STR.instance_variable_set(ivar_name, i)
+      end
+      OBJ.test; OBJ.test # profile and compile for MyObject
+    "#);
+    assert_snapshot!(assert_compiles("[STR.test, STR.test]"), @"[1000, 1000]");
+}
+
+#[test]
+fn test_getivar_t_class_then_string() {
+    // This is a regression test for a type confusion miscomp where
+    // we end up reading the fields object using an offset off of a
+    // string, assuming that it has a the same layout as a T_CLASS object.
+    // At the time of writing the fields object of strings are stored
+    // in a global table, out-of-line of each string.
+    // The string and the class end up sharing one shape ID.
+    set_call_threshold(2);
+    eval(r#"
+      module GetThousand
+        def test = @var1000
+      end
+      class MyClass
+        extend GetThousand
+      end
+      class String
+        include GetThousand
+      end
+      STR = +''
+      (0..1000).each do |i|
+        ivar_name = :"@var#{i}"
+        MyClass.instance_variable_set(ivar_name, i)
+        STR.instance_variable_set(ivar_name, i)
+      end
+      p MyClass.test; p MyClass.test # profile and compile for MyClass
+      p STR.test
+    "#);
+    assert_snapshot!(assert_compiles("[STR.test, STR.test]"), @"[1000, 1000]");
 }
 
 #[test]
@@ -5385,4 +5509,65 @@ fn test_ep_escape_preserves_keyword_default() {
         forwarder("y", additional_methods: [:to_s])
         target("x")
     "#), @"[]");
+}
+
+#[test]
+fn test_send_block_to_accepts_no_block() {
+    // Methods with &nil should raise ArgumentError when called with a block
+    assert_snapshot!(inspect("
+        def m(a, &nil); a end
+
+        def test
+          m(1) {}
+        rescue ArgumentError => e
+          e.message
+        end
+
+        test
+        test
+    "), @r#""no block accepted""#);
+}
+
+#[test]
+fn test_send_block_to_method_not_using_block() {
+    // Passing a block to a method that doesn't use it should still work correctly.
+    // ZJIT falls back to the interpreter for this case so that unused block
+    // warnings are properly emitted.
+    assert_snapshot!(inspect("
+        def m_no_block = 42
+
+        def test
+          m_no_block {}
+        end
+
+        test
+        test
+    "), @"42");
+}
+
+#[test]
+fn test_send_block_unused_warning_emitted_from_jit() {
+    // When ZJIT compiles a send with a block as a dynamic dispatch fallback
+    // (gen_send -> rb_vm_send), warn_unused_block uses cfp->pc for the dedup
+    // key. We save cfp->pc before calling rb_vm_send so the key is stable
+    // and won't spuriously collide with prior entries in the dedup table.
+    assert_snapshot!(inspect(r#"
+        $warnings = []
+        module Warning
+          def warn(message, category: nil)
+            $warnings << message
+          end
+        end
+
+        def m_unused_block_warn_test = 42
+
+        def test
+          $VERBOSE = true
+          m_unused_block_warn_test {}
+          $warnings.any? { |w| w.include?("may be ignored") }
+        end
+
+        test
+        test
+    "#), @"true");
 }

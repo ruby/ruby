@@ -48,11 +48,13 @@ impl Collection<Ruby> for VMCollection {
     }
 
     fn resume_mutators(_tls: VMWorkerThread) {
-        if CURRENT_GC_MAY_MOVE.load(Ordering::Relaxed) {
+        let current_gc_may_move = CURRENT_GC_MAY_MOVE.load(Ordering::Relaxed);
+
+        if current_gc_may_move {
             (upcalls().after_updating_jit_code)();
         }
 
-        (upcalls().resume_mutators)();
+        (upcalls().resume_mutators)(current_gc_may_move);
     }
 
     fn block_for_gc(tls: VMMutatorThread) {
