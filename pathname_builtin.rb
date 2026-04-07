@@ -1383,6 +1383,38 @@ class Pathname    # * mixed *
     File.unlink @path
   end
   alias delete unlink
+
+  # Recursively deletes a directory, including all directories beneath it.
+  #
+  # The name "rmtree" is borrowed from File::Path of Perl.
+  # File::Path provides "mkpath" and "rmtree".
+  #
+  # The previous implementation delegated to FileUtils.rm_rf and accepted
+  # +noop+, +verbose+, and +secure+ keyword arguments. This builtin
+  # implementation intentionally drops them to remove the fileutils dependency.
+  #
+  #   Pathname("/tmp/testdir").rmtree
+  #
+  def rmtree(noop: nil, verbose: nil, secure: nil)
+    remove_entry(@path)
+    self
+  end
+
+  private
+
+  def remove_entry(path, force = true) # :nodoc:
+    st = File.lstat(path)
+    if st.directory?
+      Dir.each_child(path) do |child|
+        remove_entry(File.join(path, child), force)
+      end
+      Dir.rmdir(path)
+    else
+      File.unlink(path)
+    end
+  rescue StandardError
+    raise unless force
+  end
 end
 
 class Pathname
