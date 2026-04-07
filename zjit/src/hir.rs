@@ -3669,6 +3669,84 @@ impl Function {
         })
     }
 
+    fn clean_ssa(&mut self) {
+        let mut predecessors: HashMap<BlockId, HashSet<InsnId>> = HashMap::new();
+        let rpo = self.rpo();
+        for &block in &rpo {
+            for &insn_id in &self.blocks[block.0].insns {
+                // Instructions without output, including branch instructions, can't be targets of
+                // make_equal_to, so we don't need find() here.
+                match &self.insns[insn_id.0] {
+                    Insn::IfTrue { target, .. }
+                    | Insn::IfFalse { target, .. }
+                    | Insn::Jump(target) => {
+                        predecessors.entry(target.target).or_default().insert(insn_id);
+                    }
+                    // Entries does not pass block arguments
+                    _ => {}
+                }
+            }
+        }
+
+        fn is_trivial(out: InsnId, operands: &[InsnId]) -> Option<InsnId> {
+            let mut same = None;
+            for &op in operands {
+                if Some(op) == same || op == out {
+                    continue;  // Unique value or self-reference
+                }
+                if !same.is_none() {
+                    return None;  // Merges at least two values: not trivial
+                }
+                same = Some(op);
+            }
+            same
+        }
+
+        let mut changed = true;
+        while changed {
+            changed = false;
+            for &block in &rpo {
+                let Some(preds) = predecessors.get(&block) else { continue; };
+                let mut new_params = vec![];
+                let mut num_removed = 0;
+                for (idx, &param) in self.blocks[block.0].params.iter().enumerate() {
+                    let incoming = preds.iter().map(|&pred_insn| {
+                        // Instructions without output, including branch instructions, can't be targets of
+                        // make_equal_to, so we don't need find() here.
+                        match &self.insns[pred_insn.0] {
+                            Insn::IfTrue { target, .. }
+                            | Insn::IfFalse { target, .. }
+                            | Insn::Jump(target) => {
+                                self.union_find.borrow().find_const(target.args[idx - num_removed])
+                            }
+                            _ => unreachable!(),
+                        }
+                    }).collect::<Vec<_>>();
+                    if let Some(same) = is_trivial(param, &incoming) {
+                        self.union_find.borrow_mut().make_equal_to(param, same);
+                        for &pred in preds {
+                            match &mut self.insns[pred.0] {
+                                Insn::IfTrue { target, .. }
+                                | Insn::IfFalse { target, .. }
+                                | Insn::Jump(target) => {
+                                    target.args.remove(idx - num_removed);
+                                }
+                                _ => unreachable!(),
+                            }
+                        }
+                        num_removed += 1;
+                    } else {
+                        new_params.push(param);
+                    }
+                }
+                if num_removed > 0 {
+                    self.blocks[block.0].params = new_params;
+                    changed = true;
+                }
+            }
+        }
+    }
+
     /// Rewrite eligible Send opcodes into SendDirect
     /// opcodes if we know the target ISEQ statically. This removes run-time method lookups and
     /// opens the door for inlining.
@@ -5932,6 +6010,7 @@ impl Function {
             // End strength reduction bucket
             (optimize_load_store) => { Counter::compile_hir_optimize_load_store_time_ns };
             (fold_constants) => { Counter::compile_hir_fold_constants_time_ns };
+            (clean_ssa) => { Counter::compile_hir_clean_ssa_time_ns };
             (clean_cfg) => { Counter::compile_hir_clean_cfg_time_ns };
             (remove_redundant_patch_points) => { Counter::compile_hir_remove_redundant_patch_points_time_ns };
             (remove_duplicate_check_interrupts) => { Counter::compile_hir_remove_duplicate_check_interrupts_time_ns };
@@ -5959,6 +6038,7 @@ impl Function {
         }
 
         // Function is assumed to have types inferred already
+        run_pass!(clean_ssa);
         run_pass!(type_specialize);
         run_pass!(inline);
         run_pass!(optimize_getivar);

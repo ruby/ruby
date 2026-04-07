@@ -152,6 +152,7 @@ class << RubyVM::ZJIT
       :compile_hir_strength_reduce_time_ns,
       :compile_hir_fold_constants_time_ns,
       :compile_hir_clean_cfg_time_ns,
+      :compile_hir_clean_ssa_time_ns,
       :compile_hir_eliminate_dead_code_time_ns,
       :compile_lir_time_ns,
       :profile_time_ns,
