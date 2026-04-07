@@ -923,9 +923,9 @@ pub enum Insn {
     StoreField { recv: InsnId, id: ID, offset: i32, val: InsnId },
     WriteBarrier { recv: InsnId, val: InsnId },
 
-    /// Check whether VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM is set in the environment flags.
+    /// Check whether VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM is set in the (already loaded) environment flags.
     /// Returns CBool (0/1).
-    IsBlockParamModified { ep: InsnId },
+    IsBlockParamModified { flags: InsnId },
     /// Get the block parameter as a Proc.
     GetBlockParam { level: u32, ep_offset: u32, state: InsnId },
     /// Set a local variable in a higher scope or the heap
@@ -1160,8 +1160,8 @@ macro_rules! for_each_operand_impl {
             Insn::IsBlockGiven { lep } => {
                 $visit_one!(lep);
             }
-            Insn::IsBlockParamModified { ep } => {
-                $visit_one!(ep);
+            Insn::IsBlockParamModified { flags } => {
+                $visit_one!(flags);
             }
             Insn::CheckMatch { target, pattern, state, .. } => {
                 $visit_one!(target);
@@ -1586,7 +1586,7 @@ impl Insn {
             Insn::GetSpecialNumber { .. } => effects::Any,
             Insn::GetClassVar { .. } => effects::Any,
             Insn::SetClassVar { .. } => effects::Any,
-            Insn::IsBlockParamModified { .. } => effects::Any,
+            Insn::IsBlockParamModified { .. } => effects::Empty,
             Insn::GetBlockParam { .. } => effects::Any,
             Insn::Snapshot { .. } => effects::Empty,
             Insn::Jump(_) => effects::Any,
@@ -2139,8 +2139,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::SetIvar { self_val, id, val, .. } => write!(f, "SetIvar {self_val}, :{}, {val}", id.contents_lossy()),
             Insn::GetGlobal { id, .. } => write!(f, "GetGlobal :{}", id.contents_lossy()),
             Insn::SetGlobal { id, val, .. } => write!(f, "SetGlobal :{}, {val}", id.contents_lossy()),
-            &Insn::IsBlockParamModified { ep } => {
-                write!(f, "IsBlockParamModified {ep}")
+            &Insn::IsBlockParamModified { flags } => {
+                write!(f, "IsBlockParamModified {flags}")
             },
             &Insn::SetLocal { val, level, ep_offset } => {
                 let name = get_local_var_name_for_printer(self.iseq, level, ep_offset).map_or(String::new(), |x| format!("{x}, "));
@@ -2831,7 +2831,7 @@ impl Function {
             &GuardGreaterEq { left, right, reason, state } => GuardGreaterEq { left: find!(left), right: find!(right), reason, state },
             &GuardLess { left, right, state } => GuardLess { left: find!(left), right: find!(right), state },
             &IsBlockGiven { lep } => IsBlockGiven { lep: find!(lep) },
-            &IsBlockParamModified { ep } => IsBlockParamModified { ep: find!(ep) },
+            &IsBlockParamModified { flags } => IsBlockParamModified { flags: find!(flags) },
             &GetBlockParam { level, ep_offset, state } => GetBlockParam { level, ep_offset, state: find!(state) },
             &FixnumAdd { left, right, state } => FixnumAdd { left: find!(left), right: find!(right), state },
             &FixnumSub { left, right, state } => FixnumSub { left: find!(left), right: find!(right), state },
@@ -3616,6 +3616,10 @@ impl Function {
         // shape alongside the flags, but make sure not to *store* the shape accidentally by
         // writing a u64.
         self.push_insn(block, Insn::LoadField { recv, id: ID!(_rbasic_flags), offset: RUBY_OFFSET_RBASIC_FLAGS, return_type: types::CUInt64 })
+    }
+
+    fn load_ep_flags(&mut self, block: BlockId, ep: InsnId) -> InsnId {
+        self.push_insn(block, Insn::LoadField { recv: ep, id: ID!(_ep_flags), offset: SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32), return_type: types::CUInt64 })
     }
 
     pub fn guard_not_frozen(&mut self, block: BlockId, recv: InsnId, state: InsnId) {
@@ -6165,7 +6169,6 @@ impl Function {
             | Insn::LoadField { .. }
             | Insn::GetConstantPath { .. }
             | Insn::IsBlockGiven { .. }
-            | Insn::IsBlockParamModified { .. }
             | Insn::GetGlobal { .. }
             | Insn::LoadPC
             | Insn::LoadSP
@@ -6454,6 +6457,7 @@ impl Function {
             }
             Insn::RefineType { .. } => Ok(()),
             Insn::HasType { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
+            Insn::IsBlockParamModified { flags } => self.assert_subtype(insn_id, flags, types::CUInt64),
         }
     }
 
@@ -7596,7 +7600,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let join_local = if level == 0 { Some(fun.push_insn(join_block, Insn::Param)) } else { None };
 
                     let ep = fun.push_insn(block, Insn::GetEP { level });
-                    let is_modified = fun.push_insn(block, Insn::IsBlockParamModified { ep });
+                    let flags = fun.load_ep_flags(block, ep);
+                    let is_modified = fun.push_insn(block, Insn::IsBlockParamModified { flags });
 
                     fun.push_insn(block, Insn::IfTrue { val: is_modified, target: BranchEdge { target: modified_block, args: vec![] }});
                     fun.push_insn(block, Insn::Jump(BranchEdge { target: unmodified_block, args: vec![] }));
@@ -7659,7 +7664,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let join_param = fun.push_insn(join_block, Insn::Param);
 
                     let ep = fun.push_insn(block, Insn::GetEP { level });
-                    let is_modified = fun.push_insn(block, Insn::IsBlockParamModified { ep });
+                    let flags = fun.load_ep_flags(block, ep);
+                    let is_modified = fun.push_insn(block, Insn::IsBlockParamModified { flags });
 
                     fun.push_insn(block, Insn::IfTrue {
                         val: is_modified,

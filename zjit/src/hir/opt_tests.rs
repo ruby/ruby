@@ -4729,15 +4729,16 @@ mod hir_opt_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           v17:CPtr = GetEP 0
-          v18:CBool = IsBlockParamModified v17
-          IfTrue v18, bb4()
-          v23:CInt64 = LoadField v17, :_env_data_index_specval@0x1001
-          v24:CInt64 = GuardAnyBitSet v23, CUInt64(1)
-          v25:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v25, v10)
+          v18:CUInt64 = LoadField v17, :_ep_flags@0x1001
+          v19:CBool = IsBlockParamModified v18
+          IfTrue v19, bb4()
+          v24:CInt64 = LoadField v17, :_env_data_index_specval@0x1002
+          v25:CInt64 = GuardAnyBitSet v24, CUInt64(1)
+          v26:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v26, v10)
         bb4():
-          v21:BasicObject = LoadField v17, :block@0x1010
-          Jump bb6(v21, v21)
+          v22:BasicObject = LoadField v17, :block@0x1010
+          Jump bb6(v22, v22)
         bb6(v15:BasicObject, v16:BasicObject):
           SideExit NoProfileSend recompile
         ");
@@ -4769,25 +4770,27 @@ mod hir_opt_tests {
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
           v18:CPtr = GetEP 0
-          v19:CBool = IsBlockParamModified v18
-          IfTrue v19, bb4()
-          v24:BasicObject = GetBlockParam :block, l0, EP@4
-          Jump bb6(v24)
+          v19:CUInt64 = LoadField v18, :_ep_flags@0x1001
+          v20:CBool = IsBlockParamModified v19
+          IfTrue v20, bb4()
+          v25:BasicObject = GetBlockParam :block, l0, EP@4
+          Jump bb6(v25)
         bb4():
-          v22:BasicObject = LoadField v18, :block@0x1001
-          Jump bb6(v22)
+          v23:BasicObject = LoadField v18, :block@0x1002
+          Jump bb6(v23)
         bb6(v17:BasicObject):
-          v32:CPtr = GetEP 0
-          v33:CBool = IsBlockParamModified v32
-          IfTrue v33, bb7()
-          v38:CInt64 = LoadField v32, :_env_data_index_specval@0x1002
-          v39:CInt64 = GuardAnyBitSet v38, CUInt64(1)
-          v40:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb9(v40, v17)
+          v33:CPtr = GetEP 0
+          v34:CUInt64 = LoadField v33, :_ep_flags@0x1001
+          v35:CBool = IsBlockParamModified v34
+          IfTrue v35, bb7()
+          v40:CInt64 = LoadField v33, :_env_data_index_specval@0x1003
+          v41:CInt64 = GuardAnyBitSet v40, CUInt64(1)
+          v42:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb9(v42, v17)
         bb7():
-          v36:BasicObject = LoadField v32, :block@0x1001
-          Jump bb9(v36, v36)
-        bb9(v30:BasicObject, v31:BasicObject):
+          v38:BasicObject = LoadField v33, :block@0x1002
+          Jump bb9(v38, v38)
+        bb9(v31:BasicObject, v32:BasicObject):
           SideExit NoProfileSend recompile
         ");
     }
@@ -4816,25 +4819,27 @@ mod hir_opt_tests {
           Jump bb3(v5, v6)
         bb3(v8:BasicObject, v9:NilClass):
           v14:CPtr = GetEP 1
-          v15:CBool = IsBlockParamModified v14
-          IfTrue v15, bb4()
-          v20:BasicObject = GetBlockParam :block, l1, EP@3
-          Jump bb6(v20)
+          v15:CUInt64 = LoadField v14, :_ep_flags@0x1000
+          v16:CBool = IsBlockParamModified v15
+          IfTrue v16, bb4()
+          v21:BasicObject = GetBlockParam :block, l1, EP@3
+          Jump bb6(v21)
         bb4():
-          v18:BasicObject = LoadField v14, :block@0x1000
-          Jump bb6(v18)
+          v19:BasicObject = LoadField v14, :block@0x1001
+          Jump bb6(v19)
         bb6(v13:BasicObject):
-          v27:CPtr = GetEP 1
-          v28:CBool = IsBlockParamModified v27
-          IfTrue v28, bb7()
-          v33:CInt64 = LoadField v27, :_env_data_index_specval@0x1001
-          v34:CInt64 = GuardAnyBitSet v33, CUInt64(1)
-          v35:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb9(v35)
+          v28:CPtr = GetEP 1
+          v29:CUInt64 = LoadField v28, :_ep_flags@0x1000
+          v30:CBool = IsBlockParamModified v29
+          IfTrue v30, bb7()
+          v35:CInt64 = LoadField v28, :_env_data_index_specval@0x1002
+          v36:CInt64 = GuardAnyBitSet v35, CUInt64(1)
+          v37:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb9(v37)
         bb7():
-          v31:BasicObject = LoadField v27, :block@0x1000
-          Jump bb9(v31)
-        bb9(v26:BasicObject):
+          v33:BasicObject = LoadField v28, :block@0x1001
+          Jump bb9(v33)
+        bb9(v27:BasicObject):
           SideExit NoProfileSend recompile
         ");
     }
@@ -4859,13 +4864,14 @@ mod hir_opt_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           v15:CPtr = GetEP 0
-          v16:CBool = IsBlockParamModified v15
-          IfTrue v16, bb4()
-          v21:BasicObject = GetBlockParam :block, l0, EP@3
-          Jump bb6(v21)
+          v16:CUInt64 = LoadField v15, :_ep_flags@0x1001
+          v17:CBool = IsBlockParamModified v16
+          IfTrue v17, bb4()
+          v22:BasicObject = GetBlockParam :block, l0, EP@3
+          Jump bb6(v22)
         bb4():
-          v19:BasicObject = LoadField v15, :block@0x1001
-          Jump bb6(v19)
+          v20:BasicObject = LoadField v15, :block@0x1002
+          Jump bb6(v20)
         bb6(v14:BasicObject):
           CheckInterrupts
           Return v14
@@ -4893,13 +4899,14 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v11:CPtr = GetEP 1
-          v12:CBool = IsBlockParamModified v11
-          IfTrue v12, bb4()
-          v17:BasicObject = GetBlockParam :block, l1, EP@3
-          Jump bb6(v17)
+          v12:CUInt64 = LoadField v11, :_ep_flags@0x1000
+          v13:CBool = IsBlockParamModified v12
+          IfTrue v13, bb4()
+          v18:BasicObject = GetBlockParam :block, l1, EP@3
+          Jump bb6(v18)
         bb4():
-          v15:BasicObject = LoadField v11, :block@0x1000
-          Jump bb6(v15)
+          v16:BasicObject = LoadField v11, :block@0x1001
+          Jump bb6(v16)
         bb6(v10:BasicObject):
           CheckInterrupts
           Return v10
@@ -8149,19 +8156,20 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           v14:ArrayExact = NewArray
           v18:CPtr = GetEP 0
-          v19:CBool = IsBlockParamModified v18
-          IfTrue v19, bb4()
-          v24:CInt64 = LoadField v18, :_env_data_index_specval@0x1001
-          v25:CInt64 = GuardAnyBitSet v24, CUInt64(1)
-          v26:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v26, v10)
+          v19:CUInt64 = LoadField v18, :_ep_flags@0x1001
+          v20:CBool = IsBlockParamModified v19
+          IfTrue v20, bb4()
+          v25:CInt64 = LoadField v18, :_env_data_index_specval@0x1002
+          v26:CInt64 = GuardAnyBitSet v25, CUInt64(1)
+          v27:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v27, v10)
         bb4():
-          v22:BasicObject = LoadField v18, :block@0x1010
-          Jump bb6(v22, v22)
+          v23:BasicObject = LoadField v18, :block@0x1010
+          Jump bb6(v23, v23)
         bb6(v16:BasicObject, v17:BasicObject):
-          v29:BasicObject = Send v14, &block, :map, v16 # SendFallbackReason: Complex argument passing
+          v30:BasicObject = Send v14, &block, :map, v16 # SendFallbackReason: Complex argument passing
           CheckInterrupts
-          Return v29
+          Return v30
         ");
     }
 
@@ -8187,19 +8195,20 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           v14:ArrayExact = NewArray
           v18:CPtr = GetEP 0
-          v19:CBool = IsBlockParamModified v18
-          IfTrue v19, bb4()
-          v24:CInt64 = LoadField v18, :_env_data_index_specval@0x1001
-          v25:CInt64[0] = GuardBitEquals v24, CInt64(0)
-          v26:NilClass = Const Value(nil)
-          Jump bb6(v26, v10)
+          v19:CUInt64 = LoadField v18, :_ep_flags@0x1001
+          v20:CBool = IsBlockParamModified v19
+          IfTrue v20, bb4()
+          v25:CInt64 = LoadField v18, :_env_data_index_specval@0x1002
+          v26:CInt64[0] = GuardBitEquals v25, CInt64(0)
+          v27:NilClass = Const Value(nil)
+          Jump bb6(v27, v10)
         bb4():
-          v22:BasicObject = LoadField v18, :block@0x1002
-          Jump bb6(v22, v22)
+          v23:BasicObject = LoadField v18, :block@0x1003
+          Jump bb6(v23, v23)
         bb6(v16:BasicObject, v17:BasicObject):
-          v29:BasicObject = Send v14, &block, :map, v16 # SendFallbackReason: Complex argument passing
+          v30:BasicObject = Send v14, &block, :map, v16 # SendFallbackReason: Complex argument passing
           CheckInterrupts
-          Return v29
+          Return v30
         ");
     }
 
@@ -8226,19 +8235,20 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:ArrayExact = NewArray
           v13:CPtr = GetEP 1
-          v14:CBool = IsBlockParamModified v13
-          IfTrue v14, bb4()
-          v19:CInt64 = LoadField v13, :_env_data_index_specval@0x1000
-          v20:CInt64 = GuardAnyBitSet v19, CUInt64(1)
-          v21:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v21)
+          v14:CUInt64 = LoadField v13, :_ep_flags@0x1000
+          v15:CBool = IsBlockParamModified v14
+          IfTrue v15, bb4()
+          v20:CInt64 = LoadField v13, :_env_data_index_specval@0x1001
+          v21:CInt64 = GuardAnyBitSet v20, CUInt64(1)
+          v22:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v22)
         bb4():
-          v17:BasicObject = LoadField v13, :block@0x1010
-          Jump bb6(v17)
+          v18:BasicObject = LoadField v13, :block@0x1010
+          Jump bb6(v18)
         bb6(v12:BasicObject):
-          v24:BasicObject = Send v10, &block, :map, v12 # SendFallbackReason: Complex argument passing
+          v25:BasicObject = Send v10, &block, :map, v12 # SendFallbackReason: Complex argument passing
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -11713,19 +11723,20 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           v14:ArrayExact = NewArray
           v18:CPtr = GetEP 0
-          v19:CBool = IsBlockParamModified v18
-          IfTrue v19, bb4()
-          v24:CInt64 = LoadField v18, :_env_data_index_specval@0x1001
-          v25:CInt64 = GuardAnyBitSet v24, CUInt64(1)
-          v26:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v26, v10)
+          v19:CUInt64 = LoadField v18, :_ep_flags@0x1001
+          v20:CBool = IsBlockParamModified v19
+          IfTrue v20, bb4()
+          v25:CInt64 = LoadField v18, :_env_data_index_specval@0x1002
+          v26:CInt64 = GuardAnyBitSet v25, CUInt64(1)
+          v27:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v27, v10)
         bb4():
-          v22:BasicObject = LoadField v18, :block@0x1010
-          Jump bb6(v22, v22)
+          v23:BasicObject = LoadField v18, :block@0x1010
+          Jump bb6(v23, v23)
         bb6(v16:BasicObject, v17:BasicObject):
-          v29:BasicObject = Send v14, &block, :map, v16 # SendFallbackReason: Complex argument passing
+          v30:BasicObject = Send v14, &block, :map, v16 # SendFallbackReason: Complex argument passing
           CheckInterrupts
-          Return v29
+          Return v30
         ");
     }
 
