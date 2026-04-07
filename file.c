@@ -1099,7 +1099,8 @@ static VALUE statx_birthtime(const rb_io_stat_data *st);
  *
  * Returns a new Time object containing the access time
  * of the object represented by +self+
- * <i>at the time +self+ was created</i>:
+ * at the time +self+ was created;
+ * see {Snapshot}[rdoc-ref:File::Stat@Snapshot]:
  *
  *   filepath = 't.tmp'
  *   File.write(filepath, 'foo')
