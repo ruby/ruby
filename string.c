@@ -3140,6 +3140,9 @@ str_subseq(VALUE str, long beg, long len)
     const int termlen = TERM_LEN(str);
     if (!SHARABLE_SUBSTRING_P(beg, len, RSTRING_LEN(str))) {
         str2 = rb_enc_str_new(RSTRING_PTR(str) + beg, len, rb_str_enc_get(str));
+        if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT) {
+            ENC_CODERANGE_SET(str2, ENC_CODERANGE_7BIT);
+        }
         RB_GC_GUARD(str);
         return str2;
     }
@@ -3152,12 +3155,19 @@ str_subseq(VALUE str, long beg, long len)
         TERM_FILL(ptr2+len, termlen);
 
         STR_SET_LEN(str2, len);
+        if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT) {
+            ENC_CODERANGE_SET(str2, ENC_CODERANGE_7BIT);
+        }
+
         RB_GC_GUARD(str);
     }
     else {
         str_replace_shared(str2, str);
         RUBY_ASSERT(!STR_EMBED_P(str2));
-        ENC_CODERANGE_CLEAR(str2);
+        if (ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
+            ENC_CODERANGE_CLEAR(str2);
+        }
+
         RSTRING(str2)->as.heap.ptr += beg;
         if (RSTRING_LEN(str2) > len) {
             STR_SET_LEN(str2, len);
