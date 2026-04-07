@@ -4832,7 +4832,7 @@ rb_method_type_name(rb_method_type_t type)
 {
     switch (type) {
       case VM_METHOD_TYPE_ISEQ:           return "iseq";
-      case VM_METHOD_TYPE_ATTRSET:        return "attrest";
+      case VM_METHOD_TYPE_ATTRSET:        return "attrset";
       case VM_METHOD_TYPE_IVAR:           return "ivar";
       case VM_METHOD_TYPE_BMETHOD:        return "bmethod";
       case VM_METHOD_TYPE_ALIAS:          return "alias";
