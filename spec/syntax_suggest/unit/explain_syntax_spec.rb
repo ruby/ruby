@@ -17,9 +17,23 @@ module SyntaxSuggest
       expect(explain.errors.join.strip).to_not be_empty
     end
 
-    it "handles %w[]" do
+    %w[w W i I].each do |type|
+      it "handles %#{type}-style array" do
+        source = <<~EOM
+          node.is_a?(Op) && %#{type}[| ||].include?(node.value) &&
+        EOM
+
+        explain = ExplainSyntax.new(
+          code_lines: CodeLine.from_source(source)
+        ).call
+
+        expect(explain.missing).to eq([])
+      end
+    end
+
+    it "handles %r-style regexp" do
       source = <<~EOM
-        node.is_a?(Op) && %w[| ||].include?(node.value) &&
+        node.is_a?(Op) && %r{| ||}.include?(node.value) &&
       EOM
 
       explain = ExplainSyntax.new(
@@ -27,6 +41,20 @@ module SyntaxSuggest
       ).call
 
       expect(explain.missing).to eq([])
+    end
+
+    ["", "q", "Q"].each do |type|
+      it "handles %#{type}-style string" do
+        source = <<~EOM
+          node.is_a?(Op) && %#{type}(| ||).include?(node.value) &&
+        EOM
+
+        explain = ExplainSyntax.new(
+          code_lines: CodeLine.from_source(source)
+        ).call
+
+        expect(explain.missing).to eq([])
+      end
     end
 
     it "doesn't falsely identify strings or symbols as critical chars" do

@@ -86,7 +86,7 @@ module SyntaxSuggest
   class CleanDocument
     def initialize(source:)
       lines = clean_sweep(source: source)
-      @document = CodeLine.from_source(lines.join, lines: lines)
+      @document = CodeLine.from_source(lines.join)
     end
 
     # Call all of the document "cleaners"
@@ -182,8 +182,8 @@ module SyntaxSuggest
       start_index_stack = []
       heredoc_beg_end_index = []
       lines.each do |line|
-        line.lex.each do |lex_value|
-          case lex_value.type
+        line.tokens.each do |token|
+          case token.type
           when :on_heredoc_beg
             start_index_stack << line.index
           when :on_heredoc_end
@@ -273,7 +273,7 @@ module SyntaxSuggest
 
         # Join group into the first line
         @document[line.index] = CodeLine.new(
-          lex: lines.map(&:lex).flatten,
+          tokens: lines.map(&:tokens).flatten,
           line: lines.join,
           index: line.index
         )
@@ -282,7 +282,7 @@ module SyntaxSuggest
         lines[1..].each do |line|
           # The above lines already have newlines in them, if add more
           # then there will be double newline, use an empty line instead
-          @document[line.index] = CodeLine.new(line: "", index: line.index, lex: [])
+          @document[line.index] = CodeLine.new(line: "", index: line.index, tokens: [])
         end
       end
       self
