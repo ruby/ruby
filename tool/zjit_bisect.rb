@@ -135,7 +135,7 @@ end
 
 # Try running with no JIT list to get a stable baseline
 unless run_with_jit_list(RUBY, OPTIONS, []).success?
-  cmd = [RUBY, "--zjit-allowed-iseqs=/dev/null", *OPTIONS].shelljoin
+  cmd = add_zjit_options([RUBY, "--zjit-allowed-iseqs=/dev/null", *OPTIONS]).shelljoin
   raise "The command failed unexpectedly with an empty JIT list. To reproduce, try running the following: `#{cmd}`"
 end
 # Collect the JIT list from the failing Ruby process
