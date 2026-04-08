@@ -82,6 +82,9 @@ def add_zjit_options cmd
     zjit_opts = cmd.select { |arg| arg.start_with?("--zjit") }
     run_opts_index = cmd.find_index { |arg| arg.start_with?("RUN_OPTS=") }
     specopts_index = cmd.find_index { |arg| arg.start_with?("SPECOPTS=") }
+    if run_opts_index && specopts_index
+      raise "Expected only one of RUN_OPTS or SPECOPTS to be present in make command, but both were found"
+    end
     if run_opts_index
       run_opts = Shellwords.split(cmd[run_opts_index].delete_prefix("RUN_OPTS="))
       run_opts.concat(zjit_opts)
