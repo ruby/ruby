@@ -9,7 +9,7 @@ RSpec.describe <%= config[:constant_name] %> do
   it "can call into Rust" do
     result = <%= config[:constant_name] %>.hello("world")
 
-    expect(result).to be("Hello earth, from Rust!")
+    expect(result).to eq("Hello world, from Rust!")
   end
 <%- else -%>
   it "does something useful" do

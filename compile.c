@@ -2731,7 +2731,6 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                             data.len = len;
                             rb_hash_foreach(map, cdhash_set_label_i, (VALUE)&data);
 
-                            rb_hash_rehash(map);
                             freeze_hide_obj(map);
                             rb_ractor_make_shareable(map);
                             generated_iseq[code_index + 1 + j] = map;
@@ -5373,10 +5372,10 @@ compile_hash(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int meth
                     if (!RB_SPECIAL_CONST_P(elem[1])) RB_OBJ_SET_FROZEN_SHAREABLE(elem[1]);
                     rb_ary_cat(ary, elem, 2);
                 }
-                VALUE hash = rb_hash_new_with_size(RARRAY_LEN(ary) / 2);
+                VALUE hash = rb_hash_alloc_fixed_size(Qfalse, RARRAY_LEN(ary) / 2);
                 rb_hash_bulk_insert(RARRAY_LEN(ary), RARRAY_CONST_PTR(ary), hash);
                 RB_GC_GUARD(ary);
-                hash = RB_OBJ_SET_FROZEN_SHAREABLE(rb_obj_hide(hash));
+                hash = RB_OBJ_SET_FROZEN_SHAREABLE(hash);
 
                 /* Emit optimized code */
                 FLUSH_CHUNK();
@@ -12168,7 +12167,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
                       case TS_CDHASH:
                         {
                             int i;
-                            VALUE map = rb_hash_new_with_size(RARRAY_LEN(op)/2);
+                            VALUE map = rb_hash_alloc_fixed_size(Qfalse, RARRAY_LEN(op)/2);
 
                             RHASH_TBL_RAW(map)->type = &cdhash_type;
                             op = rb_to_array_type(op);
@@ -12180,7 +12179,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
                                 rb_hash_aset(map, key, (VALUE)label | 1);
                             }
                             RB_GC_GUARD(op);
-                            RB_OBJ_SET_SHAREABLE(rb_obj_hide(map)); // allow mutation while compiling
+                            RB_OBJ_SET_SHAREABLE(map); // allow mutation while compiling
                             argv[j] = map;
                             RB_OBJ_WRITTEN(iseq, Qundef, map);
                         }
@@ -14335,7 +14334,7 @@ static VALUE
 ibf_load_object_hash(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset)
 {
     long len = (long)ibf_load_small_value(load, &offset);
-    VALUE obj = rb_hash_new_with_size(len);
+    VALUE obj = header->frozen ? rb_hash_alloc_fixed_size(rb_cHash, len) : rb_hash_new_with_size(len);
     int i;
 
     for (i = 0; i < len; i++) {
@@ -14346,7 +14345,6 @@ ibf_load_object_hash(const struct ibf_load *load, const struct ibf_object_header
         VALUE val = ibf_load_object(load, val_index);
         rb_hash_aset(obj, key, val);
     }
-    rb_hash_rehash(obj);
 
     if (header->internal) rb_obj_hide(obj);
     if (header->frozen) {

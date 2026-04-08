@@ -26,21 +26,20 @@ module SyntaxSuggest
 
     # Returns an array of CodeLine objects
     # from the source string
-    def self.from_source(source, lines: nil)
-      lines ||= source.lines
-      lex_array_for_line = LexAll.new(source: source, source_lines: lines).each_with_object(Hash.new { |h, k| h[k] = [] }) { |lex, hash| hash[lex.line] << lex }
-      lines.map.with_index do |line, index|
+    def self.from_source(source)
+      tokens_for_line = LexAll.new(source: source).each_with_object(Hash.new { |h, k| h[k] = [] }) { |token, hash| hash[token.line] << token }
+      source.lines.map.with_index do |line, index|
         CodeLine.new(
           line: line,
           index: index,
-          lex: lex_array_for_line[index + 1]
+          tokens: tokens_for_line[index + 1]
         )
       end
     end
 
-    attr_reader :line, :index, :lex, :line_number, :indent
-    def initialize(line:, index:, lex:)
-      @lex = lex
+    attr_reader :line, :index, :tokens, :line_number, :indent
+    def initialize(line:, index:, tokens:)
+      @tokens = tokens
       @line = line
       @index = index
       @original = line
@@ -181,12 +180,12 @@ module SyntaxSuggest
     #     expect(lines.first.trailing_slash?).to eq(true)
     #
     def trailing_slash?
-      last = @lex.last
+      last = @tokens.last
 
       # Older versions of prism diverged slightly from Ripper in compatibility mode
       case last&.type
       when :on_sp
-        last.token == TRAILING_SLASH
+        last.value == TRAILING_SLASH
       when :on_tstring_end
         true
       else
@@ -210,21 +209,21 @@ module SyntaxSuggest
       end_count = 0
 
       @ignore_newline_not_beg = false
-      @lex.each do |lex|
-        kw_count += 1 if lex.is_kw?
-        end_count += 1 if lex.is_end?
+      @tokens.each do |token|
+        kw_count += 1 if token.is_kw?
+        end_count += 1 if token.is_end?
 
-        if lex.type == :on_ignored_nl
-          @ignore_newline_not_beg = !lex.expr_beg?
+        if token.type == :on_ignored_nl
+          @ignore_newline_not_beg = !token.expr_beg?
         end
 
         if in_oneliner_def.nil?
-          in_oneliner_def = :ENDFN if lex.state.allbits?(Ripper::EXPR_ENDFN)
-        elsif lex.state.allbits?(Ripper::EXPR_ENDFN)
+          in_oneliner_def = :ENDFN if token.state.allbits?(Ripper::EXPR_ENDFN)
+        elsif token.state.allbits?(Ripper::EXPR_ENDFN)
           # Continue
-        elsif lex.state.allbits?(Ripper::EXPR_BEG)
-          in_oneliner_def = :BODY if lex.token == "="
-        elsif lex.state.allbits?(Ripper::EXPR_END)
+        elsif token.state.allbits?(Ripper::EXPR_BEG)
+          in_oneliner_def = :BODY if token.value == "="
+        elsif token.state.allbits?(Ripper::EXPR_END)
           # We found an endless method, count it
           oneliner_count += 1 if in_oneliner_def == :BODY
 

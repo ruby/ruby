@@ -264,8 +264,14 @@ static inline VALUE
 class_real(VALUE cl)
 {
     RUBY_ASSERT(cl);
+
+    // TODO: In the future we should only call this with T_CLASS
+    RUBY_ASSERT(RB_TYPE_P(cl, T_CLASS) || RB_TYPE_P(cl, T_ICLASS) || RB_TYPE_P(cl, T_MODULE));
+
     while (RB_UNLIKELY(fake_class_p(cl))) {
-        cl = RCLASS_SUPER(cl);
+        // All paths through super in any box will eventually result in the
+        // same class.
+        cl = RCLASSEXT_SUPER(RCLASS_EXT_PRIME(cl));
     }
     return cl;
 }
@@ -2262,6 +2268,7 @@ static VALUE class_call_alloc_func(rb_alloc_func_t allocator, VALUE klass);
 static VALUE
 rb_class_alloc(VALUE klass)
 {
+    RBIMPL_ASSERT_TYPE(klass, T_CLASS);
     rb_alloc_func_t allocator = class_get_alloc_func(klass);
     return class_call_alloc_func(allocator, klass);
 }

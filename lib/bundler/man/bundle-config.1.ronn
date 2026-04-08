@@ -108,7 +108,7 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 
 * `api_request_size` (`BUNDLE_API_REQUEST_SIZE`):
    Configure how many dependencies to fetch when resolving the specifications.
-   This configuration is only used when fetchig specifications from RubyGems
+   This configuration is only used when fetching specifications from RubyGems
    servers that didn't implement the Compact Index API.
    Defaults to 100.
 * `auto_install` (`BUNDLE_AUTO_INSTALL`):

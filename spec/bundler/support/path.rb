@@ -123,7 +123,7 @@ module Spec
         end
         Pathname(real)
       else
-        source_root.join("tmp")
+        (ruby_core? ? source_root : source_root.parent).join("tmp")
       end
     end
 

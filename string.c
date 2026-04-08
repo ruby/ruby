@@ -198,15 +198,30 @@ VALUE rb_cSymbol;
 
 #define STR_ENC_GET(str) get_encoding(str)
 
+static inline bool
+zero_filled(const char *s, int n)
+{
+    for (; n > 0; --n) {
+        if (*s++) return false;
+    }
+    return true;
+}
+
 #if !defined SHARABLE_MIDDLE_SUBSTRING
 # define SHARABLE_MIDDLE_SUBSTRING 0
 #endif
-#if !SHARABLE_MIDDLE_SUBSTRING
-#define SHARABLE_SUBSTRING_P(beg, len, end) ((beg) + (len) == (end))
-#else
-#define SHARABLE_SUBSTRING_P(beg, len, end) 1
-#endif
 
+static inline bool
+SHARABLE_SUBSTRING_P(VALUE str, long beg, long len)
+{
+#if SHARABLE_MIDDLE_SUBSTRING
+    return true;
+#else
+    long end = beg + len;
+    long source_len = RSTRING_LEN(str);
+    return end == source_len || zero_filled(RSTRING_PTR(str) + end, TERM_LEN(str));
+#endif
+}
 
 static inline long
 str_embed_capa(VALUE str)
@@ -2810,15 +2825,6 @@ rb_string_value_ptr(volatile VALUE *ptr)
     return RSTRING_PTR(str);
 }
 
-static int
-zero_filled(const char *s, int n)
-{
-    for (; n > 0; --n) {
-        if (*s++) return 0;
-    }
-    return 1;
-}
-
 static const char *
 str_null_char(const char *s, long len, const int minlen, rb_encoding *enc)
 {
@@ -3138,8 +3144,11 @@ str_subseq(VALUE str, long beg, long len)
     RUBY_ASSERT(beg+len <= RSTRING_LEN(str));
 
     const int termlen = TERM_LEN(str);
-    if (!SHARABLE_SUBSTRING_P(beg, len, RSTRING_LEN(str))) {
+    if (!SHARABLE_SUBSTRING_P(str, beg, len)) {
         str2 = rb_enc_str_new(RSTRING_PTR(str) + beg, len, rb_str_enc_get(str));
+        if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT) {
+            ENC_CODERANGE_SET(str2, ENC_CODERANGE_7BIT);
+        }
         RB_GC_GUARD(str);
         return str2;
     }
@@ -3152,12 +3161,19 @@ str_subseq(VALUE str, long beg, long len)
         TERM_FILL(ptr2+len, termlen);
 
         STR_SET_LEN(str2, len);
+        if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT) {
+            ENC_CODERANGE_SET(str2, ENC_CODERANGE_7BIT);
+        }
+
         RB_GC_GUARD(str);
     }
     else {
         str_replace_shared(str2, str);
         RUBY_ASSERT(!STR_EMBED_P(str2));
-        ENC_CODERANGE_CLEAR(str2);
+        if (ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
+            ENC_CODERANGE_CLEAR(str2);
+        }
+
         RSTRING(str2)->as.heap.ptr += beg;
         if (RSTRING_LEN(str2) > len) {
             STR_SET_LEN(str2, len);

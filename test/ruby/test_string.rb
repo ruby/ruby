@@ -3461,6 +3461,27 @@ CODE
     assert_equal(false, ("\u3042"*10).byteslice(0, 20).valid_encoding?, bug7954)
   end
 
+  def test_shared_middle_string_terminator
+    ten = "0123456789"
+    hundred = ten * 10
+    str = "#{hundred}\0#{hundred}".freeze
+
+    require 'objspace'
+
+    substr = str.byteslice(0, hundred.bytesize)
+    assert_equal hundred, substr
+    assert_includes ObjectSpace.dump(substr), ' "shared":true,'
+
+    # Larger terminator
+    substr.force_encoding(Encoding::UTF_16BE)
+    assert_equal hundred.dup.force_encoding(Encoding::UTF_16BE), substr
+    refute_includes ObjectSpace.dump(substr), ' "shared":true,'
+
+    substr = str.byteslice(0, hundred.bytesize + 1)
+    assert_equal hundred + "\0", substr
+    refute_includes ObjectSpace.dump(substr), ' "shared":true,'
+  end
+
   def test_unknown_string_option
     str = nil
     assert_nothing_raised(SyntaxError) do

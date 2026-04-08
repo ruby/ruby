@@ -1564,6 +1564,7 @@ pub(crate) mod ids {
         name: _env_data_index_specval
         name: _ep_method_entry
         name: _ep_specval
+        name: _ep_flags
         name: _rbasic_flags
         name: RUBY_FL_FREEZE
         name: RUBY_ELTS_SHARED

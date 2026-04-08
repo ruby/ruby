@@ -2630,7 +2630,7 @@ rb_obj_singleton_methods(int argc, const VALUE *argv, VALUE obj)
     int recur = TRUE;
 
     if (rb_check_arity(argc, 0, 1)) recur = RTEST(argv[0]);
-    if (RCLASS_SINGLETON_P(obj)) {
+    if (RB_TYPE_P(obj, T_CLASS) && RCLASS_SINGLETON_P(obj)) {
         rb_singleton_class(obj);
     }
     klass = CLASS_OF(obj);

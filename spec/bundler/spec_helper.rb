@@ -56,7 +56,7 @@ begin
     add_filter "/lib/rubygems/"
     add_filter "/lib/bundler/vendor/"
     add_filter "/tool/"
-    add_filter "/bundler/tmp/"
+    add_filter "/tmp/"
     add_filter ".gemspec"
   end
 

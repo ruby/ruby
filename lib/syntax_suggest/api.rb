@@ -7,25 +7,11 @@ require "stringio"
 require "pathname"
 require "timeout"
 
+# Prism is the new parser, replacing Ripper
+require "prism"
 # We need Ripper loaded for `Prism.lex_compat` even if we're using Prism
 # for lexing and parsing
 require "ripper"
-
-# Prism is the new parser, replacing Ripper
-#
-# We need to "dual boot" both for now because syntax_suggest
-# supports older rubies that do not ship with syntax suggest.
-#
-# We also need the ability to control loading of this library
-# so we can test that both modes work correctly in CI.
-if (value = ENV["SYNTAX_SUGGEST_DISABLE_PRISM"])
-  warn "Skipping loading prism due to SYNTAX_SUGGEST_DISABLE_PRISM=#{value}"
-else
-  begin
-    require "prism"
-  rescue LoadError
-  end
-end
 
 module SyntaxSuggest
   # Used to indicate a default value that cannot
@@ -34,14 +20,6 @@ module SyntaxSuggest
 
   class Error < StandardError; end
   TIMEOUT_DEFAULT = ENV.fetch("SYNTAX_SUGGEST_TIMEOUT", 1).to_i
-
-  # SyntaxSuggest.use_prism_parser? [Private]
-  #
-  # Tells us if the prism parser is available for use
-  # or if we should fallback to `Ripper`
-  def self.use_prism_parser?
-    defined?(Prism)
-  end
 
   # SyntaxSuggest.handle_error [Public]
   #
@@ -152,20 +130,11 @@ module SyntaxSuggest
   # SyntaxSuggest.invalid? [Private]
   #
   # Opposite of `SyntaxSuggest.valid?`
-  if defined?(Prism)
-    def self.invalid?(source)
-      source = source.join if source.is_a?(Array)
-      source = source.to_s
+  def self.invalid?(source)
+    source = source.join if source.is_a?(Array)
+    source = source.to_s
 
-      Prism.parse(source).failure?
-    end
-  else
-    def self.invalid?(source)
-      source = source.join if source.is_a?(Array)
-      source = source.to_s
-
-      Ripper.new(source).tap(&:parse).error?
-    end
+    Prism.parse(source).failure?
   end
 
   # SyntaxSuggest.valid? [Private]

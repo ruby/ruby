@@ -4,7 +4,7 @@ use crate::codegen::split_patch_point;
 use crate::cruby::*;
 use crate::backend::lir::*;
 use crate::options::asm_dump;
-use crate::stats::CompileError;
+use crate::stats::{CompileError, trace_compile_phase};
 use crate::virtualmem::CodePtr;
 use crate::cast::*;
 
@@ -1610,63 +1610,71 @@ impl Assembler {
         let use_scratch_reg = !self.accept_scratch_reg;
         asm_dump!(self, init);
 
-        let mut asm = self.arm64_split();
+        let mut asm = trace_compile_phase("split", || self.arm64_split());
 
         asm_dump!(asm, split);
 
-        asm.number_instructions(0);
+        trace_compile_phase("regalloc", || {
+            trace_compile_phase("number_instructions", || asm.number_instructions(0));
 
-        let live_in = asm.analyze_liveness();
-        let intervals = asm.build_intervals(live_in);
+            let live_in = trace_compile_phase("analyze_liveness", || asm.analyze_liveness());
+            let intervals = trace_compile_phase("build_intervals", || asm.build_intervals(live_in));
 
-        // Dump live intervals if requested
-        if let Some(crate::options::Options { dump_lir: Some(dump_lirs), .. }) = unsafe { crate::options::OPTIONS.as_ref() } {
-            if dump_lirs.contains(&crate::options::DumpLIR::live_intervals) {
-                println!("LIR live_intervals:\n{}", crate::backend::lir::debug_intervals(&asm, &intervals));
+            // Dump live intervals if requested
+            if let Some(crate::options::Options { dump_lir: Some(dump_lirs), .. }) = unsafe { crate::options::OPTIONS.as_ref() } {
+                if dump_lirs.contains(&crate::options::DumpLIR::live_intervals) {
+                    println!("LIR live_intervals:\n{}", crate::backend::lir::debug_intervals(&asm, &intervals));
+                }
             }
-        }
 
-        let preferred_registers = asm.preferred_register_assignments(&intervals);
-        let (assignments, num_stack_slots) = asm.linear_scan(intervals.clone(), regs.len(), &preferred_registers);
+            let preferred_registers = trace_compile_phase("preferred_registers", || asm.preferred_register_assignments(&intervals));
+            let (assignments, num_stack_slots) = trace_compile_phase("linear_scan", || asm.linear_scan(intervals.clone(), regs.len(), &preferred_registers));
 
-        let total_stack_slots = asm.stack_base_idx + num_stack_slots;
-        if total_stack_slots > Self::MAX_FRAME_STACK_SLOTS {
-            return Err(CompileError::NativeStackTooLarge);
-        }
+            let total_stack_slots = asm.stack_base_idx + num_stack_slots;
+            if total_stack_slots > Self::MAX_FRAME_STACK_SLOTS {
+                return Err(CompileError::NativeStackTooLarge);
+            }
 
-        // Dump vreg-to-physical-register mapping if requested
-        if let Some(crate::options::Options { dump_lir: Some(dump_lirs), .. }) = unsafe { crate::options::OPTIONS.as_ref() } {
-            if dump_lirs.contains(&crate::options::DumpLIR::alloc_regs) {
-                println!("LIR live_intervals:\n{}", crate::backend::lir::debug_intervals(&asm, &intervals));
+            // Dump vreg-to-physical-register mapping if requested
+            if let Some(crate::options::Options { dump_lir: Some(dump_lirs), .. }) = unsafe { crate::options::OPTIONS.as_ref() } {
+                if dump_lirs.contains(&crate::options::DumpLIR::alloc_regs) {
+                    println!("LIR live_intervals:\n{}", crate::backend::lir::debug_intervals(&asm, &intervals));
 
-                println!("VReg assignments:");
-                for (i, alloc) in assignments.iter().enumerate() {
-                    if let Some(alloc) = alloc {
-                        let range = &intervals[i].range;
-                        let alloc_str = match alloc {
-                            Allocation::Reg(n) => format!("{}", regs[*n]),
-                            Allocation::Fixed(reg) => format!("{}", reg),
-                            Allocation::Stack(n) => format!("Stack[{}]", n),
-                        };
-                        println!("  v{} => {} (range: {:?}..{:?})", i, alloc_str, range.start, range.end);
+                    println!("VReg assignments:");
+                    for (i, alloc) in assignments.iter().enumerate() {
+                        if let Some(alloc) = alloc {
+                            let range = &intervals[i].range;
+                            let alloc_str = match alloc {
+                                Allocation::Reg(n) => format!("{}", regs[*n]),
+                                Allocation::Fixed(reg) => format!("{}", reg),
+                                Allocation::Stack(n) => format!("Stack[{}]", n),
+                            };
+                            println!("  v{} => {} (range: {:?}..{:?})", i, alloc_str, range.start, range.end);
+                        }
                     }
                 }
             }
-        }
 
-        // Update FrameSetup slot_count to account for:
-        // 1) stack slots reserved for block params (stack_base_idx), and
-        // 2) register allocator spills (num_stack_slots).
-        for block in asm.basic_blocks.iter_mut() {
-            for insn in block.insns.iter_mut() {
-                if let Insn::FrameSetup { slot_count, .. } = insn {
-                    *slot_count = total_stack_slots;
+            // Update FrameSetup slot_count to account for:
+            // 1) stack slots reserved for block params (stack_base_idx), and
+            // 2) register allocator spills (num_stack_slots).
+            trace_compile_phase("count_stack_slots", || {
+                for block in asm.basic_blocks.iter_mut() {
+                    for insn in block.insns.iter_mut() {
+                        if let Insn::FrameSetup { slot_count, .. } = insn {
+                            *slot_count = total_stack_slots;
+                        }
+                    }
                 }
-            }
-        }
+            });
 
-        asm.handle_caller_saved_regs(&intervals, &assignments, &C_ARG_REGREGS);
-        asm.resolve_ssa(&intervals, &assignments);
+            trace_compile_phase("resolve_ssa", || {
+                asm.handle_caller_saved_regs(&intervals, &assignments, &C_ARG_REGREGS);
+                asm.resolve_ssa(&intervals, &assignments);
+            });
+
+            Ok(())
+        })?;
         asm_dump!(asm, alloc_regs);
 
         // We are moved out of SSA after resolve_ssa
@@ -1674,43 +1682,47 @@ impl Assembler {
         // We put compile_exits after alloc_regs to avoid extending live ranges for VRegs spilled on side exits.
         // Exit code is compiled into a separate list of instructions that we append
         // to the last reachable block before scratch_split, so it gets linearized and split.
-        let exit_insns = asm.compile_exits();
+        trace_compile_phase("compile_exits", || {
+            let exit_insns = asm.compile_exits();
+
+            // Append exit instructions to the last reachable block so they are
+            // included in linearize_instructions and processed by scratch_split.
+            if let Some(&last_block) = asm.block_order().last() {
+                for insn in exit_insns {
+                    asm.basic_blocks[last_block.0].insns.push(insn);
+                    asm.basic_blocks[last_block.0].insn_ids.push(None);
+                }
+            }
+        });
         asm_dump!(asm, compile_exits);
 
-        // Append exit instructions to the last reachable block so they are
-        // included in linearize_instructions and processed by scratch_split.
-        if let Some(&last_block) = asm.block_order().last() {
-            for insn in exit_insns {
-                asm.basic_blocks[last_block.0].insns.push(insn);
-                asm.basic_blocks[last_block.0].insn_ids.push(None);
-            }
-        }
-
         if use_scratch_reg {
-            asm = asm.arm64_scratch_split();
+            asm = trace_compile_phase("scratch_split", || asm.arm64_scratch_split());
             asm_dump!(asm, scratch_split);
         } else {
             // For trampolines that use scratch registers, resolve ParallelMov without scratch_reg.
-            asm = asm.resolve_parallel_mov_pass();
+            asm = trace_compile_phase("resolve_parallel_mov", || asm.resolve_parallel_mov_pass());
             asm_dump!(asm, resolve_parallel_mov);
         }
 
-        // Create label instances in the code block
-        for (idx, name) in asm.label_names.iter().enumerate() {
-            let label = cb.new_label(name.to_string());
-            assert_eq!(label, Label(idx));
-        }
+        trace_compile_phase("emit", || {
+            // Create label instances in the code block
+            for (idx, name) in asm.label_names.iter().enumerate() {
+                let label = cb.new_label(name.to_string());
+                assert_eq!(label, Label(idx));
+            }
 
-        let start_ptr = cb.get_write_ptr();
-        let gc_offsets = asm.arm64_emit(cb).inspect_err(|_| cb.clear_labels())?;
-        assert!(!cb.has_dropped_bytes(), "emit should not drop bytes without error");
+            let start_ptr = cb.get_write_ptr();
+            let gc_offsets = asm.arm64_emit(cb).inspect_err(|_| cb.clear_labels())?;
+            assert!(!cb.has_dropped_bytes(), "emit should not drop bytes without error");
 
-        cb.link_labels().or(Err(CompileError::LabelLinkingFailure))?;
+            cb.link_labels().or(Err(CompileError::LabelLinkingFailure))?;
 
-        // Invalidate icache for newly written out region so we don't run stale code.
-        unsafe { rb_jit_icache_invalidate(start_ptr.raw_ptr(cb) as _, cb.get_write_ptr().raw_ptr(cb) as _) };
+            // Invalidate icache for newly written out region so we don't run stale code.
+            unsafe { rb_jit_icache_invalidate(start_ptr.raw_ptr(cb) as _, cb.get_write_ptr().raw_ptr(cb) as _) };
 
-        Ok((start_ptr, gc_offsets))
+            Ok((start_ptr, gc_offsets))
+        })
     }
 }
 

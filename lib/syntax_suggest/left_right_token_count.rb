@@ -9,19 +9,19 @@ module SyntaxSuggest
   #
   # Example:
   #
-  #   left_right = LeftRightLexCount.new
+  #   left_right = LeftRightTokenCount.new
   #   left_right.count_kw
   #   left_right.missing.first
   #   # => "end"
   #
-  #   left_right = LeftRightLexCount.new
+  #   left_right = LeftRightTokenCount.new
   #   source = "{ a: b, c: d" # Note missing '}'
-  #   LexAll.new(source: source).each do |lex|
-  #     left_right.count_lex(lex)
+  #   LexAll.new(source: source).each do |token|
+  #     left_right.count_token(token)
   #   end
   #   left_right.missing.first
   #   # => "}"
-  class LeftRightLexCount
+  class LeftRightTokenCount
     def initialize
       @kw_count = 0
       @end_count = 0
@@ -49,20 +49,20 @@ module SyntaxSuggest
     #
     # Example:
     #
-    #   left_right = LeftRightLexCount.new
-    #   left_right.count_lex(LexValue.new(1, :on_lbrace, "{", Ripper::EXPR_BEG))
+    #   left_right = LeftRightTokenCount.new
+    #   left_right.count_token(Token.new(1, :on_lbrace, "{", Ripper::EXPR_BEG))
     #   left_right.count_for_char("{")
     #   # => 1
     #   left_right.count_for_char("}")
     #   # => 0
-    def count_lex(lex)
-      case lex.type
+    def count_token(token)
+      case token.type
       when :on_tstring_content
         # ^^^
         # Means it's a string or a symbol `"{"` rather than being
         # part of a data structure (like a hash) `{ a: b }`
         # ignore it.
-      when :on_words_beg, :on_symbos_beg, :on_qwords_beg,
+      when :on_words_beg, :on_symbols_beg, :on_qwords_beg,
            :on_qsymbols_beg, :on_regexp_beg, :on_tstring_beg
         # ^^^
         # Handle shorthand syntaxes like `%Q{ i am a string }`
@@ -70,7 +70,7 @@ module SyntaxSuggest
         # The start token will be the full thing `%Q{` but we
         # need to count it as if it's a `{`. Any token
         # can be used
-        char = lex.token[-1]
+        char = token.value[-1]
         @count_for_char[char] += 1 if @count_for_char.key?(char)
       when :on_embexpr_beg
         # ^^^
@@ -87,14 +87,14 @@ module SyntaxSuggest
         # When we see `#{` count it as a `{` or we will
         # have a mis-match count.
         #
-        case lex.token
+        case token.value
         when "\#{"
           @count_for_char["{"] += 1
         end
       else
-        @end_count += 1 if lex.is_end?
-        @kw_count += 1 if lex.is_kw?
-        @count_for_char[lex.token] += 1 if @count_for_char.key?(lex.token)
+        @end_count += 1 if token.is_end?
+        @kw_count += 1 if token.is_kw?
+        @count_for_char[token.value] += 1 if @count_for_char.key?(token.value)
       end
     end
 

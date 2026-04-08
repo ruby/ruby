@@ -17,8 +17,6 @@ module SyntaxSuggest
     end
 
     it "supports endless method definitions" do
-      skip("Unsupported ruby version") unless Gem::Version.new(RUBY_VERSION) >= Gem::Version.new("3")
-
       line = CodeLine.from_source(<<~EOM).first
         def square(x) = x * x
       EOM

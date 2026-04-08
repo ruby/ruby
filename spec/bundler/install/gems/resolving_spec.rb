@@ -358,7 +358,7 @@ RSpec.describe "bundle install with install-time dependencies" do
               #{lockfile_platforms}
 
             DEPENDENCIES
-              parallel_tests
+              rubocop
             #{checksums}
             BUNDLED WITH
               #{Bundler::VERSION}

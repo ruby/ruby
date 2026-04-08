@@ -5945,13 +5945,48 @@ rb_f_test(int argc, VALUE *argv, VALUE _)
 /*
  *  Document-class: File::Stat
  *
- *  Objects of class File::Stat encapsulate common status information
- *  for File objects. The information is recorded at the moment the
- *  File::Stat object is created; changes made to the file after that
- *  point will not be reflected. File::Stat objects are returned by
- *  IO#stat, File::stat, File#lstat, and File::lstat. Many of these
- *  methods return platform-specific values, and not all values are
- *  meaningful on all systems. See also Kernel#test.
+ *  A \File::Stat object contains information about an entry in the file system.
+ *
+ *  Each of these methods returns a new \File::Stat object:
+ *
+ *  - File#lstat.
+ *  - File::Stat.new.
+ *  - File::lstat.
+ *  - File::stat.
+ *  - IO#stat.
+ *
+ *  === Snapshot
+ *
+ *  A new \File::Stat object takes an immediate "snapshot" of the entry's information;
+ *  the captured information is never updated,
+ *  regardless of changes in the actual entry:
+ *
+ *  The entry must exist when File::Stat.new is called:
+ *
+ *    filepath = 't.tmp'
+ *    File.exist?(filepath)           # => false
+ *    File::Stat.new(filepath)        # Raises Errno::ENOENT: No such file or directory.
+ *    File.write(filepath, 'foo')     # Create the file.
+ *    stat = File::Stat.new(filepath) # Okay.
+ *
+ *  Later changes to the actual entry do not change the \File::Stat object:
+ *
+ *    File.atime(filepath) # => 2026-04-01 11:51:38.0014518 -0500
+ *    stat.atime           # => 2026-04-01 11:51:38.0014518 -0500
+ *    File.write(filepath, 'bar')
+ *    File.atime(filepath) # => 2026-04-01 11:58:11.922614 -0500
+ *    stat.atime           # => 2026-04-01 11:51:38.0014518 -0500
+ *    File.delete(filepath)
+ *    stat.atime           # => 2026-04-01 11:51:38.0014518 -0500
+ *
+ *  === OS-Dependencies
+ *
+ *  Methods in a \File::Stat object may return platform-dependents values,
+ *  and not all values are meaningful on all systems;
+ *  for example, File::Stat#blocks returns +nil+ on Windows,
+ *  but returns an integer on Linux.
+ *
+ *  See also Kernel#test.
  */
 
 static VALUE
