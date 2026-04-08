@@ -1759,7 +1759,7 @@ dummy
     def assert_locations(locations, expected)
       ary = locations.map {|loc| loc && [loc.first_lineno, loc.first_column, loc.last_lineno, loc.last_column] }
 
-      assert_equal(ary, expected)
+      assert_equal(expected, ary)
     end
   end
 end
