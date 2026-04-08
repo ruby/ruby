@@ -40,7 +40,7 @@ enum imemo_type {
     imemo_callinfo       = 10,
     imemo_callcache      = 11,
     imemo_constcache     = 12,
-    imemo_fields   = 13,
+    imemo_fields         = 13,
 };
 
 /* CREF (Class REFerence) is defined in method.h */
@@ -290,6 +290,30 @@ rb_imemo_fields_complex_tbl(VALUE fields_obj)
     RUBY_ASSERT((st_table *)rb_imemo_fields_ptr(fields_obj) == IMEMO_OBJ_FIELDS(fields_obj)->as.complex.table);
 
     return IMEMO_OBJ_FIELDS(fields_obj)->as.complex.table;
+}
+
+static inline bool
+rb_imemo_needs_cleanup_p(VALUE obj)
+{
+    switch (imemo_type(obj)) {
+      case imemo_constcache:
+      case imemo_cref:
+      case imemo_ifunc:
+      case imemo_memo:
+      case imemo_svar:
+      case imemo_callcache:
+      case imemo_throw_data:
+        return false;
+
+      case imemo_env:
+      case imemo_ment:
+      case imemo_iseq:
+      case imemo_callinfo:
+      case imemo_fields:
+      case imemo_tmpbuf:
+        return true;
+    }
+    UNREACHABLE_RETURN(true);
 }
 
 #endif /* INTERNAL_IMEMO_H */
