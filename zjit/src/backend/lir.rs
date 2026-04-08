@@ -50,7 +50,7 @@ impl std::fmt::Display for VRegId {
 }
 
 /// Dummy HIR block ID used when creating test or invalid LIR blocks
-const DUMMY_HIR_BLOCK_ID: usize = usize::MAX;
+const DUMMY_HIR_BLOCK_ID: u32 = u32::MAX;
 /// Dummy RPO index used when creating test or invalid LIR blocks
 const DUMMY_RPO_INDEX: usize = usize::MAX;
 

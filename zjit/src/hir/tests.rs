@@ -5537,7 +5537,7 @@ pub(crate) mod hir_build_tests {
      fn assert_dominators_contains_self(function: &Function, dominators: &Dominators) {
          for (i, _) in function.blocks.iter().enumerate() {
              // Ensure that each dominating set contains the block itself.
-             assert!(dominators.is_dominated_by(BlockId(i), BlockId(i)));
+             assert!(dominators.is_dominated_by(BlockId(i as u32), BlockId(i as u32)));
          }
      }
 
