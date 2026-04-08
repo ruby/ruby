@@ -817,6 +817,44 @@ pub enum BlockHandler {
     BlockArg,
 }
 
+#[derive(Debug, Clone)]
+pub struct CCallInfo {
+    pub cfunc: *const u8,
+    pub recv: InsnId,
+    pub args: Vec<InsnId>,
+    pub name: ID,
+    pub owner: VALUE,
+    pub return_type: Type,
+    pub elidable: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct CCallWithFrameInfo {
+    pub cd: *const rb_call_data,
+    pub cfunc: *const u8,
+    pub recv: InsnId,
+    pub args: Vec<InsnId>,
+    pub cme: *const rb_callable_method_entry_t,
+    pub name: ID,
+    pub state: InsnId,
+    pub return_type: Type,
+    pub elidable: bool,
+    pub block: Option<BlockHandler>,
+}
+
+#[derive(Debug, Clone)]
+pub struct CCallVariadicInfo {
+    pub cfunc: *const u8,
+    pub recv: InsnId,
+    pub args: Vec<InsnId>,
+    pub cme: *const rb_callable_method_entry_t,
+    pub name: ID,
+    pub state: InsnId,
+    pub return_type: Type,
+    pub elidable: bool,
+    pub block: Option<BlockHandler>,
+}
+
 /// An instruction in the SSA IR. The output of an instruction is referred to by the index of
 /// the instruction ([`InsnId`]). SSA form enables this, and [`UnionFind`] ([`Function::find`])
 /// helps with editing.
@@ -985,35 +1023,12 @@ pub enum Insn {
 
     /// Call a C function without pushing a frame
     /// `name` and `owner` are for printing purposes only
-    CCall { cfunc: *const u8, recv: InsnId, args: Vec<InsnId>, name: ID, owner: VALUE, return_type: Type, elidable: bool },
-
+    CCall(Box<CCallInfo>),
     /// Call a C function that pushes a frame
-    CCallWithFrame {
-        cd: *const rb_call_data, // cd for falling back to Send
-        cfunc: *const u8,
-        recv: InsnId,
-        args: Vec<InsnId>,
-        cme: *const rb_callable_method_entry_t,
-        name: ID,
-        state: InsnId,
-        return_type: Type,
-        elidable: bool,
-        block: Option<BlockHandler>,
-    },
-
+    CCallWithFrame(Box<CCallWithFrameInfo>),
     /// Call a variadic C function with signature: func(int argc, VALUE *argv, VALUE recv)
     /// This handles frame setup, argv creation, and frame teardown all in one
-    CCallVariadic {
-        cfunc: *const u8,
-        recv: InsnId,
-        args: Vec<InsnId>,
-        cme: *const rb_callable_method_entry_t,
-        name: ID,
-        state: InsnId,
-        return_type: Type,
-        elidable: bool,
-        block: Option<BlockHandler>,
-    },
+    CCallVariadic(Box<CCallVariadicInfo>),
 
     /// Un-optimized fallback implementation (dynamic dispatch) for send-ish instructions
     /// Ignoring keyword arguments etc for now
@@ -1170,7 +1185,7 @@ pub enum Insn {
 /// `$visit_one` macro for a single InsnId field and `$visit_many` macro for a
 /// slice/Vec of InsnIds. Used by both `for_each_operand` and `for_each_operand_mut`.
 macro_rules! for_each_operand_impl {
-    ($self:expr, $visit_one:ident, $visit_many:ident) => {
+    ($self:expr, $visit_one:ident, $visit_many:ident, $visit_boxed_one:ident, $visit_boxed_many:ident) => {
         match $self {
             Insn::Const { .. }
             | Insn::Param
@@ -1376,8 +1391,6 @@ macro_rules! for_each_operand_impl {
             }
             Insn::Send { recv, args, state, .. }
             | Insn::SendForward { recv, args, state, .. }
-            | Insn::CCallVariadic { recv, args, state, .. }
-            | Insn::CCallWithFrame { recv, args, state, .. }
             | Insn::SendDirect { recv, args, state, .. }
             | Insn::InvokeBuiltin { recv, args, state, .. }
             | Insn::InvokeSuper { recv, args, state, .. }
@@ -1386,6 +1399,16 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(recv);
                 $visit_many!(args);
                 $visit_one!(state);
+            }
+            Insn::CCallVariadic(info) => {
+                $visit_boxed_one!(info.recv);
+                $visit_boxed_many!(info.args);
+                $visit_boxed_one!(info.state);
+            }
+            Insn::CCallWithFrame(info) => {
+                $visit_boxed_one!(info.recv);
+                $visit_boxed_many!(info.args);
+                $visit_boxed_one!(info.state);
             }
             Insn::InvokeBlock { args, state, .. } => {
                 $visit_many!(args);
@@ -1396,9 +1419,9 @@ macro_rules! for_each_operand_impl {
                 $visit_many!(args);
                 $visit_one!(state);
             }
-            Insn::CCall { recv, args, .. } => {
-                $visit_one!(recv);
-                $visit_many!(args);
+            Insn::CCall(info) => {
+                $visit_boxed_one!(info.recv);
+                $visit_boxed_many!(info.args);
             }
             Insn::GetIvar { self_val, state, .. }
             | Insn::DefinedIvar { self_val, state, .. } => {
@@ -1503,21 +1526,27 @@ impl Insn {
     pub fn for_each_operand(&self, mut f: impl FnMut(InsnId)) {
         macro_rules! visit_one { ($id:expr) => { f(*$id) }; }
         macro_rules! visit_many { ($s:expr) => { for id in ($s).iter() { f(*id) } }; }
-        for_each_operand_impl!(self, visit_one, visit_many);
+        macro_rules! visit_boxed_one { ($id:expr) => { f($id) }; }
+        macro_rules! visit_boxed_many { ($s:expr) => { for id in ($s).iter() { f(*id) } }; }
+        for_each_operand_impl!(self, visit_one, visit_many, visit_boxed_one, visit_boxed_many);
     }
 
     /// Call `f` on a mutable reference to each operand (InsnId) of this instruction.
     pub fn for_each_operand_mut(&mut self, mut f: impl FnMut(&mut InsnId)) {
         macro_rules! visit_one { ($id:expr) => { f($id) }; }
         macro_rules! visit_many { ($s:expr) => { for id in ($s).iter_mut() { f(id) } }; }
-        for_each_operand_impl!(self, visit_one, visit_many);
+        macro_rules! visit_boxed_one { ($id:expr) => { f(&mut $id) }; }
+        macro_rules! visit_boxed_many { ($s:expr) => { for id in ($s).iter_mut() { f(id) } }; }
+        for_each_operand_impl!(self, visit_one, visit_many, visit_boxed_one, visit_boxed_many);
     }
 
     /// Call `f` on each operand, short-circuiting on the first error.
     pub fn try_for_each_operand<E>(&self, mut f: impl FnMut(InsnId) -> Result<(), E>) -> Result<(), E> {
         macro_rules! visit_one { ($id:expr) => { f(*$id)? }; }
         macro_rules! visit_many { ($s:expr) => { for id in ($s).iter() { f(*id)? } }; }
-        for_each_operand_impl!(self, visit_one, visit_many);
+        macro_rules! visit_boxed_one { ($id:expr) => { f($id)? }; }
+        macro_rules! visit_boxed_many { ($s:expr) => { for id in ($s).iter() { f(*id)? } }; }
+        for_each_operand_impl!(self, visit_one, visit_many, visit_boxed_one, visit_boxed_many);
         Ok(())
     }
 
@@ -1622,23 +1651,23 @@ impl Insn {
             Insn::Jump(_) => effects::Any,
             Insn::IfTrue { .. } => effects::Any,
             Insn::IfFalse { .. } => effects::Any,
-            Insn::CCall { elidable, .. } => {
-                if *elidable {
+            Insn::CCall(info) => {
+                if info.elidable {
                     Effect::write(abstract_heaps::Allocator)
                 }
                 else {
                     effects::Any
                 }
             },
-            Insn::CCallWithFrame { elidable, .. } => {
-                if *elidable {
+            Insn::CCallWithFrame(info) => {
+                if info.elidable {
                     Effect::write(abstract_heaps::Allocator)
                 }
                 else {
                     effects::Any
                 }
             },
-            Insn::CCallVariadic { .. } => effects::Any,
+            Insn::CCallVariadic(_) => effects::Any,
             Insn::Send { .. } => effects::Any,
             Insn::SendForward { .. } => effects::Any,
             Insn::InvokeSuper { .. } => effects::Any,
@@ -2085,31 +2114,31 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
             Insn::IsBlockGiven { lep } => { write!(f, "IsBlockGiven {lep}") },
             Insn::FixnumBitCheck {val, index} => { write!(f, "FixnumBitCheck {val}, {index}") },
-            Insn::CCall { cfunc, recv, args, name, owner, return_type: _, elidable: _ } => {
-                let display_name = if *owner == Qnil { name.contents_lossy().to_string() } else { qualified_method_name(*owner, *name) };
-                write!(f, "CCall {recv}, :{}@{:p}", display_name, self.ptr_map.map_ptr(cfunc))?;
-                for arg in args {
+            Insn::CCall(info) => {
+                let display_name = if info.owner == Qnil { info.name.contents_lossy().to_string() } else { qualified_method_name(info.owner, info.name) };
+                write!(f, "CCall {}, :{}@{:p}", info.recv, display_name, self.ptr_map.map_ptr(&info.cfunc))?;
+                for arg in &info.args {
                     write!(f, ", {arg}")?;
                 }
                 Ok(())
             },
-            Insn::CCallWithFrame { cfunc, recv, args, name, cme, block, .. } => {
-                write!(f, "CCallWithFrame {recv}, :{}@{:p}", qualified_method_name(unsafe { (**cme).owner }, *name), self.ptr_map.map_ptr(cfunc))?;
-                for arg in args {
+            Insn::CCallWithFrame(info) => {
+                write!(f, "CCallWithFrame {}, :{}@{:p}", info.recv, qualified_method_name(unsafe { (*info.cme).owner }, info.name), self.ptr_map.map_ptr(&info.cfunc))?;
+                for arg in &info.args {
                     write!(f, ", {arg}")?;
                 }
-                match block {
+                match info.block {
                     Some(BlockHandler::BlockIseq(blockiseq)) =>
-                        write!(f, ", block={:p}", self.ptr_map.map_ptr(blockiseq))?,
+                        write!(f, ", block={:p}", self.ptr_map.map_ptr(&blockiseq))?,
                     Some(BlockHandler::BlockArg) =>
                         write!(f, ", block=&block")?,
                     None => {}
                 }
                 Ok(())
             },
-            Insn::CCallVariadic { cfunc, recv, args, name, cme, .. } => {
-                write!(f, "CCallVariadic {recv}, :{}@{:p}", qualified_method_name(unsafe { (**cme).owner }, *name), self.ptr_map.map_ptr(cfunc))?;
-                for arg in args {
+            Insn::CCallVariadic(info) => {
+                write!(f, "CCallVariadic {}, :{}@{:p}", info.recv, qualified_method_name(unsafe { (*info.cme).owner }, info.name), self.ptr_map.map_ptr(&info.cfunc))?;
+                for arg in &info.args {
                     write!(f, ", {arg}")?;
                 }
                 Ok(())
@@ -2958,22 +2987,24 @@ impl Function {
             &HashAset { hash, key, val, state } => HashAset { hash: find!(hash), key: find!(key), val: find!(val), state },
             &ObjectAlloc { val, state } => ObjectAlloc { val: find!(val), state },
             &ObjectAllocClass { class, state } => ObjectAllocClass { class, state: find!(state) },
-            &CCall { cfunc, recv, ref args, name, owner, return_type, elidable } => CCall { cfunc, recv: find!(recv), args: find_vec!(args), name, owner, return_type, elidable },
-            &CCallWithFrame { cd, cfunc, recv, ref args, cme, name, state, return_type, elidable, block } => CCallWithFrame {
-                cd,
-                cfunc,
-                recv: find!(recv),
-                args: find_vec!(args),
-                cme,
-                name,
-                state: find!(state),
-                return_type,
-                elidable,
-                block,
-            },
-            &CCallVariadic { cfunc, recv, ref args, cme, name, state, return_type, elidable, block } => CCallVariadic {
-                cfunc, recv: find!(recv), args: find_vec!(args), cme, name, state, return_type, elidable, block
-            },
+            CCall(info) => CCall(Box::new(CCallInfo {
+                cfunc: info.cfunc, recv: find!(info.recv), args: find_vec!(info.args), name: info.name, owner: info.owner, return_type: info.return_type, elidable: info.elidable,
+            })),
+            CCallWithFrame(info) => CCallWithFrame(Box::new(CCallWithFrameInfo {
+                cd: info.cd,
+                cfunc: info.cfunc,
+                recv: find!(info.recv),
+                args: find_vec!(info.args),
+                cme: info.cme,
+                name: info.name,
+                state: find!(info.state),
+                return_type: info.return_type,
+                elidable: info.elidable,
+                block: info.block,
+            })),
+            CCallVariadic(info) => CCallVariadic(Box::new(CCallVariadicInfo {
+                cfunc: info.cfunc, recv: find!(info.recv), args: find_vec!(info.args), cme: info.cme, name: info.name, state: info.state, return_type: info.return_type, elidable: info.elidable, block: info.block,
+            })),
             &CheckMatch { target, pattern, flag, state } => CheckMatch { target: find!(target), pattern: find!(pattern), flag, state: find!(state) },
             &Defined { op_type, obj, pushval, v, state } => Defined { op_type, obj, pushval, v: find!(v), state: find!(state) },
             &DefinedIvar { self_val, pushval, id, state } => DefinedIvar { self_val: find!(self_val), pushval, id, state },
@@ -3113,9 +3144,9 @@ impl Function {
             Insn::NewRangeFixnum { .. } => types::RangeExact,
             Insn::ObjectAlloc { .. } => types::HeapBasicObject,
             Insn::ObjectAllocClass { class, .. } => Type::from_class(*class),
-            &Insn::CCallWithFrame { return_type, .. } => return_type,
-            Insn::CCall { return_type, .. } => *return_type,
-            &Insn::CCallVariadic { return_type, .. } => return_type,
+            Insn::CCallWithFrame(info) => info.return_type,
+            Insn::CCall(info) => info.return_type,
+            Insn::CCallVariadic(info) => info.return_type,
             Insn::CheckMatch { .. } => types::BasicObject,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
             Insn::RefineType { val, new_type, .. } => self.type_of(*val).intersection(*new_type),
@@ -4278,12 +4309,12 @@ impl Function {
                                     // Filter for a leaf and GC free function
                                     let ccall = if props.leaf && props.no_gc {
                                         self.count(block, Counter::inline_cfunc_optimized_send_count);
-                                        self.push_insn(block, Insn::CCall { cfunc: cfunc_ptr, recv, args, name, owner, return_type, elidable })
+                                        self.push_insn(block, Insn::CCall(Box::new(CCallInfo { cfunc: cfunc_ptr, recv, args, name, owner, return_type, elidable })))
                                     } else {
                                         if get_option!(stats) {
                                             self.count_not_inlined_cfunc(block, super_cme);
                                         }
-                                        self.push_insn(block, Insn::CCallWithFrame {
+                                        self.push_insn(block, Insn::CCallWithFrame(Box::new(CCallWithFrameInfo {
                                             cd,
                                             cfunc: cfunc_ptr,
                                             recv,
@@ -4294,7 +4325,7 @@ impl Function {
                                             return_type: types::BasicObject,
                                             elidable: false,
                                             block: None,
-                                        })
+                                        })))
                                     };
                                     self.make_equal_to(insn_id, ccall);
                                 }
@@ -4329,12 +4360,12 @@ impl Function {
                                     // Filter for a leaf and GC free function
                                     let ccall = if props.leaf && props.no_gc {
                                         self.count(block, Counter::inline_cfunc_optimized_send_count);
-                                        self.push_insn(block, Insn::CCall { cfunc: cfunc_ptr, recv, args, name, owner, return_type, elidable })
+                                        self.push_insn(block, Insn::CCall(Box::new(CCallInfo { cfunc: cfunc_ptr, recv, args, name, owner, return_type, elidable })))
                                     } else {
                                         if get_option!(stats) {
                                             self.count_not_inlined_cfunc(block, super_cme);
                                         }
-                                        self.push_insn(block, Insn::CCallVariadic {
+                                        self.push_insn(block, Insn::CCallVariadic(Box::new(CCallVariadicInfo {
                                             cfunc: cfunc_ptr,
                                             recv,
                                             args: args.clone(),
@@ -4344,7 +4375,7 @@ impl Function {
                                             return_type: types::BasicObject,
                                             elidable: false,
                                             block: None,
-                                        })
+                                        })))
                                     };
                                     self.make_equal_to(insn_id, ccall);
                                 }
@@ -4448,14 +4479,15 @@ impl Function {
         // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
         // getinstancevariable does assume_single_ractor_mode()
         let ivar_index_insn = self.push_insn(block, Insn::Const { val: Const::CUInt16(ivar_index) });
-        self.push_insn(block, Insn::CCall {
+        self.push_insn(block, Insn::CCall(Box::new(CCallInfo {
             cfunc: rb_ivar_get_at_no_ractor_check as *const u8,
             recv,
             args: vec![ivar_index_insn],
             name: ID!(rb_ivar_get_at_no_ractor_check),
             owner: Qnil,
             return_type: types::BasicObject,
-            elidable: true })
+            elidable: true,
+        })))
     }
 
     fn load_ivar_heap(&mut self, block: BlockId,  recv: InsnId, id: ID, ivar_index: u16) -> InsnId {
@@ -4860,7 +4892,7 @@ impl Function {
                     let cfunc = unsafe { get_mct_func(cfunc) }.cast();
 
                     let name = unsafe { (*cme).called_id };
-                    let ccall = fun.push_insn(block, Insn::CCallWithFrame {
+                    let ccall = fun.push_insn(block, Insn::CCallWithFrame(Box::new(CCallWithFrameInfo {
                         cd,
                         cfunc,
                         recv,
@@ -4871,7 +4903,7 @@ impl Function {
                         return_type: types::BasicObject,
                         elidable: false,
                         block: blockiseq.map(BlockHandler::BlockIseq),
-                    });
+                    })));
                     fun.make_equal_to(send_insn_id, ccall);
                     Ok(())
                 }
@@ -4898,7 +4930,7 @@ impl Function {
                         fun.count_not_inlined_cfunc(block, cme);
                     }
 
-                    let ccall = fun.push_insn(block, Insn::CCallVariadic {
+                    let ccall = fun.push_insn(block, Insn::CCallVariadic(Box::new(CCallVariadicInfo {
                         cfunc: cfunc_ptr,
                         recv,
                         args,
@@ -4908,7 +4940,7 @@ impl Function {
                         return_type: types::BasicObject,
                         elidable: false,
                         block: blockiseq.map(BlockHandler::BlockIseq),
-                    });
+                    })));
 
                     fun.make_equal_to(send_insn_id, ccall);
                     Ok(())
@@ -5045,13 +5077,13 @@ impl Function {
                     // Filter for a leaf and GC free function
                     if props.leaf && props.no_gc {
                         fun.count(block, Counter::inline_cfunc_optimized_send_count);
-                        let ccall = fun.push_insn(block, Insn::CCall { cfunc, recv, args, name, owner, return_type, elidable });
+                        let ccall = fun.push_insn(block, Insn::CCall(Box::new(CCallInfo { cfunc, recv, args, name, owner, return_type, elidable })));
                         fun.make_equal_to(send_insn_id, ccall);
                     } else {
                         if get_option!(stats) {
                             fun.count_not_inlined_cfunc(block, cme);
                         }
-                        let ccall = fun.push_insn(block, Insn::CCallWithFrame {
+                        let ccall = fun.push_insn(block, Insn::CCallWithFrame(Box::new(CCallWithFrameInfo {
                             cd,
                             cfunc,
                             recv,
@@ -5062,7 +5094,7 @@ impl Function {
                             return_type,
                             elidable,
                             block: None,
-                        });
+                        })));
                         fun.make_equal_to(send_insn_id, ccall);
                     }
 
@@ -5126,7 +5158,7 @@ impl Function {
                         let return_type = props.return_type;
                         let elidable = props.elidable;
                         let name = unsafe { (*cme).called_id };
-                        let ccall = fun.push_insn(block, Insn::CCallVariadic {
+                        let ccall = fun.push_insn(block, Insn::CCallVariadic(Box::new(CCallVariadicInfo {
                             cfunc,
                             recv,
                             args,
@@ -5136,7 +5168,7 @@ impl Function {
                             return_type,
                             elidable,
                             block: None,
-                        });
+                        })));
 
                         fun.make_equal_to(send_insn_id, ccall);
                         return Ok(())
@@ -6237,10 +6269,12 @@ impl Function {
             | Insn::ObjectAlloc { val, .. }
             | Insn::DupArrayInclude { target: val, .. }
             | Insn::GetIvar { self_val: val, .. }
-            | Insn::CCall { recv: val, .. }
             | Insn::FixnumBitCheck { val, .. } // TODO (https://github.com/Shopify/ruby/issues/859) this should check Fixnum, but then test_checkkeyword_tests_fixnum_bit fails
             | Insn::DefinedIvar { self_val: val, .. } => {
                 self.assert_subtype(insn_id, val, types::BasicObject)
+            }
+            Insn::CCall(info) => {
+                self.assert_subtype(insn_id, info.recv, types::BasicObject)
             }
             // Instructions with 2 Ruby object operands
             Insn::SetIvar { self_val: left, val: right, .. }
@@ -6261,13 +6295,25 @@ impl Function {
             | Insn::SendForward { recv, ref args, .. }
             | Insn::InvokeSuper { recv, ref args, .. }
             | Insn::InvokeSuperForward { recv, ref args, .. }
-            | Insn::CCallWithFrame { recv, ref args, .. }
-            | Insn::CCallVariadic { recv, ref args, .. }
             | Insn::InvokeBuiltin { recv, ref args, .. }
             | Insn::InvokeProc { recv, ref args, .. }
             | Insn::ArrayInclude { target: recv, elements: ref args, .. } => {
                 self.assert_subtype(insn_id, recv, types::BasicObject)?;
                 for &arg in args {
+                    self.assert_subtype(insn_id, arg, types::BasicObject)?;
+                }
+                Ok(())
+            }
+            Insn::CCallWithFrame(info) => {
+                self.assert_subtype(insn_id, info.recv, types::BasicObject)?;
+                for &arg in &info.args {
+                    self.assert_subtype(insn_id, arg, types::BasicObject)?;
+                }
+                Ok(())
+            }
+            Insn::CCallVariadic(info) => {
+                self.assert_subtype(insn_id, info.recv, types::BasicObject)?;
+                for &arg in &info.args {
                     self.assert_subtype(insn_id, arg, types::BasicObject)?;
                 }
                 Ok(())

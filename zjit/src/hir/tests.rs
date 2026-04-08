@@ -6296,4 +6296,5 @@ mod iongraph_tests {
         let json = function.to_iongraph_pass("multiple_successors");
         assert_snapshot!(json.to_string(), @r#"{"name":"multiple_successors", "mir":{"blocks":[{"ptr":4096, "id":0, "loopDepth":0, "attributes":[], "predecessors":[], "successors":[], "instructions":[]}]}, "lir":{"blocks":[]}}"#);
     }
+
  }

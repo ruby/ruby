@@ -21,7 +21,7 @@ use crate::stats::{counter_ptr, with_time_stat, trace_compile_phase, Counter, Co
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_STACK_PTR, Opnd, SP, SideExit, SideExitRecompile, Target, asm_ccall, asm_comment};
 use crate::hir::{iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
-use crate::hir::{BlockHandler, Const, FrameState, Function, Insn, InsnId, Recompile, SendFallbackReason};
+use crate::hir::{BlockHandler, CCallInfo, CCallVariadicInfo, CCallWithFrameInfo, Const, FrameState, Function, Insn, InsnId, Recompile, SendFallbackReason};
 use crate::hir_type::{types, Type};
 use crate::options::{get_option, PerfMap};
 use crate::cast::IntoUsize;
@@ -718,14 +718,20 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::GuardLess { left, right, state } => gen_guard_less(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         &Insn::GuardGreaterEq { left, right, state, .. } => gen_guard_greater_eq(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, invariant, &function.frame_state(*state))),
-        Insn::CCall { cfunc, recv, args, name, owner: _, return_type: _, elidable: _ } => gen_ccall(asm, *cfunc, *name, opnd!(recv), opnds!(args)),
+        Insn::CCall(info) => {
+            let CCallInfo { cfunc, recv, args, name, .. } = info.as_ref();
+            gen_ccall(asm, *cfunc, *name, opnd!(recv), opnds!(args))
+        }
         // Give up CCallWithFrame for 7+ args since asm.ccall() supports at most 6 args (recv + args).
         // There's no test case for this because no core cfuncs have this many parameters. But C extensions could have such methods.
-        Insn::CCallWithFrame { cd, state, args, .. } if args.len() + 1 > C_ARG_OPNDS.len() =>
-            gen_send_without_block(jit, asm, *cd, &function.frame_state(*state), SendFallbackReason::CCallWithFrameTooManyArgs),
-        Insn::CCallWithFrame { cfunc, recv, name, args, cme, state, block, .. } =>
-            gen_ccall_with_frame(jit, asm, *cfunc, *name, opnd!(recv), opnds!(args), *cme, *block, &function.frame_state(*state)),
-        Insn::CCallVariadic { cfunc, recv, name, args, cme, state, block, return_type: _, elidable: _ } => {
+        Insn::CCallWithFrame(info) if info.args.len() + 1 > C_ARG_OPNDS.len() =>
+            gen_send_without_block(jit, asm, info.cd, &function.frame_state(info.state), SendFallbackReason::CCallWithFrameTooManyArgs),
+        Insn::CCallWithFrame(info) => {
+            let CCallWithFrameInfo { cfunc, recv, args, name, cme, state, block, .. } = info.as_ref();
+            gen_ccall_with_frame(jit, asm, *cfunc, *name, opnd!(recv), opnds!(args), *cme, *block, &function.frame_state(*state))
+        }
+        Insn::CCallVariadic(info) => {
+            let CCallVariadicInfo { cfunc, recv, args, name, cme, state, block, .. } = info.as_ref();
             gen_ccall_variadic(jit, asm, *cfunc, *name, opnd!(recv), opnds!(args), *cme, *block, &function.frame_state(*state))
         }
         Insn::GetIvar { self_val, id, ic, state: _ } => gen_getivar(jit, asm, opnd!(self_val), *id, *ic),
