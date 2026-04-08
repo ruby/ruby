@@ -1413,7 +1413,7 @@ mod hir_opt_tests {
           v25:ArraySubclass[class_exact:C] = GuardType v10, ArraySubclass[class_exact:C]
           v26:BasicObject = SendDirect v25, 0x1040, :fun_new_map (0x1050)
           v16:CPtr = GetEP 0
-          v17:BasicObject = LoadField v16, :o@0x1058
+          v17:BasicObject = LoadField v16, :o@0x1078
           CheckInterrupts
           Return v26
         ");
@@ -1630,8 +1630,8 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
           v23:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)]
           v24:BasicObject = SendDirect v23, 0x1038, :foo (0x1048)
-          PatchPoint MethodRedefined(Object@0x1000, bar@0x1050, cme:0x1058)
-          v27:BasicObject = SendDirect v23, 0x1038, :bar (0x1048)
+          PatchPoint MethodRedefined(Object@0x1000, bar@0x1070, cme:0x1078)
+          v27:BasicObject = SendDirect v23, 0x1038, :bar (0x10a0)
           CheckInterrupts
           Return v27
         ");
@@ -14139,7 +14139,7 @@ mod hir_opt_tests {
           v32:FalseClass = GuardBitEquals v31, Value(false)
           v33:BasicObject = SendDirect v9, 0x1058, :foo (0x1068), v10
           v18:Fixnum[1] = Const Value(1)
-          PatchPoint MethodRedefined(Integer@0x1070, +@0x1078, cme:0x1080)
+          PatchPoint MethodRedefined(Integer@0x1090, +@0x1098, cme:0x10a0)
           v36:Fixnum = GuardType v33, Fixnum
           v37:Fixnum = FixnumAdd v36, v18
           CheckInterrupts
@@ -15288,7 +15288,7 @@ mod hir_opt_tests {
 
         // After profiling via the side exit, rebuilding HIR should now
         // have a SendDirect for greet_recompile instead of SideExit.
-        assert_snapshot!(hir_string("test_no_profile_recompile"), @r"
+        assert_snapshot!(hir_string("test_no_profile_recompile"), @"
         fn test_no_profile_recompile@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -15314,7 +15314,7 @@ mod hir_opt_tests {
           CheckInterrupts
           Return v44
         bb4(v30:BasicObject, v31:Falsy):
-          v35:StringExact[VALUE(0x1058)] = Const Value(VALUE(0x1058))
+          v35:StringExact[VALUE(0x1078)] = Const Value(VALUE(0x1078))
           v36:StringExact = StringCopy v35
           CheckInterrupts
           Return v36

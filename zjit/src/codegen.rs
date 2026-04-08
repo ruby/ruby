@@ -21,7 +21,7 @@ use crate::stats::{counter_ptr, with_time_stat, trace_compile_phase, Counter, Co
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_STACK_PTR, Opnd, SP, SideExit, SideExitRecompile, Target, asm_ccall, asm_comment};
 use crate::hir::{iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
-use crate::hir::{BlockHandler, CCallInfo, CCallVariadicInfo, CCallWithFrameInfo, Const, FrameState, Function, Insn, InsnId, Recompile, SendFallbackReason};
+use crate::hir::{BlockHandler, CCallInfo, CCallVariadicInfo, CCallWithFrameInfo, Const, FrameState, Function, Insn, InsnId, Recompile, SendDirectInfo, SendFallbackReason};
 use crate::hir_type::{types, Type};
 use crate::options::{get_option, PerfMap};
 use crate::cast::IntoUsize;
@@ -656,10 +656,13 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::Send { cd, block: Some(BlockHandler::BlockIseq(blockiseq)), state, reason, .. } => gen_send(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::Send { cd, block: Some(BlockHandler::BlockArg), state, reason, .. } => gen_send(jit, asm, cd, std::ptr::null(), &function.frame_state(state), reason),
         &Insn::SendForward { cd, blockiseq, state, reason, .. } => gen_send_forward(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
-        &Insn::SendDirect { cme, iseq, recv, ref args, kw_bits, block, state, .. } => gen_send_iseq_direct(
-                cb, jit, asm, cme, iseq, opnd!(recv), opnds!(args),
-                kw_bits, &function.frame_state(state), block,
-            ),
+        Insn::SendDirect(info) => {
+                let SendDirectInfo { cme, iseq, recv, ref args, kw_bits, block, state, .. } = **info;
+                gen_send_iseq_direct(
+                    cb, jit, asm, cme, iseq, opnd!(recv), opnds!(args),
+                    kw_bits, &function.frame_state(state), block,
+                )
+            }
         &Insn::InvokeSuper { cd, blockiseq, state, reason, .. } => gen_invokesuper(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::InvokeSuperForward { cd, blockiseq, state, reason, .. } => gen_invokesuperforward(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::InvokeBlock { cd, state, reason, .. } => gen_invokeblock(jit, asm, cd, &function.frame_state(state), reason),
