@@ -12,7 +12,7 @@ mod size_tests {
 
     #[test]
     fn test_size_of_type() {
-        assert_eq!(std::mem::size_of::<Type>(), 24);
+        assert_eq!(std::mem::size_of::<Type>(), 16);
     }
 }
 
