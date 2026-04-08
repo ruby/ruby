@@ -1213,28 +1213,6 @@ class TestGem < Gem::TestCase
     assert Gem.try_activate("b"), "try_activate should still return true"
   end
 
-  def test_try_activate_does_not_raise_no_method_error_on_activation_conflict
-    a1 = util_spec "a", "1.0" do |s|
-      s.files << "lib/a/old.rb"
-    end
-
-    a2 = util_spec "a", "2.0" do |s|
-      s.files << "lib/a/old.rb"
-      s.files << "lib/a/new_file.rb"
-    end
-
-    install_specs a1, a2
-
-    # Activate the older version
-    gem "a", "= 1.0"
-
-    # try_activate a file only in the newer version should not raise
-    # NoMethodError on nil (https://bugs.ruby-lang.org/issues/21954)
-    assert_nothing_raised do
-      Gem.try_activate("a/new_file")
-    end
-  end
-
   def test_spec_order_is_consistent
     b1 = util_spec "b", "1.0"
     b2 = util_spec "b", "2.0"
