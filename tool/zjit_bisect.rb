@@ -5,6 +5,9 @@ require 'shellwords'
 require 'tempfile'
 require 'timeout'
 
+required_ruby_version = Gem::Version.new("3.4.0")
+raise "Ruby version #{required_ruby_version} or higher is required" if Gem::Version.new(RUBY_VERSION) < required_ruby_version
+
 ARGS = {timeout: 5}
 OptionParser.new do |opts|
   opts.banner += " <path_to_ruby> -- <options>"
