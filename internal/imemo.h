@@ -292,30 +292,4 @@ rb_imemo_fields_complex_tbl(VALUE fields_obj)
     return IMEMO_OBJ_FIELDS(fields_obj)->as.complex.table;
 }
 
-static inline bool
-rb_imemo_needs_cleanup_p(VALUE obj)
-{
-    switch (imemo_type(obj)) {
-      case imemo_constcache:
-      case imemo_cref:
-      case imemo_ifunc:
-      case imemo_memo:
-      case imemo_svar:
-      case imemo_callcache:
-      case imemo_throw_data:
-        return false;
-
-      case imemo_env:
-      case imemo_ment:
-      case imemo_iseq:
-      case imemo_callinfo:
-      case imemo_fields:
-        return true;
-
-      case imemo_tmpbuf:
-        return ((rb_imemo_tmpbuf_t *)obj)->ptr != NULL;
-    }
-    UNREACHABLE_RETURN(true);
-}
-
 #endif /* INTERNAL_IMEMO_H */
