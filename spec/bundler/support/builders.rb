@@ -664,7 +664,7 @@ module Spec
             Bundler.rubygems.build(@spec, opts[:skip_validation])
           end
         elsif opts[:skip_validation]
-          @context.gem_command "build --force #{@spec.name}", dir: lib_path
+          Dir.chdir(lib_path) { Gem::Package.build(@spec, true) }
         else
           Dir.chdir(lib_path) { Gem::Package.build(@spec) }
         end

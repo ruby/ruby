@@ -997,7 +997,7 @@ Running `bundle update rails` should fix the problem.
         gem "activemerchant"
       end
     G
-    gem_command "uninstall activemerchant"
+    uninstall_gem("activemerchant")
     bundle "update rails", artifice: "compact_index"
     count = lockfile.match?("CHECKSUMS") ? 2 : 1 # Once in the specs, and once in CHECKSUMS
     expect(lockfile.scan(/activemerchant \(/).size).to eq(count)

@@ -379,7 +379,7 @@ RSpec.describe "bundle clean" do
       gem "myrack"
     G
 
-    gem_command :list
+    installed_gems_list
     expect(out).to include("myrack (1.0.0)").and include("thin (1.0)")
   end
 
@@ -498,7 +498,7 @@ RSpec.describe "bundle clean" do
     end
     bundle :update, all: true
 
-    gem_command :list
+    installed_gems_list
     expect(out).to include("foo (1.0.1, 1.0)")
   end
 
@@ -522,7 +522,7 @@ RSpec.describe "bundle clean" do
     bundle "clean --force"
 
     expect(out).to include("Removing foo (1.0)")
-    gem_command :list
+    installed_gems_list
     expect(out).not_to include("foo (1.0)")
     expect(out).to include("myrack (1.0.0)")
   end
@@ -556,7 +556,7 @@ RSpec.describe "bundle clean" do
       expect(err).to include(system_gem_path.to_s)
       expect(err).to include("grant write permissions")
 
-      gem_command :list
+      installed_gems_list
       expect(out).to include("foo (1.0)")
       expect(out).to include("myrack (1.0.0)")
     end

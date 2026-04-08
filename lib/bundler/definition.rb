@@ -1122,7 +1122,9 @@ module Bundler
     end
 
     def preload_git_source_worker
-      @preload_git_source_worker ||= Bundler::Worker.new(5, "Git source preloading", ->(source, _) { source.specs })
+      workers = Bundler.settings.installation_parallelization
+
+      @preload_git_source_worker ||= Bundler::Worker.new(workers, "Git source preloading", ->(source, _) { source.specs })
     end
 
     def preload_git_sources

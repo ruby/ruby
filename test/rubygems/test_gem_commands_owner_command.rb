@@ -32,9 +32,12 @@ class TestGemCommandsOwnerCommand < Gem::TestCase
 - email: user1@example.com
   id: 1
   handle: user1
+  role: owner
 - email: user2@example.com
+  role: maintainer
 - id: 3
   handle: user3
+  role: owner
 - id: 4
 EOF
 
@@ -48,9 +51,9 @@ EOF
     assert_equal Gem.configuration.rubygems_api_key, @stub_fetcher.last_request["Authorization"]
 
     assert_match(/Owners for gem: freewill/, @stub_ui.output)
-    assert_match(/- user1@example.com/, @stub_ui.output)
-    assert_match(/- user2@example.com/, @stub_ui.output)
-    assert_match(/- user3/, @stub_ui.output)
+    assert_match(/- user1@example.com \(owner\)/, @stub_ui.output)
+    assert_match(/- user2@example.com \(maintainer\)/, @stub_ui.output)
+    assert_match(/- user3 \(owner\)/, @stub_ui.output)
     assert_match(/- 4/, @stub_ui.output)
   end
 
