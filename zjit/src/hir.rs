@@ -528,7 +528,7 @@ impl PtrPrintMap {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum SideExitReason {
     UnhandledNewarraySend(vm_opt_newarray_send_type),
     UnhandledDuparraySend(u64),
@@ -555,7 +555,7 @@ pub enum SideExitReason {
     GuardLess,
     GuardGreaterEq,
     GuardSuperMethodEntry,
-    PatchPoint(Box<Invariant>),
+    PatchPoint(Invariant),
     CalleeSideExit,
     ObjToStringFallback,
     Interrupt,
@@ -2899,10 +2899,10 @@ impl Function {
             &HasType { val, expected } => HasType { val: find!(val), expected },
             &GuardType { val, guard_type, state } => GuardType { val: find!(val), guard_type, state },
             &GuardTypeNot { val, guard_type, state } => GuardTypeNot { val: find!(val), guard_type, state },
-            GuardBitEquals { val, expected, reason, state, recompile } => GuardBitEquals { val: find!(*val), expected: *expected, reason: reason.clone(), state: *state, recompile: *recompile },
-            GuardAnyBitSet { val, mask, mask_name, reason, state } => GuardAnyBitSet { val: find!(*val), mask: *mask, mask_name: *mask_name, reason: reason.clone(), state: *state },
-            GuardNoBitsSet { val, mask, mask_name, reason, state } => GuardNoBitsSet { val: find!(*val), mask: *mask, mask_name: *mask_name, reason: reason.clone(), state: *state },
-            GuardGreaterEq { left, right, reason, state } => GuardGreaterEq { left: find!(*left), right: find!(*right), reason: reason.clone(), state: *state },
+            &GuardBitEquals { val, expected, reason, state, recompile } => GuardBitEquals { val: find!(val), expected, reason, state, recompile },
+            &GuardAnyBitSet { val, mask, mask_name, reason, state } => GuardAnyBitSet { val: find!(val), mask, mask_name, reason, state },
+            &GuardNoBitsSet { val, mask, mask_name, reason, state } => GuardNoBitsSet { val: find!(val), mask, mask_name, reason, state },
+            &GuardGreaterEq { left, right, reason, state } => GuardGreaterEq { left: find!(left), right: find!(right), reason, state },
             &GuardLess { left, right, state } => GuardLess { left: find!(left), right: find!(right), state },
             &IsBlockGiven { lep } => IsBlockGiven { lep: find!(lep) },
             &IsBlockParamModified { ep } => IsBlockParamModified { ep: find!(ep) },
@@ -7281,7 +7281,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     };
                     if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, ARRAY_REDEFINED_OP_FLAG) } {
                         // If the basic operation is already redefined, we cannot optimize it.
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Box::new(Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop })), recompile: None });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop }), recompile: None });
                         break;  // End the block
                     }
                     fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop }, state: exit_id });
@@ -7308,7 +7308,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         },
                     };
                     if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, ARRAY_REDEFINED_OP_FLAG) } {
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Box::new(Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop })), recompile: None });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop }), recompile: None });
                         break;
                     }
                     fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop }, state: exit_id });
@@ -7861,7 +7861,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
                         state.stack_push(recv);
                     } else {
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Box::new(Invariant::BOPRedefined { klass, bop })), recompile: None });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Invariant::BOPRedefined { klass, bop }), recompile: None });
                         break;  // End the block
                     }
                 }
@@ -7873,7 +7873,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
                         state.stack_push(recv);
                     } else {
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Box::new(Invariant::BOPRedefined { klass, bop })), recompile: None });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Invariant::BOPRedefined { klass, bop }), recompile: None });
                         break;  // End the block
                     }
                 }
@@ -7885,7 +7885,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
                         state.stack_push(recv);
                     } else {
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Box::new(Invariant::BOPRedefined { klass, bop })), recompile: None });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Invariant::BOPRedefined { klass, bop }), recompile: None });
                         break;  // End the block
                     }
                 }
@@ -7897,7 +7897,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
                         state.stack_push(recv);
                     } else {
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Box::new(Invariant::BOPRedefined { klass, bop })), recompile: None });
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Invariant::BOPRedefined { klass, bop }), recompile: None });
                         break;  // End the block
                     }
                 }

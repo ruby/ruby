@@ -617,16 +617,22 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         SplatKwPolymorphic            => exit_splatkw_polymorphic,
         SplatKwNotProfiled            => exit_splatkw_not_profiled,
         DirectiveInduced              => exit_directive_induced,
-        PatchPoint(ref inv) => match **inv {
-            Invariant::BOPRedefined { .. }        => exit_patchpoint_bop_redefined,
-            Invariant::MethodRedefined { .. }     => exit_patchpoint_method_redefined,
-            Invariant::StableConstantNames { .. } => exit_patchpoint_stable_constant_names,
-            Invariant::NoTracePoint               => exit_patchpoint_no_tracepoint,
-            Invariant::NoEPEscape(_)              => exit_patchpoint_no_ep_escape,
-            Invariant::SingleRactorMode           => exit_patchpoint_single_ractor_mode,
-            Invariant::NoSingletonClass { .. }    => exit_patchpoint_no_singleton_class,
-            Invariant::RootBoxOnly                => exit_patchpoint_root_box_only,
-        },
+        PatchPoint(Invariant::BOPRedefined { .. })
+                                      => exit_patchpoint_bop_redefined,
+        PatchPoint(Invariant::MethodRedefined { .. })
+                                      => exit_patchpoint_method_redefined,
+        PatchPoint(Invariant::StableConstantNames { .. })
+                                      => exit_patchpoint_stable_constant_names,
+        PatchPoint(Invariant::NoTracePoint)
+                                      => exit_patchpoint_no_tracepoint,
+        PatchPoint(Invariant::NoEPEscape(_))
+                                      => exit_patchpoint_no_ep_escape,
+        PatchPoint(Invariant::SingleRactorMode)
+                                      => exit_patchpoint_single_ractor_mode,
+        PatchPoint(Invariant::NoSingletonClass { .. })
+                                      => exit_patchpoint_no_singleton_class,
+        PatchPoint(Invariant::RootBoxOnly)
+                                      => exit_patchpoint_root_box_only,
         SendWhileTracing              => exit_send_while_tracing,
         NoProfileSend                 => exit_no_profile_send,
         InvokeBlockNotIfunc           => exit_invokeblock_not_ifunc,

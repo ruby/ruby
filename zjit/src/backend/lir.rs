@@ -2745,7 +2745,7 @@ impl Assembler
                 // Only record the exit if `trace_side_exits` is defined and the counter is either the one specified
                 let should_record_exit = get_option!(trace_side_exits).map(|trace| match trace {
                     TraceExits::All => true,
-                    TraceExits::Counter(counter) if counter == side_exit_counter(reason.clone()) => true,
+                    TraceExits::Counter(counter) if counter == side_exit_counter(reason) => true,
                     _ => false,
                 }).unwrap_or(false);
 
@@ -2757,11 +2757,11 @@ impl Assembler
 
                     if get_option!(stats) {
                         asm_comment!(self, "increment a side exit counter");
-                        self.incr_counter(Opnd::const_ptr(exit_counter_ptr(reason.clone())), 1.into());
+                        self.incr_counter(Opnd::const_ptr(exit_counter_ptr(reason)), 1.into());
 
-                        if let SideExitReason::UnhandledYARVInsn(opcode) = &reason {
+                        if let SideExitReason::UnhandledYARVInsn(opcode) = reason {
                             asm_comment!(self, "increment an unhandled YARV insn counter");
-                            self.incr_counter(Opnd::const_ptr(exit_counter_ptr_for_opcode(*opcode)), 1.into());
+                            self.incr_counter(Opnd::const_ptr(exit_counter_ptr_for_opcode(opcode)), 1.into());
                         }
                     }
 
