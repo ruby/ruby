@@ -122,7 +122,7 @@ mod snapshot_tests {
           PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
           v25:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)]
           v26:BasicObject = SendDirect v25, 0x1048, :foo (0x1058), v13, v15, v11
-          v18:Any = Snapshot FrameState { pc: 0x1060, stack: [v26], locals: [] }
+          v18:Any = Snapshot FrameState { pc: 0x1080, stack: [v26], locals: [] }
           PatchPoint NoTracePoint
           CheckInterrupts
           Return v26
@@ -158,7 +158,7 @@ mod snapshot_tests {
           PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
           v22:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)]
           v23:BasicObject = SendDirect v22, 0x1048, :foo (0x1058), v11, v13
-          v16:Any = Snapshot FrameState { pc: 0x1060, stack: [v23], locals: [] }
+          v16:Any = Snapshot FrameState { pc: 0x1080, stack: [v23], locals: [] }
           PatchPoint NoTracePoint
           CheckInterrupts
           Return v23
