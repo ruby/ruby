@@ -7111,6 +7111,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let count = get_arg(pc, 0).as_usize();
                     let vals = state.stack_pop_n(count)?;
                     let array = state.stack_pop()?;
+                    fun.guard_not_frozen(block, array, exit_id);
                     for val in vals.into_iter() {
                         fun.push_insn(block, Insn::ArrayPush { array, val, state: exit_id });
                     }

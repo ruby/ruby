@@ -9564,6 +9564,8 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, <<@0x1010, cme:0x1018)
           v27:ArrayExact = GuardType v10, ArrayExact
+          v28:CUInt64 = LoadField v27, :_rbasic_flags@0x1040
+          v29:CUInt64 = GuardNoBitsSet v28, RUBY_FL_FREEZE=CUInt64(2048)
           ArrayPush v27, v15
           CheckInterrupts
           Return v27
@@ -9596,6 +9598,8 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, push@0x1010, cme:0x1018)
           v26:ArrayExact = GuardType v10, ArrayExact
+          v27:CUInt64 = LoadField v26, :_rbasic_flags@0x1040
+          v28:CUInt64 = GuardNoBitsSet v27, RUBY_FL_FREEZE=CUInt64(2048)
           ArrayPush v26, v15
           CheckInterrupts
           Return v26
@@ -9666,6 +9670,8 @@ mod hir_opt_tests {
           v26:RubyValue = LoadField v23, :_ep_specval@0x1050
           v27:FalseClass = GuardBitEquals v26, Value(false)
           v28:Array = GuardType v9, Array
+          v29:CUInt64 = LoadField v28, :_rbasic_flags@0x1051
+          v30:CUInt64 = GuardNoBitsSet v29, RUBY_FL_FREEZE=CUInt64(2048)
           ArrayPush v28, v10
           CheckInterrupts
           Return v28

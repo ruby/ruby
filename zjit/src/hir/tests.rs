@@ -2405,10 +2405,12 @@ pub(crate) mod hir_build_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           v16:ArrayExact = ToNewArray v10
           v18:Fixnum[1] = Const Value(1)
+          v20:CUInt64 = LoadField v16, :_rbasic_flags@0x1001
+          v21:CUInt64 = GuardNoBitsSet v20, RUBY_FL_FREEZE=CUInt64(2048)
           ArrayPush v16, v18
-          v22:BasicObject = Send v9, :foo, v16 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v24:BasicObject = Send v9, :foo, v16 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
-          Return v22
+          Return v24
         ");
     }
 
@@ -4077,6 +4079,8 @@ pub(crate) mod hir_build_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           v15:ArrayExact = ToNewArray v10
           v17:Fixnum[1] = Const Value(1)
+          v19:CUInt64 = LoadField v15, :_rbasic_flags@0x1001
+          v20:CUInt64 = GuardNoBitsSet v19, RUBY_FL_FREEZE=CUInt64(2048)
           ArrayPush v15, v17
           CheckInterrupts
           Return v15
@@ -4107,6 +4111,8 @@ pub(crate) mod hir_build_tests {
           v17:Fixnum[1] = Const Value(1)
           v19:Fixnum[2] = Const Value(2)
           v21:Fixnum[3] = Const Value(3)
+          v23:CUInt64 = LoadField v15, :_rbasic_flags@0x1001
+          v24:CUInt64 = GuardNoBitsSet v23, RUBY_FL_FREEZE=CUInt64(2048)
           ArrayPush v15, v17
           ArrayPush v15, v19
           ArrayPush v15, v21
