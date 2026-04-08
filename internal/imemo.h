@@ -310,8 +310,10 @@ rb_imemo_needs_cleanup_p(VALUE obj)
       case imemo_iseq:
       case imemo_callinfo:
       case imemo_fields:
-      case imemo_tmpbuf:
         return true;
+
+      case imemo_tmpbuf:
+        return ((rb_imemo_tmpbuf_t *)obj)->ptr != NULL;
     }
     UNREACHABLE_RETURN(true);
 }
