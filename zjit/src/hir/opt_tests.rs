@@ -4872,30 +4872,31 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           v14:Fixnum[0] = Const Value(0)
           v18:CPtr = GetEP 0
-          v19:CBool = IsBlockParamModified v18
-          IfTrue v19, bb4()
-          v24:CInt64 = LoadField v18, :_env_data_index_specval@0x1001
-          v25:CInt64[1] = Const CInt64(1)
-          v26:CInt64 = IntAnd v24, v25
-          v27:CBool = IsBitEqual v26, v25
-          IfTrue v27, bb7()
-          v31:CInt64[0] = Const CInt64(0)
-          v32:CBool = IsBitEqual v24, v31
-          IfTrue v32, bb8()
+          v19:CUInt64 = LoadField v18, :_ep_flags@0x1001
+          v20:CBool = IsBlockParamModified v19
+          IfTrue v20, bb4()
+          v25:CInt64 = LoadField v18, :_env_data_index_specval@0x1002
+          v26:CInt64[1] = Const CInt64(1)
+          v27:CInt64 = IntAnd v25, v26
+          v28:CBool = IsBitEqual v27, v26
+          IfTrue v28, bb7()
+          v32:CInt64[0] = Const CInt64(0)
+          v33:CBool = IsBitEqual v25, v32
+          IfTrue v33, bb8()
           SideExit BlockParamProxyProfileNotCovered
         bb4():
-          v22:BasicObject = LoadField v18, :block@0x1002
-          Jump bb6(v22, v22)
+          v23:BasicObject = LoadField v18, :block@0x1003
+          Jump bb6(v23, v23)
         bb7():
-          v29:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v29, v10)
+          v30:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v30, v10)
         bb8():
-          v34:NilClass = Const Value(nil)
-          Jump bb6(v34, v10)
+          v35:NilClass = Const Value(nil)
+          Jump bb6(v35, v10)
         bb6(v16:BasicObject, v17:BasicObject):
-          v38:BasicObject = Send v14, &block, :then, v16 # SendFallbackReason: Complex argument passing
+          v39:BasicObject = Send v14, &block, :then, v16 # SendFallbackReason: Complex argument passing
           CheckInterrupts
-          Return v38
+          Return v39
         ");
     }
 
