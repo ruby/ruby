@@ -86,7 +86,7 @@ impl JITState {
 
     /// Retrieve the output of a given instruction that has been compiled
     fn get_opnd(&self, insn_id: InsnId) -> lir::Opnd {
-        self.opnds[insn_id.0].unwrap_or_else(|| panic!("Failed to get_opnd({insn_id})"))
+        self.opnds[insn_id].unwrap_or_else(|| panic!("Failed to get_opnd({insn_id})"))
     }
 
     /// Find or create a label for a given BlockId
@@ -394,7 +394,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
             // Skip the entries superblock — it's an internal CFG artifact
             if block_id == function.entries_block { continue; }
             let lir_block_id = asm.new_block(block_id, function.is_entry_block(block_id), rpo_idx);
-            hir_to_lir[block_id.0] = Some(lir_block_id);
+            hir_to_lir[block_id] = Some(lir_block_id);
         }
 
         // Compile each basic block
@@ -403,7 +403,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
             if block_id == function.entries_block { continue; }
             // Set the current block to the LIR block that corresponds to this
             // HIR block.
-            let lir_block_id = hir_to_lir[block_id.0].unwrap();
+            let lir_block_id = hir_to_lir[block_id].unwrap();
             asm.set_current_block(lir_block_id);
 
             // Write a label to jump to the basic block
@@ -421,7 +421,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
             for (idx, &insn_id) in block.params().enumerate() {
                 match function.find(insn_id) {
                     Insn::Param => {
-                        jit.opnds[insn_id.0] = Some(gen_param(&mut asm, idx));
+                        jit.opnds[insn_id] = Some(gen_param(&mut asm, idx));
                     },
                     insn => unreachable!("Non-param insn found in block.params: {insn:?}"),
                 }
@@ -432,7 +432,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
             if function.is_entry_block(block_id) {
                 for &insn_id in block.insns() {
                     if let Insn::LoadArg { idx, .. } = function.find(insn_id) {
-                        jit.opnds[insn_id.0] = Some(gen_param(&mut asm, idx as usize));
+                        jit.opnds[insn_id] = Some(gen_param(&mut asm, idx as usize));
                     }
                 }
             }
@@ -451,7 +451,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
 
                         let val_opnd = jit.get_opnd(val);
 
-                        let lir_target = hir_to_lir[target.target.0].unwrap();
+                        let lir_target = hir_to_lir[target.target].unwrap();
 
                         let fall_through_target = asm.new_block(block_id, false, rpo_idx);
 
@@ -476,7 +476,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                     Insn::IfTrue { val, target } => {
                         let val_opnd = jit.get_opnd(val);
 
-                        let lir_target = hir_to_lir[target.target.0].unwrap();
+                        let lir_target = hir_to_lir[target.target].unwrap();
 
                         let fall_through_target = asm.new_block(block_id, false, rpo_idx);
 
@@ -499,7 +499,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                         asm.write_label(label);
                     }
                     Insn::Jump(target) => {
-                        let lir_target = hir_to_lir[target.target.0].unwrap();
+                        let lir_target = hir_to_lir[target.target].unwrap();
                         let branch_edge = lir::BranchEdge {
                             target: lir_target,
                             args: target.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
@@ -784,7 +784,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
     assert!(insn.has_output(), "Cannot write LIR output of HIR instruction with no output: {insn}");
 
     // If the instruction has an output, remember it in jit.opnds
-    jit.opnds[insn_id.0] = Some(out_opnd);
+    jit.opnds[insn_id] = Some(out_opnd);
 
     Ok(())
 }

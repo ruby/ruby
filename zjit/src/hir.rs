@@ -28,12 +28,27 @@ mod opt_tests;
 /// type since this effectively acts as a pointer to an [`Insn`].
 /// See also: [`Function::find`].
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-pub struct InsnId(pub usize);
+pub struct InsnId(pub u32);
 
 impl From<InsnId> for usize {
     fn from(val: InsnId) -> Self {
-        val.0
+        val.0 as usize
     }
+}
+
+impl<T> std::ops::Index<InsnId> for Vec<T> {
+    type Output = T;
+    fn index(&self, id: InsnId) -> &T { &self[id.0 as usize] }
+}
+impl<T> std::ops::IndexMut<InsnId> for Vec<T> {
+    fn index_mut(&mut self, id: InsnId) -> &mut T { &mut self[id.0 as usize] }
+}
+impl<T> std::ops::Index<InsnId> for [T] {
+    type Output = T;
+    fn index(&self, id: InsnId) -> &T { &self[id.0 as usize] }
+}
+impl<T> std::ops::IndexMut<InsnId> for [T] {
+    fn index_mut(&mut self, id: InsnId) -> &mut T { &mut self[id.0 as usize] }
 }
 
 impl std::fmt::Display for InsnId {
@@ -44,12 +59,27 @@ impl std::fmt::Display for InsnId {
 
 /// The index of a [`Block`], which effectively acts like a pointer.
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, PartialOrd, Ord)]
-pub struct BlockId(pub usize);
+pub struct BlockId(pub u32);
 
 impl From<BlockId> for usize {
     fn from(val: BlockId) -> Self {
-        val.0
+        val.0 as usize
     }
+}
+
+impl<T> std::ops::Index<BlockId> for Vec<T> {
+    type Output = T;
+    fn index(&self, id: BlockId) -> &T { &self[id.0 as usize] }
+}
+impl<T> std::ops::IndexMut<BlockId> for Vec<T> {
+    fn index_mut(&mut self, id: BlockId) -> &mut T { &mut self[id.0 as usize] }
+}
+impl<T> std::ops::Index<BlockId> for [T] {
+    type Output = T;
+    fn index(&self, id: BlockId) -> &T { &self[id.0 as usize] }
+}
+impl<T> std::ops::IndexMut<BlockId> for [T] {
+    fn index_mut(&mut self, id: BlockId) -> &mut T { &mut self[id.0 as usize] }
 }
 
 impl std::fmt::Display for BlockId {
@@ -2602,7 +2632,7 @@ impl Function {
 
     // Add an instruction to the function without adding it to any block
     fn new_insn(&mut self, insn: Insn) -> InsnId {
-        let id = InsnId(self.insns.len());
+        let id = InsnId(self.insns.len() as u32);
         if insn.has_output() {
             self.insn_types.push(types::Any);
         } else {
@@ -2617,16 +2647,16 @@ impl Function {
         let is_param = matches!(insn, Insn::Param);
         let id = self.new_insn(insn);
         if is_param {
-            self.blocks[block.0].params.push(id);
+            self.blocks[block].params.push(id);
         } else {
-            self.blocks[block.0].insns.push(id);
+            self.blocks[block].insns.push(id);
         }
         id
     }
 
     // Add an instruction to an SSA block
     fn push_insn_id(&mut self, block: BlockId, insn_id: InsnId) -> InsnId {
-        self.blocks[block.0].insns.push(insn_id);
+        self.blocks[block].insns.push(insn_id);
         insn_id
     }
 
@@ -2644,7 +2674,7 @@ impl Function {
     }
 
     fn new_block(&mut self, insn_idx: u32) -> BlockId {
-        let id = BlockId(self.blocks.len());
+        let id = BlockId(self.blocks.len() as u32);
         let block = Block {
             insn_idx,
             .. Block::default()
@@ -2654,7 +2684,7 @@ impl Function {
     }
 
     fn remove_block(&mut self, block_id: BlockId) {
-        if BlockId(self.blocks.len() - 1) != block_id {
+        if BlockId((self.blocks.len() - 1) as u32) != block_id {
             panic!("Can only remove the last block");
         }
         self.blocks.pop();
@@ -2662,12 +2692,12 @@ impl Function {
 
     /// Return a reference to the Block at the given index.
     pub fn block(&self, block_id: BlockId) -> &Block {
-        &self.blocks[block_id.0]
+        &self.blocks[block_id]
     }
 
     /// Return a reference to the entry block.
     pub fn entry_block(&self) -> &Block {
-        &self.blocks[self.entry_block.0]
+        &self.blocks[self.entry_block]
     }
 
     /// Return the number of blocks
@@ -2768,7 +2798,7 @@ impl Function {
         }
         let insn_id = find!(insn_id);
         use Insn::*;
-        match &self.insns[insn_id.0] {
+        match &self.insns[insn_id] {
             result@(Const {..}
                     | Param
                     | LoadArg {..}
@@ -2988,7 +3018,7 @@ impl Function {
         use Insn::*;
         // Always set the reason: convert_no_profile_sends depends on it to identify
         // sends that should be converted to side exits for exit-based recompilation.
-        match self.insns.get_mut(insn_id.0).unwrap() {
+        match &mut self.insns[insn_id] {
             Send { reason, .. }
             | SendForward { reason, .. }
             | InvokeSuper { reason, .. }
@@ -3001,17 +3031,17 @@ impl Function {
 
     /// Replace `insn` with the new instruction `replacement`, which will get appended to `insns`.
     fn make_equal_to(&mut self, insn: InsnId, replacement: InsnId) {
-        assert!(self.insns[insn.0].has_output(),
+        assert!(self.insns[insn].has_output(),
                 "Don't use make_equal_to for instruction with no output");
-        assert!(self.insns[replacement.0].has_output(),
+        assert!(self.insns[replacement].has_output(),
                 "Can't replace instruction that has output with instruction that has no output");
         // Don't push it to the block
         self.union_find.borrow_mut().make_equal_to(insn, replacement);
     }
 
     pub fn type_of(&self, insn: InsnId) -> Type {
-        assert!(self.insns[insn.0].has_output());
-        self.insn_types[self.union_find.borrow_mut().find(insn).0]
+        assert!(self.insns[insn].has_output());
+        self.insn_types[self.union_find.borrow_mut().find(insn)]
     }
 
     /// Check if the type of `insn` is a subtype of `ty`.
@@ -3020,8 +3050,8 @@ impl Function {
     }
 
     fn infer_type(&self, insn: InsnId) -> Type {
-        assert!(self.insns[insn.0].has_output());
-        match &self.insns[insn.0] {
+        assert!(self.insns[insn].has_output());
+        match &self.insns[insn] {
             Insn::Param => unimplemented!("params should not be present in block.insns"),
             Insn::LoadArg { val_type, .. } => *val_type,
             Insn::SetGlobal { .. } | Insn::Jump(_) | Insn::Entries { .. } | Insn::EntryPoint { .. }
@@ -3031,7 +3061,7 @@ impl Function {
             | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
             | Insn::CheckInterrupts { .. } | Insn::BreakPoint
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } | Insn::ArrayAset { .. } =>
-                panic!("Cannot infer type of instruction with no output: {}. See Insn::has_output().", self.insns[insn.0]),
+                panic!("Cannot infer type of instruction with no output: {}. See Insn::has_output().", self.insns[insn]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
             Insn::Const { val: Const::CBool(val) } => Type::from_cbool(*val),
             Insn::Const { val: Const::CInt8(val) } => Type::from_cint(types::CInt8, *val as i64),
@@ -3180,16 +3210,16 @@ impl Function {
 
     /// Copy self.param_types to the param types of jit_entry_blocks.
     fn copy_param_types(&mut self) {
-        for jit_entry_block in self.jit_entry_blocks.iter() {
-            let entry_params = self.blocks[jit_entry_block.0].params.iter();
+        for &jit_entry_block in self.jit_entry_blocks.iter() {
+            let entry_params = self.blocks[jit_entry_block].params.iter();
             let param_types = self.param_types.iter();
             assert!(
                 param_types.len() >= entry_params.len(),
                 "param types should be initialized before type inference",
             );
-            for (param, param_type) in std::iter::zip(entry_params, param_types) {
+            for (&param, param_type) in std::iter::zip(entry_params, param_types) {
                 // We know that function parameters are BasicObject or some subclass
-                self.insn_types[param.0] = *param_type;
+                self.insn_types[param] = *param_type;
             }
         }
     }
@@ -3224,11 +3254,11 @@ impl Function {
                 let mut target_changed = newly_reachable;
                 for (idx, arg) in $target.args.iter().enumerate() {
                     let arg = self.union_find.borrow().find_const(*arg);
-                    let param = $self.blocks[$target.target.0].params[idx];
+                    let param = $self.blocks[$target.target].params[idx];
                     let param = self.union_find.borrow().find_const(param);
-                    let new = self.insn_types[param.0].union(self.insn_types[arg.0]);
-                    if !self.insn_types[param.0].bit_equal(new) {
-                        self.insn_types[param.0] = new;
+                    let new = self.insn_types[param].union(self.insn_types[arg]);
+                    if !self.insn_types[param].bit_equal(new) {
+                        self.insn_types[param] = new;
                         target_changed = true;
                     }
                 }
@@ -3242,9 +3272,9 @@ impl Function {
         while let Some(block) = worklist.pop_front() {
             in_worklist.remove(block);
             if !reachable.get(block) { continue; }
-            for insn_id in &self.blocks[block.0].insns {
+            for insn_id in &self.blocks[block].insns {
                 let insn_id = self.union_find.borrow().find_const(*insn_id);
-                let insn_type = match &self.insns[insn_id.0] {
+                let insn_type = match &self.insns[insn_id] {
                     &Insn::IfTrue { val, ref target } => {
                         assert!(!self.type_of(val).bit_equal(types::Empty));
                         if self.type_of(val).could_be(Type::from_cbool(true)) {
@@ -3275,7 +3305,7 @@ impl Function {
                     _ => continue,
                 };
                 if !self.type_of(insn_id).bit_equal(insn_type) {
-                    self.insn_types[insn_id.0] = insn_type;
+                    self.insn_types[insn_id] = insn_type;
                 }
             }
         }
@@ -3283,7 +3313,7 @@ impl Function {
 
     fn chase_insn(&self, insn: InsnId) -> InsnId {
         let id = self.union_find.borrow().find_const(insn);
-        match self.insns[id.0] {
+        match self.insns[id] {
             Insn::GuardType { val, .. }
             | Insn::GuardTypeNot { val, .. }
             | Insn::GuardBitEquals { val, .. }
@@ -3676,8 +3706,8 @@ impl Function {
     /// Calls to C functions are handled separately in optimize_c_calls.
     fn type_specialize(&mut self) {
         for block in self.rpo() {
-            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
-            assert!(self.blocks[block.0].insns.is_empty());
+            let old_insns = std::mem::take(&mut self.blocks[block].insns);
+            assert!(self.blocks[block].insns.is_empty());
             for insn_id in old_insns {
                 match self.find(insn_id) {
                     Insn::Send { recv, block: None, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(freeze) && args.is_empty() =>
@@ -3975,7 +4005,7 @@ impl Function {
                         // referenced after the PatchPoint.
                         self.push_insn(block, Insn::PatchPoint { invariant: Invariant::StableConstantNames { idlist }, state });
                         let replacement = self.push_insn(block, Insn::Const { val: Const::Value(unsafe { (*ice).value }) });
-                        self.insn_types[replacement.0] = self.infer_type(replacement);
+                        self.insn_types[replacement] = self.infer_type(replacement);
                         self.make_equal_to(insn_id, replacement);
                     }
                     Insn::ObjToString { val, cd, state, .. } => {
@@ -3993,7 +4023,7 @@ impl Function {
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_type.class() }, state });
                             let guard = self.push_insn(block, Insn::GuardType { val, guard_type: types::String, state });
                             // Infer type so AnyToString can fold off this
-                            self.insn_types[guard.0] = self.infer_type(guard);
+                            self.insn_types[guard] = self.infer_type(guard);
                             self.make_equal_to(insn_id, guard);
                         } else {
                             let recv = self.push_insn(block, Insn::GuardType { val, guard_type: Type::from_profiled_type(recv_type), state});
@@ -4015,7 +4045,7 @@ impl Function {
                         let method = unsafe { rb_vm_ci_mid((*cd).ci) };
                         self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: class, method, cme }, state });
                         let replacement = self.push_insn(block, Insn::Const { val: Const::CBool(is_expected_cfunc) });
-                        self.insn_types[replacement.0] = self.infer_type(replacement);
+                        self.insn_types[replacement] = self.infer_type(replacement);
                         self.make_equal_to(insn_id, replacement);
                     }
                     Insn::ObjectAlloc { val, state } => {
@@ -4043,7 +4073,7 @@ impl Function {
                             self.push_insn_id(block, insn_id); continue;
                         }
                         let replacement = self.push_insn(block, Insn::ObjectAllocClass { class, state });
-                        self.insn_types[replacement.0] = self.infer_type(replacement);
+                        self.insn_types[replacement] = self.infer_type(replacement);
                         self.make_equal_to(insn_id, replacement);
                     }
                     Insn::NewRange { low, high, flag, state } => {
@@ -4055,7 +4085,7 @@ impl Function {
                             let high_fix = self.coerce_to(block, high, types::Fixnum, state);
                             let replacement = self.push_insn(block, Insn::NewRangeFixnum { low: low_fix, high: high_fix, flag, state });
                             self.make_equal_to(insn_id, replacement);
-                            self.insn_types[replacement.0] = self.infer_type(replacement);
+                            self.insn_types[replacement] = self.infer_type(replacement);
                         } else {
                             self.push_insn_id(block, insn_id);
                         };
@@ -4228,13 +4258,13 @@ impl Function {
                                     if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
                                         // Copy contents of tmp_block to block
                                         assert_ne!(block, tmp_block);
-                                        let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
-                                        self.blocks[block.0].insns.extend(insns);
+                                        let insns = std::mem::take(&mut self.blocks[tmp_block].insns);
+                                        self.blocks[block].insns.extend(insns);
                                         self.count(block, Counter::inline_cfunc_optimized_send_count);
                                         self.make_equal_to(insn_id, replacement);
                                         if self.type_of(replacement).bit_equal(types::Any) {
                                             // Not set yet; infer type
-                                            self.insn_types[replacement.0] = self.infer_type(replacement);
+                                            self.insn_types[replacement] = self.infer_type(replacement);
                                         }
                                         self.remove_block(tmp_block);
                                         continue;
@@ -4279,13 +4309,13 @@ impl Function {
                                         // Copy contents of tmp_block to block
                                         assert_ne!(block, tmp_block);
                                         emit_super_call_guards(self, block, super_cme, current_cme, mid, state);
-                                        let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
-                                        self.blocks[block.0].insns.extend(insns);
+                                        let insns = std::mem::take(&mut self.blocks[tmp_block].insns);
+                                        self.blocks[block].insns.extend(insns);
                                         self.count(block, Counter::inline_cfunc_optimized_send_count);
                                         self.make_equal_to(insn_id, replacement);
                                         if self.type_of(replacement).bit_equal(types::Any) {
                                             // Not set yet; infer type
-                                            self.insn_types[replacement.0] = self.infer_type(replacement);
+                                            self.insn_types[replacement] = self.infer_type(replacement);
                                         }
                                         self.remove_block(tmp_block);
                                         continue;
@@ -4343,8 +4373,8 @@ impl Function {
 
     fn inline(&mut self) {
         for block in self.rpo() {
-            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
-            assert!(self.blocks[block.0].insns.is_empty());
+            let old_insns = std::mem::take(&mut self.blocks[block].insns);
+            assert!(self.blocks[block].insns.is_empty());
             for insn_id in old_insns {
                 match self.find(insn_id) {
                     // We can inline SendDirect with blockiseq because we are prohibiting `yield`
@@ -4524,8 +4554,8 @@ impl Function {
 
     fn optimize_getivar(&mut self) {
         for block in self.rpo() {
-            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
-            assert!(self.blocks[block.0].insns.is_empty());
+            let old_insns = std::mem::take(&mut self.blocks[block].insns);
+            assert!(self.blocks[block].insns.is_empty());
             for insn_id in old_insns {
                 match self.find(insn_id) {
                     Insn::GetIvar { self_val, id, ic: _, state } => {
@@ -4823,7 +4853,7 @@ impl Function {
                     if let Some(profiled_type) = profiled_type {
                         // Guard receiver class
                         recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                        fun.insn_types[recv.0] = fun.infer_type(recv);
+                        fun.insn_types[recv] = fun.infer_type(recv);
                     }
 
                     // Emit a call
@@ -4861,7 +4891,7 @@ impl Function {
                     if let Some(profiled_type) = profiled_type {
                         // Guard receiver class
                         recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                        fun.insn_types[recv.0] = fun.infer_type(recv);
+                        fun.insn_types[recv] = fun.infer_type(recv);
                     }
 
                     if get_option!(stats) {
@@ -4986,7 +5016,7 @@ impl Function {
                     if let Some(profiled_type) = profiled_type {
                         // Guard receiver class
                         recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                        fun.insn_types[recv.0] = fun.infer_type(recv);
+                        fun.insn_types[recv] = fun.infer_type(recv);
                     }
 
                     // Try inlining the cfunc into HIR
@@ -4994,13 +5024,13 @@ impl Function {
                     if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args, state) {
                         // Copy contents of tmp_block to block
                         assert_ne!(block, tmp_block);
-                        let insns = std::mem::take(&mut fun.blocks[tmp_block.0].insns);
-                        fun.blocks[block.0].insns.extend(insns);
+                        let insns = std::mem::take(&mut fun.blocks[tmp_block].insns);
+                        fun.blocks[block].insns.extend(insns);
                         fun.count(block, Counter::inline_cfunc_optimized_send_count);
                         fun.make_equal_to(send_insn_id, replacement);
                         if fun.type_of(replacement).bit_equal(types::Any) {
                             // Not set yet; infer type
-                            fun.insn_types[replacement.0] = fun.infer_type(replacement);
+                            fun.insn_types[replacement] = fun.infer_type(replacement);
                         }
                         fun.remove_block(tmp_block);
                         return Ok(());
@@ -5062,7 +5092,7 @@ impl Function {
                         if let Some(profiled_type) = profiled_type {
                             // Guard receiver class
                             recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
-                            fun.insn_types[recv.0] = fun.infer_type(recv);
+                            fun.insn_types[recv] = fun.infer_type(recv);
                         }
 
                         let cfunc = unsafe { get_mct_func(cfunc) }.cast();
@@ -5077,13 +5107,13 @@ impl Function {
                         if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args, state) {
                             // Copy contents of tmp_block to block
                             assert_ne!(block, tmp_block);
-                            let insns = std::mem::take(&mut fun.blocks[tmp_block.0].insns);
-                            fun.blocks[block.0].insns.extend(insns);
+                            let insns = std::mem::take(&mut fun.blocks[tmp_block].insns);
+                            fun.blocks[block].insns.extend(insns);
                             fun.count(block, Counter::inline_cfunc_optimized_send_count);
                             fun.make_equal_to(send_insn_id, replacement);
                             if fun.type_of(replacement).bit_equal(types::Any) {
                                 // Not set yet; infer type
-                                fun.insn_types[replacement.0] = fun.infer_type(replacement);
+                                fun.insn_types[replacement] = fun.infer_type(replacement);
                             }
                             fun.remove_block(tmp_block);
                             return Ok(());
@@ -5126,8 +5156,8 @@ impl Function {
         }
 
         for block in self.rpo() {
-            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
-            assert!(self.blocks[block.0].insns.is_empty());
+            let old_insns = std::mem::take(&mut self.blocks[block].insns);
+            assert!(self.blocks[block].insns.is_empty());
             for insn_id in old_insns {
                 let send = self.find(insn_id);
                 match send {
@@ -5150,13 +5180,13 @@ impl Function {
                         if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
                             // Copy contents of tmp_block to block
                             assert_ne!(block, tmp_block);
-                            let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
-                            self.blocks[block.0].insns.extend(insns);
+                            let insns = std::mem::take(&mut self.blocks[tmp_block].insns);
+                            self.blocks[block].insns.extend(insns);
                             self.count(block, Counter::inline_cfunc_optimized_send_count);
                             self.make_equal_to(insn_id, replacement);
                             if self.type_of(replacement).bit_equal(types::Any) {
                                 // Not set yet; infer type
-                                self.insn_types[replacement.0] = self.infer_type(replacement);
+                                self.insn_types[replacement] = self.infer_type(replacement);
                             }
                             self.remove_block(tmp_block);
                             continue;
@@ -5184,8 +5214,8 @@ impl Function {
             return;
         }
         for block in self.rpo() {
-            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
-            assert!(self.blocks[block.0].insns.is_empty());
+            let old_insns = std::mem::take(&mut self.blocks[block].insns);
+            assert!(self.blocks[block].insns.is_empty());
             for insn_id in old_insns {
                 match self.find(insn_id) {
                     Insn::Send { cd, state, reason: SendFallbackReason::SendWithoutBlockNoProfiles | SendFallbackReason::SendNoProfiles, .. } => {
@@ -5205,7 +5235,7 @@ impl Function {
     fn optimize_load_store(&mut self) {
         for block in self.rpo() {
             let mut compile_time_heap: HashMap<(InsnId, i32), InsnId>  = HashMap::new();
-            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
+            let old_insns = std::mem::take(&mut self.blocks[block].insns);
             let mut new_insns = vec![];
             for insn_id in old_insns {
                 let replacement_insn: InsnId = match self.find(insn_id) {
@@ -5258,7 +5288,7 @@ impl Function {
                 };
                 new_insns.push(replacement_insn);
             }
-            self.blocks[block.0].insns = new_insns;
+            self.blocks[block].insns = new_insns;
         }
     }
 
@@ -5289,7 +5319,7 @@ impl Function {
         // This would require 1) fixpointing, 2) worklist, or 3) (slightly less powerful) calling a
         // function-level infer_types after each pruned branch.
         for block in self.rpo() {
-            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
+            let old_insns = std::mem::take(&mut self.blocks[block].insns);
             let mut new_insns = vec![];
             // Track guards seen so far in this block: (val, guard_type, result_insn_id).
             // When we encounter a GuardType whose (val, guard_type) pair is already covered
@@ -5552,18 +5582,18 @@ impl Function {
                 };
                 // If we're adding a new instruction, mark the two equivalent in the union-find and
                 // do an incremental flow typing of the new instruction.
-                if insn_id != replacement_id && self.insns[replacement_id.0].has_output() {
+                if insn_id != replacement_id && self.insns[replacement_id].has_output() {
                     self.make_equal_to(insn_id, replacement_id);
-                    self.insn_types[replacement_id.0] = self.infer_type(replacement_id);
+                    self.insn_types[replacement_id] = self.infer_type(replacement_id);
                 }
                 new_insns.push(replacement_id);
                 // If we've just folded an IfTrue into a Jump, for example, don't bother copying
                 // over unreachable instructions afterward.
-                if self.insns[replacement_id.0].is_terminator() {
+                if self.insns[replacement_id].is_terminator() {
                     break;
                 }
             }
-            self.blocks[block.0].insns = new_insns;
+            self.blocks[block].insns = new_insns;
         }
     }
 
@@ -5574,10 +5604,10 @@ impl Function {
         let mut worklist = VecDeque::new();
         // Find all of the instructions that have side effects, are control instructions, or are
         // otherwise necessary to keep around
-        for block_id in &rpo {
-            for insn_id in &self.blocks[block_id.0].insns {
-                if !&self.insns[insn_id.0].is_elidable() {
-                    worklist.push_back(*insn_id);
+        for &block_id in &rpo {
+            for &insn_id in &self.blocks[block_id].insns {
+                if !&self.insns[insn_id].is_elidable() {
+                    worklist.push_back(insn_id);
                 }
             }
         }
@@ -5587,18 +5617,18 @@ impl Function {
             if necessary.get(insn_id) { continue; }
             necessary.insert(insn_id);
             let insn_id = self.union_find.borrow().find_const(insn_id);
-            self.insns[insn_id.0].for_each_operand(|operand| {
+            self.insns[insn_id].for_each_operand(|operand| {
                 worklist.push_back(self.union_find.borrow().find_const(operand));
             });
         }
         // Now remove all unnecessary instructions
-        for block_id in &rpo {
-            self.blocks[block_id.0].insns.retain(|&insn_id| necessary.get(insn_id));
+        for &block_id in &rpo {
+            self.blocks[block_id].insns.retain(|&insn_id| necessary.get(insn_id));
         }
     }
 
     fn absorb_dst_block(&mut self, num_in_edges: &[u32], block: BlockId) -> bool {
-        let Some(terminator_id) = self.blocks[block.0].insns.last()
+        let Some(terminator_id) = self.blocks[block].insns.last()
             else { return false };
         let Insn::Jump(BranchEdge { target, args }) = self.find(*terminator_id)
             else { return false };
@@ -5606,21 +5636,21 @@ impl Function {
             // Can't absorb self
             return false;
         }
-        if num_in_edges[target.0] != 1 {
+        if num_in_edges[target] != 1 {
             // Can't absorb block if it's the target of more than one branch
             return false;
         }
         // Link up params with block args
-        let params = std::mem::take(&mut self.blocks[target.0].params);
+        let params = std::mem::take(&mut self.blocks[target].params);
         assert_eq!(args.len(), params.len());
         for (arg, param) in args.iter().zip(params) {
             self.make_equal_to(param, *arg);
         }
         // Remove branch instruction
-        self.blocks[block.0].insns.pop();
+        self.blocks[block].insns.pop();
         // Move target instructions into block
-        let target_insns = std::mem::take(&mut self.blocks[target.0].insns);
-        self.blocks[block.0].insns.extend(target_insns);
+        let target_insns = std::mem::take(&mut self.blocks[target].insns);
+        self.blocks[block].insns.extend(target_insns);
         true
     }
 
@@ -5632,18 +5662,18 @@ impl Function {
         // * blocks pointed to by blocks that get absorbed retain the same number of in-edges
         let mut num_in_edges = vec![0; self.blocks.len()];
         for block in self.rpo() {
-            for &insn in &self.blocks[block.0].insns {
+            for &insn in &self.blocks[block].insns {
                 // Instructions without output, including branch instructions, can't be targets of
                 // make_equal_to, so we don't need find() here.
-                match &self.insns[insn.0] {
+                match &self.insns[insn] {
                     Insn::IfTrue { target: BranchEdge { target, .. }, .. }
                     | Insn::IfFalse { target: BranchEdge { target, .. }, .. }
                     | Insn::Jump(BranchEdge { target, .. }) => {
-                        num_in_edges[target.0] += 1;
+                        num_in_edges[*target] += 1;
                     }
                     Insn::Entries { targets } => {
                         for target in targets {
-                            num_in_edges[target.0] += 1;
+                            num_in_edges[*target] += 1;
                         }
                     }
                     _ => {}
@@ -5655,7 +5685,7 @@ impl Function {
             let mut iter_changed = false;
             for block in self.rpo() {
                 // Ignore transient empty blocks
-                if self.blocks[block.0].insns.is_empty() { continue; }
+                if self.blocks[block].insns.is_empty() { continue; }
                 loop {
                     let absorbed = self.absorb_dst_block(&num_in_edges, block);
                     if !absorbed { break; }
@@ -5676,7 +5706,7 @@ impl Function {
     fn remove_redundant_patch_points(&mut self) {
         for block_id in self.rpo() {
             let mut seen = HashSet::new();
-            let insns = std::mem::take(&mut self.blocks[block_id.0].insns);
+            let insns = std::mem::take(&mut self.blocks[block_id].insns);
             let mut new_insns = Vec::with_capacity(insns.len());
             for insn_id in insns {
                 let insn = self.find(insn_id);
@@ -5689,7 +5719,7 @@ impl Function {
                 }
                 new_insns.push(insn_id);
             }
-            self.blocks[block_id.0].insns = new_insns;
+            self.blocks[block_id].insns = new_insns;
         }
     }
 
@@ -5699,10 +5729,10 @@ impl Function {
     fn remove_duplicate_check_interrupts(&mut self) {
         for block_id in self.rpo() {
             let mut seen = false;
-            let insns = std::mem::take(&mut self.blocks[block_id.0].insns);
+            let insns = std::mem::take(&mut self.blocks[block_id].insns);
             let mut new_insns = Vec::with_capacity(insns.len());
             for insn_id in insns {
-                let insn = &self.insns[insn_id.0];
+                let insn = &self.insns[insn_id];
                 if matches!(insn, Insn::CheckInterrupts { .. }) {
                     if seen { continue; }
                     seen = true;
@@ -5711,7 +5741,7 @@ impl Function {
                 }
                 new_insns.push(insn_id);
             }
-            self.blocks[block_id.0].insns = new_insns;
+            self.blocks[block_id].insns = new_insns;
         }
     }
 
@@ -5756,10 +5786,10 @@ impl Function {
             }
             if !seen.insert(block) { continue; }
             stack.push((block, Action::VisitSelf));
-            for insn_id in &self.blocks[block.0].insns {
+            for &insn_id in &self.blocks[block].insns {
                 // Instructions without output, including branch instructions, can't be targets of
                 // make_equal_to, so we don't need find() here.
-                match &self.insns[insn_id.0] {
+                match &self.insns[insn_id] {
                     Insn::IfTrue { target, .. } | Insn::IfFalse { target, .. } | Insn::Jump(target) => {
                         stack.push((target.target, Action::VisitEdges));
                     }
@@ -5769,7 +5799,7 @@ impl Function {
                         }
                     }
                     _ => {
-                        debug_assert!(!self.find(*insn_id).is_jump(), "Instruction {:?} should not be in union-find; it has no output", insn_id);
+                        debug_assert!(!self.find(insn_id).is_jump(), "Instruction {:?} should not be in union-find; it has no output", insn_id);
                     }
                 }
             }
@@ -5811,8 +5841,8 @@ impl Function {
             .insert("id", id.0)
             .insert("loopDepth", loop_depth)
             .insert("attributes", Json::array(attributes))
-            .insert("predecessors", Json::array(predecessors.iter().map(|x| x.0).collect::<Vec<usize>>()))
-            .insert("successors", Json::array(successors.iter().map(|x| x.0).collect::<Vec<usize>>()))
+            .insert("predecessors", Json::array(predecessors.iter().map(|x| x.0 as usize).collect::<Vec<usize>>()))
+            .insert("successors", Json::array(successors.iter().map(|x| x.0 as usize).collect::<Vec<usize>>()))
             .insert("instructions", Json::array(instructions))
             .build()
     }
@@ -5848,7 +5878,7 @@ impl Function {
         // Push each block from the iteration in reverse post order to `hir_blocks`.
         for block_id in self.rpo() {
             // Create the block with instructions.
-            let block = &self.blocks[block_id.0];
+            let block = &self.blocks[block_id];
             let predecessors = cfi.predecessors(block_id).collect();
             let successors = cfi.successors(block_id).collect();
             let mut instructions = Vec::new();
@@ -6021,14 +6051,14 @@ impl Function {
     fn validate_block_terminators_and_jumps(&self) -> Result<(), ValidationError> {
         for block_id in self.rpo() {
             let mut block_has_terminator = false;
-            let insns = &self.blocks[block_id.0].insns;
+            let insns = &self.blocks[block_id].insns;
             for (idx, insn_id) in insns.iter().enumerate() {
                 let insn = self.find(*insn_id);
                 match &insn {
                     Insn::Jump(BranchEdge{target, args})
                     | Insn::IfTrue { val: _, target: BranchEdge{target, args} }
                     | Insn::IfFalse { val: _, target: BranchEdge{target, args}} => {
-                        let target_block = &self.blocks[target.0];
+                        let target_block = &self.blocks[*target];
                         let target_len = target_block.params.len();
                         let args_len = args.len();
                         if target_len != args_len {
@@ -6064,25 +6094,25 @@ impl Function {
         // starts with nothing defined.
         for &block in &rpo {
             if block == self.entries_block {
-                assigned_in[block.0] = Some(InsnSet::with_capacity(self.insns.len()));
+                assigned_in[block] = Some(InsnSet::with_capacity(self.insns.len()));
             } else {
                 let mut all_ones = InsnSet::with_capacity(self.insns.len());
                 all_ones.insert_all();
-                assigned_in[block.0] = Some(all_ones);
+                assigned_in[block] = Some(all_ones);
             }
         }
         let mut worklist = VecDeque::with_capacity(self.num_blocks());
         worklist.push_back(self.entries_block);
         while let Some(block) = worklist.pop_front() {
-            let mut assigned = assigned_in[block.0].clone().unwrap();
-            for &param in &self.blocks[block.0].params {
+            let mut assigned = assigned_in[block].clone().unwrap();
+            for &param in &self.blocks[block].params {
                 assigned.insert(param);
             }
-            for &insn_id in &self.blocks[block.0].insns {
+            for &insn_id in &self.blocks[block].insns {
                 let insn_id = self.union_find.borrow().find_const(insn_id);
                 match self.find(insn_id) {
                     Insn::Jump(target) | Insn::IfTrue { target, .. } | Insn::IfFalse { target, .. } => {
-                        let Some(block_in) = assigned_in[target.target.0].as_mut() else {
+                        let Some(block_in) = assigned_in[target.target].as_mut() else {
                             return Err(ValidationError::JumpTargetNotInRPO(target.target));
                         };
                         // jump target's block_in was modified, we need to queue the block for processing.
@@ -6092,7 +6122,7 @@ impl Function {
                     }
                     Insn::Entries { ref targets } => {
                         for &target in targets {
-                            let Some(block_in) = assigned_in[target.0].as_mut() else {
+                            let Some(block_in) = assigned_in[target].as_mut() else {
                                 return Err(ValidationError::JumpTargetNotInRPO(target));
                             };
                             // jump target's block_in was modified, we need to queue the block for processing.
@@ -6110,20 +6140,20 @@ impl Function {
         }
         // Check that each instruction's operands are assigned
         for &block in &rpo {
-            let mut assigned = assigned_in[block.0].clone().unwrap();
-            for &param in &self.blocks[block.0].params {
+            let mut assigned = assigned_in[block].clone().unwrap();
+            for &param in &self.blocks[block].params {
                 assigned.insert(param);
             }
-            for &insn_id in &self.blocks[block.0].insns {
+            for &insn_id in &self.blocks[block].insns {
                 let insn_id = self.union_find.borrow().find_const(insn_id);
-                self.insns[insn_id.0].try_for_each_operand(|operand| {
+                self.insns[insn_id].try_for_each_operand(|operand| {
                     let operand = self.union_find.borrow().find_const(operand);
                     if !assigned.get(operand) {
                         return Err(ValidationError::OperandNotDefined(block, insn_id, operand));
                     }
                     Ok(())
                 })?;
-                if self.insns[insn_id.0].has_output() {
+                if self.insns[insn_id].has_output() {
                     assigned.insert(insn_id);
                 }
             }
@@ -6135,7 +6165,7 @@ impl Function {
     fn validate_insn_uniqueness(&self) -> Result<(), ValidationError> {
         let mut seen = InsnSet::with_capacity(self.insns.len());
         for block_id in self.rpo() {
-            for &insn_id in &self.blocks[block_id.0].insns {
+            for &insn_id in &self.blocks[block_id].insns {
                 let insn_id = self.union_find.borrow().find_const(insn_id);
                 if !seen.insert(insn_id) {
                     return Err(ValidationError::DuplicateInstruction(block_id, insn_id));
@@ -6460,7 +6490,7 @@ impl Function {
     /// Check that insn types match the expected types for each instruction.
     fn validate_types(&self) -> Result<(), ValidationError> {
         for block_id in self.rpo() {
-            for &insn_id in &self.blocks[block_id.0].insns {
+            for &insn_id in &self.blocks[block_id].insns {
                 self.validate_insn_type(insn_id)?;
             }
         }
@@ -6501,9 +6531,9 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
                 continue;
             }
             write!(f, "{block_id}(")?;
-            if !fun.blocks[block_id.0].params.is_empty() {
+            if !fun.blocks[block_id].params.is_empty() {
                 let mut sep = "";
-                for param in &fun.blocks[block_id.0].params {
+                for param in &fun.blocks[block_id].params {
                     write!(f, "{sep}{param}")?;
                     let insn_type = fun.type_of(*param);
                     if !insn_type.is_subtype(types::Empty) {
@@ -6513,7 +6543,7 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
                 }
             }
             writeln!(f, "):")?;
-            for insn_id in &fun.blocks[block_id.0].insns {
+            for insn_id in &fun.blocks[block_id].insns {
                 let insn = fun.find(*insn_id);
                 if !self.display_snapshot_and_tp_patchpoints &&
                     matches!(insn, Insn::Snapshot {..} | Insn::PatchPoint { invariant: Invariant::NoTracePoint, .. }) {
@@ -7371,7 +7401,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                                 let zjit_module = VALUE(state::ZJIT_MODULE.load(Ordering::Relaxed));
                                 let lookedup_module = rb_const_lookup(rb_cRubyVM, ID!(ZJIT));
                                 if !lookedup_module.is_null() && (*lookedup_module).value == zjit_module {
-                                    fun.insn_types[get_const_path.0] = Type::from_value(zjit_module);
+                                    fun.insn_types[get_const_path] = Type::from_value(zjit_module);
                                 }
                             }
                         }
@@ -8606,7 +8636,7 @@ pub struct Dominators {
 }
 
 /// Sentinel value for "no idom computed yet".
-const IDOM_NONE: BlockId = BlockId(usize::MAX);
+const IDOM_NONE: BlockId = BlockId(u32::MAX);
 
 impl Dominators {
     pub fn new(f: &Function) -> Self {
@@ -8624,13 +8654,13 @@ impl Dominators {
         // Map BlockId → RPO index for O(1) lookup in intersect.
         let mut rpo_order = vec![usize::MAX; num_blocks];
         for (idx, &block) in rpo.iter().enumerate() {
-            rpo_order[block.0] = idx;
+            rpo_order[block] = idx;
         }
 
         // Initialize idom: root's idom is itself, everything else is undefined.
         let mut idoms = vec![IDOM_NONE; num_blocks];
         let root = f.entries_block;
-        idoms[root.0] = root;
+        idoms[root] = root;
 
         let mut changed = true;
         while changed {
@@ -8642,7 +8672,7 @@ impl Dominators {
                 let preds: Vec<BlockId> = cfi.predecessors(block).collect();
                 let mut new_idom = IDOM_NONE;
                 for &p in &preds {
-                    if idoms[p.0] != IDOM_NONE {
+                    if idoms[p] != IDOM_NONE {
                         new_idom = p;
                         break;
                     }
@@ -8652,13 +8682,13 @@ impl Dominators {
                 // Intersect with remaining processed predecessors.
                 for &p in &preds {
                     if p == new_idom { continue; }
-                    if idoms[p.0] != IDOM_NONE {
+                    if idoms[p] != IDOM_NONE {
                         new_idom = Self::intersect(&idoms, &rpo_order, p, new_idom);
                     }
                 }
 
-                if idoms[block.0] != new_idom {
-                    idoms[block.0] = new_idom;
+                if idoms[block] != new_idom {
+                    idoms[block] = new_idom;
                     changed = true;
                 }
             }
@@ -8671,11 +8701,11 @@ impl Dominators {
     /// Uses RPO indices: a node with a *lower* RPO index is *higher* in the tree.
     fn intersect(idoms: &[BlockId], rpo_order: &[usize], mut b1: BlockId, mut b2: BlockId) -> BlockId {
         while b1 != b2 {
-            while rpo_order[b1.0] > rpo_order[b2.0] {
-                b1 = idoms[b1.0];
+            while rpo_order[b1] > rpo_order[b2] {
+                b1 = idoms[b1];
             }
-            while rpo_order[b2.0] > rpo_order[b1.0] {
-                b2 = idoms[b2.0];
+            while rpo_order[b2] > rpo_order[b1] {
+                b2 = idoms[b2];
             }
         }
         b1
@@ -8683,7 +8713,7 @@ impl Dominators {
 
     /// Return the immediate dominator of `block`.
     pub fn idom(&self, block: BlockId) -> BlockId {
-        self.idoms[block.0]
+        self.idoms[block]
     }
 
     /// Return true if `left` is dominated by `right`.
@@ -8728,7 +8758,7 @@ impl<'a> ControlFlowInfo<'a> {
         let uf = function.union_find.borrow();
 
         for block_id in function.rpo() {
-            let block = &function.blocks[block_id.0];
+            let block = &function.blocks[block_id];
 
             // Since ZJIT uses extended basic blocks, one must check all instructions
             // for their ability to jump to another basic block, rather than just
@@ -8742,7 +8772,7 @@ impl<'a> ControlFlowInfo<'a> {
             let mut successors: BTreeSet<BlockId> = BTreeSet::new();
             for &insn_id in &block.insns {
                 let insn_id = uf.find_const(insn_id);
-                match &function.insns[insn_id.0] {
+                match &function.insns[insn_id] {
                     Insn::Entries { targets } => {
                         successors.extend(targets);
                     }
@@ -9073,7 +9103,7 @@ mod validation_tests {
         let entry = function.entry_block;
         // Create an instruction without making it belong to anything.
         let dangling = function.new_insn(Insn::Const{val: Const::CBool(true)});
-        let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: dangling, state: InsnId(0usize) });
+        let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: dangling, state: InsnId(0) });
         function.seal_entries();
         assert_matches_err(function.validate_definite_assignment(), ValidationError::OperandNotDefined(entry, val, dangling));
     }
@@ -9085,7 +9115,7 @@ mod validation_tests {
         let const_ = function.push_insn(function.entry_block, Insn::Const{val: Const::CBool(true)});
         // Ret is a non-output instruction.
         let ret = function.push_insn(function.entry_block, Insn::Return { val: const_ });
-        let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: ret, state: InsnId(0usize) });
+        let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: ret, state: InsnId(0) });
         function.seal_entries();
         assert_matches_err(function.validate_definite_assignment(), ValidationError::OperandNotDefined(entry, val, ret));
     }
@@ -9232,7 +9262,7 @@ mod infer_tests {
     fn newarray() {
         let mut function = Function::new(std::ptr::null());
         // Fake FrameState index of 0usize
-        let val = function.push_insn(function.entry_block, Insn::NewArray { elements: vec![], state: InsnId(0usize) });
+        let val = function.push_insn(function.entry_block, Insn::NewArray { elements: vec![], state: InsnId(0) });
         assert_bit_equal(function.infer_type(val), types::ArrayExact);
     }
 
@@ -9240,8 +9270,8 @@ mod infer_tests {
     fn arraydup() {
         let mut function = Function::new(std::ptr::null());
         // Fake FrameState index of 0usize
-        let arr = function.push_insn(function.entry_block, Insn::NewArray { elements: vec![], state: InsnId(0usize) });
-        let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: arr, state: InsnId(0usize) });
+        let arr = function.push_insn(function.entry_block, Insn::NewArray { elements: vec![], state: InsnId(0) });
+        let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: arr, state: InsnId(0) });
         assert_bit_equal(function.infer_type(val), types::ArrayExact);
     }
 
