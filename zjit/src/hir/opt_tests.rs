@@ -14407,7 +14407,7 @@ mod hir_opt_tests {
           SetLocal :other_block, l0, EP@3, v40
           v27:CPtr = GetEP 0
           v28:BasicObject = LoadField v27, :other_block@0x1051
-          v30:BasicObject = InvokeSuper v11, 0x1058, v28 # SendFallbackReason: super: complex argument passing to `super` call
+          v30:BasicObject = InvokeSuper v11, 0x1040, v28 # SendFallbackReason: super: complex argument passing to `super` call
           CheckInterrupts
           Return v30
         ");

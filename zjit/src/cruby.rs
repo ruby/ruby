@@ -644,7 +644,7 @@ impl VALUE {
         i.try_into().unwrap()
     }
 
-    pub fn as_usize(self) -> usize {
+    pub const fn as_usize(self) -> usize {
         let VALUE(us) = self;
         us
     }

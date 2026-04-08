@@ -102,7 +102,7 @@ static mut ZJIT_STATE: InitializationState = InitializationState::Uninitialized;
 impl ZJITState {
     /// Initialize the ZJIT globals. Return the address of the JIT entry trampoline.
     pub fn init() -> *const u8 {
-        assert_eq!(std::mem::size_of::<crate::hir::Insn>(), 112, "Insn size changed; please update this assertion if intentional");
+        assert_eq!(std::mem::size_of::<crate::hir::Insn>(), 104, "Insn size changed; please update this assertion if intentional");
         use InitializationState::*;
 
         let initialization_state = unsafe {
