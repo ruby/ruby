@@ -9704,17 +9704,18 @@ mod hir_opt_tests {
           v20:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v19, Value(VALUE(0x1040))
           v21:RubyValue = LoadField v18, :_ep_specval@0x1048
           v22:FalseClass = GuardBitEquals v21, Value(false)
-          v28:CPtr = GetEP 0
-          v29:RubyValue = LoadField v28, :_ep_method_entry@0x1038
-          v30:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v29, Value(VALUE(0x1040))
-          v31:RubyValue = LoadField v28, :_ep_specval@0x1048
-          v32:FalseClass = GuardBitEquals v31, Value(false)
+          v30:CPtr = GetEP 0
+          v31:RubyValue = LoadField v30, :_ep_method_entry@0x1038
+          v32:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v31, Value(VALUE(0x1040))
+          v33:RubyValue = LoadField v30, :_ep_specval@0x1048
+          v34:FalseClass = GuardBitEquals v33, Value(false)
           v23:Array = GuardType v6, Array
           v24:CUInt64 = LoadField v23, :_rbasic_flags@0x1049
-          v25:CUInt64 = GuardNoBitsSet v24, RUBY_ELTS_SHARED=CUInt64(4096)
-          v26:BasicObject = ArrayPop v23
+          v25:CUInt64 = GuardNoBitsSet v24, RUBY_FL_FREEZE=CUInt64(2048)
+          v27:CUInt64 = GuardNoBitsSet v24, RUBY_ELTS_SHARED=CUInt64(4096)
+          v28:BasicObject = ArrayPop v23
           CheckInterrupts
-          Return v26
+          Return v28
         ");
     }
 
