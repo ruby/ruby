@@ -52,6 +52,7 @@ module Bundler
 
     # This is defined directly to avoid having to loading the full spec
     def missing_extensions?
+      return false if RUBY_ENGINE == "jruby"
       return false if default_gem?
       return false if extensions.empty?
       return false if File.exist? gem_build_complete_path

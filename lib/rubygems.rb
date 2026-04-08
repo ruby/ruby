@@ -9,7 +9,7 @@
 require "rbconfig"
 
 module Gem
-  VERSION = "4.0.9"
+  VERSION = "4.0.10"
 end
 
 require_relative "rubygems/defaults"
@@ -192,8 +192,9 @@ module Gem
     begin
       spec.activate
     rescue Gem::LoadError => e # this could fail due to gem dep collisions, go lax
+      name = spec.name
       spec = Gem::Specification.find_unloaded_by_path(path)
-      spec ||= Gem::Specification.find_by_name(spec.name)
+      spec ||= Gem::Specification.find_by_name(name)
       if spec.nil?
         raise e
       else
@@ -1284,10 +1285,17 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
         prefix_pattern = /^(#{prefix_group})/
       end
 
+      native_extension_suffixes = Gem.dynamic_library_suffixes.reject(&:empty?)
+
       spec.files.each do |file|
         if new_format
           file = file.sub(prefix_pattern, "")
-          next unless $~
+          unless $~
+            # Also register native extension files (e.g. date_core.bundle)
+            # that are listed without require path prefix in the gemspec
+            next if file.include?("/")
+            next unless file.end_with?(*native_extension_suffixes)
+          end
         end
 
         spec.activate if already_loaded?(file)

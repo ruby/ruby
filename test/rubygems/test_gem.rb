@@ -1213,6 +1213,28 @@ class TestGem < Gem::TestCase
     assert Gem.try_activate("b"), "try_activate should still return true"
   end
 
+  def test_try_activate_does_not_raise_no_method_error_on_activation_conflict
+    a1 = util_spec "a", "1.0" do |s|
+      s.files << "lib/a/old.rb"
+    end
+
+    a2 = util_spec "a", "2.0" do |s|
+      s.files << "lib/a/old.rb"
+      s.files << "lib/a/new_file.rb"
+    end
+
+    install_specs a1, a2
+
+    # Activate the older version
+    gem "a", "= 1.0"
+
+    # try_activate a file only in the newer version should not raise
+    # NoMethodError on nil (https://bugs.ruby-lang.org/issues/21954)
+    assert_nothing_raised do
+      Gem.try_activate("a/new_file")
+    end
+  end
+
   def test_spec_order_is_consistent
     b1 = util_spec "b", "1.0"
     b2 = util_spec "b", "2.0"
@@ -1282,10 +1304,14 @@ class TestGem < Gem::TestCase
       refute Gem.try_activate "nonexistent"
     end
 
-    expected = "Ignoring ext-1 because its extensions are not built. " \
-               "Try: gem pristine ext --version 1\n"
+    if RUBY_ENGINE == "jruby"
+      assert_equal "", err
+    else
+      expected = "Ignoring ext-1 because its extensions are not built. " \
+                 "Try: gem pristine ext --version 1\n"
 
-    assert_equal expected, err
+      assert_equal expected, err
+    end
   end
 
   def test_self_use_paths_with_nils
@@ -1631,6 +1657,27 @@ class TestGem < Gem::TestCase
     assert_equal new_style, Gem.find_unresolved_default_spec("bar.rb")
     assert_nil              Gem.find_unresolved_default_spec("exec")
     assert_nil              Gem.find_unresolved_default_spec("README")
+  end
+
+  def test_register_default_spec_new_style_with_native_extension
+    Gem.clear_default_specs
+
+    dlext = RbConfig::CONFIG["DLEXT"]
+
+    new_style = Gem::Specification.new do |spec|
+      spec.name = "my_ext"
+      spec.version = "1.0"
+      spec.files = ["lib/my_ext.rb", "my_ext_core.#{dlext}", "ext/my_ext/my_ext_core.c", "README.md"]
+      spec.require_paths = ["lib"]
+    end
+
+    Gem.register_default_spec new_style
+
+    assert_equal new_style, Gem.find_unresolved_default_spec("my_ext.rb")
+    assert_equal new_style, Gem.find_unresolved_default_spec("my_ext_core")
+    assert_equal new_style, Gem.find_unresolved_default_spec("my_ext_core.#{dlext}")
+    assert_nil              Gem.find_unresolved_default_spec("ext/my_ext/my_ext_core.c")
+    assert_nil              Gem.find_unresolved_default_spec("README.md")
   end
 
   def test_register_default_spec_old_style_with_folder_starting_with_lib

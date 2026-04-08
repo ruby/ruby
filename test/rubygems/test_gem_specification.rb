@@ -1578,13 +1578,21 @@ dependencies: []
     ext_spec
 
     _, err = capture_output do
-      refute @ext.contains_requirable_file? "nonexistent"
+      if RUBY_ENGINE == "jruby"
+        refute @ext.ignored?
+      else
+        refute @ext.contains_requirable_file? "nonexistent"
+      end
     end
 
-    expected = "Ignoring ext-1 because its extensions are not built. " \
-               "Try: gem pristine ext --version 1\n"
+    if RUBY_ENGINE == "jruby"
+      assert_equal "", err
+    else
+      expected = "Ignoring ext-1 because its extensions are not built. " \
+                 "Try: gem pristine ext --version 1\n"
 
-    assert_equal expected, err
+      assert_equal expected, err
+    end
   end
 
   def test_contains_requirable_file_eh_extension_java_platform
@@ -3953,7 +3961,11 @@ end
   def test_missing_extensions_eh
     ext_spec
 
-    assert @ext.missing_extensions?
+    if RUBY_ENGINE == "jruby"
+      refute @ext.missing_extensions?
+    else
+      assert @ext.missing_extensions?
+    end
 
     extconf_rb = File.join @ext.gem_dir, @ext.extensions.first
     FileUtils.mkdir_p File.dirname extconf_rb
