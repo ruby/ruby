@@ -222,6 +222,18 @@ RSpec.describe Bundler::Fetcher::Dependency do
       expect(Bundler).to receive(:safe_load_marshal).with(fetch_response.body).and_return([unmarshalled_gems])
       expect(subject.unmarshalled_dep_gems(gem_names)).to eq([unmarshalled_gems])
     end
+
+    it "should fetch as many dependencies as specified" do
+      allow(subject).to receive(:dependency_api_uri).with([%w[foo bar]]).and_return(dep_api_uri)
+      allow(subject).to receive(:dependency_api_uri).with([%w[bundler rubocop]]).and_return(dep_api_uri)
+
+      expect(downloader).to receive(:fetch).twice.with(dep_api_uri).and_return(fetch_response)
+      expect(Bundler).to receive(:safe_load_marshal).twice.with(fetch_response.body).and_return([unmarshalled_gems])
+
+      Bundler.settings.temporary(api_request_size: 1) do
+        expect(subject.unmarshalled_dep_gems(gem_names)).to eq([unmarshalled_gems, unmarshalled_gems])
+      end
+    end
   end
 
   describe "#get_formatted_specs_and_deps" do
