@@ -5572,3 +5572,27 @@ fn test_send_block_unused_warning_emitted_from_jit() {
         test
     "#), @"true");
 }
+
+#[test]
+fn test_load_immediates_into_registers_before_masking() {
+    // See https://github.com/ruby/ruby/pull/16669 -- this is a reduced reproduction from a Ruby
+    // spec.
+    set_call_threshold(2);
+    assert_snapshot!(inspect(r#"
+        def test
+          klass = Class.new do
+            def ===(o)
+              true
+            end
+          end
+
+          case 1
+          when klass.new
+            :called
+          end == :called
+        end
+
+        test
+        test
+    "#), @"true");
+}

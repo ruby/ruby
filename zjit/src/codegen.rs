@@ -2459,8 +2459,9 @@ fn gen_has_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, ty: Typ
         asm.csel_e(Opnd::Imm(1), Opnd::Imm(0))
     } else if ty.is_subtype(types::StaticSymbol) {
         // Static symbols have (val & 0xff) == RUBY_SYMBOL_FLAG
-        // Use 8-bit comparison like YJIT does. GuardType should not be used
-        // for a known VALUE, which with_num_bits() does not support.
+        // Use 8-bit comparison like YJIT does.
+        // If `val` is a constant (rare but possible), put it in a register to allow masking.
+        let val = asm.load_imm(val);
         asm.cmp(val.with_num_bits(8), Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
         asm.csel_e(Opnd::Imm(1), Opnd::Imm(0))
     } else if ty.is_subtype(types::NilClass) {
@@ -2529,8 +2530,9 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
         asm.jne(jit, side_exit(jit, state, GuardType(guard_type)));
     } else if guard_type.is_subtype(types::StaticSymbol) {
         // Static symbols have (val & 0xff) == RUBY_SYMBOL_FLAG
-        // Use 8-bit comparison like YJIT does. GuardType should not be used
-        // for a known VALUE, which with_num_bits() does not support.
+        // Use 8-bit comparison like YJIT does.
+        // If `val` is a constant (rare but possible), put it in a register to allow masking.
+        let val = asm.load_imm(val);
         asm.cmp(val.with_num_bits(8), Opnd::UImm(RUBY_SYMBOL_FLAG as u64));
         asm.jne(jit, side_exit(jit, state, GuardType(guard_type)));
     } else if guard_type.is_subtype(types::NilClass) {
@@ -3541,6 +3543,15 @@ impl Assembler {
         match recv {
             Opnd::VReg { .. } | Opnd::Reg(_) => recv,
             _ => self.load(recv),
+        }
+    }
+
+    /// Emits a load for constant based operands and returns a vreg,
+    /// otherwise returns recv.
+    fn load_imm(&mut self, recv: Opnd) -> Opnd {
+        match recv {
+            Opnd::Value { .. } | Opnd::UImm(_) | Opnd::Imm(_) => self.load(recv),
+            _ => recv,
         }
     }
 
