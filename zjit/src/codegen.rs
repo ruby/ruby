@@ -457,7 +457,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
 
                         let branch_edge = lir::BranchEdge {
                             target: lir_target,
-                            args: target.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
+                            args: function.operand_pool.borrow().get(target.args).iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
                         };
 
                         let fall_through_edge = lir::BranchEdge {
@@ -482,7 +482,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
 
                         let branch_edge = lir::BranchEdge {
                             target: lir_target,
-                            args: target.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
+                            args: function.operand_pool.borrow().get(target.args).iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
                         };
 
                         let fall_through_edge = lir::BranchEdge {
@@ -502,7 +502,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                         let lir_target = hir_to_lir[target.target].unwrap();
                         let branch_edge = lir::BranchEdge {
                             target: lir_target,
-                            args: target.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
+                            args: function.operand_pool.borrow().get(target.args).iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
                         };
                         gen_jump(&mut asm, branch_edge);
                         assert!(asm.current_block().insns.last().unwrap().is_terminator());
@@ -596,7 +596,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
     macro_rules! opnds {
         ($insn_ids:ident) => {
             {
-                $insn_ids.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect::<Vec<_>>()
+                function.operand_pool.borrow().get(*$insn_ids).iter().map(|insn_id| jit.get_opnd(*insn_id)).collect::<Vec<_>>()
             }
         };
     }

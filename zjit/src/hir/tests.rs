@@ -5446,7 +5446,7 @@ pub(crate) mod hir_build_tests {
      use super::*;
 
      fn edge(target: BlockId) -> BranchEdge {
-         BranchEdge { target, args: vec![] }
+         BranchEdge { target, args: InsnIdList::EMPTY }
      }
 
      #[test]
@@ -5531,7 +5531,7 @@ pub(crate) mod hir_build_tests {
      use insta::assert_snapshot;
 
      fn edge(target: BlockId) -> BranchEdge {
-         BranchEdge { target, args: vec![] }
+         BranchEdge { target, args: InsnIdList::EMPTY }
      }
 
      fn assert_dominators_contains_self(function: &Function, dominators: &Dominators) {
@@ -5809,7 +5809,7 @@ mod loop_info_tests {
     use insta::assert_snapshot;
 
     fn edge(target: BlockId) -> BranchEdge {
-        BranchEdge { target, args: vec![] }
+        BranchEdge { target, args: InsnIdList::EMPTY }
     }
 
     #[test]
@@ -6194,7 +6194,7 @@ mod iongraph_tests {
     use insta::assert_snapshot;
 
     fn edge(target: BlockId) -> BranchEdge {
-        BranchEdge { target, args: vec![] }
+        BranchEdge { target, args: InsnIdList::EMPTY }
     }
 
     #[test]

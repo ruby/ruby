@@ -131,17 +131,80 @@ impl<'a> std::fmt::Display for VALUEPrinter<'a> {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
-pub struct BranchEdge {
-    pub target: BlockId,
-    pub args: Vec<InsnId>,
+/// Compact handle into Function's operand pool. 4 bytes vs Vec's 24.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct InsnIdList {
+    start: u16,
+    len: u16,
 }
 
-impl std::fmt::Display for BranchEdge {
+impl InsnIdList {
+    pub const EMPTY: InsnIdList = InsnIdList { start: 0, len: 0 };
+
+    pub fn is_empty(self) -> bool {
+        self.len == 0
+    }
+
+    pub fn len(self) -> usize {
+        self.len as usize
+    }
+}
+
+/// Dense arena of InsnId values. Operand lists are appended contiguously
+/// and referenced via [`InsnIdList`] handles.
+#[derive(Debug, Clone)]
+pub struct OperandPool {
+    data: Vec<InsnId>,
+}
+
+impl OperandPool {
+    fn new() -> Self { Self { data: Vec::new() } }
+
+    pub fn push(&mut self, operands: &[InsnId]) -> InsnIdList {
+        let start = self.data.len();
+        assert!(start <= u16::MAX as usize, "operand pool overflow");
+        assert!(operands.len() <= u16::MAX as usize, "operand list too long");
+        self.data.extend_from_slice(operands);
+        InsnIdList { start: start as u16, len: operands.len() as u16 }
+    }
+
+    pub fn get(&self, list: InsnIdList) -> &[InsnId] {
+        let start = list.start as usize;
+        let end = start + list.len as usize;
+        if end > self.data.len() {
+            // Graceful fallback for empty/standalone pool (e.g., Insn::Display)
+            return &[];
+        }
+        &self.data[start .. end]
+    }
+
+    pub fn get_mut(&mut self, list: InsnIdList) -> &mut [InsnId] {
+        &mut self.data[list.start as usize .. list.start as usize + list.len as usize]
+    }
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub struct BranchEdge {
+    pub target: BlockId,
+    pub args: InsnIdList,
+}
+
+impl BranchEdge {
+    pub fn display<'a>(&'a self, pool: &'a OperandPool) -> BranchEdgePrinter<'a> {
+        BranchEdgePrinter { edge: self, pool }
+    }
+}
+
+pub struct BranchEdgePrinter<'a> {
+    edge: &'a BranchEdge,
+    pool: &'a OperandPool,
+}
+
+impl<'a> std::fmt::Display for BranchEdgePrinter<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}(", self.target)?;
+        write!(f, "{}(", self.edge.target)?;
         let mut prefix = "";
-        for arg in &self.args {
+        for arg in self.pool.get(self.edge.args) {
             write!(f, "{prefix}{arg}")?;
             prefix = ", ";
         }
@@ -821,7 +884,7 @@ pub enum BlockHandler {
 pub struct CCallInfo {
     pub cfunc: *const u8,
     pub recv: InsnId,
-    pub args: Vec<InsnId>,
+    pub args: InsnIdList,
     pub name: ID,
     pub owner: VALUE,
     pub return_type: Type,
@@ -833,7 +896,7 @@ pub struct CCallWithFrameInfo {
     pub cd: *const rb_call_data,
     pub cfunc: *const u8,
     pub recv: InsnId,
-    pub args: Vec<InsnId>,
+    pub args: InsnIdList,
     pub cme: *const rb_callable_method_entry_t,
     pub name: ID,
     pub state: InsnId,
@@ -846,7 +909,7 @@ pub struct CCallWithFrameInfo {
 pub struct CCallVariadicInfo {
     pub cfunc: *const u8,
     pub recv: InsnId,
-    pub args: Vec<InsnId>,
+    pub args: InsnIdList,
     pub cme: *const rb_callable_method_entry_t,
     pub name: ID,
     pub state: InsnId,
@@ -860,7 +923,7 @@ pub struct SendInfo {
     pub recv: InsnId,
     pub cd: *const rb_call_data,
     pub block: Option<BlockHandler>,
-    pub args: Vec<InsnId>,
+    pub args: InsnIdList,
     pub state: InsnId,
     pub reason: SendFallbackReason,
 }
@@ -871,7 +934,7 @@ pub struct SendDirectInfo {
     pub cd: *const rb_call_data,
     pub cme: *const rb_callable_method_entry_t,
     pub iseq: IseqPtr,
-    pub args: Vec<InsnId>,
+    pub args: InsnIdList,
     pub kw_bits: u32,
     pub block: Option<BlockHandler>,
     pub state: InsnId,
@@ -895,7 +958,7 @@ pub enum Insn {
 
     StringCopy { val: InsnId, chilled: bool, state: InsnId },
     StringIntern { val: InsnId, state: InsnId },
-    StringConcat { strings: Vec<InsnId>, state: InsnId },
+    StringConcat { strings: InsnIdList, state: InsnId },
     /// Call rb_str_getbyte with known-Fixnum index
     StringGetbyte { string: InsnId, index: InsnId },
     StringSetbyteFixnum { string: InsnId, index: InsnId, value: InsnId },
@@ -904,7 +967,7 @@ pub enum Insn {
     StringEqual { left: InsnId, right: InsnId },
 
     /// Combine count stack values into a regexp
-    ToRegexp { opt: usize, values: Vec<InsnId>, state: InsnId },
+    ToRegexp { opt: usize, values: InsnIdList, state: InsnId },
 
     /// Put special object (VMCORE, CBASE, etc.) based on value_type
     PutSpecialObject { value_type: SpecialObjectType },
@@ -914,17 +977,17 @@ pub enum Insn {
     /// Call `to_a` on `val` if the method is defined, or make a new array `[val]` otherwise. If we
     /// called `to_a`, duplicate the returned array.
     ToNewArray { val: InsnId, state: InsnId },
-    NewArray { elements: Vec<InsnId>, state: InsnId },
+    NewArray { elements: InsnIdList, state: InsnId },
     /// NewHash contains a vec of (key, value) pairs
-    NewHash { elements: Vec<InsnId>, state: InsnId },
+    NewHash { elements: InsnIdList, state: InsnId },
     NewRange { low: InsnId, high: InsnId, flag: RangeType, state: InsnId },
     NewRangeFixnum { low: InsnId, high: InsnId, flag: RangeType, state: InsnId },
     ArrayDup { val: InsnId, state: InsnId },
-    ArrayHash { elements: Vec<InsnId>, state: InsnId },
-    ArrayMax { elements: Vec<InsnId>, state: InsnId },
-    ArrayMin { elements: Vec<InsnId>, state: InsnId },
-    ArrayInclude { elements: Vec<InsnId>, target: InsnId, state: InsnId },
-    ArrayPackBuffer { elements: Vec<InsnId>, fmt: InsnId, buffer: Option<InsnId>, state: InsnId },
+    ArrayHash { elements: InsnIdList, state: InsnId },
+    ArrayMax { elements: InsnIdList, state: InsnId },
+    ArrayMin { elements: InsnIdList, state: InsnId },
+    ArrayInclude { elements: InsnIdList, target: InsnId, state: InsnId },
+    ArrayPackBuffer { elements: InsnIdList, fmt: InsnId, buffer: Option<InsnId>, state: InsnId },
     DupArrayInclude { ary: VALUE, target: InsnId, state: InsnId },
     /// Extend `left` with the elements from `right`. `left` and `right` must both be `Array`.
     ArrayExtend { left: InsnId, right: InsnId, state: InsnId },
@@ -1059,7 +1122,7 @@ pub enum Insn {
         recv: InsnId,
         cd: *const rb_call_data,
         blockiseq: IseqPtr,
-        args: Vec<InsnId>,
+        args: InsnIdList,
         state: InsnId,
         reason: SendFallbackReason,
     },
@@ -1067,7 +1130,7 @@ pub enum Insn {
         recv: InsnId,
         cd: *const rb_call_data,
         blockiseq: IseqPtr,
-        args: Vec<InsnId>,
+        args: InsnIdList,
         state: InsnId,
         reason: SendFallbackReason,
     },
@@ -1075,13 +1138,13 @@ pub enum Insn {
         recv: InsnId,
         cd: *const rb_call_data,
         blockiseq: IseqPtr,
-        args: Vec<InsnId>,
+        args: InsnIdList,
         state: InsnId,
         reason: SendFallbackReason,
     },
     InvokeBlock {
         cd: *const rb_call_data,
-        args: Vec<InsnId>,
+        args: InsnIdList,
         state: InsnId,
         reason: SendFallbackReason,
     },
@@ -1090,13 +1153,13 @@ pub enum Insn {
     InvokeBlockIfunc {
         cd: *const rb_call_data,
         block_handler: InsnId,
-        args: Vec<InsnId>,
+        args: InsnIdList,
         state: InsnId,
     },
     /// Call Proc#call optimized method type.
     InvokeProc {
         recv: InsnId,
-        args: Vec<InsnId>,
+        args: InsnIdList,
         state: InsnId,
         kw_splat: bool,
     },
@@ -1108,7 +1171,7 @@ pub enum Insn {
     InvokeBuiltin {
         bf: *const rb_builtin_function,
         recv: InsnId,
-        args: Vec<InsnId>,
+        args: InsnIdList,
         state: InsnId,
         leaf: bool,
         return_type: Type,
@@ -1188,10 +1251,10 @@ pub enum Insn {
 }
 
 /// Macro that enumerates all operands of an Insn, dispatching to caller-provided
-/// `$visit_one` macro for a single InsnId field and `$visit_many` macro for a
-/// slice/Vec of InsnIds. Used by both `for_each_operand` and `for_each_operand_mut`.
+/// `$visit_one` macro for a single InsnId field and `$visit_many` macro for an
+/// InsnIdList of InsnIds. Used by both `for_each_operand` and `for_each_operand_mut`.
 macro_rules! for_each_operand_impl {
-    ($self:expr, $visit_one:ident, $visit_many:ident, $visit_boxed_one:ident, $visit_boxed_many:ident) => {
+    ($self:expr, $visit_one:ident, $visit_many:ident, $visit_boxed_one:ident, $visit_boxed_many:ident, $visit_boxed_vec:ident) => {
         match $self {
             Insn::Const { .. }
             | Insn::Param
@@ -1319,8 +1382,8 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(state);
             }
             Insn::Snapshot(state) => {
-                $visit_boxed_many!(state.stack);
-                $visit_boxed_many!(state.locals);
+                $visit_boxed_vec!(state.stack);
+                $visit_boxed_vec!(state.locals);
             }
             Insn::FixnumAdd { left, right, state }
             | Insn::FixnumSub { left, right, state }
@@ -1537,35 +1600,38 @@ impl Insn {
     }
 
     /// Call `f` on each operand (InsnId) of this instruction.
-    pub fn for_each_operand(&self, mut f: impl FnMut(InsnId)) {
+    pub fn for_each_operand(&self, pool: &OperandPool, mut f: impl FnMut(InsnId)) {
         macro_rules! visit_one { ($id:expr) => { f(*$id) }; }
-        macro_rules! visit_many { ($s:expr) => { for id in ($s).iter() { f(*id) } }; }
+        macro_rules! visit_many { ($s:expr) => { for id in pool.get(*$s) { f(*id) } }; }
         macro_rules! visit_boxed_one { ($id:expr) => { f($id) }; }
-        macro_rules! visit_boxed_many { ($s:expr) => { for id in ($s).iter() { f(*id) } }; }
-        for_each_operand_impl!(self, visit_one, visit_many, visit_boxed_one, visit_boxed_many);
+        macro_rules! visit_boxed_many { ($s:expr) => { for id in pool.get($s) { f(*id) } }; }
+        macro_rules! visit_boxed_vec { ($s:expr) => { for id in ($s).iter() { f(*id) } }; }
+        for_each_operand_impl!(self, visit_one, visit_many, visit_boxed_one, visit_boxed_many, visit_boxed_vec);
     }
 
     /// Call `f` on a mutable reference to each operand (InsnId) of this instruction.
-    pub fn for_each_operand_mut(&mut self, mut f: impl FnMut(&mut InsnId)) {
+    pub fn for_each_operand_mut(&mut self, pool: &mut OperandPool, mut f: impl FnMut(&mut InsnId)) {
         macro_rules! visit_one { ($id:expr) => { f($id) }; }
-        macro_rules! visit_many { ($s:expr) => { for id in ($s).iter_mut() { f(id) } }; }
+        macro_rules! visit_many { ($s:expr) => { for id in pool.get_mut(*$s) { f(id) } }; }
         macro_rules! visit_boxed_one { ($id:expr) => { f(&mut $id) }; }
-        macro_rules! visit_boxed_many { ($s:expr) => { for id in ($s).iter_mut() { f(id) } }; }
-        for_each_operand_impl!(self, visit_one, visit_many, visit_boxed_one, visit_boxed_many);
+        macro_rules! visit_boxed_many { ($s:expr) => { for id in pool.get_mut($s) { f(id) } }; }
+        macro_rules! visit_boxed_vec { ($s:expr) => { for id in ($s).iter_mut() { f(id) } }; }
+        for_each_operand_impl!(self, visit_one, visit_many, visit_boxed_one, visit_boxed_many, visit_boxed_vec);
     }
 
     /// Call `f` on each operand, short-circuiting on the first error.
-    pub fn try_for_each_operand<E>(&self, mut f: impl FnMut(InsnId) -> Result<(), E>) -> Result<(), E> {
+    pub fn try_for_each_operand<E>(&self, pool: &OperandPool, mut f: impl FnMut(InsnId) -> Result<(), E>) -> Result<(), E> {
         macro_rules! visit_one { ($id:expr) => { f(*$id)? }; }
-        macro_rules! visit_many { ($s:expr) => { for id in ($s).iter() { f(*id)? } }; }
+        macro_rules! visit_many { ($s:expr) => { for id in pool.get(*$s) { f(*id)? } }; }
         macro_rules! visit_boxed_one { ($id:expr) => { f($id)? }; }
-        macro_rules! visit_boxed_many { ($s:expr) => { for id in ($s).iter() { f(*id)? } }; }
-        for_each_operand_impl!(self, visit_one, visit_many, visit_boxed_one, visit_boxed_many);
+        macro_rules! visit_boxed_many { ($s:expr) => { for id in pool.get($s) { f(*id)? } }; }
+        macro_rules! visit_boxed_vec { ($s:expr) => { for id in ($s).iter() { f(*id)? } }; }
+        for_each_operand_impl!(self, visit_one, visit_many, visit_boxed_one, visit_boxed_many, visit_boxed_vec);
         Ok(())
     }
 
-    pub fn print<'a>(&self, ptr_map: &'a PtrPrintMap, iseq: Option<IseqPtr>) -> InsnPrinter<'a> {
-        InsnPrinter { inner: self.clone(), ptr_map, iseq }
+    pub fn print<'a>(&self, ptr_map: &'a PtrPrintMap, pool: &'a OperandPool, iseq: Option<IseqPtr>) -> InsnPrinter<'a> {
+        InsnPrinter { inner: self.clone(), ptr_map, pool, iseq }
     }
 
     // TODO(Jacob): Model SP. ie, all allocations modify stack size but using the effect for stack modification feels excessive
@@ -1594,8 +1660,7 @@ impl Insn {
                 // side-effects. Empty hashes are definitely elidable.
                 if elements.is_empty() {
                     Effect::write(abstract_heaps::Allocator)
-                }
-                else {
+                } else {
                     effects::Any
                 }
             },
@@ -1766,6 +1831,7 @@ impl Insn {
 pub struct InsnPrinter<'a> {
     inner: Insn,
     ptr_map: &'a PtrPrintMap,
+    pool: &'a OperandPool,
     iseq: Option<IseqPtr>,
 }
 
@@ -1841,7 +1907,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::NewArray { elements, .. } => {
                 write!(f, "NewArray")?;
                 let mut prefix = " ";
-                for element in elements {
+                for element in self.pool.get(*elements) {
                     write!(f, "{prefix}{element}")?;
                     prefix = ", ";
                 }
@@ -1865,7 +1931,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::NewHash { elements, .. } => {
                 write!(f, "NewHash")?;
                 let mut prefix = " ";
-                for chunk in elements.chunks(2) {
+                for chunk in self.pool.get(*elements).chunks(2) {
                     if let [key, value] = chunk {
                         write!(f, "{prefix}{key}: {value}")?;
                         prefix = ", ";
@@ -1882,7 +1948,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ArrayMax { elements, .. } => {
                 write!(f, "ArrayMax")?;
                 let mut prefix = " ";
-                for element in elements {
+                for element in self.pool.get(*elements) {
                     write!(f, "{prefix}{element}")?;
                     prefix = ", ";
                 }
@@ -1891,7 +1957,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ArrayMin { elements, .. } => {
                 write!(f, "ArrayMin")?;
                 let mut prefix = " ";
-                for element in elements {
+                for element in self.pool.get(*elements) {
                     write!(f, "{prefix}{element}")?;
                     prefix = ", ";
                 }
@@ -1900,7 +1966,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ArrayHash { elements, .. } => {
                 write!(f, "ArrayHash")?;
                 let mut prefix = " ";
-                for element in elements {
+                for element in self.pool.get(*elements) {
                     write!(f, "{prefix}{element}")?;
                     prefix = ", ";
                 }
@@ -1909,7 +1975,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ArrayInclude { elements, target, .. } => {
                 write!(f, "ArrayInclude")?;
                 let mut prefix = " ";
-                for element in elements {
+                for element in self.pool.get(*elements) {
                     write!(f, "{prefix}{element}")?;
                     prefix = ", ";
                 }
@@ -1917,7 +1983,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::ArrayPackBuffer { elements, fmt, buffer, .. } => {
                 write!(f, "ArrayPackBuffer ")?;
-                for element in elements {
+                for element in self.pool.get(*elements) {
                     write!(f, "{element}, ")?;
                 }
                 write!(f, "fmt: {fmt}")?;
@@ -1942,7 +2008,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::StringConcat { strings, .. } => {
                 write!(f, "StringConcat")?;
                 let mut prefix = " ";
-                for string in strings {
+                for string in self.pool.get(*strings) {
                     write!(f, "{prefix}{string}")?;
                     prefix = ", ";
                 }
@@ -1967,7 +2033,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ToRegexp { values, opt, .. } => {
                 write!(f, "ToRegexp")?;
                 let mut prefix = " ";
-                for value in values {
+                for value in self.pool.get(*values) {
                     write!(f, "{prefix}{value}")?;
                     prefix = ", ";
                 }
@@ -1995,13 +2061,13 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::BoxFixnum { val, .. } => write!(f, "BoxFixnum {val}"),
             Insn::UnboxFixnum { val } => write!(f, "UnboxFixnum {val}"),
             Insn::FixnumAref { recv, index } => write!(f, "FixnumAref {recv}, {index}"),
-            Insn::Jump(target) => { write!(f, "Jump {target}") }
-            Insn::IfTrue { val, target } => { write!(f, "IfTrue {val}, {target}") }
-            Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {target}") }
+            Insn::Jump(target) => { write!(f, "Jump {}", target.display(self.pool)) }
+            Insn::IfTrue { val, target } => { write!(f, "IfTrue {val}, {}", target.display(self.pool)) }
+            Insn::IfFalse { val, target } => { write!(f, "IfFalse {val}, {}", target.display(self.pool)) }
             Insn::SendDirect(info) => {
                 let blockiseq = info.block.map(|bh| match bh { BlockHandler::BlockIseq(iseq) => iseq, BlockHandler::BlockArg => unreachable!() });
                 write!(f, "SendDirect {}, {:p}, :{} ({:?})", info.recv, self.ptr_map.map_ptr(&blockiseq), ruby_call_method_name(info.cd), self.ptr_map.map_ptr(info.iseq))?;
-                for arg in &info.args {
+                for arg in self.pool.get(info.args) {
                     write!(f, ", {arg}")?;
                 }
                 Ok(())
@@ -2019,7 +2085,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                     None =>
                         write!(f, "Send {recv}, :{}", ruby_call_method_name(*cd))?,
                 }
-                for arg in args {
+                for arg in self.pool.get(*args) {
                     write!(f, ", {arg}")?;
                 }
                 write!(f, " # SendFallbackReason: {reason}")?;
@@ -2027,7 +2093,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::SendForward { recv, cd, args, blockiseq, reason, .. } => {
                 write!(f, "SendForward {recv}, {:p}, :{}", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd))?;
-                for arg in args {
+                for arg in self.pool.get(*args) {
                     write!(f, ", {arg}")?;
                 }
                 write!(f, " # SendFallbackReason: {reason}")?;
@@ -2035,7 +2101,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::InvokeSuper { recv, blockiseq, args, reason, .. } => {
                 write!(f, "InvokeSuper {recv}, {:p}", self.ptr_map.map_ptr(blockiseq))?;
-                for arg in args {
+                for arg in self.pool.get(*args) {
                     write!(f, ", {arg}")?;
                 }
                 write!(f, " # SendFallbackReason: {reason}")?;
@@ -2043,7 +2109,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::InvokeSuperForward { recv, blockiseq, args, reason, .. } => {
                 write!(f, "InvokeSuperForward {recv}, {:p}", self.ptr_map.map_ptr(blockiseq))?;
-                for arg in args {
+                for arg in self.pool.get(*args) {
                     write!(f, ", {arg}")?;
                 }
                 write!(f, " # SendFallbackReason: {reason}")?;
@@ -2051,7 +2117,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::InvokeBlock { args, reason, .. } => {
                 write!(f, "InvokeBlock")?;
-                for arg in args {
+                for arg in self.pool.get(*args) {
                     write!(f, ", {arg}")?;
                 }
                 write!(f, " # SendFallbackReason: {reason}")?;
@@ -2059,14 +2125,14 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::InvokeBlockIfunc { block_handler, args, .. } => {
                 write!(f, "InvokeBlockIfunc {block_handler}")?;
-                for arg in args {
+                for arg in self.pool.get(*args) {
                     write!(f, ", {arg}")?;
                 }
                 Ok(())
             }
             Insn::InvokeProc { recv, args, kw_splat, .. } => {
                 write!(f, "InvokeProc {recv}")?;
-                for arg in args {
+                for arg in self.pool.get(*args) {
                     write!(f, ", {arg}")?;
                 }
                 if *kw_splat {
@@ -2080,7 +2146,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                            if *leaf { " leaf" } else { "" },
                            // e.g. Code that use `Primitive.cexpr!`. From BUILTIN_INLINE_PREFIX.
                            if bf_name.starts_with("_bi") { "<inline_expr>" } else { bf_name })?;
-                for arg in args {
+                for arg in self.pool.get(*args) {
                     write!(f, ", {arg}")?;
                 }
                 Ok(())
@@ -2132,14 +2198,14 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::CCall(info) => {
                 let display_name = if info.owner == Qnil { info.name.contents_lossy().to_string() } else { qualified_method_name(info.owner, info.name) };
                 write!(f, "CCall {}, :{}@{:p}", info.recv, display_name, self.ptr_map.map_ptr(&info.cfunc))?;
-                for arg in &info.args {
+                for arg in self.pool.get(info.args) {
                     write!(f, ", {arg}")?;
                 }
                 Ok(())
             },
             Insn::CCallWithFrame(info) => {
                 write!(f, "CCallWithFrame {}, :{}@{:p}", info.recv, qualified_method_name(unsafe { (*info.cme).owner }, info.name), self.ptr_map.map_ptr(&info.cfunc))?;
-                for arg in &info.args {
+                for arg in self.pool.get(info.args) {
                     write!(f, ", {arg}")?;
                 }
                 match info.block {
@@ -2153,7 +2219,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             },
             Insn::CCallVariadic(info) => {
                 write!(f, "CCallVariadic {}, :{}@{:p}", info.recv, qualified_method_name(unsafe { (*info.cme).owner }, info.name), self.ptr_map.map_ptr(&info.cfunc))?;
-                for arg in &info.args {
+                for arg in self.pool.get(info.args) {
                     write!(f, ", {arg}")?;
                 }
                 Ok(())
@@ -2268,7 +2334,10 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
 
 impl std::fmt::Display for Insn {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        self.print(&PtrPrintMap::identity(), None).fmt(f)
+        // Use an empty pool for standalone Display. InsnIdList fields will show as empty.
+        // For correct display, use insn.print(ptr_map, pool, iseq) via FunctionPrinter.
+        let empty_pool = OperandPool::new();
+        self.print(&PtrPrintMap::identity(), &empty_pool, None).fmt(f)
     }
 }
 
@@ -2555,6 +2624,7 @@ pub struct Function {
     param_types: Vec<Type>,
 
     insns: Vec<Insn>,
+    pub operand_pool: std::cell::RefCell<OperandPool>,
     union_find: std::cell::RefCell<UnionFind<InsnId>>,
     insn_types: Vec<Type>,
     blocks: Vec<Block>,
@@ -2660,6 +2730,7 @@ impl Function {
             was_invalidated_for_singleton_class_creation: false,
             policy: CompilePolicy::new(iseq),
             insns: vec![],
+            operand_pool: std::cell::RefCell::new(OperandPool::new()),
             insn_types: vec![],
             union_find: UnionFind::new().into(),
             blocks: vec![Block::default(), Block::default()],
@@ -2673,6 +2744,16 @@ impl Function {
 
     pub fn iseq(&self) -> *const rb_iseq_t {
         self.iseq
+    }
+
+    /// Push operands into the pool and return a compact handle.
+    pub fn push_operands(&self, operands: &[InsnId]) -> InsnIdList {
+        self.operand_pool.borrow_mut().push(operands)
+    }
+
+    /// Build a BranchEdge with args pushed to the operand pool.
+    pub fn branch_edge(&self, target: BlockId, args: &[InsnId]) -> BranchEdge {
+        BranchEdge { target, args: self.push_operands(args) }
     }
 
     // Add an instruction to the function without adding it to any block
@@ -2824,10 +2905,21 @@ impl Function {
                 }
             };
         }
+        // Remap a Vec<InsnId> (for FrameState stack/locals)
         macro_rules! find_vec {
             ( $x:expr ) => {
                 {
                     $x.iter().map(|arg| find!(*arg)).collect()
+                }
+            };
+        }
+        // Remap an InsnIdList through the operand pool.
+        // $x should be an InsnIdList (by value, not &InsnIdList)
+        macro_rules! find_list {
+            ( $x:expr ) => {
+                {
+                    let remapped: Vec<InsnId> = self.operand_pool.borrow().get($x).iter().map(|arg| find!(*arg)).collect();
+                    self.operand_pool.borrow_mut().push(&remapped)
                 }
             };
         }
@@ -2836,7 +2928,7 @@ impl Function {
                 {
                     BranchEdge {
                         target: $edge.target,
-                        args: find_vec!($edge.args),
+                        args: find_list!($edge.args),
                     }
                 }
             };
@@ -2877,13 +2969,13 @@ impl Function {
             &Throw { throw_state, val, state } => Throw { throw_state, val: find!(val), state },
             &StringCopy { val, chilled, state } => StringCopy { val: find!(val), chilled, state },
             &StringIntern { val, state } => StringIntern { val: find!(val), state: find!(state) },
-            &StringConcat { ref strings, state } => StringConcat { strings: find_vec!(strings), state: find!(state) },
+            &StringConcat { strings, state } => StringConcat { strings: find_list!(strings), state: find!(state) },
             &StringGetbyte { string, index } => StringGetbyte { string: find!(string), index: find!(index) },
             &StringSetbyteFixnum { string, index, value } => StringSetbyteFixnum { string: find!(string), index: find!(index), value: find!(value) },
             &StringAppend { recv, other, state } => StringAppend { recv: find!(recv), other: find!(other), state: find!(state) },
             &StringAppendCodepoint { recv, other, state } => StringAppendCodepoint { recv: find!(recv), other: find!(other), state: find!(state) },
             &StringEqual { left, right } => StringEqual { left: find!(left), right: find!(right) },
-            &ToRegexp { opt, ref values, state } => ToRegexp { opt, values: find_vec!(values), state },
+            &ToRegexp { opt, values, state } => ToRegexp { opt, values: find_list!(values), state },
             &Test { val } => Test { val: find!(val) },
             &IsNil { val } => IsNil { val: find!(val) },
             &IsMethodCfunc { val, cd, cfunc, state } => IsMethodCfunc { val: find!(val), cd, cfunc, state },
@@ -2894,8 +2986,8 @@ impl Function {
             &UnboxFixnum { val } => UnboxFixnum { val: find!(val) },
             &FixnumAref { recv, index } => FixnumAref { recv: find!(recv), index: find!(index) },
             Jump(target) => Jump(find_branch_edge!(target)),
-            &IfTrue { val, ref target } => IfTrue { val: find!(val), target: find_branch_edge!(target) },
-            &IfFalse { val, ref target } => IfFalse { val: find!(val), target: find_branch_edge!(target) },
+            &IfTrue { val, target } => IfTrue { val: find!(val), target: find_branch_edge!(target) },
+            &IfFalse { val, target } => IfFalse { val: find!(val), target: find_branch_edge!(target) },
             &RefineType { val, new_type } => RefineType { val: find!(val), new_type },
             &HasType { val, expected } => HasType { val: find!(val), expected },
             &GuardType { val, guard_type, state } => GuardType { val: find!(val), guard_type, state },
@@ -2941,7 +3033,7 @@ impl Function {
                 cd: info.cd,
                 cme: info.cme,
                 iseq: info.iseq,
-                args: find_vec!(info.args),
+                args: find_list!(info.args),
                 kw_bits: info.kw_bits,
                 block: info.block,
                 state: info.state,
@@ -2950,53 +3042,53 @@ impl Function {
                 recv: find!(info.recv),
                 cd: info.cd,
                 block: info.block,
-                args: find_vec!(info.args),
+                args: find_list!(info.args),
                 state: info.state,
                 reason: info.reason,
             })),
-            &SendForward { recv, cd, blockiseq, ref args, state, reason } => SendForward {
+            &SendForward { recv, cd, blockiseq, args, state, reason } => SendForward {
                 recv: find!(recv),
                 cd,
                 blockiseq,
-                args: find_vec!(args),
+                args: find_list!(args),
                 state,
                 reason,
             },
-            &InvokeSuper { recv, cd, blockiseq, ref args, state, reason } => InvokeSuper {
+            &InvokeSuper { recv, cd, blockiseq, args, state, reason } => InvokeSuper {
                 recv: find!(recv),
                 cd,
                 blockiseq,
-                args: find_vec!(args),
+                args: find_list!(args),
                 state,
                 reason,
             },
-            &InvokeSuperForward { recv, cd, blockiseq, ref args, state, reason } => InvokeSuperForward {
+            &InvokeSuperForward { recv, cd, blockiseq, args, state, reason } => InvokeSuperForward {
                 recv: find!(recv),
                 cd,
                 blockiseq,
-                args: find_vec!(args),
+                args: find_list!(args),
                 state,
                 reason,
             },
-            &InvokeBlock { cd, ref args, state, reason } => InvokeBlock {
+            &InvokeBlock { cd, args, state, reason } => InvokeBlock {
                 cd,
-                args: find_vec!(args),
+                args: find_list!(args),
                 state,
                 reason,
             },
-            &InvokeBlockIfunc { cd, block_handler, ref args, state } => InvokeBlockIfunc {
+            &InvokeBlockIfunc { cd, block_handler, args, state } => InvokeBlockIfunc {
                 cd,
                 block_handler: find!(block_handler),
-                args: find_vec!(args),
+                args: find_list!(args),
                 state: find!(state),
             },
-            &InvokeProc { recv, ref args, state, kw_splat } => InvokeProc {
+            &InvokeProc { recv, args, state, kw_splat } => InvokeProc {
                 recv: find!(recv),
-                args: find_vec!(args),
+                args: find_list!(args),
                 state: find!(state),
                 kw_splat,
             },
-            &InvokeBuiltin { bf, recv, ref args, state, leaf, return_type } => InvokeBuiltin { bf, recv: find!(recv), args: find_vec!(args), state, leaf, return_type },
+            &InvokeBuiltin { bf, recv, args, state, leaf, return_type } => InvokeBuiltin { bf, recv: find!(recv), args: find_list!(args), state, leaf, return_type },
             &ArrayDup { val, state } => ArrayDup { val: find!(val), state },
             &HashDup { val, state } => HashDup { val: find!(val), state },
             &HashAref { hash, key, state } => HashAref { hash: find!(hash), key: find!(key), state },
@@ -3004,13 +3096,13 @@ impl Function {
             &ObjectAlloc { val, state } => ObjectAlloc { val: find!(val), state },
             &ObjectAllocClass { class, state } => ObjectAllocClass { class, state: find!(state) },
             CCall(info) => CCall(Box::new(CCallInfo {
-                cfunc: info.cfunc, recv: find!(info.recv), args: find_vec!(info.args), name: info.name, owner: info.owner, return_type: info.return_type, elidable: info.elidable,
+                cfunc: info.cfunc, recv: find!(info.recv), args: find_list!(info.args), name: info.name, owner: info.owner, return_type: info.return_type, elidable: info.elidable,
             })),
             CCallWithFrame(info) => CCallWithFrame(Box::new(CCallWithFrameInfo {
                 cd: info.cd,
                 cfunc: info.cfunc,
                 recv: find!(info.recv),
-                args: find_vec!(info.args),
+                args: find_list!(info.args),
                 cme: info.cme,
                 name: info.name,
                 state: find!(info.state),
@@ -3019,14 +3111,14 @@ impl Function {
                 block: info.block,
             })),
             CCallVariadic(info) => CCallVariadic(Box::new(CCallVariadicInfo {
-                cfunc: info.cfunc, recv: find!(info.recv), args: find_vec!(info.args), cme: info.cme, name: info.name, state: info.state, return_type: info.return_type, elidable: info.elidable, block: info.block,
+                cfunc: info.cfunc, recv: find!(info.recv), args: find_list!(info.args), cme: info.cme, name: info.name, state: info.state, return_type: info.return_type, elidable: info.elidable, block: info.block,
             })),
             &CheckMatch { target, pattern, flag, state } => CheckMatch { target: find!(target), pattern: find!(pattern), flag, state: find!(state) },
             &Defined { op_type, obj, pushval, v, state } => Defined { op_type, obj, pushval, v: find!(v), state: find!(state) },
             &DefinedIvar { self_val, pushval, id, state } => DefinedIvar { self_val: find!(self_val), pushval, id, state },
             &GetConstant { klass, id, allow_nil, state } => GetConstant { klass: find!(klass), id, allow_nil: find!(allow_nil), state },
-            &NewArray { ref elements, state } => NewArray { elements: find_vec!(elements), state: find!(state) },
-            &NewHash { ref elements, state } => NewHash { elements: find_vec!(elements), state: find!(state) },
+            &NewArray { elements, state } => NewArray { elements: find_list!(elements), state: find!(state) },
+            &NewHash { elements, state } => NewHash { elements: find_list!(elements), state: find!(state) },
             &NewRange { low, high, flag, state } => NewRange { low: find!(low), high: find!(high), flag, state: find!(state) },
             &NewRangeFixnum { low, high, flag, state } => NewRangeFixnum { low: find!(low), high: find!(high), flag, state: find!(state) },
             &ArrayAref { array, index } => ArrayAref { array: find!(array), index: find!(index) },
@@ -3034,12 +3126,12 @@ impl Function {
             &ArrayPop { array, state } => ArrayPop { array: find!(array), state: find!(state) },
             &ArrayLength { array } => ArrayLength { array: find!(array) },
             &AdjustBounds { index, length } => AdjustBounds { index: find!(index), length: find!(length) },
-            &ArrayMax { ref elements, state } => ArrayMax { elements: find_vec!(elements), state: find!(state) },
-            &ArrayMin { ref elements, state } => ArrayMin { elements: find_vec!(elements), state: find!(state) },
-            &ArrayInclude { ref elements, target, state } => ArrayInclude { elements: find_vec!(elements), target: find!(target), state: find!(state) },
-            &ArrayPackBuffer { ref elements, fmt, ref buffer, state } => ArrayPackBuffer { elements: find_vec!(elements), fmt: find!(fmt), buffer: (*buffer).map(|buffer| find!(buffer)), state: find!(state) },
+            &ArrayMax { elements, state } => ArrayMax { elements: find_list!(elements), state: find!(state) },
+            &ArrayMin { elements, state } => ArrayMin { elements: find_list!(elements), state: find!(state) },
+            &ArrayInclude { elements, target, state } => ArrayInclude { elements: find_list!(elements), target: find!(target), state: find!(state) },
+            &ArrayPackBuffer { elements, fmt, buffer, state } => ArrayPackBuffer { elements: find_list!(elements), fmt: find!(fmt), buffer: buffer.map(|buffer| find!(buffer)), state: find!(state) },
             &DupArrayInclude { ary, target, state } => DupArrayInclude { ary, target: find!(target), state: find!(state) },
-            &ArrayHash { ref elements, state } => ArrayHash { elements: find_vec!(elements), state },
+            &ArrayHash { elements, state } => ArrayHash { elements: find_list!(elements), state },
             &SetGlobal { id, val, state } => SetGlobal { id, val: find!(val), state },
             &GetIvar { self_val, id, ic, state } => GetIvar { self_val: find!(self_val), id, ic, state },
             &LoadField { recv, id, offset, return_type } => LoadField { recv: find!(recv), id, offset, return_type },
@@ -3299,7 +3391,7 @@ impl Function {
             ($self:ident, $target:expr) => {
                 let newly_reachable = reachable.insert($target.target);
                 let mut target_changed = newly_reachable;
-                for (idx, arg) in $target.args.iter().enumerate() {
+                for (idx, arg) in $self.operand_pool.borrow().get($target.args).iter().enumerate() {
                     let arg = self.union_find.borrow().find_const(*arg);
                     let param = $self.blocks[$target.target].params[idx];
                     let param = self.union_find.borrow().find_const(param);
@@ -3322,21 +3414,21 @@ impl Function {
             for insn_id in &self.blocks[block].insns {
                 let insn_id = self.union_find.borrow().find_const(*insn_id);
                 let insn_type = match &self.insns[insn_id] {
-                    &Insn::IfTrue { val, ref target } => {
+                    &Insn::IfTrue { val, target } => {
                         assert!(!self.type_of(val).bit_equal(types::Empty));
                         if self.type_of(val).could_be(Type::from_cbool(true)) {
                             enqueue!(self, target);
                         }
                         continue;
                     }
-                    &Insn::IfFalse { val, ref target } => {
+                    &Insn::IfFalse { val, target } => {
                         assert!(!self.type_of(val).bit_equal(types::Empty));
                         if self.type_of(val).could_be(Type::from_cbool(false)) {
                             enqueue!(self, target);
                         }
                         continue;
                     }
-                    &Insn::Jump(ref target) => {
+                    &Insn::Jump(target) => {
                         enqueue!(self, target);
                         continue;
                     }
@@ -3838,12 +3930,13 @@ impl Function {
                             // Only specialize positional-positional calls
                             // TODO(max): Handle other kinds of parameter passing
                             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
-                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), has_block) {
+                            if !{ let a = self.operand_pool.borrow().get(args).to_vec(); can_direct_send(self, block, iseq, ci, insn_id, &a, has_block) } {
                                 self.push_insn_id(block, insn_id); continue;
                             }
 
                             // Check if the args are compatible before emitting any assmptions
-                            let Ok((send_state, processed_args, kw_bits)) = self.prepare_direct_send_args(block, &args, ci, iseq, state)
+                            let args_slice = self.operand_pool.borrow().get(args).to_vec();
+                            let Ok((send_state, processed_args, kw_bits)) = self.prepare_direct_send_args(block, &args_slice, ci, iseq, state)
                                 .inspect_err(|&reason| self.set_dynamic_send_reason(insn_id, reason)) else {
                                 self.push_insn_id(block, insn_id); continue;
                             };
@@ -3862,6 +3955,7 @@ impl Function {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
                             }
 
+                            let processed_args = self.push_operands(&processed_args);
                             let send_direct = self.push_insn(block, Insn::SendDirect(Box::new(SendDirectInfo { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, block: send_block })));
                             self.make_equal_to(insn_id, send_direct);
                         } else if !has_block && def_type == VM_METHOD_TYPE_BMETHOD {
@@ -3877,12 +3971,13 @@ impl Function {
                             let capture = unsafe { proc_block.as_.captured.as_ref() };
                             let iseq = unsafe { *capture.code.iseq.as_ref() };
 
-                            if !can_direct_send(self, block, iseq, ci, insn_id, args.as_slice(), has_block) {
+                            if !{ let a = self.operand_pool.borrow().get(args).to_vec(); can_direct_send(self, block, iseq, ci, insn_id, &a, has_block) } {
                                 self.push_insn_id(block, insn_id); continue;
                             }
 
                             // Check if the args are compatible before emitting any assmptions
-                            let Ok((send_state, processed_args, kw_bits)) = self.prepare_direct_send_args(block, &args, ci, iseq, state)
+                            let args_slice = self.operand_pool.borrow().get(args).to_vec();
+                            let Ok((send_state, processed_args, kw_bits)) = self.prepare_direct_send_args(block, &args_slice, ci, iseq, state)
                                 .inspect_err(|&reason| self.set_dynamic_send_reason(insn_id, reason)) else {
                                 self.push_insn_id(block, insn_id); continue;
                             };
@@ -3905,6 +4000,7 @@ impl Function {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
                             }
 
+                            let processed_args = self.push_operands(&processed_args);
                             let send_direct = self.push_insn(block, Insn::SendDirect(Box::new(SendDirectInfo { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, block: None })));
                             self.make_equal_to(insn_id, send_direct);
                         } else if !has_block && def_type == VM_METHOD_TYPE_IVAR && args.is_empty() {
@@ -3928,7 +4024,8 @@ impl Function {
 
                             let getivar = self.push_insn(block, Insn::GetIvar { self_val: recv, id, ic: std::ptr::null(), state });
                             self.make_equal_to(insn_id, getivar);
-                        } else if let (false, VM_METHOD_TYPE_ATTRSET, &[val]) = (has_block, def_type, args.as_slice()) {
+                        } else if !has_block && def_type == VM_METHOD_TYPE_ATTRSET && self.operand_pool.borrow().get(args).len() == 1 {
+                            let val = self.operand_pool.borrow().get(args)[0];
                             // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
                             // We omit gen_prepare_non_leaf_call on gen_getivar, so it's unsafe to raise for multi-ractor mode.
                             if klass.is_metaclass() && !self.assume_single_ractor_mode(block, state) {
@@ -3946,7 +4043,8 @@ impl Function {
                             self.make_equal_to(insn_id, val);
                         } else if !has_block && def_type == VM_METHOD_TYPE_OPTIMIZED {
                             let opt_type: OptimizedMethodType = unsafe { get_cme_def_body_optimized_type(cme) }.into();
-                            match (opt_type, args.as_slice()) {
+                            let args_vec: Vec<InsnId> = self.operand_pool.borrow().get(args).to_vec();
+                            match (opt_type, args_vec.as_slice()) {
                                 (OptimizedMethodType::Call, _) => {
                                     if flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KWARG) != 0 {
                                         self.count_complex_call_features(block, flags);
@@ -4019,7 +4117,7 @@ impl Function {
                                         (as_heap, offset)
                                     };
 
-                                    let replacement = if let (OptimizedMethodType::StructAset, &[val]) = (opt_type, args.as_slice()) {
+                                    let replacement = if let (OptimizedMethodType::StructAset, &[val]) = (opt_type, args_vec.as_slice()) {
                                         self.push_insn(block, Insn::StoreField { recv: target, id: mid, offset, val });
                                         self.push_insn(block, Insn::WriteBarrier { recv, val });
                                         val
@@ -4075,7 +4173,7 @@ impl Function {
                             self.make_equal_to(insn_id, guard);
                         } else {
                             let recv = self.push_insn(block, Insn::GuardType { val, guard_type: Type::from_profiled_type(recv_type), state});
-                            let send_to_s = self.push_insn(block, Insn::Send(Box::new(SendInfo { recv, cd, block: None, args: vec![], state, reason: ObjToStringNotString })));
+                            let send_to_s = self.push_insn(block, Insn::Send(Box::new(SendInfo { recv, cd, block: None, args: InsnIdList::EMPTY, state, reason: ObjToStringNotString })));
                             self.make_equal_to(insn_id, send_to_s);
                         }
                     }
@@ -4251,14 +4349,15 @@ impl Function {
                             // If not, we can't do direct dispatch.
                             let super_iseq = unsafe { get_def_iseq_ptr((*super_cme).def) };
                             // TODO: pass Option<blockiseq> to can_direct_send when we start specializing `super { ... }`.
-                            if !can_direct_send(self, block, super_iseq, ci, insn_id, args.as_slice(), false) {
+                            if !{ let a = self.operand_pool.borrow().get(args).to_vec(); can_direct_send(self, block, super_iseq, ci, insn_id, &a, false) } {
                                 self.push_insn_id(block, insn_id);
                                 self.set_dynamic_send_reason(insn_id, SuperTargetComplexArgsPass);
                                 continue;
                             }
 
                             // Check if the args are compatible before emitting any assmptions
-                            let Ok((send_state, processed_args, kw_bits)) = self.prepare_direct_send_args(block, &args, ci, super_iseq, state)
+                            let args_slice = self.operand_pool.borrow().get(args).to_vec();
+                            let Ok((send_state, processed_args, kw_bits)) = self.prepare_direct_send_args(block, &args_slice, ci, super_iseq, state)
                                 .inspect_err(|&reason| self.set_dynamic_send_reason(insn_id, reason)) else {
                                 self.push_insn_id(block, insn_id); continue;
                             };
@@ -4266,6 +4365,7 @@ impl Function {
                             emit_super_call_guards(self, block, super_cme, current_cme, mid, state);
 
                             // Use SendDirect with the super method's CME and ISEQ.
+                            let processed_args = self.push_operands(&processed_args);
                             let send_direct = self.push_insn(block, Insn::SendDirect(Box::new(SendDirectInfo {
                                 recv,
                                 cd,
@@ -4303,7 +4403,8 @@ impl Function {
 
                                     // Try inlining the cfunc into HIR
                                     let tmp_block = self.new_block(u32::MAX);
-                                    if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
+                                    let args_vec: Vec<InsnId> = self.operand_pool.borrow().get(args).to_vec();
+                                    if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args_vec, state) {
                                         // Copy contents of tmp_block to block
                                         assert_ne!(block, tmp_block);
                                         let insns = std::mem::take(&mut self.blocks[tmp_block].insns);
@@ -4353,7 +4454,8 @@ impl Function {
 
                                     // Try inlining the cfunc into HIR
                                     let tmp_block = self.new_block(u32::MAX);
-                                    if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
+                                    let args_vec: Vec<InsnId> = self.operand_pool.borrow().get(args).to_vec();
+                                    if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args_vec, state) {
                                         // Copy contents of tmp_block to block
                                         assert_ne!(block, tmp_block);
                                         emit_super_call_guards(self, block, super_cme, current_cme, mid, state);
@@ -4429,7 +4531,7 @@ impl Function {
                     // and `.call`, which would trigger autosplat. We only inline constants and
                     // variables and builtin calls.
                     Insn::SendDirect(info) => {
-                        let SendDirectInfo { recv, iseq, cd, ref args, state, .. } = *info;
+                        let SendDirectInfo { recv, iseq, cd, args, state, .. } = *info;
                         let call_info = unsafe { (*cd).ci };
                         let ci_flags = unsafe { vm_ci_flag(call_info) };
                         // .send call is not currently supported for builtins
@@ -4442,7 +4544,8 @@ impl Function {
                         match value {
                             IseqReturn::LocalVariable(idx) => {
                                 self.count(block, Counter::inline_iseq_optimized_send_count);
-                                self.make_equal_to(insn_id, args[idx as usize]);
+                                let arg_val = self.operand_pool.borrow().get(args)[idx as usize];
+                                self.make_equal_to(insn_id, arg_val);
                             }
                             IseqReturn::Value(value) => {
                                 self.count(block, Counter::inline_iseq_optimized_send_count);
@@ -4455,10 +4558,11 @@ impl Function {
                             }
                             IseqReturn::InvokeLeafBuiltin(bf, return_type) => {
                                 self.count(block, Counter::inline_iseq_optimized_send_count);
+                                let args = self.push_operands(&[recv]);
                                 let replacement = self.push_insn(block, Insn::InvokeBuiltin {
                                     bf,
                                     recv,
-                                    args: vec![recv],
+                                    args,
                                     state,
                                     leaf: true,
                                     return_type,
@@ -4497,10 +4601,11 @@ impl Function {
         // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
         // getinstancevariable does assume_single_ractor_mode()
         let ivar_index_insn = self.push_insn(block, Insn::Const { val: Const::CUInt16(ivar_index) });
+        let args = self.push_operands(&[ivar_index_insn]);
         self.push_insn(block, Insn::CCall(Box::new(CCallInfo {
             cfunc: rb_ivar_get_at_no_ractor_check as *const u8,
             recv,
-            args: vec![ivar_index_insn],
+            args,
             name: ID!(rb_ivar_get_at_no_ractor_check),
             owner: Qnil,
             return_type: types::BasicObject,
@@ -5073,7 +5178,8 @@ impl Function {
 
                     // Try inlining the cfunc into HIR
                     let tmp_block = fun.new_block(u32::MAX);
-                    if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args, state) {
+                    let args_vec: Vec<InsnId> = fun.operand_pool.borrow().get(args).to_vec();
+                    if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args_vec, state) {
                         // Copy contents of tmp_block to block
                         assert_ne!(block, tmp_block);
                         let insns = std::mem::take(&mut fun.blocks[tmp_block].insns);
@@ -5156,7 +5262,8 @@ impl Function {
 
                         // Try inlining the cfunc into HIR
                         let tmp_block = fun.new_block(u32::MAX);
-                        if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args, state) {
+                        let args_vec: Vec<InsnId> = fun.operand_pool.borrow().get(args).to_vec();
+                        if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args_vec, state) {
                             // Copy contents of tmp_block to block
                             assert_ne!(block, tmp_block);
                             let insns = std::mem::take(&mut fun.blocks[tmp_block].insns);
@@ -5231,7 +5338,8 @@ impl Function {
                         let props = ZJITState::get_method_annotations().get_builtin_properties(bf).unwrap_or_default();
                         // Try inlining the cfunc into HIR
                         let tmp_block = self.new_block(u32::MAX);
-                        if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
+                        let args_vec: Vec<InsnId> = self.operand_pool.borrow().get(args).to_vec();
+                        if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args_vec, state) {
                             // Copy contents of tmp_block to block
                             assert_ne!(block, tmp_block);
                             let insns = std::mem::take(&mut self.blocks[tmp_block].insns);
@@ -5671,7 +5779,7 @@ impl Function {
             if necessary.get(insn_id) { continue; }
             necessary.insert(insn_id);
             let insn_id = self.union_find.borrow().find_const(insn_id);
-            self.insns[insn_id].for_each_operand(|operand| {
+            self.insns[insn_id].for_each_operand(&self.operand_pool.borrow(), |operand| {
                 worklist.push_back(self.union_find.borrow().find_const(operand));
             });
         }
@@ -5696,8 +5804,9 @@ impl Function {
         }
         // Link up params with block args
         let params = std::mem::take(&mut self.blocks[target].params);
-        assert_eq!(args.len(), params.len());
-        for (arg, param) in args.iter().zip(params) {
+        let args_vec: Vec<InsnId> = self.operand_pool.borrow().get(args).to_vec();
+        assert_eq!(args_vec.len(), params.len());
+        for (arg, param) in args_vec.iter().zip(params) {
             self.make_equal_to(param, *arg);
         }
         // Remove branch instruction
@@ -5962,11 +6071,11 @@ impl Function {
                 };
 
 
-                let opcode = insn.print(&ptr_map, Some(self.iseq)).to_string();
+                let opcode = insn.print(&ptr_map, &self.operand_pool.borrow(), Some(self.iseq)).to_string();
 
                 // Collect inputs for a given instruction.
                 let mut inputs = Vec::new();
-                insn.for_each_operand(|id| inputs.push(id.0.into()));
+                insn.for_each_operand(&self.operand_pool.borrow(), |id| inputs.push(id.0.into()));
                 let inputs: Vec<Json> = inputs;
 
                 instructions.push(
@@ -6200,7 +6309,7 @@ impl Function {
             }
             for &insn_id in &self.blocks[block].insns {
                 let insn_id = self.union_find.borrow().find_const(insn_id);
-                self.insns[insn_id].try_for_each_operand(|operand| {
+                self.insns[insn_id].try_for_each_operand(&self.operand_pool.borrow(), |operand| {
                     let operand = self.union_find.borrow().find_const(operand);
                     if !assigned.get(operand) {
                         return Err(ValidationError::OperandNotDefined(block, insn_id, operand));
@@ -6311,81 +6420,81 @@ impl Function {
                 self.assert_subtype(insn_id, klass, types::BasicObject)?;
                 self.assert_subtype(insn_id, allow_nil, types::BoolExact)
             }
-            // Instructions with recv and a Vec of Ruby objects
+            // Instructions with recv and an InsnIdList of Ruby objects
             Insn::Send(ref info) => {
                 self.assert_subtype(insn_id, info.recv, types::BasicObject)?;
-                for &arg in &info.args {
+                for &arg in self.operand_pool.borrow().get(info.args) {
                     self.assert_subtype(insn_id, arg, types::BasicObject)?;
                 }
                 Ok(())
             }
-            Insn::SendForward { recv, ref args, .. }
-            | Insn::InvokeSuper { recv, ref args, .. }
-            | Insn::InvokeSuperForward { recv, ref args, .. }
-            | Insn::InvokeBuiltin { recv, ref args, .. }
-            | Insn::InvokeProc { recv, ref args, .. }
-            | Insn::ArrayInclude { target: recv, elements: ref args, .. } => {
+            Insn::SendForward { recv, args, .. }
+            | Insn::InvokeSuper { recv, args, .. }
+            | Insn::InvokeSuperForward { recv, args, .. }
+            | Insn::InvokeBuiltin { recv, args, .. }
+            | Insn::InvokeProc { recv, args, .. }
+            | Insn::ArrayInclude { target: recv, elements: args, .. } => {
                 self.assert_subtype(insn_id, recv, types::BasicObject)?;
-                for &arg in args {
+                for &arg in self.operand_pool.borrow().get(args) {
                     self.assert_subtype(insn_id, arg, types::BasicObject)?;
                 }
                 Ok(())
             }
             Insn::SendDirect(info) => {
                 self.assert_subtype(insn_id, info.recv, types::BasicObject)?;
-                for &arg in &info.args {
+                for &arg in self.operand_pool.borrow().get(info.args) {
                     self.assert_subtype(insn_id, arg, types::BasicObject)?;
                 }
                 Ok(())
             }
             Insn::CCallWithFrame(info) => {
                 self.assert_subtype(insn_id, info.recv, types::BasicObject)?;
-                for &arg in &info.args {
+                for &arg in self.operand_pool.borrow().get(info.args) {
                     self.assert_subtype(insn_id, arg, types::BasicObject)?;
                 }
                 Ok(())
             }
             Insn::CCallVariadic(info) => {
                 self.assert_subtype(insn_id, info.recv, types::BasicObject)?;
-                for &arg in &info.args {
+                for &arg in self.operand_pool.borrow().get(info.args) {
                     self.assert_subtype(insn_id, arg, types::BasicObject)?;
                 }
                 Ok(())
             }
-            Insn::ArrayPackBuffer { ref elements, fmt, buffer, .. } => {
+            Insn::ArrayPackBuffer { elements, fmt, buffer, .. } => {
                 self.assert_subtype(insn_id, fmt, types::BasicObject)?;
                 if let Some(buffer) = buffer {
                     self.assert_subtype(insn_id, buffer, types::BasicObject)?;
                 }
-                for &element in elements {
+                for &element in self.operand_pool.borrow().get(elements) {
                     self.assert_subtype(insn_id, element, types::BasicObject)?;
                 }
                 Ok(())
             }
-            // Instructions with a Vec of Ruby objects
-            Insn::InvokeBlock { ref args, .. }
-            | Insn::InvokeBlockIfunc { ref args, .. }
-            | Insn::NewArray { elements: ref args, .. }
-            | Insn::ArrayHash { elements: ref args, .. }
-            | Insn::ArrayMin { elements: ref args, .. }
-            | Insn::ArrayMax { elements: ref args, .. } => {
-                for &arg in args {
+            // Instructions with an InsnIdList of Ruby objects
+            Insn::InvokeBlock { args, .. }
+            | Insn::InvokeBlockIfunc { args, .. }
+            | Insn::NewArray { elements: args, .. }
+            | Insn::ArrayHash { elements: args, .. }
+            | Insn::ArrayMin { elements: args, .. }
+            | Insn::ArrayMax { elements: args, .. } => {
+                for &arg in self.operand_pool.borrow().get(args) {
                     self.assert_subtype(insn_id, arg, types::BasicObject)?;
                 }
                 Ok(())
             }
-            Insn::NewHash { ref elements, .. } => {
+            Insn::NewHash { elements, .. } => {
                 if elements.len() % 2 != 0 {
                     return Err(ValidationError::MiscValidationError(insn_id, "NewHash elements length is not even".to_string()));
                 }
-                for &element in elements {
+                for &element in self.operand_pool.borrow().get(elements) {
                     self.assert_subtype(insn_id, element, types::BasicObject)?;
                 }
                 Ok(())
             }
-            Insn::StringConcat { ref strings, .. }
-            | Insn::ToRegexp { values: ref strings, .. } => {
-                for &string in strings {
+            Insn::StringConcat { strings, .. }
+            | Insn::ToRegexp { values: strings, .. } => {
+                for &string in self.operand_pool.borrow().get(strings) {
                     self.assert_subtype(insn_id, string, types::String)?;
                 }
                 Ok(())
@@ -6638,7 +6747,7 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
                         write!(f, "{insn_id}:{} = ", insn_type.print(&self.ptr_map))?;
                     }
                 }
-                writeln!(f, "{}", insn.print(&self.ptr_map, Some(fun.iseq)))?;
+                writeln!(f, "{}", insn.print(&self.ptr_map, &fun.operand_pool.borrow(), Some(fun.iseq)))?;
             }
         }
         Ok(())
@@ -7226,6 +7335,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_concatstrings => {
                     let count = get_arg(pc, 0).as_u32();
                     let strings = state.stack_pop_n(count as usize)?;
+                    let strings = fun.push_operands(&strings);
                     let insn_id = fun.push_insn(block, Insn::StringConcat { strings, state: exit_id });
                     state.stack_push(insn_id);
                 }
@@ -7234,12 +7344,14 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let opt = get_arg(pc, 0).as_usize();
                     let count = get_arg(pc, 1).as_usize();
                     let values = state.stack_pop_n(count)?;
+                    let values = fun.push_operands(&values);
                     let insn_id = fun.push_insn(block, Insn::ToRegexp { opt, values, state: exit_id });
                     state.stack_push(insn_id);
                 }
                 YARVINSN_newarray => {
                     let count = get_arg(pc, 0).as_usize();
                     let elements = state.stack_pop_n(count)?;
+                    let elements = fun.push_operands(&elements);
                     state.stack_push(fun.push_insn(block, Insn::NewArray { elements, state: exit_id }));
                 }
                 YARVINSN_opt_newarray_send => {
@@ -7247,31 +7359,31 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let method = get_arg(pc, 1).as_u32();
                     let (bop, insn) = match method {
                         VM_OPT_NEWARRAY_SEND_MAX => {
-                            let elements = state.stack_pop_n(count)?;
+                            let elements = fun.push_operands(&state.stack_pop_n(count)?);
                             (BOP_MAX, Insn::ArrayMax { elements, state: exit_id })
                         }
                         VM_OPT_NEWARRAY_SEND_MIN => {
-                            let elements = state.stack_pop_n(count)?;
+                            let elements = fun.push_operands(&state.stack_pop_n(count)?);
                             (BOP_MIN, Insn::ArrayMin { elements, state: exit_id })
                         }
                         VM_OPT_NEWARRAY_SEND_HASH => {
-                            let elements = state.stack_pop_n(count)?;
+                            let elements = fun.push_operands(&state.stack_pop_n(count)?);
                             (BOP_HASH, Insn::ArrayHash { elements, state: exit_id })
                         }
                         VM_OPT_NEWARRAY_SEND_INCLUDE_P => {
                             let target = state.stack_pop()?;
-                            let elements = state.stack_pop_n(count - 1)?;
+                            let elements = fun.push_operands(&state.stack_pop_n(count - 1)?);
                             (BOP_INCLUDE_P, Insn::ArrayInclude { elements, target, state: exit_id })
                         }
                         VM_OPT_NEWARRAY_SEND_PACK => {
                             let fmt = state.stack_pop()?;
-                            let elements = state.stack_pop_n(count - 1)?;
+                            let elements = fun.push_operands(&state.stack_pop_n(count - 1)?);
                             (BOP_PACK, Insn::ArrayPackBuffer { elements, fmt, buffer: None, state: exit_id })
                         }
                         VM_OPT_NEWARRAY_SEND_PACK_BUFFER => {
                             let buffer = state.stack_pop()?;
                             let fmt = state.stack_pop()?;
-                            let elements = state.stack_pop_n(count - 2)?;
+                            let elements = fun.push_operands(&state.stack_pop_n(count - 2)?);
                             (BOP_PACK, Insn::ArrayPackBuffer { elements, fmt, buffer: Some(buffer), state: exit_id })
                         }
                         _ => {
@@ -7327,6 +7439,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         elements.push(key);
                     }
                     elements.reverse();
+                    let elements = fun.push_operands(&elements);
                     state.stack_push(fun.push_insn(block, Insn::NewHash { elements, state: exit_id }));
                 }
                 YARVINSN_duphash => {
@@ -7502,7 +7615,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     iffalse_state.replace(val, nil_false);
                     let _branch_id = fun.push_insn(block, Insn::IfFalse {
                         val: test_id,
-                        target: BranchEdge { target, args: iffalse_state.as_args(self_param) }
+                        target: fun.branch_edge(target, &iffalse_state.as_args(self_param))
                     });
                     let not_nil_false_type = types::Truthy;
                     let not_nil_false = fun.push_insn(block, Insn::RefineType { val, new_type: not_nil_false_type });
@@ -7524,7 +7637,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     iftrue_state.replace(val, not_nil_false);
                     let _branch_id = fun.push_insn(block, Insn::IfTrue {
                         val: test_id,
-                        target: BranchEdge { target, args: iftrue_state.as_args(self_param) }
+                        target: fun.branch_edge(target, &iftrue_state.as_args(self_param))
                     });
                     let nil_false_type = types::Falsy;
                     let nil_false = fun.push_insn(block, Insn::RefineType { val, new_type: nil_false_type });
@@ -7545,7 +7658,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     iftrue_state.replace(val, nil);
                     let _branch_id = fun.push_insn(block, Insn::IfTrue {
                         val: test_id,
-                        target: BranchEdge { target, args: iftrue_state.as_args(self_param) }
+                        target: fun.branch_edge(target, &iftrue_state.as_args(self_param))
                     });
                     let new_type = types::NotNil;
                     let not_nil = fun.push_insn(block, Insn::RefineType { val, new_type });
@@ -7574,7 +7687,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let target = insn_idx_to_block[&target_idx];
                     let _branch_id = fun.push_insn(block, Insn::IfFalse {
                         val: test_id,
-                        target: BranchEdge { target, args: state.as_args(self_param) }
+                        target: fun.branch_edge(target, &state.as_args(self_param))
                     });
                     queue.push_back((state.clone(), target, target_idx, local_inval));
 
@@ -7591,7 +7704,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
                     let target = insn_idx_to_block[&target_idx];
                     let _branch_id = fun.push_insn(block, Insn::Jump(
-                        BranchEdge { target, args: state.as_args(self_param) }
+                        fun.branch_edge(target, &state.as_args(self_param))
                     ));
                     queue.push_back((state.clone(), target, target_idx, local_inval));
                     break;  // Don't enqueue the next block as a successor
@@ -7708,14 +7821,14 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let ep = fun.push_insn(block, Insn::GetEP { level });
                     let is_modified = fun.push_insn(block, Insn::IsBlockParamModified { ep });
 
-                    fun.push_insn(block, Insn::IfTrue { val: is_modified, target: BranchEdge { target: modified_block, args: vec![] }});
-                    fun.push_insn(block, Insn::Jump(BranchEdge { target: unmodified_block, args: vec![] }));
+                    fun.push_insn(block, Insn::IfTrue { val: is_modified, target: BranchEdge { target: modified_block, args: InsnIdList::EMPTY }});
+                    fun.push_insn(block, Insn::Jump(BranchEdge { target: unmodified_block, args: InsnIdList::EMPTY }));
 
                     // Push modified block: load the block local via EP.
                     let modified_val = fun.get_local_from_ep(modified_block, ep, ep_offset, level, types::BasicObject);
                     let mut modified_args = vec![modified_val];
                     if level == 0 { modified_args.push(modified_val); }
-                    fun.push_insn(modified_block, Insn::Jump(BranchEdge { target: join_block, args: modified_args }));
+                    fun.push_insn(modified_block, Insn::Jump(BranchEdge { target: join_block, args: fun.push_operands(&modified_args) }));
 
                     // Push unmodified block: inspect the current block handler to
                     // decide whether this path returns `nil` or `BlockParamProxy`.
@@ -7728,7 +7841,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             let nil_val = fun.push_insn(unmodified_block, Insn::Const { val: Const::Value(Qnil) });
                             let mut unmodified_args = vec![nil_val];
                             if let Some(local) = original_local { unmodified_args.push(local); }
-                            fun.push_insn(unmodified_block, Insn::Jump(BranchEdge { target: join_block, args: unmodified_args }));
+                            fun.push_insn(unmodified_block, Insn::Jump(BranchEdge { target: join_block, args: fun.push_operands(&unmodified_args) }));
                         }
                         _ => {
                             // This handles two cases which are nearly identical
@@ -7744,7 +7857,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             let proxy_val = fun.push_insn(unmodified_block, Insn::Const { val: Const::Value(unsafe { rb_block_param_proxy }) });
                             let mut unmodified_args = vec![proxy_val];
                             if let Some(local) = original_local { unmodified_args.push(local); }
-                            fun.push_insn(unmodified_block, Insn::Jump(BranchEdge { target: join_block, args: unmodified_args }));
+                            fun.push_insn(unmodified_block, Insn::Jump(BranchEdge { target: join_block, args: fun.push_operands(&unmodified_args) }));
                         }
                     }
 
@@ -7773,16 +7886,16 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     fun.push_insn(block, Insn::IfTrue {
                         val: is_modified,
-                        target: BranchEdge { target: modified_block, args: vec![] },
+                        target: BranchEdge { target: modified_block, args: InsnIdList::EMPTY },
                     });
                     fun.push_insn(block, Insn::Jump(BranchEdge {
                         target: unmodified_block,
-                        args: vec![],
+                        args: InsnIdList::EMPTY,
                     }));
 
                     // Push modified block: read Proc from EP.
                     let modified_val = fun.get_local_from_ep(modified_block, ep, ep_offset, level, types::BasicObject);
-                    fun.push_insn(modified_block, Insn::Jump(BranchEdge { target: join_block, args: vec![modified_val] }));
+                    fun.push_insn(modified_block, Insn::Jump(BranchEdge { target: join_block, args: fun.push_operands(&[modified_val]) }));
 
                     // Push unmodified block: convert block handler to Proc.
                     let unmodified_val = fun.push_insn(unmodified_block, Insn::GetBlockParam {
@@ -7790,7 +7903,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         level,
                         state: exit_id,
                     });
-                    fun.push_insn(unmodified_block, Insn::Jump(BranchEdge { target: join_block, args: vec![unmodified_val] }));
+                    fun.push_insn(unmodified_block, Insn::Jump(BranchEdge { target: join_block, args: fun.push_operands(&[unmodified_val]) }));
 
                     // Continue compilation from the join block at the next instruction.
                     if level == 0 {
@@ -7851,6 +7964,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }
                     let args = state.stack_pop_n(argc as usize)?;
                     let recv = state.stack_pop()?;
+                    let args = fun.push_operands(&args);
                     let send = fun.push_insn(block, Insn::Send(Box::new(SendInfo { recv, cd, block: None, args, state: exit_id, reason: Uncategorized(opcode) })));
                     state.stack_push(send);
                 }
@@ -8007,11 +8121,12 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             let snapshot = fun.push_insn(block, Insn::Snapshot(Box::new(state.clone())));
                             let args = state.stack_pop_n(argc).unwrap();
                             let recv = state.stack_pop().unwrap();
+                            let args = fun.push_operands(&args);
                             let refined_recv = fun.push_insn(block, Insn::RefineType { val: recv, new_type });
                             state.replace(recv, refined_recv);
                             let send = fun.push_insn(block, Insn::Send(Box::new(SendInfo { recv: refined_recv, cd, block: None, args, state: snapshot, reason: Uncategorized(opcode) })));
                             state.stack_push(send);
-                            fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: state.as_args(self_param) }));
+                            fun.push_insn(block, Insn::Jump(fun.branch_edge(join_block, &state.as_args(self_param))));
                             block
                         }
                         let branch_insn_idx = exit_state.insn_idx as u32;
@@ -8034,7 +8149,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                                 let has_type = fun.push_insn(block, Insn::HasType { val: recv, expected });
                                 let iftrue_block =
                                     new_branch_block(&mut fun, cd, argc as usize, opcode, expected, branch_insn_idx, &exit_state, locals_count, stack_count, join_block);
-                                let target = BranchEdge { target: iftrue_block, args: entry_args.clone() };
+                                let target = BranchEdge { target: iftrue_block, args: fun.push_operands(&entry_args) };
                                 fun.push_insn(block, Insn::IfTrue { val: has_type, target });
                             }
                             // Continue compilation from the join block at the next instruction.
@@ -8046,16 +8161,18 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             queue.push_back((join_state, join_block, insn_idx, local_inval));
                             // In the fallthrough case, do a generic interpreter send and then join.
                             let args = state.stack_pop_n(argc as usize)?;
+                    let args = fun.push_operands(&args);
                             let recv = state.stack_pop()?;
                             let reason = SendWithoutBlockPolymorphicFallback;
                             let send = fun.push_insn(block, Insn::Send(Box::new(SendInfo { recv, cd, block: None, args, state: exit_id, reason })));
                             state.stack_push(send);
-                            fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: state.as_args(self_param) }));
+                            fun.push_insn(block, Insn::Jump(fun.branch_edge(join_block, &state.as_args(self_param))));
                             break;  // End the block
                         }
                     }
 
                     let args = state.stack_pop_n(argc as usize)?;
+                    let args = fun.push_operands(&args);
                     let recv = state.stack_pop()?;
                     let send = fun.push_insn(block, Insn::Send(Box::new(SendInfo { recv, cd, block: None, args, state: exit_id, reason: Uncategorized(opcode) })));
                     state.stack_push(send);
@@ -8079,6 +8196,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
 
                     let args = state.stack_pop_n(argc as usize + usize::from(block_arg))?;
+                    let args = fun.push_operands(&args);
                     let recv = state.stack_pop()?;
                     let block_handler = if !blockiseq.is_null() {
                         Some(BlockHandler::BlockIseq(blockiseq))
@@ -8124,6 +8242,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
 
                     let args = state.stack_pop_n(argc as usize + usize::from(forwarding))?;
+                    let args = fun.push_operands(&args);
                     let recv = state.stack_pop()?;
                     let send_forward = fun.push_insn(block, Insn::SendForward { recv, cd, blockiseq, args, state: exit_id, reason: SendForwardNotSpecialized });
                     state.stack_push(send_forward);
@@ -8158,6 +8277,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
                     let block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
                     let args = state.stack_pop_n(argc as usize + usize::from(block_arg))?;
+                    let args = fun.push_operands(&args);
                     let recv = state.stack_pop()?;
                     let blockiseq: IseqPtr = get_arg(pc, 1).as_ptr();
                     let result = fun.push_insn(block, Insn::InvokeSuper { recv, cd, blockiseq, args, state: exit_id, reason: Uncategorized(opcode) });
@@ -8196,6 +8316,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
                     let args = state.stack_pop_n(argc as usize + usize::from(forwarding))?;
+                    let args = fun.push_operands(&args);
                     let recv = state.stack_pop()?;
                     let result = fun.push_insn(block, Insn::InvokeSuperForward { recv, cd, blockiseq, args, state: exit_id, reason: InvokeSuperForwardNotSpecialized });
                     state.stack_push(result);
@@ -8232,6 +8353,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let argc = unsafe { vm_ci_argc((*cd).ci) };
                     let block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
                     let args = state.stack_pop_n(argc as usize + usize::from(block_arg))?;
+                    let args = fun.push_operands(&args);
 
                     // Check if this is a monomorphic IFUNC block handler we can specialize
                     let block_handler_types = profiles.payload.profile.get_operand_types(exit_state.insn_idx);
@@ -8262,20 +8384,20 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         let join_block = fun.new_block(insn_idx);
                         let join_param = fun.push_insn(join_block, Insn::Param);
                         let ifunc_block = fun.new_block(insn_idx);
-                        fun.push_insn(block, Insn::IfTrue { val: is_ifunc_match, target: BranchEdge { target: ifunc_block, args: vec![] } });
+                        fun.push_insn(block, Insn::IfTrue { val: is_ifunc_match, target: BranchEdge { target: ifunc_block, args: InsnIdList::EMPTY } });
                         let ifunc_result = fun.push_insn(ifunc_block, Insn::InvokeBlockIfunc {
                             cd,
                             block_handler,
                             args: args.clone(),
                             state: exit_id,
                         });
-                        fun.push_insn(ifunc_block, Insn::Jump(BranchEdge { target: join_block, args: vec![ifunc_result] }));
+                        fun.push_insn(ifunc_block, Insn::Jump(BranchEdge { target: join_block, args: fun.push_operands(&[ifunc_result]) }));
 
                         // In the fallthrough case, use generic rb_vm_invokeblock and join
                         let fallback_result = fun.push_insn(block, Insn::InvokeBlock {
                             cd, args, state: exit_id, reason: InvokeBlockNotSpecialized,
                         });
-                        fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: vec![fallback_result] }));
+                        fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: fun.push_operands(&[fallback_result]) }));
 
                         // Continue compilation from the join block
                         block = join_block;
@@ -8337,14 +8459,14 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             let masked = fun.push_insn(block, Insn::IntAnd { left: rbasic_flags, right: rbasic_flags_mask});
                             let has_shape_and_type = fun.push_insn(block, Insn::IsBitEqual { left: masked, right: expected_rbasic_flags });
                             let iftrue_block = fun.new_block(insn_idx);
-                            let target = BranchEdge { target: iftrue_block, args: vec![] };
+                            let target = BranchEdge { target: iftrue_block, args: InsnIdList::EMPTY };
                             fun.push_insn(block, Insn::IfTrue { val: has_shape_and_type, target });
                             let result = fun.load_ivar(iftrue_block, self_param, profiled_type, id, exit_id);
-                            fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
+                            fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: fun.push_operands(&[result]) }));
                         }
                         // In the fallthrough case, do a generic interpreter getivar and then join.
                         let result = fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id });
-                        fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
+                        fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: fun.push_operands(&[result]) }));
                         state.stack_push(join_param);
                         // Continue compilation from the join block at the next instruction.
                         // Make a copy of the current state without the args (pop the receiver
@@ -8421,6 +8543,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let builtin_attrs = unsafe { rb_jit_iseq_builtin_attrs(iseq) };
                     let leaf = builtin_attrs & BUILTIN_ATTR_LEAF != 0;
 
+                    let args = fun.push_operands(&args);
                     let insn_id = fun.push_insn(block, Insn::InvokeBuiltin {
                         bf,
                         recv: self_param,
@@ -8451,6 +8574,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let builtin_attrs = unsafe { rb_jit_iseq_builtin_attrs(iseq) };
                     let leaf = builtin_attrs & BUILTIN_ATTR_LEAF != 0;
 
+                    let args = fun.push_operands(&args);
                     let insn_id = fun.push_insn(block, Insn::InvokeBuiltin {
                         bf,
                         recv: self_param,
@@ -8531,7 +8655,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
             if insn_idx_to_block.contains_key(&insn_idx) {
                 let target = insn_idx_to_block[&insn_idx];
-                fun.push_insn(block, Insn::Jump(BranchEdge { target, args: state.as_args(self_param) }));
+                fun.push_insn(block, Insn::Jump(fun.branch_edge(target, &state.as_args(self_param))));
                 queue.push_back((state, target, insn_idx, local_inval));
                 break;  // End the block
             }
@@ -8583,7 +8707,7 @@ fn compile_entry_block(fun: &mut Function, jit_entry_insns: &[u32], insn_idx_to_
         let test_id = fun.push_insn(entry_block, Insn::IsBitEqual { left: pc, right: expected_pc });
         fun.push_insn(entry_block, Insn::IfTrue {
             val: test_id,
-            target: BranchEdge { target: target_block, args: entry_state.as_args(self_param) },
+            target: fun.branch_edge(target_block, &entry_state.as_args(self_param)),
         });
     }
 
@@ -8592,7 +8716,7 @@ fn compile_entry_block(fun: &mut Function, jit_entry_insns: &[u32], insn_idx_to_
         .copied()
         .expect("we make a block for each jump target and \
                  each entry in the ISEQ opt_table is a jump target");
-    fun.push_insn(entry_block, Insn::Jump(BranchEdge { target: target_block, args: entry_state.as_args(self_param) }));
+    fun.push_insn(entry_block, Insn::Jump(fun.branch_edge(target_block, &entry_state.as_args(self_param))));
 }
 
 /// Compile initial locals for an entry_block for the interpreter
@@ -8651,7 +8775,7 @@ fn compile_jit_entry_block(fun: &mut Function, jit_entry_idx: usize, target_bloc
         fun.count_iseq_calls(jit_entry_block);
     }
     // Jump to target_block
-    fun.push_insn(jit_entry_block, Insn::Jump(BranchEdge { target: target_block, args: entry_state.as_args(self_param) }));
+    fun.push_insn(jit_entry_block, Insn::Jump(fun.branch_edge(target_block, &entry_state.as_args(self_param))));
 }
 
 /// Compile params and initial locals for a jit_entry_block
@@ -9060,7 +9184,7 @@ mod rpo_tests {
         let entries = function.entries_block;
         let entry = function.entry_block;
         let exit = function.new_block(0);
-        function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
+        function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: InsnIdList::EMPTY }));
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(entry, Insn::Return { val });
         function.seal_entries();
@@ -9074,10 +9198,10 @@ mod rpo_tests {
         let entry = function.entry_block;
         let side = function.new_block(0);
         let exit = function.new_block(0);
-        function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
+        function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: InsnIdList::EMPTY }));
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
-        function.push_insn(entry, Insn::IfTrue { val, target: BranchEdge { target: side, args: vec![] } });
-        function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
+        function.push_insn(entry, Insn::IfTrue { val, target: BranchEdge { target: side, args: InsnIdList::EMPTY } });
+        function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: InsnIdList::EMPTY }));
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(entry, Insn::Return { val });
         function.seal_entries();
@@ -9091,10 +9215,10 @@ mod rpo_tests {
         let entry = function.entry_block;
         let side = function.new_block(0);
         let exit = function.new_block(0);
-        function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
+        function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: InsnIdList::EMPTY }));
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
-        function.push_insn(entry, Insn::IfFalse { val, target: BranchEdge { target: side, args: vec![] } });
-        function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
+        function.push_insn(entry, Insn::IfFalse { val, target: BranchEdge { target: side, args: InsnIdList::EMPTY } });
+        function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: InsnIdList::EMPTY }));
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(entry, Insn::Return { val });
         function.seal_entries();
@@ -9106,7 +9230,7 @@ mod rpo_tests {
         let mut function = Function::new(std::ptr::null());
         let entries = function.entries_block;
         let entry = function.entry_block;
-        function.push_insn(entry, Insn::Jump(BranchEdge { target: entry, args: vec![] }));
+        function.push_insn(entry, Insn::Jump(BranchEdge { target: entry, args: InsnIdList::EMPTY }));
         function.seal_entries();
         assert_eq!(function.rpo(), vec![entries, entry]);
     }
@@ -9152,7 +9276,7 @@ mod validation_tests {
         let entry = function.entry_block;
         let side = function.new_block(0);
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
-        function.push_insn(entry, Insn::IfTrue { val, target: BranchEdge { target: side, args: vec![val, val, val] } });
+        function.push_insn(entry, Insn::IfTrue { val, target: BranchEdge { target: side, args: function.push_operands(&[val, val, val]) } });
         function.seal_entries();
         assert_matches_err(function.validate(), ValidationError::MismatchedBlockArity(entry, 0, 3));
     }
@@ -9163,7 +9287,7 @@ mod validation_tests {
         let entry = function.entry_block;
         let side = function.new_block(0);
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
-        function.push_insn(entry, Insn::IfFalse { val, target: BranchEdge { target: side, args: vec![val, val, val] } });
+        function.push_insn(entry, Insn::IfFalse { val, target: BranchEdge { target: side, args: function.push_operands(&[val, val, val]) } });
         function.seal_entries();
         assert_matches_err(function.validate(), ValidationError::MismatchedBlockArity(entry, 0, 3));
     }
@@ -9174,7 +9298,7 @@ mod validation_tests {
         let entry = function.entry_block;
         let side = function.new_block(0);
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
-        function.push_insn(entry, Insn::Jump ( BranchEdge { target: side, args: vec![val, val, val] } ));
+        function.push_insn(entry, Insn::Jump ( BranchEdge { target: side, args: function.push_operands(&[val, val, val]) } ));
         function.seal_entries();
         assert_matches_err(function.validate(), ValidationError::MismatchedBlockArity(entry, 0, 3));
     }
@@ -9210,10 +9334,10 @@ mod validation_tests {
         let side = function.new_block(0);
         let exit = function.new_block(0);
         let v0 = function.push_insn(side, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(3)) });
-        function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
+        function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: InsnIdList::EMPTY }));
         let val1 = function.push_insn(entry, Insn::Const { val: Const::CBool(false) });
-        function.push_insn(entry, Insn::IfFalse { val: val1, target: BranchEdge { target: side, args: vec![] } });
-        function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
+        function.push_insn(entry, Insn::IfFalse { val: val1, target: BranchEdge { target: side, args: InsnIdList::EMPTY } });
+        function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: InsnIdList::EMPTY }));
         let val2 = function.push_insn(exit, Insn::ArrayDup { val: v0, state: v0 });
         function.seal_entries();
         crate::cruby::with_rubyvm(|| {
@@ -9230,10 +9354,10 @@ mod validation_tests {
         let side = function.new_block(0);
         let exit = function.new_block(0);
         let v0 = function.push_insn(entry, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(3)) });
-        function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
+        function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: InsnIdList::EMPTY }));
         let val = function.push_insn(entry, Insn::Const { val: Const::CBool(false) });
-        function.push_insn(entry, Insn::IfFalse { val, target: BranchEdge { target: side, args: vec![] } });
-        function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
+        function.push_insn(entry, Insn::IfFalse { val, target: BranchEdge { target: side, args: InsnIdList::EMPTY } });
+        function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: InsnIdList::EMPTY }));
         let _val = function.push_insn(exit, Insn::ArrayDup { val: v0, state: v0 });
         function.seal_entries();
         crate::cruby::with_rubyvm(|| {
@@ -9247,7 +9371,7 @@ mod validation_tests {
     fn instruction_appears_twice_in_same_block() {
         let mut function = Function::new(std::ptr::null());
         let block = function.new_block(0);
-        function.push_insn(function.entry_block, Insn::Jump(BranchEdge { target: block, args: vec![] }));
+        function.push_insn(function.entry_block, Insn::Jump(BranchEdge { target: block, args: InsnIdList::EMPTY }));
         let val = function.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn_id(block, val);
         function.push_insn(block, Insn::Return { val });
@@ -9259,7 +9383,7 @@ mod validation_tests {
     fn instruction_appears_twice_with_different_ids() {
         let mut function = Function::new(std::ptr::null());
         let block = function.new_block(0);
-        function.push_insn(function.entry_block, Insn::Jump(BranchEdge { target: block, args: vec![] }));
+        function.push_insn(function.entry_block, Insn::Jump(BranchEdge { target: block, args: InsnIdList::EMPTY }));
         let val0 = function.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
         let val1 = function.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
         function.make_equal_to(val1, val0);
@@ -9272,10 +9396,10 @@ mod validation_tests {
     fn instruction_appears_twice_in_different_blocks() {
         let mut function = Function::new(std::ptr::null());
         let block = function.new_block(0);
-        function.push_insn(function.entry_block, Insn::Jump(BranchEdge { target: block, args: vec![] }));
+        function.push_insn(function.entry_block, Insn::Jump(BranchEdge { target: block, args: InsnIdList::EMPTY }));
         let val = function.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
         let exit = function.new_block(0);
-        function.push_insn(block, Insn::Jump(BranchEdge { target: exit, args: vec![] }));
+        function.push_insn(block, Insn::Jump(BranchEdge { target: exit, args: InsnIdList::EMPTY }));
         function.push_insn_id(exit, val);
         function.push_insn(exit, Insn::Return { val });
         function.seal_entries();
@@ -9344,7 +9468,7 @@ mod infer_tests {
     fn newarray() {
         let mut function = Function::new(std::ptr::null());
         // Fake FrameState index of 0usize
-        let val = function.push_insn(function.entry_block, Insn::NewArray { elements: vec![], state: InsnId(0) });
+        let val = function.push_insn(function.entry_block, Insn::NewArray { elements: InsnIdList::EMPTY, state: InsnId(0) });
         assert_bit_equal(function.infer_type(val), types::ArrayExact);
     }
 
@@ -9352,7 +9476,7 @@ mod infer_tests {
     fn arraydup() {
         let mut function = Function::new(std::ptr::null());
         // Fake FrameState index of 0usize
-        let arr = function.push_insn(function.entry_block, Insn::NewArray { elements: vec![], state: InsnId(0) });
+        let arr = function.push_insn(function.entry_block, Insn::NewArray { elements: InsnIdList::EMPTY, state: InsnId(0) });
         let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: arr, state: InsnId(0) });
         assert_bit_equal(function.infer_type(val), types::ArrayExact);
     }
@@ -9364,11 +9488,11 @@ mod infer_tests {
         let side = function.new_block(0);
         let exit = function.new_block(0);
         let v0 = function.push_insn(side, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(3)) });
-        function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: vec![v0] }));
+        function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: function.push_operands(&[v0]) }));
         let val = function.push_insn(entry, Insn::Const { val: Const::CBool(false) });
-        function.push_insn(entry, Insn::IfFalse { val, target: BranchEdge { target: side, args: vec![] } });
+        function.push_insn(entry, Insn::IfFalse { val, target: BranchEdge { target: side, args: InsnIdList::EMPTY } });
         let v1 = function.push_insn(entry, Insn::Const { val: Const::Value(VALUE::fixnum_from_usize(4)) });
-        function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![v1] }));
+        function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: function.push_operands(&[v1]) }));
         let param = function.push_insn(exit, Insn::Param);
         function.seal_entries();
         crate::cruby::with_rubyvm(|| {
@@ -9384,11 +9508,11 @@ mod infer_tests {
         let side = function.new_block(0);
         let exit = function.new_block(0);
         let v0 = function.push_insn(side, Insn::Const { val: Const::Value(Qtrue) });
-        function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: vec![v0] }));
+        function.push_insn(side, Insn::Jump(BranchEdge { target: exit, args: function.push_operands(&[v0]) }));
         let val = function.push_insn(entry, Insn::Const { val: Const::CBool(false) });
-        function.push_insn(entry, Insn::IfFalse { val, target: BranchEdge { target: side, args: vec![] } });
+        function.push_insn(entry, Insn::IfFalse { val, target: BranchEdge { target: side, args: InsnIdList::EMPTY } });
         let v1 = function.push_insn(entry, Insn::Const { val: Const::Value(Qfalse) });
-        function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: vec![v1] }));
+        function.push_insn(entry, Insn::Jump(BranchEdge { target: exit, args: function.push_operands(&[v1]) }));
         let param = function.push_insn(exit, Insn::Param);
         function.seal_entries();
         crate::cruby::with_rubyvm(|| {
