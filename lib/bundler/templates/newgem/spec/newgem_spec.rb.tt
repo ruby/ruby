@@ -5,7 +5,15 @@ RSpec.describe <%= config[:constant_name] %> do
     expect(<%= config[:constant_name] %>::VERSION).not_to be nil
   end
 
+<%- if config[:ext] == 'rust' -%>
+  it "can call into Rust" do
+    result = <%= config[:constant_name] %>.hello("world")
+
+    expect(result).to be("Hello earth, from Rust!")
+  end
+<%- else -%>
   it "does something useful" do
     expect(false).to eq(true)
   end
+<%- end -%>
 end
