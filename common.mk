@@ -1344,11 +1344,11 @@ $(BUILTIN_BINARY:no=builtin)_binary.rbbin:
 
 $(BUILTIN_RB_INCS): $(tooldir)/mk_builtin_loader.rb $(DUMP_AST_TARGET)
 
-dump_ast$(BUILD_EXEEXT): $(tooldir)/dump_ast.c $(LIBPRISM_OBJS)
+dump_ast$(BUILD_EXEEXT): $(tooldir)/dump_ast.c $(LIBPRISM_OBJS) revision.h
 	$(ECHO) compiling $@
 	$(Q) $(CC) $(CFLAGS) $(OUTFLAG)$@ $(INCFLAGS) $(tooldir)/dump_ast.c $(LIBPRISM_OBJS)
 
-build-tool/Makefile: $(tooldir)/dump_ast.mkmf.rb prism-srcs prism-incs
+build-tool/Makefile: $(tooldir)/dump_ast.mkmf.rb prism-srcs prism-incs revision.h
 	+$(BASERUBY) -s $(tooldir)/dump_ast.mkmf.rb \
 	    "-INCFLAGS=$(INCFLAGS)" "-make=$(MAKE)" "-objext=$(OBJEXT)" \
 	    build-tool $(tooldir)/dump_ast.c dump_ast.$(OBJEXT) $(LIBPRISM_OBJS)

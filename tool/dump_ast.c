@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
+#include "revision.h"
 
 /*
  * When prism is compiled as part of CRuby, the xmalloc/xfree/etc. macros are
@@ -27,19 +28,97 @@ print_error(const pm_diagnostic_t *diagnostic, void *data)
     fprintf(stderr, "%" PRIi32 ":%" PRIu32 ":%s\n", line_column.line, line_column.column, pm_diagnostic_message(diagnostic));
 }
 
+#if defined(RUBY_RELEASE_DATETIME) && defined(RUBY_RELEASE_DATETIME)
+# define SHOW_PROGRAM_VERSION 2
+#elif defined(RUBY_RELEASE_DATETIME) || defined(RUBY_RELEASE_DATETIME)
+# define SHOW_PROGRAM_VERSION 1
+#else
+# define SHOW_PROGRAM_VERSION 0
+#endif
+#if SHOW_PROGRAM_VERSION
+# define usage_versions "and program versions"
+#else
+# define usage_versions "version"
+#endif
+
+static void
+usage(const char *prog)
+{
+    fprintf(stderr, "Usage: %s [options]... <filename>\n"
+            "Options:\n"
+            "  -v, --version: show Prism " usage_versions "\n"
+            "  -h, --help: show this message\n"
+            "", prog);
+}
+
 int
-main(int argc, const char *argv[]) {
-    if (argc != 2) {
-        fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
+main(int argc, const char *argv[])
+{
+    const char *filepath = 0;
+
+    for (int i = 1; i < argc; ++i) {
+        const char *arg = argv[i];
+        if (arg[0] != '-') {
+            if (filepath) {
+                fprintf(stderr, "too many filename\n");
+                goto usage;
+            }
+            filepath = arg;
+        }
+        else if (arg[1] == '-') {
+            if (!arg[2]) break;
+            if (strcmp(arg + 2, "version") == 0) {
+              version:
+                fputs("Prism " PRISM_VERSION
+#if SHOW_PROGRAM_VERSION
+                      " ["
+# ifdef RUBY_RELEASE_DATETIME
+                      RUBY_RELEASE_DATETIME
+# endif
+# if SHOW_PROGRAM_VERSION > 1
+                      " "
+# endif
+# ifdef RUBY_REVISION
+                      RUBY_REVISION
+# endif
+                      "]"
+#endif
+                      "\n", stdout);
+                return EXIT_SUCCESS;
+            }
+            if (strcmp(arg + 2, "help") == 0) {
+              help:
+                usage(argv[0]);
+                return EXIT_SUCCESS;
+            }
+            fprintf(stderr, "unknown option %s\n", arg);
+            goto usage;
+        }
+        else {
+            while (*++arg) {
+                switch (*arg) {
+                  case 'v':
+                    goto version;
+                  case 'h':
+                    goto help;
+                  default:
+                    fprintf(stderr, "unknown option -%c\n", *arg);
+                    goto usage;
+                }
+            }
+        }
+    }
+
+    if (!filepath) {
+      usage:
+        usage(argv[0]);
         return EXIT_FAILURE;
     }
 
-    const char *filepath = argv[1];
     pm_source_init_result_t init_result;
     pm_source_t *source = pm_source_mapped_new(filepath, 0, &init_result);
 
-    if (init_result != PM_SOURCE_INIT_SUCCESS)
-    {
+    if (init_result != PM_SOURCE_INIT_SUCCESS) {
         fprintf(stderr, "unable to map file: %s\n", filepath);
         return EXIT_FAILURE;
     }
