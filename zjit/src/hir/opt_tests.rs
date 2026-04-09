@@ -7511,6 +7511,15 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_no_side_exit_assertion() {
+        eval("
+          def side_exit = ::RubyVM::ZJIT.induce_side_exit!
+          side_exit
+        ");
+        std::panic::catch_unwind(|| assert_compiles("side_exit")).expect_err("Should panic because the program should side exit");
+    }
+
+    #[test]
     fn test_optimize_getivar_on_class_embedded() {
         eval("
             class C
@@ -7519,6 +7528,7 @@ mod hir_opt_tests {
             end
             C.test
         ");
+        assert_snapshot!(assert_compiles("C.test"), @"42");
         assert_snapshot!(hir_string_proc("C.method(:test)"), @"
         fn test@<compiled>:4:
         bb1():

@@ -2750,12 +2750,12 @@ impl Assembler
                 }).unwrap_or(false);
 
                 // If enabled, instrument exits first, and then jump to a shared exit.
-                let counted_exit = if get_option!(stats) || should_record_exit {
+                let counted_exit = if get_option!(stats) || should_record_exit || cfg!(test) {
                     let counted_exit = self.new_label("counted_exit");
                     self.write_label(counted_exit.clone());
                     asm_comment!(self, "Counted Exit: {reason}");
 
-                    if get_option!(stats) {
+                    if get_option!(stats) || cfg!(test) {
                         asm_comment!(self, "increment a side exit counter");
                         self.incr_counter(Opnd::const_ptr(exit_counter_ptr(reason)), 1.into());
 
