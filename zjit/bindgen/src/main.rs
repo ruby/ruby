@@ -314,7 +314,7 @@ fn main() {
         .allowlist_function("rb_zjit_insn_leaf")
         .allowlist_type("jit_bindgen_constants")
         .allowlist_type("zjit_struct_offsets")
-        .allowlist_type("zjit_poison_values")
+        .allowlist_var("ZJIT_JIT_RETURN_POISON")
         .allowlist_function("rb_assert_holding_vm_lock")
         .allowlist_function("rb_jit_shape_too_complex_p")
         .allowlist_function("rb_jit_multi_ractor_p")

@@ -66,10 +66,8 @@ static inline void rb_zjit_jit_frame_update_references(zjit_jit_frame_t *jit_fra
 
 #define rb_zjit_enabled_p (rb_zjit_entry != 0)
 
-enum zjit_poison_values {
-    // Poison value used on frame push when runtime checks are enabled
-    ZJIT_JIT_RETURN_POISON = 2,
-};
+// BADFrame. The high bit is set, so likely SEGV on linux and darwin if dereferenced.
+#define ZJIT_JIT_RETURN_POISON 0xbadfbadfbadfbadfULL
 
 // Return the JITFrame pointer from cfp->jit_return, or NULL if not present.
 // YJIT also uses jit_return (as a return address), so this must only return
@@ -79,7 +77,7 @@ CFP_ZJIT_FRAME(const rb_control_frame_t *cfp)
 {
     if (!rb_zjit_enabled_p) return NULL;
 #if USE_ZJIT
-    RUBY_ASSERT_ALWAYS(cfp->jit_return != (void *)ZJIT_JIT_RETURN_POISON);
+    RUBY_ASSERT((unsigned long long)cfp->jit_return != ZJIT_JIT_RETURN_POISON);
 #endif
     return cfp->jit_return;
 }
