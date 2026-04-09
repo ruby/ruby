@@ -3707,8 +3707,9 @@ skipprefixroot(const char *path, const char *end, rb_encoding *enc)
 #endif
 }
 
-char *
-rb_enc_path_last_separator(const char *path, const char *end, rb_encoding *enc)
+
+static char *
+enc_path_last_separator(const char *path, const char *end, bool mb_enc, rb_encoding *enc)
 {
     char *last = NULL;
     while (path < end) {
@@ -3719,17 +3720,22 @@ rb_enc_path_last_separator(const char *path, const char *end, rb_encoding *enc)
             last = (char *)tmp;
         }
         else {
-            Inc(path, end, true, enc);
+            Inc(path, end, mb_enc, enc);
         }
     }
     return last;
+}
+char *
+rb_enc_path_last_separator(const char *path, const char *end, rb_encoding *enc)
+{
+    return enc_path_last_separator(path, end, true, enc);
 }
 
 static inline char *
 strrdirsep(const char *path, const char *end, bool mb_enc, rb_encoding *enc)
 {
     if (RB_UNLIKELY(mb_enc)) {
-        return rb_enc_path_last_separator(path, end, enc);
+        return enc_path_last_separator(path, end, mb_enc, enc);
     }
 
     const char *cursor = end - 1;
@@ -4021,7 +4027,12 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
     s = StringValuePtr(fname);
     fend = s + RSTRING_LEN(fname);
-    enc = rb_enc_get(fname);
+    enc = rb_str_enc_get(fname);
+    bool mb_enc = !rb_str_encindex_fastpath(rb_enc_to_index(enc));
+    if (!mb_enc && RTEST(dname)) {
+        mb_enc = !rb_str_encindex_fastpath(rb_enc_to_index(rb_str_enc_get(dname)));
+    }
+
     BUFINIT();
 
     if (s < fend && s[0] == '~' && abs_mode == 0) {      /* execute only if NOT absolute_path() */
@@ -4115,7 +4126,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
         }
         else
 #endif /* defined DOSISH || defined __CYGWIN__ */
-            p = chompdirsep(skiproot(buf, p), p, true, enc);
+            p = chompdirsep(skiproot(buf, p), p, mb_enc, enc);
     }
     else {
         size_t len;
@@ -4139,7 +4150,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     rb_str_set_len(result, p-buf+1);
     BUFCHECK(bdiff + 1 >= buflen);
     p[1] = 0;
-    root = skipprefix(buf, p+1, true, enc);
+    root = skipprefix(buf, p+1, mb_enc, enc);
 
     b = s;
     while (s < fend) {
@@ -4156,7 +4167,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
                         /* We must go back to the parent */
                         char *n;
                         *p = '\0';
-                        if (!(n = strrdirsep(root, p, true, enc))) {
+                        if (!(n = strrdirsep(root, p, mb_enc, enc))) {
                             *p = '/';
                         }
                         else {
@@ -4219,7 +4230,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
                 }
             }
 #endif /* __APPLE__ */
-            Inc(s, fend, true, enc);
+            Inc(s, fend, mb_enc, enc);
             break;
         }
     }
