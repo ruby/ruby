@@ -380,9 +380,15 @@ rb_str_normalize_ospath(const char *ptr, long len)
     const char *p = ptr;
     const char *e = ptr + len;
     const char *p1 = p;
-    VALUE str = rb_str_buf_new(len);
     rb_encoding *enc = rb_utf8_encoding();
-    rb_enc_associate(str, enc);
+    VALUE str = rb_utf8_str_new(ptr, len);
+    if (RB_LIKELY(rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT)) {
+        return str;
+    }
+    else {
+        str = rb_str_buf_new(len);
+        rb_enc_associate(str, enc);
+    }
 
     while (p < e) {
         int l, c;
