@@ -64,9 +64,9 @@ RBASIC_SET_CLASS(VALUE obj, VALUE klass)
 static inline size_t
 rb_obj_embedded_size(uint32_t fields_count)
 {
-#if (defined(RACTOR_CHECK_MODE) && RACTOR_CHECK_MODE) || (defined(GC_DEBUG) && GC_DEBUG)
-    if (fields_count < 1) fields_count = 1;
-#endif
-    return offsetof(struct RObject, as.ary) + (sizeof(VALUE) * fields_count);
+    size_t size = offsetof(struct RObject, as.ary) + (sizeof(VALUE) * fields_count);
+    // Ensure enough room for the heap pointer if this expands
+    if (size < sizeof(struct RObject)) size = sizeof(struct RObject);
+    return size;
 }
 #endif /* INTERNAL_OBJECT_H */
