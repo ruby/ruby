@@ -28,7 +28,7 @@ test_collection_install__mutex_m__rbs_dependency_and__gem_dependency(RBS::CliTes
 test_collection_install_frozen(RBS::CliTest) running tests without Bundler
 test_collection_install_gemspec(RBS::CliTest) running tests without Bundler
 test_collection_update(RBS::CliTest) running tests without Bundler
-test_collection_install__nongem_stdlib_no_warning running test without Bundler
+test_collection_install__nongem_stdlib_no_warning(RBS::CliTest) running test without Bundler
 
 NetSingletonTest depending on external resources
 NetInstanceTest depending on external resources
