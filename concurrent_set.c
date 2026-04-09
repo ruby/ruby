@@ -399,7 +399,12 @@ start_search:
                 if (continuation) {
                     goto probe_next;
                 }
-                rbimpl_atomic_value_cas(&entry->key, curr_key, CONCURRENT_SET_EMPTY, RBIMPL_ATOMIC_RELEASE, RBIMPL_ATOMIC_RELAXED);
+                {
+                    VALUE prev = rbimpl_atomic_value_cas(&entry->key, curr_key, CONCURRENT_SET_EMPTY, RBIMPL_ATOMIC_RELEASE, RBIMPL_ATOMIC_RELAXED);
+                    if (prev == curr_key) {
+                        rbimpl_atomic_sub(&set->size, 1, RBIMPL_ATOMIC_RELAXED);
+                    }
+                }
                 continue;
             }
 
