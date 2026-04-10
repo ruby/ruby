@@ -15544,4 +15544,97 @@ mod hir_opt_tests {
           Return v43
         ");
     }
+
+    #[test]
+    fn test_infer_types_across_non_maximal_basic_blocks() {
+        // Previous worklist-based type inference only worked for maximal SSA. This is a regression
+        // test for hanging.
+        eval("
+            class TheClass
+              def set_value_loop
+                i = 0
+                while i < 10
+                  @levar ||= i
+                  i += 1
+                end
+              end
+            end
+            3.times do |i|
+              TheClass.new.set_value_loop
+            end
+        ");
+        assert_snapshot!(hir_string_proc("TheClass.instance_method(:set_value_loop)"), @"
+        fn set_value_loop@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:NilClass = Const Value(nil)
+          Jump bb3(v1, v2)
+        bb2():
+          EntryPoint JIT(0)
+          v5:BasicObject = LoadArg :self@0
+          v6:NilClass = Const Value(nil)
+          Jump bb3(v5, v6)
+        bb3(v8:BasicObject, v9:NilClass):
+          v13:Fixnum[0] = Const Value(0)
+          CheckInterrupts
+          Jump bb6(v8, v13)
+        bb6(v19:BasicObject, v20:Fixnum):
+          v24:Fixnum[10] = Const Value(10)
+          PatchPoint MethodRedefined(Integer@0x1000, <@0x1008, cme:0x1010)
+          v110:BoolExact = FixnumLt v20, v24
+          CheckInterrupts
+          v30:CBool = Test v110
+          IfTrue v30, bb4(v19, v20)
+          v35:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v35
+        bb4(v40:BasicObject, v41:Fixnum):
+          PatchPoint SingleRactorMode
+          v46:HeapBasicObject = GuardType v40, HeapBasicObject
+          v47:CUInt64 = LoadField v46, :_rbasic_flags@0x1038
+          v49:CUInt64[0xffffffff0000001f] = Const CUInt64(0xffffffff0000001f)
+          v50:CPtr[CPtr(0x1039)] = Const CPtr(0x1039)
+          v51 = RefineType v50, CUInt64
+          v52:CInt64 = IntAnd v47, v49
+          v53:CBool = IsBitEqual v52, v51
+          IfTrue v53, bb8()
+          v57:CUInt64[0xffffffff0000001f] = Const CUInt64(0xffffffff0000001f)
+          v58:CPtr[CPtr(0x103a)] = Const CPtr(0x103a)
+          v59 = RefineType v58, CUInt64
+          v60:CInt64 = IntAnd v47, v57
+          v61:CBool = IsBitEqual v60, v59
+          IfTrue v61, bb9()
+          v97:CShape = LoadField v46, :_shape_id@0x103b
+          v98:CShape[0x103c] = GuardBitEquals v97, CShape(0x103c)
+          v99:BasicObject = LoadField v46, :@levar@0x103d
+          Jump bb7(v99)
+        bb8():
+          v55:BasicObject = LoadField v46, :@levar@0x103d
+          Jump bb7(v55)
+        bb9():
+          v63:NilClass = Const Value(nil)
+          Jump bb7(v63)
+        bb7(v48:BasicObject):
+          CheckInterrupts
+          v69:CBool = Test v48
+          IfTrue v69, bb5(v46, v41)
+          PatchPoint NoEPEscape(set_value_loop)
+          PatchPoint SingleRactorMode
+          v101:CShape = LoadField v46, :_shape_id@0x103b
+          v102:CShape[0x103e] = GuardBitEquals v101, CShape(0x103e)
+          StoreField v46, :@levar@0x103d, v41
+          WriteBarrier v46, v41
+          v105:CShape[0x103c] = Const CShape(0x103c)
+          StoreField v46, :_shape_id@0x103b, v105
+          v79:HeapBasicObject = RefineType v46, HeapBasicObject
+          Jump bb5(v79, v41)
+        bb5(v81:HeapBasicObject, v82:Fixnum):
+          PatchPoint NoEPEscape(set_value_loop)
+          v89:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1000, +@0x103f, cme:0x1040)
+          v114:Fixnum = FixnumAdd v82, v89
+          Jump bb6(v81, v114)
+        ");
+    }
 }
