@@ -101,7 +101,7 @@ rb_call_builtin_inits(void)
     BUILTIN(ast);
     BUILTIN(trace_point);
     BUILTIN(pack);
-    BUILTIN(pathname_builtin);
+    BUILTIN(pathname);
     BUILTIN(warning);
     BUILTIN(array);
     BUILTIN(hash);

@@ -97,7 +97,7 @@ path_sub(int argc, VALUE *argv, VALUE self)
     return rb_class_new_instance(1, &str, rb_obj_class(self));
 }
 
-#include "pathname_builtin.rbinc"
+#include "pathname.rbinc"
 
 static void init_ids(void);
 
@@ -120,6 +120,7 @@ InitVM_pathname(void)
     rb_define_method(rb_cPathname, "sub", path_sub, -1);
 
     rb_provide("pathname.so");
+    rb_provide("pathname.rb");
 }
 
 void
