@@ -5610,3 +5610,25 @@ fn test_load_immediates_into_registers_before_masking() {
         test
     "#), @"true");
 }
+
+#[test]
+fn test_loop_terminates() {
+    set_call_threshold(3);
+    // Previous worklist-based type inference only worked for maximal SSA. This is a regression
+    // test for hanging.
+    assert_snapshot!(inspect(r#"
+        class TheClass
+          def set_value_loop
+            i = 0
+            while i < 10
+              @levar ||= i
+              i += 1
+            end
+          end
+        end
+
+        3.times do |i|
+          TheClass.new.set_value_loop
+        end
+    "#), @"3");
+}

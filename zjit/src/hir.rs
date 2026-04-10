@@ -3204,81 +3204,63 @@ impl Function {
         self.copy_param_types();
 
         let mut reachable = BlockSet::with_capacity(self.blocks.len());
-
-        // Maintain both a worklist and a fast membership check to avoid linear search
-        let mut worklist: VecDeque<BlockId> = VecDeque::with_capacity(self.blocks.len());
-        let mut in_worklist = BlockSet::with_capacity(self.blocks.len());
-        macro_rules! worklist_add {
-            ($block:expr) => {
-                if in_worklist.insert($block) {
-                    worklist.push_back($block);
-                }
-            };
-        }
-
         reachable.insert(self.entries_block);
-        worklist_add!(self.entries_block);
 
-        // Helper to propagate types along a branch edge and enqueue the target if anything changed
-        macro_rules! enqueue {
-            ($self:ident, $target:expr) => {
-                let newly_reachable = reachable.insert($target.target);
-                let mut target_changed = newly_reachable;
-                for (idx, arg) in $target.args.iter().enumerate() {
-                    let arg = self.union_find.borrow().find_const(*arg);
-                    let param = $self.blocks[$target.target.0].params[idx];
-                    let param = self.union_find.borrow().find_const(param);
-                    let new = self.insn_types[param.0].union(self.insn_types[arg.0]);
-                    if !self.insn_types[param.0].bit_equal(new) {
-                        self.insn_types[param.0] = new;
-                        target_changed = true;
-                    }
-                }
-                if target_changed {
-                    worklist_add!($target.target);
-                }
-            };
-        }
-
-        // Walk the graph, computing types until worklist is empty
-        while let Some(block) = worklist.pop_front() {
-            in_worklist.remove(block);
-            if !reachable.get(block) { continue; }
-            for insn_id in &self.blocks[block.0].insns {
-                let insn_id = self.union_find.borrow().find_const(*insn_id);
-                let insn_type = match &self.insns[insn_id.0] {
-                    &Insn::IfTrue { val, ref target } => {
-                        assert!(!self.type_of(val).bit_equal(types::Empty));
-                        if self.type_of(val).could_be(Type::from_cbool(true)) {
-                            enqueue!(self, target);
-                        }
-                        continue;
-                    }
-                    &Insn::IfFalse { val, ref target } => {
-                        assert!(!self.type_of(val).bit_equal(types::Empty));
-                        if self.type_of(val).could_be(Type::from_cbool(false)) {
-                            enqueue!(self, target);
-                        }
-                        continue;
-                    }
-                    &Insn::Jump(ref target) => {
-                        enqueue!(self, target);
-                        continue;
-                    }
-                    &Insn::Entries { ref targets } => {
-                        for target in targets {
-                            if reachable.insert(*target) {
-                                worklist_add!(*target);
+        // Walk the graph, computing types until fixpoint
+        let rpo = self.rpo();
+        loop {
+            let mut changed = false;
+            for &block in &rpo {
+                if !reachable.get(block) { continue; }
+                for &insn_id in &self.blocks[block.0].insns {
+                    let insn_type = match &self.insns[insn_id.0] {
+                        &Insn::IfTrue { val, target: BranchEdge { target, ref args } } => {
+                            assert!(!self.type_of(val).bit_equal(types::Empty));
+                            if self.type_of(val).could_be(Type::from_cbool(true)) {
+                                reachable.insert(target);
+                                for (idx, arg) in args.iter().enumerate() {
+                                    let param = self.blocks[target.0].params[idx];
+                                    self.insn_types[param.0] = self.type_of(param).union(self.type_of(*arg));
+                                }
                             }
+                            continue;
                         }
-                        continue;
+                        &Insn::IfFalse { val, target: BranchEdge { target, ref args } } => {
+                            assert!(!self.type_of(val).bit_equal(types::Empty));
+                            if self.type_of(val).could_be(Type::from_cbool(false)) {
+                                reachable.insert(target);
+                                for (idx, arg) in args.iter().enumerate() {
+                                    let param = self.blocks[target.0].params[idx];
+                                    self.insn_types[param.0] = self.type_of(param).union(self.type_of(*arg));
+                                }
+                            }
+                            continue;
+                        }
+                        &Insn::Jump(BranchEdge { target, ref args }) => {
+                            reachable.insert(target);
+                            for (idx, arg) in args.iter().enumerate() {
+                                let param = self.blocks[target.0].params[idx];
+                                self.insn_types[param.0] = self.type_of(param).union(self.type_of(*arg));
+                            }
+                            continue;
+                        }
+                        Insn::Entries { targets } => {
+                            for &target in targets {
+                                reachable.insert(target);
+                            }
+                            continue;
+                        }
+                        insn if insn.has_output() => self.infer_type(insn_id),
+                        _ => continue,
+                    };
+                    if !self.type_of(insn_id).bit_equal(insn_type) {
+                        self.insn_types[insn_id.0] = insn_type;
+                        changed = true;
                     }
-                    insn if insn.has_output() => self.infer_type(insn_id),
-                    _ => continue,
-                };
-                if !self.type_of(insn_id).bit_equal(insn_type) {
-                    self.insn_types[insn_id.0] = insn_type;
                 }
+            }
+            if !changed {
+                break;
             }
         }
     }
