@@ -504,6 +504,7 @@ fnmatch(
 }
 
 VALUE rb_cDir;
+static VALUE cwd_ospath;
 static VALUE sym_directory, sym_link, sym_file, sym_unknown;
 
 #if defined(DT_BLK) || defined(S_IFBLK)
@@ -1241,6 +1242,7 @@ nogvl_chdir(void *ptr)
 static void
 dir_chdir0(VALUE path)
 {
+    cwd_ospath = 0;
     if (IO_WITHOUT_GVL_INT(nogvl_chdir, (void*)RSTRING_PTR(path)) < 0)
         rb_sys_fail_path(path);
 }
@@ -1607,8 +1609,11 @@ getcwd_xfree(VALUE arg)
 VALUE
 rb_dir_getwd_ospath(void)
 {
+    if (cwd_ospath) {
+        return cwd_ospath;
+    }
     char *path = ruby_getcwd();
-    return rb_ensure(getcwd_to_str, (VALUE)path, getcwd_xfree, (VALUE)path);
+    return cwd_ospath = rb_str_freeze(rb_ensure(getcwd_to_str, (VALUE)path, getcwd_xfree, (VALUE)path));
 }
 #endif
 
@@ -1617,7 +1622,7 @@ rb_dir_getwd(void)
 {
     rb_encoding *fs = rb_filesystem_encoding();
     int fsenc = rb_enc_to_index(fs);
-    VALUE cwd = rb_dir_getwd_ospath();
+    VALUE cwd = rb_str_dup(rb_dir_getwd_ospath());
 
     switch (fsenc) {
       case ENCINDEX_US_ASCII:
@@ -4008,6 +4013,7 @@ Init_Dir(void)
 
     rb_gc_register_address(&chdir_lock.path);
     rb_gc_register_address(&chdir_lock.thread);
+    rb_gc_register_address(&cwd_ospath);
 
     rb_cDir = rb_define_class("Dir", rb_cObject);
 
