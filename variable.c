@@ -4002,15 +4002,17 @@ const_tbl_update(struct autoload_const *ac, int autoload_force)
         else {
             VALUE name = QUOTE_ID(id);
             visibility = ce->flag;
-            if (klass == rb_cObject)
-                rb_warn("already initialized constant %"PRIsVALUE"", name);
-            else
-                rb_warn("already initialized constant %"PRIsVALUE"::%"PRIsVALUE"",
-                        rb_class_name(klass), name);
+
+            VALUE previous = Qnil;
             if (!NIL_P(ce->file) && ce->line) {
-                rb_compile_warn(RSTRING_PTR(ce->file), ce->line,
-                                "previous definition of %"PRIsVALUE" was here", name);
+                previous = rb_sprintf("\n%"PRIsVALUE":%d: warning: previous definition of %"PRIsVALUE" was here", ce->file, ce->line, name);
             }
+
+            if (klass == rb_cObject)
+                rb_warn("already initialized constant %"PRIsVALUE"%"PRIsVALUE"", name, previous);
+            else
+                rb_warn("already initialized constant %"PRIsVALUE"::%"PRIsVALUE"%"PRIsVALUE"",
+                        rb_class_name(klass), name, previous);
         }
         rb_clear_constant_cache_for_id(id);
         setup_const_entry(ce, klass, val, visibility);
