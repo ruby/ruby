@@ -1491,6 +1491,14 @@ rb_hash_new_with_size(st_index_t size)
 }
 
 VALUE
+rb_hash_new_with_size_and_type(VALUE klass, st_index_t size, const struct st_hash_type *type)
+{
+    VALUE ret = hash_alloc_flags(klass, 0, Qnil, true);
+    hash_st_table_init(ret, type, size);
+    return ret;
+}
+
+VALUE
 rb_hash_new_capa(long capa)
 {
     return rb_hash_new_with_size((st_index_t)capa);

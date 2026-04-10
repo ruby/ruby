@@ -7067,7 +7067,7 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
     DECL_ANCHOR(body_seq);
     DECL_ANCHOR(cond_seq);
     int only_special_literals = 1;
-    VALUE literals = rb_hash_new();
+    VALUE literals = rb_hash_new_with_size_and_type(0, 0, &cdhash_type);
     int line;
     enum node_type type;
     const NODE *line_node;
@@ -7077,8 +7077,6 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
     INIT_ANCHOR(head);
     INIT_ANCHOR(body_seq);
     INIT_ANCHOR(cond_seq);
-
-    RHASH_TBL_RAW(literals)->type = &cdhash_type;
 
     CHECK(COMPILE(head, "case base", RNODE_CASE(node)->nd_head));
 
@@ -7165,7 +7163,6 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
 
     if (only_special_literals && ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
         ADD_INSN(ret, orig_node, dup);
-        rb_obj_hide(literals);
         ADD_INSN2(ret, orig_node, opt_case_dispatch, literals, elselabel);
         RB_OBJ_WRITTEN(iseq, Qundef, literals);
         LABEL_REF(elselabel);
@@ -12167,9 +12164,8 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
                       case TS_CDHASH:
                         {
                             int i;
-                            VALUE map = rb_hash_new_with_size(RARRAY_LEN(op)/2);
+                            VALUE map = rb_hash_new_with_size_and_type(0, RARRAY_LEN(op)/2, &cdhash_type);
 
-                            RHASH_TBL_RAW(map)->type = &cdhash_type;
                             op = rb_to_array_type(op);
                             for (i=0; i<RARRAY_LEN(op); i+=2) {
                                 VALUE key = RARRAY_AREF(op, i);
@@ -12179,7 +12175,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
                                 rb_hash_aset(map, key, (VALUE)label | 1);
                             }
                             RB_GC_GUARD(op);
-                            RB_OBJ_SET_SHAREABLE(rb_obj_hide(map)); // allow mutation while compiling
+                            RB_OBJ_SET_SHAREABLE(map); // allow mutation while compiling
                             argv[j] = map;
                             RB_OBJ_WRITTEN(iseq, Qundef, map);
                         }
@@ -13004,6 +13000,20 @@ ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq)
     return offset;
 }
 
+static int
+cdhash_copy_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    rb_hash_aset((VALUE)arg, (VALUE)key, (VALUE)val);
+    return ST_CONTINUE;
+}
+
+static VALUE
+cdhash_copy(VALUE dest, VALUE src)
+{
+    rb_hash_stlike_foreach(src, cdhash_copy_i, dest);
+    return dest;
+}
+
 static VALUE *
 ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecode_offset, ibf_offset_t bytecode_size, unsigned int iseq_size)
 {
@@ -13058,11 +13068,10 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
               case TS_CDHASH:
                 {
                     VALUE op = ibf_load_small_value(load, &reading_pos);
-                    VALUE v = ibf_load_object(load, op);
-                    v = rb_hash_dup(v); // hash dumped as frozen
-                    RHASH_TBL_RAW(v)->type = &cdhash_type;
-                    rb_hash_rehash(v); // hash function changed
-                    RB_OBJ_SET_SHAREABLE(freeze_hide_obj(v));
+                    VALUE src = ibf_load_object(load, op);
+                    VALUE v = rb_hash_new_with_size_and_type(0, RHASH_SIZE(src), &cdhash_type);
+                    rb_hash_rehash(cdhash_copy(v, src));
+                    RB_OBJ_SET_SHAREABLE(v);
 
                     // Overwrite the existing hash in the object list.  This
                     // is to keep the object alive during load time.
