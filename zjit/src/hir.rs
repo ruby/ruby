@@ -4344,7 +4344,7 @@ impl Function {
                 }
             }
         }
-        self.infer_types();
+        crate::stats::trace_compile_phase("infer_types", || self.infer_types());
     }
 
     fn inline(&mut self) {
@@ -4398,7 +4398,7 @@ impl Function {
                 }
             }
         }
-        self.infer_types();
+        crate::stats::trace_compile_phase("infer_types", || self.infer_types());
     }
 
     fn load_shape(&mut self, block: BlockId, recv: InsnId) -> InsnId {
@@ -4686,7 +4686,7 @@ impl Function {
                 }
             }
         }
-        self.infer_types();
+        crate::stats::trace_compile_phase("infer_types", || self.infer_types());
     }
 
     fn gen_patch_points_for_optimized_ccall(&mut self, block: BlockId, recv_class: VALUE, method_id: ID, cme: *const rb_callable_method_entry_struct, state: InsnId) {
@@ -5005,7 +5005,7 @@ impl Function {
                 self.push_insn_id(block, insn_id);
             }
         }
-        self.infer_types();
+        crate::stats::trace_compile_phase("infer_types", || self.infer_types());
     }
 
     /// Convert `Send` instructions with no profile data into `SideExit` with recompile info.
@@ -5504,7 +5504,7 @@ impl Function {
             changed = true;
         }
         if changed {
-            self.infer_types();
+            crate::stats::trace_compile_phase("infer_types", || self.infer_types());
         }
     }
 
