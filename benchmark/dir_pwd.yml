@@ -1,0 +1,2 @@
+benchmark:
+  pwd: Dir.pwd

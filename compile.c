@@ -12167,7 +12167,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
                       case TS_CDHASH:
                         {
                             int i;
-                            VALUE map = rb_hash_alloc_fixed_size(Qfalse, RARRAY_LEN(op)/2);
+                            VALUE map = rb_hash_new_with_size(RARRAY_LEN(op)/2);
 
                             RHASH_TBL_RAW(map)->type = &cdhash_type;
                             op = rb_to_array_type(op);
@@ -12179,7 +12179,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
                                 rb_hash_aset(map, key, (VALUE)label | 1);
                             }
                             RB_GC_GUARD(op);
-                            RB_OBJ_SET_SHAREABLE(map); // allow mutation while compiling
+                            RB_OBJ_SET_SHAREABLE(rb_obj_hide(map)); // allow mutation while compiling
                             argv[j] = map;
                             RB_OBJ_WRITTEN(iseq, Qundef, map);
                         }
