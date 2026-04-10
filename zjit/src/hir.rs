@@ -3213,6 +3213,8 @@ impl Function {
             for &block in &rpo {
                 if !reachable.get(block) { continue; }
                 for &insn_id in &self.blocks[block.0].insns {
+                    // Instructions without output, including branch instructions, can't be targets
+                    // of make_equal_to, so we don't need find() here.
                     let insn_type = match &self.insns[insn_id.0] {
                         &Insn::IfTrue { val, target: BranchEdge { target, ref args } } => {
                             assert!(!self.type_of(val).bit_equal(types::Empty));
