@@ -970,6 +970,41 @@ class TestObject < Test::Unit::TestCase
     assert_not_include(s, "@password=")
   end
 
+  def test_inspect_mutating_ivar
+    obj = Object.new
+    evil = Object.new
+    evil.define_singleton_method(:inspect) do
+      obj.instance_variables.each { |v| obj.remove_instance_variable(v) }
+      "evil"
+    end
+    obj.instance_variable_set(:@evil, evil)
+    10.times { |i| obj.instance_variable_set(:"@v#{i}", 0) }
+    # Buffered iteration: inspect sees a snapshot of the original ivars
+    result = obj.inspect
+    assert_include result, "@evil=evil"
+    10.times { |i| assert_include result, "@v#{i}=0" }
+  end
+
+  def test_inspect_mutating_ivar_too_complex
+    # Force too_complex by creating many shape variations on the same class
+    c = Class.new
+    50.times do |i|
+      o = c.new
+      o.instance_variable_set(:"@unique_#{i}", 0)
+    end
+
+    obj = c.new
+    evil = Object.new
+    evil.define_singleton_method(:inspect) do
+      obj.instance_variables.each { |v| obj.remove_instance_variable(v) }
+      ""
+    end
+    obj.instance_variable_set(:@evil, evil)
+    10.times { |i| obj.instance_variable_set(:"@v#{i}", 0) }
+    # too_complex objects use st_foreach which handles mutation gracefully
+    obj.inspect
+  end
+
   def test_inspect_too_complex
     kernel_inspect = Kernel.instance_method(:inspect)
 
@@ -980,7 +1015,7 @@ class TestObject < Test::Unit::TestCase
       Class.new(Hash),
       Struct.new(:x),
       Class.new(Thread::Mutex),
-      # It's very difficult to get a too_complex T_CLASS, to that isn't tested here
+      # It's very difficult to get a too_complex T_CLASS, so that isn't tested here
     ]
 
     klasses.each_with_index do |klass, idx|

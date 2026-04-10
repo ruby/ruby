@@ -2151,6 +2151,7 @@ struct iv_itr_data {
     st_data_t arg;
     rb_ivar_foreach_callback_func *func;
     VALUE *fields;
+    shape_id_t shape_id;
     bool ivar_only;
 };
 
@@ -2179,8 +2180,14 @@ iterate_over_shapes_callback(shape_id_t shape_id, void *data)
         rb_bug("Unreachable");
     }
 
+    RUBY_ASSERT(itr_data->shape_id == RBASIC_SHAPE_ID(itr_data->obj));
+
     VALUE val = fields[RSHAPE_INDEX(shape_id)];
-    return itr_data->func(RSHAPE_EDGE_NAME(shape_id), val, itr_data->arg);
+    int ret = itr_data->func(RSHAPE_EDGE_NAME(shape_id), val, itr_data->arg);
+
+    RUBY_ASSERT(itr_data->shape_id == RBASIC_SHAPE_ID(itr_data->obj));
+
+    return ret;
 }
 
 /*
@@ -2215,10 +2222,11 @@ obj_fields_each(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg, b
 
     shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
     if (rb_shape_too_complex_p(shape_id)) {
-        rb_st_foreach(ROBJECT_FIELDS_HASH(obj), each_hash_iv, (st_data_t)&itr_data);
+        st_foreach_safe(ROBJECT_FIELDS_HASH(obj), each_hash_iv, (st_data_t)&itr_data);
     }
     else {
         itr_data.fields = ROBJECT_FIELDS(obj);
+        itr_data.shape_id = shape_id;
         iterate_over_shapes(shape_id, func, &itr_data);
     }
 }
@@ -2241,6 +2249,7 @@ imemo_fields_each(VALUE fields_obj, rb_ivar_foreach_callback_func *func, st_data
     }
     else {
         itr_data.fields = rb_imemo_fields_ptr(fields_obj);
+        itr_data.shape_id = shape_id;
         iterate_over_shapes(shape_id, func, &itr_data);
     }
 }
@@ -2353,10 +2362,45 @@ rb_field_foreach(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg, 
     }
 }
 
+struct ivar_buf_entry {
+    ID name;
+    VALUE val;
+};
+
+static int
+collect_ivar_i(ID id, VALUE val, st_data_t arg)
+{
+    struct ivar_buf_entry **pos = (struct ivar_buf_entry **)arg;
+    (*pos)->name = id;
+    (*pos)->val = val;
+    (*pos)++;
+    return ST_CONTINUE;
+}
+
 void
 rb_ivar_foreach(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg)
 {
     rb_field_foreach(obj, func, arg, true);
+}
+
+void
+rb_ivar_foreach_buffered(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg)
+{
+    st_index_t count = rb_ivar_count(obj);
+    if (count == 0) return;
+
+    VALUE tmpbuf;
+    struct ivar_buf_entry *buf = ALLOCV_N(struct ivar_buf_entry, tmpbuf, count);
+    struct ivar_buf_entry *pos = buf;
+
+    rb_field_foreach(obj, collect_ivar_i, (st_data_t)&pos, true);
+    RUBY_ASSERT((st_index_t)(pos - buf) == count);
+
+    for (st_index_t i = 0; i < count; i++) {
+        if (func(buf[i].name, buf[i].val, arg) == ST_STOP) break;
+    }
+
+    ALLOCV_END(tmpbuf);
 }
 
 st_index_t

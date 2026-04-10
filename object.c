@@ -769,7 +769,7 @@ inspect_obj(VALUE obj, VALUE a, int recur)
         rb_str_cat2(str, " ...");
     }
     else {
-        rb_ivar_foreach(obj, inspect_i, a);
+        rb_ivar_foreach_buffered(obj, inspect_i, a);
     }
     rb_str_cat2(str, ">");
     RSTRING_PTR(str)[0] = '#';
