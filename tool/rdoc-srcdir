@@ -1,7 +1,16 @@
 #!ruby -W0
 
+srcdir = File.dirname(__dir__)
+bundled_gems = File.join(srcdir, "gems/bundled_gems")
+versions = {}
+File.foreach(bundled_gems) do |line|
+  next if line.start_with?("#") || line.strip.empty?
+  name, version, = line.split
+  versions[name] = version
+end
+
 %w[tsort rdoc].each do |lib|
-  path = Dir.glob("#{File.dirname(__dir__)}/.bundle/gems/#{lib}-*").first
+  path = File.join(srcdir, ".bundle/gems/#{lib}-#{versions[lib]}")
   $LOAD_PATH.unshift("#{path}/lib")
 end
 require 'rdoc/rdoc'
