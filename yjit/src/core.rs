@@ -1843,22 +1843,24 @@ pub fn get_or_create_iseq_payload(iseq: IseqPtr) -> &'static mut IseqPayload {
 pub fn for_each_iseq<F: FnMut(IseqPtr)>(mut callback: F) {
     unsafe extern "C" fn callback_wrapper(iseq: IseqPtr, data: *mut c_void) {
         // SAFETY: points to the local below
-        let callback: &mut &mut dyn FnMut(IseqPtr) -> bool = unsafe { std::mem::transmute(&mut *data) };
-        callback(iseq);
+        let callback: *mut *mut dyn FnMut(IseqPtr) -> bool = data.cast();
+        unsafe { (**callback)(iseq) };
     }
-    let mut data: &mut dyn FnMut(IseqPtr) = &mut callback;
-    unsafe { rb_jit_for_each_iseq(Some(callback_wrapper), (&mut data) as *mut _ as *mut c_void) };
+    let mut data: *mut dyn FnMut(IseqPtr) = &mut callback;
+    let data: *mut *mut dyn FnMut(IseqPtr) = &mut data;
+    unsafe { rb_jit_for_each_iseq(Some(callback_wrapper), data.cast()) };
 }
 
 /// Iterate over all on-stack ISEQs
 pub fn for_each_on_stack_iseq<F: FnMut(IseqPtr)>(mut callback: F) {
     unsafe extern "C" fn callback_wrapper(iseq: IseqPtr, data: *mut c_void) {
         // SAFETY: points to the local below
-        let callback: &mut &mut dyn FnMut(IseqPtr) -> bool = unsafe { std::mem::transmute(&mut *data) };
-        callback(iseq);
+        let callback: *mut *mut dyn FnMut(IseqPtr) -> bool = data.cast();
+        unsafe { (**callback)(iseq) };
     }
-    let mut data: &mut dyn FnMut(IseqPtr) = &mut callback;
-    unsafe { rb_jit_cont_each_iseq(Some(callback_wrapper), (&mut data) as *mut _ as *mut c_void) };
+    let mut data: *mut dyn FnMut(IseqPtr) = &mut callback;
+    let data: *mut *mut dyn FnMut(IseqPtr) = &mut data;
+    unsafe { rb_jit_cont_each_iseq(Some(callback_wrapper), data.cast()) };
 }
 
 /// Iterate over all on-stack ISEQ payloads
