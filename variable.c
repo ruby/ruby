@@ -2138,6 +2138,7 @@ struct iv_itr_data {
     st_data_t arg;
     rb_ivar_foreach_callback_func *func;
     VALUE *fields;
+    shape_id_t shape_id;
     bool ivar_only;
 };
 
@@ -2165,6 +2166,8 @@ iterate_over_shapes_callback(shape_id_t shape_id, void *data)
       default:
         rb_bug("Unreachable");
     }
+
+    RUBY_ASSERT_ALWAYS(itr_data->shape_id == RBASIC_SHAPE_ID(itr_data->obj));
 
     VALUE val = fields[RSHAPE_INDEX(shape_id)];
     return itr_data->func(RSHAPE_EDGE_NAME(shape_id), val, itr_data->arg);
@@ -2206,7 +2209,9 @@ obj_fields_each(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg, b
     }
     else {
         itr_data.fields = ROBJECT_FIELDS(obj);
+        itr_data.shape_id = shape_id;
         iterate_over_shapes(shape_id, func, &itr_data);
+        RUBY_ASSERT_ALWAYS(shape_id == RBASIC_SHAPE_ID(obj));
     }
 }
 
@@ -2228,7 +2233,9 @@ imemo_fields_each(VALUE fields_obj, rb_ivar_foreach_callback_func *func, st_data
     }
     else {
         itr_data.fields = rb_imemo_fields_ptr(fields_obj);
+        itr_data.shape_id = shape_id;
         iterate_over_shapes(shape_id, func, &itr_data);
+        RUBY_ASSERT_ALWAYS(shape_id == RBASIC_SHAPE_ID(fields_obj));
     }
 }
 
