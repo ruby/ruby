@@ -1232,24 +1232,24 @@ pub mod test_utils {
     pub fn with_rubyvm<T>(mut func: impl FnMut() -> T) -> T {
         RUBY_VM_INIT.call_once(boot_rubyvm);
 
-        // Set up a callback wrapper to store a return value
-        let mut result: Option<T> = None;
-        let mut data: &mut dyn FnMut() = &mut || {
-            // Store the result externally
-            result.replace(func());
-        };
-
         // Invoke callback through rb_protect() so exceptions don't crash the process.
         // "Fun" double pointer dance to get a thin function pointer to pass through C
         unsafe extern "C" fn callback_wrapper(data: VALUE) -> VALUE {
             // SAFETY: shorter lifetime than the data local in the caller frame
-            let callback: *mut &mut dyn FnMut() = std::ptr::with_exposed_provenance_mut(data.0);
-            unsafe { (*callback)() };
+            let callback: *const *mut dyn FnMut() = std::ptr::with_exposed_provenance_mut(data.0);
+            unsafe { (**callback)() };
             Qnil
         }
 
+        // Set up a callback wrapper to store the return value
+        let mut result: Option<T> = None;
+        let mut func_wrapper = || {
+            result.replace(func());
+        };
+        let data: *mut dyn FnMut() = &raw mut func_wrapper;
+        let data: *const *mut dyn FnMut() = &raw const data;
         let mut state: c_int = 0;
-        unsafe { super::rb_protect(Some(callback_wrapper), VALUE((&raw mut data).expose_provenance()), &mut state) };
+        unsafe { super::rb_protect(Some(callback_wrapper), VALUE(data.expose_provenance()), &mut state) };
         if state != 0 {
             unsafe { rb_zjit_print_exception(); }
             assert_eq!(0, state, "Exceptional unwind in callback. Ruby exception?");
