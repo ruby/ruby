@@ -3512,7 +3512,7 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           v14:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1008, zero?@0x1010, cme:0x1018)
-          v24:BasicObject = InvokeBuiltin leaf <inline_expr>, v14
+          v24:BoolExact = InvokeBuiltin leaf <inline_expr>, v14
           CheckInterrupts
           Return v24
         ");
