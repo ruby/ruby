@@ -54,5 +54,10 @@ describe :integer_equal, shared: true do
       @bignum.send(@method, obj).should == true
       @bignum.send(@method, obj).should == false
     end
+
+    it "does not lose precision when comparing with a Float" do
+      (bignum_value(1).send(@method, bignum_value.to_f)).should == false
+      (bignum_value.send(@method, bignum_value.to_f)).should == true
+    end
   end
 end

@@ -397,6 +397,7 @@ fn inline_array_push(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
     if let &[val] = args {
         if !fun.likely_a(recv, types::Array, state) { return None; }
         let recv = fun.coerce_to(block, recv, types::Array, state);
+        fun.guard_not_frozen(block, recv, state);
         let _ = fun.push_insn(block, hir::Insn::ArrayPush { array: recv, val, state });
         return Some(recv);
     }
@@ -408,6 +409,7 @@ fn inline_array_pop(fun: &mut hir::Function, block: hir::BlockId, recv: hir::Ins
     let &[] = args else { return None; };
     if !fun.likely_a(recv, types::Array, state) { return None; }
     let recv = fun.coerce_to(block, recv, types::Array, state);
+    fun.guard_not_frozen(block, recv, state);
     fun.guard_not_shared(block, recv, state);
     Some(fun.push_insn(block, hir::Insn::ArrayPop { array: recv, state }))
 }

@@ -88,6 +88,7 @@ int rb_hash_stlike_delete(VALUE hash, st_data_t *pkey, st_data_t *pval);
 int rb_hash_stlike_foreach_with_replace(VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg);
 int rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func *func, st_data_t arg);
 bool rb_hash_default_unredefined(VALUE hash);
+VALUE rb_hash_alloc_fixed_size(VALUE klass, st_index_t size);
 VALUE rb_ident_hash_new_with_size(st_index_t size);
 void rb_hash_free(VALUE hash);
 RUBY_EXTERN VALUE rb_cHash_empty_frozen;

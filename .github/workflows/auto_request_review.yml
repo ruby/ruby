@@ -14,8 +14,7 @@ jobs:
     if: ${{ github.repository == 'ruby/ruby' && github.base_ref == 'master' }}
     steps:
       - name: Request review based on files changes and/or groups the author belongs to
-        # Using a fork until https://github.com/necojackarc/auto-request-review/pull/135 is merged
-        uses: k0kubun/auto-request-review@0df295a0ff5c5d302770f589497280132131c63d # master
+        uses: necojackarc/auto-request-review@5d3060495e58e9cb41f51de50e808d3135d5374e # master
         with:
           # scope: public_repo
           token: ${{ secrets.MATZBOT_AUTO_REQUEST_REVIEW_TOKEN }}

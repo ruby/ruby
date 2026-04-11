@@ -248,7 +248,7 @@ pub struct rb_iseq_constant_body {
 /// that this is a handle. Sometimes the C code briefly uses VALUE as
 /// an unsigned integer type and don't necessarily store valid handles but
 /// thankfully those cases are rare and don't cross the FFI boundary.
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
 #[repr(transparent)] // same size and alignment as simply `usize`
 pub struct VALUE(pub usize);
 
@@ -757,6 +757,17 @@ impl IseqParameters {
     }
 }
 
+impl Debug for VALUE {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        // Only use rb_obj_info() when {:#?} since it dereferences the pointer so carries some risk.
+        if f.alternate() {
+            write!(f, "VALUE({})", self.obj_info())
+        } else {
+            write!(f, "VALUE(0x{:x})", self.0)
+        }
+    }
+}
+
 impl From<IseqPtr> for VALUE {
     /// For `.into()` convenience
     fn from(iseq: IseqPtr) -> Self {
@@ -1228,13 +1239,13 @@ pub mod test_utils {
         // "Fun" double pointer dance to get a thin function pointer to pass through C
         unsafe extern "C" fn callback_wrapper(data: VALUE) -> VALUE {
             // SAFETY: shorter lifetime than the data local in the caller frame
-            let callback: &mut &mut dyn FnMut() = unsafe { std::mem::transmute(data) };
-            callback();
+            let callback: *mut &mut dyn FnMut() = std::ptr::with_exposed_provenance_mut(data.0);
+            unsafe { (*callback)() };
             Qnil
         }
 
         let mut state: c_int = 0;
-        unsafe { super::rb_protect(Some(callback_wrapper), VALUE((&mut data) as *mut _ as usize), &mut state) };
+        unsafe { super::rb_protect(Some(callback_wrapper), VALUE((&raw mut data).expose_provenance()), &mut state) };
         if state != 0 {
             unsafe { rb_zjit_print_exception(); }
             assert_eq!(0, state, "Exceptional unwind in callback. Ruby exception?");
@@ -1280,11 +1291,23 @@ pub mod test_utils {
     }
 
     /// Like inspect, but also asserts that all compilations triggered by this program succeed.
-    pub fn assert_compiles(program: &str) -> String {
+    pub fn assert_compiles_allowing_exits(program: &str) -> String {
         use crate::state::ZJITState;
         ZJITState::enable_assert_compiles();
         let result = inspect(program);
         ZJITState::disable_assert_compiles();
+        result
+    }
+
+    /// Like inspect, but also asserts that all compilations triggered by this program succeed and
+    /// no side exits occurr during the program.
+    pub fn assert_compiles(program: &str) -> String {
+        use crate::state::ZJITState;
+        let exits_before = crate::stats::total_exit_count();
+        ZJITState::enable_assert_compiles();
+        let result = inspect(program);
+        ZJITState::disable_assert_compiles();
+        assert_eq!(exits_before, crate::stats::total_exit_count(), "Program side-exited");
         result
     }
 
@@ -1405,6 +1428,13 @@ pub mod test_utils {
     #[should_panic]
     fn value_from_fixnum_too_small_isize() {
         assert_eq!(VALUE::fixnum_from_isize(RUBY_FIXNUM_MIN-1), VALUE(1));
+    }
+
+    #[test]
+    fn value_fmt_debug() {
+        assert_eq!("VALUE(0xcafe)", format!("{:?}", VALUE(0xcafe)));
+        let alternate = format!("{:#?}", eval("::Hash"));
+        assert!(alternate.contains("Hash"), "'Hash' not substring of '{alternate}'");
     }
 }
 #[cfg(test)]
@@ -1564,6 +1594,7 @@ pub(crate) mod ids {
         name: _env_data_index_specval
         name: _ep_method_entry
         name: _ep_specval
+        name: _ep_flags
         name: _rbasic_flags
         name: RUBY_FL_FREEZE
         name: RUBY_ELTS_SHARED

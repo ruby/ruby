@@ -434,7 +434,7 @@ ifneq ($(DOT_WAIT),)
 endif
 
 ifeq ($(HAVE_GIT),yes)
-REVISION_LATEST := $(shell $(GIT_IN_SRC) rev-parse HEAD)
+REVISION_LATEST := $(shell $(GIT_IN_SRC) rev-parse HEAD 2>/dev/null)
 else
 REVISION_LATEST := update
 endif

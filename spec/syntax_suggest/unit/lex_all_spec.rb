@@ -17,10 +17,10 @@ module SyntaxSuggest
         end            # 9
       EOM
 
-      lex = LexAll.new(source: source)
-      expect(lex.map(&:token).to_s).to include("dog")
-      expect(lex.first.line).to eq(1)
-      expect(lex.last.line).to eq(9)
+      tokens = LexAll.new(source: source)
+      expect(tokens.map(&:value)).to include("dog")
+      expect(tokens.first.line).to eq(1)
+      expect(tokens.last.line).to eq(9)
     end
   end
 end

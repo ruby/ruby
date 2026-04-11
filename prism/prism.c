@@ -19685,6 +19685,15 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
                         PM_PARSER_ERR_TOKEN_FORMAT(parser, &next, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(next.type));
                     }
                 }
+
+                // It's possible that we've parsed a block argument through our
+                // call to parse_arguments. If we found one, we should mark it
+                // as invalid and destroy it, as we don't have a place for it.
+                if (arguments.block != NULL) {
+                    pm_parser_err_node(parser, arguments.block, PM_ERR_UNEXPECTED_BLOCK_ARGUMENT);
+                    pm_node_unreference(parser, arguments.block);
+                    arguments.block = NULL;
+                }
             }
 
             switch (keyword.type) {

@@ -698,7 +698,7 @@ node_children(VALUE ast_value, const NODE *node)
                                             : var_name(ainfo->rest_arg)),
                                         (ainfo->no_kwarg ? Qfalse : NEW_CHILD(ast_value, (NODE *)ainfo->kw_args)),
                                         (ainfo->no_kwarg ? Qfalse : NEW_CHILD(ast_value, ainfo->kw_rest_arg)),
-                                        var_name(ainfo->block_arg));
+                                        (ainfo->no_blockarg ? Qfalse : var_name(ainfo->block_arg)));
         }
       case NODE_SCOPE:
         {

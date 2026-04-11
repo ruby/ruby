@@ -635,22 +635,29 @@ void rb_gc_impl_set_params(void *objspace_ptr) { }
 
 static VALUE gc_verify_internal_consistency(VALUE self) { return Qnil; }
 
-#define MMTK_HEAP_COUNT 6
-#define MMTK_MAX_OBJ_SIZE 640
-
+#if SIZEOF_VALUE >= 8
+#define MMTK_HEAP_COUNT 12
+#define MMTK_MAX_OBJ_SIZE 1024
 static size_t heap_sizes[MMTK_HEAP_COUNT + 1] = {
-    32, 40, 80, 160, 320, MMTK_MAX_OBJ_SIZE, 0
+    32, 40, 64, 80, 96, 128, 160, 256, 512, 640, 768, MMTK_MAX_OBJ_SIZE, 0
 };
+#else
+#define MMTK_HEAP_COUNT 5
+#define MMTK_MAX_OBJ_SIZE 512
+static size_t heap_sizes[MMTK_HEAP_COUNT + 1] = {
+    32, 64, 128, 256, MMTK_MAX_OBJ_SIZE, 0
+};
+#endif
 
 void
 rb_gc_impl_init(void)
 {
     VALUE gc_constants = rb_hash_new();
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_SIZE")), SIZET2NUM(SIZEOF_VALUE >= 8 ? 64 : 32));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RBASIC_SIZE")), SIZET2NUM(sizeof(struct RBasic)));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OVERHEAD")), INT2NUM(0));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVARGC_MAX_ALLOCATE_SIZE")), LONG2FIX(MMTK_MAX_OBJ_SIZE));
-    // Pretend we have 5 size pools
-    rb_hash_aset(gc_constants, ID2SYM(rb_intern("SIZE_POOL_COUNT")), LONG2FIX(MMTK_HEAP_COUNT));
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_COUNT")), LONG2FIX(MMTK_HEAP_COUNT));
     // TODO: correctly set RVALUE_OLD_AGE when we have generational GC support
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OLD_AGE")), INT2FIX(0));
     OBJ_FREEZE(gc_constants);

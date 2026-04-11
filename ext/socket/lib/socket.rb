@@ -924,15 +924,11 @@ class Socket < BasicSocket
       end
     end
   ensure
-    hostname_resolution_threads.each do |thread|
-      thread.exit
-    end
+    hostname_resolution_threads.each(&:exit).each(&:join)
 
     hostname_resolution_result&.close
 
-    connecting_sockets.each_key do |connecting_socket|
-      connecting_socket.close
-    end
+    connecting_sockets.each_key(&:close)
   end
   private_class_method :tcp_with_fast_fallback
 

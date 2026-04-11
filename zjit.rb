@@ -58,8 +58,6 @@ class << RubyVM::ZJIT
   # A directive for the compiler to emit a breakpoint instruction at the call site of this method.
   # To show this to ZJIT, say `::RubyVM::ZJIT.induce_breakpoint!` verbatim.
   # Other forms are too dynamic to detect during compilation.
-  #
-  # Actually running this method does nothing, whether ZJIT sees the call or not.
   def induce_breakpoint! = nil
 
   # Check if `--zjit-stats` is used

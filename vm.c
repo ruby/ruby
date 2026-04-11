@@ -2852,7 +2852,7 @@ zjit_materialize_frames(rb_control_frame_t *cfp)
     if (!rb_zjit_enabled_p) return;
 
     while (true) {
-        if (CFP_JIT_RETURN(cfp)) {
+        if (CFP_ZJIT_FRAME(cfp)) {
             const zjit_jit_frame_t *jit_frame = (const zjit_jit_frame_t *)cfp->jit_return;
             cfp->pc = jit_frame->pc;
             cfp->_iseq = (rb_iseq_t *)jit_frame->iseq;
@@ -3671,7 +3671,7 @@ rb_execution_context_update(rb_execution_context_t *ec)
         while (cfp != limit_cfp) {
             const VALUE *ep = cfp->ep;
             cfp->self = rb_gc_location(cfp->self);
-            if (CFP_JIT_RETURN(cfp)) {
+            if (CFP_ZJIT_FRAME(cfp)) {
                 rb_zjit_jit_frame_update_references((zjit_jit_frame_t *)cfp->jit_return);
                 // block_code must always be relocated. For ISEQ frames, the JIT caller
                 // may have written it (gen_block_handler_specval) for passing blocks.

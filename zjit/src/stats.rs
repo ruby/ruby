@@ -228,6 +228,8 @@ make_counters! {
         exit_stackoverflow,
         exit_block_param_proxy_not_iseq_or_ifunc,
         exit_block_param_proxy_not_nil,
+        exit_block_param_proxy_fallback_miss,
+        exit_block_param_proxy_profile_not_covered,
         exit_block_param_wb_required,
         exit_too_many_keyword_parameters,
         exit_no_profile_send,
@@ -611,6 +613,8 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         StackOverflow                 => exit_stackoverflow,
         BlockParamProxyNotIseqOrIfunc => exit_block_param_proxy_not_iseq_or_ifunc,
         BlockParamProxyNotNil         => exit_block_param_proxy_not_nil,
+        BlockParamProxyFallbackMiss => exit_block_param_proxy_fallback_miss,
+        BlockParamProxyProfileNotCovered => exit_block_param_proxy_profile_not_covered,
         BlockParamWbRequired          => exit_block_param_wb_required,
         TooManyKeywordParameters      => exit_too_many_keyword_parameters,
         SplatKwNotNilOrHash           => exit_splatkw_not_nil_or_hash,
@@ -979,6 +983,10 @@ pub extern "C" fn rb_zjit_stats(_ec: EcPtr, _self: VALUE, target_key: VALUE) -> 
     hash
 }
 
+pub fn total_exit_count() -> u64 {
+    EXIT_COUNTERS.iter().fold(0, |sum, counter| sum + unsafe { *counter_ptr(*counter) })
+}
+
 /// Measure the time taken by func() and add that to zjit_compile_time.
 pub fn with_time_stat<F, R>(counter: Counter, func: F) -> R where F: FnOnce() -> R {
     let start = Instant::now();
@@ -991,6 +999,24 @@ pub fn with_time_stat<F, R>(counter: Counter, func: F) -> R where F: FnOnce() ->
 /// The number of bytes ZJIT has allocated on the Rust heap.
 pub fn zjit_alloc_bytes() -> usize {
     jit::GLOBAL_ALLOCATOR.alloc_size.load(Ordering::SeqCst)
+}
+
+/// Record a Perfetto duration event spanning the execution of `func`.
+/// Uses Begin/End pairs so nested calls produce properly nested slices.
+pub fn trace_compile_phase<F, R>(name: &str, func: F) -> R where F: FnOnce() -> R {
+    if !get_option!(trace_compiles) {
+        return func();
+    }
+    if let Some(tracer) = ZJITState::get_tracer() {
+        let ts = tracer.elapsed_ns();
+        tracer.write_duration_begin("compile", name, ts, &[]);
+    }
+    let result = func();
+    if let Some(tracer) = ZJITState::get_tracer() {
+        let ts = tracer.elapsed_ns();
+        tracer.write_duration_end("compile", name, ts);
+    }
+    result
 }
 
 /// Fuchsia Trace Format (FXT) binary writer for --zjit-trace-exits.
@@ -1033,7 +1059,13 @@ impl PerfettoTracer {
     pub fn new() -> Self {
         let pid = std::process::id();
         let path = format!("/tmp/perfetto-{pid}.fxt");
-        let file = std::fs::File::create(&path)
+        let tracer = Self::create(&path, pid);
+        eprintln!("ZJIT: writing trace exits to {path}");
+        tracer
+    }
+
+    fn create(path: &str, pid: u32) -> Self {
+        let file = std::fs::File::create(path)
             .unwrap_or_else(|e| panic!("ZJIT: failed to create {path}: {e}"));
         let mut tracer = PerfettoTracer {
             writer: std::io::BufWriter::new(file),
@@ -1058,8 +1090,34 @@ impl PerfettoTracer {
         tracer.write_word(pid as u64);
         tracer.write_word(1u64);
 
+        // Kernel object record for process: type=7, obj_type=1 (ZX_OBJ_TYPE_PROCESS), no args
+        let process_name_ref = tracer.intern_string("ruby");
+        let ko_process_header: u64 = 7u64
+            | (2u64 << 4)                          // size = 2 words
+            | (1u64 << 16)                         // obj_type = ZX_OBJ_TYPE_PROCESS
+            | ((process_name_ref as u64) << 24);   // name
+        tracer.write_word(ko_process_header);
+        tracer.write_word(pid as u64);             // koid = process id
+
+        // Kernel object record for thread: type=7, obj_type=2 (ZX_OBJ_TYPE_THREAD), 1 arg
+        let thread_name_ref = tracer.intern_string("main");
+        let process_arg_name_ref = tracer.intern_string("process");
+        let ko_thread_header: u64 = 7u64
+            | (4u64 << 4)                          // size = 4 words (header + koid + 2-word arg)
+            | (2u64 << 16)                         // obj_type = ZX_OBJ_TYPE_THREAD
+            | ((thread_name_ref as u64) << 24)     // name
+            | (1u64 << 40);                        // n_args = 1
+        tracer.write_word(ko_thread_header);
+        tracer.write_word(1u64);                   // koid = thread id (matches thread record)
+        // Koid argument: type=8, size=2, name="process", value=pid
+        let arg_header: u64 = 8u64 | (2u64 << 4) | ((process_arg_name_ref as u64) << 16);
+        tracer.write_word(arg_header);
+        tracer.write_word(pid as u64);
+
         // Pre-intern common strings
         tracer.intern_string("side_exit");
+        tracer.intern_string("compile");
+        tracer.intern_string("invalidation");
         // Pre-intern argument names "0".."14" for per-frame arguments
         for i in 0..15u32 {
             tracer.intern_string(&i.to_string());
@@ -1071,7 +1129,6 @@ impl PerfettoTracer {
             let _ = tracer.writer.flush();
         }
 
-        eprintln!("ZJIT: writing trace exits to {path}");
         tracer
     }
 
@@ -1107,11 +1164,64 @@ impl PerfettoTracer {
         idx
     }
 
-    pub fn write_event(&mut self, reason: &str, frames: &[String]) {
+    /// Return nanoseconds elapsed since tracer creation.
+    pub fn elapsed_ns(&self) -> u64 {
+        self.start_time.elapsed().as_nanos() as u64
+    }
+
+    /// Write a Duration Begin event (FXT event type 2) with optional frame arguments.
+    pub fn write_duration_begin(&mut self, category: &str, name: &str, ts_ns: u64, frames: &[String]) {
+        self.write_duration_event(2, category, name, ts_ns, frames);
+    }
+
+    /// Write a Duration End event (FXT event type 3).
+    pub fn write_duration_end(&mut self, category: &str, name: &str, ts_ns: u64) {
+        self.write_duration_event(3, category, name, ts_ns, &[]);
+    }
+
+    /// Write a Duration Begin or End event with optional frame arguments.
+    fn write_duration_event(&mut self, event_type: u64, category: &str, name: &str, ts_ns: u64, frames: &[String]) {
+        let category_ref = self.intern_string(category);
+        let name_ref = self.intern_string(name);
+
+        let n_args = frames.len().min(15) as u64;
+        let mut frame_refs: Vec<(u16, u16)> = Vec::with_capacity(n_args as usize);
+        for (i, frame) in frames.iter().take(15).enumerate() {
+            let fname_ref = self.intern_string(&i.to_string());
+            let value_ref = self.intern_string(frame);
+            frame_refs.push((fname_ref, value_ref));
+        }
+
+        let event_words: u64 = 2 + n_args;
+        let header: u64 = 4u64                           // record type = event
+            | (event_words << 4)                          // record size
+            | (event_type << 16)                          // event type = begin or end
+            | (n_args << 20)                              // argument count
+            | (1u64 << 24)                                // thread_ref = 1
+            | ((category_ref as u64) << 32)
+            | ((name_ref as u64) << 48);
+        self.write_word(header);
+        self.write_word(ts_ns);
+
+        for (fname_ref, value_ref) in frame_refs {
+            let arg_header: u64 = 6u64
+                | (1u64 << 4)
+                | ((fname_ref as u64) << 16)
+                | ((value_ref as u64) << 32);
+            self.write_word(arg_header);
+        }
+
+        self.event_count += 1;
+
+        use std::io::Write;
+        let _ = self.writer.flush();
+    }
+
+    pub fn write_event(&mut self, category: &str, reason: &str, frames: &[String]) {
         let ts_nanos = self.start_time.elapsed().as_nanos() as u64;
 
         // Intern event metadata strings (may emit string records first)
-        let category_ref = self.intern_string("side_exit");
+        let category_ref = self.intern_string(category);
         let name_ref = self.intern_string(reason);
 
         // Intern each frame label and collect refs (max 15 due to 4-bit n_args)
@@ -1171,4 +1281,3 @@ pub extern "C" fn rb_zjit_trace_exit_locations_enabled_p(_ec: EcPtr, _ruby_self:
         Qfalse
     }
 }
-

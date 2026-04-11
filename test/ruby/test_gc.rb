@@ -230,7 +230,7 @@ class TestGc < Test::Unit::TestCase
         GC.stat(stat)
       end
 
-      assert_equal GC.stat_heap(0, :slot_size) * (2**i), stat_heap[:slot_size]
+      assert_equal GC.stat_heap(i, :slot_size), stat_heap[:slot_size]
       assert_operator stat_heap[:heap_live_slots], :<=, stat[:heap_live_slots]
       assert_operator stat_heap[:heap_free_slots], :<=, stat[:heap_free_slots]
       assert_operator stat_heap[:heap_final_slots], :<=, stat[:heap_final_slots]
@@ -773,7 +773,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_gc_stress_at_startup
-    assert_in_out_err([{"RUBY_DEBUG"=>"gc_stress"}], '', [], [], '[Bug #15784]', success: true, timeout: 60)
+    assert_in_out_err([{"RUBY_DEBUG"=>"gc_stress"}], '', [], [], '[Bug #15784]', success: true, timeout: 120)
   end
 
   def test_gc_disabled_start

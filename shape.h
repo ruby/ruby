@@ -115,6 +115,7 @@ typedef struct {
     rb_shape_t *shape_list;
     rb_shape_t *root_shape;
     const attr_index_t *capacities;
+    size_t heaps_count;
     rb_atomic_t next_shape_id;
 
     redblack_node_t *shape_cache;

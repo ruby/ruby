@@ -269,7 +269,16 @@ module GC
   #   GC.stat_heap
   #   # =>
   #   {0 =>
-  #     {slot_size: 40,
+  #     {slot_size: 32,
+  #      heap_eden_pages: 24,
+  #      heap_eden_slots: 12288,
+  #      total_allocated_pages: 24,
+  #      force_major_gc_count: 0,
+  #      force_incremental_marking_finish_count: 0,
+  #      total_allocated_objects: 8450,
+  #      total_freed_objects: 3120},
+  #    1 =>
+  #     {slot_size: 64,
   #      heap_eden_pages: 246,
   #      heap_eden_slots: 402802,
   #      total_allocated_pages: 246,
@@ -277,8 +286,8 @@ module GC
   #      force_incremental_marking_finish_count: 1,
   #      total_allocated_objects: 33867152,
   #      total_freed_objects: 33520523},
-  #    1 =>
-  #     {slot_size: 80,
+  #    2 =>
+  #     {slot_size: 128,
   #      heap_eden_pages: 84,
   #      heap_eden_slots: 68746,
   #      total_allocated_pages: 84,
@@ -286,8 +295,8 @@ module GC
   #      force_incremental_marking_finish_count: 4,
   #      total_allocated_objects: 147491,
   #      total_freed_objects: 90699},
-  #    2 =>
-  #     {slot_size: 160,
+  #    3 =>
+  #     {slot_size: 256,
   #      heap_eden_pages: 157,
   #      heap_eden_slots: 64182,
   #      total_allocated_pages: 157,
@@ -295,8 +304,8 @@ module GC
   #      force_incremental_marking_finish_count: 0,
   #      total_allocated_objects: 211460,
   #      total_freed_objects: 190075},
-  #    3 =>
-  #     {slot_size: 320,
+  #    4 =>
+  #     {slot_size: 512,
   #      heap_eden_pages: 8,
   #      heap_eden_slots: 1631,
   #      total_allocated_pages: 8,
@@ -304,8 +313,8 @@ module GC
   #      force_incremental_marking_finish_count: 0,
   #      total_allocated_objects: 1422,
   #      total_freed_objects: 700},
-  #    4 =>
-  #     {slot_size: 640,
+  #    5 =>
+  #     {slot_size: 1024,
   #      heap_eden_pages: 16,
   #      heap_eden_slots: 1628,
   #      total_allocated_pages: 16,
@@ -316,7 +325,7 @@ module GC
   #
   # In the example above, the keys in the outer hash are the heap identifiers:
   #
-  #   GC.stat_heap.keys # => [0, 1, 2, 3, 4]
+  #   GC.stat_heap.keys # => [0, 1, 2, 3, 4, 5]
   #
   # On CRuby, each heap identifier is an integer;
   # on other implementations, a heap identifier may be a string.
@@ -324,9 +333,9 @@ module GC
   # With only argument +heap_id+ given,
   # returns statistics for the given heap identifier:
   #
-  #   GC.stat_heap(2)
+  #   GC.stat_heap(3)
   #   # =>
-  #   {slot_size: 160,
+  #   {slot_size: 256,
   #    heap_eden_pages: 157,
   #    heap_eden_slots: 64182,
   #    total_allocated_pages: 157,
@@ -338,7 +347,7 @@ module GC
   # With arguments +heap_id+ and +key+ given,
   # returns the value for the given key in the given heap:
   #
-  #   GC.stat_heap(2, :slot_size) # => 160
+  #   GC.stat_heap(3, :slot_size) # => 256
   #
   # With arguments +nil+ and +hash+ given,
   # merges the statistics for all heaps into the given hash:

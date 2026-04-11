@@ -207,16 +207,6 @@ def test_new_specs
   end
 end
 
-def verify_commits(impl)
-  puts
-  Dir.chdir(SOURCE_REPO) do
-    puts "Manually check commit messages:"
-    print "Press enter >"
-    STDIN.gets
-    system "git", "log", "master..."
-  end
-end
-
 def fast_forward_master(impl)
   Dir.chdir(SOURCE_REPO) do
     sh "git", "checkout", "master"
@@ -243,7 +233,6 @@ def main(impls)
       rebase_commits(impl)
       if new_commits?(impl)
         test_new_specs
-        verify_commits(impl)
         fast_forward_master(impl)
         check_ci
       else

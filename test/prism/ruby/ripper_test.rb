@@ -137,20 +137,22 @@ module Prism
     end
 
     # Events that are currently not emitted
-    UNSUPPORTED_EVENTS = %i[comma ignored_nl label_end lbrace lbracket lparen nl op rbrace rbracket rparen semicolon sp words_sep ignored_sp]
+    UNSUPPORTED_EVENTS = %i[comma ignored_nl label_end lbrace lbracket lparen nl rbrace rbracket rparen semicolon sp words_sep ignored_sp]
     SUPPORTED_EVENTS = Translation::Ripper::EVENTS - UNSUPPORTED_EVENTS
     # Events that assert against their line/column
-    CHECK_LOCATION_EVENTS = %i[kw]
+    CHECK_LOCATION_EVENTS = %i[kw op]
     IGNORE_FOR_SORT_EVENTS = %i[
       stmts_new stmts_add bodystmt void_stmt
       args_new args_add args_add_star args_add_block arg_paren method_add_arg
-      mlhs_new mlhs_add_star
+      mlhs_new mlhs_add mlhs_add_star mlhs_add_post
+      mrhs_new mrhs_add mrhs_add_star mrhs_new_from_args
       word_new words_new symbols_new qwords_new qsymbols_new xstring_new regexp_new
       words_add symbols_add qwords_add qsymbols_add
       regexp_end tstring_end heredoc_end
       call command fcall vcall
       field aref_field var_field var_ref block_var ident params
       string_content heredoc_dedent unary binary dyna_symbol
+      excessed_comma rest_param
       comment magic_comment embdoc embdoc_beg embdoc_end arg_ambiguous
     ]
     SORT_IGNORE = {
@@ -189,7 +191,6 @@ module Prism
       const_path_ref: ["unparser/corpus/literal/defs.txt"],
       do_block: ["whitequark/super_block.txt"],
       embexpr_end: ["seattlerb/str_interp_ternary_or_label.txt"],
-      rest_param: ["whitequark/send_lambda.txt"],
       top_const_field: [
         "seattlerb/const_3_op_asgn_or.txt",
         "seattlerb/const_op_asgn_and1.txt",
@@ -197,13 +198,9 @@ module Prism
         "whitequark/const_op_asgn.txt",
       ],
       mlhs_paren: ["unparser/corpus/literal/for.txt"],
-      mlhs_add: [
-        "whitequark/for_mlhs.txt",
-      ],
       kw: [
         "defined.txt",
         "for.txt",
-        "seattlerb/block_kw__required.txt",
         "seattlerb/case_in_42.txt",
         "seattlerb/case_in_67.txt",
         "seattlerb/case_in_86_2.txt",
@@ -220,6 +217,11 @@ module Prism
         "whitequark/super_block.txt",
         "write_command_operator.txt",
       ],
+      op: [
+        "ranges.txt",
+        "ternary_operator.txt",
+        "whitequark/args_args_assocs.txt",
+      ]
     }
     SORT_IGNORE.default = []
     SORT_EVENTS = SUPPORTED_EVENTS - IGNORE_FOR_SORT_EVENTS
@@ -235,6 +237,7 @@ module Prism
       def sorted_events
         @events.select do |e,|
           next false if e == :kw && @events.any? { |e,| e == :if_mod || e == :while_mod || e == :until_mod || e == :rescue || e == :rescue_mod || e == :while || e == :ensure }
+          next false if e == :op && @events.any? { |e,| e == :const_path_field || e == :const_ref || e == :top_const_field || e == :top_const_ref }
           SORT_EVENTS.include?(e) && !SORT_IGNORE[e].include?(filename)
         end
       end

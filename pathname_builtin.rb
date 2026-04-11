@@ -1066,15 +1066,25 @@ class Pathname    # * File *
   #   atime -> new_time
   #
   # Returns a new Time object containing the time of the most recent
-  # access (read or write) to the entry;
-  # via File.atime:
+  # access (read or write) to the entry represented by +self+:
   #
-  #   pn = Pathname.new('t.tmp')
-  #   pn.write('foo')
-  #   pn.atime # => 2026-03-22 13:49:44.5165608 -0500
-  #   pn.read  # => "foo"
-  #   pn.atime # => 2026-03-22 13:49:57.5359349 -0500
-  #   pn.delete
+  #   filepath = 't.tmp'
+  #   pn = Pathname.new(filepath)
+  #   File.exist?(filepath) # => false
+  #   pn.atime              # Raises Errno::ENOENT: No such file or directory
+  #   File.write(filepath, 'foo')
+  #   pn.atime              # => 2026-03-22 13:49:44.5165608 -0500
+  #   File.read(filepath)
+  #   pn.atime              # => 2026-03-22 13:49:57.5359349 -0500
+  #   File.delete(filepath)
+  #
+  #   dirpath = 'tmp'
+  #   Dir.mkdir(dirpath)
+  #   pn = Pathname.new(dirpath)
+  #   pn.atime            # => 2026-03-31 11:46:35.4813492 -0500
+  #   Dir.empty?(dirname) # => true
+  #   pn.atime            # => 2026-03-31 11:51:10.1210092 -0500
+  #   Dir.delete(dirpath)
   #
   def atime() File.atime(@path) end
 

@@ -380,9 +380,15 @@ rb_str_normalize_ospath(const char *ptr, long len)
     const char *p = ptr;
     const char *e = ptr + len;
     const char *p1 = p;
-    VALUE str = rb_str_buf_new(len);
     rb_encoding *enc = rb_utf8_encoding();
-    rb_enc_associate(str, enc);
+    VALUE str = rb_utf8_str_new(ptr, len);
+    if (RB_LIKELY(rb_enc_str_coderange(str) == ENC_CODERANGE_7BIT)) {
+        return str;
+    }
+    else {
+        str = rb_str_buf_new(len);
+        rb_enc_associate(str, enc);
+    }
 
     while (p < e) {
         int l, c;
@@ -1095,12 +1101,26 @@ static VALUE statx_birthtime(const rb_io_stat_data *st);
 
 /*
  *  call-seq:
- *     stat.atime   -> time
+ *    atime -> new_time
  *
- *  Returns the last access time for this file as an object of class
- *  Time.
+ * Returns a new Time object containing the access time
+ * of the object represented by +self+
+ * at the time +self+ was created;
+ * see {Snapshot}[rdoc-ref:File::Stat@Snapshot]:
  *
- *     File.stat("testfile").atime   #=> Wed Dec 31 18:00:00 CST 1969
+ *   filepath = 't.tmp'
+ *   File.write(filepath, 'foo')
+ *   file = File.new(filepath, 'w')
+ *   stat = File::Stat.new(filepath)
+ *   file.atime     # => 2026-03-31 16:26:39.5913207 -0500
+ *   stat.atime     # => 2026-03-31 16:26:39.5913207 -0500
+ *   File.write(filepath, 'bar')
+ *   file.atime     # => 2026-03-31 16:27:01.4981624 -0500  # Changed by access.
+ *   stat.atime     # => 2026-03-31 16:26:39.5913207 -0500  # Unchanged by access.
+ *   stat = File::Stat.new(filepath)
+ *   stat.atime     # => 2026-03-31 16:27:01.4981624 -0500  # New access time.
+ *   file.close
+ *   File.delete(filepath)
  *
  */
 
@@ -2446,13 +2466,23 @@ rb_file_s_ftype(VALUE klass, VALUE fname)
 
 /*
  *  call-seq:
- *     File.atime(file_name)  ->  time
+ *    File.atime(object) -> new_time
  *
- *  Returns the last access time for the named file as a Time object.
+ * Returns a new Time object containing the time of the most recent
+ * access (read or write) to the object,
+ * which may be a string filepath or dirpath, or a File or Dir object:
  *
- *  _file_name_ can be an IO object.
+ *   filepath = 't.tmp'
+ *   File.exist?(filepath)             # => false
+ *   File.atime(filepath)              # Raises Errno::ENOENT.
+ *   File.write(filepath, 'foo')
+ *   File.atime(filepath)              # => 2026-03-31 16:39:37.9290772 -0500
+ *   File.write(filepath, 'bar')
+ *   File.atime(filepath)              # => 2026-03-31 16:39:57.7710876 -0500
  *
- *     File.atime("testfile")   #=> Wed Apr 09 08:51:48 CDT 2003
+ *   File.atime('.')                   # => 2026-03-31 16:47:49.0970483 -0500
+ *   File.atime(File.new('README.md')) # => 2026-03-31 11:15:27.8215934 -0500
+ *   File.atime(Dir.new('.'))          # => 2026-03-31 12:39:45.5910591 -0500
  *
  */
 
@@ -2471,12 +2501,20 @@ rb_file_s_atime(VALUE klass, VALUE fname)
 
 /*
  *  call-seq:
- *     file.atime    -> time
+ *    atime -> new_time
  *
- *  Returns the last access time (a Time object) for <i>file</i>, or
- *  epoch if <i>file</i> has not been accessed.
+ * Returns a new Time object containing the time of the most recent
+ * access (read or write) to the file represented by +self+:
  *
- *     File.new("testfile").atime   #=> Wed Dec 31 18:00:00 CST 1969
+ *   filepath = 't.tmp'
+ *   file = File.new(filepath, 'a+')
+ *   file.atime # => 2026-03-31 17:11:27.7285397 -0500
+ *   file.write('foo')
+ *   file.atime # => 2026-03-31 17:11:27.7285397 -0500  # Unchanged; not yet written.
+ *   file.flush
+ *   file.atime # => 2026-03-31 17:12:11.3408054 -0500  # Changed; now written.
+ *   file.close
+ *   File.delete(filename)
  *
  */
 
@@ -3707,8 +3745,9 @@ skipprefixroot(const char *path, const char *end, rb_encoding *enc)
 #endif
 }
 
-char *
-rb_enc_path_last_separator(const char *path, const char *end, rb_encoding *enc)
+
+static char *
+enc_path_last_separator(const char *path, const char *end, bool mb_enc, rb_encoding *enc)
 {
     char *last = NULL;
     while (path < end) {
@@ -3719,17 +3758,22 @@ rb_enc_path_last_separator(const char *path, const char *end, rb_encoding *enc)
             last = (char *)tmp;
         }
         else {
-            Inc(path, end, true, enc);
+            Inc(path, end, mb_enc, enc);
         }
     }
     return last;
+}
+char *
+rb_enc_path_last_separator(const char *path, const char *end, rb_encoding *enc)
+{
+    return enc_path_last_separator(path, end, true, enc);
 }
 
 static inline char *
 strrdirsep(const char *path, const char *end, bool mb_enc, rb_encoding *enc)
 {
     if (RB_UNLIKELY(mb_enc)) {
-        return rb_enc_path_last_separator(path, end, enc);
+        return enc_path_last_separator(path, end, mb_enc, enc);
     }
 
     const char *cursor = end - 1;
@@ -4021,7 +4065,12 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 
     s = StringValuePtr(fname);
     fend = s + RSTRING_LEN(fname);
-    enc = rb_enc_get(fname);
+    enc = rb_str_enc_get(fname);
+    bool mb_enc = !rb_str_encindex_fastpath(rb_enc_to_index(enc));
+    if (!mb_enc && RTEST(dname)) {
+        mb_enc = !rb_str_encindex_fastpath(rb_enc_to_index(rb_str_enc_get(dname)));
+    }
+
     BUFINIT();
 
     if (s < fend && s[0] == '~' && abs_mode == 0) {      /* execute only if NOT absolute_path() */
@@ -4115,7 +4164,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
         }
         else
 #endif /* defined DOSISH || defined __CYGWIN__ */
-            p = chompdirsep(skiproot(buf, p), p, true, enc);
+            p = chompdirsep(skiproot(buf, p), p, mb_enc, enc);
     }
     else {
         size_t len;
@@ -4139,7 +4188,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     rb_str_set_len(result, p-buf+1);
     BUFCHECK(bdiff + 1 >= buflen);
     p[1] = 0;
-    root = skipprefix(buf, p+1, true, enc);
+    root = skipprefix(buf, p+1, mb_enc, enc);
 
     b = s;
     while (s < fend) {
@@ -4156,7 +4205,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
                         /* We must go back to the parent */
                         char *n;
                         *p = '\0';
-                        if (!(n = strrdirsep(root, p, true, enc))) {
+                        if (!(n = strrdirsep(root, p, mb_enc, enc))) {
                             *p = '/';
                         }
                         else {
@@ -4219,7 +4268,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
                 }
             }
 #endif /* __APPLE__ */
-            Inc(s, fend, true, enc);
+            Inc(s, fend, mb_enc, enc);
             break;
         }
     }
@@ -5945,13 +5994,48 @@ rb_f_test(int argc, VALUE *argv, VALUE _)
 /*
  *  Document-class: File::Stat
  *
- *  Objects of class File::Stat encapsulate common status information
- *  for File objects. The information is recorded at the moment the
- *  File::Stat object is created; changes made to the file after that
- *  point will not be reflected. File::Stat objects are returned by
- *  IO#stat, File::stat, File#lstat, and File::lstat. Many of these
- *  methods return platform-specific values, and not all values are
- *  meaningful on all systems. See also Kernel#test.
+ *  A \File::Stat object contains information about an entry in the file system.
+ *
+ *  Each of these methods returns a new \File::Stat object:
+ *
+ *  - File#lstat.
+ *  - File::Stat.new.
+ *  - File::lstat.
+ *  - File::stat.
+ *  - IO#stat.
+ *
+ *  === Snapshot
+ *
+ *  A new \File::Stat object takes an immediate "snapshot" of the entry's information;
+ *  the captured information is never updated,
+ *  regardless of changes in the actual entry:
+ *
+ *  The entry must exist when File::Stat.new is called:
+ *
+ *    filepath = 't.tmp'
+ *    File.exist?(filepath)           # => false
+ *    File::Stat.new(filepath)        # Raises Errno::ENOENT: No such file or directory.
+ *    File.write(filepath, 'foo')     # Create the file.
+ *    stat = File::Stat.new(filepath) # Okay.
+ *
+ *  Later changes to the actual entry do not change the \File::Stat object:
+ *
+ *    File.atime(filepath) # => 2026-04-01 11:51:38.0014518 -0500
+ *    stat.atime           # => 2026-04-01 11:51:38.0014518 -0500
+ *    File.write(filepath, 'bar')
+ *    File.atime(filepath) # => 2026-04-01 11:58:11.922614 -0500
+ *    stat.atime           # => 2026-04-01 11:51:38.0014518 -0500
+ *    File.delete(filepath)
+ *    stat.atime           # => 2026-04-01 11:51:38.0014518 -0500
+ *
+ *  === OS-Dependencies
+ *
+ *  Methods in a \File::Stat object may return platform-dependents values,
+ *  and not all values are meaningful on all systems;
+ *  for example, File::Stat#blocks returns +nil+ on Windows,
+ *  but returns an integer on Linux.
+ *
+ *  See also Kernel#test.
  */
 
 static VALUE

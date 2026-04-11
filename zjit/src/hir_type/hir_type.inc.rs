@@ -9,7 +9,7 @@ mod bits {
   pub const BasicObjectSubclass: u64 = 1u64 << 3;
   pub const Bignum: u64 = 1u64 << 4;
   pub const BoolExact: u64 = FalseClass | TrueClass;
-  pub const BuiltinExact: u64 = ArrayExact | BasicObjectExact | Class | FalseClass | Float | HashExact | Integer | ModuleExact | NilClass | NumericExact | ObjectExact | RangeExact | RegexpExact | SetExact | StringExact | Symbol | TrueClass;
+  pub const BuiltinExact: u64 = ArrayExact | BasicObjectExact | FalseClass | Float | HashExact | Integer | ModuleExact | NilClass | NumericExact | ObjectExact | RangeExact | RegexpExact | SetExact | StringExact | Symbol | TrueClass;
   pub const CBool: u64 = 1u64 << 5;
   pub const CDouble: u64 = 1u64 << 6;
   pub const CInt: u64 = CSigned | CUnsigned;
@@ -231,7 +231,7 @@ pub mod types {
   pub const Truthy: Type = Type::from_bits(bits::Truthy);
   pub const TypedTData: Type = Type::from_bits(bits::TypedTData);
   pub const Undef: Type = Type::from_bits(bits::Undef);
-  pub const ExactBitsAndClass: [(u64, *const VALUE); 17] = [
+  pub const ExactBitsAndClass: [(u64, *const VALUE); 16] = [
     (bits::ObjectExact, &raw const crate::cruby::rb_cObject),
     (bits::BasicObjectExact, &raw const crate::cruby::rb_cBasicObject),
     (bits::StringExact, &raw const crate::cruby::rb_cString),
@@ -241,7 +241,6 @@ pub mod types {
     (bits::SetExact, &raw const crate::cruby::rb_cSet),
     (bits::RegexpExact, &raw const crate::cruby::rb_cRegexp),
     (bits::ModuleExact, &raw const crate::cruby::rb_cModule),
-    (bits::Class, &raw const crate::cruby::rb_cClass),
     (bits::NumericExact, &raw const crate::cruby::rb_cNumeric),
     (bits::Integer, &raw const crate::cruby::rb_cInteger),
     (bits::Float, &raw const crate::cruby::rb_cFloat),
@@ -250,9 +249,8 @@ pub mod types {
     (bits::TrueClass, &raw const crate::cruby::rb_cTrueClass),
     (bits::FalseClass, &raw const crate::cruby::rb_cFalseClass),
   ];
-  pub const SubclassBitsAndClass: [(u64, *const VALUE); 17] = [
+  pub const SubclassBitsAndClass: [(u64, *const VALUE); 16] = [
     (bits::ArraySubclass, &raw const crate::cruby::rb_cArray),
-    (bits::Class, &raw const crate::cruby::rb_cClass),
     (bits::FalseClass, &raw const crate::cruby::rb_cFalseClass),
     (bits::Integer, &raw const crate::cruby::rb_cInteger),
     (bits::HashSubclass, &raw const crate::cruby::rb_cHash),
@@ -269,9 +267,8 @@ pub mod types {
     (bits::ObjectSubclass, &raw const crate::cruby::rb_cObject),
     (bits::BasicObjectSubclass, &raw const crate::cruby::rb_cBasicObject),
   ];
-  pub const InexactBitsAndClass: [(u64, *const VALUE); 17] = [
+  pub const InexactBitsAndClass: [(u64, *const VALUE); 16] = [
     (bits::Array, &raw const crate::cruby::rb_cArray),
-    (bits::Class, &raw const crate::cruby::rb_cClass),
     (bits::FalseClass, &raw const crate::cruby::rb_cFalseClass),
     (bits::Integer, &raw const crate::cruby::rb_cInteger),
     (bits::Hash, &raw const crate::cruby::rb_cHash),

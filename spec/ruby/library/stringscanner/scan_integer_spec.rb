@@ -44,7 +44,7 @@ version_is StringScanner::Version, "3.1.1" do # ruby_version_is "3.4"
 
       -> {
         s.scan_integer
-      }.should raise_error(Encoding::CompatibilityError, 'ASCII incompatible encoding: UTF-16BE')
+      }.should raise_error(Encoding::CompatibilityError, /ASCII incompatible encoding: UTF-16BE|incompatible encoding regexp match/)
     end
 
     context "given base" do

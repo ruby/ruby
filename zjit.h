@@ -75,7 +75,7 @@ enum zjit_poison_values {
 // YJIT also uses jit_return (as a return address), so this must only return
 // non-NULL when ZJIT is enabled and has set jit_return to a JITFrame pointer.
 static inline void *
-CFP_JIT_RETURN(const rb_control_frame_t *cfp)
+CFP_ZJIT_FRAME(const rb_control_frame_t *cfp)
 {
     if (!rb_zjit_enabled_p) return NULL;
 #if USE_ZJIT
@@ -87,7 +87,7 @@ CFP_JIT_RETURN(const rb_control_frame_t *cfp)
 static inline const VALUE*
 CFP_PC(const rb_control_frame_t *cfp)
 {
-    if (CFP_JIT_RETURN(cfp)) {
+    if (CFP_ZJIT_FRAME(cfp)) {
         return ((const zjit_jit_frame_t *)cfp->jit_return)->pc;
     }
     return cfp->pc;
@@ -96,7 +96,7 @@ CFP_PC(const rb_control_frame_t *cfp)
 static inline const rb_iseq_t*
 CFP_ISEQ(const rb_control_frame_t *cfp)
 {
-    if (CFP_JIT_RETURN(cfp)) {
+    if (CFP_ZJIT_FRAME(cfp)) {
         return ((const zjit_jit_frame_t *)cfp->jit_return)->iseq;
     }
     return cfp->_iseq;

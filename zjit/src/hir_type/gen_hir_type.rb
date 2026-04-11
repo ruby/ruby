@@ -89,7 +89,7 @@ def base_type name, c_name: nil
   [type, exact]
 end
 
-# Define a new type that cannot be subclassed.
+# Define a new type that has no subclasses and cannot be subclassed.
 # If c_name is given, mark the rb_cXYZ object as equivalent to this type.
 def final_type name, base: $object, c_name: nil
   if c_name
@@ -109,7 +109,9 @@ base_type "Range", c_name: "rb_cRange"
 base_type "Set", c_name: "rb_cSet"
 base_type "Regexp", c_name: "rb_cRegexp"
 module_class, _ = base_type "Module", c_name: "rb_cModule"
-class_ = final_type "Class", base: module_class, c_name: "rb_cClass"
+# Class cannot be subclassed by doing `class Sub < Class`,
+# but every metaclass is a subclass of `Class`. It's not final.
+module_class.subtype "Class"
 
 numeric, _ = base_type "Numeric", c_name: "rb_cNumeric"
 

@@ -33,7 +33,7 @@ module SyntaxSuggest
       array = [block_2, block_1, block_0].sort
       expect(array.last).to eq(block_2)
 
-      block = CodeBlock.new(lines: CodeLine.new(line: " " * 8 + "foo", index: 4, lex: []))
+      block = CodeBlock.new(lines: CodeLine.new(line: " " * 8 + "foo", index: 4, tokens: []))
       array.prepend(block)
       expect(array.max).to eq(block)
     end
