@@ -4034,23 +4034,10 @@ rb_int_uminus(VALUE num)
     }
 }
 
-/* Two-digit lookup table for base-10 conversion.  Each pair of characters
- * encodes a two-digit decimal number from "00" through "99" at offset 2*n.
- * Halves the number of divisions in the conversion loop compared to the
- * classic digit-at-a-time approach.  See e.g. Facebook's folly, LLVM
- * libc, Go's strconv — this is the standard itoa optimisation.
- */
-static const char ruby_decimal_digit_pairs[201] =
-    "00010203040506070809"
-    "10111213141516171819"
-    "20212223242526272829"
-    "30313233343536373839"
-    "40414243444546474849"
-    "50515253545556575859"
-    "60616263646566676869"
-    "70717273747576777879"
-    "80818283848586878889"
-    "90919293949596979899";
+/* ruby_decimal_digit_pairs is defined in bignum.c and declared in
+ * internal/bignum.h.  See there for the rationale of the 2-digit
+ * lookup-table itoa optimisation; both rb_fix2str here and big2str_2bdigits
+ * in bignum.c consume it. */
 
 VALUE
 rb_fix2str(VALUE x, int base)
