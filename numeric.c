@@ -4034,6 +4034,24 @@ rb_int_uminus(VALUE num)
     }
 }
 
+/* Two-digit lookup table for base-10 conversion.  Each pair of characters
+ * encodes a two-digit decimal number from "00" through "99" at offset 2*n.
+ * Halves the number of divisions in the conversion loop compared to the
+ * classic digit-at-a-time approach.  See e.g. Facebook's folly, LLVM
+ * libc, Go's strconv — this is the standard itoa optimisation.
+ */
+static const char ruby_decimal_digit_pairs[201] =
+    "00010203040506070809"
+    "10111213141516171819"
+    "20212223242526272829"
+    "30313233343536373839"
+    "40414243444546474849"
+    "50515253545556575859"
+    "60616263646566676869"
+    "70717273747576777879"
+    "80818283848586878889"
+    "90919293949596979899";
+
 VALUE
 rb_fix2str(VALUE x, int base)
 {
@@ -4066,9 +4084,34 @@ rb_fix2str(VALUE x, int base)
     else {
         u = val;
     }
-    do {
-        *--b = ruby_digitmap[(int)(u % base)];
-    } while (u /= base);
+    if (base == 10) {
+        /* Emit two digits per iteration from a precomputed table.  The
+         * compiler lowers `u % 100` and `u / 100` to a single multiply +
+         * shift, so each iteration costs roughly one multiply, one shift,
+         * and two stores.  About 2x fewer iterations than the classic
+         * per-digit loop for multi-digit inputs. */
+        while (u >= 100) {
+            unsigned long idx = (u % 100) * 2;
+            u /= 100;
+            b -= 2;
+            b[0] = ruby_decimal_digit_pairs[idx];
+            b[1] = ruby_decimal_digit_pairs[idx + 1];
+        }
+        if (u >= 10) {
+            unsigned long idx = u * 2;
+            b -= 2;
+            b[0] = ruby_decimal_digit_pairs[idx];
+            b[1] = ruby_decimal_digit_pairs[idx + 1];
+        }
+        else {
+            *--b = (char)('0' + u);
+        }
+    }
+    else {
+        do {
+            *--b = ruby_digitmap[(int)(u % base)];
+        } while (u /= base);
+    }
     if (neg) {
         *--b = '-';
     }
