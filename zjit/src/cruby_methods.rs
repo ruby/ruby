@@ -266,9 +266,18 @@ pub fn init() -> Annotations {
     annotate!(rb_cInteger, "[]", inline_integer_aref);
     annotate!(rb_cInteger, "to_s", types::StringExact);
     annotate!(rb_cString, "to_s", inline_string_to_s, types::StringExact);
+    annotate!(rb_cFloat, "nan?", types::BoolExact, no_gc, leaf, elidable);
+    annotate!(rb_cFloat, "finite?", types::BoolExact, no_gc, leaf, elidable);
+    annotate!(rb_cFloat, "infinite?", types::Fixnum.union(types::NilClass), no_gc, leaf, elidable);
     let thread_singleton = unsafe { rb_singleton_class(rb_cThread) };
     annotate!(thread_singleton, "current", inline_thread_current, types::BasicObject, no_gc, leaf);
 
+    annotate_builtin!(rb_cInteger, "zero?", types::BoolExact);
+    annotate_builtin!(rb_cInteger, "even?", types::BoolExact);
+    annotate_builtin!(rb_cInteger, "odd?", types::BoolExact);
+    annotate_builtin!(rb_cFloat, "zero?", types::BoolExact);
+    annotate_builtin!(rb_cFloat, "positive?", types::BoolExact);
+    annotate_builtin!(rb_cFloat, "negative?", types::BoolExact);
     annotate_builtin!(rb_mKernel, "Float", types::Float);
     annotate_builtin!(rb_mKernel, "Integer", types::Integer);
     // TODO(max): Annotate rb_mKernel#class as returning types::Class. Right now there is a subtle
