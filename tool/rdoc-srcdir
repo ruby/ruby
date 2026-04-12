@@ -9,10 +9,20 @@ File.foreach(bundled_gems) do |line|
   versions[name] = version
 end
 
-%w[tsort rdoc].each do |lib|
+%w[tsort logger rbs rdoc].each do |lib|
   path = File.join(srcdir, ".bundle/gems/#{lib}-#{versions[lib]}")
   $LOAD_PATH.unshift("#{path}/lib")
 end
+
+# Add compiled extension paths for bundled gems with C extensions.
+# These are built by `make build-ext` into .bundle/extensions/ but are not
+# on the default load path because `make html` runs with --disable-gems.
+builddir = Dir.pwd
+%w[rbs].each do |lib|
+  ext_path = Dir.glob("#{builddir}/.bundle/extensions/*/*/#{lib}-#{versions[lib]}").first
+  $LOAD_PATH.unshift(ext_path) if ext_path
+end
+
 require 'rdoc/rdoc'
 
 # Make only the output directory relative to the invoked directory.
