@@ -2437,9 +2437,7 @@ ivar_i(ID key, VALUE v, st_data_t a)
 VALUE
 rb_obj_instance_variables(VALUE obj)
 {
-    VALUE ary;
-
-    ary = rb_ary_new();
+    VALUE ary = rb_ary_new_capa(rb_ivar_count(obj));
     rb_ivar_foreach(obj, ivar_i, ary);
     return ary;
 }
