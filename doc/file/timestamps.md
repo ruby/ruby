@@ -6,6 +6,8 @@ has several times (called timestamps) associated with it.
 The Ruby methods that return these timestamps (each as a Time object)
 are actually returning "whatever the OS says,"
 and so their behaviors may vary among OS platforms.
+If a platform does not support a particular timestamp,
+the corresponding Ruby methods return NotImplementedError.
 
 These timestamps are:
 
