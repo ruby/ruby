@@ -33,26 +33,24 @@ class Gem::DependencyError < Gem::Exception; end
 class Gem::DependencyRemovalException < Gem::Exception; end
 
 ##
-# Raised by Gem::Resolver when a Gem::Dependency::Conflict reaches the
-# toplevel.  Indicates which dependencies were incompatible through #conflict
-# and #conflicting_dependencies
+# Raised by Gem::Resolver when dependency resolution fails.
 
 class Gem::DependencyResolutionError < Gem::DependencyError
-  attr_reader :conflict
-
   def initialize(conflict)
-    @conflict = conflict
+    @explanation = conflict.explanation
+    super @explanation
+  end
 
-    if conflict.respond_to?(:solve_failure)
-      super conflict.explanation
-    else
-      a, b = conflicting_dependencies
-      super "conflicting dependencies #{a} and #{b}\n#{@conflict.explanation}"
-    end
+  def explanation
+    @explanation
+  end
+
+  def conflict
+    nil
   end
 
   def conflicting_dependencies
-    @conflict.conflicting_dependencies
+    []
   end
 end
 

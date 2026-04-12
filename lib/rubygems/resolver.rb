@@ -180,8 +180,7 @@ class Gem::Resolver
       ActivationRequest.new(spec, dep_request)
     end
   rescue Gem::PubGrub::SolveFailure => e
-    failure = Gem::Resolver::PubGrubFailure.new(e)
-    raise Gem::DependencyResolutionError, failure
+    raise Gem::DependencyResolutionError, e
   end
 
   # PubGrub source interface methods
@@ -392,8 +391,6 @@ require_relative "resolver/activation_request"
 require_relative "resolver/conflict"
 require_relative "resolver/dependency_request"
 require_relative "resolver/requirement_list"
-require_relative "resolver/pub_grub_failure"
-
 require_relative "resolver/set"
 require_relative "resolver/api_set"
 require_relative "resolver/composed_set"

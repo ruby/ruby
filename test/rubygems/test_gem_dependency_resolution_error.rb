@@ -19,7 +19,15 @@ class TestGemDependencyResolutionError < Gem::TestCase
   end
 
   def test_message
-    assert_match(/^conflicting dependencies a \(= 1\) and a \(= 2\)$/,
-                 @error.message)
+    assert_match(/Activated a-2/, @error.message)
+    assert_match(/conflicting dependency/, @error.message)
+  end
+
+  def test_conflict
+    assert_nil @error.conflict
+  end
+
+  def test_conflicting_dependencies
+    assert_equal [], @error.conflicting_dependencies
   end
 end

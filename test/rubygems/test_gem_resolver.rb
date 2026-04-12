@@ -454,7 +454,7 @@ class TestGemResolver < Gem::TestCase
       r.resolve
     end
 
-    assert_kind_of Gem::Resolver::PubGrubFailure, e.conflict
+    assert_nil e.conflict
     assert_match(/a depends on c/, e.message)
     assert_match(/b depends on c/, e.message)
   end
@@ -538,7 +538,7 @@ class TestGemResolver < Gem::TestCase
       r.resolve
     end
 
-    assert_kind_of Gem::Resolver::PubGrubFailure, e.conflict
+    assert_nil e.conflict
     assert_match(/a depends on c/, e.message)
     assert_match(/b depends on c/, e.message)
   end
