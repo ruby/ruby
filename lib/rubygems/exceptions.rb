@@ -128,40 +128,6 @@ end
 
 Gem.deprecate_constant :SpecificGemNotFoundException
 
-##
-# Raised by Gem::Resolver when dependencies conflict and create the
-# inability to find a valid possible spec for a request.
-
-class Gem::ImpossibleDependenciesError < Gem::Exception
-  attr_reader :conflicts
-  attr_reader :request
-
-  def initialize(request, conflicts)
-    @request   = request
-    @conflicts = conflicts
-
-    super build_message
-  end
-
-  def build_message # :nodoc:
-    requester  = @request.requester
-    requester  = requester ? requester.spec.full_name : "The user"
-    dependency = @request.dependency
-
-    message = "#{requester} requires #{dependency} but it conflicted:\n".dup
-
-    @conflicts.each do |_, conflict|
-      message << conflict.explanation
-    end
-
-    message
-  end
-
-  def dependency
-    @request.dependency
-  end
-end
-
 class Gem::InstallError < Gem::Exception; end
 
 class Gem::RuntimeRequirementNotMetError < Gem::InstallError

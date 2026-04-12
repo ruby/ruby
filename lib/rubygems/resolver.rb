@@ -388,7 +388,6 @@ class Gem::Resolver
 end
 
 require_relative "resolver/activation_request"
-require_relative "resolver/conflict"
 require_relative "resolver/dependency_request"
 require_relative "resolver/requirement_list"
 require_relative "resolver/set"
