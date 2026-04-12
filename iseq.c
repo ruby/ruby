@@ -3027,7 +3027,9 @@ rb_estimate_iv_count(VALUE klass, const rb_iseq_t * initialize_iseq)
     attr_index_t count = (attr_index_t)iv_names.num_entries;
 
     VALUE superclass = rb_class_superclass(klass);
-    count += RCLASS_MAX_IV_COUNT(superclass);
+    if (!NIL_P(superclass)) { // BasicObject doesn't have a superclass
+        count += RCLASS_MAX_IV_COUNT(superclass);
+    }
 
     set_free_embedded_table(&iv_names);
 
