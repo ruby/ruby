@@ -9,12 +9,12 @@ and so their behaviors may vary among OS platforms.
 
 These timestamps are:
 
-|                        Name                        | Meaning                                | Changes               |
-|:--------------------------------------------------:|----------------------------------------|-----------------------|
-|    [`birthtime`](timestamps_md.html#birth-time)    | Create time.                           | Never.                |
-|  [`mtime`](timestamps_md.html#modification-time)   | Modification time.                     | When written.         |
-|     [`atime`](timestamps_md.html#access-time)      | Access time.                           | When read or written. |
-| [`ctime`](timestamps_md.html#metadata-change-time) | Metadata-change time (or create time). | See below.            |
+|               Name               | Meaning                                | Changes               |
+|:--------------------------------:|----------------------------------------|-----------------------|
+|  [`birthtime`](#birth-time)      | Create time.                           | Never.                |
+|  [`mtime`](#modification-time)   | Modification time.                     | When written.         |
+|     [`atime`](#access-time)      | Access time.                           | When read or written. |
+| [`ctime`](#metadata-change-time) | Metadata-change time (or create time). | See below.            |
 
 ## Birth \Time
 
