@@ -209,9 +209,14 @@ class Gem::Resolver
     constraint = unsatisfied_term.constraint
     extended_explanation = build_extended_explanation(name, constraint)
 
+    custom_explanation = if extended_explanation
+      "#{constraint} could not be found in any repository"
+    end
+
     Gem::Resolver::Incompatibility.new(
       [unsatisfied_term],
       cause: cause,
+      custom_explanation: custom_explanation,
       extended_explanation: extended_explanation
     )
   end

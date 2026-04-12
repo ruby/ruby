@@ -847,6 +847,7 @@ class TestGemResolver < Gem::TestCase
       r.resolve
     end
 
+    assert_match(/could not be found in any repository/, e.message)
     assert_match(/b-1.0-java/, e.message)
   end
 
