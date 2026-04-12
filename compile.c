@@ -8082,170 +8082,172 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *n
     const NODE *line_node = node;
 
     switch (nd_type(node)) {
-      // case NODE_ARYPTN: {
-      //   /*
-      //    *   if pattern.use_rest_num?
-      //    *     rest_num = 0
-      //    *   end
-      //    *   if pattern.has_constant_node?
-      //    *     unless pattern.constant === obj
-      //    *       goto match_failed
-      //    *     end
-      //    *   end
-      //    *   unless obj.respond_to?(:deconstruct)
-      //    *     goto match_failed
-      //    *   end
-      //    *   d = obj.deconstruct
-      //    *   unless Array === d
-      //    *     goto type_error
-      //    *   end
-      //    *   min_argc = pattern.pre_args_num + pattern.post_args_num
-      //    *   if pattern.has_rest_arg?
-      //    *     unless d.length >= min_argc
-      //    *       goto match_failed
-      //    *     end
-      //    *   else
-      //    *     unless d.length == min_argc
-      //    *       goto match_failed
-      //    *     end
-      //    *   end
-      //    *   pattern.pre_args_num.each do |i|
-      //    *     unless pattern.pre_args[i].match?(d[i])
-      //    *       goto match_failed
-      //    *     end
-      //    *   end
-      //    *   if pattern.use_rest_num?
-      //    *     rest_num = d.length - min_argc
-      //    *     if pattern.has_rest_arg? && pattern.has_rest_arg_id # not `*`, but `*rest`
-      //    *       unless pattern.rest_arg.match?(d[pattern.pre_args_num, rest_num])
-      //    *         goto match_failed
-      //    *       end
-      //    *     end
-      //    *   end
-      //    *   pattern.post_args_num.each do |i|
-      //    *     j = pattern.pre_args_num + i
-      //    *     j += rest_num
-      //    *     unless pattern.post_args[i].match?(d[j])
-      //    *       goto match_failed
-      //    *     end
-      //    *   end
-      //    *   goto matched
-      //    * type_error:
-      //    *   FrozenCore.raise TypeError
-      //    * match_failed:
-      //    *   goto unmatched
-      //    */
-      //   const NODE *args = RNODE_ARYPTN(node)->pre_args;
-      //   const int pre_args_num = RNODE_ARYPTN(node)->pre_args ? rb_long2int(RNODE_LIST(RNODE_ARYPTN(node)->pre_args)->as.nd_alen) : 0;
-      //   const int post_args_num = RNODE_ARYPTN(node)->post_args ? rb_long2int(RNODE_LIST(RNODE_ARYPTN(node)->post_args)->as.nd_alen) : 0;
+      case RB_ARRAY_PATTERN_NODE: {
+        /*
+         *   if pattern.use_rest_num?
+         *     rest_num = 0
+         *   end
+         *   if pattern.has_constant_node?
+         *     unless pattern.constant === obj
+         *       goto match_failed
+         *     end
+         *   end
+         *   unless obj.respond_to?(:deconstruct)
+         *     goto match_failed
+         *   end
+         *   d = obj.deconstruct
+         *   unless Array === d
+         *     goto type_error
+         *   end
+         *   min_argc = pattern.pre_args_num + pattern.post_args_num
+         *   if pattern.has_rest_arg?
+         *     unless d.length >= min_argc
+         *       goto match_failed
+         *     end
+         *   else
+         *     unless d.length == min_argc
+         *       goto match_failed
+         *     end
+         *   end
+         *   pattern.pre_args_num.each do |i|
+         *     unless pattern.pre_args[i].match?(d[i])
+         *       goto match_failed
+         *     end
+         *   end
+         *   if pattern.use_rest_num?
+         *     rest_num = d.length - min_argc
+         *     if pattern.has_rest_arg? && pattern.has_rest_arg_id # not `*`, but `*rest`
+         *       unless pattern.rest_arg.match?(d[pattern.pre_args_num, rest_num])
+         *         goto match_failed
+         *       end
+         *     end
+         *   end
+         *   pattern.post_args_num.each do |i|
+         *     j = pattern.pre_args_num + i
+         *     j += rest_num
+         *     unless pattern.post_args[i].match?(d[j])
+         *       goto match_failed
+         *     end
+         *   end
+         *   goto matched
+         * type_error:
+         *   FrozenCore.raise TypeError
+         * match_failed:
+         *   goto unmatched
+         */
+        const rb_node_list2_t *args = &RB_NODE_ARRAY_PATTERN(node)->requireds;
+        const int pre_args_num = rb_long2int(RB_NODE_LIST_LEN(&RB_NODE_ARRAY_PATTERN(node)->requireds));
+        const int post_args_num = rb_long2int(RB_NODE_LIST_LEN(&RB_NODE_ARRAY_PATTERN(node)->posts));
 
-      //   const int min_argc = pre_args_num + post_args_num;
-      //   const int use_rest_num = RNODE_ARYPTN(node)->rest_arg && (NODE_NAMED_REST_P(RNODE_ARYPTN(node)->rest_arg) ||
-      //                                                 (!NODE_NAMED_REST_P(RNODE_ARYPTN(node)->rest_arg) && post_args_num > 0));
+        const int min_argc = pre_args_num + post_args_num;
+        const int use_rest_num = RB_NODE_ARRAY_PATTERN(node)->rest && (NODE_NAMED_REST_P2(RB_NODE_ARRAY_PATTERN(node)->rest) ||
+                                                      (!NODE_NAMED_REST_P2(RB_NODE_ARRAY_PATTERN(node)->rest) && post_args_num > 0));
 
-      //   LABEL *match_failed, *type_error, *deconstruct, *deconstructed;
-      //   int i;
-      //   match_failed = NEW_LABEL(line);
-      //   type_error = NEW_LABEL(line);
-      //   deconstruct = NEW_LABEL(line);
-      //   deconstructed = NEW_LABEL(line);
+        LABEL *match_failed, *type_error, *deconstruct, *deconstructed;
+        int i;
+        match_failed = NEW_LABEL(line);
+        type_error = NEW_LABEL(line);
+        deconstruct = NEW_LABEL(line);
+        deconstructed = NEW_LABEL(line);
 
-      //   if (use_rest_num) {
-      //       ADD_INSN1(ret, line_node, putobject, INT2FIX(0)); /* allocate stack for rest_num */
-      //       ADD_INSN(ret, line_node, swap);
-      //       if (base_index) {
-      //           base_index++;
-      //       }
-      //   }
+        if (use_rest_num) {
+            ADD_INSN1(ret, line_node, putobject, INT2FIX(0)); /* allocate stack for rest_num */
+            ADD_INSN(ret, line_node, swap);
+            if (base_index) {
+                base_index++;
+            }
+        }
 
-      //   CHECK(iseq_compile_pattern_constant(iseq, ret, node, match_failed, in_single_pattern, base_index));
+        CHECK(iseq_compile_pattern_constant(iseq, ret, node, match_failed, in_single_pattern, base_index));
 
-      //   CHECK(iseq_compile_array_deconstruct(iseq, ret, node, deconstruct, deconstructed, match_failed, type_error, in_single_pattern, base_index, use_deconstructed_cache));
+        CHECK(iseq_compile_array_deconstruct(iseq, ret, node, deconstruct, deconstructed, match_failed, type_error, in_single_pattern, base_index, use_deconstructed_cache));
 
-      //   ADD_INSN(ret, line_node, dup);
-      //   ADD_SEND(ret, line_node, idLength, INT2FIX(0));
-      //   ADD_INSN1(ret, line_node, putobject, INT2FIX(min_argc));
-      //   ADD_SEND(ret, line_node, RNODE_ARYPTN(node)->rest_arg ? idGE : idEq, INT2FIX(1)); // (1)
-      //   if (in_single_pattern) {
-      //       CHECK(iseq_compile_pattern_set_length_errmsg(iseq, ret, node,
-      //                                                    RNODE_ARYPTN(node)->rest_arg ? rb_fstring_lit("%p length mismatch (given %p, expected %p+)") :
-      //                                                                       rb_fstring_lit("%p length mismatch (given %p, expected %p)"),
-      //                                                    INT2FIX(min_argc), base_index + 1 /* (1) */));
-      //   }
-      //   ADD_INSNL(ret, line_node, branchunless, match_failed);
+        ADD_INSN(ret, line_node, dup);
+        ADD_SEND(ret, line_node, idLength, INT2FIX(0));
+        ADD_INSN1(ret, line_node, putobject, INT2FIX(min_argc));
+        ADD_SEND(ret, line_node, RB_NODE_ARRAY_PATTERN(node)->rest ? idGE : idEq, INT2FIX(1)); // (1)
+        if (in_single_pattern) {
+            CHECK(iseq_compile_pattern_set_length_errmsg(iseq, ret, node,
+                                                         RB_NODE_ARRAY_PATTERN(node)->rest ? rb_fstring_lit("%p length mismatch (given %p, expected %p+)") :
+                                                                            rb_fstring_lit("%p length mismatch (given %p, expected %p)"),
+                                                         INT2FIX(min_argc), base_index + 1 /* (1) */));
+        }
+        ADD_INSNL(ret, line_node, branchunless, match_failed);
 
-      //   for (i = 0; i < pre_args_num; i++) {
-      //       ADD_INSN(ret, line_node, dup);
-      //       ADD_INSN1(ret, line_node, putobject, INT2FIX(i));
-      //       ADD_SEND(ret, line_node, idAREF, INT2FIX(1)); // (2)
-      //       CHECK(iseq_compile_pattern_match(iseq, ret, RNODE_LIST(args)->nd_head, match_failed, in_single_pattern, in_alt_pattern, base_index + 1 /* (2) */, false));
-      //       args = RNODE_LIST(args)->nd_next;
-      //   }
+        for (i = 0; i < pre_args_num; i++) {
+            const NODE *arg = args->nodes[i];
+            ADD_INSN(ret, line_node, dup);
+            ADD_INSN1(ret, line_node, putobject, INT2FIX(i));
+            ADD_SEND(ret, line_node, idAREF, INT2FIX(1)); // (2)
+            CHECK(iseq_compile_pattern_match(iseq, ret, arg, match_failed, in_single_pattern, in_alt_pattern, base_index + 1 /* (2) */, false));
+        }
 
-      //   if (RNODE_ARYPTN(node)->rest_arg) {
-      //       if (NODE_NAMED_REST_P(RNODE_ARYPTN(node)->rest_arg)) {
-      //           ADD_INSN(ret, line_node, dup);
-      //           ADD_INSN1(ret, line_node, putobject, INT2FIX(pre_args_num));
-      //           ADD_INSN1(ret, line_node, topn, INT2FIX(1));
-      //           ADD_SEND(ret, line_node, idLength, INT2FIX(0));
-      //           ADD_INSN1(ret, line_node, putobject, INT2FIX(min_argc));
-      //           ADD_SEND(ret, line_node, idMINUS, INT2FIX(1));
-      //           ADD_INSN1(ret, line_node, setn, INT2FIX(4));
-      //           ADD_SEND(ret, line_node, idAREF, INT2FIX(2)); // (3)
+        if (RB_NODE_ARRAY_PATTERN(node)->rest) {
+            const NODE *nd_rest = RB_NODE_ARRAY_PATTERN(node)->rest;
 
-      //           CHECK(iseq_compile_pattern_match(iseq, ret, RNODE_ARYPTN(node)->rest_arg, match_failed, in_single_pattern, in_alt_pattern, base_index + 1 /* (3) */, false));
-      //       }
-      //       else {
-      //           if (post_args_num > 0) {
-      //               ADD_INSN(ret, line_node, dup);
-      //               ADD_SEND(ret, line_node, idLength, INT2FIX(0));
-      //               ADD_INSN1(ret, line_node, putobject, INT2FIX(min_argc));
-      //               ADD_SEND(ret, line_node, idMINUS, INT2FIX(1));
-      //               ADD_INSN1(ret, line_node, setn, INT2FIX(2));
-      //               ADD_INSN(ret, line_node, pop);
-      //           }
-      //       }
-      //   }
+            if (NODE_NAMED_REST_P2(nd_rest)) {
+                ADD_INSN(ret, line_node, dup);
+                ADD_INSN1(ret, line_node, putobject, INT2FIX(pre_args_num));
+                ADD_INSN1(ret, line_node, topn, INT2FIX(1));
+                ADD_SEND(ret, line_node, idLength, INT2FIX(0));
+                ADD_INSN1(ret, line_node, putobject, INT2FIX(min_argc));
+                ADD_SEND(ret, line_node, idMINUS, INT2FIX(1));
+                ADD_INSN1(ret, line_node, setn, INT2FIX(4));
+                ADD_SEND(ret, line_node, idAREF, INT2FIX(2)); // (3)
 
-      //   args = RNODE_ARYPTN(node)->post_args;
-      //   for (i = 0; i < post_args_num; i++) {
-      //       ADD_INSN(ret, line_node, dup);
+                CHECK(iseq_compile_pattern_match(iseq, ret, RB_NODE_SPLAT(nd_rest)->expression, match_failed, in_single_pattern, in_alt_pattern, base_index + 1 /* (3) */, false));
+            }
+            else {
+                if (post_args_num > 0) {
+                    ADD_INSN(ret, line_node, dup);
+                    ADD_SEND(ret, line_node, idLength, INT2FIX(0));
+                    ADD_INSN1(ret, line_node, putobject, INT2FIX(min_argc));
+                    ADD_SEND(ret, line_node, idMINUS, INT2FIX(1));
+                    ADD_INSN1(ret, line_node, setn, INT2FIX(2));
+                    ADD_INSN(ret, line_node, pop);
+                }
+            }
+        }
 
-      //       ADD_INSN1(ret, line_node, putobject, INT2FIX(pre_args_num + i));
-      //       ADD_INSN1(ret, line_node, topn, INT2FIX(3));
-      //       ADD_SEND(ret, line_node, idPLUS, INT2FIX(1));
+        args = &RB_NODE_ARRAY_PATTERN(node)->posts;
+        for (i = 0; i < post_args_num; i++) {
+            const NODE *arg = args->nodes[i];
+            ADD_INSN(ret, line_node, dup);
 
-      //       ADD_SEND(ret, line_node, idAREF, INT2FIX(1)); // (4)
-      //       CHECK(iseq_compile_pattern_match(iseq, ret, RNODE_LIST(args)->nd_head, match_failed, in_single_pattern, in_alt_pattern, base_index + 1 /* (4) */, false));
-      //       args = RNODE_LIST(args)->nd_next;
-      //   }
+            ADD_INSN1(ret, line_node, putobject, INT2FIX(pre_args_num + i));
+            ADD_INSN1(ret, line_node, topn, INT2FIX(3));
+            ADD_SEND(ret, line_node, idPLUS, INT2FIX(1));
 
-      //   ADD_INSN(ret, line_node, pop);
-      //   if (use_rest_num) {
-      //       ADD_INSN(ret, line_node, pop);
-      //   }
-      //   ADD_INSNL(ret, line_node, jump, matched);
-      //   ADD_INSN(ret, line_node, putnil);
-      //   if (use_rest_num) {
-      //       ADD_INSN(ret, line_node, putnil);
-      //   }
+            ADD_SEND(ret, line_node, idAREF, INT2FIX(1)); // (4)
+            CHECK(iseq_compile_pattern_match(iseq, ret, arg, match_failed, in_single_pattern, in_alt_pattern, base_index + 1 /* (4) */, false));
+        }
 
-      //   ADD_LABEL(ret, type_error);
-      //   ADD_INSN1(ret, line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-      //   ADD_INSN1(ret, line_node, putobject, rb_eTypeError);
-      //   ADD_INSN1(ret, line_node, putobject, rb_fstring_lit("deconstruct must return Array"));
-      //   ADD_SEND(ret, line_node, id_core_raise, INT2FIX(2));
-      //   ADD_INSN(ret, line_node, pop);
+        ADD_INSN(ret, line_node, pop);
+        if (use_rest_num) {
+            ADD_INSN(ret, line_node, pop);
+        }
+        ADD_INSNL(ret, line_node, jump, matched);
+        ADD_INSN(ret, line_node, putnil);
+        if (use_rest_num) {
+            ADD_INSN(ret, line_node, putnil);
+        }
 
-      //   ADD_LABEL(ret, match_failed);
-      //   ADD_INSN(ret, line_node, pop);
-      //   if (use_rest_num) {
-      //       ADD_INSN(ret, line_node, pop);
-      //   }
-      //   ADD_INSNL(ret, line_node, jump, unmatched);
+        ADD_LABEL(ret, type_error);
+        ADD_INSN1(ret, line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+        ADD_INSN1(ret, line_node, putobject, rb_eTypeError);
+        ADD_INSN1(ret, line_node, putobject, rb_fstring_lit("deconstruct must return Array"));
+        ADD_SEND(ret, line_node, id_core_raise, INT2FIX(2));
+        ADD_INSN(ret, line_node, pop);
 
-      //   break;
-      // }
+        ADD_LABEL(ret, match_failed);
+        ADD_INSN(ret, line_node, pop);
+        if (use_rest_num) {
+            ADD_INSN(ret, line_node, pop);
+        }
+        ADD_INSNL(ret, line_node, jump, unmatched);
+
+        break;
+      }
       // case NODE_FNDPTN: {
       //   /*
       //    *   if pattern.has_constant_node?
@@ -8762,9 +8764,9 @@ iseq_compile_pattern_constant(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NOD
 {
     const NODE *line_node = node;
 
-    if (RNODE_ARYPTN(node)->nd_pconst) {
+    if (RB_NODE_ARRAY_PATTERN(node)->constant) {
         ADD_INSN(ret, line_node, dup); // (1)
-        CHECK(COMPILE(ret, "constant", RNODE_ARYPTN(node)->nd_pconst)); // (2)
+        CHECK(COMPILE(ret, "constant", RB_NODE_ARRAY_PATTERN(node)->constant)); // (2)
         if (in_single_pattern) {
             ADD_INSN1(ret, line_node, dupn, INT2FIX(2));
         }
