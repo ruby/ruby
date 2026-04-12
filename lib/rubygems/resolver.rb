@@ -338,7 +338,6 @@ class Gem::Resolver
 
   def spec_for(name, version)
     candidates = @all_specs[name].select {|s| s.version == version }
-    candidates = @all_specs[name].select {|s| s.version.to_s == version.to_s } if candidates.empty?
 
     if candidates.length > 1
       # Prefer already-installed specs to avoid unnecessary downloads
