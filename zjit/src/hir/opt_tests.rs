@@ -15647,4 +15647,228 @@ mod hir_opt_tests {
           Jump bb6(v81, v114)
         ");
     }
+
+    #[test]
+    fn test_float_nan_p_annotation() {
+        eval(r#"
+            def test(x) = x.nan?
+            test(1.0)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Float@0x1008, nan?@0x1010, cme:0x1018)
+          v23:Flonum = GuardType v10, Flonum
+          v24:BoolExact = CCall v23, :Float#nan?@0x1040
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
+    fn test_float_finite_p_annotation() {
+        eval(r#"
+            def test(x) = x.finite?
+            test(1.0)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Float@0x1008, finite?@0x1010, cme:0x1018)
+          v23:Flonum = GuardType v10, Flonum
+          v24:BoolExact = CCall v23, :Float#finite?@0x1040
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
+    fn test_float_infinite_p_annotation() {
+        eval(r#"
+            def test(x) = x.infinite?
+            test(1.0)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Float@0x1008, infinite?@0x1010, cme:0x1018)
+          v23:Flonum = GuardType v10, Flonum
+          v24:NilClass|Fixnum = CCall v23, :Float#infinite?@0x1040
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
+    fn test_integer_even_p_annotation() {
+        eval(r#"
+            def test(x) = x.even?
+            test(2)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, even?@0x1010, cme:0x1018)
+          v22:Fixnum = GuardType v10, Fixnum
+          v24:BoolExact = InvokeBuiltin leaf <inline_expr>, v22
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
+    fn test_integer_odd_p_annotation() {
+        eval(r#"
+            def test(x) = x.odd?
+            test(3)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Integer@0x1008, odd?@0x1010, cme:0x1018)
+          v22:Fixnum = GuardType v10, Fixnum
+          v24:BoolExact = InvokeBuiltin leaf <inline_expr>, v22
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
+    fn test_float_zero_p_annotation() {
+        eval(r#"
+            def test(x) = x.zero?
+            test(1.0)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Float@0x1008, zero?@0x1010, cme:0x1018)
+          v22:Flonum = GuardType v10, Flonum
+          v24:BoolExact = InvokeBuiltin leaf <inline_expr>, v22
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
+    fn test_float_positive_p_annotation() {
+        eval(r#"
+            def test(x) = x.positive?
+            test(1.0)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Float@0x1008, positive?@0x1010, cme:0x1018)
+          v22:Flonum = GuardType v10, Flonum
+          v24:BoolExact = InvokeBuiltin leaf <inline_expr>, v22
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
+    fn test_float_negative_p_annotation() {
+        eval(r#"
+            def test(x) = x.negative?
+            test(-1.0)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :x@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Float@0x1008, negative?@0x1010, cme:0x1018)
+          v22:Flonum = GuardType v10, Flonum
+          v24:BoolExact = InvokeBuiltin leaf <inline_expr>, v22
+          CheckInterrupts
+          Return v24
+        ");
+    }
 }
