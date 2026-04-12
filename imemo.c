@@ -89,6 +89,7 @@ rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t size, size_t cnt)
 void
 rb_free_tmp_buffer(volatile VALUE *store)
 {
+    if (!*store) return;
     rb_imemo_tmpbuf_t *s = (rb_imemo_tmpbuf_t*)ATOMIC_VALUE_EXCHANGE(*store, 0);
     if (s) {
         void *ptr = ATOMIC_PTR_EXCHANGE(s->ptr, 0);
