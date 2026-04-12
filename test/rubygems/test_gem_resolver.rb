@@ -455,6 +455,7 @@ class TestGemResolver < Gem::TestCase
     end
 
     assert_nil e.conflict
+    assert_match(/your request/, e.message)
     assert_match(/a depends on c/, e.message)
     assert_match(/b depends on c/, e.message)
   end

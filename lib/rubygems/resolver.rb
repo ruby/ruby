@@ -100,7 +100,7 @@ class Gem::Resolver
     @skip_gems           = {}
     @soft_missing        = false
 
-    @root_package = Gem::PubGrub::Package.root
+    @root_package = RootPackage.new
     @root_version = Gem::PubGrub::Package.root_version
 
     @packages = {}
@@ -346,6 +346,22 @@ class Gem::Resolver
 
   def make_logger
     DEBUG_RESOLVER ? Gem::PubGrub::StderrLogger.new : Gem::PubGrub::NullLogger.new
+  end
+
+  # Custom root package so error messages say "your request depends on..."
+  # instead of PubGrub's default "root depends on...".
+  class RootPackage < Gem::PubGrub::Package
+    def initialize
+      super(:root)
+    end
+
+    def root?
+      true
+    end
+
+    def to_s
+      "your request"
+    end
   end
 end
 
