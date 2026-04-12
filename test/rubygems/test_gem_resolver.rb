@@ -828,4 +828,47 @@ class TestGemResolver < Gem::TestCase
 
     assert_resolves_to [a_stable, b_pre], r
   end
+
+  def test_error_includes_platform_hint_when_specs_exist_for_other_platforms
+    a = util_spec "a", "1.0" do |s|
+      s.add_dependency "b", ">= 1.0"
+    end
+
+    b_foreign = util_spec "b", "1.0" do |s|
+      s.platform = "java"
+    end
+
+    s = set(a, b_foreign)
+
+    ad = make_dep "a"
+    r = Gem::Resolver.new([ad], s)
+
+    e = assert_raise Gem::DependencyResolutionError do
+      r.resolve
+    end
+
+    assert_match(/b-1.0-java/, e.message)
+  end
+
+  def test_error_includes_ruby_version_hint_when_filtered
+    a = util_spec "a", "1.0" do |s|
+      s.add_dependency "b", ">= 1.0"
+    end
+
+    b = util_spec "b", "1.0" do |s|
+      s.required_ruby_version = ">= 999.0"
+    end
+
+    s = set(a, b)
+
+    ad = make_dep "a"
+    r = Gem::Resolver.new([ad], s)
+
+    e = assert_raise Gem::DependencyResolutionError do
+      r.resolve
+    end
+
+    assert_match(/requires Ruby/, e.message)
+    assert_match(/you have/, e.message)
+  end
 end

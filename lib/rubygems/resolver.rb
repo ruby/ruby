@@ -163,7 +163,13 @@ class Gem::Resolver
       ActivationRequest.new(spec, dep_request)
     end
   rescue Gem::PubGrub::SolveFailure => e
-    raise Gem::DependencyResolutionError, e
+    extended = extract_extended_explanation(e.incompatibility)
+    if extended
+      message = "#{e.explanation}\n\n#{extended}"
+      raise Gem::DependencyResolutionError, Struct.new(:explanation).new(message)
+    else
+      raise Gem::DependencyResolutionError, e
+    end
   end
 
   # PubGrub source interface methods
@@ -198,7 +204,16 @@ class Gem::Resolver
 
   def no_versions_incompatibility_for(_package, unsatisfied_term)
     cause = Gem::PubGrub::Incompatibility::NoVersions.new(unsatisfied_term)
-    Gem::PubGrub::Incompatibility.new([unsatisfied_term], cause: cause)
+
+    name = unsatisfied_term.package.to_s
+    constraint = unsatisfied_term.constraint
+    extended_explanation = build_extended_explanation(name, constraint)
+
+    Gem::Resolver::Incompatibility.new(
+      [unsatisfied_term],
+      cause: cause,
+      extended_explanation: extended_explanation
+    )
   end
 
   def incompatibilities_for(package, version)
@@ -344,6 +359,68 @@ class Gem::Resolver
     deps
   end
 
+  def build_extended_explanation(name, constraint)
+    dep = Gem::Dependency.new(name, ">= 0.a")
+    dep_request = DependencyRequest.new(dep, nil)
+    unfiltered = @set.find_all(dep_request)
+    return if unfiltered.empty?
+
+    filtered = @all_specs[name]
+    return if filtered.length == unfiltered.length
+
+    hints = []
+
+    # Check for specs that exist for other platforms
+    platform_specs = unfiltered.select do |s|
+      !Gem::Platform.installable?(s) && constraint.range.include?(s.version)
+    end
+    if platform_specs.any?
+      label = "#{name} (#{constraint.constraint_string})"
+      hints << "The source contains the following gems matching '#{label}':"
+      platform_specs.each do |s|
+        actual = s.respond_to?(:spec) ? s.spec : s
+        hints << "  * #{actual.full_name}"
+      end
+    end
+
+    # Check for specs filtered by Ruby version
+    installable = select_local_platforms(unfiltered)
+    ruby_specs = installable.select do |s|
+      actual = s.respond_to?(:spec) ? s.spec : s
+      constraint.range.include?(s.version) &&
+        !actual.required_ruby_version.satisfied_by?(Gem.ruby_version)
+    rescue StandardError
+      false
+    end
+    if ruby_specs.any?
+      versions = ruby_specs.map(&:version).uniq.sort.reverse.first(3)
+      sample = ruby_specs.find {|s| s.version == versions.first }
+      actual = sample.respond_to?(:spec) ? sample.spec : sample
+      ruby_req = actual.required_ruby_version
+      hints << "#{name} #{versions.join(", ")} requires Ruby #{ruby_req} (you have #{Gem.ruby_version})"
+    end
+
+    hints.empty? ? nil : hints.join("\n")
+  end
+
+  def extract_extended_explanation(incompatibility)
+    while incompatibility.cause.is_a?(Gem::PubGrub::Incompatibility::ConflictCause)
+      cause = incompatibility.cause
+
+      [cause.conflict, cause.other].each do |incompat|
+        if incompat.cause.is_a?(Gem::PubGrub::Incompatibility::NoVersions) &&
+            incompat.respond_to?(:extended_explanation) &&
+            incompat.extended_explanation
+          return incompat.extended_explanation
+        end
+      end
+
+      incompatibility = cause.conflict
+    end
+
+    nil
+  end
+
   def make_logger
     DEBUG_RESOLVER ? Gem::PubGrub::StderrLogger.new : Gem::PubGrub::NullLogger.new
   end
@@ -367,6 +444,7 @@ end
 
 require_relative "resolver/activation_request"
 require_relative "resolver/dependency_request"
+require_relative "resolver/incompatibility"
 require_relative "resolver/requirement_list"
 require_relative "resolver/set"
 require_relative "resolver/api_set"
