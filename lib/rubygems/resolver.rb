@@ -106,7 +106,8 @@ class Gem::Resolver
     @packages = {}
 
     @all_specs = Hash.new {|h, name| h[name] = find_all_specs_for(name) }
-    @sorted_versions = Hash.new {|h, pkg| h[pkg] = @all_specs[pkg.to_s].map(&:version).uniq.sort }
+    @all_versions = Hash.new {|h, pkg| h[pkg] = @all_specs[pkg.to_s].map(&:version).uniq.sort }
+    @sorted_versions = Hash.new {|h, pkg| h[pkg] = filter_versions(pkg) }
     @cached_dependencies = Hash.new {|h, pkg| h[pkg] = Hash.new {|v, ver| v[ver] = compute_dependencies(pkg, ver) } }
   end
 
@@ -188,20 +189,7 @@ class Gem::Resolver
   def all_versions_for(package)
     return [@root_version] if package == @root_package
 
-    all_versions = @sorted_versions[package]
-
-    # Exclude prerelease versions unless the set has prerelease enabled.
-    # Prereleases are still available via versions_for when a range
-    # specifically includes them (e.g., "= 2.a"), with low priority
-    # in the Strategy.
-    if @set.respond_to?(:prerelease) && @set.prerelease
-      versions = all_versions
-    else
-      stable = all_versions.reject(&:prerelease?)
-      versions = stable.empty? ? all_versions : stable
-    end
-
-    versions = versions.reverse # highest first
+    versions = @sorted_versions[package].reverse # highest first
     name = package.to_s
 
     if (skip_dep_gems = skip_gems[name]) && !skip_dep_gems.empty?
@@ -313,6 +301,19 @@ class Gem::Resolver
 
   def package_for(name)
     @packages[name] ||= Gem::PubGrub::Package.new(name)
+  end
+
+  # Filter versions to exclude prereleases unless prerelease is enabled.
+  # Both all_versions_for and versions_for use this filtered set to ensure
+  # PubGrub's constraint propagation and version selection are consistent.
+  def filter_versions(package)
+    all_versions = @all_versions[package]
+    if @set.respond_to?(:prerelease) && @set.prerelease
+      all_versions
+    else
+      stable = all_versions.reject(&:prerelease?)
+      stable.empty? ? all_versions : stable
+    end
   end
 
   def find_all_specs_for(name)

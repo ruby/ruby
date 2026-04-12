@@ -774,4 +774,57 @@ class TestGemResolver < Gem::TestCase
     assert_match "No match for 'a (= 1)' on this platform. Found: c-p-1",
                  e.message
   end
+
+  def test_resolve_prerelease_not_considered_when_stable_exists
+    # a-1.0 depends on b ~> 2.0 — only b-2.0.pre satisfies that, but
+    # b also has a stable version (1.0), so prereleases are filtered out.
+    # The resolver must fail, not silently use b-2.0.pre during propagation.
+    a_stable = util_spec "a", "1.0" do |s|
+      s.add_dependency "b", "~> 2.0"
+    end
+
+    b_stable = util_spec "b", "1.0"
+    b_pre = util_spec "b", "2.0.pre"
+
+    s = set(a_stable, b_stable, b_pre)
+
+    ad = make_dep "a"
+    r = Gem::Resolver.new([ad], s)
+
+    assert_raise Gem::DependencyResolutionError do
+      r.resolve
+    end
+  end
+
+  def test_resolve_prerelease_considered_when_enabled
+    a_stable = util_spec "a", "1.0" do |s|
+      s.add_dependency "b", ">= 1.0"
+    end
+
+    b_pre = util_spec "b", "2.0.pre"
+
+    s = set(a_stable, b_pre)
+    s.prerelease = true
+
+    ad = make_dep "a"
+    r = Gem::Resolver.new([ad], s)
+
+    assert_resolves_to [a_stable, b_pre], r
+  end
+
+  def test_resolve_prerelease_used_when_no_stable_versions_exist
+    a_stable = util_spec "a", "1.0" do |s|
+      s.add_dependency "b", ">= 1.0"
+    end
+
+    b_pre = util_spec "b", "2.0.pre"
+    b_other_pre = util_spec "b", "1.0.pre"
+
+    s = set(a_stable, b_pre, b_other_pre)
+
+    ad = make_dep "a"
+    r = Gem::Resolver.new([ad], s)
+
+    assert_resolves_to [a_stable, b_pre], r
+  end
 end
