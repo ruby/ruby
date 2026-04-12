@@ -111,24 +111,6 @@ class Gem::Resolver
     @cached_dependencies = Hash.new {|h, pkg| h[pkg] = Hash.new {|v, ver| v[ver] = compute_dependencies(pkg, ver) } }
   end
 
-  def explain(stage, *data) # :nodoc:
-    return unless DEBUG_RESOLVER
-
-    d = data.map(&:pretty_inspect).join(", ")
-    $stderr.printf "%10s %s\n", stage.to_s.upcase, d
-  end
-
-  def explain_list(stage) # :nodoc:
-    return unless DEBUG_RESOLVER
-
-    data = yield
-    $stderr.printf "%10s (%d entries)\n", stage.to_s.upcase, data.size
-    unless data.empty?
-      require "pp"
-      PP.pp data, $stderr
-    end
-  end
-
   ##
   # Proceed with resolution! Returns an array of ActivationRequest objects.
 
@@ -266,26 +248,6 @@ class Gem::Resolver
         cause: :dependency
       )
     end
-  end
-
-  ##
-  # Extracts the specifications that may be able to fulfill +dependency+ and
-  # returns those that match the local platform and all those that match.
-
-  def find_possible(dependency) # :nodoc:
-    all = @set.find_all dependency
-
-    if (skip_dep_gems = skip_gems[dependency.name]) && !skip_dep_gems.empty?
-      matching = all.select do |api_spec|
-        skip_dep_gems.any? {|s| api_spec.version == s.version }
-      end
-
-      all = matching unless matching.empty?
-    end
-
-    matching_platform = select_local_platforms all
-
-    [matching_platform, all]
   end
 
   ##
