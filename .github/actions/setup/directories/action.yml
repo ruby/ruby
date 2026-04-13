@@ -193,7 +193,7 @@ runs:
         INPUT_MAKE_COMMAND: ${{ inputs.make-command }}
 
     - name: clean
-      uses: gacts/run-and-post-run@81b6ce503cde93862cec047c54652e45c5dca991 # v1.4.3
+      uses: gacts/run-and-post-run@598d7a875d5620e0457490555b5e18e46082aa47 # v1.4.4
       with:
         working-directory:
         post: |
