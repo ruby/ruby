@@ -642,6 +642,12 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
                 cb, jit, asm, cme, iseq, opnd!(recv), opnds!(args),
                 kw_bits, &function.frame_state(state), block,
             ),
+        Insn::PushLightweightFrame { cme, iseq, recv, args, kw_bits, blockiseq, state, .. } => {
+            no_output!(gen_push_lightweight_frame(jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), *kw_bits, &function.frame_state(*state), *blockiseq))
+        },
+        Insn::PopLightweightFrame { iseq, argc, state } => {
+            no_output!(gen_pop_lightweight_frame(asm, *iseq, *argc, &function.frame_state(*state)))
+        },
         &Insn::InvokeSuper { cd, blockiseq, state, reason, .. } => gen_invokesuper(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::InvokeSuperForward { cd, blockiseq, state, reason, .. } => gen_invokesuperforward(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::InvokeBlock { cd, state, reason, .. } => gen_invokeblock(jit, asm, cd, &function.frame_state(state), reason),
@@ -1535,6 +1541,110 @@ fn gen_send_without_block(
         rb_vm_opt_send_without_block,
         EC, CFP, Opnd::const_ptr(cd)
     )
+}
+
+/// Push an interpreter frame for an inlined callee. This is the same as the frame push
+/// portion of gen_send_iseq_direct, but without the native call to the callee. Control
+/// falls through to the next instruction (the inlined callee body).
+fn gen_push_lightweight_frame(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    cme: *const rb_callable_method_entry_t,
+    iseq: IseqPtr,
+    recv: Opnd,
+    args: Vec<Opnd>,
+    kw_bits: u32,
+    state: &FrameState,
+    blockiseq: Option<IseqPtr>,
+) {
+    let local_size = unsafe { get_iseq_body_local_table_size(iseq) }.to_usize();
+    let stack_growth = state.stack_size() + local_size + unsafe { get_iseq_body_stack_max(iseq) }.to_usize();
+    gen_stack_overflow_check(jit, asm, state, stack_growth);
+
+    // Save cfp->pc and cfp->sp for the caller frame.
+    // Cannot use gen_prepare_non_leaf_call because we need special SP math.
+    gen_save_pc_for_gc(asm, state);
+    gen_save_sp(asm, state.stack().len() - args.len() - 1); // -1 for receiver
+
+    gen_spill_locals(jit, asm, state);
+    gen_spill_stack(jit, asm, state);
+
+    // This mirrors vm_caller_setup_arg_block() for the `blockiseq != NULL` case.
+    // The HIR specialization guards ensure we will only reach here for literal blocks,
+    // not &block forwarding, &:foo, etc. These are rejected in `type_specialize` by
+    // `unspecializable_call_type`.
+    let block_handler = blockiseq.map(|b| gen_block_handler_specval(asm, b));
+
+    let callee_is_bmethod = VM_METHOD_TYPE_BMETHOD == unsafe { get_cme_def_type(cme) };
+
+    let (frame_type, specval) = if callee_is_bmethod {
+        // Extract EP from the Proc instance
+        let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
+        let proc = unsafe { rb_jit_get_proc_ptr(procv) };
+        let proc_block = unsafe { &(*proc).block };
+        let capture = unsafe { proc_block.as_.captured.as_ref() };
+        let bmethod_frame_type = VM_FRAME_MAGIC_BLOCK | VM_FRAME_FLAG_BMETHOD | VM_FRAME_FLAG_LAMBDA;
+        // Tag the captured EP like VM_GUARDED_PREV_EP() in vm_call_iseq_bmethod()
+        let bmethod_specval = (capture.ep.addr() | 1).into();
+        (bmethod_frame_type, bmethod_specval)
+    } else {
+        let specval = block_handler.unwrap_or_else(|| VM_BLOCK_HANDLER_NONE.into());
+        (VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL, specval)
+    };
+
+    // Set up the new frame.
+    // TODO: Lazily materialize caller frames on side exits or when needed.
+    gen_push_frame(asm, args.len(), state, ControlFrame {
+        recv,
+        iseq: Some(iseq),
+        cme,
+        frame_type,
+        specval,
+        write_block_code: iseq_may_write_block_code(iseq),
+    });
+
+    // Write "keyword_bits" to the callee's frame if the callee accepts keywords.
+    // This is a synthetic local/parameter that the callee reads via checkkeyword to determine
+    // which optional keyword arguments need their defaults evaluated.
+    // We write this to the local table slot at bits_start so that:
+    // 1. The interpreter can read it via checkkeyword if we side-exit
+    // 2. The JIT entry can read it from the callee frame slot
+    if unsafe { rb_get_iseq_flags_has_kw(iseq) } {
+        let keyword = unsafe { rb_get_iseq_body_param_keyword(iseq) };
+        let bits_start = unsafe { (*keyword).bits_start } as usize;
+        let unspecified_bits = VALUE::fixnum_from_usize(kw_bits as usize);
+        let bits_offset = (state.stack().len() - args.len() + bits_start) * SIZEOF_VALUE;
+        asm_comment!(asm, "write keyword bits to callee frame");
+        asm.store(Opnd::mem(64, SP, bits_offset as i32), unspecified_bits.into());
+    }
+
+    let sp_offset = (state.stack().len() + local_size - args.len() + VM_ENV_DATA_SIZE.to_usize()) * SIZEOF_VALUE;
+    asm_comment!(asm, "switch to inlined callee SP");
+    let new_sp = asm.add(SP, sp_offset.into());
+    asm.mov(SP, new_sp);
+
+    asm_comment!(asm, "switch to inlined callee CFP");
+    let new_cfp = asm.sub(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
+    asm.mov(CFP, new_cfp);
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP as i32), CFP);
+}
+
+/// Pop the interpreter frame for an inlined callee, restoring the caller's SP and CFP.
+fn gen_pop_lightweight_frame(
+    asm: &mut Assembler,
+    iseq: IseqPtr,
+    argc: usize,
+    state: &FrameState,
+) {
+    let local_size = unsafe { get_iseq_body_local_table_size(iseq) }.to_usize();
+    let sp_offset = (state.stack().len() + local_size - argc + VM_ENV_DATA_SIZE.to_usize()) * SIZEOF_VALUE;
+
+    asm_comment!(asm, "restore caller SP after inline");
+    asm.sub_into(SP, sp_offset.into());
+
+    asm_comment!(asm, "restore caller CFP after inline");
+    asm.add_into(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP as i32), CFP);
 }
 
 /// Compile a direct call to an ISEQ method.

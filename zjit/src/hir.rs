@@ -11,7 +11,7 @@ use crate::{
     state,
 };
 use std::{
-    cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter,
+    cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, rc::Rc, slice::Iter,
     sync::atomic::Ordering,
 };
 use crate::hir_type::{Type, types};
@@ -1113,6 +1113,26 @@ pub enum Insn {
         state: InsnId,
     },
 
+    /// Push an interpreter frame for an inlined callee. Initially does a full frame push;
+    /// will be replaced with a lightweight frame push when that project lands.
+    PushLightweightFrame {
+        iseq: IseqPtr,
+        cme: *const rb_callable_method_entry_t,
+        recv: InsnId,
+        args: Vec<InsnId>,
+        kw_bits: u32,
+        blockiseq: Option<IseqPtr>,
+        state: InsnId,
+    },
+    /// Pop the interpreter frame for an inlined callee, restoring the caller's frame.
+    /// Carries the callee's iseq and argument count so codegen can compute the SP offset
+    /// to restore.
+    PopLightweightFrame {
+        iseq: IseqPtr,
+        argc: usize,
+        state: InsnId,
+    },
+
     // Invoke a builtin function
     InvokeBuiltin {
         bf: rb_builtin_function,
@@ -1432,6 +1452,7 @@ macro_rules! for_each_operand_impl {
             | Insn::CCallVariadic { recv, args, state, .. }
             | Insn::CCallWithFrame { recv, args, state, .. }
             | Insn::SendDirect { recv, args, state, .. }
+            | Insn::PushLightweightFrame { recv, args, state, .. }
             | Insn::InvokeBuiltin { recv, args, state, .. }
             | Insn::InvokeSuper { recv, args, state, .. }
             | Insn::InvokeSuperForward { recv, args, state, .. }
@@ -1468,7 +1489,8 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(val);
                 $visit_one!(state);
             }
-            Insn::GetClassVar { state, .. } => {
+            Insn::GetClassVar { state, .. }
+            | Insn::PopLightweightFrame { state, .. } => {
                 $visit_one!(state);
             }
             Insn::SetClassVar { val, state, .. } => {
@@ -1532,7 +1554,8 @@ impl Insn {
             | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
             | Insn::CheckInterrupts { .. } | Insn::BreakPoint | Insn::Unreachable
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. }
-            | Insn::ArrayAset { .. } => false,
+            | Insn::ArrayAset { .. }
+            | Insn::PushLightweightFrame { .. } | Insn::PopLightweightFrame { .. } => false,
             _ => true,
         }
     }
@@ -1699,6 +1722,8 @@ impl Insn {
             Insn::InvokeBlock { .. } => effects::Any,
             Insn::InvokeBlockIfunc { .. } => effects::Any,
             Insn::SendDirect { .. } => effects::Any,
+            Insn::PushLightweightFrame { .. } => effects::Any,
+            Insn::PopLightweightFrame { .. } => effects::Any,
             Insn::InvokeBuiltin { .. } => effects::Any,
             Insn::EntryPoint { .. } => effects::Any,
             Insn::Return { .. } => effects::Any,
@@ -2021,6 +2046,16 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                     write!(f, ", {arg}")?;
                 }
                 Ok(())
+            }
+            Insn::PushLightweightFrame { recv, iseq, args, .. } => {
+                write!(f, "PushLightweightFrame {recv} ({:?})", self.ptr_map.map_ptr(iseq))?;
+                for arg in args {
+                    write!(f, ", {arg}")?;
+                }
+                Ok(())
+            }
+            Insn::PopLightweightFrame { .. } => {
+                write!(f, "PopLightweightFrame")
             }
             Insn::Send { recv, cd, args, block, reason, .. } => {
                 // For tests, we want to check HIR snippets textually. Addresses change
@@ -2948,7 +2983,8 @@ impl Function {
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. }
             | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
             | Insn::CheckInterrupts { .. } | Insn::BreakPoint | Insn::Unreachable
-            | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } | Insn::ArrayAset { .. } =>
+            | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } | Insn::ArrayAset { .. }
+            | Insn::PushLightweightFrame { .. } | Insn::PopLightweightFrame { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}. See Insn::has_output().", self.insns[insn.0]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
             Insn::Const { val: Const::CBool(val) } => Type::from_cbool(*val),
@@ -4281,6 +4317,56 @@ impl Function {
             }
         }
         crate::stats::trace_compile_phase("infer_types", || self.infer_types());
+    }
+
+    /// Check whether a callee ISEQ is eligible for inlining into this function.
+    /// The checks implemented here are conservative: simple positional parameters only,
+    /// no escaping EP, no invokeblock/yield, no getblockparam. Callee body shape
+    /// restrictions (single return, etc.) live in inline_methods since they need
+    /// the built HIR to evaluate.
+    fn should_inline(&self, callee_iseq: IseqPtr) -> bool {
+        let threshold = get_option!(inline_threshold);
+        if threshold == 0 {
+            return false;
+        }
+
+        // Check callee bytecode size against threshold.
+        let callee_size = unsafe { get_iseq_encoded_size(callee_iseq) } as usize;
+        if callee_size > threshold {
+            return false;
+        }
+
+        // Reject complex parameter shapes that we cannot handle.
+        let params = unsafe { callee_iseq.params() };
+        if params.flags.has_rest() != 0
+            || params.flags.has_post() != 0
+            || params.flags.forwardable() != 0
+            || params.flags.has_kwrest() != 0
+        {
+            return false;
+        }
+
+        // Reject callees that use yield/invokeblock (block inlining is future work).
+        let callee_encoded_size = unsafe { get_iseq_encoded_size(callee_iseq) };
+        let mut pc_idx: u32 = 0;
+        while pc_idx < callee_encoded_size {
+            let pc = unsafe { rb_iseq_pc_at_idx(callee_iseq, pc_idx) };
+            let opcode: u32 = unsafe { rb_iseq_opcode_at_pc(callee_iseq, pc) }
+                .try_into()
+                .unwrap();
+            // This scan runs before `rb_zjit_profile_disable`, so check the
+            // trace_ and zjit_ variants alongside the bare opcode.
+            if opcode == YARVINSN_invokeblock
+                || opcode == YARVINSN_trace_invokeblock
+                || opcode == YARVINSN_zjit_invokeblock
+            {
+                return false;
+            }
+            let insn_len = insn_len(opcode as usize);
+            pc_idx += insn_len;
+        }
+
+        true
     }
 
     fn inline(&mut self) {
@@ -6085,6 +6171,7 @@ impl Function {
             }
             // Instructions with recv and a Vec of Ruby objects
             Insn::SendDirect { recv, ref args, .. }
+            | Insn::PushLightweightFrame { recv, ref args, .. }
             | Insn::Send { recv, ref args, .. }
             | Insn::SendForward { recv, ref args, .. }
             | Insn::InvokeSuper { recv, ref args, .. }
@@ -6324,6 +6411,10 @@ impl Function {
             Insn::RefineType { .. } => Ok(()),
             Insn::HasType { val, .. } => self.assert_subtype(insn_id, val, types::BasicObject),
             Insn::IsBlockParamModified { flags } => self.assert_subtype(insn_id, flags, types::CUInt64),
+            // Frame instructions have no output to validate; their operands
+            // are validated by the recv+args group (PushLightweightFrame)
+            // or the state-only group (PopLightweightFrame).
+            Insn::PopLightweightFrame { .. } => Ok(()),
         }
     }
 
@@ -6414,6 +6505,12 @@ pub struct FrameState {
 
     stack: Vec<InsnId>,
     locals: Vec<InsnId>,
+
+    // For inlined frames, the caller's state at the call site. This allows
+    // side exits from inlined code to reconstruct the full frame chain.
+    // Rc is used because all Snapshots within an inlined callee share the
+    // same caller state, avoiding redundant deep clones during remapping.
+    caller_state: Option<Rc<FrameState>>,
 }
 
 impl FrameState {
@@ -6457,6 +6554,9 @@ impl FrameState {
                 *slot = new;
             }
         }
+        if let Some(ref mut caller) = self.caller_state {
+            Rc::make_mut(caller).replace(old, new);
+        }
     }
 }
 
@@ -6494,7 +6594,7 @@ fn ep_offset_to_local_idx(iseq: IseqPtr, ep_offset: u32) -> usize {
 
 impl FrameState {
     fn new(iseq: IseqPtr) -> FrameState {
-        FrameState { iseq, pc: std::ptr::null::<VALUE>(), insn_idx: 0, stack: vec![], locals: vec![] }
+        FrameState { iseq, pc: std::ptr::null::<VALUE>(), insn_idx: 0, stack: vec![], locals: vec![], caller_state: None }
     }
 
     /// Get the number of stack operands
@@ -6593,7 +6693,11 @@ impl Display for FrameStatePrinter<'_> {
             if idx > 0 { write!(f, ", ")?; }
             write!(f, "{name}={local}")?;
         }
-        write!(f, "] }}")
+        write!(f, "]")?;
+        if let Some(ref caller) = inner.caller_state {
+            write!(f, ", caller: {}", caller.print(self.ptr_map))?;
+        }
+        write!(f, " }}")
     }
 }
 

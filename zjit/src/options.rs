@@ -114,6 +114,9 @@ pub struct Options {
 
     /// Maximum number of versions per ISEQ
     pub max_versions: usize,
+
+    /// Maximum callee bytecode size for inlining (0 disables inlining).
+    pub inline_threshold: usize,
 }
 
 impl Default for Options {
@@ -142,6 +145,7 @@ impl Default for Options {
             allowed_iseqs: None,
             log_compiled_iseqs: None,
             max_versions: 2,
+            inline_threshold: 30,
         }
     }
 }
@@ -360,6 +364,12 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             Ok(n) => options.max_versions = n,
             Err(_) => return None,
         },
+
+        ("inline-threshold", _) => match opt_val.parse() {
+            Ok(n) => { options.inline_threshold = n; },
+            Err(_) => return None,
+        },
+
 
         ("stats-quiet", _) => {
             options.stats = true;
