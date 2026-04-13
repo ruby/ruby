@@ -872,4 +872,17 @@ class TestGemResolver < Gem::TestCase
     assert_match(/requires Ruby/, e.message)
     assert_match(/you have/, e.message)
   end
+
+  def test_self_dependency_does_not_crash
+    a = util_spec "a", "1.0" do |s|
+      s.add_dependency "a"
+    end
+
+    s = set(a)
+    ad = make_dep "a"
+    r = Gem::Resolver.new([ad], s)
+
+    assert_resolves_to [a], r
+  end
+
 end

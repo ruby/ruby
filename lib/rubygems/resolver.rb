@@ -349,6 +349,7 @@ class Gem::Resolver
 
     actual_spec = spec.respond_to?(:spec) ? spec.spec : spec
     actual_spec.dependencies.each do |d|
+      next if d.name == package.to_s
       next if d.type == :development && !@development
       next if d.type == :development && @development_shallow && !root_names.include?(package.to_s)
 
