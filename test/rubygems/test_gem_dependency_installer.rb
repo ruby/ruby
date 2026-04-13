@@ -688,6 +688,25 @@ class TestGemDependencyInstaller < Gem::TestCase
     assert_equal %w[b-1], inst.installed_gems.map(&:full_name)
   end
 
+  def test_install_force_with_unsatisfiable_dep
+    # foo depends on bar >= 2.0, but only bar-1.0 exists.
+    # With --force, the unsatisfiable dep should be skipped.
+    _, foo_gem = util_gem "foo", "1" do |s|
+      s.add_dependency "bar", ">= 2.0"
+    end
+
+    util_setup_spec_fetcher(util_spec("bar", "1.0"))
+    FileUtils.mv foo_gem, @tempdir
+    inst = nil
+
+    Dir.chdir @tempdir do
+      inst = Gem::DependencyInstaller.new force: true
+      inst.install "foo"
+    end
+
+    assert_equal %w[foo-1], inst.installed_gems.map(&:full_name)
+  end
+
   def test_install_build_args
     util_setup_gems
 
@@ -798,8 +817,7 @@ class TestGemDependencyInstaller < Gem::TestCase
         inst.install "b"
       end
 
-      assert_match(/depends on a/, e.message)
-      assert_match(/no versions satisfy a/, e.message)
+      assert_match(/depends on unknown package a/, e.message)
     end
 
     assert_equal [], inst.installed_gems.map(&:full_name)

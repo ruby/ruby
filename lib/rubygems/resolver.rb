@@ -385,10 +385,12 @@ class Gem::Resolver
 
       dep_package = package_for(d.name)
 
-      # Check if the dependency has any available versions
-      dep_specs = @all_specs[d.name]
-      if dep_specs.empty? && @soft_missing
-        next
+      # In force mode, skip deps that can't be satisfied — either no
+      # specs at all, or no specs matching the version requirement.
+      if @soft_missing
+        dep_specs = @all_specs[d.name]
+        matching = dep_specs.select {|s| d.requirement.satisfied_by?(s.version) }
+        next if matching.empty?
       end
 
       deps[d.name] = Gem::PubGrub::RubyGems.requirement_to_constraint(dep_package, d.requirement)

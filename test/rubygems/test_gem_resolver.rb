@@ -938,4 +938,21 @@ class TestGemResolver < Gem::TestCase
     assert_match(/--prerelease/, e.message)
   end
 
+  def test_soft_missing_skips_dep_with_wrong_version
+    a = util_spec "a", "1.0" do |s|
+      s.add_dependency "b", ">= 2.0"
+    end
+
+    b = util_spec "b", "1.0"
+
+    s = set(a, b)
+    ad = make_dep "a"
+    r = Gem::Resolver.new([ad], s)
+    r.soft_missing = true
+
+    # b exists but only 1.0, which doesn't satisfy >= 2.0.
+    # With soft_missing (--force), the dep should be skipped.
+    assert_resolves_to [a], r
+  end
+
 end
