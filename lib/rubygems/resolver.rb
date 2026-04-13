@@ -224,6 +224,7 @@ class Gem::Resolver
     sorted_versions = @sorted_versions[package]
     package_deps[version].filter_map do |dep_package_name, dep_constraint|
       dep_package = dep_constraint.package
+
       low = high = @version_to_index[package][version]
 
       # find version low such that all >= low share the same dep
@@ -255,10 +256,10 @@ class Gem::Resolver
 
       if dep_constraint.range.empty?
         cause = Gem::PubGrub::Incompatibility::InvalidDependency.new(dep_package, dep_constraint)
-        next Gem::PubGrub::Incompatibility.new(
+        return [Gem::PubGrub::Incompatibility.new(
           [Gem::PubGrub::Term.new(self_constraint, true)],
           cause: cause
-        )
+        )]
       end
 
       Gem::PubGrub::Incompatibility.new(
@@ -289,8 +290,7 @@ class Gem::Resolver
   def root_dependencies
     deps = {}
     @needed.each do |dep|
-      range = Gem::PubGrub::RubyGems.requirement_to_range(dep.requirement)
-      constraint = Gem::PubGrub::VersionConstraint.new(package_for(dep.name), range: range)
+      constraint = Gem::PubGrub::RubyGems.requirement_to_constraint(package_for(dep.name), dep.requirement)
       deps[dep.name] = deps.key?(dep.name) ? deps[dep.name].intersect(constraint) : constraint
     end
     deps
@@ -366,8 +366,7 @@ class Gem::Resolver
         next
       end
 
-      range = Gem::PubGrub::RubyGems.requirement_to_range(d.requirement)
-      deps[d.name] = Gem::PubGrub::VersionConstraint.new(dep_package, range: range)
+      deps[d.name] = Gem::PubGrub::RubyGems.requirement_to_constraint(dep_package, d.requirement)
     end
 
     deps
