@@ -109,6 +109,8 @@ class Gem::Resolver
     @all_versions = Hash.new {|h, pkg| h[pkg] = @all_specs[pkg.to_s].map(&:version).uniq.sort }
     @sorted_versions = Hash.new {|h, pkg| h[pkg] = filter_versions(pkg) }
     @cached_dependencies = Hash.new {|h, pkg| h[pkg] = Hash.new {|v, ver| v[ver] = compute_dependencies(pkg, ver) } }
+    @version_to_index = Hash.new {|h, pkg| h[pkg] = @sorted_versions[pkg].each_with_index.to_h }
+    @versions_for_cache = {}
   end
 
   ##
@@ -149,6 +151,7 @@ class Gem::Resolver
     solver = Gem::PubGrub::VersionSolver.new(
       source: self,
       root: @root_package,
+      strategy: Gem::Resolver::Strategy.new(self, @root_package),
       logger: make_logger
     )
     result = solver.solve
@@ -199,7 +202,7 @@ class Gem::Resolver
   end
 
   def versions_for(package, range = Gem::PubGrub::VersionRange.any)
-    range.select_versions(@sorted_versions[package])
+    @versions_for_cache[[package, range]] ||= range.select_versions(@sorted_versions[package])
   end
 
   def no_versions_incompatibility_for(_package, unsatisfied_term)
@@ -226,7 +229,7 @@ class Gem::Resolver
     sorted_versions = @sorted_versions[package]
     package_deps[version].filter_map do |dep_package_name, dep_constraint|
       dep_package = dep_constraint.package
-      low = high = sorted_versions.index(version)
+      low = high = @version_to_index[package][version]
 
       # find version low such that all >= low share the same dep
       while low > 0 &&
@@ -450,6 +453,7 @@ end
 require_relative "resolver/activation_request"
 require_relative "resolver/dependency_request"
 require_relative "resolver/incompatibility"
+require_relative "resolver/strategy"
 require_relative "resolver/requirement_list"
 require_relative "resolver/set"
 require_relative "resolver/api_set"
