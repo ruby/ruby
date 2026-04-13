@@ -107,8 +107,16 @@ class Gem::Resolver
 
     @all_specs = Hash.new {|h, name| h[name] = find_all_specs_for(name) }
     @all_versions = Hash.new {|h, pkg| h[pkg] = @all_specs[pkg.to_s].map(&:version).uniq.sort }
-    @sorted_versions = Hash.new {|h, pkg| h[pkg] = filter_versions(pkg) }
-    @cached_dependencies = Hash.new {|h, pkg| h[pkg] = Hash.new {|v, ver| v[ver] = compute_dependencies(pkg, ver) } }
+    @sorted_versions = Hash.new do |h, pkg|
+      h[pkg] = Gem::PubGrub::Package.root?(pkg) ? [@root_version] : filter_versions(pkg)
+    end
+    @cached_dependencies = Hash.new do |h, pkg|
+      h[pkg] = if Gem::PubGrub::Package.root?(pkg)
+        { @root_version => root_dependencies }
+      else
+        Hash.new {|v, ver| v[ver] = compute_dependencies(pkg, ver) }
+      end
+    end
     @version_to_index = Hash.new {|h, pkg| h[pkg] = @sorted_versions[pkg].each_with_index.to_h }
     @versions_for_cache = {}
   end
@@ -136,17 +144,6 @@ class Gem::Resolver
       exc.errors = @set.errors
       raise exc
     end
-
-    # Build root deps from @needed
-    root_deps = {}
-    @needed.each do |dep|
-      range = Gem::PubGrub::RubyGems.requirement_to_range(dep.requirement)
-      constraint = Gem::PubGrub::VersionConstraint.new(package_for(dep.name), range: range)
-      root_deps[dep.name] = root_deps.key?(dep.name) ? root_deps[dep.name].intersect(constraint) : constraint
-    end
-
-    @sorted_versions[@root_package] = [@root_version]
-    @cached_dependencies[@root_package] = { @root_version => root_deps }
 
     solver = Gem::PubGrub::VersionSolver.new(
       source: self,
@@ -178,8 +175,6 @@ class Gem::Resolver
   # PubGrub source interface methods
 
   def all_versions_for(package)
-    return [@root_version] if package == @root_package
-
     versions = @sorted_versions[package].reverse # highest first
     name = package.to_s
 
@@ -291,6 +286,16 @@ class Gem::Resolver
   # Filter versions to exclude prereleases unless prerelease is enabled.
   # Both all_versions_for and versions_for use this filtered set to ensure
   # PubGrub's constraint propagation and version selection are consistent.
+  def root_dependencies
+    deps = {}
+    @needed.each do |dep|
+      range = Gem::PubGrub::RubyGems.requirement_to_range(dep.requirement)
+      constraint = Gem::PubGrub::VersionConstraint.new(package_for(dep.name), range: range)
+      deps[dep.name] = deps.key?(dep.name) ? deps[dep.name].intersect(constraint) : constraint
+    end
+    deps
+  end
+
   def filter_versions(package)
     all_versions = @all_versions[package]
     if @set.respond_to?(:prerelease) && @set.prerelease
@@ -338,8 +343,6 @@ class Gem::Resolver
   end
 
   def compute_dependencies(package, version)
-    return {} if package == @root_package
-
     spec = spec_for(package.to_s, version)
     return {} unless spec
     return {} if @ignore_dependencies
