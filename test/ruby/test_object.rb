@@ -970,6 +970,34 @@ class TestObject < Test::Unit::TestCase
     assert_not_include(s, "@password=")
   end
 
+  def test_inspect_too_complex
+    kernel_inspect = Kernel.instance_method(:inspect)
+
+    klasses = [
+      Class.new,
+      Class.new(String),
+      Class.new(Array),
+      Class.new(Hash),
+      Struct.new(:x),
+      Class.new(Thread::Mutex),
+      # It's very difficult to get a too_complex T_CLASS, to that isn't tested here
+    ]
+
+    klasses.each_with_index do |klass, idx|
+      8.times do |i|
+        klass.new.instance_variable_set(:"@sib_#{rand(999999)}", 1)
+      end
+
+      obj = klass.new
+      obj.instance_variable_set(:@a, 1)
+      obj.instance_variable_set(:@b, 2)
+
+      s = kernel_inspect.bind_call(obj)
+      assert_include(s, "@a=1")
+      assert_include(s, "@b=2")
+    end
+  end
+
   def test_singleton_methods
     assert_equal([], Object.new.singleton_methods)
     assert_equal([], Object.new.singleton_methods(false))

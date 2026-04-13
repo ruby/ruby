@@ -2402,7 +2402,7 @@ rb_ivar_count(VALUE obj)
             VALUE fields_obj = rb_obj_fields_no_ractor_check(obj);
             if (fields_obj) {
                 if (rb_shape_obj_too_complex_p(fields_obj)) {
-                    rb_st_table_size(rb_imemo_fields_complex_tbl(fields_obj));
+                    iv_count = rb_st_table_size(rb_imemo_fields_complex_tbl(fields_obj));
                 }
                 else {
                     iv_count = RBASIC_FIELDS_COUNT(obj);
