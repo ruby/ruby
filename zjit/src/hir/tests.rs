@@ -2900,10 +2900,8 @@ pub(crate) mod hir_build_tests {
           v31:StringExact = StringCopy v30
           v37:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
           v38:StringExact = StringCopy v37
-          v40:CPtr = GetEP 0
-          v41:BasicObject = LoadField v40, :buf@0x1018
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_PACK)
-          v44:String = ArrayPackBuffer v16, v17, fmt: v38, buf: v41
+          v42:String = ArrayPackBuffer v16, v17, fmt: v38, buf: v31
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v31
@@ -2949,8 +2947,6 @@ pub(crate) mod hir_build_tests {
           v31:StringExact = StringCopy v30
           v37:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
           v38:StringExact = StringCopy v37
-          v40:CPtr = GetEP 0
-          v41:BasicObject = LoadField v40, :buf@0x1018
           SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_PACK))
         ");
     }

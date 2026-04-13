@@ -7363,8 +7363,18 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_getlocal => {
                     let ep_offset = get_arg(pc, 0).as_u32();
                     let level = get_arg(pc, 1).as_u32();
-                    let ep = fun.push_insn(block, Insn::GetEP { level });
-                    state.stack_push(fun.get_local_from_ep(block, ep, ep_offset, level, types::BasicObject));
+                    if level == 0 && !local_inval {
+                        // Same optimization as getlocal_WC_0: use FrameState
+                        let val = state.getlocal(ep_offset);
+                        state.stack_push(val);
+                    } else {
+                        let ep = fun.push_insn(block, Insn::GetEP { level });
+                        let val = fun.get_local_from_ep(block, ep, ep_offset, level, types::BasicObject);
+                        if level == 0 {
+                            state.setlocal(ep_offset, val);
+                        }
+                        state.stack_push(val);
+                    }
                 }
                 YARVINSN_setlocal => {
                     let ep_offset = get_arg(pc, 0).as_u32();
