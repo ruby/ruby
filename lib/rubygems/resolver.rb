@@ -347,6 +347,8 @@ class Gem::Resolver
     return {} unless spec
     return {} if @ignore_dependencies
 
+    spec.fetch_development_dependencies if @development && spec.respond_to?(:fetch_development_dependencies)
+
     deps = {}
     root_names = @needed.map(&:name)
 
