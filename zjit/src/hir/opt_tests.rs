@@ -15996,6 +15996,34 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_float_to_i_inline() {
+        eval(r#"
+            def test(a) = a.to_i
+            test(3.7)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:2:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :a@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Float@0x1008, to_i@0x1010, cme:0x1018)
+          v23:Flonum = GuardType v10, Flonum
+          v24:Integer = FloatToInt v23
+          CheckInterrupts
+          Return v24
+        ");
+    }
+
+    #[test]
     fn test_float_mul_fixnum_inline() {
         eval(r#"
             def test(a, b) = a * b

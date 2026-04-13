@@ -269,6 +269,8 @@ pub fn init() -> Annotations {
     annotate!(rb_cFloat, "-", inline_float_minus);
     annotate!(rb_cFloat, "*", inline_float_mul);
     annotate!(rb_cFloat, "/", inline_float_div);
+    annotate!(rb_cFloat, "to_i", inline_float_to_i);
+    annotate!(rb_cFloat, "to_int", inline_float_to_i);
     annotate!(rb_cString, "to_s", inline_string_to_s, types::StringExact);
     annotate!(rb_cFloat, "nan?", types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cFloat, "finite?", types::BoolExact, no_gc, leaf, elidable);
@@ -670,6 +672,15 @@ fn inline_float_mul(fun: &mut hir::Function, block: hir::BlockId, recv: hir::Ins
 fn inline_float_div(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_float_op(fun, block, &|recv, other| hir::Insn::FloatDiv { recv, other, state }, BOP_DIV, recv, other, state)
+}
+
+fn inline_float_to_i(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[] = args else { return None; };
+    if fun.likely_a(recv, types::Flonum, state) {
+        let recv = fun.coerce_to(block, recv, types::Flonum, state);
+        return Some(fun.push_insn(block, hir::Insn::FloatToInt { recv, state }));
+    }
+    None
 }
 
 fn try_inline_fixnum_op(fun: &mut hir::Function, block: hir::BlockId, f: &dyn Fn(hir::InsnId, hir::InsnId) -> hir::Insn, bop: u32, left: hir::InsnId, right: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {

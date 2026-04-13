@@ -1097,6 +1097,8 @@ pub enum Insn {
     FloatSub  { recv: InsnId, other: InsnId, state: InsnId },
     FloatMul  { recv: InsnId, other: InsnId, state: InsnId },
     FloatDiv  { recv: InsnId, other: InsnId, state: InsnId },
+    /// Float#to_i: truncate float to integer via rb_jit_flo_to_i
+    FloatToInt { recv: InsnId, state: InsnId },
 
     // Distinct from `Send` with `mid:to_s` because does not have a patch point for String to_s being redefined
     ObjToString { val: InsnId, cd: *const rb_call_data, state: InsnId },
@@ -1296,6 +1298,10 @@ macro_rules! for_each_operand_impl {
             | Insn::FloatDiv { recv, other, state } => {
                 $visit_one!(recv);
                 $visit_one!(other);
+                $visit_one!(state);
+            }
+            Insn::FloatToInt { recv, state } => {
+                $visit_one!(recv);
                 $visit_one!(state);
             }
             Insn::FixnumLt { left, right }
@@ -1645,6 +1651,7 @@ impl Insn {
             Insn::FloatSub { .. } => effects::Any,
             Insn::FloatMul { .. } => effects::Any,
             Insn::FloatDiv { .. } => effects::Any,
+            Insn::FloatToInt { .. } => effects::Any,
             Insn::FixnumEq { .. } => effects::Empty,
             Insn::FixnumNeq { .. } => effects::Empty,
             Insn::FixnumLt { .. } => effects::Empty,
@@ -2043,6 +2050,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::FloatSub   { recv, other, .. } => { write!(f, "FloatSub {recv}, {other}") },
             Insn::FloatMul   { recv, other, .. } => { write!(f, "FloatMul {recv}, {other}") },
             Insn::FloatDiv   { recv, other, .. } => { write!(f, "FloatDiv {recv}, {other}") },
+            Insn::FloatToInt { recv, .. } => { write!(f, "FloatToInt {recv}") },
             Insn::FixnumEq   { left, right, .. } => { write!(f, "FixnumEq {left}, {right}") },
             Insn::FixnumNeq  { left, right, .. } => { write!(f, "FixnumNeq {left}, {right}") },
             Insn::FixnumLt   { left, right, .. } => { write!(f, "FixnumLt {left}, {right}") },
@@ -2866,6 +2874,7 @@ impl Function {
             &FloatSub { recv, other, state } => FloatSub { recv: find!(recv), other: find!(other), state },
             &FloatMul { recv, other, state } => FloatMul { recv: find!(recv), other: find!(other), state },
             &FloatDiv { recv, other, state } => FloatDiv { recv: find!(recv), other: find!(other), state },
+            &FloatToInt { recv, state } => FloatToInt { recv: find!(recv), state },
             &FixnumNeq { left, right } => FixnumNeq { left: find!(left), right: find!(right) },
             &FixnumEq { left, right } => FixnumEq { left: find!(left), right: find!(right) },
             &FixnumGt { left, right } => FixnumGt { left: find!(left), right: find!(right) },
@@ -3133,6 +3142,7 @@ impl Function {
             Insn::FloatSub   { .. } => types::Float,
             Insn::FloatMul   { .. } => types::Float,
             Insn::FloatDiv   { .. } => types::Float,
+            Insn::FloatToInt { .. } => types::Integer,
             Insn::FixnumEq   { .. } => types::BoolExact,
             Insn::FixnumNeq  { .. } => types::BoolExact,
             Insn::FixnumLt   { .. } => types::BoolExact,
@@ -6249,6 +6259,9 @@ impl Function {
                 self.assert_subtype(insn_id, recv, types::Flonum)?;
                 // other can be Flonum or Fixnum (rb_float_plus etc. handle both)
                 self.assert_subtype(insn_id, other, types::Flonum.union(types::Fixnum))
+            }
+            Insn::FloatToInt { recv, .. } => {
+                self.assert_subtype(insn_id, recv, types::Flonum)
             }
             Insn::FixnumLShift { left, right, .. }
             | Insn::FixnumRShift { left, right, .. } => {

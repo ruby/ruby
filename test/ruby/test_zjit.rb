@@ -426,6 +426,8 @@ class TestZJIT < Test::Unit::TestCase
     assert_compiles '4.5', 'def test = 1.5 * 3; test' # Float * Fixnum
     assert_compiles 'true', 'def test = (Float::NAN + 1.0).nan?; test'
     assert_compiles 'Infinity', 'def test = Float::INFINITY * 2.0; test'
+    assert_compiles '3', 'def test = 3.7.to_i; test'
+    assert_compiles '-2', 'def test = (-2.9).to_i; test'
   end
 
   private
