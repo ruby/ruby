@@ -895,6 +895,8 @@ int_ossl_asn1_decode0_cons(unsigned char **pp, long max_len, long length,
     return asn1data;
 }
 
+#define MAX_NESTING_DEPTH 200
+
 static VALUE
 ossl_asn1_decode0(unsigned char **pp, long length, long *offset, int depth,
                   int yield, long *num_read)
@@ -904,6 +906,10 @@ ossl_asn1_decode0(unsigned char **pp, long length, long *offset, int depth,
     long len = 0, inner_read = 0, off = *offset, hlen;
     int tag, tc, j;
     VALUE asn1data, tag_class;
+
+    if (depth > MAX_NESTING_DEPTH) {
+        ossl_raise(eASN1Error, "nesting depth %d exceeds limit", depth);
+    }
 
     p = *pp;
     start = p;
