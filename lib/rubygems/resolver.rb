@@ -105,7 +105,8 @@ class Gem::Resolver
 
     @packages = {}
 
-    @all_specs = Hash.new {|h, name| h[name] = find_all_specs_for(name) }
+    @unfiltered_specs = Hash.new {|h, name| h[name] = find_unfiltered_specs_for(name) }
+    @all_specs = Hash.new {|h, name| h[name] = filter_specs(@unfiltered_specs[name]) }
     @all_versions = Hash.new {|h, pkg| h[pkg] = @all_specs[pkg.to_s].map(&:version).uniq.sort }
     @sorted_versions = Hash.new do |h, pkg|
       h[pkg] = Gem::PubGrub::Package.root?(pkg) ? [@root_version] : filter_versions(pkg)
@@ -225,6 +226,19 @@ class Gem::Resolver
     package_deps[version].filter_map do |dep_package_name, dep_constraint|
       dep_package = dep_constraint.package
 
+      # If no specs exist at all for this dependency (not even for other
+      # platforms or Ruby versions), mark this version as invalid.
+      # When specs exist but were filtered out, let PubGrub discover it
+      # via NoVersions so platform/ruby hints are generated.
+      if @unfiltered_specs[dep_package_name].empty?
+        self_constraint = Gem::PubGrub::VersionConstraint.new(package, range: Gem::PubGrub::VersionRange.any)
+        cause = Gem::PubGrub::Incompatibility::InvalidDependency.new(dep_package, dep_constraint)
+        return [Gem::PubGrub::Incompatibility.new(
+          [Gem::PubGrub::Term.new(self_constraint, true)],
+          cause: cause
+        )]
+      end
+
       low = high = @version_to_index[package][version]
 
       # find version low such that all >= low share the same dep
@@ -306,15 +320,17 @@ class Gem::Resolver
     end
   end
 
-  def find_all_specs_for(name)
+  def find_unfiltered_specs_for(name)
     dep = Gem::Dependency.new(name, ">= 0.a")
     dep_request = DependencyRequest.new(dep, nil)
-    all = @set.find_all(dep_request)
+    @set.find_all(dep_request)
+  end
 
-    specs = select_local_platforms(all)
+  def filter_specs(specs)
+    filtered = select_local_platforms(specs)
 
     unless @soft_missing
-      specs = specs.select do |s|
+      filtered = filtered.select do |s|
         actual = s.respond_to?(:spec) ? s.spec : s
         actual.required_ruby_version.satisfied_by?(Gem.ruby_version) &&
           actual.required_rubygems_version.satisfied_by?(Gem.rubygems_version)
@@ -323,7 +339,7 @@ class Gem::Resolver
       end
     end
 
-    specs
+    filtered
   end
 
   def spec_for(name, version)
@@ -373,9 +389,7 @@ class Gem::Resolver
   end
 
   def build_extended_explanation(name, constraint)
-    dep = Gem::Dependency.new(name, ">= 0.a")
-    dep_request = DependencyRequest.new(dep, nil)
-    unfiltered = @set.find_all(dep_request)
+    unfiltered = @unfiltered_specs[name]
     return if unfiltered.empty?
 
     filtered = @all_specs[name]

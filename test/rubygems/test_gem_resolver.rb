@@ -516,8 +516,7 @@ class TestGemResolver < Gem::TestCase
       r.resolve
     end
 
-    assert_match(/depends on b/, e.message)
-    assert_match(/no versions satisfy b/, e.message)
+    assert_match(/depends on unknown package b/, e.message)
   end
 
   def test_raises_when_possibles_are_exhausted
