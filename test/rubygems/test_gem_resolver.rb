@@ -884,4 +884,58 @@ class TestGemResolver < Gem::TestCase
     assert_resolves_to [a], r
   end
 
+  def test_contradictory_root_requirements_give_clear_error
+    a1 = util_spec "a", "1"
+    a2 = util_spec "a", "2"
+
+    s = set(a1, a2)
+    r = Gem::Resolver.new([make_dep("a", "= 1"), make_dep("a", "= 2")], s)
+
+    e = assert_raise Gem::DependencyResolutionError do
+      r.resolve
+    end
+
+    assert_match(/contradictory/, e.message)
+    refute_match(/unknown package/, e.message)
+  end
+
+  def test_empty_range_transitive_dep_does_not_say_unknown
+    a = util_spec "a", "1.0" do |s|
+      s.add_dependency "b", "> 2", "< 1"
+    end
+
+    b = util_spec "b", "1.5"
+
+    s = set(a, b)
+    ad = make_dep "a"
+    r = Gem::Resolver.new([ad], s)
+
+    e = assert_raise Gem::DependencyResolutionError do
+      r.resolve
+    end
+
+    assert_match(/contradictory/, e.message)
+    refute_match(/unknown package/, e.message)
+  end
+
+  def test_error_hints_about_prerelease_when_filtered
+    a = util_spec "a", "1.0" do |s|
+      s.add_dependency "b", "~> 2.0"
+    end
+
+    b_stable = util_spec "b", "1.0"
+    b_pre = util_spec "b", "2.0.pre"
+
+    s = set(a, b_stable, b_pre)
+    ad = make_dep "a"
+    r = Gem::Resolver.new([ad], s)
+
+    e = assert_raise Gem::DependencyResolutionError do
+      r.resolve
+    end
+
+    assert_match(/pre-release/, e.message)
+    assert_match(/--prerelease/, e.message)
+  end
+
 end

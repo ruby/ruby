@@ -269,11 +269,20 @@ class Gem::Resolver
       self_constraint = Gem::PubGrub::VersionConstraint.new(package, range: range)
 
       if dep_constraint.range.empty?
-        cause = Gem::PubGrub::Incompatibility::InvalidDependency.new(dep_package, dep_constraint)
-        return [Gem::PubGrub::Incompatibility.new(
-          [Gem::PubGrub::Term.new(self_constraint, true)],
-          cause: cause
-        )]
+        if @unfiltered_specs[dep_package_name].any?
+          # Package exists but requirement is self-contradictory
+          return [Gem::Resolver::Incompatibility.new(
+            [Gem::PubGrub::Term.new(self_constraint, true)],
+            cause: Gem::PubGrub::Incompatibility::NoVersions.new(dep_constraint),
+            custom_explanation: "#{dep_package_name} cannot satisfy contradictory requirements #{dep_constraint.constraint_string}"
+          )]
+        else
+          cause = Gem::PubGrub::Incompatibility::InvalidDependency.new(dep_package, dep_constraint)
+          return [Gem::PubGrub::Incompatibility.new(
+            [Gem::PubGrub::Term.new(self_constraint, true)],
+            cause: cause
+          )]
+        end
       end
 
       Gem::PubGrub::Incompatibility.new(
@@ -393,7 +402,10 @@ class Gem::Resolver
     return if unfiltered.empty?
 
     filtered = @all_specs[name]
-    return if filtered.length == unfiltered.length
+    pkg = package_for(name)
+    has_prerelease_filtering = @all_versions[pkg].length > @sorted_versions[pkg].length
+
+    return if filtered.length == unfiltered.length && !has_prerelease_filtering
 
     hints = []
 
@@ -425,6 +437,16 @@ class Gem::Resolver
       actual = sample.respond_to?(:spec) ? sample.spec : sample
       ruby_req = actual.required_ruby_version
       hints << "#{name} #{versions.join(", ")} requires Ruby #{ruby_req} (you have #{Gem.ruby_version})"
+    end
+
+    # Check for specs filtered by prerelease status
+    unless @set.respond_to?(:prerelease) && @set.prerelease
+      pkg = package_for(name)
+      prerelease_versions = @all_versions[pkg].select(&:prerelease?) - @sorted_versions[pkg]
+      if prerelease_versions.any?
+        versions = prerelease_versions.sort.reverse.first(3) # limit to avoid cluttering error output
+        hints << "#{name} #{versions.join(", ")} are pre-release versions. Use --prerelease to allow pre-release gems."
+      end
     end
 
     hints.empty? ? nil : hints.join("\n")
