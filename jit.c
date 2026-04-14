@@ -827,16 +827,6 @@ rb_jit_fix_div_fix(VALUE recv, VALUE obj)
     return rb_fix_div_fix(recv, obj);
 }
 
-VALUE
-rb_jit_flo_to_i(VALUE num)
-{
-    double f = trunc(RFLOAT_VALUE(num));
-    if (FIXABLE(f)) {
-        return LONG2FIX((long)f);
-    }
-    return rb_dbl2big(f);
-}
-
 // YJIT/ZJIT need this function to never allocate and never raise
 VALUE
 rb_yarv_str_eql_internal(VALUE str1, VALUE str2)
