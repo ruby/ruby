@@ -90,7 +90,7 @@ jobs:
 
       - name: Restore vcpkg artifact
         id: restore-vcpkg
-        uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: src\vcpkg_installed
           key: windows-${{ matrix.os }}-vcpkg-${{ hashFiles('src/vcpkg.json') }}
@@ -102,7 +102,7 @@ jobs:
         if: ${{ ! steps.restore-vcpkg.outputs.cache-hit }}
 
       - name: Save vcpkg artifact
-        uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: src\vcpkg_installed
           key: windows-${{ matrix.os }}-vcpkg-${{ hashFiles('src/vcpkg.json') }}
