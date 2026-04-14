@@ -1159,7 +1159,40 @@ class Pathname    # * File *
   # See File.lutime.
   def lutime(atime, mtime) File.lutime(atime, mtime, @path) end
 
-  # See <tt>File.basename</tt>.  Returns the last component of the path.
+  # call-seq:
+  #   basename(path, suffix = '') -> new_pathname
+  #
+  # Returns a new \Pathname object containing all or part of the last entry
+  # of the path represented by +self+.
+  # Entries are delimited by the value of constant File::SEPARATOR
+  # and, if non-nil, the value of constant File::ALT_SEPARATOR.
+  #
+  # When +suffix+ is the empty string <tt>''</tt>, returns all of the last entry:
+  #
+  #   Pathname.new('foo/bar/baz/bat.txt').basename # => #<Pathname:bat.txt>
+  #   Pathname.new('foo/bar/baz').basename         # => #<Pathname:baz>
+  #
+  #   File::SEPARATOR                              # => "/"
+  #   Pathname.new('foo/bar.txt////').basename     # => #<Pathname:bar.txt>
+  #   File::ALT_SEPARATOR # => "\\"                # On Windows.
+  #   Pathname.new('foo/bar.txt//\\\\//').basename # => #<Pathname:bar.txt>
+  #
+  # When +suffix+ is <tt>'.*'</tt>,
+  # the last {filename extension}[https://en.wikipedia.org/wiki/Filename_extension],
+  # if any, is removed:
+  #
+  #   Pathname.new('foo/bar.txt').basename('.*')     # => #<Pathname:bar>
+  #   Pathname.new('foo/bar.txt.old').basename('.*') # => #<Pathname:bar.txt>
+  #   Pathname.new('foo/bar').basename('.*')         # => #<Pathname:bar>
+  #
+  # When +suffix+ is any string other than <tt>''</tt> or <tt>'.*'</tt>,
+  # the matching trailing substring, if any, is removed:
+  #
+  #   Pathname.new('foo/bar.txt').basename('.txt') # => #<Pathname:bar>
+  #   Pathname.new('foo/bar.txt').basename('txt')  # => #<Pathname:bar.>
+  #   Pathname.new('foo/bar.txt').basename('*')    # => #<Pathname:bar.txt>
+  #   Pathname.new('foo/bar.txt').basename('.')    # => #<Pathname:bar.txt>
+  #
   def basename(...) self.class.new(File.basename(@path, ...)) end
 
   # See <tt>File.dirname</tt>.  Returns all but the last component of the path.

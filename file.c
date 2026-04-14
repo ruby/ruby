@@ -5051,19 +5051,39 @@ ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encodin
 
 /*
  *  call-seq:
- *     File.basename(file_name [, suffix] )  ->  base_name
+ *    File.basename(path, suffix = '') -> new_string
  *
- *  Returns the last component of the filename given in
- *  <i>file_name</i> (after first stripping trailing separators),
- *  which can be formed using both File::SEPARATOR and
- *  File::ALT_SEPARATOR as the separator when File::ALT_SEPARATOR is
- *  not <code>nil</code>. If <i>suffix</i> is given and present at the
- *  end of <i>file_name</i>, it is removed. If <i>suffix</i> is ".*",
- *  any extension will be removed.
+ *  Returns a new string containing all or part of the last entry of the given +path+.
+ *  Entries are delimited by the value of constant File::SEPARATOR
+ *  and, if non-nil, the value of constant File::ALT_SEPARATOR.
  *
- *     File.basename("/home/gumby/work/ruby.rb")          #=> "ruby.rb"
- *     File.basename("/home/gumby/work/ruby.rb", ".rb")   #=> "ruby"
- *     File.basename("/home/gumby/work/ruby.rb", ".*")    #=> "ruby"
+ *  When +suffix+ is the empty string <tt>''</tt>,
+ *  returns all of the last entry:
+ *
+ *    File.basename('foo/bar/baz/bat.txt') # => "bat.txt"
+ *    File.basename('foo/bar/baz')         # => "baz"
+ *
+ *    File::SEPARATOR                      # => "/"
+ *    File.basename('foo/bar.txt////')     # => "bar.txt"
+ *    File::ALT_SEPARATOR                  # => "\\"  # On Windows.
+ *    File.basename('foo/bar.txt//\\\\//') # => "bar.txt"
+ *
+ *  When +suffix+ is <tt>'.*'</tt>,
+ *  the last {filename extension}[https://en.wikipedia.org/wiki/Filename_extension],
+ *  if any, is removed:
+ *
+ *    File.basename('foo/bar.txt', '.*')     # => "bar"
+ *    File.basename('foo/bar.txt.old', '.*') # => "bar.txt"
+ *    File.basename('foo/bar', '.*')         # => "bar"
+ *
+ *  When +suffix+ is any string other than <tt>''</tt> or <tt>'.*'</tt>,
+ *  the matching trailing substring, if any, is removed:
+ *
+ *    File.basename('foo/bar.txt', '.txt') # => "bar"
+ *    File.basename('foo/bar.txt', 'txt')  # => "bar."
+ *    File.basename('foo/bar.txt', '*')    # => "bar.txt"
+ *    File.basename('foo/bar.txt', '.')    # => "bar.txt"
+ *
  */
 
 static VALUE
