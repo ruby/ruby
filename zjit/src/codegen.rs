@@ -2333,7 +2333,7 @@ fn gen_float_div(asm: &mut Assembler, recv: lir::Opnd, other: lir::Opnd, state: 
 /// Compile Float#to_i (truncate to integer)
 fn gen_float_to_int(asm: &mut Assembler, recv: lir::Opnd, state: &FrameState) -> lir::Opnd {
     gen_prepare_leaf_call_with_gc(asm, state);
-    asm_ccall!(asm, rb_zjit_flo_to_i, recv)
+    asm_ccall!(asm, rb_flo_to_i, recv)
 }
 
 /// Compile Fixnum == Fixnum

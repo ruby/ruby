@@ -155,14 +155,6 @@ rb_zjit_defined_ivar(VALUE obj, ID id, VALUE pushval)
     return result ? pushval : Qnil;
 }
 
-// Wrapper to call static flo_to_i from Rust. Keeps the truncation logic
-// centralized in numeric.c.
-VALUE
-rb_zjit_flo_to_i(VALUE num)
-{
-    return flo_to_i(num);
-}
-
 bool
 rb_zjit_method_tracing_currently_enabled(void)
 {

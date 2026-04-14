@@ -183,7 +183,7 @@ static VALUE fix_rshift(long, unsigned long);
 static VALUE int_pow(long x, unsigned long y);
 static VALUE rb_int_floor(VALUE num, int ndigits);
 static VALUE rb_int_ceil(VALUE num, int ndigits);
-VALUE flo_to_i(VALUE num);
+static VALUE flo_to_i(VALUE num);
 static int float_round_overflow(int ndigits, int binexp);
 static int float_round_underflow(int ndigits, int binexp);
 
@@ -2554,7 +2554,7 @@ float_round_underflow(int ndigits, int binexp)
  *
  */
 
-VALUE
+static VALUE
 flo_to_i(VALUE num)
 {
     double f = RFLOAT_VALUE(num);
@@ -2563,6 +2563,12 @@ flo_to_i(VALUE num)
     if (f < 0.0) f = ceil(f);
 
     return dbl2ival(f);
+}
+
+VALUE
+rb_flo_to_i(VALUE num)
+{
+    return flo_to_i(num);
 }
 
 /*
