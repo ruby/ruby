@@ -1086,6 +1086,7 @@ class Pathname    # * File *
   #   pn.atime            # => 2026-03-31 11:51:10.1210092 -0500
   #   Dir.delete(dirpath)
   #
+  # See {File System Timestamps}[rdoc-ref:file/timestamps.md].
   def atime() File.atime(@path) end
 
   # Returns the birth time for the file.

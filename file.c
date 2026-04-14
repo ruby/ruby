@@ -1122,6 +1122,7 @@ static VALUE statx_birthtime(const rb_io_stat_data *st);
  *   file.close
  *   File.delete(filepath)
  *
+ * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  */
 
 static VALUE
@@ -2484,6 +2485,7 @@ rb_file_s_ftype(VALUE klass, VALUE fname)
  *   File.atime(File.new('README.md')) # => 2026-03-31 11:15:27.8215934 -0500
  *   File.atime(Dir.new('.'))          # => 2026-03-31 12:39:45.5910591 -0500
  *
+ * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  */
 
 static VALUE
@@ -2516,6 +2518,7 @@ rb_file_s_atime(VALUE klass, VALUE fname)
  *   file.close
  *   File.delete(filename)
  *
+ * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  */
 
 static VALUE
