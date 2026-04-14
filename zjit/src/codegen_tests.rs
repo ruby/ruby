@@ -5632,3 +5632,19 @@ fn test_loop_terminates() {
         end
     "#), @"3");
 }
+
+// Regression test: getlocal with level=0 after setlocal_WC_0 was loading stale EP
+// memory, causing Array#pack with buffer: keyword to receive the wrong buffer VALUE.
+// See https://github.com/ruby/ruby/pull/16736
+#[test]
+fn test_getlocal_level_zero_after_setlocal_wc_0() {
+    assert_snapshot!(inspect(r#"
+        def test
+          b = +"x"
+          v = 2
+          [v].pack("C*", buffer: b)
+          b.size
+        end
+        test
+    "#), @"2");
+}
