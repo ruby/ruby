@@ -2139,6 +2139,7 @@ unsafe extern "C" {
     pub fn rb_float_minus(x: VALUE, y: VALUE) -> VALUE;
     pub fn rb_float_mul(x: VALUE, y: VALUE) -> VALUE;
     pub fn rb_float_div(x: VALUE, y: VALUE) -> VALUE;
+    pub fn rb_flo_to_i(num: VALUE) -> VALUE;
     pub fn rb_fix_aref(fix: VALUE, idx: VALUE) -> VALUE;
     pub fn rb_vm_insn_addr2opcode(addr: *const ::std::os::raw::c_void) -> ::std::os::raw::c_int;
     pub fn rb_iseq_line_no(iseq: *const rb_iseq_t, pos: usize) -> ::std::os::raw::c_uint;
@@ -2306,7 +2307,6 @@ unsafe extern "C" {
         end: *mut ::std::os::raw::c_void,
     );
     pub fn rb_jit_fix_div_fix(recv: VALUE, obj: VALUE) -> VALUE;
-    pub fn rb_flo_to_i(num: VALUE) -> VALUE;
     pub fn rb_yarv_str_eql_internal(str1: VALUE, str2: VALUE) -> VALUE;
     pub fn rb_jit_str_concat_codepoint(str_: VALUE, codepoint: VALUE);
     pub fn rb_jit_shape_capacity(shape_id: shape_id_t) -> attr_index_t;
