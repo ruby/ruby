@@ -145,7 +145,7 @@ impl Default for Options {
             allowed_iseqs: None,
             log_compiled_iseqs: None,
             max_versions: 2,
-            inline_threshold: 30,
+            inline_threshold: 0,
         }
     }
 }

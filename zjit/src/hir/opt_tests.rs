@@ -17672,4 +17672,96 @@ mod hir_opt_tests {
           Return v57
         ");
     }
+
+    // Helper that compiles with inlining enabled. Temporarily sets the inline
+    // threshold, compiles and optimizes, then restores the original value.
+    #[track_caller]
+    fn hir_string_with_inlining(method: &str) -> String {
+        let old_threshold = get_option!(inline_threshold);
+        unsafe { OPTIONS.as_mut().unwrap().inline_threshold = 30; }
+        let result = hir_string(method);
+        unsafe { OPTIONS.as_mut().unwrap().inline_threshold = old_threshold; }
+        result
+    }
+
+    // The callee's `x + x` cannot be specialized to FixnumAdd because the caller's
+    // ProfileOracle does not yet have the callee's profile entries. The Send remains
+    // unoptimized with a "no profile data available" fallback reason. The follow-up
+    // change that merges callee profile entries into the caller's oracle removes this gap.
+    #[test]
+    fn test_inline_method_with_send() {
+        eval("
+            def double(x)
+              x + x
+            end
+            def test(n)
+              double(n)
+            end
+            test(1)
+            test(1)
+        ");
+        assert_snapshot!(hir_string_with_inlining("test"), @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1008, double@0x1010, cme:0x1018)
+          v23:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)]
+          PushLightweightFrame v23 (0x1040), v10
+          v42:BasicObject = Send v10, :+, v10 # SendFallbackReason: SendWithoutBlock: no profile data available
+          CheckInterrupts
+          PopLightweightFrame
+          CheckInterrupts
+          Return v42
+        ");
+    }
+
+    #[test]
+    fn test_inline_arithmetic_method() {
+        eval("
+            def add_one(x)
+              x + 1
+            end
+            def test(n)
+              add_one(n)
+            end
+            test(1)
+            test(1)
+        ");
+        assert_snapshot!(hir_string_with_inlining("test"), @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1008, add_one@0x1010, cme:0x1018)
+          v23:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)]
+          PushLightweightFrame v23 (0x1040), v10
+          v40:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
+          v55:Fixnum = GuardType v10, Fixnum
+          v56:Fixnum = FixnumAdd v55, v40
+          CheckInterrupts
+          PopLightweightFrame
+          CheckInterrupts
+          Return v56
+        ");
+    }
 }

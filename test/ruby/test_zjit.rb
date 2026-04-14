@@ -382,6 +382,32 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 14, num_profiles: 5
   end
 
+  def test_inlined_method_returns_correct_value
+    assert_runs '3', <<~RUBY, extra_args: ['--zjit-inline-threshold=30']
+      def add_one(x) = x + 1
+      def test(n) = add_one(n)
+
+      test(2)
+    RUBY
+  end
+
+  def test_inlined_method_deoptimizes_on_redefinition
+    assert_runs '100', <<~RUBY, extra_args: ['--zjit-inline-threshold=30']
+      def callee(x) = x + 1
+      def test(n) = callee(n)
+
+      # Warm up so callee gets inlined into test.
+      test(1)
+      test(1)
+
+      # Redefine callee. The inlined version in test should be invalidated,
+      # and subsequent calls should use the new definition.
+      def callee(x) = x * 100
+
+      test(1)
+    RUBY
+  end
+
   def test_exit_tracing
     # Smoke test: --zjit-trace-exits writes a Fuchsia trace (.fxt) file to /tmp
     assert_compiles('true', <<~RUBY, extra_args: ['--zjit-trace-exits'])

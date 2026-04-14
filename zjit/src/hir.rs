@@ -4369,6 +4369,277 @@ impl Function {
         true
     }
 
+    /// Remap all BlockId references within an instruction using an explicit mapping.
+    fn remap_branch_targets(insn: &mut Insn, block_map: &HashMap<usize, BlockId>) {
+        let remap = |block_id: &mut BlockId| {
+            if let Some(&new_id) = block_map.get(&block_id.0) {
+                *block_id = new_id;
+            }
+        };
+        match insn {
+            Insn::Jump(edge) => { remap(&mut edge.target); }
+            Insn::IfTrue { target, .. } => { remap(&mut target.target); }
+            Insn::IfFalse { target, .. } => { remap(&mut target.target); }
+            Insn::Entries { targets } => {
+                for target in targets {
+                    remap(target);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    /// Inline method calls by replacing eligible SendDirect instructions with the
+    /// callee's HIR body. Returns true if any inlining occurred.
+    fn inline_methods(&mut self) -> bool {
+        let mut did_inline = false;
+
+        for block in self.rpo() {
+            // Take the block's instruction list so we can rebuild it.
+            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
+            assert!(self.blocks[block.0].insns.is_empty());
+
+            let mut iter = old_insns.into_iter();
+            while let Some(insn_id) = iter.next() {
+                let insn = self.find(insn_id);
+                let Insn::SendDirect { recv, cd: _, cme, iseq, args, kw_bits, block: call_block, state } = insn else {
+                    self.push_insn_id(block, insn_id);
+                    continue;
+                };
+                // SendDirect invariant: block is either None or BlockIseq.
+                // BlockArg is rejected upstream during type specialization.
+                let blockiseq: Option<IseqPtr> = call_block.map(|bh| match bh {
+                    BlockHandler::BlockIseq(bi) => bi,
+                    BlockHandler::BlockArg => unreachable!("BlockArg in SendDirect"),
+                });
+
+                if !self.should_inline(iseq) {
+                    self.push_insn_id(block, insn_id);
+                    continue;
+                }
+
+                // Compile the callee from its ISEQ to get a fresh, unoptimized Function.
+                // The callee's ISEQ may still have profiling instrumentation active
+                // (zjit_opt_* bytecodes). Disable it before compiling so that
+                // iseq_to_hir sees the original opcodes.
+                unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
+                let callee = match iseq_to_hir(iseq) {
+                    Ok(callee) => callee,
+                    Err(_) => {
+                        self.push_insn_id(block, insn_id);
+                        continue;
+                    }
+                };
+
+                // Only inline callees with a single Return instruction. Multiple-return callees
+                // need a continuation block that merges return values through a phi, which
+                // inline_methods doesn't yet emit.
+                let mut return_insns = Vec::new();
+                for callee_block in &callee.blocks {
+                    for &callee_insn_id in &callee_block.insns {
+                        if matches!(callee.insns[callee_insn_id.0], Insn::Return { .. }) {
+                            return_insns.push(callee_insn_id);
+                        }
+                    }
+                }
+
+                if return_insns.len() != 1 {
+                    self.push_insn_id(block, insn_id);
+                    continue;
+                }
+
+                // If we've made it this far, we've determined we're going to inline the method.
+                did_inline = true;
+
+                // Capture the caller's FrameState at the call site for use in the
+                // inlined body's Snapshots.
+                let caller_frame_state = Rc::new(self.frame_state(state));
+
+                // Find the callee's body entry block by following the Jump at the end
+                // of the last JIT entry block. Each JIT entry block corresponds to a
+                // different number of optional parameters passed; the last one handles
+                // the case where all optionals are provided, and its Jump target is
+                // where the method body begins.
+                let callee_entry_body_block = {
+                    let last_jit_entry = *callee.jit_entry_blocks.last().unwrap();
+                    let last_jit_insn = callee.blocks[last_jit_entry.0].insns.last().unwrap();
+
+                    match &callee.insns[last_jit_insn.0] {
+                        Insn::Jump(edge) => edge.target,
+                        other => panic!("Expected Jump as last instruction of JIT entry block, got {other}"),
+                    }
+                };
+
+                // Collect all body blocks reachable from the callee's entry body block.
+                // These are the blocks we need to copy (not the entry scaffolding).
+                let callee_body_blocks: Vec<BlockId> = {
+                    let mut body = Vec::new();
+                    let mut visited = HashSet::new();
+                    let mut worklist = vec![callee_entry_body_block];
+
+                    while let Some(block_id) = worklist.pop() {
+                        if !visited.insert(block_id) { continue; }
+                        body.push(block_id);
+
+                        for &insn_id in &callee.blocks[block_id.0].insns {
+                            match &callee.insns[insn_id.0] {
+                                Insn::Jump(edge) => { worklist.push(edge.target); }
+                                Insn::IfTrue { target, .. } | Insn::IfFalse { target, .. } => {
+                                    worklist.push(target.target);
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+                    body
+                };
+
+                // Copy callee blocks and instructions into the caller.
+                let insn_base = self.insns.len();
+                let block_base = self.blocks.len();
+
+                // Build an explicit mapping from callee BlockId → caller BlockId.
+                let mut block_map = HashMap::new();
+                for (i, &callee_block_id) in callee_body_blocks.iter().enumerate() {
+                    block_map.insert(callee_block_id.0, BlockId(block_base + i));
+                }
+
+                // Move body blocks from the callee into the caller, remapping
+                // InsnId references by insn_base.
+                for &callee_block_id in &callee_body_blocks {
+                    let callee_block = &callee.blocks[callee_block_id.0];
+                    let mut new_block = Block {
+                        insn_idx: callee_block.insn_idx,
+                        ..Block::default()
+                    };
+
+                    for &param_id in &callee_block.params {
+                        new_block.params.push(InsnId(param_id.0 + insn_base));
+                    }
+
+                    for &callee_insn_id in &callee_block.insns {
+                        new_block.insns.push(InsnId(callee_insn_id.0 + insn_base));
+                    }
+
+                    self.blocks.push(new_block);
+                }
+
+                // Merge the callee's union_find entries into the caller, remapped.
+                {
+                    let callee_uf = callee.union_find.borrow();
+                    for (i, forwarded) in callee_uf.forwarded.iter().enumerate() {
+                        if let Some(target) = forwarded {
+                            let caller_i = InsnId(i + insn_base);
+                            let caller_target = InsnId(target.0 + insn_base);
+                            self.union_find.borrow_mut().set(caller_i, caller_target);
+                        }
+                    }
+                }
+
+                // Move all callee instructions into the caller. We move the entire
+                // insns vector (not just body block instructions) to keep InsnId
+                // offsets consistent: every callee InsnId(n) maps to InsnId(n + insn_base).
+                // Entry scaffolding instructions are unreachable but preserve the indexing.
+                for (mut insn, insn_type) in callee.insns.into_iter().zip(callee.insn_types) {
+                    // Remap InsnId operands.
+                    insn.for_each_operand_mut(|id| {
+                        *id = InsnId(id.0 + insn_base);
+                    });
+
+                    // Remap BlockId targets.
+                    Self::remap_branch_targets(&mut insn, &block_map);
+
+                    // Set caller_state on Snapshot FrameStates.
+                    if let Insn::Snapshot { ref mut state } = insn {
+                        state.caller_state = Some(Rc::clone(&caller_frame_state));
+                    }
+
+                    self.insn_types.push(insn_type);
+                    self.insns.push(insn);
+                }
+
+                // Map callee params to caller values:
+                //
+                // The callee's body entry block has params: [self, local0, local1, ..., stack0, stack1, ...]
+                // For a simple call, the first param is self (recv), followed by locals
+                // (which include the arguments), and then any stack values.
+                let remapped_entry = *block_map.get(&callee_entry_body_block.0).unwrap();
+                let callee_body_params: Vec<InsnId> = self.blocks[remapped_entry.0].params.clone();
+
+                // First param is self.
+                if !callee_body_params.is_empty() {
+                    self.make_equal_to(callee_body_params[0], recv);
+                }
+
+                // Next params are locals. The first N locals are the arguments.
+                let num_locals = callee_body_params.len() - 1; // -1 for self
+                for (i, &param_id) in callee_body_params[1..].iter().enumerate() {
+                    if i < args.len() {
+                        self.make_equal_to(param_id, args[i]);
+                    } else if i < num_locals {
+                        // Non-parameter locals are initialized to nil.
+                        let nil = self.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
+                        self.make_equal_to(param_id, nil);
+                    }
+                }
+
+                // Clear the callee entry block's params since we've aliased them
+                // via make_equal_to rather than passing them as branch arguments.
+                // This keeps validation happy (the Jump passes 0 args).
+                self.blocks[remapped_entry.0].params.clear();
+
+                // Create continuation block for post-call code.
+                let continuation = self.new_block(self.blocks[block.0].insn_idx);
+                let return_val_param = self.push_insn(continuation, Insn::Param);
+
+                // Add PopLightweightFrame at the start of the continuation block.
+                self.push_insn(continuation, Insn::PopLightweightFrame {
+                    iseq,
+                    argc: args.len(),
+                    state,
+                });
+
+                // Move remaining instructions from the original block into the continuation.
+                for remaining_insn_id in iter.by_ref() {
+                    self.push_insn_id(continuation, remaining_insn_id);
+                }
+
+                // The original SendDirect result is now the continuation's return value param.
+                self.make_equal_to(insn_id, return_val_param);
+
+                // Rewrite callee's Return to Jump to continuation.
+                let remapped_return = InsnId(return_insns[0].0 + insn_base);
+                let return_val = match &self.insns[remapped_return.0] {
+                    Insn::Return { val } => *val,
+                    _ => unreachable!(),
+                };
+                self.insns[remapped_return.0] = Insn::Jump(BranchEdge {
+                    target: continuation,
+                    args: vec![return_val],
+                });
+
+                // Insert PushLightweightFrame and jump to callee entry.
+                self.push_insn(block, Insn::PushLightweightFrame {
+                    iseq, cme, recv, args: args.clone(), kw_bits, blockiseq, state,
+                });
+                self.push_insn(block, Insn::Jump(BranchEdge {
+                    target: remapped_entry,
+                    args: vec![],
+                }));
+
+                // We consumed the rest of the iterator via the continuation block,
+                // so break out of the instruction loop for this block.
+                break;
+            }
+        }
+
+        if did_inline {
+            self.infer_types();
+        }
+
+        did_inline
+    }
+
     fn inline(&mut self) {
         for block in self.reverse_post_order() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
@@ -5893,19 +6164,40 @@ impl Function {
             passes.push(self.to_iongraph_pass("unoptimized"));
         }
 
-        // Function is assumed to have types inferred already
-        run_pass!(type_specialize);
-        run_pass!(inline);
-        run_pass!(optimize_getivar);
-        run_pass!(optimize_c_calls);
-        run_pass!(convert_no_profile_sends);
-        run_pass!(optimize_load_store);
-        run_pass!(canonicalize);
-        run_pass!(fold_constants);
-        run_pass!(clean_cfg);
-        run_pass!(remove_redundant_patch_points);
-        run_pass!(remove_duplicate_check_interrupts);
-        run_pass!(eliminate_dead_code);
+        // The optimization pipeline runs in a fixed-point loop so that inlining and
+        // type specialization can feed each other: the first iteration inlines direct
+        // calls and specializes the inlined code, and subsequent iterations can inline
+        // calls that only became monomorphic after the previous round of specialization.
+        // Termination is guaranteed because each iteration either inlines at least one
+        // call (growing the function toward the inlining budget) or reaches a fixed point.
+        const MAX_INLINE_ITERATIONS: usize = 10;
+        for _ in 0..MAX_INLINE_ITERATIONS {
+            // Function is assumed to have types inferred already
+            run_pass!(type_specialize);
+            // The trivial inliner runs first to handle simple cases (constant returns,
+            // parameter returns, etc.) without frame push/pop overhead. The general
+            // inliner then handles more complex methods that require full inlining.
+            run_pass!(inline);
+            let did_inline = self.inline_methods();
+            #[cfg(debug_assertions)] self.assert_validates();
+            if should_dump {
+                passes.push(self.to_iongraph_pass("inline_methods"));
+            }
+            run_pass!(optimize_getivar);
+            run_pass!(optimize_c_calls);
+            run_pass!(convert_no_profile_sends);
+            run_pass!(optimize_load_store);
+            run_pass!(canonicalize);
+            run_pass!(fold_constants);
+            run_pass!(clean_cfg);
+            run_pass!(remove_redundant_patch_points);
+            run_pass!(remove_duplicate_check_interrupts);
+            run_pass!(eliminate_dead_code);
+
+            if !did_inline {
+                break;
+            }
+        }
 
         if should_dump {
             let iseq_name = iseq_get_location(self.iseq, 0);
