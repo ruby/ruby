@@ -119,6 +119,7 @@ typedef union {
 #define MAX_INTEGER_PACK_SIZE 8
 
 static const char toofew[] = "too few arguments";
+static const char intoitself[] = "cannot pack buffer object into itself";
 
 static void encodes(VALUE,const char*,long,int,int);
 static void qpencode(VALUE,VALUE,long);
@@ -280,6 +281,8 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
 #define MORE_ITEM (idx < RARRAY_LEN(ary))
 #define THISFROM (MORE_ITEM ? RARRAY_AREF(ary, idx) : TOO_FEW)
 #define NEXTFROM (MORE_ITEM ? RARRAY_AREF(ary, idx++) : TOO_FEW)
+#define NOT_BUFFER(val) (((val) == res) ? rb_raise(rb_eArgError, intoitself) : (void)0)
+#define STR_FROM(val) NOT_BUFFER(StringValue(val))
 
     while (p < pend) {
         int explicit_endian = 0;
@@ -334,7 +337,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
                 plen = 0;
             }
             else {
-                StringValue(from);
+                STR_FROM(from);
                 ptr = RSTRING_PTR(from);
                 plen = RSTRING_LEN(from);
             }
@@ -719,7 +722,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
           case 'u':		/* uuencoded string */
           case 'm':		/* base64 encoded string */
             from = NEXTFROM;
-            StringValue(from);
+            STR_FROM(from);
             ptr = RSTRING_PTR(from);
             plen = RSTRING_LEN(from);
 
@@ -749,6 +752,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
 
           case 'M':		/* quoted-printable encoded string */
             from = rb_obj_as_string(NEXTFROM);
+            NOT_BUFFER(from);
             if (len <= 1)
                 len = 72;
             qpencode(res, from, len);
@@ -757,7 +761,7 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
           case 'P':		/* pointer to packed byte string */
             from = THISFROM;
             if (!NIL_P(from)) {
-                StringValue(from);
+                STR_FROM(from);
                 if (RSTRING_LEN(from) < len) {
                     rb_raise(rb_eArgError, "too short buffer for P(%ld for %ld)",
                              RSTRING_LEN(from), len);
@@ -767,13 +771,11 @@ pack_pack(rb_execution_context_t *ec, VALUE ary, VALUE fmt, VALUE buffer)
             /* FALL THROUGH */
           case 'p':		/* pointer to string */
             while (len-- > 0) {
-                char *t;
+                char *t = 0;
                 from = NEXTFROM;
-                if (NIL_P(from)) {
-                    t = 0;
-                }
-                else {
-                    t = StringValuePtr(from);
+                if (!NIL_P(from)) {
+                    STR_FROM(from);
+                    t = RSTRING_PTR(from);
                 }
                 if (!associates) {
                     associates = rb_ary_new();
