@@ -12309,10 +12309,12 @@ rb_str_partition(VALUE str, VALUE sep)
         pos = rb_str_index(str, sep, 0);
         if (pos < 0) goto failed;
     }
+
+    long rpos = pos + RSTRING_LEN(sep);
+    if (rpos > RSTRING_LEN(str)) goto failed;
     return rb_ary_new3(3, rb_str_subseq(str, 0, pos),
                           sep,
-                          rb_str_subseq(str, pos+RSTRING_LEN(sep),
-                                             RSTRING_LEN(str)-pos-RSTRING_LEN(sep)));
+                          rb_str_subseq(str, rpos, RSTRING_LEN(str)-rpos));
 
   failed:
     return rb_ary_new3(3, str_duplicate(rb_cString, str), str_new_empty_String(str), str_new_empty_String(str));
@@ -12349,10 +12351,11 @@ rb_str_rpartition(VALUE str, VALUE sep)
         }
     }
 
+    long rpos = pos + RSTRING_LEN(sep);
+    if (rpos > RSTRING_LEN(str)) goto failed;
     return rb_ary_new3(3, rb_str_subseq(str, 0, pos),
                           sep,
-                          rb_str_subseq(str, pos+RSTRING_LEN(sep),
-                                        RSTRING_LEN(str)-pos-RSTRING_LEN(sep)));
+                          rb_str_subseq(str, rpos, RSTRING_LEN(str)-rpos));
   failed:
     return rb_ary_new3(3, str_new_empty_String(str), str_new_empty_String(str), str_duplicate(rb_cString, str));
 }

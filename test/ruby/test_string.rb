@@ -3021,6 +3021,10 @@ CODE
     assert_equal(["", "", "foo"], S("foo").partition(/^=*/))
 
     assert_equal([S("ab"), S("c"), S("dbce")], S("abcdbce").partition(/b\Kc/))
+
+    s = S("A").force_encoding(Encoding::UTF_16LE)
+    sep = S("A\x00").force_encoding(s.encoding)
+    assert_equal([s, "", ""], s.partition(sep))
   end
 
   def test_rpartition
@@ -3047,6 +3051,10 @@ CODE
     assert_equal("hello", hello, bug)
 
     assert_equal([S("abcdb"), S("c"), S("e")], S("abcdbce").rpartition(/b\Kc/))
+
+    s = S("A").force_encoding(Encoding::UTF_16LE)
+    sep = S("A\x00").force_encoding(s.encoding)
+    assert_equal(["", "", s], s.rpartition(sep))
   end
 
   def test_rs
