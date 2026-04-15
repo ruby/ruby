@@ -48,6 +48,14 @@ module EnvUtil
     attr_reader :original_internal_encoding, :original_external_encoding,
                 :original_verbose, :original_warning
 
+    if RUBY_ENGINE == "truffleruby"
+      # Tests relying on timeout have high variance on TruffleRuby due to the highly-optimizing JIT, deoptimization, profiling interpreter, different GC, etc.
+      # Setting a default timeout scale helps avoid transient failures for tests relying on timeouts.
+      # We choose 10 because it is the same number used in CRuby CI on macOS:
+      # https://github.com/ruby/ruby/blob/9d46b0c735877f152a0b4b16b8153c6f395dee28/.github/workflows/macos.yml#L133
+      self.timeout_scale = 10
+    end
+
     def capture_global_values
       @original_internal_encoding = Encoding.default_internal
       @original_external_encoding = Encoding.default_external
