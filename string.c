@@ -4215,7 +4215,7 @@ str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
     slen = RSTRING_LEN(sub);
 
     while (s) {
-        if (memcmp(s, t, slen) == 0) {
+        if (s + slen <= e && memcmp(s, t, slen) == 0) {
             return s - sbeg;
         }
         if (s <= sbeg) break;
