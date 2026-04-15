@@ -4336,10 +4336,15 @@ impl Function {
             return false;
         }
 
-        // Reject complex parameter shapes that we cannot handle.
+        // Only inline callees with simple positional parameters. Optional params,
+        // keyword params, rest/post params, block params, and forwardable params all
+        // have local table layouts that our parameter mapping doesn't handle yet.
         let params = unsafe { callee_iseq.params() };
-        if params.flags.has_rest() != 0
+        if params.flags.has_opt() != 0
+            || params.flags.has_kw() != 0
+            || params.flags.has_rest() != 0
             || params.flags.has_post() != 0
+            || params.flags.has_block() != 0
             || params.flags.forwardable() != 0
             || params.flags.has_kwrest() != 0
         {
