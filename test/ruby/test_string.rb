@@ -1802,6 +1802,8 @@ CODE
     assert_rindex(nil, S("こんにち"), S("こんにちは"))
     assert_rindex(nil, S("こ"), S("こんにちは"))
     assert_rindex(nil, S(""), S("こんにちは"))
+
+    assert_rindex(nil, S("A" * 1024), S("\u{3042}"))
   end
 
   def test_rjust
