@@ -995,7 +995,7 @@ enum unpack_mode {
 };
 
 static VALUE
-pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
+pack_unpack_internal(VALUE str, VALUE fmt, VALUE ofs, enum unpack_mode mode)
 {
 #define hexdigits ruby_hexdigits
     const char *s, *send;
@@ -1019,6 +1019,7 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
 
     StringValue(str);
     StringValue(fmt);
+    long offset = NUM2LONG(ofs);
     rb_must_asciicompat(fmt);
 
     len = RSTRING_LEN(str);
@@ -1675,13 +1676,13 @@ static VALUE
 pack_unpack(rb_execution_context_t *ec, VALUE str, VALUE fmt, VALUE offset)
 {
     enum unpack_mode mode = rb_block_given_p() ? UNPACK_BLOCK : UNPACK_ARRAY;
-    return pack_unpack_internal(str, fmt, mode, RB_NUM2LONG(offset));
+    return pack_unpack_internal(str, fmt, offset, mode);
 }
 
 static VALUE
 pack_unpack1(rb_execution_context_t *ec, VALUE str, VALUE fmt, VALUE offset)
 {
-    return pack_unpack_internal(str, fmt, UNPACK_1, RB_NUM2LONG(offset));
+    return pack_unpack_internal(str, fmt, offset, UNPACK_1);
 }
 
 int
