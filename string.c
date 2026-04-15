@@ -10604,7 +10604,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
         subptr = hit;
     }
 
-    if (subptr != pend) {
+    if (subptr < pend) {
         if (chomp) {
             if (rsnewline) {
                 pend = chomp_newline(subptr, pend, enc);
