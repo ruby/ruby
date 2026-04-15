@@ -1394,6 +1394,11 @@ CODE
     assert_equal s.object_id, s.lines {|x| res << x }.object_id
     assert_equal(S("hello\n"), res[0])
     assert_equal(S("world"),  res[1])
+
+    s = S("AB").force_encoding(Encoding::UTF_32LE)
+    sep = S("B").force_encoding(Encoding::UTF_32LE)
+
+    assert_empty(s.lines(sep).to_a)
   end
 
   def test_empty?
