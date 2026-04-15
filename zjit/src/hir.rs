@@ -4346,6 +4346,12 @@ impl Function {
             return false;
         }
 
+        // Reject callees whose environment pointer can escape (e.g., via binding).
+        // TODO (nirvdrum 2026-04-15) The interaction between inlined frames and EP escape hasn't been verified.
+        if iseq_escapes_ep(callee_iseq) || crate::invariants::iseq_escapes_ep(callee_iseq) {
+            return false;
+        }
+
         // Reject callees that use yield/invokeblock (block inlining is future work).
         let callee_encoded_size = unsafe { get_iseq_encoded_size(callee_iseq) };
         let mut pc_idx: u32 = 0;
