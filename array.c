@@ -2385,6 +2385,24 @@ rb_ary_set_len(VALUE ary, long len)
 }
 
 VALUE
+rb_ary_modify_expand(VALUE ary, long expand)
+{
+    long len = RARRAY_LEN(ary);
+
+    if (expand < 0) {
+        rb_raise(rb_eArgError, "negative expanding array size");
+    }
+    if (expand >= ARY_MAX_SIZE - len) {
+        rb_raise(rb_eArgError, " size too big");
+    }
+    rb_ary_modify_check(ary);
+    if (len + expand > ARY_CAPA(ary)) {
+        ary_resize_capa(ary, len + expand);
+    }
+    return ary;
+}
+
+VALUE
 rb_ary_resize(VALUE ary, long len)
 {
     long olen;

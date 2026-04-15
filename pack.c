@@ -962,6 +962,9 @@ hex2num(char c)
 
 #define PACK_LENGTH_ADJUST_SIZE(sz) do {	\
     tmp_len = 0;				\
+    if (mode == UNPACK_ARRAY) { 		\
+        rb_ary_modify_expand(ary, len); 	\
+    }						\
     if (len > (long)((send-s)/(sz))) {		\
         if (!star) {				\
             tmp_len = len-(send-s)/(sz);	\
@@ -972,7 +975,7 @@ hex2num(char c)
 
 #define PACK_ITEM_ADJUST() do { \
     if (tmp_len > 0 && mode == UNPACK_ARRAY) \
-        rb_ary_store(ary, RARRAY_LEN(ary)+tmp_len-1, Qnil); \
+        rb_ary_resize(ary, RARRAY_LEN(ary)+tmp_len); \
 } while (0)
 
 /* Workaround for Oracle Developer Studio (Oracle Solaris Studio)
