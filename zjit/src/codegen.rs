@@ -1592,8 +1592,6 @@ fn gen_push_lightweight_frame(
         (VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL, specval)
     };
 
-    // Set up the new frame.
-    // TODO: Lazily materialize caller frames on side exits or when needed.
     gen_push_frame(asm, args.len(), state, ControlFrame {
         recv,
         iseq: Some(iseq),
@@ -1602,6 +1600,31 @@ fn gen_push_lightweight_frame(
         specval,
         write_block_code: iseq_may_write_block_code(iseq),
     });
+
+    // Fully materialize the inlined callee's CFP. Unlike gen_send_iseq_direct
+    // where the callee's JIT entry writes cfp->pc/iseq on demand (or
+    // gen_save_pc_for_gc lazily installs a JITFrame pointer), inlined code has
+    // no entry point, so we must initialize these fields up front.
+    //
+    // We write cfp->pc, cfp->iseq, cfp->sp directly and clear cfp->jit_return so
+    // that CFP_ZJIT_FRAME returns NULL and CFP_PC/CFP_ISEQ read from cfp
+    // directly rather than dereferencing a stale/poisoned JITFrame pointer.
+    // Inlined HIR will install a fresh JITFrame via gen_save_pc_for_gc before
+    // any subsequent GC-triggering operation.
+    fn cfp_opnd(offset: i32) -> Opnd {
+        Opnd::mem(64, CFP, offset - (RUBY_SIZEOF_CONTROL_FRAME as i32))
+    }
+    let callee_pc = unsafe { rb_iseq_pc_at_idx(iseq, 0) };
+    asm_comment!(asm, "initialize cfp->pc for inlined frame");
+    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_PC), Opnd::const_ptr(callee_pc));
+    asm_comment!(asm, "initialize cfp->iseq for inlined frame");
+    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_ISEQ), VALUE::from(iseq).into());
+    asm_comment!(asm, "clear cfp->jit_return for inlined frame");
+    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_JIT_RETURN), 0.into());
+    asm_comment!(asm, "initialize cfp->sp for inlined frame");
+    let ep_offset = state.stack().len() as i32 + local_size as i32 - args.len() as i32 + VM_ENV_DATA_SIZE as i32 - 1;
+    let new_sp = asm.lea(Opnd::mem(64, SP, (ep_offset + 1) * SIZEOF_VALUE_I32));
+    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SP), new_sp);
 
     // Write "keyword_bits" to the callee's frame if the callee accepts keywords.
     // This is a synthetic local/parameter that the callee reads via checkkeyword to determine
