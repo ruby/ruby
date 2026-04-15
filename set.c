@@ -483,11 +483,11 @@ set_initialize_with_block(RB_BLOCK_CALL_FUNC_ARGLIST(i, set))
  * Returns a new \Set object based on the given +object+,
  * which must be an Enumerable or +nil+.
  *
- * With no argument given,
+ * With argument +object+ given as +nil+,
  * returns a new empty \Set object:
  *
  *   Set.new                          # => Set[]
- *   Set.new { fail 'Cannot happen' } # => Set[]
+ *   Set.new { fail 'Cannot happen' } # => Set[]  # Block not called.
  *
  * With no block given and +object+ given as an Enumerable,
  * populates the new set with the elements of +object+:
@@ -504,8 +504,7 @@ set_initialize_with_block(RB_BLOCK_CALL_FUNC_ARGLIST(i, set))
  * calls the block with each element of +object+;
  * adds the block's return value to the new set:
  *
- *   Set.new(4..10) {|i| i * 2 }      # => Set[8, 10, 12, 14, 16, 18, 20]
- *   Set.new { fail 'Cannot happen' } # => Set[]  # Block not called.
+ *   Set.new(4..10) {|i| i * 2 } # => Set[8, 10, 12, 14, 16, 18, 20]
  *
  */
 static VALUE
