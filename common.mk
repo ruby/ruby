@@ -1579,27 +1579,10 @@ no-test-bundled-gems-precheck:
 yes-update-default-gemspecs no-update-default-gemspecs: update-default-gemspecs
 update-default-gemspecs: $(PREP)
 	@$(MAKEDIRS) $(srcdir)/.bundle/specifications
-	$(Q)$(MINIRUBY) -W0 -C "$(srcdir)" -rrubygems \
-	    -e "destdir = ARGV.shift" \
-	    -e "ARGV.each do |basedir|" \
-	    -e   "Dir.glob(basedir+'/**/*.gemspec') do |g|" \
-	    -e     "dir, base = File.split(g)" \
-	    -e     "spec = Dir.chdir(dir) {Gem::Specification.load(base)} ||" \
-	    -e         "Gem::Specification.load(g)" \
-	    -e     "unless spec" \
-	    -e       "puts %[Ignoring #{g}]" \
-	    -e       "next" \
-	    -e     "end" \
-	    -e     "spec.files.clear" \
-	    -e     "spec.extensions.clear" \
-	    -e     "src = spec.to_ruby" \
-	    -e     "src.sub!(/^$$/) {" \
-	    -e       "%[# default: #{g} #{File.mtime(g).strftime(%[%s.%N])}\n]" \
-	    -e     "}" \
-	    -e     "File.binwrite(File.join(destdir, spec.full_name+'.gemspec'), src)" \
-	    -e   "end" \
-	    -e "end" \
-	    -- .bundle/specifications lib ext
+	$(Q)$(MINIRUBY) -W0 -C "$(srcdir)" -I tool/lib -roptparse -routput -rbundled_gem \
+	    -e "(out = Output.new).def_options(ARGV.options)" \
+	    -e "BundledGem.update_default_gemspecs(ARGV.parse!, out, quiet: $(V).zero?)" \
+	    -- -c -o .bundle/specifications lib ext
 
 install-for-test-bundled-gems: $(TEST_RUNNABLE)-install-for-test-bundled-gems
 no-install-for-test-bundled-gems: no-update-default-gemspecs

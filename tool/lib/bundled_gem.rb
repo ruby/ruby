@@ -130,4 +130,30 @@ module BundledGem
     command = "#{git} checkout --detach #{rev}"
     system(command, chdir: gemdir) or raise "failed: #{command}"
   end
+
+  def load_gemspec(g)
+    dir, base = File.split(g)
+    spec = Dir.chdir(dir) {Gem::Specification.load(base)} || Gem::Specification.load(g) or
+      return false
+    spec.files.clear
+    spec.extensions.clear
+    src = spec.to_ruby
+    src.sub!(/^$$/) {
+      %[# default: #{g} #{File.mtime(g).strftime(%[%s.%N])}\n]
+    }
+    return spec.full_name+'.gemspec', src
+  end
+
+  def update_default_gemspecs(basedirs, out, quiet: true)
+    basedirs.each do |basedir|
+      Dir.glob(basedir+'/**/*.gemspec') do |g|
+        name, src = BundledGem.load_gemspec(g)
+        unless src
+          puts "Ignoring #{g}" unless quiet
+          next
+        end
+        out.write(src, name: name, quiet: quiet)
+      end
+    end
+  end
 end
