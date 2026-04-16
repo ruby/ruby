@@ -244,6 +244,78 @@ RSpec.describe "hook plugins" do
     end
   end
 
+  context "before-fetch and after-fetch hooks" do
+    before do
+      build_repo2 do
+        build_plugin "fetch-timing-plugin" do |s|
+          s.write "plugins.rb", <<-RUBY
+            @timing_start = nil
+            Bundler::Plugin::API.hook Bundler::Plugin::Events::GEM_BEFORE_FETCH do |spec|
+              @timing_start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+              puts "gem \#{spec.name} started fetch at \#{@timing_start}"
+            end
+            Bundler::Plugin::API.hook Bundler::Plugin::Events::GEM_AFTER_FETCH do |spec|
+              timing_end = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+              puts "gem \#{spec.name} took \#{timing_end - @timing_start} to fetch"
+              @timing_start = nil
+            end
+          RUBY
+        end
+      end
+
+      bundle "plugin install fetch-timing-plugin --source https://gem.repo2"
+    end
+
+    it "runs around each gem download" do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        gem "rake"
+        gem "myrack"
+      G
+
+      expect(out).to include "gem rake started fetch at"
+      expect(out).to match(/gem rake took \d+\.\d+ to fetch/)
+      expect(out).to include "gem myrack started fetch at"
+      expect(out).to match(/gem myrack took \d+\.\d+ to fetch/)
+    end
+  end
+
+  context "before-git-fetch and after-git-fetch hooks" do
+    before do
+      build_repo2 do
+        build_plugin "git-fetch-timing-plugin" do |s|
+          s.write "plugins.rb", <<-RUBY
+            @timing_start = nil
+            Bundler::Plugin::API.hook Bundler::Plugin::Events::GIT_BEFORE_FETCH do |source|
+              @timing_start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+              puts "git source \#{source.name} started fetch at \#{@timing_start}"
+            end
+            Bundler::Plugin::API.hook Bundler::Plugin::Events::GIT_AFTER_FETCH do |source|
+              timing_end = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+              puts "git source \#{source.name} took \#{timing_end - @timing_start} to fetch"
+              @timing_start = nil
+            end
+          RUBY
+        end
+      end
+
+      bundle "plugin install git-fetch-timing-plugin --source https://gem.repo2"
+    end
+
+    it "runs around each git source fetch" do
+      build_git "foo", "1.0", path: lib_path("foo")
+
+      relative_path = lib_path("foo").relative_path_from(bundled_app)
+      install_gemfile <<-G, verbose: true
+        source "https://gem.repo1"
+        gem "foo", :git => "#{relative_path}"
+      G
+
+      expect(out).to include "git source foo started fetch at"
+      expect(out).to match(/git source foo took \d+\.\d+ to fetch/)
+    end
+  end
+
   def install_gemfile_and_bundler_require
     install_gemfile <<-G
       source "https://gem.repo1"
