@@ -1485,7 +1485,7 @@ dist:
 up:: update-remote
 
 up$(DOT_WAIT)::
-	-$(Q)$(MAKE) $(mflags) Q=$(Q) REVISION_FORCE=PHONY ALWAYS_UPDATE_UNICODE= after-update
+	-$(Q)$(MAKE) $(mflags) Q=$(Q) REVISION_FORCE=PHONY ALWAYS_UPDATE_UNICODE= MINIRUBY=$(BASERUBY) after-update
 
 yes::
 no::
@@ -1494,6 +1494,7 @@ after-update:: common-srcs
 after-update:: $(REVISION_H)
 after-update:: extract-extlibs
 after-update:: extract-gems
+after-update:: update-default-gemspecs
 
 update-src::
 	$(Q) $(RM) $(REVISION_H) revision.h "$(srcdir)/$(REVISION_H)" "$(srcdir)/revision.h"
