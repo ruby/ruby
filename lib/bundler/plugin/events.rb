@@ -46,6 +46,30 @@ module Bundler
       define :GEM_AFTER_INSTALL,  "after-install"
 
       # @!parse
+      #   A hook called before each individual gem is downloaded from a remote source.
+      #   Includes a Gem::Specification. Does not fire on cache hits.
+      #   GEM_BEFORE_FETCH = "before-fetch"
+      define :GEM_BEFORE_FETCH, "before-fetch"
+
+      # @!parse
+      #   A hook called after each individual gem is downloaded from a remote source.
+      #   Includes a Gem::Specification. Does not fire on cache hits.
+      #   GEM_AFTER_FETCH = "after-fetch"
+      define :GEM_AFTER_FETCH, "after-fetch"
+
+      # @!parse
+      #   A hook called before a git source is fetched.
+      #   Includes a Bundler::Source::Git reference.
+      #   GIT_BEFORE_FETCH = "before-git-fetch"
+      define :GIT_BEFORE_FETCH, "before-git-fetch"
+
+      # @!parse
+      #   A hook called after a git source is fetched.
+      #   Includes a Bundler::Source::Git reference.
+      #   GIT_AFTER_FETCH = "after-git-fetch"
+      define :GIT_AFTER_FETCH, "after-git-fetch"
+
+      # @!parse
       #   A hook called before any gems install
       #   Includes an Array of Bundler::Dependency objects
       #   GEM_BEFORE_INSTALL_ALL = "before-install-all"
