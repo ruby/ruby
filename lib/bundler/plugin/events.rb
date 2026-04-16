@@ -50,13 +50,19 @@ module Bundler
 
       # @!parse
       #   A hook called before each individual gem is downloaded from a remote source.
-      #   Includes a Gem::Specification. Does not fire on cache hits.
+      #   Includes a spec-like object responding to the Gem::Specification API
+      #   (for example, a Bundler spec proxy such as Bundler::EndpointSpecification
+      #   or Bundler::RemoteSpecification). Does not fire when the gem is already
+      #   present at the initial download-cache check.
       #   GEM_BEFORE_FETCH = "before-fetch"
       define :GEM_BEFORE_FETCH, "before-fetch"
 
       # @!parse
       #   A hook called after each individual gem is downloaded from a remote source.
-      #   Includes a Gem::Specification. Does not fire on cache hits.
+      #   Includes a spec-like object responding to the Gem::Specification API
+      #   (for example, a Bundler spec proxy such as Bundler::EndpointSpecification
+      #   or Bundler::RemoteSpecification). Does not fire when the gem is already
+      #   present at the initial download-cache check.
       #   GEM_AFTER_FETCH = "after-fetch"
       define :GEM_AFTER_FETCH, "after-fetch"
 
