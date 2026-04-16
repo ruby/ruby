@@ -60,9 +60,10 @@ class AutoReviewPR
 
   def review(pr_number)
     existing_comments = fetch_existing_comments(pr_number)
-    review_non_fork_branch(pr_number, existing_comments)
+    pr = @client.get("/repos/#{REPO}/pulls/#{pr_number}")
+    review_non_fork_branch(pr_number, pr, existing_comments)
     review_upstream_repos(pr_number, existing_comments)
-    review_redmine_links(pr_number, existing_comments)
+    review_redmine_links(pr_number, pr, existing_comments)
   end
 
   private
@@ -82,13 +83,12 @@ class AutoReviewPR
   end
 
   # Suggest re-filing from a fork if the PR branch is in ruby/ruby itself
-  def review_non_fork_branch(pr_number, existing_comments)
+  def review_non_fork_branch(pr_number, pr, existing_comments)
     if already_commented?(existing_comments, FORK_COMMENT_PREFIX)
       puts "Skipped: The PR ##{pr_number} already has a fork branch comment."
       return
     end
 
-    pr = @client.get("/repos/#{REPO}/pulls/#{pr_number}")
     head_repo = pr.dig(:head, :repo, :full_name)
     if head_repo != REPO
       puts "Skipped: The PR ##{pr_number} is already from a fork (#{head_repo})."
@@ -124,13 +124,12 @@ class AutoReviewPR
     post_comment(pr_number, format_upstream_comment(upstream_repos))
   end
 
-  def review_redmine_links(pr_number, existing_comments)
+  def review_redmine_links(pr_number, pr, existing_comments)
     if already_commented?(existing_comments, REDMINE_COMMENT_PREFIX)
       puts "Skipped: The PR ##{pr_number} already has a Redmine links comment."
       return
     end
 
-    pr = @client.get("/repos/#{REPO}/pulls/#{pr_number}")
     text = "#{pr[:title]}\n#{pr[:body]}"
 
     tickets = text.scan(REDMINE_TICKET_PATTERN).uniq
