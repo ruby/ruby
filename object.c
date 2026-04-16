@@ -1376,10 +1376,8 @@ VALUE
 rb_obj_freeze(VALUE obj)
 {
     if (!OBJ_FROZEN(obj)) {
+        RUBY_ASSERT(!RB_SPECIAL_CONST_P(obj));
         OBJ_FREEZE(obj);
-        if (SPECIAL_CONST_P(obj)) {
-            rb_bug("special consts should be frozen.");
-        }
     }
     return obj;
 }
