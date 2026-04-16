@@ -344,7 +344,7 @@ $(EXTS_MK): ext/configure-ext.mk $(srcdir)/template/exts.mk.tmpl \
 	    $(srcdir)/template/exts.mk.tmpl --gnumake=$(gnumake) --configure-exts=ext/configure-ext.mk
 
 ext/configure-ext.mk: $(PREP) all-incs $(MKFILES) $(RBCONFIG) $(LIBRUBY) \
-		$(srcdir)/template/configure-ext.mk.tmpl
+		$(srcdir)/template/configure-ext.mk.tmpl update-default-gemspecs
 	$(ECHO) generating makefiles $@
 	$(Q)$(MAKEDIRS) $(@D)
 	$(Q)$(MINIRUBY) $(tooldir)/generic_erb.rb -o $@ -c \
@@ -623,11 +623,11 @@ post-install-dbg::
 srcs-doc: prepare-gems
 
 RDOC_DEPENDS = main srcs-doc
-rdoc: PHONY $(RDOC_DEPENDS) $(RBCONFIG)
+rdoc: PHONY $(RDOC_DEPENDS) $(RBCONFIG) update-default-gemspecs
 	@echo Generating RDoc documentation
 	$(Q) $(RDOC) --ri --op "$(RDOCOUT)" $(RDOC_GEN_OPTS) $(RDOCFLAGS) .
 
-html: PHONY $(RDOC_DEPENDS) $(RBCONFIG)
+html: PHONY $(RDOC_DEPENDS) $(RBCONFIG) update-default-gemspecs
 	@echo Generating RDoc HTML files
 	$(Q) $(RDOC) --op "$(HTMLOUT)" $(RDOC_GEN_OPTS) $(RDOCFLAGS) .
 
@@ -1576,11 +1576,10 @@ test-bundled-gems-precheck: $(TEST_RUNNABLE)-test-bundled-gems-precheck
 yes-test-bundled-gems-precheck: $(PRECHECK_BUNDLED_GEMS:yes=main)
 no-test-bundled-gems-precheck:
 
-update-default-gemspecs: $(TEST_RUNNABLE)-update-default-gemspecs
-no-update-default-gemspecs:
-yes-update-default-gemspecs: $(PRECHECK_BUNDLED_GEMS:yes=main) $(PROGRAM)
+yes-update-default-gemspecs no-update-default-gemspecs: update-default-gemspecs
+update-default-gemspecs: $(PREP)
 	@$(MAKEDIRS) $(srcdir)/.bundle/specifications
-	@$(XRUBY) -W0 -C "$(srcdir)" -rrubygems \
+	$(Q)$(MINIRUBY) -W0 -C "$(srcdir)" -rrubygems \
 	    -e "destdir = ARGV.shift" \
 	    -e "ARGV.each do |basedir|" \
 	    -e   "Dir.glob(basedir+'/**/*.gemspec') do |g|" \
