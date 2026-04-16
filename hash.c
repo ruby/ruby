@@ -1398,7 +1398,7 @@ rb_hash_foreach(VALUE hash, rb_foreach_func *func, VALUE farg)
     arg.hash = hash;
     arg.func = (rb_foreach_func *)func;
     arg.arg  = farg;
-    if (RB_OBJ_FROZEN(hash)) {
+    if (RB_OBJ_FROZEN_RAW(hash)) {
         hash_foreach_call((VALUE)&arg);
     }
     else {
@@ -2901,7 +2901,7 @@ rb_hash_key_str(VALUE key)
 static int
 hash_aset_str(st_data_t *key, st_data_t *val, struct update_arg *arg, int existing)
 {
-    if (!existing && !RB_OBJ_FROZEN(*key)) {
+    if (!existing && !RB_OBJ_FROZEN_RAW(*key)) {
         *key = rb_hash_key_str(*key);
     }
     return hash_aset(key, val, arg, existing);
@@ -4149,7 +4149,7 @@ rb_hash_update_block_callback(st_data_t *key, st_data_t *value, struct update_ar
         hash_iter_lev_dec(hash);
         ua->iterating = false;
     }
-    else if (RHASH_STRING_KEY_P(hash, k) && !RB_OBJ_FROZEN(k)) {
+    else if (RHASH_STRING_KEY_P(hash, k) && !RB_OBJ_FROZEN_RAW(k)) {
         *key = (st_data_t)rb_hash_key_str(k);
     }
     *value = (st_data_t)newvalue;
@@ -4418,7 +4418,7 @@ rb_hash_assoc(VALUE hash, VALUE key)
             .key = (st_data_t)key,
         };
 
-        if (RB_OBJ_FROZEN(hash)) {
+        if (RB_OBJ_FROZEN_RAW(hash)) {
             value = assoc_lookup(arg);
         }
         else {
@@ -5085,7 +5085,7 @@ rb_hash_add_new_element(VALUE hash, VALUE key, VALUE val)
 static st_data_t
 key_stringify(VALUE key)
 {
-    return (rb_obj_class(key) == rb_cString && !RB_OBJ_FROZEN(key)) ?
+    return (rb_obj_class(key) == rb_cString && !RB_OBJ_FROZEN_RAW(key)) ?
         rb_hash_key_str(key) : key;
 }
 
