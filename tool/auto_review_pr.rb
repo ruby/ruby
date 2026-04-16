@@ -38,6 +38,9 @@ class AutoReviewPR
   UPSTREAM_COMMENT_PREFIX = 'The following files are maintained in the following upstream repositories:'
   UPSTREAM_COMMENT_SUFFIX = 'Please file a pull request to the above instead. Thank you!'
 
+  REDMINE_TICKET_PATTERN = /\[(Bug|Feature|Misc)\s*#(\d+)\]/
+  REDMINE_COMMENT_PREFIX = 'This pull request references the following Redmine tickets:'
+
   FORK_COMMENT_PREFIX = 'It looks like this pull request was filed from a branch in ruby/ruby.'
   FORK_COMMENT_BODY = <<~COMMENT
     #{FORK_COMMENT_PREFIX}
@@ -59,6 +62,7 @@ class AutoReviewPR
     existing_comments = fetch_existing_comments(pr_number)
     review_non_fork_branch(pr_number, existing_comments)
     review_upstream_repos(pr_number, existing_comments)
+    review_redmine_links(pr_number, existing_comments)
   end
 
   private
@@ -118,6 +122,32 @@ class AutoReviewPR
     end
 
     post_comment(pr_number, format_upstream_comment(upstream_repos))
+  end
+
+  def review_redmine_links(pr_number, existing_comments)
+    if already_commented?(existing_comments, REDMINE_COMMENT_PREFIX)
+      puts "Skipped: The PR ##{pr_number} already has a Redmine links comment."
+      return
+    end
+
+    pr = @client.get("/repos/#{REPO}/pulls/#{pr_number}")
+    text = "#{pr[:title]}\n#{pr[:body]}"
+
+    tickets = text.scan(REDMINE_TICKET_PATTERN).uniq
+    if tickets.empty?
+      puts "Skipped: The PR ##{pr_number} doesn't reference any Redmine tickets."
+      return
+    end
+
+    post_comment(pr_number, format_redmine_comment(tickets))
+  end
+
+  def format_redmine_comment(tickets)
+    comment = +"#{REDMINE_COMMENT_PREFIX}\n\n"
+    tickets.each do |type, number|
+      comment << "* [#{type} ##{number}](https://bugs.ruby-lang.org/issues/#{number})\n"
+    end
+    comment
   end
 
   def format_upstream_comment(upstream_repos)
