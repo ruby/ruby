@@ -441,7 +441,7 @@ rb_shape_obj_has_fields(VALUE obj)
 static inline bool
 rb_obj_gen_fields_p(VALUE obj)
 {
-    switch (TYPE(obj)) {
+    switch (BUILTIN_TYPE(obj)) {
         case T_NONE:
         case T_OBJECT:
         case T_CLASS:
