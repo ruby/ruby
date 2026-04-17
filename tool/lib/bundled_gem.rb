@@ -152,7 +152,7 @@ module BundledGem
           puts "Ignoring #{g}" unless quiet
           next
         end
-        out.write(src, name: name, quiet: quiet)
+        out.write(src, name: name, newer: File.mtime(g), quiet: quiet)
       end
     end
   end
