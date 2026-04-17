@@ -15896,7 +15896,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Float@0x1008, +@0x1010, cme:0x1018)
           v28:Flonum = GuardType v12, Flonum
           v29:Flonum = GuardType v13, Flonum
-          v30:Float = FloatAdd v28, v29
+          v30:Flonum = FloatAdd v28, v29
           CheckInterrupts
           Return v30
         ");
@@ -15927,7 +15927,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Float@0x1008, *@0x1010, cme:0x1018)
           v28:Flonum = GuardType v12, Flonum
           v29:Flonum = GuardType v13, Flonum
-          v30:Float = FloatMul v28, v29
+          v30:Flonum = FloatMul v28, v29
           CheckInterrupts
           Return v30
         ");
@@ -15958,7 +15958,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Float@0x1008, -@0x1010, cme:0x1018)
           v28:Flonum = GuardType v12, Flonum
           v29:Flonum = GuardType v13, Flonum
-          v30:Float = FloatSub v28, v29
+          v30:Flonum = FloatSub v28, v29
           CheckInterrupts
           Return v30
         ");
@@ -15989,7 +15989,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Float@0x1008, /@0x1010, cme:0x1018)
           v28:Flonum = GuardType v12, Flonum
           v29:Flonum = GuardType v13, Flonum
-          v30:Float = FloatDiv v28, v29
+          v30:Flonum = FloatDiv v28, v29
           CheckInterrupts
           Return v30
         ");
@@ -16048,7 +16048,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Float@0x1008, *@0x1010, cme:0x1018)
           v28:Flonum = GuardType v12, Flonum
           v29:Fixnum = GuardType v13, Fixnum
-          v30:Float = FloatMul v28, v29
+          v30:Flonum = FloatMul v28, v29
           CheckInterrupts
           Return v30
         ");
