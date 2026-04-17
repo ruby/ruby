@@ -6549,7 +6549,9 @@ impl FrameState {
 
     /// Get a stack operand at idx
     fn stack_topn(&self, idx: usize) -> Result<InsnId, ParseError> {
-        let idx = self.stack.len() - idx - 1;
+        let Some(idx) = self.stack.len().checked_sub(idx + 1) else {
+            return Err(ParseError::StackUnderflow(self.clone()));
+        };
         self.stack.get(idx).ok_or_else(|| ParseError::StackUnderflow(self.clone())).copied()
     }
 
@@ -6717,10 +6719,14 @@ impl ProfileOracle {
         let iseq_insn_idx = state.insn_idx;
         let Some(operand_types) = self.payload.profile.get_operand_types(iseq_insn_idx) else { return };
         let entry = self.types.entry(iseq_insn_idx).or_default();
-        // operand_types is always going to be <= stack size (otherwise it would have an underflow
-        // at run-time) so use that to drive iteration.
+
+        // operand_types is generally <= stack size (otherwise it would underflow at run-time),
+        // but the inliner can reach this code by invoking iseq_to_hir on callee ISEQs whose
+        // profile was collected while the runtime stack held values our compile-time virtual
+        // stack does not yet carry. Skip any profile entries we cannot map without failing the
+        // whole compile.
         for (idx, insn_type_distribution) in operand_types.iter().rev().enumerate() {
-            let insn = state.stack_topn(idx + stack_offset).expect("Unexpected stack underflow in profiling");
+            let Ok(insn) = state.stack_topn(idx + stack_offset) else { break };
             entry.push((insn, TypeDistributionSummary::new(insn_type_distribution)))
         }
     }
