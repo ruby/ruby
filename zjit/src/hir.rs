@@ -3216,9 +3216,6 @@ impl Function {
             };
         }
 
-        reachable.insert(self.entries_block);
-        worklist_add!(self.entries_block);
-
         // Helper to propagate types along a branch edge and enqueue the target if anything changed
         macro_rules! enqueue {
             ($self:ident, $target:expr) => {
@@ -3240,44 +3237,75 @@ impl Function {
             };
         }
 
-        // Walk the graph, computing types until worklist is empty
-        while let Some(block) = worklist.pop_front() {
-            in_worklist.remove(block);
-            if !reachable.get(block) { continue; }
-            for insn_id in &self.blocks[block.0].insns {
-                let insn_id = self.union_find.borrow().find_const(*insn_id);
-                let insn_type = match &self.insns[insn_id.0] {
-                    &Insn::IfTrue { val, ref target } => {
-                        assert!(!self.type_of(val).bit_equal(types::Empty));
-                        if self.type_of(val).could_be(Type::from_cbool(true)) {
-                            enqueue!(self, target);
-                        }
-                        continue;
-                    }
-                    &Insn::IfFalse { val, ref target } => {
-                        assert!(!self.type_of(val).bit_equal(types::Empty));
-                        if self.type_of(val).could_be(Type::from_cbool(false)) {
-                            enqueue!(self, target);
-                        }
-                        continue;
-                    }
-                    &Insn::Jump(ref target) => {
-                        enqueue!(self, target);
-                        continue;
-                    }
-                    &Insn::Entries { ref targets } => {
-                        for target in targets {
-                            if reachable.insert(*target) {
-                                worklist_add!(*target);
+        reachable.insert(self.entries_block);
+        worklist_add!(self.entries_block);
+
+        // Outer fixpoint loop: re-process all reachable blocks as long as any
+        // instruction type changed in the previous pass. This is needed because
+        // an instruction in block B may use a value defined in block A via
+        // dominator-based SSA access (rather than a block parameter). When A's
+        // types widen, the per-block worklist only re-enqueues A's direct
+        // branch targets; it does not re-enqueue arbitrary blocks that happen
+        // to reference A's values. Re-seeding the worklist with every reachable
+        // block and iterating to a fixpoint guarantees every block sees fully-
+        // widened operand types.
+        let mut any_changed = true;
+        while any_changed {
+            any_changed = false;
+
+            // Walk the graph, computing types until worklist is empty
+            while let Some(block) = worklist.pop_front() {
+                in_worklist.remove(block);
+                if !reachable.get(block) { continue; }
+                for insn_id in &self.blocks[block.0].insns {
+                    let insn_id = self.union_find.borrow().find_const(*insn_id);
+                    let insn_type = match &self.insns[insn_id.0] {
+                        &Insn::IfTrue { val, ref target } => {
+                            assert!(!self.type_of(val).bit_equal(types::Empty));
+                            if self.type_of(val).could_be(Type::from_cbool(true)) {
+                                enqueue!(self, target);
                             }
+                            continue;
                         }
-                        continue;
+                        &Insn::IfFalse { val, ref target } => {
+                            assert!(!self.type_of(val).bit_equal(types::Empty));
+                            if self.type_of(val).could_be(Type::from_cbool(false)) {
+                                enqueue!(self, target);
+                            }
+                            continue;
+                        }
+                        &Insn::Jump(ref target) => {
+                            enqueue!(self, target);
+                            continue;
+                        }
+                        &Insn::Entries { ref targets } => {
+                            for target in targets {
+                                if reachable.insert(*target) {
+                                    worklist_add!(*target);
+                                }
+                            }
+                            continue;
+                        }
+                        insn if insn.has_output() => self.infer_type(insn_id),
+                        _ => continue,
+                    };
+                    if !self.type_of(insn_id).bit_equal(insn_type) {
+                        self.insn_types[insn_id.0] = insn_type;
+                        any_changed = true;
                     }
-                    insn if insn.has_output() => self.infer_type(insn_id),
-                    _ => continue,
-                };
-                if !self.type_of(insn_id).bit_equal(insn_type) {
-                    self.insn_types[insn_id.0] = insn_type;
+                }
+            }
+
+            // If any instruction's type changed in this pass, re-seed the
+            // worklist with every reachable block so the next outer iteration
+            // re-computes all non-param instruction types against widened
+            // operand types.
+            if any_changed {
+                for block_id in 0..self.blocks.len() {
+                    let block = BlockId(block_id);
+                    if reachable.get(block) {
+                        worklist_add!(block);
+                    }
                 }
             }
         }
@@ -9244,5 +9272,76 @@ mod infer_tests {
             function.infer_types();
             assert_bit_equal(function.type_of(param), types::TrueClass.union(types::FalseClass));
         });
+    }
+
+    #[test]
+    fn reprocesses_blocks_when_operand_type_widens_cross_block() {
+        // Construct a CFG where a block uses a value from a dominator block
+        // via dominator-based SSA rather than through its own block parameter:
+        //
+        //     entries → entry
+        //     entry:    IfTrue cond, merge(Qnil)      # contribution 1: NilClass
+        //               Jump detour1
+        //     detour1:  Jump detour2
+        //     detour2:  Jump merge(Qtrue)              # contribution 2: TrueClass
+        //     merge(arg):  Jump reader                 # propagates no args
+        //     reader:   v_is_nil = IsNil(arg)          # uses arg cross-block
+        //               Return v_is_nil
+        //
+        // The BFS pops blocks in FIFO order. After processing `entry`, the
+        // worklist contains `merge` (from the IfTrue edge; `arg = NilClass`)
+        // and `detour1`. FIFO processes `merge` next, which only sees the
+        // NilClass contribution and enqueues `reader` via its args-free
+        // Jump. Worklist order is then `[detour1, reader]`. `detour1` adds
+        // `detour2`, so the order becomes `[reader, detour2]`. `reader`
+        // is processed while `arg` is still NilClass, so `IsNil(arg)` is
+        // computed as `Const(cbool(true))` and cached in `insn_types`.
+        // Only then does `detour2` execute the Jump that widens `merge`'s
+        // arg to `NilClass ∪ TrueClass`, re-enqueueing `merge`. When
+        // `merge` is reprocessed, its only instruction after the param is
+        // `Jump reader` with no args; `reader`'s params do not change, so
+        // `reader` is never re-enqueued. Without an outer fixpoint
+        // iteration, `v_is_nil` retains its stale `cbool(true)` type even
+        // though `arg`'s type in `insn_types` has widened.
+        //
+        // The correct widened type for `IsNil(arg)` is `CBool`. This test
+        // verifies that `infer_types` iterates to a fixpoint so `v_is_nil`
+        // converges to the correct type.
+        let mut function = Function::new(std::ptr::null());
+        let entry = function.entry_block;
+        let detour1 = function.new_block(0);
+        let detour2 = function.new_block(0);
+        let merge = function.new_block(0);
+        let reader = function.new_block(0);
+
+        let arg = function.push_insn(merge, Insn::Param);
+
+        let cond = function.push_insn(entry, Insn::Const { val: Const::CBool(true) });
+        let v_nil = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        function.push_insn(entry, Insn::IfTrue {
+            val: cond,
+            target: BranchEdge { target: merge, args: vec![v_nil] },
+        });
+        function.push_insn(entry, Insn::Jump(BranchEdge { target: detour1, args: vec![] }));
+
+        function.push_insn(detour1, Insn::Jump(BranchEdge { target: detour2, args: vec![] }));
+
+        let v_true = function.push_insn(detour2, Insn::Const { val: Const::Value(Qtrue) });
+        function.push_insn(detour2, Insn::Jump(BranchEdge { target: merge, args: vec![v_true] }));
+
+        function.push_insn(merge, Insn::Jump(BranchEdge { target: reader, args: vec![] }));
+
+        let v_is_nil = function.push_insn(reader, Insn::IsNil { val: arg });
+        function.push_insn(reader, Insn::Return { val: v_is_nil });
+
+        function.seal_entries();
+        crate::cruby::with_rubyvm(|| {
+            function.infer_types();
+        });
+
+        // `arg` is the union of NilClass (from Qnil) and TrueClass (from
+        // Qtrue). Neither is a subtype of the other, so IsNil(arg) cannot
+        // be a known-constant cbool; the inferred type must be CBool.
+        assert_bit_equal(function.type_of(v_is_nil), types::CBool);
     }
 }
