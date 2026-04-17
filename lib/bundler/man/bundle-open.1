@@ -4,7 +4,7 @@
 .SH "NAME"
 \fBbundle\-open\fR \- Opens the source directory for a gem in your bundle
 .SH "SYNOPSIS"
-\fBbundle open\fR [GEM] [\-\-path=PATH]
+\fBbundle open\fR [GEM] [\-\-path=PATH] [\-\-exact\-match]
 .SH "DESCRIPTION"
 Opens the source directory of the provided GEM in your editor\.
 .P
@@ -29,4 +29,7 @@ Will open the README\.md file of the 'rack' gem source in your bundle\.
 .TP
 \fB\-\-path[=PATH]\fR
 Specify GEM source relative path to open\.
+.TP
+\fB\-\-exact\-match\fR
+Only match gems whose names exactly match the given name\.
 

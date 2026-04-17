@@ -122,6 +122,10 @@ module Bundler
       raise GemNotFound, gem_not_found_message(name, Bundler.definition.dependencies)
     end
 
+    def self.select_spec_with_match_type(name, options)
+      select_spec(name, options["exact-match"] ? nil : :regex_match)
+    end
+
     def self.default_gem_spec(name)
       gem_spec = Gem::Specification.find_all_by_name(name).last
       gem_spec if gem_spec&.default_gem?
