@@ -6948,7 +6948,9 @@ impl FrameState {
 
     /// Get a stack operand at idx
     fn stack_topn(&self, idx: usize) -> Result<InsnId, ParseError> {
-        let idx = self.stack.len() - idx - 1;
+        let Some(idx) = self.stack.len().checked_sub(idx + 1) else {
+            return Err(ParseError::StackUnderflow(self.clone()));
+        };
         self.stack.get(idx).ok_or_else(|| ParseError::StackUnderflow(self.clone())).copied()
     }
 
