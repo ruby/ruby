@@ -998,6 +998,32 @@ CODE
     assert_equal [65, 66, 67], res
   end
 
+  def test_getbyte
+    s = S('foo')
+    assert_equal(102, s.getbyte(0))
+    assert_equal(111, s.getbyte(2))
+    assert_equal(102, s.getbyte(-3))
+    assert_nil(s.getbyte(3))
+    assert_nil(s.getbyte(-4))
+    assert_nil(S('').getbyte(0))
+    assert_nil(S('').getbyte(-1))
+  end
+
+  def test_setbyte
+    s = S('xyzzy')
+    assert_equal(129, s.setbyte(2, 129))
+    assert_equal(S("xy\x81zy").force_encoding(s.encoding), s)
+
+    s = S('foo')
+    s.setbyte(-3, 98)
+    assert_equal(S('boo').force_encoding(s.encoding), s)
+
+    assert_raise(IndexError) { S('foo').setbyte(3, 0) }
+    assert_raise(IndexError) { S('foo').setbyte(-4, 0) }
+
+    assert_raise(FrozenError) { S('foo').freeze.setbyte(0, 0x61) }
+  end
+
   def test_each_codepoint
     # Single byte optimization
     assert_equal 65, S("ABC").each_codepoint.next
