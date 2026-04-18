@@ -233,5 +233,17 @@ RSpec.describe Bundler::CompactIndexClient::Parser do
       VERSIONS
       expect(parser.info("a")).to eq(a_result)
     end
+
+    it "handles lines without a checksum" do
+      compact_index.versions = <<~VERSIONS
+        created_at: 2024-05-01T00:00:04Z
+        ---
+        a 1.0.0,1.0.1,1.1.0 aaa111
+        b 2.0.0,2.0.0-java
+        c 3.0.0,3.0.3,3.3.3 ccc333
+      VERSIONS
+
+      expect(parser.info("a")).to eq(a_result)
+    end
   end
 end
