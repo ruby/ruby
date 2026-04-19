@@ -96,7 +96,7 @@ Pipe.new(NM + ARGV).each do |line|
     next
   when /\Aruby_static_id_/
     next unless so
-  when /\A(?:RUBY_|ruby_|rb_)/
+  when /\A(?:RUBY_|ruby_|rb_|rbimpl_)/
     next unless so and /_(threadptr|ec)_/ =~ n
   when *SYMBOLS_IN_EMPTYLIB
     next

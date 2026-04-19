@@ -1584,21 +1584,11 @@ reg_enc_error(VALUE re, VALUE str)
              rb_enc_inspect_name(rb_enc_get(str)));
 }
 
-static inline int
-str_coderange(VALUE str)
-{
-    int cr = ENC_CODERANGE(str);
-    if (cr == ENC_CODERANGE_UNKNOWN) {
-        cr = rb_enc_str_coderange(str);
-    }
-    return cr;
-}
-
 static rb_encoding*
 rb_reg_prepare_enc(VALUE re, VALUE str, int warn)
 {
     rb_encoding *enc = 0;
-    int cr = str_coderange(str);
+    int cr = rb_enc_str_coderange(str);
 
     if (cr == ENC_CODERANGE_BROKEN) {
         rb_raise(rb_eArgError,
@@ -3276,7 +3266,7 @@ rb_reg_preprocess_dregexp(VALUE ary, int options)
         src_enc = rb_enc_get(str);
         if (options & ARG_ENCODING_NONE &&
                 src_enc != ascii8bit) {
-            if (str_coderange(str) != ENC_CODERANGE_7BIT)
+            if (rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT)
                 rb_raise(rb_eRegexpError, "/.../n has a non escaped non ASCII character in non ASCII-8BIT script");
             else
                 src_enc = ascii8bit;
@@ -3397,7 +3387,7 @@ rb_reg_initialize_str(VALUE obj, VALUE str, int options, onig_errmsg_buffer err,
     if (options & ARG_ENCODING_NONE) {
         rb_encoding *ascii8bit = rb_ascii8bit_encoding();
         if (enc != ascii8bit) {
-            if (str_coderange(str) != ENC_CODERANGE_7BIT) {
+            if (rb_enc_str_coderange(str) != ENC_CODERANGE_7BIT) {
                 errcpy(err, "/.../n has a non escaped non ASCII character in non ASCII-8BIT script");
                 return -1;
             }

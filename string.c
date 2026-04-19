@@ -942,16 +942,25 @@ rb_enc_str_coderange_scan(VALUE str, rb_encoding *enc)
 }
 
 int
+rbimpl_enc_str_coderange_scan(VALUE str)
+{
+    int cr = enc_coderange_scan(str, get_encoding(str));
+    ENC_CODERANGE_SET(str, cr);
+    return cr;
+}
+
+#undef rb_enc_str_coderange
+int
 rb_enc_str_coderange(VALUE str)
 {
     int cr = ENC_CODERANGE(str);
 
     if (cr == ENC_CODERANGE_UNKNOWN) {
-        cr = enc_coderange_scan(str, get_encoding(str));
-        ENC_CODERANGE_SET(str, cr);
+        cr = rbimpl_enc_str_coderange_scan(str);
     }
     return cr;
 }
+#define rb_enc_str_coderange rb_enc_str_coderange_inline
 
 static inline bool
 rb_enc_str_asciicompat(VALUE str)
