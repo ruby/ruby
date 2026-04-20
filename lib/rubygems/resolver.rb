@@ -119,7 +119,8 @@ class Gem::Resolver
       end
     end
     @version_to_index = Hash.new {|h, pkg| h[pkg] = @sorted_versions[pkg].each_with_index.to_h }
-    @versions_for_cache = {}
+    @versions_for_cache = Hash.new {|h, pkg| h[pkg] = {} }
+    @spec_for_cache = Hash.new {|h, name| h[name] = build_spec_for_cache(name) }
   end
 
   ##
@@ -192,7 +193,7 @@ class Gem::Resolver
   end
 
   def versions_for(package, range = Gem::PubGrub::VersionRange.any)
-    @versions_for_cache[[package, range]] ||= begin
+    @versions_for_cache[package][range] ||= begin
       candidates = range.select_versions(@sorted_versions[package])
 
       if Gem::PubGrub::Package.root?(package) ||
@@ -357,18 +358,20 @@ class Gem::Resolver
   end
 
   def spec_for(name, version)
-    candidates = @all_specs[name].select {|s| s.version == version }
+    @spec_for_cache[name][version]
+  end
 
-    if candidates.length > 1
+  def build_spec_for_cache(name)
+    @all_specs[name].group_by(&:version).transform_values do |candidates|
+      next candidates.first if candidates.length == 1
+
       # Prefer already-installed specs to avoid unnecessary downloads
       installed = candidates.select {|s| s.is_a?(Gem::Resolver::InstalledSpecification) }
-      return installed.first if installed.length == 1
+      next installed.first if installed.length == 1
       candidates = installed if installed.any?
 
       # Among remaining candidates, prefer the most specific platform
       candidates.min_by {|s| Gem::Platform.platform_specificity_match(s.platform, Gem::Platform.local) }
-    else
-      candidates.first
     end
   end
 

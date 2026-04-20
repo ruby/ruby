@@ -7,7 +7,7 @@
 class Gem::Resolver::Strategy
   def initialize(source)
     @source = source
-    @package_priority_cache = {}
+    @package_priority_cache = Hash.new {|h, pkg| h[pkg] = {} }
 
     @version_indexes = Hash.new do |h, k|
       if Gem::PubGrub::Package.root?(k)
@@ -33,7 +33,7 @@ class Gem::Resolver::Strategy
 
   def next_term_to_try_from(unsatisfied)
     unsatisfied.min_by do |package, range|
-      @package_priority_cache[[package, range]] ||= begin
+      @package_priority_cache[package][range] ||= begin
         matching_versions = @source.versions_for(package, range)
         higher_versions = @source.versions_for(package, range.upper_invert)
 
