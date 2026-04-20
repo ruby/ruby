@@ -58,7 +58,7 @@ class TestGemResolverStrategy < Gem::TestCase
     pkg = make_package("a")
     source = StubSource.new("a" => [v("2.0"), v("1.0"), v("3.0")])
 
-    strategy = Gem::Resolver::Strategy.new(source, Gem::PubGrub::Package.root)
+    strategy = Gem::Resolver::Strategy.new(source)
     unsatisfied = { pkg => make_range_any }
 
     _package, version = strategy.next_package_and_version(unsatisfied)
@@ -77,7 +77,7 @@ class TestGemResolverStrategy < Gem::TestCase
       "b" => [v("1.0")]
     )
 
-    strategy = Gem::Resolver::Strategy.new(source, Gem::PubGrub::Package.root)
+    strategy = Gem::Resolver::Strategy.new(source)
 
     unsatisfied = {
       pkg_a => make_range_any,
@@ -104,7 +104,7 @@ class TestGemResolverStrategy < Gem::TestCase
       "b" => [v("3.0"), v("2.0"), v("1.0")]
     )
 
-    strategy = Gem::Resolver::Strategy.new(source, Gem::PubGrub::Package.root)
+    strategy = Gem::Resolver::Strategy.new(source)
 
     unsatisfied = {
       pkg_a => range,
@@ -120,7 +120,7 @@ class TestGemResolverStrategy < Gem::TestCase
     pkg = make_package("a")
     source = StubSource.new("a" => [v("2.0"), v("1.0")])
 
-    strategy = Gem::Resolver::Strategy.new(source, Gem::PubGrub::Package.root)
+    strategy = Gem::Resolver::Strategy.new(source)
 
     range = make_range_any
     unsatisfied = { pkg => range }
@@ -143,7 +143,7 @@ class TestGemResolverStrategy < Gem::TestCase
     pkg = make_package("a")
     source = StubSource.new("a" => [v("3.0"), v("2.0"), v("1.0")])
 
-    strategy = Gem::Resolver::Strategy.new(source, Gem::PubGrub::Package.root)
+    strategy = Gem::Resolver::Strategy.new(source)
 
     range_any = make_range_any
     range_gte = make_range_gte(v("2.0"))

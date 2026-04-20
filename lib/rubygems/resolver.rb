@@ -109,7 +109,7 @@ class Gem::Resolver
     @all_specs = Hash.new {|h, name| h[name] = filter_specs(@unfiltered_specs[name]) }
     @all_versions = Hash.new {|h, pkg| h[pkg] = @all_specs[pkg.to_s].map(&:version).uniq.sort }
     @sorted_versions = Hash.new do |h, pkg|
-      h[pkg] = Gem::PubGrub::Package.root?(pkg) ? [@root_version] : filter_versions(pkg)
+      h[pkg] = Gem::PubGrub::Package.root?(pkg) ? [@root_version] : @all_versions[pkg]
     end
     @cached_dependencies = Hash.new do |h, pkg|
       h[pkg] = if Gem::PubGrub::Package.root?(pkg)
@@ -133,14 +133,8 @@ class Gem::Resolver
       all = @set.find_all(dep_request)
       matching = select_local_platforms(all)
 
-      if matching.empty?
-        exc = Gem::UnsatisfiableDependencyError.new(dep_request, all)
-        exc.errors = @set.errors
-        raise exc
-      end
+      next unless matching.empty?
 
-      specs_matching_requirement = matching.select {|s| dep.requirement.satisfied_by?(s.version) }
-      next unless specs_matching_requirement.empty?
       exc = Gem::UnsatisfiableDependencyError.new(dep_request, all)
       exc.errors = @set.errors
       raise exc
@@ -149,7 +143,7 @@ class Gem::Resolver
     solver = Gem::PubGrub::VersionSolver.new(
       source: self,
       root: @root_package,
-      strategy: Gem::Resolver::Strategy.new(self, @root_package),
+      strategy: Gem::Resolver::Strategy.new(self),
       logger: make_logger
     )
     result = solver.solve
@@ -198,7 +192,21 @@ class Gem::Resolver
   end
 
   def versions_for(package, range = Gem::PubGrub::VersionRange.any)
-    @versions_for_cache[[package, range]] ||= range.select_versions(@sorted_versions[package])
+    @versions_for_cache[[package, range]] ||= begin
+      candidates = range.select_versions(@sorted_versions[package])
+
+      if Gem::PubGrub::Package.root?(package) ||
+         (@set.respond_to?(:prerelease) && @set.prerelease) ||
+         range_admits_prerelease?(range)
+        candidates
+      elsif @all_versions[package].any? {|v| !v.prerelease? }
+        candidates.reject(&:prerelease?)
+      else
+        # Only prereleases exist for this gem; fall back to them so
+        # dependencies like `>= 1.0` can still be satisfied.
+        candidates
+      end
+    end
   end
 
   def no_versions_incompatibility_for(_package, unsatisfied_term)
@@ -307,9 +315,6 @@ class Gem::Resolver
     @packages[name] ||= Gem::PubGrub::Package.new(name)
   end
 
-  # Filter versions to exclude prereleases unless prerelease is enabled.
-  # Both all_versions_for and versions_for use this filtered set to ensure
-  # PubGrub's constraint propagation and version selection are consistent.
   def root_dependencies
     deps = {}
     @needed.each do |dep|
@@ -319,22 +324,14 @@ class Gem::Resolver
     deps
   end
 
-  def filter_versions(package)
-    all_versions = @all_versions[package]
-    if (@set.respond_to?(:prerelease) && @set.prerelease) || root_requires_prerelease?(package)
-      all_versions
-    else
-      stable = all_versions.reject(&:prerelease?)
-      stable.empty? ? all_versions : stable
+  # Only the min bound is inspected: `~>` synthesises a max like `X.A`
+  # whose suffix looks prerelease to Gem::Version but is not the user's
+  # intent, so checking max would mis-admit prereleases for every `~>`.
+  def range_admits_prerelease?(range)
+    range.ranges.any? do |r|
+      next false if r.empty?
+      r.min&.prerelease?
     end
-  end
-
-  # Root deps with an explicit prerelease requirement (e.g. `= 4.1.0.dev`)
-  # must keep their prerelease versions in the filtered set; otherwise
-  # PubGrub cannot match them even though `@set.find_all` returned them.
-  def root_requires_prerelease?(package)
-    name = package.to_s
-    @needed.any? {|dep| dep.name == name && dep.requirement.prerelease? }
   end
 
   def find_unfiltered_specs_for(name)
@@ -413,9 +410,17 @@ class Gem::Resolver
 
     filtered = @all_specs[name]
     pkg = package_for(name)
-    has_prerelease_filtering = @all_versions[pkg].length > @sorted_versions[pkg].length
 
-    return if filtered.length == unfiltered.length && !has_prerelease_filtering
+    # A prerelease hint applies when the source would strip prereleases for
+    # this constraint (global prerelease flag off and the constraint's range
+    # doesn't itself reach into prerelease territory) AND a prerelease of
+    # the gem exists somewhere.
+    prerelease_gated = !(@set.respond_to?(:prerelease) && @set.prerelease) &&
+                       !range_admits_prerelease?(constraint.range)
+    has_prerelease_candidate = prerelease_gated &&
+                               @all_versions[pkg].any?(&:prerelease?)
+
+    return if filtered.length == unfiltered.length && !has_prerelease_candidate
 
     hints = []
 
@@ -450,9 +455,8 @@ class Gem::Resolver
     end
 
     # Check for specs filtered by prerelease status
-    unless @set.respond_to?(:prerelease) && @set.prerelease
-      pkg = package_for(name)
-      prerelease_versions = @all_versions[pkg].select(&:prerelease?) - @sorted_versions[pkg]
+    if prerelease_gated
+      prerelease_versions = @all_versions[pkg].select(&:prerelease?)
       if prerelease_versions.any?
         versions = prerelease_versions.sort.reverse.first(3) # limit to avoid cluttering error output
         hints << "#{name} #{versions.join(", ")} are pre-release versions. Use --prerelease to allow pre-release gems."

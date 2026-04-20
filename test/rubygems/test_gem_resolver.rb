@@ -844,6 +844,27 @@ class TestGemResolver < Gem::TestCase
     assert_resolves_to [a_pre], r
   end
 
+  def test_resolve_transitive_prerelease_required_by_exact_requirement
+    # A transitive dep with an exact prerelease version must resolve to that
+    # version even when stable versions of the same gem are in the set.
+    # The gate on prereleases lives in versions_for and is per-constraint:
+    # `= 2.0.pre` carries a prerelease bound, so prereleases are admitted for
+    # this range even though the global prerelease flag is off.
+    a = util_spec "a", "1.0" do |s|
+      s.add_dependency "b", "= 2.0.pre"
+    end
+
+    b_stable = util_spec "b", "1.0"
+    b_pre = util_spec "b", "2.0.pre"
+
+    s = set(a, b_stable, b_pre)
+
+    ad = make_dep "a"
+    r = Gem::Resolver.new([ad], s)
+
+    assert_resolves_to [a, b_pre], r
+  end
+
   def test_error_includes_platform_hint_when_specs_exist_for_other_platforms
     a = util_spec "a", "1.0" do |s|
       s.add_dependency "b", ">= 1.0"

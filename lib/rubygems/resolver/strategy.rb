@@ -5,7 +5,7 @@
 # calls during the solver's package selection loop.
 
 class Gem::Resolver::Strategy
-  def initialize(source, root_package)
+  def initialize(source)
     @source = source
     @package_priority_cache = {}
 
