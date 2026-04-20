@@ -4,8 +4,8 @@ require_relative "helper"
 
 class TestGemResolverStrategy < Gem::TestCase
   # Minimal source that implements the two methods Strategy calls:
-  #   all_versions_for(package) — returns versions in preference order
-  #   versions_for(package, range) — returns versions matching a range
+  #   all_versions_for(package) - returns versions in preference order
+  #   versions_for(package, range) - returns versions matching a range
   #
   # Tracks call counts so we can assert on caching behavior.
   class StubSource
@@ -53,7 +53,7 @@ class TestGemResolverStrategy < Gem::TestCase
   end
 
   def test_most_preferred_version_respects_all_versions_for_ordering
-    # all_versions_for returns [2.0, 1.0, 3.0] — so 2.0 is most preferred
+    # all_versions_for returns [2.0, 1.0, 3.0] - so 2.0 is most preferred
     # even though 3.0 is numerically highest.
     pkg = make_package("a")
     source = StubSource.new("a" => [v("2.0"), v("1.0"), v("3.0")])
@@ -152,7 +152,7 @@ class TestGemResolverStrategy < Gem::TestCase
     strategy.next_package_and_version({ pkg => range_any })
     calls_after_first = source.versions_for_calls
 
-    # Second call with different range — cache miss, so versions_for is called again
+    # Second call with different range - cache miss, so versions_for is called again
     strategy.next_package_and_version({ pkg => range_gte })
     calls_after_second = source.versions_for_calls
 

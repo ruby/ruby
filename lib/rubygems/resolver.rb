@@ -321,12 +321,20 @@ class Gem::Resolver
 
   def filter_versions(package)
     all_versions = @all_versions[package]
-    if @set.respond_to?(:prerelease) && @set.prerelease
+    if (@set.respond_to?(:prerelease) && @set.prerelease) || root_requires_prerelease?(package)
       all_versions
     else
       stable = all_versions.reject(&:prerelease?)
       stable.empty? ? all_versions : stable
     end
+  end
+
+  # Root deps with an explicit prerelease requirement (e.g. `= 4.1.0.dev`)
+  # must keep their prerelease versions in the filtered set; otherwise
+  # PubGrub cannot match them even though `@set.find_all` returned them.
+  def root_requires_prerelease?(package)
+    name = package.to_s
+    @needed.any? {|dep| dep.name == name && dep.requirement.prerelease? }
   end
 
   def find_unfiltered_specs_for(name)
@@ -385,7 +393,7 @@ class Gem::Resolver
 
       dep_package = package_for(d.name)
 
-      # In force mode, skip deps that can't be satisfied — either no
+      # In force mode, skip deps that can't be satisfied - either no
       # specs at all, or no specs matching the version requirement.
       if @soft_missing
         dep_specs = @all_specs[d.name]
@@ -460,8 +468,8 @@ class Gem::Resolver
 
       [cause.conflict, cause.other].each do |incompat|
         if incompat.cause.is_a?(Gem::PubGrub::Incompatibility::NoVersions) &&
-            incompat.respond_to?(:extended_explanation) &&
-            incompat.extended_explanation
+           incompat.respond_to?(:extended_explanation) &&
+           incompat.extended_explanation
           return incompat.extended_explanation
         end
       end

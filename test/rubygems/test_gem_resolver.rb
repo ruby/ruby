@@ -776,7 +776,7 @@ class TestGemResolver < Gem::TestCase
   end
 
   def test_resolve_prerelease_not_considered_when_stable_exists
-    # a-1.0 depends on b ~> 2.0 — only b-2.0.pre satisfies that, but
+    # a-1.0 depends on b ~> 2.0 - only b-2.0.pre satisfies that, but
     # b also has a stable version (1.0), so prereleases are filtered out.
     # The resolver must fail, not silently use b-2.0.pre during propagation.
     a_stable = util_spec "a", "1.0" do |s|
@@ -826,6 +826,22 @@ class TestGemResolver < Gem::TestCase
     r = Gem::Resolver.new([ad], s)
 
     assert_resolves_to [a_stable, b_pre], r
+  end
+
+  def test_resolve_prerelease_required_by_exact_requirement
+    # A root dep with an exact prerelease version must resolve to that
+    # version even when stable versions of the same gem are in the set.
+    # Gem.finish_resolve hits this: it imports loaded_specs as exact-version
+    # deps, so the currently-activated prerelease bundler becomes a root dep.
+    a_stable = util_spec "a", "1.0"
+    a_pre = util_spec "a", "2.0.pre"
+
+    s = set(a_stable, a_pre)
+
+    ad = make_dep "a", "= 2.0.pre"
+    r = Gem::Resolver.new([ad], s)
+
+    assert_resolves_to [a_pre], r
   end
 
   def test_error_includes_platform_hint_when_specs_exist_for_other_platforms
@@ -954,5 +970,4 @@ class TestGemResolver < Gem::TestCase
     # With soft_missing (--force), the dep should be skipped.
     assert_resolves_to [a], r
   end
-
 end
