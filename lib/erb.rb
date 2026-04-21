@@ -463,6 +463,9 @@ class ERB
   #   erb.def_method(MyClass, 'render(arg1, arg2)', filename)
   #   print MyClass.new.render('foo', 123)
   def def_method(mod, methodname, fname='(ERB)')
+    unless @_init.equal?(self.class.singleton_class)
+      raise ArgumentError, "not initialized"
+    end
     src = self.src.sub(/^(?!#|$)/) {"def #{methodname}\n"} << "\nend\n"
     mod.module_eval do
       eval(src, binding, fname, -1)

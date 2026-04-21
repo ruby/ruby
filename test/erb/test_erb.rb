@@ -714,6 +714,33 @@ EOS
     assert_raise(ArgumentError) {erb.result}
   end
 
+  def test_prohibited_marshal_load_def_method
+    erb = ERB.allocate
+    erb.instance_variable_set(:@src, "")
+    erb.instance_variable_set(:@lineno, 1)
+    erb.instance_variable_set(:@_init, true)
+    erb = Marshal.load(Marshal.dump(erb))
+    assert_raise(ArgumentError) {erb.def_method(Class.new, 'render')}
+  end
+
+  def test_prohibited_marshal_load_def_module
+    erb = ERB.allocate
+    erb.instance_variable_set(:@src, "")
+    erb.instance_variable_set(:@lineno, 1)
+    erb.instance_variable_set(:@_init, true)
+    erb = Marshal.load(Marshal.dump(erb))
+    assert_raise(ArgumentError) {erb.def_module}
+  end
+
+  def test_prohibited_marshal_load_def_class
+    erb = ERB.allocate
+    erb.instance_variable_set(:@src, "")
+    erb.instance_variable_set(:@lineno, 1)
+    erb.instance_variable_set(:@_init, true)
+    erb = Marshal.load(Marshal.dump(erb))
+    assert_raise(ArgumentError) {erb.def_class}
+  end
+
   def test_multi_line_comment_lineno
     erb = ERB.new(<<~EOS)
       <%= __LINE__ %>
