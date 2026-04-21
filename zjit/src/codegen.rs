@@ -52,9 +52,6 @@ const JIT_RETURN_POISON: Option<usize> = if cfg!(feature = "runtime_checks") {
 
 /// Ephemeral code generation state
 struct JITState {
-    /// Instruction sequence for the method being compiled
-    iseq: IseqPtr,
-
     /// ISEQ version that is being compiled, which will be used by PatchPoint
     version: IseqVersionRef,
 
@@ -73,9 +70,8 @@ struct JITState {
 
 impl JITState {
     /// Create a new JITState instance
-    fn new(iseq: IseqPtr, version: IseqVersionRef, num_insns: usize, num_blocks: usize) -> Self {
+    fn new(version: IseqVersionRef, num_insns: usize, num_blocks: usize) -> Self {
         JITState {
-            iseq,
             version,
             opnds: vec![None; num_insns],
             labels: vec![None; num_blocks],
@@ -379,7 +375,7 @@ fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, mut version: IseqVersionRef,
 fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, function: &Function) -> Result<(IseqCodePtrs, Vec<CodePtr>, Vec<IseqCallRef>), CompileError> {
     let (mut jit, asm) = trace_compile_phase("codegen", || {
         let num_spilled_params = max_num_params(function).saturating_sub(ALLOC_REGS.len());
-        let mut jit = JITState::new(iseq, version, function.num_insns(), function.num_blocks());
+        let mut jit = JITState::new(version, function.num_insns(), function.num_blocks());
         let mut asm = Assembler::new_with_stack_slots(num_spilled_params);
 
         // Mapping from HIR block IDs to LIR block IDs.

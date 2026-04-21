@@ -23,7 +23,6 @@ fn test_breakpoint_hir_codegen() {
     let breakpoint = function.push_insn(function.entries_block, Insn::BreakPoint);
 
     let mut jit = JITState::new(
-        iseq,
         IseqVersion::new(iseq),
         function.num_insns(),
         function.num_blocks(),
