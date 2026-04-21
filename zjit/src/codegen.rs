@@ -2854,7 +2854,7 @@ fn gen_spill_locals(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
     gen_incr_counter(asm, Counter::vm_write_locals_count);
     asm_comment!(asm, "spill locals");
     for (idx, &insn_id) in state.locals().enumerate() {
-        asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(jit.iseq, idx) - 1) * SIZEOF_VALUE_I32), jit.get_opnd(insn_id));
+        asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(state.iseq, idx) - 1) * SIZEOF_VALUE_I32), jit.get_opnd(insn_id));
     }
 }
 
@@ -3028,7 +3028,7 @@ fn side_exit(jit: &JITState, state: &FrameState, reason: SideExitReason) -> Targ
 fn side_exit_with_recompile(jit: &JITState, state: &FrameState, reason: SideExitReason, recompile: Option<Recompile>) -> Target {
     let mut exit = build_side_exit(jit, state);
     exit.recompile = recompile.map(|strategy| SideExitRecompile {
-        iseq: Opnd::Value(VALUE::from(jit.iseq)),
+        iseq: Opnd::Value(VALUE::from(state.iseq)),
         insn_idx: state.insn_idx() as u32,
         strategy,
     });
@@ -3051,7 +3051,7 @@ fn build_side_exit(jit: &JITState, state: &FrameState) -> SideExit {
         pc: Opnd::const_ptr(state.pc),
         stack,
         locals,
-        iseq: jit.iseq,
+        iseq: state.iseq,
         recompile: None,
     }
 }
