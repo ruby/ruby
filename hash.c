@@ -6487,7 +6487,7 @@ env_rassoc(VALUE dmy, VALUE obj)
 
         while (*env) {
             const char *p = *env;
-            char *s = strchr(p, '=');
+            const char *s = strchr(p, '=');
             if (s++) {
                 long len = strlen(s);
                 if (RSTRING_LEN(obj) == len && strncmp(s, RSTRING_PTR(obj), len) == 0) {
@@ -6707,7 +6707,7 @@ env_shift(VALUE _)
         char **env = GET_ENVIRON(environ);
         if (*env) {
             const char *p = *env;
-            char *s = strchr(p, '=');
+            const char *s = strchr(p, '=');
             if (s) {
                 key = env_str_new(p, s-p, enc);
                 VALUE val = env_str_new2(getenv(RSTRING_PTR(key)), enc);

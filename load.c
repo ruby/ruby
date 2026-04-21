@@ -1712,7 +1712,7 @@ rb_ext_resolve_symbol(const char* fname, const char* symbol)
     VALUE handle;
     VALUE resolved;
     VALUE path;
-    char *ext;
+    const char *ext;
     VALUE fname_str = rb_str_new_cstr(fname);
     const rb_box_t *box = rb_loading_box();
 
