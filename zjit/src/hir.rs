@@ -883,7 +883,9 @@ pub enum Insn {
     UnboxFixnum { val: InsnId },
     FixnumAref { recv: InsnId, index: InsnId },
     // TODO(max): In iseq body types that are not ISEQ_TYPE_METHOD, rewrite to Constant false.
-    Defined { op_type: usize, obj: VALUE, pushval: VALUE, v: InsnId, state: InsnId },
+    // `lep_level` is the lexical distance from this insn's iseq up to its local_iseq, used only
+    // for the DEFINED_YIELD op_type to materialize the local EP inline. Zero for other op_types.
+    Defined { op_type: usize, obj: VALUE, pushval: VALUE, v: InsnId, lep_level: u32, state: InsnId },
     GetConstant { klass: InsnId, id: ID, allow_nil: InsnId, state: InsnId },
     GetConstantPath { ic: *const iseq_inline_constant_cache, state: InsnId },
     /// Kernel#block_given? but without pushing a frame. Similar to [`Insn::Defined`] with
@@ -2982,7 +2984,7 @@ impl Function {
                 cfunc, recv: find!(recv), args: find_vec!(args), cme, name, state, return_type, elidable, block
             },
             &CheckMatch { target, pattern, flag, state } => CheckMatch { target: find!(target), pattern: find!(pattern), flag, state: find!(state) },
-            &Defined { op_type, obj, pushval, v, state } => Defined { op_type, obj, pushval, v: find!(v), state: find!(state) },
+            &Defined { op_type, obj, pushval, v, lep_level, state } => Defined { op_type, obj, pushval, v: find!(v), lep_level, state: find!(state) },
             &DefinedIvar { self_val, pushval, id, state } => DefinedIvar { self_val: find!(self_val), pushval, id, state },
             &GetConstant { klass, id, allow_nil, state } => GetConstant { klass: find!(klass), id, allow_nil: find!(allow_nil), state },
             &NewArray { ref elements, state } => NewArray { elements: find_vec!(elements), state: find!(state) },
@@ -7174,7 +7176,18 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         // Similar to gen_is_block_given
                         Insn::Const { val: Const::Value(Qnil) }
                     } else {
-                        Insn::Defined { op_type, obj, pushval, v, state: exit_id }
+                        // For DEFINED_YIELD, codegen materializes the local EP inline (similar to
+                        // gen_is_block_given) to check for a block handler. Precompute the lexical
+                        // distance from this iseq up to local_iseq so codegen does not have to
+                        // walk the parent chain. Any DEFINED_YIELD reaching this branch has a
+                        // method local_iseq by construction — the above branch has already
+                        // diverted the non-method case to Qnil.
+                        let lep_level = if op_type == DEFINED_YIELD as usize {
+                            get_lvar_level(iseq)
+                        } else {
+                            0
+                        };
+                        Insn::Defined { op_type, obj, pushval, v, lep_level, state: exit_id }
                     };
                     state.stack_push(fun.push_insn(block, insn));
                 }

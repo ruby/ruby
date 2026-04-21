@@ -748,7 +748,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::SideExit { state, reason, recompile } => no_output!(gen_side_exit(jit, asm, reason, *recompile, &function.frame_state(*state))),
         Insn::PutSpecialObject { value_type } => gen_putspecialobject(asm, *value_type),
         Insn::AnyToString { val, str, state } => gen_anytostring(asm, opnd!(val), opnd!(str), &function.frame_state(*state)),
-        Insn::Defined { op_type, obj, pushval, v, state } => gen_defined(jit, asm, *op_type, *obj, *pushval, opnd!(v), &function.frame_state(*state)),
+        Insn::Defined { op_type, obj, pushval, v, lep_level, state } => gen_defined(jit, asm, *op_type, *obj, *pushval, opnd!(v), *lep_level, &function.frame_state(*state)),
         Insn::CheckMatch { target, pattern, flag, state } => gen_checkmatch(jit, asm, opnd!(target), opnd!(pattern), *flag, &function.frame_state(*state)),
         Insn::GetSpecialSymbol { symbol_type, state: _ } => gen_getspecial_symbol(asm, *symbol_type),
         Insn::GetSpecialNumber { nth, state } => gen_getspecial_number(asm, *nth, &function.frame_state(*state)),
@@ -794,13 +794,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
     Ok(())
 }
 
-/// Gets the EP of the ISeq of the containing method, or "local level".
-/// Equivalent of GET_LEP() macro.
-fn gen_get_lep(jit: &JITState, asm: &mut Assembler) -> Opnd {
-    let level = get_lvar_level(jit.iseq);
-    gen_get_ep(asm, level)
-}
-
 // Get EP at `level` from CFP
 fn gen_get_ep(asm: &mut Assembler, level: u32) -> Opnd {
     // Load environment pointer EP from CFP into a register
@@ -835,18 +828,12 @@ fn gen_objtostring(jit: &mut JITState, asm: &mut Assembler, val: Opnd, cd: *cons
     ret
 }
 
-fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, obj: VALUE, pushval: VALUE, tested_value: Opnd, state: &FrameState) -> Opnd {
+fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, obj: VALUE, pushval: VALUE, tested_value: Opnd, lep_level: u32, state: &FrameState) -> Opnd {
     match op_type as defined_type {
         DEFINED_YIELD => {
-            // `yield` goes to the block handler stowed in the "local" iseq which is
-            // the current iseq or a parent. Only the "method" iseq type can be passed a
-            // block handler. (e.g. `yield` in the top level script is a syntax error.)
-            //
-            // Similar to gen_is_block_given
-            let local_iseq = unsafe { rb_get_iseq_body_local_iseq(jit.iseq) };
-            assert_eq!(unsafe { rb_get_iseq_body_type(local_iseq) }, ISEQ_TYPE_METHOD,
-                       "defined?(yield) in non-method iseq should be handled by HIR construction");
-            let lep = gen_get_lep(jit, asm);
+            // `lep_level` was precomputed at HIR construction so we can materialize the local EP
+            // inline without walking the parent iseq chain here.
+            let lep = gen_get_ep(asm, lep_level);
             let block_handler = asm.load(Opnd::mem(64, lep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL));
             let pushval = asm.load(pushval.into());
             asm.cmp(block_handler, VM_BLOCK_HANDLER_NONE.into());
