@@ -463,6 +463,17 @@ make_counters! {
     invokeblock_handler_megamorphic,
     invokeblock_handler_no_profiles,
 
+    // HIR-level method inliner (inline_methods) counters. These are incremented
+    // at compile time, once per SendDirect the inliner considers.
+    inline_method_count,
+    inline_reject_too_large,
+    inline_reject_complex_params,
+    inline_reject_ep_escapes,
+    inline_reject_invokeblock,
+    inline_reject_blockparam,
+    inline_reject_compile_failure,
+    inline_reject_multiple_returns,
+
     getblockparamproxy_handler_iseq,
     getblockparamproxy_handler_ifunc,
     getblockparamproxy_handler_symbol,

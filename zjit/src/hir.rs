@@ -18,7 +18,7 @@ use crate::hir_type::{Type, types};
 use crate::hir_effect::{Effect, abstract_heaps, effects};
 use crate::bitset::BitSet;
 use crate::profile::{TypeDistributionSummary, ProfiledType};
-use crate::stats::Counter;
+use crate::stats::{Counter, incr_counter};
 use SendFallbackReason::*;
 
 pub(crate) mod tests;
@@ -4333,6 +4333,7 @@ impl Function {
         // Check callee bytecode size against threshold.
         let callee_size = unsafe { get_iseq_encoded_size(callee_iseq) } as usize;
         if callee_size > threshold {
+            incr_counter!(inline_reject_too_large);
             return false;
         }
 
@@ -4348,12 +4349,14 @@ impl Function {
             || params.flags.forwardable() != 0
             || params.flags.has_kwrest() != 0
         {
+            incr_counter!(inline_reject_complex_params);
             return false;
         }
 
         // Reject callees whose environment pointer can escape (e.g., via binding).
         // TODO (nirvdrum 2026-04-15) The interaction between inlined frames and EP escape hasn't been verified.
         if iseq_escapes_ep(callee_iseq) || crate::invariants::iseq_escapes_ep(callee_iseq) {
+            incr_counter!(inline_reject_ep_escapes);
             return false;
         }
 
@@ -4371,8 +4374,25 @@ impl Function {
                 || opcode == YARVINSN_trace_invokeblock
                 || opcode == YARVINSN_zjit_invokeblock
             {
+                incr_counter!(inline_reject_invokeblock);
                 return false;
             }
+
+            // Reject callees that use block params. The codegen for getblockparam
+            // and getblockparamproxy uses jit.iseq to compute the block param level,
+            // which would be wrong for inlined code. This scan runs before
+            // `rb_zjit_profile_disable`, so check the trace_ and zjit_ variants
+            // alongside the bare opcodes.
+            if opcode == YARVINSN_getblockparam
+                || opcode == YARVINSN_trace_getblockparam
+                || opcode == YARVINSN_getblockparamproxy
+                || opcode == YARVINSN_trace_getblockparamproxy
+                || opcode == YARVINSN_zjit_getblockparamproxy
+            {
+                incr_counter!(inline_reject_blockparam);
+                return false;
+            }
+
             let insn_len = insn_len(opcode as usize);
             pc_idx += insn_len;
         }
@@ -4437,6 +4457,7 @@ impl Function {
                 let callee = match iseq_to_hir(iseq) {
                     Ok(callee) => callee,
                     Err(_) => {
+                        incr_counter!(inline_reject_compile_failure);
                         self.push_insn_id(block, insn_id);
                         continue;
                     }
@@ -4455,11 +4476,13 @@ impl Function {
                 }
 
                 if return_insns.len() != 1 {
+                    incr_counter!(inline_reject_multiple_returns);
                     self.push_insn_id(block, insn_id);
                     continue;
                 }
 
                 // If we've made it this far, we've determined we're going to inline the method.
+                incr_counter!(inline_method_count);
                 did_inline = true;
 
                 // Capture the caller's FrameState at the call site for use in the
