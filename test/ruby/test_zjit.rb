@@ -408,6 +408,49 @@ class TestZJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_inlined_method_survives_compact_between_calls
+    omit("GC.compact support is required for this test") unless GC.respond_to?(:compact)
+    assert_runs '2', <<~RUBY, extra_args: ['--zjit-inline-threshold=30']
+      def callee(x) = x + 1
+      def test(n) = callee(n)
+
+      # Warm up so callee gets inlined into test.
+      test(1)
+      test(1)
+
+      # Compaction moves Ruby objects, including any VALUEs the inlined body
+      # references through Const::Value (e.g. the Integer literal 1 in callee).
+      # The payload's GC-offset tracking must update those references in place.
+      GC.compact
+
+      test(1)
+    RUBY
+  end
+
+  def test_inlined_method_survives_compact_during_call
+    omit("GC.compact support is required for this test") unless GC.respond_to?(:compact)
+    assert_runs '2', <<~RUBY, extra_args: ['--zjit-inline-threshold=30']
+      def trigger_compact = GC.compact
+      def callee(x)
+        trigger_compact
+        x + 1
+      end
+      def test(n) = callee(n)
+
+      # Warm up so callee gets inlined into test.
+      test(1)
+      test(1)
+
+      # trigger_compact fires compaction while the inlined body is live on the
+      # stack. The JITFrame attached to cfp->jit_return for the inlined frame
+      # holds the callee's ISEQ pointer, which compaction will move. Without
+      # the rb_zjit_jit_frame_update_references hook, the on-stack JITFrame
+      # would point at a moved ISEQ and subsequent frame inspection (backtrace,
+      # materialization on side exit) would crash.
+      test(1)
+    RUBY
+  end
+
   def test_exit_tracing
     # Smoke test: --zjit-trace-exits writes a Fuchsia trace (.fxt) file to /tmp
     assert_compiles('true', <<~RUBY, extra_args: ['--zjit-trace-exits'])
