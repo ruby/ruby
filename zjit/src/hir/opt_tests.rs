@@ -17684,12 +17684,10 @@ mod hir_opt_tests {
         result
     }
 
-    // The callee's `x + x` cannot be specialized to FixnumAdd because the caller's
-    // ProfileOracle does not yet have the callee's profile entries. The Send remains
-    // unoptimized with a "no profile data available" fallback reason. The follow-up
-    // change that merges callee profile entries into the caller's oracle removes this gap.
     #[test]
     fn test_inline_method_with_send() {
+        // The callee-internal `x + x` Send gets specialized to FixnumAdd because the callee's
+        // profile entries are merged into the caller's ProfileOracle during inlining.
         eval("
             def double(x)
               x + x
@@ -17717,11 +17715,13 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Object@0x1008, double@0x1010, cme:0x1018)
           v23:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)]
           PushLightweightFrame v23 (0x1040), v10
-          v42:BasicObject = Send v10, :+, v10 # SendFallbackReason: SendWithoutBlock: no profile data available
+          PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
+          v54:Fixnum = GuardType v10, Fixnum
+          v56:Fixnum = FixnumAdd v54, v54
           CheckInterrupts
           PopLightweightFrame
           CheckInterrupts
-          Return v42
+          Return v56
         ");
     }
 
