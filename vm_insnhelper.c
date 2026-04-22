@@ -1618,11 +1618,9 @@ update_classvariable_cache(const rb_iseq_t *iseq, VALUE klass, ID id, const rb_c
 
     ent->global_cvar_state = GET_GLOBAL_CVAR_STATE();
     RB_OBJ_WRITE((VALUE)ent, &ent->cref, cref);
-    ic->entry = ent;
+    RB_OBJ_WRITE(iseq, &ic->entry, ent);
 
     RUBY_ASSERT(BUILTIN_TYPE((VALUE)cref) == T_IMEMO && IMEMO_TYPE_P(cref, imemo_cref));
-    RB_OBJ_WRITTEN(iseq, Qundef, ent->class_value);
-    RB_OBJ_WRITTEN(ent->class_value, Qundef, ent->cref);
 
     return cvar_value;
 }
