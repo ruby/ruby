@@ -3323,7 +3323,7 @@ impl Function {
     /// Return the profiled type of the HIR instruction at the given ISEQ instruction
     /// index, if it is known to be monomorphic or skewed polymorphic. This historical type
     /// record is not a guarantee and must be checked with a GuardType or similar.
-    fn profiled_type_of_at(&self, insn: InsnId, iseq_insn_idx: usize) -> Option<ProfiledType> {
+    fn profiled_type_of_at(&self, insn: InsnId, iseq_insn_idx: YarvInsnIdx) -> Option<ProfiledType> {
         match self.resolve_receiver_type_from_profile(insn, iseq_insn_idx) {
             ReceiverTypeResolution::Monomorphic { profiled_type }
             | ReceiverTypeResolution::SkewedPolymorphic { profiled_type } => Some(profiled_type),
@@ -3492,14 +3492,14 @@ impl Function {
     /// Returns:
     /// - `StaticallyKnown` if the receiver's exact class is known at compile-time
     /// - Result of [`Self::resolve_receiver_type_from_profile`] if we need to check profile data
-    fn resolve_receiver_type(&self, recv: InsnId, recv_type: Type, insn_idx: usize) -> ReceiverTypeResolution {
+    fn resolve_receiver_type(&self, recv: InsnId, recv_type: Type, insn_idx: YarvInsnIdx) -> ReceiverTypeResolution {
         if let Some(class) = recv_type.runtime_exact_ruby_class() {
             return ReceiverTypeResolution::StaticallyKnown { class };
         }
         self.resolve_receiver_type_from_profile(recv, insn_idx)
     }
 
-    fn polymorphic_summary(&self, profiles: &ProfileOracle, recv: InsnId, insn_idx: usize) -> Option<TypeDistributionSummary> {
+    fn polymorphic_summary(&self, profiles: &ProfileOracle, recv: InsnId, insn_idx: YarvInsnIdx) -> Option<TypeDistributionSummary> {
         let Some(entries) = profiles.types.get(&insn_idx) else {
             return None;
         };
@@ -3523,7 +3523,7 @@ impl Function {
     /// - `Megamorphic`/`SkewedMegamorphic` if the receiver has too many types to optimize
     ///   (SkewedMegamorphic may be optimized in the future, but for now we don't)
     /// - `NoProfile` if we have no type information
-    fn resolve_receiver_type_from_profile(&self, recv: InsnId, insn_idx: usize) -> ReceiverTypeResolution {
+    fn resolve_receiver_type_from_profile(&self, recv: InsnId, insn_idx: YarvInsnIdx) -> ReceiverTypeResolution {
         let Some(profiles) = self.profiles.as_ref() else {
             return ReceiverTypeResolution::NoProfile;
         };
@@ -6412,7 +6412,7 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
 #[derive(Debug, Clone, PartialEq)]
 pub struct FrameState {
     pub iseq: IseqPtr,
-    insn_idx: usize,
+    insn_idx: YarvInsnIdx,
     // Ruby bytecode instruction pointer
     pub pc: *const VALUE,
 
@@ -6422,7 +6422,7 @@ pub struct FrameState {
 
 impl FrameState {
     /// Get the YARV instruction index for the current instruction
-    pub fn insn_idx(&self) -> usize {
+    pub fn insn_idx(&self) -> YarvInsnIdx {
         self.insn_idx
     }
 
@@ -6702,7 +6702,7 @@ struct ProfileOracle {
     /// instruction index. At a given ISEQ instruction, the interpreter has profiled the stack
     /// operands to a given ISEQ instruction, and this list of pairs of (InsnId, Type) map that
     /// profiling information into HIR instructions.
-    types: HashMap<usize, Vec<(InsnId, TypeDistributionSummary)>>,
+    types: HashMap<YarvInsnIdx, Vec<(InsnId, TypeDistributionSummary)>>,
 }
 
 impl ProfileOracle {

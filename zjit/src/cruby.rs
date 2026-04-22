@@ -261,6 +261,9 @@ pub struct ID(pub ::std::os::raw::c_ulong);
 /// Pointer to an ISEQ
 pub type IseqPtr = *const rb_iseq_t;
 
+/// Index of a YARV instruction within an ISEQ's bytecode array.
+pub type YarvInsnIdx = usize;
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct ShapeId(pub u32);
 
