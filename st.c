@@ -397,8 +397,13 @@ set_bin(st_index_t *bins, int s, st_index_t n, st_index_t v)
 #define ENTRY_BASE 2
 
 /* Mark I-th bin of table TAB as empty, in other words not
-   corresponding to any entry.  */
-#define MARK_BIN_EMPTY(tab, i) (set_bin((tab)->bins, get_size_ind(tab), i, EMPTY_BIN))
+   corresponding to any entry.  When the Swiss-bins backend is enabled
+   and active for this table, also clear the parallel control byte. */
+#define MARK_BIN_EMPTY(tab, i)                                          \
+    do {                                                                \
+        set_bin((tab)->bins, get_size_ind(tab), (i), EMPTY_BIN);        \
+        SWISS_SET_CTRL_EMPTY((tab), (i));                               \
+    } while (0)
 
 /* Values used for not found entry and bin with given
    characteristics.  */
@@ -412,10 +417,13 @@ set_bin(st_index_t *bins, int s, st_index_t n, st_index_t v)
 
 /* Mark I-th bin of table TAB as corresponding to a deleted table
    entry.  Update number of entries in the table and number of bins
-   corresponding to deleted entries. */
+   corresponding to deleted entries.  When the Swiss-bins backend is
+   enabled and active for this table, also write the deleted tombstone
+   to the parallel control byte. */
 #define MARK_BIN_DELETED(tab, i)				\
     do {                                                        \
-        set_bin((tab)->bins, get_size_ind(tab), i, DELETED_BIN); \
+        set_bin((tab)->bins, get_size_ind(tab), (i), DELETED_BIN); \
+        SWISS_SET_CTRL_DELETED((tab), (i));                     \
     } while (0)
 
 /* Macros to check that value B is used empty bins and bins
@@ -485,6 +493,11 @@ initialize_bins(st_table *tab)
     memset(tab->bins, 0, bins_size(tab));
 }
 
+#ifdef ST_USE_SWISS_BINS
+/* Forward declaration: full definition lives in the Swiss-bins block. */
+static size_t swiss_ctrl_alloc_size(const st_table *tab);
+#endif
+
 /* Make table TAB empty.  */
 static void
 make_tab_empty(st_table *tab)
@@ -493,6 +506,13 @@ make_tab_empty(st_table *tab)
     tab->entries_start = tab->entries_bound = 0;
     if (tab->bins != NULL)
         initialize_bins(tab);
+#ifdef ST_USE_SWISS_BINS
+    /* 0xff is ST_SWISS_CTRL_EMPTY; the macro is defined further down
+     * alongside the Swiss helpers. Hardcoded here to avoid forward
+     * declaration ordering issues with the macro. */
+    if (tab->ctrl != NULL)
+        memset(tab->ctrl, 0xff, swiss_ctrl_alloc_size(tab));
+#endif
 }
 
 #ifdef HASH_LOG
@@ -525,6 +545,454 @@ stat_col(void)
 }
 #endif
 
+/* ===========================================================================
+ * Optional measurement subsystem (ST_STATS).
+ *
+ * Compiled in only when ST_STATS is defined. Activated at runtime when the
+ * RUBY_ST_STATS environment variable is set to a non-empty value other than
+ * "0". When disabled at compile time, every macro below expands to a no-op
+ * and there is zero impact on the generated code.
+ *
+ * On exit (when enabled at runtime) a human-readable report is written to
+ * /tmp/ruby_st_stats.<pid>. The report covers:
+ *   - find probe-length histogram, split by hit vs miss
+ *   - total operation counts (lookup / insert / delete)
+ *   - rebuild / compaction / resize counts
+ *   - histogram of table sizes observed at rebuild time
+ *   - top-N callsites of the public API (st_lookup/st_insert/st_delete/...)
+ * ========================================================================= */
+
+/* These op identifiers are always defined so that ST_STATS_* macro arguments
+ * are valid tokens regardless of whether ST_STATS is enabled. */
+#define ST_STATS_OP_LOOKUP 0
+#define ST_STATS_OP_INSERT 1
+#define ST_STATS_OP_DELETE 2
+#define ST_STATS_OP_OTHER  3
+#define ST_STATS_OP_COUNT  4
+
+#ifdef ST_STATS
+#include <inttypes.h>
+
+#define ST_STATS_PROBE_BUCKETS 9
+#define ST_STATS_CALLSITE_SLOTS 1024
+#define ST_STATS_SIZE_HIST_BUCKETS 33
+
+struct st_stats_probe_data {
+    uint64_t calls;
+    uint64_t total_probes;
+    uint64_t hist[ST_STATS_PROBE_BUCKETS];
+};
+
+struct st_stats_callsite {
+    void *addr;
+    uint64_t counts[ST_STATS_OP_COUNT];
+};
+
+static struct {
+    int initialized;
+    int enabled;
+    /* Per-find probe statistics, separated by outcome. */
+    struct st_stats_probe_data find_hit;
+    struct st_stats_probe_data find_miss;
+    /* Public-API call counts. */
+    uint64_t op_calls[ST_STATS_OP_COUNT];
+    /* Rebuild accounting. */
+    uint64_t rebuilds;
+    uint64_t compactions;
+    uint64_t resizes;
+    /* Histogram of num_entries at rebuild time, indexed by floor(log2(n))+1. */
+    uint64_t rebuild_size_hist[ST_STATS_SIZE_HIST_BUCKETS];
+    /* Bounded per-callsite table. Linear scan is fine: this is for analysis. */
+    struct st_stats_callsite callsites[ST_STATS_CALLSITE_SLOTS];
+    int callsites_used;
+} st_stats;
+
+static void st_stats_dump(void);
+
+static void
+st_stats_init(void)
+{
+    if (st_stats.initialized) return;
+    const char *env = getenv("RUBY_ST_STATS");
+    st_stats.enabled = env != NULL && env[0] != '\0' && env[0] != '0';
+    if (st_stats.enabled) atexit(st_stats_dump);
+    st_stats.initialized = 1;
+}
+
+static inline int
+st_stats_probe_bucket(uint32_t probes)
+{
+    /* 1, 2, 3, 4, 5-8, 9-16, 17-32, 33-64, 65+ */
+    if (probes <= 1) return 0;
+    if (probes <= 2) return 1;
+    if (probes <= 3) return 2;
+    if (probes <= 4) return 3;
+    if (probes <= 8) return 4;
+    if (probes <= 16) return 5;
+    if (probes <= 32) return 6;
+    if (probes <= 64) return 7;
+    return 8;
+}
+
+static inline int
+st_stats_log2_bucket(st_index_t n)
+{
+    int b = 0;
+    while (n > 0 && b < ST_STATS_SIZE_HIST_BUCKETS - 1) {
+        n >>= 1;
+        b++;
+    }
+    return b;
+}
+
+static void
+st_stats_record_probes(uint32_t probes, int hit)
+{
+    if (!st_stats.enabled) return;
+    struct st_stats_probe_data *d = hit ? &st_stats.find_hit : &st_stats.find_miss;
+    d->calls++;
+    d->total_probes += probes;
+    d->hist[st_stats_probe_bucket(probes)]++;
+}
+
+static void
+st_stats_record_op(int op)
+{
+    if (!st_stats.enabled) return;
+    if (op < 0 || op >= ST_STATS_OP_COUNT) return;
+    st_stats.op_calls[op]++;
+}
+
+static void
+st_stats_record_callsite(void *addr, int op)
+{
+    if (!st_stats.enabled) return;
+    if (op < 0 || op >= ST_STATS_OP_COUNT) return;
+    int i;
+    for (i = 0; i < st_stats.callsites_used; i++) {
+        if (st_stats.callsites[i].addr == addr) {
+            st_stats.callsites[i].counts[op]++;
+            return;
+        }
+    }
+    if (st_stats.callsites_used >= ST_STATS_CALLSITE_SLOTS) return;
+    st_stats.callsites[st_stats.callsites_used].addr = addr;
+    st_stats.callsites[st_stats.callsites_used].counts[op] = 1;
+    st_stats.callsites_used++;
+}
+
+static void
+st_stats_record_rebuild(st_index_t entries_at_rebuild, int is_compaction)
+{
+    if (!st_stats.enabled) return;
+    st_stats.rebuilds++;
+    if (is_compaction) st_stats.compactions++;
+    else st_stats.resizes++;
+    st_stats.rebuild_size_hist[st_stats_log2_bucket(entries_at_rebuild)]++;
+}
+
+static int
+st_stats_callsite_compare(const void *a, const void *b)
+{
+    const struct st_stats_callsite *ca = a;
+    const struct st_stats_callsite *cb = b;
+    uint64_t ta = ca->counts[0] + ca->counts[1] + ca->counts[2] + ca->counts[3];
+    uint64_t tb = cb->counts[0] + cb->counts[1] + cb->counts[2] + cb->counts[3];
+    if (ta < tb) return 1;
+    if (ta > tb) return -1;
+    return 0;
+}
+
+static void
+st_stats_dump_probe(FILE *f, const char *label, const struct st_stats_probe_data *d)
+{
+    if (d->calls == 0) {
+        fprintf(f, "  %s: (no calls)\n", label);
+        return;
+    }
+    fprintf(f, "  %s: %" PRIu64 " calls, %" PRIu64 " probes, avg %.2f\n",
+            label, d->calls, d->total_probes,
+            (double)d->total_probes / (double)d->calls);
+    fprintf(f, "    histogram (1, 2, 3, 4, 5-8, 9-16, 17-32, 33-64, 65+):");
+    int b;
+    for (b = 0; b < ST_STATS_PROBE_BUCKETS; b++) {
+        fprintf(f, " %" PRIu64, d->hist[b]);
+    }
+    fprintf(f, "\n");
+}
+
+static void
+st_stats_dump(void)
+{
+    char fname[64];
+    snprintf(fname, sizeof(fname), "/tmp/ruby_st_stats.%ld", (long)getpid());
+    FILE *f = fopen(fname, "w");
+    if (f == NULL) return;
+
+    fprintf(f, "=== Ruby st_table stats (pid %ld) ===\n\n", (long)getpid());
+
+    fprintf(f, "Public API calls:\n");
+    fprintf(f, "  lookup: %" PRIu64 "\n", st_stats.op_calls[ST_STATS_OP_LOOKUP]);
+    fprintf(f, "  insert: %" PRIu64 "\n", st_stats.op_calls[ST_STATS_OP_INSERT]);
+    fprintf(f, "  delete: %" PRIu64 "\n", st_stats.op_calls[ST_STATS_OP_DELETE]);
+    fprintf(f, "  other:  %" PRIu64 "\n", st_stats.op_calls[ST_STATS_OP_OTHER]);
+
+    fprintf(f, "\nProbe statistics:\n");
+    st_stats_dump_probe(f, "hits ", &st_stats.find_hit);
+    st_stats_dump_probe(f, "miss ", &st_stats.find_miss);
+
+    fprintf(f, "\nRebuild accounting:\n");
+    fprintf(f, "  rebuilds: %" PRIu64 " (compactions: %" PRIu64 ", resizes: %" PRIu64 ")\n",
+            st_stats.rebuilds, st_stats.compactions, st_stats.resizes);
+    fprintf(f, "  num_entries at rebuild (by 2^k):\n");
+    int p;
+    for (p = 0; p < ST_STATS_SIZE_HIST_BUCKETS; p++) {
+        if (st_stats.rebuild_size_hist[p]) {
+            fprintf(f, "    2^%-2d: %" PRIu64 "\n", p, st_stats.rebuild_size_hist[p]);
+        }
+    }
+
+    fprintf(f, "\nTop callsites of public API (lookup/insert/delete/other):\n");
+    qsort(st_stats.callsites, (size_t)st_stats.callsites_used,
+          sizeof(struct st_stats_callsite), st_stats_callsite_compare);
+    int n = st_stats.callsites_used < 30 ? st_stats.callsites_used : 30;
+    int i;
+    for (i = 0; i < n; i++) {
+        const struct st_stats_callsite *cs = &st_stats.callsites[i];
+        fprintf(f, "  %p  L=%" PRIu64 " I=%" PRIu64 " D=%" PRIu64 " O=%" PRIu64 "\n",
+                cs->addr,
+                cs->counts[ST_STATS_OP_LOOKUP],
+                cs->counts[ST_STATS_OP_INSERT],
+                cs->counts[ST_STATS_OP_DELETE],
+                cs->counts[ST_STATS_OP_OTHER]);
+    }
+
+    fclose(f);
+}
+
+#define ST_STATS_DECLARE_PROBE() uint32_t _st_probes = 0
+#define ST_STATS_BUMP_PROBE() ((void)(++_st_probes))
+#define ST_STATS_RECORD_PROBES(hit) st_stats_record_probes(_st_probes, (hit))
+#define ST_STATS_RECORD_OP(op) st_stats_record_op(op)
+#define ST_STATS_RECORD_CALLSITE(op) \
+    st_stats_record_callsite(__builtin_return_address(0), (op))
+#define ST_STATS_RECORD_REBUILD(entries, is_compaction) \
+    st_stats_record_rebuild((entries), (is_compaction))
+#define ST_STATS_INIT() st_stats_init()
+
+#else /* !ST_STATS */
+
+#define ST_STATS_DECLARE_PROBE() ((void)0)
+#define ST_STATS_BUMP_PROBE() ((void)0)
+#define ST_STATS_RECORD_PROBES(hit) ((void)0)
+#define ST_STATS_RECORD_OP(op) ((void)0)
+#define ST_STATS_RECORD_CALLSITE(op) ((void)0)
+#define ST_STATS_RECORD_REBUILD(entries, is_compaction) ((void)0)
+#define ST_STATS_INIT() ((void)0)
+
+#endif /* ST_STATS */
+
+/* ===========================================================================
+ * Swiss-table-style bins backend (compile-time gated by
+ * ST_USE_SWISS_BINS). Adds a parallel control-byte array (tab->ctrl) used as
+ * a fast pre-filter during probing. The existing entries[] log is unchanged
+ * so insertion order is preserved.
+ *
+ * The Swiss path only kicks in when entry_power >= SWISS_MIN_ENTRY_POWER.
+ * Below that threshold we fall through to the existing perturb-chain bins
+ * (or no-bins linear scan), because the SWAR setup costs do not pay off for
+ * small tables. The threshold is a benchmark-driven tunable.
+ * ========================================================================= */
+
+#ifdef ST_USE_SWISS_BINS
+
+/* ---------------------------------------------------------------------------
+ * Group/match API used by the four find_* probing loops below:
+ *
+ *   ST_SWISS_GROUP_SIZE         -- group width in slots (8)
+ *   swiss_group_t               -- opaque handle for one group's control bytes
+ *   swiss_match_t               -- opaque iterator over matching slots
+ *   st_swiss_load_group(p)      -- load ST_SWISS_GROUP_SIZE control bytes
+ *   st_swiss_match_byte(g, b)   -- mask of slots whose ctrl byte == b
+ *   st_swiss_match_empty(g)     -- mask of slots whose ctrl byte == EMPTY
+ *   st_swiss_match_free(g)      -- mask of slots that are EMPTY or DELETED
+ *   st_swiss_match_any(m)       -- truthy iff any slot is set
+ *   st_swiss_match_first(m)     -- slot index in [0, ST_SWISS_GROUP_SIZE)
+ *   st_swiss_match_drop(m)      -- m with the lowest match cleared
+ *
+ * The implementation uses scalar SWAR (SIMD-Within-A-Register) over a
+ * uint64_t. We initially explored SSE2 and NEON variants too, but in
+ * benchmarks the SWAR path was at least as fast as NEON on Apple Silicon
+ * (because Apple's wide integer pipeline executes the three SWAR ops in
+ * parallel, while NEON's vector->GPR transfer for the match mask costs
+ * several cycles). SSE2 has the strongest theoretical advantage thanks
+ * to native _mm_movemask_epi8, but the SWAR path is the simplest portable
+ * baseline to maintain. SIMD variants can be reintroduced later if a
+ * representative workload demonstrates a meaningful win.
+ * --------------------------------------------------------------------------- */
+
+#define ST_SWISS_GROUP_SIZE 8
+
+/* Below this entry_power, do not use the Swiss path: stay on the existing
+ * perturb-chain or no-bins layout. Tunable; benchmark to refine.
+ *
+ * Floor: SWISS_MIN_ENTRY_POWER must guarantee bin_count >= ST_SWISS_GROUP_SIZE
+ * so a single group load covers a full power-of-two slice. With the current
+ * features[] table, entry_power=6 maps to bin_power=7 (bin_count=128), which
+ * is comfortably above 8. */
+#ifndef SWISS_MIN_ENTRY_POWER
+#define SWISS_MIN_ENTRY_POWER 6
+#endif
+
+/* Control byte values. 0x00..0x7f = occupied (top bit clear, holds H2). */
+#define ST_SWISS_CTRL_EMPTY   ((unsigned char)0xff)
+#define ST_SWISS_CTRL_DELETED ((unsigned char)0xfe)
+
+#define ST_SWISS_CTRL_IS_EMPTY(c)             ((c) == ST_SWISS_CTRL_EMPTY)
+#define ST_SWISS_CTRL_IS_DELETED(c)           ((c) == ST_SWISS_CTRL_DELETED)
+#define ST_SWISS_CTRL_IS_EMPTY_OR_DELETED(c)  (((c) & (unsigned char)0x80) != 0)
+#define ST_SWISS_CTRL_IS_OCCUPIED(c)          (((c) & (unsigned char)0x80) == 0)
+
+/* H2 derivation: top 7 bits of the hash. */
+static inline unsigned char
+st_swiss_h2(st_hash_t hash)
+{
+    return (unsigned char)((hash >> ((sizeof(st_hash_t) * 8) - 7)) & 0x7f);
+}
+
+/* Number of Swiss bin slots. Mirrors the bins layout: it is the actual number
+ * of slots addressable by hash_bin(), which is bins_mask(tab) + 1.
+ * Note: this is logical slot count -- ctrl[] is one byte per slot. */
+static inline st_index_t
+swiss_ctrl_slots(const st_table *tab)
+{
+    return ((st_index_t)1) << tab->bin_power;
+}
+
+/* Allocation size in bytes for the ctrl[] array. We over-allocate by one
+ * group so loads near the end never read past the end. */
+static inline size_t
+swiss_ctrl_alloc_size(const st_table *tab)
+{
+    return (size_t)swiss_ctrl_slots(tab) + ST_SWISS_GROUP_SIZE;
+}
+
+/* Should we maintain ctrl[] for this table? */
+static inline int
+swiss_active_p(const st_table *tab)
+{
+    return tab->ctrl != NULL && tab->entry_power >= SWISS_MIN_ENTRY_POWER;
+}
+
+/* ---- Group/match types and SWAR primitives -------------------------------- */
+
+/* One uint64_t per 8-byte group. Match masks have 0x80 set in the matching
+ * byte's high-bit position and zero elsewhere. */
+typedef uint64_t swiss_group_t;
+typedef uint64_t swiss_match_t;
+
+static inline swiss_group_t
+st_swiss_load_group(const unsigned char *p)
+{
+    swiss_group_t g;
+    memcpy(&g, p, sizeof(g));
+    return g;
+}
+
+static inline swiss_match_t
+st_swiss_match_byte(swiss_group_t g, unsigned char b)
+{
+    /* Standard SWAR byte-equality: produces 0x80 in matching bytes. */
+    const swiss_group_t lsb = 0x0101010101010101ULL;
+    const swiss_group_t msb = 0x8080808080808080ULL;
+    swiss_group_t x = g ^ (lsb * (swiss_group_t)b);
+    return (x - lsb) & ~x & msb;
+}
+
+static inline swiss_match_t
+st_swiss_match_empty(swiss_group_t g)
+{
+    return st_swiss_match_byte(g, ST_SWISS_CTRL_EMPTY);
+}
+
+static inline swiss_match_t
+st_swiss_match_free(swiss_group_t g)
+{
+    return g & 0x8080808080808080ULL;
+}
+
+static inline int
+st_swiss_match_any(swiss_match_t m) { return m != 0; }
+
+static inline int
+st_swiss_match_first(swiss_match_t m)
+{
+#if defined(__GNUC__) || defined(__clang__)
+    return __builtin_ctzll(m) >> 3;
+#else
+    int i;
+    for (i = 0; i < 8; i++) {
+        if (m & ((swiss_match_t)0x80 << (i * 8))) return i;
+    }
+    return 8;
+#endif
+}
+
+static inline swiss_match_t
+st_swiss_match_drop(swiss_match_t m)
+{
+    /* Only the high bit of each matching byte is set, so clearing the lowest
+     * set bit cleanly drops one match. */
+    return m & (m - 1);
+}
+
+/* Compute the index of the first probe group for HASH in table TAB. The
+ * group index is aligned to ST_SWISS_GROUP_SIZE, which keeps every group
+ * load entirely within ctrl[] (no shadow bytes needed) since the slot count
+ * is always a power of two >= GROUP_SIZE for tables above the threshold. */
+static inline st_index_t
+st_swiss_first_group(const st_table *tab, st_hash_t hash)
+{
+    return hash_bin(hash, (st_table *)tab) & ~((st_index_t)(ST_SWISS_GROUP_SIZE - 1));
+}
+
+/* Mask bits used for triangular probing within ctrl[]. Note: bin_power
+ * always >= 3 above the SWISS threshold so masking is well-defined. */
+static inline st_index_t
+st_swiss_bin_mask(const st_table *tab)
+{
+    return (((st_index_t)1) << tab->bin_power) - 1;
+}
+
+#define SWISS_SET_CTRL_EMPTY(tab, i)                                    \
+    do {                                                                \
+        if (swiss_active_p(tab)) {                                      \
+            (tab)->ctrl[(i)] = ST_SWISS_CTRL_EMPTY;                     \
+        }                                                               \
+    } while (0)
+
+#define SWISS_SET_CTRL_DELETED(tab, i)                                  \
+    do {                                                                \
+        if (swiss_active_p(tab)) {                                      \
+            (tab)->ctrl[(i)] = ST_SWISS_CTRL_DELETED;                   \
+        }                                                               \
+    } while (0)
+
+#define SWISS_SET_CTRL_OCCUPIED(tab, i, hash)                           \
+    do {                                                                \
+        if (swiss_active_p(tab)) {                                      \
+            (tab)->ctrl[(i)] = st_swiss_h2(hash);                       \
+        }                                                               \
+    } while (0)
+
+#else /* !ST_USE_SWISS_BINS */
+
+#define SWISS_SET_CTRL_EMPTY(tab, i) ((void)0)
+#define SWISS_SET_CTRL_DELETED(tab, i) ((void)0)
+#define SWISS_SET_CTRL_OCCUPIED(tab, i, hash) ((void)0)
+
+#endif /* ST_USE_SWISS_BINS */
+
 st_table *
 st_init_existing_table_with_size(st_table *tab, const struct st_hash_type *type, st_index_t size)
 {
@@ -542,6 +1010,8 @@ st_init_existing_table_with_size(st_table *tab, const struct st_hash_type *type,
         atexit(stat_col);
     }
 #endif
+
+    ST_STATS_INIT();
 
     n = get_power2(size);
 #ifndef RUBY
@@ -564,6 +1034,23 @@ st_init_existing_table_with_size(st_table *tab, const struct st_hash_type *type,
         }
 #endif
     }
+#ifdef ST_USE_SWISS_BINS
+    /* Allocate the parallel control-byte array only above the threshold.
+     * Below it we fall through to the existing perturb-chain logic. */
+    if (tab->bins != NULL && n >= SWISS_MIN_ENTRY_POWER) {
+        tab->ctrl = (unsigned char *) malloc(swiss_ctrl_alloc_size(tab));
+#ifndef RUBY
+        if (tab->ctrl == NULL) {
+            free(tab->bins);
+            free_fixed_ptr(tab);
+            return NULL;
+        }
+#endif
+    }
+    else {
+        tab->ctrl = NULL;
+    }
+#endif
     tab->entries = (st_table_entry *) malloc(get_allocated_entries(tab)
                                              * sizeof(st_table_entry));
 #ifndef RUBY
@@ -694,6 +1181,14 @@ st_bins_memsize(const st_table *tab)
     return tab->bins == NULL ? 0 : bins_size(tab);
 }
 
+#ifdef ST_USE_SWISS_BINS
+static inline size_t
+st_ctrl_memsize(const st_table *tab)
+{
+    return tab->ctrl == NULL ? 0 : swiss_ctrl_alloc_size(tab);
+}
+#endif
+
 static inline void
 st_free_entries(const st_table *tab)
 {
@@ -704,6 +1199,10 @@ static inline void
 st_free_bins(const st_table *tab)
 {
     sized_free(tab->bins, st_bins_memsize(tab));
+#ifdef ST_USE_SWISS_BINS
+    if (tab->ctrl != NULL)
+        sized_free(tab->ctrl, st_ctrl_memsize(tab));
+#endif
 }
 
 void
@@ -728,6 +1227,9 @@ st_memsize(const st_table *tab)
     RUBY_ASSERT(tab != NULL);
     return(sizeof(st_table)
            + st_bins_memsize(tab)
+#ifdef ST_USE_SWISS_BINS
+           + st_ctrl_memsize(tab)
+#endif
            + st_entries_memsize(tab));
 }
 
@@ -788,17 +1290,29 @@ static void rebuild_cleanup(st_table *const tab);
 static void
 rebuild_table(st_table *tab)
 {
+    st_index_t entries_at_rebuild = tab->num_entries;
+    int is_compaction;
     if ((2 * tab->num_entries <= get_allocated_entries(tab)
          && REBUILD_THRESHOLD * tab->num_entries > get_allocated_entries(tab))
         || tab->num_entries < (1 << MINIMAL_POWER2)) {
         /* Compaction: */
+        is_compaction = 1;
         tab->num_entries = 0;
         if (tab->bins != NULL)
             initialize_bins(tab);
+#ifdef ST_USE_SWISS_BINS
+        /* In-place compaction: reset the Swiss control bytes so subsequent
+         * find_table_bin_ind_direct sees fresh empty slots, otherwise
+         * stale h2/tombstone bytes from before compaction would mislead
+         * the SWAR probe and cause non-terminating searches. */
+        if (tab->ctrl != NULL)
+            memset(tab->ctrl, 0xff, swiss_ctrl_alloc_size(tab));
+#endif
         rebuild_table_with(tab, tab);
     }
     else {
         st_table *new_tab;
+        is_compaction = 0;
         /* This allocation could trigger GC and compaction. If tab is the
          * gen_fields_tbl, then tab could have changed in size due to objects being
          * freed and/or moved. Do not store attributes of tab before this line. */
@@ -808,6 +1322,9 @@ rebuild_table(st_table *tab)
         rebuild_move_table(new_tab, tab);
     }
     rebuild_cleanup(tab);
+    ST_STATS_RECORD_REBUILD(entries_at_rebuild, is_compaction);
+    (void)entries_at_rebuild;
+    (void)is_compaction;
 }
 
 static void
@@ -839,6 +1356,7 @@ rebuild_table_with(st_table *const new_tab, st_table *const tab)
             bin_ind = find_table_bin_ind_direct(new_tab, curr_entry_ptr->hash,
                                                 curr_entry_ptr->key);
             set_bin(bins, size_ind, bin_ind, ni + ENTRY_BASE);
+            SWISS_SET_CTRL_OCCUPIED(new_tab, bin_ind, curr_entry_ptr->hash);
         }
         new_tab->num_entries++;
         ni++;
@@ -857,6 +1375,9 @@ rebuild_move_table(st_table *const new_tab, st_table *const tab)
     tab->bin_power = new_tab->bin_power;
     tab->size_ind = new_tab->size_ind;
     tab->bins = new_tab->bins;
+#ifdef ST_USE_SWISS_BINS
+    tab->ctrl = new_tab->ctrl;
+#endif
     tab->entries = new_tab->entries;
     free_fixed_ptr(new_tab);
 }
@@ -899,16 +1420,21 @@ find_entry(st_table *tab, st_hash_t hash_value, st_data_t key)
     int eq_p, rebuilt_p;
     st_index_t i, bound;
     st_table_entry *entries;
+    ST_STATS_DECLARE_PROBE();
 
     bound = tab->entries_bound;
     entries = tab->entries;
     for (i = tab->entries_start; i < bound; i++) {
+        ST_STATS_BUMP_PROBE();
         DO_PTR_EQUAL_CHECK(tab, &entries[i], hash_value, key, eq_p, rebuilt_p);
         if (EXPECT(rebuilt_p, 0))
             return REBUILT_TABLE_ENTRY_IND;
-        if (eq_p)
+        if (eq_p) {
+            ST_STATS_RECORD_PROBES(1);
             return i;
+        }
     }
+    ST_STATS_RECORD_PROBES(0);
     return UNDEFINED_ENTRY_IND;
 }
 
@@ -932,6 +1458,44 @@ find_table_entry_ind(st_table *tab, st_hash_t hash_value, st_data_t key)
 #endif
     st_index_t bin;
     st_table_entry *entries = tab->entries;
+    ST_STATS_DECLARE_PROBE();
+
+#ifdef ST_USE_SWISS_BINS
+    if (swiss_active_p(tab)) {
+        const unsigned char h2 = st_swiss_h2(hash_value);
+        const st_index_t mask = st_swiss_bin_mask(tab);
+        const unsigned int swiss_size_ind = get_size_ind(tab);
+        st_index_t group_idx = st_swiss_first_group(tab, hash_value);
+        st_index_t step = 0;
+        for (;;) {
+            ST_STATS_BUMP_PROBE();
+            swiss_group_t g = st_swiss_load_group(tab->ctrl + group_idx);
+            swiss_match_t mh2 = st_swiss_match_byte(g, h2);
+            while (st_swiss_match_any(mh2)) {
+                int slot = st_swiss_match_first(mh2);
+                st_index_t cand_bin_ind = group_idx + slot;
+                st_index_t cand_bin = get_bin(tab->bins, swiss_size_ind, cand_bin_ind);
+                if (EXPECT(!EMPTY_OR_DELETED_BIN_P(cand_bin), 1)) {
+                    DO_PTR_EQUAL_CHECK(tab, &entries[cand_bin - ENTRY_BASE],
+                                       hash_value, key, eq_p, rebuilt_p);
+                    if (EXPECT(rebuilt_p, 0))
+                        return REBUILT_TABLE_ENTRY_IND;
+                    if (eq_p) {
+                        ST_STATS_RECORD_PROBES(1);
+                        return cand_bin;
+                    }
+                }
+                mh2 = st_swiss_match_drop(mh2);
+            }
+            if (st_swiss_match_any(st_swiss_match_empty(g))) {
+                ST_STATS_RECORD_PROBES(0);
+                return UNDEFINED_ENTRY_IND;
+            }
+            step += ST_SWISS_GROUP_SIZE;
+            group_idx = (group_idx + step) & mask;
+        }
+    }
+#endif
 
     ind = hash_bin(hash_value, tab);
 #ifdef QUADRATIC_PROBE
@@ -941,6 +1505,7 @@ find_table_entry_ind(st_table *tab, st_hash_t hash_value, st_data_t key)
 #endif
     FOUND_BIN;
     for (;;) {
+        ST_STATS_BUMP_PROBE();
         bin = get_bin(tab->bins, get_size_ind(tab), ind);
         if (! EMPTY_OR_DELETED_BIN_P(bin)) {
             DO_PTR_EQUAL_CHECK(tab, &entries[bin - ENTRY_BASE], hash_value, key, eq_p, rebuilt_p);
@@ -949,8 +1514,10 @@ find_table_entry_ind(st_table *tab, st_hash_t hash_value, st_data_t key)
             if (eq_p)
                 break;
         }
-        else if (EMPTY_BIN_P(bin))
+        else if (EMPTY_BIN_P(bin)) {
+            ST_STATS_RECORD_PROBES(0);
             return UNDEFINED_ENTRY_IND;
+        }
 #ifdef QUADRATIC_PROBE
         ind = hash_bin(ind + d, tab);
         d++;
@@ -959,6 +1526,7 @@ find_table_entry_ind(st_table *tab, st_hash_t hash_value, st_data_t key)
 #endif
         COLLISION;
     }
+    ST_STATS_RECORD_PROBES(1);
     return bin;
 }
 
@@ -978,6 +1546,44 @@ find_table_bin_ind(st_table *tab, st_hash_t hash_value, st_data_t key)
 #endif
     st_index_t bin;
     st_table_entry *entries = tab->entries;
+    ST_STATS_DECLARE_PROBE();
+
+#ifdef ST_USE_SWISS_BINS
+    if (swiss_active_p(tab)) {
+        const unsigned char h2 = st_swiss_h2(hash_value);
+        const st_index_t mask = st_swiss_bin_mask(tab);
+        const unsigned int swiss_size_ind = get_size_ind(tab);
+        st_index_t group_idx = st_swiss_first_group(tab, hash_value);
+        st_index_t step = 0;
+        for (;;) {
+            ST_STATS_BUMP_PROBE();
+            swiss_group_t g = st_swiss_load_group(tab->ctrl + group_idx);
+            swiss_match_t mh2 = st_swiss_match_byte(g, h2);
+            while (st_swiss_match_any(mh2)) {
+                int slot = st_swiss_match_first(mh2);
+                st_index_t cand_bin_ind = group_idx + slot;
+                st_index_t cand_bin = get_bin(tab->bins, swiss_size_ind, cand_bin_ind);
+                if (EXPECT(!EMPTY_OR_DELETED_BIN_P(cand_bin), 1)) {
+                    DO_PTR_EQUAL_CHECK(tab, &entries[cand_bin - ENTRY_BASE],
+                                       hash_value, key, eq_p, rebuilt_p);
+                    if (EXPECT(rebuilt_p, 0))
+                        return REBUILT_TABLE_BIN_IND;
+                    if (eq_p) {
+                        ST_STATS_RECORD_PROBES(1);
+                        return cand_bin_ind;
+                    }
+                }
+                mh2 = st_swiss_match_drop(mh2);
+            }
+            if (st_swiss_match_any(st_swiss_match_empty(g))) {
+                ST_STATS_RECORD_PROBES(0);
+                return UNDEFINED_BIN_IND;
+            }
+            step += ST_SWISS_GROUP_SIZE;
+            group_idx = (group_idx + step) & mask;
+        }
+    }
+#endif
 
     ind = hash_bin(hash_value, tab);
 #ifdef QUADRATIC_PROBE
@@ -987,6 +1593,7 @@ find_table_bin_ind(st_table *tab, st_hash_t hash_value, st_data_t key)
 #endif
     FOUND_BIN;
     for (;;) {
+        ST_STATS_BUMP_PROBE();
         bin = get_bin(tab->bins, get_size_ind(tab), ind);
         if (! EMPTY_OR_DELETED_BIN_P(bin)) {
             DO_PTR_EQUAL_CHECK(tab, &entries[bin - ENTRY_BASE], hash_value, key, eq_p, rebuilt_p);
@@ -995,8 +1602,10 @@ find_table_bin_ind(st_table *tab, st_hash_t hash_value, st_data_t key)
             if (eq_p)
                 break;
         }
-        else if (EMPTY_BIN_P(bin))
+        else if (EMPTY_BIN_P(bin)) {
+            ST_STATS_RECORD_PROBES(0);
             return UNDEFINED_BIN_IND;
+        }
 #ifdef QUADRATIC_PROBE
         ind = hash_bin(ind + d, tab);
         d++;
@@ -1005,6 +1614,7 @@ find_table_bin_ind(st_table *tab, st_hash_t hash_value, st_data_t key)
 #endif
         COLLISION;
     }
+    ST_STATS_RECORD_PROBES(1);
     return ind;
 }
 
@@ -1021,6 +1631,30 @@ find_table_bin_ind_direct(st_table *tab, st_hash_t hash_value, st_data_t key)
     st_index_t perturb;
 #endif
     st_index_t bin;
+    ST_STATS_DECLARE_PROBE();
+
+#ifdef ST_USE_SWISS_BINS
+    if (swiss_active_p(tab)) {
+        /* Direct insert: find the first empty-or-deleted slot. The caller
+         * guarantees the key is not already present, so we don't compare
+         * keys here. */
+        const st_index_t mask = st_swiss_bin_mask(tab);
+        st_index_t group_idx = st_swiss_first_group(tab, hash_value);
+        st_index_t step = 0;
+        for (;;) {
+            ST_STATS_BUMP_PROBE();
+            swiss_group_t g = st_swiss_load_group(tab->ctrl + group_idx);
+            swiss_match_t mfree = st_swiss_match_free(g);
+            if (st_swiss_match_any(mfree)) {
+                int slot = st_swiss_match_first(mfree);
+                ST_STATS_RECORD_PROBES(0);
+                return group_idx + slot;
+            }
+            step += ST_SWISS_GROUP_SIZE;
+            group_idx = (group_idx + step) & mask;
+        }
+    }
+#endif
 
     ind = hash_bin(hash_value, tab);
 #ifdef QUADRATIC_PROBE
@@ -1030,9 +1664,12 @@ find_table_bin_ind_direct(st_table *tab, st_hash_t hash_value, st_data_t key)
 #endif
     FOUND_BIN;
     for (;;) {
+        ST_STATS_BUMP_PROBE();
         bin = get_bin(tab->bins, get_size_ind(tab), ind);
-        if (EMPTY_OR_DELETED_BIN_P(bin))
+        if (EMPTY_OR_DELETED_BIN_P(bin)) {
+            ST_STATS_RECORD_PROBES(0);
             return ind;
+        }
 #ifdef QUADRATIC_PROBE
         ind = hash_bin(ind + d, tab);
         d++;
@@ -1067,6 +1704,72 @@ find_table_bin_ptr_and_reserve(st_table *tab, st_hash_t *hash_value,
     st_index_t entry_index;
     st_index_t first_deleted_bin_ind;
     st_table_entry *entries;
+    int hit_p = 0;
+    ST_STATS_DECLARE_PROBE();
+
+#ifdef ST_USE_SWISS_BINS
+    if (swiss_active_p(tab)) {
+        const unsigned char h2 = st_swiss_h2(curr_hash_value);
+        const st_index_t mask = st_swiss_bin_mask(tab);
+        const unsigned int swiss_size_ind = get_size_ind(tab);
+        st_index_t group_idx = st_swiss_first_group(tab, curr_hash_value);
+        st_index_t step = 0;
+        st_index_t swiss_first_deleted = UNDEFINED_BIN_IND;
+        entries = tab->entries;
+        for (;;) {
+            ST_STATS_BUMP_PROBE();
+            swiss_group_t g = st_swiss_load_group(tab->ctrl + group_idx);
+            /* First, scan for H2 matches and check keys. */
+            swiss_match_t mh2 = st_swiss_match_byte(g, h2);
+            while (st_swiss_match_any(mh2)) {
+                int slot = st_swiss_match_first(mh2);
+                st_index_t cand_bin_ind = group_idx + slot;
+                st_index_t cand_entry = get_bin(tab->bins, swiss_size_ind, cand_bin_ind);
+                if (EXPECT(!EMPTY_OR_DELETED_BIN_P(cand_entry), 1)) {
+                    DO_PTR_EQUAL_CHECK(tab, &entries[cand_entry - ENTRY_BASE],
+                                       curr_hash_value, key, eq_p, rebuilt_p);
+                    if (EXPECT(rebuilt_p, 0))
+                        return REBUILT_TABLE_ENTRY_IND;
+                    if (eq_p) {
+                        ST_STATS_RECORD_PROBES(1);
+                        *bin_ind = cand_bin_ind;
+                        return cand_entry;
+                    }
+                }
+                mh2 = st_swiss_match_drop(mh2);
+            }
+            /* Track first deleted (tombstone) slot for reuse on insert. */
+            if (swiss_first_deleted == UNDEFINED_BIN_IND) {
+                swiss_match_t mdel = st_swiss_match_byte(g, ST_SWISS_CTRL_DELETED);
+                if (st_swiss_match_any(mdel)) {
+                    int slot = st_swiss_match_first(mdel);
+                    swiss_first_deleted = group_idx + slot;
+                }
+            }
+            /* An empty byte means the key is not in the table: stop probing. */
+            swiss_match_t mempty = st_swiss_match_empty(g);
+            if (st_swiss_match_any(mempty)) {
+                ST_STATS_RECORD_PROBES(0);
+                tab->num_entries++;
+                if (swiss_first_deleted != UNDEFINED_BIN_IND) {
+                    /* Reuse the earlier tombstone slot. MARK_BIN_EMPTY clears
+                     * both bins[] and ctrl[] for that slot; the caller will
+                     * then overwrite with the new entry. */
+                    ind = swiss_first_deleted;
+                    MARK_BIN_EMPTY(tab, ind);
+                }
+                else {
+                    int slot = st_swiss_match_first(mempty);
+                    ind = group_idx + slot;
+                }
+                *bin_ind = ind;
+                return UNDEFINED_ENTRY_IND;
+            }
+            step += ST_SWISS_GROUP_SIZE;
+            group_idx = (group_idx + step) & mask;
+        }
+    }
+#endif
 
     ind = hash_bin(curr_hash_value, tab);
 #ifdef QUADRATIC_PROBE
@@ -1078,6 +1781,7 @@ find_table_bin_ptr_and_reserve(st_table *tab, st_hash_t *hash_value,
     first_deleted_bin_ind = UNDEFINED_BIN_IND;
     entries = tab->entries;
     for (;;) {
+        ST_STATS_BUMP_PROBE();
         entry_index = get_bin(tab->bins, get_size_ind(tab), ind);
         if (EMPTY_BIN_P(entry_index)) {
             tab->num_entries++;
@@ -1093,8 +1797,10 @@ find_table_bin_ptr_and_reserve(st_table *tab, st_hash_t *hash_value,
             DO_PTR_EQUAL_CHECK(tab, &entries[entry_index - ENTRY_BASE], curr_hash_value, key, eq_p, rebuilt_p);
             if (EXPECT(rebuilt_p, 0))
                 return REBUILT_TABLE_ENTRY_IND;
-            if (eq_p)
+            if (eq_p) {
+                hit_p = 1;
                 break;
+            }
         }
         else if (first_deleted_bin_ind == UNDEFINED_BIN_IND)
             first_deleted_bin_ind = ind;
@@ -1106,6 +1812,8 @@ find_table_bin_ptr_and_reserve(st_table *tab, st_hash_t *hash_value,
 #endif
         COLLISION;
     }
+    ST_STATS_RECORD_PROBES(hit_p);
+    (void)hit_p;
     *bin_ind = ind;
     return entry_index;
 }
@@ -1118,6 +1826,8 @@ st_lookup(st_table *tab, st_data_t key, st_data_t *value)
     st_index_t bin;
     st_hash_t hash = do_hash(key, tab);
 
+    ST_STATS_RECORD_OP(ST_STATS_OP_LOOKUP);
+    ST_STATS_RECORD_CALLSITE(ST_STATS_OP_LOOKUP);
  retry:
     if (tab->bins == NULL) {
         bin = find_entry(tab, hash, key);
@@ -1147,6 +1857,8 @@ st_get_key(st_table *tab, st_data_t key, st_data_t *result)
     st_index_t bin;
     st_hash_t hash = do_hash(key, tab);
 
+    ST_STATS_RECORD_OP(ST_STATS_OP_LOOKUP);
+    ST_STATS_RECORD_CALLSITE(ST_STATS_OP_LOOKUP);
  retry:
     if (tab->bins == NULL) {
         bin = find_entry(tab, hash, key);
@@ -1191,6 +1903,8 @@ st_insert(st_table *tab, st_data_t key, st_data_t value)
     st_index_t bin_ind;
     int new_p;
 
+    ST_STATS_RECORD_OP(ST_STATS_OP_INSERT);
+    ST_STATS_RECORD_CALLSITE(ST_STATS_OP_INSERT);
     hash_value = do_hash(key, tab);
  retry:
     rebuild_table_if_necessary(tab);
@@ -1217,8 +1931,10 @@ st_insert(st_table *tab, st_data_t key, st_data_t value)
         entry->hash = hash_value;
         entry->key = key;
         entry->record = value;
-        if (bin_ind != UNDEFINED_BIN_IND)
+        if (bin_ind != UNDEFINED_BIN_IND) {
             set_bin(tab->bins, get_size_ind(tab), bin_ind, ind + ENTRY_BASE);
+            SWISS_SET_CTRL_OCCUPIED(tab, bin_ind, hash_value);
+        }
         return 0;
     }
     tab->entries[bin].record = value;
@@ -1247,6 +1963,7 @@ st_add_direct_with_hash(st_table *tab,
     if (tab->bins != NULL) {
         bin_ind = find_table_bin_ind_direct(tab, hash, key);
         set_bin(tab->bins, get_size_ind(tab), bin_ind, ind + ENTRY_BASE);
+        SWISS_SET_CTRL_OCCUPIED(tab, bin_ind, hash);
     }
 }
 
@@ -1282,6 +1999,8 @@ st_insert2(st_table *tab, st_data_t key, st_data_t value,
     st_index_t bin_ind;
     int new_p;
 
+    ST_STATS_RECORD_OP(ST_STATS_OP_INSERT);
+    ST_STATS_RECORD_CALLSITE(ST_STATS_OP_INSERT);
     hash_value = do_hash(key, tab);
  retry:
     rebuild_table_if_necessary (tab);
@@ -1309,8 +2028,10 @@ st_insert2(st_table *tab, st_data_t key, st_data_t value,
         entry->hash = hash_value;
         entry->key = key;
         entry->record = value;
-        if (bin_ind != UNDEFINED_BIN_IND)
+        if (bin_ind != UNDEFINED_BIN_IND) {
             set_bin(tab->bins, get_size_ind(tab), bin_ind, ind + ENTRY_BASE);
+            SWISS_SET_CTRL_OCCUPIED(tab, bin_ind, hash_value);
+        }
         return 0;
     }
     tab->entries[bin].record = value;
@@ -1332,6 +2053,20 @@ st_replace(st_table *new_tab, st_table *old_tab)
         }
 #endif
     }
+#ifdef ST_USE_SWISS_BINS
+    if (old_tab->ctrl == NULL) {
+        new_tab->ctrl = NULL;
+    }
+    else {
+        new_tab->ctrl = (unsigned char *) malloc(swiss_ctrl_alloc_size(old_tab));
+#ifndef RUBY
+        if (new_tab->ctrl == NULL) {
+            free(new_tab->bins);
+            return NULL;
+        }
+#endif
+    }
+#endif
     new_tab->entries = (st_table_entry *) malloc(get_allocated_entries(old_tab)
                                                  * sizeof(st_table_entry));
 #ifndef RUBY
@@ -1343,6 +2078,11 @@ st_replace(st_table *new_tab, st_table *old_tab)
            get_allocated_entries(old_tab));
     if (old_tab->bins != NULL)
         MEMCPY(new_tab->bins, old_tab->bins, char, bins_size(old_tab));
+#ifdef ST_USE_SWISS_BINS
+    if (old_tab->ctrl != NULL)
+        MEMCPY(new_tab->ctrl, old_tab->ctrl, unsigned char,
+               swiss_ctrl_alloc_size(old_tab));
+#endif
 
     return new_tab;
 }
@@ -1429,6 +2169,8 @@ st_general_delete(st_table *tab, st_data_t *key, st_data_t *value)
 int
 st_delete(st_table *tab, st_data_t *key, st_data_t *value)
 {
+    ST_STATS_RECORD_OP(ST_STATS_OP_DELETE);
+    ST_STATS_RECORD_CALLSITE(ST_STATS_OP_DELETE);
     return st_general_delete(tab, key, value);
 }
 
@@ -1441,6 +2183,8 @@ int
 st_delete_safe(st_table *tab, st_data_t *key, st_data_t *value,
                st_data_t never ATTRIBUTE_UNUSED)
 {
+    ST_STATS_RECORD_OP(ST_STATS_OP_DELETE);
+    ST_STATS_RECORD_CALLSITE(ST_STATS_OP_DELETE);
     return st_general_delete(tab, key, value);
 }
 
@@ -1456,6 +2200,8 @@ st_shift(st_table *tab, st_data_t *key, st_data_t *value)
     st_table_entry *entries, *curr_entry_ptr;
     st_index_t bin_ind;
 
+    ST_STATS_RECORD_OP(ST_STATS_OP_OTHER);
+    ST_STATS_RECORD_CALLSITE(ST_STATS_OP_OTHER);
     entries = tab->entries;
     bound = tab->entries_bound;
     for (i = tab->entries_start; i < bound; i++) {
@@ -1522,6 +2268,9 @@ st_update(st_table *tab, st_data_t key,
     st_data_t value = 0, old_key;
     int retval, existing;
     st_hash_t hash = do_hash(key, tab);
+
+    ST_STATS_RECORD_OP(ST_STATS_OP_OTHER);
+    ST_STATS_RECORD_CALLSITE(ST_STATS_OP_OTHER);
 
  retry:
     entries = tab->entries;
@@ -2196,6 +2945,9 @@ st_expand_table(st_table *tab, st_index_t siz)
     tab->size_ind = tmp->size_ind;
     tab->entries = tmp->entries;
     tab->bins = NULL;
+#ifdef ST_USE_SWISS_BINS
+    tab->ctrl = NULL;
+#endif
     tab->rebuilds_num++;
     free_fixed_ptr(tmp);
 }
@@ -2211,6 +2963,9 @@ st_rehash_linear(st_table *tab)
 
     st_free_bins(tab);
     tab->bins = NULL;
+#ifdef ST_USE_SWISS_BINS
+    tab->ctrl = NULL;
+#endif
 
     for (i = tab->entries_start; i < tab->entries_bound; i++) {
         p = &tab->entries[i];
@@ -2245,8 +3000,17 @@ st_rehash_indexed(st_table *tab)
     if (!tab->bins) {
         tab->bins = malloc(bins_size(tab));
     }
+#ifdef ST_USE_SWISS_BINS
+    if (!tab->ctrl && tab->entry_power >= SWISS_MIN_ENTRY_POWER) {
+        tab->ctrl = malloc(swiss_ctrl_alloc_size(tab));
+    }
+#endif
     unsigned int const size_ind = get_size_ind(tab);
     initialize_bins(tab);
+#ifdef ST_USE_SWISS_BINS
+    if (tab->ctrl != NULL)
+        memset(tab->ctrl, ST_SWISS_CTRL_EMPTY, swiss_ctrl_alloc_size(tab));
+#endif
     for (i = tab->entries_start; i < tab->entries_bound; i++) {
         st_table_entry *p = &tab->entries[i];
         st_index_t ind;
@@ -2265,6 +3029,7 @@ st_rehash_indexed(st_table *tab)
             if (EMPTY_OR_DELETED_BIN_P(bin)) {
                 /* ok, new room */
                 set_bin(tab->bins, size_ind, ind, i + ENTRY_BASE);
+                SWISS_SET_CTRL_OCCUPIED(tab, ind, p->hash);
                 break;
             }
             else {

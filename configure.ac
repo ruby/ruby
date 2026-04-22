@@ -746,6 +746,32 @@ AC_ARG_ENABLE(devel,
     [AS_IF([test "x${RUBY_DEVEL-no}" != xyes], [RUBY_DEVEL=])]
 )dnl
 AC_SUBST(RUBY_DEVEL)
+
+# Experimental Swiss-table-style bins backend for st.c.
+# Disabled by default; preserves insertion-order semantics by leaving entries[]
+# untouched and only swapping the index layer. See st.c for details.
+AC_ARG_ENABLE(swiss-st,
+    AS_HELP_STRING([--disable-swiss-st],
+        [disable Swiss-table style bins in st.c. The Swiss layer adds a
+         parallel control-byte array (ctrl[]) and uses scalar SWAR group
+         probing for faster lookups, especially on miss-dominated workloads.
+         (default: yes)]),
+    [enable_swiss_st=$enableval], [enable_swiss_st=yes])
+AS_IF([test "x$enable_swiss_st" = xyes], [
+    AC_DEFINE(ST_USE_SWISS_BINS, 1)
+])
+
+# Opt-in measurement subsystem for st.c. When enabled at compile time, the
+# RUBY_ST_STATS environment variable activates it at runtime; the report is
+# written to /tmp/ruby_st_stats.<pid> on exit. Default builds incur zero
+# overhead.
+AC_ARG_ENABLE(st-stats,
+    AS_HELP_STRING([--enable-st-stats],
+        [compile in the st.c measurement subsystem (runtime gated by RUBY_ST_STATS, default: no)]),
+    [enable_st_stats=$enableval], [enable_st_stats=no])
+AS_IF([test "x$enable_st_stats" = xyes], [
+    AC_DEFINE(ST_STATS, 1)
+])
 particular_werror_flags=${RUBY_DEVEL:-no}
 AC_ARG_ENABLE(werror,
 	AS_HELP_STRING([--disable-werror],

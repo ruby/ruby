@@ -92,6 +92,15 @@ struct st_table {
     st_index_t entries_start, entries_bound;
     /* Array of size 2^entry_power.  */
     st_table_entry *entries;
+#ifdef ST_USE_SWISS_BINS
+    /* Swiss-style control bytes, parallel to bins[].
+     *   0xff  = empty
+     *   0xfe  = deleted (tombstone)
+     *   0x00..0x7f = occupied (top bit clear); value is H2 of the hash
+     * Only allocated when entry_power >= SWISS_MIN_ENTRY_POWER; NULL otherwise.
+     * The standard bins[] index layer is always allocated alongside it. */
+    unsigned char *ctrl;
+#endif
 };
 
 #define st_is_member(table,key) st_lookup((table),(key),(st_data_t *)0)
