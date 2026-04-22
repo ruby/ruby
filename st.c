@@ -134,11 +134,25 @@
 /* The type of hashes.  */
 typedef st_index_t st_hash_t;
 
+/* When the Swiss-bins backend is enabled, st_table_entry is shrunk from
+ * 24 B to 16 B by moving the per-entry hash into a parallel uint32_t array
+ * (tab->hashes, declared in st_table). Storing only the low 32 bits is fine
+ * for our needs: bin placement uses the full hash from do_hash() at probe
+ * time, and the stored value is only used as a fast pre-filter before
+ * EQUAL(). The 16 B layout doubles entries[]-per-cache-line density, which
+ * profiling identified as the dominant remaining hot-path cost. */
+#ifdef ST_USE_SWISS_BINS
+struct st_table_entry {
+    st_data_t key;
+    st_data_t record;
+};
+#else
 struct st_table_entry {
     st_hash_t hash;
     st_data_t key;
     st_data_t record;
 };
+#endif
 
 #define type_numhash st_hashtype_num
 static const struct st_hash_type st_hashtype_num = {
@@ -185,8 +199,34 @@ static const struct st_hash_type type_strcasehash = {
 #endif
 
 #define EQUAL(tab,x,y) ((x) == (y) || (*(tab)->type->compare)((x),(y)) == 0)
-#define PTR_EQUAL(tab, ptr, hash_val, key_) \
+
+/* Per-entry hash access. With the Swiss-bins backend, the hash lives in the
+ * parallel tab->hashes[] array (one uint32_t per entry); without it, each
+ * st_table_entry stores its own 64-bit hash inline. The macros below hide
+ * the difference so the bulk of st.c is layout-agnostic. */
+#ifdef ST_USE_SWISS_BINS
+typedef uint32_t st_hash32_t;
+# define ST_RESERVED_HASH32_VAL ((st_hash32_t)0xFFFFFFFFu)
+# define ST_HASH_AT_PTR(tab, ptr) \
+    ((tab)->hashes[(st_index_t)((ptr) - (tab)->entries)])
+# define ST_HASH_AT_IDX(tab, idx) ((tab)->hashes[(idx)])
+# define ST_HASH32_FROM(h) ((st_hash32_t)(h))
+/* For the compact-entry layout we keep the 32-bit hash check as a
+ * cheap prefilter before EQUAL (which can be expensive for strings,
+ * symbols, and other Object keys). It costs one extra load from a
+ * different cache line, which is hidden by the prefetch issued at the
+ * H2-match site and amortised when EQUAL would otherwise run a full
+ * string compare. */
+# define PTR_EQUAL(tab, ptr, hash_val, key_) \
+    (ST_HASH_AT_PTR((tab), (ptr)) == ST_HASH32_FROM(hash_val) \
+     && EQUAL((tab), (key_), (ptr)->key))
+#else
+# define ST_HASH_AT_PTR(tab, ptr) ((ptr)->hash)
+# define ST_HASH_AT_IDX(tab, idx) ((tab)->entries[(idx)].hash)
+# define ST_HASH32_FROM(h) (h)
+# define PTR_EQUAL(tab, ptr, hash_val, key_) \
     ((ptr)->hash == (hash_val) && EQUAL((tab), (key_), (ptr)->key))
+#endif
 
 /* As PTR_EQUAL only its result is returned in RES.  REBUILT_P is set
    up to TRUE if the table is rebuilt during the comparison.  */
@@ -194,6 +234,19 @@ static const struct st_hash_type type_strcasehash = {
     do {							    \
         unsigned int _old_rebuilds_num = (tab)->rebuilds_num;       \
         res = PTR_EQUAL(tab, ptr, hash_val, key);		    \
+        rebuilt_p = _old_rebuilds_num != (tab)->rebuilds_num;	    \
+    } while (FALSE)
+
+/* PTR_EQUAL/DO_PTR_EQUAL_CHECK family for the set_table_entry layout, which
+ * keeps the legacy {hash, key} inline form (no record/value, so it is already
+ * 16 B and there is nothing to compact). The set side does not use the Swiss
+ * fast path, so it has no parallel hashes[] array. */
+#define SET_PTR_EQUAL(tab, ptr, hash_val, key_) \
+    ((ptr)->hash == (hash_val) && EQUAL((tab), (key_), (ptr)->key))
+#define SET_DO_PTR_EQUAL_CHECK(tab, ptr, hash_val, key, res, rebuilt_p) \
+    do {							    \
+        unsigned int _old_rebuilds_num = (tab)->rebuilds_num;       \
+        res = SET_PTR_EQUAL(tab, ptr, hash_val, key);		    \
         rebuilt_p = _old_rebuilds_num != (tab)->rebuilds_num;	    \
     } while (FALSE)
 
@@ -338,7 +391,14 @@ static inline st_hash_t
 normalize_hash_value(st_hash_t hash)
 {
     /* RESERVED_HASH_VAL is used for a deleted entry.  Map it into
-       another value.  Such mapping should be extremely rare.  */
+       another value.  Such mapping should be extremely rare. With the
+       Swiss-bins layout the per-entry hash is truncated to its low 32 bits,
+       so we also nudge any hash whose low half happens to equal the 32-bit
+       reserved value off by one to avoid a tombstone aliasing collision. */
+#ifdef ST_USE_SWISS_BINS
+    if ((uint32_t)hash == 0xFFFFFFFFu)
+        return RESERVED_HASH_SUBSTITUTION_VAL;
+#endif
     return hash == RESERVED_HASH_VAL ? RESERVED_HASH_SUBSTITUTION_VAL : hash;
 }
 
@@ -448,10 +508,23 @@ set_bin(st_index_t *bins, int s, st_index_t n, st_index_t v)
 #define IND_DELETED_BIN_P(tab, i) (DELETED_BIN_P(get_bin((tab)->bins, get_size_ind(tab), i)))
 #define IND_EMPTY_OR_DELETED_BIN_P(tab, i) (EMPTY_OR_DELETED_BIN_P(get_bin((tab)->bins, get_size_ind(tab), i)))
 
-/* Macros for marking and checking deleted entries given by their
-   pointer E_PTR.  */
-#define MARK_ENTRY_DELETED(e_ptr) ((e_ptr)->hash = RESERVED_HASH_VAL)
-#define DELETED_ENTRY_P(e_ptr) ((e_ptr)->hash == RESERVED_HASH_VAL)
+/* Macros for marking and checking deleted entries given by their pointer
+ * E_PTR.  Both forms take the table because the Swiss-bins layout stores
+ * the per-entry hash (and therefore the tombstone marker) in the parallel
+ * tab->hashes[] array; the legacy non-Swiss layout still keeps it inline. */
+#ifdef ST_USE_SWISS_BINS
+# define MARK_ENTRY_DELETED(tab, e_ptr) \
+    (ST_HASH_AT_PTR((tab), (e_ptr)) = ST_RESERVED_HASH32_VAL)
+# define DELETED_ENTRY_P(tab, e_ptr) \
+    (ST_HASH_AT_PTR((tab), (e_ptr)) == ST_RESERVED_HASH32_VAL)
+#else
+# define MARK_ENTRY_DELETED(tab, e_ptr) ((e_ptr)->hash = RESERVED_HASH_VAL)
+# define DELETED_ENTRY_P(tab, e_ptr)    ((e_ptr)->hash == RESERVED_HASH_VAL)
+#endif
+
+/* set_table_entry keeps its hash inline (16 B already; nothing to compact). */
+#define SET_MARK_ENTRY_DELETED(e_ptr) ((e_ptr)->hash = RESERVED_HASH_VAL)
+#define SET_DELETED_ENTRY_P(e_ptr)    ((e_ptr)->hash == RESERVED_HASH_VAL)
 
 /* Return bin size index of table TAB.  */
 static inline unsigned int
@@ -905,11 +978,19 @@ st_stats_dump(void)
 #define ST_SWISS_CTRL_IS_EMPTY_OR_DELETED(c)  (((c) & (unsigned char)0x80) != 0)
 #define ST_SWISS_CTRL_IS_OCCUPIED(c)          (((c) & (unsigned char)0x80) == 0)
 
-/* H2 derivation: top 7 bits of the hash. */
+/* H2 derivation: bits 25..31 of the hash. We deliberately stay within
+ * the low 32 bits so that the parallel uint32_t hashes[] (see
+ * include/ruby/st.h) can be used as-is during rebuild without having
+ * to recompute the full 64-bit hash from the key. Bin selection
+ * (hash_bin) uses bits 0..bin_power-1, so as long as bin_power <= 25
+ * (32M bins) the H2 byte stays uncorrelated with the bin index. For
+ * the rare giant tables beyond that threshold, the H2 prefilter loses
+ * a little quality but lookups remain correct: PTR_EQUAL still falls
+ * through to a full key comparison. */
 static inline unsigned char
 st_swiss_h2(st_hash_t hash)
 {
-    return (unsigned char)((hash >> ((sizeof(st_hash_t) * 8) - 7)) & 0x7f);
+    return (unsigned char)((hash >> 25) & 0x7f);
 }
 
 /* Number of Swiss bin slots. Mirrors the bins layout: it is the actual number
@@ -1090,6 +1171,9 @@ st_init_existing_table_with_size(st_table *tab, const struct st_hash_type *type,
 #endif
     }
 #ifdef ST_USE_SWISS_BINS
+    /* Pre-NULL the parallel arrays so partial-failure cleanup paths
+     * (st_free_table -> st_free_entries) never touch garbage. */
+    tab->hashes = NULL;
     /* Allocate the parallel control-byte array only above the threshold.
      * Below it we fall through to the existing perturb-chain logic. */
     if (tab->bins != NULL && n >= SWISS_MIN_ENTRY_POWER) {
@@ -1113,6 +1197,16 @@ st_init_existing_table_with_size(st_table *tab, const struct st_hash_type *type,
         st_free_table(tab);
         return NULL;
     }
+#endif
+#ifdef ST_USE_SWISS_BINS
+    tab->hashes = (uint32_t *) malloc(get_allocated_entries(tab)
+                                      * sizeof(uint32_t));
+#ifndef RUBY
+    if (tab->hashes == NULL) {
+        st_free_table(tab);
+        return NULL;
+    }
+#endif
 #endif
     make_tab_empty(tab);
     tab->rebuilds_num = 0;
@@ -1242,12 +1336,22 @@ st_ctrl_memsize(const st_table *tab)
 {
     return tab->ctrl == NULL ? 0 : swiss_ctrl_alloc_size(tab);
 }
+
+static inline size_t
+st_hashes_memsize(const st_table *tab)
+{
+    return get_allocated_entries(tab) * sizeof(uint32_t);
+}
 #endif
 
 static inline void
 st_free_entries(const st_table *tab)
 {
     sized_free(tab->entries, st_entries_memsize(tab));
+#ifdef ST_USE_SWISS_BINS
+    if (tab->hashes != NULL)
+        sized_free(tab->hashes, st_hashes_memsize(tab));
+#endif
 }
 
 static inline void
@@ -1284,6 +1388,7 @@ st_memsize(const st_table *tab)
            + st_bins_memsize(tab)
 #ifdef ST_USE_SWISS_BINS
            + st_ctrl_memsize(tab)
+           + (tab->hashes == NULL ? 0 : st_hashes_memsize(tab))
 #endif
            + st_entries_memsize(tab));
 }
@@ -1403,15 +1508,21 @@ rebuild_table_with(st_table *const new_tab, st_table *const tab)
     for (i = tab->entries_start; i < bound; i++) {
         curr_entry_ptr = &entries[i];
         PREFETCH(entries + i + 1, 0);
-        if (EXPECT(DELETED_ENTRY_P(curr_entry_ptr), 0))
+        if (EXPECT(DELETED_ENTRY_P(tab, curr_entry_ptr), 0))
             continue;
+        /* The stored 32-bit hash is enough for hash_bin() (bin_power is
+         * almost always <= 25 in practice) and for st_swiss_h2() (we
+         * derive H2 from bits 25..31 -- see st_swiss_h2 above). No need
+         * to recompute via do_hash here. */
+        st_hash_t curr_hash = ST_HASH_AT_IDX(tab, i);
         if (&new_entries[ni] != curr_entry_ptr)
             new_entries[ni] = *curr_entry_ptr;
+        ST_HASH_AT_IDX(new_tab, ni) = ST_HASH32_FROM(curr_hash);
         if (EXPECT(bins != NULL, 1)) {
-            bin_ind = find_table_bin_ind_direct(new_tab, curr_entry_ptr->hash,
+            bin_ind = find_table_bin_ind_direct(new_tab, curr_hash,
                                                 curr_entry_ptr->key);
             set_bin(bins, size_ind, bin_ind, ni + ENTRY_BASE);
-            SWISS_SET_CTRL_OCCUPIED(new_tab, bin_ind, curr_entry_ptr->hash);
+            SWISS_SET_CTRL_OCCUPIED(new_tab, bin_ind, curr_hash);
         }
         new_tab->num_entries++;
         ni++;
@@ -1432,6 +1543,7 @@ rebuild_move_table(st_table *const new_tab, st_table *const tab)
     tab->bins = new_tab->bins;
 #ifdef ST_USE_SWISS_BINS
     tab->ctrl = new_tab->ctrl;
+    tab->hashes = new_tab->hashes;
 #endif
     tab->entries = new_tab->entries;
     free_fixed_ptr(new_tab);
@@ -1531,6 +1643,11 @@ find_table_entry_ind(st_table *tab, st_hash_t hash_value, st_data_t key)
                 st_index_t cand_bin_ind = group_idx + slot;
                 st_index_t cand_bin = get_bin(tab->bins, swiss_size_ind, cand_bin_ind);
                 if (EXPECT(!EMPTY_OR_DELETED_BIN_P(cand_bin), 1)) {
+                    /* H2 matched: pull the entry's key/record cache line
+                     * (and the parallel hash slot) ahead of PTR_EQUAL so
+                     * the comparison can overlap with the memory fetch. */
+                    PREFETCH(&entries[cand_bin - ENTRY_BASE], 0);
+                    PREFETCH(&tab->hashes[cand_bin - ENTRY_BASE], 0);
                     DO_PTR_EQUAL_CHECK(tab, &entries[cand_bin - ENTRY_BASE],
                                        hash_value, key, eq_p, rebuilt_p);
                     if (EXPECT(rebuilt_p, 0))
@@ -1619,6 +1736,10 @@ find_table_bin_ind(st_table *tab, st_hash_t hash_value, st_data_t key)
                 st_index_t cand_bin_ind = group_idx + slot;
                 st_index_t cand_bin = get_bin(tab->bins, swiss_size_ind, cand_bin_ind);
                 if (EXPECT(!EMPTY_OR_DELETED_BIN_P(cand_bin), 1)) {
+                    /* H2 matched: prefetch the entry/hashes line so the
+                     * PTR_EQUAL load can overlap with memory latency. */
+                    PREFETCH(&entries[cand_bin - ENTRY_BASE], 0);
+                    PREFETCH(&tab->hashes[cand_bin - ENTRY_BASE], 0);
                     DO_PTR_EQUAL_CHECK(tab, &entries[cand_bin - ENTRY_BASE],
                                        hash_value, key, eq_p, rebuilt_p);
                     if (EXPECT(rebuilt_p, 0))
@@ -1781,6 +1902,10 @@ find_table_bin_ptr_and_reserve(st_table *tab, st_hash_t *hash_value,
                 st_index_t cand_bin_ind = group_idx + slot;
                 st_index_t cand_entry = get_bin(tab->bins, swiss_size_ind, cand_bin_ind);
                 if (EXPECT(!EMPTY_OR_DELETED_BIN_P(cand_entry), 1)) {
+                    /* H2 matched: prefetch the entry/hashes line so the
+                     * PTR_EQUAL load can overlap with memory latency. */
+                    PREFETCH(&entries[cand_entry - ENTRY_BASE], 0);
+                    PREFETCH(&tab->hashes[cand_entry - ENTRY_BASE], 0);
                     DO_PTR_EQUAL_CHECK(tab, &entries[cand_entry - ENTRY_BASE],
                                        curr_hash_value, key, eq_p, rebuilt_p);
                     if (EXPECT(rebuilt_p, 0))
@@ -1998,7 +2123,7 @@ st_insert(st_table *tab, st_data_t key, st_data_t value)
     if (new_p) {
         ind = tab->entries_bound++;
         entry = &tab->entries[ind];
-        entry->hash = hash_value;
+        ST_HASH_AT_IDX(tab, ind) = ST_HASH32_FROM(hash_value);
         entry->key = key;
         entry->record = value;
         if (bin_ind != UNDEFINED_BIN_IND) {
@@ -2026,7 +2151,7 @@ st_add_direct_with_hash(st_table *tab,
     rebuild_table_if_necessary(tab);
     ind = tab->entries_bound++;
     entry = &tab->entries[ind];
-    entry->hash = hash;
+    ST_HASH_AT_IDX(tab, ind) = ST_HASH32_FROM(hash);
     entry->key = key;
     entry->record = value;
     tab->num_entries++;
@@ -2095,7 +2220,7 @@ st_insert2(st_table *tab, st_data_t key, st_data_t value,
         key = (*func)(key);
         ind = tab->entries_bound++;
         entry = &tab->entries[ind];
-        entry->hash = hash_value;
+        ST_HASH_AT_IDX(tab, ind) = ST_HASH32_FROM(hash_value);
         entry->key = key;
         entry->record = value;
         if (bin_ind != UNDEFINED_BIN_IND) {
@@ -2144,6 +2269,17 @@ st_replace(st_table *new_tab, st_table *old_tab)
         return NULL;
     }
 #endif
+#ifdef ST_USE_SWISS_BINS
+    new_tab->hashes = (uint32_t *) malloc(get_allocated_entries(old_tab)
+                                          * sizeof(uint32_t));
+#ifndef RUBY
+    if (new_tab->hashes == NULL) {
+        return NULL;
+    }
+#endif
+    MEMCPY(new_tab->hashes, old_tab->hashes, uint32_t,
+           get_allocated_entries(old_tab));
+#endif
     MEMCPY(new_tab->entries, old_tab->entries, st_table_entry,
            get_allocated_entries(old_tab));
     if (old_tab->bins != NULL)
@@ -2188,7 +2324,7 @@ update_range_for_deleted(st_table *tab, st_index_t n)
         st_index_t start = n + 1;
         st_index_t bound = tab->entries_bound;
         st_table_entry *entries = tab->entries;
-        while (start < bound && DELETED_ENTRY_P(&entries[start])) start++;
+        while (start < bound && DELETED_ENTRY_P(tab, &entries[start])) start++;
         tab->entries_start = start;
     }
 }
@@ -2230,7 +2366,7 @@ st_general_delete(st_table *tab, st_data_t *key, st_data_t *value)
     entry = &tab->entries[bin];
     *key = entry->key;
     if (value != 0) *value = entry->record;
-    MARK_ENTRY_DELETED(entry);
+    MARK_ENTRY_DELETED(tab, entry);
     tab->num_entries--;
     update_range_for_deleted(tab, bin);
     return 1;
@@ -2276,9 +2412,14 @@ st_shift(st_table *tab, st_data_t *key, st_data_t *value)
     bound = tab->entries_bound;
     for (i = tab->entries_start; i < bound; i++) {
         curr_entry_ptr = &entries[i];
-        if (! DELETED_ENTRY_P(curr_entry_ptr)) {
-            st_hash_t entry_hash = curr_entry_ptr->hash;
+        if (! DELETED_ENTRY_P(tab, curr_entry_ptr)) {
             st_data_t entry_key = curr_entry_ptr->key;
+            /* Recompute the full hash from the key. With the Swiss-bins
+             * layout the per-entry hash is truncated to 32 bits, which
+             * is sufficient for hash_bin() (bin_power <= 25 in
+             * practice) and for st_swiss_h2() since H2 lives in bits
+             * 25..31 of the 32-bit truncation. */
+            st_hash_t entry_hash = ST_HASH_AT_PTR(tab, curr_entry_ptr);
 
             if (value != 0) *value = curr_entry_ptr->record;
             *key = entry_key;
@@ -2301,7 +2442,7 @@ st_shift(st_table *tab, st_data_t *key, st_data_t *value)
                                           - ENTRY_BASE];
                 MARK_BIN_DELETED(tab, bin_ind);
             }
-            MARK_ENTRY_DELETED(curr_entry_ptr);
+            MARK_ENTRY_DELETED(tab, curr_entry_ptr);
             tab->num_entries--;
             update_range_for_deleted(tab, i);
             return 1;
@@ -2392,7 +2533,7 @@ st_update(st_table *tab, st_data_t key,
         if (existing) {
             if (bin_ind != UNDEFINED_BIN_IND)
                 MARK_BIN_DELETED(tab, bin_ind);
-            MARK_ENTRY_DELETED(entry);
+            MARK_ENTRY_DELETED(tab, entry);
             tab->num_entries--;
             update_range_for_deleted(tab, bin);
         }
@@ -2423,15 +2564,21 @@ st_general_foreach(st_table *tab, st_foreach_check_callback_func *func, st_updat
     int error_p, packed_p = tab->bins == NULL;
 
     entries = tab->entries;
+    int hash_known = 0;
     /* The bound can change inside the loop even without rebuilding
        the table, e.g. by an entry insertion.  */
     for (i = tab->entries_start; i < tab->entries_bound; i++) {
         curr_entry_ptr = &entries[i];
-        if (EXPECT(DELETED_ENTRY_P(curr_entry_ptr), 0))
+        if (EXPECT(DELETED_ENTRY_P(tab, curr_entry_ptr), 0))
             continue;
         key = curr_entry_ptr->key;
         rebuilds_num = tab->rebuilds_num;
-        hash = curr_entry_ptr->hash;
+        /* Capture the per-entry hash up front so the post-rebuild and
+         * ST_DELETE branches can reuse it without calling do_hash() on
+         * the key again. The 32-bit truncation is fine for both
+         * hash_bin() and st_swiss_h2() (see comment on st_swiss_h2). */
+        hash = ST_HASH_AT_PTR(tab, curr_entry_ptr);
+        hash_known = 1;
         retval = (*func)(key, curr_entry_ptr->record, arg, 0);
 
         if (retval == ST_REPLACE && replace) {
@@ -2443,6 +2590,10 @@ st_general_foreach(st_table *tab, st_foreach_check_callback_func *func, st_updat
         }
 
         if (rebuilds_num != tab->rebuilds_num) {
+            /* The callback caused a rebuild; entries[] indices may have
+             * shifted, but `hash` (captured above from the parallel
+             * hashes[] array) is still the correct value for `key`
+             * since do_hash is deterministic. Re-find by hash + key. */
         retry:
             entries = tab->entries;
             packed_p = tab->bins == NULL;
@@ -2478,6 +2629,7 @@ st_general_foreach(st_table *tab, st_foreach_check_callback_func *func, st_updat
             return 0;
           case ST_DELETE: {
             st_data_t key = curr_entry_ptr->key;
+            /* hash was captured from hashes[] at the top of the loop. */
 
               again:
             if (packed_p) {
@@ -2497,13 +2649,15 @@ st_general_foreach(st_table *tab, st_foreach_check_callback_func *func, st_updat
                 MARK_BIN_DELETED(tab, bin_ind);
             }
             curr_entry_ptr = &entries[bin];
-            MARK_ENTRY_DELETED(curr_entry_ptr);
+            MARK_ENTRY_DELETED(tab, curr_entry_ptr);
             tab->num_entries--;
             update_range_for_deleted(tab, bin);
             break;
           }
         }
     }
+    (void)hash;
+    (void)hash_known;
     return 0;
 }
 
@@ -2557,7 +2711,7 @@ st_general_keys(st_table *tab, st_data_t *keys, st_index_t size)
             break;
         curr_entry_ptr = &entries[i];
         key = curr_entry_ptr->key;
-        if (! DELETED_ENTRY_P(curr_entry_ptr))
+        if (! DELETED_ENTRY_P(tab, curr_entry_ptr))
             *keys++ = key;
     }
 
@@ -2594,7 +2748,7 @@ st_general_values(st_table *tab, st_data_t *values, st_index_t size)
         if (values == values_end)
             break;
         curr_entry_ptr = &entries[i];
-        if (! DELETED_ENTRY_P(curr_entry_ptr))
+        if (! DELETED_ENTRY_P(tab, curr_entry_ptr))
             *values++ = curr_entry_ptr->record;
     }
 
@@ -3006,6 +3160,11 @@ st_expand_table(st_table *tab, st_index_t siz)
     tmp = st_init_table_with_size(tab->type, siz);
     n = get_allocated_entries(tab);
     MEMCPY(tmp->entries, tab->entries, st_table_entry, n);
+#ifdef ST_USE_SWISS_BINS
+    /* Carry the parallel hashes[] over too, otherwise PTR_EQUAL on the
+     * expanded table would compare against zeroed-out hash slots. */
+    MEMCPY(tmp->hashes, tab->hashes, uint32_t, n);
+#endif
     st_free_bins(tab);
     st_free_entries(tab);
     st_free_bins(tmp);
@@ -3017,6 +3176,7 @@ st_expand_table(st_table *tab, st_index_t siz)
     tab->bins = NULL;
 #ifdef ST_USE_SWISS_BINS
     tab->ctrl = NULL;
+    tab->hashes = tmp->hashes;
 #endif
     tab->rebuilds_num++;
     free_fixed_ptr(tmp);
@@ -3039,18 +3199,21 @@ st_rehash_linear(st_table *tab)
 
     for (i = tab->entries_start; i < tab->entries_bound; i++) {
         p = &tab->entries[i];
-        if (DELETED_ENTRY_P(p))
+        if (DELETED_ENTRY_P(tab, p))
             continue;
         for (j = i + 1; j < tab->entries_bound; j++) {
             q = &tab->entries[j];
-            if (DELETED_ENTRY_P(q))
+            if (DELETED_ENTRY_P(tab, q))
                 continue;
-            DO_PTR_EQUAL_CHECK(tab, p, q->hash, q->key, eq_p, rebuilt_p);
+            DO_PTR_EQUAL_CHECK(tab, p, ST_HASH_AT_PTR(tab, q), q->key, eq_p, rebuilt_p);
             if (EXPECT(rebuilt_p, 0))
                 return TRUE;
             if (eq_p) {
+                /* Move q's hash into p's slot before overwriting the entry
+                 * (the parallel hashes[] is keyed by entry index). */
+                ST_HASH_AT_PTR(tab, p) = ST_HASH_AT_PTR(tab, q);
                 *p = *q;
-                MARK_ENTRY_DELETED(q);
+                MARK_ENTRY_DELETED(tab, q);
                 tab->num_entries--;
                 update_range_for_deleted(tab, j);
             }
@@ -3084,33 +3247,38 @@ st_rehash_indexed(st_table *tab)
     for (i = tab->entries_start; i < tab->entries_bound; i++) {
         st_table_entry *p = &tab->entries[i];
         st_index_t ind;
+
+        if (DELETED_ENTRY_P(tab, p))
+            continue;
+
+        /* The stored 32-bit hash is sufficient for hash_bin() and for
+         * st_swiss_h2() (see comment on st_swiss_h2). No need to call
+         * do_hash again. */
+        st_hash_t fresh = ST_HASH_AT_IDX(tab, i);
 #ifdef QUADRATIC_PROBE
         st_index_t d = 1;
 #else
-        st_index_t perturb = p->hash;
+        st_index_t perturb = fresh;
 #endif
 
-        if (DELETED_ENTRY_P(p))
-            continue;
-
-        ind = hash_bin(p->hash, tab);
+        ind = hash_bin(fresh, tab);
         for (;;) {
             st_index_t bin = get_bin(tab->bins, size_ind, ind);
             if (EMPTY_OR_DELETED_BIN_P(bin)) {
                 /* ok, new room */
                 set_bin(tab->bins, size_ind, ind, i + ENTRY_BASE);
-                SWISS_SET_CTRL_OCCUPIED(tab, ind, p->hash);
+                SWISS_SET_CTRL_OCCUPIED(tab, ind, fresh);
                 break;
             }
             else {
                 st_table_entry *q = &tab->entries[bin - ENTRY_BASE];
-                DO_PTR_EQUAL_CHECK(tab, q, p->hash, p->key, eq_p, rebuilt_p);
+                DO_PTR_EQUAL_CHECK(tab, q, fresh, p->key, eq_p, rebuilt_p);
                 if (EXPECT(rebuilt_p, 0))
                     return TRUE;
                 if (eq_p) {
                     /* duplicated key; delete it */
                     q->record = p->record;
-                    MARK_ENTRY_DELETED(p);
+                    MARK_ENTRY_DELETED(tab, p);
                     tab->num_entries--;
                     update_range_for_deleted(tab, bin);
                     break;
@@ -3157,12 +3325,11 @@ static void
 st_insert_single(st_table *tab, VALUE hash, VALUE key, VALUE val)
 {
     st_data_t k = st_stringify(key);
-    st_table_entry e;
-    e.hash = do_hash(k, tab);
-    e.key = k;
-    e.record = val;
-
-    tab->entries[tab->entries_bound++] = e;
+    st_index_t i = tab->entries_bound++;
+    st_hash_t h = do_hash(k, tab);
+    ST_HASH_AT_IDX(tab, i) = ST_HASH32_FROM(h);
+    tab->entries[i].key = k;
+    tab->entries[i].record = val;
     tab->num_entries++;
     RB_OBJ_WRITTEN(hash, Qundef, k);
     RB_OBJ_WRITTEN(hash, Qundef, val);
@@ -3512,7 +3679,7 @@ set_rebuild_table_with(set_table *const new_tab, set_table *const tab)
     for (i = tab->entries_start; i < bound; i++) {
         curr_entry_ptr = &entries[i];
         PREFETCH(entries + i + 1, 0);
-        if (EXPECT(DELETED_ENTRY_P(curr_entry_ptr), 0))
+        if (EXPECT(SET_DELETED_ENTRY_P(curr_entry_ptr), 0))
             continue;
         if (&new_entries[ni] != curr_entry_ptr)
             new_entries[ni] = *curr_entry_ptr;
@@ -3583,7 +3750,7 @@ set_find_entry(set_table *tab, st_hash_t hash_value, st_data_t key)
     bound = tab->entries_bound;
     entries = tab->entries;
     for (i = tab->entries_start; i < bound; i++) {
-        DO_PTR_EQUAL_CHECK(tab, &entries[i], hash_value, key, eq_p, rebuilt_p);
+        SET_DO_PTR_EQUAL_CHECK(tab, &entries[i], hash_value, key, eq_p, rebuilt_p);
         if (EXPECT(rebuilt_p, 0))
             return REBUILT_TABLE_ENTRY_IND;
         if (eq_p)
@@ -3622,7 +3789,7 @@ set_find_table_entry_ind(set_table *tab, st_hash_t hash_value, st_data_t key)
     for (;;) {
         bin = get_bin(set_bins_ptr(tab), set_get_size_ind(tab), ind);
         if (! EMPTY_OR_DELETED_BIN_P(bin)) {
-            DO_PTR_EQUAL_CHECK(tab, &entries[bin - ENTRY_BASE], hash_value, key, eq_p, rebuilt_p);
+            SET_DO_PTR_EQUAL_CHECK(tab, &entries[bin - ENTRY_BASE], hash_value, key, eq_p, rebuilt_p);
             if (EXPECT(rebuilt_p, 0))
                 return REBUILT_TABLE_ENTRY_IND;
             if (eq_p)
@@ -3666,7 +3833,7 @@ set_find_table_bin_ind(set_table *tab, st_hash_t hash_value, st_data_t key)
     for (;;) {
         bin = get_bin(set_bins_ptr(tab), set_get_size_ind(tab), ind);
         if (! EMPTY_OR_DELETED_BIN_P(bin)) {
-            DO_PTR_EQUAL_CHECK(tab, &entries[bin - ENTRY_BASE], hash_value, key, eq_p, rebuilt_p);
+            SET_DO_PTR_EQUAL_CHECK(tab, &entries[bin - ENTRY_BASE], hash_value, key, eq_p, rebuilt_p);
             if (EXPECT(rebuilt_p, 0))
                 return REBUILT_TABLE_BIN_IND;
             if (eq_p)
@@ -3767,7 +3934,7 @@ set_find_table_bin_ptr_and_reserve(set_table *tab, st_hash_t *hash_value,
             break;
         }
         else if (! DELETED_BIN_P(entry_index)) {
-            DO_PTR_EQUAL_CHECK(tab, &entries[entry_index - ENTRY_BASE], curr_hash_value, key, eq_p, rebuilt_p);
+            SET_DO_PTR_EQUAL_CHECK(tab, &entries[entry_index - ENTRY_BASE], curr_hash_value, key, eq_p, rebuilt_p);
             if (EXPECT(rebuilt_p, 0))
                 return REBUILT_TABLE_ENTRY_IND;
             if (eq_p)
@@ -3904,7 +4071,7 @@ set_update_range_for_deleted(set_table *tab, st_index_t n)
         st_index_t start = n + 1;
         st_index_t bound = tab->entries_bound;
         set_table_entry *entries = tab->entries;
-        while (start < bound && DELETED_ENTRY_P(&entries[start])) start++;
+        while (start < bound && SET_DELETED_ENTRY_P(&entries[start])) start++;
         tab->entries_start = start;
     }
 }
@@ -3949,7 +4116,7 @@ set_table_delete(set_table *tab, st_data_t *key)
     }
     entry = &tab->entries[bin];
     *key = entry->key;
-    MARK_ENTRY_DELETED(entry);
+    SET_MARK_ENTRY_DELETED(entry);
     tab->num_entries--;
     set_update_range_for_deleted(tab, bin);
     return 1;
@@ -3982,7 +4149,7 @@ set_general_foreach(set_table *tab, set_foreach_check_callback_func *func,
        the table, e.g. by an entry insertion.  */
     for (i = tab->entries_start; i < tab->entries_bound; i++) {
         curr_entry_ptr = &entries[i];
-        if (EXPECT(DELETED_ENTRY_P(curr_entry_ptr), 0))
+        if (EXPECT(SET_DELETED_ENTRY_P(curr_entry_ptr), 0))
             continue;
         key = curr_entry_ptr->key;
         rebuilds_num = tab->rebuilds_num;
@@ -4049,7 +4216,7 @@ set_general_foreach(set_table *tab, set_foreach_check_callback_func *func,
                 MARK_SET_BIN_DELETED(tab, bin_ind);
             }
             curr_entry_ptr = &entries[bin];
-            MARK_ENTRY_DELETED(curr_entry_ptr);
+            SET_MARK_ENTRY_DELETED(curr_entry_ptr);
             tab->num_entries--;
             set_update_range_for_deleted(tab, bin);
             break;
@@ -4109,7 +4276,7 @@ set_keys(set_table *tab, st_data_t *keys, st_index_t size)
             break;
         curr_entry_ptr = &entries[i];
         key = curr_entry_ptr->key;
-        if (! DELETED_ENTRY_P(curr_entry_ptr))
+        if (! SET_DELETED_ENTRY_P(curr_entry_ptr))
             *keys++ = key;
     }
 
