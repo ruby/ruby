@@ -197,6 +197,16 @@ static const struct st_hash_type type_strcasehash = {
         rebuilt_p = _old_rebuilds_num != (tab)->rebuilds_num;	    \
     } while (FALSE)
 
+#ifdef ST_USE_SWISS_BINS
+/* Forward-defined here so the bins_size / table init helpers below can
+ * see it; the rich documentation lives next to the rest of the Swiss
+ * machinery further down. Below this entry_power, do not use the
+ * Swiss-bins fast path. */
+#ifndef SWISS_MIN_ENTRY_POWER
+#define SWISS_MIN_ENTRY_POWER 6
+#endif
+#endif
+
 /* Features of a table.  */
 struct st_features {
     /* Power of 2 used for number of allocated entries.  */
@@ -479,11 +489,50 @@ get_allocated_entries(const st_table *tab)
     return ((st_index_t) 1)<<tab->entry_power;
 }
 
+#ifdef ST_USE_SWISS_BINS
+/* Returns true if the Swiss-bins fast path will be active for a table
+ * of the given entry_power. */
+static inline int
+swiss_active_for_power_p(unsigned char n)
+{
+    return n >= SWISS_MIN_ENTRY_POWER;
+}
+
+/* Effective bin_power for a table of the given entry_power. Swiss-active
+ * tables use a 1x bins[] (bin_power == entry_power) instead of the
+ * default 2x layout, so peak bins[] load tracks peak entries[] load.
+ * The rebuild trigger (see rebuild_table_if_necessary) caps the latter
+ * at ~7/8 so the SWAR empty-byte short-circuit keeps miss probes cheap.
+ * Non-Swiss tables (small ones, parser_st.c, --disable-swiss-st) use the
+ * features[] table unchanged. */
+static inline unsigned char
+table_bin_power_for(unsigned char n)
+{
+    return swiss_active_for_power_p(n) ? n : features[n].bin_power;
+}
+
+/* Effective bins[] storage size, in st_index_t words, for a table of
+ * the given entry_power. Halved for Swiss-active tables in lockstep
+ * with the bin_count change above. */
+static inline st_index_t
+table_bins_words_for(unsigned char n)
+{
+    if (swiss_active_for_power_p(n)) {
+        st_index_t w = features[n].bins_words;
+        return w == 0 ? 0 : (w + 1) / 2;
+    }
+    return features[n].bins_words;
+}
+#else
+# define table_bin_power_for(n)   (features[n].bin_power)
+# define table_bins_words_for(n)  (features[n].bins_words)
+#endif
+
 /* Return size of the allocated bins of table TAB.  */
 static inline st_index_t
 bins_size(const st_table *tab)
 {
-    return features[tab->entry_power].bins_words * sizeof (st_index_t);
+    return table_bins_words_for(tab->entry_power) * sizeof (st_index_t);
 }
 
 /* Mark all bins of table TAB as empty.  */
@@ -837,9 +886,12 @@ st_stats_dump(void)
  * perturb-chain or no-bins layout. Tunable; benchmark to refine.
  *
  * Floor: SWISS_MIN_ENTRY_POWER must guarantee bin_count >= ST_SWISS_GROUP_SIZE
- * so a single group load covers a full power-of-two slice. With the current
- * features[] table, entry_power=6 maps to bin_power=7 (bin_count=128), which
- * is comfortably above 8. */
+ * so a single group load covers a full power-of-two slice. Swiss-active
+ * tables override bin_power = entry_power (see table_bin_power_for), so at
+ * entry_power=6 we have bin_count=64 = 8 groups, the minimum that still
+ * makes triangular probing meaningful. The macro is forward-defined near
+ * the top of the file so the layout helpers can see it; the real
+ * documentation lives here. */
 #ifndef SWISS_MIN_ENTRY_POWER
 #define SWISS_MIN_ENTRY_POWER 6
 #endif
@@ -1021,7 +1073,10 @@ st_init_existing_table_with_size(st_table *tab, const struct st_hash_type *type,
 
     tab->type = type;
     tab->entry_power = n;
-    tab->bin_power = features[n].bin_power;
+    tab->bin_power = table_bin_power_for(n);
+    /* size_ind tracks the byte-width needed to store an entries[] index,
+     * which is bounded by 2^entry_power irrespective of bin_count, so it
+     * is unchanged when Swiss halves the bin_count. */
     tab->size_ind = features[n].size_ind;
     if (n <= MAX_POWER2_FOR_TABLES_WITHOUT_BINS)
         tab->bins = NULL;
@@ -1885,8 +1940,23 @@ static inline void
 rebuild_table_if_necessary (st_table *tab)
 {
     st_index_t bound = tab->entries_bound;
+    st_index_t cap = get_allocated_entries(tab);
 
-    if (bound == get_allocated_entries(tab))
+#ifdef ST_USE_SWISS_BINS
+    /* Swiss-active tables use bin_count == entries capacity (1x bins,
+     * not 2x), so peak bins[] load equals peak entries_bound load.
+     * Trigger a rebuild slightly before entries[] is full so bins[]
+     * never crosses ~7/8 occupied+tombstoned -- this keeps at least one
+     * EMPTY slot per 8-byte SWAR group on average, which is what makes
+     * the empty-byte short-circuit terminate miss probes cheaply. */
+    if (swiss_active_p(tab)) {
+        if (bound * 8 >= cap * 7)
+            rebuild_table(tab);
+        return;
+    }
+#endif
+
+    if (bound == cap)
         rebuild_table(tab);
 }
 
