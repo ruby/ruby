@@ -115,6 +115,17 @@ module Bundler
           "Run `git checkout HEAD -- #{@lockfile_path}` first to get a clean lock."
       end
 
+      @valid = lockfile.strip.empty? ||
+        lockfile.split(/(?:\r?\n)+/).any? {|l| KNOWN_SECTIONS.include?(l) }
+
+      unless @valid
+        SharedHelpers.feature_deprecated!(
+          "Your #{@lockfile_path} does not appear to be a valid lockfile. " \
+          "Run `rm #{@lockfile_path}` and then `bundle install` to generate a new lockfile. " \
+          "This will raise a LockfileError in a future version of Bundler."
+        )
+      end
+
       lockfile.split(/((?:\r?\n)+)/) do |line|
         # split alternates between the line and the following whitespace
         next @pos.advance!(line) if line.match?(/^\s*$/)
@@ -162,6 +173,10 @@ module Bundler
 
     def may_include_redundant_platform_specific_gems?
       bundler_version.nil? || bundler_version < Gem::Version.new("1.16.2")
+    end
+
+    def valid?
+      @valid
     end
 
     private
