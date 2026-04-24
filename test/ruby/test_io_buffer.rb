@@ -694,6 +694,36 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal IO::Buffer.for("\xce\xcd\xcc\xcb\xce\xcd\xcc\xcb\xce\xcd"), source.dup.not!
   end
 
+  def test_popcount
+    # All ones: 8 bits set per byte
+    assert_equal 8,  IO::Buffer.for("\xFF").popcount
+    # All zeros: no bits set
+    assert_equal 0,  IO::Buffer.for("\x00").popcount
+    # Mixed: 0xFF (8) + 0x00 (0) + 0x0F (4) = 12
+    assert_equal 12, IO::Buffer.for("\xFF\x00\x0F").popcount
+    # Subrange: offset=0, length=1 => 0xFF => 8
+    assert_equal 8,  IO::Buffer.for("\xFF\x00\x0F").popcount(0, 1)
+    # Subrange: offset=1, length=1 => 0x00 => 0
+    assert_equal 0,  IO::Buffer.for("\xFF\x00\x0F").popcount(1, 1)
+    # Subrange: offset=2, length=1 => 0x0F => 4
+    assert_equal 4,  IO::Buffer.for("\xFF\x00\x0F").popcount(2, 1)
+    # Subrange: offset=1, length=2 => 0x00 + 0x0F = 4
+    assert_equal 4,  IO::Buffer.for("\xFF\x00\x0F").popcount(1, 2)
+    # Empty buffer: 0
+    assert_equal 0,  IO::Buffer.new(0).popcount
+    # 8-byte aligned: 8 bytes of 0xFF => 64 bits
+    assert_equal 64, IO::Buffer.for("\xFF" * 8).popcount
+    # Cross 8-byte boundary: 9 bytes of 0xFF => 72 bits
+    assert_equal 72, IO::Buffer.for("\xFF" * 9).popcount
+    # offset=0 with no length => defaults to full buffer:
+    assert_equal 12, IO::Buffer.for("\xFF\x00\x0F").popcount(0)
+    # offset=1 with no length => 0x00 + 0x0F = 4:
+    assert_equal 4,  IO::Buffer.for("\xFF\x00\x0F").popcount(1)
+    # Out-of-range raises
+    assert_raise(ArgumentError) { IO::Buffer.for("\xFF").popcount(0, 2) }
+    assert_raise(ArgumentError) { IO::Buffer.for("\xFF").popcount(1, 1) }
+  end
+
   def test_shared
     message = "Hello World"
     buffer = IO::Buffer.new(64, IO::Buffer::MAPPED | IO::Buffer::SHARED)
