@@ -3731,7 +3731,7 @@ io_buffer_not_inplace(VALUE self)
 }
 
 static size_t
-memory_popcount(const unsigned char *base, size_t size)
+memory_bit_count(const unsigned char *base, size_t size)
 {
     size_t count = 0;
 
@@ -3753,20 +3753,20 @@ memory_popcount(const unsigned char *base, size_t size)
 }
 
 /*
- *  call-seq: popcount([offset, [length]]) -> integer
+ *  call-seq: bit_count([offset, [length]]) -> integer
  *
  *  Returns the number of set bits (1s) in the buffer, also known as the
  *  Hamming weight or population count. An optional +offset+ and +length+
  *  can be provided to count bits in a subrange of the buffer.
  *
- *    IO::Buffer.for("\xFF\x00\x0F").popcount
+ *    IO::Buffer.for("\xFF\x00\x0F").bit_count
  *    # => 12
  *
- *    IO::Buffer.for("\xFF\x00\x0F").popcount(1, 2)
+ *    IO::Buffer.for("\xFF\x00\x0F").bit_count(1, 2)
  *    # => 4
  */
 static VALUE
-io_buffer_popcount(int argc, VALUE *argv, VALUE self)
+io_buffer_bit_count(int argc, VALUE *argv, VALUE self)
 {
     rb_check_arity(argc, 0, 2);
 
@@ -3779,7 +3779,7 @@ io_buffer_popcount(int argc, VALUE *argv, VALUE self)
     size_t size;
     io_buffer_get_bytes_for_reading(buffer, &base, &size);
 
-    size_t count = memory_popcount((const unsigned char *)base + offset, length);
+    size_t count = memory_bit_count((const unsigned char *)base + offset, length);
 
     return SIZET2NUM(count);
 }
@@ -4039,7 +4039,7 @@ Init_IO_Buffer(void)
     rb_define_method(rb_cIOBuffer, "xor!", io_buffer_xor_inplace, 1);
     rb_define_method(rb_cIOBuffer, "not!", io_buffer_not_inplace, 0);
 
-    rb_define_method(rb_cIOBuffer, "popcount", io_buffer_popcount, -1);
+    rb_define_method(rb_cIOBuffer, "bit_count", io_buffer_bit_count, -1);
 
     // IO operations:
     rb_define_method(rb_cIOBuffer, "read", io_buffer_read, -1);
