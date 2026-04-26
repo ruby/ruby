@@ -1415,7 +1415,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
         rb_add_refined_method_entry(refined_class, mid);
         if (search_superclass) {
             rb_method_entry_t *me = lookup_method_table(refined_class, mid);
-            me->def->body.refined.orig_me = search_method0(refined_class, mid, NULL, true);
+            RB_OBJ_WRITE(me, &me->def->body.refined.orig_me, search_method0(refined_class, mid, NULL, true));
         }
     }
     if (type == VM_METHOD_TYPE_REFINED) {
