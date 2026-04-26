@@ -212,6 +212,26 @@ class TestISeq < Test::Unit::TestCase
     end
   end
 
+  def test_compile_file_options
+    Tempfile.create(%w"test_iseq .rb") do |f|
+      f.puts('"test"')
+      f.close
+      iseq = RubyVM::InstructionSequence.compile_file(f.path, { frozen_string_literal: false })
+      refute_predicate iseq.eval, :frozen?
+
+      iseq = RubyVM::InstructionSequence.compile_file(f.path, { frozen_string_literal: true })
+      assert_predicate iseq.eval, :frozen?
+    end
+  end
+
+  def test_compile_options
+    iseq = RubyVM::InstructionSequence.compile("'test'", nil, nil, nil, { frozen_string_literal: false })
+    refute_predicate iseq.eval, :frozen?
+
+    iseq = RubyVM::InstructionSequence.compile("'test'", nil, nil, nil, { frozen_string_literal: true })
+    assert_predicate iseq.eval, :frozen?
+  end
+
   LINE_BEFORE_METHOD = __LINE__
   def method_test_line_trace
 
