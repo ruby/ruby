@@ -1270,6 +1270,7 @@ obj_traverse_rec(struct obj_traverse_data *data)
 {
     if (UNLIKELY(!data->rec)) {
         data->rec_hash = rb_ident_hash_new();
+        rb_obj_hide(data->rec_hash);
         data->rec = RHASH_ST_TABLE(data->rec_hash);
     }
     return data->rec;
