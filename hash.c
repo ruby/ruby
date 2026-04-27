@@ -1498,7 +1498,7 @@ rb_hash_alloc_fixed_size(VALUE klass, st_index_t size)
     }
     else {
         size_t slot_size = sizeof(struct RHash) + offsetof(ar_table, pairs) + size * sizeof(ar_table_pair);
-        ret = rb_wb_protected_newobj_of(GET_EC(), klass, T_HASH, 0, slot_size);
+        ret = rb_newobj_of(GET_EC(), klass, T_HASH, 0, RGENGC_WB_PROTECTED_HASH, slot_size);
     }
 
     RHASH_SET_IFNONE(ret, Qnil);
