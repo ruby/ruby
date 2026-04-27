@@ -17867,4 +17867,174 @@ mod hir_opt_tests {
         assert!(!result.contains("PushLightweightFrame"),
             "Expected no PushLightweightFrame in HIR when budget is exceeded:\n{result}");
     }
+
+    #[test]
+    fn test_inline_method_with_all_optionals_omitted() {
+        // Caller fills 0 optionals: both `b` and `c` defaults must run inside the inlined
+        // body. We pick `jit_entry_blocks[0]` so the body's default-init chain executes
+        // and assigns `b = 10`, `c = 100` before the post-default body adds them.
+        eval("
+            def add_opts(a, b = 10, c = 100)
+              a + b + c
+            end
+            def test(n)
+              add_opts(n)
+            end
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+
+        let result = hir_string_with_inlining("test");
+
+        assert!(counters.inline_method_count > inline_count_before,
+            "Expected add_opts to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
+        assert!(result.contains("PushLightweightFrame"),
+            "Expected PushLightweightFrame in inlined HIR:\n{result}");
+        assert!(!result.contains("SendDirect"),
+            "Expected SendDirect to be replaced after inlining:\n{result}");
+
+        assert_snapshot!(result, @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1008, add_opts@0x1010, cme:0x1018)
+          v23:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)]
+          PushLightweightFrame v23 (0x1040), v10
+          v63:Fixnum[10] = Const Value(10)
+          v72:Fixnum[100] = Const Value(100)
+          PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
+          v103:Fixnum = GuardType v10, Fixnum
+          v104:Fixnum = FixnumAdd v103, v63
+          v107:Fixnum = FixnumAdd v104, v72
+          CheckInterrupts
+          PopLightweightFrame
+          CheckInterrupts
+          Return v107
+        ");
+    }
+
+    #[test]
+    fn test_inline_method_with_some_optionals_supplied() {
+        // Caller fills 1 of 2 optionals: only `c`'s default should run. We pick
+        // `jit_entry_blocks[1]`, whose target enters the body just before the `c`
+        // default-init code so `b` is taken from the caller and `c` is filled in.
+        eval("
+            def add_opts(a, b = 10, c = 100)
+              a + b + c
+            end
+            def test(n)
+              add_opts(n, 20)
+            end
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+
+        let result = hir_string_with_inlining("test");
+
+        assert!(counters.inline_method_count > inline_count_before,
+            "Expected add_opts to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
+        assert!(result.contains("PushLightweightFrame"),
+            "Expected PushLightweightFrame in inlined HIR:\n{result}");
+        assert!(!result.contains("SendDirect"),
+            "Expected SendDirect to be replaced after inlining:\n{result}");
+
+        assert_snapshot!(result, @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v16:Fixnum[20] = Const Value(20)
+          PatchPoint MethodRedefined(Object@0x1008, add_opts@0x1010, cme:0x1018)
+          v25:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)]
+          PushLightweightFrame v25 (0x1040), v10, v16
+          v74:Fixnum[100] = Const Value(100)
+          PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
+          v104:Fixnum = GuardType v10, Fixnum
+          v105:Fixnum = FixnumAdd v104, v16
+          v108:Fixnum = FixnumAdd v105, v74
+          CheckInterrupts
+          PopLightweightFrame
+          CheckInterrupts
+          Return v108
+        ");
+    }
+
+    #[test]
+    fn test_inline_method_with_all_optionals_supplied() {
+        // Caller fills every optional: no default-init code runs. We pick the last
+        // `jit_entry_blocks` entry, which lands directly in the post-default body.
+        eval("
+            def add_opts(a, b = 10, c = 100)
+              a + b + c
+            end
+            def test(n)
+              add_opts(n, 20, 200)
+            end
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+
+        let result = hir_string_with_inlining("test");
+
+        assert!(counters.inline_method_count > inline_count_before,
+            "Expected add_opts to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
+        assert!(result.contains("PushLightweightFrame"),
+            "Expected PushLightweightFrame in inlined HIR:\n{result}");
+        assert!(!result.contains("SendDirect"),
+            "Expected SendDirect to be replaced after inlining:\n{result}");
+
+        assert_snapshot!(result, @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v16:Fixnum[20] = Const Value(20)
+          v18:Fixnum[200] = Const Value(200)
+          PatchPoint MethodRedefined(Object@0x1008, add_opts@0x1010, cme:0x1018)
+          v27:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)]
+          PushLightweightFrame v27 (0x1040), v10, v16, v18
+          PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
+          v105:Fixnum = GuardType v10, Fixnum
+          v106:Fixnum = FixnumAdd v105, v16
+          v109:Fixnum = FixnumAdd v106, v18
+          CheckInterrupts
+          PopLightweightFrame
+          CheckInterrupts
+          Return v109
+        ");
+    }
 }

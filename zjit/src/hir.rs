@@ -4359,12 +4359,12 @@ impl Function {
             return false;
         }
 
-        // Only inline callees with simple positional parameters. Optional params,
-        // keyword params, rest/post params, block params, and forwardable params all
-        // have local table layouts that our parameter mapping doesn't handle yet.
+        // Inline callees with required and/or optional positional parameters. Keyword
+        // params, rest/post params, block params, and forwardable params are still
+        // rejected because their local-table layouts and argument-shaping prologues
+        // need additional work to map cleanly into HIR.
         let params = unsafe { callee_iseq.params() };
-        if params.flags.has_opt() != 0
-            || params.flags.has_kw() != 0
+        if params.flags.has_kw() != 0
             || params.flags.has_rest() != 0
             || params.flags.has_post() != 0
             || params.flags.has_block() != 0
@@ -4514,16 +4514,23 @@ impl Function {
                 // inlined body's Snapshots.
                 let caller_frame_state = Rc::new(self.frame_state(state));
 
-                // Find the callee's body entry block by following the Jump at the end
-                // of the last JIT entry block. Each JIT entry block corresponds to a
-                // different number of optional parameters passed; the last one handles
-                // the case where all optionals are provided, and its Jump target is
-                // where the method body begins.
+                // Find the callee's body entry block by picking the JIT entry block
+                // that matches how many optional parameters the caller actually filled,
+                // then following its trailing Jump to the body. Each JIT entry block at
+                // index `k` corresponds to "lead_num + k" arguments having been passed:
+                // it runs the default-init code for the remaining `opt_num - k`
+                // optionals (if any) before falling through into the post-default body.
+                // SendDirect emission already guarantees args.len() lies within
+                // `lead_num..=lead_num + opt_num`, so `passed_opt_num` is in range and
+                // the index into `jit_entry_blocks` is safe.
                 let callee_entry_body_block = {
-                    let last_jit_entry = *callee.jit_entry_blocks.last().unwrap();
-                    let last_jit_insn = callee.blocks[last_jit_entry.0].insns.last().unwrap();
+                    let callee_params = unsafe { iseq.params() };
+                    let lead_num = callee_params.lead_num as usize;
+                    let passed_opt_num = args.len() - lead_num;
+                    let jit_entry = callee.jit_entry_blocks[passed_opt_num];
+                    let jit_entry_last_insn = callee.blocks[jit_entry.0].insns.last().unwrap();
 
-                    match &callee.insns[last_jit_insn.0] {
+                    match &callee.insns[jit_entry_last_insn.0] {
                         Insn::Jump(edge) => edge.target,
                         other => panic!("Expected Jump as last instruction of JIT entry block, got {other}"),
                     }
@@ -4632,8 +4639,12 @@ impl Function {
                 // Map callee params to caller values:
                 //
                 // The callee's body entry block has params: [self, local0, local1, ..., stack0, stack1, ...]
-                // For a simple call, the first param is self (recv), followed by locals
-                // (which include the arguments), and then any stack values.
+                // The first param is self (recv); the next `args.len()` locals are
+                // the arguments the caller actually passed (lead positionals plus any
+                // optionals the caller filled in); any remaining locals — unfilled
+                // optionals and non-parameter locals — are initialized to nil. For
+                // unfilled optionals, the body's default-init code (entered via the
+                // chosen jit_entry_blocks[passed_opt_num] target) overwrites them.
                 let remapped_entry = *block_map.get(&callee_entry_body_block.0).unwrap();
                 let callee_body_params: Vec<InsnId> = self.blocks[remapped_entry.0].params.clone();
 
@@ -4648,7 +4659,7 @@ impl Function {
                     if i < args.len() {
                         self.make_equal_to(param_id, args[i]);
                     } else if i < num_locals {
-                        // Non-parameter locals are initialized to nil.
+                        // Unfilled optional locals and non-parameter locals are initialized to nil.
                         let nil = self.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
                         self.make_equal_to(param_id, nil);
                     }
