@@ -214,7 +214,7 @@ class TestISeq < Test::Unit::TestCase
 
   def test_compile_file_options
     Tempfile.create(%w"test_iseq .rb") do |f|
-      f.puts('"test"')
+      f.puts('_ = "test"')
       f.close
       iseq = RubyVM::InstructionSequence.compile_file(f.path, { frozen_string_literal: false })
       refute_predicate iseq.eval, :frozen?
