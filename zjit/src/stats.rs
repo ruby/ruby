@@ -473,6 +473,7 @@ make_counters! {
     inline_reject_blockparam,
     inline_reject_compile_failure,
     inline_reject_no_returns,
+    inline_reject_budget_exceeded,
 
     getblockparamproxy_handler_iseq,
     getblockparamproxy_handler_ifunc,

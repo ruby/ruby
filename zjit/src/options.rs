@@ -115,8 +115,36 @@ pub struct Options {
     /// Maximum number of versions per ISEQ
     pub max_versions: usize,
 
-    /// Maximum callee bytecode size for inlining (0 disables inlining).
+    /// Per-callee size threshold for inlining, measured as the callee's YARV bytecode size
+    /// (see `get_iseq_encoded_size`). Callees larger than this are rejected by `should_inline`.
+    /// 0 disables inlining entirely.
+    ///
+    /// Note: this is a different unit than `inline_budget`; see that field's doc comment.
     pub inline_threshold: usize,
+
+    /// Per-caller cumulative size budget for inlining, measured as the caller
+    /// `Function`'s `insns.len()` at the moment `should_inline` is consulted (during
+    /// `inline_methods` inside the `optimize()` fixed-point loop). Once a caller has
+    /// grown past this many HIR instructions, `should_inline` rejects further callees,
+    /// bounding runaway code-size growth from depth-N inlining (and providing the
+    /// optimization fixed-point loop's effective terminating condition). 0 disables
+    /// the budget.
+    ///
+    /// Caveat on the unit: `self.insns` is append-only across the whole pipeline —
+    /// `InsnId`s are stable indices into it, so passes never shrink it. `len()` is
+    /// therefore a high-water mark of total HIR instructions ever allocated for the
+    /// function, including ones that later optimization passes mark dead via
+    /// `eliminate_dead_code` or alias away via `union_find`. By the time
+    /// `should_inline` runs in a given fixed-point iteration, `self.insns.len()` has
+    /// already been bumped by `iseq_to_hir`'s initial build, then by `type_specialize`
+    /// and the trivial `inline` pass, and (in iterations 2+) by every prior pass in
+    /// the loop including the previous round's `inline_methods`. It is a useful proxy
+    /// for "compile work done" but not for "size of the compiled output".
+    ///
+    /// Note: this is a different unit than `inline_threshold` — that field is callee
+    /// YARV bytecode words; this one is caller HIR instructions, allocation high-water
+    /// mark. They aren't directly comparable; YARV → HIR typically expands roughly 1-3x.
+    pub inline_budget: usize,
 }
 
 impl Default for Options {
@@ -146,6 +174,7 @@ impl Default for Options {
             log_compiled_iseqs: None,
             max_versions: 2,
             inline_threshold: 0,
+            inline_budget: 500,
         }
     }
 }
@@ -367,6 +396,11 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
         ("inline-threshold", _) => match opt_val.parse() {
             Ok(n) => { options.inline_threshold = n; },
+            Err(_) => return None,
+        },
+
+        ("inline-budget", _) => match opt_val.parse() {
+            Ok(n) => { options.inline_budget = n; },
             Err(_) => return None,
         },
 

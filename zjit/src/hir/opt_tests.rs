@@ -17817,4 +17817,54 @@ mod hir_opt_tests {
           Return v56
         ");
     }
+
+    #[test]
+    fn test_inline_budget_rejects_when_exceeded() {
+        // The same workload as test_inline_arithmetic_method, which we know inlines
+        // successfully under the default settings (budget=500, threshold=30). Setting
+        // the budget to 1 forces should_inline to bail on the budget check before
+        // reaching any other rejection reason. To verify the budget specifically is
+        // what blocked the inline (not e.g. the size threshold or a parameter-shape
+        // check), we read the inline_reject_budget_exceeded counter and confirm it
+        // incremented while inline_method_count did not.
+        eval("
+            def add_one(x)
+              x + 1
+            end
+            def test(n)
+              add_one(n)
+            end
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let budget_rejects_before = counters.inline_reject_budget_exceeded;
+        let inline_count_before = counters.inline_method_count;
+
+        let old_threshold = get_option!(inline_threshold);
+        let old_budget = get_option!(inline_budget);
+        unsafe {
+            OPTIONS.as_mut().unwrap().inline_threshold = 30;
+            OPTIONS.as_mut().unwrap().inline_budget = 1;
+        }
+        let result = hir_string("test");
+        unsafe {
+            OPTIONS.as_mut().unwrap().inline_threshold = old_threshold;
+            OPTIONS.as_mut().unwrap().inline_budget = old_budget;
+        }
+
+        let budget_rejects_after = counters.inline_reject_budget_exceeded;
+        let inline_count_after = counters.inline_method_count;
+
+        assert!(budget_rejects_after > budget_rejects_before,
+            "Expected inline_reject_budget_exceeded to increment, but it stayed at {budget_rejects_before}");
+        assert_eq!(inline_count_after, inline_count_before,
+            "Expected no successful inlines under budget=1, but inline_method_count went from {inline_count_before} to {inline_count_after}");
+
+        // Belt-and-braces: the resulting HIR also reflects no inlining took place.
+        assert!(result.contains("SendDirect"),
+            "Expected SendDirect to remain in HIR when budget is exceeded:\n{result}");
+        assert!(!result.contains("PushLightweightFrame"),
+            "Expected no PushLightweightFrame in HIR when budget is exceeded:\n{result}");
+    }
 }

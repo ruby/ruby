@@ -4340,6 +4340,18 @@ impl Function {
             return false;
         }
 
+        // Per-caller cumulative budget. self.insns is append-only (InsnIds are stable
+        // indices), so its len() is a high-water mark of total HIR instructions ever
+        // allocated for this function — not the final compiled size. Once that count
+        // crosses the budget, every further callee is rejected and the optimization
+        // fixed-point loop reaches its terminal iteration. See `Options::inline_budget`
+        // for the full unit/semantics caveat. Budget == 0 disables this cap.
+        let budget = get_option!(inline_budget);
+        if budget != 0 && self.insns.len() > budget {
+            incr_counter!(inline_reject_budget_exceeded);
+            return false;
+        }
+
         // Check callee bytecode size against threshold.
         let callee_size = unsafe { get_iseq_encoded_size(callee_iseq) } as usize;
         if callee_size > threshold {
