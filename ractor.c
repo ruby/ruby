@@ -1993,7 +1993,7 @@ rb_obj_traverse_replace(VALUE obj,
 }
 
 static const bool wb_protected_types[RUBY_T_MASK] = {
-    [T_OBJECT] = RGENGC_WB_PROTECTED_OBJECT,
+    [T_OBJECT] = true,
     [T_HASH] = true,
     [T_ARRAY] = true,
     [T_STRING] = true,
