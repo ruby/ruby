@@ -43,7 +43,7 @@ module Win32
 #====================================================================
   module Resolv
     begin
-      require 'win32/registry'
+      require 'win32/registry' unless defined?(Win32::Registry)
       module SZ
         refine Registry do
           # ad hoc workaround for broken registry
@@ -83,7 +83,7 @@ module Win32
 
           unless nvdom.empty?
             @search = [ nvdom ]
-            udmnd = get_item_property(TCPIP_NT, 'UseDomainNameDevolution').to_i
+            udmnd = get_item_property_i(TCPIP_NT, 'UseDomainNameDevolution')
             if udmnd != 0
               if /^\w+\./ =~ nvdom
                 devo = $'
@@ -137,6 +137,18 @@ module Win32
           cmd = "Get-ItemProperty -Path 'HKLM:\\#{path}' -Name '#{name}' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty '#{name}'"
           output, _ = Open3.capture2('powershell', '-Command', cmd)
           output.strip
+        end
+      end
+
+      def get_item_property_i(path, name)
+        if defined?(Win32::Registry)
+          Registry::HKEY_LOCAL_MACHINE.open(path) do |reg|
+            reg.read_i(name)
+          rescue Registry::Error
+            0
+          end
+        else
+          get_item_property(path, name).to_i
         end
       end
     end
