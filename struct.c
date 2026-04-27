@@ -827,7 +827,7 @@ struct_alloc(VALUE klass)
         embedded_size += sizeof(VALUE);
     }
 
-    VALUE flags = T_STRUCT | (RGENGC_WB_PROTECTED_STRUCT ? FL_WB_PROTECTED : 0);
+    VALUE flags = T_STRUCT | FL_WB_PROTECTED;
 
     if (n > 0 && rb_gc_size_allocatable_p(embedded_size)) {
         flags |= n << RSTRUCT_EMBED_LEN_SHIFT;
