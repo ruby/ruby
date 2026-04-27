@@ -1203,6 +1203,21 @@ rb_data_typed_object_zalloc(VALUE klass, size_t size, const rb_data_type_t *type
 }
 
 static size_t
+ruby_xmalloc_usable_size(void *ptr)
+{
+#ifdef HAVE_MALLOC_USABLE_SIZE
+#if CALC_EXACT_MALLOC_SIZE
+    struct malloc_obj_info *info = (struct malloc_obj_info *)ptr - 1;
+    return malloc_usable_size(info) - sizeof(struct malloc_obj_info);
+#else
+    return malloc_usable_size(ptr);
+#endif
+#else
+    return 0;
+#endif
+}
+
+static size_t
 rb_objspace_data_type_memsize(VALUE obj)
 {
     size_t size = 0;
@@ -1210,13 +1225,11 @@ rb_objspace_data_type_memsize(VALUE obj)
         const void *ptr = RTYPEDDATA_GET_DATA(obj);
 
         if (ptr) {
-            const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
             if (RTYPEDDATA_EMBEDDABLE_P(obj) && !RTYPEDDATA_EMBEDDED_P(obj)) {
-#ifdef HAVE_MALLOC_USABLE_SIZE
-                size += malloc_usable_size((void *)ptr);
-#endif
+                size += ruby_xmalloc_usable_size((void *)ptr);
             }
 
+            const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
             if (type->function.dsize) {
                 size += type->function.dsize(ptr);
             }
