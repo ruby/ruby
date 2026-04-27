@@ -2420,7 +2420,7 @@ rb_gc_impl_heap_sizes(void *objspace_ptr)
 {
     if (heap_sizes[0] == 0) {
         for (unsigned char i = 0; i < HEAP_COUNT; i++) {
-            heap_sizes[i] = heap_slot_size(i);
+            heap_sizes[i] = heap_slot_size(i) + RVALUE_OVERHEAD;
         }
     }
 
