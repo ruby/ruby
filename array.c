@@ -687,22 +687,17 @@ ary_alloc_embed(VALUE klass, long capa)
 {
     size_t size = ary_embed_size(capa);
     RUBY_ASSERT(rb_gc_size_allocatable_p(size));
-    NEWOBJ_OF(ary, struct RArray, klass,
-                     T_ARRAY | RARRAY_EMBED_FLAG | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
-                     size, 0);
-    /* Created array is:
-     *   FL_SET_EMBED((VALUE)ary);
-     *   ARY_SET_EMBED_LEN((VALUE)ary, 0);
-     */
-    return (VALUE)ary;
+   /* Created array is:
+    *   FL_SET_EMBED((VALUE)ary);
+    *   ARY_SET_EMBED_LEN((VALUE)ary, 0);
+    */
+    return rb_newobj_of(klass, T_ARRAY | RARRAY_EMBED_FLAG, 0, true, size);
 }
 
 static VALUE
 ary_alloc_heap(VALUE klass)
 {
-    NEWOBJ_OF(ary, struct RArray, klass,
-                     T_ARRAY | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
-                     sizeof(struct RArray), 0);
+    NEWOBJ_OF(ary, struct RArray, klass, T_ARRAY | FL_WB_PROTECTED, sizeof(struct RArray), 0);
 
     ary->as.heap.len = 0;
     ary->as.heap.aux.capa = 0;
@@ -806,7 +801,7 @@ ec_ary_alloc_embed(rb_execution_context_t *ec, VALUE klass, long capa)
     size_t size = ary_embed_size(capa);
     RUBY_ASSERT(rb_gc_size_allocatable_p(size));
     NEWOBJ_OF(ary, struct RArray, klass,
-            T_ARRAY | RARRAY_EMBED_FLAG | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
+            T_ARRAY | RARRAY_EMBED_FLAG | FL_WB_PROTECTED,
             size, ec);
     /* Created array is:
      *   FL_SET_EMBED((VALUE)ary);
@@ -819,7 +814,7 @@ static VALUE
 ec_ary_alloc_heap(rb_execution_context_t *ec, VALUE klass)
 {
     NEWOBJ_OF(ary, struct RArray, klass,
-            T_ARRAY | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
+            T_ARRAY | FL_WB_PROTECTED,
             sizeof(struct RArray), ec);
 
     ary->as.heap.len = 0;

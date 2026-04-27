@@ -439,17 +439,6 @@ RBIMPL_SYMBOL_EXPORT_END()
  * @private
  *
  * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
- * struct ::RArray.  It has to be set  at the time ruby itself compiles.  Makes
- * no sense for 3rd parties.
- */
-#ifndef RGENGC_WB_PROTECTED_ARRAY
-# define RGENGC_WB_PROTECTED_ARRAY 1
-#endif
-
-/**
- * @private
- *
- * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
  * struct ::RHash.  It has  to be set at the time  ruby itself compiles.  Makes
  * no sense for 3rd parties.
  */
@@ -640,8 +629,7 @@ RBIMPL_SYMBOL_EXPORT_END()
  *
  * @shyouhei doesn't understand why this has to be visible from extensions.
  */
-#define RB_OBJ_WB_UNPROTECT_FOR(type, obj) \
-    (RGENGC_WB_PROTECTED_##type ? OBJ_WB_UNPROTECT(obj) : obj)
+#define RB_OBJ_WB_UNPROTECT_FOR(type, obj) OBJ_WB_UNPROTECT(obj)
 
 /**
  * @private
