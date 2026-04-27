@@ -472,7 +472,7 @@ make_counters! {
     inline_reject_invokeblock,
     inline_reject_blockparam,
     inline_reject_compile_failure,
-    inline_reject_multiple_returns,
+    inline_reject_no_returns,
 
     getblockparamproxy_handler_iseq,
     getblockparamproxy_handler_ifunc,

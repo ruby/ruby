@@ -4473,9 +4473,12 @@ impl Function {
                     }
                 };
 
-                // Only inline callees with a single Return instruction. Multiple-return callees
-                // need a continuation block that merges return values through a phi, which
-                // inline_methods doesn't yet emit.
+                // Collect all Return instructions in the callee. Each Return becomes a Jump to
+                // the continuation block, passing its return value as the edge argument; the
+                // continuation's single Param merges them. A callee with no Returns never reaches
+                // the continuation (it diverges or always side-exits), which would leave the
+                // caller's SendDirect result aliased to a Param in an unreachable block — skip
+                // that case to avoid dangling references in the caller.
                 let mut return_insns = Vec::new();
                 for callee_block in &callee.blocks {
                     for &callee_insn_id in &callee_block.insns {
@@ -4485,8 +4488,8 @@ impl Function {
                     }
                 }
 
-                if return_insns.len() != 1 {
-                    incr_counter!(inline_reject_multiple_returns);
+                if return_insns.is_empty() {
+                    incr_counter!(inline_reject_no_returns);
                     self.push_insn_id(block, insn_id);
                     continue;
                 }
@@ -4663,16 +4666,19 @@ impl Function {
                 // The original SendDirect result is now the continuation's return value param.
                 self.make_equal_to(insn_id, return_val_param);
 
-                // Rewrite callee's Return to Jump to continuation.
-                let remapped_return = InsnId(return_insns[0].0 + insn_base);
-                let return_val = match &self.insns[remapped_return.0] {
-                    Insn::Return { val } => *val,
-                    _ => unreachable!(),
-                };
-                self.insns[remapped_return.0] = Insn::Jump(BranchEdge {
-                    target: continuation,
-                    args: vec![return_val],
-                });
+                // Rewrite each callee Return to Jump to the continuation, passing its return
+                // value as the edge argument. The continuation's Param merges them.
+                for callee_return_id in &return_insns {
+                    let remapped_return = InsnId(callee_return_id.0 + insn_base);
+                    let return_val = match &self.insns[remapped_return.0] {
+                        Insn::Return { val } => *val,
+                        _ => unreachable!(),
+                    };
+                    self.insns[remapped_return.0] = Insn::Jump(BranchEdge {
+                        target: continuation,
+                        args: vec![return_val],
+                    });
+                }
 
                 // Insert PushLightweightFrame and jump to callee entry.
                 self.push_insn(block, Insn::PushLightweightFrame {

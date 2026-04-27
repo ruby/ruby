@@ -17726,6 +17726,59 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_inline_method_with_multiple_returns() {
+        // `clamp_nonneg` has two Return instructions (one from the early `return 0 if ...`,
+        // one from the implicit trailing `x`). Inlining rewrites each Return to a Jump into
+        // the continuation block, whose single Param merges the return values.
+        eval("
+            def clamp_nonneg(x)
+              return 0 if x < 0
+              x
+            end
+            def test(n)
+              clamp_nonneg(n)
+            end
+            test(1)
+            test(1)
+        ");
+        assert_snapshot!(hir_string_with_inlining("test"), @"
+        fn test@<compiled>:7:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1008, clamp_nonneg@0x1010, cme:0x1018)
+          v23:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)]
+          PushLightweightFrame v23 (0x1040), v10
+          v40:Fixnum[0] = Const Value(0)
+          PatchPoint MethodRedefined(Integer@0x1048, <@0x1050, cme:0x1058)
+          v72:Fixnum = GuardType v10, Fixnum
+          v73:BoolExact = FixnumLt v72, v40
+          CheckInterrupts
+          v46:CBool = Test v73
+          IfFalse v46, bb5(v23, v10)
+          v51:Fixnum[0] = Const Value(0)
+          CheckInterrupts
+          Jump bb6(v51)
+        bb5(v56:ObjectSubclass[class_exact*:Object@VALUE(0x1008)], v57:BasicObject):
+          CheckInterrupts
+          Jump bb6(v57)
+        bb6(v66:BasicObject):
+          PopLightweightFrame
+          CheckInterrupts
+          Return v66
+        ");
+    }
+
+    #[test]
     fn test_inline_arithmetic_method() {
         eval("
             def add_one(x)
