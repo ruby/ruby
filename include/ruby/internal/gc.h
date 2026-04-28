@@ -436,21 +436,6 @@ RBIMPL_SYMBOL_EXPORT_END()
 #endif
 
 /**
- * @private
- *
- * @deprecated  This macro once was a thing in the old days, but makes no sense
- *              any  longer today.   Exists  here  for backwards  compatibility
- *              only.  You can safely forget about it.
- *
- * @internal
- *
- * @shyouhei doesn't think anybody uses this right now.
- */
-#ifndef RGENGC_WB_PROTECTED_NODE_CREF
-# define RGENGC_WB_PROTECTED_NODE_CREF 1
-#endif
-
-/**
  * @defgroup rgengc Write barrier (WB) interfaces:
  *
  * @note The following  core interfaces can  be changed in the  future.  Please
