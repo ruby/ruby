@@ -2002,7 +2002,7 @@ static const bool wb_protected_types[RUBY_T_MASK] = {
     [T_REGEXP] = true,
     [T_MATCH] = true,
     [T_FLOAT] = true,
-    [T_RATIONAL] = RGENGC_WB_PROTECTED_RATIONAL,
+    [T_RATIONAL] = true,
 };
 
 static enum obj_traverse_iterator_result

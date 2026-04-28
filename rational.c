@@ -404,7 +404,7 @@ f_lcm(VALUE x, VALUE y)
 inline static VALUE
 nurat_s_new_internal(VALUE klass, VALUE num, VALUE den)
 {
-    NEWOBJ_OF(obj, struct RRational, klass, T_RATIONAL | (RGENGC_WB_PROTECTED_RATIONAL ? FL_WB_PROTECTED : 0),
+    NEWOBJ_OF(obj, struct RRational, klass, T_RATIONAL | FL_WB_PROTECTED,
             sizeof(struct RRational), 0);
 
     RATIONAL_SET_NUM((VALUE)obj, num);
