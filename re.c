@@ -968,7 +968,7 @@ static VALUE
 match_alloc(VALUE klass)
 {
     size_t alloc_size = sizeof(struct RMatch) + sizeof(rb_matchext_t);
-    VALUE flags = T_MATCH | (RGENGC_WB_PROTECTED_MATCH ? FL_WB_PROTECTED : 0);
+    VALUE flags = T_MATCH | FL_WB_PROTECTED;
     NEWOBJ_OF(match, struct RMatch, klass, flags, alloc_size, 0);
 
     match->str = Qfalse;
