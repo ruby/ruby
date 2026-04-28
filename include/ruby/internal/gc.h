@@ -438,17 +438,6 @@ RBIMPL_SYMBOL_EXPORT_END()
 /**
  * @private
  *
- * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
- * struct ::RBignum.  It has to be set at the time ruby itself compiles.  Makes
- * no sense for 3rd parties.
- */
-#ifndef RGENGC_WB_PROTECTED_BIGNUM
-# define RGENGC_WB_PROTECTED_BIGNUM 1
-#endif
-
-/**
- * @private
- *
  * @deprecated  This macro once was a thing in the old days, but makes no sense
  *              any  longer today.   Exists  here  for backwards  compatibility
  *              only.  You can safely forget about it.
