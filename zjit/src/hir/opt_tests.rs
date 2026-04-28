@@ -17983,6 +17983,62 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_inline_method_with_rescue_handler() {
+        eval("
+            def maybe_rescue(x)
+              begin
+                x + 1
+              rescue StandardError
+                0
+              end
+            end
+            def test(n)
+              maybe_rescue(n)
+            end
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+
+        let result = hir_string_with_inlining("test");
+
+        assert!(counters.inline_method_count > inline_count_before,
+            "Expected maybe_rescue to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
+        assert!(result.contains("PushLightweightFrame"),
+            "Expected PushLightweightFrame in inlined HIR:\n{result}");
+        assert!(!result.contains("SendDirect"),
+            "Expected SendDirect to be replaced after inlining:\n{result}");
+
+        assert_snapshot!(result, @"
+        fn test@<compiled>:10:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1008, maybe_rescue@0x1010, cme:0x1018)
+          v23:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)]
+          PushLightweightFrame v23 (0x1040), v10
+          v40:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
+          v56:Fixnum = GuardType v10, Fixnum
+          v57:Fixnum = FixnumAdd v56, v40
+          CheckInterrupts
+          PopLightweightFrame
+          CheckInterrupts
+          Return v57
+        ");
+    }
+
+    #[test]
     fn test_inline_method_with_all_optionals_supplied() {
         // Caller fills every optional: no default-init code runs. We pick the last
         // `jit_entry_blocks` entry, which lands directly in the post-default body.

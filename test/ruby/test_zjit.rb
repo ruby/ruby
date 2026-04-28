@@ -451,6 +451,119 @@ class TestZJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_inlined_method_with_rescue_caught_in_callee
+    # The callee's begin/rescue catches an exception raised inside the same
+    # callee. The runtime exception walker must find the rescue clause via the
+    # inlined callee's CFP (whose iseq pointer is the callee iseq), then resume
+    # the callee at the catch entry's continuation PC. The rescue branch returns
+    # 42 while the happy branch would return 0, so a wrong control-flow path
+    # would change the result.
+    assert_runs '42', <<~RUBY, extra_args: ['--zjit-inline-threshold=30']
+      def callee(x)
+        begin
+          raise "boom" if x.negative?
+          0
+        rescue
+          42
+        end
+      end
+      def test(n) = callee(n)
+
+      test(-1)
+    RUBY
+  end
+
+  def test_inlined_method_with_rescue_caught_in_caller
+    # The callee re-raises (no rescue) and the caller catches the exception.
+    # This exercises the unwind path that pops the inlined callee's CFP and
+    # finds the catch entry on the *caller's* iseq, with the caller CFP's PC
+    # last stamped within the begin block by gen_save_pc_for_gc.
+    assert_runs '99', <<~RUBY, extra_args: ['--zjit-inline-threshold=30']
+      def callee(x)
+        raise "boom" if x.negative?
+        0
+      end
+      def test(n)
+        begin
+          callee(n)
+        rescue
+          99
+        end
+      end
+
+      test(-1)
+    RUBY
+  end
+
+  def test_inlined_method_with_ensure_runs_on_propagation
+    # The callee has begin/ensure (no rescue). The ensure must execute its
+    # side effect before the exception propagates to the caller's rescue.
+    # Comparing the side-effect log to the rescue value lets us tell whether
+    # the ensure block actually ran on the propagation path.
+    assert_runs '"ensured: caught"', <<~RUBY, extra_args: ['--zjit-inline-threshold=30']
+      $log = []
+      def callee(x)
+        begin
+          raise "boom" if x.negative?
+          $log << "no_raise"
+        ensure
+          $log << "ensured"
+        end
+      end
+      def test(n)
+        begin
+          callee(n)
+          "no_rescue"
+        rescue
+          "caught"
+        end
+      end
+
+      result = test(-1)
+      "\#{$log.first}: \#{result}"
+    RUBY
+  end
+
+  def test_inlined_method_with_retry_resumes_begin_block
+    # The retry path (CATCH_TYPE_RETRY) sets cfp->pc to the begin block's
+    # start in the callee iseq. Without retry support on inlined frames this
+    # would either loop forever, segfault, or return the wrong count. The
+    # counter terminates the loop on the second pass so the test is bounded.
+    assert_runs '2', <<~RUBY, extra_args: ['--zjit-inline-threshold=30']
+      def callee(counter)
+        begin
+          counter[0] += 1
+          raise "boom" if counter[0] < 2
+          counter[0]
+        rescue
+          retry
+        end
+      end
+      def test(c) = callee(c)
+
+      test([0])
+    RUBY
+  end
+
+  def test_inlined_method_with_block_break_across_inlined_boundary
+    # When the inlined callee passes a literal block to a yielding method,
+    # the parent callee iseq carries CATCH_TYPE_BREAK entries covering the
+    # send opcode. A `break` from the block raises TAG_BREAK and unwinds to
+    # the inlined callee's CFP, where the catch entry must match. Asymmetric
+    # values (the break path yields 7, the run-to-completion path would
+    # yield the last element 99) discriminate between the two paths.
+    assert_runs '7', <<~RUBY, extra_args: ['--zjit-inline-threshold=30']
+      def callee(arr)
+        arr.each do |x|
+          break 7 if x > 5
+        end
+      end
+      def test(a) = callee(a)
+
+      test([1, 6, 99])
+    RUBY
+  end
+
   def test_exit_tracing
     # Smoke test: --zjit-trace-exits writes a Fuchsia trace (.fxt) file to /tmp
     assert_compiles('true', <<~RUBY, extra_args: ['--zjit-trace-exits'])
