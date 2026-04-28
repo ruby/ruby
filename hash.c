@@ -1422,7 +1422,7 @@ static VALUE
 hash_alloc_flags(VALUE klass, VALUE flags, VALUE ifnone, bool st)
 {
     const size_t size = sizeof(struct RHash) + (st ? sizeof(st_table) : sizeof(ar_table));
-    VALUE hash = rb_newobj_of(klass, T_HASH | flags, 0, true, size);
+    VALUE hash = rb_newobj_of(klass, T_HASH | flags, 0, size);
     return rb_hash_set_ifnone(hash, ifnone);
 }
 
@@ -1493,7 +1493,7 @@ rb_hash_alloc_fixed_size(VALUE klass, st_index_t size)
     }
     else {
         size_t slot_size = sizeof(struct RHash) + offsetof(ar_table, pairs) + size * sizeof(ar_table_pair);
-        ret = rb_newobj_of(klass, T_HASH, 0, true, slot_size);
+        ret = rb_newobj_of(klass, T_HASH, 0, slot_size);
     }
 
     RHASH_SET_IFNONE(ret, Qnil);

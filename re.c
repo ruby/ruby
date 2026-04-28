@@ -968,8 +968,7 @@ static VALUE
 match_alloc(VALUE klass)
 {
     size_t alloc_size = sizeof(struct RMatch) + sizeof(rb_matchext_t);
-    VALUE flags = T_MATCH | FL_WB_PROTECTED;
-    NEWOBJ_OF(match, struct RMatch, klass, flags, alloc_size);
+    NEWOBJ_OF(match, struct RMatch, klass, T_MATCH, alloc_size);
 
     match->str = Qfalse;
     match->regexp = Qfalse;
@@ -3403,7 +3402,7 @@ rb_reg_initialize_str(VALUE obj, VALUE str, int options, onig_errmsg_buffer err,
 VALUE
 rb_reg_s_alloc(VALUE klass)
 {
-    NEWOBJ_OF(re, struct RRegexp, klass, T_REGEXP | FL_WB_PROTECTED, sizeof(struct RRegexp));
+    NEWOBJ_OF(re, struct RRegexp, klass, T_REGEXP, sizeof(struct RRegexp));
 
     re->ptr = 0;
     RB_OBJ_WRITE(re, &re->src, 0);

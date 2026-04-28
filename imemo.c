@@ -43,17 +43,15 @@ rb_imemo_name(enum imemo_type type)
 VALUE
 rb_imemo_new(enum imemo_type type, VALUE v0, size_t size, bool is_shareable)
 {
-    VALUE flags = T_IMEMO | FL_WB_PROTECTED | (type << FL_USHIFT) | (is_shareable ? FL_SHAREABLE : 0);
-    NEWOBJ_OF(obj, void, v0, flags, size);
-
-    return (VALUE)obj;
+    VALUE flags = T_IMEMO | (type << FL_USHIFT) | (is_shareable ? FL_SHAREABLE : 0);
+    return rb_newobj_of(v0, flags, 0, size);
 }
 
 VALUE
 rb_imemo_tmpbuf_new(void)
 {
     VALUE flags = T_IMEMO | (imemo_tmpbuf << FL_USHIFT);
-    NEWOBJ_OF(obj, rb_imemo_tmpbuf_t, 0, flags, sizeof(rb_imemo_tmpbuf_t));
+    UNPROTECTED_NEWOBJ_OF(obj, rb_imemo_tmpbuf_t, 0, flags, sizeof(rb_imemo_tmpbuf_t));
 
     rb_gc_register_pinning_obj((VALUE)obj);
 

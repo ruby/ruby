@@ -3066,17 +3066,14 @@ bignew_1(VALUE klass, size_t len, int sign)
     if (big_embeddable_p(len)) {
         size_t size = big_embed_size(len);
         RUBY_ASSERT(rb_gc_size_allocatable_p(size));
-        NEWOBJ_OF(big, struct RBignum, klass,
-                T_BIGNUM | BIGNUM_EMBED_FLAG | FL_WB_PROTECTED,
-                size);
+        NEWOBJ_OF(big, struct RBignum, klass, T_BIGNUM | BIGNUM_EMBED_FLAG, size);
         bigv = (VALUE)big;
         BIGNUM_SET_SIGN(bigv, sign);
         BIGNUM_SET_LEN(bigv, len);
         (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)big->as.ary, len * sizeof(BDIGIT));
     }
     else {
-        NEWOBJ_OF(big, struct RBignum, klass,
-                T_BIGNUM | FL_WB_PROTECTED, sizeof(struct RBignum));
+        NEWOBJ_OF(big, struct RBignum, klass, T_BIGNUM, sizeof(struct RBignum));
         bigv = (VALUE)big;
         BIGNUM_SET_SIGN(bigv, sign);
         big->as.heap.digits = ALLOC_N(BDIGIT, len);

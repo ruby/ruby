@@ -666,7 +666,7 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable)
 
     RUBY_ASSERT(type == T_CLASS || type == T_ICLASS || type == T_MODULE);
 
-    VALUE flags = type | FL_SHAREABLE | FL_WB_PROTECTED;
+    VALUE flags = type | FL_SHAREABLE;
     if (boxable) flags |= RCLASS_BOXABLE;
 
     NEWOBJ_OF(obj, struct RClass, klass, flags, alloc_size);
