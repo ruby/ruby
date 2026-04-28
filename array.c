@@ -697,7 +697,7 @@ ary_alloc_embed(VALUE klass, long capa)
 static VALUE
 ary_alloc_heap(VALUE klass)
 {
-    NEWOBJ_OF(ary, struct RArray, klass, T_ARRAY | FL_WB_PROTECTED, sizeof(struct RArray), 0);
+    NEWOBJ_OF(ary, struct RArray, klass, T_ARRAY | FL_WB_PROTECTED, sizeof(struct RArray));
 
     ary->as.heap.len = 0;
     ary->as.heap.aux.capa = 0;
@@ -800,7 +800,7 @@ ec_ary_alloc_embed(rb_execution_context_t *ec, VALUE klass, long capa)
 {
     size_t size = ary_embed_size(capa);
     RUBY_ASSERT(rb_gc_size_allocatable_p(size));
-    NEWOBJ_OF(ary, struct RArray, klass,
+    EC_NEWOBJ_OF(ary, struct RArray, klass,
             T_ARRAY | RARRAY_EMBED_FLAG | FL_WB_PROTECTED,
             size, ec);
     /* Created array is:
@@ -813,7 +813,7 @@ ec_ary_alloc_embed(rb_execution_context_t *ec, VALUE klass, long capa)
 static VALUE
 ec_ary_alloc_heap(rb_execution_context_t *ec, VALUE klass)
 {
-    NEWOBJ_OF(ary, struct RArray, klass,
+    EC_NEWOBJ_OF(ary, struct RArray, klass,
             T_ARRAY | FL_WB_PROTECTED,
             sizeof(struct RArray), ec);
 

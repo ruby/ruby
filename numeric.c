@@ -910,7 +910,7 @@ num_negative_p(VALUE num)
 VALUE
 rb_float_new_in_heap(double d)
 {
-    NEWOBJ_OF(flt, struct RFloat, rb_cFloat, T_FLOAT | FL_WB_PROTECTED, sizeof(struct RFloat), 0);
+    NEWOBJ_OF(flt, struct RFloat, rb_cFloat, T_FLOAT | FL_WB_PROTECTED, sizeof(struct RFloat));
 
 #if SIZEOF_DOUBLE <= SIZEOF_VALUE
     flt->float_value = d;

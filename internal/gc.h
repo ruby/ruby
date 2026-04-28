@@ -120,10 +120,10 @@ const char *rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
 struct rb_execution_context_struct; /* in vm_core.h */
 struct rb_objspace; /* in vm_core.h */
 
-#define NEWOBJ_OF_WITH_SHAPE(var, T, c, f, shape_id, s, ec) \
+#define EC_NEWOBJ_OF_WITH_SHAPE(var, T, c, f, shape_id, s, ec) \
     T *(var) = (T *)rb_ec_newobj_of((ec ? ec : GET_EC()), (c), (f) & ~FL_WB_PROTECTED, shape_id, (f) & FL_WB_PROTECTED, s)
-
-#define NEWOBJ_OF(var, T, c, f, s, ec) NEWOBJ_OF_WITH_SHAPE(var, T, c, f, 0 /* ROOT_SHAPE_ID */, s, ec)
+#define EC_NEWOBJ_OF(var, T, c, f, s, ec) EC_NEWOBJ_OF_WITH_SHAPE(var, T, c, f, 0 /* ROOT_SHAPE_ID */, s, ec)
+#define NEWOBJ_OF(var, T, c, f, s) EC_NEWOBJ_OF_WITH_SHAPE(var, T, c, f, 0 /* ROOT_SHAPE_ID */, s, NULL)
 
 #ifndef RB_GC_OBJECT_METADATA_ENTRY_DEFINED
 # define RB_GC_OBJECT_METADATA_ENTRY_DEFINED

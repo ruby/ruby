@@ -1079,8 +1079,7 @@ rb_class_allocate_instance(VALUE klass)
     // There might be a NEWOBJ tracepoint callback, and it may set fields.
     // So the shape must be passed to `NEWOBJ_OF`.
     VALUE flags = T_OBJECT | FL_WB_PROTECTED;
-    NEWOBJ_OF_WITH_SHAPE(o, struct RObject, klass, flags, rb_shape_root(rb_gc_heap_id_for_size(size)), size, 0);
-    VALUE obj = (VALUE)o;
+    VALUE obj = rb_newobj_of(klass, flags, rb_shape_root(rb_gc_heap_id_for_size(size)), true, size);
 
 #if RUBY_DEBUG
     RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));

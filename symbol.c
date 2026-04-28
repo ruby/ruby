@@ -303,7 +303,7 @@ sym_set_create(VALUE sym, void *data)
     VALUE str = dup_string_for_create(static_sym_entry->str);
 
     if (create_dynamic_symbol) {
-        NEWOBJ_OF(obj, struct RSymbol, rb_cSymbol, T_SYMBOL | FL_WB_PROTECTED, sizeof(struct RSymbol), 0);
+        NEWOBJ_OF(obj, struct RSymbol, rb_cSymbol, T_SYMBOL | FL_WB_PROTECTED, sizeof(struct RSymbol));
 
         rb_encoding *enc = rb_enc_get(str);
         rb_enc_set_index((VALUE)obj, rb_enc_to_index(enc));

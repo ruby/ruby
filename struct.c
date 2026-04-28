@@ -837,7 +837,7 @@ struct_alloc(VALUE klass)
             flags |= RSTRUCT_GEN_FIELDS;
         }
 
-        NEWOBJ_OF(st, struct RStruct, klass, flags, embedded_size, 0);
+        NEWOBJ_OF(st, struct RStruct, klass, flags, embedded_size);
         if (RCLASS_MAX_IV_COUNT(klass) == 0) {
             if (!rb_shape_obj_has_fields((VALUE)st)
                     && embedded_size < rb_gc_obj_slot_size((VALUE)st)) {
@@ -854,7 +854,7 @@ struct_alloc(VALUE klass)
         return (VALUE)st;
     }
     else {
-        NEWOBJ_OF(st, struct RStruct, klass, flags, sizeof(struct RStruct), 0);
+        NEWOBJ_OF(st, struct RStruct, klass, flags, sizeof(struct RStruct));
 
         st->as.heap.ptr = NULL;
         st->as.heap.fields_obj = 0;

@@ -669,7 +669,7 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable)
     VALUE flags = type | FL_SHAREABLE | FL_WB_PROTECTED;
     if (boxable) flags |= RCLASS_BOXABLE;
 
-    NEWOBJ_OF(obj, struct RClass, klass, flags, alloc_size, 0);
+    NEWOBJ_OF(obj, struct RClass, klass, flags, alloc_size);
 
     obj->object_id = 0;
 

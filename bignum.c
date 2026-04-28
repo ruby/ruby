@@ -3068,7 +3068,7 @@ bignew_1(VALUE klass, size_t len, int sign)
         RUBY_ASSERT(rb_gc_size_allocatable_p(size));
         NEWOBJ_OF(big, struct RBignum, klass,
                 T_BIGNUM | BIGNUM_EMBED_FLAG | FL_WB_PROTECTED,
-                size, 0);
+                size);
         bigv = (VALUE)big;
         BIGNUM_SET_SIGN(bigv, sign);
         BIGNUM_SET_LEN(bigv, len);
@@ -3076,7 +3076,7 @@ bignew_1(VALUE klass, size_t len, int sign)
     }
     else {
         NEWOBJ_OF(big, struct RBignum, klass,
-                T_BIGNUM | FL_WB_PROTECTED, sizeof(struct RBignum), 0);
+                T_BIGNUM | FL_WB_PROTECTED, sizeof(struct RBignum));
         bigv = (VALUE)big;
         BIGNUM_SET_SIGN(bigv, sign);
         big->as.heap.digits = ALLOC_N(BDIGIT, len);
