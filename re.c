@@ -967,13 +967,9 @@ VALUE rb_cMatch;
 static VALUE
 match_alloc(VALUE klass)
 {
-    size_t alloc_size = sizeof(struct RMatch) + sizeof(rb_matchext_t);
+    size_t alloc_size = sizeof(struct RMatch);
     NEWOBJ_OF(match, struct RMatch, klass, T_MATCH, alloc_size);
-
-    match->str = Qfalse;
-    match->regexp = Qfalse;
-    memset(RMATCH_EXT(match), 0, sizeof(rb_matchext_t));
-
+    memset(((char *)match) + sizeof(struct RBasic), 0, sizeof(struct RMatch) - sizeof(struct RBasic));
     return (VALUE)match;
 }
 
@@ -1007,7 +1003,7 @@ pair_byte_cmp(const void *pair1, const void *pair2)
 static void
 update_char_offset(VALUE match)
 {
-    rb_matchext_t *rm = RMATCH_EXT(match);
+    struct RMatch *rm = RMATCH(match);
     struct re_registers *regs;
     int i, num_regs, num_pos;
     long c;
@@ -1088,23 +1084,22 @@ match_check(VALUE match)
 static VALUE
 match_init_copy(VALUE obj, VALUE orig)
 {
-    rb_matchext_t *rm;
+    struct RMatch *rm = RMATCH(obj);
 
     if (!OBJ_INIT_COPY(obj, orig)) return obj;
 
-    RB_OBJ_WRITE(obj, &RMATCH(obj)->str, RMATCH(orig)->str);
-    RB_OBJ_WRITE(obj, &RMATCH(obj)->regexp, RMATCH(orig)->regexp);
+    RB_OBJ_WRITE(obj, &rm->str, RMATCH(orig)->str);
+    RB_OBJ_WRITE(obj, &rm->regexp, RMATCH(orig)->regexp);
 
-    rm = RMATCH_EXT(obj);
     if (rb_reg_region_copy(&rm->regs, RMATCH_REGS(orig)))
         rb_memerror();
 
-    if (RMATCH_EXT(orig)->char_offset_num_allocated) {
+    if (RMATCH(orig)->char_offset_num_allocated) {
         if (rm->char_offset_num_allocated < rm->regs.num_regs) {
             SIZED_REALLOC_N(rm->char_offset, struct rmatch_offset, rm->regs.num_regs, rm->char_offset_num_allocated);
             rm->char_offset_num_allocated = rm->regs.num_regs;
         }
-        MEMCPY(rm->char_offset, RMATCH_EXT(orig)->char_offset,
+        MEMCPY(rm->char_offset, RMATCH(orig)->char_offset,
                struct rmatch_offset, rm->regs.num_regs);
         RB_GC_GUARD(orig);
     }
@@ -1259,8 +1254,8 @@ match_offset(VALUE match, VALUE n)
         return rb_assoc_new(Qnil, Qnil);
 
     update_char_offset(match);
-    return rb_assoc_new(LONG2NUM(RMATCH_EXT(match)->char_offset[i].beg),
-                        LONG2NUM(RMATCH_EXT(match)->char_offset[i].end));
+    return rb_assoc_new(LONG2NUM(RMATCH(match)->char_offset[i].beg),
+                        LONG2NUM(RMATCH(match)->char_offset[i].end));
 }
 
 /*
@@ -1366,7 +1361,7 @@ match_begin(VALUE match, VALUE n)
         return Qnil;
 
     update_char_offset(match);
-    return LONG2NUM(RMATCH_EXT(match)->char_offset[i].beg);
+    return LONG2NUM(RMATCH(match)->char_offset[i].beg);
 }
 
 
@@ -1392,7 +1387,7 @@ match_end(VALUE match, VALUE n)
         return Qnil;
 
     update_char_offset(match);
-    return LONG2NUM(RMATCH_EXT(match)->char_offset[i].end);
+    return LONG2NUM(RMATCH(match)->char_offset[i].end);
 }
 
 /*
@@ -1479,7 +1474,7 @@ match_nth_length(VALUE match, VALUE n)
 
     update_char_offset(match);
     const struct rmatch_offset *const ofs =
-        &RMATCH_EXT(match)->char_offset[i];
+        &RMATCH(match)->char_offset[i];
     return LONG2NUM(ofs->end - ofs->beg);
 }
 
@@ -1511,14 +1506,13 @@ static void
 match_set_string(VALUE m, VALUE string, long pos, long len)
 {
     struct RMatch *match = (struct RMatch *)m;
-    rb_matchext_t *rmatch = RMATCH_EXT(match);
 
-    RB_OBJ_WRITE(match, &RMATCH(match)->str, string);
-    RB_OBJ_WRITE(match, &RMATCH(match)->regexp, Qnil);
-    int err = onig_region_resize(&rmatch->regs, 1);
+    RB_OBJ_WRITE(match, &match->str, string);
+    RB_OBJ_WRITE(match, &match->regexp, Qnil);
+    int err = onig_region_resize(&match->regs, 1);
     if (err) rb_memerror();
-    rmatch->regs.beg[0] = pos;
-    rmatch->regs.end[0] = pos + len;
+    match->regs.beg[0] = pos;
+    match->regs.end[0] = pos + len;
 }
 
 VALUE
@@ -1820,10 +1814,10 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
         match = match_alloc(rb_cMatch);
     }
     else {
-        onig_region_free(&RMATCH_EXT(match)->regs, false);
+        onig_region_free(&RMATCH(match)->regs, false);
     }
 
-    rb_matchext_t *rm = RMATCH_EXT(match);
+    struct RMatch *rm = RMATCH(match);
     rm->regs = regs;
 
     if (set_backref_str) {
