@@ -439,17 +439,6 @@ RBIMPL_SYMBOL_EXPORT_END()
  * @private
  *
  * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
- * struct ::RComplex.   It has  to be  set at  the time  ruby itself  compiles.
- * Makes no sense for 3rd parties.
- */
-#ifndef RGENGC_WB_PROTECTED_COMPLEX
-# define RGENGC_WB_PROTECTED_COMPLEX 1
-#endif
-
-/**
- * @private
- *
- * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
  * struct ::RRational.  It  has to  be set  at the  time ruby  itself compiles.
  * Makes no sense for 3rd parties.
  */
