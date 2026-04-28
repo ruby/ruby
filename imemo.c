@@ -44,7 +44,7 @@ VALUE
 rb_imemo_new(enum imemo_type type, VALUE v0, size_t size, bool is_shareable)
 {
     VALUE flags = T_IMEMO | (type << FL_USHIFT) | (is_shareable ? FL_SHAREABLE : 0);
-    return rb_newobj_of(v0, flags, 0, size);
+    return rb_newobj_of(v0, flags, size);
 }
 
 VALUE

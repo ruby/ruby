@@ -691,7 +691,7 @@ ary_alloc_embed(VALUE klass, long capa)
     *   FL_SET_EMBED((VALUE)ary);
     *   ARY_SET_EMBED_LEN((VALUE)ary, 0);
     */
-    return rb_newobj_of(klass, T_ARRAY | RARRAY_EMBED_FLAG, 0, size);
+    return rb_newobj_of(klass, T_ARRAY | RARRAY_EMBED_FLAG, size);
 }
 
 static VALUE
@@ -804,13 +804,13 @@ ec_ary_alloc_embed(rb_execution_context_t *ec, VALUE klass, long capa)
     *   FL_SET_EMBED((VALUE)ary);
     *   ARY_SET_EMBED_LEN((VALUE)ary, 0);
     */
-    return rb_ec_newobj_of(ec, klass, T_ARRAY | RARRAY_EMBED_FLAG, 0, true, size);
+    return rb_ec_newobj_of(ec, klass, T_ARRAY | RARRAY_EMBED_FLAG, size);
 }
 
 static VALUE
 ec_ary_alloc_heap(rb_execution_context_t *ec, VALUE klass)
 {
-    VALUE ary = rb_ec_newobj_of(ec, klass, T_ARRAY, 0, true, sizeof(struct RArray));
+    VALUE ary = rb_ec_newobj_of(ec, klass, T_ARRAY, sizeof(struct RArray));
     RARRAY(ary)->as.heap.len = 0;
     RARRAY(ary)->as.heap.aux.capa = 0;
     RARRAY(ary)->as.heap.ptr = NULL;

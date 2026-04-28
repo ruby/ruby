@@ -121,10 +121,10 @@ struct rb_execution_context_struct; /* in vm_core.h */
 struct rb_objspace; /* in vm_core.h */
 
 #define EC_NEWOBJ_OF(var, T, c, f, s, ec)  \
-    T *(var) = (T *)rb_ec_newobj_of((ec), (c), (f), 0 /* ROOT_SHAPE_ID */, true, s)
+    T *(var) = (T *)rb_ec_newobj_of((ec), (c), (f), s)
 #define NEWOBJ_OF(var, T, c, f, s) EC_NEWOBJ_OF(var, T, c, f, s, GET_EC())
 #define UNPROTECTED_NEWOBJ_OF(var, T, c, f, s) \
-    T *(var) = (T *)rb_ec_newobj_of((GET_EC()), (c), (f), 0, false, s)
+    T *(var) = (T *)rb_newobj((GET_EC()), (c), (f), 0 /* ROOT_SHAPE_ID */, false, s)
 
 #ifndef RB_GC_OBJECT_METADATA_ENTRY_DEFINED
 # define RB_GC_OBJECT_METADATA_ENTRY_DEFINED
@@ -245,8 +245,9 @@ VALUE rb_gc_disable_no_rest(void);
 
 /* gc.c (export) */
 const char *rb_objspace_data_type_name(VALUE obj);
-VALUE rb_newobj_of(VALUE, VALUE, uint32_t /* shape_id_t */, size_t);
-VALUE rb_ec_newobj_of(struct rb_execution_context_struct *, VALUE, VALUE, uint32_t /* shape_id_t */, bool, size_t);
+VALUE rb_newobj(struct rb_execution_context_struct *, VALUE, VALUE, uint32_t /* shape_id_t */, bool, size_t);
+VALUE rb_newobj_of(VALUE, VALUE, size_t);
+VALUE rb_ec_newobj_of(struct rb_execution_context_struct *, VALUE, VALUE, size_t);
 size_t rb_obj_memsize_of(VALUE);
 struct rb_gc_object_metadata_entry *rb_gc_object_metadata(VALUE obj);
 void rb_gc_mark_values(long n, const VALUE *values);
