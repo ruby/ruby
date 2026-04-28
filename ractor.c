@@ -2001,7 +2001,7 @@ static const bool wb_protected_types[RUBY_T_MASK] = {
     [T_COMPLEX] = RGENGC_WB_PROTECTED_COMPLEX,
     [T_REGEXP] = true,
     [T_MATCH] = true,
-    [T_FLOAT] = RGENGC_WB_PROTECTED_FLOAT,
+    [T_FLOAT] = true,
     [T_RATIONAL] = RGENGC_WB_PROTECTED_RATIONAL,
 };
 
