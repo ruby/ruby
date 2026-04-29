@@ -313,9 +313,10 @@ RSpec.describe ".bundle/config" do
 
   describe "parseable option" do
     it "prints an empty string" do
-      bundle "config get foo --parseable"
+      bundle "config get foo --parseable", raise_on_error: false
 
       expect(out).to eq ""
+      expect(last_command).to be_failure
     end
 
     it "only prints the value of the config" do
@@ -501,8 +502,9 @@ E
     it "get" do
       ENV["BUNDLE_BAR"] = "bar_val"
 
-      bundle "config get foo"
+      bundle "config get foo", raise_on_error: false
       expect(out).to eq "Settings for `foo` in order of priority. The top value will be used\nYou have not configured a value for `foo`"
+      expect(last_command).to be_failure
 
       ENV["BUNDLE_FOO"] = "foo_val"
 
@@ -547,7 +549,8 @@ E
 
       bundle "config unset foo"
       expect(out).to eq ""
-      expect(bundle("config get foo")).to eq "Settings for `foo` in order of priority. The top value will be used\nYou have not configured a value for `foo`"
+      expect(bundle("config get foo", raise_on_error: false)).to eq "Settings for `foo` in order of priority. The top value will be used\nYou have not configured a value for `foo`"
+      expect(last_command).to be_failure
 
       bundle "config set --local foo 1"
       bundle "config set --global foo 2"
@@ -557,7 +560,8 @@ E
       expect(bundle("config get foo")).to eq "Settings for `foo` in order of priority. The top value will be used\nSet for the current user (#{home(".bundle/config")}): \"2\""
       bundle "config unset foo --global"
       expect(out).to eq ""
-      expect(bundle("config get foo")).to eq "Settings for `foo` in order of priority. The top value will be used\nYou have not configured a value for `foo`"
+      expect(bundle("config get foo", raise_on_error: false)).to eq "Settings for `foo` in order of priority. The top value will be used\nYou have not configured a value for `foo`"
+      expect(last_command).to be_failure
 
       bundle "config set --local foo 1"
       bundle "config set --global foo 2"
@@ -567,7 +571,8 @@ E
       expect(bundle("config get foo")).to eq "Settings for `foo` in order of priority. The top value will be used\nSet for your local app (#{bundled_app(".bundle/config")}): \"1\""
       bundle "config unset foo --local"
       expect(out).to eq ""
-      expect(bundle("config get foo")).to eq "Settings for `foo` in order of priority. The top value will be used\nYou have not configured a value for `foo`"
+      expect(bundle("config get foo", raise_on_error: false)).to eq "Settings for `foo` in order of priority. The top value will be used\nYou have not configured a value for `foo`"
+      expect(last_command).to be_failure
 
       bundle "config unset foo --local --global", raise_on_error: false
       expect(last_command).to be_failure

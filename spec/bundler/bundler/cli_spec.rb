@@ -251,8 +251,10 @@ To update to the most recent version, run `bundle update --bundler`
 
       context "running a parseable command" do
         it "prints no warning" do
+          bundle "config set foo value", env: { "BUNDLER_VERSION" => bundler_version }
           bundle "config get --parseable foo", env: { "BUNDLER_VERSION" => bundler_version }
-          expect(stdboth).to eq ""
+          expect(out).to eq "foo=value"
+          expect(err).to eq ""
 
           bundle "platform --ruby", env: { "BUNDLER_VERSION" => bundler_version }, raise_on_error: false
           expect(stdboth).to eq "Could not locate Gemfile"
