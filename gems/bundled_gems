@@ -37,7 +37,7 @@ ostruct             0.6.3   https://github.com/ruby/ostruct
 pstore              0.2.1   https://github.com/ruby/pstore
 benchmark           0.5.0   https://github.com/ruby/benchmark
 logger              1.7.0   https://github.com/ruby/logger
-rdoc                7.2.0   https://github.com/ruby/rdoc 4913d56243f2577c639ba305fd36c40d55c34f1a
+rdoc                7.2.0   https://github.com/ruby/rdoc bc0baee787609f2205e8f1103f3e1d36b923184a
 win32ole            1.9.3   https://github.com/ruby/win32ole
 irb                 1.17.0  https://github.com/ruby/irb cfd0b917d3feb01adb7d413b19faeb0309900599
 reline              0.6.3   https://github.com/ruby/reline
