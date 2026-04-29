@@ -418,7 +418,9 @@ ossl_ts_req_set_cert_requested(VALUE self, VALUE requested)
     TS_REQ *req;
 
     GetTSRequest(self, req);
-    TS_REQ_set_cert_req(req, RTEST(requested));
+    if (!TS_REQ_set_cert_req(req, RTEST(requested))) {
+        ossl_raise(eTimestampError, "TS_REQ_set_cert_req");
+    }
 
     return requested;
 }

@@ -351,7 +351,9 @@ ossl_x509ext_set_critical(VALUE self, VALUE flag)
     X509_EXTENSION *ext;
 
     GetX509Ext(self, ext);
-    X509_EXTENSION_set_critical(ext, RTEST(flag) ? 1 : 0);
+    if (!X509_EXTENSION_set_critical(ext, RTEST(flag) ? 1 : 0)) {
+        ossl_raise(eX509ExtError, "X509_EXTENSION_set_critical");
+    }
 
     return flag;
 }
