@@ -12009,6 +12009,7 @@ prism/json.$(OBJEXT): $(top_srcdir)/prism/internal/list.h
 prism/json.$(OBJEXT): $(top_srcdir)/prism/internal/options.h
 prism/json.$(OBJEXT): $(top_srcdir)/prism/internal/parser.h
 prism/json.$(OBJEXT): $(top_srcdir)/prism/internal/static_literals.h
+prism/json.$(OBJEXT): $(top_srcdir)/prism/internal/strpbrk.h
 prism/json.$(OBJEXT): $(top_srcdir)/prism/json.c
 prism/json.$(OBJEXT): $(top_srcdir)/prism/json.h
 prism/json.$(OBJEXT): $(top_srcdir)/prism/line_offset_list.h
@@ -12229,6 +12230,7 @@ prism/parser.$(OBJEXT): $(top_srcdir)/prism/internal/magic_comments.h
 prism/parser.$(OBJEXT): $(top_srcdir)/prism/internal/options.h
 prism/parser.$(OBJEXT): $(top_srcdir)/prism/internal/parser.h
 prism/parser.$(OBJEXT): $(top_srcdir)/prism/internal/static_literals.h
+prism/parser.$(OBJEXT): $(top_srcdir)/prism/internal/strpbrk.h
 prism/parser.$(OBJEXT): $(top_srcdir)/prism/line_offset_list.h
 prism/parser.$(OBJEXT): $(top_srcdir)/prism/magic_comments.h
 prism/parser.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -12287,6 +12289,7 @@ prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/internal/options.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/internal/parser.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/internal/static_literals.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/internal/strncasecmp.h
+prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/internal/strpbrk.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/line_offset_list.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/magic_comments.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -12432,6 +12435,7 @@ prism/regexp.$(OBJEXT): $(top_srcdir)/prism/internal/regexp.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/internal/static_literals.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/internal/stringy.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/internal/strncasecmp.h
+prism/regexp.$(OBJEXT): $(top_srcdir)/prism/internal/strpbrk.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/line_offset_list.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/magic_comments.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/options.h
