@@ -1222,6 +1222,7 @@ append_method(VALUE obj, VALUE str, ID default_method, VALUE default_args)
             rb_str_buf_cat2(str, ")");
         }
     }
+    RB_GC_GUARD(eargs);
 
     return str;
 }
@@ -4387,6 +4388,7 @@ arith_seq_inspect(VALUE self)
             rb_str_buf_cat2(str, ")");
         }
     }
+    RB_GC_GUARD(eargs);
 
     rb_str_buf_cat2(str, ")");
 
