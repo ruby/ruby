@@ -1671,12 +1671,14 @@ fn gen_send_iseq_direct(
         // See vm_call_iseq_setup_normal_opt_start in vm_inshelper.c
         let lead_num = params.lead_num as u32;
         let opt_num = params.opt_num as u32;
+        let post_num = params.post_num as u32;
         let keyword = params.keyword;
         let kw_total_num = if keyword.is_null() { 0 } else { unsafe { (*keyword).num } } as u32;
-        assert!(args.len() as u32 <= lead_num + opt_num + kw_total_num);
+        assert!(args.len() as u32 <= lead_num + opt_num + post_num + kw_total_num);
         // For computing optional positional entry point, only count positional args
+        // and exclude the always-present lead and post slots.
         let positional_argc = args.len() as u32 - kw_total_num;
-        let num_optionals_passed = positional_argc.saturating_sub(lead_num);
+        let num_optionals_passed = positional_argc.saturating_sub(lead_num + post_num);
         num_optionals_passed
     } else {
         0

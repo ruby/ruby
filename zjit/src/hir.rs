@@ -2402,7 +2402,6 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
 
     use Counter::*;
     if 0 != params.flags.has_rest()    { count_failure(complex_arg_pass_param_rest) }
-    if 0 != params.flags.has_post()    { count_failure(complex_arg_pass_param_post) }
     if 0 != params.flags.forwardable() { count_failure(complex_arg_pass_param_forwardable) }
     if callee_has_block_param && caller_passes_block_arg
                                        { count_failure(complex_arg_pass_param_block) }
@@ -2423,9 +2422,9 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
         return false;
     }
 
-    // Because we exclude e.g. post parameters above, they are also excluded from the checks below.
     let lead_num = params.lead_num;
     let opt_num = params.opt_num;
+    let post_num = params.post_num;
     let keyword = params.keyword;
     let kw_req_num = if keyword.is_null() { 0 } else { unsafe { (*keyword).required_num } };
     let kw_total_num = if keyword.is_null() { 0 } else { unsafe { (*keyword).num } };
@@ -2441,7 +2440,7 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
 
     let positional_ok = c_int::try_from(caller_positional)
         .as_ref()
-        .map(|argc| (lead_num..=lead_num + opt_num).contains(argc))
+        .map(|argc| (lead_num + post_num..=lead_num + opt_num + post_num).contains(argc))
         .unwrap_or(false);
     let keyword_ok = c_int::try_from(caller_kw_count)
         .as_ref()

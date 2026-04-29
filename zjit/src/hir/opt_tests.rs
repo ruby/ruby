@@ -3762,11 +3762,11 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn dont_specialize_call_to_post_param_iseq() {
-        enable_zjit_stats();
+    fn specialize_call_to_post_param_iseq() {
         eval("
             def foo(opt=80, post) = post
             def test = foo(10)
+            test
             test
         ");
         assert_snapshot!(hir_string("test"), @"
@@ -3778,18 +3778,44 @@ mod hir_opt_tests {
         bb2():
           EntryPoint JIT(0)
           v4:BasicObject = LoadArg :self@0
-          IncrCounterPtr
           Jump bb3(v4)
-        bb3(v7:BasicObject):
-          IncrCounter zjit_insn_count
-          IncrCounter zjit_insn_count
-          v14:Fixnum[10] = Const Value(10)
-          IncrCounter zjit_insn_count
-          IncrCounter complex_arg_pass_param_post
-          v17:BasicObject = Send v7, :foo, v14 # SendFallbackReason: Complex argument passing
-          IncrCounter zjit_insn_count
+        bb3(v6:BasicObject):
+          v11:Fixnum[10] = Const Value(10)
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v20:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)]
+          v21:BasicObject = SendDirect v20, 0x1038, :foo (0x1048), v11
           CheckInterrupts
-          Return v17
+          Return v21
+        ");
+    }
+
+    #[test]
+    fn specialize_call_to_iseq_with_optional_between_required_params() {
+        let result = eval("
+            def foo(lead, opt=80, post) = lead + opt + post
+            def test = foo(10, 20)
+            test
+            test
+        ");
+        assert_eq!(VALUE::fixnum_from_usize(110), result);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v11:Fixnum[10] = Const Value(10)
+          v13:Fixnum[20] = Const Value(20)
+          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
+          v22:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)]
+          v23:BasicObject = SendDirect v22, 0x1038, :foo (0x1048), v11, v13
+          CheckInterrupts
+          Return v23
         ");
     }
 
