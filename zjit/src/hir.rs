@@ -4359,14 +4359,13 @@ impl Function {
             return false;
         }
 
-        // Inline callees with required and/or optional positional parameters. Keyword
-        // params, rest/post params, block params, and forwardable params are still
-        // rejected because their local-table layouts and argument-shaping prologues
-        // need additional work to map cleanly into HIR.
+        // Inline callees with required, optional, and post-required positional
+        // parameters. Keyword params, rest params, block params, and forwardable
+        // params are still rejected because their local-table layouts and
+        // argument-shaping prologues need additional work to map cleanly into HIR.
         let params = unsafe { callee_iseq.params() };
         if params.flags.has_kw() != 0
             || params.flags.has_rest() != 0
-            || params.flags.has_post() != 0
             || params.flags.has_block() != 0
             || params.flags.forwardable() != 0
             || params.flags.has_kwrest() != 0
@@ -4517,16 +4516,18 @@ impl Function {
                 // Find the callee's body entry block by picking the JIT entry block
                 // that matches how many optional parameters the caller actually filled,
                 // then following its trailing Jump to the body. Each JIT entry block at
-                // index `k` corresponds to "lead_num + k" arguments having been passed:
-                // it runs the default-init code for the remaining `opt_num - k`
-                // optionals (if any) before falling through into the post-default body.
-                // SendDirect emission already guarantees args.len() lies within
-                // `lead_num..=lead_num + opt_num`, so `passed_opt_num` is in range and
-                // the index into `jit_entry_blocks` is safe.
+                // index `k` corresponds to "lead_num + k + post_num" arguments having
+                // been passed: it runs the default-init code for the remaining
+                // `opt_num - k` optionals (if any) before falling through into the
+                // post-default body. SendDirect emission already guarantees args.len()
+                // lies within `lead_num + post_num..=lead_num + opt_num + post_num`, so
+                // `passed_opt_num` is in range and the index into `jit_entry_blocks` is
+                // safe.
                 let callee_entry_body_block = {
                     let callee_params = unsafe { iseq.params() };
                     let lead_num = callee_params.lead_num as usize;
-                    let passed_opt_num = args.len() - lead_num;
+                    let post_num = callee_params.post_num as usize;
+                    let passed_opt_num = args.len() - lead_num - post_num;
                     let jit_entry = callee.jit_entry_blocks[passed_opt_num];
                     let jit_entry_last_insn = callee.blocks[jit_entry.0].insns.last().unwrap();
 
@@ -4639,12 +4640,29 @@ impl Function {
                 // Map callee params to caller values:
                 //
                 // The callee's body entry block has params: [self, local0, local1, ..., stack0, stack1, ...]
-                // The first param is self (recv); the next `args.len()` locals are
-                // the arguments the caller actually passed (lead positionals plus any
-                // optionals the caller filled in); any remaining locals — unfilled
-                // optionals and non-parameter locals — are initialized to nil. For
-                // unfilled optionals, the body's default-init code (entered via the
-                // chosen jit_entry_blocks[passed_opt_num] target) overwrites them.
+                // The first param is self (recv); the rest follow the callee's local
+                // table order (lead, opt, post, then non-parameter locals). The caller
+                // pushes args without gaps, so we map locals to args by category:
+                //
+                //   * lead locals (indices 0..lead_num) and filled optional locals
+                //     (lead_num..lead_num + passed_opt_num) take args in order.
+                //   * unfilled optional locals (lead_num + passed_opt_num..lead_num + opt_num)
+                //     are nil-initialized; the body's default-init code (entered via
+                //     the chosen jit_entry_blocks[passed_opt_num] target) overwrites
+                //     them.
+                //   * post-required locals (lead_num + opt_num..lead_num + opt_num + post_num)
+                //     take the trailing args, but their position in the local table
+                //     leaves a gap of (opt_num - passed_opt_num) above the args' compact
+                //     layout, so we shift the arg index down by that amount.
+                //   * any remaining non-parameter locals are nil-initialized.
+                let callee_params = unsafe { iseq.params() };
+                let lead_num = callee_params.lead_num as usize;
+                let opt_num = callee_params.opt_num as usize;
+                let post_num = callee_params.post_num as usize;
+                let passed_opt_num = args.len() - lead_num - post_num;
+                let omitted_opt_num = opt_num - passed_opt_num;
+                let post_end = lead_num + opt_num + post_num;
+
                 let remapped_entry = *block_map.get(&callee_entry_body_block.0).unwrap();
                 let callee_body_params: Vec<InsnId> = self.blocks[remapped_entry.0].params.clone();
 
@@ -4653,13 +4671,23 @@ impl Function {
                     self.make_equal_to(callee_body_params[0], recv);
                 }
 
-                // Next params are locals. The first N locals are the arguments.
+                // Next params are locals.
                 let num_locals = callee_body_params.len() - 1; // -1 for self
                 for (i, &param_id) in callee_body_params[1..].iter().enumerate() {
-                    if i < args.len() {
+                    if i < lead_num + passed_opt_num {
+                        // Lead local or filled optional: arg index matches local index.
                         self.make_equal_to(param_id, args[i]);
+                    } else if i < lead_num + opt_num {
+                        // Unfilled optional: nil-initialized; default-init code will overwrite.
+                        let nil = self.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
+                        self.make_equal_to(param_id, nil);
+                    } else if i < post_end {
+                        // Post-required local: the arg sits compactly after the filled
+                        // optionals, so shift the arg index down by the gap of unfilled
+                        // optionals between the optional and post regions.
+                        self.make_equal_to(param_id, args[i - omitted_opt_num]);
                     } else if i < num_locals {
-                        // Unfilled optional locals and non-parameter locals are initialized to nil.
+                        // Non-parameter local: nil-initialized.
                         let nil = self.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
                         self.make_equal_to(param_id, nil);
                     }
