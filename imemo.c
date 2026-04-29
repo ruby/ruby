@@ -128,16 +128,10 @@ rb_imemo_fields_new(VALUE owner, shape_id_t shape_id, bool shareable)
 {
     size_t capa = RSHAPE_CAPACITY(shape_id);
     size_t embedded_size = offsetof(struct rb_fields, as.embed) + capa * sizeof(VALUE);
-    VALUE fields;
-    if (rb_gc_size_allocatable_p(embedded_size)) {
-        fields = rb_imemo_new(imemo_fields, owner, embedded_size, shareable);
-    }
-    else {
-        fields = rb_imemo_new(imemo_fields, owner, sizeof(struct rb_fields), shareable);
-        IMEMO_OBJ_FIELDS(fields)->as.external.ptr = ALLOC_N(VALUE, capa);
-        FL_SET_RAW(fields, OBJ_FIELD_HEAP);
-    }
+    RUBY_ASSERT(rb_gc_size_allocatable_p(embedded_size));
+    VALUE fields = rb_imemo_new(imemo_fields, owner, embedded_size, shareable);
     RBASIC_SET_SHAPE_ID(fields, shape_id);
+    RUBY_ASSERT(IMEMO_TYPE_P(fields, imemo_fields));
     return fields;
 }
 
@@ -265,13 +259,8 @@ rb_imemo_memsize(VALUE obj)
       case imemo_cvar_entry:
         break;
       case imemo_fields:
-        if (FL_TEST_RAW(obj, OBJ_FIELD_HEAP)) {
-            if (rb_shape_obj_too_complex_p(obj)) {
-                size += st_memsize(IMEMO_OBJ_FIELDS(obj)->as.complex.table);
-            }
-            else {
-                size += RSHAPE_CAPACITY(RBASIC_SHAPE_ID(obj)) * sizeof(VALUE);
-            }
+        if (rb_shape_obj_too_complex_p(obj)) {
+            size += st_memsize(IMEMO_OBJ_FIELDS(obj)->as.complex.table);
         }
         break;
       default:
@@ -572,12 +561,8 @@ imemo_fields_free(struct rb_fields *fields)
 {
     if (FL_TEST_RAW((VALUE)fields, OBJ_FIELD_HEAP)) {
         shape_id_t shape_id = RBASIC_SHAPE_ID((VALUE)fields);
-        if (rb_shape_too_complex_p(shape_id)) {
-            st_free_table(fields->as.complex.table);
-        }
-        else {
-            SIZED_FREE_N(fields->as.external.ptr, RSHAPE_CAPACITY(shape_id));
-        }
+        RUBY_ASSERT(rb_shape_too_complex_p(shape_id));
+        st_free_table(fields->as.complex.table);
     }
 }
 

@@ -3041,7 +3041,7 @@ rb_estimate_iv_count(VALUE klass, const rb_iseq_t * initialize_iseq)
         }
     }
 
-    attr_index_t count = (attr_index_t)iv_names.num_entries;
+    size_t count = iv_names.num_entries;
 
     VALUE superclass = rb_class_superclass(klass);
     if (!NIL_P(superclass)) { // BasicObject doesn't have a superclass
@@ -3050,7 +3050,11 @@ rb_estimate_iv_count(VALUE klass, const rb_iseq_t * initialize_iseq)
 
     set_free_embedded_table(&iv_names);
 
-    return count;
+    if (count > (attr_index_t)-1) {
+        return (attr_index_t)-1;
+    }
+
+    return (attr_index_t)count;
 }
 
 /*

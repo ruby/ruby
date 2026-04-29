@@ -4,7 +4,7 @@
 #include "internal/gc.h"
 #include "internal/struct.h"
 
-typedef uint16_t attr_index_t;
+typedef uint8_t attr_index_t;
 typedef uint32_t shape_id_t;
 #define SHAPE_ID_NUM_BITS 32
 #define SHAPE_ID_OFFSET_NUM_BITS 19
@@ -64,7 +64,6 @@ enum shape_id_mask {
 
 typedef uint32_t redblack_id_t;
 
-#define SHAPE_MAX_FIELDS (attr_index_t)(-1)
 #define SHAPE_FLAG_SHIFT ((SIZEOF_VALUE * CHAR_BIT) - SHAPE_ID_NUM_BITS)
 #define SHAPE_FLAG_MASK (((VALUE)-1) >> SHAPE_ID_NUM_BITS)
 
@@ -106,6 +105,7 @@ enum shape_flags {
 
 typedef struct {
     rb_shape_t *shape_list;
+    attr_index_t max_capacity;
     attr_index_t heaps_count;
     attr_index_t capacities[SHAPE_ID_HEAP_INDEX_MAX];
 } rb_shape_tree_t;

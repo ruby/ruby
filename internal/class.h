@@ -83,9 +83,9 @@ struct rb_classext_struct {
             const VALUE includer;
         } iclass;
     } as;
-    attr_index_t max_iv_count;
     uint16_t superclass_depth;
-    unsigned char variation_count;
+    attr_index_t max_iv_count;
+    uint8_t variation_count;
     bool permanent_classpath : 1;
     bool cloned : 1;
     bool shared_const_tbl : 1;

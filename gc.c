@@ -1069,27 +1069,46 @@ rb_newobj_of(VALUE klass, VALUE flags, size_t size)
     return rb_newobj(GET_EC(), klass, flags, ROOT_SHAPE_ID, true, size);
 }
 
+static
+VALUE class_allocate_complex_instance(VALUE klass, uint32_t capacity)
+{
+    shape_id_t initial_shape_id = rb_shape_root(rb_gc_heap_id_for_size(sizeof(struct RObject)));
+    VALUE obj = rb_newobj_of_with_shape(klass, T_OBJECT, initial_shape_id, sizeof(struct RObject));
+    rb_obj_init_too_complex(obj, rb_st_init_numtable_with_size(capacity));
+    return obj;
+}
+
 VALUE
 rb_class_allocate_instance(VALUE klass)
 {
     uint32_t index_tbl_num_entries = RCLASS_MAX_IV_COUNT(klass);
+    VALUE obj;
 
-    size_t size = rb_obj_embedded_size(index_tbl_num_entries);
-    if (!rb_gc_size_allocatable_p(size)) {
-        size = sizeof(struct RObject);
+    // Directly start as TOO_COMPLEX if we know we're over the limit.
+    RUBY_ASSERT(rb_shape_tree.max_capacity > 0);
+    if (RB_UNLIKELY(index_tbl_num_entries > rb_shape_tree.max_capacity)) {
+        obj = class_allocate_complex_instance(klass, index_tbl_num_entries);
     }
+    else {
+        size_t size = rb_obj_embedded_size(index_tbl_num_entries);
+        if (!rb_gc_size_allocatable_p(size)) {
+            size = sizeof(struct RObject);
+        }
 
-    // There might be a NEWOBJ tracepoint callback, and it may set fields.
-    // So the shape must be passed to `NEWOBJ_OF`.
-    VALUE obj = rb_newobj_of_with_shape(klass, T_OBJECT, rb_shape_root(rb_gc_heap_id_for_size(size)), size);
+        // There might be a NEWOBJ tracepoint callback, and it may set fields.
+        // So the shape must be passed to `NEWOBJ_OF`.
+        obj = rb_newobj_of_with_shape(klass, T_OBJECT, rb_shape_root(rb_gc_heap_id_for_size(size)), size);
+
+        #if RUBY_DEBUG
+            VALUE *ptr = ROBJECT_FIELDS(obj);
+            size_t fields_count = RSHAPE_LEN(RBASIC_SHAPE_ID(obj));
+            for (size_t i = fields_count; i < ROBJECT_FIELDS_CAPACITY(obj); i++) {
+                ptr[i] = Qundef;
+            }
+        #endif
+    }
 
 #if RUBY_DEBUG
-    RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
-    VALUE *ptr = ROBJECT_FIELDS(obj);
-    size_t fields_count = RSHAPE_LEN(RBASIC_SHAPE_ID(obj));
-    for (size_t i = fields_count; i < ROBJECT_FIELDS_CAPACITY(obj); i++) {
-        ptr[i] = Qundef;
-    }
     if (rb_obj_class(obj) != rb_class_real(klass)) {
         rb_bug("Expected rb_class_allocate_instance to set the class correctly");
     }

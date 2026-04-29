@@ -1769,11 +1769,17 @@ void
 rb_obj_init_too_complex(VALUE obj, st_table *table)
 {
     // This method is meant to be called on newly allocated object.
-    RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
     RUBY_ASSERT(rb_shape_canonical_p(RBASIC_SHAPE_ID(obj)));
     RUBY_ASSERT(RSHAPE_LEN(RBASIC_SHAPE_ID(obj)) == 0);
 
-    obj_transition_too_complex(obj, table);
+    if (rb_shape_obj_too_complex_p(obj)) {
+        st_table *old_table = ROBJECT_FIELDS_HASH(obj);
+        ROBJECT_SET_FIELDS_HASH(obj, table);
+        if (old_table) st_free_table(old_table);
+    }
+    else {
+        obj_transition_too_complex(obj, table);
+    }
 }
 
 static int
@@ -1889,10 +1895,6 @@ generic_shape_ivar(VALUE obj, ID id, bool *new_ivar_out)
 
     if (!rb_shape_too_complex_p(current_shape_id)) {
         if (!rb_shape_find_ivar(current_shape_id, id, &target_shape_id)) {
-            if (RSHAPE_LEN(current_shape_id) >= SHAPE_MAX_FIELDS) {
-                rb_raise(rb_eArgError, "too many instance variables");
-            }
-
             new_ivar = true;
             target_shape_id = rb_obj_shape_transition_add_ivar(obj, id);
         }
