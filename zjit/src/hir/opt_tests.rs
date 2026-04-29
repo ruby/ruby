@@ -7506,7 +7506,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_optimize_getivar_extended() {
+    fn test_optimize_getivar_complex() {
         eval(r#"
             class C
               attr_reader :foo
@@ -7540,12 +7540,9 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(C@0x1008)
           PatchPoint MethodRedefined(C@0x1008, foo@0x1010, cme:0x1018)
           v23:ObjectSubclass[class_exact:C] = GuardType v10, ObjectSubclass[class_exact:C]
-          v26:CShape = LoadField v23, :_shape_id@0x1040
-          v27:CShape[0x1041] = GuardBitEquals v26, CShape(0x1041)
-          v28:CPtr = LoadField v23, :_as_heap@0x1042
-          v29:BasicObject = LoadField v28, :@foo@0x1043
+          v24:BasicObject = GetIvar v23, :@foo
           CheckInterrupts
-          Return v29
+          Return v24
         ");
     }
 
@@ -7647,7 +7644,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_optimize_getivar_on_module_extended() {
+    fn test_optimize_getivar_on_module_complex() {
         eval(r#"
             module M
               @foo = 42
@@ -7670,15 +7667,9 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           PatchPoint SingleRactorMode
-          v17:Module = GuardType v6, Module
-          v18:CShape = LoadField v17, :_shape_id@0x1000
-          v19:CShape[0x1001] = GuardBitEquals v18, CShape(0x1001)
-          PatchPoint RootBoxOnly
-          v21:RubyValue = LoadField v17, :_fields_obj@0x1002
-          v22:CPtr = LoadField v21, :_as_heap@0x1003
-          v23:BasicObject = LoadField v22, :@foo@0x1004
+          v11:BasicObject = GetIvar v6, :@foo
           CheckInterrupts
-          Return v23
+          Return v11
         ");
     }
 
@@ -7725,7 +7716,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_optimize_getivar_on_class_extended() {
+    fn test_optimize_getivar_on_class_complex() {
         eval(r#"
             class C
               @foo = 42
@@ -7748,15 +7739,9 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           PatchPoint SingleRactorMode
-          v17:Class = GuardType v6, Class
-          v18:CShape = LoadField v17, :_shape_id@0x1000
-          v19:CShape[0x1001] = GuardBitEquals v18, CShape(0x1001)
-          PatchPoint RootBoxOnly
-          v21:RubyValue = LoadField v17, :_fields_obj@0x1002
-          v22:CPtr = LoadField v21, :_as_heap@0x1003
-          v23:BasicObject = LoadField v22, :@foo@0x1004
+          v11:BasicObject = GetIvar v6, :@foo
           CheckInterrupts
-          Return v23
+          Return v11
         ");
     }
 
@@ -7830,7 +7815,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_optimize_getivar_on_typed_data_heap_fields() {
+    fn test_optimize_getivar_on_typed_data_complex_fields() {
         // Typed T_DATA with enough ivars to force heap field storage
         eval("
             class C < Thread
@@ -7855,14 +7840,9 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           PatchPoint SingleRactorMode
-          v17:TypedTData = GuardType v6, TypedTData
-          v18:CShape = LoadField v17, :_shape_id@0x1000
-          v19:CShape[0x1001] = GuardBitEquals v18, CShape(0x1001)
-          v20:RubyValue = LoadField v17, :_fields_obj@0x1002
-          v21:CPtr = LoadField v20, :_as_heap@0x1002
-          v22:BasicObject = LoadField v21, :@var1000@0x1003
+          v11:BasicObject = GetIvar v6, :@var1000
           CheckInterrupts
-          Return v22
+          Return v11
         ");
     }
 
@@ -7928,12 +7908,12 @@ mod hir_opt_tests {
             class C
               def foo_then_many
                 @foo = 1
-                1000.times { |i| instance_variable_set(:"@v#{i}", i) }
+                10.times { |i| instance_variable_set(:"@v#{i}", i) }
                 @bar = 2
               end
 
               def many_then_foo
-                1000.times { |i| instance_variable_set(:"@v#{i}", i) }
+                10.times { |i| instance_variable_set(:"@v#{i}", i) }
                 @bar = 3
                 @foo = 4
               end
@@ -7968,29 +7948,28 @@ mod hir_opt_tests {
           v17:CInt64 = IntAnd v12, v14
           v18:CBool = IsBitEqual v17, v16
           IfTrue v18, bb5()
-          v23:CUInt64[0xffffffff0000001f] = Const CUInt64(0xffffffff0000001f)
-          v24:CPtr[CPtr(0x1002)] = Const CPtr(0x1002)
-          v25 = RefineType v24, CUInt64
-          v26:CInt64 = IntAnd v12, v23
-          v27:CBool = IsBitEqual v26, v25
-          IfTrue v27, bb6()
-          v32:BasicObject = GetIvar v11, :@foo
-          Jump bb4(v32)
+          v22:CUInt64[0xffffffff0000001f] = Const CUInt64(0xffffffff0000001f)
+          v23:CPtr[CPtr(0x1002)] = Const CPtr(0x1002)
+          v24 = RefineType v23, CUInt64
+          v25:CInt64 = IntAnd v12, v22
+          v26:CBool = IsBitEqual v25, v24
+          IfTrue v26, bb6()
+          v31:BasicObject = GetIvar v11, :@foo
+          Jump bb4(v31)
         bb5():
-          v20:CPtr = LoadField v11, :_as_heap@0x1003
-          v21:BasicObject = LoadField v20, :@foo@0x1004
-          Jump bb4(v21)
+          v20:BasicObject = LoadField v11, :@foo@0x1003
+          Jump bb4(v20)
         bb6():
-          v29:CPtr = LoadField v11, :_as_heap@0x1003
-          v30:BasicObject = LoadField v29, :@foo@0x1000
-          Jump bb4(v30)
+          v28:CPtr = LoadField v11, :_as_heap@0x1004
+          v29:BasicObject = LoadField v28, :@foo@0x1000
+          Jump bb4(v29)
         bb4(v13:BasicObject):
-          v35:Fixnum[1] = Const Value(1)
+          v34:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v46:Fixnum = GuardType v13, Fixnum
-          v47:Fixnum = FixnumAdd v46, v35
+          v45:Fixnum = GuardType v13, Fixnum
+          v46:Fixnum = FixnumAdd v45, v34
           CheckInterrupts
-          Return v47
+          Return v46
         ");
     }
 
@@ -8003,12 +7982,12 @@ mod hir_opt_tests {
             class C
               def foo_then_many
                 @foo = 1
-                1000.times { |i| instance_variable_set(:"@v#{i}", i) }
+                100.times { |i| instance_variable_set(:"@v#{i}", i) }
                 @bar = 2
               end
 
               def many_then_foo
-                1000.times { |i| instance_variable_set(:"@v#{i}", i) }
+                100.times { |i| instance_variable_set(:"@v#{i}", i) }
                 @bar = 3
                 @foo = 4
               end
@@ -8052,26 +8031,25 @@ mod hir_opt_tests {
           v26:CInt64 = IntAnd v12, v23
           v27:CBool = IsBitEqual v26, v25
           IfTrue v27, bb6()
-          v45:CShape = LoadField v11, :_shape_id@0x1003
-          v46:CShape[0x1004] = GuardBitEquals v45, CShape(0x1004)
-          v47:CPtr = LoadField v11, :_as_heap@0x1005
-          v48:BasicObject = LoadField v47, :@foo@0x1000
-          Jump bb4(v48)
+          v44:CShape = LoadField v11, :_shape_id@0x1003
+          v45:CShape[0x1004] = GuardBitEquals v44, CShape(0x1004)
+          v46:CPtr = LoadField v11, :_as_heap@0x1005
+          v47:BasicObject = LoadField v46, :@foo@0x1000
+          Jump bb4(v47)
         bb5():
           v20:CPtr = LoadField v11, :_as_heap@0x1005
           v21:BasicObject = LoadField v20, :@foo@0x1000
           Jump bb4(v21)
         bb6():
-          v29:CPtr = LoadField v11, :_as_heap@0x1005
-          v30:BasicObject = LoadField v29, :@foo@0x1006
-          Jump bb4(v30)
+          v29:BasicObject = LoadField v11, :@foo@0x1006
+          Jump bb4(v29)
         bb4(v13:BasicObject):
-          v35:Fixnum[1] = Const Value(1)
+          v34:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v51:Fixnum = GuardType v13, Fixnum
-          v52:Fixnum = FixnumAdd v51, v35
+          v50:Fixnum = GuardType v13, Fixnum
+          v51:Fixnum = FixnumAdd v50, v34
           CheckInterrupts
-          Return v52
+          Return v51
         ");
     }
 

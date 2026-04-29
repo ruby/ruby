@@ -519,8 +519,7 @@ shape_grow_capa(attr_index_t current_capa)
             return capa;
         }
     }
-
-    return (attr_index_t)rb_malloc_grow_capa(current_capa, sizeof(VALUE));
+    return capacities[rb_shape_tree.heaps_count - 1];
 }
 
 static rb_shape_t *
@@ -536,6 +535,7 @@ rb_shape_alloc_new_child(ID id, rb_shape_t *shape, enum shape_type shape_type)
             RUBY_ASSERT(shape->next_field_index == shape->capacity);
             new_shape->capacity = shape_grow_capa(shape->capacity);
         }
+
         RUBY_ASSERT(new_shape->capacity > shape->next_field_index);
         new_shape->next_field_index = shape->next_field_index + 1;
         if (new_shape->next_field_index > ANCESTOR_CACHE_THRESHOLD) {
@@ -780,6 +780,11 @@ shape_get_next(rb_shape_t *shape, enum shape_type shape_type, VALUE klass, ID id
         rb_bug("rb_shape_get_next: trying to create ivar that already exists at index %u", index);
     }
 #endif
+
+    RUBY_ASSERT(rb_shape_tree.max_capacity > 0);
+    if (UNLIKELY(shape->next_field_index >= rb_shape_tree.max_capacity)) {
+        return NULL;
+    }
 
     bool allow_new_shape = RCLASS_VARIATION_COUNT(klass) < SHAPE_MAX_VARIATIONS;
     bool variation_created = false;
@@ -1530,13 +1535,16 @@ Init_default_shapes(void)
     size_t index;
     for (index = 0; index < heaps_count; index++) {
         if (heap_sizes[index] > sizeof(struct RBasic)) {
-            rb_shape_tree.capacities[index] = (heap_sizes[index] - sizeof(struct RBasic)) / sizeof(VALUE);
+            size_t capa = (heap_sizes[index] - sizeof(struct RBasic)) / sizeof(VALUE);
+            RUBY_ASSERT(capa < ATTR_INDEX_NOT_SET);
+            rb_shape_tree.capacities[index] = (attr_index_t)capa;
         }
         else {
             rb_shape_tree.capacities[index] = 0;
         }
     }
     rb_shape_tree.heaps_count = heaps_count;
+    rb_shape_tree.max_capacity = rb_shape_tree.capacities[heaps_count - 1];
 
 #ifdef HAVE_MMAP
     size_t shape_list_mmap_size = rb_size_mul_or_raise(SHAPE_BUFFER_SIZE, sizeof(rb_shape_t), rb_eRuntimeError);
@@ -1626,7 +1634,7 @@ Init_shape(void)
     rb_define_const(rb_cShape, "SHAPE_ID_NUM_BITS", INT2NUM(SHAPE_ID_NUM_BITS));
     rb_define_const(rb_cShape, "SHAPE_FLAG_SHIFT", INT2NUM(SHAPE_FLAG_SHIFT));
     rb_define_const(rb_cShape, "SHAPE_MAX_VARIATIONS", INT2NUM(SHAPE_MAX_VARIATIONS));
-    rb_define_const(rb_cShape, "SHAPE_MAX_EMBEDDED_CAPACITY", INT2NUM(rb_shape_tree.capacities[rb_shape_tree.heaps_count - 1]));
+    rb_define_const(rb_cShape, "SHAPE_MAX_FIELDS", INT2NUM(rb_shape_tree.max_capacity));
     rb_define_const(rb_cShape, "SIZEOF_RB_SHAPE_T", INT2NUM(sizeof(rb_shape_t)));
     rb_define_const(rb_cShape, "SIZEOF_REDBLACK_NODE_T", INT2NUM(sizeof(redblack_node_t)));
     rb_define_const(rb_cShape, "SHAPE_BUFFER_SIZE", INT2NUM(sizeof(rb_shape_t) * SHAPE_BUFFER_SIZE));

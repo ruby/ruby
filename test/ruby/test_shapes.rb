@@ -6,7 +6,7 @@ require 'securerandom'
 
 # These test the functionality of object shapes
 class TestShapes < Test::Unit::TestCase
-  MANY_IVS = RubyVM::Shape::SHAPE_MAX_EMBEDDED_CAPACITY + 1
+  MANY_IVS = RubyVM::Shape::SHAPE_MAX_FIELDS + 1
 
   class IVOrder
     def expected_ivs
@@ -95,15 +95,15 @@ class TestShapes < Test::Unit::TestCase
   # shapes
   def assert_shape_equal(e, a)
     assert_equal(
-      {id: e.id, parent_offset: e.parent_offset, depth: e.depth, type: e.type},
-      {id: a.id, parent_offset: a.parent_offset, depth: a.depth, type: a.type},
+      {id: e.offset, parent_offset: e.parent_offset, depth: e.depth, type: e.type, name: e.edge_name},
+      {id: a.offset, parent_offset: a.parent_offset, depth: a.depth, type: a.type, name: e.edge_name},
     )
   end
 
   def refute_shape_equal(e, a)
     refute_equal(
-      {id: e.id, parent_offset: e.parent_offset, depth: e.depth, type: e.type},
-      {id: a.id, parent_offset: a.parent_offset, depth: a.depth, type: a.type},
+      {id: e.offset, parent_offset: e.parent_offset, depth: e.depth, type: e.type, name: e.edge_name},
+      {id: a.offset, parent_offset: a.parent_offset, depth: a.depth, type: a.type, name: e.edge_name},
     )
   end
 
@@ -199,7 +199,7 @@ class TestShapes < Test::Unit::TestCase
       obj.instance_variable_set(:"@a#{_1}", 1)
     end
 
-    refute_predicate RubyVM::Shape.of(obj), :too_complex?
+    assert_predicate RubyVM::Shape.of(obj), :too_complex?
   end
 
   def test_removing_when_too_many_ivs_on_class
@@ -1155,7 +1155,7 @@ class TestShapes < Test::Unit::TestCase
     obj = Example.new.freeze
     obj2 = obj.dup
     refute_predicate(obj2, :frozen?)
-    refute_shape_equal(RubyVM::Shape.of(obj), RubyVM::Shape.of(obj2))
+    refute_equal(RubyVM::Shape.of(obj), RubyVM::Shape.of(obj2))
     assert_equal(obj2.instance_variable_get(:@a), 1)
   end
 
@@ -1181,7 +1181,7 @@ class TestShapes < Test::Unit::TestCase
     obj = Object.new
     obj2 = obj.clone(freeze: true)
     assert_predicate(obj2, :frozen?)
-    refute_shape_equal(RubyVM::Shape.of(obj), RubyVM::Shape.of(obj2))
+    refute_equal(RubyVM::Shape.of(obj), RubyVM::Shape.of(obj2))
     assert_predicate(RubyVM::Shape.of(obj2), :shape_frozen?)
   end
 
@@ -1250,5 +1250,43 @@ class TestShapes < Test::Unit::TestCase
 
   def test_generic_too_complex_during_delete
     assert_too_complex_during_delete(Class.new(Array).new)
+  end
+
+  def assert_too_complex_max_fields(obj)
+    extra_fields = RubyVM::Shape::SHAPE_MAX_FIELDS - obj.instance_variables.size
+    extra_fields.times do |i|
+      obj.instance_variable_set("@camel_ivar#{i}", i)
+    end
+    refute_predicate RubyVM::Shape.of(obj), :too_complex?
+    obj.instance_variable_set("@camel_straw", true)
+    assert_predicate RubyVM::Shape.of(obj), :too_complex?
+  end
+
+  def test_max_fields_complex
+    assert_too_complex_max_fields(Class.new(Object).new)
+  end
+
+  def test_generic_max_fields_complex
+    assert_too_complex_max_fields(Class.new(Array).new)
+  end
+
+  def test_class_max_fields_complex
+    assert_too_complex_max_fields(Class.new(Module).new)
+  end
+
+  def test_max_initial_fields
+    klass = Class.new
+    init_ivars = (RubyVM::Shape::SHAPE_MAX_FIELDS + 1).times.map { |i| "@ivar_#{i} = #{i}" }
+    klass.class_eval(<<~RUBY)
+      def initialize(init = false)
+        if init
+          #{init_ivars.join(";")}
+        end
+      end
+    RUBY
+    assert_predicate RubyVM::Shape.of(klass.new), :too_complex?
+    assert_predicate RubyVM::Shape.of(klass.new.dup), :too_complex?
+    assert_predicate RubyVM::Shape.of(klass.new(true)), :too_complex?
+    assert_predicate RubyVM::Shape.of(klass.new(true).dup), :too_complex?
   end
 end if defined?(RubyVM::Shape)
