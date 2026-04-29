@@ -101,15 +101,26 @@ rb_free_tmp_buffer(volatile VALUE *store)
 }
 
 struct MEMO *
-rb_imemo_memo_new(VALUE a, VALUE b, VALUE c)
+rb_imemo_memo_new(VALUE a, VALUE b, long c)
 {
     struct MEMO *memo = IMEMO_NEW(struct MEMO, imemo_memo, 0);
 
-    rb_gc_register_pinning_obj((VALUE)memo);
+    *((VALUE *)&memo->v1) = a;
+    *((VALUE *)&memo->v2) = b;
+    memo->u3.cnt = c;
+
+    return memo;
+}
+
+struct MEMO *
+rb_imemo_memo_new_value(VALUE a, VALUE b, VALUE c)
+{
+    struct MEMO *memo = IMEMO_NEW(struct MEMO, imemo_memo, 0);
 
     *((VALUE *)&memo->v1) = a;
     *((VALUE *)&memo->v2) = b;
     *((VALUE *)&memo->u3.value) = c;
+    memo->flags |= MEMO_U3_IS_VALUE;
 
     return memo;
 }
@@ -478,8 +489,8 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
 
         rb_gc_mark_and_move((VALUE *)&memo->v1);
         rb_gc_mark_and_move((VALUE *)&memo->v2);
-        if (!reference_updating) {
-            rb_gc_mark_maybe(memo->u3.value);
+        if (FL_TEST_RAW(obj, MEMO_U3_IS_VALUE)) {
+            rb_gc_mark_and_move((VALUE *)&memo->u3.value);
         }
 
         break;

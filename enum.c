@@ -127,7 +127,7 @@ static VALUE
 enum_grep0(VALUE obj, VALUE pat, VALUE test)
 {
     VALUE ary = rb_ary_new();
-    struct MEMO *memo = rb_imemo_memo_new(pat, ary, test);
+    struct MEMO *memo = rb_imemo_memo_new_value(pat, ary, test);
     rb_block_call_func_t fn;
     if (rb_block_given_p()) {
         fn = grep_iter_i;
@@ -207,27 +207,32 @@ enum_grep_v(VALUE obj, VALUE pat)
     return enum_grep0(obj, pat, Qfalse);
 }
 
-#define COUNT_BIGNUM IMEMO_FL_USER0
-#define MEMO_V3_SET(m, v) RB_OBJ_WRITE((m), &(m)->u3.value, (v))
+static inline void
+MEMO_V3_SET(struct MEMO *m, VALUE v)
+{
+    RB_OBJ_WRITE(m, &m->u3.value, v);
+    m->flags |= MEMO_U3_IS_VALUE;
+}
 
 static void
 imemo_count_up(struct MEMO *memo)
 {
-    if (memo->flags & COUNT_BIGNUM) {
+    if (memo->flags & MEMO_U3_IS_VALUE) {
+        RUBY_ASSERT(RB_TYPE_P(memo->u3.value, T_BIGNUM));
         MEMO_V3_SET(memo, rb_int_succ(memo->u3.value));
     }
     else if (++memo->u3.cnt == 0) {
         /* overflow */
         unsigned long buf[2] = {0, 1};
         MEMO_V3_SET(memo, rb_big_unpack(buf, 2));
-        memo->flags |= COUNT_BIGNUM;
     }
 }
 
 static VALUE
 imemo_count_value(struct MEMO *memo)
 {
-    if (memo->flags & COUNT_BIGNUM) {
+    if (memo->flags & MEMO_U3_IS_VALUE) {
+        RUBY_ASSERT(RB_TYPE_P(memo->u3.value, T_BIGNUM));
         return memo->u3.value;
     }
     else {
@@ -1084,7 +1089,7 @@ enum_inject(int argc, VALUE *argv, VALUE obj)
         return ary_inject_op(obj, init, op);
     }
 
-    memo = rb_imemo_memo_new(init, Qnil, op);
+    memo = rb_imemo_memo_new_value(init, Qnil, op);
     rb_block_call(obj, id_each, 0, 0, iter, (VALUE)memo);
     if (UNDEF_P(memo->v1)) return Qnil;
     return memo->v1;

@@ -97,6 +97,10 @@ struct rb_imemo_tmpbuf_struct {
     size_t size; /* buffer size in bytes */
 };
 
+/* Set on imemo_memo when u3 holds a VALUE that GC must mark.
+ * When unset, u3 is a non-VALUE (cnt/state). */
+#define MEMO_U3_IS_VALUE IMEMO_FL_USER0
+
 /*! MEMO
  *
  * @see imemo_type
@@ -132,7 +136,8 @@ typedef struct rb_imemo_tmpbuf_struct rb_imemo_tmpbuf_t;
 #endif
 VALUE rb_imemo_new(enum imemo_type type, VALUE v0, size_t size, bool is_shareable);
 VALUE rb_imemo_tmpbuf_new(void);
-struct MEMO *rb_imemo_memo_new(VALUE a, VALUE b, VALUE c);
+struct MEMO *rb_imemo_memo_new(VALUE a, VALUE b, long c);
+struct MEMO *rb_imemo_memo_new_value(VALUE a, VALUE b, VALUE c);
 struct vm_ifunc *rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int max_argc);
 static inline enum imemo_type imemo_type(VALUE imemo);
 static inline int imemo_type_p(VALUE imemo, enum imemo_type imemo_type);
