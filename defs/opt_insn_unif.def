@@ -6,12 +6,12 @@
 __END__
 
 putobject putobject
-putobject putstring
+putobject dupstring
 putobject setlocal
 
-putstring putstring
-putstring putobject
-putstring setlocal
+dupstring dupstring
+dupstring putobject
+dupstring setlocal
 
 # putnil end
 

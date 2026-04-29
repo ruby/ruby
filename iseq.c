@@ -3266,7 +3266,7 @@ iseqw_s_of(VALUE klass, VALUE body)
  *    0000 trace            8                                               (   1)
  *    0002 trace            1                                               (   2)
  *    0004 putself
- *    0005 putstring        "hello, world"
+ *    0005 dupstring        "hello, world"
  *    0007 send             :puts, 1, nil, 8, <ic:0>
  *    0013 trace            16                                              (   3)
  *    0015 leave                                                            (   2)

@@ -774,9 +774,9 @@ pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const
                 if (frozen_result) {
                     PUSH_INSN1(ret, current_location, putobject, current_string);
                 } else if (mutable_result || interpolated) {
-                    PUSH_INSN1(ret, current_location, putstring, current_string);
+                    PUSH_INSN1(ret, current_location, dupstring, current_string);
                 } else {
-                    PUSH_INSN1(ret, current_location, putchilledstring, current_string);
+                    PUSH_INSN1(ret, current_location, dupchilledstring, current_string);
                 }
             } else {
                 PUSH_INSN1(ret, current_location, putobject, current_string);
@@ -9677,10 +9677,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     PUSH_INSN1(ret, location, putobject, string);
                 }
                 else if (PM_NODE_FLAG_P(node, PM_INTERPOLATED_STRING_NODE_FLAGS_MUTABLE)) {
-                    PUSH_INSN1(ret, location, putstring, string);
+                    PUSH_INSN1(ret, location, dupstring, string);
                 }
                 else {
-                    PUSH_INSN1(ret, location, putchilledstring, string);
+                    PUSH_INSN1(ret, location, dupchilledstring, string);
                 }
             }
         }
@@ -10395,10 +10395,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 PUSH_INSN1(ret, location, putobject, string);
             }
             else if (PM_NODE_FLAG_P(cast, PM_STRING_FLAGS_MUTABLE)) {
-                PUSH_INSN1(ret, location, putstring, string);
+                PUSH_INSN1(ret, location, dupstring, string);
             }
             else {
-                PUSH_INSN1(ret, location, putchilledstring, string);
+                PUSH_INSN1(ret, location, dupchilledstring, string);
             }
         }
         return;
@@ -10452,10 +10452,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 PUSH_INSN1(ret, location, putobject, value);
             }
             else if (PM_NODE_FLAG_P(node, PM_STRING_FLAGS_MUTABLE)) {
-                PUSH_INSN1(ret, location, putstring, value);
+                PUSH_INSN1(ret, location, dupstring, value);
             }
             else {
-                PUSH_INSN1(ret, location, putchilledstring, value);
+                PUSH_INSN1(ret, location, dupchilledstring, value);
             }
         }
         return;

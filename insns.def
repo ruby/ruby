@@ -373,7 +373,7 @@ putspecialobject
 
 /* put string val. string will be copied. */
 DEFINE_INSN
-putstring
+dupstring
 (VALUE str)
 ()
 (VALUE val)
@@ -383,7 +383,7 @@ putstring
 
 /* put chilled string val. string will be copied but frozen in the future. */
 DEFINE_INSN
-putchilledstring
+dupchilledstring
 (VALUE str)
 ()
 (VALUE val)

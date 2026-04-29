@@ -5074,7 +5074,7 @@ pm_interpolated_regular_expression_node_closing_set(pm_parser_t *parser, pm_inte
  * PM_NODE_FLAG_STATIC_LITERAL indicates that the node should be treated as a
  * single static literal string that can be pushed onto the stack on its own.
  * Note that this doesn't necessarily mean that the string will be frozen or
- * not; the instructions in CRuby will be either putobject or putstring,
+ * not; the instructions in CRuby will be either putobject, dupstring or dupchilledstring,
  * depending on the combination of `--enable-frozen-string-literal`,
  * `# frozen_string_literal: true`, and whether or not there is interpolation.
  *

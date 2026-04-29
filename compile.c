@@ -3195,7 +3195,7 @@ iseq_pop_newarray(rb_iseq_t *iseq, INSN *iobj)
 static int
 is_frozen_putstring(INSN *insn, VALUE *op)
 {
-    if (IS_INSN_ID(insn, putstring) || IS_INSN_ID(insn, putchilledstring)) {
+    if (IS_INSN_ID(insn, dupstring) || IS_INSN_ID(insn, dupchilledstring)) {
         *op = OPERAND_AT(insn, 0);
         return 1;
     }
@@ -3255,8 +3255,8 @@ optimize_checktype(rb_iseq_t *iseq, INSN *iobj)
     VALUE type;
 
     switch (INSN_OF(iobj)) {
-      case BIN(putstring):
-      case BIN(putchilledstring):
+      case BIN(dupstring):
+      case BIN(dupchilledstring):
         type = INT2FIX(T_STRING);
         break;
       case BIN(putnil):
@@ -3454,8 +3454,8 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
     }
 
     /*
-     * putstring "beg"
-     * putstring "end"
+     * dupstring "beg"
+     * dupstring "end"
      * newrange excl
      *
      * ==>
@@ -3670,16 +3670,16 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                      * =>
                      *   jump L1
                      *
-                     *   putstring ".."
+                     *   dupstring ".."
                      *   if L1
                      * =>
                      *   jump L1
                      *
-                     *   putstring ".."
+                     *   dupstring ".."
                      *   dup
                      *   if L1
                      * =>
-                     *   putstring ".."
+                     *   dupstring ".."
                      *   jump L1
                      *
                      */
@@ -3694,7 +3694,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                                 OPERAND_AT(pobj, 0) == Qfalse :
                                 FALSE);
                     }
-                    else if (IS_INSN_ID(pobj, putstring) ||
+                    else if (IS_INSN_ID(pobj, dupstring) ||
                              IS_INSN_ID(pobj, duparray) ||
                              IS_INSN_ID(pobj, newarray)) {
                         cond = IS_INSN_ID(iobj, branchif);
@@ -3732,7 +3732,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 
     if (IS_INSN_ID(iobj, pop)) {
         /*
-         *  putself / putnil / putobject obj / putstring "..."
+         *  putself / putnil / putobject obj / dupstring "..."
          *  pop
          * =>
          *  # do nothing
@@ -3741,8 +3741,8 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
         if (IS_INSN(prev)) {
             enum ruby_vminsn_type previ = ((INSN *)prev)->insn_id;
             if (previ == BIN(putobject) || previ == BIN(putnil) ||
-                previ == BIN(putself) || previ == BIN(putstring) ||
-                previ == BIN(putchilledstring) ||
+                previ == BIN(putself) || previ == BIN(dupstring) ||
+                previ == BIN(dupchilledstring) ||
                 previ == BIN(dup) ||
                 previ == BIN(getlocal) ||
                 previ == BIN(getblockparam) ||
@@ -3884,10 +3884,10 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
         }
     }
 
-    if (IS_INSN_ID(iobj, putstring) || IS_INSN_ID(iobj, putchilledstring) ||
+    if (IS_INSN_ID(iobj, dupstring) || IS_INSN_ID(iobj, dupchilledstring) ||
         (IS_INSN_ID(iobj, putobject) && RB_TYPE_P(OPERAND_AT(iobj, 0), T_STRING))) {
         /*
-         *  putstring ""
+         *  dupstring ""
          *  concatstrings N
          * =>
          *  concatstrings N-1
@@ -4222,7 +4222,7 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
                 }
             }
         }
-        else if ((IS_INSN_ID(niobj, putstring) || IS_INSN_ID(niobj, putchilledstring) ||
+        else if ((IS_INSN_ID(niobj, dupstring) || IS_INSN_ID(niobj, dupchilledstring) ||
                   (IS_INSN_ID(niobj, putobject) && RB_TYPE_P(OPERAND_AT(niobj, 0), T_STRING))) &&
                  IS_NEXT_INSN_ID(&niobj->link, send)) {
             const struct rb_callinfo *ci = (struct rb_callinfo *)OPERAND_AT((INSN *)niobj->link.next, 0);
@@ -4235,9 +4235,9 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
                 return COMPILE_OK;
             }
         }
-        // newarray n, putchilledstring "E", getlocal b, send :pack with {buffer: b}
-        // -> putchilledstring "E", getlocal b, opt_newarray_send n+2, :pack, :buffer
-        else if ((IS_INSN_ID(niobj, putstring) || IS_INSN_ID(niobj, putchilledstring) ||
+        // newarray n, dupchilledstring "E", getlocal b, send :pack with {buffer: b}
+        // -> dupchilledstring "E", getlocal b, opt_newarray_send n+2, :pack, :buffer
+        else if ((IS_INSN_ID(niobj, dupstring) || IS_INSN_ID(niobj, dupchilledstring) ||
                   (IS_INSN_ID(niobj, putobject) && RB_TYPE_P(OPERAND_AT(niobj, 0), T_STRING))) &&
                  IS_NEXT_INSN_ID(&niobj->link, getlocal) &&
                  (niobj->link.next && IS_NEXT_INSN_ID(niobj->link.next, send))) {
@@ -4260,7 +4260,7 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
         // Break the "else if" chain since some prior checks abort after sub-ifs.
         // We already found "newarray".  To match `[...].include?(arg)` we look for
         // the instruction(s) representing the argument followed by a "send".
-        if ((IS_INSN_ID(niobj, putstring) || IS_INSN_ID(niobj, putchilledstring) ||
+        if ((IS_INSN_ID(niobj, dupstring) || IS_INSN_ID(niobj, dupchilledstring) ||
                   IS_INSN_ID(niobj, putobject) ||
                   IS_INSN_ID(niobj, putself) ||
                   IS_INSN_ID(niobj, getlocal) ||
@@ -4729,7 +4729,7 @@ compile_dstr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node)
     int cnt;
     if (!RNODE_DSTR(node)->nd_next) {
         VALUE lit = rb_node_dstr_string_val(node);
-        ADD_INSN1(ret, node, putstring, lit);
+        ADD_INSN1(ret, node, dupstring, lit);
         RB_OBJ_SET_SHAREABLE(lit);
         RB_OBJ_WRITTEN(iseq, Qundef, lit);
     }
@@ -11250,10 +11250,10 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
             }
             switch (option->frozen_string_literal) {
               case ISEQ_FROZEN_STRING_LITERAL_UNSET:
-                ADD_INSN1(ret, node, putchilledstring, lit);
+                ADD_INSN1(ret, node, dupchilledstring, lit);
                 break;
               case ISEQ_FROZEN_STRING_LITERAL_DISABLED:
-                ADD_INSN1(ret, node, putstring, lit);
+                ADD_INSN1(ret, node, dupstring, lit);
                 break;
               case ISEQ_FROZEN_STRING_LITERAL_ENABLED:
                 ADD_INSN1(ret, node, putobject, lit);

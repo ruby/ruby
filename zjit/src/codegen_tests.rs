@@ -69,22 +69,22 @@ fn test_putobject() {
 }
 
 #[test]
-fn test_putstring() {
+fn test_dupstring() {
     eval(r##"
         def test = "#{""}"
         test
     "##);
-    assert_contains_opcode("test", YARVINSN_putstring);
+    assert_contains_opcode("test", YARVINSN_dupstring);
     assert_snapshot!(assert_compiles(r##"test"##), @r#""""#);
 }
 
 #[test]
-fn test_putchilledstring() {
+fn test_dupchilledstring() {
     eval(r#"
         def test = ""
         test
     "#);
-    assert_contains_opcode("test", YARVINSN_putchilledstring);
+    assert_contains_opcode("test", YARVINSN_dupchilledstring);
     assert_snapshot!(assert_compiles(r#"test"#), @r#""""#);
 }
 

@@ -2764,7 +2764,7 @@ fn gen_newhash(
     Some(KeepCompiling)
 }
 
-fn gen_putstring(
+fn gen_dupstring(
     jit: &mut JITState,
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
@@ -2784,7 +2784,7 @@ fn gen_putstring(
     Some(KeepCompiling)
 }
 
-fn gen_putchilledstring(
+fn gen_dupchilledstring(
     jit: &mut JITState,
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
@@ -10814,8 +10814,8 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_concattoarray => Some(gen_concattoarray),
         YARVINSN_pushtoarray => Some(gen_pushtoarray),
         YARVINSN_newrange => Some(gen_newrange),
-        YARVINSN_putstring => Some(gen_putstring),
-        YARVINSN_putchilledstring => Some(gen_putchilledstring),
+        YARVINSN_dupstring => Some(gen_dupstring),
+        YARVINSN_dupchilledstring => Some(gen_dupchilledstring),
         YARVINSN_expandarray => Some(gen_expandarray),
         YARVINSN_defined => Some(gen_defined),
         YARVINSN_definedivar => Some(gen_definedivar),
