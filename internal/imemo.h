@@ -109,7 +109,6 @@ struct MEMO {
         long cnt;
         long state;
         const VALUE value;
-        void (*func)(void);
     } u3;
 };
 
