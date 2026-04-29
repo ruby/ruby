@@ -2348,4 +2348,16 @@ class TestRegexp < Test::Unit::TestCase
       end
     end;
   end
+
+  def test_too_many_range_repeat
+    source = '(?:foobar){0,100}' * 100000
+    assert_raise(RegexpError) { Regexp.new(source) }
+    assert_raise(SyntaxError) { eval("/#{source}/") }
+  end
+
+  def test_too_many_null_check
+    source = '(?:(?:foo)?|(?:bar)?)*' * 100000
+    assert_raise(RegexpError) { Regexp.new(source) }
+    assert_raise(SyntaxError) { eval("/#{source}/") }
+  end
 end
