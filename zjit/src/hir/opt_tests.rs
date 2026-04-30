@@ -18039,6 +18039,71 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_inline_method_with_invokesuper() {
+        eval("
+            class Parent
+              def greet = 'hi'
+            end
+            class Child < Parent
+              def greet = super + '!'
+            end
+            child = Child.new
+            def test(c) = c.greet
+            test(child)
+            test(child)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+
+        let result = hir_string_with_inlining("test");
+
+        assert!(counters.inline_method_count > inline_count_before,
+            "Expected Child#greet to be inlined, but inline_method_count did not increment.\nHIR:\n{result}");
+        assert!(result.contains("PushLightweightFrame"),
+            "Expected PushLightweightFrame in HIR when inlining a super-containing callee:\n{result}");
+
+        assert_snapshot!(result, @"
+        fn test@<compiled>:9:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :c@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :c@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(Child@0x1008)
+          PatchPoint MethodRedefined(Child@0x1008, greet@0x1010, cme:0x1018)
+          v23:ObjectSubclass[class_exact:Child] = GuardType v10, ObjectSubclass[class_exact:Child]
+          PushLightweightFrame v23 (0x1040)
+          PatchPoint MethodRedefined(Parent@0x1048, greet@0x1010, cme:0x1050)
+          v58:CPtr = GetEP 0
+          v59:RubyValue = LoadField v58, :VM_ENV_DATA_INDEX_ME_CREF@0x1078
+          v60:CallableMethodEntry[VALUE(0x1018)] = GuardBitEquals v59, Value(VALUE(0x1018))
+          v61:RubyValue = LoadField v58, :VM_ENV_DATA_INDEX_SPECVAL@0x1079
+          v62:FalseClass = GuardBitEquals v61, Value(false)
+          PushLightweightFrame v23 (0x1040)
+          v74:StringExact[VALUE(0x1080)] = Const Value(VALUE(0x1080))
+          v75:StringExact = StringCopy v74
+          CheckInterrupts
+          PopLightweightFrame
+          v38:StringExact[VALUE(0x1088)] = Const Value(VALUE(0x1088))
+          v39:StringExact = StringCopy v38
+          PatchPoint NoSingletonClass(String@0x1090)
+          PatchPoint MethodRedefined(String@0x1090, +@0x1098, cme:0x10a0)
+          v56:BasicObject = CCallWithFrame v75, :String#+@0x10c8, v39
+          CheckInterrupts
+          PopLightweightFrame
+          CheckInterrupts
+          Return v56
+        ");
+    }
+
+    #[test]
     fn test_inline_method_with_all_optionals_supplied() {
         // Caller fills every optional: no default-init code runs. We pick the last
         // `jit_entry_blocks` entry, which lands directly in the post-default body.

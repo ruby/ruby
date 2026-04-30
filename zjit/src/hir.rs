@@ -4047,6 +4047,7 @@ impl Function {
                             current_cme: *const rb_callable_method_entry_t,
                             mid: ID,
                             state: InsnId,
+                            local_iseq: IseqPtr,
                         ) {
                             fun.push_insn(block, Insn::PatchPoint {
                                 invariant: Invariant::MethodRedefined {
@@ -4058,8 +4059,10 @@ impl Function {
                             });
 
                             // Get the EP of the ISeq of the containing method, or "local level", skipping over block-level EPs.
-                            // Equivalent of GET_LEP() macro.
-                            let level = get_lvar_level(fun.iseq);
+                            // Equivalent of GET_LEP() macro. The iseq is the FrameState's, not the
+                            // outer compilation's, so that an inlined super call walks from the
+                            // callee's CFP rather than the caller's.
+                            let level = get_lvar_level(local_iseq);
                             let lep = fun.push_insn(block, Insn::GetEP { level });
                             // Load ep[VM_ENV_DATA_INDEX_ME_CREF]
                             let method_entry = fun.push_insn(block, Insn::LoadField { recv: lep, id: FieldName::VM_ENV_DATA_INDEX_ME_CREF, offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_ME_CREF, return_type: types::RubyValue });
@@ -4110,18 +4113,12 @@ impl Function {
                             continue;
                         }
 
-                        // Intentionally uses the outer JIT function's iseq instead of
-                        // frame_state.iseq. Switching this to frame_state.iseq would make the
-                        // invokesuper lookup correct for inlined bodies, but the downstream
-                        // specialized super codegen has its own jit.iseq coupling that segfaults
-                        // when the looked-up CME belongs to the callee rather than the outer
-                        // function. The correct fix requires auditing the specialized super path
-                        // for jit.iseq usage; pending that, this line intentionally misses or
-                        // matches spuriously for inlined invokesuper.
-                        // TODO (nirvdrum 2026-04-22): Switch to frame_state.iseq once the super
-                        // codegen is audited for jit.iseq vs state.iseq consistency.
-                        let jit_payload = get_or_create_iseq_payload(self.iseq);
-                        let Some(current_cme) = jit_payload.profile.get_super_method_entry(frame_state.insn_idx) else {
+                        // Use frame_state.iseq so that an inlined super call looks up its
+                        // profiled CME against the callee's payload rather than the outer
+                        // compilation's. The runtime guard walks from the live CFP, which is
+                        // the callee's CFP for inlined code, so the profile lookup must agree.
+                        let local_payload = get_or_create_iseq_payload(frame_state.iseq);
+                        let Some(current_cme) = local_payload.profile.get_super_method_entry(frame_state.insn_idx) else {
                             self.push_insn_id(block, insn_id);
 
                             // The absence of the super CME could be due to a missing profile, but
@@ -4174,7 +4171,7 @@ impl Function {
                                 self.push_insn_id(block, insn_id); continue;
                             };
 
-                            emit_super_call_guards(self, block, super_cme, current_cme, mid, state);
+                            emit_super_call_guards(self, block, super_cme, current_cme, mid, state, frame_state.iseq);
 
                             // Use SendDirect with the super method's CME and ISEQ.
                             let send_direct = self.push_insn(block, Insn::SendDirect {
@@ -4210,7 +4207,7 @@ impl Function {
                                         continue;
                                     }
 
-                                    emit_super_call_guards(self, block, super_cme, current_cme, mid, state);
+                                    emit_super_call_guards(self, block, super_cme, current_cme, mid, state, frame_state.iseq);
 
                                     // Try inlining the cfunc into HIR
                                     let tmp_block = self.new_block(u32::MAX);
@@ -4260,7 +4257,7 @@ impl Function {
 
                                 // Variadic C function: func(int argc, VALUE *argv, VALUE recv)
                                 -1 => {
-                                    emit_super_call_guards(self, block, super_cme, current_cme, mid, state);
+                                    emit_super_call_guards(self, block, super_cme, current_cme, mid, state, frame_state.iseq);
 
                                     // Try inlining the cfunc into HIR
                                     let tmp_block = self.new_block(u32::MAX);
