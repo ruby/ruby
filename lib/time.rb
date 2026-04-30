@@ -369,6 +369,9 @@ class Time
     # If the extracted time zone abbreviation does not match any of them,
     # it is ignored and the given time is regarded as a local time.
     #
+    # A +zone+ argument can be provided to specify the zone for the given
+    # +date+, if the +date+ does not include a time zone or offset.
+    #
     # ArgumentError is raised if Date._parse cannot extract information from
     # +date+ or if the Time class cannot represent specified date.
     #
@@ -382,12 +385,12 @@ class Time
     #
     # You must require 'time' to use this method.
     #
-    def parse(date, now=self.now)
+    def parse(date, now=self.now, zone: nil)
       comp = !block_given?
       d = Date._parse(date, comp)
       year = d[:year]
       year = yield(year) if year && !comp
-      make_time(date, year, d[:yday], d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
+      make_time(date, year, d[:yday], d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone] || zone, now)
     end
 
     #

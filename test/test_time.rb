@@ -370,6 +370,15 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     assert_equal(t, Time.parse("1200-02-15 BC 14:13:20-00:00:00"))
   end
 
+  def test_parse_custom_offset
+    t = Time.at(-100000000000).utc
+    assert_equal(t, Time.parse("1200-02-15 BC 14:13:20", zone: "UTC"))
+    assert_equal(t, Time.parse("1200-02-15 BC 15:13:20", zone: "+01:00").utc)
+
+    assert_equal(t, Time.parse("1200-02-15 BC 15:13:20+01:00", zone: "UTC").utc)
+    assert_equal(t, Time.parse("1200-02-15 BC 15:13:20+01:00", zone: "+02:00").utc)
+  end
+
   def test_parse_leap_second
     t = Time.utc(1998,12,31,23,59,59)
     assert_equal(t, Time.parse("Thu Dec 31 23:59:59 UTC 1998"))
