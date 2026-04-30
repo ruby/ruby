@@ -61,14 +61,18 @@ module Bundler
 
       current_cmd = args.last[:current_command].name
 
-      Bundler.configure_custom_gemfile(options[:gemfile])
+      # `bundle config` manages stored settings, so avoid promoting settings
+      # like `gemfile` or `lockfile` to environment variables before it runs.
+      unless current_cmd == "config"
+        Bundler.configure_custom_gemfile(options[:gemfile])
 
-      # lock --lockfile works differently than install --lockfile
-      unless current_cmd == "lock"
-        custom_lockfile = options[:lockfile] || ENV["BUNDLE_LOCKFILE"] || Bundler.settings[:lockfile]
-        if custom_lockfile && !custom_lockfile.empty?
-          Bundler::SharedHelpers.set_env "BUNDLE_LOCKFILE", File.expand_path(custom_lockfile)
-          reset_settings = true
+        # lock --lockfile works differently than install --lockfile
+        unless current_cmd == "lock"
+          custom_lockfile = options[:lockfile] || ENV["BUNDLE_LOCKFILE"] || Bundler.settings[:lockfile]
+          if custom_lockfile && !custom_lockfile.empty?
+            Bundler::SharedHelpers.set_env "BUNDLE_LOCKFILE", File.expand_path(custom_lockfile)
+            reset_settings = true
+          end
         end
       end
 

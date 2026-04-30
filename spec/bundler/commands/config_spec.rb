@@ -577,6 +577,36 @@ E
 end
 
 RSpec.describe "setting gemfile via config" do
+  context "when a default Gemfile exists" do
+    before do
+      gemfile <<-G
+        source "https://gem.repo1"
+      G
+
+      gemfile bundled_app("foo/bar_gemfile"), <<-G
+        source "https://gem.repo1"
+      G
+    end
+
+    it "reports the local gemfile setting without promoting it to the environment" do
+      bundle "config set gemfile foo/bar_gemfile"
+
+      bundle "config list"
+      expect(out).to include("Set for your local app (#{bundled_app(".bundle/config")}): \"foo/bar_gemfile\"")
+      expect(out).not_to include("Set via BUNDLE_GEMFILE")
+    end
+
+    it "unsets the local gemfile setting from the app config" do
+      bundle "config set gemfile foo/bar_gemfile"
+
+      bundle "config unset gemfile"
+      bundle "config get gemfile"
+
+      expect(out).to include("You have not configured a value for `gemfile`")
+      expect(File.read(bundled_app(".bundle/config"))).not_to include("BUNDLE_GEMFILE")
+    end
+  end
+
   context "when only the non-default Gemfile exists" do
     it "persists the gemfile location to .bundle/config" do
       gemfile bundled_app("NotGemfile"), <<-G
