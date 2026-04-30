@@ -574,6 +574,7 @@ class TestTimeExtension < Test::Unit::TestCase # :nodoc:
     test = $1
     define_method(test) {__send__(sub, :xmlschema)}
     define_method(test.sub(/xmlschema/, 'iso8601')) {__send__(sub, :iso8601)}
+    define_method(test.sub(/xmlschema/, 'rfc3339')) {__send__(sub, :rfc3339)}
   end
 
   def test_parse_with_various_object

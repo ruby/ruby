@@ -624,13 +624,48 @@ class Time
     # You must require 'time' to use this method.
     #
     def xmlschema(time)
-      if /\A\s*
+      pattern = /\A\s*
           (-?\d+)-(\d\d)-(\d\d)
           T
           (\d\d):(\d\d):(\d\d)
           (\.\d+)?
           (Z|[+-]\d\d(?::?\d\d)?)?
-          \s*\z/ix =~ time
+          \s*\z/ix
+      _xmlschema(pattern, time)
+    end
+    alias iso8601 xmlschema
+
+    #
+    # Parses +time+ as a dateTime defined by RFC3339 and converts it to
+    # a Time object.
+    #
+    # ArgumentError is raised if +time+ is not compliant with the format or if
+    # the Time class cannot represent the specified time.
+    #
+    # See #xmlschema for more information on this format.
+    #
+    #     require 'time'
+    #
+    #     Time.rfc3339("2011-10-05T22:26:12-04:00")
+    #     #=> 2011-10-05 22:26:12-04:00
+    #
+    # You must require 'time' to use this method.
+    #
+    def rfc3339(time)
+      pattern = /\A\s*
+          (-?\d{4})-(\d\d)-(\d\d)
+          [T\s]
+          (\d\d):(\d\d):(\d\d)
+          (\.\d+)?
+          (Z|[+-]\d\d(?::?\d\d)?)?
+          \s*\z/ix
+      _xmlschema(pattern, time)
+    end
+
+    private
+
+    def _xmlschema(pattern, time)
+      if pattern =~ time
         year = $1.to_i
         mon = $2.to_i
         day = $3.to_i
@@ -656,7 +691,7 @@ class Time
         raise ArgumentError.new("invalid xmlschema format: #{time.inspect}")
       end
     end
-    alias iso8601 xmlschema
+
   end # class << self
 
   #
@@ -731,4 +766,5 @@ class Time
     end
   end
   alias iso8601 xmlschema unless method_defined?(:iso8601)
+  alias rfc3339 xmlschema
 end
