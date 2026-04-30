@@ -545,6 +545,24 @@ class TestZJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_inlined_method_with_super_call
+    assert_runs '"hi!"', <<~RUBY, extra_args: ['--zjit-inline-threshold=30']
+      class Parent
+        def greet = 'hi'
+      end
+
+      class Child < Parent
+        def greet = super + '!'
+      end
+
+      def test(c) = c.greet
+
+      child = Child.new
+      test(child)
+      test(child)
+    RUBY
+  end
+
   def test_inlined_method_with_block_break_across_inlined_boundary
     # When the inlined callee passes a literal block to a yielding method,
     # the parent callee iseq carries CATCH_TYPE_BREAK entries covering the
