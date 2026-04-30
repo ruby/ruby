@@ -158,6 +158,21 @@ fn iseq_version_update_references(mut version: IseqVersionRef) {
         }
     }
 
+    // Move ISEQ references in the inliner's per-version index. These point at
+    // callees whose HIR was inlined into this version's compiled code, and the
+    // callee ISEQs can move during GC compaction the same way `outgoing` ISEQs
+    // can.
+    for callee_iseq in unsafe { version.as_mut() }.inlined_callees.iter_mut() {
+        let old_iseq = *callee_iseq;
+        if old_iseq.is_null() {
+            continue;
+        }
+        let new_iseq = unsafe { rb_gc_location(VALUE(old_iseq as usize)) }.0 as IseqPtr;
+        if old_iseq != new_iseq {
+            *callee_iseq = new_iseq;
+        }
+    }
+
     // Move objects baked in JIT code.
     // The code region is already writable because rb_zjit_mark_all_writable() was called
     // before the GC update_references phase. We write directly to avoid per-page mprotect calls.

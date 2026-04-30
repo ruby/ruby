@@ -2669,6 +2669,23 @@ impl Function {
         self.iseq
     }
 
+    /// Return the set of callee ISEQs whose HIR was inlined into this function.
+    /// Derived from the ProfileOracle: any iseq that appears as a key in
+    /// `profiles.types` other than this function's own iseq must have been
+    /// inlined here, because `merge_callee` is the only path that introduces
+    /// foreign-iseq entries into a function's oracle.
+    pub fn inlined_callees(&self) -> std::collections::HashSet<IseqPtr> {
+        let mut callees = std::collections::HashSet::new();
+        if let Some(profiles) = self.profiles.as_ref() {
+            for (iseq, _) in profiles.types.keys() {
+                if *iseq != self.iseq {
+                    callees.insert(*iseq);
+                }
+            }
+        }
+        callees
+    }
+
     // Add an instruction to the function without adding it to any block
     fn new_insn(&mut self, insn: Insn) -> InsnId {
         let id = InsnId(self.insns.len());

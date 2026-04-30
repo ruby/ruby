@@ -13,6 +13,14 @@ pub struct IseqPayload {
     pub profile: IseqProfile,
     /// JIT code versions. Different versions should have different assumptions.
     pub versions: Vec<IseqVersionRef>,
+    /// Caller versions whose compiled code contains an inlined copy of this ISEQ.
+    /// Populated when a caller version is committed in `gen_iseq` and the inliner
+    /// pulled this ISEQ's HIR into the caller. Read by `exit_recompile` to invalidate
+    /// callers when this ISEQ has no standalone version to invalidate but its profile
+    /// changed (e.g. shape guard failure inside an inlined body). Entries to
+    /// already-invalidated versions are skipped at read time and pruned on caller
+    /// invalidation; see `invalidate_iseq_version`.
+    pub inlined_into: Vec<IseqVersionRef>,
     /// Whether a previous compilation of this ISEQ was invalidated due to
     /// singleton class creation (violation of [`crate::hir::Invariant::NoSingletonClass`]).
     pub was_invalidated_for_singleton_class_creation: bool,
@@ -23,6 +31,7 @@ impl IseqPayload {
         Self {
             profile: IseqProfile::new(),
             versions: vec![],
+            inlined_into: vec![],
             was_invalidated_for_singleton_class_creation: false,
         }
     }
@@ -45,6 +54,14 @@ pub struct IseqVersion {
 
     /// JIT-to-JIT calls to the ISEQ. The IseqPayload's ISEQ is the callee of it.
     pub incoming: Vec<IseqCallRef>,
+
+    /// ISEQs whose HIR was inlined into this version's compiled code by the inliner.
+    /// Used as the cleanup index for `IseqPayload::inlined_into`: when this version is
+    /// invalidated, we walk this list and prune the matching back-pointer from each
+    /// callee's `inlined_into`. Each ISEQ here has this version listed in its
+    /// `inlined_into` (modulo invalidation pruning). Pointers are tracked on GC
+    /// compaction the same way `outgoing` IseqCall iseqs are.
+    pub inlined_callees: Vec<IseqPtr>,
 }
 
 /// We use a raw pointer instead of Rc to save space for refcount
@@ -64,6 +81,7 @@ impl IseqVersion {
             gc_offsets: vec![],
             outgoing: vec![],
             incoming: vec![],
+            inlined_callees: vec![],
         };
         let version_ptr = Box::into_raw(Box::new(version));
         NonNull::new(version_ptr).expect("no null from Box")

@@ -233,6 +233,23 @@ pub fn invalidate_iseq_version(cb: &mut CodeBlock, iseq: IseqPtr, version: &mut 
                 debug!("{err:?}: gen_iseq_call failed during invalidation: {}", iseq_get_location(incoming.iseq.get(), 0));
             }
         }
+
+        // Prune the inliner's back-pointer index: this version is no longer a
+        // valid caller for any of the ISEQs it inlined, so remove it from each
+        // callee's `inlined_into`. Drain `inlined_callees` so a version that is
+        // re-entered through this path (which shouldn't happen, but defensively)
+        // doesn't double-prune. Callees whose ISEQ pointer was nulled by
+        // `rb_zjit_iseq_free` are skipped because the payload-level cleanup
+        // there is responsible for them.
+        let version_ref = *version;
+        let inlined_callees = std::mem::take(&mut unsafe { version.as_mut() }.inlined_callees);
+        for callee_iseq in inlined_callees {
+            if callee_iseq.is_null() {
+                continue;
+            }
+            let callee_payload = get_or_create_iseq_payload(callee_iseq);
+            callee_payload.inlined_into.retain(|v| *v != version_ref);
+        }
     }
 }
 
@@ -368,6 +385,21 @@ fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, mut version: IseqVersionRef,
     // Prepare for GC
     unsafe { version.as_mut() }.outgoing.extend(iseq_calls);
     append_gc_offsets(iseq, version, &gc_offsets);
+
+    // Wire up the inliner's back-pointer index. For each ISEQ whose HIR was inlined
+    // into this version's compiled code, record the relationship in two complementary
+    // places: on the version (for cleanup on invalidation, see `invalidate_iseq_version`)
+    // and on the callee's payload (for `exit_recompile` to find when the callee has
+    // no standalone version to invalidate). Both indexes are derived from the
+    // function's ProfileOracle.
+    let inlined_callees = function.inlined_callees();
+    if !inlined_callees.is_empty() {
+        for callee_iseq in &inlined_callees {
+            get_or_create_iseq_payload(*callee_iseq).inlined_into.push(version);
+        }
+        unsafe { version.as_mut() }.inlined_callees.extend(inlined_callees);
+    }
+
     Ok(iseq_code_ptrs)
 }
 
@@ -3233,16 +3265,22 @@ c_callable! {
     /// For shape guard exits (argc == -1): profiles self from the CFP.
     /// Once enough profiles are gathered, invalidates the ISEQ for recompilation.
     pub(crate) fn exit_recompile(ec: EcPtr, iseq_raw: VALUE, insn_idx: u32, argc: i32) {
-        // Fast check before taking the VM lock: skip if already invalidated or
-        // at the version limit. This avoids expensive lock acquisition on every
-        // shape guard exit after the recompile has already been triggered.
+        // Fast check before taking the VM lock: skip if neither the standalone
+        // version path nor the inlined-into path could make progress. The standalone
+        // path is "done" when the last version is already invalidated or when we
+        // have hit max_iseq_versions. The inlined-into path is "done" when there
+        // are no remaining live caller versions to invalidate (we drain entries
+        // when callers are invalidated, so a non-empty list still has live work).
+        // Without this check we'd take the VM lock on every shape failure forever
+        // for callees that have nothing left to recompile.
         {
             let iseq: IseqPtr = iseq_raw.as_iseq();
             let payload = get_or_create_iseq_payload(iseq);
-            let already_done = payload.versions.last()
-                .map_or(false, |v| unsafe { v.as_ref() }.is_invalidated())
+            let standalone_done = payload.versions.last()
+                .map_or(true, |v| unsafe { v.as_ref() }.is_invalidated())
                 || payload.versions.len() >= max_iseq_versions();
-            if already_done {
+            let inlined_done = payload.inlined_into.is_empty();
+            if standalone_done && inlined_done {
                 return;
             }
         }
@@ -3271,14 +3309,38 @@ c_callable! {
                     payload.profile.profile_self_at(iseq, insn_idx as usize, self_val)
                 };
 
-                // Once we have enough profiles, invalidate and recompile the ISEQ
-                if should_recompile {
-                    if let Some(version) = payload.versions.last_mut() {
-                        let cb = ZJITState::get_code_block();
-                        invalidate_iseq_version(cb, iseq, version);
-                        cb.mark_all_executable();
-                    }
+                if !should_recompile {
+                    return;
                 }
+
+                let cb = ZJITState::get_code_block();
+
+                // Invalidate the standalone version, if any. This is the path that
+                // existed before the inliner: the iseq has its own compiled version
+                // and a future call will recompile it from the now-richer profile.
+                if let Some(version) = payload.versions.last_mut() {
+                    invalidate_iseq_version(cb, iseq, version);
+                }
+
+                // Invalidate caller versions whose compiled code contains an inlined
+                // copy of this iseq. Without this step, an iseq that was only ever
+                // inlined (never compiled standalone) would have nothing to invalidate
+                // and the new profile data would sit unused while the same shape
+                // failures kept firing inside the caller's still-stale compiled code.
+                // Drain to ensure each caller is invalidated at most once per round
+                // and so that already-invalidated entries don't accumulate; the
+                // matching cleanup on `invalidate_iseq_version` keeps the list
+                // pruned for callers that get invalidated through other paths.
+                let inlined_into = std::mem::take(&mut payload.inlined_into);
+                for mut caller_version in inlined_into {
+                    let caller_iseq = unsafe { caller_version.as_ref() }.iseq;
+                    if caller_iseq.is_null() {
+                        continue;
+                    }
+                    invalidate_iseq_version(cb, caller_iseq, &mut caller_version);
+                }
+
+                cb.mark_all_executable();
             });
         });
     }
