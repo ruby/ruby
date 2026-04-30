@@ -2359,18 +2359,23 @@ match_to_s(VALUE match)
     return str;
 }
 
+struct named_captures_data {
+    VALUE hash;
+    VALUE match;
+    int symbolize;
+};
+
 static int
 match_named_captures_iter(const OnigUChar *name, const OnigUChar *name_end,
         int back_num, int *back_refs, OnigRegex regex, void *arg)
 {
-    struct MEMO *memo = MEMO_CAST(arg);
-    VALUE hash = memo->v1;
-    VALUE match = memo->v2;
-    long symbolize = memo->u3.state;
+    struct named_captures_data *data = arg;
+    VALUE hash = data->hash;
+    VALUE match = data->match;
 
     VALUE key = rb_enc_str_new((const char *)name, name_end-name, regex->enc);
 
-    if (symbolize > 0) {
+    if (data->symbolize) {
         key = rb_str_intern(key);
     }
 
@@ -2430,14 +2435,13 @@ static VALUE
 match_named_captures(int argc, VALUE *argv, VALUE match)
 {
     VALUE hash;
-    struct MEMO *memo;
 
     match_check(match);
     if (NIL_P(RMATCH(match)->regexp))
         return rb_hash_new();
 
     VALUE opt;
-    VALUE symbolize_names = 0;
+    int symbolize_names = 0;
 
     rb_scan_args(argc, argv, "0:", &opt);
 
@@ -2456,9 +2460,9 @@ match_named_captures(int argc, VALUE *argv, VALUE match)
     }
 
     hash = rb_hash_new();
-    memo = rb_imemo_memo_new(hash, match, symbolize_names);
+    struct named_captures_data data = { hash, match, symbolize_names };
 
-    onig_foreach_name(RREGEXP(RMATCH(match)->regexp)->ptr, match_named_captures_iter, (void*)memo);
+    onig_foreach_name(RREGEXP(RMATCH(match)->regexp)->ptr, match_named_captures_iter, &data);
 
     return hash;
 }
@@ -2494,10 +2498,9 @@ match_deconstruct_keys(VALUE match, VALUE keys)
     if (NIL_P(keys)) {
         h = rb_hash_new_with_size(onig_number_of_names(RREGEXP_PTR(RMATCH(match)->regexp)));
 
-        struct MEMO *memo;
-        memo = rb_imemo_memo_new(h, match, 1);
+        struct named_captures_data data = { h, match, 1 };
 
-        onig_foreach_name(RREGEXP_PTR(RMATCH(match)->regexp), match_named_captures_iter, (void*)memo);
+        onig_foreach_name(RREGEXP_PTR(RMATCH(match)->regexp), match_named_captures_iter, &data);
 
         return h;
     }
