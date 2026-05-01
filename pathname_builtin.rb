@@ -349,16 +349,15 @@ class Pathname
 
   if File::ALT_SEPARATOR
     # Separator list string.
-    SEPARATOR_LIST = Regexp.quote "#{File::ALT_SEPARATOR}#{File::SEPARATOR}"
+    separator_list = Regexp.quote "#{File::ALT_SEPARATOR}#{File::SEPARATOR}"
     # Regexp that matches a separator.
-    SEPARATOR_PAT = /[#{SEPARATOR_LIST}]/
+    SEPARATOR_PAT = /[#{separator_list}]/
   else
-    SEPARATOR_LIST = Regexp.quote File::SEPARATOR
-    SEPARATOR_PAT = /#{SEPARATOR_LIST}/
+    separator_list = Regexp.quote File::SEPARATOR
+    SEPARATOR_PAT = /#{separator_list}/
   end
-  SEPARATOR_LIST.freeze
   SEPARATOR_PAT.freeze
-  private_constant :SEPARATOR_LIST, :SEPARATOR_LIST
+  private_constant :SEPARATOR_PAT
 
   if File.dirname('A:') == 'A:.' # DOSish drive letter
     # Regexp that matches an absolute path.
