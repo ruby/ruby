@@ -35,6 +35,12 @@ RSpec.describe Bundler::Override do
         expect(result).to eq(Gem::Requirement.new(">= 1.5"))
       end
 
+      it "preserves != exclusion constraints" do
+        override = described_class.new("rails", :version, :ignore_upper)
+        result = override.apply_to(Gem::Requirement.new(">= 1.0", "!= 1.5.0", "< 2.0"))
+        expect(result).to eq(Gem::Requirement.new(">= 1.0", "!= 1.5.0"))
+      end
+
       it "returns the default requirement when only upper bounds remain" do
         override = described_class.new("rails", :version, :ignore_upper)
         result = override.apply_to(Gem::Requirement.new("< 2.0"))

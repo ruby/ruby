@@ -2,7 +2,7 @@
 
 module Bundler
   class Override
-    LOWER_BOUND_OPERATORS = [">=", ">", "="].freeze
+    UPPER_BOUND_OPERATORS = ["<", "<="].freeze
 
     attr_reader :target, :field, :operation
 
@@ -30,17 +30,19 @@ module Bundler
     def remove_upper_bounds(requirement)
       return Gem::Requirement.default if requirement.nil? || requirement.none?
 
-      lower_bounds = requirement.requirements.filter_map do |op, version|
-        if LOWER_BOUND_OPERATORS.include?(op)
-          [op, version]
+      preserved = requirement.requirements.filter_map do |op, version|
+        if UPPER_BOUND_OPERATORS.include?(op)
+          nil
         elsif op == "~>"
           [">=", version]
+        else
+          [op, version]
         end
       end
 
-      return Gem::Requirement.default if lower_bounds.empty?
+      return Gem::Requirement.default if preserved.empty?
 
-      Gem::Requirement.new(lower_bounds.map {|op, v| "#{op} #{v}" })
+      Gem::Requirement.new(preserved.map {|op, v| "#{op} #{v}" })
     end
   end
 end
