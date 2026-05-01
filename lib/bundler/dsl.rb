@@ -186,6 +186,10 @@ module Bundler
     end
 
     def override(target, **operations)
+      if target == :all && operations.key?(:version)
+        raise ArgumentError, "`override :all, version:` is not allowed; version requirements are per-gem"
+      end
+
       operations.each do |field, operation|
         @overrides << Override.new(target, field, operation)
       end

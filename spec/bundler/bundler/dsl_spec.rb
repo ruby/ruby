@@ -397,5 +397,24 @@ RSpec.describe Bundler::Dsl do
     it "is empty by default" do
       expect(subject.overrides).to eq([])
     end
+
+    it "raises ArgumentError when target is :all and version: is given" do
+      expect do
+        subject.override(:all, version: ">= 8.0")
+      end.to raise_error(ArgumentError, /`override :all, version:` is not allowed/)
+    end
+
+    it "rejects :all + version: even when other fields are also given" do
+      expect do
+        subject.override(:all, required_ruby_version: :ignore_upper, version: ">= 8.0")
+      end.to raise_error(ArgumentError, /`override :all, version:` is not allowed/)
+    end
+
+    it "does not record any override when :all + version: is rejected" do
+      expect do
+        subject.override(:all, version: ">= 8.0")
+      end.to raise_error(ArgumentError)
+      expect(subject.overrides).to eq([])
+    end
   end
 end
