@@ -190,6 +190,7 @@ module Spec
         "spec/install/gems/no_build_extension_spec.rb",
         "spec/install/gems/no_install_plugin_spec.rb",
         "spec/bundler/override_spec.rb",
+        "spec/install/gemfile/override_spec.rb",
       ],
     }.freeze
   end

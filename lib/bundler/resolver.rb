@@ -510,7 +510,7 @@ module Bundler
     end
 
     def to_dependency_hash(dependencies, packages)
-      dependencies.inject({}) do |deps, dep|
+      apply_overrides(dependencies).inject({}) do |deps, dep|
         package = packages[dep.name]
 
         current_req = deps[package]
@@ -523,6 +523,16 @@ module Bundler
         end
 
         deps
+      end
+    end
+
+    def apply_overrides(dependencies)
+      return dependencies if @base.overrides.empty?
+
+      dependencies.map do |dep|
+        override = @base.overrides.find {|o| o.target == dep.name && o.field == :version }
+        next dep unless override
+        Gem::Dependency.new(dep.name, override.apply_to(dep.requirement))
       end
     end
 
