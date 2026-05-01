@@ -541,6 +541,45 @@ When a `gemspec` dependency encounters version conflicts during resolution, the
 local version under development will always be selected -- even if there are
 remote versions that better match other requirements for the `gemspec` gem.
 
+## OVERRIDE
+
+The `override` directive rewrites the version requirement on another gem
+before resolution runs. It targets the common case where an upstream gem's
+published metadata is too narrow on the current project's machine -- a stale
+upper bound, an unwanted floor, or a transitive pin that has to be lifted.
+
+    override <target>, <field>: <operation>
+
+`<target>` is a gem name string. `<field>` is `version:`. `<operation>` is
+one of:
+
+  * a version requirement string (e.g. `">= 8.0"`), which **replaces** the
+    target's version requirement absolutely. The original requirement, both
+    direct and transitive, is discarded in favour of the override.
+  * `:ignore_upper`, which removes upper-bound operators (`<` and `<=`) from
+    the existing requirement and folds `~>` into its lower bound (`~> 1.5`
+    becomes `>= 1.5`). Other operators, including `!=`, are preserved.
+  * `nil`, which collapses the requirement to `>= 0` (no constraint at all).
+
+Multiple `override` calls for distinct targets are allowed; declaring the
+same `target` and `field` twice is an error.
+
+    source "https://rubygems.org"
+
+    # Force every reference to "rails" -- direct or transitive -- to >= 8.0.
+    override "rails", version: ">= 8.0"
+
+    # Strip the upper bound on nokogiri.
+    override "nokogiri", version: :ignore_upper
+
+    # Drop the version pin on legacy entirely.
+    override "legacy", version: nil
+
+    gem "rails", "~> 7.0"
+
+The override only affects resolution; `Gemfile.lock` continues to reflect
+the resolved versions, not the rewritten requirements.
+
 ## SOURCE PRIORITY
 
 When attempting to locate a gem to satisfy a gem requirement,

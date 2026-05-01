@@ -1,6 +1,6 @@
 .\" generated with Ronn-NG/v0.10.1
 .\" http://github.com/apjanke/ronn-ng/tree/0.10.1
-.TH "GEMFILE" "5" "April 2026" ""
+.TH "GEMFILE" "5" "May 2026" ""
 .SH "NAME"
 \fBGemfile\fR \- A format for describing gem dependencies for Ruby programs
 .SH "SYNOPSIS"
@@ -460,6 +460,42 @@ The \fBgemspec\fR method adds any runtime dependencies as gem requirements in th
 The \fBgemspec\fR method supports optional \fB:path\fR, \fB:glob\fR, \fB:name\fR, and \fB:development_group\fR options, which control where bundler looks for the \fB\.gemspec\fR, the glob it uses to look for the gemspec (defaults to: \fB{,*,*/*}\.gemspec\fR), what named \fB\.gemspec\fR it uses (if more than one is present), and which group development dependencies are included in\.
 .P
 When a \fBgemspec\fR dependency encounters version conflicts during resolution, the local version under development will always be selected \-\- even if there are remote versions that better match other requirements for the \fBgemspec\fR gem\.
+.SH "OVERRIDE"
+The \fBoverride\fR directive rewrites the version requirement on another gem before resolution runs\. It targets the common case where an upstream gem's published metadata is too narrow on the current project's machine \-\- a stale upper bound, an unwanted floor, or a transitive pin that has to be lifted\.
+.IP "" 4
+.nf
+override <target>, <field>: <operation>
+.fi
+.IP "" 0
+.P
+\fB<target>\fR is a gem name string\. \fB<field>\fR is \fBversion:\fR\. \fB<operation>\fR is one of:
+.IP "\(bu" 4
+a version requirement string (e\.g\. \fB">= 8\.0"\fR), which \fBreplaces\fR the target's version requirement absolutely\. The original requirement, both direct and transitive, is discarded in favour of the override\.
+.IP "\(bu" 4
+\fB:ignore_upper\fR, which removes upper\-bound operators (\fB<\fR and \fB<=\fR) from the existing requirement and folds \fB~>\fR into its lower bound (\fB~> 1\.5\fR becomes \fB>= 1\.5\fR)\. Other operators, including \fB!=\fR, are preserved\.
+.IP "\(bu" 4
+\fBnil\fR, which collapses the requirement to \fB>= 0\fR (no constraint at all)\.
+.IP "" 0
+.P
+Multiple \fBoverride\fR calls for distinct targets are allowed; declaring the same \fBtarget\fR and \fBfield\fR twice is an error\.
+.IP "" 4
+.nf
+source "https://rubygems\.org"
+
+# Force every reference to "rails" \-\- direct or transitive \-\- to >= 8\.0\.
+override "rails", version: ">= 8\.0"
+
+# Strip the upper bound on nokogiri\.
+override "nokogiri", version: :ignore_upper
+
+# Drop the version pin on legacy entirely\.
+override "legacy", version: nil
+
+gem "rails", "~> 7\.0"
+.fi
+.IP "" 0
+.P
+The override only affects resolution; \fBGemfile\.lock\fR continues to reflect the resolved versions, not the rewritten requirements\.
 .SH "SOURCE PRIORITY"
 When attempting to locate a gem to satisfy a gem requirement, bundler uses the following priority order:
 .IP "1." 4
