@@ -116,7 +116,7 @@ module Bundler
       end
 
       @valid = lockfile.strip.empty? ||
-        lockfile.split(/(?:\r?\n)+/).any? {|l| KNOWN_SECTIONS.include?(l) }
+               lockfile.split(/(?:\r?\n)+/).any? {|l| KNOWN_SECTIONS.include?(l) }
 
       unless @valid
         SharedHelpers.feature_deprecated!(
