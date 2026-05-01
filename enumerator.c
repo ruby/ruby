@@ -2095,17 +2095,12 @@ lazy_map(VALUE obj)
     return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_map_funcs);
 }
 
-struct flat_map_i_arg {
-    struct MEMO *result;
-    long index;
-};
-
 static VALUE
 lazy_flat_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, y))
 {
-    struct flat_map_i_arg *arg = (struct flat_map_i_arg *)y;
+    struct MEMO *arg = MEMO_CAST(y);
 
-    return lazy_yielder_yield(arg->result, arg->index, argc, argv);
+    return lazy_yielder_yield((struct MEMO *)arg->v1, arg->u3.cnt, argc, argv);
 }
 
 static struct MEMO *
@@ -2120,9 +2115,9 @@ lazy_flat_map_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo
         ary = value;
     }
     else if (rb_respond_to(value, id_force) && rb_respond_to(value, id_each)) {
-        struct flat_map_i_arg arg = {.result = result, .index = proc_index};
+        struct MEMO *arg = rb_imemo_memo_new((VALUE)result, Qfalse, proc_index);
         LAZY_MEMO_RESET_BREAK(result);
-        rb_block_call(value, id_each, 0, 0, lazy_flat_map_i, (VALUE)&arg);
+        rb_block_call(value, id_each, 0, 0, lazy_flat_map_i, (VALUE)arg);
         if (break_p) LAZY_MEMO_SET_BREAK(result);
         return 0;
     }
