@@ -59,7 +59,7 @@ module Bundler
     #   to be updated or true if all gems should be updated
     # @param ruby_version [Bundler::RubyVersion, nil] Requested Ruby Version
     # @param optional_groups [Array(String)] A list of optional groups
-    def initialize(lockfile, dependencies, sources, unlock, ruby_version = nil, optional_groups = [], gemfiles = [])
+    def initialize(lockfile, dependencies, sources, unlock, ruby_version = nil, optional_groups = [], gemfiles = [], overrides = [])
       unlock ||= {}
 
       if unlock == true
@@ -89,7 +89,7 @@ module Bundler
       @specs           = nil
       @ruby_version    = ruby_version
       @gemfiles        = gemfiles
-      @overrides       = []
+      @overrides       = overrides
 
       @lockfile               = lockfile
       @lockfile_contents      = String.new
@@ -1044,7 +1044,7 @@ module Bundler
               @locked_specs.delete(locked_specs.select {|s| s.source != dep.source })
             end
 
-            unless dep.matches_spec?(locked_specs.first)
+            unless apply_override_to(dep).matches_spec?(locked_specs.first)
               @gems_to_unlock << name
               dep_changed = true
             end

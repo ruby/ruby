@@ -209,9 +209,7 @@ module Bundler
     def to_definition(lockfile, unlock)
       check_primary_source_safety
       lockfile = @lockfile unless @lockfile.nil?
-      definition = Definition.new(lockfile, @dependencies, @sources, unlock, @ruby_version, @optional_groups, @gemfiles)
-      definition.overrides = @overrides
-      definition
+      Definition.new(lockfile, @dependencies, @sources, unlock, @ruby_version, @optional_groups, @gemfiles, @overrides)
     end
 
     def group(*args, &blk)
