@@ -13,7 +13,7 @@ CommitEmailInfo = Struct.new(
   :log,
   :branch,
   :diffs,
-  :added_files, :deleted_files, :updated_files,
+  :added_files, :deleted_files, :renamed_files, :updated_files,
   :added_dirs, :deleted_dirs, :updated_dirs,
 )
 
@@ -38,6 +38,7 @@ class GitInfoBuilder
     info.diffs = diffs
     info.added_files = find_files(diffs, status: :added)
     info.deleted_files = find_files(diffs, status: :deleted)
+    info.renamed_files = find_files(diffs, status: :renamed)
     info.updated_files = find_files(diffs, status: :modified)
     info.added_dirs = [] # git does not deal with directory
     info.deleted_dirs = [] # git does not deal with directory
@@ -83,8 +84,8 @@ class GitInfoBuilder
 
     numstats = git('diff', '--numstat', oldrev, newrev).lines.map { |l| l.strip.split("\t", 3) }
     git('diff', '--name-status', oldrev, newrev).each_line do |line|
-      status, path, _newpath = line.strip.split("\t", 3)
-      diff = build_diff(path, numstats)
+      status, path, newpath = line.strip.split("\t", 3)
+      diff = build_diff(path, numstats, newpath:)
 
       case status
       when 'A'
@@ -96,7 +97,7 @@ class GitInfoBuilder
       when 'D'
         diffs[path] = { deleted: { type: :deleted, **diff } }
       when /\AR/ # R100 (which does not exist in git.ruby-lang.org's git 2.1.4)
-        # TODO: implement something
+        diffs["#{path} -> #{newpath}"] = { renamed: { type: :renamed, **diff } }
       else
         $stderr.puts "unexpected git diff status: #{status}"
       end
@@ -105,9 +106,11 @@ class GitInfoBuilder
     diffs
   end
 
-  def build_diff(path, numstats)
+  def build_diff(path, numstats, newpath: nil)
     diff = { added: 0, deleted: 0 } # :body not implemented because not used
-    line = numstats.find { |(_added, _deleted, file, *)| file == path }
+    line = numstats.find do |(_added, _deleted, file, *)|
+      file == path || file == renamed_numstat_path(path, newpath)
+    end
     return diff if line.nil?
 
     added, deleted, _ = line
@@ -118,6 +121,12 @@ class GitInfoBuilder
       diff[:deleted] = Integer(deleted)
     end
     diff
+  end
+
+  def renamed_numstat_path(path, newpath)
+    return path unless newpath
+
+    "#{path} => #{newpath}"
   end
 
   def git_show(revision, format:)
@@ -225,6 +234,7 @@ class << CommitEmail
     body << added_files(info)
     body << deleted_dirs(info)
     body << deleted_files(info)
+    body << renamed_files(info)
     body << modified_dirs(info)
     body << modified_files(info)
     [body.rstrip].pack('M')
@@ -253,6 +263,10 @@ class << CommitEmail
 
   def deleted_files(info)
     changed_files('Removed', info.deleted_files)
+  end
+
+  def renamed_files(info)
+    changed_files('Renamed', info.renamed_files)
   end
 
   def modified_files(info)

@@ -84,6 +84,35 @@ class TestCommitEmail < Test::Unit::TestCase
     end
   end
 
+  def test_sendmail_lists_renamed_files
+    omit 'the sendmail script does not work on windows' if windows?
+
+    Dir.chdir(@ruby) do
+      File.write('before.txt', "before\n")
+      git('add', 'before.txt')
+      git('commit', '-m', 'Add file')
+
+      before_rev = git('rev-parse', 'HEAD').chomp
+
+      git('mv', 'before.txt', 'after.txt')
+      git('commit', '-m', 'Rename file')
+
+      after_rev = git('rev-parse', 'HEAD').chomp
+
+      out, _, status = EnvUtil.invoke_ruby([
+        { 'SENDMAIL' => @sendmail, 'TZ' => 'UTC' }.merge!(gem_env),
+        @commit_email, './', 'cvs-admin@ruby-lang.org',
+        before_rev, after_rev, 'refs/heads/master',
+        '--viewer-uri', 'https://github.com/ruby/ruby/commit/',
+        '--error-to', 'cvs-admin@ruby-lang.org',
+      ], '', true)
+      stdin = out.b.split(STDIN_DELIMITER.b, 2).last.force_encoding('UTF-8')
+
+      assert_true(status.success?)
+      assert_match(/  Renamed files:\n    before\.txt -> after\.txt=?\n?\z/, stdin)
+    end
+  end
+
   private
 
   # Resurrect the gem environment preserved by tool/test/init.rb.
