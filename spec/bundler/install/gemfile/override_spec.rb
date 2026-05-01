@@ -88,4 +88,26 @@ RSpec.describe "override DSL" do
       expect(the_bundle).to include_gems "myrack 1.0.0"
     end
   end
+
+  context "with a version: nil operation" do
+    it "drops a direct dependency's pin entirely" do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        override "myrack", version: nil
+        gem "myrack", "= 0.9.1"
+      G
+
+      expect(the_bundle).to include_gems "myrack 1.0.0"
+    end
+
+    it "drops a transitive dependency's pin entirely" do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        override "myrack", version: nil
+        gem "myrack_middleware"
+      G
+
+      expect(the_bundle).to include_gems "myrack 1.0.0", "myrack_middleware 1.0"
+    end
+  end
 end
