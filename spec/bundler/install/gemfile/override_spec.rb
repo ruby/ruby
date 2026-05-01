@@ -50,5 +50,20 @@ RSpec.describe "override DSL" do
 
       expect(the_bundle).to include_gems "myrack 0.9.1"
     end
+
+    it "pins a prerelease version that the Gemfile dependency would otherwise filter out" do
+      build_repo2 do
+        build_gem "has_prerelease", "1.0"
+        build_gem "has_prerelease", "1.1.pre"
+      end
+
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        override "has_prerelease", version: "= 1.1.pre"
+        gem "has_prerelease"
+      G
+
+      expect(the_bundle).to include_gems "has_prerelease 1.1.pre"
+    end
   end
 end
