@@ -18039,6 +18039,52 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_inline_rejects_callees_on_deny_list() {
+        // The `--zjit-inline-deny=...` knob lists qualified method names that
+        // should_inline must refuse to inline, regardless of any other heuristic
+        // outcome. The match runs before size/parameter/budget checks so the
+        // signal is unambiguous when reading stats. The counter check pins the
+        // rejection cause to the deny list specifically; an HIR-only check could
+        // pass for any number of unrelated reasons that also leave SendDirect
+        // in place.
+        eval("
+            def add_one(x)
+              x + 1
+            end
+            def test(n)
+              add_one(n)
+            end
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let denied_rejects_before = counters.inline_reject_denied;
+        let inline_count_before = counters.inline_method_count;
+
+        let old_deny = get_option!(inline_deny).clone();
+        unsafe {
+            OPTIONS.as_mut().unwrap().inline_deny.insert("Object#add_one".to_string());
+        }
+        let result = hir_string_with_inlining("test");
+        unsafe {
+            OPTIONS.as_mut().unwrap().inline_deny = old_deny;
+        }
+
+        let denied_rejects_after = counters.inline_reject_denied;
+        let inline_count_after = counters.inline_method_count;
+
+        assert!(denied_rejects_after > denied_rejects_before,
+            "Expected inline_reject_denied to increment for Object#add_one, but it stayed at {denied_rejects_before}");
+        assert_eq!(inline_count_after, inline_count_before,
+            "Expected no inlines for Object#add_one when on the deny list, but inline_method_count went from {inline_count_before} to {inline_count_after}");
+
+        assert!(result.contains("SendDirect"),
+            "Expected SendDirect to remain in HIR when callee is on the deny list:\n{result}");
+        assert!(!result.contains("PushLightweightFrame"),
+            "Expected no PushLightweightFrame in HIR when callee is on the deny list:\n{result}");
+    }
+
+    #[test]
     fn test_inline_method_with_invokesuper() {
         eval("
             class Parent

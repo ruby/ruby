@@ -145,6 +145,16 @@ pub struct Options {
     /// YARV bytecode words; this one is caller HIR instructions, allocation high-water
     /// mark. They aren't directly comparable; YARV → HIR typically expands roughly 1-3x.
     pub inline_budget: usize,
+
+    /// Set of qualified method names (e.g. `Class#method`, `Module::Class.method`) that
+    /// `should_inline` will refuse to inline. Populated from `--zjit-inline-deny=…` as a
+    /// comma-separated list. Used as a debugging/experimentation knob: callees on this
+    /// list are rejected before any of the other `should_inline` checks run, so we can
+    /// isolate the contribution of specific methods to the inliner's overall effect.
+    /// Empty by default; matching uses the same string format produced by
+    /// `qualified_method_name`. Only named methods are matched today; anonymous code
+    /// (blocks, procs without a stable method binding) cannot be denied this way.
+    pub inline_deny: HashSet<String>,
 }
 
 impl Default for Options {
@@ -175,6 +185,7 @@ impl Default for Options {
             max_versions: 2,
             inline_threshold: 0,
             inline_budget: 500,
+            inline_deny: HashSet::new(),
         }
     }
 }
@@ -403,6 +414,19 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             Ok(n) => { options.inline_budget = n; },
             Err(_) => return None,
         },
+
+        ("inline-deny", csv) => {
+            // Comma-separated list of qualified method names to refuse to inline,
+            // matching the format produced by `qualified_method_name`. Whitespace
+            // around entries is trimmed; empty entries are skipped so trailing or
+            // duplicated commas don't introduce a "" sentinel into the set.
+            for entry in csv.split(',') {
+                let trimmed = entry.trim();
+                if !trimmed.is_empty() {
+                    options.inline_deny.insert(trimmed.to_string());
+                }
+            }
+        }
 
 
         ("stats-quiet", _) => {

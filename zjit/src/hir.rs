@@ -4331,7 +4331,7 @@ impl Function {
     /// no escaping EP, no invokeblock/yield, no getblockparam. Callee body shape
     /// restrictions (single return, etc.) live in inline_methods since they need
     /// the built HIR to evaluate.
-    fn should_inline(&self, callee_iseq: IseqPtr) -> bool {
+    fn should_inline(&self, callee_iseq: IseqPtr, cme: *const rb_callable_method_entry_t) -> bool {
         let threshold = get_option!(inline_threshold);
         if threshold == 0 {
             return false;
@@ -4347,6 +4347,26 @@ impl Function {
         if budget != 0 && self.insns.len() > budget {
             incr_counter!(inline_reject_budget_exceeded);
             return false;
+        }
+
+        // User-supplied denylist of qualified method names (e.g. `User#name` or
+        // `Foo.bar`). Lets us isolate the inliner's contribution from individual
+        // problem methods without committing to a heuristic. Anonymous code paths
+        // (blocks, procs without a stable method binding) can't be expressed in this
+        // format, so they aren't matched and fall through to the rest of the checks.
+        // Unsafe deref of `cme` is safe here because `inline_methods` only calls
+        // `should_inline` for `SendDirect` instructions, which carry a non-null cme.
+        if !cme.is_null() {
+            let deny = unsafe { crate::options::OPTIONS.as_ref() }.map(|o| &o.inline_deny);
+            if deny.is_some_and(|d| !d.is_empty()) {
+                let owner = unsafe { (*cme).owner };
+                let method_id = unsafe { get_def_original_id((*cme).def) };
+                let qualified = qualified_method_name(owner, method_id);
+                if deny.unwrap().contains(&qualified) {
+                    incr_counter!(inline_reject_denied);
+                    return false;
+                }
+            }
         }
 
         // Check callee bytecode size against threshold.
@@ -4462,7 +4482,7 @@ impl Function {
                     BlockHandler::BlockArg => unreachable!("BlockArg in SendDirect"),
                 });
 
-                if !self.should_inline(iseq) {
+                if !self.should_inline(iseq, cme) {
                     self.push_insn_id(block, insn_id);
                     continue;
                 }
