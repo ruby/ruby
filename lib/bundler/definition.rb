@@ -10,13 +10,14 @@ module Bundler
       attr_accessor :no_lock
     end
 
-    attr_writer :lockfile
+    attr_writer :lockfile, :overrides
 
     attr_reader(
       :dependencies,
       :locked_checksums,
       :locked_deps,
       :locked_gems,
+      :overrides,
       :platforms,
       :ruby_version,
       :lockfile,
@@ -88,6 +89,7 @@ module Bundler
       @specs           = nil
       @ruby_version    = ruby_version
       @gemfiles        = gemfiles
+      @overrides       = []
 
       @lockfile               = lockfile
       @lockfile_contents      = String.new
