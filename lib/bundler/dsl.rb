@@ -198,6 +198,7 @@ module Bundler
       operations.each do |field, operation|
         validate_override_field!(field)
         validate_override_operation!(operation)
+        validate_override_uniqueness!(target, field)
       end
 
       operations.each do |field, operation|
@@ -288,6 +289,11 @@ module Bundler
       else
         raise ArgumentError, "override operation must be a String, Symbol, or nil, got #{operation.inspect}"
       end
+    end
+
+    def validate_override_uniqueness!(target, field)
+      return unless @overrides.any? {|o| o.target == target && o.field == field }
+      raise ArgumentError, "duplicate override for #{target.inspect} `#{field}:`"
     end
 
     def add_dependency(name, version = nil, options = {})

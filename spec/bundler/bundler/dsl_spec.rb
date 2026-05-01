@@ -447,5 +447,27 @@ RSpec.describe Bundler::Dsl do
       end.to raise_error(ArgumentError, /unsupported override field/)
       expect(subject.overrides).to eq([])
     end
+
+    it "raises ArgumentError when the same target and field are overridden twice" do
+      subject.override("rails", version: ">= 8.0")
+      expect do
+        subject.override("rails", version: :ignore_upper)
+      end.to raise_error(ArgumentError, /duplicate override for "rails" `version:`/)
+    end
+
+    it "keeps the original override when a duplicate is rejected" do
+      subject.override("rails", version: ">= 8.0")
+      expect do
+        subject.override("rails", version: :ignore_upper)
+      end.to raise_error(ArgumentError)
+      expect(subject.overrides.size).to eq(1)
+      expect(subject.overrides.first.operation).to eq(">= 8.0")
+    end
+
+    it "allows different targets with the same field" do
+      subject.override("rails", version: ">= 8.0")
+      subject.override("nokogiri", version: :ignore_upper)
+      expect(subject.overrides.size).to eq(2)
+    end
   end
 end
