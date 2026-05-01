@@ -2072,7 +2072,7 @@ nmin_filter(struct nmin_data *data)
 static VALUE
 nmin_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, _data))
 {
-    struct nmin_data *data = (struct nmin_data *)_data;
+    struct nmin_data *data = RB_IMEMO_TMPBUF_PTR(_data);
     VALUE cmpv;
 
     ENUM_WANT_SVALUE();
@@ -2107,44 +2107,48 @@ VALUE
 rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary)
 {
     VALUE result;
-    struct nmin_data data;
+    VALUE memo = 0;
+    struct nmin_data *data;
 
-    data.n = NUM2LONG(num);
-    if (data.n < 0)
-        rb_raise(rb_eArgError, "negative size (%ld)", data.n);
-    if (data.n == 0)
+    long n_val = NUM2LONG(num);
+    if (n_val < 0)
+        rb_raise(rb_eArgError, "negative size (%ld)", n_val);
+    if (n_val == 0)
         return rb_ary_new2(0);
-    if (LONG_MAX/4/(by ? 2 : 1) < data.n)
+    if (LONG_MAX/4/(by ? 2 : 1) < n_val)
         rb_raise(rb_eArgError, "too big size");
-    data.bufmax = data.n * 4;
-    data.curlen = 0;
-    data.buf = rb_ary_hidden_new(data.bufmax * (by ? 2 : 1));
-    data.limit = Qundef;
-    data.cmpfunc = by ? nmin_cmp :
+
+    data = rb_alloc_tmp_buffer(&memo, sizeof(struct nmin_data));
+    data->n = n_val;
+    data->bufmax = data->n * 4;
+    data->curlen = 0;
+    data->buf = rb_ary_hidden_new(data->bufmax * (by ? 2 : 1));
+    data->limit = Qundef;
+    data->cmpfunc = by ? nmin_cmp :
                    rb_block_given_p() ? nmin_block_cmp :
                    nmin_cmp;
-    data.rev = rev;
-    data.by = by;
+    data->rev = rev;
+    data->by = by;
     if (ary) {
         long i;
         for (i = 0; i < RARRAY_LEN(obj); i++) {
             VALUE args[1];
             args[0] = RARRAY_AREF(obj, i);
-            nmin_i(obj, (VALUE)&data, 1, args, Qundef);
+            nmin_i(obj, memo, 1, args, Qundef);
         }
     }
     else {
-        rb_block_call(obj, id_each, 0, 0, nmin_i, (VALUE)&data);
+        rb_block_call(obj, id_each, 0, 0, nmin_i, memo);
     }
-    nmin_filter(&data);
-    result = data.buf;
+    nmin_filter(data);
+    result = data->buf;
     if (by) {
         long i;
         RARRAY_PTR_USE(result, ptr, {
             ruby_qsort(ptr,
                        RARRAY_LEN(result)/2,
                        sizeof(VALUE)*2,
-                       data.cmpfunc, (void *)&data);
+                       data->cmpfunc, (void *)data);
             for (i=1; i<RARRAY_LEN(result); i+=2) {
                 ptr[i/2] = ptr[i];
             }
@@ -2154,7 +2158,7 @@ rb_nmin_run(VALUE obj, VALUE num, int by, int rev, int ary)
     else {
         RARRAY_PTR_USE(result, ptr, {
             ruby_qsort(ptr, RARRAY_LEN(result), sizeof(VALUE),
-                       data.cmpfunc, (void *)&data);
+                       data->cmpfunc, (void *)data);
         });
     }
     if (rev) {
