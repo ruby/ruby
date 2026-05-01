@@ -635,7 +635,20 @@ module Bundler
     end
 
     def expanded_dependencies
-      dependencies_with_bundler + metadata_dependencies
+      apply_overrides_to(dependencies_with_bundler) + metadata_dependencies
+    end
+
+    def apply_overrides_to(deps)
+      return deps if @overrides.empty?
+      deps.map {|dep| apply_override_to(dep) }
+    end
+
+    def apply_override_to(dep)
+      override = @overrides.find {|o| o.target == dep.name && o.field == :version }
+      return dep unless override
+      new_dep = dep.dup
+      new_dep.instance_variable_set(:@requirement, override.apply_to(dep.requirement))
+      new_dep
     end
 
     def dependencies_with_bundler
