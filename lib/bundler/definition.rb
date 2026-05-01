@@ -1054,7 +1054,23 @@ module Bundler
         @changed_dependencies << name if dep_changed
       end
 
+      converge_overrides_outside_dependencies
+
       @changed_dependencies.any?
+    end
+
+    def converge_overrides_outside_dependencies
+      @overrides.each do |override|
+        next unless override.target.is_a?(String)
+
+        name = override.target
+        next if @changed_dependencies.include?(name)
+        next if @dependencies.any? {|d| d.name == name }
+        next if @originally_locked_specs[name].empty?
+
+        @gems_to_unlock << name
+        @changed_dependencies << name
+      end
     end
 
     # Remove elements from the locked specs that are expired. This will most
