@@ -330,17 +330,6 @@ class Pathname
   SEPARATOR_PAT.freeze
   private_constant :SEPARATOR_PAT
 
-  if File.dirname('A:') == 'A:.' # DOSish drive letter
-    # Regexp that matches an absolute path.
-    ABSOLUTE_PATH = /\A(?:[A-Za-z]:|#{SEPARATOR_PAT})/
-  else
-    ABSOLUTE_PATH = /\A#{SEPARATOR_PAT}/
-  end
-  ABSOLUTE_PATH.freeze
-  private_constant :ABSOLUTE_PATH
-
-  # :startdoc:
-
   # Creates a full path, including any intermediate directories that don't yet
   # exist.
   #
