@@ -66,4 +66,26 @@ RSpec.describe "override DSL" do
       expect(the_bundle).to include_gems "has_prerelease 1.1.pre"
     end
   end
+
+  context "with a version: :ignore_upper operation" do
+    it "strips a < upper bound on a direct dependency" do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        override "myrack", version: :ignore_upper
+        gem "myrack", "< 1.0"
+      G
+
+      expect(the_bundle).to include_gems "myrack 1.0.0"
+    end
+
+    it "folds ~> into >= so newer versions become reachable" do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        override "myrack", version: :ignore_upper
+        gem "myrack", "~> 0.9.1"
+      G
+
+      expect(the_bundle).to include_gems "myrack 1.0.0"
+    end
+  end
 end
