@@ -185,9 +185,19 @@ module Bundler
       with_source(git_source) { yield }
     end
 
+    SUPPORTED_OVERRIDE_FIELDS = [:version].freeze
+    SUPPORTED_OVERRIDE_SYMBOL_OPERATIONS = [:ignore_upper].freeze
+
     def override(target, **operations)
+      validate_override_target!(target)
+
       if target == :all && operations.key?(:version)
         raise ArgumentError, "`override :all, version:` is not allowed; version requirements are per-gem"
+      end
+
+      operations.each do |field, operation|
+        validate_override_field!(field)
+        validate_override_operation!(operation)
       end
 
       operations.each do |field, operation|
@@ -256,6 +266,29 @@ module Bundler
     end
 
     private
+
+    def validate_override_target!(target)
+      return if target == :all
+      return if target.is_a?(String)
+      raise ArgumentError, "override target must be :all or a gem name string, got #{target.inspect}"
+    end
+
+    def validate_override_field!(field)
+      return if SUPPORTED_OVERRIDE_FIELDS.include?(field)
+      raise ArgumentError, "unsupported override field `#{field}:`; only `version:` is currently supported"
+    end
+
+    def validate_override_operation!(operation)
+      case operation
+      when String, nil
+        # ok
+      when Symbol
+        return if SUPPORTED_OVERRIDE_SYMBOL_OPERATIONS.include?(operation)
+        raise ArgumentError, "unsupported override operation: #{operation.inspect}"
+      else
+        raise ArgumentError, "override operation must be a String, Symbol, or nil, got #{operation.inspect}"
+      end
+    end
 
     def add_dependency(name, version = nil, options = {})
       options["gemfile"] = @gemfile

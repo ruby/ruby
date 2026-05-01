@@ -416,5 +416,36 @@ RSpec.describe Bundler::Dsl do
       end.to raise_error(ArgumentError)
       expect(subject.overrides).to eq([])
     end
+
+    it "raises ArgumentError when target is neither :all nor a string" do
+      expect do
+        subject.override(:rails, version: ">= 8.0")
+      end.to raise_error(ArgumentError, /target must be :all or a gem name string/)
+    end
+
+    it "raises ArgumentError for an unsupported field" do
+      expect do
+        subject.override("rails", required_ruby_version: :ignore_upper)
+      end.to raise_error(ArgumentError, /unsupported override field `required_ruby_version:`/)
+    end
+
+    it "raises ArgumentError for a non-string, non-symbol, non-nil operation" do
+      expect do
+        subject.override("rails", version: 42)
+      end.to raise_error(ArgumentError, /override operation must be a String, Symbol, or nil/)
+    end
+
+    it "raises ArgumentError for an unsupported symbol operation" do
+      expect do
+        subject.override("rails", version: :explode)
+      end.to raise_error(ArgumentError, /unsupported override operation/)
+    end
+
+    it "rejects atomically when one field in a multi-field call is invalid" do
+      expect do
+        subject.override("rails", version: ">= 8.0", required_ruby_version: :ignore_upper)
+      end.to raise_error(ArgumentError, /unsupported override field/)
+      expect(subject.overrides).to eq([])
+    end
   end
 end
