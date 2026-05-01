@@ -615,7 +615,6 @@ class TestGemPackage < Gem::Package::TarTestCase
                  File.read(extracted)
   end
 
-
   def test_extract_tar_gz_rejects_preexisting_symlink_escape
     omit "Symlinks not supported or not enabled" unless symlink_supported?
 
