@@ -22,7 +22,7 @@ module Bundler
     GITHUB_PULL_REQUEST_URL = %r{\Ahttps://github\.com/([A-Za-z0-9_\-\.]+/[A-Za-z0-9_\-\.]+)/pull/(\d+)\z}
     GITLAB_MERGE_REQUEST_URL = %r{\Ahttps://gitlab\.com/([A-Za-z0-9_\-\./]+)/-/merge_requests/(\d+)\z}
 
-    attr_reader :gemspecs, :gemfile
+    attr_reader :gemspecs, :gemfile, :overrides
     attr_accessor :dependencies
 
     def initialize
@@ -40,6 +40,7 @@ module Bundler
       @gemfile              = nil
       @gemfiles             = []
       @lockfile             = nil
+      @overrides            = []
       add_git_sources
     end
 
@@ -184,10 +185,18 @@ module Bundler
       with_source(git_source) { yield }
     end
 
+    def override(target, **operations)
+      operations.each do |field, operation|
+        @overrides << Override.new(target, field, operation)
+      end
+    end
+
     def to_definition(lockfile, unlock)
       check_primary_source_safety
       lockfile = @lockfile unless @lockfile.nil?
-      Definition.new(lockfile, @dependencies, @sources, unlock, @ruby_version, @optional_groups, @gemfiles)
+      definition = Definition.new(lockfile, @dependencies, @sources, unlock, @ruby_version, @optional_groups, @gemfiles)
+      definition.overrides = @overrides
+      definition
     end
 
     def group(*args, &blk)

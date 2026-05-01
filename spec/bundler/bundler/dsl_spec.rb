@@ -366,4 +366,36 @@ RSpec.describe Bundler::Dsl do
       end
     end
   end
+
+  describe "#override" do
+    it "stores an Override for a gem with a version: operation" do
+      subject.override("rails", version: ">= 8.0")
+
+      expect(subject.overrides.size).to eq(1)
+      override = subject.overrides.first
+      expect(override.target).to eq("rails")
+      expect(override.field).to eq(:version)
+      expect(override.operation).to eq(">= 8.0")
+    end
+
+    it "accepts :ignore_upper as the operation" do
+      subject.override("nokogiri", version: :ignore_upper)
+      expect(subject.overrides.first.operation).to eq(:ignore_upper)
+    end
+
+    it "accepts nil as the operation" do
+      subject.override("legacy", version: nil)
+      expect(subject.overrides.first.operation).to be_nil
+    end
+
+    it "appends to overrides across multiple statements" do
+      subject.override("rails", version: ">= 8.0")
+      subject.override("nokogiri", version: :ignore_upper)
+      expect(subject.overrides.map(&:target)).to eq(["rails", "nokogiri"])
+    end
+
+    it "is empty by default" do
+      expect(subject.overrides).to eq([])
+    end
+  end
 end
