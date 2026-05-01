@@ -4753,7 +4753,7 @@ static VALUE
 enum_sum_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
 {
     ENUM_WANT_SVALUE();
-    sum_iter(i, (struct enum_sum_memo *) args);
+    sum_iter(i, RB_IMEMO_TMPBUF_PTR(args));
     return Qnil;
 }
 
@@ -4828,48 +4828,52 @@ int_range_sum(VALUE beg, VALUE end, int excl, VALUE init)
 static VALUE
 enum_sum(int argc, VALUE* argv, VALUE obj)
 {
-    struct enum_sum_memo memo;
+    VALUE memo_obj = 0;
+    struct enum_sum_memo *memo;
     VALUE beg, end;
     int excl;
 
-    memo.v = (rb_check_arity(argc, 0, 1) == 0) ? LONG2FIX(0) : argv[0];
-    memo.block_given = rb_block_given_p();
-    memo.n = 0;
-    memo.r = Qundef;
-
-    if ((memo.float_value = RB_FLOAT_TYPE_P(memo.v))) {
-        memo.f = RFLOAT_VALUE(memo.v);
-        memo.c = 0.0;
-    }
-    else {
-        memo.f = 0.0;
-        memo.c = 0.0;
-    }
+    VALUE init = (rb_check_arity(argc, 0, 1) == 0) ? LONG2FIX(0) : argv[0];
 
     if (RTEST(rb_range_values(obj, &beg, &end, &excl))) {
-        if (!memo.block_given && !memo.float_value &&
+        if (!rb_block_given_p() && !RB_FLOAT_TYPE_P(init) &&
                 (FIXNUM_P(beg) || RB_BIGNUM_TYPE_P(beg)) &&
                 (FIXNUM_P(end) || RB_BIGNUM_TYPE_P(end))) {
-            return int_range_sum(beg, end, excl, memo.v);
+            return int_range_sum(beg, end, excl, init);
         }
+    }
+
+    memo = rb_alloc_tmp_buffer(&memo_obj, sizeof(struct enum_sum_memo));
+    memo->v = init;
+    memo->block_given = rb_block_given_p();
+    memo->n = 0;
+    memo->r = Qundef;
+
+    if ((memo->float_value = RB_FLOAT_TYPE_P(memo->v))) {
+        memo->f = RFLOAT_VALUE(memo->v);
+        memo->c = 0.0;
+    }
+    else {
+        memo->f = 0.0;
+        memo->c = 0.0;
     }
 
     if (RB_TYPE_P(obj, T_HASH) &&
             rb_method_basic_definition_p(CLASS_OF(obj), id_each))
-        hash_sum(obj, &memo);
+        hash_sum(obj, memo);
     else
-        rb_block_call(obj, id_each, 0, 0, enum_sum_i, (VALUE)&memo);
+        rb_block_call(obj, id_each, 0, 0, enum_sum_i, memo_obj);
 
-    if (memo.float_value) {
-        return DBL2NUM(memo.f + memo.c);
+    if (memo->float_value) {
+        return DBL2NUM(memo->f + memo->c);
     }
     else {
-        if (memo.n != 0)
-            memo.v = rb_fix_plus(LONG2FIX(memo.n), memo.v);
-        if (!UNDEF_P(memo.r)) {
-            memo.v = rb_rational_plus(memo.r, memo.v);
+        if (memo->n != 0)
+            memo->v = rb_fix_plus(LONG2FIX(memo->n), memo->v);
+        if (!UNDEF_P(memo->r)) {
+            memo->v = rb_rational_plus(memo->r, memo->v);
         }
-        return memo.v;
+        return memo->v;
     }
 }
 
