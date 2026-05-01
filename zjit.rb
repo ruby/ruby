@@ -112,6 +112,7 @@ class << RubyVM::ZJIT
     print_counters_with_prefix(prefix: 'invokeblock_handler_', prompt: 'invokeblock handler', buf:, stats:, limit: 10)
     print_counters_with_prefix(prefix: 'getblockparamproxy_handler_', prompt: 'getblockparamproxy handler', buf:, stats:, limit: 10)
     print_counters_with_prefix(prefix: 'inline_reject_', prompt: 'HIR-level inlining rejection reasons', buf:, stats:, limit: 10)
+    print_counters_with_prefix(prefix: 'inlined_callee_recompile_count_', prompt: 'inlined callees whose shape failures cascaded caller invalidations', buf:, stats:, limit: 20)
 
     # Show most popular unsupported call features. Because each call can
     # use multiple complex features, a decrease in this number does not

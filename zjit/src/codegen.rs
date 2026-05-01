@@ -3332,6 +3332,21 @@ c_callable! {
                 // matching cleanup on `invalidate_iseq_version` keeps the list
                 // pruned for callers that get invalidated through other paths.
                 let inlined_into = std::mem::take(&mut payload.inlined_into);
+
+                // Attribute the cascade to the callee whose shape guard failed so
+                // we can rank candidates for `--zjit-inline-deny`. We restrict to
+                // shape-guard exits (argc < 0) because the user-facing problem is
+                // a polymorphic ivar inside inlined code dragging every inlined
+                // call site into a `no_side_exits` recompile. Adding `inlined_into.len()`
+                // weights callees by the breadth of the damage, since a callee
+                // inlined into many callers inflicts that cliff on each of them.
+                if argc < 0 && !inlined_into.is_empty() {
+                    let key = iseq_get_location(iseq, 0);
+                    let counters = ZJITState::get_inlined_callee_recompile_count_pointers();
+                    let counter = counters.entry(key).or_insert_with(|| Box::new(0));
+                    **counter += inlined_into.len() as u64;
+                }
+
                 for mut caller_version in inlined_into {
                     let caller_iseq = unsafe { caller_version.as_ref() }.iseq;
                     if caller_iseq.is_null() {

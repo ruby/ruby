@@ -69,6 +69,16 @@ pub struct ZJITState {
     /// Counter pointers for access counts of ISEQs accessed by JIT code
     iseq_calls_count_pointers: HashMap<String, Box<u64>>,
 
+    /// Counter pointers, keyed by the inlined callee's `iseq_get_location(iseq, 0)`,
+    /// for shape-guard failures inside inlined code that cascaded an invalidation
+    /// back into one or more callers. The value records the cumulative number of
+    /// caller invalidations attributed to a given callee, which is the breadth of
+    /// the cliff a polymorphic ivar inside that callee inflicts on every caller
+    /// that inlined it. Surfaced via `--zjit-stats` as
+    /// `inlined_callee_recompile_count_<key>` lines so we can rank candidates for
+    /// the `--zjit-inline-deny` knob.
+    inlined_callee_recompile_count_pointers: HashMap<String, Box<u64>>,
+
     /// Perfetto tracer for --zjit-trace-exits
     perfetto_tracer: Option<PerfettoTracer>,
 
@@ -150,6 +160,7 @@ impl ZJITState {
             not_annotated_frame_cfunc_counter_pointers: HashMap::new(),
             ccall_counter_pointers: HashMap::new(),
             iseq_calls_count_pointers: HashMap::new(),
+            inlined_callee_recompile_count_pointers: HashMap::new(),
             perfetto_tracer,
             jit_frames: vec![],
         };
@@ -249,6 +260,11 @@ impl ZJITState {
     /// Get a mutable reference to iseq access count pointers
     pub fn get_iseq_calls_count_pointers() -> &'static mut HashMap<String, Box<u64>> {
         &mut ZJITState::get_instance().iseq_calls_count_pointers
+    }
+
+    /// Get a mutable reference to the inlined-callee cascade-recompile counter pointers
+    pub fn get_inlined_callee_recompile_count_pointers() -> &'static mut HashMap<String, Box<u64>> {
+        &mut ZJITState::get_instance().inlined_callee_recompile_count_pointers
     }
 
     /// Was --zjit-save-compiled-iseqs specified?
