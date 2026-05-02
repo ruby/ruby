@@ -249,9 +249,9 @@ STATIC_ASSERT(imemo_fields_complex_offset, offsetof(struct RObject, as.heap.fiel
 
 #define IMEMO_OBJ_FIELDS(fields) ((struct rb_fields *)fields)
 
-VALUE rb_imemo_fields_new(VALUE owner, size_t capa, bool shareable);
-VALUE rb_imemo_fields_new_complex(VALUE owner, size_t capa, bool shareable);
-VALUE rb_imemo_fields_new_complex_tbl(VALUE owner, st_table *tbl, bool shareable);
+VALUE rb_imemo_fields_new(VALUE owner, /* shape_id_t */ uint32_t shape_id, bool shareable);
+VALUE rb_imemo_fields_new_complex(VALUE owner, /* shape_id_t */ uint32_t shape_id, size_t capa, bool shareable);
+VALUE rb_imemo_fields_new_complex_tbl(VALUE owner, /* shape_id_t */ uint32_t shape_id, st_table *tbl, bool shareable);
 VALUE rb_imemo_fields_clone(VALUE fields_obj);
 void rb_imemo_fields_clear(VALUE fields_obj);
 
