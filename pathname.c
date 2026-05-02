@@ -213,6 +213,26 @@ path_sub_ext(VALUE self, VALUE repl)
     return rb_class_new_instance(1, &path, rb_obj_class(self));
 }
 
+/* :nodoc: */
+/* chop_basename(path) -> [pre-basename, basename] or nil */
+static VALUE
+chop_basename(VALUE self, VALUE path)
+{
+    long baselen, alllen = RSTRING_LEN(check_strpath(path));
+    if (alllen <= 0) return Qnil;
+    rb_encoding *enc = rb_enc_get(path);
+    const char *name = RSTRING_PTR(path);
+    const char *base = ruby_enc_find_basename(name, &baselen, &alllen, enc);
+    if (baselen < 1) return Qnil;
+    if (baselen == 1 && isdirsep(*base)) return Qnil;
+    RUBY_ASSERT(base >= name);
+    RUBY_ASSERT(base <= RSTRING_END(path));
+    VALUE dir = rb_str_subseq(path, 0, base - name);
+    VALUE basename = rb_enc_str_new(base, alllen, enc);
+    RB_GC_GUARD(path);
+    return rb_assoc_new(dir, basename);
+}
+
 #include "pathname_builtin.rbinc"
 
 static void init_ids(void);
@@ -239,6 +259,7 @@ InitVM_pathname(void)
     rb_define_method(rb_cPathname, "absolute?", path_absolute_p, 0);
 
     rb_define_private_method(rb_cPathname, "has_separator?", has_separator_p, 1);
+    rb_define_private_method(rb_cPathname, "chop_basename", chop_basename, 1);
 
     rb_provide("pathname.so");
 }

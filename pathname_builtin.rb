@@ -338,17 +338,6 @@ class Pathname
     self
   end
 
-  # chop_basename(path) -> [pre-basename, basename] or nil
-  def chop_basename(path) # :nodoc:
-    base = File.basename(path)
-    if /\A#{SEPARATOR_PAT}?\z/o.match?(base)
-      return nil
-    else
-      return path[0, path.rindex(base)], base
-    end
-  end
-  private :chop_basename
-
   # split_names(path) -> prefix, [name, ...]
   def split_names(path) # :nodoc:
     names = []
