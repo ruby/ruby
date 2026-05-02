@@ -37,11 +37,26 @@ static ID id_object_id;
 
 // Should be on its own cache line
 static RUBY_ALIGNAS(128) rb_atomic_t redblack_cache_size;
+
+struct redblack_node {
+    ID key;
+    rb_shape_t *value;
+    redblack_id_t l;
+    redblack_id_t r;
+};
+typedef struct redblack_node redblack_node_t;
+
 static redblack_node_t *redblack_cache;
 
 #define LEAF 0
 #define BLACK 0x0
 #define RED 0x1
+
+static inline redblack_node_t *
+redblack_node(redblack_id_t id)
+{
+    return id ? &redblack_cache[id - 1] : LEAF;
+}
 
 static redblack_node_t *
 redblack_left(redblack_node_t *node)
@@ -51,7 +66,7 @@ redblack_left(redblack_node_t *node)
     }
     else {
         RUBY_ASSERT(node->l < redblack_cache_size);
-        redblack_node_t *left = &redblack_cache[node->l - 1];
+        redblack_node_t *left = redblack_node(node->l);
         return left;
     }
 }
@@ -64,13 +79,13 @@ redblack_right(redblack_node_t *node)
     }
     else {
         RUBY_ASSERT(node->r < redblack_cache_size);
-        redblack_node_t *right = &redblack_cache[node->r - 1];
+        redblack_node_t *right = redblack_node(node->r);
         return right;
     }
 }
 
 static redblack_node_t *
-redblack_find(redblack_node_t *tree, ID key)
+redblack_find0(redblack_node_t *tree, ID key)
 {
     if (tree == LEAF) {
         return LEAF;
@@ -84,13 +99,19 @@ redblack_find(redblack_node_t *tree, ID key)
         }
         else {
             if (key < tree->key) {
-                return redblack_find(redblack_left(tree), key);
+                return redblack_find0(redblack_left(tree), key);
             }
             else {
-                return redblack_find(redblack_right(tree), key);
+                return redblack_find0(redblack_right(tree), key);
             }
         }
     }
+}
+
+static redblack_node_t *
+redblack_find(redblack_id_t tree_id, ID key)
+{
+    return redblack_find0(redblack_node(tree_id), key);
 }
 
 static inline rb_shape_t *
@@ -276,16 +297,16 @@ redblack_force_black(redblack_node_t *node)
     return node;
 }
 
-static redblack_node_t *
+static redblack_id_t
 redblack_insert(redblack_node_t *tree, ID key, rb_shape_t *value)
 {
     redblack_node_t *root = redblack_insert_aux(tree, key, value);
 
     if (redblack_red_p(root)) {
-        return redblack_force_black(root);
+        return redblack_id_for(redblack_force_black(root));
     }
     else {
-        return root;
+        return redblack_id_for(root);
     }
 }
 #endif
@@ -465,12 +486,10 @@ static redblack_node_t *
 redblack_cache_ancestors(rb_shape_t *shape)
 {
     if (!(shape->ancestor_index || shape->parent_id == INVALID_SHAPE_ID)) {
-        redblack_node_t *parent_index;
-
-        parent_index = redblack_cache_ancestors(RSHAPE(shape->parent_id));
+        redblack_node_t *parent_index_node = redblack_cache_ancestors(RSHAPE(shape->parent_id));
 
         if (shape->type == SHAPE_IVAR) {
-            shape->ancestor_index = redblack_insert(parent_index, shape->edge_name, shape);
+            shape->ancestor_index = redblack_insert(parent_index_node, shape->edge_name, shape);
 
 #if RUBY_DEBUG
             if (shape->ancestor_index) {
@@ -481,11 +500,11 @@ redblack_cache_ancestors(rb_shape_t *shape)
 #endif
         }
         else {
-            shape->ancestor_index = parent_index;
+            shape->ancestor_index = redblack_id_for(parent_index_node);
         }
     }
 
-    return shape->ancestor_index;
+    return redblack_node(shape->ancestor_index);
 }
 #else
 static redblack_node_t *

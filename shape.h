@@ -75,8 +75,6 @@ typedef uint32_t redblack_id_t;
 #define ROOT_TOO_COMPLEX_SHAPE_ID       (ROOT_SHAPE_ID | SHAPE_ID_FL_TOO_COMPLEX)
 #define ROOT_TOO_COMPLEX_WITH_OBJ_ID    (ROOT_SHAPE_WITH_OBJ_ID | SHAPE_ID_FL_TOO_COMPLEX | SHAPE_ID_FL_HAS_OBJECT_ID)
 
-typedef struct redblack_node redblack_node_t;
-
 enum shape_type {
     SHAPE_ROOT,
     SHAPE_IVAR,
@@ -86,7 +84,7 @@ enum shape_type {
 struct rb_shape {
     VALUE edges; // id_table from ID (ivar) to next shape
     ID edge_name; // ID (ivar) for transition from parent to rb_shape
-    redblack_node_t *ancestor_index;
+    redblack_id_t ancestor_index;
     shape_id_t parent_id;
     attr_index_t next_field_index; // Fields are either ivars or internal properties like `object_id`
     attr_index_t capacity; // Total capacity of the object with this shape
@@ -94,13 +92,6 @@ struct rb_shape {
 };
 
 typedef struct rb_shape rb_shape_t;
-
-struct redblack_node {
-    ID key;
-    rb_shape_t *value;
-    redblack_id_t l;
-    redblack_id_t r;
-};
 
 enum shape_flags {
     SHAPE_FL_FROZEN             = 1 << 0,
