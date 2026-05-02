@@ -77,6 +77,12 @@ typedef uint32_t redblack_id_t;
 
 typedef struct redblack_node redblack_node_t;
 
+enum shape_type {
+    SHAPE_ROOT,
+    SHAPE_IVAR,
+    SHAPE_OBJ_ID,
+};
+
 struct rb_shape {
     VALUE edges; // id_table from ID (ivar) to next shape
     ID edge_name; // ID (ivar) for transition from parent to rb_shape
@@ -84,7 +90,7 @@ struct rb_shape {
     shape_id_t parent_id;
     attr_index_t next_field_index; // Fields are either ivars or internal properties like `object_id`
     attr_index_t capacity; // Total capacity of the object with this shape
-    uint8_t type;
+    enum shape_type type : 8;
 };
 
 typedef struct rb_shape rb_shape_t;
@@ -94,12 +100,6 @@ struct redblack_node {
     rb_shape_t *value;
     redblack_id_t l;
     redblack_id_t r;
-};
-
-enum shape_type {
-    SHAPE_ROOT,
-    SHAPE_IVAR,
-    SHAPE_OBJ_ID,
 };
 
 enum shape_flags {
