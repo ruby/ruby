@@ -311,6 +311,7 @@ pub enum Const {
     CUInt8(u8),
     CUInt16(u16),
     CUInt32(u32),
+    CAttrIndex(attr_index_t),
     CShape(ShapeId),
     CUInt64(u64),
     CPtr(*const u8),
@@ -3079,6 +3080,7 @@ impl Function {
             Insn::Const { val: Const::CUInt8(val) } => Type::from_cint(types::CUInt8, *val as i64),
             Insn::Const { val: Const::CUInt16(val) } => Type::from_cint(types::CUInt16, *val as i64),
             Insn::Const { val: Const::CUInt32(val) } => Type::from_cint(types::CUInt32, *val as i64),
+            Insn::Const { val: Const::CAttrIndex(val) } => Type::from_cint(types::CAttrIndex, *val as i64),
             Insn::Const { val: Const::CShape(val) } => Type::from_cint(types::CShape, val.0 as i64),
             Insn::Const { val: Const::CUInt64(val) } => Type::from_cint(types::CUInt64, *val as i64),
             Insn::Const { val: Const::CPtr(val) } => Type::from_cptr(*val),
@@ -4440,10 +4442,10 @@ impl Function {
         })
     }
 
-    fn load_ivar_c_call(&mut self, block: BlockId, recv: InsnId, ivar_index: u16) -> InsnId {
+    fn load_ivar_c_call(&mut self, block: BlockId, recv: InsnId, ivar_index: attr_index_t) -> InsnId {
         // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
         // getinstancevariable does assume_single_ractor_mode()
-        let ivar_index_insn = self.push_insn(block, Insn::Const { val: Const::CUInt16(ivar_index) });
+        let ivar_index_insn = self.push_insn(block, Insn::Const { val: Const::CAttrIndex(ivar_index) });
         self.push_insn(block, Insn::CCall {
             cfunc: rb_ivar_get_at_no_ractor_check as *const u8,
             recv,
@@ -4454,7 +4456,7 @@ impl Function {
             elidable: true })
     }
 
-    fn load_ivar_heap(&mut self, block: BlockId,  recv: InsnId, id: ID, ivar_index: u16) -> InsnId {
+    fn load_ivar_heap(&mut self, block: BlockId,  recv: InsnId, id: ID, ivar_index: attr_index_t) -> InsnId {
         // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
         let ptr = self.push_insn(block, Insn::LoadField {
             recv, id: ID!(_as_heap),
@@ -4468,7 +4470,7 @@ impl Function {
         })
     }
 
-    fn load_ivar_embedded(&mut self, block: BlockId, recv: InsnId, id: ID, ivar_index: u16) -> InsnId {
+    fn load_ivar_embedded(&mut self, block: BlockId, recv: InsnId, id: ID, ivar_index: attr_index_t) -> InsnId {
         // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
         let offset = ROBJECT_OFFSET_AS_ARY as i32
             + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
@@ -4478,7 +4480,7 @@ impl Function {
         })
     }
 
-    fn load_ivar_from_fields(&mut self, block: BlockId, recv: InsnId, is_embedded: bool, id: ID, ivar_index: u16) -> InsnId {
+    fn load_ivar_from_fields(&mut self, block: BlockId, recv: InsnId, is_embedded: bool, id: ID, ivar_index: attr_index_t) -> InsnId {
         if is_embedded {
             return self.load_ivar_embedded(block, recv, id, ivar_index);
         } else {
@@ -4507,7 +4509,7 @@ impl Function {
         // Too-complex shapes use hash tables; rb_shape_get_iv_index doesn't support them.
         // Callers must filter these out before calling load_ivar.
         assert!(!recv_type.shape().is_too_complex(), "load_ivar called with too-complex shape");
-        let mut ivar_index: u16 = 0;
+        let mut ivar_index: attr_index_t = 0;
         if ! unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
             // If there is no IVAR index, then the ivar was undefined when we
             // entered the compiler.  That means we can just return nil for this
@@ -4611,7 +4613,7 @@ impl Function {
                         let self_val = self.load_ivar_guard_type(block, self_val, recv_type, state);
                         let shape = self.load_shape(block, self_val);
                         self.guard_shape(block, shape, recv_type.shape(), state, None);
-                        let mut ivar_index: u16 = 0;
+                        let mut ivar_index: attr_index_t = 0;
                         let replacement = if unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
                             self.push_insn(block, Insn::Const { val: Const::Value(pushval) })
                         } else {
@@ -4650,7 +4652,7 @@ impl Function {
                             self.count(block, Counter::setivar_fallback_frozen);
                             self.push_insn_id(block, insn_id); continue;
                         }
-                        let mut ivar_index: u16 = 0;
+                        let mut ivar_index: attr_index_t = 0;
                         let mut next_shape_id = recv_type.shape();
                         if !unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
                             // Current shape does not contain this ivar; do a shape transition.
@@ -6294,6 +6296,7 @@ impl Function {
                     Const::CUInt8(_) => self.assert_subtype(insn_id, val, types::CUInt8),
                     Const::CUInt16(_) => self.assert_subtype(insn_id, val, types::CUInt16),
                     Const::CUInt32(_) => self.assert_subtype(insn_id, val, types::CUInt32),
+                    Const::CAttrIndex(_) => self.assert_subtype(insn_id, val, types::CAttrIndex),
                     Const::CShape(_) => self.assert_subtype(insn_id, val, types::CShape),
                     Const::CUInt64(_) => self.assert_subtype(insn_id, val, types::CUInt64),
                     Const::CBool(_) => self.assert_subtype(insn_id, val, types::CBool),

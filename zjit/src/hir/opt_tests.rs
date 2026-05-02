@@ -7773,7 +7773,7 @@ mod hir_opt_tests {
           v17:HeapBasicObject = GuardType v6, HeapBasicObject
           v18:CShape = LoadField v17, :_shape_id@0x1000
           v19:CShape[0x1001] = GuardBitEquals v18, CShape(0x1001)
-          v20:CUInt16[0] = Const CUInt16(0)
+          v20:CAttrIndex[0] = Const CAttrIndex(0)
           v21:BasicObject = CCall v17, :rb_ivar_get_at_no_ractor_check@0x1008, v20
           CheckInterrupts
           Return v21

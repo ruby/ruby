@@ -614,6 +614,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::Const { val: Const::CUInt16(val) } => gen_const_uint16(val),
         &Insn::Const { val: Const::CUInt32(val) } => gen_const_uint32(val),
         &Insn::Const { val: Const::CUInt64(val) } => Opnd::UImm(val),
+        &Insn::Const { val: Const::CAttrIndex(val) } => gen_const_attr_index_t(val),
         &Insn::Const { val: Const::CShape(val) } => {
             assert_eq!(SHAPE_ID_NUM_BITS, 32);
             gen_const_uint32(val.0)
@@ -1452,6 +1453,10 @@ fn gen_const_uint16(val: u16) -> lir::Opnd {
 }
 
 fn gen_const_uint32(val: u32) -> lir::Opnd {
+    Opnd::UImm(val as u64)
+}
+
+fn gen_const_attr_index_t(val: attr_index_t) -> lir::Opnd {
     Opnd::UImm(val as u64)
 }
 
