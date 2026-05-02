@@ -35,6 +35,10 @@
 
 static ID id_object_id;
 
+// Should be on its own cache line
+static RUBY_ALIGNAS(128) rb_atomic_t redblack_cache_size;
+static redblack_node_t *redblack_cache;
+
 #define LEAF 0
 #define BLACK 0x0
 #define RED 0x1
@@ -46,8 +50,8 @@ redblack_left(redblack_node_t *node)
         return LEAF;
     }
     else {
-        RUBY_ASSERT(node->l < rb_shape_tree.cache_size);
-        redblack_node_t *left = &rb_shape_tree.shape_cache[node->l - 1];
+        RUBY_ASSERT(node->l < redblack_cache_size);
+        redblack_node_t *left = &redblack_cache[node->l - 1];
         return left;
     }
 }
@@ -59,8 +63,8 @@ redblack_right(redblack_node_t *node)
         return LEAF;
     }
     else {
-        RUBY_ASSERT(node->r < rb_shape_tree.cache_size);
-        redblack_node_t *right = &rb_shape_tree.shape_cache[node->r - 1];
+        RUBY_ASSERT(node->r < redblack_cache_size);
+        redblack_node_t *right = &redblack_cache[node->r - 1];
         return right;
     }
 }
@@ -118,7 +122,7 @@ redblack_id_for(redblack_node_t *node)
         return 0;
     }
     else {
-        redblack_node_t *redblack_nodes = rb_shape_tree.shape_cache;
+        redblack_node_t *redblack_nodes = redblack_cache;
         redblack_id_t id = (redblack_id_t)(node - redblack_nodes);
         return id + 1;
     }
@@ -127,7 +131,7 @@ redblack_id_for(redblack_node_t *node)
 static redblack_node_t *
 redblack_new(char color, ID key, rb_shape_t *value, redblack_node_t *left, redblack_node_t *right)
 {
-    if (rb_shape_tree.cache_size + 1 >= REDBLACK_CACHE_SIZE) {
+    if (redblack_cache_size + 1 >= REDBLACK_CACHE_SIZE) {
         // We're out of cache, just quit
         return LEAF;
     }
@@ -135,8 +139,8 @@ redblack_new(char color, ID key, rb_shape_t *value, redblack_node_t *left, redbl
     RUBY_ASSERT(left == LEAF || left->key < key);
     RUBY_ASSERT(right == LEAF || right->key > key);
 
-    redblack_node_t *redblack_nodes = rb_shape_tree.shape_cache;
-    redblack_node_t *node = &redblack_nodes[(rb_shape_tree.cache_size)++];
+    redblack_node_t *redblack_nodes = redblack_cache;
+    redblack_node_t *node = &redblack_nodes[RUBY_ATOMIC_FETCH_ADD(redblack_cache_size, 1)];
     node->key = key;
     node->value = (rb_shape_t *)((uintptr_t)value | color);
     node->l = redblack_id_for(left);
@@ -286,20 +290,23 @@ redblack_insert(redblack_node_t *tree, ID key, rb_shape_t *value)
 }
 #endif
 
-rb_shape_tree_t rb_shape_tree = { 0 };
 static VALUE shape_tree_obj = Qfalse;
+rb_shape_tree_t rb_shape_tree = { 0 };
+
+// Should be on its own cache line
+static RUBY_ALIGNAS(128) rb_atomic_t shape_next_id;
 
 rb_shape_t *
 rb_shape_get_root_shape(void)
 {
-    return rb_shape_tree.root_shape;
+    return rb_shape_tree.shape_list;
 }
 
 static void
 shape_tree_mark_and_move(void *data)
 {
     rb_shape_t *cursor = rb_shape_get_root_shape();
-    rb_shape_t *end = RSHAPE(rb_shape_tree.next_shape_id - 1);
+    rb_shape_t *end = RSHAPE(shape_next_id - 1);
     while (cursor <= end) {
         if (cursor->edges && !SINGLE_CHILD_P(cursor->edges)) {
             rb_gc_mark_and_move(&cursor->edges);
@@ -308,10 +315,25 @@ shape_tree_mark_and_move(void *data)
     }
 }
 
+size_t
+rb_shapes_cache_size(void)
+{
+    return redblack_cache ? redblack_cache_size : 0;
+}
+
+size_t
+rb_shapes_count(void)
+{
+    return (size_t)RUBY_ATOMIC_LOAD(shape_next_id);
+}
+
 static size_t
 shape_tree_memsize(const void *data)
 {
-    return rb_shape_tree.cache_size * sizeof(redblack_node_t);
+    if (redblack_cache) {
+        return redblack_cache_size * sizeof(redblack_node_t);
+    }
+    return 0;
 }
 
 static const rb_data_type_t shape_tree_type = {
@@ -358,7 +380,7 @@ rb_shape_each_shape_id(each_shape_callback callback, void *data)
 {
     rb_shape_t *start = rb_shape_get_root_shape();
     rb_shape_t *cursor = start;
-    rb_shape_t *end = RSHAPE(rb_shapes_count());
+    rb_shape_t *end = RSHAPE(RUBY_ATOMIC_LOAD(shape_next_id));
     while (cursor < end) {
         callback((shape_id_t)(cursor - start), data);
         cursor += 1;
@@ -402,12 +424,12 @@ shape_alloc(void)
     shape_id_t current, new_id;
 
     do {
-        current = RUBY_ATOMIC_LOAD(rb_shape_tree.next_shape_id);
+        current = RUBY_ATOMIC_LOAD(shape_next_id);
         if (current > MAX_SHAPE_ID) {
             return NULL;  // Out of shapes
         }
         new_id = current + 1;
-    } while (current != RUBY_ATOMIC_CAS(rb_shape_tree.next_shape_id, current, new_id));
+    } while (current != RUBY_ATOMIC_CAS(shape_next_id, current, new_id));
 
     return &rb_shape_tree.shape_list[current];
 }
@@ -1456,7 +1478,7 @@ rb_shape_root_shape(VALUE self)
 static VALUE
 rb_shape_shapes_available(VALUE self)
 {
-    return INT2NUM(MAX_SHAPE_ID - (rb_shapes_count() - 1));
+    return ULL2NUM(MAX_SHAPE_ID - (rb_shapes_count() - 1));
 }
 
 static VALUE
@@ -1464,7 +1486,7 @@ rb_shape_exhaust(int argc, VALUE *argv, VALUE self)
 {
     rb_check_arity(argc, 0, 1);
     int offset = argc == 1 ? NUM2INT(argv[0]) : 0;
-    RUBY_ATOMIC_SET(rb_shape_tree.next_shape_id, MAX_SHAPE_ID - offset + 1);
+    RUBY_ATOMIC_SET(shape_next_id, MAX_SHAPE_ID - offset + 1);
     return Qnil;
 }
 
@@ -1545,18 +1567,21 @@ Init_default_shapes(void)
     while (heap_sizes[heaps_count]) {
         heaps_count++;
     }
-    attr_index_t *capacities = ALLOC_N(attr_index_t, heaps_count);
+
+    if (heaps_count > SHAPE_ID_HEAP_INDEX_MAX) {
+        rb_bug("Init_default_shapes initialized with %lu heaps, only up to %u are supported", heaps_count, SHAPE_ID_HEAP_INDEX_MAX);
+    }
+
     size_t index;
     for (index = 0; index < heaps_count; index++) {
         if (heap_sizes[index] > sizeof(struct RBasic)) {
-            capacities[index] = (heap_sizes[index] - sizeof(struct RBasic)) / sizeof(VALUE);
+            rb_shape_tree.capacities[index] = (heap_sizes[index] - sizeof(struct RBasic)) / sizeof(VALUE);
         }
         else {
-            capacities[index] = 0;
+            rb_shape_tree.capacities[index] = 0;
         }
     }
     rb_shape_tree.heaps_count = heaps_count;
-    rb_shape_tree.capacities = capacities;
 
 #ifdef HAVE_MMAP
     size_t shape_list_mmap_size = rb_size_mul_or_raise(SHAPE_BUFFER_SIZE, sizeof(rb_shape_t), rb_eRuntimeError);
@@ -1580,19 +1605,19 @@ Init_default_shapes(void)
 
 #ifdef HAVE_MMAP
     size_t shape_cache_mmap_size = rb_size_mul_or_raise(REDBLACK_CACHE_SIZE, sizeof(redblack_node_t), rb_eRuntimeError);
-    rb_shape_tree.shape_cache = (redblack_node_t *)mmap(NULL, shape_cache_mmap_size,
+    redblack_cache = (redblack_node_t *)mmap(NULL, shape_cache_mmap_size,
                          PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    rb_shape_tree.cache_size = 0;
+    redblack_cache_size = 0;
 
     // If mmap fails, then give up on the redblack tree cache.
     // We set the cache size such that the redblack node allocators think
     // the cache is full.
-    if (rb_shape_tree.shape_cache == MAP_FAILED) {
-        rb_shape_tree.shape_cache = 0;
-        rb_shape_tree.cache_size = REDBLACK_CACHE_SIZE;
+    if (redblack_cache == MAP_FAILED) {
+        redblack_cache = NULL;
+        redblack_cache_size = REDBLACK_CACHE_SIZE;
     }
     else {
-        ruby_annotate_mmap(rb_shape_tree.shape_cache, shape_cache_mmap_size, "Ruby:Init_default_shapes:shape_cache");
+        ruby_annotate_mmap(redblack_cache, shape_cache_mmap_size, "Ruby:Init_default_shapes:shape_cache");
     }
 #endif
 
@@ -1603,9 +1628,8 @@ Init_default_shapes(void)
     rb_shape_t *root = rb_shape_alloc_with_parent_id(0, INVALID_SHAPE_ID);
     root->capacity = 0;
     root->type = SHAPE_ROOT;
-    rb_shape_tree.root_shape = root;
-    RUBY_ASSERT(raw_shape_id(rb_shape_tree.root_shape) == ROOT_SHAPE_ID);
-    RUBY_ASSERT(!(raw_shape_id(rb_shape_tree.root_shape) & SHAPE_ID_HAS_IVAR_MASK));
+    RUBY_ASSERT(raw_shape_id(root) == ROOT_SHAPE_ID);
+    RUBY_ASSERT(!(raw_shape_id(root) & SHAPE_ID_HAS_IVAR_MASK));
 
     bool dontcare;
     rb_shape_t *root_with_obj_id = get_next_shape_internal(root, id_object_id, SHAPE_OBJ_ID, &dontcare, true);
@@ -1616,12 +1640,6 @@ Init_default_shapes(void)
     RUBY_ASSERT(root_with_obj_id->next_field_index == 1);
     RUBY_ASSERT(!(raw_shape_id(root_with_obj_id) & SHAPE_ID_HAS_IVAR_MASK));
     (void)root_with_obj_id;
-}
-
-void
-rb_shape_free_all(void)
-{
-    xfree((void *)rb_shape_tree.capacities);
 }
 
 void

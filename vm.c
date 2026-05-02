@@ -867,7 +867,7 @@ vm_stat(int argc, VALUE *argv, VALUE self)
     SET(constant_cache_misses, ruby_vm_constant_cache_misses);
     SET(global_cvar_state, ruby_vm_global_cvar_state);
     SET(next_shape_id, (rb_serial_t)rb_shapes_count());
-    SET(shape_cache_size, (rb_serial_t)rb_shape_tree.cache_size);
+    SET(shape_cache_size, (rb_serial_t)rb_shapes_cache_size());
 #undef SET
 
 #if USE_DEBUG_COUNTER
@@ -3477,7 +3477,6 @@ ruby_vm_destruct(rb_vm_t *vm)
         ruby_current_vm_ptr = NULL;
 
         if (rb_free_at_exit) {
-            rb_shape_free_all();
 #if USE_YJIT
             rb_yjit_free_at_exit();
 #endif
