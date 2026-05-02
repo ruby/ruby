@@ -364,17 +364,17 @@ ROBJECT_FIELDS_HASH(VALUE obj)
     RUBY_ASSERT(rb_shape_obj_too_complex_p(obj));
     RUBY_ASSERT(FL_TEST_RAW(obj, ROBJECT_HEAP));
 
-    return (st_table *)ROBJECT(obj)->as.heap.fields;
+    return ROBJECT(obj)->as.hash;
 }
 
 static inline void
-ROBJECT_SET_FIELDS_HASH(VALUE obj, const st_table *tbl)
+ROBJECT_SET_FIELDS_HASH(VALUE obj, st_table *tbl)
 {
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
     RUBY_ASSERT(rb_shape_obj_too_complex_p(obj));
     RUBY_ASSERT(FL_TEST_RAW(obj, ROBJECT_HEAP));
 
-    ROBJECT(obj)->as.heap.fields = (VALUE *)tbl;
+    ROBJECT(obj)->as.hash = tbl;
 }
 
 static inline uint32_t
