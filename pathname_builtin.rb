@@ -282,14 +282,6 @@ class Pathname
   alias === ==
   alias eql? ==
 
-  unless method_defined?(:<=>, false)
-    # Provides for comparing pathnames, case-sensitively.
-    def <=>(other)
-      return nil unless Pathname === other
-      @path.tr('/', "\0") <=> other.path.tr('/', "\0")
-    end
-  end
-
   def hash # :nodoc:
     @path.hash
   end
@@ -304,27 +296,6 @@ class Pathname
 
   def inspect # :nodoc:
     "#<#{self.class}:#{@path}>"
-  end
-
-  unless method_defined?(:sub, false)
-    # Return a pathname which is substituted by String#sub.
-    def sub(pattern, *args, **kwargs, &block)
-      if block
-        path = @path.sub(pattern, *args, **kwargs) {|*sub_args|
-          begin
-            old = Thread.current[:pathname_sub_matchdata]
-            Thread.current[:pathname_sub_matchdata] = $~
-            eval("$~ = Thread.current[:pathname_sub_matchdata]", block.binding)
-          ensure
-            Thread.current[:pathname_sub_matchdata] = old
-          end
-          yield(*sub_args)
-        }
-      else
-        path = @path.sub(pattern, *args, **kwargs)
-      end
-      self.class.new(path)
-    end
   end
 
   # Return a pathname with +repl+ added as a suffix to the basename.
