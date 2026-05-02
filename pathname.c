@@ -186,6 +186,33 @@ has_separator_p(VALUE self, VALUE path)
     return Qfalse;
 }
 
+/*
+ * Return a pathname with +repl+ added as a suffix to the basename.
+ *
+ * If self has no extension part, +repl+ is appended.
+ *
+ *	Pathname.new('/usr/bin/shutdown').sub_ext('.rb')
+ *	    #=> #<Pathname:/usr/bin/shutdown.rb>
+ */
+static VALUE
+path_sub_ext(VALUE self, VALUE repl)
+{
+    VALUE path = get_strpath(self);
+    long len = RSTRING_LEN(path);
+    const char *ptr = RSTRING_PTR(path);
+    const char *ext = ruby_enc_find_extname(ptr, &len, rb_enc_get(path));
+    if (len > 0) {
+        RUBY_ASSERT(ext, "should point the last dot");
+        path = rb_str_subseq(path, 0, ext - ptr);
+    }
+    else {
+        /* no dot or dotted file */
+        path = rb_str_dup(path);
+    }
+    path = rb_str_append(path, repl);
+    return rb_class_new_instance(1, &path, rb_obj_class(self));
+}
+
 #include "pathname_builtin.rbinc"
 
 static void init_ids(void);
@@ -207,6 +234,7 @@ InitVM_pathname(void)
     rb_cPathname = rb_define_class("Pathname", rb_cObject);
     rb_define_method(rb_cPathname, "<=>", path_cmp, 1);
     rb_define_method(rb_cPathname, "sub", path_sub, -1);
+    rb_define_method(rb_cPathname, "sub_ext", path_sub_ext, 1);
     rb_define_method(rb_cPathname, "root?", path_root_p, 0);
     rb_define_method(rb_cPathname, "absolute?", path_absolute_p, 0);
 
