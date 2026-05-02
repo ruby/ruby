@@ -298,26 +298,6 @@ class Pathname
     "#<#{self.class}:#{@path}>"
   end
 
-  # Return a pathname with +repl+ added as a suffix to the basename.
-  #
-  # If self has no extension part, +repl+ is appended.
-  #
-  #	Pathname.new('/usr/bin/shutdown').sub_ext('.rb')
-  #	    #=> #<Pathname:/usr/bin/shutdown.rb>
-  def sub_ext(repl)
-    ext = File.extname(@path)
-
-    # File.extname("foo.bar:stream") returns ".bar" on NTFS and not ".bar:stream"
-    # (see ruby_enc_find_extname()).
-    # The behavior of Pathname#sub_ext is to replace everything
-    # from the start of the extname until the end of the path with repl.
-    unless @path.end_with?(ext)
-      ext = @path[@path.rindex(ext)..]
-    end
-
-    self.class.new(@path.chomp(ext) + repl)
-  end
-
   if File::ALT_SEPARATOR
     # Separator list string.
     separator_list = Regexp.quote "#{File::ALT_SEPARATOR}#{File::SEPARATOR}"
