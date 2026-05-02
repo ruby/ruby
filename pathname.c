@@ -11,6 +11,7 @@ get_strpath(VALUE obj)
     strpath = rb_ivar_get(obj, id_at_path);
     if (!RB_TYPE_P(strpath, T_STRING))
         rb_raise(rb_eTypeError, "unexpected @path");
+    rb_get_path_check_no_convert(strpath);
     return strpath;
 }
 
