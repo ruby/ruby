@@ -245,13 +245,20 @@ VALUE
 rb_get_path_check_convert(VALUE obj)
 {
     obj = file_path_convert(obj);
+    rb_get_path_check_no_convert(obj);
+    return rb_str_new_frozen(obj);
+}
 
+/* TODO: name */
+VALUE
+rb_get_path_check_no_convert(VALUE obj)
+{
     check_path_encoding(obj);
     if (!rb_str_to_cstr(obj)) {
         rb_raise(rb_eArgError, "path name contains null byte");
     }
 
-    return rb_str_new_frozen(obj);
+    return obj;
 }
 
 VALUE

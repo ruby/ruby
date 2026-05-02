@@ -23,6 +23,7 @@ VALUE rb_file_expand_path_fast(VALUE, VALUE);
 VALUE rb_file_expand_path_internal(VALUE, VALUE, int, int, VALUE);
 VALUE rb_get_path_check_to_string(VALUE);
 VALUE rb_get_path_check_convert(VALUE);
+VALUE rb_get_path_check_no_convert(VALUE);
 int ruby_is_fd_loadable(int fd);
 
 RUBY_SYMBOL_EXPORT_BEGIN
