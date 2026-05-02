@@ -131,6 +131,48 @@ class TestShapes < Test::Unit::TestCase
     assert_operator obj["variation_count"], :<, RubyVM::Shape::SHAPE_MAX_VARIATIONS
   end
 
+  def test_max_iv_count
+    klass = Class.new
+    object = klass.new
+
+    assert_equal 0, RubyVM::Shape.class_max_iv_count(klass)
+    8.times do |i|
+      object.instance_variable_set("@ivar_#{i}", i)
+    end
+    assert_equal 8, RubyVM::Shape.class_max_iv_count(klass)
+
+    subklass = Class.new(klass)
+    assert_equal 8, RubyVM::Shape.class_max_iv_count(subklass)
+  end
+
+  def test_max_iv_count_on_Object
+    object = Object.new
+
+    assert_equal 0, RubyVM::Shape.class_max_iv_count(Object)
+    8.times do |i|
+      object.instance_variable_set("@ivar_#{i}", i)
+    end
+    assert_equal 0, RubyVM::Shape.class_max_iv_count(Object)
+  end
+
+  def test_max_iv_count_on_BasicObject
+    object = BasicObject.new
+
+    assert_equal 0, RubyVM::Shape.class_max_iv_count(BasicObject)
+    8.times do |i|
+      Object.instance_method(:instance_variable_set).bind_call(object, "@ivar_#{i}", i)
+    end
+    assert_equal 0, RubyVM::Shape.class_max_iv_count(BasicObject)
+
+    subklass = Class.new(BasicObject)
+    object = subklass.new
+    assert_equal 0, RubyVM::Shape.class_max_iv_count(subklass)
+    8.times do |i|
+      Object.instance_method(:instance_variable_set).bind_call(object, "@ivar_#{i}", i)
+    end
+    assert_equal 8, RubyVM::Shape.class_max_iv_count(subklass)
+  end
+
   def test_too_many_ivs_on_obj
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;

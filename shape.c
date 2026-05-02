@@ -822,7 +822,7 @@ shape_get_next(rb_shape_t *shape, enum shape_type shape_type, VALUE klass, ID id
     }
 
     // Check if we should update max_iv_count on the object's class
-    if (new_shape->next_field_index > RCLASS_MAX_IV_COUNT(klass)) {
+    if (new_shape->next_field_index > RCLASS_MAX_IV_COUNT(klass) && !RCLASS_EXPECT_NO_IVAR(klass)) {
         RCLASS_SET_MAX_IV_COUNT(klass, new_shape->next_field_index);
     }
 
@@ -1468,6 +1468,12 @@ rb_shape_exhaust(int argc, VALUE *argv, VALUE self)
     return Qnil;
 }
 
+static VALUE
+rb_shape_class_max_iv_count(VALUE self, VALUE klass)
+{
+    return INT2NUM(RCLASS_MAX_IV_COUNT(klass));
+}
+
 static VALUE shape_to_h(rb_shape_t *shape);
 
 static enum rb_id_table_iterator_result collect_keys_and_values(ID key, VALUE value, void *ref)
@@ -1658,5 +1664,6 @@ Init_shape(void)
     rb_define_singleton_method(rb_cShape, "root_shape", rb_shape_root_shape, 0);
     rb_define_singleton_method(rb_cShape, "shapes_available", rb_shape_shapes_available, 0);
     rb_define_singleton_method(rb_cShape, "exhaust_shapes", rb_shape_exhaust, -1);
+    rb_define_singleton_method(rb_cShape, "class_max_iv_count", rb_shape_class_max_iv_count, 1);
 #endif
 }

@@ -2224,6 +2224,7 @@ rb_class_initialize(int argc, VALUE *argv, VALUE klass)
         }
     }
     rb_class_set_super(klass, super);
+    RCLASS_SET_MAX_IV_COUNT(klass, RCLASS_MAX_IV_COUNT(super));
     RCLASS_SET_ALLOCATOR(klass, RCLASS_ALLOCATOR(super));
     rb_make_metaclass(klass, RBASIC(super)->klass);
     rb_class_inherited(super, klass);

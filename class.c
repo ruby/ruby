@@ -868,10 +868,7 @@ rb_class_new(VALUE super)
     rb_check_inheritable(super);
     VALUE klass = rb_class_boot(super);
 
-    if (super != rb_cObject && super != rb_cBasicObject) {
-        RCLASS_SET_MAX_IV_COUNT(klass, RCLASS_MAX_IV_COUNT(super));
-    }
-
+    RCLASS_SET_MAX_IV_COUNT(klass, RCLASS_MAX_IV_COUNT(super));
     RUBY_ASSERT(getenv("RUBY_BOX") || RCLASS_PRIME_CLASSEXT_WRITABLE_P(klass));
 
     return klass;
@@ -1418,8 +1415,10 @@ Init_class_hierarchy(void)
     rb_cBasicObject = boot_defclass("BasicObject", 0);
     RCLASS_SET_ALLOCATOR(rb_cBasicObject, rb_class_allocate_instance);
     FL_SET_RAW(rb_cBasicObject, RCLASS_ALLOCATOR_DEFINED);
+    RCLASS_SET_EXPECT_NO_IVAR(rb_cBasicObject);
+
     rb_cObject = boot_defclass("Object", rb_cBasicObject);
-    rb_vm_register_global_object(rb_cObject);
+    RCLASS_SET_EXPECT_NO_IVAR(rb_cObject);
 
     /* resolve class name ASAP for order-independence */
     rb_set_class_path_string(rb_cObject, rb_cObject, rb_fstring_lit("Object"));
