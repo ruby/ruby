@@ -2334,6 +2334,10 @@ io_buffer_each_byte(int argc, VALUE *argv, VALUE self)
     size_t offset, count;
     io_buffer_extract_offset_count(RB_IO_BUFFER_DATA_TYPE_U8, size, argc, argv, &offset, &count);
 
+    if (size_sum_is_bigger_than(offset, count, size)) {
+        rb_raise(rb_eArgError, "Specified offset+count is bigger than the buffer size!");
+    }
+
     for (size_t i = 0; i < count; i++) {
         unsigned char *value = (unsigned char *)base + i + offset;
         rb_yield(RB_INT2FIX(*value));
