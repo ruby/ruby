@@ -4651,7 +4651,7 @@ mod hir_opt_tests {
           v49:SetExact = GuardType v17, SetExact
           v50:BasicObject = CCallVariadic v49, :Set#initialize@0x1068
           CheckInterrupts
-          Return v17
+          Return v49
         ");
     }
 
@@ -15257,7 +15257,7 @@ mod hir_opt_tests {
           v78:BasicObject = LoadField v75, :iter_method@0x1058
           v79:BasicObject = LoadField v75, :kwsplat@0x1059
           SetLocal :sep, l0, EP@5, v119
-          Jump bb8(v58, v76, v119, v78, v79)
+          Jump bb8(v118, v76, v119, v78, v79)
         bb8(v83:BasicObject, v84:BasicObject, v85:BasicObject, v86:BasicObject, v87:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1060, CONST)
@@ -15720,6 +15720,69 @@ mod hir_opt_tests {
           CheckInterrupts
           Return v43
         ");
+    }
+
+    #[test]
+    fn test_dedup_guard_type_across_cfg_join() {
+        eval("
+            def test(n, cond)
+              if cond
+                a = n + 1
+              else
+                a = n + 2
+              end
+              n + a
+            end
+            test(1, true); test(1, false)
+        ");
+        let hir = hir_string("test");
+        let guard_count = hir.matches("GuardType").count();
+        assert_eq!(
+            guard_count, 2,
+            "expected 2 GuardType instructions after cross-block dedup, found {guard_count}\n\nHIR:\n{hir}"
+        );
+    }
+
+    #[test]
+    fn test_forward_guard_through_conditional_branch() {
+        eval("
+            def test(n, a, b)
+              if a
+                if b
+                  n + 1
+                else
+                  n + 2
+                end
+              else
+                n + 3
+              end
+            end
+            test(1, true, true); test(1, true, false); test(1, false, false)
+        ");
+        let hir = hir_string("test");
+        let guard_count = hir.matches("GuardType").count();
+        assert!(
+            guard_count <= 3,
+            "expected at most 3 GuardType instructions (one per leaf branch) after forwarding through conditional branches, found {guard_count}\n\nHIR:\n{hir}"
+        );
+    }
+
+    #[test]
+    fn test_no_forward_when_no_guard_in_branches() {
+        let src = "
+            def test(n, cond)
+              a = if cond then 1 else 2 end
+              n + a
+            end
+            test(1, true); test(1, false)
+        ";
+        eval(src);
+        let hir = hir_string("test");
+        let guard_count = hir.matches("GuardType").count();
+        assert_eq!(
+            guard_count, 1,
+            "expected 1 GuardType (merge block only), found {guard_count}\n\nHIR:\n{hir}"
+        );
     }
 
     #[test]

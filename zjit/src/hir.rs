@@ -4927,6 +4927,48 @@ impl Function {
             .unwrap_or(insn_id)
     }
 
+    /// Forward each branch-edge arg through the most recent `GuardType` of that
+    /// value within the same block. Lets a follow-up `infer_types` narrow merge-block
+    /// parameter types so `fold_constants` can drop redundant guards at CFG joins.
+    fn forward_guarded_values_to_jumps(&mut self) {
+        let mut changed = false;
+        let mut latest_guard: HashMap<InsnId, InsnId> = HashMap::new();
+        for block in self.rpo() {
+            latest_guard.clear();
+            for i in 0..self.blocks[block.0].insns.len() {
+                let insn_id = self.blocks[block.0].insns[i];
+                match self.find(insn_id) {
+                    Insn::GuardType { val, .. } => {
+                        latest_guard.insert(val, insn_id);
+                    }
+                    Insn::Jump(BranchEdge { ref args, .. })
+                    | Insn::IfTrue { target: BranchEdge { ref args, .. }, .. }
+                    | Insn::IfFalse { target: BranchEdge { ref args, .. }, .. } => {
+                        if !args.iter().any(|arg| latest_guard.contains_key(arg)) {
+                            continue;
+                        }
+                        let new_args: Vec<InsnId> = args.iter()
+                            .map(|arg| latest_guard.get(arg).copied().unwrap_or(*arg))
+                            .collect();
+                        match &mut self.insns[insn_id.0] {
+                            Insn::Jump(BranchEdge { args, .. })
+                            | Insn::IfTrue { target: BranchEdge { args, .. }, .. }
+                            | Insn::IfFalse { target: BranchEdge { args, .. }, .. } => {
+                                *args = new_args;
+                                changed = true;
+                            }
+                            _ => unreachable!("find preserves terminator variant"),
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+        if changed {
+            crate::stats::trace_compile_phase("infer_types", || self.infer_types());
+        }
+    }
+
     /// Use type information left by `infer_types` to fold away operations that can be evaluated at compile-time.
     ///
     /// It can fold fixnum math, truthiness tests, and branches with constant conditionals.
@@ -5580,6 +5622,7 @@ impl Function {
             (convert_no_profile_sends) => { Counter::compile_hir_strength_reduce_time_ns };
             // End strength reduction bucket
             (optimize_load_store) => { Counter::compile_hir_optimize_load_store_time_ns };
+            (forward_guarded_values_to_jumps) => { Counter::compile_hir_forward_guarded_values_to_jumps_time_ns };
             (fold_constants) => { Counter::compile_hir_fold_constants_time_ns };
             (clean_cfg) => { Counter::compile_hir_clean_cfg_time_ns };
             (remove_redundant_patch_points) => { Counter::compile_hir_remove_redundant_patch_points_time_ns };
@@ -5614,6 +5657,7 @@ impl Function {
         run_pass!(optimize_c_calls);
         run_pass!(convert_no_profile_sends);
         run_pass!(optimize_load_store);
+        run_pass!(forward_guarded_values_to_jumps);
         run_pass!(fold_constants);
         run_pass!(clean_cfg);
         run_pass!(remove_redundant_patch_points);
