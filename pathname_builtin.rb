@@ -1094,7 +1094,7 @@ class Pathname    # * File *
   #   Pathname.new('t.dat').read(10, 2)
   #   # => "\x99\x90\x99\x91\x99\x92\x99\x93\x99\x94"
   #
-  # Returns +nil+ if the specified number of bytes is unavailable:
+  # Returns +nil+ if +offset+ is past the end of the file:
   #
   #   Pathname.new('t.txt').read(10, 200) # => nil
   #
