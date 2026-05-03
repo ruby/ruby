@@ -11,6 +11,12 @@
 #   Pathname.new('lib')            # => #<Pathname:lib>
 #   Pathname.new('/usr/local/bin') # => #<Pathname:/usr/local/bin>
 #
+# == About the Examples
+#
+# Many examples here use these variables:
+#
+#  :include: doc/examples/files.rdoc
+#
 # == Convenience Methods
 #
 # The class provides *all* functionality from class File and module FileTest,
@@ -1040,8 +1046,63 @@ class Pathname    # * File *
     File.foreach(@path, ...)
   end
 
-  # See <tt>File.read</tt>.  Returns all data from the file, or the first +N+ bytes
-  # if specified.
+  # call-seq:
+  #   read(length = nil, offset = 0, **opts) -> string or nil
+  #
+  # Reads and returns some or all of the content of the file
+  # whose path is <tt>self.to_s</tt>.
+  #
+  # With no arguments given,
+  # reads in text mode and returns the entire content of the file:
+  #
+  #   Pathname.new('t.txt').read
+  #   # => "First line\nSecond line\n\nFourth line\nFifth line\n"
+  #   Pathname.new('t.ja').read
+  #   # => "こんにちは"
+  #   Pathname.new('t.dat').read
+  #   # => "\xFE\xFF\x99\x90\x99\x91\x99\x92\x99\x93\x99\x94"
+  #
+  # On Windows, text mode can terminate reading and leave bytes in the file unread
+  # when encountering certain special bytes.
+  # Consider using #binread if all bytes in the file should be read.
+  #
+  # With argument +length+ given, returns +length+ bytes if available:
+  #
+  #   Pathname.new('t.txt').read(7)
+  #   # => "First l"
+  #   Pathname.new('t.ja').read(7)
+  #   # => "\xE3\x81\x93\xE3\x82\x93\xE3"
+  #   Pathname.new('t.dat').read(7)
+  #   # => "\xFE\xFF\x99\x90\x99\x91\x99"
+  #
+  # Returns all bytes if +length+ is larger than the files size:
+  #
+  #   Pathname.new('t.txt').read(700)
+  #   # => "First line\r\nSecond line\r\n\r\nFourth line\r\nFifth line\r\n"
+  #   Pathname.new('t.ja').read(700)
+  #   # => "\xE3\x81\x93\xE3\x82\x93\xE3\x81\xAB\xE3\x81\xA1\xE3\x81\xAF"
+  #   Pathname.new('t.dat').read(700)
+  #   # => "\xFE\xFF\x99\x90\x99\x91\x99\x92\x99\x93\x99\x94"
+  #
+  # With arguments +length+ and +offset+ given,
+  # returns +length+ bytes if available, beginning at the given +offset+:
+  #
+  #   Pathname.new('t.txt').read(10, 2)
+  #   # => "rst line\r\n"
+  #   Pathname.new('t.ja').read(10, 2)
+  #   # => "\x93\xE3\x82\x93\xE3\x81\xAB\xE3\x81\xA1"
+  #   Pathname.new('t.dat').read(10, 2)
+  #   # => "\x99\x90\x99\x91\x99\x92\x99\x93\x99\x94"
+  #
+  # Returns +nil+ if the specified number of bytes is unavailable:
+  #
+  #   Pathname.new('t.txt').read(10, 200) # => nil
+  #
+  # Optional keyword arguments +opts+ specify:
+  #
+  # - {Open Options}[rdoc-ref:IO@Open+Options].
+  # - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
+  #
   def read(...) File.read(@path, ...) end
 
   # See <tt>File.binread</tt>.  Returns all the bytes from the file, or the first +N+
