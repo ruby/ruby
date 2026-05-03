@@ -233,6 +233,21 @@ chop_basename(VALUE self, VALUE path)
     return rb_assoc_new(dir, basename);
 }
 
+/* :nodoc: */
+/* has_trailing_separator?(path) -> bool */
+static VALUE
+has_trailing_separator(VALUE self, VALUE path)
+{
+    long baselen, alllen = RSTRING_LEN(check_strpath(path));
+    if (alllen <= 0) return Qfalse;
+    rb_encoding *enc = rb_enc_get(path);
+    const char *name = RSTRING_PTR(path);
+    const char *base = ruby_enc_find_basename(name, &baselen, &alllen, enc);
+    if (baselen < 1) return Qfalse;
+    if (baselen == 1 && isdirsep(*base)) return Qfalse;
+    return RBOOL(base + alllen < RSTRING_END(path));
+}
+
 #include "pathname_builtin.rbinc"
 
 static void init_ids(void);
@@ -260,6 +275,7 @@ InitVM_pathname(void)
 
     rb_define_private_method(rb_cPathname, "has_separator?", has_separator_p, 1);
     rb_define_private_method(rb_cPathname, "chop_basename", chop_basename, 1);
+    rb_define_private_method(rb_cPathname, "has_trailing_separator?", has_trailing_separator, 1);
 
     rb_provide("pathname.so");
 }

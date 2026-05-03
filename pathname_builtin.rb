@@ -500,17 +500,6 @@ class Pathname
   end
   private :cleanpath_aggressive
 
-  # has_trailing_separator?(path) -> bool
-  def has_trailing_separator?(path) # :nodoc:
-    if r = chop_basename(path)
-      pre, basename = r
-      pre.length + basename.length < path.length
-    else
-      false
-    end
-  end
-  private :has_trailing_separator?
-
   # add_trailing_separator(path) -> path
   def add_trailing_separator(path) # :nodoc:
     if File.basename(path + 'a') == 'a'
