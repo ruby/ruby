@@ -7,7 +7,7 @@ module ErrorHighlight
         locs = self.backtrace_locations
         return "" if locs.size < 2
         callee_loc, caller_loc = locs
-        callee_spot = ErrorHighlight.spot(self, backtrace_location: callee_loc, point_type: :name)
+        callee_spot = ErrorHighlight.spot(self, backtrace_location: callee_loc, point_type: :args)
         caller_spot = ErrorHighlight.spot(self, backtrace_location: caller_loc, point_type: :name)
         if caller_spot && callee_spot &&
             caller_loc.path == callee_loc.path &&

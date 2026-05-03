@@ -235,18 +235,21 @@ module ErrorHighlight
         spot_op_cdecl
 
       when :DEFN
-        raise NotImplementedError if @point_type != :name
         spot_defn
 
       when :DEFS
-        raise NotImplementedError if @point_type != :name
         spot_defs
 
       when :LAMBDA
         spot_lambda
 
       when :ITER
-        spot_iter
+        case @point_type
+        when :name
+          spot_iter_for_name
+        when :args
+          spot_iter_for_args
+        end
 
       when :call_node
         case @point_type
@@ -290,28 +293,13 @@ module ErrorHighlight
         prism_spot_constant_path_operator_write
 
       when :def_node
-        case @point_type
-        when :name
-          prism_spot_def_for_name
-        when :args
-          raise NotImplementedError
-        end
+        prism_spot_def_for_name
 
       when :lambda_node
-        case @point_type
-        when :name
-          prism_spot_lambda_for_name
-        when :args
-          raise NotImplementedError
-        end
+        prism_spot_lambda_for_name
 
       when :block_node
-        case @point_type
-        when :name
-          prism_spot_block_for_name
-        when :args
-          raise NotImplementedError
-        end
+        prism_spot_block_for_name
 
       end
 
@@ -689,11 +677,20 @@ module ErrorHighlight
     end
 
     # Example:
+    #   no_such_method { ... }
+    #   ^^^^^^^^^^^^^^
+    def spot_iter_for_name
+      nd_fcall, = @node.children
+      @node = nd_fcall
+      spot
+    end
+
+    # Example:
     #   lambda { ... }
     #          ^
     #   define_method :foo do
     #                      ^^
-    def spot_iter
+    def spot_iter_for_args
       _nd_fcall, nd_scope = @node.children
       fetch_line(nd_scope.first_lineno)
       if @snippet.match(/\G(?:do\b|\{)/, nd_scope.first_column)
