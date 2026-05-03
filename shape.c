@@ -740,22 +740,15 @@ rb_shape_object_id(shape_id_t original_shape_id)
 static inline shape_id_t
 transition_complex(shape_id_t shape_id)
 {
-    uint8_t heap_index = rb_shape_heap_index(shape_id);
-    shape_id_t next_shape_id;
+    shape_id_t next_shape_id = ROOT_TOO_COMPLEX_SHAPE_ID;
 
-    if (heap_index) {
-        next_shape_id = rb_shape_root(heap_index - 1) | SHAPE_ID_FL_TOO_COMPLEX;
-        if (rb_shape_has_object_id(shape_id)) {
-            next_shape_id = shape_transition_object_id(next_shape_id);
-        }
+    if (rb_shape_has_object_id(shape_id)) {
+        next_shape_id = ROOT_TOO_COMPLEX_WITH_OBJ_ID;
     }
-    else {
-        if (rb_shape_has_object_id(shape_id)) {
-            next_shape_id = ROOT_TOO_COMPLEX_WITH_OBJ_ID | (shape_id & SHAPE_ID_FLAGS_MASK);
-        }
-        else {
-            next_shape_id = ROOT_TOO_COMPLEX_SHAPE_ID | (shape_id & SHAPE_ID_FLAGS_MASK);
-        }
+
+    uint8_t heap_index = rb_shape_heap_index(shape_id);
+    if (heap_index) {
+        next_shape_id |= rb_shape_root(heap_index - 1);
     }
 
     RUBY_ASSERT(rb_shape_has_object_id(shape_id) == rb_shape_has_object_id(next_shape_id));
