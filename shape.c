@@ -374,19 +374,7 @@ static const rb_data_type_t shape_tree_type = {
  */
 
 static inline shape_id_t
-RSHAPE_FLAGS(shape_id_t shape_id)
-{
-    return shape_id & SHAPE_ID_FLAGS_MASK;
-}
-
-static inline shape_id_t
-RSHAPE_OFFSET(shape_id_t shape_id)
-{
-    return shape_id & SHAPE_ID_OFFSET_MASK;
-}
-
-static inline shape_id_t
-raw_shape_id(rb_shape_t *shape)
+shape_offset(rb_shape_t *shape)
 {
     RUBY_ASSERT(shape);
     return (shape_id_t)(shape - rb_shape_tree.shape_list);
@@ -484,7 +472,7 @@ rb_shape_alloc_with_parent_id(ID edge_name, shape_id_t parent_id)
 static rb_shape_t *
 rb_shape_alloc(ID edge_name, rb_shape_t *parent, enum shape_type type)
 {
-    rb_shape_t *shape = rb_shape_alloc_with_parent_id(edge_name, raw_shape_id(parent));
+    rb_shape_t *shape = rb_shape_alloc_with_parent_id(edge_name, shape_offset(parent));
     if (!shape) return NULL;
 
     shape->type = (uint8_t)type;
@@ -717,7 +705,7 @@ rb_shape_transition_object_id(shape_id_t original_shape_id)
     bool dont_care;
     rb_shape_t *shape = get_next_shape_internal(RSHAPE(original_shape_id), id_object_id, SHAPE_OBJ_ID, &dont_care, true);
     if (!shape) {
-        return ROOT_TOO_COMPLEX_WITH_OBJ_ID | (original_shape_id & SHAPE_ID_FLAGS_MASK);
+        return ROOT_TOO_COMPLEX_WITH_OBJ_ID | RSHAPE_FLAGS(original_shape_id);
     }
 
     RUBY_ASSERT(shape);
@@ -760,7 +748,7 @@ rb_shape_get_next_iv_shape(shape_id_t shape_id, ID id)
     if (!next_shape) {
         return INVALID_SHAPE_ID;
     }
-    return raw_shape_id(next_shape);
+    return shape_offset(next_shape);
 }
 
 static bool
@@ -906,7 +894,7 @@ rb_obj_shape_transition_remove_ivar(VALUE obj, ID id, shape_id_t *removed_shape_
     rb_shape_t *new_shape = remove_shape_recursive(obj, RSHAPE(original_shape_id), id, &removed_shape);
 
     if (removed_shape) {
-        *removed_shape_id = raw_shape_id(removed_shape);
+        *removed_shape_id = shape_offset(removed_shape);
     }
 
     if (new_shape) {
@@ -985,13 +973,13 @@ rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value,
         if (shape_hint == shape) {
             // We've found a common ancestor so use the index hint
             *value = index_hint;
-            *shape_id_hint = raw_shape_id(shape);
+            *shape_id_hint = shape_offset(shape);
             return true;
         }
         if (shape->edge_name == id) {
             // We found the matching id before a common ancestor
             *value = shape->next_field_index - 1;
-            *shape_id_hint = raw_shape_id(shape);
+            *shape_id_hint = shape_offset(shape);
             return true;
         }
 
@@ -1363,7 +1351,7 @@ shape_id_t_to_rb_cShape(shape_id_t shape_id)
 
     VALUE obj = rb_struct_new(rb_cShape,
             INT2NUM(shape_id),
-            INT2NUM(shape_id & SHAPE_ID_OFFSET_MASK),
+            INT2NUM(RSHAPE_OFFSET(shape_id)),
             INT2NUM(shape->parent_id),
             rb_shape_edge_name(shape),
             INT2NUM(shape->next_field_index),
@@ -1377,7 +1365,7 @@ shape_id_t_to_rb_cShape(shape_id_t shape_id)
 static enum rb_id_table_iterator_result
 rb_edges_to_hash(ID key, VALUE value, void *ref)
 {
-    rb_hash_aset(*(VALUE *)ref, parse_key(key), shape_id_t_to_rb_cShape(raw_shape_id((rb_shape_t *)value)));
+    rb_hash_aset(*(VALUE *)ref, parse_key(key), shape_id_t_to_rb_cShape(shape_offset((rb_shape_t *)value)));
     return ID_TABLE_CONTINUE;
 }
 
@@ -1499,7 +1487,7 @@ shape_to_h(rb_shape_t *shape)
 {
     VALUE rb_shape = rb_hash_new();
 
-    rb_hash_aset(rb_shape, ID2SYM(rb_intern("id")), INT2NUM(raw_shape_id(shape)));
+    rb_hash_aset(rb_shape, ID2SYM(rb_intern("id")), INT2NUM(shape_offset(shape)));
     rb_hash_aset(rb_shape, ID2SYM(rb_intern("edges")), edges(shape->edges));
 
     if (shape == rb_shape_get_root_shape()) {
@@ -1603,17 +1591,17 @@ Init_default_shapes(void)
     rb_shape_t *root = rb_shape_alloc_with_parent_id(0, INVALID_SHAPE_ID);
     root->capacity = 0;
     root->type = SHAPE_ROOT;
-    RUBY_ASSERT(raw_shape_id(root) == ROOT_SHAPE_ID);
-    RUBY_ASSERT(!(raw_shape_id(root) & SHAPE_ID_HAS_IVAR_MASK));
+    RUBY_ASSERT(shape_offset(root) == ROOT_SHAPE_ID);
+    RUBY_ASSERT(!(shape_offset(root) & SHAPE_ID_HAS_IVAR_MASK));
 
     bool dontcare;
     rb_shape_t *root_with_obj_id = get_next_shape_internal(root, id_object_id, SHAPE_OBJ_ID, &dontcare, true);
     RUBY_ASSERT(root_with_obj_id);
-    RUBY_ASSERT(raw_shape_id(root_with_obj_id) == ROOT_SHAPE_WITH_OBJ_ID);
+    RUBY_ASSERT(shape_offset(root_with_obj_id) == ROOT_SHAPE_WITH_OBJ_ID);
     RUBY_ASSERT(root_with_obj_id->type == SHAPE_OBJ_ID);
     RUBY_ASSERT(root_with_obj_id->edge_name == id_object_id);
     RUBY_ASSERT(root_with_obj_id->next_field_index == 1);
-    RUBY_ASSERT(!(raw_shape_id(root_with_obj_id) & SHAPE_ID_HAS_IVAR_MASK));
+    RUBY_ASSERT(!(shape_offset(root_with_obj_id) & SHAPE_ID_HAS_IVAR_MASK));
     (void)root_with_obj_id;
 }
 

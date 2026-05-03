@@ -23,9 +23,10 @@ STATIC_ASSERT(shape_id_num_bits, SHAPE_ID_NUM_BITS == sizeof(shape_id_t) * CHAR_
 // shape_id_t bits:
 //      0-18 SHAPE_ID_OFFSET_MASK
 //              index in rb_shape_tree.shape_list. Allow to access `rb_shape_t *`.
+//              This is the part that describe how fields are laid out in memory.
 //      19-22 SHAPE_ID_HEAP_INDEX_MASK
 //              index in rb_shape_tree.capacities. Allow to access slot size.
-//              Always 0 except for T_OBJECT.
+//              Currently always 0 except for T_OBJECT.
 //      23 SHAPE_ID_FL_FROZEN
 //              Whether the object is frozen or not.
 //      24 SHAPE_ID_FL_HAS_OBJECT_ID
@@ -169,13 +170,23 @@ RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
     RUBY_ASSERT(rb_shape_verify_consistency(obj, shape_id));
 }
 
+static inline shape_id_t
+RSHAPE_FLAGS(shape_id_t shape_id)
+{
+    return shape_id & SHAPE_ID_FLAGS_MASK;
+}
+
+static inline shape_id_t
+RSHAPE_OFFSET(shape_id_t shape_id)
+{
+    return shape_id & SHAPE_ID_OFFSET_MASK;
+}
+
 static inline rb_shape_t *
 RSHAPE(shape_id_t shape_id)
 {
-    uint32_t offset = (shape_id & SHAPE_ID_OFFSET_MASK);
-    RUBY_ASSERT(offset != INVALID_SHAPE_ID);
-
-    return &rb_shape_tree.shape_list[offset];
+    RUBY_ASSERT(shape_id != INVALID_SHAPE_ID);
+    return &rb_shape_tree.shape_list[RSHAPE_OFFSET(shape_id)];
 }
 
 int32_t rb_shape_id_offset(void);
@@ -239,7 +250,7 @@ rb_shape_root(size_t heap_id)
 }
 
 static inline shape_id_t
-RSHAPE_PARENT_RAW_ID(shape_id_t shape_id)
+RSHAPE_PARENT_OFFSET(shape_id_t shape_id)
 {
     return RSHAPE(shape_id)->parent_id;
 }
@@ -247,8 +258,8 @@ RSHAPE_PARENT_RAW_ID(shape_id_t shape_id)
 static inline bool
 RSHAPE_DIRECT_CHILD_P(shape_id_t parent_id, shape_id_t child_id)
 {
-    return (parent_id & SHAPE_ID_FLAGS_MASK) == (child_id & SHAPE_ID_FLAGS_MASK) &&
-        RSHAPE(child_id)->parent_id == (parent_id & SHAPE_ID_OFFSET_MASK);
+    return (RSHAPE_FLAGS(parent_id) == RSHAPE_FLAGS(child_id) &&
+        RSHAPE_PARENT_OFFSET(child_id) == RSHAPE_OFFSET(parent_id));
 }
 
 static inline enum shape_type

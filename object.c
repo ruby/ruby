@@ -328,8 +328,8 @@ rb_obj_singleton_class(VALUE obj)
 void
 rb_obj_copy_ivar(VALUE dest, VALUE obj)
 {
-    RUBY_ASSERT(!RB_TYPE_P(obj, T_CLASS) && !RB_TYPE_P(obj, T_MODULE));
-    RUBY_ASSERT(BUILTIN_TYPE(dest) == BUILTIN_TYPE(obj));
+    RUBY_ASSERT(RB_TYPE_P(obj, T_OBJECT));
+    RUBY_ASSERT(RB_TYPE_P(dest, T_OBJECT));
 
     unsigned long src_num_ivs = rb_ivar_count(obj);
     if (!src_num_ivs) {
