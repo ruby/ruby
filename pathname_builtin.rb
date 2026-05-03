@@ -299,9 +299,9 @@ class Pathname
     path = @path == '/' ? @path : @path.chomp('/')
 
     stack = []
-    until File.directory?(path) || File.dirname(path) == path
+    until File.directory?(path) || (parent = File.dirname(path)) == path
       stack.push path
-      path = File.dirname(path)
+      path = parent
     end
 
     stack.reverse_each do |dir|
