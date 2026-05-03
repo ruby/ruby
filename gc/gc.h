@@ -11,7 +11,6 @@
  */
 #include "ruby/ruby.h"
 
-#if USE_MODULAR_GC
 #include "ruby/thread_native.h"
 
 struct rb_gc_vm_context {
@@ -19,7 +18,6 @@ struct rb_gc_vm_context {
 
     struct rb_execution_context_struct *ec;
 };
-#endif
 
 typedef int (*vm_table_foreach_callback_func)(VALUE value, void *data);
 typedef int (*vm_table_update_callback_func)(VALUE *value, void *data);

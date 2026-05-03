@@ -683,6 +683,8 @@ typedef struct rb_objspace {
     int sweeping_heap_count;
 
     int fork_vm_lock_lev;
+
+    struct rb_gc_vm_context vm_context;
 } rb_objspace_t;
 
 #ifndef HEAP_PAGE_ALIGN_LOG
@@ -1650,6 +1652,14 @@ rb_gc_impl_garbage_object_p(void *objspace_ptr, VALUE ptr)
     if (dead) return true;
     return is_lazy_sweeping(objspace) && GET_HEAP_PAGE(ptr)->flags.before_sweep &&
         !RVALUE_MARKED(objspace, ptr);
+}
+
+struct rb_gc_vm_context *
+rb_gc_impl_get_vm_context(void *objspace_ptr)
+{
+    rb_objspace_t *objspace = objspace_ptr;
+
+    return &objspace->vm_context;
 }
 
 static void free_stack_chunks(mark_stack_t *);
@@ -6767,6 +6777,8 @@ gc_marking_enter(rb_objspace_t *objspace)
     if (MEASURE_GC) {
         gc_clock_start(&objspace->profile.marking_start_time);
     }
+
+    rb_gc_initialize_vm_context(&objspace->vm_context);
 }
 
 static void

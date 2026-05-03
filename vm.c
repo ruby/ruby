@@ -3764,8 +3764,8 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 
     /* mark machine stack */
     if (ec->machine.stack_start && ec->machine.stack_end &&
-        ec != GET_EC() /* marked for current ec at the first stage of marking */
-        ) {
+            /* marked for current ec at the first stage of marking */
+            ec != rb_gc_get_ec()) {
         rb_gc_mark_machine_context(ec);
     }
 
