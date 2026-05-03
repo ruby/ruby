@@ -31,7 +31,7 @@ module Bundler
 
       Injector.inject(dependencies,
         conservative_versioning: options[:version].nil?, # Perform conservative versioning only when version is not specified
-        optimistic: options[:optimistic],
+        pessimistic: options[:pessimistic],
         strict: options[:strict])
     end
 
@@ -46,7 +46,7 @@ module Bundler
 
       raise InvalidOption, "You cannot specify `--branch` and `--ref` at the same time." if options["branch"] && options["ref"]
 
-      raise InvalidOption, "You cannot specify `--strict` and `--optimistic` at the same time." if options[:strict] && options[:optimistic]
+      raise InvalidOption, "You cannot specify `--strict` and `--pessimistic` at the same time." if options[:strict] && options[:pessimistic]
 
       # raise error when no gems are specified
       raise InvalidOption, "Please specify gems to add." if gems.empty?

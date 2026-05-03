@@ -46,7 +46,10 @@ Do not print progress information to the standard output\.
 Adds the gem to the Gemfile but does not install it\.
 .TP
 \fB\-\-optimistic\fR
-Adds optimistic declaration of version\.
+Ignored (now default behavior)
+.TP
+\fB\-\-pessimistic\fR
+Adds pessimistic declaration of version\.
 .TP
 \fB\-\-strict\fR
 Adds strict declaration of version\.
@@ -62,7 +65,7 @@ You can add the \fBrails\fR gem with version greater than 1\.1 (not including 1\
 .IP "3." 4
 You can use the \fBhttps://gems\.example\.com\fR custom source and assign the gem to a group\.
 .IP
-\fBbundle add rails \-\-version "~> 5\.0\.0" \-\-source "https://gems\.example\.com" \-\-group "development"\fR
+\fBbundle add rails \-\-version ">= 5\.0\.0" \-\-source "https://gems\.example\.com" \-\-group "development"\fR
 .IP "4." 4
 The following adds the \fBgem\fR entry to the Gemfile without installing the gem\. You can install gems later via \fBbundle install\fR\.
 .IP

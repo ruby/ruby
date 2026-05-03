@@ -403,7 +403,8 @@ module Bundler
     method_option "glob", type: :string, banner: "The location of a dependency's .gemspec, expanded within Ruby (single quotes recommended)"
     method_option "quiet", type: :boolean, banner: "Only output warnings and errors."
     method_option "skip-install", type: :boolean, banner: "Adds gem to the Gemfile but does not install it"
-    method_option "optimistic", type: :boolean, banner: "Adds optimistic declaration of version to gem"
+    method_option "optimistic", type: :boolean, banner: "Ignored (now default behavior)"
+    method_option "pessimistic", type: :boolean, banner: "Adds pessimistic declaration of version to gem"
     method_option "strict", type: :boolean, banner: "Adds strict declaration of version to gem"
     def add(*gems)
       require_relative "cli/add"
