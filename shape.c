@@ -374,6 +374,18 @@ static const rb_data_type_t shape_tree_type = {
  */
 
 static inline shape_id_t
+RSHAPE_FLAGS(shape_id_t shape_id)
+{
+    return shape_id & SHAPE_ID_FLAGS_MASK;
+}
+
+static inline shape_id_t
+RSHAPE_OFFSET(shape_id_t shape_id)
+{
+    return shape_id & SHAPE_ID_OFFSET_MASK;
+}
+
+static inline shape_id_t
 raw_shape_id(rb_shape_t *shape)
 {
     RUBY_ASSERT(shape);
@@ -385,7 +397,7 @@ shape_id(rb_shape_t *shape, shape_id_t previous_shape_id)
 {
     RUBY_ASSERT(shape);
     shape_id_t raw_id = (shape_id_t)(shape - rb_shape_tree.shape_list);
-    return raw_id | (previous_shape_id & SHAPE_ID_FLAGS_MASK);
+    return raw_id | RSHAPE_FLAGS(previous_shape_id);
 }
 
 #if RUBY_DEBUG
@@ -1073,9 +1085,8 @@ rb_shape_id_offset(void)
     return sizeof(uintptr_t) - SHAPE_ID_NUM_BITS / sizeof(uintptr_t);
 }
 
-// Rebuild a similar shape with the same ivars but starting from
-// a different SHAPE_T_OBJECT, and don't cary over non-canonical transitions
-// such as SHAPE_OBJ_ID.
+// Rebuild a similar shape with the same ivars but without "non-canonical"
+// edges such as SHAPE_OBJ_ID.
 static rb_shape_t *
 shape_rebuild(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
 {
@@ -1113,13 +1124,22 @@ rb_shape_rebuild(shape_id_t initial_shape_id, shape_id_t dest_shape_id)
     RUBY_ASSERT(!rb_shape_too_complex_p(initial_shape_id));
     RUBY_ASSERT(!rb_shape_too_complex_p(dest_shape_id));
 
-    rb_shape_t *next_shape = shape_rebuild(RSHAPE(initial_shape_id), RSHAPE(dest_shape_id));
-    if (next_shape) {
-        return shape_id(next_shape, initial_shape_id);
+    shape_id_t next_shape_id;
+    // The shape has a SHAPE_OBJ_ID edge, it needs to be rebuilt.
+    if (dest_shape_id & SHAPE_ID_FL_HAS_OBJECT_ID) {
+        rb_shape_t *next_shape = shape_rebuild(RSHAPE(initial_shape_id), RSHAPE(dest_shape_id));
+        if (next_shape) {
+            next_shape_id = shape_id(next_shape, initial_shape_id & ~SHAPE_ID_FL_NON_CANONICAL_MASK);
+        }
+        else {
+            return rb_shape_transition_complex(initial_shape_id | (dest_shape_id & ~SHAPE_ID_FL_NON_CANONICAL_MASK));
+        }
     }
     else {
-        return rb_shape_transition_complex(initial_shape_id | (dest_shape_id & SHAPE_ID_FL_HAS_OBJECT_ID));
+        // Happy path, we have nothing to do other than change the flags.
+        next_shape_id = RSHAPE_OFFSET(dest_shape_id) | RSHAPE_FLAGS(initial_shape_id);
     }
+    return next_shape_id;
 }
 
 void
