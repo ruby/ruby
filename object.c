@@ -501,7 +501,7 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
         }
 
         if (RB_OBJ_FROZEN(obj)) {
-            shape_id_t next_shape_id = rb_shape_transition_frozen(clone);
+            shape_id_t next_shape_id = rb_obj_shape_transition_frozen(clone);
             RBASIC_SET_SHAPE_ID(clone, next_shape_id);
         }
         break;

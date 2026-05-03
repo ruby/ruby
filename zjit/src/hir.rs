@@ -4660,7 +4660,7 @@ impl Function {
                             let class = recv_type.class();
                             // We're only looking at T_OBJECT so ignore all of the imemo stuff.
                             assert!(recv_type.flags().is_t_object());
-                            next_shape_id = ShapeId(unsafe { rb_shape_transition_add_ivar_no_warnings(class, current_shape_id.0, id) });
+                            next_shape_id = ShapeId(unsafe { rb_shape_transition_add_ivar_no_warnings(current_shape_id.0, id, class) });
                             // If the VM ran out of shapes, or this class generated too many leaf,
                             // it may be de-optimized into OBJ_TOO_COMPLEX_SHAPE (hash-table).
                             let new_shape_too_complex = unsafe { rb_jit_shape_too_complex_p(next_shape_id.0) };

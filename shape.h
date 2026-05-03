@@ -169,22 +169,6 @@ RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
     RUBY_ASSERT(rb_shape_verify_consistency(obj, shape_id));
 }
 
-void rb_set_boxed_class_shape_id(VALUE obj, shape_id_t shape_id);
-
-static inline void
-RB_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
-{
-    switch (BUILTIN_TYPE(obj)) {
-      case T_CLASS:
-      case T_MODULE:
-        rb_set_boxed_class_shape_id(obj, shape_id);
-        break;
-      default:
-        RBASIC_SET_SHAPE_ID(obj, shape_id);
-        break;
-    }
-}
-
 static inline rb_shape_t *
 RSHAPE(shape_id_t shape_id)
 {
@@ -205,15 +189,9 @@ bool rb_shape_find_ivar(shape_id_t shape_id, ID id, shape_id_t *ivar_shape);
 typedef int rb_shape_foreach_transition_callback(shape_id_t shape_id, void *data);
 bool rb_shape_foreach_field(shape_id_t shape_id, rb_shape_foreach_transition_callback func, void *data);
 
-shape_id_t rb_shape_transition_frozen(VALUE obj);
-shape_id_t rb_shape_transition_complex(VALUE obj);
-shape_id_t rb_shape_transition_remove_ivar(VALUE obj, ID id, shape_id_t *removed_shape_id);
-shape_id_t rb_shape_transition_add_ivar(VALUE obj, ID id);
-shape_id_t rb_shape_transition_add_ivar_no_warnings(VALUE klass, shape_id_t original_shape_id, ID id);
-shape_id_t rb_shape_transition_object_id(VALUE obj);
-shape_id_t rb_shape_transition_heap(VALUE obj, size_t heap_index);
-shape_id_t rb_shape_object_id(shape_id_t original_shape_id);
+shape_id_t rb_shape_transition_add_ivar_no_warnings(shape_id_t shape_id, ID id, VALUE klass);
 
+shape_id_t rb_shape_object_id(shape_id_t original_shape_id);
 shape_id_t rb_shape_rebuild(shape_id_t initial_shape_id, shape_id_t dest_shape_id);
 void rb_shape_copy_fields(VALUE dest, VALUE *dest_buf, shape_id_t dest_shape_id, VALUE *src_buf, shape_id_t src_shape_id);
 void rb_shape_copy_complex_ivars(VALUE dest, VALUE obj, shape_id_t src_shape_id, st_table *fields_table);
@@ -452,6 +430,67 @@ rb_obj_using_gen_fields_table_p(VALUE obj)
 
     return rb_obj_gen_fields_p(obj);
 }
+
+static inline shape_id_t
+rb_shape_transition_frozen(shape_id_t shape_id)
+{
+    return shape_id | SHAPE_ID_FL_FROZEN;
+}
+
+static inline shape_id_t
+rb_shape_transition_complex(shape_id_t shape_id)
+{
+    shape_id_t next_shape_id = ROOT_TOO_COMPLEX_SHAPE_ID;
+
+    if (rb_shape_has_object_id(shape_id)) {
+        next_shape_id = ROOT_TOO_COMPLEX_WITH_OBJ_ID;
+    }
+
+    uint8_t heap_index = rb_shape_heap_index(shape_id);
+    if (heap_index) {
+        next_shape_id |= rb_shape_root(heap_index - 1);
+    }
+
+    RUBY_ASSERT(rb_shape_has_object_id(shape_id) == rb_shape_has_object_id(next_shape_id));
+
+    return next_shape_id;
+}
+
+static inline shape_id_t
+rb_shape_transition_heap(shape_id_t shape_id, size_t heap_index)
+{
+    return (shape_id & (~SHAPE_ID_HEAP_INDEX_MASK)) | rb_shape_root(heap_index);
+}
+
+shape_id_t rb_shape_transition_object_id(shape_id_t shape_id);
+
+static inline shape_id_t
+rb_obj_shape_transition_frozen(VALUE obj)
+{
+    RUBY_ASSERT(RB_OBJ_FROZEN(obj));
+    return rb_shape_transition_frozen(RBASIC_SHAPE_ID(obj));
+}
+
+static inline shape_id_t
+rb_obj_shape_transition_complex(VALUE obj)
+{
+    return rb_shape_transition_complex(RBASIC_SHAPE_ID(obj));
+}
+
+static inline shape_id_t
+rb_obj_shape_transition_heap(VALUE obj, size_t heap_index)
+{
+    return rb_shape_transition_heap(RBASIC_SHAPE_ID(obj), heap_index);
+}
+
+static inline shape_id_t
+rb_obj_shape_transition_object_id(VALUE obj)
+{
+    return rb_shape_transition_object_id(RBASIC_SHAPE_ID(obj));
+}
+
+shape_id_t rb_obj_shape_transition_remove_ivar(VALUE obj, ID id, shape_id_t *removed_shape_id);
+shape_id_t rb_obj_shape_transition_add_ivar(VALUE obj, ID id);
 
 // For ext/objspace
 RUBY_SYMBOL_EXPORT_BEGIN

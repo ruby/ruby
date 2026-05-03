@@ -1582,7 +1582,7 @@ static shape_id_t
 obj_transition_too_complex(VALUE obj, st_table *table)
 {
     RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
-    shape_id_t shape_id = rb_shape_transition_complex(obj);
+    shape_id_t shape_id = rb_obj_shape_transition_complex(obj);
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
@@ -1686,7 +1686,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
 
     shape_id_t old_shape_id = RBASIC_SHAPE_ID(fields_obj);
     shape_id_t removed_shape_id;
-    shape_id_t next_shape_id = rb_shape_transition_remove_ivar(fields_obj, id, &removed_shape_id);
+    shape_id_t next_shape_id = rb_obj_shape_transition_remove_ivar(fields_obj, id, &removed_shape_id);
 
     if (UNLIKELY(rb_shape_too_complex_p(next_shape_id))) {
         if (UNLIKELY(!rb_shape_too_complex_p(old_shape_id))) {
@@ -1894,7 +1894,7 @@ generic_shape_ivar(VALUE obj, ID id, bool *new_ivar_out)
             }
 
             new_ivar = true;
-            target_shape_id = rb_shape_transition_add_ivar(obj, id);
+            target_shape_id = rb_obj_shape_transition_add_ivar(obj, id);
         }
     }
 
@@ -2016,9 +2016,20 @@ void rb_obj_freeze_inline(VALUE x)
             RB_FL_UNSET_RAW(x, FL_USER2 | FL_USER3); // STR_CHILLED
         }
 
-        RB_SET_SHAPE_ID(x, rb_shape_transition_frozen(x));
+        shape_id_t shape_id = rb_obj_shape_transition_frozen(x);
+        switch (BUILTIN_TYPE(x)) {
+          case T_CLASS:
+          case T_MODULE:
+            RBASIC_SET_SHAPE_ID(RCLASS_WRITABLE_ENSURE_FIELDS_OBJ(x), shape_id);
+            // FIXME: How to do multi-shape?
+            RBASIC_SET_SHAPE_ID(x, shape_id);
+            break;
+          default:
+            RBASIC_SET_SHAPE_ID(x, shape_id);
+            break;
+        }
 
-        if (RBASIC_CLASS(x)) {
+        if (RBASIC_CLASS(x) && RCLASS_SINGLETON_P(RBASIC_CLASS(x))) {
             rb_freeze_singleton_class(x);
         }
     }
