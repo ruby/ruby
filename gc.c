@@ -2705,10 +2705,10 @@ count_objects_i(VALUE obj, void *d)
  *
  *  It returns a hash, such as:
  *	{
- *	  :TOTAL=>10000,
- *	  :FREE=>3011,
- *	  :T_OBJECT=>6,
- *	  :T_CLASS=>404,
+ *	  TOTAL: 10000,
+ *	  FREE: 3011,
+ *	  T_OBJECT: 6,
+ *	  T_CLASS: 404,
  *	  # ...
  *	}
  *
@@ -2726,7 +2726,7 @@ count_objects_i(VALUE obj, void *d)
  *    h = {}
  *    ObjectSpace.count_objects(h)
  *    puts h
- *    # => { :TOTAL=>10000, :T_CLASS=>158280, :T_MODULE=>20672, :T_STRING=>527249 }
+ *    # => { TOTAL: 10000, T_CLASS: 158280, T_MODULE: 20672, T_STRING: 527249 }
  *
  *  This method is only expected to work on C Ruby.
  *
