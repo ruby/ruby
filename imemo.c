@@ -126,8 +126,10 @@ rb_imemo_memo_new_value(VALUE a, VALUE b, VALUE c)
 VALUE
 rb_imemo_fields_new(VALUE owner, shape_id_t shape_id, bool shareable)
 {
+    shape_id = rb_shape_transition_best_heap(shape_id);
     size_t capa = RSHAPE_CAPACITY(shape_id);
     size_t embedded_size = offsetof(struct rb_fields, as.embed) + capa * sizeof(VALUE);
+
     RUBY_ASSERT(rb_gc_size_allocatable_p(embedded_size));
     VALUE fields = rb_imemo_new(imemo_fields, owner, embedded_size, shareable);
     RBASIC_SET_SHAPE_ID(fields, shape_id);
@@ -141,7 +143,7 @@ rb_imemo_fields_new_complex(VALUE owner, shape_id_t shape_id, size_t capa, bool 
     VALUE fields = rb_imemo_new(imemo_fields, owner, sizeof(struct rb_fields), shareable);
     IMEMO_OBJ_FIELDS(fields)->as.complex.table = st_init_numtable_with_size(capa);
     FL_SET_RAW(fields, OBJ_FIELD_HEAP);
-    RBASIC_SET_SHAPE_ID(fields, shape_id);
+    RBASIC_SET_SHAPE_ID(fields, rb_shape_transition_heap(shape_id, 0));
     return fields;
 }
 
@@ -204,13 +206,15 @@ void
 rb_imemo_fields_clear(VALUE fields_obj)
 {
     // When replacing an imemo/fields by another one, we must clear
-    // its shape so that gc.c:obj_free_object_id won't be called.
-    if (rb_obj_shape_complex_p(fields_obj)) {
-        RBASIC_SET_SHAPE_ID(fields_obj, ROOT_COMPLEX_SHAPE_ID);
+    // SHAPE_ID_FL_HAS_OBJECT_ID from its shape so that
+    // gc.c:obj_free_object_id won't be called.
+    shape_id_t shape_id = RBASIC_SHAPE_ID(fields_obj);
+    if (rb_shape_has_object_id(shape_id)) {
+        // We need to bypass consistency checks because it's normally not
+        // allowed for SHAPE_ID_FL_HAS_OBJECT_ID not to be present.
+        RBASIC_SET_SHAPE_ID_NO_CHECKS(fields_obj, shape_id & ~SHAPE_ID_FL_HAS_OBJECT_ID);
     }
-    else {
-        RBASIC_SET_SHAPE_ID(fields_obj, ROOT_SHAPE_ID);
-    }
+
     // Invalidate the ec->gen_fields_cache.
     RBASIC_CLEAR_CLASS(fields_obj);
 }

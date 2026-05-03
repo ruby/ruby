@@ -346,7 +346,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     shape_id_t initial_shape_id = RBASIC_SHAPE_ID(dest);
     RUBY_ASSERT(RSHAPE_TYPE_P(initial_shape_id, SHAPE_ROOT));
 
-    shape_id_t dest_shape_id = rb_shape_rebuild(initial_shape_id, src_shape_id);
+    shape_id_t dest_shape_id = rb_shape_rebuild(obj, initial_shape_id, src_shape_id);
     if (UNLIKELY(rb_shape_complex_p(dest_shape_id))) {
         st_table *table = rb_st_init_numtable_with_size(src_num_ivs);
         rb_obj_copy_ivs_to_hash_table(obj, table);
@@ -358,11 +358,9 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     VALUE *src_buf = ROBJECT_FIELDS(obj);
     VALUE *dest_buf = ROBJECT_FIELDS(dest);
 
-    attr_index_t initial_capa = RSHAPE_CAPACITY(initial_shape_id);
     attr_index_t dest_capa = RSHAPE_CAPACITY(dest_shape_id);
 
-    RUBY_ASSERT(src_num_ivs <= dest_capa);
-    if (initial_capa < dest_capa) {
+    if (!(rb_shape_embedded_p(dest_shape_id))) {
         rb_ensure_iv_list_size(dest, 0, dest_capa);
         dest_buf = ROBJECT_FIELDS(dest);
     }

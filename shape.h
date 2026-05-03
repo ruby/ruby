@@ -27,11 +27,14 @@ STATIC_ASSERT(shape_id_num_bits, SHAPE_ID_NUM_BITS == sizeof(shape_id_t) * CHAR_
 //      19-22 SHAPE_ID_HEAP_INDEX_MASK
 //              index in rb_shape_tree.capacities. Allow to access slot size.
 //              Currently always 0 except for T_OBJECT.
-//      23 SHAPE_ID_FL_FROZEN
+//      23 SHAPE_ID_FL_EMBEDDED_FIELDS
+//              Whether the object fields are embedded in the slot.
+//              If not set they're stored in an associated IMEMO/fields.
+//      24 SHAPE_ID_FL_FROZEN
 //              Whether the object is frozen or not.
-//      24 SHAPE_ID_FL_HAS_OBJECT_ID
+//      25 SHAPE_ID_FL_HAS_OBJECT_ID
 //              Whether the object has an `SHAPE_OBJ_ID` transition.
-//      25 SHAPE_ID_FL_COMPLEX
+//      26 SHAPE_ID_FL_COMPLEX
 //              The object is backed by a `st_table`.
 
 enum shape_id_fl_type {
@@ -39,13 +42,13 @@ enum shape_id_fl_type {
 
     SHAPE_ID_HEAP_INDEX_MASK = ((1 << SHAPE_ID_HEAP_INDEX_BITS) - 1) << SHAPE_ID_HEAP_INDEX_OFFSET,
 
-    SHAPE_ID_FL_COMPLEX = RBIMPL_SHAPE_ID_FL(0),
+    SHAPE_ID_FL_EMBEDDED_FIELDS = RBIMPL_SHAPE_ID_FL(0),
     SHAPE_ID_FL_FROZEN = RBIMPL_SHAPE_ID_FL(1),
     SHAPE_ID_FL_HAS_OBJECT_ID = RBIMPL_SHAPE_ID_FL(2),
+    SHAPE_ID_FL_COMPLEX = RBIMPL_SHAPE_ID_FL(3),
 
     SHAPE_ID_FL_NON_CANONICAL_MASK = SHAPE_ID_FL_FROZEN | SHAPE_ID_FL_HAS_OBJECT_ID,
-    SHAPE_ID_FLAGS_MASK = SHAPE_ID_HEAP_INDEX_MASK | SHAPE_ID_FL_NON_CANONICAL_MASK | SHAPE_ID_FL_COMPLEX,
-
+    SHAPE_ID_FLAGS_MASK = SHAPE_ID_HEAP_INDEX_MASK | SHAPE_ID_FL_EMBEDDED_FIELDS | SHAPE_ID_FL_NON_CANONICAL_MASK | SHAPE_ID_FL_COMPLEX,
 #undef RBIMPL_SHAPE_ID_FL
 };
 
@@ -58,9 +61,11 @@ enum shape_id_mask {
 // The interpreter doesn't care about frozen status, slot size or object id when reading ivars.
 // So we normalize shape_id by clearing these bits to improve cache hits.
 // JITs however might care about some of it.
-#define SHAPE_ID_READ_ONLY_MASK (~(SHAPE_ID_FL_FROZEN | SHAPE_ID_HEAP_INDEX_MASK | SHAPE_ID_FL_HAS_OBJECT_ID))
+#define SHAPE_ID_READ_ONLY_MASK (~(SHAPE_ID_FL_FROZEN | SHAPE_ID_HEAP_INDEX_MASK | SHAPE_ID_FL_HAS_OBJECT_ID | SHAPE_ID_FL_EMBEDDED_FIELDS))
+
 // For write it's the same idea, but here we do care about frozen status.
-#define SHAPE_ID_WRITE_MASK (~(SHAPE_ID_HEAP_INDEX_MASK | SHAPE_ID_FL_HAS_OBJECT_ID))
+// JITs however might care about some of it.
+#define SHAPE_ID_WRITE_MASK (~(SHAPE_ID_HEAP_INDEX_MASK | SHAPE_ID_FL_HAS_OBJECT_ID | SHAPE_ID_FL_EMBEDDED_FIELDS))
 
 typedef uint32_t redblack_id_t;
 
@@ -176,6 +181,15 @@ RSHAPE_OFFSET(shape_id_t shape_id)
     return shape_id & SHAPE_ID_OFFSET_MASK;
 }
 
+static inline void
+RBASIC_SET_OWNER_SHAPE_ID(VALUE obj, shape_id_t shape_id)
+{
+    // Owner objects nave have SHAPE_ID_FL_EMBEDDED_FIELDS set;
+    shape_id_t owner_mask = SHAPE_ID_HEAP_INDEX_MASK | SHAPE_ID_FL_EMBEDDED_FIELDS;
+    shape_id_t owner_shape_id = RBASIC_SHAPE_ID(obj) & owner_mask;
+    RBASIC_SET_SHAPE_ID(obj, owner_shape_id | (shape_id & ~owner_mask));
+}
+
 static inline rb_shape_t *
 RSHAPE(shape_id_t shape_id)
 {
@@ -198,7 +212,7 @@ bool rb_shape_foreach_field(shape_id_t shape_id, rb_shape_foreach_transition_cal
 shape_id_t rb_shape_transition_add_ivar_no_warnings(shape_id_t shape_id, ID id, VALUE klass);
 
 shape_id_t rb_shape_object_id(shape_id_t original_shape_id);
-shape_id_t rb_shape_rebuild(shape_id_t initial_shape_id, shape_id_t dest_shape_id);
+shape_id_t rb_shape_rebuild(VALUE obj, shape_id_t initial_shape_id, shape_id_t dest_shape_id);
 void rb_shape_copy_fields(VALUE dest, VALUE *dest_buf, shape_id_t dest_shape_id, VALUE *src_buf, shape_id_t src_shape_id);
 void rb_shape_copy_complex_ivars(VALUE dest, VALUE obj, shape_id_t src_shape_id, st_table *fields_table);
 
@@ -212,6 +226,12 @@ static inline bool
 rb_shape_complex_p(shape_id_t shape_id)
 {
     return shape_id & SHAPE_ID_FL_COMPLEX;
+}
+
+static inline bool
+rb_shape_embedded_p(shape_id_t shape_id)
+{
+    return shape_id & SHAPE_ID_FL_EMBEDDED_FIELDS;
 }
 
 static inline bool
@@ -241,7 +261,8 @@ rb_shape_heap_index(shape_id_t shape_id)
 static inline shape_id_t
 rb_shape_root(size_t heap_id)
 {
-    shape_id_t heap_index = (shape_id_t)(heap_id + 1);
+    RUBY_ASSERT(heap_id <= SHAPE_ID_HEAP_INDEX_MAX);
+    shape_id_t heap_index = (shape_id_t)(heap_id);
     shape_id_t heap_flags = heap_index << SHAPE_ID_HEAP_INDEX_OFFSET;
 
     RUBY_ASSERT((heap_flags & SHAPE_ID_HEAP_INDEX_MASK) == heap_flags);
@@ -254,6 +275,22 @@ static inline shape_id_t
 RSHAPE_PARENT_OFFSET(shape_id_t shape_id)
 {
     return RSHAPE(shape_id)->parent_offset;
+}
+
+static inline shape_id_t
+rb_shape_embeddable_root(size_t heap_id, attr_index_t fields_count)
+{
+    shape_id_t shape_id = rb_shape_root(heap_id);
+    if (rb_shape_tree.capacities[heap_id] >= fields_count) {
+        shape_id |= SHAPE_ID_FL_EMBEDDED_FIELDS;
+    }
+    return shape_id;
+}
+
+static inline shape_id_t
+RSHAPE_PARENT_ID(shape_id_t shape_id)
+{
+    return (shape_id & ~SHAPE_ID_OFFSET_MASK) | RSHAPE_PARENT_OFFSET(shape_id);
 }
 
 static inline bool
@@ -277,20 +314,14 @@ RSHAPE_TYPE_P(shape_id_t shape_id, enum shape_type type)
 static inline attr_index_t
 RSHAPE_EMBEDDED_CAPACITY(shape_id_t shape_id)
 {
-    uint8_t heap_index = rb_shape_heap_index(shape_id);
-    if (heap_index) {
-        return rb_shape_tree.capacities[heap_index - 1];
-    }
-    return 0;
+    return rb_shape_tree.capacities[rb_shape_heap_index(shape_id)];
 }
 
 static inline attr_index_t
 RSHAPE_CAPACITY(shape_id_t shape_id)
 {
-    attr_index_t embedded_capacity = RSHAPE_EMBEDDED_CAPACITY(shape_id);
-
-    if (embedded_capacity > RSHAPE(shape_id)->capacity) {
-        return embedded_capacity;
+    if (rb_shape_embedded_p(shape_id)) {
+        return RSHAPE_EMBEDDED_CAPACITY(shape_id);
     }
     else {
         return RSHAPE(shape_id)->capacity;
@@ -443,28 +474,17 @@ rb_obj_using_gen_fields_table_p(VALUE obj)
 }
 
 static inline shape_id_t
-rb_shape_transition_frozen(shape_id_t shape_id)
+rb_shape_transition_extended(shape_id_t shape_id)
 {
-    return shape_id | SHAPE_ID_FL_FROZEN;
+    return shape_id & ~SHAPE_ID_FL_EMBEDDED_FIELDS;
 }
 
 static inline shape_id_t
-rb_shape_transition_complex(shape_id_t shape_id)
+rb_shape_transition_embedded(shape_id_t shape_id)
 {
-    shape_id_t next_shape_id = ROOT_COMPLEX_SHAPE_ID;
-
-    if (rb_shape_has_object_id(shape_id)) {
-        next_shape_id = ROOT_COMPLEX_WITH_OBJ_ID;
-    }
-
-    uint8_t heap_index = rb_shape_heap_index(shape_id);
-    if (heap_index) {
-        next_shape_id |= rb_shape_root(heap_index - 1);
-    }
-
-    RUBY_ASSERT(rb_shape_has_object_id(shape_id) == rb_shape_has_object_id(next_shape_id));
-
-    return next_shape_id;
+    shape_id |= SHAPE_ID_FL_EMBEDDED_FIELDS;
+    RUBY_ASSERT(RSHAPE_EMBEDDED_CAPACITY(shape_id) >= RSHAPE_LEN(shape_id));
+    return shape_id;
 }
 
 static inline shape_id_t
@@ -479,6 +499,64 @@ static inline shape_id_t
 rb_shape_transition_heap(shape_id_t shape_id, size_t heap_index)
 {
     return (shape_id & (~SHAPE_ID_HEAP_INDEX_MASK)) | rb_shape_root(heap_index);
+}
+
+static inline shape_id_t
+rb_shape_transition_complex(shape_id_t shape_id)
+{
+    shape_id_t new_offset = ROOT_COMPLEX_SHAPE_ID;
+    if (rb_shape_has_object_id(shape_id)) {
+        new_offset = ROOT_COMPLEX_WITH_OBJ_ID;
+    }
+    shape_id_t next_shape_id = RSHAPE_FLAGS(shape_id) | new_offset;
+    next_shape_id = rb_shape_transition_extended(next_shape_id);
+    next_shape_id |= SHAPE_ID_FL_COMPLEX;
+
+    RUBY_ASSERT(rb_shape_has_object_id(shape_id) == rb_shape_has_object_id(next_shape_id));
+
+    return next_shape_id;
+}
+
+static inline shape_id_t
+rb_shape_transition_best_heap(shape_id_t shape_id)
+{
+    if (rb_shape_complex_p(shape_id)) {
+        return rb_shape_transition_heap(shape_id, 0);
+    }
+
+    attr_index_t len = RSHAPE_LEN(shape_id);
+    shape_id_t heap_index = rb_shape_heap_index(shape_id);
+
+    if (len > rb_shape_tree.capacities[heap_index]) {
+        while (heap_index < rb_shape_tree.heaps_count) {
+            heap_index++;
+            if (rb_shape_tree.capacities[heap_index] >= len) {
+                return rb_shape_transition_embedded(rb_shape_transition_heap(shape_id, heap_index));
+            }
+        }
+        return rb_shape_transition_extended(rb_shape_transition_heap(shape_id, 0));
+    }
+    else {
+        while (heap_index > 0 && rb_shape_tree.capacities[heap_index - 1] > len) {
+            heap_index--;
+        }
+        return rb_shape_transition_embedded(rb_shape_transition_heap(shape_id, heap_index));
+    }
+}
+
+static inline shape_id_t
+rb_shape_transition_layout(shape_id_t shape_id)
+{
+    if (rb_shape_complex_p(shape_id) || RSHAPE_EMBEDDED_CAPACITY(shape_id) < RSHAPE_LEN(shape_id)) {
+        return rb_shape_transition_extended(shape_id);
+    }
+    return rb_shape_transition_embedded(shape_id);
+}
+
+static inline shape_id_t
+rb_shape_transition_frozen(shape_id_t shape_id)
+{
+    return shape_id | SHAPE_ID_FL_FROZEN;
 }
 
 shape_id_t rb_shape_transition_object_id(shape_id_t shape_id);

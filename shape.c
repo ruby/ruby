@@ -373,6 +373,12 @@ static const rb_data_type_t shape_tree_type = {
  * Shape getters
  */
 
+static inline bool
+RSHAPE_EMBEDDABLE_TYPE_P(VALUE obj)
+{
+    return RB_TYPE_P(obj, T_OBJECT) || IMEMO_TYPE_P(obj, imemo_fields);
+}
+
 static inline shape_id_t
 SHAPE_OFFSET(rb_shape_t *shape)
 {
@@ -386,6 +392,16 @@ SHAPE_ID(rb_shape_t *shape, shape_id_t previous_shape_id)
     RUBY_ASSERT(shape);
     shape_id_t offset = (shape_id_t)(shape - rb_shape_tree.shape_list);
     return offset | RSHAPE_FLAGS(previous_shape_id);
+}
+
+static inline shape_id_t
+OBJ_SHAPE_ID(VALUE obj, rb_shape_t *shape, shape_id_t previous_shape_id)
+{
+    shape_id_t new_shape_id = SHAPE_ID(shape, previous_shape_id);
+    if (RSHAPE_EMBEDDABLE_TYPE_P(obj)) {
+        new_shape_id = rb_shape_transition_layout(new_shape_id);
+    }
+    return new_shape_id;
 }
 
 void
@@ -694,14 +710,22 @@ rb_shape_transition_object_id(shape_id_t original_shape_id)
 {
     RUBY_ASSERT(!rb_shape_has_object_id(original_shape_id));
 
+    if (UNLIKELY(rb_shape_complex_p(original_shape_id))) {
+        RUBY_ASSERT(RSHAPE_OFFSET(original_shape_id) == 0);
+        return rb_shape_transition_complex(original_shape_id | SHAPE_ID_FL_HAS_OBJECT_ID);
+    }
+
     bool dont_care;
     rb_shape_t *shape = get_next_shape_internal(RSHAPE(original_shape_id), id_object_id, SHAPE_OBJ_ID, &dont_care, true);
     if (!shape) {
-        return ROOT_COMPLEX_WITH_OBJ_ID | RSHAPE_FLAGS(original_shape_id);
+        return rb_shape_transition_complex(original_shape_id | SHAPE_ID_FL_HAS_OBJECT_ID);
     }
+    shape_id_t next_shape_id = SHAPE_ID(shape, original_shape_id) | SHAPE_ID_FL_HAS_OBJECT_ID;
+    if (rb_shape_embedded_p(next_shape_id)) {
+        next_shape_id = rb_shape_transition_layout(next_shape_id);
+    }
+    return next_shape_id;
 
-    RUBY_ASSERT(shape);
-    return SHAPE_ID(shape, original_shape_id) | SHAPE_ID_FL_HAS_OBJECT_ID;
 }
 
 shape_id_t
@@ -895,7 +919,7 @@ rb_obj_shape_transition_remove_ivar(VALUE obj, ID id, shape_id_t *removed_shape_
     }
 
     if (new_shape) {
-        return SHAPE_ID(new_shape, original_shape_id);
+        return OBJ_SHAPE_ID(obj, new_shape, original_shape_id);
     }
     else if (removed_shape) {
         // We found the shape to remove, but couldn't create a new variation.
@@ -916,7 +940,7 @@ rb_obj_shape_transition_add_ivar(VALUE obj, ID id)
     VALUE klass = obj_get_owner_class(obj);
     rb_shape_t *next_shape = shape_get_next(RSHAPE(original_shape_id), SHAPE_IVAR, klass, id, true);
     if (next_shape) {
-        return SHAPE_ID(next_shape, original_shape_id);
+        return OBJ_SHAPE_ID(obj, next_shape, original_shape_id);
     }
     else {
         return rb_shape_transition_complex(original_shape_id);
@@ -1104,7 +1128,7 @@ shape_rebuild(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
 // Rebuild `dest_shape_id` starting from `initial_shape_id`, and keep only SHAPE_IVAR transitions.
 // SHAPE_OBJ_ID and frozen status are lost.
 shape_id_t
-rb_shape_rebuild(shape_id_t initial_shape_id, shape_id_t dest_shape_id)
+rb_shape_rebuild(VALUE obj, shape_id_t initial_shape_id, shape_id_t dest_shape_id)
 {
     RUBY_ASSERT(!rb_shape_complex_p(initial_shape_id));
     RUBY_ASSERT(!rb_shape_complex_p(dest_shape_id));
@@ -1124,6 +1148,16 @@ rb_shape_rebuild(shape_id_t initial_shape_id, shape_id_t dest_shape_id)
         // Happy path, we have nothing to do other than change the flags.
         next_shape_id = RSHAPE_OFFSET(dest_shape_id) | RSHAPE_FLAGS(initial_shape_id);
     }
+
+    if (RSHAPE_EMBEDDABLE_TYPE_P(obj)) {
+        if (RSHAPE_EMBEDDED_CAPACITY(initial_shape_id) >= RSHAPE(dest_shape_id)->capacity) {
+            next_shape_id |= SHAPE_ID_FL_EMBEDDED_FIELDS;
+        }
+        else {
+            next_shape_id &= ~SHAPE_ID_FL_EMBEDDED_FIELDS;
+        }
+    }
+
     return next_shape_id;
 }
 
@@ -1283,9 +1317,33 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
     }
 
     uint8_t flags_heap_index = rb_shape_heap_index(shape_id);
-    if (RB_TYPE_P(obj, T_OBJECT)) {
-        RUBY_ASSERT(flags_heap_index > 0);
-        size_t shape_id_slot_size = rb_shape_tree.capacities[flags_heap_index - 1] * sizeof(VALUE) + sizeof(struct RBasic);
+    if (RSHAPE_EMBEDDABLE_TYPE_P(obj)) {
+        attr_index_t embedded_capacity = rb_shape_tree.capacities[flags_heap_index];
+        if (rb_shape_complex_p(shape_id)) {
+            if (shape_id & SHAPE_ID_FL_EMBEDDED_FIELDS) {
+                rb_bug("Complex shape shouldn't have SHAPE_ID_FL_EMBEDDED_FIELDS\n");
+            }
+        }
+        else if (embedded_capacity >= RSHAPE_LEN(shape_id)) {
+            if (!(shape_id & SHAPE_ID_FL_EMBEDDED_FIELDS)) {
+                rb_bug(
+                    "Should have SHAPE_ID_FL_EMBEDDED_FIELDS flag: embedded_capacity = %u, shape_len = %u",
+                    embedded_capacity,
+                    RSHAPE_LEN(shape_id)
+                );
+            }
+        }
+        else {
+            if (shape_id & SHAPE_ID_FL_EMBEDDED_FIELDS) {
+                rb_bug(
+                    "Shouldn't have SHAPE_ID_FL_EMBEDDED_FIELDS flag: embedded_capacity = %u, shape_len = %u",
+                    embedded_capacity,
+                    RSHAPE_LEN(shape_id)
+                );
+            }
+        }
+
+        size_t shape_id_slot_size = embedded_capacity * sizeof(VALUE) + sizeof(struct RBasic);
         size_t actual_slot_size = rb_gc_obj_slot_size(obj);
 
         if (shape_id_slot_size != actual_slot_size) {
@@ -1293,9 +1351,7 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
         }
     }
     else {
-        if (flags_heap_index) {
-            rb_bug("shape_id indicate heap_index > 0 but object is not T_OBJECT: %s", rb_obj_info(obj));
-        }
+        RUBY_ASSERT(!(shape_id & SHAPE_ID_FL_EMBEDDED_FIELDS));
     }
 
     return true;
@@ -1534,7 +1590,8 @@ Init_default_shapes(void)
 
     size_t index;
     for (index = 0; index < heaps_count; index++) {
-        if (heap_sizes[index] > sizeof(struct RBasic)) {
+        size_t heap_size = heap_sizes[index];
+        if (heap_size > sizeof(struct RBasic)) {
             size_t capa = (heap_sizes[index] - sizeof(struct RBasic)) / sizeof(VALUE);
             RUBY_ASSERT(capa < ATTR_INDEX_NOT_SET);
             rb_shape_tree.capacities[index] = (attr_index_t)capa;

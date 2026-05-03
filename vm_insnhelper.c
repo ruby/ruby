@@ -1446,8 +1446,8 @@ vm_setivar_class(VALUE obj, VALUE val, rb_setivar_cache cache)
     RB_OBJ_WRITE(fields_obj, &rb_imemo_fields_ptr(fields_obj)[cache.index], val);
 
     if (shape_id != dest_shape_id) {
-        RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
-        RBASIC_SET_SHAPE_ID(fields_obj, dest_shape_id);
+        RBASIC_SET_SHAPE_ID(fields_obj, rb_shape_transition_offset(RBASIC_SHAPE_ID(fields_obj), dest_shape_id));
+        RBASIC_SET_OWNER_SHAPE_ID(obj, dest_shape_id);
     }
 
     RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
@@ -1466,12 +1466,15 @@ vm_setivar_default(VALUE obj, ID id, VALUE val, rb_setivar_cache cache)
     }
 
     VALUE fields_obj = rb_obj_fields(obj, id);
-    RUBY_ASSERT(fields_obj);
+    if (!fields_obj) {
+        RUBY_ASSERT(RSHAPE_LEN(shape_id) == 0);
+        fields_obj = rb_imemo_fields_new(obj, shape_id, RB_OBJ_SHAREABLE_P(obj));
+    }
     RB_OBJ_WRITE(fields_obj, &rb_imemo_fields_ptr(fields_obj)[cache.index], val);
 
     if (shape_id != dest_shape_id) {
-        RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
-        RBASIC_SET_SHAPE_ID(fields_obj, dest_shape_id);
+        RBASIC_SET_SHAPE_ID(fields_obj, rb_shape_transition_offset(RBASIC_SHAPE_ID(fields_obj), dest_shape_id));
+        RBASIC_SET_OWNER_SHAPE_ID(obj, dest_shape_id);
     }
 
     RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
