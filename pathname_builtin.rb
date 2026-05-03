@@ -500,18 +500,6 @@ class Pathname
   end
   private :cleanpath_aggressive
 
-  def del_trailing_separator(path) # :nodoc:
-    if r = chop_basename(path)
-      pre, basename = r
-      pre + basename
-    elsif /#{SEPARATOR_PAT}+\z/o =~ path
-      $` + File.dirname(path)[/#{SEPARATOR_PAT}*\z/o]
-    else
-      path
-    end
-  end
-  private :del_trailing_separator
-
   def cleanpath_conservative # :nodoc:
     path = @path
     names = []

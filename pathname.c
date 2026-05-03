@@ -265,6 +265,35 @@ add_trailing_separator(VALUE self, VALUE path)
     return rb_str_cat_cstr(rb_str_dup(path), "/");
 }
 
+/* :nodoc: */
+static VALUE
+del_trailing_separator(VALUE self, VALUE path)
+{
+    long len = RSTRING_LEN(check_strpath(path));
+    if (len <= 0) return path;
+    rb_encoding *enc = rb_enc_get(path);
+    const char *name = RSTRING_PTR(path);
+    const char *end = name + len, *tail = end;
+    const char *top = rb_enc_path_skip_prefix(name, end, enc);
+    if (tail > top && isdirsep(tail[-1])) {
+        while (--tail > top && isdirsep(tail[-1]));
+        if (tail > top &&
+            tail[0] != '/' &&
+            !rb_str_enc_fastpath(path) &&
+            rb_enc_left_char_head(top, tail, end, enc) != tail) {
+            /* trailing byte, not a directory separator */
+            ++tail;
+        }
+        if (tail < end) {
+            if (tail == name || (drive_letter && tail == top && top[-1] == ':')) {
+                ++tail;
+            }
+        }
+    }
+    if (tail == end) return path;
+    return rb_str_subseq(path, 0, tail - name);
+}
+
 #include "pathname_builtin.rbinc"
 
 static void init_ids(void);
@@ -294,6 +323,7 @@ InitVM_pathname(void)
     rb_define_private_method(rb_cPathname, "chop_basename", chop_basename, 1);
     rb_define_private_method(rb_cPathname, "has_trailing_separator?", has_trailing_separator, 1);
     rb_define_private_method(rb_cPathname, "add_trailing_separator", add_trailing_separator, 1);
+    rb_define_private_method(rb_cPathname, "del_trailing_separator", del_trailing_separator, 1);
 
     rb_provide("pathname.so");
 }
