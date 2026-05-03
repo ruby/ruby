@@ -46,6 +46,7 @@ struct rb_classext_struct {
     const rb_box_t *box;
     VALUE super;
     VALUE fields_obj; // Fields are either ivar or other internal properties stored inline
+    VALUE classpath;
     struct rb_id_table *m_tbl;
     struct rb_id_table *const_tbl;
     struct rb_id_table *callable_m_tbl;
@@ -92,7 +93,6 @@ struct rb_classext_struct {
     bool iclass_origin_shared_mtbl : 1;
     bool superclasses_with_self : 1;
     bool expect_no_ivar : 1;
-    VALUE classpath;
 };
 typedef struct rb_classext_struct rb_classext_t;
 
