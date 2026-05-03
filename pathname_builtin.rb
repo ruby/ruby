@@ -326,17 +326,6 @@ class Pathname
     self
   end
 
-  # split_names(path) -> prefix, [name, ...]
-  def split_names(path) # :nodoc:
-    names = []
-    while r = chop_basename(path)
-      path, basename = r
-      names.unshift basename
-    end
-    return path, names
-  end
-  private :split_names
-
   def prepend_prefix(prefix, relpath) # :nodoc:
     if relpath.empty?
       File.dirname(prefix)

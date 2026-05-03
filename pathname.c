@@ -234,6 +234,26 @@ chop_basename(VALUE self, VALUE path)
 }
 
 /* :nodoc: */
+/* split_names(path) -> prefix, [name, ...] */
+static VALUE
+split_names(VALUE self, VALUE path)
+{
+    rb_encoding *enc = rb_enc_get(check_strpath(path));
+    const char *beg = RSTRING_PTR(path), *ptr = beg;
+    const char *end = RSTRING_END(path);
+    const char *root = rb_enc_path_skip_prefix_root(ptr, end, enc);
+    VALUE pre = rb_str_subseq(path, 0, root - ptr);
+    VALUE names = rb_ary_new();
+    while (ptr < end) {
+        const char *next = rb_enc_path_next(ptr, end, enc);
+        if (next > ptr) rb_ary_push(names, rb_str_subseq(path, ptr - beg, next - ptr));
+        ptr = next;
+        while (ptr < end && isdirsep(*ptr)) ++ptr;
+    }
+    return rb_assoc_new(pre, names);
+}
+
+/* :nodoc: */
 /* has_trailing_separator?(path) -> bool */
 static VALUE
 has_trailing_separator(VALUE self, VALUE path)
@@ -321,6 +341,7 @@ InitVM_pathname(void)
 
     rb_define_private_method(rb_cPathname, "has_separator?", has_separator_p, 1);
     rb_define_private_method(rb_cPathname, "chop_basename", chop_basename, 1);
+    rb_define_private_method(rb_cPathname, "split_names", split_names, 1);
     rb_define_private_method(rb_cPathname, "has_trailing_separator?", has_trailing_separator, 1);
     rb_define_private_method(rb_cPathname, "add_trailing_separator", add_trailing_separator, 1);
     rb_define_private_method(rb_cPathname, "del_trailing_separator", del_trailing_separator, 1);
