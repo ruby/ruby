@@ -8,7 +8,6 @@ module Gem
 
   WIN_PATTERNS = [
     /bccwin/i,
-    /cygwin/i,
     /djgpp/i,
     /mingw/i,
     /mswin/i,
