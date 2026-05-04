@@ -1370,6 +1370,12 @@ check_override_opt_method(VALUE klass, VALUE mid)
     }
 }
 
+static VALUE
+zsuper_to_super(int argc, VALUE *argv, VALUE self)
+{
+    return rb_call_super_kw(argc, argv, RB_PASS_CALLED_KEYWORDS);
+}
+
 static inline rb_method_entry_t* search_method0(VALUE klass, ID id, VALUE *defined_class_ptr, bool skip_refined);
 /*
  * klass->method_table[mid] = method_entry(defined_class, visi, def)
@@ -1386,6 +1392,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     st_data_t data;
     int make_refined = 0;
     VALUE orig_klass;
+    bool turn_zsuper_to_super = false;
 
     if (NIL_P(klass)) {
         klass = rb_cObject;
@@ -1411,12 +1418,10 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 
     if (RB_TYPE_P(klass, T_MODULE) && FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
         VALUE refined_class = rb_refinement_module_get_refined_class(klass);
-        bool search_superclass = type == VM_METHOD_TYPE_ZSUPER && !lookup_method_table(refined_class, mid);
-        rb_add_refined_method_entry(refined_class, mid);
-        if (search_superclass) {
-            rb_method_entry_t *me = lookup_method_table(refined_class, mid);
-            RB_OBJ_WRITE(me, &me->def->body.refined.orig_me, search_method0(refined_class, mid, NULL, true));
+        if (type == VM_METHOD_TYPE_ZSUPER) {
+            turn_zsuper_to_super = true;
         }
+        rb_add_refined_method_entry(refined_class, mid);
     }
     if (type == VM_METHOD_TYPE_REFINED) {
         rb_method_entry_t *old_me = lookup_method_table(RCLASS_ORIGIN(klass), mid);
@@ -1479,6 +1484,12 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     me = rb_method_entry_create(mid, defined_class, visi, NULL);
     if (def == NULL) {
         def = rb_method_definition_create(type, original_id);
+        if (turn_zsuper_to_super) {
+          def->type = VM_METHOD_TYPE_CFUNC;
+          def->body.cfunc.func = (rb_cfunc_t)zsuper_to_super;
+          def->body.cfunc.invoker = ractor_safe_call_cfunc_m1;
+          def->body.cfunc.argc = -1;
+        }
     }
     rb_method_definition_set(me, def, opts);
 
