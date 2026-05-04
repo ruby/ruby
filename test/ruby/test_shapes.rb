@@ -6,7 +6,7 @@ require 'securerandom'
 
 # These test the functionality of object shapes
 class TestShapes < Test::Unit::TestCase
-  MANY_IVS = 80
+  MANY_IVS = RubyVM::Shape::SHAPE_MAX_EMBEDDED_CAPACITY + 1
 
   class IVOrder
     def expected_ivs
