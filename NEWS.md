@@ -15,6 +15,8 @@ Note: We're only listing outstanding class updates.
 
     * `Array#pack` accepts a new format `R` and `r` for unpacking unsigned
       and signed LEB128 encoded integers. [[Feature #21785]]
+    * `Array#pack` accepts a new format `^` that returns the current offset.
+      Useful when combined with variable width formats like LEB128. [[Feature #21796]]
 
 * ENV
 
@@ -164,6 +166,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #15330]: https://bugs.ruby-lang.org/issues/15330
 [Feature #21390]: https://bugs.ruby-lang.org/issues/21390
 [Feature #21785]: https://bugs.ruby-lang.org/issues/21785
+[Feature #21796]: https://bugs.ruby-lang.org/issues/21796
 [Feature #21853]: https://bugs.ruby-lang.org/issues/21853
 [Feature #21861]: https://bugs.ruby-lang.org/issues/21861
 [Feature #21932]: https://bugs.ruby-lang.org/issues/21932
