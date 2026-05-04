@@ -211,9 +211,16 @@ pub extern "C" fn rb_zjit_invalidate_no_ep_escape(iseq: IseqPtr) {
     }
 
     with_vm_lock(src_loc!(), || {
-        // Remember that this ISEQ may escape EP
+        // Remember that this ISEQ may escape EP. If we have already processed
+        // an EP escape for this ISEQ, the JIT version was already invalidated
+        // and any patch points were already patched out. Redoing that work
+        // would just re-walk the same patch points and overwrite them with
+        // identical jumps. CRuby calls this on every env heap-promotion,
+        // regardless of whether ZJIT has anything left to invalidate.
         let invariants = ZJITState::get_invariants();
-        invariants.ep_escape_iseqs.insert(iseq);
+        if !invariants.ep_escape_iseqs.insert(iseq) {
+            return;
+        }
 
         // If the ISEQ has been compiled assuming it doesn't escape EP, invalidate the JIT code.
         if let Some(patch_points) = invariants.no_ep_escape_iseq_patch_points.remove(&iseq) {
