@@ -500,6 +500,7 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
 
 #define argf_of(obj) (*(struct argf *)DATA_PTR(obj))
 #define ARGF argf_of(argf)
+#define ARGF_SET(field, value) RB_OBJ_WRITE(argf, &ARGF.field, value)
 
 #define GetWriteIO(io) rb_io_get_write_io(io)
 
@@ -10017,16 +10018,16 @@ argf_memsize(const void *ptr)
 static const rb_data_type_t argf_type = {
     "ARGF",
     {argf_mark_and_move, RUBY_TYPED_DEFAULT_FREE, argf_memsize, argf_mark_and_move},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 static inline void
-argf_init(struct argf *p, VALUE v)
+argf_init(VALUE argf, struct argf *p, VALUE v)
 {
     p->filename = Qnil;
     p->current_file = Qnil;
     p->lineno = 0;
-    p->argv = v;
+    RB_OBJ_WRITE(argf, &p->argv, v);
 }
 
 static VALUE
@@ -10035,7 +10036,7 @@ argf_alloc(VALUE klass)
     struct argf *p;
     VALUE argf = TypedData_Make_Struct(klass, struct argf, &argf_type, p);
 
-    argf_init(p, Qnil);
+    argf_init(argf, p, Qnil);
     return argf;
 }
 
@@ -10046,7 +10047,7 @@ static VALUE
 argf_initialize(VALUE argf, VALUE argv)
 {
     memset(&ARGF, 0, sizeof(ARGF));
-    argf_init(&ARGF, argv);
+    argf_init(argf, &ARGF, argv);
 
     return argf;
 }
@@ -10057,7 +10058,8 @@ argf_initialize_copy(VALUE argf, VALUE orig)
 {
     if (!OBJ_INIT_COPY(argf, orig)) return argf;
     ARGF = argf_of(orig);
-    ARGF.argv = rb_obj_dup(ARGF.argv);
+    rb_gc_writebarrier_remember(argf);
+    ARGF_SET(argv, rb_obj_dup(ARGF.argv));
     return argf;
 }
 
@@ -10176,11 +10178,11 @@ argf_next_argv(VALUE argf)
         if (RARRAY_LEN(ARGF.argv) > 0) {
             VALUE filename = rb_ary_shift(ARGF.argv);
             FilePathValue(filename);
-            ARGF.filename = filename;
+            ARGF_SET(filename, filename);
             filename = rb_str_encode_ospath(filename);
             fn = StringValueCStr(filename);
             if (RSTRING_LEN(filename) == 1 && fn[0] == '-') {
-                ARGF.current_file = rb_stdin;
+                ARGF_SET(current_file, rb_stdin);
                 if (ARGF.inplace) {
                     rb_warn("Can't do inplace edit for stdio; skipping");
                     goto retry;
@@ -10275,7 +10277,7 @@ argf_next_argv(VALUE argf)
                 if (!ARGF.binmode) {
                     fmode |= DEFAULT_TEXTMODE;
                 }
-                ARGF.current_file = prep_io(fr, fmode, rb_cFile, fn);
+                ARGF_SET(current_file, prep_io(fr, fmode, rb_cFile, fn));
                 if (!NIL_P(write_io)) {
                     rb_io_set_write_io(ARGF.current_file, write_io);
                 }
@@ -10304,8 +10306,8 @@ argf_next_argv(VALUE argf)
         }
     }
     else if (ARGF.next_p == -1) {
-        ARGF.current_file = rb_stdin;
-        ARGF.filename = rb_str_new2("-");
+        ARGF_SET(current_file, rb_stdin);
+        ARGF_SET(filename, rb_str_new2("-"));
         if (ARGF.inplace) {
             rb_warn("Can't do inplace edit for stdio");
             rb_ractor_stdout_set(orig_stdout);
@@ -13674,6 +13676,7 @@ argf_set_encoding(int argc, VALUE *argv, VALUE argf)
     rb_io_set_encoding(argc, argv, ARGF.current_file);
     GetOpenFile(ARGF.current_file, fptr);
     ARGF.encs = fptr->encs;
+    RB_OBJ_WRITTEN(argf, Qundef, ARGF.encs.ecopts);
     return argf;
 }
 
@@ -14606,7 +14609,7 @@ argf_inplace_mode_set(VALUE argf, VALUE val)
         ARGF.inplace = Qnil;
     }
     else {
-        ARGF.inplace = rb_str_new_frozen(val);
+        ARGF_SET(inplace, rb_str_new_frozen(val));
     }
     return argf;
 }
@@ -14620,7 +14623,7 @@ opt_i_set(VALUE val, ID id, VALUE *var)
 void
 ruby_set_inplace_mode(const char *suffix)
 {
-    ARGF.inplace = !suffix ? Qfalse : !*suffix ? Qnil : rb_str_new(suffix, strlen(suffix));
+    ARGF_SET(inplace, !suffix ? Qfalse : !*suffix ? Qnil : rb_str_new(suffix, strlen(suffix)));
 }
 
 /*
@@ -15968,7 +15971,7 @@ Init_IO(void)
 
     rb_define_hooked_variable("$.", &argf, argf_lineno_getter, argf_lineno_setter);
     rb_define_hooked_variable("$FILENAME", &argf, argf_filename_getter, rb_gvar_readonly_setter);
-    ARGF.filename = rb_str_new2("-");
+    ARGF_SET(filename, rb_str_new2("-"));
 
     rb_define_hooked_variable("$-i", &argf, opt_i_get, opt_i_set);
     rb_gvar_ractor_local("$-i");
