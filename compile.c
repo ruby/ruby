@@ -4699,6 +4699,7 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *cond,
         CHECK(ok = compile_logical(iseq, ret, RNODE_AND(cond)->nd_1st, NULL, else_label));
         cond = RNODE_AND(cond)->nd_2nd;
         if (ok == COMPILE_SINGLE) {
+            ADD_INSNL(ret, cond, jump, else_label);
             INIT_ANCHOR(ignore);
             ret = ignore;
             then_label = NEW_LABEL(nd_line(cond));
@@ -4708,6 +4709,7 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *cond,
         CHECK(ok = compile_logical(iseq, ret, RNODE_OR(cond)->nd_1st, then_label, NULL));
         cond = RNODE_OR(cond)->nd_2nd;
         if (ok == COMPILE_SINGLE) {
+            ADD_INSNL(ret, cond, jump, then_label);
             INIT_ANCHOR(ignore);
             ret = ignore;
             else_label = NEW_LABEL(nd_line(cond));
