@@ -632,23 +632,6 @@ class Pathname
     chop_basename(@path) == nil && SEPARATOR_PAT.match?(@path)
   end
 
-  # call-seq:
-  #   absolute? -> true or false
-  #
-  # Returns whether +self+ contains an absolute path:
-  #
-  #   Pathname.new('/home').absolute? # => true
-  #   Pathname.new('lib').absolute?   # => false
-  #
-  # OS-dependent for some paths:
-  #
-  #   Pathname.new('C:/').absolute?   # => true   # On Windows.
-  #   Pathname.new('C:/').absolute?   # => false  # Elsewhere.
-  #
-  def absolute?
-    ABSOLUTE_PATH.match? @path
-  end
-
   # The opposite of Pathname#absolute?
   #
   # It returns +false+ if the pathname begins with a slash.

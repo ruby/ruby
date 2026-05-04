@@ -1,4 +1,17 @@
 #include "ruby.h"
+#include "internal.h"
+#include "internal/file.h"
+#include "internal/vm.h"
+
+#if defined __CYGWIN__ || defined DOSISH
+# define drive_letter 1
+# define alt_separator 1
+# define isdirsep(x) ((x) == '/' || (x) == '\\')
+#else
+# define drive_letter 0
+# define alt_separator 0
+# define isdirsep(x) ((x) == '/')
+#endif
 
 static VALUE rb_cPathname;
 static ID id_at_path;
@@ -98,6 +111,33 @@ path_sub(int argc, VALUE *argv, VALUE self)
     return rb_class_new_instance(1, &str, rb_obj_class(self));
 }
 
+/*
+ * call-seq:
+ *   absolute? -> true or false
+ *
+ * Returns whether +self+ contains an absolute path:
+ *
+ *   Pathname.new('/home').absolute? # => true
+ *   Pathname.new('lib').absolute?   # => false
+ *
+ * OS-dependent for some paths:
+ *
+ *   Pathname.new('C:/').absolute?   # => true   # On Windows.
+ *   Pathname.new('C:/').absolute?   # => false  # Elsewhere.
+ */
+static VALUE
+path_absolute_p(VALUE self)
+{
+    VALUE path = get_strpath(self);
+    const char *ptr = RSTRING_PTR(path);
+    long len = RSTRING_LEN(path);
+    if (len < 1) return Qfalse;
+    if (drive_letter) {
+        if (len >= 2 && ISALPHA(ptr[0]) && (ptr[1] == ':')) return Qtrue;
+    }
+    return RBOOL(isdirsep(ptr[0]));
+}
+
 #include "pathname_builtin.rbinc"
 
 static void init_ids(void);
@@ -119,6 +159,7 @@ InitVM_pathname(void)
     rb_cPathname = rb_define_class("Pathname", rb_cObject);
     rb_define_method(rb_cPathname, "<=>", path_cmp, 1);
     rb_define_method(rb_cPathname, "sub", path_sub, -1);
+    rb_define_method(rb_cPathname, "absolute?", path_absolute_p, 0);
 
     rb_provide("pathname.so");
 }

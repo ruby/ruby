@@ -11143,6 +11143,10 @@ parser_st.$(OBJEXT): {$(VPATH)}st.c
 pathname.$(OBJEXT): $(hdrdir)/ruby.h
 pathname.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 pathname.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+pathname.$(OBJEXT): $(top_srcdir)/internal/file.h
+pathname.$(OBJEXT): $(top_srcdir)/internal/serial.h
+pathname.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+pathname.$(OBJEXT): $(top_srcdir)/internal/vm.h
 pathname.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 pathname.$(OBJEXT): {$(VPATH)}assert.h
 pathname.$(OBJEXT): {$(VPATH)}backward.h
@@ -11160,6 +11164,7 @@ pathname.$(OBJEXT): {$(VPATH)}config.h
 pathname.$(OBJEXT): {$(VPATH)}defines.h
 pathname.$(OBJEXT): {$(VPATH)}encoding.h
 pathname.$(OBJEXT): {$(VPATH)}intern.h
+pathname.$(OBJEXT): {$(VPATH)}internal.h
 pathname.$(OBJEXT): {$(VPATH)}internal/abi.h
 pathname.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 pathname.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
