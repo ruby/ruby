@@ -1424,6 +1424,30 @@ populate_cache(attr_index_t index, shape_id_t next_shape_id, ID id, const rb_ise
     }
 }
 
+static inline shape_id_t
+revalidate_cache(shape_id_t shape_id, shape_id_t dest_shape_id, ID id, attr_index_t index)
+{
+    RUBY_ASSERT(shape_id != INVALID_SHAPE_ID);
+
+    if (shape_id != dest_shape_id) {
+        if (!(dest_shape_id != INVALID_SHAPE_ID &&
+              RSHAPE_DIRECT_CHILD_P(shape_id, dest_shape_id) &&
+              RSHAPE_EDGE_NAME(dest_shape_id) == id &&
+              index < RSHAPE_CAPACITY(shape_id))) {
+            return INVALID_SHAPE_ID;
+        }
+    }
+
+    // Cache hit case
+    RUBY_ASSERT(!rb_shape_frozen_p(dest_shape_id));
+    RUBY_ASSERT(!rb_shape_too_complex_p(dest_shape_id));
+    RUBY_ASSERT(!rb_shape_frozen_p(shape_id));
+    RUBY_ASSERT(!rb_shape_too_complex_p(shape_id));
+    RUBY_ASSERT(RSHAPE_CAPACITY(shape_id) >= RSHAPE_LEN(dest_shape_id));
+
+    return dest_shape_id;
+}
+
 ALWAYS_INLINE(static VALUE vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, int is_attr));
 NOINLINE(static VALUE vm_setivar_slowpath_ivar(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic));
 NOINLINE(static VALUE vm_setivar_slowpath_attr(VALUE obj, ID id, VALUE val, const struct rb_callcache *cc));
@@ -1476,20 +1500,8 @@ vm_setivar_class(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_ind
     }
 
     shape_id_t shape_id = RBASIC_SHAPE_ID(fields_obj);
-
-    // Cache hit case
-    if (shape_id == dest_shape_id) {
-        RUBY_ASSERT(dest_shape_id != INVALID_SHAPE_ID && shape_id != INVALID_SHAPE_ID);
-    }
-    else if (dest_shape_id != INVALID_SHAPE_ID) {
-        if (RSHAPE_DIRECT_CHILD_P(shape_id, dest_shape_id) && RSHAPE_EDGE_NAME(dest_shape_id) == id && RSHAPE_CAPACITY(shape_id) == RSHAPE_CAPACITY(dest_shape_id)) {
-            RUBY_ASSERT(index < RSHAPE_CAPACITY(dest_shape_id));
-        }
-        else {
-            return Qundef;
-        }
-    }
-    else {
+    dest_shape_id = revalidate_cache(shape_id, dest_shape_id, id, index);
+    if (UNLIKELY(dest_shape_id == INVALID_SHAPE_ID)) {
         return Qundef;
     }
 
@@ -1510,20 +1522,8 @@ static VALUE
 vm_setivar_default(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t index)
 {
     shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
-
-    // Cache hit case
-    if (shape_id == dest_shape_id) {
-        RUBY_ASSERT(dest_shape_id != INVALID_SHAPE_ID && shape_id != INVALID_SHAPE_ID);
-    }
-    else if (dest_shape_id != INVALID_SHAPE_ID) {
-        if (RSHAPE_DIRECT_CHILD_P(shape_id, dest_shape_id) && RSHAPE_EDGE_NAME(dest_shape_id) == id && RSHAPE_CAPACITY(shape_id) == RSHAPE_CAPACITY(dest_shape_id)) {
-            RUBY_ASSERT(index < RSHAPE_CAPACITY(dest_shape_id));
-        }
-        else {
-            return Qundef;
-        }
-    }
-    else {
+    dest_shape_id = revalidate_cache(shape_id, dest_shape_id, id, index);
+    if (UNLIKELY(dest_shape_id == INVALID_SHAPE_ID)) {
         return Qundef;
     }
 
@@ -1551,32 +1551,15 @@ vm_setivar(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t i
             VM_ASSERT(!rb_ractor_shareable_p(obj) || rb_obj_frozen_p(obj));
 
             shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
-            RUBY_ASSERT(dest_shape_id == INVALID_SHAPE_ID || !rb_shape_too_complex_p(dest_shape_id));
-
-            if (LIKELY(shape_id == dest_shape_id)) {
-                RUBY_ASSERT(dest_shape_id != INVALID_SHAPE_ID && shape_id != INVALID_SHAPE_ID);
-                VM_ASSERT(!rb_ractor_shareable_p(obj));
-            }
-            else if (dest_shape_id != INVALID_SHAPE_ID) {
-                if (RSHAPE_DIRECT_CHILD_P(shape_id, dest_shape_id) && RSHAPE_EDGE_NAME(dest_shape_id) == id && RSHAPE_CAPACITY(shape_id) == RSHAPE_CAPACITY(dest_shape_id)) {
-                    RUBY_ASSERT(dest_shape_id != INVALID_SHAPE_ID && shape_id != INVALID_SHAPE_ID);
-
-                    RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
-
-                    RUBY_ASSERT(index < RSHAPE_CAPACITY(dest_shape_id));
-                }
-                else {
-                    break;
-                }
-            }
-            else {
+            dest_shape_id = revalidate_cache(shape_id, dest_shape_id, id, index);
+            if (UNLIKELY(dest_shape_id == INVALID_SHAPE_ID)) {
                 break;
             }
 
-            VALUE *ptr = ROBJECT_FIELDS(obj);
-
-            RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
-            RB_OBJ_WRITE(obj, &ptr[index], val);
+            RB_OBJ_WRITE(obj, &ROBJECT_FIELDS(obj)[index], val);
+            if (shape_id != dest_shape_id) {
+                RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
+            }
 
             RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
             RB_DEBUG_COUNTER_INC(ivar_set_obj_hit);

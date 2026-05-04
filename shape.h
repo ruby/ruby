@@ -55,10 +55,12 @@ enum shape_id_mask {
     SHAPE_ID_HAS_IVAR_MASK = SHAPE_ID_FL_TOO_COMPLEX | (SHAPE_ID_OFFSET_MASK - 1),
 };
 
-// The interpreter doesn't care about frozen status or slot size when reading ivars.
+// The interpreter doesn't care about frozen status, slot size or object id when reading ivars.
 // So we normalize shape_id by clearing these bits to improve cache hits.
 // JITs however might care about some of it.
 #define SHAPE_ID_READ_ONLY_MASK (~(SHAPE_ID_FL_FROZEN | SHAPE_ID_HEAP_INDEX_MASK | SHAPE_ID_FL_HAS_OBJECT_ID))
+// For write it's the same, but there we do care about frozen status
+#define SHAPE_ID_WRITE_MASK (~(SHAPE_ID_HEAP_INDEX_MASK | SHAPE_ID_FL_HAS_OBJECT_ID))
 
 typedef uint32_t redblack_id_t;
 
@@ -206,6 +208,12 @@ shape_id_t rb_shape_object_id(shape_id_t original_shape_id);
 shape_id_t rb_shape_rebuild(shape_id_t initial_shape_id, shape_id_t dest_shape_id);
 void rb_shape_copy_fields(VALUE dest, VALUE *dest_buf, shape_id_t dest_shape_id, VALUE *src_buf, shape_id_t src_shape_id);
 void rb_shape_copy_complex_ivars(VALUE dest, VALUE obj, shape_id_t src_shape_id, st_table *fields_table);
+
+static inline bool
+rb_shape_frozen_p(shape_id_t shape_id)
+{
+    return shape_id & SHAPE_ID_FL_FROZEN;
+}
 
 static inline bool
 rb_shape_too_complex_p(shape_id_t shape_id)
