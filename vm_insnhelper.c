@@ -1233,10 +1233,17 @@ vm_get_cvar_base(const rb_cref_t *cref, const rb_control_frame_t *cfp, int top_l
     return klass;
 }
 
-ALWAYS_INLINE(static void fill_ivar_cache(const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, int is_attr, attr_index_t index, shape_id_t shape_id));
+ALWAYS_INLINE(static void fill_ivar_cache(attr_index_t index, shape_id_t shape_id, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, bool is_attr));
 static inline void
-fill_ivar_cache(const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, int is_attr, attr_index_t index, shape_id_t shape_id)
+fill_ivar_cache(attr_index_t index, shape_id_t shape_id, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, bool is_attr)
 {
+    RUBY_ASSERT(!rb_shape_too_complex_p(shape_id));
+    RUBY_ASSERT(shape_id != INVALID_SHAPE_ID);
+
+    // We only care about the shape offset.
+    shape_id = RSHAPE_OFFSET(shape_id);
+
+    // Cache population code
     if (is_attr) {
         vm_cc_attr_index_set(cc, index, shape_id);
     }
@@ -1367,7 +1374,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
                 // This fills in the cache with the shared cache object.
                 // "ent" is the shared cache object
                 if (cached_id != previous_cached_id) {
-                    fill_ivar_cache(iseq, ic, cc, is_attr, index, cached_id);
+                    fill_ivar_cache(index, cached_id, iseq, ic, cc, is_attr);
                 }
 
                 if (index == ATTR_INDEX_NOT_SET) {
@@ -1410,26 +1417,8 @@ general_path:
     }
 }
 
-static void
-populate_cache(attr_index_t index, shape_id_t next_shape_id, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, bool is_attr)
-{
-    RUBY_ASSERT(!rb_shape_too_complex_p(next_shape_id));
-    RUBY_ASSERT(next_shape_id != INVALID_SHAPE_ID);
-
-    // We only care about the shape offset.
-    next_shape_id = RSHAPE_OFFSET(next_shape_id);
-
-    // Cache population code
-    if (is_attr) {
-        vm_cc_attr_index_set(cc, index, next_shape_id);
-    }
-    else {
-        vm_ic_attr_index_set(iseq, ic, index, next_shape_id);
-    }
-}
-
 static inline shape_id_t
-revalidate_cache(shape_id_t shape_id, shape_id_t dest_shape_offset, ID id, attr_index_t index)
+revalidate_setivar_cache(shape_id_t shape_id, shape_id_t dest_shape_offset, ID id, attr_index_t index)
 {
     RUBY_ASSERT(shape_id != INVALID_SHAPE_ID);
     RUBY_ASSERT(dest_shape_offset == INVALID_SHAPE_ID || dest_shape_offset == RSHAPE_OFFSET(dest_shape_offset));
@@ -1485,7 +1474,7 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
     shape_id_t next_shape_id = RBASIC_SHAPE_ID(obj);
 
     if (!rb_shape_too_complex_p(next_shape_id)) {
-        populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
+        fill_ivar_cache(index, next_shape_id, iseq, ic, cc, is_attr);
     }
 
     RB_DEBUG_COUNTER_INC(ivar_set_obj_miss);
@@ -1521,7 +1510,7 @@ vm_setivar_class(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_ind
     }
 
     shape_id_t shape_id = RBASIC_SHAPE_ID(fields_obj);
-    dest_shape_id = revalidate_cache(shape_id, dest_shape_id, id, index);
+    dest_shape_id = revalidate_setivar_cache(shape_id, dest_shape_id, id, index);
     if (UNLIKELY(dest_shape_id == INVALID_SHAPE_ID)) {
         return Qundef;
     }
@@ -1543,7 +1532,7 @@ static VALUE
 vm_setivar_default(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t index)
 {
     shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
-    dest_shape_id = revalidate_cache(shape_id, dest_shape_id, id, index);
+    dest_shape_id = revalidate_setivar_cache(shape_id, dest_shape_id, id, index);
     if (UNLIKELY(dest_shape_id == INVALID_SHAPE_ID)) {
         return Qundef;
     }
@@ -1572,7 +1561,7 @@ vm_setivar(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t i
             VM_ASSERT(!rb_ractor_shareable_p(obj) || rb_obj_frozen_p(obj));
 
             shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
-            dest_shape_id = revalidate_cache(shape_id, dest_shape_id, id, index);
+            dest_shape_id = revalidate_setivar_cache(shape_id, dest_shape_id, id, index);
             if (UNLIKELY(dest_shape_id == INVALID_SHAPE_ID)) {
                 break;
             }
