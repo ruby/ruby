@@ -367,24 +367,12 @@ rb_gc_shutdown_call_finalizer_p(VALUE obj)
     }
 }
 
-uint32_t
-rb_gc_get_shape(VALUE obj)
-{
-    return (uint32_t)rb_obj_shape_id(obj);
-}
-
 void
-rb_gc_set_shape(VALUE obj, uint32_t shape_id)
-{
-    RBASIC_SET_SHAPE_ID(obj, (uint32_t)shape_id);
-}
-
-uint32_t
-rb_gc_rebuild_shape(VALUE obj, size_t heap_id)
+rb_gc_obj_changed_pool(VALUE obj, size_t heap_id)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, T_OBJECT));
 
-    return (uint32_t)rb_obj_shape_transition_heap(obj, heap_id);
+    RBASIC_SET_SHAPE_ID(obj, rb_obj_shape_transition_heap(obj, heap_id));
 }
 
 void rb_vm_update_references(void *ptr);
