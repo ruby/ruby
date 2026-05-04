@@ -39,9 +39,9 @@ enum shape_id_fl_type {
 
     SHAPE_ID_HEAP_INDEX_MASK = ((1 << SHAPE_ID_HEAP_INDEX_BITS) - 1) << SHAPE_ID_HEAP_INDEX_OFFSET,
 
-    SHAPE_ID_FL_FROZEN = RBIMPL_SHAPE_ID_FL(0),
-    SHAPE_ID_FL_HAS_OBJECT_ID = RBIMPL_SHAPE_ID_FL(1),
-    SHAPE_ID_FL_TOO_COMPLEX = RBIMPL_SHAPE_ID_FL(2),
+    SHAPE_ID_FL_TOO_COMPLEX = RBIMPL_SHAPE_ID_FL(0),
+    SHAPE_ID_FL_FROZEN = RBIMPL_SHAPE_ID_FL(1),
+    SHAPE_ID_FL_HAS_OBJECT_ID = RBIMPL_SHAPE_ID_FL(2),
 
     SHAPE_ID_FL_NON_CANONICAL_MASK = SHAPE_ID_FL_FROZEN | SHAPE_ID_FL_HAS_OBJECT_ID,
     SHAPE_ID_FLAGS_MASK = SHAPE_ID_HEAP_INDEX_MASK | SHAPE_ID_FL_NON_CANONICAL_MASK | SHAPE_ID_FL_TOO_COMPLEX,
@@ -59,7 +59,7 @@ enum shape_id_mask {
 // So we normalize shape_id by clearing these bits to improve cache hits.
 // JITs however might care about some of it.
 #define SHAPE_ID_READ_ONLY_MASK (~(SHAPE_ID_FL_FROZEN | SHAPE_ID_HEAP_INDEX_MASK | SHAPE_ID_FL_HAS_OBJECT_ID))
-// For write it's the same, but there we do care about frozen status
+// For write it's the same idea, but here we do care about frozen status.
 #define SHAPE_ID_WRITE_MASK (~(SHAPE_ID_HEAP_INDEX_MASK | SHAPE_ID_FL_HAS_OBJECT_ID))
 
 typedef uint32_t redblack_id_t;
@@ -473,6 +473,14 @@ rb_shape_transition_complex(shape_id_t shape_id)
     RUBY_ASSERT(rb_shape_has_object_id(shape_id) == rb_shape_has_object_id(next_shape_id));
 
     return next_shape_id;
+}
+
+static inline shape_id_t
+rb_shape_transition_offset(shape_id_t shape_id, shape_id_t offset)
+{
+    offset = RSHAPE_OFFSET(offset);
+    RUBY_ASSERT(RSHAPE_OFFSET(shape_id) == offset || RSHAPE_DIRECT_CHILD_P(shape_id, offset));
+    return RSHAPE_FLAGS(shape_id) | offset;
 }
 
 static inline shape_id_t

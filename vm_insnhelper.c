@@ -1414,6 +1414,10 @@ static void
 populate_cache(attr_index_t index, shape_id_t next_shape_id, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_callcache *cc, bool is_attr)
 {
     RUBY_ASSERT(!rb_shape_too_complex_p(next_shape_id));
+    RUBY_ASSERT(next_shape_id != INVALID_SHAPE_ID);
+
+    // We only care about the shape offset.
+    next_shape_id = RSHAPE_OFFSET(next_shape_id);
 
     // Cache population code
     if (is_attr) {
@@ -1425,25 +1429,42 @@ populate_cache(attr_index_t index, shape_id_t next_shape_id, ID id, const rb_ise
 }
 
 static inline shape_id_t
-revalidate_cache(shape_id_t shape_id, shape_id_t dest_shape_id, ID id, attr_index_t index)
+revalidate_cache(shape_id_t shape_id, shape_id_t dest_shape_offset, ID id, attr_index_t index)
 {
     RUBY_ASSERT(shape_id != INVALID_SHAPE_ID);
+    RUBY_ASSERT(dest_shape_offset == INVALID_SHAPE_ID || dest_shape_offset == RSHAPE_OFFSET(dest_shape_offset));
 
-    if (shape_id != dest_shape_id) {
-        if (!(dest_shape_id != INVALID_SHAPE_ID &&
-              RSHAPE_DIRECT_CHILD_P(shape_id, dest_shape_id) &&
+    shape_id_t dest_shape_id = shape_id;
+    shape_id_t normalized_shape_id = shape_id & SHAPE_ID_WRITE_MASK;
+
+    if (normalized_shape_id == dest_shape_offset) {
+        // Perfect hit case, we're reassigning an existing ivar, the shape doesn't change.
+        // Also since `SHAPE_ID_WRITE_MASK` contains COMPLEX and FROZEN flags, by matching
+        // `dest_shape_offset` we also checked that the object is neither complex nor frozen.
+    }
+    else {
+        if (dest_shape_offset == INVALID_SHAPE_ID) {
+            // The cache is cold.
+            return INVALID_SHAPE_ID;
+        }
+
+        // Child hit case, the cache offset is a direct child of the current shape
+        // and the ivar name matches.
+        // We additionally need to ensure that the object has sufficient capacity.
+        if (!(RSHAPE_DIRECT_CHILD_P(shape_id, dest_shape_id) &&
               RSHAPE_EDGE_NAME(dest_shape_id) == id &&
               index < RSHAPE_CAPACITY(shape_id))) {
             return INVALID_SHAPE_ID;
         }
+
+        // We use the cached offset, but combined with the current shape flags.
+        dest_shape_id = rb_shape_transition_offset(shape_id, dest_shape_offset);
     }
 
     // Cache hit case
-    RUBY_ASSERT(!rb_shape_frozen_p(dest_shape_id));
-    RUBY_ASSERT(!rb_shape_too_complex_p(dest_shape_id));
     RUBY_ASSERT(!rb_shape_frozen_p(shape_id));
     RUBY_ASSERT(!rb_shape_too_complex_p(shape_id));
-    RUBY_ASSERT(RSHAPE_CAPACITY(shape_id) >= RSHAPE_LEN(dest_shape_id));
+    RUBY_ASSERT(RSHAPE_CAPACITY(shape_id) >= RSHAPE_LEN(dest_shape_offset));
 
     return dest_shape_id;
 }
