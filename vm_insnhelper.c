@@ -1417,7 +1417,8 @@ general_path:
     }
 }
 
-static inline shape_id_t
+ALWAYS_INLINE(static shape_id_t revalidate_setivar_cache(shape_id_t shape_id, shape_id_t dest_shape_offset, ID id, attr_index_t index));
+static shape_id_t
 revalidate_setivar_cache(shape_id_t shape_id, shape_id_t dest_shape_offset, ID id, attr_index_t index)
 {
     RUBY_ASSERT(shape_id != INVALID_SHAPE_ID);
