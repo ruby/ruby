@@ -2216,6 +2216,9 @@ Init_eval(void)
     rb_gvar_ractor_local("$@");
     rb_gvar_ractor_local("$!");
 
+    rb_gvar_box_dynamic("$@");
+    rb_gvar_box_dynamic("$!");
+
     rb_define_global_function("raise", f_raise, -1);
     rb_define_global_function("fail", f_raise, -1);
 
