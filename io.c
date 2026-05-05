@@ -12250,8 +12250,12 @@ seek_before_access(VALUE argp)
  *  With only argument +path+ given, reads in text mode and returns the entire content
  *  of the file at the given path:
  *
- *    IO.read('t.txt')
- *    # => "First line\nSecond line\n\nThird line\nFourth line\n"
+ *    File.read('t.txt')
+ *    # => "First line\nSecond line\n\nFourth line\nFifth line\n"
+ *    File.read('t.ja')
+ *    # => "こんにちは"
+ *    File.read('t.dat')
+ *    # => "\xFE\xFF\x99\x90\x99\x91\x99\x92\x99\x93\x99\x94"
  *
  *  On Windows, text mode can terminate reading and leave bytes in the file
  *  unread when encountering certain special bytes. Consider using
@@ -12259,15 +12263,36 @@ seek_before_access(VALUE argp)
  *
  *  With argument +length+, returns +length+ bytes if available:
  *
- *    IO.read('t.txt', 7) # => "First l"
- *    IO.read('t.txt', 700)
+ *    File.read('t.txt', 7)
+ *    # => "First l"
+ *    File.read('t.ja', 7)
+ *    # => "\xE3\x81\x93\xE3\x82\x93\xE3"
+ *    File.read('t.dat', 7)
+ *    # => "\xFE\xFF\x99\x90\x99\x91\x99"
+ *
+ *  Returns all bytes if +length+ is larger than the files size:
+ *
+ *    File.read('t.txt', 700)
  *    # => "First line\r\nSecond line\r\n\r\nFourth line\r\nFifth line\r\n"
+ *    File.read('t.ja', 700)
+ *    # => "\xE3\x81\x93\xE3\x82\x93\xE3\x81\xAB\xE3\x81\xA1\xE3\x81\xAF"
+ *    File.read('t.dat', 700)
+ *    # => "\xFE\xFF\x99\x90\x99\x91\x99\x92\x99\x93\x99\x94"
  *
  *  With arguments +length+ and +offset+, returns +length+ bytes
  *  if available, beginning at the given +offset+:
  *
- *    IO.read('t.txt', 10, 2)   # => "rst line\nS"
- *    IO.read('t.txt', 10, 200) # => nil
+ *    File.read('t.txt', 10, 2)
+ *    # => "rst line\r\n"
+ *    File.read('t.ja', 10, 2)
+ *    # => "\x93\xE3\x82\x93\xE3\x81\xAB\xE3\x81\xA1"
+ *    File.read('t.dat', 10, 2)
+ *    # => "\x99\x90\x99\x91\x99\x92\x99\x93\x99\x94"
+ *
+ *  Returns +nil+ if +offset+ is past the end of the stream:
+ *
+ *    File.read('t.txt', 10, 200)
+ *    # => nil
  *
  *  Optional keyword arguments +opts+ specify:
  *
