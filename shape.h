@@ -70,7 +70,7 @@ typedef uint32_t redblack_id_t;
 
 #define SHAPE_MAX_VARIATIONS 8
 
-#define INVALID_SHAPE_ID ((shape_id_t)-1)
+#define INVALID_SHAPE_ID (SHAPE_BUFFER_SIZE - 1)
 #define ATTR_INDEX_NOT_SET ((attr_index_t)-1)
 
 #define ROOT_SHAPE_ID                   0x0
@@ -187,8 +187,9 @@ RSHAPE_OFFSET(shape_id_t shape_id)
 static inline rb_shape_t *
 RSHAPE(shape_id_t shape_id)
 {
-    RUBY_ASSERT(shape_id != INVALID_SHAPE_ID);
-    return &rb_shape_tree.shape_list[RSHAPE_OFFSET(shape_id)];
+    shape_id_t offset = RSHAPE_OFFSET(shape_id);
+    RUBY_ASSERT(offset != INVALID_SHAPE_ID);
+    return &rb_shape_tree.shape_list[offset];
 }
 
 int32_t rb_shape_id_offset(void);

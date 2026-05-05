@@ -30,7 +30,7 @@
 #define SINGLE_CHILD_P(x) ((uintptr_t)(x) & SINGLE_CHILD_TAG)
 #define SINGLE_CHILD(x) (rb_shape_t *)((uintptr_t)(x) & SINGLE_CHILD_MASK)
 #define ANCESTOR_CACHE_THRESHOLD 10
-#define MAX_SHAPE_ID (SHAPE_BUFFER_SIZE - 1)
+#define MAX_SHAPE_ID (INVALID_SHAPE_ID - 1)
 #define ANCESTOR_SEARCH_MAX_DEPTH 2
 
 static ID id_object_id;
