@@ -1475,18 +1475,18 @@ fn gen_jump(asm: &mut Assembler, branch: lir::BranchEdge) {
 
 /// Compile a conditional branch to a basic block
 fn gen_if_true(asm: &mut Assembler, val: lir::Opnd, branch: lir::BranchEdge, fall_through: lir::BranchEdge) {
-    // If val is zero, move on to the next instruction.
+    // If val is not zero, move on to the next instruction.
     asm.test(val, val);
-    asm.push_insn(lir::Insn::Jz(Target::Block(fall_through)));
-    asm.jmp(Target::Block(branch));
+    asm.push_insn(lir::Insn::Jnz(Target::Block(branch)));
+    asm.jmp(Target::Block(fall_through));
 }
 
 /// Compile a conditional branch to a basic block
 fn gen_if_false(asm: &mut Assembler, val: lir::Opnd, branch: lir::BranchEdge, fall_through: lir::BranchEdge) {
-    // If val is not zero, move on to the next instruction.
+    // If val is zero, move on to the next instruction.
     asm.test(val, val);
-    asm.push_insn(lir::Insn::Jnz(Target::Block(fall_through)));
-    asm.jmp(Target::Block(branch));
+    asm.push_insn(lir::Insn::Jz(Target::Block(branch)));
+    asm.jmp(Target::Block(fall_through));
 }
 
 /// Compile a dynamic dispatch with block
