@@ -117,14 +117,6 @@ RUBY_SYMBOL_EXPORT_END
 size_t rb_shapes_cache_size(void);
 size_t rb_shapes_count(void);
 
-union rb_attr_index_cache {
-    uint64_t pack;
-    struct {
-        shape_id_t shape_id;
-        attr_index_t index;
-    } unpack;
-};
-
 static inline shape_id_t
 RBASIC_SHAPE_ID(VALUE obj)
 {
@@ -267,8 +259,7 @@ RSHAPE_PARENT_OFFSET(shape_id_t shape_id)
 static inline bool
 RSHAPE_DIRECT_CHILD_P(shape_id_t parent_offset, shape_id_t child_id)
 {
-    return (RSHAPE_FLAGS(parent_offset) == RSHAPE_FLAGS(child_id) &&
-        RSHAPE_PARENT_OFFSET(child_id) == RSHAPE_OFFSET(parent_offset));
+    return RSHAPE_PARENT_OFFSET(child_id) == RSHAPE_OFFSET(parent_offset);
 }
 
 static inline enum shape_type
@@ -528,5 +519,108 @@ size_t rb_shape_memsize(shape_id_t shape);
 size_t rb_shape_edges_count(shape_id_t shape_id);
 size_t rb_shape_depth(shape_id_t shape_id);
 RUBY_SYMBOL_EXPORT_END
+
+// Inline cache helpers
+
+typedef struct {
+    attr_index_t index;
+    shape_id_t shape_offset;
+} rb_getivar_cache;
+
+union rb_getivar_cache {
+    uint64_t pack;
+    rb_getivar_cache unpack;
+};
+STATIC_ASSERT(rb_getivar_cache_size, sizeof(union rb_getivar_cache) <= sizeof(uint64_t));
+
+#define IVAR_CACHE_INIT ((uint64_t)-1)
+#define ATTR_INDEX_T_NUM_BITS (sizeof(attr_index_t) * CHAR_BIT)
+
+static inline rb_getivar_cache
+rb_getivar_cache_unpack(uint64_t packed)
+{
+    union rb_getivar_cache cache = {
+        .pack = packed,
+    };
+
+    // Because caches may initialized with all bits set (IVAR_CACHE_INIT), and `shape_offset` if 32bits,
+    // we need to remove any potential extra bits set in the "padding".
+    cache.unpack.shape_offset &= SHAPE_ID_OFFSET_MASK;
+    return cache.unpack;
+}
+
+static inline uint64_t
+rb_getivar_cache_pack(shape_id_t shape_offset, attr_index_t index)
+{
+    RUBY_ASSERT(shape_offset == RSHAPE_OFFSET(shape_offset));
+    RUBY_ASSERT(shape_offset != INVALID_SHAPE_ID);
+
+    union rb_getivar_cache cache = {
+        .unpack = {
+            .shape_offset = shape_offset,
+            .index = index,
+        },
+    };
+    return cache.pack;
+}
+
+typedef struct {
+    attr_index_t index;
+    shape_id_t source_shape_offset;
+    shape_id_t dest_shape_offset;
+} rb_setivar_cache;
+
+static inline rb_setivar_cache
+rb_setivar_cache_unpack(uint64_t packed)
+{
+    rb_setivar_cache cache = {
+        .index = (attr_index_t)packed,
+        .source_shape_offset = RSHAPE_OFFSET((shape_id_t)(packed >> ATTR_INDEX_T_NUM_BITS)),
+        .dest_shape_offset = RSHAPE_OFFSET((shape_id_t)(packed >> (ATTR_INDEX_T_NUM_BITS + SHAPE_ID_OFFSET_NUM_BITS))),
+    };
+    return cache;
+}
+
+static inline uint64_t
+rb_setivar_cache_pack(shape_id_t shape_offset, shape_id_t dest_shape_offset, attr_index_t index)
+{
+    RUBY_ASSERT(shape_offset == RSHAPE_OFFSET(shape_offset));
+    RUBY_ASSERT(dest_shape_offset == RSHAPE_OFFSET(dest_shape_offset));
+    RUBY_ASSERT(shape_offset == dest_shape_offset || RSHAPE_DIRECT_CHILD_P(shape_offset, dest_shape_offset));
+
+    uint64_t packed_cache = (uint64_t)dest_shape_offset << (ATTR_INDEX_T_NUM_BITS + SHAPE_ID_OFFSET_NUM_BITS);
+    packed_cache |= (uint64_t)shape_offset << ATTR_INDEX_T_NUM_BITS;
+    packed_cache |= (uint64_t)index;
+    return packed_cache;
+}
+
+
+ALWAYS_INLINE(static shape_id_t rb_setivar_cache_revalidate(shape_id_t shape_id, rb_setivar_cache cache));
+static shape_id_t
+rb_setivar_cache_revalidate(shape_id_t shape_id, rb_setivar_cache cache)
+{
+    RUBY_ASSERT(shape_id != INVALID_SHAPE_ID);
+    RUBY_ASSERT(cache.dest_shape_offset == INVALID_SHAPE_ID || cache.dest_shape_offset == RSHAPE_OFFSET(cache.dest_shape_offset));
+
+    shape_id_t normalized_shape_id = shape_id & SHAPE_ID_WRITE_MASK;
+    if (UNLIKELY(normalized_shape_id != cache.source_shape_offset)) {
+        return INVALID_SHAPE_ID;
+    }
+
+    if (UNLIKELY(cache.index >= RSHAPE_CAPACITY(shape_id))) {
+        // That's still a hit in term of layout, but the object will need to be resized,
+        // so unfortunately we'll have to go through the slow path regardless...
+        return INVALID_SHAPE_ID;
+    }
+
+    // Cache hit case
+    RUBY_ASSERT(cache.source_shape_offset == cache.dest_shape_offset || RSHAPE_DIRECT_CHILD_P(shape_id, cache.dest_shape_offset));
+    RUBY_ASSERT(cache.index < RSHAPE_CAPACITY(shape_id));
+    RUBY_ASSERT(!rb_shape_frozen_p(shape_id));
+    RUBY_ASSERT(!rb_shape_too_complex_p(shape_id));
+
+    // We use the cached offset, but combined with the current shape flags.
+    return rb_shape_transition_offset(shape_id, cache.dest_shape_offset);
+}
 
 #endif

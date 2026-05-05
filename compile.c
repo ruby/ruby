@@ -2781,12 +2781,12 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
                             if (insn == BIN(setinstancevariable)) {
                                 cache->iv_set_name = SYM2ID(operands[j - 1]);
+                                cache->value = IVAR_CACHE_INIT;
                             }
                             else {
                                 cache->iv_set_name = 0;
+                                cache->value = rb_getivar_cache_pack(ROOT_SHAPE_ID, ATTR_INDEX_NOT_SET);
                             }
-
-                            vm_ic_attr_index_initialize(cache, INVALID_SHAPE_ID);
                         }
                       case TS_ISE: /* inline storage entry: `once` insn */
                       case TS_ICVARC: /* inline cvar cache */
@@ -13124,12 +13124,12 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
                         if (insn == BIN(setinstancevariable)) {
                             ID iv_name = (ID)code[code_index - 1];
                             cache->iv_set_name = iv_name;
+                            cache->value = IVAR_CACHE_INIT;
                         }
                         else {
                             cache->iv_set_name = 0;
+                            cache->value = rb_getivar_cache_pack(ROOT_SHAPE_ID, ATTR_INDEX_NOT_SET);
                         }
-
-                        vm_ic_attr_index_initialize(cache, INVALID_SHAPE_ID);
                     }
 
                 }
