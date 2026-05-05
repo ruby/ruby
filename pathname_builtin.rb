@@ -1044,8 +1044,12 @@ class Pathname    # * File *
   # if specified.
   def read(...) File.read(@path, ...) end
 
-  # See <tt>File.binread</tt>.  Returns all the bytes from the file, or the first +N+
-  # if specified.
+  # call-seq:
+  #   binread(length = nil, offset = 0) -> string or nil
+  #
+  # Behaves like #read, except that the file is opened in binary mode
+  # with ASCII-8BIT encoding.
+  #
   def binread(...) File.binread(@path, ...) end
 
   # See <tt>File.readlines</tt>.  Returns all the lines from the file.
