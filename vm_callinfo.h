@@ -459,7 +459,7 @@ vm_unpack_shape_and_index(const uint64_t cache_value, shape_id_t *shape_id, attr
         .pack = cache_value,
     };
     *shape_id = cache.unpack.shape_id;
-    *index = cache.unpack.index - 1;
+    *index = cache.unpack.index;
 }
 
 static inline void
@@ -514,7 +514,7 @@ vm_pack_shape_and_index(shape_id_t shape_id, attr_index_t index)
     union rb_attr_index_cache cache = {
         .unpack = {
             .shape_id = shape_id,
-            .index = index + 1,
+            .index = index,
         }
     };
     return cache.pack;
