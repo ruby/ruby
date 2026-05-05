@@ -8417,198 +8417,204 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *n
 
       //   break;
       // }
-      // case NODE_HSHPTN: {
-      //   /*
-      //    *   keys = nil
-      //    *   if pattern.has_kw_args_node? && !pattern.has_kw_rest_arg_node?
-      //    *     keys = pattern.kw_args_node.keys
-      //    *   end
-      //    *   if pattern.has_constant_node?
-      //    *     unless pattern.constant === obj
-      //    *       goto match_failed
-      //    *     end
-      //    *   end
-      //    *   unless obj.respond_to?(:deconstruct_keys)
-      //    *     goto match_failed
-      //    *   end
-      //    *   d = obj.deconstruct_keys(keys)
-      //    *   unless Hash === d
-      //    *     goto type_error
-      //    *   end
-      //    *   if pattern.has_kw_rest_arg_node?
-      //    *     d = d.dup
-      //    *   end
-      //    *   if pattern.has_kw_args_node?
-      //    *     pattern.kw_args_node.each |k,|
-      //    *       unless d.key?(k)
-      //    *         goto match_failed
-      //    *       end
-      //    *     end
-      //    *     pattern.kw_args_node.each |k, pat|
-      //    *       if pattern.has_kw_rest_arg_node?
-      //    *         unless pat.match?(d.delete(k))
-      //    *           goto match_failed
-      //    *         end
-      //    *       else
-      //    *         unless pat.match?(d[k])
-      //    *           goto match_failed
-      //    *         end
-      //    *       end
-      //    *     end
-      //    *   else
-      //    *     unless d.empty?
-      //    *       goto match_failed
-      //    *     end
-      //    *   end
-      //    *   if pattern.has_kw_rest_arg_node?
-      //    *     if pattern.no_rest_keyword?
-      //    *       unless d.empty?
-      //    *         goto match_failed
-      //    *       end
-      //    *     else
-      //    *       unless pattern.kw_rest_arg_node.match?(d)
-      //    *         goto match_failed
-      //    *       end
-      //    *     end
-      //    *   end
-      //    *   goto matched
-      //    * type_error:
-      //    *   FrozenCore.raise TypeError
-      //    * match_failed:
-      //    *   goto unmatched
-      //    */
-      //   LABEL *match_failed, *type_error;
-      //   VALUE keys = Qnil;
+      case RB_HASH_PATTERN_NODE: {
+        /*
+         *   keys = nil
+         *   if pattern.has_kw_args_node? && !pattern.has_kw_rest_arg_node?
+         *     keys = pattern.kw_args_node.keys
+         *   end
+         *   if pattern.has_constant_node?
+         *     unless pattern.constant === obj
+         *       goto match_failed
+         *     end
+         *   end
+         *   unless obj.respond_to?(:deconstruct_keys)
+         *     goto match_failed
+         *   end
+         *   d = obj.deconstruct_keys(keys)
+         *   unless Hash === d
+         *     goto type_error
+         *   end
+         *   if pattern.has_kw_rest_arg_node?
+         *     d = d.dup
+         *   end
+         *   if pattern.has_kw_args_node?
+         *     pattern.kw_args_node.each |k,|
+         *       unless d.key?(k)
+         *         goto match_failed
+         *       end
+         *     end
+         *     pattern.kw_args_node.each |k, pat|
+         *       if pattern.has_kw_rest_arg_node?
+         *         unless pat.match?(d.delete(k))
+         *           goto match_failed
+         *         end
+         *       else
+         *         unless pat.match?(d[k])
+         *           goto match_failed
+         *         end
+         *       end
+         *     end
+         *   else
+         *     unless d.empty?
+         *       goto match_failed
+         *     end
+         *   end
+         *   if pattern.has_kw_rest_arg_node?
+         *     if pattern.no_rest_keyword?
+         *       unless d.empty?
+         *         goto match_failed
+         *       end
+         *     else
+         *       unless pattern.kw_rest_arg_node.match?(d)
+         *         goto match_failed
+         *       end
+         *     end
+         *   end
+         *   goto matched
+         * type_error:
+         *   FrozenCore.raise TypeError
+         * match_failed:
+         *   goto unmatched
+         */
+        LABEL *match_failed, *type_error;
+        VALUE keys = Qnil;
+        const rb_node_list2_t *elements = &RB_NODE_HASH_PATTERN(node)->elements;
+        const NODE *nd_rest = RB_NODE_HASH_PATTERN(node)->rest;
+        bool has_rest = nd_rest && !(nd_type_p(nd_rest, RB_ASSOC_SPLAT_NODE) && RB_NODE_ASSOC_SPLAT(nd_rest)->value == NULL);
 
-      //   match_failed = NEW_LABEL(line);
-      //   type_error = NEW_LABEL(line);
+        match_failed = NEW_LABEL(line);
+        type_error = NEW_LABEL(line);
 
-      //   if (RNODE_HSHPTN(node)->nd_pkwargs && !RNODE_HSHPTN(node)->nd_pkwrestarg) {
-      //       const NODE *kw_args = RNODE_HASH(RNODE_HSHPTN(node)->nd_pkwargs)->nd_head;
-      //       keys = rb_ary_new_capa(kw_args ? RNODE_LIST(kw_args)->as.nd_alen/2 : 0);
-      //       while (kw_args) {
-      //           rb_ary_push(keys, get_symbol_value(iseq, RNODE_LIST(kw_args)->nd_head));
-      //           kw_args = RNODE_LIST(RNODE_LIST(kw_args)->nd_next)->nd_next;
-      //       }
-      //   }
+        if (!RB_NODE_LIST_EMPTY_P(elements) && !has_rest) {
+            keys = rb_ary_new_capa(RB_NODE_LIST_LEN(elements));
+            for (size_t i = 0; i < RB_NODE_LIST_LEN(elements); i++) {
+                const NODE *elem = elements->nodes[i];
+                EXPECT_NODE("hash pattern elements/keys", elem, RB_ASSOC_NODE, COMPILE_NG);
+                rb_ary_push(keys, get_symbol_value(iseq, RB_NODE_ASSOC(elem)->key));
+            }
+        }
 
-      //   CHECK(iseq_compile_pattern_constant(iseq, ret, node, match_failed, in_single_pattern, base_index));
+        CHECK(iseq_compile_pattern_constant(iseq, ret, node, match_failed, in_single_pattern, base_index));
 
-      //   ADD_INSN(ret, line_node, dup);
-      //   ADD_INSN1(ret, line_node, putobject, ID2SYM(rb_intern("deconstruct_keys")));
-      //   ADD_SEND(ret, line_node, idRespond_to, INT2FIX(1)); // (1)
-      //   if (in_single_pattern) {
-      //       CHECK(iseq_compile_pattern_set_general_errmsg(iseq, ret, node, rb_fstring_lit("%p does not respond to #deconstruct_keys"), base_index + 1 /* (1) */));
-      //   }
-      //   ADD_INSNL(ret, line_node, branchunless, match_failed);
+        ADD_INSN(ret, line_node, dup);
+        ADD_INSN1(ret, line_node, putobject, ID2SYM(rb_intern("deconstruct_keys")));
+        ADD_SEND(ret, line_node, idRespond_to, INT2FIX(1)); // (1)
+        if (in_single_pattern) {
+            CHECK(iseq_compile_pattern_set_general_errmsg(iseq, ret, node, rb_fstring_lit("%p does not respond to #deconstruct_keys"), base_index + 1 /* (1) */));
+        }
+        ADD_INSNL(ret, line_node, branchunless, match_failed);
 
-      //   if (NIL_P(keys)) {
-      //       ADD_INSN(ret, line_node, putnil);
-      //   }
-      //   else {
-      //       RB_OBJ_SET_FROZEN_SHAREABLE(keys);
-      //       ADD_INSN1(ret, line_node, duparray, keys);
-      //       RB_OBJ_WRITTEN(iseq, Qundef, rb_obj_hide(keys));
-      //   }
-      //   ADD_SEND(ret, line_node, rb_intern("deconstruct_keys"), INT2FIX(1)); // (2)
+        if (NIL_P(keys)) {
+            ADD_INSN(ret, line_node, putnil);
+        }
+        else {
+            RB_OBJ_SET_FROZEN_SHAREABLE(keys);
+            ADD_INSN1(ret, line_node, duparray, keys);
+            RB_OBJ_WRITTEN(iseq, Qundef, rb_obj_hide(keys));
+        }
+        ADD_SEND(ret, line_node, rb_intern("deconstruct_keys"), INT2FIX(1)); // (2)
 
-      //   ADD_INSN(ret, line_node, dup);
-      //   ADD_INSN1(ret, line_node, checktype, INT2FIX(T_HASH));
-      //   ADD_INSNL(ret, line_node, branchunless, type_error);
+        ADD_INSN(ret, line_node, dup);
+        ADD_INSN1(ret, line_node, checktype, INT2FIX(T_HASH));
+        ADD_INSNL(ret, line_node, branchunless, type_error);
 
-      //   if (RNODE_HSHPTN(node)->nd_pkwrestarg) {
-      //       ADD_SEND(ret, line_node, rb_intern("dup"), INT2FIX(0));
-      //   }
+        if (has_rest) {
+            ADD_SEND(ret, line_node, rb_intern("dup"), INT2FIX(0));
+        }
 
-      //   if (RNODE_HSHPTN(node)->nd_pkwargs) {
-      //       int i;
-      //       int keys_num;
-      //       const NODE *args;
-      //       args = RNODE_HASH(RNODE_HSHPTN(node)->nd_pkwargs)->nd_head;
-      //       if (args) {
-      //           DECL_ANCHOR(match_values);
-      //           INIT_ANCHOR(match_values);
-      //           keys_num = rb_long2int(RNODE_LIST(args)->as.nd_alen) / 2;
-      //           for (i = 0; i < keys_num; i++) {
-      //               NODE *key_node = RNODE_LIST(args)->nd_head;
-      //               NODE *value_node = RNODE_LIST(RNODE_LIST(args)->nd_next)->nd_head;
-      //               VALUE key = get_symbol_value(iseq, key_node);
+        if (!RB_NODE_LIST_EMPTY_P(elements)) {
+            int i;
+            int keys_num;
+            DECL_ANCHOR(match_values);
+            INIT_ANCHOR(match_values);
+            keys_num = rb_long2int(RB_NODE_LIST_LEN(elements));
 
-      //               ADD_INSN(ret, line_node, dup);
-      //               ADD_INSN1(ret, line_node, putobject, key);
-      //               ADD_SEND(ret, line_node, rb_intern("key?"), INT2FIX(1)); // (3)
-      //               if (in_single_pattern) {
-      //                   LABEL *match_succeeded;
-      //                   match_succeeded = NEW_LABEL(line);
+            for (size_t i = 0; i < RB_NODE_LIST_LEN(elements); i++) {
+                const NODE *args = elements->nodes[i];
+                EXPECT_NODE("hash pattern elements/key", args, RB_ASSOC_NODE, COMPILE_NG);
 
-      //                   ADD_INSN(ret, line_node, dup);
-      //                   ADD_INSNL(ret, line_node, branchif, match_succeeded);
+                NODE *key_node = RB_NODE_ASSOC(args)->key;
+                NODE *value_node = RB_NODE_ASSOC(args)->value;
+                VALUE key = get_symbol_value(iseq, key_node);
 
-      //                   VALUE str = rb_str_freeze(rb_sprintf("key not found: %+"PRIsVALUE, key));
-      //                   ADD_INSN1(ret, line_node, putobject, RB_OBJ_SET_SHAREABLE(str)); // (4)
-      //                   ADD_INSN1(ret, line_node, setn, INT2FIX(base_index + CASE3_BI_OFFSET_ERROR_STRING + 2 /* (3), (4) */));
-      //                   ADD_INSN1(ret, line_node, putobject, Qtrue); // (5)
-      //                   ADD_INSN1(ret, line_node, setn, INT2FIX(base_index + CASE3_BI_OFFSET_KEY_ERROR_P + 3 /* (3), (4), (5) */));
-      //                   ADD_INSN1(ret, line_node, topn, INT2FIX(3)); // (6)
-      //                   ADD_INSN1(ret, line_node, setn, INT2FIX(base_index + CASE3_BI_OFFSET_KEY_ERROR_MATCHEE + 4 /* (3), (4), (5), (6) */));
-      //                   ADD_INSN1(ret, line_node, putobject, key); // (7)
-      //                   ADD_INSN1(ret, line_node, setn, INT2FIX(base_index + CASE3_BI_OFFSET_KEY_ERROR_KEY + 5 /* (3), (4), (5), (6), (7) */));
+                ADD_INSN(ret, line_node, dup);
+                ADD_INSN1(ret, line_node, putobject, key);
+                ADD_SEND(ret, line_node, rb_intern("key?"), INT2FIX(1)); // (3)
+                if (in_single_pattern) {
+                    LABEL *match_succeeded;
+                    match_succeeded = NEW_LABEL(line);
 
-      //                   ADD_INSN1(ret, line_node, adjuststack, INT2FIX(4));
+                    ADD_INSN(ret, line_node, dup);
+                    ADD_INSNL(ret, line_node, branchif, match_succeeded);
 
-      //                   ADD_LABEL(ret, match_succeeded);
-      //               }
-      //               ADD_INSNL(ret, line_node, branchunless, match_failed);
+                    VALUE str = rb_str_freeze(rb_sprintf("key not found: %+"PRIsVALUE, key));
+                    ADD_INSN1(ret, line_node, putobject, RB_OBJ_SET_SHAREABLE(str)); // (4)
+                    ADD_INSN1(ret, line_node, setn, INT2FIX(base_index + CASE3_BI_OFFSET_ERROR_STRING + 2 /* (3), (4) */));
+                    ADD_INSN1(ret, line_node, putobject, Qtrue); // (5)
+                    ADD_INSN1(ret, line_node, setn, INT2FIX(base_index + CASE3_BI_OFFSET_KEY_ERROR_P + 3 /* (3), (4), (5) */));
+                    ADD_INSN1(ret, line_node, topn, INT2FIX(3)); // (6)
+                    ADD_INSN1(ret, line_node, setn, INT2FIX(base_index + CASE3_BI_OFFSET_KEY_ERROR_MATCHEE + 4 /* (3), (4), (5), (6) */));
+                    ADD_INSN1(ret, line_node, putobject, key); // (7)
+                    ADD_INSN1(ret, line_node, setn, INT2FIX(base_index + CASE3_BI_OFFSET_KEY_ERROR_KEY + 5 /* (3), (4), (5), (6), (7) */));
 
-      //               ADD_INSN(match_values, line_node, dup);
-      //               ADD_INSN1(match_values, line_node, putobject, key);
-      //               ADD_SEND(match_values, line_node, RNODE_HSHPTN(node)->nd_pkwrestarg ? rb_intern("delete") : idAREF, INT2FIX(1)); // (8)
-      //               CHECK(iseq_compile_pattern_match(iseq, match_values, value_node, match_failed, in_single_pattern, in_alt_pattern, base_index + 1 /* (8) */, false));
-      //               args = RNODE_LIST(RNODE_LIST(args)->nd_next)->nd_next;
-      //           }
-      //           ADD_SEQ(ret, match_values);
-      //       }
-      //   }
-      //   else {
-      //       ADD_INSN(ret, line_node, dup);
-      //       ADD_SEND(ret, line_node, idEmptyP, INT2FIX(0)); // (9)
-      //       if (in_single_pattern) {
-      //           CHECK(iseq_compile_pattern_set_general_errmsg(iseq, ret, node, rb_fstring_lit("%p is not empty"), base_index + 1 /* (9) */));
-      //       }
-      //       ADD_INSNL(ret, line_node, branchunless, match_failed);
-      //   }
+                    ADD_INSN1(ret, line_node, adjuststack, INT2FIX(4));
 
-      //   if (RNODE_HSHPTN(node)->nd_pkwrestarg) {
-      //       if (RNODE_HSHPTN(node)->nd_pkwrestarg == NODE_SPECIAL_NO_REST_KEYWORD) {
-      //           ADD_INSN(ret, line_node, dup);
-      //           ADD_SEND(ret, line_node, idEmptyP, INT2FIX(0)); // (10)
-      //           if (in_single_pattern) {
-      //               CHECK(iseq_compile_pattern_set_general_errmsg(iseq, ret, node, rb_fstring_lit("rest of %p is not empty"), base_index + 1 /* (10) */));
-      //           }
-      //           ADD_INSNL(ret, line_node, branchunless, match_failed);
-      //       }
-      //       else {
-      //           ADD_INSN(ret, line_node, dup); // (11)
-      //           CHECK(iseq_compile_pattern_match(iseq, ret, RNODE_HSHPTN(node)->nd_pkwrestarg, match_failed, in_single_pattern, in_alt_pattern, base_index + 1 /* (11) */, false));
-      //       }
-      //   }
+                    ADD_LABEL(ret, match_succeeded);
+                }
+                ADD_INSNL(ret, line_node, branchunless, match_failed);
 
-      //   ADD_INSN(ret, line_node, pop);
-      //   ADD_INSNL(ret, line_node, jump, matched);
-      //   ADD_INSN(ret, line_node, putnil);
+                ADD_INSN(match_values, line_node, dup);
+                ADD_INSN1(match_values, line_node, putobject, key);
+                ADD_SEND(match_values, line_node, has_rest ? rb_intern("delete") : idAREF, INT2FIX(1)); // (8)
 
-      //   ADD_LABEL(ret, type_error);
-      //   ADD_INSN1(ret, line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-      //   ADD_INSN1(ret, line_node, putobject, rb_eTypeError);
-      //   ADD_INSN1(ret, line_node, putobject, rb_fstring_lit("deconstruct_keys must return Hash"));
-      //   ADD_SEND(ret, line_node, id_core_raise, INT2FIX(2));
-      //   ADD_INSN(ret, line_node, pop);
+                if (nd_type_p(value_node, RB_IMPLICIT_NODE)) {
+                    value_node = RB_NODE_IMPLICIT(value_node)->value;
+                }
+                CHECK(iseq_compile_pattern_match(iseq, match_values, value_node, match_failed, in_single_pattern, in_alt_pattern, base_index + 1 /* (8) */, false));
+            }
+            ADD_SEQ(ret, match_values);
+        }
+        else {
+            ADD_INSN(ret, line_node, dup);
+            ADD_SEND(ret, line_node, idEmptyP, INT2FIX(0)); // (9)
+            if (in_single_pattern) {
+                CHECK(iseq_compile_pattern_set_general_errmsg(iseq, ret, node, rb_fstring_lit("%p is not empty"), base_index + 1 /* (9) */));
+            }
+            ADD_INSNL(ret, line_node, branchunless, match_failed);
+        }
 
-      //   ADD_LABEL(ret, match_failed);
-      //   ADD_INSN(ret, line_node, pop);
-      //   ADD_INSNL(ret, line_node, jump, unmatched);
-      //   break;
-      // }
+        if (has_rest) {
+            if (nd_type_p(nd_rest, RB_NO_KEYWORDS_PARAMETER_NODE)) {
+                ADD_INSN(ret, line_node, dup);
+                ADD_SEND(ret, line_node, idEmptyP, INT2FIX(0)); // (10)
+                if (in_single_pattern) {
+                    CHECK(iseq_compile_pattern_set_general_errmsg(iseq, ret, node, rb_fstring_lit("rest of %p is not empty"), base_index + 1 /* (10) */));
+                }
+                ADD_INSNL(ret, line_node, branchunless, match_failed);
+            }
+            else {
+                ADD_INSN(ret, line_node, dup); // (11)
+                CHECK(iseq_compile_pattern_match(iseq, ret, RB_NODE_ASSOC_SPLAT(nd_rest)->value, match_failed, in_single_pattern, in_alt_pattern, base_index + 1 /* (11) */, false));
+            }
+        }
+
+        ADD_INSN(ret, line_node, pop);
+        ADD_INSNL(ret, line_node, jump, matched);
+        ADD_INSN(ret, line_node, putnil);
+
+        ADD_LABEL(ret, type_error);
+        ADD_INSN1(ret, line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+        ADD_INSN1(ret, line_node, putobject, rb_eTypeError);
+        ADD_INSN1(ret, line_node, putobject, rb_fstring_lit("deconstruct_keys must return Hash"));
+        ADD_SEND(ret, line_node, id_core_raise, INT2FIX(2));
+        ADD_INSN(ret, line_node, pop);
+
+        ADD_LABEL(ret, match_failed);
+        ADD_INSN(ret, line_node, pop);
+        ADD_INSNL(ret, line_node, jump, unmatched);
+        break;
+      }
       case RB_PINNED_VARIABLE_NODE:
         node = RB_NODE_PINNED_VARIABLE(node)->variable;
         goto compile_value;
