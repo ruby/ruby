@@ -87,23 +87,17 @@ module Bundler
 
         if value.nil?
           warn_unused_scope "Ignoring --#{scope} since no value to set was given"
-
-          configured = Bundler.settings.locations(name).any?
+          current_value = Bundler.settings[name]
 
           if options[:parseable]
             if value = Bundler.settings[name]
               Bundler.ui.info("#{name}=#{value}")
             end
-            if configured
-              return
-            else
-              exit 1
-            end
+          else
+            confirm(name)
           end
 
-          confirm(name)
-
-          if configured
+          if current_value
             return
           else
             exit 1
