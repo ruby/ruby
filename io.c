@@ -12432,36 +12432,50 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
 
 /*
  *  call-seq:
- *    IO.write(path, data, offset = 0, **opts)    -> integer
+ *    IO.write(path, data, offset = 0, **opts) -> nonnegative_integer
  *
  *  Opens the stream, writes the given +data+ to it,
  *  and closes the stream; returns the number of bytes written.
  *
  *  The first argument must be a string that is the path to a file.
  *
- *  With only argument +path+ given, writes the given +data+ to the file at that path:
+ *  With only arguments +path+ and +data+ given,
+ *  writes the given data to the file at that path:
  *
- *    IO.write('t.tmp', 'abc')    # => 3
- *    File.read('t.tmp')          # => "abc"
+ *    path = 't.tmp'
+ *    File.write(path, "First line\nSecond line\n\nFourth line\nFifth line\n") # => 47
+ *    File.write(path, 'こんにちは')                                             # => 15
+ *    File.write(path, "\xFE\xFF\x99\x90\x99\x91\x99\x92\x99\x93\x99\x94")     # => 12
  *
- *  If +offset+ is zero (the default), the file is overwritten:
+ *  When +offset+ is zero (the default), the entire file content is overwritten:
  *
- *    IO.write('t.tmp', 'A')      # => 1
- *    File.read('t.tmp')          # => "A"
+ *    File.read(path) # => "\xFE\xFF\x99\x90\x99\x91\x99\x92\x99\x93\x99\x94"
+ *    File.write(path, 'foo')
+ *    File.read(path) # => "foo"
  *
- *  If +offset+ in within the file content, the file is partly overwritten:
+ *  When +offset+ in within the file content, the file content is partly overwritten,
+ *  beginning at byte +offset+:
  *
- *    IO.write('t.tmp', 'abcdef') # => 3
- *    File.read('t.tmp')          # => "abcdef"
- *    # Offset within content.
- *    IO.write('t.tmp', '012', 2) # => 3
- *    File.read('t.tmp')          # => "ab012f"
+ *    File.write(path, "First line\nSecond line\n\nFourth line\nFifth line\n")
+ *    File.write(path, 'LINE', 6)
+ *    File.read(path) # => "First LINE\nSecond line\n\nFourth line\nFifth line\n"
+ *
+ *  When the file contains multi-byte characters,
+ *  the effect of writing may disturb some characters:
+ *
+ *    File.write(path, "こんにちは")
+ *    File.write(path, 'FOO', 3)  # Replace one 3-byte character.
+ *    File.read(path) # => "こFOOにちは"
+ *    File.write(path, 'BAR', 7)  # Replace bytes in two different 3-byte characters.
+ *    File.read(path) # => "こFOO\xE3BAR\x81\xA1は"
  *
  *  If +offset+ is outside the file content,
  *  the file is padded with null characters <tt>"\u0000"</tt>:
  *
- *    IO.write('t.tmp', 'xyz', 10) # => 3
- *    File.read('t.tmp')           # => "ab012f\u0000\u0000\u0000\u0000xyz"
+ *    File.write(path, "First line\nSecond line\n\nFourth line\nFifth line\n")
+ *    File.write(path, 'FOO', 55)
+ *    File.read(path)
+ *    # => "First line\nSecond line\n\nFourth line\nFifth line\n\u0000\u0000\u0000FOO"
  *
  *  Optional keyword arguments +opts+ specify:
  *
