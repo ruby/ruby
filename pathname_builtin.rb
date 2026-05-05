@@ -1045,7 +1045,7 @@ class Pathname    # * File *
   def read(...) File.read(@path, ...) end
 
   # call-seq:
-  #   binread(length = nil, offset = 0) -> string or nil
+  #   binread(length = nil, offset = 0, **opts) -> string or nil
   #
   # Behaves like #read, except that the file is opened in binary mode
   # with ASCII-8BIT encoding.
