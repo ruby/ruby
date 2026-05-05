@@ -2699,29 +2699,34 @@ count_objects_i(VALUE obj, void *d)
 
 /*
  *  call-seq:
- *     ObjectSpace.count_objects([result_hash]) -> hash
+ *     ObjectSpace.count_objects(result_hash = {}) -> hash
  *
- *  Counts all objects grouped by type.
+ *  Counts the number of objects, grouped by type.
  *
- *  It returns a hash, such as:
- *	{
- *	  TOTAL: 10000,
- *	  FREE: 3011,
- *	  T_OBJECT: 6,
- *	  T_CLASS: 404,
- *	  # ...
- *	}
+ *  It returns a hash that looks like:
  *
- *  The contents of the returned hash are implementation specific.
- *  It may be changed in future.
+ *    {
+ *      TOTAL: 10000,
+ *      FREE: 3011,
+ *      T_OBJECT: 6,
+ *      T_CLASS: 404,
+ *      # ...
+ *    }
  *
- *  The keys starting with +:T_+ means live objects.
+ *  The contents of the returned hash are implementation specific and
+ *  may be changed in future versions without notice.
+ *
+ *  The keys starting with +:T_+ are live objects of a particular type.
  *  For example, +:T_ARRAY+ is the number of arrays.
- *  +:FREE+ means object slots which is not used now.
- *  +:TOTAL+ means sum of above.
+ *
+ *  The key +:FREE+ is the number of object slots which are empty.
+ *
+ *  The key +:TOTAL+ is the total number of slots (which is the sum of
+ *  all of the other values).
  *
  *  If the optional argument +result_hash+ is given,
- *  it is overwritten and returned. This is intended to avoid probe effect.
+ *  it is overwritten and returned.
+ *  This is intended to avoid the probe effect.
  *
  *    h = {}
  *    ObjectSpace.count_objects(h)
