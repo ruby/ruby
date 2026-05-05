@@ -2717,7 +2717,14 @@ io_buffer_get_string(int argc, VALUE *argv, VALUE self)
 
     io_buffer_validate_range(buffer, offset, length);
 
-    return rb_enc_str_new((const char*)base + offset, length, encoding);
+    if (rb_io_buffer_readonly_p(self) &&
+            (buffer->flags & RB_IO_BUFFER_EXTERNAL) &&
+            RB_TYPE_P(buffer->source, T_STRING)) {
+        return rb_enc_str_new_external((const char*)base + offset, length, encoding, buffer->source);
+    }
+    else {
+        return rb_enc_str_new((const char*)base + offset, length, encoding);
+    }
 }
 
 /*
