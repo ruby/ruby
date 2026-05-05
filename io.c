@@ -12451,7 +12451,7 @@ rb_io_s_write(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *    IO.binwrite(path, string, offset = 0)    -> integer
+ *    IO.binwrite(path, string, offset = 0, **opts)    -> integer
  *
  *  Behaves like IO.write, except that the stream is opened in binary mode
  *  with ASCII-8BIT encoding.
