@@ -625,6 +625,126 @@ class TestBox < Test::Unit::TestCase
     end;
   end
 
+  def test_errinfo_not_cached_in_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      first, second = Ruby::Box.new.eval(<<~'CODE')
+        a = begin; raise "first"; rescue RuntimeError; $!.message; end
+        b = begin; raise "second"; rescue RuntimeError; $!.message; end
+        [a, b]
+      CODE
+      assert_equal "first", first
+      assert_equal "second", second
+    end;
+  end
+
+  def test_errinfo_not_cached_in_nested_boxes
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      inner_msg, outer_msg = Ruby::Box.new.eval(<<~'CODE')
+        outer_a = begin; raise "outer1"; rescue RuntimeError; $!.message; end
+
+        inner_msg = Ruby::Box.new.eval(<<~'INNER')
+          begin; raise "inner1"; rescue RuntimeError; $!; end
+          begin; raise "inner2"; rescue RuntimeError; $!.message; end
+        INNER
+
+        outer_b = begin; raise "outer2"; rescue RuntimeError; $!.message; end
+        [inner_msg, outer_b]
+      CODE
+      assert_equal "inner2", inner_msg
+      assert_equal "outer2", outer_msg
+    end;
+  end
+
+  def test_backtrace_not_cached_in_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      a_actual, b_actual = Ruby::Box.new.eval(<<~'CODE')
+        a_actual = begin; raise "first"; rescue RuntimeError; $@.first[/:(\d+):/, 1].to_i; end
+        b_actual = begin; raise "second"; rescue RuntimeError; $@.first[/:(\d+):/, 1].to_i; end
+        [a_actual, b_actual]
+      CODE
+      assert_equal 1, a_actual
+      assert_equal 2, b_actual
+    end;
+  end
+
+  def test_backtrace_not_cached_in_nested_boxes
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      inner_actual, outer_actual = Ruby::Box.new.eval(<<~'CODE')
+        begin; raise "outer1"; rescue RuntimeError; $@; end
+        inner_actual = Ruby::Box.new.eval(<<~'INNER')
+          begin; raise "inner1"; rescue RuntimeError; $@; end
+          begin; raise "inner2"; rescue RuntimeError; $@.first[/:(\d+):/, 1].to_i; end
+        INNER
+        outer_actual = begin; raise "outer2"; rescue RuntimeError; $@.first[/:(\d+):/, 1].to_i; end
+        [inner_actual, outer_actual]
+      CODE
+      assert_equal 2, inner_actual
+      assert_equal 6, outer_actual
+    end;
+  end
+
+  def test_errinfo_isolated_between_boxes
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      box_a = Ruby::Box.new
+      box_b = Ruby::Box.new
+
+      a = box_a.eval('begin; raise "a"; rescue; $!.message; end')
+      b = box_b.eval('begin; raise "b"; rescue; $!.message; end')
+
+      assert_equal "a", a
+      assert_equal "b", b
+    end;
+  end
+
+  def test_backtrace_isolated_between_boxes
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      box_a = Ruby::Box.new
+      box_b = Ruby::Box.new
+
+      a_line = box_a.eval("\nbegin; raise; rescue; $@.first[/:(\\d+):/, 1].to_i; end")
+      b_line = box_b.eval('begin; raise; rescue; $@.first[/:(\d+):/, 1].to_i; end')
+
+      assert_equal 2, a_line
+      assert_equal 1, b_line
+    end;
+  end
+
+  def test_inner_box_rescue_does_not_disturb_outer_box_errinfo
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      box_a = Ruby::Box.new
+      errinfo_in_inner_rescue, errinfo_after_inner_rescue, errinfo_back_in_outer_rescue = box_a.eval(<<~'A')
+        errinfo_in_inner_rescue = errinfo_after_inner_rescue = errinfo_back_in_outer_rescue = nil
+        begin
+          raise "outer"
+        rescue
+          errinfo_in_inner_rescue, errinfo_after_inner_rescue = Ruby::Box.new.eval(<<~'B')
+            in_rescue = after_rescue = nil
+            begin
+              raise "inner"
+            rescue
+              in_rescue = $! && $!.message
+            end
+            after_rescue = $! && $!.message
+            [in_rescue, after_rescue]
+          B
+          errinfo_back_in_outer_rescue = $! && $!.message
+        end
+        [errinfo_in_inner_rescue, errinfo_after_inner_rescue, errinfo_back_in_outer_rescue]
+      A
+
+      assert_equal "inner", errinfo_in_inner_rescue
+      assert_equal "outer", errinfo_after_inner_rescue
+      assert_equal "outer", errinfo_back_in_outer_rescue
+    end;
+  end
+
   def test_load_path_and_loaded_features
     setup_box
 
