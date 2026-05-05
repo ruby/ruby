@@ -1086,7 +1086,7 @@ class Pathname    # * File *
   #   pn.atime            # => 2026-03-31 11:51:10.1210092 -0500
   #   Dir.delete(dirpath)
   #
-  # See {File System Timestamps}[rdoc-ref:file/timestamps.md].
+  # See {File System Timestamps}[rdoc-ref:timestamps.md].
   def atime() File.atime(@path) end
 
   # call-seq:
@@ -1108,7 +1108,7 @@ class Pathname    # * File *
   #   File.delete(filepath)
   #   pn.birthtime   # Raises Errno::ENOENT: No such file or directory
   #
-  # See {File System Timestamps}[rdoc-ref:file/timestamps.md].
+  # See {File System Timestamps}[rdoc-ref:timestamps.md].
   def birthtime() File.birthtime(@path) end
 
   # See <tt>File.ctime</tt>.  Returns last (directory entry, not file) change time.

@@ -1122,7 +1122,7 @@ static VALUE statx_birthtime(const rb_io_stat_data *st);
  *   file.close
  *   File.delete(filepath)
  *
- * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
+ * See {File System Timestamps}[rdoc-ref:timestamps.md].
  */
 
 static VALUE
@@ -1185,7 +1185,7 @@ rb_stat_ctime(VALUE self)
  *   File.delete(filename)
  *   stat.birthtime # => 2026-04-14 10:41:55.5146554 -0500
  *
- * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
+ * See {File System Timestamps}[rdoc-ref:timestamps.md].
  */
 
 static VALUE
@@ -2483,7 +2483,7 @@ rb_file_s_ftype(VALUE klass, VALUE fname)
  *   File.atime(File.new('README.md')) # => 2026-03-31 11:15:27.8215934 -0500
  *   File.atime(Dir.new('.'))          # => 2026-03-31 12:39:45.5910591 -0500
  *
- * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
+ * See {File System Timestamps}[rdoc-ref:timestamps.md].
  */
 
 static VALUE
@@ -2516,7 +2516,7 @@ rb_file_s_atime(VALUE klass, VALUE fname)
  *   file.close
  *   File.delete(filename)
  *
- * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
+ * See {File System Timestamps}[rdoc-ref:timestamps.md].
  */
 
 static VALUE
@@ -2652,7 +2652,7 @@ rb_file_ctime(VALUE obj)
  *   File.delete(path)
  *   File.birthtime(path) # Raises Errno::ENOENT: No such file or directory
  *
- * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
+ * See {File System Timestamps}[rdoc-ref:timestamps.md].
  */
 
 VALUE
@@ -2688,7 +2688,7 @@ rb_file_s_birthtime(VALUE klass, VALUE fname)
  *    File.delete(filepath)
  *    file.birthtime # Raises IOError: closed stream
  *
- *  See {File System Timestamps}[rdoc-ref:file/timestamps.md].
+ *  See {File System Timestamps}[rdoc-ref:timestamps.md].
  */
 
 static VALUE
