@@ -384,8 +384,8 @@ static inline shape_id_t
 shape_id(rb_shape_t *shape, shape_id_t previous_shape_id)
 {
     RUBY_ASSERT(shape);
-    shape_id_t raw_id = (shape_id_t)(shape - rb_shape_tree.shape_list);
-    return raw_id | RSHAPE_FLAGS(previous_shape_id);
+    shape_id_t offset = (shape_id_t)(shape - rb_shape_tree.shape_list);
+    return offset | RSHAPE_FLAGS(previous_shape_id);
 }
 
 #if RUBY_DEBUG
@@ -431,9 +431,9 @@ rb_shape_depth(shape_id_t shape_id)
     size_t depth = 1;
     rb_shape_t *shape = RSHAPE(shape_id);
 
-    while (shape->parent_id != INVALID_SHAPE_ID) {
+    while (shape->parent_offset != INVALID_SHAPE_ID) {
         depth++;
-        shape = RSHAPE(shape->parent_id);
+        shape = RSHAPE(shape->parent_offset);
     }
 
     return depth;
@@ -456,14 +456,14 @@ shape_alloc(void)
 }
 
 static rb_shape_t *
-rb_shape_alloc_with_parent_id(ID edge_name, shape_id_t parent_id)
+rb_shape_alloc_with_parent_offset(ID edge_name, shape_id_t parent_offset)
 {
     rb_shape_t *shape = shape_alloc();
     if (!shape) return NULL;
 
     shape->edge_name = edge_name;
     shape->next_field_index = 0;
-    shape->parent_id = parent_id;
+    shape->parent_offset = parent_offset;
     shape->edges = 0;
 
     return shape;
@@ -472,7 +472,7 @@ rb_shape_alloc_with_parent_id(ID edge_name, shape_id_t parent_id)
 static rb_shape_t *
 rb_shape_alloc(ID edge_name, rb_shape_t *parent, enum shape_type type)
 {
-    rb_shape_t *shape = rb_shape_alloc_with_parent_id(edge_name, shape_offset(parent));
+    rb_shape_t *shape = rb_shape_alloc_with_parent_offset(edge_name, shape_offset(parent));
     if (!shape) return NULL;
 
     shape->type = (uint8_t)type;
@@ -485,8 +485,8 @@ rb_shape_alloc(ID edge_name, rb_shape_t *parent, enum shape_type type)
 static redblack_node_t *
 redblack_cache_ancestors(rb_shape_t *shape)
 {
-    if (!(shape->ancestor_index || shape->parent_id == INVALID_SHAPE_ID)) {
-        redblack_node_t *parent_index_node = redblack_cache_ancestors(RSHAPE(shape->parent_id));
+    if (!(shape->ancestor_index || shape->parent_offset == INVALID_SHAPE_ID)) {
+        redblack_node_t *parent_index_node = redblack_cache_ancestors(RSHAPE(shape->parent_offset));
 
         if (shape->type == SHAPE_IVAR) {
             shape->ancestor_index = redblack_insert(parent_index_node, shape->edge_name, shape);
@@ -719,10 +719,10 @@ rb_shape_object_id(shape_id_t original_shape_id)
 
     rb_shape_t *shape = RSHAPE(original_shape_id);
     while (shape->type != SHAPE_OBJ_ID) {
-        if (UNLIKELY(shape->parent_id == INVALID_SHAPE_ID)) {
+        if (UNLIKELY(shape->parent_offset == INVALID_SHAPE_ID)) {
             rb_bug("Missing object_id in shape tree");
         }
-        shape = RSHAPE(shape->parent_id);
+        shape = RSHAPE(shape->parent_offset);
     }
 
     return shape_id(shape, original_shape_id) | SHAPE_ID_FL_HAS_OBJECT_ID;
@@ -754,7 +754,7 @@ rb_shape_get_next_iv_shape(shape_id_t shape_id, ID id)
 static bool
 shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
 {
-    while (shape->parent_id != INVALID_SHAPE_ID) {
+    while (shape->parent_offset != INVALID_SHAPE_ID) {
         if (shape->edge_name == id) {
             enum shape_type shape_type;
             shape_type = (enum shape_type)shape->type;
@@ -771,7 +771,7 @@ shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
             }
         }
 
-        shape = RSHAPE(shape->parent_id);
+        shape = RSHAPE(shape->parent_offset);
     }
 
     return false;
@@ -847,7 +847,7 @@ obj_get_owner_class(VALUE obj)
 static rb_shape_t *
 remove_shape_recursive(VALUE obj, rb_shape_t *shape, ID id, rb_shape_t **removed_shape)
 {
-    if (shape->parent_id == INVALID_SHAPE_ID) {
+    if (shape->parent_offset == INVALID_SHAPE_ID) {
         // We've hit the top of the shape tree and couldn't find the
         // IV we wanted to remove, so return NULL
         *removed_shape = NULL;
@@ -857,11 +857,11 @@ remove_shape_recursive(VALUE obj, rb_shape_t *shape, ID id, rb_shape_t **removed
         if (shape->type == SHAPE_IVAR && shape->edge_name == id) {
             *removed_shape = shape;
 
-            return RSHAPE(shape->parent_id);
+            return RSHAPE(shape->parent_offset);
         }
         else {
             // This isn't the IV we want to remove, keep walking up.
-            rb_shape_t *new_parent = remove_shape_recursive(obj, RSHAPE(shape->parent_id), id, removed_shape);
+            rb_shape_t *new_parent = remove_shape_recursive(obj, RSHAPE(shape->parent_offset), id, removed_shape);
 
             // We found a new parent.  Create a child of the new parent that
             // has the same attributes as this shape.
@@ -967,7 +967,7 @@ rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value,
 
     while (depth > 0 && shape->next_field_index > index_hint) {
         while (shape_hint->next_field_index > shape->next_field_index) {
-            shape_hint = RSHAPE(shape_hint->parent_id);
+            shape_hint = RSHAPE(shape_hint->parent_offset);
         }
 
         if (shape_hint == shape) {
@@ -983,7 +983,7 @@ rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value,
             return true;
         }
 
-        shape = RSHAPE(shape->parent_id);
+        shape = RSHAPE(shape->parent_offset);
         depth--;
     }
 
@@ -1014,14 +1014,14 @@ shape_cache_find_ivar(rb_shape_t *shape, ID id, rb_shape_t **ivar_shape)
 static bool
 shape_find_ivar(rb_shape_t *shape, ID id, rb_shape_t **ivar_shape)
 {
-    while (shape->parent_id != INVALID_SHAPE_ID) {
+    while (shape->parent_offset != INVALID_SHAPE_ID) {
         if (shape->edge_name == id) {
             RUBY_ASSERT(shape->type == SHAPE_IVAR);
             *ivar_shape = shape;
             return true;
         }
 
-        shape = RSHAPE(shape->parent_id);
+        shape = RSHAPE(shape->parent_offset);
     }
 
     return false;
@@ -1083,7 +1083,7 @@ shape_rebuild(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
     RUBY_ASSERT(initial_shape->type == SHAPE_ROOT);
 
     if (dest_shape->type != initial_shape->type) {
-        midway_shape = shape_rebuild(initial_shape, RSHAPE(dest_shape->parent_id));
+        midway_shape = shape_rebuild(initial_shape, RSHAPE(dest_shape->parent_offset));
         if (UNLIKELY(!midway_shape)) {
             return NULL;
         }
@@ -1146,18 +1146,18 @@ rb_shape_copy_fields(VALUE dest, VALUE *dest_buf, shape_id_t dest_shape_id, VALU
         }
     }
     else {
-        while (src_shape->parent_id != INVALID_SHAPE_ID) {
+        while (src_shape->parent_offset != INVALID_SHAPE_ID) {
             if (src_shape->type == SHAPE_IVAR) {
                 while (dest_shape->edge_name != src_shape->edge_name) {
-                    if (UNLIKELY(dest_shape->parent_id == INVALID_SHAPE_ID)) {
+                    if (UNLIKELY(dest_shape->parent_offset == INVALID_SHAPE_ID)) {
                         rb_bug("Lost field %s", rb_id2name(src_shape->edge_name));
                     }
-                    dest_shape = RSHAPE(dest_shape->parent_id);
+                    dest_shape = RSHAPE(dest_shape->parent_offset);
                 }
 
                 RB_OBJ_WRITE(dest, &dest_buf[dest_shape->next_field_index - 1], src_buf[src_shape->next_field_index - 1]);
             }
-            src_shape = RSHAPE(src_shape->parent_id);
+            src_shape = RSHAPE(src_shape->parent_offset);
         }
     }
 }
@@ -1212,8 +1212,8 @@ rb_shape_foreach_field(shape_id_t initial_shape_id, rb_shape_foreach_transition_
         return true;
     }
 
-    shape_id_t parent_id = shape_id(RSHAPE(shape->parent_id), initial_shape_id);
-    if (rb_shape_foreach_field(parent_id, func, data)) {
+    shape_id_t parent_offset = shape_id(RSHAPE(shape->parent_offset), initial_shape_id);
+    if (rb_shape_foreach_field(parent_offset, func, data)) {
         switch (func(shape_id(shape, initial_shape_id), data)) {
           case ST_STOP:
             return false;
@@ -1242,12 +1242,12 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
     rb_shape_t *shape = RSHAPE(shape_id);
 
     bool has_object_id = false;
-    while (shape->parent_id != INVALID_SHAPE_ID) {
+    while (shape->parent_offset != INVALID_SHAPE_ID) {
         if (shape->type == SHAPE_OBJ_ID) {
             has_object_id = true;
             break;
         }
-        shape = RSHAPE(shape->parent_id);
+        shape = RSHAPE(shape->parent_offset);
     }
 
     if (rb_shape_has_object_id(shape_id)) {
@@ -1352,7 +1352,7 @@ shape_id_t_to_rb_cShape(shape_id_t shape_id)
     VALUE obj = rb_struct_new(rb_cShape,
             INT2NUM(shape_id),
             INT2NUM(RSHAPE_OFFSET(shape_id)),
-            INT2NUM(shape->parent_id),
+            INT2NUM(shape->parent_offset),
             rb_shape_edge_name(shape),
             INT2NUM(shape->next_field_index),
             INT2NUM(rb_shape_heap_index(shape_id)),
@@ -1415,8 +1415,8 @@ rb_shape_parent(VALUE self)
 {
     rb_shape_t *shape;
     shape = RSHAPE(NUM2INT(rb_struct_getmember(self, rb_intern("id"))));
-    if (shape->parent_id != INVALID_SHAPE_ID) {
-        return shape_id_t_to_rb_cShape(shape->parent_id);
+    if (shape->parent_offset != INVALID_SHAPE_ID) {
+        return shape_id_t_to_rb_cShape(shape->parent_offset);
     }
     else {
         return Qnil;
@@ -1491,10 +1491,10 @@ shape_to_h(rb_shape_t *shape)
     rb_hash_aset(rb_shape, ID2SYM(rb_intern("edges")), edges(shape->edges));
 
     if (shape == rb_shape_get_root_shape()) {
-        rb_hash_aset(rb_shape, ID2SYM(rb_intern("parent_id")), INT2NUM(ROOT_SHAPE_ID));
+        rb_hash_aset(rb_shape, ID2SYM(rb_intern("parent_offset")), INT2NUM(ROOT_SHAPE_ID));
     }
     else {
-        rb_hash_aset(rb_shape, ID2SYM(rb_intern("parent_id")), INT2NUM(shape->parent_id));
+        rb_hash_aset(rb_shape, ID2SYM(rb_intern("parent_offset")), INT2NUM(shape->parent_offset));
     }
 
     rb_hash_aset(rb_shape, ID2SYM(rb_intern("edge_name")), rb_id2str(shape->edge_name));
@@ -1588,7 +1588,7 @@ Init_default_shapes(void)
     shape_tree_obj = TypedData_Wrap_Struct(0, &shape_tree_type, (void *)1);
 
     // Root shape
-    rb_shape_t *root = rb_shape_alloc_with_parent_id(0, INVALID_SHAPE_ID);
+    rb_shape_t *root = rb_shape_alloc_with_parent_offset(0, INVALID_SHAPE_ID);
     root->capacity = 0;
     root->type = SHAPE_ROOT;
     RUBY_ASSERT(shape_offset(root) == ROOT_SHAPE_ID);
@@ -1613,8 +1613,8 @@ Init_shape(void)
      * :nodoc: */
     VALUE rb_cShape = rb_struct_define_under(rb_cRubyVM, "Shape",
             "id",
-            "raw_id",
-            "parent_id",
+            "offset",
+            "parent_offset",
             "edge_name",
             "next_field_index",
             "heap_index",

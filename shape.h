@@ -88,7 +88,7 @@ struct rb_shape {
     VALUE edges; // id_table from ID (ivar) to next shape
     ID edge_name; // ID (ivar) for transition from parent to rb_shape
     redblack_id_t ancestor_index;
-    shape_id_t parent_id;
+    shape_id_t parent_offset;
     attr_index_t next_field_index; // Fields are either ivars or internal properties like `object_id`
     attr_index_t capacity; // Total capacity of the object with this shape
     enum shape_type type : 8;
@@ -260,14 +260,14 @@ rb_shape_root(size_t heap_id)
 static inline shape_id_t
 RSHAPE_PARENT_OFFSET(shape_id_t shape_id)
 {
-    return RSHAPE(shape_id)->parent_id;
+    return RSHAPE(shape_id)->parent_offset;
 }
 
 static inline bool
-RSHAPE_DIRECT_CHILD_P(shape_id_t parent_id, shape_id_t child_id)
+RSHAPE_DIRECT_CHILD_P(shape_id_t parent_offset, shape_id_t child_id)
 {
-    return (RSHAPE_FLAGS(parent_id) == RSHAPE_FLAGS(child_id) &&
-        RSHAPE_PARENT_OFFSET(child_id) == RSHAPE_OFFSET(parent_id));
+    return (RSHAPE_FLAGS(parent_offset) == RSHAPE_FLAGS(child_id) &&
+        RSHAPE_PARENT_OFFSET(child_id) == RSHAPE_OFFSET(parent_offset));
 }
 
 static inline enum shape_type
