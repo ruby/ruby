@@ -12412,7 +12412,8 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
  *
  *  The first argument must be a string that is the path to a file.
  *
- *  With only argument +path+ given, writes the given +data+ to the file at that path:
+ *  With only arguments +path+ and +data+ given,
+ *  writes the given data to the file at that path:
  *
  *    path = 't.tmp'
  *    File.write(path, "First line\nSecond line\n\nFourth line\nFifth line\n") # => 47
