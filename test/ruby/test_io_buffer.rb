@@ -1065,4 +1065,112 @@ class TestIOBuffer < Test::Unit::TestCase
       buffer.hexdump(0, 1, 0)
     end
   end
+
+  def test_get_string_zero_copy_readonly
+    source = "Hello World"
+    buffer = IO::Buffer.for(source)
+    assert_predicate buffer, :readonly?
+
+    str = buffer.get_string
+    assert_equal source, str
+    assert_equal Encoding::BINARY, str.encoding
+
+    str2 = buffer.get_string(6, 5)
+    assert_equal "World", str2
+  end
+
+  def test_get_string_zero_copy_readonly_encoding
+    source = "Hello"
+    buffer = IO::Buffer.for(source)
+
+    str = buffer.get_string(0, source.bytesize, Encoding::UTF_8)
+    assert_equal source, str
+    assert_equal Encoding::UTF_8, str.encoding
+
+    str2 = buffer.get_string(0, source.bytesize, Encoding::US_ASCII)
+    assert_equal source, str2
+    assert_equal Encoding::US_ASCII, str2.encoding
+  end
+
+  def test_get_string_zero_copy_gc_safe
+    str = IO::Buffer.for(+"keep me alive").get_string
+
+    GC.compact if GC.respond_to?(:compact)
+    GC.start(full_mark: true, immediate_sweep: true)
+
+    assert_equal "keep me alive", str
+  end
+
+  def test_get_string_zero_copy_cow
+    source = "Hello"
+    buffer = IO::Buffer.for(source)
+
+    str = buffer.get_string
+    str2 = str.dup
+    str2.upcase!
+
+    assert_equal "Hello", str
+    assert_equal "HELLO", str2
+    assert_equal "Hello", buffer.get_string
+  end
+
+  def test_get_string_zero_copy_direct_mutation
+    source = "Hello"
+    buffer = IO::Buffer.for(source)
+
+    str = buffer.get_string
+    refute_predicate str, :frozen?
+    str.upcase!
+
+    assert_equal "HELLO", str
+    assert_equal "Hello", buffer.get_string
+  end
+
+  def test_get_string_writable_copies
+    buffer = IO::Buffer.new(5)
+    buffer.set_string("hello")
+    refute_predicate buffer, :readonly?
+
+    str = buffer.get_string
+    assert_equal "hello", str
+
+    buffer.set_string("world")
+    assert_equal "hello", str
+  end
+
+  def test_get_string_zero_copy_locked
+    # Use a frozen string so rb_str_tmp_frozen_acquire returns the same object,
+    # guaranteeing buffer->source == source.
+    source = "hello".dup.freeze
+    buffer = IO::Buffer.for(source)
+    assert_predicate buffer, :readonly?
+
+    str = nil
+    buffer.locked { str = buffer.get_string }
+    buffer.free
+
+    # After buffer.free clears buffer->source, str's parent must keep source alive.
+    # Use a WeakMap to detect if source is prematurely collected.
+    tracker = Object.new
+    weak = ObjectSpace::WeakMap.new
+    weak[tracker] = source
+    source = nil
+
+    GC.compact if GC.respond_to?(:compact)
+    GC.start(full_mark: true, immediate_sweep: true)
+
+    assert_equal "hello", weak[tracker], "source String must be kept alive by str"
+    assert_equal "hello", str
+  end
+
+  def test_get_string_zero_copy_compaction
+    omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
+
+    str = IO::Buffer.for(+"compact me").get_string
+
+    GC.verify_compaction_references(expand_heap: true, toward: :empty)
+    GC.start(full_mark: true, immediate_sweep: true)
+
+    assert_equal "compact me", str
+  end
 end
