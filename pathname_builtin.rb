@@ -1054,7 +1054,41 @@ class Pathname    # * File *
   # See <tt>File.sysopen</tt>.
   def sysopen(...) File.sysopen(@path, ...) end
 
-  # Writes +contents+ to the file. See <tt>File.write</tt>.
+  # call-seq:
+  #   write(data, offset = 0, **opts) -> nonnegative_integer
+  #
+  # Opens the file at +self.to_s+, writes the given +data+ to it,
+  # and closes the file; returns the number of bytes written.
+  #
+  # With only argument +data+ given, writes the given data to the file:
+  #
+  #   path = 't.tmp'
+  #   pn = Pathname.new(path)
+  #   pn.write('foo') # => 3
+  #   File.read(path) # => "foo"
+  #
+  # If +offset+ is zero (the default), the file is overwritten:
+  #
+  #   pn.write('bar')
+  #   File.read(path) # => "bar"
+  #
+  # If +offset+ in within the file content, the file is partly overwritten:
+  #
+  #   pn.write('foobarbaz')
+  #   pn.write('BAR', 3)
+  #   File.read(path) # => "fooBARbaz"
+  #
+  # If +offset+ is outside the file content,
+  # the file is padded with null characters <tt>"\u0000"</tt>:
+  #
+  #   pn.write('bat', 12)
+  #   File.read(path) # => "fooBARbaz\u0000\u0000\u0000bat"
+  #
+  # Optional keyword arguments +opts+ specify:
+  #
+  # - {Open Options}[rdoc-ref:IO@Open+Options].
+  # - {Encoding options}[rdoc-ref:encodings.rdoc@Encoding+Options].
+  #
   def write(...) File.write(@path, ...) end
 
   # Writes +contents+ to the file, opening it in binary mode.
