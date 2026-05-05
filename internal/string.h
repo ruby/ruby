@@ -21,6 +21,7 @@
 #define STR_CHILLED                 (FL_USER2 | FL_USER3)
 #define STR_CHILLED_LITERAL         FL_USER2
 #define STR_CHILLED_SYMBOL_TO_S     FL_USER3
+#define STR_EXTERNAL_PARENT         FL_USER4
 
 enum ruby_rstring_private_flags {
     RSTRING_CHILLED = STR_CHILLED,
@@ -106,6 +107,7 @@ void rb_warn_unchilled_symbol_to_s(VALUE str);
 
 static inline bool STR_EMBED_P(VALUE str);
 static inline bool STR_SHARED_P(VALUE str);
+static inline bool STR_EXTERNAL_PARENT_P(VALUE str);
 static inline VALUE QUOTE(VALUE v);
 static inline VALUE QUOTE_ID(ID v);
 static inline bool is_ascii_string(VALUE str);
@@ -161,6 +163,12 @@ static inline bool
 STR_SHARED_P(VALUE str)
 {
     return FL_ALL_RAW(str, STR_NOEMBED | STR_SHARED);
+}
+
+static inline bool
+STR_EXTERNAL_PARENT_P(VALUE str)
+{
+    return FL_ALL_RAW(str, STR_NOEMBED | STR_EXTERNAL_PARENT);
 }
 
 static inline bool

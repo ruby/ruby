@@ -238,6 +238,13 @@ struct RString {
                  * control such properties.
                  */
                 VALUE shared;
+
+                /**
+                 * Parent of the string. If the parent is also a string,
+                 * "shared" should be used, not this. This is for non-string
+                 * parents such as IO::Buffer.
+                 */
+                VALUE parent;
             } aux;
         } heap;
 
