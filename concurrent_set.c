@@ -251,7 +251,7 @@ concurrent_set_try_resize_locked(VALUE old_set_obj, VALUE *set_obj_ptr, VALUE ne
         // Insert key into new_set.
         struct concurrent_set_probe probe;
         int idx = concurrent_set_probe_start(&probe, new_set, hash);
-        int start_idx = idx;
+        MAYBE_UNUSED(int start_idx) = idx;
 
         while (true) {
             struct concurrent_set_entry *entry = &new_set->entries[idx];
@@ -329,7 +329,6 @@ concurrent_set_try_resize(VALUE old_set_obj, VALUE *set_obj_ptr)
         // May cause GC and therefore deletes, so must happen first.
         VALUE new_set_obj = rb_concurrent_set_new(old_set->funcs, new_capacity, old_set->key_type);
         // Deletes from sweep thread must not happen during resize and sweep thread can't take VM lock so it takes the resize lock.
-        // Re-entry is necessary because
         resize_lock_lock();
         {
             concurrent_set_try_resize_locked(old_set_obj, set_obj_ptr, new_set_obj, old_capacity);
@@ -647,13 +646,13 @@ rb_concurrent_set_delete_by_identity_locked(VALUE set_obj, VALUE key)
     struct concurrent_set_probe probe;
     int idx = concurrent_set_probe_start(&probe, set, hash);
     bool hash_cleared = false;
-    VALUE prev_hash = 0;
+    MAYBE_UNUSED(VALUE prev_hash) = 0;
 
     while (true) {
         struct concurrent_set_entry *entry = &set->entries[idx];
         VALUE raw_key = rbimpl_atomic_value_load(&entry->key, RBIMPL_ATOMIC_ACQUIRE);
         VALUE loaded_hash_raw = rbimpl_atomic_value_load(&entry->hash, RBIMPL_ATOMIC_ACQUIRE);
-        VALUE loaded_hash = loaded_hash_raw & CONCURRENT_SET_HASH_MASK;
+        MAYBE_UNUSED(VALUE loaded_hash) = loaded_hash_raw & CONCURRENT_SET_HASH_MASK;
         bool continuation = raw_key & CONCURRENT_SET_CONTINUATION_BIT;
         VALUE curr_key = raw_key & CONCURRENT_SET_KEY_MASK;
 
@@ -728,27 +727,17 @@ VALUE
 rb_concurrent_set_delete_by_identity(VALUE *set_obj_ptr, VALUE key)
 {
     VALUE result;
-    VALUE set_obj = rbimpl_atomic_value_load(set_obj_ptr, RBIMPL_ATOMIC_ACQUIRE);
 
     if (cur_thread_needs_resize_lock_during_delete()) {
-        while (1) {
-            resize_lock_lock();
-            {
-                VALUE current_set_obj = rbimpl_atomic_value_load(set_obj_ptr, RBIMPL_ATOMIC_ACQUIRE);
-                if (current_set_obj != set_obj) {
-                    set_obj = current_set_obj;
-                    // retry - resize happened
-                }
-                else {
-                    result = rb_concurrent_set_delete_by_identity_locked(set_obj, key);
-                    resize_lock_unlock();
-                    break;
-                }
-            }
-            resize_lock_unlock();
+        resize_lock_lock();
+        {
+            VALUE set_obj = rbimpl_atomic_value_load(set_obj_ptr, RBIMPL_ATOMIC_ACQUIRE);
+            result = rb_concurrent_set_delete_by_identity_locked(set_obj, key);
         }
+        resize_lock_unlock();
     }
     else {
+        VALUE set_obj = rbimpl_atomic_value_load(set_obj_ptr, RBIMPL_ATOMIC_ACQUIRE);
         result = rb_concurrent_set_delete_by_identity_locked(set_obj, key);
     }
     return result;
