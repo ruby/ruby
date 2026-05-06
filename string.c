@@ -4401,7 +4401,7 @@ static VALUE str_casecmp_p(VALUE str1, VALUE str2);
  *  Related: see {Comparing}[rdoc-ref:String@Comparing].
  */
 
-static VALUE
+VALUE
 rb_str_casecmp(VALUE str1, VALUE str2)
 {
     VALUE s = rb_check_string_type(str2);
