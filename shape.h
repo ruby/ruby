@@ -428,9 +428,8 @@ rb_obj_using_gen_fields_table_p(VALUE obj)
 {
     switch (BUILTIN_TYPE(obj)) {
       case T_DATA:
-        if (RTYPEDDATA_P(obj)) return false;
+        return false;
         break;
-
       case T_STRUCT:
         if (!FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS)) return false;
         break;

@@ -410,14 +410,6 @@ RB_TYPE_P(VALUE obj, enum ruby_value_type t)
 #endif
 /** @endcond */
 
-RBIMPL_ATTR_PURE()
-RBIMPL_ATTR_ARTIFICIAL()
-/**
- * @private
- * Defined in ruby/internal/core/rtypeddata.h
- */
-static inline bool rbimpl_rtypeddata_p(VALUE obj);
-
 RBIMPL_ATTR_ARTIFICIAL()
 /**
  * Identical  to  RB_TYPE_P(),  except  it  raises  exceptions  on  predication
@@ -435,7 +427,7 @@ Check_Type(VALUE v, enum ruby_value_type t)
     if (RB_UNLIKELY(! RB_TYPE_P(v, t))) {
         goto unexpected_type;
     }
-    else if (t == RUBY_T_DATA && rbimpl_rtypeddata_p(v)) {
+    else if (t == RUBY_T_DATA) {
         /* Typed data is not simple `T_DATA`, see `rb_check_type` */
         goto unexpected_type;
     }
