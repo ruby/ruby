@@ -746,7 +746,9 @@ rb_concurrent_set_delete_by_identity(VALUE *set_obj_ptr, VALUE key)
 static void
 rb_concurrent_set_foreach_with_replace_locked(VALUE set_obj, int (*callback)(VALUE *key, void *data), void *data)
 {
-    ASSERT_vm_locking_with_barrier();
+    if (!ruby_vm_during_cleanup) {
+        ASSERT_vm_locking_with_barrier();
+    }
 
     struct concurrent_set *set = RTYPEDDATA_GET_DATA(set_obj);
 
