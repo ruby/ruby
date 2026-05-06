@@ -719,7 +719,7 @@ rb_concurrent_set_delete_by_identity_locked(VALUE set_obj, VALUE key)
 
 static bool cur_thread_needs_resize_lock_during_delete(void)
 {
-    return false; // some threads will require this in future (eg: sweep thread)
+    return !ruby_native_thread_p();
 }
 
 // This can be called concurrently by a ruby GC thread and another thread
