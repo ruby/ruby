@@ -1217,6 +1217,9 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
         fields_obj = obj;
+        if (FL_TEST_RAW(obj, ROBJECT_HEAP) && !rb_obj_shape_complex_p(obj)) {
+            fields_obj = ROBJECT(obj)->as.extended;
+        }
         break;
       case T_CLASS:
       case T_MODULE:

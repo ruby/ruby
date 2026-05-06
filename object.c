@@ -362,12 +362,17 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     attr_index_t dest_capa = RSHAPE_CAPACITY(dest_shape_id);
 
     RUBY_ASSERT(src_num_ivs <= dest_capa);
+
+    VALUE dest_obj_fields = dest;
     if (initial_capa < dest_capa) {
-        rb_ensure_iv_list_size(dest, 0, dest_capa);
-        dest_buf = ROBJECT_FIELDS(dest);
+        dest_obj_fields = rb_imemo_fields_new(dest, dest_shape_id, false);
+        dest_buf = rb_imemo_fields_ptr(dest_obj_fields);
     }
 
-    rb_shape_copy_fields(dest, dest_buf, dest_shape_id, src_buf, src_shape_id);
+    rb_shape_copy_fields(dest_obj_fields, dest_buf, dest_shape_id, src_buf, src_shape_id);
+    if (dest != dest_obj_fields) {
+        RBASIC_SET_SHAPE_ID(dest_obj_fields, rb_shape_transition_no_heap(dest_shape_id));
+    }
     RBASIC_SET_SHAPE_ID(dest, dest_shape_id);
 }
 

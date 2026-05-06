@@ -1421,7 +1421,12 @@ rb_obj_field_get(VALUE obj, shape_id_t target_shape_id)
         fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
         break;
       case T_OBJECT:
-        fields_obj = obj;
+        if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
+            fields_obj = ROBJECT(obj)->as.extended;
+        }
+        else {
+            fields_obj = obj;
+        }
         break;
       case T_IMEMO:
         RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_fields));
@@ -1472,7 +1477,12 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
         fields_obj = obj;
         break;
       case T_OBJECT:
-        fields_obj = obj;
+        if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
+            fields_obj = ROBJECT(obj)->as.extended;
+        }
+        else {
+            fields_obj = obj;
+        }
         break;
       default:
         fields_obj = rb_obj_fields(obj, id);
@@ -1658,7 +1668,12 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
         }
         break;
       case T_OBJECT:
-        fields_obj = obj;
+        if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
+            fields_obj = ROBJECT(obj)->as.extended;
+        }
+        else {
+            fields_obj = obj;
+        }
         break;
       default: {
         fields_obj = rb_obj_fields(obj, id);
@@ -1721,9 +1736,11 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
                     MEMCPY(rb_imemo_fields_ptr(fields_obj), fields, VALUE, new_fields_count);
                     SIZED_FREE_N(fields, RSHAPE_CAPACITY(old_shape_id));
                 }
-                else if (RSHAPE_CAPACITY(old_shape_id) != RSHAPE_CAPACITY(next_shape_id)) {
-                    IMEMO_OBJ_FIELDS(fields_obj)->as.external.ptr = ruby_xrealloc_sized(fields, RSHAPE_CAPACITY(next_shape_id) * sizeof(VALUE), RSHAPE_CAPACITY(old_shape_id) * sizeof(VALUE));
-                }
+                // TODO: check but I think we don't need this.
+                // FIXME: actually we might for JITs.
+                // else if (RSHAPE_CAPACITY(old_shape_id) != RSHAPE_CAPACITY(next_shape_id)) {
+                //     IMEMO_OBJ_FIELDS(fields_obj)->as.external.ptr = ruby_xrealloc_sized(fields, RSHAPE_CAPACITY(next_shape_id) * sizeof(VALUE), RSHAPE_CAPACITY(old_shape_id) * sizeof(VALUE));
+                // }
             }
         }
         else {
@@ -1906,18 +1923,19 @@ generic_ivar_set(VALUE obj, ID id, VALUE val)
 void
 rb_ensure_iv_list_size(VALUE obj, uint32_t current_len, uint32_t new_capacity)
 {
-    RUBY_ASSERT(!rb_obj_shape_complex_p(obj));
-
-    if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
-        SIZED_REALLOC_N(ROBJECT(obj)->as.heap.fields, VALUE, new_capacity, current_len);
-    }
-    else {
-        VALUE *ptr = ROBJECT_FIELDS(obj);
-        VALUE *newptr = ALLOC_N(VALUE, new_capacity);
-        MEMCPY(newptr, ptr, VALUE, current_len);
-        FL_SET_RAW(obj, ROBJECT_HEAP);
-        ROBJECT(obj)->as.heap.fields = newptr;
-    }
+    rb_bug("Need to update JITs");
+//     RUBY_ASSERT(!rb_obj_shape_complex_p(obj));
+//
+//     if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
+//         SIZED_REALLOC_N(ROBJECT(obj)->as.heap.fields, VALUE, new_capacity, current_len);
+//     }
+//     else {
+//         VALUE *ptr = ROBJECT_FIELDS(obj);
+//         VALUE *newptr = ALLOC_N(VALUE, new_capacity);
+//         MEMCPY(newptr, ptr, VALUE, current_len);
+//         FL_SET_RAW(obj, ROBJECT_HEAP);
+//         ROBJECT(obj)->as.heap.fields = newptr;
+//     }
 }
 
 static int
@@ -1968,14 +1986,26 @@ obj_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE val)
     else {
         attr_index_t index = RSHAPE_INDEX(target_shape_id);
 
+        VALUE fields_obj = obj;
+        VALUE *dest_buf = ROBJECT_FIELDS(obj);
+
         if (index >= RSHAPE_LEN(current_shape_id)) {
             if (UNLIKELY(index >= RSHAPE_CAPACITY(current_shape_id))) {
-                rb_ensure_iv_list_size(obj, RSHAPE_CAPACITY(current_shape_id), RSHAPE_CAPACITY(target_shape_id));
+                RUBY_ASSERT(!RB_OBJ_SHAREABLE_P(obj));
+
+                shape_id_t fields_shape_id = rb_shape_transition_no_heap(target_shape_id);
+                fields_obj = rb_imemo_fields_new(obj, fields_shape_id, false);
+                dest_buf = rb_imemo_fields_ptr(fields_obj);
+                rb_shape_copy_fields(fields_obj, dest_buf, current_shape_id, ROBJECT_FIELDS(obj), current_shape_id);
+
+                RBASIC_SET_SHAPE_ID(fields_obj, fields_shape_id);
+                RB_OBJ_WRITE(obj, &ROBJECT(obj)->as.extended, fields_obj);
+                FL_SET_RAW(obj, ROBJECT_HEAP);
             }
             RBASIC_SET_SHAPE_ID(obj, target_shape_id);
         }
 
-        RB_OBJ_WRITE(obj, &ROBJECT_FIELDS(obj)[index], val);
+        RB_OBJ_WRITE(fields_obj, &dest_buf[index], val);
 
         return index;
     }

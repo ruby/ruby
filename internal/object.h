@@ -9,6 +9,7 @@
  * @brief      Internal header for Object.
  */
 #include "ruby/ruby.h"          /* for VALUE */
+#include "imemo.h"
 
 /* object.c */
 
@@ -69,4 +70,20 @@ rb_obj_embedded_size(uint32_t fields_count)
     if (size < sizeof(struct RObject)) size = sizeof(struct RObject);
     return size;
 }
+
+RBIMPL_ATTR_PURE_UNLESS_DEBUG()
+RBIMPL_ATTR_ARTIFICIAL()
+static inline VALUE *
+ROBJECT_FIELDS(VALUE obj)
+{
+    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+
+    if (RB_UNLIKELY(RB_FL_ANY_RAW(obj, ROBJECT_HEAP))) {
+        return rb_imemo_fields_ptr(ROBJECT(obj)->as.extended);
+    }
+    else {
+        return ROBJECT(obj)->as.ary;
+    }
+}
+
 #endif /* INTERNAL_OBJECT_H */

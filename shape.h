@@ -480,6 +480,12 @@ rb_shape_transition_heap(shape_id_t shape_id, size_t heap_index)
     return (shape_id & (~SHAPE_ID_HEAP_INDEX_MASK)) | rb_shape_root(heap_index);
 }
 
+static inline shape_id_t
+rb_shape_transition_no_heap(shape_id_t shape_id)
+{
+    return (shape_id & (~SHAPE_ID_HEAP_INDEX_MASK));
+}
+
 shape_id_t rb_shape_transition_object_id(shape_id_t shape_id);
 
 static inline shape_id_t

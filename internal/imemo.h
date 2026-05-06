@@ -245,9 +245,6 @@ struct rb_fields {
             VALUE fields[1];
         } embed;
         struct {
-            VALUE *ptr;
-        } external;
-        struct {
             // Note: the st_table could be embedded, but complex T_CLASS should be rare to
             // non-existent, so not really worth the trouble.
             st_table *table;
@@ -260,8 +257,7 @@ struct rb_fields {
 #define OBJ_FIELD_HEAP ROBJECT_HEAP
 STATIC_ASSERT(imemo_fields_flags, OBJ_FIELD_HEAP == IMEMO_FL_USER0);
 STATIC_ASSERT(imemo_fields_embed_offset, offsetof(struct RObject, as.ary) == offsetof(struct rb_fields, as.embed.fields));
-STATIC_ASSERT(imemo_fields_external_offset, offsetof(struct RObject, as.heap.fields) == offsetof(struct rb_fields, as.external.ptr));
-STATIC_ASSERT(imemo_fields_complex_offset, offsetof(struct RObject, as.heap.fields) == offsetof(struct rb_fields, as.complex.table));
+STATIC_ASSERT(imemo_fields_complex_offset, offsetof(struct RObject, as.extended) == offsetof(struct rb_fields, as.complex.table));
 
 #define IMEMO_OBJ_FIELDS(fields) ((struct rb_fields *)fields)
 
@@ -308,12 +304,7 @@ rb_imemo_fields_ptr(VALUE fields_obj)
 
     RUBY_ASSERT(IMEMO_TYPE_P(fields_obj, imemo_fields) || RB_TYPE_P(fields_obj, T_OBJECT));
 
-    if (UNLIKELY(FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP))) {
-        return IMEMO_OBJ_FIELDS(fields_obj)->as.external.ptr;
-    }
-    else {
-        return IMEMO_OBJ_FIELDS(fields_obj)->as.embed.fields;
-    }
+    return IMEMO_OBJ_FIELDS(fields_obj)->as.embed.fields;
 }
 
 static inline st_table *

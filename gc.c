@@ -1383,8 +1383,7 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
 
     switch (flags & RUBY_T_MASK) {
       case T_OBJECT:
-        if (flags & ROBJECT_HEAP) return true;
-        return false;
+        return rb_shape_complex_p(shape_id);
 
       case T_DATA:
         {
@@ -1533,7 +1532,6 @@ rb_gc_obj_free(void *objspace, VALUE obj)
                 st_free_table(ROBJECT_FIELDS_HASH(obj));
             }
             else {
-                SIZED_FREE_N(ROBJECT(obj)->as.heap.fields, ROBJECT_FIELDS_CAPACITY(obj));
                 RB_DEBUG_COUNTER_INC(obj_obj_ptr);
             }
         }
@@ -2571,13 +2569,8 @@ rb_obj_memsize_of(VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
-            if (rb_obj_shape_complex_p(obj)) {
-                size += rb_st_memsize(ROBJECT_FIELDS_HASH(obj));
-            }
-            else {
-                size += ROBJECT_FIELDS_CAPACITY(obj) * sizeof(VALUE);
-            }
+        if (rb_obj_shape_complex_p(obj)) {
+            size += rb_st_memsize(ROBJECT_FIELDS_HASH(obj));
         }
         break;
       case T_MODULE:
@@ -3498,6 +3491,9 @@ rb_gc_mark_children(void *objspace, VALUE obj)
             gc_mark_tbl_no_pin(ROBJECT_FIELDS_HASH(obj));
             len = ROBJECT_FIELDS_COUNT_COMPLEX(obj);
         }
+        else if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
+            rb_gc_mark_movable(ROBJECT(obj)->as.extended);
+        }
         else {
             const VALUE * const ptr = ROBJECT_FIELDS(obj);
 
@@ -3857,13 +3853,16 @@ gc_ref_update_object(void *objspace, VALUE v)
 
         size_t slot_size = rb_gc_obj_slot_size(v);
         size_t embed_size = rb_obj_embedded_size(ROBJECT_FIELDS_CAPACITY(v));
-        if (slot_size >= embed_size) {
-            // Object can be re-embedded
-            memcpy(ROBJECT(v)->as.ary, ptr, sizeof(VALUE) * ROBJECT_FIELDS_COUNT(v));
-            SIZED_FREE_N(ptr, ROBJECT_FIELDS_CAPACITY(v));
-            FL_UNSET_RAW(v, ROBJECT_HEAP);
-            ptr = ROBJECT(v)->as.ary;
+        if (slot_size < embed_size) {
+            UPDATE_IF_MOVED(objspace, ROBJECT(v)->as.extended);
+            return;
         }
+
+        // Object can be re-embedded
+        memcpy(ROBJECT(v)->as.ary, ptr, sizeof(VALUE) * ROBJECT_FIELDS_COUNT(v));
+        SIZED_FREE_N(ptr, ROBJECT_FIELDS_CAPACITY(v));
+        FL_UNSET_RAW(v, ROBJECT_HEAP);
+        ptr = ROBJECT(v)->as.ary;
     }
 
     for (uint32_t i = 0; i < ROBJECT_FIELDS_COUNT(v); i++) {
