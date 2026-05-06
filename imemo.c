@@ -205,7 +205,7 @@ rb_imemo_fields_clear(VALUE fields_obj)
 {
     // When replacing an imemo/fields by another one, we must clear
     // its shape so that gc.c:obj_free_object_id won't be called.
-    if (rb_shape_obj_complex_p(fields_obj)) {
+    if (rb_obj_shape_complex_p(fields_obj)) {
         RBASIC_SET_SHAPE_ID(fields_obj, ROOT_COMPLEX_SHAPE_ID);
     }
     else {
@@ -259,7 +259,7 @@ rb_imemo_memsize(VALUE obj)
       case imemo_cvar_entry:
         break;
       case imemo_fields:
-        if (rb_shape_obj_complex_p(obj)) {
+        if (rb_obj_shape_complex_p(obj)) {
             size += st_memsize(IMEMO_OBJ_FIELDS(obj)->as.complex.table);
         }
         break;
@@ -513,7 +513,7 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
             // imemo_fields can refer unshareable objects
             // even if the imemo_fields is shareable.
 
-            if (rb_shape_obj_complex_p(obj)) {
+            if (rb_obj_shape_complex_p(obj)) {
                 st_table *tbl = rb_imemo_fields_complex_tbl(obj);
                 if (reference_updating) {
                     rb_gc_ref_update_table_values_only(tbl);

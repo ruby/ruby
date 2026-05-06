@@ -1281,7 +1281,7 @@ rb_obj_fields(VALUE obj, ID field_name)
     ivar_ractor_check(obj, field_name);
 
     VALUE fields_obj = 0;
-    if (rb_shape_obj_has_fields(obj)) {
+    if (rb_obj_shape_has_fields(obj)) {
         switch (BUILTIN_TYPE(obj)) {
           case T_DATA:
             if (LIKELY(RTYPEDDATA_P(obj))) {
@@ -1581,7 +1581,7 @@ static VALUE imemo_fields_complex_from_obj(VALUE owner, VALUE source_fields_obj,
 static shape_id_t
 obj_transition_complex(VALUE obj, st_table *table)
 {
-    RUBY_ASSERT(!rb_shape_obj_complex_p(obj));
+    RUBY_ASSERT(!rb_obj_shape_complex_p(obj));
     shape_id_t shape_id = rb_obj_shape_transition_complex(obj);
 
     switch (BUILTIN_TYPE(obj)) {
@@ -1622,20 +1622,20 @@ obj_transition_complex(VALUE obj, st_table *table)
 static shape_id_t
 rb_evict_fields_to_hash(VALUE obj)
 {
-    RUBY_ASSERT(!rb_shape_obj_complex_p(obj));
+    RUBY_ASSERT(!rb_obj_shape_complex_p(obj));
 
     st_table *table = st_init_numtable_with_size(RSHAPE_LEN(RBASIC_SHAPE_ID(obj)));
     rb_obj_copy_fields_to_hash_table(obj, table);
     shape_id_t new_shape_id = obj_transition_complex(obj, table);
 
-    RUBY_ASSERT(rb_shape_obj_complex_p(obj));
+    RUBY_ASSERT(rb_obj_shape_complex_p(obj));
     return new_shape_id;
 }
 
 void
 rb_evict_ivars_to_hash(VALUE obj)
 {
-    RUBY_ASSERT(!rb_shape_obj_complex_p(obj));
+    RUBY_ASSERT(!rb_obj_shape_complex_p(obj));
 
     st_table *table = st_init_numtable_with_size(rb_ivar_count(obj));
 
@@ -1643,7 +1643,7 @@ rb_evict_ivars_to_hash(VALUE obj)
     rb_obj_copy_ivs_to_hash_table(obj, table);
     obj_transition_complex(obj, table);
 
-    RUBY_ASSERT(rb_shape_obj_complex_p(obj));
+    RUBY_ASSERT(rb_obj_shape_complex_p(obj));
 }
 
 static VALUE
@@ -1772,7 +1772,7 @@ rb_obj_init_complex(VALUE obj, st_table *table)
     RUBY_ASSERT(rb_shape_canonical_p(RBASIC_SHAPE_ID(obj)));
     RUBY_ASSERT(RSHAPE_LEN(RBASIC_SHAPE_ID(obj)) == 0);
 
-    if (rb_shape_obj_complex_p(obj)) {
+    if (rb_obj_shape_complex_p(obj)) {
         st_table *old_table = ROBJECT_FIELDS_HASH(obj);
         ROBJECT_SET_FIELDS_HASH(obj, table);
         if (old_table) st_free_table(old_table);
@@ -1915,7 +1915,7 @@ generic_ivar_set(VALUE obj, ID id, VALUE val)
 void
 rb_ensure_iv_list_size(VALUE obj, uint32_t current_len, uint32_t new_capacity)
 {
-    RUBY_ASSERT(!rb_shape_obj_complex_p(obj));
+    RUBY_ASSERT(!rb_obj_shape_complex_p(obj));
 
     if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
         SIZED_REALLOC_N(ROBJECT(obj)->as.heap.fields, VALUE, new_capacity, current_len);
@@ -2104,7 +2104,7 @@ ivar_defined0(VALUE obj, ID id)
 {
     attr_index_t index;
 
-    if (rb_shape_obj_complex_p(obj)) {
+    if (rb_obj_shape_complex_p(obj)) {
         VALUE idx;
         st_table *table = NULL;
         switch (BUILTIN_TYPE(obj)) {
@@ -2184,12 +2184,12 @@ iterate_over_shapes_callback(shape_id_t shape_id, void *data)
     VALUE *fields;
     switch (BUILTIN_TYPE(itr_data->obj)) {
       case T_OBJECT:
-        RUBY_ASSERT(!rb_shape_obj_complex_p(itr_data->obj));
+        RUBY_ASSERT(!rb_obj_shape_complex_p(itr_data->obj));
         fields = ROBJECT_FIELDS(itr_data->obj);
         break;
       case T_IMEMO:
         RUBY_ASSERT(IMEMO_TYPE_P(itr_data->obj, imemo_fields));
-        RUBY_ASSERT(!rb_shape_obj_complex_p(itr_data->obj));
+        RUBY_ASSERT(!rb_obj_shape_complex_p(itr_data->obj));
 
         fields = rb_imemo_fields_ptr(itr_data->obj);
         break;
@@ -2437,7 +2437,7 @@ rb_ivar_count(VALUE obj)
             if (!fields_obj) {
                 return 0;
             }
-            if (rb_shape_obj_complex_p(fields_obj)) {
+            if (rb_obj_shape_complex_p(fields_obj)) {
                 iv_count = rb_st_table_size(rb_imemo_fields_complex_tbl(fields_obj));
             }
             else {
@@ -2449,7 +2449,7 @@ rb_ivar_count(VALUE obj)
       case T_IMEMO:
         RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_fields));
 
-        if (rb_shape_obj_complex_p(obj)) {
+        if (rb_obj_shape_complex_p(obj)) {
             iv_count = rb_st_table_size(rb_imemo_fields_complex_tbl(obj));
         }
         else {
@@ -2461,7 +2461,7 @@ rb_ivar_count(VALUE obj)
         {
             VALUE fields_obj = rb_obj_fields_no_ractor_check(obj);
             if (fields_obj) {
-                if (rb_shape_obj_complex_p(fields_obj)) {
+                if (rb_obj_shape_complex_p(fields_obj)) {
                     iv_count = rb_st_table_size(rb_imemo_fields_complex_tbl(fields_obj));
                 }
                 else {
@@ -2472,7 +2472,7 @@ rb_ivar_count(VALUE obj)
         break;
     }
 
-    if (rb_shape_obj_has_id(obj)) {
+    if (rb_obj_shape_has_id(obj)) {
         iv_count--;
     }
 
