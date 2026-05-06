@@ -33,7 +33,12 @@ jobs:
           - name: default
           - name: mmtk
             mmtk_build: release
+          - name: wbcheck
         os: [macos-26, ubuntu-latest]
+        exclude:
+          - gc:
+              name: wbcheck
+            os: macos-26
         include:
           - test_task: check
       fail-fast: false
@@ -118,6 +123,11 @@ jobs:
           echo 'EXCLUDES=../src/test/.excludes-mmtk' >> $GITHUB_ENV
           echo 'MSPECOPT=-B../src/spec/mmtk.mspec' >> $GITHUB_ENV
         if: ${{ matrix.gc.name == 'mmtk' }}
+
+      - name: Adjust test timeout
+        run: |
+          echo 'RUBY_TEST_TIMEOUT_SCALE=5' >> $GITHUB_ENV
+        if: ${{ matrix.gc.name == 'wbcheck' }}
 
       - run: ${SETARCH} make
 
