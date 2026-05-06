@@ -1247,10 +1247,34 @@ end
 
 class Pathname    # * FileTest *
 
-  # See <tt>FileTest.blockdev?</tt>.
+  # call-seq:
+  #   blockdev? => true or false
+  #
+  # Returns whether +self+ represents a block device
+  # (i.e., a random-access device):
+  #
+  #   Pathname.new('/dev/nvme0n1').blockdev? # => true
+  #   Pathname.new('/dev/loop0').blockdev?   # => true
+  #   Pathname.new('/dev/tty').blockdev?     # => false
+  #   Pathname.new('/dev/null').blockdev?    # => false
+  #   Pathname.new('nosuch').blockdev?       # => false
+  #
+  # The returned value is OS-dependent; on Windows, almost always +false+.
   def blockdev?() FileTest.blockdev?(@path) end
 
-  # See <tt>FileTest.chardev?</tt>.
+  # call-seq:
+  #   chardev? => true or false
+  #
+  # Returns whether +self+ represents a character device
+  # (i.e., a sequential-access device):
+  #
+  #   Pathname.new('/dev/tty').chardev?     # => true
+  #   Pathname.new('/dev/null').chardev?    # => true
+  #   Pathname.new('/dev/nvme0n1').chardev? # => false
+  #   Pathname.new('/dev/loop0').chardev?   # => false
+  #   Pathname.new('nosuch').chardev?       # => false
+  #
+  # The returned value is OS-dependent; on Windows, almost always +false+.
   def chardev?() FileTest.chardev?(@path) end
 
   # Tests the file is empty.
