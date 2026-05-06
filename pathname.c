@@ -112,6 +112,24 @@ path_sub(int argc, VALUE *argv, VALUE self)
 }
 
 /*
+ * Predicate method for root directories.  Returns +true+ if the
+ * pathname consists of consecutive slashes.
+ *
+ * It doesn't access the filesystem.  So it may return +false+ for some
+ * pathnames which points to roots such as <tt>/usr/..</tt>.
+ */
+static VALUE
+path_root_p(VALUE self)
+{
+    VALUE path = get_strpath(self);
+    if (RSTRING_LEN(path) == 0) return Qfalse;
+    const char *ptr = RSTRING_PTR(path), *end = RSTRING_END(path);
+    rb_encoding *enc = rb_enc_get(path);
+    const char *base = rb_enc_path_skip_prefix_root(ptr, end, enc);
+    return RBOOL(base == end);
+}
+
+/*
  * call-seq:
  *   absolute? -> true or false
  *
@@ -159,6 +177,7 @@ InitVM_pathname(void)
     rb_cPathname = rb_define_class("Pathname", rb_cObject);
     rb_define_method(rb_cPathname, "<=>", path_cmp, 1);
     rb_define_method(rb_cPathname, "sub", path_sub, -1);
+    rb_define_method(rb_cPathname, "root?", path_root_p, 0);
     rb_define_method(rb_cPathname, "absolute?", path_absolute_p, 0);
 
     rb_provide("pathname.so");
