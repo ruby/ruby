@@ -298,18 +298,6 @@ class Pathname
     "#<#{self.class}:#{@path}>"
   end
 
-  if File::ALT_SEPARATOR
-    # Separator list string.
-    separator_list = Regexp.quote "#{File::ALT_SEPARATOR}#{File::SEPARATOR}"
-    # Regexp that matches a separator.
-    SEPARATOR_PAT = /[#{separator_list}]/
-  else
-    separator_list = Regexp.quote File::SEPARATOR
-    SEPARATOR_PAT = /#{separator_list}/
-  end
-  SEPARATOR_PAT.freeze
-  private_constant :SEPARATOR_PAT
-
   # Creates a full path, including any intermediate directories that don't yet
   # exist.
   #
