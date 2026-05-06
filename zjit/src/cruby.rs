@@ -611,8 +611,7 @@ impl VALUE {
     /// Typed `T_DATA` made from `TypedData_Make_Struct()` (e.g. Thread, ARGF)
     pub fn typed_data_p(self) -> bool {
         !self.special_const_p() &&
-            self.builtin_type() == RUBY_T_DATA &&
-            0 != (self.builtin_flags() & RUBY_TYPED_FL_IS_TYPED_DATA.to_usize())
+            self.builtin_type() == RUBY_T_DATA
     }
 
     pub fn typed_data_fields_embedded_p(self) -> bool {

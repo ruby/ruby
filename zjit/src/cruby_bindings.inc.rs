@@ -347,7 +347,6 @@ pub const RUBY_TYPED_FREE_IMMEDIATELY: rbimpl_typeddata_flags = 1;
 pub const RUBY_TYPED_EMBEDDABLE: rbimpl_typeddata_flags = 2;
 pub const RUBY_TYPED_FROZEN_SHAREABLE: rbimpl_typeddata_flags = 256;
 pub const RUBY_TYPED_WB_PROTECTED: rbimpl_typeddata_flags = 32;
-pub const RUBY_TYPED_FL_IS_TYPED_DATA: rbimpl_typeddata_flags = 64;
 pub const RUBY_TYPED_DECL_MARKING: rbimpl_typeddata_flags = 16384;
 pub type rbimpl_typeddata_flags = u32;
 pub type rb_event_flag_t = u32;

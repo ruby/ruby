@@ -366,7 +366,7 @@ impl ProfiledType {
         } else if self.flags().is_t_module() {
             (RUBY_T_MODULE, RUBY_T_MASK)
         } else if self.flags().is_typed_data() {
-            (RUBY_T_DATA | RUBY_TYPED_FL_IS_TYPED_DATA, RUBY_T_MASK | RUBY_TYPED_FL_IS_TYPED_DATA)
+            (RUBY_T_DATA, RUBY_T_MASK)
         } else {
             (0, 0)
         };

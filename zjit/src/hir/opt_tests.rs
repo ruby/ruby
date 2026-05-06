@@ -8295,7 +8295,7 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           v11:HeapBasicObject = GuardType v6, HeapBasicObject
           v12:CUInt64 = LoadField v11, :RBASIC_FLAGS@0x1000
-          v14:CUInt64[0xffffffff0000005f] = Const CUInt64(0xffffffff0000005f)
+          v14:CUInt64[0xffffffff0000001f] = Const CUInt64(0xffffffff0000001f)
           v15:CPtr[CPtr(0x1001)] = Const CPtr(0x1001)
           v16 = RefineType v15, CUInt64
           v17:CInt64 = IntAnd v12, v14

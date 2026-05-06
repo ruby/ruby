@@ -2554,11 +2554,11 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
         asm.cmp(val, Qfalse.into());
         asm.je(jit, side.clone());
 
-        // Check the builtin type and RUBY_TYPED_FL_IS_TYPED_DATA with mask and compare
+        // Check the builtin type with mask and compare
         let val = asm.load_mem(val);
         let flags = asm.load(Opnd::mem(VALUE_BITS, val, RUBY_OFFSET_RBASIC_FLAGS));
-        let mask     = RUBY_T_MASK.to_usize() | RUBY_TYPED_FL_IS_TYPED_DATA.to_usize();
-        let expected = RUBY_T_DATA.to_usize() | RUBY_TYPED_FL_IS_TYPED_DATA.to_usize();
+        let mask     = RUBY_T_MASK.to_usize();
+        let expected = RUBY_T_DATA.to_usize();
         let masked = asm.and(flags, mask.into());
         asm.cmp(masked, expected.into());
         asm.jne(jit, side);

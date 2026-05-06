@@ -206,11 +206,6 @@ rbimpl_typeddata_flags {
     RUBY_TYPED_WB_PROTECTED     = RUBY_FL_WB_PROTECTED, /* THIS FLAG DEPENDS ON Ruby version */
 
     /**
-     * This flag is used to distinguish RTypedData from deprecated RData objects.
-     */
-    RUBY_TYPED_FL_IS_TYPED_DATA = RUBY_FL_USERPRIV0,
-
-    /**
      * This flag determines whether marking and compaction should be carried out
      * using the dmark/dcompact callback functions or whether we should mark
      * declaratively using a list of references defined inside the data struct we're wrapping
@@ -631,7 +626,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 rbimpl_rtypeddata_p(VALUE obj)
 {
-    return FL_TEST_RAW(obj, RUBY_TYPED_FL_IS_TYPED_DATA);
+    return true;
 }
 
 RBIMPL_ATTR_PURE()

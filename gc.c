@@ -1226,7 +1226,7 @@ typed_data_alloc(VALUE klass, VALUE typed_flag, void *datap, const rb_data_type_
     RBIMPL_NONNULL_ARG(type);
     if (klass) rb_data_object_check(klass);
     bool wb_protected = (type->flags & RUBY_FL_WB_PROTECTED) || !type->function.dmark;
-    VALUE obj = rb_newobj(GET_EC(), klass, T_DATA | RUBY_TYPED_FL_IS_TYPED_DATA, ROOT_SHAPE_ID, wb_protected, size);
+    VALUE obj = rb_newobj(GET_EC(), klass, T_DATA, ROOT_SHAPE_ID, wb_protected, size);
 
     rb_gc_register_pinning_obj(obj);
 
@@ -1466,17 +1466,16 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
         if (flags & ROBJECT_HEAP) return true;
         return false;
 
-      case T_DATA:
-        if (flags & RUBY_TYPED_FL_IS_TYPED_DATA) {
-            uintptr_t type = (uintptr_t)RTYPEDDATA(obj)->type;
-            if (type & TYPED_DATA_EMBEDDED) {
-                RUBY_DATA_FUNC dfree = ((const rb_data_type_t *)(type & TYPED_DATA_PTR_MASK))->function.dfree;
-                if (dfree == RUBY_NEVER_FREE || dfree == RUBY_TYPED_DEFAULT_FREE) {
-                    return false;
-                }
-            }
+      case T_DATA: {
+          uintptr_t type = (uintptr_t)RTYPEDDATA(obj)->type;
+          if (type & TYPED_DATA_EMBEDDED) {
+              RUBY_DATA_FUNC dfree = ((const rb_data_type_t *)(type & TYPED_DATA_PTR_MASK))->function.dfree;
+              if (dfree == RUBY_NEVER_FREE || dfree == RUBY_TYPED_DEFAULT_FREE) {
+                  return false;
+              }
+          }
+          return true;
         }
-        return true;
 
       case T_STRING:
         if (flags & (RSTRING_NOEMBED | RSTRING_FSTR)) return true;
