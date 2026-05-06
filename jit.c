@@ -549,9 +549,9 @@ rb_set_cfp_sp(struct rb_control_frame_struct *cfp, VALUE *sp)
 }
 
 bool
-rb_jit_shape_too_complex_p(shape_id_t shape_id)
+rb_jit_shape_complex_p(shape_id_t shape_id)
 {
-    return rb_shape_too_complex_p(shape_id);
+    return rb_shape_complex_p(shape_id);
 }
 
 bool

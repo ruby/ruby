@@ -274,8 +274,8 @@ impl ShapeId {
         self != INVALID_SHAPE_ID
     }
 
-    pub fn is_too_complex(self) -> bool {
-        unsafe { rb_jit_shape_too_complex_p(self.0) }
+    pub fn is_complex(self) -> bool {
+        unsafe { rb_jit_shape_complex_p(self.0) }
     }
 
     pub fn is_frozen(self) -> bool {

@@ -5492,7 +5492,7 @@ fn test_tracepoint_return_value_with_rescue() {
 // Too-complex shapes use hash tables for ivar storage, and rb_shape_get_iv_index()
 // doesn't work for them. The polymorphic path must fall through to GetIvar instead.
 #[test]
-fn test_polymorphic_getivar_too_complex_shape() {
+fn test_polymorphic_getivar_complex_shape() {
     // Need threshold >= 3 so both shapes get profiled before compilation
     set_call_threshold(3);
     assert_snapshot!(inspect(r#"

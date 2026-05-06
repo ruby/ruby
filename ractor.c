@@ -1809,7 +1809,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
     if (UNLIKELY(rb_obj_gen_fields_p(obj))) {
         VALUE fields_obj = rb_obj_fields_no_ractor_check(obj);
 
-        if (UNLIKELY(rb_shape_obj_too_complex_p(obj))) {
+        if (UNLIKELY(rb_shape_obj_complex_p(obj))) {
             struct obj_traverse_replace_callback_data d = {
                 .stop = false,
                 .data = data,
@@ -1846,7 +1846,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 
       case T_OBJECT:
         {
-            if (rb_shape_obj_too_complex_p(obj)) {
+            if (rb_shape_obj_complex_p(obj)) {
                 struct obj_traverse_replace_callback_data d = {
                     .stop = false,
                     .data = data,
