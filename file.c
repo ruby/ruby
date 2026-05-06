@@ -3767,6 +3767,11 @@ skipprefixroot(const char *path, const char *end, rb_encoding *enc)
 #endif
 }
 
+char *
+rb_enc_path_skip_prefix_root(const char *path, const char *end, rb_encoding *enc)
+{
+    return skipprefixroot(path, end, enc);
+}
 
 static char *
 enc_path_last_separator(const char *path, const char *end, bool mb_enc, rb_encoding *enc)

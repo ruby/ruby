@@ -621,17 +621,6 @@ class Pathname
     end
   end
 
-  #
-  # Predicate method for root directories.  Returns +true+ if the
-  # pathname consists of consecutive slashes.
-  #
-  # It doesn't access the filesystem.  So it may return +false+ for some
-  # pathnames which points to roots such as <tt>/usr/..</tt>.
-  #
-  def root?
-    chop_basename(@path) == nil && SEPARATOR_PAT.match?(@path)
-  end
-
   # The opposite of Pathname#absolute?
   #
   # It returns +false+ if the pathname begins with a slash.
