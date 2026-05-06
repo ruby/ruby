@@ -279,7 +279,7 @@ concurrent_set_try_resize_locked(VALUE old_set_obj, VALUE *set_obj_ptr, VALUE ne
     RB_GC_GUARD(old_set_obj);
 }
 
-static rb_nativethread_lock_t resize_lock = RB_NATIVETHREAD_LOCK_INIT;
+static rb_nativethread_lock_t resize_lock;
 
 static inline void
 resize_lock_lock(void)
@@ -291,6 +291,12 @@ static inline void
 resize_lock_unlock(void)
 {
     rb_native_mutex_unlock(&resize_lock);
+}
+
+void
+rb_concurrent_set_initialize(void)
+{
+    rb_native_mutex_initialize(&resize_lock);
 }
 
 static void

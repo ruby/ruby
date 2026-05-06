@@ -17,5 +17,6 @@ VALUE rb_concurrent_set_find(VALUE *set_obj_ptr, VALUE key);
 VALUE rb_concurrent_set_find_or_insert(VALUE *set_obj_ptr, VALUE key, void *data);
 VALUE rb_concurrent_set_delete_by_identity(VALUE *set_obj, VALUE key);
 void rb_concurrent_set_foreach_with_replace(VALUE set_obj, int (*callback)(VALUE *key, void *data), void *data);
+void rb_concurrent_set_initialize(void);
 
 #endif

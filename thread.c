@@ -76,6 +76,7 @@
 #include "hrtime.h"
 #include "internal.h"
 #include "internal/class.h"
+#include "internal/concurrent_set.h"
 #include "internal/cont.h"
 #include "internal/error.h"
 #include "internal/eval.h"
@@ -5033,6 +5034,7 @@ void rb_fiber_atfork(rb_thread_t *);
 void
 rb_thread_atfork(void)
 {
+    rb_concurrent_set_initialize();
     rb_thread_t *th = GET_THREAD();
     rb_threadptr_pending_interrupt_clear(th);
     rb_thread_atfork_internal(th, terminate_atfork_i);
