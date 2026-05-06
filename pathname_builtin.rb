@@ -1156,9 +1156,11 @@ class Pathname    # * File *
   #
   def write(...) File.write(@path, ...) end
 
-  # Writes +contents+ to the file, opening it in binary mode.
+  # call-seq:
+  #   binwrite(string, offset = 0, **opts) -> nonnegative_integer
   #
-  # See File.binwrite.
+  # Behaves like #write, except that the file is opened in binary mode
+  # with ASCII-8BIT encoding.
   def binwrite(...) File.binwrite(@path, ...) end
 
   # call-seq:
