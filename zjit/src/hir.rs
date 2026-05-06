@@ -4610,9 +4610,13 @@ impl Function {
                             self.count(block, Counter::definedivar_fallback_complex);
                             self.push_insn_id(block, insn_id); continue;
                         }
+                        if self.policy.no_side_exits {
+                            // On the final version, keep the DefinedIvar fallback instead of another shape guard.
+                            self.push_insn_id(block, insn_id); continue;
+                        }
                         let self_val = self.load_ivar_guard_type(block, self_val, recv_type, state);
                         let shape = self.load_shape(block, self_val);
-                        self.guard_shape(block, shape, recv_type.shape(), state, None);
+                        self.guard_shape(block, shape, recv_type.shape(), state, Some(Recompile::ProfileSelf));
                         let mut ivar_index: attr_index_t = 0;
                         let replacement = if unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
                             self.push_insn(block, Insn::Const { val: Const::Value(pushval) })
@@ -4624,7 +4628,7 @@ impl Function {
                         };
                         self.make_equal_to(insn_id, replacement);
                     }
-                    Insn::SetIvar { self_val, id, val, state, ic: _ } => {
+                    Insn::SetIvar { self_val, id, val, state, ic } => {
                         let frame_state = self.frame_state(state);
                         let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.insn_idx) else {
                             // No (monomorphic/skewed polymorphic) profile info
@@ -4650,6 +4654,10 @@ impl Function {
                         if recv_type.shape().is_frozen() {
                             // Can't set ivars on frozen objects
                             self.count(block, Counter::setivar_fallback_frozen);
+                            self.push_insn_id(block, insn_id); continue;
+                        }
+                        if self.policy.no_side_exits {
+                            // On the final version, keep the SetIvar fallback instead of another shape guard.
                             self.push_insn_id(block, insn_id); continue;
                         }
                         let mut ivar_index: attr_index_t = 0;
@@ -4684,7 +4692,10 @@ impl Function {
                         }
                         let self_val = self.load_ivar_guard_type(block, self_val, recv_type, state);
                         let shape = self.load_shape(block, self_val);
-                        self.guard_shape(block, shape, recv_type.shape(), state, None);
+                        // TODO: attr_writer SetIvar has a null inline cache and may not target CFP self.
+                        // Support it with a recompile strategy that profiles the receiver operand.
+                        let recompile = if ic.is_null() { None } else { Some(Recompile::ProfileSelf) };
+                        self.guard_shape(block, shape, recv_type.shape(), state, recompile);
                         // Current shape contains this ivar
                         let (ivar_storage, offset) = if recv_type.flags().is_embedded() {
                             // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
