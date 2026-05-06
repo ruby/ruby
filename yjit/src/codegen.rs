@@ -2950,7 +2950,7 @@ fn gen_get_ivar(
 
     // NOTE: This assumes T_OBJECT can't ever have the same shape_id as any other type.
     // too-complex shapes can't use index access, so we use rb_ivar_get for them too.
-    if !comptime_receiver.heap_object_p() || comptime_receiver.shape_too_complex() || megamorphic {
+    if !comptime_receiver.heap_object_p() || comptime_receiver.shape_complex() || megamorphic {
         // General case. Call rb_ivar_get().
         // VALUE rb_ivar_get(VALUE obj, ID id)
         asm_comment!(asm, "call rb_ivar_get()");
@@ -3168,8 +3168,8 @@ fn gen_set_ivar(
     }
 
     // Get the iv index
-    let shape_too_complex = comptime_receiver.shape_too_complex();
-    let ivar_index = if !comptime_receiver.special_const_p() && !shape_too_complex {
+    let shape_complex = comptime_receiver.shape_complex();
+    let ivar_index = if !comptime_receiver.special_const_p() && !shape_complex {
         let shape_id = comptime_receiver.shape_id_of();
         let mut ivar_index: attr_index_t = 0;
         if unsafe { rb_shape_get_iv_index(shape_id, ivar_name, &mut ivar_index) } {
@@ -3182,23 +3182,23 @@ fn gen_set_ivar(
     };
 
     // The current shape doesn't contain this iv, we need to transition to another shape.
-    let mut new_shape_too_complex = false;
-    let new_shape = if !shape_too_complex && receiver_t_object && ivar_index.is_none() {
+    let mut new_shape_complex = false;
+    let new_shape = if !shape_complex && receiver_t_object && ivar_index.is_none() {
         let current_shape_id = comptime_receiver.shape_id_of();
         // We don't need to check about imemo_fields here because we're definitely looking at a T_OBJECT.
         let klass = unsafe { rb_obj_class(comptime_receiver) };
         let next_shape_id = unsafe { rb_shape_transition_add_ivar_no_warnings(current_shape_id, ivar_name, klass) };
 
         // If the VM ran out of shapes, or this class generated too many leaf,
-        // it may be de-optimized into OBJ_TOO_COMPLEX_SHAPE (hash-table).
-        new_shape_too_complex = unsafe { rb_jit_shape_too_complex_p(next_shape_id) };
-        if new_shape_too_complex {
+        // it may be de-optimized into OBJ_COMPLEX_SHAPE (hash-table).
+        new_shape_complex = unsafe { rb_jit_shape_complex_p(next_shape_id) };
+        if new_shape_complex {
             Some((next_shape_id, None, 0_usize))
         } else {
             let current_capacity = unsafe { rb_yjit_shape_capacity(current_shape_id) };
             let next_capacity = unsafe { rb_yjit_shape_capacity(next_shape_id) };
 
-            // If the new shape has a different capacity, or is TOO_COMPLEX, we'll have to
+            // If the new shape has a different capacity, or is COMPLEX, we'll have to
             // reallocate it.
             let needs_extension = next_capacity != current_capacity;
 
@@ -3218,7 +3218,7 @@ fn gen_set_ivar(
 
     // If the receiver isn't a T_OBJECT, then just write out the IV write as a function call.
     // too-complex shapes can't use index access, so we use rb_ivar_get for them too.
-    if !receiver_t_object || shape_too_complex || new_shape_too_complex || megamorphic {
+    if !receiver_t_object || shape_complex || new_shape_complex || megamorphic {
         // The function could raise FrozenError.
         // Note that this modifies REG_SP, which is why we do it first
         jit_prepare_non_leaf_call(jit, asm);
@@ -3435,7 +3435,7 @@ fn gen_definedivar(
     // Specialize base on compile time values
     let comptime_receiver = jit.peek_at_self();
 
-    if comptime_receiver.special_const_p() || comptime_receiver.shape_too_complex() || asm.ctx.get_chain_depth() >= GET_IVAR_MAX_DEPTH {
+    if comptime_receiver.special_const_p() || comptime_receiver.shape_complex() || asm.ctx.get_chain_depth() >= GET_IVAR_MAX_DEPTH {
         // Fall back to calling rb_ivar_defined
 
         // Save the PC and SP because the callee may allocate

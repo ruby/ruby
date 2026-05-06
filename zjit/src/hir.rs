@@ -4508,7 +4508,7 @@ impl Function {
     fn load_ivar(&mut self, block: BlockId, self_val: InsnId, recv_type: ProfiledType, id: ID, state: InsnId) -> InsnId {
         // Too-complex shapes use hash tables; rb_shape_get_iv_index doesn't support them.
         // Callers must filter these out before calling load_ivar.
-        assert!(!recv_type.shape().is_too_complex(), "load_ivar called with too-complex shape");
+        assert!(!recv_type.shape().is_complex(), "load_ivar called with too-complex shape");
         let mut ivar_index: attr_index_t = 0;
         if ! unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
             // If there is no IVAR index, then the ivar was undefined when we
@@ -4569,9 +4569,9 @@ impl Function {
                             self.push_insn_id(block, insn_id); continue;
                         }
                         assert!(recv_type.shape().is_valid());
-                        if recv_type.shape().is_too_complex() {
+                        if recv_type.shape().is_complex() {
                             // too-complex shapes can't use index access
-                            self.count(block, Counter::getivar_fallback_too_complex);
+                            self.count(block, Counter::getivar_fallback_complex);
                             self.push_insn_id(block, insn_id); continue;
                         }
                         if self.policy.no_side_exits {
@@ -4605,9 +4605,9 @@ impl Function {
                             self.count(block, Counter::definedivar_fallback_not_t_object);
                             self.push_insn_id(block, insn_id); continue;
                         }
-                        if recv_type.shape().is_too_complex() {
+                        if recv_type.shape().is_complex() {
                             // too-complex shapes can't use index access
-                            self.count(block, Counter::definedivar_fallback_too_complex);
+                            self.count(block, Counter::definedivar_fallback_complex);
                             self.push_insn_id(block, insn_id); continue;
                         }
                         let self_val = self.load_ivar_guard_type(block, self_val, recv_type, state);
@@ -4642,9 +4642,9 @@ impl Function {
                             self.count(block, Counter::setivar_fallback_not_t_object);
                             self.push_insn_id(block, insn_id); continue;
                         }
-                        if recv_type.shape().is_too_complex() {
+                        if recv_type.shape().is_complex() {
                             // too-complex shapes can't use index access
-                            self.count(block, Counter::setivar_fallback_too_complex);
+                            self.count(block, Counter::setivar_fallback_complex);
                             self.push_insn_id(block, insn_id); continue;
                         }
                         if recv_type.shape().is_frozen() {
@@ -4662,18 +4662,18 @@ impl Function {
                             assert!(recv_type.flags().is_t_object());
                             next_shape_id = ShapeId(unsafe { rb_shape_transition_add_ivar_no_warnings(current_shape_id.0, id, class) });
                             // If the VM ran out of shapes, or this class generated too many leaf,
-                            // it may be de-optimized into OBJ_TOO_COMPLEX_SHAPE (hash-table).
-                            let new_shape_too_complex = unsafe { rb_jit_shape_too_complex_p(next_shape_id.0) };
+                            // it may be de-optimized into OBJ_COMPLEX_SHAPE (hash-table).
+                            let new_shape_complex = unsafe { rb_jit_shape_complex_p(next_shape_id.0) };
                             // TODO(max): Is it OK to bail out here after making a shape transition?
-                            if new_shape_too_complex {
-                                self.count(block, Counter::setivar_fallback_new_shape_too_complex);
+                            if new_shape_complex {
+                                self.count(block, Counter::setivar_fallback_new_shape_complex);
                                 self.push_insn_id(block, insn_id); continue;
                             }
                             let ivar_result = unsafe { rb_shape_get_iv_index(next_shape_id.0, id, &mut ivar_index) };
                             assert!(ivar_result, "New shape must have the ivar index");
                             let current_capacity = unsafe { rb_jit_shape_capacity(current_shape_id.0) };
                             let next_capacity = unsafe { rb_jit_shape_capacity(next_shape_id.0) };
-                            // If the new shape has a different capacity, or is TOO_COMPLEX, we'll have to
+                            // If the new shape has a different capacity, or is COMPLEX, we'll have to
                             // reallocate it.
                             let needs_extension = next_capacity != current_capacity;
                             if needs_extension {
@@ -8283,7 +8283,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             // Too-complex shapes use hash tables for ivars;
                             // rb_shape_get_iv_index doesn't work for them.
                             // Let the fallthrough GetIvar handle these.
-                            if expected_shape.is_too_complex() { continue; }
+                            if expected_shape.is_complex() { continue; }
                             if seen_shape_and_flags.contains(&expected_rbasic_flags) { continue; }
                             seen_shape_and_flags.push(expected_rbasic_flags);
                             let rbasic_flags_mask = fun.push_insn(block, Insn::Const { val: Const::CUInt64(rbasic_flags_mask) });

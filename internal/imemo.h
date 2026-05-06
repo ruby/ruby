@@ -291,7 +291,7 @@ rb_imemo_fields_complex_tbl(VALUE fields_obj)
     RUBY_ASSERT(FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP));
 
     // Some codepaths unconditionally access the fields_ptr, and assume it can be used as st_table if the
-    // shape is too_complex.
+    // shape is complex.
     RUBY_ASSERT((st_table *)rb_imemo_fields_ptr(fields_obj) == IMEMO_OBJ_FIELDS(fields_obj)->as.complex.table);
 
     return IMEMO_OBJ_FIELDS(fields_obj)->as.complex.table;

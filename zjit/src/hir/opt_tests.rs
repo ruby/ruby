@@ -5795,7 +5795,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_dont_specialize_setivar_when_next_shape_is_too_complex() {
+    fn test_dont_specialize_setivar_when_next_shape_is_complex() {
         eval(r#"
             class AboutToBeTooComplex
               def test = @abc = 5
@@ -8243,7 +8243,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_dont_optimize_getivar_with_too_complex_shape() {
+    fn test_dont_optimize_getivar_with_complex_shape() {
         eval(r#"
             class C
               attr_accessor :foo

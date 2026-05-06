@@ -985,8 +985,8 @@ class TestObject < Test::Unit::TestCase
     10.times { |i| assert_include result, "@v#{i}=0" }
   end
 
-  def test_inspect_mutating_ivar_too_complex
-    # Force too_complex by creating many shape variations on the same class
+  def test_inspect_mutating_ivar_complex
+    # Force complex by creating many shape variations on the same class
     c = Class.new
     50.times do |i|
       o = c.new
@@ -1001,11 +1001,11 @@ class TestObject < Test::Unit::TestCase
     end
     obj.instance_variable_set(:@evil, evil)
     10.times { |i| obj.instance_variable_set(:"@v#{i}", 0) }
-    # too_complex objects use st_foreach which handles mutation gracefully
+    # complex objects use st_foreach which handles mutation gracefully
     obj.inspect
   end
 
-  def test_inspect_too_complex
+  def test_inspect_complex
     kernel_inspect = Kernel.instance_method(:inspect)
 
     klasses = [
@@ -1015,7 +1015,7 @@ class TestObject < Test::Unit::TestCase
       Class.new(Hash),
       Struct.new(:x),
       Class.new(Thread::Mutex),
-      # It's very difficult to get a too_complex T_CLASS, so that isn't tested here
+      # It's very difficult to get a complex T_CLASS, so that isn't tested here
     ]
 
     klasses.each_with_index do |klass, idx|

@@ -471,7 +471,7 @@ class TestMarshal < Test::Unit::TestCase
 
   class TooComplex
     def initialize
-      @marshal_too_complex = 1
+      @marshal_complex = 1
     end
   end
 
@@ -487,10 +487,10 @@ class TestMarshal < Test::Unit::TestCase
     obj.instance_variable_set(ivar, 1)
 
     if defined?(RubyVM::Shape)
-      assert_predicate(RubyVM::Shape.of(obj), :too_complex?)
+      assert_predicate(RubyVM::Shape.of(obj), :complex?)
     end
     obj.object_id
-    assert_equal "\x04\bo:\x1CTestMarshal::TooComplex\a:\x19@marshal_too_complexi\x06:\f#{ivar}i\x06".b, Marshal.dump(obj)
+    assert_equal "\x04\bo:\x1CTestMarshal::TooComplex\a:\x15@marshal_complexi\x06:\f#{ivar}i\x06".b, Marshal.dump(obj)
   end
 
   def test_marshal_complex

@@ -550,7 +550,7 @@ RCLASS_FIELDS_COUNT(VALUE obj)
 
     VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
     if (fields_obj) {
-        if (rb_shape_obj_too_complex_p(fields_obj)) {
+        if (rb_shape_obj_complex_p(fields_obj)) {
             return (uint32_t)rb_st_table_size(rb_imemo_fields_complex_tbl(fields_obj));
         }
         else {

@@ -1329,7 +1329,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
         }
 #endif
 
-        if (UNLIKELY(rb_shape_too_complex_p(shape_id))) {
+        if (UNLIKELY(rb_shape_complex_p(shape_id))) {
             st_table *table = (st_table *)ivar_list;
 
             RUBY_ASSERT(table);
@@ -1343,7 +1343,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
             shape_id_t previous_cached_offset = cache.shape_offset;
             if (rb_shape_get_iv_index_with_hint(shape_id, id, &cache.index, &cache.shape_offset)) {
                 if (cache.shape_offset != previous_cached_offset) {
-                    RUBY_ASSERT(!rb_shape_too_complex_p(cache.shape_offset));
+                    RUBY_ASSERT(!rb_shape_complex_p(cache.shape_offset));
                     RUBY_ASSERT(cache.shape_offset != INVALID_SHAPE_ID);
 
                     uint64_t packed_cache = rb_getivar_cache_pack(cache.shape_offset, cache.index);
@@ -1400,7 +1400,7 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
     attr_index_t index = rb_ivar_set_index(obj, id, val);
     shape_id_t next_shape_id = RBASIC_SHAPE_ID(obj);
 
-    if (!rb_shape_too_complex_p(next_shape_id)) {
+    if (!rb_shape_complex_p(next_shape_id)) {
         uint64_t packed_cache = rb_setivar_cache_pack(RSHAPE_OFFSET(previous_shape_id), RSHAPE_OFFSET(next_shape_id), index);
         vm_cache_attr_index_set(is_attr, ic, cc, packed_cache);
     }

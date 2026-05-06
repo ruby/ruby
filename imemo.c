@@ -177,7 +177,7 @@ rb_imemo_fields_clone(VALUE fields_obj)
     shape_id_t shape_id = RBASIC_SHAPE_ID(fields_obj);
     VALUE clone;
 
-    if (rb_shape_too_complex_p(shape_id)) {
+    if (rb_shape_complex_p(shape_id)) {
         st_table *src_table = rb_imemo_fields_complex_tbl(fields_obj);
 
         st_table *dest_table = xcalloc(1, sizeof(st_table));
@@ -205,8 +205,8 @@ rb_imemo_fields_clear(VALUE fields_obj)
 {
     // When replacing an imemo/fields by another one, we must clear
     // its shape so that gc.c:obj_free_object_id won't be called.
-    if (rb_shape_obj_too_complex_p(fields_obj)) {
-        RBASIC_SET_SHAPE_ID(fields_obj, ROOT_TOO_COMPLEX_SHAPE_ID);
+    if (rb_shape_obj_complex_p(fields_obj)) {
+        RBASIC_SET_SHAPE_ID(fields_obj, ROOT_COMPLEX_SHAPE_ID);
     }
     else {
         RBASIC_SET_SHAPE_ID(fields_obj, ROOT_SHAPE_ID);
@@ -259,7 +259,7 @@ rb_imemo_memsize(VALUE obj)
       case imemo_cvar_entry:
         break;
       case imemo_fields:
-        if (rb_shape_obj_too_complex_p(obj)) {
+        if (rb_shape_obj_complex_p(obj)) {
             size += st_memsize(IMEMO_OBJ_FIELDS(obj)->as.complex.table);
         }
         break;
@@ -513,7 +513,7 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
             // imemo_fields can refer unshareable objects
             // even if the imemo_fields is shareable.
 
-            if (rb_shape_obj_too_complex_p(obj)) {
+            if (rb_shape_obj_complex_p(obj)) {
                 st_table *tbl = rb_imemo_fields_complex_tbl(obj);
                 if (reference_updating) {
                     rb_gc_ref_update_table_values_only(tbl);
@@ -561,7 +561,7 @@ imemo_fields_free(struct rb_fields *fields)
 {
     if (FL_TEST_RAW((VALUE)fields, OBJ_FIELD_HEAP)) {
         shape_id_t shape_id = RBASIC_SHAPE_ID((VALUE)fields);
-        RUBY_ASSERT(rb_shape_too_complex_p(shape_id));
+        RUBY_ASSERT(rb_shape_complex_p(shape_id));
         st_free_table(fields->as.complex.table);
     }
 }

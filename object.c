@@ -338,7 +338,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
 
     shape_id_t src_shape_id = RBASIC_SHAPE_ID(obj);
 
-    if (rb_shape_too_complex_p(src_shape_id)) {
+    if (rb_shape_complex_p(src_shape_id)) {
         rb_shape_copy_complex_ivars(dest, obj, src_shape_id, ROBJECT_FIELDS_HASH(obj));
         return;
     }
@@ -347,10 +347,10 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     RUBY_ASSERT(RSHAPE_TYPE_P(initial_shape_id, SHAPE_ROOT));
 
     shape_id_t dest_shape_id = rb_shape_rebuild(initial_shape_id, src_shape_id);
-    if (UNLIKELY(rb_shape_too_complex_p(dest_shape_id))) {
+    if (UNLIKELY(rb_shape_complex_p(dest_shape_id))) {
         st_table *table = rb_st_init_numtable_with_size(src_num_ivs);
         rb_obj_copy_ivs_to_hash_table(obj, table);
-        rb_obj_init_too_complex(dest, table);
+        rb_obj_init_complex(dest, table);
 
         return;
     }

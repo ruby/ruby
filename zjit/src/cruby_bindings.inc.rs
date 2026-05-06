@@ -1485,7 +1485,7 @@ pub type vm_frame_env_flags = u32;
 pub type attr_index_t = u8;
 pub type shape_id_t = u32;
 pub const SHAPE_ID_HEAP_INDEX_MASK: shape_id_fl_type = 7864320;
-pub const SHAPE_ID_FL_TOO_COMPLEX: shape_id_fl_type = 8388608;
+pub const SHAPE_ID_FL_COMPLEX: shape_id_fl_type = 8388608;
 pub const SHAPE_ID_FL_FROZEN: shape_id_fl_type = 16777216;
 pub const SHAPE_ID_FL_HAS_OBJECT_ID: shape_id_fl_type = 33554432;
 pub const SHAPE_ID_FL_NON_CANONICAL_MASK: shape_id_fl_type = 50331648;
@@ -2282,7 +2282,7 @@ unsafe extern "C" {
     pub fn rb_jit_array_len(a: VALUE) -> ::std::os::raw::c_long;
     pub fn rb_set_cfp_pc(cfp: *mut rb_control_frame_struct, pc: *const VALUE);
     pub fn rb_set_cfp_sp(cfp: *mut rb_control_frame_struct, sp: *mut VALUE);
-    pub fn rb_jit_shape_too_complex_p(shape_id: shape_id_t) -> bool;
+    pub fn rb_jit_shape_complex_p(shape_id: shape_id_t) -> bool;
     pub fn rb_jit_multi_ractor_p() -> bool;
     pub fn rb_jit_class_fields_embedded_p(klass: VALUE) -> bool;
     pub fn rb_jit_typed_data_fields_embedded_p(obj: VALUE) -> bool;

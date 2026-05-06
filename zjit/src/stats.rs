@@ -310,10 +310,10 @@ make_counters! {
         setivar_fallback_not_monomorphic,
         setivar_fallback_immediate,
         setivar_fallback_not_t_object,
-        setivar_fallback_too_complex,
+        setivar_fallback_complex,
         setivar_fallback_frozen,
         setivar_fallback_shape_transition,
-        setivar_fallback_new_shape_too_complex,
+        setivar_fallback_new_shape_complex,
         setivar_fallback_new_shape_needs_extension,
     }
 
@@ -323,7 +323,7 @@ make_counters! {
         getivar_fallback_not_monomorphic,
         getivar_fallback_immediate,
         getivar_fallback_not_t_object,
-        getivar_fallback_too_complex,
+        getivar_fallback_complex,
     }
 
     // Ivar fallback counters that are summed as dynamic_definedivar_count
@@ -332,7 +332,7 @@ make_counters! {
         definedivar_fallback_not_monomorphic,
         definedivar_fallback_immediate,
         definedivar_fallback_not_t_object,
-        definedivar_fallback_too_complex,
+        definedivar_fallback_complex,
     }
 
     // compile_error_: Compile error reasons

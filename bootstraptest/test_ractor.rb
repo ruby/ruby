@@ -2163,7 +2163,7 @@ assert_equal 'ok', %q{
 
 # move object with complex generic ivars
 assert_equal 'ok', %q{
-  # Make Array too_complex
+  # Make Array complex
   30.times { |i| [].instance_variable_set(:"@complex#{i}", 1) }
 
   ractor = Ractor.new { Ractor.receive }
@@ -2190,7 +2190,7 @@ assert_equal 'ok', %q{
 
 # copy object with complex generic ivars
 assert_equal 'ok', %q{
-  # Make Array too_complex
+  # Make Array complex
   30.times { |i| [].instance_variable_set(:"@complex#{i}", 1) }
 
   ractor = Ractor.new { Ractor.receive }
