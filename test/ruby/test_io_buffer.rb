@@ -1163,6 +1163,31 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal "hello", str
   end
 
+  def test_get_string_zero_copy_slice
+    # Use a frozen string so rb_str_tmp_frozen_acquire returns the same object,
+    # guaranteeing buffer->source == source.
+    source = "hello world".dup.freeze
+    slice = IO::Buffer.for(source).slice(6, 5)
+    assert_predicate slice, :readonly?
+
+    str = slice.get_string
+    assert_equal "world", str
+    slice.free
+
+    # After slice.free clears slice->source, str's parent must keep source alive.
+    # Use a WeakMap to detect if source is prematurely collected.
+    tracker = Object.new
+    weak = ObjectSpace::WeakMap.new
+    weak[tracker] = source
+    source = nil
+
+    GC.compact if GC.respond_to?(:compact)
+    GC.start(full_mark: true, immediate_sweep: true)
+
+    assert_equal "hello world", weak[tracker], "source String must be kept alive by str via slice"
+    assert_equal "world", str
+  end
+
   def test_get_string_zero_copy_compaction
     omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
 
