@@ -323,9 +323,7 @@ class Pathname
     if relpath.empty?
       File.dirname(prefix)
     elsif has_separator?(prefix)
-      prefix = File.dirname(prefix)
-      prefix = File.join(prefix, "") if File.basename(prefix + 'a') != 'a'
-      prefix + relpath
+      add_trailing_separator(File.dirname(prefix)) + relpath
     else
       prefix + relpath
     end
