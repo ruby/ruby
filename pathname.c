@@ -1,6 +1,7 @@
 #include "ruby.h"
 #include "internal.h"
 #include "internal/file.h"
+#include "internal/string.h"
 #include "internal/vm.h"
 
 #if defined __CYGWIN__ || defined DOSISH
@@ -16,6 +17,14 @@
 static VALUE rb_cPathname;
 static ID id_at_path;
 static ID id_sub;
+
+static VALUE
+check_strpath(VALUE path)
+{
+    Check_Type(path, T_STRING);
+    rb_get_path_check_no_convert(path);
+    return path;
+}
 
 static VALUE
 get_strpath(VALUE obj)
@@ -156,6 +165,27 @@ path_absolute_p(VALUE self)
     return RBOOL(isdirsep(ptr[0]));
 }
 
+/* :nodoc: */
+static VALUE
+has_separator_p(VALUE self, VALUE path)
+{
+    const char *ptr = RSTRING_PTR(check_strpath(path));
+    const char *end = RSTRING_END(path);
+    if (alt_separator) {
+        rb_encoding *enc = rb_enc_get(path);
+        bool mb = !rb_str_enc_fastpath(path);
+        while (ptr < end) {
+            if (isdirsep(*ptr)) return Qtrue;
+            ptr += (mb ? rb_enc_mbclen(ptr, end, enc) : 1);
+        }
+    }
+    else {
+        /* assume '/' will never be trailing bytes */
+        if (memchr(ptr, '/', end - ptr)) return Qtrue;
+    }
+    return Qfalse;
+}
+
 #include "pathname_builtin.rbinc"
 
 static void init_ids(void);
@@ -179,6 +209,8 @@ InitVM_pathname(void)
     rb_define_method(rb_cPathname, "sub", path_sub, -1);
     rb_define_method(rb_cPathname, "root?", path_root_p, 0);
     rb_define_method(rb_cPathname, "absolute?", path_absolute_p, 0);
+
+    rb_define_private_method(rb_cPathname, "has_separator?", has_separator_p, 1);
 
     rb_provide("pathname.so");
 }

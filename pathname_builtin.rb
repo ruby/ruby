@@ -383,7 +383,7 @@ class Pathname
   def prepend_prefix(prefix, relpath) # :nodoc:
     if relpath.empty?
       File.dirname(prefix)
-    elsif SEPARATOR_PAT.match?(prefix)
+    elsif has_separator?(prefix)
       prefix = File.dirname(prefix)
       prefix = File.join(prefix, "") if File.basename(prefix + 'a') != 'a'
       prefix + relpath
@@ -524,7 +524,7 @@ class Pathname
       end
     end
     pre.tr!(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
-    if SEPARATOR_PAT.match?(File.basename(pre))
+    if has_separator?(File.basename(pre))
       names.shift while names[0] == '..'
     end
     self.class.new(prepend_prefix(pre, File.join(*names)))
@@ -573,7 +573,7 @@ class Pathname
       names.unshift base if base != '.'
     end
     pre.tr!(File::ALT_SEPARATOR, File::SEPARATOR) if File::ALT_SEPARATOR
-    if SEPARATOR_PAT.match?(File.basename(pre))
+    if has_separator?(File.basename(pre))
       names.shift while names[0] == '..'
     end
     if names.empty?
@@ -800,7 +800,7 @@ class Pathname
       basename_list2.shift
     end
     r1 = chop_basename(prefix1)
-    if !r1 && (r1 = SEPARATOR_PAT.match?(File.basename(prefix1)))
+    if !r1 && (r1 = has_separator?(File.basename(prefix1)))
       while !basename_list2.empty? && basename_list2.first == '..'
         index_list2.shift
         basename_list2.shift

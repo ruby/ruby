@@ -11146,6 +11146,7 @@ pathname.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 pathname.$(OBJEXT): $(top_srcdir)/internal/file.h
 pathname.$(OBJEXT): $(top_srcdir)/internal/serial.h
 pathname.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+pathname.$(OBJEXT): $(top_srcdir)/internal/string.h
 pathname.$(OBJEXT): $(top_srcdir)/internal/vm.h
 pathname.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 pathname.$(OBJEXT): {$(VPATH)}assert.h
@@ -11162,6 +11163,7 @@ pathname.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 pathname.$(OBJEXT): {$(VPATH)}builtin.h
 pathname.$(OBJEXT): {$(VPATH)}config.h
 pathname.$(OBJEXT): {$(VPATH)}defines.h
+pathname.$(OBJEXT): {$(VPATH)}encindex.h
 pathname.$(OBJEXT): {$(VPATH)}encoding.h
 pathname.$(OBJEXT): {$(VPATH)}intern.h
 pathname.$(OBJEXT): {$(VPATH)}internal.h
