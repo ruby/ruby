@@ -204,12 +204,12 @@ ruby_fl_type {
      */
     RUBY_FL_PROMOTED    = (1<<5),
 
-    /**
-     * This flag meaning is type dependent, currently only used by T_DATA.
-     *
-     * @internal
-     */
-    RUBY_FL_USERPRIV0    = (1<<6),
+   /**
+    * This flag is no longer in use
+    *
+    * @internal
+    */
+    RUBY_FL_UNUSED6    = (1<<6),
 
     /**
      * This flag has  something to do with finalisers.  A  ruby object can have
