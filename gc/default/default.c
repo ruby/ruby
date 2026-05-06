@@ -6415,6 +6415,8 @@ garbage_collect(rb_objspace_t *objspace, unsigned int reason)
 static int
 gc_start(rb_objspace_t *objspace, unsigned int reason)
 {
+    rb_gc_initialize_vm_context(&objspace->vm_context);
+
     unsigned int do_full_mark = !!(reason & GPR_FLAG_FULL_MARK);
 
     if (!rb_darray_size(objspace->heap_pages.sorted)) return TRUE; /* heap is not ready */

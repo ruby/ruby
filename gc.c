@@ -239,7 +239,7 @@ rb_gc_event_hook(VALUE obj, rb_event_flag_t event)
 {
     if (LIKELY(!rb_gc_event_hook_required_p(event))) return;
 
-    rb_execution_context_t *ec = GET_EC();
+    rb_execution_context_t *ec = rb_gc_get_ec();
     if (!ec->cfp) return;
 
     EXEC_EVENT_HOOK(ec, event, ec->cfp->self, 0, 0, 0, obj);
