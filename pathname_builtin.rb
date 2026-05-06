@@ -221,13 +221,6 @@ class Pathname
 
   # :stopdoc:
 
-  if File::FNM_SYSCASE.nonzero?
-    # Avoid #zero? here because #casecmp can return nil.
-    private def same_paths?(a, b) a.casecmp(b) == 0 end
-  else
-    private def same_paths?(a, b) a == b end
-  end
-
   attr_reader :path
   protected :path
 

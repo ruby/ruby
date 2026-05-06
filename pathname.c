@@ -120,6 +120,18 @@ path_sub(int argc, VALUE *argv, VALUE self)
     return rb_class_new_instance(1, &str, rb_obj_class(self));
 }
 
+/* :nodoc: */
+static VALUE
+same_paths(VALUE self, VALUE a, VALUE b)
+{
+    check_strpath(a);
+    check_strpath(b);
+    if (CASEFOLD_FILESYSTEM)
+        return RBOOL(rb_str_casecmp(a, b) == INT2FIX(0));
+    else
+        return rb_str_equal(a, b);
+}
+
 /*
  * Predicate method for root directories.  Returns +true+ if the
  * pathname consists of consecutive slashes.
@@ -339,6 +351,7 @@ InitVM_pathname(void)
     rb_define_method(rb_cPathname, "root?", path_root_p, 0);
     rb_define_method(rb_cPathname, "absolute?", path_absolute_p, 0);
 
+    rb_define_private_method(rb_cPathname, "same_paths?", same_paths, 2);
     rb_define_private_method(rb_cPathname, "has_separator?", has_separator_p, 1);
     rb_define_private_method(rb_cPathname, "chop_basename", chop_basename, 1);
     rb_define_private_method(rb_cPathname, "split_names", split_names, 1);
