@@ -215,7 +215,7 @@ rb_shape_complex_p(shape_id_t shape_id)
 }
 
 static inline bool
-rb_shape_obj_complex_p(VALUE obj)
+rb_obj_shape_complex_p(VALUE obj)
 {
     return !RB_SPECIAL_CONST_P(obj) && rb_shape_complex_p(RBASIC_SHAPE_ID(obj));
 }
@@ -322,7 +322,7 @@ ROBJECT_FIELDS_CAPACITY(VALUE obj)
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
     // Asking for capacity doesn't make sense when the object is using
     // a hash table for storing instance variables
-    RUBY_ASSERT(!rb_shape_obj_complex_p(obj));
+    RUBY_ASSERT(!rb_obj_shape_complex_p(obj));
     return RSHAPE_CAPACITY(RBASIC_SHAPE_ID(obj));
 }
 
@@ -330,7 +330,7 @@ static inline st_table *
 ROBJECT_FIELDS_HASH(VALUE obj)
 {
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-    RUBY_ASSERT(rb_shape_obj_complex_p(obj));
+    RUBY_ASSERT(rb_obj_shape_complex_p(obj));
     RUBY_ASSERT(FL_TEST_RAW(obj, ROBJECT_HEAP));
 
     return ROBJECT(obj)->as.hash;
@@ -340,7 +340,7 @@ static inline void
 ROBJECT_SET_FIELDS_HASH(VALUE obj, st_table *tbl)
 {
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-    RUBY_ASSERT(rb_shape_obj_complex_p(obj));
+    RUBY_ASSERT(rb_obj_shape_complex_p(obj));
     RUBY_ASSERT(FL_TEST_RAW(obj, ROBJECT_HEAP));
 
     ROBJECT(obj)->as.hash = tbl;
@@ -356,14 +356,14 @@ static inline uint32_t
 ROBJECT_FIELDS_COUNT_NOT_COMPLEX(VALUE obj)
 {
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
-    RUBY_ASSERT(!rb_shape_obj_complex_p(obj));
+    RUBY_ASSERT(!rb_obj_shape_complex_p(obj));
     return RSHAPE(RBASIC_SHAPE_ID(obj))->next_field_index;
 }
 
 static inline uint32_t
 ROBJECT_FIELDS_COUNT(VALUE obj)
 {
-    if (rb_shape_obj_complex_p(obj)) {
+    if (rb_obj_shape_complex_p(obj)) {
         return ROBJECT_FIELDS_COUNT_COMPLEX(obj);
     }
     else {
@@ -378,7 +378,7 @@ RBASIC_FIELDS_COUNT(VALUE obj)
 }
 
 static inline bool
-rb_shape_obj_has_id(VALUE obj)
+rb_obj_shape_has_id(VALUE obj)
 {
     return rb_shape_has_object_id(RBASIC_SHAPE_ID(obj));
 }
@@ -390,7 +390,7 @@ rb_shape_has_ivars(shape_id_t shape_id)
 }
 
 static inline bool
-rb_shape_obj_has_ivars(VALUE obj)
+rb_obj_shape_has_ivars(VALUE obj)
 {
     return rb_shape_has_ivars(RBASIC_SHAPE_ID(obj));
 }
@@ -402,7 +402,7 @@ rb_shape_has_fields(shape_id_t shape_id)
 }
 
 static inline bool
-rb_shape_obj_has_fields(VALUE obj)
+rb_obj_shape_has_fields(VALUE obj)
 {
     return rb_shape_has_fields(RBASIC_SHAPE_ID(obj));
 }
@@ -420,7 +420,7 @@ rb_obj_gen_fields_p(VALUE obj)
         default:
           break;
     }
-    return rb_shape_obj_has_fields(obj);
+    return rb_obj_shape_has_fields(obj);
 }
 
 static inline bool

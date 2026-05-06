@@ -436,7 +436,7 @@ rb_object_shape_count(void)
 bool
 rb_yjit_shape_obj_complex_p(VALUE obj)
 {
-    return rb_shape_obj_complex_p(obj);
+    return rb_obj_shape_complex_p(obj);
 }
 
 attr_index_t
