@@ -64,7 +64,9 @@ module Bundler
 
       @cached_dependencies = Hash.new do |dependencies, package|
         dependencies[package] = Hash.new do |versions, version|
-          versions[version] = to_dependency_hash(version.dependencies.reject {|d| d.name == package.name }, @packages)
+          deps = version.dependencies.reject {|d| d.name == package.name }
+          deps = apply_metadata_overrides(deps, package.name)
+          versions[version] = to_dependency_hash(deps, @packages)
         end
       end
 
@@ -531,6 +533,23 @@ module Bundler
 
       dependencies.map do |dep|
         override = Override.find_for(@base.overrides, dep.name, :version)
+        next dep unless override
+        Gem::Dependency.new(dep.name, override.apply_to(dep.requirement))
+      end
+    end
+
+    METADATA_DEP_FIELD = {
+      "Ruby\0" => :required_ruby_version,
+      "RubyGems\0" => :required_rubygems_version,
+    }.freeze
+
+    def apply_metadata_overrides(dependencies, name)
+      return dependencies if @base.overrides.empty?
+
+      dependencies.map do |dep|
+        field = METADATA_DEP_FIELD[dep.name]
+        next dep unless field
+        override = Override.find_for(@base.overrides, name, field)
         next dep unless override
         Gem::Dependency.new(dep.name, override.apply_to(dep.requirement))
       end
