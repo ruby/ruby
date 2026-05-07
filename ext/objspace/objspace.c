@@ -230,7 +230,7 @@ type2sym(enum ruby_value_type i)
  *  T_DATA may be wrong.
  *
  *  It returns a hash as:
- *    {:TOTAL=>1461154, :T_CLASS=>158280, :T_MODULE=>20672, :T_STRING=>527249, ...}
+ *    {TOTAL: 1461154, T_CLASS: 158280, T_MODULE: 20672, T_STRING: 527249, ...}
  *
  *  If the optional argument, result_hash, is given,
  *  it is overwritten and returned.
