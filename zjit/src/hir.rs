@@ -5011,6 +5011,19 @@ impl Function {
                 new_insns.push(insn_id);
             }
 
+
+            // get the block
+            // load-store optimization
+            // reverse updated instructions
+            // DSE
+            // reverse final updated instructions
+            // return
+            //
+            // get the block
+            // load-store optimization, DSE* after (same iteration)
+            //     instead of eliding the store, mark the earlier store for removal
+            // return
+
             // After performing scalar replacement on loads and stores where
             // applicable, we scan in reverse to find an eliminate dead stores
             let mut reversed_insns = std::mem::take(&mut new_insns);
@@ -5038,11 +5051,10 @@ impl Function {
                         remove_aliasing(&mut compile_time_heap, offset);
                     },
                     insn => {
-                        // TODO: Add test case for control flow potential bugs
-                        if insn.effects_of().includes(Effect::read(abstract_heaps::Memory)) {
-                            compile_time_heap.clear();
-                        }
-                        else if insn.effects_of().includes(effects::Control) {
+                        let insn_reads_memory = insn.effects_of().includes(Effect::read(abstract_heaps::Memory));
+                        let insn_uses_control_flow = insn.effects_of().includes(effects::Control);
+                        // TODO: Once we update from extended basic blocks to normal basic blocks, we can remove the control flow check
+                        if insn_reads_memory || insn_uses_control_flow {
                             compile_time_heap.clear();
                         }
                     }
@@ -5053,101 +5065,6 @@ impl Function {
             self.blocks[block.0].insns = new_insns;
         }
     }
-
-    // This pass assumes that load_store_optimization has already run
-    // This means that we will never have cases where loads and stores are
-    // repeated with the same offset and value.
-    // However, we still may have unnecessary stores. For the purposes of this
-    // pass, unnecessary means that a store to an offset is not utilized by
-    // other HIR instructions before a second store to the same offset occurs.
-    // Removing one of these two stores does not alter program behavior.
-    // TODO: Improve comments and clean up algorithm sketch
-    // fn eliminate_dead_stores(&mut self) {
-    //     #[derive(PartialEq, Eq, Hash)]
-    //     struct StoreHeap {
-    //         // TODO: Is object a good name here? If not, what should it be instead?
-    //         object: InsnId,
-    //         offset: i32,
-    //     }
-
-    //     // This helper function is used while we don't have type based alias
-    //     // analysis. Matching offsets could result in aliased objects that need
-    //     // to be clear.
-    //     fn prune_stores(map: &mut HashMap<StoreHeap, InsnId>, offset: i32) {
-    //         map.retain(|StoreHeap { object: _, offset: off }, _| *off != offset);
-    //     }
-
-    //     for block in self.rpo() {
-    //         // TODO: Probably convert this to a vec of tuples? Time complexity is worse but constant factors are better
-    //         let mut active_stores: HashMap<StoreHeap, InsnId> = HashMap::new();
-    //         let insns = std::mem::take(&mut self.blocks[block.0].insns);
-    //         let mut new_insns = vec![];
-    //         for insn_id in insns.iter().rev().copied() {
-    //             match self.find(insn_id) {
-    //                 Insn::StoreField { recv, offset, .. } => {
-    //                     let key = StoreHeap { object: self.chase_insn(recv), offset };
-    //                     // If an older store is being tracked, then there have
-    //                     // been no usees between stores and the first store is
-    //                     // dead and should not be emitted.
-    //                     if active_stores.contains_key(&key) {
-    //                         continue
-    //                     }
-    //                     // Otherwise, we have a new store to begin tracking.
-    //                     // Because we don't have type based alias analysis, we
-    //                     // need to remove all other stores with the same offset
-    //                     // before adding our own.
-    //                     else {
-    //                         prune_stores(&mut active_stores, offset);
-    //                         active_stores.insert(key, insn_id);
-    //                     }
-    //                 }
-    //                 // If a load is found, then any earlier store was
-    //                 // necessary. We know this because redundant loads and
-    //                 // stores were already eliminated, implying the
-    //                 // hypothetical StoreField we haven't found yet has a
-    //                 // different value than the one in active_stores.
-    //                 // The following lines are required when we have type
-    //                 // based alias analysis and the following call to prune
-    //                 // stores is no longer used.
-    //                 // Insn::LoadField { recv, offset, .. } => {
-    //                 //     let key = StoreHeap { object: self.chase_insn(recv), offset };
-    //                 //     active_stores.remove(&key);
-    //                 Insn::LoadField{ offset, .. } => {
-    //                     // Because we don't have type based alias analysis, we
-    //                     // can't just remove the (up to) one entry of the
-    //                     // StoreHeap key in active_stores. We need to remove all
-    //                     // such keys that could alias.
-    //                     prune_stores(&mut active_stores, offset);
-    //                 }
-    //                 Insn::WriteBarrier { .. } => {
-    //                     // Currently, WriteBarrier write effects are Allocator and Memory when we'd really like them to be flags.
-    //                     // We don't use LoadField for mark bits so we can ignore them for now.
-    //                     // But flags does not exist in our effects abstract heap modeling and we don't want to add special casing to effects.
-    //                     // This special casing in this pass here should be removed once we refine our effects system to provide greater granularity for WriteBarrier.
-    //                     // TODO: use TBAA
-    //                     let offset = RUBY_OFFSET_RBASIC_FLAGS;
-    //                     prune_stores(&mut active_stores, offset);
-    //                 },
-    //                 insn => {
-    //                     // If the instruction can read memory, we cannot assume
-    //                     // entries of active_stores are not loaded. This is because we use
-    //                     // extended basic blocks and we should probably change this to be
-    //                     // standard basic blocks.
-    //                     // TODO: Add a test for this case
-    //                     if insn.effects_of().includes(Effect::read(abstract_heaps::Memory)) {
-    //                         active_stores.clear();
-    //                     }
-    //                     else if insn.effects_of().includes(effects::Control) {
-    //                         active_stores.clear();
-    //                     }
-    //                 }
-    //             }
-    //             new_insns.push(insn_id);
-    //         }
-    //         new_insns.reverse();
-    //         self.blocks[block.0].insns = new_insns;
-    //     }
-    // }
 
     /// Fold a binary operator on fixnums.
     fn fold_fixnum_bop(&mut self, insn_id: InsnId, left: InsnId, right: InsnId, f: impl FnOnce(Option<i64>, Option<i64>) -> Option<i64>) -> InsnId {
