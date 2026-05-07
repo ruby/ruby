@@ -1147,7 +1147,7 @@ module Prism
           on_blockarg(nil)
         else
           bounds(node.name_loc)
-          name = visit_token(node.name.to_s)
+          name = on_ident(node.name.to_s)
 
           bounds(node.location)
           on_blockarg(name)
@@ -1362,7 +1362,7 @@ module Prism
           receiver = visit(node.receiver)
 
           bounds(node.call_operator_loc)
-          call_operator = visit_token(node.call_operator)
+          call_operator = visit_call_operator(node.call_operator)
 
           message =
             if node.message_loc.nil?
@@ -1473,7 +1473,7 @@ module Prism
         receiver = visit(node.receiver)
 
         bounds(node.call_operator_loc)
-        call_operator = visit_token(node.call_operator)
+        call_operator = visit_call_operator(node.call_operator)
 
         bounds(node.message_loc)
         message = visit_token(node.message)
@@ -1495,7 +1495,7 @@ module Prism
         receiver = visit(node.receiver)
 
         bounds(node.call_operator_loc)
-        call_operator = visit_token(node.call_operator)
+        call_operator = visit_call_operator(node.call_operator)
 
         bounds(node.message_loc)
         message = visit_token(node.message)
@@ -1517,7 +1517,7 @@ module Prism
         receiver = visit(node.receiver)
 
         bounds(node.call_operator_loc)
-        call_operator = visit_token(node.call_operator)
+        call_operator = visit_call_operator(node.call_operator)
 
         bounds(node.message_loc)
         message = visit_token(node.message)
@@ -1551,7 +1551,7 @@ module Prism
           receiver = visit(node.receiver)
 
           bounds(node.call_operator_loc)
-          call_operator = visit_token(node.call_operator)
+          call_operator = visit_call_operator(node.call_operator)
 
           bounds(node.message_loc)
           message = visit_token(node.message)
@@ -1663,9 +1663,6 @@ module Prism
 
       # @@foo = 1
       # ^^^^^^^^^
-      #
-      # @@foo, @@bar = 1
-      # ^^^^^  ^^^^^
       def visit_class_variable_write_node(node)
         bounds(node.name_loc)
         target = on_var_field(on_cvar(node.name.to_s))
@@ -1737,9 +1734,6 @@ module Prism
 
       # Foo = 1
       # ^^^^^^^
-      #
-      # Foo, Bar = 1
-      # ^^^  ^^^
       def visit_constant_write_node(node)
         bounds(node.name_loc)
         target = on_var_field(on_const(node.name.to_s))
@@ -1832,9 +1826,6 @@ module Prism
 
       # Foo::Bar = 1
       # ^^^^^^^^^^^^
-      #
-      # Foo::Foo, Bar::Bar = 1
-      # ^^^^^^^^  ^^^^^^^^
       def visit_constant_path_write_node(node)
         target = visit_constant_path_write_node_target(node.target)
 
@@ -1932,7 +1923,7 @@ module Prism
         operator =
           if !node.operator_loc.nil?
             bounds(node.operator_loc)
-            visit_token(node.operator)
+            node.operator == "." ? on_period(".") : on_op("::")
           end
 
         bounds(node.name_loc)
@@ -2247,9 +2238,6 @@ module Prism
 
       # $foo = 1
       # ^^^^^^^^
-      #
-      # $foo, $bar = 1
-      # ^^^^  ^^^^
       def visit_global_variable_write_node(node)
         bounds(node.name_loc)
         target = on_var_field(on_gvar(node.name.to_s))
@@ -3211,7 +3199,7 @@ module Prism
       #         ^^^^^^^
       def visit_optional_parameter_node(node)
         bounds(node.name_loc)
-        name = visit_token(node.name.to_s)
+        name = on_ident(node.name.to_s)
 
         bounds(node.operator_loc)
         on_op("=")
@@ -3532,7 +3520,7 @@ module Prism
           on_rest_param(nil)
         else
           bounds(node.name_loc)
-          on_rest_param(visit_token(node.name.to_s))
+          on_rest_param(on_ident(node.name.to_s))
         end
       end
 
@@ -4135,6 +4123,11 @@ module Prism
         else
           on_ident(token)
         end
+      end
+
+      # Visit either `.`, `&.`, or `::`.
+      def visit_call_operator(token)
+        token == "." ? on_period(token) : on_op(token)
       end
 
       # Visit a node that represents a number. We need to explicitly handle the
