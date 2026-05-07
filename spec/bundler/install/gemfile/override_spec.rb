@@ -291,7 +291,7 @@ RSpec.describe "override DSL" do
       expect(err).to include("still_blocked")
     end
 
-    it "re-resolves a previously locked spec when an :all metadata override is added" do
+    it "preserves locked versions when an :all metadata override is added without bundle update" do
       build_repo2 do
         build_gem "selectable", "1.0"
         build_gem "selectable", "2.0" do |s|
@@ -313,7 +313,13 @@ RSpec.describe "override DSL" do
         gem "selectable"
       G
 
+      # :all override alone does not pre-unlock locked specs; narrow change
+      # should not trigger unrelated lockfile churn.
       bundle :lock
+      expect(lockfile).to include("selectable (1.0)")
+
+      # bundle update opts the user into re-resolution under the override.
+      bundle "update selectable"
       expect(lockfile).to include("selectable (2.0)")
     end
   end

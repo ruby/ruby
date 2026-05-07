@@ -1061,11 +1061,10 @@ module Bundler
 
     def converge_overrides_outside_dependencies
       @overrides.each do |override|
-        if override.target == :all
-          unlock_all_locked_specs_for_override
-          next
-        end
-
+        # :all overrides are intentionally not pre-unlocked. They take effect on
+        # fresh resolution (no lockfile) or when the user runs `bundle update`.
+        # Forcing a full re-resolve from a single :all directive would surprise
+        # users with unrelated dependency churn.
         next unless override.target.is_a?(String)
 
         name = override.target
@@ -1076,15 +1075,6 @@ module Bundler
         # Other fields are not visible there, so they always reach here.
         next if override.field == :version && @dependencies.any? {|d| d.name == name }
 
-        @gems_to_unlock << name
-        @changed_dependencies << name
-      end
-    end
-
-    def unlock_all_locked_specs_for_override
-      @originally_locked_specs.each do |locked_spec|
-        name = locked_spec.name
-        next if @changed_dependencies.include?(name)
         @gems_to_unlock << name
         @changed_dependencies << name
       end
