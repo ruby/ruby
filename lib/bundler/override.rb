@@ -4,6 +4,10 @@ module Bundler
   class Override
     UPPER_BOUND_OPERATORS = ["<", "<="].freeze
 
+    def self.find_for(overrides, name, field)
+      overrides.find {|o| o.target == name && o.field == field }
+    end
+
     attr_reader :target, :field, :operation
 
     def initialize(target, field, operation)

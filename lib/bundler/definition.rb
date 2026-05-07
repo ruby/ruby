@@ -644,7 +644,7 @@ module Bundler
     end
 
     def apply_override_to(dep)
-      override = @overrides.find {|o| o.target == dep.name && o.field == :version }
+      override = Override.find_for(@overrides, dep.name, :version)
       return dep unless override
       new_dep = dep.dup
       new_dep.instance_variable_set(:@requirement, override.apply_to(dep.requirement))

@@ -1,6 +1,28 @@
 # frozen_string_literal: true
 
 RSpec.describe Bundler::Override do
+  describe ".find_for" do
+    it "returns the matching override by target and field" do
+      a = described_class.new("rails", :version, ">= 8.0")
+      b = described_class.new("nokogiri", :version, :ignore_upper)
+      expect(described_class.find_for([a, b], "rails", :version)).to be(a)
+    end
+
+    it "returns nil when no override matches the target" do
+      a = described_class.new("rails", :version, ">= 8.0")
+      expect(described_class.find_for([a], "sinatra", :version)).to be_nil
+    end
+
+    it "returns nil when no override matches the field" do
+      a = described_class.new("rails", :version, ">= 8.0")
+      expect(described_class.find_for([a], "rails", :required_ruby_version)).to be_nil
+    end
+
+    it "returns nil for an empty overrides list" do
+      expect(described_class.find_for([], "rails", :version)).to be_nil
+    end
+  end
+
   describe "#apply_to" do
     context "when operation is a version spec string" do
       it "replaces the existing requirement entirely" do

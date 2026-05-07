@@ -530,7 +530,7 @@ module Bundler
       return dependencies if @base.overrides.empty?
 
       dependencies.map do |dep|
-        override = @base.overrides.find {|o| o.target == dep.name && o.field == :version }
+        override = Override.find_for(@base.overrides, dep.name, :version)
         next dep unless override
         Gem::Dependency.new(dep.name, override.apply_to(dep.requirement))
       end
