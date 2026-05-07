@@ -9,12 +9,18 @@ module Bundler
         overrides.find {|o| o.target == :all && o.field == field }
     end
 
-    attr_reader :target, :field, :operation
+    attr_reader :target, :field, :operation, :source_location
 
-    def initialize(target, field, operation)
+    def initialize(target, field, operation, source_location: nil)
       @target = target
       @field = field
       @operation = operation
+      @source_location = source_location
+    end
+
+    def source_location_label
+      return nil unless @source_location
+      "#{File.basename(@source_location.path)}:#{@source_location.lineno}"
     end
 
     def apply_to(requirement)

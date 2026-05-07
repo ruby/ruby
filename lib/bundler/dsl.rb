@@ -201,8 +201,9 @@ module Bundler
         validate_override_uniqueness!(target, field)
       end
 
+      source_location = caller_locations(1, 1)&.first
       operations.each do |field, operation|
-        @overrides << Override.new(target, field, operation)
+        @overrides << Override.new(target, field, operation, source_location: source_location)
       end
     end
 
