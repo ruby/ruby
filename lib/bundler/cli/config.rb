@@ -97,10 +97,10 @@ module Bundler
             confirm(name)
           end
 
-          if current_value
-            return
-          else
+          if current_value.nil?
             exit 1
+          else
+            return
           end
         end
 
