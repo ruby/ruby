@@ -1,11 +1,18 @@
 class RaiseErrorMatcher
   FAILURE_MESSAGE_FOR_EXCEPTION = {}.compare_by_identity
+  UNDEF_CAUSE = Object.new
 
   attr_writer :block
 
-  def initialize(exception, message, &block)
+  def initialize(exception, message = nil, options = nil, &block)
+    if message.is_a? Hash
+      @message = nil
+      options = message
+    else
+      @message = message
+    end
+    @cause = options ? options.fetch(:cause, UNDEF_CAUSE) : UNDEF_CAUSE
     @exception = exception
-    @message = message
     @block = block
     @actual = nil
   end
@@ -45,24 +52,45 @@ class RaiseErrorMatcher
     end
   end
 
-  def matching_exception?(exc)
-    matching_class?(exc) and matching_message?(exc)
-  end
-
-  def exception_class_and_message(exception_class, message)
-    if message
-      "#{exception_class} (#{message})"
+  def matching_cause?(exc)
+    case @cause
+    when UNDEF_CAUSE
+      true
     else
-      "#{exception_class}"
+      @cause == exc.cause
     end
   end
 
+  def matching_exception?(exc)
+    matching_class?(exc) and matching_message?(exc) and matching_cause?(exc)
+  end
+
+  def exception_class_and_message_and_cause(exception_class, message, cause)
+    string = "#{exception_class}"
+    prefixed = false
+    prefix = -> { prefixed ? ", " : prefixed = "(" }
+
+    if message != nil
+      string << "#{prefix.()}#{message.inspect}"
+    end
+
+    if cause != UNDEF_CAUSE
+      string << "#{prefix.()}cause: #{cause.inspect}"
+    end
+
+    string << ")" if prefixed
+
+    string
+  end
+
   def format_expected_exception
-    exception_class_and_message(@exception, @message)
+    exception_class_and_message_and_cause(@exception, @message, @cause)
   end
 
   def format_exception(exception)
-    exception_class_and_message(exception.class, exception.message)
+    exception_class_and_message_and_cause(exception.class,
+                                          @message == nil ? nil : exception.message,
+                                          @cause == UNDEF_CAUSE ? UNDEF_CAUSE : exception.cause)
   end
 
   def failure_message
@@ -87,18 +115,18 @@ class RaiseErrorMatcher
 end
 
 module MSpecMatchers
-  private def raise_error(exception = Exception, message = nil, &block)
-    RaiseErrorMatcher.new(exception, message, &block)
+  private def raise_error(exception = Exception, message = nil, options = nil, &block)
+    RaiseErrorMatcher.new(exception, message, options, &block)
   end
 
   # CRuby < 4.1 has inconsistent coercion errors:
   # https://bugs.ruby-lang.org/issues/21864
   # This matcher ignores the message on CRuby < 4.1
   # and checks the message for all other cases, including other Rubies
-  private def raise_consistent_error(exception = Exception, message = nil, &block)
+  private def raise_consistent_error(exception = Exception, message = nil, options = nil, &block)
     if RUBY_ENGINE == "ruby" and ruby_version_is ""..."4.1"
       message = nil
     end
-    RaiseErrorMatcher.new(exception, message, &block)
+    RaiseErrorMatcher.new(exception, message, options, &block)
   end
 end
