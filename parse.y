@@ -6274,17 +6274,17 @@ p_arg		: p_expr
 
 p_kwargs	: p_kwarg ',' p_any_kwrest
                     {
-                        $$ =  new_hash_pattern_tail(p, $1, $3, &@$);
+                        $$ =  new_hash_pattern_tail(p, new_unique_key_hash(p, $1, &@$), $3, &@$);
                     /*% ripper: [$:1, $:3] %*/
                     }
                 | p_kwarg
                     {
-                        $$ =  new_hash_pattern_tail(p, $1, 0, &@$);
+                        $$ =  new_hash_pattern_tail(p, new_unique_key_hash(p, $1, &@$), 0, &@$);
                     /*% ripper: [$:1, Qnil] %*/
                     }
                 | p_kwarg ','
                     {
-                        $$ =  new_hash_pattern_tail(p, $1, 0, &@$);
+                        $$ =  new_hash_pattern_tail(p, new_unique_key_hash(p, $1, &@$), 0, &@$);
                     /*% ripper: [$:1, Qnil] %*/
                     }
                 | p_any_kwrest
@@ -17613,7 +17613,7 @@ error_duplicate_pattern_key(struct parser_params *p, VALUE key, const YYLTYPE *l
 static NODE *
 new_unique_key_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc)
 {
-    return NEW_HASH(hash, loc);
+    return hash;
 }
 
 static rb_node_t *
