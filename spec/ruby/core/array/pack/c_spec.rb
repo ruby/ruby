@@ -48,7 +48,7 @@ describe :array_pack_8bit, shared: true do
   it "raise ArgumentError for NULL bytes between directives" do
     -> {
       [1, 2, 3].pack(pack_format("\000", 2))
-    }.should raise_error(ArgumentError, /unknown pack directive/)
+    }.should.raise(ArgumentError, /unknown pack directive/)
   end
 
   it "ignores spaces between directives" do

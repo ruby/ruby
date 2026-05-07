@@ -43,8 +43,8 @@ describe "String#rpartition with String" do
   end
 
   it "raises an error if not convertible to string" do
-    ->{ "hello".rpartition(5) }.should raise_error(TypeError)
-    ->{ "hello".rpartition(nil) }.should raise_error(TypeError)
+    ->{ "hello".rpartition(5) }.should.raise(TypeError)
+    ->{ "hello".rpartition(nil) }.should.raise(TypeError)
   end
 
   it "handles a pattern in a superset encoding" do

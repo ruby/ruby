@@ -2,7 +2,7 @@
 describe :object_id, shared: true do
   it "returns an integer" do
     o1 = @object.new
-    o1.__send__(@method).should be_kind_of(Integer)
+    o1.__send__(@method).should.is_a?(Integer)
   end
 
   it "returns the same value on all calls to id for a given object" do

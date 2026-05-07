@@ -6,6 +6,6 @@ describe "Symbol#intern" do
   end
 
   it "returns a Symbol" do
-    :foo.intern.should be_kind_of(Symbol)
+    :foo.intern.should.is_a?(Symbol)
   end
 end

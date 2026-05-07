@@ -12,7 +12,7 @@ describe "Tempfile#close when passed no argument or [false]" do
 
   it "closes self" do
     @tempfile.close
-    @tempfile.closed?.should be_true
+    @tempfile.closed?.should == true
   end
 
   it "does not unlink self" do
@@ -29,7 +29,7 @@ describe "Tempfile#close when passed [true]" do
 
   it "closes self" do
     @tempfile.close(true)
-    @tempfile.closed?.should be_true
+    @tempfile.closed?.should == true
   end
 
   it "unlinks self" do
@@ -46,7 +46,7 @@ describe "Tempfile#close!" do
 
   it "closes self" do
     @tempfile.close!
-    @tempfile.closed?.should be_true
+    @tempfile.closed?.should == true
   end
 
   it "unlinks self" do

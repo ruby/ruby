@@ -15,7 +15,7 @@ describe "Dir#read" do
     # an FS does not necessarily impose order
     ls = Dir.entries DirSpecs.mock_dir
     dir = Dir.open DirSpecs.mock_dir
-    ls.should include(dir.read)
+    ls.should.include?(dir.read)
     dir.close
   end
 
@@ -61,7 +61,7 @@ describe "Dir#read" do
             while entry = d.read
               shift_jis_entries << entry
             end
-          }.should_not raise_error
+          }.should_not.raise
         end
       ensure
         Encoding.default_internal = old_internal_encoding

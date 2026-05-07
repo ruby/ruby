@@ -6,7 +6,7 @@ describe :symbol_match, shared: true do
   end
 
   it "returns nil if there is no match" do
-    :a.send(@method, /b/).should be_nil
+    :a.send(@method, /b/).should == nil
   end
 
   it "sets the last match pseudo-variables" do
@@ -22,12 +22,12 @@ end
 describe "Symbol#match" do
   it "returns the MatchData" do
     result = :abc.match(/b/)
-    result.should be_kind_of(MatchData)
+    result.should.is_a?(MatchData)
     result[0].should == 'b'
   end
 
   it "returns nil if there is no match" do
-    :a.match(/b/).should be_nil
+    :a.match(/b/).should == nil
   end
 
   it "sets the last match pseudo-variables" do
@@ -38,7 +38,7 @@ describe "Symbol#match" do
   describe "when passed a block" do
     it "yields the MatchData" do
       :abc.match(/./) {|m| ScratchPad.record m }
-      ScratchPad.recorded.should be_kind_of(MatchData)
+      ScratchPad.recorded.should.is_a?(MatchData)
     end
 
     it "returns the block result" do
@@ -61,17 +61,17 @@ describe "Symbol#match?" do
 
   context "when matches the given regex" do
     it "returns true but does not set Regexp.last_match" do
-      :string.match?(/string/i).should be_true
-      Regexp.last_match.should be_nil
+      :string.match?(/string/i).should == true
+      Regexp.last_match.should == nil
     end
   end
 
   it "returns false when does not match the given regex" do
-    :string.match?(/STRING/).should be_false
+    :string.match?(/STRING/).should == false
   end
 
   it "takes matching position as the 2nd argument" do
-    :string.match?(/str/i, 0).should be_true
-    :string.match?(/str/i, 1).should be_false
+    :string.match?(/str/i, 0).should == true
+    :string.match?(/str/i, 1).should == false
   end
 end

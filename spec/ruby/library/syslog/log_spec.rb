@@ -7,11 +7,11 @@ platform_is_not :windows do
     platform_is_not :windows, :darwin, :aix, :android do
 
       before :each do
-        Syslog.opened?.should be_false
+        Syslog.opened?.should == false
       end
 
       after :each do
-        Syslog.opened?.should be_false
+        Syslog.opened?.should == false
       end
 
       it "receives a priority as first argument" do
@@ -34,14 +34,14 @@ platform_is_not :windows do
 
       it "fails with TypeError on nil log messages" do
         Syslog.open do |s|
-          -> { s.log(1, nil) }.should raise_error(TypeError)
+          -> { s.log(1, nil) }.should.raise(TypeError)
         end
       end
 
       it "fails if the log is closed" do
         -> {
           Syslog.log(Syslog::LOG_ALERT, "test")
-        }.should raise_error(RuntimeError)
+        }.should.raise(RuntimeError)
       end
 
       it "accepts printf parameters" do

@@ -10,7 +10,7 @@ describe "String#b" do
 
   it "returns new string without modifying self" do
     str = "こんちには"
-    str.b.should_not equal(str)
+    str.b.should_not.equal?(str)
     str.should == "こんちには"
   end
 end

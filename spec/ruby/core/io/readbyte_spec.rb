@@ -19,6 +19,6 @@ describe "IO#readbyte" do
     @io.seek(999999)
     -> do
       @io.readbyte
-    end.should raise_error EOFError
+    end.should.raise EOFError
   end
 end

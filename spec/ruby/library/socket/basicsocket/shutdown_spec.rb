@@ -23,25 +23,25 @@ platform_is_not :windows do # hangs
         it 'shuts down a socket for reading' do
           @client.shutdown(Socket::SHUT_RD)
 
-          @client.recv(1).to_s.should be_empty
+          @client.recv(1).to_s.should.empty?
         end
 
         it 'shuts down a socket for writing' do
           @client.shutdown(Socket::SHUT_WR)
 
-          -> { @client.write('hello') }.should raise_error(Errno::EPIPE)
+          -> { @client.write('hello') }.should.raise(Errno::EPIPE)
         end
 
         it 'shuts down a socket for reading and writing' do
           @client.shutdown(Socket::SHUT_RDWR)
 
-          @client.recv(1).to_s.should be_empty
+          @client.recv(1).to_s.should.empty?
 
-          -> { @client.write('hello') }.should raise_error(Errno::EPIPE)
+          -> { @client.write('hello') }.should.raise(Errno::EPIPE)
         end
 
         it 'raises ArgumentError when using an invalid option' do
-          -> { @server.shutdown(666) }.should raise_error(ArgumentError)
+          -> { @server.shutdown(666) }.should.raise(ArgumentError)
         end
       end
 
@@ -49,37 +49,37 @@ platform_is_not :windows do # hangs
         it 'shuts down a socket for reading using :RD' do
           @client.shutdown(:RD)
 
-          @client.recv(1).to_s.should be_empty
+          @client.recv(1).to_s.should.empty?
         end
 
         it 'shuts down a socket for reading using :SHUT_RD' do
           @client.shutdown(:SHUT_RD)
 
-          @client.recv(1).to_s.should be_empty
+          @client.recv(1).to_s.should.empty?
         end
 
         it 'shuts down a socket for writing using :WR' do
           @client.shutdown(:WR)
 
-          -> { @client.write('hello') }.should raise_error(Errno::EPIPE)
+          -> { @client.write('hello') }.should.raise(Errno::EPIPE)
         end
 
         it 'shuts down a socket for writing using :SHUT_WR' do
           @client.shutdown(:SHUT_WR)
 
-          -> { @client.write('hello') }.should raise_error(Errno::EPIPE)
+          -> { @client.write('hello') }.should.raise(Errno::EPIPE)
         end
 
         it 'shuts down a socket for reading and writing' do
           @client.shutdown(:RDWR)
 
-          @client.recv(1).to_s.should be_empty
+          @client.recv(1).to_s.should.empty?
 
-          -> { @client.write('hello') }.should raise_error(Errno::EPIPE)
+          -> { @client.write('hello') }.should.raise(Errno::EPIPE)
         end
 
         it 'raises ArgumentError when using an invalid option' do
-          -> { @server.shutdown(:Nope) }.should raise_error(SocketError)
+          -> { @server.shutdown(:Nope) }.should.raise(SocketError)
         end
       end
 
@@ -87,29 +87,29 @@ platform_is_not :windows do # hangs
         it 'shuts down a socket for reading using "RD"' do
           @client.shutdown('RD')
 
-          @client.recv(1).to_s.should be_empty
+          @client.recv(1).to_s.should.empty?
         end
 
         it 'shuts down a socket for reading using "SHUT_RD"' do
           @client.shutdown('SHUT_RD')
 
-          @client.recv(1).to_s.should be_empty
+          @client.recv(1).to_s.should.empty?
         end
 
         it 'shuts down a socket for writing using "WR"' do
           @client.shutdown('WR')
 
-          -> { @client.write('hello') }.should raise_error(Errno::EPIPE)
+          -> { @client.write('hello') }.should.raise(Errno::EPIPE)
         end
 
         it 'shuts down a socket for writing using "SHUT_WR"' do
           @client.shutdown('SHUT_WR')
 
-          -> { @client.write('hello') }.should raise_error(Errno::EPIPE)
+          -> { @client.write('hello') }.should.raise(Errno::EPIPE)
         end
 
         it 'raises ArgumentError when using an invalid option' do
-          -> { @server.shutdown('Nope') }.should raise_error(SocketError)
+          -> { @server.shutdown('Nope') }.should.raise(SocketError)
         end
       end
 
@@ -123,7 +123,7 @@ platform_is_not :windows do # hangs
 
           @client.shutdown(@dummy)
 
-          @client.recv(1).to_s.should be_empty
+          @client.recv(1).to_s.should.empty?
         end
 
         it 'shuts down a socket for reading using "SHUT_RD"' do
@@ -131,7 +131,7 @@ platform_is_not :windows do # hangs
 
           @client.shutdown(@dummy)
 
-          @client.recv(1).to_s.should be_empty
+          @client.recv(1).to_s.should.empty?
         end
 
         it 'shuts down a socket for reading and writing' do
@@ -139,15 +139,15 @@ platform_is_not :windows do # hangs
 
           @client.shutdown(@dummy)
 
-          @client.recv(1).to_s.should be_empty
+          @client.recv(1).to_s.should.empty?
 
-          -> { @client.write('hello') }.should raise_error(Errno::EPIPE)
+          -> { @client.write('hello') }.should.raise(Errno::EPIPE)
         end
       end
 
       describe 'using an object that does not respond to #to_str' do
         it 'raises TypeError' do
-          -> { @server.shutdown(mock(:dummy)) }.should raise_error(TypeError)
+          -> { @server.shutdown(mock(:dummy)) }.should.raise(TypeError)
         end
       end
     end

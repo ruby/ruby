@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 describe "Encoding.locale_charmap" do
   it "returns a String" do
-    Encoding.locale_charmap.should be_an_instance_of(String)
+    Encoding.locale_charmap.should.instance_of?(String)
   end
 
   describe "when setting LC_ALL=C" do

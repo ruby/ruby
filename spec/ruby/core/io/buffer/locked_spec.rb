@@ -21,7 +21,7 @@ describe "IO::Buffer#locked" do
       @buffer = IO::Buffer.new(4)
       @buffer.locked do
         # Just an example, each method is responsible for checking the lock state.
-        -> { @buffer.resize(8) }.should raise_error(IO::Buffer::LockedError)
+        -> { @buffer.resize(8) }.should.raise(IO::Buffer::LockedError)
       end
     end
   end
@@ -29,7 +29,7 @@ describe "IO::Buffer#locked" do
   it "disallows reentrant locking, raising IO::Buffer::LockedError" do
     @buffer = IO::Buffer.new(4)
     @buffer.locked do
-      -> { @buffer.locked {} }.should raise_error(IO::Buffer::LockedError, "Buffer already locked!")
+      -> { @buffer.locked {} }.should.raise(IO::Buffer::LockedError, "Buffer already locked!")
     end
   end
 
@@ -37,9 +37,9 @@ describe "IO::Buffer#locked" do
     @buffer = IO::Buffer.new(4)
     slice = @buffer.slice(0, 2)
     @buffer.locked do
-      @buffer.locked?.should be_true
-      slice.locked?.should be_false
-      slice.locked { slice.locked?.should be_true }
+      @buffer.locked?.should == true
+      slice.locked?.should == false
+      slice.locked { slice.locked?.should == true }
     end
   end
 
@@ -47,9 +47,9 @@ describe "IO::Buffer#locked" do
     @buffer = IO::Buffer.new(4)
     slice = @buffer.slice(0, 2)
     slice.locked do
-      slice.locked?.should be_true
-      @buffer.locked?.should be_false
-      @buffer.locked { @buffer.locked?.should be_true }
+      slice.locked?.should == true
+      @buffer.locked?.should == false
+      @buffer.locked { @buffer.locked?.should == true }
     end
   end
 end
@@ -62,14 +62,14 @@ describe "IO::Buffer#locked?" do
 
   it "is false by default" do
     @buffer = IO::Buffer.new(4)
-    @buffer.locked?.should be_false
+    @buffer.locked?.should == false
   end
 
   it "is true only inside of #locked block" do
     @buffer = IO::Buffer.new(4)
     @buffer.locked do
-      @buffer.locked?.should be_true
+      @buffer.locked?.should == true
     end
-    @buffer.locked?.should be_false
+    @buffer.locked?.should == false
   end
 end

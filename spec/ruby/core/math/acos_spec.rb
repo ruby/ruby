@@ -8,7 +8,7 @@ describe "Math.acos" do
   end
 
   it "returns a float" do
-    Math.acos(1).should be_kind_of(Float )
+    Math.acos(1).should.is_a?(Float )
   end
 
   it "returns the arccosine of the argument" do
@@ -21,27 +21,27 @@ describe "Math.acos" do
   end
 
   it "raises an Math::DomainError if the argument is greater than 1.0" do
-    -> { Math.acos(1.0001) }.should raise_error(Math::DomainError)
+    -> { Math.acos(1.0001) }.should.raise(Math::DomainError)
   end
 
   it "raises an Math::DomainError if the argument is less than -1.0" do
-    -> { Math.acos(-1.0001) }.should raise_error(Math::DomainError)
+    -> { Math.acos(-1.0001) }.should.raise(Math::DomainError)
   end
 
   it "raises a TypeError if the string argument cannot be coerced with Float()" do
-    -> { Math.acos("test") }.should raise_error(TypeError)
+    -> { Math.acos("test") }.should.raise(TypeError)
   end
 
   it "returns NaN given NaN" do
-    Math.acos(nan_value).nan?.should be_true
+    Math.acos(nan_value).nan?.should == true
   end
 
   it "raises a TypeError if the argument cannot be coerced with Float()" do
-    -> { Math.acos(MathSpecs::UserClass.new) }.should raise_error(TypeError)
+    -> { Math.acos(MathSpecs::UserClass.new) }.should.raise(TypeError)
   end
 
   it "raises a TypeError if the argument is nil" do
-    -> { Math.acos(nil) }.should raise_error(TypeError)
+    -> { Math.acos(nil) }.should.raise(TypeError)
   end
 
   it "accepts any argument that can be coerced with Float()" do

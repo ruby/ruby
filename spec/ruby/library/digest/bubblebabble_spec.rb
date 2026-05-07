@@ -3,7 +3,7 @@ require 'digest/bubblebabble'
 
 describe "Digest.bubblebabble" do
   it "returns a String" do
-    Digest.bubblebabble('').should be_an_instance_of(String)
+    Digest.bubblebabble('').should.instance_of?(String)
   end
 
   it "returns a String in the Bubble Babble Binary Data Encoding format" do
@@ -20,10 +20,10 @@ describe "Digest.bubblebabble" do
   end
 
   it "raises a TypeError when passed nil" do
-    -> { Digest.bubblebabble(nil) }.should raise_error(TypeError)
+    -> { Digest.bubblebabble(nil) }.should.raise(TypeError)
   end
 
   it "raises a TypeError when passed an Integer" do
-    -> { Digest.bubblebabble(9001) }.should raise_error(TypeError)
+    -> { Digest.bubblebabble(9001) }.should.raise(TypeError)
   end
 end

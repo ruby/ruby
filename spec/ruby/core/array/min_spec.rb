@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 describe "Array#min" do
   it "is defined on Array" do
-    [1].method(:max).owner.should equal Array
+    [1].method(:max).owner.should.equal? Array
   end
 
   it "returns nil with no values" do
@@ -64,22 +64,22 @@ describe "Array#min" do
   end
 
   it "returns nil for an empty Enumerable" do
-    [].min.should be_nil
+    [].min.should == nil
   end
 
   it "raises a NoMethodError for elements without #<=>" do
     -> do
       [BasicObject.new, BasicObject.new].min
-    end.should raise_error(NoMethodError)
+    end.should.raise(NoMethodError)
   end
 
   it "raises an ArgumentError for incomparable elements" do
     -> do
       [11,"22"].min
-    end.should raise_error(ArgumentError)
+    end.should.raise(ArgumentError)
     -> do
       [11,12,22,33].min{|a, b| nil}
-    end.should raise_error(ArgumentError)
+    end.should.raise(ArgumentError)
   end
 
   it "returns the minimum when using a block rule" do

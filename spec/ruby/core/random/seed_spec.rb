@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 describe "Random#seed" do
   it "returns an Integer" do
-    Random.new.seed.should be_kind_of(Integer)
+    Random.new.seed.should.is_a?(Integer)
   end
 
   it "returns an arbitrary seed if the constructor was called without arguments" do

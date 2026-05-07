@@ -38,7 +38,7 @@ describe "StringScanner#scan_full" do
     it "returns nil when matching failed" do
       @s.scan_full(/(?<a>2008)/, false, false)
       @s.should_not.matched?
-      @s[:a].should be_nil
+      @s[:a].should == nil
     end
   end
 end

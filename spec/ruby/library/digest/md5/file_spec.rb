@@ -15,7 +15,7 @@ describe "Digest::MD5.file" do
     end
 
     it "returns a Digest::MD5 object" do
-      Digest::MD5.file(@file).should be_kind_of(Digest::MD5)
+      Digest::MD5.file(@file).should.is_a?(Digest::MD5)
     end
 
     it "returns a Digest::MD5 object with the correct digest" do
@@ -26,7 +26,7 @@ describe "Digest::MD5.file" do
       obj = mock("to_str")
       obj.should_receive(:to_str).and_return(@file)
       result = Digest::MD5.file(obj)
-      result.should be_kind_of(Digest::MD5)
+      result.should.is_a?(Digest::MD5)
       result.digest.should == MD5Constants::Digest
     end
   end
@@ -34,10 +34,10 @@ describe "Digest::MD5.file" do
   it_behaves_like :file_read_directory, :file, Digest::MD5
 
   it "raises a Errno::ENOENT when passed a path that does not exist" do
-    -> { Digest::MD5.file("") }.should raise_error(Errno::ENOENT)
+    -> { Digest::MD5.file("") }.should.raise(Errno::ENOENT)
   end
 
   it "raises a TypeError when passed nil" do
-    -> { Digest::MD5.file(nil) }.should raise_error(TypeError)
+    -> { Digest::MD5.file(nil) }.should.raise(TypeError)
   end
 end

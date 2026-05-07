@@ -100,17 +100,17 @@ describe "IO#ungetc" do
   it "makes subsequent unbuffered operations to raise IOError" do
     @io.getc
     @io.ungetc(100)
-    -> { @io.sysread(1) }.should raise_error(IOError)
+    -> { @io.sysread(1) }.should.raise(IOError)
   end
 
   it "raises TypeError if passed nil" do
     @io.getc.should == ?V
-    proc{@io.ungetc(nil)}.should raise_error(TypeError)
+    proc{@io.ungetc(nil)}.should.raise(TypeError)
   end
 
   it "puts one or more characters back in the stream" do
     @io.gets
-    @io.ungetc("Aquí ").should be_nil
+    @io.ungetc("Aquí ").should == nil
     @io.gets.chomp.should == "Aquí Qui è la linea due."
   end
 
@@ -118,21 +118,21 @@ describe "IO#ungetc" do
     chars = mock("io ungetc")
     chars.should_receive(:to_str).and_return("Aquí ")
 
-    @io.ungetc(chars).should be_nil
+    @io.ungetc(chars).should == nil
     @io.gets.chomp.should == "Aquí Voici la ligne une."
   end
 
   it "returns nil when invoked on stream that was not yet read" do
-    @io.ungetc(100).should be_nil
+    @io.ungetc(100).should == nil
   end
 
   it "raises IOError on stream not opened for reading" do
-    -> { STDOUT.ungetc(100) }.should raise_error(IOError, "not opened for reading")
+    -> { STDOUT.ungetc(100) }.should.raise(IOError, "not opened for reading")
   end
 
   it "raises IOError on closed stream" do
     @io.getc
     @io.close
-    -> { @io.ungetc(100) }.should raise_error(IOError)
+    -> { @io.ungetc(100) }.should.raise(IOError)
   end
 end

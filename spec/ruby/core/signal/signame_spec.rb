@@ -16,13 +16,13 @@ describe "Signal.signame" do
   end
 
   it "raises a TypeError when the passed argument can't be coerced to Integer" do
-    -> { Signal.signame("hello") }.should raise_error(TypeError)
+    -> { Signal.signame("hello") }.should.raise(TypeError)
   end
 
   it "raises a TypeError when the passed argument responds to #to_int but does not return an Integer" do
     obj = mock('signal')
     obj.should_receive(:to_int).and_return('not an int')
-    -> { Signal.signame(obj) }.should raise_error(TypeError)
+    -> { Signal.signame(obj) }.should.raise(TypeError)
   end
 
   platform_is_not :windows do

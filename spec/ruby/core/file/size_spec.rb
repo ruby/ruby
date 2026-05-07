@@ -56,11 +56,11 @@ describe "File#size" do
   end
 
   it "is an instance method" do
-    @file.respond_to?(:size).should be_true
+    @file.respond_to?(:size).should == true
   end
 
   it "returns the file's size as an Integer" do
-    @file.size.should be_an_instance_of(Integer)
+    @file.size.should.instance_of?(Integer)
   end
 
   it "returns the file's size in bytes" do
@@ -81,7 +81,7 @@ describe "File#size" do
 
   it "raises an IOError on a closed file" do
     @file.close
-    -> { @file.size }.should raise_error(IOError)
+    -> { @file.size }.should.raise(IOError)
   end
 
   platform_is_not :windows do

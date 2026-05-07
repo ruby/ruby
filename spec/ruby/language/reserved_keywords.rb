@@ -49,20 +49,20 @@ describe "Ruby's reserved keywords" do
   keywords.each do |name|
     describe "keyword '#{name}'" do
       it "can't be used as local variable name" do
-        -> { eval(<<~RUBY) }.should raise_error(SyntaxError)
+        -> { eval(<<~RUBY) }.should.raise(SyntaxError)
             #{name} = :local_variable
         RUBY
       end
 
       if name == "defined?"
         it "can't be used as an instance variable name" do
-          -> { eval(<<~RUBY) }.should raise_error(SyntaxError)
+          -> { eval(<<~RUBY) }.should.raise(SyntaxError)
             @#{name} = :instance_variable
           RUBY
         end
 
         it "can't be used as a class variable name" do
-          -> { eval(<<~RUBY) }.should raise_error(SyntaxError)
+          -> { eval(<<~RUBY) }.should.raise(SyntaxError)
             class C
               @@#{name} = :class_variable
             end
@@ -70,7 +70,7 @@ describe "Ruby's reserved keywords" do
         end
 
         it "can't be used as a global variable name" do
-          -> { eval(<<~RUBY) }.should raise_error(SyntaxError)
+          -> { eval(<<~RUBY) }.should.raise(SyntaxError)
             $#{name} = :global_variable
           RUBY
         end
@@ -106,7 +106,7 @@ describe "Ruby's reserved keywords" do
       end
 
       it "can't be used as a positional parameter name" do
-        -> { eval(<<~RUBY) }.should raise_error(SyntaxError)
+        -> { eval(<<~RUBY) }.should.raise(SyntaxError)
           def x(#{name}); end
         RUBY
       end
@@ -115,7 +115,7 @@ describe "Ruby's reserved keywords" do
 
       if invalid_kw_param_names.include?(name)
         it "can't be used a keyword parameter name" do
-          -> { eval(<<~RUBY) }.should raise_error(SyntaxError)
+          -> { eval(<<~RUBY) }.should.raise(SyntaxError)
             def m(#{name}:); end
           RUBY
         end

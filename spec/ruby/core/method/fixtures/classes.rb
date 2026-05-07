@@ -27,6 +27,7 @@ module MethodSpecs
 
     alias bar foo
     alias baz bar
+    alias qux baz
 
     def same_as_foo
       true

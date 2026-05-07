@@ -23,6 +23,6 @@ describe "Socket::IPSocket#getaddress" do
   it "raises an error on unknown hostnames" do
     -> {
       IPSocket.getaddress("rubyspecdoesntexist.ruby-lang.org")
-    }.should raise_error(SocketError)
+    }.should.raise(SocketError)
   end
 end

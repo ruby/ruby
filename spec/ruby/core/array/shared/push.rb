@@ -1,7 +1,7 @@
 describe :array_push, shared: true do
   it "appends the arguments to the array" do
     a = [ "a", "b", "c" ]
-    a.send(@method, "d", "e", "f").should equal(a)
+    a.send(@method, "d", "e", "f").should.equal?(a)
     a.send(@method).should == ["a", "b", "c", "d", "e", "f"]
     a.send(@method, 5)
     a.should == ["a", "b", "c", "d", "e", "f", 5]
@@ -27,7 +27,7 @@ describe :array_push, shared: true do
   end
 
   it "raises a FrozenError on a frozen array" do
-    -> { ArraySpecs.frozen_array.send(@method, 1) }.should raise_error(FrozenError)
-    -> { ArraySpecs.frozen_array.send(@method) }.should raise_error(FrozenError)
+    -> { ArraySpecs.frozen_array.send(@method, 1) }.should.raise(FrozenError)
+    -> { ArraySpecs.frozen_array.send(@method) }.should.raise(FrozenError)
   end
 end

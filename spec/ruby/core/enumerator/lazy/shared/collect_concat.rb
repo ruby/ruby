@@ -16,8 +16,8 @@ describe :enumerator_lazy_collect_concat, shared: true do
 
   it "returns a new instance of Enumerator::Lazy" do
     ret = @yieldsmixed.send(@method) {}
-    ret.should be_an_instance_of(Enumerator::Lazy)
-    ret.should_not equal(@yieldsmixed)
+    ret.should.instance_of?(Enumerator::Lazy)
+    ret.should_not.equal?(@yieldsmixed)
   end
 
   it "sets #size to nil" do
@@ -34,7 +34,7 @@ describe :enumerator_lazy_collect_concat, shared: true do
 
     it "flattens elements when the given block returned an array or responding to .each and .force" do
       (0..Float::INFINITY).lazy.send(@method) { |n| (n * 10).to_s.chars }.first(6).should == %w[0 1 0 2 0 3]
-      (0..Float::INFINITY).lazy.send(@method) { |n| (n * 10).to_s.each_char }.first(6).all? { |o| o.instance_of? Enumerator }.should be_true
+      (0..Float::INFINITY).lazy.send(@method) { |n| (n * 10).to_s.each_char }.first(6).all? { |o| o.instance_of? Enumerator }.should == true
       (0..Float::INFINITY).lazy.send(@method) { |n| (n * 10).to_s.each_char.lazy }.first(6).should == %w[0 1 0 2 0 3]
     end
   end
@@ -46,7 +46,7 @@ describe :enumerator_lazy_collect_concat, shared: true do
   end
 
   it "raises an ArgumentError when not given a block" do
-    -> { @yieldsmixed.send(@method) }.should raise_error(ArgumentError)
+    -> { @yieldsmixed.send(@method) }.should.raise(ArgumentError)
   end
 
   describe "on a nested Lazy" do
@@ -64,7 +64,7 @@ describe :enumerator_lazy_collect_concat, shared: true do
 
       it "flattens elements when the given block returned an array or responding to .each and .force" do
         (0..Float::INFINITY).lazy.map {|n| n * 10 }.send(@method) { |n| n.to_s.chars }.first(6).should == %w[0 1 0 2 0 3]
-        (0..Float::INFINITY).lazy.map {|n| n * 10 }.send(@method) { |n| n.to_s.each_char }.first(6).all? { |o| o.instance_of? Enumerator }.should be_true
+        (0..Float::INFINITY).lazy.map {|n| n * 10 }.send(@method) { |n| n.to_s.each_char }.first(6).all? { |o| o.instance_of? Enumerator }.should == true
         (0..Float::INFINITY).lazy.map {|n| n * 10 }.send(@method) { |n| n.to_s.each_char.lazy }.first(6).should == %w[0 1 0 2 0 3]
       end
     end

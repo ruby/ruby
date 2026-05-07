@@ -14,6 +14,6 @@ describe "String#gsub" do
     str.force_encoding Encoding::UTF_8
     -> {
       str.gsub(/</, "&lt;")
-    }.should raise_error(ArgumentError, /invalid byte sequence in UTF-8/)
+    }.should.raise(ArgumentError, /invalid byte sequence in UTF-8/)
   end
 end

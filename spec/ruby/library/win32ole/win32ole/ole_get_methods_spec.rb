@@ -9,7 +9,7 @@ platform_is :windows do
     end
 
     it "returns an array of WIN32OLE::Method objects" do
-      @win32ole.ole_get_methods.all? {|m| m.kind_of? WIN32OLE::Method}.should be_true
+      @win32ole.ole_get_methods.all? {|m| m.kind_of? WIN32OLE::Method}.should == true
     end
 
   end

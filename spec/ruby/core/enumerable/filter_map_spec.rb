@@ -19,6 +19,6 @@ describe 'Enumerable#filter_map' do
   end
 
   it 'returns an enumerator when no block given' do
-    @numerous.filter_map.should be_an_instance_of(Enumerator)
+    @numerous.filter_map.should.instance_of?(Enumerator)
   end
 end

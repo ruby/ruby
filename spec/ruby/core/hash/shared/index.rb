@@ -10,13 +10,13 @@ describe :hash_index, shared: true do
 
   it "returns nil if the value is not found" do
     suppress_warning do # for Hash#index
-      { a: -1, b: 3.14, c: 2.718 }.send(@method, 1).should be_nil
+      { a: -1, b: 3.14, c: 2.718 }.send(@method, 1).should == nil
     end
   end
 
   it "doesn't return default value if the value is not found" do
     suppress_warning do # for Hash#index
-      Hash.new(5).send(@method, 5).should be_nil
+      Hash.new(5).send(@method, 5).should == nil
     end
   end
 

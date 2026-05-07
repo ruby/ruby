@@ -30,7 +30,7 @@ describe "CApiWrappedTypedStruct" do
 
   it "throws an exception for a wrong type" do
     a = @s.typed_wrap_struct(1024)
-    -> { @s.typed_get_struct_other(a) }.should raise_error(TypeError)
+    -> { @s.typed_get_struct_other(a) }.should.raise(TypeError)
   end
 
   it "unwraps data for a parent type" do
@@ -63,7 +63,7 @@ describe "CApiWrappedTypedStruct" do
       -> {
         a = @s.typed_wrap_struct(1024)
         @s.rb_check_type(a, a)
-      }.should raise_error(TypeError) { |e|
+      }.should.raise(TypeError) { |e|
         e.message.should == 'wrong argument type Object (expected Data)'
       }
     end
@@ -82,7 +82,7 @@ describe "CApiWrappedTypedStruct" do
 
     it "raises an error for different types" do
       a = @s.typed_wrap_struct(1024)
-      -> { @s.rb_check_typeddata_different_type(a) }.should raise_error(TypeError)
+      -> { @s.rb_check_typeddata_different_type(a) }.should.raise(TypeError)
     end
   end
 

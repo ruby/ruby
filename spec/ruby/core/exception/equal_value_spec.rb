@@ -31,10 +31,10 @@ describe "Exception#==" do
   it "returns false if the two exceptions inherit from Exception but have different classes" do
     one = RuntimeError.new("message")
     one.set_backtrace [__dir__]
-    one.should be_kind_of(Exception)
+    one.should.is_a?(Exception)
     two = TypeError.new("message")
     two.set_backtrace [__dir__]
-    two.should be_kind_of(Exception)
+    two.should.is_a?(Exception)
     one.should_not == two
   end
 

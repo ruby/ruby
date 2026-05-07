@@ -7,7 +7,7 @@ describe "Array.[]" do
     Array.[](5, true, nil, 'a', "Ruby", obj).should == [5, true, nil, "a", "Ruby", obj]
 
     a = ArraySpecs::MyArray.[](5, true, nil, 'a', "Ruby", obj)
-    a.should be_an_instance_of(ArraySpecs::MyArray)
+    a.should.instance_of?(ArraySpecs::MyArray)
     a.inspect.should == [5, true, nil, "a", "Ruby", obj].inspect
   end
 end
@@ -18,7 +18,7 @@ describe "Array[]" do
     Array[5, true, nil, 'a', "Ruby", obj].should == Array.[](5, true, nil, "a", "Ruby", obj)
 
     a = ArraySpecs::MyArray[5, true, nil, 'a', "Ruby", obj]
-    a.should be_an_instance_of(ArraySpecs::MyArray)
+    a.should.instance_of?(ArraySpecs::MyArray)
     a.inspect.should == [5, true, nil, "a", "Ruby", obj].inspect
   end
 end

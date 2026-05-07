@@ -11,7 +11,7 @@ describe "Enumerable#chunk_while" do
 
   context "when given a block" do
     it "returns an enumerator" do
-      @result.should be_an_instance_of(Enumerator)
+      @result.should.instance_of?(Enumerator)
     end
 
     it "splits chunks between adjacent elements i and j where the block returns false" do
@@ -30,7 +30,7 @@ describe "Enumerable#chunk_while" do
 
   context "when not given a block" do
     it "raises an ArgumentError" do
-      -> { @enum.chunk_while }.should raise_error(ArgumentError)
+      -> { @enum.chunk_while }.should.raise(ArgumentError)
     end
   end
 

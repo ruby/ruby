@@ -14,7 +14,7 @@ platform_is_not :windows do
         if value.nil?
           value.should == nil
         else
-          value.should be_kind_of(Integer)
+          value.should.is_a?(Integer)
         end
       end
     end

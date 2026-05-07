@@ -22,18 +22,18 @@ describe "File.link" do
 
     it "raises an Errno::EEXIST if the target already exists" do
       File.link(@file, @link)
-      -> { File.link(@file, @link) }.should raise_error(Errno::EEXIST)
+      -> { File.link(@file, @link) }.should.raise(Errno::EEXIST)
     end
 
     it "raises an ArgumentError if not passed two arguments" do
-      -> { File.link                      }.should raise_error(ArgumentError)
-      -> { File.link(@file)               }.should raise_error(ArgumentError)
-      -> { File.link(@file, @link, @file) }.should raise_error(ArgumentError)
+      -> { File.link                      }.should.raise(ArgumentError)
+      -> { File.link(@file)               }.should.raise(ArgumentError)
+      -> { File.link(@file, @link, @file) }.should.raise(ArgumentError)
     end
 
     it "raises a TypeError if not passed String types" do
-      -> { File.link(@file, nil) }.should raise_error(TypeError)
-      -> { File.link(@file, 1)   }.should raise_error(TypeError)
+      -> { File.link(@file, nil) }.should.raise(TypeError)
+      -> { File.link(@file, 1)   }.should.raise(TypeError)
     end
   end
 end

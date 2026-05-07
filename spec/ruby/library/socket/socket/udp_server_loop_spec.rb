@@ -53,7 +53,7 @@ describe 'Socket.udp_server_loop' do
       thread.join
 
       msg.should == 'hello'
-      src.should be_an_instance_of(Socket::UDPSource)
+      src.should.instance_of?(Socket::UDPSource)
     end
   end
 end

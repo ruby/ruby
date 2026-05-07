@@ -53,13 +53,13 @@ describe "Kernel#extend" do
   end
 
   it "raises an ArgumentError when no arguments given" do
-    -> { Object.new.extend }.should raise_error(ArgumentError)
+    -> { Object.new.extend }.should.raise(ArgumentError)
   end
 
   it "raises a TypeError when the argument is not a Module" do
     o = mock('o')
     klass = Class.new
-    -> { o.extend(klass) }.should raise_error(TypeError)
+    -> { o.extend(klass) }.should.raise(TypeError)
   end
 
   describe "on frozen instance" do
@@ -69,11 +69,11 @@ describe "Kernel#extend" do
     end
 
     it "raises an ArgumentError when no arguments given" do
-      -> { @frozen.extend }.should raise_error(ArgumentError)
+      -> { @frozen.extend }.should.raise(ArgumentError)
     end
 
     it "raises a FrozenError" do
-      -> { @frozen.extend @module }.should raise_error(FrozenError)
+      -> { @frozen.extend @module }.should.raise(FrozenError)
     end
   end
 

@@ -6,7 +6,7 @@ describe :string_each_char_without_block, shared: true do
   describe "when no block is given" do
     it "returns an enumerator" do
       enum = "hello".send(@method)
-      enum.should be_an_instance_of(Enumerator)
+      enum.should.instance_of?(Enumerator)
       enum.to_a.should == ['h', 'e', 'l', 'l', 'o']
     end
 

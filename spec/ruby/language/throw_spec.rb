@@ -35,7 +35,7 @@ describe "The throw keyword" do
         throw :exit
       end
     end
-    $!.should be_nil
+    $!.should == nil
   end
 
   it "allows any object as its argument" do
@@ -45,7 +45,7 @@ describe "The throw keyword" do
   end
 
   it "does not convert strings to a symbol" do
-    -> { catch(:exit) { throw "exit" } }.should raise_error(ArgumentError)
+    -> { catch(:exit) { throw "exit" } }.should.raise(ArgumentError)
   end
 
   it "unwinds stack from within a method" do
@@ -64,8 +64,8 @@ describe "The throw keyword" do
   end
 
   it "raises an ArgumentError if outside of scope of a matching catch" do
-    -> { throw :test, 5 }.should raise_error(ArgumentError)
-    -> { catch(:different) { throw :test, 5 } }.should raise_error(ArgumentError)
+    -> { throw :test, 5 }.should.raise(ArgumentError)
+    -> { catch(:different) { throw :test, 5 } }.should.raise(ArgumentError)
   end
 
   it "raises an UncaughtThrowError if used to exit a thread" do
@@ -73,7 +73,7 @@ describe "The throw keyword" do
       t = Thread.new {
         -> {
           throw :what
-        }.should raise_error(UncaughtThrowError)
+        }.should.raise(UncaughtThrowError)
       }
       t.join
     end

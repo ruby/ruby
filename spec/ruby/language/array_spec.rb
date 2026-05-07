@@ -4,7 +4,7 @@ require_relative 'fixtures/array'
 describe "Array literals" do
   it "[] should return a new array populated with the given elements" do
     array = [1, 'a', nil]
-    array.should be_kind_of(Array)
+    array.should.is_a?(Array)
     array[0].should == 1
     array[1].should == 'a'
     array[2].should == nil
@@ -12,7 +12,7 @@ describe "Array literals" do
 
   it "[] treats empty expressions as nil elements" do
     array = [0, (), 2, (), 4]
-    array.should be_kind_of(Array)
+    array.should.is_a?(Array)
     array[0].should == 0
     array[1].should == nil
     array[2].should == 2
@@ -89,7 +89,7 @@ describe "The unpacking splat operator (*)" do
   it "returns a new array containing the same values when applied to an array inside an empty array" do
     splatted_array = [3, 4, 5]
     [*splatted_array].should == splatted_array
-    [*splatted_array].should_not equal(splatted_array)
+    [*splatted_array].should_not.equal?(splatted_array)
   end
 
   it "unpacks the start and count arguments in an array slice assignment" do
@@ -135,7 +135,7 @@ describe "The unpacking splat operator (*)" do
 
   it "when applied to a non-Array value uses it unchanged if it does not respond_to?(:to_a)" do
     obj = Object.new
-    obj.should_not respond_to(:to_a)
+    obj.should_not.respond_to?(:to_a)
     [1, *obj].should == [1, obj]
   end
 

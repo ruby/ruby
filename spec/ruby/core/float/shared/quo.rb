@@ -12,8 +12,8 @@ describe :float_quo, shared: true do
   end
 
   it "returns NaN when the argument is NaN" do
-    -1819.999999.send(@method, nan_value).nan?.should be_true
-    11109.1981271.send(@method, nan_value).nan?.should be_true
+    -1819.999999.send(@method, nan_value).nan?.should == true
+    11109.1981271.send(@method, nan_value).nan?.should == true
   end
 
   it "returns Infinity when the argument is 0.0" do
@@ -50,10 +50,10 @@ describe :float_quo, shared: true do
   end
 
   it "raises a TypeError when argument isn't numeric" do
-    -> { 27292.2.send(@method, mock('non-numeric')) }.should raise_error(TypeError)
+    -> { 27292.2.send(@method, mock('non-numeric')) }.should.raise(TypeError)
   end
 
   it "raises an ArgumentError when passed multiple arguments" do
-    -> { 272.221.send(@method, 6,0.2) }.should raise_error(ArgumentError)
+    -> { 272.221.send(@method, 6,0.2) }.should.raise(ArgumentError)
   end
 end

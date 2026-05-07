@@ -14,7 +14,7 @@ describe "Tempfile#open" do
   it "reopens self" do
     @tempfile.close
     @tempfile.open
-    @tempfile.closed?.should be_false
+    @tempfile.closed?.should == false
   end
 
   it "reopens self in read and write mode and does not truncate" do
@@ -33,8 +33,8 @@ describe "Tempfile.open" do
 
   it "returns a new, open Tempfile instance" do
     @tempfile = Tempfile.open("specs")
-    # Delegation messes up .should be_an_instance_of(Tempfile)
-    @tempfile.instance_of?(Tempfile).should be_true
+    # Delegation messes up .should.instance_of?(Tempfile)
+    @tempfile.instance_of?(Tempfile).should == true
   end
 
   it "is passed an array [base, suffix] as first argument" do
@@ -46,14 +46,14 @@ describe "Tempfile.open" do
     Tempfile.open("specs", Dir.tmpdir, encoding: "IBM037:IBM037", binmode: true) do |tempfile|
       @tempfile = tempfile
       tempfile.external_encoding.should == Encoding.find("IBM037")
-      tempfile.binmode?.should be_true
+      tempfile.binmode?.should == true
     end
   end
 
   it "uses a blank string for basename when passed no arguments" do
     Tempfile.open() do |tempfile|
       @tempfile = tempfile
-      tempfile.closed?.should be_false
+      tempfile.closed?.should == false
     end
     @tempfile.should_not == nil
   end
@@ -74,9 +74,9 @@ describe "Tempfile.open when passed a block" do
       @tempfile = tempfile
       ScratchPad.record :yielded
 
-      # Delegation messes up .should be_an_instance_of(Tempfile)
-      tempfile.instance_of?(Tempfile).should be_true
-      tempfile.closed?.should be_false
+      # Delegation messes up .should.instance_of?(Tempfile)
+      tempfile.instance_of?(Tempfile).should == true
+      tempfile.closed?.should == false
     end
 
     ScratchPad.recorded.should == :yielded
@@ -92,6 +92,6 @@ describe "Tempfile.open when passed a block" do
 
   it "closes the yielded Tempfile after the block" do
     Tempfile.open("specs") { |tempfile| @tempfile = tempfile }
-    @tempfile.closed?.should be_true
+    @tempfile.closed?.should == true
   end
 end

@@ -10,8 +10,8 @@ describe "Array#<<" do
   it "returns self to allow chaining" do
     a = []
     b = a
-    (a << 1).should equal(b)
-    (a << 2 << 3).should equal(b)
+    (a << 1).should.equal?(b)
+    (a << 2 << 3).should.equal?(b)
   end
 
   it "correctly resizes the Array" do
@@ -31,7 +31,7 @@ describe "Array#<<" do
   end
 
   it "raises a FrozenError on a frozen array" do
-    -> { ArraySpecs.frozen_array << 5 }.should raise_error(FrozenError)
+    -> { ArraySpecs.frozen_array << 5 }.should.raise(FrozenError)
   end
 end
 

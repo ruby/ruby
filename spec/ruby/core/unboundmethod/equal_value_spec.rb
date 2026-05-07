@@ -3,8 +3,8 @@ require_relative 'fixtures/classes'
 
 context "Creating UnboundMethods" do
   specify "there is no difference between Method#unbind and Module#instance_method" do
-    UnboundMethodSpecs::Methods.instance_method(:foo).should be_kind_of(UnboundMethod)
-    UnboundMethodSpecs::Methods.new.method(:foo).unbind.should be_kind_of(UnboundMethod)
+    UnboundMethodSpecs::Methods.instance_method(:foo).should.is_a?(UnboundMethod)
+    UnboundMethodSpecs::Methods.new.method(:foo).unbind.should.is_a?(UnboundMethod)
   end
 end
 

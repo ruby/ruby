@@ -5,14 +5,14 @@ describe 'UNIXSocket#initialize' do
   describe 'using a non existing path' do
     platform_is_not :windows do
       it 'raises Errno::ENOENT' do
-        -> { UNIXSocket.new(SocketSpecs.socket_path) }.should raise_error(Errno::ENOENT)
+        -> { UNIXSocket.new(SocketSpecs.socket_path) }.should.raise(Errno::ENOENT)
       end
     end
 
     platform_is :windows do
       # Why, Windows, why?
       it 'raises Errno::ECONNREFUSED' do
-        -> { UNIXSocket.new(SocketSpecs.socket_path) }.should raise_error(Errno::ECONNREFUSED)
+        -> { UNIXSocket.new(SocketSpecs.socket_path) }.should.raise(Errno::ECONNREFUSED)
       end
     end
   end
@@ -31,7 +31,7 @@ describe 'UNIXSocket#initialize' do
     end
 
     it 'returns a new UNIXSocket' do
-      @socket.should be_an_instance_of(UNIXSocket)
+      @socket.should.instance_of?(UNIXSocket)
     end
 
     it 'sets the socket path to an empty String' do
@@ -39,7 +39,7 @@ describe 'UNIXSocket#initialize' do
     end
 
     it 'sets the socket to binmode' do
-      @socket.binmode?.should be_true
+      @socket.binmode?.should == true
     end
 
     platform_is_not :windows do

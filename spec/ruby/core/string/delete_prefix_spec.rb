@@ -12,13 +12,13 @@ describe "String#delete_prefix" do
   it "returns a copy of the string, when the prefix isn't found" do
     s = 'hello'
     r = s.delete_prefix('hello!')
-    r.should_not equal s
+    r.should_not.equal? s
     r.should == s
     r = s.delete_prefix('ell')
-    r.should_not equal s
+    r.should_not.equal? s
     r.should == s
     r = s.delete_prefix('')
-    r.should_not equal s
+    r.should_not.equal? s
     r.should == s
   end
 
@@ -41,7 +41,7 @@ describe "String#delete_prefix" do
 
   it "returns a String instance when called on a subclass instance" do
     s = StringSpecs::MyString.new('hello')
-    s.delete_prefix('hell').should be_an_instance_of(String)
+    s.delete_prefix('hell').should.instance_of?(String)
   end
 
   it "returns a String in the same encoding as self" do
@@ -52,7 +52,7 @@ end
 describe "String#delete_prefix!" do
   it "removes the found prefix" do
     s = 'hello'
-    s.delete_prefix!('hell').should equal(s)
+    s.delete_prefix!('hell').should.equal?(s)
     s.should == 'o'
   end
 
@@ -76,8 +76,8 @@ describe "String#delete_prefix!" do
   end
 
   it "raises a FrozenError when self is frozen" do
-    -> { 'hello'.freeze.delete_prefix!('hell') }.should raise_error(FrozenError)
-    -> { 'hello'.freeze.delete_prefix!('') }.should raise_error(FrozenError)
-    -> { ''.freeze.delete_prefix!('') }.should raise_error(FrozenError)
+    -> { 'hello'.freeze.delete_prefix!('hell') }.should.raise(FrozenError)
+    -> { 'hello'.freeze.delete_prefix!('') }.should.raise(FrozenError)
+    -> { ''.freeze.delete_prefix!('') }.should.raise(FrozenError)
   end
 end

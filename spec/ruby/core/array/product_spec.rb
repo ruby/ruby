@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "Array#product" do
   it "returns converted arguments using :to_ary" do
-    ->{ [1].product(2..3) }.should raise_error(TypeError)
+    ->{ [1].product(2..3) }.should.raise(TypeError)
     ar = ArraySpecs::ArrayConvertible.new(2,3)
     [1].product(ar).should == [[1,2],[1,3]]
     ar.called.should == :to_ary
@@ -31,7 +31,7 @@ describe "Array#product" do
     a = (0..100).to_a
     -> do
       a.product(a, a, a, a, a, a, a, a, a, a)
-    end.should raise_error(RangeError)
+    end.should.raise(RangeError)
   end
 
   describe "when given a block" do
@@ -43,7 +43,7 @@ describe "Array#product" do
 
       acc = []
       [1,2].product([3,4,5],[],[6,8]){|array| acc << array}
-      acc.should be_empty
+      acc.should.empty?
     end
 
     it "returns self" do
@@ -56,18 +56,18 @@ describe "Array#product" do
       a = (0..100).to_a
       -> do
         a.product(a, a, a, a, a, a, a, a, a, a)
-      end.should raise_error(RangeError)
+      end.should.raise(RangeError)
     end
   end
 
   describe "when given an empty block" do
     it "returns self" do
       arr = [1,2]
-      arr.product([3,4,5],[6,8]){}.should equal(arr)
+      arr.product([3,4,5],[6,8]){}.should.equal?(arr)
       arr = []
-      arr.product([3,4,5],[6,8]){}.should equal(arr)
+      arr.product([3,4,5],[6,8]){}.should.equal?(arr)
       arr = [1,2]
-      arr.product([]){}.should equal(arr)
+      arr.product([]){}.should.equal?(arr)
     end
   end
 end

@@ -15,7 +15,7 @@ describe "Net::HTTP#mkcol" do
 
   it "sends a MKCOL request to the passed path and returns the response" do
     response = @http.mkcol("/request")
-    response.should be_kind_of(Net::HTTPResponse)
+    response.should.is_a?(Net::HTTPResponse)
     response.body.should == "Request type: MKCOL"
   end
 end

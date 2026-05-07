@@ -8,7 +8,7 @@ describe "Regexps with modifiers" do
 
   it "supports /m (multiline)" do
     /foo.bar/m.match("foo\nbar").to_a.should == ["foo\nbar"]
-    /foo.bar/.match("foo\nbar").should be_nil
+    /foo.bar/.match("foo\nbar").should == nil
   end
 
   it "supports /x (extended syntax)" do
@@ -36,7 +36,7 @@ describe "Regexps with modifiers" do
     /foo/imox.match("foo").to_a.should == ["foo"]
     /foo/imoximox.match("foo").to_a.should == ["foo"]
 
-    -> { eval('/foo/a') }.should raise_error(SyntaxError)
+    -> { eval('/foo/a') }.should.raise(SyntaxError)
   end
 
   it "supports (?~) (absent operator)" do
@@ -46,57 +46,57 @@ describe "Regexps with modifiers" do
 
   it "supports (?imx-imx) (inline modifiers)" do
     /(?i)foo/.match("FOO").to_a.should == ["FOO"]
-    /foo(?i)/.match("FOO").should be_nil
+    /foo(?i)/.match("FOO").should == nil
     # Interaction with /i
-    /(?-i)foo/i.match("FOO").should be_nil
+    /(?-i)foo/i.match("FOO").should == nil
     /foo(?-i)/i.match("FOO").to_a.should == ["FOO"]
     # Multiple uses
     /foo (?i)bar (?-i)baz/.match("foo BAR baz").to_a.should == ["foo BAR baz"]
-    /foo (?i)bar (?-i)baz/.match("foo BAR BAZ").should be_nil
+    /foo (?i)bar (?-i)baz/.match("foo BAR BAZ").should == nil
 
     /(?m)./.match("\n").to_a.should == ["\n"]
-    /.(?m)/.match("\n").should be_nil
+    /.(?m)/.match("\n").should == nil
     # Interaction with /m
-    /(?-m)./m.match("\n").should be_nil
+    /(?-m)./m.match("\n").should == nil
     /.(?-m)/m.match("\n").to_a.should == ["\n"]
     # Multiple uses
     /. (?m). (?-m)./.match(". \n .").to_a.should == [". \n ."]
-    /. (?m). (?-m)./.match(". \n \n").should be_nil
+    /. (?m). (?-m)./.match(". \n \n").should == nil
 
     /(?x) foo /.match("foo").to_a.should == ["foo"]
-    / foo (?x)/.match("foo").should be_nil
+    / foo (?x)/.match("foo").should == nil
     # Interaction with /x
-    /(?-x) foo /x.match("foo").should be_nil
+    /(?-x) foo /x.match("foo").should == nil
     / foo (?-x)/x.match("foo").to_a.should == ["foo"]
     # Multiple uses
     /( foo )(?x)( bar )(?-x)( baz )/.match(" foo bar baz ").to_a.should == [" foo bar baz ", " foo ", "bar", " baz "]
-    /( foo )(?x)( bar )(?-x)( baz )/.match(" foo barbaz").should be_nil
+    /( foo )(?x)( bar )(?-x)( baz )/.match(" foo barbaz").should == nil
 
     # Parsing
-    /(?i-i)foo/.match("FOO").should be_nil
+    /(?i-i)foo/.match("FOO").should == nil
     /(?ii)foo/.match("FOO").to_a.should == ["FOO"]
     /(?-)foo/.match("foo").to_a.should == ["foo"]
-    -> { eval('/(?o)/') }.should raise_error(SyntaxError)
+    -> { eval('/(?o)/') }.should.raise(SyntaxError)
   end
 
   it "supports (?imx-imx:expr) (scoped inline modifiers)" do
     /foo (?i:bar) baz/.match("foo BAR baz").to_a.should == ["foo BAR baz"]
-    /foo (?i:bar) baz/.match("foo BAR BAZ").should be_nil
-    /foo (?-i:bar) baz/i.match("foo BAR BAZ").should be_nil
+    /foo (?i:bar) baz/.match("foo BAR BAZ").should == nil
+    /foo (?-i:bar) baz/i.match("foo BAR BAZ").should == nil
 
     /. (?m:.) ./.match(". \n .").to_a.should == [". \n ."]
-    /. (?m:.) ./.match(". \n \n").should be_nil
-    /. (?-m:.) ./m.match("\n \n \n").should be_nil
+    /. (?m:.) ./.match(". \n \n").should == nil
+    /. (?-m:.) ./m.match("\n \n \n").should == nil
 
     /( foo )(?x: bar )( baz )/.match(" foo bar baz ").to_a.should == [" foo bar baz ", " foo ", " baz "]
-    /( foo )(?x: bar )( baz )/.match(" foo barbaz").should be_nil
+    /( foo )(?x: bar )( baz )/.match(" foo barbaz").should == nil
     /( foo )(?-x: bar )( baz )/x.match("foo bar baz").to_a.should == ["foo bar baz", "foo", "baz"]
 
     # Parsing
-    /(?i-i:foo)/.match("FOO").should be_nil
+    /(?i-i:foo)/.match("FOO").should == nil
     /(?ii:foo)/.match("FOO").to_a.should == ["FOO"]
     /(?-:)foo/.match("foo").to_a.should == ["foo"]
-    -> { eval('/(?o:)/') }.should raise_error(SyntaxError)
+    -> { eval('/(?o:)/') }.should.raise(SyntaxError)
   end
 
   it "supports . with /m" do

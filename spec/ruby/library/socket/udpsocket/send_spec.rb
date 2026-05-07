@@ -34,7 +34,7 @@ describe "UDPSocket#send" do
 
     @msg[0].should == "ad hoc"
     @msg[1][0].should == "AF_INET"
-    @msg[1][1].should be_kind_of(Integer)
+    @msg[1][1].should.is_a?(Integer)
     @msg[1][3].should == "127.0.0.1"
   end
 
@@ -46,7 +46,7 @@ describe "UDPSocket#send" do
 
     @msg[0].should == "ad hoc"
     @msg[1][0].should == "AF_INET"
-    @msg[1][1].should be_kind_of(Integer)
+    @msg[1][1].should.is_a?(Integer)
     @msg[1][3].should == "127.0.0.1"
   end
 
@@ -59,7 +59,7 @@ describe "UDPSocket#send" do
 
     @msg[0].should == "connection-based"
     @msg[1][0].should == "AF_INET"
-    @msg[1][1].should be_kind_of(Integer)
+    @msg[1][1].should.is_a?(Integer)
     @msg[1][3].should == "127.0.0.1"
   end
 
@@ -68,7 +68,7 @@ describe "UDPSocket#send" do
     begin
       -> do
         @socket.send('1' * 100_000, 0, SocketSpecs.hostname, @port.to_s)
-      end.should raise_error(Errno::EMSGSIZE)
+      end.should.raise(Errno::EMSGSIZE)
     ensure
       @socket.send("ad hoc", 0, SocketSpecs.hostname, @port)
       @socket.close
@@ -96,7 +96,7 @@ describe 'UDPSocket#send' do
     describe 'using a disconnected socket' do
       describe 'without a destination address' do
         it "raises #{SocketSpecs.dest_addr_req_error}" do
-          -> { @client.send('hello', 0) }.should raise_error(SocketSpecs.dest_addr_req_error)
+          -> { @client.send('hello', 0) }.should.raise(SocketSpecs.dest_addr_req_error)
         end
       end
 
@@ -108,7 +108,7 @@ describe 'UDPSocket#send' do
         it 'does not persist the connection after sending data' do
           @client.send('hello', 0, @addr.ip_address, @addr.ip_port)
 
-          -> { @client.send('hello', 0) }.should raise_error(SocketSpecs.dest_addr_req_error)
+          -> { @client.send('hello', 0) }.should.raise(SocketSpecs.dest_addr_req_error)
         end
       end
 

@@ -26,11 +26,11 @@ describe "String#casecmp independent of case" do
   end
 
   it "returns nil if other can't be converted to a string" do
-    "abc".casecmp(mock('abc')).should be_nil
+    "abc".casecmp(mock('abc')).should == nil
   end
 
   it "returns nil if incompatible encodings" do
-    "あれ".casecmp("れ".encode(Encoding::EUC_JP)).should be_nil
+    "あれ".casecmp("れ".encode(Encoding::EUC_JP)).should == nil
   end
 
   describe "in UTF-8 mode" do
@@ -143,7 +143,7 @@ describe 'String#casecmp? independent of case' do
   end
 
   it "returns nil if incompatible encodings" do
-    "あれ".casecmp?("れ".encode(Encoding::EUC_JP)).should be_nil
+    "あれ".casecmp?("れ".encode(Encoding::EUC_JP)).should == nil
   end
 
   describe 'for UNICODE characters' do
@@ -190,11 +190,11 @@ describe 'String#casecmp? independent of case' do
   end
 
   it "case folds" do
-    "ß".casecmp?("ss").should be_true
+    "ß".casecmp?("ss").should == true
   end
 
   it "returns nil if other can't be converted to a string" do
-    "abc".casecmp?(mock('abc')).should be_nil
+    "abc".casecmp?(mock('abc')).should == nil
   end
 
   it "returns true for empty strings in different encodings" do

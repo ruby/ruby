@@ -30,22 +30,22 @@ ruby_version_is ""..."4.1" do
 
     it "raises a Net::FTPPermError when the response code is 500" do
       @server.should_receive(:syst).and_respond("500 Syntax error, command unrecognized.")
-      -> { @ftp.system }.should raise_error(Net::FTPPermError)
+      -> { @ftp.system }.should.raise(Net::FTPPermError)
     end
 
     it "raises a Net::FTPPermError when the response code is 501" do
       @server.should_receive(:syst).and_respond("501 Syntax error in parameters or arguments.")
-      -> { @ftp.system }.should raise_error(Net::FTPPermError)
+      -> { @ftp.system }.should.raise(Net::FTPPermError)
     end
 
     it "raises a Net::FTPPermError when the response code is 502" do
       @server.should_receive(:syst).and_respond("502 Command not implemented.")
-      -> { @ftp.system }.should raise_error(Net::FTPPermError)
+      -> { @ftp.system }.should.raise(Net::FTPPermError)
     end
 
     it "raises a Net::FTPTempError when the response code is 421" do
       @server.should_receive(:syst).and_respond("421 Service not available, closing control connection.")
-      -> { @ftp.system }.should raise_error(Net::FTPTempError)
+      -> { @ftp.system }.should.raise(Net::FTPTempError)
     end
   end
 end

@@ -51,7 +51,7 @@ describe "BigDecimal#fix" do
   it "does not allow any arguments" do
     -> {
       @mixed.fix(10)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
 end

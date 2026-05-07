@@ -9,7 +9,7 @@ describe :argf_each_line, shared: true do
 
   it "is a public method" do
     argf [@file1_name, @file2_name] do
-      @argf.public_methods(false).should include(@method)
+      @argf.public_methods(false).should.include?(@method)
     end
   end
 
@@ -29,7 +29,7 @@ describe :argf_each_line, shared: true do
 
   it "returns self when passed a block" do
     argf [@file1_name, @file2_name] do
-      @argf.send(@method) {}.should equal(@argf)
+      @argf.send(@method) {}.should.equal?(@argf)
     end
   end
 
@@ -45,7 +45,7 @@ describe :argf_each_line, shared: true do
   describe "when no block is given" do
     it "returns an Enumerator" do
       argf [@file1_name, @file2_name] do
-        @argf.send(@method).should be_an_instance_of(Enumerator)
+        @argf.send(@method).should.instance_of?(Enumerator)
       end
     end
 

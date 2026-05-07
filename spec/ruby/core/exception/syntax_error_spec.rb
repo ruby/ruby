@@ -6,7 +6,7 @@ describe "SyntaxError#path" do
 
     -> {
       eval("if true", TOPLEVEL_BINDING, filename)
-    }.should raise_error(SyntaxError) { |e|
+    }.should.raise(SyntaxError) { |e|
       e.path.should == filename
     }
   end
@@ -16,7 +16,7 @@ describe "SyntaxError#path" do
 
     -> {
       require_relative "fixtures/syntax_error"
-    }.should raise_error(SyntaxError) { |e| e.path.should == expected_path }
+    }.should.raise(SyntaxError) { |e| e.path.should == expected_path }
   end
 
   it "returns nil when constructed directly" do

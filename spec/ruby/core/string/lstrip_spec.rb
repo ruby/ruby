@@ -30,7 +30,7 @@ end
 describe "String#lstrip!" do
   it "modifies self in place and returns self" do
     a = "  hello  "
-    a.lstrip!.should equal(a)
+    a.lstrip!.should.equal?(a)
     a.should == "hello  "
   end
 
@@ -53,22 +53,22 @@ describe "String#lstrip!" do
   end
 
   it "raises a FrozenError on a frozen instance that is modified" do
-    -> { "  hello  ".freeze.lstrip! }.should raise_error(FrozenError)
+    -> { "  hello  ".freeze.lstrip! }.should.raise(FrozenError)
   end
 
   # see [ruby-core:23657]
   it "raises a FrozenError on a frozen instance that would not be modified" do
-    -> { "hello".freeze.lstrip! }.should raise_error(FrozenError)
-    -> { "".freeze.lstrip!      }.should raise_error(FrozenError)
+    -> { "hello".freeze.lstrip! }.should.raise(FrozenError)
+    -> { "".freeze.lstrip!      }.should.raise(FrozenError)
   end
 
   it "raises an ArgumentError if the first non-space codepoint is invalid" do
     s = "\xDFabc".force_encoding(Encoding::UTF_8)
-    s.valid_encoding?.should be_false
-    -> { s.lstrip! }.should raise_error(ArgumentError)
+    s.valid_encoding?.should == false
+    -> { s.lstrip! }.should.raise(ArgumentError)
 
     s = "   \xDFabc".force_encoding(Encoding::UTF_8)
-    s.valid_encoding?.should be_false
-    -> { s.lstrip! }.should raise_error(ArgumentError)
+    s.valid_encoding?.should == false
+    -> { s.lstrip! }.should.raise(ArgumentError)
   end
 end

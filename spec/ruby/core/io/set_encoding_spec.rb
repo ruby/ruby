@@ -5,21 +5,21 @@ describe :io_set_encoding_write, shared: true do
     @io = new_io @name, "#{@object}:ibm437:ibm866"
     @io.set_encoding nil, nil
 
-    @io.external_encoding.should be_nil
-    @io.internal_encoding.should be_nil
+    @io.external_encoding.should == nil
+    @io.internal_encoding.should == nil
   end
 
   it "sets the encodings to nil when the IO is built with no explicit encoding" do
     @io = new_io @name, @object
 
     # Checking our assumptions first
-    @io.external_encoding.should be_nil
-    @io.internal_encoding.should be_nil
+    @io.external_encoding.should == nil
+    @io.internal_encoding.should == nil
 
     @io.set_encoding nil, nil
 
-    @io.external_encoding.should be_nil
-    @io.internal_encoding.should be_nil
+    @io.external_encoding.should == nil
+    @io.internal_encoding.should == nil
   end
 
   it "prevents the encodings from changing when Encoding defaults are changed" do
@@ -29,8 +29,8 @@ describe :io_set_encoding_write, shared: true do
     Encoding.default_external = Encoding::IBM437
     Encoding.default_internal = Encoding::IBM866
 
-    @io.external_encoding.should be_nil
-    @io.internal_encoding.should be_nil
+    @io.external_encoding.should == nil
+    @io.internal_encoding.should == nil
   end
 
   it "sets the encodings to the current Encoding defaults" do
@@ -75,8 +75,8 @@ describe "IO#set_encoding when passed nil, nil" do
       Encoding.default_internal = Encoding::IBM866
 
       @io.set_encoding nil, nil
-      @io.external_encoding.should equal(Encoding::IBM437)
-      @io.internal_encoding.should equal(Encoding::IBM866)
+      @io.external_encoding.should.equal?(Encoding::IBM437)
+      @io.internal_encoding.should.equal?(Encoding::IBM866)
     end
 
     it "prevents the #internal_encoding from changing when Encoding.default_internal is changed" do
@@ -85,7 +85,7 @@ describe "IO#set_encoding when passed nil, nil" do
 
       Encoding.default_internal = Encoding::IBM437
 
-      @io.internal_encoding.should be_nil
+      @io.internal_encoding.should == nil
     end
 
     it "allows the #external_encoding to change when Encoding.default_external is changed" do
@@ -94,17 +94,17 @@ describe "IO#set_encoding when passed nil, nil" do
 
       Encoding.default_external = Encoding::IBM437
 
-      @io.external_encoding.should equal(Encoding::IBM437)
+      @io.external_encoding.should.equal?(Encoding::IBM437)
     end
   end
 
   describe "with 'rb' mode" do
     it "returns Encoding.default_external" do
       @io = new_io @name, "rb"
-      @io.external_encoding.should equal(Encoding::BINARY)
+      @io.external_encoding.should.equal?(Encoding::BINARY)
 
       @io.set_encoding nil, nil
-      @io.external_encoding.should equal(Encoding.default_external)
+      @io.external_encoding.should.equal?(Encoding.default_external)
     end
   end
 
@@ -158,13 +158,13 @@ describe "IO#set_encoding" do
   end
 
   it "returns self" do
-    @io.set_encoding(Encoding::UTF_8).should equal(@io)
+    @io.set_encoding(Encoding::UTF_8).should.equal?(@io)
   end
 
   it "sets the external encoding when passed an Encoding argument" do
     @io.set_encoding(Encoding::UTF_8)
     @io.external_encoding.should == Encoding::UTF_8
-    @io.internal_encoding.should be_nil
+    @io.internal_encoding.should == nil
   end
 
   it "sets the external and internal encoding when passed two Encoding arguments" do
@@ -176,19 +176,19 @@ describe "IO#set_encoding" do
   it "sets the external encoding when passed the name of an Encoding" do
     @io.set_encoding("utf-8")
     @io.external_encoding.should == Encoding::UTF_8
-    @io.internal_encoding.should be_nil
+    @io.internal_encoding.should == nil
   end
 
   it "ignores the internal encoding if the same as external when passed Encoding objects" do
     @io.set_encoding(Encoding::UTF_8, Encoding::UTF_8)
     @io.external_encoding.should == Encoding::UTF_8
-    @io.internal_encoding.should be_nil
+    @io.internal_encoding.should == nil
   end
 
   it "ignores the internal encoding if the same as external when passed encoding names separated by ':'" do
     @io.set_encoding("utf-8:utf-8")
     @io.external_encoding.should == Encoding::UTF_8
-    @io.internal_encoding.should be_nil
+    @io.internal_encoding.should == nil
   end
 
   it "sets the external and internal encoding when passed the names of Encodings separated by ':'" do
@@ -229,10 +229,10 @@ describe "IO#set_encoding" do
   end
 
   it "raises ArgumentError when no arguments are given" do
-    -> { @io.set_encoding() }.should raise_error(ArgumentError)
+    -> { @io.set_encoding() }.should.raise(ArgumentError)
   end
 
   it "raises ArgumentError when too many arguments are given" do
-    -> { @io.set_encoding(1, 2, 3) }.should raise_error(ArgumentError)
+    -> { @io.set_encoding(1, 2, 3) }.should.raise(ArgumentError)
   end
 end

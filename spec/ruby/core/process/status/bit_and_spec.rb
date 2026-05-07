@@ -23,7 +23,7 @@ ruby_version_is ""..."4.0" do
           ruby_exe("exit(0)")
           -> {
             $? & -1
-          }.should raise_error(ArgumentError, 'negative mask value: -1')
+          }.should.raise(ArgumentError, 'negative mask value: -1')
         end
       end
 

@@ -26,16 +26,16 @@ describe "Net::HTTPHeader#[]= when passed key, value" do
     @headers['MY-HEADER'] = "last one"
 
     @headers["My-Header"].should == "last one"
-    @headers.size.should eql(1)
+    @headers.size.should.eql?(1)
   end
 
   it "removes the header entry with the passed key when the value is false or nil" do
     @headers['My-Header'] = "test"
     @headers['My-Header'] = nil
-    @headers['My-Header'].should be_nil
+    @headers['My-Header'].should == nil
 
     @headers['My-Header'] = "test"
     @headers['My-Header'] = false
-    @headers['My-Header'].should be_nil
+    @headers['My-Header'].should == nil
   end
 end

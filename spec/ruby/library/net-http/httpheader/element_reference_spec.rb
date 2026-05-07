@@ -33,7 +33,7 @@ describe "Net::HTTPHeader#[] when passed key" do
   end
 
   it "returns nil for non-existing entries" do
-    @headers["My-Header"].should be_nil
-    @headers["My-Other-Header"].should be_nil
+    @headers["My-Header"].should == nil
+    @headers["My-Other-Header"].should == nil
   end
 end

@@ -10,45 +10,45 @@ describe "Proc#source_location" do
   end
 
   it "returns an Array" do
-    @proc.source_location.should be_an_instance_of(Array)
-    @proc_new.source_location.should be_an_instance_of(Array)
-    @lambda.source_location.should be_an_instance_of(Array)
-    @method.source_location.should be_an_instance_of(Array)
+    @proc.source_location.should.instance_of?(Array)
+    @proc_new.source_location.should.instance_of?(Array)
+    @lambda.source_location.should.instance_of?(Array)
+    @method.source_location.should.instance_of?(Array)
   end
 
   it "sets the first value to the path of the file in which the proc was defined" do
     file = @proc.source_location.first
-    file.should be_an_instance_of(String)
+    file.should.instance_of?(String)
     file.should == File.realpath('fixtures/source_location.rb', __dir__)
 
     file = @proc_new.source_location.first
-    file.should be_an_instance_of(String)
+    file.should.instance_of?(String)
     file.should == File.realpath('fixtures/source_location.rb', __dir__)
 
     file = @lambda.source_location.first
-    file.should be_an_instance_of(String)
+    file.should.instance_of?(String)
     file.should == File.realpath('fixtures/source_location.rb', __dir__)
 
     file = @method.source_location.first
-    file.should be_an_instance_of(String)
+    file.should.instance_of?(String)
     file.should == File.realpath('fixtures/source_location.rb', __dir__)
   end
 
   it "sets the last value to an Integer representing the line on which the proc was defined" do
     line = @proc.source_location.last
-    line.should be_an_instance_of(Integer)
+    line.should.instance_of?(Integer)
     line.should == 4
 
     line = @proc_new.source_location.last
-    line.should be_an_instance_of(Integer)
+    line.should.instance_of?(Integer)
     line.should == 12
 
     line = @lambda.source_location.last
-    line.should be_an_instance_of(Integer)
+    line.should.instance_of?(Integer)
     line.should == 8
 
     line = @method.source_location.last
-    line.should be_an_instance_of(Integer)
+    line.should.instance_of?(Integer)
     line.should == 15
   end
 

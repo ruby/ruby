@@ -24,7 +24,7 @@ describe "String#upcase" do
       upcased.should == "ASSET"
       upcased.size.should == 5
       upcased.bytesize.should == 5
-      upcased.ascii_only?.should be_true
+      upcased.ascii_only?.should == true
     end
   end
 
@@ -48,7 +48,7 @@ describe "String#upcase" do
     end
 
     it "does not allow any other additional option" do
-      -> { "i".upcase(:turkic, :ascii) }.should raise_error(ArgumentError)
+      -> { "i".upcase(:turkic, :ascii) }.should.raise(ArgumentError)
     end
   end
 
@@ -62,27 +62,27 @@ describe "String#upcase" do
     end
 
     it "does not allow any other additional option" do
-      -> { "iß".upcase(:lithuanian, :ascii) }.should raise_error(ArgumentError)
+      -> { "iß".upcase(:lithuanian, :ascii) }.should.raise(ArgumentError)
     end
   end
 
   it "does not allow the :fold option for upcasing" do
-    -> { "abc".upcase(:fold) }.should raise_error(ArgumentError)
+    -> { "abc".upcase(:fold) }.should.raise(ArgumentError)
   end
 
   it "does not allow invalid options" do
-    -> { "abc".upcase(:invalid_option) }.should raise_error(ArgumentError)
+    -> { "abc".upcase(:invalid_option) }.should.raise(ArgumentError)
   end
 
   it "returns a String instance for subclasses" do
-    StringSpecs::MyString.new("fooBAR").upcase.should be_an_instance_of(String)
+    StringSpecs::MyString.new("fooBAR").upcase.should.instance_of?(String)
   end
 end
 
 describe "String#upcase!" do
   it "modifies self in place" do
     a = "HeLlO"
-    a.upcase!.should equal(a)
+    a.upcase!.should.equal?(a)
     a.should == "HELLO"
   end
 
@@ -112,7 +112,7 @@ describe "String#upcase!" do
       upcased.should == "ASSET"
       upcased.size.should == 5
       upcased.bytesize.should == 5
-      upcased.ascii_only?.should be_true
+      upcased.ascii_only?.should == true
     end
   end
 
@@ -144,7 +144,7 @@ describe "String#upcase!" do
     end
 
     it "does not allow any other additional option" do
-      -> { a = "i"; a.upcase!(:turkic, :ascii) }.should raise_error(ArgumentError)
+      -> { a = "i"; a.upcase!(:turkic, :ascii) }.should.raise(ArgumentError)
     end
   end
 
@@ -162,16 +162,16 @@ describe "String#upcase!" do
     end
 
     it "does not allow any other additional option" do
-      -> { a = "iß"; a.upcase!(:lithuanian, :ascii) }.should raise_error(ArgumentError)
+      -> { a = "iß"; a.upcase!(:lithuanian, :ascii) }.should.raise(ArgumentError)
     end
   end
 
   it "does not allow the :fold option for upcasing" do
-    -> { a = "abc"; a.upcase!(:fold) }.should raise_error(ArgumentError)
+    -> { a = "abc"; a.upcase!(:fold) }.should.raise(ArgumentError)
   end
 
   it "does not allow invalid options" do
-    -> { a = "abc"; a.upcase!(:invalid_option) }.should raise_error(ArgumentError)
+    -> { a = "abc"; a.upcase!(:invalid_option) }.should.raise(ArgumentError)
   end
 
   it "returns nil if no modifications were made" do
@@ -181,7 +181,7 @@ describe "String#upcase!" do
   end
 
   it "raises a FrozenError when self is frozen" do
-    -> { "HeLlo".freeze.upcase! }.should raise_error(FrozenError)
-    -> { "HELLO".freeze.upcase! }.should raise_error(FrozenError)
+    -> { "HeLlo".freeze.upcase! }.should.raise(FrozenError)
+    -> { "HELLO".freeze.upcase! }.should.raise(FrozenError)
   end
 end

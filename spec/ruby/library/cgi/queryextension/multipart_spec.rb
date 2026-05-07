@@ -37,7 +37,7 @@ EOS
     end
 
     it "returns true if the current Request is a multipart request" do
-      @cgi.multipart?.should be_true
+      @cgi.multipart?.should == true
     end
   end
 end

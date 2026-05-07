@@ -13,7 +13,7 @@ describe "Kernel#require" do
 
   # if this fails, update your rubygems
   it "is a private method" do
-    Kernel.should have_private_instance_method(:require)
+    Kernel.private_instance_methods(false).should.include?(:require)
   end
 
   it "provided features are already required" do

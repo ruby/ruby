@@ -23,7 +23,7 @@ describe "CSV#readlines" do
 
   it "raises CSV::MalformedCSVError exception if input is illegal" do
     csv = CSV.new('"quoted" field')
-    -> { csv.readlines }.should raise_error(CSV::MalformedCSVError)
+    -> { csv.readlines }.should.raise(CSV::MalformedCSVError)
   end
 
   it "handles illegal input with the liberal_parsing option" do

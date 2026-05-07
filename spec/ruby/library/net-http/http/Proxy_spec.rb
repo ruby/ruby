@@ -13,7 +13,7 @@ describe "Net::HTTP.Proxy" do
   it "sets the returned subclasses' proxy options based on the passed arguments" do
     http_with_proxy = Net::HTTP.Proxy("localhost", 1234, "rspec", "rocks")
     http_with_proxy.proxy_address.should == "localhost"
-    http_with_proxy.proxy_port.should eql(1234)
+    http_with_proxy.proxy_port.should.eql?(1234)
     http_with_proxy.proxy_user.should == "rspec"
     http_with_proxy.proxy_pass.should == "rocks"
   end
@@ -22,14 +22,14 @@ end
 describe "Net::HTTP#proxy?" do
   describe "when self is no proxy class instance" do
     it "returns false" do
-      Net::HTTP.new("localhost", 3333).proxy?.should be_false
+      Net::HTTP.new("localhost", 3333).proxy?.should == false
     end
   end
 
   describe "when self is a proxy class instance" do
     it "returns false" do
       http_with_proxy = Net::HTTP.Proxy("localhost", 1234, "rspec", "rocks")
-      http_with_proxy.new("localhost", 3333).proxy?.should be_true
+      http_with_proxy.new("localhost", 3333).proxy?.should == true
     end
   end
 end

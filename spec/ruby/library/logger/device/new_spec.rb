@@ -14,11 +14,11 @@ describe "Logger::LogDevice#new" do
 
   it "creates a new log device" do
     l = Logger::LogDevice.new(@log_file)
-    l.dev.should be_kind_of(File)
+    l.dev.should.is_a?(File)
   end
 
   it "receives an IO object to log there as first argument" do
-    @log_file.should be_kind_of(IO)
+    @log_file.should.is_a?(IO)
     l = Logger::LogDevice.new(@log_file)
     l.write("foo")
     @log_file.rewind
@@ -33,7 +33,7 @@ describe "Logger::LogDevice#new" do
 
     File.should.exist?(path)
     File.open(path) do |f|
-      f.readlines.should_not be_empty
+      f.readlines.should_not.empty?
     end
 
     rm_r path
@@ -42,6 +42,6 @@ describe "Logger::LogDevice#new" do
   it "receives options via a hash as second argument" do
     -> {
       Logger::LogDevice.new(STDERR, shift_age: 8, shift_size: 10)
-    }.should_not raise_error
+    }.should_not.raise
   end
 end

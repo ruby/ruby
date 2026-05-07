@@ -4,7 +4,7 @@ require_relative 'fixtures/classes'
 # arctangent : (-Inf, Inf) --> (-PI/2, PI/2)
 describe "Math.atan" do
   it "returns a float" do
-    Math.atan(1).should be_kind_of(Float)
+    Math.atan(1).should.is_a?(Float)
   end
 
   it "returns the arctangent of the argument" do
@@ -17,15 +17,15 @@ describe "Math.atan" do
   end
 
   it "raises a TypeError if the argument cannot be coerced with Float()" do
-    -> { Math.atan("test") }.should raise_error(TypeError)
+    -> { Math.atan("test") }.should.raise(TypeError)
   end
 
   it "returns NaN given NaN" do
-    Math.atan(nan_value).nan?.should be_true
+    Math.atan(nan_value).nan?.should == true
   end
 
   it "raises a TypeError if the argument is nil" do
-    -> { Math.atan(nil) }.should raise_error(TypeError)
+    -> { Math.atan(nil) }.should.raise(TypeError)
   end
 
   it "accepts any argument that can be coerced with Float()" do

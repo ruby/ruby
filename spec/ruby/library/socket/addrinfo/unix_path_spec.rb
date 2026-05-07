@@ -8,7 +8,7 @@ describe "Addrinfo#unix_path" do
     end
 
     it "raises an exception" do
-      -> { @addrinfo.unix_path }.should raise_error(SocketError)
+      -> { @addrinfo.unix_path }.should.raise(SocketError)
     end
 
   end
@@ -19,7 +19,7 @@ describe "Addrinfo#unix_path" do
     end
 
     it "raises an exception" do
-      -> { @addrinfo.unix_path }.should raise_error(SocketError)
+      -> { @addrinfo.unix_path }.should.raise(SocketError)
     end
   end
 

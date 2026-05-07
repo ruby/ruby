@@ -25,7 +25,7 @@ describe "Encoding::Converter.new" do
   it "raises an Encoding::ConverterNotFoundError if both encodings are the same" do
     -> do
       Encoding::Converter.new "utf-8", "utf-8"
-    end.should raise_error(Encoding::ConverterNotFoundError)
+    end.should.raise(Encoding::ConverterNotFoundError)
   end
 
   it "calls #to_str to convert the source encoding argument to an encoding name" do
@@ -67,25 +67,25 @@ describe "Encoding::Converter.new" do
 
     -> do
       Encoding::Converter.new("us-ascii", "utf-8", replace: obj)
-    end.should raise_error(TypeError)
+    end.should.raise(TypeError)
   end
 
   it "raises a TypeError if passed true for the replacement object" do
     -> do
       Encoding::Converter.new("us-ascii", "utf-8", replace: true)
-    end.should raise_error(TypeError)
+    end.should.raise(TypeError)
   end
 
   it "raises a TypeError if passed false for the replacement object" do
     -> do
       Encoding::Converter.new("us-ascii", "utf-8", replace: false)
-    end.should raise_error(TypeError)
+    end.should.raise(TypeError)
   end
 
   it "raises a TypeError if passed an Integer for the replacement object" do
     -> do
       Encoding::Converter.new("us-ascii", "utf-8", replace: 1)
-    end.should raise_error(TypeError)
+    end.should.raise(TypeError)
   end
 
   it "accepts an empty String for the replacement object" do

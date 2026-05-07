@@ -4,7 +4,7 @@ describe :ostruct_inspect, shared: true do
     os.send(@method).should == "#<OpenStruct name=\"John Smith\">"
 
     os = OpenStruct.new(age: 20, name: "John Smith")
-    os.send(@method).should be_kind_of(String)
+    os.send(@method).should.is_a?(String)
   end
 
   it "correctly handles self-referential OpenStructs" do

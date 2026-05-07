@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 describe "GC.total_time" do
   it "returns an Integer" do
-    GC.total_time.should be_kind_of(Integer)
+    GC.total_time.should.is_a?(Integer)
   end
 
   it "increases as collections are run" do

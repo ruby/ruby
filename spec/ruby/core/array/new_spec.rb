@@ -3,31 +3,31 @@ require_relative 'fixtures/classes'
 
 describe "Array.new" do
   it "returns an instance of Array" do
-    Array.new.should be_an_instance_of(Array)
+    Array.new.should.instance_of?(Array)
   end
 
   it "returns an instance of a subclass" do
-    ArraySpecs::MyArray.new(1, 2).should be_an_instance_of(ArraySpecs::MyArray)
+    ArraySpecs::MyArray.new(1, 2).should.instance_of?(ArraySpecs::MyArray)
   end
 
   it "raises an ArgumentError if passed 3 or more arguments" do
     -> do
       [1, 2].send :initialize, 1, 'x', true
-    end.should raise_error(ArgumentError)
+    end.should.raise(ArgumentError)
     -> do
       [1, 2].send(:initialize, 1, 'x', true) {}
-    end.should raise_error(ArgumentError)
+    end.should.raise(ArgumentError)
   end
 end
 
 describe "Array.new with no arguments" do
   it "returns an empty array" do
-    Array.new.should be_empty
+    Array.new.should.empty?
   end
 
   it "does not use the given block" do
     -> {
-      -> { Array.new { raise } }.should_not raise_error
+      -> { Array.new { raise } }.should_not.raise
     }.should complain(/warning: given block not used/, verbose: true)
   end
 end
@@ -39,7 +39,7 @@ describe "Array.new with (array)" do
   end
 
   it "does not use the given block" do
-    ->{ Array.new([1, 2]) { raise } }.should_not raise_error
+    ->{ Array.new([1, 2]) { raise } }.should_not.raise
   end
 
   it "calls #to_ary to convert the value to an array" do
@@ -56,7 +56,7 @@ describe "Array.new with (array)" do
   end
 
   it "raises a TypeError if an Array type argument and a default object" do
-    -> { Array.new([1, 2], 1) }.should raise_error(TypeError)
+    -> { Array.new([1, 2], 1) }.should.raise(TypeError)
   end
 end
 
@@ -65,8 +65,8 @@ describe "Array.new with (size, object=nil)" do
     obj = [3]
     a = Array.new(2, obj)
     a.should == [obj, obj]
-    a[0].should equal(obj)
-    a[1].should equal(obj)
+    a[0].should.equal?(obj)
+    a[1].should.equal?(obj)
 
     Array.new(3, 14).should == [14, 14, 14]
   end
@@ -76,12 +76,12 @@ describe "Array.new with (size, object=nil)" do
   end
 
   it "raises an ArgumentError if size is negative" do
-    -> { Array.new(-1, :a) }.should raise_error(ArgumentError)
-    -> { Array.new(-1) }.should raise_error(ArgumentError)
+    -> { Array.new(-1, :a) }.should.raise(ArgumentError)
+    -> { Array.new(-1) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if size is too large" do
-    -> { Array.new(fixnum_max+1) }.should raise_error(ArgumentError)
+    -> { Array.new(fixnum_max+1) }.should.raise(ArgumentError)
   end
 
   it "calls #to_int to convert the size argument to an Integer when object is given" do
@@ -99,7 +99,7 @@ describe "Array.new with (size, object=nil)" do
   it "raises a TypeError if the size argument is not an Integer type" do
     obj = mock('nonnumeric')
     obj.stub!(:to_ary).and_return([1, 2])
-    ->{ Array.new(obj, :a) }.should raise_error(TypeError)
+    ->{ Array.new(obj, :a) }.should.raise(TypeError)
   end
 
   it "yields the index of the element and sets the element to the value of the block" do

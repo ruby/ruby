@@ -10,34 +10,34 @@ describe "IO::Buffer#valid?" do
   context "with a non-slice buffer" do
     it "is true for a regular buffer" do
       @buffer = IO::Buffer.new(4)
-      @buffer.valid?.should be_true
+      @buffer.valid?.should == true
     end
 
     it "is true for a 0-size buffer" do
       @buffer = IO::Buffer.new(0)
-      @buffer.valid?.should be_true
+      @buffer.valid?.should == true
     end
 
     it "is true for a freed buffer" do
       @buffer = IO::Buffer.new(4)
       @buffer.free
-      @buffer.valid?.should be_true
+      @buffer.valid?.should == true
     end
 
     it "is true for a freed file-backed buffer" do
       File.open(__FILE__, "r") do |file|
         @buffer = IO::Buffer.map(file, nil, 0, IO::Buffer::READONLY)
-        @buffer.valid?.should be_true
+        @buffer.valid?.should == true
         @buffer.free
-        @buffer.valid?.should be_true
+        @buffer.valid?.should == true
       end
     end
 
     it "is true for a freed string-backed buffer" do
       @buffer = IO::Buffer.for("hello")
-      @buffer.valid?.should be_true
+      @buffer.valid?.should == true
       @buffer.free
-      @buffer.valid?.should be_true
+      @buffer.valid?.should == true
     end
   end
 
@@ -47,7 +47,7 @@ describe "IO::Buffer#valid?" do
     it "is true for a slice of a live buffer" do
       @buffer = IO::Buffer.new(4)
       slice = @buffer.slice(0, 2)
-      slice.valid?.should be_true
+      slice.valid?.should == true
     end
 
     context "when buffer is resized" do
@@ -55,7 +55,7 @@ describe "IO::Buffer#valid?" do
         @buffer = IO::Buffer.new(4)
         slice = @buffer.slice(2, 2)
         @buffer.resize(3)
-        slice.valid?.should be_false
+        slice.valid?.should == false
       end
 
       platform_is_not :linux do
@@ -65,7 +65,7 @@ describe "IO::Buffer#valid?" do
           @buffer = IO::Buffer.new(4, IO::Buffer::MAPPED)
           slice = @buffer.slice(0, 2)
           @buffer.resize(8)
-          slice.valid?.should be_false
+          slice.valid?.should == false
         end
       end
     end
@@ -74,32 +74,32 @@ describe "IO::Buffer#valid?" do
       buffer = IO::Buffer.new(4)
       slice = buffer.slice(0, 2)
       @buffer = buffer.transfer
-      slice.valid?.should be_false
+      slice.valid?.should == false
     end
 
     it "is false for a slice of a freed buffer" do
       @buffer = IO::Buffer.new(4)
       slice = @buffer.slice(0, 2)
       @buffer.free
-      slice.valid?.should be_false
+      slice.valid?.should == false
     end
 
     it "is false for a slice of a freed file-backed buffer" do
       File.open(__FILE__, "r") do |file|
         @buffer = IO::Buffer.map(file, nil, 0, IO::Buffer::READONLY)
         slice = @buffer.slice(0, 2)
-        slice.valid?.should be_true
+        slice.valid?.should == true
         @buffer.free
-        slice.valid?.should be_false
+        slice.valid?.should == false
       end
     end
 
     it "is true for a slice of a freed string-backed buffer while string is alive" do
       @buffer = IO::Buffer.for("alive")
       slice = @buffer.slice(0, 2)
-      slice.valid?.should be_true
+      slice.valid?.should == true
       @buffer.free
-      slice.valid?.should be_true
+      slice.valid?.should == true
     end
 
     # There probably should be a test with a garbage-collected string,

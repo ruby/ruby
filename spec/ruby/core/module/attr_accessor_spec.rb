@@ -34,7 +34,7 @@ describe "Module#attr_accessor" do
       attr_accessor :spec_attr_accessor
     end
 
-    -> { true.spec_attr_accessor = "a" }.should raise_error(FrozenError)
+    -> { true.spec_attr_accessor = "a" }.should.raise(FrozenError)
   end
 
   it "raises FrozenError if the receiver if frozen" do
@@ -46,7 +46,7 @@ describe "Module#attr_accessor" do
     obj.foo.should == 1
 
     obj.freeze
-    -> { obj.foo = 42 }.should raise_error(FrozenError)
+    -> { obj.foo = 42 }.should.raise(FrozenError)
     obj.foo.should == 1
   end
 
@@ -62,9 +62,9 @@ describe "Module#attr_accessor" do
 
   it "raises a TypeError when the given names can't be converted to strings using to_str" do
     o = mock('o')
-    -> { Class.new { attr_accessor o } }.should raise_error(TypeError)
+    -> { Class.new { attr_accessor o } }.should.raise(TypeError)
     (o = mock('123')).should_receive(:to_str).and_return(123)
-    -> { Class.new { attr_accessor o } }.should raise_error(TypeError)
+    -> { Class.new { attr_accessor o } }.should.raise(TypeError)
   end
 
   it "applies current visibility to methods created" do
@@ -73,12 +73,12 @@ describe "Module#attr_accessor" do
       attr_accessor :foo
     end
 
-    -> { c.new.foo }.should raise_error(NoMethodError)
-    -> { c.new.foo=1 }.should raise_error(NoMethodError)
+    -> { c.new.foo }.should.raise(NoMethodError)
+    -> { c.new.foo=1 }.should.raise(NoMethodError)
   end
 
   it "is a public method" do
-    Module.should have_public_instance_method(:attr_accessor, false)
+    Module.public_instance_methods(false).should.include?(:attr_accessor)
   end
 
   it "returns an array of defined method names as symbols" do
@@ -104,7 +104,7 @@ describe "Module#attr_accessor" do
     end
 
     it "can read through the accessor" do
-      1.foobar.should be_nil
+      1.foobar.should == nil
     end
   end
 

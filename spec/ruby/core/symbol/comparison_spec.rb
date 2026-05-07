@@ -37,15 +37,15 @@ end
 
 describe "Symbol#<=>" do
   it "returns nil if other is a String" do
-    (:abc <=> "abc").should be_nil
+    (:abc <=> "abc").should == nil
   end
 
   it "returns nil if other is an Integer" do
-    (:abc <=> 1).should be_nil
+    (:abc <=> 1).should == nil
   end
 
   it "returns nil if other is an object" do
     obj = mock("string <=>")
-    (:abc <=> obj).should be_nil
+    (:abc <=> obj).should == nil
   end
 end

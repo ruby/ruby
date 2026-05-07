@@ -15,7 +15,7 @@ describe "BasicSocket.for_fd" do
   it "return a Socket instance wrapped around the descriptor" do
     @s2 = TCPServer.for_fd(@server.fileno)
     @s2.autoclose = false
-    @s2.should be_kind_of(TCPServer)
+    @s2.should.is_a?(TCPServer)
     @s2.fileno.should == @server.fileno
   end
 
@@ -24,7 +24,7 @@ describe "BasicSocket.for_fd" do
     socket2 = Socket.for_fd(@socket1.fileno)
     socket2.autoclose = false
 
-    socket2.should be_an_instance_of(Socket)
+    socket2.should.instance_of?(Socket)
     socket2.fileno.should == @socket1.fileno
   end
 
@@ -33,6 +33,6 @@ describe "BasicSocket.for_fd" do
     socket2 = Socket.for_fd(@socket1.fileno)
     socket2.autoclose = false
 
-    socket2.binmode?.should be_true
+    socket2.binmode?.should == true
   end
 end

@@ -3,6 +3,6 @@ describe :queue_freeze, shared: true do
     queue = @object.call
     -> {
       queue.freeze
-    }.should raise_error(TypeError, "cannot freeze #{queue}")
+    }.should.raise(TypeError, "cannot freeze #{queue}")
   end
 end

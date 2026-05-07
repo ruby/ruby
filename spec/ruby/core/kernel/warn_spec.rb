@@ -14,7 +14,7 @@ describe "Kernel#warn" do
   end
 
   it "is a private method" do
-    Kernel.should have_private_instance_method(:warn)
+    Kernel.private_instance_methods(false).should.include?(:warn)
   end
 
   it "accepts multiple arguments" do
@@ -161,7 +161,7 @@ describe "Kernel#warn" do
       -> {
         $VERBOSE = true
         warn("message", category: Object.new)
-      }.should raise_error(TypeError)
+      }.should.raise(TypeError)
     end
 
     it "converts first arg using to_s" do
@@ -194,19 +194,19 @@ describe "Kernel#warn" do
     end
 
     it "raises ArgumentError if passed negative value" do
-      -> { warn "", uplevel: -2 }.should raise_error(ArgumentError)
-      -> { warn "", uplevel: -100 }.should raise_error(ArgumentError)
+      -> { warn "", uplevel: -2 }.should.raise(ArgumentError)
+      -> { warn "", uplevel: -100 }.should.raise(ArgumentError)
     end
 
     it "raises ArgumentError if passed -1" do
-      -> { warn "", uplevel: -1 }.should raise_error(ArgumentError)
+      -> { warn "", uplevel: -1 }.should.raise(ArgumentError)
     end
 
     it "raises TypeError if passed not Integer" do
-      -> { warn "", uplevel: "" }.should raise_error(TypeError)
-      -> { warn "", uplevel: [] }.should raise_error(TypeError)
-      -> { warn "", uplevel: {} }.should raise_error(TypeError)
-      -> { warn "", uplevel: Object.new }.should raise_error(TypeError)
+      -> { warn "", uplevel: "" }.should.raise(TypeError)
+      -> { warn "", uplevel: [] }.should.raise(TypeError)
+      -> { warn "", uplevel: {} }.should.raise(TypeError)
+      -> { warn "", uplevel: Object.new }.should.raise(TypeError)
     end
   end
 

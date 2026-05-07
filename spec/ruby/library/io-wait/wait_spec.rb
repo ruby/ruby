@@ -56,12 +56,12 @@ describe "IO#wait" do
 
     it "raises IOError when io is closed (closed stream (IOError))" do
       @io.close
-      -> { @io.wait(IO::READABLE, 0) }.should raise_error(IOError, "closed stream")
+      -> { @io.wait(IO::READABLE, 0) }.should.raise(IOError, "closed stream")
     end
 
     it "raises ArgumentError when events is not positive" do
-      -> { @w.wait(0, 0) }.should raise_error(ArgumentError, "Events must be positive integer!")
-      -> { @w.wait(-1, 0) }.should raise_error(ArgumentError, "Events must be positive integer!")
+      -> { @w.wait(0, 0) }.should.raise(ArgumentError, "Events must be positive integer!")
+      -> { @w.wait(-1, 0) }.should.raise(ArgumentError, "Events must be positive integer!")
     end
 
     it "changes thread status to 'sleep' when waits for READABLE event" do
@@ -147,16 +147,16 @@ describe "IO#wait" do
     end
 
     it "raises ArgumentError when passed wrong Symbol value as mode argument" do
-      -> { @io.wait(0, :wrong) }.should raise_error(ArgumentError, "unsupported mode: wrong")
+      -> { @io.wait(0, :wrong) }.should.raise(ArgumentError, "unsupported mode: wrong")
     end
 
     it "raises ArgumentError when several Integer arguments passed" do
-      -> { @w.wait(0, 10, :r) }.should raise_error(ArgumentError, "timeout given more than once")
+      -> { @w.wait(0, 10, :r) }.should.raise(ArgumentError, "timeout given more than once")
     end
 
     it "raises IOError when io is closed (closed stream (IOError))" do
       @io.close
-      -> { @io.wait(0, :r) }.should raise_error(IOError, "closed stream")
+      -> { @io.wait(0, :r) }.should.raise(IOError, "closed stream")
     end
   end
 end

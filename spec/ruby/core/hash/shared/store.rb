@@ -57,7 +57,7 @@ describe :hash_store, shared: true do
     key = "foo".freeze
     h = {}
     h.send(@method, key, 0)
-    h.keys[0].should equal(key)
+    h.keys[0].should.equal?(key)
   end
 
   it "keeps the existing key in the hash if there is a matching one" do
@@ -66,28 +66,28 @@ describe :hash_store, shared: true do
     key2 = HashSpecs::ByValueKey.new(13)
     h[key1] = 41
     key_in_hash = h.keys.last
-    key_in_hash.should equal(key1)
+    key_in_hash.should.equal?(key1)
     h[key2] = 42
     last_key = h.keys.last
-    last_key.should equal(key_in_hash)
-    last_key.should_not equal(key2)
+    last_key.should.equal?(key_in_hash)
+    last_key.should_not.equal?(key2)
   end
 
   it "keeps the existing String key in the hash if there is a matching one" do
     h = { "a" => 1, "b" => 2, "c" => 3, "d" => 4 }
     key1 = "foo".dup
     key2 = "foo".dup
-    key1.should_not equal(key2)
+    key1.should_not.equal?(key2)
     h[key1] = 41
     frozen_key = h.keys.last
-    frozen_key.should_not equal(key1)
+    frozen_key.should_not.equal?(key1)
     h[key2] = 42
-    h.keys.last.should equal(frozen_key)
-    h.keys.last.should_not equal(key2)
+    h.keys.last.should.equal?(frozen_key)
+    h.keys.last.should_not.equal?(key2)
   end
 
   it "raises a FrozenError if called on a frozen instance" do
-    -> { HashSpecs.frozen_hash.send(@method, 1, 2) }.should raise_error(FrozenError)
+    -> { HashSpecs.frozen_hash.send(@method, 1, 2) }.should.raise(FrozenError)
   end
 
   it "does not raise an exception if changing the value of an existing key during iteration" do

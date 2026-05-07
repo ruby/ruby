@@ -26,9 +26,9 @@ describe :start_with, shared: true do
 
   it "ignores arguments not convertible to string" do
     "hello".send(@method).should_not.start_with?()
-    -> { "hello".send(@method).start_with?(1) }.should raise_error(TypeError)
-    -> { "hello".send(@method).start_with?(["h"]) }.should raise_error(TypeError)
-    -> { "hello".send(@method).start_with?(1, nil, "h") }.should raise_error(TypeError)
+    -> { "hello".send(@method).start_with?(1) }.should.raise(TypeError)
+    -> { "hello".send(@method).start_with?(["h"]) }.should.raise(TypeError)
+    -> { "hello".send(@method).start_with?(1, nil, "h") }.should.raise(TypeError)
   end
 
   it "uses only the needed arguments" do
@@ -60,14 +60,14 @@ describe :start_with, shared: true do
 
   it "sets Regexp.last_match if it returns true" do
     regexp = /test-(\d+)/
-    "test-1337".send(@method).start_with?(regexp).should be_true
-    Regexp.last_match.should_not be_nil
+    "test-1337".send(@method).start_with?(regexp).should == true
+    Regexp.last_match.should_not == nil
     Regexp.last_match[1].should == "1337"
     $1.should == "1337"
 
-    "test-asdf".send(@method).start_with?(regexp).should be_false
-    Regexp.last_match.should be_nil
-    $1.should be_nil
+    "test-asdf".send(@method).start_with?(regexp).should == false
+    Regexp.last_match.should == nil
+    $1.should == nil
   end
 
   it "checks that we are not matching part of a character" do

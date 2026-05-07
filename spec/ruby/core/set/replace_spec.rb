@@ -13,7 +13,7 @@ describe "Set#replace" do
   it "raises RuntimeError when called during iteration" do
     set = Set[:a, :b, :c, :d, :e, :f]
     set.each do |_m|
-      -> { set.replace(Set[1, 2, 3]) }.should raise_error(RuntimeError, /iteration/)
+      -> { set.replace(Set[1, 2, 3]) }.should.raise(RuntimeError, /iteration/)
     end
     set.should == Set[:a, :b, :c, :d, :e, :f]
   end

@@ -12,7 +12,7 @@ describe "File::Stat#ctime" do
 
   it "returns the ctime of a File::Stat object" do
     st = File.stat(@file)
-    st.ctime.should be_kind_of(Time)
+    st.ctime.should.is_a?(Time)
     st.ctime.should <= Time.now
   end
 end

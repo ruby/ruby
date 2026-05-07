@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 describe "Complex#marshal_dump" do
   it "is a private method" do
-    Complex.should have_private_instance_method(:marshal_dump, false)
+    Complex.private_instance_methods(false).should.include?(:marshal_dump)
   end
 
   it "dumps real and imaginary parts" do

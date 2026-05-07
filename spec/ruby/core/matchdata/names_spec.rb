@@ -3,12 +3,12 @@ require_relative '../../spec_helper'
 describe "MatchData#names" do
   it "returns an Array" do
     md = 'haystack'.match(/(?<yellow>hay)/)
-    md.names.should be_an_instance_of(Array)
+    md.names.should.instance_of?(Array)
   end
 
   it "sets each element to a String" do
     'haystack'.match(/(?<yellow>hay)/).names.all? do |e|
-      e.should be_an_instance_of(String)
+      e.should.instance_of?(String)
     end
   end
 

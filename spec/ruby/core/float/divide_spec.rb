@@ -16,25 +16,25 @@ describe "Float#/" do
   end
 
   it "returns +Infinity when dividing non-zero by zero of the same sign" do
-    (1.0 / 0.0).should be_positive_infinity
-    (-1.0 / -0.0).should be_positive_infinity
+    (1.0 / 0.0).should.infinite? == 1
+    (-1.0 / -0.0).should.infinite? == 1
   end
 
   it "returns -Infinity when dividing non-zero by zero of opposite sign" do
-    (-1.0 / 0.0).should be_negative_infinity
-    (1.0 / -0.0).should be_negative_infinity
+    (-1.0 / 0.0).should.infinite? == -1
+    (1.0 / -0.0).should.infinite? == -1
   end
 
   it "returns NaN when dividing zero by zero" do
-    (0.0 / 0.0).should be_nan
-    (-0.0 / 0.0).should be_nan
-    (0.0 / -0.0).should be_nan
-    (-0.0 / -0.0).should be_nan
+    (0.0 / 0.0).should.nan?
+    (-0.0 / 0.0).should.nan?
+    (0.0 / -0.0).should.nan?
+    (-0.0 / -0.0).should.nan?
   end
 
   it "raises a TypeError when given a non-Numeric" do
-    -> { 13.0 / "10"    }.should raise_error(TypeError)
-    -> { 13.0 / :symbol }.should raise_error(TypeError)
+    -> { 13.0 / "10"    }.should.raise(TypeError)
+    -> { 13.0 / :symbol }.should.raise(TypeError)
   end
 
   it "divides correctly by Rational numbers" do

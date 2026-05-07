@@ -14,24 +14,24 @@ describe :file_world_readable, shared: true do
   platform_is_not :windows do
     it "returns nil if the file is chmod 600" do
       File.chmod(0600, @file)
-      @object.world_readable?(@file).should be_nil
+      @object.world_readable?(@file).should == nil
     end
 
     it "returns nil if the file is chmod 000" do
       File.chmod(0000, @file)
-      @object.world_readable?(@file).should be_nil
+      @object.world_readable?(@file).should == nil
     end
 
     it "returns nil if the file is chmod 700" do
       File.chmod(0700, @file)
-      @object.world_readable?(@file).should be_nil
+      @object.world_readable?(@file).should == nil
     end
   end
 
   # We don't specify what the Integer is because it's system dependent
   it "returns an Integer if the file is chmod 644" do
     File.chmod(0644, @file)
-    @object.world_readable?(@file).should be_an_instance_of(Integer)
+    @object.world_readable?(@file).should.instance_of?(Integer)
   end
 
   it "returns an Integer if the file is a directory and chmod 644" do
@@ -39,7 +39,7 @@ describe :file_world_readable, shared: true do
     Dir.mkdir(dir)
     Dir.should.exist?(dir)
     File.chmod(0644, dir)
-    @object.world_readable?(dir).should be_an_instance_of(Integer)
+    @object.world_readable?(dir).should.instance_of?(Integer)
     Dir.rmdir(dir)
   end
 

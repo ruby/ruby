@@ -29,11 +29,11 @@ describe "IO#readline" do
 
   it "raises EOFError on end of stream" do
     IOSpecs.lines.length.times { @io.readline }
-    -> { @io.readline }.should raise_error(EOFError)
+    -> { @io.readline }.should.raise(EOFError)
   end
 
   it "raises IOError on closed stream" do
-    -> { IOSpecs.closed_io.readline }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.readline }.should.raise(IOError)
   end
 
   it "assigns the returned line to $_" do
@@ -53,7 +53,7 @@ describe "IO#readline" do
     end
 
     it "does not accept Integers that don't fit in a C off_t" do
-      -> { @io.readline(2**128) }.should raise_error(RangeError)
+      -> { @io.readline(2**128) }.should.raise(RangeError)
     end
   end
 
@@ -74,11 +74,11 @@ describe "IO#readline" do
     end
 
     it "raises exception when options passed as Hash" do
-      -> { @io.readline({ chomp: true }) }.should raise_error(TypeError)
+      -> { @io.readline({ chomp: true }) }.should.raise(TypeError)
 
       -> {
         @io.readline("\n", 1, { chomp: true })
-      }.should raise_error(ArgumentError, "wrong number of arguments (given 3, expected 0..2)")
+      }.should.raise(ArgumentError, "wrong number of arguments (given 3, expected 0..2)")
     end
   end
 end

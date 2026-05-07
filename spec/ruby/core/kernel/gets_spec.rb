@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "Kernel#gets" do
   it "is a private method" do
-    Kernel.should have_private_instance_method(:gets)
+    Kernel.private_instance_methods(false).should.include?(:gets)
   end
 
   it "calls ARGF.gets" do

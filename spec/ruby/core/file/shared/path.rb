@@ -12,7 +12,7 @@ describe :file_path, shared: true do
 
   it "returns a String" do
     @file = File.new @path
-    @file.send(@method).should be_an_instance_of(String)
+    @file.send(@method).should.instance_of?(String)
   end
 
   it "returns a different String on every call" do

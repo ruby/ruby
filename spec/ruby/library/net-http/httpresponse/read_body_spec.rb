@@ -17,7 +17,7 @@ describe "Net::HTTPResponse#read_body" do
 
     it "returns the previously read body if called a second time" do
       @res.reading_body(@socket, true) do
-        @res.read_body.should equal(@res.read_body)
+        @res.read_body.should.equal?(@res.read_body)
       end
     end
   end
@@ -34,14 +34,14 @@ describe "Net::HTTPResponse#read_body" do
     it "returns the passed buffer" do
       @res.reading_body(@socket, true) do
         buffer = +""
-        @res.read_body(buffer).should equal(buffer)
+        @res.read_body(buffer).should.equal?(buffer)
       end
     end
 
     it "raises an IOError if called a second time" do
       @res.reading_body(@socket, true) do
         @res.read_body(+"")
-        -> { @res.read_body(+"") }.should raise_error(IOError)
+        -> { @res.read_body(+"") }.should.raise(IOError)
       end
     end
   end
@@ -57,21 +57,21 @@ describe "Net::HTTPResponse#read_body" do
           buffer << body
         end
 
-        yielded.should be_true
+        yielded.should == true
         buffer.should == "test body"
       end
     end
 
     it "returns the ReadAdapter" do
       @res.reading_body(@socket, true) do
-        @res.read_body { nil }.should be_kind_of(Net::ReadAdapter)
+        @res.read_body { nil }.should.is_a?(Net::ReadAdapter)
       end
     end
 
     it "raises an IOError if called a second time" do
       @res.reading_body(@socket, true) do
         @res.read_body {}
-        -> { @res.read_body {} }.should raise_error(IOError)
+        -> { @res.read_body {} }.should.raise(IOError)
       end
     end
   end
@@ -79,7 +79,7 @@ describe "Net::HTTPResponse#read_body" do
   describe "when passed buffer and block" do
     it "raises an ArgumentError" do
       @res.reading_body(@socket, true) do
-        -> { @res.read_body(+"") {} }.should raise_error(ArgumentError)
+        -> { @res.read_body(+"") {} }.should.raise(ArgumentError)
       end
     end
   end

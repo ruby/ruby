@@ -12,7 +12,7 @@ describe "Thread#backtrace" do
     Thread.pass while t.status && t.status != 'sleep'
 
     backtrace = t.backtrace
-    backtrace.should be_kind_of(Array)
+    backtrace.should.is_a?(Array)
     backtrace.first.should =~ /[`'](?:Kernel#)?sleep'/
 
     t.raise 'finish the thread'
@@ -30,7 +30,7 @@ describe "Thread#backtrace" do
     backtrace = t.backtrace
     t.kill
     t.join
-    backtrace.should be_kind_of(Array)
+    backtrace.should.is_a?(Array)
   end
 
   it "can be called with a number of locations to omit" do

@@ -19,7 +19,7 @@ describe "Enumerator::Yielder#<<" do
 
   it "returns self" do
     y = Enumerator::Yielder.new {|x| x + 1}
-    (y << 1).should equal(y)
+    (y << 1).should.equal?(y)
   end
 
   context "when multiple arguments passed" do
@@ -29,7 +29,7 @@ describe "Enumerator::Yielder#<<" do
 
       -> {
         y.<<(1, 2)
-      }.should raise_error(ArgumentError, /wrong number of arguments/)
+      }.should.raise(ArgumentError, /wrong number of arguments/)
     end
   end
 end

@@ -9,16 +9,17 @@ describe "Module#undefined_instance_methods" do
 
   it "returns inherited methods undefined in the class" do
     methods = ModuleSpecs::UndefinedInstanceMethods::Child.undefined_instance_methods
-    methods.should include(:parent_method, :another_parent_method)
+    methods.to_set.should >= Set[:parent_method, :another_parent_method]
   end
 
   it "returns methods from an included module that are undefined in the class" do
     methods = ModuleSpecs::UndefinedInstanceMethods::Grandchild.undefined_instance_methods
-    methods.should include(:super_included_method)
+    methods.should.include?(:super_included_method)
   end
 
   it "does not returns ancestors undefined methods" do
     methods = ModuleSpecs::UndefinedInstanceMethods::Grandchild.undefined_instance_methods
-    methods.should_not include(:parent_method, :another_parent_method)
+    methods.should_not.include?(:parent_method)
+    methods.should_not.include?(:another_parent_method)
   end
 end

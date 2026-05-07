@@ -15,7 +15,7 @@ describe "UNIXSocket#addr" do
   end
 
   it "returns an array" do
-    @client.addr.should be_kind_of(Array)
+    @client.addr.should.is_a?(Array)
   end
 
   it "returns the address family of this socket in an array" do

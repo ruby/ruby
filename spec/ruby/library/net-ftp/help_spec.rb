@@ -38,32 +38,32 @@ ruby_version_is ""..."4.1" do
 
     it "does not raise any error when the response code is 211" do
       @server.should_receive(:help).and_respond("211 System status, or system help reply.")
-      -> { @ftp.help }.should_not raise_error
+      -> { @ftp.help }.should_not.raise
     end
 
     it "does not raise any error when the response code is 214" do
       @server.should_receive(:help).and_respond("214 Help message.")
-      -> { @ftp.help }.should_not raise_error
+      -> { @ftp.help }.should_not.raise
     end
 
     it "raises a Net::FTPPermError when the response code is 500" do
       @server.should_receive(:help).and_respond("500 Syntax error, command unrecognized.")
-      -> { @ftp.help }.should raise_error(Net::FTPPermError)
+      -> { @ftp.help }.should.raise(Net::FTPPermError)
     end
 
     it "raises a Net::FTPPermError when the response code is 501" do
       @server.should_receive(:help).and_respond("501 Syntax error in parameters or arguments.")
-      -> { @ftp.help }.should raise_error(Net::FTPPermError)
+      -> { @ftp.help }.should.raise(Net::FTPPermError)
     end
 
     it "raises a Net::FTPPermError when the response code is 502" do
       @server.should_receive(:help).and_respond("502 Command not implemented.")
-      -> { @ftp.help }.should raise_error(Net::FTPPermError)
+      -> { @ftp.help }.should.raise(Net::FTPPermError)
     end
 
     it "raises a Net::FTPTempError when the response code is 421" do
       @server.should_receive(:help).and_respond("421 Service not available, closing control connection.")
-      -> { @ftp.help }.should raise_error(Net::FTPTempError)
+      -> { @ftp.help }.should.raise(Net::FTPTempError)
     end
   end
 end

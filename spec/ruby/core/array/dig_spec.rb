@@ -4,7 +4,7 @@ describe "Array#dig" do
 
   it "returns #at with one arg" do
     ['a'].dig(0).should == 'a'
-    ['a'].dig(1).should be_nil
+    ['a'].dig(1).should == nil
   end
 
   it "recurses array elements" do
@@ -22,20 +22,20 @@ describe "Array#dig" do
   it "raises a TypeError for a non-numeric index" do
     -> {
       ['a'].dig(:first)
-    }.should raise_error(TypeError)
+    }.should.raise(TypeError)
   end
 
   it "raises a TypeError if any intermediate step does not respond to #dig" do
     a = [1, 2]
     -> {
       a.dig(0, 1)
-    }.should raise_error(TypeError)
+    }.should.raise(TypeError)
   end
 
   it "raises an ArgumentError if no arguments provided" do
     -> {
       [10].dig()
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "returns nil if any intermediate step is nil" do

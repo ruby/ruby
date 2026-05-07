@@ -7,11 +7,11 @@ platform_is_not :windows do
     platform_is_not :windows do
 
       before :each do
-        Syslog.opened?.should be_false
+        Syslog.opened?.should == false
       end
 
       after :each do
-        Syslog.opened?.should be_false
+        Syslog.opened?.should == false
       end
 
       it "returns the logging facility" do
@@ -21,7 +21,7 @@ platform_is_not :windows do
       end
 
       it "returns nil if the log is closed" do
-        Syslog.opened?.should be_false
+        Syslog.opened?.should == false
         Syslog.facility.should == nil
       end
 

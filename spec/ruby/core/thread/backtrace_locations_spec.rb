@@ -3,20 +3,20 @@ require_relative '../../spec_helper'
 describe "Thread#backtrace_locations" do
   it "returns an Array" do
     locations = Thread.current.backtrace_locations
-    locations.should be_an_instance_of(Array)
-    locations.should_not be_empty
+    locations.should.instance_of?(Array)
+    locations.should_not.empty?
   end
 
   it "sets each element to a Thread::Backtrace::Location" do
     locations = Thread.current.backtrace_locations
-    locations.each { |loc| loc.should be_an_instance_of(Thread::Backtrace::Location) }
+    locations.each { |loc| loc.should.instance_of?(Thread::Backtrace::Location) }
   end
 
   it "can be called on any Thread" do
     locations = Thread.new { Thread.current.backtrace_locations }.value
-    locations.should be_an_instance_of(Array)
-    locations.should_not be_empty
-    locations.each { |loc| loc.should be_an_instance_of(Thread::Backtrace::Location) }
+    locations.should.instance_of?(Array)
+    locations.should_not.empty?
+    locations.each { |loc| loc.should.instance_of?(Thread::Backtrace::Location) }
   end
 
   it "can be called with a number of locations to omit" do

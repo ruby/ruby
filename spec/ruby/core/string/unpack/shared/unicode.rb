@@ -53,7 +53,7 @@ describe :string_unpack_unicode, shared: true do
   it "raise ArgumentError for NULL bytes between directives" do
     -> {
       "\x01\x02".unpack("U\x00U")
-    }.should raise_error(ArgumentError, /unknown unpack directive/)
+    }.should.raise(ArgumentError, /unknown unpack directive/)
   end
 
   it "ignores spaces between directives" do

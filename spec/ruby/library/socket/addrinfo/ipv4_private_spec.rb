@@ -19,7 +19,7 @@ describe "Addrinfo#ipv4_private?" do
     end
 
     it "returns false for a public address" do
-      @other.ipv4_private?.should be_false
+      @other.ipv4_private?.should == false
     end
   end
 
@@ -29,7 +29,7 @@ describe "Addrinfo#ipv4_private?" do
     end
 
     it "returns false" do
-      @other.ipv4_private?.should be_false
+      @other.ipv4_private?.should == false
     end
   end
 
@@ -39,7 +39,7 @@ describe "Addrinfo#ipv4_private?" do
     end
 
     it "returns false" do
-      @addrinfo.ipv4_private?.should be_false
+      @addrinfo.ipv4_private?.should == false
     end
   end
 end

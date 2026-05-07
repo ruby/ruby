@@ -3,7 +3,7 @@ require 'date'
 
 describe "Date.today" do
   it "returns a Date object" do
-    Date.today.should be_kind_of Date
+    Date.today.should.is_a? Date
   end
 
   it "sets Date object to the current date" do

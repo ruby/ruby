@@ -27,7 +27,7 @@ describe "Addrinfo#ip_port" do
     end
 
     it "raises an exception" do
-      -> { @addrinfo.ip_port }.should raise_error(SocketError)
+      -> { @addrinfo.ip_port }.should.raise(SocketError)
     end
   end
 end

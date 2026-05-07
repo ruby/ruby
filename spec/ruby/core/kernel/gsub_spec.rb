@@ -6,20 +6,20 @@ require_relative 'fixtures/classes'
 ruby_version_is ""..."1.9" do
   describe "Kernel#gsub" do
     it "is a private method" do
-      Kernel.should have_private_instance_method(:gsub)
+      Kernel.private_instance_methods(false).should.include?(:gsub)
     end
 
     it "raises a TypeError if $_ is not a String" do
       -> {
         $_ = 123
         gsub(/./, "!")
-      }.should raise_error(TypeError)
+      }.should.raise(TypeError)
     end
 
     it "when matches sets $_ to a new string, leaving the former value unaltered" do
       orig_value = $_ = "hello"
       gsub("ello", "ola")
-      $_.should_not equal(orig_value)
+      $_.should_not.equal?(orig_value)
       $_.should == "hola"
       orig_value.should == "hello"
     end
@@ -86,7 +86,7 @@ ruby_version_is ""..."1.9" do
 
   describe "Kernel#gsub!" do
     it "is a private method" do
-      Kernel.should have_private_instance_method(:gsub!)
+      Kernel.private_instance_methods(false).should.include?(:gsub!)
     end
   end
 

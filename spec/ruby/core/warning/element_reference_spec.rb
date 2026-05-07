@@ -16,12 +16,12 @@ describe "Warning.[]" do
   end
 
   it "raises for unknown category" do
-    -> { Warning[:noop] }.should raise_error(ArgumentError, /unknown category: noop/)
+    -> { Warning[:noop] }.should.raise(ArgumentError, /unknown category: noop/)
   end
 
   it "raises for non-Symbol category" do
-    -> { Warning[42] }.should raise_error(TypeError)
-    -> { Warning[false] }.should raise_error(TypeError)
-    -> { Warning["noop"] }.should raise_error(TypeError)
+    -> { Warning[42] }.should.raise(TypeError)
+    -> { Warning[false] }.should.raise(TypeError)
+    -> { Warning["noop"] }.should.raise(TypeError)
   end
 end

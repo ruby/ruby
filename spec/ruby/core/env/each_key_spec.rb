@@ -10,9 +10,9 @@ describe "ENV.each_key" do
       ENV.clear
       ENV["1"] = "3"
       ENV["2"] = "4"
-      ENV.each_key { |k| e << k }.should equal(ENV)
-      e.should include("1")
-      e.should include("2")
+      ENV.each_key { |k| e << k }.should.equal?(ENV)
+      e.should.include?("1")
+      e.should.include?("2")
     ensure
       ENV.replace orig
     end
@@ -20,7 +20,7 @@ describe "ENV.each_key" do
 
   it "returns an Enumerator if called without a block" do
     enum = ENV.each_key
-    enum.should be_an_instance_of(Enumerator)
+    enum.should.instance_of?(Enumerator)
     enum.to_a.should == ENV.keys
   end
 

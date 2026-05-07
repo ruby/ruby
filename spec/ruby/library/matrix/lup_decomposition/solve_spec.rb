@@ -8,7 +8,7 @@ describe "Matrix::LUPDecomposition#solve" do
       lu = Matrix::LUPDecomposition.new(a)
       -> {
         lu.solve(a)
-      }.should raise_error(Matrix::ErrNotRegular)
+      }.should.raise(Matrix::ErrNotRegular)
     end
 
     describe "for non singular matrices" do
@@ -33,7 +33,7 @@ describe "Matrix::LUPDecomposition#solve" do
         values = Matrix[[1, 2, 3, 4], [0, 1, 2, 3]]
         -> {
           @lu.solve(values)
-        }.should raise_error(Matrix::ErrDimensionMismatch)
+        }.should.raise(Matrix::ErrDimensionMismatch)
       end
 
       it "returns the right vector when given a vector of the appropriate size" do
@@ -46,7 +46,7 @@ describe "Matrix::LUPDecomposition#solve" do
         values = Vector[14, 55]
         -> {
           @lu.solve(values)
-        }.should raise_error(Matrix::ErrDimensionMismatch)
+        }.should.raise(Matrix::ErrDimensionMismatch)
       end
     end
   end

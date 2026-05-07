@@ -7,7 +7,7 @@ describe "Binding#eval" do
     bind = obj.get_binding
 
     bind.eval("@secret += square(3)").should == 10
-    bind.eval("a").should be_true
+    bind.eval("a").should == true
 
     bind.eval("class Inside; end")
     bind.eval("Inside.name").should == "BindingSpecs::Demo::Inside"

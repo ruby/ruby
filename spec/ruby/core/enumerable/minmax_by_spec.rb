@@ -4,7 +4,7 @@ require_relative 'shared/enumerable_enumeratorized'
 
 describe "Enumerable#minmax_by" do
   it "returns an enumerator if no block" do
-    EnumerableSpecs::Numerous.new(42).minmax_by.should be_an_instance_of(Enumerator)
+    EnumerableSpecs::Numerous.new(42).minmax_by.should.instance_of?(Enumerator)
   end
 
   it "returns nil if #each yields no objects" do
@@ -19,8 +19,8 @@ describe "Enumerable#minmax_by" do
   it "returns the object that appears first in #each in case of a tie" do
     a, b, c, d = '1', '1', '2', '2'
     mm = EnumerableSpecs::Numerous.new(a, b, c, d).minmax_by {|obj| obj.to_i }
-    mm[0].should equal(a)
-    mm[1].should equal(c)
+    mm[0].should.equal?(a)
+    mm[1].should.equal?(c)
   end
 
   it "uses min/max.<=>(current) to determine order" do

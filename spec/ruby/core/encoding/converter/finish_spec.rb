@@ -7,7 +7,7 @@ describe "Encoding::Converter#finish" do
 
   it "returns a String" do
     @ec.convert('foo')
-    @ec.finish.should be_an_instance_of(String)
+    @ec.finish.should.instance_of?(String)
   end
 
   it "returns an empty String if there is nothing more to convert" do

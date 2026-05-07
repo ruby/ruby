@@ -75,83 +75,83 @@ describe "Regexp.union" do
   it "raises ArgumentError if the arguments include conflicting ASCII-incompatible Strings" do
     -> {
       Regexp.union("a".encode("UTF-16LE"), "b".encode("UTF-16BE"))
-    }.should raise_error(ArgumentError, 'incompatible encodings: UTF-16LE and UTF-16BE')
+    }.should.raise(ArgumentError, 'incompatible encodings: UTF-16LE and UTF-16BE')
   end
 
   it "raises ArgumentError if the arguments include conflicting ASCII-incompatible Regexps" do
     -> {
       Regexp.union(Regexp.new("a".encode("UTF-16LE")),
                    Regexp.new("b".encode("UTF-16BE")))
-    }.should raise_error(ArgumentError, 'incompatible encodings: UTF-16LE and UTF-16BE')
+    }.should.raise(ArgumentError, 'incompatible encodings: UTF-16LE and UTF-16BE')
   end
 
   it "raises ArgumentError if the arguments include conflicting fixed encoding Regexps" do
     -> {
       Regexp.union(Regexp.new("a".encode("UTF-8"),    Regexp::FIXEDENCODING),
                    Regexp.new("b".encode("US-ASCII"), Regexp::FIXEDENCODING))
-    }.should raise_error(ArgumentError, 'incompatible encodings: UTF-8 and US-ASCII')
+    }.should.raise(ArgumentError, 'incompatible encodings: UTF-8 and US-ASCII')
   end
 
   it "raises ArgumentError if the arguments include a fixed encoding Regexp and a String containing non-ASCII-compatible characters in a different encoding" do
     -> {
       Regexp.union(Regexp.new("a".encode("UTF-8"), Regexp::FIXEDENCODING),
                    "\u00A9".encode("ISO-8859-1"))
-    }.should raise_error(ArgumentError, 'incompatible encodings: UTF-8 and ISO-8859-1')
+    }.should.raise(ArgumentError, 'incompatible encodings: UTF-8 and ISO-8859-1')
   end
 
   it "raises ArgumentError if the arguments include a String containing non-ASCII-compatible characters and a fixed encoding Regexp in a different encoding" do
     -> {
       Regexp.union("\u00A9".encode("ISO-8859-1"),
                    Regexp.new("a".encode("UTF-8"), Regexp::FIXEDENCODING))
-    }.should raise_error(ArgumentError, 'incompatible encodings: ISO-8859-1 and UTF-8')
+    }.should.raise(ArgumentError, 'incompatible encodings: ISO-8859-1 and UTF-8')
   end
 
   it "raises ArgumentError if the arguments include an ASCII-incompatible String and an ASCII-only String" do
     -> {
       Regexp.union("a".encode("UTF-16LE"), "b".encode("UTF-8"))
-    }.should raise_error(ArgumentError, /ASCII incompatible encoding: UTF-16LE|incompatible encodings: UTF-16LE and US-ASCII/)
+    }.should.raise(ArgumentError, /ASCII incompatible encoding: UTF-16LE|incompatible encodings: UTF-16LE and US-ASCII/)
   end
 
   it "raises ArgumentError if the arguments include an ASCII-incompatible Regexp and an ASCII-only String" do
     -> {
       Regexp.union(Regexp.new("a".encode("UTF-16LE")), "b".encode("UTF-8"))
-    }.should raise_error(ArgumentError, /ASCII incompatible encoding: UTF-16LE|incompatible encodings: UTF-16LE and US-ASCII/)
+    }.should.raise(ArgumentError, /ASCII incompatible encoding: UTF-16LE|incompatible encodings: UTF-16LE and US-ASCII/)
   end
 
   it "raises ArgumentError if the arguments include an ASCII-incompatible String and an ASCII-only Regexp" do
     -> {
       Regexp.union("a".encode("UTF-16LE"), Regexp.new("b".encode("UTF-8")))
-    }.should raise_error(ArgumentError, /ASCII incompatible encoding: UTF-16LE|incompatible encodings: UTF-16LE and US-ASCII/)
+    }.should.raise(ArgumentError, /ASCII incompatible encoding: UTF-16LE|incompatible encodings: UTF-16LE and US-ASCII/)
   end
 
   it "raises ArgumentError if the arguments include an ASCII-incompatible Regexp and an ASCII-only Regexp" do
     -> {
       Regexp.union(Regexp.new("a".encode("UTF-16LE")), Regexp.new("b".encode("UTF-8")))
-    }.should raise_error(ArgumentError, /ASCII incompatible encoding: UTF-16LE|incompatible encodings: UTF-16LE and US-ASCII/)
+    }.should.raise(ArgumentError, /ASCII incompatible encoding: UTF-16LE|incompatible encodings: UTF-16LE and US-ASCII/)
   end
 
   it "raises ArgumentError if the arguments include an ASCII-incompatible String and a String containing non-ASCII-compatible characters in a different encoding" do
     -> {
       Regexp.union("a".encode("UTF-16LE"), "\u00A9".encode("ISO-8859-1"))
-    }.should raise_error(ArgumentError, 'incompatible encodings: UTF-16LE and ISO-8859-1')
+    }.should.raise(ArgumentError, 'incompatible encodings: UTF-16LE and ISO-8859-1')
   end
 
   it "raises ArgumentError if the arguments include an ASCII-incompatible Regexp and a String containing non-ASCII-compatible characters in a different encoding" do
     -> {
       Regexp.union(Regexp.new("a".encode("UTF-16LE")), "\u00A9".encode("ISO-8859-1"))
-    }.should raise_error(ArgumentError, 'incompatible encodings: UTF-16LE and ISO-8859-1')
+    }.should.raise(ArgumentError, 'incompatible encodings: UTF-16LE and ISO-8859-1')
   end
 
   it "raises ArgumentError if the arguments include an ASCII-incompatible String and a Regexp containing non-ASCII-compatible characters in a different encoding" do
     -> {
       Regexp.union("a".encode("UTF-16LE"), Regexp.new("\u00A9".encode("ISO-8859-1")))
-    }.should raise_error(ArgumentError, 'incompatible encodings: UTF-16LE and ISO-8859-1')
+    }.should.raise(ArgumentError, 'incompatible encodings: UTF-16LE and ISO-8859-1')
   end
 
   it "raises ArgumentError if the arguments include an ASCII-incompatible Regexp and a Regexp containing non-ASCII-compatible characters in a different encoding" do
     -> {
       Regexp.union(Regexp.new("a".encode("UTF-16LE")), Regexp.new("\u00A9".encode("ISO-8859-1")))
-    }.should raise_error(ArgumentError, 'incompatible encodings: UTF-16LE and ISO-8859-1')
+    }.should.raise(ArgumentError, 'incompatible encodings: UTF-16LE and ISO-8859-1')
   end
 
   it "uses to_str to convert arguments (if not Regexp)" do
@@ -177,6 +177,6 @@ describe "Regexp.union" do
     end
     -> {
       Regexp.union(["skiing", "sledding"], [/dogs/, /cats/i])
-    }.should raise_error(TypeError, 'no implicit conversion of Array into String')
+    }.should.raise(TypeError, 'no implicit conversion of Array into String')
   end
 end

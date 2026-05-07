@@ -62,7 +62,7 @@ HERE
   it 'raises SyntaxError if quoted HEREDOC identifier is ending not on same line' do
     -> {
       eval %{<<"HERE\n"\nraises syntax error\nHERE}
-    }.should raise_error(SyntaxError)
+    }.should.raise(SyntaxError)
   end
 
   it "allows HEREDOC with <<~'identifier', allowing to indent identifier and content" do
@@ -114,6 +114,6 @@ HERE
         b
         #{c}
       HERE
-    }.should raise_error(NameError) { |e| e.backtrace[0].should.start_with?("#{__FILE__}:#{__LINE__ - 2}") }
+    }.should.raise(NameError) { |e| e.backtrace[0].should.start_with?("#{__FILE__}:#{__LINE__ - 2}") }
   end
 end

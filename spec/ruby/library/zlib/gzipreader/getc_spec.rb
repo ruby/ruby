@@ -33,7 +33,7 @@ describe "Zlib::GzipReader#getc" do
     gz = Zlib::GzipReader.new @io
     gz.read
     pos = gz.pos
-    gz.getc.should be_nil
+    gz.getc.should == nil
     gz.pos.should == pos
   end
 end

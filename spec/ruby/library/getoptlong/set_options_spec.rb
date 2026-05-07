@@ -41,7 +41,7 @@ describe "GetoptLong#set_options" do
     argv [] do
       -> {
         @opts.set_options(["--size", GetoptLong::NO_ARGUMENT, GetoptLong::REQUIRED_ARGUMENT])
-      }.should raise_error(ArgumentError)
+      }.should.raise(ArgumentError)
     end
   end
 
@@ -50,7 +50,7 @@ describe "GetoptLong#set_options" do
       @opts.get
       -> {
         @opts.set_options()
-      }.should raise_error(RuntimeError)
+      }.should.raise(RuntimeError)
     end
   end
 
@@ -58,7 +58,7 @@ describe "GetoptLong#set_options" do
     argv [] do
       -> {
         @opts.set_options(["--size"])
-      }.should raise_error(ArgumentError)
+      }.should.raise(ArgumentError)
     end
   end
 
@@ -68,7 +68,7 @@ describe "GetoptLong#set_options" do
         @opts.set_options(
           ["--size", GetoptLong::REQUIRED_ARGUMENT],
           "test")
-      }.should raise_error(ArgumentError)
+      }.should.raise(ArgumentError)
     end
   end
 
@@ -78,13 +78,13 @@ describe "GetoptLong#set_options" do
         @opts.set_options(
           ["--size", GetoptLong::NO_ARGUMENT],
           ["--size", GetoptLong::OPTIONAL_ARGUMENT])
-      }.should raise_error(ArgumentError)
+      }.should.raise(ArgumentError)
 
       -> {
         @opts.set_options(
           ["--size", GetoptLong::NO_ARGUMENT],
           ["-s", "--size", GetoptLong::OPTIONAL_ARGUMENT])
-      }.should raise_error(ArgumentError)
+      }.should.raise(ArgumentError)
     end
   end
 
@@ -92,7 +92,7 @@ describe "GetoptLong#set_options" do
     argv [] do
       -> {
         @opts.set_options(["-size", GetoptLong::NO_ARGUMENT])
-      }.should raise_error(ArgumentError)
+      }.should.raise(ArgumentError)
     end
   end
 end

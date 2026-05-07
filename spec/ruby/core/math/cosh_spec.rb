@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "Math.cosh" do
   it "returns a float" do
-    Math.cosh(1.0).should be_kind_of(Float)
+    Math.cosh(1.0).should.is_a?(Float)
   end
 
   it "returns the hyperbolic cosine of the argument" do
@@ -14,15 +14,15 @@ describe "Math.cosh" do
   end
 
   it "raises a TypeError if the argument cannot be coerced with Float()" do
-    -> { Math.cosh("test") }.should raise_error(TypeError)
+    -> { Math.cosh("test") }.should.raise(TypeError)
   end
 
   it "returns NaN given NaN" do
-    Math.cosh(nan_value).nan?.should be_true
+    Math.cosh(nan_value).nan?.should == true
   end
 
   it "raises a TypeError if the argument is nil" do
-    -> { Math.cosh(nil) }.should raise_error(TypeError)
+    -> { Math.cosh(nil) }.should.raise(TypeError)
   end
 
   it "accepts any argument that can be coerced with Float()" do

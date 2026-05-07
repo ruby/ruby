@@ -7,7 +7,7 @@ describe "BasicSocket#getsockopt" do
   end
 
   after :each do
-    @sock.closed?.should be_false
+    @sock.closed?.should == false
     @sock.close
   end
 
@@ -41,13 +41,13 @@ describe "BasicSocket#getsockopt" do
   end
 
   it "raises a SystemCallError with an invalid socket option" do
-    -> { @sock.getsockopt Socket::SOL_SOCKET, -1 }.should raise_error(Errno::ENOPROTOOPT)
+    -> { @sock.getsockopt Socket::SOL_SOCKET, -1 }.should.raise(Errno::ENOPROTOOPT)
   end
 
   it 'returns a Socket::Option using a constant' do
     opt = @sock.getsockopt(Socket::SOL_SOCKET, Socket::SO_TYPE)
 
-    opt.should be_an_instance_of(Socket::Option)
+    opt.should.instance_of?(Socket::Option)
   end
 
   it 'returns a Socket::Option for a boolean option' do
@@ -59,7 +59,7 @@ describe "BasicSocket#getsockopt" do
   it 'returns a Socket::Option for a numeric option' do
     opt = @sock.getsockopt(Socket::IPPROTO_IP, Socket::IP_TTL)
 
-    opt.int.should be_kind_of(Integer)
+    opt.int.should.is_a?(Integer)
   end
 
   it 'returns a Socket::Option for a struct option' do
@@ -69,7 +69,7 @@ describe "BasicSocket#getsockopt" do
   end
 
   it 'raises Errno::ENOPROTOOPT when requesting an invalid option' do
-    -> { @sock.getsockopt(Socket::SOL_SOCKET, -1) }.should raise_error(Errno::ENOPROTOOPT)
+    -> { @sock.getsockopt(Socket::SOL_SOCKET, -1) }.should.raise(Errno::ENOPROTOOPT)
   end
 
   describe 'using Symbols as arguments' do
@@ -171,7 +171,7 @@ describe "BasicSocket#getsockopt" do
       opt   = @sock.getsockopt(Socket::IPPROTO_IP, Socket::IP_TTL).to_s
       array = opt.unpack('i')
 
-      array[0].should be_kind_of(Integer)
+      array[0].should.is_a?(Integer)
       array[0].should > 0
     end
 

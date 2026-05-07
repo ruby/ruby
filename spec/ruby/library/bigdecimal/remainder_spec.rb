@@ -39,8 +39,8 @@ describe "BigDecimal#remainder" do
 
   version_is BigDecimal::VERSION, "3.3.0" do
     it "raises ZeroDivisionError used with zero" do
-      -> { @mixed.remainder(@zero) }.should raise_error(ZeroDivisionError)
-      -> { @zero.remainder(@zero) }.should raise_error(ZeroDivisionError)
+      -> { @mixed.remainder(@zero) }.should.raise(ZeroDivisionError)
+      -> { @zero.remainder(@zero) }.should.raise(ZeroDivisionError)
     end
   end
 
@@ -71,7 +71,7 @@ describe "BigDecimal#remainder" do
   it "raises TypeError if the argument cannot be coerced to BigDecimal" do
     -> {
       @one.remainder('2')
-    }.should raise_error(TypeError)
+    }.should.raise(TypeError)
   end
 
 end

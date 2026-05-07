@@ -9,6 +9,6 @@ describe "Range#include?" do
   it_behaves_like :range_include, :include?
 
   it "does not include U+9995 in the range U+0999..U+9999" do
-    ("\u{999}".."\u{9999}").include?("\u{9995}").should be_false
+    ("\u{999}".."\u{9999}").include?("\u{9995}").should == false
   end
 end

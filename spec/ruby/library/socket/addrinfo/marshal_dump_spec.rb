@@ -8,7 +8,7 @@ describe 'Addrinfo#marshal_dump' do
     end
 
     it 'returns an Array' do
-      @addr.marshal_dump.should be_an_instance_of(Array)
+      @addr.marshal_dump.should.instance_of?(Array)
     end
 
     describe 'the returned Array' do
@@ -48,7 +48,7 @@ describe 'Addrinfo#marshal_dump' do
     end
 
     it 'returns an Array' do
-      @addr.marshal_dump.should be_an_instance_of(Array)
+      @addr.marshal_dump.should.instance_of?(Array)
     end
 
     describe 'the returned Array' do

@@ -29,7 +29,7 @@ describe "Logger#unknown" do
   end
 
   it "receives empty messages" do
-    -> { @logger.unknown("") }.should_not raise_error
+    -> { @logger.unknown("") }.should_not.raise
     @log_file.rewind
     LoggerSpecs.strip_date(@log_file.readlines.first).should ==  "ANY -- : \n"
   end

@@ -23,7 +23,7 @@ describe "URI.join" do
   it "raises an error if given no argument" do
     -> {
       URI.join
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "doesn't create redundant '/'s" do

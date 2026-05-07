@@ -4,13 +4,13 @@ require 'pathname'
 describe "Pathname#birthtime" do
   platform_is :windows, :darwin, :freebsd, :netbsd do
     it "returns the birth time for self" do
-      Pathname.new(__FILE__).birthtime.should be_kind_of(Time)
+      Pathname.new(__FILE__).birthtime.should.is_a?(Time)
     end
   end
 
   platform_is :openbsd do
     it "raises an NotImplementedError" do
-      -> { Pathname.new(__FILE__).birthtime }.should raise_error(NotImplementedError)
+      -> { Pathname.new(__FILE__).birthtime }.should.raise(NotImplementedError)
     end
   end
 end

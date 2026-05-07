@@ -10,20 +10,20 @@ describe "ARGF.close" do
     argf [@file1_name, @file2_name] do
       io = @argf.to_io
       @argf.close
-      io.closed?.should be_true
+      io.closed?.should == true
     end
   end
 
   it "returns self" do
     argf [@file1_name, @file2_name] do
-      @argf.close.should equal(@argf)
+      @argf.close.should.equal?(@argf)
     end
   end
 
   it "doesn't raise an IOError if called on a closed stream" do
     argf [@file1_name] do
-      -> { @argf.close }.should_not raise_error
-      -> { @argf.close }.should_not raise_error
+      -> { @argf.close }.should_not.raise
+      -> { @argf.close }.should_not.raise
     end
   end
 end

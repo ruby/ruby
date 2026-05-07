@@ -55,9 +55,9 @@ describe "Keyword arguments" do
     end
 
     m(kw: 1).should == []
-    -> { m(kw: 1, kw2: 2) }.should raise_error(ArgumentError, 'unknown keyword: :kw2')
-    -> { m(kw: 1, true => false) }.should raise_error(ArgumentError, 'unknown keyword: true')
-    -> { m(kw: 1, a: 1, b: 2, c: 3) }.should raise_error(ArgumentError, 'unknown keywords: :a, :b, :c')
+    -> { m(kw: 1, kw2: 2) }.should.raise(ArgumentError, 'unknown keyword: :kw2')
+    -> { m(kw: 1, true => false) }.should.raise(ArgumentError, 'unknown keyword: true')
+    -> { m(kw: 1, a: 1, b: 2, c: 3) }.should.raise(ArgumentError, 'unknown keywords: :a, :b, :c')
   end
 
   it "raises ArgumentError exception when required keyword argument is not passed" do
@@ -65,8 +65,8 @@ describe "Keyword arguments" do
       [a, b, c]
     end
 
-    -> { m(a: 1, b: 2) }.should raise_error(ArgumentError, /missing keyword: :c/)
-    -> { m() }.should raise_error(ArgumentError, /missing keywords: :a, :b, :c/)
+    -> { m(a: 1, b: 2) }.should.raise(ArgumentError, /missing keyword: :c/)
+    -> { m() }.should.raise(ArgumentError, /missing keywords: :a, :b, :c/)
   end
 
   it "raises ArgumentError for missing keyword arguments even if there are extra ones" do
@@ -74,7 +74,7 @@ describe "Keyword arguments" do
       a
     end
 
-    -> { m(b: 1) }.should raise_error(ArgumentError, /missing keyword: :a/)
+    -> { m(b: 1) }.should.raise(ArgumentError, /missing keyword: :a/)
   end
 
   it "handle * and ** at the same call site" do
@@ -95,7 +95,7 @@ describe "Keyword arguments" do
       end
 
       h2 = bar(h)
-      h2.should equal(h)
+      h2.should.equal?(h)
       Hash.ruby2_keywords_hash?(h).should == true
     end
   end

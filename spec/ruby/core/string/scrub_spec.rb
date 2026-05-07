@@ -38,9 +38,9 @@ describe "String#scrub with a default replacement" do
   end
 
   it "returns String instances when called on a subclass" do
-    StringSpecs::MyString.new("foo").scrub.should be_an_instance_of(String)
+    StringSpecs::MyString.new("foo").scrub.should.instance_of?(String)
     input = [0x81].pack('C').force_encoding('utf-8')
-    StringSpecs::MyString.new(input).scrub.should be_an_instance_of(String)
+    StringSpecs::MyString.new(input).scrub.should.instance_of?(String)
   end
 end
 
@@ -75,7 +75,7 @@ describe "String#scrub with a custom replacement" do
     xE4 = [0xE4].pack('C').force_encoding('utf-8')
     block = -> { "foo#{x81}".scrub(xE4) }
 
-    block.should raise_error(ArgumentError)
+    block.should.raise(ArgumentError)
   end
 
   it "returns a String in the same encoding as self" do
@@ -87,13 +87,13 @@ describe "String#scrub with a custom replacement" do
     x81 = [0x81].pack('C').force_encoding('utf-8')
     block = -> { "foo#{x81}".scrub(1) }
 
-    block.should raise_error(TypeError)
+    block.should.raise(TypeError)
   end
 
   it "returns String instances when called on a subclass" do
-    StringSpecs::MyString.new("foo").scrub("*").should be_an_instance_of(String)
+    StringSpecs::MyString.new("foo").scrub("*").should.instance_of?(String)
     input = [0x81].pack('C').force_encoding('utf-8')
-    StringSpecs::MyString.new(input).scrub("*").should be_an_instance_of(String)
+    StringSpecs::MyString.new(input).scrub("*").should.instance_of?(String)
   end
 end
 
@@ -121,9 +121,9 @@ describe "String#scrub with a block" do
   end
 
   it "returns String instances when called on a subclass" do
-    StringSpecs::MyString.new("foo").scrub { |b| "*" }.should be_an_instance_of(String)
+    StringSpecs::MyString.new("foo").scrub { |b| "*" }.should.instance_of?(String)
     input = [0x81].pack('C').force_encoding('utf-8')
-    StringSpecs::MyString.new(input).scrub { |b| "<#{b.unpack("H*")[0]}>" }.should be_an_instance_of(String)
+    StringSpecs::MyString.new(input).scrub { |b| "<#{b.unpack("H*")[0]}>" }.should.instance_of?(String)
   end
 end
 
@@ -146,7 +146,7 @@ describe "String#scrub!" do
     input = "a"
     input.freeze
     input.scrub!
-    input.frozen?.should be_true
+    input.frozen?.should == true
   end
 
   it "preserves the instance variables of already valid strings" do

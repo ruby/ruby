@@ -23,25 +23,25 @@ describe "IO#close" do
 
   it "raises an IOError reading from a closed IO" do
     @io.close
-    -> { @io.read }.should raise_error(IOError)
+    -> { @io.read }.should.raise(IOError)
   end
 
   it "raises an IOError writing to a closed IO" do
     @io.close
-    -> { @io.write "data" }.should raise_error(IOError)
+    -> { @io.write "data" }.should.raise(IOError)
   end
 
   it 'does not close the stream if autoclose is false' do
     other_io = IO.new(@io.fileno)
     other_io.autoclose = false
     other_io.close
-    -> { @io.write "data" }.should_not raise_error(IOError)
+    -> { @io.write "data" }.should_not.raise(IOError)
   end
 
   it "does nothing if already closed" do
     @io.close
 
-    @io.close.should be_nil
+    @io.close.should == nil
   end
 
   it "does not call the #flush method but flushes the stream internally" do
@@ -80,7 +80,7 @@ describe "IO#close" do
 
         matching_exception&.tap {|ex| raise ex}
       end
-    end.should raise_error(IOError, IOSpecs::THREAD_CLOSE_ERROR_MESSAGE)
+    end.should.raise(IOError, IOSpecs::THREAD_CLOSE_ERROR_MESSAGE)
   end
 end
 
@@ -93,7 +93,7 @@ describe "IO#close on an IO.popen stream" do
 
     io.close
 
-    -> { io.pid }.should raise_error(IOError)
+    -> { io.pid }.should.raise(IOError)
   end
 
   it "sets $?" do

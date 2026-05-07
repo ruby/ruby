@@ -21,21 +21,21 @@ describe "Numeric#singleton_method_added" do
     -> do
       a = NumericSpecs::Subclass.new
       def a.test; end
-    end.should raise_error(TypeError)
+    end.should.raise(TypeError)
 
     -> do
       a = 1
       def a.test; end
-    end.should raise_error(TypeError)
+    end.should.raise(TypeError)
 
     -> do
       a = 1.5
       def a.test; end
-    end.should raise_error(TypeError)
+    end.should.raise(TypeError)
 
     -> do
       a = bignum_value
       def a.test; end
-    end.should raise_error(TypeError)
+    end.should.raise(TypeError)
   end
 end

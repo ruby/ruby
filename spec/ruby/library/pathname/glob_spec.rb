@@ -41,7 +41,7 @@ describe 'Pathname.glob' do
   it "raises an ArgumentError when supplied a keyword argument other than :base" do
     -> {
       Pathname.glob('*i*.rb', foo: @dir + 'lib')
-    }.should raise_error(ArgumentError, "unknown keyword: :foo")
+    }.should.raise(ArgumentError, "unknown keyword: :foo")
   end
 
   it "does not raise an ArgumentError when supplied a flag and :base keyword argument" do
@@ -81,7 +81,7 @@ describe 'Pathname#glob' do
 
   it 'yields matching file paths to block' do
     ary = []
-    Pathname.new(@dir).glob('lib/*i*.rb') { |p| ary << p }.should be_nil
+    Pathname.new(@dir).glob('lib/*i*.rb') { |p| ary << p }.should == nil
     ary.sort.should == [Pathname.new(@file_1), Pathname.new(@file_2)].sort
   end
 

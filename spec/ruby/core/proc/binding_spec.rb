@@ -3,7 +3,7 @@ require_relative '../../spec_helper'
 describe "Proc#binding" do
   it "returns a Binding instance" do
     [Proc.new{}, -> {}, proc {}].each { |p|
-      p.binding.should be_kind_of(Binding)
+      p.binding.should.is_a?(Binding)
     }
   end
 

@@ -21,6 +21,6 @@ describe "UNIXSocket#peeraddr" do
   it "raises an error in server sockets" do
     -> {
       @server.peeraddr
-    }.should raise_error(Errno::ENOTCONN)
+    }.should.raise(Errno::ENOTCONN)
   end
 end

@@ -130,12 +130,12 @@ describe :array_slice, shared: true do
     def from.to_int() 'cat' end
     def to.to_int() -2 end
 
-    -> { a.send(@method, from..to) }.should raise_error(TypeError)
+    -> { a.send(@method, from..to) }.should.raise(TypeError)
 
     def from.to_int() 1 end
     def to.to_int() 'cat' end
 
-    -> { a.send(@method, from..to) }.should raise_error(TypeError)
+    -> { a.send(@method, from..to) }.should.raise(TypeError)
   end
 
   it "returns the elements specified by Range indexes with [m..n]" do
@@ -287,10 +287,10 @@ describe :array_slice, shared: true do
     a.send(@method, 1..0).should == []
     a.send(@method, 1...0).should == []
 
-    -> { a.send(@method, "a" .. "b") }.should raise_error(TypeError)
-    -> { a.send(@method, "a" ... "b") }.should raise_error(TypeError)
-    -> { a.send(@method, from .. "b") }.should raise_error(TypeError)
-    -> { a.send(@method, from ... "b") }.should raise_error(TypeError)
+    -> { a.send(@method, "a" .. "b") }.should.raise(TypeError)
+    -> { a.send(@method, "a" ... "b") }.should.raise(TypeError)
+    -> { a.send(@method, from .. "b") }.should.raise(TypeError)
+    -> { a.send(@method, from ... "b") }.should.raise(TypeError)
   end
 
   it "returns the same elements as [m..n] and [m...n] with Range subclasses" do
@@ -398,63 +398,63 @@ describe :array_slice, shared: true do
     end
 
     it "returns a Array instance with [n, m]" do
-      @array.send(@method, 0, 2).should be_an_instance_of(Array)
+      @array.send(@method, 0, 2).should.instance_of?(Array)
     end
 
     it "returns a Array instance with [-n, m]" do
-      @array.send(@method, -3, 2).should be_an_instance_of(Array)
+      @array.send(@method, -3, 2).should.instance_of?(Array)
     end
 
     it "returns a Array instance with [n..m]" do
-      @array.send(@method, 1..3).should be_an_instance_of(Array)
+      @array.send(@method, 1..3).should.instance_of?(Array)
     end
 
     it "returns a Array instance with [n...m]" do
-      @array.send(@method, 1...3).should be_an_instance_of(Array)
+      @array.send(@method, 1...3).should.instance_of?(Array)
     end
 
     it "returns a Array instance with [-n..-m]" do
-      @array.send(@method, -3..-1).should be_an_instance_of(Array)
+      @array.send(@method, -3..-1).should.instance_of?(Array)
     end
 
     it "returns a Array instance with [-n...-m]" do
-      @array.send(@method, -3...-1).should be_an_instance_of(Array)
+      @array.send(@method, -3...-1).should.instance_of?(Array)
     end
 
     it "returns an empty array when m == n with [m...n]" do
       @array.send(@method, 1...1).should == []
-      ScratchPad.recorded.should be_nil
+      ScratchPad.recorded.should == nil
     end
 
     it "returns an empty array with [0...0]" do
       @array.send(@method, 0...0).should == []
-      ScratchPad.recorded.should be_nil
+      ScratchPad.recorded.should == nil
     end
 
     it "returns an empty array when m > n and m, n are positive with [m..n]" do
       @array.send(@method, 3..2).should == []
-      ScratchPad.recorded.should be_nil
+      ScratchPad.recorded.should == nil
     end
 
     it "returns an empty array when m > n and m, n are negative with [m..n]" do
       @array.send(@method, -2..-3).should == []
-      ScratchPad.recorded.should be_nil
+      ScratchPad.recorded.should == nil
     end
 
     it "returns [] if index == array.size with [index, length]" do
       @array.send(@method, 5, 2).should == []
-      ScratchPad.recorded.should be_nil
+      ScratchPad.recorded.should == nil
     end
 
     it "returns [] if the index is valid but length is zero with [index, length]" do
       @array.send(@method, 0, 0).should == []
       @array.send(@method, 2, 0).should == []
-      ScratchPad.recorded.should be_nil
+      ScratchPad.recorded.should == nil
     end
 
     it "does not call #initialize on the subclass instance" do
       @array.send(@method, 0, 3).should == [1, 2, 3]
-      ScratchPad.recorded.should be_nil
+      ScratchPad.recorded.should == nil
     end
   end
 
@@ -462,13 +462,13 @@ describe :array_slice, shared: true do
     array = [1, 2, 3, 4, 5, 6]
     obj = mock('large value')
     obj.should_receive(:to_int).and_return(bignum_value)
-    -> { array.send(@method, obj) }.should raise_error(RangeError)
+    -> { array.send(@method, obj) }.should.raise(RangeError)
 
     obj = 8e19
-    -> { array.send(@method, obj) }.should raise_error(RangeError)
+    -> { array.send(@method, obj) }.should.raise(RangeError)
 
     # boundary value when longs are 64 bits
-    -> { array.send(@method, 2.0**63) }.should raise_error(RangeError)
+    -> { array.send(@method, 2.0**63) }.should.raise(RangeError)
 
     # just under the boundary value when longs are 64 bits
     array.send(@method, max_long.to_f.prev_float).should == nil
@@ -478,20 +478,20 @@ describe :array_slice, shared: true do
     array = [1, 2, 3, 4, 5, 6]
     obj = mock('large value')
     obj.should_receive(:to_int).and_return(bignum_value)
-    -> { array.send(@method, 1, obj) }.should raise_error(RangeError)
+    -> { array.send(@method, 1, obj) }.should.raise(RangeError)
 
     obj = 8e19
-    -> { array.send(@method, 1, obj) }.should raise_error(RangeError)
+    -> { array.send(@method, 1, obj) }.should.raise(RangeError)
   end
 
   it "raises a type error if a range is passed with a length" do
-    ->{ [1, 2, 3].send(@method, 1..2, 1) }.should raise_error(TypeError)
+    ->{ [1, 2, 3].send(@method, 1..2, 1) }.should.raise(TypeError)
   end
 
   it "raises a RangeError if passed a range with a bound that is too large" do
     array = [1, 2, 3, 4, 5, 6]
-    -> { array.send(@method, bignum_value..(bignum_value + 1)) }.should raise_error(RangeError)
-    -> { array.send(@method, 0..bignum_value) }.should raise_error(RangeError)
+    -> { array.send(@method, bignum_value..(bignum_value + 1)) }.should.raise(RangeError)
+    -> { array.send(@method, 0..bignum_value) }.should.raise(RangeError)
   end
 
   it "can accept endless ranges" do
@@ -718,17 +718,17 @@ describe :array_slice, shared: true do
     it "has range with bounds outside of array" do
       # end is equal to array's length
       @array.send(@method, (0..6).step(1)).should == [0, 1, 2, 3, 4, 5]
-      -> { @array.send(@method, (0..6).step(2)) }.should raise_error(RangeError)
+      -> { @array.send(@method, (0..6).step(2)) }.should.raise(RangeError)
 
       # end is greater than length with positive steps
       @array.send(@method, (1..6).step(2)).should == [1, 3, 5]
       @array.send(@method, (2..7).step(2)).should == [2, 4]
-      -> { @array.send(@method, (2..8).step(2)) }.should raise_error(RangeError)
+      -> { @array.send(@method, (2..8).step(2)) }.should.raise(RangeError)
 
       # begin is greater than length with negative steps
       @array.send(@method, (6..1).step(-2)).should == [5, 3, 1]
       @array.send(@method, (7..2).step(-2)).should == [5, 3]
-      -> { @array.send(@method, (8..2).step(-2)) }.should raise_error(RangeError)
+      -> { @array.send(@method, (8..2).step(-2)) }.should.raise(RangeError)
     end
 
     it "has endless range with start outside of array's bounds" do
@@ -736,7 +736,7 @@ describe :array_slice, shared: true do
       @array.send(@method, eval("(7..).step(1)")).should == nil
 
       @array.send(@method, eval("(6..).step(2)")).should == []
-      -> { @array.send(@method, eval("(7..).step(2)")) }.should raise_error(RangeError)
+      -> { @array.send(@method, eval("(7..).step(2)")) }.should.raise(RangeError)
     end
   end
 

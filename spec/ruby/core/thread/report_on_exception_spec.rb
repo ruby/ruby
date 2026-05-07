@@ -58,7 +58,7 @@ describe "Thread#report_on_exception=" do
 
       -> {
         t.join
-      }.should raise_error(RuntimeError, "Thread#report_on_exception specs")
+      }.should.raise(RuntimeError, "Thread#report_on_exception specs")
     end
 
     it "prints a backtrace on $stderr in the regular backtrace order" do
@@ -86,7 +86,7 @@ describe "Thread#report_on_exception=" do
 
       -> {
         t.join
-      }.should raise_error(RuntimeError, "Thread#report_on_exception specs backtrace order")
+      }.should.raise(RuntimeError, "Thread#report_on_exception specs backtrace order")
     end
 
     it "prints the backtrace even if the thread was killed just after Thread#raise" do
@@ -107,7 +107,7 @@ describe "Thread#report_on_exception=" do
 
       -> {
         t.join
-      }.should raise_error(RuntimeError, "Thread#report_on_exception before kill spec")
+      }.should.raise(RuntimeError, "Thread#report_on_exception before kill spec")
     end
   end
 
@@ -124,7 +124,7 @@ describe "Thread#report_on_exception=" do
 
       -> {
         t.join
-      }.should raise_error(RuntimeError, "Thread#report_on_exception specs")
+      }.should.raise(RuntimeError, "Thread#report_on_exception specs")
     end
   end
 
@@ -144,12 +144,12 @@ describe "Thread#report_on_exception=" do
 
         -> {
           mutex.sleep(5)
-        }.should raise_error(RuntimeError, "Thread#report_on_exception specs")
+        }.should.raise(RuntimeError, "Thread#report_on_exception specs")
       }.should output("", /Thread.+terminated with exception.+Thread#report_on_exception specs/m)
 
       -> {
         t.join
-      }.should raise_error(RuntimeError, "Thread#report_on_exception specs")
+      }.should.raise(RuntimeError, "Thread#report_on_exception specs")
     end
   end
 end

@@ -2,7 +2,7 @@ require_relative '../fixtures/encoded_strings'
 
 describe :array_inspect, shared: true do
   it "returns a string" do
-    [1, 2, 3].send(@method).should be_an_instance_of(String)
+    [1, 2, 3].send(@method).should.instance_of?(String)
   end
 
   it "returns '[]' for an empty Array" do
@@ -55,7 +55,7 @@ describe :array_inspect, shared: true do
     obj.should_receive(:inspect).and_return(obj)
     obj.should_receive(:to_s).and_raise(Exception)
 
-    -> { [obj].send(@method) }.should raise_error(Exception)
+    -> { [obj].send(@method) }.should.raise(Exception)
   end
 
   it "represents a recursive element with '[...]'" do

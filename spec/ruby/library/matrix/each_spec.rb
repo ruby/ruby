@@ -9,12 +9,12 @@ describe "Matrix#each" do
 
   it "returns an Enumerator when called without a block" do
     enum = @m.each
-    enum.should be_an_instance_of(Enumerator)
+    enum.should.instance_of?(Enumerator)
     enum.to_a.should == @result
   end
 
   it "returns self" do
-    @m.each{}.should equal(@m)
+    @m.each{}.should.equal?(@m)
   end
 
   it "yields the elements starting with the those of the first row" do
@@ -33,13 +33,13 @@ describe "Matrix#each with an argument" do
   it "raises an ArgumentError for unrecognized argument" do
     -> {
       @m.each("all"){}
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
     -> {
       @m.each(nil){}
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
     -> {
       @m.each(:left){}
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "yields the rights elements when passed :diagonal" do

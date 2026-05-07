@@ -14,32 +14,32 @@ describe "Module#public" do
       public :module_specs_private_method_on_object
     end
 
-    m.should have_public_instance_method(:module_specs_private_method_on_object)
+    m.public_instance_methods(false).should.include?(:module_specs_private_method_on_object)
 
     # Ensure we did not change Object's method
-    Object.should_not have_public_instance_method(:module_specs_private_method_on_object)
+    Object.public_instance_methods(true).should_not.include?(:module_specs_private_method_on_object)
   end
 
   it "makes a private Object instance method public in Kernel" do
-    Kernel.should have_public_instance_method(
+    Kernel.public_instance_methods(false).should.include?(
                   :module_specs_private_method_on_object_for_kernel_public)
-    Object.should_not have_public_instance_method(
+    Object.public_instance_methods(true).should_not.include?(
                   :module_specs_private_method_on_object_for_kernel_public)
   end
 
   it "returns argument or arguments if given" do
     (class << Object.new; self; end).class_eval do
       def foo; end
-      public(:foo).should equal(:foo)
+      public(:foo).should.equal?(:foo)
       public([:foo, :foo]).should == [:foo, :foo]
       public(:foo, :foo).should == [:foo, :foo]
-      public.should equal(nil)
+      public.should.equal?(nil)
     end
   end
 
   it "raises a NameError when given an undefined name" do
     -> do
       Module.new.send(:public, :undefined)
-    end.should raise_error(NameError)
+    end.should.raise(NameError)
   end
 end

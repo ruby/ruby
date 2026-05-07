@@ -16,20 +16,20 @@ describe 'Addrinfo#connect' do
     it 'returns a Socket when no block is given' do
       addr = Addrinfo.tcp(ip_address, @port)
       @socket = addr.connect
-      @socket.should be_an_instance_of(Socket)
+      @socket.should.instance_of?(Socket)
     end
 
     it 'yields a Socket when a block is given' do
       addr = Addrinfo.tcp(ip_address, @port)
       addr.connect do |socket|
-        socket.should be_an_instance_of(Socket)
+        socket.should.instance_of?(Socket)
       end
     end
 
     it 'accepts a Hash of options' do
       addr = Addrinfo.tcp(ip_address, @port)
       @socket = addr.connect(timeout: 2)
-      @socket.should be_an_instance_of(Socket)
+      @socket.should.instance_of?(Socket)
     end
   end
 end

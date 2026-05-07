@@ -59,7 +59,7 @@ describe "The rescue keyword" do
       rescue SpecificExampleException => target&.captured_error
         :caught
       end.should == :caught
-      target.should be_nil
+      target.should == nil
     end
 
     it 'using a setter method' do
@@ -186,7 +186,7 @@ describe "The rescue keyword" do
     rescue *exception_list
       caught_it = true
     end
-    caught_it.should be_true
+    caught_it.should == true
     caught = []
     [->{raise ArbitraryException}, ->{raise SpecificExampleException}].each do |block|
       begin
@@ -197,7 +197,7 @@ describe "The rescue keyword" do
     end
     caught.size.should == 2
     exception_list.each do |exception_class|
-      caught.map{|e| e.class}.should include(exception_class)
+      caught.map{|e| e.class}.should.include?(exception_class)
     end
   end
 
@@ -210,7 +210,7 @@ describe "The rescue keyword" do
     rescue *exceptions
       caught_it = true
     end
-    caught_it.should be_true
+    caught_it.should == true
   end
 
   it "can combine a splatted list of exceptions with a literal list of exceptions" do
@@ -220,7 +220,7 @@ describe "The rescue keyword" do
     rescue ArbitraryException, *exception_list
       caught_it = true
     end
-    caught_it.should be_true
+    caught_it.should == true
     caught = []
     [->{raise ArbitraryException}, ->{raise SpecificExampleException}].each do |block|
       begin
@@ -231,7 +231,7 @@ describe "The rescue keyword" do
     end
     caught.size.should == 2
     exception_list.each do |exception_class|
-      caught.map{|e| e.class}.should include(exception_class)
+      caught.map{|e| e.class}.should.include?(exception_class)
     end
   end
 
@@ -241,7 +241,7 @@ describe "The rescue keyword" do
         raise OtherCustomException, "not rescued!"
       rescue *exception_list
       end
-    end.should raise_error(OtherCustomException)
+    end.should.raise(OtherCustomException)
   end
 
   it "can rescue different types of exceptions in different ways" do
@@ -345,7 +345,7 @@ describe "The rescue keyword" do
           ScratchPad << :else
         end
       ruby
-    }.should raise_error(SyntaxError, /else without rescue is useless/)
+    }.should.raise(SyntaxError, /else without rescue is useless/)
   end
 
   it "will not execute an else block if an exception was raised" do
@@ -413,7 +413,7 @@ describe "The rescue keyword" do
         ScratchPad << :two
         raise SpecificExampleException, "an error from else"
       end
-    end.should raise_error(SpecificExampleException)
+    end.should.raise(SpecificExampleException)
     ScratchPad.recorded.should == [:one, :two]
   end
 
@@ -445,7 +445,7 @@ describe "The rescue keyword" do
           rescue
             ScratchPad << :caught
           end
-        }.should raise_error(exception.class)
+        }.should.raise(exception.class)
       end
       ScratchPad.recorded.should == []
     end
@@ -476,7 +476,7 @@ describe "The rescue keyword" do
         raise "error"
       rescue rescuer
       end
-    }.should raise_error(TypeError) { |e|
+    }.should.raise(TypeError) { |e|
       e.message.should =~ /class or module required for rescue clause/
     }
   end
@@ -488,7 +488,7 @@ describe "The rescue keyword" do
         raise "error"
       rescue *rescuer
       end
-    }.should raise_error(TypeError) { |e|
+    }.should.raise(TypeError) { |e|
       e.message.should =~ /class or module required for rescue clause/
     }
   end
@@ -508,7 +508,7 @@ describe "The rescue keyword" do
         raise "from block"
       rescue (raise "from rescue expression")
       end
-    }.should raise_error(RuntimeError, "from rescue expression") { |e|
+    }.should.raise(RuntimeError, "from rescue expression") { |e|
       e.cause.message.should == "from block"
     }
   end
@@ -542,7 +542,7 @@ describe "The rescue keyword" do
           :caught
         }
       ruby
-    }.should raise_error(SyntaxError)
+    }.should.raise(SyntaxError)
   end
 
   it "allows rescue in 'do end' block" do
@@ -563,7 +563,7 @@ describe "The rescue keyword" do
   end
 
   it "requires the 'rescue' in method arguments to be wrapped in parens" do
-    -> { eval '1.+(1 rescue 1)' }.should raise_error(SyntaxError)
+    -> { eval '1.+(1 rescue 1)' }.should.raise(SyntaxError)
     eval('1.+((1 rescue 1))').should == 2
   end
 
@@ -593,7 +593,7 @@ describe "The rescue keyword" do
         eval <<-ruby
           a = 1 rescue RuntimeError 2
         ruby
-      }.should raise_error(SyntaxError)
+      }.should.raise(SyntaxError)
     end
 
     it "rescues only StandardError and its subclasses" do
@@ -602,7 +602,7 @@ describe "The rescue keyword" do
 
       -> {
         a = raise(Exception) rescue 1
-      }.should raise_error(Exception)
+      }.should.raise(Exception)
     end
 
     it "rescues with multiple assignment" do

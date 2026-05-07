@@ -2,130 +2,130 @@ require_relative '../../../spec_helper'
 
 describe "Encoding::Converter::INVALID_MASK" do
   it "exists" do
-    Encoding::Converter.should have_constant(:INVALID_MASK)
+    Encoding::Converter.should.const_defined?(:INVALID_MASK, false)
   end
 
   it "has an Integer value" do
-    Encoding::Converter::INVALID_MASK.should be_an_instance_of(Integer)
+    Encoding::Converter::INVALID_MASK.should.instance_of?(Integer)
   end
 end
 
 describe "Encoding::Converter::INVALID_REPLACE" do
   it "exists" do
-    Encoding::Converter.should have_constant(:INVALID_REPLACE)
+    Encoding::Converter.should.const_defined?(:INVALID_REPLACE, false)
   end
 
   it "has an Integer value" do
-    Encoding::Converter::INVALID_REPLACE.should be_an_instance_of(Integer)
+    Encoding::Converter::INVALID_REPLACE.should.instance_of?(Integer)
   end
 end
 
 describe "Encoding::Converter::UNDEF_MASK" do
   it "exists" do
-    Encoding::Converter.should have_constant(:UNDEF_MASK)
+    Encoding::Converter.should.const_defined?(:UNDEF_MASK, false)
   end
 
   it "has an Integer value" do
-    Encoding::Converter::UNDEF_MASK.should be_an_instance_of(Integer)
+    Encoding::Converter::UNDEF_MASK.should.instance_of?(Integer)
   end
 end
 
 describe "Encoding::Converter::UNDEF_REPLACE" do
   it "exists" do
-    Encoding::Converter.should have_constant(:UNDEF_REPLACE)
+    Encoding::Converter.should.const_defined?(:UNDEF_REPLACE, false)
   end
 
   it "has an Integer value" do
-    Encoding::Converter::UNDEF_REPLACE.should be_an_instance_of(Integer)
+    Encoding::Converter::UNDEF_REPLACE.should.instance_of?(Integer)
   end
 end
 
 describe "Encoding::Converter::UNDEF_HEX_CHARREF" do
   it "exists" do
-    Encoding::Converter.should have_constant(:UNDEF_HEX_CHARREF)
+    Encoding::Converter.should.const_defined?(:UNDEF_HEX_CHARREF, false)
   end
 
   it "has an Integer value" do
-    Encoding::Converter::UNDEF_HEX_CHARREF.should be_an_instance_of(Integer)
+    Encoding::Converter::UNDEF_HEX_CHARREF.should.instance_of?(Integer)
   end
 end
 
 describe "Encoding::Converter::PARTIAL_INPUT" do
   it "exists" do
-    Encoding::Converter.should have_constant(:PARTIAL_INPUT)
+    Encoding::Converter.should.const_defined?(:PARTIAL_INPUT, false)
   end
 
   it "has an Integer value" do
-    Encoding::Converter::PARTIAL_INPUT.should be_an_instance_of(Integer)
+    Encoding::Converter::PARTIAL_INPUT.should.instance_of?(Integer)
   end
 end
 
 describe "Encoding::Converter::AFTER_OUTPUT" do
   it "exists" do
-    Encoding::Converter.should have_constant(:AFTER_OUTPUT)
+    Encoding::Converter.should.const_defined?(:AFTER_OUTPUT, false)
   end
 
   it "has an Integer value" do
-    Encoding::Converter::AFTER_OUTPUT.should be_an_instance_of(Integer)
+    Encoding::Converter::AFTER_OUTPUT.should.instance_of?(Integer)
   end
 end
 
 describe "Encoding::Converter::UNIVERSAL_NEWLINE_DECORATOR" do
   it "exists" do
-    Encoding::Converter.should have_constant(:UNIVERSAL_NEWLINE_DECORATOR)
+    Encoding::Converter.should.const_defined?(:UNIVERSAL_NEWLINE_DECORATOR, false)
   end
 
   it "has an Integer value" do
-    Encoding::Converter::UNIVERSAL_NEWLINE_DECORATOR.should be_an_instance_of(Integer)
+    Encoding::Converter::UNIVERSAL_NEWLINE_DECORATOR.should.instance_of?(Integer)
   end
 end
 
 describe "Encoding::Converter::CRLF_NEWLINE_DECORATOR" do
   it "exists" do
-    Encoding::Converter.should have_constant(:CRLF_NEWLINE_DECORATOR)
+    Encoding::Converter.should.const_defined?(:CRLF_NEWLINE_DECORATOR, false)
   end
 
   it "has an Integer value" do
-    Encoding::Converter::CRLF_NEWLINE_DECORATOR.should be_an_instance_of(Integer)
+    Encoding::Converter::CRLF_NEWLINE_DECORATOR.should.instance_of?(Integer)
   end
 end
 
 describe "Encoding::Converter::CR_NEWLINE_DECORATOR" do
   it "exists" do
-    Encoding::Converter.should have_constant(:CR_NEWLINE_DECORATOR)
+    Encoding::Converter.should.const_defined?(:CR_NEWLINE_DECORATOR, false)
   end
 
   it "has an Integer value" do
-    Encoding::Converter::CR_NEWLINE_DECORATOR.should be_an_instance_of(Integer)
+    Encoding::Converter::CR_NEWLINE_DECORATOR.should.instance_of?(Integer)
   end
 end
 
 describe "Encoding::Converter::XML_TEXT_DECORATOR" do
   it "exists" do
-    Encoding::Converter.should have_constant(:XML_TEXT_DECORATOR)
+    Encoding::Converter.should.const_defined?(:XML_TEXT_DECORATOR, false)
   end
 
   it "has an Integer value" do
-    Encoding::Converter::XML_TEXT_DECORATOR.should be_an_instance_of(Integer)
+    Encoding::Converter::XML_TEXT_DECORATOR.should.instance_of?(Integer)
   end
 end
 
 describe "Encoding::Converter::XML_ATTR_CONTENT_DECORATOR" do
   it "exists" do
-    Encoding::Converter.should have_constant(:XML_ATTR_CONTENT_DECORATOR)
+    Encoding::Converter.should.const_defined?(:XML_ATTR_CONTENT_DECORATOR, false)
   end
 
   it "has an Integer value" do
-    Encoding::Converter::XML_ATTR_CONTENT_DECORATOR.should be_an_instance_of(Integer)
+    Encoding::Converter::XML_ATTR_CONTENT_DECORATOR.should.instance_of?(Integer)
   end
 end
 
 describe "Encoding::Converter::XML_ATTR_QUOTE_DECORATOR" do
   it "exists" do
-    Encoding::Converter.should have_constant(:XML_ATTR_QUOTE_DECORATOR)
+    Encoding::Converter.should.const_defined?(:XML_ATTR_QUOTE_DECORATOR, false)
   end
 
   it "has an Integer value" do
-    Encoding::Converter::XML_ATTR_QUOTE_DECORATOR.should be_an_instance_of(Integer)
+    Encoding::Converter::XML_ATTR_QUOTE_DECORATOR.should.instance_of?(Integer)
   end
 end

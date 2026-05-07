@@ -38,7 +38,7 @@ describe :string_unpack_8bit, shared: true do
   it "raise ArgumentError for NULL bytes between directives" do
     -> {
       "abc".unpack(unpack_format("\000", 2))
-    }.should raise_error(ArgumentError, /unknown unpack directive/)
+    }.should.raise(ArgumentError, /unknown unpack directive/)
   end
 
   it "ignores spaces between directives" do

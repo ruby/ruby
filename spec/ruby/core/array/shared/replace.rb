@@ -2,9 +2,9 @@ describe :array_replace, shared: true do
   it "replaces the elements with elements from other array" do
     a = [1, 2, 3, 4, 5]
     b = ['a', 'b', 'c']
-    a.send(@method, b).should equal(a)
+    a.send(@method, b).should.equal?(a)
     a.should == b
-    a.should_not equal(b)
+    a.should_not.equal?(b)
 
     a.send(@method, [4] * 10)
     a.should == [4] * 10
@@ -27,7 +27,7 @@ describe :array_replace, shared: true do
   it "returns self" do
     ary = [1, 2, 3]
     other = [:a, :b, :c]
-    ary.send(@method, other).should equal(ary)
+    ary.send(@method, other).should.equal?(ary)
   end
 
   it "does not make self dependent to the original array" do
@@ -55,6 +55,6 @@ describe :array_replace, shared: true do
   it "raises a FrozenError on a frozen array" do
     -> {
       ArraySpecs.frozen_array.send(@method, ArraySpecs.frozen_array)
-    }.should raise_error(FrozenError)
+    }.should.raise(FrozenError)
   end
 end

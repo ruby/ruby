@@ -8,15 +8,15 @@ platform_is :windows do
     end
 
     it "raises ArgumentError if argument is given" do
-      -> { @dict.ole_put_methods(1) }.should raise_error ArgumentError
+      -> { @dict.ole_put_methods(1) }.should.raise ArgumentError
     end
 
     it "returns an array of WIN32OLE::Methods" do
-      @dict.ole_put_methods.all? { |m| m.kind_of? WIN32OLE::Method }.should be_true
+      @dict.ole_put_methods.all? { |m| m.kind_of? WIN32OLE::Method }.should == true
     end
 
     it "contains a 'Key' method for Scripting Dictionary" do
-      @dict.ole_put_methods.map { |m| m.name }.include?('Key').should be_true
+      @dict.ole_put_methods.map { |m| m.name }.include?('Key').should == true
     end
   end
 end

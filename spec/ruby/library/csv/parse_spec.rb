@@ -5,7 +5,7 @@ describe "CSV.parse" do
 
   it "parses '' into []" do
     result = CSV.parse ''
-    result.should be_kind_of(Array)
+    result.should.is_a?(Array)
     result.should == []
   end
 
@@ -82,7 +82,7 @@ describe "CSV.parse" do
   it "raises CSV::MalformedCSVError exception if input is illegal" do
     -> {
       CSV.parse('"quoted" field')
-    }.should raise_error(CSV::MalformedCSVError)
+    }.should.raise(CSV::MalformedCSVError)
   end
 
   it "handles illegal input with the liberal_parsing option" do

@@ -25,7 +25,7 @@ describe "Time#strftime" do
 
   # Differences with date
   it "requires an argument" do
-    -> { @time.strftime }.should raise_error(ArgumentError)
+    -> { @time.strftime }.should.raise(ArgumentError)
   end
 
   # %Z is zone name or empty for Time

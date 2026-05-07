@@ -35,7 +35,7 @@ describe :string_unpack_16bit_le, shared: true do
   it "raise ArgumentError for NULL bytes between directives" do
     -> {
       "abcd".unpack(unpack_format("\000", 2))
-    }.should raise_error(ArgumentError, /unknown unpack directive/)
+    }.should.raise(ArgumentError, /unknown unpack directive/)
   end
 
   it "ignores spaces between directives" do
@@ -90,7 +90,7 @@ describe :string_unpack_16bit_be, shared: true do
   it "raise ArgumentError for NULL bytes between directives" do
     -> {
       "badc".unpack(unpack_format("\000", 2))
-    }.should raise_error(ArgumentError, /unknown unpack directive/)
+    }.should.raise(ArgumentError, /unknown unpack directive/)
   end
 
   it "ignores spaces between directives" do
@@ -146,7 +146,7 @@ describe :string_unpack_32bit_le, shared: true do
   it "raise ArgumentError for NULL bytes between directives" do
     -> {
       "abcdefgh".unpack(unpack_format("\000", 2))
-    }.should raise_error(ArgumentError, /unknown unpack directive/)
+    }.should.raise(ArgumentError, /unknown unpack directive/)
   end
 
   it "ignores spaces between directives" do
@@ -202,7 +202,7 @@ describe :string_unpack_32bit_be, shared: true do
   it "raise ArgumentError for NULL bytes between directives" do
     -> {
       "dcbahgfe".unpack(unpack_format("\000", 2))
-    }.should raise_error(ArgumentError, /unknown unpack directive/)
+    }.should.raise(ArgumentError, /unknown unpack directive/)
   end
 
   it "ignores spaces between directives" do
@@ -254,7 +254,7 @@ describe :string_unpack_64bit_le, shared: true do
   it "raise ArgumentError for NULL bytes between directives" do
     -> {
       "badc".unpack(unpack_format("\000", 2))
-    }.should raise_error(ArgumentError, /unknown unpack directive/)
+    }.should.raise(ArgumentError, /unknown unpack directive/)
   end
 
   it "ignores spaces between directives" do
@@ -317,7 +317,7 @@ describe :string_unpack_64bit_be, shared: true do
   it "raise ArgumentError for NULL bytes between directives" do
     -> {
       "hgfedcbadcfehgba".unpack(unpack_format("\000", 2))
-    }.should raise_error(ArgumentError, /unknown unpack directive/)
+    }.should.raise(ArgumentError, /unknown unpack directive/)
   end
 
   it "ignores spaces between directives" do

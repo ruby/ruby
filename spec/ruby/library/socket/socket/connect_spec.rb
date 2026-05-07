@@ -40,7 +40,7 @@ describe 'Socket#connect' do
         # as it's too implementation-dependent and checking for connect()
         # errors is futile anyways because of TOCTOU
         @client.connect(@server.getsockname)
-      }.should raise_error(Errno::EISCONN)
+      }.should.raise(Errno::EISCONN)
     end
 
     platform_is_not :darwin do
@@ -70,7 +70,7 @@ describe 'Socket#connect' do
         rescue Errno::ENETUNREACH
           skip "Off line"
         end
-      }.should raise_error(IO::TimeoutError)
+      }.should.raise(IO::TimeoutError)
     ensure
       client.close
     end

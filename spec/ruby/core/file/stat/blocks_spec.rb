@@ -21,7 +21,7 @@ describe "File::Stat#blocks" do
   platform_is :windows do
     it "returns nil" do
       st = File.stat(@file)
-      st.blocks.should be_nil
+      st.blocks.should == nil
     end
   end
 end

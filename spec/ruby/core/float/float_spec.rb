@@ -8,12 +8,12 @@ describe "Float" do
   it ".allocate raises a TypeError" do
     -> do
       Float.allocate
-    end.should raise_error(TypeError)
+    end.should.raise(TypeError)
   end
 
   it ".new is undefined" do
     -> do
       Float.new
-    end.should raise_error(NoMethodError)
+    end.should.raise(NoMethodError)
   end
 end

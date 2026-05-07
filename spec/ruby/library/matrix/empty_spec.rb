@@ -4,20 +4,20 @@ require 'matrix'
 
 describe "Matrix#empty?" do
   it "returns true when the Matrix is empty" do
-    Matrix[ ].empty?.should be_true
-    Matrix[ [], [], [] ].empty?.should be_true
-    Matrix[ [], [], [] ].transpose.empty?.should be_true
+    Matrix[ ].empty?.should == true
+    Matrix[ [], [], [] ].empty?.should == true
+    Matrix[ [], [], [] ].transpose.empty?.should == true
   end
 
   it "returns false when the Matrix has elements" do
-    Matrix[ [1, 2] ].empty?.should be_false
-    Matrix[ [1], [2] ].empty?.should be_false
+    Matrix[ [1, 2] ].empty?.should == false
+    Matrix[ [1], [2] ].empty?.should == false
   end
 
   it "doesn't accept any parameter" do
     ->{
       Matrix[ [1, 2] ].empty?(42)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 end
 
@@ -40,29 +40,29 @@ describe "Matrix.empty" do
   it "does not accept more than two parameters" do
     ->{
       Matrix.empty(1, 2, 3)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "raises an error if both dimensions are > 0" do
     ->{
       Matrix.empty(1, 2)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "raises an error if any dimension is < 0" do
     ->{
       Matrix.empty(-2, 0)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
 
     ->{
       Matrix.empty(0, -2)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
 end
 
 describe "for a subclass of Matrix" do
   it "returns an instance of that subclass" do
-    MatrixSub.empty(0, 1).should be_an_instance_of(MatrixSub)
+    MatrixSub.empty(0, 1).should.instance_of?(MatrixSub)
   end
 end

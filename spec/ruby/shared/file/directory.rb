@@ -12,24 +12,24 @@ describe :file_directory, shared: true do
   end
 
   it "returns true if the argument is a directory" do
-    @object.send(@method, @dir).should be_true
+    @object.send(@method, @dir).should == true
   end
 
   it "returns false if the argument is not a directory" do
-    @object.send(@method, @file).should be_false
+    @object.send(@method, @file).should == false
   end
 
   it "accepts an object that has a #to_path method" do
-    @object.send(@method, mock_to_path(@dir)).should be_true
+    @object.send(@method, mock_to_path(@dir)).should == true
   end
 
   it "raises a TypeError when passed an Integer" do
-    -> { @object.send(@method, 1) }.should raise_error(TypeError)
-    -> { @object.send(@method, bignum_value) }.should raise_error(TypeError)
+    -> { @object.send(@method, 1) }.should.raise(TypeError)
+    -> { @object.send(@method, bignum_value) }.should.raise(TypeError)
   end
 
   it "raises a TypeError when passed nil" do
-    -> { @object.send(@method, nil) }.should raise_error(TypeError)
+    -> { @object.send(@method, nil) }.should.raise(TypeError)
   end
 end
 
@@ -47,13 +47,13 @@ describe :file_directory_io, shared: true do
   end
 
   it "returns false if the argument is an IO that's not a directory" do
-    @object.send(@method, STDIN).should be_false
+    @object.send(@method, STDIN).should == false
   end
 
   platform_is_not :windows do
     it "returns true if the argument is an IO that is a directory" do
       File.open(@dir, "r") do |f|
-        @object.send(@method, f).should be_true
+        @object.send(@method, f).should == true
       end
     end
   end
@@ -61,6 +61,6 @@ describe :file_directory_io, shared: true do
   it "calls #to_io to convert a non-IO object" do
     io = mock('FileDirectoryIO')
     io.should_receive(:to_io).and_return(STDIN)
-    @object.send(@method, io).should be_false
+    @object.send(@method, io).should == false
   end
 end

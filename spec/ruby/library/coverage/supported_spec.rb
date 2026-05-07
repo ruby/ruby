@@ -17,14 +17,14 @@ describe "Coverage.supported?" do
   it "raise TypeError if argument is not Symbol" do
     -> {
       Coverage.supported?("lines")
-    }.should raise_error(TypeError, "wrong argument type String (expected Symbol)")
+    }.should.raise(TypeError, "wrong argument type String (expected Symbol)")
 
     -> {
       Coverage.supported?([])
-    }.should raise_error(TypeError, "wrong argument type Array (expected Symbol)")
+    }.should.raise(TypeError, "wrong argument type Array (expected Symbol)")
 
     -> {
       Coverage.supported?(1)
-    }.should raise_error(TypeError, "wrong argument type Integer (expected Symbol)")
+    }.should.raise(TypeError, "wrong argument type Integer (expected Symbol)")
   end
 end

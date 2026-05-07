@@ -25,7 +25,7 @@ describe "Array#pack with format 'u'" do
   end
 
   it "will not implicitly convert a number to a string" do
-    -> { [0].pack('u') }.should raise_error(TypeError)
+    -> { [0].pack('u') }.should.raise(TypeError)
   end
 
   it "encodes an empty string as an empty string" do
@@ -122,16 +122,16 @@ describe "Array#pack with format 'u'" do
 
   it "raises a TypeError if #to_str does not return a String" do
     obj = mock("pack m non-string")
-    -> { [obj].pack("u") }.should raise_error(TypeError)
+    -> { [obj].pack("u") }.should.raise(TypeError)
   end
 
   it "raises a TypeError if passed nil" do
-    -> { [nil].pack("u") }.should raise_error(TypeError)
+    -> { [nil].pack("u") }.should.raise(TypeError)
   end
 
   it "raises a TypeError if passed an Integer" do
-    -> { [0].pack("u") }.should raise_error(TypeError)
-    -> { [bignum_value].pack("u") }.should raise_error(TypeError)
+    -> { [0].pack("u") }.should.raise(TypeError)
+    -> { [bignum_value].pack("u") }.should.raise(TypeError)
   end
 
   it "sets the output string to US-ASCII encoding" do

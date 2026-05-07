@@ -7,18 +7,18 @@ describe "Encoding.find" do
 
   it "returns the corresponding Encoding object if given a valid encoding name" do
     @encodings.each do |enc|
-      Encoding.find(enc).should be_an_instance_of(Encoding)
+      Encoding.find(enc).should.instance_of?(Encoding)
     end
   end
 
   it "returns the corresponding Encoding object if given a valid alias name" do
     Encoding.aliases.keys.each do |enc_alias|
-      Encoding.find(enc_alias).should be_an_instance_of(Encoding)
+      Encoding.find(enc_alias).should.instance_of?(Encoding)
     end
   end
 
   it "raises a TypeError if passed a Symbol" do
-    -> { Encoding.find(:"utf-8") }.should raise_error(TypeError)
+    -> { Encoding.find(:"utf-8") }.should.raise(TypeError)
   end
 
   it "returns the passed Encoding object" do
@@ -50,7 +50,7 @@ describe "Encoding.find" do
   end
 
   it "raises an ArgumentError if the given encoding does not exist" do
-    -> { Encoding.find('dh2dh278d') }.should raise_error(ArgumentError, 'unknown encoding name - dh2dh278d')
+    -> { Encoding.find('dh2dh278d') }.should.raise(ArgumentError, 'unknown encoding name - dh2dh278d')
   end
 
   # Not sure how to do a better test, since locale depends on weird platform-specific stuff

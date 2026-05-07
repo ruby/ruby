@@ -18,7 +18,7 @@ describe :time_gmtime, shared: true do
   it "returns self" do
     with_timezone("CST", -6) do
       t = Time.local(2007, 1, 9, 12, 0, 0)
-      t.send(@method).should equal(t)
+      t.send(@method).should.equal?(t)
     end
   end
 
@@ -26,14 +26,14 @@ describe :time_gmtime, shared: true do
     it "does not raise an error if already in UTC" do
       time = Time.gm(2007, 1, 9, 12, 0, 0)
       time.freeze
-      time.send(@method).should equal(time)
+      time.send(@method).should.equal?(time)
     end
 
     it "raises a FrozenError if the time is not UTC" do
       with_timezone("CST", -6) do
         time = Time.now
         time.freeze
-        -> { time.send(@method) }.should raise_error(FrozenError)
+        -> { time.send(@method) }.should.raise(FrozenError)
       end
     end
   end

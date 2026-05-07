@@ -13,6 +13,6 @@ describe "Matrix::LUPDecomposition#u" do
   end
 
   it "returns an upper triangular matrix" do
-    @u.upper_triangular?.should be_true
+    @u.upper_triangular?.should == true
   end
 end

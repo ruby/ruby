@@ -20,7 +20,7 @@ describe "IO::Buffer.for" do
       @string[0] = "d"
       @buffer.get_string(0, 1).should == "f".b
 
-      -> { @buffer.set_string("d") }.should raise_error(IO::Buffer::AccessError, "Buffer is not writable!")
+      -> { @buffer.set_string("d") }.should.raise(IO::Buffer::AccessError, "Buffer is not writable!")
     end
 
     it "creates an external, read-only buffer" do
@@ -74,7 +74,7 @@ describe "IO::Buffer.for" do
 
       it "locks the original string to prevent modification" do
         IO::Buffer.for(@string) do |_buffer|
-          -> { @string[0] = "t" }.should raise_error(RuntimeError, "can't modify string; temporarily locked")
+          -> { @string[0] = "t" }.should.raise(RuntimeError, "can't modify string; temporarily locked")
         end
         @string[1] = "u"
         @string.should == "fur striñg"
@@ -86,7 +86,7 @@ describe "IO::Buffer.for" do
         IO::Buffer.for(@string.freeze) do |buffer|
           buffer.should.readonly?
 
-          -> { buffer.set_string("ghost shell") }.should raise_error(IO::Buffer::AccessError, "Buffer is not writable!")
+          -> { buffer.set_string("ghost shell") }.should.raise(IO::Buffer::AccessError, "Buffer is not writable!")
         end
       end
     end

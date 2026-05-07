@@ -18,13 +18,13 @@ describe "String#[]= with Integer index" do
   it "raises an IndexError without changing self if idx is outside of self" do
     str = "hello"
 
-    -> { str[20] = "bam" }.should raise_error(IndexError)
+    -> { str[20] = "bam" }.should.raise(IndexError)
     str.should == "hello"
 
-    -> { str[-20] = "bam" }.should raise_error(IndexError)
+    -> { str[-20] = "bam" }.should.raise(IndexError)
     str.should == "hello"
 
-    -> { ""[-1] = "bam" }.should raise_error(IndexError)
+    -> { ""[-1] = "bam" }.should.raise(IndexError)
   end
 
   # Behaviour is verified by matz in
@@ -37,7 +37,7 @@ describe "String#[]= with Integer index" do
 
   it "raises IndexError if the string index doesn't match a position in the string" do
     str = "hello"
-    -> { str['y'] = "bam" }.should raise_error(IndexError)
+    -> { str['y'] = "bam" }.should.raise(IndexError)
     str.should == "hello"
   end
 
@@ -45,7 +45,7 @@ describe "String#[]= with Integer index" do
     a = "hello"
     a.freeze
 
-    -> { a[0] = "bam" }.should raise_error(FrozenError)
+    -> { a[0] = "bam" }.should.raise(FrozenError)
   end
 
   it "calls to_int on index" do
@@ -69,17 +69,17 @@ describe "String#[]= with Integer index" do
   end
 
   it "raises a TypeError if other_str can't be converted to a String" do
-    -> { "test"[1] = []        }.should raise_error(TypeError)
-    -> { "test"[1] = mock('x') }.should raise_error(TypeError)
-    -> { "test"[1] = nil       }.should raise_error(TypeError)
+    -> { "test"[1] = []        }.should.raise(TypeError)
+    -> { "test"[1] = mock('x') }.should.raise(TypeError)
+    -> { "test"[1] = nil       }.should.raise(TypeError)
   end
 
   it "raises a TypeError if passed an Integer replacement" do
-    -> { "abc"[1] = 65 }.should raise_error(TypeError)
+    -> { "abc"[1] = 65 }.should.raise(TypeError)
   end
 
   it "raises an IndexError if the index is greater than character size" do
-    -> { "あれ"[4] = "a" }.should raise_error(IndexError)
+    -> { "あれ"[4] = "a" }.should.raise(IndexError)
   end
 
   it "calls #to_int to convert the index" do
@@ -95,14 +95,14 @@ describe "String#[]= with Integer index" do
     index = mock("string element set")
     index.should_receive(:to_int).and_return('1')
 
-    -> { "abc"[index] = "d" }.should raise_error(TypeError)
+    -> { "abc"[index] = "d" }.should.raise(TypeError)
   end
 
   it "raises an IndexError if #to_int returns a value out of range" do
     index = mock("string element set")
     index.should_receive(:to_int).and_return(4)
 
-    -> { "ab"[index] = "c" }.should raise_error(IndexError)
+    -> { "ab"[index] = "c" }.should.raise(IndexError)
   end
 
   it "replaces a character with a multibyte character" do
@@ -127,7 +127,7 @@ describe "String#[]= with Integer index" do
     str = " ".force_encoding Encoding::US_ASCII
     rep = [160].pack('C').force_encoding Encoding::BINARY
     str[0] = rep
-    str.encoding.should equal(Encoding::BINARY)
+    str.encoding.should.equal?(Encoding::BINARY)
   end
 
   it "updates the string to a compatible encoding" do
@@ -139,7 +139,7 @@ describe "String#[]= with Integer index" do
   it "raises an Encoding::CompatibilityError if the replacement encoding is incompatible" do
     str = "あれ"
     rep = "が".encode Encoding::EUC_JP
-    -> { str[0] = rep }.should raise_error(Encoding::CompatibilityError)
+    -> { str[0] = rep }.should.raise(Encoding::CompatibilityError)
   end
 end
 
@@ -164,7 +164,7 @@ describe "String#[]= with String index" do
 
   it "raises an IndexError if the search String is not found" do
     str = "abcde"
-    -> { str["g"] = "h" }.should raise_error(IndexError)
+    -> { str["g"] = "h" }.should.raise(IndexError)
   end
 
   it "replaces characters with a multibyte character" do
@@ -189,13 +189,13 @@ describe "String#[]= with String index" do
     str = " ".force_encoding Encoding::US_ASCII
     rep = [160].pack('C').force_encoding Encoding::BINARY
     str[" "] = rep
-    str.encoding.should equal(Encoding::BINARY)
+    str.encoding.should.equal?(Encoding::BINARY)
   end
 
   it "raises an Encoding::CompatibilityError if the replacement encoding is incompatible" do
     str = "あれ"
     rep = "が".encode Encoding::EUC_JP
-    -> { str["れ"] = rep }.should raise_error(Encoding::CompatibilityError)
+    -> { str["れ"] = rep }.should.raise(Encoding::CompatibilityError)
   end
 end
 
@@ -208,7 +208,7 @@ describe "String#[]= with a Regexp index" do
 
   it "raises IndexError if the regexp index doesn't match a position in the string" do
     str = "hello"
-    -> { str[/y/] = "bam" }.should raise_error(IndexError)
+    -> { str[/y/] = "bam" }.should.raise(IndexError)
     str.should == "hello"
   end
 
@@ -225,7 +225,7 @@ describe "String#[]= with a Regexp index" do
     rep = mock("string element set regexp")
     rep.should_not_receive(:to_str)
 
-    -> { "abc"[/def/] = rep }.should raise_error(IndexError)
+    -> { "abc"[/def/] = rep }.should.raise(IndexError)
   end
 
   describe "with 3 arguments" do
@@ -242,7 +242,7 @@ describe "String#[]= with a Regexp index" do
       ref = mock("string element set regexp ref")
       ref.should_receive(:to_int).and_return(nil)
 
-      -> { "abc"[/a(b)/, ref] = "x" }.should raise_error(TypeError)
+      -> { "abc"[/a(b)/, ref] = "x" }.should.raise(TypeError)
     end
 
     it "uses the 2nd of 3 arguments as which capture should be replaced" do
@@ -261,20 +261,20 @@ describe "String#[]= with a Regexp index" do
       rep = mock("string element set regexp")
       rep.should_not_receive(:to_str)
 
-      -> { "abc"[/a(b)/, 2] = rep }.should raise_error(IndexError)
+      -> { "abc"[/a(b)/, 2] = rep }.should.raise(IndexError)
     end
 
     it "raises IndexError if the specified capture isn't available" do
       str = "aaa bbb ccc"
-      -> { str[/a (bbb) c/,  2] = "ddd" }.should raise_error(IndexError)
-      -> { str[/a (bbb) c/, -2] = "ddd" }.should raise_error(IndexError)
+      -> { str[/a (bbb) c/,  2] = "ddd" }.should.raise(IndexError)
+      -> { str[/a (bbb) c/, -2] = "ddd" }.should.raise(IndexError)
     end
 
     describe "when the optional capture does not match" do
       it "raises an IndexError before setting the replacement" do
         str1 = "a b c"
         str2 = str1.dup
-        -> { str2[/a (b) (Z)?/,  2] = "d" }.should raise_error(IndexError)
+        -> { str2[/a (b) (Z)?/,  2] = "d" }.should.raise(IndexError)
         str2.should == str1
       end
     end
@@ -302,13 +302,13 @@ describe "String#[]= with a Regexp index" do
     str = " ".force_encoding Encoding::US_ASCII
     rep = [160].pack('C').force_encoding Encoding::BINARY
     str[/ /] = rep
-    str.encoding.should equal(Encoding::BINARY)
+    str.encoding.should.equal?(Encoding::BINARY)
   end
 
   it "raises an Encoding::CompatibilityError if the replacement encoding is incompatible" do
     str = "あれ"
     rep = "が".encode Encoding::EUC_JP
-    -> { str[/れ/] = rep }.should raise_error(Encoding::CompatibilityError)
+    -> { str[/れ/] = rep }.should.raise(Encoding::CompatibilityError)
   end
 end
 
@@ -358,11 +358,11 @@ describe "String#[]= with a Range index" do
   end
 
   it "raises a RangeError if negative Range begin is out of range" do
-    -> { "abc"[-4..-2] = "x" }.should raise_error(RangeError, "-4..-2 out of range")
+    -> { "abc"[-4..-2] = "x" }.should.raise(RangeError, "-4..-2 out of range")
   end
 
   it "raises a RangeError if positive Range begin is greater than String size" do
-    -> { "abc"[4..2] = "x" }.should raise_error(RangeError, "4..2 out of range")
+    -> { "abc"[4..2] = "x" }.should.raise(RangeError, "4..2 out of range")
   end
 
   it "uses the Range end as an index rather than a count" do
@@ -423,13 +423,13 @@ describe "String#[]= with a Range index" do
     str = " ".force_encoding Encoding::US_ASCII
     rep = [160].pack('C').force_encoding Encoding::BINARY
     str[0..1] = rep
-    str.encoding.should equal(Encoding::BINARY)
+    str.encoding.should.equal?(Encoding::BINARY)
   end
 
   it "raises an Encoding::CompatibilityError if the replacement encoding is incompatible" do
     str = "あれ"
     rep = "が".encode Encoding::EUC_JP
-    -> { str[0..1] = rep }.should raise_error(Encoding::CompatibilityError)
+    -> { str[0..1] = rep }.should.raise(Encoding::CompatibilityError)
   end
 end
 
@@ -498,14 +498,14 @@ describe "String#[]= with Integer index, count" do
     index = mock("string element set index")
     index.should_receive(:to_int).and_return("1")
 
-    -> { "abc"[index, 2] = "xyz" }.should raise_error(TypeError)
+    -> { "abc"[index, 2] = "xyz" }.should.raise(TypeError)
   end
 
   it "raises a TypeError if #to_int for count does not return an Integer" do
     count = mock("string element set count")
     count.should_receive(:to_int).and_return("1")
 
-    -> { "abc"[1, count] = "xyz" }.should raise_error(TypeError)
+    -> { "abc"[1, count] = "xyz" }.should.raise(TypeError)
   end
 
   it "calls #to_str to convert the replacement object" do
@@ -521,23 +521,23 @@ describe "String#[]= with Integer index, count" do
     r = mock("string element set replacement")
     r.should_receive(:to_str).and_return(nil)
 
-    -> { "abc"[1, 1] = r }.should raise_error(TypeError)
+    -> { "abc"[1, 1] = r }.should.raise(TypeError)
   end
 
   it "raises an IndexError if |idx| is greater than the length of the string" do
-    -> { "hello"[6, 0] = "bob"  }.should raise_error(IndexError)
-    -> { "hello"[-6, 0] = "bob" }.should raise_error(IndexError)
+    -> { "hello"[6, 0] = "bob"  }.should.raise(IndexError)
+    -> { "hello"[-6, 0] = "bob" }.should.raise(IndexError)
   end
 
   it "raises an IndexError if count < 0" do
-    -> { "hello"[0, -1] = "bob" }.should raise_error(IndexError)
-    -> { "hello"[1, -1] = "bob" }.should raise_error(IndexError)
+    -> { "hello"[0, -1] = "bob" }.should.raise(IndexError)
+    -> { "hello"[1, -1] = "bob" }.should.raise(IndexError)
   end
 
   it "raises a TypeError if other_str is a type other than String" do
-    -> { "hello"[0, 2] = nil  }.should raise_error(TypeError)
-    -> { "hello"[0, 2] = []   }.should raise_error(TypeError)
-    -> { "hello"[0, 2] = 33   }.should raise_error(TypeError)
+    -> { "hello"[0, 2] = nil  }.should.raise(TypeError)
+    -> { "hello"[0, 2] = []   }.should.raise(TypeError)
+    -> { "hello"[0, 2] = 33   }.should.raise(TypeError)
   end
 
   it "replaces characters with a multibyte character" do
@@ -571,19 +571,19 @@ describe "String#[]= with Integer index, count" do
   end
 
   it "raises an IndexError if the character index is out of range of a multibyte String" do
-    -> { "あれ"[3, 0] = "り" }.should raise_error(IndexError)
+    -> { "あれ"[3, 0] = "り" }.should.raise(IndexError)
   end
 
   it "encodes the String in an encoding compatible with the replacement" do
     str = " ".force_encoding Encoding::US_ASCII
     rep = [160].pack('C').force_encoding Encoding::BINARY
     str[0, 1] = rep
-    str.encoding.should equal(Encoding::BINARY)
+    str.encoding.should.equal?(Encoding::BINARY)
   end
 
   it "raises an Encoding::CompatibilityError if the replacement encoding is incompatible" do
     str = "あれ"
     rep = "が".encode Encoding::EUC_JP
-    -> { str[0, 1] = rep }.should raise_error(Encoding::CompatibilityError)
+    -> { str[0, 1] = rep }.should.raise(Encoding::CompatibilityError)
   end
 end

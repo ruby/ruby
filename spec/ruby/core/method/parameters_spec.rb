@@ -308,7 +308,7 @@ describe "Method#parameters" do
     [
       [[:rest]],
       [[:opt]]
-    ].should include([].method(:pop).parameters)
+    ].should.include?([].method(:pop).parameters)
   end
 
   it "returns [[:req]] for each parameter for core methods with fixed-length argument lists" do

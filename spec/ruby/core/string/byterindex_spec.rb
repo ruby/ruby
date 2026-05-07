@@ -184,7 +184,7 @@ describe "String#byterindex with String" do
   end
 
   it "raises a TypeError when given offset is nil" do
-    -> { "str".byterindex("st", nil) }.should raise_error(TypeError)
+    -> { "str".byterindex("st", nil) }.should.raise(TypeError)
   end
 
   it "handles a substring in a superset encoding" do
@@ -338,7 +338,7 @@ describe "String#byterindex with Regexp" do
   end
 
   it "raises a TypeError when given offset is nil" do
-    -> { "str".byterindex(/../, nil) }.should raise_error(TypeError)
+    -> { "str".byterindex(/../, nil) }.should.raise(TypeError)
   end
 
   it "returns the reverse byte index of a multibyte character" do

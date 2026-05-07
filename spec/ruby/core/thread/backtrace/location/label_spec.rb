@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe 'Thread::Backtrace::Location#label' do
   it 'returns the base label of the call frame' do
-    ThreadBacktraceLocationSpecs.locations[0].label.should include('<top (required)>')
+    ThreadBacktraceLocationSpecs.locations[0].label.should.include?('<top (required)>')
   end
 
   it 'returns the method name for a method location' do

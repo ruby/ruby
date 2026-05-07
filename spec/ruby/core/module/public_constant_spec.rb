@@ -8,7 +8,7 @@ describe "Module#public_constant" do
 
     -> do
       cls2.send :public_constant, :Foo
-    end.should raise_error(NameError)
+    end.should.raise(NameError)
   end
 
   it "accepts strings as constant names" do

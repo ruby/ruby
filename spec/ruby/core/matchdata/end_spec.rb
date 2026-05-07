@@ -12,7 +12,7 @@ describe "MatchData#end" do
 
     it "returns nil when the nth match isn't found" do
       match_data = /something is( not)? (right)/.match("something is right")
-      match_data.end(1).should be_nil
+      match_data.end(1).should == nil
     end
 
     it "returns the character offset for multi-byte strings" do

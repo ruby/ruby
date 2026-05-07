@@ -4,7 +4,7 @@ require_relative 'fixtures/classes'
 # arcsine : (-1.0, 1.0) --> (-PI/2, PI/2)
 describe "Math.asin" do
   it "returns a float" do
-    Math.asin(1).should be_kind_of(Float)
+    Math.asin(1).should.is_a?(Float)
   end
 
   it "returns the arcsine of the argument" do
@@ -17,23 +17,23 @@ describe "Math.asin" do
   end
 
   it "raises an Math::DomainError if the argument is greater than 1.0" do
-    -> { Math.asin(1.0001) }.should raise_error( Math::DomainError)
+    -> { Math.asin(1.0001) }.should.raise( Math::DomainError)
   end
 
   it "raises an Math::DomainError if the argument is less than -1.0" do
-    -> { Math.asin(-1.0001) }.should raise_error( Math::DomainError)
+    -> { Math.asin(-1.0001) }.should.raise( Math::DomainError)
   end
 
   it "raises a TypeError if the argument cannot be coerced with Float()" do
-    -> { Math.asin("test") }.should raise_error(TypeError)
+    -> { Math.asin("test") }.should.raise(TypeError)
   end
 
   it "returns NaN given NaN" do
-    Math.asin(nan_value).nan?.should be_true
+    Math.asin(nan_value).nan?.should == true
   end
 
   it "raises a TypeError if the argument is nil" do
-    -> { Math.asin(nil) }.should raise_error(TypeError)
+    -> { Math.asin(nil) }.should.raise(TypeError)
   end
 
   it "accepts any argument that can be coerced with Float()" do

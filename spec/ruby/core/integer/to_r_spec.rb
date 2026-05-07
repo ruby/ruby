@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 describe "Integer#to_r" do
   it "returns a Rational object" do
-    309.to_r.should be_an_instance_of(Rational)
+    309.to_r.should.instance_of?(Rational)
   end
 
   it "constructs a rational number with self as the numerator" do
@@ -15,12 +15,12 @@ describe "Integer#to_r" do
 
   it "works even if self is a Bignum" do
     bignum = 99999**999
-    bignum.should be_an_instance_of(Integer)
+    bignum.should.instance_of?(Integer)
     bignum.to_r.should == Rational(bignum, 1)
   end
 
   it "raises an ArgumentError if given any arguments" do
-    -> { 287.to_r(2) }.should raise_error(ArgumentError)
-    -> { 9102826.to_r(309, [], 71) }.should raise_error(ArgumentError)
+    -> { 287.to_r(2) }.should.raise(ArgumentError)
+    -> { 9102826.to_r(309, [], 71) }.should.raise(ArgumentError)
   end
 end

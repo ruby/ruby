@@ -80,7 +80,7 @@ describe 'Coverage.result' do
     Coverage.result
     -> {
       Coverage.result
-    }.should raise_error(RuntimeError, 'coverage measurement is not enabled')
+    }.should.raise(RuntimeError, 'coverage measurement is not enabled')
   end
 
   it 'second run should give same result' do
@@ -108,7 +108,7 @@ describe 'Coverage.result' do
 
   it 'does not include the file starting coverage since it is not tracked' do
     require @config_file.chomp('.rb')
-    Coverage.result.should_not include(@config_file)
+    Coverage.result.should_not.include?(@config_file)
   end
 
   it 'returns the correct results when eval coverage is enabled' do

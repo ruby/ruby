@@ -3,11 +3,11 @@ require_relative 'fixtures/classes'
 
 describe "Kernel#fail" do
   it "is a private method" do
-    Kernel.should have_private_instance_method(:fail)
+    Kernel.private_instance_methods(false).should.include?(:fail)
   end
 
   it "raises a RuntimeError" do
-    -> { fail }.should raise_error(RuntimeError)
+    -> { fail }.should.raise(RuntimeError)
   end
 
   it "accepts an Object with an exception method returning an Exception" do
@@ -15,12 +15,12 @@ describe "Kernel#fail" do
     def obj.exception(msg)
       StandardError.new msg
     end
-    -> { fail obj, "..." }.should raise_error(StandardError, "...")
+    -> { fail obj, "..." }.should.raise(StandardError, "...")
   end
 
   it "instantiates the specified exception class" do
     error_class = Class.new(RuntimeError)
-    -> { fail error_class }.should raise_error(error_class)
+    -> { fail error_class }.should.raise(error_class)
   end
 
   it "uses the specified message" do
@@ -33,7 +33,7 @@ describe "Kernel#fail" do
       else
         raise Exception
       end
-    }.should raise_error(RuntimeError)
+    }.should.raise(RuntimeError)
   end
 end
 

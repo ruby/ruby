@@ -3,7 +3,7 @@ require_relative '../../spec_helper'
 platform_is :linux, :darwin, :windows, :freebsd do
   describe "Thread#native_thread_id" do
     it "returns an integer when the thread is alive" do
-      Thread.current.native_thread_id.should be_kind_of(Integer)
+      Thread.current.native_thread_id.should.is_a?(Integer)
     end
 
     it "returns nil when the thread is not running" do
@@ -19,7 +19,7 @@ platform_is :linux, :darwin, :windows, :freebsd do
       t_thread_id = t.native_thread_id
 
       # native_thread_id can be nil on a M:N scheduler
-      t_thread_id.should be_kind_of(Integer) if t_thread_id != nil
+      t_thread_id.should.is_a?(Integer) if t_thread_id != nil
 
       main_thread_id.should_not == t_thread_id
 

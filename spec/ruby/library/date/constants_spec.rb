@@ -36,11 +36,11 @@ describe "Date constants" do
     [Date::MONTHNAMES, Date::DAYNAMES, Date::ABBR_MONTHNAMES, Date::ABBR_DAYNAMES].each do |ary|
       -> {
         ary << "Unknown"
-      }.should raise_error(FrozenError, /frozen/)
+      }.should.raise(FrozenError, /frozen/)
       ary.compact.each do |name|
         -> {
           name << "modified"
-        }.should raise_error(FrozenError, /frozen/)
+        }.should.raise(FrozenError, /frozen/)
       end
     end
   end

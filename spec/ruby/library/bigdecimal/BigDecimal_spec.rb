@@ -10,7 +10,7 @@ end
 describe "Kernel#BigDecimal" do
 
   it "creates a new object of class BigDecimal" do
-    BigDecimal("3.14159").should be_kind_of(BigDecimal)
+    BigDecimal("3.14159").should.is_a?(BigDecimal)
     (0..9).each {|i|
       BigDecimal("1#{i}").should == 10 + i
       BigDecimal("-1#{i}").should == -10 - i
@@ -53,15 +53,15 @@ describe "Kernel#BigDecimal" do
   end
 
   it "does not ignores trailing garbage" do
-    -> { BigDecimal("123E45ruby") }.should raise_error(ArgumentError)
-    -> { BigDecimal("123x45") }.should raise_error(ArgumentError)
-    -> { BigDecimal("123.4%E5") }.should raise_error(ArgumentError)
-    -> { BigDecimal("1E2E3E4E5E") }.should raise_error(ArgumentError)
+    -> { BigDecimal("123E45ruby") }.should.raise(ArgumentError)
+    -> { BigDecimal("123x45") }.should.raise(ArgumentError)
+    -> { BigDecimal("123.4%E5") }.should.raise(ArgumentError)
+    -> { BigDecimal("1E2E3E4E5E") }.should.raise(ArgumentError)
   end
 
   it "raises ArgumentError for invalid strings" do
-    -> { BigDecimal("ruby") }.should raise_error(ArgumentError)
-    -> { BigDecimal("  \t\n \r-\t\t\tInfinity   \n") }.should raise_error(ArgumentError)
+    -> { BigDecimal("ruby") }.should.raise(ArgumentError)
+    -> { BigDecimal("  \t\n \r-\t\t\tInfinity   \n") }.should.raise(ArgumentError)
   end
 
   it "allows omitting the integer part" do
@@ -72,8 +72,8 @@ describe "Kernel#BigDecimal" do
     reference = BigDecimal("12345.67E89")
 
     BigDecimal("12_345.67E89").should == reference
-    -> { BigDecimal("1_2_3_4_5_._6____7_E89") }.should raise_error(ArgumentError)
-    -> { BigDecimal("12345_.67E_8__9_") }.should raise_error(ArgumentError)
+    -> { BigDecimal("1_2_3_4_5_._6____7_E89") }.should.raise(ArgumentError)
+    -> { BigDecimal("12345_.67E_8__9_") }.should.raise(ArgumentError)
   end
 
   it "accepts NaN and [+-]Infinity" do
@@ -91,13 +91,13 @@ describe "Kernel#BigDecimal" do
 
   describe "with exception: false" do
     it "returns nil for invalid strings" do
-      BigDecimal("invalid", exception: false).should be_nil
-      BigDecimal("0invalid", exception: false).should be_nil
-      BigDecimal("invalid0", exception: false).should be_nil
+      BigDecimal("invalid", exception: false).should == nil
+      BigDecimal("0invalid", exception: false).should == nil
+      BigDecimal("invalid0", exception: false).should == nil
       if BigDecimal::VERSION >= "3.1.9"
         BigDecimal("0.", exception: false).to_i.should == 0
       else
-        BigDecimal("0.", exception: false).should be_nil
+        BigDecimal("0.", exception: false).should == nil
       end
     end
   end

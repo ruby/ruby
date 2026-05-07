@@ -12,6 +12,6 @@ describe "File#inspect" do
   end
 
   it "returns a String" do
-    @file.inspect.should be_an_instance_of(String)
+    @file.inspect.should.instance_of?(String)
   end
 end

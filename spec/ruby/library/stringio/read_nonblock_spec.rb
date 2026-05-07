@@ -45,7 +45,7 @@ describe "StringIO#read_nonblock" do
         stringio.rewind
 
         stringio.read_nonblock(5).should == "hello"
-        stringio.read_nonblock(5, exception: false).should be_nil
+        stringio.read_nonblock(5, exception: false).should == nil
       end
     end
   end

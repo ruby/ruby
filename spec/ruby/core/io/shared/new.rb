@@ -22,7 +22,7 @@ describe :io_new, shared: true do
 
   it "creates an IO instance from an Integer argument" do
     @io = IO.send(@method, @fd, "w")
-    @io.should be_an_instance_of(IO)
+    @io.should.instance_of?(IO)
   end
 
   it "creates an IO instance when STDOUT is closed" do
@@ -32,7 +32,7 @@ describe :io_new, shared: true do
 
       begin
         @io = IO.send(@method, @fd, "w")
-        @io.should be_an_instance_of(IO)
+        @io.should.instance_of?(IO)
       ensure
         STDOUT = stdout
         rm_r stdout_file
@@ -49,7 +49,7 @@ describe :io_new, shared: true do
 
       begin
         @io = IO.send(@method, @fd, "w")
-        @io.should be_an_instance_of(IO)
+        @io.should.instance_of?(IO)
       ensure
         STDERR = stderr
         rm_r stderr_file
@@ -61,7 +61,7 @@ describe :io_new, shared: true do
     obj = mock("file descriptor")
     obj.should_receive(:to_int).and_return(@fd)
     @io = IO.send(@method, obj, "w")
-    @io.should be_an_instance_of(IO)
+    @io.should.instance_of?(IO)
   end
 
   it "accepts options as keyword arguments" do
@@ -70,7 +70,7 @@ describe :io_new, shared: true do
 
     -> {
       IO.send(@method, @fd, "w", {flags: File::CREAT})
-    }.should raise_error(ArgumentError, "wrong number of arguments (given 3, expected 1..2)")
+    }.should.raise(ArgumentError, "wrong number of arguments (given 3, expected 1..2)")
   end
 
   it "accepts a :mode option" do
@@ -231,7 +231,7 @@ describe :io_new, shared: true do
   it "raises ArgumentError for nil options" do
     -> {
       IO.send(@method, @fd, 'w', nil)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "coerces mode with #to_str" do
@@ -314,100 +314,100 @@ describe :io_new_errors, shared: true do
   end
 
   it "raises an Errno::EBADF if the file descriptor is not valid" do
-    -> { IO.send(@method, -1, "w") }.should raise_error(Errno::EBADF)
+    -> { IO.send(@method, -1, "w") }.should.raise(Errno::EBADF)
   end
 
   it "raises an IOError if passed a closed stream" do
-    -> { IO.send(@method, IOSpecs.closed_io.fileno, 'w') }.should raise_error(IOError)
+    -> { IO.send(@method, IOSpecs.closed_io.fileno, 'w') }.should.raise(IOError)
   end
 
   platform_is_not :windows do
     it "raises an Errno::EINVAL if the new mode is not compatible with the descriptor's current mode" do
-      -> { IO.send(@method, @fd, "r") }.should raise_error(Errno::EINVAL)
+      -> { IO.send(@method, @fd, "r") }.should.raise(Errno::EINVAL)
     end
   end
 
   it "raises ArgumentError if passed an empty mode string" do
-    -> { IO.send(@method, @fd, "") }.should raise_error(ArgumentError)
+    -> { IO.send(@method, @fd, "") }.should.raise(ArgumentError)
   end
 
   it "raises an error if passed modes two ways" do
     -> {
       IO.send(@method, @fd, "w", mode: "w")
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "raises an error if passed encodings two ways" do
     -> {
       @io = IO.send(@method, @fd, 'w:ISO-8859-1', encoding: 'ISO-8859-1')
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
     -> {
       @io = IO.send(@method, @fd, 'w:ISO-8859-1', external_encoding: 'ISO-8859-1')
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
     -> {
       @io = IO.send(@method, @fd, 'w:ISO-8859-1', internal_encoding: 'ISO-8859-1')
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
     -> {
       @io = IO.send(@method, @fd, 'w:ISO-8859-1:UTF-8', internal_encoding: 'ISO-8859-1')
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "raises an error if passed matching binary/text mode two ways" do
     -> {
       @io = IO.send(@method, @fd, "wb", binmode: true)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
     -> {
       @io = IO.send(@method, @fd, "wt", textmode: true)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
 
     -> {
       @io = IO.send(@method, @fd, "wb", textmode: false)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
     -> {
       @io = IO.send(@method, @fd, "wt", binmode: false)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "raises an error if passed conflicting binary/text mode two ways" do
     -> {
       @io = IO.send(@method, @fd, "wb", binmode: false)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
     -> {
       @io = IO.send(@method, @fd, "wt", textmode: false)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
 
     -> {
       @io = IO.send(@method, @fd, "wb", textmode: true)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
     -> {
       @io = IO.send(@method, @fd, "wt", binmode: true)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "raises an error when trying to set both binmode and textmode" do
     -> {
       @io = IO.send(@method, @fd, "w", textmode: true, binmode: true)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
     -> {
       @io = IO.send(@method, @fd, File::Constants::WRONLY, textmode: true, binmode: true)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "raises ArgumentError if not passed a hash or nil for options" do
     -> {
       @io = IO.send(@method, @fd, 'w', false)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
     -> {
       @io = IO.send(@method, @fd, false, false)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
     -> {
       @io = IO.send(@method, @fd, nil, false)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "raises ArgumentError if passed a hash for mode and nil for options" do
     -> {
       @io = IO.send(@method, @fd, {mode: 'w'}, nil)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 end

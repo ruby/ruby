@@ -15,7 +15,7 @@ describe "TCPServer#accept" do
     data = nil
     t = Thread.new do
       client = @server.accept
-      client.should be_kind_of(TCPSocket)
+      client.should.is_a?(TCPSocket)
       data = client.read(5)
       client << "goodbye"
       client.close
@@ -50,7 +50,7 @@ describe "TCPServer#accept" do
     t = Thread.new {
       -> {
         @server.accept
-      }.should raise_error(Exception, "interrupted")
+      }.should.raise(Exception, "interrupted")
     }
 
     Thread.pass while t.status and t.status != "sleep"
@@ -80,7 +80,7 @@ describe "TCPServer#accept" do
 
   it "raises an IOError if the socket is closed" do
     @server.close
-    -> { @server.accept }.should raise_error(IOError)
+    -> { @server.accept }.should.raise(IOError)
   end
 end
 
@@ -112,7 +112,7 @@ describe 'TCPServer#accept' do
 
       it 'returns a TCPSocket' do
         @socket = @server.accept
-        @socket.should be_an_instance_of(TCPSocket)
+        @socket.should.instance_of?(TCPSocket)
       end
 
       platform_is_not :windows do

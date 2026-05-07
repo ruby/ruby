@@ -22,7 +22,7 @@ describe "Net::HTTPResponse#reading_body" do
         yielded = true
       end
 
-      yielded.should be_true
+      yielded.should == true
     end
 
     describe "but the response type is not allowed to have a body" do
@@ -31,28 +31,28 @@ describe "Net::HTTPResponse#reading_body" do
       end
 
       it "returns nil" do
-        @res.reading_body(@socket, false) {}.should be_nil
-        @res.body.should be_nil
+        @res.reading_body(@socket, false) {}.should == nil
+        @res.body.should == nil
       end
 
       it "yields the passed block" do
         yielded = false
         @res.reading_body(@socket, true) { yielded = true }
-        yielded.should be_true
+        yielded.should == true
       end
     end
   end
 
   describe "when body_allowed is false" do
     it "returns nil" do
-      @res.reading_body(@socket, false) {}.should be_nil
-      @res.body.should be_nil
+      @res.reading_body(@socket, false) {}.should == nil
+      @res.body.should == nil
     end
 
     it "yields the passed block" do
       yielded = false
       @res.reading_body(@socket, true) { yielded = true }
-      yielded.should be_true
+      yielded.should == true
     end
   end
 end

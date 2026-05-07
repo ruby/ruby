@@ -9,7 +9,7 @@ platform_is :windows do
     end
 
     it "raises ArgumentError if argument is given" do
-      -> { @m_browse_for_folder.size_opt_params(1) }.should raise_error ArgumentError
+      -> { @m_browse_for_folder.size_opt_params(1) }.should.raise ArgumentError
     end
 
     it "returns expected value for Shell Control's 'BrowseForFolder' method" do

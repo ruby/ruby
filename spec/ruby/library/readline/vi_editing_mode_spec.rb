@@ -4,7 +4,7 @@ platform_is_not :darwin do
   with_feature :readline do
     describe "Readline.vi_editing_mode" do
       it "returns nil" do
-        Readline.vi_editing_mode.should be_nil
+        Readline.vi_editing_mode.should == nil
       end
     end
   end

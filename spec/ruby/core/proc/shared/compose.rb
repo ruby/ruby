@@ -5,7 +5,7 @@ describe :proc_compose, shared: true do
 
     -> {
       lhs.send(@method, not_callable)
-    }.should raise_error(TypeError, "callable object is expected")
+    }.should.raise(TypeError, "callable object is expected")
 
   end
 
@@ -17,6 +17,6 @@ describe :proc_compose, shared: true do
 
     -> {
       lhs.send(@method, succ)
-    }.should raise_error(TypeError, "callable object is expected")
+    }.should.raise(TypeError, "callable object is expected")
   end
 end

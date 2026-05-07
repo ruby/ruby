@@ -9,7 +9,7 @@ platform_is :windows do
     end
 
     it "raises ArgumentError if argument is given" do
-      -> { @m.dispid(0) }.should raise_error ArgumentError
+      -> { @m.dispid(0) }.should.raise ArgumentError
     end
 
     it "returns expected dispatch ID for Shell's 'namespace' method" do

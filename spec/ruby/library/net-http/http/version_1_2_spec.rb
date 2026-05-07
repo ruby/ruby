@@ -6,12 +6,12 @@ describe "Net::HTTP.version_1_2" do
   it "turns on net/http 1.2 features" do
     Net::HTTP.version_1_2
 
-    Net::HTTP.version_1_2?.should be_true
-    Net::HTTP.version_1_1?.should be_false
+    Net::HTTP.version_1_2?.should == true
+    Net::HTTP.version_1_1?.should == false
   end
 
   it "returns true" do
-    Net::HTTP.version_1_2.should be_true
+    Net::HTTP.version_1_2.should == true
   end
 end
 

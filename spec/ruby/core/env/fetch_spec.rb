@@ -16,7 +16,7 @@ describe "ENV.fetch" do
   end
 
   it "raises a TypeError if the key is not a String" do
-    -> { ENV.fetch Object.new }.should raise_error(TypeError, "no implicit conversion of Object into String")
+    -> { ENV.fetch Object.new }.should.raise(TypeError, "no implicit conversion of Object into String")
   end
 
   context "when the key is not found" do
@@ -25,7 +25,7 @@ describe "ENV.fetch" do
     it "formats the object with #inspect in the KeyError message" do
       -> {
         ENV.fetch('foo')
-      }.should raise_error(KeyError, 'key not found: "foo"')
+      }.should.raise(KeyError, 'key not found: "foo"')
     end
   end
 

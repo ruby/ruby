@@ -10,7 +10,7 @@ describe "SimpleDelegator" do
   it "can be marshalled" do
     m = Marshal.load(Marshal.dump(@delegate))
     m.class.should == SimpleDelegator
-    (m == @obj).should be_true
+    (m == @obj).should == true
   end
 
   it "can be marshalled with its instance variables intact" do

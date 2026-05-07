@@ -52,7 +52,7 @@ describe "Hash#delete" do
   end
 
   it "raises a FrozenError if called on a frozen instance" do
-    -> { HashSpecs.frozen_hash.delete("foo") }.should raise_error(FrozenError)
-    -> { HashSpecs.empty_frozen_hash.delete("foo") }.should raise_error(FrozenError)
+    -> { HashSpecs.frozen_hash.delete("foo") }.should.raise(FrozenError)
+    -> { HashSpecs.empty_frozen_hash.delete("foo") }.should.raise(FrozenError)
   end
 end

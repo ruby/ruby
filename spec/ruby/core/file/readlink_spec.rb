@@ -26,12 +26,12 @@ describe "File.readlink" do
 
       it "raises an Errno::ENOENT if there is no such file" do
         # TODO: missing_file
-        -> { File.readlink("/this/surely/does/not/exist") }.should raise_error(Errno::ENOENT)
+        -> { File.readlink("/this/surely/does/not/exist") }.should.raise(Errno::ENOENT)
       end
 
       it "raises an Errno::EINVAL if called with a normal file" do
         touch @file
-        -> { File.readlink(@file) }.should raise_error(Errno::EINVAL)
+        -> { File.readlink(@file) }.should.raise(Errno::EINVAL)
       end
     end
 
@@ -49,7 +49,7 @@ describe "File.readlink" do
       it "returns the name of the file referenced by the given link" do
         touch @file
         result = File.readlink(@link)
-        result.encoding.should equal Encoding.find('filesystem')
+        result.encoding.should.equal? Encoding.find('filesystem')
         result.should == @file.dup.force_encoding(Encoding.find('filesystem'))
       end
     end

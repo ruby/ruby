@@ -93,7 +93,7 @@ describe :string_each_line, shared: true do
 
   it "returns self" do
     s = "hello\nworld"
-    (s.send(@method) {}).should equal(s)
+    (s.send(@method) {}).should.equal?(s)
   end
 
   it "tries to convert the separator to a string using to_str" do
@@ -119,8 +119,8 @@ describe :string_each_line, shared: true do
   end
 
   it "raises a TypeError when the separator can't be converted to a string" do
-    -> { "hello world".send(@method, false) {}     }.should raise_error(TypeError)
-    -> { "hello world".send(@method, mock('x')) {} }.should raise_error(TypeError)
+    -> { "hello world".send(@method, false) {}     }.should.raise(TypeError)
+    -> { "hello world".send(@method, mock('x')) {} }.should.raise(TypeError)
   end
 
   it "accepts a string separator" do
@@ -128,7 +128,7 @@ describe :string_each_line, shared: true do
   end
 
   it "raises a TypeError when the separator is a symbol" do
-    -> { "hello world".send(@method, :o).to_a }.should raise_error(TypeError)
+    -> { "hello world".send(@method, :o).to_a }.should.raise(TypeError)
   end
 
   context "when `chomp` keyword argument is passed" do
@@ -171,6 +171,6 @@ describe :string_each_line, shared: true do
 
   it "raises Encoding::ConverterNotFoundError for dummy UTF-7" do
     str = "a\nb".dup.force_encoding(Encoding::UTF_7)
-    -> { str.lines }.should raise_error(Encoding::ConverterNotFoundError)
+    -> { str.lines }.should.raise(Encoding::ConverterNotFoundError)
   end
 end

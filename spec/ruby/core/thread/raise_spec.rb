@@ -4,7 +4,7 @@ require_relative '../../shared/kernel/raise'
 
 describe "Thread#raise" do
   it "is a public method" do
-    Thread.public_instance_methods.should include(:raise)
+    Thread.public_instance_methods.should.include?(:raise)
   end
 
   it_behaves_like :kernel_raise, :raise, ThreadSpecs::NewThreadToRaise
@@ -36,27 +36,27 @@ describe "Thread#raise on a sleeping thread" do
   it "raises a RuntimeError if no exception class is given" do
     @thr.raise
     Thread.pass while @thr.status
-    ScratchPad.recorded.should be_kind_of(RuntimeError)
+    ScratchPad.recorded.should.is_a?(RuntimeError)
   end
 
   it "raises the given exception" do
     @thr.raise Exception
     Thread.pass while @thr.status
-    ScratchPad.recorded.should be_kind_of(Exception)
+    ScratchPad.recorded.should.is_a?(Exception)
   end
 
   it "raises the given exception with the given message" do
     @thr.raise Exception, "get to work"
     Thread.pass while @thr.status
-    ScratchPad.recorded.should be_kind_of(Exception)
+    ScratchPad.recorded.should.is_a?(Exception)
     ScratchPad.recorded.message.should == "get to work"
   end
 
   it "raises the given exception and the backtrace is the one of the interrupted thread" do
     @thr.raise Exception
     Thread.pass while @thr.status
-    ScratchPad.recorded.should be_kind_of(Exception)
-    ScratchPad.recorded.backtrace[0].should include("sleep")
+    ScratchPad.recorded.should.is_a?(Exception)
+    ScratchPad.recorded.backtrace[0].should.include?("sleep")
   end
 
   it "is captured and raised by Thread#value" do
@@ -68,7 +68,7 @@ describe "Thread#raise on a sleeping thread" do
     ThreadSpecs.spin_until_sleeping(t)
 
     t.raise
-    -> { t.value }.should raise_error(RuntimeError)
+    -> { t.value }.should.raise(RuntimeError)
   end
 
   it "raises a RuntimeError when called with no arguments inside rescue" do
@@ -86,7 +86,7 @@ describe "Thread#raise on a sleeping thread" do
       ThreadSpecs.spin_until_sleeping(t)
       t.raise
     end
-    -> { t.value }.should raise_error(RuntimeError)
+    -> { t.value }.should.raise(RuntimeError)
   end
 
   it "re-raises a previously rescued exception without overwriting the backtrace" do
@@ -108,8 +108,8 @@ describe "Thread#raise on a sleeping thread" do
       raise_again_line = __LINE__; t.raise raised
       raised_again = t.value
 
-      raised_again.backtrace.first.should include("#{__FILE__}:#{initial_raise_line}:")
-      raised_again.backtrace.first.should_not include("#{__FILE__}:#{raise_again_line}:")
+      raised_again.backtrace.first.should.include?("#{__FILE__}:#{initial_raise_line}:")
+      raised_again.backtrace.first.should_not.include?("#{__FILE__}:#{raise_again_line}:")
     end
   end
 
@@ -155,19 +155,19 @@ describe "Thread#raise on a running thread" do
   it "raises a RuntimeError if no exception class is given" do
     @thr.raise
     Thread.pass while @thr.status
-    ScratchPad.recorded.should be_kind_of(RuntimeError)
+    ScratchPad.recorded.should.is_a?(RuntimeError)
   end
 
   it "raises the given exception" do
     @thr.raise Exception
     Thread.pass while @thr.status
-    ScratchPad.recorded.should be_kind_of(Exception)
+    ScratchPad.recorded.should.is_a?(Exception)
   end
 
   it "raises the given exception with the given message" do
     @thr.raise Exception, "get to work"
     Thread.pass while @thr.status
-    ScratchPad.recorded.should be_kind_of(Exception)
+    ScratchPad.recorded.should.is_a?(Exception)
     ScratchPad.recorded.message.should == "get to work"
   end
 
@@ -181,7 +181,7 @@ describe "Thread#raise on a running thread" do
 
     q.pop # wait for `report_on_exception = false`.
     t.raise
-    -> { t.value }.should raise_error(RuntimeError)
+    -> { t.value }.should.raise(RuntimeError)
   end
 
   it "raises the given argument even when there is an active exception" do
@@ -200,7 +200,7 @@ describe "Thread#raise on a running thread" do
     rescue
       Thread.pass until raised
       t.raise RangeError
-      -> { t.value }.should raise_error(RangeError)
+      -> { t.value }.should.raise(RangeError)
     end
   end
 
@@ -221,7 +221,7 @@ describe "Thread#raise on a running thread" do
       Thread.pass until raised
       t.raise
     end
-    -> { t.value }.should raise_error(RuntimeError)
+    -> { t.value }.should.raise(RuntimeError)
   end
 end
 
@@ -237,6 +237,6 @@ describe "Thread#raise on same thread" do
         Thread.current.raise
       end
     end
-    -> { t.value }.should raise_error(RuntimeError, '')
+    -> { t.value }.should.raise(RuntimeError, '')
   end
 end

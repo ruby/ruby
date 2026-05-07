@@ -4,7 +4,7 @@ require 'net/http'
 describe "Net::HTTP.proxy_address" do
   describe "when self is no proxy class" do
     it "returns nil" do
-      Net::HTTP.proxy_address.should be_nil
+      Net::HTTP.proxy_address.should == nil
     end
   end
 
@@ -18,7 +18,7 @@ end
 describe "Net::HTTP#proxy_address" do
   describe "when self is no proxy class instance" do
     it "returns nil" do
-      Net::HTTP.new("localhost", 3333).proxy_address.should be_nil
+      Net::HTTP.new("localhost", 3333).proxy_address.should == nil
     end
   end
 

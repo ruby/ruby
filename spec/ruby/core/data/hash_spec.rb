@@ -6,7 +6,7 @@ describe "Data#hash" do
     a = DataSpecs::Measure.new(42, "km")
     b = DataSpecs::Measure.new(42, "km")
     a.hash.should == b.hash
-    a.hash.should be_an_instance_of(Integer)
+    a.hash.should.instance_of?(Integer)
   end
 
   it "returns different hashes for objects with different values" do

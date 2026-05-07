@@ -18,13 +18,13 @@ platform_is_not :windows do
     it "UNIXServer.open by raising an exception when there is a NUL byte" do
       -> {
         UNIXServer.open(@path+"\0")
-      }.should raise_error(ArgumentError, /(path name|string) contains null byte/)
+      }.should.raise(ArgumentError, /(path name|string) contains null byte/)
     end
 
     it "UNIXSocket.open by raising an exception when there is a NUL byte" do
       -> {
         UNIXSocket.open(@path+"\0")
-      }.should raise_error(ArgumentError, /(path name|string) contains null byte/)
+      }.should.raise(ArgumentError, /(path name|string) contains null byte/)
     end
   end
 end

@@ -5,47 +5,47 @@ describe "Socket::Constants" do
   it "defines socket types" do
     consts = ["SOCK_DGRAM", "SOCK_RAW", "SOCK_RDM", "SOCK_SEQPACKET", "SOCK_STREAM"]
     consts.each do |c|
-      Socket::Constants.should have_constant(c)
+      Socket::Constants.should.const_defined?(c, false)
     end
   end
 
   it "defines protocol families" do
     consts = ["PF_INET6", "PF_INET", "PF_UNIX", "PF_UNSPEC"]
     consts.each do |c|
-      Socket::Constants.should have_constant(c)
+      Socket::Constants.should.const_defined?(c, false)
     end
   end
 
   platform_is_not :aix do
     it "defines PF_IPX protocol" do
-      Socket::Constants.should have_constant("PF_IPX")
+      Socket::Constants.should.const_defined?("PF_IPX", false)
     end
   end
 
   it "defines address families" do
     consts = ["AF_INET6", "AF_INET", "AF_UNIX", "AF_UNSPEC"]
     consts.each do |c|
-      Socket::Constants.should have_constant(c)
+      Socket::Constants.should.const_defined?(c, false)
     end
   end
 
   platform_is_not :aix do
     it "defines AF_IPX address" do
-      Socket::Constants.should have_constant("AF_IPX")
+      Socket::Constants.should.const_defined?("AF_IPX", false)
     end
   end
 
   it "defines send/receive options" do
     consts = ["MSG_DONTROUTE", "MSG_OOB", "MSG_PEEK"]
     consts.each do |c|
-      Socket::Constants.should have_constant(c)
+      Socket::Constants.should.const_defined?(c, false)
     end
   end
 
   it "defines socket level options" do
     consts = ["SOL_SOCKET"]
     consts.each do |c|
-      Socket::Constants.should have_constant(c)
+      Socket::Constants.should.const_defined?(c, false)
     end
   end
 
@@ -53,7 +53,7 @@ describe "Socket::Constants" do
     consts = ["SO_BROADCAST", "SO_DEBUG", "SO_DONTROUTE", "SO_ERROR", "SO_KEEPALIVE", "SO_LINGER",
               "SO_OOBINLINE", "SO_RCVBUF", "SO_REUSEADDR", "SO_SNDBUF", "SO_TYPE"]
     consts.each do |c|
-      Socket::Constants.should have_constant(c)
+      Socket::Constants.should.const_defined?(c, false)
     end
   end
 
@@ -64,7 +64,7 @@ describe "Socket::Constants" do
       consts += ["IP_DEFAULT_MULTICAST_LOOP", "IP_DEFAULT_MULTICAST_TTL"]
     end
     consts.each do |c|
-      Socket::Constants.should have_constant(c)
+      Socket::Constants.should.const_defined?(c, false)
     end
   end
 
@@ -72,7 +72,7 @@ describe "Socket::Constants" do
     it "defines multicast options" do
       consts = ["IP_MAX_MEMBERSHIPS"]
       consts.each do |c|
-        Socket::Constants.should have_constant(c)
+        Socket::Constants.should.const_defined?(c, false)
       end
     end
   end
@@ -83,13 +83,13 @@ describe "Socket::Constants" do
       consts << "TCP_MAXSEG"
     end
     consts.each do |c|
-      Socket::Constants.should have_constant(c)
+      Socket::Constants.should.const_defined?(c, false)
     end
   end
 
   platform_is_not :windows do
     it 'defines SCM options' do
-      Socket::Constants.should have_constant('SCM_RIGHTS')
+      Socket::Constants.should.const_defined?('SCM_RIGHTS', false)
     end
 
     it 'defines error options' do
@@ -101,7 +101,7 @@ describe "Socket::Constants" do
       end
 
       consts.each do |c|
-        Socket::Constants.should have_constant(c)
+        Socket::Constants.should.const_defined?(c, false)
       end
     end
   end

@@ -3,22 +3,22 @@ require_relative 'fixtures/classes'
 
 describe "Module#module_function" do
   it "is a private method" do
-    Module.should have_private_instance_method(:module_function)
+    Module.private_instance_methods(false).should.include?(:module_function)
   end
 
   describe "on Class" do
     it "is undefined" do
-      Class.should_not have_private_instance_method(:module_function, true)
+      Class.private_instance_methods(true).should_not.include?(:module_function)
     end
 
     it "raises a TypeError if calling after rebinded to Class" do
       -> {
         Module.instance_method(:module_function).bind(Class.new).call
-      }.should raise_error(TypeError)
+      }.should.raise(TypeError)
 
       -> {
         Module.instance_method(:module_function).bind(Class.new).call :foo
-      }.should raise_error(TypeError)
+      }.should.raise(TypeError)
     end
   end
 end
@@ -41,7 +41,7 @@ describe "Module#module_function with specific method names" do
   it "returns argument or arguments if given" do
     Module.new do
       def foo; end
-      module_function(:foo).should equal(:foo)
+      module_function(:foo).should.equal?(:foo)
       module_function(:foo, :foo).should == [:foo, :foo]
     end
   end
@@ -83,9 +83,9 @@ describe "Module#module_function with specific method names" do
 
     (o = mock('x')).extend(m)
     o.respond_to?(:test).should == false
-    m.should have_private_instance_method(:test)
+    m.private_instance_methods(false).should.include?(:test)
     o.send(:test).should == "hello"
-    -> { o.test }.should raise_error(NoMethodError)
+    -> { o.test }.should.raise(NoMethodError)
   end
 
   it "makes the new Module methods public" do
@@ -114,17 +114,17 @@ describe "Module#module_function with specific method names" do
   it "raises a TypeError when the given names can't be converted to string using to_str" do
     o = mock('123')
 
-    -> { Module.new { module_function(o) } }.should raise_error(TypeError)
+    -> { Module.new { module_function(o) } }.should.raise(TypeError)
 
     o.should_receive(:to_str).and_return(123)
-    -> { Module.new { module_function(o) } }.should raise_error(TypeError)
+    -> { Module.new { module_function(o) } }.should.raise(TypeError)
   end
 
   it "can make accessible private methods" do # JRUBY-4214
     m = Module.new do
       module_function :require
     end
-    m.respond_to?(:require).should be_true
+    m.respond_to?(:require).should == true
   end
 
   it "creates Module methods that super up the singleton class of the module" do
@@ -207,7 +207,7 @@ describe "Module#module_function as a toggle (no arguments) in a Module body" do
 
   it "returns nil" do
     Module.new do
-      module_function.should equal(nil)
+      module_function.should.equal?(nil)
     end
   end
 

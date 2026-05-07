@@ -84,11 +84,11 @@ describe "BigDecimal#<" do
   end
 
   it "raises an ArgumentError if the argument can't be coerced into a BigDecimal" do
-    -> {@zero         < nil }.should raise_error(ArgumentError)
-    -> {@infinity     < nil }.should raise_error(ArgumentError)
-    -> {@infinity_neg < nil }.should raise_error(ArgumentError)
-    -> {@mixed        < nil }.should raise_error(ArgumentError)
-    -> {@pos_int      < nil }.should raise_error(ArgumentError)
-    -> {@neg_frac     < nil }.should raise_error(ArgumentError)
+    -> {@zero         < nil }.should.raise(ArgumentError)
+    -> {@infinity     < nil }.should.raise(ArgumentError)
+    -> {@infinity_neg < nil }.should.raise(ArgumentError)
+    -> {@mixed        < nil }.should.raise(ArgumentError)
+    -> {@pos_int      < nil }.should.raise(ArgumentError)
+    -> {@neg_frac     < nil }.should.raise(ArgumentError)
   end
 end

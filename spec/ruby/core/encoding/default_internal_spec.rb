@@ -10,17 +10,17 @@ describe "Encoding.default_internal" do
   end
 
   it "is nil by default" do
-    Encoding.default_internal.should be_nil
+    Encoding.default_internal.should == nil
   end
 
   it "returns an Encoding object if a default internal encoding is set" do
     Encoding.default_internal = Encoding::ASCII
-    Encoding.default_internal.should be_an_instance_of(Encoding)
+    Encoding.default_internal.should.instance_of?(Encoding)
   end
 
   it "returns nil if no default internal encoding is set" do
     Encoding.default_internal = nil
-    Encoding.default_internal.should be_nil
+    Encoding.default_internal.should == nil
   end
 
   it "returns the default internal encoding" do
@@ -60,15 +60,15 @@ describe "Encoding.default_internal=" do
     obj = mock('string')
     obj.should_receive(:to_str).at_least(1).times.and_return(1)
 
-    -> { Encoding.default_internal = obj }.should raise_error(TypeError)
+    -> { Encoding.default_internal = obj }.should.raise(TypeError)
   end
 
   it "raises a TypeError when passed an object not providing #to_str" do
-    -> { Encoding.default_internal = mock("encoding") }.should raise_error(TypeError)
+    -> { Encoding.default_internal = mock("encoding") }.should.raise(TypeError)
   end
 
   it "accepts an argument of nil to unset the default internal encoding" do
     Encoding.default_internal = nil
-    Encoding.default_internal.should be_nil
+    Encoding.default_internal.should == nil
   end
 end

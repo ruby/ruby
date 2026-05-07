@@ -8,7 +8,7 @@ describe "Module#private_constant" do
 
     -> do
       cls2.send :private_constant, :Foo
-    end.should raise_error(NameError)
+    end.should.raise(NameError)
   end
 
   it "accepts strings as constant names" do
@@ -16,7 +16,7 @@ describe "Module#private_constant" do
     cls.const_set :Foo, true
     cls.send :private_constant, "Foo"
 
-    -> { cls::Foo }.should raise_error(NameError)
+    -> { cls::Foo }.should.raise(NameError)
   end
 
   it "accepts multiple names" do
@@ -26,7 +26,7 @@ describe "Module#private_constant" do
 
     mod.send :private_constant, :Foo, :Bar
 
-    -> {mod::Foo}.should raise_error(NameError)
-    -> {mod::Bar}.should raise_error(NameError)
+    -> {mod::Foo}.should.raise(NameError)
+    -> {mod::Bar}.should.raise(NameError)
   end
 end

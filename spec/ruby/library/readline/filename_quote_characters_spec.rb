@@ -4,7 +4,7 @@ platform_is_not :darwin do
   with_feature :readline do
     describe "Readline.filename_quote_characters" do
       it "returns nil" do
-        Readline.filename_quote_characters.should be_nil
+        Readline.filename_quote_characters.should == nil
       end
     end
 

@@ -19,7 +19,7 @@ describe "Array#pack with format 'Z'" do
   end
 
   it "will not implicitly convert a number to a string" do
-    -> { [0].pack('Z') }.should raise_error(TypeError)
+    -> { [0].pack('Z') }.should.raise(TypeError)
   end
 
   it "adds all the bytes and appends a NULL byte when passed the '*' modifier" do

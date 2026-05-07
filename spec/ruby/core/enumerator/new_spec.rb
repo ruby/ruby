@@ -3,7 +3,7 @@ require_relative '../../spec_helper'
 describe "Enumerator.new" do
   context "no block given" do
     it "raises" do
-      -> { Enumerator.new(1, :upto, 3) }.should raise_error(ArgumentError)
+      -> { Enumerator.new(1, :upto, 3) }.should.raise(ArgumentError)
     end
   end
 

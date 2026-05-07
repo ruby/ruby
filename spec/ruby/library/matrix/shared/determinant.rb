@@ -29,10 +29,10 @@ describe :determinant, shared: true do
   it "raises an error for rectangular matrices" do
     -> {
       Matrix[[1], [2], [3]].send(@method)
-    }.should raise_error(Matrix::ErrDimensionMismatch)
+    }.should.raise(Matrix::ErrDimensionMismatch)
 
     -> {
       Matrix.empty(3,0).send(@method)
-    }.should raise_error(Matrix::ErrDimensionMismatch)
+    }.should.raise(Matrix::ErrDimensionMismatch)
   end
 end

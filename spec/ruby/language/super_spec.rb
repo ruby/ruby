@@ -83,8 +83,8 @@ describe "The super keyword" do
       end
     end
 
-    -> {sub_normal.new.foo}.should raise_error(NoMethodError, /super/)
-    -> {sub_zsuper.new.foo}.should raise_error(NoMethodError, /super/)
+    -> {sub_normal.new.foo}.should.raise(NoMethodError, /super/)
+    -> {sub_zsuper.new.foo}.should.raise(NoMethodError, /super/)
   end
 
   it "uses given block even if arguments are passed explicitly" do
@@ -130,7 +130,7 @@ describe "The super keyword" do
       end
     end
 
-    c2.new.m('a') { raise }.should be_false
+    c2.new.m('a') { raise }.should == false
   end
 
   it "uses block argument given to method when used in a block" do
@@ -200,7 +200,7 @@ describe "The super keyword" do
       end
     end
 
-    -> { klass.new.a(:a_called) }.should raise_error(RuntimeError)
+    -> { klass.new.a(:a_called) }.should.raise(RuntimeError)
   end
 
   it "is able to navigate to super, when a method is defined dynamically on the singleton class" do

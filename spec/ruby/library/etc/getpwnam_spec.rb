@@ -22,7 +22,7 @@ platform_is_not :windows do
       -> {
         Etc.getpwnam(123)
         Etc.getpwnam(nil)
-      }.should raise_error(TypeError)
+      }.should.raise(TypeError)
     end
   end
 end

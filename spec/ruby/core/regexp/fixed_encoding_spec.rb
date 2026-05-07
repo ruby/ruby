@@ -3,34 +3,34 @@ require_relative '../../spec_helper'
 
 describe "Regexp#fixed_encoding?" do
   it "returns false by default" do
-    /needle/.fixed_encoding?.should be_false
+    /needle/.fixed_encoding?.should == false
   end
 
   it "returns false if the 'n' modifier was supplied to the Regexp" do
-    /needle/n.fixed_encoding?.should be_false
+    /needle/n.fixed_encoding?.should == false
   end
 
   it "returns true if the 'u' modifier was supplied to the Regexp" do
-    /needle/u.fixed_encoding?.should be_true
+    /needle/u.fixed_encoding?.should == true
   end
 
   it "returns true if the 's' modifier was supplied to the Regexp" do
-    /needle/s.fixed_encoding?.should be_true
+    /needle/s.fixed_encoding?.should == true
   end
 
   it "returns true if the 'e' modifier was supplied to the Regexp" do
-    /needle/e.fixed_encoding?.should be_true
+    /needle/e.fixed_encoding?.should == true
   end
 
   it "returns true if the Regexp contains a \\u escape" do
-    /needle \u{8768}/.fixed_encoding?.should be_true
+    /needle \u{8768}/.fixed_encoding?.should == true
   end
 
   it "returns true if the Regexp contains a UTF-8 literal" do
-    /文字化け/.fixed_encoding?.should be_true
+    /文字化け/.fixed_encoding?.should == true
   end
 
   it "returns true if the Regexp was created with the Regexp::FIXEDENCODING option" do
-    Regexp.new("", Regexp::FIXEDENCODING).fixed_encoding?.should be_true
+    Regexp.new("", Regexp::FIXEDENCODING).fixed_encoding?.should == true
   end
 end

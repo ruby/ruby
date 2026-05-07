@@ -9,7 +9,7 @@ describe 'TracePoint#method_id' do
       method_name = tp.method_id
     }.enable do
       TracePointSpec.test
-      method_name.should equal(:test)
+      method_name.should.equal?(:test)
     end
   end
 end

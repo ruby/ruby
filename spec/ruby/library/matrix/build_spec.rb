@@ -6,7 +6,7 @@ describe "Matrix.build" do
 
   it "returns a Matrix object of the given size" do
     m = Matrix.build(3, 4){1}
-    m.should be_an_instance_of(Matrix)
+    m.should.instance_of?(Matrix)
     m.row_size.should == 3
     m.column_size.should == 4
   end
@@ -24,32 +24,32 @@ describe "Matrix.build" do
 
   it "returns an Enumerator is no block is given" do
     enum = Matrix.build(2, 1)
-    enum.should be_an_instance_of(Enumerator)
+    enum.should.instance_of?(Enumerator)
     enum.each{1}.should == Matrix[[1], [1]]
   end
 
   it "requires integers as parameters" do
-    -> { Matrix.build("1", "2"){1} }.should raise_error(TypeError)
-    -> { Matrix.build(nil, nil){1} }.should raise_error(TypeError)
-    -> { Matrix.build(1..2){1} }.should raise_error(TypeError)
+    -> { Matrix.build("1", "2"){1} }.should.raise(TypeError)
+    -> { Matrix.build(nil, nil){1} }.should.raise(TypeError)
+    -> { Matrix.build(1..2){1} }.should.raise(TypeError)
   end
 
   it "requires non-negative integers" do
-    -> { Matrix.build(-1, 1){1} }.should raise_error(ArgumentError)
-    -> { Matrix.build(+1,-1){1} }.should raise_error(ArgumentError)
+    -> { Matrix.build(-1, 1){1} }.should.raise(ArgumentError)
+    -> { Matrix.build(+1,-1){1} }.should.raise(ArgumentError)
   end
 
   it "returns empty Matrix if one argument is zero" do
     m = Matrix.build(0, 3){
       raise "Should not yield"
     }
-    m.should be_empty
+    m.should.empty?
     m.column_size.should == 3
 
     m = Matrix.build(3, 0){
       raise "Should not yield"
     }
-    m.should be_empty
+    m.should.empty?
     m.row_size.should == 3
   end
 
@@ -68,6 +68,6 @@ end
 
 describe "for a subclass of Matrix" do
   it "returns an instance of that subclass" do
-    MatrixSub.build(3){1}.should be_an_instance_of(MatrixSub)
+    MatrixSub.build(3){1}.should.instance_of?(MatrixSub)
   end
 end

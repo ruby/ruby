@@ -3,10 +3,10 @@ require_relative 'fixtures/classes'
 
 describe "Module#>" do
   it "returns false if self is a subclass of or includes the given module" do
-    (ModuleSpecs::Child > ModuleSpecs::Parent).should be_false
-    (ModuleSpecs::Child > ModuleSpecs::Basic).should be_false
-    (ModuleSpecs::Child > ModuleSpecs::Super).should be_false
-    (ModuleSpecs::Super > ModuleSpecs::Basic).should be_false
+    (ModuleSpecs::Child > ModuleSpecs::Parent).should == false
+    (ModuleSpecs::Child > ModuleSpecs::Basic).should == false
+    (ModuleSpecs::Child > ModuleSpecs::Super).should == false
+    (ModuleSpecs::Super > ModuleSpecs::Basic).should == false
   end
 
   it "returns true if self is a superclass of or included by the given module" do
@@ -31,6 +31,6 @@ describe "Module#>" do
   end
 
   it "raises a TypeError if the argument is not a class/module" do
-    -> { ModuleSpecs::Parent > mock('x') }.should raise_error(TypeError)
+    -> { ModuleSpecs::Parent > mock('x') }.should.raise(TypeError)
   end
 end

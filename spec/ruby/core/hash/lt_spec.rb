@@ -8,7 +8,7 @@ describe "Hash#<" do
 
   it "returns false if both hashes are identical" do
     h = { a: 1, b: 2 }
-    (h < h).should be_false
+    (h < h).should == false
   end
 end
 

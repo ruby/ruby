@@ -8,9 +8,9 @@ platform_is :windows do
     end
 
     it "raises ArgumentError if insufficient number of arguments are given" do
-      -> { @shell._invoke() }.should raise_error ArgumentError
-      -> { @shell._invoke(0) }.should raise_error ArgumentError
-      -> { @shell._invoke(0, []) }.should raise_error ArgumentError
+      -> { @shell._invoke() }.should.raise ArgumentError
+      -> { @shell._invoke(0) }.should.raise ArgumentError
+      -> { @shell._invoke(0, []) }.should.raise ArgumentError
     end
 
     it "dispatches the method bound to a specific ID" do

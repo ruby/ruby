@@ -12,8 +12,8 @@ describe "Array#dup" do
     aa = a.dup
     bb = b.dup
 
-    aa.frozen?.should be_false
-    bb.frozen?.should be_false
+    aa.frozen?.should == false
+    bb.frozen?.should == false
   end
 
   it "does not copy singleton methods" do
@@ -23,9 +23,9 @@ describe "Array#dup" do
     aa = a.dup
     bb = b.dup
 
-    a.respond_to?(:a_singleton_method).should be_true
-    b.respond_to?(:a_singleton_method).should be_false
-    aa.respond_to?(:a_singleton_method).should be_false
-    bb.respond_to?(:a_singleton_method).should be_false
+    a.respond_to?(:a_singleton_method).should == true
+    b.respond_to?(:a_singleton_method).should == false
+    aa.respond_to?(:a_singleton_method).should == false
+    bb.respond_to?(:a_singleton_method).should == false
   end
 end

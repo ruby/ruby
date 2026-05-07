@@ -10,7 +10,7 @@ describe "TCPSocket.gethostbyname" do
   end
 
   it "returns an array elements of information on the hostname" do
-    @host_info.should be_kind_of(Array)
+    @host_info.should.is_a?(Array)
   end
 
   platform_is_not :windows do
@@ -20,12 +20,12 @@ describe "TCPSocket.gethostbyname" do
 
     it "returns the address type as the third value" do
       address_type = @host_info[2]
-      [Socket::AF_INET, Socket::AF_INET6].include?(address_type).should be_true
+      [Socket::AF_INET, Socket::AF_INET6].include?(address_type).should == true
     end
 
     it "returns the IP address as the fourth value" do
       ip = @host_info[3]
-      ["127.0.0.1", "::1"].include?(ip).should be_true
+      ["127.0.0.1", "::1"].include?(ip).should == true
     end
   end
 
@@ -48,14 +48,14 @@ describe "TCPSocket.gethostbyname" do
   end
 
   it "returns any aliases to the address as second value" do
-    @host_info[1].should be_kind_of(Array)
+    @host_info[1].should.is_a?(Array)
   end
 end
 
 describe 'TCPSocket.gethostbyname' do
   it 'returns an Array' do
     suppress_warning do
-      TCPSocket.gethostbyname('127.0.0.1').should be_an_instance_of(Array)
+      TCPSocket.gethostbyname('127.0.0.1').should.instance_of?(Array)
     end
   end
 
@@ -72,11 +72,11 @@ describe 'TCPSocket.gethostbyname' do
       end
 
       it 'includes an array of alternative hostnames as the 2nd value' do
-        @array[1].should be_an_instance_of(Array)
+        @array[1].should.instance_of?(Array)
       end
 
       it 'includes the address family as the 3rd value' do
-        @array[2].should be_kind_of(Integer)
+        @array[2].should.is_a?(Integer)
       end
 
       it 'includes the IP addresses as all the remaining values' do

@@ -33,13 +33,13 @@ describe :stringio_gets_separator, shared: true do
 
     it "updates self's lineno by one" do
       @io.send(@method, ">")
-      @io.lineno.should eql(1)
+      @io.lineno.should.eql?(1)
 
       @io.send(@method, ">")
-      @io.lineno.should eql(2)
+      @io.lineno.should.eql?(2)
 
       @io.send(@method, ">")
-      @io.lineno.should eql(3)
+      @io.lineno.should.eql?(3)
     end
 
     it "returns the next paragraph when the passed separator is an empty String" do
@@ -88,13 +88,13 @@ describe :stringio_gets_limit, shared: true do
 
     it "updates self's lineno by one" do
       @io.send(@method, 3)
-      @io.lineno.should eql(1)
+      @io.lineno.should.eql?(1)
 
       @io.send(@method, 3)
-      @io.lineno.should eql(2)
+      @io.lineno.should.eql?(2)
 
       @io.send(@method, 3)
-      @io.lineno.should eql(3)
+      @io.lineno.should.eql?(3)
     end
 
     it "tries to convert the passed limit to an Integer using #to_int" do
@@ -146,13 +146,13 @@ describe :stringio_gets_separator_and_limit, shared: true do
 
     it "updates self's lineno by one" do
       @io.send(@method, '>', 3)
-      @io.lineno.should eql(1)
+      @io.lineno.should.eql?(1)
 
       @io.send(@method, '>', 3)
-      @io.lineno.should eql(2)
+      @io.lineno.should.eql?(2)
 
       @io.send(@method, '>', 3)
-      @io.lineno.should eql(3)
+      @io.lineno.should.eql?(3)
     end
 
     it "tries to convert the passed separator to a String using #to_str" do
@@ -204,24 +204,24 @@ describe :stringio_gets_no_argument, shared: true do
 
     it "updates self's position" do
       @io.send(@method)
-      @io.pos.should eql(8)
+      @io.pos.should.eql?(8)
 
       @io.send(@method)
-      @io.pos.should eql(19)
+      @io.pos.should.eql?(19)
 
       @io.send(@method)
-      @io.pos.should eql(36)
+      @io.pos.should.eql?(36)
     end
 
     it "updates self's lineno" do
       @io.send(@method)
-      @io.lineno.should eql(1)
+      @io.lineno.should.eql?(1)
 
       @io.send(@method)
-      @io.lineno.should eql(2)
+      @io.lineno.should.eql?(2)
 
       @io.send(@method)
-      @io.lineno.should eql(3)
+      @io.lineno.should.eql?(3)
     end
   end
 end
@@ -239,11 +239,11 @@ describe :stringio_gets_write_only, shared: true do
   describe "when in write-only mode" do
     it "raises an IOError" do
       io = StringIO.new(+"xyz", "w")
-      -> { io.send(@method) }.should raise_error(IOError)
+      -> { io.send(@method) }.should.raise(IOError)
 
       io = StringIO.new("xyz")
       io.close_read
-      -> { io.send(@method) }.should raise_error(IOError)
+      -> { io.send(@method) }.should.raise(IOError)
     end
   end
 end

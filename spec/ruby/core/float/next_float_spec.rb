@@ -9,7 +9,7 @@ describe "Float#next_float" do
     barely_positive.should < barely_positive.next_float
 
     midpoint = barely_positive / 2
-    [0.0, barely_positive].should include midpoint
+    [0.0, barely_positive].should.include? midpoint
   end
 
   it "returns Float::INFINITY for Float::INFINITY" do

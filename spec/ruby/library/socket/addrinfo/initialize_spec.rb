@@ -200,7 +200,7 @@ describe "Addrinfo#initialize" do
       it 'raises SocketError' do
         block = -> { Addrinfo.new(['AF_INET6', 80, 'hostname', '127.0.0.1']) }
 
-        block.should raise_error(SocketError)
+        block.should.raise(SocketError)
       end
     end
 
@@ -294,7 +294,7 @@ describe "Addrinfo#initialize" do
         value = Socket::SOCK_RDM
         block = -> { Addrinfo.new(sockaddr, nil, value) }
 
-        block.should raise_error(SocketError)
+        block.should.raise(SocketError)
       end
     end
 
@@ -340,7 +340,7 @@ describe "Addrinfo#initialize" do
           value = Socket.const_get(constant)
           -> {
             Addrinfo.new(@sockaddr, value)
-          }.should raise_error(SocketError)
+          }.should.raise(SocketError)
         end
       end
     end
@@ -368,7 +368,7 @@ describe "Addrinfo#initialize" do
               value = Socket.const_get(type)
               block = -> { Addrinfo.new(@sockaddr, nil, nil, value) }
 
-              block.should raise_error(SocketError)
+              block.should.raise(SocketError)
             end
           end
         end
@@ -396,7 +396,7 @@ describe "Addrinfo#initialize" do
               value = Socket.const_get(type)
               block = -> { Addrinfo.new(@sockaddr, nil, @socktype, value) }
 
-              block.should raise_error(SocketError)
+              block.should.raise(SocketError)
             end
           end
         end
@@ -413,7 +413,7 @@ describe "Addrinfo#initialize" do
               value = Socket.const_get(type)
               block = -> { Addrinfo.new(@sockaddr, nil, @socktype, value) }
 
-              block.should raise_error(SocketError)
+              block.should.raise(SocketError)
             end
           end
         end
@@ -444,7 +444,7 @@ describe "Addrinfo#initialize" do
             value = Socket.const_get(type)
             block = -> { Addrinfo.new(@sockaddr, nil, @socktype, value) }
 
-            block.should raise_error(SocketError)
+            block.should.raise(SocketError)
           end
         end
       end
@@ -472,7 +472,7 @@ describe "Addrinfo#initialize" do
                 value = Socket.const_get(type)
                 block = -> { Addrinfo.new(@sockaddr, nil, @socktype, value) }
 
-                block.should raise_error(SocketError)
+                block.should.raise(SocketError)
               end
             end
           end
@@ -501,7 +501,7 @@ describe "Addrinfo#initialize" do
               value = Socket.const_get(type)
               block = -> { Addrinfo.new(@sockaddr, nil, @socktype, value) }
 
-              block.should raise_error(SocketError)
+              block.should.raise(SocketError)
             end
           end
         end

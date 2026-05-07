@@ -6,7 +6,7 @@ describe "LocalJumpError#reason" do
   end
 
   it "returns 'return' for a return" do
-    -> { get_me_a_return.call }.should raise_error(LocalJumpError) { |e|
+    -> { get_me_a_return.call }.should.raise(LocalJumpError) { |e|
       e.reason.should == :return
     }
   end

@@ -5,27 +5,27 @@ describe "Matrix#regular?" do
 
   it "returns false for singular matrices" do
     m = Matrix[ [1,2,3], [3,4,3], [0,0,0] ]
-    m.regular?.should be_false
+    m.regular?.should == false
 
     m = Matrix[ [1,2,9], [3,4,9], [1,2,9] ]
-    m.regular?.should be_false
+    m.regular?.should == false
   end
 
   it "returns true if the Matrix is regular" do
-    Matrix[ [0,1], [1,0] ].regular?.should be_true
+    Matrix[ [0,1], [1,0] ].regular?.should == true
   end
 
   it "returns true for an empty 0x0 matrix" do
-    Matrix.empty(0,0).regular?.should be_true
+    Matrix.empty(0,0).regular?.should == true
   end
 
   it "raises an error for rectangular matrices" do
     -> {
       Matrix[[1], [2], [3]].regular?
-    }.should raise_error(Matrix::ErrDimensionMismatch)
+    }.should.raise(Matrix::ErrDimensionMismatch)
 
     -> {
       Matrix.empty(3,0).regular?
-    }.should raise_error(Matrix::ErrDimensionMismatch)
+    }.should.raise(Matrix::ErrDimensionMismatch)
   end
 end

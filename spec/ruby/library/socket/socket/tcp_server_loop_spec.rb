@@ -47,8 +47,8 @@ describe 'Socket.tcp_server_loop' do
       # complete.
       thread.join
 
-      @sock.should be_an_instance_of(Socket)
-      addr.should be_an_instance_of(Addrinfo)
+      @sock.should.instance_of?(Socket)
+      addr.should.instance_of?(Addrinfo)
     end
   end
 end

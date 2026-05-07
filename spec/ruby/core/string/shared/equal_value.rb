@@ -3,11 +3,11 @@ require_relative '../fixtures/classes'
 
 describe :string_equal_value, shared: true do
   it "returns false if obj does not respond to to_str" do
-    'hello'.send(@method, 5).should be_false
+    'hello'.send(@method, 5).should == false
     not_supported_on :opal do
-      'hello'.send(@method, :hello).should be_false
+      'hello'.send(@method, :hello).should == false
     end
-    'hello'.send(@method, mock('x')).should be_false
+    'hello'.send(@method, mock('x')).should == false
   end
 
   it "returns obj == self if obj responds to to_str" do
@@ -20,10 +20,10 @@ describe :string_equal_value, shared: true do
     # Don't use @method for :== in `obj.should_receive(:==)`
     obj.should_receive(:==).and_return(true)
 
-    'hello'.send(@method, obj).should be_true
+    'hello'.send(@method, obj).should == true
   end
 
   it "is not fooled by NUL characters" do
-    "abc\0def".send(@method, "abc\0xyz").should be_false
+    "abc\0def".send(@method, "abc\0xyz").should == false
   end
 end

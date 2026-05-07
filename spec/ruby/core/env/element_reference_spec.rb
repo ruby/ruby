@@ -28,7 +28,7 @@ describe "ENV.[]" do
   end
 
   it "raises TypeError if the argument is not a String and does not respond to #to_str" do
-    -> { ENV[Object.new] }.should raise_error(TypeError, "no implicit conversion of Object into String")
+    -> { ENV[Object.new] }.should.raise(TypeError, "no implicit conversion of Object into String")
   end
 
   platform_is :windows do
@@ -71,6 +71,6 @@ describe "ENV.[]" do
     ENV[@variable] = ""
     Encoding.default_internal = Encoding::IBM437
 
-    ENV[@variable].encoding.should equal(Encoding::IBM437)
+    ENV[@variable].encoding.should.equal?(Encoding::IBM437)
   end
 end

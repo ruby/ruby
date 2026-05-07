@@ -18,6 +18,6 @@ describe "StandardError" do
   end
 
   it "does not rescue superclass of StandardError" do
-    -> { begin; raise Exception; rescue; end }.should raise_error(Exception)
+    -> { begin; raise Exception; rescue; end }.should.raise(Exception)
   end
 end

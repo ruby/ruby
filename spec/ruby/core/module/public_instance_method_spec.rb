@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "Module#public_instance_method" do
   it "is a public method" do
-    Module.should have_public_instance_method(:public_instance_method, false)
+    Module.public_instance_methods(false).should.include?(:public_instance_method)
   end
 
   it "requires an argument" do
@@ -13,12 +13,12 @@ describe "Module#public_instance_method" do
   describe "when given a public method name" do
     it "returns an UnboundMethod corresponding to the defined Module" do
       ret = ModuleSpecs::Super.public_instance_method(:public_module)
-      ret.should be_an_instance_of(UnboundMethod)
-      ret.owner.should equal(ModuleSpecs::Basic)
+      ret.should.instance_of?(UnboundMethod)
+      ret.owner.should.equal?(ModuleSpecs::Basic)
 
       ret = ModuleSpecs::Super.public_instance_method(:public_super_module)
-      ret.should be_an_instance_of(UnboundMethod)
-      ret.owner.should equal(ModuleSpecs::Super)
+      ret.should.instance_of?(UnboundMethod)
+      ret.owner.should.equal?(ModuleSpecs::Super)
     end
 
     it "accepts if the name is a Symbol or String" do
@@ -28,31 +28,31 @@ describe "Module#public_instance_method" do
   end
 
   it "raises a TypeError when given a name is not Symbol or String" do
-    -> { Module.new.public_instance_method(nil) }.should raise_error(TypeError)
+    -> { Module.new.public_instance_method(nil) }.should.raise(TypeError)
   end
 
   it "raises a NameError when given a protected method name" do
     -> do
       ModuleSpecs::Basic.public_instance_method(:protected_module)
-    end.should raise_error(NameError)
+    end.should.raise(NameError)
   end
 
   it "raises a NameError if the method is private" do
     -> do
       ModuleSpecs::Basic.public_instance_method(:private_module)
-    end.should raise_error(NameError)
+    end.should.raise(NameError)
   end
 
   it "raises a NameError if the method has been undefined" do
     -> do
       ModuleSpecs::Parent.public_instance_method(:undefed_method)
-    end.should raise_error(NameError)
+    end.should.raise(NameError)
   end
 
   it "raises a NameError if the method does not exist" do
     -> do
       Module.new.public_instance_method(:missing)
-    end.should raise_error(NameError)
+    end.should.raise(NameError)
   end
 
   it "sets the NameError#name attribute to the name of the missing method" do

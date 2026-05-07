@@ -17,8 +17,8 @@ describe "Integer#<" do
     end
 
     it "raises an ArgumentError when given a non-Integer" do
-      -> { 5 < "4"       }.should raise_error(ArgumentError)
-      -> { 5 < mock('x') }.should raise_error(ArgumentError)
+      -> { 5 < "4"       }.should.raise(ArgumentError)
+      -> { 5 < mock('x') }.should.raise(ArgumentError)
     end
   end
 
@@ -38,8 +38,8 @@ describe "Integer#<" do
     end
 
     it "raises an ArgumentError when given a non-Integer" do
-      -> { @bignum < "4" }.should raise_error(ArgumentError)
-      -> { @bignum < mock('str') }.should raise_error(ArgumentError)
+      -> { @bignum < "4" }.should.raise(ArgumentError)
+      -> { @bignum < mock('str') }.should.raise(ArgumentError)
     end
 
     it "dispatches the correct operator after coercion" do

@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 describe "Process.times" do
   it "returns a Process::Tms" do
-    Process.times.should be_kind_of(Process::Tms)
+    Process.times.should.is_a?(Process::Tms)
   end
 
   # TODO: Intel C Compiler does not work this example

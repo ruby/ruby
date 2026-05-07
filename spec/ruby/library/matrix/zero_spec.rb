@@ -4,7 +4,7 @@ require 'matrix'
 
 describe "Matrix.zero" do
   it "returns an object of type Matrix" do
-    Matrix.zero(3).should be_kind_of(Matrix)
+    Matrix.zero(3).should.is_a?(Matrix)
   end
 
   it "creates a n x n matrix" do
@@ -30,7 +30,7 @@ describe "Matrix.zero" do
 
   describe "for a subclass of Matrix" do
     it "returns an instance of that subclass" do
-      MatrixSub.zero(3).should be_an_instance_of(MatrixSub)
+      MatrixSub.zero(3).should.instance_of?(MatrixSub)
     end
   end
 end

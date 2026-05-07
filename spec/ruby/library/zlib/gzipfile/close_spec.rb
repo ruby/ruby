@@ -10,10 +10,8 @@ describe "Zlib::GzipFile#close" do
 
       gzio.should.closed?
 
-      -> { gzio.orig_name }.should \
-        raise_error(Zlib::GzipFile::Error, 'closed gzip stream')
-      -> { gzio.comment }.should \
-        raise_error(Zlib::GzipFile::Error, 'closed gzip stream')
+      -> { gzio.orig_name }.should.raise(Zlib::GzipFile::Error, 'closed gzip stream')
+      -> { gzio.comment }.should.raise(Zlib::GzipFile::Error, 'closed gzip stream')
     end
 
     io.string[10..-1].should == ([3] + Array.new(9,0)).pack('C*')

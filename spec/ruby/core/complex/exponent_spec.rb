@@ -3,13 +3,13 @@ require_relative '../../spec_helper'
 describe "Complex#**" do
   describe "with Integer 0" do
     it "returns Complex(1)" do
-      (Complex(3, 4) ** 0).should eql(Complex(1))
+      (Complex(3, 4) ** 0).should.eql?(Complex(1))
     end
   end
 
   describe "with Float 0.0" do
     it "returns Complex(1.0, 0.0)" do
-      (Complex(3, 4) ** 0.0).should eql(Complex(1.0, 0.0))
+      (Complex(3, 4) ** 0.0).should.eql?(Complex(1.0, 0.0))
     end
   end
 

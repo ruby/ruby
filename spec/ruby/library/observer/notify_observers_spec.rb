@@ -18,7 +18,7 @@ describe "Observer#notify_observers" do
   it "verifies observer responds to update" do
     -> {
       @observable.add_observer(@observable)
-    }.should raise_error(NoMethodError)
+    }.should.raise(NoMethodError)
   end
 
   it "receives the callback" do

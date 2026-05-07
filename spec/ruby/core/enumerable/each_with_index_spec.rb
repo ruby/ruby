@@ -26,19 +26,19 @@ describe "Enumerable#each_with_index" do
     acc = []
     res = @b.each_with_index {|a,i| acc << [a,i]}
     [[2, 0], [5, 1], [3, 2], [6, 3], [1, 4], [4, 5]].should == acc
-    res.should eql(@b)
+    res.should.eql?(@b)
   end
 
   it "binds splat arguments properly" do
     acc = []
     res = @b.each_with_index { |*b| c,d = b; acc << c; acc << d }
     [2, 0, 5, 1, 3, 2, 6, 3, 1, 4, 4, 5].should == acc
-    res.should eql(@b)
+    res.should.eql?(@b)
   end
 
   it "returns an enumerator if no block" do
     e = @b.each_with_index
-    e.should be_an_instance_of(Enumerator)
+    e.should.instance_of?(Enumerator)
     e.to_a.should == [[2, 0], [5, 1], [3, 2], [6, 3], [1, 4], [4, 5]]
   end
 
