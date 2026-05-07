@@ -42,6 +42,7 @@ enum imemo_type {
     imemo_callcache      = 11,
     imemo_constcache     = 12,
     imemo_fields         = 13,
+    imemo_subclasses     = 14,
 };
 
 /* CREF (Class REFerence) is defined in method.h */
@@ -249,7 +250,27 @@ STATIC_ASSERT(imemo_fields_complex_offset, offsetof(struct RObject, as.heap.fiel
 
 #define IMEMO_OBJ_FIELDS(fields) ((struct rb_fields *)fields)
 
+#define IMEMO_SUBCLASSES_HEAP IMEMO_FL_USER0
+
+struct rb_subclasses {
+    VALUE flags;
+    uint32_t count;
+    uint32_t capacity;
+    union {
+        VALUE *external;
+        VALUE embed[1];
+    } as;
+};
+
+static inline VALUE *
+rb_imemo_subclasses_entries(VALUE v)
+{
+    struct rb_subclasses *s = (struct rb_subclasses *)v;
+    return FL_TEST_RAW(v, IMEMO_SUBCLASSES_HEAP) ? s->as.external : s->as.embed;
+}
+
 VALUE rb_imemo_fields_new(VALUE owner, /* shape_id_t */ uint32_t shape_id, bool shareable);
+VALUE rb_imemo_subclasses_new(uint32_t capacity);
 VALUE rb_imemo_fields_new_complex(VALUE owner, /* shape_id_t */ uint32_t shape_id, size_t capa, bool shareable);
 VALUE rb_imemo_fields_new_complex_tbl(VALUE owner, /* shape_id_t */ uint32_t shape_id, st_table *tbl, bool shareable);
 VALUE rb_imemo_fields_clone(VALUE fields_obj);

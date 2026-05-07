@@ -31,6 +31,7 @@ rb_imemo_name(enum imemo_type type)
         IMEMO_NAME(tmpbuf);
         IMEMO_NAME(cvar_entry);
         IMEMO_NAME(fields);
+        IMEMO_NAME(subclasses);
 #undef IMEMO_NAME
     }
     rb_bug("unreachable");
@@ -215,6 +216,32 @@ rb_imemo_fields_clear(VALUE fields_obj)
     RBASIC_CLEAR_CLASS(fields_obj);
 }
 
+VALUE
+rb_imemo_subclasses_new(uint32_t capacity)
+{
+    size_t embed_size = offsetof(struct rb_subclasses, as) + capacity * sizeof(VALUE);
+    struct rb_subclasses *subs;
+
+    if (rb_gc_size_allocatable_p(embed_size)) {
+        subs = (struct rb_subclasses *)rb_imemo_new(imemo_subclasses, 0, embed_size, true);
+        subs->count = 0;
+        subs->capacity = capacity;
+        memset(subs->as.embed, 0, capacity * sizeof(VALUE));
+        rb_gc_declare_weak_references((VALUE)subs);
+    }
+    else {
+        subs = (struct rb_subclasses *)rb_imemo_new(imemo_subclasses, 0, sizeof(struct rb_subclasses), true);
+        subs->as.external = NULL;
+        subs->count = 0;
+        subs->capacity = 0;
+        FL_SET_RAW((VALUE)subs, IMEMO_SUBCLASSES_HEAP);
+        rb_gc_declare_weak_references((VALUE)subs);
+        subs->as.external = ZALLOC_N(VALUE, capacity);
+        subs->capacity = capacity;
+    }
+    return (VALUE)subs;
+}
+
 /* =========================================================================
  * memsize
  * ========================================================================= */
@@ -263,6 +290,13 @@ rb_imemo_memsize(VALUE obj)
             size += st_memsize(IMEMO_OBJ_FIELDS(obj)->as.complex.table);
         }
         break;
+      case imemo_subclasses: {
+        if (FL_TEST_RAW(obj, IMEMO_SUBCLASSES_HEAP)) {
+            struct rb_subclasses *subs = (struct rb_subclasses *)obj;
+            size += subs->capacity * sizeof(VALUE);
+        }
+        break;
+      }
       default:
         rb_bug("unreachable");
     }
@@ -506,6 +540,18 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
           rb_gc_mark_and_move((VALUE *)&ent->cref);
           break;
       }
+      case imemo_subclasses: {
+        if (reference_updating) {
+            struct rb_subclasses *subs = (struct rb_subclasses *)obj;
+            VALUE *entries = rb_imemo_subclasses_entries(obj);
+            for (uint32_t i = 0; i < subs->count; i++) {
+                if (entries[i]) {
+                    entries[i] = rb_gc_location(entries[i]);
+                }
+            }
+        }
+        break;
+      }
       case imemo_fields: {
         rb_gc_mark_and_move((VALUE *)&RBASIC(obj)->klass);
 
@@ -641,6 +687,13 @@ rb_imemo_free(VALUE obj)
         imemo_fields_free(IMEMO_OBJ_FIELDS(obj));
         RB_DEBUG_COUNTER_INC(obj_imemo_fields);
         break;
+      case imemo_subclasses: {
+        if (FL_TEST_RAW(obj, IMEMO_SUBCLASSES_HEAP)) {
+            struct rb_subclasses *subs = (struct rb_subclasses *)obj;
+            SIZED_FREE_N(subs->as.external, subs->capacity);
+        }
+        break;
+      }
       default:
         rb_bug("unreachable");
     }

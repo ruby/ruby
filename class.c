@@ -80,10 +80,6 @@
 #define METACLASS_OF(k) RBASIC(k)->klass
 #define SET_METACLASS_OF(k, cls) RBASIC_SET_CLASS(k, cls)
 
-static void rb_class_remove_from_super_subclasses(VALUE klass);
-static void rb_class_remove_from_module_subclasses(VALUE klass);
-static void rb_class_classext_free_subclasses(rb_classext_t *ext);
-
 rb_classext_t *
 rb_class_unlink_classext(VALUE klass, const rb_box_t *box)
 {
@@ -103,11 +99,6 @@ rb_class_classext_free(VALUE klass, rb_classext_t *ext, bool is_prime)
 
     if (!RCLASSEXT_SHARED_CONST_TBL(ext) && (tbl = RCLASSEXT_CONST_TBL(ext)) != NULL) {
         rb_free_const_table(tbl);
-    }
-
-    if (is_prime) {
-        rb_class_remove_from_super_subclasses(klass);
-        rb_class_classext_free_subclasses(ext);
     }
 
     if (RCLASSEXT_SUPERCLASSES_WITH_SELF(ext)) {
@@ -134,11 +125,6 @@ rb_iclass_classext_free(VALUE klass, rb_classext_t *ext, bool is_prime)
 
     if (RCLASSEXT_CALLABLE_M_TBL(ext) != NULL) {
         rb_id_table_free(RCLASSEXT_CALLABLE_M_TBL(ext));
-    }
-
-    if (is_prime) {
-        rb_class_remove_from_super_subclasses(klass);
-        rb_class_remove_from_module_subclasses(klass);
     }
 
     if (!is_prime) { // the prime classext will be freed with RClass
@@ -406,23 +392,25 @@ rb_class_duplicate_classext(rb_classext_t *orig, VALUE klass, const rb_box_t *bo
          *
          * Subclasses are only in the prime classext, so read from orig.
          */
-        rb_subclass_entry_t *subclass_entry = RCLASSEXT_SUBCLASSES(orig);
-        if (subclass_entry) subclass_entry = subclass_entry->next; // skip dummy head
-        while (subclass_entry) {
-            VALUE iclass = subclass_entry->klass;
+        VALUE subs_v = RCLASSEXT_SUBCLASSES(orig);
+        if (subs_v) {
+            struct rb_subclasses *subs = (struct rb_subclasses *)subs_v;
+            VALUE *entries = rb_imemo_subclasses_entries(subs_v);
+            for (uint32_t i = 0; i < subs->count; i++) {
+                VALUE iclass = entries[i];
+                if (!iclass) continue;
 
-            /* every node in the subclass list should be an ICLASS built from this module */
-            VM_ASSERT(iclass);
-            VM_ASSERT(RB_TYPE_P(iclass, T_ICLASS));
-            VM_ASSERT(RBASIC_CLASS(iclass) == klass);
+                /* every node in the subclass list should be an ICLASS built from this module */
+                VM_ASSERT(RB_TYPE_P(iclass, T_ICLASS));
+                VM_ASSERT(RBASIC_CLASS(iclass) == klass);
 
-            if (FL_TEST_RAW(iclass, RCLASS_BOXABLE)) {
-                // Non-boxable ICLASSes (included by classes in main/user boxes) can't
-                // hold per-box classexts, and their includer classes also can't, so
-                // method lookup through them always uses the prime classext.
-                class_duplicate_iclass_classext(iclass, ext, box);
+                if (FL_TEST_RAW(iclass, RCLASS_BOXABLE)) {
+                    // Non-boxable ICLASSes (included by classes in main/user boxes) can't
+                    // hold per-box classexts, and their includer classes also can't, so
+                    // method lookup through them always uses the prime classext.
+                    class_duplicate_iclass_classext(iclass, ext, box);
+                }
             }
-            subclass_entry = subclass_entry->next;
         }
     }
 
@@ -481,36 +469,47 @@ rb_class_variation_count(VALUE klass)
     return RCLASS_VARIATION_COUNT(klass);
 }
 
-static rb_subclass_entry_t *
+static void
 push_subclass_entry_to_list(VALUE super, VALUE klass)
 {
-    rb_subclass_entry_t *entry, *head;
-
     RUBY_ASSERT(
             (RB_TYPE_P(super, T_MODULE) && RB_TYPE_P(klass, T_ICLASS)) ||
             (RB_TYPE_P(super, T_CLASS) && RB_TYPE_P(klass, T_CLASS)) ||
             (RB_TYPE_P(klass, T_ICLASS) && !NIL_P(RCLASS_REFINED_CLASS(klass)))
             );
 
-    entry = ZALLOC(rb_subclass_entry_t);
-    entry->klass = klass;
-
     RB_VM_LOCKING() {
-        head = RCLASS_WRITABLE_SUBCLASSES(super);
-        if (!head) {
-            head = ZALLOC(rb_subclass_entry_t);
-            RCLASS_SET_SUBCLASSES(super, head);
-        }
-        entry->next = head->next;
-        entry->prev = head;
+        VALUE subs_v = RCLASS_SUBCLASSES(super);
+        struct rb_subclasses *subs = (struct rb_subclasses *)subs_v;
 
-        if (head->next) {
-            head->next->prev = entry;
+        if (!subs || subs->count == subs->capacity) {
+            VALUE *old_entries = subs ? rb_imemo_subclasses_entries(subs_v) : NULL;
+            uint32_t live = 0;
+            for (uint32_t i = 0; subs && i < subs->count; i++) {
+                if (old_entries[i]) live++;
+            }
+
+            uint32_t cap = subs ? subs->capacity : 2;
+            if (live * 2 >= cap) cap *= 2;
+
+            VALUE new_v = rb_imemo_subclasses_new(cap);
+            struct rb_subclasses *new_subs = (struct rb_subclasses *)new_v;
+            VALUE *new_entries = rb_imemo_subclasses_entries(new_v);
+            for (uint32_t i = 0; subs && i < subs->count; i++) {
+                VALUE entry = old_entries[i];
+                if (entry) {
+                    new_entries[new_subs->count++] = entry;
+                    RB_OBJ_WRITTEN(new_v, Qundef, entry);
+                }
+            }
+            RCLASS_SET_SUBCLASSES(super, new_v);
+            subs_v = new_v;
+            subs = new_subs;
         }
-        head->next = entry;
+
+        rb_imemo_subclasses_entries(subs_v)[subs->count++] = klass;
+        RB_OBJ_WRITTEN(subs_v, Qundef, klass);
     }
-
-    return entry;
 }
 
 void
@@ -519,8 +518,7 @@ rb_class_subclass_add(VALUE super, VALUE klass)
     if (super && !UNDEF_P(super)) {
         RUBY_ASSERT(RB_TYPE_P(super, T_CLASS) || RB_TYPE_P(super, T_MODULE));
         RUBY_ASSERT(RB_TYPE_P(klass, T_CLASS) || RB_TYPE_P(klass, T_ICLASS));
-        rb_subclass_entry_t *entry = push_subclass_entry_to_list(super, klass);
-        RCLASS_EXT_PRIME(klass)->subclass_entry = entry;
+        push_subclass_entry_to_list(super, klass);
     }
 }
 
@@ -530,112 +528,32 @@ rb_module_add_to_subclasses_list(VALUE module, VALUE iclass)
     if (module && !UNDEF_P(module)) {
         RUBY_ASSERT(RB_TYPE_P(module, T_MODULE));
         RUBY_ASSERT(RB_TYPE_P(iclass, T_ICLASS));
-        rb_subclass_entry_t *entry = push_subclass_entry_to_list(module, iclass);
-        RCLASS_EXT_PRIME(iclass)->module_subclass_entry = entry;
-    }
-}
-
-static void
-rb_subclass_entry_remove(rb_subclass_entry_t *entry)
-{
-    if (entry) {
-        rb_subclass_entry_t *prev = entry->prev, *next = entry->next;
-
-        if (prev) {
-            prev->next = next;
-        }
-        if (next) {
-            next->prev = prev;
-        }
-
-        xfree(entry);
-    }
-}
-
-static void
-rb_class_remove_from_super_subclasses(VALUE klass)
-{
-    rb_classext_t *ext = RCLASS_EXT_PRIME(klass);
-    rb_subclass_entry_t *entry = RCLASSEXT_SUBCLASS_ENTRY(ext);
-
-    if (!entry) return;
-    rb_subclass_entry_remove(entry);
-    RCLASSEXT_SUBCLASS_ENTRY(ext) = NULL;
-}
-
-static void
-rb_class_remove_from_module_subclasses(VALUE klass)
-{
-    rb_classext_t *ext = RCLASS_EXT_PRIME(klass);
-    rb_subclass_entry_t *entry = RCLASSEXT_MODULE_SUBCLASS_ENTRY(ext);
-
-    if (!entry) return;
-    rb_subclass_entry_remove(entry);
-    RCLASSEXT_MODULE_SUBCLASS_ENTRY(ext) = NULL;
-}
-
-static void
-rb_class_classext_free_subclasses(rb_classext_t *ext)
-{
-    rb_subclass_entry_t *head = RCLASSEXT_SUBCLASSES(ext);
-
-    if (head) {
-        // Detach all children's back-pointers before freeing the list,
-        // so they don't try to unlink from a freed entry later.
-        rb_subclass_entry_t *entry = head->next; // skip dummy head
-        while (entry) {
-            if (entry->klass) {
-                rb_classext_t *child_ext = RCLASS_EXT_PRIME(entry->klass);
-                if (RCLASSEXT_SUBCLASS_ENTRY(child_ext) == entry) {
-                    RCLASSEXT_SUBCLASS_ENTRY(child_ext) = NULL;
-                }
-                if (RCLASSEXT_MODULE_SUBCLASS_ENTRY(child_ext) == entry) {
-                    RCLASSEXT_MODULE_SUBCLASS_ENTRY(child_ext) = NULL;
-                }
-            }
-            entry = entry->next;
-        }
-
-        entry = head;
-        while (entry) {
-            rb_subclass_entry_t *next = entry->next;
-            xfree(entry);
-            entry = next;
-        }
-        RCLASSEXT_SUBCLASSES(ext) = NULL;
+        push_subclass_entry_to_list(module, iclass);
     }
 }
 
 void
 rb_class_foreach_subclass(VALUE klass, void (*f)(VALUE, VALUE), VALUE arg)
 {
-    rb_subclass_entry_t *tmp;
-    rb_subclass_entry_t *cur = RCLASS_SUBCLASSES_FIRST(klass);
-    /* do not be tempted to simplify this loop into a for loop, the order of
-       operations is important here if `f` modifies the linked list */
-    while (cur) {
-        VALUE curklass = cur->klass;
-        tmp = cur->next;
-        // do not trigger GC during f, otherwise the cur will become
-        // a dangling pointer if the subclass is collected
-        f(curklass, arg);
-        cur = tmp;
-    }
-}
+    VALUE subs_v = RCLASS_SUBCLASSES(klass);
+    if (!subs_v) return;
 
-static void
-class_detach_subclasses(VALUE klass, VALUE arg)
-{
-    rb_class_remove_from_super_subclasses(klass);
+    struct rb_subclasses *subs = (struct rb_subclasses *)subs_v;
+    VALUE *entries = rb_imemo_subclasses_entries(subs_v);
+    for (uint32_t i = 0; i < subs->count; i++) {
+        VALUE curklass = entries[i];
+        if (curklass) {
+            f(curklass, arg);
+        }
+    }
 }
 
 static void
 class_switch_superclass(VALUE super, VALUE klass)
 {
-    RB_VM_LOCKING() {
-        class_detach_subclasses(klass, Qnil);
-        rb_class_subclass_add(super, klass);
-    }
+    // No need to remove from old super's subclasses list — the GC
+    // will nullify the weak reference when appropriate.
+    rb_class_subclass_add(super, klass);
 }
 
 /**
@@ -1695,29 +1613,34 @@ rb_include_module(VALUE klass, VALUE module)
         rb_raise(rb_eArgError, "cyclic include detected");
 
     if (RB_TYPE_P(klass, T_MODULE)) {
-        rb_subclass_entry_t *iclass = RCLASS_SUBCLASSES_FIRST(klass);
-        while (iclass) {
-            int do_include = 1;
-            VALUE check_class = iclass->klass;
-            /* During lazy sweeping, iclass->klass could be a dead object that
-             * has not yet been swept. */
-            if (!rb_objspace_garbage_object_p(check_class)) {
-                while (check_class) {
-                    RUBY_ASSERT(!rb_objspace_garbage_object_p(check_class));
+        VALUE subs_v = RCLASS_SUBCLASSES(klass);
+        if (subs_v) {
+            struct rb_subclasses *subs = (struct rb_subclasses *)subs_v;
+            VALUE *entries = rb_imemo_subclasses_entries(subs_v);
+            for (uint32_t i = 0; i < subs->count; i++) {
+                VALUE check_class = entries[i];
+                if (!check_class) continue;
 
-                    if (RB_TYPE_P(check_class, T_ICLASS) &&
-                            (METACLASS_OF(check_class) == module)) {
-                        do_include = 0;
+                int do_include = 1;
+                /* During lazy sweeping, the entry could be a dead object that
+                 * has not yet been swept. */
+                if (!rb_objspace_garbage_object_p(check_class)) {
+                    VALUE walk = check_class;
+                    while (walk) {
+                        RUBY_ASSERT(!rb_objspace_garbage_object_p(walk));
+
+                        if (RB_TYPE_P(walk, T_ICLASS) &&
+                                (METACLASS_OF(walk) == module)) {
+                            do_include = 0;
+                        }
+                        walk = RCLASS_SUPER(walk);
                     }
-                    check_class = RCLASS_SUPER(check_class);
-                }
 
-                if (do_include) {
-                    include_modules_at(iclass->klass, RCLASS_ORIGIN(iclass->klass), module, TRUE);
+                    if (do_include) {
+                        include_modules_at(check_class, RCLASS_ORIGIN(check_class), module, TRUE);
+                    }
                 }
             }
-
-            iclass = iclass->next;
         }
     }
 }
@@ -1950,29 +1873,32 @@ rb_prepend_module(VALUE klass, VALUE module)
         rb_vm_check_redefinition_by_prepend(klass);
     }
     if (RB_TYPE_P(klass, T_MODULE)) {
-        rb_subclass_entry_t *iclass = RCLASS_SUBCLASSES_FIRST(klass);
+        VALUE subs_v = RCLASS_SUBCLASSES(klass);
         VALUE klass_origin = RCLASS_ORIGIN(klass);
         struct rb_id_table *klass_m_tbl = RCLASS_M_TBL(klass);
         struct rb_id_table *klass_origin_m_tbl = RCLASS_M_TBL(klass_origin);
-        while (iclass) {
-            /* During lazy sweeping, iclass->klass could be a dead object that
-             * has not yet been swept. */
-            if (!rb_objspace_garbage_object_p(iclass->klass)) {
-                const VALUE subclass = iclass->klass;
-                if (klass_had_no_origin && klass_origin_m_tbl == RCLASS_M_TBL(subclass)) {
-                    // backfill an origin iclass to handle refinements and future prepends
-                    rb_id_table_foreach(RCLASS_M_TBL(subclass), clear_module_cache_i, (void *)subclass);
-                    RCLASS_WRITE_M_TBL(subclass, klass_m_tbl);
-                    VALUE origin = rb_include_class_new(klass_origin, RCLASS_SUPER(subclass));
-                    rb_class_set_super(subclass, origin);
-                    RCLASS_SET_INCLUDER(origin, RCLASS_INCLUDER(subclass));
-                    RCLASS_WRITE_ORIGIN(subclass, origin);
-                    RICLASS_SET_ORIGIN_SHARED_MTBL(origin);
+        if (subs_v) {
+            struct rb_subclasses *subs = (struct rb_subclasses *)subs_v;
+            VALUE *entries = rb_imemo_subclasses_entries(subs_v);
+            for (uint32_t i = 0; i < subs->count; i++) {
+                const VALUE subclass = entries[i];
+                if (!subclass) continue;
+                /* During lazy sweeping, the entry could be a dead object that
+                 * has not yet been swept. */
+                if (!rb_objspace_garbage_object_p(subclass)) {
+                    if (klass_had_no_origin && klass_origin_m_tbl == RCLASS_M_TBL(subclass)) {
+                        // backfill an origin iclass to handle refinements and future prepends
+                        rb_id_table_foreach(RCLASS_M_TBL(subclass), clear_module_cache_i, (void *)subclass);
+                        RCLASS_WRITE_M_TBL(subclass, klass_m_tbl);
+                        VALUE origin = rb_include_class_new(klass_origin, RCLASS_SUPER(subclass));
+                        rb_class_set_super(subclass, origin);
+                        RCLASS_SET_INCLUDER(origin, RCLASS_INCLUDER(subclass));
+                        RCLASS_WRITE_ORIGIN(subclass, origin);
+                        RICLASS_SET_ORIGIN_SHARED_MTBL(origin);
+                    }
+                    include_modules_at(subclass, subclass, module, FALSE);
                 }
-                include_modules_at(subclass, subclass, module, FALSE);
             }
-
-            iclass = iclass->next;
         }
     }
 }

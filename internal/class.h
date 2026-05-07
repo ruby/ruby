@@ -27,13 +27,6 @@
 # undef RCLASS_SUPER
 #endif
 
-struct rb_subclass_entry {
-    VALUE klass;
-    struct rb_subclass_entry *next;
-    struct rb_subclass_entry *prev;
-};
-typedef struct rb_subclass_entry rb_subclass_entry_t;
-
 struct rb_cvar_class_tbl_entry {
     VALUE imemo_flags;
     uint32_t index;
@@ -54,21 +47,10 @@ struct rb_classext_struct {
     VALUE cvc_tbl;
     VALUE *superclasses;
     /**
-     * The head of the subclasses linked list. This is a dummy entry (klass == 0)
-     * whose `next` points to the first real entry. Only used in prime classext.
+     * imemo_subclasses VALUE tracking this class's subclasses.
+     * Only used in prime classext. Lazily allocated on first subclass addition.
      */
-    struct rb_subclass_entry *subclasses;
-    /**
-     * Back-pointer to this class's entry in its superclass's subclasses list.
-     * Used for O(1) removal when the class is freed.
-     */
-    struct rb_subclass_entry *subclass_entry;
-    /**
-     * In the case that this is an `ICLASS`, `module_subclass_entry` points to the
-     * entry in the module's `subclasses` list that indicates that the klass has been
-     * included. Used for O(1) removal.
-     */
-    struct rb_subclass_entry *module_subclass_entry;
+    VALUE subclasses;
 
     const VALUE origin_;
     const VALUE refined_class;
@@ -151,8 +133,6 @@ static inline rb_classext_t * RCLASS_EXT_WRITABLE(VALUE obj);
 #define RCLASSEXT_SUPERCLASS_DEPTH(ext) (ext->superclass_depth)
 #define RCLASSEXT_SUPERCLASSES(ext) (ext->superclasses)
 #define RCLASSEXT_SUBCLASSES(ext) (ext->subclasses)
-#define RCLASSEXT_SUBCLASS_ENTRY(ext) (ext->subclass_entry)
-#define RCLASSEXT_MODULE_SUBCLASS_ENTRY(ext) (ext->module_subclass_entry)
 #define RCLASSEXT_ORIGIN(ext) (ext->origin_)
 #define RCLASSEXT_REFINED_CLASS(ext) (ext->refined_class)
 // class.allocator/singleton_class.attached_object are not accessed directly via RCLASSEXT_*
@@ -190,7 +170,6 @@ static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE
  */
 #define RCLASS_CVC_TBL(c) (RCLASS_EXT_READABLE(c)->cvc_tbl)
 #define RCLASS_SUBCLASSES(c) (RCLASS_EXT_PRIME(c)->subclasses)
-#define RCLASS_SUBCLASSES_FIRST(c) (RCLASS_EXT_PRIME(c)->subclasses ? RCLASS_EXT_PRIME(c)->subclasses->next : NULL)
 #define RCLASS_ORIGIN(c) (RCLASS_EXT_READABLE(c)->origin_)
 #define RICLASS_IS_ORIGIN_P(c) (RCLASS_EXT_READABLE(c)->iclass_is_origin)
 #define RCLASS_PERMANENT_CLASSPATH_P(c) (RCLASS_EXT_READABLE(c)->permanent_classpath)
@@ -229,7 +208,7 @@ static inline void RCLASS_SET_CVC_TBL(VALUE klass, VALUE table);
 static inline void RCLASS_WRITE_CVC_TBL(VALUE klass, VALUE table);
 
 static inline void RCLASS_WRITE_SUPERCLASSES(VALUE klass, size_t depth, VALUE *superclasses, bool with_self);
-static inline void RCLASS_SET_SUBCLASSES(VALUE klass, rb_subclass_entry_t *head);
+static inline void RCLASS_SET_SUBCLASSES(VALUE klass, VALUE subclasses);
 
 static inline void RCLASS_SET_ORIGIN(VALUE klass, VALUE origin);
 static inline void RCLASS_WRITE_ORIGIN(VALUE klass, VALUE origin);
@@ -686,10 +665,10 @@ RCLASS_WRITE_SUPERCLASSES(VALUE klass, size_t depth, VALUE *superclasses, bool w
 }
 
 static inline void
-RCLASS_SET_SUBCLASSES(VALUE klass, rb_subclass_entry_t *head)
+RCLASS_SET_SUBCLASSES(VALUE klass, VALUE subclasses)
 {
     rb_classext_t *ext = RCLASS_EXT_PRIME(klass);
-    RCLASSEXT_SUBCLASSES(ext) = head;
+    RB_OBJ_WRITE(klass, &RCLASSEXT_SUBCLASSES(ext), subclasses);
 }
 
 static inline void

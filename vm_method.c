@@ -439,7 +439,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
     RB_VM_LOCKING() {
         rb_vm_barrier();
 
-        if (LIKELY(RCLASS_SUBCLASSES_FIRST(klass) == NULL) &&
+        if (LIKELY(!RCLASS_SUBCLASSES(klass)) &&
             !FL_TEST_RAW(klass, RCLASS_HAS_SUBCLASSES) &&
             // Non-refinement ICLASSes (from module inclusion) previously had
             // subclasses reparented onto them, so they need the tree path for
