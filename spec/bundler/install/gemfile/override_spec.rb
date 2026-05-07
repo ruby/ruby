@@ -141,4 +141,106 @@ RSpec.describe "override DSL" do
       expect(lockfile).not_to match(/override/i)
     end
   end
+
+  context "with a required_ruby_version: operation" do
+    it "lets the resolver pick a gem whose required_ruby_version excludes the current Ruby with :ignore_upper" do
+      build_repo2 do
+        build_gem "needs_old_ruby", "1.0" do |s|
+          s.required_ruby_version = "< #{Gem.ruby_version}"
+        end
+      end
+
+      gemfile <<-G
+        source "https://gem.repo2"
+        override "needs_old_ruby", required_ruby_version: :ignore_upper
+        gem "needs_old_ruby"
+      G
+
+      bundle :lock
+      expect(lockfile).to include("needs_old_ruby (1.0)")
+    end
+
+    it "lets the resolver pick the gem with required_ruby_version: nil" do
+      build_repo2 do
+        build_gem "needs_old_ruby", "1.0" do |s|
+          s.required_ruby_version = "< #{Gem.ruby_version}"
+        end
+      end
+
+      gemfile <<-G
+        source "https://gem.repo2"
+        override "needs_old_ruby", required_ruby_version: nil
+        gem "needs_old_ruby"
+      G
+
+      bundle :lock
+      expect(lockfile).to include("needs_old_ruby (1.0)")
+    end
+
+    it "applies to a transitive dependency's required_ruby_version" do
+      build_repo2 do
+        build_gem "needs_old_ruby", "1.0" do |s|
+          s.required_ruby_version = "< #{Gem.ruby_version}"
+        end
+        build_gem "wraps_old", "1.0" do |s|
+          s.add_dependency "needs_old_ruby"
+        end
+      end
+
+      gemfile <<-G
+        source "https://gem.repo2"
+        override "needs_old_ruby", required_ruby_version: :ignore_upper
+        gem "wraps_old"
+      G
+
+      bundle :lock
+      expect(lockfile).to include("needs_old_ruby (1.0)")
+      expect(lockfile).to include("wraps_old (1.0)")
+    end
+
+    it "re-resolves a direct dep when a metadata override is added against an existing lockfile" do
+      build_repo2 do
+        build_gem "selectable", "1.0"
+        build_gem "selectable", "2.0" do |s|
+          s.required_ruby_version = "< #{Gem.ruby_version}"
+        end
+      end
+
+      gemfile <<-G
+        source "https://gem.repo2"
+        gem "selectable"
+      G
+
+      bundle :lock
+      expect(lockfile).to include("selectable (1.0)")
+
+      gemfile <<-G
+        source "https://gem.repo2"
+        override "selectable", required_ruby_version: :ignore_upper
+        gem "selectable"
+      G
+
+      bundle :lock
+      expect(lockfile).to include("selectable (2.0)")
+    end
+  end
+
+  context "with a required_rubygems_version: operation" do
+    it "lets the resolver pick a gem whose required_rubygems_version excludes the current RubyGems with :ignore_upper" do
+      build_repo2 do
+        build_gem "needs_old_rubygems", "1.0" do |s|
+          s.required_rubygems_version = "< #{Gem.rubygems_version}"
+        end
+      end
+
+      gemfile <<-G
+        source "https://gem.repo2"
+        override "needs_old_rubygems", required_rubygems_version: :ignore_upper
+        gem "needs_old_rubygems"
+      G
+
+      bundle :lock
+      expect(lockfile).to include("needs_old_rubygems (1.0)")
+    end
+  end
 end
