@@ -7,11 +7,23 @@ module Bundler
     end
 
     def matches_current_ruby?
-      effective_required_ruby_version.satisfied_by?(Gem.ruby_version)
+      @required_ruby_version.satisfied_by?(Gem.ruby_version)
     end
 
     def matches_current_rubygems?
-      effective_required_rubygems_version.satisfied_by?(Gem.rubygems_version)
+      @required_rubygems_version.satisfied_by?(Gem.rubygems_version)
+    end
+
+    def matches_current_metadata_with_overrides?(overrides)
+      matches_current_ruby_with_overrides?(overrides) && matches_current_rubygems_with_overrides?(overrides)
+    end
+
+    def matches_current_ruby_with_overrides?(overrides)
+      effective_required_version(@required_ruby_version, :required_ruby_version, overrides).satisfied_by?(Gem.ruby_version)
+    end
+
+    def matches_current_rubygems_with_overrides?(overrides)
+      effective_required_version(@required_rubygems_version, :required_rubygems_version, overrides).satisfied_by?(Gem.rubygems_version)
     end
 
     def expanded_dependencies
@@ -29,18 +41,10 @@ module Bundler
 
     private
 
-    def effective_required_ruby_version
-      apply_metadata_override(@required_ruby_version, :required_ruby_version)
-    end
-
-    def effective_required_rubygems_version
-      apply_metadata_override(@required_rubygems_version, :required_rubygems_version)
-    end
-
-    def apply_metadata_override(requirement, field)
-      override = Override.find_for(Bundler.overrides, name, field)
-      return requirement unless override
-      override.apply_to(requirement)
+    def effective_required_version(requirement, field, overrides)
+      return requirement if overrides.nil? || overrides.empty?
+      override = Override.find_for(overrides, name, field)
+      override ? override.apply_to(requirement) : requirement
     end
   end
 end

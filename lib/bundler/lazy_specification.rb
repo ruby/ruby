@@ -9,7 +9,7 @@ module Bundler
     include ForcePlatform
 
     attr_reader :name, :version, :platform, :materialization
-    attr_accessor :source, :remote, :force_ruby_platform, :dependencies, :required_ruby_version, :required_rubygems_version
+    attr_accessor :source, :remote, :force_ruby_platform, :dependencies, :required_ruby_version, :required_rubygems_version, :overrides
 
     #
     # For backwards compatibility with existing lockfiles, if the most specific
@@ -234,8 +234,9 @@ module Bundler
     # about the mismatch higher up the stack, right before trying to install the
     # bad gem.
     def choose_compatible(candidates, fallback_to_non_installable: Bundler.frozen_bundle?)
+      override_list = overrides || []
       search = candidates.reverse.find do |spec|
-        spec.is_a?(StubSpecification) || spec.matches_current_metadata?
+        spec.is_a?(StubSpecification) || spec.matches_current_metadata_with_overrides?(override_list)
       end
       if search.nil? && fallback_to_non_installable
         search = candidates.last

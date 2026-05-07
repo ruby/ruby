@@ -244,11 +244,6 @@ module Bundler
       Bundler.settings[:deployment]
     end
 
-    def overrides
-      return [] unless defined?(@definition) && @definition
-      @definition.overrides
-    end
-
     def locked_gems
       @locked_gems ||=
         if defined?(@definition) && @definition

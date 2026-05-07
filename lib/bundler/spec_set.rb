@@ -7,8 +7,17 @@ module Bundler
     include Enumerable
     include TSort
 
+    attr_accessor :overrides
+
     def initialize(specs)
       @specs = specs
+      @overrides = []
+    end
+
+    def with_overrides(overrides)
+      @overrides = overrides || []
+      @specs.each {|s| s.overrides = @overrides if s.respond_to?(:overrides=) }
+      self
     end
 
     def for(dependencies, platforms = [nil], legacy_platforms = [nil], skips: [])
@@ -125,7 +134,7 @@ module Bundler
     def materialize(deps)
       materialize_dependencies(deps)
 
-      SpecSet.new(materialized_specs)
+      SpecSet.new(materialized_specs).with_overrides(@overrides)
     end
 
     # Materialize for all the specs in the spec set, regardless of what platform they're for
@@ -229,7 +238,7 @@ module Bundler
     end
 
     def valid?(s)
-      s.matches_current_metadata? && valid_dependencies?(s)
+      s.matches_current_metadata_with_overrides?(@overrides) && valid_dependencies?(s)
     end
 
     def to_s

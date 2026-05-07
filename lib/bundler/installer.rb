@@ -211,12 +211,13 @@ module Bundler
     end
 
     def ensure_specs_are_compatible!
+      overrides = @definition.overrides
       @definition.specs.each do |spec|
-        unless spec.matches_current_ruby?
+        unless spec.matches_current_ruby_with_overrides?(overrides)
           raise InstallError, "#{spec.full_name} requires ruby version #{spec.required_ruby_version}, " \
             "which is incompatible with the current version, #{Gem.ruby_version}"
         end
-        unless spec.matches_current_rubygems?
+        unless spec.matches_current_rubygems_with_overrides?(overrides)
           raise InstallError, "#{spec.full_name} requires rubygems version #{spec.required_rubygems_version}, " \
             "which is incompatible with the current version, #{Gem.rubygems_version}"
         end

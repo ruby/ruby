@@ -111,12 +111,12 @@ module Bundler
         @locked_bundler_version = @locked_gems.bundler_version
         @locked_ruby_version = @locked_gems.ruby_version
         @locked_deps = @locked_gems.dependencies
-        @originally_locked_specs = SpecSet.new(@locked_gems.specs)
+        @originally_locked_specs = SpecSet.new(@locked_gems.specs).with_overrides(@overrides)
         @originally_locked_sources = @locked_gems.sources
         @locked_checksums = @locked_gems.checksums
 
         if @unlocking_all
-          @locked_specs   = SpecSet.new([])
+          @locked_specs   = SpecSet.new([]).with_overrides(@overrides)
           @locked_sources = []
         else
           @locked_specs   = @originally_locked_specs
@@ -137,7 +137,7 @@ module Bundler
         @most_specific_locked_platform = nil
         @platforms      = []
         @locked_deps    = {}
-        @locked_specs   = SpecSet.new([])
+        @locked_specs   = SpecSet.new([]).with_overrides(@overrides)
         @locked_sources = []
         @originally_locked_specs = @locked_specs
         @originally_locked_sources = @locked_sources
@@ -506,7 +506,7 @@ module Bundler
     def normalize_platforms
       resolve.normalize_platforms!(current_dependencies, platforms)
 
-      @resolve = SpecSet.new(resolve.for(current_dependencies, @platforms))
+      @resolve = SpecSet.new(resolve.for(current_dependencies, @platforms)).with_overrides(@overrides)
     end
 
     def add_platform(platform)
@@ -762,7 +762,7 @@ module Bundler
       local_platform_needed_for_resolvability = @most_specific_non_local_locked_platform && !@platforms.include?(Bundler.local_platform)
       @platforms << Bundler.local_platform if local_platform_needed_for_resolvability
 
-      result = SpecSet.new(resolver.start)
+      result = SpecSet.new(resolver.start).with_overrides(@overrides)
 
       @resolved_bundler_version = result.find {|spec| spec.name == "bundler" }&.version
 
@@ -788,7 +788,7 @@ module Bundler
         result.add_originally_invalid_platforms!(platforms, @originally_invalid_platforms)
       end
 
-      SpecSet.new(result.for(dependencies, @platforms | [Gem::Platform::RUBY]))
+      SpecSet.new(result.for(dependencies, @platforms | [Gem::Platform::RUBY])).with_overrides(@overrides)
     end
 
     def precompute_source_requirements_for_indirect_dependencies?

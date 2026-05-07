@@ -1,5 +1,39 @@
 # frozen_string_literal: true
 
+RSpec.describe "MatchMetadata override-aware checks" do
+  let(:spec_class) do
+    Class.new do
+      include Bundler::MatchMetadata
+      attr_accessor :name
+      def initialize(name, ruby_req, rubygems_req)
+        @name = name
+        @required_ruby_version = ruby_req
+        @required_rubygems_version = rubygems_req
+      end
+    end
+  end
+
+  it "matches_current_metadata? ignores overrides (strict path)" do
+    spec = spec_class.new("rails", Gem::Requirement.new("< #{Gem.ruby_version}"), Gem::Requirement.default)
+    overrides = [Bundler::Override.new("rails", :required_ruby_version, :ignore_upper)]
+    # Strict method MUST NOT apply overrides; guards SelfManager and other generic callers.
+    expect(spec.matches_current_metadata?).to be(false)
+    expect(spec.matches_current_metadata_with_overrides?(overrides)).to be(true)
+  end
+
+  it "matches_current_ruby_with_overrides? returns the strict result for an empty override list" do
+    spec = spec_class.new("rails", Gem::Requirement.new(">= #{Gem.ruby_version}"), Gem::Requirement.default)
+    expect(spec.matches_current_ruby_with_overrides?([])).to be(true)
+    expect(spec.matches_current_ruby_with_overrides?(nil)).to be(true)
+  end
+
+  it "matches_current_rubygems_with_overrides? honors :all override" do
+    spec = spec_class.new("rails", Gem::Requirement.default, Gem::Requirement.new("< #{Gem.rubygems_version}"))
+    overrides = [Bundler::Override.new(:all, :required_rubygems_version, :ignore_upper)]
+    expect(spec.matches_current_rubygems_with_overrides?(overrides)).to be(true)
+  end
+end
+
 RSpec.describe Bundler::Override do
   describe ".find_for" do
     it "returns the matching override by target and field" do
