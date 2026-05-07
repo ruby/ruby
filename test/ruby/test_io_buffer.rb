@@ -1198,4 +1198,59 @@ class TestIOBuffer < Test::Unit::TestCase
 
     assert_equal "compact me", str
   end
+
+  def test_get_string_zero_copy_mapped
+    buffer = File.open(__FILE__) {|file| IO::Buffer.map(file, 100, 0, IO::Buffer::READONLY)}
+    str = buffer.get_string(0, 30)
+    assert_equal "# frozen_string_literal: false", str
+
+    # Zero-copy string keeps the IO::Buffer alive via STR_EXTERNAL_PARENT.
+    tracker = Object.new
+    weak = ObjectSpace::WeakMap.new
+    weak[tracker] = buffer
+    buffer = nil
+
+    GC.compact if GC.respond_to?(:compact)
+    GC.start(full_mark: true, immediate_sweep: true)
+
+    assert weak[tracker], "IO::Buffer (MAPPED) must be kept alive by the zero-copy string"
+    assert_equal "# frozen_string_literal: false", str
+  end
+
+  def test_get_string_zero_copy_deferred_free
+    source = "hello world".dup.freeze
+    buffer = IO::Buffer.for(source)
+    str = buffer.get_string
+    assert_equal "hello world", str
+
+    buffer.free
+    assert_predicate buffer, :null?
+
+    assert_equal "hello world", str
+  end
+
+  def test_get_string_zero_copy_deferred_free_gc
+    source = "hello world".dup.freeze
+    buffer = IO::Buffer.for(source)
+    str = buffer.get_string
+    buffer.free
+
+    tracker = Object.new
+    weak = ObjectSpace::WeakMap.new
+    weak[tracker] = buffer
+    buffer = nil
+
+    GC.compact if GC.respond_to?(:compact)
+    GC.start(full_mark: true, immediate_sweep: true)
+
+    assert weak[tracker], "IO::Buffer must be kept alive after free while zero-copy string is alive"
+    assert_equal "hello world", str
+
+    str = nil
+
+    GC.compact if GC.respond_to?(:compact)
+    GC.start(full_mark: true, immediate_sweep: true)
+
+    assert_nil weak[tracker], "IO::Buffer must be collected (deferred free executed) after zero-copy string is released"
+  end
 end
