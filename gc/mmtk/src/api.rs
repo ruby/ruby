@@ -181,7 +181,7 @@ pub extern "C" fn mmtk_builder_default() -> *mut MMTKBuilder {
 #[no_mangle]
 pub unsafe extern "C" fn mmtk_init_binding(
     builder: *mut MMTKBuilder,
-    _binding_options: *const RubyBindingOptions,
+    binding_options: *const RubyBindingOptions,
     upcalls: *const RubyUpcalls,
 ) {
     crate::MUTATOR_THREAD_PANIC_HANDLER
@@ -191,9 +191,13 @@ pub unsafe extern "C" fn mmtk_init_binding(
     crate::set_panic_hook();
 
     let builder: Box<MMTKBuilder> = unsafe { Box::from_raw(builder) };
-    let binding_options = RubyBindingOptions {
-        ractor_check_mode: false,
-        suffix_size: 0,
+    let binding_options = if binding_options.is_null() {
+        RubyBindingOptions {
+            ractor_check_mode: false,
+            suffix_size: 0,
+        }
+    } else {
+        unsafe { (*binding_options).clone() }
     };
     let mmtk_boxed = mmtk_init(&builder);
     let mmtk_static = Box::leak(Box::new(mmtk_boxed));
