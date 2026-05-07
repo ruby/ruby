@@ -129,4 +129,16 @@ RSpec.describe "override DSL" do
       expect(the_bundle).to include_gems "myrack 1.0.0", "myrack_middleware 1.0"
     end
   end
+
+  context "lockfile contents" do
+    it "does not record the override directive in Gemfile.lock" do
+      install_gemfile <<-G
+        source "https://gem.repo1"
+        override "myrack", version: "= 0.9.1"
+        gem "myrack"
+      G
+
+      expect(lockfile).not_to match(/override/i)
+    end
+  end
 end
