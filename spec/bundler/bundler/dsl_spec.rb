@@ -444,10 +444,19 @@ RSpec.describe Bundler::Dsl do
       expect(override.operation).to be_nil
     end
 
-    it "raises ArgumentError for `override :all, required_ruby_version:` until :all is implemented" do
-      expect do
-        subject.override(:all, required_ruby_version: :ignore_upper)
-      end.to raise_error(ArgumentError, /`override :all` is not yet supported/)
+    it "stores an Override targeting :all with a metadata field" do
+      subject.override(:all, required_ruby_version: :ignore_upper)
+      override = subject.overrides.first
+      expect(override.target).to eq(:all)
+      expect(override.field).to eq(:required_ruby_version)
+      expect(override.operation).to eq(:ignore_upper)
+    end
+
+    it "stores an Override targeting :all with required_rubygems_version" do
+      subject.override(:all, required_rubygems_version: nil)
+      override = subject.overrides.first
+      expect(override.target).to eq(:all)
+      expect(override.field).to eq(:required_rubygems_version)
     end
 
     it "raises ArgumentError for a non-string, non-symbol, non-nil operation" do

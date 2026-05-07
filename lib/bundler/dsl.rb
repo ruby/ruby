@@ -195,10 +195,6 @@ module Bundler
         raise ArgumentError, "`override :all, version:` is not allowed; version requirements are per-gem"
       end
 
-      if target == :all && operations.any?
-        raise ArgumentError, "`override :all` is not yet supported"
-      end
-
       operations.each do |field, operation|
         validate_override_field!(field)
         validate_override_operation!(operation)
