@@ -717,7 +717,8 @@ rb_concurrent_set_delete_by_identity_locked(VALUE set_obj, VALUE key)
     }
 }
 
-static bool cur_thread_needs_resize_lock_during_delete(void)
+static bool
+cur_thread_needs_resize_lock_during_delete(void)
 {
     return !ruby_native_thread_p();
 }
@@ -793,11 +794,20 @@ rb_concurrent_set_foreach_with_replace_locked(VALUE set_obj, int (*callback)(VAL
 void
 rb_concurrent_set_foreach_with_replace(VALUE set_obj, int (*callback)(VALUE *key, void *data), void *data)
 {
-    RB_VM_LOCKING() {
-        resize_lock_lock();
-        {
-            rb_concurrent_set_foreach_with_replace_locked(set_obj, callback, data);
-        }
-        resize_lock_unlock();
+    unsigned int lev;
+    bool native_thread = false;
+    // FIXME: Right now, MMTk calls this function in a worker thread, which is not safe. Until they
+    // fix that, we'll work around that by not attempting a VM lock, which would crash MMTk.
+    if (ruby_native_thread_p()) {
+        native_thread = true;
+        RB_VM_LOCK_ENTER_LEV(&lev);
+    }
+    resize_lock_lock();
+    {
+        rb_concurrent_set_foreach_with_replace_locked(set_obj, callback, data);
+    }
+    resize_lock_unlock();
+    if (native_thread) {
+        RB_VM_LOCK_LEAVE_LEV(&lev);
     }
 }
