@@ -2738,14 +2738,21 @@ io_buffer_get_string(int argc, VALUE *argv, VALUE self)
 
     io_buffer_validate_range(buffer, offset, length);
 
-    if (rb_io_buffer_readonly_p(self) &&
-            !(buffer->flags & (RB_IO_BUFFER_INTERNAL | RB_IO_BUFFER_MAPPED)) &&
-            RB_TYPE_P(buffer->source, T_STRING)) {
-        return rb_enc_str_new_external((const char*)base + offset, length, encoding, buffer->source);
+    if (rb_io_buffer_readonly_p(self)) {
+        bool can_zero_copy;
+
+        size_t termlen = (size_t)rb_enc_mbminlen(encoding);
+        size_t src_termlen = RB_TYPE_P(buffer->source, T_STRING) ?
+            (size_t)rb_enc_mbminlen(rb_enc_get(buffer->source)) : 0;
+        can_zero_copy = (offset + length + termlen <= buffer->size + src_termlen);
+
+        if (can_zero_copy) {
+            buffer->flags |= RB_IO_BUFFER_HAS_ZERO_COPY_STRINGS;
+            return rb_enc_str_new_external((const char*)base + offset, length, encoding, self);
+        }
     }
-    else {
-        return rb_enc_str_new((const char*)base + offset, length, encoding);
-    }
+
+    return rb_enc_str_new((const char*)base + offset, length, encoding);
 }
 
 /*
