@@ -279,7 +279,9 @@ module Bundler
 
     def validate_override_operation!(operation)
       case operation
-      when String, nil
+      when String
+        Gem::Requirement.new(operation)
+      when nil
         # ok
       when Symbol
         return if SUPPORTED_OVERRIDE_SYMBOL_OPERATIONS.include?(operation)
@@ -287,6 +289,8 @@ module Bundler
       else
         raise ArgumentError, "override operation must be a String, Symbol, or nil, got #{operation.inspect}"
       end
+    rescue Gem::Requirement::BadRequirementError => e
+      raise ArgumentError, "invalid override version requirement #{operation.inspect}: #{e.message}"
     end
 
     def validate_override_uniqueness!(target, field)

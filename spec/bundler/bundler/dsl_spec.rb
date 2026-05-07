@@ -441,6 +441,19 @@ RSpec.describe Bundler::Dsl do
       end.to raise_error(ArgumentError, /unsupported override operation/)
     end
 
+    it "raises ArgumentError for an unparsable version string" do
+      expect do
+        subject.override("rails", version: "not a version")
+      end.to raise_error(ArgumentError, /invalid override version requirement/)
+    end
+
+    it "does not record an override when the version string is invalid" do
+      expect do
+        subject.override("rails", version: "not a version")
+      end.to raise_error(ArgumentError)
+      expect(subject.overrides).to eq([])
+    end
+
     it "rejects atomically when one field in a multi-field call is invalid" do
       expect do
         subject.override("rails", version: ">= 8.0", required_ruby_version: :ignore_upper)
