@@ -1294,13 +1294,28 @@ rb_gc_handle_weak_references(VALUE obj)
         break;
 
       case T_IMEMO: {
-        GC_ASSERT(imemo_type(obj) == imemo_callcache);
-
-        struct rb_callcache *cc = (struct rb_callcache *)obj;
-        if (cc->klass != Qundef &&
-            (!rb_gc_handle_weak_references_alive_p(cc->klass) ||
-             !rb_gc_handle_weak_references_alive_p((VALUE)cc->cme_))) {
-            vm_cc_invalidate(cc);
+        switch (imemo_type(obj)) {
+          case imemo_callcache: {
+            struct rb_callcache *cc = (struct rb_callcache *)obj;
+            if (cc->klass != Qundef &&
+                (!rb_gc_handle_weak_references_alive_p(cc->klass) ||
+                 !rb_gc_handle_weak_references_alive_p((VALUE)cc->cme_))) {
+                vm_cc_invalidate(cc);
+            }
+            break;
+          }
+          case imemo_subclasses: {
+            struct rb_subclasses *subs = (struct rb_subclasses *)obj;
+            VALUE *entries = rb_imemo_subclasses_entries(obj);
+            for (uint32_t i = 0; i < subs->count; i++) {
+                if (entries[i] && !rb_gc_handle_weak_references_alive_p(entries[i])) {
+                    entries[i] = 0;
+                }
+            }
+            break;
+          }
+          default:
+            rb_bug("rb_gc_handle_weak_references: unexpected imemo type");
         }
 
         break;
@@ -1329,6 +1344,9 @@ rb_gc_imemo_needs_cleanup_p(VALUE obj)
       case imemo_iseq:
       case imemo_callinfo:
         return true;
+
+      case imemo_subclasses:
+        return FL_TEST_RAW(obj, IMEMO_SUBCLASSES_HEAP);
 
       case imemo_tmpbuf:
         return ((rb_imemo_tmpbuf_t *)obj)->ptr != NULL;
@@ -3333,6 +3351,9 @@ gc_mark_classext_module(rb_classext_t *ext, bool prime, VALUE box_value, void *a
     }
     mark_m_tbl(objspace, RCLASSEXT_CALLABLE_M_TBL(ext));
     gc_mark_internal(RCLASSEXT_CC_TBL(ext));
+    if (RCLASSEXT_SUBCLASSES(ext)) {
+        gc_mark_internal(RCLASSEXT_SUBCLASSES(ext));
+    }
     gc_mark_internal(RCLASSEXT_CLASSPATH(ext));
 }
 
@@ -3353,6 +3374,9 @@ gc_mark_classext_iclass(rb_classext_t *ext, bool prime, VALUE box_value, void *a
     }
     mark_m_tbl(objspace, RCLASSEXT_CALLABLE_M_TBL(ext));
     gc_mark_internal(RCLASSEXT_CC_TBL(ext));
+    if (RCLASSEXT_SUBCLASSES(ext)) {
+        gc_mark_internal(RCLASSEXT_SUBCLASSES(ext));
+    }
 }
 
 #define TYPED_DATA_REFS_OFFSET_LIST(d) (size_t *)(uintptr_t)RTYPEDDATA_TYPE(d)->function.dmark
@@ -3989,18 +4013,6 @@ update_const_tbl(void *objspace, struct rb_id_table *tbl)
 }
 
 static void
-update_subclasses(void *objspace, rb_classext_t *ext)
-{
-    rb_subclass_entry_t *entry = RCLASSEXT_SUBCLASSES(ext);
-    if (!entry) return;
-    while (entry) {
-        if (entry->klass)
-            UPDATE_IF_MOVED(objspace, entry->klass);
-        entry = entry->next;
-    }
-}
-
-static void
 update_superclasses(rb_objspace_t *objspace, rb_classext_t *ext)
 {
     if (RCLASSEXT_SUPERCLASSES_WITH_SELF(ext)) {
@@ -4041,7 +4053,9 @@ update_classext(rb_classext_t *ext, bool is_prime, VALUE box_value, void *arg)
     UPDATE_IF_MOVED(objspace, RCLASSEXT_CC_TBL(ext));
     UPDATE_IF_MOVED(objspace, RCLASSEXT_CVC_TBL(ext));
     update_superclasses(objspace, ext);
-    update_subclasses(objspace, ext);
+    if (RCLASSEXT_SUBCLASSES(ext)) {
+        UPDATE_IF_MOVED(objspace, RCLASSEXT_SUBCLASSES(ext));
+    }
 
     update_classext_values(objspace, ext, false);
 }
@@ -4059,7 +4073,9 @@ update_iclass_classext(rb_classext_t *ext, bool is_prime, VALUE box_value, void 
     update_m_tbl(objspace, RCLASSEXT_CALLABLE_M_TBL(ext));
     UPDATE_IF_MOVED(objspace, RCLASSEXT_CC_TBL(ext));
     UPDATE_IF_MOVED(objspace, RCLASSEXT_CVC_TBL(ext));
-    update_subclasses(objspace, ext);
+    if (RCLASSEXT_SUBCLASSES(ext)) {
+        UPDATE_IF_MOVED(objspace, RCLASSEXT_SUBCLASSES(ext));
+    }
 
     update_classext_values(objspace, ext, true);
 }
