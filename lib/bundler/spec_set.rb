@@ -155,7 +155,7 @@ module Bundler
     def incomplete_specs_for_platform(deps, platform)
       return [] if @specs.empty?
 
-      validation_set = self.class.new(@specs)
+      validation_set = self.class.new(@specs).with_overrides(@overrides)
       validation_set.for(deps, [platform])
       validation_set.incomplete_specs
     end
