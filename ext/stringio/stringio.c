@@ -167,6 +167,9 @@ strio_readbuf(struct StringIO *ptr, VALUE str)
     if (!NIL_P(str)) {
 	StringValue(str);
 	rb_str_modify(str);
+	if (str == ptr->string) {
+	    rb_raise(rb_eArgError, "cannot read into the underlying string");
+	}
     }
     return str;
 }
