@@ -1065,8 +1065,11 @@ module Bundler
 
         name = override.target
         next if @changed_dependencies.include?(name)
-        next if @dependencies.any? {|d| d.name == name }
         next if @originally_locked_specs[name].empty?
+        # version: overrides on direct deps are detected in the per-dep
+        # converge_dependencies loop via apply_override_to + matches_spec?.
+        # Other fields are not visible there, so they always reach here.
+        next if override.field == :version && @dependencies.any? {|d| d.name == name }
 
         @gems_to_unlock << name
         @changed_dependencies << name
