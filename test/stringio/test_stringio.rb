@@ -831,9 +831,11 @@ class TestStringIO < Test::Unit::TestCase
     assert_raise(EOFError) { f.pread(1, 5) }
     assert_raise(ArgumentError) { f.pread(-1, 0) }
     assert_raise(Errno::EINVAL) { f.pread(3, -1) }
+    assert_raise(Errno::EINVAL) { f.pread(0, -1) }
+    assert_raise(IOError) { StringIO.new(nil, "w").pread(3, 0) }
+    assert_raise(TypeError) { f.pread(3, 0, []) }
 
     assert_equal "".b, StringIO.new("").pread(0, 0)
-    assert_equal "".b, StringIO.new("").pread(0, -10)
 
     buf = "stale".b
     assert_equal "stale".b, StringIO.new("").pread(0, 0, buf)
