@@ -560,8 +560,10 @@ static inline void
 imemo_fields_free(struct rb_fields *fields)
 {
     if (FL_TEST_RAW((VALUE)fields, OBJ_FIELD_HEAP)) {
+#if RUBY_DEBUG
         shape_id_t shape_id = RBASIC_SHAPE_ID((VALUE)fields);
         RUBY_ASSERT(rb_shape_complex_p(shape_id));
+#endif
         st_free_table(fields->as.complex.table);
     }
 }
