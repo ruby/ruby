@@ -34,12 +34,14 @@ describe "Regexp#match" do
     /(.)(.)(.)/.match(:abc).should be_kind_of(MatchData)
   end
 
-  it "raises a TypeError on an uninitialized Regexp" do
-    -> { Regexp.allocate.match('foo') }.should raise_error(TypeError)
-  end
+  ruby_version_is ""..."3.3" do
+    it "raises a TypeError on an uninitialized Regexp" do
+      -> { Regexp.allocate.match('foo') }.should raise_error(TypeError)
+    end
 
-  it "raises TypeError on an uninitialized Regexp" do
-    -> { Regexp.allocate.match('foo'.encode("UTF-16LE")) }.should raise_error(TypeError)
+    it "raises TypeError on an uninitialized Regexp" do
+      -> { Regexp.allocate.match('foo'.encode("UTF-16LE")) }.should raise_error(TypeError)
+    end
   end
 
   describe "with [string, position]" do
