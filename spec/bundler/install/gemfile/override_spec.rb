@@ -243,4 +243,78 @@ RSpec.describe "override DSL" do
       expect(lockfile).to include("needs_old_rubygems (1.0)")
     end
   end
+
+  context "with an :all target" do
+    it "applies required_ruby_version: :ignore_upper to every gem" do
+      build_repo2 do
+        build_gem "needs_old_ruby_a", "1.0" do |s|
+          s.required_ruby_version = "< #{Gem.ruby_version}"
+        end
+        build_gem "needs_old_ruby_b", "1.0" do |s|
+          s.required_ruby_version = "< #{Gem.ruby_version}"
+        end
+      end
+
+      gemfile <<-G
+        source "https://gem.repo2"
+        override :all, required_ruby_version: :ignore_upper
+        gem "needs_old_ruby_a"
+        gem "needs_old_ruby_b"
+      G
+
+      bundle :lock
+      expect(lockfile).to include("needs_old_ruby_a (1.0)")
+      expect(lockfile).to include("needs_old_ruby_b (1.0)")
+    end
+
+    it "is overridden by a per-gem override on the same field" do
+      build_repo2 do
+        build_gem "permissive", "1.0" do |s|
+          s.required_ruby_version = "< #{Gem.ruby_version}"
+        end
+        build_gem "still_blocked", "1.0" do |s|
+          s.required_ruby_version = "= #{Gem.ruby_version}.999"
+        end
+      end
+
+      # :all says ignore_upper (would unblock both), but per-gem on
+      # still_blocked nails it to a hard requirement that still fails.
+      gemfile <<-G
+        source "https://gem.repo2"
+        override :all, required_ruby_version: :ignore_upper
+        override "still_blocked", required_ruby_version: "= #{Gem.ruby_version}.999"
+        gem "permissive"
+        gem "still_blocked"
+      G
+
+      bundle :lock, raise_on_error: false
+      expect(err).to include("still_blocked")
+    end
+
+    it "re-resolves a previously locked spec when an :all metadata override is added" do
+      build_repo2 do
+        build_gem "selectable", "1.0"
+        build_gem "selectable", "2.0" do |s|
+          s.required_ruby_version = "< #{Gem.ruby_version}"
+        end
+      end
+
+      gemfile <<-G
+        source "https://gem.repo2"
+        gem "selectable"
+      G
+
+      bundle :lock
+      expect(lockfile).to include("selectable (1.0)")
+
+      gemfile <<-G
+        source "https://gem.repo2"
+        override :all, required_ruby_version: :ignore_upper
+        gem "selectable"
+      G
+
+      bundle :lock
+      expect(lockfile).to include("selectable (2.0)")
+    end
+  end
 end
