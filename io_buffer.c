@@ -868,6 +868,8 @@ io_buffer_validate_slice(VALUE source, void *base, size_t size)
 static int
 io_buffer_validate(struct rb_io_buffer *buffer)
 {
+    if (buffer->flags & RB_IO_BUFFER_FREED) return 0;
+
     if (buffer->source != Qnil) {
         // Only slices incur this overhead, unfortunately... better safe than sorry!
         return io_buffer_validate_slice(buffer->source, buffer->base, buffer->size);
@@ -974,7 +976,7 @@ rb_io_buffer_to_s(VALUE self)
     rb_str_append(result, rb_class_name(CLASS_OF(self)));
     rb_str_catf(result, " %p+%"PRIdSIZE, buffer->base, buffer->size);
 
-    if (buffer->base == NULL) {
+    if (buffer->base == NULL || (buffer->flags & RB_IO_BUFFER_FREED)) {
         rb_str_cat2(result, " NULL");
     }
 
@@ -1010,11 +1012,15 @@ rb_io_buffer_to_s(VALUE self)
         rb_str_cat2(result, " READONLY");
     }
 
+    if (buffer->flags & RB_IO_BUFFER_FREED) {
+        rb_str_cat2(result, " FREED");
+    }
+
     if (buffer->source != Qnil) {
         rb_str_cat2(result, " SLICE");
     }
 
-    if (!io_buffer_validate(buffer)) {
+    if (!(buffer->flags & RB_IO_BUFFER_FREED) && !io_buffer_validate(buffer)) {
         rb_str_cat2(result, " INVALID");
     }
 
@@ -1178,7 +1184,7 @@ rb_io_buffer_null_p(VALUE self)
     struct rb_io_buffer *buffer = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
 
-    return RBOOL(buffer->base == NULL);
+    return RBOOL(buffer->base == NULL || (buffer->flags & RB_IO_BUFFER_FREED));
 }
 
 /*
@@ -1520,7 +1526,12 @@ rb_io_buffer_free(VALUE self)
         rb_raise(rb_eIOBufferLockedError, "Buffer is locked!");
     }
 
-    io_buffer_free(buffer);
+    if (buffer->flags & RB_IO_BUFFER_HAS_ZERO_COPY_STRINGS) {
+        buffer->flags |= RB_IO_BUFFER_FREED;
+    }
+    else {
+        io_buffer_free(buffer);
+    }
 
     return self;
 }
@@ -1531,7 +1542,13 @@ VALUE rb_io_buffer_free_locked(VALUE self)
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
 
     io_buffer_unlock(buffer);
-    io_buffer_free(buffer);
+
+    if (buffer->flags & RB_IO_BUFFER_HAS_ZERO_COPY_STRINGS) {
+        buffer->flags |= RB_IO_BUFFER_FREED;
+    }
+    else {
+        io_buffer_free(buffer);
+    }
 
     return self;
 }
@@ -1754,6 +1771,10 @@ rb_io_buffer_resize(VALUE self, size_t size)
 
     if (buffer->flags & RB_IO_BUFFER_LOCKED) {
         rb_raise(rb_eIOBufferLockedError, "Cannot resize locked buffer!");
+    }
+
+    if (buffer->flags & RB_IO_BUFFER_FREED) {
+        rb_raise(rb_eIOBufferAccessError, "Cannot resize buffer with outstanding zero-copy strings!");
     }
 
     if (buffer->base == NULL) {
