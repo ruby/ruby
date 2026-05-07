@@ -185,7 +185,7 @@ module Bundler
       with_source(git_source) { yield }
     end
 
-    SUPPORTED_OVERRIDE_FIELDS = [:version].freeze
+    SUPPORTED_OVERRIDE_FIELDS = [:version, :required_ruby_version, :required_rubygems_version].freeze
     SUPPORTED_OVERRIDE_SYMBOL_OPERATIONS = [:ignore_upper].freeze
 
     def override(target, **operations)
@@ -193,6 +193,10 @@ module Bundler
 
       if target == :all && operations.key?(:version)
         raise ArgumentError, "`override :all, version:` is not allowed; version requirements are per-gem"
+      end
+
+      if target == :all && operations.any?
+        raise ArgumentError, "`override :all` is not yet supported"
       end
 
       operations.each do |field, operation|
@@ -274,7 +278,8 @@ module Bundler
 
     def validate_override_field!(field)
       return if SUPPORTED_OVERRIDE_FIELDS.include?(field)
-      raise ArgumentError, "unsupported override field `#{field}:`; only `version:` is currently supported"
+      supported = SUPPORTED_OVERRIDE_FIELDS.map {|f| "`#{f}:`" }.join(", ")
+      raise ArgumentError, "unsupported override field `#{field}:`; supported fields: #{supported}"
     end
 
     def validate_override_operation!(operation)

@@ -425,8 +425,29 @@ RSpec.describe Bundler::Dsl do
 
     it "raises ArgumentError for an unsupported field" do
       expect do
-        subject.override("rails", required_ruby_version: :ignore_upper)
-      end.to raise_error(ArgumentError, /unsupported override field `required_ruby_version:`/)
+        subject.override("rails", as: "y")
+      end.to raise_error(ArgumentError, /unsupported override field `as:`/)
+    end
+
+    it "stores an Override for a gem with a required_ruby_version: operation" do
+      subject.override("rails", required_ruby_version: :ignore_upper)
+      override = subject.overrides.first
+      expect(override.target).to eq("rails")
+      expect(override.field).to eq(:required_ruby_version)
+      expect(override.operation).to eq(:ignore_upper)
+    end
+
+    it "stores an Override for a gem with a required_rubygems_version: operation" do
+      subject.override("rails", required_rubygems_version: nil)
+      override = subject.overrides.first
+      expect(override.field).to eq(:required_rubygems_version)
+      expect(override.operation).to be_nil
+    end
+
+    it "raises ArgumentError for `override :all, required_ruby_version:` until :all is implemented" do
+      expect do
+        subject.override(:all, required_ruby_version: :ignore_upper)
+      end.to raise_error(ArgumentError, /`override :all` is not yet supported/)
     end
 
     it "raises ArgumentError for a non-string, non-symbol, non-nil operation" do
@@ -456,7 +477,7 @@ RSpec.describe Bundler::Dsl do
 
     it "rejects atomically when one field in a multi-field call is invalid" do
       expect do
-        subject.override("rails", version: ">= 8.0", required_ruby_version: :ignore_upper)
+        subject.override("rails", version: ">= 8.0", as: "y")
       end.to raise_error(ArgumentError, /unsupported override field/)
       expect(subject.overrides).to eq([])
     end
