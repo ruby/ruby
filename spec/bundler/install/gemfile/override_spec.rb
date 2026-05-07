@@ -318,6 +318,27 @@ RSpec.describe "override DSL" do
     end
   end
 
+  context "diagnostic on resolve failure" do
+    it "lists active overrides with their Gemfile location" do
+      build_repo2 do
+        build_gem "needs_old_ruby", "1.0" do |s|
+          s.required_ruby_version = "= #{Gem.ruby_version}.999"
+        end
+      end
+
+      gemfile <<-G
+        source "https://gem.repo2"
+        override "needs_old_ruby", required_ruby_version: "= #{Gem.ruby_version}.999"
+        gem "needs_old_ruby"
+      G
+
+      bundle :lock, raise_on_error: false
+      expect(err).to include("Bundler applied the following overrides")
+      expect(err).to include("override \"needs_old_ruby\", required_ruby_version:")
+      expect(err).to match(/declared at Gemfile:\d+/)
+    end
+  end
+
   context "install-time compatibility" do
     it "installs a gem whose required_ruby_version excludes the current Ruby when an override removes the constraint" do
       build_repo2 do

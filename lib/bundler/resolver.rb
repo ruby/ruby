@@ -122,7 +122,23 @@ module Bundler
         explanation << extended_explanation
       end
 
+      override_summary = override_diagnostic_summary
+      explanation << override_summary if override_summary
+
       raise SolveFailure.new(explanation)
+    end
+
+    def override_diagnostic_summary
+      return nil if @base.overrides.empty?
+
+      lines = ["Bundler applied the following overrides while resolving:"]
+      @base.overrides.each do |override|
+        target = override.target == :all ? ":all" : override.target.inspect
+        location = override.source_location_label
+        lines << "  override #{target}, #{override.field}: #{override.operation.inspect}" \
+          "#{location ? " (declared at #{location})" : ""}"
+      end
+      "\n\n#{lines.join("\n")}"
     end
 
     def find_names_to_relax(incompatibility)
