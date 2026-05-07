@@ -21,6 +21,22 @@ RSpec.describe Bundler::Override do
     it "returns nil for an empty overrides list" do
       expect(described_class.find_for([], "rails", :version)).to be_nil
     end
+
+    it "falls back to an :all override on the same field" do
+      a = described_class.new(:all, :required_ruby_version, :ignore_upper)
+      expect(described_class.find_for([a], "rails", :required_ruby_version)).to be(a)
+    end
+
+    it "prefers a per-gem override over a matching :all override" do
+      per_gem = described_class.new("rails", :required_ruby_version, ">= 3.4")
+      all_target = described_class.new(:all, :required_ruby_version, :ignore_upper)
+      expect(described_class.find_for([all_target, per_gem], "rails", :required_ruby_version)).to be(per_gem)
+    end
+
+    it "does not fall back to :all when the field differs" do
+      a = described_class.new(:all, :required_ruby_version, :ignore_upper)
+      expect(described_class.find_for([a], "rails", :required_rubygems_version)).to be_nil
+    end
   end
 
   describe "#apply_to" do
