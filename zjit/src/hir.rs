@@ -2690,6 +2690,24 @@ impl Function {
         self.blocks.pop();
     }
 
+    fn num_successors(&self, block: BlockId) -> usize {
+        let insns = &self.blocks[block.0].insns;
+        let last = self.find(*insns.last().unwrap());
+        match last {
+            Insn::Jump(_) => {
+                if insns.len() >= 2 && matches!(self.find(insns[insns.len() - 2]), Insn::IfTrue { .. } | Insn::IfFalse { .. }) {
+                    2
+                } else {
+                    1
+                }
+            }
+            Insn::Entries { targets } => targets.len(),
+            Insn::Return { .. } | Insn::SideExit { .. } | Insn::Throw { .. } => 0,
+            _ => unreachable!("block doesn't end with a jump or terminator")
+        }
+    }
+
+
     /// Return a reference to the Block at the given index.
     pub fn block(&self, block_id: BlockId) -> &Block {
         &self.blocks[block_id.0]
@@ -5307,6 +5325,9 @@ impl Function {
     }
 
     fn absorb_dst_block(&mut self, num_in_edges: &[u32], block: BlockId) -> bool {
+        if self.num_successors(block) > 1 {
+            return false;
+        }
         let Some(terminator_id) = self.blocks[block.0].insns.last()
             else { return false };
         let Insn::Jump(BranchEdge { target, args }) = self.find(*terminator_id)
@@ -5749,12 +5770,28 @@ impl Function {
                     }
                     _ => {}
                 }
-                if !insn.is_terminator() {
-                    continue;
-                }
-                block_has_terminator = true;
-                if idx != insns.len() - 1 {
-                    return Err(ValidationError::TerminatorNotAtEnd(block_id, *insn_id, idx));
+                if insn.is_terminator() {
+                    block_has_terminator = true;
+
+                    match &insn {
+                        Insn::IfTrue { val: _, target: BranchEdge{ .. } }
+                        | Insn::IfFalse { val: _, target: BranchEdge{ .. }} => {
+                            // IfTrue / IfFalse should always be second to last
+                            if idx != insns.len() - 2 {
+                                return Err(ValidationError::TerminatorNotAtEnd(block_id, *insn_id, idx))
+                            }
+                            // The instruction after IfTrue/IfFalse must be a Jump
+                            if !matches!(self.find(insns[idx + 1]), Insn::Jump(_)) {
+                                return Err(ValidationError::TerminatorNotAtEnd(block_id, *insn_id, idx))
+                            }
+                        }
+                        _ => {
+                            // Jump etc should always be last
+                            if idx != insns.len() - 1 {
+                                return Err(ValidationError::TerminatorNotAtEnd(block_id, *insn_id, idx))
+                            }
+                        }
+                    }
                 }
             }
             if !block_has_terminator {
@@ -7129,10 +7166,20 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         val: test_id,
                         target: BranchEdge { target, args: iffalse_state.as_args(self_param) }
                     });
+
+                    let fall_through = fun.new_block(insn_idx);
+
+                    fun.push_insn(block, Insn::Jump(
+                            BranchEdge { target: fall_through, args: vec![] }
+                    ));
+
+                    block = fall_through;
+
                     let not_nil_false_type = types::Truthy;
                     let not_nil_false = fun.push_insn(block, Insn::RefineType { val, new_type: not_nil_false_type });
                     state.replace(val, not_nil_false);
                     queue.push_back((state.clone(), target, target_idx, local_inval));
+
                 }
                 YARVINSN_branchif | YARVINSN_branchif_without_ints => {
                     if opcode == YARVINSN_branchif {
@@ -7151,6 +7198,15 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         val: test_id,
                         target: BranchEdge { target, args: iftrue_state.as_args(self_param) }
                     });
+
+                    let fall_through = fun.new_block(insn_idx);
+
+                    let _fall_through_id = fun.push_insn(block, Insn::Jump(
+                            BranchEdge { target: fall_through, args: vec![] }
+                    ));
+
+                    block = fall_through;
+
                     let nil_false_type = types::Falsy;
                     let nil_false = fun.push_insn(block, Insn::RefineType { val, new_type: nil_false_type });
                     state.replace(val, nil_false);
@@ -7172,6 +7228,14 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         val: test_id,
                         target: BranchEdge { target, args: iftrue_state.as_args(self_param) }
                     });
+
+                    let fall_through = fun.new_block(insn_idx);
+
+                    let _fall_through_id = fun.push_insn(block, Insn::Jump(
+                            BranchEdge { target: fall_through, args: vec![] }
+                    ));
+
+                    block = fall_through;
                     let new_type = types::NotNil;
                     let not_nil = fun.push_insn(block, Insn::RefineType { val, new_type });
                     state.replace(val, not_nil);
@@ -7201,6 +7265,14 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         val: test_id,
                         target: BranchEdge { target, args: state.as_args(self_param) }
                     });
+
+                    let fall_through = fun.new_block(insn_idx);
+
+                    let _fall_through_id = fun.push_insn(block, Insn::Jump(
+                            BranchEdge { target: fall_through, args: vec![] }
+                    ));
+
+                    block = fall_through;
                     queue.push_back((state.clone(), target, target_idx, local_inval));
 
                     // Move on to the fast path
@@ -7452,20 +7524,30 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             .map(|&kind| (kind, fun.new_block(branch_insn_idx)))
                             .collect::<Vec<_>>();
 
+                            let mut current_block = unmodified_block;
+
                             for &(kind, profiled_block) in &profiled_blocks {
                                 match kind {
                                     ProfiledBlockHandlerFamily::Nil => {
-                                        let none_handler = fun.push_insn(unmodified_block, Insn::Const {
+                                        let none_handler = fun.push_insn(current_block, Insn::Const {
                                             val: Const::CInt64(VM_BLOCK_HANDLER_NONE.into()),
                                         });
-                                        let is_none = fun.push_insn(unmodified_block, Insn::IsBitEqual {
+                                        let is_none = fun.push_insn(current_block, Insn::IsBitEqual {
                                             left: block_handler,
                                             right: none_handler,
                                         });
-                                        fun.push_insn(unmodified_block, Insn::IfTrue {
+                                        fun.push_insn(current_block, Insn::IfTrue {
                                             val: is_none,
                                             target: BranchEdge { target: profiled_block, args: vec![] },
                                         });
+
+                                        let next_block = fun.new_block(branch_insn_idx);
+
+                                        fun.push_insn(current_block, Insn::Jump(
+                                            BranchEdge { target: next_block, args: vec![] },
+                                        ));
+                                        current_block = next_block;
+
                                         let val = fun.push_insn(profiled_block, Insn::Const { val: Const::Value(Qnil) });
                                         let mut args = vec![val];
                                         if let Some(local) = original_local { args.push(local); }
@@ -7478,19 +7560,25 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                                         //   VM_BH_ISEQ_BLOCK_P(): block_handler & 0x03 == 0x01
                                         //   VM_BH_IFUNC_P():      block_handler & 0x03 == 0x03
                                         // So to check for either of those cases we can use: val & 0x1 == 0x1
-                                        let tag_mask = fun.push_insn(unmodified_block, Insn::Const { val: Const::CInt64(0x1) });
-                                        let tag_bits = fun.push_insn(unmodified_block, Insn::IntAnd {
+                                        let tag_mask = fun.push_insn(current_block, Insn::Const { val: Const::CInt64(0x1) });
+                                        let tag_bits = fun.push_insn(current_block, Insn::IntAnd {
                                             left: block_handler,
                                             right: tag_mask,
                                         });
-                                        let is_iseq_or_ifunc = fun.push_insn(unmodified_block, Insn::IsBitEqual {
+                                        let is_iseq_or_ifunc = fun.push_insn(current_block, Insn::IsBitEqual {
                                             left: tag_bits,
                                             right: tag_mask,
                                         });
-                                        fun.push_insn(unmodified_block, Insn::IfTrue {
+                                        fun.push_insn(current_block, Insn::IfTrue {
                                             val: is_iseq_or_ifunc,
                                             target: BranchEdge { target: profiled_block, args: vec![] },
                                         });
+                                        let next_block = fun.new_block(branch_insn_idx);
+                                        fun.push_insn(current_block, Insn::Jump(
+                                            BranchEdge { target: next_block, args: vec![] },
+                                        ));
+                                        current_block = next_block;
+
                                         // TODO(Shopify/ruby#753): GC root, so we should be able to avoid unnecessary GC tracing
                                         let val = fun.push_insn(profiled_block, Insn::Const { val: Const::Value(unsafe { rb_block_param_proxy }) });
                                         let mut args = vec![val];
@@ -7500,7 +7588,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                                 }
                             }
 
-                            fun.push_insn(unmodified_block, Insn::SideExit { state: exit_id, reason: SideExitReason::BlockParamProxyProfileNotCovered, recompile: None });
+                            fun.push_insn(current_block, Insn::SideExit { state: exit_id, reason: SideExitReason::BlockParamProxyProfileNotCovered, recompile: None });
                         }
                     }
 
@@ -7793,6 +7881,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                                     new_branch_block(&mut fun, cd, argc as usize, opcode, expected, branch_insn_idx, &exit_state, locals_count, stack_count, join_block);
                                 let target = BranchEdge { target: iftrue_block, args: entry_args.clone() };
                                 fun.push_insn(block, Insn::IfTrue { val: has_type, target });
+                                let fall_through = fun.new_block(insn_idx);
+                                fun.push_insn(block, Insn::Jump(
+                                        BranchEdge { target: fall_through, args: vec![] }
+                                ));
+                                block = fall_through;
                             }
                             // Continue compilation from the join block at the next instruction.
                             // Make a copy of the current state without the args (pop the receiver
@@ -8060,6 +8153,13 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         let join_param = fun.push_insn(join_block, Insn::Param);
                         let ifunc_block = fun.new_block(insn_idx);
                         fun.push_insn(block, Insn::IfTrue { val: is_ifunc_match, target: BranchEdge { target: ifunc_block, args: vec![] } });
+                        let fall_through = fun.new_block(insn_idx);
+                        fun.push_insn(block, Insn::Jump(
+                                BranchEdge { target: fall_through, args: vec![] }
+                        ));
+
+                        block = fall_through;
+
                         let ifunc_result = fun.push_insn(ifunc_block, Insn::InvokeBlockIfunc {
                             cd,
                             block_handler,
@@ -8136,6 +8236,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             let iftrue_block = fun.new_block(insn_idx);
                             let target = BranchEdge { target: iftrue_block, args: vec![] };
                             fun.push_insn(block, Insn::IfTrue { val: has_shape_and_type, target });
+                            let fall_through = fun.new_block(insn_idx);
+                            fun.push_insn(block, Insn::Jump(BranchEdge { target: fall_through, args: vec![] }));
+                            block = fall_through;
                             let result = fun.load_ivar(iftrue_block, self_param, profiled_type, id, exit_id);
                             fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
                         }
@@ -8348,7 +8451,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
     fun.profiles = Some(profiles);
     if let Err(err) = crate::stats::trace_compile_phase("validate", || fun.validate()) {
-        debug!("ZJIT: {err:?}: Initial HIR:\n{}", FunctionPrinter::without_snapshot(&fun));
+        eprintln!("ZJIT: {err:?}: Initial HIR:\n{}", FunctionPrinter::without_snapshot(&fun));
         return Err(ParseError::Validation(err));
     }
     Ok(fun)
@@ -8356,7 +8459,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
 /// Compile an entry_block for the interpreter
 fn compile_entry_block(fun: &mut Function, jit_entry_insns: &[u32], insn_idx_to_block: &HashMap<u32, BlockId>) {
-    let entry_block = fun.entry_block;
+    let mut entry_block = fun.entry_block;
     let (self_param, entry_state) = compile_entry_state(fun);
     let mut pc: Option<InsnId> = None;
     let &all_opts_passed_insn_idx = jit_entry_insns.last().unwrap();
@@ -8380,6 +8483,12 @@ fn compile_entry_block(fun: &mut Function, jit_entry_insns: &[u32], insn_idx_to_
             val: test_id,
             target: BranchEdge { target: target_block, args: entry_state.as_args(self_param) },
         });
+        // TODO: is this the right insn index??
+        let fall_through = fun.new_block(jit_entry_insn);
+        let _fall_through_id = fun.push_insn(entry_block, Insn::Jump(
+                BranchEdge { target: fall_through, args: vec![] }
+        ));
+        entry_block = fall_through;
     }
 
     // Terminate the block with a jump to the block with all optionals passed
@@ -8948,6 +9057,10 @@ mod validation_tests {
         let side = function.new_block(0);
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(entry, Insn::IfTrue { val, target: BranchEdge { target: side, args: vec![val, val, val] } });
+        let fall_through = function.new_block(1);
+        function.push_insn(entry, Insn::Jump(
+                BranchEdge { target: fall_through, args: vec![] }
+        ));
         function.seal_entries();
         assert_matches_err(function.validate(), ValidationError::MismatchedBlockArity(entry, 0, 3));
     }
@@ -8959,6 +9072,10 @@ mod validation_tests {
         let side = function.new_block(0);
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(entry, Insn::IfFalse { val, target: BranchEdge { target: side, args: vec![val, val, val] } });
+        let fall_through = function.new_block(1);
+        function.push_insn(entry, Insn::Jump(
+                BranchEdge { target: fall_through, args: vec![] }
+        ));
         function.seal_entries();
         assert_matches_err(function.validate(), ValidationError::MismatchedBlockArity(entry, 0, 3));
     }

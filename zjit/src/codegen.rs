@@ -172,7 +172,7 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exc
             // We assert only `jit_exception: false` cases until we support exception handlers.
             if ZJITState::assert_compiles_enabled() && !jit_exception {
                 let iseq_location = iseq_get_location(iseq, 0);
-                panic!("Failed to compile: {iseq_location}");
+                panic!("Failed to compile: {iseq_location}: {err:?}");
             }
 
             // For --zjit-stats, generate an entry that just increments exit_compilation_failure and exits
@@ -394,7 +394,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
         }
 
         // Compile each basic block
-        for (rpo_idx, &block_id) in reverse_post_order.iter().enumerate() {
+        for &block_id in reverse_post_order.iter() {
             // Skip the entries superblock — it's an internal CFG artifact
             if block_id == function.entries_block { continue; }
             // Set the current block to the LIR block that corresponds to this
@@ -437,11 +437,6 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
             for (insn_idx, &insn_id) in block.insns().enumerate() {
                 let insn = function.find(insn_id);
 
-                // IfTrue and IfFalse should never be terminators
-                if matches!(insn, Insn::IfTrue {..} | Insn::IfFalse {..}) {
-                    assert!(!insn.is_terminator(), "IfTrue/IfFalse should not be terminators");
-                }
-
                 match insn {
                     Insn::IfFalse { val, target } => {
 
@@ -449,50 +444,26 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
 
                         let lir_target = hir_to_lir[target.target.0].unwrap();
 
-                        let fall_through_target = asm.new_block(block_id, false, rpo_idx);
-
                         let branch_edge = lir::BranchEdge {
                             target: lir_target,
                             args: target.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
                         };
 
-                        let fall_through_edge = lir::BranchEdge {
-                            target: fall_through_target,
-                            args: vec![]
-                        };
-
-                        gen_if_false(&mut asm, val_opnd, branch_edge, fall_through_edge);
+                        gen_if_false(&mut asm, val_opnd, branch_edge);
                         assert!(asm.current_block().insns.last().unwrap().is_terminator());
-
-                        asm.set_current_block(fall_through_target);
-
-                        let label = jit.get_label(&mut asm, fall_through_target, block_id);
-                        asm.write_label(label);
                     },
                     Insn::IfTrue { val, target } => {
                         let val_opnd = jit.get_opnd(val);
 
                         let lir_target = hir_to_lir[target.target.0].unwrap();
 
-                        let fall_through_target = asm.new_block(block_id, false, rpo_idx);
-
                         let branch_edge = lir::BranchEdge {
                             target: lir_target,
                             args: target.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
                         };
 
-                        let fall_through_edge = lir::BranchEdge {
-                            target: fall_through_target,
-                            args: vec![]
-                        };
-
-                        gen_if_true(&mut asm, val_opnd, branch_edge, fall_through_edge);
+                        gen_if_true(&mut asm, val_opnd, branch_edge);
                         assert!(asm.current_block().insns.last().unwrap().is_terminator());
-
-                        asm.set_current_block(fall_through_target);
-
-                        let label = jit.get_label(&mut asm, fall_through_target, block_id);
-                        asm.write_label(label);
                     }
                     Insn::Jump(target) => {
                         let lir_target = hir_to_lir[target.target.0].unwrap();
@@ -1474,19 +1445,17 @@ fn gen_jump(asm: &mut Assembler, branch: lir::BranchEdge) {
 }
 
 /// Compile a conditional branch to a basic block
-fn gen_if_true(asm: &mut Assembler, val: lir::Opnd, branch: lir::BranchEdge, fall_through: lir::BranchEdge) {
+fn gen_if_true(asm: &mut Assembler, val: lir::Opnd, branch: lir::BranchEdge) {
     // If val is not zero, move on to the next instruction.
     asm.test(val, val);
     asm.push_insn(lir::Insn::Jnz(Target::Block(branch)));
-    asm.jmp(Target::Block(fall_through));
 }
 
 /// Compile a conditional branch to a basic block
-fn gen_if_false(asm: &mut Assembler, val: lir::Opnd, branch: lir::BranchEdge, fall_through: lir::BranchEdge) {
+fn gen_if_false(asm: &mut Assembler, val: lir::Opnd, branch: lir::BranchEdge) {
     // If val is zero, move on to the next instruction.
     asm.test(val, val);
     asm.push_insn(lir::Insn::Jz(Target::Block(branch)));
-    asm.jmp(Target::Block(fall_through));
 }
 
 /// Compile a dynamic dispatch with block
