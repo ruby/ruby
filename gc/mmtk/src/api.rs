@@ -191,14 +191,7 @@ pub unsafe extern "C" fn mmtk_init_binding(
     crate::set_panic_hook();
 
     let builder: Box<MMTKBuilder> = unsafe { Box::from_raw(builder) };
-    let binding_options = if binding_options.is_null() {
-        RubyBindingOptions {
-            ractor_check_mode: false,
-            suffix_size: 0,
-        }
-    } else {
-        unsafe { (*binding_options).clone() }
-    };
+    let binding_options = unsafe { (*binding_options).clone() };
     let mmtk_boxed = mmtk_init(&builder);
     let mmtk_static = Box::leak(Box::new(mmtk_boxed));
 
