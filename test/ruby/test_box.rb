@@ -877,6 +877,30 @@ class TestBox < Test::Unit::TestCase
     end;
   end
 
+  def test_symbol_to_proc_uses_current_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      box = Ruby::Box.new
+
+      normal, via_sym_proc = box.eval(<<~'RUBY')
+        class Array
+          def box_only_method
+            :ok
+          end
+        end
+
+        normal = [[1]].flat_map { |ary| ary.box_only_method }
+        via_sym_proc = [[1]].flat_map(&:box_only_method)
+        [normal, via_sym_proc]
+      RUBY
+
+      assert_equal [:ok], normal
+      assert_equal [:ok], via_sym_proc
+
+      assert_raise(NoMethodError) { [1].box_only_method }
+    end;
+  end
+
   def test_loading_extension_libs_in_main_box_1
     pend if /mswin|mingw/ =~ RUBY_PLATFORM # timeout on windows environments
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)

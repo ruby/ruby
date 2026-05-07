@@ -5197,7 +5197,48 @@ rb_vm_yield_with_cfunc(rb_execution_context_t *ec, const struct rb_captured_bloc
 static VALUE
 vm_yield_with_symbol(rb_execution_context_t *ec,  VALUE symbol, int argc, const VALUE *argv, int kw_splat, VALUE block_handler)
 {
-    return rb_sym_proc_call(SYM2ID(symbol), argc, argv, kw_splat, rb_vm_bh_to_procval(ec, block_handler));
+    VALUE passed_proc = rb_vm_bh_to_procval(ec, block_handler);
+
+    if (!rb_box_available()) {
+        return rb_sym_proc_call(SYM2ID(symbol), argc, argv, kw_splat, passed_proc);
+    }
+
+    const rb_control_frame_t *reg_cfp = ec->cfp;
+    const rb_control_frame_t *ruby_cfp = rb_vm_get_ruby_level_next_cfp(ec, reg_cfp);
+    const rb_box_t *box = NULL;
+
+    /*
+     * Traverse the frames until a user-defined Box (Optional Box) is found.
+     * Frames for built-in methods like <internal:xxx> run in the Root or Main Box,
+     * so we can safely skip them with this condition without doing string comparisons.
+     */
+    while (ruby_cfp) {
+        box = current_box_on_cfp(ec, ruby_cfp);
+        if (BOX_OPTIONAL_P(box)) {
+            break;
+        }
+        ruby_cfp = rb_vm_get_ruby_level_next_cfp(ec, RUBY_VM_PREVIOUS_CONTROL_FRAME(ruby_cfp));
+    }
+
+    // Fallback to the normal call if no user-defined Box (Optional Box) is found
+    if (!ruby_cfp || !box) {
+        return rb_sym_proc_call(SYM2ID(symbol), argc, argv, kw_splat, passed_proc);
+    }
+
+    VALUE filename = rb_iseq_path(CFP_ISEQ(ruby_cfp));
+    const rb_iseq_t *iseq = rb_iseq_new(Qnil, filename, filename, Qnil, 0, ISEQ_TYPE_TOP);
+    VALUE val;
+
+    vm_push_frame(ec, iseq, VM_FRAME_MAGIC_TOP | VM_ENV_FLAG_LOCAL | VM_FRAME_FLAG_FINISH,
+                  Qnil, GC_GUARDED_PTR(box),
+                  (VALUE)vm_cref_new_toplevel(ec), /* cref or me */
+                  0, reg_cfp->sp, 0, 0);
+
+    val = rb_sym_proc_call(SYM2ID(symbol), argc, argv, kw_splat, passed_proc);
+
+    rb_vm_pop_frame(ec);
+
+    return val;
 }
 
 static inline int
