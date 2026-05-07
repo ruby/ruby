@@ -338,11 +338,11 @@ module Bundler
       elsif no_resolve_needed?
         if deleted_deps.any?
           Bundler.ui.debug "Some dependencies were deleted, using a subset of the resolution from the lockfile"
-          SpecSet.new(filter_specs(@locked_specs, @dependencies - deleted_deps))
+          SpecSet.new(filter_specs(@locked_specs, @dependencies - deleted_deps)).with_overrides(@overrides)
         else
           Bundler.ui.debug "Found no changes, using resolution from the lockfile"
           if @removed_platforms.any? || @locked_gems.may_include_redundant_platform_specific_gems?
-            SpecSet.new(filter_specs(@locked_specs, @dependencies))
+            SpecSet.new(filter_specs(@locked_specs, @dependencies)).with_overrides(@overrides)
           else
             @locked_specs
           end
