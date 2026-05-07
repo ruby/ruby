@@ -317,4 +317,58 @@ RSpec.describe "override DSL" do
       expect(lockfile).to include("selectable (2.0)")
     end
   end
+
+  context "install-time compatibility" do
+    it "installs a gem whose required_ruby_version excludes the current Ruby when an override removes the constraint" do
+      build_repo2 do
+        build_gem "needs_old_ruby", "1.0" do |s|
+          s.required_ruby_version = "< #{Gem.ruby_version}"
+        end
+      end
+
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        override "needs_old_ruby", required_ruby_version: nil
+        gem "needs_old_ruby"
+      G
+
+      expect(the_bundle).to include_gems "needs_old_ruby 1.0"
+    end
+
+    it "installs a gem whose required_rubygems_version excludes the current RubyGems when an override removes it" do
+      build_repo2 do
+        build_gem "needs_old_rubygems", "1.0" do |s|
+          s.required_rubygems_version = "< #{Gem.rubygems_version}"
+        end
+      end
+
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        override "needs_old_rubygems", required_rubygems_version: nil
+        gem "needs_old_rubygems"
+      G
+
+      expect(the_bundle).to include_gems "needs_old_rubygems 1.0"
+    end
+
+    it "installs every gem when :all required_ruby_version override is in effect" do
+      build_repo2 do
+        build_gem "needs_old_ruby_a", "1.0" do |s|
+          s.required_ruby_version = "< #{Gem.ruby_version}"
+        end
+        build_gem "needs_old_ruby_b", "1.0" do |s|
+          s.required_ruby_version = "< #{Gem.ruby_version}"
+        end
+      end
+
+      install_gemfile <<-G
+        source "https://gem.repo2"
+        override :all, required_ruby_version: :ignore_upper
+        gem "needs_old_ruby_a"
+        gem "needs_old_ruby_b"
+      G
+
+      expect(the_bundle).to include_gems "needs_old_ruby_a 1.0", "needs_old_ruby_b 1.0"
+    end
+  end
 end
