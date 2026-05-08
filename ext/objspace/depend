@@ -197,6 +197,7 @@ object_tracing.o: $(top_srcdir)/node.h
 object_tracing.o: $(top_srcdir)/ruby_assert.h
 object_tracing.o: $(top_srcdir)/ruby_atomic.h
 object_tracing.o: $(top_srcdir)/rubyparser.h
+object_tracing.o: $(top_srcdir)/scheduler.h
 object_tracing.o: $(top_srcdir)/thread_pthread.h
 object_tracing.o: $(top_srcdir)/vm_core.h
 object_tracing.o: $(top_srcdir)/vm_opts.h
@@ -410,6 +411,7 @@ objspace.o: $(top_srcdir)/node.h
 objspace.o: $(top_srcdir)/ruby_assert.h
 objspace.o: $(top_srcdir)/ruby_atomic.h
 objspace.o: $(top_srcdir)/rubyparser.h
+objspace.o: $(top_srcdir)/scheduler.h
 objspace.o: $(top_srcdir)/shape.h
 objspace.o: $(top_srcdir)/symbol.h
 objspace.o: $(top_srcdir)/thread_pthread.h
@@ -628,6 +630,7 @@ objspace_dump.o: $(top_srcdir)/node.h
 objspace_dump.o: $(top_srcdir)/ruby_assert.h
 objspace_dump.o: $(top_srcdir)/ruby_atomic.h
 objspace_dump.o: $(top_srcdir)/rubyparser.h
+objspace_dump.o: $(top_srcdir)/scheduler.h
 objspace_dump.o: $(top_srcdir)/shape.h
 objspace_dump.o: $(top_srcdir)/symbol.h
 objspace_dump.o: $(top_srcdir)/thread_pthread.h

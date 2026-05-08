@@ -267,6 +267,7 @@ array.$(OBJEXT): {$(VPATH)}ractor.h
 array.$(OBJEXT): {$(VPATH)}ruby_assert.h
 array.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 array.$(OBJEXT): {$(VPATH)}rubyparser.h
+array.$(OBJEXT): {$(VPATH)}scheduler.h
 array.$(OBJEXT): {$(VPATH)}shape.h
 array.$(OBJEXT): {$(VPATH)}st.h
 array.$(OBJEXT): {$(VPATH)}subst.h
@@ -524,6 +525,7 @@ ast.$(OBJEXT): {$(VPATH)}prism_xallocator.h
 ast.$(OBJEXT): {$(VPATH)}ruby_assert.h
 ast.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 ast.$(OBJEXT): {$(VPATH)}rubyparser.h
+ast.$(OBJEXT): {$(VPATH)}scheduler.h
 ast.$(OBJEXT): {$(VPATH)}shape.h
 ast.$(OBJEXT): {$(VPATH)}st.h
 ast.$(OBJEXT): {$(VPATH)}subst.h
@@ -737,6 +739,7 @@ bignum.$(OBJEXT): {$(VPATH)}oniguruma.h
 bignum.$(OBJEXT): {$(VPATH)}ruby_assert.h
 bignum.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 bignum.$(OBJEXT): {$(VPATH)}rubyparser.h
+bignum.$(OBJEXT): {$(VPATH)}scheduler.h
 bignum.$(OBJEXT): {$(VPATH)}shape.h
 bignum.$(OBJEXT): {$(VPATH)}st.h
 bignum.$(OBJEXT): {$(VPATH)}subst.h
@@ -998,6 +1001,7 @@ box.$(OBJEXT): {$(VPATH)}prism_xallocator.h
 box.$(OBJEXT): {$(VPATH)}ruby_assert.h
 box.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 box.$(OBJEXT): {$(VPATH)}rubyparser.h
+box.$(OBJEXT): {$(VPATH)}scheduler.h
 box.$(OBJEXT): {$(VPATH)}shape.h
 box.$(OBJEXT): {$(VPATH)}st.h
 box.$(OBJEXT): {$(VPATH)}subst.h
@@ -1246,6 +1250,7 @@ builtin.$(OBJEXT): {$(VPATH)}prism_xallocator.h
 builtin.$(OBJEXT): {$(VPATH)}ruby_assert.h
 builtin.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 builtin.$(OBJEXT): {$(VPATH)}rubyparser.h
+builtin.$(OBJEXT): {$(VPATH)}scheduler.h
 builtin.$(OBJEXT): {$(VPATH)}shape.h
 builtin.$(OBJEXT): {$(VPATH)}st.h
 builtin.$(OBJEXT): {$(VPATH)}subst.h
@@ -1458,6 +1463,7 @@ class.$(OBJEXT): {$(VPATH)}ractor.h
 class.$(OBJEXT): {$(VPATH)}ruby_assert.h
 class.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 class.$(OBJEXT): {$(VPATH)}rubyparser.h
+class.$(OBJEXT): {$(VPATH)}scheduler.h
 class.$(OBJEXT): {$(VPATH)}shape.h
 class.$(OBJEXT): {$(VPATH)}st.h
 class.$(OBJEXT): {$(VPATH)}subst.h
@@ -1923,6 +1929,7 @@ compile.$(OBJEXT): {$(VPATH)}regex.h
 compile.$(OBJEXT): {$(VPATH)}ruby_assert.h
 compile.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 compile.$(OBJEXT): {$(VPATH)}rubyparser.h
+compile.$(OBJEXT): {$(VPATH)}scheduler.h
 compile.$(OBJEXT): {$(VPATH)}shape.h
 compile.$(OBJEXT): {$(VPATH)}st.h
 compile.$(OBJEXT): {$(VPATH)}subst.h
@@ -2146,6 +2153,7 @@ complex.$(OBJEXT): {$(VPATH)}oniguruma.h
 complex.$(OBJEXT): {$(VPATH)}ruby_assert.h
 complex.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 complex.$(OBJEXT): {$(VPATH)}rubyparser.h
+complex.$(OBJEXT): {$(VPATH)}scheduler.h
 complex.$(OBJEXT): {$(VPATH)}shape.h
 complex.$(OBJEXT): {$(VPATH)}st.h
 complex.$(OBJEXT): {$(VPATH)}subst.h
@@ -2352,6 +2360,7 @@ concurrent_set.$(OBJEXT): {$(VPATH)}oniguruma.h
 concurrent_set.$(OBJEXT): {$(VPATH)}ruby_assert.h
 concurrent_set.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 concurrent_set.$(OBJEXT): {$(VPATH)}rubyparser.h
+concurrent_set.$(OBJEXT): {$(VPATH)}scheduler.h
 concurrent_set.$(OBJEXT): {$(VPATH)}st.h
 concurrent_set.$(OBJEXT): {$(VPATH)}subst.h
 concurrent_set.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
@@ -2610,6 +2619,7 @@ cont.$(OBJEXT): {$(VPATH)}ractor_core.h
 cont.$(OBJEXT): {$(VPATH)}ruby_assert.h
 cont.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 cont.$(OBJEXT): {$(VPATH)}rubyparser.h
+cont.$(OBJEXT): {$(VPATH)}scheduler.h
 cont.$(OBJEXT): {$(VPATH)}shape.h
 cont.$(OBJEXT): {$(VPATH)}st.h
 cont.$(OBJEXT): {$(VPATH)}subst.h
@@ -2826,6 +2836,7 @@ debug.$(OBJEXT): {$(VPATH)}ractor_core.h
 debug.$(OBJEXT): {$(VPATH)}ruby_assert.h
 debug.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 debug.$(OBJEXT): {$(VPATH)}rubyparser.h
+debug.$(OBJEXT): {$(VPATH)}scheduler.h
 debug.$(OBJEXT): {$(VPATH)}shape.h
 debug.$(OBJEXT): {$(VPATH)}st.h
 debug.$(OBJEXT): {$(VPATH)}subst.h
@@ -3208,6 +3219,7 @@ dir.$(OBJEXT): {$(VPATH)}oniguruma.h
 dir.$(OBJEXT): {$(VPATH)}ruby_assert.h
 dir.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 dir.$(OBJEXT): {$(VPATH)}rubyparser.h
+dir.$(OBJEXT): {$(VPATH)}scheduler.h
 dir.$(OBJEXT): {$(VPATH)}shape.h
 dir.$(OBJEXT): {$(VPATH)}st.h
 dir.$(OBJEXT): {$(VPATH)}subst.h
@@ -4762,6 +4774,7 @@ encoding.$(OBJEXT): {$(VPATH)}regenc.h
 encoding.$(OBJEXT): {$(VPATH)}ruby_assert.h
 encoding.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 encoding.$(OBJEXT): {$(VPATH)}rubyparser.h
+encoding.$(OBJEXT): {$(VPATH)}scheduler.h
 encoding.$(OBJEXT): {$(VPATH)}shape.h
 encoding.$(OBJEXT): {$(VPATH)}st.h
 encoding.$(OBJEXT): {$(VPATH)}subst.h
@@ -5186,6 +5199,7 @@ enumerator.$(OBJEXT): {$(VPATH)}oniguruma.h
 enumerator.$(OBJEXT): {$(VPATH)}ruby_assert.h
 enumerator.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 enumerator.$(OBJEXT): {$(VPATH)}rubyparser.h
+enumerator.$(OBJEXT): {$(VPATH)}scheduler.h
 enumerator.$(OBJEXT): {$(VPATH)}shape.h
 enumerator.$(OBJEXT): {$(VPATH)}st.h
 enumerator.$(OBJEXT): {$(VPATH)}subst.h
@@ -5409,6 +5423,7 @@ error.$(OBJEXT): {$(VPATH)}oniguruma.h
 error.$(OBJEXT): {$(VPATH)}ruby_assert.h
 error.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 error.$(OBJEXT): {$(VPATH)}rubyparser.h
+error.$(OBJEXT): {$(VPATH)}scheduler.h
 error.$(OBJEXT): {$(VPATH)}shape.h
 error.$(OBJEXT): {$(VPATH)}st.h
 error.$(OBJEXT): {$(VPATH)}subst.h
@@ -5681,6 +5696,7 @@ eval.$(OBJEXT): {$(VPATH)}ractor_core.h
 eval.$(OBJEXT): {$(VPATH)}ruby_assert.h
 eval.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 eval.$(OBJEXT): {$(VPATH)}rubyparser.h
+eval.$(OBJEXT): {$(VPATH)}scheduler.h
 eval.$(OBJEXT): {$(VPATH)}shape.h
 eval.$(OBJEXT): {$(VPATH)}st.h
 eval.$(OBJEXT): {$(VPATH)}subst.h
@@ -6192,6 +6208,7 @@ gc.$(OBJEXT): {$(VPATH)}regint.h
 gc.$(OBJEXT): {$(VPATH)}ruby_assert.h
 gc.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 gc.$(OBJEXT): {$(VPATH)}rubyparser.h
+gc.$(OBJEXT): {$(VPATH)}scheduler.h
 gc.$(OBJEXT): {$(VPATH)}shape.h
 gc.$(OBJEXT): {$(VPATH)}st.h
 gc.$(OBJEXT): {$(VPATH)}subst.h
@@ -6441,6 +6458,7 @@ goruby.$(OBJEXT): {$(VPATH)}prism_compile.h
 goruby.$(OBJEXT): {$(VPATH)}ruby_assert.h
 goruby.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 goruby.$(OBJEXT): {$(VPATH)}rubyparser.h
+goruby.$(OBJEXT): {$(VPATH)}scheduler.h
 goruby.$(OBJEXT): {$(VPATH)}shape.h
 goruby.$(OBJEXT): {$(VPATH)}st.h
 goruby.$(OBJEXT): {$(VPATH)}subst.h
@@ -6706,6 +6724,7 @@ hash.$(OBJEXT): {$(VPATH)}ractor.h
 hash.$(OBJEXT): {$(VPATH)}ruby_assert.h
 hash.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 hash.$(OBJEXT): {$(VPATH)}rubyparser.h
+hash.$(OBJEXT): {$(VPATH)}scheduler.h
 hash.$(OBJEXT): {$(VPATH)}shape.h
 hash.$(OBJEXT): {$(VPATH)}st.h
 hash.$(OBJEXT): {$(VPATH)}subst.h
@@ -6919,6 +6938,7 @@ imemo.$(OBJEXT): {$(VPATH)}oniguruma.h
 imemo.$(OBJEXT): {$(VPATH)}ruby_assert.h
 imemo.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 imemo.$(OBJEXT): {$(VPATH)}rubyparser.h
+imemo.$(OBJEXT): {$(VPATH)}scheduler.h
 imemo.$(OBJEXT): {$(VPATH)}shape.h
 imemo.$(OBJEXT): {$(VPATH)}st.h
 imemo.$(OBJEXT): {$(VPATH)}subst.h
@@ -7316,6 +7336,7 @@ io.$(OBJEXT): {$(VPATH)}ractor.h
 io.$(OBJEXT): {$(VPATH)}ruby_assert.h
 io.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 io.$(OBJEXT): {$(VPATH)}rubyparser.h
+io.$(OBJEXT): {$(VPATH)}scheduler.h
 io.$(OBJEXT): {$(VPATH)}shape.h
 io.$(OBJEXT): {$(VPATH)}st.h
 io.$(OBJEXT): {$(VPATH)}subst.h
@@ -7535,6 +7556,7 @@ io_buffer.$(OBJEXT): {$(VPATH)}oniguruma.h
 io_buffer.$(OBJEXT): {$(VPATH)}ruby_assert.h
 io_buffer.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 io_buffer.$(OBJEXT): {$(VPATH)}rubyparser.h
+io_buffer.$(OBJEXT): {$(VPATH)}scheduler.h
 io_buffer.$(OBJEXT): {$(VPATH)}st.h
 io_buffer.$(OBJEXT): {$(VPATH)}subst.h
 io_buffer.$(OBJEXT): {$(VPATH)}thread.h
@@ -7807,6 +7829,7 @@ iseq.$(OBJEXT): {$(VPATH)}ractor_core.h
 iseq.$(OBJEXT): {$(VPATH)}ruby_assert.h
 iseq.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 iseq.$(OBJEXT): {$(VPATH)}rubyparser.h
+iseq.$(OBJEXT): {$(VPATH)}scheduler.h
 iseq.$(OBJEXT): {$(VPATH)}shape.h
 iseq.$(OBJEXT): {$(VPATH)}st.h
 iseq.$(OBJEXT): {$(VPATH)}subst.h
@@ -8066,6 +8089,7 @@ jit.$(OBJEXT): {$(VPATH)}prism_xallocator.h
 jit.$(OBJEXT): {$(VPATH)}ruby_assert.h
 jit.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 jit.$(OBJEXT): {$(VPATH)}rubyparser.h
+jit.$(OBJEXT): {$(VPATH)}scheduler.h
 jit.$(OBJEXT): {$(VPATH)}shape.h
 jit.$(OBJEXT): {$(VPATH)}st.h
 jit.$(OBJEXT): {$(VPATH)}subst.h
@@ -8338,6 +8362,7 @@ load.$(OBJEXT): {$(VPATH)}ractor_core.h
 load.$(OBJEXT): {$(VPATH)}ruby_assert.h
 load.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 load.$(OBJEXT): {$(VPATH)}rubyparser.h
+load.$(OBJEXT): {$(VPATH)}scheduler.h
 load.$(OBJEXT): {$(VPATH)}shape.h
 load.$(OBJEXT): {$(VPATH)}st.h
 load.$(OBJEXT): {$(VPATH)}subst.h
@@ -9063,6 +9088,7 @@ marshal.$(OBJEXT): {$(VPATH)}oniguruma.h
 marshal.$(OBJEXT): {$(VPATH)}ruby_assert.h
 marshal.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 marshal.$(OBJEXT): {$(VPATH)}rubyparser.h
+marshal.$(OBJEXT): {$(VPATH)}scheduler.h
 marshal.$(OBJEXT): {$(VPATH)}shape.h
 marshal.$(OBJEXT): {$(VPATH)}st.h
 marshal.$(OBJEXT): {$(VPATH)}subst.h
@@ -9448,6 +9474,7 @@ memory_view.$(OBJEXT): {$(VPATH)}oniguruma.h
 memory_view.$(OBJEXT): {$(VPATH)}ruby_assert.h
 memory_view.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 memory_view.$(OBJEXT): {$(VPATH)}rubyparser.h
+memory_view.$(OBJEXT): {$(VPATH)}scheduler.h
 memory_view.$(OBJEXT): {$(VPATH)}shape.h
 memory_view.$(OBJEXT): {$(VPATH)}st.h
 memory_view.$(OBJEXT): {$(VPATH)}subst.h
@@ -9723,6 +9750,7 @@ miniinit.$(OBJEXT): {$(VPATH)}ractor.rb
 miniinit.$(OBJEXT): {$(VPATH)}ruby_assert.h
 miniinit.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 miniinit.$(OBJEXT): {$(VPATH)}rubyparser.h
+miniinit.$(OBJEXT): {$(VPATH)}scheduler.h
 miniinit.$(OBJEXT): {$(VPATH)}shape.h
 miniinit.$(OBJEXT): {$(VPATH)}st.h
 miniinit.$(OBJEXT): {$(VPATH)}subst.h
@@ -9936,6 +9964,7 @@ node.$(OBJEXT): {$(VPATH)}oniguruma.h
 node.$(OBJEXT): {$(VPATH)}ruby_assert.h
 node.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 node.$(OBJEXT): {$(VPATH)}rubyparser.h
+node.$(OBJEXT): {$(VPATH)}scheduler.h
 node.$(OBJEXT): {$(VPATH)}shape.h
 node.$(OBJEXT): {$(VPATH)}st.h
 node.$(OBJEXT): {$(VPATH)}subst.h
@@ -10152,6 +10181,7 @@ node_dump.$(OBJEXT): {$(VPATH)}oniguruma.h
 node_dump.$(OBJEXT): {$(VPATH)}ruby_assert.h
 node_dump.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 node_dump.$(OBJEXT): {$(VPATH)}rubyparser.h
+node_dump.$(OBJEXT): {$(VPATH)}scheduler.h
 node_dump.$(OBJEXT): {$(VPATH)}shape.h
 node_dump.$(OBJEXT): {$(VPATH)}st.h
 node_dump.$(OBJEXT): {$(VPATH)}subst.h
@@ -10375,6 +10405,7 @@ numeric.$(OBJEXT): {$(VPATH)}oniguruma.h
 numeric.$(OBJEXT): {$(VPATH)}ruby_assert.h
 numeric.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 numeric.$(OBJEXT): {$(VPATH)}rubyparser.h
+numeric.$(OBJEXT): {$(VPATH)}scheduler.h
 numeric.$(OBJEXT): {$(VPATH)}shape.h
 numeric.$(OBJEXT): {$(VPATH)}st.h
 numeric.$(OBJEXT): {$(VPATH)}subst.h
@@ -10602,6 +10633,7 @@ object.$(OBJEXT): {$(VPATH)}probes.h
 object.$(OBJEXT): {$(VPATH)}ruby_assert.h
 object.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 object.$(OBJEXT): {$(VPATH)}rubyparser.h
+object.$(OBJEXT): {$(VPATH)}scheduler.h
 object.$(OBJEXT): {$(VPATH)}shape.h
 object.$(OBJEXT): {$(VPATH)}st.h
 object.$(OBJEXT): {$(VPATH)}subst.h
@@ -10821,6 +10853,7 @@ pack.$(OBJEXT): {$(VPATH)}pack.rbinc
 pack.$(OBJEXT): {$(VPATH)}ruby_assert.h
 pack.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 pack.$(OBJEXT): {$(VPATH)}rubyparser.h
+pack.$(OBJEXT): {$(VPATH)}scheduler.h
 pack.$(OBJEXT): {$(VPATH)}shape.h
 pack.$(OBJEXT): {$(VPATH)}st.h
 pack.$(OBJEXT): {$(VPATH)}subst.h
@@ -11059,6 +11092,7 @@ parse.$(OBJEXT): {$(VPATH)}regex.h
 parse.$(OBJEXT): {$(VPATH)}ruby_assert.h
 parse.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 parse.$(OBJEXT): {$(VPATH)}rubyparser.h
+parse.$(OBJEXT): {$(VPATH)}scheduler.h
 parse.$(OBJEXT): {$(VPATH)}shape.h
 parse.$(OBJEXT): {$(VPATH)}st.h
 parse.$(OBJEXT): {$(VPATH)}subst.h
@@ -13248,6 +13282,7 @@ proc.$(OBJEXT): {$(VPATH)}ractor_core.h
 proc.$(OBJEXT): {$(VPATH)}ruby_assert.h
 proc.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 proc.$(OBJEXT): {$(VPATH)}rubyparser.h
+proc.$(OBJEXT): {$(VPATH)}scheduler.h
 proc.$(OBJEXT): {$(VPATH)}shape.h
 proc.$(OBJEXT): {$(VPATH)}st.h
 proc.$(OBJEXT): {$(VPATH)}subst.h
@@ -13481,6 +13516,7 @@ process.$(OBJEXT): {$(VPATH)}ractor_core.h
 process.$(OBJEXT): {$(VPATH)}ruby_assert.h
 process.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 process.$(OBJEXT): {$(VPATH)}rubyparser.h
+process.$(OBJEXT): {$(VPATH)}scheduler.h
 process.$(OBJEXT): {$(VPATH)}shape.h
 process.$(OBJEXT): {$(VPATH)}st.h
 process.$(OBJEXT): {$(VPATH)}subst.h
@@ -13716,6 +13752,7 @@ ractor.$(OBJEXT): {$(VPATH)}regex.h
 ractor.$(OBJEXT): {$(VPATH)}ruby_assert.h
 ractor.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 ractor.$(OBJEXT): {$(VPATH)}rubyparser.h
+ractor.$(OBJEXT): {$(VPATH)}scheduler.h
 ractor.$(OBJEXT): {$(VPATH)}shape.h
 ractor.$(OBJEXT): {$(VPATH)}st.h
 ractor.$(OBJEXT): {$(VPATH)}subst.h
@@ -13935,6 +13972,7 @@ random.$(OBJEXT): {$(VPATH)}random.h
 random.$(OBJEXT): {$(VPATH)}ruby_assert.h
 random.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 random.$(OBJEXT): {$(VPATH)}rubyparser.h
+random.$(OBJEXT): {$(VPATH)}scheduler.h
 random.$(OBJEXT): {$(VPATH)}shape.h
 random.$(OBJEXT): {$(VPATH)}siphash.c
 random.$(OBJEXT): {$(VPATH)}siphash.h
@@ -14349,6 +14387,7 @@ rational.$(OBJEXT): {$(VPATH)}rational.c
 rational.$(OBJEXT): {$(VPATH)}ruby_assert.h
 rational.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 rational.$(OBJEXT): {$(VPATH)}rubyparser.h
+rational.$(OBJEXT): {$(VPATH)}scheduler.h
 rational.$(OBJEXT): {$(VPATH)}shape.h
 rational.$(OBJEXT): {$(VPATH)}st.h
 rational.$(OBJEXT): {$(VPATH)}subst.h
@@ -14574,6 +14613,7 @@ re.$(OBJEXT): {$(VPATH)}regint.h
 re.$(OBJEXT): {$(VPATH)}ruby_assert.h
 re.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 re.$(OBJEXT): {$(VPATH)}rubyparser.h
+re.$(OBJEXT): {$(VPATH)}scheduler.h
 re.$(OBJEXT): {$(VPATH)}shape.h
 re.$(OBJEXT): {$(VPATH)}st.h
 re.$(OBJEXT): {$(VPATH)}subst.h
@@ -15837,6 +15877,7 @@ ruby.$(OBJEXT): {$(VPATH)}ruby.c
 ruby.$(OBJEXT): {$(VPATH)}ruby_assert.h
 ruby.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 ruby.$(OBJEXT): {$(VPATH)}rubyparser.h
+ruby.$(OBJEXT): {$(VPATH)}scheduler.h
 ruby.$(OBJEXT): {$(VPATH)}shape.h
 ruby.$(OBJEXT): {$(VPATH)}st.h
 ruby.$(OBJEXT): {$(VPATH)}subst.h
@@ -16040,6 +16081,7 @@ ruby_parser.$(OBJEXT): {$(VPATH)}oniguruma.h
 ruby_parser.$(OBJEXT): {$(VPATH)}ruby_assert.h
 ruby_parser.$(OBJEXT): {$(VPATH)}ruby_parser.c
 ruby_parser.$(OBJEXT): {$(VPATH)}rubyparser.h
+ruby_parser.$(OBJEXT): {$(VPATH)}scheduler.h
 ruby_parser.$(OBJEXT): {$(VPATH)}st.h
 ruby_parser.$(OBJEXT): {$(VPATH)}subst.h
 scheduler.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
@@ -16243,6 +16285,7 @@ scheduler.$(OBJEXT): {$(VPATH)}ruby_assert.h
 scheduler.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 scheduler.$(OBJEXT): {$(VPATH)}rubyparser.h
 scheduler.$(OBJEXT): {$(VPATH)}scheduler.c
+scheduler.$(OBJEXT): {$(VPATH)}scheduler.h
 scheduler.$(OBJEXT): {$(VPATH)}shape.h
 scheduler.$(OBJEXT): {$(VPATH)}st.h
 scheduler.$(OBJEXT): {$(VPATH)}subst.h
@@ -16455,6 +16498,7 @@ set.$(OBJEXT): {$(VPATH)}oniguruma.h
 set.$(OBJEXT): {$(VPATH)}ruby_assert.h
 set.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 set.$(OBJEXT): {$(VPATH)}rubyparser.h
+set.$(OBJEXT): {$(VPATH)}scheduler.h
 set.$(OBJEXT): {$(VPATH)}set.c
 set.$(OBJEXT): {$(VPATH)}shape.h
 set.$(OBJEXT): {$(VPATH)}st.h
@@ -16827,6 +16871,7 @@ shape.$(OBJEXT): {$(VPATH)}oniguruma.h
 shape.$(OBJEXT): {$(VPATH)}ruby_assert.h
 shape.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 shape.$(OBJEXT): {$(VPATH)}rubyparser.h
+shape.$(OBJEXT): {$(VPATH)}scheduler.h
 shape.$(OBJEXT): {$(VPATH)}shape.c
 shape.$(OBJEXT): {$(VPATH)}shape.h
 shape.$(OBJEXT): {$(VPATH)}st.h
@@ -17046,6 +17091,7 @@ signal.$(OBJEXT): {$(VPATH)}ractor_core.h
 signal.$(OBJEXT): {$(VPATH)}ruby_assert.h
 signal.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 signal.$(OBJEXT): {$(VPATH)}rubyparser.h
+signal.$(OBJEXT): {$(VPATH)}scheduler.h
 signal.$(OBJEXT): {$(VPATH)}shape.h
 signal.$(OBJEXT): {$(VPATH)}signal.c
 signal.$(OBJEXT): {$(VPATH)}st.h
@@ -17455,6 +17501,7 @@ st.$(OBJEXT): {$(VPATH)}oniguruma.h
 st.$(OBJEXT): {$(VPATH)}ruby_assert.h
 st.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 st.$(OBJEXT): {$(VPATH)}rubyparser.h
+st.$(OBJEXT): {$(VPATH)}scheduler.h
 st.$(OBJEXT): {$(VPATH)}st.c
 st.$(OBJEXT): {$(VPATH)}st.h
 st.$(OBJEXT): {$(VPATH)}subst.h
@@ -17864,6 +17911,7 @@ string.$(OBJEXT): {$(VPATH)}regex.h
 string.$(OBJEXT): {$(VPATH)}ruby_assert.h
 string.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 string.$(OBJEXT): {$(VPATH)}rubyparser.h
+string.$(OBJEXT): {$(VPATH)}scheduler.h
 string.$(OBJEXT): {$(VPATH)}shape.h
 string.$(OBJEXT): {$(VPATH)}st.h
 string.$(OBJEXT): {$(VPATH)}string.c
@@ -18114,6 +18162,7 @@ struct.$(OBJEXT): {$(VPATH)}oniguruma.h
 struct.$(OBJEXT): {$(VPATH)}ruby_assert.h
 struct.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 struct.$(OBJEXT): {$(VPATH)}rubyparser.h
+struct.$(OBJEXT): {$(VPATH)}scheduler.h
 struct.$(OBJEXT): {$(VPATH)}shape.h
 struct.$(OBJEXT): {$(VPATH)}st.h
 struct.$(OBJEXT): {$(VPATH)}struct.c
@@ -18337,6 +18386,7 @@ symbol.$(OBJEXT): {$(VPATH)}ractor.h
 symbol.$(OBJEXT): {$(VPATH)}ruby_assert.h
 symbol.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 symbol.$(OBJEXT): {$(VPATH)}rubyparser.h
+symbol.$(OBJEXT): {$(VPATH)}scheduler.h
 symbol.$(OBJEXT): {$(VPATH)}shape.h
 symbol.$(OBJEXT): {$(VPATH)}st.h
 symbol.$(OBJEXT): {$(VPATH)}subst.h
@@ -18610,6 +18660,7 @@ thread.$(OBJEXT): {$(VPATH)}ractor_core.h
 thread.$(OBJEXT): {$(VPATH)}ruby_assert.h
 thread.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 thread.$(OBJEXT): {$(VPATH)}rubyparser.h
+thread.$(OBJEXT): {$(VPATH)}scheduler.h
 thread.$(OBJEXT): {$(VPATH)}shape.h
 thread.$(OBJEXT): {$(VPATH)}st.h
 thread.$(OBJEXT): {$(VPATH)}subst.h
@@ -18835,6 +18886,7 @@ time.$(OBJEXT): {$(VPATH)}oniguruma.h
 time.$(OBJEXT): {$(VPATH)}ruby_assert.h
 time.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 time.$(OBJEXT): {$(VPATH)}rubyparser.h
+time.$(OBJEXT): {$(VPATH)}scheduler.h
 time.$(OBJEXT): {$(VPATH)}shape.h
 time.$(OBJEXT): {$(VPATH)}st.h
 time.$(OBJEXT): {$(VPATH)}subst.h
@@ -19049,6 +19101,7 @@ transcode.$(OBJEXT): {$(VPATH)}oniguruma.h
 transcode.$(OBJEXT): {$(VPATH)}ruby_assert.h
 transcode.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 transcode.$(OBJEXT): {$(VPATH)}rubyparser.h
+transcode.$(OBJEXT): {$(VPATH)}scheduler.h
 transcode.$(OBJEXT): {$(VPATH)}shape.h
 transcode.$(OBJEXT): {$(VPATH)}st.h
 transcode.$(OBJEXT): {$(VPATH)}subst.h
@@ -19442,6 +19495,7 @@ variable.$(OBJEXT): {$(VPATH)}ractor_core.h
 variable.$(OBJEXT): {$(VPATH)}ruby_assert.h
 variable.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 variable.$(OBJEXT): {$(VPATH)}rubyparser.h
+variable.$(OBJEXT): {$(VPATH)}scheduler.h
 variable.$(OBJEXT): {$(VPATH)}shape.h
 variable.$(OBJEXT): {$(VPATH)}st.h
 variable.$(OBJEXT): {$(VPATH)}subst.h
@@ -19657,6 +19711,7 @@ version.$(OBJEXT): {$(VPATH)}revision.h
 version.$(OBJEXT): {$(VPATH)}ruby_assert.h
 version.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 version.$(OBJEXT): {$(VPATH)}rubyparser.h
+version.$(OBJEXT): {$(VPATH)}scheduler.h
 version.$(OBJEXT): {$(VPATH)}shape.h
 version.$(OBJEXT): {$(VPATH)}st.h
 version.$(OBJEXT): {$(VPATH)}subst.h
@@ -19944,6 +19999,7 @@ vm.$(OBJEXT): {$(VPATH)}ractor_core.h
 vm.$(OBJEXT): {$(VPATH)}ruby_assert.h
 vm.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 vm.$(OBJEXT): {$(VPATH)}rubyparser.h
+vm.$(OBJEXT): {$(VPATH)}scheduler.h
 vm.$(OBJEXT): {$(VPATH)}shape.h
 vm.$(OBJEXT): {$(VPATH)}st.h
 vm.$(OBJEXT): {$(VPATH)}subst.h
@@ -20213,6 +20269,7 @@ vm_backtrace.$(OBJEXT): {$(VPATH)}prism_xallocator.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}ruby_assert.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}rubyparser.h
+vm_backtrace.$(OBJEXT): {$(VPATH)}scheduler.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}shape.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}st.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}subst.h
@@ -20463,6 +20520,7 @@ vm_dump.$(OBJEXT): {$(VPATH)}ractor_core.h
 vm_dump.$(OBJEXT): {$(VPATH)}ruby_assert.h
 vm_dump.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 vm_dump.$(OBJEXT): {$(VPATH)}rubyparser.h
+vm_dump.$(OBJEXT): {$(VPATH)}scheduler.h
 vm_dump.$(OBJEXT): {$(VPATH)}shape.h
 vm_dump.$(OBJEXT): {$(VPATH)}st.h
 vm_dump.$(OBJEXT): {$(VPATH)}subst.h
@@ -20672,6 +20730,7 @@ vm_sync.$(OBJEXT): {$(VPATH)}ractor_core.h
 vm_sync.$(OBJEXT): {$(VPATH)}ruby_assert.h
 vm_sync.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 vm_sync.$(OBJEXT): {$(VPATH)}rubyparser.h
+vm_sync.$(OBJEXT): {$(VPATH)}scheduler.h
 vm_sync.$(OBJEXT): {$(VPATH)}shape.h
 vm_sync.$(OBJEXT): {$(VPATH)}st.h
 vm_sync.$(OBJEXT): {$(VPATH)}subst.h
@@ -20928,6 +20987,7 @@ vm_trace.$(OBJEXT): {$(VPATH)}ractor_core.h
 vm_trace.$(OBJEXT): {$(VPATH)}ruby_assert.h
 vm_trace.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 vm_trace.$(OBJEXT): {$(VPATH)}rubyparser.h
+vm_trace.$(OBJEXT): {$(VPATH)}scheduler.h
 vm_trace.$(OBJEXT): {$(VPATH)}shape.h
 vm_trace.$(OBJEXT): {$(VPATH)}st.h
 vm_trace.$(OBJEXT): {$(VPATH)}subst.h
@@ -21136,6 +21196,7 @@ weakmap.$(OBJEXT): {$(VPATH)}oniguruma.h
 weakmap.$(OBJEXT): {$(VPATH)}ruby_assert.h
 weakmap.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 weakmap.$(OBJEXT): {$(VPATH)}rubyparser.h
+weakmap.$(OBJEXT): {$(VPATH)}scheduler.h
 weakmap.$(OBJEXT): {$(VPATH)}st.h
 weakmap.$(OBJEXT): {$(VPATH)}subst.h
 weakmap.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
@@ -21398,6 +21459,7 @@ yjit.$(OBJEXT): {$(VPATH)}probes_helper.h
 yjit.$(OBJEXT): {$(VPATH)}ruby_assert.h
 yjit.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 yjit.$(OBJEXT): {$(VPATH)}rubyparser.h
+yjit.$(OBJEXT): {$(VPATH)}scheduler.h
 yjit.$(OBJEXT): {$(VPATH)}shape.h
 yjit.$(OBJEXT): {$(VPATH)}st.h
 yjit.$(OBJEXT): {$(VPATH)}subst.h
@@ -21668,6 +21730,7 @@ zjit.$(OBJEXT): {$(VPATH)}probes_helper.h
 zjit.$(OBJEXT): {$(VPATH)}ruby_assert.h
 zjit.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 zjit.$(OBJEXT): {$(VPATH)}rubyparser.h
+zjit.$(OBJEXT): {$(VPATH)}scheduler.h
 zjit.$(OBJEXT): {$(VPATH)}shape.h
 zjit.$(OBJEXT): {$(VPATH)}st.h
 zjit.$(OBJEXT): {$(VPATH)}subst.h

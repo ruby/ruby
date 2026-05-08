@@ -114,14 +114,8 @@ class Scheduler
       end
     end
 
-    if @ready.any?
-      ready = nil
-
-      @lock.synchronize do
-        ready, @ready = @ready, []
-      end
-
-      ready.each do |fiber|
+    if ready_any?
+      ready_drain.each do |fiber|
         fiber.transfer if fiber.alive?
       end
     end
@@ -134,7 +128,8 @@ class Scheduler
     # This defers signal processing, which is the root cause of the gRPC bug
     # See: https://github.com/socketry/async/blob/main/lib/async/scheduler.rb
     Thread.handle_interrupt(::SignalException => :never) do
-      while @readable.any? or @writable.any? or @waiting.any? or @blocking.any?
+      while @readable.any? or @writable.any? or @waiting.any? or @blocking.any? or
+            should_run_more?
         run_once
 
         break if Thread.pending_interrupt?
@@ -305,9 +300,7 @@ class Scheduler
     # $stderr.puts blocker.backtrace.inspect
     # $stderr.puts fiber.backtrace.inspect
 
-    @lock.synchronize do
-      @ready << fiber
-    end
+    ready_push(fiber)
 
     io = @urgent.last
     io.write_nonblock('.')
@@ -329,9 +322,7 @@ class Scheduler
   end
 
   def fiber_interrupt(fiber, exception)
-    @lock.synchronize do
-      @ready << FiberInterrupt.new(fiber, exception)
-    end
+    ready_push(FiberInterrupt.new(fiber, exception))
 
     io = @urgent.last
     io.write_nonblock('.')
@@ -346,6 +337,33 @@ class Scheduler
     fiber.transfer
 
     return fiber
+  end
+
+  protected
+
+  # Push a fiber (or FiberInterrupt) onto the ready queue.
+  # Override in subclasses to use a priority queue.
+  def ready_push(fiber)
+    @lock.synchronize { @ready << fiber }
+  end
+
+  # Drain and return all ready fibers atomically.
+  # Override in subclasses to use a priority queue.
+  def ready_drain
+    @lock.synchronize { @ready.tap { @ready = [] } }
+  end
+
+  # Whether there are any fibers waiting in the ready queue.
+  # Override if the subclass uses a different data structure.
+  def ready_any?
+    @lock.synchronize { @ready.any? }
+  end
+
+  # Return true if the run loop should keep iterating even when all
+  # IO/blocking/waiting queues are empty. Override in subclasses that
+  # drive CPU-bound fibers solely through the ready queue (e.g. FairScheduler).
+  def should_run_more?
+    false
   end
 
   # This hook is invoked by `Addrinfo.getaddrinfo`. Using a thread ensures that

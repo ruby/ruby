@@ -217,6 +217,7 @@ ancdata.o: $(top_srcdir)/node.h
 ancdata.o: $(top_srcdir)/ruby_assert.h
 ancdata.o: $(top_srcdir)/ruby_atomic.h
 ancdata.o: $(top_srcdir)/rubyparser.h
+ancdata.o: $(top_srcdir)/scheduler.h
 ancdata.o: $(top_srcdir)/shape.h
 ancdata.o: $(top_srcdir)/thread_pthread.h
 ancdata.o: $(top_srcdir)/vm_core.h
@@ -433,6 +434,7 @@ basicsocket.o: $(top_srcdir)/node.h
 basicsocket.o: $(top_srcdir)/ruby_assert.h
 basicsocket.o: $(top_srcdir)/ruby_atomic.h
 basicsocket.o: $(top_srcdir)/rubyparser.h
+basicsocket.o: $(top_srcdir)/scheduler.h
 basicsocket.o: $(top_srcdir)/shape.h
 basicsocket.o: $(top_srcdir)/thread_pthread.h
 basicsocket.o: $(top_srcdir)/vm_core.h
@@ -649,6 +651,7 @@ constants.o: $(top_srcdir)/node.h
 constants.o: $(top_srcdir)/ruby_assert.h
 constants.o: $(top_srcdir)/ruby_atomic.h
 constants.o: $(top_srcdir)/rubyparser.h
+constants.o: $(top_srcdir)/scheduler.h
 constants.o: $(top_srcdir)/shape.h
 constants.o: $(top_srcdir)/thread_pthread.h
 constants.o: $(top_srcdir)/vm_core.h
@@ -866,6 +869,7 @@ ifaddr.o: $(top_srcdir)/node.h
 ifaddr.o: $(top_srcdir)/ruby_assert.h
 ifaddr.o: $(top_srcdir)/ruby_atomic.h
 ifaddr.o: $(top_srcdir)/rubyparser.h
+ifaddr.o: $(top_srcdir)/scheduler.h
 ifaddr.o: $(top_srcdir)/shape.h
 ifaddr.o: $(top_srcdir)/thread_pthread.h
 ifaddr.o: $(top_srcdir)/vm_core.h
@@ -1082,6 +1086,7 @@ init.o: $(top_srcdir)/node.h
 init.o: $(top_srcdir)/ruby_assert.h
 init.o: $(top_srcdir)/ruby_atomic.h
 init.o: $(top_srcdir)/rubyparser.h
+init.o: $(top_srcdir)/scheduler.h
 init.o: $(top_srcdir)/shape.h
 init.o: $(top_srcdir)/thread_pthread.h
 init.o: $(top_srcdir)/vm_core.h
@@ -1298,6 +1303,7 @@ ipsocket.o: $(top_srcdir)/node.h
 ipsocket.o: $(top_srcdir)/ruby_assert.h
 ipsocket.o: $(top_srcdir)/ruby_atomic.h
 ipsocket.o: $(top_srcdir)/rubyparser.h
+ipsocket.o: $(top_srcdir)/scheduler.h
 ipsocket.o: $(top_srcdir)/shape.h
 ipsocket.o: $(top_srcdir)/thread_pthread.h
 ipsocket.o: $(top_srcdir)/vm_core.h
@@ -1514,6 +1520,7 @@ option.o: $(top_srcdir)/node.h
 option.o: $(top_srcdir)/ruby_assert.h
 option.o: $(top_srcdir)/ruby_atomic.h
 option.o: $(top_srcdir)/rubyparser.h
+option.o: $(top_srcdir)/scheduler.h
 option.o: $(top_srcdir)/shape.h
 option.o: $(top_srcdir)/thread_pthread.h
 option.o: $(top_srcdir)/vm_core.h
@@ -1730,6 +1737,7 @@ raddrinfo.o: $(top_srcdir)/node.h
 raddrinfo.o: $(top_srcdir)/ruby_assert.h
 raddrinfo.o: $(top_srcdir)/ruby_atomic.h
 raddrinfo.o: $(top_srcdir)/rubyparser.h
+raddrinfo.o: $(top_srcdir)/scheduler.h
 raddrinfo.o: $(top_srcdir)/shape.h
 raddrinfo.o: $(top_srcdir)/thread_pthread.h
 raddrinfo.o: $(top_srcdir)/vm_core.h
@@ -1946,6 +1954,7 @@ socket.o: $(top_srcdir)/node.h
 socket.o: $(top_srcdir)/ruby_assert.h
 socket.o: $(top_srcdir)/ruby_atomic.h
 socket.o: $(top_srcdir)/rubyparser.h
+socket.o: $(top_srcdir)/scheduler.h
 socket.o: $(top_srcdir)/shape.h
 socket.o: $(top_srcdir)/thread_pthread.h
 socket.o: $(top_srcdir)/vm_core.h
@@ -2162,6 +2171,7 @@ sockssocket.o: $(top_srcdir)/node.h
 sockssocket.o: $(top_srcdir)/ruby_assert.h
 sockssocket.o: $(top_srcdir)/ruby_atomic.h
 sockssocket.o: $(top_srcdir)/rubyparser.h
+sockssocket.o: $(top_srcdir)/scheduler.h
 sockssocket.o: $(top_srcdir)/shape.h
 sockssocket.o: $(top_srcdir)/thread_pthread.h
 sockssocket.o: $(top_srcdir)/vm_core.h
@@ -2378,6 +2388,7 @@ tcpserver.o: $(top_srcdir)/node.h
 tcpserver.o: $(top_srcdir)/ruby_assert.h
 tcpserver.o: $(top_srcdir)/ruby_atomic.h
 tcpserver.o: $(top_srcdir)/rubyparser.h
+tcpserver.o: $(top_srcdir)/scheduler.h
 tcpserver.o: $(top_srcdir)/shape.h
 tcpserver.o: $(top_srcdir)/thread_pthread.h
 tcpserver.o: $(top_srcdir)/vm_core.h
@@ -2594,6 +2605,7 @@ tcpsocket.o: $(top_srcdir)/node.h
 tcpsocket.o: $(top_srcdir)/ruby_assert.h
 tcpsocket.o: $(top_srcdir)/ruby_atomic.h
 tcpsocket.o: $(top_srcdir)/rubyparser.h
+tcpsocket.o: $(top_srcdir)/scheduler.h
 tcpsocket.o: $(top_srcdir)/shape.h
 tcpsocket.o: $(top_srcdir)/thread_pthread.h
 tcpsocket.o: $(top_srcdir)/vm_core.h
@@ -2810,6 +2822,7 @@ udpsocket.o: $(top_srcdir)/node.h
 udpsocket.o: $(top_srcdir)/ruby_assert.h
 udpsocket.o: $(top_srcdir)/ruby_atomic.h
 udpsocket.o: $(top_srcdir)/rubyparser.h
+udpsocket.o: $(top_srcdir)/scheduler.h
 udpsocket.o: $(top_srcdir)/shape.h
 udpsocket.o: $(top_srcdir)/thread_pthread.h
 udpsocket.o: $(top_srcdir)/vm_core.h
@@ -3026,6 +3039,7 @@ unixserver.o: $(top_srcdir)/node.h
 unixserver.o: $(top_srcdir)/ruby_assert.h
 unixserver.o: $(top_srcdir)/ruby_atomic.h
 unixserver.o: $(top_srcdir)/rubyparser.h
+unixserver.o: $(top_srcdir)/scheduler.h
 unixserver.o: $(top_srcdir)/shape.h
 unixserver.o: $(top_srcdir)/thread_pthread.h
 unixserver.o: $(top_srcdir)/vm_core.h
@@ -3242,6 +3256,7 @@ unixsocket.o: $(top_srcdir)/node.h
 unixsocket.o: $(top_srcdir)/ruby_assert.h
 unixsocket.o: $(top_srcdir)/ruby_atomic.h
 unixsocket.o: $(top_srcdir)/rubyparser.h
+unixsocket.o: $(top_srcdir)/scheduler.h
 unixsocket.o: $(top_srcdir)/shape.h
 unixsocket.o: $(top_srcdir)/thread_pthread.h
 unixsocket.o: $(top_srcdir)/vm_core.h
