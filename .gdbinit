@@ -979,7 +979,7 @@ end
 
 define print_lineno
   set $cfp = $arg0
-  set $iseq = $cfp->iseq
+  set $iseq = rb_get_cfp_iseq($cfp)
   set $pos = $cfp->pc - $iseq->body->iseq_encoded
   if $pos != 0
     set $pos = $pos - 1
@@ -1060,7 +1060,7 @@ define print_id
   else
     set $serial = (rb_id_serial_t)$id
   end
-  if $serial && $serial <= ruby_global_symbols.last_id
+  if $serial && $serial < ruby_global_symbols.next_id
     set $idx = $serial / ID_ENTRY_UNIT
     set $ids = (struct RArray *)ruby_global_symbols.ids
     set $flags = $ids->basic.flags
@@ -1083,7 +1083,7 @@ define print_id
           set $aryptr = $ary->as.heap.ptr
           set $arylen = $ary->as.heap.len
         end
-        set $result = $aryptr[($serial % ID_ENTRY_UNIT) * ID_ENTRY_SIZE + $t]
+        set $result = $aryptr[($serial % ID_ENTRY_UNIT) + $t]
         if $result != RUBY_Qnil
           print_string $result
         else
@@ -1117,16 +1117,17 @@ define rb_ps_thread
   set $cfp = $ps_thread_th->ec->cfp
   set $cfpend = (rb_control_frame_t *)($ps_thread_th->ec->vm_stack + $ps_thread_th->ec->vm_stack_size)-1
   while $cfp < $cfpend
-    if $cfp->iseq
-      if !((VALUE)$cfp->iseq & RUBY_IMMEDIATE_MASK) && (((imemo_ifunc << RUBY_FL_USHIFT) | RUBY_T_IMEMO)==$cfp->iseq->flags & ((RUBY_IMEMO_MASK << RUBY_FL_USHIFT) | RUBY_T_MASK))
+    if $cfp->_iseq
+      set $iseq = rb_get_cfp_iseq($cfp)
+      if !((VALUE)$iseq & RUBY_IMMEDIATE_MASK) && (((imemo_ifunc << RUBY_FL_USHIFT) | RUBY_T_IMEMO)==$iseq->flags & ((RUBY_IMEMO_MASK << RUBY_FL_USHIFT) | RUBY_T_MASK))
         printf "%d:ifunc ", $cfpend-$cfp
         set print symbol-filename on
-        output/a $cfp->iseq.body
+        output/a $iseq.body
         set print symbol-filename off
         printf "\n"
       else
       if $cfp->pc
-        set $location = $cfp->iseq->body->location
+        set $location = $iseq->body->location
         printf "%d:", $cfpend-$cfp
         print_pathobj $location.pathobj
         printf ":"

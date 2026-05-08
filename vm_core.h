@@ -920,7 +920,7 @@ struct rb_block {
 typedef struct rb_control_frame_struct {
     const VALUE *pc;        // cfp[0]
     VALUE *sp;              // cfp[1]
-    const rb_iseq_t *_iseq; // cfp[2] -- use rb_cfp_iseq(cfp) to read
+    const rb_iseq_t *_iseq; // cfp[2] -- use CFP_ISEQ(cfp) to read
     VALUE self;             // cfp[3] / block[0]
     const VALUE *ep;        // cfp[4] / block[1]
     const void *block_code; // cfp[5] / block[2] -- iseq, ifunc, or forwarded block handler
