@@ -16,7 +16,11 @@ module Bundler
 
     def with_overrides(overrides)
       @overrides = overrides || []
-      @specs.each {|s| s.overrides = @overrides if s.respond_to?(:overrides=) }
+      # Only LazySpecification carries an overrides accessor. Avoid
+      # respond_to?(:overrides=) here because RemoteSpecification#respond_to?
+      # forwards to _remote_specification, which would force-load the
+      # backing gemspec to answer the question.
+      @specs.each {|s| s.overrides = @overrides if s.is_a?(LazySpecification) }
       self
     end
 
