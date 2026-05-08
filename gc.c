@@ -242,7 +242,30 @@ rb_gc_event_hook(VALUE obj, rb_event_flag_t event)
     rb_execution_context_t *ec = rb_gc_get_ec();
     if (!ec->cfp) return;
 
+#if USE_MODULAR_GC
+    bool gc_thread_p = false;
+    if (!GET_EC()) {
+        gc_thread_p = true;
+
+# ifdef RB_THREAD_LOCAL_SPECIFIER
+        rb_current_ec_set(ec);
+# else
+        native_tls_set(ruby_current_ec_key, ec);
+# endif
+    }
+#endif
+
     EXEC_EVENT_HOOK(ec, event, ec->cfp->self, 0, 0, 0, obj);
+
+#if USE_MODULAR_GC
+    if (gc_thread_p) {
+# ifdef RB_THREAD_LOCAL_SPECIFIER
+        rb_current_ec_set(NULL);
+# else
+        native_tls_set(ruby_current_ec_key, NULL);
+# endif
+    }
+#endif
 }
 
 void *
