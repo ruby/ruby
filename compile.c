@@ -8735,21 +8735,21 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *n
       //   ADD_INSNL(ret, line_node, jump, unmatched);
       //   break;
       // }
-      // case NODE_OR: {
-      //   LABEL *match_succeeded, *fin;
-      //   match_succeeded = NEW_LABEL(line);
-      //   fin = NEW_LABEL(line);
+      case RB_ALTERNATION_PATTERN_NODE: {
+        LABEL *match_succeeded, *fin;
+        match_succeeded = NEW_LABEL(line);
+        fin = NEW_LABEL(line);
 
-      //   ADD_INSN(ret, line_node, dup); // (1)
-      //   CHECK(iseq_compile_pattern_each(iseq, ret, RNODE_OR(node)->nd_1st, match_succeeded, fin, in_single_pattern, true, base_index + 1 /* (1) */, use_deconstructed_cache));
-      //   ADD_LABEL(ret, match_succeeded);
-      //   ADD_INSN(ret, line_node, pop);
-      //   ADD_INSNL(ret, line_node, jump, matched);
-      //   ADD_INSN(ret, line_node, putnil);
-      //   ADD_LABEL(ret, fin);
-      //   CHECK(iseq_compile_pattern_each(iseq, ret, RNODE_OR(node)->nd_2nd, matched, unmatched, in_single_pattern, true, base_index, use_deconstructed_cache));
-      //   break;
-      // }
+        ADD_INSN(ret, line_node, dup); // (1)
+        CHECK(iseq_compile_pattern_each(iseq, ret, RB_NODE_ALTERNATION_PATTERN(node)->left, match_succeeded, fin, in_single_pattern, true, base_index + 1 /* (1) */, use_deconstructed_cache));
+        ADD_LABEL(ret, match_succeeded);
+        ADD_INSN(ret, line_node, pop);
+        ADD_INSNL(ret, line_node, jump, matched);
+        ADD_INSN(ret, line_node, putnil);
+        ADD_LABEL(ret, fin);
+        CHECK(iseq_compile_pattern_each(iseq, ret, RB_NODE_ALTERNATION_PATTERN(node)->right, matched, unmatched, in_single_pattern, true, base_index, use_deconstructed_cache));
+        break;
+      }
       default:
         UNKNOWN_NODE("NODE_IN", node, COMPILE_NG);
     }
