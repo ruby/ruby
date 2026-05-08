@@ -1180,7 +1180,7 @@ match_size(VALUE match)
     return INT2FIX(RMATCH_NREGS(match));
 }
 
-static int name_to_backref_number(const struct re_registers *, VALUE, const char*, const char*);
+static int match_name_to_backref_number(VALUE match, VALUE name);
 NORETURN(static void name_to_backref_error(VALUE name));
 
 static void
@@ -1200,11 +1200,7 @@ backref_number_check(VALUE match, int i)
 static int
 match_backref_number(VALUE match, VALUE backref)
 {
-    const char *name;
     int num;
-
-    struct re_registers *regs = RMATCH_REGS(match);
-    VALUE regexp = RMATCH(match)->regexp;
 
     match_check(match);
     if (SYMBOL_P(backref)) {
@@ -1213,9 +1209,8 @@ match_backref_number(VALUE match, VALUE backref)
     else if (!RB_TYPE_P(backref, T_STRING)) {
         return NUM2INT(backref);
     }
-    name = StringValueCStr(backref);
 
-    num = name_to_backref_number(regs, regexp, name, name + RSTRING_LEN(backref));
+    num = match_name_to_backref_number(match, backref);
 
     if (num < 1) {
         name_to_backref_error(backref);
@@ -2123,6 +2118,26 @@ name_to_backref_number(const struct re_registers *regs, VALUE regexp, const char
      name_to_backref_number((regs), (re), (name_ptr), (name_end)))
 
 static int
+match_name_to_backref_number(VALUE match, VALUE name)
+{
+    VALUE regexp = RMATCH(match)->regexp;
+    if (NIL_P(regexp)) return -1;
+
+    int *nums;
+    int n = onig_name_to_group_numbers(RREGEXP_PTR(regexp),
+        (const unsigned char *)RSTRING_PTR(name),
+        (const unsigned char *)RSTRING_END(name), &nums);
+    if (n < 0) return n;
+    if (n == 0) return ONIGERR_PARSER_BUG;
+    if (n == 1) return nums[0];
+    for (int i = n - 1; i >= 0; i--) {
+        if (RMATCH_BEG(match, nums[i]) != ONIG_REGION_NOTPOS)
+            return nums[i];
+    }
+    return nums[n - 1];
+}
+
+static int
 namev_to_backref_number(VALUE match, VALUE name)
 {
     int num;
@@ -2133,8 +2148,14 @@ namev_to_backref_number(VALUE match, VALUE name)
     else if (!RB_TYPE_P(name, T_STRING)) {
         return -1;
     }
-    num = NAME_TO_NUMBER(RMATCH_REGS(match), RMATCH(match)->regexp, name,
-                         RSTRING_PTR(name), RSTRING_END(name));
+
+    VALUE re = RMATCH(match)->regexp;
+    if (NIL_P(re) || !rb_enc_compatible(RREGEXP_SRC(re), name)) {
+        num = 0;
+    }
+    else {
+        num = match_name_to_backref_number(match, name);
+    }
     if (num < 1) {
         name_to_backref_error(name);
     }
@@ -2500,8 +2521,7 @@ match_deconstruct_keys(VALUE match, VALUE keys)
 
         name = rb_sym2str(key);
 
-        int num = NAME_TO_NUMBER(RMATCH_REGS(match), RMATCH(match)->regexp, RMATCH(match)->regexp,
-                         RSTRING_PTR(name), RSTRING_END(name));
+        int num = match_name_to_backref_number(match, name);
 
         if (num >= 0) {
             rb_hash_aset(h, key, rb_reg_nth_match(num, match));
