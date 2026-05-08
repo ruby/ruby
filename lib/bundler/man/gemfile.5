@@ -461,21 +461,23 @@ The \fBgemspec\fR method supports optional \fB:path\fR, \fB:glob\fR, \fB:name\fR
 .P
 When a \fBgemspec\fR dependency encounters version conflicts during resolution, the local version under development will always be selected \-\- even if there are remote versions that better match other requirements for the \fBgemspec\fR gem\.
 .SH "OVERRIDE"
-The \fBoverride\fR directive rewrites the version requirement on another gem before resolution runs\. It targets the common case where an upstream gem's published metadata is too narrow on the current project's machine \-\- a stale upper bound, an unwanted floor, or a transitive pin that has to be lifted\.
+The \fBoverride\fR directive rewrites a constraint on another gem before resolution runs\. It targets the common case where an upstream gem's published metadata is too narrow on the current project's machine \-\- a stale upper bound, an unwanted floor, or a transitive pin that has to be lifted\.
 .IP "" 4
 .nf
 override <target>, <field>: <operation>
 .fi
 .IP "" 0
 .P
-\fB<target>\fR is a gem name string\. \fB<field>\fR is \fBversion:\fR\. \fB<operation>\fR is one of:
+\fB<target>\fR is a gem name string or \fB:all\fR\. \fB<field>\fR is one of \fBversion:\fR, \fBrequired_ruby_version:\fR, or \fBrequired_rubygems_version:\fR\. \fB<operation>\fR is one of:
 .IP "\(bu" 4
-a version requirement string (e\.g\. \fB">= 8\.0"\fR), which \fBreplaces\fR the target's version requirement absolutely\. The original requirement, both direct and transitive, is discarded in favour of the override\.
+a version requirement string (e\.g\. \fB">= 8\.0"\fR), which \fBreplaces\fR the target's requirement absolutely\. The original requirement, both direct and transitive, is discarded in favour of the override\.
 .IP "\(bu" 4
 \fB:ignore_upper\fR, which removes upper\-bound operators (\fB<\fR and \fB<=\fR) from the existing requirement and folds \fB~>\fR into its lower bound (\fB~> 1\.5\fR becomes \fB>= 1\.5\fR)\. Other operators, including \fB!=\fR, are preserved\.
 .IP "\(bu" 4
 \fBnil\fR, which collapses the requirement to \fB>= 0\fR (no constraint at all)\.
 .IP "" 0
+.P
+\fB:all\fR only applies to \fBrequired_ruby_version:\fR and \fBrequired_rubygems_version:\fR\. A per\-gem override on the same field takes precedence over an \fB:all\fR override\. \fB:all + version:\fR is rejected: version requirements only make sense per gem\.
 .P
 Multiple \fBoverride\fR calls for distinct targets are allowed; declaring the same \fBtarget\fR and \fBfield\fR twice is an error\.
 .IP "" 4
@@ -491,11 +493,17 @@ override "nokogiri", version: :ignore_upper
 # Drop the version pin on legacy entirely\.
 override "legacy", version: nil
 
+# Loosen every gem's required_ruby_version upper bound\.
+override :all, required_ruby_version: :ignore_upper
+
+# Override one specific gem's required_rubygems_version\.
+override "tricky", required_rubygems_version: nil
+
 gem "rails", "~> 7\.0"
 .fi
 .IP "" 0
 .P
-The override only affects resolution; \fBGemfile\.lock\fR continues to reflect the resolved versions, not the rewritten requirements\.
+The override only affects resolution and the install\-time Ruby/RubyGems compatibility checks; \fBGemfile\.lock\fR continues to reflect the resolved versions, not the rewritten requirements\. When resolution still fails, Bundler appends the active overrides (with their Gemfile location) to the error message so it is clear which override shaped the constraint set\.
 .SH "SOURCE PRIORITY"
 When attempting to locate a gem to satisfy a gem requirement, bundler uses the following priority order:
 .IP "1." 4

@@ -543,23 +543,28 @@ remote versions that better match other requirements for the `gemspec` gem.
 
 ## OVERRIDE
 
-The `override` directive rewrites the version requirement on another gem
-before resolution runs. It targets the common case where an upstream gem's
+The `override` directive rewrites a constraint on another gem before
+resolution runs. It targets the common case where an upstream gem's
 published metadata is too narrow on the current project's machine -- a stale
 upper bound, an unwanted floor, or a transitive pin that has to be lifted.
 
     override <target>, <field>: <operation>
 
-`<target>` is a gem name string. `<field>` is `version:`. `<operation>` is
+`<target>` is a gem name string or `:all`. `<field>` is one of `version:`,
+`required_ruby_version:`, or `required_rubygems_version:`. `<operation>` is
 one of:
 
   * a version requirement string (e.g. `">= 8.0"`), which **replaces** the
-    target's version requirement absolutely. The original requirement, both
-    direct and transitive, is discarded in favour of the override.
+    target's requirement absolutely. The original requirement, both direct
+    and transitive, is discarded in favour of the override.
   * `:ignore_upper`, which removes upper-bound operators (`<` and `<=`) from
     the existing requirement and folds `~>` into its lower bound (`~> 1.5`
     becomes `>= 1.5`). Other operators, including `!=`, are preserved.
   * `nil`, which collapses the requirement to `>= 0` (no constraint at all).
+
+`:all` only applies to `required_ruby_version:` and `required_rubygems_version:`.
+A per-gem override on the same field takes precedence over an `:all` override.
+`:all + version:` is rejected: version requirements only make sense per gem.
 
 Multiple `override` calls for distinct targets are allowed; declaring the
 same `target` and `field` twice is an error.
@@ -575,10 +580,19 @@ same `target` and `field` twice is an error.
     # Drop the version pin on legacy entirely.
     override "legacy", version: nil
 
+    # Loosen every gem's required_ruby_version upper bound.
+    override :all, required_ruby_version: :ignore_upper
+
+    # Override one specific gem's required_rubygems_version.
+    override "tricky", required_rubygems_version: nil
+
     gem "rails", "~> 7.0"
 
-The override only affects resolution; `Gemfile.lock` continues to reflect
-the resolved versions, not the rewritten requirements.
+The override only affects resolution and the install-time Ruby/RubyGems
+compatibility checks; `Gemfile.lock` continues to reflect the resolved
+versions, not the rewritten requirements. When resolution still fails,
+Bundler appends the active overrides (with their Gemfile location) to the
+error message so it is clear which override shaped the constraint set.
 
 ## SOURCE PRIORITY
 
