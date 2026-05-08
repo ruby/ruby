@@ -38,6 +38,13 @@
 #endif
 
 #ifdef BUILDING_MODULAR_GC
+# define RUBY_DTRACE_GC_HOOK(name, ...)
+#else
+# define RUBY_DTRACE_GC_HOOK(name, ...) \
+    do {if (RUBY_DTRACE_GC_##name##_ENABLED()) RUBY_DTRACE_GC_##name(__VA_ARGS__);} while (0)
+#endif
+
+#ifdef BUILDING_MODULAR_GC
 # define RB_DEBUG_COUNTER_INC(_name) ((void)0)
 # define RB_DEBUG_COUNTER_INC_IF(_name, cond) (!!(cond))
 #else
@@ -6693,9 +6700,7 @@ gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_
 {
     *lock_lev = RB_GC_VM_LOCK();
 
-    if (RUBY_DTRACE_GC_ENTER_ENABLED()) {
-        RUBY_DTRACE_GC_ENTER(event);
-    }
+    RUBY_DTRACE_GC_HOOK(ENTER, event);
 
     switch (event) {
       case gc_enter_event_rest:
@@ -6725,9 +6730,7 @@ gc_exit(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_l
 {
     GC_ASSERT(during_gc != 0);
 
-    if (RUBY_DTRACE_GC_EXIT_ENABLED()) {
-        RUBY_DTRACE_GC_EXIT(event);
-    }
+    RUBY_DTRACE_GC_HOOK(EXIT, event);
 
     rb_gc_event_hook(0, RUBY_INTERNAL_EVENT_GC_EXIT);
 
@@ -8595,13 +8598,6 @@ gc_prof_timer_stop(rb_objspace_t *objspace)
         record->gc_invoke_time -= objspace->profile.invoke_time;
     }
 }
-
-#ifdef BUILDING_MODULAR_GC
-# define RUBY_DTRACE_GC_HOOK(name)
-#else
-# define RUBY_DTRACE_GC_HOOK(name) \
-    do {if (RUBY_DTRACE_GC_##name##_ENABLED()) RUBY_DTRACE_GC_##name();} while (0)
-#endif
 
 static inline void
 gc_prof_mark_timer_start(rb_objspace_t *objspace)
