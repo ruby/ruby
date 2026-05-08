@@ -605,7 +605,7 @@ RSpec.describe "setting gemfile via config" do
       bundle "config set gemfile foo/bar_gemfile"
 
       bundle "config unset gemfile"
-      bundle "config get gemfile"
+      bundle "config get gemfile", raise_on_error: false
 
       expect(out).to include("You have not configured a value for `gemfile`")
       expect(File.read(bundled_app(".bundle/config"))).not_to include("BUNDLE_GEMFILE")
