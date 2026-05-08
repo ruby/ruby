@@ -221,23 +221,26 @@ type2sym(enum ruby_value_type i)
 
 /*
  *  call-seq:
- *    ObjectSpace.count_objects_size([result_hash]) -> hash
+ *    ObjectSpace.count_objects_size(result_hash = {}) -> result_hash
  *
  *  Counts objects size (in bytes) for each type.
  *
- *  Note that this information is incomplete.  You need to deal with
- *  this information as only a *HINT*.  Especially, total size of
- *  T_DATA may be wrong.
+ *  Note that the returned size may not be accurate, so it should only
+ *  be used as a hint. Specifically, the size for +T_DATA+ may be
+ *  inaccurate because these are custom objects defined in Ruby and
+ *  native extensions and so they may not accurately report their
+ *  memory size.
  *
- *  It returns a hash as:
+ *  It returns a hash that looks like:
+ *
  *    {TOTAL: 1461154, T_CLASS: 158280, T_MODULE: 20672, T_STRING: 527249, ...}
  *
- *  If the optional argument, result_hash, is given,
- *  it is overwritten and returned.
- *  This is intended to avoid probe effect.
+ *  The contents of the returned hash are implementation specific and
+ *  may be changed in future versions without notice.
  *
- *  The contents of the returned hash is implementation defined.
- *  It may be changed in future.
+ *  If the optional argument, +result_hash+, is given,
+ *  it is overwritten and returned.
+ *  This is intended to avoid the probe effect.
  *
  *  This method is only expected to work with C Ruby.
  */
