@@ -3921,7 +3921,7 @@ copy_home_path(VALUE result, const char *dir)
     memcpy(buf = RSTRING_PTR(result), dir, dirlen);
     encidx = rb_filesystem_encindex();
     rb_enc_associate_index(result, encidx);
-#if defined DOSISH || defined __CYGWIN__
+#if defined FILE_ALT_SEPARATOR
     rb_encoding *enc = rb_enc_from_index(encidx);
     bool mb_enc = enc_mbclen_needed(enc);
     for (char *p = buf, *bend = p + dirlen; p < bend; Inc(p, bend, mb_enc, enc)) {
@@ -4169,14 +4169,14 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
             BUFINIT();
             p = e;
         }
-#if defined DOSISH || defined __CYGWIN__
+#if defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC
         if (s < fend && isdirsep(*s)) {
             /* specified full path, but not drive letter nor UNC */
             /* we need to get the drive letter or UNC share name */
             p = skipprefix(buf, p, mb_enc, enc);
         }
         else
-#endif /* defined DOSISH || defined __CYGWIN__ */
+#endif /* defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC */
             p = chompdirsep(skiproot(buf, p), p, mb_enc, enc);
     }
     else {
@@ -4233,8 +4233,8 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 #endif /* USE_NTFS */
                     break;
                   case '/':
-#if defined DOSISH || defined __CYGWIN__
-                  case '\\':
+#if defined FILE_ALT_SEPARATOR
+                  case FILE_ALT_SEPARATOR:
 #endif
                     b = ++s;
                     break;
@@ -4258,8 +4258,8 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 #endif /* USE_NTFS */
             break;
           case '/':
-#if defined DOSISH || defined __CYGWIN__
-          case '\\':
+#if defined FILE_ALT_SEPARATOR
+          case FILE_ALT_SEPARATOR:
 #endif
             if (s > b) {
                 WITH_ROOTDIFF(BUFCOPY(b, s-b));
