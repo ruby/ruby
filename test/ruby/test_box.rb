@@ -1195,6 +1195,27 @@ class TestBox < Test::Unit::TestCase
     end;
   end
 
+  def test_symbol_to_proc_with_escaped_binding
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      # Regression test for [BUG] Local ep without cme/box, flags: 66660087.
+      # binding() may escape TOP env and propagate LOCAL to IFUNC frames.
+      assert_nothing_raised do
+        using Module.new {
+          refine ::Binding do
+            def eval_methods
+              ::Kernel.instance_method(:methods).bind_call(receiver)
+            end
+          end
+        }
+
+        result = binding.eval_methods.map(&:to_s)
+        assert_kind_of Array, result
+        assert result.all? { |x| x.is_a?(String) }
+      end
+    end;
+  end
+
   def test_very_basic_method_calls_and_constants
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
