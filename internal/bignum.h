@@ -107,6 +107,7 @@ struct RBignum {
 
 /* bignum.c */
 extern const char ruby_digitmap[];
+extern const char ruby_decimal_digit_pairs[];
 double rb_big_fdiv_double(VALUE x, VALUE y);
 VALUE rb_big_uminus(VALUE x);
 VALUE rb_big_hash(VALUE);
