@@ -446,18 +446,31 @@ rb_threadptr_join_list_wakeup(rb_thread_t *thread)
     }
 }
 
+// This lock is for protecting thread->keeping_mutexes when mutex and thread are concurrently freed
+static void keeping_mutexes_lock_lock(void);
+static void keeping_mutexes_lock_unlock(void);
+
 void
 rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
 {
-    while (th->keeping_mutexes) {
-        rb_mutex_t *mutex = th->keeping_mutexes;
-        th->keeping_mutexes = mutex->next_mutex;
+    keeping_mutexes_lock_lock();
+    {
+        while (th->keeping_mutexes) {
+            rb_mutex_t *mutex = th->keeping_mutexes;
+            rb_mutex_t *next = mutex->next_mutex;
+            th->keeping_mutexes = next;
+            mutex->next_mutex = NULL;
 
-        // rb_warn("mutex #<%p> was not unlocked by thread #<%p>", (void *)mutex, (void*)th);
-        VM_ASSERT(mutex->ec_serial);
-        const char *error_message = rb_mutex_unlock_th(mutex, th, 0);
-        if (error_message) rb_bug("invalid keeping_mutexes: %s", error_message);
+            keeping_mutexes_lock_unlock();
+
+            // rb_warn("mutex #<%p> was not unlocked by thread #<%p>", (void *)mutex, (void*)th);
+            VM_ASSERT(mutex->ec_serial);
+            const char *error_message = rb_mutex_unlock_th(mutex, th, 0, false);
+            if (error_message) rb_bug("invalid keeping_mutexes: %s", error_message);
+            keeping_mutexes_lock_lock();
+        }
     }
+    keeping_mutexes_lock_unlock();
 }
 
 void
@@ -4984,6 +4997,7 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
     thread_sched_atfork(TH_SCHED(th));
     ubf_list_atfork();
     rb_signal_atfork();
+    keeping_mutexes_lock_initialize();
 
     // OK. Only this thread accesses:
     ccan_list_for_each(&vm->ractor.set, r, vmlr_node) {
