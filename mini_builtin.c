@@ -102,3 +102,16 @@ rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin
     const rb_iseq_t *iseq = builtin_iseq_load(feature_name, table);
     rb_iseq_eval(iseq, rb_root_box());
 }
+
+VALUE
+rb_define_gem_modules(VALUE _a, VALUE _b)
+{
+    // do nothing - moniruby doesn't load gem_prelude.rb.
+    return Qnil;
+}
+
+void
+rb_load_gem_prelude(VALUE _)
+{
+    // do nothing - miniruby doesn't support loading RubyGems.
+}

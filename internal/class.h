@@ -286,7 +286,7 @@ RCLASS_SET_BOX_CLASSEXT(VALUE obj, const rb_box_t *box, rb_classext_t *ext)
 {
     int first_set = 0;
     st_table *tbl = RCLASS_CLASSEXT_TBL(obj);
-    VM_ASSERT(BOX_USER_P(box)); // non-prime classext is only for user box, with box_object
+    VM_ASSERT(BOX_MUTABLE_P(box)); // Setting non-prime classext never happens on the master box
     VM_ASSERT(box->box_object);
     VM_ASSERT(RCLASSEXT_BOX(ext) == box);
     if (!tbl) {
@@ -361,7 +361,7 @@ RCLASS_EXT_READABLE_LOOKUP(VALUE obj, const rb_box_t *box)
 static inline rb_classext_t *
 RCLASS_EXT_READABLE_IN_BOX(VALUE obj, const rb_box_t *box)
 {
-    if (BOX_ROOT_P(box)
+    if (BOX_MASTER_P(box)
         || RCLASS_PRIME_CLASSEXT_READABLE_P(obj)) {
         return RCLASS_EXT_PRIME(obj);
     }
@@ -377,7 +377,7 @@ RCLASS_EXT_READABLE(VALUE obj)
     }
     // delay determining the current box to optimize for unmodified classes
     box = rb_current_box();
-    if (BOX_ROOT_P(box)) {
+    if (BOX_MASTER_P(box)) {
         return RCLASS_EXT_PRIME(obj);
     }
     return RCLASS_EXT_READABLE_LOOKUP(obj, box);
@@ -411,7 +411,7 @@ RCLASS_EXT_WRITABLE_LOOKUP(VALUE obj, const rb_box_t *box)
 static inline rb_classext_t *
 RCLASS_EXT_WRITABLE_IN_BOX(VALUE obj, const rb_box_t *box)
 {
-    if (BOX_ROOT_P(box)
+    if (BOX_MASTER_P(box)
         || RCLASS_PRIME_CLASSEXT_WRITABLE_P(obj)) {
         return RCLASS_EXT_PRIME(obj);
     }
@@ -427,7 +427,7 @@ RCLASS_EXT_WRITABLE(VALUE obj)
     }
     // delay determining the current box to optimize for unmodified classes
     box = rb_current_box();
-    if (BOX_ROOT_P(box)) {
+    if (BOX_MASTER_P(box)) {
         return RCLASS_EXT_PRIME(obj);
     }
     return RCLASS_EXT_WRITABLE_LOOKUP(obj, box);

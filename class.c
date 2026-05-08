@@ -190,7 +190,7 @@ rb_class_set_box_classext(VALUE obj, const rb_box_t *box, rb_classext_t *ext)
         .ext = ext,
     };
 
-    VM_ASSERT(BOX_USER_P(box));
+    VM_ASSERT(BOX_MUTABLE_P(box));
 
     st_update(RCLASS_CLASSEXT_TBL(obj), (st_data_t)box->box_object, set_box_classext_update, (st_data_t)&args);
 
@@ -697,7 +697,7 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable)
 static VALUE
 class_alloc(enum ruby_value_type type, VALUE klass)
 {
-    bool boxable = rb_box_available() && BOX_ROOT_P(rb_current_box());
+    bool boxable = rb_box_available() && BOX_MASTER_P(rb_current_box());
     return class_alloc0(type, klass, boxable);
 }
 

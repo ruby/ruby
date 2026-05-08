@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require 'test/unit'
+require 'rbconfig'
+require 'tempfile'
 
 class TestBox < Test::Unit::TestCase
   EXPERIMENTAL_WARNING_LINE_PATTERNS = [
@@ -154,8 +156,7 @@ class TestBox < Test::Unit::TestCase
     assert Ruby::Box.current.inspect.include?("main")
   end
 
-  def test_class_variables
-    # [Bug #21952]
+  def test_class_variables_in_root_are_invisible_in_other_boxes
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "here = '#{__dir__}'; #{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
       Ruby::Box.root.eval(<<~RUBY)
@@ -178,10 +179,9 @@ class TestBox < Test::Unit::TestCase
       REPRO
 
       b1 = Ruby::Box.new
-      assert_equal 2, b1.eval(code)
-
-      b2 = Ruby::Box.new
-      assert_equal 2, b2.eval(code)
+      assert_raise(NameError, "uninitialized class variable @@x in B") {
+        b1.eval(code)
+      }
     end;
   end
 
@@ -898,6 +898,72 @@ class TestBox < Test::Unit::TestCase
     end
   end
 
+  def test_calling_root_box_methods_does_not_change_user_boxes_newly_created
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      assert_not_include Object.constants.sort, :Find # required by Pathname#find
+      assert_not_include Ruby::Box.root.eval("Object.constants.sort"), :Find
+      b1 = Ruby::Box.new
+      assert_not_include b1.eval("Object.constants.sort"), :Find
+
+      require 'pathname'
+      Pathname.new('.').find{|path| path.directory?}
+      assert_include Object.constants.sort, :Find # required by Pathname#find
+
+      assert_not_include Ruby::Box.root.eval("Object.constants.sort"), :Find
+      assert_not_include b1.eval("Object.constants.sort"), :Find
+
+      Ruby::Box.root.eval("require 'pathname'; Pathname.new('.').find{|path| path.directory? }")
+      assert_include Ruby::Box.root.eval("Object.constants.sort"), :Find
+
+      assert_not_include b1.eval("Object.constants.sort"), :Find
+      b2 = Ruby::Box.new
+      assert_not_include b2.eval("Object.constants.sort"), :Find
+    end;
+  end
+
+  def test_boxes_have_different_rubygems
+    # assert_separately w/ ENV_ENABLE_BOX and --enable=gems causes timeouts on CI @ Windows
+    assert_in_out_err([ENV_ENABLE_BOX, "--enable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        require "json"
+        h = {main: Gem.object_id, root: Ruby::Box.root.eval("Gem").object_id, box: Ruby::Box.new.eval("Gem").object_id}
+        puts h.to_json
+      end;
+      require "json"
+      result = JSON.parse(output.first, symbolize_names: true)
+      assert_not_equal result[:main], result[:root]
+      assert_not_equal result[:box], result[:root]
+      assert_not_equal result[:main], result[:box]
+    end
+  end
+
+  def test_require_list_loaded_only_in_main_box
+    Tempfile.create(["req_a", ".rb"]) do |t1|
+      Tempfile.create(["req_b", ".rb"]) do |t2|
+        t1.puts "module FooBarA; end"
+        t1.close
+        t2.puts "module FooBarB; end"
+        t2.close
+
+        opts = [ENV_ENABLE_BOX, "-r#{t1.path}", "-r#{t2.path}"]
+        assert_separately(opts, __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+        begin;
+          main_constants = Object.constants
+          assert_include main_constants, :FooBarA
+          assert_include main_constants, :FooBarB
+
+          root_constants = Ruby::Box.root.eval("Object.constants.sort")
+          master_constants = Ruby::Box.master.eval("Object.constants.sort")
+          assert_not_include root_constants, :FooBarA
+          assert_not_include root_constants, :FooBarB
+          assert_not_include master_constants, :FooBarA
+          assert_not_include master_constants, :FooBarB
+        end;
+      end
+    end
+  end
+
   def test_root_and_main_methods
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
@@ -993,6 +1059,18 @@ class TestBox < Test::Unit::TestCase
 
       assert_equal "Foo", box::FOO_NAME
       assert_equal "Foo", box::Foo.name
+    end;
+  end
+
+  def test_very_basic_method_calls_and_constants
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      code = <<~EOC
+      consts = Object.constants
+      [consts.include?(:String), consts.include?(:Array)]
+      EOC
+      assert_equal([true, true], Ruby::Box.current.eval(code))
+      assert_equal([true, true], Ruby::Box.root.eval(code))
     end;
   end
 

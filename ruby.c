@@ -798,6 +798,25 @@ require_libraries(VALUE *req_list)
     *req_list = 0;
 }
 
+static void
+require_libraries_in_main_box(VALUE *req_list)
+{
+    const rb_box_t *main_box = rb_main_box();
+    VALUE list = *req_list;
+    ID require;
+    rb_encoding *extenc = rb_default_external_encoding();
+
+    CONST_ID(require, "require");
+    while (list && RARRAY_LEN(list) > 0) {
+        VALUE feature = rb_ary_shift(list);
+        rb_enc_associate(feature, extenc);
+        RBASIC_SET_CLASS_RAW(feature, rb_cString);
+        OBJ_FREEZE(feature);
+        rb_funcallv(main_box->box_object, require, 1, &feature);
+    }
+    *req_list = 0;
+}
+
 static const struct rb_block*
 toplevel_context(rb_binding_t *bind)
 {
@@ -1771,6 +1790,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
     return argc0 - argc;
 }
 
+VALUE rb_define_gem_modules(VALUE, VALUE);
 void Init_builtin_features(void);
 
 static void
@@ -1798,26 +1818,6 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 
     if (opt->dump & dump_exit_bits) return;
 
-    if (FEATURE_SET_P(opt->features, gems)) {
-        rb_define_module("Gem");
-        if (opt->features.set & FEATURE_BIT(error_highlight)) {
-            rb_define_module("ErrorHighlight");
-        }
-        if (opt->features.set & FEATURE_BIT(did_you_mean)) {
-            rb_define_module("DidYouMean");
-        }
-        if (opt->features.set & FEATURE_BIT(syntax_suggest)) {
-            rb_define_module("SyntaxSuggest");
-        }
-    }
-
-    /* [Feature #19785] Warning for removed GC environment variable.
-     * Remove this in Ruby 3.4. */
-    if (getenv("RUBY_GC_HEAP_INIT_SLOTS")) {
-        rb_warn_deprecated("The environment variable RUBY_GC_HEAP_INIT_SLOTS",
-                           "environment variables RUBY_GC_HEAP_%d_INIT_SLOTS");
-    }
-
     Init_ext(); /* load statically linked extensions before rubygems */
     Init_extra_exts();
 
@@ -1826,15 +1826,52 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
     GET_VM()->running = 1;
     memset(ruby_vm_redefined_flag, 0, sizeof(ruby_vm_redefined_flag));
 
-    ruby_init_prelude();
+    // Register JIT-optimized builtin CMEs before the prelude, which may
+    // redefine core methods (e.g. Kernel.prepend via bundler/setup).
+#if USE_YJIT
+    rb_yjit_init_builtin_cmes();
+#endif
+#if USE_ZJIT
+    extern void rb_zjit_init_builtin_cmes(void);
+    rb_zjit_init_builtin_cmes();
+#endif
 
-    /* Initialize the main box after loading libraries (including rubygems)
-     * to enable those in both root and main */
-    if (rb_box_available())
-        rb_initialize_main_box();
+    /**
+     * Initialize the root/main boxes before loading libraries to run them
+     * (including RubyGems, written in Ruby) in those boxes themselves
+     */
+    if (rb_box_available()) {
+        rb_initialize_mandatory_boxes();
+    }
+
     rb_box_init_done();
 
-    // Initialize JITs after ruby_init_prelude() because JITing prelude is typically not optimal.
+    if (FEATURE_SET_P(opt->features, gems)) {
+        rb_box_gem_flags_t gem_flags = {
+            .gem = FEATURE_SET_P(opt->features, gems),
+            .error_highlight = opt->features.set & FEATURE_BIT(error_highlight),
+            .did_you_mean    = opt->features.set & FEATURE_BIT(did_you_mean),
+            .syntax_suggest  = opt->features.set & FEATURE_BIT(syntax_suggest)
+        };
+
+        if (rb_box_available()) {
+            rb_vm_call_cfunc_in_box(Qnil, rb_define_gem_modules, (VALUE)&gem_flags, Qnil,
+                                    rb_str_new_cstr("before_prelude.root.dummy"), rb_root_box());
+            rb_vm_call_cfunc_in_box(Qnil, rb_define_gem_modules, (VALUE)&gem_flags, Qnil,
+                                    rb_str_new_cstr("before_prelude.main.dummy"), rb_main_box());
+
+            rb_box_set_gem_flags(&gem_flags);
+        }
+        else {
+            rb_define_gem_modules((VALUE)&gem_flags, Qnil);
+        }
+    }
+
+    // The root/main boxes load gem_prelude here.
+    // User boxes will load it in those #initialize instead.
+    ruby_init_prelude();
+
+    // Enable JITs after ruby_init_prelude() to avoid JITing prelude code.
 #if USE_YJIT
     rb_yjit_init(opt->yjit);
 #endif
@@ -1844,7 +1881,12 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 #endif
 
     ruby_set_script_name(opt->script_name);
-    require_libraries(&opt->req_list);
+    if (rb_box_available()) {
+        require_libraries_in_main_box(&opt->req_list);
+    }
+    else {
+        require_libraries(&opt->req_list);
+    }
 }
 
 static int

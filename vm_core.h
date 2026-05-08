@@ -763,6 +763,7 @@ typedef struct rb_vm_struct {
     const VALUE special_exceptions[ruby_special_error_count];
 
     /* Ruby Box */
+    rb_box_t *master_box;
     rb_box_t *root_box;
     rb_box_t *main_box;
 
