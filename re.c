@@ -1684,8 +1684,6 @@ rb_reg_onig_match(VALUE re, VALUE str,
     }
 
     if (result < 0) {
-        onig_region_free(regs, 0);
-
         switch (result) {
           case ONIG_MISMATCH:
             break;
@@ -1770,11 +1768,26 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
         .pos = pos,
         .range = reverse ? 0 : len,
     };
-    struct re_registers regs = {0};
+
+    rb_reg_check(re);
+
+    /* Stack-backed regs sized to max(num_mem+1, ONIG_NREGION) so
+     * onig_region_resize_clear takes its no-op branch. */
+    int n = RREGEXP_PTR(re)->num_mem + 1;
+    int cap = n < ONIG_NREGION ? ONIG_NREGION : n;
+    VALUE regs_buf;
+    OnigPosition *buf = ALLOCV_N(OnigPosition, regs_buf, (size_t)cap * 2);
+    struct re_registers regs = {
+        .allocated = cap,
+        .num_regs  = 0,
+        .beg = buf,
+        .end = buf + cap,
+    };
 
     OnigPosition result = rb_reg_onig_match(re, str, reg_onig_search, &args, &regs);
 
     if (result == ONIG_MISMATCH) {
+        ALLOCV_END(regs_buf);
         rb_backref_set(Qnil);
         return ONIG_MISMATCH;
     }
@@ -1799,8 +1812,8 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
         onig_region_free(&RMATCH(match)->regs, false);
     }
 
-    struct RMatch *rm = RMATCH(match);
-    rm->regs = regs;
+    if (rb_reg_region_copy(RMATCH_REGS(match), &regs)) rb_memerror();
+    ALLOCV_END(regs_buf);
 
     if (set_backref_str) {
         RB_OBJ_WRITE(match, &RMATCH(match)->str, rb_str_new4(str));
@@ -1852,17 +1865,32 @@ reg_onig_match(regex_t *reg, VALUE str, struct re_registers *regs, void *_)
 bool
 rb_reg_start_with_p(VALUE re, VALUE str)
 {
+    rb_reg_check(re);
+
+    int n = RREGEXP_PTR(re)->num_mem + 1;
+    int cap = n < ONIG_NREGION ? ONIG_NREGION : n;
+    VALUE regs_buf;
+    OnigPosition *buf = ALLOCV_N(OnigPosition, regs_buf, (size_t)cap * 2);
+    struct re_registers regs = {
+        .allocated = cap,
+        .num_regs  = 0,
+        .beg = buf,
+        .end = buf + cap,
+    };
+
+    if (rb_reg_onig_match(re, str, reg_onig_match, NULL, &regs) == ONIG_MISMATCH) {
+        ALLOCV_END(regs_buf);
+        rb_backref_set(Qnil);
+        return false;
+    }
+
     VALUE match = rb_backref_get();
     if (NIL_P(match) || FL_TEST(match, MATCH_BUSY)) {
         match = match_alloc(rb_cMatch);
     }
 
-    struct re_registers *regs = RMATCH_REGS(match);
-
-    if (rb_reg_onig_match(re, str, reg_onig_match, NULL, regs) == ONIG_MISMATCH) {
-        rb_backref_set(Qnil);
-        return false;
-    }
+    if (rb_reg_region_copy(RMATCH_REGS(match), &regs)) rb_memerror();
+    ALLOCV_END(regs_buf);
 
     RB_OBJ_WRITE(match, &RMATCH(match)->str, rb_str_new4(str));
     RB_OBJ_WRITE(match, &RMATCH(match)->regexp, re);
