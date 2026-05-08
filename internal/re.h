@@ -12,16 +12,28 @@
 #include "ruby/ruby.h"          /* for VALUE */
 #include "ruby/re.h"            /* for struct RMatch and struct re_registers */
 
+static inline OnigPosition *
+RMATCH_BEG_PTR(VALUE match)
+{
+    return RMATCH(match)->regs.beg;
+}
+
+static inline OnigPosition *
+RMATCH_END_PTR(VALUE match)
+{
+    return RMATCH(match)->regs.end;
+}
+
 static inline long
 RMATCH_BEG(VALUE match, int i)
 {
-    return RMATCH(match)->regs.beg[i];
+    return RMATCH_BEG_PTR(match)[i];
 }
 
 static inline long
 RMATCH_END(VALUE match, int i)
 {
-    return RMATCH(match)->regs.end[i];
+    return RMATCH_END_PTR(match)[i];
 }
 
 static inline int
