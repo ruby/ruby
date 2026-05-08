@@ -57,7 +57,8 @@ module Prism
       #          [[1, 13], :on_kw,     "end", END      ]]
       #
       def self.lex(src, filename = "-", lineno = 1, raise_errors: false)
-        result = Prism.lex_compat(coerce_source(src), filepath: filename, line: lineno, version: "current")
+        coerced = coerce_source(src)
+        result = Prism.lex_compat(coerced, filepath: filename, line: lineno, version: "current", encoding: coerced.encoding)
 
         if result.failure? && raise_errors
           raise SyntaxError, result.errors.first.message
@@ -4077,7 +4078,7 @@ module Prism
 
       # Lazily initialize the parse result.
       def result
-        @result ||= Prism.parse(source, partial_script: true, version: "current", freeze: true)
+        @result ||= Prism.parse(source, partial_script: true, version: "current", freeze: true, encoding: source.encoding)
       end
 
       def line_and_column_cache
