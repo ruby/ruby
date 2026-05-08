@@ -68,16 +68,35 @@ p s.x  # 1
 
 ### Ruby Box types
 
-There are two box types:
+There are three box types:
 
+* Master box
 * Root box
 * User boxes
 
-There is the root box, just a single box in a Ruby process. Ruby bootstrap runs in the root box, and all builtin classes/modules are defined in the root box. (See "Builtin classes and modules".)
+Ruby bootstrap runs in the root box, and a
 
-User boxes are to run user-written programs and libraries loaded from user programs. The user's main program (specified by the `ruby` command line argument) is executed in the "main" box, which is a user box automatically created at the end of Ruby's bootstrap, copied from the root box.
+There is the root box, just a single box in a Ruby process. All builtin classes/modules are defined and run in the root box. (See "Builtin classes and modules".)
 
-When `Ruby::Box.new` is called, an "optional" box (a user, non-main box) is created, copied from the root box. All user boxes are flat, copied from the root box.
+User boxes are to run user-written programs and libraries loaded from user programs. The user's main program (specified by the `ruby` command line argument) is executed in the "main" box, which is a user box automatically created at the end of Ruby's bootstrap. The files specified with `-r` command line option will be required in the main box.
+
+Calling `Ruby::Box.new` creates an "optional" box (a user, non-main box), technically equal to the main box.
+
+Ruby also has the master box. The master box is the "master copy" of all boxes. Boxes will be created as a copy of the master box. The master box is only for the source of box copies, and no code runs in the master box.
+
+
+```
+[master]
+ |
+ |----[root]
+ |
+ |----[main]
+ |
+ |----[user box 1]
+ |
+ |----[user box 2]
+ ...
+```
 
 ### Ruby Box class and instances
 
@@ -125,7 +144,7 @@ box::Foo.foo_is_blank? #=> false   (#blank? called in box)
 String::BLANK_PATTERN # NameError
 ```
 
-The main box and `box` are different boxes, so monkey patches in main are also invisible in `box`.
+The main box and `box` above are different boxes, so monkey patches in main are also invisible in `box`.
 
 ### Builtin classes and modules
 
@@ -133,9 +152,21 @@ In the box context, "builtin" classes and modules are classes and modules:
 
 * Accessible without any `require` calls in user scripts
 * Defined before any user program start running
-* Including classes/modules loaded by `prelude.rb` (including RubyGems `Gem`, for example)
 
 Hereafter, "builtin classes and modules" will be referred to as just "builtin classes".
+
+Builtin classes and modules are loaded in all boxes, and run in the root box.
+
+### Exceptional non-built-in classes/modules
+
+There are some exceptional classes/modules that are enabled in default, but aren't built-in classes. Those classes/modules are:
+
+* `RubyGems`
+* `ErrorHighlight`
+* `DidYouMean`
+* `SyntaxSuggest`
+
+Those classes/modules (part of default gems) are loaded in each boxes independently. If a user box's code calls RubyGems, it calls the RubyGems inside the box itself, instead of the root box's one.
 
 ### Builtin classes referred via box objects
 
@@ -316,41 +347,6 @@ This could potentially conflict with the user's expectations. We should find the
 #### Expose top level methods as a method of the box object
 
 Currently, top level methods in boxes are not accessible from outside of the box. But there might be a use case to call other box's top level methods.
-
-#### Split root and builtin box
-
-Currently, the single "root" box is the source of classext CoW. And also, the "root" box can load additional files after starting main script evaluation by calling methods which contain lines like `require "openssl"`.
-
-That means, user boxes can have different sets of definitions according to when it is created.
-
-```
-[root]
- |
- |----[main]
- |
- |(require "openssl" called in root)
- |
- |----[box1] having OpenSSL
- |
- |(remove_const called for OpenSSL in root)
- |
- |----[box2] without OpenSSL
-```
-
-This could cause unexpected behavior differences between user boxes. It should NOT be a problem because user scripts which refer to `OpenSSL` should call `require "openssl"` by themselves.
-But in the worst case, a script (without `require "openssl"`) runs well in `box1`, but doesn't run in `box2`. This situation looks like a "random failure" to users.
-
-An option possible to prevent this situation is to have "root" and "builtin" boxes.
-
-* root
-  * The box for the Ruby process bootstrap, then the source of CoW
-  * After starting the main box, no code runs in this box
-* builtin
-  * The box copied from the root box at the same time with "main"
-  * Methods and procs defined in the "root" box run in this box
-  * Classes and modules required will be loaded in this box
-
-This design realizes a consistent source of box CoW.
 
 #### Separate `cc_tbl` and `callable_m_tbl`, `cvc_tbl` for less classext CoW
 

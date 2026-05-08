@@ -21,6 +21,8 @@ struct rb_builtin_function {
 }
 
 void rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin_function *table);
+VALUE rb_define_gem_modules(VALUE, VALUE);
+void rb_load_gem_prelude(VALUE box);
 
 #ifndef rb_execution_context_t
 typedef struct rb_execution_context_struct rb_execution_context_t;
