@@ -34,6 +34,33 @@ RSpec.describe "MatchMetadata override-aware checks" do
   end
 end
 
+RSpec.describe "LazySpecification override propagation" do
+  let(:overrides) { [Bundler::Override.new("rails", :required_ruby_version, :ignore_upper)] }
+
+  it "carries overrides forward from a source LazySpec via from_spec" do
+    src = Bundler::LazySpecification.new("rails", "8.0", Gem::Platform::RUBY)
+    src.overrides = overrides
+    derived = Bundler::LazySpecification.from_spec(src)
+    expect(derived.overrides).to eq(overrides)
+  end
+
+  it "does not call respond_to? on the source spec, avoiding gemspec lazy load" do
+    # If from_spec used respond_to?(:overrides), a RemoteSpec source would
+    # force-load the backing gemspec. Use a stand-in object whose
+    # respond_to? raises to prove it is never asked.
+    src = Object.new
+    src.define_singleton_method(:name) { "rails" }
+    src.define_singleton_method(:version) { Gem::Version.new("8.0") }
+    src.define_singleton_method(:platform) { Gem::Platform::RUBY }
+    src.define_singleton_method(:source) { nil }
+    src.define_singleton_method(:runtime_dependencies) { [] }
+    src.define_singleton_method(:required_ruby_version) { Gem::Requirement.default }
+    src.define_singleton_method(:required_rubygems_version) { Gem::Requirement.default }
+    src.define_singleton_method(:respond_to?) {|*| raise "from_spec must not call respond_to?" }
+    expect { Bundler::LazySpecification.from_spec(src) }.not_to raise_error
+  end
+end
+
 RSpec.describe Bundler::Override do
   describe ".find_for" do
     it "returns the matching override by target and field" do

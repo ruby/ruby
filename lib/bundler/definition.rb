@@ -111,12 +111,13 @@ module Bundler
         @locked_bundler_version = @locked_gems.bundler_version
         @locked_ruby_version = @locked_gems.ruby_version
         @locked_deps = @locked_gems.dependencies
-        @originally_locked_specs = SpecSet.new(@locked_gems.specs).with_overrides(@overrides)
+        Override.attach(@locked_gems.specs, @overrides)
+        @originally_locked_specs = SpecSet.new(@locked_gems.specs)
         @originally_locked_sources = @locked_gems.sources
         @locked_checksums = @locked_gems.checksums
 
         if @unlocking_all
-          @locked_specs   = SpecSet.new([]).with_overrides(@overrides)
+          @locked_specs   = SpecSet.new([])
           @locked_sources = []
         else
           @locked_specs   = @originally_locked_specs
@@ -137,7 +138,7 @@ module Bundler
         @most_specific_locked_platform = nil
         @platforms      = []
         @locked_deps    = {}
-        @locked_specs   = SpecSet.new([]).with_overrides(@overrides)
+        @locked_specs   = SpecSet.new([])
         @locked_sources = []
         @originally_locked_specs = @locked_specs
         @originally_locked_sources = @locked_sources
@@ -338,11 +339,11 @@ module Bundler
       elsif no_resolve_needed?
         if deleted_deps.any?
           Bundler.ui.debug "Some dependencies were deleted, using a subset of the resolution from the lockfile"
-          SpecSet.new(filter_specs(@locked_specs, @dependencies - deleted_deps)).with_overrides(@overrides)
+          SpecSet.new(filter_specs(@locked_specs, @dependencies - deleted_deps))
         else
           Bundler.ui.debug "Found no changes, using resolution from the lockfile"
           if @removed_platforms.any? || @locked_gems.may_include_redundant_platform_specific_gems?
-            SpecSet.new(filter_specs(@locked_specs, @dependencies)).with_overrides(@overrides)
+            SpecSet.new(filter_specs(@locked_specs, @dependencies))
           else
             @locked_specs
           end
@@ -506,7 +507,7 @@ module Bundler
     def normalize_platforms
       resolve.normalize_platforms!(current_dependencies, platforms)
 
-      @resolve = SpecSet.new(resolve.for(current_dependencies, @platforms)).with_overrides(@overrides)
+      @resolve = SpecSet.new(resolve.for(current_dependencies, @platforms))
     end
 
     def add_platform(platform)
@@ -762,7 +763,7 @@ module Bundler
       local_platform_needed_for_resolvability = @most_specific_non_local_locked_platform && !@platforms.include?(Bundler.local_platform)
       @platforms << Bundler.local_platform if local_platform_needed_for_resolvability
 
-      result = SpecSet.new(resolver.start).with_overrides(@overrides)
+      result = SpecSet.new(resolver.start)
 
       @resolved_bundler_version = result.find {|spec| spec.name == "bundler" }&.version
 
@@ -788,7 +789,7 @@ module Bundler
         result.add_originally_invalid_platforms!(platforms, @originally_invalid_platforms)
       end
 
-      SpecSet.new(result.for(dependencies, @platforms | [Gem::Platform::RUBY])).with_overrides(@overrides)
+      SpecSet.new(result.for(dependencies, @platforms | [Gem::Platform::RUBY]))
     end
 
     def precompute_source_requirements_for_indirect_dependencies?

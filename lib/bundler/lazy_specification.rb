@@ -30,6 +30,7 @@ module Bundler
       lazy_spec.dependencies = s.runtime_dependencies
       lazy_spec.required_ruby_version = s.required_ruby_version
       lazy_spec.required_rubygems_version = s.required_rubygems_version
+      lazy_spec.overrides = s.overrides if s.is_a?(LazySpecification)
       lazy_spec
     end
 

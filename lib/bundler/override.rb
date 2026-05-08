@@ -9,6 +9,16 @@ module Bundler
         overrides.find {|o| o.target == :all && o.field == field }
     end
 
+    # Attach the given overrides onto every LazySpecification in `specs` so
+    # downstream consumers (LazySpecification#choose_compatible, the install-
+    # time compatibility check, etc.) can read the override list off the spec
+    # itself. Non-LazySpec entries (StubSpecification, Gem::Specification, ...)
+    # are left untouched.
+    def self.attach(specs, overrides)
+      return if overrides.nil? || overrides.empty?
+      specs.each {|s| s.overrides = overrides if s.is_a?(LazySpecification) }
+    end
+
     attr_reader :target, :field, :operation, :source_location
 
     def initialize(target, field, operation, source_location: nil)

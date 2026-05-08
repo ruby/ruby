@@ -93,29 +93,4 @@ RSpec.describe Bundler::SpecSet do
     end
   end
 
-  describe "#with_overrides" do
-    it "defaults to an empty override list" do
-      expect(described_class.new([]).overrides).to eq([])
-    end
-
-    it "stores the overrides supplied" do
-      override = Bundler::Override.new("rails", :version, ">= 8.0")
-      expect(described_class.new([]).with_overrides([override]).overrides).to eq([override])
-    end
-
-    it "treats nil as an empty override list" do
-      set = described_class.new([])
-      override = Bundler::Override.new("rails", :version, ">= 8.0")
-      set.with_overrides([override])
-      set.with_overrides(nil)
-      expect(set.overrides).to eq([])
-    end
-
-    it "cascades overrides to contained specs that accept them" do
-      lazy = Bundler::LazySpecification.new("rails", "8.0", Gem::Platform::RUBY)
-      override = Bundler::Override.new("rails", :version, ">= 8.0")
-      described_class.new([lazy]).with_overrides([override])
-      expect(lazy.overrides).to eq([override])
-    end
-  end
 end

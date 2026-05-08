@@ -7,21 +7,8 @@ module Bundler
     include Enumerable
     include TSort
 
-    attr_accessor :overrides
-
     def initialize(specs)
       @specs = specs
-      @overrides = []
-    end
-
-    def with_overrides(overrides)
-      @overrides = overrides || []
-      # Only LazySpecification carries an overrides accessor. Avoid
-      # respond_to?(:overrides=) here because RemoteSpecification#respond_to?
-      # forwards to _remote_specification, which would force-load the
-      # backing gemspec to answer the question.
-      @specs.each {|s| s.overrides = @overrides if s.is_a?(LazySpecification) }
-      self
     end
 
     def for(dependencies, platforms = [nil], legacy_platforms = [nil], skips: [])
@@ -138,7 +125,7 @@ module Bundler
     def materialize(deps)
       materialize_dependencies(deps)
 
-      SpecSet.new(materialized_specs).with_overrides(@overrides)
+      SpecSet.new(materialized_specs)
     end
 
     # Materialize for all the specs in the spec set, regardless of what platform they're for
@@ -159,7 +146,7 @@ module Bundler
     def incomplete_specs_for_platform(deps, platform)
       return [] if @specs.empty?
 
-      validation_set = self.class.new(@specs).with_overrides(@overrides)
+      validation_set = self.class.new(@specs)
       validation_set.for(deps, [platform])
       validation_set.incomplete_specs
     end
@@ -242,7 +229,7 @@ module Bundler
     end
 
     def valid?(s)
-      s.matches_current_metadata_with_overrides?(@overrides) && valid_dependencies?(s)
+      s.matches_current_metadata? && valid_dependencies?(s)
     end
 
     def to_s

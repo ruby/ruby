@@ -82,6 +82,7 @@ module Bundler
       solver = PubGrub::VersionSolver.new(source: self, root: root, strategy: Strategy.new(self), logger: logger)
       result = solver.solve
       resolved_specs = result.flat_map {|package, version| version.to_specs(package, @most_specific_locked_platform) }
+      Override.attach(resolved_specs, @base.overrides)
       SpecSet.new(resolved_specs).specs_with_additional_variants_from(@base.locked_specs)
     rescue PubGrub::SolveFailure => e
       incompatibility = e.incompatibility
