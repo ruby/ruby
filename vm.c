@@ -117,7 +117,6 @@ VM_EP_RUBY_LEP(const rb_execution_context_t *ec, const rb_control_frame_t *curre
     const rb_control_frame_t *cfp = current_cfp;
 
     if (VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_IFUNC)) {
-        ep = VM_EP_LEP(current_cfp->ep);
         /**
          * Returns CFUNC frame only in this case.
          *
@@ -145,7 +144,20 @@ VM_EP_RUBY_LEP(const rb_execution_context_t *ec, const rb_control_frame_t *curre
          * We expect that `chunk_i` works as expected by the implementation of `#chunk`
          * without any overwritten definitions from boxes.
          * So the definitions on IFUNC frames should be equal to the caller CFUNC.
+         *
+         * NOTE: We traverse the cfp chain directly instead of using VM_EP_LEP.
+         * When an IFUNC env is escaped to the heap (e.g., due to a surrounding
+         * `binding` call), the env may acquire VM_ENV_FLAG_LOCAL, causing VM_EP_LEP
+         * to return the IFUNC ep itself rather than the enclosing CFUNC ep.
          */
+        while (VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_IFUNC)) {
+            cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+            VM_BOX_ASSERT(RUBY_VM_VALID_CONTROL_FRAME_P(cfp, eocfp), "Valid control frame expected for IFUNC caller");
+            if (!RUBY_VM_VALID_CONTROL_FRAME_P(cfp, eocfp)) {
+                return NULL;
+            }
+            ep = cfp->ep;
+        }
         VM_ASSERT(VM_ENV_FRAME_TYPE_P(ep, VM_FRAME_MAGIC_CFUNC));
         return ep;
     }
