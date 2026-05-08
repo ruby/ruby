@@ -4930,18 +4930,32 @@ impl Function {
         }
     }
 
-    // TODO: Replace hashmaps with vecs?
-    // TODO: Add comments describing load store elimination in the first pass
-    // TODO: Link to rails at scale post?
-    // TODO: Add comments describing deada store elimination in the second pass
-    // TODO: Add master comment about type based alias analysis with specific callouts referencing the overall TBAA comment
-    // TODO(Jacob): Spend time with the old noggin to answer the following questions.
-    //       1. It is possible to do DSE forwards. Is it possible to do this at the same time as load store?
-    //          If so, this would allow us to do it in one pass*. We still need to clean up the dead stores afterwards and convert them to
-    //          NOPs or something. The more I think about it, the more I think it makes sense to have a cleanup pass at the end of all other
-    //          analysis passes.
-    //       2. DSE and load-store-opt seem like duals of each other. If this is true, then they should be symmetric. Why does DSE only handle
-    //          stores? Can I convince myself that we're not missing some potential dead loads? Is this caught at an SSA level already?
+    /// Load store optimization performs two functions:
+    /// 1. Elide duplicate LoadField and StoreField instructions, and replace
+    /// redundant loads or stores with their values when possible.
+    /// 2. Remove "dead stores". A store is dead when it is never used before
+    ///    getting overwritten by a second store. If this pass proves no use,
+    ///    the first store is elided.
+    ///
+    /// These two optimizations use very similar abstract interpretations and are
+    /// currently combined into one pass. The primary difference is that load
+    /// store optimization runs forward (from top to bottom of a block) while
+    /// dead store elimination runs in reverse. A subtle secondary difference is
+    /// that our use of extended basic blocks induces an asymmetry between these
+    /// two optimizations. When scanning in reverse, dead store elimination needs
+    /// to consider the "multi-exit" nature of EBBs. Stores that appear to be
+    /// dead can sometimes have early exits that make the optimization unsound
+    /// if we don't handle this special case. Basic blocks avoid this problem.
+    ///
+    /// Note for future improvements:
+    /// Load & store optimizations currently operate at a block level, but could
+    /// be expanded to operate on methods. This likely means the two passes
+    /// should be split into their own methods as instead of "one forwards, one
+    /// backwards" we need to traverse dominator and post dominator trees and it
+    /// becomes tricky enough that splitting may be cleaner.
+    ///
+    /// For further reading, see the following Rails at Scale blog post.
+    /// https://railsatscale.com/2026-03-18-how-zjit-removes-redundant-object-loads-and-stores/
     fn optimize_load_store(&mut self) {
         #[derive(PartialEq, Eq, Hash, Clone, Copy)]
         struct HeapKey {
@@ -4949,17 +4963,16 @@ impl Function {
             offset: i32,
         }
 
-        // This helper function is used while we don't have type based alias
-        // analysis. Matching offsets could result in aliased objects that need
-        // to be clear.
-        // Any code location that uses the remove_aliasing function needs to be replaced
-        // when we implement TBAA
-        fn remove_aliasing(map: &mut HashMap<HeapKey, InsnId>, offset: i32) {
+        // This helper function is used to clear the cache for matching offsets
+        // while we don't have type based alias.
+        // TBAA will primarily modify any part of this optimization that
+        // currently uses this helper function.
+        fn flush_aliasing(map: &mut HashMap<HeapKey, InsnId>, offset: i32) {
             map.retain(|HeapKey { object: _, offset: off }, _| *off != offset);
         }
 
+        // Redundant load and store optimization
         for block in self.rpo() {
-            // First, we eliminate loads and stores
             let mut compile_time_heap: HashMap<HeapKey, InsnId> = HashMap::new();
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             let mut new_insns = vec![];
@@ -4969,12 +4982,11 @@ impl Function {
                     Insn::StoreField { recv, offset, val, .. } => {
                         let key = HeapKey { object: self.chase_insn(recv), offset };
                         let heap_entry = compile_time_heap.get(&key).copied();
-                        // TODO(Jacob): Switch from actual to partial equality
                         if Some(val) == heap_entry {
                             // If the value is already stored, short circuit and don't add an instruction to the block
                             continue
                         }
-                        remove_aliasing(&mut compile_time_heap, offset);
+                        flush_aliasing(&mut compile_time_heap, offset);
                         compile_time_heap.insert(key, val);
                     },
                     Insn::LoadField { recv, offset, .. } => {
@@ -4983,7 +4995,6 @@ impl Function {
                             std::collections::hash_map::Entry::Occupied(entry) => {
                                 // If the value is stored already, we should short circuit.
                                 // However, we need to replace insn_id with its representative in the SSA union.
-                                // TODO: Show an example of why we need this with p little ascii diagram or something
                                 self.make_equal_to(insn_id, *entry.get());
                                 continue
                             }
@@ -4999,7 +5010,7 @@ impl Function {
                         // But flags does not exist in our effects abstract heap modeling and we don't want to add special casing to effects.
                         // This special casing in this pass here should be removed once we refine our effects system to provide greater granularity for WriteBarrier.
                         let offset = RUBY_OFFSET_RBASIC_FLAGS;
-                        remove_aliasing(&mut compile_time_heap, offset);
+                        flush_aliasing(&mut compile_time_heap, offset);
                     },
                     insn => {
                         // If an instruction affects memory and we haven't modeled it, the compile_time_heap is invalidated
@@ -5011,25 +5022,12 @@ impl Function {
                 new_insns.push(insn_id);
             }
 
-
-            // get the block
-            // load-store optimization
-            // reverse updated instructions
-            // DSE
-            // reverse final updated instructions
-            // return
-            //
-            // get the block
-            // load-store optimization, DSE* after (same iteration)
-            //     instead of eliding the store, mark the earlier store for removal
-            // return
-
-            // After performing scalar replacement on loads and stores where
-            // applicable, we scan in reverse to find an eliminate dead stores
+            // Set up for dead store elimination
             let mut reversed_insns = std::mem::take(&mut new_insns);
             reversed_insns.reverse();
             compile_time_heap.clear();
 
+            // Dead store elimnination
             for insn_id in reversed_insns {
                 match self.find(insn_id) {
                     Insn::StoreField { recv, offset, .. } => {
@@ -5039,21 +5037,21 @@ impl Function {
                             continue
                         }
                         else {
-                            remove_aliasing(&mut compile_time_heap, offset);
+                            flush_aliasing(&mut compile_time_heap, offset);
                             compile_time_heap.insert(key, insn_id);
                         }
                     }
                     Insn::LoadField{ offset, .. } => {
-                        remove_aliasing(&mut compile_time_heap, offset);
+                        flush_aliasing(&mut compile_time_heap, offset);
                     }
                     Insn::WriteBarrier { .. } => {
                         let offset = RUBY_OFFSET_RBASIC_FLAGS;
-                        remove_aliasing(&mut compile_time_heap, offset);
+                        flush_aliasing(&mut compile_time_heap, offset);
                     },
                     insn => {
                         let insn_reads_memory = insn.effects_of().includes(Effect::read(abstract_heaps::Memory));
                         let insn_uses_control_flow = insn.effects_of().includes(effects::Control);
-                        // TODO: Once we update from extended basic blocks to normal basic blocks, we can remove the control flow check
+                        // TODO(Jacob): Once we update from extended basic blocks to normal basic blocks, we can remove the control flow check
                         if insn_reads_memory || insn_uses_control_flow {
                             compile_time_heap.clear();
                         }
