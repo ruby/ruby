@@ -3553,16 +3553,15 @@ rb_reg_equal(VALUE re1, VALUE re2)
 static VALUE
 match_hash(VALUE match)
 {
-    const struct re_registers *regs;
     st_index_t hashval;
 
     match_check(match);
     hashval = rb_hash_start(rb_str_hash(RMATCH(match)->str));
     hashval = rb_hash_uint(hashval, reg_hash(match_regexp(match)));
-    regs = RMATCH_REGS(match);
-    hashval = rb_hash_uint(hashval, regs->num_regs);
-    hashval = rb_hash_uint(hashval, rb_memhash(regs->beg, regs->num_regs * sizeof(*regs->beg)));
-    hashval = rb_hash_uint(hashval, rb_memhash(regs->end, regs->num_regs * sizeof(*regs->end)));
+    int num_regs = RMATCH_NREGS(match);
+    hashval = rb_hash_uint(hashval, num_regs);
+    hashval = rb_hash_uint(hashval, rb_memhash(RMATCH_BEG_PTR(match), num_regs * sizeof(OnigPosition)));
+    hashval = rb_hash_uint(hashval, rb_memhash(RMATCH_END_PTR(match), num_regs * sizeof(OnigPosition)));
     hashval = rb_hash_end(hashval);
     return ST2FIX(hashval);
 }
@@ -3579,18 +3578,15 @@ match_hash(VALUE match)
 static VALUE
 match_equal(VALUE match1, VALUE match2)
 {
-    const struct re_registers *regs1, *regs2;
-
     if (match1 == match2) return Qtrue;
     if (!RB_TYPE_P(match2, T_MATCH)) return Qfalse;
     if (!RMATCH(match1)->regexp || !RMATCH(match2)->regexp) return Qfalse;
     if (!rb_str_equal(RMATCH(match1)->str, RMATCH(match2)->str)) return Qfalse;
     if (!rb_reg_equal(match_regexp(match1), match_regexp(match2))) return Qfalse;
-    regs1 = RMATCH_REGS(match1);
-    regs2 = RMATCH_REGS(match2);
-    if (regs1->num_regs != regs2->num_regs) return Qfalse;
-    if (memcmp(regs1->beg, regs2->beg, regs1->num_regs * sizeof(*regs1->beg))) return Qfalse;
-    if (memcmp(regs1->end, regs2->end, regs1->num_regs * sizeof(*regs1->end))) return Qfalse;
+    int num_regs = RMATCH_NREGS(match1);
+    if (num_regs != RMATCH_NREGS(match2)) return Qfalse;
+    if (memcmp(RMATCH_BEG_PTR(match1), RMATCH_BEG_PTR(match2), num_regs * sizeof(OnigPosition))) return Qfalse;
+    if (memcmp(RMATCH_END_PTR(match1), RMATCH_END_PTR(match2), num_regs * sizeof(OnigPosition))) return Qfalse;
     return Qtrue;
 }
 
