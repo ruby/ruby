@@ -2123,7 +2123,7 @@ name_to_backref_number(const struct re_registers *regs, VALUE regexp, const char
      name_to_backref_number((regs), (re), (name_ptr), (name_end)))
 
 static int
-namev_to_backref_number(const struct re_registers *regs, VALUE re, VALUE name)
+namev_to_backref_number(VALUE match, VALUE name)
 {
     int num;
 
@@ -2133,7 +2133,7 @@ namev_to_backref_number(const struct re_registers *regs, VALUE re, VALUE name)
     else if (!RB_TYPE_P(name, T_STRING)) {
         return -1;
     }
-    num = NAME_TO_NUMBER(regs, re, name,
+    num = NAME_TO_NUMBER(RMATCH_REGS(match), RMATCH(match)->regexp, name,
                          RSTRING_PTR(name), RSTRING_END(name));
     if (num < 1) {
         name_to_backref_error(name);
@@ -2228,7 +2228,7 @@ match_aref(int argc, VALUE *argv, VALUE match)
             return rb_reg_nth_match(FIX2INT(idx), match);
         }
         else {
-            int num = namev_to_backref_number(RMATCH_REGS(match), RMATCH(match)->regexp, idx);
+            int num = namev_to_backref_number(match, idx);
             if (num >= 0) {
                 return rb_reg_nth_match(num, match);
             }
@@ -2298,7 +2298,7 @@ match_values_at(int argc, VALUE *argv, VALUE match)
             rb_ary_push(result, rb_reg_nth_match(FIX2INT(argv[i]), match));
         }
         else {
-            int num = namev_to_backref_number(RMATCH_REGS(match), RMATCH(match)->regexp, argv[i]);
+            int num = namev_to_backref_number(match, argv[i]);
             if (num >= 0) {
                 rb_ary_push(result, rb_reg_nth_match(num, match));
             }
@@ -3627,7 +3627,7 @@ match_equal(VALUE match1, VALUE match2)
 static VALUE
 match_integer_at(int argc, VALUE *argv, VALUE match)
 {
-    const struct re_registers *regs = RMATCH_REGS(match_check(match));
+    match_check(match);
 
     int base = 10;
     VALUE idx;
@@ -3637,7 +3637,7 @@ match_integer_at(int argc, VALUE *argv, VALUE match)
     if (FIXNUM_P(idx = argv[0])) {
         nth = NUM2INT(idx);
     }
-    else if ((nth = namev_to_backref_number(regs, RMATCH(match)->regexp, idx)) < 0) {
+    else if ((nth = namev_to_backref_number(match, idx)) < 0) {
         name_to_backref_error(idx);
     }
 
