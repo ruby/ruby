@@ -93,4 +93,56 @@ RSpec.describe Bundler::SpecSet do
     end
   end
 
+  describe "#complete_platform" do
+    let(:platform) { Gem::Platform.new("x86_64-linux") }
+
+    let(:platform_variant) do
+      build_spec("needs_old_ruby", "1.0", platform).first.tap do |s|
+        s.required_ruby_version = Gem::Requirement.new("< #{Gem.ruby_version}")
+      end
+    end
+
+    let(:lazy_spec) do
+      lazy = Bundler::LazySpecification.new("needs_old_ruby", Gem::Version.new("1.0"), Gem::Platform::RUBY)
+      lazy.required_ruby_version = Gem::Requirement.new("< #{Gem.ruby_version}")
+      source = double("source")
+      source_specs = double("source_specs")
+      allow(source).to receive(:specs).and_return(source_specs)
+      allow(source_specs).to receive(:search).
+        with(["needs_old_ruby", Gem::Version.new("1.0")]).and_return([platform_variant])
+      lazy.source = source
+      lazy
+    end
+
+    it "rejects a platform variant whose strict metadata is incompatible when no override is attached" do
+      set = described_class.new([lazy_spec])
+      expect(set.send(:complete_platform, platform)).to be(false)
+    end
+
+    it "accepts a platform variant when the LazySpec carries an override that allows it" do
+      lazy_spec.overrides = [Bundler::Override.new("needs_old_ruby", :required_ruby_version, :ignore_upper)]
+      set = described_class.new([lazy_spec])
+      expect(set.send(:complete_platform, platform)).to be(true)
+    end
+
+    it "carries overrides onto a synthesized LazySpec so a follow-up complete_platform still honors them" do
+      override = Bundler::Override.new("needs_old_ruby", :required_ruby_version, :ignore_upper)
+      lazy_spec.overrides = [override]
+      second_platform = Gem::Platform.new("aarch64-linux")
+      second_variant = build_spec("needs_old_ruby", "1.0", second_platform).first.tap do |s|
+        s.required_ruby_version = Gem::Requirement.new("< #{Gem.ruby_version}")
+      end
+      allow(lazy_spec.source.specs).to receive(:search).
+        with(["needs_old_ruby", Gem::Version.new("1.0")]).and_return([platform_variant, second_variant])
+
+      set = described_class.new([lazy_spec])
+      expect(set.send(:complete_platform, platform)).to be(true)
+      # The synthesized x86_64-linux variant is now in the set. If lookup
+      # picks it as exemplar for the next platform check, the override list
+      # must still be reachable via its overrides accessor.
+      synthesized = set.to_a.find {|s| s.platform == platform }
+      expect(synthesized.overrides).to eq([override])
+      expect(set.send(:complete_platform, second_platform)).to be(true)
+    end
+  end
 end
