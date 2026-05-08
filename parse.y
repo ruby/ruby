@@ -1307,7 +1307,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 // #define NEW_RESBODY(a,v,ex,n,loc) (NODE *)rb_node_resbody_new(p,a,v,ex,n,loc)
 // #define NEW_ENSURE(b,en,loc) (NODE *)rb_node_ensure_new(p,b,en,loc)
 // #define NEW_AND(f,s,loc,op_loc) (NODE *)rb_node_and_new(p,f,s,loc,op_loc)
-#define NEW_OR(f,s,loc,op_loc) (NODE *)rb_node_or_new(p,f,s,loc,op_loc)
+// #define NEW_OR(f,s,loc,op_loc) (NODE *)rb_node_or_new(p,f,s,loc,op_loc)
 #define NEW_MASGN(l,r,loc)   rb_node_masgn_new(p,l,r,loc)
 // #define NEW_LASGN(v,val,loc) (NODE *)rb_node_lasgn_new(p,v,val,loc)
 // #define NEW_DASGN(v,val,loc) (NODE *)rb_node_dasgn_new(p,v,val,loc)
@@ -1541,6 +1541,7 @@ static rb_lambda_node_t *rb_new_node_lambda_new(struct parser_params *p, rb_node
 static rb_array_pattern_node_t *rb_new_node_array_pattern_new(struct parser_params *p, rb_array_node_t *pre_args, NODE *rest_arg, rb_array_node_t *post_args, const YYLTYPE *loc);
 static rb_hash_pattern_node_t *rb_new_node_hash_pattern_new(struct parser_params *p, NODE *nd_pconst, rb_array_node_t *nd_pkwargs, NODE *nd_pkwrestarg, const YYLTYPE *loc);
 static rb_find_pattern_node_t *rb_new_node_find_pattern_new(struct parser_params *p, rb_splat_node_t *pre_rest_arg, rb_array_node_t *args, NODE *post_rest_arg, const YYLTYPE *loc);
+static rb_alternation_pattern_node_t *rb_new_node_alternation_pattern_new(struct parser_params *p, NODE *right, NODE *left, const YYLTYPE *loc, const YYLTYPE *operator_loc);
 static rb_pinned_variable_node_t *rb_new_node_pinned_variable_new(struct parser_params *p, rb_node_t *nd_var, const YYLTYPE *loc, const YYLTYPE *operator_loc);
 static rb_pinned_expression_node_t *rb_new_node_pinned_expression_new(struct parser_params *p, rb_node_t *nd_expr, const YYLTYPE *loc, const YYLTYPE *operator_loc, const YYLTYPE *lparen_loc, const YYLTYPE *rparen_loc);
 static rb_source_line_node_t *rb_new_node_source_line_new(struct parser_params *p, const YYLTYPE *loc);
@@ -1703,7 +1704,7 @@ static rb_source_encoding_node_t *rb_new_node_source_encoding_new(struct parser_
 #define NEW_RB_ARRAY_PATTERN(pre,r,post,loc) (rb_node_t *)rb_new_node_array_pattern_new(p,pre,r,post,loc)
 #define NEW_RB_HASH_PATTERN(c,kw,kwrest,loc) (rb_node_t *)rb_new_node_hash_pattern_new(p,c,kw,kwrest,loc)
 #define NEW_RB_FIND_PATTERN(pre,a,post,loc) (rb_node_t *)rb_new_node_find_pattern_new(p,pre,a,post,loc)
-
+#define NEW_RB_ALTERNATION_PATTERN(f,s,loc,op_loc) (rb_node_t *)rb_new_node_alternation_pattern_new(p,f,s,loc,op_loc)
 #define NEW_RB_PINNED_VARIABLE(v,loc,op_loc) (rb_node_t *)rb_new_node_pinned_variable_new(p,v,loc,op_loc)
 #define NEW_RB_PINNED_EXPRESSION(e,loc,op_loc,lp_loc,rp_loc) (rb_node_t *)rb_new_node_pinned_expression_new(p,e,loc,op_loc,lp_loc,rp_loc)
 #define NEW_RB_SOURCE_LINE(loc) (rb_node_t *)rb_new_node_source_line_new(p,loc)
@@ -6064,7 +6065,7 @@ p_alt		: p_alt[left] '|'[alt] p_alt_begin[ctxt] p_expr_basic[right]
                             yyerror1(&@alt, "alternative pattern after variable capture");
                         }
                         p->ctxt.in_alt_pattern = $ctxt.in_alt_pattern;
-                        $$ = NEW_OR($left, $right, &@$, &@alt);
+                        $$ = NEW_RB_ALTERNATION_PATTERN($left, $right, &@$, &@alt);
                     /*% ripper: binary!($:left, ID2VAL(idOr), $:right) %*/
                     }
                 | p_expr_basic
@@ -12010,16 +12011,16 @@ rb_node_begin_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc)
 //     return n;
 // }
 
-static rb_node_or_t *
-rb_node_or_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc, const YYLTYPE *operator_loc)
-{
-    rb_node_or_t *n = NODE_NEWNODE(NODE_OR, rb_node_or_t, loc);
-    n->nd_1st = nd_1st;
-    n->nd_2nd = nd_2nd;
-    n->operator_loc = *operator_loc;
+// static rb_node_or_t *
+// rb_node_or_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc, const YYLTYPE *operator_loc)
+// {
+//     rb_node_or_t *n = NODE_NEWNODE(NODE_OR, rb_node_or_t, loc);
+//     n->nd_1st = nd_1st;
+//     n->nd_2nd = nd_2nd;
+//     n->operator_loc = *operator_loc;
 
-    return n;
-}
+//     return n;
+// }
 
 // static rb_node_return_t *
 // rb_node_return_new(struct parser_params *p, NODE *nd_stts, const YYLTYPE *loc, const YYLTYPE *keyword_loc)
@@ -14166,6 +14167,17 @@ rb_new_node_find_pattern_new(struct parser_params *p, rb_splat_node_t *pre_rest_
     n->right = post_rest_arg;
     n->opening_loc = NULL_LOC;
     n->closing_loc = NULL_LOC;
+
+    return n;
+}
+
+static rb_alternation_pattern_node_t *
+rb_new_node_alternation_pattern_new(struct parser_params *p, NODE *left, NODE *right, const YYLTYPE *loc, const YYLTYPE *operator_loc)
+{
+    rb_alternation_pattern_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_ALTERNATION_PATTERN_NODE, rb_alternation_pattern_node_t, loc);
+    n->left = left;
+    n->right = right;
+    n->operator_loc = *operator_loc;
 
     return n;
 }
