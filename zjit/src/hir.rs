@@ -4692,8 +4692,9 @@ impl Function {
                         }
                         let self_val = self.load_ivar_guard_type(block, self_val, recv_type, state);
                         let shape = self.load_shape(block, self_val);
-                        // TODO: attr_writer SetIvar has a null inline cache and may not target CFP self.
-                        // Support it with a recompile strategy that profiles the receiver operand.
+                        // TODO: attr_writer SetIvar has a null inline cache and may target a receiver
+                        // operand other than CFP self. Support it with a reprofile strategy that
+                        // profiles the receiver operand even after the send insn has finished profiling.
                         let recompile = if ic.is_null() { None } else { Some(Recompile::ProfileSelf) };
                         self.guard_shape(block, shape, recv_type.shape(), state, recompile);
                         // Current shape contains this ivar
