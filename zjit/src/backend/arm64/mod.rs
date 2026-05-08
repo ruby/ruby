@@ -1561,6 +1561,9 @@ impl Assembler {
                 Insn::Breakpoint => {
                     brk(cb, A64Opnd::None);
                 },
+                Insn::Abort => {
+                    udf(cb, u16::MAX);
+                },
                 Insn::CSelZ { truthy, falsy, out } |
                 Insn::CSelE { truthy, falsy, out } => {
                     csel(cb, out.into(), truthy.into(), falsy.into(), Condition::EQ);

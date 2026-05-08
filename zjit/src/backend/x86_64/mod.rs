@@ -1089,6 +1089,7 @@ impl Assembler {
                 },
 
                 Insn::Breakpoint => int3(cb),
+                Insn::Abort => ud2(cb),
 
                 Insn::CSelZ { truthy, falsy, out } => {
                     emit_csel(cb, *truthy, *falsy, *out, cmovz, cmovnz);

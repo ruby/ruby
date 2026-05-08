@@ -653,6 +653,9 @@ pub enum Insn {
     #[allow(dead_code)]
     Breakpoint,
 
+    // Abort the process
+    Abort,
+
     /// Add a comment into the IR at the point that this instruction is added.
     /// It won't have any impact on that actual compiled code.
     Comment(String),
@@ -895,6 +898,7 @@ impl Insn {
             Insn::And { .. } => "And",
             Insn::BakeString(_) => "BakeString",
             Insn::Breakpoint => "Breakpoint",
+            Insn::Abort => "Abort",
             Insn::Comment(_) => "Comment",
             Insn::Cmp { .. } => "Cmp",
             Insn::CPop { .. } => "CPop",
@@ -1185,7 +1189,7 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             }
 
             Insn::BakeString(_) |
-            Insn::Breakpoint |
+            Insn::Breakpoint | Insn::Abort |
             Insn::Comment(_) |
             Insn::CPop { .. } |
             Insn::PadPatchPoint |
@@ -1363,7 +1367,7 @@ impl<'a> InsnOpndMutIterator<'a> {
             }
 
             Insn::BakeString(_) |
-            Insn::Breakpoint |
+            Insn::Breakpoint | Insn::Abort |
             Insn::Comment(_) |
             Insn::CPop { .. } |
             Insn::FrameSetup { .. } |
@@ -3463,6 +3467,11 @@ impl Assembler {
     #[allow(dead_code)]
     pub fn breakpoint(&mut self) {
         self.push_insn(Insn::Breakpoint);
+    }
+
+    #[allow(dead_code)]
+    pub fn abort(&mut self) {
+        self.push_insn(Insn::Abort);
     }
 
     /// Call a C function without PosMarkers
