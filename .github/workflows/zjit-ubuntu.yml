@@ -279,6 +279,8 @@ jobs:
       - name: Run ruby-bench
         run: ruby run_benchmarks.rb -e "zjit::../build/install/bin/ruby ${{ matrix.ruby_opts }}" ${{ matrix.bench_opts }}
         working-directory: ruby-bench
+        env:
+          BUNDLER_VERSION: 0
 
       - uses: ./.github/actions/slack
         with:
