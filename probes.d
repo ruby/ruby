@@ -256,6 +256,13 @@ provider ruby {
      Fired when de-allocating memory with xfree.
   */
   probe gc__xfree();
+
+  /*
+     ruby:::gc-obj_free();
+
+     Fired when de-allocating memory with xfree.
+  */
+  probe gc__obj_free(void *obj, int builtin_type);
 };
 
 #pragma D attributes Stable/Evolving/Common provider ruby provider

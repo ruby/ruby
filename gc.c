@@ -1533,7 +1533,13 @@ rb_gc_obj_free(void *objspace, VALUE obj)
 
     RB_DEBUG_COUNTER_INC(obj_free);
 
-    switch (BUILTIN_TYPE(obj)) {
+    enum ruby_value_type builtin_type = BUILTIN_TYPE(obj);
+
+    if (RUBY_DTRACE_GC_OBJ_FREE_ENABLED()) {
+        RUBY_DTRACE_GC_OBJ_FREE((void*)obj, builtin_type);
+    }
+
+    switch (builtin_type) {
       case T_NIL:
       case T_FIXNUM:
       case T_TRUE:
@@ -1544,7 +1550,7 @@ rb_gc_obj_free(void *objspace, VALUE obj)
         break;
     }
 
-    switch (BUILTIN_TYPE(obj)) {
+    switch (builtin_type) {
       case T_OBJECT:
         if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
             if (rb_obj_shape_complex_p(obj)) {

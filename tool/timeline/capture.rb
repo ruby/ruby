@@ -23,6 +23,9 @@ USDT_GROUPS = {
   'xfree' => [
     ['gc__xfree',         'gc_xfree',         'i',  0],
   ],
+  'obj_free' => [
+    ['gc__obj_free',      'gc_obj_free',      'i',  2],
+  ],
 }
 
 DEFAULT_GROUP = USDT_GROUPS['default']
