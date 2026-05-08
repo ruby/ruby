@@ -791,6 +791,7 @@ box.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 box.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 box.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 box.$(OBJEXT): {$(VPATH)}box.c
+box.$(OBJEXT): {$(VPATH)}builtin.h
 box.$(OBJEXT): {$(VPATH)}config.h
 box.$(OBJEXT): {$(VPATH)}constant.h
 box.$(OBJEXT): {$(VPATH)}darray.h

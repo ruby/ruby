@@ -3189,7 +3189,7 @@ find_loader_control_frame(const rb_execution_context_t *ec, const rb_control_fra
     while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
         if (!VM_ENV_FRAME_TYPE_P(cfp->ep, VM_FRAME_MAGIC_CFUNC))
             break;
-        if (!BOX_ROOT_P(current_box_on_cfp(ec, cfp)))
+        if (!BOX_MASTER_P(current_box_on_cfp(ec, cfp)))
             break;
         cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     }
