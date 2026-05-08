@@ -6,19 +6,19 @@ source "https://rubygems.org"
 gemspec
 
 gem "irb"
-gem "rake", "~> 13.0"
+gem "rake", ">= 13.0"
 <%- if config[:ext] -%>
 
 gem "rake-compiler"
 <%- end -%>
 <%- if config[:test] -%>
 
-gem "<%= config[:test] %>", "~> <%= config[:test_framework_version] %>"
+gem "<%= config[:test] %>", ">= <%= config[:test_framework_version] %>"
 <%- end -%>
 <%- if config[:linter] == "rubocop" -%>
 
-gem "rubocop", "~> <%= config[:linter_version] %>"
+gem "rubocop", ">= <%= config[:linter_version] %>"
 <%- elsif config[:linter] == "standard" -%>
 
-gem "standard", "~> <%= config[:linter_version] %>"
+gem "standard", ">= <%= config[:linter_version] %>"
 <%- end -%>

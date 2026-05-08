@@ -752,7 +752,7 @@ RSpec.describe "bundle gem" do
       builder.eval_gemfile(bundled_app("#{gem_name}/Gemfile"))
       builder.dependencies
       rspec_dep = builder.dependencies.find {|d| d.name == "rspec" }
-      expect(rspec_dep).to be_specific
+      expect(rspec_dep).not_to be_specific
     end
   end
 
@@ -837,7 +837,7 @@ RSpec.describe "bundle gem" do
       builder.eval_gemfile(bundled_app("#{gem_name}/Gemfile"))
       builder.dependencies
       minitest_dep = builder.dependencies.find {|d| d.name == "minitest" }
-      expect(minitest_dep).to be_specific
+      expect(minitest_dep).not_to be_specific
     end
 
     it "builds spec skeleton" do
@@ -898,7 +898,7 @@ RSpec.describe "bundle gem" do
       builder.eval_gemfile(bundled_app("#{gem_name}/Gemfile"))
       builder.dependencies
       test_unit_dep = builder.dependencies.find {|d| d.name == "test-unit" }
-      expect(test_unit_dep).to be_specific
+      expect(test_unit_dep).not_to be_specific
     end
 
     it "builds spec skeleton" do
@@ -1829,7 +1829,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes go_gem in gem_name.gemspec" do
-        expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to include('spec.add_dependency "go_gem", "~> 0.2"')
+        expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to include('spec.add_dependency "go_gem", ">= 0.2"')
       end
 
       it "includes go_gem extension in extconf.rb" do
