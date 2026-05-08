@@ -793,7 +793,7 @@ parse_lex_input(const uint8_t *input, size_t input_length, const pm_options_t *o
     parse_lex_data_t parse_lex_data = {
         .source = source,
         .tokens = rb_ary_new(),
-        .encoding = rb_utf8_encoding(),
+        .encoding = rb_enc_find(pm_parser_encoding_name(parser)),
         .freeze = pm_options_freeze(options),
     };
 
