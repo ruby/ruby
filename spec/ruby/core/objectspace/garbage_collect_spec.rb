@@ -3,7 +3,7 @@ require_relative '../../spec_helper'
 describe "ObjectSpace.garbage_collect" do
 
   it "can be invoked without any exceptions" do
-    -> { ObjectSpace.garbage_collect }.should_not raise_error
+    -> { ObjectSpace.garbage_collect }.should_not.raise
   end
 
   it "accepts keyword arguments" do
@@ -11,7 +11,7 @@ describe "ObjectSpace.garbage_collect" do
   end
 
   it "ignores the supplied block" do
-    -> { ObjectSpace.garbage_collect {} }.should_not raise_error
+    -> { ObjectSpace.garbage_collect {} }.should_not.raise
   end
 
   it "always returns nil" do

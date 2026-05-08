@@ -155,6 +155,7 @@ unsigned = cvalue_int.subtype "CUnsigned"
   unsigned.subtype "CUInt#{width}"
 }
 unsigned.subtype "CShape"
+unsigned.subtype "CAttrIndex"
 
 # Assign individual bits to type leaves and union bit patterns to nodes with subtypes
 num_bits = 0

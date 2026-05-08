@@ -199,7 +199,7 @@ describe "C-API exception constant" do
 
   specify "rb_eFatal references the fatal class" do
     fatal = @s.rb_eFatal
-    fatal.should be_kind_of(Class)
+    fatal.should.is_a?(Class)
     fatal.should < Exception
   end
 

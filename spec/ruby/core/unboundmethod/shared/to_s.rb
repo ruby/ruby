@@ -8,8 +8,8 @@ describe :unboundmethod_to_s, shared: true do
   end
 
   it "returns a String" do
-    @from_module.send(@method).should be_kind_of(String)
-    @from_method.send(@method).should be_kind_of(String)
+    @from_module.send(@method).should.is_a?(String)
+    @from_method.send(@method).should.is_a?(String)
   end
 
   it "the String reflects that this is an UnboundMethod object" do

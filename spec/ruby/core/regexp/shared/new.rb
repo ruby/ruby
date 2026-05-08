@@ -23,10 +23,10 @@ describe :regexp_new, shared: true do
 
     class RegexpSpecsSubclassTwo < Regexp; end
 
-    RegexpSpecsSubclass.send(@method, "hi").should be_kind_of(RegexpSpecsSubclass)
+    RegexpSpecsSubclass.send(@method, "hi").should.is_a?(RegexpSpecsSubclass)
     RegexpSpecsSubclass.send(@method, "hi").args.first.should == "hi"
 
-    RegexpSpecsSubclassTwo.send(@method, "hi").should be_kind_of(RegexpSpecsSubclassTwo)
+    RegexpSpecsSubclassTwo.send(@method, "hi").should.is_a?(RegexpSpecsSubclassTwo)
   end
 end
 
@@ -40,12 +40,12 @@ describe :regexp_new_non_string_or_regexp, shared: true do
 
   it "raises TypeError if there is no #to_str method for non-String/Regexp argument" do
     obj = Object.new
-    -> { Regexp.send(@method, obj) }.should raise_error(TypeError, "no implicit conversion of Object into String")
+    -> { Regexp.send(@method, obj) }.should.raise(TypeError, "no implicit conversion of Object into String")
 
-    -> { Regexp.send(@method, 1) }.should raise_error(TypeError, "no implicit conversion of Integer into String")
-    -> { Regexp.send(@method, 1.0) }.should raise_error(TypeError, "no implicit conversion of Float into String")
-    -> { Regexp.send(@method, :symbol) }.should raise_error(TypeError, "no implicit conversion of Symbol into String")
-    -> { Regexp.send(@method, []) }.should raise_error(TypeError, "no implicit conversion of Array into String")
+    -> { Regexp.send(@method, 1) }.should.raise(TypeError, "no implicit conversion of Integer into String")
+    -> { Regexp.send(@method, 1.0) }.should.raise(TypeError, "no implicit conversion of Float into String")
+    -> { Regexp.send(@method, :symbol) }.should.raise(TypeError, "no implicit conversion of Symbol into String")
+    -> { Regexp.send(@method, []) }.should.raise(TypeError, "no implicit conversion of Array into String")
   end
 
   it "raises TypeError if #to_str returns non-String value" do
@@ -62,7 +62,7 @@ describe :regexp_new_string, shared: true do
   end
 
   it "raises a RegexpError when passed an incorrect regexp" do
-    -> { Regexp.send(@method, "^[$", 0) }.should raise_error(RegexpError, Regexp.new(Regexp.escape("premature end of char-class: /^[$/")))
+    -> { Regexp.send(@method, "^[$", 0) }.should.raise(RegexpError, Regexp.new(Regexp.escape("premature end of char-class: /^[$/")))
   end
 
   it "does not set Regexp options if only given one argument" do
@@ -184,21 +184,21 @@ describe :regexp_new_string, shared: true do
   end
 
   it "raises an Argument error if the second argument contains unsupported chars" do
-    -> { Regexp.send(@method, 'Hi', 'e') }.should raise_error(ArgumentError, "unknown regexp option: e")
-    -> { Regexp.send(@method, 'Hi', 'n') }.should raise_error(ArgumentError, "unknown regexp option: n")
-    -> { Regexp.send(@method, 'Hi', 's') }.should raise_error(ArgumentError, "unknown regexp option: s")
-    -> { Regexp.send(@method, 'Hi', 'u') }.should raise_error(ArgumentError, "unknown regexp option: u")
-    -> { Regexp.send(@method, 'Hi', 'j') }.should raise_error(ArgumentError, "unknown regexp option: j")
-    -> { Regexp.send(@method, 'Hi', 'mjx') }.should raise_error(ArgumentError, /unknown regexp option: mjx\b/)
+    -> { Regexp.send(@method, 'Hi', 'e') }.should.raise(ArgumentError, "unknown regexp option: e")
+    -> { Regexp.send(@method, 'Hi', 'n') }.should.raise(ArgumentError, "unknown regexp option: n")
+    -> { Regexp.send(@method, 'Hi', 's') }.should.raise(ArgumentError, "unknown regexp option: s")
+    -> { Regexp.send(@method, 'Hi', 'u') }.should.raise(ArgumentError, "unknown regexp option: u")
+    -> { Regexp.send(@method, 'Hi', 'j') }.should.raise(ArgumentError, "unknown regexp option: j")
+    -> { Regexp.send(@method, 'Hi', 'mjx') }.should.raise(ArgumentError, /unknown regexp option: mjx\b/)
   end
 
   describe "with escaped characters" do
     it "raises a Regexp error if there is a trailing backslash" do
-      -> { Regexp.send(@method, "\\") }.should raise_error(RegexpError, Regexp.new(Regexp.escape("too short escape sequence: /\\/")))
+      -> { Regexp.send(@method, "\\") }.should.raise(RegexpError, Regexp.new(Regexp.escape("too short escape sequence: /\\/")))
     end
 
     it "does not raise a Regexp error if there is an escaped trailing backslash" do
-      -> { Regexp.send(@method, "\\\\") }.should_not raise_error(RegexpError)
+      -> { Regexp.send(@method, "\\\\") }.should_not.raise(RegexpError)
     end
 
     it "accepts a backspace followed by a non-special character" do
@@ -206,23 +206,23 @@ describe :regexp_new_string, shared: true do
     end
 
     it "raises a RegexpError if \\x is not followed by any hexadecimal digits" do
-      -> { Regexp.send(@method, "\\" + "xn") }.should raise_error(RegexpError, Regexp.new(Regexp.escape("invalid hex escape: /\\xn/")))
+      -> { Regexp.send(@method, "\\" + "xn") }.should.raise(RegexpError, Regexp.new(Regexp.escape("invalid hex escape: /\\xn/")))
     end
 
     it "raises a RegexpError if less than four digits are given for \\uHHHH" do
-      -> { Regexp.send(@method, "\\" + "u304") }.should raise_error(RegexpError, Regexp.new(Regexp.escape("invalid Unicode escape: /\\u304/")))
+      -> { Regexp.send(@method, "\\" + "u304") }.should.raise(RegexpError, Regexp.new(Regexp.escape("invalid Unicode escape: /\\u304/")))
     end
 
     it "raises a RegexpError if the \\u{} escape is empty" do
-      -> { Regexp.send(@method, "\\" + "u{}") }.should raise_error(RegexpError, Regexp.new(Regexp.escape("invalid Unicode list: /\\u{}/")))
+      -> { Regexp.send(@method, "\\" + "u{}") }.should.raise(RegexpError, Regexp.new(Regexp.escape("invalid Unicode list: /\\u{}/")))
     end
 
     it "raises a RegexpError if the \\u{} escape contains non hexadecimal digits" do
-      -> { Regexp.send(@method, "\\" + "u{abcX}") }.should raise_error(RegexpError, Regexp.new(Regexp.escape("invalid Unicode list: /\\u{abcX}/")))
+      -> { Regexp.send(@method, "\\" + "u{abcX}") }.should.raise(RegexpError, Regexp.new(Regexp.escape("invalid Unicode list: /\\u{abcX}/")))
     end
 
     it "raises a RegexpError if more than six hexadecimal digits are given" do
-      -> { Regexp.send(@method, "\\" + "u{0ffffff}") }.should raise_error(RegexpError, Regexp.new(Regexp.escape("invalid Unicode range: /\\u{0ffffff}/")))
+      -> { Regexp.send(@method, "\\" + "u{0ffffff}") }.should.raise(RegexpError, Regexp.new(Regexp.escape("invalid Unicode range: /\\u{0ffffff}/")))
     end
 
     it "returns a Regexp with US-ASCII encoding if only 7-bit ASCII characters are present regardless of the input String's encoding" do

@@ -1533,7 +1533,7 @@ exc_initialize(int argc, VALUE *argv, VALUE exc)
  *
  *    x0 = StandardError.new('Boom') # => #<StandardError: Boom>
  *    x1 = x0.exception              # => #<StandardError: Boom>
- *    x0.__id__ == x1.__id__         # => true
+ *    x0.equal?(x1)                  # => true
  *
  *  With {string-convertible object}[rdoc-ref:implicit_conversion.rdoc@String-Convertible+Objects]
  *  +message+ (even the same as the original message),
@@ -1541,7 +1541,7 @@ exc_initialize(int argc, VALUE *argv, VALUE exc)
  *  and whose message is the given +message+:
  *
  *    x1 = x0.exception('Boom') # => #<StandardError: Boom>
- *    x0..equal?(x1)            # => false
+ *    x0.equal?(x1)             # => false
  *
  */
 

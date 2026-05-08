@@ -31,8 +31,8 @@ describe "String#partition with String" do
   end
 
   it "raises an error if not convertible to string" do
-    ->{ "hello".partition(5) }.should raise_error(TypeError)
-    ->{ "hello".partition(nil) }.should raise_error(TypeError)
+    ->{ "hello".partition(5) }.should.raise(TypeError)
+    ->{ "hello".partition(nil) }.should.raise(TypeError)
   end
 
   it "takes precedence over a given block" do

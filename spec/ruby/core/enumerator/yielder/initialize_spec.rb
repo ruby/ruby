@@ -9,10 +9,10 @@ describe "Enumerator::Yielder#initialize" do
   end
 
   it "is a private method" do
-    @class.should have_private_instance_method(:initialize, false)
+    @class.private_instance_methods(false).should.include?(:initialize)
   end
 
   it "returns self when given a block" do
-    @uninitialized.send(:initialize) {}.should equal(@uninitialized)
+    @uninitialized.send(:initialize) {}.should.equal?(@uninitialized)
   end
 end

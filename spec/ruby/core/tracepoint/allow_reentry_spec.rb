@@ -25,6 +25,6 @@ describe 'TracePoint.allow_reentry' do
   it 'raises RuntimeError when not called inside a TracePoint' do
     -> {
       TracePoint.allow_reentry{}
-    }.should raise_error(RuntimeError)
+    }.should.raise(RuntimeError)
   end
 end

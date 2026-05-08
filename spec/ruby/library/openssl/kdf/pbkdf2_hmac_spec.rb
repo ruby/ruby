@@ -83,80 +83,80 @@ describe "OpenSSL::KDF.pbkdf2_hmac" do
   it "raises a TypeError when password is not a String and does not respond to #to_str" do
     -> {
       OpenSSL::KDF.pbkdf2_hmac(Object.new, **@defaults)
-    }.should raise_error(TypeError, "no implicit conversion of Object into String")
+    }.should.raise(TypeError, "no implicit conversion of Object into String")
   end
 
   it "raises a TypeError when salt is not a String and does not respond to #to_str" do
     -> {
       OpenSSL::KDF.pbkdf2_hmac("secret", **@defaults, salt: Object.new)
-    }.should raise_error(TypeError, "no implicit conversion of Object into String")
+    }.should.raise(TypeError, "no implicit conversion of Object into String")
   end
 
   it "raises a TypeError when iterations is not an Integer and does not respond to #to_int" do
     -> {
       OpenSSL::KDF.pbkdf2_hmac("secret", **@defaults, iterations: Object.new)
-    }.should raise_error(TypeError, "no implicit conversion of Object into Integer")
+    }.should.raise(TypeError, "no implicit conversion of Object into Integer")
   end
 
   it "raises a TypeError when length is not an Integer and does not respond to #to_int" do
     -> {
       OpenSSL::KDF.pbkdf2_hmac("secret", **@defaults, length: Object.new)
-    }.should raise_error(TypeError, "no implicit conversion of Object into Integer")
+    }.should.raise(TypeError, "no implicit conversion of Object into Integer")
   end
 
   it "raises a TypeError when hash is neither a String nor an OpenSSL::Digest" do
     -> {
       OpenSSL::KDF.pbkdf2_hmac("secret", **@defaults, hash: Object.new)
-    }.should raise_error(TypeError)
+    }.should.raise(TypeError)
   end
 
   version_is OpenSSL::VERSION, "4.0.0" do
     it "raises a OpenSSL::Digest::DigestError for unknown digest algorithms" do
       -> {
         OpenSSL::KDF.pbkdf2_hmac("secret", **@defaults, hash: "wd40")
-      }.should raise_error(OpenSSL::Digest::DigestError, /wd40/)
+      }.should.raise(OpenSSL::Digest::DigestError, /wd40/)
     end
   end
 
   it "treats salt as a required keyword" do
     -> {
       OpenSSL::KDF.pbkdf2_hmac("secret", **@defaults.except(:salt))
-    }.should raise_error(ArgumentError, 'missing keyword: :salt')
+    }.should.raise(ArgumentError, 'missing keyword: :salt')
   end
 
   it "treats iterations as a required keyword" do
     -> {
       OpenSSL::KDF.pbkdf2_hmac("secret", **@defaults.except(:iterations))
-    }.should raise_error(ArgumentError, 'missing keyword: :iterations')
+    }.should.raise(ArgumentError, 'missing keyword: :iterations')
   end
 
   it "treats length as a required keyword" do
     -> {
       OpenSSL::KDF.pbkdf2_hmac("secret", **@defaults.except(:length))
-    }.should raise_error(ArgumentError, 'missing keyword: :length')
+    }.should.raise(ArgumentError, 'missing keyword: :length')
   end
 
   it "treats hash as a required keyword" do
     -> {
       OpenSSL::KDF.pbkdf2_hmac("secret", **@defaults.except(:hash))
-    }.should raise_error(ArgumentError, 'missing keyword: :hash')
+    }.should.raise(ArgumentError, 'missing keyword: :hash')
   end
 
   it "treats all keywords as required" do
     -> {
       OpenSSL::KDF.pbkdf2_hmac("secret")
-    }.should raise_error(ArgumentError, 'missing keywords: :salt, :iterations, :length, :hash')
+    }.should.raise(ArgumentError, 'missing keywords: :salt, :iterations, :length, :hash')
   end
 
   guard -> { OpenSSL::OPENSSL_VERSION_NUMBER >= 0x30000000 } do
     it "raises an OpenSSL::KDF::KDFError for 0 or less iterations" do
       -> {
         OpenSSL::KDF.pbkdf2_hmac("secret", **@defaults, iterations: 0)
-      }.should raise_error(OpenSSL::KDF::KDFError, "PKCS5_PBKDF2_HMAC: invalid iteration count")
+      }.should.raise(OpenSSL::KDF::KDFError, "PKCS5_PBKDF2_HMAC: invalid iteration count")
 
       -> {
         OpenSSL::KDF.pbkdf2_hmac("secret", **@defaults, iterations: -1)
-      }.should raise_error(OpenSSL::KDF::KDFError, /PKCS5_PBKDF2_HMAC/)
+      }.should.raise(OpenSSL::KDF::KDFError, /PKCS5_PBKDF2_HMAC/)
     end
   end
 end

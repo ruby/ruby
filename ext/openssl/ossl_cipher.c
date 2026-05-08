@@ -645,7 +645,7 @@ ossl_cipher_get_auth_tag(int argc, VALUE *argv, VALUE self)
         ossl_raise(eCipherError, "authentication tag not supported by this cipher");
 
     ret = rb_str_new(NULL, tag_len);
-    if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_GET_TAG, tag_len, RSTRING_PTR(ret)))
+    if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_GET_TAG, tag_len, RSTRING_PTR(ret)) <= 0)
         ossl_raise(eCipherError, "retrieving the authentication tag failed");
 
     return ret;
@@ -687,7 +687,7 @@ ossl_cipher_set_auth_tag(VALUE self, VALUE vtag)
     if (!(EVP_CIPHER_flags(EVP_CIPHER_CTX_cipher(ctx)) & EVP_CIPH_FLAG_AEAD_CIPHER))
         ossl_raise(eCipherError, "authentication tag not supported by this cipher");
 
-    if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_TAG, tag_len, tag))
+    if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_TAG, tag_len, tag) <= 0)
         ossl_raise(eCipherError, "unable to set AEAD tag");
 
     return vtag;
@@ -717,7 +717,7 @@ ossl_cipher_set_auth_tag_len(VALUE self, VALUE vlen)
     if (!(EVP_CIPHER_flags(EVP_CIPHER_CTX_cipher(ctx)) & EVP_CIPH_FLAG_AEAD_CIPHER))
         ossl_raise(eCipherError, "AEAD not supported by this cipher");
 
-    if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_TAG, tag_len, NULL))
+    if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_TAG, tag_len, NULL) <= 0)
         ossl_raise(eCipherError, "unable to set authentication tag length");
 
     /* for #auth_tag */
@@ -749,7 +749,7 @@ ossl_cipher_set_iv_length(VALUE self, VALUE iv_length)
     if (!(EVP_CIPHER_flags(EVP_CIPHER_CTX_cipher(ctx)) & EVP_CIPH_FLAG_AEAD_CIPHER))
         ossl_raise(eCipherError, "cipher does not support AEAD");
 
-    if (!EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, len, NULL))
+    if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_AEAD_SET_IVLEN, len, NULL) <= 0)
         ossl_raise(eCipherError, "unable to set IV length");
 
     /*

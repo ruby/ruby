@@ -475,6 +475,8 @@ class TC_Operator < Test::Unit::TestCase
     assert_equal(false, @a != IPAddr.new("3ffe:505:2::"))
     assert_equal(false, @a == @inconvertible_range)
     assert_equal(false, @a == @inconvertible_string)
+    assert_equal(false, IPAddr.new("0.0.0.0") == nil)
+    assert_equal(false, IPAddr.new("::") == nil)
   end
 
   def test_compare
@@ -533,6 +535,9 @@ class TC_Operator < Test::Unit::TestCase
     assert_equal(false, IPAddr.new('::ffff:0.0.0.0').loopback?)
     assert_equal(false, IPAddr.new('::ffff:192.168.2.0').loopback?)
     assert_equal(false, IPAddr.new('::ffff:255.0.0.0').loopback?)
+
+    # Global unicast addresses with 0xffff in group 5 must not be mistaken for ::ffff:127.x.x.x
+    assert_equal(false, IPAddr.new('2001:db8:1:1:0:ffff:7f00:1').loopback?)
   end
 
   def test_private?
@@ -583,6 +588,10 @@ class TC_Operator < Test::Unit::TestCase
     assert_equal(false, IPAddr.new('::ffff:192.169.0.0').private?)
 
     assert_equal(false, IPAddr.new('::ffff:169.254.0.1').private?)
+
+    # Global unicast addresses with 0xffff in group 5 must not be mistaken for ::ffff:10/172.16/192.168.x
+    assert_equal(false, IPAddr.new('2001:718:1404:c8:0:ffff:ac19:c80e').private?)
+    assert_equal(false, IPAddr.new('2001:db8:1:1:0:ffff:c0a8:1').private?)
   end
 
   def test_link_local?
@@ -609,6 +618,9 @@ class TC_Operator < Test::Unit::TestCase
 
     assert_equal(true,  IPAddr.new('::ffff:169.254.1.1').link_local?)
     assert_equal(true,  IPAddr.new('::ffff:169.254.254.255').link_local?)
+
+    # Global unicast addresses with 0xffff in group 5 must not be mistaken for ::ffff:169.254.x.x
+    assert_equal(false, IPAddr.new('2001:db8:1:1:0:ffff:a9fe:101').link_local?)
   end
 
   def test_hash

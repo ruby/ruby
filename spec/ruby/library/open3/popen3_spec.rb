@@ -5,10 +5,10 @@ describe "Open3.popen3" do
   it "returns in, out, err and a thread waiting the process" do
     stdin, out, err, waiter = Open3.popen3(ruby_cmd("print :foo"))
     begin
-      stdin.should be_kind_of IO
-      out.should be_kind_of IO
-      err.should be_kind_of IO
-      waiter.should be_kind_of Thread
+      stdin.should.is_a? IO
+      out.should.is_a? IO
+      err.should.is_a? IO
+      waiter.should.is_a? Thread
 
       out.read.should == "foo"
     ensure

@@ -10,7 +10,7 @@ describe :hash_each, shared: true do
   it "yields the key and value of each pair to a block expecting |key, value|" do
     r = {}
     h = { a: 1, b: 2, c: 3, d: 5 }
-    h.send(@method) { |k,v| r[k.to_s] = v.to_s }.should equal(h)
+    h.send(@method) { |k,v| r[k.to_s] = v.to_s }.should.equal?(h)
     r.should == { "a" => "1", "b" => "2", "c" => "3", "d" => "5" }
   end
 
@@ -28,11 +28,11 @@ describe :hash_each, shared: true do
 
     -> {
       { "a" => 1 }.send(@method, &obj.method(:foo))
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
 
     -> {
       { "a" => 1 }.send(@method, &-> key, value { })
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "yields an Array of 2 elements when given a callable of arity 1" do
@@ -53,7 +53,7 @@ describe :hash_each, shared: true do
 
     -> {
       { "a" => 1 }.send(@method, &obj.method(:foo))
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "uses the same order as keys() and values()" do

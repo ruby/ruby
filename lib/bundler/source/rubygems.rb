@@ -533,7 +533,9 @@ module Bundler
             wrappers: true,
             env_shebang: true,
             build_args: options[:build_args],
-            bundler_extension_cache_path: extension_cache_path(spec)
+            bundler_extension_cache_path: extension_cache_path(spec),
+            build_extension: Bundler.settings[:no_build_extension] ? false : nil,
+            install_plugin: Bundler.settings[:no_install_plugin] ? false : nil
           )
           @gem_installers_mutex.synchronize { @gem_installers[spec.name] ||= installer }
         end

@@ -75,7 +75,7 @@ describe "Thread.handle_interrupt" do
         Thread.handle_interrupt(RuntimeError => :immediate) {
           flunk "not reached"
         }
-      }.should raise_error(RuntimeError, "interrupt immediate")
+      }.should.raise(RuntimeError, "interrupt immediate")
       Thread.pending_interrupt?.should == false
     end
   end
@@ -95,7 +95,7 @@ describe "Thread.handle_interrupt" do
         Thread.handle_interrupt(RuntimeError => :immediate) {
           flunk "not reached"
         }
-      }.should raise_error(RuntimeError, "interrupt with fibers")
+      }.should.raise(RuntimeError, "interrupt with fibers")
       Thread.pending_interrupt?.should == false
     end
 
@@ -115,7 +115,7 @@ describe "Thread.handle_interrupt" do
         executed = true
         raise "regular exception"
       end
-    }.should raise_error(RuntimeError, "interrupt exception")
+    }.should.raise(RuntimeError, "interrupt exception")
     executed.should == true
   end
 

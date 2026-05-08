@@ -10,10 +10,10 @@ describe "Module#<" do
   end
 
   it "returns false if self is a superclass of or included by the given module" do
-    (ModuleSpecs::Parent < ModuleSpecs::Child).should be_false
-    (ModuleSpecs::Basic < ModuleSpecs::Child).should be_false
-    (ModuleSpecs::Super < ModuleSpecs::Child).should be_false
-    (ModuleSpecs::Basic < ModuleSpecs::Super).should be_false
+    (ModuleSpecs::Parent < ModuleSpecs::Child).should == false
+    (ModuleSpecs::Basic < ModuleSpecs::Child).should == false
+    (ModuleSpecs::Super < ModuleSpecs::Child).should == false
+    (ModuleSpecs::Basic < ModuleSpecs::Super).should == false
   end
 
   it "returns false if self is the same as the given module" do
@@ -31,6 +31,6 @@ describe "Module#<" do
   end
 
   it "raises a TypeError if the argument is not a class/module" do
-    -> { ModuleSpecs::Parent < mock('x') }.should raise_error(TypeError)
+    -> { ModuleSpecs::Parent < mock('x') }.should.raise(TypeError)
   end
 end

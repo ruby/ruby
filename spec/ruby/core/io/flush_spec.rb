@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "IO#flush" do
   it "raises IOError on closed stream" do
-    -> { IOSpecs.closed_io.flush }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.flush }.should.raise(IOError)
   end
 
   describe "on a pipe" do
@@ -29,8 +29,8 @@ describe "IO#flush" do
         @w.write "foo"
         @r.close
 
-        -> { @w.flush }.should raise_error(Errno::EPIPE, /Broken pipe/)
-        -> { @w.close }.should raise_error(Errno::EPIPE, /Broken pipe/)
+        -> { @w.flush }.should.raise(Errno::EPIPE, /Broken pipe/)
+        -> { @w.close }.should.raise(Errno::EPIPE, /Broken pipe/)
       end
     end
   end

@@ -5074,7 +5074,7 @@ pm_interpolated_regular_expression_node_closing_set(pm_parser_t *parser, pm_inte
  * PM_NODE_FLAG_STATIC_LITERAL indicates that the node should be treated as a
  * single static literal string that can be pushed onto the stack on its own.
  * Note that this doesn't necessarily mean that the string will be frozen or
- * not; the instructions in CRuby will be either putobject or putstring,
+ * not; the instructions in CRuby will be either putobject, dupstring or dupchilledstring,
  * depending on the combination of `--enable-frozen-string-literal`,
  * `# frozen_string_literal: true`, and whether or not there is interpolation.
  *
@@ -15321,12 +15321,22 @@ parse_block_exit(pm_parser_t *parser, pm_node_t *node) {
             case PM_CONTEXT_LAMBDA_ENSURE:
             case PM_CONTEXT_LAMBDA_RESCUE:
             case PM_CONTEXT_LOOP_PREDICATE:
-            case PM_CONTEXT_POSTEXE:
             case PM_CONTEXT_UNTIL:
             case PM_CONTEXT_WHILE:
                 // These are the good cases. We're allowed to have a block exit
                 // in these contexts.
                 return;
+            case PM_CONTEXT_POSTEXE:
+                // https://bugs.ruby-lang.org/issues/20409
+                if (context_node->context == PM_CONTEXT_POSTEXE) {
+                    if (parser->version < PM_OPTIONS_VERSION_CRUBY_4_1) {
+                        return;
+                    }
+                    if (PM_NODE_TYPE_P(node, PM_NEXT_NODE)) {
+                        return;
+                    }
+                }
+            PRISM_FALLTHROUGH
             case PM_CONTEXT_DEF:
             case PM_CONTEXT_DEF_PARAMS:
             case PM_CONTEXT_DEF_ELSE:

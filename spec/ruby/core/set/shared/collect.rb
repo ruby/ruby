@@ -10,7 +10,7 @@ describe :set_collect_bang, shared: true do
   end
 
   it "returns self" do
-    @set.send(@method) { |x| x }.should equal(@set)
+    @set.send(@method) { |x| x }.should.equal?(@set)
   end
 
   it "replaces self with the return values of the block" do

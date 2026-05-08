@@ -41,41 +41,41 @@ describe "File.path" do
   it "raises TypeError when #to_path result is not a string" do
     path = mock("path")
     path.should_receive(:to_path).and_return(nil)
-    -> { File.path(path) }.should raise_error TypeError
+    -> { File.path(path) }.should.raise TypeError
 
     path = mock("path")
     path.should_receive(:to_path).and_return(42)
-    -> { File.path(path) }.should raise_error TypeError
+    -> { File.path(path) }.should.raise TypeError
   end
 
   it "raises ArgumentError for string argument contains NUL character" do
-    -> { File.path("\0") }.should raise_error ArgumentError
-    -> { File.path("a\0") }.should raise_error ArgumentError
-    -> { File.path("a\0c") }.should raise_error ArgumentError
+    -> { File.path("\0") }.should.raise ArgumentError
+    -> { File.path("a\0") }.should.raise ArgumentError
+    -> { File.path("a\0c") }.should.raise ArgumentError
   end
 
   it "raises ArgumentError when #to_path result contains NUL character" do
     path = mock("path")
     path.should_receive(:to_path).and_return("\0")
-    -> { File.path(path) }.should raise_error ArgumentError
+    -> { File.path(path) }.should.raise ArgumentError
 
     path = mock("path")
     path.should_receive(:to_path).and_return("a\0")
-    -> { File.path(path) }.should raise_error ArgumentError
+    -> { File.path(path) }.should.raise ArgumentError
 
     path = mock("path")
     path.should_receive(:to_path).and_return("a\0c")
-    -> { File.path(path) }.should raise_error ArgumentError
+    -> { File.path(path) }.should.raise ArgumentError
   end
 
   it "raises Encoding::CompatibilityError for ASCII-incompatible string argument" do
     path = "abc".encode(Encoding::UTF_32BE)
-    -> { File.path(path) }.should raise_error Encoding::CompatibilityError
+    -> { File.path(path) }.should.raise Encoding::CompatibilityError
   end
 
   it "raises Encoding::CompatibilityError when #to_path result is ASCII-incompatible" do
     path = mock("path")
     path.should_receive(:to_path).and_return("abc".encode(Encoding::UTF_32BE))
-    -> { File.path(path) }.should raise_error Encoding::CompatibilityError
+    -> { File.path(path) }.should.raise Encoding::CompatibilityError
   end
 end

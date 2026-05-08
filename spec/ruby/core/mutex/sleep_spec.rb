@@ -4,21 +4,21 @@ describe "Mutex#sleep" do
   describe "when not locked by the current thread" do
     it "raises a ThreadError" do
       m = Mutex.new
-      -> { m.sleep }.should raise_error(ThreadError)
+      -> { m.sleep }.should.raise(ThreadError)
     end
 
     it "raises an ArgumentError if passed a negative duration" do
       m = Mutex.new
-      -> { m.sleep(-0.1) }.should raise_error(ArgumentError)
-      -> { m.sleep(-1) }.should raise_error(ArgumentError)
+      -> { m.sleep(-0.1) }.should.raise(ArgumentError)
+      -> { m.sleep(-1) }.should.raise(ArgumentError)
     end
   end
 
   it "raises an ArgumentError if passed a negative duration" do
     m = Mutex.new
     m.lock
-    -> { m.sleep(-0.1) }.should raise_error(ArgumentError)
-    -> { m.sleep(-1) }.should raise_error(ArgumentError)
+    -> { m.sleep(-0.1) }.should.raise(ArgumentError)
+    -> { m.sleep(-1) }.should.raise(ArgumentError)
   end
 
   it "pauses execution for approximately the duration requested" do
@@ -38,7 +38,7 @@ describe "Mutex#sleep" do
     th = Thread.new { m.lock; locked = true; m.sleep }
     Thread.pass until locked
     Thread.pass until th.stop?
-    m.locked?.should be_false
+    m.locked?.should == false
     th.run
     th.join
   end
@@ -47,7 +47,7 @@ describe "Mutex#sleep" do
     m = Mutex.new
     m.lock
     m.sleep(0.001)
-    m.locked?.should be_true
+    m.locked?.should == true
   end
 
   it "relocks the mutex when woken by an exception being raised" do
@@ -65,7 +65,7 @@ describe "Mutex#sleep" do
     Thread.pass until locked
     Thread.pass until th.stop?
     th.raise(Exception)
-    th.value.should be_true
+    th.value.should == true
   end
 
   it "returns the rounded number of seconds asleep" do
@@ -79,7 +79,7 @@ describe "Mutex#sleep" do
     Thread.pass until locked
     Thread.pass until th.stop?
     th.wakeup
-    th.value.should be_kind_of(Integer)
+    th.value.should.is_a?(Integer)
   end
 
   it "wakes up when requesting sleep times near or equal to zero" do
@@ -97,7 +97,7 @@ describe "Mutex#sleep" do
     m.lock
     times.each do |time|
       # just testing that sleep completes
-      -> {m.sleep(time)}.should_not raise_error
+      -> {m.sleep(time)}.should_not.raise
     end
   end
 end

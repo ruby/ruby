@@ -5,7 +5,7 @@ EvalSpecs::A.new.c
 
 describe "Kernel#eval" do
   it "is a private method" do
-    Kernel.should have_private_instance_method(:eval)
+    Kernel.private_instance_methods(false).should.include?(:eval)
   end
 
   it "is a module function" do
@@ -76,12 +76,12 @@ describe "Kernel#eval" do
     x = 1
     bind = proc {}
 
-    -> { eval("x", bind) }.should raise_error(TypeError)
+    -> { eval("x", bind) }.should.raise(TypeError)
   end
 
   it "does not make Proc locals visible to evaluated code" do
     bind = proc { inner = 4 }
-    -> { eval("inner", bind.binding) }.should raise_error(NameError)
+    -> { eval("inner", bind.binding) }.should.raise(NameError)
   end
 
   # REWRITE ME: This obscures the real behavior of where locals are stored
@@ -119,7 +119,7 @@ describe "Kernel#eval" do
     outer_binding = binding
 
     eval("if false; a = 1; end", outer_binding)
-    eval("a", outer_binding).should be_nil
+    eval("a", outer_binding).should == nil
   end
 
   it "allows creating a new class in a binding" do
@@ -136,7 +136,7 @@ describe "Kernel#eval" do
     expected = 'speccing.rb'
     -> {
       eval('if true', TOPLEVEL_BINDING, expected)
-    }.should raise_error(SyntaxError) { |e|
+    }.should.raise(SyntaxError) { |e|
       e.message.should =~ /#{expected}:1:.+/
     }
   end
@@ -145,7 +145,7 @@ describe "Kernel#eval" do
     expected_file = 'speccing.rb'
     -> {
       eval('if true', TOPLEVEL_BINDING, expected_file, -100)
-    }.should raise_error(SyntaxError) { |e|
+    }.should.raise(SyntaxError) { |e|
       e.message.should =~ /#{expected_file}:-100:.+/
     }
   end
@@ -263,14 +263,14 @@ describe "Kernel#eval" do
 
   # See http://jira.codehaus.org/browse/JRUBY-5163
   it "uses the receiver as self inside the eval" do
-    eval("self").should equal(self)
-    Kernel.eval("self").should equal(Kernel)
+    eval("self").should.equal?(self)
+    Kernel.eval("self").should.equal?(Kernel)
   end
 
   it "does not pass the block to the method being eval'ed" do
     -> {
       eval('KernelSpecs::EvalTest.call_yield') { "content" }
-    }.should raise_error(LocalJumpError)
+    }.should.raise(LocalJumpError)
   end
 
   it "returns from the scope calling #eval when evaluating 'return'" do
@@ -308,7 +308,7 @@ describe "Kernel#eval" do
   it "has the correct default definee when called through Method#call" do
     class EvalSpecs
       method(:eval).call("def eval_spec_method_call; end")
-      EvalSpecs.should have_instance_method(:eval_spec_method_call)
+      EvalSpecs.should.method_defined?(:eval_spec_method_call, false)
     end
   end
 
@@ -362,7 +362,7 @@ end
 CODE
       code.encoding.should == Encoding::BINARY
       eval(code)
-      EvalSpecs.constants(false).should include(:"Vπ")
+      EvalSpecs.constants(false).should.include?(:"Vπ")
       EvalSpecs::Vπ.should == 3.14
     ensure
       EvalSpecs.send(:remove_const, :Vπ)
@@ -377,7 +377,7 @@ end
 CODE
       code.encoding.should == Encoding::BINARY
       eval(code)
-      EvalSpecs.constants(false).should include(:"Vπemacs")
+      EvalSpecs.constants(false).should.include?(:"Vπemacs")
       EvalSpecs::Vπemacs.should == 3.14
     ensure
       EvalSpecs.send(:remove_const, :Vπemacs)
@@ -392,7 +392,7 @@ end
 CODE
       code.encoding.should == Encoding::BINARY
       eval(code)
-      EvalSpecs.constants(false).should include(:"Vπspaces")
+      EvalSpecs.constants(false).should.include?(:"Vπspaces")
       EvalSpecs::Vπspaces.should == 3.14
     ensure
       EvalSpecs.send(:remove_const, :Vπspaces)
@@ -408,7 +408,7 @@ end
 CODE
       code.encoding.should == Encoding::BINARY
       eval(code)
-      EvalSpecs.constants(false).should include(:"Vπshebang")
+      EvalSpecs.constants(false).should.include?(:"Vπshebang")
       EvalSpecs::Vπshebang.should == 3.14
     ensure
       EvalSpecs.send(:remove_const, :Vπshebang)
@@ -424,7 +424,7 @@ end
 CODE
       code.encoding.should == Encoding::BINARY
       eval(code)
-      EvalSpecs.constants(false).should include(:"Vπshebang_spaces")
+      EvalSpecs.constants(false).should.include?(:"Vπshebang_spaces")
       EvalSpecs::Vπshebang_spaces.should == 3.14
     ensure
       EvalSpecs.send(:remove_const, :Vπshebang_spaces)
@@ -442,7 +442,7 @@ end
 CODE
       code.encoding.should == Encoding::BINARY
       eval(code)
-      EvalSpecs.constants(false).should include(:"Vπstring")
+      EvalSpecs.constants(false).should.include?(:"Vπstring")
       EvalSpecs::Vπstring.should == "frozen"
       EvalSpecs::Vπstring.encoding.should == Encoding::UTF_8
       EvalSpecs::Vπstring.frozen?.should == !frozen_string_default
@@ -459,10 +459,10 @@ end
 CODE
       code.encoding.should == Encoding::BINARY
       eval(code)
-      EvalSpecs.constants(false).should include(:"Vπsame_line")
+      EvalSpecs.constants(false).should.include?(:"Vπsame_line")
       EvalSpecs::Vπsame_line.should == "frozen"
       EvalSpecs::Vπsame_line.encoding.should == Encoding::UTF_8
-      EvalSpecs::Vπsame_line.frozen?.should be_true
+      EvalSpecs::Vπsame_line.frozen?.should == true
     ensure
       EvalSpecs.send(:remove_const, :Vπsame_line)
     end
@@ -478,9 +478,9 @@ end
 CODE
       code.encoding.should == Encoding::BINARY
       eval(code)
-      EvalSpecs.constants(false).should_not include(:"Vπfrozen_first")
+      EvalSpecs.constants(false).should_not.include?(:"Vπfrozen_first")
       binary_constant = "Vπfrozen_first".b.to_sym
-      EvalSpecs.constants(false).should include(binary_constant)
+      EvalSpecs.constants(false).should.include?(binary_constant)
       value = EvalSpecs.const_get(binary_constant)
       value.should == "frozen"
       value.encoding.should == Encoding::BINARY

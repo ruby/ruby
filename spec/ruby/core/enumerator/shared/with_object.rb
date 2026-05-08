@@ -16,18 +16,18 @@ describe :enum_with_object, shared: true do
       ret = @enum.send(@method, @memo) do |elm, memo|
         # nothing
       end
-      ret.should equal(@memo)
+      ret.should.equal?(@memo)
     end
 
     context "the block parameter" do
       it "passes each element to first parameter" do
-        @block_params[0][0].should equal(:a)
-        @block_params[1][0].should equal(:b)
+        @block_params[0][0].should.equal?(:a)
+        @block_params[1][0].should.equal?(:b)
       end
 
       it "passes the given object to last parameter" do
-        @block_params[0][1].should equal(@memo)
-        @block_params[1][1].should equal(@memo)
+        @block_params[0][1].should.equal?(@memo)
+        @block_params[1][1].should.equal?(@memo)
       end
     end
   end
@@ -35,8 +35,8 @@ describe :enum_with_object, shared: true do
   context "without block" do
     it "returns new Enumerator" do
       ret = @enum.send(@method, @memo)
-      ret.should be_an_instance_of(Enumerator)
-      ret.should_not equal(@enum)
+      ret.should.instance_of?(Enumerator)
+      ret.should_not.equal?(@enum)
     end
   end
 end

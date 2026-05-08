@@ -25,6 +25,6 @@ describe :env_include, shared: true do
   end
 
   it "raises TypeError if the argument is not a String and does not respond to #to_str" do
-    -> { ENV.send(@method, Object.new) }.should raise_error(TypeError, "no implicit conversion of Object into String")
+    -> { ENV.send(@method, Object.new) }.should.raise(TypeError, "no implicit conversion of Object into String")
   end
 end

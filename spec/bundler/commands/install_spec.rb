@@ -1379,6 +1379,48 @@ RSpec.describe "bundle install with gem sources" do
     end
   end
 
+  describe "when a native extension requires a transitive dependency at build time" do
+    before do
+      build_repo4 do
+        build_gem "alpha", "1.0.0" do |s|
+          extension = "ext/alpha/extconf.rb"
+          s.extensions = extension
+          s.write(extension, <<~CODE)
+            require "mkmf"
+            sleep 1
+            create_makefile("alpha")
+          CODE
+          s.write "lib/alpha.rb", "ALPHA = '1.0.0'"
+        end
+
+        build_gem "beta", "1.0.0" do |s|
+          s.add_dependency "alpha"
+          s.write "lib/beta.rb", "require 'alpha'\nBETA = '1.0.0'"
+        end
+
+        build_gem "gamma", "1.0.0" do |s|
+          s.add_dependency "beta"
+          extension = "ext/gamma/extconf.rb"
+          s.extensions = extension
+          s.write(extension, <<~EXTCONF)
+            require "beta"
+            require "mkmf"
+            create_makefile("gamma")
+          EXTCONF
+        end
+      end
+    end
+
+    it "installs successfully" do
+      install_gemfile <<~G
+        source "https://gem.repo4"
+        gem "gamma"
+      G
+
+      expect(the_bundle).to include_gems "alpha 1.0.0", "beta 1.0.0", "gamma 1.0.0"
+    end
+  end
+
   describe "when configured path is UTF-8 and a file inside a gem package too" do
     let(:app_path) do
       path = tmp("♥")

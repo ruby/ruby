@@ -1,6 +1,3 @@
-call-seq:
-  skip_until(pattern) -> matched_substring_size or nil
-
 Attempts to [match][17] the given `pattern`
 anywhere (at any [position][2]) in the [target substring][3].
 

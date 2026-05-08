@@ -14,7 +14,7 @@ describe :env_select, shared: true do
 
   it "returns an Enumerator when no block is given" do
     enum = ENV.send(@method)
-    enum.should be_an_instance_of(Enumerator)
+    enum.should.instance_of?(Enumerator)
   end
 
   it "selects via the enumerator" do
@@ -49,7 +49,7 @@ describe :env_select!, shared: true do
   end
 
   it "returns an Enumerator if called without a block" do
-    ENV.send(@method).should be_an_instance_of(Enumerator)
+    ENV.send(@method).should.instance_of?(Enumerator)
   end
 
   it "selects via the enumerator" do

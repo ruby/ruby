@@ -8,11 +8,11 @@ describe "Addrinfo#ipv6_multicast?" do
     end
 
     it "returns true for a multicast address" do
-      @multicast.ipv6_multicast?.should be_false
+      @multicast.ipv6_multicast?.should == false
     end
 
     it "returns false for another address" do
-      @other.ipv6_multicast?.should be_false
+      @other.ipv6_multicast?.should == false
     end
   end
 
@@ -40,7 +40,7 @@ describe "Addrinfo#ipv6_multicast?" do
     end
 
     it "returns false" do
-      @addrinfo.ipv6_multicast?.should be_false
+      @addrinfo.ipv6_multicast?.should == false
     end
   end
 end

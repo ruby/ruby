@@ -192,6 +192,18 @@ module Gem::InstallUpdateOptions
                 "rbconfig.rb for the deployment target platform") do |v, _o|
       Gem.set_target_rbconfig(v)
     end
+
+    add_option(:"Install/Update", "--[no-]build-extension",
+                "Build native extensions during installation.",
+                "Defaults to true") do |v, _o|
+      options[:build_extension] = v
+    end
+
+    add_option(:"Install/Update", "--[no-]install-plugin",
+                "Install plugins during installation.",
+                "Defaults to true") do |v, _o|
+      options[:install_plugin] = v
+    end
   end
 
   ##

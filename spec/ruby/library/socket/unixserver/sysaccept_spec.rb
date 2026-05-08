@@ -32,7 +32,7 @@ describe 'UNIXServer#sysaccept' do
     describe 'without any data' do
       it 'returns an Integer' do
         @fd = @server.sysaccept
-        @fd.should be_kind_of(Integer)
+        @fd.should.is_a?(Integer)
       end
     end
 
@@ -43,7 +43,7 @@ describe 'UNIXServer#sysaccept' do
 
       it 'returns an Integer' do
         @fd = @server.sysaccept
-        @fd.should be_kind_of(Integer)
+        @fd.should.is_a?(Integer)
       end
     end
   end

@@ -19,14 +19,14 @@ describe 'Socket.unix' do
     it 'returns a Socket' do
       @socket = Socket.unix(@path)
 
-      @socket.should be_an_instance_of(Socket)
+      @socket.should.instance_of?(Socket)
     end
   end
 
   describe 'when a block is given' do
     it 'yields a Socket' do
       Socket.unix(@path) do |sock|
-        sock.should be_an_instance_of(Socket)
+        sock.should.instance_of?(Socket)
       end
     end
 

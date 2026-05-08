@@ -12,7 +12,7 @@ describe "Thread#[]=" do
       th.freeze
       -> {
         th[:foo] = "bar"
-      }.should raise_error(FrozenError, "can't modify frozen thread locals")
+      }.should.raise(FrozenError, "can't modify frozen thread locals")
     end.join
   end
 
@@ -40,8 +40,8 @@ describe "Thread#[]=" do
   end
 
   it "raises exceptions on the wrong type of keys" do
-    -> { Thread.current[nil] = true }.should raise_error(TypeError)
-    -> { Thread.current[5] = true }.should raise_error(TypeError)
+    -> { Thread.current[nil] = true }.should.raise(TypeError)
+    -> { Thread.current[5] = true }.should.raise(TypeError)
   end
 
   it "is not shared across fibers" do
@@ -51,7 +51,7 @@ describe "Thread#[]=" do
       Thread.current[:value].should == 1
     end
     fib.resume
-    Thread.current[:value].should be_nil
+    Thread.current[:value].should == nil
     Thread.current[:value] = 2
     fib.resume
     Thread.current[:value] = 2

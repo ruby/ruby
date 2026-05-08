@@ -15,12 +15,12 @@ describe "Kernel#open" do
   end
 
   it "is a private method" do
-    Kernel.should have_private_instance_method(:open)
+    Kernel.private_instance_methods(false).should.include?(:open)
   end
 
   it "opens a file when given a valid filename" do
     @file = open(@name)
-    @file.should be_kind_of(File)
+    @file.should.is_a?(File)
   end
 
   it "opens a file when called with a block" do
@@ -34,7 +34,7 @@ describe "Kernel#open" do
           @io = open("|date")
         end
         begin
-          @io.should be_kind_of(IO)
+          @io.should.is_a?(IO)
           @io.read
         ensure
           @io.close
@@ -64,7 +64,7 @@ describe "Kernel#open" do
           @io = open("|date /t")
         end
         begin
-          @io.should be_kind_of(IO)
+          @io.should.is_a?(IO)
           @io.read
         ensure
           @io.close
@@ -89,16 +89,16 @@ describe "Kernel#open" do
   end
 
   it "raises an ArgumentError if not passed one argument" do
-    -> { open }.should raise_error(ArgumentError)
+    -> { open }.should.raise(ArgumentError)
   end
 
   it "accepts options as keyword arguments" do
     @file = open(@name, "r", 0666, flags: File::CREAT)
-    @file.should be_kind_of(File)
+    @file.should.is_a?(File)
 
     -> {
       open(@name, "r", 0666, {flags: File::CREAT})
-    }.should raise_error(ArgumentError, "wrong number of arguments (given 4, expected 1..3)")
+    }.should.raise(ArgumentError, "wrong number of arguments (given 4, expected 1..3)")
   end
 
   describe "when given an object that responds to to_open" do
@@ -126,7 +126,7 @@ describe "Kernel#open" do
       @file = File.open(@name)
       obj.should_receive(:to_open).and_return(@file)
       @file = open(obj)
-      @file.should be_kind_of(File)
+      @file.should.is_a?(File)
     end
 
     it "returns the value from #to_open" do
@@ -167,9 +167,9 @@ describe "Kernel#open" do
 
   it "raises a TypeError if passed a non-String that does not respond to #to_open" do
     obj = mock('non-fileish')
-    -> { open(obj) }.should raise_error(TypeError)
-    -> { open(nil) }.should raise_error(TypeError)
-    -> { open(7)   }.should raise_error(TypeError)
+    -> { open(obj) }.should.raise(TypeError)
+    -> { open(nil) }.should.raise(TypeError)
+    -> { open(7)   }.should.raise(TypeError)
   end
 
   it "accepts nil for mode and permission" do

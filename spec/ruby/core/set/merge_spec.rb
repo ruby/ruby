@@ -8,18 +8,18 @@ describe "Set#merge" do
 
   it "returns self" do
     set = Set[1, 2]
-    set.merge([3, 4]).should equal(set)
+    set.merge([3, 4]).should.equal?(set)
   end
 
   it "raises an ArgumentError when passed a non-Enumerable" do
-    -> { Set[1, 2].merge(1) }.should raise_error(ArgumentError)
-    -> { Set[1, 2].merge(Object.new) }.should raise_error(ArgumentError)
+    -> { Set[1, 2].merge(1) }.should.raise(ArgumentError)
+    -> { Set[1, 2].merge(Object.new) }.should.raise(ArgumentError)
   end
 
   it "raises RuntimeError when called during iteration" do
     set = Set[:a, :b]
     set.each do |_m|
-      -> { set.merge([1, 2]) }.should raise_error(RuntimeError, /iteration/)
+      -> { set.merge([1, 2]) }.should.raise(RuntimeError, /iteration/)
     end
   end
 

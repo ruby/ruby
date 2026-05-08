@@ -25,7 +25,7 @@ describe "Range#last" do
   end
 
   it "raises an ArgumentError when count is negative" do
-    -> { (0..2).last(-1) }.should raise_error(ArgumentError)
+    -> { (0..2).last(-1) }.should.raise(ArgumentError)
   end
 
   it "calls #to_int to convert the argument" do
@@ -36,7 +36,7 @@ describe "Range#last" do
   it "raises a TypeError if #to_int does not return an Integer" do
     obj = mock("to_int")
     obj.should_receive(:to_int).and_return("1")
-    -> { (2..3).last(obj) }.should raise_error(TypeError)
+    -> { (2..3).last(obj) }.should.raise(TypeError)
   end
 
   it "truncates the value when passed a Float" do
@@ -44,14 +44,14 @@ describe "Range#last" do
   end
 
   it "raises a TypeError when passed nil" do
-    -> { (2..3).last(nil) }.should raise_error(TypeError)
+    -> { (2..3).last(nil) }.should.raise(TypeError)
   end
 
   it "raises a TypeError when passed a String" do
-    -> { (2..3).last("1") }.should raise_error(TypeError)
+    -> { (2..3).last("1") }.should.raise(TypeError)
   end
 
   it "raises a RangeError when called on an endless range" do
-    -> { eval("(1..)").last }.should raise_error(RangeError)
+    -> { eval("(1..)").last }.should.raise(RangeError)
   end
 end

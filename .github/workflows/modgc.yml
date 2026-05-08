@@ -62,7 +62,7 @@ jobs:
         uses: ./.github/actions/setup/ubuntu
         if: ${{ contains(matrix.os, 'ubuntu') }}
 
-      - uses: ruby/setup-ruby@e65c17d16e57e481586a6a5a0282698790062f92 # v1.300.0
+      - uses: ruby/setup-ruby@c4e5b1316158f92e3d49443a9d58b31d25ac0f8f # v1.306.0
         with:
           ruby-version: '3.1'
           bundler: none
@@ -105,7 +105,7 @@ jobs:
           ${SETARCH} ../src/configure -C --disable-install-doc --with-modular-gc="${MODULAR_GC_DIR}" \
           ${arch:+--target=$arch-$OSTYPE --host=$arch-$OSTYPE}
 
-      - uses: actions-rust-lang/setup-rust-toolchain@150fca883cd4034361b621bd4e6a9d34e5143606 # v1.15.4
+      - uses: actions-rust-lang/setup-rust-toolchain@2b1f5e9b395427c92ee4e3331786ca3c37afe2d7 # v1.16.0
       - name: Set MMTk environment variables
         run: |
           echo 'EXCLUDES=../src/test/.excludes-mmtk' >> $GITHUB_ENV

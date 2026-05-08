@@ -3,7 +3,7 @@ require_relative '../../spec_helper'
 
 describe "Regexp#encoding" do
   it "returns an Encoding object" do
-    /glar/.encoding.should be_an_instance_of(Encoding)
+    /glar/.encoding.should.instance_of?(Encoding)
   end
 
   it "defaults to US-ASCII if the Regexp contains only US-ASCII character" do

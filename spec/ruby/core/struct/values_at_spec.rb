@@ -14,8 +14,8 @@ describe "Struct#values_at" do
     end
 
     it "raises IndexError if any of integers is out of range" do
-      -> { @movie.values_at(3) }.should raise_error(IndexError, "offset 3 too large for struct(size:3)")
-      -> { @movie.values_at(-4) }.should raise_error(IndexError, "offset -4 too small for struct(size:3)")
+      -> { @movie.values_at(3) }.should.raise(IndexError, "offset 3 too large for struct(size:3)")
+      -> { @movie.values_at(-4) }.should.raise(IndexError, "offset -4 too small for struct(size:3)")
     end
   end
 
@@ -29,7 +29,7 @@ describe "Struct#values_at" do
     end
 
     it "raises RangeError if any element of the range is negative and out of range" do
-      -> { @movie.values_at(-4..3) }.should raise_error(RangeError, "-4..3 out of range")
+      -> { @movie.values_at(-4..3) }.should.raise(RangeError, "-4..3 out of range")
     end
 
     it "supports endless Range" do
@@ -54,6 +54,6 @@ describe "Struct#values_at" do
   end
 
   it "fails when passed unsupported types" do
-    -> { @movie.values_at('make') }.should raise_error(TypeError, "no implicit conversion of String into Integer")
+    -> { @movie.values_at('make') }.should.raise(TypeError, "no implicit conversion of String into Integer")
   end
 end

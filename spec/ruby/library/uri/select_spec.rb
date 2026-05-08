@@ -15,13 +15,13 @@ describe "URI#select" do
   end
 
   it "raises an ArgumentError if a component is requested that isn't valid under the given scheme" do
-    -> { URI("mailto:spam@mailinator.com").select(:path) }.should raise_error(ArgumentError)
-    -> { URI("http://blog.blag.web").select(:typecode) }.should raise_error(ArgumentError)
+    -> { URI("mailto:spam@mailinator.com").select(:path) }.should.raise(ArgumentError)
+    -> { URI("http://blog.blag.web").select(:typecode) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if given strings rather than symbols" do
     -> {
       URI("http://host:8080/path/").select("scheme","host","port",'path')
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 end

@@ -1,6 +1,3 @@
-call-seq:
-  get_byte -> byte_as_character or nil
-
 Returns the next byte, if available:
 
 - If the [position][2]

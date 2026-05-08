@@ -17,18 +17,18 @@ describe 'Addrinfo#connect_to' do
     describe 'using separate arguments' do
       it 'returns a Socket when no block is given' do
         @socket = @addr.connect_to(ip_address, @port)
-        @socket.should be_an_instance_of(Socket)
+        @socket.should.instance_of?(Socket)
       end
 
       it 'yields the Socket when a block is given' do
         @addr.connect_to(ip_address, @port) do |socket|
-          socket.should be_an_instance_of(Socket)
+          socket.should.instance_of?(Socket)
         end
       end
 
       it 'treats the last argument as a set of options if it is a Hash' do
         @socket = @addr.connect_to(ip_address, @port, timeout: 2)
-        @socket.should be_an_instance_of(Socket)
+        @socket.should.instance_of?(Socket)
       end
 
       it 'binds the Addrinfo to the local address' do
@@ -48,18 +48,18 @@ describe 'Addrinfo#connect_to' do
 
       it 'returns a Socket when no block is given' do
         @socket = @addr.connect_to(@to_addr)
-        @socket.should be_an_instance_of(Socket)
+        @socket.should.instance_of?(Socket)
       end
 
       it 'yields the Socket when a block is given' do
         @addr.connect_to(@to_addr) do |socket|
-          socket.should be_an_instance_of(Socket)
+          socket.should.instance_of?(Socket)
         end
       end
 
       it 'treats the last argument as a set of options if it is a Hash' do
         @socket = @addr.connect_to(@to_addr, timeout: 2)
-        @socket.should be_an_instance_of(Socket)
+        @socket.should.instance_of?(Socket)
       end
 
       it 'binds the socket to the local address' do

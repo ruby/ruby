@@ -50,13 +50,13 @@ platform_is_not :windows do
     end
 
     it "raises a SystemCallError if the file descriptor given is not valid" do
-      -> { Dir.fchdir(-1) }.should raise_error(SystemCallError, "Bad file descriptor - fchdir")
-      -> { Dir.fchdir(-1) { } }.should raise_error(SystemCallError, "Bad file descriptor - fchdir")
+      -> { Dir.fchdir(-1) }.should.raise(SystemCallError, "Bad file descriptor - fchdir")
+      -> { Dir.fchdir(-1) { } }.should.raise(SystemCallError, "Bad file descriptor - fchdir")
     end
 
     it "raises a SystemCallError if the file descriptor given is not for a directory" do
-      -> { Dir.fchdir $stdout.fileno }.should raise_error(SystemCallError, /(Not a directory|Invalid argument) - fchdir/)
-      -> { Dir.fchdir($stdout.fileno) { } }.should raise_error(SystemCallError, /(Not a directory|Invalid argument) - fchdir/)
+      -> { Dir.fchdir $stdout.fileno }.should.raise(SystemCallError, /(Not a directory|Invalid argument) - fchdir/)
+      -> { Dir.fchdir($stdout.fileno) { } }.should.raise(SystemCallError, /(Not a directory|Invalid argument) - fchdir/)
     end
   end
 end
@@ -64,8 +64,8 @@ end
 platform_is :windows do
   describe "Dir.fchdir" do
     it "raises NotImplementedError" do
-      -> { Dir.fchdir 1 }.should raise_error(NotImplementedError)
-      -> { Dir.fchdir(1) { } }.should raise_error(NotImplementedError)
+      -> { Dir.fchdir 1 }.should.raise(NotImplementedError)
+      -> { Dir.fchdir(1) { } }.should.raise(NotImplementedError)
     end
   end
 end

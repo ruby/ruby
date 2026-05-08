@@ -1122,6 +1122,7 @@ static VALUE statx_birthtime(const rb_io_stat_data *st);
  *   file.close
  *   File.delete(filepath)
  *
+ * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  */
 
 static VALUE
@@ -1169,24 +1170,22 @@ rb_stat_ctime(VALUE self)
 #if defined(HAVE_STAT_BIRTHTIME)
 /*
  *  call-seq:
- *     stat.birthtime  ->  time
+ *    birthtime -> new_time
  *
- *  Returns the birth time for <i>stat</i>.
+ * Returns a new Time object containing the create time
+ * of the object represented by +self+
+ * at the time +self+ was created;
+ * see {Snapshot}[rdoc-ref:File::Stat@Snapshot]:
  *
- *  If the platform doesn't have birthtime, raises NotImplementedError.
+ *   filename = 't.tmp'
+ *   stat = File::Stat.new(filename) # Raises Errno::ENOENT: No such file or directory
+ *   File.write(filename, 'foo')
+ *   stat = File::Stat.new(filename)
+ *   stat.birthtime # => 2026-04-14 10:41:55.5146554 -0500
+ *   File.delete(filename)
+ *   stat.birthtime # => 2026-04-14 10:41:55.5146554 -0500
  *
- *     File.write("testfile", "foo")
- *     sleep 10
- *     File.write("testfile", "bar")
- *     sleep 10
- *     File.chmod(0644, "testfile")
- *     sleep 10
- *     File.read("testfile")
- *     File.stat("testfile").birthtime   #=> 2014-02-24 11:19:17 +0900
- *     File.stat("testfile").mtime       #=> 2014-02-24 11:19:27 +0900
- *     File.stat("testfile").ctime       #=> 2014-02-24 11:19:37 +0900
- *     File.stat("testfile").atime       #=> 2014-02-24 11:19:47 +0900
- *
+ * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  */
 
 static VALUE
@@ -2484,6 +2483,7 @@ rb_file_s_ftype(VALUE klass, VALUE fname)
  *   File.atime(File.new('README.md')) # => 2026-03-31 11:15:27.8215934 -0500
  *   File.atime(Dir.new('.'))          # => 2026-03-31 12:39:45.5910591 -0500
  *
+ * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  */
 
 static VALUE
@@ -2516,6 +2516,7 @@ rb_file_s_atime(VALUE klass, VALUE fname)
  *   file.close
  *   File.delete(filename)
  *
+ * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  */
 
 static VALUE
@@ -2637,16 +2638,21 @@ rb_file_ctime(VALUE obj)
 #if defined(HAVE_STAT_BIRTHTIME)
 /*
  *  call-seq:
- *     File.birthtime(file_name)  -> time
+ *     File.birthtime(entry_path) -> new_time
  *
- *  Returns the birth time for the named file.
+ * Returns a new Time object containing the create time
+ * of the entry at the given +path+:
  *
- *  _file_name_ can be an IO object.
+ *   path = 't.tmp'
+ *   File.birthtime(path) # Raises Errno::ENOENT: No such file or directory
+ *   File.write(path, 'foo')
+ *   File.birthtime(path) # => 2026-04-14 11:10:43.2891695 -0500
+ *   File.write(path, 'bar')
+ *   File.birthtime(path) # => 2026-04-14 11:10:43.2891695 -0500
+ *   File.delete(path)
+ *   File.birthtime(path) # Raises Errno::ENOENT: No such file or directory
  *
- *     File.birthtime("testfile")   #=> Wed Apr 09 08:53:13 CDT 2003
- *
- *  If the platform doesn't have birthtime, raises NotImplementedError.
- *
+ * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  */
 
 VALUE
@@ -2668,14 +2674,21 @@ rb_file_s_birthtime(VALUE klass, VALUE fname)
 #if defined(HAVE_STAT_BIRTHTIME)
 /*
  *  call-seq:
- *     file.birthtime  ->  time
+ *    birthtime -> new_time
  *
- *  Returns the birth time for <i>file</i>.
+ *  Returns a new Time object containing the create time for +self+:
  *
- *     File.new("testfile").birthtime   #=> Wed Apr 09 08:53:14 CDT 2003
+ *    filepath = 't.tmp'
+ *    File.write(filepath, 'foo')
+ *    file = File.new(filepath)
+ *    file.birthtime # => 2026-04-14 15:53:45.002656 -0500
+ *    File.write(filepath, 'bar')
+ *    file.birthtime # => 2026-04-14 15:53:45.002656 -0500
+ *    file.close
+ *    File.delete(filepath)
+ *    file.birthtime # Raises IOError: closed stream
  *
- *  If the platform doesn't have birthtime, raises NotImplementedError.
- *
+ *  See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  */
 
 static VALUE
@@ -3609,6 +3622,8 @@ static const char file_alt_separator[] = {FILE_ALT_SEPARATOR, '\0'};
 # define isADS(x) 0
 #endif
 
+#define enc_mbclen_needed(enc) (!rb_str_encindex_fastpath(rb_enc_to_index(enc)))
+
 #define Next(p, e, mb_enc, enc) ((p) + ((mb_enc) ? rb_enc_mbclen((p), (e), (enc)) : 1))
 #define Inc(p, e, mb_enc, enc) ((p) = Next((p), (e), (mb_enc), (enc)))
 
@@ -3696,7 +3711,7 @@ enc_path_next(const char *s, const char *e, bool mb_enc, rb_encoding *enc)
 char *
 rb_enc_path_next(const char *s, const char *e, rb_encoding *enc)
 {
-    return enc_path_next(s, e, true, enc);
+    return enc_path_next(s, e, enc_mbclen_needed(enc), enc);
 }
 
 #if defined(DOSISH_UNC) || defined(DOSISH_DRIVE_LETTER)
@@ -3730,15 +3745,15 @@ enc_path_skip_prefix(const char *path, const char *end, bool mb_enc, rb_encoding
 char *
 rb_enc_path_skip_prefix(const char *path, const char *end, rb_encoding *enc)
 {
-    return enc_path_skip_prefix(path, end, true, enc);
+    return enc_path_skip_prefix(path, end, enc_mbclen_needed(enc), enc);
 }
 
 static inline char *
 skipprefixroot(const char *path, const char *end, rb_encoding *enc)
 {
 #if defined(DOSISH_UNC) || defined(DOSISH_DRIVE_LETTER)
-    char *p = skipprefix(path, end, true, enc);
-    while (isdirsep(*p)) p++;
+    char *p = skipprefix(path, end, enc_mbclen_needed(enc), enc);
+    while (p < end && isdirsep(*p)) p++;
     return p;
 #else
     return skiproot(path, end);
@@ -3766,7 +3781,7 @@ enc_path_last_separator(const char *path, const char *end, bool mb_enc, rb_encod
 char *
 rb_enc_path_last_separator(const char *path, const char *end, rb_encoding *enc)
 {
-    return enc_path_last_separator(path, end, true, enc);
+    return enc_path_last_separator(path, end, enc_mbclen_needed(enc), enc);
 }
 
 static inline char *
@@ -3814,7 +3829,7 @@ char *
 rb_enc_path_end(const char *path, const char *end, rb_encoding *enc)
 {
     if (path < end && isdirsep(*path)) path++;
-    return chompdirsep(path, end, true, enc);
+    return chompdirsep(path, end, enc_mbclen_needed(enc), enc);
 }
 
 static rb_encoding *
@@ -3835,6 +3850,7 @@ fs_enc_check(VALUE path1, VALUE path2)
 static char *
 ntfs_tail(const char *path, const char *end, rb_encoding *enc)
 {
+    bool mb_enc = enc_mbclen_needed(enc);
     while (path < end && *path == '.') path++;
     while (path < end && !isADS(*path)) {
         if (istrailinggarbage(*path)) {
@@ -3849,7 +3865,7 @@ ntfs_tail(const char *path, const char *end, rb_encoding *enc)
             if (isADS(*path)) path++;
         }
         else {
-            Inc(path, end, true, enc);
+            Inc(path, end, mb_enc, enc);
         }
     }
     return (char *)path;
@@ -3897,10 +3913,6 @@ static VALUE
 copy_home_path(VALUE result, const char *dir)
 {
     char *buf;
-#if defined DOSISH || defined __CYGWIN__
-    char *p, *bend;
-    rb_encoding *enc;
-#endif
     long dirlen;
     int encidx;
 
@@ -3909,10 +3921,11 @@ copy_home_path(VALUE result, const char *dir)
     memcpy(buf = RSTRING_PTR(result), dir, dirlen);
     encidx = rb_filesystem_encindex();
     rb_enc_associate_index(result, encidx);
-#if defined DOSISH || defined __CYGWIN__
-    enc = rb_enc_from_index(encidx);
-    for (bend = (p = buf) + dirlen; p < bend; Inc(p, bend, true, enc)) {
-        if (*p == '\\') {
+#if defined FILE_ALT_SEPARATOR
+    rb_encoding *enc = rb_enc_from_index(encidx);
+    bool mb_enc = enc_mbclen_needed(enc);
+    for (char *p = buf, *bend = p + dirlen; p < bend; Inc(p, bend, mb_enc, enc)) {
+        if (*p == FILE_ALT_SEPARATOR) {
             *p = '/';
         }
     }
@@ -4066,9 +4079,9 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     s = StringValuePtr(fname);
     fend = s + RSTRING_LEN(fname);
     enc = rb_str_enc_get(fname);
-    bool mb_enc = !rb_str_encindex_fastpath(rb_enc_to_index(enc));
+    bool mb_enc = enc_mbclen_needed(enc);
     if (!mb_enc && RTEST(dname)) {
-        mb_enc = !rb_str_encindex_fastpath(rb_enc_to_index(rb_str_enc_get(dname)));
+        mb_enc = enc_mbclen_needed(rb_str_enc_get(dname));
     }
 
     BUFINIT();
@@ -4139,7 +4152,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
                 rb_enc_associate(result, enc = fs_enc_check(result, fname));
                 p = pend;
             }
-            p = chompdirsep(skiproot(buf, p), p, true, enc);
+            p = chompdirsep(skiproot(buf, p), p, mb_enc, enc);
             s += 2;
         }
     }
@@ -4156,14 +4169,14 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
             BUFINIT();
             p = e;
         }
-#if defined DOSISH || defined __CYGWIN__
+#if defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC
         if (s < fend && isdirsep(*s)) {
             /* specified full path, but not drive letter nor UNC */
             /* we need to get the drive letter or UNC share name */
-            p = skipprefix(buf, p, true, enc);
+            p = skipprefix(buf, p, mb_enc, enc);
         }
         else
-#endif /* defined DOSISH || defined __CYGWIN__ */
+#endif /* defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC */
             p = chompdirsep(skiproot(buf, p), p, mb_enc, enc);
     }
     else {
@@ -4220,8 +4233,8 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 #endif /* USE_NTFS */
                     break;
                   case '/':
-#if defined DOSISH || defined __CYGWIN__
-                  case '\\':
+#if defined FILE_ALT_SEPARATOR
+                  case FILE_ALT_SEPARATOR:
 #endif
                     b = ++s;
                     break;
@@ -4245,8 +4258,8 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 #endif /* USE_NTFS */
             break;
           case '/':
-#if defined DOSISH || defined __CYGWIN__
-          case '\\':
+#if defined FILE_ALT_SEPARATOR
+          case FILE_ALT_SEPARATOR:
 #endif
             if (s > b) {
                 WITH_ROOTDIFF(BUFCOPY(b, s-b));
@@ -4566,9 +4579,10 @@ realpath_rec(long *prefixlenp, VALUE *resolvedp, const char *unresolved, VALUE f
         }
         else if (testnamelen == 2 && testname[0] == '.' && testname[1] == '.') {
             if (*prefixlenp < RSTRING_LEN(*resolvedp)) {
+                bool mb_enc = enc_mbclen_needed(enc);
                 const char *resolved_str = RSTRING_PTR(*resolvedp);
                 const char *resolved_names = resolved_str + *prefixlenp;
-                const char *lastsep = strrdirsep(resolved_names, resolved_str + RSTRING_LEN(*resolvedp), true, enc);
+                const char *lastsep = strrdirsep(resolved_names, resolved_str + RSTRING_LEN(*resolvedp), mb_enc, enc);
                 long len = lastsep ? lastsep - resolved_names : 0;
                 rb_str_resize(*resolvedp, *prefixlenp + len);
             }
@@ -4708,7 +4722,8 @@ rb_check_realpath_emulate(VALUE basedir, VALUE path, rb_encoding *origenc, enum 
   root_found:
     RSTRING_GETMEM(resolved, prefixptr, prefixlen);
     pend = prefixptr + prefixlen;
-    ptr = chompdirsep(prefixptr, pend, true, enc);
+    bool mb_enc = enc_mbclen_needed(enc);
+    ptr = chompdirsep(prefixptr, pend, mb_enc, enc);
     if (ptr < pend) {
         prefixlen = ++ptr - prefixptr;
         rb_str_set_len(resolved, prefixlen);
@@ -4718,7 +4733,7 @@ rb_check_realpath_emulate(VALUE basedir, VALUE path, rb_encoding *origenc, enum 
         if (*prefixptr == FILE_ALT_SEPARATOR) {
             *prefixptr = '/';
         }
-        Inc(prefixptr, pend, true, enc);
+        Inc(prefixptr, pend, mb_enc, enc);
     }
 #endif
 
@@ -4966,9 +4981,6 @@ static inline const char *
 enc_find_basename(const char *name, long *baselen, long *alllen, bool mb_enc, rb_encoding *enc)
 {
     const char *p, *q, *e, *end;
-#if defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC
-    const char *root;
-#endif
     long f = 0, n = -1;
 
     long len = (alllen ? (size_t)*alllen : strlen(name));
@@ -4980,7 +4992,7 @@ enc_find_basename(const char *name, long *baselen, long *alllen, bool mb_enc, rb
     end = name + len;
     name = skipprefix(name, end, mb_enc, enc);
 #if defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC
-    root = name;
+    const char *root = name;
 #endif
 
     while (name < end && isdirsep(*name)) {
@@ -5046,24 +5058,44 @@ enc_find_basename(const char *name, long *baselen, long *alllen, bool mb_enc, rb
 const char *
 ruby_enc_find_basename(const char *name, long *baselen, long *alllen, rb_encoding *enc)
 {
-    return enc_find_basename(name, baselen, alllen, true, enc);
+    return enc_find_basename(name, baselen, alllen, enc_mbclen_needed(enc), enc);
 }
 
 /*
  *  call-seq:
- *     File.basename(file_name [, suffix] )  ->  base_name
+ *    File.basename(path, suffix = '') -> new_string
  *
- *  Returns the last component of the filename given in
- *  <i>file_name</i> (after first stripping trailing separators),
- *  which can be formed using both File::SEPARATOR and
- *  File::ALT_SEPARATOR as the separator when File::ALT_SEPARATOR is
- *  not <code>nil</code>. If <i>suffix</i> is given and present at the
- *  end of <i>file_name</i>, it is removed. If <i>suffix</i> is ".*",
- *  any extension will be removed.
+ *  Returns a new string containing all or part of the last entry of the given +path+.
+ *  Entries are delimited by the value of constant File::SEPARATOR
+ *  and, if non-nil, the value of constant File::ALT_SEPARATOR.
  *
- *     File.basename("/home/gumby/work/ruby.rb")          #=> "ruby.rb"
- *     File.basename("/home/gumby/work/ruby.rb", ".rb")   #=> "ruby"
- *     File.basename("/home/gumby/work/ruby.rb", ".*")    #=> "ruby"
+ *  When +suffix+ is the empty string <tt>''</tt>,
+ *  returns all of the last entry:
+ *
+ *    File.basename('foo/bar/baz/bat.txt') # => "bat.txt"
+ *    File.basename('foo/bar/baz')         # => "baz"
+ *
+ *    File::SEPARATOR                      # => "/"
+ *    File.basename('foo/bar.txt////')     # => "bar.txt"
+ *    File::ALT_SEPARATOR                  # => "\\"  # On Windows.
+ *    File.basename('foo/bar.txt//\\\\//') # => "bar.txt"
+ *
+ *  When +suffix+ is <tt>'.*'</tt>,
+ *  the last {filename extension}[https://en.wikipedia.org/wiki/Filename_extension],
+ *  if any, is removed:
+ *
+ *    File.basename('foo/bar.txt', '.*')     # => "bar"
+ *    File.basename('foo/bar.txt.old', '.*') # => "bar.txt"
+ *    File.basename('foo/bar', '.*')         # => "bar"
+ *
+ *  When +suffix+ is any string other than <tt>''</tt> or <tt>'.*'</tt>,
+ *  the matching trailing substring, if any, is removed:
+ *
+ *    File.basename('foo/bar.txt', '.txt') # => "bar"
+ *    File.basename('foo/bar.txt', 'txt')  # => "bar."
+ *    File.basename('foo/bar.txt', '*')    # => "bar.txt"
+ *    File.basename('foo/bar.txt', '.')    # => "bar.txt"
+ *
  */
 
 static VALUE
@@ -5091,7 +5123,7 @@ rb_file_s_basename(int argc, VALUE *argv, VALUE _)
         return rb_enc_str_new(0, 0, enc);
     }
 
-    bool mb_enc = !rb_str_encindex_fastpath(rb_enc_to_index(enc));
+    bool mb_enc = enc_mbclen_needed(enc);
     p = enc_find_basename(name, &f, &n, mb_enc, enc);
     if (n >= 0) {
         if (!fp) {
@@ -5270,7 +5302,7 @@ enc_find_extname(const char *name, long *len, bool mb_enc, rb_encoding *enc)
 const char *
 ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
 {
-    return enc_find_extname(name, len, true, enc);
+    return enc_find_extname(name, len, enc_mbclen_needed(enc), enc);
 }
 
 /*

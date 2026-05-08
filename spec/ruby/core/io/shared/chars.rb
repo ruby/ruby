@@ -24,7 +24,7 @@ describe :io_chars, shared: true do
   describe "when no block is given" do
     it "returns an Enumerator" do
       enum = @io.send(@method)
-      enum.should be_an_instance_of(Enumerator)
+      enum.should.instance_of?(Enumerator)
       enum.first(5).should == ["V", "o", "i", "c", "i"]
     end
 
@@ -38,19 +38,19 @@ describe :io_chars, shared: true do
   end
 
   it "returns itself" do
-    @io.send(@method) { |c| }.should equal(@io)
+    @io.send(@method) { |c| }.should.equal?(@io)
   end
 
   it "returns an enumerator for a closed stream" do
-    IOSpecs.closed_io.send(@method).should be_an_instance_of(Enumerator)
+    IOSpecs.closed_io.send(@method).should.instance_of?(Enumerator)
   end
 
   it "raises an IOError when an enumerator created on a closed stream is accessed" do
-    -> { IOSpecs.closed_io.send(@method).first }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.send(@method).first }.should.raise(IOError)
   end
 
   it "raises IOError on closed stream" do
-    -> { IOSpecs.closed_io.send(@method) {} }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.send(@method) {} }.should.raise(IOError)
   end
 end
 

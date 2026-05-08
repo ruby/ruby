@@ -15,7 +15,7 @@ describe "Dir#close" do
     dir.close.should == nil
 
     platform_is_not :windows do
-      -> { dir.fileno }.should raise_error(IOError, /closed directory/)
+      -> { dir.fileno }.should.raise(IOError, /closed directory/)
     end
   end
 
@@ -33,8 +33,8 @@ describe "Dir#close" do
         dir.close
         dir_new.close
 
-        -> { dir.fileno }.should raise_error(IOError, /closed directory/)
-        -> { dir_new.fileno }.should raise_error(IOError, /closed directory/)
+        -> { dir.fileno }.should.raise(IOError, /closed directory/)
+        -> { dir_new.fileno }.should.raise(IOError, /closed directory/)
       end
     end
   end
@@ -46,7 +46,7 @@ describe "Dir#close" do
         dir_new = Dir.for_fd(dir.fileno)
         dir.close
 
-        -> { dir_new.close }.should raise_error(Errno::EBADF, 'Bad file descriptor - closedir')
+        -> { dir_new.close }.should.raise(Errno::EBADF, 'Bad file descriptor - closedir')
       end
     end
   end

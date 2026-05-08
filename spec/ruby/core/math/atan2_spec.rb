@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "Math.atan2" do
   it "returns a float" do
-    Math.atan2(1.2, 0.5).should be_kind_of(Float)
+    Math.atan2(1.2, 0.5).should.is_a?(Float)
   end
 
   it "returns the arc tangent of y, x" do
@@ -14,15 +14,15 @@ describe "Math.atan2" do
   end
 
   it "raises a TypeError if the argument cannot be coerced with Float()" do
-    -> { Math.atan2(1.0, "test")    }.should raise_error(TypeError)
-    -> { Math.atan2("test", 0.0)    }.should raise_error(TypeError)
-    -> { Math.atan2("test", "this") }.should raise_error(TypeError)
+    -> { Math.atan2(1.0, "test")    }.should.raise(TypeError)
+    -> { Math.atan2("test", 0.0)    }.should.raise(TypeError)
+    -> { Math.atan2("test", "this") }.should.raise(TypeError)
   end
 
   it "raises a TypeError if the argument is nil" do
-    -> { Math.atan2(nil, 1.0)  }.should raise_error(TypeError)
-    -> { Math.atan2(-1.0, nil) }.should raise_error(TypeError)
-    -> { Math.atan2(nil, nil)  }.should raise_error(TypeError)
+    -> { Math.atan2(nil, 1.0)  }.should.raise(TypeError)
+    -> { Math.atan2(-1.0, nil) }.should.raise(TypeError)
+    -> { Math.atan2(nil, nil)  }.should.raise(TypeError)
   end
 
   it "accepts any argument that can be coerced with Float()" do

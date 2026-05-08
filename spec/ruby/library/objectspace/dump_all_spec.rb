@@ -82,7 +82,7 @@ describe "ObjectSpace.dump_all" do
       ObjectSpace.dump_all(output: :stdout)
     RUBY
 
-    stdout.should include('"value":"abc"')
+    stdout.should.include?('"value":"abc"')
   end
 
   it "dumps Ruby heap to provided IO when passed output: IO" do
@@ -107,6 +107,6 @@ describe "ObjectSpace.dump_all" do
   end
 
   it "raises ArgumentError when passed not supported :output value" do
-    -> { ObjectSpace.dump_all(output: Object.new) }.should raise_error(ArgumentError, /wrong output option/)
+    -> { ObjectSpace.dump_all(output: Object.new) }.should.raise(ArgumentError, /wrong output option/)
   end
 end

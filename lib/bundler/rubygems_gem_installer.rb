@@ -27,7 +27,11 @@ module Bundler
         extract_files
       end
 
-      build_extensions if spec.extensions.any?
+      if options[:build_extension] == false
+        warn_skipped_extensions
+      elsif spec.extensions.any?
+        build_extensions
+      end
       write_build_info_file
       run_post_build_hooks
 
@@ -35,7 +39,12 @@ module Bundler
         generate_bin
       end
 
-      generate_plugins
+      if options[:install_plugin] == false
+        remove_stale_plugins
+        warn_skipped_plugins
+      else
+        generate_plugins
+      end
 
       write_spec
 
@@ -78,6 +87,20 @@ module Bundler
       else
         regenerate_plugins_for(spec, @plugins_dir)
       end
+    end
+
+    def warn_skipped_extensions
+      return if spec.extensions.empty?
+
+      Bundler.ui.warn "#{spec.full_name} contains native extensions that were not built.\n" \
+                      "To build extensions, unset no_build_extension and run `bundle pristine #{spec.name}`."
+    end
+
+    def warn_skipped_plugins
+      return if spec.plugins.empty?
+
+      Bundler.ui.warn "#{spec.full_name} contains plugins that were not installed.\n" \
+                      "To install plugins, unset no_install_plugin and run `bundle pristine #{spec.name}`."
     end
 
     if Bundler.rubygems.provides?("< 3.5.19")

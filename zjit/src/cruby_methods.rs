@@ -247,6 +247,7 @@ pub fn init() -> Annotations {
     annotate!(rb_cBasicObject, "!", inline_basic_object_not, types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cBasicObject, "!=", inline_basic_object_neq, types::BoolExact);
     annotate!(rb_cBasicObject, "initialize", inline_basic_object_initialize);
+    annotate!(rb_cClass, "allocate", inline_class_allocate);
     annotate!(rb_cInteger, "succ", inline_integer_succ);
     annotate!(rb_cInteger, "^", inline_integer_xor);
     annotate!(rb_cInteger, "==", inline_integer_eq);
@@ -265,10 +266,25 @@ pub fn init() -> Annotations {
     annotate!(rb_cInteger, ">>", inline_integer_rshift);
     annotate!(rb_cInteger, "[]", inline_integer_aref);
     annotate!(rb_cInteger, "to_s", types::StringExact);
+    annotate!(rb_cFloat, "+", inline_float_plus);
+    annotate!(rb_cFloat, "-", inline_float_minus);
+    annotate!(rb_cFloat, "*", inline_float_mul);
+    annotate!(rb_cFloat, "/", inline_float_div);
+    annotate!(rb_cFloat, "to_i", inline_float_to_i);
+    annotate!(rb_cFloat, "to_int", inline_float_to_i);
     annotate!(rb_cString, "to_s", inline_string_to_s, types::StringExact);
+    annotate!(rb_cFloat, "nan?", types::BoolExact, no_gc, leaf, elidable);
+    annotate!(rb_cFloat, "finite?", types::BoolExact, no_gc, leaf, elidable);
+    annotate!(rb_cFloat, "infinite?", types::Fixnum.union(types::NilClass), no_gc, leaf, elidable);
     let thread_singleton = unsafe { rb_singleton_class(rb_cThread) };
     annotate!(thread_singleton, "current", inline_thread_current, types::BasicObject, no_gc, leaf);
 
+    annotate_builtin!(rb_cInteger, "zero?", types::BoolExact);
+    annotate_builtin!(rb_cInteger, "even?", types::BoolExact);
+    annotate_builtin!(rb_cInteger, "odd?", types::BoolExact);
+    annotate_builtin!(rb_cFloat, "zero?", types::BoolExact);
+    annotate_builtin!(rb_cFloat, "positive?", types::BoolExact);
+    annotate_builtin!(rb_cFloat, "negative?", types::BoolExact);
     annotate_builtin!(rb_mKernel, "Float", types::Float);
     annotate_builtin!(rb_mKernel, "Integer", types::Integer);
     // TODO(max): Annotate rb_mKernel#class as returning types::Class. Right now there is a subtle
@@ -620,6 +636,54 @@ fn inline_integer_xor(fun: &mut hir::Function, block: hir::BlockId, recv: hir::I
     None
 }
 
+fn try_inline_float_op(fun: &mut hir::Function, block: hir::BlockId, f: &dyn Fn(hir::InsnId, hir::InsnId) -> hir::Insn, bop: u32, recv: hir::InsnId, other: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
+    if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, FLOAT_REDEFINED_OP_FLAG) } {
+        return None;
+    }
+    // Receiver must be Flonum (cheap tag check: (val & 3) == 2).
+    // The other operand can be Flonum or Fixnum since rb_float_plus/minus/mul/div
+    // handle both via fast paths (FIXNUM_P check + cast to double).
+    // HeapFloat falls back to CCallWithFrame via the default Send path.
+    if fun.likely_a(recv, types::Flonum, state)
+        && (fun.likely_a(other, types::Flonum, state) || fun.likely_a(other, types::Fixnum, state))
+    {
+        let recv = fun.coerce_to(block, recv, types::Flonum, state);
+        let other_type = if fun.likely_a(other, types::Flonum, state) { types::Flonum } else { types::Fixnum };
+        let other = fun.coerce_to(block, other, other_type, state);
+        return Some(fun.push_insn(block, f(recv, other)));
+    }
+    None
+}
+
+fn inline_float_plus(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_float_op(fun, block, &|recv, other| hir::Insn::FloatAdd { recv, other, state }, BOP_PLUS, recv, other, state)
+}
+
+fn inline_float_minus(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_float_op(fun, block, &|recv, other| hir::Insn::FloatSub { recv, other, state }, BOP_MINUS, recv, other, state)
+}
+
+fn inline_float_mul(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_float_op(fun, block, &|recv, other| hir::Insn::FloatMul { recv, other, state }, BOP_MULT, recv, other, state)
+}
+
+fn inline_float_div(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[other] = args else { return None; };
+    try_inline_float_op(fun, block, &|recv, other| hir::Insn::FloatDiv { recv, other, state }, BOP_DIV, recv, other, state)
+}
+
+fn inline_float_to_i(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[] = args else { return None; };
+    if fun.likely_a(recv, types::Flonum, state) {
+        let recv = fun.coerce_to(block, recv, types::Flonum, state);
+        return Some(fun.push_insn(block, hir::Insn::FloatToInt { recv, state }));
+    }
+    None
+}
+
 fn try_inline_fixnum_op(fun: &mut hir::Function, block: hir::BlockId, f: &dyn Fn(hir::InsnId, hir::InsnId) -> hir::Insn, bop: u32, left: hir::InsnId, right: hir::InsnId, state: hir::InsnId) -> Option<hir::InsnId> {
     if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, INTEGER_REDEFINED_OP_FLAG) } {
         // If the basic operation is already redefined, we cannot optimize it.
@@ -785,6 +849,13 @@ fn inline_basic_object_neq(fun: &mut hir::Function, block: hir::BlockId, recv: h
     let c_result = fun.push_insn(block, hir::Insn::IsBitNotEqual { left: recv, right: other });
     let result = fun.push_insn(block, hir::Insn::BoxBool { val: c_result });
     Some(result)
+}
+
+fn inline_class_allocate(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    if !args.is_empty() { return None; }
+
+    // Inline only in the case we have a leaf allocator
+    fun.try_inline_object_alloc(block, recv, state)
 }
 
 fn inline_basic_object_initialize(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {

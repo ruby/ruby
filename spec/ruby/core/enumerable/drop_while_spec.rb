@@ -8,7 +8,7 @@ describe "Enumerable#drop_while" do
   end
 
   it "returns an Enumerator if no block given" do
-    @enum.drop_while.should be_an_instance_of(Enumerator)
+    @enum.drop_while.should.instance_of?(Enumerator)
   end
 
   it "returns no/all elements for {true/false} block" do
@@ -38,7 +38,7 @@ describe "Enumerable#drop_while" do
 
   it "doesn't return self when it could" do
     a = [1,2,3]
-    a.drop_while{false}.should_not equal(a)
+    a.drop_while{false}.should_not.equal?(a)
   end
 
   it "gathers whole arrays as elements when each yields multiple" do

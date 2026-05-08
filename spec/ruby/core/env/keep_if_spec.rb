@@ -22,15 +22,15 @@ describe "ENV.keep_if" do
   end
 
   it "returns ENV when block given" do
-    ENV.keep_if { |k, v| !["foo", "bar"].include?(k) }.should equal(ENV)
+    ENV.keep_if { |k, v| !["foo", "bar"].include?(k) }.should.equal?(ENV)
   end
 
   it "returns ENV even if nothing deleted" do
-    ENV.keep_if { true }.should equal(ENV)
+    ENV.keep_if { true }.should.equal?(ENV)
   end
 
   it "returns an Enumerator if no block given" do
-    ENV.keep_if.should be_an_instance_of(Enumerator)
+    ENV.keep_if.should.instance_of?(Enumerator)
   end
 
   it "deletes pairs through enumerator" do
@@ -42,12 +42,12 @@ describe "ENV.keep_if" do
 
   it "returns ENV from enumerator" do
     enum = ENV.keep_if
-    enum.each { |k, v| !["foo", "bar"].include?(k) }.should equal(ENV)
+    enum.each { |k, v| !["foo", "bar"].include?(k) }.should.equal?(ENV)
   end
 
   it "returns ENV from enumerator even if nothing deleted" do
     enum = ENV.keep_if
-    enum.each { true }.should equal(ENV)
+    enum.each { true }.should.equal?(ENV)
   end
 
   it_behaves_like :enumeratorized_with_origin_size, :keep_if, ENV

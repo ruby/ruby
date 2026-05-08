@@ -30,7 +30,9 @@ module Bundler
       init_gems_rb
       inline
       lockfile_checksums
+      no_build_extension
       no_install
+      no_install_plugin
       no_prune
       path.system
       plugins

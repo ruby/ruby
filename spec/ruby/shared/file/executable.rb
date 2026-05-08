@@ -31,13 +31,13 @@ describe :file_executable, shared: true do
   end
 
   it "raises an ArgumentError if not passed one argument" do
-    -> { @object.send(@method) }.should raise_error(ArgumentError)
+    -> { @object.send(@method) }.should.raise(ArgumentError)
   end
 
   it "raises a TypeError if not passed a String type" do
-    -> { @object.send(@method, 1)     }.should raise_error(TypeError)
-    -> { @object.send(@method, nil)   }.should raise_error(TypeError)
-    -> { @object.send(@method, false) }.should raise_error(TypeError)
+    -> { @object.send(@method, 1)     }.should.raise(TypeError)
+    -> { @object.send(@method, nil)   }.should.raise(TypeError)
+    -> { @object.send(@method, false) }.should.raise(TypeError)
   end
 
   platform_is_not :windows do

@@ -90,8 +90,8 @@ describe "Dir.chdir" do
   end
 
   it "raises an Errno::ENOENT if the directory does not exist" do
-    -> { Dir.chdir DirSpecs.nonexistent }.should raise_error(Errno::ENOENT)
-    -> { Dir.chdir(DirSpecs.nonexistent) { } }.should raise_error(Errno::ENOENT)
+    -> { Dir.chdir DirSpecs.nonexistent }.should.raise(Errno::ENOENT)
+    -> { Dir.chdir(DirSpecs.nonexistent) { } }.should.raise(Errno::ENOENT)
   end
 
   it "raises an Errno::ENOENT if the original directory no longer exists" do
@@ -106,7 +106,7 @@ describe "Dir.chdir" do
         Dir.chdir dir1 do
           Dir.chdir(dir2) { Dir.unlink dir1 }
         end
-      }.should raise_error(Errno::ENOENT)
+      }.should.raise(Errno::ENOENT)
     ensure
       Dir.unlink dir1 if Dir.exist?(dir1)
       Dir.unlink dir2 if Dir.exist?(dir2)

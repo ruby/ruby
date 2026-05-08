@@ -26,7 +26,7 @@ end
 
 describe :kernel_chomp_private, shared: true do
   it "is a private method" do
-    KernelSpecs.has_private_method(@method).should be_true
+    KernelSpecs.has_private_method(@method).should == true
   end
 end
 

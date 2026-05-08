@@ -8,9 +8,9 @@ describe :dir_pos, shared: true do
   end
 
   it "returns an Integer representing the current position in the directory" do
-    @dir.send(@method).should be_kind_of(Integer)
-    @dir.send(@method).should be_kind_of(Integer)
-    @dir.send(@method).should be_kind_of(Integer)
+    @dir.send(@method).should.is_a?(Integer)
+    @dir.send(@method).should.is_a?(Integer)
+    @dir.send(@method).should.is_a?(Integer)
   end
 
   it "returns a different Integer if moved from previous position" do
@@ -18,8 +18,8 @@ describe :dir_pos, shared: true do
     @dir.read
     b = @dir.send(@method)
 
-    a.should be_kind_of(Integer)
-    b.should be_kind_of(Integer)
+    a.should.is_a?(Integer)
+    b.should.is_a?(Integer)
 
     a.should_not == b
   end

@@ -22,7 +22,7 @@ describe "UNIXServer#accept" do
       data, info = sock.recvfrom(5)
 
       data.should == 'hello'
-      info.should_not be_empty
+      info.should_not.empty?
     ensure
       sock.close
       client.close
@@ -49,7 +49,7 @@ describe "UNIXServer#accept" do
     t = Thread.new {
       -> {
         @server.accept
-      }.should raise_error(Exception, "interrupted")
+      }.should.raise(Exception, "interrupted")
     }
 
     Thread.pass while t.status and t.status != "sleep"
@@ -88,7 +88,7 @@ describe 'UNIXServer#accept' do
     describe 'without any data' do
       it 'returns a UNIXSocket' do
         @socket = @server.accept
-        @socket.should be_an_instance_of(UNIXSocket)
+        @socket.should.instance_of?(UNIXSocket)
       end
     end
 
@@ -99,7 +99,7 @@ describe 'UNIXServer#accept' do
 
       it 'returns a UNIXSocket' do
         @socket = @server.accept
-        @socket.should be_an_instance_of(UNIXSocket)
+        @socket.should.instance_of?(UNIXSocket)
       end
 
       describe 'the returned UNIXSocket' do

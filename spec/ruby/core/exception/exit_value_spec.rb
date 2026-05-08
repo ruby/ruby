@@ -6,7 +6,7 @@ describe "LocalJumpError#exit_value" do
   end
 
   it "returns the value given to return" do
-    -> { get_me_a_return.call }.should raise_error(LocalJumpError) { |e|
+    -> { get_me_a_return.call }.should.raise(LocalJumpError) { |e|
       e.exit_value.should == 42
     }
   end

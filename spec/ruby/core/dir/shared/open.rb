@@ -1,18 +1,18 @@
 describe :dir_open, shared: true do
   it "returns a Dir instance representing the specified directory" do
     dir = Dir.send(@method, DirSpecs.mock_dir)
-    dir.should be_kind_of(Dir)
+    dir.should.is_a?(Dir)
     dir.close
   end
 
   it "raises a SystemCallError if the directory does not exist" do
     -> do
       Dir.send @method, DirSpecs.nonexistent
-    end.should raise_error(SystemCallError)
+    end.should.raise(SystemCallError)
   end
 
   it "may take a block which is yielded to with the Dir instance" do
-    Dir.send(@method, DirSpecs.mock_dir) {|dir| dir.should be_kind_of(Dir)}
+    Dir.send(@method, DirSpecs.mock_dir) {|dir| dir.should.is_a?(Dir)}
   end
 
   it "returns the value of the block if a block is given" do
@@ -21,7 +21,7 @@ describe :dir_open, shared: true do
 
   it "closes the Dir instance when the block exits if given a block" do
     closed_dir = Dir.send(@method, DirSpecs.mock_dir) { |dir| dir }
-    -> { closed_dir.read }.should raise_error(IOError)
+    -> { closed_dir.read }.should.raise(IOError)
   end
 
   it "closes the Dir instance when the block exits the block even due to an exception" do
@@ -32,9 +32,9 @@ describe :dir_open, shared: true do
         closed_dir = dir
         raise "dir specs"
       end
-    end.should raise_error(RuntimeError, "dir specs")
+    end.should.raise(RuntimeError, "dir specs")
 
-    -> { closed_dir.read }.should raise_error(IOError)
+    -> { closed_dir.read }.should.raise(IOError)
   end
 
   it "calls #to_path on non-String arguments" do
@@ -45,7 +45,7 @@ describe :dir_open, shared: true do
 
   it "accepts an options Hash" do
     dir = Dir.send(@method, DirSpecs.mock_dir, encoding: "utf-8") {|d| d }
-    dir.should be_kind_of(Dir)
+    dir.should.is_a?(Dir)
   end
 
   it "calls #to_hash to convert the options object" do
@@ -53,12 +53,12 @@ describe :dir_open, shared: true do
     options.should_receive(:to_hash).and_return({ encoding: Encoding::UTF_8 })
 
     dir = Dir.send(@method, DirSpecs.mock_dir, **options) {|d| d }
-    dir.should be_kind_of(Dir)
+    dir.should.is_a?(Dir)
   end
 
   it "ignores the :encoding option if it is nil" do
     dir = Dir.send(@method, DirSpecs.mock_dir, encoding: nil) {|d| d }
-    dir.should be_kind_of(Dir)
+    dir.should.is_a?(Dir)
   end
 
   platform_is_not :windows do

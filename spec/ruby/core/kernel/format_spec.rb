@@ -4,7 +4,7 @@ require_relative 'fixtures/classes'
 # NOTE: most specs are in sprintf_spec.rb, this is just an alias
 describe "Kernel#format" do
   it "is a private method" do
-    Kernel.should have_private_instance_method(:format)
+    Kernel.private_instance_methods(false).should.include?(:format)
   end
 end
 
@@ -20,7 +20,7 @@ describe "Kernel.format" do
         format("test", 1)
       RUBY
 
-      ruby_exe(code, args: "2>&1").should include("warning: too many arguments for format string")
+      ruby_exe(code, args: "2>&1").should.include?("warning: too many arguments for format string")
     end
 
     it "does not warns if too many keyword arguments are passed" do
@@ -29,7 +29,7 @@ describe "Kernel.format" do
         format("test %{test}", test: 1, unused: 2)
       RUBY
 
-      ruby_exe(code, args: "2>&1").should_not include("warning")
+      ruby_exe(code, args: "2>&1").should_not.include?("warning")
     end
 
     ruby_bug "#20593", ""..."3.4" do
@@ -40,7 +40,7 @@ describe "Kernel.format" do
           format("test", {})
         RUBY
 
-        ruby_exe(code, args: "2>&1").should_not include("warning")
+        ruby_exe(code, args: "2>&1").should_not.include?("warning")
       end
     end
   end

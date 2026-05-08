@@ -11,14 +11,14 @@ describe "IO#lineno" do
   end
 
   it "raises an IOError on a closed stream" do
-    -> { IOSpecs.closed_io.lineno }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.lineno }.should.raise(IOError)
   end
 
   it "raises an IOError on a write-only stream" do
     name = tmp("io_lineno.txt")
     begin
       File.open(name, 'w') do |f|
-        -> { f.lineno }.should raise_error(IOError)
+        -> { f.lineno }.should.raise(IOError)
       end
     ensure
       rm_r name
@@ -29,7 +29,7 @@ describe "IO#lineno" do
     cmd = platform_is(:windows) ? 'rem' : 'cat'
     IO.popen(cmd, 'r+') do |p|
       p.close_read
-      -> { p.lineno }.should raise_error(IOError)
+      -> { p.lineno }.should.raise(IOError)
     end
   end
 
@@ -56,14 +56,14 @@ describe "IO#lineno=" do
   end
 
   it "raises an IOError on a closed stream" do
-    -> { IOSpecs.closed_io.lineno = 5 }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.lineno = 5 }.should.raise(IOError)
   end
 
   it "raises an IOError on a write-only stream" do
     name = tmp("io_lineno.txt")
     begin
       File.open(name, 'w') do |f|
-        -> { f.lineno = 0 }.should raise_error(IOError)
+        -> { f.lineno = 0 }.should.raise(IOError)
       end
     ensure
       rm_r name
@@ -74,7 +74,7 @@ describe "IO#lineno=" do
     cmd = platform_is(:windows) ? 'rem' : 'cat'
     IO.popen(cmd, 'r+') do |p|
       p.close_read
-      -> { p.lineno = 0 }.should raise_error(IOError)
+      -> { p.lineno = 0 }.should.raise(IOError)
     end
   end
 
@@ -95,12 +95,12 @@ describe "IO#lineno=" do
   end
 
   it "raises TypeError if cannot convert argument to Integer implicitly" do
-    -> { @io.lineno = "1" }.should raise_error(TypeError, 'no implicit conversion of String into Integer')
+    -> { @io.lineno = "1" }.should.raise(TypeError, 'no implicit conversion of String into Integer')
     -> { @io.lineno = nil }.should raise_consistent_error(TypeError, 'no implicit conversion of nil into Integer')
   end
 
   it "does not accept Integers that don't fit in a C int" do
-    -> { @io.lineno = 2**32 }.should raise_error(RangeError)
+    -> { @io.lineno = 2**32 }.should.raise(RangeError)
   end
 
   it "sets the current line number to the given value" do

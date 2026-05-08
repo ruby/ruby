@@ -9,8 +9,8 @@ describe :date_valid_civil?, shared: true do
   #  31
 
   it "returns true if it is a valid civil date" do
-    Date.send(@method, 1582, 10, 15).should be_true
-    Date.send(@method, 1582, 10, 14, Date::ENGLAND).should be_true
+    Date.send(@method, 1582, 10, 15).should == true
+    Date.send(@method, 1582, 10, 14, Date::ENGLAND).should == true
   end
 
   it "returns false if it is not a valid civil date" do
@@ -24,13 +24,13 @@ describe :date_valid_civil?, shared: true do
     #   -15 -14 -13 -12 -11 -10  -9
     #    -8  -7  -6  -5  -4  -3  -2
     #    -1
-    Date.send(@method, 1582, -3, -22).should be_false
-    Date.send(@method, 1582, -3, -21).should be_true
-    Date.send(@method, 1582, -3, -18).should be_true
-    Date.send(@method, 1582, -3, -17).should be_true
+    Date.send(@method, 1582, -3, -22).should == false
+    Date.send(@method, 1582, -3, -21).should == true
+    Date.send(@method, 1582, -3, -18).should == true
+    Date.send(@method, 1582, -3, -17).should == true
 
-    Date.send(@method, 2007, -11, -10).should be_true
-    Date.send(@method, 2008, -11, -10).should be_true
+    Date.send(@method, 2007, -11, -10).should == true
+    Date.send(@method, 2008, -11, -10).should == true
   end
 
 end

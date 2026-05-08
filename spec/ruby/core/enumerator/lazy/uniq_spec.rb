@@ -8,7 +8,7 @@ describe 'Enumerator::Lazy#uniq' do
     end
 
     it 'returns a lazy enumerator' do
-      @lazy.should be_an_instance_of(Enumerator::Lazy)
+      @lazy.should.instance_of?(Enumerator::Lazy)
       @lazy.force.should == [0, 1]
     end
 
@@ -28,7 +28,7 @@ describe 'Enumerator::Lazy#uniq' do
     end
 
     it 'returns a lazy enumerator' do
-      @lazy.should be_an_instance_of(Enumerator::Lazy)
+      @lazy.should.instance_of?(Enumerator::Lazy)
       @lazy.force.should == [0, 1]
     end
 

@@ -99,6 +99,11 @@ struct RObject {
             VALUE *fields;
         } heap;
 
+        /* When an object is too complex, it uses a st_table to store instance
+         * variable name to value mappings.
+         */
+        st_table *hash;
+
         /* Embedded instance variables. When an object is small enough, it
          * uses this area to store the instance variables.
          *

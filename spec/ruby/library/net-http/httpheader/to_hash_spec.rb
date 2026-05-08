@@ -20,6 +20,6 @@ describe "Net::HTTPHeader#to_hash" do
   it "does not allow modifying the headers from the returned hash" do
     @headers.to_hash["my-header"] = ["test"]
     @headers.to_hash.should == {}
-    @headers.key?("my-header").should be_false
+    @headers.key?("my-header").should == false
   end
 end

@@ -234,6 +234,7 @@ pub const VM_ENV_DATA_INDEX_SPECVAL: i32 = -1;
 pub const VM_ENV_DATA_INDEX_FLAGS: u32 = 0;
 pub const VM_BLOCK_HANDLER_NONE: u32 = 0;
 pub const SHAPE_ID_NUM_BITS: u32 = 32;
+pub const ZJIT_JIT_RETURN_POISON: i64 = -4981057192772781345;
 pub type rb_alloc_func_t = ::std::option::Option<unsafe extern "C" fn(klass: VALUE) -> VALUE>;
 pub const RUBY_Qfalse: ruby_special_consts = 0;
 pub const RUBY_Qnil: ruby_special_consts = 4;
@@ -438,6 +439,7 @@ pub const imemo_memo: imemo_type = 5;
 pub const imemo_ment: imemo_type = 6;
 pub const imemo_iseq: imemo_type = 7;
 pub const imemo_tmpbuf: imemo_type = 8;
+pub const imemo_cvar_entry: imemo_type = 9;
 pub const imemo_callinfo: imemo_type = 10;
 pub const imemo_callcache: imemo_type = 11;
 pub const imemo_constcache: imemo_type = 12;
@@ -1480,14 +1482,14 @@ pub const VM_ENV_FLAG_ESCAPED: vm_frame_env_flags = 4;
 pub const VM_ENV_FLAG_WB_REQUIRED: vm_frame_env_flags = 8;
 pub const VM_ENV_FLAG_ISOLATED: vm_frame_env_flags = 16;
 pub type vm_frame_env_flags = u32;
-pub type attr_index_t = u16;
+pub type attr_index_t = u8;
 pub type shape_id_t = u32;
-pub const SHAPE_ID_HEAP_INDEX_MASK: shape_id_fl_type = 16252928;
+pub const SHAPE_ID_HEAP_INDEX_MASK: shape_id_fl_type = 7864320;
+pub const SHAPE_ID_FL_COMPLEX: shape_id_fl_type = 8388608;
 pub const SHAPE_ID_FL_FROZEN: shape_id_fl_type = 16777216;
 pub const SHAPE_ID_FL_HAS_OBJECT_ID: shape_id_fl_type = 33554432;
-pub const SHAPE_ID_FL_TOO_COMPLEX: shape_id_fl_type = 67108864;
 pub const SHAPE_ID_FL_NON_CANONICAL_MASK: shape_id_fl_type = 50331648;
-pub const SHAPE_ID_FLAGS_MASK: shape_id_fl_type = 133693440;
+pub const SHAPE_ID_FLAGS_MASK: shape_id_fl_type = 66584576;
 pub type shape_id_fl_type = u32;
 pub const CONST_DEPRECATED: rb_const_flag_t = 256;
 pub const CONST_VISIBILITY_MASK: rb_const_flag_t = 255;
@@ -1505,6 +1507,7 @@ pub struct rb_const_entry_struct {
 pub type rb_const_entry_t = rb_const_entry_struct;
 #[repr(C)]
 pub struct rb_cvar_class_tbl_entry {
+    pub imemo_flags: VALUE,
     pub index: u32,
     pub global_cvar_state: rb_serial_t,
     pub cref: *const rb_cref_t,
@@ -1587,8 +1590,8 @@ pub const YARVINSN_putnil: ruby_vminsn_type = 17;
 pub const YARVINSN_putself: ruby_vminsn_type = 18;
 pub const YARVINSN_putobject: ruby_vminsn_type = 19;
 pub const YARVINSN_putspecialobject: ruby_vminsn_type = 20;
-pub const YARVINSN_putstring: ruby_vminsn_type = 21;
-pub const YARVINSN_putchilledstring: ruby_vminsn_type = 22;
+pub const YARVINSN_dupstring: ruby_vminsn_type = 21;
+pub const YARVINSN_dupchilledstring: ruby_vminsn_type = 22;
 pub const YARVINSN_concatstrings: ruby_vminsn_type = 23;
 pub const YARVINSN_anytostring: ruby_vminsn_type = 24;
 pub const YARVINSN_toregexp: ruby_vminsn_type = 25;
@@ -1700,8 +1703,8 @@ pub const YARVINSN_trace_putnil: ruby_vminsn_type = 130;
 pub const YARVINSN_trace_putself: ruby_vminsn_type = 131;
 pub const YARVINSN_trace_putobject: ruby_vminsn_type = 132;
 pub const YARVINSN_trace_putspecialobject: ruby_vminsn_type = 133;
-pub const YARVINSN_trace_putstring: ruby_vminsn_type = 134;
-pub const YARVINSN_trace_putchilledstring: ruby_vminsn_type = 135;
+pub const YARVINSN_trace_dupstring: ruby_vminsn_type = 134;
+pub const YARVINSN_trace_dupchilledstring: ruby_vminsn_type = 135;
 pub const YARVINSN_trace_concatstrings: ruby_vminsn_type = 136;
 pub const YARVINSN_trace_anytostring: ruby_vminsn_type = 137;
 pub const YARVINSN_trace_toregexp: ruby_vminsn_type = 138;
@@ -1917,8 +1920,6 @@ pub struct zjit_jit_frame {
     pub iseq: *const rb_iseq_t,
     pub materialize_block_code: bool,
 }
-pub const ZJIT_JIT_RETURN_POISON: zjit_poison_values = 2;
-pub type zjit_poison_values = u32;
 pub const ISEQ_BODY_OFFSET_PARAM: zjit_struct_offsets = 16;
 pub type zjit_struct_offsets = u32;
 pub const ROBJECT_OFFSET_AS_HEAP_FIELDS: jit_bindgen_constants = 16;
@@ -1933,7 +1934,7 @@ pub const RUBY_OFFSET_EC_INTERRUPT_MASK: jit_bindgen_constants = 36;
 pub const RUBY_OFFSET_EC_THREAD_PTR: jit_bindgen_constants = 48;
 pub const RUBY_OFFSET_EC_RACTOR_ID: jit_bindgen_constants = 64;
 pub type jit_bindgen_constants = u32;
-pub const rb_invalid_shape_id: shape_id_t = 4294967295;
+pub const rb_invalid_shape_id: shape_id_t = 524287;
 pub type rb_iseq_param_keyword_struct =
     rb_iseq_constant_body_rb_iseq_parameters_rb_iseq_param_keyword;
 #[repr(C)]
@@ -2096,9 +2097,9 @@ unsafe extern "C" {
     pub fn rb_obj_shape_id(obj: VALUE) -> shape_id_t;
     pub fn rb_shape_get_iv_index(shape_id: shape_id_t, id: ID, value: *mut attr_index_t) -> bool;
     pub fn rb_shape_transition_add_ivar_no_warnings(
-        klass: VALUE,
-        original_shape_id: shape_id_t,
+        shape_id: shape_id_t,
         id: ID,
+        klass: VALUE,
     ) -> shape_id_t;
     pub fn rb_const_lookup(klass: VALUE, id: ID) -> *mut rb_const_entry_t;
     pub fn rb_ivar_get_at_no_ractor_check(obj: VALUE, index: attr_index_t) -> VALUE;
@@ -2139,6 +2140,7 @@ unsafe extern "C" {
     pub fn rb_float_minus(x: VALUE, y: VALUE) -> VALUE;
     pub fn rb_float_mul(x: VALUE, y: VALUE) -> VALUE;
     pub fn rb_float_div(x: VALUE, y: VALUE) -> VALUE;
+    pub fn rb_flo_to_i(num: VALUE) -> VALUE;
     pub fn rb_fix_aref(fix: VALUE, idx: VALUE) -> VALUE;
     pub fn rb_vm_insn_addr2opcode(addr: *const ::std::os::raw::c_void) -> ::std::os::raw::c_int;
     pub fn rb_iseq_line_no(iseq: *const rb_iseq_t, pos: usize) -> ::std::os::raw::c_uint;
@@ -2280,7 +2282,7 @@ unsafe extern "C" {
     pub fn rb_jit_array_len(a: VALUE) -> ::std::os::raw::c_long;
     pub fn rb_set_cfp_pc(cfp: *mut rb_control_frame_struct, pc: *const VALUE);
     pub fn rb_set_cfp_sp(cfp: *mut rb_control_frame_struct, sp: *mut VALUE);
-    pub fn rb_jit_shape_too_complex_p(shape_id: shape_id_t) -> bool;
+    pub fn rb_jit_shape_complex_p(shape_id: shape_id_t) -> bool;
     pub fn rb_jit_multi_ractor_p() -> bool;
     pub fn rb_jit_class_fields_embedded_p(klass: VALUE) -> bool;
     pub fn rb_jit_typed_data_fields_embedded_p(obj: VALUE) -> bool;

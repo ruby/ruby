@@ -35,14 +35,14 @@ describe "Integer#&" do
     end
 
     it "raises a TypeError when passed a Float" do
-      -> { (3 & 3.4) }.should raise_error(TypeError)
+      -> { (3 & 3.4) }.should.raise(TypeError)
     end
 
     it "raises a TypeError and does not call #to_int when defined on an object" do
       obj = mock("fixnum bit and")
       obj.should_not_receive(:to_int)
 
-      -> { 3 & obj }.should raise_error(TypeError)
+      -> { 3 & obj }.should.raise(TypeError)
     end
   end
 
@@ -84,14 +84,14 @@ describe "Integer#&" do
     end
 
     it "raises a TypeError when passed a Float" do
-      -> { (@bignum & 3.4) }.should raise_error(TypeError)
+      -> { (@bignum & 3.4) }.should.raise(TypeError)
     end
 
     it "raises a TypeError and does not call #to_int when defined on an object" do
       obj = mock("bignum bit and")
       obj.should_not_receive(:to_int)
 
-      -> { @bignum & obj }.should raise_error(TypeError)
+      -> { @bignum & obj }.should.raise(TypeError)
     end
   end
 end

@@ -7,7 +7,7 @@ describe "Hash#except" do
 
   it "returns a new duplicate hash without arguments" do
     ret = @hash.except
-    ret.should_not equal(@hash)
+    ret.should_not.equal?(@hash)
     ret.should == @hash
   end
 
@@ -21,17 +21,17 @@ describe "Hash#except" do
 
   it "does not retain the default value" do
     h = Hash.new(1)
-    h.except(:a).default.should be_nil
+    h.except(:a).default.should == nil
     h[:a] = 1
-    h.except(:a).default.should be_nil
+    h.except(:a).default.should == nil
   end
 
   it "does not retain the default_proc" do
     pr = proc { |h, k| h[k] = [] }
     h = Hash.new(&pr)
-    h.except(:a).default_proc.should be_nil
+    h.except(:a).default_proc.should == nil
     h[:a] = 1
-    h.except(:a).default_proc.should be_nil
+    h.except(:a).default_proc.should == nil
   end
 
   it "retains compare_by_identity flag" do

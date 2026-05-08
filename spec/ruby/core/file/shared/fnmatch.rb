@@ -222,48 +222,48 @@ describe :file_fnmatch, shared: true do
 
   it "returns false if '/' in pattern do not match '/' in path when flags includes FNM_PATHNAME" do
     pattern = '*/*'
-    File.send(@method, pattern, 'dave/.profile', File::FNM_PATHNAME).should be_false
+    File.send(@method, pattern, 'dave/.profile', File::FNM_PATHNAME).should == false
 
     pattern = '**/foo'
-    File.send(@method, pattern, 'a/.b/c/foo', File::FNM_PATHNAME).should be_false
+    File.send(@method, pattern, 'a/.b/c/foo', File::FNM_PATHNAME).should == false
   end
 
   it "returns true if '/' in pattern match '/' in path when flags includes FNM_PATHNAME" do
     pattern = '*/*'
-    File.send(@method, pattern, 'dave/.profile', File::FNM_PATHNAME | File::FNM_DOTMATCH).should be_true
+    File.send(@method, pattern, 'dave/.profile', File::FNM_PATHNAME | File::FNM_DOTMATCH).should == true
 
     pattern = '**/foo'
-    File.send(@method, pattern, 'a/b/c/foo', File::FNM_PATHNAME).should be_true
-    File.send(@method, pattern, '/a/b/c/foo', File::FNM_PATHNAME).should be_true
-    File.send(@method, pattern, 'c:/a/b/c/foo', File::FNM_PATHNAME).should be_true
-    File.send(@method, pattern, 'a/.b/c/foo', File::FNM_PATHNAME | File::FNM_DOTMATCH).should be_true
+    File.send(@method, pattern, 'a/b/c/foo', File::FNM_PATHNAME).should == true
+    File.send(@method, pattern, '/a/b/c/foo', File::FNM_PATHNAME).should == true
+    File.send(@method, pattern, 'c:/a/b/c/foo', File::FNM_PATHNAME).should == true
+    File.send(@method, pattern, 'a/.b/c/foo', File::FNM_PATHNAME | File::FNM_DOTMATCH).should == true
   end
 
   it "has special handling for ./ when using * and FNM_PATHNAME" do
-    File.send(@method, './*', '.', File::FNM_PATHNAME).should be_false
-    File.send(@method, './*', './', File::FNM_PATHNAME).should be_true
-    File.send(@method, './*/', './', File::FNM_PATHNAME).should be_false
-    File.send(@method, './**', './', File::FNM_PATHNAME).should be_true
-    File.send(@method, './**/', './', File::FNM_PATHNAME).should be_true
-    File.send(@method, './*', '.', File::FNM_PATHNAME | File::FNM_DOTMATCH).should be_false
-    File.send(@method, './*', './', File::FNM_PATHNAME | File::FNM_DOTMATCH).should be_true
-    File.send(@method, './*/', './', File::FNM_PATHNAME | File::FNM_DOTMATCH).should be_false
-    File.send(@method, './**', './', File::FNM_PATHNAME | File::FNM_DOTMATCH).should be_true
-    File.send(@method, './**/', './', File::FNM_PATHNAME | File::FNM_DOTMATCH).should be_true
+    File.send(@method, './*', '.', File::FNM_PATHNAME).should == false
+    File.send(@method, './*', './', File::FNM_PATHNAME).should == true
+    File.send(@method, './*/', './', File::FNM_PATHNAME).should == false
+    File.send(@method, './**', './', File::FNM_PATHNAME).should == true
+    File.send(@method, './**/', './', File::FNM_PATHNAME).should == true
+    File.send(@method, './*', '.', File::FNM_PATHNAME | File::FNM_DOTMATCH).should == false
+    File.send(@method, './*', './', File::FNM_PATHNAME | File::FNM_DOTMATCH).should == true
+    File.send(@method, './*/', './', File::FNM_PATHNAME | File::FNM_DOTMATCH).should == false
+    File.send(@method, './**', './', File::FNM_PATHNAME | File::FNM_DOTMATCH).should == true
+    File.send(@method, './**/', './', File::FNM_PATHNAME | File::FNM_DOTMATCH).should == true
   end
 
   it "matches **/* with FNM_PATHNAME to recurse directories" do
-    File.send(@method, 'nested/**/*', 'nested/subdir', File::FNM_PATHNAME).should be_true
-    File.send(@method, 'nested/**/*', 'nested/subdir/file', File::FNM_PATHNAME).should be_true
-    File.send(@method, 'nested/**/*', 'nested/.dotsubdir', File::FNM_PATHNAME | File::FNM_DOTMATCH).should be_true
-    File.send(@method, 'nested/**/*', 'nested/.dotsubir/.dotfile', File::FNM_PATHNAME | File::FNM_DOTMATCH).should be_true
+    File.send(@method, 'nested/**/*', 'nested/subdir', File::FNM_PATHNAME).should == true
+    File.send(@method, 'nested/**/*', 'nested/subdir/file', File::FNM_PATHNAME).should == true
+    File.send(@method, 'nested/**/*', 'nested/.dotsubdir', File::FNM_PATHNAME | File::FNM_DOTMATCH).should == true
+    File.send(@method, 'nested/**/*', 'nested/.dotsubir/.dotfile', File::FNM_PATHNAME | File::FNM_DOTMATCH).should == true
   end
 
   it "matches ** with FNM_PATHNAME only in current directory" do
-    File.send(@method, 'nested/**', 'nested/subdir', File::FNM_PATHNAME).should be_true
-    File.send(@method, 'nested/**', 'nested/subdir/file', File::FNM_PATHNAME).should be_false
-    File.send(@method, 'nested/**', 'nested/.dotsubdir', File::FNM_PATHNAME | File::FNM_DOTMATCH).should be_true
-    File.send(@method, 'nested/**', 'nested/.dotsubir/.dotfile', File::FNM_PATHNAME | File::FNM_DOTMATCH).should be_false
+    File.send(@method, 'nested/**', 'nested/subdir', File::FNM_PATHNAME).should == true
+    File.send(@method, 'nested/**', 'nested/subdir/file', File::FNM_PATHNAME).should == false
+    File.send(@method, 'nested/**', 'nested/.dotsubdir', File::FNM_PATHNAME | File::FNM_DOTMATCH).should == true
+    File.send(@method, 'nested/**', 'nested/.dotsubir/.dotfile', File::FNM_PATHNAME | File::FNM_DOTMATCH).should == false
   end
 
   it "accepts an object that has a #to_path method" do
@@ -271,21 +271,21 @@ describe :file_fnmatch, shared: true do
   end
 
   it "raises a TypeError if the first and second arguments are not string-like" do
-    -> { File.send(@method, nil, nil, 0, 0) }.should raise_error(ArgumentError)
-    -> { File.send(@method, 1, 'some/thing') }.should raise_error(TypeError)
-    -> { File.send(@method, 'some/thing', 1) }.should raise_error(TypeError)
-    -> { File.send(@method, 1, 1) }.should raise_error(TypeError)
+    -> { File.send(@method, nil, nil, 0, 0) }.should.raise(ArgumentError)
+    -> { File.send(@method, 1, 'some/thing') }.should.raise(TypeError)
+    -> { File.send(@method, 'some/thing', 1) }.should.raise(TypeError)
+    -> { File.send(@method, 1, 1) }.should.raise(TypeError)
   end
 
   it "raises a TypeError if the third argument is not an Integer" do
-    -> { File.send(@method, "*/place", "path/to/file", "flags") }.should raise_error(TypeError)
-    -> { File.send(@method, "*/place", "path/to/file", nil) }.should raise_error(TypeError)
+    -> { File.send(@method, "*/place", "path/to/file", "flags") }.should.raise(TypeError)
+    -> { File.send(@method, "*/place", "path/to/file", nil) }.should.raise(TypeError)
   end
 
   it "does not raise a TypeError if the third argument can be coerced to an Integer" do
     flags = mock("flags")
     flags.should_receive(:to_int).and_return(10)
-    -> { File.send(@method, "*/place", "path/to/file", flags) }.should_not raise_error
+    -> { File.send(@method, "*/place", "path/to/file", flags) }.should_not.raise
   end
 
   it "matches multibyte characters" do

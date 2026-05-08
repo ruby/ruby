@@ -744,7 +744,7 @@ pub(crate) mod hir_build_tests {
     #[test]
     fn test_string_copy() {
         eval("def test = \"hello\"");
-        assert_contains_opcode("test", YARVINSN_putchilledstring);
+        assert_contains_opcode("test", YARVINSN_dupchilledstring);
         assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:1:
         bb1():
@@ -1983,8 +1983,9 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           v15:BasicObject = Send v10, 0x1008, :each # SendFallbackReason: Uncategorized(send)
-          v16:CPtr = GetEP 0
-          v17:BasicObject = LoadField v16, :a@0x1030
+          PatchPoint NoEPEscape(test)
+          v18:CPtr = LoadSP
+          v19:BasicObject = LoadField v18, :a@0x1000
           CheckInterrupts
           Return v15
         ");
@@ -2266,8 +2267,9 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           v16:BasicObject = InvokeSuperForward v9, 0x1008, v10 # SendFallbackReason: InvokeSuperForward: not yet specialized
-          v17:CPtr = GetEP 0
-          v18:BasicObject = LoadField v17, :...@0x1010
+          PatchPoint NoEPEscape(test)
+          v19:CPtr = LoadSP
+          v20:BasicObject = LoadField v19, :...@0x1000
           CheckInterrupts
           Return v16
         ");
@@ -2900,10 +2902,8 @@ pub(crate) mod hir_build_tests {
           v31:StringExact = StringCopy v30
           v37:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
           v38:StringExact = StringCopy v37
-          v40:CPtr = GetEP 0
-          v41:BasicObject = LoadField v40, :buf@0x1018
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_PACK)
-          v44:String = ArrayPackBuffer v16, v17, fmt: v38, buf: v41
+          v42:String = ArrayPackBuffer v16, v17, fmt: v38, buf: v31
           PatchPoint NoEPEscape(test)
           CheckInterrupts
           Return v31
@@ -2949,8 +2949,6 @@ pub(crate) mod hir_build_tests {
           v31:StringExact = StringCopy v30
           v37:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
           v38:StringExact = StringCopy v37
-          v40:CPtr = GetEP 0
-          v41:BasicObject = LoadField v40, :buf@0x1018
           SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_PACK))
         ");
     }

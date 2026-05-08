@@ -14,7 +14,7 @@ describe "MatchData#string" do
 
   it "returns the same frozen string for every call" do
     md = /(.)(.)(\d+)(\d)/.match("THX1138.")
-    md.string.should equal(md.string)
+    md.string.should.equal?(md.string)
   end
 
   it "returns a frozen copy of the matched string for gsub!(String)" do

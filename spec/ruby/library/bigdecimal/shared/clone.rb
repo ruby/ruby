@@ -8,6 +8,6 @@ describe :bigdecimal_clone, shared: true do
   it "returns self" do
     copy = @obj.public_send(@method)
 
-    copy.should equal(@obj)
+    copy.should.equal?(@obj)
   end
 end

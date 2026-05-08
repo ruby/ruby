@@ -12,7 +12,7 @@ describe "File::Stat#atime" do
 
   it "returns the atime of a File::Stat object" do
     st = File.stat(@file)
-    st.atime.should be_kind_of(Time)
+    st.atime.should.is_a?(Time)
     st.atime.should <= Time.now
   end
 end

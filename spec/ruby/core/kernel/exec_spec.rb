@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "Kernel#exec" do
   it "is a private method" do
-    Kernel.should have_private_instance_method(:exec)
+    Kernel.private_instance_methods(false).should.include?(:exec)
   end
 
   it "runs the specified command, replacing current process" do

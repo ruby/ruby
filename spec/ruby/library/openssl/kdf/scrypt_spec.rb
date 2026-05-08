@@ -89,79 +89,79 @@ guard -> { OpenSSL::OPENSSL_VERSION.start_with?('OpenSSL') and OpenSSL::OPENSSL_
     it "raises a TypeError when password is not a String and does not respond to #to_str" do
       -> {
         OpenSSL::KDF.scrypt(Object.new, **@defaults)
-      }.should raise_error(TypeError, "no implicit conversion of Object into String")
+      }.should.raise(TypeError, "no implicit conversion of Object into String")
     end
 
     it "raises a TypeError when salt is not a String and does not respond to #to_str" do
       -> {
         OpenSSL::KDF.scrypt("secret", **@defaults, salt: Object.new)
-      }.should raise_error(TypeError, "no implicit conversion of Object into String")
+      }.should.raise(TypeError, "no implicit conversion of Object into String")
     end
 
     it "raises a TypeError when N is not an Integer and does not respond to #to_int" do
       -> {
         OpenSSL::KDF.scrypt("secret", **@defaults, N: Object.new)
-      }.should raise_error(TypeError, "no implicit conversion of Object into Integer")
+      }.should.raise(TypeError, "no implicit conversion of Object into Integer")
     end
 
     it "raises a TypeError when r is not an Integer and does not respond to #to_int" do
       -> {
         OpenSSL::KDF.scrypt("secret", **@defaults, r: Object.new)
-      }.should raise_error(TypeError, "no implicit conversion of Object into Integer")
+      }.should.raise(TypeError, "no implicit conversion of Object into Integer")
     end
 
     it "raises a TypeError when p is not an Integer and does not respond to #to_int" do
       -> {
         OpenSSL::KDF.scrypt("secret", **@defaults, p: Object.new)
-      }.should raise_error(TypeError, "no implicit conversion of Object into Integer")
+      }.should.raise(TypeError, "no implicit conversion of Object into Integer")
     end
 
     it "raises a TypeError when length is not an Integer and does not respond to #to_int" do
       -> {
         OpenSSL::KDF.scrypt("secret", **@defaults, length: Object.new)
-      }.should raise_error(TypeError, "no implicit conversion of Object into Integer")
+      }.should.raise(TypeError, "no implicit conversion of Object into Integer")
     end
 
     it "treats salt as a required keyword" do
       -> {
         OpenSSL::KDF.scrypt("secret", **@defaults.except(:salt))
-      }.should raise_error(ArgumentError, 'missing keyword: :salt')
+      }.should.raise(ArgumentError, 'missing keyword: :salt')
     end
 
     it "treats N as a required keyword" do
       -> {
         OpenSSL::KDF.scrypt("secret", **@defaults.except(:N))
-      }.should raise_error(ArgumentError, 'missing keyword: :N')
+      }.should.raise(ArgumentError, 'missing keyword: :N')
     end
 
     it "treats r as a required keyword" do
       -> {
         OpenSSL::KDF.scrypt("secret", **@defaults.except(:r))
-      }.should raise_error(ArgumentError, 'missing keyword: :r')
+      }.should.raise(ArgumentError, 'missing keyword: :r')
     end
 
     it "treats p as a required keyword" do
       -> {
         OpenSSL::KDF.scrypt("secret", **@defaults.except(:p))
-      }.should raise_error(ArgumentError, 'missing keyword: :p')
+      }.should.raise(ArgumentError, 'missing keyword: :p')
     end
 
     it "treats length as a required keyword" do
       -> {
         OpenSSL::KDF.scrypt("secret", **@defaults.except(:length))
-      }.should raise_error(ArgumentError, 'missing keyword: :length')
+      }.should.raise(ArgumentError, 'missing keyword: :length')
     end
 
     it "treats all keywords as required" do
       -> {
         OpenSSL::KDF.scrypt("secret")
-      }.should raise_error(ArgumentError, 'missing keywords: :salt, :N, :r, :p, :length')
+      }.should.raise(ArgumentError, 'missing keywords: :salt, :N, :r, :p, :length')
     end
 
     it "requires N to be a power of 2" do
       -> {
         OpenSSL::KDF.scrypt("secret", **@defaults, N: 2**14 - 1)
-      }.should raise_error(OpenSSL::KDF::KDFError, /EVP_PBE_scrypt/)
+      }.should.raise(OpenSSL::KDF::KDFError, /EVP_PBE_scrypt/)
     end
 
     it "requires N to be at least 2" do
@@ -170,41 +170,41 @@ guard -> { OpenSSL::OPENSSL_VERSION.start_with?('OpenSSL') and OpenSSL::OPENSSL_
 
       -> {
         OpenSSL::KDF.scrypt("secret", **@defaults, N: 1)
-      }.should raise_error(OpenSSL::KDF::KDFError, /EVP_PBE_scrypt/)
+      }.should.raise(OpenSSL::KDF::KDFError, /EVP_PBE_scrypt/)
 
       -> {
         OpenSSL::KDF.scrypt("secret", **@defaults, N: 0)
-      }.should raise_error(OpenSSL::KDF::KDFError, /EVP_PBE_scrypt/)
+      }.should.raise(OpenSSL::KDF::KDFError, /EVP_PBE_scrypt/)
 
       -> {
         OpenSSL::KDF.scrypt("secret", **@defaults, N: -1)
-      }.should raise_error(OpenSSL::KDF::KDFError, /EVP_PBE_scrypt/)
+      }.should.raise(OpenSSL::KDF::KDFError, /EVP_PBE_scrypt/)
     end
 
     it "requires r to be positive" do
       -> {
         OpenSSL::KDF.scrypt("secret", **@defaults, r: 0)
-      }.should raise_error(OpenSSL::KDF::KDFError, /EVP_PBE_scrypt/)
+      }.should.raise(OpenSSL::KDF::KDFError, /EVP_PBE_scrypt/)
 
       -> {
         OpenSSL::KDF.scrypt("secret", **@defaults, r: -1)
-      }.should raise_error(OpenSSL::KDF::KDFError, /EVP_PBE_scrypt/)
+      }.should.raise(OpenSSL::KDF::KDFError, /EVP_PBE_scrypt/)
     end
 
     it "requires p to be positive" do
       -> {
         OpenSSL::KDF.scrypt("secret", **@defaults, p: 0)
-      }.should raise_error(OpenSSL::KDF::KDFError, /EVP_PBE_scrypt/)
+      }.should.raise(OpenSSL::KDF::KDFError, /EVP_PBE_scrypt/)
 
       -> {
         OpenSSL::KDF.scrypt("secret", **@defaults, p: -1)
-      }.should raise_error(OpenSSL::KDF::KDFError, /EVP_PBE_scrypt/)
+      }.should.raise(OpenSSL::KDF::KDFError, /EVP_PBE_scrypt/)
     end
 
     it "requires length to be not negative" do
       -> {
         OpenSSL::KDF.scrypt("secret", **@defaults, length: -1)
-      }.should raise_error(ArgumentError, "negative string size (or size too big)")
+      }.should.raise(ArgumentError, "negative string size (or size too big)")
     end
   end
 end

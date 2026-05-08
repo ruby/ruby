@@ -13,6 +13,6 @@ describe "Resolv#getname" do
     res = Resolv.new([])
     -> {
       res.getname("should.raise.error")
-    }.should raise_error(Resolv::ResolvError)
+    }.should.raise(Resolv::ResolvError)
   end
 end

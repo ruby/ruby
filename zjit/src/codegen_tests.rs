@@ -23,7 +23,6 @@ fn test_breakpoint_hir_codegen() {
     let breakpoint = function.push_insn(function.entries_block, Insn::BreakPoint);
 
     let mut jit = JITState::new(
-        iseq,
         IseqVersion::new(iseq),
         function.num_insns(),
         function.num_blocks(),
@@ -70,22 +69,22 @@ fn test_putobject() {
 }
 
 #[test]
-fn test_putstring() {
+fn test_dupstring() {
     eval(r##"
         def test = "#{""}"
         test
     "##);
-    assert_contains_opcode("test", YARVINSN_putstring);
+    assert_contains_opcode("test", YARVINSN_dupstring);
     assert_snapshot!(assert_compiles(r##"test"##), @r#""""#);
 }
 
 #[test]
-fn test_putchilledstring() {
+fn test_dupchilledstring() {
     eval(r#"
         def test = ""
         test
     "#);
-    assert_contains_opcode("test", YARVINSN_putchilledstring);
+    assert_contains_opcode("test", YARVINSN_dupchilledstring);
     assert_snapshot!(assert_compiles(r#"test"#), @r#""""#);
 }
 
@@ -651,6 +650,24 @@ fn test_send_with_local_written_by_blockiseq() {
         test
         test
     "), @"[1, 2]");
+}
+
+#[test]
+fn test_no_ep_escape_patch_point_after_send_does_not_repeat_send() {
+    eval(r#"
+        $send_count = 0
+
+        def test
+          captured = nil
+          tap do |_|
+            $send_count += 1
+            -> { captured } if $send_count == 2
+          end
+          $send_count
+        end
+    "#);
+    assert_contains_opcode("test", YARVINSN_send);
+    assert_snapshot!(assert_compiles_allowing_exits("[test, test, test]"), @"[1, 2, 3]");
 }
 
 #[test]
@@ -5475,7 +5492,7 @@ fn test_tracepoint_return_value_with_rescue() {
 // Too-complex shapes use hash tables for ivar storage, and rb_shape_get_iv_index()
 // doesn't work for them. The polymorphic path must fall through to GetIvar instead.
 #[test]
-fn test_polymorphic_getivar_too_complex_shape() {
+fn test_polymorphic_getivar_complex_shape() {
     // Need threshold >= 3 so both shapes get profiled before compilation
     set_call_threshold(3);
     assert_snapshot!(inspect(r#"
@@ -5631,4 +5648,20 @@ fn test_loop_terminates() {
           TheClass.new.set_value_loop
         end
     "#), @"3");
+}
+
+// Regression test: getlocal with level=0 after setlocal_WC_0 was loading stale EP
+// memory, causing Array#pack with buffer: keyword to receive the wrong buffer VALUE.
+// See https://github.com/ruby/ruby/pull/16736
+#[test]
+fn test_getlocal_level_zero_after_setlocal_wc_0() {
+    assert_snapshot!(inspect(r#"
+        def test
+          b = +"x"
+          v = 2
+          [v].pack("C*", buffer: b)
+          b.size
+        end
+        test
+    "#), @"2");
 }

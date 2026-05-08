@@ -24,7 +24,7 @@ describe "Net::HTTP#send_request" do
   describe "when passed type, path" do
     it "sends a HTTP Request of the passed type to the passed path" do
       response = @http.send_request("HEAD", "/request")
-      response.body.should be_nil
+      response.body.should == nil
 
       (@methods - %w[POST PUT]).each do |method|
         response = @http.send_request(method, "/request")
@@ -36,7 +36,7 @@ describe "Net::HTTP#send_request" do
   describe "when passed type, path, body" do
     it "sends a HTTP Request with the passed body" do
       response = @http.send_request("HEAD", "/request/body", "test=test")
-      response.body.should be_nil
+      response.body.should == nil
 
       @methods.each do |method|
         response = @http.send_request(method, "/request/body", "test=test")
@@ -50,11 +50,11 @@ describe "Net::HTTP#send_request" do
       referer = 'https://www.ruby-lang.org/'.freeze
 
       response = @http.send_request("HEAD", "/request/header", "test=test", "referer" => referer)
-      response.body.should be_nil
+      response.body.should == nil
 
       @methods.each do |method|
         response = @http.send_request(method, "/request/header", "test=test", "referer" => referer)
-        response.body.should include({ "Referer" => referer }.inspect.delete("{}"))
+        response.body.should.include?({ "Referer" => referer }.inspect.delete("{}"))
       end
     end
   end

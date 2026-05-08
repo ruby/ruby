@@ -10,7 +10,7 @@ platform_is :windows do
     end
 
     it "raises ArgumentError if argument is given" do
-      -> { @param_overwritefiles.ole_type(1) }.should raise_error ArgumentError
+      -> { @param_overwritefiles.ole_type(1) }.should.raise ArgumentError
     end
 
     it "returns 'BOOL' for 3rd parameter of FileSystemObject's 'CopyFile' method" do

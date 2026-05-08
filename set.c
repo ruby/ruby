@@ -476,22 +476,36 @@ set_initialize_with_block(RB_BLOCK_CALL_FUNC_ARGLIST(i, set))
 }
 
 /*
- *  call-seq:
- *    Set.new -> new_set
- *    Set.new(enum) -> new_set
- *    Set.new(enum) { |elem| ... } -> new_set
+ * call-seq:
+ *   Set.new(object = nil) -> new_set
+ *   Set.new(object = nil) {|element| ... } -> new_set
  *
- *  Creates a new set containing the elements of the given enumerable
- *  object.
+ * Returns a new \Set object based on the given +object+,
+ * which must be an Enumerable or +nil+.
  *
- *  If a block is given, the elements of enum are preprocessed by the
- *  given block.
+ * With argument +object+ given as +nil+,
+ * returns a new empty \Set object:
  *
- *    Set.new([1, 2])                       #=> Set[1, 2]
- *    Set.new([1, 2, 1])                    #=> Set[1, 2]
- *    Set.new([1, 'c', :s])                 #=> Set[1, "c", :s]
- *    Set.new(1..5)                         #=> Set[1, 2, 3, 4, 5]
- *    Set.new([1, 2, 3]) { |x| x * x }      #=> Set[1, 4, 9]
+ *   Set.new                          # => Set[]
+ *   Set.new { fail 'Cannot happen' } # => Set[]  # Block not called.
+ *
+ * With no block given and +object+ given as an Enumerable,
+ * populates the new set with the elements of +object+:
+ *
+ *   Set.new(%w[ a b c ])     # => Set["a", "b", "c"]
+ *   Set.new({foo: 0, bar: 1})     # => Set[[:foo, 0], [:bar, 1]]
+ *   Set.new(4..10)     # => Set[4, 5, 6, 7, 8, 9, 10]
+ *   Set.new(Dir.new('lib')).take(5)
+ *   # => [".", "..", "bundled_gems.rb", "bundler", "bundler.rb"]
+ *   Set.new(File.new('doc/NEWS/NEWS-4.0.0.md')).take(3)
+ *   # => ["# NEWS for Ruby 4.0.0\n", "\n", "This document is a list of user-visible feature changes\n"]
+ *
+ * With a block given and +object+ given as an Enumerable,
+ * calls the block with each element of +object+;
+ * adds the block's return value to the new set:
+ *
+ *   Set.new(4..10) {|i| i * 2 } # => Set[8, 10, 12, 14, 16, 18, 20]
+ *
  */
 static VALUE
 set_i_initialize(int argc, VALUE *argv, VALUE set)

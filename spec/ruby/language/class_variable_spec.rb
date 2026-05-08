@@ -30,19 +30,19 @@ describe "A class variable defined in a module" do
   end
 
   it "is not defined in these classes" do
-    ClassVariablesSpec::ClassC.cvar_defined?.should be_false
+    ClassVariablesSpec::ClassC.cvar_defined?.should == false
   end
 
   it "is only updated in the module a method defined in the module is used" do
     ClassVariablesSpec::ClassC.cvar_m = "new value"
     ClassVariablesSpec::ClassC.cvar_m.should == "new value"
 
-    ClassVariablesSpec::ClassC.cvar_defined?.should be_false
+    ClassVariablesSpec::ClassC.cvar_defined?.should == false
   end
 
   it "is updated in the class when a Method defined in the class is used" do
     ClassVariablesSpec::ClassC.cvar_c = "new value"
-    ClassVariablesSpec::ClassC.cvar_defined?.should be_true
+    ClassVariablesSpec::ClassC.cvar_defined?.should == true
   end
 
   it "can be accessed inside the class using the module methods" do
@@ -55,11 +55,11 @@ describe "A class variable defined in a module" do
   end
 
   it "is defined in the extended module" do
-    ClassVariablesSpec::ModuleN.class_variable_defined?(:@@cvar_n).should be_true
+    ClassVariablesSpec::ModuleN.class_variable_defined?(:@@cvar_n).should == true
   end
 
   it "is not defined in the extending module" do
-    ClassVariablesSpec::ModuleO.class_variable_defined?(:@@cvar_n).should be_false
+    ClassVariablesSpec::ModuleO.class_variable_defined?(:@@cvar_n).should == false
   end
 end
 
@@ -70,14 +70,14 @@ describe 'A class variable definition' do
     c = Class.new(b)
     b.class_variable_set(:@@cv, :value)
 
-    -> { a.class_variable_get(:@@cv) }.should raise_error(NameError)
+    -> { a.class_variable_get(:@@cv) }.should.raise(NameError)
     b.class_variable_get(:@@cv).should == :value
     c.class_variable_get(:@@cv).should == :value
 
     # updates the same variable
     c.class_variable_set(:@@cv, :next)
 
-    -> { a.class_variable_get(:@@cv) }.should raise_error(NameError)
+    -> { a.class_variable_get(:@@cv) }.should.raise(NameError)
     b.class_variable_get(:@@cv).should == :next
     c.class_variable_get(:@@cv).should == :next
   end
@@ -87,16 +87,16 @@ describe 'Accessing a class variable' do
   it "raises a RuntimeError when accessed from the toplevel scope (not in some module or class)" do
     -> {
       eval "@@cvar_toplevel1"
-    }.should raise_error(RuntimeError, 'class variable access from toplevel')
+    }.should.raise(RuntimeError, 'class variable access from toplevel')
     -> {
       eval "@@cvar_toplevel2 = 2"
-    }.should raise_error(RuntimeError, 'class variable access from toplevel')
+    }.should.raise(RuntimeError, 'class variable access from toplevel')
   end
 
   it "does not raise an error when checking if defined from the toplevel scope" do
     -> {
       eval "defined?(@@cvar_toplevel1)"
-    }.should_not raise_error
+    }.should_not.raise
   end
 
   it "raises a RuntimeError when a class variable is overtaken in an ancestor class" do
@@ -107,7 +107,7 @@ describe 'Accessing a class variable' do
 
     -> {
       subclass.class_variable_get(:@@cvar_overtaken)
-    }.should raise_error(RuntimeError, /class variable @@cvar_overtaken of .+ is overtaken by .+/)
+    }.should.raise(RuntimeError, /class variable @@cvar_overtaken of .+ is overtaken by .+/)
 
     parent.class_variable_get(:@@cvar_overtaken).should == :parent
   end

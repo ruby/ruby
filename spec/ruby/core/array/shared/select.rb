@@ -20,7 +20,7 @@ describe :array_select, shared: true do
   end
 
   it "does not return subclass instance on Array subclasses" do
-    ArraySpecs::MyArray[1, 2, 3].send(@method) { true }.should be_an_instance_of(Array)
+    ArraySpecs::MyArray[1, 2, 3].send(@method) { true }.should.instance_of?(Array)
   end
 
   it "properly handles recursive arrays" do

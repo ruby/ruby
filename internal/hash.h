@@ -193,4 +193,20 @@ RHASH_AR_TABLE_SIZE_RAW(VALUE h)
     return (unsigned)ret;
 }
 
+#define RHASH_AR_TABLE_BOUND_RAW(h) \
+  ((unsigned int)((RBASIC(h)->flags >> RHASH_AR_TABLE_BOUND_SHIFT) & \
+                  (RHASH_AR_TABLE_BOUND_MASK >> RHASH_AR_TABLE_BOUND_SHIFT)))
+
+#define RHASH_ST_TABLE_SET(h, s)  rb_hash_st_table_set(h, s)
+#define RHASH_TYPE(hash) (RHASH_AR_TABLE_P(hash) ? &objhash : RHASH_ST_TABLE(hash)->type)
+
+static inline unsigned int
+RHASH_AR_TABLE_BOUND(VALUE h)
+{
+    RUBY_ASSERT(RHASH_AR_TABLE_P(h));
+    const unsigned int bound = RHASH_AR_TABLE_BOUND_RAW(h);
+    RUBY_ASSERT(bound <= RHASH_AR_TABLE_MAX_SIZE);
+    return bound;
+}
+
 #endif /* INTERNAL_HASH_H */

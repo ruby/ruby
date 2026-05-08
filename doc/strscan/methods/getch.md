@@ -1,6 +1,3 @@
-call-seq:
-  getch -> character or nil
-
 Returns the next (possibly multibyte) character,
 if available:
 

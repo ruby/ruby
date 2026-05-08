@@ -3,6 +3,6 @@ require_relative 'fixtures/classes'
 
 describe "Singleton#clone" do
   it "is prevented" do
-    -> { SingletonSpecs::MyClass.instance.clone }.should raise_error(TypeError)
+    -> { SingletonSpecs::MyClass.instance.clone }.should.raise(TypeError)
   end
 end

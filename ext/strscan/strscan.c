@@ -22,7 +22,7 @@ extern size_t onig_region_memsize(const struct re_registers *regs);
 
 #include <stdbool.h>
 
-#define STRSCAN_VERSION "3.1.7.dev"
+#define STRSCAN_VERSION "3.1.9.dev"
 
 
 #ifdef HAVE_RB_DEPRECATE_CONSTANT
@@ -410,6 +410,9 @@ strscan_reset(VALUE self)
 
 /*
  * :markup: markdown
+ * :call-seq:
+ *   terminate -> self
+ *
  * :include: strscan/link_refs.txt
  * :include: strscan/methods/terminate.md
  */
@@ -539,6 +542,9 @@ strscan_concat(VALUE self, VALUE str)
 
 /*
  * :markup: markdown
+ * :call-seq:
+ *   pos -> byte_position
+ *
  * :include: strscan/link_refs.txt
  * :include: strscan/methods/get_pos.md
  */
@@ -553,6 +559,9 @@ strscan_get_pos(VALUE self)
 
 /*
  * :markup: markdown
+ * :call-seq:
+ *   charpos -> character_position
+ *
  * :include: strscan/link_refs.txt
  * :include: strscan/methods/get_charpos.md
  */
@@ -568,6 +577,10 @@ strscan_get_charpos(VALUE self)
 
 /*
  * :markup: markdown
+ * :call-seq:
+ *   pos = n -> n
+ *   pointer = n -> n
+ *
  * :include: strscan/link_refs.txt
  * :include: strscan/methods/set_pos.md
  */
@@ -792,6 +805,9 @@ strscan_do_scan(VALUE self, VALUE pattern, int succptr, int getstr, int headonly
 
 /*
  * :markup: markdown
+ * :call-seq:
+ *   scan(pattern) -> substring or nil
+ *
  * :include: strscan/link_refs.txt
  * :include: strscan/methods/scan.md
  */
@@ -865,6 +881,9 @@ strscan_match_p(VALUE self, VALUE re)
 
 /*
  * :markup: markdown
+ * call-seq:
+ *   skip(pattern) match_size or nil
+ *
  * :include: strscan/link_refs.txt
  * :include: strscan/methods/skip.md
  */
@@ -962,6 +981,9 @@ strscan_scan_full(VALUE self, VALUE re, VALUE s, VALUE f)
 
 /*
  * :markup: markdown
+ * :call-seq:
+ *   scan_until(pattern) -> substring or nil
+ *
  * :include: strscan/link_refs.txt
  * :include: strscan/methods/scan_until.md
  */
@@ -1036,6 +1058,9 @@ strscan_exist_p(VALUE self, VALUE re)
 
 /*
  * :markup: markdown
+ * :call-seq:
+ *   skip_until(pattern) -> matched_substring_size or nil
+ *
  * :include: strscan/link_refs.txt
  * :include: strscan/methods/skip_until.md
  */
@@ -1147,6 +1172,9 @@ adjust_registers_to_matched(struct strscanner *p)
 
 /*
  * :markup: markdown
+ * :call-seq:
+ *   getch -> character or nil
+ *
  * :include: strscan/link_refs.txt
  * :include: strscan/methods/getch.md
  */
@@ -1220,6 +1248,9 @@ strscan_peek_byte(VALUE self)
 
 /*
  * :markup: markdown
+ * :call-seq:
+ *   get_byte -> byte_as_character or nil
+ *
  * :include: strscan/link_refs.txt
  * :include: strscan/methods/get_byte.md
  */

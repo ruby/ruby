@@ -41,8 +41,8 @@ describe 'Socket.accept_loop' do
         end
 
         begin
-          conn.should be_an_instance_of(Socket)
-          addr.should be_an_instance_of(Addrinfo)
+          conn.should.instance_of?(Socket)
+          addr.should.instance_of?(Addrinfo)
         ensure
           conn.close
         end
@@ -73,8 +73,8 @@ describe 'Socket.accept_loop' do
         end
 
         begin
-          conn.should be_an_instance_of(Socket)
-          addr.should be_an_instance_of(Addrinfo)
+          conn.should.instance_of?(Socket)
+          addr.should.instance_of?(Addrinfo)
         ensure
           conn.close
         end

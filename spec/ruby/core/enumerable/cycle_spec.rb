@@ -17,7 +17,7 @@ describe "Enumerable#cycle" do
 
     it "returns nil if there are no elements" do
       out = EnumerableSpecs::Empty.new.cycle { break :nope }
-      out.should be_nil
+      out.should == nil
     end
 
     it "yields successive elements of the array repeatedly" do
@@ -44,8 +44,8 @@ describe "Enumerable#cycle" do
 
   describe "passed a number n as an argument" do
     it "returns nil and does nothing for non positive n" do
-      EnumerableSpecs::ThrowingEach.new.cycle(0) {}.should be_nil
-      EnumerableSpecs::NoEach.new.cycle(-22) {}.should be_nil
+      EnumerableSpecs::ThrowingEach.new.cycle(0) {}.should == nil
+      EnumerableSpecs::NoEach.new.cycle(-22) {}.should == nil
     end
 
     it "calls each at most once" do
@@ -71,12 +71,12 @@ describe "Enumerable#cycle" do
 
     it "raises a TypeError when the passed n cannot be coerced to Integer" do
       enum = EnumerableSpecs::Numerous.new
-      ->{ enum.cycle("cat"){} }.should raise_error(TypeError)
+      ->{ enum.cycle("cat"){} }.should.raise(TypeError)
     end
 
     it "raises an ArgumentError if more arguments are passed" do
       enum = EnumerableSpecs::Numerous.new
-      ->{ enum.cycle(1, 2) {} }.should raise_error(ArgumentError)
+      ->{ enum.cycle(1, 2) {} }.should.raise(ArgumentError)
     end
 
     it "gathers whole arrays as elements when each yields multiple" do

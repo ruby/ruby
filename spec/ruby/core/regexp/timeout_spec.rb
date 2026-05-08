@@ -17,7 +17,7 @@ describe "Regexp.timeout" do
     -> {
       # A typical ReDoS case
       /^(a*)*$/ =~ "a" * 1000000 + "x"
-    }.should raise_error(Regexp::TimeoutError, "regexp match timeout")
+    }.should.raise(Regexp::TimeoutError, "regexp match timeout")
   end
 
   it "raises Regexp::TimeoutError after timeout keyword value elapsed" do
@@ -28,6 +28,6 @@ describe "Regexp.timeout" do
 
     -> {
       re =~ "a" * 1000000 + "x"
-    }.should raise_error(Regexp::TimeoutError, "regexp match timeout")
+    }.should.raise(Regexp::TimeoutError, "regexp match timeout")
   end
 end

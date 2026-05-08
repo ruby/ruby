@@ -15,7 +15,7 @@ describe "Digest::SHA1.file" do
     end
 
     it "returns a Digest::SHA1 object" do
-      Digest::SHA1.file(@file).should be_kind_of(Digest::SHA1)
+      Digest::SHA1.file(@file).should.is_a?(Digest::SHA1)
     end
 
     it "returns a Digest::SHA1 object with the correct digest" do
@@ -26,7 +26,7 @@ describe "Digest::SHA1.file" do
       obj = mock("to_str")
       obj.should_receive(:to_str).and_return(@file)
       result = Digest::SHA1.file(obj)
-      result.should be_kind_of(Digest::SHA1)
+      result.should.is_a?(Digest::SHA1)
       result.digest.should == SHA1Constants::Digest
     end
   end
@@ -34,10 +34,10 @@ describe "Digest::SHA1.file" do
   it_behaves_like :file_read_directory, :file, Digest::SHA1
 
   it "raises a Errno::ENOENT when passed a path that does not exist" do
-    -> { Digest::SHA1.file("") }.should raise_error(Errno::ENOENT)
+    -> { Digest::SHA1.file("") }.should.raise(Errno::ENOENT)
   end
 
   it "raises a TypeError when passed nil" do
-    -> { Digest::SHA1.file(nil) }.should raise_error(TypeError)
+    -> { Digest::SHA1.file(nil) }.should.raise(TypeError)
   end
 end

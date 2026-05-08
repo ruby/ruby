@@ -6,11 +6,11 @@ describe "Kernel.at_exit" do
   it_behaves_like :kernel_at_exit, :at_exit
 
   it "is a private method" do
-    Kernel.should have_private_instance_method(:at_exit)
+    Kernel.private_instance_methods(false).should.include?(:at_exit)
   end
 
   it "raises ArgumentError if called without a block" do
-    -> { at_exit }.should raise_error(ArgumentError, "called without a block")
+    -> { at_exit }.should.raise(ArgumentError, "called without a block")
   end
 end
 

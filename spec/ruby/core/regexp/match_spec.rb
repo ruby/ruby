@@ -3,11 +3,11 @@ require_relative '../../spec_helper'
 
 describe :regexp_match, shared: true do
   it "returns nil if there is no match" do
-    /xyz/.send(@method,"abxyc").should be_nil
+    /xyz/.send(@method,"abxyc").should == nil
   end
 
   it "returns nil if the object is nil" do
-    /\w+/.send(@method, nil).should be_nil
+    /\w+/.send(@method, nil).should == nil
   end
 end
 
@@ -27,19 +27,19 @@ describe "Regexp#match" do
   it_behaves_like :regexp_match, :match
 
   it "returns a MatchData object" do
-    /(.)(.)(.)/.match("abc").should be_kind_of(MatchData)
+    /(.)(.)(.)/.match("abc").should.is_a?(MatchData)
   end
 
   it "returns a MatchData object, when argument is a Symbol" do
-    /(.)(.)(.)/.match(:abc).should be_kind_of(MatchData)
+    /(.)(.)(.)/.match(:abc).should.is_a?(MatchData)
   end
 
   it "raises a TypeError on an uninitialized Regexp" do
-    -> { Regexp.allocate.match('foo') }.should raise_error(TypeError)
+    -> { Regexp.allocate.match('foo') }.should.raise(TypeError)
   end
 
   it "raises TypeError on an uninitialized Regexp" do
-    -> { Regexp.allocate.match('foo'.encode("UTF-16LE")) }.should raise_error(TypeError)
+    -> { Regexp.allocate.match('foo'.encode("UTF-16LE")) }.should.raise(TypeError)
   end
 
   describe "with [string, position]" do
@@ -54,7 +54,7 @@ describe "Regexp#match" do
 
       it "raises an ArgumentError for an invalid encoding" do
         x96 = ([150].pack('C')).force_encoding('utf-8')
-        -> { /(.).(.)/.match("Hello, #{x96} world!", 1) }.should raise_error(ArgumentError)
+        -> { /(.).(.)/.match("Hello, #{x96} world!", 1) }.should.raise(ArgumentError)
       end
     end
 
@@ -69,14 +69,14 @@ describe "Regexp#match" do
 
       it "raises an ArgumentError for an invalid encoding" do
         x96 = ([150].pack('C')).force_encoding('utf-8')
-        -> { /(.).(.)/.match("Hello, #{x96} world!", -1) }.should raise_error(ArgumentError)
+        -> { /(.).(.)/.match("Hello, #{x96} world!", -1) }.should.raise(ArgumentError)
       end
     end
 
     describe "when passed a block" do
       it "yields the MatchData" do
         /./.match("abc") {|m| ScratchPad.record m }
-        ScratchPad.recorded.should be_kind_of(MatchData)
+        ScratchPad.recorded.should.is_a?(MatchData)
       end
 
       it "returns the block result" do
@@ -94,20 +94,20 @@ describe "Regexp#match" do
   it "resets $~ if passed nil" do
     # set $~
     /./.match("a")
-    $~.should be_kind_of(MatchData)
+    $~.should.is_a?(MatchData)
 
     /1/.match(nil)
-    $~.should be_nil
+    $~.should == nil
   end
 
   it "raises TypeError when the given argument cannot be coerced to String" do
     f = 1
-    -> { /foo/.match(f)[0] }.should raise_error(TypeError)
+    -> { /foo/.match(f)[0] }.should.raise(TypeError)
   end
 
   it "raises TypeError when the given argument is an Exception" do
     f = Exception.new("foo")
-    -> { /foo/.match(f)[0] }.should raise_error(TypeError)
+    -> { /foo/.match(f)[0] }.should.raise(TypeError)
   end
 end
 
@@ -119,22 +119,22 @@ describe "Regexp#match?" do
 
   context "when matches the given value" do
     it "returns true but does not set Regexp.last_match" do
-      /string/i.match?('string').should be_true
-      Regexp.last_match.should be_nil
+      /string/i.match?('string').should == true
+      Regexp.last_match.should == nil
     end
   end
 
   it "returns false when does not match the given value" do
-    /STRING/.match?('string').should be_false
+    /STRING/.match?('string').should == false
   end
 
   it "takes matching position as the 2nd argument" do
-    /str/i.match?('string', 0).should be_true
-    /str/i.match?('string', 1).should be_false
+    /str/i.match?('string', 0).should == true
+    /str/i.match?('string', 1).should == false
   end
 
   it "returns false when given nil" do
-    /./.match?(nil).should be_false
+    /./.match?(nil).should == false
   end
 end
 

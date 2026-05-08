@@ -19,6 +19,6 @@ describe :io_tty, shared: true do
   end
 
   it "raises IOError on closed stream" do
-    -> { IOSpecs.closed_io.send @method }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.send @method }.should.raise(IOError)
   end
 end

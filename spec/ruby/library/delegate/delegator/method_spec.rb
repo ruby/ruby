@@ -9,7 +9,7 @@ describe "Delegator#method" do
 
   it "returns a method object for public methods of the delegate object" do
     m = @delegate.method(:pub)
-    m.should be_an_instance_of(Method)
+    m.should.instance_of?(Method)
     m.call.should == :foo
   end
 
@@ -18,7 +18,7 @@ describe "Delegator#method" do
       -> {
         @delegate.method(:prot)
       }.should complain(/delegator does not forward private method #prot/)
-    }.should raise_error(NameError)
+    }.should.raise(NameError)
   end
 
   it "raises a NameError for a private methods of the delegate object" do
@@ -26,36 +26,36 @@ describe "Delegator#method" do
       -> {
         @delegate.method(:priv)
       }.should complain(/delegator does not forward private method #priv/)
-    }.should raise_error(NameError)
+    }.should.raise(NameError)
   end
 
   it "returns a method object for public methods of the Delegator class" do
     m = @delegate.method(:extra)
-    m.should be_an_instance_of(Method)
+    m.should.instance_of?(Method)
     m.call.should == :cheese
   end
 
   it "returns a method object for protected methods of the Delegator class" do
     m = @delegate.method(:extra_protected)
-    m.should be_an_instance_of(Method)
+    m.should.instance_of?(Method)
     m.call.should == :baz
   end
 
   it "returns a method object for private methods of the Delegator class" do
     m = @delegate.method(:extra_private)
-    m.should be_an_instance_of(Method)
+    m.should.instance_of?(Method)
     m.call.should == :bar
   end
 
   it "raises a NameError for an invalid method name" do
     -> {
       @delegate.method(:invalid_and_silly_method_name)
-    }.should raise_error(NameError)
+    }.should.raise(NameError)
   end
 
   it "returns a method that respond_to_missing?" do
     m = @delegate.method(:pub_too)
-    m.should be_an_instance_of(Method)
+    m.should.instance_of?(Method)
     m.call.should == :pub_too
   end
 
@@ -64,6 +64,6 @@ describe "Delegator#method" do
     @delegate.__setobj__([1,2,3])
     -> {
       m.call
-    }.should raise_error(NameError)
+    }.should.raise(NameError)
   end
 end

@@ -35,9 +35,10 @@ struct rb_subclass_entry {
 typedef struct rb_subclass_entry rb_subclass_entry_t;
 
 struct rb_cvar_class_tbl_entry {
+    VALUE imemo_flags;
     uint32_t index;
     rb_serial_t global_cvar_state;
-    const rb_cref_t * cref;
+    const rb_cref_t *cref;
     VALUE class_value;
 };
 
@@ -45,11 +46,12 @@ struct rb_classext_struct {
     const rb_box_t *box;
     VALUE super;
     VALUE fields_obj; // Fields are either ivar or other internal properties stored inline
+    VALUE classpath;
     struct rb_id_table *m_tbl;
     struct rb_id_table *const_tbl;
     struct rb_id_table *callable_m_tbl;
     VALUE cc_tbl; /* { ID => { cme, [cc1, cc2, ...] }, ... } */
-    struct rb_id_table *cvc_tbl;
+    VALUE cvc_tbl;
     VALUE *superclasses;
     /**
      * The head of the subclasses linked list. This is a dummy entry (klass == 0)
@@ -81,16 +83,16 @@ struct rb_classext_struct {
             const VALUE includer;
         } iclass;
     } as;
-    attr_index_t max_iv_count;
     uint16_t superclass_depth;
-    unsigned char variation_count;
+    attr_index_t max_iv_count;
+    uint8_t variation_count;
     bool permanent_classpath : 1;
     bool cloned : 1;
     bool shared_const_tbl : 1;
     bool iclass_is_origin : 1;
     bool iclass_origin_shared_mtbl : 1;
     bool superclasses_with_self : 1;
-    VALUE classpath;
+    bool expect_no_ivar : 1;
 };
 typedef struct rb_classext_struct rb_classext_t;
 
@@ -226,8 +228,8 @@ static inline void RCLASS_SET_CONST_TBL(VALUE klass, struct rb_id_table *table, 
 static inline void RCLASS_WRITE_CONST_TBL(VALUE klass, struct rb_id_table *table, bool shared);
 static inline void RCLASS_WRITE_CALLABLE_M_TBL(VALUE klass, struct rb_id_table *table);
 static inline void RCLASS_WRITE_CC_TBL(VALUE klass, VALUE table);
-static inline void RCLASS_SET_CVC_TBL(VALUE klass, struct rb_id_table *table);
-static inline void RCLASS_WRITE_CVC_TBL(VALUE klass, struct rb_id_table *table);
+static inline void RCLASS_SET_CVC_TBL(VALUE klass, VALUE table);
+static inline void RCLASS_WRITE_CVC_TBL(VALUE klass, VALUE table);
 
 static inline void RCLASS_WRITE_SUPERCLASSES(VALUE klass, size_t depth, VALUE *superclasses, bool with_self);
 static inline void RCLASS_SET_SUBCLASSES(VALUE klass, rb_subclass_entry_t *head);
@@ -513,7 +515,7 @@ RCLASS_WRITABLE_ENSURE_FIELDS_OBJ(VALUE obj)
     RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
     rb_classext_t *ext = RCLASS_EXT_WRITABLE(obj);
     if (!ext->fields_obj) {
-        RB_OBJ_WRITE(obj, &ext->fields_obj, rb_imemo_fields_new(obj, 1, true));
+        RB_OBJ_WRITE(obj, &ext->fields_obj, rb_imemo_fields_new(obj, ROOT_SHAPE_ID, true));
     }
     return ext->fields_obj;
 }
@@ -548,7 +550,7 @@ RCLASS_FIELDS_COUNT(VALUE obj)
 
     VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
     if (fields_obj) {
-        if (rb_shape_obj_too_complex_p(fields_obj)) {
+        if (rb_obj_shape_complex_p(fields_obj)) {
             return (uint32_t)rb_st_table_size(rb_imemo_fields_complex_tbl(fields_obj));
         }
         else {
@@ -601,15 +603,15 @@ RCLASS_WRITE_CC_TBL(VALUE klass, VALUE table)
 }
 
 static inline void
-RCLASS_SET_CVC_TBL(VALUE klass, struct rb_id_table *table)
+RCLASS_SET_CVC_TBL(VALUE klass, VALUE table)
 {
-    RCLASSEXT_CVC_TBL(RCLASS_EXT_PRIME(klass)) = table;
+    RB_OBJ_ATOMIC_WRITE(klass, &RCLASSEXT_CVC_TBL(RCLASS_EXT_PRIME(klass)), table);
 }
 
 static inline void
-RCLASS_WRITE_CVC_TBL(VALUE klass, struct rb_id_table *table)
+RCLASS_WRITE_CVC_TBL(VALUE klass, VALUE table)
 {
-    RCLASSEXT_CVC_TBL(RCLASS_EXT_WRITABLE(klass)) = table;
+    RB_OBJ_ATOMIC_WRITE(klass, &RCLASSEXT_CVC_TBL(RCLASS_EXT_WRITABLE(klass)), table);
 }
 
 static inline void
@@ -730,7 +732,22 @@ RCLASS_SET_ATTACHED_OBJECT(VALUE klass, VALUE attached_object)
 static inline void
 RCLASS_SET_MAX_IV_COUNT(VALUE klass, attr_index_t count)
 {
+    RUBY_ASSERT(klass != rb_cObject);
+    RUBY_ASSERT(klass != rb_cBasicObject);
+
     RCLASS_MAX_IV_COUNT(klass) = count;
+}
+
+static inline void
+RCLASS_SET_EXPECT_NO_IVAR(VALUE klass)
+{
+    RCLASS_EXT_PRIME(klass)->expect_no_ivar = true;
+}
+
+static inline bool
+RCLASS_EXPECT_NO_IVAR(VALUE klass)
+{
+    return RCLASS_EXT_PRIME(klass)->expect_no_ivar;
 }
 
 static inline void

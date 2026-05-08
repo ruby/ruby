@@ -6,7 +6,7 @@ describe :kernel_float, shared: true do
     float = 1.12
     float2 = @object.send(:Float, float)
     float2.should == float
-    float2.should equal float
+    float2.should.equal? float
   end
 
   it "returns a Float for Fixnums" do
@@ -22,22 +22,22 @@ describe :kernel_float, shared: true do
   end
 
   it "raises an ArgumentError for nil" do
-    -> { @object.send(:Float, nil) }.should raise_error(TypeError)
+    -> { @object.send(:Float, nil) }.should.raise(TypeError)
   end
 
   it "returns the identical NaN for NaN" do
     nan = nan_value
-    nan.nan?.should be_true
+    nan.nan?.should == true
     nan2 = @object.send(:Float, nan)
-    nan2.nan?.should be_true
-    nan2.should equal(nan)
+    nan2.nan?.should == true
+    nan2.should.equal?(nan)
   end
 
   it "returns the same Infinity for Infinity" do
     infinity = infinity_value
     infinity2 = @object.send(:Float, infinity)
     infinity2.should == infinity_value
-    infinity.should equal(infinity2)
+    infinity.should.equal?(infinity2)
   end
 
   it "converts Strings to floats without calling #to_f" do
@@ -51,30 +51,30 @@ describe :kernel_float, shared: true do
   end
 
   it "raises an ArgumentError for a String of word characters" do
-    -> { @object.send(:Float, "float") }.should raise_error(ArgumentError)
+    -> { @object.send(:Float, "float") }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError for a String with string in error message" do
-    -> { @object.send(:Float, "foo") }.should raise_error(ArgumentError) { |e|
+    -> { @object.send(:Float, "foo") }.should.raise(ArgumentError) { |e|
       e.message.should == 'invalid value for Float(): "foo"'
     }
   end
 
   it "raises an ArgumentError if there are two decimal points in the String" do
-    -> { @object.send(:Float, "10.0.0") }.should raise_error(ArgumentError)
+    -> { @object.send(:Float, "10.0.0") }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError for a String of numbers followed by word characters" do
-    -> { @object.send(:Float, "10D") }.should raise_error(ArgumentError)
+    -> { @object.send(:Float, "10D") }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError for a String of word characters followed by numbers" do
-    -> { @object.send(:Float, "D10") }.should raise_error(ArgumentError)
+    -> { @object.send(:Float, "D10") }.should.raise(ArgumentError)
   end
 
   it "is strict about the string form even across newlines" do
-    -> { @object.send(:Float, "not a number\n10") }.should raise_error(ArgumentError)
-    -> { @object.send(:Float, "10\nnot a number") }.should raise_error(ArgumentError)
+    -> { @object.send(:Float, "not a number\n10") }.should.raise(ArgumentError)
+    -> { @object.send(:Float, "10\nnot a number") }.should.raise(ArgumentError)
   end
 
   it "converts String subclasses to floats without calling #to_f" do
@@ -96,17 +96,17 @@ describe :kernel_float, shared: true do
   end
 
   it "raises an ArgumentError if a + or - is embedded in a String" do
-    -> { @object.send(:Float, "1+1") }.should raise_error(ArgumentError)
-    -> { @object.send(:Float, "1-1") }.should raise_error(ArgumentError)
+    -> { @object.send(:Float, "1+1") }.should.raise(ArgumentError)
+    -> { @object.send(:Float, "1-1") }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if a String has a trailing + or -" do
-    -> { @object.send(:Float, "11+") }.should raise_error(ArgumentError)
-    -> { @object.send(:Float, "11-") }.should raise_error(ArgumentError)
+    -> { @object.send(:Float, "11+") }.should.raise(ArgumentError)
+    -> { @object.send(:Float, "11-") }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError for a String with a leading _" do
-    -> { @object.send(:Float, "_1") }.should raise_error(ArgumentError)
+    -> { @object.send(:Float, "_1") }.should.raise(ArgumentError)
   end
 
   it "returns a value for a String with an embedded _" do
@@ -114,31 +114,31 @@ describe :kernel_float, shared: true do
   end
 
   it "raises an ArgumentError for a String with a trailing _" do
-    -> { @object.send(:Float, "10_") }.should raise_error(ArgumentError)
+    -> { @object.send(:Float, "10_") }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError for a String of \\0" do
-    -> { @object.send(:Float, "\0") }.should raise_error(ArgumentError)
+    -> { @object.send(:Float, "\0") }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError for a String with a leading \\0" do
-    -> { @object.send(:Float, "\01") }.should raise_error(ArgumentError)
+    -> { @object.send(:Float, "\01") }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError for a String with an embedded \\0" do
-    -> { @object.send(:Float, "1\01") }.should raise_error(ArgumentError)
+    -> { @object.send(:Float, "1\01") }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError for a String with a trailing \\0" do
-    -> { @object.send(:Float, "1\0") }.should raise_error(ArgumentError)
+    -> { @object.send(:Float, "1\0") }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError for a String that is just an empty space" do
-    -> { @object.send(:Float, " ") }.should raise_error(ArgumentError)
+    -> { @object.send(:Float, " ") }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError for a String that with an embedded space" do
-    -> { @object.send(:Float, "1 2") }.should raise_error(ArgumentError)
+    -> { @object.send(:Float, "1 2") }.should.raise(ArgumentError)
   end
 
   it "returns a value for a String with a leading space" do
@@ -159,11 +159,11 @@ describe :kernel_float, shared: true do
 
   ruby_version_is ""..."3.4" do
     it "raises ArgumentError if a fractional part is missing" do
-      -> { @object.send(:Float, "1.") }.should raise_error(ArgumentError)
-      -> { @object.send(:Float, "+1.") }.should raise_error(ArgumentError)
-      -> { @object.send(:Float, "-1.") }.should raise_error(ArgumentError)
-      -> { @object.send(:Float, "1.e+0") }.should raise_error(ArgumentError)
-      -> { @object.send(:Float, "1.e-2") }.should raise_error(ArgumentError)
+      -> { @object.send(:Float, "1.") }.should.raise(ArgumentError)
+      -> { @object.send(:Float, "+1.") }.should.raise(ArgumentError)
+      -> { @object.send(:Float, "-1.") }.should.raise(ArgumentError)
+      -> { @object.send(:Float, "1.e+0") }.should.raise(ArgumentError)
+      -> { @object.send(:Float, "1.e-2") }.should.raise(ArgumentError)
     end
   end
 
@@ -179,11 +179,11 @@ describe :kernel_float, shared: true do
 
   %w(e E).each do |e|
     it "raises an ArgumentError if #{e} is the trailing character" do
-      -> { @object.send(:Float, "2#{e}") }.should raise_error(ArgumentError)
+      -> { @object.send(:Float, "2#{e}") }.should.raise(ArgumentError)
     end
 
     it "raises an ArgumentError if #{e} is the leading character" do
-      -> { @object.send(:Float, "#{e}2") }.should raise_error(ArgumentError)
+      -> { @object.send(:Float, "#{e}2") }.should.raise(ArgumentError)
     end
 
     it "returns Infinity for '2#{e}1000'" do
@@ -201,18 +201,18 @@ describe :kernel_float, shared: true do
     end
 
     it "raises an exception if a space is embedded on either side of the '#{e}'" do
-      -> { @object.send(:Float, "2 0#{e}100") }.should raise_error(ArgumentError)
-      -> { @object.send(:Float, "20#{e}1 00") }.should raise_error(ArgumentError)
+      -> { @object.send(:Float, "2 0#{e}100") }.should.raise(ArgumentError)
+      -> { @object.send(:Float, "20#{e}1 00") }.should.raise(ArgumentError)
     end
 
     it "raises an exception if there's a leading _ on either side of the '#{e}'" do
-      -> { @object.send(:Float, "_20#{e}100") }.should raise_error(ArgumentError)
-      -> { @object.send(:Float, "20#{e}_100") }.should raise_error(ArgumentError)
+      -> { @object.send(:Float, "_20#{e}100") }.should.raise(ArgumentError)
+      -> { @object.send(:Float, "20#{e}_100") }.should.raise(ArgumentError)
     end
 
     it "raises an exception if there's a trailing _ on either side of the '#{e}'" do
-      -> { @object.send(:Float, "20_#{e}100") }.should raise_error(ArgumentError)
-      -> { @object.send(:Float, "20#{e}100_") }.should raise_error(ArgumentError)
+      -> { @object.send(:Float, "20_#{e}100") }.should.raise(ArgumentError)
+      -> { @object.send(:Float, "20#{e}100_") }.should.raise(ArgumentError)
     end
 
     it "allows decimal points on the left side of the '#{e}'" do
@@ -220,7 +220,7 @@ describe :kernel_float, shared: true do
     end
 
     it "raises an ArgumentError if there's a decimal point on the right side of the '#{e}'" do
-      -> { @object.send(:Float, "20#{e}2.0") }.should raise_error(ArgumentError)
+      -> { @object.send(:Float, "20#{e}2.0") }.should.raise(ArgumentError)
     end
   end
 
@@ -241,8 +241,8 @@ describe :kernel_float, shared: true do
 
     ruby_version_is ""..."3.4.3" do
       it "does not accept embedded _ if the number contains a-f" do
-        -> { @object.send(:Float, "0x1_0a") }.should raise_error(ArgumentError)
-        @object.send(:Float, "0x1_0a", exception: false).should be_nil
+        -> { @object.send(:Float, "0x1_0a") }.should.raise(ArgumentError)
+        @object.send(:Float, "0x1_0a", exception: false).should == nil
       end
     end
 
@@ -253,12 +253,12 @@ describe :kernel_float, shared: true do
     end
 
     it "does not accept _ before, after or inside the 0x prefix" do
-      -> { @object.send(:Float, "_0x10") }.should raise_error(ArgumentError)
-      -> { @object.send(:Float, "0_x10") }.should raise_error(ArgumentError)
-      -> { @object.send(:Float, "0x_10") }.should raise_error(ArgumentError)
-      @object.send(:Float, "_0x10", exception: false).should be_nil
-      @object.send(:Float, "0_x10", exception: false).should be_nil
-      @object.send(:Float, "0x_10", exception: false).should be_nil
+      -> { @object.send(:Float, "_0x10") }.should.raise(ArgumentError)
+      -> { @object.send(:Float, "0_x10") }.should.raise(ArgumentError)
+      -> { @object.send(:Float, "0x_10") }.should.raise(ArgumentError)
+      @object.send(:Float, "_0x10", exception: false).should == nil
+      @object.send(:Float, "0_x10", exception: false).should == nil
+      @object.send(:Float, "0x_10", exception: false).should == nil
     end
 
     it "parses negative hexadecimal string as negative float" do
@@ -282,11 +282,11 @@ describe :kernel_float, shared: true do
         end
 
         it "raises an ArgumentError if #{p} is the trailing character" do
-          -> { @object.send(:Float, "0x1#{p}") }.should raise_error(ArgumentError)
+          -> { @object.send(:Float, "0x1#{p}") }.should.raise(ArgumentError)
         end
 
         it "raises an ArgumentError if #{p} is the leading character" do
-          -> { @object.send(:Float, "0x#{p}1") }.should raise_error(ArgumentError)
+          -> { @object.send(:Float, "0x#{p}1") }.should.raise(ArgumentError)
         end
 
         it "returns Infinity for '0x1#{p}10000'" do
@@ -304,18 +304,18 @@ describe :kernel_float, shared: true do
         end
 
         it "raises an exception if a space is embedded on either side of the '#{p}'" do
-          -> { @object.send(:Float, "0x1 0#{p}10") }.should raise_error(ArgumentError)
-          -> { @object.send(:Float, "0x10#{p}1 0") }.should raise_error(ArgumentError)
+          -> { @object.send(:Float, "0x1 0#{p}10") }.should.raise(ArgumentError)
+          -> { @object.send(:Float, "0x10#{p}1 0") }.should.raise(ArgumentError)
         end
 
         it "raises an exception if there's a leading _ on either side of the '#{p}'" do
-          -> { @object.send(:Float, "0x_10#{p}10") }.should raise_error(ArgumentError)
-          -> { @object.send(:Float, "0x10#{p}_10") }.should raise_error(ArgumentError)
+          -> { @object.send(:Float, "0x_10#{p}10") }.should.raise(ArgumentError)
+          -> { @object.send(:Float, "0x10#{p}_10") }.should.raise(ArgumentError)
         end
 
         it "raises an exception if there's a trailing _ on either side of the '#{p}'" do
-          -> { @object.send(:Float, "0x10_#{p}10") }.should raise_error(ArgumentError)
-          -> { @object.send(:Float, "0x10#{p}10_") }.should raise_error(ArgumentError)
+          -> { @object.send(:Float, "0x10_#{p}10") }.should.raise(ArgumentError)
+          -> { @object.send(:Float, "0x10#{p}10_") }.should.raise(ArgumentError)
         end
 
         it "allows hexadecimal points on the left side of the '#{p}'" do
@@ -323,7 +323,7 @@ describe :kernel_float, shared: true do
         end
 
         it "raises an ArgumentError if there's a decimal point on the right side of the '#{p}'" do
-          -> { @object.send(:Float, "0x1#{p}1.0") }.should raise_error(ArgumentError)
+          -> { @object.send(:Float, "0x1#{p}1.0") }.should.raise(ArgumentError)
         end
       end
     end
@@ -344,34 +344,34 @@ describe :kernel_float, shared: true do
     nan = nan_value
     (nan_to_f = mock('NaN')).should_receive(:to_f).once.and_return(nan)
     nan2 = @object.send(:Float, nan_to_f)
-    nan2.nan?.should be_true
-    nan2.should equal(nan)
+    nan2.nan?.should == true
+    nan2.should.equal?(nan)
   end
 
   it "returns the identical Infinity if #to_f is called and it returns Infinity" do
     infinity = infinity_value
     (infinity_to_f = mock('Infinity')).should_receive(:to_f).once.and_return(infinity)
     infinity2 = @object.send(:Float, infinity_to_f)
-    infinity2.should equal(infinity)
+    infinity2.should.equal?(infinity)
   end
 
   it "raises a TypeError if #to_f is not provided" do
-    -> { @object.send(:Float, mock('x')) }.should raise_error(TypeError)
+    -> { @object.send(:Float, mock('x')) }.should.raise(TypeError)
   end
 
   it "raises a TypeError if #to_f returns a String" do
     (obj = mock('ha!')).should_receive(:to_f).once.and_return('ha!')
-    -> { @object.send(:Float, obj) }.should raise_error(TypeError)
+    -> { @object.send(:Float, obj) }.should.raise(TypeError)
   end
 
   it "raises a TypeError if #to_f returns an Integer" do
     (obj = mock('123')).should_receive(:to_f).once.and_return(123)
-    -> { @object.send(:Float, obj) }.should raise_error(TypeError)
+    -> { @object.send(:Float, obj) }.should.raise(TypeError)
   end
 
   it "raises a RangeError when passed a Complex argument" do
     c = Complex(2, 3)
-    -> { @object.send(:Float, c) }.should raise_error(RangeError)
+    -> { @object.send(:Float, c) }.should.raise(RangeError)
   end
 
   describe "when passed exception: false" do
@@ -408,6 +408,6 @@ end
 
 describe "Kernel#Float" do
   it "is a private method" do
-    Kernel.should have_private_instance_method(:Float)
+    Kernel.private_instance_methods(false).should.include?(:Float)
   end
 end

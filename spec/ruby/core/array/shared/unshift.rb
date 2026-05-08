@@ -1,9 +1,9 @@
 describe :array_unshift, shared: true do
   it "prepends object to the original array" do
     a = [1, 2, 3]
-    a.send(@method, "a").should equal(a)
+    a.send(@method, "a").should.equal?(a)
     a.should == ['a', 1, 2, 3]
-    a.send(@method).should equal(a)
+    a.send(@method).should.equal?(a)
     a.should == ['a', 1, 2, 3]
     a.send(@method, 5, 4, 3)
     a.should == [5, 4, 3, 'a', 1, 2, 3]
@@ -41,12 +41,12 @@ describe :array_unshift, shared: true do
   end
 
   it "raises a FrozenError on a frozen array when the array is modified" do
-    -> { ArraySpecs.frozen_array.send(@method, 1) }.should raise_error(FrozenError)
+    -> { ArraySpecs.frozen_array.send(@method, 1) }.should.raise(FrozenError)
   end
 
   # see [ruby-core:23666]
   it "raises a FrozenError on a frozen array when the array would not be modified" do
-    -> { ArraySpecs.frozen_array.send(@method) }.should raise_error(FrozenError)
+    -> { ArraySpecs.frozen_array.send(@method) }.should.raise(FrozenError)
   end
 
   # https://github.com/truffleruby/truffleruby/issues/2772

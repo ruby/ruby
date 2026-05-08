@@ -29,8 +29,8 @@ describe "Integer#nobits?" do
     -> {
       (obj = mock('10')).should_receive(:coerce).any_number_of_times.and_return([42,10])
       13.nobits?(obj)
-    }.should raise_error(TypeError)
-    -> { 13.nobits?("10")    }.should raise_error(TypeError)
-    -> { 13.nobits?(:symbol) }.should raise_error(TypeError)
+    }.should.raise(TypeError)
+    -> { 13.nobits?("10")    }.should.raise(TypeError)
+    -> { 13.nobits?(:symbol) }.should.raise(TypeError)
   end
 end

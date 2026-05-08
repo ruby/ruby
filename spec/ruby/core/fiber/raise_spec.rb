@@ -4,7 +4,7 @@ require_relative '../../shared/kernel/raise'
 
 describe "Fiber#raise" do
   it "is a public method" do
-    Fiber.public_instance_methods.should include(:raise)
+    Fiber.public_instance_methods.should.include?(:raise)
   end
 
   it_behaves_like :kernel_raise, :raise, FiberSpecs::NewFiberToRaise
@@ -14,51 +14,51 @@ describe "Fiber#raise" do
   end
 
   it 'raises RuntimeError by default' do
-    -> { FiberSpecs::NewFiberToRaise.raise }.should raise_error(RuntimeError)
+    -> { FiberSpecs::NewFiberToRaise.raise }.should.raise(RuntimeError)
   end
 
   it "raises FiberError if Fiber is not born" do
     fiber = Fiber.new { true }
-    -> { fiber.raise }.should raise_error(FiberError, "cannot raise exception on unborn fiber")
+    -> { fiber.raise }.should.raise(FiberError, "cannot raise exception on unborn fiber")
   end
 
   it "raises FiberError if Fiber is dead" do
     fiber = Fiber.new { true }
     fiber.resume
-    -> { fiber.raise }.should raise_error(FiberError, /dead fiber called|attempt to resume a terminated fiber/)
+    -> { fiber.raise }.should.raise(FiberError, /dead fiber called|attempt to resume a terminated fiber/)
   end
 
   it 'accepts error class' do
-    -> { FiberSpecs::NewFiberToRaise.raise FiberSpecs::CustomError }.should raise_error(FiberSpecs::CustomError)
+    -> { FiberSpecs::NewFiberToRaise.raise FiberSpecs::CustomError }.should.raise(FiberSpecs::CustomError)
   end
 
   it 'accepts error message' do
-    -> { FiberSpecs::NewFiberToRaise.raise "error message" }.should raise_error(RuntimeError, "error message")
+    -> { FiberSpecs::NewFiberToRaise.raise "error message" }.should.raise(RuntimeError, "error message")
   end
 
   it 'does not accept array of backtrace information only' do
-    -> { FiberSpecs::NewFiberToRaise.raise ['foo'] }.should raise_error(TypeError)
+    -> { FiberSpecs::NewFiberToRaise.raise ['foo'] }.should.raise(TypeError)
   end
 
   it 'does not accept integer' do
-    -> { FiberSpecs::NewFiberToRaise.raise 100 }.should raise_error(TypeError)
+    -> { FiberSpecs::NewFiberToRaise.raise 100 }.should.raise(TypeError)
   end
 
   it 'accepts error class with error message' do
-    -> { FiberSpecs::NewFiberToRaise.raise FiberSpecs::CustomError, 'test error' }.should raise_error(FiberSpecs::CustomError, 'test error')
+    -> { FiberSpecs::NewFiberToRaise.raise FiberSpecs::CustomError, 'test error' }.should.raise(FiberSpecs::CustomError, 'test error')
   end
 
   it 'accepts error class with error message and backtrace information' do
     -> {
       FiberSpecs::NewFiberToRaise.raise FiberSpecs::CustomError, 'test error', ['foo', 'boo']
-    }.should raise_error(FiberSpecs::CustomError) { |e|
+    }.should.raise(FiberSpecs::CustomError) { |e|
       e.message.should == 'test error'
       e.backtrace.should == ['foo', 'boo']
     }
   end
 
   it 'does not accept only error message and backtrace information' do
-    -> { FiberSpecs::NewFiberToRaise.raise 'test error', ['foo', 'boo'] }.should raise_error(TypeError)
+    -> { FiberSpecs::NewFiberToRaise.raise 'test error', ['foo', 'boo'] }.should.raise(TypeError)
   end
 
   it "raises a FiberError if invoked from a different Thread" do
@@ -67,15 +67,15 @@ describe "Fiber#raise" do
     Thread.new do
       -> {
         fiber.raise
-      }.should raise_error(FiberError, "fiber called across threads")
+      }.should.raise(FiberError, "fiber called across threads")
     end.join
   end
 
   it "kills Fiber" do
     fiber = Fiber.new { Fiber.yield :first; :second }
     fiber.resume
-    -> { fiber.raise }.should raise_error
-    -> { fiber.resume }.should raise_error(FiberError, /dead fiber called|attempt to resume a terminated fiber/)
+    -> { fiber.raise }.should.raise
+    -> { fiber.resume }.should.raise(FiberError, /dead fiber called|attempt to resume a terminated fiber/)
   end
 
   it "returns to calling fiber after raise" do
@@ -107,13 +107,13 @@ describe "Fiber#raise" do
 
       -> do
         f2.raise(RuntimeError, "Expected error")
-      end.should raise_error(RuntimeError, "Expected error")
+      end.should.raise(RuntimeError, "Expected error")
     end
 
     it "raises on itself" do
       -> do
         Fiber.current.raise(RuntimeError, "Expected error")
-      end.should raise_error(RuntimeError, "Expected error")
+      end.should.raise(RuntimeError, "Expected error")
     end
 
     it "should raise on parent fiber" do
@@ -128,7 +128,7 @@ describe "Fiber#raise" do
 
       -> do
         f2.resume
-      end.should raise_error(RuntimeError, "Expected error")
+      end.should.raise(RuntimeError, "Expected error")
     end
   end
 
@@ -136,6 +136,6 @@ describe "Fiber#raise" do
     root = Fiber.current
     fiber = Fiber.new { root.transfer }
     fiber.transfer
-    -> { fiber.raise "msg" }.should raise_error(RuntimeError, "msg")
+    -> { fiber.raise "msg" }.should.raise(RuntimeError, "msg")
   end
 end

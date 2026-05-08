@@ -166,9 +166,9 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
   end if ENV["OSSL_TEST_ALL"] == "1" && Process.respond_to?(:setsid)
 
   def test_hmac_sign_verify
-    pkey = OpenSSL::PKey.generate_key("HMAC", { "key" => "abcd" })
+    pkey = OpenSSL::PKey.generate_key("HMAC", { "key" => "a"*32 })
 
-    hmac = OpenSSL::HMAC.new("abcd", "SHA256").update("data").digest
+    hmac = OpenSSL::HMAC.new("a"*32, "SHA256").update("data").digest
     assert_equal hmac, pkey.sign("SHA256", "data")
 
     # EVP_PKEY_HMAC does not support verify

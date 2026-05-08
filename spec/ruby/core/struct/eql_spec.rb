@@ -8,6 +8,6 @@ describe "Struct#eql?" do
   it "returns false if any corresponding elements are not #eql?" do
     car = StructClasses::Car.new("Honda", "Accord", 1998)
     similar_car = StructClasses::Car.new("Honda", "Accord", 1998.0)
-    car.should_not eql(similar_car)
+    car.should_not.eql?(similar_car)
   end
 end

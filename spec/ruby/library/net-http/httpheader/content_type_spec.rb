@@ -17,7 +17,7 @@ describe "Net::HTTPHeader#content_type" do
   end
 
   it "returns nil if the 'Content-Type' header entry does not exist" do
-    @headers.content_type.should be_nil
+    @headers.content_type.should == nil
   end
 end
 

@@ -16,7 +16,7 @@ describe 'UNIXSocket#remote_address' do
   end
 
   it 'returns an Addrinfo' do
-    @client.remote_address.should be_an_instance_of(Addrinfo)
+    @client.remote_address.should.instance_of?(Addrinfo)
   end
 
   describe 'the returned Addrinfo' do

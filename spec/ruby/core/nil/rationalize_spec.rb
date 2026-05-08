@@ -10,7 +10,7 @@ describe "NilClass#rationalize" do
   end
 
   it "raises ArgumentError when passed more than one argument" do
-    -> { nil.rationalize(0.1, 0.1) }.should raise_error(ArgumentError)
-    -> { nil.rationalize(0.1, 0.1, 2) }.should raise_error(ArgumentError)
+    -> { nil.rationalize(0.1, 0.1) }.should.raise(ArgumentError)
+    -> { nil.rationalize(0.1, 0.1, 2) }.should.raise(ArgumentError)
   end
 end

@@ -96,28 +96,28 @@ describe :openssl_digest_update, shared: true do
       digest = OpenSSL::Digest.new('sha1')
       -> {
         digest.send(@method, Object.new)
-      }.should raise_error(TypeError, 'no implicit conversion of Object into String')
+      }.should.raise(TypeError, 'no implicit conversion of Object into String')
     end
 
     it "raises a TypeError with SHA256" do
       digest = OpenSSL::Digest.new('sha256')
       -> {
         digest.send(@method, Object.new)
-      }.should raise_error(TypeError, 'no implicit conversion of Object into String')
+      }.should.raise(TypeError, 'no implicit conversion of Object into String')
     end
 
     it "raises a TypeError with SHA384" do
       digest = OpenSSL::Digest.new('sha384')
       -> {
         digest.send(@method, Object.new)
-      }.should raise_error(TypeError, 'no implicit conversion of Object into String')
+      }.should.raise(TypeError, 'no implicit conversion of Object into String')
     end
 
     it "raises a TypeError with SHA512" do
       digest = OpenSSL::Digest.new('sha512')
       -> {
         digest.send(@method, Object.new)
-      }.should raise_error(TypeError, 'no implicit conversion of Object into String')
+      }.should.raise(TypeError, 'no implicit conversion of Object into String')
     end
   end
 end

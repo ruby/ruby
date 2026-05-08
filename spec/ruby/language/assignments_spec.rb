@@ -36,7 +36,7 @@ describe 'Assignments' do
 
         -> {
           (:not_a_module)::A = (ScratchPad << :rhs; :value)
-        }.should raise_error(TypeError)
+        }.should.raise(TypeError)
 
         ScratchPad.recorded.should == [:rhs]
       end
@@ -68,7 +68,7 @@ describe 'Assignments' do
 
           -> {
             eval "obj[:a, &block] = 2"
-          }.should raise_error(SyntaxError, /unexpected block arg given in index assignment|block arg given in index assignment/)
+          }.should.raise(SyntaxError, /unexpected block arg given in index assignment|block arg given in index assignment/)
         end
       end
     end
@@ -95,7 +95,7 @@ describe 'Assignments' do
       ruby_version_is "3.4" do
         it "raises SyntaxError when given keyword arguments in index assignments" do
           a = @klass.new
-          -> { eval "a[1, 2, 3, b: 4] = 5" }.should raise_error(SyntaxError,
+          -> { eval "a[1, 2, 3, b: 4] = 5" }.should.raise(SyntaxError,
             /keywords are not allowed in index assignment expressions|keyword arg given in index assignment/) # prism|parse.y
         end
       end
@@ -199,7 +199,7 @@ describe 'Assignments' do
 
             -> {
               eval "obj[:a, &block] += 2"
-            }.should raise_error(SyntaxError, /unexpected block arg given in index assignment|block arg given in index assignment/)
+            }.should.raise(SyntaxError, /unexpected block arg given in index assignment|block arg given in index assignment/)
           end
         end
       end
@@ -230,7 +230,7 @@ describe 'Assignments' do
         ruby_version_is "3.4" do
           it "raises SyntaxError when given keyword arguments in index assignments" do
             a = @klass.new
-            -> { eval "a[1, 2, 3, b: 4] += 5" }.should raise_error(SyntaxError,
+            -> { eval "a[1, 2, 3, b: 4] += 5" }.should.raise(SyntaxError,
               /keywords are not allowed in index assignment expressions|keyword arg given in index assignment/) # prism|parse.y
           end
         end

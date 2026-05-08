@@ -64,7 +64,9 @@ module Bundler
 
       @cached_dependencies = Hash.new do |dependencies, package|
         dependencies[package] = Hash.new do |versions, version|
-          versions[version] = to_dependency_hash(version.dependencies.reject {|d| d.name == package.name }, @packages)
+          deps = version.dependencies.reject {|d| d.name == package.name }
+          deps = apply_metadata_overrides(deps, package.name)
+          versions[version] = to_dependency_hash(deps, @packages)
         end
       end
 
@@ -80,6 +82,7 @@ module Bundler
       solver = PubGrub::VersionSolver.new(source: self, root: root, strategy: Strategy.new(self), logger: logger)
       result = solver.solve
       resolved_specs = result.flat_map {|package, version| version.to_specs(package, @most_specific_locked_platform) }
+      Override.attach(resolved_specs, @base.overrides)
       SpecSet.new(resolved_specs).specs_with_additional_variants_from(@base.locked_specs)
     rescue PubGrub::SolveFailure => e
       incompatibility = e.incompatibility
@@ -120,7 +123,23 @@ module Bundler
         explanation << extended_explanation
       end
 
+      override_summary = override_diagnostic_summary
+      explanation << override_summary if override_summary
+
       raise SolveFailure.new(explanation)
+    end
+
+    def override_diagnostic_summary
+      return nil if @base.overrides.empty?
+
+      lines = ["Bundler applied the following overrides while resolving:"]
+      @base.overrides.each do |override|
+        target = override.target == :all ? ":all" : override.target.inspect
+        location = override.source_location_label
+        lines << "  override #{target}, #{override.field}: #{override.operation.inspect}" \
+          "#{location ? " (declared at #{location})" : ""}"
+      end
+      "\n\n#{lines.join("\n")}"
     end
 
     def find_names_to_relax(incompatibility)
@@ -510,7 +529,7 @@ module Bundler
     end
 
     def to_dependency_hash(dependencies, packages)
-      dependencies.inject({}) do |deps, dep|
+      apply_overrides(dependencies).inject({}) do |deps, dep|
         package = packages[dep.name]
 
         current_req = deps[package]
@@ -523,6 +542,33 @@ module Bundler
         end
 
         deps
+      end
+    end
+
+    def apply_overrides(dependencies)
+      return dependencies if @base.overrides.empty?
+
+      dependencies.map do |dep|
+        override = Override.find_for(@base.overrides, dep.name, :version)
+        next dep unless override
+        Gem::Dependency.new(dep.name, override.apply_to(dep.requirement))
+      end
+    end
+
+    METADATA_DEP_FIELD = {
+      "Ruby\0" => :required_ruby_version,
+      "RubyGems\0" => :required_rubygems_version,
+    }.freeze
+
+    def apply_metadata_overrides(dependencies, name)
+      return dependencies if @base.overrides.empty?
+
+      dependencies.map do |dep|
+        field = METADATA_DEP_FIELD[dep.name]
+        next dep unless field
+        override = Override.find_for(@base.overrides, name, field)
+        next dep unless override
+        Gem::Dependency.new(dep.name, override.apply_to(dep.requirement))
       end
     end
 

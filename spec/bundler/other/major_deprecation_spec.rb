@@ -290,7 +290,7 @@ RSpec.describe "major deprecations" do
 
     describe "old get interface" do
       before do
-        bundle "config waka"
+        bundle "config waka", raise_on_error: false
       end
 
       it "warns", bundler: "4" do

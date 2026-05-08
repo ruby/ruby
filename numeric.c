@@ -910,7 +910,7 @@ num_negative_p(VALUE num)
 VALUE
 rb_float_new_in_heap(double d)
 {
-    NEWOBJ_OF(flt, struct RFloat, rb_cFloat, T_FLOAT | (RGENGC_WB_PROTECTED_FLOAT ? FL_WB_PROTECTED : 0), sizeof(struct RFloat), 0);
+    NEWOBJ_OF(flt, struct RFloat, rb_cFloat, T_FLOAT, sizeof(struct RFloat));
 
 #if SIZEOF_DOUBLE <= SIZEOF_VALUE
     flt->float_value = d;
@@ -2563,6 +2563,12 @@ flo_to_i(VALUE num)
     if (f < 0.0) f = ceil(f);
 
     return dbl2ival(f);
+}
+
+VALUE
+rb_flo_to_i(VALUE num)
+{
+    return flo_to_i(num);
 }
 
 /*

@@ -28,6 +28,6 @@ describe "ObjectSpace.undefine_finalizer" do
   it "should raise when removing finalizers for a frozen object" do
     obj = Object.new
     obj.freeze
-    -> { ObjectSpace.undefine_finalizer(obj) }.should raise_error(FrozenError)
+    -> { ObjectSpace.undefine_finalizer(obj) }.should.raise(FrozenError)
   end
 end

@@ -17,8 +17,8 @@ describe "Matrix#**" do
 
     it "raises a ErrDimensionMismatch for non square matrices" do
       m = Matrix[ [1, 1], [1, 2], [2, 3]]
-      -> { m ** 3 }.should raise_error(Matrix::ErrDimensionMismatch)
-      -> { m ** 0 }.should raise_error(Matrix::ErrDimensionMismatch)
+      -> { m ** 3 }.should.raise(Matrix::ErrDimensionMismatch)
+      -> { m ** 0 }.should.raise(Matrix::ErrDimensionMismatch)
     end
 
     describe "that is < 0" do
@@ -30,7 +30,7 @@ describe "Matrix#**" do
 
       it "raises a ErrNotRegular for irregular matrices" do
         m = Matrix[ [1, 1], [1, 1] ]
-        -> { m ** -2 }.should raise_error(Matrix::ErrNotRegular)
+        -> { m ** -2 }.should.raise(Matrix::ErrNotRegular)
       end
     end
 
@@ -42,7 +42,7 @@ describe "Matrix#**" do
 
       it "raises an ErrDimensionMismatch for non-square matrices" do
         m = Matrix[ [1, 1] ]
-        -> { m ** 0 }.should raise_error(Matrix::ErrDimensionMismatch)
+        -> { m ** 0 }.should.raise(Matrix::ErrDimensionMismatch)
       end
     end
   end
@@ -56,7 +56,7 @@ describe "Matrix#**" do
 
   describe "for a subclass of Matrix" do
     it "returns an instance of that subclass" do
-      (MatrixSub.ins ** 1).should be_an_instance_of(MatrixSub)
+      (MatrixSub.ins ** 1).should.instance_of?(MatrixSub)
     end
   end
 end

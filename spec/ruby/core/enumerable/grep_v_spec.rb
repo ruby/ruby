@@ -55,7 +55,7 @@ describe "Enumerable#grep_v" do
     end
 
     it "raises an ArgumentError when not given a pattern" do
-      -> { @numerous.grep_v }.should raise_error(ArgumentError)
+      -> { @numerous.grep_v }.should.raise(ArgumentError)
     end
   end
 
@@ -70,7 +70,7 @@ describe "Enumerable#grep_v" do
     end
 
     it "raises an ArgumentError when not given a pattern" do
-      -> { @numerous.grep_v { |e| e } }.should raise_error(ArgumentError)
+      -> { @numerous.grep_v { |e| e } }.should.raise(ArgumentError)
     end
   end
 end

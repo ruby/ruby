@@ -3730,6 +3730,60 @@ io_buffer_not_inplace(VALUE self)
     return self;
 }
 
+static size_t
+memory_bit_count(const unsigned char *base, size_t size)
+{
+    size_t count = 0;
+
+    // Process 8 bytes at a time for efficiency:
+    const uint64_t *base64 = (const uint64_t *)base;
+    size_t count64 = size / 8;
+    for (size_t i = 0; i < count64; i += 1) {
+        count += rb_popcount64(base64[i]);
+    }
+
+    // Process any remaining bytes:
+    size_t remaining = size % 8;
+    const unsigned char *tail = base + (count64 * 8);
+    for (size_t i = 0; i < remaining; i += 1) {
+        count += rb_popcount32(tail[i]);
+    }
+
+    return count;
+}
+
+/*
+ *  call-seq: bit_count([offset, [length]]) -> integer
+ *
+ *  Returns the number of set bits (1s) in the buffer, also known as the
+ *  Hamming weight or population count. An optional +offset+ and +length+
+ *  can be provided to count bits in a subrange of the buffer.
+ *
+ *    IO::Buffer.for("\xFF\x00\x0F").bit_count
+ *    # => 12
+ *
+ *    IO::Buffer.for("\xFF\x00\x0F").bit_count(1, 2)
+ *    # => 4
+ */
+static VALUE
+io_buffer_bit_count(int argc, VALUE *argv, VALUE self)
+{
+    rb_check_arity(argc, 0, 2);
+
+    size_t offset, length;
+    struct rb_io_buffer *buffer = io_buffer_extract_offset_length(self, argc, argv, &offset, &length);
+
+    io_buffer_validate_range(buffer, offset, length);
+
+    const void *base;
+    size_t size;
+    io_buffer_get_bytes_for_reading(buffer, &base, &size);
+
+    size_t count = memory_bit_count((const unsigned char *)base + offset, length);
+
+    return SIZET2NUM(count);
+}
+
 /*
  *  Document-class: IO::Buffer
  *
@@ -3984,6 +4038,8 @@ Init_IO_Buffer(void)
     rb_define_method(rb_cIOBuffer, "or!", io_buffer_or_inplace, 1);
     rb_define_method(rb_cIOBuffer, "xor!", io_buffer_xor_inplace, 1);
     rb_define_method(rb_cIOBuffer, "not!", io_buffer_not_inplace, 0);
+
+    rb_define_method(rb_cIOBuffer, "bit_count", io_buffer_bit_count, -1);
 
     // IO operations:
     rb_define_method(rb_cIOBuffer, "read", io_buffer_read, -1);

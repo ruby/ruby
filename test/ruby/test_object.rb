@@ -970,6 +970,69 @@ class TestObject < Test::Unit::TestCase
     assert_not_include(s, "@password=")
   end
 
+  def test_inspect_mutating_ivar
+    obj = Object.new
+    evil = Object.new
+    evil.define_singleton_method(:inspect) do
+      obj.instance_variables.each { |v| obj.remove_instance_variable(v) }
+      "evil"
+    end
+    obj.instance_variable_set(:@evil, evil)
+    10.times { |i| obj.instance_variable_set(:"@v#{i}", 0) }
+    # Buffered iteration: inspect sees a snapshot of the original ivars
+    result = obj.inspect
+    assert_include result, "@evil=evil"
+    10.times { |i| assert_include result, "@v#{i}=0" }
+  end
+
+  def test_inspect_mutating_ivar_complex
+    # Force complex by creating many shape variations on the same class
+    c = Class.new
+    50.times do |i|
+      o = c.new
+      o.instance_variable_set(:"@unique_#{i}", 0)
+    end
+
+    obj = c.new
+    evil = Object.new
+    evil.define_singleton_method(:inspect) do
+      obj.instance_variables.each { |v| obj.remove_instance_variable(v) }
+      ""
+    end
+    obj.instance_variable_set(:@evil, evil)
+    10.times { |i| obj.instance_variable_set(:"@v#{i}", 0) }
+    # complex objects use st_foreach which handles mutation gracefully
+    obj.inspect
+  end
+
+  def test_inspect_complex
+    kernel_inspect = Kernel.instance_method(:inspect)
+
+    klasses = [
+      Class.new,
+      Class.new(String),
+      Class.new(Array),
+      Class.new(Hash),
+      Struct.new(:x),
+      Class.new(Thread::Mutex),
+      # It's very difficult to get a complex T_CLASS, so that isn't tested here
+    ]
+
+    klasses.each_with_index do |klass, idx|
+      8.times do |i|
+        klass.new.instance_variable_set(:"@sib_#{rand(999999)}", 1)
+      end
+
+      obj = klass.new
+      obj.instance_variable_set(:@a, 1)
+      obj.instance_variable_set(:@b, 2)
+
+      s = kernel_inspect.bind_call(obj)
+      assert_include(s, "@a=1")
+      assert_include(s, "@b=2")
+    end
+  end
+
   def test_singleton_methods
     assert_equal([], Object.new.singleton_methods)
     assert_equal([], Object.new.singleton_methods(false))

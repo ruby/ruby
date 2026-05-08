@@ -19,7 +19,7 @@ describe "Array#reverse_each" do
 
   it "returns self" do
     a = [:a, :b, :c]
-    a.reverse_each { |x| }.should equal(a)
+    a.reverse_each { |x| }.should.equal?(a)
   end
 
   it "yields only the top level element of an empty recursive arrays" do

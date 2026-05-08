@@ -9,18 +9,18 @@ describe "Enumerator::Generator#initialize" do
   end
 
   it "is a private method" do
-    @class.should have_private_instance_method(:initialize, false)
+    @class.private_instance_methods(false).should.include?(:initialize)
   end
 
   it "returns self when given a block" do
-    @uninitialized.send(:initialize) {}.should equal(@uninitialized)
+    @uninitialized.send(:initialize) {}.should.equal?(@uninitialized)
   end
 
   describe "on frozen instance" do
     it "raises a FrozenError" do
       -> {
         @uninitialized.freeze.send(:initialize) {}
-      }.should raise_error(FrozenError)
+      }.should.raise(FrozenError)
     end
   end
 end

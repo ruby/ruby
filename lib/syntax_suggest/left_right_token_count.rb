@@ -49,21 +49,22 @@ module SyntaxSuggest
     #
     # Example:
     #
+    #   token = CodeLine.from_source("{").first.tokens.first
     #   left_right = LeftRightTokenCount.new
-    #   left_right.count_token(Token.new(1, :on_lbrace, "{", Ripper::EXPR_BEG))
+    #   left_right.count_token(Token.new(token)
     #   left_right.count_for_char("{")
     #   # => 1
     #   left_right.count_for_char("}")
     #   # => 0
     def count_token(token)
       case token.type
-      when :on_tstring_content
+      when :STRING_CONTENT
         # ^^^
         # Means it's a string or a symbol `"{"` rather than being
         # part of a data structure (like a hash) `{ a: b }`
         # ignore it.
-      when :on_words_beg, :on_symbols_beg, :on_qwords_beg,
-           :on_qsymbols_beg, :on_regexp_beg, :on_tstring_beg
+      when :PERCENT_UPPER_W, :PERCENT_UPPER_I, :PERCENT_LOWER_W,
+           :PERCENT_LOWER_I, :REGEXP_BEGIN, :STRING_BEGIN
         # ^^^
         # Handle shorthand syntaxes like `%Q{ i am a string }`
         #
@@ -72,25 +73,18 @@ module SyntaxSuggest
         # can be used
         char = token.value[-1]
         @count_for_char[char] += 1 if @count_for_char.key?(char)
-      when :on_embexpr_beg
+      when :EMBEXPR_BEGIN
         # ^^^
         # Embedded string expressions like `"#{foo} <-embed"`
         # are parsed with chars:
         #
-        # `#{` as :on_embexpr_beg
-        #  `}` as :on_embexpr_end
-        #
-        # We cannot ignore both :on_emb_expr_beg and :on_embexpr_end
-        # because sometimes the lexer thinks something is an embed
-        # string end, when it is not like `lol = }` (no clue why).
+        # `#{` as :EMBEXPR_BEGIN
+        #  `}` as :EMBEXPR_END
         #
         # When we see `#{` count it as a `{` or we will
         # have a mis-match count.
         #
-        case token.value
-        when "\#{"
-          @count_for_char["{"] += 1
-        end
+        @count_for_char["{"] += 1
       else
         @end_count += 1 if token.is_end?
         @kw_count += 1 if token.is_kw?

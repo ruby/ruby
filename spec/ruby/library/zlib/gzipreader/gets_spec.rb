@@ -16,7 +16,7 @@ describe 'Zlib::GzipReader#gets' do
 
       gz.gets('').should == "123\n45\n\n"
       gz.gets('').should == "abc\nde\n\n"
-      gz.eof?.should be_true
+      gz.eof?.should == true
     end
   end
 end

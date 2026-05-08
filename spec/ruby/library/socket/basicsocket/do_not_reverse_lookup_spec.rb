@@ -16,7 +16,7 @@ describe "BasicSocket.do_not_reverse_lookup" do
   end
 
   it "defaults to true" do
-    BasicSocket.do_not_reverse_lookup.should be_true
+    BasicSocket.do_not_reverse_lookup.should == true
   end
 
   it "causes 'peeraddr' to avoid name lookups" do

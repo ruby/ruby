@@ -28,13 +28,13 @@ describe "C-API Exception function" do
   describe "rb_exc_raise" do
     it "raises passed exception" do
       runtime_error = RuntimeError.new '42'
-      -> { @s.rb_exc_raise(runtime_error) }.should raise_error(RuntimeError, '42')
+      -> { @s.rb_exc_raise(runtime_error) }.should.raise(RuntimeError, '42')
     end
 
     it "raises an exception with an empty backtrace" do
       runtime_error = RuntimeError.new '42'
       runtime_error.set_backtrace []
-      -> { @s.rb_exc_raise(runtime_error) }.should raise_error(RuntimeError, '42')
+      -> { @s.rb_exc_raise(runtime_error) }.should.raise(RuntimeError, '42')
     end
 
     it "sets $! to the raised exception when not rescuing from an another exception" do
@@ -88,15 +88,15 @@ describe "C-API Exception function" do
     end
 
     it "accepts nil" do
-      @s.rb_set_errinfo(nil).should be_nil
+      @s.rb_set_errinfo(nil).should == nil
     end
 
     it "accepts an Exception instance" do
-      @s.rb_set_errinfo(Exception.new).should be_nil
+      @s.rb_set_errinfo(Exception.new).should == nil
     end
 
     it "raises a TypeError if the object is not nil or an Exception instance" do
-      -> { @s.rb_set_errinfo("error") }.should raise_error(TypeError)
+      -> { @s.rb_set_errinfo("error") }.should.raise(TypeError)
     end
   end
 
@@ -104,8 +104,8 @@ describe "C-API Exception function" do
     it "raises a FrozenError regardless of the object's frozen state" do
       # The type of the argument we supply doesn't matter. The choice here is arbitrary and we only change the type
       # of the argument to ensure the exception messages are set correctly.
-      -> { @s.rb_error_frozen_object(Array.new) }.should raise_error(FrozenError, "can't modify frozen Array: []")
-      -> { @s.rb_error_frozen_object(Array.new.freeze) }.should raise_error(FrozenError, "can't modify frozen Array: []")
+      -> { @s.rb_error_frozen_object(Array.new) }.should.raise(FrozenError, "can't modify frozen Array: []")
+      -> { @s.rb_error_frozen_object(Array.new.freeze) }.should.raise(FrozenError, "can't modify frozen Array: []")
     end
 
     it "properly handles recursive rb_error_frozen_object calls" do
@@ -116,7 +116,7 @@ describe "C-API Exception function" do
         s.rb_error_frozen_object(object)
       end
 
-      -> { @s.rb_error_frozen_object(object) }.should raise_error(FrozenError, "can't modify frozen #{klass}:  ...")
+      -> { @s.rb_error_frozen_object(object) }.should.raise(FrozenError, "can't modify frozen #{klass}:  ...")
     end
   end
 
@@ -124,14 +124,14 @@ describe "C-API Exception function" do
     it "returns system error with default message when passed message is NULL" do
       exception = @s.rb_syserr_new(Errno::ENOENT::Errno, nil)
       exception.class.should == Errno::ENOENT
-      exception.message.should include("No such file or directory")
+      exception.message.should.include?("No such file or directory")
       exception.should.is_a?(SystemCallError)
     end
 
     it "returns system error with custom message" do
       exception = @s.rb_syserr_new(Errno::ENOENT::Errno, "custom message")
 
-      exception.message.should include("custom message")
+      exception.message.should.include?("custom message")
       exception.class.should == Errno::ENOENT
       exception.should.is_a?(SystemCallError)
     end
@@ -141,14 +141,14 @@ describe "C-API Exception function" do
     it "returns system error with default message when passed message is nil" do
       exception = @s.rb_syserr_new_str(Errno::ENOENT::Errno, nil)
 
-      exception.message.should include("No such file or directory")
+      exception.message.should.include?("No such file or directory")
       exception.class.should == Errno::ENOENT
       exception.should.is_a?(SystemCallError)
     end
 
     it "returns system error with custom message" do
       exception = @s.rb_syserr_new_str(Errno::ENOENT::Errno, "custom message")
-      exception.message.should include("custom message")
+      exception.message.should.include?("custom message")
       exception.class.should == Errno::ENOENT
       exception.should.is_a?(SystemCallError)
     end
@@ -181,17 +181,17 @@ describe "C-API Exception function" do
     end
 
     it "raises a TypeError for incorrect types" do
-      -> { @s.rb_make_exception([nil]) }.should raise_error(TypeError)
-      -> { @s.rb_make_exception([Object.new]) }.should raise_error(TypeError)
+      -> { @s.rb_make_exception([nil]) }.should.raise(TypeError)
+      -> { @s.rb_make_exception([Object.new]) }.should.raise(TypeError)
       obj = Object.new
       def obj.exception
         "not exception type"
       end
-      -> { @s.rb_make_exception([obj]) }.should raise_error(TypeError)
+      -> { @s.rb_make_exception([obj]) }.should.raise(TypeError)
     end
 
     it "raises an ArgumentError for too many arguments" do
-      -> { @s.rb_make_exception([Exception, "Message", ["backtrace 1"], "extra"])  }.should raise_error(ArgumentError)
+      -> { @s.rb_make_exception([Exception, "Message", ["backtrace 1"], "extra"])  }.should.raise(ArgumentError)
     end
 
     it "returns nil for empty arguments" do

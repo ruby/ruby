@@ -4,12 +4,12 @@ ruby_version_is "3.4" do
   describe "GC.config" do
     context "without arguments" do
       it "returns a hash of current settings" do
-        GC.config.should be_kind_of(Hash)
+        GC.config.should.is_a?(Hash)
       end
 
       it "includes the name of currently loaded GC implementation as a global key" do
-        GC.config.should include(:implementation)
-        GC.config[:implementation].should be_kind_of(String)
+        GC.config.should.include?(:implementation)
+        GC.config[:implementation].should.is_a?(String)
       end
     end
 
@@ -55,7 +55,7 @@ ruby_version_is "3.4" do
       end
 
       it "raises an ArgumentError if options include global keys" do
-        -> { GC.config(implementation: "default") }.should raise_error(ArgumentError, 'Attempting to set read-only key "Implementation"')
+        -> { GC.config(implementation: "default") }.should.raise(ArgumentError, 'Attempting to set read-only key "Implementation"')
       end
     end
 
@@ -65,9 +65,9 @@ ruby_version_is "3.4" do
       end
 
       it "raises ArgumentError for all other arguments" do
-        -> { GC.config([]) }.should raise_error(ArgumentError)
-        -> { GC.config("default") }.should raise_error(ArgumentError)
-        -> { GC.config(1) }.should raise_error(ArgumentError)
+        -> { GC.config([]) }.should.raise(ArgumentError)
+        -> { GC.config("default") }.should.raise(ArgumentError)
+        -> { GC.config(1) }.should.raise(ArgumentError)
       end
     end
 
@@ -82,8 +82,8 @@ ruby_version_is "3.4" do
         end
 
         it "includes :rgengc_allow_full_mark option, true by default" do
-          GC.config.should include(:rgengc_allow_full_mark)
-          GC.config[:rgengc_allow_full_mark].should be_true
+          GC.config.should.include?(:rgengc_allow_full_mark)
+          GC.config[:rgengc_allow_full_mark].should == true
         end
 
         it "allows to set :rgengc_allow_full_mark" do

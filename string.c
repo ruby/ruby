@@ -370,7 +370,7 @@ static VALUE register_fstring(VALUE str, bool copy, bool force_precompute_hash);
 static inline bool
 BARE_STRING_P(VALUE str)
 {
-    return RBASIC_CLASS(str) == rb_cString && !rb_shape_obj_has_ivars(str);
+    return RBASIC_CLASS(str) == rb_cString && !rb_obj_shape_has_ivars(str);
 }
 
 static inline st_index_t
@@ -547,7 +547,7 @@ fstring_concurrent_set_create(VALUE str, void *data)
     RUBY_ASSERT(RB_TYPE_P(str, T_STRING));
     RUBY_ASSERT(OBJ_FROZEN(str));
     RUBY_ASSERT(!FL_TEST_RAW(str, STR_FAKESTR));
-    RUBY_ASSERT(!rb_shape_obj_has_ivars(str));
+    RUBY_ASSERT(!rb_obj_shape_has_ivars(str));
     RUBY_ASSERT(RBASIC_CLASS(str) == rb_cString);
     RUBY_ASSERT(!rb_objspace_garbage_object_p(str));
 
@@ -942,16 +942,25 @@ rb_enc_str_coderange_scan(VALUE str, rb_encoding *enc)
 }
 
 int
+rbimpl_enc_str_coderange_scan(VALUE str)
+{
+    int cr = enc_coderange_scan(str, get_encoding(str));
+    ENC_CODERANGE_SET(str, cr);
+    return cr;
+}
+
+#undef rb_enc_str_coderange
+int
 rb_enc_str_coderange(VALUE str)
 {
     int cr = ENC_CODERANGE(str);
 
     if (cr == ENC_CODERANGE_UNKNOWN) {
-        cr = enc_coderange_scan(str, get_encoding(str));
-        ENC_CODERANGE_SET(str, cr);
+        cr = rbimpl_enc_str_coderange_scan(str);
     }
     return cr;
 }
+#define rb_enc_str_coderange rb_enc_str_coderange_inline
 
 static inline bool
 rb_enc_str_asciicompat(VALUE str)
@@ -1016,8 +1025,7 @@ str_alloc_embed(VALUE klass, size_t capa)
     RUBY_ASSERT(size > 0);
     RUBY_ASSERT(rb_gc_size_allocatable_p(size));
 
-    NEWOBJ_OF(str, struct RString, klass,
-            T_STRING | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), size, 0);
+    NEWOBJ_OF(str, struct RString, klass, T_STRING, size);
 
     str->len = 0;
     str->as.embed.ary[0] = 0;
@@ -1028,8 +1036,7 @@ str_alloc_embed(VALUE klass, size_t capa)
 static inline VALUE
 str_alloc_heap(VALUE klass)
 {
-    NEWOBJ_OF(str, struct RString, klass,
-            T_STRING | STR_NOEMBED | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), sizeof(struct RString), 0);
+    NEWOBJ_OF(str, struct RString, klass, T_STRING | STR_NOEMBED, sizeof(struct RString));
 
     str->len = 0;
     str->as.heap.aux.capa = 0;
@@ -1893,8 +1900,7 @@ ec_str_alloc_embed(struct rb_execution_context_struct *ec, VALUE klass, size_t c
     RUBY_ASSERT(size > 0);
     RUBY_ASSERT(rb_gc_size_allocatable_p(size));
 
-    NEWOBJ_OF(str, struct RString, klass,
-            T_STRING | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), size, ec);
+    EC_NEWOBJ_OF(str, struct RString, klass, T_STRING, size, ec);
 
     str->len = 0;
 
@@ -1904,8 +1910,7 @@ ec_str_alloc_embed(struct rb_execution_context_struct *ec, VALUE klass, size_t c
 static inline VALUE
 ec_str_alloc_heap(struct rb_execution_context_struct *ec, VALUE klass)
 {
-    NEWOBJ_OF(str, struct RString, klass,
-            T_STRING | STR_NOEMBED | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), sizeof(struct RString), ec);
+    EC_NEWOBJ_OF(str, struct RString, klass, T_STRING | STR_NOEMBED, sizeof(struct RString), ec);
 
     str->as.heap.aux.capa = 0;
     str->as.heap.ptr = NULL;

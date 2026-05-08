@@ -16,8 +16,8 @@ describe "Process.getrlimit" do
     it "returns a two-element Array of Integers" do
       result = Process.getrlimit Process::RLIMIT_CORE
       result.size.should == 2
-      result.first.should be_kind_of(Integer)
-      result.last.should be_kind_of(Integer)
+      result.first.should.is_a?(Integer)
+      result.last.should.is_a?(Integer)
     end
 
     context "when passed an Object" do
@@ -36,7 +36,7 @@ describe "Process.getrlimit" do
         obj = mock("process getrlimit integer")
         obj.should_receive(:to_int).and_return(nil)
 
-        -> { Process.getrlimit(obj) }.should raise_error(TypeError)
+        -> { Process.getrlimit(obj) }.should.raise(TypeError)
       end
     end
 
@@ -49,7 +49,7 @@ describe "Process.getrlimit" do
       end
 
       it "raises ArgumentError when passed an unknown resource" do
-        -> { Process.getrlimit(:FOO) }.should raise_error(ArgumentError)
+        -> { Process.getrlimit(:FOO) }.should.raise(ArgumentError)
       end
     end
 
@@ -62,7 +62,7 @@ describe "Process.getrlimit" do
       end
 
       it "raises ArgumentError when passed an unknown resource" do
-        -> { Process.getrlimit("FOO") }.should raise_error(ArgumentError)
+        -> { Process.getrlimit("FOO") }.should.raise(ArgumentError)
       end
     end
 
@@ -91,10 +91,10 @@ describe "Process.getrlimit" do
 
   platform_is :windows do
     it "is not implemented" do
-      Process.respond_to?(:getrlimit).should be_false
+      Process.respond_to?(:getrlimit).should == false
       -> do
         Process.getrlimit(nil)
-      end.should raise_error NotImplementedError
+      end.should.raise NotImplementedError
     end
   end
 end

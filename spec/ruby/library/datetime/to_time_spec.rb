@@ -4,7 +4,7 @@ date_version = defined?(Date::VERSION) ? Date::VERSION : '3.1.0'
 
 describe "DateTime#to_time" do
   it "yields a new Time object" do
-    DateTime.now.to_time.should be_kind_of(Time)
+    DateTime.now.to_time.should.is_a?(Time)
   end
 
   it "returns a Time representing the same instant" do

@@ -27,21 +27,56 @@ module SyntaxSuggest
     # Returns an array of CodeLine objects
     # from the source string
     def self.from_source(source)
-      tokens_for_line = LexAll.new(source: source).each_with_object(Hash.new { |h, k| h[k] = [] }) { |token, hash| hash[token.line] << token }
+      source = +source
+      parse_result = Prism.parse_lex(source)
+      ast, tokens = parse_result.value
+
+      clean_comments!(source, parse_result.comments)
+
+      visitor = Visitor.new
+      visitor.visit(ast)
+      tokens.sort_by! { |token, _state| token.location.start_line }
+
+      prev_token = nil
+      tokens.map! do |token, _state|
+        prev_token = Token.new(token, prev_token, visitor)
+      end
+
+      tokens_for_line = tokens.each_with_object(Hash.new { |h, k| h[k] = [] }) { |token, hash| hash[token.line] << token }
       source.lines.map.with_index do |line, index|
         CodeLine.new(
           line: line,
           index: index,
-          tokens: tokens_for_line[index + 1]
+          tokens: tokens_for_line[index + 1],
+          consecutive: visitor.consecutive_lines.include?(index + 1)
         )
       end
     end
 
+    # Remove comments that apear on their own in source. They will never be the cause
+    # of syntax errors and are just visual noise. Example:
+    #
+    #   source = +<<~RUBY
+    #     # Comment-only line
+    #     foo # Inline comment
+    #   RUBY
+    #   CodeLine.clean_comments!(source, Prism.parse(source).comments)
+    #   source # => "\nfoo # Inline comment\n"
+    def self.clean_comments!(source, comments)
+      # Iterate backwards since we are modifying the source in place and must preserve
+      # the offsets. Prism comments are sorted by their location in the source.
+      comments.reverse_each do |comment|
+        next if comment.trailing?
+        source.bytesplice(comment.location.start_offset, comment.location.length, "")
+      end
+    end
+
     attr_reader :line, :index, :tokens, :line_number, :indent
-    def initialize(line:, index:, tokens:)
+    def initialize(line:, index:, tokens:, consecutive:)
       @tokens = tokens
       @line = line
       @index = index
+      @consecutive = consecutive
       @original = line
       @line_number = @index + 1
       strip_line = line.dup
@@ -150,29 +185,16 @@ module SyntaxSuggest
       index <=> other.index
     end
 
-    # [Not stable API]
-    #
-    # Lines that have a `on_ignored_nl` type token and NOT
-    # a `BEG` type seem to be a good proxy for the ability
-    # to join multiple lines into one.
-    #
-    # This predicate method is used to determine when those
-    # two criteria have been met.
-    #
-    # The one known case this doesn't handle is:
-    #
-    #     Ripper.lex <<~EOM
-    #       a &&
-    #        b ||
-    #        c
-    #     EOM
-    #
-    # For some reason this introduces `on_ignore_newline` but with BEG type
-    def ignore_newline_not_beg?
-      @ignore_newline_not_beg
+    # Can this line be logically joined together
+    # with the following line? Determined by walking
+    # the AST
+    def consecutive?
+      @consecutive
     end
 
-    # Determines if the given line has a trailing slash
+    # Determines if the given line has a trailing slash.
+    # Simply check if the line contains a backslash after
+    # the content of the last token.
     #
     #     lines = CodeLine.from_source(<<~EOM)
     #       it "foo" \
@@ -180,60 +202,18 @@ module SyntaxSuggest
     #     expect(lines.first.trailing_slash?).to eq(true)
     #
     def trailing_slash?
-      last = @tokens.last
-
-      # Older versions of prism diverged slightly from Ripper in compatibility mode
-      case last&.type
-      when :on_sp
-        last.value == TRAILING_SLASH
-      when :on_tstring_end
-        true
-      else
-        false
-      end
+      return unless (last = @tokens.last)
+      @line.byteindex(TRAILING_SLASH, last.location.end_column) != nil
     end
 
-    # Endless method detection
-    #
-    # From https://github.com/ruby/irb/commit/826ae909c9c93a2ddca6f9cfcd9c94dbf53d44ab
-    # Detecting a "oneliner" seems to need a state machine.
-    # This can be done by looking mostly at the "state" (last value):
-    #
-    #   ENDFN -> BEG (token = '=' ) -> END
-    #
     private def set_kw_end
-      oneliner_count = 0
-      in_oneliner_def = nil
-
       kw_count = 0
       end_count = 0
 
-      @ignore_newline_not_beg = false
       @tokens.each do |token|
         kw_count += 1 if token.is_kw?
         end_count += 1 if token.is_end?
-
-        if token.type == :on_ignored_nl
-          @ignore_newline_not_beg = !token.expr_beg?
-        end
-
-        if in_oneliner_def.nil?
-          in_oneliner_def = :ENDFN if token.state.allbits?(Ripper::EXPR_ENDFN)
-        elsif token.state.allbits?(Ripper::EXPR_ENDFN)
-          # Continue
-        elsif token.state.allbits?(Ripper::EXPR_BEG)
-          in_oneliner_def = :BODY if token.value == "="
-        elsif token.state.allbits?(Ripper::EXPR_END)
-          # We found an endless method, count it
-          oneliner_count += 1 if in_oneliner_def == :BODY
-
-          in_oneliner_def = nil
-        else
-          in_oneliner_def = nil
-        end
       end
-
-      kw_count -= oneliner_count
 
       @is_kw = (kw_count - end_count) > 0
       @is_end = (end_count - kw_count) > 0

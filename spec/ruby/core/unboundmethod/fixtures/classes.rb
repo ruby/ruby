@@ -36,6 +36,7 @@ module UnboundMethodSpecs
 
     alias bar foo
     alias baz bar
+    alias qux baz
     alias alias_1 foo
     alias alias_2 foo
 

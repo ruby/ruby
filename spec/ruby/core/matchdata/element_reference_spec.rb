@@ -55,7 +55,7 @@ describe "MatchData#[]" do
 
   it "returns instances of String when given a String subclass" do
     str = MatchDataSpecs::MyString.new("THX1138.")
-    /(.)(.)(\d+)(\d)/.match(str)[0..-1].each { |m| m.should be_an_instance_of(String) }
+    /(.)(.)(\d+)(\d)/.match(str)[0..-1].each { |m| m.should.instance_of?(String) }
   end
 end
 
@@ -108,12 +108,12 @@ describe "MatchData#[Symbol]" do
 
   it "raises an IndexError if there is no named match corresponding to the Symbol" do
     md = 'haystack'.match(/(?<t>t(?<a>ack))/)
-    -> { md[:baz] }.should raise_error(IndexError, /baz/)
+    -> { md[:baz] }.should.raise(IndexError, /baz/)
   end
 
   it "raises an IndexError if there is no named match corresponding to the String" do
     md = 'haystack'.match(/(?<t>t(?<a>ack))/)
-    -> { md['baz'] }.should raise_error(IndexError, /baz/)
+    -> { md['baz'] }.should.raise(IndexError, /baz/)
   end
 
   it "returns matches in the String's encoding" do

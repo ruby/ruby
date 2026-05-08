@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 describe "Kernel#initialize_clone" do
   it "is a private instance method" do
-    Kernel.should have_private_instance_method(:initialize_clone)
+    Kernel.private_instance_methods(false).should.include?(:initialize_clone)
   end
 
   it "returns the receiver" do

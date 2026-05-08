@@ -1,6 +1,3 @@
-call-seq:
-  skip(pattern) match_size or nil
-
 Attempts to [match][17] the given `pattern`
 at the beginning of the [target substring][3];
 

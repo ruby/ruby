@@ -88,7 +88,7 @@ describe "The while expression" do
           break if c
           c = false
         )
-    end.should be_nil
+    end.should == nil
   end
 
   it "stops running body if interrupted by break in a begin ... end element op-assign-or value" do
@@ -99,7 +99,7 @@ describe "The while expression" do
         break if c
         c = false
       end
-    end.should be_nil
+    end.should == nil
   end
 
   it "stops running body if interrupted by break in a parenthesized element op-assign value" do
@@ -111,7 +111,7 @@ describe "The while expression" do
           break if c
           c = false
         )
-    end.should be_nil
+    end.should == nil
     a.should == [1, 2]
   end
 
@@ -123,7 +123,7 @@ describe "The while expression" do
         break if c
         c = false
       end
-    end.should be_nil
+    end.should == nil
     a.should == [1, 2]
   end
 
@@ -139,7 +139,7 @@ describe "The while expression" do
           break unless d
           d = false
         )
-    end.should be_nil
+    end.should == nil
   end
 
   it "stops running body if interrupted by break with unless in a begin ... end attribute op-assign-or value" do
@@ -153,7 +153,7 @@ describe "The while expression" do
         break unless d
         d = false
       end
-    end.should be_nil
+    end.should == nil
   end
 
   it "stops running body if interrupted by break in a parenthesized attribute op-assign-or value" do
@@ -168,7 +168,7 @@ describe "The while expression" do
           break if c
           c = false
         )
-    end.should be_nil
+    end.should == nil
   end
 
   it "stops running body if interrupted by break in a begin ... end attribute op-assign-or value" do
@@ -182,7 +182,7 @@ describe "The while expression" do
         break if c
         c = false
       end
-    end.should be_nil
+    end.should == nil
   end
 
   it "returns value passed to break if interrupted by break" do

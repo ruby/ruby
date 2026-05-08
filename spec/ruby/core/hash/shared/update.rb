@@ -1,14 +1,14 @@
 describe :hash_update, shared: true do
   it "adds the entries from other, overwriting duplicate keys. Returns self" do
     h = { _1: 'a', _2: '3' }
-    h.send(@method, _1: '9', _9: 2).should equal(h)
+    h.send(@method, _1: '9', _9: 2).should.equal?(h)
     h.should == { _1: "9", _2: "3", _9: 2 }
   end
 
   it "sets any duplicate key to the value of block if passed a block" do
     h1 = { a: 2, b: -1 }
     h2 = { a: -2, c: 1 }
-    h1.send(@method, h2) { |k,x,y| 3.14 }.should equal(h1)
+    h1.send(@method, h2) { |k,x,y| 3.14 }.should.equal?(h1)
     h1.should == { c: 1, b: -1, a: 3.14 }
 
     h1.send(@method, h1) { nil }
@@ -37,7 +37,7 @@ describe :hash_update, shared: true do
   it "raises a FrozenError on a frozen instance that is modified" do
     -> do
       HashSpecs.frozen_hash.send(@method, 1 => 2)
-    end.should raise_error(FrozenError)
+    end.should.raise(FrozenError)
   end
 
   it "checks frozen status before coercing an object with #to_hash" do
@@ -47,14 +47,14 @@ describe :hash_update, shared: true do
     def obj.to_hash() raise Exception, "should not receive #to_hash" end
     obj.freeze
 
-    -> { HashSpecs.frozen_hash.send(@method, obj) }.should raise_error(FrozenError)
+    -> { HashSpecs.frozen_hash.send(@method, obj) }.should.raise(FrozenError)
   end
 
   # see redmine #1571
   it "raises a FrozenError on a frozen instance that would not be modified" do
     -> do
       HashSpecs.frozen_hash.send(@method, HashSpecs.empty_frozen_hash)
-    end.should raise_error(FrozenError)
+    end.should.raise(FrozenError)
   end
 
   it "does not raise an exception if changing the value of an existing key during iteration" do
@@ -71,6 +71,6 @@ describe :hash_update, shared: true do
 
   it "accepts zero arguments" do
     hash = { a: 1 }
-    hash.send(@method).should eql(hash)
+    hash.send(@method).should.eql?(hash)
   end
 end

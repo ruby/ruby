@@ -20,7 +20,7 @@ describe "BigDecimal's util method definitions" do
 
     it "should define #to_d on BigDecimal" do
       bd = BigDecimal("3.14")
-      bd.to_d.should equal(bd)
+      bd.to_d.should.equal?(bd)
     end
 
     it "should define #to_d on Rational" do

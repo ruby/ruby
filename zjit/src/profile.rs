@@ -13,7 +13,7 @@ use crate::stats::with_time_stat;
 struct Profiler {
     cfp: CfpPtr,
     iseq: IseqPtr,
-    insn_idx: usize,
+    insn_idx: YarvInsnIdx,
 }
 
 impl Profiler {
@@ -424,7 +424,7 @@ pub struct IseqProfile {
     entries: Vec<ProfileEntry>,
 
     /// Method entries for `super` calls (stored as VALUE to be GC-safe)
-    super_cme: HashMap<usize, TypeDistribution>
+    super_cme: HashMap<YarvInsnIdx, TypeDistribution>
 }
 
 impl IseqProfile {
@@ -436,7 +436,7 @@ impl IseqProfile {
     }
 
     /// Get or create a mutable profile entry for the given instruction index.
-    fn entry_mut(&mut self, insn_idx: usize) -> &mut ProfileEntry {
+    fn entry_mut(&mut self, insn_idx: YarvInsnIdx) -> &mut ProfileEntry {
         let idx = insn_idx as u32;
         match self.entries.binary_search_by_key(&idx, |e| e.insn_idx) {
             Ok(i) => &mut self.entries[i],
@@ -452,14 +452,14 @@ impl IseqProfile {
     }
 
     /// Get a profile entry for the given instruction index (read-only).
-    fn entry(&self, insn_idx: usize) -> Option<&ProfileEntry> {
+    fn entry(&self, insn_idx: YarvInsnIdx) -> Option<&ProfileEntry> {
         let idx = insn_idx as u32;
         self.entries.binary_search_by_key(&idx, |e| e.insn_idx)
             .ok().map(|i| &self.entries[i])
     }
 
     /// Check if enough profiles have been gathered for this instruction.
-    pub fn done_profiling_at(&self, insn_idx: usize) -> bool {
+    pub fn done_profiling_at(&self, insn_idx: YarvInsnIdx) -> bool {
         self.entry(insn_idx).map_or(false, |e| e.profiles_remaining == 0)
     }
 
@@ -467,7 +467,7 @@ impl IseqProfile {
     /// `sp` is the current stack pointer (after the args and receiver).
     /// `argc` is the number of arguments (not counting receiver).
     /// Returns true if enough profiles have been gathered and the ISEQ should be recompiled.
-    pub fn profile_send_at(&mut self, iseq: IseqPtr, insn_idx: usize, sp: *const VALUE, argc: usize) -> bool {
+    pub fn profile_send_at(&mut self, iseq: IseqPtr, insn_idx: YarvInsnIdx, sp: *const VALUE, argc: usize) -> bool {
         let n = argc + 1; // args + receiver
         let entry = self.entry_mut(insn_idx);
         if entry.opnd_types.is_empty() {
@@ -487,7 +487,7 @@ impl IseqProfile {
     /// This may be called on an instruction that was already profiled by YARV,
     /// so we reset the counter to re-profile with the new shapes seen at runtime.
     /// Returns true if enough profiles have been gathered and the ISEQ should be recompiled.
-    pub fn profile_self_at(&mut self, iseq: IseqPtr, insn_idx: usize, self_val: VALUE) -> bool {
+    pub fn profile_self_at(&mut self, iseq: IseqPtr, insn_idx: YarvInsnIdx, self_val: VALUE) -> bool {
         let entry = self.entry_mut(insn_idx);
         // Reset profiling if the previous round already finished (stale YARV profiles).
         // This ensures we collect num_profiles samples of the new shapes before recompiling.
@@ -505,11 +505,11 @@ impl IseqProfile {
     }
 
     /// Get profiled operand types for a given instruction index
-    pub fn get_operand_types(&self, insn_idx: usize) -> Option<&[TypeDistribution]> {
+    pub fn get_operand_types(&self, insn_idx: YarvInsnIdx) -> Option<&[TypeDistribution]> {
         self.entry(insn_idx).map(|e| e.opnd_types.as_slice()).filter(|s| !s.is_empty())
     }
 
-    pub fn get_super_method_entry(&self, insn_idx: usize) -> Option<*const rb_callable_method_entry_t> {
+    pub fn get_super_method_entry(&self, insn_idx: YarvInsnIdx) -> Option<*const rb_callable_method_entry_t> {
         let Some(entry) = self.super_cme.get(&insn_idx) else { return None };
         let summary = TypeDistributionSummary::new(entry);
 

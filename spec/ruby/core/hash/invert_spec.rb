@@ -27,17 +27,17 @@ describe "Hash#invert" do
 
   it "does not retain the default value" do
     h = Hash.new(1)
-    h.invert.default.should be_nil
+    h.invert.default.should == nil
     h[:a] = 1
-    h.invert.default.should be_nil
+    h.invert.default.should == nil
   end
 
   it "does not retain the default_proc" do
     pr = proc { |h, k| h[k] = [] }
     h = Hash.new(&pr)
-    h.invert.default_proc.should be_nil
+    h.invert.default_proc.should == nil
     h[:a] = 1
-    h.invert.default_proc.should be_nil
+    h.invert.default_proc.should == nil
   end
 
   it "does not retain compare_by_identity flag" do

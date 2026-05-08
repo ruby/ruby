@@ -7,7 +7,7 @@ describe "StringIO#truncate when passed [length]" do
   end
 
   it "returns an Integer" do
-    @io.truncate(4).should be_kind_of(Integer)
+    @io.truncate(4).should.is_a?(Integer)
   end
 
   it "truncated the underlying string down to the passed length" do
@@ -18,13 +18,13 @@ describe "StringIO#truncate when passed [length]" do
   it "does not create a copy of the underlying string" do
     io = StringIO.new(str = +"123456789")
     io.truncate(4)
-    io.string.should equal(str)
+    io.string.should.equal?(str)
   end
 
   it "does not change the position" do
     @io.pos = 7
     @io.truncate(4)
-    @io.pos.should eql(7)
+    @io.pos.should.eql?(7)
   end
 
   it "can grow a string to a larger size, padding it with \\000" do
@@ -33,8 +33,8 @@ describe "StringIO#truncate when passed [length]" do
   end
 
   it "raises an Errno::EINVAL when the passed length is negative" do
-    -> { @io.truncate(-1) }.should raise_error(Errno::EINVAL)
-    -> { @io.truncate(-10) }.should raise_error(Errno::EINVAL)
+    -> { @io.truncate(-1) }.should.raise(Errno::EINVAL)
+    -> { @io.truncate(-10) }.should.raise(Errno::EINVAL)
   end
 
   it "tries to convert the passed length to an Integer using #to_int" do
@@ -46,17 +46,17 @@ describe "StringIO#truncate when passed [length]" do
   end
 
   it "raises a TypeError when the passed length can't be converted to an Integer" do
-    -> { @io.truncate(Object.new) }.should raise_error(TypeError)
+    -> { @io.truncate(Object.new) }.should.raise(TypeError)
   end
 end
 
 describe "StringIO#truncate when self is not writable" do
   it "raises an IOError" do
     io = StringIO.new(+"test", "r")
-    -> { io.truncate(2) }.should raise_error(IOError)
+    -> { io.truncate(2) }.should.raise(IOError)
 
     io = StringIO.new(+"test")
     io.close_write
-    -> { io.truncate(2) }.should raise_error(IOError)
+    -> { io.truncate(2) }.should.raise(IOError)
   end
 end

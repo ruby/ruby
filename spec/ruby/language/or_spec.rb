@@ -26,24 +26,24 @@ describe "The || operator" do
   end
 
   it "treats empty expressions as nil" do
-    (() || true).should be_true
-    (() || false).should be_false
-    (true || ()).should be_true
-    (false || ()).should be_nil
-    (() || ()).should be_nil
+    (() || true).should == true
+    (() || false).should == false
+    (true || ()).should == true
+    (false || ()).should == nil
+    (() || ()).should == nil
   end
 
   it "has a higher precedence than 'break' in 'break true || false'" do
     # see also 'break true or false' below
-    -> { break false || true }.call.should be_true
+    -> { break false || true }.call.should == true
   end
 
   it "has a higher precedence than 'next' in 'next true || false'" do
-    -> { next false || true }.call.should be_true
+    -> { next false || true }.call.should == true
   end
 
   it "has a higher precedence than 'return' in 'return true || false'" do
-    -> { return false || true }.call.should be_true
+    -> { return false || true }.call.should == true
   end
 end
 
@@ -68,23 +68,23 @@ describe "The or operator" do
   end
 
   it "treats empty expressions as nil" do
-    (() or true).should be_true
-    (() or false).should be_false
-    (true or ()).should be_true
-    (false or ()).should be_nil
-    (() or ()).should be_nil
+    (() or true).should == true
+    (() or false).should == false
+    (true or ()).should == true
+    (false or ()).should == nil
+    (() or ()).should == nil
   end
 
   it "has a lower precedence than 'break' in 'break true or false'" do
     # see also 'break true || false' above
-    -> { eval "break true or false" }.should raise_error(SyntaxError, /void value expression/)
+    -> { eval "break true or false" }.should.raise(SyntaxError, /void value expression/)
   end
 
   it "has a lower precedence than 'next' in 'next true or false'" do
-    -> { eval "next true or false" }.should raise_error(SyntaxError, /void value expression/)
+    -> { eval "next true or false" }.should.raise(SyntaxError, /void value expression/)
   end
 
   it "has a lower precedence than 'return' in 'return true or false'" do
-    -> { eval "return true or false" }.should raise_error(SyntaxError, /void value expression/)
+    -> { eval "return true or false" }.should.raise(SyntaxError, /void value expression/)
   end
 end

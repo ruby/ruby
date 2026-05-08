@@ -47,11 +47,11 @@ describe "String#chop" do
 
   it "returns a new string when applied to an empty string" do
     s = ""
-    s.chop.should_not equal(s)
+    s.chop.should_not.equal?(s)
   end
 
   it "returns String instances when called on a subclass" do
-    StringSpecs::MyString.new("hello\n").chop.should be_an_instance_of(String)
+    StringSpecs::MyString.new("hello\n").chop.should.instance_of?(String)
   end
 
   it "returns a String in the same encoding as self" do
@@ -99,21 +99,21 @@ describe "String#chop!" do
 
   it "returns self if modifications were made" do
     str = "hello"
-    str.chop!.should equal(str)
+    str.chop!.should.equal?(str)
   end
 
   it "returns nil when called on an empty string" do
-    "".chop!.should be_nil
+    "".chop!.should == nil
   end
 
   it "raises a FrozenError on a frozen instance that is modified" do
-    -> { "string\n\r".freeze.chop! }.should raise_error(FrozenError)
+    -> { "string\n\r".freeze.chop! }.should.raise(FrozenError)
   end
 
   # see [ruby-core:23666]
   it "raises a FrozenError on a frozen instance that would not be modified" do
     a = ""
     a.freeze
-    -> { a.chop! }.should raise_error(FrozenError)
+    -> { a.chop! }.should.raise(FrozenError)
   end
 end

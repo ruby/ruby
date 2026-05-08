@@ -881,6 +881,19 @@ EXPECTED
     assert_equal "\xDE\xAD\xBE\xEF\xBA\xBE\xF0\x0D\0\0\xBA\xAD\xFA\xCE", buf
 
     assert_equal addr, [buf].pack('p')
+
+    assert_packing_buffer_fail("b*")
+    assert_packing_buffer_fail("B*")
+    assert_packing_buffer_fail("h*")
+    assert_packing_buffer_fail("H*")
+    assert_packing_buffer_fail("u", 16384)
+    assert_packing_buffer_fail("m", 16384)
+    assert_packing_buffer_fail("M", 16384)
+  end
+
+  def assert_packing_buffer_fail(fmt, size = 8192)
+    s = "\x01".b * size
+    assert_raise(ArgumentError) {[s].pack(fmt, buffer: s)}
   end
 
   def test_unpack_with_block

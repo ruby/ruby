@@ -13,7 +13,7 @@ describe "Enumerable#reject" do
   end
 
   it "returns an Enumerator if called without a block" do
-    EnumerableSpecs::Numerous.new.reject.should be_an_instance_of(Enumerator)
+    EnumerableSpecs::Numerous.new.reject.should.instance_of?(Enumerator)
   end
 
   it "gathers whole arrays as elements when each yields multiple" do

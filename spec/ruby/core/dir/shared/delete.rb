@@ -20,13 +20,13 @@ describe :dir_delete, shared: true do
   it "raises an Errno::ENOTEMPTY when trying to remove a nonempty directory" do
     -> do
       Dir.send @method, DirSpecs.mock_rmdir("nonempty")
-    end.should raise_error(Errno::ENOTEMPTY)
+    end.should.raise(Errno::ENOTEMPTY)
   end
 
   it "raises an Errno::ENOENT when trying to remove a non-existing directory" do
     -> do
       Dir.send @method, DirSpecs.nonexistent
-    end.should raise_error(Errno::ENOENT)
+    end.should.raise(Errno::ENOENT)
   end
 
   it "raises an Errno::ENOTDIR when trying to remove a non-directory" do
@@ -34,7 +34,7 @@ describe :dir_delete, shared: true do
     touch(file)
     -> do
       Dir.send @method, file
-    end.should raise_error(Errno::ENOTDIR)
+    end.should.raise(Errno::ENOTDIR)
   end
 
   # this won't work on Windows, since chmod(0000) does not remove all permissions
@@ -46,7 +46,7 @@ describe :dir_delete, shared: true do
         File.chmod(0000, parent)
         -> do
           Dir.send @method, child
-        end.should raise_error(Errno::EACCES)
+        end.should.raise(Errno::EACCES)
       end
     end
   end

@@ -17,9 +17,9 @@ describe "Time#+" do
   end
 
   it "raises a TypeError if given argument is a coercible String" do
-    -> { Time.now + "1" }.should raise_error(TypeError)
-    -> { Time.now + "0.1" }.should raise_error(TypeError)
-    -> { Time.now + "1/3" }.should raise_error(TypeError)
+    -> { Time.now + "1" }.should.raise(TypeError)
+    -> { Time.now + "0.1" }.should.raise(TypeError)
+    -> { Time.now + "1/3" }.should.raise(TypeError)
   end
 
   it "increments the time by the specified amount as rational numbers" do
@@ -32,8 +32,8 @@ describe "Time#+" do
   end
 
   it "raises TypeError on argument that can't be coerced into Rational" do
-    -> { Time.now + Object.new }.should raise_error(TypeError)
-    -> { Time.now + "stuff" }.should raise_error(TypeError)
+    -> { Time.now + Object.new }.should.raise(TypeError)
+    -> { Time.now + "stuff" }.should.raise(TypeError)
   end
 
   it "returns a UTC time if self is UTC" do
@@ -68,15 +68,15 @@ describe "Time#+" do
   it "does not return a subclass instance" do
     c = Class.new(Time)
     x = c.now + 1
-    x.should be_an_instance_of(Time)
+    x.should.instance_of?(Time)
   end
 
   it "raises TypeError on Time argument" do
-    -> { Time.now + Time.now }.should raise_error(TypeError)
+    -> { Time.now + Time.now }.should.raise(TypeError)
   end
 
   it "raises TypeError on nil argument" do
-    -> { Time.now + nil }.should raise_error(TypeError)
+    -> { Time.now + nil }.should.raise(TypeError)
   end
 
   #see [ruby-dev:38446]

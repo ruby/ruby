@@ -6,9 +6,9 @@
 # - revision: revision in repository-url to test
 #   if `revision` is not given, "v"+`version` or `version` will be used.
 
-minitest            6.0.3  https://github.com/minitest/minitest
+minitest            6.0.5  https://github.com/minitest/minitest
 power_assert        3.0.1   https://github.com/ruby/power_assert
-rake                13.3.1  https://github.com/ruby/rake
+rake                13.4.2  https://github.com/ruby/rake
 test-unit           3.7.7   https://github.com/test-unit/test-unit
 rexml               3.4.4   https://github.com/ruby/rexml
 rss                 0.3.2   https://github.com/ruby/rss
@@ -23,7 +23,7 @@ racc                1.8.1   https://github.com/ruby/racc
 mutex_m             0.3.0   https://github.com/ruby/mutex_m
 getoptlong          0.2.1   https://github.com/ruby/getoptlong
 base64              0.3.0   https://github.com/ruby/base64
-bigdecimal          4.1.1   https://github.com/ruby/bigdecimal
+bigdecimal          4.1.2   https://github.com/ruby/bigdecimal
 observer            0.1.2   https://github.com/ruby/observer
 abbrev              0.1.2   https://github.com/ruby/abbrev
 resolv-replace      0.2.0   https://github.com/ruby/resolv-replace
@@ -37,7 +37,7 @@ ostruct             0.6.3   https://github.com/ruby/ostruct
 pstore              0.2.1   https://github.com/ruby/pstore
 benchmark           0.5.0   https://github.com/ruby/benchmark
 logger              1.7.0   https://github.com/ruby/logger
-rdoc                7.2.0   https://github.com/ruby/rdoc 4913d56243f2577c639ba305fd36c40d55c34f1a
+rdoc                7.2.0   https://github.com/ruby/rdoc bc0baee787609f2205e8f1103f3e1d36b923184a
 win32ole            1.9.3   https://github.com/ruby/win32ole
 irb                 1.17.0  https://github.com/ruby/irb cfd0b917d3feb01adb7d413b19faeb0309900599
 reline              0.6.3   https://github.com/ruby/reline

@@ -203,6 +203,29 @@ module SyntaxSuggest
       EOM
     end
 
+    it "multi-line chain with missing paren" do
+      source = <<~EOM
+        class Dog
+          def bark
+            User
+              .where(name: "schneems"
+              .first
+          end
+        end
+      EOM
+      io = StringIO.new
+      SyntaxSuggest.call(
+        io: io,
+        source: source
+      )
+      out = io.string
+      expect(out).to include(<<~EOM)
+        > 3      User
+        > 4        .where(name: "schneems"
+        > 5        .first
+      EOM
+    end
+
     it "empty else" do
       source = <<~EOM
         class Foo

@@ -1103,6 +1103,7 @@ enumerator_rewind(VALUE obj)
 
 static struct generator *generator_ptr(VALUE obj);
 static VALUE append_method(VALUE obj, VALUE str, ID default_method, VALUE default_args);
+static VALUE append_method_args(VALUE obj, VALUE str, VALUE default_args);
 
 static VALUE
 inspect_enumerator(VALUE obj, VALUE dummy, int recur)
@@ -1175,7 +1176,7 @@ kwd_append(VALUE key, VALUE val, VALUE str)
 static VALUE
 append_method(VALUE obj, VALUE str, ID default_method, VALUE default_args)
 {
-    VALUE method, eargs;
+    VALUE method;
 
     method = rb_attr_get(obj, id_method);
     if (method != Qfalse) {
@@ -1189,6 +1190,13 @@ append_method(VALUE obj, VALUE str, ID default_method, VALUE default_args)
         rb_str_buf_cat2(str, ":");
         rb_str_buf_append(str, method);
     }
+    return append_method_args(obj, str, default_args);
+}
+
+static VALUE
+append_method_args(VALUE obj, VALUE str, VALUE default_args)
+{
+    VALUE eargs;
 
     eargs = rb_attr_get(obj, id_arguments);
     if (NIL_P(eargs)) {
@@ -1218,10 +1226,11 @@ append_method(VALUE obj, VALUE str, ID default_method, VALUE default_args)
             if (!NIL_P(kwds)) {
                 rb_hash_foreach(kwds, kwd_append, str);
             }
-            rb_str_set_len(str, RSTRING_LEN(str)-2);
+            rb_str_set_len(str, RSTRING_LEN(str)-2); /* drop the last ", " */
             rb_str_buf_cat2(str, ")");
         }
     }
+    RB_GC_GUARD(eargs);
 
     return str;
 }
@@ -4340,7 +4349,7 @@ static VALUE
 arith_seq_inspect(VALUE self)
 {
     struct enumerator *e;
-    VALUE eobj, str, eargs;
+    VALUE eobj, str;
     int range_p;
 
     TypedData_Get_Struct(self, struct enumerator, &enumerator_data_type, e);
@@ -4354,39 +4363,7 @@ arith_seq_inspect(VALUE self)
     str = rb_sprintf("(%s%"PRIsVALUE"%s.", range_p ? "(" : "", eobj, range_p ? ")" : "");
 
     rb_str_buf_append(str, rb_id2str(e->meth));
-
-    eargs = rb_attr_get(eobj, id_arguments);
-    if (NIL_P(eargs)) {
-        eargs = e->args;
-    }
-    if (eargs != Qfalse) {
-        long argc = RARRAY_LEN(eargs);
-        const VALUE *argv = RARRAY_CONST_PTR(eargs); /* WB: no new reference */
-
-        if (argc > 0) {
-            VALUE kwds = Qnil;
-
-            rb_str_buf_cat2(str, "(");
-
-            if (RB_TYPE_P(argv[argc-1], T_HASH)) {
-                int all_key = TRUE;
-                rb_hash_foreach(argv[argc-1], key_symbol_p, (VALUE)&all_key);
-                if (all_key) kwds = argv[--argc];
-            }
-
-            while (argc--) {
-                VALUE arg = *argv++;
-
-                rb_str_append(str, rb_inspect(arg));
-                rb_str_buf_cat2(str, ", ");
-            }
-            if (!NIL_P(kwds)) {
-                rb_hash_foreach(kwds, kwd_append, str);
-            }
-            rb_str_set_len(str, RSTRING_LEN(str)-2); /* drop the last ", " */
-            rb_str_buf_cat2(str, ")");
-        }
-    }
+    append_method_args(eobj, str, e->args);
 
     rb_str_buf_cat2(str, ")");
 

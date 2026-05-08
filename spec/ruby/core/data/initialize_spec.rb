@@ -61,7 +61,7 @@ describe "Data#initialize" do
   it "raises ArgumentError if no arguments are given" do
     -> {
       DataSpecs::Measure.new
-    }.should raise_error(ArgumentError) { |e|
+    }.should.raise(ArgumentError) { |e|
       e.message.should.include?("missing keywords: :amount, :unit")
     }
   end
@@ -69,7 +69,7 @@ describe "Data#initialize" do
   it "raises ArgumentError if at least one argument is missing" do
     -> {
       DataSpecs::Measure.new(unit: "km")
-    }.should raise_error(ArgumentError) { |e|
+    }.should.raise(ArgumentError) { |e|
       e.message.should.include?("missing keyword: :amount")
     }
   end
@@ -77,7 +77,7 @@ describe "Data#initialize" do
   it "raises ArgumentError if unknown keyword is given" do
     -> {
       DataSpecs::Measure.new(amount: 42, unit: "km", system: "metric")
-    }.should raise_error(ArgumentError) { |e|
+    }.should.raise(ArgumentError) { |e|
       e.message.should.include?("unknown keyword: :system")
     }
   end
@@ -90,7 +90,7 @@ describe "Data#initialize" do
   end
 
   it "supports Data with no fields" do
-    -> { DataSpecs::Empty.new }.should_not raise_error
+    -> { DataSpecs::Empty.new }.should_not.raise
   end
 
   it "can be overridden" do

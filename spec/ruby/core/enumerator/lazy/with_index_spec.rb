@@ -17,7 +17,7 @@ describe "Enumerator::Lazy#with_index" do
   end
 
   it "raises TypeError when offset does not convert to Integer" do
-    -> { (0..Float::INFINITY).lazy.with_index(false).map { |i, idx| i }.first(3) }.should raise_error(TypeError)
+    -> { (0..Float::INFINITY).lazy.with_index(false).map { |i, idx| i }.first(3) }.should.raise(TypeError)
   end
 
   it "enumerates with a given block" do

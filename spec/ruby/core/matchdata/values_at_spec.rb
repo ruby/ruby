@@ -26,7 +26,7 @@ describe "MatchData#values_at" do
     end
 
     it "raises RangeError if any element of the range is negative and out of range" do
-      -> { /(.)(.)(\d+)(\d)/.match("THX1138: The Movie").values_at(-6..3) }.should raise_error(RangeError, "-6..3 out of range")
+      -> { /(.)(.)(\d+)(\d)/.match("THX1138: The Movie").values_at(-6..3) }.should.raise(RangeError, "-6..3 out of range")
     end
 
     it "supports endless Range" do
@@ -71,6 +71,6 @@ describe "MatchData#values_at" do
   it "fails when passed arguments of unsupported types" do
     -> {
       /(.)(.)(\d+)(\d)/.match("THX1138: The Movie").values_at(Object.new)
-    }.should raise_error(TypeError, "no implicit conversion of Object into Integer")
+    }.should.raise(TypeError, "no implicit conversion of Object into Integer")
   end
 end

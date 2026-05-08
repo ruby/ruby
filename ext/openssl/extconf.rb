@@ -135,6 +135,7 @@ Logging::message "=== Checking for OpenSSL features... ===\n"
 evp_h = "openssl/evp.h".freeze
 ts_h = "openssl/ts.h".freeze
 ssl_h = "openssl/ssl.h".freeze
+stack_h = "openssl/stack.h".freeze
 
 # compile options
 have_func("RAND_egd()", "openssl/rand.h")
@@ -149,6 +150,9 @@ have_func("EVP_PBE_scrypt(\"\", 0, (unsigned char *)\"\", 0, 0, 0, 0, 0, NULL, 0
 
 # added in OpenSSL 1.1.1 and LibreSSL 3.5.0, then removed in LibreSSL 4.0.0
 have_func("EVP_PKEY_check(NULL)", evp_h)
+
+# added in OpenSSL 1.1.1, currently not in LibreSSL
+have_func("OPENSSL_sk_new_reserve(NULL, 0)", stack_h)
 
 # added in 3.0.0
 have_func("SSL_CTX_set0_tmp_dh_pkey(NULL, NULL)", ssl_h)

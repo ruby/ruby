@@ -7,7 +7,7 @@ describe :extract_range_matched, shared: true do
     s.scan(/\w{1}/)
 
     ch = s.send(@method)
-    ch.should_not be_kind_of(cls)
-    ch.should be_an_instance_of(String)
+    ch.should_not.is_a?(cls)
+    ch.should.instance_of?(String)
   end
 end

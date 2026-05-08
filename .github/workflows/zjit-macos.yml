@@ -93,7 +93,7 @@ jobs:
           rustup install ${{ matrix.rust_version }} --profile minimal
           rustup default ${{ matrix.rust_version }}
 
-      - uses: taiki-e/install-action@b8be7f5e140177087325943c4a8e169d01c59b3d # v2.75.3
+      - uses: taiki-e/install-action@cca35edeb1d01366c2843b68fc3ca441446d73d3 # v2.77.1
         with:
           tool: nextest@0.9
         if: ${{ matrix.test_task == 'zjit-check' }}
@@ -225,6 +225,8 @@ jobs:
       - name: Run ruby-bench
         run: ruby run_benchmarks.rb -e "zjit::../build/install/bin/ruby ${{ matrix.ruby_opts }}" ${{ matrix.bench_opts }}
         working-directory: ruby-bench
+        env:
+          BUNDLER_VERSION: 0
 
       - uses: ./.github/actions/slack
         with:

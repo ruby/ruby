@@ -16,6 +16,22 @@
 #include <sys/sysctl.h>
 #endif
 
+#ifndef VM_CHECK_MODE
+# define VM_CHECK_MODE RUBY_DEBUG
+#endif
+
+// From ractor_core.h
+#ifndef RACTOR_CHECK_MODE
+# define RACTOR_CHECK_MODE (VM_CHECK_MODE || RUBY_DEBUG) && (SIZEOF_UINT64_T == SIZEOF_VALUE)
+#endif
+
+#if RACTOR_CHECK_MODE
+# define RVALUE_SUFFIX_SIZE sizeof(VALUE)
+void rb_ractor_setup_belonging(VALUE obj);
+#else
+# define RVALUE_SUFFIX_SIZE 0
+#endif
+
 struct objspace {
     bool measure_gc_time;
     bool gc_stress;
@@ -253,11 +269,7 @@ rb_mmtk_scan_gc_roots(void)
 {
     struct objspace *objspace = rb_gc_get_objspace();
 
-    // FIXME: Make `rb_gc_mark_roots` aware that the current thread may not have EC.
-    // See: https://github.com/ruby/mmtk/issues/22
-    rb_gc_worker_thread_set_vm_context(&objspace->vm_context);
     rb_gc_mark_roots(objspace, NULL);
-    rb_gc_worker_thread_unset_vm_context(&objspace->vm_context);
 }
 
 static int
@@ -561,7 +573,11 @@ void *
 rb_gc_impl_objspace_alloc(void)
 {
     MMTk_Builder *builder = rb_mmtk_builder_init();
-    mmtk_init_binding(builder, NULL, &ruby_upcalls);
+    MMTk_RubyBindingOptions binding_options = {
+        .ractor_check_mode = RACTOR_CHECK_MODE != 0,
+        .suffix_size = RVALUE_SUFFIX_SIZE,
+    };
+    mmtk_init_binding(builder, &binding_options, &ruby_upcalls);
 
     return calloc(1, sizeof(struct objspace));
 }
@@ -784,6 +800,14 @@ rb_gc_impl_config_set(void *objspace_ptr, VALUE hash)
     // TODO
 }
 
+struct rb_gc_vm_context *
+rb_gc_impl_get_vm_context(void *objspace_ptr)
+{
+    struct objspace *objspace = objspace_ptr;
+
+    return &objspace->vm_context;
+}
+
 // Object allocation
 
 static VALUE
@@ -881,7 +905,8 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
         mmtk_handle_user_collection_request(ractor_cache, false, false);
     }
 
-    alloc_size += sizeof(VALUE);
+    // Layout: [hidden size header (sizeof(VALUE))][payload (alloc_size)][suffix (RVALUE_SUFFIX_SIZE)]
+    alloc_size += sizeof(VALUE) + RVALUE_SUFFIX_SIZE;
 
     VALUE *alloc_obj = (VALUE *)rb_mmtk_alloc_fast_path(objspace, ractor_cache, alloc_size);
     if (!alloc_obj) {
@@ -889,7 +914,7 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     }
 
     alloc_obj++;
-    alloc_obj[-1] = alloc_size - sizeof(VALUE);
+    alloc_obj[-1] = alloc_size - sizeof(VALUE) - RVALUE_SUFFIX_SIZE;
     alloc_obj[0] = flags;
     alloc_obj[1] = klass;
 
@@ -900,6 +925,10 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     mmtk_buffer_obj_free_candidate(ractor_cache, (VALUE)alloc_obj);
 
     objspace->total_allocated_objects++;
+
+#if RACTOR_CHECK_MODE
+    rb_ractor_setup_belonging((VALUE)alloc_obj);
+#endif
 
     return (VALUE)alloc_obj;
 }

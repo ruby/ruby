@@ -10,7 +10,7 @@ describe :argf_each_codepoint, shared: true do
 
   it "is a public method" do
     argf @filenames do
-      @argf.public_methods(false).should include(@method)
+      @argf.public_methods(false).should.include?(@method)
     end
   end
 
@@ -22,13 +22,13 @@ describe :argf_each_codepoint, shared: true do
 
   it "returns self when passed a block" do
     argf @filenames do
-      @argf.send(@method) {}.should equal(@argf)
+      @argf.send(@method) {}.should.equal?(@argf)
     end
   end
 
   it "returns an Enumerator when passed no block" do
     argf @filenames do
-      @argf.send(@method).should be_an_instance_of(Enumerator)
+      @argf.send(@method).should.instance_of?(Enumerator)
     end
   end
 
@@ -41,7 +41,7 @@ describe :argf_each_codepoint, shared: true do
   describe "when no block is given" do
     it "returns an Enumerator" do
       argf @filenames do
-        @argf.send(@method).should be_an_instance_of(Enumerator)
+        @argf.send(@method).should.instance_of?(Enumerator)
       end
     end
 

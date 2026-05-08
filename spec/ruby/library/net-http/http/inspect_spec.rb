@@ -15,7 +15,7 @@ describe "Net::HTTP#inspect" do
   end
 
   it "returns a String representation of self" do
-    @http.inspect.should be_kind_of(String)
+    @http.inspect.should.is_a?(String)
     @http.inspect.should == "#<Net::HTTP localhost:#{@port} open=false>"
 
     @http.start

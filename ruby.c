@@ -1373,7 +1373,7 @@ proc_0_option(ruby_cmdline_options_t *opt, const char *s)
 static void
 proc_encoding_option(ruby_cmdline_options_t *opt, const char *s, const char *opt_name)
 {
-    char *p;
+    const char *p;
 # define set_encoding_part(type) \
     if (!(p = strchr(s, ':'))) {                        \
         set_##type##_encoding_once(opt, s, 0);          \

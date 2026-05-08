@@ -6,11 +6,11 @@ describe "Array#combination" do
   end
 
   it "returns an enumerator when no block is provided" do
-    @array.combination(2).should be_an_instance_of(Enumerator)
+    @array.combination(2).should.instance_of?(Enumerator)
   end
 
   it "returns self when a block is given" do
-    @array.combination(2){}.should equal(@array)
+    @array.combination(2){}.should.equal?(@array)
   end
 
   it "yields nothing for out of bounds length and return self" do
@@ -30,7 +30,7 @@ describe "Array#combination" do
   it "yields a copy of self if the argument is the size of the receiver" do
     r = @array.combination(4).to_a
     r.should == [@array]
-    r[0].should_not equal(@array)
+    r[0].should_not.equal?(@array)
   end
 
   it "yields [] when length is 0" do

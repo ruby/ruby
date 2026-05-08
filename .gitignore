@@ -97,6 +97,7 @@ lcov*.info
 /enc.mk
 /encdb.h
 /exts.mk
+/gc/*/exts.mk
 /goruby
 /id.[ch]
 /largefile.h

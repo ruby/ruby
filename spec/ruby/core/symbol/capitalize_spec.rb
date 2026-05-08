@@ -3,7 +3,7 @@ require_relative '../../spec_helper'
 
 describe "Symbol#capitalize" do
   it "returns a Symbol" do
-    :glark.capitalize.should be_an_instance_of(Symbol)
+    :glark.capitalize.should.instance_of?(Symbol)
   end
 
   it "converts the first character to uppercase if it is ASCII" do

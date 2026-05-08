@@ -7,7 +7,7 @@ describe "Encoding::UndefinedConversionError#destination_encoding" do
   end
 
   it "returns an Encoding object" do
-    @exception.destination_encoding.should be_an_instance_of(Encoding)
+    @exception.destination_encoding.should.instance_of?(Encoding)
   end
 
   it "is equal to the destination encoding of the object that raised it" do

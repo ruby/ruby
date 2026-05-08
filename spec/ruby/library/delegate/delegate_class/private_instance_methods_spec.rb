@@ -7,17 +7,17 @@ describe "DelegateClass.private_instance_methods" do
   end
 
   it "does not include any instance methods of the delegated class" do
-    @methods.should_not include :pub
-    @methods.should_not include :prot
-    @methods.should_not include :priv # since these are not forwarded...
+    @methods.should_not.include? :pub
+    @methods.should_not.include? :prot
+    @methods.should_not.include? :priv # since these are not forwarded...
   end
 
   it "includes private instance methods of the DelegateClass class" do
-    @methods.should include :extra_private
+    @methods.should.include? :extra_private
   end
 
   it "does not include public or protected instance methods of the DelegateClass class" do
-    @methods.should_not include :extra
-    @methods.should_not include :extra_protected
+    @methods.should_not.include? :extra
+    @methods.should_not.include? :extra_protected
   end
 end

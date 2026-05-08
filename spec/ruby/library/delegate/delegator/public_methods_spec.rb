@@ -9,10 +9,10 @@ describe "Delegator#public_methods" do
   end
 
   it "includes public methods of the delegate object" do
-    @methods.should include :pub
+    @methods.should.include? :pub
   end
 
   it "includes public instance methods of the Delegator class" do
-    @methods.should include :extra
+    @methods.should.include? :extra
   end
 end

@@ -498,7 +498,8 @@ rb_gccct_clear_table(void)
 {
     rb_vm_t *vm = GET_VM();
     if (vm->global_cc_cache_table_used) {
-        MEMZERO(vm->global_cc_cache_table, struct rb_callcache *, VM_GLOBAL_CC_CACHE_TABLE_SIZE);
+        const struct rb_callcache **const table = vm->global_cc_cache_table;
+        MEMZERO(table, struct rb_callcache *, VM_GLOBAL_CC_CACHE_TABLE_SIZE);
         vm->global_cc_cache_table_used = false;
     }
     return Qnil;

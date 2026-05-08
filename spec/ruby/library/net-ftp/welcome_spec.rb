@@ -20,7 +20,7 @@ ruby_version_is ""..."4.1" do
     end
 
     it "returns the server's welcome message" do
-      @ftp.welcome.should be_nil
+      @ftp.welcome.should == nil
       @ftp.login
       @ftp.welcome.should == "230 User logged in, proceed. (USER anonymous)\n"
     end

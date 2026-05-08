@@ -4,7 +4,7 @@ require_relative 'fixtures/classes'
 describe "Struct#instance_variable_get" do
   it "returns nil for attributes" do
     car = StructClasses::Car.new("Hugo", "Foo", "1972")
-    car.instance_variable_get(:@make).should be_nil
+    car.instance_variable_get(:@make).should == nil
   end
 
   it "returns a user value for variables with the same name as attributes" do

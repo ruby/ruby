@@ -8,8 +8,8 @@ describe "Net::HTTP.new" do
     end
 
     it "returns a Net::HTTP instance" do
-      @http.proxy?.should be_false
-      @http.instance_of?(Net::HTTP).should be_true
+      @http.proxy?.should == false
+      @http.instance_of?(Net::HTTP).should == true
     end
 
     it "sets the new Net::HTTP instance's address to the passed address" do
@@ -17,11 +17,11 @@ describe "Net::HTTP.new" do
     end
 
     it "sets the new Net::HTTP instance's port to the default HTTP port" do
-      @http.port.should eql(Net::HTTP.default_port)
+      @http.port.should.eql?(Net::HTTP.default_port)
     end
 
     it "does not start the new Net::HTTP instance" do
-      @http.started?.should be_false
+      @http.started?.should == false
     end
   end
 
@@ -31,8 +31,8 @@ describe "Net::HTTP.new" do
     end
 
     it "returns a Net::HTTP instance" do
-      @http.proxy?.should be_false
-      @http.instance_of?(Net::HTTP).should be_true
+      @http.proxy?.should == false
+      @http.instance_of?(Net::HTTP).should == true
     end
 
     it "sets the new Net::HTTP instance's address to the passed address" do
@@ -40,44 +40,44 @@ describe "Net::HTTP.new" do
     end
 
     it "sets the new Net::HTTP instance's port to the passed port" do
-      @http.port.should eql(3333)
+      @http.port.should.eql?(3333)
     end
 
     it "does not start the new Net::HTTP instance" do
-      @http.started?.should be_false
+      @http.started?.should == false
     end
   end
 
   describe "when passed address, port, *proxy_options" do
     it "returns a Net::HTTP instance" do
       http = Net::HTTP.new("localhost", 3333, "localhost")
-      http.proxy?.should be_true
-      http.instance_of?(Net::HTTP).should be_true
-      http.should be_kind_of(Net::HTTP)
+      http.proxy?.should == true
+      http.instance_of?(Net::HTTP).should == true
+      http.should.is_a?(Net::HTTP)
     end
 
     it "correctly sets the passed Proxy options" do
       http = Net::HTTP.new("localhost", 3333, "localhost")
       http.proxy_address.should == "localhost"
-      http.proxy_port.should eql(80)
-      http.proxy_user.should be_nil
-      http.proxy_pass.should be_nil
+      http.proxy_port.should.eql?(80)
+      http.proxy_user.should == nil
+      http.proxy_pass.should == nil
 
       http = Net::HTTP.new("localhost", 3333, "localhost", 1234)
       http.proxy_address.should == "localhost"
-      http.proxy_port.should eql(1234)
-      http.proxy_user.should be_nil
-      http.proxy_pass.should be_nil
+      http.proxy_port.should.eql?(1234)
+      http.proxy_user.should == nil
+      http.proxy_pass.should == nil
 
       http = Net::HTTP.new("localhost", 3333, "localhost", 1234, "rubyspec")
       http.proxy_address.should == "localhost"
-      http.proxy_port.should eql(1234)
+      http.proxy_port.should.eql?(1234)
       http.proxy_user.should == "rubyspec"
-      http.proxy_pass.should be_nil
+      http.proxy_pass.should == nil
 
       http = Net::HTTP.new("localhost", 3333, "localhost", 1234, "rubyspec", "rocks")
       http.proxy_address.should == "localhost"
-      http.proxy_port.should eql(1234)
+      http.proxy_port.should.eql?(1234)
       http.proxy_user.should == "rubyspec"
       http.proxy_pass.should == "rocks"
     end

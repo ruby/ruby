@@ -32,25 +32,25 @@ describe "Object#to_yaml" do
 
   it "returns the YAML representation of a FalseClass" do
     false_klass = false
-    false_klass.should be_kind_of(FalseClass)
+    false_klass.should.is_a?(FalseClass)
     false_klass.to_yaml.should match_yaml("--- false\n")
   end
 
   it "returns the YAML representation of a Float object" do
     float = 1.2
-    float.should be_kind_of(Float)
+    float.should.is_a?(Float)
     float.to_yaml.should match_yaml("--- 1.2\n")
   end
 
   it "returns the YAML representation of an Integer object" do
     int = 20
-    int.should be_kind_of(Integer)
+    int.should.is_a?(Integer)
     int.to_yaml.should match_yaml("--- 20\n")
   end
 
   it "returns the YAML representation of a NilClass object" do
     nil_klass = nil
-    nil_klass.should be_kind_of(NilClass)
+    nil_klass.should.is_a?(NilClass)
     nil_klass.to_yaml.should match_yaml("--- \n")
   end
 
@@ -84,7 +84,7 @@ describe "Object#to_yaml" do
 
   it "returns the YAML representation of a TrueClass" do
     true_klass = true
-    true_klass.should be_kind_of(TrueClass)
+    true_klass.should.is_a?(TrueClass)
     true_klass.to_yaml.should match_yaml("--- true\n")
   end
 
@@ -94,10 +94,10 @@ describe "Object#to_yaml" do
 
   it "returns the YAML representation for Range objects" do
     yaml = Range.new(1,3).to_yaml
-    yaml.include?("!ruby/range").should be_true
-    yaml.include?("begin: 1").should be_true
-    yaml.include?("end: 3").should be_true
-    yaml.include?("excl: false").should be_true
+    yaml.include?("!ruby/range").should == true
+    yaml.include?("begin: 1").should == true
+    yaml.include?("end: 3").should == true
+    yaml.include?("excl: false").should == true
   end
 
   it "returns the YAML representation of numeric constants" do

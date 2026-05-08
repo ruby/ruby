@@ -56,8 +56,8 @@ describe :thread_exit, shared: true do
     Thread.pass while @inner.status and @inner.status != "sleep"
     @outer.send(@method)
     @outer.join
-    ScratchPad.recorded.should include(:inner_ensure_clause)
-    ScratchPad.recorded.should include(:outer_ensure_clause)
+    ScratchPad.recorded.should.include?(:inner_ensure_clause)
+    ScratchPad.recorded.should.include?(:outer_ensure_clause)
   end
 
   it "does not set $!" do
@@ -155,7 +155,7 @@ describe :thread_exit, shared: true do
 
     it "propagates inner exception to Thread.join if there is an outer ensure clause" do
       thread = ThreadSpecs.dying_thread_with_outer_ensure(@method) { }
-      -> { thread.join }.should raise_error(RuntimeError, "In dying thread")
+      -> { thread.join }.should.raise(RuntimeError, "In dying thread")
     end
 
     it "runs all outer ensure clauses even if inner ensure clause raises exception" do

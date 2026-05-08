@@ -5,7 +5,7 @@ require_relative 'fixtures/classes'
 # distribution (which is a normalized form of the Gaussian function).
 describe "Math.erf" do
   it "returns a float" do
-    Math.erf(1).should be_kind_of(Float)
+    Math.erf(1).should.is_a?(Float)
   end
 
   it "returns the error function of the argument" do
@@ -21,15 +21,15 @@ describe "Math.erf" do
   end
 
   it "raises a TypeError if the argument cannot be coerced with Float()" do
-    -> { Math.erf("test") }.should raise_error(TypeError)
+    -> { Math.erf("test") }.should.raise(TypeError)
   end
 
   it "returns NaN given NaN" do
-    Math.erf(nan_value).nan?.should be_true
+    Math.erf(nan_value).nan?.should == true
   end
 
   it "raises a TypeError if the argument is nil" do
-    -> { Math.erf(nil) }.should raise_error(TypeError)
+    -> { Math.erf(nil) }.should.raise(TypeError)
   end
 
   it "accepts any argument that can be coerced with Float()" do

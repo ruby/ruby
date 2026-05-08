@@ -8,7 +8,7 @@ describe "String#undump" do
   end
 
   it "always returns String instance" do
-    StringSpecs::MyString.new('"foo"').undump.should be_an_instance_of(String)
+    StringSpecs::MyString.new('"foo"').undump.should.instance_of?(String)
   end
 
   it "strips outer \"" do
@@ -396,46 +396,46 @@ describe "String#undump" do
 
   describe "Limitations" do
     it "cannot undump non ASCII-compatible string" do
-      -> { '"foo"'.encode('utf-16le').undump }.should raise_error(Encoding::CompatibilityError)
+      -> { '"foo"'.encode('utf-16le').undump }.should.raise(Encoding::CompatibilityError)
     end
   end
 
   describe "invalid dump" do
     it "raises RuntimeError exception if wrapping \" are missing" do
-      -> { 'foo'.undump }.should raise_error(RuntimeError, /invalid dumped string/)
-      -> { '"foo'.undump }.should raise_error(RuntimeError, /unterminated dumped string/)
-      -> { 'foo"'.undump }.should raise_error(RuntimeError, /invalid dumped string/)
-      -> { "'foo'".undump }.should raise_error(RuntimeError, /invalid dumped string/)
+      -> { 'foo'.undump }.should.raise(RuntimeError, /invalid dumped string/)
+      -> { '"foo'.undump }.should.raise(RuntimeError, /unterminated dumped string/)
+      -> { 'foo"'.undump }.should.raise(RuntimeError, /invalid dumped string/)
+      -> { "'foo'".undump }.should.raise(RuntimeError, /invalid dumped string/)
     end
 
     it "raises RuntimeError if there is incorrect \\x sequence" do
-      -> { '"\x"'.undump }.should raise_error(RuntimeError, /invalid hex escape/)
-      -> { '"\\x3y"'.undump }.should raise_error(RuntimeError, /invalid hex escape/)
+      -> { '"\x"'.undump }.should.raise(RuntimeError, /invalid hex escape/)
+      -> { '"\\x3y"'.undump }.should.raise(RuntimeError, /invalid hex escape/)
     end
 
     it "raises RuntimeError in there is incorrect \\u sequence" do
-      -> { '"\\u"'.undump }.should raise_error(RuntimeError, /invalid Unicode escape/)
-      -> { '"\\u{"'.undump }.should raise_error(RuntimeError, /invalid Unicode escape/)
-      -> { '"\\u{3042"'.undump }.should raise_error(RuntimeError, /invalid Unicode escape/)
-      -> { '"\\u"'.undump }.should raise_error(RuntimeError, /invalid Unicode escape/)
+      -> { '"\\u"'.undump }.should.raise(RuntimeError, /invalid Unicode escape/)
+      -> { '"\\u{"'.undump }.should.raise(RuntimeError, /invalid Unicode escape/)
+      -> { '"\\u{3042"'.undump }.should.raise(RuntimeError, /invalid Unicode escape/)
+      -> { '"\\u"'.undump }.should.raise(RuntimeError, /invalid Unicode escape/)
     end
 
     it "raises RuntimeError if there is malformed dump of non ASCII-compatible string" do
-      -> { '"".force_encoding("BINARY"'.undump }.should raise_error(RuntimeError, /invalid dumped string/)
-      -> { '"".force_encoding("Unknown")'.undump }.should raise_error(RuntimeError, /dumped string has unknown encoding name/)
-      -> { '"".force_encoding()'.undump }.should raise_error(RuntimeError, /invalid dumped string/)
+      -> { '"".force_encoding("BINARY"'.undump }.should.raise(RuntimeError, /invalid dumped string/)
+      -> { '"".force_encoding("Unknown")'.undump }.should.raise(RuntimeError, /dumped string has unknown encoding name/)
+      -> { '"".force_encoding()'.undump }.should.raise(RuntimeError, /invalid dumped string/)
     end
 
     it "raises RuntimeError if string contains \0 character" do
-      -> { "\"foo\0\"".undump }.should raise_error(RuntimeError, /string contains null byte/)
+      -> { "\"foo\0\"".undump }.should.raise(RuntimeError, /string contains null byte/)
     end
 
     it "raises RuntimeError if string contains non ASCII character" do
-      -> { "\"\u3042\"".undump }.should raise_error(RuntimeError, /non-ASCII character detected/)
+      -> { "\"\u3042\"".undump }.should.raise(RuntimeError, /non-ASCII character detected/)
     end
 
     it "raises RuntimeError if there are some excessive \"" do
-      -> { '" "" "'.undump }.should raise_error(RuntimeError, /invalid dumped string/)
+      -> { '" "" "'.undump }.should.raise(RuntimeError, /invalid dumped string/)
     end
   end
 end

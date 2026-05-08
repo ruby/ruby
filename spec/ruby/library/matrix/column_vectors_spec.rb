@@ -8,11 +8,11 @@ describe "Matrix#column_vectors" do
   end
 
   it "returns an Array" do
-    Matrix[ [1,2], [3,4] ].column_vectors.should be_an_instance_of(Array)
+    Matrix[ [1,2], [3,4] ].column_vectors.should.instance_of?(Array)
   end
 
   it "returns an Array of Vectors" do
-    @vectors.all? {|v| v.should be_an_instance_of(Vector)}
+    @vectors.all? {|v| v.should.instance_of?(Vector)}
   end
 
   it "returns each column as a Vector" do

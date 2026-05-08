@@ -81,7 +81,7 @@ describe "Enumerable#grep" do
     end
 
     it "raises an ArgumentError when not given a pattern" do
-      -> { @numerous.grep { |e| e } }.should raise_error(ArgumentError)
+      -> { @numerous.grep { |e| e } }.should.raise(ArgumentError)
     end
   end
 end

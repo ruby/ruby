@@ -3,7 +3,7 @@ require_relative '../../spec_helper'
 describe "Complex#to_c" do
   it "returns self" do
     value = Complex(1, 5)
-    value.to_c.should equal(value)
+    value.to_c.should.equal?(value)
   end
 
   it 'returns the same value' do

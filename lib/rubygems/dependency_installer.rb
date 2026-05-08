@@ -88,6 +88,8 @@ class Gem::DependencyInstaller
     @dir_mode = options[:dir_mode]
     @data_mode = options[:data_mode]
     @prog_mode = options[:prog_mode]
+    @build_extension = options[:build_extension]
+    @install_plugin = options[:install_plugin]
 
     # Indicates that we should not try to update any deps unless
     # we absolutely must.
@@ -169,6 +171,8 @@ class Gem::DependencyInstaller
       dir_mode: @dir_mode,
       data_mode: @data_mode,
       prog_mode: @prog_mode,
+      build_extension: @build_extension,
+      install_plugin: @install_plugin,
     }
     options[:install_dir] = @install_dir if @only_install_dir
 

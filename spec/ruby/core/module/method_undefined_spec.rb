@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "Module#method_undefined" do
   it "is a private instance method" do
-    Module.should have_private_instance_method(:method_undefined)
+    Module.private_instance_methods(false).should.include?(:method_undefined)
   end
 
   it "returns nil in the default implementation" do

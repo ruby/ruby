@@ -28,12 +28,12 @@ describe "Module#alias_method" do
 
   it "retains method visibility" do
     @class.make_alias :private_ichi, :private_one
-    -> { @object.private_one  }.should raise_error(NameError)
-    -> { @object.private_ichi }.should raise_error(NameError)
+    -> { @object.private_one  }.should.raise(NameError)
+    -> { @object.private_ichi }.should.raise(NameError)
     @class.make_alias :public_ichi, :public_one
     @object.public_ichi.should == @object.public_one
     @class.make_alias :protected_ichi, :protected_one
-    -> { @object.protected_ichi }.should raise_error(NameError)
+    -> { @object.protected_ichi }.should.raise(NameError)
   end
 
   it "handles aliasing a stub that changes visibility" do
@@ -55,7 +55,7 @@ describe "Module#alias_method" do
   end
 
   it "fails if origin method not found" do
-    -> { @class.make_alias :ni, :san }.should raise_error(NameError) { |e|
+    -> { @class.make_alias :ni, :san }.should.raise(NameError) { |e|
       # a NameError and not a NoMethodError
       e.class.should == NameError
     }
@@ -63,7 +63,7 @@ describe "Module#alias_method" do
 
   it "raises FrozenError if frozen" do
     @class.freeze
-    -> { @class.make_alias :uno, :public_one }.should raise_error(FrozenError)
+    -> { @class.make_alias :uno, :public_one }.should.raise(FrozenError)
   end
 
   it "converts the names using #to_str" do
@@ -78,23 +78,23 @@ describe "Module#alias_method" do
   end
 
   it "raises a TypeError when the given name can't be converted using to_str" do
-    -> { @class.make_alias mock('x'), :public_one }.should raise_error(TypeError)
+    -> { @class.make_alias mock('x'), :public_one }.should.raise(TypeError)
   end
 
   it "raises a NoMethodError if the given name raises a NoMethodError during type coercion using to_str" do
     obj = mock("mock-name")
     obj.should_receive(:to_str).and_raise(NoMethodError)
-    -> { @class.make_alias obj, :public_one }.should raise_error(NoMethodError)
+    -> { @class.make_alias obj, :public_one }.should.raise(NoMethodError)
   end
 
   it "is a public method" do
-    Module.should have_public_instance_method(:alias_method, false)
+    Module.public_instance_methods(false).should.include?(:alias_method)
   end
 
   describe "returned value" do
     it "returns symbol of the defined method name" do
-      @class.send(:alias_method, :checking_return_value, :public_one).should equal(:checking_return_value)
-      @class.send(:alias_method, 'checking_return_value', :public_one).should equal(:checking_return_value)
+      @class.send(:alias_method, :checking_return_value, :public_one).should.equal?(:checking_return_value)
+      @class.send(:alias_method, 'checking_return_value', :public_one).should.equal?(:checking_return_value)
     end
   end
 
@@ -104,14 +104,14 @@ describe "Module#alias_method" do
 
   it "works on private module methods in a module that has been reopened" do
     ModuleSpecs::ReopeningModule.foo.should == true
-    -> { ModuleSpecs::ReopeningModule.foo2 }.should_not raise_error(NoMethodError)
+    -> { ModuleSpecs::ReopeningModule.foo2 }.should_not.raise(NoMethodError)
   end
 
   it "accesses a method defined on Object from Kernel" do
-    Kernel.should_not have_public_instance_method(:module_specs_public_method_on_object)
+    Kernel.public_instance_methods(true).should_not.include?(:module_specs_public_method_on_object)
 
-    Kernel.should have_public_instance_method(:module_specs_alias_on_kernel)
-    Object.should have_public_instance_method(:module_specs_alias_on_kernel)
+    Kernel.public_instance_methods(false).should.include?(:module_specs_alias_on_kernel)
+    Object.public_instance_methods(true).should.include?(:module_specs_alias_on_kernel)
   end
 
   it "can call a method with super aliased twice" do
@@ -130,42 +130,42 @@ describe "Module#alias_method" do
 
     it "keeps initialize private when aliasing" do
       @class.make_alias(:initialize, :public_one)
-      @class.private_instance_methods.include?(:initialize).should be_true
+      @class.private_instance_methods.include?(:initialize).should == true
 
       @subclass.make_alias(:initialize, :public_one)
-      @subclass.private_instance_methods.include?(:initialize).should be_true
+      @subclass.private_instance_methods.include?(:initialize).should == true
     end
 
     it "keeps initialize_copy private when aliasing" do
       @class.make_alias(:initialize_copy, :public_one)
-      @class.private_instance_methods.include?(:initialize_copy).should be_true
+      @class.private_instance_methods.include?(:initialize_copy).should == true
 
       @subclass.make_alias(:initialize_copy, :public_one)
-      @subclass.private_instance_methods.include?(:initialize_copy).should be_true
+      @subclass.private_instance_methods.include?(:initialize_copy).should == true
     end
 
     it "keeps initialize_clone private when aliasing" do
       @class.make_alias(:initialize_clone, :public_one)
-      @class.private_instance_methods.include?(:initialize_clone).should be_true
+      @class.private_instance_methods.include?(:initialize_clone).should == true
 
       @subclass.make_alias(:initialize_clone, :public_one)
-      @subclass.private_instance_methods.include?(:initialize_clone).should be_true
+      @subclass.private_instance_methods.include?(:initialize_clone).should == true
     end
 
     it "keeps initialize_dup private when aliasing" do
       @class.make_alias(:initialize_dup, :public_one)
-      @class.private_instance_methods.include?(:initialize_dup).should be_true
+      @class.private_instance_methods.include?(:initialize_dup).should == true
 
       @subclass.make_alias(:initialize_dup, :public_one)
-      @subclass.private_instance_methods.include?(:initialize_dup).should be_true
+      @subclass.private_instance_methods.include?(:initialize_dup).should == true
     end
 
     it "keeps respond_to_missing? private when aliasing" do
       @class.make_alias(:respond_to_missing?, :public_one)
-      @class.private_instance_methods.include?(:respond_to_missing?).should be_true
+      @class.private_instance_methods.include?(:respond_to_missing?).should == true
 
       @subclass.make_alias(:respond_to_missing?, :public_one)
-      @subclass.private_instance_methods.include?(:respond_to_missing?).should be_true
+      @subclass.private_instance_methods.include?(:respond_to_missing?).should == true
     end
   end
 end

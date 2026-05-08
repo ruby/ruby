@@ -19,24 +19,24 @@ ruby_version_is "4.1" do
     end
 
     it "is a public method" do
-      Module.should have_public_instance_method(:autoload_relative, false)
+      Module.public_instance_methods(false).should.include?(:autoload_relative)
     end
 
     it "registers a file to load relative to the current file the first time the named constant is accessed" do
       ModuleSpecs::Autoload.autoload_relative :AutoloadRelativeA, "fixtures/autoload_relative_a.rb"
       path = ModuleSpecs::Autoload.autoload?(:AutoloadRelativeA)
-      path.should_not be_nil
+      path.should_not == nil
       path.should.end_with?("autoload_relative_a.rb")
-      File.exist?(path).should be_true
+      File.exist?(path).should == true
     end
 
     it "loads the registered file when the constant is accessed" do
       ModuleSpecs::Autoload.autoload_relative :AutoloadRelativeB, "fixtures/autoload_relative_a.rb"
-      ModuleSpecs::Autoload::AutoloadRelativeB.should be_kind_of(Module)
+      ModuleSpecs::Autoload::AutoloadRelativeB.should.is_a?(Module)
     end
 
     it "returns nil" do
-      ModuleSpecs::Autoload.autoload_relative(:AutoloadRelativeC, "fixtures/autoload_relative_a.rb").should be_nil
+      ModuleSpecs::Autoload.autoload_relative(:AutoloadRelativeC, "fixtures/autoload_relative_a.rb").should == nil
     end
 
     it "registers a file to load the first time the named constant is accessed" do
@@ -44,51 +44,51 @@ ruby_version_is "4.1" do
         autoload_relative :D, "fixtures/autoload_relative_a.rb"
       end
       path = ModuleSpecs::Autoload::AutoloadRelativeTest.autoload?(:D)
-      path.should_not be_nil
+      path.should_not == nil
       path.should.end_with?("autoload_relative_a.rb")
     end
 
     it "sets the autoload constant in the constants table" do
       ModuleSpecs::Autoload.autoload_relative :AutoloadRelativeTableTest, "fixtures/autoload_relative_a.rb"
-      ModuleSpecs::Autoload.should have_constant(:AutoloadRelativeTableTest)
+      ModuleSpecs::Autoload.should.const_defined?(:AutoloadRelativeTableTest, false)
     end
 
     it "calls #to_path on non-String filenames" do
       name = mock("autoload_relative mock")
       name.should_receive(:to_path).and_return("fixtures/autoload_relative_a.rb")
       ModuleSpecs::Autoload.autoload_relative :AutoloadRelativeToPath, name
-      ModuleSpecs::Autoload.autoload?(:AutoloadRelativeToPath).should_not be_nil
+      ModuleSpecs::Autoload.autoload?(:AutoloadRelativeToPath).should_not == nil
     end
 
     it "calls #to_str on non-String filenames" do
       name = mock("autoload_relative mock")
       name.should_receive(:to_str).and_return("fixtures/autoload_relative_a.rb")
       ModuleSpecs::Autoload.autoload_relative :AutoloadRelativeToStr, name
-      ModuleSpecs::Autoload.autoload?(:AutoloadRelativeToStr).should_not be_nil
+      ModuleSpecs::Autoload.autoload?(:AutoloadRelativeToStr).should_not == nil
     end
 
     it "raises a TypeError if the filename argument is not a String or pathname" do
       -> {
         ModuleSpecs::Autoload.autoload_relative :AutoloadRelativeTypError, nil
-      }.should raise_error(TypeError)
+      }.should.raise(TypeError)
     end
 
     it "raises a NameError if the constant name is not valid" do
       -> {
         ModuleSpecs::Autoload.autoload_relative :invalid_name, "fixtures/autoload_relative_a.rb"
-      }.should raise_error(NameError)
+      }.should.raise(NameError)
     end
 
     it "raises an ArgumentError if the constant name starts with a lowercase letter" do
       -> {
         ModuleSpecs::Autoload.autoload_relative :autoload, "fixtures/autoload_relative_a.rb"
-      }.should raise_error(NameError)
+      }.should.raise(NameError)
     end
 
     it "raises LoadError if called from eval without file context" do
       -> {
         ModuleSpecs::Autoload.module_eval('autoload_relative :EvalTest, "fixtures/autoload_relative_a.rb"')
-      }.should raise_error(LoadError, /autoload_relative called without file context/)
+      }.should.raise(LoadError, /autoload_relative called without file context/)
     end
 
     it "can autoload in instance_eval with a file context" do
@@ -97,7 +97,7 @@ ruby_version_is "4.1" do
         autoload_relative :InstanceEvalTest, "fixtures/autoload_relative_a.rb"
         path = autoload?(:InstanceEvalTest)
       CODE
-      path.should_not be_nil
+      path.should_not == nil
       path.should.end_with?("autoload_relative_a.rb")
     end
 
@@ -112,8 +112,8 @@ ruby_version_is "4.1" do
     it "can load nested directory paths" do
       ModuleSpecs::Autoload.autoload_relative :NestedPath, "fixtures/autoload_relative_a.rb"
       path = ModuleSpecs::Autoload.autoload?(:NestedPath)
-      path.should_not be_nil
-      File.exist?(path).should be_true
+      path.should_not == nil
+      File.exist?(path).should == true
     end
 
     describe "interoperability with autoload?" do
@@ -121,7 +121,7 @@ ruby_version_is "4.1" do
         ModuleSpecs::Autoload.autoload_relative :QueryTest, "fixtures/autoload_relative_a.rb"
         path = ModuleSpecs::Autoload.autoload?(:QueryTest)
         # Should be an absolute path
-        Pathname.new(path).absolute?.should be_true
+        Pathname.new(path).absolute?.should == true
       end
     end
 end

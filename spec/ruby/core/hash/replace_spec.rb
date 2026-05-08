@@ -4,7 +4,7 @@ require_relative 'fixtures/classes'
 describe "Hash#replace" do
   it "replaces the contents of self with other" do
     h = { a: 1, b: 2 }
-    h.replace(c: -1, d: -2).should equal(h)
+    h.replace(c: -1, d: -2).should.equal?(h)
     h.should == { c: -1, d: -2 }
   end
 
@@ -25,7 +25,7 @@ describe "Hash#replace" do
 
   it "does not retain the default value" do
     hash = Hash.new(1)
-    hash.replace(b: 2).default.should be_nil
+    hash.replace(b: 2).default.should == nil
   end
 
   it "transfers the default value of an argument" do
@@ -36,7 +36,7 @@ describe "Hash#replace" do
   it "does not retain the default_proc" do
     pr = proc { |h, k| h[k] = [] }
     hash = Hash.new(&pr)
-    hash.replace(b: 2).default_proc.should be_nil
+    hash.replace(b: 2).default_proc.should == nil
   end
 
   it "transfers the default_proc of an argument" do
@@ -68,12 +68,12 @@ describe "Hash#replace" do
   it "raises a FrozenError if called on a frozen instance that would not be modified" do
     -> do
       HashSpecs.frozen_hash.replace(HashSpecs.frozen_hash)
-    end.should raise_error(FrozenError)
+    end.should.raise(FrozenError)
   end
 
   it "raises a FrozenError if called on a frozen instance that is modified" do
     -> do
       HashSpecs.frozen_hash.replace(HashSpecs.empty_frozen_hash)
-    end.should raise_error(FrozenError)
+    end.should.raise(FrozenError)
   end
 end

@@ -418,6 +418,18 @@ class TestZJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_float_arithmetic
+    assert_compiles '4.0', 'def test = 1.5 + 2.5; test'
+    assert_compiles '6.0', 'def test = 2.0 * 3.0; test'
+    assert_compiles '1.5', 'def test = 3.5 - 2.0; test'
+    assert_compiles '2.5', 'def test = 5.0 / 2.0; test'
+    assert_compiles '4.5', 'def test = 1.5 * 3; test' # Float * Fixnum
+    assert_compiles 'true', 'def test = (Float::NAN + 1.0).nan?; test'
+    assert_compiles 'Infinity', 'def test = Float::INFINITY * 2.0; test'
+    assert_compiles '3', 'def test = 3.7.to_i; test'
+    assert_compiles '-2', 'def test = (-2.9).to_i; test'
+  end
+
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT

@@ -31,11 +31,11 @@ describe :file_unlink, shared: true do
   end
 
   it "raises a TypeError if not passed a String type" do
-    -> { File.send(@method, 1) }.should raise_error(TypeError)
+    -> { File.send(@method, 1) }.should.raise(TypeError)
   end
 
   it "raises an Errno::ENOENT when the given file doesn't exist" do
-    -> { File.send(@method, 'bogus') }.should raise_error(Errno::ENOENT)
+    -> { File.send(@method, 'bogus') }.should.raise(Errno::ENOENT)
   end
 
   it "coerces a given parameter into a string if possible" do

@@ -22,12 +22,12 @@ describe 'Socket.tcp' do
   it 'returns a Socket when no block is given' do
     @client = Socket.tcp(@host, @port)
 
-    @client.should be_an_instance_of(Socket)
+    @client.should.instance_of?(Socket)
   end
 
   it 'yields the Socket when a block is given' do
     Socket.tcp(@host, @port) do |socket|
-      socket.should be_an_instance_of(Socket)
+      socket.should.instance_of?(Socket)
     end
   end
 
@@ -51,7 +51,7 @@ describe 'Socket.tcp' do
   it 'raises ArgumentError when 6 arguments are provided' do
     -> {
       Socket.tcp(@host, @port, @host, 0, {:connect_timeout => 1}, 10)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it 'connects to the server' do

@@ -11,7 +11,7 @@ describe "File.mtime" do
   end
 
   it "returns the modification Time of the file" do
-    File.mtime(@filename).should be_kind_of(Time)
+    File.mtime(@filename).should.is_a?(Time)
     File.mtime(@filename).should be_close(@mtime, TIME_TOLERANCE)
   end
 
@@ -34,7 +34,7 @@ describe "File.mtime" do
   end
 
   it "raises an Errno::ENOENT exception if the file is not found" do
-    -> { File.mtime('bogus') }.should raise_error(Errno::ENOENT)
+    -> { File.mtime('bogus') }.should.raise(Errno::ENOENT)
   end
 end
 
@@ -50,7 +50,7 @@ describe "File#mtime" do
   end
 
   it "returns the modification Time of the file" do
-    @f.mtime.should be_kind_of(Time)
+    @f.mtime.should.is_a?(Time)
   end
 
 end

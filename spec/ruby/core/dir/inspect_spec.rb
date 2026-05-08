@@ -11,7 +11,7 @@ describe "Dir#inspect" do
   end
 
   it "returns a String" do
-    @dir.inspect.should be_an_instance_of(String)
+    @dir.inspect.should.instance_of?(String)
   end
 
   it "includes the class name" do
@@ -19,6 +19,6 @@ describe "Dir#inspect" do
   end
 
   it "includes the directory name" do
-    @dir.inspect.should include(Dir.getwd)
+    @dir.inspect.should.include?(Dir.getwd)
   end
 end

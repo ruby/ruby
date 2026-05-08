@@ -2,11 +2,11 @@ require_relative '../../spec_helper'
 
 describe "String#unpack" do
   it "raises a TypeError when passed nil" do
-    -> { "abc".unpack(nil) }.should raise_error(TypeError)
+    -> { "abc".unpack(nil) }.should.raise(TypeError)
   end
 
   it "raises a TypeError when passed an Integer" do
-    -> { "abc".unpack(1) }.should raise_error(TypeError)
+    -> { "abc".unpack(1) }.should.raise(TypeError)
   end
 
   it "starts unpacking from the given offset" do
@@ -19,7 +19,7 @@ describe "String#unpack" do
   end
 
   it "raises an ArgumentError when the offset is negative" do
-    -> { "a".unpack("C", offset: -1) }.should raise_error(ArgumentError, "offset can't be negative")
+    -> { "a".unpack("C", offset: -1) }.should.raise(ArgumentError, "offset can't be negative")
   end
 
   it "returns nil if the offset is at the end of the string" do
@@ -27,6 +27,6 @@ describe "String#unpack" do
   end
 
   it "raises an ArgumentError when the offset is larger than the string" do
-    -> { "a".unpack("C", offset: 2) }.should raise_error(ArgumentError, "offset outside of string")
+    -> { "a".unpack("C", offset: 2) }.should.raise(ArgumentError, "offset outside of string")
   end
 end

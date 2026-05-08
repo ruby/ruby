@@ -20,7 +20,7 @@ platform_is(:windows, :darwin, :freebsd, :netbsd,
 
     it "returns the birthtime of a File::Stat object" do
       st = File.stat(@file)
-      st.birthtime.should be_kind_of(Time)
+      st.birthtime.should.is_a?(Time)
       st.birthtime.should <= Time.now
     rescue NotImplementedError => e
       e.message.should.start_with?(*not_implemented_messages)

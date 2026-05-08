@@ -31,8 +31,8 @@ with_feature :readline do
     end
 
     it "raises an IndexError when the given index is greater than the history size" do
-      -> { Readline::HISTORY.delete_at(10) }.should raise_error(IndexError)
-      -> { Readline::HISTORY.delete_at(-10) }.should raise_error(IndexError)
+      -> { Readline::HISTORY.delete_at(10) }.should.raise(IndexError)
+      -> { Readline::HISTORY.delete_at(-10) }.should.raise(IndexError)
     end
   end
 end

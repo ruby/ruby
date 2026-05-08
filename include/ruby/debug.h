@@ -754,59 +754,6 @@ rb_postponed_job_handle_t rb_postponed_job_preregister(unsigned int flags, rb_po
  */
 void rb_postponed_job_trigger(rb_postponed_job_handle_t h);
 
-/**
- * Schedules the given `func` to be called with `data` when Ruby next checks for
- * interrupts. If this function is called multiple times in between Ruby checking
- * for interrupts, then `func` will be called only once with the `data` value from
- * the first call to this function.
- *
- * Like `rb_postponed_job_trigger`, the context in which the job is called
- * holds the GVL and can allocate Ruby objects.
- *
- * This method essentially has the same semantics as:
- *
- * ```
- *   rb_postponed_job_trigger(rb_postponed_job_preregister(func, data));
- * ```
- *
- * @note    Previous versions of Ruby promised that the (`func`, `data`) pairs would
- *          be executed as many times as they were registered with this function; in
- *          reality this was always subject to race conditions and this function no
- *          longer provides this guarantee. Instead, multiple calls to this function
- *          can be coalesced into a single execution of the passed `func`, with the
- *          most recent `data` registered at that time passed in.
- *
- * @deprecated  This interface implies that arbitrarily many `func`'s can be enqueued
- *              over the lifetime of the program, whilst in reality the registration
- *              slots for postponed jobs are a finite resource. This is made clearer
- *              by the `rb_postponed_job_preregister` and `rb_postponed_job_trigger`
- *              functions, and a future version of Ruby might delete this function.
- *
- * @param[in]      flags      Unused and ignored.
- * @param[in]      func       Job body.
- * @param[in,out]  data       Passed as-is to `func`.
- * @retval         0          Postponed job registration table is full. Failed.
- * @retval         1          Registration succeeded.
- * @post           The passed job will run on the next interrupt check.
- */
- RBIMPL_ATTR_DEPRECATED(("use rb_postponed_job_preregister and rb_postponed_job_trigger"))
-int rb_postponed_job_register(unsigned int flags, rb_postponed_job_func_t func, void *data);
-
-/**
- * Identical to `rb_postponed_job_register`
- *
- * @deprecated  This is deprecated for the same reason as `rb_postponed_job_register`
- *
- * @param[in]      flags      Unused and ignored.
- * @param[in]      func       Job body.
- * @param[in,out]  data       Passed as-is to `func`.
- * @retval         0          Postponed job registration table is full. Failed.
- * @retval         1          Registration succeeded.
- * @post           The passed job will run on the next interrupt check.
- */
- RBIMPL_ATTR_DEPRECATED(("use rb_postponed_job_preregister and rb_postponed_job_trigger"))
-int rb_postponed_job_register_one(unsigned int flags, rb_postponed_job_func_t func, void *data);
-
 /** @} */
 
 /**

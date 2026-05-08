@@ -40,13 +40,13 @@ describe :file_zero, shared: true do
   end
 
   it "raises an ArgumentError if not passed one argument" do
-    -> { File.zero? }.should raise_error(ArgumentError)
+    -> { File.zero? }.should.raise(ArgumentError)
   end
 
   it "raises a TypeError if not passed a String type" do
-    -> { @object.send(@method, nil)   }.should raise_error(TypeError)
-    -> { @object.send(@method, true)  }.should raise_error(TypeError)
-    -> { @object.send(@method, false) }.should raise_error(TypeError)
+    -> { @object.send(@method, nil)   }.should.raise(TypeError)
+    -> { @object.send(@method, true)  }.should.raise(TypeError)
+    -> { @object.send(@method, false) }.should.raise(TypeError)
   end
 
   it "returns true inside a block opening a file if it is empty" do
@@ -57,7 +57,7 @@ describe :file_zero, shared: true do
 
   # See https://bugs.ruby-lang.org/issues/449 for background
   it "returns true or false for a directory" do
-    @object.send(@method, @dir).should be_true_or_false
+    [true, false].should.include? @object.send(@method, @dir)
   end
 end
 

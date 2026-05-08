@@ -24,7 +24,7 @@ platform_is_not :windows, :android do
       -> {
         Etc.getgrnam(123)
         Etc.getgrnam(nil)
-      }.should raise_error(TypeError)
+      }.should.raise(TypeError)
     end
   end
 end

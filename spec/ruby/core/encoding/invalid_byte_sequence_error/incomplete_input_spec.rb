@@ -3,7 +3,7 @@ require_relative '../../../spec_helper'
 
 describe "Encoding::InvalidByteSequenceError#incomplete_input?" do
   it "returns nil by default" do
-    Encoding::InvalidByteSequenceError.new.incomplete_input?.should be_nil
+    Encoding::InvalidByteSequenceError.new.incomplete_input?.should == nil
   end
 
   it "returns true if #primitive_convert returned :incomplete_input for the same data" do
@@ -12,7 +12,7 @@ describe "Encoding::InvalidByteSequenceError#incomplete_input?" do
     begin
       ec.convert("\xA1")
     rescue Encoding::InvalidByteSequenceError => e
-      e.incomplete_input?.should be_true
+      e.incomplete_input?.should == true
     end
   end
 
@@ -22,7 +22,7 @@ describe "Encoding::InvalidByteSequenceError#incomplete_input?" do
     begin
       ec.convert("\xfffffffff")
     rescue Encoding::InvalidByteSequenceError => e
-      e.incomplete_input?.should be_false
+      e.incomplete_input?.should == false
     end
   end
 end

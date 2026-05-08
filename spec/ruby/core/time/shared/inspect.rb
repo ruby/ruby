@@ -16,6 +16,6 @@ describe :inspect, shared: true do
   end
 
   it "returns a US-ASCII encoded string" do
-    Time.now.send(@method).encoding.should equal(Encoding::US_ASCII)
+    Time.now.send(@method).encoding.should.equal?(Encoding::US_ASCII)
   end
 end

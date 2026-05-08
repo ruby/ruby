@@ -10,7 +10,7 @@ describe "Matrix.rows" do
   end
 
   it "returns a Matrix" do
-    @m.should be_kind_of(Matrix)
+    @m.should.is_a?(Matrix)
   end
 
   it "creates a matrix from argument rows" do
@@ -21,8 +21,8 @@ describe "Matrix.rows" do
   it "copies the original rows by default" do
     @a << 3
     @b << 6
-    @m.row(0).should_not equal(@a)
-    @m.row(1).should_not equal(@b)
+    @m.row(0).should_not.equal?(@a)
+    @m.row(1).should_not.equal?(@b)
   end
 
   it "references the original rows if copy is false" do
@@ -35,7 +35,7 @@ describe "Matrix.rows" do
 
   describe "for a subclass of Matrix" do
     it "returns an instance of that subclass" do
-      MatrixSub.rows([[0, 1], [0, 1]]).should be_an_instance_of(MatrixSub)
+      MatrixSub.rows([[0, 1], [0, 1]]).should.instance_of?(MatrixSub)
     end
   end
 end

@@ -29,10 +29,10 @@ describe "Array#rotate" do
     it "raises a TypeError if not passed an integer-like argument" do
       -> {
         [1, 2].rotate(nil)
-      }.should raise_error(TypeError)
+      }.should.raise(TypeError)
       -> {
         [1, 2].rotate("4")
-      }.should raise_error(TypeError)
+      }.should.raise(TypeError)
     end
   end
 
@@ -50,18 +50,18 @@ describe "Array#rotate" do
       [].freeze.rotate
       [2].freeze.rotate(2)
       [1,2,3].freeze.rotate(-3)
-    }.should_not raise_error
+    }.should_not.raise
   end
 
   it "does not return self" do
     a = [1, 2, 3]
-    a.rotate.should_not equal(a)
+    a.rotate.should_not.equal?(a)
     a = []
-    a.rotate(0).should_not equal(a)
+    a.rotate(0).should_not.equal?(a)
   end
 
   it "does not return subclass instance for Array subclasses" do
-    ArraySpecs::MyArray[1, 2, 3].rotate.should be_an_instance_of(Array)
+    ArraySpecs::MyArray[1, 2, 3].rotate.should.instance_of?(Array)
   end
 end
 
@@ -69,7 +69,7 @@ describe "Array#rotate!" do
   describe "when passed no argument" do
     it "moves the first element to the end and returns self" do
       a = [1, 2, 3, 4, 5]
-      a.rotate!.should equal(a)
+      a.rotate!.should.equal?(a)
       a.should == [2, 3, 4, 5, 1]
     end
   end
@@ -77,11 +77,11 @@ describe "Array#rotate!" do
   describe "with an argument n" do
     it "moves the first (n % size) elements at the end and returns self" do
       a = [1, 2, 3, 4, 5]
-      a.rotate!(2).should equal(a)
+      a.rotate!(2).should.equal?(a)
       a.should == [3, 4, 5, 1, 2]
-      a.rotate!(-12).should equal(a)
+      a.rotate!(-12).should.equal?(a)
       a.should == [1, 2, 3, 4, 5]
-      a.rotate!(13).should equal(a)
+      a.rotate!(13).should.equal?(a)
       a.should == [4, 5, 1, 2, 3]
     end
 
@@ -96,34 +96,34 @@ describe "Array#rotate!" do
     it "raises a TypeError if not passed an integer-like argument" do
       -> {
         [1, 2].rotate!(nil)
-      }.should raise_error(TypeError)
+      }.should.raise(TypeError)
       -> {
         [1, 2].rotate!("4")
-      }.should raise_error(TypeError)
+      }.should.raise(TypeError)
     end
   end
 
   it "does nothing and returns self when the length is zero or one" do
     a = [1]
-    a.rotate!.should equal(a)
+    a.rotate!.should.equal?(a)
     a.should == [1]
-    a.rotate!(2).should equal(a)
+    a.rotate!(2).should.equal?(a)
     a.should == [1]
-    a.rotate!(-21).should equal(a)
+    a.rotate!(-21).should.equal?(a)
     a.should == [1]
 
     a = []
-    a.rotate!.should equal(a)
+    a.rotate!.should.equal?(a)
     a.should == []
-    a.rotate!(2).should equal(a)
+    a.rotate!(2).should.equal?(a)
     a.should == []
-    a.rotate!(-21).should equal(a)
+    a.rotate!(-21).should.equal?(a)
     a.should == []
   end
 
   it "raises a FrozenError on a frozen array" do
-    -> { [1, 2, 3].freeze.rotate!(0) }.should raise_error(FrozenError)
-    -> { [1].freeze.rotate!(42) }.should raise_error(FrozenError)
-    -> { [].freeze.rotate! }.should raise_error(FrozenError)
+    -> { [1, 2, 3].freeze.rotate!(0) }.should.raise(FrozenError)
+    -> { [1].freeze.rotate!(42) }.should.raise(FrozenError)
+    -> { [].freeze.rotate! }.should.raise(FrozenError)
   end
 end

@@ -4,22 +4,22 @@ require_relative 'fixtures/classes'
 describe "Numeric#positive?" do
   describe "on positive numbers" do
     it "returns true" do
-      1.positive?.should be_true
-      0.1.positive?.should be_true
+      1.positive?.should == true
+      0.1.positive?.should == true
     end
   end
 
   describe "on zero" do
     it "returns false" do
-      0.positive?.should be_false
-      0.0.positive?.should be_false
+      0.positive?.should == false
+      0.0.positive?.should == false
     end
   end
 
   describe "on negative numbers" do
     it "returns false" do
-      -1.positive?.should be_false
-      -0.1.positive?.should be_false
+      -1.positive?.should == false
+      -0.1.positive?.should == false
     end
   end
 end

@@ -24,7 +24,7 @@ ruby_version_is ""..."4.0" do
     end
 
     it "returns a String" do
-      @cgi["one"].should be_kind_of(String)
+      @cgi["one"].should.is_a?(String)
     end
   end
 end

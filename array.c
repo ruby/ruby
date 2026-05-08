@@ -687,22 +687,17 @@ ary_alloc_embed(VALUE klass, long capa)
 {
     size_t size = ary_embed_size(capa);
     RUBY_ASSERT(rb_gc_size_allocatable_p(size));
-    NEWOBJ_OF(ary, struct RArray, klass,
-                     T_ARRAY | RARRAY_EMBED_FLAG | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
-                     size, 0);
-    /* Created array is:
-     *   FL_SET_EMBED((VALUE)ary);
-     *   ARY_SET_EMBED_LEN((VALUE)ary, 0);
-     */
-    return (VALUE)ary;
+   /* Created array is:
+    *   FL_SET_EMBED((VALUE)ary);
+    *   ARY_SET_EMBED_LEN((VALUE)ary, 0);
+    */
+    return rb_newobj_of(klass, T_ARRAY | RARRAY_EMBED_FLAG, size);
 }
 
 static VALUE
 ary_alloc_heap(VALUE klass)
 {
-    NEWOBJ_OF(ary, struct RArray, klass,
-                     T_ARRAY | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
-                     sizeof(struct RArray), 0);
+    NEWOBJ_OF(ary, struct RArray, klass, T_ARRAY, sizeof(struct RArray));
 
     ary->as.heap.len = 0;
     ary->as.heap.aux.capa = 0;
@@ -805,28 +800,21 @@ ec_ary_alloc_embed(rb_execution_context_t *ec, VALUE klass, long capa)
 {
     size_t size = ary_embed_size(capa);
     RUBY_ASSERT(rb_gc_size_allocatable_p(size));
-    NEWOBJ_OF(ary, struct RArray, klass,
-            T_ARRAY | RARRAY_EMBED_FLAG | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
-            size, ec);
-    /* Created array is:
-     *   FL_SET_EMBED((VALUE)ary);
-     *   ARY_SET_EMBED_LEN((VALUE)ary, 0);
-     */
-    return (VALUE)ary;
+   /* Created array is:
+    *   FL_SET_EMBED((VALUE)ary);
+    *   ARY_SET_EMBED_LEN((VALUE)ary, 0);
+    */
+    return rb_ec_newobj_of(ec, klass, T_ARRAY | RARRAY_EMBED_FLAG, size);
 }
 
 static VALUE
 ec_ary_alloc_heap(rb_execution_context_t *ec, VALUE klass)
 {
-    NEWOBJ_OF(ary, struct RArray, klass,
-            T_ARRAY | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
-            sizeof(struct RArray), ec);
-
-    ary->as.heap.len = 0;
-    ary->as.heap.aux.capa = 0;
-    ary->as.heap.ptr = NULL;
-
-    return (VALUE)ary;
+    VALUE ary = rb_ec_newobj_of(ec, klass, T_ARRAY, sizeof(struct RArray));
+    RARRAY(ary)->as.heap.len = 0;
+    RARRAY(ary)->as.heap.aux.capa = 0;
+    RARRAY(ary)->as.heap.ptr = NULL;
+    return ary;
 }
 
 static VALUE
@@ -5895,7 +5883,7 @@ rb_ary_union_hash(VALUE hash, VALUE ary2)
  *
  *  Returns the union of +self+ and +other_array+;
  *  duplicates are removed; order is preserved;
- *  items are compared using <tt>eql?</tt>:
+ *  items are compared using <tt>eql?</tt> and <tt>hash</tt>:
  *
  *    [0, 1] | [2, 3] # => [0, 1, 2, 3]
  *    [0, 1, 1] | [2, 2, 3] # => [0, 1, 2, 3]
@@ -5929,7 +5917,7 @@ rb_ary_or(VALUE ary1, VALUE ary2)
  *
  *  Returns a new array that is the union of the elements of +self+
  *  and all given arrays +other_arrays+;
- *  items are compared using <tt>eql?</tt>:
+ *  items are compared using <tt>eql?</tt> and <tt>hash</tt>:
  *
  *    [0, 1, 2, 3].union([4, 5], [6, 7]) # => [0, 1, 2, 3, 4, 5, 6, 7]
  *
@@ -6429,7 +6417,7 @@ push_value(st_data_t key, st_data_t val, st_data_t ary)
  *  returns +self+ if any elements removed, +nil+ otherwise.
  *
  *  With no block given, identifies and removes elements using method <tt>eql?</tt>
- *  to compare elements:
+ *  and <tt>hash</tt> to compare elements:
  *
  *    a = [0, 0, 1, 1, 2, 2]
  *    a.uniq! # => [0, 1, 2]
@@ -6437,7 +6425,7 @@ push_value(st_data_t key, st_data_t val, st_data_t ary)
  *
  *  With a block given, calls the block for each element;
  *  identifies and omits "duplicate" elements using method <tt>eql?</tt>
- *  to compare <i>block return values</i>;
+ *  and <tt>hash</tt> to compare <i>block return values</i>;
  *  that is, an element is a duplicate if its block return value
  *  is the same as that of a previous element:
  *
@@ -6486,14 +6474,14 @@ rb_ary_uniq_bang(VALUE ary)
  *  the first occurrence always being retained.
  *
  *  With no block given, identifies and omits duplicate elements using method <tt>eql?</tt>
- *  to compare elements:
+ *  and <tt>hash</tt> to compare elements:
  *
  *    a = [0, 0, 1, 1, 2, 2]
  *    a.uniq # => [0, 1, 2]
  *
  *  With a block given, calls the block for each element;
  *  identifies and omits "duplicate" elements using method <tt>eql?</tt>
- *  to compare <i>block return values</i>;
+ *  and <tt>hash</tt> to compare <i>block return values</i>;
  *  that is, an element is a duplicate if its block return value
  *  is the same as that of a previous element:
  *

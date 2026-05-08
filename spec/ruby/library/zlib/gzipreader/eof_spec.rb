@@ -12,31 +12,31 @@ describe "Zlib::GzipReader#eof?" do
 
   it "returns true when at EOF" do
     gz = Zlib::GzipReader.new @io
-    gz.eof?.should be_false
+    gz.eof?.should == false
     gz.read
-    gz.eof?.should be_true
+    gz.eof?.should == true
   end
 
   it "returns true when at EOF with the exact length of uncompressed data" do
     gz = Zlib::GzipReader.new @io
-    gz.eof?.should be_false
+    gz.eof?.should == false
     gz.read(10)
-    gz.eof?.should be_true
+    gz.eof?.should == true
   end
 
   it "returns true when at EOF with a length greater than the size of uncompressed data" do
     gz = Zlib::GzipReader.new @io
-    gz.eof?.should be_false
+    gz.eof?.should == false
     gz.read(11)
-    gz.eof?.should be_true
+    gz.eof?.should == true
   end
 
   it "returns false when at EOF when there's data left in the buffer to read" do
     gz = Zlib::GzipReader.new @io
     gz.read(9)
-    gz.eof?.should be_false
+    gz.eof?.should == false
     gz.read
-    gz.eof?.should be_true
+    gz.eof?.should == true
   end
 
   # This is especially important for JRuby, since eof? there
@@ -44,11 +44,11 @@ describe "Zlib::GzipReader#eof?" do
   it "does not affect the reading data" do
     gz = Zlib::GzipReader.new @io
     0.upto(9) do |i|
-      gz.eof?.should be_false
+      gz.eof?.should == false
       gz.read(1).should == @data[i, 1]
     end
-    gz.eof?.should be_true
+    gz.eof?.should == true
     gz.read.should == ""
-    gz.eof?.should be_true
+    gz.eof?.should == true
   end
 end

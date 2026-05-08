@@ -32,11 +32,11 @@ describe "Struct#dig" do
     instance = @klass.new(1)
     -> {
       instance.dig(:a, 3)
-    }.should raise_error(TypeError)
+    }.should.raise(TypeError)
   end
 
   it "raises an ArgumentError if no arguments provided" do
-    -> { @instance.dig }.should raise_error(ArgumentError)
+    -> { @instance.dig }.should.raise(ArgumentError)
   end
 
   it "calls #dig on any intermediate step with the rest of the sequence as arguments" do

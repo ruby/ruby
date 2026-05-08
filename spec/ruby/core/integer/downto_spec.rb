@@ -27,8 +27,8 @@ describe "Integer#downto [stop] when self and stop are Integers" do
   end
 
   it "raises an ArgumentError for invalid endpoints" do
-    -> {1.downto("A") {|x| p x } }.should raise_error(ArgumentError)
-    -> {1.downto(nil) {|x| p x } }.should raise_error(ArgumentError)
+    -> {1.downto("A") {|x| p x } }.should.raise(ArgumentError)
+    -> {1.downto(nil) {|x| p x } }.should.raise(ArgumentError)
   end
 
   describe "when no block is given" do
@@ -45,9 +45,9 @@ describe "Integer#downto [stop] when self and stop are Integers" do
       describe "size" do
         it "raises an ArgumentError for invalid endpoints" do
           enum = 1.downto("A")
-          -> { enum.size }.should raise_error(ArgumentError)
+          -> { enum.size }.should.raise(ArgumentError)
           enum = 1.downto(nil)
-          -> { enum.size }.should raise_error(ArgumentError)
+          -> { enum.size }.should.raise(ArgumentError)
         end
 
         it "returns self - stop + 1" do

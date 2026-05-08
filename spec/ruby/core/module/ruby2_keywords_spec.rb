@@ -175,7 +175,7 @@ describe "Module#ruby2_keywords" do
       obj.singleton_class.class_exec do
         ruby2_keywords :not_existing
       end
-    }.should raise_error(NameError, /undefined method [`']not_existing'/)
+    }.should.raise(NameError, /undefined method [`']not_existing'/)
   end
 
   it "accepts String as well" do
@@ -197,7 +197,7 @@ describe "Module#ruby2_keywords" do
       obj.singleton_class.class_exec do
         ruby2_keywords Object.new
       end
-    }.should raise_error(TypeError, /is not a symbol nor a string/)
+    }.should.raise(TypeError, /is not a symbol nor a string/)
   end
 
   it "prints warning when a method does not accept argument splat" do

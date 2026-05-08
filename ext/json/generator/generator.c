@@ -819,9 +819,17 @@ static VALUE encode_json_string_rescue(VALUE str, VALUE exception)
     return Qundef;
 }
 
+static inline int json_str_coderange(VALUE str) {
+    int coderange = RB_ENC_CODERANGE(str);
+    if (coderange == RUBY_ENC_CODERANGE_UNKNOWN) {
+        coderange = rb_enc_str_coderange(str);
+    }
+    return coderange;
+}
+
 static inline bool valid_json_string_p(VALUE str)
 {
-    int coderange = rb_enc_str_coderange(str);
+    int coderange = json_str_coderange(str);
 
     if (RB_LIKELY(coderange == ENC_CODERANGE_7BIT)) {
         return true;
@@ -834,12 +842,8 @@ static inline bool valid_json_string_p(VALUE str)
     return false;
 }
 
-static inline VALUE ensure_valid_encoding(struct generate_json_data *data, VALUE str, bool as_json_called, bool is_key)
+NOINLINE(static) VALUE convert_invalid_encoding(struct generate_json_data *data, VALUE str, bool as_json_called, bool is_key)
 {
-    if (RB_LIKELY(valid_json_string_p(str))) {
-        return str;
-    }
-
     if (!as_json_called && data->state->strict && RTEST(data->state->as_json)) {
         VALUE coerced_str = json_call_as_json(data->state, str, Qfalse);
         if (coerced_str != str) {
@@ -875,6 +879,16 @@ static inline VALUE ensure_valid_encoding(struct generate_json_data *data, VALUE
     return rb_rescue(encode_json_string_try, str, encode_json_string_rescue, str);
 }
 
+ALWAYS_INLINE(static) VALUE ensure_valid_encoding(struct generate_json_data *data, VALUE str, bool as_json_called, bool is_key)
+{
+    if (RB_LIKELY(valid_json_string_p(str))) {
+        return str;
+    }
+    else {
+        return convert_invalid_encoding(data, str, as_json_called, is_key);
+    }
+}
+
 static void raw_generate_json_string(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
     fbuffer_append_char(buffer, '"');
@@ -893,7 +907,7 @@ static void raw_generate_json_string(FBuffer *buffer, struct generate_json_data 
     search.chunk_end = NULL;
 #endif /* HAVE_SIMD */
 
-    switch (rb_enc_str_coderange(obj)) {
+    switch (json_str_coderange(obj)) {
         case ENC_CODERANGE_7BIT:
         case ENC_CODERANGE_VALID:
             if (RB_UNLIKELY(data->state->ascii_only)) {

@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "Kernel#readlines" do
   it "is a private method" do
-    Kernel.should have_private_instance_method(:readlines)
+    Kernel.private_instance_methods(false).should.include?(:readlines)
   end
 end
 

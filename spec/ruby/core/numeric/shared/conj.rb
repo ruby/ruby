@@ -14,7 +14,7 @@ describe :numeric_conj, shared: true do
 
   it "returns self" do
     @numbers.each do |number|
-      number.send(@method).should equal(number)
+      number.send(@method).should.equal?(number)
     end
   end
 end

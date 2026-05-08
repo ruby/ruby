@@ -22,7 +22,7 @@ describe :dir_path, shared: true do
     path = DirSpecs.mock_dir.force_encoding Encoding::IBM866
     dir = Dir.open path
     begin
-      dir.send(@method).encoding.should equal(Encoding::IBM866)
+      dir.send(@method).encoding.should.equal?(Encoding::IBM866)
     ensure
       dir.close
     end

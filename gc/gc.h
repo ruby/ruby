@@ -11,7 +11,6 @@
  */
 #include "ruby/ruby.h"
 
-#if USE_MODULAR_GC
 #include "ruby/thread_native.h"
 
 struct rb_gc_vm_context {
@@ -19,7 +18,6 @@ struct rb_gc_vm_context {
 
     struct rb_execution_context_struct *ec;
 };
-#endif
 
 typedef int (*vm_table_foreach_callback_func)(VALUE value, void *data);
 typedef int (*vm_table_update_callback_func)(VALUE *value, void *data);
@@ -88,9 +86,7 @@ MODULAR_GC_FN void rb_gc_mark_roots(void *objspace, const char **categoryp);
 MODULAR_GC_FN void rb_gc_ractor_newobj_cache_foreach(void (*func)(void *cache, void *data), void *data);
 MODULAR_GC_FN bool rb_gc_multi_ractor_p(void);
 MODULAR_GC_FN bool rb_gc_shutdown_call_finalizer_p(VALUE obj);
-MODULAR_GC_FN uint32_t rb_gc_get_shape(VALUE obj);
-MODULAR_GC_FN void rb_gc_set_shape(VALUE obj, uint32_t shape_id);
-MODULAR_GC_FN uint32_t rb_gc_rebuild_shape(VALUE obj, size_t heap_id);
+MODULAR_GC_FN void rb_gc_obj_changed_pool(VALUE obj, size_t heap_id);
 MODULAR_GC_FN void rb_gc_prepare_heap_process_object(VALUE obj);
 MODULAR_GC_FN bool rb_memerror_reentered(void);
 MODULAR_GC_FN bool rb_obj_id_p(VALUE);

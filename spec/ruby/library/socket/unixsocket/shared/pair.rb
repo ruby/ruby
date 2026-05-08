@@ -3,8 +3,8 @@ require_relative '../../fixtures/classes'
 
 describe :unixsocket_pair, shared: true do
   it "returns two UNIXSockets" do
-    @s1.should be_an_instance_of(UNIXSocket)
-    @s2.should be_an_instance_of(UNIXSocket)
+    @s1.should.instance_of?(UNIXSocket)
+    @s2.should.instance_of?(UNIXSocket)
   end
 
   it "returns a pair of connected sockets" do

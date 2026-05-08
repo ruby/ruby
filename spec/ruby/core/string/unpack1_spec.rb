@@ -21,7 +21,7 @@ describe "String#unpack1" do
   end
 
   it "raises an ArgumentError when the offset is negative" do
-    -> { "a".unpack1("C", offset: -1) }.should raise_error(ArgumentError, "offset can't be negative")
+    -> { "a".unpack1("C", offset: -1) }.should.raise(ArgumentError, "offset can't be negative")
   end
 
   it "returns nil if the offset is at the end of the string" do
@@ -29,7 +29,7 @@ describe "String#unpack1" do
   end
 
   it "raises an ArgumentError when the offset is larger than the string bytesize" do
-    -> { "a".unpack1("C", offset: 2) }.should raise_error(ArgumentError, "offset outside of string")
+    -> { "a".unpack1("C", offset: 2) }.should.raise(ArgumentError, "offset outside of string")
   end
 
   context "with format 'm0'" do
@@ -41,7 +41,7 @@ describe "String#unpack1" do
     end
 
     it "raises an ArgumentError for an invalid base64 character" do
-      -> { "dGV%zdA==".unpack1("m0") }.should raise_error(ArgumentError)
+      -> { "dGV%zdA==".unpack1("m0") }.should.raise(ArgumentError)
     end
   end
 end

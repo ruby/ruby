@@ -49,13 +49,13 @@ describe :array_join_with_default_separator, shared: true do
   it "raises a NoMethodError if an element does not respond to #to_str, #to_ary, or #to_s" do
     obj = mock('o')
     class << obj; undef :to_s; end
-    -> { [1, obj].send(@method) }.should raise_error(NoMethodError)
+    -> { [1, obj].send(@method) }.should.raise(NoMethodError)
   end
 
   it "raises an ArgumentError when the Array is recursive" do
-    -> { ArraySpecs.recursive_array.send(@method) }.should raise_error(ArgumentError)
-    -> { ArraySpecs.head_recursive_array.send(@method) }.should raise_error(ArgumentError)
-    -> { ArraySpecs.empty_recursive_array.send(@method) }.should raise_error(ArgumentError)
+    -> { ArraySpecs.recursive_array.send(@method) }.should.raise(ArgumentError)
+    -> { ArraySpecs.head_recursive_array.send(@method) }.should.raise(ArgumentError)
+    -> { ArraySpecs.empty_recursive_array.send(@method) }.should.raise(ArgumentError)
   end
 
   it "uses the first encoding when other strings are compatible" do
@@ -81,7 +81,7 @@ describe :array_join_with_default_separator, shared: true do
   it "fails for arrays with incompatibly-encoded strings" do
     ary_utf8_bad_binary = ArraySpecs.array_with_utf8_and_binary_strings
 
-    -> { ary_utf8_bad_binary.send(@method) }.should raise_error(EncodingError)
+    -> { ary_utf8_bad_binary.send(@method) }.should.raise(EncodingError)
   end
 
   context "when $, is not nil" do

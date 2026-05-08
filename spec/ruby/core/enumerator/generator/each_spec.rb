@@ -10,7 +10,7 @@ describe "Enumerator::Generator#each" do
   end
 
   it "is an enumerable" do
-    @generator.should be_kind_of(Enumerable)
+    @generator.should.is_a?(Enumerable)
   end
 
   it "supports enumeration with a block" do
@@ -21,11 +21,11 @@ describe "Enumerator::Generator#each" do
   end
 
   it "raises a LocalJumpError if no block given" do
-    -> { @generator.each }.should raise_error(LocalJumpError)
+    -> { @generator.each }.should.raise(LocalJumpError)
   end
 
   it "returns the block returned value" do
-    @generator.each {}.should equal(:block_returned)
+    @generator.each {}.should.equal?(:block_returned)
   end
 
   it "requires multiple arguments" do

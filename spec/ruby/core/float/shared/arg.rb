@@ -1,12 +1,12 @@
 describe :float_arg, shared: true do
   it "returns NaN if NaN" do
     f = nan_value
-    f.send(@method).nan?.should be_true
+    f.send(@method).nan?.should == true
   end
 
   it "returns self if NaN" do
     f = nan_value
-    f.send(@method).should equal(f)
+    f.send(@method).should.equal?(f)
   end
 
   it "returns 0 if positive" do

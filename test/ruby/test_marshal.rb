@@ -471,7 +471,7 @@ class TestMarshal < Test::Unit::TestCase
 
   class TooComplex
     def initialize
-      @marshal_too_complex = 1
+      @marshal_complex = 1
     end
   end
 
@@ -487,10 +487,10 @@ class TestMarshal < Test::Unit::TestCase
     obj.instance_variable_set(ivar, 1)
 
     if defined?(RubyVM::Shape)
-      assert_predicate(RubyVM::Shape.of(obj), :too_complex?)
+      assert_predicate(RubyVM::Shape.of(obj), :complex?)
     end
     obj.object_id
-    assert_equal "\x04\bo:\x1CTestMarshal::TooComplex\a:\x19@marshal_too_complexi\x06:\f#{ivar}i\x06".b, Marshal.dump(obj)
+    assert_equal "\x04\bo:\x1CTestMarshal::TooComplex\a:\x15@marshal_complexi\x06:\f#{ivar}i\x06".b, Marshal.dump(obj)
   end
 
   def test_marshal_complex
@@ -859,17 +859,15 @@ class TestMarshal < Test::Unit::TestCase
 
   def test_marshal_dump_adding_instance_variable
     obj = Bug15968.new
-    assert_raise_with_message(RuntimeError, /instance variable added/) do
-      Marshal.dump(obj)
-    end
+    loaded = Marshal.load(Marshal.dump(obj))
+    assert_nil loaded.baz
   end
 
   def test_marshal_dump_removing_instance_variable
     obj = Bug15968.new
     obj.baz = :Bug15968
-    assert_raise_with_message(RuntimeError, /instance variable removed/) do
-      Marshal.dump(obj)
-    end
+    loaded = Marshal.load(Marshal.dump(obj))
+    assert_equal :Bug15968, loaded.baz
   end
 
   ruby2_keywords def ruby2_keywords_hash(*a)

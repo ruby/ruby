@@ -6,7 +6,7 @@ describe "Refinement#include" do
       refine String do
         -> {
           include Module.new
-        }.should raise_error(TypeError, "Refinement#include has been removed")
+        }.should.raise(TypeError, "Refinement#include has been removed")
       end
     end
   end

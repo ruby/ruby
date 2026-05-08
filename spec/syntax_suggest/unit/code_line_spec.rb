@@ -44,7 +44,7 @@ module SyntaxSuggest
       EOM
 
       # Indicates line 1 can join 2, 2 can join 3, but 3 won't join it's next line
-      expect(code_lines.map(&:ignore_newline_not_beg?)).to eq([true, true, false, false])
+      expect(code_lines.map(&:consecutive?)).to eq([true, true, false, false])
     end
 
     it "trailing if" do
@@ -129,14 +129,15 @@ module SyntaxSuggest
 
     it "knows empty lines" do
       code_lines = CodeLine.from_source(<<~EOM)
-        # Not empty
+        # Comment only
+        foo # Inline comment
 
-        # Not empty
+        bar
       EOM
 
-      expect(code_lines.map(&:empty?)).to eq([false, true, false])
-      expect(code_lines.map(&:not_empty?)).to eq([true, false, true])
-      expect(code_lines.map { |l| SyntaxSuggest.valid?(l) }).to eq([true, true, true])
+      expect(code_lines.map(&:empty?)).to eq([true, false, true, false])
+      expect(code_lines.map(&:not_empty?)).to eq([false, true, false, true])
+      expect(code_lines.map { |l| SyntaxSuggest.valid?(l) }).to eq([true, true, true, true])
     end
 
     it "counts indentations" do

@@ -253,7 +253,10 @@ obj_to_asn1str(VALUE obj)
     StringValue(obj);
     if(!(str = ASN1_STRING_new()))
         ossl_raise(eASN1Error, NULL);
-    ASN1_STRING_set(str, RSTRING_PTR(obj), RSTRING_LENINT(obj));
+    if(!ASN1_STRING_set(str, RSTRING_PTR(obj), RSTRING_LENINT(obj))) {
+        ASN1_STRING_free(str);
+        ossl_raise(eASN1Error, NULL);
+    }
 
     return str;
 }
@@ -323,7 +326,10 @@ obj_to_asn1derstr(VALUE obj)
     str = ossl_to_der(obj);
     if(!(a1str = ASN1_STRING_new()))
         ossl_raise(eASN1Error, NULL);
-    ASN1_STRING_set(a1str, RSTRING_PTR(str), RSTRING_LENINT(str));
+    if(!ASN1_STRING_set(a1str, RSTRING_PTR(str), RSTRING_LENINT(str))) {
+        ASN1_STRING_free(a1str);
+        ossl_raise(eASN1Error, NULL);
+    }
 
     return a1str;
 }

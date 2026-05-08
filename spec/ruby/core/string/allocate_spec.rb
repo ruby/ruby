@@ -3,7 +3,7 @@ require_relative '../../spec_helper'
 describe "String.allocate" do
   it "returns an instance of String" do
     str = String.allocate
-    str.should be_an_instance_of(String)
+    str.should.instance_of?(String)
   end
 
   it "returns a fully-formed String" do

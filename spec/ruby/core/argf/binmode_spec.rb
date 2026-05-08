@@ -9,7 +9,7 @@ describe "ARGF.binmode" do
 
   it "returns self" do
     argf [@bin_file] do
-      @argf.binmode.should equal @argf
+      @argf.binmode.should.equal? @argf
     end
   end
 

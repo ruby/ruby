@@ -16,8 +16,8 @@ describe "Enumerator::Lazy#take_while" do
 
   it "returns a new instance of Enumerator::Lazy" do
     ret = @yieldsmixed.take_while {}
-    ret.should be_an_instance_of(Enumerator::Lazy)
-    ret.should_not equal(@yieldsmixed)
+    ret.should.instance_of?(Enumerator::Lazy)
+    ret.should_not.equal?(@yieldsmixed)
   end
 
   it "sets #size to nil" do
@@ -40,7 +40,7 @@ describe "Enumerator::Lazy#take_while" do
   end
 
   it "raises an ArgumentError when not given a block" do
-    -> { @yieldsmixed.take_while }.should raise_error(ArgumentError)
+    -> { @yieldsmixed.take_while }.should.raise(ArgumentError)
   end
 
   describe "on a nested Lazy" do

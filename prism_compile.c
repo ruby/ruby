@@ -774,9 +774,9 @@ pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const
                 if (frozen_result) {
                     PUSH_INSN1(ret, current_location, putobject, current_string);
                 } else if (mutable_result || interpolated) {
-                    PUSH_INSN1(ret, current_location, putstring, current_string);
+                    PUSH_INSN1(ret, current_location, dupstring, current_string);
                 } else {
-                    PUSH_INSN1(ret, current_location, putchilledstring, current_string);
+                    PUSH_INSN1(ret, current_location, dupchilledstring, current_string);
                 }
             } else {
                 PUSH_INSN1(ret, current_location, putobject, current_string);
@@ -964,10 +964,10 @@ pm_code_location(pm_scope_node_t *scope_node, const pm_node_t *node)
 
 static void
 pm_compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const pm_node_t *cond,
-                         LABEL *then_label, LABEL *else_label, bool popped, pm_scope_node_t *scope_node);
+                         LABEL *then_label, LABEL *else_label, pm_scope_node_t *scope_node);
 
 static void
-pm_compile_logical(rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_node_t *cond, LABEL *then_label, LABEL *else_label, bool popped, pm_scope_node_t *scope_node)
+pm_compile_logical(rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_node_t *cond, LABEL *then_label, LABEL *else_label, pm_scope_node_t *scope_node)
 {
     const pm_node_location_t location = PM_NODE_START_LOCATION(cond);
 
@@ -977,17 +977,14 @@ pm_compile_logical(rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_node_t *cond, LAB
     if (!then_label) then_label = label;
     else if (!else_label) else_label = label;
 
-    pm_compile_branch_condition(iseq, seq, cond, then_label, else_label, popped, scope_node);
+    pm_compile_branch_condition(iseq, seq, cond, then_label, else_label, scope_node);
 
     if (LIST_INSN_SIZE_ONE(seq)) {
         INSN *insn = (INSN *) ELEM_FIRST_INSN(FIRST_ELEMENT(seq));
         if (insn->insn_id == BIN(jump) && (LABEL *)(insn->operands[0]) == label) return;
     }
 
-    if (!label->refcnt) {
-        if (popped) PUSH_INSN(ret, location, putnil);
-    }
-    else {
+    if (label->refcnt) {
         PUSH_LABEL(seq, label);
     }
 
@@ -1059,7 +1056,7 @@ pm_compile_flip_flop(const pm_flip_flop_node_t *flip_flop_node, LABEL *else_labe
 static void pm_compile_defined_expr(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_location_t *node_location, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node, bool in_condition);
 
 static void
-pm_compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const pm_node_t *cond, LABEL *then_label, LABEL *else_label, bool popped, pm_scope_node_t *scope_node)
+pm_compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const pm_node_t *cond, LABEL *then_label, LABEL *else_label, pm_scope_node_t *scope_node)
 {
     const pm_node_location_t location = PM_NODE_START_LOCATION(cond);
 
@@ -1067,14 +1064,14 @@ again:
     switch (PM_NODE_TYPE(cond)) {
       case PM_AND_NODE: {
         const pm_and_node_t *cast = (const pm_and_node_t *) cond;
-        pm_compile_logical(iseq, ret, cast->left, NULL, else_label, popped, scope_node);
+        pm_compile_logical(iseq, ret, cast->left, NULL, else_label, scope_node);
 
         cond = cast->right;
         goto again;
       }
       case PM_OR_NODE: {
         const pm_or_node_t *cast = (const pm_or_node_t *) cond;
-        pm_compile_logical(iseq, ret, cast->left, then_label, NULL, popped, scope_node);
+        pm_compile_logical(iseq, ret, cast->left, then_label, NULL, scope_node);
 
         cond = cast->right;
         goto again;
@@ -1095,11 +1092,11 @@ again:
         PUSH_INSNL(ret, location, jump, then_label);
         return;
       case PM_FLIP_FLOP_NODE:
-        pm_compile_flip_flop((const pm_flip_flop_node_t *) cond, else_label, then_label, iseq, location.line, ret, popped, scope_node);
+        pm_compile_flip_flop((const pm_flip_flop_node_t *) cond, else_label, then_label, iseq, location.line, ret, false, scope_node);
         return;
       case PM_DEFINED_NODE: {
         const pm_defined_node_t *cast = (const pm_defined_node_t *) cond;
-        pm_compile_defined_expr(iseq, cast->value, &location, ret, popped, scope_node, true);
+        pm_compile_defined_expr(iseq, cast->value, &location, ret, false, scope_node, true);
         break;
       }
       default: {
@@ -1143,7 +1140,7 @@ pm_compile_conditional(rb_iseq_t *iseq, const pm_node_location_t *node_location,
     LABEL *end_label = NULL;
 
     DECL_ANCHOR(cond_seq);
-    pm_compile_branch_condition(iseq, cond_seq, predicate, then_label, else_label, false, scope_node);
+    pm_compile_branch_condition(iseq, cond_seq, predicate, then_label, else_label, scope_node);
     PUSH_SEQ(ret, cond_seq);
 
     rb_code_location_t conditional_location = { 0 };
@@ -1291,10 +1288,10 @@ pm_compile_loop(rb_iseq_t *iseq, const pm_node_location_t *node_location, pm_nod
     PUSH_LABEL(ret, next_label);
 
     if (type == PM_WHILE_NODE) {
-        pm_compile_branch_condition(iseq, ret, predicate, redo_label, end_label, popped, scope_node);
+        pm_compile_branch_condition(iseq, ret, predicate, redo_label, end_label, scope_node);
     }
     else if (type == PM_UNTIL_NODE) {
-        pm_compile_branch_condition(iseq, ret, predicate, end_label, redo_label, popped, scope_node);
+        pm_compile_branch_condition(iseq, ret, predicate, end_label, redo_label, scope_node);
     }
 
     PUSH_LABEL(ret, end_label);
@@ -7693,7 +7690,7 @@ pm_compile_case_node(rb_iseq_t *iseq, const pm_case_node_t *cast, const pm_node_
                 }
                 else {
                     LABEL *next_label = NEW_LABEL(pm_node_line_number_cached(condition, scope_node));
-                    pm_compile_branch_condition(iseq, cond_seq, condition, label, next_label, false, scope_node);
+                    pm_compile_branch_condition(iseq, cond_seq, condition, label, next_label, scope_node);
                     PUSH_LABEL(cond_seq, next_label);
                 }
             }
@@ -9680,10 +9677,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     PUSH_INSN1(ret, location, putobject, string);
                 }
                 else if (PM_NODE_FLAG_P(node, PM_INTERPOLATED_STRING_NODE_FLAGS_MUTABLE)) {
-                    PUSH_INSN1(ret, location, putstring, string);
+                    PUSH_INSN1(ret, location, dupstring, string);
                 }
                 else {
-                    PUSH_INSN1(ret, location, putchilledstring, string);
+                    PUSH_INSN1(ret, location, dupchilledstring, string);
                 }
             }
         }
@@ -10398,10 +10395,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 PUSH_INSN1(ret, location, putobject, string);
             }
             else if (PM_NODE_FLAG_P(cast, PM_STRING_FLAGS_MUTABLE)) {
-                PUSH_INSN1(ret, location, putstring, string);
+                PUSH_INSN1(ret, location, dupstring, string);
             }
             else {
-                PUSH_INSN1(ret, location, putchilledstring, string);
+                PUSH_INSN1(ret, location, dupchilledstring, string);
             }
         }
         return;
@@ -10455,10 +10452,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 PUSH_INSN1(ret, location, putobject, value);
             }
             else if (PM_NODE_FLAG_P(node, PM_STRING_FLAGS_MUTABLE)) {
-                PUSH_INSN1(ret, location, putstring, value);
+                PUSH_INSN1(ret, location, dupstring, value);
             }
             else {
-                PUSH_INSN1(ret, location, putchilledstring, value);
+                PUSH_INSN1(ret, location, dupchilledstring, value);
             }
         }
         return;

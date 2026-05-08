@@ -104,7 +104,7 @@ runs:
         fetch-depth: ${{ inputs.fetch-depth }}
         persist-credentials: false
 
-    - uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+    - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
       with:
         path: ${{ inputs.srcdir }}/.downloaded-cache
         key: ${{ runner.os }}-${{ runner.arch }}-downloaded-cache
@@ -193,7 +193,7 @@ runs:
         INPUT_MAKE_COMMAND: ${{ inputs.make-command }}
 
     - name: clean
-      uses: gacts/run-and-post-run@81b6ce503cde93862cec047c54652e45c5dca991 # v1.4.3
+      uses: gacts/run-and-post-run@598d7a875d5620e0457490555b5e18e46082aa47 # v1.4.4
       with:
         working-directory:
         post: |

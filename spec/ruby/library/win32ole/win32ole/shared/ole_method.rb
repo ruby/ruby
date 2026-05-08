@@ -7,12 +7,12 @@ platform_is :windows do
     end
 
     it "raises ArgumentError if no argument is given" do
-      -> { @dict.send(@method) }.should raise_error ArgumentError
+      -> { @dict.send(@method) }.should.raise ArgumentError
     end
 
     it "returns the WIN32OLE::Method 'Add' if given 'Add'" do
       result = @dict.send(@method, "Add")
-      result.kind_of?(WIN32OLE::Method).should be_true
+      result.kind_of?(WIN32OLE::Method).should == true
       result.name.should == 'Add'
     end
   end

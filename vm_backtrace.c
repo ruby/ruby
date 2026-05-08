@@ -991,6 +991,7 @@ backtrace_initialize_copy(VALUE self, VALUE original)
 
     bt->backtrace_size = original_bt->backtrace_size;
     MEMCPY(bt->backtrace, original_bt->backtrace, rb_backtrace_location_t, original_bt->backtrace_size);
+    rb_gc_writebarrier_remember(self);
 
     return Qnil;
 }

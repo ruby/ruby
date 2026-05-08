@@ -9,16 +9,16 @@ describe "Math.frexp" do
   end
 
   it "raises a TypeError if the argument cannot be coerced with Float()" do
-    -> { Math.frexp("test") }.should raise_error(TypeError)
+    -> { Math.frexp("test") }.should.raise(TypeError)
   end
 
   it "returns NaN given NaN" do
     frac, _exp = Math.frexp(nan_value)
-    frac.nan?.should be_true
+    frac.nan?.should == true
   end
 
   it "raises a TypeError if the argument is nil" do
-    -> { Math.frexp(nil) }.should raise_error(TypeError)
+    -> { Math.frexp(nil) }.should.raise(TypeError)
   end
 
   it "accepts any argument that can be coerced with Float()" do

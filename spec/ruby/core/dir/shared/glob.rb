@@ -13,7 +13,7 @@ describe :dir_glob, shared: true do
 
   it "raises an Encoding::CompatibilityError if the argument encoding is not compatible with US-ASCII" do
     pattern = "files*".dup.force_encoding Encoding::UTF_16BE
-    -> { Dir.send(@method, pattern) }.should raise_error(Encoding::CompatibilityError)
+    -> { Dir.send(@method, pattern) }.should.raise(Encoding::CompatibilityError)
   end
 
   it "calls #to_path to convert a pattern" do
@@ -24,7 +24,7 @@ describe :dir_glob, shared: true do
   end
 
   it "raises an ArgumentError if the string contains \\0" do
-    -> {Dir.send(@method, "file_o*\0file_t*")}.should raise_error ArgumentError, /nul-separated/
+    -> {Dir.send(@method, "file_o*\0file_t*")}.should.raise ArgumentError, /nul-separated/
   end
 
   it "result is sorted by default" do
@@ -43,9 +43,9 @@ describe :dir_glob, shared: true do
   end
 
   it "raises an ArgumentError if sort: is not true or false" do
-    -> { Dir.send(@method, '*', sort: 0) }.should raise_error ArgumentError, /expected true or false/
-    -> { Dir.send(@method, '*', sort: nil) }.should raise_error ArgumentError, /expected true or false/
-    -> { Dir.send(@method, '*', sort: 'false') }.should raise_error ArgumentError, /expected true or false/
+    -> { Dir.send(@method, '*', sort: 0) }.should.raise ArgumentError, /expected true or false/
+    -> { Dir.send(@method, '*', sort: nil) }.should.raise ArgumentError, /expected true or false/
+    -> { Dir.send(@method, '*', sort: 'false') }.should.raise ArgumentError, /expected true or false/
   end
 
   it "matches non-dotfiles with '*'" do
@@ -373,7 +373,7 @@ describe :dir_glob, shared: true do
     it "raises TypeError when cannot convert value to string" do
       -> {
         Dir.send(@method, "*", base: [])
-      }.should raise_error(TypeError)
+      }.should.raise(TypeError)
     end
 
     it "handles '' as current directory path" do

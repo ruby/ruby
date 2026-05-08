@@ -7,8 +7,8 @@ describe "Proc#parameters" do
 
   it "returns an Array of Arrays for a proc expecting parameters" do
     p = proc {|x| }
-    p.parameters.should be_an_instance_of(Array)
-    p.parameters.first.should be_an_instance_of(Array)
+    p.parameters.should.instance_of?(Array)
+    p.parameters.first.should.instance_of?(Array)
   end
 
   it "sets the first element of each sub-Array to :opt for optional arguments" do

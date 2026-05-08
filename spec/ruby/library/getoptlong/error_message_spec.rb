@@ -14,7 +14,7 @@ describe "GetoptLong#error_message" do
       opts.get
       -> {
         opts.ordering = GetoptLong::PERMUTE
-      }.should raise_error(ArgumentError) { |e|
+      }.should.raise(ArgumentError) { |e|
         e.message.should == "argument error"
         opts.error_message.should == "argument error"
       }

@@ -10,7 +10,7 @@ describe "Enumerator::Chain#rewind" do
   end
 
   it "returns self" do
-    @enum.rewind.should equal @enum
+    @enum.rewind.should.equal? @enum
   end
 
   it "does nothing if receiver has not been iterated" do
@@ -35,7 +35,7 @@ describe "Enumerator::Chain#rewind" do
     @obj.should_not_receive(:rewind)
     @second.should_receive(:rewind).and_raise(RuntimeError)
     @enum.each {}
-    -> { @enum.rewind }.should raise_error(RuntimeError)
+    -> { @enum.rewind }.should.raise(RuntimeError)
   end
 
   it "calls rewind only for objects that have actually been iterated on" do
@@ -45,7 +45,7 @@ describe "Enumerator::Chain#rewind" do
 
     @obj.should_receive(:rewind)
     @second.should_not_receive(:rewind)
-    -> { @enum.each {} }.should raise_error(RuntimeError)
+    -> { @enum.each {} }.should.raise(RuntimeError)
     @enum.rewind
   end
 end

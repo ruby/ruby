@@ -200,8 +200,16 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Gemfile to disable lockfile creation entirely (see gemfile(5)).
 * `lockfile_checksums` (`BUNDLE_LOCKFILE_CHECKSUMS`):
    Whether Bundler should include a checksums section in new lockfiles, to protect from compromised gem sources. Defaults to true.
+* `no_build_extension` (`BUNDLE_NO_BUILD_EXTENSION`):
+   Whether Bundler should skip building native extensions during installation.
+   When set, gems are installed without compiling their C extensions.
+   To build extensions later, unset this setting and run `bundle pristine <gem>`.
 * `no_install` (`BUNDLE_NO_INSTALL`):
    Whether `bundle package` should skip installing gems.
+* `no_install_plugin` (`BUNDLE_NO_INSTALL_PLUGIN`):
+   Whether Bundler should skip installing RubyGems plugins during installation.
+   When set, plugin files are not written to the plugins directory.
+   To install plugins later, unset this setting and run `bundle pristine <gem>`.
 * `no_prune` (`BUNDLE_NO_PRUNE`):
    Whether Bundler should leave outdated gems unpruned when caching.
 * `only` (`BUNDLE_ONLY`):

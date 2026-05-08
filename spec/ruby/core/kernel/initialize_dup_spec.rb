@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 describe "Kernel#initialize_dup" do
   it "is a private instance method" do
-    Kernel.should have_private_instance_method(:initialize_dup)
+    Kernel.private_instance_methods(false).should.include?(:initialize_dup)
   end
 
   it "returns the receiver" do

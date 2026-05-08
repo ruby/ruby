@@ -561,6 +561,7 @@ zjit_compile(rb_execution_context_t *ec)
 
 static inline void zjit_materialize_frames(rb_control_frame_t *cfp);
 
+#if USE_YJIT || USE_ZJIT
 // Execute JIT code compiled by yjit_compile() or zjit_compile()
 static inline VALUE
 jit_exec(rb_execution_context_t *ec)
@@ -595,7 +596,6 @@ jit_exec(rb_execution_context_t *ec)
     return Qundef;
 }
 
-#if USE_YJIT || USE_ZJIT
 // Generate JIT code that supports the following kind of ISEQ entry:
 //   * The first ISEQ pushed by vm_exec_handle_exception. The frame would
 //     point to a location specified by a catch table, and it doesn't have
@@ -652,6 +652,7 @@ jit_exec_exception(rb_execution_context_t *ec)
 }
 #else
 # define jit_compile_exception(ec) ((rb_jit_func_t)0)
+# define jit_exec(ec) Qundef
 # define jit_exec_exception(ec) Qundef
 #endif
 
@@ -866,7 +867,7 @@ vm_stat(int argc, VALUE *argv, VALUE self)
     SET(constant_cache_misses, ruby_vm_constant_cache_misses);
     SET(global_cvar_state, ruby_vm_global_cvar_state);
     SET(next_shape_id, (rb_serial_t)rb_shapes_count());
-    SET(shape_cache_size, (rb_serial_t)rb_shape_tree.cache_size);
+    SET(shape_cache_size, (rb_serial_t)rb_shapes_cache_size());
 #undef SET
 
 #if USE_DEBUG_COUNTER
@@ -3476,7 +3477,6 @@ ruby_vm_destruct(rb_vm_t *vm)
         ruby_current_vm_ptr = NULL;
 
         if (rb_free_at_exit) {
-            rb_shape_free_all();
 #if USE_YJIT
             rb_yjit_free_at_exit();
 #endif
@@ -3763,8 +3763,8 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
 
     /* mark machine stack */
     if (ec->machine.stack_start && ec->machine.stack_end &&
-        ec != GET_EC() /* marked for current ec at the first stage of marking */
-        ) {
+            /* marked for current ec at the first stage of marking */
+            ec != rb_gc_get_ec()) {
         rb_gc_mark_machine_context(ec);
     }
 

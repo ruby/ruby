@@ -35,15 +35,15 @@ describe "String#include? with String" do
   end
 
   it "raises a TypeError if other can't be converted to string" do
-    -> { "hello".include?([])       }.should raise_error(TypeError)
-    -> { "hello".include?('h'.ord)  }.should raise_error(TypeError)
-    -> { "hello".include?(mock('x')) }.should raise_error(TypeError)
+    -> { "hello".include?([])       }.should.raise(TypeError)
+    -> { "hello".include?('h'.ord)  }.should.raise(TypeError)
+    -> { "hello".include?(mock('x')) }.should.raise(TypeError)
   end
 
   it "raises an Encoding::CompatibilityError if the encodings are incompatible" do
     pat = "ア".encode Encoding::EUC_JP
     -> do
       "あれ".include?(pat)
-    end.should raise_error(Encoding::CompatibilityError)
+    end.should.raise(Encoding::CompatibilityError)
   end
 end

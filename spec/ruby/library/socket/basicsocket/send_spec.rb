@@ -9,8 +9,8 @@ describe "BasicSocket#send" do
   end
 
   after :each do
-    @server.closed?.should be_false
-    @socket.closed?.should be_false
+    @server.closed?.should == false
+    @socket.closed?.should == false
 
     @server.close
     @socket.close
@@ -28,7 +28,7 @@ describe "BasicSocket#send" do
       client.close
     end
     Thread.pass while t.status and t.status != "sleep"
-    t.status.should_not be_nil
+    t.status.should_not == nil
 
     @socket.send('hello', 0).should == 5
     @socket.shutdown(1) # indicate, that we are done sending
@@ -50,7 +50,7 @@ describe "BasicSocket#send" do
         client.close
       end
       Thread.pass while t.status and t.status != "sleep"
-      t.status.should_not be_nil
+      t.status.should_not == nil
 
       @socket.send('helloU', Socket::MSG_PEEK | Socket::MSG_OOB).should == 6
       @socket.shutdown # indicate, that we are done sending
@@ -73,7 +73,7 @@ describe "BasicSocket#send" do
       client.close
     end
     Thread.pass while t.status and t.status != "sleep"
-    t.status.should_not be_nil
+    t.status.should_not == nil
 
     sockaddr = Socket.pack_sockaddr_in(@port, "127.0.0.1")
     @socket.send('hello', 0, sockaddr).should == 5
@@ -109,7 +109,7 @@ describe 'BasicSocket#send' do
 
       describe 'without a destination address' do
         it "raises #{SocketSpecs.dest_addr_req_error}" do
-          -> { @client.send('hello', 0) }.should raise_error(SocketSpecs.dest_addr_req_error)
+          -> { @client.send('hello', 0) }.should.raise(SocketSpecs.dest_addr_req_error)
         end
       end
 
@@ -121,7 +121,7 @@ describe 'BasicSocket#send' do
         it 'does not persist the connection after writing to the socket' do
           @client.send('hello', 0, @server.getsockname)
 
-          -> { @client.send('hello', 0) }.should raise_error(SocketSpecs.dest_addr_req_error)
+          -> { @client.send('hello', 0) }.should.raise(SocketSpecs.dest_addr_req_error)
         end
       end
 

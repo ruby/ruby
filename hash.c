@@ -471,23 +471,7 @@ ar_set_entry(VALUE hash, unsigned int index, st_data_t key, st_data_t val, st_ha
 #define RHASH_AR_TABLE_SIZE(h) (HASH_ASSERT(RHASH_AR_TABLE_P(h)), \
                                 RHASH_AR_TABLE_SIZE_RAW(h))
 
-#define RHASH_AR_TABLE_BOUND_RAW(h) \
-  ((unsigned int)((RBASIC(h)->flags >> RHASH_AR_TABLE_BOUND_SHIFT) & \
-                  (RHASH_AR_TABLE_BOUND_MASK >> RHASH_AR_TABLE_BOUND_SHIFT)))
-
-#define RHASH_ST_TABLE_SET(h, s)  rb_hash_st_table_set(h, s)
-#define RHASH_TYPE(hash) (RHASH_AR_TABLE_P(hash) ? &objhash : RHASH_ST_TABLE(hash)->type)
-
 #define HASH_ASSERT(expr) RUBY_ASSERT_MESG_WHEN(HASH_DEBUG, expr, #expr)
-
-static inline unsigned int
-RHASH_AR_TABLE_BOUND(VALUE h)
-{
-    HASH_ASSERT(RHASH_AR_TABLE_P(h));
-    const unsigned int bound = RHASH_AR_TABLE_BOUND_RAW(h);
-    HASH_ASSERT(bound <= RHASH_AR_TABLE_MAX_SIZE);
-    return bound;
-}
 
 #if HASH_DEBUG
 #define hash_verify(hash) hash_verify_(hash, __FILE__, __LINE__)
@@ -1437,14 +1421,9 @@ compact_after_delete(VALUE hash)
 static VALUE
 hash_alloc_flags(VALUE klass, VALUE flags, VALUE ifnone, bool st)
 {
-    const VALUE wb = (RGENGC_WB_PROTECTED_HASH ? FL_WB_PROTECTED : 0);
     const size_t size = sizeof(struct RHash) + (st ? sizeof(st_table) : sizeof(ar_table));
-
-    NEWOBJ_OF(hash, struct RHash, klass, T_HASH | wb | flags, size, 0);
-
-    RHASH_SET_IFNONE((VALUE)hash, ifnone);
-
-    return (VALUE)hash;
+    VALUE hash = rb_newobj_of(klass, T_HASH | flags, size);
+    return rb_hash_set_ifnone(hash, ifnone);
 }
 
 static VALUE
@@ -1514,7 +1493,7 @@ rb_hash_alloc_fixed_size(VALUE klass, st_index_t size)
     }
     else {
         size_t slot_size = sizeof(struct RHash) + offsetof(ar_table, pairs) + size * sizeof(ar_table_pair);
-        ret = rb_wb_protected_newobj_of(GET_EC(), klass, T_HASH, 0, slot_size);
+        ret = rb_newobj_of(klass, T_HASH, slot_size);
     }
 
     RHASH_SET_IFNONE(ret, Qnil);
@@ -1969,6 +1948,9 @@ rb_hash_rehash_i(VALUE key, VALUE value, VALUE arg)
     else {
         st_insert(RHASH_ST_TABLE(arg), (st_data_t)key, (st_data_t)value);
     }
+
+    RB_OBJ_WRITTEN(arg, Qundef, key);
+    RB_OBJ_WRITTEN(arg, Qundef, value);
     return ST_CONTINUE;
 }
 
@@ -6503,7 +6485,7 @@ env_rassoc(VALUE dmy, VALUE obj)
 
         while (*env) {
             const char *p = *env;
-            char *s = strchr(p, '=');
+            const char *s = strchr(p, '=');
             if (s++) {
                 long len = strlen(s);
                 if (RSTRING_LEN(obj) == len && strncmp(s, RSTRING_PTR(obj), len) == 0) {
@@ -6723,7 +6705,7 @@ env_shift(VALUE _)
         char **env = GET_ENVIRON(environ);
         if (*env) {
             const char *p = *env;
-            char *s = strchr(p, '=');
+            const char *s = strchr(p, '=');
             if (s) {
                 key = env_str_new(p, s-p, enc);
                 VALUE val = env_str_new2(getenv(RSTRING_PTR(key)), enc);

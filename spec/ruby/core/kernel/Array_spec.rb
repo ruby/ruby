@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "Kernel" do
   it "has private instance method Array()" do
-    Kernel.should have_private_instance_method(:Array)
+    Kernel.private_instance_methods(false).should.include?(:Array)
   end
 end
 
@@ -77,14 +77,14 @@ describe :kernel_Array, shared: true do
     obj = mock("Array() string")
     obj.should_receive(:to_ary).and_return("string")
 
-    -> { @object.send(@method, obj) }.should raise_error(TypeError)
+    -> { @object.send(@method, obj) }.should.raise(TypeError)
   end
 
   it "raises a TypeError if #to_a does not return an Array" do
     obj = mock("Array() string")
     obj.should_receive(:to_a).and_return("string")
 
-    -> { @object.send(@method, obj) }.should raise_error(TypeError)
+    -> { @object.send(@method, obj) }.should.raise(TypeError)
   end
 end
 

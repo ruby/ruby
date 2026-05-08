@@ -22,7 +22,7 @@ module Bundler
     GITHUB_PULL_REQUEST_URL = %r{\Ahttps://github\.com/([A-Za-z0-9_\-\.]+/[A-Za-z0-9_\-\.]+)/pull/(\d+)\z}
     GITLAB_MERGE_REQUEST_URL = %r{\Ahttps://gitlab\.com/([A-Za-z0-9_\-\./]+)/-/merge_requests/(\d+)\z}
 
-    attr_reader :gemspecs, :gemfile
+    attr_reader :gemspecs, :gemfile, :overrides
     attr_accessor :dependencies
 
     def initialize
@@ -40,6 +40,7 @@ module Bundler
       @gemfile              = nil
       @gemfiles             = []
       @lockfile             = nil
+      @overrides            = []
       add_git_sources
     end
 
@@ -184,10 +185,32 @@ module Bundler
       with_source(git_source) { yield }
     end
 
+    SUPPORTED_OVERRIDE_FIELDS = [:version, :required_ruby_version, :required_rubygems_version].freeze
+    SUPPORTED_OVERRIDE_SYMBOL_OPERATIONS = [:ignore_upper].freeze
+
+    def override(target, **operations)
+      validate_override_target!(target)
+
+      if target == :all && operations.key?(:version)
+        raise ArgumentError, "`override :all, version:` is not allowed; version requirements are per-gem"
+      end
+
+      operations.each do |field, operation|
+        validate_override_field!(field)
+        validate_override_operation!(operation)
+        validate_override_uniqueness!(target, field)
+      end
+
+      source_location = caller_locations(1, 1)&.first
+      operations.each do |field, operation|
+        @overrides << Override.new(target, field, operation, source_location: source_location)
+      end
+    end
+
     def to_definition(lockfile, unlock)
       check_primary_source_safety
       lockfile = @lockfile unless @lockfile.nil?
-      Definition.new(lockfile, @dependencies, @sources, unlock, @ruby_version, @optional_groups, @gemfiles)
+      Definition.new(lockfile, @dependencies, @sources, unlock, @ruby_version, @optional_groups, @gemfiles, @overrides)
     end
 
     def group(*args, &blk)
@@ -243,6 +266,39 @@ module Bundler
     end
 
     private
+
+    def validate_override_target!(target)
+      return if target == :all
+      return if target.is_a?(String)
+      raise ArgumentError, "override target must be :all or a gem name string, got #{target.inspect}"
+    end
+
+    def validate_override_field!(field)
+      return if SUPPORTED_OVERRIDE_FIELDS.include?(field)
+      supported = SUPPORTED_OVERRIDE_FIELDS.map {|f| "`#{f}:`" }.join(", ")
+      raise ArgumentError, "unsupported override field `#{field}:`; supported fields: #{supported}"
+    end
+
+    def validate_override_operation!(operation)
+      case operation
+      when String
+        Gem::Requirement.new(operation)
+      when nil
+        # ok
+      when Symbol
+        return if SUPPORTED_OVERRIDE_SYMBOL_OPERATIONS.include?(operation)
+        raise ArgumentError, "unsupported override operation: #{operation.inspect}"
+      else
+        raise ArgumentError, "override operation must be a String, Symbol, or nil, got #{operation.inspect}"
+      end
+    rescue Gem::Requirement::BadRequirementError => e
+      raise ArgumentError, "invalid override version requirement #{operation.inspect}: #{e.message}"
+    end
+
+    def validate_override_uniqueness!(target, field)
+      return unless @overrides.any? {|o| o.target == target && o.field == field }
+      raise ArgumentError, "duplicate override for #{target.inspect} `#{field}:`"
+    end
 
     def add_dependency(name, version = nil, options = {})
       options["gemfile"] = @gemfile

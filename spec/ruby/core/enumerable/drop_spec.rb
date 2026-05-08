@@ -7,13 +7,13 @@ describe "Enumerable#drop" do
   end
 
   it "requires exactly one argument" do
-    ->{ @enum.drop{} }.should raise_error(ArgumentError)
-    ->{ @enum.drop(1, 2){} }.should raise_error(ArgumentError)
+    ->{ @enum.drop{} }.should.raise(ArgumentError)
+    ->{ @enum.drop(1, 2){} }.should.raise(ArgumentError)
   end
 
   describe "passed a number n as an argument" do
     it "raises ArgumentError if n < 0" do
-      ->{ @enum.drop(-1) }.should raise_error(ArgumentError)
+      ->{ @enum.drop(-1) }.should.raise(ArgumentError)
     end
 
     it "tries to convert n to an Integer using #to_int" do
@@ -35,8 +35,8 @@ describe "Enumerable#drop" do
     end
 
     it "raises a TypeError when the passed n cannot be coerced to Integer" do
-      ->{ @enum.drop("hat") }.should raise_error(TypeError)
-      ->{ @enum.drop(nil) }.should raise_error(TypeError)
+      ->{ @enum.drop("hat") }.should.raise(TypeError)
+      ->{ @enum.drop(nil) }.should.raise(TypeError)
     end
 
   end

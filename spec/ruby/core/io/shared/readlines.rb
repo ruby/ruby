@@ -1,11 +1,11 @@
 describe :io_readlines, shared: true do
   it "raises TypeError if the first parameter is nil" do
-    -> { IO.send(@method, nil, &@object) }.should raise_error(TypeError)
+    -> { IO.send(@method, nil, &@object) }.should.raise(TypeError)
   end
 
   it "raises an Errno::ENOENT if the file does not exist" do
     name = tmp("nonexistent.txt")
-    -> { IO.send(@method, name, &@object) }.should raise_error(Errno::ENOENT)
+    -> { IO.send(@method, name, &@object) }.should.raise(Errno::ENOENT)
   end
 
   it "yields a single string with entire content when the separator is nil" do
@@ -80,12 +80,12 @@ describe :io_readlines_options_19, shared: true do
       end
 
       it "does not accept Integers that don't fit in a C off_t" do
-        -> { IO.send(@method, @name, 2**128, &@object) }.should raise_error(RangeError)
+        -> { IO.send(@method, @name, 2**128, &@object) }.should.raise(RangeError)
       end
 
       describe "when passed limit" do
         it "raises ArgumentError when passed 0 as a limit" do
-          -> { IO.send(@method, @name, 0, &@object) }.should raise_error(ArgumentError)
+          -> { IO.send(@method, @name, 0, &@object) }.should.raise(ArgumentError)
         end
       end
     end
@@ -106,7 +106,7 @@ describe :io_readlines_options_19, shared: true do
       it "raises TypeError exception" do
         -> {
           IO.send(@method, @name, { chomp: true }, &@object)
-        }.should raise_error(TypeError)
+        }.should.raise(TypeError)
       end
     end
 
@@ -116,7 +116,7 @@ describe :io_readlines_options_19, shared: true do
 
         -> {
           IO.send(@method, @name, obj, &@object)
-        }.should raise_error(TypeError)
+        }.should.raise(TypeError)
       end
     end
   end
@@ -170,7 +170,7 @@ describe :io_readlines_options_19, shared: true do
 
         -> {
           IO.send(@method, @name, " ", obj, &@object)
-        }.should raise_error(TypeError)
+        }.should.raise(TypeError)
       end
     end
 
@@ -178,7 +178,7 @@ describe :io_readlines_options_19, shared: true do
       it "raises TypeError exception" do
         -> {
           IO.send(@method, @name, "", { chomp: true }, &@object)
-        }.should raise_error(TypeError)
+        }.should.raise(TypeError)
       end
     end
   end
@@ -188,7 +188,7 @@ describe :io_readlines_options_19, shared: true do
       it "uses the keyword arguments as options" do
         -> do
           IO.send(@method, @filename, 10, mode: "w", &@object)
-        end.should raise_error(IOError)
+        end.should.raise(IOError)
       end
     end
 
@@ -196,7 +196,7 @@ describe :io_readlines_options_19, shared: true do
       it "uses the keyword arguments as options" do
         -> do
           IO.send(@method, @filename, " ", mode: "w", &@object)
-        end.should raise_error(IOError)
+        end.should.raise(IOError)
       end
     end
 
@@ -207,7 +207,7 @@ describe :io_readlines_options_19, shared: true do
 
         -> do
           IO.send(@method, @filename, sep, mode: "w", &@object)
-        end.should raise_error(IOError)
+        end.should.raise(IOError)
       end
     end
   end
@@ -237,7 +237,7 @@ describe :io_readlines_options_19, shared: true do
     it "uses the keyword arguments as options" do
       -> do
         IO.send(@method, @filename, " ", 10, mode: "w", &@object)
-      end.should raise_error(IOError)
+      end.should.raise(IOError)
     end
 
     describe "when passed chomp, nil as a separator, and a limit" do

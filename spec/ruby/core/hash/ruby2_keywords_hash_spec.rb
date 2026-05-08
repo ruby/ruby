@@ -16,7 +16,7 @@ describe "Hash.ruby2_keywords_hash?" do
   end
 
   it "raises TypeError for non-Hash" do
-    -> { Hash.ruby2_keywords_hash?(nil) }.should raise_error(TypeError)
+    -> { Hash.ruby2_keywords_hash?(nil) }.should.raise(TypeError)
   end
 end
 
@@ -54,7 +54,7 @@ describe "Hash.ruby2_keywords_hash" do
   end
 
   it "raises TypeError for non-Hash" do
-    -> { Hash.ruby2_keywords_hash(nil) }.should raise_error(TypeError)
+    -> { Hash.ruby2_keywords_hash(nil) }.should.raise(TypeError)
   end
 
   it "retains the default value" do

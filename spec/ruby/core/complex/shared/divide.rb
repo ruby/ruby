@@ -19,11 +19,11 @@ describe :complex_divide, shared: true do
     end
 
     it "raises a ZeroDivisionError when given zero" do
-      -> { Complex(20, 40).send(@method, 0) }.should raise_error(ZeroDivisionError)
+      -> { Complex(20, 40).send(@method, 0) }.should.raise(ZeroDivisionError)
     end
 
     it "produces Rational parts" do
-      Complex(5, 9).send(@method, 2).should eql(Complex(Rational(5,2), Rational(9,2)))
+      Complex(5, 9).send(@method, 2).should.eql?(Complex(Rational(5,2), Rational(9,2)))
     end
   end
 
@@ -76,7 +76,7 @@ describe :complex_divide, shared: true do
       other = mock_numeric('other')
       other.should_receive(:real?).any_number_of_times.and_return(false)
       other.should_receive(:coerce).with(complex).and_return([5, 2])
-      complex.send(@method, other).should eql(Rational(5, 2))
+      complex.send(@method, other).should.eql?(Rational(5, 2))
     end
   end
 end

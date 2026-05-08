@@ -6,7 +6,7 @@ describe "BasicObject#singleton_method_removed" do
   end
 
   it "is a private method" do
-    BasicObject.should have_private_instance_method(:singleton_method_removed)
+    BasicObject.private_instance_methods(false).should.include?(:singleton_method_removed)
   end
 
   it "is called when a method is removed on self" do

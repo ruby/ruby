@@ -16,8 +16,8 @@ describe "File#chmod" do
   end
 
   it "raises RangeError with too large values" do
-    -> { @file.chmod(2**64) }.should raise_error(RangeError)
-    -> { @file.chmod(-2**63 - 1) }.should raise_error(RangeError)
+    -> { @file.chmod(2**64) }.should.raise(RangeError)
+    -> { @file.chmod(-2**63 - 1) }.should.raise(RangeError)
   end
 
   it "invokes to_int on non-integer argument" do
@@ -97,8 +97,8 @@ describe "File.chmod" do
   end
 
   it "raises RangeError with too large values" do
-    -> { File.chmod(2**64, @file) }.should raise_error(RangeError)
-    -> { File.chmod(-2**63 - 1, @file) }.should raise_error(RangeError)
+    -> { File.chmod(2**64, @file) }.should.raise(RangeError)
+    -> { File.chmod(-2**63 - 1, @file) }.should.raise(RangeError)
   end
 
   it "accepts an object that has a #to_path method" do
@@ -106,13 +106,13 @@ describe "File.chmod" do
   end
 
   it "throws a TypeError if the given path is not coercible into a string" do
-    -> { File.chmod(0, []) }.should raise_error(TypeError)
+    -> { File.chmod(0, []) }.should.raise(TypeError)
   end
 
   it "raises an error for a non existent path" do
     -> {
       File.chmod(0644, "#{@file}.not.existing")
-    }.should raise_error(Errno::ENOENT)
+    }.should.raise(Errno::ENOENT)
   end
 
   it "invokes to_int on non-integer argument" do

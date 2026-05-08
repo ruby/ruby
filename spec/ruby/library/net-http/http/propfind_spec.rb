@@ -19,6 +19,6 @@ describe "Net::HTTP#propfind" do
   end
 
   it "returns a Net::HTTPResponse" do
-    @http.propfind("/request", "test=test").should be_kind_of(Net::HTTPResponse)
+    @http.propfind("/request", "test=test").should.is_a?(Net::HTTPResponse)
   end
 end

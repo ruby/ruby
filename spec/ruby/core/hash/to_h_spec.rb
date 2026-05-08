@@ -4,7 +4,7 @@ require_relative 'fixtures/classes'
 describe "Hash#to_h" do
   it "returns self for Hash instances" do
     h = {}
-    h.to_h.should equal(h)
+    h.to_h.should.equal?(h)
   end
 
   describe "when called on a subclass of Hash" do
@@ -14,7 +14,7 @@ describe "Hash#to_h" do
     end
 
     it "returns a new Hash instance" do
-      @h.to_h.should be_an_instance_of(Hash)
+      @h.to_h.should.instance_of?(Hash)
       @h.to_h.should == @h
       @h[:foo].should == :bar
     end
@@ -55,17 +55,17 @@ describe "Hash#to_h" do
     it "raises ArgumentError if block returns longer or shorter array" do
       -> do
         { a: 1, b: 2 }.to_h { |k, v| [k.to_s, v*v, 1] }
-      end.should raise_error(ArgumentError, /element has wrong array length/)
+      end.should.raise(ArgumentError, /element has wrong array length/)
 
       -> do
         { a: 1, b: 2 }.to_h { |k, v| [k] }
-      end.should raise_error(ArgumentError, /element has wrong array length/)
+      end.should.raise(ArgumentError, /element has wrong array length/)
     end
 
     it "raises TypeError if block returns something other than Array" do
       -> do
         { a: 1, b: 2 }.to_h { |k, v| "not-array" }
-      end.should raise_error(TypeError, /wrong element type String/)
+      end.should.raise(TypeError, /wrong element type String/)
     end
 
     it "coerces returned pair to Array with #to_ary" do
@@ -81,20 +81,20 @@ describe "Hash#to_h" do
 
       -> do
         { a: 1 }.to_h { |k| x }
-      end.should raise_error(TypeError, /wrong element type MockObject/)
+      end.should.raise(TypeError, /wrong element type MockObject/)
     end
 
     it "does not retain the default value" do
       h = Hash.new(1)
       h2 = h.to_h { |k, v| [k.to_s, v*v]}
-      h2.default.should be_nil
+      h2.default.should == nil
     end
 
     it "does not retain the default_proc" do
       pr = proc { |h, k| h[k] = [] }
       h = Hash.new(&pr)
       h2 = h.to_h { |k, v| [k.to_s, v*v]}
-      h2.default_proc.should be_nil
+      h2.default_proc.should == nil
     end
 
     it "does not retain compare_by_identity flag" do

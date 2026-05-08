@@ -5,19 +5,19 @@ require_relative 'fixtures/classes'
 describe "String#rindex with object" do
   it "raises a TypeError if obj isn't a String or Regexp" do
     not_supported_on :opal do
-      -> { "hello".rindex(:sym) }.should raise_error(TypeError)
+      -> { "hello".rindex(:sym) }.should.raise(TypeError)
     end
-    -> { "hello".rindex(mock('x')) }.should raise_error(TypeError)
+    -> { "hello".rindex(mock('x')) }.should.raise(TypeError)
   end
 
   it "raises a TypeError if obj is an Integer" do
-    -> { "hello".rindex(42) }.should raise_error(TypeError)
+    -> { "hello".rindex(42) }.should.raise(TypeError)
   end
 
   it "doesn't try to convert obj to an integer via to_int" do
     obj = mock('x')
     obj.should_not_receive(:to_int)
-    -> { "hello".rindex(obj) }.should raise_error(TypeError)
+    -> { "hello".rindex(obj) }.should.raise(TypeError)
   end
 
   it "tries to convert obj to a string via to_str" do
@@ -193,7 +193,7 @@ describe "String#rindex with String" do
   end
 
   it "raises a TypeError when given offset is nil" do
-    -> { "str".rindex("st", nil) }.should raise_error(TypeError)
+    -> { "str".rindex("st", nil) }.should.raise(TypeError)
   end
 
   it "handles a substring in a superset encoding" do
@@ -208,7 +208,7 @@ describe "String#rindex with String" do
     str = 'abc'.dup.force_encoding("ISO-2022-JP")
     pattern = 'b'.dup.force_encoding("EUC-JP")
 
-    -> { str.rindex(pattern) }.should raise_error(Encoding::CompatibilityError, "incompatible character encodings: ISO-2022-JP and EUC-JP")
+    -> { str.rindex(pattern) }.should.raise(Encoding::CompatibilityError, "incompatible character encodings: ISO-2022-JP and EUC-JP")
   end
 end
 
@@ -362,7 +362,7 @@ describe "String#rindex with Regexp" do
   end
 
   it "raises a TypeError when given offset is nil" do
-    -> { "str".rindex(/../, nil) }.should raise_error(TypeError)
+    -> { "str".rindex(/../, nil) }.should.raise(TypeError)
   end
 
   it "returns the reverse character index of a multibyte character" do
@@ -379,6 +379,6 @@ describe "String#rindex with Regexp" do
     re = Regexp.new "れ".encode(Encoding::EUC_JP)
     -> do
       "あれ".rindex re
-    end.should raise_error(Encoding::CompatibilityError, "incompatible encoding regexp match (EUC-JP regexp with UTF-8 string)")
+    end.should.raise(Encoding::CompatibilityError, "incompatible encoding regexp match (EUC-JP regexp with UTF-8 string)")
   end
 end

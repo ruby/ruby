@@ -12,7 +12,7 @@ describe 'TCPServer#initialize' do
     end
 
     it 'sets the port to the given argument' do
-      @server.local_address.ip_port.should be_kind_of(Integer)
+      @server.local_address.ip_port.should.is_a?(Integer)
       @server.local_address.ip_port.should > 0
     end
 
@@ -24,7 +24,7 @@ describe 'TCPServer#initialize' do
     end
 
     it "sets the socket to binmode" do
-      @server.binmode?.should be_true
+      @server.binmode?.should == true
     end
   end
 
@@ -38,7 +38,7 @@ describe 'TCPServer#initialize' do
     end
 
     it 'sets the port to the given argument' do
-      @server.local_address.ip_port.should be_kind_of(Integer)
+      @server.local_address.ip_port.should.is_a?(Integer)
       @server.local_address.ip_port.should > 0
     end
 
@@ -52,7 +52,7 @@ describe 'TCPServer#initialize' do
 
   describe 'with a single String argument containing a non numeric value' do
     it 'raises SocketError' do
-      -> { TCPServer.new('cats') }.should raise_error(SocketError)
+      -> { TCPServer.new('cats') }.should.raise(SocketError)
     end
   end
 
@@ -67,7 +67,7 @@ describe 'TCPServer#initialize' do
       end
 
       it 'sets the port to the given port argument' do
-        @server.local_address.ip_port.should be_kind_of(Integer)
+        @server.local_address.ip_port.should.is_a?(Integer)
         @server.local_address.ip_port.should > 0
       end
 
@@ -90,7 +90,7 @@ describe 'TCPServer#initialize' do
     end
 
     it 'sets the port to the given port argument' do
-      @server.local_address.ip_port.should be_kind_of(Integer)
+      @server.local_address.ip_port.should.is_a?(Integer)
       @server.local_address.ip_port.should > 0
     end
 

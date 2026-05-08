@@ -186,7 +186,7 @@ describe "String#unpack with format 'm'" do
     end
 
     it "raises an ArgumentError for an invalid base64 character" do
-      -> { "dGV%zdA==".unpack("m0") }.should raise_error(ArgumentError)
+      -> { "dGV%zdA==".unpack("m0") }.should.raise(ArgumentError)
     end
   end
 end

@@ -4,7 +4,7 @@ require_relative 'shared/__FILE__'
 
 describe "The __FILE__ pseudo-variable" do
   it "raises a SyntaxError if assigned to" do
-    -> { eval("__FILE__ = 1") }.should raise_error(SyntaxError)
+    -> { eval("__FILE__ = 1") }.should.raise(SyntaxError)
   end
 
   it "equals (eval at __FILE__:__LINE__) inside an eval" do

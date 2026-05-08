@@ -4,7 +4,7 @@ require_relative 'fixtures/const_added'
 
 describe "Module#const_added" do
   it "is a private instance method" do
-    Module.should have_private_instance_method(:const_added)
+    Module.private_instance_methods(false).should.include?(:const_added)
   end
 
   it "returns nil in the default implementation" do

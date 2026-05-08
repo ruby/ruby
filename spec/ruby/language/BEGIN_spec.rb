@@ -15,7 +15,7 @@ describe "The BEGIN keyword" do
   end
 
   it "must appear in a top-level context" do
-    -> { eval "1.times { BEGIN { 1 } }" }.should raise_error(SyntaxError)
+    -> { eval "1.times { BEGIN { 1 } }" }.should.raise(SyntaxError)
   end
 
   it "uses top-level for self" do

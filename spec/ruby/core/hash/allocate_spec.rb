@@ -3,7 +3,7 @@ require_relative '../../spec_helper'
 describe "Hash.allocate" do
   it "returns an instance of Hash" do
     hsh = Hash.allocate
-    hsh.should be_an_instance_of(Hash)
+    hsh.should.instance_of?(Hash)
   end
 
   it "returns a fully-formed instance of Hash" do

@@ -3,7 +3,7 @@ require_relative '../spec_helper'
 with_feature :readline do
   describe "Readline::HISTORY.shift" do
     it "returns nil when the history is empty" do
-      Readline::HISTORY.shift.should be_nil
+      Readline::HISTORY.shift.should == nil
     end
 
     it "returns and removes the first item from the history" do

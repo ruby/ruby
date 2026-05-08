@@ -28,7 +28,7 @@ describe :kernel_sprintf, shared: true do
     it "raises TypeError exception if cannot convert to Integer" do
       -> {
         @method.call("%b", Object.new)
-      }.should raise_error(TypeError)
+      }.should.raise(TypeError)
     end
 
     ["b", "B"].each do |f|
@@ -122,7 +122,7 @@ describe :kernel_sprintf, shared: true do
     it "raises TypeError exception if cannot convert to Float" do
       -> {
         @method.call("%f", Object.new)
-      }.should raise_error(TypeError)
+      }.should.raise(TypeError)
     end
 
     {"e" => "e", "E" => "E"}.each_pair do |f, exp|
@@ -391,7 +391,7 @@ describe :kernel_sprintf, shared: true do
 
         -> {
           @method.call("%s", obj)
-        }.should raise_error(NoMethodError)
+        }.should.raise(NoMethodError)
       end
 
       it "formats a partial substring without including omitted characters" do
@@ -444,7 +444,7 @@ describe :kernel_sprintf, shared: true do
       it "alone raises an ArgumentError" do
         -> {
           @method.call("%")
-        }.should raise_error(ArgumentError)
+        }.should.raise(ArgumentError)
       end
 
       it "is escaped by %" do
@@ -551,7 +551,7 @@ describe :kernel_sprintf, shared: true do
       it "raises exception if argument number is bigger than actual arguments list" do
         -> {
           @method.call("%4$d", 1, 2, 3)
-        }.should raise_error(ArgumentError)
+        }.should.raise(ArgumentError)
       end
 
       it "ignores '-' sign" do
@@ -562,7 +562,7 @@ describe :kernel_sprintf, shared: true do
       it "raises ArgumentError exception when absolute and relative argument numbers are mixed" do
         -> {
           @method.call("%1$d %d", 1, 2)
-        }.should raise_error(ArgumentError)
+        }.should.raise(ArgumentError)
       end
     end
 
@@ -812,7 +812,7 @@ describe :kernel_sprintf, shared: true do
       it "raises ArgumentError when is mixed with width" do
         -> {
           @method.call("%*10d", 10, 112)
-        }.should raise_error(ArgumentError)
+        }.should.raise(ArgumentError)
       end
     end
   end
@@ -911,7 +911,7 @@ describe :kernel_sprintf, shared: true do
       it "cannot be mixed with unnamed style" do
         -> {
           @method.call("%d %<foo>d", 1, foo: "123")
-        }.should raise_error(ArgumentError)
+        }.should.raise(ArgumentError)
       end
     end
 
@@ -931,7 +931,7 @@ describe :kernel_sprintf, shared: true do
       it "cannot be mixed with unnamed style" do
         -> {
           @method.call("%d %{foo}", 1, foo: "123")
-        }.should raise_error(ArgumentError)
+        }.should.raise(ArgumentError)
       end
 
       it "respects Hash#default when there is no set key" do
@@ -942,15 +942,15 @@ describe :kernel_sprintf, shared: true do
       it "raises KeyError when Hash#default returns nil" do
         -> {
           @method.call("%{foo}", {})
-        }.should raise_error(KeyError, 'key{foo} not found')
+        }.should.raise(KeyError, 'key{foo} not found')
 
         -> {
           @method.call("%{foo}", Hash.new(nil))
-        }.should raise_error(KeyError, 'key{foo} not found')
+        }.should.raise(KeyError, 'key{foo} not found')
 
         -> {
           @method.call("%{foo}", Hash.new { nil })
-        }.should raise_error(KeyError, 'key{foo} not found')
+        }.should.raise(KeyError, 'key{foo} not found')
       end
 
       it "accepts a nil value for an existing key" do
@@ -978,21 +978,21 @@ describe :kernel_sprintf, shared: true do
     it "raises a KeyError" do
       -> {
         @method.call("%<foo>s", @object)
-      }.should raise_error(KeyError)
+      }.should.raise(KeyError)
     end
 
     it "sets the Hash as the receiver of KeyError" do
       -> {
         @method.call("%<foo>s", @object)
-      }.should raise_error(KeyError) { |err|
-        err.receiver.should equal(@object)
+      }.should.raise(KeyError) { |err|
+        err.receiver.should.equal?(@object)
       }
     end
 
     it "sets the unmatched key as the key of KeyError" do
       -> {
         @method.call("%<foo>s", @object)
-      }.should raise_error(KeyError) { |err|
+      }.should.raise(KeyError) { |err|
         err.key.to_s.should == 'foo'
       }
     end

@@ -97,6 +97,44 @@ class TestGemResolverGitSpecification < Gem::TestCase
     assert_path_exist File.join git_spec.spec.extension_dir, "b.rb"
   end
 
+  def test_install_no_build_extension
+    pend if Gem.java_platform?
+    pend "terminates on mswin" if vc_windows? && ruby_repo?
+    name, _, repository, = git_gem "a", 1 do |s|
+      s.extensions << "ext/extconf.rb"
+    end
+
+    Dir.chdir "git/a" do
+      FileUtils.mkdir_p "ext/lib"
+
+      File.open "ext/extconf.rb", "w" do |io|
+        io.puts 'require "mkmf"'
+        io.puts 'create_makefile "a"'
+      end
+
+      FileUtils.touch "ext/lib/b.rb"
+
+      system @git, "add", "ext/extconf.rb"
+      system @git, "add", "ext/lib/b.rb"
+
+      system @git, "commit", "--quiet", "-m", "Add extension files"
+    end
+
+    source = Gem::Source::Git.new name, repository, nil, true
+
+    spec = source.specs.first
+
+    git_spec = Gem::Resolver::GitSpecification.new @set, spec, source
+
+    use_ui @ui do
+      git_spec.install(build_extension: false)
+    end
+
+    assert_path_not_exist File.join(git_spec.spec.extension_dir, "b.rb")
+    assert_match "contains native extensions that were not built", @ui.error
+    assert_match "gem pristine #{git_spec.spec.name} --extensions", @ui.error
+  end
+
   def test_install_installed
     git_gem "a", 1
 

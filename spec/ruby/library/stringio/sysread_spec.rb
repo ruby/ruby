@@ -44,7 +44,7 @@ describe "StringIO#sysread when passed [length]" do
 
   it "raises an EOFError when self's position is at the end" do
     @io.pos = 7
-    -> { @io.sysread(10) }.should raise_error(EOFError)
+    -> { @io.sysread(10) }.should.raise(EOFError)
   end
 
   it "returns an empty String when length is 0" do

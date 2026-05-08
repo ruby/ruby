@@ -8,16 +8,16 @@ describe "IO::Buffer#private?" do
 
   it "is true for a buffer created with PRIVATE flag" do
     @buffer = IO::Buffer.new(12, IO::Buffer::INTERNAL | IO::Buffer::PRIVATE)
-    @buffer.private?.should be_true
+    @buffer.private?.should == true
   end
 
   it "is false for a buffer created without PRIVATE flag" do
     @buffer = IO::Buffer.new(12, IO::Buffer::INTERNAL)
-    @buffer.private?.should be_false
+    @buffer.private?.should == false
   end
 
   it "is false for a null buffer" do
     @buffer = IO::Buffer.new(0)
-    @buffer.private?.should be_false
+    @buffer.private?.should == false
   end
 end

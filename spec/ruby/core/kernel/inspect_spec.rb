@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "Kernel#inspect" do
   it "returns a String" do
-    Object.new.inspect.should be_an_instance_of(String)
+    Object.new.inspect.should.instance_of?(String)
   end
 
   it "does not call #to_s if it is defined" do
@@ -26,7 +26,7 @@ describe "Kernel#inspect" do
     class << obj
       undef_method :class
     end
-    obj.inspect.should be_kind_of(String)
+    obj.inspect.should.is_a?(String)
   end
 
   ruby_version_is "4.0" do
@@ -84,7 +84,7 @@ describe "Kernel#inspect" do
         private def instance_variables_to_inspect = {}
       end
 
-      ->{ obj.inspect }.should raise_error(TypeError, "Expected #instance_variables_to_inspect to return an Array or nil, but it returned Hash")
+      ->{ obj.inspect }.should.raise(TypeError, "Expected #instance_variables_to_inspect to return an Array or nil, but it returned Hash")
     end
   end
 end

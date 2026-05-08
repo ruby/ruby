@@ -4,7 +4,7 @@ require_relative '../fixtures/classes'
 describe 'Addrinfo.tcp' do
   SocketSpecs.each_ip_protocol do |family, ip_address|
     it 'returns an Addrinfo instance' do
-      Addrinfo.tcp(ip_address, 80).should be_an_instance_of(Addrinfo)
+      Addrinfo.tcp(ip_address, 80).should.instance_of?(Addrinfo)
     end
 
     it 'sets the IP address' do

@@ -149,7 +149,7 @@ describe "Dir.glob" do
   it "accepts a block and yields it with each elements" do
     ary = []
     ret = Dir.glob(["file_o*", "file_t*"]) { |t| ary << t }
-    ret.should be_nil
+    ret.should == nil
     ary.should == %w!file_one.ext file_two.ext!
   end
 

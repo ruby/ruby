@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 describe "Regexp#names" do
   it "returns an Array" do
-    /foo/.names.should be_an_instance_of(Array)
+    /foo/.names.should.instance_of?(Array)
   end
 
   it "returns an empty Array if there are no named captures" do
@@ -11,7 +11,7 @@ describe "Regexp#names" do
 
   it "returns each named capture as a String" do
     /n(?<cap>ee)d(?<ture>le)/.names.each do |name|
-      name.should be_an_instance_of(String)
+      name.should.instance_of?(String)
     end
   end
 

@@ -16,16 +16,16 @@ describe "Date#deconstruct_keys" do
   it "requires one argument" do
     -> {
       Date.new(2022, 10, 5).deconstruct_keys
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "it raises error when argument is neither nil nor array" do
     d = Date.new(2022, 10, 5)
 
-    -> { d.deconstruct_keys(1) }.should raise_error(TypeError, "wrong argument type Integer (expected Array or nil)")
-    -> { d.deconstruct_keys("asd") }.should raise_error(TypeError, "wrong argument type String (expected Array or nil)")
-    -> { d.deconstruct_keys(:x) }.should raise_error(TypeError, "wrong argument type Symbol (expected Array or nil)")
-    -> { d.deconstruct_keys({}) }.should raise_error(TypeError, "wrong argument type Hash (expected Array or nil)")
+    -> { d.deconstruct_keys(1) }.should.raise(TypeError, "wrong argument type Integer (expected Array or nil)")
+    -> { d.deconstruct_keys("asd") }.should.raise(TypeError, "wrong argument type String (expected Array or nil)")
+    -> { d.deconstruct_keys(:x) }.should.raise(TypeError, "wrong argument type Symbol (expected Array or nil)")
+    -> { d.deconstruct_keys({}) }.should.raise(TypeError, "wrong argument type Hash (expected Array or nil)")
   end
 
   it "returns {} when passed []" do

@@ -18,7 +18,7 @@ describe "String#unpack with directive 'w'" do
   it "raise ArgumentError for NULL bytes between directives" do
     -> {
       "\x01\x02\x03".unpack("w\x00w")
-    }.should raise_error(ArgumentError, /unknown unpack directive/)
+    }.should.raise(ArgumentError, /unknown unpack directive/)
   end
 
   it "ignores spaces between directives" do

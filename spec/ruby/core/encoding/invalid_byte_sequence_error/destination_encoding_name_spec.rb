@@ -8,8 +8,8 @@ describe "Encoding::InvalidByteSequenceError#destination_encoding_name" do
   end
 
   it "returns a String" do
-    @exception.destination_encoding_name.should be_an_instance_of(String)
-    @exception2.destination_encoding_name.should be_an_instance_of(String)
+    @exception.destination_encoding_name.should.instance_of?(String)
+    @exception2.destination_encoding_name.should.instance_of?(String)
   end
 
   it "is equal to the destination encoding name of the object that raised it" do

@@ -3,7 +3,7 @@ require_relative '../spec_helper'
 describe "A Symbol literal" do
   it "is a ':' followed by any number of valid characters" do
     a = :foo
-    a.should be_kind_of(Symbol)
+    a.should.is_a?(Symbol)
     a.inspect.should == ':foo'
   end
 
@@ -21,7 +21,7 @@ describe "A Symbol literal" do
       :_Foo,
       :&,
       :_9
-    ].each { |s| s.should be_kind_of(Symbol) }
+    ].each { |s| s.should.is_a?(Symbol) }
   end
 
   it "is a ':' followed by a single- or double-quoted string that may contain otherwise invalid characters" do
@@ -31,7 +31,7 @@ describe "A Symbol literal" do
       [:"foo #{1 + 1}", ':"foo 2"'],
       [:"foo\nbar",     ':"foo\nbar"'],
     ].each { |sym, str|
-      sym.should be_kind_of(Symbol)
+      sym.should.is_a?(Symbol)
       sym.inspect.should == str
     }
   end
@@ -42,22 +42,22 @@ describe "A Symbol literal" do
   end
 
   it "may contain '::' in the string" do
-    :'Some::Class'.should be_kind_of(Symbol)
+    :'Some::Class'.should.is_a?(Symbol)
   end
 
   it "is converted to a literal, unquoted representation if the symbol contains only valid characters" do
     a, b, c = :'foo', :'+', :'Foo__9'
-    a.should be_kind_of(Symbol)
+    a.should.is_a?(Symbol)
     a.inspect.should == ':foo'
-    b.should be_kind_of(Symbol)
+    b.should.is_a?(Symbol)
     b.inspect.should == ':+'
-    c.should be_kind_of(Symbol)
+    c.should.is_a?(Symbol)
     c.inspect.should == ':Foo__9'
   end
 
   it "can be created by the %s-delimited expression" do
     a, b = :'foo bar', %s{foo bar}
-    b.should be_kind_of(Symbol)
+    b.should.is_a?(Symbol)
     b.inspect.should == ':"foo bar"'
     b.should == a
   end
@@ -68,7 +68,7 @@ describe "A Symbol literal" do
       [:'a string', :'a string'],
       [:"#{var}", :"#{var}"]
     ].each { |a, b|
-      a.should equal(b)
+      a.should.equal?(b)
     }
   end
 
@@ -78,7 +78,7 @@ describe "A Symbol literal" do
 
   it "can be an empty string" do
     c = :''
-    c.should be_kind_of(Symbol)
+    c.should.is_a?(Symbol)
     c.inspect.should == ':""'
   end
 
@@ -101,7 +101,7 @@ describe "A Symbol literal" do
       ScratchPad.record []
       -> {
         eval 'ScratchPad << 1; :"\xC3"'
-      }.should raise_error(SyntaxError, /invalid symbol/)
+      }.should.raise(SyntaxError, /invalid symbol/)
       ScratchPad.recorded.should == []
     end
   end

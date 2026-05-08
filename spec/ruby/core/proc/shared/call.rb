@@ -70,21 +70,21 @@ describe :proc_call_on_proc_or_lambda, shared: true do
   it "raises an ArgumentError on excess arguments when self is a lambda" do
     -> {
       -> x { x }.send(@method, 1, 2)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
 
     -> {
       -> x { x }.send(@method, 1, 2, 3)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError on missing arguments when self is a lambda" do
     -> {
       -> x { x }.send(@method)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
 
     -> {
       -> x, y { [x,y] }.send(@method, 1)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "treats a single Array argument as a single argument when self is a lambda" do

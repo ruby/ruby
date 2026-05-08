@@ -93,11 +93,11 @@ describe "Socket::IPSocket#recvfrom" do
         end
 
         Thread.pass while t.status and t.status != "sleep"
-        t.status.should_not be_nil
+        t.status.should_not == nil
 
         @client.close
 
-        t.value.should be_nil
+        t.value.should == nil
       end
     end
 

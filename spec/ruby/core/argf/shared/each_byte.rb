@@ -18,14 +18,14 @@ describe :argf_each_byte, shared: true do
 
   it "returns self when passed a block" do
     argf [@file1_name, @file2_name] do
-      @argf.send(@method) {}.should equal(@argf)
+      @argf.send(@method) {}.should.equal?(@argf)
     end
   end
 
   it "returns an Enumerator when passed no block" do
     argf [@file1_name, @file2_name] do
       enum = @argf.send(@method)
-      enum.should be_an_instance_of(Enumerator)
+      enum.should.instance_of?(Enumerator)
 
       bytes = []
       enum.each { |b| bytes << b }
@@ -37,7 +37,7 @@ describe :argf_each_byte, shared: true do
     it "returns an Enumerator" do
       argf [@file1_name, @file2_name] do
         enum = @argf.send(@method)
-        enum.should be_an_instance_of(Enumerator)
+        enum.should.instance_of?(Enumerator)
 
         bytes = []
         enum.each { |b| bytes << b }

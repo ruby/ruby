@@ -13,25 +13,25 @@ describe "Set#keep_if" do
 
   it "keeps every element from self for which the passed block returns true" do
     @set.keep_if { |x| x.size != 3 }
-    @set.size.should eql(1)
+    @set.size.should.eql?(1)
 
-    @set.should_not include("one")
-    @set.should_not include("two")
-    @set.should include("three")
+    @set.should_not.include?("one")
+    @set.should_not.include?("two")
+    @set.should.include?("three")
   end
 
   it "returns self" do
-    @set.keep_if {}.should equal(@set)
+    @set.keep_if {}.should.equal?(@set)
   end
 
   it "returns an Enumerator when passed no block" do
     enum = @set.keep_if
-    enum.should be_an_instance_of(Enumerator)
+    enum.should.instance_of?(Enumerator)
 
     enum.each { |x| x.size != 3 }
 
-    @set.should_not include("one")
-    @set.should_not include("two")
-    @set.should include("three")
+    @set.should_not.include?("one")
+    @set.should_not.include?("two")
+    @set.should.include?("three")
   end
 end

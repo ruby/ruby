@@ -18,7 +18,7 @@ describe :argf_fileno, shared: true do
   it "raises an ArgumentError when called on a closed stream" do
     argf [@file1] do
       @argf.read
-      -> { @argf.send(@method) }.should raise_error(ArgumentError)
+      -> { @argf.send(@method) }.should.raise(ArgumentError)
     end
   end
 end

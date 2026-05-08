@@ -11,8 +11,8 @@ describe "IO::Buffer#resize" do
       @buffer = IO::Buffer.new(4)
       @buffer.resize(IO::Buffer::PAGE_SIZE)
       @buffer.size.should == IO::Buffer::PAGE_SIZE
-      @buffer.internal?.should be_true
-      @buffer.mapped?.should be_false
+      @buffer.internal?.should == true
+      @buffer.mapped?.should == false
     end
 
     platform_is :linux do
@@ -20,8 +20,8 @@ describe "IO::Buffer#resize" do
         @buffer = IO::Buffer.new(IO::Buffer::PAGE_SIZE, IO::Buffer::MAPPED)
         @buffer.resize(4)
         @buffer.size.should == 4
-        @buffer.internal?.should be_false
-        @buffer.mapped?.should be_true
+        @buffer.internal?.should == false
+        @buffer.mapped?.should == true
       end
     end
 
@@ -30,8 +30,8 @@ describe "IO::Buffer#resize" do
         @buffer = IO::Buffer.new(IO::Buffer::PAGE_SIZE, IO::Buffer::MAPPED)
         @buffer.resize(4)
         @buffer.size.should == 4
-        @buffer.internal?.should be_true
-        @buffer.mapped?.should be_false
+        @buffer.internal?.should == true
+        @buffer.mapped?.should == false
       end
     end
   end
@@ -40,7 +40,7 @@ describe "IO::Buffer#resize" do
     it "disallows resizing shared buffer, raising IO::Buffer::AccessError" do
       File.open(__FILE__, "r+") do |file|
         @buffer = IO::Buffer.map(file)
-        -> { @buffer.resize(10) }.should raise_error(IO::Buffer::AccessError, "Cannot resize external buffer!")
+        -> { @buffer.resize(10) }.should.raise(IO::Buffer::AccessError, "Cannot resize external buffer!")
       end
     end
 
@@ -61,14 +61,14 @@ describe "IO::Buffer#resize" do
     context "without a block" do
       it "disallows resizing, raising IO::Buffer::AccessError" do
         @buffer = IO::Buffer.for(+"test")
-        -> { @buffer.resize(10) }.should raise_error(IO::Buffer::AccessError, "Cannot resize external buffer!")
+        -> { @buffer.resize(10) }.should.raise(IO::Buffer::AccessError, "Cannot resize external buffer!")
       end
     end
 
     context "with a block" do
       it "disallows resizing, raising IO::Buffer::AccessError" do
         IO::Buffer.for(+'test') do |buffer|
-          -> { buffer.resize(10) }.should raise_error(IO::Buffer::AccessError, "Cannot resize external buffer!")
+          -> { buffer.resize(10) }.should.raise(IO::Buffer::AccessError, "Cannot resize external buffer!")
         end
       end
     end
@@ -77,7 +77,7 @@ describe "IO::Buffer#resize" do
   context "with a String-backed buffer created with .string" do
     it "disallows resizing, raising IO::Buffer::AccessError" do
       IO::Buffer.string(4) do |buffer|
-        -> { buffer.resize(10) }.should raise_error(IO::Buffer::AccessError, "Cannot resize external buffer!")
+        -> { buffer.resize(10) }.should.raise(IO::Buffer::AccessError, "Cannot resize external buffer!")
       end
     end
   end
@@ -87,8 +87,8 @@ describe "IO::Buffer#resize" do
       @buffer = IO::Buffer.new(0)
       @buffer.resize(IO::Buffer::PAGE_SIZE)
       @buffer.size.should == IO::Buffer::PAGE_SIZE
-      @buffer.internal?.should be_false
-      @buffer.mapped?.should be_true
+      @buffer.internal?.should == false
+      @buffer.mapped?.should == true
     end
 
     it "allows resizing after a free, creating a regular buffer according to new size" do
@@ -96,15 +96,15 @@ describe "IO::Buffer#resize" do
       @buffer.free
       @buffer.resize(10)
       @buffer.size.should == 10
-      @buffer.internal?.should be_true
-      @buffer.mapped?.should be_false
+      @buffer.internal?.should == true
+      @buffer.mapped?.should == false
     end
   end
 
   it "allows resizing to 0, freeing memory" do
     @buffer = IO::Buffer.new(4)
     @buffer.resize(0)
-    @buffer.null?.should be_true
+    @buffer.null?.should == true
   end
 
   it "can be called repeatedly" do
@@ -128,19 +128,19 @@ describe "IO::Buffer#resize" do
   it "is disallowed while locked, raising IO::Buffer::LockedError" do
     @buffer = IO::Buffer.new(4)
     @buffer.locked do
-      -> { @buffer.resize(10) }.should raise_error(IO::Buffer::LockedError, "Cannot resize locked buffer!")
+      -> { @buffer.resize(10) }.should.raise(IO::Buffer::LockedError, "Cannot resize locked buffer!")
     end
   end
 
   it "raises ArgumentError if size is negative" do
     @buffer = IO::Buffer.new(4)
-    -> { @buffer.resize(-1) }.should raise_error(ArgumentError, "Size can't be negative!")
+    -> { @buffer.resize(-1) }.should.raise(ArgumentError, "Size can't be negative!")
   end
 
   it "raises TypeError if size is not an Integer" do
     @buffer = IO::Buffer.new(4)
-    -> { @buffer.resize(nil) }.should raise_error(TypeError, "not an Integer")
-    -> { @buffer.resize(10.0) }.should raise_error(TypeError, "not an Integer")
+    -> { @buffer.resize(nil) }.should.raise(TypeError, "not an Integer")
+    -> { @buffer.resize(10.0) }.should.raise(TypeError, "not an Integer")
   end
 
   context "with a slice of a buffer" do

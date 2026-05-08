@@ -4,7 +4,7 @@ require_relative 'fixtures/classes'
 
 describe "String#inspect" do
   it "does not return a subclass instance" do
-    StringSpecs::MyString.new.inspect.should be_an_instance_of(String)
+    StringSpecs::MyString.new.inspect.should.instance_of?(String)
   end
 
   it "returns a string with special characters replaced with \\<char> notation" do

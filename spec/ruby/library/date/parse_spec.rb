@@ -23,7 +23,7 @@ describe "Date#parse" do
 
   # Specs using numbers
   it "throws an argument error for a single digit" do
-    ->{ Date.parse("1") }.should raise_error(ArgumentError)
+    ->{ Date.parse("1") }.should.raise(ArgumentError)
   end
 
   it "parses DD as month day number" do
@@ -66,8 +66,8 @@ describe "Date#parse" do
   end
 
   it "raises a TypeError trying to parse non-String-like object" do
-    -> { Date.parse(1) }.should raise_error(TypeError)
-    -> { Date.parse([]) }.should raise_error(TypeError)
+    -> { Date.parse(1) }.should.raise(TypeError)
+    -> { Date.parse([]) }.should.raise(TypeError)
   end
 
   it "coerces using to_str" do

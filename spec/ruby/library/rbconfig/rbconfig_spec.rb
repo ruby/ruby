@@ -4,8 +4,8 @@ require 'rbconfig'
 describe 'RbConfig::CONFIG' do
   it 'values are all strings' do
     RbConfig::CONFIG.each do |k, v|
-      k.should be_kind_of String
-      v.should be_kind_of String
+      k.should.is_a? String
+      v.should.is_a? String
     end
   end
 
@@ -32,7 +32,7 @@ describe 'RbConfig::CONFIG' do
 
     it "['sitelibdir'] is set and is part of $LOAD_PATH" do
       sitelibdir = RbConfig::CONFIG['sitelibdir']
-      sitelibdir.should be_kind_of String
+      sitelibdir.should.is_a? String
       $LOAD_PATH.map{|path| File.realpath(path) rescue path }.should.include? sitelibdir
     end
   end
@@ -80,7 +80,7 @@ describe 'RbConfig::CONFIG' do
       ar = RbConfig::CONFIG.fetch('AR')
       out = `#{ar} --version`
       $?.should.success?
-      out.should_not be_empty
+      out.should_not.empty?
     end
 
     it "['STRIP'] exists and can be executed" do

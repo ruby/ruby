@@ -3,7 +3,7 @@ require_relative '../../../spec_helper'
 describe :encoding_name, shared: true do
   it "returns a String" do
     Encoding.list.each do |e|
-      e.send(@method).should be_an_instance_of(String)
+      e.send(@method).should.instance_of?(String)
     end
   end
 

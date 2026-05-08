@@ -17,8 +17,8 @@ describe "Enumerator::Lazy#chunk" do
 
   it "returns a new instance of Enumerator::Lazy" do
     ret = @yieldsmixed.chunk {}
-    ret.should be_an_instance_of(Enumerator::Lazy)
-    ret.should_not equal(@yieldsmixed)
+    ret.should.instance_of?(Enumerator::Lazy)
+    ret.should_not.equal?(@yieldsmixed)
   end
 
   it "sets #size to nil" do
@@ -27,7 +27,7 @@ describe "Enumerator::Lazy#chunk" do
 
   it "returns an Enumerator if called without a block" do
     chunk = @yieldsmixed.chunk
-    chunk.should be_an_instance_of(Enumerator::Lazy)
+    chunk.should.instance_of?(Enumerator::Lazy)
 
     res = chunk.each { |v| true }.force
     res.should == [[true, EnumeratorLazySpecs::YieldsMixed.gathered_yields]]

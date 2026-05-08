@@ -5,7 +5,7 @@ describe :module_class_exec, shared: true do
         'foo'
       end
     end
-    -> {42.foo}.should raise_error(NoMethodError)
+    -> {42.foo}.should.raise(NoMethodError)
   end
 
   it "defines method in the receiver's scope" do
@@ -19,11 +19,17 @@ describe :module_class_exec, shared: true do
   end
 
   it "raises a LocalJumpError when no block is given" do
-    -> { ModuleSpecs::Subclass.send(@method) }.should raise_error(LocalJumpError)
+    -> { ModuleSpecs::Subclass.send(@method) }.should.raise(LocalJumpError)
   end
 
   it "passes arguments to the block" do
     a = ModuleSpecs::Subclass
-    a.send(@method, 1) { |b| b }.should equal(1)
+    a.send(@method, 1) { |b| b }.should.equal?(1)
+  end
+
+  describe "with optional argument" do
+    it "does not destructure a single array argument" do
+      ModuleSpecs::Subclass.send(@method, [1, 2, 3]) { |a = 99| a }.should == [1, 2, 3]
+    end
   end
 end

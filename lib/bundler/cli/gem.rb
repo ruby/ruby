@@ -288,7 +288,7 @@ module Bundler
       open_editor(options["edit"], target.join("#{name}.gemspec")) if options[:edit]
 
       Bundler.ui.info "\nGem '#{name}' was successfully created. " \
-        "For more information on making a RubyGem visit https://bundler.io/guides/creating_gem.html"
+        "For more information on making a RubyGem visit https://guides.rubygems.org/make-your-own-gem/"
     end
 
     private

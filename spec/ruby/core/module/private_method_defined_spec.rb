@@ -34,25 +34,25 @@ describe "Module#private_method_defined?" do
   it "raises a TypeError if passed an Integer" do
     -> do
       ModuleSpecs::CountsMixin.private_method_defined?(1)
-    end.should raise_error(TypeError)
+    end.should.raise(TypeError)
   end
 
   it "raises a TypeError if passed nil" do
     -> do
       ModuleSpecs::CountsMixin.private_method_defined?(nil)
-    end.should raise_error(TypeError)
+    end.should.raise(TypeError)
   end
 
   it "raises a TypeError if passed false" do
     -> do
       ModuleSpecs::CountsMixin.private_method_defined?(false)
-    end.should raise_error(TypeError)
+    end.should.raise(TypeError)
   end
 
   it "raises a TypeError if passed an object that does not defined #to_str" do
     -> do
       ModuleSpecs::CountsMixin.private_method_defined?(mock('x'))
-    end.should raise_error(TypeError)
+    end.should.raise(TypeError)
   end
 
   it "raises a TypeError if passed an object that defines #to_sym" do
@@ -61,7 +61,7 @@ describe "Module#private_method_defined?" do
 
     -> do
       ModuleSpecs::CountsMixin.private_method_defined?(sym)
-    end.should raise_error(TypeError)
+    end.should.raise(TypeError)
   end
 
   it "calls #to_str to convert an Object" do

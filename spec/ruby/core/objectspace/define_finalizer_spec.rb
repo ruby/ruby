@@ -13,7 +13,7 @@ describe "ObjectSpace.define_finalizer" do
   it "raises an ArgumentError if the action does not respond to call" do
     -> {
       ObjectSpace.define_finalizer(Object.new, mock("ObjectSpace.define_finalizer no #call"))
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "accepts an object and a proc" do
@@ -42,7 +42,7 @@ describe "ObjectSpace.define_finalizer" do
   it "raises ArgumentError trying to define a finalizer on a non-reference" do
     -> {
       ObjectSpace.define_finalizer(:blah) { 1 }
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   # see [ruby-core:24095]
@@ -57,7 +57,7 @@ describe "ObjectSpace.define_finalizer" do
       exit 0
     RUBY
 
-    ruby_exe(code, :args => "2>&1").should include("finalizer run\n")
+    ruby_exe(code, :args => "2>&1").should.include?("finalizer run\n")
   end
 
   it "warns if the finalizer has the object as the receiver" do
@@ -73,7 +73,7 @@ describe "ObjectSpace.define_finalizer" do
       exit 0
     RUBY
 
-    ruby_exe(code, :args => "2>&1").should include("warning: finalizer references object to be finalized\n")
+    ruby_exe(code, :args => "2>&1").should.include?("warning: finalizer references object to be finalized\n")
   end
 
   it "warns if the finalizer is a method bound to the receiver" do
@@ -90,7 +90,7 @@ describe "ObjectSpace.define_finalizer" do
       exit 0
     RUBY
 
-    ruby_exe(code, :args => "2>&1").should include("warning: finalizer references object to be finalized\n")
+    ruby_exe(code, :args => "2>&1").should.include?("warning: finalizer references object to be finalized\n")
   end
 
   it "warns if the finalizer was a block in the receiver" do
@@ -106,7 +106,7 @@ describe "ObjectSpace.define_finalizer" do
       exit 0
     RUBY
 
-    ruby_exe(code, :args => "2>&1").should include("warning: finalizer references object to be finalized\n")
+    ruby_exe(code, :args => "2>&1").should.include?("warning: finalizer references object to be finalized\n")
   end
 
   it "calls a finalizer at exit even if it is self-referencing" do
@@ -117,7 +117,7 @@ describe "ObjectSpace.define_finalizer" do
       exit 0
     RUBY
 
-    ruby_exe(code).should include("finalizer run\n")
+    ruby_exe(code).should.include?("finalizer run\n")
   end
 
   it "calls a finalizer at exit even if it is indirectly self-referencing" do
@@ -136,7 +136,7 @@ describe "ObjectSpace.define_finalizer" do
       exit 0
     RUBY
 
-    ruby_exe(code, :args => "2>&1").should include("finalizer run\n")
+    ruby_exe(code, :args => "2>&1").should.include?("finalizer run\n")
   end
 
   it "calls a finalizer defined in a finalizer running at exit" do
@@ -152,7 +152,7 @@ describe "ObjectSpace.define_finalizer" do
       exit 0
     RUBY
 
-    ruby_exe(code, :args => "2>&1").should include("finalizer 2 run\n")
+    ruby_exe(code, :args => "2>&1").should.include?("finalizer 2 run\n")
   end
 
   it "allows multiple finalizers with different 'callables' to be defined" do
@@ -199,7 +199,9 @@ describe "ObjectSpace.define_finalizer" do
         ObjectSpace.define_finalizer(Object.new) { raise "finalizing" }
       RUBY
 
-      ruby_exe(code, args: "2>&1").should include("warning: Exception in finalizer", "finalizing")
+      out = ruby_exe(code, args: "2>&1")
+      out.should.include?("warning: Exception in finalizer")
+      out.should.include?("finalizing")
     end
   end
 

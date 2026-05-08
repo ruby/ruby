@@ -36,7 +36,7 @@ describe "Hash#[]" do
     b = h[:b]
     a << "bar"
 
-    a.should equal(b)
+    a.should.equal?(b)
     a.should == "foobar"
     b.should == "foobar"
   end

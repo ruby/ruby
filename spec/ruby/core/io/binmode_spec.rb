@@ -13,11 +13,11 @@ describe "IO#binmode" do
 
   it "returns self" do
     @io = new_io(@name)
-    @io.binmode.should equal(@io)
+    @io.binmode.should.equal?(@io)
   end
 
   it "raises an IOError on closed stream" do
-    -> { IOSpecs.closed_io.binmode }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.binmode }.should.raise(IOError)
   end
 
   it "sets external encoding to binary" do
@@ -47,9 +47,9 @@ describe "IO#binmode?" do
   end
 
   it "is true after a call to IO#binmode" do
-    @file.binmode?.should be_false
+    @file.binmode?.should == false
     @file.binmode
-    @file.binmode?.should be_true
+    @file.binmode?.should == true
   end
 
   it "propagates to dup'ed IO objects" do
@@ -59,6 +59,6 @@ describe "IO#binmode?" do
   end
 
   it "raises an IOError on closed stream" do
-    -> { IOSpecs.closed_io.binmode? }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.binmode? }.should.raise(IOError)
   end
 end

@@ -5,7 +5,7 @@ source "https://rubygems.org"
 gem "test-unit", "~> 3.0"
 gem "test-unit-ruby-core"
 gem "rake", "~> 13.1"
-gem "rb_sys"
+gem "rb_sys", ">= 0.9.127"
 
 gem "turbo_tests", "~> 2.2.3"
 gem "parallel_tests", "~> 4.10.1"

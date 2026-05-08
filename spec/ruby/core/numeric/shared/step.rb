@@ -13,7 +13,7 @@ describe :numeric_step, shared: true do
 
   it "defaults to step = 1" do
     @step.call(1, 5, &@prc)
-    ScratchPad.recorded.should eql [1, 2, 3, 4, 5]
+    ScratchPad.recorded.should.eql? [1, 2, 3, 4, 5]
   end
 
   it "defaults to an infinite limit with a step size of 1 for Integers" do
@@ -26,35 +26,35 @@ describe :numeric_step, shared: true do
 
   describe "when self, stop and step are Integers" do
     it "yields only Integers" do
-      @step.call(1, 5, 1) { |x| x.should be_an_instance_of(Integer) }
+      @step.call(1, 5, 1) { |x| x.should.instance_of?(Integer) }
     end
 
     describe "with a positive step" do
       it "yields while increasing self by step until stop is reached" do
         @step.call(1, 5, 1, &@prc)
-        ScratchPad.recorded.should eql [1, 2, 3, 4, 5]
+        ScratchPad.recorded.should.eql? [1, 2, 3, 4, 5]
       end
 
       it "yields once when self equals stop" do
         @step.call(1, 1, 1, &@prc)
-        ScratchPad.recorded.should eql [1]
+        ScratchPad.recorded.should.eql? [1]
       end
 
       it "does not yield when self is greater than stop" do
         @step.call(2, 1, 1, &@prc)
-        ScratchPad.recorded.should eql []
+        ScratchPad.recorded.should.eql? []
       end
     end
 
     describe "with a negative step" do
       it "yields while decreasing self by step until stop is reached" do
         @step.call(5, 1, -1, &@prc)
-        ScratchPad.recorded.should eql [5, 4, 3, 2, 1]
+        ScratchPad.recorded.should.eql? [5, 4, 3, 2, 1]
       end
 
       it "yields once when self equals stop" do
         @step.call(5, 5, -1, &@prc)
-        ScratchPad.recorded.should eql [5]
+        ScratchPad.recorded.should.eql? [5]
       end
 
       it "does not yield when self is less than stop" do
@@ -66,26 +66,26 @@ describe :numeric_step, shared: true do
 
   describe "when at least one of self, stop or step is a Float" do
     it "yields Floats even if only self is a Float" do
-      @step.call(1.5, 5, 1) { |x| x.should be_an_instance_of(Float) }
+      @step.call(1.5, 5, 1) { |x| x.should.instance_of?(Float) }
     end
 
     it "yields Floats even if only stop is a Float" do
-      @step.call(1, 5.0, 1) { |x| x.should be_an_instance_of(Float) }
+      @step.call(1, 5.0, 1) { |x| x.should.instance_of?(Float) }
     end
 
     it "yields Floats even if only step is a Float" do
-      @step.call(1, 5, 1.0) { |x| x.should be_an_instance_of(Float) }
+      @step.call(1, 5, 1.0) { |x| x.should.instance_of?(Float) }
     end
 
     describe "with a positive step" do
       it "yields while increasing self by step while < stop" do
         @step.call(1.5, 5, 1, &@prc)
-        ScratchPad.recorded.should eql [1.5, 2.5, 3.5, 4.5]
+        ScratchPad.recorded.should.eql? [1.5, 2.5, 3.5, 4.5]
       end
 
       it "yields once when self equals stop" do
         @step.call(1.5, 1.5, 1, &@prc)
-        ScratchPad.recorded.should eql [1.5]
+        ScratchPad.recorded.should.eql? [1.5]
       end
 
       it "does not yield when self is greater than stop" do
@@ -96,19 +96,19 @@ describe :numeric_step, shared: true do
       it "is careful about not yielding a value greater than limit" do
         # As 9*1.3+1.0 == 12.700000000000001 > 12.7, we test:
         @step.call(1.0, 12.7, 1.3, &@prc)
-        ScratchPad.recorded.should eql [1.0, 2.3, 3.6, 4.9, 6.2, 7.5, 8.8, 10.1, 11.4, 12.7]
+        ScratchPad.recorded.should.eql? [1.0, 2.3, 3.6, 4.9, 6.2, 7.5, 8.8, 10.1, 11.4, 12.7]
       end
     end
 
     describe "with a negative step" do
       it "yields while decreasing self by step while self > stop" do
         @step.call(5, 1.5, -1, &@prc)
-        ScratchPad.recorded.should eql [5.0, 4.0, 3.0, 2.0]
+        ScratchPad.recorded.should.eql? [5.0, 4.0, 3.0, 2.0]
       end
 
       it "yields once when self equals stop" do
         @step.call(1.5, 1.5, -1, &@prc)
-        ScratchPad.recorded.should eql [1.5]
+        ScratchPad.recorded.should.eql? [1.5]
       end
 
       it "does not yield when self is less than stop" do
@@ -119,24 +119,24 @@ describe :numeric_step, shared: true do
       it "is careful about not yielding a value smaller than limit" do
         # As -9*1.3-1.0 == -12.700000000000001 < -12.7, we test:
         @step.call(-1.0, -12.7, -1.3, &@prc)
-        ScratchPad.recorded.should eql [-1.0, -2.3, -3.6, -4.9, -6.2, -7.5, -8.8, -10.1, -11.4, -12.7]
+        ScratchPad.recorded.should.eql? [-1.0, -2.3, -3.6, -4.9, -6.2, -7.5, -8.8, -10.1, -11.4, -12.7]
       end
     end
 
     describe "with a positive Infinity step" do
       it "yields once if self < stop" do
         @step.call(42, 100, infinity_value, &@prc)
-        ScratchPad.recorded.should eql [42.0]
+        ScratchPad.recorded.should.eql? [42.0]
       end
 
       it "yields once when stop is Infinity" do
         @step.call(42, infinity_value, infinity_value, &@prc)
-        ScratchPad.recorded.should eql [42.0]
+        ScratchPad.recorded.should.eql? [42.0]
       end
 
       it "yields once when self equals stop" do
         @step.call(42, 42, infinity_value, &@prc)
-        ScratchPad.recorded.should eql [42.0]
+        ScratchPad.recorded.should.eql? [42.0]
       end
 
       it "yields once when self and stop are Infinity" do
@@ -159,17 +159,17 @@ describe :numeric_step, shared: true do
     describe "with a negative Infinity step" do
       it "yields once if self > stop" do
         @step.call(42, 6, -infinity_value, &@prc)
-        ScratchPad.recorded.should eql [42.0]
+        ScratchPad.recorded.should.eql? [42.0]
       end
 
       it "yields once if stop is -Infinity" do
         @step.call(42, -infinity_value, -infinity_value, &@prc)
-        ScratchPad.recorded.should eql [42.0]
+        ScratchPad.recorded.should.eql? [42.0]
       end
 
       it "yields once when self equals stop" do
         @step.call(42, 42, -infinity_value, &@prc)
-        ScratchPad.recorded.should eql [42.0]
+        ScratchPad.recorded.should.eql? [42.0]
       end
 
       it "yields once when self and stop are Infinity" do
@@ -226,60 +226,60 @@ describe :numeric_step, shared: true do
   describe "when step is a String" do
     describe "with self and stop as Integers" do
       it "raises an ArgumentError when step is a numeric representation" do
-        -> { @step.call(1, 5, "1") {} }.should raise_error(ArgumentError)
-        -> { @step.call(1, 5, "0.1") {} }.should raise_error(ArgumentError)
-        -> { @step.call(1, 5, "1/3") {} }.should raise_error(ArgumentError)
+        -> { @step.call(1, 5, "1") {} }.should.raise(ArgumentError)
+        -> { @step.call(1, 5, "0.1") {} }.should.raise(ArgumentError)
+        -> { @step.call(1, 5, "1/3") {} }.should.raise(ArgumentError)
       end
       it "raises an ArgumentError with step as an alphanumeric string" do
-        -> { @step.call(1, 5, "foo") {} }.should raise_error(ArgumentError)
+        -> { @step.call(1, 5, "foo") {} }.should.raise(ArgumentError)
       end
     end
 
     describe "with self and stop as Floats" do
       it "raises an ArgumentError when step is a numeric representation" do
-        -> { @step.call(1.1, 5.1, "1") {} }.should raise_error(ArgumentError)
-        -> { @step.call(1.1, 5.1, "0.1") {} }.should raise_error(ArgumentError)
-        -> { @step.call(1.1, 5.1, "1/3") {} }.should raise_error(ArgumentError)
+        -> { @step.call(1.1, 5.1, "1") {} }.should.raise(ArgumentError)
+        -> { @step.call(1.1, 5.1, "0.1") {} }.should.raise(ArgumentError)
+        -> { @step.call(1.1, 5.1, "1/3") {} }.should.raise(ArgumentError)
       end
       it "raises an ArgumentError with step as an alphanumeric string" do
-        -> { @step.call(1.1, 5.1, "foo") {} }.should raise_error(ArgumentError)
+        -> { @step.call(1.1, 5.1, "foo") {} }.should.raise(ArgumentError)
       end
     end
   end
 
   it "does not rescue ArgumentError exceptions" do
-    -> { @step.call(1, 2) { raise ArgumentError, "" }}.should raise_error(ArgumentError)
+    -> { @step.call(1, 2) { raise ArgumentError, "" }}.should.raise(ArgumentError)
   end
 
   it "does not rescue TypeError exceptions" do
-    -> { @step.call(1, 2) { raise TypeError, "" } }.should raise_error(TypeError)
+    -> { @step.call(1, 2) { raise TypeError, "" } }.should.raise(TypeError)
   end
 
   describe "when no block is given" do
     step_enum_class = Enumerator::ArithmeticSequence
 
     it "returns an #{step_enum_class} when not passed a block and self > stop" do
-      @step.call(1, 0, 2).should be_an_instance_of(step_enum_class)
+      @step.call(1, 0, 2).should.instance_of?(step_enum_class)
     end
 
     it "returns an #{step_enum_class} when not passed a block and self < stop" do
-      @step.call(1, 2, 3).should be_an_instance_of(step_enum_class)
+      @step.call(1, 2, 3).should.instance_of?(step_enum_class)
     end
 
     it "returns an #{step_enum_class} that uses the given step" do
-      @step.call(0, 5, 2).to_a.should eql [0, 2, 4]
+      @step.call(0, 5, 2).to_a.should.eql? [0, 2, 4]
     end
 
     describe "when step is a String" do
       describe "with self and stop as Integers" do
         it "returns an Enumerator" do
-          @step.call(1, 5, "foo").should be_an_instance_of(Enumerator)
+          @step.call(1, 5, "foo").should.instance_of?(Enumerator)
         end
       end
 
       describe "with self and stop as Floats" do
         it "returns an Enumerator" do
-          @step.call(1.1, 5.1, "foo").should be_an_instance_of(Enumerator)
+          @step.call(1.1, 5.1, "foo").should.instance_of?(Enumerator)
         end
       end
     end
@@ -289,23 +289,23 @@ describe :numeric_step, shared: true do
         describe "when step is a String" do
           describe "with self and stop as Integers" do
             it "raises an ArgumentError when step is a numeric representation" do
-              -> { @step.call(1, 5, "1").size }.should raise_error(ArgumentError)
-              -> { @step.call(1, 5, "0.1").size }.should raise_error(ArgumentError)
-              -> { @step.call(1, 5, "1/3").size }.should raise_error(ArgumentError)
+              -> { @step.call(1, 5, "1").size }.should.raise(ArgumentError)
+              -> { @step.call(1, 5, "0.1").size }.should.raise(ArgumentError)
+              -> { @step.call(1, 5, "1/3").size }.should.raise(ArgumentError)
             end
             it "raises an ArgumentError with step as an alphanumeric string" do
-              -> { @step.call(1, 5, "foo").size }.should raise_error(ArgumentError)
+              -> { @step.call(1, 5, "foo").size }.should.raise(ArgumentError)
             end
           end
 
           describe "with self and stop as Floats" do
             it "raises an ArgumentError when step is a numeric representation" do
-              -> { @step.call(1.1, 5.1, "1").size }.should raise_error(ArgumentError)
-              -> { @step.call(1.1, 5.1, "0.1").size }.should raise_error(ArgumentError)
-              -> { @step.call(1.1, 5.1, "1/3").size }.should raise_error(ArgumentError)
+              -> { @step.call(1.1, 5.1, "1").size }.should.raise(ArgumentError)
+              -> { @step.call(1.1, 5.1, "0.1").size }.should.raise(ArgumentError)
+              -> { @step.call(1.1, 5.1, "1/3").size }.should.raise(ArgumentError)
             end
             it "raises an ArgumentError with step as an alphanumeric string" do
-              -> { @step.call(1.1, 5.1, "foo").size }.should raise_error(ArgumentError)
+              -> { @step.call(1.1, 5.1, "foo").size }.should.raise(ArgumentError)
             end
           end
         end

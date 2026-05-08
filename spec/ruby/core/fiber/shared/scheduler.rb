@@ -8,7 +8,7 @@ describe :scheduler, shared: true do
       end
       -> {
         suppress_warning { Fiber.set_scheduler(scheduler) }
-      }.should raise_error(ArgumentError, /Scheduler must implement ##{missing_method}/)
+      }.should.raise(ArgumentError, /Scheduler must implement ##{missing_method}/)
     end
   end
 
@@ -40,12 +40,12 @@ describe :scheduler, shared: true do
     end
     suppress_warning { Fiber.set_scheduler(scheduler) }
     Fiber.set_scheduler(nil)
-    Fiber.scheduler.should be_nil
+    Fiber.scheduler.should == nil
   end
 
   it "can assign a nil scheduler multiple times" do
     Fiber.set_scheduler(nil)
     Fiber.set_scheduler(nil)
-    Fiber.scheduler.should be_nil
+    Fiber.scheduler.should == nil
   end
 end

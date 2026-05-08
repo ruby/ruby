@@ -5,11 +5,11 @@ platform_is :windows do
   describe "WIN32OLE.connect" do
     it "creates WIN32OLE object given valid argument" do
       obj = WIN32OLE.connect("winmgmts:")
-      obj.should be_kind_of WIN32OLE
+      obj.should.is_a? WIN32OLE
     end
 
     it "raises TypeError when given invalid argument" do
-      -> { WIN32OLE.connect 1 }.should raise_error TypeError
+      -> { WIN32OLE.connect 1 }.should.raise TypeError
     end
 
   end

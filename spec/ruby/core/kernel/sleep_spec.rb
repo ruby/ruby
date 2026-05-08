@@ -3,11 +3,11 @@ require_relative '../fiber/fixtures/scheduler'
 
 describe "Kernel#sleep" do
   it "is a private method" do
-    Kernel.should have_private_instance_method(:sleep)
+    Kernel.private_instance_methods(false).should.include?(:sleep)
   end
 
   it "returns an Integer" do
-    sleep(0.001).should be_kind_of(Integer)
+    sleep(0.001).should.is_a?(Integer)
   end
 
   it "accepts a Float" do
@@ -29,12 +29,12 @@ describe "Kernel#sleep" do
   end
 
   it "raises an ArgumentError when passed a negative duration" do
-    -> { sleep(-0.1) }.should raise_error(ArgumentError)
-    -> { sleep(-1) }.should raise_error(ArgumentError)
+    -> { sleep(-0.1) }.should.raise(ArgumentError)
+    -> { sleep(-1) }.should.raise(ArgumentError)
   end
 
   it "raises a TypeError when passed a String" do
-    -> { sleep('2')   }.should raise_error(TypeError)
+    -> { sleep('2')   }.should.raise(TypeError)
   end
 
   it "pauses execution indefinitely if not given a duration" do

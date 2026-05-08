@@ -38,38 +38,38 @@ describe "String#unicode_normalized?" do
   end
 
   it "raises an Encoding::CompatibilityError if the string is not in an unicode encoding" do
-    -> { @nfc_normalized_str.force_encoding("ISO-8859-1").unicode_normalized? }.should raise_error(Encoding::CompatibilityError)
+    -> { @nfc_normalized_str.force_encoding("ISO-8859-1").unicode_normalized? }.should.raise(Encoding::CompatibilityError)
   end
 
   it "raises an ArgumentError if the specified form is invalid" do
-    -> { @nfc_normalized_str.unicode_normalized?(:invalid_form) }.should raise_error(ArgumentError)
+    -> { @nfc_normalized_str.unicode_normalized?(:invalid_form) }.should.raise(ArgumentError)
   end
 
   it "returns true if str is in Unicode normalization form (nfc)" do
     str = "a\u0300"
-    str.unicode_normalized?(:nfc).should be_false
+    str.unicode_normalized?(:nfc).should == false
     str.unicode_normalize!(:nfc)
-    str.unicode_normalized?(:nfc).should be_true
+    str.unicode_normalized?(:nfc).should == true
   end
 
   it "returns true if str is in Unicode normalization form (nfd)" do
     str = "a\u00E0"
-    str.unicode_normalized?(:nfd).should be_false
+    str.unicode_normalized?(:nfd).should == false
     str.unicode_normalize!(:nfd)
-    str.unicode_normalized?(:nfd).should be_true
+    str.unicode_normalized?(:nfd).should == true
   end
 
   it "returns true if str is in Unicode normalization form (nfkc)" do
     str = "a\u0300"
-    str.unicode_normalized?(:nfkc).should be_false
+    str.unicode_normalized?(:nfkc).should == false
     str.unicode_normalize!(:nfkc)
-    str.unicode_normalized?(:nfkc).should be_true
+    str.unicode_normalized?(:nfkc).should == true
   end
 
   it "returns true if str is in Unicode normalization form (nfkd)" do
     str = "a\u00E0"
-    str.unicode_normalized?(:nfkd).should be_false
+    str.unicode_normalized?(:nfkd).should == false
     str.unicode_normalize!(:nfkd)
-    str.unicode_normalized?(:nfkd).should be_true
+    str.unicode_normalized?(:nfkd).should == true
   end
 end

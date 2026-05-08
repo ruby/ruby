@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "Kernel#untrace_var" do
   it "is a private method" do
-    Kernel.should have_private_instance_method(:untrace_var)
+    Kernel.private_instance_methods(false).should.include?(:untrace_var)
   end
 end
 

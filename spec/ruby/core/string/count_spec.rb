@@ -23,7 +23,7 @@ describe "String#count" do
   end
 
   it "raises an ArgumentError when given no arguments" do
-    -> { "hell yeah".count }.should raise_error(ArgumentError)
+    -> { "hell yeah".count }.should.raise(ArgumentError)
   end
 
   it "negates sets starting with ^" do
@@ -76,8 +76,8 @@ describe "String#count" do
   it "raises if the given sequences are invalid" do
     s = "hel-[()]-lo012^"
 
-    -> { s.count("h-e") }.should raise_error(ArgumentError)
-    -> { s.count("^h-e") }.should raise_error(ArgumentError)
+    -> { s.count("h-e") }.should.raise(ArgumentError)
+    -> { s.count("^h-e") }.should.raise(ArgumentError)
   end
 
   it 'returns the number of occurrences of a multi-byte character' do
@@ -98,8 +98,8 @@ describe "String#count" do
   end
 
   it "raises a TypeError when a set arg can't be converted to a string" do
-    -> { "hello world".count(100)       }.should raise_error(TypeError)
-    -> { "hello world".count([])        }.should raise_error(TypeError)
-    -> { "hello world".count(mock('x')) }.should raise_error(TypeError)
+    -> { "hello world".count(100)       }.should.raise(TypeError)
+    -> { "hello world".count([])        }.should.raise(TypeError)
+    -> { "hello world".count(mock('x')) }.should.raise(TypeError)
   end
 end

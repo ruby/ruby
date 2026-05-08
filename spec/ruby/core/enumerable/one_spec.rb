@@ -15,57 +15,57 @@ describe "Enumerable#one?" do
   end
 
   it "raises an ArgumentError when more than 1 argument is provided" do
-    -> { @enum.one?(1, 2, 3) }.should raise_error(ArgumentError)
-    -> { [].one?(1, 2, 3) }.should raise_error(ArgumentError)
-    -> { {}.one?(1, 2, 3) }.should raise_error(ArgumentError)
+    -> { @enum.one?(1, 2, 3) }.should.raise(ArgumentError)
+    -> { [].one?(1, 2, 3) }.should.raise(ArgumentError)
+    -> { {}.one?(1, 2, 3) }.should.raise(ArgumentError)
   end
 
   it "does not hide exceptions out of #each" do
     -> {
       EnumerableSpecs::ThrowingEach.new.one?
-    }.should raise_error(RuntimeError)
+    }.should.raise(RuntimeError)
 
     -> {
       EnumerableSpecs::ThrowingEach.new.one? { false }
-    }.should raise_error(RuntimeError)
+    }.should.raise(RuntimeError)
   end
 
   describe "with no block" do
     it "returns true if only one element evaluates to true" do
-      [false, nil, true].one?.should be_true
+      [false, nil, true].one?.should == true
     end
 
     it "returns false if two elements evaluate to true" do
-      [false, :value, nil, true].one?.should be_false
+      [false, :value, nil, true].one?.should == false
     end
 
     it "returns false if all elements evaluate to false" do
-      [false, nil, false].one?.should be_false
+      [false, nil, false].one?.should == false
     end
 
     it "gathers whole arrays as elements when each yields multiple" do
       multi = EnumerableSpecs::YieldsMultiWithSingleTrue.new
-      multi.one?.should be_false
+      multi.one?.should == false
     end
   end
 
   describe "with a block" do
     it "returns true if block returns true once" do
-      [:a, :b, :c].one? { |s| s == :a }.should be_true
+      [:a, :b, :c].one? { |s| s == :a }.should == true
     end
 
     it "returns false if the block returns true more than once" do
-      [:a, :b, :c].one? { |s| s == :a || s == :b }.should be_false
+      [:a, :b, :c].one? { |s| s == :a || s == :b }.should == false
     end
 
     it "returns false if the block only returns false" do
-      [:a, :b, :c].one? { |s| s == :d }.should be_false
+      [:a, :b, :c].one? { |s| s == :d }.should == false
     end
 
     it "does not hide exceptions out of the block" do
       -> {
         @enum.one? { raise "from block" }
-      }.should raise_error(RuntimeError)
+      }.should.raise(RuntimeError)
     end
 
     it "gathers initial args as elements when each yields multiple" do
@@ -84,7 +84,7 @@ describe "Enumerable#one?" do
   end
 
   describe 'when given a pattern argument' do
-    it "calls `===` on the pattern the return value " do
+    it "calls `===` on the pattern the return value" do
       pattern = EnumerableSpecs::Pattern.new { |x| x == 1 }
       @enum1.one?(pattern).should == true
       pattern.yielded.should == [[0], [1], [2], [-1]]
@@ -99,7 +99,7 @@ describe "Enumerable#one?" do
     it "does not hide exceptions out of #each" do
       -> {
         EnumerableSpecs::ThrowingEach.new.one?(Integer)
-      }.should raise_error(RuntimeError)
+      }.should.raise(RuntimeError)
     end
 
     it "returns true if the pattern returns a truthy value only once" do
@@ -135,7 +135,7 @@ describe "Enumerable#one?" do
       pattern = EnumerableSpecs::Pattern.new { raise "from pattern" }
       -> {
         @enum.one?(pattern)
-      }.should raise_error(RuntimeError)
+      }.should.raise(RuntimeError)
     end
 
     it "calls the pattern with gathered array when yielded with multiple arguments" do

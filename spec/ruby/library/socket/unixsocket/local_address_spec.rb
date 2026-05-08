@@ -16,7 +16,7 @@ describe 'UNIXSocket#local_address' do
   end
 
   it 'returns an Addrinfo' do
-    @client.local_address.should be_an_instance_of(Addrinfo)
+    @client.local_address.should.instance_of?(Addrinfo)
   end
 
   describe 'the returned Addrinfo' do
@@ -57,7 +57,7 @@ describe 'UNIXSocket#local_address with a UNIX socket pair' do
   end
 
   it 'returns an Addrinfo' do
-    @sock.local_address.should be_an_instance_of(Addrinfo)
+    @sock.local_address.should.instance_of?(Addrinfo)
   end
 
   describe 'the returned Addrinfo' do
@@ -76,13 +76,13 @@ describe 'UNIXSocket#local_address with a UNIX socket pair' do
     it 'raises SocketError for #ip_address' do
       -> {
         @sock.local_address.ip_address
-      }.should raise_error(SocketError, "need IPv4 or IPv6 address")
+      }.should.raise(SocketError, "need IPv4 or IPv6 address")
     end
 
     it 'raises SocketError for #ip_port' do
       -> {
         @sock.local_address.ip_port
-      }.should raise_error(SocketError, "need IPv4 or IPv6 address")
+      }.should.raise(SocketError, "need IPv4 or IPv6 address")
     end
 
     it 'uses 0 as the protocol' do

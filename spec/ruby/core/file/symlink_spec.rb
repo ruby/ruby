@@ -32,18 +32,18 @@ describe "File.symlink" do
 
     it "raises an Errno::EEXIST if the target already exists" do
       File.symlink(@file, @link)
-      -> { File.symlink(@file, @link) }.should raise_error(Errno::EEXIST)
+      -> { File.symlink(@file, @link) }.should.raise(Errno::EEXIST)
     end
 
     it "raises an ArgumentError if not called with two arguments" do
-      -> { File.symlink        }.should raise_error(ArgumentError)
-      -> { File.symlink(@file) }.should raise_error(ArgumentError)
+      -> { File.symlink        }.should.raise(ArgumentError)
+      -> { File.symlink(@file) }.should.raise(ArgumentError)
     end
 
     it "raises a TypeError if not called with String types" do
-      -> { File.symlink(@file, nil) }.should raise_error(TypeError)
-      -> { File.symlink(@file, 1)   }.should raise_error(TypeError)
-      -> { File.symlink(1, 1)       }.should raise_error(TypeError)
+      -> { File.symlink(@file, nil) }.should.raise(TypeError)
+      -> { File.symlink(@file, 1)   }.should.raise(TypeError)
+      -> { File.symlink(1, 1)       }.should.raise(TypeError)
     end
   end
 end

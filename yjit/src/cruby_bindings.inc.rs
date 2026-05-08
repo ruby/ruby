@@ -356,6 +356,7 @@ pub const imemo_memo: imemo_type = 5;
 pub const imemo_ment: imemo_type = 6;
 pub const imemo_iseq: imemo_type = 7;
 pub const imemo_tmpbuf: imemo_type = 8;
+pub const imemo_cvar_entry: imemo_type = 9;
 pub const imemo_callinfo: imemo_type = 10;
 pub const imemo_callcache: imemo_type = 11;
 pub const imemo_constcache: imemo_type = 12;
@@ -633,12 +634,13 @@ pub const VM_ENV_FLAG_ESCAPED: vm_frame_env_flags = 4;
 pub const VM_ENV_FLAG_WB_REQUIRED: vm_frame_env_flags = 8;
 pub const VM_ENV_FLAG_ISOLATED: vm_frame_env_flags = 16;
 pub type vm_frame_env_flags = u32;
-pub type attr_index_t = u16;
+pub type attr_index_t = u8;
 pub type shape_id_t = u32;
-pub const SHAPE_ID_HAS_IVAR_MASK: shape_id_mask = 67633150;
+pub const SHAPE_ID_HAS_IVAR_MASK: shape_id_mask = 8912894;
 pub type shape_id_mask = u32;
 #[repr(C)]
 pub struct rb_cvar_class_tbl_entry {
+    pub imemo_flags: VALUE,
     pub index: u32,
     pub global_cvar_state: rb_serial_t,
     pub cref: *const rb_cref_t,
@@ -721,8 +723,8 @@ pub const YARVINSN_putnil: ruby_vminsn_type = 17;
 pub const YARVINSN_putself: ruby_vminsn_type = 18;
 pub const YARVINSN_putobject: ruby_vminsn_type = 19;
 pub const YARVINSN_putspecialobject: ruby_vminsn_type = 20;
-pub const YARVINSN_putstring: ruby_vminsn_type = 21;
-pub const YARVINSN_putchilledstring: ruby_vminsn_type = 22;
+pub const YARVINSN_dupstring: ruby_vminsn_type = 21;
+pub const YARVINSN_dupchilledstring: ruby_vminsn_type = 22;
 pub const YARVINSN_concatstrings: ruby_vminsn_type = 23;
 pub const YARVINSN_anytostring: ruby_vminsn_type = 24;
 pub const YARVINSN_toregexp: ruby_vminsn_type = 25;
@@ -834,8 +836,8 @@ pub const YARVINSN_trace_putnil: ruby_vminsn_type = 130;
 pub const YARVINSN_trace_putself: ruby_vminsn_type = 131;
 pub const YARVINSN_trace_putobject: ruby_vminsn_type = 132;
 pub const YARVINSN_trace_putspecialobject: ruby_vminsn_type = 133;
-pub const YARVINSN_trace_putstring: ruby_vminsn_type = 134;
-pub const YARVINSN_trace_putchilledstring: ruby_vminsn_type = 135;
+pub const YARVINSN_trace_dupstring: ruby_vminsn_type = 134;
+pub const YARVINSN_trace_dupchilledstring: ruby_vminsn_type = 135;
 pub const YARVINSN_trace_concatstrings: ruby_vminsn_type = 136;
 pub const YARVINSN_trace_anytostring: ruby_vminsn_type = 137;
 pub const YARVINSN_trace_toregexp: ruby_vminsn_type = 138;
@@ -1113,9 +1115,9 @@ extern "C" {
     pub fn rb_obj_shape_id(obj: VALUE) -> shape_id_t;
     pub fn rb_shape_get_iv_index(shape_id: shape_id_t, id: ID, value: *mut attr_index_t) -> bool;
     pub fn rb_shape_transition_add_ivar_no_warnings(
-        klass: VALUE,
-        original_shape_id: shape_id_t,
+        shape_id: shape_id_t,
         id: ID,
+        klass: VALUE,
     ) -> shape_id_t;
     pub fn rb_ivar_get_at(obj: VALUE, index: attr_index_t, id: ID) -> VALUE;
     pub fn rb_ivar_get_at_no_ractor_check(obj: VALUE, index: attr_index_t) -> VALUE;
@@ -1203,7 +1205,7 @@ extern "C" {
         line: ::std::os::raw::c_int,
     );
     pub fn rb_object_shape_count() -> VALUE;
-    pub fn rb_yjit_shape_obj_too_complex_p(obj: VALUE) -> bool;
+    pub fn rb_yjit_shape_obj_complex_p(obj: VALUE) -> bool;
     pub fn rb_yjit_shape_capacity(shape_id: shape_id_t) -> attr_index_t;
     pub fn rb_yjit_shape_index(shape_id: shape_id_t) -> attr_index_t;
     pub fn rb_yjit_sendish_sp_pops(ci: *const rb_callinfo) -> usize;
@@ -1306,7 +1308,7 @@ extern "C" {
     pub fn rb_jit_array_len(a: VALUE) -> ::std::os::raw::c_long;
     pub fn rb_set_cfp_pc(cfp: *mut rb_control_frame_struct, pc: *const VALUE);
     pub fn rb_set_cfp_sp(cfp: *mut rb_control_frame_struct, sp: *mut VALUE);
-    pub fn rb_jit_shape_too_complex_p(shape_id: shape_id_t) -> bool;
+    pub fn rb_jit_shape_complex_p(shape_id: shape_id_t) -> bool;
     pub fn rb_jit_multi_ractor_p() -> bool;
     pub fn rb_jit_vm_lock_then_barrier(
         recursive_lock_level: *mut ::std::os::raw::c_uint,

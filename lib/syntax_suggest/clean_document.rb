@@ -66,27 +66,9 @@ module SyntaxSuggest
   #
   # All of these problems are fixed by joining the whole heredoc into a single
   # line.
-  #
-  # ## Comments and whitespace
-  #
-  # Comments can throw off the way the lexer tells us that the line
-  # logically belongs with the next line. This is valid ruby but
-  # results in a different lex output than before:
-  #
-  #     1 User.
-  #     2   where(name: "schneems").
-  #     3   # Comment here
-  #     4   first
-  #
-  # To handle this we can replace comment lines with empty lines
-  # and then re-lex the source. This removal and re-lexing preserves
-  # line index and document size, but generates an easier to work with
-  # document.
-  #
   class CleanDocument
     def initialize(source:)
-      lines = clean_sweep(source: source)
-      @document = CodeLine.from_source(lines.join)
+      @document = CodeLine.from_source(source)
     end
 
     # Call all of the document "cleaners"
@@ -110,62 +92,6 @@ module SyntaxSuggest
       @document.join
     end
 
-    # Remove comments
-    #
-    # replace with empty newlines
-    #
-    #     source = <<~'EOM'
-    #       # Comment 1
-    #       puts "hello"
-    #       # Comment 2
-    #       puts "world"
-    #     EOM
-    #
-    #     lines = CleanDocument.new(source: source).lines
-    #     expect(lines[0].to_s).to eq("\n")
-    #     expect(lines[1].to_s).to eq("puts "hello")
-    #     expect(lines[2].to_s).to eq("\n")
-    #     expect(lines[3].to_s).to eq("puts "world")
-    #
-    # Important: This must be done before lexing.
-    #
-    # After this change is made, we lex the document because
-    # removing comments can change how the doc is parsed.
-    #
-    # For example:
-    #
-    #     values = LexAll.new(source: <<~EOM))
-    #       User.
-    #         # comment
-    #         where(name: 'schneems')
-    #     EOM
-    #     expect(
-    #       values.count {|v| v.type == :on_ignored_nl}
-    #     ).to eq(1)
-    #
-    # After the comment is removed:
-    #
-    #     values = LexAll.new(source: <<~EOM))
-    #       User.
-    #
-    #         where(name: 'schneems')
-    #     EOM
-    #     expect(
-    #      values.count {|v| v.type == :on_ignored_nl}
-    #    ).to eq(2)
-    #
-    def clean_sweep(source:)
-      # Match comments, but not HEREDOC strings with #{variable} interpolation
-      # https://rubular.com/r/HPwtW9OYxKUHXQ
-      source.lines.map do |line|
-        if line.match?(/^\s*#([^{].*|)$/)
-          $/
-        else
-          line
-        end
-      end
-    end
-
     # Smushes all heredoc lines into one line
     #
     #     source = <<~'EOM'
@@ -184,9 +110,9 @@ module SyntaxSuggest
       lines.each do |line|
         line.tokens.each do |token|
           case token.type
-          when :on_heredoc_beg
+          when :HEREDOC_START
             start_index_stack << line.index
-          when :on_heredoc_end
+          when :HEREDOC_END
             start_index = start_index_stack.pop
             end_index = line.index
             heredoc_beg_end_index << [start_index, end_index]
@@ -212,20 +138,10 @@ module SyntaxSuggest
     #     expect(lines[0].to_s).to eq(source)
     #     expect(lines[1].to_s).to eq("")
     #
-    # The one known case this doesn't handle is:
-    #
-    #     Ripper.lex <<~EOM
-    #       a &&
-    #        b ||
-    #        c
-    #     EOM
-    #
-    # For some reason this introduces `on_ignore_newline` but with BEG type
-    #
     def join_consecutive!
-      consecutive_groups = @document.select(&:ignore_newline_not_beg?).map do |code_line|
+      consecutive_groups = @document.select(&:consecutive?).map do |code_line|
         take_while_including(code_line.index..) do |line|
-          line.ignore_newline_not_beg?
+          line.consecutive?
         end
       end
 
@@ -275,14 +191,15 @@ module SyntaxSuggest
         @document[line.index] = CodeLine.new(
           tokens: lines.map(&:tokens).flatten,
           line: lines.join,
-          index: line.index
+          index: line.index,
+          consecutive: false
         )
 
         # Hide the rest of the lines
         lines[1..].each do |line|
           # The above lines already have newlines in them, if add more
           # then there will be double newline, use an empty line instead
-          @document[line.index] = CodeLine.new(line: "", index: line.index, tokens: [])
+          @document[line.index] = CodeLine.new(line: "", index: line.index, tokens: [], consecutive: false)
         end
       end
       self

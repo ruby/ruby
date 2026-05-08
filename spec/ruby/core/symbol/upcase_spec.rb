@@ -3,7 +3,7 @@ require_relative '../../spec_helper'
 
 describe "Symbol#upcase" do
   it "returns a Symbol" do
-    :glark.upcase.should be_an_instance_of(Symbol)
+    :glark.upcase.should.instance_of?(Symbol)
   end
 
   it "converts lowercase ASCII characters to their uppercase equivalents" do

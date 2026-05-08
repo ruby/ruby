@@ -175,9 +175,9 @@ describe "String#gsub with pattern and replacement" do
   end
 
   it "raises a TypeError when pattern can't be converted to a string" do
-    -> { "hello".gsub([], "x")            }.should raise_error(TypeError)
-    -> { "hello".gsub(Object.new, "x")    }.should raise_error(TypeError)
-    -> { "hello".gsub(nil, "x")           }.should raise_error(TypeError)
+    -> { "hello".gsub([], "x")            }.should.raise(TypeError)
+    -> { "hello".gsub(Object.new, "x")    }.should.raise(TypeError)
+    -> { "hello".gsub(nil, "x")           }.should.raise(TypeError)
   end
 
   it "tries to convert replacement to a string using to_str" do
@@ -188,16 +188,16 @@ describe "String#gsub with pattern and replacement" do
   end
 
   it "raises a TypeError when replacement can't be converted to a string" do
-    -> { "hello".gsub(/[aeiou]/, [])            }.should raise_error(TypeError)
-    -> { "hello".gsub(/[aeiou]/, Object.new)    }.should raise_error(TypeError)
-    -> { "hello".gsub(/[aeiou]/, nil)           }.should raise_error(TypeError)
+    -> { "hello".gsub(/[aeiou]/, [])            }.should.raise(TypeError)
+    -> { "hello".gsub(/[aeiou]/, Object.new)    }.should.raise(TypeError)
+    -> { "hello".gsub(/[aeiou]/, nil)           }.should.raise(TypeError)
   end
 
   it "returns String instances when called on a subclass" do
-    StringSpecs::MyString.new("").gsub(//, "").should be_an_instance_of(String)
-    StringSpecs::MyString.new("").gsub(/foo/, "").should be_an_instance_of(String)
-    StringSpecs::MyString.new("foo").gsub(/foo/, "").should be_an_instance_of(String)
-    StringSpecs::MyString.new("foo").gsub("foo", "").should be_an_instance_of(String)
+    StringSpecs::MyString.new("").gsub(//, "").should.instance_of?(String)
+    StringSpecs::MyString.new("").gsub(/foo/, "").should.instance_of?(String)
+    StringSpecs::MyString.new("foo").gsub(/foo/, "").should.instance_of?(String)
+    StringSpecs::MyString.new("foo").gsub("foo", "").should.instance_of?(String)
   end
 
   it "sets $~ to MatchData of last match and nil when there's none" do
@@ -450,8 +450,8 @@ describe "String#gsub with pattern and block" do
     s = "hllëllo"
     s2 = "hellö"
 
-    -> { s.gsub(/l/) { |bar| "Русский".force_encoding("iso-8859-5") } }.should raise_error(Encoding::CompatibilityError)
-    -> { s2.gsub(/l/) { |bar| "Русский".force_encoding("iso-8859-5") } }.should raise_error(Encoding::CompatibilityError)
+    -> { s.gsub(/l/) { |bar| "Русский".force_encoding("iso-8859-5") } }.should.raise(Encoding::CompatibilityError)
+    -> { s2.gsub(/l/) { |bar| "Русский".force_encoding("iso-8859-5") } }.should.raise(Encoding::CompatibilityError)
   end
 
   it "replaces the incompatible part properly even if the encodings are not compatible" do
@@ -463,7 +463,7 @@ describe "String#gsub with pattern and block" do
   not_supported_on :opal do
     it "raises an ArgumentError if encoding is not valid" do
       x92 = [0x92].pack('C').force_encoding('utf-8')
-      -> { "a#{x92}b".gsub(/[^\x00-\x7f]/u, '') }.should raise_error(ArgumentError)
+      -> { "a#{x92}b".gsub(/[^\x00-\x7f]/u, '') }.should.raise(ArgumentError)
     end
   end
 end
@@ -471,7 +471,7 @@ end
 describe "String#gsub with pattern and without replacement and block" do
   it "returns an enumerator" do
     enum = "abca".gsub(/a/)
-    enum.should be_an_instance_of(Enumerator)
+    enum.should.instance_of?(Enumerator)
     enum.to_a.should == ["a", "a"]
   end
 
@@ -495,13 +495,13 @@ end
 describe "String#gsub! with pattern and replacement" do
   it "modifies self in place and returns self" do
     a = "hello"
-    a.gsub!(/[aeiou]/, '*').should equal(a)
+    a.gsub!(/[aeiou]/, '*').should.equal?(a)
     a.should == "h*ll*"
   end
 
   it "modifies self in place with multi-byte characters and returns self" do
     a = "¿por qué?"
-    a.gsub!(/([a-z\d]*)/, "*").should equal(a)
+    a.gsub!(/([a-z\d]*)/, "*").should.equal?(a)
     a.should == "*¿** **é*?*"
   end
 
@@ -517,9 +517,9 @@ describe "String#gsub! with pattern and replacement" do
     s = "hello"
     s.freeze
 
-    -> { s.gsub!(/ROAR/, "x")    }.should raise_error(FrozenError)
-    -> { s.gsub!(/e/, "e")       }.should raise_error(FrozenError)
-    -> { s.gsub!(/[aeiou]/, '*') }.should raise_error(FrozenError)
+    -> { s.gsub!(/ROAR/, "x")    }.should.raise(FrozenError)
+    -> { s.gsub!(/e/, "e")       }.should.raise(FrozenError)
+    -> { s.gsub!(/[aeiou]/, '*') }.should.raise(FrozenError)
   end
 
   it "handles a pattern in a superset encoding" do
@@ -547,7 +547,7 @@ end
 describe "String#gsub! with pattern and block" do
   it "modifies self in place and returns self" do
     a = "hello"
-    a.gsub!(/[aeiou]/) { '*' }.should equal(a)
+    a.gsub!(/[aeiou]/) { '*' }.should.equal?(a)
     a.should == "h*ll*"
   end
 
@@ -563,9 +563,9 @@ describe "String#gsub! with pattern and block" do
     s = "hello"
     s.freeze
 
-    -> { s.gsub!(/ROAR/)    { "x" } }.should raise_error(FrozenError)
-    -> { s.gsub!(/e/)       { "e" } }.should raise_error(FrozenError)
-    -> { s.gsub!(/[aeiou]/) { '*' } }.should raise_error(FrozenError)
+    -> { s.gsub!(/ROAR/)    { "x" } }.should.raise(FrozenError)
+    -> { s.gsub!(/e/)       { "e" } }.should.raise(FrozenError)
+    -> { s.gsub!(/[aeiou]/) { '*' } }.should.raise(FrozenError)
   end
 
   it "uses the compatible encoding if they are compatible" do
@@ -580,8 +580,8 @@ describe "String#gsub! with pattern and block" do
     s = "hllëllo"
     s2 = "hellö"
 
-    -> { s.gsub!(/l/) { |bar| "Русский".force_encoding("iso-8859-5") } }.should raise_error(Encoding::CompatibilityError)
-    -> { s2.gsub!(/l/) { |bar| "Русский".force_encoding("iso-8859-5") } }.should raise_error(Encoding::CompatibilityError)
+    -> { s.gsub!(/l/) { |bar| "Русский".force_encoding("iso-8859-5") } }.should.raise(Encoding::CompatibilityError)
+    -> { s2.gsub!(/l/) { |bar| "Русский".force_encoding("iso-8859-5") } }.should.raise(Encoding::CompatibilityError)
   end
 
   it "replaces the incompatible part properly even if the encodings are not compatible" do
@@ -593,7 +593,7 @@ describe "String#gsub! with pattern and block" do
   not_supported_on :opal do
     it "raises an ArgumentError if encoding is not valid" do
       x92 = [0x92].pack('C').force_encoding('utf-8')
-      -> { "a#{x92}b".gsub!(/[^\x00-\x7f]/u, '') }.should raise_error(ArgumentError)
+      -> { "a#{x92}b".gsub!(/[^\x00-\x7f]/u, '') }.should.raise(ArgumentError)
     end
   end
 end
@@ -601,7 +601,7 @@ end
 describe "String#gsub! with pattern and without replacement and block" do
   it "returns an enumerator" do
     enum = "abca".gsub!(/a/)
-    enum.should be_an_instance_of(Enumerator)
+    enum.should.instance_of?(Enumerator)
     enum.to_a.should == ["a", "a"]
   end
 

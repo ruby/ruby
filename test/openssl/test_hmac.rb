@@ -4,14 +4,18 @@ require_relative 'utils'
 if defined?(OpenSSL)
 
 class OpenSSL::TestHMAC < OpenSSL::TestCase
-  def test_hmac
+  def test_hmac_md5
+    omit_on_fips # MD5
+
     # RFC 2202 2. Test Cases for HMAC-MD5
     hmac = OpenSSL::HMAC.new(["0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b"].pack("H*"), "MD5")
     hmac.update("Hi There")
     assert_equal ["9294727a3638bb1c13f48ef8158bfc9d"].pack("H*"), hmac.digest
     assert_equal "9294727a3638bb1c13f48ef8158bfc9d", hmac.hexdigest
     assert_equal "kpRyejY4uxwT9I74FYv8nQ==", hmac.base64digest
+  end
 
+  def test_hmac_sha224
     # RFC 4231 4.2. Test Case 1
     hmac = OpenSSL::HMAC.new(["0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b"].pack("H*"), "SHA224")
     hmac.update("Hi There")
@@ -21,7 +25,7 @@ class OpenSSL::TestHMAC < OpenSSL::TestCase
   end
 
   def test_dup
-    h1 = OpenSSL::HMAC.new("KEY", "MD5")
+    h1 = OpenSSL::HMAC.new("KEY"*32, "SHA256")
     h1.update("DATA")
     h = h1.dup
     assert_equal(h1.digest, h.digest, "dup digest")
@@ -35,7 +39,7 @@ class OpenSSL::TestHMAC < OpenSSL::TestCase
   end
 
   def test_reset_keep_key
-    h1 = OpenSSL::HMAC.new("KEY", "MD5")
+    h1 = OpenSSL::HMAC.new("KEY"*32, "SHA256")
     first = h1.update("test").hexdigest
     h1.reset
     second = h1.update("test").hexdigest
@@ -43,9 +47,9 @@ class OpenSSL::TestHMAC < OpenSSL::TestCase
   end
 
   def test_eq
-    h1 = OpenSSL::HMAC.new("KEY", "MD5")
-    h2 = OpenSSL::HMAC.new("KEY", OpenSSL::Digest.new("MD5"))
-    h3 = OpenSSL::HMAC.new("FOO", "MD5")
+    h1 = OpenSSL::HMAC.new("KEY"*32, "SHA256")
+    h2 = OpenSSL::HMAC.new("KEY"*32, OpenSSL::Digest.new("SHA256"))
+    h3 = OpenSSL::HMAC.new("FOO"*32, "SHA256")
 
     assert_equal h1, h2
     refute_equal h1, h2.digest
@@ -53,17 +57,19 @@ class OpenSSL::TestHMAC < OpenSSL::TestCase
   end
 
   def test_singleton_methods
-    # RFC 2202 2. Test Cases for HMAC-MD5
-    key = ["0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b"].pack("H*")
-    digest = OpenSSL::HMAC.digest("MD5", key, "Hi There")
-    assert_equal ["9294727a3638bb1c13f48ef8158bfc9d"].pack("H*"), digest
-    hexdigest = OpenSSL::HMAC.hexdigest("MD5", key, "Hi There")
-    assert_equal "9294727a3638bb1c13f48ef8158bfc9d", hexdigest
-    b64digest = OpenSSL::HMAC.base64digest("MD5", key, "Hi There")
-    assert_equal "kpRyejY4uxwT9I74FYv8nQ==", b64digest
+    # RFC 4231 4.2. Test Case 1
+    key = ["0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b"].pack("H*")
+    digest = OpenSSL::HMAC.digest("SHA256", key, "Hi There")
+    assert_equal ["b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7"].pack("H*"), digest
+    hexdigest = OpenSSL::HMAC.hexdigest("SHA256", key, "Hi There")
+    assert_equal "b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7", hexdigest
+    b64digest = OpenSSL::HMAC.base64digest("SHA256", key, "Hi There")
+    assert_equal "sDRMYdjbOFNcqK/OrwvxK4gdwgDJgz2nJuk3bC4yz/c=", b64digest
   end
 
   def test_zero_length_key
+    omit_on_fips # Key length
+
     # Empty string as the key
     hexdigest = OpenSSL::HMAC.hexdigest("SHA256", "\0"*32, "test")
     assert_equal "43b0cef99265f9e34c10ea9d3501926d27b39f57c6d674561d8ba236e7a819fb", hexdigest

@@ -32,14 +32,14 @@ describe "StringScanner#rest?" do
   end
 
   it "returns true if there is more data in the string" do
-    @s.rest?.should be_true
+    @s.rest?.should == true
     @s.scan(/This/)
-    @s.rest?.should be_true
+    @s.rest?.should == true
   end
 
   it "returns false if there is no more data in the string" do
     @s.terminate
-    @s.rest?.should be_false
+    @s.rest?.should == false
   end
 
   it "is the opposite of eos?" do

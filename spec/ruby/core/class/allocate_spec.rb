@@ -3,7 +3,7 @@ require_relative '../../spec_helper'
 describe "Class#allocate" do
   it "returns an instance of self" do
     klass = Class.new
-    klass.allocate.should be_an_instance_of(klass)
+    klass.allocate.should.instance_of?(klass)
   end
 
   it "returns a fully-formed instance of Module" do
@@ -16,7 +16,7 @@ describe "Class#allocate" do
     klass = Class.allocate
     -> do
       klass.new
-    end.should raise_error(Exception)
+    end.should.raise(Exception)
   end
 
   it "does not call initialize on the new instance" do
@@ -36,6 +36,6 @@ describe "Class#allocate" do
   it "raises TypeError for #superclass" do
     -> do
       Class.allocate.superclass
-    end.should raise_error(TypeError)
+    end.should.raise(TypeError)
   end
 end

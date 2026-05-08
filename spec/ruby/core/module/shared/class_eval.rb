@@ -14,7 +14,7 @@ describe :module_class_eval, shared: true do
         'foo'
       end
     end
-    -> {42.foo}.should raise_error(NoMethodError)
+    -> {42.foo}.should.raise(NoMethodError)
   end
 
   it "resolves constants in the caller scope" do
@@ -45,7 +45,7 @@ describe :module_class_eval, shared: true do
     ModuleSpecs.send(@method) do |block_parameter|
       given = block_parameter
     end
-    given.should equal ModuleSpecs
+    given.should.equal? ModuleSpecs
   end
 
   it "uses the optional filename and lineno parameters for error messages" do
@@ -82,26 +82,26 @@ describe :module_class_eval, shared: true do
 
   it "raises a TypeError when the given eval-string can't be converted to string using to_str" do
     o = mock('x')
-    -> { ModuleSpecs.send(@method, o) }.should raise_error(TypeError, "no implicit conversion of MockObject into String")
+    -> { ModuleSpecs.send(@method, o) }.should.raise(TypeError, "no implicit conversion of MockObject into String")
 
     (o = mock('123')).should_receive(:to_str).and_return(123)
     -> { ModuleSpecs.send(@method, o) }.should raise_consistent_error(TypeError, /can't convert MockObject into String/)
   end
 
   it "raises an ArgumentError when no arguments and no block are given" do
-    -> { ModuleSpecs.send(@method) }.should raise_error(ArgumentError, "wrong number of arguments (given 0, expected 1..3)")
+    -> { ModuleSpecs.send(@method) }.should.raise(ArgumentError, "wrong number of arguments (given 0, expected 1..3)")
   end
 
   it "raises an ArgumentError when more than 3 arguments are given" do
     -> {
       ModuleSpecs.send(@method, "1 + 1", "some file", 0, "bogus")
-    }.should raise_error(ArgumentError, "wrong number of arguments (given 4, expected 1..3)")
+    }.should.raise(ArgumentError, "wrong number of arguments (given 4, expected 1..3)")
   end
 
   it "raises an ArgumentError when a block and normal arguments are given" do
     -> {
       ModuleSpecs.send(@method, "1 + 1") { 1 + 1 }
-    }.should raise_error(ArgumentError, "wrong number of arguments (given 1, expected 0)")
+    }.should.raise(ArgumentError, "wrong number of arguments (given 1, expected 0)")
   end
 
   # This case was found because Rubinius was caching the compiled

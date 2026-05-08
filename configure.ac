@@ -3580,7 +3580,8 @@ AS_CASE(["$target_os"],
 
 AC_ARG_ENABLE(multiarch,
 	      AS_HELP_STRING([--enable-multiarch], [enable multiarch compatible directories]),
-	      [multiarch=], [unset multiarch])
+	      [AS_CASE([$enableval], [no], [unset multiarch], [multiarch=])],
+	      [unset multiarch])
 AS_IF([test ${multiarch+set}], [
    AC_DEFINE(ENABLE_MULTIARCH)
 ])

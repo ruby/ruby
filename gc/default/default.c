@@ -438,7 +438,6 @@ struct RMoved {
     VALUE flags;
     VALUE dummy;
     VALUE destination;
-    uint32_t original_shape_id;
 };
 
 #define RMOVED(obj) ((struct RMoved *)(obj))
@@ -683,6 +682,8 @@ typedef struct rb_objspace {
     int sweeping_heap_count;
 
     int fork_vm_lock_lev;
+
+    struct rb_gc_vm_context vm_context;
 } rb_objspace_t;
 
 #ifndef HEAP_PAGE_ALIGN_LOG
@@ -1650,6 +1651,14 @@ rb_gc_impl_garbage_object_p(void *objspace_ptr, VALUE ptr)
     if (dead) return true;
     return is_lazy_sweeping(objspace) && GET_HEAP_PAGE(ptr)->flags.before_sweep &&
         !RVALUE_MARKED(objspace, ptr);
+}
+
+struct rb_gc_vm_context *
+rb_gc_impl_get_vm_context(void *objspace_ptr)
+{
+    rb_objspace_t *objspace = objspace_ptr;
+
+    return &objspace->vm_context;
 }
 
 static void free_stack_chunks(mark_stack_t *);
@@ -3203,7 +3212,7 @@ gc_setup_mark_bits(struct heap_page *page)
 }
 
 static int gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj);
-static VALUE gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, size_t src_slot_size, size_t slot_size);
+static VALUE gc_move(rb_objspace_t *objspace, VALUE scan, VALUE free, struct heap_page *src_page, struct heap_page *dest_page);
 
 #if defined(_WIN32)
 enum {HEAP_PAGE_LOCK = PAGE_NOACCESS, HEAP_PAGE_UNLOCK = PAGE_READWRITE};
@@ -3286,7 +3295,7 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *free_page, 
     objspace->rcompactor.moved_count_table[BUILTIN_TYPE(src)]++;
     objspace->rcompactor.total_moved++;
 
-    gc_move(objspace, src, dest, src_page->slot_size, free_page->slot_size);
+    gc_move(objspace, src, dest, src_page, free_page);
     gc_pin(objspace, src);
     free_page->free_slots--;
 
@@ -4086,19 +4095,9 @@ invalidate_moved_plane(rb_objspace_t *objspace, struct heap_page *page, uintptr_
                     CLEAR_IN_BITMAP(GET_HEAP_PINNED_BITS(forwarding_object), forwarding_object);
 
                     object = rb_gc_impl_location(objspace, forwarding_object);
-
-                    uint32_t original_shape_id = 0;
-                    if (RB_TYPE_P(object, T_OBJECT)) {
-                        original_shape_id = RMOVED(forwarding_object)->original_shape_id;
-                    }
-
-                    gc_move(objspace, object, forwarding_object, GET_HEAP_PAGE(object)->slot_size, page->slot_size);
+                    gc_move(objspace, object, forwarding_object, GET_HEAP_PAGE(object), page);
                     /* forwarding_object is now our actual object, and "object"
                      * is the free slot for the original page */
-
-                    if (original_shape_id) {
-                        rb_gc_set_shape(forwarding_object, original_shape_id);
-                    }
 
                     struct heap_page *orig_page = GET_HEAP_PAGE(object);
                     orig_page->free_slots++;
@@ -5572,23 +5571,8 @@ gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, VALUE src)
     GC_ASSERT(gc_is_moveable_obj(objspace, src));
 
     rb_heap_t *dest_pool = gc_compact_destination_pool(objspace, heap, src);
-    uint32_t orig_shape = 0;
-    uint32_t new_shape = 0;
-
     if (gc_compact_heap_cursors_met_p(dest_pool)) {
         return dest_pool != heap;
-    }
-
-    if (RB_TYPE_P(src, T_OBJECT)) {
-        orig_shape = rb_gc_get_shape(src);
-
-        if (dest_pool != heap) {
-            new_shape = rb_gc_rebuild_shape(src, dest_pool - heaps);
-
-            if (new_shape == 0) {
-                dest_pool = heap;
-            }
-        }
     }
 
     while (!try_move(objspace, dest_pool, dest_pool->free_pages, src)) {
@@ -5614,14 +5598,6 @@ gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, VALUE src)
         if (gc_compact_heap_cursors_met_p(dest_pool)) {
             return dest_pool != heap;
         }
-    }
-
-    if (orig_shape != 0) {
-        if (new_shape != 0) {
-            VALUE dest = rb_gc_impl_location(objspace, src);
-            rb_gc_set_shape(dest, new_shape);
-        }
-        RMOVED(src)->original_shape_id = orig_shape;
     }
 
     return true;
@@ -6439,6 +6415,8 @@ garbage_collect(rb_objspace_t *objspace, unsigned int reason)
 static int
 gc_start(rb_objspace_t *objspace, unsigned int reason)
 {
+    rb_gc_initialize_vm_context(&objspace->vm_context);
+
     unsigned int do_full_mark = !!(reason & GPR_FLAG_FULL_MARK);
 
     if (!rb_darray_size(objspace->heap_pages.sorted)) return TRUE; /* heap is not ready */
@@ -6767,6 +6745,8 @@ gc_marking_enter(rb_objspace_t *objspace)
     if (MEASURE_GC) {
         gc_clock_start(&objspace->profile.marking_start_time);
     }
+
+    rb_gc_initialize_vm_context(&objspace->vm_context);
 }
 
 static void
@@ -6973,8 +6953,11 @@ gc_is_moveable_obj(rb_objspace_t *objspace, VALUE obj)
 void rb_mv_generic_ivar(VALUE src, VALUE dst);
 
 static VALUE
-gc_move(rb_objspace_t *objspace, VALUE src, VALUE dest, size_t src_slot_size, size_t slot_size)
+gc_move(rb_objspace_t *objspace, VALUE src, VALUE dest, struct heap_page *src_page, struct heap_page *dest_page)
 {
+    size_t src_slot_size = src_page->slot_size;
+    size_t slot_size = dest_page->slot_size;
+
     int marked;
     int wb_unprotected;
     int uncollectible;
@@ -7002,6 +6985,10 @@ gc_move(rb_objspace_t *objspace, VALUE src, VALUE dest, size_t src_slot_size, si
 
     /* Move the object */
     memcpy((void *)dest, (void *)src, MIN(src_slot_size, slot_size));
+
+    if (src_slot_size != slot_size && RB_TYPE_P(src, T_OBJECT)) {
+        rb_gc_obj_changed_pool(dest, dest_page->heap - heaps);
+    }
 
     if (RVALUE_OVERHEAD > 0) {
         void *dest_overhead = (void *)(((uintptr_t)dest) + slot_size - RVALUE_OVERHEAD);

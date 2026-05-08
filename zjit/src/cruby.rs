@@ -261,6 +261,9 @@ pub struct ID(pub ::std::os::raw::c_ulong);
 /// Pointer to an ISEQ
 pub type IseqPtr = *const rb_iseq_t;
 
+/// Index of a YARV instruction within an ISEQ's bytecode array.
+pub type YarvInsnIdx = usize;
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct ShapeId(pub u32);
 
@@ -271,8 +274,8 @@ impl ShapeId {
         self != INVALID_SHAPE_ID
     }
 
-    pub fn is_too_complex(self) -> bool {
-        unsafe { rb_jit_shape_too_complex_p(self.0) }
+    pub fn is_complex(self) -> bool {
+        unsafe { rb_jit_shape_complex_p(self.0) }
     }
 
     pub fn is_frozen(self) -> bool {
@@ -320,11 +323,12 @@ pub fn iseq_rest_param_idx(params: &IseqParameters) -> Option<i32> {
 pub fn for_each_iseq<F: FnMut(IseqPtr)>(mut callback: F) {
     unsafe extern "C" fn callback_wrapper(iseq: IseqPtr, data: *mut c_void) {
         // SAFETY: points to the local below
-        let callback: &mut &mut dyn FnMut(IseqPtr) -> bool = unsafe { std::mem::transmute(&mut *data) };
-        callback(iseq);
+        let callback: *mut *mut dyn FnMut(IseqPtr) -> bool = data.cast();
+        unsafe { (**callback)(iseq) };
     }
-    let mut data: &mut dyn FnMut(IseqPtr) = &mut callback;
-    unsafe { rb_jit_for_each_iseq(Some(callback_wrapper), (&mut data) as *mut _ as *mut c_void) };
+    let mut data: *mut dyn FnMut(IseqPtr) = &raw mut callback;
+    let data: *mut *mut dyn FnMut(IseqPtr) = &raw mut data;
+    unsafe { rb_jit_for_each_iseq(Some(callback_wrapper), data.cast()) };
 }
 
 /// Return a poison value to be set above the stack top to verify leafness.
@@ -1228,24 +1232,24 @@ pub mod test_utils {
     pub fn with_rubyvm<T>(mut func: impl FnMut() -> T) -> T {
         RUBY_VM_INIT.call_once(boot_rubyvm);
 
-        // Set up a callback wrapper to store a return value
-        let mut result: Option<T> = None;
-        let mut data: &mut dyn FnMut() = &mut || {
-            // Store the result externally
-            result.replace(func());
-        };
-
         // Invoke callback through rb_protect() so exceptions don't crash the process.
         // "Fun" double pointer dance to get a thin function pointer to pass through C
         unsafe extern "C" fn callback_wrapper(data: VALUE) -> VALUE {
             // SAFETY: shorter lifetime than the data local in the caller frame
-            let callback: *mut &mut dyn FnMut() = std::ptr::with_exposed_provenance_mut(data.0);
-            unsafe { (*callback)() };
+            let callback: *const *mut dyn FnMut() = std::ptr::with_exposed_provenance_mut(data.0);
+            unsafe { (**callback)() };
             Qnil
         }
 
+        // Set up a callback wrapper to store the return value
+        let mut result: Option<T> = None;
+        let mut func_wrapper = || {
+            result.replace(func());
+        };
+        let data: *mut dyn FnMut() = &raw mut func_wrapper;
+        let data: *const *mut dyn FnMut() = &raw const data;
         let mut state: c_int = 0;
-        unsafe { super::rb_protect(Some(callback_wrapper), VALUE((&raw mut data).expose_provenance()), &mut state) };
+        unsafe { super::rb_protect(Some(callback_wrapper), VALUE(data.expose_provenance()), &mut state) };
         if state != 0 {
             unsafe { rb_zjit_print_exception(); }
             assert_eq!(0, state, "Exceptional unwind in callback. Ruby exception?");
@@ -1514,6 +1518,12 @@ mod class_name_tests {
 }
 
 pub fn class_has_leaf_allocator(class: VALUE) -> bool {
+    // We need to check if the class is initialized and not a singleton before
+    // trying to read the allocator, otherwise it will raise.
+    // Because of this they should be considered non-leaf anyways.
+    if !unsafe { rb_zjit_class_initialized_p(class) } { return false; }
+    if unsafe { rb_zjit_singleton_class_p(class) } { return false; }
+
     // empty_hash_alloc
     if class == unsafe { rb_cHash } { return true; }
     // empty_ary_alloc

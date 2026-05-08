@@ -30,7 +30,7 @@ platform_is_not :windows do
       -> {
         Etc.getpwuid("foo")
         Etc.getpwuid(nil)
-      }.should raise_error(TypeError)
+      }.should.raise(TypeError)
     end
   end
 end

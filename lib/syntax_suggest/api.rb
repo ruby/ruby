@@ -9,9 +9,6 @@ require "timeout"
 
 # Prism is the new parser, replacing Ripper
 require "prism"
-# We need Ripper loaded for `Prism.lex_compat` even if we're using Prism
-# for lexing and parsing
-require "ripper"
 
 module SyntaxSuggest
   # Used to indicate a default value that cannot
@@ -188,7 +185,6 @@ require_relative "explain_syntax"
 require_relative "clean_document"
 
 # Helpers
-require_relative "lex_all"
 require_relative "code_line"
 require_relative "code_block"
 require_relative "block_expand"
@@ -200,3 +196,5 @@ require_relative "priority_engulf_queue"
 require_relative "pathname_from_message"
 require_relative "display_invalid_blocks"
 require_relative "parse_blocks_from_indent_line"
+require_relative "visitor"
+require_relative "token"

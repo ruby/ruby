@@ -31,7 +31,7 @@ describe :io_copy_stream_to_file, shared: true do
     obj = mock("io_copy_stream_to")
     obj.should_receive(:to_path).and_return(1)
 
-    -> { IO.copy_stream(@object.from, obj) }.should raise_error(TypeError)
+    -> { IO.copy_stream(@object.from, obj) }.should.raise(TypeError)
   end
 end
 
@@ -71,7 +71,7 @@ describe :io_copy_stream_to_io, shared: true do
   it "raises an IOError if the destination IO is not open for writing" do
     to_io = new_io __FILE__, "r"
     begin
-      -> { IO.copy_stream @object.from, to_io }.should raise_error(IOError)
+      -> { IO.copy_stream @object.from, to_io }.should.raise(IOError)
     ensure
       to_io.close
     end
@@ -79,7 +79,7 @@ describe :io_copy_stream_to_io, shared: true do
 
   it "does not close the destination IO" do
     IO.copy_stream(@object.from, @to_io)
-    @to_io.closed?.should be_false
+    @to_io.closed?.should == false
   end
 
   it "copies only length bytes when specified" do
@@ -129,12 +129,12 @@ describe "IO.copy_stream" do
     it "raises an IOError if the source IO is not open for reading" do
       @from_io.close
       @from_io = new_io @from_bigfile, "a"
-      -> { IO.copy_stream @from_io, @to_name }.should raise_error(IOError)
+      -> { IO.copy_stream @from_io, @to_name }.should.raise(IOError)
     end
 
     it "does not close the source IO" do
       IO.copy_stream(@from_io, @to_name)
-      @from_io.closed?.should be_false
+      @from_io.closed?.should == false
     end
 
     platform_is_not :windows do
@@ -206,7 +206,7 @@ describe "IO.copy_stream" do
       obj = mock("io_copy_stream_from")
       obj.should_receive(:to_path).and_return(1)
 
-      -> { IO.copy_stream(obj, @to_name) }.should raise_error(TypeError)
+      -> { IO.copy_stream(obj, @to_name) }.should.raise(TypeError)
     end
 
     describe "to a file name" do
@@ -240,12 +240,12 @@ describe "IO.copy_stream" do
 
     it "does not close the source IO" do
       IO.copy_stream(@from_io, @to_name)
-      @from_io.closed?.should be_false
+      @from_io.closed?.should == false
     end
 
     platform_is_not :windows do
       it "raises an error when an offset is specified" do
-        -> { IO.copy_stream(@from_io, @to_name, 8, 4) }.should raise_error(Errno::ESPIPE)
+        -> { IO.copy_stream(@from_io, @to_name, 8, 4) }.should.raise(Errno::ESPIPE)
       end
     end
 
@@ -299,6 +299,14 @@ describe "IO.copy_stream" do
     it "does not call #pos on the source if no offset is given" do
       @io.should_not_receive(:pos)
       IO.copy_stream(@io, @to_name)
+    end
+
+    it "does not call #read on the source or #write on the destination if zero length is given" do
+      from = mock("io_copy_stream_to_object_zero_length_read")
+      to = mock("io_copy_stream_to_object_zero_length_write")
+      from.should_not_receive(:read)
+      to.should_not_receive(:write)
+      IO.copy_stream(from, to, 0)
     end
   end
 

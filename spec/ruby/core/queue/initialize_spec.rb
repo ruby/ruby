@@ -35,20 +35,20 @@ describe "Queue#initialize" do
     end
 
     it "raises a TypeError if the given argument can't be converted to an Array" do
-      -> { Queue.new(42) }.should raise_error(TypeError)
-      -> { Queue.new(:abc) }.should raise_error(TypeError)
+      -> { Queue.new(42) }.should.raise(TypeError)
+      -> { Queue.new(:abc) }.should.raise(TypeError)
     end
 
     it "raises a NoMethodError if the given argument raises a NoMethodError during type coercion to an Array" do
       enumerable = MockObject.new('mock-enumerable')
       enumerable.should_receive(:to_a).and_raise(NoMethodError)
-      -> { Queue.new(enumerable) }.should raise_error(NoMethodError)
+      -> { Queue.new(enumerable) }.should.raise(NoMethodError)
     end
   end
 
   it "raises TypeError if the provided Enumerable does not respond to #to_a" do
     enumerable = MockObject.new('mock-enumerable')
-    -> { Queue.new(enumerable) }.should raise_error(TypeError, "can't convert MockObject into Array")
+    -> { Queue.new(enumerable) }.should.raise(TypeError, "can't convert MockObject into Array")
   end
 
   it "raises TypeError if #to_a does not return Array" do

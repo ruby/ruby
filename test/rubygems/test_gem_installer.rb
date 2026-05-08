@@ -2442,6 +2442,136 @@ class TestGemInstaller < Gem::InstallerTestCase
     assert_kind_of(String, installer.gem)
   end
 
+  def test_install_no_build_extension
+    installer = util_setup_installer
+
+    gemdir = File.join @gemhome, "gems", @spec.full_name
+
+    installer.options[:build_extension] = false
+
+    use_ui @ui do
+      installer.install
+    end
+
+    assert_path_exist gemdir
+    assert_path_not_exist File.join(@spec.extension_dir, "gem.build_complete")
+    assert_match "contains native extensions that were not built", @ui.error
+    assert_match "gem pristine #{@spec.name} --extensions", @ui.error
+  end
+
+  def test_install_no_build_extension_without_extensions
+    spec = quick_gem "b", 2
+
+    util_build_gem spec
+
+    installer = util_installer spec, @gemhome
+    installer.options[:build_extension] = false
+
+    use_ui @ui do
+      installer.install
+    end
+
+    refute_match "contains native extensions", @ui.error
+  end
+
+  def test_install_no_install_plugin
+    installer = util_setup_installer do |spec|
+      write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
+        io.write "# do nothing"
+      end
+
+      spec.files += %w[lib/rubygems_plugin.rb]
+    end
+
+    installer.options[:install_plugin] = false
+
+    build_rake_in do
+      use_ui @ui do
+        installer.install
+      end
+    end
+
+    plugin_path = File.join Gem.plugindir, "a_plugin.rb"
+    refute File.exist?(plugin_path), "plugin must not be written when --no-install-plugin"
+    assert_match "contains plugins that were not installed", @ui.error
+    assert_match "gem pristine #{@spec.name} --only-plugins", @ui.error
+  end
+
+  def test_install_no_install_plugin_skips_load_plugin
+    installer = util_setup_installer do |spec|
+      write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
+        io.write "$no_install_plugin_test_loaded = true"
+      end
+
+      spec.files += %w[lib/rubygems_plugin.rb]
+    end
+
+    # Simulate a pre-existing plugin wrapper from a previous install
+    FileUtils.mkdir_p Gem.plugindir
+    plugin_path = File.join Gem.plugindir, "a_plugin.rb"
+    File.write(plugin_path, "require_relative '../../gems/#{@spec.full_name}/lib/rubygems_plugin'")
+
+    installer.options[:install_plugin] = false
+
+    build_rake_in do
+      use_ui @ui do
+        installer.install
+      end
+    end
+
+    refute defined?($no_install_plugin_test_loaded) && $no_install_plugin_test_loaded,
+           "plugin must not be loaded when --no-install-plugin"
+  ensure
+    $no_install_plugin_test_loaded = nil
+  end
+
+  def test_install_no_install_plugin_without_plugins
+    installer = util_setup_installer
+
+    installer.options[:install_plugin] = false
+
+    build_rake_in do
+      use_ui @ui do
+        installer.install
+      end
+    end
+
+    refute_match "contains plugins", @ui.error
+  end
+
+  def test_install_no_install_plugin_removes_stale_wrappers
+    # First install a version with a plugin
+    installer = util_setup_installer do |spec|
+      write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
+        io.write "# plugin code"
+      end
+
+      spec.files += %w[lib/rubygems_plugin.rb]
+    end
+
+    build_rake_in do
+      use_ui @ui do
+        installer.install
+      end
+    end
+
+    plugin_path = File.join Gem.plugindir, "a_plugin.rb"
+    assert File.exist?(plugin_path), "plugin wrapper should exist after first install"
+
+    # Now install a new version without plugins, using --no-install-plugin
+    spec2 = quick_gem "a", 3
+    util_build_gem spec2
+
+    installer2 = util_installer spec2, @gemhome
+    installer2.options[:install_plugin] = false
+
+    use_ui @ui do
+      installer2.install
+    end
+
+    refute File.exist?(plugin_path), "stale plugin wrapper must be removed"
+  end
+
   private
 
   def util_execless

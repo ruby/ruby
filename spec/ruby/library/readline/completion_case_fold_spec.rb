@@ -3,7 +3,7 @@ require_relative 'spec_helper'
 with_feature :readline do
   describe "Readline.completion_case_fold" do
     it "returns nil" do
-      Readline.completion_case_fold.should be_nil
+      Readline.completion_case_fold.should == nil
     end
   end
 

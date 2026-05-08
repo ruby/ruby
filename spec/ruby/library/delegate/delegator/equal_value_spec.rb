@@ -9,16 +9,16 @@ describe "Delegator#==" do
 
   it "is not delegated when passed self" do
     @base.should_not_receive(:==)
-    (@delegator == @delegator).should be_true
+    (@delegator == @delegator).should == true
   end
 
   it "is delegated when passed the delegated object" do
     @base.should_receive(:==).and_return(false)
-    (@delegator == @base).should be_false
+    (@delegator == @base).should == false
   end
 
   it "is delegated in general" do
     @base.should_receive(:==).and_return(true)
-    (@delegator == 42).should be_true
+    (@delegator == 42).should == true
   end
 end

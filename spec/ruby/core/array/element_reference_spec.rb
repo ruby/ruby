@@ -39,12 +39,12 @@ describe "Array.[]" do
     end
 
     it "returns an instance of the subclass" do
-      ArraySpecs::MyArray[1, 2, 3].should be_an_instance_of(ArraySpecs::MyArray)
+      ArraySpecs::MyArray[1, 2, 3].should.instance_of?(ArraySpecs::MyArray)
     end
 
     it "does not call #initialize on the subclass instance" do
       ArraySpecs::MyArray[1, 2, 3].should == [1, 2, 3]
-      ScratchPad.recorded.should be_nil
+      ScratchPad.recorded.should == nil
     end
   end
 end

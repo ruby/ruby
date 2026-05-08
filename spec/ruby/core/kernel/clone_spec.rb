@@ -25,7 +25,7 @@ describe "Kernel#clone" do
     end
 
     clone = instance.clone
-    clone.class.should equal klass
+    clone.class.should.equal? klass
   end
 
   describe "with no arguments" do
@@ -40,7 +40,7 @@ describe "Kernel#clone" do
 
     it 'copies frozen?' do
       o = ''.freeze.clone
-      o.frozen?.should be_true
+      o.frozen?.should == true
     end
   end
 
@@ -56,7 +56,7 @@ describe "Kernel#clone" do
 
     it "copies frozen?" do
       o = "".freeze.clone(freeze: nil)
-      o.frozen?.should be_true
+      o.frozen?.should == true
     end
   end
 
@@ -78,7 +78,7 @@ describe "Kernel#clone" do
 
     it "calls #initialize_clone with kwargs freeze: true even if #initialize_clone only takes a single argument" do
       obj = KernelSpecs::Clone.new
-      -> { obj.clone(freeze: true) }.should raise_error(ArgumentError, 'wrong number of arguments (given 2, expected 1)')
+      -> { obj.clone(freeze: true) }.should.raise(ArgumentError, 'wrong number of arguments (given 2, expected 1)')
     end
   end
 
@@ -100,15 +100,15 @@ describe "Kernel#clone" do
 
     it "calls #initialize_clone with kwargs freeze: false even if #initialize_clone only takes a single argument" do
       obj = KernelSpecs::Clone.new
-      -> { obj.clone(freeze: false) }.should raise_error(ArgumentError, 'wrong number of arguments (given 2, expected 1)')
+      -> { obj.clone(freeze: false) }.should.raise(ArgumentError, 'wrong number of arguments (given 2, expected 1)')
     end
   end
 
   describe "with freeze: anything else" do
     it 'raises ArgumentError when passed not true/false/nil' do
-      -> { @obj.clone(freeze: 1) }.should raise_error(ArgumentError, /unexpected value for freeze: Integer/)
-      -> { @obj.clone(freeze: "") }.should raise_error(ArgumentError, /unexpected value for freeze: String/)
-      -> { @obj.clone(freeze: Object.new) }.should raise_error(ArgumentError, /unexpected value for freeze: Object/)
+      -> { @obj.clone(freeze: 1) }.should.raise(ArgumentError, /unexpected value for freeze: Integer/)
+      -> { @obj.clone(freeze: "") }.should.raise(ArgumentError, /unexpected value for freeze: String/)
+      -> { @obj.clone(freeze: Object.new) }.should.raise(ArgumentError, /unexpected value for freeze: Object/)
     end
   end
 

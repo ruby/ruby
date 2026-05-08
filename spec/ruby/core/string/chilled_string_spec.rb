@@ -73,7 +73,7 @@ describe "chilled String" do
           -> {
             -> {
               input << "mutated"
-            }.should raise_error(FrozenError)
+            }.should.raise(FrozenError)
           }.should_not complain(/literal string will be frozen in the future/)
         end
       end
@@ -142,7 +142,7 @@ describe "chilled String" do
           -> {
             -> {
               input << "mutated"
-            }.should raise_error(FrozenError)
+            }.should.raise(FrozenError)
           }.should_not complain(/string returned by :chilled\.to_s will be frozen in the future/)
         end
       end

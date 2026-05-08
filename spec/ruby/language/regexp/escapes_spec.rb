@@ -116,11 +116,11 @@ describe "Regexps with escape characters" do
   it "supports \\x (hex characters)" do
     /\xA/.match("\nxyz").to_a.should == ["\n"]
     /\x0A/.match("\n").to_a.should == ["\n"]
-    /\xAA/.match("\nA").should be_nil
+    /\xAA/.match("\nA").should == nil
     /\x0AA/.match("\nA").to_a.should == ["\nA"]
     /\xAG/.match("\nG").to_a.should == ["\nG"]
     # Non-matches
-    -> { eval('/\xG/') }.should raise_error(SyntaxError)
+    -> { eval('/\xG/') }.should.raise(SyntaxError)
 
     # \x{7HHHHHHH} wide hexadecimal char (character code point value)
   end
@@ -136,14 +136,14 @@ describe "Regexps with escape characters" do
     /\c,\cL\cl/.match("\f\f\f").to_a.should == ["\f\f\f"]
     /\c-\cM\cm/.match("\r\r\r").to_a.should == ["\r\r\r"]
 
-    /\cJ/.match("\r").should be_nil
+    /\cJ/.match("\r").should == nil
 
     # Parsing precedence
     /\cJ+/.match("\n\n").to_a.should == ["\n\n"] # Quantifiers apply to entire escape sequence
     /\\cJ/.match("\\cJ").to_a.should == ["\\cJ"]
-    -> { eval('/[abc\x]/') }.should raise_error(SyntaxError) # \x is treated as a escape sequence even inside a character class
+    -> { eval('/[abc\x]/') }.should.raise(SyntaxError) # \x is treated as a escape sequence even inside a character class
     # Syntax error
-    -> { eval('/\c/') }.should raise_error(SyntaxError)
+    -> { eval('/\c/') }.should.raise(SyntaxError)
 
     # \cx          control char          (character code point value)
     # \C-x         control char          (character code point value)

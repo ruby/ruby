@@ -13,6 +13,6 @@ describe "Hash#==" do
 
     l_val.should_receive(:==).with(r_val).and_return(true)
 
-    ({ 1 => l_val } == { 1 => r_val }).should be_true
+    ({ 1 => l_val } == { 1 => r_val }).should == true
   end
 end
