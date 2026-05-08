@@ -1,4 +1,5 @@
 #include "internal.h"
+#include "internal/box.h"
 #include "vm_core.h"
 #include "iseq.h"
 #include "builtin.h"
@@ -56,7 +57,7 @@ builtin_lookup(const char *feature, size_t *psize)
 }
 
 static void
-load_with_builtin_functions(const char *feature_name, const struct rb_builtin_function *table)
+load_with_builtin_functions(const char *feature_name, const struct rb_builtin_function *table, const rb_box_t *target_box)
 {
     // search binary
     size_t size;
@@ -74,13 +75,40 @@ load_with_builtin_functions(const char *feature_name, const struct rb_builtin_fu
     vm->builtin_function_table = NULL;
 
     // exec
-    rb_iseq_eval(rb_iseq_check(iseq), rb_root_box()); // builtin functions are loaded in the root box
+    rb_iseq_eval(rb_iseq_check(iseq), target_box);
 }
 
 void
 rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin_function *table)
 {
-    load_with_builtin_functions(feature_name, table);
+    load_with_builtin_functions(feature_name, table, rb_root_box());
+}
+
+VALUE
+rb_define_gem_modules(VALUE flags_value, VALUE _)
+{
+    rb_box_gem_flags_t *flags = (rb_box_gem_flags_t *)flags_value;
+
+    if (flags->gem) {
+        rb_define_module("Gem");
+        if (flags->error_highlight) {
+            rb_define_module("ErrorHighlight");
+        }
+        if (flags->did_you_mean) {
+            rb_define_module("DidYouMean");
+        }
+        if (flags->syntax_suggest) {
+            rb_define_module("SyntaxSuggest");
+        }
+    }
+
+    return Qnil;
+}
+
+void
+rb_load_gem_prelude(VALUE box)
+{
+    load_with_builtin_functions("gem_prelude", NULL, (const rb_box_t *)box);
 }
 
 #endif
@@ -103,7 +131,9 @@ Init_builtin_features(void)
 
 #ifdef BUILTIN_BINARY_SIZE
 
-    load_with_builtin_functions("gem_prelude", NULL);
+    rb_load_gem_prelude((VALUE)rb_root_box());
+
+    rb_load_gem_prelude((VALUE)rb_main_box());
 
 #endif
 

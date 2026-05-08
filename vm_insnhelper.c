@@ -2273,6 +2273,8 @@ vm_search_method_fastpath(const struct rb_control_frame_struct *reg_cfp, struct 
 {
     const struct rb_callcache *cc = cd->cc;
 
+    VM_ASSERT_TYPE2(klass, T_CLASS, T_ICLASS);
+
 #if OPT_INLINE_METHOD_CACHE
     if (LIKELY(vm_cc_class_check(cc, klass))) {
         if (LIKELY(!METHOD_ENTRY_INVALIDATED(vm_cc_cme(cc)))) {
