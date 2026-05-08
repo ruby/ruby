@@ -10,6 +10,25 @@
  */
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for VALUE */
+#include "ruby/re.h"            /* for struct RMatch and struct re_registers */
+
+static inline long
+RMATCH_BEG(VALUE match, int i)
+{
+    return RMATCH(match)->regs.beg[i];
+}
+
+static inline long
+RMATCH_END(VALUE match, int i)
+{
+    return RMATCH(match)->regs.end[i];
+}
+
+static inline int
+RMATCH_NREGS(VALUE match)
+{
+    return RMATCH(match)->regs.num_regs;
+}
 
 /* re.c */
 VALUE rb_reg_s_alloc(VALUE klass);

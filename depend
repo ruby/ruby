@@ -4878,6 +4878,7 @@ enum.$(OBJEXT): {$(VPATH)}internal/core/rclass.h
 enum.$(OBJEXT): {$(VPATH)}internal/core/rdata.h
 enum.$(OBJEXT): {$(VPATH)}internal/core/rfile.h
 enum.$(OBJEXT): {$(VPATH)}internal/core/rhash.h
+enum.$(OBJEXT): {$(VPATH)}internal/core/rmatch.h
 enum.$(OBJEXT): {$(VPATH)}internal/core/robject.h
 enum.$(OBJEXT): {$(VPATH)}internal/core/rregexp.h
 enum.$(OBJEXT): {$(VPATH)}internal/core/rstring.h
@@ -4968,6 +4969,8 @@ enum.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 enum.$(OBJEXT): {$(VPATH)}missing.h
 enum.$(OBJEXT): {$(VPATH)}onigmo.h
 enum.$(OBJEXT): {$(VPATH)}oniguruma.h
+enum.$(OBJEXT): {$(VPATH)}re.h
+enum.$(OBJEXT): {$(VPATH)}regex.h
 enum.$(OBJEXT): {$(VPATH)}ruby_assert.h
 enum.$(OBJEXT): {$(VPATH)}shape.h
 enum.$(OBJEXT): {$(VPATH)}st.h
@@ -8965,6 +8968,7 @@ marshal.$(OBJEXT): {$(VPATH)}internal/core/rclass.h
 marshal.$(OBJEXT): {$(VPATH)}internal/core/rdata.h
 marshal.$(OBJEXT): {$(VPATH)}internal/core/rfile.h
 marshal.$(OBJEXT): {$(VPATH)}internal/core/rhash.h
+marshal.$(OBJEXT): {$(VPATH)}internal/core/rmatch.h
 marshal.$(OBJEXT): {$(VPATH)}internal/core/robject.h
 marshal.$(OBJEXT): {$(VPATH)}internal/core/rregexp.h
 marshal.$(OBJEXT): {$(VPATH)}internal/core/rstring.h
@@ -9060,6 +9064,8 @@ marshal.$(OBJEXT): {$(VPATH)}missing.h
 marshal.$(OBJEXT): {$(VPATH)}node.h
 marshal.$(OBJEXT): {$(VPATH)}onigmo.h
 marshal.$(OBJEXT): {$(VPATH)}oniguruma.h
+marshal.$(OBJEXT): {$(VPATH)}re.h
+marshal.$(OBJEXT): {$(VPATH)}regex.h
 marshal.$(OBJEXT): {$(VPATH)}ruby_assert.h
 marshal.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 marshal.$(OBJEXT): {$(VPATH)}rubyparser.h
@@ -10952,6 +10958,7 @@ parse.$(OBJEXT): {$(VPATH)}internal/core/rclass.h
 parse.$(OBJEXT): {$(VPATH)}internal/core/rdata.h
 parse.$(OBJEXT): {$(VPATH)}internal/core/rfile.h
 parse.$(OBJEXT): {$(VPATH)}internal/core/rhash.h
+parse.$(OBJEXT): {$(VPATH)}internal/core/rmatch.h
 parse.$(OBJEXT): {$(VPATH)}internal/core/robject.h
 parse.$(OBJEXT): {$(VPATH)}internal/core/rregexp.h
 parse.$(OBJEXT): {$(VPATH)}internal/core/rstring.h
@@ -11054,6 +11061,7 @@ parse.$(OBJEXT): {$(VPATH)}parser_st.h
 parse.$(OBJEXT): {$(VPATH)}probes.dmyh
 parse.$(OBJEXT): {$(VPATH)}probes.h
 parse.$(OBJEXT): {$(VPATH)}ractor.h
+parse.$(OBJEXT): {$(VPATH)}re.h
 parse.$(OBJEXT): {$(VPATH)}regenc.h
 parse.$(OBJEXT): {$(VPATH)}regex.h
 parse.$(OBJEXT): {$(VPATH)}ruby_assert.h
@@ -15946,6 +15954,7 @@ ruby_parser.$(OBJEXT): {$(VPATH)}internal/core/rclass.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/core/rdata.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/core/rfile.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/core/rhash.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/core/rmatch.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/core/robject.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/core/rregexp.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/core/rstring.h
@@ -16037,6 +16046,8 @@ ruby_parser.$(OBJEXT): {$(VPATH)}missing.h
 ruby_parser.$(OBJEXT): {$(VPATH)}node.h
 ruby_parser.$(OBJEXT): {$(VPATH)}onigmo.h
 ruby_parser.$(OBJEXT): {$(VPATH)}oniguruma.h
+ruby_parser.$(OBJEXT): {$(VPATH)}re.h
+ruby_parser.$(OBJEXT): {$(VPATH)}regex.h
 ruby_parser.$(OBJEXT): {$(VPATH)}ruby_assert.h
 ruby_parser.$(OBJEXT): {$(VPATH)}ruby_parser.c
 ruby_parser.$(OBJEXT): {$(VPATH)}rubyparser.h
@@ -19345,6 +19356,7 @@ variable.$(OBJEXT): {$(VPATH)}internal/core/rclass.h
 variable.$(OBJEXT): {$(VPATH)}internal/core/rdata.h
 variable.$(OBJEXT): {$(VPATH)}internal/core/rfile.h
 variable.$(OBJEXT): {$(VPATH)}internal/core/rhash.h
+variable.$(OBJEXT): {$(VPATH)}internal/core/rmatch.h
 variable.$(OBJEXT): {$(VPATH)}internal/core/robject.h
 variable.$(OBJEXT): {$(VPATH)}internal/core/rregexp.h
 variable.$(OBJEXT): {$(VPATH)}internal/core/rstring.h
@@ -19439,6 +19451,8 @@ variable.$(OBJEXT): {$(VPATH)}onigmo.h
 variable.$(OBJEXT): {$(VPATH)}oniguruma.h
 variable.$(OBJEXT): {$(VPATH)}ractor.h
 variable.$(OBJEXT): {$(VPATH)}ractor_core.h
+variable.$(OBJEXT): {$(VPATH)}re.h
+variable.$(OBJEXT): {$(VPATH)}regex.h
 variable.$(OBJEXT): {$(VPATH)}ruby_assert.h
 variable.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 variable.$(OBJEXT): {$(VPATH)}rubyparser.h
@@ -19839,6 +19853,7 @@ vm.$(OBJEXT): {$(VPATH)}internal/core/rclass.h
 vm.$(OBJEXT): {$(VPATH)}internal/core/rdata.h
 vm.$(OBJEXT): {$(VPATH)}internal/core/rfile.h
 vm.$(OBJEXT): {$(VPATH)}internal/core/rhash.h
+vm.$(OBJEXT): {$(VPATH)}internal/core/rmatch.h
 vm.$(OBJEXT): {$(VPATH)}internal/core/robject.h
 vm.$(OBJEXT): {$(VPATH)}internal/core/rregexp.h
 vm.$(OBJEXT): {$(VPATH)}internal/core/rstring.h
@@ -19941,6 +19956,8 @@ vm.$(OBJEXT): {$(VPATH)}probes.h
 vm.$(OBJEXT): {$(VPATH)}probes_helper.h
 vm.$(OBJEXT): {$(VPATH)}ractor.h
 vm.$(OBJEXT): {$(VPATH)}ractor_core.h
+vm.$(OBJEXT): {$(VPATH)}re.h
+vm.$(OBJEXT): {$(VPATH)}regex.h
 vm.$(OBJEXT): {$(VPATH)}ruby_assert.h
 vm.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 vm.$(OBJEXT): {$(VPATH)}rubyparser.h
