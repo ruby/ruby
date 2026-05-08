@@ -984,6 +984,15 @@ rb_reg_region_copy(struct re_registers *to, const struct re_registers *from)
     return ONIGERR_MEMORY;
 }
 
+/* Replace `match`'s registers with a copy of `regs`. Raises on OOM. */
+static void
+match_set_regs(VALUE match, const struct re_registers *regs)
+{
+    if (rb_reg_region_copy(RMATCH_REGS(match), regs)) {
+        rb_memerror();
+    }
+}
+
 typedef struct {
     long byte_pos;
     long char_pos;
@@ -1089,8 +1098,7 @@ match_init_copy(VALUE obj, VALUE orig)
     RB_OBJ_WRITE(obj, &rm->str, RMATCH(orig)->str);
     RB_OBJ_WRITE(obj, &rm->regexp, RMATCH(orig)->regexp);
 
-    if (rb_reg_region_copy(&rm->regs, RMATCH_REGS(orig)))
-        rb_memerror();
+    match_set_regs(obj, RMATCH_REGS(orig));
 
     if (RMATCH(orig)->char_offset_num_allocated) {
         if (rm->char_offset_num_allocated < rm->regs.num_regs) {
@@ -1808,11 +1816,8 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
     if (NIL_P(match)) {
         match = match_alloc(rb_cMatch);
     }
-    else {
-        onig_region_free(&RMATCH(match)->regs, false);
-    }
 
-    if (rb_reg_region_copy(RMATCH_REGS(match), &regs)) rb_memerror();
+    match_set_regs(match, &regs);
     ALLOCV_END(regs_buf);
 
     if (set_backref_str) {
@@ -1889,7 +1894,7 @@ rb_reg_start_with_p(VALUE re, VALUE str)
         match = match_alloc(rb_cMatch);
     }
 
-    if (rb_reg_region_copy(RMATCH_REGS(match), &regs)) rb_memerror();
+    match_set_regs(match, &regs);
     ALLOCV_END(regs_buf);
 
     RB_OBJ_WRITE(match, &RMATCH(match)->str, rb_str_new4(str));
