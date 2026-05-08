@@ -60,9 +60,6 @@
 # define HAVE_CRYPT_R 1
 #endif
 
-#define BEG(no) (regs->beg[(no)])
-#define END(no) (regs->end[(no)])
-
 #undef rb_str_new
 #undef rb_usascii_str_new
 #undef rb_utf8_str_new
@@ -6273,8 +6270,8 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
             match0 = pat;
         }
         else {
-            beg0 = BEG(0);
-            end0 = END(0);
+            beg0 = RMATCH_BEG(match, 0);
+            end0 = RMATCH_END(match, 0);
             if (iter) match0 = rb_reg_nth_match(0, match);
         }
 
@@ -6419,8 +6416,8 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
             match0 = pat;
         }
         else {
-            beg0 = BEG(0);
-            end0 = END(0);
+            beg0 = RMATCH_BEG(match, 0);
+            end0 = RMATCH_END(match, 0);
             if (mode == ITER) match0 = rb_reg_nth_match(0, match);
         }
 
@@ -10645,17 +10642,14 @@ scan_once(VALUE str, VALUE pat, long *start, int set_backref_str)
     VALUE result = Qnil;
     long end, pos = rb_pat_search(pat, str, *start, set_backref_str);
     if (pos >= 0) {
-        VALUE match;
-        struct re_registers *regs;
+        VALUE match = Qnil;
         if (BUILTIN_TYPE(pat) == T_STRING) {
-            regs = NULL;
             end = pos + RSTRING_LEN(pat);
         }
         else {
             match = rb_backref_get();
-            regs = RMATCH_REGS(match);
-            pos = BEG(0);
-            end = END(0);
+            pos = RMATCH_BEG(match, 0);
+            end = RMATCH_END(match, 0);
         }
 
         if (pos == end) {
@@ -10673,16 +10667,17 @@ scan_once(VALUE str, VALUE pat, long *start, int set_backref_str)
             *start = end;
         }
 
-        if (!regs || regs->num_regs == 1) {
+        if (NIL_P(match) || RMATCH_NREGS(match) == 1) {
             result = rb_str_subseq(str, pos, end - pos);
             return result;
         }
         else {
-            result = rb_ary_new2(regs->num_regs);
-            for (int i = 1; i < regs->num_regs; i++) {
+            int num_regs = RMATCH_NREGS(match);
+            result = rb_ary_new2(num_regs);
+            for (int i = 1; i < num_regs; i++) {
                 VALUE s = Qnil;
-                if (BEG(i) >= 0) {
-                    s = rb_str_subseq(str, BEG(i), END(i)-BEG(i));
+                if (RMATCH_BEG(match, i) >= 0) {
+                    s = rb_str_subseq(str, RMATCH_BEG(match, i), RMATCH_END(match, i) - RMATCH_BEG(match, i));
                 }
 
                 rb_ary_push(result, s);

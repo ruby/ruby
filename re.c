@@ -1004,7 +1004,6 @@ static void
 update_char_offset(VALUE match)
 {
     struct RMatch *rm = RMATCH(match);
-    struct re_registers *regs;
     int i, num_regs, num_pos;
     long c;
     char *s, *p, *q;
@@ -1015,8 +1014,7 @@ update_char_offset(VALUE match)
     if (rm->char_offset_num_allocated)
         return;
 
-    regs = &rm->regs;
-    num_regs = rm->regs.num_regs;
+    num_regs = RMATCH_NREGS(match);
 
     if (rm->char_offset_num_allocated < num_regs) {
         SIZED_REALLOC_N(rm->char_offset, struct rmatch_offset, num_regs, rm->char_offset_num_allocated);
@@ -1026,8 +1024,8 @@ update_char_offset(VALUE match)
     enc = rb_enc_get(RMATCH(match)->str);
     if (rb_enc_mbmaxlen(enc) == 1) {
         for (i = 0; i < num_regs; i++) {
-            rm->char_offset[i].beg = BEG(i);
-            rm->char_offset[i].end = END(i);
+            rm->char_offset[i].beg = RMATCH_BEG(match, i);
+            rm->char_offset[i].end = RMATCH_END(match, i);
         }
         return;
     }
@@ -1035,10 +1033,10 @@ update_char_offset(VALUE match)
     pairs = RB_ALLOCV_N(pair_t, pairs_obj, num_regs * 2);
     num_pos = 0;
     for (i = 0; i < num_regs; i++) {
-        if (BEG(i) < 0)
+        if (RMATCH_BEG(match, i) < 0)
             continue;
-        pairs[num_pos++].byte_pos = BEG(i);
-        pairs[num_pos++].byte_pos = END(i);
+        pairs[num_pos++].byte_pos = RMATCH_BEG(match, i);
+        pairs[num_pos++].byte_pos = RMATCH_END(match, i);
     }
     qsort(pairs, num_pos, sizeof(pair_t), pair_byte_cmp);
 
@@ -1053,17 +1051,17 @@ update_char_offset(VALUE match)
 
     for (i = 0; i < num_regs; i++) {
         pair_t key, *found;
-        if (BEG(i) < 0) {
+        if (RMATCH_BEG(match, i) < 0) {
             rm->char_offset[i].beg = -1;
             rm->char_offset[i].end = -1;
             continue;
         }
 
-        key.byte_pos = BEG(i);
+        key.byte_pos = RMATCH_BEG(match, i);
         found = bsearch(&key, pairs, num_pos, sizeof(pair_t), pair_byte_cmp);
         rm->char_offset[i].beg = found->char_pos;
 
-        key.byte_pos = END(i);
+        key.byte_pos = RMATCH_END(match, i);
         found = bsearch(&key, pairs, num_pos, sizeof(pair_t), pair_byte_cmp);
         rm->char_offset[i].end = found->char_pos;
     }
@@ -3637,7 +3635,7 @@ match_integer_at(int argc, VALUE *argv, VALUE match)
 
     int base = 10;
     VALUE idx;
-    long nth;
+    int nth;
 
     argc = rb_check_arity(argc, 1, 2);
     if (FIXNUM_P(idx = argv[0])) {
@@ -3651,10 +3649,10 @@ match_integer_at(int argc, VALUE *argv, VALUE match)
         rb_raise(rb_eArgError, "invalid radix %d", base);
     }
 
-    if (nth >= regs->num_regs) return Qnil;
-    if (nth < 0 && (nth += regs->num_regs) <= 0) return Qnil;
+    if (nth >= RMATCH_NREGS(match)) return Qnil;
+    if (nth < 0 && (nth += RMATCH_NREGS(match)) <= 0) return Qnil;
 
-    long start = BEG(nth), end = END(nth);
+    long start = RMATCH_BEG(match, nth), end = RMATCH_END(match, nth);
     if (start < 0) return Qnil;
     RUBY_ASSERT(start <= end, "%ld > %ld", start, end);
 
