@@ -1179,7 +1179,7 @@ static VALUE
 match_size(VALUE match)
 {
     match_check(match);
-    return INT2FIX(RMATCH_REGS(match)->num_regs);
+    return INT2FIX(RMATCH_NREGS(match));
 }
 
 static int name_to_backref_number(const struct re_registers *, VALUE, const char*, const char*);
@@ -1193,9 +1193,9 @@ name_to_backref_error(VALUE name)
 }
 
 static void
-backref_number_check(struct re_registers *regs, int i)
+backref_number_check(VALUE match, int i)
 {
-    if (i < 0 || regs->num_regs <= i)
+    if (i < 0 || RMATCH_NREGS(match) <= i)
         rb_raise(rb_eIndexError, "index %d out of matches", i);
 }
 
@@ -1245,12 +1245,11 @@ static VALUE
 match_offset(VALUE match, VALUE n)
 {
     int i = match_backref_number(match, n);
-    struct re_registers *regs = RMATCH_REGS(match);
 
     match_check(match);
-    backref_number_check(regs, i);
+    backref_number_check(match, i);
 
-    if (BEG(i) < 0)
+    if (RMATCH_BEG(match, i) < 0)
         return rb_assoc_new(Qnil, Qnil);
 
     update_char_offset(match);
@@ -1280,14 +1279,13 @@ static VALUE
 match_byteoffset(VALUE match, VALUE n)
 {
     int i = match_backref_number(match, n);
-    struct re_registers *regs = RMATCH_REGS(match);
 
     match_check(match);
-    backref_number_check(regs, i);
+    backref_number_check(match, i);
 
-    if (BEG(i) < 0)
+    if (RMATCH_BEG(match, i) < 0)
         return rb_assoc_new(Qnil, Qnil);
-    return rb_assoc_new(LONG2NUM(BEG(i)), LONG2NUM(END(i)));
+    return rb_assoc_new(LONG2NUM(RMATCH_BEG(match, i)), LONG2NUM(RMATCH_END(match, i)));
 }
 
 
@@ -1304,14 +1302,13 @@ static VALUE
 match_bytebegin(VALUE match, VALUE n)
 {
     int i = match_backref_number(match, n);
-    struct re_registers *regs = RMATCH_REGS(match);
 
     match_check(match);
-    backref_number_check(regs, i);
+    backref_number_check(match, i);
 
-    if (BEG(i) < 0)
+    if (RMATCH_BEG(match, i) < 0)
         return Qnil;
-    return LONG2NUM(BEG(i));
+    return LONG2NUM(RMATCH_BEG(match, i));
 }
 
 
@@ -1328,14 +1325,13 @@ static VALUE
 match_byteend(VALUE match, VALUE n)
 {
     int i = match_backref_number(match, n);
-    struct re_registers *regs = RMATCH_REGS(match);
 
     match_check(match);
-    backref_number_check(regs, i);
+    backref_number_check(match, i);
 
-    if (BEG(i) < 0)
+    if (RMATCH_BEG(match, i) < 0)
         return Qnil;
-    return LONG2NUM(END(i));
+    return LONG2NUM(RMATCH_END(match, i));
 }
 
 
@@ -1352,12 +1348,11 @@ static VALUE
 match_begin(VALUE match, VALUE n)
 {
     int i = match_backref_number(match, n);
-    struct re_registers *regs = RMATCH_REGS(match);
 
     match_check(match);
-    backref_number_check(regs, i);
+    backref_number_check(match, i);
 
-    if (BEG(i) < 0)
+    if (RMATCH_BEG(match, i) < 0)
         return Qnil;
 
     update_char_offset(match);
@@ -1378,12 +1373,11 @@ static VALUE
 match_end(VALUE match, VALUE n)
 {
     int i = match_backref_number(match, n);
-    struct re_registers *regs = RMATCH_REGS(match);
 
     match_check(match);
-    backref_number_check(regs, i);
+    backref_number_check(match, i);
 
-    if (BEG(i) < 0)
+    if (RMATCH_BEG(match, i) < 0)
         return Qnil;
 
     update_char_offset(match);
@@ -1420,11 +1414,10 @@ static VALUE
 match_nth(VALUE match, VALUE n)
 {
     int i = match_backref_number(match, n);
-    struct re_registers *regs = RMATCH_REGS(match);
 
-    backref_number_check(regs, i);
+    backref_number_check(match, i);
 
-    long start = BEG(i), end = END(i);
+    long start = RMATCH_BEG(match, i), end = RMATCH_END(match, i);
     if (start < 0)
         return Qnil;
 
@@ -1464,12 +1457,11 @@ static VALUE
 match_nth_length(VALUE match, VALUE n)
 {
     int i = match_backref_number(match, n);
-    struct re_registers *regs = RMATCH_REGS(match);
 
     match_check(match);
-    backref_number_check(regs, i);
+    backref_number_check(match, i);
 
-    if (BEG(i) < 0)
+    if (RMATCH_BEG(match, i) < 0)
         return Qnil;
 
     update_char_offset(match);
@@ -1495,11 +1487,8 @@ rb_match_unbusy(VALUE match)
 int
 rb_match_count(VALUE match)
 {
-    struct re_registers *regs;
     if (NIL_P(match)) return -1;
-    regs = RMATCH_REGS(match);
-    if (!regs) return -1;
-    return regs->num_regs;
+    return RMATCH_NREGS(match);
 }
 
 static void
@@ -1892,18 +1881,17 @@ rb_reg_start_with_p(VALUE re, VALUE str)
 VALUE
 rb_reg_nth_defined(int nth, VALUE match)
 {
-    struct re_registers *regs;
     if (NIL_P(match)) return Qnil;
     match_check(match);
-    regs = RMATCH_REGS(match);
-    if (nth >= regs->num_regs) {
+    int num_regs = RMATCH_NREGS(match);
+    if (nth >= num_regs) {
         return Qnil;
     }
     if (nth < 0) {
-        nth += regs->num_regs;
+        nth += num_regs;
         if (nth <= 0) return Qnil;
     }
-    return RBOOL(BEG(nth) != -1);
+    return RBOOL(RMATCH_BEG(match, nth) != -1);
 }
 
 VALUE
@@ -1911,21 +1899,20 @@ rb_reg_nth_match(int nth, VALUE match)
 {
     VALUE str;
     long start, end, len;
-    struct re_registers *regs;
 
     if (NIL_P(match)) return Qnil;
     match_check(match);
-    regs = RMATCH_REGS(match);
-    if (nth >= regs->num_regs) {
+    int num_regs = RMATCH_NREGS(match);
+    if (nth >= num_regs) {
         return Qnil;
     }
     if (nth < 0) {
-        nth += regs->num_regs;
+        nth += num_regs;
         if (nth <= 0) return Qnil;
     }
-    start = BEG(nth);
+    start = RMATCH_BEG(match, nth);
     if (start == -1) return Qnil;
-    end = END(nth);
+    end = RMATCH_END(match, nth);
     len = end - start;
     str = rb_str_subseq(RMATCH(match)->str, start, len);
     return str;
@@ -1959,13 +1946,11 @@ VALUE
 rb_reg_match_pre(VALUE match)
 {
     VALUE str;
-    struct re_registers *regs;
 
     if (NIL_P(match)) return Qnil;
     match_check(match);
-    regs = RMATCH_REGS(match);
-    if (BEG(0) == -1) return Qnil;
-    str = rb_str_subseq(RMATCH(match)->str, 0, BEG(0));
+    if (RMATCH_BEG(match, 0) == -1) return Qnil;
+    str = rb_str_subseq(RMATCH(match)->str, 0, RMATCH_BEG(match, 0));
     return str;
 }
 
@@ -1993,14 +1978,12 @@ rb_reg_match_post(VALUE match)
 {
     VALUE str;
     long pos;
-    struct re_registers *regs;
 
     if (NIL_P(match)) return Qnil;
     match_check(match);
-    regs = RMATCH_REGS(match);
-    if (BEG(0) == -1) return Qnil;
+    if (RMATCH_BEG(match, 0) == -1) return Qnil;
     str = RMATCH(match)->str;
-    pos = END(0);
+    pos = RMATCH_END(match, 0);
     str = rb_str_subseq(str, pos, RSTRING_LEN(str) - pos);
     return str;
 }
@@ -2009,14 +1992,12 @@ static int
 match_last_index(VALUE match)
 {
     int i;
-    struct re_registers *regs;
 
     if (NIL_P(match)) return -1;
     match_check(match);
-    regs = RMATCH_REGS(match);
-    if (BEG(0) == -1) return -1;
+    if (RMATCH_BEG(match, 0) == -1) return -1;
 
-    for (i=regs->num_regs-1; BEG(i) == -1 && i > 0; i--)
+    for (i = RMATCH_NREGS(match) - 1; RMATCH_BEG(match, i) == -1 && i > 0; i--)
         ;
     return i;
 }
@@ -2026,8 +2007,8 @@ rb_reg_match_last(VALUE match)
 {
     int i = match_last_index(match);
     if (i <= 0) return Qnil;
-    struct re_registers *regs = RMATCH_REGS(match);
-    return rb_str_subseq(RMATCH(match)->str, BEG(i), END(i) - BEG(i));
+    long start = RMATCH_BEG(match, i);
+    return rb_str_subseq(RMATCH(match)->str, start, RMATCH_END(match, i) - start);
 }
 
 VALUE
@@ -2065,22 +2046,22 @@ last_paren_match_getter(ID _x, VALUE *_y)
 static VALUE
 match_array(VALUE match, int start)
 {
-    struct re_registers *regs;
     VALUE ary;
     VALUE target;
     int i;
 
     match_check(match);
-    regs = RMATCH_REGS(match);
-    ary = rb_ary_new2(regs->num_regs);
+    int num_regs = RMATCH_NREGS(match);
+    ary = rb_ary_new2(num_regs);
     target = RMATCH(match)->str;
 
-    for (i=start; i<regs->num_regs; i++) {
-        if (regs->beg[i] == -1) {
+    for (i = start; i < num_regs; i++) {
+        long beg = RMATCH_BEG(match, i);
+        if (beg == -1) {
             rb_ary_push(ary, Qnil);
         }
         else {
-            VALUE str = rb_str_subseq(target, regs->beg[i], regs->end[i]-regs->beg[i]);
+            VALUE str = rb_str_subseq(target, beg, RMATCH_END(match, i) - beg);
             rb_ary_push(ary, str);
         }
     }
@@ -2165,7 +2146,7 @@ namev_to_backref_number(const struct re_registers *regs, VALUE re, VALUE name)
 static VALUE
 match_ary_subseq(VALUE match, long beg, long len, VALUE result)
 {
-    long olen = RMATCH_REGS(match)->num_regs;
+    long olen = RMATCH_NREGS(match);
     long j, end = olen < beg+len ? olen : beg+len;
     if (NIL_P(result)) result = rb_ary_new_capa(len);
     if (len == 0) return result;
@@ -2183,7 +2164,7 @@ static VALUE
 match_ary_aref(VALUE match, VALUE idx, VALUE result)
 {
     long beg, len;
-    int num_regs = RMATCH_REGS(match)->num_regs;
+    int num_regs = RMATCH_NREGS(match);
 
     /* check if idx is Range */
     switch (rb_range_beg_len(idx, &beg, &len, (long)num_regs, !NIL_P(result))) {
@@ -2261,7 +2242,7 @@ match_aref(int argc, VALUE *argv, VALUE match)
     else {
         long beg = NUM2LONG(idx);
         long len = NUM2LONG(length);
-        long num_regs = RMATCH_REGS(match)->num_regs;
+        long num_regs = RMATCH_NREGS(match);
         if (len < 0) {
             return Qnil;
         }
@@ -2601,8 +2582,7 @@ match_inspect(VALUE match)
     VALUE cname = rb_class_path(rb_obj_class(match));
     VALUE str;
     int i;
-    struct re_registers *regs = RMATCH_REGS(match);
-    int num_regs = regs->num_regs;
+    int num_regs = RMATCH_NREGS(match);
     struct backref_name_tag *names;
     VALUE names_obj = Qnil;
     VALUE regexp = RMATCH(match)->regexp;
