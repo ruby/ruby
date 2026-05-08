@@ -18320,6 +18320,290 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_inline_method_with_required_keyword() {
+        eval("
+            def add_kw(a, b:)
+              a + b
+            end
+            def test(n)
+              add_kw(n, b: 5)
+            end
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+
+        let result = hir_string_with_inlining("test");
+
+        assert!(counters.inline_method_count > inline_count_before,
+            "Expected add_kw to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
+        assert!(result.contains("PushLightweightFrame"),
+            "Expected PushLightweightFrame in inlined HIR:\n{result}");
+        assert!(!result.contains("SendDirect"),
+            "Expected SendDirect to be replaced after inlining:\n{result}");
+
+        assert_snapshot!(result, @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v16:Fixnum[5] = Const Value(5)
+          PatchPoint MethodRedefined(Object@0x1008, add_kw@0x1010, cme:0x1018)
+          v25:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)]
+          v57:Fixnum[0] = Const Value(0)
+          PushLightweightFrame v25 (0x1040), v10, v16
+          PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
+          v64:Fixnum = GuardType v10, Fixnum
+          v65:Fixnum = FixnumAdd v64, v16
+          CheckInterrupts
+          PopLightweightFrame
+          CheckInterrupts
+          Return v65
+        ");
+    }
+
+    #[test]
+    fn test_inline_method_with_optional_keyword_supplied() {
+        eval("
+            def add_optkw(a, b: 10)
+              a + b
+            end
+            def test(n)
+              add_optkw(n, b: 50)
+            end
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+
+        let result = hir_string_with_inlining("test");
+
+        assert!(counters.inline_method_count > inline_count_before,
+            "Expected add_optkw to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
+        assert!(result.contains("PushLightweightFrame"),
+            "Expected PushLightweightFrame in inlined HIR:\n{result}");
+        assert!(!result.contains("SendDirect"),
+            "Expected SendDirect to be replaced after inlining:\n{result}");
+
+        assert_snapshot!(result, @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v16:Fixnum[50] = Const Value(50)
+          PatchPoint MethodRedefined(Object@0x1008, add_optkw@0x1010, cme:0x1018)
+          v25:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)]
+          v57:Fixnum[0] = Const Value(0)
+          PushLightweightFrame v25 (0x1040), v10, v16
+          PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
+          v64:Fixnum = GuardType v10, Fixnum
+          v65:Fixnum = FixnumAdd v64, v16
+          CheckInterrupts
+          PopLightweightFrame
+          CheckInterrupts
+          Return v65
+        ");
+    }
+
+    #[test]
+    fn test_inline_method_with_optional_keyword_omitted_constant_default() {
+        eval("
+            def add_optkw(a, b: 10)
+              a + b
+            end
+            def test(n)
+              add_optkw(n)
+            end
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+
+        let result = hir_string_with_inlining("test");
+
+        assert!(counters.inline_method_count > inline_count_before,
+            "Expected add_optkw to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
+        assert!(result.contains("PushLightweightFrame"),
+            "Expected PushLightweightFrame in inlined HIR:\n{result}");
+        assert!(!result.contains("SendDirect"),
+            "Expected SendDirect to be replaced after inlining:\n{result}");
+
+        assert_snapshot!(result, @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v22:Fixnum[10] = Const Value(10)
+          PatchPoint MethodRedefined(Object@0x1008, add_optkw@0x1010, cme:0x1018)
+          v25:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)]
+          v57:Fixnum[0] = Const Value(0)
+          PushLightweightFrame v25 (0x1040), v10, v22
+          PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
+          v64:Fixnum = GuardType v10, Fixnum
+          v65:Fixnum = FixnumAdd v64, v22
+          CheckInterrupts
+          PopLightweightFrame
+          CheckInterrupts
+          Return v65
+        ");
+    }
+
+    #[test]
+    fn test_inline_method_with_keywords_reordered() {
+        // Caller passes keywords in an order that doesn't match the callee's declaration.
+        eval("
+            def add_kws(a, b:, c:)
+              a * 100 + b * 10 + c
+            end
+            def test(n)
+              add_kws(n, c: 3, b: 2)
+            end
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+
+        let result = hir_string_with_inlining("test");
+
+        assert!(counters.inline_method_count > inline_count_before,
+            "Expected add_kws to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
+        assert!(result.contains("PushLightweightFrame"),
+            "Expected PushLightweightFrame in inlined HIR:\n{result}");
+        assert!(!result.contains("SendDirect"),
+            "Expected SendDirect to be replaced after inlining:\n{result}");
+
+        assert_snapshot!(result, @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v16:Fixnum[3] = Const Value(3)
+          v18:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(Object@0x1008, add_kws@0x1010, cme:0x1018)
+          v28:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)]
+          v77:Fixnum[0] = Const Value(0)
+          PushLightweightFrame v28 (0x1040), v10, v18, v16
+          v55:Fixnum[100] = Const Value(100)
+          PatchPoint MethodRedefined(Integer@0x1048, *@0x1050, cme:0x1058)
+          v84:Fixnum = GuardType v10, Fixnum
+          v85:Fixnum = FixnumMult v84, v55
+          v95:Fixnum[20] = Const Value(20)
+          PatchPoint MethodRedefined(Integer@0x1048, +@0x1080, cme:0x1088)
+          v91:Fixnum = FixnumAdd v85, v95
+          v94:Fixnum = FixnumAdd v91, v16
+          CheckInterrupts
+          PopLightweightFrame
+          CheckInterrupts
+          Return v94
+        ");
+    }
+
+    #[test]
+    fn test_inline_method_with_optional_keyword_omitted_nonconstant_default() {
+        // Optional keyword with a non-constant default expression (`b: a * 2`) omitted by the caller.
+        eval("
+            def add_optkw_dyn(a, b: a * 2)
+              a + b
+            end
+            def test(n)
+              add_optkw_dyn(n)
+            end
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+
+        let result = hir_string_with_inlining("test");
+
+        assert!(counters.inline_method_count > inline_count_before,
+            "Expected add_optkw_dyn to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
+        assert!(result.contains("PushLightweightFrame"),
+            "Expected PushLightweightFrame in inlined HIR:\n{result}");
+        assert!(!result.contains("SendDirect"),
+            "Expected SendDirect to be replaced after inlining:\n{result}");
+
+        assert_snapshot!(result, @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v22:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(Object@0x1008, add_optkw_dyn@0x1010, cme:0x1018)
+          v25:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)]
+          v78:Fixnum[1] = Const Value(1)
+          PushLightweightFrame v25 (0x1040), v10, v22
+          v47:BoolExact = FixnumBitCheck v78, 0
+          CheckInterrupts
+          v50:CBool = Test v47
+          IfTrue v50, bb5(v25, v10, v22, v78)
+          v56:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(Integer@0x1048, *@0x1050, cme:0x1058)
+          v85:Fixnum = GuardType v10, Fixnum
+          v86:Fixnum = FixnumMult v85, v56
+          Jump bb5(v25, v10, v86, v78)
+        bb5(v62:ObjectSubclass[class_exact*:Object@VALUE(0x1008)], v63:BasicObject, v64:NilClass|Fixnum, v65:Fixnum[1]):
+          PatchPoint MethodRedefined(Integer@0x1048, +@0x1080, cme:0x1088)
+          v89:Fixnum = GuardType v63, Fixnum
+          v90:Fixnum = GuardType v64, Fixnum
+          v91:Fixnum = FixnumAdd v89, v90
+          CheckInterrupts
+          PopLightweightFrame
+          CheckInterrupts
+          Return v91
+        ");
+    }
+
+    #[test]
     fn test_inline_method_with_required_optional_post_all_supplied() {
         // Same callee shape as above (lead+opt+post) but the caller fills the
         // optional explicitly. We pick jit_entry_blocks[1] so no default-init code

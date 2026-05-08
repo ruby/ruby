@@ -642,8 +642,8 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
                 cb, jit, asm, cme, iseq, opnd!(recv), opnds!(args),
                 kw_bits, &function.frame_state(state), block,
             ),
-        Insn::PushLightweightFrame { cme, iseq, recv, args, kw_bits, blockiseq, state, .. } => {
-            no_output!(gen_push_lightweight_frame(jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), *kw_bits, &function.frame_state(*state), *blockiseq))
+        Insn::PushLightweightFrame { cme, iseq, recv, args, blockiseq, state, .. } => {
+            no_output!(gen_push_lightweight_frame(jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), &function.frame_state(*state), *blockiseq))
         },
         Insn::PopLightweightFrame { iseq, argc, state } => {
             no_output!(gen_pop_lightweight_frame(asm, *iseq, *argc, &function.frame_state(*state)))
@@ -1553,7 +1553,6 @@ fn gen_push_lightweight_frame(
     iseq: IseqPtr,
     recv: Opnd,
     args: Vec<Opnd>,
-    kw_bits: u32,
     state: &FrameState,
     blockiseq: Option<IseqPtr>,
 ) {
@@ -1626,20 +1625,15 @@ fn gen_push_lightweight_frame(
     let new_sp = asm.lea(Opnd::mem(64, SP, (ep_offset + 1) * SIZEOF_VALUE_I32));
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SP), new_sp);
 
-    // Write "keyword_bits" to the callee's frame if the callee accepts keywords.
-    // This is a synthetic local/parameter that the callee reads via checkkeyword to determine
-    // which optional keyword arguments need their defaults evaluated.
-    // We write this to the local table slot at bits_start so that:
-    // 1. The interpreter can read it via checkkeyword if we side-exit
-    // 2. The JIT entry can read it from the callee frame slot
-    if unsafe { rb_get_iseq_flags_has_kw(iseq) } {
-        let keyword = unsafe { rb_get_iseq_body_param_keyword(iseq) };
-        let bits_start = unsafe { (*keyword).bits_start } as usize;
-        let unspecified_bits = VALUE::fixnum_from_usize(kw_bits as usize);
-        let bits_offset = (state.stack().len() - args.len() + bits_start) * SIZEOF_VALUE;
-        asm_comment!(asm, "write keyword bits to callee frame");
-        asm.store(Opnd::mem(64, SP, bits_offset as i32), unspecified_bits.into());
-    }
+    // The callee's hidden `kw_bits` local does not need a runtime store here:
+    // the inliner aliases the local to a `Const::Value` carrying the
+    // compile-time bitmask, so `checkkeyword` lowers to a constant
+    // `FixnumBitCheck` rather than a memory load. On a side exit out of the
+    // inlined body, FrameState materialization writes the local back to the
+    // callee frame from that constant, and on the no-side-exit path nothing
+    // reads the slot before `gen_pop_lightweight_frame` tears down the frame.
+    // (The non-inlined `gen_send_iseq_direct` path still emits its own store
+    // because the callee's separate JIT entry reads it from memory.)
 
     let sp_offset = (state.stack().len() + local_size - args.len() + VM_ENV_DATA_SIZE.to_usize()) * SIZEOF_VALUE;
     asm_comment!(asm, "switch to inlined callee SP");

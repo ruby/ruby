@@ -451,6 +451,58 @@ class TestZJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_inlined_method_with_required_keyword
+    assert_runs '12', <<~RUBY, extra_args: ['--zjit-inline-threshold=30']
+      def callee(x, y:) = x + y
+      def test(n) = callee(n, y: 10)
+
+      test(2)
+    RUBY
+  end
+
+  def test_inlined_method_with_optional_keyword_supplied
+    assert_runs '7', <<~RUBY, extra_args: ['--zjit-inline-threshold=30']
+      def callee(x, y: 100) = x + y
+      def test(n) = callee(n, y: 5)
+
+      test(2)
+    RUBY
+  end
+
+  def test_inlined_method_with_optional_keyword_omitted
+    assert_runs '102', <<~RUBY, extra_args: ['--zjit-inline-threshold=30']
+      def callee(x, y: 100) = x + y
+      def test(n) = callee(n)
+
+      test(2)
+    RUBY
+  end
+
+  def test_inlined_method_with_reordered_keywords
+    # The caller passes the keywords in (b, a) order while the callee declares
+    # them in (a, b) order, so the inliner must reorder per the keyword names
+    # rather than positional order. The subtraction is asymmetric so a wrong
+    # mapping would produce -9 instead of 9.
+    assert_runs '9', <<~RUBY, extra_args: ['--zjit-inline-threshold=30']
+      def callee(a:, b:) = a - b
+      def test = callee(b: 1, a: 10)
+
+      test
+    RUBY
+  end
+
+  def test_inlined_method_with_keyword_default_using_prior_param
+    # When the caller omits an optional keyword whose default expression
+    # references another parameter, the default must execute in callee scope
+    # with the freshly-bound parameter visible.
+    assert_runs '202', <<~RUBY, extra_args: ['--zjit-inline-threshold=30']
+      def callee(x, y: x * 100) = x + y
+      def test(n) = callee(n)
+
+      test(2)
+    RUBY
+  end
+
   def test_inlined_method_with_rescue_caught_in_callee
     # The callee's begin/rescue catches an exception raised inside the same
     # callee. The runtime exception walker must find the rescue clause via the

@@ -1120,7 +1120,6 @@ pub enum Insn {
         cme: *const rb_callable_method_entry_t,
         recv: InsnId,
         args: Vec<InsnId>,
-        kw_bits: u32,
         blockiseq: Option<IseqPtr>,
         state: InsnId,
     },
@@ -4376,13 +4375,13 @@ impl Function {
             return false;
         }
 
-        // Inline callees with required, optional, and post-required positional
-        // parameters. Keyword params, rest params, block params, and forwardable
-        // params are still rejected because their local-table layouts and
-        // argument-shaping prologues need additional work to map cleanly into HIR.
+        // Inline callees with required, optional, post-required positional, and
+        // keyword parameters. Rest params, block params, double-splat (kwrest),
+        // and forwardable params are still rejected because their local-table
+        // layouts and argument-shaping prologues need additional work to map
+        // cleanly into HIR.
         let params = unsafe { callee_iseq.params() };
-        if params.flags.has_kw() != 0
-            || params.flags.has_rest() != 0
+        if params.flags.has_rest() != 0
             || params.flags.has_block() != 0
             || params.flags.forwardable() != 0
             || params.flags.has_kwrest() != 0
@@ -4533,18 +4532,23 @@ impl Function {
                 // Find the callee's body entry block by picking the JIT entry block
                 // that matches how many optional parameters the caller actually filled,
                 // then following its trailing Jump to the body. Each JIT entry block at
-                // index `k` corresponds to "lead_num + k + post_num" arguments having
-                // been passed: it runs the default-init code for the remaining
+                // index `k` corresponds to "lead_num + k + post_num" positional arguments
+                // having been passed: it runs the default-init code for the remaining
                 // `opt_num - k` optionals (if any) before falling through into the
                 // post-default body. SendDirect emission already guarantees args.len()
-                // lies within `lead_num + post_num..=lead_num + opt_num + post_num`, so
-                // `passed_opt_num` is in range and the index into `jit_entry_blocks` is
-                // safe.
+                // lies within `lead_num + post_num + kw_num..=lead_num + opt_num + post_num + kw_num`,
+                // where `kw_num` is the callee's full keyword count (zero when the callee
+                // has no keywords). After `prepare_direct_send_args` runs, the caller's
+                // arg list has a slot for every callee keyword (filled in callee table
+                // order, padded with defaults for omitted optional keywords), so the
+                // keyword tail is a fixed-size addition we subtract off before recovering
+                // the optional-positional count.
                 let callee_entry_body_block = {
                     let callee_params = unsafe { iseq.params() };
                     let lead_num = callee_params.lead_num as usize;
                     let post_num = callee_params.post_num as usize;
-                    let passed_opt_num = args.len() - lead_num - post_num;
+                    let kw_num = callee_kw_num(iseq);
+                    let passed_opt_num = args.len() - lead_num - post_num - kw_num;
                     let jit_entry = callee.jit_entry_blocks[passed_opt_num];
                     let jit_entry_last_insn = callee.blocks[jit_entry.0].insns.last().unwrap();
 
@@ -4658,8 +4662,9 @@ impl Function {
                 //
                 // The callee's body entry block has params: [self, local0, local1, ..., stack0, stack1, ...]
                 // The first param is self (recv); the rest follow the callee's local
-                // table order (lead, opt, post, then non-parameter locals). The caller
-                // pushes args without gaps, so we map locals to args by category:
+                // table order (lead, opt, post, kw, then any hidden kw_bits slot, then
+                // non-parameter locals). The caller pushes args without gaps, so we map
+                // locals to args by category:
                 //
                 //   * lead locals (indices 0..lead_num) and filled optional locals
                 //     (lead_num..lead_num + passed_opt_num) take args in order.
@@ -4667,18 +4672,29 @@ impl Function {
                 //     are nil-initialized; the body's default-init code (entered via
                 //     the chosen jit_entry_blocks[passed_opt_num] target) overwrites
                 //     them.
-                //   * post-required locals (lead_num + opt_num..lead_num + opt_num + post_num)
-                //     take the trailing args, but their position in the local table
-                //     leaves a gap of (opt_num - passed_opt_num) above the args' compact
-                //     layout, so we shift the arg index down by that amount.
+                //   * post-required and keyword locals
+                //     (lead_num + opt_num..lead_num + opt_num + post_num + kw_num) take the
+                //     trailing args, but their position in the local table leaves a gap
+                //     of (opt_num - passed_opt_num) above the args' compact layout, so we
+                //     shift the arg index down by that amount. Keyword args follow this
+                //     same arithmetic because `prepare_direct_send_args` already
+                //     reordered them into callee table order with defaults filled in.
+                //   * the hidden kw_bits storage local (when the callee has keywords) is
+                //     aliased to the SendDirect's compile-time kw_bits value as a fixnum
+                //     constant. `checkkeyword` lowers to `FixnumBitCheck` against this
+                //     constant, and FrameState materialization on a side exit writes the
+                //     same value back to the runtime frame so a resuming interpreter sees
+                //     the correct bitmask.
                 //   * any remaining non-parameter locals are nil-initialized.
                 let callee_params = unsafe { iseq.params() };
                 let lead_num = callee_params.lead_num as usize;
                 let opt_num = callee_params.opt_num as usize;
                 let post_num = callee_params.post_num as usize;
-                let passed_opt_num = args.len() - lead_num - post_num;
+                let kw_num = callee_kw_num(iseq);
+                let passed_opt_num = args.len() - lead_num - post_num - kw_num;
                 let omitted_opt_num = opt_num - passed_opt_num;
-                let post_end = lead_num + opt_num + post_num;
+                let positional_kw_end = lead_num + opt_num + post_num + kw_num;
+                let kw_bits_local_idx = callee_kw_bits_local_idx(iseq);
 
                 let remapped_entry = *block_map.get(&callee_entry_body_block.0).unwrap();
                 let callee_body_params: Vec<InsnId> = self.blocks[remapped_entry.0].params.clone();
@@ -4698,11 +4714,20 @@ impl Function {
                         // Unfilled optional: nil-initialized; default-init code will overwrite.
                         let nil = self.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
                         self.make_equal_to(param_id, nil);
-                    } else if i < post_end {
-                        // Post-required local: the arg sits compactly after the filled
-                        // optionals, so shift the arg index down by the gap of unfilled
-                        // optionals between the optional and post regions.
+                    } else if i < positional_kw_end {
+                        // Post-required or keyword local: the arg sits compactly after
+                        // the filled optionals, so shift the arg index down by the gap
+                        // of unfilled optionals between the optional and post regions.
                         self.make_equal_to(param_id, args[i - omitted_opt_num]);
+                    } else if Some(i) == kw_bits_local_idx {
+                        // Hidden kw_bits slot: alias to the SendDirect's compile-time
+                        // value as a fixnum, the same encoding the interpreter uses for
+                        // this hidden local. checkkeyword's FixnumBitCheck will read
+                        // this constant directly inside the inlined body.
+                        let bits_const = self.push_insn(block, Insn::Const {
+                            val: Const::Value(VALUE::fixnum_from_usize(kw_bits as usize)),
+                        });
+                        self.make_equal_to(param_id, bits_const);
                     } else if i < num_locals {
                         // Non-parameter local: nil-initialized.
                         let nil = self.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
@@ -4750,7 +4775,7 @@ impl Function {
 
                 // Insert PushLightweightFrame and jump to callee entry.
                 self.push_insn(block, Insn::PushLightweightFrame {
-                    iseq, cme, recv, args: args.clone(), kw_bits, blockiseq, state,
+                    iseq, cme, recv, args: args.clone(), blockiseq, state,
                 });
                 self.push_insn(block, Insn::Jump(BranchEdge {
                     target: remapped_entry,
@@ -7194,6 +7219,36 @@ pub enum ParseError {
 /// Return the number of locals in the current ISEQ (includes parameters)
 fn num_locals(iseq: *const rb_iseq_t) -> usize {
     (unsafe { get_iseq_body_local_table_size(iseq) }).to_usize()
+}
+
+/// Number of declared keyword parameters on the callee, or zero if the
+/// callee does not accept any keywords.
+fn callee_kw_num(iseq: *const rb_iseq_t) -> usize {
+    if unsafe { rb_get_iseq_flags_has_kw(iseq) } {
+        let keyword = unsafe { rb_get_iseq_body_param_keyword(iseq) };
+        if keyword.is_null() {
+            0
+        } else {
+            unsafe { (*keyword).num as usize }
+        }
+    } else {
+        0
+    }
+}
+
+/// Local table index of the hidden `kw_bits` storage slot used by
+/// `checkkeyword`, or `None` when the callee has no keyword parameters.
+fn callee_kw_bits_local_idx(iseq: *const rb_iseq_t) -> Option<usize> {
+    if !unsafe { rb_get_iseq_flags_has_kw(iseq) } {
+        return None;
+    }
+
+    let keyword = unsafe { rb_get_iseq_body_param_keyword(iseq) };
+    if keyword.is_null() {
+        return None;
+    }
+
+    Some(unsafe { (*keyword).bits_start } as usize)
 }
 
 /// If we can't handle the type of send (yet), bail out.
