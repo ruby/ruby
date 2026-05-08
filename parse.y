@@ -1542,6 +1542,7 @@ static rb_array_pattern_node_t *rb_new_node_array_pattern_new(struct parser_para
 static rb_hash_pattern_node_t *rb_new_node_hash_pattern_new(struct parser_params *p, NODE *nd_pconst, rb_array_node_t *nd_pkwargs, NODE *nd_pkwrestarg, const YYLTYPE *loc);
 static rb_find_pattern_node_t *rb_new_node_find_pattern_new(struct parser_params *p, rb_splat_node_t *pre_rest_arg, rb_array_node_t *args, NODE *post_rest_arg, const YYLTYPE *loc);
 static rb_alternation_pattern_node_t *rb_new_node_alternation_pattern_new(struct parser_params *p, NODE *right, NODE *left, const YYLTYPE *loc, const YYLTYPE *operator_loc);
+static rb_capture_pattern_node_t *rb_new_node_capture_pattern_new(struct parser_params *p, NODE *value, rb_local_variable_target_node_t *target, const YYLTYPE *loc, const YYLTYPE *operator_loc);
 static rb_pinned_variable_node_t *rb_new_node_pinned_variable_new(struct parser_params *p, rb_node_t *nd_var, const YYLTYPE *loc, const YYLTYPE *operator_loc);
 static rb_pinned_expression_node_t *rb_new_node_pinned_expression_new(struct parser_params *p, rb_node_t *nd_expr, const YYLTYPE *loc, const YYLTYPE *operator_loc, const YYLTYPE *lparen_loc, const YYLTYPE *rparen_loc);
 static rb_source_line_node_t *rb_new_node_source_line_new(struct parser_params *p, const YYLTYPE *loc);
@@ -1705,6 +1706,7 @@ static rb_source_encoding_node_t *rb_new_node_source_encoding_new(struct parser_
 #define NEW_RB_HASH_PATTERN(c,kw,kwrest,loc) (rb_node_t *)rb_new_node_hash_pattern_new(p,c,kw,kwrest,loc)
 #define NEW_RB_FIND_PATTERN(pre,a,post,loc) (rb_node_t *)rb_new_node_find_pattern_new(p,pre,a,post,loc)
 #define NEW_RB_ALTERNATION_PATTERN(f,s,loc,op_loc) (rb_node_t *)rb_new_node_alternation_pattern_new(p,f,s,loc,op_loc)
+#define NEW_RB_CAPTURE_PATTERN(k,v,loc,op_loc) (rb_node_t *)rb_new_node_capture_pattern_new(p,k,v,loc,op_loc)
 #define NEW_RB_PINNED_VARIABLE(v,loc,op_loc) (rb_node_t *)rb_new_node_pinned_variable_new(p,v,loc,op_loc)
 #define NEW_RB_PINNED_EXPRESSION(e,loc,op_loc,lp_loc,rp_loc) (rb_node_t *)rb_new_node_pinned_expression_new(p,e,loc,op_loc,lp_loc,rp_loc)
 #define NEW_RB_SOURCE_LINE(loc) (rb_node_t *)rb_new_node_source_line_new(p,loc)
@@ -6048,9 +6050,7 @@ p_expr		: p_as
 
 p_as		: p_expr tASSOC p_variable
                     {
-                        NODE *n = NEW_LIST($1, &@$);
-                        n = list_append(p, n, $3);
-                        $$ = new_hash(p, n, &@$);
+                        $$ = NEW_RB_CAPTURE_PATTERN($1, $3, &@$, &@2);
                     /*% ripper: binary!($:1, ID2VAL((id_assoc)), $:3) %*/
                     }
                 | p_alt
@@ -14177,6 +14177,17 @@ rb_new_node_alternation_pattern_new(struct parser_params *p, NODE *left, NODE *r
     rb_alternation_pattern_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_ALTERNATION_PATTERN_NODE, rb_alternation_pattern_node_t, loc);
     n->left = left;
     n->right = right;
+    n->operator_loc = *operator_loc;
+
+    return n;
+}
+
+static rb_capture_pattern_node_t *
+rb_new_node_capture_pattern_new(struct parser_params *p, NODE *value, rb_local_variable_target_node_t *target, const YYLTYPE *loc, const YYLTYPE *operator_loc)
+{
+    rb_capture_pattern_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_CAPTURE_PATTERN_NODE, rb_capture_pattern_node_t, loc);
+    n->value = value;
+    n->target = target;
     n->operator_loc = *operator_loc;
 
     return n;

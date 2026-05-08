@@ -8714,27 +8714,20 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *n
         ADD_INSNL(ret, line_node, jump, matched);
         break;
       }
-      // case NODE_HASH: {
-      //   NODE *n;
-      //   LABEL *match_failed;
-      //   match_failed = NEW_LABEL(line);
+      case RB_CAPTURE_PATTERN_NODE: {
+        LABEL *match_failed;
+        match_failed = NEW_LABEL(line);
 
-      //   n = RNODE_HASH(node)->nd_head;
-      //   if (! (nd_type_p(n, NODE_LIST) && RNODE_LIST(n)->as.nd_alen == 2)) {
-      //       COMPILE_ERROR(ERROR_ARGS "unexpected node");
-      //       return COMPILE_NG;
-      //   }
+        ADD_INSN(ret, line_node, dup); // (1)
+        CHECK(iseq_compile_pattern_match(iseq, ret, RB_NODE_CAPTURE_PATTERN(node)->value, match_failed, in_single_pattern, in_alt_pattern, base_index + 1 /* (1) */, use_deconstructed_cache));
+        CHECK(iseq_compile_pattern_each(iseq, ret, (NODE *)RB_NODE_CAPTURE_PATTERN(node)->target, matched, match_failed, in_single_pattern, in_alt_pattern, base_index, false));
+        ADD_INSN(ret, line_node, putnil);
 
-      //   ADD_INSN(ret, line_node, dup); // (1)
-      //   CHECK(iseq_compile_pattern_match(iseq, ret, RNODE_LIST(n)->nd_head, match_failed, in_single_pattern, in_alt_pattern, base_index + 1 /* (1) */, use_deconstructed_cache));
-      //   CHECK(iseq_compile_pattern_each(iseq, ret, RNODE_LIST(RNODE_LIST(n)->nd_next)->nd_head, matched, match_failed, in_single_pattern, in_alt_pattern, base_index, false));
-      //   ADD_INSN(ret, line_node, putnil);
-
-      //   ADD_LABEL(ret, match_failed);
-      //   ADD_INSN(ret, line_node, pop);
-      //   ADD_INSNL(ret, line_node, jump, unmatched);
-      //   break;
-      // }
+        ADD_LABEL(ret, match_failed);
+        ADD_INSN(ret, line_node, pop);
+        ADD_INSNL(ret, line_node, jump, unmatched);
+        break;
+      }
       case RB_ALTERNATION_PATTERN_NODE: {
         LABEL *match_succeeded, *fin;
         match_succeeded = NEW_LABEL(line);
