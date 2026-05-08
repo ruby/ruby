@@ -1147,6 +1147,11 @@ pub enum Insn {
     CheckInterrupts { state: InsnId },
 
     BreakPoint,
+
+    /// Only use this instruction in tests where you need to end a block with
+    /// a terminator, but don't ever expect the code to be executed.  This
+    /// instruction should never be generated from iseq_to_hir
+    Unreachable,
 }
 
 /// Macro that enumerates all operands of an Insn, dispatching to caller-provided
@@ -1165,7 +1170,7 @@ macro_rules! for_each_operand_impl {
             | Insn::LoadEC
             | Insn::GetEP { .. }
             | Insn::LoadSelf
-            | Insn::BreakPoint
+            | Insn::BreakPoint | Insn::Unreachable
             | Insn::PutSpecialObject { .. }
             | Insn::IncrCounter(_)
             | Insn::IncrCounterPtr { .. } => {}
@@ -1471,7 +1476,7 @@ impl Insn {
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetGlobal { .. }
             | Insn::SetLocal { .. } | Insn::Throw { .. } | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
-            | Insn::CheckInterrupts { .. } | Insn::BreakPoint
+            | Insn::CheckInterrupts { .. } | Insn::BreakPoint | Insn::Unreachable
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. }
             | Insn::ArrayAset { .. } => false,
             _ => true,
@@ -1698,7 +1703,7 @@ impl Insn {
                     abstract_heaps::Control
                 ),
             Insn::Entries { .. } => effects::Any,
-            Insn::BreakPoint => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
+            Insn::BreakPoint | Insn::Unreachable => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
         }
     }
 
@@ -2223,6 +2228,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::CheckInterrupts { .. } => write!(f, "CheckInterrupts"),
             Insn::IsA { val, class } => write!(f, "IsA {val}, {class}"),
             Insn::BreakPoint => write!(f, "BreakPoint"),
+            Insn::Unreachable => write!(f, "Unreachable"),
         }
     }
 }
@@ -2837,7 +2843,7 @@ impl Function {
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. }
             | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
-            | Insn::CheckInterrupts { .. } | Insn::BreakPoint
+            | Insn::CheckInterrupts { .. } | Insn::BreakPoint | Insn::Unreachable
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } | Insn::ArrayAset { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}. See Insn::has_output().", self.insns[insn.0]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
@@ -5810,7 +5816,7 @@ impl Function {
             | Insn::LoadSP
             | Insn::LoadEC
             | Insn::GetEP { .. }
-            | Insn::BreakPoint
+            | Insn::BreakPoint | Insn::Unreachable
             | Insn::LoadSelf
             | Insn::Snapshot { .. }
             | Insn::Jump { .. }
