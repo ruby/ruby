@@ -22,13 +22,36 @@ bin4feature(const struct builtin_binary *bb, const char *feature, size_t *psize)
 static const unsigned char*
 builtin_lookup(const char *feature, size_t *psize)
 {
-    static int index = 0;
-    const unsigned char *bin = bin4feature(&builtin_binary[index++], feature, psize);
+    static size_t index = 0;
+    const unsigned char *bin = NULL;
 
-    // usually, `builtin_binary` order is loading order at miniruby.
-    for (const struct builtin_binary *bb = &builtin_binary[0]; bb->feature &&! bin; bb++) {
-        bin = bin4feature(bb++, feature, psize);
+    /*
+     * Fast path:
+     * builtin_binary is usually arranged in the same order
+     * as features are looked up in miniruby, so try the next entry first.
+     */
+    if (builtin_binary[index].feature) {
+        bin = bin4feature(&builtin_binary[index], feature, psize);
+        index++;
     }
+    if (bin) {
+        return bin;
+    }
+
+    /*
+     * Fallback:
+     * In case the lookup order does not match the array order,
+     * scan the entire table to find the feature.
+     */
+    for (const struct builtin_binary *bb = &builtin_binary[0];
+         bb->feature;
+         bb++) {
+        bin = bin4feature(bb, feature, psize);
+        if (bin) {
+            break;
+        }
+    }
+
     return bin;
 }
 
