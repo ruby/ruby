@@ -962,12 +962,31 @@ make_regexp(const char *s, long len, rb_encoding *enc, int flags, onig_errmsg_bu
 VALUE rb_cMatch;
 
 static VALUE
+match_alloc_n(VALUE klass, int num_regs)
+{
+    int capa = num_regs * 2;
+    size_t alloc_size = offsetof(struct RMatch, as) + sizeof(OnigPosition) * capa;
+    if (alloc_size < sizeof(struct RMatch)) {
+        alloc_size = sizeof(struct RMatch);
+    }
+
+    VALUE flags = T_MATCH;
+    if (!rb_gc_size_allocatable_p(alloc_size)) {
+        alloc_size = sizeof(struct RMatch);
+        flags |= RMATCH_ONIG;
+        capa = 0;
+    }
+
+    NEWOBJ_OF(match, struct RMatch, klass, flags, alloc_size);
+    memset(((char *)match) + sizeof(struct RBasic), 0, alloc_size - sizeof(struct RBasic));
+    match->capa = capa;
+    return (VALUE)match;
+}
+
+static VALUE
 match_alloc(VALUE klass)
 {
-    size_t alloc_size = sizeof(struct RMatch);
-    NEWOBJ_OF(match, struct RMatch, klass, T_MATCH, alloc_size);
-    memset(((char *)match) + sizeof(struct RBasic), 0, sizeof(struct RMatch) - sizeof(struct RBasic));
-    return (VALUE)match;
+    return match_alloc_n(klass, 0);
 }
 
 int
@@ -981,13 +1000,36 @@ rb_reg_region_copy(struct re_registers *to, const struct re_registers *from)
     return ONIGERR_MEMORY;
 }
 
-/* Replace `match`'s registers with a copy of `regs`. Raises on OOM. */
+/* Replace `match`'s registers with a copy of (num_regs, beg, end). If the
+ * data does not fit in the embed form, the match is evicted to onig form.
+ * Raises on OOM. */
 static void
-match_set_regs(VALUE match, const struct re_registers *regs)
+match_set_regs(VALUE match, int num_regs, const OnigPosition *beg, const OnigPosition *end)
 {
-    if (rb_reg_region_copy(RMATCH_REGS(match), regs)) {
-        rb_memerror();
+    struct RMatch *rm = RMATCH(match);
+
+    if (FL_TEST_RAW(match, RMATCH_ONIG)) {
+        if (onig_region_resize(&rm->as.onig, num_regs)) {
+            rb_memerror();
+        }
+        memcpy(rm->as.onig.beg, beg, num_regs * sizeof(OnigPosition));
+        memcpy(rm->as.onig.end, end, num_regs * sizeof(OnigPosition));
     }
+    else if (num_regs * 2 <= rm->capa) {
+        memcpy(&rm->as.embed[0], beg, num_regs * sizeof(OnigPosition));
+        memcpy(&rm->as.embed[num_regs], end, num_regs * sizeof(OnigPosition));
+    }
+    else {
+        struct re_registers tmp = {0};
+        if (onig_region_resize(&tmp, num_regs)) {
+            rb_memerror();
+        }
+        memcpy(tmp.beg, beg, num_regs * sizeof(OnigPosition));
+        memcpy(tmp.end, end, num_regs * sizeof(OnigPosition));
+        rm->as.onig = tmp;
+        FL_SET_RAW(match, RMATCH_ONIG);
+    }
+    rm->num_regs = num_regs;
 }
 
 typedef struct {
@@ -1095,15 +1137,15 @@ match_init_copy(VALUE obj, VALUE orig)
     RB_OBJ_WRITE(obj, &rm->str, RMATCH(orig)->str);
     RB_OBJ_WRITE(obj, &rm->regexp, RMATCH(orig)->regexp);
 
-    match_set_regs(obj, RMATCH_REGS(orig));
+    match_set_regs(obj, RMATCH_NREGS(orig), RMATCH_BEG_PTR(orig), RMATCH_END_PTR(orig));
 
     if (RMATCH(orig)->char_offset_num_allocated) {
-        if (rm->char_offset_num_allocated < rm->regs.num_regs) {
-            SIZED_REALLOC_N(rm->char_offset, struct rmatch_offset, rm->regs.num_regs, rm->char_offset_num_allocated);
-            rm->char_offset_num_allocated = rm->regs.num_regs;
+        if (rm->char_offset_num_allocated < rm->num_regs) {
+            SIZED_REALLOC_N(rm->char_offset, struct rmatch_offset, rm->num_regs, rm->char_offset_num_allocated);
+            rm->char_offset_num_allocated = rm->num_regs;
         }
         MEMCPY(rm->char_offset, RMATCH(orig)->char_offset,
-               struct rmatch_offset, rm->regs.num_regs);
+               struct rmatch_offset, rm->num_regs);
         RB_GC_GUARD(orig);
     }
 
@@ -1489,6 +1531,17 @@ rb_match_count(VALUE match)
     return RMATCH_NREGS(match);
 }
 
+static VALUE
+match_alloc_or_reuse(VALUE existing, int num_regs)
+{
+    if (!NIL_P(existing) &&
+        !FL_TEST(existing, MATCH_BUSY) &&
+        RMATCH(existing)->capa >= num_regs * 2) {
+        return existing;
+    }
+    return match_alloc_n(rb_cMatch, num_regs);
+}
+
 static void
 match_set_string(VALUE m, VALUE string, long pos, long len)
 {
@@ -1496,19 +1549,14 @@ match_set_string(VALUE m, VALUE string, long pos, long len)
 
     RB_OBJ_WRITE(match, &match->str, string);
     RB_OBJ_WRITE(match, &match->regexp, Qnil);
-    int err = onig_region_resize(&match->regs, 1);
-    if (err) rb_memerror();
-    match->regs.beg[0] = pos;
-    match->regs.end[0] = pos + len;
+    OnigPosition beg = pos, end = pos + len;
+    match_set_regs(m, 1, &beg, &end);
 }
 
 VALUE
 rb_backref_set_string(VALUE string, long pos, long len)
 {
-    VALUE match = rb_backref_get();
-    if (NIL_P(match) || FL_TEST(match, MATCH_BUSY)) {
-        match = match_alloc(rb_cMatch);
-    }
+    VALUE match = match_alloc_or_reuse(rb_backref_get(), 1);
     match_set_string(match, string, pos, len);
     rb_backref_set(match);
     return match;
@@ -1797,24 +1845,10 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
         return ONIG_MISMATCH;
     }
 
-    VALUE match = Qnil;
-    if (set_match) {
-        match = *set_match;
-    }
+    VALUE existing = (set_match && !NIL_P(*set_match)) ? *set_match : rb_backref_get();
+    VALUE match = match_alloc_or_reuse(existing, regs.num_regs);
 
-    if (NIL_P(match)) {
-        match = rb_backref_get();
-    }
-
-    if (!NIL_P(match) && FL_TEST(match, MATCH_BUSY)) {
-        match = Qnil;
-    }
-
-    if (NIL_P(match)) {
-        match = match_alloc(rb_cMatch);
-    }
-
-    match_set_regs(match, &regs);
+    match_set_regs(match, regs.num_regs, regs.beg, regs.end);
     ALLOCV_END(regs_buf);
 
     if (set_backref_str) {
@@ -1886,12 +1920,8 @@ rb_reg_start_with_p(VALUE re, VALUE str)
         return false;
     }
 
-    VALUE match = rb_backref_get();
-    if (NIL_P(match) || FL_TEST(match, MATCH_BUSY)) {
-        match = match_alloc(rb_cMatch);
-    }
-
-    match_set_regs(match, &regs);
+    VALUE match = match_alloc_or_reuse(rb_backref_get(), regs.num_regs);
+    match_set_regs(match, regs.num_regs, regs.beg, regs.end);
     ALLOCV_END(regs_buf);
 
     RB_OBJ_WRITE(match, &RMATCH(match)->str, rb_str_new4(str));
