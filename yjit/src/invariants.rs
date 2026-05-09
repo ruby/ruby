@@ -168,8 +168,8 @@ pub fn track_no_ep_escape_assumption(uninit_block: BlockRef, iseq: IseqPtr) {
         .insert(uninit_block);
 }
 
-/// Returns true if a given ISEQ has previously escaped an environment.
-pub fn iseq_escapes_ep(iseq: IseqPtr) -> bool {
+/// Returns true if a given ISEQ has escaped an environment since YJIT boot.
+pub fn seen_escaped_env(iseq: IseqPtr) -> bool {
     Invariants::get_instance()
         .no_ep_escape_iseqs
         .get(&iseq)
