@@ -230,7 +230,7 @@ rb_box_entry_mark(void *ptr)
     rb_gc_mark(box->ruby_dln_libmap);
     rb_gc_mark(box->gvar_tbl);
     if (box->classext_cow_classes) {
-        rb_mark_tbl(box->classext_cow_classes);
+        rb_mark_set(box->classext_cow_classes);
     }
 }
 
@@ -267,10 +267,10 @@ free_box_st_tables(void *ptr)
 }
 
 static int
-free_classext_for_box(st_data_t _key, st_data_t obj_value, st_data_t box_arg)
+free_classext_for_box(st_data_t key, st_data_t _value, st_data_t box_arg)
 {
     rb_classext_t *ext;
-    VALUE obj = (VALUE)obj_value;
+    VALUE obj = (VALUE)key;
     const rb_box_t *box = (const rb_box_t *)box_arg;
 
     if (RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE)) {
