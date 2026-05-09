@@ -9124,6 +9124,214 @@ compile_case3(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_no
     return COMPILE_OK;
 }
 
+static int
+compile_match_predicate(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const rb_match_predicate_node_t *const node, int popped)
+{
+    const NODE *line_node = node->pattern;
+    LABEL *endlabel, *elselabel;
+    DECL_ANCHOR(head);
+    DECL_ANCHOR(body_seq);
+    DECL_ANCHOR(cond_seq);
+    int line;
+    VALUE branches = 0;
+    int branch_id = 0;
+
+    INIT_ANCHOR(head);
+    INIT_ANCHOR(body_seq);
+    INIT_ANCHOR(cond_seq);
+
+    branches = decl_branch_base(iseq, PTR2NUM(node), nd_code_loc(node), "case");
+    line = nd_line(line_node);
+
+    endlabel = NEW_LABEL(line);
+    elselabel = NEW_LABEL(line);
+
+    ADD_INSN(head, line_node, putnil); /* allocate stack for cached #deconstruct value */
+
+    CHECK(COMPILE(head, "case base", node->value));
+
+    ADD_SEQ(ret, head); /* case VAL */
+
+    {
+        const NODE *pattern = node->pattern;
+        line = nd_line(pattern);
+        LABEL *l1 = NEW_LABEL(line);
+
+        ADD_LABEL(body_seq, l1);
+        ADD_INSN1(body_seq, line_node, adjuststack, INT2FIX(2));
+
+        const NODE *const coverage_node = pattern;
+        add_trace_branch_coverage(
+            iseq,
+            body_seq,
+            nd_code_loc(coverage_node),
+            nd_node_id(coverage_node),
+            branch_id++,
+            "in",
+            branches);
+
+        if (!popped) ADD_INSN1(body_seq, line_node, putobject, Qtrue);
+        ADD_INSNL(body_seq, line_node, jump, endlabel);
+
+        int pat_line = nd_line(pattern);
+        LABEL *next_pat = NEW_LABEL(pat_line);
+        ADD_INSN (cond_seq, pattern, dup); /* dup case VAL */
+        // NOTE: set base_index (it's "under" the matchee value, so it's position is 2)
+        CHECK(iseq_compile_pattern_each(iseq, cond_seq, pattern, l1, next_pat, false, false, 2, true));
+        ADD_LABEL(cond_seq, next_pat);
+        LABEL_UNREMOVABLE(next_pat);
+    }
+
+    {
+        ADD_LABEL(cond_seq, elselabel);
+        ADD_INSN(cond_seq, line_node, pop);
+        ADD_INSN(cond_seq, line_node, pop); /* discard cached #deconstruct value */
+        add_trace_branch_coverage(iseq, cond_seq, nd_code_loc(node), nd_node_id(node), branch_id, "else", branches);
+        if (!popped) ADD_INSN1(cond_seq, line_node, putobject, Qfalse);
+        ADD_INSNL(cond_seq, line_node, jump, endlabel);
+        ADD_INSN(cond_seq, line_node, putnil);
+        if (popped) {
+            ADD_INSN(cond_seq, line_node, putnil);
+        }
+    }
+
+    ADD_SEQ(ret, cond_seq);
+    ADD_SEQ(ret, body_seq);
+    ADD_LABEL(ret, endlabel);
+    return COMPILE_OK;
+}
+
+static int
+compile_match_required(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const rb_match_predicate_node_t *const node, int popped)
+{
+    const NODE *line_node = node->pattern;
+    LABEL *endlabel, *elselabel;
+    DECL_ANCHOR(head);
+    DECL_ANCHOR(body_seq);
+    DECL_ANCHOR(cond_seq);
+    int line;
+    VALUE branches = 0;
+    int branch_id = 0;
+
+    INIT_ANCHOR(head);
+    INIT_ANCHOR(body_seq);
+    INIT_ANCHOR(cond_seq);
+
+    branches = decl_branch_base(iseq, PTR2NUM(node), nd_code_loc(node), "case");
+    line = nd_line(line_node);
+
+    endlabel = NEW_LABEL(line);
+    elselabel = NEW_LABEL(line);
+
+    /* allocate stack for ... */
+    ADD_INSN(head, line_node, putnil); /* key_error_key */
+    ADD_INSN(head, line_node, putnil); /* key_error_matchee */
+    ADD_INSN1(head, line_node, putobject, Qfalse); /* key_error_p */
+    ADD_INSN(head, line_node, putnil); /* error_string */
+
+    ADD_INSN(head, line_node, putnil); /* allocate stack for cached #deconstruct value */
+
+    CHECK(COMPILE(head, "case base", node->value));
+
+    ADD_SEQ(ret, head); /* case VAL */
+
+    {
+        const NODE *pattern = node->pattern;
+        line = nd_line(pattern);
+        LABEL *l1 = NEW_LABEL(line);
+
+        ADD_LABEL(body_seq, l1);
+        ADD_INSN1(body_seq, line_node, adjuststack, INT2FIX(6));
+
+        const NODE *const coverage_node = pattern;
+        add_trace_branch_coverage(
+            iseq,
+            body_seq,
+            nd_code_loc(coverage_node),
+            nd_node_id(coverage_node),
+            branch_id++,
+            "in",
+            branches);
+
+        if (!popped) ADD_INSN(body_seq, line_node, putnil);
+        ADD_INSNL(body_seq, line_node, jump, endlabel);
+
+        int pat_line = nd_line(pattern);
+        LABEL *next_pat = NEW_LABEL(pat_line);
+        ADD_INSN (cond_seq, pattern, dup); /* dup case VAL */
+        // NOTE: set base_index (it's "under" the matchee value, so it's position is 2)
+        CHECK(iseq_compile_pattern_each(iseq, cond_seq, pattern, l1, next_pat, true, false, 2, true));
+        ADD_LABEL(cond_seq, next_pat);
+        LABEL_UNREMOVABLE(next_pat);
+    }
+
+    {
+        debugs("== else (implicit)\n");
+        ADD_LABEL(cond_seq, elselabel);
+        add_trace_branch_coverage(iseq, cond_seq, nd_code_loc(node), nd_node_id(node), branch_id, "else", branches);
+        ADD_INSN1(cond_seq, node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+
+        /*
+         *   if key_error_p
+         *     FrozenCore.raise NoMatchingPatternKeyError.new(FrozenCore.sprintf("%p: %s", case_val, error_string), matchee: key_error_matchee, key: key_error_key)
+         *   else
+         *     FrozenCore.raise NoMatchingPatternError, FrozenCore.sprintf("%p: %s", case_val, error_string)
+         *   end
+         */
+        LABEL *key_error, *fin;
+        struct rb_callinfo_kwarg *kw_arg;
+
+        key_error = NEW_LABEL(line);
+        fin = NEW_LABEL(line);
+
+        kw_arg = rb_xmalloc_mul_add(2, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg));
+        kw_arg->references = 0;
+        kw_arg->keyword_len = 2;
+        kw_arg->keywords[0] = ID2SYM(rb_intern("matchee"));
+        kw_arg->keywords[1] = ID2SYM(rb_intern("key"));
+
+        ADD_INSN1(cond_seq, node, topn, INT2FIX(CASE3_BI_OFFSET_KEY_ERROR_P + 2));
+        ADD_INSNL(cond_seq, node, branchif, key_error);
+        ADD_INSN1(cond_seq, node, putobject, rb_eNoMatchingPatternError);
+        ADD_INSN1(cond_seq, node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+        ADD_INSN1(cond_seq, node, putobject, rb_fstring_lit("%p: %s"));
+        ADD_INSN1(cond_seq, node, topn, INT2FIX(4)); /* case VAL */
+        ADD_INSN1(cond_seq, node, topn, INT2FIX(CASE3_BI_OFFSET_ERROR_STRING + 6));
+        ADD_SEND(cond_seq, node, id_core_sprintf, INT2FIX(3));
+        ADD_SEND(cond_seq, node, id_core_raise, INT2FIX(2));
+        ADD_INSNL(cond_seq, node, jump, fin);
+
+        ADD_LABEL(cond_seq, key_error);
+        ADD_INSN1(cond_seq, node, putobject, rb_eNoMatchingPatternKeyError);
+        ADD_INSN1(cond_seq, node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+        ADD_INSN1(cond_seq, node, putobject, rb_fstring_lit("%p: %s"));
+        ADD_INSN1(cond_seq, node, topn, INT2FIX(4)); /* case VAL */
+        ADD_INSN1(cond_seq, node, topn, INT2FIX(CASE3_BI_OFFSET_ERROR_STRING + 6));
+        ADD_SEND(cond_seq, node, id_core_sprintf, INT2FIX(3));
+        ADD_INSN1(cond_seq, node, topn, INT2FIX(CASE3_BI_OFFSET_KEY_ERROR_MATCHEE + 4));
+        ADD_INSN1(cond_seq, node, topn, INT2FIX(CASE3_BI_OFFSET_KEY_ERROR_KEY + 5));
+        ADD_SEND_R(cond_seq, node, rb_intern("new"), INT2FIX(1), NULL, INT2FIX(VM_CALL_KWARG), kw_arg);
+        ADD_SEND(cond_seq, node, id_core_raise, INT2FIX(1));
+
+        ADD_LABEL(cond_seq, fin);
+
+        ADD_INSN1(cond_seq, node, adjuststack, INT2FIX(7));
+        if (!popped) {
+            ADD_INSN(cond_seq, node, putnil);
+        }
+        ADD_INSNL(cond_seq, node, jump, endlabel);
+        ADD_INSN1(cond_seq, node, dupn, INT2FIX(5));
+        if (popped) {
+            ADD_INSN(cond_seq, line_node, putnil);
+        }
+    }
+
+    ADD_SEQ(ret, cond_seq);
+    ADD_SEQ(ret, body_seq);
+    ADD_LABEL(ret, endlabel);
+    return COMPILE_OK;
+}
+
 #undef CASE3_BI_OFFSET_DECONSTRUCTED_CACHE
 #undef CASE3_BI_OFFSET_ERROR_STRING
 #undef CASE3_BI_OFFSET_KEY_ERROR_P
@@ -12099,6 +12307,14 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       }
       case RB_CASE_MATCH_NODE: {
         CHECK(compile_case3(iseq, ret, node, popped));
+        break;
+      }
+      case RB_MATCH_PREDICATE_NODE: {
+        CHECK(compile_match_predicate(iseq, ret, node, popped));
+        break;
+      }
+      case RB_MATCH_REQUIRED_NODE: {
+        CHECK(compile_match_required(iseq, ret, node, popped));
         break;
       }
       case RB_WHILE_NODE:
