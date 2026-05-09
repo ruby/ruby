@@ -171,20 +171,22 @@ module Timeout
     message ||= "execution expired"
 
     if Fiber.respond_to?(:current_scheduler) && (scheduler = Fiber.current_scheduler)&.respond_to?(:timeout_after)
-      return scheduler.timeout_after(sec, klass || Error, message, &block)
-    end
-
-    Timeout.ensure_timeout_thread_created
-    perform = Proc.new do |exc|
-      request = Request.new(Thread.current, sec, exc, message)
-      QUEUE_MUTEX.synchronize do
-        QUEUE << request
-        CONDVAR.signal
+      perform = Proc.new do |exc|
+        scheduler.timeout_after(sec, exc, message, &block)
       end
-      begin
-        return yield(sec)
-      ensure
-        request.finished
+    else
+      Timeout.ensure_timeout_thread_created
+      perform = Proc.new do |exc|
+        request = Request.new(Thread.current, sec, exc, message)
+        QUEUE_MUTEX.synchronize do
+          QUEUE << request
+          CONDVAR.signal
+        end
+        begin
+          return yield(sec)
+        ensure
+          request.finished
+        end
       end
     end
 
