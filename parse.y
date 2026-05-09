@@ -1185,9 +1185,9 @@ static rb_node_block_t *rb_node_block_new(struct parser_params *p, NODE *nd_head
 // static rb_node_unless_t *rb_node_unless_new(struct parser_params *p, NODE *nd_cond, NODE *nd_body, NODE *nd_else, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *then_keyword_loc, const YYLTYPE *end_keyword_loc);
 // static rb_node_case_t *rb_node_case_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *case_keyword_loc, const YYLTYPE *end_keyword_loc);
 // static rb_node_case2_t *rb_node_case2_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *case_keyword_loc, const YYLTYPE *end_keyword_loc);
-static rb_node_case3_t *rb_node_case3_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *case_keyword_loc, const YYLTYPE *end_keyword_loc);
+// static rb_node_case3_t *rb_node_case3_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *case_keyword_loc, const YYLTYPE *end_keyword_loc);
 // static rb_node_when_t *rb_node_when_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, NODE *nd_next, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *then_keyword_loc);
-static rb_node_in_t *rb_node_in_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, NODE *nd_next, const YYLTYPE *loc, const YYLTYPE *in_keyword_loc, const YYLTYPE *then_keyword_loc, const YYLTYPE *operator_loc);
+// static rb_node_in_t *rb_node_in_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, NODE *nd_next, const YYLTYPE *loc, const YYLTYPE *in_keyword_loc, const YYLTYPE *then_keyword_loc, const YYLTYPE *operator_loc);
 static rb_node_while_t *rb_node_while_new(struct parser_params *p, NODE *nd_cond, NODE *nd_body, long nd_state, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *closing_loc);
 // static rb_node_until_t *rb_node_until_new(struct parser_params *p, NODE *nd_cond, NODE *nd_body, long nd_state, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *closing_loc);
 // static rb_node_iter_t *rb_node_iter_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_body, const YYLTYPE *loc);
@@ -1199,7 +1199,7 @@ static rb_node_begin_t *rb_node_begin_new(struct parser_params *p, NODE *nd_body
 // static rb_node_resbody_t *rb_node_resbody_new(struct parser_params *p, NODE *nd_args, NODE *nd_exc_var, NODE *nd_body, NODE *nd_next, const YYLTYPE *loc);
 // static rb_node_ensure_t *rb_node_ensure_new(struct parser_params *p, NODE *nd_head, NODE *nd_ensr, const YYLTYPE *loc);
 // static rb_node_and_t *rb_node_and_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc, const YYLTYPE *operator_loc);
-static rb_node_or_t *rb_node_or_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc, const YYLTYPE *operator_loc);
+// static rb_node_or_t *rb_node_or_new(struct parser_params *p, NODE *nd_1st, NODE *nd_2nd, const YYLTYPE *loc, const YYLTYPE *operator_loc);
 static rb_node_masgn_t *rb_node_masgn_new(struct parser_params *p, NODE *nd_head, NODE *nd_args, const YYLTYPE *loc);
 // static rb_node_lasgn_t *rb_node_lasgn_new(struct parser_params *p, ID nd_vid, NODE *nd_value, const YYLTYPE *loc);
 // static rb_node_dasgn_t *rb_node_dasgn_new(struct parser_params *p, ID nd_vid, NODE *nd_value, const YYLTYPE *loc);
@@ -1293,9 +1293,9 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 // #define NEW_UNLESS(c,t,e,loc,k_loc,t_loc,e_loc) (NODE *)rb_node_unless_new(p,c,t,e,loc,k_loc,t_loc,e_loc)
 // #define NEW_CASE(h,b,loc,ck_loc,ek_loc) (NODE *)rb_node_case_new(p,h,b,loc,ck_loc,ek_loc)
 // #define NEW_CASE2(b,loc,ck_loc,ek_loc) (NODE *)rb_node_case2_new(p,b,loc,ck_loc,ek_loc)
-#define NEW_CASE3(h,b,loc,ck_loc,ek_loc) (NODE *)rb_node_case3_new(p,h,b,loc,ck_loc,ek_loc)
+// #define NEW_CASE3(h,b,loc,ck_loc,ek_loc) (NODE *)rb_node_case3_new(p,h,b,loc,ck_loc,ek_loc)
 // #define NEW_WHEN(c,t,e,loc,k_loc,t_loc) (NODE *)rb_node_when_new(p,c,t,e,loc,k_loc,t_loc)
-#define NEW_IN(c,t,e,loc,ik_loc,tk_loc,o_loc) (NODE *)rb_node_in_new(p,c,t,e,loc,ik_loc,tk_loc,o_loc)
+// #define NEW_IN(c,t,e,loc,ik_loc,tk_loc,o_loc) (NODE *)rb_node_in_new(p,c,t,e,loc,ik_loc,tk_loc,o_loc)
 #define NEW_WHILE(c,b,n,loc,k_loc,c_loc) (NODE *)rb_node_while_new(p,c,b,n,loc,k_loc,c_loc)
 // #define NEW_UNTIL(c,b,n,loc,k_loc,c_loc) (NODE *)rb_node_until_new(p,c,b,n,loc,k_loc,c_loc)
 // #define NEW_ITER(a,b,loc) (NODE *)rb_node_iter_new(p,a,b,loc)
@@ -1543,6 +1543,8 @@ static rb_hash_pattern_node_t *rb_new_node_hash_pattern_new(struct parser_params
 static rb_find_pattern_node_t *rb_new_node_find_pattern_new(struct parser_params *p, rb_splat_node_t *pre_rest_arg, rb_array_node_t *args, NODE *post_rest_arg, const YYLTYPE *loc);
 static rb_alternation_pattern_node_t *rb_new_node_alternation_pattern_new(struct parser_params *p, NODE *right, NODE *left, const YYLTYPE *loc, const YYLTYPE *operator_loc);
 static rb_capture_pattern_node_t *rb_new_node_capture_pattern_new(struct parser_params *p, NODE *value, rb_local_variable_target_node_t *target, const YYLTYPE *loc, const YYLTYPE *operator_loc);
+static rb_match_predicate_node_t *rb_new_node_match_predicate_new(struct parser_params *p, NODE *value, NODE *pattern, const YYLTYPE *loc, const YYLTYPE *operator_loc);
+static rb_match_required_node_t *rb_new_node_match_required_new(struct parser_params *p, NODE *value, NODE *pattern, const YYLTYPE *loc, const YYLTYPE *operator_loc);
 static rb_pinned_variable_node_t *rb_new_node_pinned_variable_new(struct parser_params *p, rb_node_t *nd_var, const YYLTYPE *loc, const YYLTYPE *operator_loc);
 static rb_pinned_expression_node_t *rb_new_node_pinned_expression_new(struct parser_params *p, rb_node_t *nd_expr, const YYLTYPE *loc, const YYLTYPE *operator_loc, const YYLTYPE *lparen_loc, const YYLTYPE *rparen_loc);
 static rb_source_line_node_t *rb_new_node_source_line_new(struct parser_params *p, const YYLTYPE *loc);
@@ -1707,6 +1709,8 @@ static rb_source_encoding_node_t *rb_new_node_source_encoding_new(struct parser_
 #define NEW_RB_FIND_PATTERN(pre,a,post,loc) (rb_node_t *)rb_new_node_find_pattern_new(p,pre,a,post,loc)
 #define NEW_RB_ALTERNATION_PATTERN(f,s,loc,op_loc) (rb_node_t *)rb_new_node_alternation_pattern_new(p,f,s,loc,op_loc)
 #define NEW_RB_CAPTURE_PATTERN(k,v,loc,op_loc) (rb_node_t *)rb_new_node_capture_pattern_new(p,k,v,loc,op_loc)
+#define NEW_RB_MATCH_PREDICATE(v,pat,loc,op_loc) (rb_node_t *)rb_new_node_match_predicate_new(p,v,pat,loc,op_loc)
+#define NEW_RB_MATCH_REQUIRED(v,pat,loc,op_loc) (rb_node_t *)rb_new_node_match_required_new(p,v,pat,loc,op_loc)
 #define NEW_RB_PINNED_VARIABLE(v,loc,op_loc) (rb_node_t *)rb_new_node_pinned_variable_new(p,v,loc,op_loc)
 #define NEW_RB_PINNED_EXPRESSION(e,loc,op_loc,lp_loc,rp_loc) (rb_node_t *)rb_new_node_pinned_expression_new(p,e,loc,op_loc,lp_loc,rp_loc)
 #define NEW_RB_SOURCE_LINE(loc) (rb_node_t *)rb_new_node_source_line_new(p,loc)
@@ -4035,7 +4039,7 @@ expr		: command_call
                         p->ctxt.in_kwarg = $ctxt.in_kwarg;
                         p->ctxt.in_alt_pattern = $ctxt.in_alt_pattern;
                         p->ctxt.capture_in_pattern = $ctxt.capture_in_pattern;
-                        $$ = NEW_CASE3($arg, NEW_IN($body, 0, 0, &@body, &NULL_LOC, &NULL_LOC, &@assoc), &@$, &NULL_LOC, &NULL_LOC);
+                        $$ = NEW_RB_MATCH_REQUIRED($arg, $body, &@$, &@assoc);
                     /*% ripper: case!($:arg, in!($:body, Qnil, Qnil)) %*/
                     }
                 | arg keyword_in
@@ -4050,7 +4054,7 @@ expr		: command_call
                         p->ctxt.in_kwarg = $ctxt.in_kwarg;
                         p->ctxt.in_alt_pattern = $ctxt.in_alt_pattern;
                         p->ctxt.capture_in_pattern = $ctxt.capture_in_pattern;
-                        $$ = NEW_CASE3($arg, NEW_IN($body, NEW_RB_TRUE(&@body), NEW_RB_FALSE(&@body), &@body, &@keyword_in, &NULL_LOC, &NULL_LOC), &@$, &NULL_LOC, &NULL_LOC);
+                        $$ = NEW_RB_MATCH_PREDICATE($arg, $body, &@$, &@keyword_in);
                     /*% ripper: case!($:arg, in!($:body, Qnil, Qnil)) %*/
                     }
                 | arg %prec tLBRACE_ARG
@@ -12174,17 +12178,17 @@ rb_node_begin_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc)
 //     return n;
 // }
 
-static rb_node_case3_t *
-rb_node_case3_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *case_keyword_loc, const YYLTYPE *end_keyword_loc)
-{
-    rb_node_case3_t *n = NODE_NEWNODE(NODE_CASE3, rb_node_case3_t, loc);
-    n->nd_head = nd_head;
-    n->nd_body = nd_body;
-    n->case_keyword_loc = *case_keyword_loc;
-    n->end_keyword_loc = *end_keyword_loc;
+// static rb_node_case3_t *
+// rb_node_case3_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, const YYLTYPE *loc, const YYLTYPE *case_keyword_loc, const YYLTYPE *end_keyword_loc)
+// {
+//     rb_node_case3_t *n = NODE_NEWNODE(NODE_CASE3, rb_node_case3_t, loc);
+//     n->nd_head = nd_head;
+//     n->nd_body = nd_body;
+//     n->case_keyword_loc = *case_keyword_loc;
+//     n->end_keyword_loc = *end_keyword_loc;
 
-    return n;
-}
+//     return n;
+// }
 
 // static rb_node_when_t *
 // rb_node_when_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, NODE *nd_next, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *then_keyword_loc)
@@ -12199,19 +12203,19 @@ rb_node_case3_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, const Y
 //     return n;
 // }
 
-static rb_node_in_t *
-rb_node_in_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, NODE *nd_next, const YYLTYPE *loc, const YYLTYPE *in_keyword_loc, const YYLTYPE *then_keyword_loc, const YYLTYPE *operator_loc)
-{
-    rb_node_in_t *n = NODE_NEWNODE(NODE_IN, rb_node_in_t, loc);
-    n->nd_head = nd_head;
-    n->nd_body = nd_body;
-    n->nd_next = nd_next;
-    n->in_keyword_loc = *in_keyword_loc;
-    n->then_keyword_loc = *then_keyword_loc;
-    n->operator_loc = *operator_loc;
+// static rb_node_in_t *
+// rb_node_in_new(struct parser_params *p, NODE *nd_head, NODE *nd_body, NODE *nd_next, const YYLTYPE *loc, const YYLTYPE *in_keyword_loc, const YYLTYPE *then_keyword_loc, const YYLTYPE *operator_loc)
+// {
+//     rb_node_in_t *n = NODE_NEWNODE(NODE_IN, rb_node_in_t, loc);
+//     n->nd_head = nd_head;
+//     n->nd_body = nd_body;
+//     n->nd_next = nd_next;
+//     n->in_keyword_loc = *in_keyword_loc;
+//     n->then_keyword_loc = *then_keyword_loc;
+//     n->operator_loc = *operator_loc;
 
-    return n;
-}
+//     return n;
+// }
 
 static rb_node_while_t *
 rb_node_while_new(struct parser_params *p, NODE *nd_cond, NODE *nd_body, long nd_state, const YYLTYPE *loc, const YYLTYPE *keyword_loc, const YYLTYPE *closing_loc)
@@ -14188,6 +14192,28 @@ rb_new_node_capture_pattern_new(struct parser_params *p, NODE *value, rb_local_v
     rb_capture_pattern_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_CAPTURE_PATTERN_NODE, rb_capture_pattern_node_t, loc);
     n->value = value;
     n->target = target;
+    n->operator_loc = *operator_loc;
+
+    return n;
+}
+
+static rb_match_predicate_node_t *
+rb_new_node_match_predicate_new(struct parser_params *p, NODE *value, NODE *pattern, const YYLTYPE *loc, const YYLTYPE *operator_loc)
+{
+    rb_match_predicate_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_MATCH_PREDICATE_NODE, rb_match_predicate_node_t, loc);
+    n->value = value;
+    n->pattern = pattern;
+    n->operator_loc = *operator_loc;
+
+    return n;
+}
+
+static rb_match_required_node_t *
+rb_new_node_match_required_new(struct parser_params *p, NODE *value, NODE *pattern, const YYLTYPE *loc, const YYLTYPE *operator_loc)
+{
+    rb_match_required_node_t *n = RB_NEW_NODE_NEWNODE((enum rb_node_type)RB_MATCH_REQUIRED_NODE, rb_match_required_node_t, loc);
+    n->value = value;
+    n->pattern = pattern;
     n->operator_loc = *operator_loc;
 
     return n;
