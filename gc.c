@@ -100,6 +100,7 @@
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/rational.h"
+#include "internal/re.h"
 #include "internal/sanitizers.h"
 #include "internal/struct.h"
 #include "internal/symbol.h"
@@ -1643,17 +1644,19 @@ rb_gc_obj_free(void *objspace, VALUE obj)
         {
             struct RMatch *rm = RMATCH(obj);
 #if USE_DEBUG_COUNTER
-            if (rm->regs.num_regs >= 8) {
+            if (rm->num_regs >= 8) {
                 RB_DEBUG_COUNTER_INC(obj_match_ge8);
             }
-            else if (rm->regs.num_regs >= 4) {
+            else if (rm->num_regs >= 4) {
                 RB_DEBUG_COUNTER_INC(obj_match_ge4);
             }
-            else if (rm->regs.num_regs >= 1) {
+            else if (rm->num_regs >= 1) {
                 RB_DEBUG_COUNTER_INC(obj_match_under4);
             }
 #endif
-            onig_region_free(&rm->regs, 0);
+            if (FL_TEST_RAW(obj, RMATCH_ONIG)) {
+                onig_region_free(&rm->as.onig, 0);
+            }
             SIZED_FREE_N(rm->char_offset, rm->char_offset_num_allocated);
 
             RB_DEBUG_COUNTER_INC(obj_match_ptr);
@@ -2640,7 +2643,9 @@ rb_obj_memsize_of(VALUE obj)
       case T_MATCH:
         {
             struct RMatch *rm = RMATCH(obj);
-            size += onig_region_memsize(&rm->regs);
+            if (FL_TEST_RAW(obj, RMATCH_ONIG)) {
+                size += onig_region_memsize(&rm->as.onig);
+            }
             size += sizeof(struct rmatch_offset) * rm->char_offset_num_allocated;
         }
         break;

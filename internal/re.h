@@ -12,16 +12,28 @@
 #include "ruby/ruby.h"          /* for VALUE */
 #include "ruby/re.h"            /* for struct RMatch and struct re_registers */
 
+#define RMATCH_ONIG FL_USER1
+
 static inline OnigPosition *
 RMATCH_BEG_PTR(VALUE match)
 {
-    return RMATCH(match)->regs.beg;
+    if (FL_TEST_RAW(match, RMATCH_ONIG)) {
+        return RMATCH(match)->as.onig.beg;
+    }
+    else {
+        return &RMATCH(match)->as.embed[0];
+    }
 }
 
 static inline OnigPosition *
 RMATCH_END_PTR(VALUE match)
 {
-    return RMATCH(match)->regs.end;
+    if (FL_TEST_RAW(match, RMATCH_ONIG)) {
+        return RMATCH(match)->as.onig.end;
+    }
+    else {
+        return &RMATCH(match)->as.embed[RMATCH(match)->num_regs];
+    }
 }
 
 static inline long
@@ -39,7 +51,7 @@ RMATCH_END(VALUE match, int i)
 static inline int
 RMATCH_NREGS(VALUE match)
 {
-    return RMATCH(match)->regs.num_regs;
+    return RMATCH(match)->num_regs;
 }
 
 /* re.c */

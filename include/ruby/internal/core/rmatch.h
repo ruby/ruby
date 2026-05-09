@@ -91,17 +91,26 @@ struct RMatch {
      */
     VALUE regexp;  /* RRegexp */
 
-   /**
-    * "Registers"  of a  match.   This  is a  quasi-opaque  struct that  holds
-    * execution result of a match.  Roughly resembles `$~`.
-    */
-   struct re_registers regs;
+    /** Number of ::rmatch_offset that ::rmatch::char_offset holds. */
+    int char_offset_num_allocated;
 
-   /** Number of ::rmatch_offset that ::rmatch::char_offset holds. */
-   int char_offset_num_allocated;
+    /** Capture group offsets, in C array. */
+    struct rmatch_offset *char_offset;
 
-   /** Capture group offsets, in C array. */
-   struct rmatch_offset *char_offset;
+    /** Number of capture-group registers. */
+    int num_regs;
+
+    /** Capacity of `as.embed`, in OnigPosition slots. */
+    int capa;
+
+    /**
+     * "Registers" of a match.  This is a quasi-opaque struct that holds
+     * execution result of a match.  Roughly resembles `$~`.
+     */
+    union {
+        OnigPosition embed[1];
+        struct re_registers onig;
+    } as;
 };
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
@@ -131,7 +140,7 @@ static inline struct re_registers *
 RMATCH_REGS(VALUE match)
 {
     RBIMPL_ASSERT_TYPE(match, RUBY_T_MATCH);
-    return &RMATCH(match)->regs;
+    return &RMATCH(match)->as.onig;
 }
 
 #endif /* RBIMPL_RMATCH_H */

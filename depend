@@ -5952,6 +5952,7 @@ gc.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 gc.$(OBJEXT): $(top_srcdir)/internal/object.h
 gc.$(OBJEXT): $(top_srcdir)/internal/proc.h
 gc.$(OBJEXT): $(top_srcdir)/internal/rational.h
+gc.$(OBJEXT): $(top_srcdir)/internal/re.h
 gc.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 gc.$(OBJEXT): $(top_srcdir)/internal/serial.h
 gc.$(OBJEXT): $(top_srcdir)/internal/set_table.h
