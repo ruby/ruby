@@ -66,6 +66,16 @@ class PStoreTest < Test::Unit::TestCase
     end
   end
 
+  def test_data_should_be_stored_correctly_when_in_ultra_safe_mode
+    @pstore.ultra_safe = true
+    @pstore.transaction do
+      @pstore[:foo] = "bar"
+    end
+    @pstore.transaction(true) do
+      assert_equal "bar", @pstore[:foo]
+    end
+  end
+
   def test_writing_inside_readonly_transaction_raises_error
     assert_raise(PStore::Error) do
       @pstore.transaction(true) do
@@ -133,7 +143,8 @@ class PStoreTest < Test::Unit::TestCase
   def test_pstore_files_are_accessed_as_binary_files
     bug5311 = '[ruby-core:39503]'
     n = 128
-    assert_in_out_err(["-Eutf-8:utf-8", "-rpstore", "-", @pstore_file], <<-SRC, [bug5311], [], bug5311, timeout: 30)
+    top_dir = File.expand_path('../lib', __dir__)
+    assert_in_out_err(["-Eutf-8:utf-8", "-I#{top_dir}", "-rpstore", "-", @pstore_file], <<-SRC, [bug5311], [], bug5311, timeout: 30)
       @pstore = PStore.new(ARGV[0])
       (1..#{n}).each do |i|
         @pstore.transaction {@pstore["Key\#{i}"] = "value \#{i}"}

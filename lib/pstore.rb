@@ -326,11 +326,14 @@ require "digest"
 #  end
 #
 class PStore
-  VERSION = "0.1.4"
+  # :stopdoc:
+  VERSION = "0.2.1"
 
   RDWR_ACCESS = {mode: IO::RDWR | IO::CREAT | IO::BINARY, encoding: Encoding::ASCII_8BIT}.freeze
   RD_ACCESS = {mode: IO::RDONLY | IO::BINARY, encoding: Encoding::ASCII_8BIT}.freeze
   WR_ACCESS = {mode: IO::WRONLY | IO::CREAT | IO::TRUNC | IO::BINARY, encoding: Encoding::ASCII_8BIT}.freeze
+  private_constant :RDWR_ACCESS, :RD_ACCESS, :WR_ACCESS
+  # :startdoc:
 
   # The error type thrown by all PStore methods.
   class Error < StandardError
@@ -591,6 +594,8 @@ class PStore
   end
 
   private
+  # :stopdoc:
+
   # Constant for relieving Ruby's garbage collector.
   CHECKSUM_ALGO = %w[SHA512 SHA384 SHA256 SHA1 RMD160 MD5].each do |algo|
     begin
@@ -601,6 +606,10 @@ class PStore
   EMPTY_STRING = ""
   EMPTY_MARSHAL_DATA = Marshal.dump({})
   EMPTY_MARSHAL_CHECKSUM = CHECKSUM_ALGO.digest(EMPTY_MARSHAL_DATA)
+
+  EMPTY_MARSHAL_DATA.freeze
+  EMPTY_MARSHAL_CHECKSUM.freeze
+  private_constant :CHECKSUM_ALGO, :EMPTY_STRING, :EMPTY_MARSHAL_DATA, :EMPTY_MARSHAL_CHECKSUM
 
   #
   # Open the specified filename (either in read-only mode or in
@@ -664,20 +673,16 @@ class PStore
     end
   end
 
-  def on_windows?
-    is_windows = RUBY_PLATFORM =~ /mswin|mingw|bccwin|wince/
-    self.class.__send__(:define_method, :on_windows?) do
-      is_windows
-    end
-    is_windows
-  end
+  ON_WINDOWS = true & (/mswin|mingw|bccwin|wince/ =~ RUBY_PLATFORM) # :nodoc:
+  private_constant :ON_WINDOWS
 
   def save_data(original_checksum, original_file_size, file)
     new_data = dump(@table)
 
     if new_data.bytesize != original_file_size || CHECKSUM_ALGO.digest(new_data) != original_checksum
-      if @ultra_safe && !on_windows?
-        # Windows doesn't support atomic file renames.
+      if @ultra_safe && !ON_WINDOWS
+        # Once a file is locked, Windows does not guarantee that the
+        # lock will be released until the file is closed.
         save_data_with_atomic_file_rename_strategy(new_data, file)
       else
         save_data_with_fast_strategy(new_data, file)
