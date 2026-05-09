@@ -113,8 +113,18 @@ struct RMatch {
     } as;
 };
 
-RBIMPL_ATTR_PURE_UNLESS_DEBUG()
-RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_SYMBOL_EXPORT_BEGIN()
+/**
+ * @private
+ *
+ * Converts an  embedded match  to onig  form.  This  is an  implementation
+ * detail of #RMATCH_REGS.  People don't use it directly.
+ *
+ * @param[out]  match  A match object, possibly in embedded form.
+ */
+void rb_match_ensure_onig(VALUE match);
+RBIMPL_SYMBOL_EXPORT_END()
+
 /**
  * Queries the raw ::re_registers.
  *
@@ -140,6 +150,7 @@ static inline struct re_registers *
 RMATCH_REGS(VALUE match)
 {
     RBIMPL_ASSERT_TYPE(match, RUBY_T_MATCH);
+    rb_match_ensure_onig(match);
     return &RMATCH(match)->as.onig;
 }
 

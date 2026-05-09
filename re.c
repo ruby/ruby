@@ -1000,6 +1000,29 @@ rb_reg_region_copy(struct re_registers *to, const struct re_registers *from)
     return ONIGERR_MEMORY;
 }
 
+static void
+match_to_onig(VALUE match, int num_regs, const OnigPosition *src_beg, const OnigPosition *src_end)
+{
+    struct RMatch *rm = RMATCH(match);
+    struct re_registers tmp = {0};
+    if (onig_region_resize(&tmp, num_regs)) {
+        rb_memerror();
+    }
+    memcpy(tmp.beg, src_beg, num_regs * sizeof(OnigPosition));
+    memcpy(tmp.end, src_end, num_regs * sizeof(OnigPosition));
+    rm->as.onig = tmp;
+    FL_SET_RAW(match, RMATCH_ONIG);
+}
+
+void
+rb_match_ensure_onig(VALUE match)
+{
+    if (FL_TEST_RAW(match, RMATCH_ONIG)) return;
+    struct RMatch *rm = RMATCH(match);
+    int n = rm->num_regs;
+    match_to_onig(match, n, &rm->as.embed[0], &rm->as.embed[n]);
+}
+
 /* Replace `match`'s registers with a copy of (num_regs, beg, end). If the
  * data does not fit in the embed form, the match is evicted to onig form.
  * Raises on OOM. */
@@ -1020,14 +1043,7 @@ match_set_regs(VALUE match, int num_regs, const OnigPosition *beg, const OnigPos
         memcpy(&rm->as.embed[num_regs], end, num_regs * sizeof(OnigPosition));
     }
     else {
-        struct re_registers tmp = {0};
-        if (onig_region_resize(&tmp, num_regs)) {
-            rb_memerror();
-        }
-        memcpy(tmp.beg, beg, num_regs * sizeof(OnigPosition));
-        memcpy(tmp.end, end, num_regs * sizeof(OnigPosition));
-        rm->as.onig = tmp;
-        FL_SET_RAW(match, RMATCH_ONIG);
+        match_to_onig(match, num_regs, beg, end);
     }
     rm->num_regs = num_regs;
 }
