@@ -6258,12 +6258,10 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
         int cr = ENC_CODERANGE(str);
         long beg0, end0;
         VALUE match, match0 = Qnil;
-        struct re_registers *regs;
         char *p, *rp;
         long len, rlen;
 
         match = rb_backref_get();
-        regs = RMATCH_REGS(match);
         if (RB_TYPE_P(pat, T_STRING)) {
             beg0 = beg;
             end0 = beg0 + RSTRING_LEN(pat);
@@ -6289,7 +6287,7 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
             rb_check_frozen(str);
         }
         else {
-            repl = rb_reg_regsub(repl, str, regs, RB_TYPE_P(pat, T_STRING) ? Qnil : pat);
+            repl = rb_reg_regsub_match(repl, str, match);
         }
 
         enc = rb_enc_compatible(str, repl);
@@ -6409,7 +6407,6 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     ENC_CODERANGE_SET(dest, rb_enc_asciicompat(str_enc) ? ENC_CODERANGE_7BIT : ENC_CODERANGE_VALID);
 
     do {
-        struct re_registers *regs = RMATCH_REGS(match);
         if (RB_TYPE_P(pat, T_STRING)) {
             beg0 = beg;
             end0 = beg0 + RSTRING_LEN(pat);
@@ -6446,7 +6443,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
             }
         }
         else if (need_backref_str) {
-            val = rb_reg_regsub(repl, str, regs, RB_TYPE_P(pat, T_STRING) ? Qnil : pat);
+            val = rb_reg_regsub_match(repl, str, match);
             if (need_backref_str < 0) {
                 need_backref_str = val != repl;
             }

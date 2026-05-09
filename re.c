@@ -37,9 +37,6 @@ VALUE rb_eRegexpError, rb_eRegexpTimeoutError;
 typedef char onig_errmsg_buffer[ONIG_MAX_ERROR_MESSAGE_LEN];
 #define errcpy(err, msg) strlcpy((err), (msg), ONIG_MAX_ERROR_MESSAGE_LEN)
 
-#define BEG(no) (regs->beg[(no)])
-#define END(no) (regs->end[(no)])
-
 #if 'a' == 97   /* it's ascii */
 static const char casetable[] = {
         '\000', '\001', '\002', '\003', '\004', '\005', '\006', '\007',
@@ -4557,8 +4554,8 @@ rb_reg_init_copy(VALUE copy, VALUE re)
     return reg_copy(copy, re);
 }
 
-VALUE
-rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
+static VALUE
+do_regsub(VALUE str, VALUE src, VALUE regexp, int num_regs, const OnigPosition *beg, const OnigPosition *end)
 {
     VALUE val = 0;
     char *p, *s, *e;
@@ -4625,7 +4622,13 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
                 if (name_end < e) {
                     VALUE n = rb_str_subseq(str, (long)(name - RSTRING_PTR(str)),
                                             (long)(name_end - name));
-                    if ((no = NAME_TO_NUMBER(regs, regexp, n, name, name_end)) < 1) {
+                    struct re_registers tmp = {
+                        .allocated = num_regs,
+                        .num_regs = num_regs,
+                        .beg = (OnigPosition *)beg,
+                        .end = (OnigPosition *)end,
+                    };
+                    if ((no = NAME_TO_NUMBER(&tmp, regexp, n, name, name_end)) < 1) {
                         name_to_backref_error(n);
                     }
                     p = s = name_end + clen;
@@ -4645,16 +4648,16 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
             break;
 
           case '`':
-            rb_enc_str_buf_cat(val, RSTRING_PTR(src), BEG(0), src_enc);
+            rb_enc_str_buf_cat(val, RSTRING_PTR(src), beg[0], src_enc);
             continue;
 
           case '\'':
-            rb_enc_str_buf_cat(val, RSTRING_PTR(src)+END(0), RSTRING_LEN(src)-END(0), src_enc);
+            rb_enc_str_buf_cat(val, RSTRING_PTR(src)+end[0], RSTRING_LEN(src)-end[0], src_enc);
             continue;
 
           case '+':
-            no = regs->num_regs-1;
-            while (BEG(no) == -1 && no > 0) no--;
+            no = num_regs-1;
+            while (beg[no] == -1 && no > 0) no--;
             if (no == 0) continue;
             break;
 
@@ -4668,9 +4671,9 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
         }
 
         if (no >= 0) {
-            if (no >= regs->num_regs) continue;
-            if (BEG(no) == -1) continue;
-            rb_enc_str_buf_cat(val, RSTRING_PTR(src)+BEG(no), END(no)-BEG(no), src_enc);
+            if (no >= num_regs) continue;
+            if (beg[no] == -1) continue;
+            rb_enc_str_buf_cat(val, RSTRING_PTR(src)+beg[no], end[no]-beg[no], src_enc);
         }
     }
 
@@ -4680,6 +4683,20 @@ rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
     }
 
     return val;
+#undef ASCGET
+}
+
+VALUE
+rb_reg_regsub(VALUE str, VALUE src, struct re_registers *regs, VALUE regexp)
+{
+    return do_regsub(str, src, regexp, regs->num_regs, regs->beg, regs->end);
+}
+
+VALUE
+rb_reg_regsub_match(VALUE str, VALUE src, VALUE match)
+{
+    return do_regsub(str, src, RMATCH(match)->regexp,
+                     RMATCH_NREGS(match), RMATCH_BEG_PTR(match), RMATCH_END_PTR(match));
 }
 
 static VALUE
