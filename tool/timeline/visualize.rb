@@ -59,9 +59,19 @@ class LogProcessor
     @type_id_name = {}
     @start_time = nil
     @results = []
+    @started = false
   end
 
+  attr_accessor :started
+
   def process_line(line)
+    if !@started
+      if line == "====RUBY_TRACING_LOG_START===="
+        @started = true
+      end
+      return
+    end
+
     if line.include?(',')
       process_log_line(line)
     else

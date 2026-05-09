@@ -9,6 +9,8 @@ BEGIN {
         //always collect data
         @stats_enabled = 1;
     }
+
+    printf("====RUBY_TRACING_LOG_START====\n");
 }
 
 % usdts.each do |probe, name, ph, niargs|
