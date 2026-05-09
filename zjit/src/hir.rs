@@ -4611,6 +4611,8 @@ impl Function {
                             self.push_insn_id(block, insn_id); continue;
                         }
                         if self.policy.no_side_exits {
+                            // TODO: Support polymorphic DefinedIvar shape-specialized paths.
+                            // https://github.com/Shopify/ruby/issues/980
                             // On the final version, keep the DefinedIvar fallback instead of another shape guard.
                             self.push_insn_id(block, insn_id); continue;
                         }
@@ -4657,6 +4659,8 @@ impl Function {
                             self.push_insn_id(block, insn_id); continue;
                         }
                         if self.policy.no_side_exits {
+                            // TODO: Support polymorphic SetIvar shape-specialized paths.
+                            // https://github.com/Shopify/ruby/issues/927
                             // On the final version, keep the SetIvar fallback instead of another shape guard.
                             self.push_insn_id(block, insn_id); continue;
                         }
