@@ -670,6 +670,8 @@ static void add_opt_method_entry(const rb_method_entry_t *me);
 #define VM_ASSERT_TYPE3(obj, type1, type2, type3) \
     VM_ASSERT(RB_TYPE_3_P(obj, type1, type2, type3), #obj ": %s", rb_obj_info(obj))
 
+static const rb_box_t * current_box_on_cfp(const rb_execution_context_t *ec, const rb_control_frame_t *cfp);
+
 #include "vm_insnhelper.c"
 
 #include "vm_exec.c"
