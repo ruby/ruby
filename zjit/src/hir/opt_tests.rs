@@ -1129,7 +1129,7 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(CustomEq@0x1008)
           PatchPoint MethodRedefined(CustomEq@0x1008, !=@0x1010, cme:0x1018)
           v30:ObjectSubclass[class_exact:CustomEq] = GuardType v10, ObjectSubclass[class_exact:CustomEq]
-          v31:BoolExact = CCallWithFrame v30, :BasicObject#!=@0x1040, v10
+          v31:BoolExact = CCallWithFrame v30, :BasicObject#!=@0x1040, v30
           v21:NilClass = Const Value(nil)
           CheckInterrupts
           Return v21
@@ -1752,7 +1752,7 @@ mod hir_opt_tests {
           v28:Fixnum[30] = Const Value(30)
           v30:Fixnum[40] = Const Value(40)
           v32:Fixnum[50] = Const Value(50)
-          v34:BasicObject = Send v6, :target, v24, v26, v28, v30, v32 # SendFallbackReason: Argument count does not match parameter count
+          v34:BasicObject = Send v44, :target, v24, v26, v28, v30, v32 # SendFallbackReason: Argument count does not match parameter count
           v37:ArrayExact = NewArray v45, v48, v34
           CheckInterrupts
           Return v37
@@ -4046,7 +4046,7 @@ mod hir_opt_tests {
           v33:Fixnum[40] = Const Value(40)
           v35:Fixnum[50] = Const Value(50)
           v37:Fixnum[60] = Const Value(60)
-          v39:BasicObject = Send v6, :target, v27, v29, v31, v33, v35, v37 # SendFallbackReason: Too many arguments for LIR
+          v39:BasicObject = Send v48, :target, v27, v29, v31, v33, v35, v37 # SendFallbackReason: Too many arguments for LIR
           v41:ArrayExact = NewArray v49, v52, v39
           CheckInterrupts
           Return v41
@@ -5683,7 +5683,7 @@ mod hir_opt_tests {
           WriteBarrier v28, v10
           v33:CShape[0x1003] = Const CShape(0x1003)
           StoreField v28, :_shape_id@0x1000, v33
-          v14:HeapBasicObject = RefineType v6, HeapBasicObject
+          v14:HeapBasicObject = RefineType v28, HeapBasicObject
           v17:Fixnum[2] = Const Value(2)
           PatchPoint SingleRactorMode
           StoreField v14, :@bar@0x1004, v17
@@ -6359,7 +6359,7 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Array@0x1010)
           PatchPoint MethodRedefined(Array@0x1010, to_s@0x1018, cme:0x1020)
           v33:BasicObject = CCallWithFrame v28, :Array#to_s@0x1048
-          v20:String = AnyToString v10, str: v33
+          v20:String = AnyToString v28, str: v33
           v22:StringExact = StringConcat v14, v20
           CheckInterrupts
           Return v22
@@ -9606,7 +9606,7 @@ mod hir_opt_tests {
           v33:ArrayExact = GuardType v10, ArrayExact
           v34:CUInt64 = LoadField v33, :_rbasic_flags@0x1040
           v35:CUInt64 = GuardNoBitsSet v34, RUBY_FL_FREEZE=CUInt64(2048)
-          v37:CUInt64 = GuardNoBitsSet v34, RUBY_ELTS_SHARED=CUInt64(4096)
+          v37:CUInt64 = GuardNoBitsSet v35, RUBY_ELTS_SHARED=CUInt64(4096)
           v46:CInt64[1] = Const CInt64(1)
           v39:CInt64 = ArrayLength v33
           v40:CInt64[1] = GuardLess v46, v39
@@ -9649,7 +9649,7 @@ mod hir_opt_tests {
           v38:Fixnum = GuardType v15, Fixnum
           v39:CUInt64 = LoadField v37, :_rbasic_flags@0x1040
           v40:CUInt64 = GuardNoBitsSet v39, RUBY_FL_FREEZE=CUInt64(2048)
-          v42:CUInt64 = GuardNoBitsSet v39, RUBY_ELTS_SHARED=CUInt64(4096)
+          v42:CUInt64 = GuardNoBitsSet v40, RUBY_ELTS_SHARED=CUInt64(4096)
           v43:CInt64 = UnboxFixnum v38
           v44:CInt64 = ArrayLength v37
           v45:CInt64 = GuardLess v43, v44
@@ -9874,7 +9874,7 @@ mod hir_opt_tests {
           v23:Array = GuardType v6, Array
           v24:CUInt64 = LoadField v23, :_rbasic_flags@0x1049
           v25:CUInt64 = GuardNoBitsSet v24, RUBY_FL_FREEZE=CUInt64(2048)
-          v27:CUInt64 = GuardNoBitsSet v24, RUBY_ELTS_SHARED=CUInt64(4096)
+          v27:CUInt64 = GuardNoBitsSet v25, RUBY_ELTS_SHARED=CUInt64(4096)
           v28:BasicObject = ArrayPop v23
           CheckInterrupts
           Return v28
@@ -10089,7 +10089,7 @@ mod hir_opt_tests {
           v33:CInt64 = AdjustBounds v32, v31
           v34:CInt64[0] = Const CInt64(0)
           v35:CInt64 = GuardGreaterEq v33, v34
-          v36:Fixnum = StringGetbyte v28, v33
+          v36:Fixnum = StringGetbyte v28, v35
           CheckInterrupts
           Return v36
         ");
@@ -14643,7 +14643,7 @@ mod hir_opt_tests {
           SetLocal :other_block, l0, EP@3, v40
           v27:CPtr = GetEP 0
           v28:BasicObject = LoadField v27, :other_block@0x1051
-          v30:BasicObject = InvokeSuper v11, 0x1058, v28 # SendFallbackReason: super: complex argument passing to `super` call
+          v30:BasicObject = InvokeSuper v39, 0x1058, v28 # SendFallbackReason: super: complex argument passing to `super` call
           CheckInterrupts
           Return v30
         ");
@@ -15360,7 +15360,7 @@ mod hir_opt_tests {
           WriteBarrier v35, v13
           v40:CShape[0x1003] = Const CShape(0x1003)
           StoreField v35, :_shape_id@0x1000, v40
-          v20:HeapBasicObject = RefineType v8, HeapBasicObject
+          v20:HeapBasicObject = RefineType v35, HeapBasicObject
           PatchPoint NoEPEscape(initialize)
           PatchPoint SingleRactorMode
           WriteBarrier v20, v13
@@ -15408,7 +15408,7 @@ mod hir_opt_tests {
           WriteBarrier v49, v16
           v54:CShape[0x1003] = Const CShape(0x1003)
           StoreField v49, :_shape_id@0x1000, v54
-          v23:HeapBasicObject = RefineType v10, HeapBasicObject
+          v23:HeapBasicObject = RefineType v49, HeapBasicObject
           v26:Fixnum[5] = Const Value(5)
           PatchPoint NoEPEscape(initialize)
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
@@ -15456,7 +15456,7 @@ mod hir_opt_tests {
           WriteBarrier v43, v13
           v48:CShape[0x1003] = Const CShape(0x1003)
           StoreField v43, :_shape_id@0x1000, v48
-          v20:HeapBasicObject = RefineType v8, HeapBasicObject
+          v20:HeapBasicObject = RefineType v43, HeapBasicObject
           PatchPoint NoEPEscape(initialize)
           PatchPoint SingleRactorMode
           WriteBarrier v20, v13

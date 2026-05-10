@@ -4144,6 +4144,9 @@ impl Function {
                 }
             }
         }
+        crate::stats::trace_compile_phase("canonicalize", ||
+            crate::stats::with_time_stat(Counter::compile_hir_canonicalize_time_ns, || self.canonicalize())
+        );
         crate::stats::trace_compile_phase("infer_types", || self.infer_types());
     }
 
@@ -4198,6 +4201,9 @@ impl Function {
                 }
             }
         }
+        crate::stats::trace_compile_phase("canonicalize", ||
+            crate::stats::with_time_stat(Counter::compile_hir_canonicalize_time_ns, || self.canonicalize())
+        );
         crate::stats::trace_compile_phase("infer_types", || self.infer_types());
     }
 
@@ -4486,6 +4492,9 @@ impl Function {
                 }
             }
         }
+        crate::stats::trace_compile_phase("canonicalize", ||
+            crate::stats::with_time_stat(Counter::compile_hir_canonicalize_time_ns, || self.canonicalize())
+        );
         crate::stats::trace_compile_phase("infer_types", || self.infer_types());
     }
 
@@ -4816,6 +4825,9 @@ impl Function {
                 self.push_insn_id(block, insn_id);
             }
         }
+        crate::stats::trace_compile_phase("canonicalize", ||
+            crate::stats::with_time_stat(Counter::compile_hir_canonicalize_time_ns, || self.canonicalize())
+        );
         crate::stats::trace_compile_phase("infer_types", || self.infer_types());
     }
 
@@ -4927,45 +4939,54 @@ impl Function {
             .unwrap_or(insn_id)
     }
 
-    /// Forward each branch-edge arg through the most recent `GuardType` of that
-    /// value within the same block. Lets a follow-up `infer_types` narrow merge-block
-    /// parameter types so `fold_constants` can drop redundant guards at CFG joins.
-    fn forward_guarded_values_to_jumps(&mut self) {
-        let mut changed = false;
-        let mut latest_guard: HashMap<InsnId, InsnId> = HashMap::new();
+    /// Block-local canonicalize: rewrite each operand through union-find and a
+    /// per-block map of the most recent `Guard*` for that value. Forwards
+    /// guarded values into branch-edge args (so `infer_types` narrows merge-block
+    /// parameters and `fold_constants` drops redundant CFG-join guards) and
+    /// ordinary in-block uses.
+    ///
+    /// `Guard*` substitutions are unconditional within a block: a guard's
+    /// side-exit semantics guarantee the substituted value type holds for every
+    /// downstream use in the same block.
+    ///
+    /// `RefineType` is intentionally skipped: its narrowing is only valid on one
+    /// branch arm, which would require dropping refine-derived rewrites at each
+    /// `IfTrue`/`IfFalse`. Cross-arm refine forwarding is left for a follow-up
+    /// dominator-scoped pass.
+    ///
+    /// Inspired by Cranelift's aegraph canonicalize step
+    /// (<https://cfallin.org/blog/2026/04/09/aegraph/>).
+    fn canonicalize(&mut self) {
+        let mut rewrite_map: HashMap<InsnId, InsnId> = HashMap::new();
         for block in self.rpo() {
-            latest_guard.clear();
+            rewrite_map.clear();
             for i in 0..self.blocks[block.0].insns.len() {
                 let insn_id = self.blocks[block.0].insns[i];
-                match self.find(insn_id) {
-                    Insn::GuardType { val, .. } => {
-                        latest_guard.insert(val, insn_id);
-                    }
-                    Insn::Jump(BranchEdge { ref args, .. })
-                    | Insn::IfTrue { target: BranchEdge { ref args, .. }, .. }
-                    | Insn::IfFalse { target: BranchEdge { ref args, .. }, .. } => {
-                        if !args.iter().any(|arg| latest_guard.contains_key(arg)) {
-                            continue;
-                        }
-                        let new_args: Vec<InsnId> = args.iter()
-                            .map(|arg| latest_guard.get(arg).copied().unwrap_or(*arg))
-                            .collect();
-                        match &mut self.insns[insn_id.0] {
-                            Insn::Jump(BranchEdge { args, .. })
-                            | Insn::IfTrue { target: BranchEdge { args, .. }, .. }
-                            | Insn::IfFalse { target: BranchEdge { args, .. }, .. } => {
-                                *args = new_args;
-                                changed = true;
-                            }
-                            _ => unreachable!("find preserves terminator variant"),
-                        }
+                let canonical_id = self.union_find.borrow().find_const(insn_id);
+
+                let union_find = &self.union_find;
+                self.insns[canonical_id.0].for_each_operand_mut(|operand| {
+                    let canon = union_find.borrow().find_const(*operand);
+                    *operand = rewrite_map.get(&canon).copied().unwrap_or(canon);
+                });
+
+                // GuardTypeNot is excluded: its infer_type is BasicObject
+                // (HIR has no negated-type representation), so registering
+                // would widen downstream uses' inferred types. For the
+                // binary guards only `left` is registered because their
+                // infer_type is type_of(left).
+                match &self.insns[canonical_id.0] {
+                    Insn::GuardType      { val:  src, .. }
+                    | Insn::GuardBitEquals { val:  src, .. }
+                    | Insn::GuardAnyBitSet { val:  src, .. }
+                    | Insn::GuardNoBitsSet { val:  src, .. }
+                    | Insn::GuardGreaterEq { left: src, .. }
+                    | Insn::GuardLess      { left: src, .. } => {
+                        rewrite_map.insert(*src, canonical_id);
                     }
                     _ => {}
                 }
             }
-        }
-        if changed {
-            crate::stats::trace_compile_phase("infer_types", || self.infer_types());
         }
     }
 
@@ -5357,6 +5378,9 @@ impl Function {
             changed = true;
         }
         if changed {
+            crate::stats::trace_compile_phase("canonicalize", ||
+                crate::stats::with_time_stat(Counter::compile_hir_canonicalize_time_ns, || self.canonicalize())
+            );
             crate::stats::trace_compile_phase("infer_types", || self.infer_types());
         }
     }
@@ -5622,7 +5646,7 @@ impl Function {
             (convert_no_profile_sends) => { Counter::compile_hir_strength_reduce_time_ns };
             // End strength reduction bucket
             (optimize_load_store) => { Counter::compile_hir_optimize_load_store_time_ns };
-            (forward_guarded_values_to_jumps) => { Counter::compile_hir_forward_guarded_values_to_jumps_time_ns };
+            (canonicalize) => { Counter::compile_hir_canonicalize_time_ns };
             (fold_constants) => { Counter::compile_hir_fold_constants_time_ns };
             (clean_cfg) => { Counter::compile_hir_clean_cfg_time_ns };
             (remove_redundant_patch_points) => { Counter::compile_hir_remove_redundant_patch_points_time_ns };
@@ -5657,7 +5681,8 @@ impl Function {
         run_pass!(optimize_c_calls);
         run_pass!(convert_no_profile_sends);
         run_pass!(optimize_load_store);
-        run_pass!(forward_guarded_values_to_jumps);
+        run_pass!(canonicalize);
+        crate::stats::trace_compile_phase("infer_types", || self.infer_types());
         run_pass!(fold_constants);
         run_pass!(clean_cfg);
         run_pass!(remove_redundant_patch_points);
