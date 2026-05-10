@@ -1529,7 +1529,7 @@ Init_default_shapes(void)
     }
 
     if (heaps_count > SHAPE_ID_HEAP_INDEX_MAX) {
-        rb_bug("Init_default_shapes initialized with %lu heaps, only up to %u are supported", heaps_count, SHAPE_ID_HEAP_INDEX_MAX);
+        rb_bug("Init_default_shapes initialized with %zu heaps, only up to %u are supported", heaps_count, SHAPE_ID_HEAP_INDEX_MAX);
     }
 
     size_t index;
