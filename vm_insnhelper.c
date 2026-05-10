@@ -1460,9 +1460,13 @@ vm_setivar(VALUE obj, VALUE val, rb_setivar_cache cache)
                 break;
             }
 
-            RB_OBJ_WRITE(obj, &ROBJECT_FIELDS(obj)[cache.index], val);
+            VALUE fields_obj = ROBJECT_FIELDS_OBJ(obj);
+            RB_OBJ_WRITE(obj, &rb_imemo_fields_ptr(fields_obj)[cache.index], val);
             if (shape_id != dest_shape_id) {
                 RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
+                if (obj != fields_obj) {
+                    RBASIC_SET_SHAPE_ID(fields_obj, rb_shape_transition_no_heap(dest_shape_id));
+                }
             }
 
             RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
@@ -3957,8 +3961,7 @@ vm_call_ivar(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_call
     const struct rb_callcache *cc = calling->cc;
     RB_DEBUG_COUNTER_INC(ccf_ivar);
     cfp->sp -= 1;
-    VALUE ivar = vm_getivar(calling->recv, vm_cc_cme(cc)->def->body.attr.id, NULL, NULL, cc, TRUE, Qnil);
-    return ivar;
+    return vm_getivar(calling->recv, vm_cc_cme(cc)->def->body.attr.id, NULL, NULL, cc, TRUE, Qnil);
 }
 
 static VALUE

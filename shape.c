@@ -1291,6 +1291,20 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
         if (shape_id_slot_size != actual_slot_size) {
             rb_bug("shape_id heap_index flags mismatch: shape_id_slot_size=%zu, gc_slot_size=%zu\n", shape_id_slot_size, actual_slot_size);
         }
+
+        if (FL_TEST_RAW(obj, ROBJECT_HEAP) && !rb_shape_complex_p(shape_id)) {
+            VALUE fields_obj = ROBJECT_FIELDS_OBJ(obj);
+            shape_id_t fields_id = RBASIC_SHAPE_ID(fields_obj);
+            if ((fields_id & ~SHAPE_ID_FL_FROZEN) != (rb_shape_transition_no_heap(shape_id) & ~SHAPE_ID_FL_FROZEN)) {
+                rb_bug(
+                    "T_OBJECT (%"PRIxVALUE") and its extended fields (%"PRIxVALUE") should have the same shape id obj=%u fields_obj=%u",
+                    obj,
+                    fields_obj,
+                    rb_shape_transition_no_heap(shape_id),
+                    RBASIC_SHAPE_ID(fields_obj)
+                );
+            }
+        }
     }
     else {
         if (flags_heap_index) {

@@ -368,6 +368,8 @@ ROBJECT_FIELDS_OBJ(VALUE obj)
     return obj;
 }
 
+static inline shape_id_t rb_shape_transition_no_heap(shape_id_t);
+
 static inline void
 ROBJECT_SET_EXTENDED_FIELDS(VALUE obj, VALUE fields_obj)
 {

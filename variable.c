@@ -1478,12 +1478,7 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
         fields_obj = obj;
         break;
       case T_OBJECT:
-        if (!rb_shape_complex_p(shape_id) && FL_TEST_RAW(obj, ROBJECT_HEAP)) {
-            fields_obj = ROBJECT_EXTENDED_FIELDS(obj);
-        }
-        else {
-            fields_obj = obj;
-        }
+        fields_obj = ROBJECT_FIELDS_OBJ(obj);
         break;
       default:
         fields_obj = rb_obj_fields(obj, id);
@@ -1587,20 +1582,9 @@ obj_transition_complex(VALUE obj, st_table *table)
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
         {
-            VALUE *old_fields = NULL;
-            uint32_t old_fields_len = 0;
-            if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
-                old_fields = ROBJECT_FIELDS(obj);
-                old_fields_len = ROBJECT_FIELDS_CAPACITY(obj);
-            }
-            else {
-                FL_SET_RAW(obj, ROBJECT_HEAP);
-            }
+            FL_SET_RAW(obj, ROBJECT_HEAP);
             RBASIC_SET_SHAPE_ID(obj, shape_id);
             ROBJECT_SET_FIELDS_HASH(obj, table);
-            if (old_fields) {
-                SIZED_FREE_N(old_fields, old_fields_len);
-            }
         }
         break;
       case T_CLASS:
@@ -1986,20 +1970,26 @@ obj_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE val)
         attr_index_t index = RSHAPE_INDEX(target_shape_id);
 
         VALUE fields_obj = ROBJECT_FIELDS_OBJ(obj);
+        const VALUE original_fields_obj = fields_obj;
         VALUE *dest_buf = rb_imemo_fields_ptr(fields_obj);
 
         if (index >= RSHAPE_LEN(current_shape_id)) {
+            shape_id_t fields_shape_id = rb_shape_transition_no_heap(target_shape_id);
+
             if (UNLIKELY(index >= RSHAPE_CAPACITY(current_shape_id))) {
                 RUBY_ASSERT(!RB_OBJ_SHAREABLE_P(obj));
 
-                shape_id_t fields_shape_id = rb_shape_transition_no_heap(target_shape_id);
                 fields_obj = rb_imemo_fields_new(obj, fields_shape_id, RB_OBJ_SHAREABLE_P(obj));
                 dest_buf = rb_imemo_fields_ptr(fields_obj);
                 rb_shape_copy_fields(fields_obj, dest_buf, current_shape_id, ROBJECT_FIELDS(obj), current_shape_id);
+            }
 
-                RBASIC_SET_SHAPE_ID(fields_obj, fields_shape_id);
+            if (fields_obj != original_fields_obj) {
                 FL_SET_RAW(obj, ROBJECT_HEAP);
                 ROBJECT_SET_EXTENDED_FIELDS(obj, fields_obj);
+            }
+            if (fields_obj != obj) {
+                RBASIC_SET_SHAPE_ID(fields_obj, fields_shape_id);
             }
             RBASIC_SET_SHAPE_ID(obj, target_shape_id);
         }
