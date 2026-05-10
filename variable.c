@@ -1421,8 +1421,8 @@ rb_obj_field_get(VALUE obj, shape_id_t target_shape_id)
         fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
         break;
       case T_OBJECT:
-        if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
-            fields_obj = ROBJECT(obj)->as.extended;
+        if (!rb_shape_complex_p(target_shape_id) && FL_TEST_RAW(obj, ROBJECT_HEAP)) {
+            fields_obj = ROBJECT_EXTENDED_FIELDS(obj);
         }
         else {
             fields_obj = obj;
@@ -1454,6 +1454,7 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
 {
     if (SPECIAL_CONST_P(obj)) return undef;
 
+    shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
     VALUE fields_obj;
 
     switch (BUILTIN_TYPE(obj)) {
@@ -1477,8 +1478,8 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
         fields_obj = obj;
         break;
       case T_OBJECT:
-        if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
-            fields_obj = ROBJECT(obj)->as.extended;
+        if (!rb_shape_complex_p(shape_id) && FL_TEST_RAW(obj, ROBJECT_HEAP)) {
+            fields_obj = ROBJECT_EXTENDED_FIELDS(obj);
         }
         else {
             fields_obj = obj;
@@ -1492,8 +1493,6 @@ rb_ivar_lookup(VALUE obj, ID id, VALUE undef)
     if (!fields_obj) {
         return undef;
     }
-
-    shape_id_t shape_id = RBASIC_SHAPE_ID(fields_obj);
 
     if (UNLIKELY(rb_shape_complex_p(shape_id))) {
         st_table *iv_table = rb_imemo_fields_complex_tbl(fields_obj);
@@ -1669,7 +1668,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
         break;
       case T_OBJECT:
         if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
-            fields_obj = ROBJECT(obj)->as.extended;
+            fields_obj = ROBJECT_EXTENDED_FIELDS(obj);
         }
         else {
             fields_obj = obj;
@@ -1986,21 +1985,21 @@ obj_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE val)
     else {
         attr_index_t index = RSHAPE_INDEX(target_shape_id);
 
-        VALUE fields_obj = obj;
-        VALUE *dest_buf = ROBJECT_FIELDS(obj);
+        VALUE fields_obj = ROBJECT_FIELDS_OBJ(obj);
+        VALUE *dest_buf = rb_imemo_fields_ptr(fields_obj);
 
         if (index >= RSHAPE_LEN(current_shape_id)) {
             if (UNLIKELY(index >= RSHAPE_CAPACITY(current_shape_id))) {
                 RUBY_ASSERT(!RB_OBJ_SHAREABLE_P(obj));
 
                 shape_id_t fields_shape_id = rb_shape_transition_no_heap(target_shape_id);
-                fields_obj = rb_imemo_fields_new(obj, fields_shape_id, false);
+                fields_obj = rb_imemo_fields_new(obj, fields_shape_id, RB_OBJ_SHAREABLE_P(obj));
                 dest_buf = rb_imemo_fields_ptr(fields_obj);
                 rb_shape_copy_fields(fields_obj, dest_buf, current_shape_id, ROBJECT_FIELDS(obj), current_shape_id);
 
                 RBASIC_SET_SHAPE_ID(fields_obj, fields_shape_id);
-                RB_OBJ_WRITE(obj, &ROBJECT(obj)->as.extended, fields_obj);
                 FL_SET_RAW(obj, ROBJECT_HEAP);
+                ROBJECT_SET_EXTENDED_FIELDS(obj, fields_obj);
             }
             RBASIC_SET_SHAPE_ID(obj, target_shape_id);
         }
@@ -2086,6 +2085,7 @@ rb_ivar_set(VALUE obj, ID id, VALUE val)
 {
     rb_check_frozen(obj);
     ivar_set(obj, id, val);
+    RUBY_ASSERT(rb_ivar_get(obj, id) == val);
     return val;
 }
 

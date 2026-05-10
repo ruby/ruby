@@ -10,6 +10,7 @@
  */
 #include "ruby/ruby.h"          /* for VALUE */
 #include "imemo.h"
+#include "shape.h"
 
 /* object.c */
 
@@ -78,12 +79,7 @@ ROBJECT_FIELDS(VALUE obj)
 {
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
 
-    if (RB_UNLIKELY(RB_FL_ANY_RAW(obj, ROBJECT_HEAP))) {
-        return rb_imemo_fields_ptr(ROBJECT(obj)->as.extended);
-    }
-    else {
-        return ROBJECT(obj)->as.ary;
-    }
+    return rb_imemo_fields_ptr(ROBJECT_FIELDS_OBJ(obj));
 }
 
 #endif /* INTERNAL_OBJECT_H */

@@ -651,6 +651,7 @@ module Test
 
         # Require needed thing for parallel running
         require 'timeout'
+        p self
         @tasks = @order.group(@order.sort_by_string(@files)) # Array of filenames.
 
         @need_quit = false

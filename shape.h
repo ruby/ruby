@@ -346,6 +346,39 @@ ROBJECT_SET_FIELDS_HASH(VALUE obj, st_table *tbl)
     ROBJECT(obj)->as.hash = tbl;
 }
 
+static inline VALUE
+ROBJECT_EXTENDED_FIELDS(VALUE obj)
+{
+    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+    RUBY_ASSERT(!rb_obj_shape_complex_p(obj));
+    RUBY_ASSERT(FL_TEST_RAW(obj, ROBJECT_HEAP));
+    RUBY_ASSERT(ROBJECT(obj)->as.extended);
+
+    return ROBJECT(obj)->as.extended;
+}
+
+static inline VALUE
+ROBJECT_FIELDS_OBJ(VALUE obj)
+{
+    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+
+    if (UNLIKELY(FL_TEST_RAW(obj, ROBJECT_HEAP) && !rb_obj_shape_complex_p(obj))) {
+        return ROBJECT_EXTENDED_FIELDS(obj);
+    }
+    return obj;
+}
+
+static inline void
+ROBJECT_SET_EXTENDED_FIELDS(VALUE obj, VALUE fields_obj)
+{
+    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+    RUBY_ASSERT(!rb_obj_shape_complex_p(obj));
+    RUBY_ASSERT(FL_TEST_RAW(obj, ROBJECT_HEAP));
+    RUBY_ASSERT(fields_obj);
+
+    RB_OBJ_WRITE(obj, &ROBJECT(obj)->as.extended, fields_obj);
+}
+
 static inline uint32_t
 ROBJECT_FIELDS_COUNT_COMPLEX(VALUE obj)
 {
