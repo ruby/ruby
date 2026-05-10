@@ -1111,6 +1111,9 @@ VALUE rb_fiber_scheduler_blocking_operation_wait(VALUE scheduler, void* (*functi
     operation->data2 = NULL;
     operation->unblock_function = NULL;
 
+    // Ensure that the blocking operation remains visible until this point:
+    RB_GC_GUARD(blocking_operation);
+
     // If the blocking operation was never executed, return Qundef to signal the caller to use rb_nogvl instead
     if (current_status == RB_FIBER_SCHEDULER_BLOCKING_OPERATION_STATUS_QUEUED) {
         return Qundef;
