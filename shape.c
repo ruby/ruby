@@ -1297,11 +1297,13 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
             shape_id_t fields_id = RBASIC_SHAPE_ID(fields_obj);
             if ((fields_id & ~SHAPE_ID_FL_FROZEN) != (rb_shape_transition_no_heap(shape_id) & ~SHAPE_ID_FL_FROZEN)) {
                 rb_bug(
-                    "T_OBJECT (%"PRIxVALUE") and its extended fields (%"PRIxVALUE") should have the same shape id obj=%u fields_obj=%u",
+                    "T_OBJECT (%"PRIxVALUE") and its extended fields (%"PRIxVALUE") should have the same shape id obj=%u (%s) fields_obj=%u (%s)",
                     obj,
                     fields_obj,
                     rb_shape_transition_no_heap(shape_id),
-                    RBASIC_SHAPE_ID(fields_obj)
+                    rb_id2name(RSHAPE_EDGE_NAME(shape_id)),
+                    RBASIC_SHAPE_ID(fields_obj),
+                    rb_id2name(RBASIC_SHAPE_ID(fields_obj))
                 );
             }
         }
