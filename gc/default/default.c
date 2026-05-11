@@ -7676,20 +7676,6 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
     SET(marking_time, (size_t)ns_to_ms(objspace->profile.marking_time_ns));
     SET(sweeping_time, (size_t)ns_to_ms(objspace->profile.sweeping_time_ns));
 
-    /* implementation dependent counters */
-    SET(heap_allocated_pages, rb_darray_size(objspace->heap_pages.sorted));
-    SET(heap_empty_pages, objspace->empty_pages_count)
-    SET(heap_allocatable_bytes, objspace->heap_pages.allocatable_bytes);
-    SET(heap_available_slots, objspace_available_slots(objspace));
-    SET(heap_live_slots, objspace_live_slots(objspace));
-    SET(heap_free_slots, objspace_free_slots(objspace));
-    SET(heap_final_slots, total_final_slots_count(objspace));
-    SET(heap_marked_slots, objspace->marked_slots);
-    SET(heap_eden_pages, heap_eden_total_pages(objspace));
-    SET(total_allocated_pages, objspace->heap_pages.allocated_pages);
-    SET(total_freed_pages, objspace->heap_pages.freed_pages);
-    SET(total_allocated_objects, total_allocated_objects(objspace));
-    SET(total_freed_objects, total_freed_objects(objspace));
     {
         /* Monotonic totals; snapshot the pair under one lock so they're
          * consistent with each other on 32-bit. */
@@ -7700,6 +7686,18 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
         SET64(total_malloc_bytes, total_malloc);
         SET64(total_free_bytes, total_free);
     }
+
+    /* implementation dependent counters (small / fixnum-safe) */
+    SET(heap_allocated_pages, rb_darray_size(objspace->heap_pages.sorted));
+    SET(heap_empty_pages, objspace->empty_pages_count)
+    SET(heap_allocatable_bytes, objspace->heap_pages.allocatable_bytes);
+    SET(heap_eden_pages, heap_eden_total_pages(objspace));
+    SET(total_allocated_pages, objspace->heap_pages.allocated_pages);
+    SET(total_freed_pages, objspace->heap_pages.freed_pages);
+    /* These two may allocate Bignums on small-FIXNUM_MAX platforms — keep
+     * them above the slot snapshot below. */
+    SET(total_allocated_objects, total_allocated_objects(objspace));
+    SET(total_freed_objects, total_freed_objects(objspace));
     SET(malloc_increase_bytes, gc_malloc_counters_increase_unsigned(objspace, &objspace->malloc_counters.counters));
     SET(malloc_increase_bytes_limit, malloc_limit);
     SET(minor_gc_count, objspace->profile.minor_gc_count);
@@ -7715,6 +7713,12 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
     SET(oldmalloc_increase_bytes, gc_malloc_counters_increase_unsigned(objspace, &objspace->malloc_counters.oldcounters));
     SET(oldmalloc_increase_bytes_limit, objspace->rgengc.oldmalloc_increase_limit);
 #endif
+
+    SET(heap_available_slots, objspace_available_slots(objspace));
+    SET(heap_live_slots, objspace_live_slots(objspace));
+    SET(heap_free_slots, objspace_free_slots(objspace));
+    SET(heap_final_slots, total_final_slots_count(objspace));
+    SET(heap_marked_slots, objspace->marked_slots);
 
 #if RGENGC_PROFILE
     SET(total_generated_normal_object_count, objspace->profile.total_generated_normal_object_count);
