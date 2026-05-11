@@ -12,6 +12,7 @@
 #include "ruby/internal/config.h"
 
 #include <ctype.h>
+
 #include "encindex.h"
 #include "hrtime.h"
 #include "internal.h"
