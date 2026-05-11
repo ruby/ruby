@@ -1421,12 +1421,7 @@ rb_obj_field_get(VALUE obj, shape_id_t target_shape_id)
         fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
         break;
       case T_OBJECT:
-        if (!rb_shape_complex_p(target_shape_id) && FL_TEST_RAW(obj, ROBJECT_HEAP)) {
-            fields_obj = ROBJECT_EXTENDED_FIELDS(obj);
-        }
-        else {
-            fields_obj = obj;
-        }
+        fields_obj = ROBJECT_FIELDS_OBJ(obj);
         break;
       case T_IMEMO:
         RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_fields));
@@ -1613,6 +1608,8 @@ rb_evict_fields_to_hash(VALUE obj)
     shape_id_t new_shape_id = obj_transition_complex(obj, table);
 
     RUBY_ASSERT(rb_obj_shape_complex_p(obj));
+    RUBY_ASSERT(rb_imemo_fields_complex_tbl(obj) == table);
+    RUBY_ASSERT(ROBJECT_FIELDS_HASH(obj) == table);
     return new_shape_id;
 }
 
@@ -1651,12 +1648,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
         }
         break;
       case T_OBJECT:
-        if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
-            fields_obj = ROBJECT_EXTENDED_FIELDS(obj);
-        }
-        else {
-            fields_obj = obj;
-        }
+        fields_obj = ROBJECT_FIELDS_OBJ(obj);
         break;
       default: {
         fields_obj = rb_obj_fields(obj, id);
@@ -1679,15 +1671,18 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
 
     if (UNLIKELY(rb_shape_complex_p(next_shape_id))) {
         if (UNLIKELY(!rb_shape_complex_p(old_shape_id))) {
-            if (type == T_OBJECT) {
+            if (fields_obj == obj || RB_TYPE_P(obj, T_OBJECT)) {
                 rb_evict_fields_to_hash(obj);
+                fields_obj = obj;
+                RUBY_ASSERT(rb_imemo_fields_complex_tbl(fields_obj) == ROBJECT_FIELDS_HASH(obj));
             }
             else {
                 fields_obj = imemo_fields_complex_from_obj(obj, fields_obj, next_shape_id);
             }
         }
         st_data_t key = id;
-        if (!st_delete(rb_imemo_fields_complex_tbl(fields_obj), &key, (st_data_t *)&val)) {
+        st_table *table = rb_imemo_fields_complex_tbl(fields_obj);
+        if (!st_delete(table, &key, (st_data_t *)&val)) {
             val = undef;
         }
     }
@@ -1732,7 +1727,9 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
         }
     }
 
-    RBASIC_SET_SHAPE_ID(obj, next_shape_id);
+    // FIXME: rb_shape_transition_heap is hard to use.
+    RBASIC_SET_SHAPE_ID(obj, rb_shape_transition_heap(next_shape_id, rb_shape_heap_index(RBASIC_SHAPE_ID(obj)) - 1));
+
     if (fields_obj != original_fields_obj) {
         switch (type) {
           case T_OBJECT:

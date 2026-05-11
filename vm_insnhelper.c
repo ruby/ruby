@@ -1296,10 +1296,9 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
 #endif
 
         if (UNLIKELY(rb_shape_complex_p(shape_id))) {
-            st_table *table = (st_table *)ivar_list;
+            st_table *table = rb_imemo_fields_complex_tbl(fields_obj);
 
             RUBY_ASSERT(table);
-            RUBY_ASSERT(table == rb_imemo_fields_complex_tbl(fields_obj));
 
             if (!st_lookup(table, id, &val)) {
                 val = default_value;
