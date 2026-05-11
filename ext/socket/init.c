@@ -54,7 +54,7 @@ rsock_raise_resolution_error_for_host(const char *reason, int error, VALUE host)
     VALUE msg = rb_sprintf("%s: %s", reason, gai_strerror(error));
 #endif
     if (RTEST(host)) {
-       rb_str_concat(msg, rb_sprintf(" for `%s`", RSTRING_PTR(host)));
+       rb_str_catf(msg, " for '%"PRIsVALUE"'", host);
     }
 
     StringValue(msg);
