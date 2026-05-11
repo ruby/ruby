@@ -875,6 +875,10 @@ class TestISeq < Test::Unit::TestCase
     assert_ruby_status([], "BEGIN {exit}; while true && true; end")
   end
 
+  def test_short_circuited_loop_condition
+    assert_ruby_status([], "while true || true; exit; end; abort")
+  end
+
   def test_unreachable_syntax_error
     mesg = /Invalid break/
     assert_syntax_error("false and break", mesg)
