@@ -95,51 +95,44 @@ rb_mutex_num_waiting(rb_mutex_t *mutex)
     return n;
 }
 
-static rb_nativethread_lock_t keeping_mutexes_lock;
-#ifdef RUBY_THREAD_PTHREAD_H
-static pthread_t keeping_mutexes_lock_owner;
-#endif
-
 static inline void
-ASSERT_keeping_mutexes_lock_locked(void)
+ASSERT_keeping_mutexes_lock_locked(rb_thread_t *th)
 {
 #ifdef RUBY_THREAD_PTHREAD_H
-    VM_ASSERT(pthread_self() == keeping_mutexes_lock_owner);
+    VM_ASSERT(pthread_self() == th->keeping_mutexes_lock_owner);
+#else
+    (void)th;
 #endif
 }
 
 static inline void
-ASSERT_keeping_mutexes_lock_unlocked(void)
+ASSERT_keeping_mutexes_lock_unlocked(rb_thread_t *th)
 {
 #ifdef RUBY_THREAD_PTHREAD_H
-    VM_ASSERT(pthread_self() != keeping_mutexes_lock_owner);
+    VM_ASSERT(pthread_self() != th->keeping_mutexes_lock_owner);
+#else
+    (void)th;
 #endif
 }
 
 static void
-keeping_mutexes_lock_lock(void)
+keeping_mutexes_lock_lock(rb_thread_t *th)
 {
-    ASSERT_keeping_mutexes_lock_unlocked();
-    rb_native_mutex_lock(&keeping_mutexes_lock);
+    ASSERT_keeping_mutexes_lock_unlocked(th);
+    rb_native_mutex_lock(&th->keeping_mutexes_lock);
 #ifdef RUBY_THREAD_PTHREAD_H
-    keeping_mutexes_lock_owner = pthread_self();
+    th->keeping_mutexes_lock_owner = pthread_self();
 #endif
 }
 
 static void
-keeping_mutexes_lock_unlock(void)
+keeping_mutexes_lock_unlock(rb_thread_t *th)
 {
-    ASSERT_keeping_mutexes_lock_locked();
+    ASSERT_keeping_mutexes_lock_locked(th);
 #ifdef RUBY_THREAD_PTHREAD_H
-    keeping_mutexes_lock_owner = 0;
+    th->keeping_mutexes_lock_owner = 0;
 #endif
-    rb_native_mutex_unlock(&keeping_mutexes_lock);
-}
-
-static void
-keeping_mutexes_lock_initialize(void)
-{
-    rb_native_mutex_initialize(&keeping_mutexes_lock);
+    rb_native_mutex_unlock(&th->keeping_mutexes_lock);
 }
 
 rb_thread_t* rb_fiber_threadptr(const rb_fiber_t *fiber);
@@ -219,7 +212,7 @@ static void
 thread_mutex_insert(rb_thread_t *thread, rb_mutex_t *mutex)
 {
     RUBY_ASSERT(!mutex->next_mutex);
-    keeping_mutexes_lock_lock();
+    keeping_mutexes_lock_lock(thread);
     {
         if (thread->keeping_mutexes) {
             mutex->next_mutex = thread->keeping_mutexes;
@@ -227,13 +220,13 @@ thread_mutex_insert(rb_thread_t *thread, rb_mutex_t *mutex)
 
         thread->keeping_mutexes = mutex;
     }
-    keeping_mutexes_lock_unlock();
+    keeping_mutexes_lock_unlock(thread);
 }
 
 static void
 thread_mutex_remove(rb_thread_t *thread, rb_mutex_t *mutex)
 {
-    keeping_mutexes_lock_lock();
+    keeping_mutexes_lock_lock(thread);
     {
         rb_mutex_t **keeping_mutexes = &thread->keeping_mutexes;
 
@@ -247,7 +240,7 @@ thread_mutex_remove(rb_thread_t *thread, rb_mutex_t *mutex)
             mutex->next_mutex = NULL;
         }
     }
-    keeping_mutexes_lock_unlock();
+    keeping_mutexes_lock_unlock(thread);
 }
 
 static void
@@ -592,12 +585,12 @@ rb_mut_unlock(rb_execution_context_t *ec, VALUE self)
 static void
 rb_mutex_abandon_keeping_mutexes(rb_thread_t *th)
 {
-    keeping_mutexes_lock_lock();
+    keeping_mutexes_lock_lock(th);
     {
         rb_mutex_abandon_all(th->keeping_mutexes);
         th->keeping_mutexes = NULL;
     }
-    keeping_mutexes_lock_unlock();
+    keeping_mutexes_lock_unlock(th);
 }
 
 static void
@@ -1607,8 +1600,6 @@ Init_thread_sync(void)
 
     rb_provide("monitor.so");
     rb_provide("thread.rb");
-
-    keeping_mutexes_lock_initialize();
 }
 
 #include "thread_sync.rbinc"
