@@ -3492,7 +3492,9 @@ rb_gc_mark_children(void *objspace, VALUE obj)
             len = ROBJECT_FIELDS_COUNT_COMPLEX(obj);
         }
         else if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
-            rb_gc_mark_movable(ROBJECT_EXTENDED_FIELDS(obj));
+            if (!rb_gc_checking_shareable()) {
+                rb_gc_mark_movable(ROBJECT_EXTENDED_FIELDS(obj));
+            }
         }
         else {
             const VALUE * const ptr = ROBJECT_FIELDS(obj);
