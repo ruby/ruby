@@ -4955,7 +4955,7 @@ impl Function {
     /// becomes tricky enough that splitting may be cleaner.
     ///
     /// For further reading, see the following Rails at Scale blog post.
-    /// https://railsatscale.com/2026-03-18-how-zjit-removes-redundant-object-loads-and-stores/
+    /// <https://railsatscale.com/2026-03-18-how-zjit-removes-redundant-object-loads-and-stores/>
     fn optimize_load_store(&mut self) {
         #[derive(PartialEq, Eq, Hash, Clone, Copy)]
         struct HeapKey {
