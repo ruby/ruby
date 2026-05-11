@@ -727,7 +727,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
             }
 
             if (raddrinfo_pthread_create(&threads[i], fork_safe_do_fast_fallback_getaddrinfo, arg->getaddrinfo_entries[i]) != 0) {
-                rsock_raise_resolution_error("getaddrinfo(3)", EAI_AGAIN);
+                rsock_raise_resolution_error_for_host("getaddrinfo(3)", EAI_AGAIN, arg->remote.host);
             }
         }
 
@@ -762,7 +762,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                         serv = arg->remote.serv;
                     }
                     if (last_error.type == RESOLUTION_ERROR) {
-                        rsock_raise_resolution_error(syscall, last_error.ecode);
+                        rsock_raise_resolution_error_for_host(syscall, last_error.ecode, host);
                     } else {
                         rsock_syserr_fail_host_port(last_error.ecode, syscall, host, serv);
                     }
@@ -805,7 +805,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                         serv = arg->remote.serv;
                     }
                     if (last_error.type == RESOLUTION_ERROR) {
-                        rsock_raise_resolution_error(syscall, last_error.ecode);
+                        rsock_raise_resolution_error_for_host(syscall, last_error.ecode, host);
                     } else {
                         rsock_syserr_fail_host_port(last_error.ecode, syscall, host, serv);
                     }
@@ -841,7 +841,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                             serv = arg->remote.serv;
                         }
                         if (last_error.type == RESOLUTION_ERROR) {
-                            rsock_raise_resolution_error(syscall, last_error.ecode);
+                            rsock_raise_resolution_error_for_host(syscall, last_error.ecode, host);
                         } else {
                             rsock_syserr_fail_host_port(last_error.ecode, syscall, host, serv);
                         }
@@ -934,7 +934,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                     serv = arg->remote.serv;
                 }
                 if (last_error.type == RESOLUTION_ERROR) {
-                    rsock_raise_resolution_error(syscall, last_error.ecode);
+                    rsock_raise_resolution_error_for_host(syscall, last_error.ecode, host);
                 } else {
                     rsock_syserr_fail_host_port(last_error.ecode, syscall, host, serv);
                 }
@@ -1033,7 +1033,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                             serv = arg->remote.serv;
                         }
                         if (last_error.type == RESOLUTION_ERROR) {
-                            rsock_raise_resolution_error(syscall, last_error.ecode);
+                            rsock_raise_resolution_error_for_host(syscall, last_error.ecode, host);
                         } else {
                             rsock_syserr_fail_host_port(last_error.ecode, syscall, host, serv);
                         }
@@ -1071,7 +1071,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                             serv = arg->remote.serv;
                         }
                         if (last_error.type == RESOLUTION_ERROR) {
-                            rsock_raise_resolution_error(syscall, last_error.ecode);
+                            rsock_raise_resolution_error_for_host(syscall, last_error.ecode, host);
                         } else {
                             rsock_syserr_fail_host_port(last_error.ecode, syscall, host, serv);
                         }
@@ -1217,7 +1217,7 @@ init_fast_fallback_inetsock_internal(VALUE v)
                     serv = arg->remote.serv;
                 }
                 if (last_error.type == RESOLUTION_ERROR) {
-                    rsock_raise_resolution_error(syscall, last_error.ecode);
+                    rsock_raise_resolution_error_for_host(syscall, last_error.ecode, host);
                 } else {
                     rsock_syserr_fail_host_port(last_error.ecode, syscall, host, serv);
                 }
