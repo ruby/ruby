@@ -3971,7 +3971,7 @@ static void
 set_timeout(rb_hrtime_t *hrt, VALUE timeout)
 {
     double timeout_d = NIL_P(timeout) ? 0.0 : NUM2DBL(timeout);
-    if (!NIL_P(timeout) && timeout_d <= 0) {
+    if (!NIL_P(timeout) && !(timeout_d > 0)) {
         rb_raise(rb_eArgError, "invalid timeout: %"PRIsVALUE, timeout);
     }
     double2hrtime(hrt, timeout_d);
