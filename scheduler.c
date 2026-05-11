@@ -680,9 +680,13 @@ rb_fiber_scheduler_unblock(VALUE scheduler, VALUE blocker, VALUE fiber)
     int saved_interrupt_mask = ec->interrupt_mask;
     ec->interrupt_mask |= PENDING_INTERRUPT_MASK;
 
+    rb_control_frame_t *volatile cfp = ec->cfp;
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         result = rb_funcall(scheduler, id_unblock, 2, blocker, fiber);
+    }
+    else {
+        rb_vm_rewind_cfp(ec, cfp);
     }
     EC_POP_TAG();
 
@@ -1145,9 +1149,13 @@ VALUE rb_fiber_scheduler_fiber_interrupt(VALUE scheduler, VALUE fiber, VALUE exc
     int saved_interrupt_mask = ec->interrupt_mask;
     ec->interrupt_mask |= PENDING_INTERRUPT_MASK;
 
+    rb_control_frame_t *volatile cfp = ec->cfp;
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         result = rb_check_funcall(scheduler, id_fiber_interrupt, 2, arguments);
+    }
+    else {
+        rb_vm_rewind_cfp(ec, cfp);
     }
     EC_POP_TAG();
 
