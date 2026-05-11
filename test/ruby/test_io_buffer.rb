@@ -2,6 +2,7 @@
 
 require 'tempfile'
 require 'rbconfig/sizeof'
+require 'weakref'
 
 class TestIOBuffer < Test::Unit::TestCase
   experimental = Warning[:experimental]
@@ -1150,17 +1151,14 @@ class TestIOBuffer < Test::Unit::TestCase
     buffer.free
 
     # After buffer.free clears buffer->source, str's parent must keep source alive.
-    # Use a WeakMap to detect if source is prematurely collected.
-    tracker = Object.new
-    weak = ObjectSpace::WeakMap.new
-    weak[tracker] = source
+    source_ref = WeakRef.new(source)
     source = nil
 
     GC.compact if GC.respond_to?(:compact)
     GC.start(full_mark: true, immediate_sweep: true)
 
-    assert_equal "hello", weak[tracker], "source String must be kept alive by str"
-    assert_equal "hello", str
+    assert source_ref.weakref_alive?, "source String must be kept alive by str"
+    assert_equal "hello", str.dup
   end
 
   def test_get_string_zero_copy_slice
@@ -1175,17 +1173,14 @@ class TestIOBuffer < Test::Unit::TestCase
     slice.free
 
     # After slice.free clears slice->source, str's parent must keep source alive.
-    # Use a WeakMap to detect if source is prematurely collected.
-    tracker = Object.new
-    weak = ObjectSpace::WeakMap.new
-    weak[tracker] = source
+    source_ref = WeakRef.new(source)
     source = nil
 
     GC.compact if GC.respond_to?(:compact)
     GC.start(full_mark: true, immediate_sweep: true)
 
-    assert_equal "hello world", weak[tracker], "source String must be kept alive by str via slice"
-    assert_equal "world", str
+    assert source_ref.weakref_alive?, "source String must be kept alive by str via slice"
+    assert_equal "world", str.dup
   end
 
   def test_get_string_zero_copy_compaction
@@ -1199,22 +1194,25 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal "compact me", str
   end
 
+  def freed(id)
+    @freed = true
+  end
+
   def test_get_string_zero_copy_mapped
     buffer = File.open(__FILE__) {|file| IO::Buffer.map(file, 100, 0, IO::Buffer::READONLY)}
     str = buffer.get_string(0, 30)
     assert_equal "# frozen_string_literal: false", str
 
     # Zero-copy string keeps the IO::Buffer alive via STR_EXTERNAL_PARENT.
-    tracker = Object.new
-    weak = ObjectSpace::WeakMap.new
-    weak[tracker] = buffer
+    @freed = false
+    ObjectSpace.define_finalizer(buffer, &method(:freed))
     buffer = nil
 
     GC.compact if GC.respond_to?(:compact)
     GC.start(full_mark: true, immediate_sweep: true)
 
-    assert weak[tracker], "IO::Buffer (MAPPED) must be kept alive by the zero-copy string"
-    assert_equal "# frozen_string_literal: false", str
+    assert !@freed, "IO::Buffer (MAPPED) must be kept alive by the zero-copy string"
+    assert_equal "# frozen_string_literal: false", str.dup
   end
 
   def test_get_string_zero_copy_deferred_free
@@ -1231,26 +1229,25 @@ class TestIOBuffer < Test::Unit::TestCase
 
   def test_get_string_zero_copy_deferred_free_gc
     source = "hello world".dup.freeze
+    @freed = false
     buffer = IO::Buffer.for(source)
+    ObjectSpace.define_finalizer(buffer, &method(:freed))
     str = buffer.get_string
     buffer.free
 
-    tracker = Object.new
-    weak = ObjectSpace::WeakMap.new
-    weak[tracker] = buffer
     buffer = nil
 
     GC.compact if GC.respond_to?(:compact)
     GC.start(full_mark: true, immediate_sweep: true)
 
-    assert weak[tracker], "IO::Buffer must be kept alive after free while zero-copy string is alive"
-    assert_equal "hello world", str
+    assert !@freed, "IO::Buffer must be kept alive after free while zero-copy string is alive"
+    assert_equal "hello world", str.dup
 
     str = nil
 
     GC.compact if GC.respond_to?(:compact)
     GC.start(full_mark: true, immediate_sweep: true)
 
-    assert_nil weak[tracker], "IO::Buffer must be collected (deferred free executed) after zero-copy string is released"
+    assert @freed, "IO::Buffer must be collected (deferred free executed) after zero-copy string is released"
   end
 end
