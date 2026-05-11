@@ -3038,9 +3038,13 @@ impl Function {
                             assert!(!self.type_of(val).bit_equal(types::Empty));
                             if self.type_of(val).could_be(Type::from_cbool(true)) {
                                 reachable.insert(target);
-                                for (idx, arg) in args.iter().enumerate() {
+                                // Snapshot arg types before any param updates so phi-style
+                                // updates happen in parallel (the args of a self-loop may name
+                                // params of `target` itself).
+                                let arg_types: Vec<Type> = args.iter().map(|a| self.type_of(*a)).collect();
+                                for (idx, arg_type) in arg_types.into_iter().enumerate() {
                                     let param = self.blocks[target.0].params[idx];
-                                    self.insn_types[param.0] = self.type_of(param).union(self.type_of(*arg));
+                                    self.insn_types[param.0] = self.type_of(param).union(arg_type);
                                 }
                             }
                             continue;
@@ -3049,18 +3053,20 @@ impl Function {
                             assert!(!self.type_of(val).bit_equal(types::Empty));
                             if self.type_of(val).could_be(Type::from_cbool(false)) {
                                 reachable.insert(target);
-                                for (idx, arg) in args.iter().enumerate() {
+                                let arg_types: Vec<Type> = args.iter().map(|a| self.type_of(*a)).collect();
+                                for (idx, arg_type) in arg_types.into_iter().enumerate() {
                                     let param = self.blocks[target.0].params[idx];
-                                    self.insn_types[param.0] = self.type_of(param).union(self.type_of(*arg));
+                                    self.insn_types[param.0] = self.type_of(param).union(arg_type);
                                 }
                             }
                             continue;
                         }
                         &Insn::Jump(BranchEdge { target, ref args }) => {
                             reachable.insert(target);
-                            for (idx, arg) in args.iter().enumerate() {
+                            let arg_types: Vec<Type> = args.iter().map(|a| self.type_of(*a)).collect();
+                            for (idx, arg_type) in arg_types.into_iter().enumerate() {
                                 let param = self.blocks[target.0].params[idx];
-                                self.insn_types[param.0] = self.type_of(param).union(self.type_of(*arg));
+                                self.insn_types[param.0] = self.type_of(param).union(arg_type);
                             }
                             continue;
                         }
