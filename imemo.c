@@ -29,6 +29,7 @@ rb_imemo_name(enum imemo_type type)
         IMEMO_NAME(svar);
         IMEMO_NAME(throw_data);
         IMEMO_NAME(tmpbuf);
+        IMEMO_NAME(cvar_entry);
         IMEMO_NAME(fields);
 #undef IMEMO_NAME
     }
@@ -246,6 +247,8 @@ rb_imemo_memsize(VALUE obj)
       case imemo_tmpbuf:
         size += ((rb_imemo_tmpbuf_t *)obj)->cnt * sizeof(VALUE);
 
+        break;
+      case imemo_cvar_entry:
         break;
       case imemo_fields:
         if (FL_TEST_RAW(obj, OBJ_FIELD_HEAP)) {
@@ -495,6 +498,12 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
 
         break;
       }
+      case imemo_cvar_entry: {
+          struct rb_cvar_class_tbl_entry *ent = (struct rb_cvar_class_tbl_entry *)obj;
+          rb_gc_mark_and_move(&ent->class_value);
+          rb_gc_mark_and_move((VALUE *)&ent->cref);
+          break;
+      }
       case imemo_fields: {
         rb_gc_mark_and_move((VALUE *)&RBASIC(obj)->klass);
 
@@ -622,6 +631,10 @@ rb_imemo_free(VALUE obj)
       case imemo_tmpbuf:
         xfree(((rb_imemo_tmpbuf_t *)obj)->ptr);
         RB_DEBUG_COUNTER_INC(obj_imemo_tmpbuf);
+
+        break;
+      case imemo_cvar_entry:
+        RB_DEBUG_COUNTER_INC(obj_imemo_cvar_entry);
 
         break;
       case imemo_fields:

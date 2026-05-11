@@ -1604,24 +1604,23 @@ update_classvariable_cache(const rb_iseq_t *iseq, VALUE klass, ID id, const rb_c
         defined_class = RBASIC(defined_class)->klass;
     }
 
-    struct rb_id_table *rb_cvc_tbl = RCLASS_CVC_TBL(defined_class);
+    VALUE rb_cvc_tbl = RCLASS_CVC_TBL(defined_class);
     if (!rb_cvc_tbl) {
         rb_bug("the cvc table should be set");
     }
 
     VALUE ent_data;
-    if (!rb_id_table_lookup(rb_cvc_tbl, id, &ent_data)) {
+    if (!rb_marked_id_table_lookup(rb_cvc_tbl, id, &ent_data)) {
         rb_bug("should have cvar cache entry");
     }
 
     struct rb_cvar_class_tbl_entry *ent = (void *)ent_data;
 
     ent->global_cvar_state = GET_GLOBAL_CVAR_STATE();
-    ent->cref = cref;
+    RB_OBJ_WRITE((VALUE)ent, &ent->cref, cref);
     ic->entry = ent;
 
     RUBY_ASSERT(BUILTIN_TYPE((VALUE)cref) == T_IMEMO && IMEMO_TYPE_P(cref, imemo_cref));
-    RB_OBJ_WRITTEN(iseq, Qundef, ent->cref);
     RB_OBJ_WRITTEN(iseq, Qundef, ent->class_value);
     RB_OBJ_WRITTEN(ent->class_value, Qundef, ent->cref);
 
