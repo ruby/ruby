@@ -45,17 +45,25 @@ rsock_raise_resolution_error_for_host(const char *reason, int error, VALUE host)
     if (error == EAI_SYSTEM && (e = errno) != 0)
         rb_syserr_fail(e, reason);
 #endif
+
+    VALUE msg;
+
 #ifdef _WIN32
     rb_encoding *enc = rb_default_internal_encoding();
-    VALUE msg = rb_sprintf("%s: ", reason);
+    if (RTEST(host)) {
+        msg = rb_sprintf("%s '%"PRIsVALUE"': ", reason, host);
+    } else {
+        msg = rb_sprintf("%s: ", reason);
+    }
     if (!enc) enc = rb_default_internal_encoding();
     rb_str_concat(msg, rb_w32_conv_from_wchar(gai_strerrorW(error), enc));
 #else
-    VALUE msg = rb_sprintf("%s: %s", reason, gai_strerror(error));
-#endif
     if (RTEST(host)) {
-       rb_str_catf(msg, " for '%"PRIsVALUE"'", host);
+        msg = rb_sprintf("%s '%"PRIsVALUE"': %s", reason, host, gai_strerror(error));
+    } else {
+        msg = rb_sprintf("%s: %s", reason, gai_strerror(error));
     }
+#endif
 
     StringValue(msg);
     VALUE self = rb_class_new_instance(1, &msg, rb_eResolution);
