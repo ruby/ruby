@@ -2035,6 +2035,7 @@ class TestRegexp < Test::Unit::TestCase
       Regexp.timeout = 1e300
       assert_equal(((1<<64)-1) / 1000000000.0, Regexp.timeout)
 
+      assert_raise(ArgumentError) { Regexp.timeout = Float::NAN }
       assert_raise(ArgumentError) { Regexp.timeout = 0 }
       assert_raise(ArgumentError) { Regexp.timeout = -1 }
 
@@ -2127,6 +2128,7 @@ class TestRegexp < Test::Unit::TestCase
 
       assert_equal(((1<<64)-1) / 1000000000.0, Regexp.new("foo", timeout: 1e300).timeout)
 
+      assert_raise(ArgumentError) { Regexp.new("foo", timeout: Float::NAN) }
       assert_raise(ArgumentError) { Regexp.new("foo", timeout: 0) }
       assert_raise(ArgumentError) { Regexp.new("foo", timeout: -1) }
     end;
