@@ -371,6 +371,8 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
 
     rb_shape_copy_fields(dest_obj_fields, dest_buf, dest_shape_id, src_buf, src_shape_id);
     if (dest != dest_obj_fields) {
+        FL_SET_RAW(dest, ROBJECT_HEAP);
+        ROBJECT_SET_EXTENDED_FIELDS(dest, dest_obj_fields);
         RBASIC_SET_SHAPE_ID(dest_obj_fields, rb_shape_transition_no_heap(dest_shape_id));
     }
     RBASIC_SET_SHAPE_ID(dest, dest_shape_id);
