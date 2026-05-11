@@ -438,31 +438,25 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                 let insn = function.find(insn_id);
 
                 match insn {
-                    Insn::IfFalse { val, target } => {
-
+                    Insn::CondBranch { val, if_true, if_false } => {
                         let val_opnd = jit.get_opnd(val);
+                        let true_target = hir_to_lir[if_true.target.0].unwrap();
+                        let false_target = hir_to_lir[if_false.target.0].unwrap();
 
-                        let lir_target = hir_to_lir[target.target.0].unwrap();
-
-                        let branch_edge = lir::BranchEdge {
-                            target: lir_target,
-                            args: target.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
+                        let true_branch = lir::BranchEdge {
+                            target: true_target,
+                            args: if_true.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
                         };
 
-                        gen_if_false(&mut asm, val_opnd, branch_edge);
-                        assert!(asm.current_block().insns.last().unwrap().is_terminator());
-                    },
-                    Insn::IfTrue { val, target } => {
-                        let val_opnd = jit.get_opnd(val);
-
-                        let lir_target = hir_to_lir[target.target.0].unwrap();
-
-                        let branch_edge = lir::BranchEdge {
-                            target: lir_target,
-                            args: target.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
+                        let false_branch = lir::BranchEdge {
+                            target: false_target,
+                            args: if_false.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
                         };
 
-                        gen_if_true(&mut asm, val_opnd, branch_edge);
+                        asm.test(val_opnd, val_opnd);
+                        asm.push_insn(lir::Insn::Jnz(Target::Block(true_branch)));
+                        asm.jmp(Target::Block(false_branch));
+
                         assert!(asm.current_block().insns.last().unwrap().is_terminator());
                     }
                     Insn::Jump(target) => {
@@ -471,7 +465,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                             target: lir_target,
                             args: target.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
                         };
-                        gen_jump(&mut asm, branch_edge);
+                        asm.jmp(Target::Block(branch_edge));
                         assert!(asm.current_block().insns.last().unwrap().is_terminator());
 
                         // Jump should always be the last instruction in an HIR block
@@ -750,7 +744,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::ArrayMax { ref elements, state } => gen_array_max(jit, asm, opnds!(elements), &function.frame_state(state)),
         &Insn::ArrayMin { ref elements, state } => gen_array_min(jit, asm, opnds!(elements), &function.frame_state(state)),
         &Insn::Throw { state, .. } => return Err(state),
-        &Insn::IfFalse { .. } | Insn::IfTrue { .. }
+        &Insn::CondBranch { .. }
         | &Insn::Jump { .. } | Insn::Entries { .. } => unreachable!(),
     };
 
@@ -1436,26 +1430,6 @@ fn gen_param(asm: &mut Assembler, _idx: usize) -> lir::Opnd {
     let vreg = asm.new_block_param(VALUE_BITS);
     asm.current_block().add_parameter(vreg);
     vreg
-}
-
-/// Compile a jump to a basic block
-fn gen_jump(asm: &mut Assembler, branch: lir::BranchEdge) {
-    // Jump to the basic block
-    asm.jmp(Target::Block(branch));
-}
-
-/// Compile a conditional branch to a basic block
-fn gen_if_true(asm: &mut Assembler, val: lir::Opnd, branch: lir::BranchEdge) {
-    // If val is not zero, move on to the next instruction.
-    asm.test(val, val);
-    asm.push_insn(lir::Insn::Jnz(Target::Block(branch)));
-}
-
-/// Compile a conditional branch to a basic block
-fn gen_if_false(asm: &mut Assembler, val: lir::Opnd, branch: lir::BranchEdge) {
-    // If val is zero, move on to the next instruction.
-    asm.test(val, val);
-    asm.push_insn(lir::Insn::Jz(Target::Block(branch)));
 }
 
 /// Compile a dynamic dispatch with block
