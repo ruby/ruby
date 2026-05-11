@@ -45,6 +45,7 @@ rsock_raise_resolution_error_for_host(const char *reason, int error, VALUE host)
     if (error == EAI_SYSTEM && (e = errno) != 0)
         rb_syserr_fail(e, reason);
 #endif
+
 #ifdef _WIN32
     rb_encoding *enc = rb_default_internal_encoding();
     VALUE msg = rb_sprintf("%s: ", reason);
@@ -53,8 +54,9 @@ rsock_raise_resolution_error_for_host(const char *reason, int error, VALUE host)
 #else
     VALUE msg = rb_sprintf("%s: %s", reason, gai_strerror(error));
 #endif
+
     if (RTEST(host)) {
-       rb_str_catf(msg, " for '%"PRIsVALUE"'", host);
+        rb_str_catf(msg, " %+"PRIsVALUE, host);
     }
 
     StringValue(msg);
