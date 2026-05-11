@@ -29,6 +29,7 @@ rb_gvar_setter_t *rb_gvar_setter_function_of(ID);
 void rb_gvar_readonly_setter(VALUE v, ID id, VALUE *_);
 void rb_gvar_ractor_local(const char *name);
 void rb_gvar_box_ready(const char *name);
+void rb_gvar_box_dynamic(const char *name);
 
 /**
  * Sets the name of a module.

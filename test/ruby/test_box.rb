@@ -531,6 +531,26 @@ class TestBox < Test::Unit::TestCase
     end
   end
 
+  def test_match_variables_are_not_cached_in_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      /(?<a>foo)/ =~ 'bar'
+      /(?<b>baz)/ =~ 'baz'
+      assert_equal "baz", b
+      assert_equal "baz", $~.to_s
+
+      /foo/ =~ 'bar'
+      assert_nil $~
+      /(?<word>foo)(bar)?/ =~ 'foo'
+      assert_equal "foo", word
+      assert_equal "foo", $~.to_s
+      assert_equal "foo", $&
+      assert_equal "", $`
+      assert_equal "", $'
+      assert_equal "foo", $+
+    end;
+  end
+
   def test_load_path_and_loaded_features
     setup_box
 

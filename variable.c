@@ -534,6 +534,7 @@ struct rb_global_variable {
     rb_gvar_compact_t *compactor;
     struct trace_var *trace;
     bool box_ready;
+    bool box_dynamic;
 };
 
 struct rb_global_entry {
@@ -618,6 +619,13 @@ rb_gvar_box_ready(const char *name)
     entry->var->box_ready = true;
 }
 
+void
+rb_gvar_box_dynamic(const char *name)
+{
+    struct rb_global_entry *entry = rb_find_global_entry(rb_intern(name));
+    entry->var->box_dynamic = true;
+}
+
 static void
 rb_gvar_undef_compactor(void *var)
 {
@@ -646,6 +654,7 @@ rb_global_entry(ID id)
             var->block_trace = 0;
             var->trace = 0;
             var->box_ready = false;
+            var->box_dynamic = false;
             rb_id_table_insert(rb_global_tbl, id, (VALUE)entry);
         }
     }
@@ -1000,9 +1009,13 @@ rb_gvar_set_entry(struct rb_global_entry *entry, VALUE val)
     return val;
 }
 
-#define USE_BOX_GVAR_TBL(ns,entry) \
-    (BOX_USER_P(ns) && \
-     (!entry || !entry->var->box_ready || entry->var->setter != rb_gvar_readonly_setter))
+static inline bool
+gvar_use_box_tbl(const rb_box_t *box, const struct rb_global_entry *entry)
+{
+    return BOX_USER_P(box) &&
+        !entry->var->box_dynamic &&
+        (!entry->var->box_ready || entry->var->setter != rb_gvar_readonly_setter);
+}
 
 VALUE
 rb_gvar_set(ID id, VALUE val)
@@ -1015,7 +1028,7 @@ rb_gvar_set(ID id, VALUE val)
     RB_VM_LOCKING() {
         entry = rb_global_entry(id);
 
-        if (USE_BOX_GVAR_TBL(box, entry)) {
+        if (gvar_use_box_tbl(box, entry)) {
             use_box_tbl = true;
             rb_hash_aset(box->gvar_tbl, rb_id2sym(entry->id), val);
             retval = val;
@@ -1048,7 +1061,7 @@ rb_gvar_get(ID id)
         entry = rb_global_entry(id);
         var = entry->var;
 
-        if (USE_BOX_GVAR_TBL(box, entry)) {
+        if (gvar_use_box_tbl(box, entry)) {
             use_box_tbl = true;
             gvars = box->gvar_tbl;
             key = rb_id2sym(entry->id);
