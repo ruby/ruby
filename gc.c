@@ -3843,8 +3843,11 @@ gc_ref_update_array(void *objspace, VALUE v)
 static void
 gc_ref_update_object(void *objspace, VALUE v)
 {
-    VALUE *ptr = ROBJECT_FIELDS(v);
+    if (FL_TEST_RAW(v, ROBJECT_HEAP) && !rb_obj_shape_complex_p(v)) {
+        UPDATE_IF_MOVED(objspace, ROBJECT(v)->as.extended);
+    }
 
+    VALUE *ptr = ROBJECT_FIELDS(v);
     if (FL_TEST_RAW(v, ROBJECT_HEAP)) {
         if (rb_obj_shape_complex_p(v)) {
             gc_ref_update_table_values_only(ROBJECT_FIELDS_HASH(v));
@@ -3853,16 +3856,13 @@ gc_ref_update_object(void *objspace, VALUE v)
 
         size_t slot_size = rb_gc_obj_slot_size(v);
         size_t embed_size = rb_obj_embedded_size(ROBJECT_FIELDS_CAPACITY(v));
-        if (slot_size < embed_size) {
-            UPDATE_IF_MOVED(objspace, ROBJECT(v)->as.extended);
-            return;
+        if (slot_size >= embed_size) {
+            // Object can be re-embedded
+            memcpy(ROBJECT(v)->as.ary, ptr, sizeof(VALUE) * ROBJECT_FIELDS_COUNT(v));
+            SIZED_FREE_N(ptr, ROBJECT_FIELDS_CAPACITY(v));
+            FL_UNSET_RAW(v, ROBJECT_HEAP);
+            ptr = ROBJECT(v)->as.ary;
         }
-
-        // Object can be re-embedded
-        memcpy(ROBJECT(v)->as.ary, ptr, sizeof(VALUE) * ROBJECT_FIELDS_COUNT(v));
-        SIZED_FREE_N(ptr, ROBJECT_FIELDS_CAPACITY(v));
-        FL_UNSET_RAW(v, ROBJECT_HEAP);
-        ptr = ROBJECT(v)->as.ary;
     }
 
     for (uint32_t i = 0; i < ROBJECT_FIELDS_COUNT(v); i++) {
