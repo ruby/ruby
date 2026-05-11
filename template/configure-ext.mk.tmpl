@@ -14,13 +14,20 @@ opt = OptionParser.new do |o|
   o.order!(ARGV)
 end
 srcdir ||= File.dirname(File.dirname(__FILE__))
-exts = {}
-[
-  ["exts", "ext", "--extstatic $(EXTSTATIC)"],
-  ["gems", ".bundle/gems", "--no-extstatic"],
-].each do |t, d, o|
-  exts[t] = [o, Dir.glob("#{srcdir}/#{d}/*/").map {|n| n[(srcdir.size+1)..-2]}]
-end
+exts = {
+  exts: [
+    "--extstatic $(EXTSTATIC)",
+    Dir.glob("ext/**/extconf.rb", base: srcdir).map do |d|
+      d[%r[\Aext/[^/]+]]
+    end.uniq
+  ],
+  gems: [
+    "--no-extstatic",
+    Dir.glob(".bundle/gems/**/extconf.rb", base: srcdir).grep_v(/test/) do |d|
+      d[%r[\A\.bundle/gems/[^/]+]]
+    end.uniq
+  ],
+}
 %>
 MINIRUBY = <%=miniruby%>
 SCRIPT_ARGS = <%=script_args.gsub("#", "\\#").gsub(/\A|[\s"']\K--jobserver-auth=[^\s'"]*/, "")%>
@@ -33,9 +40,6 @@ gems:
 
 % exts.each do |t, (o, dirs)|
 %   dirs.each do |d|
-%     extconf = Dir.glob("#{srcdir}/#{d}/**/extconf.rb")
-%     next if extconf.empty?
-%     next if extconf.any?{|f| f.include?(".bundle/gems") && f.include?("test") }
 <%=t%>: <%=d%>/exts.mk
 <%=d%>/exts.mk: FORCE
 	$(Q)$(MINIRUBY) $(srcdir)/ext/extmk.rb --make='$(MAKE)' \
