@@ -762,7 +762,7 @@ class TestSocket < Test::Unit::TestCase
   end
 
   def test_tcp_socket_resolution_error_with_host
-    assert_raise_with_message(Socket::ResolutionError, /not known for `unknown`$/) do
+    assert_raise_with_message(Socket::ResolutionError, / for 'unknown'$/) do
       TCPSocket.new("unknown", 80)
     end
   end
