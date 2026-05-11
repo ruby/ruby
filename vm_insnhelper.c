@@ -5210,7 +5210,6 @@ vm_yield_with_symbol(rb_execution_context_t *ec,  VALUE symbol, int argc, const 
     /*
      * Traverse the frames until a user-defined Box (Optional Box) is found.
      * Frames for built-in methods like <internal:xxx> run in the Root or Main Box,
-     * so we can safely skip them with this condition without doing string comparisons.
      */
     while (ruby_cfp) {
         box = current_box_on_cfp(ec, ruby_cfp);
