@@ -38,7 +38,7 @@ static VALUE sym_wait_readable;
 static ID id_error_code;
 
 void
-rsock_raise_resolution_error(const char *reason, int error)
+rsock_raise_resolution_error_for_host(const char *reason, int error, VALUE host)
 {
 #ifdef EAI_SYSTEM
     int e;
@@ -53,6 +53,9 @@ rsock_raise_resolution_error(const char *reason, int error)
 #else
     VALUE msg = rb_sprintf("%s: %s", reason, gai_strerror(error));
 #endif
+    if (RTEST(host)) {
+       rb_str_concat(msg, rb_sprintf(" for `%s`", RSTRING_PTR(host)));
+    }
 
     StringValue(msg);
     VALUE self = rb_class_new_instance(1, &msg, rb_eResolution);

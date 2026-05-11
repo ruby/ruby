@@ -761,6 +761,12 @@ class TestSocket < Test::Unit::TestCase
     end
   end
 
+  def test_tcp_socket_resolution_error_with_host
+    assert_raise_with_message(Socket::ResolutionError, /not known for `unknown`$/) do
+      TCPSocket.new("unknown", 80)
+    end
+  end
+
   def test_tcp_socket_v6_hostname_resolved_earlier
     opts = %w[-rsocket -W1]
     assert_separately opts, <<~RUBY
