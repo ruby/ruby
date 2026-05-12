@@ -1687,7 +1687,7 @@ BUNDLER_SPECS =
 PREPARE_BUNDLER = $(TEST_RUNNABLE)-test-bundler-prepare
 test-bundler: $(TEST_RUNNABLE)-test-bundler
 yes-test-bundler: $(PREPARE_BUNDLER)
-	$(gnumake_recursive)$(XRUBY) \
+	$(gnumake_recursive)$(XRUBY) --enable-gems \
 		-r./$(arch)-fake \
 		-r$(tooldir)/lib/_tmpdir \
 		-I$(srcdir)/spec/bundler -I$(srcdir)/spec/lib \
