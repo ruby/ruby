@@ -16,6 +16,10 @@
 
 #include "ruby/thread.h"
 
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif
+
 // For `ruby_thread_has_gvl_p`:
 #include "internal/thread.h"
 
@@ -1181,7 +1185,7 @@ rb_fiber_scheduler_socket_accept(VALUE scheduler, VALUE sock, void *sockaddr, vo
         return RUBY_Qundef;
     }
 
-    VALUE client_sockaddr = rb_io_buffer_new(sockaddr, *(int *)len, 0);
+    VALUE client_sockaddr = rb_io_buffer_new(sockaddr, *(socklen_t *)len, 0);
 
     VALUE arguments[] = {
         scheduler, sock, client_sockaddr
@@ -1193,7 +1197,7 @@ rb_fiber_scheduler_socket_accept(VALUE scheduler, VALUE sock, void *sockaddr, vo
     } else {
         peer_fd = fiber_scheduler_socket_accept((VALUE)&arguments);
     }
-    *(int *)len = NUM2INT(rb_funcall(client_sockaddr, id_size, 0));
+    *(socklen_t *)len = (socklen_t)NUM2UINT(rb_funcall(client_sockaddr, id_size, 0));
     rb_io_buffer_free(client_sockaddr);
     return peer_fd;
 }
