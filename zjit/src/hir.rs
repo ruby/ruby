@@ -8409,7 +8409,8 @@ fn compile_entry_block(fun: &mut Function, jit_entry_insns: &[u32], insn_idx_to_
     let &all_opts_passed_insn_idx = jit_entry_insns.last().unwrap();
 
     // Check-and-jump for each missing optional PC
-    for &jit_entry_insn in jit_entry_insns.iter() {
+    let mut iter = jit_entry_insns.iter().peekable();
+    while let Some(&jit_entry_insn) = iter.next() {
         if jit_entry_insn == all_opts_passed_insn_idx {
             continue;
         }
@@ -8424,8 +8425,8 @@ fn compile_entry_block(fun: &mut Function, jit_entry_insns: &[u32], insn_idx_to_
         });
         let test_id = fun.push_insn(entry_block, Insn::IsBitEqual { left: pc, right: expected_pc });
 
-        // TODO: is this the right insn index??
-        let fall_through = fun.new_block(jit_entry_insn);
+        let next_insn_idx = **iter.peek().expect("last entry is skipped so there is always a next");
+        let fall_through = fun.new_block(next_insn_idx);
 
         fun.push_insn(entry_block, Insn::CondBranch {
             val: test_id,
