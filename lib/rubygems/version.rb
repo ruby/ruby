@@ -25,130 +25,145 @@
 # 4. 0.9
 #
 # If you want to specify a version restriction that includes both prereleases
-# and regular releases of the 1.x series this is the best way:
+# and regular releases of 1.x or later versions:
 #
-#   s.add_dependency 'example', '>= 1.0.0.a', '< 2.0.0'
+#   s.add_dependency 'example', '>= 1.0.0.a'
 #
 # == How Software Changes
 #
-# Users expect to be able to specify a version constraint that gives them
-# some reasonable expectation that new versions of a library will work with
-# their software if the version constraint is true, and not work with their
-# software if the version constraint is false.  In other words, the perfect
-# system will accept all compatible versions of the library and reject all
-# incompatible versions.
+# Libraries generally change in 3 ways:
 #
-# Libraries change in 3 ways (well, more than 3, but stay focused here!).
+# 1. The change is an implementation detail, bug fix, security fix, or
+#    optimization, and has no behavioral effect on the software using it.
 #
-# 1. The change may be an implementation detail only and have no effect on
-#    the client software.
-# 2. The change may add new features, but do so in a way that client software
-#    written to an earlier version is still compatible.
-# 3. The change may change the public interface of the library in such a way
-#    that old software is no longer compatible.
+# 2. The change adds new features, and software using those new features is
+#    not compatible with previous versions of the library, but software using
+#    previous versions of the library is compatible with the change.
 #
-# Some examples are appropriate at this point.  Suppose I have a Stack class
-# that supports a <tt>push</tt> and a <tt>pop</tt> method.
-#
-# === Examples of Category 1 changes:
-#
-# * Switch from an array based implementation to a linked-list based
-#   implementation.
-# * Provide an automatic (and transparent) backing store for large stacks.
-#
-# === Examples of Category 2 changes might be:
-#
-# * Add a <tt>depth</tt> method to return the current depth of the stack.
-# * Add a <tt>top</tt> method that returns the current top of stack (without
-#   changing the stack).
-# * Change <tt>push</tt> so that it returns the item pushed (previously it
-#   had no usable return value).
-#
-# === Examples of Category 3 changes might be:
-#
-# * Changes <tt>pop</tt> so that it no longer returns a value (you must use
-#   <tt>top</tt> to get the top of the stack).
-# * Rename the methods to <tt>push_item</tt> and <tt>pop_item</tt>.
+# 3. The change modifies the public interface of some part of the library in
+#    such a way that software that uses that part of the library must be
+#    modified to work.
 #
 # == RubyGems Rational Versioning
 #
 # * Versions shall be represented by three non-negative integers, separated
 #   by periods (e.g. 3.1.4).  The first integers is the "major" version
 #   number, the second integer is the "minor" version number, and the third
-#   integer is the "build" number.
+#   integer is the "patch" version number.
 #
-# * A category 1 change (implementation detail) will increment the build
-#   number.
+# * A category 1 change (implementation detail, bug fix, or security fix)
+#   will increment the patch number.
 #
 # * A category 2 change (backwards compatible) will increment the minor
-#   version number and reset the build number.
+#   version number and reset the patch number.
 #
 # * A category 3 change (incompatible) will increment the major build number
-#   and reset the minor and build numbers.
+#   and reset the minor and patch numbers.
 #
-# * Any "public" release of a gem should have a different version.  Normally
-#   that means incrementing the build number.  This means a developer can
-#   generate builds all day long, but as soon as they make a public release,
-#   the version must be updated.
+# * Any "public" release of a gem should have a different version.
 #
-# === Examples
+# == Optimistic Vs. Pessimistic Dependency Versioning
 #
-# Let's work through a project lifecycle using our Stack example from above.
+# Users expect to be able to specify a version constraint that gives them
+# some reasonable expectation that new versions of a library will work with
+# their software if the version constraint is true, and not work with their
+# software if the version constraint is false.  In other words, the perfect
+# system will accept all compatible versions of the library and reject all
+# incompatible versions. Unfortunately, there is no perfect system, as you
+# cannot predict the future. You can never know whether a future version of
+# a library will contain which type of change.
 #
-# Version 0.0.1:: The initial Stack class is release.
-# Version 0.0.2:: Switched to a linked=list implementation because it is
-#                 cooler.
-# Version 0.1.0:: Added a <tt>depth</tt> method.
-# Version 1.0.0:: Added <tt>top</tt> and made <tt>pop</tt> return nil
-#                 (<tt>pop</tt> used to return the  old top item).
-# Version 1.1.0:: <tt>push</tt> now returns the value pushed (it used it
-#                 return nil).
-# Version 1.1.1:: Fixed a bug in the linked list implementation.
-# Version 1.1.2:: Fixed a bug introduced in the last fix.
+# There are two common outlooks on dependency versioning:
 #
-# Client A needs a stack with basic push/pop capability.  They write to the
-# original interface (no <tt>top</tt>), so their version constraint looks like:
+# 1. Optimistic. This does not set an upper bound on a dependency. It is
+#    possible that a future version of a dependency will break the software,
+#    and in that case, the dependency version will need to be updated and
+#    changes will need to be made.
 #
-#   gem 'stack', '>= 0.0'
+# 2. Pessimistic. This assumes all major versions of a dependency will break
+#    the softaware, and that patch or minor releases of a dependency will not
+#    break the software. If there is a major version of a dependency released,
+#    the dependency version must be updated in order to use it, even if no
+#    code changes are actually needed.
 #
-# Essentially, any version is OK with Client A.  An incompatible change to
-# the library will cause them grief, but they are willing to take the chance
-# (we call Client A optimistic).
+# In general, optimistic version is superior to pessimistic versioning.
+# Pessimistic versioning is often wrong in both directions. Dependencies can
+# release patch or minor versions that contain incompatibilities. One
+# common reason is that a security fix may require backwards-incompatible API
+# changes. In this case, even though pessimistic versioning was used, it
+# didn't even save effort, as you still need to make code changes and adjust
+# dependency versions. Similarly, for all but the smallest dependencies, just
+# because the dependency made a backwards incompatible change to one interface
+# doesn't mean the dependency made a backwards incompatible change to an
+# interface that the software is using. It is a common problem that a
+# dependency will release a new major version and the software does not require
+# any changes in order to use. In this case, being pessimistic requires
+# additional work for no benefit.
 #
-# Client B is just like Client A except for two things: (1) They use the
-# <tt>depth</tt> method and (2) they are worried about future
-# incompatibilities, so they write their version constraint like this:
+# When a library uses pessimistic versioning of dependencies, it causes
+# significant problems if that library is not not diligent about updating
+# dependency versions and any library is depending on that library.
+# For example:
 #
-#   gem 'stack', '~> 0.1'
+# * Library A is currently on release 1.2.3
 #
-# The <tt>depth</tt> method was introduced in version 0.1.0, so that version
-# or anything later is fine, as long as the version stays below version 1.0
-# where incompatibilities are introduced.  We call Client B pessimistic
-# because they are worried about incompatible future changes (it is OK to be
-# pessimistic!).
+# * Library B is at version 2.3.4 and has a pessimistic dependency on
+#   library A, using ~> 1.0 (>= 1.0, < 2)
 #
-# == Preventing Version Catastrophe:
+# * Library C is at version 3.4.5 and has an optimistic dependency on
+#   library A, using >= 1.0
 #
-# From: https://www.zenspider.com/ruby/2008/10/rubygems-how-to-preventing-catastrophe.html
+# * Library D has optimistic dependencies on both libraries B and C
 #
-# Let's say you're depending on the fnord gem version 2.y.z. If you
-# specify your dependency as ">= 2.0.0" then, you're good, right? What
-# happens if fnord 3.0 comes out and it isn't backwards compatible
-# with 2.y.z? Your stuff will break as a result of using ">=". The
-# better route is to specify your dependency with an "approximate" version
-# specifier ("~>"). They're a tad confusing, so here is how the dependency
-# specifiers work:
+# * Library A releases a new major version, 2.0.0, with new features, which
+#   is mostly backwards compatible, but does contain some backwards
+#   incompatible changes
 #
-#   Specification From  ... To (exclusive)
-#   ">= 3.0"      3.0   ... &infin;
-#   "~> 3.0"      3.0   ... 4.0
-#   "~> 3.0.0"    3.0.0 ... 3.1
-#   "~> 3.5"      3.5   ... 4.0
-#   "~> 3.5.0"    3.5.0 ... 3.6
-#   "~> 3"        3.0   ... 4.0
+# * Library B would work with A 2.0.0, but cannot use it due to pessimistic
+#   versioning
 #
-# For the last example, single-digit versions are automatically extended with
-# a zero to give a sensible result.
+# * Library C wants to use the new features in the major release of library
+#   A to implement its own new features, so it does so, bumps the
+#   dependency version of A to >= 2.0, and releases version 3.5.0.
+#
+# * Library D cannot upgrade to the new version of library C, because it
+#   depends on library B, which has a pessimistic dependency on library A.
+#
+# * Library C releases a security fix patch version 3.5.1 to fix a
+#   vulnerability present in all previous versions.
+#
+# * Library D is now in a terrible situation. It cannot upgrade to library
+#   C 3.5.1, as that requires library A > 2.0, because it depends on library
+#   B, which requires library A > 1.0, < 2, even though library B would work
+#   fine with library A 2.0.0.
+#
+# This type of situation brought on by pessimistic versioning is unfortunately
+# both common and serious in practice.
+#
+# This is not to say that optimistic versioning never causes a problem.
+# However, with optimistic versioning, if there is a problem, it can be solved
+# with the addition of a single dependency. For example, continuing the
+# previous example:
+#
+# * Library A releases a new major version, 3.0.0, which makes backwards
+#   incompatible changes that break library C.
+#
+# * Until library C releases an updated version with new changes, library
+#   D only needs to set a specific dependency on library A for > 2.0, < 3.
+#
+# Both optimistic versioning and pessismistic versioning have problems in
+# certain cases. However, it's significantly easier to fix optimistic
+# versioning problems than pessimistic versioning problems.
+#
+# That is not to say that pessimistic versioning is never appropriate. If the
+# dependency is library that adds a single method, where any change resulting
+# in a major version bump would probably break a library using it, then using
+# pessimistic versioning may be warranted. Additionally, if a dependency has
+# already announced or committed backwards incompatible changes that would
+# break a library's use of it, then having that library use a pessimistic
+# version constraint would likely be warranted. However, outside of
+# specific situations, you should avoid using pessimistic versioning, as the
+# costs typically exceed the benefits.
 
 # Workaround for directly loading Gem::Version in some cases
 module Gem; end
