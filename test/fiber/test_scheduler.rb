@@ -417,8 +417,8 @@ class TestFiberScheduler < Test::Unit::TestCase
   def test_socket_send_udp
     s1 = UDPSocket.new
     s2 = UDPSocket.new
-    port = SecureRandom.rand(60001..65535)
-    s2.bind('127.0.0.1', port)
+    s2.bind('127.0.0.1', 0)
+    port = s2.addr[1]
     dest = Addrinfo.new(s2.addr)
     operations = nil
 
@@ -503,12 +503,11 @@ class TestFiberScheduler < Test::Unit::TestCase
 
   def test_socket_recv_udp
     s1 = UDPSocket.new
-    port_src = SecureRandom.rand(60001..65534)
-    s1.bind('127.0.0.1', port_src)
+    s1.bind('127.0.0.1', 0)
+    port_src = s1.addr[1]
 
     s2 = UDPSocket.new
-    port_dest = port_src + 1
-    s2.bind('127.0.0.1', port_dest)
+    s2.bind('127.0.0.1', 0)
 
     src = Addrinfo.new(s1.addr)
     dest = Addrinfo.new(s2.addr)
@@ -620,15 +619,13 @@ class TestFiberScheduler < Test::Unit::TestCase
   end
 
   def test_socket_accept
-    server_port = SecureRandom.rand(60001..65534)
     server = Socket.new(:INET, :STREAM, 0)
-    server.bind(Addrinfo.tcp('127.0.0.1', server_port))
+    server.bind(Addrinfo.tcp('127.0.0.1', 0))
     server.listen(5)
 
-    client_port = server_port + 1
     client = Socket.new(:INET, :STREAM, 0)
-    client_addr = Addrinfo.tcp('127.0.0.1', client_port)
-    client.bind(client_addr)
+    client.bind(Addrinfo.tcp('127.0.0.1', 0))
+    client_addr = Addrinfo.new(client.getsockname)
     client.connect(server.connect_address)
 
     operations = nil
@@ -660,13 +657,11 @@ class TestFiberScheduler < Test::Unit::TestCase
   end
 
   def test_socket_accept_tcpserver
-    server_port = port = SecureRandom.rand(60001..65534)
-    server = TCPServer.new('127.0.0.1', server_port)
+    server = TCPServer.new('127.0.0.1', 0)
 
-    client_port = server_port + 1
     client = Socket.new(:INET, :STREAM, 0)
-    client_addr = Addrinfo.tcp('127.0.0.1', client_port)
-    client.bind(client_addr)
+    client.bind(Addrinfo.tcp('127.0.0.1', 0))
+    client_addr = Addrinfo.new(client.getsockname)
     client.connect(server.connect_address)
 
     operations = nil
