@@ -713,7 +713,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::RefineType { val, .. } => opnd!(val),
         Insn::HasType { val, expected } => gen_has_type(jit, asm, opnd!(val), *expected),
         Insn::GuardType { val, guard_type, state } => gen_guard_type(jit, asm, opnd!(val), *guard_type, &function.frame_state(*state)),
-        Insn::GuardTypeNot { val, guard_type, state } => gen_guard_type_not(jit, asm, opnd!(val), *guard_type, &function.frame_state(*state)),
         &Insn::GuardBitEquals { val, expected, reason, state, recompile } => gen_guard_bit_equals(jit, asm, opnd!(val), expected, reason, recompile, &function.frame_state(state)),
         &Insn::GuardAnyBitSet { val, mask, reason, state, .. } => gen_guard_any_bit_set(jit, asm, opnd!(val), mask, reason, &function.frame_state(state)),
         &Insn::GuardNoBitsSet { val, mask, reason, state, .. } => gen_guard_no_bits_set(jit, asm, opnd!(val), mask, reason, &function.frame_state(state)),
@@ -2635,45 +2634,6 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
         asm.je(jit, side_exit.clone());
         asm.test(val, (RUBY_IMMEDIATE_MASK as u64).into());
         asm.jnz(jit, side_exit);
-    } else {
-        unimplemented!("unsupported type: {guard_type}");
-    }
-    val
-}
-
-fn gen_guard_type_not(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard_type: Type, state: &FrameState) -> lir::Opnd {
-    if guard_type.is_subtype(types::String) {
-        // We only exit if val *is* a String. Otherwise we fall through.
-        let hir_block_id = asm.current_block().hir_block_id;
-        let rpo_idx = asm.current_block().rpo_index;
-
-        // Create continuation block upfront so early-out jumps can target it
-        let cont_block = asm.new_block(hir_block_id, false, rpo_idx);
-        let cont_edge = || Target::Block(lir::BranchEdge { target: cont_block, args: vec![] });
-
-        let side = side_exit(jit, state, GuardTypeNot(guard_type));
-
-        // Continue if special constant (not string)
-        asm.test(val, Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
-        asm.jnz(jit, cont_edge());
-
-        // Continue if false (not string)
-        asm.cmp(val, Qfalse.into());
-        asm.je(jit, cont_edge());
-
-        let val = asm.load_mem(val);
-
-        let flags = asm.load(Opnd::mem(VALUE_BITS, val, RUBY_OFFSET_RBASIC_FLAGS));
-        let tag   = asm.and(flags, Opnd::UImm(RUBY_T_MASK as u64));
-        asm.cmp(tag, Opnd::UImm(RUBY_T_STRING as u64));
-        asm.je(jit, side);
-
-        // Fall through to continuation block
-        asm.jmp(cont_edge());
-
-        asm.set_current_block(cont_block);
-        let label = jit.get_label(asm, cont_block, hir_block_id);
-        asm.write_label(label);
     } else {
         unimplemented!("unsupported type: {guard_type}");
     }
