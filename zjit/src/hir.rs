@@ -7,7 +7,7 @@
 #![allow(clippy::match_like_matches_macro)]
 use crate::{
     backend::lir::C_ARG_OPNDS,
-    cast::IntoUsize, codegen::{local_idx_to_ep_offset, max_iseq_versions}, cruby::*, invariants::{self}, payload::{get_or_create_iseq_payload, IseqPayload}, options::{get_option, DumpHIR}, state::ZJITState, json::Json,
+    cast::IntoUsize, codegen::{local_idx_to_ep_offset, max_iseq_versions}, cruby::*, invariants::{self}, payload::{get_or_create_iseq_payload, IseqPayload}, options::{debug, get_option, DumpHIR}, state::ZJITState, json::Json,
     state,
 };
 use std::{
@@ -3022,14 +3022,22 @@ impl Function {
 
         // Assign `new_type` to `insn` if it differs from the recorded type.
         // Returns `true` if a write actually happened, `false` if the type
-        // was already equal.
-        let set_type = |this: &mut Function, insn: InsnId, new_type: Type| -> bool {
-            if this.type_of(insn).bit_equal(new_type) {
-                return false;
-            }
-            this.insn_types[insn.0] = new_type;
-            true
-        };
+        // Macro instead of closure so the borrow checker sees individual field
+        // accesses rather than an `&mut self` borrow that conflicts with
+        // `&self.insns` held by an outer match.
+        macro_rules! set_type {
+            ($insn:expr, $new_type:expr) => {{
+                let insn = $insn;
+                let new_type = $new_type;
+                let old_type = self.insn_types[self.union_find.borrow_mut().find(insn).0];
+                if old_type.bit_equal(new_type) {
+                    false
+                } else {
+                    self.insn_types[insn.0] = new_type;
+                    true
+                }
+            }};
+        }
 
         let mut reachable = BlockSet::with_capacity(self.blocks.len());
         reachable.insert(self.entries_block);
@@ -3044,12 +3052,10 @@ impl Function {
                     let insn_id = self.blocks[block.0].insns[i];
                     // Instructions without output, including branch instructions, can't be targets
                     // of make_equal_to, so we don't need find() here.
-                    // Clone the insn so we don't hold a borrow on self.insns
-                    // across calls to set_type() below.
-                    let insn_type = match self.insns[insn_id.0].clone() {
+                    let insn_type = match &self.insns[insn_id.0] {
                         Insn::CondBranch { val, if_true, if_false } => {
-                            assert!(!self.type_of(val).bit_equal(types::Empty));
-                            if self.type_of(val).could_be(Type::from_cbool(true)) {
+                            assert!(!self.type_of(*val).bit_equal(types::Empty));
+                            if self.type_of(*val).could_be(Type::from_cbool(true)) {
                                 reachable.insert(if_true.target);
                                 // Snapshot arg types before any param updates so phi-style
                                 // updates happen in parallel (the args of a self-loop may name
@@ -3057,30 +3063,30 @@ impl Function {
                                 let arg_types: Vec<Type> = if_true.args.iter().map(|a| self.type_of(*a)).collect();
                                 for (idx, arg_type) in arg_types.into_iter().enumerate() {
                                     let param = self.blocks[if_true.target.0].params[idx];
-                                    changed |= set_type(self, param, self.type_of(param).union(arg_type));
+                                    changed |= set_type!(param, self.type_of(param).union(arg_type));
                                 }
                             }
-                            if self.type_of(val).could_be(Type::from_cbool(false)) {
+                            if self.type_of(*val).could_be(Type::from_cbool(false)) {
                                 reachable.insert(if_false.target);
                                 let arg_types: Vec<Type> = if_false.args.iter().map(|a| self.type_of(*a)).collect();
                                 for (idx, arg_type) in arg_types.into_iter().enumerate() {
                                     let param = self.blocks[if_false.target.0].params[idx];
-                                    changed |= set_type(self, param, self.type_of(param).union(arg_type));
+                                    changed |= set_type!(param, self.type_of(param).union(arg_type));
                                 }
                             }
                             continue;
                         }
-                        Insn::Jump(BranchEdge { target, args }) => {
+                        &Insn::Jump(BranchEdge { target, ref args }) => {
                             reachable.insert(target);
                             let arg_types: Vec<Type> = args.iter().map(|a| self.type_of(*a)).collect();
                             for (idx, arg_type) in arg_types.into_iter().enumerate() {
                                 let param = self.blocks[target.0].params[idx];
-                                changed |= set_type(self, param, self.type_of(param).union(arg_type));
+                                changed |= set_type!(param, self.type_of(param).union(arg_type));
                             }
                             continue;
                         }
                         Insn::Entries { targets } => {
-                            for target in targets {
+                            for &target in targets {
                                 reachable.insert(target);
                             }
                             continue;
@@ -3088,7 +3094,7 @@ impl Function {
                         insn if insn.has_output() => self.infer_type(insn_id),
                         _ => continue,
                     };
-                    changed |= set_type(self, insn_id, insn_type);
+                    changed |= set_type!(insn_id, insn_type);
                 }
             }
             if !changed {
