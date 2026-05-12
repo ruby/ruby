@@ -1195,7 +1195,7 @@ impl Assembler {
             });
 
             trace_compile_phase("resolve_ssa", || {
-                asm.handle_caller_saved_regs(&intervals, &assignments, &C_ARG_REGREGS);
+                asm.handle_caller_saved_regs(&intervals, &assignments, &C_ARG_REGREGS, total_stack_slots);
                 asm.resolve_ssa(&intervals, &assignments);
             });
 
