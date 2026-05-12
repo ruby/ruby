@@ -1,9 +1,7 @@
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::fmt;
 use std::mem::take;
-use std::panic;
 use std::rc::Rc;
-use std::sync::{Arc, Mutex};
 use crate::bitset::BitSet;
 use crate::codegen::{local_size_and_idx_to_ep_offset, perf_symbol_range_start, perf_symbol_range_end};
 use crate::cruby::{IseqPtr, Qundef, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
@@ -3858,91 +3856,6 @@ macro_rules! asm_ccall {
     }};
 }
 pub(crate) use asm_ccall;
-
-// Allow moving Assembler to panic hooks. Since we take the VM lock on compilation,
-// no other threads should reference the same Assembler instance.
-unsafe impl Send for Insn {}
-unsafe impl Sync for Insn {}
-
-/// Dump Assembler with insn_idx on panic. Restore the original panic hook on drop.
-pub struct AssemblerPanicHook {
-    /// Original panic hook before AssemblerPanicHook is installed.
-    prev_hook: Box<dyn Fn(&panic::PanicHookInfo<'_>) + Sync + Send + 'static>,
-}
-
-impl AssemblerPanicHook {
-    /// Maximum number of lines [`Self::dump_asm`] is allowed to dump by default.
-    /// When --zjit-dump-lir is given, this limit is ignored.
-    const MAX_DUMP_LINES: usize = 10;
-
-    /// Install a panic hook to dump Assembler with insn_idx on dev builds.
-    /// This returns shared references to the previous hook and insn_idx.
-    /// It takes insn_idx as an argument so that you can manually use it
-    /// on non-emit passes that keep mutating the Assembler to be dumped.
-    pub fn new(asm: &Assembler, insn_idx: usize) -> (Option<Arc<Self>>, Option<Arc<Mutex<usize>>>) {
-        if cfg!(debug_assertions) {
-            // Wrap prev_hook with Arc to share it among the new hook and Self to be dropped.
-            let prev_hook = panic::take_hook();
-            let panic_hook_ref = Arc::new(Self { prev_hook });
-            let weak_hook = Arc::downgrade(&panic_hook_ref);
-
-            // Wrap insn_idx with Arc to share it among the new hook and the caller mutating it.
-            let insn_idx = Arc::new(Mutex::new(insn_idx));
-            let insn_idx_ref = insn_idx.clone();
-
-            // Install a new hook to dump Assembler with insn_idx
-            let asm = asm.clone();
-            panic::set_hook(Box::new(move |panic_info| {
-                if let Some(panic_hook) = weak_hook.upgrade() {
-                    if let Ok(insn_idx) = insn_idx_ref.lock() {
-                        // Dump Assembler, highlighting the insn_idx line
-                        Self::dump_asm(&asm, *insn_idx);
-                    }
-
-                    // Call the previous panic hook
-                    (panic_hook.prev_hook)(panic_info);
-                }
-            }));
-
-            (Some(panic_hook_ref), Some(insn_idx))
-        } else {
-            (None, None)
-        }
-    }
-
-    /// Dump Assembler, highlighting the insn_idx line
-    fn dump_asm(asm: &Assembler, insn_idx: usize) {
-        let colors = crate::ttycolors::get_colors();
-        let bold_begin = colors.bold_begin;
-        let bold_end = colors.bold_end;
-        let lir_string = lir_string(asm);
-        let lines: Vec<&str> = lir_string.split('\n').collect();
-
-        // By default, dump only MAX_DUMP_LINES lines.
-        // Ignore it if --zjit-dump-lir is given.
-        let (min_idx, max_idx) = if get_option!(dump_lir).is_some() {
-            (0, lines.len())
-        } else {
-            (insn_idx.saturating_sub(Self::MAX_DUMP_LINES / 2), insn_idx.saturating_add(Self::MAX_DUMP_LINES / 2))
-        };
-
-        eprintln!("Failed to compile LIR at insn_idx={insn_idx}:");
-        for (idx, line) in lines.iter().enumerate().filter(|(idx, _)| (min_idx..=max_idx).contains(idx)) {
-            if idx == insn_idx && line.starts_with("  ") {
-                eprintln!("{bold_begin}=>{}{bold_end}", &line["  ".len()..]);
-            } else {
-                eprintln!("{line}");
-            }
-        }
-    }
-}
-
-impl Drop for AssemblerPanicHook {
-    fn drop(&mut self) {
-        // Restore the original hook
-        panic::set_hook(std::mem::replace(&mut self.prev_hook, Box::new(|_| {})));
-    }
-}
 
 #[cfg(test)]
 mod tests {
