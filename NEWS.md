@@ -25,6 +25,16 @@ Note: We're only listing outstanding class updates.
       As with the existing skip path, `errno` is `0` because the function was
       never called.
 
+* Fiber::Scheduler
+
+    * New hook methods `socket_recv`, `socket_send`, `socket_connect`, and
+      `socket_accept` are added. When a scheduler is set, these hooks are
+      invoked by `Socket#recv`, `Socket#recvfrom`, `Socket#send`,
+      `UDPSocket#send`, `Socket#connect`, `Socket#accept`, and
+      `TCPServer#accept`, allowing schedulers to handle socket I/O
+      cooperatively without relying on the generic `io_wait` hook.
+      [[Feature #21837]]
+
 * Array
 
     * `Array#pack` accepts new formats `R` and `r` for unsigned and signed
@@ -496,3 +506,4 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [irb-v1.17.0]: https://github.com/ruby/irb/releases/tag/v1.17.0
 [irb-v1.18.0]: https://github.com/ruby/irb/releases/tag/v1.18.0
 [reline-v0.7.0]: https://github.com/ruby/reline/releases/tag/v0.7.0
+[Feature #21837]: https://bugs.ruby-lang.org/issues/21837
