@@ -8398,7 +8398,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
     fun.profiles = Some(profiles);
     if let Err(err) = crate::stats::trace_compile_phase("validate", || fun.validate()) {
-        eprintln!("ZJIT: {err:?}: Initial HIR:\n{}", FunctionPrinter::without_snapshot(&fun));
+        debug!("ZJIT: {err:?}: Initial HIR:\n{}", FunctionPrinter::without_snapshot(&fun));
         return Err(ParseError::Validation(err));
     }
     Ok(fun)
