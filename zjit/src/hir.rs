@@ -2696,7 +2696,6 @@ impl Function {
             Insn::Entries { targets } => targets,
             Insn::Unreachable | Insn::Return { .. } | Insn::SideExit { .. } | Insn::Throw { .. } => vec![],
             _ => vec![]
-            // _ => unreachable!("block doesn't end with a jump or terminator")
         }
     }
 
