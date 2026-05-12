@@ -7131,7 +7131,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let not_nil_false = fun.push_insn(block, Insn::RefineType { val, new_type: not_nil_false_type });
                     state.replace(val, not_nil_false);
                     queue.push_back((state.clone(), target, target_idx, local_inval));
-
                 }
                 YARVINSN_branchif | YARVINSN_branchif_without_ints => {
                     if opcode == YARVINSN_branchif {
