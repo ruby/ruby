@@ -5721,20 +5721,6 @@ impl Function {
             Ok(())
         };
 
-        // The `rpo` function calls `successors`, and `successors` will blow up
-        // if a block doesn't end with a terminator.  First we'll iterate
-        // through all blocks (regardless of reachability) and assert that they
-        // end with a terminator.  Then we should be safe to use `rpo`.
-        for (idx, block) in self.blocks.iter().enumerate() {
-            let insns = &block.insns;
-            if let Some(insn_id) = insns.last() {
-                let last = self.find(*insn_id);
-                if !last.is_terminator() {
-                    return Err(ValidationError::BlockHasNoTerminator(BlockId(idx)));
-                }
-            }
-        }
-
         for block_id in self.rpo() {
             let insns = &self.blocks[block_id.0].insns;
             for (idx, insn_id) in insns.iter().enumerate() {
@@ -5750,11 +5736,18 @@ impl Function {
                     }
                     _ => {}
                 }
+
                 if insn.is_terminator() {
                     // Blow up if we have a terminator that isn't at the end
                     // of the block.
                     if idx != insns.len() - 1 {
                         return Err(ValidationError::TerminatorNotAtEnd(block_id, *insn_id, idx))
+                    }
+                }
+                // If the last instruction isn't a terminator, return an error
+                if idx == insns.len() - 1 {
+                    if !insn.is_terminator() {
+                        return Err(ValidationError::BlockHasNoTerminator(block_id));
                     }
                 }
             }
