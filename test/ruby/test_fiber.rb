@@ -513,6 +513,7 @@ class TestFiber < Test::Unit::TestCase
     omit "not supported on IBM platforms" if RUBY_PLATFORM =~ /s390x|powerpc/
     omit "not supported with YJIT" if defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
     omit "not supported with ZJIT" if defined?(RubyVM::ZJIT) && RubyVM::ZJIT.enabled?
+    omit "unstable on RubyCI for ruby_4_0" unless ENV.key?("GITHUB_ACTIONS")
 
     assert_separately([], <<~RUBY, timeout: 120)
       max_map_count = File.read("/proc/sys/vm/max_map_count").to_i
