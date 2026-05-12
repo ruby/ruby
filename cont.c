@@ -3651,6 +3651,8 @@ Init_Cont(void)
 #endif
     SET_MACHINE_STACK_END(&th->ec->machine.stack_end);
 
+    rb_eFiberError = rb_define_class("FiberError", rb_eStandardError);
+
     size_t minimum_count = shared_fiber_pool_minimum_count();
     size_t maximum_count = shared_fiber_pool_maximum_count();
     fiber_pool_initialize(&shared_fiber_pool, stack_size, minimum_count, maximum_count, vm_stack_size);
@@ -3675,7 +3677,6 @@ Init_Cont(void)
 
     rb_cFiber = rb_define_class("Fiber", rb_cObject);
     rb_define_alloc_func(rb_cFiber, fiber_alloc);
-    rb_eFiberError = rb_define_class("FiberError", rb_eStandardError);
     rb_define_singleton_method(rb_cFiber, "yield", rb_fiber_s_yield, -1);
     rb_define_singleton_method(rb_cFiber, "current", rb_fiber_s_current, 0);
     rb_define_singleton_method(rb_cFiber, "blocking", rb_fiber_blocking, 0);
