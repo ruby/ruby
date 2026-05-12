@@ -2695,6 +2695,11 @@ impl Function {
             Insn::Jump(edge) => vec![edge.target],
             Insn::Entries { targets } => targets,
             Insn::Unreachable | Insn::Return { .. } | Insn::SideExit { .. } | Insn::Throw { .. } => vec![],
+            // Blocks that don't end with terminators are technically errors,
+            // every block in the CFG should end with a terminator. But we
+            // want to be able to iterate over poorly constructed CFG when
+            // debugging, so we'll return an empty vec.  The validation
+            // routines check for terminators, so we should catch CFG errors there.
             _ => vec![]
         }
     }
