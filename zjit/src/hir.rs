@@ -2687,19 +2687,6 @@ impl Function {
         self.blocks.pop();
     }
 
-    fn num_successors(&self, block: BlockId) -> usize {
-        let insns = &self.blocks[block.0].insns;
-        let last = self.find(*insns.last().unwrap());
-        match last {
-            Insn::CondBranch { .. } => 2,
-            Insn::Jump(_) => 1,
-            Insn::Entries { targets } => targets.len(),
-            Insn::Unreachable | Insn::Return { .. } | Insn::SideExit { .. } | Insn::Throw { .. } => 0,
-            _ => 0
-            // _ => unreachable!("block doesn't end with a jump or terminator")
-        }
-    }
-
     fn successors(&self, block: BlockId) -> Vec<BlockId> {
         let insns = &self.blocks[block.0].insns;
         let last = self.find(*insns.last().unwrap());
@@ -5324,9 +5311,6 @@ impl Function {
     }
 
     fn absorb_dst_block(&mut self, num_in_edges: &[u32], block: BlockId) -> bool {
-        if self.num_successors(block) > 1 {
-            return false;
-        }
         let Some(terminator_id) = self.blocks[block.0].insns.last()
             else { return false };
         let Insn::Jump(BranchEdge { target, args }) = self.find(*terminator_id)
