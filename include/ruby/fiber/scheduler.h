@@ -546,10 +546,10 @@ VALUE rb_fiber_scheduler_socket_recv(VALUE scheduler, VALUE sock, VALUE buffer, 
  * Non-blocking read from the passed Socket using a native buffer.
  *
  * @param[in]   scheduler    Target scheduler.
- * @param[in]   sock         An socket object to read from.
- * @param[in]   base         The memory to read to.
+ * @param[in]   sock         A socket object to receive from.
+ * @param[in]   base         The memory to receive into.
  * @param[in]   size         Size of the memory.
- * @param[in]   length       The minimum number of bytes to read.
+ * @param[in]   length       The minimum number of bytes to receive.
  * @param[in]   flags        The flags to use for receiving.
  * @param[in]   recvfrom     Whether to perform recvfrom and return the source addrinfo.
  * @retval      RUBY_Qundef  `scheduler` doesn't have `#socket_recv`.
@@ -561,7 +561,7 @@ VALUE rb_fiber_scheduler_socket_recv_memory(VALUE scheduler, VALUE sock, void *b
  * Non-blocking connect with the passed Socket to the given address.
  *
  * @param[in]   scheduler    Target scheduler.
- * @param[in]   sock         An socket object to read from.
+ * @param[in]   sock         A socket object to connect.
  * @param[in]   addr         A packed string containing the destination addrinfo.
  * @retval      RUBY_Qundef  `scheduler` doesn't have `#socket_connect`.
  * @return      otherwise    What `scheduler.socket_connect` returns `[-errno, 0]`.
@@ -572,9 +572,9 @@ VALUE rb_fiber_scheduler_socket_connect(VALUE scheduler, VALUE sock, VALUE addr)
  * Non-blocking accept connection from the passed Socket.
  *
  * @param[in]   scheduler       Target scheduler.
- * @param[in]   sock            An socket object to read from.
- * @param[in]   sockaddr        Pointer to sockaddr for peer address
- * @param[in]   sockaddr_len    Pointer to sockaddr length
+ * @param[in]   sock            A socket object to accept connections on.
+ * @param[in]   sockaddr        Pointer to sockaddr for peer address.
+ * @param[in]   sockaddr_len    Pointer to sockaddr length.
  * @retval      RUBY_Qundef     `scheduler` doesn't have `#socket_accept`.
  * @return      otherwise       What `scheduler.socket_accept` returns `[-errno, fd]`.
  */
