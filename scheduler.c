@@ -1047,12 +1047,12 @@ rb_fiber_scheduler_socket_recv(VALUE scheduler, VALUE sock, VALUE buffer, size_t
 
 /*
  *  Document-method: Fiber::Scheduler#socket_send
- *  call-seq: socket_send(sock, dest, buffer, length, flags) -> written length or -errno
+ *  call-seq: socket_send(sock, buffer, length, flags, dest = nil) -> written length or -errno
  *
  *  Invoked by Socket#send to send +length+ bytes to +sock+ from from a
  *  specified +buffer+ (see IO::Buffer) with the given +flags+.
  *
- *  The +dest+ argument is either nil, a packed sockaddr string or a Addrinfo
+ *  The +dest+ argument is either nil, a packed sockaddr string or an Addrinfo
  *  instance denoting the destination address for connection-less sockets. If
  *  +dest+ is not nil, the method implementation should use the +sendto+ system
  *  call or equivalent to specify the destination address to the OS.
@@ -1095,7 +1095,7 @@ rb_fiber_scheduler_socket_send(VALUE scheduler, VALUE sock, VALUE dest, VALUE bu
     }
 
     VALUE arguments[] = {
-        scheduler, sock, dest, buffer, SIZET2NUM(length), INT2NUM(flags)
+        scheduler, sock, buffer, SIZET2NUM(length), INT2NUM(flags), dest
     };
 
     if (rb_respond_to(scheduler, id_fiber_interrupt)) {

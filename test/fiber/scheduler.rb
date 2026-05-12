@@ -514,7 +514,7 @@ class IOErrorScheduler < Scheduler
     return -Errno::EINVAL::Errno
   end
 
-  def socket_send(sock, dest, buffer, length, flags)
+  def socket_send(sock, buffer, length, flags, dest = nil)
     return -Errno::ENOTCONN::Errno
   end
 
@@ -536,11 +536,11 @@ class SocketIOScheduler < Scheduler
     @operations ||= []
   end
 
-  def socket_send(sock, dest, buffer, length, flags)
+  def socket_send(sock, buffer, length, flags, dest = nil)
     descriptor = sock.fileno
     string = buffer.get_string
 
-    self.operations << [:socket_send, descriptor, dest, string, length, flags]
+    self.operations << [:socket_send, descriptor, string, length, flags, dest]
 
     Fiber.blocking do
       if dest
