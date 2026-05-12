@@ -1471,9 +1471,22 @@ static VALUE convert_encoding(VALUE source)
   return rb_funcall(source, i_encode, 1, Encoding_UTF_8);
 }
 
+struct parser_config_init_args {
+    JSON_ParserConfig *config;
+    VALUE self;
+};
+
+static void parser_config_wb_write(VALUE self, VALUE *dest, VALUE val)
+{
+    *dest = val;
+    if (self) RB_OBJ_WRITTEN(self, Qundef, val);
+}
+
 static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
 {
-    JSON_ParserConfig *config = (JSON_ParserConfig *)data;
+    struct parser_config_init_args *args = (struct parser_config_init_args *)data;
+    JSON_ParserConfig *config = args->config;
+    VALUE self = args->self;
 
          if (key == sym_max_nesting)                { config->max_nesting = RTEST(val) ? FIX2INT(val) : 0; }
     else if (key == sym_allow_nan)                  { config->allow_nan = RTEST(val); }
@@ -1482,15 +1495,15 @@ static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
     else if (key == sym_allow_invalid_escape)       { config->allow_invalid_escape = RTEST(val); }
     else if (key == sym_symbolize_names)            { config->symbolize_names = RTEST(val); }
     else if (key == sym_freeze)                     { config->freeze = RTEST(val); }
-    else if (key == sym_on_load)                    { config->on_load_proc = RTEST(val) ? val : Qfalse; }
+    else if (key == sym_on_load)                    { parser_config_wb_write(self, &config->on_load_proc, RTEST(val) ? val : Qfalse); }
     else if (key == sym_allow_duplicate_key)        { config->on_duplicate_key = RTEST(val) ? JSON_IGNORE : JSON_RAISE; }
     else if (key == sym_decimal_class)              {
         if (RTEST(val)) {
             if (rb_respond_to(val, i_try_convert)) {
-                config->decimal_class = val;
+                parser_config_wb_write(self, &config->decimal_class, val);
                 config->decimal_method_id = i_try_convert;
             } else if (rb_respond_to(val, i_new)) {
-                config->decimal_class = val;
+                parser_config_wb_write(self, &config->decimal_class, val);
                 config->decimal_method_id = i_new;
             } else if (RB_TYPE_P(val, T_CLASS)) {
                 VALUE name = rb_class_name(val);
@@ -1499,7 +1512,7 @@ static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
                 if (last_colon) {
                     const char *mod_path_end = last_colon - 1;
                     VALUE mod_path = rb_str_substr(name, 0, mod_path_end - name_cstr);
-                    config->decimal_class = rb_path_to_class(mod_path);
+                    parser_config_wb_write(self, &config->decimal_class, rb_path_to_class(mod_path));
 
                     const char *method_name_beg = last_colon + 1;
                     long before_len = method_name_beg - name_cstr;
@@ -1507,7 +1520,7 @@ static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
                     VALUE method_name = rb_str_substr(name, before_len, len);
                     config->decimal_method_id = SYM2ID(rb_str_intern(method_name));
                 } else {
-                    config->decimal_class = rb_mKernel;
+                    parser_config_wb_write(self, &config->decimal_class, rb_mKernel);
                     config->decimal_method_id = SYM2ID(rb_str_intern(name));
                 }
             }
@@ -1517,16 +1530,21 @@ static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
     return ST_CONTINUE;
 }
 
-static void parser_config_init(JSON_ParserConfig *config, VALUE opts)
+static void parser_config_init(JSON_ParserConfig *config, VALUE opts, VALUE self)
 {
     config->max_nesting = 100;
+
+    struct parser_config_init_args args = {
+        .config = config,
+        .self = self,
+    };
 
     if (!NIL_P(opts)) {
         Check_Type(opts, T_HASH);
         if (RHASH_SIZE(opts) > 0) {
             // We assume in most cases few keys are set so it's faster to go over
             // the provided keys than to check all possible keys.
-            rb_hash_foreach(opts, parser_config_init_i, (VALUE)config);
+            rb_hash_foreach(opts, parser_config_init_i, (VALUE)&args);
         }
 
     }
@@ -1560,9 +1578,7 @@ static VALUE cParserConfig_initialize(VALUE self, VALUE opts)
     rb_check_frozen(self);
     GET_PARSER_CONFIG;
 
-    parser_config_init(config, opts);
-
-    RB_OBJ_WRITTEN(self, Qundef, config->decimal_class);
+    parser_config_init(config, opts, self);
 
     return self;
 }
@@ -1624,7 +1640,7 @@ static VALUE cParser_m_parse(VALUE klass, VALUE Vsource, VALUE opts)
 
     JSON_ParserConfig _config = {0};
     JSON_ParserConfig *config = &_config;
-    parser_config_init(config, opts);
+    parser_config_init(config, opts, false);
 
     return cParser_parse(config, Vsource);
 }
