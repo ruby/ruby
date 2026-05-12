@@ -3538,7 +3538,7 @@ AS_IF([test x"$cross_compiling" = xyes], [
     # darwin target requires miniruby for linking ext bundles
     PREP="$PREP"' miniruby$(EXEEXT)'
   ])
-  RUNRUBY_COMMAND='$(MINIRUBY) -I`cd $(srcdir)/lib; pwd`'
+  RUNRUBY_COMMAND='$(MINIRUBY) -I`$(CHDIR) $(srcdir)/lib; pwd`'
   RUNRUBY='$(RUNRUBY_COMMAND)'
   XRUBY='$(MINIRUBY)'
   TEST_RUNNABLE=no
