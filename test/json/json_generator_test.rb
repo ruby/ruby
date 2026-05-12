@@ -1081,4 +1081,15 @@ class JSONGeneratorTest < Test::Unit::TestCase
     end
   end
 
+  def test_large_depth_raises
+    assert_raise(RangeError, ArgumentError) do
+      JSON.generate([[1]],
+        indent:      " " * 5,
+        array_nl:    "\n",
+        depth:       3_689_348_814_741_910_324,
+        max_nesting: 0
+      )
+    end
+  end
+
 end
