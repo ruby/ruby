@@ -4970,11 +4970,8 @@ impl Function {
                     *operand = rewrite_map.get(&canon).copied().unwrap_or(canon);
                 });
 
-                // GuardTypeNot is excluded: its infer_type is BasicObject
-                // (HIR has no negated-type representation), so registering
-                // would widen downstream uses' inferred types. For the
-                // binary guards only `left` is registered because their
-                // infer_type is type_of(left).
+                // For the binary guards only `left` is registered because their infer_type is
+                // type_of(left).
                 match &self.insns[canonical_id.0] {
                     Insn::GuardType      { val:  src, .. }
                     | Insn::GuardBitEquals { val:  src, .. }
