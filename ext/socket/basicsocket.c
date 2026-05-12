@@ -590,13 +590,13 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE socket)
 
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        char *ptr = RSTRING_PTR(arg.mesg);
-        long len = RSTRING_LEN(arg.mesg);
-        VALUE ret = rb_fiber_scheduler_socket_send_memory(scheduler, socket, to, ptr, len, 0, NUM2INT(flags));
-        if (!UNDEF_P(ret)) {
-            if (rb_fiber_scheduler_io_result_apply(ret) < 0)
+        char *data = RSTRING_PTR(arg.mesg);
+        long length = RSTRING_LEN(arg.mesg);
+        VALUE result = rb_fiber_scheduler_socket_send_memory(scheduler, socket, data, length, 0, NUM2INT(flags), to);
+        if (!UNDEF_P(result)) {
+            if (rb_fiber_scheduler_io_result_apply(result) < 0)
                 rb_sys_fail(funcname);
-            return ret;
+            return result;
         }
     }
 

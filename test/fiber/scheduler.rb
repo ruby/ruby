@@ -514,19 +514,19 @@ class IOErrorScheduler < Scheduler
     return -Errno::EINVAL::Errno
   end
 
-  def socket_send(sock, buffer, length, flags, dest = nil)
+  def socket_send(socket, buffer, length, flags, destination = nil)
     return -Errno::ENOTCONN::Errno
   end
 
-  def socket_recv(sock, buffer, length, flags, recvfrom)
+  def socket_recv(socket, buffer, length, flags, from = nil)
     return -Errno::ENOTSOCK::Errno
   end
 
-  def socket_connect(sock, addr)
+  def socket_connect(socket, address)
     return -Errno::EBADF::Errno
   end
 
-  def socket_accept(sock, client_sockaddr)
+  def socket_accept(socket, address)
     return -Errno::ENOTSOCK::Errno
   end
 end
@@ -536,65 +536,64 @@ class SocketIOScheduler < Scheduler
     @operations ||= []
   end
 
-  def socket_send(sock, buffer, length, flags, dest = nil)
-    descriptor = sock.fileno
+  def socket_send(socket, buffer, length, flags, destination = nil)
+    descriptor = socket.fileno
     string = buffer.get_string
 
-    self.operations << [:socket_send, descriptor, string, length, flags, dest]
+    self.operations << [:socket_send, descriptor, string, length, flags, destination]
 
     Fiber.blocking do
-      if dest
-        sock.send(string, flags, dest)
+      if destination
+        socket.send(string, flags, destination)
       else
-        sock.send(string, flags)
+        socket.send(string, flags)
       end
     end
   end
 
-  def socket_recv(sock, buffer, length, flags, recvfrom)
-    descriptor = sock.fileno
+  def socket_recv(socket, buffer, length, flags, from = nil)
+    descriptor = socket.fileno
     length = buffer.size if length == 0
 
-    self.operations << [:socket_recv, descriptor, length, flags, recvfrom]
+    self.operations << [:socket_recv, descriptor, length, flags, !from.nil?]
 
     Fiber.blocking do
-      str = nil
-      if recvfrom
-        str, addr = sock.recvfrom(length, flags)
+      if from
+        temp = Socket.for_fd(socket.fileno)
+        temp.autoclose = false
+        str, addrinfo = temp.recvfrom(length, flags)
         buffer.set_string(str)
+        from.replace(addrinfo.to_s)
         str.bytesize
-        [str.bytesize, addr]
       else
-        str = sock.recv(length, flags)
+        str = socket.recv(length, flags)
         buffer.set_string(str)
         str.bytesize
       end
     end
   end
 
-  def socket_connect(sock, addr)
-    descriptor = sock.fileno
+  def socket_connect(socket, address)
+    descriptor = socket.fileno
 
-    self.operations << [:socket_connect, descriptor, addr]
-    addr2 = Addrinfo.new(addr)
+    self.operations << [:socket_connect, descriptor, address]
+    addr2 = Addrinfo.new(address)
 
     Fiber.blocking do
-      sock.connect(addr2.ip_address, addr2.ip_port)
+      socket.connect(addr2.ip_address, addr2.ip_port)
     end
   end
 
-  def socket_accept(sock, client_sockaddr)
-    descriptor = sock.fileno
+  def socket_accept(socket, address)
+    descriptor = socket.fileno
 
     Fiber.blocking do
       # Use Socket.for_fd with autoclose=false so GC doesn't close sock's fd.
-      temp = Socket.for_fd(sock.fileno)
+      temp = Socket.for_fd(socket.fileno)
       temp.autoclose = false
-      conn, addr = temp.accept
-      s = addr.to_s
-      client_sockaddr.set_string(s)
-      client_sockaddr.resize(s.bytesize)
-      self.operations << [:socket_accept, descriptor, addr.to_s]
+      conn, peer_addrinfo = temp.accept
+      address.replace(peer_addrinfo.to_s)
+      self.operations << [:socket_accept, descriptor, peer_addrinfo.to_s]
       # Prevent conn from closing its fd on GC; the C side will own the fd.
       conn.autoclose = false
       conn.fileno

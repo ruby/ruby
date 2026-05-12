@@ -157,16 +157,16 @@ udp_send_internal(VALUE v)
 
     VALUE scheduler = rb_fiber_scheduler_current();
     if (scheduler != Qnil) {
-        char *ptr = RSTRING_PTR(arg->sarg.mesg);
-        long len = RSTRING_LEN(arg->sarg.mesg);
-        VALUE dest = rb_str_new((char*)arg->res->ai->ai_addr, arg->res->ai->ai_addrlen);
-        VALUE ret = rb_fiber_scheduler_socket_send_memory(scheduler, fptr->self, dest, ptr, len, 0, arg->sarg.flags);
-        if (!UNDEF_P(ret)) {
-            if (rb_fiber_scheduler_io_result_apply(ret) < 0)
+        char *data = RSTRING_PTR(arg->sarg.mesg);
+        long length = RSTRING_LEN(arg->sarg.mesg);
+        VALUE destination = rb_str_new((char*)arg->res->ai->ai_addr, arg->res->ai->ai_addrlen);
+        VALUE result = rb_fiber_scheduler_socket_send_memory(scheduler, fptr->self, data, length, 0, arg->sarg.flags, destination);
+        if (!UNDEF_P(result)) {
+            if (rb_fiber_scheduler_io_result_apply(result) < 0)
                 rb_sys_fail("sendto(2)");
 
-            RB_GC_GUARD(dest);
-            return ret;
+            RB_GC_GUARD(destination);
+            return result;
         }
     }
 

@@ -419,7 +419,7 @@ class TestFiberScheduler < Test::Unit::TestCase
     s2 = UDPSocket.new
     s2.bind('127.0.0.1', 0)
     port = s2.addr[1]
-    dest = Addrinfo.new(s2.addr)
+    destination = Addrinfo.new(s2.addr)
     operations = nil
 
     thread = Thread.new do
@@ -427,7 +427,7 @@ class TestFiberScheduler < Test::Unit::TestCase
       Fiber.set_scheduler scheduler
 
       Fiber.schedule do
-        s1.send('foo', 0, dest)
+        s1.send('foo', 0, destination)
         s1.send('bar', 0, '127.0.0.1', port)
       end
 
@@ -436,8 +436,8 @@ class TestFiberScheduler < Test::Unit::TestCase
 
     thread.join
     assert_equal [
-      [:socket_send, s1.fileno, 'foo', 0, 0, dest.to_s],
-      [:socket_send, s1.fileno, 'bar', 0, 0, dest.to_s]
+      [:socket_send, s1.fileno, 'foo', 0, 0, destination.to_s],
+      [:socket_send, s1.fileno, 'bar', 0, 0, destination.to_s]
     ], operations
 
     assert_equal 'foo', s2.recv(6)
@@ -509,12 +509,11 @@ class TestFiberScheduler < Test::Unit::TestCase
     s2 = UDPSocket.new
     s2.bind('127.0.0.1', 0)
 
-    src = Addrinfo.new(s1.addr)
-    dest = Addrinfo.new(s2.addr)
+    destination = Addrinfo.new(s2.addr)
 
     operations = nil
 
-    s1.send('foobar', 0, dest)
+    s1.send('foobar', 0, destination)
     received = []
 
     thread = Thread.new do
