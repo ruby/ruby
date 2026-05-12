@@ -104,6 +104,48 @@ class TestGemBundlerVersionFinder < Gem::TestCase
     end
   end
 
+  def test_bundler_version_with_bundle_version_env_system
+    ENV["BUNDLE_VERSION"] = "system"
+
+    bvf.stub(:lockfile_contents, "\n\nBUNDLED WITH\n   1.1.1.1\n") do
+      assert_nil bvf.bundler_version
+    end
+  end
+
+  def test_bundler_version_with_bundle_version_env_overrides_config
+    ENV["BUNDLE_VERSION"] = "2.3.4"
+
+    config_content = <<~CONFIG
+      BUNDLE_VERSION: "1.2.3"
+    CONFIG
+
+    Tempfile.create("bundle_config") do |f|
+      f.write(config_content)
+      f.flush
+
+      bvf.stub(:bundler_global_config_file, f.path) do
+        assert_equal v("2.3.4"), bvf.bundler_version
+      end
+    end
+  end
+
+  def test_bundler_version_with_empty_bundle_version_env
+    ENV["BUNDLE_VERSION"] = ""
+
+    config_content = <<~CONFIG
+      BUNDLE_VERSION: "1.2.3"
+    CONFIG
+
+    Tempfile.create("bundle_config") do |f|
+      f.write(config_content)
+      f.flush
+
+      bvf.stub(:bundler_global_config_file, f.path) do
+        assert_equal v("1.2.3"), bvf.bundler_version
+      end
+    end
+  end
+
   def test_bundler_version_with_bundle_config_non_existent_file
     bvf.stub(:bundler_global_config_file, "/non/existent/path") do
       assert_nil bvf.bundler_version
