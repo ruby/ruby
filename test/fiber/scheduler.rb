@@ -70,7 +70,7 @@ class Scheduler
 
     begin
       readable, writable = IO.select(@readable.keys + [@urgent.first], @writable.keys, [], next_timeout)
-    rescue IOError
+    rescue IOError, Errno::EBADF
       # Ignore - this can happen if the IO is closed while we are waiting.
     end
 
@@ -587,11 +587,16 @@ class SocketIOScheduler < Scheduler
     descriptor = sock.fileno
 
     Fiber.blocking do
-      conn, addr = Socket.for_fd(sock.fileno).accept
+      # Use Socket.for_fd with autoclose=false so GC doesn't close sock's fd.
+      temp = Socket.for_fd(sock.fileno)
+      temp.autoclose = false
+      conn, addr = temp.accept
       s = addr.to_s
       client_sockaddr.set_string(s)
       client_sockaddr.resize(s.bytesize)
       self.operations << [:socket_accept, descriptor, addr.to_s]
+      # Prevent conn from closing its fd on GC; the C side will own the fd.
+      conn.autoclose = false
       conn.fileno
     end
   end
