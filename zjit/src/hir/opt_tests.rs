@@ -9606,7 +9606,7 @@ mod hir_opt_tests {
           v33:ArrayExact = GuardType v10, ArrayExact
           v34:CUInt64 = LoadField v33, :_rbasic_flags@0x1040
           v35:CUInt64 = GuardNoBitsSet v34, RUBY_FL_FREEZE=CUInt64(2048)
-          v37:CUInt64 = GuardNoBitsSet v35, RUBY_ELTS_SHARED=CUInt64(4096)
+          v37:CUInt64 = GuardNoBitsSet v34, RUBY_ELTS_SHARED=CUInt64(4096)
           v46:CInt64[1] = Const CInt64(1)
           v39:CInt64 = ArrayLength v33
           v40:CInt64[1] = GuardLess v46, v39
@@ -9649,7 +9649,7 @@ mod hir_opt_tests {
           v38:Fixnum = GuardType v15, Fixnum
           v39:CUInt64 = LoadField v37, :_rbasic_flags@0x1040
           v40:CUInt64 = GuardNoBitsSet v39, RUBY_FL_FREEZE=CUInt64(2048)
-          v42:CUInt64 = GuardNoBitsSet v40, RUBY_ELTS_SHARED=CUInt64(4096)
+          v42:CUInt64 = GuardNoBitsSet v39, RUBY_ELTS_SHARED=CUInt64(4096)
           v43:CInt64 = UnboxFixnum v38
           v44:CInt64 = ArrayLength v37
           v45:CInt64 = GuardLess v43, v44
@@ -9874,7 +9874,7 @@ mod hir_opt_tests {
           v23:Array = GuardType v6, Array
           v24:CUInt64 = LoadField v23, :_rbasic_flags@0x1049
           v25:CUInt64 = GuardNoBitsSet v24, RUBY_FL_FREEZE=CUInt64(2048)
-          v27:CUInt64 = GuardNoBitsSet v25, RUBY_ELTS_SHARED=CUInt64(4096)
+          v27:CUInt64 = GuardNoBitsSet v24, RUBY_ELTS_SHARED=CUInt64(4096)
           v28:BasicObject = ArrayPop v23
           CheckInterrupts
           Return v28
