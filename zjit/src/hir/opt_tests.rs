@@ -1129,7 +1129,7 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(CustomEq@0x1008)
           PatchPoint MethodRedefined(CustomEq@0x1008, !=@0x1010, cme:0x1018)
           v30:ObjectSubclass[class_exact:CustomEq] = GuardType v10, ObjectSubclass[class_exact:CustomEq]
-          v31:BoolExact = CCallWithFrame v30, :BasicObject#!=@0x1040, v10
+          v31:BoolExact = CCallWithFrame v30, :BasicObject#!=@0x1040, v30
           v21:NilClass = Const Value(nil)
           CheckInterrupts
           Return v21
@@ -1752,7 +1752,7 @@ mod hir_opt_tests {
           v28:Fixnum[30] = Const Value(30)
           v30:Fixnum[40] = Const Value(40)
           v32:Fixnum[50] = Const Value(50)
-          v34:BasicObject = Send v6, :target, v24, v26, v28, v30, v32 # SendFallbackReason: Argument count does not match parameter count
+          v34:BasicObject = Send v44, :target, v24, v26, v28, v30, v32 # SendFallbackReason: Argument count does not match parameter count
           v37:ArrayExact = NewArray v45, v48, v34
           CheckInterrupts
           Return v37
@@ -4046,7 +4046,7 @@ mod hir_opt_tests {
           v33:Fixnum[40] = Const Value(40)
           v35:Fixnum[50] = Const Value(50)
           v37:Fixnum[60] = Const Value(60)
-          v39:BasicObject = Send v6, :target, v27, v29, v31, v33, v35, v37 # SendFallbackReason: Too many arguments for LIR
+          v39:BasicObject = Send v48, :target, v27, v29, v31, v33, v35, v37 # SendFallbackReason: Too many arguments for LIR
           v41:ArrayExact = NewArray v49, v52, v39
           CheckInterrupts
           Return v41
@@ -4651,7 +4651,7 @@ mod hir_opt_tests {
           v49:SetExact = GuardType v17, SetExact
           v50:BasicObject = CCallVariadic v49, :Set#initialize@0x1068
           CheckInterrupts
-          Return v17
+          Return v49
         ");
     }
 
@@ -5683,7 +5683,7 @@ mod hir_opt_tests {
           WriteBarrier v28, v10
           v33:CShape[0x1003] = Const CShape(0x1003)
           StoreField v28, :_shape_id@0x1000, v33
-          v14:HeapBasicObject = RefineType v6, HeapBasicObject
+          v14:HeapBasicObject = RefineType v28, HeapBasicObject
           v17:Fixnum[2] = Const Value(2)
           PatchPoint SingleRactorMode
           StoreField v14, :@bar@0x1004, v17
@@ -6359,7 +6359,7 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Array@0x1010)
           PatchPoint MethodRedefined(Array@0x1010, to_s@0x1018, cme:0x1020)
           v33:BasicObject = CCallWithFrame v28, :Array#to_s@0x1048
-          v20:String = AnyToString v10, str: v33
+          v20:String = AnyToString v28, str: v33
           v22:StringExact = StringConcat v14, v20
           CheckInterrupts
           Return v22
@@ -10089,7 +10089,7 @@ mod hir_opt_tests {
           v33:CInt64 = AdjustBounds v32, v31
           v34:CInt64[0] = Const CInt64(0)
           v35:CInt64 = GuardGreaterEq v33, v34
-          v36:Fixnum = StringGetbyte v28, v33
+          v36:Fixnum = StringGetbyte v28, v35
           CheckInterrupts
           Return v36
         ");
@@ -14643,7 +14643,7 @@ mod hir_opt_tests {
           SetLocal :other_block, l0, EP@3, v40
           v27:CPtr = GetEP 0
           v28:BasicObject = LoadField v27, :other_block@0x1051
-          v30:BasicObject = InvokeSuper v11, 0x1058, v28 # SendFallbackReason: super: complex argument passing to `super` call
+          v30:BasicObject = InvokeSuper v39, 0x1058, v28 # SendFallbackReason: super: complex argument passing to `super` call
           CheckInterrupts
           Return v30
         ");
@@ -15257,7 +15257,7 @@ mod hir_opt_tests {
           v78:BasicObject = LoadField v75, :iter_method@0x1058
           v79:BasicObject = LoadField v75, :kwsplat@0x1059
           SetLocal :sep, l0, EP@5, v119
-          Jump bb8(v58, v76, v119, v78, v79)
+          Jump bb8(v118, v76, v119, v78, v79)
         bb8(v83:BasicObject, v84:BasicObject, v85:BasicObject, v86:BasicObject, v87:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1060, CONST)
@@ -15360,7 +15360,7 @@ mod hir_opt_tests {
           WriteBarrier v35, v13
           v40:CShape[0x1003] = Const CShape(0x1003)
           StoreField v35, :_shape_id@0x1000, v40
-          v20:HeapBasicObject = RefineType v8, HeapBasicObject
+          v20:HeapBasicObject = RefineType v35, HeapBasicObject
           PatchPoint NoEPEscape(initialize)
           PatchPoint SingleRactorMode
           WriteBarrier v20, v13
@@ -15408,7 +15408,7 @@ mod hir_opt_tests {
           WriteBarrier v49, v16
           v54:CShape[0x1003] = Const CShape(0x1003)
           StoreField v49, :_shape_id@0x1000, v54
-          v23:HeapBasicObject = RefineType v10, HeapBasicObject
+          v23:HeapBasicObject = RefineType v49, HeapBasicObject
           v26:Fixnum[5] = Const Value(5)
           PatchPoint NoEPEscape(initialize)
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
@@ -15456,7 +15456,7 @@ mod hir_opt_tests {
           WriteBarrier v43, v13
           v48:CShape[0x1003] = Const CShape(0x1003)
           StoreField v43, :_shape_id@0x1000, v48
-          v20:HeapBasicObject = RefineType v8, HeapBasicObject
+          v20:HeapBasicObject = RefineType v43, HeapBasicObject
           PatchPoint NoEPEscape(initialize)
           PatchPoint SingleRactorMode
           WriteBarrier v20, v13
@@ -15720,6 +15720,69 @@ mod hir_opt_tests {
           CheckInterrupts
           Return v43
         ");
+    }
+
+    #[test]
+    fn test_dedup_guard_type_across_cfg_join() {
+        eval("
+            def test(n, cond)
+              if cond
+                a = n + 1
+              else
+                a = n + 2
+              end
+              n + a
+            end
+            test(1, true); test(1, false)
+        ");
+        let hir = hir_string("test");
+        let guard_count = hir.matches("GuardType").count();
+        assert_eq!(
+            guard_count, 2,
+            "expected 2 GuardType instructions after cross-block dedup, found {guard_count}\n\nHIR:\n{hir}"
+        );
+    }
+
+    #[test]
+    fn test_forward_guard_through_conditional_branch() {
+        eval("
+            def test(n, a, b)
+              if a
+                if b
+                  n + 1
+                else
+                  n + 2
+                end
+              else
+                n + 3
+              end
+            end
+            test(1, true, true); test(1, true, false); test(1, false, false)
+        ");
+        let hir = hir_string("test");
+        let guard_count = hir.matches("GuardType").count();
+        assert!(
+            guard_count <= 3,
+            "expected at most 3 GuardType instructions (one per leaf branch) after forwarding through conditional branches, found {guard_count}\n\nHIR:\n{hir}"
+        );
+    }
+
+    #[test]
+    fn test_no_forward_when_no_guard_in_branches() {
+        let src = "
+            def test(n, cond)
+              a = if cond then 1 else 2 end
+              n + a
+            end
+            test(1, true); test(1, false)
+        ";
+        eval(src);
+        let hir = hir_string("test");
+        let guard_count = hir.matches("GuardType").count();
+        assert_eq!(
+            guard_count, 1,
+            "expected 1 GuardType (merge block only), found {guard_count}\n\nHIR:\n{hir}"
+        );
     }
 
     #[test]

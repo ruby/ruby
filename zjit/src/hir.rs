@@ -4144,6 +4144,9 @@ impl Function {
                 }
             }
         }
+        crate::stats::trace_compile_phase("canonicalize", ||
+            crate::stats::with_time_stat(Counter::compile_hir_canonicalize_time_ns, || self.canonicalize())
+        );
         crate::stats::trace_compile_phase("infer_types", || self.infer_types());
     }
 
@@ -4198,6 +4201,9 @@ impl Function {
                 }
             }
         }
+        crate::stats::trace_compile_phase("canonicalize", ||
+            crate::stats::with_time_stat(Counter::compile_hir_canonicalize_time_ns, || self.canonicalize())
+        );
         crate::stats::trace_compile_phase("infer_types", || self.infer_types());
     }
 
@@ -4486,6 +4492,9 @@ impl Function {
                 }
             }
         }
+        crate::stats::trace_compile_phase("canonicalize", ||
+            crate::stats::with_time_stat(Counter::compile_hir_canonicalize_time_ns, || self.canonicalize())
+        );
         crate::stats::trace_compile_phase("infer_types", || self.infer_types());
     }
 
@@ -4816,6 +4825,9 @@ impl Function {
                 self.push_insn_id(block, insn_id);
             }
         }
+        crate::stats::trace_compile_phase("canonicalize", ||
+            crate::stats::with_time_stat(Counter::compile_hir_canonicalize_time_ns, || self.canonicalize())
+        );
         crate::stats::trace_compile_phase("infer_types", || self.infer_types());
     }
 
@@ -4925,6 +4937,54 @@ impl Function {
             .map(|b| if b { Qtrue } else { Qfalse })
             .map(|b| self.new_insn(Insn::Const { val: Const::Value(b) }))
             .unwrap_or(insn_id)
+    }
+
+    /// Block-local canonicalize: rewrite each operand through union-find and a
+    /// per-block map of the most recent `Guard*` for that value. Forwards
+    /// guarded values into branch-edge args (so `infer_types` narrows merge-block
+    /// parameters and `fold_constants` drops redundant CFG-join guards) and
+    /// ordinary in-block uses.
+    ///
+    /// `Guard*` substitutions are unconditional within a block: a guard's
+    /// side-exit semantics guarantee the substituted value type holds for every
+    /// downstream use in the same block.
+    ///
+    /// `RefineType` is intentionally skipped: its narrowing is only valid on one
+    /// branch arm, which would require dropping refine-derived rewrites at each
+    /// `IfTrue`/`IfFalse`. Cross-arm refine forwarding is left for a follow-up
+    /// dominator-scoped pass.
+    ///
+    /// Inspired by Cranelift's aegraph canonicalize step
+    /// (<https://cfallin.org/blog/2026/04/09/aegraph/>).
+    fn canonicalize(&mut self) {
+        let mut rewrite_map: HashMap<InsnId, InsnId> = HashMap::new();
+        for block in self.rpo() {
+            rewrite_map.clear();
+            for i in 0..self.blocks[block.0].insns.len() {
+                let insn_id = self.blocks[block.0].insns[i];
+                let canonical_id = self.union_find.borrow().find_const(insn_id);
+
+                let union_find = &self.union_find;
+                self.insns[canonical_id.0].for_each_operand_mut(|operand| {
+                    let canon = union_find.borrow().find_const(*operand);
+                    *operand = rewrite_map.get(&canon).copied().unwrap_or(canon);
+                });
+
+                // For the binary guards only `left` is registered because their infer_type is
+                // type_of(left).
+                match &self.insns[canonical_id.0] {
+                    Insn::GuardType      { val:  src, .. }
+                    | Insn::GuardBitEquals { val:  src, .. }
+                    | Insn::GuardAnyBitSet { val:  src, .. }
+                    | Insn::GuardNoBitsSet { val:  src, .. }
+                    | Insn::GuardGreaterEq { left: src, .. }
+                    | Insn::GuardLess      { left: src, .. } => {
+                        rewrite_map.insert(*src, canonical_id);
+                    }
+                    _ => {}
+                }
+            }
+        }
     }
 
     /// Use type information left by `infer_types` to fold away operations that can be evaluated at compile-time.
@@ -5315,6 +5375,9 @@ impl Function {
             changed = true;
         }
         if changed {
+            crate::stats::trace_compile_phase("canonicalize", ||
+                crate::stats::with_time_stat(Counter::compile_hir_canonicalize_time_ns, || self.canonicalize())
+            );
             crate::stats::trace_compile_phase("infer_types", || self.infer_types());
         }
     }
