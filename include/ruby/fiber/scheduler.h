@@ -532,9 +532,9 @@ VALUE rb_fiber_scheduler_socket_send_memory(VALUE scheduler, VALUE sock, VALUE d
  * Non-blocking recv from the passed Socket.
  *
  * @param[in]   scheduler    Target scheduler.
- * @param[in]   sock         A socket object to recv from.
- * @param[in]   buffer       The buffer to recv into.
- * @param[in]   length       The minimum number of bytes to recv.
+ * @param[in]   sock         A socket object to receive from.
+ * @param[in]   buffer       The buffer to receive into.
+ * @param[in]   length       The minimum number of bytes to receive.
  * @param[in]   flags        The flags to use for receiving.
  * @param[in]   recvfrom     Whether to perform recvfrom and return the source addrinfo.
  * @retval      RUBY_Qundef  `scheduler` doesn't have `#socket_recv`.
