@@ -7,6 +7,11 @@ Note that each entry is kept to a minimum, see links for details.
 
 ## Language changes
 
+* `Module#clone` and `Module#dup` no longer rewrite the lexical scope of
+  copied methods. Constants and class variables resolve through the
+  original class, consistent with inheritance and mixins.
+  [[Feature #21981]]
+
 ## Core classes updates
 
 Note: We're only listing outstanding class updates.
@@ -170,6 +175,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21853]: https://bugs.ruby-lang.org/issues/21853
 [Feature #21861]: https://bugs.ruby-lang.org/issues/21861
 [Feature #21932]: https://bugs.ruby-lang.org/issues/21932
+[Feature #21981]: https://bugs.ruby-lang.org/issues/21981
 [RubyGems-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/v4.0.4
 [RubyGems-v4.0.5]: https://github.com/rubygems/rubygems/releases/tag/v4.0.5
 [RubyGems-v4.0.6]: https://github.com/rubygems/rubygems/releases/tag/v4.0.6
