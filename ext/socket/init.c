@@ -636,7 +636,6 @@ rsock_connect(VALUE self, const struct sockaddr *sockaddr, int len, int socks, V
     if (scheduler != Qnil) {
         VALUE address = rb_str_new((char*)sockaddr, len);
         VALUE result = rb_fiber_scheduler_socket_connect(scheduler, fptr->self, address);
-        RB_GC_GUARD(address);
         if (!UNDEF_P(result)) {
             if (rb_fiber_scheduler_io_result_apply(result) < 0)
                 rb_sys_fail("connect(2)");

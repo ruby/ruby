@@ -165,7 +165,6 @@ udp_send_internal(VALUE v)
             if (rb_fiber_scheduler_io_result_apply(result) < 0)
                 rb_sys_fail("sendto(2)");
 
-            RB_GC_GUARD(destination);
             return result;
         }
     }
