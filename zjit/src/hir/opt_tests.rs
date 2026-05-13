@@ -7625,6 +7625,136 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_definedivar_shape_guard_recompile() {
+        // Call with one shape to compile, then call with a different shape to
+        // trigger shape guard exits and recompilation. On the recompiled version,
+        // DefinedIvar stays as a C call fallback to avoid more shape guard exits.
+        eval("
+            class C
+              def initialize(extra = false)
+                @bar = 0 if extra  # changes the shape
+                @foo = 42
+              end
+              def has_foo = defined?(@foo)
+            end
+
+            c = C.new
+            c.has_foo  # profile
+            c.has_foo  # compile (version 1 with shape guard)
+            d = C.new(true)  # same class, different shape
+            100.times { d.has_foo }  # trigger shape guard exits -> recompile
+            100.times { c.has_foo }  # run recompiled version (version 2)
+        ");
+        assert_snapshot!(hir_string_proc("C.new.method(:has_foo)"), @"
+        fn has_foo@<compiled>:7:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:StringExact|NilClass = DefinedIvar v6, :@foo
+          CheckInterrupts
+          Return v10
+        ");
+    }
+
+    #[test]
+    fn test_setivar_shape_guard_recompile() {
+        // Call with one shape to compile, then call with a different shape to
+        // trigger shape guard exits and recompilation. On the recompiled version,
+        // SetIvar stays as a C call fallback to avoid more shape guard exits.
+        eval("
+            class C
+              def initialize(extra = false)
+                @bar = 0 if extra  # changes the shape
+                @foo = 42
+              end
+              def foo = @foo = 5
+            end
+
+            c = C.new
+            c.foo  # profile
+            c.foo  # compile (version 1 with shape guard)
+            d = C.new(true)  # same class, different shape
+            100.times { d.foo }  # trigger shape guard exits -> recompile
+            100.times { c.foo }  # run recompiled version (version 2)
+        ");
+        assert_snapshot!(hir_string_proc("C.new.method(:foo)"), @"
+        fn foo@<compiled>:7:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[5] = Const Value(5)
+          PatchPoint SingleRactorMode
+          SetIvar v6, :@foo, v10
+          CheckInterrupts
+          Return v10
+        ");
+    }
+
+    #[test]
+    fn test_setivar_shape_guard_attr_writer_no_recompile() {
+        // attr_writer SetIvar has no inline cache and may target a receiver
+        // operand other than CFP self, so don't recompile here yet.
+        eval("
+            class C
+              attr_writer :foo
+              def initialize(extra = false)
+                @bar = 0 if extra  # changes the shape
+                @foo = 42
+              end
+            end
+
+            class D
+              def write(obj)
+                obj.foo = 5
+              end
+            end
+
+            c = C.new
+            d = D.new
+            d.write(c)  # profile
+            d.write(c)  # compile (version 1 with shape guard)
+            e = C.new(true)  # same class, different shape
+            100.times { d.write(e) }  # shape guard exits, but no recompile
+        ");
+        assert_snapshot!(hir_string_proc("D.new.method(:write)"), @"
+        fn write@<compiled>:12:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :obj@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :obj@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v17:Fixnum[5] = Const Value(5)
+          PatchPoint MethodRedefined(C@0x1008, foo=@0x1010, cme:0x1018)
+          v28:ObjectSubclass[class_exact:C] = GuardType v10, ObjectSubclass[class_exact:C]
+          v31:CShape = LoadField v28, :_shape_id@0x1040
+          v32:CShape[0x1041] = GuardBitEquals v31, CShape(0x1041)
+          StoreField v28, :@foo@0x1042, v17
+          WriteBarrier v28, v17
+          CheckInterrupts
+          Return v17
+        ");
+    }
+
+    #[test]
     fn test_optimize_getivar_on_module_embedded() {
         eval("
             module M
@@ -13546,23 +13676,17 @@ mod hir_opt_tests {
          CheckInterrupts
          SetLocal :formatted, l0, EP@3, v16
          PatchPoint SingleRactorMode
-         v60:HeapBasicObject = GuardType v15, HeapBasicObject
-         v61:CShape = LoadField v60, :_shape_id@0x1003
-         v62:CShape[0x1004] = GuardBitEquals v61, CShape(0x1004)
-         StoreField v60, :@formatted@0x1005, v16
-         WriteBarrier v60, v16
-         v65:CShape[0x1006] = Const CShape(0x1006)
-         StoreField v60, :_shape_id@0x1003, v65
+         SetIvar v15, :@formatted, v16
          v47:Class[VMFrozenCore] = Const Value(VALUE(0x1008))
          PatchPoint MethodRedefined(Class@0x1010, lambda@0x1018, cme:0x1020)
-         v69:BasicObject = CCallWithFrame v47, :RubyVM::FrozenCore.lambda@0x1048, block=0x1050
+         v62:BasicObject = CCallWithFrame v47, :RubyVM::FrozenCore.lambda@0x1048, block=0x1050
          v50:CPtr = GetEP 0
          v51:BasicObject = LoadField v50, :a@0x1001
          v52:BasicObject = LoadField v50, :_b@0x1002
          v53:BasicObject = LoadField v50, :_c@0x1058
          v54:BasicObject = LoadField v50, :formatted@0x1059
          CheckInterrupts
-         Return v69
+         Return v62
        ");
     }
 
