@@ -53,7 +53,7 @@ static const rb_data_type_t ossl_x509name_type = {
  * Public
  */
 VALUE
-ossl_x509name_new(X509_NAME *name)
+ossl_x509name_new(const X509_NAME *name)
 {
     X509_NAME *new;
     VALUE obj;
@@ -62,7 +62,8 @@ ossl_x509name_new(X509_NAME *name)
     if (!name) {
 	new = X509_NAME_new();
     } else {
-	new = X509_NAME_dup(name);
+	/* OpenSSL 1.1.1 takes a non-const pointer */
+	new = X509_NAME_dup((X509_NAME *)name);
     }
     if (!new) {
 	ossl_raise(eX509NameError, NULL);
@@ -360,7 +361,7 @@ ossl_x509name_to_a(VALUE self)
     }
     ret = rb_ary_new2(entries);
     for (i=0; i<entries; i++) {
-	if (!(entry = X509_NAME_get_entry(name, i))) {
+	if (!(entry = (X509_NAME_ENTRY *)X509_NAME_get_entry(name, i))) {
 	    ossl_raise(eX509NameError, NULL);
 	}
 	if (!i2t_ASN1_OBJECT(long_name, sizeof(long_name),
@@ -374,8 +375,9 @@ ossl_x509name_to_a(VALUE self)
 	    short_name = OBJ_nid2sn(nid);
 	    vname = rb_str_new2(short_name); /*do not free*/
 	}
-	value = X509_NAME_ENTRY_get_data(entry);
-	ary = rb_ary_new3(3, vname, asn1str_to_str(value), INT2NUM(value->type));
+	value = (ASN1_STRING *)X509_NAME_ENTRY_get_data(entry);
+	ary = rb_ary_new3(3, vname, asn1str_to_str(value),
+                          INT2NUM(ASN1_STRING_type(value)));
 	rb_ary_push(ret, ary);
     }
     return ret;

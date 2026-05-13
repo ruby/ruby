@@ -900,7 +900,6 @@ ossl_ocspbres_get_status(VALUE self)
     OCSP_CERTID *cid;
     ASN1_TIME *revtime, *thisupd, *nextupd;
     int status, reason;
-    X509_EXTENSION *x509ext;
     VALUE ret, ary, ext;
     int count, ext_count, i, j;
 
@@ -927,7 +926,7 @@ ossl_ocspbres_get_status(VALUE self)
 	ext = rb_ary_new();
 	ext_count = OCSP_SINGLERESP_get_ext_count(single);
 	for(j = 0; j < ext_count; j++){
-	    x509ext = OCSP_SINGLERESP_get_ext(single, j);
+	    const X509_EXTENSION *x509ext = OCSP_SINGLERESP_get_ext(single, j);
 	    rb_ary_push(ext, ossl_x509ext_new(x509ext));
 	}
 	rb_ary_push(ary, ext);
@@ -1358,7 +1357,6 @@ static VALUE
 ossl_ocspsres_get_extensions(VALUE self)
 {
     OCSP_SINGLERESP *sres;
-    X509_EXTENSION *ext;
     int count, i;
     VALUE ary;
 
@@ -1367,7 +1365,7 @@ ossl_ocspsres_get_extensions(VALUE self)
     count = OCSP_SINGLERESP_get_ext_count(sres);
     ary = rb_ary_new2(count);
     for (i = 0; i < count; i++) {
-	ext = OCSP_SINGLERESP_get_ext(sres, i);
+	const X509_EXTENSION *ext = OCSP_SINGLERESP_get_ext(sres, i);
 	rb_ary_push(ary, ossl_x509ext_new(ext)); /* will dup */
     }
 
@@ -1565,8 +1563,9 @@ ossl_ocspcid_get_issuer_name_hash(VALUE self)
     GetOCSPCertId(self, id);
     OCSP_id_get0_info(&name_hash, NULL, NULL, NULL, id);
 
-    ret = rb_str_new(NULL, name_hash->length * 2);
-    ossl_bin2hex(name_hash->data, RSTRING_PTR(ret), name_hash->length);
+    ret = rb_str_new(NULL, ASN1_STRING_length(name_hash) * 2);
+    ossl_bin2hex(ASN1_STRING_get0_data(name_hash), RSTRING_PTR(ret),
+                 ASN1_STRING_length(name_hash));
 
     return ret;
 }
@@ -1588,8 +1587,9 @@ ossl_ocspcid_get_issuer_key_hash(VALUE self)
     GetOCSPCertId(self, id);
     OCSP_id_get0_info(NULL, NULL, &key_hash, NULL, id);
 
-    ret = rb_str_new(NULL, key_hash->length * 2);
-    ossl_bin2hex(key_hash->data, RSTRING_PTR(ret), key_hash->length);
+    ret = rb_str_new(NULL, ASN1_STRING_length(key_hash) * 2);
+    ossl_bin2hex(ASN1_STRING_get0_data(key_hash), RSTRING_PTR(ret),
+                 ASN1_STRING_length(key_hash));
 
     return ret;
 }

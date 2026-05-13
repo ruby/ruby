@@ -64,6 +64,7 @@
 
 #if OSSL_OPENSSL_PREREQ(3, 0, 0)
 # define OSSL_USE_PROVIDER
+# include <openssl/provider.h>
 #endif
 
 /*
@@ -119,7 +120,7 @@ do{\
  * Convert binary string to hex string. The caller is responsible for
  * ensuring out has (2 * len) bytes of capacity.
  */
-void ossl_bin2hex(unsigned char *in, char *out, size_t len);
+void ossl_bin2hex(const unsigned char *in, char *out, size_t len);
 
 /*
  * Our default PEM callback

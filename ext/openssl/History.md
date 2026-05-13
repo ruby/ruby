@@ -1,3 +1,13 @@
+Version 3.2.4
+=============
+
+Notable changes
+---------------
+
+* Add support for OpenSSL 4.0.
+  [[GitHub #1051]](https://github.com/ruby/openssl/pull/1051)
+
+
 Version 3.2.3
 =============
 

@@ -172,7 +172,7 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     assert_raise(OpenSSL::PKey::PKeyError, "[Bug #12783]") {
       rsa.verify("SHA1", "a", "b")
     }
-  end
+  end unless openssl?(3, 0, 0)
 
   def test_sign_verify_pss
     key = Fixtures.pkey("rsa1024")
