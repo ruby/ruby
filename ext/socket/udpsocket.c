@@ -146,6 +146,22 @@ struct udp_send_arg {
     struct rsock_send_arg sarg;
 };
 
+struct rsock_send_scheduler_args {
+    VALUE scheduler;
+    VALUE socket;
+    size_t length;
+    int flags;
+    VALUE destination;
+};
+
+static VALUE
+rsock_send_with_scheduler(VALUE buffer, VALUE _argument)
+{
+    struct rsock_send_scheduler_args *args = (struct rsock_send_scheduler_args *)_argument;
+    return rb_fiber_scheduler_socket_send(args->scheduler, args->socket, buffer,
+                                          args->length, args->flags, args->destination);
+}
+
 static VALUE
 udp_send_internal(VALUE v)
 {
@@ -164,10 +180,15 @@ udp_send_internal(VALUE v)
 
     for (res = arg->res->ai; res; res = res->ai_next) {
         if (use_scheduler) {
-            char *data = RSTRING_PTR(arg->sarg.mesg);
-            long length = RSTRING_LEN(arg->sarg.mesg);
             VALUE destination = rb_str_new((char*)res->ai_addr, res->ai_addrlen);
-            VALUE result = rb_fiber_scheduler_socket_send_memory(scheduler, fptr->self, data, length, 0, arg->sarg.flags, destination);
+            struct rsock_send_scheduler_args arguments = {
+                .scheduler = scheduler,
+                .socket = fptr->self,
+                .length = 0,
+                .flags = arg->sarg.flags,
+                .destination = destination,
+            };
+            VALUE result = rb_io_buffer_for_reading(arg->sarg.mesg, rsock_send_with_scheduler, (VALUE)&arguments);
             if (UNDEF_P(result)) {
                 /* Scheduler doesn't implement socket_send; fall back to blocking for all addrs. */
                 use_scheduler = 0;

@@ -519,21 +519,6 @@ VALUE rb_fiber_scheduler_fiber(VALUE scheduler, int argc, VALUE *argv, int kw_sp
 VALUE rb_fiber_scheduler_socket_send(VALUE scheduler, VALUE socket, VALUE buffer, size_t length, int flags, VALUE destination);
 
 /**
- * Non-blocking send to the passed Socket using a native buffer.
- *
- * @param[in]   scheduler    Target scheduler.
- * @param[in]   socket       A socket object to send to.
- * @param[in]   base         The memory to write from.
- * @param[in]   size         Size of the memory.
- * @param[in]   length       The minimum number of bytes to write.
- * @param[in]   flags        The flags to use for sending.
- * @param[in]   destination  Optional send destination.
- * @retval      RUBY_Qundef  `scheduler` doesn't have `#socket_send`.
- * @return      otherwise    What `scheduler.socket_send` returns `[-errno, size]`.
- */
-VALUE rb_fiber_scheduler_socket_send_memory(VALUE scheduler, VALUE socket, const void *base, size_t size, size_t length, int flags, VALUE destination);
-
-/**
  * Non-blocking recv from the passed Socket.
  *
  * @param[in]   scheduler    Target scheduler.
@@ -548,22 +533,6 @@ VALUE rb_fiber_scheduler_socket_send_memory(VALUE scheduler, VALUE socket, const
  * @return      otherwise    What `scheduler.socket_recv` returns (received byte count or -errno).
  */
 VALUE rb_fiber_scheduler_socket_recv(VALUE scheduler, VALUE socket, VALUE buffer, size_t length, int flags, VALUE from);
-
-/**
- * Non-blocking read from the passed Socket using a native buffer.
- *
- * @param[in]   scheduler    Target scheduler.
- * @param[in]   socket       A socket object to receive from.
- * @param[in]   base         The memory to receive into.
- * @param[in]   size         Size of the memory.
- * @param[in]   length       The minimum number of bytes to receive.
- * @param[in]   flags        The flags to use for receiving.
- * @param[in]   from         A mutable String to receive the source address into,
- *                           or Qnil if the source address is not needed.
- * @retval      RUBY_Qundef  `scheduler` doesn't have `#socket_recv`.
- * @return      otherwise    What `scheduler.socket_recv` returns.
- */
-VALUE rb_fiber_scheduler_socket_recv_memory(VALUE scheduler, VALUE socket, void *base, size_t size, size_t length, int flags, VALUE from);
 
 /**
  * Non-blocking connect with the passed Socket to the given address.

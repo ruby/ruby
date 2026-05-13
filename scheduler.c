@@ -1310,30 +1310,6 @@ rb_fiber_scheduler_socket_address_unpack(VALUE buffer, struct sockaddr *address,
     return (size_t)length;
 }
 
-VALUE
-rb_fiber_scheduler_socket_recv_memory(VALUE scheduler, VALUE socket, void *base, size_t size, size_t length, int flags, VALUE from)
-{
-    VALUE buffer = rb_io_buffer_new(base, size, RB_IO_BUFFER_LOCKED);
-
-    VALUE result = rb_fiber_scheduler_socket_recv(scheduler, socket, buffer, length, flags, from);
-
-    rb_io_buffer_free_locked(buffer);
-
-    return result;
-}
-
-VALUE
-rb_fiber_scheduler_socket_send_memory(VALUE scheduler, VALUE socket, const void *base, size_t size, size_t length, int flags, VALUE destination)
-{
-    VALUE buffer = rb_io_buffer_new((void*)base, size, RB_IO_BUFFER_LOCKED|RB_IO_BUFFER_READONLY);
-
-    VALUE result = rb_fiber_scheduler_socket_send(scheduler, socket, buffer, length, flags, destination);
-
-    rb_io_buffer_free_locked(buffer);
-
-    return result;
-}
-
 /*
  *  Document-method: Fiber::Scheduler#io_close
  *  call-seq: io_close(fd)
