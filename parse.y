@@ -1659,22 +1659,7 @@ static NODE *add_block_exit(struct parser_params *p, NODE *node);
 static rb_node_exits_t *init_block_exit(struct parser_params *p);
 static rb_node_exits_t *allow_block_exit(struct parser_params *p);
 static void restore_block_exit(struct parser_params *p, rb_node_exits_t *exits);
-static void clear_block_exit(struct parser_params *p, unsigned int error_mask);
-
-static unsigned int
-exits_mask(enum node_type t)
-{
-    switch (t) {
-      case NODE_BREAK:
-      case NODE_NEXT:
-      case NODE_REDO:
-        return 1u << (t - NODE_BREAK);
-      default:
-        UNREACHABLE_RETURN(0);
-    }
-}
-
-#define EXITS_MASK_ALL (exits_mask(NODE_BREAK)|exits_mask(NODE_NEXT)|exits_mask(NODE_REDO))
+static void clear_block_exit(struct parser_params *p, bool error);
 
 static void
 next_rescue_context(struct lex_context *next, const struct lex_context *outer, enum rescue_context def)
@@ -1692,7 +1677,7 @@ restore_defun(struct parser_params *p, rb_node_def_temp_t *temp)
     p->ctxt.in_rescue = ctxt.in_rescue;
     p->max_numparam = temp->save.max_numparam;
     numparam_pop(p, temp->save.numparam_save);
-    clear_block_exit(p, EXITS_MASK_ALL);
+    clear_block_exit(p, true);
 }
 
 static void
@@ -1849,23 +1834,20 @@ restore_block_exit(struct parser_params *p, rb_node_exits_t *exits)
 }
 
 static void
-clear_block_exit(struct parser_params *p, unsigned int error_mask)
+clear_block_exit(struct parser_params *p, bool error)
 {
     rb_node_exits_t *exits = p->exits;
     if (!exits) return;
-    if (error_mask) {
+    if (error) {
         for (NODE *e = RNODE(exits); (e = RNODE_EXITS(e)->nd_chain) != 0; ) {
             switch (nd_type(e)) {
               case NODE_BREAK:
-                if (!(error_mask & exits_mask(NODE_BREAK))) break;
                 yyerror1(&e->nd_loc, "Invalid break");
                 break;
               case NODE_NEXT:
-                if (!(error_mask & exits_mask(NODE_NEXT))) break;
                 yyerror1(&e->nd_loc, "Invalid next");
                 break;
               case NODE_REDO:
-                if (!(error_mask & exits_mask(NODE_REDO))) break;
                 yyerror1(&e->nd_loc, "Invalid redo");
                 break;
               default:
@@ -3230,7 +3212,7 @@ top_stmts	: none
 
 top_stmt	: stmt
                     {
-                        clear_block_exit(p, EXITS_MASK_ALL);
+                        clear_block_exit(p, true);
                         $$ = $1;
                     }
                 | keyword_BEGIN begin_block
@@ -3370,7 +3352,7 @@ stmt		: keyword_alias[kw] fitem[new] {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fit
                     }
                 | stmt[body] modifier_while[mod] expr_value[cond_expr]
                     {
-                        clear_block_exit(p, 0);
+                        clear_block_exit(p, false);
                         if ($body && nd_type_p($body, NODE_BEGIN)) {
                             $$ = NEW_WHILE(cond(p, $cond_expr, &@cond_expr), RNODE_BEGIN($body)->nd_body, 0, &@$, &@mod, &NULL_LOC);
                         }
@@ -3401,7 +3383,7 @@ stmt		: keyword_alias[kw] fitem[new] {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fit
                     }
                 | k_END[k_end] block_open[lbrace] compstmt(stmts)[body] '}'[rbrace]
                     {
-                        clear_block_exit(p, exits_mask(NODE_BREAK) | exits_mask(NODE_REDO));
+                        clear_block_exit(p, true);
                         restore_block_exit(p, $block_open);
                         p->ctxt = $k_end;
                         {

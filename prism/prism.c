@@ -15332,9 +15332,6 @@ parse_block_exit(pm_parser_t *parser, pm_node_t *node) {
                     if (parser->version < PM_OPTIONS_VERSION_CRUBY_4_1) {
                         return;
                     }
-                    if (PM_NODE_TYPE_P(node, PM_NEXT_NODE)) {
-                        return;
-                    }
                 }
             PRISM_FALLTHROUGH
             case PM_CONTEXT_DEF:
