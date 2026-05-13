@@ -574,7 +574,7 @@ bsock_remote_address(VALUE sock)
  *     p s.read
  *   }
  */
-struct rsock_send_scheduler_args {
+struct rsock_send_scheduler_arguments {
     VALUE scheduler;
     VALUE socket;
     size_t length;
@@ -583,11 +583,11 @@ struct rsock_send_scheduler_args {
 };
 
 static VALUE
-rsock_send_with_scheduler(VALUE buffer, VALUE _args)
+rsock_send_with_scheduler(VALUE buffer, VALUE _argument)
 {
-    struct rsock_send_scheduler_args *args = (struct rsock_send_scheduler_args *)_args;
-    return rb_fiber_scheduler_socket_send(args->scheduler, args->socket, buffer,
-                                          args->length, args->flags, args->destination);
+    struct rsock_send_scheduler_arguments *arguments = (struct rsock_send_scheduler_arguments *)_argument;
+    return rb_fiber_scheduler_socket_send(arguments->scheduler, arguments->socket, buffer,
+                                          arguments->length, arguments->flags, arguments->destination);
 }
 
 VALUE
@@ -621,7 +621,7 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE socket)
 #else
     if (scheduler != Qnil) {
 #endif
-        struct rsock_send_scheduler_args arguments = {
+        struct rsock_send_scheduler_arguments arguments = {
             .scheduler = scheduler,
             .socket = socket,
             .length = 0,

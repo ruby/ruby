@@ -581,7 +581,9 @@ class TestFiberScheduler < Test::Unit::TestCase
 
   def test_socket_connect
     s1 = UDPSocket.new
-    port = SecureRandom.rand(60001..65534)
+    s2 = UDPSocket.new
+    s2.bind('127.0.0.1', 0)
+    port = s2.addr[1]
     addr = Addrinfo.udp('127.0.0.1', port)
 
     operations = nil
@@ -606,11 +608,14 @@ class TestFiberScheduler < Test::Unit::TestCase
   ensure
     thread.kill rescue nil
     s1.close rescue nil
+    s2.close rescue nil
   end
 
   def test_socket_connect_error
     s1 = UDPSocket.new
-    port = SecureRandom.rand(60001..65534)
+    s2 = UDPSocket.new
+    s2.bind('127.0.0.1', 0)
+    port = s2.addr[1]
 
     error = nil
 
@@ -629,6 +634,7 @@ class TestFiberScheduler < Test::Unit::TestCase
   ensure
     thread.kill rescue nil
     s1.close rescue nil
+    s2.close rescue nil
   end
 
   def test_socket_accept
