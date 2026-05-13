@@ -3619,15 +3619,23 @@ impl Function {
         self.push_insn(block, Insn::GuardNoBitsSet { val: flags, mask: Const::CUInt64(RUBY_ELTS_SHARED as u64), mask_name: Some(ID!(RUBY_ELTS_SHARED)), reason: SideExitReason::GuardNotShared, state });
     }
 
+    /// `iseq` is the ISEQ that `ep_offset` is relative to, which is the ISEQ that
+    /// produced the bytecode being translated. When `add_iseq_to_hir` runs for the
+    /// top-level compile that is `self.iseq`, but when it runs as part of inlining
+    /// it is the callee being inlined, not `self.iseq` (which is the outer caller).
+    /// Decoding the offset against the wrong ISEQ trips `ep_offset_to_local_idx`'s
+    /// `local_idx < local_table_size` assertion whenever the two ISEQs disagree on
+    /// `local_table_size`, so callers thread the active ISEQ through explicitly.
     fn get_local_from_ep(
         &mut self,
         block: BlockId,
+        iseq: IseqPtr,
         ep: InsnId,
         ep_offset: u32,
         level: u32,
         return_type: Type,
     ) -> InsnId {
-        let local_id = get_local_var_id(self.iseq, level, ep_offset);
+        let local_id = get_local_var_id(iseq, level, ep_offset);
         let ep_offset = i32::try_from(ep_offset)
             .unwrap_or_else(|_| panic!("Could not convert ep_offset {ep_offset} to i32"));
         let offset = -(SIZEOF_VALUE_I32 * ep_offset);
@@ -3640,14 +3648,17 @@ impl Function {
         })
     }
 
+    /// See `get_local_from_ep` for why `iseq` is threaded through explicitly rather
+    /// than read from `self.iseq`.
     fn get_local_from_sp(
         &mut self,
         block: BlockId,
+        iseq: IseqPtr,
         sp: InsnId,
         ep_offset: u32,
         return_type: Type,
     ) -> InsnId {
-        let local_id = get_local_var_id(self.iseq, 0, ep_offset);
+        let local_id = get_local_var_id(iseq, 0, ep_offset);
         let ep_offset = i32::try_from(ep_offset)
             .unwrap_or_else(|_| panic!("Could not convert ep_offset {ep_offset} to i32"));
         let offset = -(SIZEOF_VALUE_I32 * (ep_offset + 1));
@@ -4437,26 +4448,6 @@ impl Function {
         true
     }
 
-    /// Remap all BlockId references within an instruction using an explicit mapping.
-    fn remap_branch_targets(insn: &mut Insn, block_map: &HashMap<usize, BlockId>) {
-        let remap = |block_id: &mut BlockId| {
-            if let Some(&new_id) = block_map.get(&block_id.0) {
-                *block_id = new_id;
-            }
-        };
-        match insn {
-            Insn::Jump(edge) => { remap(&mut edge.target); }
-            Insn::IfTrue { target, .. } => { remap(&mut target.target); }
-            Insn::IfFalse { target, .. } => { remap(&mut target.target); }
-            Insn::Entries { targets } => {
-                for target in targets {
-                    remap(target);
-                }
-            }
-            _ => {}
-        }
-    }
-
     /// Inline method calls by replacing eligible SendDirect instructions with the
     /// callee's HIR body. Returns true if any inlining occurred.
     fn inline_methods(&mut self) -> bool {
@@ -4486,42 +4477,58 @@ impl Function {
                     continue;
                 }
 
-                // Compile the callee from its ISEQ to get a fresh, unoptimized Function.
+                // Snapshot the caller's HIR length so we can roll back if compiling
+                // the callee fails or its body has no return paths. add_iseq_to_hir
+                // appends to the caller in place, so on rejection we truncate the
+                // instruction, type, and block tables back to these lengths,
+                // discarding the partial translation. Union-find needs no snapshot:
+                // HIR construction only appends instructions and never calls
+                // make_equal_to or find, so the forwarding table is untouched between
+                // here and the rejection points below.
+                let pre_insns_len = self.insns.len();
+                let pre_insn_types_len = self.insn_types.len();
+                let pre_blocks_len = self.blocks.len();
+
+                // Create the continuation block before translating the callee so it
+                // can serve as the return_block argument; the callee's leaves become
+                // Jumps to this block directly during translation. The continuation
+                // is included in the pre-state snapshot above so a rollback also
+                // discards it. Execution resumes in the caller at the instruction
+                // following the call, so label the block with that index rather than
+                // the enclosing block's start.
+                let call_state = self.frame_state(state);
+                let continuation = self.new_block(call_state.insn_idx() as u32 + insn_len(call_state.get_opcode() as usize));
+
                 // The callee's ISEQ may still have profiling instrumentation active
-                // (zjit_opt_* bytecodes). Disable it before compiling so that
-                // iseq_to_hir sees the original opcodes.
+                // (zjit_opt_* bytecodes). Disable it so add_iseq_to_hir sees the
+                // original opcodes.
                 unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
-                let callee = match iseq_to_hir(iseq) {
-                    Ok(callee) => callee,
+                let add_result = match add_iseq_to_hir(self, iseq, false, Some(continuation)) {
+                    Ok(r) => r,
                     Err(_) => {
+                        self.insns.truncate(pre_insns_len);
+                        self.insn_types.truncate(pre_insn_types_len);
+                        self.blocks.truncate(pre_blocks_len);
                         incr_counter!(inline_reject_compile_failure);
                         self.push_insn_id(block, insn_id);
                         continue;
                     }
                 };
 
-                // Collect all Return instructions in the callee. Each Return becomes a Jump to
-                // the continuation block, passing its return value as the edge argument; the
-                // continuation's single Param merges them. A callee with no Returns never reaches
-                // the continuation (it diverges or always side-exits), which would leave the
-                // caller's SendDirect result aliased to a Param in an unreachable block — skip
-                // that case to avoid dangling references in the caller.
-                let mut return_insns = Vec::new();
-                for callee_block in &callee.blocks {
-                    for &callee_insn_id in &callee_block.insns {
-                        if matches!(callee.insns[callee_insn_id.0], Insn::Return { .. }) {
-                            return_insns.push(callee_insn_id);
-                        }
-                    }
-                }
-
-                if return_insns.is_empty() {
+                // A callee with no return paths never reaches the continuation: it
+                // diverges or always side-exits. Inlining it would leave the caller's
+                // SendDirect result aliased to a Param in an unreachable block, so
+                // reject and roll back.
+                if add_result.num_returns == 0 {
+                    self.insns.truncate(pre_insns_len);
+                    self.insn_types.truncate(pre_insn_types_len);
+                    self.blocks.truncate(pre_blocks_len);
                     incr_counter!(inline_reject_no_returns);
                     self.push_insn_id(block, insn_id);
                     continue;
                 }
 
-                // If we've made it this far, we've determined we're going to inline the method.
+                // Past the point of no return: commit the inlining.
                 incr_counter!(inline_method_count);
                 did_inline = true;
 
@@ -4529,136 +4536,44 @@ impl Function {
                 // inlined body's Snapshots.
                 let caller_frame_state = Rc::new(self.frame_state(state));
 
-                // Find the callee's body entry block by picking the JIT entry block
-                // that matches how many optional parameters the caller actually filled,
-                // then following its trailing Jump to the body. Each JIT entry block at
-                // index `k` corresponds to "lead_num + k + post_num" positional arguments
-                // having been passed: it runs the default-init code for the remaining
-                // `opt_num - k` optionals (if any) before falling through into the
-                // post-default body. SendDirect emission already guarantees args.len()
-                // lies within `lead_num + post_num + kw_num..=lead_num + opt_num + post_num + kw_num`,
-                // where `kw_num` is the callee's full keyword count (zero when the callee
-                // has no keywords). After `prepare_direct_send_args` runs, the caller's
-                // arg list has a slot for every callee keyword (filled in callee table
-                // order, padded with defaults for omitted optional keywords), so the
-                // keyword tail is a fixed-size addition we subtract off before recovering
-                // the optional-positional count.
-                let callee_entry_body_block = {
-                    let callee_params = unsafe { iseq.params() };
-                    let lead_num = callee_params.lead_num as usize;
-                    let post_num = callee_params.post_num as usize;
-                    let kw_num = callee_kw_num(iseq);
-                    let passed_opt_num = args.len() - lead_num - post_num - kw_num;
-                    let jit_entry = callee.jit_entry_blocks[passed_opt_num];
-                    let jit_entry_last_insn = callee.blocks[jit_entry.0].insns.last().unwrap();
-
-                    match &callee.insns[jit_entry_last_insn.0] {
-                        Insn::Jump(edge) => edge.target,
-                        other => panic!("Expected Jump as last instruction of JIT entry block, got {other}"),
-                    }
-                };
-
-                // Collect all body blocks reachable from the callee's entry body block.
-                // These are the blocks we need to copy (not the entry scaffolding).
-                let callee_body_blocks: Vec<BlockId> = {
-                    let mut body = Vec::new();
-                    let mut visited = HashSet::new();
-                    let mut worklist = vec![callee_entry_body_block];
-
-                    while let Some(block_id) = worklist.pop() {
-                        if !visited.insert(block_id) { continue; }
-                        body.push(block_id);
-
-                        for &insn_id in &callee.blocks[block_id.0].insns {
-                            match &callee.insns[insn_id.0] {
-                                Insn::Jump(edge) => { worklist.push(edge.target); }
-                                Insn::IfTrue { target, .. } | Insn::IfFalse { target, .. } => {
-                                    worklist.push(target.target);
-                                }
-                                _ => {}
-                            }
-                        }
-                    }
-                    body
-                };
-
-                // Copy callee blocks and instructions into the caller.
-                let insn_base = self.insns.len();
-                let block_base = self.blocks.len();
-
-                // Merge the callee's ProfileOracle entries into the caller's. The callee's
-                // profile_stack/profile_self calls during its iseq_to_hir built entries keyed by
-                // (callee_iseq, callee_insn_idx). After the remap below, references to callee
-                // instructions use caller-space InsnIds (callee_id.0 + insn_base). Merging here
-                // makes type_specialize able to find profile data for Sends inside the inlined
-                // body; without this step, the inliner loses all of the callee's profile info.
-                if let (Some(caller_profiles), Some(callee_profiles)) =
-                    (self.profiles.as_mut(), callee.profiles.as_ref())
-                {
-                    caller_profiles.merge_callee(callee_profiles, insn_base);
-                }
-
-                // Build an explicit mapping from callee BlockId → caller BlockId.
-                let mut block_map = HashMap::new();
-                for (i, &callee_block_id) in callee_body_blocks.iter().enumerate() {
-                    block_map.insert(callee_block_id.0, BlockId(block_base + i));
-                }
-
-                // Move body blocks from the callee into the caller, remapping
-                // InsnId references by insn_base.
-                for &callee_block_id in &callee_body_blocks {
-                    let callee_block = &callee.blocks[callee_block_id.0];
-                    let mut new_block = Block {
-                        insn_idx: callee_block.insn_idx,
-                        ..Block::default()
-                    };
-
-                    for &param_id in &callee_block.params {
-                        new_block.params.push(InsnId(param_id.0 + insn_base));
-                    }
-
-                    for &callee_insn_id in &callee_block.insns {
-                        new_block.insns.push(InsnId(callee_insn_id.0 + insn_base));
-                    }
-
-                    self.blocks.push(new_block);
-                }
-
-                // Merge the callee's union_find entries into the caller, remapped.
-                {
-                    let callee_uf = callee.union_find.borrow();
-                    for (i, forwarded) in callee_uf.forwarded.iter().enumerate() {
-                        if let Some(target) = forwarded {
-                            let caller_i = InsnId(i + insn_base);
-                            let caller_target = InsnId(target.0 + insn_base);
-                            self.union_find.borrow_mut().set(caller_i, caller_target);
-                        }
-                    }
-                }
-
-                // Move all callee instructions into the caller. We move the entire
-                // insns vector (not just body block instructions) to keep InsnId
-                // offsets consistent: every callee InsnId(n) maps to InsnId(n + insn_base).
-                // Entry scaffolding instructions are unreachable but preserve the indexing.
-                for (mut insn, insn_type) in callee.insns.into_iter().zip(callee.insn_types) {
-                    // Remap InsnId operands.
-                    insn.for_each_operand_mut(|id| {
-                        *id = InsnId(id.0 + insn_base);
-                    });
-
-                    // Remap BlockId targets.
-                    Self::remap_branch_targets(&mut insn, &block_map);
-
-                    // Set caller_state on Snapshot FrameStates.
-                    if let Insn::Snapshot { ref mut state } = insn {
+                // Stamp caller_state on every Snapshot that add_iseq_to_hir emitted
+                // for this callee. Each opcode emits a Snapshot, so this is the only
+                // place the chain of caller frames is woven into the inlined HIR;
+                // without it, side exits from inlined code would lose the outer
+                // frame and the interpreter would resume in the wrong place.
+                for idx in pre_insns_len..self.insns.len() {
+                    if let Insn::Snapshot { ref mut state } = self.insns[idx] {
                         state.caller_state = Some(Rc::clone(&caller_frame_state));
                     }
-
-                    self.insn_types.push(insn_type);
-                    self.insns.push(insn);
                 }
 
-                // Map callee params to caller values:
+                // Pick the callee body entry block matching how many optional
+                // parameters the caller actually filled. add_iseq_to_hir returns one
+                // body entry block per `jit_entry_idx`; entry index `k` is where
+                // execution begins when `lead_num + k + post_num + kw_num` arguments
+                // are passed: it runs the default-init code for the remaining
+                // `opt_num - k` optionals (if any) before falling through into the
+                // post-default body. SendDirect emission already guarantees
+                // args.len() lies in `lead_num + post_num + kw_num..=lead_num +
+                // opt_num + post_num + kw_num`, with `kw_num` being the callee's
+                // full keyword count (zero when the callee has no keywords). After
+                // `prepare_direct_send_args` runs, the caller's arg list has a slot
+                // for every callee keyword (filled in callee table order, padded
+                // with defaults for omitted optional keywords), so the keyword tail
+                // is a fixed-size addition we subtract off before recovering the
+                // optional-positional count.
+                let callee_params = unsafe { iseq.params() };
+                let lead_num = callee_params.lead_num as usize;
+                let opt_num = callee_params.opt_num as usize;
+                let post_num = callee_params.post_num as usize;
+                let kw_num = callee_kw_num(iseq);
+                let passed_opt_num = args.len() - lead_num - post_num - kw_num;
+                let omitted_opt_num = opt_num - passed_opt_num;
+                let positional_kw_end = lead_num + opt_num + post_num + kw_num;
+                let kw_bits_local_idx = callee_kw_bits_local_idx(iseq);
+                let callee_entry_body_block = add_result.body_entry_blocks[passed_opt_num];
+
+                // Map callee body entry params to caller values:
                 //
                 // The callee's body entry block has params: [self, local0, local1, ..., stack0, stack1, ...]
                 // The first param is self (recv); the rest follow the callee's local
@@ -4670,7 +4585,7 @@ impl Function {
                 //     (lead_num..lead_num + passed_opt_num) take args in order.
                 //   * unfilled optional locals (lead_num + passed_opt_num..lead_num + opt_num)
                 //     are nil-initialized; the body's default-init code (entered via
-                //     the chosen jit_entry_blocks[passed_opt_num] target) overwrites
+                //     the chosen body_entry_blocks[passed_opt_num] target) overwrites
                 //     them.
                 //   * post-required and keyword locals
                 //     (lead_num + opt_num..lead_num + opt_num + post_num + kw_num) take the
@@ -4686,18 +4601,7 @@ impl Function {
                 //     same value back to the runtime frame so a resuming interpreter sees
                 //     the correct bitmask.
                 //   * any remaining non-parameter locals are nil-initialized.
-                let callee_params = unsafe { iseq.params() };
-                let lead_num = callee_params.lead_num as usize;
-                let opt_num = callee_params.opt_num as usize;
-                let post_num = callee_params.post_num as usize;
-                let kw_num = callee_kw_num(iseq);
-                let passed_opt_num = args.len() - lead_num - post_num - kw_num;
-                let omitted_opt_num = opt_num - passed_opt_num;
-                let positional_kw_end = lead_num + opt_num + post_num + kw_num;
-                let kw_bits_local_idx = callee_kw_bits_local_idx(iseq);
-
-                let remapped_entry = *block_map.get(&callee_entry_body_block.0).unwrap();
-                let callee_body_params: Vec<InsnId> = self.blocks[remapped_entry.0].params.clone();
+                let callee_body_params: Vec<InsnId> = self.blocks[callee_entry_body_block.0].params.clone();
 
                 // First param is self.
                 if !callee_body_params.is_empty() {
@@ -4735,16 +4639,15 @@ impl Function {
                     }
                 }
 
-                // Clear the callee entry block's params since we've aliased them
-                // via make_equal_to rather than passing them as branch arguments.
-                // This keeps validation happy (the Jump passes 0 args).
-                self.blocks[remapped_entry.0].params.clear();
+                // Clear the callee body entry block's params since we've aliased
+                // them via make_equal_to rather than passing them as branch
+                // arguments. This keeps validation happy (the Jump passes 0 args).
+                self.blocks[callee_entry_body_block.0].params.clear();
 
-                // Create continuation block for post-call code.
-                let continuation = self.new_block(self.blocks[block.0].insn_idx);
+                // Set up the continuation: a single Param merges all return values
+                // jumped in from the callee's leaves, then PopLightweightFrame
+                // unwinds the inlined frame before any post-call code runs.
                 let return_val_param = self.push_insn(continuation, Insn::Param);
-
-                // Add PopLightweightFrame at the start of the continuation block.
                 self.push_insn(continuation, Insn::PopLightweightFrame {
                     iseq,
                     argc: args.len(),
@@ -4759,28 +4662,25 @@ impl Function {
                 // The original SendDirect result is now the continuation's return value param.
                 self.make_equal_to(insn_id, return_val_param);
 
-                // Rewrite each callee Return to Jump to the continuation, passing its return
-                // value as the edge argument. The continuation's Param merges them.
-                for callee_return_id in &return_insns {
-                    let remapped_return = InsnId(callee_return_id.0 + insn_base);
-                    let return_val = match &self.insns[remapped_return.0] {
-                        Insn::Return { val } => *val,
-                        _ => unreachable!(),
-                    };
-                    self.insns[remapped_return.0] = Insn::Jump(BranchEdge {
-                        target: continuation,
-                        args: vec![return_val],
-                    });
-                }
-
-                // Insert PushLightweightFrame and jump to callee entry.
+                // Insert PushLightweightFrame and jump to callee body entry.
                 self.push_insn(block, Insn::PushLightweightFrame {
                     iseq, cme, recv, args: args.clone(), blockiseq, state,
                 });
                 self.push_insn(block, Insn::Jump(BranchEdge {
-                    target: remapped_entry,
+                    target: callee_entry_body_block,
                     args: vec![],
                 }));
+
+                // Merge the callee's profile entries into the caller's. Entries are
+                // keyed by (callee_iseq, callee_insn_idx) and the InsnIds were
+                // assigned in caller space during translation, so the merge needs
+                // no remapping. Without this step, type_specialize couldn't find
+                // profile data for Sends inside the inlined body.
+                if let Some(caller_profiles) = self.profiles.as_mut() {
+                    caller_profiles.merge_callee(&add_result.profiles, 0);
+                } else {
+                    self.profiles = Some(add_result.profiles);
+                }
 
                 // We consumed the rest of the iterator via the continuation block,
                 // so break out of the instruction loop for this block.
@@ -7367,16 +7267,69 @@ fn invalidates_locals(opcode: u32, operands: *const VALUE) -> bool {
 /// The index of the self parameter in the HIR function
 pub const SELF_PARAM_IDX: usize = 0;
 
+/// Result of populating a Function with HIR for an ISEQ.
+struct AddIseqResult {
+    /// Body entry block per `jit_entry_idx`. Indexed by the same `passed_opt_num`
+    /// the JIT entry scaffolding uses, this is the body block the scaffolding
+    /// (when generated) targets after running default-init code for missing
+    /// optionals. Callers that pass `make_entry_blocks=false` (e.g. the inliner)
+    /// use this to pick the right entry point without needing the scaffolding.
+    body_entry_blocks: Vec<BlockId>,
+    /// Profile oracle populated during compilation. The caller decides whether
+    /// to assign it to `fun.profiles` (top-level) or merge it into an existing
+    /// oracle (inliner).
+    profiles: ProfileOracle,
+    /// Number of return paths emitted. Counts `YARVINSN_leave` translations,
+    /// whether they became `Insn::Return` or `Insn::Jump(return_block, ...)`.
+    /// Lets callers tell whether the ISEQ has any reachable return paths.
+    num_returns: usize,
+}
+
 /// Compile ISEQ into High-level IR
 pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     if !ZJITState::can_compile_iseq(iseq) {
         return Err(ParseError::NotAllowed);
     }
     let payload = get_or_create_iseq_payload(iseq);
-    let mut profiles = ProfileOracle::new(iseq);
     let mut fun = Function::new(iseq);
     fun.was_invalidated_for_singleton_class_creation = payload.was_invalidated_for_singleton_class_creation;
     fun.self_is_heap_object = payload.self_is_heap_object;
+
+    let result = add_iseq_to_hir(&mut fun, iseq, true, None)?;
+    fun.profiles = Some(result.profiles);
+
+    if let Err(err) = crate::stats::trace_compile_phase("validate", || fun.validate()) {
+        debug!("ZJIT: {err:?}: Initial HIR:\n{}", FunctionPrinter::without_snapshot(&fun));
+        return Err(ParseError::Validation(err));
+    }
+    Ok(fun)
+}
+
+/// Populate `fun` with HIR translated from `iseq`. Used both for top-level
+/// compilation (`iseq_to_hir`) and for inlining an ISEQ directly into a caller
+/// (the method inliner).
+///
+/// When `make_entry_blocks` is true, generate the interpreter entry block and a
+/// JIT entry block for each opt-table entry, push the JIT entry blocks onto
+/// `fun.jit_entry_blocks`, and run the post-translation passes
+/// (`seal_entries`, `set_param_types`, `infer_types`) before returning. When
+/// false, only the body blocks are produced and the post-translation passes are
+/// skipped; the caller is expected to run them once translation of all
+/// constituent ISEQs is complete.
+///
+/// When `return_block` is `Some(target)`, `YARVINSN_leave` emits a
+/// `Jump(target, [retval])` instead of `Insn::Return { val }`. The inliner uses
+/// this to wire the callee's return paths directly to a continuation block in
+/// the caller, avoiding a second rewrite pass.
+fn add_iseq_to_hir(
+    fun: &mut Function,
+    iseq: *const rb_iseq_t,
+    make_entry_blocks: bool,
+    return_block: Option<BlockId>,
+) -> Result<AddIseqResult, ParseError> {
+    let payload = get_or_create_iseq_payload(iseq);
+    let mut profiles = ProfileOracle::new(iseq);
+    let mut num_returns: usize = 0;
 
     // Compute a map of PC->Block by finding jump targets
     let jit_entry_insns = unsafe { iseq.params() }.opt_table_slice().iter().copied().map(VALUE::as_u32).collect::<Vec<_>>();
@@ -7385,11 +7338,15 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     // Make all empty basic blocks. The ordering of the BBs matters for getting fallthrough jumps
     // in good places, but it's not necessary for correctness. TODO: Higher quality scheduling during lowering.
     let mut insn_idx_to_block = HashMap::new();
+    let mut body_entry_blocks = Vec::with_capacity(jit_entry_insns.len());
     // Make blocks for optionals first, and put them right next to their JIT entrypoint
     for insn_idx in jit_entry_insns.iter().copied() {
-        let jit_entry_block = fun.new_block(insn_idx);
-        fun.jit_entry_blocks.push(jit_entry_block);
-        insn_idx_to_block.entry(insn_idx).or_insert_with(|| fun.new_block(insn_idx));
+        if make_entry_blocks {
+            let jit_entry_block = fun.new_block(insn_idx);
+            fun.jit_entry_blocks.push(jit_entry_block);
+        }
+        let body_entry = *insn_idx_to_block.entry(insn_idx).or_insert_with(|| fun.new_block(insn_idx));
+        body_entry_blocks.push(body_entry);
     }
     // Make blocks for the rest of the jump targets
     for insn_idx in jump_targets {
@@ -7398,16 +7355,18 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     // Done, drop `mut`.
     let insn_idx_to_block = insn_idx_to_block;
 
-    // Compile an entry_block for the interpreter
-    compile_entry_block(&mut fun, jit_entry_insns.as_slice(), &insn_idx_to_block);
+    if make_entry_blocks {
+        // Compile an entry_block for the interpreter
+        compile_entry_block(fun, jit_entry_insns.as_slice(), &insn_idx_to_block);
 
-    // Compile all JIT-to-JIT entry blocks
-    for (jit_entry_idx, insn_idx) in jit_entry_insns.iter().enumerate() {
-        let target_block = insn_idx_to_block.get(insn_idx)
-            .copied()
-            .expect("we make a block for each jump target and \
-                     each entry in the ISEQ opt_table is a jump target");
-        compile_jit_entry_block(&mut fun, jit_entry_idx, target_block);
+        // Compile all JIT-to-JIT entry blocks
+        for (jit_entry_idx, insn_idx) in jit_entry_insns.iter().enumerate() {
+            let target_block = insn_idx_to_block.get(insn_idx)
+                .copied()
+                .expect("we make a block for each jump target and \
+                         each entry in the ISEQ opt_table is a jump target");
+            compile_jit_entry_block(fun, jit_entry_idx, target_block);
+        }
     }
 
     // Check if the EP is escaped for the ISEQ from the beginning. We give up
@@ -7863,7 +7822,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         state.getlocal(ep_offset)
                     } else if ep_escaped {
                         let ep = fun.push_insn(block, Insn::GetEP { level: 0 });
-                        fun.get_local_from_ep(block, ep, ep_offset, 0, types::BasicObject)
+                        fun.get_local_from_ep(block, iseq, ep, ep_offset, 0, types::BasicObject)
                     } else {
                         let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.without_locals() });
                         fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
@@ -8059,7 +8018,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     } else if ep_escaped {
                         // Read the local using EP
                         let ep = fun.push_insn(block, Insn::GetEP { level: 0 });
-                        let val = fun.get_local_from_ep(block, ep, ep_offset, 0, types::BasicObject);
+                        let val = fun.get_local_from_ep(block, iseq, ep, ep_offset, 0, types::BasicObject);
                         state.setlocal(ep_offset, val); // remember the result to spill on side-exits
                         state.stack_push(val);
                     } else {
@@ -8094,7 +8053,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_getlocal_WC_1 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
                     let ep = fun.push_insn(block, Insn::GetEP { level: 1 });
-                    state.stack_push(fun.get_local_from_ep(block, ep, ep_offset, 1, types::BasicObject));
+                    state.stack_push(fun.get_local_from_ep(block, iseq, ep, ep_offset, 1, types::BasicObject));
                 }
                 YARVINSN_setlocal_WC_1 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
@@ -8109,7 +8068,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         state.stack_push(val);
                     } else {
                         let ep = fun.push_insn(block, Insn::GetEP { level });
-                        let val = fun.get_local_from_ep(block, ep, ep_offset, level, types::BasicObject);
+                        let val = fun.get_local_from_ep(block, iseq, ep, ep_offset, level, types::BasicObject);
                         if level == 0 {
                             state.setlocal(ep_offset, val);
                         }
@@ -8196,7 +8155,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     });
 
                     // Push modified block: load the block local via EP.
-                    let modified_val = fun.get_local_from_ep(modified_block, ep, ep_offset, level, types::BasicObject);
+                    let modified_val = fun.get_local_from_ep(modified_block, iseq, ep, ep_offset, level, types::BasicObject);
                     let mut modified_args = vec![modified_val];
                     if level == 0 { modified_args.push(modified_val); }
                     fun.push_insn(modified_block, Insn::Jump(BranchEdge { target: join_block, args: modified_args }));
@@ -8429,7 +8388,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     });
 
                     // Push modified block: read Proc from EP.
-                    let modified_val = fun.get_local_from_ep(modified_block, ep, ep_offset, level, types::BasicObject);
+                    let modified_val = fun.get_local_from_ep(modified_block, iseq, ep, ep_offset, level, types::BasicObject);
                     fun.push_insn(modified_block, Insn::Jump(BranchEdge { target: join_block, args: vec![modified_val] }));
 
                     // Push unmodified block: convert block handler to Proc.
@@ -8541,7 +8500,13 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_leave => {
                     fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
-                    fun.push_insn(block, Insn::Return { val: state.stack_pop()? });
+                    let val = state.stack_pop()?;
+                    num_returns += 1;
+                    if let Some(target) = return_block {
+                        fun.push_insn(block, Insn::Jump(BranchEdge { target, args: vec![val] }));
+                    } else {
+                        fun.push_insn(block, Insn::Return { val });
+                    }
                     break;  // Don't enqueue the next block as a successor
                 }
                 YARVINSN_throw => {
@@ -8670,7 +8635,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                                 seen_types.push(expected);
                                 let has_type = fun.push_insn(block, Insn::HasType { val: recv, expected });
                                 let iftrue_block =
-                                    new_branch_block(&mut fun, cd, argc as usize, opcode, expected, branch_insn_idx, &exit_state, locals_count, stack_count, join_block);
+                                    new_branch_block(fun, cd, argc as usize, opcode, expected, branch_insn_idx, &exit_state, locals_count, stack_count, join_block);
                                 let target = BranchEdge { target: iftrue_block, args: entry_args.clone() };
                                 let fall_through = fun.new_block(insn_idx);
                                 fun.push_insn(block, Insn::CondBranch {
@@ -8749,9 +8714,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                                 fun.push_insn(block, base_insn)
                             });
                             let val = if !ep_escaped {
-                                fun.get_local_from_sp(block, recv, ep_offset_u32, types::BasicObject)
+                                fun.get_local_from_sp(block, iseq, recv, ep_offset_u32, types::BasicObject)
                             } else {
-                                fun.get_local_from_ep(block, recv, ep_offset_u32, 0, types::BasicObject)
+                                fun.get_local_from_ep(block, iseq, recv, ep_offset_u32, 0, types::BasicObject)
                             };
                             state.setlocal(ep_offset_u32, val);
                         }
@@ -8795,9 +8760,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                                 fun.push_insn(block, base_insn)
                             });
                             let val = if !ep_escaped {
-                                fun.get_local_from_sp(block, recv, ep_offset_u32, types::BasicObject)
+                                fun.get_local_from_sp(block, iseq, recv, ep_offset_u32, types::BasicObject)
                             } else {
-                                fun.get_local_from_ep(block, recv, ep_offset_u32, 0, types::BasicObject)
+                                fun.get_local_from_ep(block, iseq, recv, ep_offset_u32, 0, types::BasicObject)
                             };
                             state.setlocal(ep_offset_u32, val);
                         }
@@ -8840,9 +8805,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                                 fun.push_insn(block, base_insn)
                             });
                             let val = if !ep_escaped {
-                                fun.get_local_from_sp(block, recv, ep_offset_u32, types::BasicObject)
+                                fun.get_local_from_sp(block, iseq, recv, ep_offset_u32, types::BasicObject)
                             } else {
-                                fun.get_local_from_ep(block, recv, ep_offset_u32, 0, types::BasicObject)
+                                fun.get_local_from_ep(block, iseq, recv, ep_offset_u32, 0, types::BasicObject)
                             };
                             state.setlocal(ep_offset_u32, val);
                         }
@@ -8887,9 +8852,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                                 fun.push_insn(block, base_insn)
                             });
                             let val = if !ep_escaped {
-                                fun.get_local_from_sp(block, recv, ep_offset_u32, types::BasicObject)
+                                fun.get_local_from_sp(block, iseq, recv, ep_offset_u32, types::BasicObject)
                             } else {
-                                fun.get_local_from_ep(block, recv, ep_offset_u32, 0, types::BasicObject)
+                                fun.get_local_from_ep(block, iseq, recv, ep_offset_u32, 0, types::BasicObject)
                             };
                             state.setlocal(ep_offset_u32, val);
                         }
@@ -9225,25 +9190,22 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
         }
     }
 
-    // Populate the entries superblock with an Entries instruction targeting all entry blocks
-    fun.seal_entries();
+    if make_entry_blocks {
+        // Populate the entries superblock with an Entries instruction targeting all entry blocks
+        fun.seal_entries();
 
-    fun.set_param_types();
-    fun.infer_types();
+        fun.set_param_types();
+        fun.infer_types();
 
-    match get_option!(dump_hir_init) {
-        Some(DumpHIR::WithoutSnapshot) => println!("Initial HIR:\n{}", FunctionPrinter::without_snapshot(&fun)),
-        Some(DumpHIR::All) => println!("Initial HIR:\n{}", FunctionPrinter::with_snapshot(&fun)),
-        Some(DumpHIR::Debug) => println!("Initial HIR:\n{:#?}", &fun),
-        None => {},
+        match get_option!(dump_hir_init) {
+            Some(DumpHIR::WithoutSnapshot) => println!("Initial HIR:\n{}", FunctionPrinter::without_snapshot(fun)),
+            Some(DumpHIR::All) => println!("Initial HIR:\n{}", FunctionPrinter::with_snapshot(fun)),
+            Some(DumpHIR::Debug) => println!("Initial HIR:\n{:#?}", fun),
+            None => {},
+        }
     }
 
-    fun.profiles = Some(profiles);
-    if let Err(err) = crate::stats::trace_compile_phase("validate", || fun.validate()) {
-        debug!("ZJIT: {err:?}: Initial HIR:\n{}", FunctionPrinter::without_snapshot(&fun));
-        return Err(ParseError::Validation(err));
-    }
-    Ok(fun)
+    Ok(AddIseqResult { body_entry_blocks, profiles, num_returns })
 }
 
 /// Compile an entry_block for the interpreter
@@ -9321,9 +9283,9 @@ fn compile_entry_state(fun: &mut Function) -> (InsnId, FrameState) {
                 fun.push_insn(entry_block, base_insn)
             });
             let val = if use_sp {
-                fun.get_local_from_sp(entry_block, recv, ep_offset_u32, return_type)
+                fun.get_local_from_sp(entry_block, iseq, recv, ep_offset_u32, return_type)
             } else {
-                fun.get_local_from_ep(entry_block, recv, ep_offset_u32, 0, return_type)
+                fun.get_local_from_ep(entry_block, iseq, recv, ep_offset_u32, 0, return_type)
             };
             entry_state.locals.push(val);
         } else {
@@ -9392,6 +9354,7 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
             let ep = *ep.get_or_insert_with(|| fun.push_insn(jit_entry_block, Insn::GetEP { level: 0 }));
             entry_state.locals.push(fun.get_local_from_ep(
                 jit_entry_block,
+                iseq,
                 ep,
                 ep_offset_u32,
                 0,
