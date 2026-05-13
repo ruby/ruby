@@ -5672,7 +5672,7 @@ mod hir_opt_tests {
             obj.test
             TEST = klass.instance_method(:test)
         "#);
-        assert_snapshot!(hir_string_proc("TEST"), @"
+        assert_snapshot!(hir_string_proc("TEST"), @r"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -5693,7 +5693,6 @@ mod hir_opt_tests {
           v33:CShape[0x1003] = Const CShape(0x1003)
           StoreField v28, :shape_id@0x1000, v33
           v14:HeapBasicObject = RefineType v28, HeapBasicObject
-          v14:HeapBasicObject = RefineType v6, HeapBasicObject
           v17:Fixnum[2] = Const Value(2)
           PatchPoint SingleRactorMode
           StoreField v14, :@bar@0x1003, v17
@@ -15878,12 +15877,13 @@ mod hir_opt_tests {
           v15:CInt64 = IntAnd v13, v14
           v16:CInt64[3] = Const CInt64(3)
           v17:CBool = IsBitEqual v15, v16
-          IfTrue v17, bb5()
-          v22:BasicObject = InvokeBlock, v10 # SendFallbackReason: InvokeBlock: not yet specialized
-          Jump bb4(v22)
+          CondBranch v17, bb5(), bb6()
         bb5():
           v20:BasicObject = InvokeBlockIfunc v13, v10
           Jump bb4(v20)
+        bb6():
+          v22:BasicObject = InvokeBlock, v10 # SendFallbackReason: InvokeBlock: not yet specialized
+          Jump bb4(v22)
         bb4(v18:BasicObject):
           v27:Fixnum[2] = Const Value(2)
           v29:CPtr = GetEP 0
@@ -15892,13 +15892,14 @@ mod hir_opt_tests {
           v32:CInt64 = IntAnd v30, v31
           v33:CInt64[3] = Const CInt64(3)
           v34:CBool = IsBitEqual v32, v33
-          IfTrue v34, bb7()
-          v39:BasicObject = InvokeBlock, v27 # SendFallbackReason: InvokeBlock: not yet specialized
-          Jump bb6(v39)
-        bb7():
+          CondBranch v34, bb8(), bb9()
+        bb8():
           v37:BasicObject = InvokeBlockIfunc v30, v27
-          Jump bb6(v37)
-        bb6(v35:BasicObject):
+          Jump bb7(v37)
+        bb9():
+          v39:BasicObject = InvokeBlock, v27 # SendFallbackReason: InvokeBlock: not yet specialized
+          Jump bb7(v39)
+        bb7(v35:BasicObject):
           CheckInterrupts
           Return v35
         ");
@@ -15977,7 +15978,7 @@ mod hir_opt_tests {
           v37:CShape[0x1001] = GuardBitEquals v36, CShape(0x1001)
           StoreField v35, :@a@0x1002, v10
           WriteBarrier v35, v10
-          v14:HeapBasicObject = RefineType v6, HeapBasicObject
+          v14:HeapBasicObject = RefineType v35, HeapBasicObject
           v17:Fixnum[2] = Const Value(2)
           PatchPoint SingleRactorMode
           StoreField v14, :@b@0x1003, v17
@@ -16066,7 +16067,7 @@ mod hir_opt_tests {
           WriteBarrier v49, v10
           v54:CShape[0x1002] = Const CShape(0x1002)
           StoreField v49, :_shape_id@0x1000, v54
-          v14:HeapBasicObject = RefineType v6, HeapBasicObject
+          v14:HeapBasicObject = RefineType v49, HeapBasicObject
           v17:Fixnum[2] = Const Value(2)
           PatchPoint SingleRactorMode
           WriteBarrier v14, v17
