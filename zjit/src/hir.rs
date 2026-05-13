@@ -5049,12 +5049,12 @@ impl Function {
                         flush_aliasing(&mut compile_time_heap, offset);
                     },
                     insn => {
-                        let insn_reads_memory = insn.effects_of().includes(Effect::read(abstract_heaps::Memory));
-                        let insn_uses_control_flow = insn.effects_of().includes(Effect::write(abstract_heaps::Control));
+                        let insn_can_read_memory = insn.effects_of().includes(Effect::read(abstract_heaps::Memory));
+                        let insn_can_modify_control_flow = insn.effects_of().includes(Effect::write(abstract_heaps::Control));
                         // TODO(Jacob): We should refine the control flow check
                         // For instance, we could sink the StoreField instruction into failed guards
                         // This allows us to preserve the dead store optimization.
-                        if insn_reads_memory || insn_uses_control_flow {
+                        if insn_can_read_memory || insn_can_modify_control_flow {
                             compile_time_heap.clear();
                         }
                     }
