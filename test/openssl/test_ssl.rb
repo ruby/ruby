@@ -355,6 +355,22 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
+  def test_sync_close_initialize_opt
+    start_server do |port|
+      begin
+        sock = TCPSocket.new("127.0.0.1", port)
+        ssl = OpenSSL::SSL::SSLSocket.new(sock, sync_close: true)
+        assert_equal true, ssl.sync_close
+        ssl.connect
+        ssl.puts "abc"; assert_equal "abc\n", ssl.gets
+        ssl.close
+        assert_predicate sock, :closed?
+      ensure
+        sock&.close
+      end
+    end
+  end
+
   def test_copy_stream
     start_server do |port|
       server_connect(port) do |ssl|
@@ -1064,36 +1080,46 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     end
   end
 
-  def test_servername_cb_raises_an_exception_on_unknown_objects
-    hostname = 'example.org'
-
-    ctx2 = OpenSSL::SSL::SSLContext.new
-    ctx2.cert = @svr_cert
-    ctx2.key = @svr_key
-    ctx2.servername_cb = lambda { |args| Object.new }
-
+  def test_servername_cb_exception
     sock1, sock2 = socketpair
 
-    s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
-
-    ctx1 = OpenSSL::SSL::SSLContext.new
-
-    s1 = OpenSSL::SSL::SSLSocket.new(sock1, ctx1)
-    s1.hostname = hostname
     t = Thread.new {
-      assert_raise(OpenSSL::SSL::SSLError) do
+      s1 = OpenSSL::SSL::SSLSocket.new(sock1)
+      s1.hostname = "localhost"
+      assert_raise_with_message(OpenSSL::SSL::SSLError, /unrecognized.name/i) {
         s1.connect
-      end
+      }
     }
 
-    assert_raise(ArgumentError) do
-      s2.accept
-    end
-
+    ctx2 = OpenSSL::SSL::SSLContext.new
+    ctx2.servername_cb = lambda { |args| raise RuntimeError, "foo" }
+    s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
+    assert_raise_with_message(RuntimeError, "foo") { s2.accept }
     assert t.join
   ensure
-    sock1.close if sock1
-    sock2.close if sock2
+    sock1.close
+    sock2.close
+    t.kill.join
+  end
+
+  def test_servername_cb_raises_an_exception_on_unknown_objects
+    sock1, sock2 = socketpair
+
+    t = Thread.new {
+      s1 = OpenSSL::SSL::SSLSocket.new(sock1)
+      s1.hostname = "localhost"
+      assert_raise(OpenSSL::SSL::SSLError) { s1.connect }
+    }
+
+    ctx2 = OpenSSL::SSL::SSLContext.new
+    ctx2.servername_cb = lambda { |args| Object.new }
+    s2 = OpenSSL::SSL::SSLSocket.new(sock2, ctx2)
+    assert_raise(ArgumentError) { s2.accept }
+    assert t.join
+  ensure
+    sock1.close
+    sock2.close
+    t.kill.join
   end
 
   def test_accept_errors_include_peeraddr

@@ -702,7 +702,7 @@ static VALUE ossl_ec_group_initialize(int argc, VALUE *argv, VALUE self)
 
         break;
       default:
-        ossl_raise(rb_eArgError, "wrong number of arguments");
+        ossl_raise(rb_eArgError, "wrong number of arguments (given %d, expected 1 or 4)", argc);
     }
 
     ASSUME(group);
