@@ -17764,14 +17764,15 @@ mod hir_opt_tests {
           v63:BoolExact = FixnumLt v62, v31
           CheckInterrupts
           v37:CBool = Test v63
-          IfFalse v37, bb6(v23, v10)
+          CondBranch v37, bb7(), bb6(v23, v62)
+        bb7():
           v42:Fixnum[0] = Const Value(0)
           CheckInterrupts
           Jump bb4(v42)
-        bb6(v47:ObjectSubclass[class_exact*:Object@VALUE(0x1008)], v48:BasicObject):
+        bb6(v47:ObjectSubclass[class_exact*:Object@VALUE(0x1008)], v48:Fixnum):
           CheckInterrupts
           Jump bb4(v48)
-        bb4(v56:BasicObject):
+        bb4(v56:Fixnum):
           PopLightweightFrame
           CheckInterrupts
           Return v56
@@ -18585,12 +18586,13 @@ mod hir_opt_tests {
           v33:BoolExact = FixnumBitCheck v63, 0
           CheckInterrupts
           v36:CBool = Test v33
-          IfTrue v36, bb6(v25, v10, v22, v63)
+          CondBranch v36, bb6(v25, v10, v22, v63), bb7()
+        bb7():
           v42:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1048, *@0x1050, cme:0x1058)
           v70:Fixnum = GuardType v10, Fixnum
           v71:Fixnum = FixnumMult v70, v42
-          Jump bb6(v25, v10, v71, v63)
+          Jump bb6(v25, v70, v71, v63)
         bb6(v48:ObjectSubclass[class_exact*:Object@VALUE(0x1008)], v49:BasicObject, v50:NilClass|Fixnum, v51:Fixnum[1]):
           PatchPoint MethodRedefined(Integer@0x1048, +@0x1080, cme:0x1088)
           v74:Fixnum = GuardType v49, Fixnum
