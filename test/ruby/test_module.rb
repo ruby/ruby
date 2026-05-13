@@ -3272,9 +3272,11 @@ class TestModule < Test::Unit::TestCase
   CloneTestM1 = CloneTestM0.clone
   CloneTestM2 = CloneTestM0.clone
   module CloneTestM1
+    remove_const :TEST
     TEST = :M1
   end
   module CloneTestM2
+    remove_const :TEST
     TEST = :M2
   end
   class CloneTestC1
