@@ -494,6 +494,14 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal string.bytes[3, 5], buffer.each_byte(3, 5).to_a
   end
 
+  def test_each_byte_bounds_error
+    buffer = IO::Buffer.for("A")
+
+    assert_raise(ArgumentError) { buffer.each_byte(0, 2).to_a }
+    assert_raise(ArgumentError) { buffer.each_byte(1, 1).to_a }
+    assert_raise(ArgumentError) { buffer.each_byte(SIZE_MAX, 0).to_a }
+  end
+
   def test_zero_length_each_byte
     buffer = IO::Buffer.new(0)
 
