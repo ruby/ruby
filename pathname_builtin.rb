@@ -1050,7 +1050,49 @@ class Pathname    # * File *
   # See <tt>File.mtime</tt>.  Returns last modification time.
   def mtime() File.mtime(@path) end
 
-  # See <tt>File.chmod</tt>.  Changes permissions.
+
+  # call-seq:
+  #   chmod(mode) -> 1
+  #
+  # Changes the mode (i.e., permissions) of the entry represented by +self+;
+  # see {File Permissions}[rdoc-ref:File@File+Permissions];
+  # returns +1+:
+  #
+  #   # A helper method to make an integer mode display as octal.
+  #   def pretty(mode); '0' + (mode & 0777).to_s(8); end
+  #
+  #   # Work in a temporary directory.
+  #   require 'tmpdir'
+  #   Dir.mktmpdir do |tmpdirpath|
+  #     # A subdirectory therein, and its Pathname.
+  #     dirpath = File.join(tmpdirpath, 'subdir')
+  #     Dir.mkdir(dirpath)
+  #     dir_pn = Pathname(dirpath)
+  #     # The directory mode.
+  #     puts "Original directory mode: #{pretty(dir_pn.stat.mode)}"
+  #     # Change the directory mode.
+  #     dir_pn.chmod(0777)
+  #     puts "New directory mode:      #{pretty(dir_pn.stat.mode)}"
+  #
+  #     # A file in the subdirectory, and its Pathname.
+  #     filepath = File.join(dirpath, 't.txt')
+  #     file_pn = Pathname(filepath)
+  #     # Create the file.
+  #     File.write(filepath, 'foo')
+  #     # The file mode.
+  #     puts "Original file mode:      #{pretty(file_pn.stat.mode)}"
+  #     # Change the file modes.
+  #     file_pn.chmod(0777)
+  #     puts "New file mode:           #{pretty(file_pn.stat.mode)}"
+  #   end
+  #
+  # Output:
+  #
+  #   Original directory mode: 0775
+  #   New directory mode:      0777
+  #   Original file mode:      0664
+  #   New file mode:           0777
+  #
   def chmod(mode) File.chmod(mode, @path) end
 
   # See <tt>File.lchmod</tt>.
