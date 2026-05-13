@@ -779,60 +779,60 @@ class Pathname
   # Returns a new \Pathname object based on the content of +self+ and +other+;
   # argument +other+ may be a String, a File, a Dir, or another \Pathname:
   #
-  #   pn = Pathname.new('foo') # => #<Pathname:foo>
+  #   pn = Pathname('foo')     # => #<Pathname:foo>
   #   pn + 'bar'               # => #<Pathname:foo/bar>
   #   pn + File.new('LEGAL')   # => #<Pathname:foo/LEGAL>
   #   pn + Dir.new('lib')      # => #<Pathname:foo/lib>
-  #   pn + Pathname.new('bar') # => #<Pathname:foo/bar>
+  #   pn + Pathname('bar')     # => #<Pathname:foo/bar>
   #
   # When +other+ specifies a relative path (see #relative?),
   # it is combined with +self+ to form a new pathname:
   #
-  #   Pathname.new('/a/b') + 'c' # => #<Pathname:/a/b/c>
+  #   Pathname('/a/b') + 'c' # => #<Pathname:/a/b/c>
   #
   # Extra component separators (<tt>'/'</tt>) are removed:
   #
-  #   Pathname.new('/a/b/') + 'c' # => #<Pathname:/a/b/c>
+  #   Pathname('/a/b/') + 'c' # => #<Pathname:/a/b/c>
   #
   # Extra current-directory components (<tt>'.'</tt>) are removed:
   #
-  #   Pathname.new('a') + '.' # => #<Pathname:a>
-  #   Pathname.new('.') + 'a' # => #<Pathname:a>
-  #   Pathname.new('.') + '.' # => #<Pathname:.>
+  #   Pathname('a') + '.' # => #<Pathname:a>
+  #   Pathname('.') + 'a' # => #<Pathname:a>
+  #   Pathname('.') + '.' # => #<Pathname:.>
   #
   # Parent-directory components (<tt>'..'</tt>) are:
   #
   # - Resolved, when possible:
   #
-  #     Pathname.new('a')      + '..'      # => #<Pathname:.>
-  #     Pathname.new('a/b')    + '..'      # => #<Pathname:a>
-  #     Pathname.new('/')      + '../a'    # => #<Pathname:/a>
-  #     Pathname.new('a')      + '../b'    # => #<Pathname:b>
-  #     Pathname.new('a/b')    + '../c'    # => #<Pathname:a/c>
-  #     Pathname.new('a//b/c') + '../d//e' # => #<Pathname:a//b/d//e>
+  #     Pathname('a')      + '..'      # => #<Pathname:.>
+  #     Pathname('a/b')    + '..'      # => #<Pathname:a>
+  #     Pathname('/')      + '../a'    # => #<Pathname:/a>
+  #     Pathname('a')      + '../b'    # => #<Pathname:b>
+  #     Pathname('a/b')    + '../c'    # => #<Pathname:a/c>
+  #     Pathname('a//b/c') + '../d//e' # => #<Pathname:a//b/d//e>
   #
   # - Removed, when not needed:
   #
-  #     Pathname.new('/') + '..' # => #<Pathname:/>
+  #     Pathname('/') + '..' # => #<Pathname:/>
   #
   # - Retained, when needed:
   #
-  #     Pathname.new('..') + '..'   # => #<Pathname:../..>
-  #     Pathname.new('..') + '../a' # => #<Pathname:../../a>
+  #     Pathname('..') + '..'   # => #<Pathname:../..>
+  #     Pathname('..') + '../a' # => #<Pathname:../../a>
   #
   # When +other+ specifies an absolute path (see #absolute?),
-  # equivalent to <tt>Pathname.new(other.to_s)</tt>:
+  # equivalent to <tt>Pathname(other.to_s)</tt>:
   #
-  #   Pathname.new('/a') + '/b/c' # => #<Pathname:/b/c>
+  #   Pathname('/a') + '/b/c' # => #<Pathname:/b/c>
   #
   # Occurrences of <tt>'/'</tt>, <tt>'.'</tt>, and <tt>'..'</tt> are preserved:
   #
-  #   Pathname.new('/a') + '//b//c/./../d' # => #<Pathname://b//c/./../d>
+  #   Pathname('/a') + '//b//c/./../d' # => #<Pathname://b//c/./../d>
   #
   # This method does not access the file system, so +other+ need not represent
   # an existing (or even a valid) file or directory path:
   #
-  #   Pathname.new('/var') + 'nosuch:ever' # => #<Pathname:/var/nosuch:ever>
+  #   Pathname('/var') + 'nosuch:ever' # => #<Pathname:/var/nosuch:ever>
   #
   def +(other)
     other = Pathname.new(other) unless Pathname === other
