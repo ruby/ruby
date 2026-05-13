@@ -3331,14 +3331,17 @@ impl Function {
         self.resolve_receiver_type_from_profile(recv, insn_idx)
     }
 
-    fn polymorphic_summary(&self, profiles: &ProfileOracle, recv: InsnId, insn_idx: YarvInsnIdx) -> Option<TypeDistributionSummary> {
+    fn polymorphic_summary(&self, profiles: &ProfileOracle, recv: InsnId, insn_idx: YarvInsnIdx, include_monomorphic: bool) -> Option<TypeDistributionSummary> {
         let Some(entries) = profiles.types.get(&insn_idx) else {
             return None;
         };
         let recv = self.chase_insn(recv);
         for (entry_insn, entry_type_summary) in entries {
             if self.union_find.borrow().find_const(*entry_insn) == recv {
-                if entry_type_summary.is_polymorphic() || entry_type_summary.is_skewed_polymorphic() {
+                let usable = entry_type_summary.is_polymorphic()
+                    || entry_type_summary.is_skewed_polymorphic()
+                    || (include_monomorphic && entry_type_summary.is_monomorphic());
+                if usable {
                     return Some(entry_type_summary.clone());
                 }
                 return None;
@@ -4405,9 +4408,8 @@ impl Function {
                         }
                         if self.policy.no_side_exits {
                             // On the final version, skip GetIvar shape specialization.
-                            // iseq_to_hir already generates polymorphic branches with a
-                            // GetIvar C call fallback for getinstancevariable, so we don't
-                            // need to wrap it again here.
+                            // iseq_to_hir already generates side-exit-free branches with a
+                            // GetIvar C call fallback for getinstancevariable.
                             self.push_insn_id(block, insn_id); continue;
                         }
                         let self_val = self.load_ivar_guard_type(block, self_val, recv_type, state);
@@ -7825,7 +7827,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         let stack_count = state.stack.len();
                         let recv = state.stack_topn(argc as usize)?;  // args are on top
                         let entry_args = state.as_args(self_param);
-                        if let Some(summary) = fun.polymorphic_summary(&profiles, recv, exit_state.insn_idx) {
+                        if let Some(summary) = fun.polymorphic_summary(&profiles, recv, exit_state.insn_idx, false) {
                             let join_block = insn_idx_to_block.get(&insn_idx).copied().unwrap_or_else(|| fun.new_block(insn_idx));
                             // Dedup by expected type so immediate/heap variants
                             // under the same Ruby class can still get separate branches.
@@ -8167,7 +8169,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledYARVInsn(opcode), recompile: None });
                         break;  // End the block
                     }
-                    if let Some(summary) = fun.polymorphic_summary(&profiles, self_param, exit_state.insn_idx) {
+                    if let Some(summary) = fun.polymorphic_summary(&profiles, self_param, exit_state.insn_idx, fun.policy.no_side_exits) {
                         self_param = fun.push_insn(block, Insn::GuardType { val: self_param, guard_type: types::HeapBasicObject, state: exit_id });
                         let rbasic_flags = fun.load_rbasic_flags(block, self_param);
                         let join_block = insn_idx_to_block.get(&insn_idx).copied().unwrap_or_else(|| fun.new_block(insn_idx));

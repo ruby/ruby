@@ -7625,6 +7625,80 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_getivar_monomorphic_on_recompile() {
+        // Trigger recompilation via a no-profile send rather than the getivar's
+        // own shape guard, so the getivar profile stays monomorphic. On the
+        // recompiled version, iseq_to_hir should still wrap the monomorphic
+        // getivar with an inline shape-guarded fast path plus a GetIvar C call
+        // fallback, instead of falling through to a bare GetIvar.
+        eval("
+            def unprofiled_recompile_helper(x) = x.to_s
+            class C
+              def initialize
+                @foo = 42
+              end
+              def read_foo(flag)
+                unprofiled_recompile_helper(42) if flag
+                @foo
+              end
+            end
+            c = C.new
+            # Profile + compile read_foo. The send is unprofiled -> SideExit.
+            c.read_foo(false)
+            c.read_foo(false)
+            # Hit the SideExit enough times for it to profile the send and
+            # invalidate v1 (num_profiles=5 by default).
+            5.times { c.read_foo(true) }
+        ");
+        assert_snapshot!(hir_string_proc("C.new.method(:read_foo)"), @"
+        fn read_foo@<compiled>:8:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :flag@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :flag@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          CheckInterrupts
+          v16:CBool = Test v10
+          v17:Falsy = RefineType v10, Falsy
+          CondBranch v16, bb5(), bb4(v9, v17)
+        bb5():
+          v19:Truthy = RefineType v10, Truthy
+          v22:Fixnum[42] = Const Value(42)
+          PatchPoint NoSingletonClass(C@0x1008)
+          PatchPoint MethodRedefined(C@0x1008, unprofiled_recompile_helper@0x1010, cme:0x1018)
+          v53:ObjectSubclass[class_exact:C] = GuardType v9, ObjectSubclass[class_exact:C]
+          v54:BasicObject = SendDirect v53, 0x1040, :unprofiled_recompile_helper (0x1050), v22
+          Jump bb4(v53, v19)
+        bb4(v27:BasicObject, v28:BasicObject):
+          PatchPoint SingleRactorMode
+          v33:HeapBasicObject = GuardType v27, HeapBasicObject
+          v34:CUInt64 = LoadField v33, :RBASIC_FLAGS@0x1058
+          v36:CUInt64[0xffffffff0000001f] = Const CUInt64(0xffffffff0000001f)
+          v37:CPtr[CPtr(0x1059)] = Const CPtr(0x1059)
+          v38 = RefineType v37, CUInt64
+          v39:CInt64 = IntAnd v34, v36
+          v40:CBool = IsBitEqual v39, v38
+          CondBranch v40, bb7(), bb8()
+        bb7():
+          v42:BasicObject = LoadField v33, :@foo@0x105a
+          Jump bb6(v42)
+        bb8():
+          v44:BasicObject = GetIvar v33, :@foo
+          Jump bb6(v44)
+        bb6(v35:BasicObject):
+          CheckInterrupts
+          Return v35
+        ");
+    }
+
+    #[test]
     fn test_definedivar_shape_guard_recompile() {
         // Call with one shape to compile, then call with a different shape to
         // trigger shape guard exits and recompilation. On the recompiled version,
