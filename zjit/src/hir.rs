@@ -4454,16 +4454,31 @@ impl Function {
         let mut did_inline = false;
 
         for block in self.rpo() {
-            // Take the block's instruction list so we can rebuild it.
-            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
-            assert!(self.blocks[block.0].insns.is_empty());
+            // Walk this block looking for an inlinable SendDirect. Under the
+            // basic-block invariant, the terminator is the last instruction in
+            // the block and SendDirect is never a terminator (it has an
+            // output), so every SendDirect lives in the block body and its
+            // position can be found by a linear scan. We commit at most one
+            // inline per block in a given pass; any further inlinable SendDirects
+            // that get moved into the continuation block are picked up by the outer
+            // fixed-point loop. The cursor below advances past SendDirects we
+            // reject (denylist, compile failure, no-return callee) so that a
+            // later, inlinable SendDirect in the same block still gets a
+            // chance this pass.
+            let mut search_start = 0;
+            loop {
+                let Some(offset) = self.blocks[block.0].insns[search_start..].iter()
+                    .position(|&id| matches!(self.find(id), Insn::SendDirect { .. }))
+                else {
+                    break;
+                };
+                let send_pos = search_start + offset;
 
-            let mut iter = old_insns.into_iter();
-            while let Some(insn_id) = iter.next() {
-                let insn = self.find(insn_id);
-                let Insn::SendDirect { recv, cd: _, cme, iseq, args, kw_bits, block: call_block, state } = insn else {
-                    self.push_insn_id(block, insn_id);
-                    continue;
+                let send_insn_id = self.blocks[block.0].insns[send_pos];
+                let Insn::SendDirect { recv, cd: _, cme, iseq, args, kw_bits, block: call_block, state }
+                    = self.find(send_insn_id)
+                else {
+                    unreachable!("position {send_insn_id} is not a SendDirect");
                 };
                 // SendDirect invariant: block is either None or BlockIseq.
                 // BlockArg is rejected upstream during type specialization.
@@ -4473,7 +4488,7 @@ impl Function {
                 });
 
                 if !self.should_inline(iseq, cme) {
-                    self.push_insn_id(block, insn_id);
+                    search_start = send_pos + 1;
                     continue;
                 }
 
@@ -4484,7 +4499,9 @@ impl Function {
                 // discarding the partial translation. Union-find needs no snapshot:
                 // HIR construction only appends instructions and never calls
                 // make_equal_to or find, so the forwarding table is untouched between
-                // here and the rejection points below.
+                // here and the rejection points below. The original block isn't
+                // touched until we commit to the inline below, so rejection paths
+                // only need to advance the search cursor without restoring it.
                 let pre_insns_len = self.insns.len();
                 let pre_insn_types_len = self.insn_types.len();
                 let pre_blocks_len = self.blocks.len();
@@ -4510,7 +4527,7 @@ impl Function {
                         self.insn_types.truncate(pre_insn_types_len);
                         self.blocks.truncate(pre_blocks_len);
                         incr_counter!(inline_reject_compile_failure);
-                        self.push_insn_id(block, insn_id);
+                        search_start = send_pos + 1;
                         continue;
                     }
                 };
@@ -4524,7 +4541,7 @@ impl Function {
                     self.insn_types.truncate(pre_insn_types_len);
                     self.blocks.truncate(pre_blocks_len);
                     incr_counter!(inline_reject_no_returns);
-                    self.push_insn_id(block, insn_id);
+                    search_start = send_pos + 1;
                     continue;
                 }
 
@@ -4546,6 +4563,18 @@ impl Function {
                         state.caller_state = Some(Rc::clone(&caller_frame_state));
                     }
                 }
+
+                // Split the original block at the SendDirect's position. Pre-Send
+                // instructions stay in `block`; the SendDirect itself is consumed
+                // (we alias its uses to the continuation's return-value Param
+                // below); everything after, including the original terminator,
+                // moves onto the continuation. We split before adding new
+                // instructions to either block so that the param-initialization
+                // constants land in `block` at the correct position (after the
+                // pre-Send body, before the PushLightweightFrame and Jump we add
+                // last).
+                let tail = self.blocks[block.0].insns.split_off(send_pos);
+                debug_assert!(matches!(self.find(tail[0]), Insn::SendDirect { .. }));
 
                 // Pick the callee body entry block matching how many optional
                 // parameters the caller actually filled. add_iseq_to_hir returns one
@@ -4644,9 +4673,12 @@ impl Function {
                 // arguments. This keeps validation happy (the Jump passes 0 args).
                 self.blocks[callee_entry_body_block.0].params.clear();
 
-                // Set up the continuation: a single Param merges all return values
-                // jumped in from the callee's leaves, then PopLightweightFrame
-                // unwinds the inlined frame before any post-call code runs.
+                // Set up the continuation block: a single Param merges all return
+                // values jumped in from the callee's leaves, then PopLightweightFrame
+                // unwinds the inlined frame before any post-call code runs. The
+                // tail collected above (post-Send instructions plus the original
+                // terminator) is grafted on after, skipping the SendDirect at
+                // tail[0] which is being consumed.
                 let return_val_param = self.push_insn(continuation, Insn::Param);
                 self.push_insn(continuation, Insn::PopLightweightFrame {
                     iseq,
@@ -4654,13 +4686,13 @@ impl Function {
                     state,
                 });
 
-                // Move remaining instructions from the original block into the continuation.
-                for remaining_insn_id in iter.by_ref() {
-                    self.push_insn_id(continuation, remaining_insn_id);
+                // Start at 1 to skip over the SendDirect at position 0.
+                for &id in &tail[1..] {
+                    self.push_insn_id(continuation, id);
                 }
 
                 // The original SendDirect result is now the continuation's return value param.
-                self.make_equal_to(insn_id, return_val_param);
+                self.make_equal_to(send_insn_id, return_val_param);
 
                 // Insert PushLightweightFrame and jump to callee body entry.
                 self.push_insn(block, Insn::PushLightweightFrame {
@@ -4682,8 +4714,9 @@ impl Function {
                     self.profiles = Some(add_result.profiles);
                 }
 
-                // We consumed the rest of the iterator via the continuation block,
-                // so break out of the instruction loop for this block.
+                // One inline per (block, pass): any further inlinable SendDirects
+                // that landed in the continuation are picked up on the next outer
+                // pass once the continuation enters self.rpo().
                 break;
             }
         }
