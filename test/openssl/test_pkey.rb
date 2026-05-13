@@ -8,6 +8,7 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     assert_instance_of OpenSSL::PKey::RSA, rsa
     assert_equal "rsaEncryption", rsa.oid
     assert_match %r{oid=rsaEncryption}, rsa.inspect
+    assert_match %r{type_name=RSA}, rsa.inspect if openssl?(3, 0, 0)
 
     # X25519 private key
     x25519_pem = <<~EOF
@@ -38,6 +39,12 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     assert_raise(OpenSSL::PKey::PKeyError) {
       OpenSSL::PKey.generate_parameters("EC", "invalid" => "option")
     }
+  end
+
+  def test_s_generate_parameters_with_block
+    # DSA kengen is not FIPS-approved.
+    # https://github.com/openssl/openssl/commit/49a35f0#diff-605396c063194975af8ce31399d42690ab18186b422fb5012101cc9132660fe1R611-R614
+    omit_on_fips
 
     # Parameter generation callback is called
     if openssl?(3, 0, 0, 0) && !openssl?(3, 0, 0, 6)
@@ -144,32 +151,6 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     assert_raise(OpenSSL::PKey::PKeyError) { priv.derive(pub) }
   end
 
-  def test_ed25519_not_approved_on_fips
-    omit_on_non_fips
-    # Ed25519 is technically allowed in the OpenSSL 3.0 code as a kind of bug.
-    # So, we need to omit OpenSSL 3.0.
-    #
-    # See OpenSSL providers/fips/fipsprov.c PROV_NAMES_ED25519 entries with
-    # FIPS_DEFAULT_PROPERTIES on openssl-3.0 branch and
-    # FIPS_UNAPPROVED_PROPERTIES on openssl-3.1 branch.
-    #
-    # See also
-    # https://github.com/openssl/openssl/issues/20758#issuecomment-1639658102
-    # for details.
-    unless openssl?(3, 1, 0, 0)
-      omit 'Ed25519 is allowed in the OpenSSL 3.0 FIPS code as a kind of bug'
-    end
-
-    priv_pem = <<~EOF
-    -----BEGIN PRIVATE KEY-----
-    MC4CAQAwBQYDK2VwBCIEIEzNCJso/5banbbDRuwRTg9bijGfNaumJNqM9u1PuKb7
-    -----END PRIVATE KEY-----
-    EOF
-    assert_raise(OpenSSL::PKey::PKeyError) do
-      OpenSSL::PKey.read(priv_pem)
-    end
-  end
-
   def test_x25519
     # Test vector from RFC 7748 Section 6.1
     alice_pem = <<~EOF
@@ -191,6 +172,8 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
       pend "X25519 is not implemented"
     end
     assert_instance_of OpenSSL::PKey::PKey, alice
+    assert_equal "X25519", alice.oid
+    assert_match %r{oid=X25519}, alice.inspect
     assert_equal alice_pem, alice.private_to_pem
     assert_equal bob_pem, bob.public_to_pem
     assert_equal [shared_secret].pack("H*"), alice.derive(bob)
@@ -211,6 +194,25 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
       alice_private_raw
     assert_equal "de9edb7d7b7dc1b4d35b61c2ece435373f8343c85b78674dadfc7e146f882b4f",
       bob_public_raw
+  end
+
+  def test_ml_dsa
+    # AWS-LC also supports ML-DSA, but it's implemented in a different way
+    return unless openssl?(3, 5, 0)
+
+    pkey = OpenSSL::PKey.generate_key("ML-DSA-44")
+    assert_match(/type_name=ML-DSA-44/, pkey.inspect)
+    sig = pkey.sign(nil, "data")
+    assert_equal(2420, sig.bytesize)
+    assert_equal(true, pkey.verify(nil, sig, "data"))
+
+    pub2 = OpenSSL::PKey.read(pkey.public_to_der)
+    assert_equal(true, pub2.verify(nil, sig, "data"))
+
+    raw_public_key = pkey.raw_public_key
+    assert_equal(1312, raw_public_key.bytesize)
+    pub3 = OpenSSL::PKey.new_raw_public_key("ML-DSA-44", raw_public_key)
+    assert_equal(true, pub3.verify(nil, sig, "data"))
   end
 
   def raw_initialize

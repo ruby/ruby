@@ -8,6 +8,7 @@
  * (See the file 'LICENCE'.)
  */
 #include RUBY_EXTCONF_H
+#include <ruby.h>
 
 #include <string.h> /* memcpy() */
 #include <openssl/x509_vfy.h>

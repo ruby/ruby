@@ -5,8 +5,6 @@
 #include "ossl.h"
 
 #ifdef OSSL_USE_PROVIDER
-# include <openssl/provider.h>
-
 #define NewProvider(klass) \
     TypedData_Wrap_Struct((klass), &ossl_provider_type, 0)
 #define SetProvider(obj, provider) do { \

@@ -48,7 +48,7 @@ static const rb_data_type_t ossl_x509attr_type = {
  * Public
  */
 VALUE
-ossl_x509attr_new(X509_ATTRIBUTE *attr)
+ossl_x509attr_new(const X509_ATTRIBUTE *attr)
 {
     X509_ATTRIBUTE *new;
     VALUE obj;
@@ -57,7 +57,8 @@ ossl_x509attr_new(X509_ATTRIBUTE *attr)
     if (!attr) {
 	new = X509_ATTRIBUTE_new();
     } else {
-	new = X509_ATTRIBUTE_dup(attr);
+	/* OpenSSL 1.1.1 takes a non-const pointer */
+	new = X509_ATTRIBUTE_dup((X509_ATTRIBUTE *)attr);
     }
     if (!new) {
 	ossl_raise(eX509AttrError, NULL);
@@ -174,7 +175,7 @@ static VALUE
 ossl_x509attr_get_oid(VALUE self)
 {
     X509_ATTRIBUTE *attr;
-    ASN1_OBJECT *oid;
+    const ASN1_OBJECT *oid;
     BIO *out;
     VALUE ret;
     int nid;
@@ -186,7 +187,7 @@ ossl_x509attr_get_oid(VALUE self)
     else{
 	if (!(out = BIO_new(BIO_s_mem())))
 	    ossl_raise(eX509AttrError, NULL);
-	i2a_ASN1_OBJECT(out, oid);
+	i2a_ASN1_OBJECT(out, (ASN1_OBJECT *)oid);
 	ret = ossl_membio2str(out);
     }
 
@@ -214,7 +215,7 @@ ossl_x509attr_set_value(VALUE self, VALUE value)
 
     GetX509Attr(self, attr);
     if (X509_ATTRIBUTE_count(attr)) { /* populated, reset first */
-	ASN1_OBJECT *obj = X509_ATTRIBUTE_get0_object(attr);
+	const ASN1_OBJECT *obj = X509_ATTRIBUTE_get0_object(attr);
 	X509_ATTRIBUTE *new_attr = X509_ATTRIBUTE_create_by_OBJ(NULL, obj, 0, NULL, -1);
 	if (!new_attr)
 	    ossl_raise(eX509AttrError, NULL);
@@ -256,7 +257,7 @@ ossl_x509attr_get_value(VALUE self)
 
     count = X509_ATTRIBUTE_count(attr);
     for (i = 0; i < count; i++)
-	sk_ASN1_TYPE_push(sk, X509_ATTRIBUTE_get0_type(attr, i));
+        sk_ASN1_TYPE_push(sk, (ASN1_TYPE *)X509_ATTRIBUTE_get0_type(attr, i));
 
     if ((len = i2d_ASN1_SET_ANY(sk, NULL)) <= 0) {
 	sk_ASN1_TYPE_free(sk);

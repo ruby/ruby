@@ -521,10 +521,8 @@ static void
 ossl_x509stctx_free(void *ptr)
 {
     X509_STORE_CTX *ctx = ptr;
-    if (X509_STORE_CTX_get0_untrusted(ctx))
-	sk_X509_pop_free(X509_STORE_CTX_get0_untrusted(ctx), X509_free);
-    if (X509_STORE_CTX_get0_cert(ctx))
-	X509_free(X509_STORE_CTX_get0_cert(ctx));
+    sk_X509_pop_free(X509_STORE_CTX_get0_untrusted(ctx), X509_free);
+    X509_free((X509 *)X509_STORE_CTX_get0_cert(ctx));
     X509_STORE_CTX_free(ctx);
 }
 
@@ -765,7 +763,7 @@ static VALUE
 ossl_x509stctx_get_curr_crl(VALUE self)
 {
     X509_STORE_CTX *ctx;
-    X509_CRL *crl;
+    const X509_CRL *crl;
 
     GetX509StCtx(self, ctx);
     crl = X509_STORE_CTX_get0_current_crl(ctx);

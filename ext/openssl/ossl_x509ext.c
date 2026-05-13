@@ -62,7 +62,7 @@ static const rb_data_type_t ossl_x509ext_type = {
  * Public
  */
 VALUE
-ossl_x509ext_new(X509_EXTENSION *ext)
+ossl_x509ext_new(const X509_EXTENSION *ext)
 {
     X509_EXTENSION *new;
     VALUE obj;
@@ -71,7 +71,8 @@ ossl_x509ext_new(X509_EXTENSION *ext)
     if (!ext) {
 	new = X509_EXTENSION_new();
     } else {
-	new = X509_EXTENSION_dup(ext);
+	/* OpenSSL 1.1.1 takes a non-const pointer */
+	new = X509_EXTENSION_dup((X509_EXTENSION *)ext);
     }
     if (!new) {
 	ossl_raise(eX509ExtError, NULL);
@@ -346,12 +347,20 @@ ossl_x509ext_set_value(VALUE self, VALUE data)
     GetX509Ext(self, ext);
     data = ossl_to_der_if_possible(data);
     StringValue(data);
-    asn1s = X509_EXTENSION_get_data(ext);
 
+    asn1s = ASN1_OCTET_STRING_new();
+    if (!asn1s)
+        ossl_raise(eX509ExtError, "ASN1_OCTET_STRING_new");
     if (!ASN1_OCTET_STRING_set(asn1s, (unsigned char *)RSTRING_PTR(data),
-			       RSTRING_LENINT(data))) {
-	ossl_raise(eX509ExtError, "ASN1_OCTET_STRING_set");
+                               RSTRING_LENINT(data))) {
+        ASN1_OCTET_STRING_free(asn1s);
+        ossl_raise(eX509ExtError, "ASN1_OCTET_STRING_set");
     }
+    if (!X509_EXTENSION_set_data(ext, asn1s)) {
+        ASN1_OCTET_STRING_free(asn1s);
+        ossl_raise(eX509ExtError, "X509_EXTENSION_set_data");
+    }
+    ASN1_OCTET_STRING_free(asn1s);
 
     return data;
 }
@@ -371,7 +380,7 @@ static VALUE
 ossl_x509ext_get_oid(VALUE obj)
 {
     X509_EXTENSION *ext;
-    ASN1_OBJECT *extobj;
+    const ASN1_OBJECT *extobj;
     BIO *out;
     VALUE ret;
     int nid;
@@ -383,7 +392,7 @@ ossl_x509ext_get_oid(VALUE obj)
     else{
 	if (!(out = BIO_new(BIO_s_mem())))
 	    ossl_raise(eX509ExtError, NULL);
-	i2a_ASN1_OBJECT(out, extobj);
+	i2a_ASN1_OBJECT(out, (ASN1_OBJECT *)extobj);
 	ret = ossl_membio2str(out);
     }
 
@@ -411,13 +420,13 @@ static VALUE
 ossl_x509ext_get_value_der(VALUE obj)
 {
     X509_EXTENSION *ext;
-    ASN1_OCTET_STRING *value;
+    const ASN1_OCTET_STRING *value;
 
     GetX509Ext(obj, ext);
     if ((value = X509_EXTENSION_get_data(ext)) == NULL)
 	ossl_raise(eX509ExtError, NULL);
 
-    return rb_str_new((const char *)value->data, value->length);
+    return asn1str_to_str(value);
 }
 
 static VALUE
