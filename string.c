@@ -6397,6 +6397,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
         if (bang) return Qnil;	/* no match, no substitution */
         return str_duplicate(rb_cString, str);
     }
+    if (bang) str_modify_keep_cr(str);
 
     offset = 0;
     blen = RSTRING_LEN(str) + 30; /* len + margin */
@@ -6518,7 +6519,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 static VALUE
 rb_str_gsub_bang(int argc, VALUE *argv, VALUE str)
 {
-    str_modify_keep_cr(str);
+    str_modifiable(str);
     return str_gsub(argc, argv, str, 1);
 }
 
