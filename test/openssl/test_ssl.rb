@@ -1724,7 +1724,9 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       }
     }
     start_server(ctx_proc: ctx_proc) do |port|
-      server_connect(port) { |ssl|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.ecdh_curves = "P-256" # Exclude RFC 7919 groups
+      server_connect(port, ctx) { |ssl|
         assert called, "dh callback should be called"
         assert_equal dh.to_der, ssl.tmp_key.to_der
       }
@@ -1851,7 +1853,9 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       ctx.tmp_dh = dh
     }
     start_server(ctx_proc: ctx_proc) do |port|
-      server_connect(port) { |ssl|
+      ctx = OpenSSL::SSL::SSLContext.new
+      ctx.ecdh_curves = "P-256" # Exclude RFC 7919 groups
+      server_connect(port, ctx) { |ssl|
         assert_equal dh.to_der, ssl.tmp_key.to_der
       }
     end

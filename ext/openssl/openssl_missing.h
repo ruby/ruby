@@ -210,6 +210,10 @@ IMPL_PKEY_GETTER(EC_KEY, ec)
     } while (0)
 #endif
 
+#if !defined(HAVE_ASN1_STRING_GET0_DATA)
+#  define ASN1_STRING_get0_data(x) ((x)->data)
+#endif
+
 /* added in 3.0.0 */
 #if !defined(HAVE_TS_VERIFY_CTX_SET_CERTS)
 #  define TS_VERIFY_CTX_set_certs(ctx, crts) TS_VERIFY_CTS_set_certs(ctx, crts)
@@ -233,6 +237,29 @@ IMPL_PKEY_GETTER(EC_KEY, ec)
 
 #ifndef HAVE_EVP_PKEY_EQ
 #  define EVP_PKEY_eq(a, b) EVP_PKEY_cmp(a, b)
+#endif
+
+/* added in 4.0.0 */
+#ifndef HAVE_ASN1_BIT_STRING_SET1
+static inline int
+ASN1_BIT_STRING_set1(ASN1_BIT_STRING *bitstr, const uint8_t *data,
+                     size_t length, int unused_bits)
+{
+    if (length > INT_MAX || !ASN1_STRING_set(bitstr, data, (int)length))
+        return 0;
+    bitstr->flags &= ~(ASN1_STRING_FLAG_BITS_LEFT | 0x07);
+    bitstr->flags |= ASN1_STRING_FLAG_BITS_LEFT | unused_bits;
+    return 1;
+}
+
+static inline int
+ASN1_BIT_STRING_get_length(const ASN1_BIT_STRING *bitstr, size_t *length,
+                           int *unused_bits)
+{
+    *length = bitstr->length;
+    *unused_bits = bitstr->flags & 0x07;
+    return 1;
+}
 #endif
 
 #endif /* _OSSL_OPENSSL_MISSING_H_ */
