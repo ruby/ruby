@@ -6415,12 +6415,12 @@ garbage_collect(rb_objspace_t *objspace, unsigned int reason)
 static int
 gc_start(rb_objspace_t *objspace, unsigned int reason)
 {
-    rb_gc_initialize_vm_context(&objspace->vm_context);
-
     unsigned int do_full_mark = !!(reason & GPR_FLAG_FULL_MARK);
 
     if (!rb_darray_size(objspace->heap_pages.sorted)) return TRUE; /* heap is not ready */
     if (!(reason & GPR_FLAG_METHOD) && !ready_to_gc(objspace)) return TRUE; /* GC is not allowed */
+
+    rb_gc_initialize_vm_context(&objspace->vm_context);
 
     GC_ASSERT(gc_mode(objspace) == gc_mode_none, "gc_mode is %s\n", gc_mode_name(gc_mode(objspace)));
     GC_ASSERT(!is_lazy_sweeping(objspace));
