@@ -95,13 +95,10 @@ jobs:
             libncurses-dev:${{ matrix.arch }} \
             autoconf ruby
 
-      - name: Build baseruby
-        run: |
-          mkdir ../baseruby
-          cd ../baseruby
-          ../src/configure --prefix=$PWD/install --disable-install-doc
-          make
-          make install
+      - uses: ./.github/actions/setup/baseruby
+        id: baseruby
+        with:
+          srcdir: src
 
       - name: Run configure
         run: >-
@@ -109,7 +106,9 @@ jobs:
           --prefix=/usr
           --build=${{ matrix.build }}
           --host=${{ matrix.host }}
-          --with-baseruby=$PWD/../baseruby/install/bin/ruby
+          --with-baseruby="$baseruby"
+        env:
+          baseruby: ${{ steps.baseruby.outputs.ruby }}
 
       - run: make
 
