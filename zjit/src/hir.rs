@@ -4195,9 +4195,6 @@ impl Function {
                 }
             }
         }
-        crate::stats::trace_compile_phase("canonicalize", ||
-            crate::stats::with_time_stat(Counter::compile_hir_canonicalize_time_ns, || self.canonicalize())
-        );
         crate::stats::trace_compile_phase("infer_types", || self.infer_types());
     }
 
@@ -4252,9 +4249,6 @@ impl Function {
                 }
             }
         }
-        crate::stats::trace_compile_phase("canonicalize", ||
-            crate::stats::with_time_stat(Counter::compile_hir_canonicalize_time_ns, || self.canonicalize())
-        );
         crate::stats::trace_compile_phase("infer_types", || self.infer_types());
     }
 
@@ -4559,9 +4553,6 @@ impl Function {
                 }
             }
         }
-        crate::stats::trace_compile_phase("canonicalize", ||
-            crate::stats::with_time_stat(Counter::compile_hir_canonicalize_time_ns, || self.canonicalize())
-        );
         crate::stats::trace_compile_phase("infer_types", || self.infer_types());
     }
 
@@ -4892,9 +4883,6 @@ impl Function {
                 self.push_insn_id(block, insn_id);
             }
         }
-        crate::stats::trace_compile_phase("canonicalize", ||
-            crate::stats::with_time_stat(Counter::compile_hir_canonicalize_time_ns, || self.canonicalize())
-        );
         crate::stats::trace_compile_phase("infer_types", || self.infer_types());
     }
 
@@ -5052,6 +5040,8 @@ impl Function {
                 }
             }
         }
+
+        crate::stats::trace_compile_phase("infer_types", || self.infer_types());
     }
 
     /// Use type information left by `infer_types` to fold away operations that can be evaluated at compile-time.
@@ -5405,9 +5395,6 @@ impl Function {
             changed = true;
         }
         if changed {
-            crate::stats::trace_compile_phase("canonicalize", ||
-                crate::stats::with_time_stat(Counter::compile_hir_canonicalize_time_ns, || self.canonicalize())
-            );
             crate::stats::trace_compile_phase("infer_types", || self.infer_types());
         }
     }
@@ -5659,6 +5646,7 @@ impl Function {
             (convert_no_profile_sends) => { Counter::compile_hir_strength_reduce_time_ns };
             // End strength reduction bucket
             (optimize_load_store) => { Counter::compile_hir_optimize_load_store_time_ns };
+            (canonicalize) => { Counter::compile_hir_canonicalize_time_ns };
             (fold_constants) => { Counter::compile_hir_fold_constants_time_ns };
             (clean_cfg) => { Counter::compile_hir_clean_cfg_time_ns };
             (remove_redundant_patch_points) => { Counter::compile_hir_remove_redundant_patch_points_time_ns };
@@ -5693,6 +5681,7 @@ impl Function {
         run_pass!(optimize_c_calls);
         run_pass!(convert_no_profile_sends);
         run_pass!(optimize_load_store);
+        run_pass!(canonicalize);
         run_pass!(fold_constants);
         run_pass!(clean_cfg);
         run_pass!(remove_redundant_patch_points);
