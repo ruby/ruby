@@ -1221,9 +1221,7 @@ class Pathname    # * File *
   # call-seq:
   #   chmod(mode) -> 1
   #
-  # Changes the mode
-  # (i.e., {permissions}[rdoc-ref:File@File+Permissions])
-  # of the entry represented by +self+;
+  # Changes the mode (i.e., permissions) of the entry represented by +self+;
   # see {File Permissions}[rdoc-ref:File@File+Permissions];
   # returns +1+:
   #
