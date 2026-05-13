@@ -156,20 +156,30 @@ udp_send_internal(VALUE v)
     rb_io_check_closed(fptr = arg->fptr);
 
     VALUE scheduler = rb_fiber_scheduler_current();
-    if (scheduler != Qnil) {
-        char *data = RSTRING_PTR(arg->sarg.mesg);
-        long length = RSTRING_LEN(arg->sarg.mesg);
-        VALUE destination = rb_str_new((char*)arg->res->ai->ai_addr, arg->res->ai->ai_addrlen);
-        VALUE result = rb_fiber_scheduler_socket_send_memory(scheduler, fptr->self, data, length, 0, arg->sarg.flags, destination);
-        if (!UNDEF_P(result)) {
-            if (rb_fiber_scheduler_io_result_apply(result) < 0)
-                rb_sys_fail("sendto(2)");
-
-            return result;
-        }
-    }
+#ifdef MSG_DONTWAIT
+    int use_scheduler = (scheduler != Qnil) && !(arg->sarg.flags & MSG_DONTWAIT);
+#else
+    int use_scheduler = (scheduler != Qnil);
+#endif
 
     for (res = arg->res->ai; res; res = res->ai_next) {
+        if (use_scheduler) {
+            char *data = RSTRING_PTR(arg->sarg.mesg);
+            long length = RSTRING_LEN(arg->sarg.mesg);
+            VALUE destination = rb_str_new((char*)res->ai_addr, res->ai_addrlen);
+            VALUE result = rb_fiber_scheduler_socket_send_memory(scheduler, fptr->self, data, length, 0, arg->sarg.flags, destination);
+            if (UNDEF_P(result)) {
+                /* Scheduler doesn't implement socket_send; fall back to blocking for all addrs. */
+                use_scheduler = 0;
+            }
+            else {
+                if (rb_fiber_scheduler_io_result_apply(result) >= 0)
+                    return result;
+                /* Scheduler reported an error for this addr; try the next one. */
+                continue;
+            }
+        }
+
       retry:
         arg->sarg.fd = fptr->fd;
         arg->sarg.to = res->ai_addr;
