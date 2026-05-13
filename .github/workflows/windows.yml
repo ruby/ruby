@@ -26,16 +26,13 @@ jobs:
       matrix:
         include:
           - os: 2022
-            vc: 2022
             test_task: check
           - os: 2025-vs2026
-            vc: 2022
             test_task: check
           - os: 11-arm
             test_task: 'btest test-basic test-tool' # check and test-spec are broken yet.
             target: arm64
           - os: 2025-vs2026
-            vc: 2022
             test_task: test-bundled-gems
       fail-fast: false
 
@@ -49,7 +46,7 @@ jobs:
       || (github.event.pull_request.user.login == 'dependabot[bot]' && !startsWith(github.head_ref, 'dependabot/vcpkg'))
       )}}
 
-    name: Windows ${{ matrix.os }}/Visual C++ ${{ matrix.vc }} (${{ matrix.test_task }})
+    name: Windows ${{ matrix.os }} (${{ matrix.test_task }})
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
@@ -113,8 +110,6 @@ jobs:
         # %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
         # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
         run: |
-          ::- Set up VC ${{ matrix.vc }}
-
           ::- Using sort.exe located in the same directory as comm.exe
           ::- should probably work just fine.
           for %%I in (comm.exe) do set "sort=%%~dp$PATH:I\sort.exe"
@@ -188,7 +183,7 @@ jobs:
 
       - uses: ./.github/actions/slack
         with:
-          label: Windows ${{ matrix.os }} / VC ${{ matrix.vc }} / ${{ matrix.test_task || 'check' }}
+          label: Windows ${{ matrix.os }} / ${{ matrix.test_task || 'check' }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
 
