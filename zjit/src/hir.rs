@@ -788,6 +788,44 @@ pub enum BlockHandler {
     BlockArg,
 }
 
+/// Identifier used by LoadField/StoreField/LoadArg for HIR dumps. Variants
+/// without an associated value name internal VM fields that we used to intern
+/// as CRuby IDs just to print them; the `Id` variant carries a real CRuby ID
+/// (e.g. local variable, ivar, struct field name).
+#[allow(non_camel_case_types)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum FieldName {
+    VM_ENV_DATA_INDEX_ME_CREF,
+    VM_ENV_DATA_INDEX_SPECVAL,
+    VM_ENV_DATA_INDEX_FLAGS,
+    RBASIC_FLAGS,
+    shape_id,
+    as_heap,
+    fields_obj,
+    thread_ptr,
+    len,
+    SelfParam,
+    Id(ID),
+}
+
+impl std::fmt::Display for FieldName {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        use FieldName::*;
+        match self {
+            Id(id) if id_is_empty(*id) => f.write_str("<empty>"),
+            Id(id) => f.write_str(&id.contents_lossy()),
+            SelfParam => f.write_str("self"),
+            _ => write!(f, "{self:?}"),
+        }
+    }
+}
+
+impl From<ID> for FieldName {
+    fn from(id: ID) -> Self {
+        FieldName::Id(id)
+    }
+}
+
 /// An instruction in the SSA IR. The output of an instruction is referred to by the index of
 /// the instruction ([`InsnId`]). SSA form enables this, and [`UnionFind`] ([`Function::find`])
 /// helps with editing.
@@ -798,7 +836,7 @@ pub enum Insn {
     Param,
     /// Load a function argument from the calling convention.
     /// Used in JIT entry blocks. idx is the calling convention index, id is for display.
-    LoadArg { idx: u32, id: ID, val_type: Type },
+    LoadArg { idx: u32, id: FieldName, val_type: Type },
 
     /// Synthetic terminator for the entries superblock. Targets all entry blocks
     /// so that CFG analyses see a single root. Not lowered to machine code.
@@ -920,10 +958,10 @@ pub enum Insn {
     LoadSP,
     /// Load cfp->self
     LoadSelf,
-    LoadField { recv: InsnId, id: ID, offset: i32, return_type: Type },
+    LoadField { recv: InsnId, id: FieldName, offset: i32, return_type: Type },
     /// Write `val` at an offset of `recv`.
     /// When writing a Ruby object to a Ruby object, one must use GuardNotFrozen (or equivalent) before and WriteBarrier after.
-    StoreField { recv: InsnId, id: ID, offset: i32, val: InsnId },
+    StoreField { recv: InsnId, id: FieldName, offset: i32, val: InsnId },
     WriteBarrier { recv: InsnId, val: InsnId },
 
     /// Check whether VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM is set in the (already loaded) environment flags.
@@ -1779,7 +1817,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
         match &self.inner {
             Insn::Const { val } => { write!(f, "Const {}", val.print(self.ptr_map)) }
             Insn::Param => { write!(f, "Param") }
-            Insn::LoadArg { idx, id, .. } => { write!(f, "LoadArg :{}@{idx}", id.contents_lossy()) }
+            Insn::LoadArg { idx, id, .. } => { write!(f, "LoadArg :{id}@{idx}") }
             Insn::Entries { targets } => {
                 write!(f, "Entries")?;
                 let mut prefix = " ";
@@ -2154,14 +2192,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             &Insn::GetEP { level } => write!(f, "GetEP {level}"),
             Insn::LoadSelf => write!(f, "LoadSelf"),
             &Insn::LoadField { recv, id, offset, return_type: _ } => {
-                let field_name = if id_is_empty(id) {
-                    std::borrow::Cow::Borrowed("<empty>")
-                } else {
-                    id.contents_lossy()
-                };
-                write!(f, "LoadField {recv}, :{}@{:#x}", field_name, self.ptr_map.map_offset(offset))
+                write!(f, "LoadField {recv}, :{id}@{:#x}", self.ptr_map.map_offset(offset))
             }
-            &Insn::StoreField { recv, id, offset, val } => write!(f, "StoreField {recv}, :{}@{:#x}, {val}", id.contents_lossy(), self.ptr_map.map_offset(offset)),
+            &Insn::StoreField { recv, id, offset, val } => write!(f, "StoreField {recv}, :{id}@{:#x}, {val}", self.ptr_map.map_offset(offset)),
             &Insn::WriteBarrier { recv, val } => write!(f, "WriteBarrier {recv}, {val}"),
             Insn::SetIvar { self_val, id, val, .. } => write!(f, "SetIvar {self_val}, :{}, {val}", id.contents_lossy()),
             Insn::GetGlobal { id, .. } => write!(f, "GetGlobal :{}", id.contents_lossy()),
@@ -3455,11 +3488,11 @@ impl Function {
         // a (u32, u32) inside a u64 at RUBY_OFFSET_RBASIC_FLAGS (offset 0). It's fine to load the
         // shape alongside the flags, but make sure not to *store* the shape accidentally by
         // writing a u64.
-        self.push_insn(block, Insn::LoadField { recv, id: ID!(_rbasic_flags), offset: RUBY_OFFSET_RBASIC_FLAGS, return_type: types::CUInt64 })
+        self.push_insn(block, Insn::LoadField { recv, id: FieldName::RBASIC_FLAGS, offset: RUBY_OFFSET_RBASIC_FLAGS, return_type: types::CUInt64 })
     }
 
     fn load_ep_flags(&mut self, block: BlockId, ep: InsnId) -> InsnId {
-        self.push_insn(block, Insn::LoadField { recv: ep, id: ID!(_ep_flags), offset: SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32), return_type: types::CUInt64 })
+        self.push_insn(block, Insn::LoadField { recv: ep, id: FieldName::VM_ENV_DATA_INDEX_FLAGS, offset: SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32), return_type: types::CUInt64 })
     }
 
     pub fn guard_not_frozen(&mut self, block: BlockId, recv: InsnId, state: InsnId) {
@@ -3487,7 +3520,7 @@ impl Function {
 
         self.push_insn(block, Insn::LoadField {
             recv: ep,
-            id: local_id,
+            id: local_id.into(),
             offset,
             return_type,
         })
@@ -3507,7 +3540,7 @@ impl Function {
 
         self.push_insn(block, Insn::LoadField {
             recv: sp,
-            id: local_id,
+            id: local_id.into(),
             offset,
             return_type,
         })
@@ -3780,17 +3813,17 @@ impl Function {
                                         let offset = RUBY_OFFSET_RSTRUCT_AS_ARY + (SIZEOF_VALUE_I32 * index);
                                         (recv, offset)
                                     } else {
-                                        let as_heap = self.push_insn(block, Insn::LoadField { recv, id: ID!(_as_heap), offset: RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR, return_type: types::CPtr });
+                                        let as_heap = self.push_insn(block, Insn::LoadField { recv, id: FieldName::as_heap, offset: RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR, return_type: types::CPtr });
                                         let offset = SIZEOF_VALUE_I32 * index;
                                         (as_heap, offset)
                                     };
 
                                     let replacement = if let (OptimizedMethodType::StructAset, &[val]) = (opt_type, args.as_slice()) {
-                                        self.push_insn(block, Insn::StoreField { recv: target, id: mid, offset, val });
+                                        self.push_insn(block, Insn::StoreField { recv: target, id: mid.into(), offset, val });
                                         self.push_insn(block, Insn::WriteBarrier { recv, val });
                                         val
                                     } else { // StructAref
-                                        self.push_insn(block, Insn::LoadField { recv: target, id: mid, offset, return_type: types::BasicObject })
+                                        self.push_insn(block, Insn::LoadField { recv: target, id: mid.into(), offset, return_type: types::BasicObject })
                                     };
                                     self.make_equal_to(insn_id, replacement);
                                 },
@@ -3908,11 +3941,11 @@ impl Function {
                             let level = get_lvar_level(fun.iseq);
                             let lep = fun.push_insn(block, Insn::GetEP { level });
                             // Load ep[VM_ENV_DATA_INDEX_ME_CREF]
-                            let method_entry = fun.push_insn(block, Insn::LoadField { recv: lep, id: ID!(_ep_method_entry), offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_ME_CREF, return_type: types::RubyValue });
+                            let method_entry = fun.push_insn(block, Insn::LoadField { recv: lep, id: FieldName::VM_ENV_DATA_INDEX_ME_CREF, offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_ME_CREF, return_type: types::RubyValue });
                             // Guard that it matches the expected CME
                             fun.push_insn(block, Insn::GuardBitEquals { val: method_entry, expected: Const::Value(current_cme.into()), reason: SideExitReason::GuardSuperMethodEntry, state, recompile: None });
 
-                            let block_handler = fun.push_insn(block, Insn::LoadField { recv: lep, id: ID!(_ep_specval), offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, return_type: types::RubyValue });
+                            let block_handler = fun.push_insn(block, Insn::LoadField { recv: lep, id: FieldName::VM_ENV_DATA_INDEX_SPECVAL, offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, return_type: types::RubyValue });
                             fun.push_insn(block, Insn::GuardBitEquals {
                                 val: block_handler,
                                 expected: Const::Value(VALUE(VM_BLOCK_HANDLER_NONE as usize)),
@@ -4228,7 +4261,7 @@ impl Function {
     fn load_shape(&mut self, block: BlockId, recv: InsnId) -> InsnId {
         self.push_insn(block, Insn::LoadField {
             recv,
-            id: ID!(_shape_id),
+            id: FieldName::shape_id,
             offset: unsafe { rb_shape_id_offset() } as i32,
             return_type: types::CShape
         })
@@ -4261,13 +4294,13 @@ impl Function {
     fn load_ivar_heap(&mut self, block: BlockId,  recv: InsnId, id: ID, ivar_index: attr_index_t) -> InsnId {
         // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
         let ptr = self.push_insn(block, Insn::LoadField {
-            recv, id: ID!(_as_heap),
+            recv, id: FieldName::as_heap,
             offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32,
             return_type: types::CPtr,
         });
         let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
         self.push_insn(block, Insn::LoadField {
-            recv: ptr, id, offset,
+            recv: ptr, id: id.into(), offset,
             return_type: types::BasicObject,
         })
     }
@@ -4277,7 +4310,7 @@ impl Function {
         let offset = ROBJECT_OFFSET_AS_ARY as i32
             + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
         self.push_insn(block, Insn::LoadField {
-            recv, id, offset,
+            recv, id: id.into(), offset,
             return_type: types::BasicObject,
         })
     }
@@ -4328,7 +4361,7 @@ impl Function {
             }
             // Root box only: load directly from prime classext
             let fields_obj = self.push_insn(block, Insn::LoadField {
-                recv: self_val, id: ID!(_fields_obj),
+                recv: self_val, id: FieldName::fields_obj,
                 offset: RCLASS_OFFSET_PRIME_FIELDS_OBJ as i32,
                 return_type: types::RubyValue,
             });
@@ -4337,7 +4370,7 @@ impl Function {
         if recv_type.flags().is_typed_data() {
             // Typed T_DATA: load from fields_obj at fixed offset in RTypedData
             let fields_obj = self.push_insn(block, Insn::LoadField {
-                recv: self_val, id: ID!(_fields_obj),
+                recv: self_val, id: FieldName::fields_obj,
                 offset: RTYPEDDATA_OFFSET_FIELDS_OBJ as i32,
                 return_type: types::RubyValue,
             });
@@ -4509,17 +4542,17 @@ impl Function {
                             let offset = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
                             (self_val, offset)
                         } else {
-                            let as_heap = self.push_insn(block, Insn::LoadField { recv: self_val, id: ID!(_as_heap), offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32, return_type: types::CPtr });
+                            let as_heap = self.push_insn(block, Insn::LoadField { recv: self_val, id: FieldName::as_heap, offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32, return_type: types::CPtr });
                             let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
                             (as_heap, offset)
                         };
-                        self.push_insn(block, Insn::StoreField { recv: ivar_storage, id, offset, val });
+                        self.push_insn(block, Insn::StoreField { recv: ivar_storage, id: id.into(), offset, val });
                         self.push_insn(block, Insn::WriteBarrier { recv: self_val, val });
                         if next_shape_id != recv_type.shape() {
                             // Write the new shape ID
                             let shape_id = self.push_insn(block, Insn::Const { val: Const::CShape(next_shape_id) });
                             let shape_id_offset = unsafe { rb_shape_id_offset() };
-                            self.push_insn(block, Insn::StoreField { recv: self_val, id: ID!(_shape_id), offset: shape_id_offset, val: shape_id });
+                            self.push_insn(block, Insn::StoreField { recv: self_val, id: FieldName::shape_id, offset: shape_id_offset, val: shape_id });
                         }
                     }
                     _ => { self.push_insn_id(block, insn_id); }
@@ -7318,7 +7351,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let ep = fun.push_insn(block, Insn::GetEP { level });
                     let flags = fun.push_insn(block, Insn::LoadField {
                         recv: ep,
-                        id: ID!(_env_data_index_flags),
+                        id: FieldName::VM_ENV_DATA_INDEX_FLAGS,
                         offset: SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32),
                         return_type: types::CInt64,
                     });
@@ -7328,7 +7361,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let modified = fun.push_insn(block, Insn::IntOr { left: flags, right: modified_flag });
                     fun.push_insn(block, Insn::StoreField {
                         recv: ep,
-                        id: ID!(_env_data_index_flags),
+                        id: FieldName::VM_ENV_DATA_INDEX_FLAGS,
                         offset: SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32),
                         val: modified,
                     });
@@ -7386,7 +7419,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     // Push unmodified block: inspect the current block handler to
                     // decide whether this path returns `nil` or `BlockParamProxy`.
-                    let block_handler = fun.push_insn(unmodified_block, Insn::LoadField { recv: ep, id: ID!(_env_data_index_specval), offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, return_type: types::CInt64 });
+                    let block_handler = fun.push_insn(unmodified_block, Insn::LoadField { recv: ep, id: FieldName::VM_ENV_DATA_INDEX_SPECVAL, offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, return_type: types::CInt64 });
                     let original_local = if level == 0 { Some(state.getlocal(ep_offset)) } else { None };
                     // `block_handler & 1 == 1` accepts both ISEQ (0b01) and ifunc
                     // (0b11) handlers. Keep a compile-time check that this shortcut
@@ -8077,7 +8110,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         let lep = fun.push_insn(block, Insn::GetEP { level });
                         let block_handler = fun.push_insn(block, Insn::LoadField {
                             recv: lep,
-                            id: ID!(_env_data_index_specval),
+                            id: FieldName::VM_ENV_DATA_INDEX_SPECVAL,
                             offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL,
                             return_type: types::CInt64,
                         });
@@ -8527,7 +8560,7 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
     };
 
     let mut arg_idx: u32 = 0;
-    let self_param = fun.push_insn(jit_entry_block, Insn::LoadArg { idx: arg_idx, id: ID!(self_), val_type: types::BasicObject });
+    let self_param = fun.push_insn(jit_entry_block, Insn::LoadArg { idx: arg_idx, id: FieldName::SelfParam, val_type: types::BasicObject });
     arg_idx += 1;
     let mut entry_state = FrameState::new(iseq);
     let mut ep: Option<InsnId> = None;
@@ -8553,7 +8586,7 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
             ));
         } else if local_idx < param_size {
             let id = unsafe { rb_zjit_local_id(iseq, local_idx.try_into().unwrap()) };
-            entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::LoadArg { idx: arg_idx, id, val_type: types::BasicObject }));
+            entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::LoadArg { idx: arg_idx, id: id.into(), val_type: types::BasicObject }));
             arg_idx += 1;
         } else {
             entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Const { val: Const::Value(Qnil) }));

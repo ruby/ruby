@@ -21,7 +21,7 @@ use crate::stats::{counter_ptr, with_time_stat, trace_compile_phase, Counter, Co
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_STACK_PTR, Opnd, SP, SideExit, SideExitRecompile, Target, asm_ccall, asm_comment};
 use crate::hir::{iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
-use crate::hir::{BlockHandler, Const, FrameState, Function, Insn, InsnId, Recompile, SendFallbackReason};
+use crate::hir::{BlockHandler, Const, FieldName, FrameState, Function, Insn, InsnId, Recompile, SendFallbackReason};
 use crate::hir_type::{types, Type};
 use crate::options::{get_option, PerfMap};
 use crate::cast::IntoUsize;
@@ -1338,16 +1338,16 @@ fn gen_load_self() -> Opnd {
     Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF)
 }
 
-fn gen_load_field(asm: &mut Assembler, recv: Opnd, id: ID, offset: i32, return_type: Type) -> Opnd {
+fn gen_load_field(asm: &mut Assembler, recv: Opnd, id: FieldName, offset: i32, return_type: Type) -> Opnd {
     gen_incr_counter(asm, Counter::load_field_count);
-    asm_comment!(asm, "Load field id={} offset={}", id.contents_lossy(), offset);
+    asm_comment!(asm, "Load field id={id} offset={offset}");
     let recv = asm.load_mem(recv);
     asm.load(Opnd::mem(return_type.num_bits(), recv, offset))
 }
 
-fn gen_store_field(asm: &mut Assembler, recv: Opnd, id: ID, offset: i32, val: Opnd, val_type: Type) {
+fn gen_store_field(asm: &mut Assembler, recv: Opnd, id: FieldName, offset: i32, val: Opnd, val_type: Type) {
     gen_incr_counter(asm, Counter::store_field_count);
-    asm_comment!(asm, "Store field id={} offset={}", id.contents_lossy(), offset);
+    asm_comment!(asm, "Store field id={id} offset={offset}");
     let recv = asm.load_mem(recv);
     asm.store(Opnd::mem(val_type.num_bits(), recv, offset), val);
 }

@@ -2419,7 +2419,7 @@ pub(crate) mod hir_build_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           v16:ArrayExact = ToNewArray v10
           v18:Fixnum[1] = Const Value(1)
-          v20:CUInt64 = LoadField v16, :_rbasic_flags@0x1001
+          v20:CUInt64 = LoadField v16, :RBASIC_FLAGS@0x1001
           v21:CUInt64 = GuardNoBitsSet v20, RUBY_FL_FREEZE=CUInt64(2048)
           ArrayPush v16, v18
           v24:BasicObject = Send v9, :foo, v16 # SendFallbackReason: Uncategorized(opt_send_without_block)
@@ -2483,14 +2483,14 @@ pub(crate) mod hir_build_tests {
           v29:ArrayExact = ToArray v19
           PatchPoint NoEPEscape(test)
           v36:CPtr = GetEP 0
-          v37:CUInt64 = LoadField v36, :_ep_flags@0x1004
+          v37:CUInt64 = LoadField v36, :VM_ENV_DATA_INDEX_FLAGS@0x1004
           v38:CBool = IsBlockParamModified v37
           CondBranch v38, bb4(), bb5()
         bb4():
           v40:BasicObject = LoadField v36, :&@0x1005
           Jump bb6(v40, v40)
         bb5():
-          v42:CInt64 = LoadField v36, :_env_data_index_specval@0x1006
+          v42:CInt64 = LoadField v36, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
           v43:CInt64 = GuardAnyBitSet v42, CUInt64(1)
           v44:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           Jump bb6(v44, v21)
@@ -3403,7 +3403,7 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           v15:CPtr = GetEP 0
-          v16:CUInt64 = LoadField v15, :_ep_flags@0x1001
+          v16:CUInt64 = LoadField v15, :VM_ENV_DATA_INDEX_FLAGS@0x1001
           v17:CBool = IsBlockParamModified v16
           CondBranch v17, bb4(), bb5()
         bb4():
@@ -3439,14 +3439,14 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           v17:CPtr = GetEP 0
-          v18:CUInt64 = LoadField v17, :_ep_flags@0x1001
+          v18:CUInt64 = LoadField v17, :VM_ENV_DATA_INDEX_FLAGS@0x1001
           v19:CBool = IsBlockParamModified v18
           CondBranch v19, bb4(), bb5()
         bb4():
           v21:BasicObject = LoadField v17, :block@0x1002
           Jump bb6(v21, v21)
         bb5():
-          v23:CInt64 = LoadField v17, :_env_data_index_specval@0x1003
+          v23:CInt64 = LoadField v17, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
           v24:CInt64 = GuardAnyBitSet v23, CUInt64(1)
           v25:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           Jump bb6(v25, v10)
@@ -3483,7 +3483,7 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
           v18:CPtr = GetEP 0
-          v19:CUInt64 = LoadField v18, :_ep_flags@0x1001
+          v19:CUInt64 = LoadField v18, :VM_ENV_DATA_INDEX_FLAGS@0x1001
           v20:CBool = IsBlockParamModified v19
           CondBranch v20, bb4(), bb5()
         bb4():
@@ -3494,14 +3494,14 @@ pub(crate) mod hir_build_tests {
           Jump bb6(v24)
         bb6(v17:BasicObject):
           v32:CPtr = GetEP 0
-          v33:CUInt64 = LoadField v32, :_ep_flags@0x1001
+          v33:CUInt64 = LoadField v32, :VM_ENV_DATA_INDEX_FLAGS@0x1001
           v34:CBool = IsBlockParamModified v33
           CondBranch v34, bb7(), bb8()
         bb7():
           v36:BasicObject = LoadField v32, :block@0x1002
           Jump bb9(v36, v36)
         bb8():
-          v38:CInt64 = LoadField v32, :_env_data_index_specval@0x1003
+          v38:CInt64 = LoadField v32, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
           v39:CInt64 = GuardAnyBitSet v38, CUInt64(1)
           v40:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           Jump bb9(v40, v17)
@@ -3536,7 +3536,7 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v5, v6)
         bb3(v8:BasicObject, v9:NilClass):
           v14:CPtr = GetEP 1
-          v15:CUInt64 = LoadField v14, :_ep_flags@0x1000
+          v15:CUInt64 = LoadField v14, :VM_ENV_DATA_INDEX_FLAGS@0x1000
           v16:CBool = IsBlockParamModified v15
           CondBranch v16, bb4(), bb5()
         bb4():
@@ -3547,14 +3547,14 @@ pub(crate) mod hir_build_tests {
           Jump bb6(v20)
         bb6(v13:BasicObject):
           v27:CPtr = GetEP 1
-          v28:CUInt64 = LoadField v27, :_ep_flags@0x1000
+          v28:CUInt64 = LoadField v27, :VM_ENV_DATA_INDEX_FLAGS@0x1000
           v29:CBool = IsBlockParamModified v28
           CondBranch v29, bb7(), bb8()
         bb7():
           v31:BasicObject = LoadField v27, :block@0x1001
           Jump bb9(v31)
         bb8():
-          v33:CInt64 = LoadField v27, :_env_data_index_specval@0x1002
+          v33:CInt64 = LoadField v27, :VM_ENV_DATA_INDEX_SPECVAL@0x1002
           v34:CInt64 = GuardAnyBitSet v33, CUInt64(1)
           v35:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           Jump bb9(v35)
@@ -3593,14 +3593,14 @@ pub(crate) mod hir_build_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           v14:Fixnum[0] = Const Value(0)
           v18:CPtr = GetEP 0
-          v19:CUInt64 = LoadField v18, :_ep_flags@0x1001
+          v19:CUInt64 = LoadField v18, :VM_ENV_DATA_INDEX_FLAGS@0x1001
           v20:CBool = IsBlockParamModified v19
           CondBranch v20, bb4(), bb5()
         bb4():
           v22:BasicObject = LoadField v18, :block@0x1002
           Jump bb6(v22, v22)
         bb5():
-          v24:CInt64 = LoadField v18, :_env_data_index_specval@0x1003
+          v24:CInt64 = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
           v25:CInt64[1] = Const CInt64(1)
           v26:CInt64 = IntAnd v24, v25
           v27:CBool = IsBitEqual v26, v25
@@ -3645,7 +3645,7 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v11:CPtr = GetEP 1
-          v12:CUInt64 = LoadField v11, :_ep_flags@0x1000
+          v12:CUInt64 = LoadField v11, :VM_ENV_DATA_INDEX_FLAGS@0x1000
           v13:CBool = IsBlockParamModified v12
           CondBranch v13, bb4(), bb5()
         bb4():
@@ -3685,10 +3685,10 @@ pub(crate) mod hir_build_tests {
           v14:NilClass = Const Value(nil)
           SetLocal :block, l0, EP@3, v14
           v18:CPtr = GetEP 0
-          v19:CInt64 = LoadField v18, :_env_data_index_flags@0x1001
+          v19:CInt64 = LoadField v18, :VM_ENV_DATA_INDEX_FLAGS@0x1001
           v20:CInt64[512] = Const CInt64(512)
           v21:CInt64 = IntOr v19, v20
-          StoreField v18, :_env_data_index_flags@0x1001, v21
+          StoreField v18, :VM_ENV_DATA_INDEX_FLAGS@0x1001, v21
           CheckInterrupts
           Return v14
         ");
@@ -3717,10 +3717,10 @@ pub(crate) mod hir_build_tests {
           v10:NilClass = Const Value(nil)
           SetLocal :block, l1, EP@3, v10
           v14:CPtr = GetEP 1
-          v15:CInt64 = LoadField v14, :_env_data_index_flags@0x1000
+          v15:CInt64 = LoadField v14, :VM_ENV_DATA_INDEX_FLAGS@0x1000
           v16:CInt64[512] = Const CInt64(512)
           v17:CInt64 = IntOr v15, v16
-          StoreField v14, :_env_data_index_flags@0x1000, v17
+          StoreField v14, :VM_ENV_DATA_INDEX_FLAGS@0x1000, v17
           CheckInterrupts
           Return v10
         ");
@@ -3750,14 +3750,14 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           v21:CPtr = GetEP 0
-          v22:CUInt64 = LoadField v21, :_ep_flags@0x1002
+          v22:CUInt64 = LoadField v21, :VM_ENV_DATA_INDEX_FLAGS@0x1002
           v23:CBool = IsBlockParamModified v22
           CondBranch v23, bb4(), bb5()
         bb4():
           v25:BasicObject = LoadField v21, :b@0x1003
           Jump bb6(v25, v25)
         bb5():
-          v27:CInt64 = LoadField v21, :_env_data_index_specval@0x1004
+          v27:CInt64 = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
           v28:CInt64 = GuardAnyBitSet v27, CUInt64(1)
           v29:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           Jump bb6(v29, v13)
@@ -3799,14 +3799,14 @@ pub(crate) mod hir_build_tests {
           v29:ArrayExact = ToArray v19
           PatchPoint NoEPEscape(test)
           v36:CPtr = GetEP 0
-          v37:CUInt64 = LoadField v36, :_ep_flags@0x1004
+          v37:CUInt64 = LoadField v36, :VM_ENV_DATA_INDEX_FLAGS@0x1004
           v38:CBool = IsBlockParamModified v37
           CondBranch v38, bb4(), bb5()
         bb4():
           v40:BasicObject = LoadField v36, :&@0x1005
           Jump bb6(v40, v40)
         bb5():
-          v42:CInt64 = LoadField v36, :_env_data_index_specval@0x1006
+          v42:CInt64 = LoadField v36, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
           v43:CInt64[0] = GuardBitEquals v42, CInt64(0)
           v44:NilClass = Const Value(nil)
           Jump bb6(v44, v21)
@@ -3843,14 +3843,14 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           v21:CPtr = GetEP 0
-          v22:CUInt64 = LoadField v21, :_ep_flags@0x1002
+          v22:CUInt64 = LoadField v21, :VM_ENV_DATA_INDEX_FLAGS@0x1002
           v23:CBool = IsBlockParamModified v22
           CondBranch v23, bb4(), bb5()
         bb4():
           v25:BasicObject = LoadField v21, :b@0x1003
           Jump bb6(v25, v25)
         bb5():
-          v27:CInt64 = LoadField v21, :_env_data_index_specval@0x1004
+          v27:CInt64 = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
           v28:CInt64 = GuardAnyBitSet v27, CUInt64(1)
           v29:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           Jump bb6(v29, v13)
@@ -3887,14 +3887,14 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           v21:CPtr = GetEP 0
-          v22:CUInt64 = LoadField v21, :_ep_flags@0x1002
+          v22:CUInt64 = LoadField v21, :VM_ENV_DATA_INDEX_FLAGS@0x1002
           v23:CBool = IsBlockParamModified v22
           CondBranch v23, bb4(), bb5()
         bb4():
           v25:BasicObject = LoadField v21, :b@0x1003
           Jump bb6(v25, v25)
         bb5():
-          v27:CInt64 = LoadField v21, :_env_data_index_specval@0x1004
+          v27:CInt64 = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
           v28:CInt64 = GuardAnyBitSet v27, CUInt64(1)
           v29:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           Jump bb6(v29, v13)
@@ -3941,14 +3941,14 @@ pub(crate) mod hir_build_tests {
           v29:ArrayExact = ToArray v19
           PatchPoint NoEPEscape(test)
           v36:CPtr = GetEP 0
-          v37:CUInt64 = LoadField v36, :_ep_flags@0x1004
+          v37:CUInt64 = LoadField v36, :VM_ENV_DATA_INDEX_FLAGS@0x1004
           v38:CBool = IsBlockParamModified v37
           CondBranch v38, bb4(), bb5()
         bb4():
           v40:BasicObject = LoadField v36, :&@0x1005
           Jump bb6(v40, v40)
         bb5():
-          v42:CInt64 = LoadField v36, :_env_data_index_specval@0x1006
+          v42:CInt64 = LoadField v36, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
           v43:CInt64[0] = GuardBitEquals v42, CInt64(0)
           v44:NilClass = Const Value(nil)
           Jump bb6(v44, v21)
@@ -3984,14 +3984,14 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           v21:CPtr = GetEP 0
-          v22:CUInt64 = LoadField v21, :_ep_flags@0x1002
+          v22:CUInt64 = LoadField v21, :VM_ENV_DATA_INDEX_FLAGS@0x1002
           v23:CBool = IsBlockParamModified v22
           CondBranch v23, bb4(), bb5()
         bb4():
           v25:BasicObject = LoadField v21, :block@0x1003
           Jump bb6(v25, v25)
         bb5():
-          v27:CInt64 = LoadField v21, :_env_data_index_specval@0x1004
+          v27:CInt64 = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
           v28:CInt64 = GuardAnyBitSet v27, CUInt64(1)
           v29:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           Jump bb6(v29, v13)
@@ -4077,7 +4077,7 @@ pub(crate) mod hir_build_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           v15:ArrayExact = ToNewArray v10
           v17:Fixnum[1] = Const Value(1)
-          v19:CUInt64 = LoadField v15, :_rbasic_flags@0x1001
+          v19:CUInt64 = LoadField v15, :RBASIC_FLAGS@0x1001
           v20:CUInt64 = GuardNoBitsSet v19, RUBY_FL_FREEZE=CUInt64(2048)
           ArrayPush v15, v17
           CheckInterrupts
@@ -4109,7 +4109,7 @@ pub(crate) mod hir_build_tests {
           v17:Fixnum[1] = Const Value(1)
           v19:Fixnum[2] = Const Value(2)
           v21:Fixnum[3] = Const Value(3)
-          v23:CUInt64 = LoadField v15, :_rbasic_flags@0x1001
+          v23:CUInt64 = LoadField v15, :RBASIC_FLAGS@0x1001
           v24:CUInt64 = GuardNoBitsSet v23, RUBY_FL_FREEZE=CUInt64(2048)
           ArrayPush v15, v17
           ArrayPush v15, v19
@@ -4684,14 +4684,14 @@ pub(crate) mod hir_build_tests {
           v27:BasicObject = InvokeBuiltin dir_s_open, v18, v19, v20
           PatchPoint NoEPEscape(open)
           v35:CPtr = GetEP 0
-          v36:CUInt64 = LoadField v35, :_ep_flags@0x1004
+          v36:CUInt64 = LoadField v35, :VM_ENV_DATA_INDEX_FLAGS@0x1004
           v37:CBool = IsBlockParamModified v36
           CondBranch v37, bb5(), bb6()
         bb5():
           v39:BasicObject = LoadField v35, :block@0x1005
           Jump bb7(v39, v39)
         bb6():
-          v41:CInt64 = LoadField v35, :_env_data_index_specval@0x1006
+          v41:CInt64 = LoadField v35, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
           v42:CInt64 = GuardAnyBitSet v41, CUInt64(1)
           v43:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           Jump bb7(v43, v22)
