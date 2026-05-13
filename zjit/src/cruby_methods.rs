@@ -12,7 +12,7 @@ use crate::cruby::*;
 use std::collections::HashMap;
 use std::ffi::c_void;
 use crate::hir_type::{types, Type};
-use crate::hir;
+use crate::hir::{self, FieldName};
 
 // Array iteration builtin functions (defined in array.c)
 unsafe extern "C" {
@@ -322,13 +322,13 @@ fn inline_thread_current(fun: &mut hir::Function, block: hir::BlockId, _recv: hi
     let ec = fun.push_insn(block, hir::Insn::LoadEC);
     let thread_ptr = fun.push_insn(block, hir::Insn::LoadField {
         recv: ec,
-        id: ID!(thread_ptr),
+        id: FieldName::thread_ptr,
         offset: RUBY_OFFSET_EC_THREAD_PTR as i32,
         return_type: types::CPtr,
     });
     let thread_self = fun.push_insn(block, hir::Insn::LoadField {
         recv: thread_ptr,
-        id: ID!(self_),
+        id: FieldName::SelfParam,
         offset: RUBY_OFFSET_THREAD_SELF as i32,
         // TODO(max): Add Thread type. But Thread.current is not guaranteed to be an exact Thread.
         // You can make subclasses...
@@ -462,7 +462,7 @@ fn inline_string_bytesize(fun: &mut hir::Function, block: hir::BlockId, recv: hi
         let recv = fun.coerce_to(block, recv, types::String, state);
         let len = fun.push_insn(block, hir::Insn::LoadField {
             recv,
-            id: ID!(len),
+            id: FieldName::len,
             offset: RUBY_OFFSET_RSTRING_LEN as i32,
             return_type: types::CInt64,
         });
@@ -486,7 +486,7 @@ fn inline_string_getbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
         let unboxed_index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
         let len = fun.push_insn(block, hir::Insn::LoadField {
             recv,
-            id: ID!(len),
+            id: FieldName::len,
             offset: RUBY_OFFSET_RSTRING_LEN as i32,
             return_type: types::CInt64,
         });
@@ -514,7 +514,7 @@ fn inline_string_setbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
         let unboxed_index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
         let len = fun.push_insn(block, hir::Insn::LoadField {
             recv,
-            id: ID!(len),
+            id: FieldName::len,
             offset: RUBY_OFFSET_RSTRING_LEN as i32,
             return_type: types::CInt64,
         });
@@ -537,7 +537,7 @@ fn inline_string_empty_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir
     let &[] = args else { return None; };
     let len = fun.push_insn(block, hir::Insn::LoadField {
         recv,
-        id: ID!(len),
+        id: FieldName::len,
         offset: RUBY_OFFSET_RSTRING_LEN as i32,
         return_type: types::CInt64,
     });

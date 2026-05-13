@@ -1593,22 +1593,9 @@ pub(crate) mod ids {
         name: freeze
         name: minusat            content: b"-@"
         name: aref               content: b"[]"
-        name: len
-        name: _as_heap
-        name: _fields_obj
-        name: thread_ptr
-        name: self_              content: b"self"
         name: rb_ivar_get_at_no_ractor_check
-        name: _shape_id
-        name: _env_data_index_flags
-        name: _env_data_index_specval
-        name: _ep_method_entry
-        name: _ep_specval
-        name: _ep_flags
-        name: _rbasic_flags
         name: RUBY_FL_FREEZE
         name: RUBY_ELTS_SHARED
-        name: VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM
         name: RubyVM
         name: ZJIT
         name: induce_side_exit_bang       content: b"induce_side_exit!"
