@@ -757,7 +757,7 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
                 bt_backpatch_loc(backpatch_counter, loc, cfp->iseq, cfp->pc);
                 RB_OBJ_WRITTEN(btobj, Qundef, cfp->iseq);
                 if (do_yield) {
-                    bt_yield_loc(loc - backpatch_counter, backpatch_counter, btobj);
+                    bt_yield_loc(loc - backpatch_counter + 1, backpatch_counter, btobj);
                 }
                 break;
             }
