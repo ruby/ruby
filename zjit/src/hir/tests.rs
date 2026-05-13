@@ -4644,9 +4644,9 @@ pub(crate) mod hir_build_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          v10:HeapObject = InvokeBuiltin leaf <inline_expr>, v6
+          v10:Class = InvokeBuiltin leaf <inline_expr>, v6
           Jump bb4(v6, v10)
-        bb4(v12:BasicObject, v13:HeapObject):
+        bb4(v12:BasicObject, v13:Class):
           CheckInterrupts
           Return v13
         ");
