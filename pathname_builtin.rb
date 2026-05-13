@@ -267,13 +267,13 @@ class Pathname
   #
   # Returns whether the stored paths in +self+ and +other+ are equal:
   #
-  #   pn = Pathname.new('lib')
-  #   pn == Pathname.new('lib')   # => true
-  #   pn == Pathname.new('./lib') # => false
+  #   pn = Pathname('lib')
+  #   pn == Pathname('lib')   # => true
+  #   pn == Pathname('./lib') # => false
   #
   # Returns +false+ if +other+ is not a pathname:
   #
-  #   pn == 'lib'                 # => false
+  #   pn == 'lib'             # => false
   #
   def ==(other)
     return false unless Pathname === other
