@@ -317,5 +317,53 @@ RSpec.describe "bundle install" do
       expect(the_bundle).to include_gems("production_gem 1.0")
       expect(the_bundle).not_to include_gems("development_gem 1.0")
     end
+
+    it "resolves indirect dependencies from a git source not in the requested groups" do
+      build_lib "activesupport", "1.0", path: lib_path("rails/activesupport")
+      build_git "activerecord", "1.0", path: lib_path("rails") do |s|
+        s.add_dependency "activesupport", "= 1.0"
+      end
+
+      gemfile <<-G
+        source "https://gem.repo1"
+
+        gem "activerecord", :git => "#{lib_path("rails")}"
+
+        group :ci do
+          gem "myrack"
+        end
+      G
+
+      bundle_config "only ci"
+      bundle :install
+
+      expect(the_bundle).to include_gems("myrack 1.0.0")
+      expect(the_bundle).not_to include_gems("activerecord 1.0")
+    end
+
+    it "resolves indirect dependencies from a git source not in the requested groups (without compact_index dependency API)" do
+      build_lib "activesupport", "1.0", path: lib_path("rails/activesupport")
+      build_git "activerecord", "1.0", path: lib_path("rails") do |s|
+        s.add_dependency "activesupport", "= 1.0"
+      end
+
+      gemfile <<-G
+        source "https://gem.repo1"
+
+        gem "activerecord", :git => "#{lib_path("rails")}"
+
+        group :ci do
+          gem "myrack"
+        end
+      G
+
+      # Force the RubygemsAggregate code path in find_source_requirements by
+      # making the dependency API unavailable.
+      bundle_config "only ci"
+      bundle :install, artifice: "endpoint_api_forbidden"
+
+      expect(the_bundle).to include_gems("myrack 1.0.0")
+      expect(the_bundle).not_to include_gems("activerecord 1.0")
+    end
   end
 end

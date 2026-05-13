@@ -1213,16 +1213,20 @@ module Bundler
     def find_source_requirements
       preload_git_sources
 
+      # Only safe to exclude when locked_requirements (merged below) backfills the gap.
+      nothing_changed = nothing_changed?
+      excluded = nothing_changed ? excluded_git_sources : []
+
       # Record the specs available in each gem's source, so that those
       # specs will be available later when the resolver knows where to
       # look for that gemspec (or its dependencies)
       source_requirements = if precompute_source_requirements_for_indirect_dependencies?
-        all_requirements = source_map.all_requirements(excluded_git_sources)
+        all_requirements = source_map.all_requirements(excluded)
         { default: default_source }.merge(all_requirements)
       else
-        { default: Source::RubygemsAggregate.new(sources, source_map, excluded_git_sources) }.merge(source_map.direct_requirements)
+        { default: Source::RubygemsAggregate.new(sources, source_map, excluded) }.merge(source_map.direct_requirements)
       end
-      source_requirements.merge!(source_map.locked_requirements) if nothing_changed?
+      source_requirements.merge!(source_map.locked_requirements) if nothing_changed
       metadata_dependencies.each do |dep|
         source_requirements[dep.name] = sources.metadata_source
       end
