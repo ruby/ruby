@@ -168,7 +168,7 @@ rsock_is_dgram(rb_io_t *fptr)
     return socktype == SOCK_DGRAM;
 }
 
-struct rsock_recv_scheduler_args {
+struct rsock_recv_scheduler_arguments {
     VALUE scheduler;
     VALUE socket;
     size_t length;
@@ -179,9 +179,9 @@ struct rsock_recv_scheduler_args {
 static VALUE
 rsock_recv_with_scheduler(VALUE buffer, VALUE _argument)
 {
-    struct rsock_recv_scheduler_args *args = (struct rsock_recv_scheduler_args *)_argument;
-    return rb_fiber_scheduler_socket_recv(args->scheduler, args->socket, buffer,
-                                          args->length, args->flags, args->from);
+    struct rsock_recv_scheduler_arguments *arguments = (struct rsock_recv_scheduler_arguments *)_argument;
+    return rb_fiber_scheduler_socket_recv(arguments->scheduler, arguments->socket, buffer,
+                                          arguments->length, arguments->flags, arguments->from);
 }
 
 VALUE
@@ -228,7 +228,7 @@ rsock_s_recvfrom(VALUE socket, int argc, VALUE *argv, enum sock_recv_type from)
         int need_address = (from == RECV_IP) || (from == RECV_SOCKET);
 #endif
         VALUE from_address = need_address ? rb_str_new(0, 0) : Qnil;
-        struct rsock_recv_scheduler_args arguments = {
+        struct rsock_recv_scheduler_arguments arguments = {
             .scheduler = scheduler,
             .socket = socket,
             .length = 0,
