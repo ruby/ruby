@@ -112,7 +112,8 @@ jobs:
           pushd ../baseruby
           echo "ruby=$PWD/install/bin/ruby" >> $GITHUB_OUTPUT
           echo "dump_ast=$PWD/dump_ast" >> $GITHUB_OUTPUT
-          ../src/configure --prefix=$PWD/install
+          ../src/configure --prefix=$PWD/install --disable-install-doc
+          export CONFIGURE_ARGS=--with-out-ext=-test-
           make
           make install
 
