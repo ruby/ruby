@@ -201,7 +201,11 @@ rsock_s_recvfrom(VALUE socket, int argc, VALUE *argv, enum sock_recv_type from)
     arg.length = buflen;
 
     VALUE scheduler = rb_fiber_scheduler_current();
+#ifdef MSG_DONTWAIT
+    if (scheduler != Qnil && !(arg.flags & MSG_DONTWAIT)) {
+#else
     if (scheduler != Qnil) {
+#endif
         char *data = RSTRING_PTR(str);
         long length = buflen;
 #ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN

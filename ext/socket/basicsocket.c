@@ -600,7 +600,11 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE socket)
     }
 
     VALUE scheduler = rb_fiber_scheduler_current();
+#ifdef MSG_DONTWAIT
+    if (scheduler != Qnil && !(NUM2INT(flags) & MSG_DONTWAIT)) {
+#else
     if (scheduler != Qnil) {
+#endif
         char *data = RSTRING_PTR(arg.mesg);
         long length = RSTRING_LEN(arg.mesg);
         VALUE result = rb_fiber_scheduler_socket_send_memory(scheduler, socket, data, length, 0, NUM2INT(flags), to);
