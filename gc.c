@@ -2009,7 +2009,7 @@ finalizer_fire_ready_queue(void *data)
         RB_VM_LOCKING() {
             ccan_list_for_each(&GET_VM()->ractor.set, r, vmlr_node) {
                 if (r != cr && r->finalizer_queue && r->threads.main) {
-                    rb_ractor_interrupt_exec(r, finalizer_interrupt_exec_func, NULL, rb_interrupt_exec_flag_none);
+                    rb_threadptr_interrupt_exec(r->threads.main, finalizer_interrupt_exec_func, NULL, rb_interrupt_exec_flag_none);
                 }
             }
         }
