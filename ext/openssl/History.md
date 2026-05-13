@@ -1,3 +1,9 @@
+Version 3.3.2
+=============
+
+Merged changes in 3.1.3 and 3.2.3.
+
+
 Version 3.3.1
 =============
 
@@ -80,6 +86,12 @@ And various non-user-visible changes and bug fixes. Please see the commit
 history for more details.
 
 
+Version 3.2.3
+=============
+
+Merged changes in 3.1.3.
+
+
 Version 3.2.2
 =============
 
@@ -130,6 +142,16 @@ Notable changes
 * Allow `OpenSSL::X509::ExtensionFactory#create_extension` to take OIDs in the
   dotted-decimal notation.
   [[GitHub #141]](https://github.com/ruby/openssl/pull/141)
+
+
+Version 3.1.3
+=============
+
+Bug fixes
+---------
+
+* Fix missing NULL check for `EVP_PKEY_get0()` functions with OpenSSL 3.x.
+  [[GitHub #957]](https://github.com/ruby/openssl/pull/957)
 
 
 Version 3.1.2
