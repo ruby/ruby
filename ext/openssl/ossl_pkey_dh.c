@@ -21,6 +21,8 @@
     EVP_PKEY *_pkey; \
     GetPKeyDH((obj), _pkey); \
     (dh) = EVP_PKEY_get0_DH(_pkey); \
+    if ((dh) == NULL) \
+        ossl_raise(eDHError, "failed to get DH from EVP_PKEY"); \
 } while (0)
 
 /*
