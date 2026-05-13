@@ -574,6 +574,22 @@ bsock_remote_address(VALUE sock)
  *     p s.read
  *   }
  */
+struct rsock_send_scheduler_args {
+    VALUE scheduler;
+    VALUE socket;
+    size_t length;
+    int flags;
+    VALUE destination;
+};
+
+static VALUE
+rsock_send_with_scheduler(VALUE buffer, VALUE _args)
+{
+    struct rsock_send_scheduler_args *args = (struct rsock_send_scheduler_args *)_args;
+    return rb_fiber_scheduler_socket_send(args->scheduler, args->socket, buffer,
+                                          args->length, args->flags, args->destination);
+}
+
 VALUE
 rsock_bsock_send(int argc, VALUE *argv, VALUE socket)
 {
@@ -605,9 +621,14 @@ rsock_bsock_send(int argc, VALUE *argv, VALUE socket)
 #else
     if (scheduler != Qnil) {
 #endif
-        char *data = RSTRING_PTR(arg.mesg);
-        long length = RSTRING_LEN(arg.mesg);
-        VALUE result = rb_fiber_scheduler_socket_send_memory(scheduler, socket, data, length, 0, NUM2INT(flags), to);
+        struct rsock_send_scheduler_args arguments = {
+            .scheduler = scheduler,
+            .socket = socket,
+            .length = 0,
+            .flags = NUM2INT(flags),
+            .destination = to,
+        };
+        VALUE result = rb_io_buffer_for_reading(arg.mesg, rsock_send_with_scheduler, (VALUE)&arguments);
         if (!UNDEF_P(result)) {
             if (rb_fiber_scheduler_io_result_apply(result) < 0)
                 rb_sys_fail(funcname);

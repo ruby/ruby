@@ -168,6 +168,22 @@ rsock_is_dgram(rb_io_t *fptr)
     return socktype == SOCK_DGRAM;
 }
 
+struct rsock_recv_scheduler_args {
+    VALUE scheduler;
+    VALUE socket;
+    size_t length;
+    int flags;
+    VALUE from;
+};
+
+static VALUE
+rsock_recv_with_scheduler(VALUE buffer, VALUE _argument)
+{
+    struct rsock_recv_scheduler_args *args = (struct rsock_recv_scheduler_args *)_argument;
+    return rb_fiber_scheduler_socket_recv(args->scheduler, args->socket, buffer,
+                                          args->length, args->flags, args->from);
+}
+
 VALUE
 rsock_s_recvfrom(VALUE socket, int argc, VALUE *argv, enum sock_recv_type from)
 {
@@ -206,15 +222,20 @@ rsock_s_recvfrom(VALUE socket, int argc, VALUE *argv, enum sock_recv_type from)
 #else
     if (scheduler != Qnil) {
 #endif
-        char *data = RSTRING_PTR(str);
-        long length = buflen;
 #ifdef HAVE_TYPE_STRUCT_SOCKADDR_UN
         int need_address = (from == RECV_IP) || (from == RECV_SOCKET) || (from == RECV_UNIX);
 #else
         int need_address = (from == RECV_IP) || (from == RECV_SOCKET);
 #endif
         VALUE from_address = need_address ? rb_str_new(0, 0) : Qnil;
-        VALUE result = rb_fiber_scheduler_socket_recv_memory(scheduler, socket, data, length, 0, arg.flags, from_address);
+        struct rsock_recv_scheduler_args arguments = {
+            .scheduler = scheduler,
+            .socket = socket,
+            .length = 0,
+            .flags = arg.flags,
+            .from = from_address,
+        };
+        VALUE result = rb_io_buffer_for_writing(str, rsock_recv_with_scheduler, (VALUE)&arguments);
         if (!UNDEF_P(result)) {
             if (rb_fiber_scheduler_io_result_apply(result) < 0)
                 rb_sys_fail("recvfrom(2)");

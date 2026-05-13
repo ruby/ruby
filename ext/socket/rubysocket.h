@@ -142,6 +142,7 @@
 #include "internal/error.h"
 #include "internal/gc.h"
 #include "internal/io.h"
+#include "internal/io_buffer.h"
 #include "internal/thread.h"
 #include "internal/vm.h"
 #include "ruby/io.h"
