@@ -4453,18 +4453,30 @@ impl Function {
     fn inline_methods(&mut self) -> bool {
         let mut did_inline = false;
 
-        for block in self.rpo() {
+        // Worklist of blocks left to scan for inlinable SendDirects. Seeded with
+        // the function's current RPO so we visit every existing block, and
+        // extended with each continuation block we create below. Inlining a SendDirect
+        // splits its block: pre-Send instructions stay in `block` and the post-Send
+        // tail moves to a fresh `continuation`. That tail may contain further
+        // SendDirects that were present before this call started, so queueing
+        // `continuation` ensures they get a chance to inline as well.
+        //
+        // The callee body blocks emitted by add_iseq_to_hir are deliberately
+        // NOT enqueued: any Sends they contain are next-level work that only becomes
+        // inlinable after a later type_specialize pass promotes them to SendDirect.
+        let mut worklist: VecDeque<BlockId> = self.reverse_post_order().into_iter().collect();
+
+        while let Some(block) = worklist.pop_front() {
             // Walk this block looking for an inlinable SendDirect. Under the
             // basic-block invariant, the terminator is the last instruction in
             // the block and SendDirect is never a terminator (it has an
             // output), so every SendDirect lives in the block body and its
             // position can be found by a linear scan. We commit at most one
-            // inline per block in a given pass; any further inlinable SendDirects
-            // that get moved into the continuation block are picked up by the outer
-            // fixed-point loop. The cursor below advances past SendDirects we
-            // reject (denylist, compile failure, no-return callee) so that a
-            // later, inlinable SendDirect in the same block still gets a
-            // chance this pass.
+            // inline per block visit; the post-Send tail that moves to the
+            // continuation is rescanned when that continuation comes off the
+            // worklist. The cursor below advances past SendDirects we reject
+            // (denylist, compile failure, no-return callee) so that a later,
+            // inlinable SendDirect in the same block still gets a chance.
             let mut search_start = 0;
             loop {
                 let Some(offset) = self.blocks[block.0].insns[search_start..].iter()
@@ -4714,9 +4726,13 @@ impl Function {
                     self.profiles = Some(add_result.profiles);
                 }
 
-                // One inline per (block, pass): any further inlinable SendDirects
-                // that landed in the continuation are picked up on the next outer
-                // pass once the continuation enters self.rpo().
+                // The post-Send tail now lives in `continuation` and may itself
+                // contain further inlinable SendDirects. Queue it for scanning
+                // so we handle every SendDirect at the current level in this
+                // single inline_methods call.
+                worklist.push_back(continuation);
+
+                // Done with this block: the rest of it is in `continuation`.
                 break;
             }
         }
@@ -6267,6 +6283,7 @@ impl Function {
             // inliner then handles more complex methods that require full inlining.
             run_pass!(inline);
             let did_inline = self.inline_methods();
+
             #[cfg(debug_assertions)] self.assert_validates();
             if should_dump {
                 passes.push(self.to_iongraph_pass("inline_methods"));
