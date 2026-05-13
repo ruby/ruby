@@ -58,13 +58,14 @@ GetX509CRLPtr(VALUE obj)
 }
 
 VALUE
-ossl_x509crl_new(X509_CRL *crl)
+ossl_x509crl_new(const X509_CRL *crl)
 {
     X509_CRL *tmp;
     VALUE obj;
 
     obj = NewX509CRL(cX509CRL);
-    tmp = crl ? X509_CRL_dup(crl) : X509_CRL_new();
+    /* OpenSSL 1.1.1 takes a non-const pointer */
+    tmp = crl ? X509_CRL_dup((X509_CRL *)crl) : X509_CRL_new();
     if(!tmp) ossl_raise(eX509CRLError, NULL);
     SetX509CRL(obj, tmp);
 
@@ -274,7 +275,7 @@ ossl_x509crl_get_revoked(VALUE self)
 {
     X509_CRL *crl;
     int i, num;
-    X509_REVOKED *rev;
+    const X509_REVOKED *rev;
     VALUE ary, revoked;
 
     GetX509CRL(self, crl);
@@ -444,7 +445,6 @@ ossl_x509crl_get_extensions(VALUE self)
 {
     X509_CRL *crl;
     int count, i;
-    X509_EXTENSION *ext;
     VALUE ary;
 
     GetX509CRL(self, crl);
@@ -455,7 +455,7 @@ ossl_x509crl_get_extensions(VALUE self)
     }
     ary = rb_ary_new2(count);
     for (i=0; i<count; i++) {
-	ext = X509_CRL_get_ext(crl, i); /* NO DUP - don't free! */
+	const X509_EXTENSION *ext = X509_CRL_get_ext(crl, i);
 	rb_ary_push(ary, ossl_x509ext_new(ext));
     }
 

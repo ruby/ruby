@@ -16,17 +16,18 @@ static VALUE ossl_asn1_decode0(unsigned char **pp, long length, long *offset,
  * DATE conversion
  */
 VALUE
-asn1time_to_time(const ASN1_TIME *time)
+asn1time_to_time(const ASN1_TIME *time_)
 {
+    ASN1_TIME *time = (ASN1_TIME *)time_; // const cast for OpenSSL 1.0.2
     struct tm tm;
     VALUE argv[6];
     int count;
 
     memset(&tm, 0, sizeof(struct tm));
 
-    switch (time->type) {
+    switch (ASN1_STRING_type(time)) {
     case V_ASN1_UTCTIME:
-	count = sscanf((const char *)time->data, "%2d%2d%2d%2d%2d%2dZ",
+	count = sscanf((const char *)ASN1_STRING_get0_data(time), "%2d%2d%2d%2d%2d%2dZ",
 		&tm.tm_year, &tm.tm_mon, &tm.tm_mday, &tm.tm_hour, &tm.tm_min,
 		&tm.tm_sec);
 
@@ -34,7 +35,7 @@ asn1time_to_time(const ASN1_TIME *time)
 	    tm.tm_sec = 0;
 	} else if (count != 6) {
 	    ossl_raise(rb_eTypeError, "bad UTCTIME format: \"%s\"",
-		    time->data);
+		    ASN1_STRING_get0_data(time));
 	}
 	if (tm.tm_year < 69) {
 	    tm.tm_year += 2000;
@@ -43,7 +44,7 @@ asn1time_to_time(const ASN1_TIME *time)
 	}
 	break;
     case V_ASN1_GENERALIZEDTIME:
-	count = sscanf((const char *)time->data, "%4d%2d%2d%2d%2d%2dZ",
+	count = sscanf((const char *)ASN1_STRING_get0_data(time), "%4d%2d%2d%2d%2d%2dZ",
 		&tm.tm_year, &tm.tm_mon, &tm.tm_mday, &tm.tm_hour, &tm.tm_min,
 		&tm.tm_sec);
 	if (count == 5) {
@@ -51,7 +52,7 @@ asn1time_to_time(const ASN1_TIME *time)
 	}
 	else if (count != 6) {
 		ossl_raise(rb_eTypeError, "bad GENERALIZEDTIME format: \"%s\"",
-			time->data);
+			ASN1_STRING_get0_data(time));
 	}
 	break;
     default:
@@ -96,7 +97,8 @@ ossl_time_split(VALUE time, time_t *sec, int *days)
 VALUE
 asn1str_to_str(const ASN1_STRING *str)
 {
-    return rb_str_new((const char *)str->data, str->length);
+    return rb_str_new((const char *)ASN1_STRING_get0_data(str),
+                      ASN1_STRING_length(str));
 }
 
 /*
@@ -111,9 +113,9 @@ asn1integer_to_num(const ASN1_INTEGER *ai)
     if (!ai) {
 	ossl_raise(rb_eTypeError, "ASN1_INTEGER is NULL!");
     }
-    if (ai->type == V_ASN1_ENUMERATED)
-	/* const_cast: workaround for old OpenSSL */
-	bn = ASN1_ENUMERATED_to_BN((ASN1_ENUMERATED *)ai, NULL);
+    if (ASN1_STRING_type((ASN1_STRING *)ai) == V_ASN1_ENUMERATED)
+        /* const_cast: workaround for old OpenSSL */
+        bn = ASN1_ENUMERATED_to_BN((ASN1_ENUMERATED *)ai, NULL);
     else
 	bn = ASN1_INTEGER_to_BN(ai, NULL);
 
@@ -204,7 +206,7 @@ obj_to_asn1int(VALUE obj)
 }
 
 static ASN1_BIT_STRING*
-obj_to_asn1bstr(VALUE obj, long unused_bits)
+obj_to_asn1bstr(VALUE obj, int unused_bits)
 {
     ASN1_BIT_STRING *bstr;
 
@@ -212,11 +214,11 @@ obj_to_asn1bstr(VALUE obj, long unused_bits)
 	ossl_raise(eASN1Error, "unused_bits for a bitstring value must be in "\
 		   "the range 0 to 7");
     StringValue(obj);
-    if(!(bstr = ASN1_BIT_STRING_new()))
-	ossl_raise(eASN1Error, NULL);
-    ASN1_BIT_STRING_set(bstr, (unsigned char *)RSTRING_PTR(obj), RSTRING_LENINT(obj));
-    bstr->flags &= ~(ASN1_STRING_FLAG_BITS_LEFT|0x07); /* clear */
-    bstr->flags |= ASN1_STRING_FLAG_BITS_LEFT | unused_bits;
+    if (!(bstr = ASN1_BIT_STRING_new()))
+        ossl_raise(eASN1Error, "ASN1_BIT_STRING_new");
+    if (!ASN1_BIT_STRING_set1(bstr, (uint8_t *)RSTRING_PTR(obj),
+                              RSTRING_LEN(obj), unused_bits))
+        ossl_raise(eASN1Error, "ASN1_BIT_STRING_set1");
 
     return bstr;
 }
@@ -340,22 +342,25 @@ decode_int(unsigned char* der, long length)
 }
 
 static VALUE
-decode_bstr(unsigned char* der, long length, long *unused_bits)
+decode_bstr(unsigned char* der, long length, int *unused_bits)
 {
     ASN1_BIT_STRING *bstr;
     const unsigned char *p;
-    long len;
+    size_t len;
     VALUE ret;
+    int state;
 
     p = der;
-    if(!(bstr = d2i_ASN1_BIT_STRING(NULL, &p, length)))
-	ossl_raise(eASN1Error, NULL);
-    len = bstr->length;
-    *unused_bits = 0;
-    if(bstr->flags & ASN1_STRING_FLAG_BITS_LEFT)
-	*unused_bits = bstr->flags & 0x07;
-    ret = rb_str_new((const char *)bstr->data, len);
+    if (!(bstr = d2i_ASN1_BIT_STRING(NULL, &p, length)))
+        ossl_raise(eASN1Error, "d2i_ASN1_BIT_STRING");
+    if (!ASN1_BIT_STRING_get_length(bstr, &len, unused_bits)) {
+        ASN1_BIT_STRING_free(bstr);
+        ossl_raise(eASN1Error, "ASN1_BIT_STRING_get_length");
+    }
+    ret = ossl_str_new((const char *)ASN1_STRING_get0_data(bstr), len, &state);
     ASN1_BIT_STRING_free(bstr);
+    if (state)
+        rb_jump_tag(state);
 
     return ret;
 }
@@ -711,7 +716,7 @@ int_ossl_asn1_decode0_prim(unsigned char **pp, long length, long hlen, int tag,
 {
     VALUE value, asn1data;
     unsigned char *p;
-    long flag = 0;
+    int flag = 0;
 
     p = *pp;
 
@@ -767,7 +772,7 @@ int_ossl_asn1_decode0_prim(unsigned char **pp, long length, long hlen, int tag,
 	    asn1data = rb_funcallv_public(klass, rb_intern("new"), 4, args);
 	}
 	if(tag == V_ASN1_BIT_STRING){
-	    rb_ivar_set(asn1data, sivUNUSED_BITS, LONG2NUM(flag));
+	    rb_ivar_set(asn1data, sivUNUSED_BITS, INT2NUM(flag));
 	}
     }
     else {

@@ -181,7 +181,7 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
     assert_raise(OpenSSL::PKey::PKeyError, "[Bug #12783]") {
       rsa.verify("SHA1", "a", "b")
     }
-  end
+  end unless openssl?(3, 0, 0)
 
   def test_sign_verify_pss
     key = Fixtures.pkey("rsa2048")
@@ -529,53 +529,54 @@ class OpenSSL::TestPKeyRSA < OpenSSL::PKeyTestCase
 
   def test_private_encoding_encrypted
     rsa = Fixtures.pkey("rsa2048")
-    encoded = rsa.private_to_der("aes-128-cbc", "abcdef")
+    encoded = rsa.private_to_der("aes-128-cbc", "abcdefgh")
     asn1 = OpenSSL::ASN1.decode(encoded) # PKCS #8 EncryptedPrivateKeyInfo
     assert_kind_of OpenSSL::ASN1::Sequence, asn1
     assert_equal 2, asn1.value.size
     assert_not_equal rsa.private_to_der, encoded
-    assert_same_rsa rsa, OpenSSL::PKey.read(encoded, "abcdef")
-    assert_same_rsa rsa, OpenSSL::PKey.read(encoded) { "abcdef" }
+    assert_same_rsa rsa, OpenSSL::PKey.read(encoded, "abcdefgh")
+    assert_same_rsa rsa, OpenSSL::PKey.read(encoded) { "abcdefgh" }
     assert_raise(OpenSSL::PKey::PKeyError) { OpenSSL::PKey.read(encoded, "abcxyz") }
 
-    encoded = rsa.private_to_pem("aes-128-cbc", "abcdef")
+    encoded = rsa.private_to_pem("aes-128-cbc", "abcdefgh")
     assert_match (/BEGIN ENCRYPTED PRIVATE KEY/), encoded.lines[0]
-    assert_same_rsa rsa, OpenSSL::PKey.read(encoded, "abcdef")
+    assert_same_rsa rsa, OpenSSL::PKey.read(encoded, "abcdefgh")
 
-    # certtool --load-privkey=test/openssl/fixtures/pkey/rsa2048.pem --to-p8 --password=abcdef
+    # Use openssl instead of certtool due to https://gitlab.com/gnutls/gnutls/-/issues/1632
+    # openssl pkcs8 -in test/openssl/fixtures/pkey/rsa2048.pem -topk8 -v2 aes-128-cbc -passout pass:abcdefgh
     pem = <<~EOF
-    -----BEGIN ENCRYPTED PRIVATE KEY-----
-    MIIFOTBjBgkqhkiG9w0BBQ0wVjA1BgkqhkiG9w0BBQwwKAQSsTIsinrhNMr4owUz
-    cwYGgB0lAgMJJ8ACARAwCgYIKoZIhvcNAgkwHQYJYIZIAWUDBAECBBDtDYqmQOLV
-    Nh0T0DslWgovBIIE0ESbJey2Pjf9brTp9/41CPnI9Ev78CGSv8Ihyuynu6G7oj7N
-    G7jUB1pVMQ7ivebF5DmM0qHAix6fDqJetB3WCnRQpMLyIdq5VrnKwFNhwGYduWA5
-    IyaAc4DHj02e6YLyBTIKpu79OSFxLrnLCRaTbvZIUQaGhyd6pB7iAhqz5YBC0rpa
-    iMK5TRlNGPYG9n2eGFOhvUsbJ4T8VDzjpVWw0VNRaukXtg4xiR6o1f0qSXqAb5d9
-    REq5DfaQfoOKTV9j7KJHDRrBQG81vkU4K+xILrCBfbcYb82aCoinwSep9LC30HaH
-    LZ0hYQOuD/k/UbgjToS2wyMnkz75MN5ZNhDMZl/mACQdsMMtIxG37Mpo1Ca33uZi
-    71TCOEKIblZS11L1YhIni9Af8pOuHJBWwezP2zN2nPwV6OhgL7Jlax7ICQOPC6L/
-    yRGgC5eT4lDDAuTy0IdUhr0r5XrFzZR0/5Vgsq9cGfk9QkXOoETRhQVkEfUDdCs6
-    6CK+SwUR9qh5824ShODFG0SQpsqBPIVtkGrypBSUJtICmGMOAsclB7RDN7/opJwp
-    qv/iRJ5dhWrhRgQ/DfYifvO5On7RgC2hm48gF3Pt6XCA857ryyYxLYeMY42tAUqp
-    Hmc9HL7bMYF/jl3cJ32+gLvI3PBVvrvyeAhRo6z7MFVe9I04OywV6BHUx1Us6ybF
-    qkYnSpcJZdu7HyvzXm7XWLFmt7K5BlAgnFsa/8+cI1BGPgQRc1j0SWepXsSwFZX6
-    JkNQ0dewq4uRJXbGyQgfh5I5ETpqDhSt2JfBwAoze6cx3DPC711PUamxyWMiejs+
-    mYdia4p62NxaUvyXWmCGIEOzajRwywEhf9OLAmfqTN41TIrEL4BUxqtzDyw8Nl8T
-    KB7nJEC366jFASfumNQkXXyH5yBIF+XwwSKUOObRZVn2rUzFToo51hHu9efxHoXa
-    jZlpfglWijkmOuwoIGlGHOq8gUn76oq9WbV+YO+fWm/mf4S3ECzmYzxb6a1uCTy/
-    Itkm2qOe3yTM1t+oCqZ0/MeTZ84ALQaWv5reQfjronPZ1jeNtxrYz28tJ4KwBn0U
-    bJReXbOLsHAymipncxlmaevbx4GPTduu/lbpxefoN95w+SpEdyTmVWrfaCTgAbad
-    EzcRl60my3xOMQ7CaUbRgGiwohqHDvuXzeqoZ96u6CwfAoEfy4jETmKLRH6uTtj7
-    4jdTyoqyizjpvaM8LPspBS+oqFwLxBjpseQuScrZO1BjPxrImLy2/VRqwJ+CF4FB
-    iijEgDgDc1EMIGe5YmOAV+i22n9RqX+2IvkYp7CWXrB9/lmirLFukd7hT8DLPUGq
-    AvSZwTPbDPoZKG3DAebC3DbiC7A3x0KZp24doNRLamZ/MyKHo2Rzl0UhkzDU0ly2
-    eAnyNYsOAQck+C6L+ieD95Gksm9YJWurwttm5JragbIJwMCrsBQd4bXDkKdRhxS2
-    JpS0dT/aoDmgTzoG07x4cZk0rjBkfX1ta0j0b1lz7/PZXl9AbRvFdq5sJpmv4Ryz
-    S+OERqo4IEfJJq2WJ92WR+HLGV3Gvsdb7znZTEF1tp4pWOLAt83Pry282UJxO7Pe
-    ySf/868TEmXams06GYvH+7cMiIT2m9Dc+EFgNaPmm0uMmJ+ZjqHKSOLzrL7C
-    -----END ENCRYPTED PRIVATE KEY-----
+-----BEGIN ENCRYPTED PRIVATE KEY-----
+MIIFNTBfBgkqhkiG9w0BBQ0wUjAxBgkqhkiG9w0BBQwwJAQQ+Sg92Hgy8EgVPf7t
+Hen1qwICCAAwDAYIKoZIhvcNAgkFADAdBglghkgBZQMEAQIEEB5UX2xdDO8/AKA8
++Y5CZyUEggTQkArh4mMPpnAe3xOcDKMz8KCn5lrLb/6Dla7Rp9LHKGkUfyI11EZt
+m+OIriwy9oDQquKyVuLQVGAxXKk+3pyxMqLB0i3hLYamT3vzoPctyVwjuRuKoU3E
+CbF0YhCoxvWMvjHsolwYzx00DbLXouE4BGKvPjnhw5hwtdoZ9Px0ZnCXCxVXi8z/
+mlw7a2ptKEiHQVjuPPbttq+dA+ez7pbWonWVod5TMaPtyEZu5XfPD+0pMboceHZg
+H8ehgUhV3mzEJiisFGg1q9hj+4BaFl5m4tvqp43inCCdShE78CNnOPzJ7WCjKJqi
+jGvHjeMoVx3rZXHcZDAzfIZvDigp9uAfzjRJjpRG8sg5sDQVC7vdUhQDe5TorKT2
+Vb0tdVYxoEpMJ3dhU6Ds5JxMR6GTLjsjTqOkAl6db3HxulwfEpr7YjOpfODR+ttA
+BeIcUcMLsDHayIaQaMLIftHxOkfX7UxoFW9CMG5UMQf/m3eEgVUwgK/E5sUJRUTo
+yhRzJ4NAP4fgc4YH9tbzvUrhfdCXCBEOn6IlDQL66SZr8Mm+Ggu4Ij4TnKWXLrXL
+nSTDDa42kPOvtedKqxC/uXE7rrfh+uyw6J6OjSl6u86TIebndLuDo5DTdWKh8rsg
+fvZZ6332dfMp8JC9/4YnYIJdI7acInSoyHp52OB+2+dgYCr5OrZFjjKS7nELVfo7
+OxGy6uH3NHF9qyUEf3MN17TRHI7jP3zKbXcDTPSyxLQkWe/CU5B251CTmoTSidSW
+EhKnPlGZYbpVQJ4KGEL5UeY8W9PXQo4Dl7TmXBGvuPqNF8kMB3XrPIph7GmihmX0
+nlJqLk9eiRFmUETS0IdAyKJrm4R9Hf6rjYCbXlaApylyVUdSZ2BxgeoTY9BA6Kgf
+3xlgMv01MoUkXMx2+OLIc9MzhButQiDxh3mfS012CjKqUFrJhRSa8DOpUfVgmXpq
+/HP4drWamLWYJR8FsmJS11ZYc1EK/ctJTSpqfewvoUGOSHomhh7zXn1Acb6+9/3p
+bcrJjoR5K8Jg6NlG4dSNkpY/x92I7bFLXFqELIH5tteDrlQen5eASjaiyPPAoOw8
+IGfOmFS4VUPh1VP6g8Jtn5Hr2qXB3DoQoI6EvUZhJ6GJfi67mx5VKux6G9MzJkix
+GU1cL4WzWK2DU0l39UxXjS+4TmOYbrqLVnVMjusX0fwb8LkDC/fVohbhLwhHNwu6
+nSTSEpS9zSDrv1JXFtAtPv6XCSFs6ssPWJMwGSdThn7EfV0GEhG2mCzTyVhwxxQo
+6U/Suqq4oMZoracPUCZx0E4u/bb4KBoFA/eBNPJENTR18IiV+D7wAxlxauO3N1t4
+iJxwrrvSgQPmOGuxrh5LVD41UXYUWLtndzabnpByppFn2MbmvrqJgon0MSs84cTA
+7scnbPu1V3PpKy/t67gtVw9Ue8hLjrskWB1JPFYr7vRWvJzYjfbflyroF+QEJ3TA
+6rTfUC9+ePci6T+i9jF4xcmzqYzRtnGtp5nRUitJGw0uwBTDwzfI2WD6ltvvu7lc
+pHuzvY5zEapuu1JhjHLUd+OE8rVVM999DUXo/IDLsWyRCphCiYfVXJNogd9rB0Ta
+5AhVgpRhxkarBURZyLTYj7NRxCsbHq7XExJNrIdRG/KlBQfyEyIzZ7E=
+-----END ENCRYPTED PRIVATE KEY-----
     EOF
-    assert_same_rsa rsa, OpenSSL::PKey.read(pem, "abcdef")
+    assert_same_rsa rsa, OpenSSL::PKey.read(pem, "abcdefgh")
   end
 
   def test_dup

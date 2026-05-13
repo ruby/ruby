@@ -8,6 +8,7 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     assert_instance_of OpenSSL::PKey::RSA, rsa
     assert_equal "rsaEncryption", rsa.oid
     assert_match %r{oid=rsaEncryption}, rsa.inspect
+    assert_match %r{type_name=RSA}, rsa.inspect if openssl?(3, 0, 0)
 
     # X25519 private key
     x25519_pem = <<~EOF
@@ -166,6 +167,8 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
       pend "X25519 is not implemented"
     end
     assert_instance_of OpenSSL::PKey::PKey, alice
+    assert_equal "X25519", alice.oid
+    assert_match %r{oid=X25519}, alice.inspect
     assert_equal alice_pem, alice.private_to_pem
     assert_equal bob_pem, bob.public_to_pem
     assert_equal [shared_secret].pack("H*"), alice.derive(bob)
@@ -186,6 +189,25 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
       alice_private_raw
     assert_equal "de9edb7d7b7dc1b4d35b61c2ece435373f8343c85b78674dadfc7e146f882b4f",
       bob_public_raw
+  end
+
+  def test_ml_dsa
+    # AWS-LC also supports ML-DSA, but it's implemented in a different way
+    return unless openssl?(3, 5, 0)
+
+    pkey = OpenSSL::PKey.generate_key("ML-DSA-44")
+    assert_match(/type_name=ML-DSA-44/, pkey.inspect)
+    sig = pkey.sign(nil, "data")
+    assert_equal(2420, sig.bytesize)
+    assert_equal(true, pkey.verify(nil, sig, "data"))
+
+    pub2 = OpenSSL::PKey.read(pkey.public_to_der)
+    assert_equal(true, pub2.verify(nil, sig, "data"))
+
+    raw_public_key = pkey.raw_public_key
+    assert_equal(1312, raw_public_key.bytesize)
+    pub3 = OpenSSL::PKey.new_raw_public_key("ML-DSA-44", raw_public_key)
+    assert_equal(true, pub3.verify(nil, sig, "data"))
   end
 
   def raw_initialize
