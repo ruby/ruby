@@ -11124,48 +11124,48 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
     rlen = n - llen;
     cr = ENC_CODERANGE(str);
     if (flen > 1) {
-       llen2 = str_offset(f, f + flen, llen % fclen, enc, singlebyte);
-       rlen2 = str_offset(f, f + flen, rlen % fclen, enc, singlebyte);
+        llen2 = str_offset(f, f + flen, llen % fclen, enc, singlebyte);
+        rlen2 = str_offset(f, f + flen, rlen % fclen, enc, singlebyte);
     }
     size = RSTRING_LEN(str);
     if ((len = llen / fclen + rlen / fclen) >= LONG_MAX / flen ||
-       (len *= flen) >= LONG_MAX - llen2 - rlen2 ||
-       (len += llen2 + rlen2) >= LONG_MAX - size) {
-       rb_raise(rb_eArgError, "argument too big");
+        (len *= flen) >= LONG_MAX - llen2 - rlen2 ||
+        (len += llen2 + rlen2) >= LONG_MAX - size) {
+        rb_raise(rb_eArgError, "argument too big");
     }
     len += size;
     res = str_enc_new(rb_cString, 0, len, enc);
     p = RSTRING_PTR(res);
     if (flen <= 1) {
-       memset(p, *f, llen);
-       p += llen;
+        memset(p, *f, llen);
+        p += llen;
     }
     else {
-       while (llen >= fclen) {
+        while (llen >= fclen) {
             memcpy(p,f,flen);
             p += flen;
             llen -= fclen;
         }
-       if (llen > 0) {
-           memcpy(p, f, llen2);
-           p += llen2;
+        if (llen > 0) {
+            memcpy(p, f, llen2);
+            p += llen2;
         }
     }
     memcpy(p, RSTRING_PTR(str), size);
     p += size;
     if (flen <= 1) {
-       memset(p, *f, rlen);
-       p += rlen;
+        memset(p, *f, rlen);
+        p += rlen;
     }
     else {
-       while (rlen >= fclen) {
+        while (rlen >= fclen) {
             memcpy(p,f,flen);
             p += flen;
             rlen -= fclen;
         }
-       if (rlen > 0) {
-           memcpy(p, f, rlen2);
-           p += rlen2;
+        if (rlen > 0) {
+            memcpy(p, f, rlen2);
+            p += rlen2;
         }
     }
     TERM_FILL(p, termlen);
