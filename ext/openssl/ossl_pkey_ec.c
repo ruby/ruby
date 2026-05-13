@@ -22,6 +22,8 @@ static const rb_data_type_t ossl_ec_point_type;
     EVP_PKEY *_pkey; \
     GetPKeyEC(obj, _pkey); \
     (key) = EVP_PKEY_get0_EC_KEY(_pkey); \
+    if ((key) == NULL) \
+        ossl_raise(eECError, "failed to get EC_KEY from EVP_PKEY"); \
 } while (0)
 
 #define GetECGroup(obj, group) do { \

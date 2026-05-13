@@ -21,6 +21,8 @@
     EVP_PKEY *_pkey; \
     GetPKeyDSA((obj), _pkey); \
     (dsa) = EVP_PKEY_get0_DSA(_pkey); \
+    if ((dsa) == NULL) \
+        ossl_raise(eDSAError, "failed to get DSA from EVP_PKEY"); \
 } while (0)
 
 static inline int
