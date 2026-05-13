@@ -106,6 +106,8 @@ jobs:
           ${arch:+--target=$arch-$OSTYPE --host=$arch-$OSTYPE}
 
       - uses: actions-rust-lang/setup-rust-toolchain@46268bd060767258de96ed93c1251119784f2ab6 # v1.16.1
+        with:
+          cache-bin: false
       - name: Set MMTk environment variables
         run: |
           echo 'EXCLUDES=../src/test/.excludes-mmtk' >> $GITHUB_ENV
