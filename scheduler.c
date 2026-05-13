@@ -16,9 +16,14 @@
 
 #include "ruby/thread.h"
 
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
+/* For memcpy (used in rb_fiber_scheduler_socket_address_unpack): */
 #include <string.h>
+
+/* For struct sockaddr (used in address pack/unpack helpers): */
+#ifdef HAVE_SYS_SOCKET_H
+# include <sys/socket.h>
+#elif defined HAVE_NET_SOCKET_H
+# include <net/socket.h>
 #endif
 
 // For `ruby_thread_has_gvl_p`:
