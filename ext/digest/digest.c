@@ -571,7 +571,7 @@ static rb_digest_metadata_t *
 get_digest_base_metadata(VALUE klass)
 {
     VALUE p;
-    VALUE obj;
+    VALUE obj = Qnil;
     rb_digest_metadata_t *algo;
 
     for (p = klass; !NIL_P(p); p = rb_class_superclass(p)) {
