@@ -78,7 +78,7 @@ releases.
 * ipaddr 1.2.9
 * json 2.19.5
   * 2.18.0 to [v2.18.1][json-v2.18.1], [v2.19.0][json-v2.19.0], [v2.19.1][json-v2.19.1], [v2.19.2][json-v2.19.2], [v2.19.3][json-v2.19.3], [v2.19.4][json-v2.19.4]
-* openssl 4.0.1
+* openssl 4.0.2
   * 4.0.0 to [v4.0.1][openssl-v4.0.1]
 * prism 1.9.0
   * 1.7.0 to [v1.8.0][prism-v1.8.0], [v1.8.1][prism-v1.8.1], [v1.9.0][prism-v1.9.0]
