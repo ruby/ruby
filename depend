@@ -11143,6 +11143,7 @@ parser_st.$(OBJEXT): {$(VPATH)}st.c
 pathname.$(OBJEXT): $(hdrdir)/ruby.h
 pathname.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 pathname.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+pathname.$(OBJEXT): $(top_srcdir)/internal/error.h
 pathname.$(OBJEXT): $(top_srcdir)/internal/file.h
 pathname.$(OBJEXT): $(top_srcdir)/internal/serial.h
 pathname.$(OBJEXT): $(top_srcdir)/internal/static_assert.h

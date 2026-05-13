@@ -1,5 +1,6 @@
 #include "ruby.h"
 #include "internal.h"
+#include "internal/error.h"     /* for rb_warn_deprecated_to_remove_at */
 #include "internal/file.h"
 #include "internal/string.h"
 #include "internal/vm.h"
@@ -358,6 +359,26 @@ InitVM_pathname(void)
     rb_define_private_method(rb_cPathname, "has_trailing_separator?", has_trailing_separator, 1);
     rb_define_private_method(rb_cPathname, "add_trailing_separator", add_trailing_separator, 1);
     rb_define_private_method(rb_cPathname, "del_trailing_separator", del_trailing_separator, 1);
+
+    {
+        /* NOTE: Used in bundler up to version 4.0.11. Remove this
+         * later. */
+        static const char fullname[] = "Pathname::SEPARATOR_PAT";
+        static const char source[] =
+#if alt_separator
+            "[/\\\\]"
+#else
+            "/"
+#endif
+            "(?# internal and deprecated constant kept only for old Bundler; do not use)";
+        const char *const name = fullname + rb_strlen_lit("Pathname::");
+
+        VALUE pat = rb_reg_new(source, sizeof(source)-1, 0);
+        OBJ_FREEZE(pat);
+        rb_define_const(rb_cPathname, name, pat);
+        rb_deprecate_constant(rb_cPathname, name);
+        rb_warn_deprecated_to_remove_at(4.2, fullname, NULL);
+    }
 
     rb_provide("pathname.so");
 }
