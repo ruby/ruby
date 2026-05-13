@@ -6,8 +6,8 @@ if defined?(OpenSSL)
 class OpenSSL::TestDigest < OpenSSL::TestCase
   def setup
     super
-    @d1 = OpenSSL::Digest.new("MD5")
-    @d2 = OpenSSL::Digest::MD5.new
+    @d1 = OpenSSL::Digest.new("SHA256")
+    @d2 = OpenSSL::Digest::SHA256.new
   end
 
   def test_initialize
@@ -17,18 +17,20 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
   end
 
   def test_digest
-    null_hex = "d41d8cd98f00b204e9800998ecf8427e"
+    # SHA256 null value calculated by `echo -n "" | sha256sum`
+    null_hex = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     null_bin = [null_hex].pack("H*")
     data = "DATA"
-    hex = "e44f9e348e41cb272efa87387728571b"
+    # SHA256 DATA value calculated by `echo -n "DATA" | sha256sum`
+    hex = "c97c29c7a71b392b437ee03fd17f09bb10b75e879466fc0eb757b2c4a78ac938"
     bin = [hex].pack("H*")
     assert_equal(null_bin, @d1.digest)
     assert_equal(null_hex, @d1.hexdigest)
     @d1 << data
     assert_equal(bin, @d1.digest)
     assert_equal(hex, @d1.hexdigest)
-    assert_equal(bin, OpenSSL::Digest.digest('MD5', data))
-    assert_equal(hex, OpenSSL::Digest.hexdigest('MD5', data))
+    assert_equal(bin, OpenSSL::Digest.digest('SHA256', data))
+    assert_equal(hex, OpenSSL::Digest.hexdigest('SHA256', data))
   end
 
   def test_eql
@@ -38,9 +40,9 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
   end
 
   def test_info
-    assert_equal("MD5", @d1.name, "name")
-    assert_equal("MD5", @d2.name, "name")
-    assert_equal(16, @d1.size, "size")
+    assert_equal("SHA256", @d1.name, "name")
+    assert_equal("SHA256", @d2.name, "name")
+    assert_equal(32, @d1.size, "size")
   end
 
   def test_dup
@@ -60,7 +62,10 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
   end
 
   def test_digest_constants
-    %w{MD5 SHA1 SHA224 SHA256 SHA384 SHA512}.each do |name|
+    non_fips_names = %w{MD5}
+    names = %w{SHA1 SHA224 SHA256 SHA384 SHA512}
+    names = non_fips_names + names unless OpenSSL.fips_mode
+    names.each do |name|
       assert_not_nil(OpenSSL::Digest.new(name))
       klass = OpenSSL::Digest.const_get(name.tr('-', '_'))
       assert_not_nil(klass.new)
@@ -125,6 +130,9 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
   end
 
   def test_fetched_evp_md
+    # KECCAK-256 is not FIPS-approved.
+    omit_on_fips
+
     # Pre-NIST Keccak is an example of a digest algorithm that doesn't have an
     # NID and requires dynamic allocation of EVP_MD
     hex = "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
