@@ -155,6 +155,14 @@ pub struct Options {
     /// `qualified_method_name`. Only named methods are matched today; anonymous code
     /// (blocks, procs without a stable method binding) cannot be denied this way.
     pub inline_deny: HashSet<String>,
+
+    /// Upper bound on how many times the `optimize` fixed-point loop will iterate
+    /// before giving up. Each iteration runs `type_specialize` → `inline` →
+    /// `inline_methods` → the rest of the HIR pipeline; in steady state the loop
+    /// terminates as soon as an iteration fails to inline anything new. The cap
+    /// exists to bound compile time when something pathological prevents the loop
+    /// from reaching a fixed point.
+    pub inline_max_iterations: usize,
 }
 
 impl Default for Options {
@@ -186,6 +194,7 @@ impl Default for Options {
             inline_threshold: 0,
             inline_budget: 500,
             inline_deny: HashSet::new(),
+            inline_max_iterations: 10,
         }
     }
 }
@@ -412,6 +421,11 @@ fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
 
         ("inline-budget", _) => match opt_val.parse() {
             Ok(n) => { options.inline_budget = n; },
+            Err(_) => return None,
+        },
+
+        ("inline-max-iterations", _) => match opt_val.parse() {
+            Ok(n) => { options.inline_max_iterations = n; },
             Err(_) => return None,
         },
 

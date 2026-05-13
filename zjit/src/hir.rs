@@ -6274,8 +6274,7 @@ impl Function {
         // calls that only became monomorphic after the previous round of specialization.
         // Termination is guaranteed because each iteration either inlines at least one
         // call (growing the function toward the inlining budget) or reaches a fixed point.
-        const MAX_INLINE_ITERATIONS: usize = 10;
-        for _ in 0..MAX_INLINE_ITERATIONS {
+        for _ in 0..get_option!(inline_max_iterations) {
             // Function is assumed to have types inferred already
             run_pass!(type_specialize);
             // The trivial inliner runs first to handle simple cases (constant returns,
