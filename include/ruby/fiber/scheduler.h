@@ -589,6 +589,17 @@ VALUE rb_fiber_scheduler_socket_connect(VALUE scheduler, VALUE socket, VALUE add
 VALUE rb_fiber_scheduler_socket_accept(VALUE scheduler, VALUE socket, VALUE address);
 
 /**
+ * Non-blocking shutdown of the passed Socket.
+ *
+ * @param[in]   scheduler    Target scheduler.
+ * @param[in]   socket       A socket object to shut down.
+ * @param[in]   how          How to shut down: SHUT_RD=0, SHUT_WR=1, SHUT_RDWR=2.
+ * @retval      RUBY_Qundef  `scheduler` doesn't have `#socket_shutdown`.
+ * @return      otherwise    What `scheduler.socket_shutdown` returns (0 or -errno).
+ */
+VALUE rb_fiber_scheduler_socket_shutdown(VALUE scheduler, VALUE socket, int how);
+
+/**
  * Pack a struct sockaddr into a Ruby String for passing to a scheduler hook.
  *
  * @param[in]   address  Pointer to the sockaddr to pack.

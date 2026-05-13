@@ -710,4 +710,57 @@ class TestFiberScheduler < Test::Unit::TestCase
     thread.kill rescue nil
     server.close rescue nil
   end
+
+  def test_socket_shutdown
+    server = Socket.new(:INET, :STREAM, 0)
+    server.bind(Addrinfo.tcp('127.0.0.1', 0))
+    server.listen(5)
+
+    client = Socket.new(:INET, :STREAM, 0)
+    client.connect(server.connect_address)
+
+    operations = nil
+
+    thread = Thread.new do
+      scheduler = SocketIOScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        client.shutdown(Socket::SHUT_WR)
+      end
+
+      operations = scheduler.operations
+    end
+
+    thread.join
+    assert_equal [
+      [:socket_shutdown, client.fileno, Socket::SHUT_WR]
+    ], operations
+  ensure
+    thread.kill rescue nil
+    server.close rescue nil
+    client&.close rescue nil
+  end
+
+  def test_socket_shutdown_error
+    socket = Socket.new(:INET, :STREAM, 0)
+
+    error = nil
+
+    thread = Thread.new do
+      scheduler = IOErrorScheduler.new
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        socket.shutdown
+      rescue => error
+      end
+    end
+
+    thread.join
+    assert_kind_of Errno::EBADF, error
+  ensure
+    thread.kill rescue nil
+    socket.close rescue nil
+  end
 end

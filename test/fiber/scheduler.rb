@@ -529,6 +529,10 @@ class IOErrorScheduler < Scheduler
   def socket_accept(socket, address)
     return -Errno::ENOTSOCK::Errno
   end
+
+  def socket_shutdown(socket, how)
+    return -Errno::EBADF::Errno
+  end
 end
 
 class SocketIOScheduler < Scheduler
@@ -597,6 +601,14 @@ class SocketIOScheduler < Scheduler
       # Prevent conn from closing its fd on GC; the C side will own the fd.
       conn.autoclose = false
       conn.fileno
+    end
+  end
+
+  def socket_shutdown(socket, how)
+    descriptor = socket.fileno
+    self.operations << [:socket_shutdown, descriptor, how]
+    Fiber.blocking do
+      socket.shutdown(how)
     end
   end
 end

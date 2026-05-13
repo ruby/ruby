@@ -103,6 +103,17 @@ bsock_shutdown(int argc, VALUE *argv, VALUE sock)
         }
     }
     GetOpenFile(sock, fptr);
+
+    VALUE scheduler = rb_fiber_scheduler_current();
+    if (scheduler != Qnil) {
+        VALUE result = rb_fiber_scheduler_socket_shutdown(scheduler, sock, how);
+        if (!UNDEF_P(result)) {
+            if (rb_fiber_scheduler_io_result_apply(result) < 0)
+                rb_sys_fail("shutdown(2)");
+            return INT2FIX(0);
+        }
+    }
+
     if (shutdown(fptr->fd, how) == -1)
         rb_sys_fail("shutdown(2)");
 

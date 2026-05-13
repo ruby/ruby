@@ -18,13 +18,13 @@ Note: We're only listing outstanding class updates.
 
 * Fiber::Scheduler
 
-    * New hook methods `socket_recv`, `socket_send`, `socket_connect`, and
-      `socket_accept` are added. When a scheduler is set, these hooks are
-      invoked by `Socket#recv`, `Socket#recvfrom`, `Socket#send`,
-      `UDPSocket#send`, `Socket#connect`, `Socket#accept`, and
-      `TCPServer#accept`, allowing schedulers to handle socket I/O
-      cooperatively without relying on the generic `io_wait` hook.
-      [[Feature #21837]]
+    * New hook methods `socket_recv`, `socket_send`, `socket_connect`,
+      `socket_accept`, and `socket_shutdown` are added. When a scheduler is
+      set, these hooks are invoked by `Socket#recv`, `Socket#recvfrom`,
+      `Socket#send`, `UDPSocket#send`, `Socket#connect`, `Socket#accept`,
+      `TCPServer#accept`, and `BasicSocket#shutdown`, allowing schedulers to
+      handle socket I/O cooperatively without relying on the generic `io_wait`
+      hook. [[Feature #21837]]
 
 * Array
 

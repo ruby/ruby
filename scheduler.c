@@ -49,6 +49,7 @@ static ID id_socket_recv;
 static ID id_socket_send;
 static ID id_socket_connect;
 static ID id_socket_accept;
+static ID id_socket_shutdown;
 
 static ID id_address_resolve;
 
@@ -291,7 +292,7 @@ rb_fiber_scheduler_blocking_operation_new(void *(*function)(void *), void *data,
  *  Hook methods are:
  *
  *  * #io_wait, #io_read, #io_write, #io_pread, #io_pwrite #io_select, and #io_close
- *  * #socket_recv, #socket_send, #socket_connect, #socket_accept
+ *  * #socket_recv, #socket_send, #socket_connect, #socket_accept, #socket_shutdown
  *  * #process_wait
  *  * #kernel_sleep
  *  * #timeout_after
@@ -349,6 +350,7 @@ Init_Fiber_Scheduler(void)
     id_socket_send = rb_intern_const("socket_send");
     id_socket_connect = rb_intern_const("socket_connect");
     id_socket_accept = rb_intern_const("socket_accept");
+    id_socket_shutdown = rb_intern_const("socket_shutdown");
 
     // Define an anonymous BlockingOperation class for internal use only
     // This is completely hidden from Ruby code and cannot be instantiated directly
@@ -383,6 +385,7 @@ Init_Fiber_Scheduler(void)
     rb_define_method(rb_cFiberScheduler, "socket_send", rb_fiber_scheduler_socket_send, 5);
     rb_define_method(rb_cFiberScheduler, "socket_connect", rb_fiber_scheduler_socket_connect, 2);
     rb_define_method(rb_cFiberScheduler, "socket_accept", rb_fiber_scheduler_socket_accept, 2);
+    rb_define_method(rb_cFiberScheduler, "socket_shutdown", rb_fiber_scheduler_socket_shutdown, 2);
 #endif
 }
 
@@ -1193,6 +1196,46 @@ rb_fiber_scheduler_socket_accept(VALUE scheduler, VALUE socket, VALUE address)
         return rb_thread_io_blocking_operation(socket, fiber_scheduler_socket_accept, (VALUE)&arguments);
     } else {
         return fiber_scheduler_socket_accept((VALUE)&arguments);
+    }
+}
+
+/*
+ *  Document-method: Fiber::Scheduler#socket_shutdown
+ *  call-seq: socket_shutdown(socket, how) -> 0 or -errno
+ *
+ *  Invoked by BasicSocket#shutdown to shut down part or all of a full-duplex
+ *  connection on the given socket.
+ *
+ *  The +how+ argument is an integer: +SHUT_RD+ (0), +SHUT_WR+ (1), or
+ *  +SHUT_RDWR+ (2).
+ *
+ *  Expected to return zero if successful, or, in case of an error,
+ *  <tt>-errno</tt> (negated number corresponding to system's error code).
+ *
+ *  The method should be considered _experimental_.
+ */
+static VALUE
+fiber_scheduler_socket_shutdown(VALUE _argument) {
+    VALUE *arguments = (VALUE*)_argument;
+
+    return rb_funcallv(arguments[0], id_socket_shutdown, 2, arguments + 1);
+}
+
+VALUE
+rb_fiber_scheduler_socket_shutdown(VALUE scheduler, VALUE socket, int how)
+{
+    if (!rb_respond_to(scheduler, id_socket_shutdown)) {
+        return RUBY_Qundef;
+    }
+
+    VALUE arguments[] = {
+        scheduler, socket, INT2NUM(how)
+    };
+
+    if (rb_respond_to(scheduler, id_fiber_interrupt)) {
+        return rb_thread_io_blocking_operation(socket, fiber_scheduler_socket_shutdown, (VALUE)&arguments);
+    } else {
+        return fiber_scheduler_socket_shutdown((VALUE)&arguments);
     }
 }
 
