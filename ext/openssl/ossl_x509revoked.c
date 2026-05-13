@@ -48,13 +48,14 @@ static const rb_data_type_t ossl_x509rev_type = {
  * PUBLIC
  */
 VALUE
-ossl_x509revoked_new(X509_REVOKED *rev)
+ossl_x509revoked_new(const X509_REVOKED *rev)
 {
     X509_REVOKED *new;
     VALUE obj;
 
     obj = NewX509Rev(cX509Rev);
-    new = X509_REVOKED_dup(rev);
+    /* OpenSSL 1.1.1 takes a non-const pointer */
+    new = X509_REVOKED_dup((X509_REVOKED *)rev);
     if (!new)
         ossl_raise(eX509RevError, "X509_REVOKED_dup");
     SetX509Rev(obj, new);
@@ -185,7 +186,7 @@ ossl_x509revoked_get_extensions(VALUE self)
 {
     X509_REVOKED *rev;
     int count, i;
-    X509_EXTENSION *ext;
+    const X509_EXTENSION *ext;
     VALUE ary;
 
     GetX509Rev(self, rev);

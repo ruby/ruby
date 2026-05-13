@@ -62,13 +62,14 @@ static const rb_data_type_t ossl_x509ext_type = {
  * Public
  */
 VALUE
-ossl_x509ext_new(X509_EXTENSION *ext)
+ossl_x509ext_new(const X509_EXTENSION *ext)
 {
     X509_EXTENSION *new;
     VALUE obj;
 
     obj = NewX509Ext(cX509Ext);
-    new = X509_EXTENSION_dup(ext);
+    /* OpenSSL 1.1.1 takes a non-const pointer */
+    new = X509_EXTENSION_dup((X509_EXTENSION *)ext);
     if (!new)
         ossl_raise(eX509ExtError, "X509_EXTENSION_dup");
     SetX509Ext(obj, new);
@@ -338,12 +339,20 @@ ossl_x509ext_set_value(VALUE self, VALUE data)
     GetX509Ext(self, ext);
     data = ossl_to_der_if_possible(data);
     StringValue(data);
-    asn1s = X509_EXTENSION_get_data(ext);
 
+    asn1s = ASN1_OCTET_STRING_new();
+    if (!asn1s)
+        ossl_raise(eX509ExtError, "ASN1_OCTET_STRING_new");
     if (!ASN1_OCTET_STRING_set(asn1s, (unsigned char *)RSTRING_PTR(data),
                                RSTRING_LENINT(data))) {
+        ASN1_OCTET_STRING_free(asn1s);
         ossl_raise(eX509ExtError, "ASN1_OCTET_STRING_set");
     }
+    if (!X509_EXTENSION_set_data(ext, asn1s)) {
+        ASN1_OCTET_STRING_free(asn1s);
+        ossl_raise(eX509ExtError, "X509_EXTENSION_set_data");
+    }
+    ASN1_OCTET_STRING_free(asn1s);
 
     return data;
 }
@@ -386,7 +395,7 @@ ossl_x509ext_get_value(VALUE obj)
     if (!(out = BIO_new(BIO_s_mem())))
         ossl_raise(eX509ExtError, NULL);
     if (!X509V3_EXT_print(out, ext, 0, 0))
-        ASN1_STRING_print(out, (ASN1_STRING *)X509_EXTENSION_get_data(ext));
+        ASN1_STRING_print(out, X509_EXTENSION_get_data(ext));
     ret = ossl_membio2str(out);
 
     return ret;
@@ -396,7 +405,7 @@ static VALUE
 ossl_x509ext_get_value_der(VALUE obj)
 {
     X509_EXTENSION *ext;
-    ASN1_OCTET_STRING *value;
+    const ASN1_OCTET_STRING *value;
 
     GetX509Ext(obj, ext);
     if ((value = X509_EXTENSION_get_data(ext)) == NULL)

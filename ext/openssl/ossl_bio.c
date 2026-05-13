@@ -32,7 +32,11 @@ ossl_membio2str(BIO *bio)
     int state;
     BUF_MEM *buf;
 
-    BIO_get_mem_ptr(bio, &buf);
+    if (BIO_get_mem_ptr(bio, &buf) <= 0) {
+        BIO_free(bio);
+        ossl_raise(eOSSLError, "BIO_get_mem_ptr");
+    }
+
     ret = ossl_str_new(buf->data, buf->length, &state);
     BIO_free(bio);
     if (state)
