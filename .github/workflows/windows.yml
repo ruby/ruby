@@ -28,13 +28,13 @@ jobs:
           - os: 2022
             vc: 2022
             test_task: check
-          - os: 2025
+          - os: 2025-vs2026
             vc: 2022
             test_task: check
           - os: 11-arm
             test_task: 'btest test-basic test-tool' # check and test-spec are broken yet.
             target: arm64
-          - os: 2025
+          - os: 2025-vs2026
             vc: 2022
             test_task: test-bundled-gems
       fail-fast: false
@@ -195,7 +195,7 @@ jobs:
   result:
     if: ${{ always() }}
     name: ${{ github.workflow }} result
-    runs-on: windows-latest
+    runs-on: windows-2025-vs2026
     needs: [make]
     steps:
       - run: exit 1
