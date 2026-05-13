@@ -760,18 +760,12 @@ impl Assembler {
         // The write_pos for the last Insn::PatchPoint, if any
         let mut last_patch_pos: Option<usize> = None;
 
-        // Install a panic hook to dump Assembler with insn_idx on dev builds
-        let (_hook, mut hook_insn_idx) = AssemblerPanicHook::new(self, 0);
-
         // For each instruction
         let mut insn_idx: usize = 0;
         assert_eq!(self.basic_blocks.len(), 1, "Assembler should be linearized into a single block before arm64_emit");
         let insns = &self.basic_blocks[0].insns;
 
         while let Some(insn) = insns.get(insn_idx) {
-            // Update insn_idx that is shown on panic
-            hook_insn_idx.as_mut().map(|idx| idx.lock().map(|mut idx| *idx = insn_idx).unwrap());
-
             match insn {
                 Insn::Comment(text) => {
                     cb.add_comment(text);
