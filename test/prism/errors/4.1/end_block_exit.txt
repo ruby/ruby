@@ -3,3 +3,8 @@ END {
   ^~~~~ Invalid break
 }
 
+END {
+  next
+  ^~~~ Invalid next
+}
+
