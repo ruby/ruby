@@ -1600,26 +1600,29 @@ fn gen_push_lightweight_frame(
         write_block_code: iseq_may_write_block_code(iseq),
     });
 
-    // Fully materialize the inlined callee's CFP. Unlike gen_send_iseq_direct
-    // where the callee's JIT entry writes cfp->pc/iseq on demand (or
-    // gen_save_pc_for_gc lazily installs a JITFrame pointer), inlined code has
-    // no entry point, so we must initialize these fields up front.
+    // Publish the inlined callee's entry JITFrame before the inlined body runs.
+    // Frame walking functions such as rb_profile_frames can inspect the new
+    // CFP between this frame push and the first inlined gen_save_pc_for_gc, so
+    // cfp->jit_return must already reference a valid JITFrame slot. Leaving it
+    // stale or uninitialized is unsafe because CFP_ZJIT_FRAME has no independent
+    // way to tell whether it points at a valid JITFrame slot.
     //
-    // We write cfp->pc, cfp->iseq, cfp->sp directly and clear cfp->jit_return so
-    // that CFP_ZJIT_FRAME returns NULL and CFP_PC/CFP_ISEQ read from cfp
-    // directly rather than dereferencing a stale/poisoned JITFrame pointer.
-    // Inlined HIR will install a fresh JITFrame via gen_save_pc_for_gc before
-    // any subsequent GC-triggering operation.
+    // We install a pre-baked JITFrame for the callee's entry by writing its address into
+    // the native-stack JITFrame slot at [NATIVE_BASE_PTR - 8] and pointing the callee's
+    // cfp->jit_return at that slot (NATIVE_BASE_PTR), matching the protocol established
+    // by gen_entry_point + gen_save_pc_for_gc. CFP_ZJIT_FRAME in zjit.h reads the
+    // JITFrame via ((VALUE *)cfp->jit_return)[-1], so the field must be the slot's
+    // address, not the JITFrame pointer itself. Once the inlined body runs its first
+    // gen_save_pc_for_gc, that call overwrites the slot with a JITFrame carrying the
+    // current PC, just as the non-inlined path does.
     fn cfp_opnd(offset: i32) -> Opnd {
         Opnd::mem(64, CFP, offset - (RUBY_SIZEOF_CONTROL_FRAME as i32))
     }
-    let callee_pc = unsafe { rb_iseq_pc_at_idx(iseq, 0) };
-    asm_comment!(asm, "initialize cfp->pc for inlined frame");
-    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_PC), Opnd::const_ptr(callee_pc));
-    asm_comment!(asm, "initialize cfp->iseq for inlined frame");
-    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_ISEQ), VALUE::from(iseq).into());
-    asm_comment!(asm, "clear cfp->jit_return for inlined frame");
-    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_JIT_RETURN), 0.into());
+    let callee_entry_pc = unsafe { rb_iseq_pc_at_idx(iseq, 0) };
+    let callee_entry_frame = JITFrame::new_iseq(callee_entry_pc, iseq, !iseq_may_write_block_code(iseq));
+    asm_comment!(asm, "install entry JITFrame for inlined callee");
+    asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, -SIZEOF_VALUE_I32), Opnd::const_ptr(callee_entry_frame));
+    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_JIT_RETURN), NATIVE_BASE_PTR);
     asm_comment!(asm, "initialize cfp->sp for inlined frame");
     let ep_offset = state.stack().len() as i32 + local_size as i32 - args.len() as i32 + VM_ENV_DATA_SIZE as i32 - 1;
     let new_sp = asm.lea(Opnd::mem(64, SP, (ep_offset + 1) * SIZEOF_VALUE_I32));
