@@ -3369,14 +3369,14 @@ io_buffer_pwrite(int argc, VALUE *argv, VALUE self)
 }
 
 static inline void
-io_buffer_check_mask(const struct rb_io_buffer *buffer)
+io_buffer_check_mask_size(size_t size)
 {
-    if (buffer->size == 0)
+    if (size == 0)
         rb_raise(rb_eIOBufferMaskError, "Zero-length mask given!");
 }
 
 static void
-memory_and(unsigned char * restrict output, unsigned char * restrict base, size_t size, unsigned char * restrict mask, size_t mask_size)
+memory_and(unsigned char * restrict output, const unsigned char * restrict base, size_t size, const unsigned char * restrict mask, size_t mask_size)
 {
     for (size_t offset = 0; offset < size; offset += 1) {
         output[offset] = base[offset] & mask[offset % mask_size];
@@ -3404,13 +3404,21 @@ io_buffer_and(VALUE self, VALUE mask)
     struct rb_io_buffer *mask_buffer = NULL;
     TypedData_Get_Struct(mask, struct rb_io_buffer, &rb_io_buffer_type, mask_buffer);
 
-    io_buffer_check_mask(mask_buffer);
+    const void *base;
+    size_t size;
+    io_buffer_get_bytes_for_reading(buffer, &base, &size);
 
-    VALUE output = rb_io_buffer_new(NULL, buffer->size, io_flags_for_size(buffer->size));
+    const void *mask_base;
+    size_t mask_size;
+    io_buffer_get_bytes_for_reading(mask_buffer, &mask_base, &mask_size);
+
+    io_buffer_check_mask_size(mask_size);
+
+    VALUE output = rb_io_buffer_new(NULL, size, io_flags_for_size(size));
     struct rb_io_buffer *output_buffer = NULL;
     TypedData_Get_Struct(output, struct rb_io_buffer, &rb_io_buffer_type, output_buffer);
 
-    memory_and(output_buffer->base, buffer->base, buffer->size, mask_buffer->base, mask_buffer->size);
+    memory_and(output_buffer->base, base, size, mask_base, mask_size);
 
     return output;
 }
@@ -3444,7 +3452,7 @@ io_buffer_or(VALUE self, VALUE mask)
     struct rb_io_buffer *mask_buffer = NULL;
     TypedData_Get_Struct(mask, struct rb_io_buffer, &rb_io_buffer_type, mask_buffer);
 
-    io_buffer_check_mask(mask_buffer);
+    io_buffer_check_mask_size(mask_buffer->size);
 
     VALUE output = rb_io_buffer_new(NULL, buffer->size, io_flags_for_size(buffer->size));
     struct rb_io_buffer *output_buffer = NULL;
@@ -3484,7 +3492,7 @@ io_buffer_xor(VALUE self, VALUE mask)
     struct rb_io_buffer *mask_buffer = NULL;
     TypedData_Get_Struct(mask, struct rb_io_buffer, &rb_io_buffer_type, mask_buffer);
 
-    io_buffer_check_mask(mask_buffer);
+    io_buffer_check_mask_size(mask_buffer->size);
 
     VALUE output = rb_io_buffer_new(NULL, buffer->size, io_flags_for_size(buffer->size));
     struct rb_io_buffer *output_buffer = NULL;
@@ -3581,7 +3589,7 @@ io_buffer_and_inplace(VALUE self, VALUE mask)
     struct rb_io_buffer *mask_buffer = NULL;
     TypedData_Get_Struct(mask, struct rb_io_buffer, &rb_io_buffer_type, mask_buffer);
 
-    io_buffer_check_mask(mask_buffer);
+    io_buffer_check_mask_size(mask_buffer->size);
     io_buffer_check_overlaps(buffer, mask_buffer);
 
     void *base;
@@ -3627,7 +3635,7 @@ io_buffer_or_inplace(VALUE self, VALUE mask)
     struct rb_io_buffer *mask_buffer = NULL;
     TypedData_Get_Struct(mask, struct rb_io_buffer, &rb_io_buffer_type, mask_buffer);
 
-    io_buffer_check_mask(mask_buffer);
+    io_buffer_check_mask_size(mask_buffer->size);
     io_buffer_check_overlaps(buffer, mask_buffer);
 
     void *base;
@@ -3673,7 +3681,7 @@ io_buffer_xor_inplace(VALUE self, VALUE mask)
     struct rb_io_buffer *mask_buffer = NULL;
     TypedData_Get_Struct(mask, struct rb_io_buffer, &rb_io_buffer_type, mask_buffer);
 
-    io_buffer_check_mask(mask_buffer);
+    io_buffer_check_mask_size(mask_buffer->size);
     io_buffer_check_overlaps(buffer, mask_buffer);
 
     void *base;
