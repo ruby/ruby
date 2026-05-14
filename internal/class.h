@@ -319,7 +319,7 @@ RCLASS_PRIME_CLASSEXT_WRITABLE_P(VALUE klass)
 {
     VM_ASSERT(klass != 0, "klass should be a valid object");
     VM_ASSERT_BOXABLE_TYPE(klass);
-    return FL_TEST(klass, RCLASS_PRIME_CLASSEXT_WRITABLE);
+    return FL_TEST_RAW(klass, RCLASS_PRIME_CLASSEXT_WRITABLE);
 }
 
 static inline void
@@ -328,10 +328,10 @@ RCLASS_SET_PRIME_CLASSEXT_WRITABLE(VALUE klass, bool writable)
     VM_ASSERT(klass != 0, "klass should be a valid object");
     VM_ASSERT_BOXABLE_TYPE(klass);
     if (writable) {
-        FL_SET(klass, RCLASS_PRIME_CLASSEXT_WRITABLE);
+        FL_SET_RAW(klass, RCLASS_PRIME_CLASSEXT_WRITABLE);
     }
     else {
-        FL_UNSET(klass, RCLASS_PRIME_CLASSEXT_WRITABLE);
+        FL_UNSET_RAW(klass, RCLASS_PRIME_CLASSEXT_WRITABLE);
     }
 }
 
