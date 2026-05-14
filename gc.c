@@ -1021,6 +1021,12 @@ rb_newobj(rb_execution_context_t *ec, VALUE klass, VALUE flags, shape_id_t shape
     GC_ASSERT((flags & FL_WB_PROTECTED) == 0);
     rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
     VALUE obj = rb_gc_impl_new_obj(rb_gc_get_objspace(), cr->newobj_cache, klass, flags, wb_protected, size);
+
+#if RACTOR_CHECK_MODE
+    void rb_ractor_setup_belonging(VALUE obj);
+    rb_ractor_setup_belonging(obj);
+#endif
+
     RBASIC_SET_SHAPE_ID_NO_CHECKS(obj, shape_id);
 
     gc_validate_pc(obj);
