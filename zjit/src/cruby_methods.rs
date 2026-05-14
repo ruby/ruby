@@ -208,9 +208,9 @@ pub fn init() -> Annotations {
     annotate!(rb_cString, "==", inline_string_eq);
     annotate!(rb_cModule, "name", types::StringExact.union(types::NilClass), no_gc, leaf, elidable);
     annotate!(rb_cModule, "===", inline_module_eqq, types::BoolExact, no_gc, leaf);
-    annotate!(rb_cArray, "length", types::Fixnum, no_gc, leaf, elidable);
-    annotate!(rb_cArray, "size", types::Fixnum, no_gc, leaf, elidable);
-    annotate!(rb_cArray, "empty?", types::BoolExact, no_gc, leaf, elidable);
+    annotate!(rb_cArray, "length", inline_array_length, types::Fixnum, no_gc, leaf, elidable);
+    annotate!(rb_cArray, "size", inline_array_length, types::Fixnum, no_gc, leaf, elidable);
+    annotate!(rb_cArray, "empty?", inline_array_empty_p, types::BoolExact, no_gc, leaf, elidable);
     annotate!(rb_cArray, "reverse", types::ArrayExact, leaf, elidable);
     annotate!(rb_cArray, "join", types::StringExact);
     annotate!(rb_cArray, "[]", inline_array_aref);
@@ -333,6 +333,21 @@ fn inline_array_pop(fun: &mut hir::Function, block: hir::BlockId, recv: hir::Ins
     // We know that all Array are HeapObject, so no need to insert a GuardType(HeapObject).
     let arr = fun.push_insn(block, hir::Insn::GuardNotFrozen { recv, state });
     Some(fun.push_insn(block, hir::Insn::ArrayPop { array: arr, state }))
+}
+
+fn inline_array_length(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[] = args else { return None; };
+    let len = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
+    Some(fun.push_insn(block, hir::Insn::BoxFixnum { val: len, state }))
+}
+
+fn inline_array_empty_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+    let &[] = args else { return None; };
+    let len = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
+    let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
+    let is_zero = fun.push_insn(block, hir::Insn::IsBitEqual { left: len, right: zero });
+    let result = fun.push_insn(block, hir::Insn::BoxBool { val: is_zero });
+    Some(result)
 }
 
 fn inline_hash_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {

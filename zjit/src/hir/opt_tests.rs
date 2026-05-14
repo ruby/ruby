@@ -2272,8 +2272,9 @@ mod hir_opt_tests {
           v13:ArrayExact = NewArray
           PatchPoint MethodRedefined(Array@0x1000, length@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Array@0x1000)
+          v28:CInt64 = ArrayLength v13
+          v29:Fixnum = BoxFixnum v28
           IncrCounter inline_cfunc_optimized_send_count
-          v29:Fixnum = CCall Array#length@0x1038, v13
           v20:Fixnum[5] = Const Value(5)
           CheckInterrupts
           Return v20
@@ -2416,8 +2417,9 @@ mod hir_opt_tests {
           v13:ArrayExact = NewArray
           PatchPoint MethodRedefined(Array@0x1000, size@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Array@0x1000)
+          v28:CInt64 = ArrayLength v13
+          v29:Fixnum = BoxFixnum v28
           IncrCounter inline_cfunc_optimized_send_count
-          v29:Fixnum = CCall Array#size@0x1038, v13
           v20:Fixnum[5] = Const Value(5)
           CheckInterrupts
           Return v20
@@ -3270,8 +3272,9 @@ mod hir_opt_tests {
           v18:ArrayExact = NewArray v11, v12
           PatchPoint MethodRedefined(Array@0x1000, length@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Array@0x1000)
+          v29:CInt64 = ArrayLength v18
+          v30:Fixnum = BoxFixnum v29
           IncrCounter inline_cfunc_optimized_send_count
-          v30:Fixnum = CCall Array#length@0x1038, v18
           CheckInterrupts
           Return v30
         ");
@@ -3297,8 +3300,9 @@ mod hir_opt_tests {
           v18:ArrayExact = NewArray v11, v12
           PatchPoint MethodRedefined(Array@0x1000, size@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Array@0x1000)
+          v29:CInt64 = ArrayLength v18
+          v30:Fixnum = BoxFixnum v29
           IncrCounter inline_cfunc_optimized_send_count
-          v30:Fixnum = CCall Array#size@0x1038, v18
           CheckInterrupts
           Return v30
         ");
@@ -4851,10 +4855,13 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Array@0x1000, empty?@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Array@0x1000)
           v23:ArrayExact = GuardType v9, ArrayExact
+          v24:CInt64 = ArrayLength v23
+          v25:CInt64[0] = Const CInt64(0)
+          v26:CBool = IsBitEqual v24, v25
+          v27:BoolExact = BoxBool v26
           IncrCounter inline_cfunc_optimized_send_count
-          v25:BoolExact = CCall Array#empty?@0x1038, v23
           CheckInterrupts
-          Return v25
+          Return v27
         ");
     }
 
@@ -6116,8 +6123,9 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Array@0x1000, length@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Array@0x1000)
           v23:ArrayExact = GuardType v9, ArrayExact
+          v24:CInt64 = ArrayLength v23
+          v25:Fixnum = BoxFixnum v24
           IncrCounter inline_cfunc_optimized_send_count
-          v25:Fixnum = CCall Array#length@0x1038, v23
           CheckInterrupts
           Return v25
         ");
@@ -6144,8 +6152,9 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Array@0x1000, size@0x1008, cme:0x1010)
           PatchPoint NoSingletonClass(Array@0x1000)
           v23:ArrayExact = GuardType v9, ArrayExact
+          v24:CInt64 = ArrayLength v23
+          v25:Fixnum = BoxFixnum v24
           IncrCounter inline_cfunc_optimized_send_count
-          v25:Fixnum = CCall Array#size@0x1038, v23
           CheckInterrupts
           Return v25
         ");
