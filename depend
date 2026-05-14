@@ -7354,6 +7354,7 @@ io_buffer.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/gc.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/io.h
+io_buffer.$(OBJEXT): $(top_srcdir)/internal/io_buffer.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/serial.h
