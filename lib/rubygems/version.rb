@@ -81,7 +81,7 @@
 #    changes will need to be made.
 #
 # 2. Pessimistic. This assumes all major versions of a dependency will break
-#    the softaware, and that patch or minor releases of a dependency will not
+#    the software, and that patch or minor releases of a dependency will not
 #    break the software. If there is a major version of a dependency released,
 #    the dependency version must be updated in order to use it, even if no
 #    code changes are actually needed.
