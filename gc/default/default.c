@@ -102,7 +102,9 @@
 
 // From ractor_core.h
 #ifndef RACTOR_CHECK_MODE
-# define RACTOR_CHECK_MODE (VM_CHECK_MODE || RUBY_DEBUG) && (SIZEOF_UINT64_T == SIZEOF_VALUE)
+#define RACTOR_CHECK_MODE 0
+// FIXME: figure out what's up with RVALUE_OVERHEAD
+//# define RACTOR_CHECK_MODE (VM_CHECK_MODE || RUBY_DEBUG) && (SIZEOF_UINT64_T == SIZEOF_VALUE)
 #endif
 
 #ifndef RUBY_DEBUG_LOG

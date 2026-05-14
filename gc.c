@@ -363,9 +363,16 @@ rb_gc_shutdown_call_finalizer_p(VALUE obj)
 void
 rb_gc_obj_changed_pool(VALUE obj, size_t heap_id)
 {
-    RUBY_ASSERT(RB_TYPE_P(obj, T_OBJECT));
-
-    RBASIC_SET_SHAPE_ID(obj, rb_obj_shape_transition_heap(obj, heap_id));
+    if (RB_TYPE_P(obj, T_OBJECT)) {
+        // We need to bypass shape consistency checks because we just changed pool size
+        // so if the T_OBJECT was extended (ROBJECT_HEAP), it can probably be embedded again,
+        // but we can't do that here, `gc_ref_update_object` will do it later..
+        RBASIC_SET_SHAPE_ID_NO_CHECKS(obj, rb_obj_shape_transition_heap(obj, heap_id));
+    }
+    else {
+        RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_fields));
+        RBASIC_SET_SHAPE_ID(obj, rb_obj_shape_transition_heap(obj, heap_id));
+    }
 }
 
 void rb_vm_update_references(void *ptr);
@@ -1074,27 +1081,25 @@ VALUE class_allocate_complex_instance(VALUE klass, uint32_t capacity)
 VALUE
 rb_class_allocate_instance(VALUE klass)
 {
-    uint32_t index_tbl_num_entries = RCLASS_MAX_IV_COUNT(klass);
-    VALUE obj;
+    attr_index_t fields_count = RCLASS_MAX_IV_COUNT(klass);
+    size_t size = rb_obj_embedded_size(fields_count);
 
+    VALUE obj;
     // Directly start as COMPLEX if we know we're over the limit.
     RUBY_ASSERT(rb_shape_tree.max_capacity > 0);
-    if (RB_UNLIKELY(index_tbl_num_entries > rb_shape_tree.max_capacity)) {
-        obj = class_allocate_complex_instance(klass, index_tbl_num_entries);
+    if (RB_UNLIKELY(fields_count > rb_shape_tree.max_capacity)) {
+        obj = class_allocate_complex_instance(klass, fields_count);
     }
     else {
-        size_t size = rb_obj_embedded_size(index_tbl_num_entries);
-        if (!rb_gc_size_allocatable_p(size)) {
-            size = sizeof(struct RObject);
-        }
+        RUBY_ASSERT(rb_gc_size_allocatable_p(size));
 
         // There might be a NEWOBJ tracepoint callback, and it may set fields.
         // So the shape must be passed to `NEWOBJ_OF`.
-        obj = rb_newobj_of_with_shape(klass, T_OBJECT, rb_shape_root(rb_gc_heap_id_for_size(size)), size);
+        shape_id_t shape_id = rb_shape_embeddable_root(rb_gc_heap_id_for_size(size), fields_count);
+        obj = rb_newobj_of_with_shape(klass, T_OBJECT, shape_id, size);
 
         #if RUBY_DEBUG
             VALUE *ptr = ROBJECT_FIELDS(obj);
-            size_t fields_count = RSHAPE_LEN(RBASIC_SHAPE_ID(obj));
             for (size_t i = fields_count; i < ROBJECT_FIELDS_CAPACITY(obj); i++) {
                 ptr[i] = Qundef;
             }
@@ -2184,8 +2189,7 @@ object_id0(VALUE obj)
         return object_id_get(obj, shape_id);
     }
 
-    shape_id_t object_id_shape_id = rb_obj_shape_transition_object_id(obj);
-
+    shape_id_t object_id_shape_id = rb_shape_transition_object_id(shape_id);
     id = generate_next_object_id();
     rb_obj_field_set(obj, object_id_shape_id, 0, id);
 
@@ -3876,13 +3880,13 @@ gc_ref_update_object(void *objspace, VALUE v)
             return;
         }
 
-        size_t slot_size = rb_gc_obj_slot_size(v);
-        size_t embed_size = rb_obj_embedded_size(ROBJECT_FIELDS_CAPACITY(v));
-        if (slot_size >= embed_size) {
+        shape_id_t shape_id = RBASIC_SHAPE_ID(v);
+        if (RSHAPE_EMBEDDED_CAPACITY(shape_id) >= RSHAPE_LEN(shape_id)) {
             // Object can be re-embedded
-            memcpy(ROBJECT(v)->as.ary, ptr, sizeof(VALUE) * ROBJECT_FIELDS_COUNT(v));
-            SIZED_FREE_N(ptr, ROBJECT_FIELDS_CAPACITY(v));
             FL_UNSET_RAW(v, ROBJECT_HEAP);
+            memcpy(ROBJECT(v)->as.ary, ptr, sizeof(VALUE) * ROBJECT_FIELDS_COUNT(v));
+            RBASIC_SET_SHAPE_ID(v, rb_shape_transition_embedded(shape_id));
+            SIZED_FREE_N(ptr, ROBJECT_FIELDS_CAPACITY(v));
             ptr = ROBJECT(v)->as.ary;
         }
     }
