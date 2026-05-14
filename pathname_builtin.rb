@@ -1241,7 +1241,7 @@ class Pathname    # * File *
   #     dir_pn.chown(1000, 1000)
   #     dir_stat = File.stat(dirpath)
   #     puts "New directory owner:      #{dir_stat.uid}"
-  #     puts "New directory group:      #{dir_stat.uid}"
+  #     puts "New directory group:      #{dir_stat.gid}"
   #
   #     # A file in the subdirectory, and its Pathname.
   #     filepath = File.join(dirpath, 't.txt')
