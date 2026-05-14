@@ -1580,7 +1580,7 @@ yes-test-bundled-gems-precheck: $(PRECHECK_BUNDLED_GEMS:yes=main)
 no-test-bundled-gems-precheck:
 
 yes-update-default-gemspecs no-update-default-gemspecs: update-default-gemspecs
-update-default-gemspecs: $(PREP)
+update-default-gemspecs: $(PREP) $(RBCONFIG)
 	@$(MAKEDIRS) $(srcdir)/.bundle/specifications
 	$(Q)$(MINIRUBY) -W0 -C "$(srcdir)" -I tool/lib -roptparse -routput -rbundled_gem \
 	    -e "(out = Output.new).def_options(ARGV.options)" \
