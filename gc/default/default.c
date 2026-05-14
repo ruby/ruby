@@ -7761,10 +7761,6 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
     SET(heap_eden_pages, heap_eden_total_pages(objspace));
     SET(total_allocated_pages, objspace->heap_pages.allocated_pages);
     SET(total_freed_pages, objspace->heap_pages.freed_pages);
-    /* These two may allocate Bignums on small-FIXNUM_MAX platforms — keep
-     * them above the slot snapshot below. */
-    SET(total_allocated_objects, total_allocated_objects(objspace));
-    SET(total_freed_objects, total_freed_objects(objspace));
     SET(malloc_increase_bytes, gc_malloc_counters_increase_unsigned(objspace, &objspace->malloc_counters.counters));
     SET(malloc_increase_bytes_limit, malloc_limit);
     SET(minor_gc_count, objspace->profile.minor_gc_count);
@@ -7781,6 +7777,9 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
     SET(oldmalloc_increase_bytes_limit, objspace->rgengc.oldmalloc_increase_limit);
 #endif
 
+    ractor_cache_flush_count(objspace, rb_gc_get_ractor_newobj_cache());
+    SET(total_allocated_objects, total_allocated_objects(objspace));
+    SET(total_freed_objects, total_freed_objects(objspace));
     SET(heap_available_slots, objspace_available_slots(objspace));
     SET(heap_live_slots, objspace_live_slots(objspace));
     SET(heap_free_slots, objspace_free_slots(objspace));
