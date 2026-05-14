@@ -1615,6 +1615,12 @@ fn gen_push_lightweight_frame(
     // address, not the JITFrame pointer itself. Once the inlined body runs its first
     // gen_save_pc_for_gc, that call overwrites the slot with a JITFrame carrying the
     // current PC, just as the non-inlined path does.
+    //
+    // cfp->sp is left stale at frame push, matching the non-inlined gen_push_frame, which
+    // also skips the cfp->sp write for ISEQ frames. The first gen_save_sp call inside the
+    // inlined body (reached via gen_prepare_call_with_gc or gen_prepare_leaf_call_with_gc
+    // before any GC-triggering operation) installs the correct value. Side-exits write
+    // cfp->sp themselves via compile_exit_save_state in lir.rs before returning Qundef.
     fn cfp_opnd(offset: i32) -> Opnd {
         Opnd::mem(64, CFP, offset - (RUBY_SIZEOF_CONTROL_FRAME as i32))
     }
@@ -1623,10 +1629,6 @@ fn gen_push_lightweight_frame(
     asm_comment!(asm, "install entry JITFrame for inlined callee");
     asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, -SIZEOF_VALUE_I32), Opnd::const_ptr(callee_entry_frame));
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_JIT_RETURN), NATIVE_BASE_PTR);
-    asm_comment!(asm, "initialize cfp->sp for inlined frame");
-    let ep_offset = state.stack().len() as i32 + local_size as i32 - args.len() as i32 + VM_ENV_DATA_SIZE as i32 - 1;
-    let new_sp = asm.lea(Opnd::mem(64, SP, (ep_offset + 1) * SIZEOF_VALUE_I32));
-    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SP), new_sp);
 
     // The callee's hidden `kw_bits` local does not need a runtime store here:
     // the inliner aliases the local to a `Const::Value` carrying the
