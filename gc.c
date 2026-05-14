@@ -1392,6 +1392,7 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
       case T_FLOAT:
       case T_RATIONAL:
       case T_COMPLEX:
+      case T_MATCH:
         break;
 
       case T_FILE:
@@ -1400,7 +1401,6 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
       case T_ICLASS:
       case T_MODULE:
       case T_REGEXP:
-      case T_MATCH:
         return true;
     }
 
@@ -1434,6 +1434,10 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
 
       case T_HASH:
         if (flags & RHASH_ST_TABLE_FLAG) return true;
+        return rb_shape_has_fields(shape_id);
+
+      case T_MATCH:
+        if ((flags & (RMATCH_ONIG | RMATCH_OFFSETS_EXTERNAL)) || USE_DEBUG_COUNTER) return true;
         return rb_shape_has_fields(shape_id);
 
       case T_BIGNUM:

@@ -13,6 +13,7 @@
 #include "ruby/re.h"            /* for struct RMatch and struct re_registers */
 
 #define RMATCH_ONIG FL_USER1
+#define RMATCH_OFFSETS_EXTERNAL FL_USER2
 
 static inline OnigPosition *
 RMATCH_BEG_PTR(VALUE match)
