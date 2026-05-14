@@ -962,6 +962,12 @@ class TestMarshal < Test::Unit::TestCase
     end
   end
 
+  def test_bignum_invalid_sign
+    assert_raise(ArgumentError) do
+      Marshal.load("\x04\bl?")
+    end
+  end
+
   class TestMarshalFreezeProc < Test::Unit::TestCase
     include MarshalTestLib
 
