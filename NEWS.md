@@ -107,9 +107,10 @@ releases.
 * test-unit 3.7.7
   * 3.7.5 to [3.7.6][test-unit-3.7.6], [3.7.7][test-unit-3.7.7]
 * net-imap 0.6.4
-  * 0.6.2 to [v0.6.3][net-imap-v0.6.3]
+  * 0.6.2 to [v0.6.3][net-imap-v0.6.3], [v0.6.4][net-imap-v0.6.4]
 * rbs 4.0.2
   * 3.10.0 to [v3.10.1][rbs-v3.10.1], [v3.10.2][rbs-v3.10.2], [v3.10.3][rbs-v3.10.3], [v3.10.4][rbs-v3.10.4], [v4.0.0.dev.5][rbs-v4.0.0.dev.5], [v4.0.0][rbs-v4.0.0], [v4.0.2][rbs-v4.0.2]
+* typeprof 0.32.0
 * mutex_m 0.3.0
 * bigdecimal 4.1.2
   * 4.0.1 to [v4.1.0][bigdecimal-v4.1.0], [v4.1.1][bigdecimal-v4.1.1], [v4.1.2][bigdecimal-v4.1.2]
@@ -221,6 +222,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [test-unit-3.7.6]: https://github.com/test-unit/test-unit/releases/tag/3.7.6
 [test-unit-3.7.7]: https://github.com/test-unit/test-unit/releases/tag/3.7.7
 [net-imap-v0.6.3]: https://github.com/ruby/net-imap/releases/tag/v0.6.3
+[net-imap-v0.6.4]: https://github.com/ruby/net-imap/releases/tag/v0.6.4
 [rbs-v3.10.1]: https://github.com/ruby/rbs/releases/tag/v3.10.1
 [rbs-v3.10.2]: https://github.com/ruby/rbs/releases/tag/v3.10.2
 [rbs-v3.10.3]: https://github.com/ruby/rbs/releases/tag/v3.10.3
