@@ -146,6 +146,31 @@ class TestGemBundlerVersionFinder < Gem::TestCase
     end
   end
 
+  def test_bundler_version_with_bundle_version_env_lockfile
+    ENV["BUNDLE_VERSION"] = "lockfile"
+
+    bvf.stub(:lockfile_contents, "\n\nBUNDLED WITH\n   1.1.1.1\n") do
+      assert_equal v("1.1.1.1"), bvf.bundler_version
+    end
+  end
+
+  def test_bundler_version_with_bundle_config_version_lockfile
+    config_content = <<~CONFIG
+      BUNDLE_VERSION: "lockfile"
+    CONFIG
+
+    Tempfile.create("bundle_config") do |f|
+      f.write(config_content)
+      f.flush
+
+      bvf.stub(:bundler_global_config_file, f.path) do
+        bvf.stub(:lockfile_contents, "\n\nBUNDLED WITH\n   1.1.1.1\n") do
+          assert_equal v("1.1.1.1"), bvf.bundler_version
+        end
+      end
+    end
+  end
+
   def test_bundler_version_with_bundle_config_non_existent_file
     bvf.stub(:bundler_global_config_file, "/non/existent/path") do
       assert_nil bvf.bundler_version
