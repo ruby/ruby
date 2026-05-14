@@ -862,6 +862,18 @@ module RbInstall
     ensure
       $VERBOSE = verbose
     end
+
+    def regenerate_plugins_for(spec, plugins_dir)
+      plugins = spec.plugins
+      return if plugins.empty?
+      dir = without_destdir(plugins_dir)
+      plugins.each do |plugin|
+        $installed_list.puts(File.join(dir, "#{spec.name}_plugin#{File.extname(plugin)}"))
+      end
+      unless $dryrun
+        super
+      end
+    end
   end
 end
 
