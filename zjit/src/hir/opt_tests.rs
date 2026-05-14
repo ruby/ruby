@@ -5666,7 +5666,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_dont_specialize_polymorphic_definedivar() {
+    fn test_optimize_definedivar_polymorphic() {
         set_call_threshold(3);
         eval("
             class C
@@ -5691,9 +5691,33 @@ mod hir_opt_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          v10:StringExact|NilClass = DefinedIvar v6, :@a
+          v10:HeapBasicObject = GuardType v6, HeapBasicObject
+          v11:CUInt64 = LoadField v10, :RBASIC_FLAGS@0x1000
+          v13:CUInt64[0xffffffff0000001f] = Const CUInt64(0xffffffff0000001f)
+          v14:CPtr[CPtr(0x1001)] = Const CPtr(0x1001)
+          v15 = RefineType v14, CUInt64
+          v16:CInt64 = IntAnd v11, v13
+          v17:CBool = IsBitEqual v16, v15
+          CondBranch v17, bb5(), bb6()
+        bb5():
+          v19:NilClass = Const Value(nil)
+          Jump bb4(v19)
+        bb6():
+          v21:CUInt64[0xffffffff0000001f] = Const CUInt64(0xffffffff0000001f)
+          v22:CPtr[CPtr(0x1002)] = Const CPtr(0x1002)
+          v23 = RefineType v22, CUInt64
+          v24:CInt64 = IntAnd v11, v21
+          v25:CBool = IsBitEqual v24, v23
+          CondBranch v25, bb7(), bb8()
+        bb7():
+          v27:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          Jump bb4(v27)
+        bb8():
+          v29:StringExact|NilClass = DefinedIvar v10, :@a
+          Jump bb4(v29)
+        bb4(v12:StringExact|NilClass):
           CheckInterrupts
-          Return v10
+          Return v12
         ");
     }
 
@@ -8010,7 +8034,7 @@ mod hir_opt_tests {
     fn test_definedivar_shape_guard_recompile() {
         // Call with one shape to compile, then call with a different shape to
         // trigger shape guard exits and recompilation. On the recompiled version,
-        // DefinedIvar stays as a C call fallback to avoid more shape guard exits.
+        // DefinedIvar uses polymorphic fast paths plus a C call fallback.
         eval("
             class C
               def initialize(extra = false)
@@ -8038,9 +8062,32 @@ mod hir_opt_tests {
           v4:HeapBasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:HeapBasicObject):
-          v10:StringExact|NilClass = DefinedIvar v6, :@foo
+          v11:CUInt64 = LoadField v6, :RBASIC_FLAGS@0x1000
+          v13:CUInt64[0xffffffff0000001f] = Const CUInt64(0xffffffff0000001f)
+          v14:CPtr[CPtr(0x1001)] = Const CPtr(0x1001)
+          v15 = RefineType v14, CUInt64
+          v16:CInt64 = IntAnd v11, v13
+          v17:CBool = IsBitEqual v16, v15
+          CondBranch v17, bb5(), bb6()
+        bb5():
+          v19:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          Jump bb4(v19)
+        bb6():
+          v21:CUInt64[0xffffffff0000001f] = Const CUInt64(0xffffffff0000001f)
+          v22:CPtr[CPtr(0x1010)] = Const CPtr(0x1010)
+          v23 = RefineType v22, CUInt64
+          v24:CInt64 = IntAnd v11, v21
+          v25:CBool = IsBitEqual v24, v23
+          CondBranch v25, bb7(), bb8()
+        bb7():
+          v27:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          Jump bb4(v27)
+        bb8():
+          v29:StringExact|NilClass = DefinedIvar v6, :@foo
+          Jump bb4(v29)
+        bb4(v12:StringExact|NilClass):
           CheckInterrupts
-          Return v10
+          Return v12
         ");
     }
 
