@@ -2021,6 +2021,9 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
             int sign;
 
             sign = r_byte(arg);
+            if (sign != '+' && sign != '-') {
+                rb_raise(rb_eArgError, "invalid Bignum sign");
+            }
             len = r_keep_readable(arg, r_long(arg), 2);
 
             if (SIZEOF_VALUE >= 8 && len <= 4) {
