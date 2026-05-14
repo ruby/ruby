@@ -754,7 +754,7 @@ class Pathname
   # yields +self+, then a new pathname for each successive dirname in the stored path;
   # see File.dirname:
   #
-  #   Pathname.new('/path/to/some/file.rb').ascend {|dirname| p dirname}
+  #   Pathname('/path/to/some/file.rb').ascend {|dirname| p dirname}
   #   #<Pathname:/path/to/some/file.rb>
   #   #<Pathname:/path/to/some>
   #   #<Pathname:/path/to>
