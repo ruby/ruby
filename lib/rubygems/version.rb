@@ -44,10 +44,10 @@
 #    such a way that software that uses that part of the library must be
 #    modified to work.
 #
-# == RubyGems Rational Versioning
+# == RubyGems Rational Versioning (the recommended approach)
 #
 # * Versions shall be represented by three non-negative integers, separated
-#   by periods (e.g. 3.1.4).  The first integers is the "major" version
+#   by periods (e.g. 3.1.4).  The first integer is the "major" version
 #   number, the second integer is the "minor" version number, and the third
 #   integer is the "patch" version number.
 #
@@ -57,7 +57,7 @@
 # * A category 2 change (backwards compatible) will increment the minor
 #   version number and reset the patch number.
 #
-# * A category 3 change (incompatible) will increment the major build number
+# * A category 3 change (incompatible) will increment the major version number
 #   and reset the minor and patch numbers.
 #
 # * Any "public" release of a gem should have a different version.
@@ -65,7 +65,7 @@
 # == Optimistic Vs. Pessimistic Dependency Versioning
 #
 # Users expect to be able to specify a version constraint that gives them
-# some reasonable expectation that new versions of a library will work with
+# a reasonable expectation that new versions of a library will work with
 # their software if the version constraint is true, and not work with their
 # software if the version constraint is false.  In other words, the perfect
 # system will accept all compatible versions of the library and reject all
@@ -80,47 +80,47 @@
 #    and in that case, the dependency version will need to be updated and
 #    changes will need to be made.
 #
-# 2. Pessimistic. This assumes all major versions of a dependency will break
-#    the software, and that patch or minor releases of a dependency will not
-#    break the software. If there is a major version of a dependency released,
-#    the dependency version must be updated in order to use it, even if no
-#    code changes are actually needed.
+# 2. Pessimistic. This assumes all major version changes of a dependency will
+#    break the software, and that patch or minor changes of a dependency will
+#    not break the software. If there is a major version of a dependency
+#    released, the dependency version must be updated in order to use it, even
+#    if no code changes are actually needed.
 #
-# In general, optimistic version is superior to pessimistic versioning.
+# In general, optimistic versioning is superior to pessimistic versioning.
 # Pessimistic versioning is often wrong in both directions. Dependencies can
 # release patch or minor versions that contain incompatibilities. One
-# common reason is that a security fix may require backwards-incompatible API
-# changes. In this case, even though pessimistic versioning was used, it
+# common reason is that a security fix may require a backwards-incompatible API
+# change. In this case, even though pessimistic versioning was used, it
 # didn't even save effort, as you still need to make code changes and adjust
 # dependency versions. Similarly, for all but the smallest dependencies, just
 # because the dependency made a backwards incompatible change to one interface
 # doesn't mean the dependency made a backwards incompatible change to an
 # interface that the software is using. It is a common problem that a
 # dependency will release a new major version and the software does not require
-# any changes in order to use. In this case, being pessimistic requires
+# any changes in order to use it. In this case, being pessimistic results in
 # additional work for no benefit.
 #
 # When a library uses pessimistic versioning of dependencies, it causes
-# significant problems if that library is not not diligent about updating
+# significant problems if that library is not diligent about updating
 # dependency versions and any library is depending on that library.
 # For example:
 #
-# * Library A is currently on release 1.2.3
+# * Library A is currently on release 1.2.3.
 #
 # * Library B is at version 2.3.4 and has a pessimistic dependency on
-#   library A, using ~> 1.0 (>= 1.0, < 2)
+#   library A, using ~> 1.0 (>= 1.0, < 2).
 #
 # * Library C is at version 3.4.5 and has an optimistic dependency on
-#   library A, using >= 1.0
+#   library A, using >= 1.0.
 #
-# * Library D has optimistic dependencies on both libraries B and C
+# * Library D has optimistic dependencies on both libraries B and C.
 #
 # * Library A releases a new major version, 2.0.0, with new features, which
 #   is mostly backwards compatible, but does contain some backwards
-#   incompatible changes
+#   incompatible changes.
 #
 # * Library B would work with A 2.0.0, but cannot use it due to pessimistic
-#   versioning
+#   versioning.
 #
 # * Library C wants to use the new features in the major release of library
 #   A to implement its own new features, so it does so, bumps the
@@ -149,14 +149,15 @@
 #   incompatible changes that break library C.
 #
 # * Until library C releases an updated version with new changes, library
-#   D only needs to set a specific dependency on library A for > 2.0, < 3.
+#   D only needs to set a specific dependency on library A for > 2.0, < 3,
+#   until library C is updated to work with the new version of library A.
 #
-# Both optimistic versioning and pessismistic versioning have problems in
+# Both optimistic versioning and pessimistic versioning have problems in
 # certain cases. However, it's significantly easier to fix optimistic
-# versioning problems than pessimistic versioning problems.
+# versioning problems than to fix pessimistic versioning problems.
 #
 # That is not to say that pessimistic versioning is never appropriate. If the
-# dependency is library that adds a single method, where any change resulting
+# dependency is a library that adds a single method, where any change resulting
 # in a major version bump would probably break a library using it, then using
 # pessimistic versioning may be warranted. Additionally, if a dependency has
 # already announced or committed backwards incompatible changes that would
