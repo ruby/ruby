@@ -685,7 +685,7 @@ impl Assembler {
                     // Convert MemBase::Stack to MemBase::Reg(NATIVE_BASE_PTR) with the
                     // correct stack displacement. The stack slot value lives directly at
                     // [NATIVE_BASE_PTR + stack_disp], so we just adjust the base and
-                    // combine displacements — no indirection needed. Large
+                    // combine displacements -- no indirection needed. Large
                     // displacements are handled by split_stack_membase().
                     let Mem { base, disp: stack_disp, .. } = stack_state.stack_membase_to_mem(stack_membase);
                     Opnd::Mem(Mem { base, disp: stack_disp + opnd_disp, num_bits: opnd_num_bits })

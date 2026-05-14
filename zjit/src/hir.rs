@@ -6233,7 +6233,7 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
         writeln!(f, "fn {iseq_name}:")?;
         for block_id in fun.rpo() {
             if !self.display_snapshot_and_tp_patchpoints && block_id == fun.entries_block {
-                // Unless we're doing --zjit-dump-hir=all, skip the entries superblock — it's an
+                // Unless we're doing --zjit-dump-hir=all, skip the entries superblock -- it's an
                 // internal CFG artifact
                 continue;
             }
@@ -7041,7 +7041,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         // gen_is_block_given) to check for a block handler. Precompute the lexical
                         // distance from this iseq up to local_iseq so codegen does not have to
                         // walk the parent chain. Any DEFINED_YIELD reaching this branch has a
-                        // method local_iseq by construction — the above branch has already
+                        // method local_iseq by construction -- the above branch has already
                         // diverted the non-method case to Qnil.
                         let lep_level = if op_type == DEFINED_YIELD as usize {
                             get_lvar_level(iseq)
@@ -8606,7 +8606,7 @@ impl Dominators {
         let rpo = f.rpo();
         let num_blocks = f.blocks.len();
 
-        // Map BlockId → RPO index for O(1) lookup in intersect.
+        // Map BlockId -> RPO index for O(1) lookup in intersect.
         let mut rpo_order = vec![usize::MAX; num_blocks];
         for (idx, &block) in rpo.iter().enumerate() {
             rpo_order[block.0] = idx;

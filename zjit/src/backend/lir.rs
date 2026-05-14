@@ -2458,7 +2458,7 @@ impl Assembler
 
                     if survivors.is_empty() {
                         if call_result_live {
-                            // No survivors to restore — move result directly to output.
+                            // No survivors to restore -- move result directly to output.
                             let out = Self::rewritten_opnd(out, assignments);
                             new_insns.push(Insn::Mov { dest: out, src: C_RET_OPND });
                             new_ids.push(None);
@@ -3257,7 +3257,7 @@ impl fmt::Display for Assembler {
         }
 
         // Use sorted_blocks() instead of block_order() because block_order()
-        // calls rpo() → edges() which requires all blocks end with terminators.
+        // calls rpo() -> edges() which requires all blocks end with terminators.
         // After arm64_scratch_split, blocks may not have terminators.
         for bb in self.sorted_blocks() {
             let params = &bb.parameters;
@@ -4323,7 +4323,7 @@ mod tests {
         asm.number_instructions(16);
         let intervals = asm.build_intervals(live_in);
 
-        // 3 registers — only r10 needs to spill
+        // 3 registers -- only r10 needs to spill
         let preferred_registers = asm.preferred_register_assignments(&intervals);
         let (assignments, num_stack_slots) = asm.linear_scan(intervals, 3, &preferred_registers);
 
@@ -4351,7 +4351,7 @@ mod tests {
         asm.number_instructions(16);
         let intervals = asm.build_intervals(live_in);
 
-        // Only 1 register available — forces spills
+        // Only 1 register available -- forces spills
         let preferred_registers = asm.preferred_register_assignments(&intervals);
         let (assignments, num_stack_slots) = asm.linear_scan(intervals, 1, &preferred_registers);
 
@@ -4431,9 +4431,9 @@ mod tests {
         use crate::backend::current::ALLOC_REGS;
         let regs = &ALLOC_REGS[..5];
 
-        // Edge b1→b2 (single succ): args=[UImm(1), v1], params=[v2, v3]
-        // v1→Reg(1), v2→Reg(1), v3→Reg(2)
-        // Reg copy: Reg(1)→Reg(2) → Mov(regs[2], regs[1])
+        // Edge b1->b2 (single succ): args=[UImm(1), v1], params=[v2, v3]
+        // v1->Reg(1), v2->Reg(1), v3->Reg(2)
+        // Reg copy: Reg(1)->Reg(2) -> Mov(regs[2], regs[1])
         // Imm move: Mov(regs[1], UImm(1))
         // Inserted in b1 before Jmp: [Label, Mov, Mov, Jmp]
         let b1_insns = &asm.basic_blocks[b1.0].insns;
@@ -4443,10 +4443,10 @@ mod tests {
         assert!(matches!(&b1_insns[2], Insn::Mov { dest, src }
             if *dest == Opnd::Reg(regs[1]) && *src == Opnd::UImm(1)));
 
-        // Edge b3→b2 (single succ): args=[v4, v5], params=[v2, v3]
-        // v4→Reg(3), v5→Reg(2), v2→Reg(1), v3→Reg(2)
-        // Reg copy: Reg(3)→Reg(1) → Mov(regs[1], regs[3])
-        // Reg(2)→Reg(2) is self-move, filtered
+        // Edge b3->b2 (single succ): args=[v4, v5], params=[v2, v3]
+        // v4->Reg(3), v5->Reg(2), v2->Reg(1), v3->Reg(2)
+        // Reg copy: Reg(3)->Reg(1) -> Mov(regs[1], regs[3])
+        // Reg(2)->Reg(2) is self-move, filtered
         // Inserted in b3 before Jmp: [Label, Mul, Sub, Mov, Jmp]
         let b3_insns = &asm.basic_blocks[b3.0].insns;
         assert_eq!(b3_insns.len(), 5);
@@ -4455,7 +4455,7 @@ mod tests {
 
         // Verify original instructions in b3 are rewritten to physical registers.
         // b3: Mul { left: r12, right: r13, out: r14 }, Sub { left: r13, right: UImm(1), out: r15 }
-        // r12→Reg(1), r13→Reg(2), r14→Reg(3), r15→Reg(2)
+        // r12->Reg(1), r13->Reg(2), r14->Reg(3), r15->Reg(2)
         assert!(matches!(&b3_insns[1], Insn::Mul { left, right, out }
             if *left == Opnd::Reg(regs[1]) && *right == Opnd::Reg(regs[2]) && *out == Opnd::Reg(regs[3])));
         assert!(matches!(&b3_insns[2], Insn::Sub { left, right, out }
@@ -4473,8 +4473,8 @@ mod tests {
         let (assignments, _) = asm.linear_scan(intervals.clone(), 5, &preferred_registers);
 
         // Entry block b1 has parameters [v0, v1].
-        // With 5 registers: v0 → Reg(0) = regs[0], arrival = param_opnd(0) = regs[0] → self-move, filtered
-        //                    v1 → Reg(1) = regs[1], arrival = param_opnd(1) = regs[1] → self-move, filtered
+        // With 5 registers: v0 -> Reg(0) = regs[0], arrival = param_opnd(0) = regs[0] -> self-move, filtered
+        //                    v1 -> Reg(1) = regs[1], arrival = param_opnd(1) = regs[1] -> self-move, filtered
         // Before resolve_ssa, b1 has: [Label, Jmp] = 2 insns
         assert_eq!(asm.basic_blocks[b1.0].insns.len(), 2);
 
@@ -4482,7 +4482,7 @@ mod tests {
 
         // After resolve_ssa, b1 should still have the same number of insns
         // (plus any edge moves, but no entry param moves since they're all self-moves).
-        // Edge b1→b2 inserts 2 moves before Jmp: [Label, Mov, Mov, Jmp] = 4 insns
+        // Edge b1->b2 inserts 2 moves before Jmp: [Label, Mov, Mov, Jmp] = 4 insns
         // No additional entry param moves.
         let b1_insns = &asm.basic_blocks[b1.0].insns;
         assert_eq!(b1_insns.len(), 4);
@@ -4508,8 +4508,8 @@ mod tests {
         let b3 = asm.new_block(hir::BlockId(2), false, 2);
 
         // b1: v0 = Add(123, 0), v1 = Add(v0, 456), Cmp(v1, 0), Jl(b2, [v0]), Jmp(b3, [v1])
-        // v0 is live across b1→b2 edge AND v1 is live across b1→b3 edge
-        // This forces v0 and v1 to have overlapping live ranges → different registers
+        // v0 is live across b1->b2 edge AND v1 is live across b1->b3 edge
+        // This forces v0 and v1 to have overlapping live ranges -> different registers
         asm.set_current_block(b1);
         let label_b1 = asm.new_label("bb0");
         asm.write_label(label_b1);
@@ -4562,8 +4562,8 @@ mod tests {
 
         asm.resolve_ssa(&intervals, &assignments);
 
-        // A new interstitial block should have been created for the critical edge b1→b3
-        // b1→b3 is critical because b1 has 2 successors and b3 has 2 predecessors
+        // A new interstitial block should have been created for the critical edge b1->b3
+        // b1->b3 is critical because b1 has 2 successors and b3 has 2 predecessors
         assert_eq!(asm.basic_blocks.len(), 4);
         let split_block_id = BlockId(3);
 
@@ -4587,11 +4587,11 @@ mod tests {
             panic!("Expected Jmp(b3) at end of split block");
         }
 
-        // The split block should have a Mov for v1→v4
+        // The split block should have a Mov for v1->v4
         let has_mov = split_insns.iter().any(|insn| matches!(insn, Insn::Mov { .. }));
-        assert!(has_mov, "Expected Mov in split block for v1→v4");
+        assert!(has_mov, "Expected Mov in split block for v1->v4");
 
-        // b2→b3 is not a critical edge (b2 has single succ), so moves go before Jmp in b2
+        // b2->b3 is not a critical edge (b2 has single succ), so moves go before Jmp in b2
         let v3_alloc = assignments[v3.vreg_idx().0].unwrap();
         let b2_insns = &asm.basic_blocks[b2.0].insns;
         if v3_alloc != v4_alloc {
