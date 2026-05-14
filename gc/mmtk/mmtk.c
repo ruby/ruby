@@ -575,7 +575,6 @@ rb_gc_impl_objspace_alloc(void)
 {
     MMTk_Builder *builder = rb_mmtk_builder_init();
     MMTk_RubyBindingOptions binding_options = {
-        .ractor_check_mode = RACTOR_CHECK_MODE != 0,
         .suffix_size = RVALUE_SUFFIX_SIZE,
     };
     mmtk_init_binding(builder, &binding_options, &ruby_upcalls);

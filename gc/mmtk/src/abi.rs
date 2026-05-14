@@ -291,7 +291,6 @@ impl From<Vec<ObjectReference>> for RawVecOfObjRef {
 #[repr(C)]
 #[derive(Clone)]
 pub struct RubyBindingOptions {
-    pub ractor_check_mode: bool,
     pub suffix_size: usize,
 }
 

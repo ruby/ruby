@@ -33,7 +33,6 @@ typedef struct MMTk_BumpPointer {
 #define MMTk_GC_THREAD_KIND_WORKER 1
 
 typedef struct MMTk_RubyBindingOptions {
-    bool ractor_check_mode;
     size_t suffix_size;
 } MMTk_RubyBindingOptions;
 
