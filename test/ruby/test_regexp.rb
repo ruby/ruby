@@ -1694,7 +1694,7 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_match_integer_at
-    m = /(\d+{4})(\d+{2})(\d+{2})/.match("20260308")
+    m = /(\d{4})(\d{2})(\d{2})/.match("20260308")
     assert_equal(20260308, m.integer_at(0))
     assert_equal(2026,     m.integer_at(1))
     assert_equal(3,        m.integer_at(2))
@@ -1711,7 +1711,7 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_match_integer_at_name
-    m = /(?<y>\d+{4})(?<m>\d+{2})(?<d>\d+{2})/.match("20260308")
+    m = /(?<y>\d{4})(?<m>\d{2})(?<d>\d{2})/.match("20260308")
     assert_equal(2026,     m.integer_at("y"))
     assert_equal(3,        m.integer_at("m"))
     assert_equal(8,        m.integer_at("d"))
