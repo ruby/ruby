@@ -27,7 +27,6 @@
 
 #if RACTOR_CHECK_MODE
 # define RVALUE_SUFFIX_SIZE sizeof(VALUE)
-void rb_ractor_setup_belonging(VALUE obj);
 #else
 # define RVALUE_SUFFIX_SIZE 0
 #endif
@@ -929,10 +928,6 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     mmtk_buffer_obj_free_candidate(ractor_cache, (VALUE)alloc_obj);
 
     objspace->total_allocated_objects++;
-
-#if RACTOR_CHECK_MODE
-    rb_ractor_setup_belonging((VALUE)alloc_obj);
-#endif
 
     return (VALUE)alloc_obj;
 }
