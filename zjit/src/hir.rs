@@ -856,7 +856,7 @@ pub enum Insn {
     ToRegexp { opt: usize, values: Vec<InsnId>, state: InsnId },
 
     /// Put special object (VMCORE, CBASE, etc.) based on value_type
-    PutSpecialObject { value_type: SpecialObjectType },
+    PutSpecialObject { value_type: SpecialObjectType, state: InsnId },
 
     /// Call `to_a` on `val` if the method is defined, or make a new array `[val]` otherwise.
     ToArray { val: InsnId, state: InsnId },
@@ -1205,7 +1205,6 @@ macro_rules! for_each_operand_impl {
             | Insn::GetEP { .. }
             | Insn::LoadSelf
             | Insn::BreakPoint | Insn::Unreachable
-            | Insn::PutSpecialObject { .. }
             | Insn::IncrCounter(_)
             | Insn::IncrCounterPtr { .. } => {}
 
@@ -1222,6 +1221,7 @@ macro_rules! for_each_operand_impl {
             }
             Insn::PatchPoint { state, .. }
             | Insn::CheckInterrupts { state }
+            | Insn::PutSpecialObject { state, .. }
             | Insn::GetBlockParam { state, .. }
             | Insn::GetConstantPath { state, .. } => {
                 $visit_one!(state);
@@ -2224,7 +2224,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                     write!(f, "SideExit {reason}")
                 }
             }
-            Insn::PutSpecialObject { value_type } => write!(f, "PutSpecialObject {value_type}"),
+            Insn::PutSpecialObject { value_type, .. } => write!(f, "PutSpecialObject {value_type}"),
             Insn::Throw { throw_state, val, .. } => {
                 write!(f, "Throw ")?;
                 match throw_state & VM_THROW_STATE_MASK {
@@ -6830,7 +6830,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let insn = if value_type == SpecialObjectType::VMCore {
                         Insn::Const { val: Const::Value(unsafe { rb_mRubyVMFrozenCore }) }
                     } else {
-                        Insn::PutSpecialObject { value_type }
+                        Insn::PutSpecialObject { value_type, state: exit_id }
                     };
                     state.stack_push(fun.push_insn(block, insn));
                 }
