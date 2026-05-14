@@ -1,19 +1,20 @@
 module MethodSpecs
-
-
   class SourceLocation
-    def self.location # This needs to be on this line
-      :location       # for the spec to pass
+    LOCATION_LINE = __LINE__ + 1
+    def self.location
+      :location
     end
 
     def self.redefined
       :first
     end
 
+    REDEFINED_LINE = __LINE__ + 1
     def self.redefined
       :last
     end
 
+    ORIGINAL_LINE = __LINE__ + 1
     def original
     end
 
