@@ -442,9 +442,11 @@ class TestClass < Test::Unit::TestCase
   CloneTest1 = CloneTest.clone
   CloneTest2 = CloneTest.clone
   class CloneTest1
+    remove_const :TEST
     TEST = :C1
   end
   class CloneTest2
+    remove_const :TEST
     TEST = :C2
   end
 
