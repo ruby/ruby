@@ -4071,7 +4071,7 @@ rb_Hash(VALUE val)
  *
  *  Examples:
  *
- *    Hash({foo: 0, bar: 1}) # => {:foo=>0, :bar=>1}
+ *    Hash({foo: 0, bar: 1}) # => {foo: 0, bar: 1}
  *    Hash(nil)              # => {}
  *    Hash([])               # => {}
  *
