@@ -69,8 +69,8 @@ LIBRUBY_EXTS  = ./.libruby-with-ext.time
 REVISION_H    = ./.revision.time
 PLATFORM_D    = $(TIMESTAMPDIR)/.$(PLATFORM_DIR).time
 ENC_TRANS_D   = $(TIMESTAMPDIR)/.enc-trans.time
-X_$(no_baseruby:no=NO_)BASERUBY = $(BASERUBY)
-X_$(yes_baseruby:yes=NO_)BASERUBY = $(XRUBY)
+X_$(CROSS_COMPILING:yes=)BASERUBY = $(BASERUBY)
+X_$(CROSS_COMPILING:no=)BASERUBY = $(XRUBY)
 RDOC          = $(X_BASERUBY) --enable-gems "$(tooldir)/rdoc-srcdir"
 RDOCOUT       = $(EXTOUT)/rdoc
 HTMLOUT       = $(EXTOUT)/html
