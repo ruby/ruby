@@ -15683,7 +15683,7 @@ mod hir_opt_tests {
 
     #[test]
     fn test_recompile_no_profile_send() {
-        // Test the SideExit → recompile flow: a no-profile send becomes a SideExit,
+        // Test the SideExit -> recompile flow: a no-profile send becomes a SideExit,
         // the exit profiles the send, triggers recompilation, and the new version
         // optimizes it to SendDirect.
         eval("

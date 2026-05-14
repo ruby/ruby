@@ -112,7 +112,7 @@ const SCRATCH1_OPND: Opnd = Opnd::Reg(R10_REG);
 pub const SCRATCH_REG: Reg = R11_REG;
 
 impl Assembler {
-    // This keeps frame growth below the ±4096-byte displacement range we rely
+    // This keeps frame growth below the +/-4096-byte displacement range we rely
     // on for common stack-slot accesses on x86_64.
     const MAX_FRAME_STACK_SLOTS: usize = 2048;
 
@@ -142,7 +142,7 @@ impl Assembler {
     }
 
     // These are the callee-saved registers in the x86-64 SysV ABI
-    // RBX, RSP, RBP, and R12–R15
+    // RBX, RSP, RBP, and R12-R15
 
     /// Split IR instructions for the x86 platform
     fn x86_split(mut self) -> Assembler
@@ -357,7 +357,7 @@ impl Assembler {
                     // Convert MemBase::Stack to MemBase::Reg(NATIVE_BASE_PTR) with the
                     // correct stack displacement. The stack slot value lives directly at
                     // [NATIVE_BASE_PTR + stack_disp], so we just adjust the base and
-                    // combine displacements — no indirection needed.
+                    // combine displacements -- no indirection needed.
                     let Mem { base, disp: stack_disp, .. } = stack_state.stack_membase_to_mem(stack_membase);
                     Opnd::Mem(Mem { base, disp: stack_disp + opnd_disp, num_bits: opnd_num_bits })
                 }
