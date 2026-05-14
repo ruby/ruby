@@ -1255,7 +1255,7 @@ class Pathname    # * File *
   #     file_pn.chown(1000, 1000)
   #     file_stat = File.stat(dirpath)
   #     puts "New file owner:           #{file_stat.uid}"
-  #     puts "New file group:           #{file_stat.uid}"
+  #     puts "New file group:           #{file_stat.gid}"
   #   end
   #
   # Output:
