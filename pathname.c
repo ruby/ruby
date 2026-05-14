@@ -30,16 +30,16 @@ get_strpath(VALUE obj)
  *
  * Examples:
  *
- *   Pathname('a')  <=> Pathname.new('b')  # => -1
- *   Pathname('a')  <=> Pathname.new('ab') # => -1
- *   Pathname('a')  <=> Pathname.new('a')  # => 0
- *   Pathname('b')  <=> Pathname.new('a')  # => 1
- *   Pathname('ab') <=> Pathname.new('a')  # => 1
- *   Pathname('ab') <=> 'a'                # => nil
+ *   Pathname('a')  <=> Pathname('b')  # => -1
+ *   Pathname('a')  <=> Pathname('ab') # => -1
+ *   Pathname('a')  <=> Pathname('a')  # => 0
+ *   Pathname('b')  <=> Pathname('a')  # => 1
+ *   Pathname('ab') <=> Pathname('a')  # => 1
+ *   Pathname('ab') <=> 'a'            # => nil
  *
  * Two pathnames that are different may refer to the same entry in the filesystem:
  *
- *   Pathname('lib') <=> Pathname.new('./lib') # => 1
+ *   Pathname('lib') <=> Pathname('./lib') # => 1
  *
  */
 static VALUE
