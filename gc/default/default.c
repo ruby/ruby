@@ -2222,12 +2222,6 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
     RBASIC(obj)->shape_id = 0;
 #endif
 
-
-#if RACTOR_CHECK_MODE
-    void rb_ractor_setup_belonging(VALUE obj);
-    rb_ractor_setup_belonging(obj);
-#endif
-
 #if RGENGC_CHECK_MODE
     int lev = RB_GC_VM_LOCK_NO_BARRIER();
     {
