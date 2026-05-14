@@ -1001,23 +1001,41 @@ class Pathname    # * File *
   # Returns a new Time object containing the time of the most recent
   # access (read or write) to the entry represented by +self+:
   #
-  #   filepath = 't.tmp'
-  #   pn = Pathname.new(filepath)
-  #   File.exist?(filepath) # => false
-  #   pn.atime              # Raises Errno::ENOENT: No such file or directory
-  #   File.write(filepath, 'foo')
-  #   pn.atime              # => 2026-03-22 13:49:44.5165608 -0500
-  #   File.read(filepath)
-  #   pn.atime              # => 2026-03-22 13:49:57.5359349 -0500
-  #   File.delete(filepath)
+  #   # Work in a temporary directory.
+  #   require 'tmpdir'
+  #   Dir.mktmpdir do |tmpdirpath|
+  #     # A subdirectory therein, and its Pathname.
+  #     dirpath = File.join(tmpdirpath, 'subdir')
+  #     Dir.mkdir(dirpath)
+  #     dir_pn = Pathname(dirpath)
+  #     puts "Create directory; establishes atime for directory."
+  #     puts "  Directory atime: #{dir_pn.atime}"
+  #     sleep(1)
   #
-  #   dirpath = 'tmp'
-  #   Dir.mkdir(dirpath)
-  #   pn = Pathname.new(dirpath)
-  #   pn.atime            # => 2026-03-31 11:46:35.4813492 -0500
-  #   Dir.empty?(dirname) # => true
-  #   pn.atime            # => 2026-03-31 11:51:10.1210092 -0500
-  #   Dir.delete(dirpath)
+  #     # A file in the subdirectory, and its Pathname.
+  #     filepath = File.join(dirpath, 't.txt')
+  #     puts "Create file; establishes atime for file, updates atime for directory."
+  #     File.write(filepath, 'foo')
+  #     file_pn = Pathname(filepath)
+  #     puts "  File atime:      #{file_pn.atime}"
+  #     puts "  Directory atime: #{dir_pn.atime}"
+  #     sleep(1)
+  #     puts "Write file; updates atimes for file and directory."
+  #     File.write(filepath, 'bar')
+  #     puts "  File atime:      #{file_pn.atime}"
+  #     puts "  Directory atime: #{dir_pn.atime}"
+  #   end
+  #
+  # Output:
+  #
+  #   Create directory; establishes atime for directory.
+  #     Directory atime: 2026-05-14 14:36:43 +0100
+  #   Create file; establishes atime for file, updates atime for directory.
+  #     File atime:      2026-05-14 14:36:44 +0100
+  #     Directory atime: 2026-05-14 14:36:44 +0100
+  #   Write file; updates atimes for file and directory.
+  #     File atime:      2026-05-14 14:36:45 +0100
+  #     Directory atime: 2026-05-14 14:36:45 +0100
   #
   # See {File System Timestamps}[rdoc-ref:file/timestamps.md].
   def atime() File.atime(@path) end
