@@ -75,16 +75,17 @@ releases.
 ### The following default gems are updated.
 
 * RubyGems 4.1.0.dev
-  * 4.0.3 to [v4.0.4][RubyGems-v4.0.4], [v4.0.5][RubyGems-v4.0.5], [v4.0.6][RubyGems-v4.0.6], [v4.0.7][RubyGems-v4.0.7], [v4.0.8][RubyGems-v4.0.8], [v4.0.9][RubyGems-v4.0.9], [v4.0.10][RubyGems-v4.0.10]
+  * 4.0.3 to [v4.0.4][RubyGems-v4.0.4], [v4.0.5][RubyGems-v4.0.5], [v4.0.6][RubyGems-v4.0.6], [v4.0.7][RubyGems-v4.0.7], [v4.0.8][RubyGems-v4.0.8], [v4.0.9][RubyGems-v4.0.9], [v4.0.10][RubyGems-v4.0.10], [v4.0.11][RubyGems-v4.0.11]
 * bundler 4.1.0.dev
-  * 4.0.3 to [v4.0.4][bundler-v4.0.4], [v4.0.5][bundler-v4.0.5], [v4.0.6][bundler-v4.0.6], [v4.0.7][bundler-v4.0.7], [v4.0.8][bundler-v4.0.8], [v4.0.9][bundler-v4.0.9], [v4.0.10][bundler-v4.0.10]
+  * 4.0.3 to [v4.0.4][bundler-v4.0.4], [v4.0.5][bundler-v4.0.5], [v4.0.6][bundler-v4.0.6], [v4.0.7][bundler-v4.0.7], [v4.0.8][bundler-v4.0.8], [v4.0.9][bundler-v4.0.9], [v4.0.10][bundler-v4.0.10], [v4.0.11][bundler-v4.0.11]
 * erb 6.0.4
-  * 6.0.1 to [v6.0.2][erb-v6.0.2], [v6.0.3][erb-v6.0.3]
+  * 6.0.1 to [v6.0.1.1][erb-v6.0.1.1], [v6.0.2][erb-v6.0.2], [v6.0.3][erb-v6.0.3], [v6.0.4][erb-v6.0.4]
 * ipaddr 1.2.9
+  * 1.2.8 to [v1.2.9][ipaddr-v1.2.9]
 * json 2.19.5
-  * 2.18.0 to [v2.18.1][json-v2.18.1], [v2.19.0][json-v2.19.0], [v2.19.1][json-v2.19.1], [v2.19.2][json-v2.19.2], [v2.19.3][json-v2.19.3], [v2.19.4][json-v2.19.4]
+  * 2.18.0 to [v2.18.1][json-v2.18.1], [v2.19.0][json-v2.19.0], [v2.19.1][json-v2.19.1], [v2.19.2][json-v2.19.2], [v2.19.3][json-v2.19.3], [v2.19.4][json-v2.19.4], [v2.19.5][json-v2.19.5]
 * openssl 4.0.2
-  * 4.0.0 to [v4.0.1][openssl-v4.0.1]
+  * 4.0.0 to [v4.0.1][openssl-v4.0.1], [v4.0.2][openssl-v4.0.2]
 * prism 1.9.0
   * 1.7.0 to [v1.8.0][prism-v1.8.0], [v1.8.1][prism-v1.8.1], [v1.9.0][prism-v1.9.0]
 * resolv 0.7.1
@@ -100,12 +101,12 @@ releases.
 
 ### The following bundled gems are updated.
 
-* minitest 6.0.5
+* minitest 6.0.6
 * rake 13.4.2
   * 13.3.1 to [v13.4.0][rake-v13.4.0], [v13.4.1][rake-v13.4.1], [v13.4.2][rake-v13.4.2]
 * test-unit 3.7.7
   * 3.7.5 to [3.7.6][test-unit-3.7.6], [3.7.7][test-unit-3.7.7]
-* net-imap 0.6.3
+* net-imap 0.6.4
   * 0.6.2 to [v0.6.3][net-imap-v0.6.3]
 * rbs 4.0.2
   * 3.10.0 to [v3.10.1][rbs-v3.10.1], [v3.10.2][rbs-v3.10.2], [v3.10.3][rbs-v3.10.3], [v3.10.4][rbs-v3.10.4], [v4.0.0.dev.5][rbs-v4.0.0.dev.5], [v4.0.0][rbs-v4.0.0], [v4.0.2][rbs-v4.0.2]
@@ -124,7 +125,7 @@ releases.
   * 7.0.3 to [v7.1.0][rdoc-v7.1.0], [v7.2.0][rdoc-v7.2.0]
 * win32ole 1.9.3
   * 1.9.2 to [v1.9.3][win32ole-v1.9.3]
-* irb 1.17.0
+* irb 1.18.0
   * 1.16.0 to [v1.17.0][irb-v1.17.0]
 
 ### RubyGems and Bundler
@@ -183,6 +184,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [RubyGems-v4.0.8]: https://github.com/rubygems/rubygems/releases/tag/v4.0.8
 [RubyGems-v4.0.9]: https://github.com/rubygems/rubygems/releases/tag/v4.0.9
 [RubyGems-v4.0.10]: https://github.com/rubygems/rubygems/releases/tag/v4.0.10
+[RubyGems-v4.0.11]: https://github.com/rubygems/rubygems/releases/tag/v4.0.11
 [bundler-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.4
 [bundler-v4.0.5]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.5
 [bundler-v4.0.6]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.6
@@ -190,15 +192,21 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [bundler-v4.0.8]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.8
 [bundler-v4.0.9]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.9
 [bundler-v4.0.10]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.10
+[bundler-v4.0.11]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.11
+[erb-v6.0.1.1]: https://github.com/ruby/erb/releases/tag/v6.0.1.1
 [erb-v6.0.2]: https://github.com/ruby/erb/releases/tag/v6.0.2
 [erb-v6.0.3]: https://github.com/ruby/erb/releases/tag/v6.0.3
+[erb-v6.0.4]: https://github.com/ruby/erb/releases/tag/v6.0.4
+[ipaddr-v1.2.9]: https://github.com/ruby/ipaddr/releases/tag/v1.2.9
 [json-v2.18.1]: https://github.com/ruby/json/releases/tag/v2.18.1
 [json-v2.19.0]: https://github.com/ruby/json/releases/tag/v2.19.0
 [json-v2.19.1]: https://github.com/ruby/json/releases/tag/v2.19.1
 [json-v2.19.2]: https://github.com/ruby/json/releases/tag/v2.19.2
 [json-v2.19.3]: https://github.com/ruby/json/releases/tag/v2.19.3
 [json-v2.19.4]: https://github.com/ruby/json/releases/tag/v2.19.4
+[json-v2.19.5]: https://github.com/ruby/json/releases/tag/v2.19.5
 [openssl-v4.0.1]: https://github.com/ruby/openssl/releases/tag/v4.0.1
+[openssl-v4.0.2]: https://github.com/ruby/openssl/releases/tag/v4.0.2
 [prism-v1.8.0]: https://github.com/ruby/prism/releases/tag/v1.8.0
 [prism-v1.8.1]: https://github.com/ruby/prism/releases/tag/v1.8.1
 [prism-v1.9.0]: https://github.com/ruby/prism/releases/tag/v1.9.0
