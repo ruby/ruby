@@ -78,7 +78,7 @@ static inline void rb_zjit_tracing_invalidate_all(void) {}
 static inline void rb_zjit_invalidate_no_singleton_class(VALUE klass) {}
 static inline void rb_zjit_invalidate_root_box(void) {}
 static inline void rb_zjit_jit_frame_update_references(zjit_jit_frame_t *jit_frame) {}
-static inline const zjit_jit_frame_t* CFP_ZJIT_FRAME(const rb_control_frame_t *cfp) { return NULL; }
+static inline const zjit_jit_frame_t *CFP_ZJIT_FRAME(const rb_control_frame_t *cfp) { return NULL; }
 #endif // #if USE_ZJIT
 
 #define rb_zjit_enabled_p (rb_zjit_entry != 0)
