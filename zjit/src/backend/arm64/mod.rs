@@ -2845,6 +2845,55 @@ mod tests {
     }
 
     #[test]
+    fn test_ccall_stack_args_seven() {
+        // Seven args: one overflow, padded to 16 bytes for SP alignment.
+        // Stack arg lands at [sp + 0] in the reserved area below the call.
+        let (mut asm, mut cb) = setup_asm();
+        let args: Vec<Opnd> = (0..7).map(|i| asm.load(Opnd::UImm((i + 1) as u64))).collect();
+        asm.ccall(0 as _, args);
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        let disasm = cb.disasm();
+        assert!(disasm.contains("sub sp, sp, #0x10"), "expected sub sp, sp, #0x10:\n{disasm}");
+        // The 7th arg should be stored into [sp + 0]; the exact source register
+        // depends on regalloc, so match on the addressing rather than the reg.
+        assert!(disasm.contains(", [sp]") || disasm.contains(", [sp + 0]") || disasm.contains(", [sp, #0]"), "expected store into [sp]:\n{disasm}");
+        assert!(disasm.contains("add sp, sp, #0x10"), "expected matching add sp, sp, #0x10:\n{disasm}");
+    }
+
+    #[test]
+    fn test_ccall_stack_args_eight_with_survivors() {
+        // Eight args (two overflow slots) with a survivor. This is the shape
+        // that exposed the bug in #15312: pushing the survivor first then
+        // writing the stack arg at [sp + 0] overlapped, so the survivor's pop
+        // restored garbage. With the SP sub between, the survivor sits below
+        // the outgoing-args area.
+        // Use few enough live vregs that the survivor stays in a register.
+        let (mut asm, mut cb) = setup_asm();
+        let surv = asm.load(Opnd::UImm(0x42));
+        let a0 = asm.load(Opnd::UImm(1));
+        let a1 = asm.load(Opnd::UImm(2));
+        asm.ccall(0 as _, vec![a0, a1, a0, a1, a0, a1, a0, a1]);
+        let _ = asm.add(surv, Opnd::UImm(1));
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        let disasm = cb.disasm();
+        // Survivor must be pushed via pre-indexed store before the SP sub.
+        assert!(disasm.contains("[sp, #-0x10]!"), "missing survivor push (pre-index):\n{disasm}");
+        assert!(disasm.contains("sub sp, sp, #0x10"), "expected sub sp, sp, #0x10 for 2 stack args:\n{disasm}");
+        assert!(disasm.contains("add sp, sp, #0x10"), "expected matching add sp, sp, #0x10:\n{disasm}");
+        assert!(disasm.contains("[sp], #0x10"), "missing survivor pop (post-index):\n{disasm}");
+        // Survivor push must come before SP sub so the survivor slot is below the outgoing-arg area.
+        let push_pos = disasm.find("[sp, #-0x10]!").unwrap();
+        let sub_pos = disasm.find("sub sp, sp, #0x10").unwrap();
+        assert!(push_pos < sub_pos, "survivor push must precede SP sub:\n{disasm}");
+        // SP add must come before survivor pop so the pop reads from the right slot.
+        let add_pos = disasm.find("add sp, sp, #0x10").unwrap();
+        let pop_pos = disasm.find("[sp], #0x10").unwrap();
+        assert!(add_pos < pop_pos, "SP add must precede survivor pop:\n{disasm}");
+    }
+
+    #[test]
     fn test_cpop_pair_into() {
         let (mut asm, mut cb) = setup_asm();
         let v0 = asm.load(1.into());

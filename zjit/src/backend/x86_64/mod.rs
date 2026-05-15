@@ -299,8 +299,7 @@ impl Assembler {
                     };
                     asm.push_insn(insn);
                 },
-                Insn::CCall { opnds, .. } => {
-                    assert!(opnds.len() <= C_ARG_OPNDS.len());
+                Insn::CCall { .. } => {
                     // CCall argument setup is handled by handle_caller_saved_regs.
                     asm.push_insn(insn);
                 },
@@ -2001,6 +2000,66 @@ mod tests {
         0x3b: add rdi, r8
         ");
         assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b80500000057565251415057b800000000ffd05f4158595a5e5f4801f74889d74801cf4889d74c01c7");
+    }
+
+    #[test]
+    fn test_ccall_stack_args_seven() {
+        // Seven args: one overflow onto the stack. Verify we sub/add 16 bytes
+        // for alignment (one slot for the overflow + one pad) and write the
+        // overflow at [rsp + 0] before the call.
+        let (mut asm, mut cb) = setup_asm();
+        let args: Vec<Opnd> = (0..7).map(|i| asm.load(Opnd::UImm((i + 1) as u64))).collect();
+        asm.ccall(0 as _, args);
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        assert_disasm_snapshot!(cb.disasm(), @r"
+        0x0: mov edi, 1
+        0x5: mov esi, 2
+        0xa: mov edx, 3
+        0xf: mov ecx, 4
+        0x14: mov r8d, 5
+        0x1a: mov r9d, 6
+        0x20: mov eax, 7
+        0x25: sub rsp, 0x10
+        0x29: mov qword ptr [rsp], rax
+        0x2d: mov eax, 0
+        0x32: call rax
+        0x34: add rsp, 0x10
+        ");
+    }
+
+    #[test]
+    fn test_ccall_stack_args_eight_with_survivors() {
+        // Eight args (two stack overflow slots) with a survivor that needs to
+        // be preserved across the call. The survivor's push and pop must
+        // bracket the SP sub/add so the survivor slot is never overwritten by
+        // a stack arg write -- this is the bug from #15312 / #15587.
+        // Use few enough live vregs that the survivor stays in a register
+        // rather than being spilled to a stack slot.
+        let (mut asm, mut cb) = setup_asm();
+        let surv = asm.load(Opnd::UImm(0x42));
+        let a0 = asm.load(Opnd::UImm(1));
+        let a1 = asm.load(Opnd::UImm(2));
+        asm.ccall(0 as _, vec![a0, a1, a0, a1, a0, a1, a0, a1]);
+        // Use survivor after the call so it must be preserved.
+        let _ = asm.add(surv, Opnd::UImm(1));
+        asm.compile_with_num_regs(&mut cb, ALLOC_REGS.len());
+
+        let disasm = cb.disasm();
+        // Survivor must be pushed (the spill alternative would just write to
+        // [rbp - N] and not need a push at all).
+        assert!(disasm.contains("push "), "expected a survivor push, got:\n{disasm}");
+        // SP sub and matching add must use the same immediate (16 bytes for 2 stack args).
+        assert!(disasm.contains("sub rsp, 0x10"), "expected sub rsp, 0x10:\n{disasm}");
+        assert!(disasm.contains("add rsp, 0x10"), "expected matching add rsp, 0x10:\n{disasm}");
+        // The sub must come AFTER the push so survivors live below the outgoing-arg area.
+        let sub_pos = disasm.find("sub rsp, 0x10").unwrap();
+        let push_pos = disasm.find("push ").unwrap();
+        assert!(push_pos < sub_pos, "survivor push must precede SP sub:\n{disasm}");
+        // And the add must come BEFORE the pop so we restore from the right slot.
+        let add_pos = disasm.find("add rsp, 0x10").unwrap();
+        let pop_pos = disasm.find("pop ").unwrap();
+        assert!(add_pos < pop_pos, "SP add must precede survivor pop:\n{disasm}");
     }
 
     #[test]

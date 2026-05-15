@@ -2335,6 +2335,13 @@ impl Assembler
     /// Handle caller-saved registers around CCall instructions.
     /// For each CCall, push live caller-saved registers, set up arguments
     /// in C calling convention registers, and pop saved registers after.
+    ///
+    /// Arguments beyond `regs.len()` are passed on the stack per SysV/AAPCS64:
+    /// the caller reserves space below the survivor pushes (rounded up to keep
+    /// SP 16-byte aligned), writes overflow args at `[SP + i*8]`, makes the call,
+    /// and tears the area down before popping survivors. The push/sub on entry
+    /// and the matching add/pop on exit must mirror exactly so survivors restore
+    /// from the slot they were pushed into (the bug in #15312 / revert #15587).
     pub fn handle_caller_saved_regs(
         &mut self,
         intervals: &[Interval],
@@ -2342,7 +2349,7 @@ impl Assembler
         regs: &[Reg],
     ) {
         use crate::backend::parcopy;
-        use crate::backend::current::{C_RET_OPND, SCRATCH_REG, ALLOC_REGS};
+        use crate::backend::current::{C_RET_OPND, SCRATCH_REG, ALLOC_REGS, NATIVE_STACK_PTR};
 
         for block_id in self.block_order() {
             let block = &mut self.basic_blocks[block_id.0];
@@ -2404,13 +2411,43 @@ impl Assembler
                         new_ids.push(None);
                     }
 
-                    // Extract arguments from CCall, clear opnds
+                    let num_reg_args = opnds.len().min(regs.len());
+                    let num_stack_args = opnds.len() - num_reg_args;
+                    // Round up to even so the area is 16-byte aligned. SP is
+                    // 16-aligned coming in (FrameSetup + paired/padded pushes
+                    // above keep it so), and the call instruction itself only
+                    // shifts SP by an aligned amount.
+                    let stack_arg_slots = (num_stack_args + 1) & !1;
+                    let stack_arg_bytes = stack_arg_slots as i64 * SIZEOF_VALUE_I32 as i64;
 
-                    assert!(opnds.len() <= regs.len());
+                    // Reserve outgoing-args space below the survivor pushes.
+                    // Must happen BEFORE writing args (we don't want signals
+                    // hitting our red zone) and BEFORE the call. Mirrored by
+                    // the add after the call, before popping survivors.
+                    if stack_arg_bytes > 0 {
+                        new_insns.push(Insn::Sub {
+                            left: NATIVE_STACK_PTR,
+                            right: stack_arg_bytes.into(),
+                            out: NATIVE_STACK_PTR,
+                        });
+                        new_ids.push(None);
+                    }
+
+                    // Write overflow args before clobbering registers. Sources
+                    // may still live in C arg registers that the reg-portion
+                    // parcopy is about to overwrite, so do this first.
+                    for (i, arg) in opnds.iter().skip(num_reg_args).enumerate() {
+                        let dest = Opnd::mem(64, NATIVE_STACK_PTR, i as i32 * SIZEOF_VALUE_I32);
+                        let src = Self::rewritten_opnd(*arg, assignments);
+                        // scratch_split handles mem-mem and 64-bit immediates.
+                        new_insns.push(Insn::Mov { dest, src });
+                        new_ids.push(None);
+                    }
 
                     // Sequentialize argument moves: each arg goes to regs[i]
                     let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = opnds
                         .iter()
+                        .take(num_reg_args)
                         .zip(regs.iter())
                         .map(|(arg, param)| parcopy::RegisterCopy::<Opnd> {
                             destination: Opnd::Reg(*param),
@@ -2456,43 +2493,46 @@ impl Assembler
                         new_ids.push(None);
                     }
 
-                    if survivors.is_empty() {
-                        if call_result_live {
-                            // No survivors to restore -- move result directly to output.
-                            let out = Self::rewritten_opnd(out, assignments);
-                            new_insns.push(Insn::Mov { dest: out, src: C_RET_OPND });
-                            new_ids.push(None);
-                        }
-                    } else {
-                        if call_result_live {
-                            // Save CCall result to scratch immediately, before pops
-                            // can clobber either C_RET or the output register.
-                            new_insns.push(Insn::Mov { dest: Opnd::Reg(SCRATCH_REG), src: C_RET_OPND });
-                            new_ids.push(None);
-                        }
+                    // If there are survivors to restore, save C_RET to scratch
+                    // before any pops can clobber it or the output register.
+                    let needs_scratch_save = call_result_live && !survivors.is_empty();
+                    if needs_scratch_save {
+                        new_insns.push(Insn::Mov { dest: Opnd::Reg(SCRATCH_REG), src: C_RET_OPND });
+                        new_ids.push(None);
+                    }
 
-                        // Pop alignment padding (if needed)
-                        if needs_alignment {
-                            new_insns.push(Insn::CPopInto(Opnd::Reg(ALLOC_REGS[0])));
-                            new_ids.push(None);
-                        }
+                    // Tear down outgoing-args area. Must match the sub above so
+                    // that the survivor pops land on the slots they were pushed to.
+                    if stack_arg_bytes > 0 {
+                        new_insns.push(Insn::Add {
+                            left: NATIVE_STACK_PTR,
+                            right: stack_arg_bytes.into(),
+                            out: NATIVE_STACK_PTR,
+                        });
+                        new_ids.push(None);
+                    }
 
-                        // Restore all survivors in reverse stack order, pairing adjacent pops when possible.
-                        for group in survivor_push_groups.iter().rev() {
-                            match group.as_slice() {
-                                [left, right] => new_insns.push(Insn::CPopPairInto(*right, *left)),
-                                [reg] => new_insns.push(Insn::CPopInto(*reg)),
-                                _ => unreachable!(),
-                            }
-                            new_ids.push(None);
-                        }
+                    // Pop alignment padding (if needed)
+                    if needs_alignment {
+                        new_insns.push(Insn::CPopInto(Opnd::Reg(ALLOC_REGS[0])));
+                        new_ids.push(None);
+                    }
 
-                        if call_result_live {
-                            // Move result from scratch to output AFTER all pops.
-                            let out = Self::rewritten_opnd(out, assignments);
-                            new_insns.push(Insn::Mov { dest: out, src: Opnd::Reg(SCRATCH_REG) });
-                            new_ids.push(None);
+                    // Restore all survivors in reverse stack order, pairing adjacent pops when possible.
+                    for group in survivor_push_groups.iter().rev() {
+                        match group.as_slice() {
+                            [left, right] => new_insns.push(Insn::CPopPairInto(*right, *left)),
+                            [reg] => new_insns.push(Insn::CPopInto(*reg)),
+                            _ => unreachable!(),
                         }
+                        new_ids.push(None);
+                    }
+
+                    if call_result_live {
+                        let out = Self::rewritten_opnd(out, assignments);
+                        let src = if needs_scratch_save { Opnd::Reg(SCRATCH_REG) } else { C_RET_OPND };
+                        new_insns.push(Insn::Mov { dest: out, src });
+                        new_ids.push(None);
                     }
                 } else {
                     new_insns.push(insn);
