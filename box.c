@@ -856,8 +856,7 @@ rb_box_load(int argc, VALUE *argv, VALUE box)
 
     rb_vm_frame_flag_set_box_require(GET_EC());
 
-    VALUE args = rb_ary_new_from_args(2, fname, wrap);
-    return rb_load_entrypoint(args);
+    return rb_load_entrypoint(fname, wrap);
 }
 
 static VALUE

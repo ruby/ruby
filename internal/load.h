@@ -12,7 +12,7 @@
 
 /* load.c */
 VALUE rb_get_expanded_load_path(void);
-VALUE rb_load_entrypoint(VALUE args);
+VALUE rb_load_entrypoint(VALUE fname, VALUE wrap);
 VALUE rb_require_relative_entrypoint(VALUE fname);
 int rb_require_internal(VALUE fname);
 NORETURN(void rb_load_fail(VALUE, const char*));
