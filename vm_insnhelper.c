@@ -5061,6 +5061,13 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
         cc = vm_cc_new(Qundef, NULL, vm_call_method_missing, cc_type_super);
         RB_OBJ_WRITE(iseq, &cd->cc, cc);
     }
+    else if (klass == rb_cBasicObject &&
+             RB_TYPE_P(me->defined_class, T_ICLASS) &&
+             RCLASS_INCLUDER(me->defined_class) == 0) {
+        rb_raise(rb_eNoMethodError,
+                 "super in a method in a module that has been refined and that is called via super"
+                 " from a refinement method is not supported.");
+    }
     else {
         cc = vm_search_method_fastpath(reg_cfp, cd, klass);
         const rb_callable_method_entry_t *cached_cme = vm_cc_cme(cc);
