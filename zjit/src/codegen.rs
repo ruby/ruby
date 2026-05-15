@@ -2710,8 +2710,8 @@ fn gen_save_pc_for_gc(asm: &mut Assembler, state: &FrameState) {
     let opcode: usize = state.get_opcode().try_into().unwrap();
     let next_pc: *const VALUE = unsafe { state.pc.offset(insn_len(opcode) as isize) };
 
-    gen_incr_counter(asm, Counter::vm_write_pc_count);
-    asm_comment!(asm, "save PC to CFP");
+    gen_incr_counter(asm, Counter::vm_write_jit_frame_count);
+    asm_comment!(asm, "save JITFrame to CFP");
     if let Some(pc) = PC_POISON {
         asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::const_ptr(pc));
     }
