@@ -373,13 +373,13 @@ fn test_mov() {
     0x0: mov edx, dword ptr [rbx + 0x80]
     0x0: mov rax, qword ptr [rsp + 4]
     0x0: mov r8d, 0x34
-    0x0: movabs r8, 0x80000000
-    0x0: movabs r8, 0xffffffffffffffff
+    0x0: mov r8d, 0x80000000
+    0x0: mov r8, 0xffffffffffffffff
     0x0: mov eax, 0x34
     0x0: movabs rax, 0xffc0000000000002
-    0x0: movabs rax, 0x80000000
-    0x0: movabs rax, 0xffffffffffffffcc
-    0x0: movabs rax, 0xffffffffffffffff
+    0x0: mov eax, 0x80000000
+    0x0: mov rax, 0xffffffffffffffcc
+    0x0: mov rax, 0xffffffffffffffff
     0x0: mov cl, r9b
     0x0: mov rbx, rax
     0x0: mov rdi, rbx
@@ -405,13 +405,13 @@ fn test_mov() {
     8b9380000000
     488b442404
     41b834000000
-    49b80000008000000000
-    49b8ffffffffffffffff
+    41b800000080
+    49c7c0ffffffff
     b834000000
     48b8020000000000c0ff
-    48b80000008000000000
-    48b8ccffffffffffffff
-    48b8ffffffffffffffff
+    b800000080
+    48c7c0ccffffff
+    48c7c0ffffffff
     4488c9
     4889c3
     4889df
@@ -488,8 +488,8 @@ fn test_mov_unsigned() {
     0x0: mov eax, 1
     0x0: mov eax, 0xffffffff
     0x0: movabs rax, 0x100000000
-    0x0: movabs rax, 0xffffffffffffffff
-    0x0: movabs r8, 0xffffffffffffffff
+    0x0: mov rax, 0xffffffffffffffff
+    0x0: mov r8, 0xffffffffffffffff
     0x0: mov r8b, 1
     0x0: mov r8b, 0xff
     0x0: mov r8w, 1
@@ -497,7 +497,7 @@ fn test_mov_unsigned() {
     0x0: mov r8d, 1
     0x0: mov r8d, 0xffffffff
     0x0: mov r8d, 1
-    0x0: movabs r8, 0xffffffffffffffff
+    0x0: mov r8, 0xffffffffffffffff
     ");
 
     assert_snapshot!(hexdumps!(cb01, cb02, cb03, cb04, cb05, cb06, cb07, cb08, cb09, cb10, cb11, cb12, cb13, cb14, cb15, cb16, cb17, cb18, cb19, cb20, cb21), @"
@@ -512,8 +512,8 @@ fn test_mov_unsigned() {
     b801000000
     b8ffffffff
     48b80000000001000000
-    48b8ffffffffffffffff
-    49b8ffffffffffffffff
+    48c7c0ffffffff
+    49c7c0ffffffff
     41b001
     41b0ff
     6641b80100
@@ -521,7 +521,7 @@ fn test_mov_unsigned() {
     41b801000000
     41b8ffffffff
     41b801000000
-    49b8ffffffffffffffff
+    49c7c0ffffffff
     ");
 }
 
