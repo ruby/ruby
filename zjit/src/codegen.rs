@@ -707,11 +707,11 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::SetIvar { self_val, id, ic, val, state } => no_output!(gen_setivar(jit, asm, opnd!(self_val), *id, *ic, opnd!(val), &function.frame_state(*state))),
         Insn::FixnumBitCheck { val, index } => gen_fixnum_bit_check(asm, opnd!(val), *index),
         Insn::SideExit { state, reason, recompile } => no_output!(gen_side_exit(jit, asm, reason, *recompile, &function.frame_state(*state))),
-        Insn::PutSpecialObject { value_type } => gen_putspecialobject(asm, *value_type),
+        Insn::PutSpecialObject { value_type, state } => gen_putspecialobject(jit, asm, *value_type, &function.frame_state(*state)),
         Insn::AnyToString { val, str, state } => gen_anytostring(asm, opnd!(val), opnd!(str), &function.frame_state(*state)),
         Insn::Defined { op_type, obj, pushval, v, lep_level, state } => gen_defined(jit, asm, *op_type, *obj, *pushval, opnd!(v), *lep_level, &function.frame_state(*state)),
         Insn::CheckMatch { target, pattern, flag, state } => gen_checkmatch(jit, asm, opnd!(target), opnd!(pattern), *flag, &function.frame_state(*state)),
-        Insn::GetSpecialSymbol { symbol_type, state: _ } => gen_getspecial_symbol(asm, *symbol_type),
+        Insn::GetSpecialSymbol { symbol_type, state } => gen_getspecial_symbol(asm, *symbol_type, &function.frame_state(*state)),
         Insn::GetSpecialNumber { nth, state } => gen_getspecial_number(asm, *nth, &function.frame_state(*state)),
         &Insn::IncrCounter(counter) => no_output!(gen_incr_counter(asm, counter)),
         Insn::IncrCounterPtr { counter_ptr } => no_output!(gen_incr_counter_ptr(asm, *counter_ptr)),
@@ -1219,7 +1219,13 @@ fn gen_side_exit(jit: &mut JITState, asm: &mut Assembler, reason: &SideExitReaso
 }
 
 /// Emit a special object lookup
-fn gen_putspecialobject(asm: &mut Assembler, value_type: SpecialObjectType) -> Opnd {
+fn gen_putspecialobject(jit: &JITState, asm: &mut Assembler, value_type: SpecialObjectType, state: &FrameState) -> Opnd {
+    // rb_vm_get_special_object for CBASE/CONST_BASE can call rb_singleton_class,
+    // which allocates (may trigger GC) and can raise TypeError on non-class
+    // receivers (e.g. `123.instance_eval { Const = 1 }`). Treat as non-leaf so
+    // the PC is saved for GC and stack/locals are spilled for rescue.
+    gen_prepare_non_leaf_call(jit, asm, state);
+
     // Get the EP of the current CFP and load it into a register
     let ep_opnd = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_EP);
     let ep_reg = asm.load(ep_opnd);
@@ -1227,9 +1233,12 @@ fn gen_putspecialobject(asm: &mut Assembler, value_type: SpecialObjectType) -> O
     asm_ccall!(asm, rb_vm_get_special_object, ep_reg, Opnd::UImm(u64::from(value_type)))
 }
 
-fn gen_getspecial_symbol(asm: &mut Assembler, symbol_type: SpecialBackrefSymbol) -> Opnd {
-    // Fetch a "special" backref based on the symbol type
+fn gen_getspecial_symbol(asm: &mut Assembler, symbol_type: SpecialBackrefSymbol, state: &FrameState) -> Opnd {
+    // rb_backref_get reaches rb_vm_svar_lep, which calls CFP_PC/CFP_ISEQ on the
+    // current frame, so the PC must be saved before the call.
+    gen_prepare_leaf_call_with_gc(asm, state);
 
+    // Fetch a "special" backref based on the symbol type
     let backref = asm_ccall!(asm, rb_backref_get,);
 
     match symbol_type {
@@ -1249,11 +1258,12 @@ fn gen_getspecial_symbol(asm: &mut Assembler, symbol_type: SpecialBackrefSymbol)
 }
 
 fn gen_getspecial_number(asm: &mut Assembler, nth: u64, state: &FrameState) -> Opnd {
-    // Fetch the N-th match from the last backref based on type shifted by 1
-
-    let backref = asm_ccall!(asm, rb_backref_get,);
-
+    // rb_backref_get reaches rb_vm_svar_lep, which calls CFP_PC/CFP_ISEQ on the
+    // current frame, so the PC must be saved before the call.
     gen_prepare_leaf_call_with_gc(asm, state);
+
+    // Fetch the N-th match from the last backref based on type shifted by 1
+    let backref = asm_ccall!(asm, rb_backref_get,);
 
     asm_ccall!(asm, rb_reg_nth_match, Opnd::Imm((nth >> 1).try_into().unwrap()), backref)
 }

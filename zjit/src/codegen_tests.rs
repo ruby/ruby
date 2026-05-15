@@ -4205,6 +4205,52 @@ fn test_getspecial_multiple_groups() {
     assert_snapshot!(assert_compiles(r#"test("123-456")"#), @r#""456""#);
 }
 
+// In a JIT-to-JIT call, gen_push_frame writes JIT_RETURN_POISON to the
+// callee's cfp->jit_return (runtime_checks builds). On the *first* such
+// call the function stub trampoline clears jit_return to NULL, so the
+// crash only manifests on the second JIT-to-JIT hit when the stub has
+// been patched to jump directly to the callee's JIT entry. Putting $& as
+// the first C call in the callee keeps the poison live until
+// gen_getspecial_symbol calls rb_backref_get → rb_vm_svar_lep → CFP_PC →
+// CFP_ZJIT_FRAME, which dereferences the poison without the prep fix.
+#[test]
+fn test_getspecial_symbol_in_jit_to_jit_callee() {
+    eval(r#"
+        def callee = $&
+        def caller_method = callee
+
+        # Warm up callee so it JITs
+        callee
+        callee
+
+        # First call to caller_method profiles; second JITs caller_method
+        # and runs through the function-stub-hit path which clears
+        # jit_return. The third call goes through the patched stub with
+        # POISON intact, hitting the bug.
+        caller_method
+        caller_method
+    "#);
+    assert_contains_opcode("callee", YARVINSN_getspecial);
+    assert_snapshot!(assert_compiles("caller_method"), @"nil");
+}
+
+// Same JIT-to-JIT setup, exercising gen_getspecial_number ($N).
+#[test]
+fn test_getspecial_number_in_jit_to_jit_callee() {
+    eval(r#"
+        def callee = $1
+        def caller_method = callee
+
+        callee
+        callee
+
+        caller_method
+        caller_method
+    "#);
+    assert_contains_opcode("callee", YARVINSN_getspecial);
+    assert_snapshot!(assert_compiles("caller_method"), @"nil");
+}
+
 #[test]
 fn test_profile_under_nested_jit_call() {
     assert_snapshot!(inspect("
