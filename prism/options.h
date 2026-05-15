@@ -103,7 +103,7 @@ static const uint8_t PM_OPTIONS_COMMAND_LINE_P = 0x10;
 
 /**
  * A bit representing whether or not the command line -x option was set. -x
- * searches the input file for a shebang that matches the current Ruby engine.
+ * searches the input file for a shebang that includes "ruby".
  */
 static const uint8_t PM_OPTIONS_COMMAND_LINE_X = 0x20;
 
