@@ -1040,26 +1040,54 @@ class Pathname    # * File *
   # See {File System Timestamps}[rdoc-ref:file/timestamps.md].
   def atime() File.atime(@path) end
 
+  # :markup: markdown
+  #
   # call-seq:
   #   birthtime -> new_time
   #
   # Returns a new Time object containing the create time of the entry
   # represented by +self+:
   #
-  #   filepath = 't.tmp'
-  #   pn = Pathname.new(filepath)
-  #   pn.birthtime   # Raises Errno::ENOENT: No such file or directory
-  #   file = File.open(filepath, 'w')
-  #   pn.birthtime   # => 2026-04-14 16:14:47.494846 -0500
-  #   file.birthtime # => 2026-04-14 16:14:47.494846 -0500
-  #   file.write('foo')
-  #   pn.birthtime   # => 2026-04-14 16:14:47.494846 -0500
-  #   file.close
-  #   pn.birthtime   # => 2026-04-14 16:14:47.494846 -0500
-  #   File.delete(filepath)
-  #   pn.birthtime   # Raises Errno::ENOENT: No such file or directory
+  # ```ruby
+  # # Work in a temporary directory.
+  # Pathname.mktmpdir do |tmpdirpath|
+  #   # A subdirectory therein, and its Pathname.
+  #   dirpath = File.join(tmpdirpath, 'subdir')
+  #   dir_pn = Pathname(dirpath)
+  #   puts "Create directory; directory birthtime established."
+  #   dir_pn.mkdir
+  #   puts "  Directory birthtime: #{dir_pn.birthtime}"
+  #   sleep(1)
   #
-  # See {File System Timestamps}[rdoc-ref:file/timestamps.md].
+  #   # A file in the subdirectory, and its Pathname.
+  #   filepath = File.join(dirpath, 't.txt')
+  #   file_pn = Pathname(filepath)
+  #   puts "Create file; file birthtime established; directory birthtime not updated."
+  #   file_pn.write('foo')
+  #   puts "  File birthtime:      #{file_pn.birthtime}"
+  #   puts "  Directory birthtime: #{dir_pn.birthtime}"
+  #   sleep(1)
+  #   puts "Write file; neither birthtime updated."
+  #   file_pn.write('bar')
+  #   puts "  File birthtime:      #{file_pn.birthtime}"
+  #   puts "  Directory birthtime: #{dir_pn.birthtime}"
+  # end
+  # ```
+  #
+  # Output:
+  #
+  # ```text
+  # Create directory; directory birthtime established.
+  #   Directory birthtime: 2026-05-14 23:41:12 +0100
+  # Create file; file birthtime established; directory birthtime not updated.
+  #   File birthtime:      2026-05-14 23:41:13 +0100
+  #   Directory birthtime: 2026-05-14 23:41:12 +0100
+  # Write file; neither birthtime updated.
+  #   File birthtime:      2026-05-14 23:41:13 +0100
+  #   Directory birthtime: 2026-05-14 23:41:12 +0100
+  # ```
+  #
+  # See [File System Timestamps](rdoc-ref:file/timestamps.md).
   def birthtime() File.birthtime(@path) end
 
   # See <tt>File.ctime</tt>.  Returns last (directory entry, not file) change time.
