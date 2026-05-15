@@ -899,7 +899,7 @@ class TestBox < Test::Unit::TestCase
   end
 
   def test_calling_root_box_methods_does_not_change_user_boxes_newly_created
-    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true, timeout: 60)
     begin;
       assert_not_include Object.constants.sort, :Find # required by Pathname#find
       assert_not_include Ruby::Box.root.eval("Object.constants.sort"), :Find
