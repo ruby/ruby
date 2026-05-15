@@ -2,7 +2,6 @@
 
 require 'rubygems'
 require 'rdoc/rdoc'
-require 'rbs'
 
 # Make only the output directory relative to the invoked directory.
 invoked = Dir.pwd
