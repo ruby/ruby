@@ -9774,6 +9774,7 @@ rb_str_enumerate_codepoints(VALUE str, VALUE ary)
     unsigned int c;
     const char *ptr, *end;
     rb_encoding *enc;
+    int enc_asciicompat;
 
     if (single_byte_optimizable(str))
         return rb_str_enumerate_bytes(str, ary);
@@ -9782,9 +9783,15 @@ rb_str_enumerate_codepoints(VALUE str, VALUE ary)
     ptr = RSTRING_PTR(str);
     end = RSTRING_END(str);
     enc = STR_ENC_GET(str);
+    enc_asciicompat = rb_enc_asciicompat(enc);
 
     while (ptr < end) {
-        c = rb_enc_codepoint_len(ptr, end, &n, enc);
+        /* Fast path: ASCII byte in an ASCII-compatible encoding is its own codepoint;
+         * skip rb_enc_codepoint_len and return the byte directly.
+         */
+        n = 1;
+        c = (enc_asciicompat && ISASCII(*ptr)) ?
+            (unsigned char)*ptr : rb_enc_codepoint_len(ptr, end, &n, enc);
         ENUM_ELEM(ary, UINT2NUM(c));
         ptr += n;
     }
