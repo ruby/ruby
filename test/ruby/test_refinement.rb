@@ -1035,6 +1035,43 @@ class TestRefinement < Test::Unit::TestCase
     RUBY
   end
 
+  def test_prohibit_super_in_refined_module_method
+    assert_separately([], <<-"end;")
+      bug22071 = '[ruby-core:125511] [Bug #22071]'
+      class BasicObject
+        def a; "B" end
+      end
+
+      module G
+        def a; "G" + super end
+      end
+
+      module F
+        include G
+        def a; "F" + super end
+      end
+
+      class A
+        def a; "A" + super end
+      end
+
+      class B < A
+        include F
+      end
+
+      module R
+       refine F do
+         def a; "R"+super end
+       end
+      end
+      using R
+
+      msg = "super in a method in a module that has been refined and that is called via super" +
+        " from a refinement method is not supported."
+      assert_raise(NoMethodError, msg, bug22071) { B.new.a }
+    end;
+  end
+
   def test_refine_after_using
     assert_separately([], <<-"end;")
       bug8880 = '[ruby-core:57079] [Bug #8880]'
