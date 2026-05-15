@@ -2865,8 +2865,11 @@ fn gen_push_frame(asm: &mut Assembler, argc: usize, state: &FrameState, frame: C
         // Without this, stale data from a previous frame occupying this CFP slot
         // can be used as an ifunc pointer, causing a segfault.
         asm.mov(cfp_opnd(RUBY_OFFSET_CFP_BLOCK_CODE), 0.into());
-        let jit_frame = JITFrame::new_cfunc();
-        asm.mov(cfp_opnd(RUBY_OFFSET_CFP_JIT_RETURN), Opnd::const_ptr(jit_frame));
+        // C frames share a single static JITFrame (rb_zjit_c_frame). Setting
+        // cfp->jit_return to the ZJIT_JIT_RETURN_C_FRAME sentinel tells
+        // CFP_ZJIT_FRAME() to use that shared frame, so we don't need to
+        // allocate a per-call JITFrame for C method pushes.
+        asm.mov(cfp_opnd(RUBY_OFFSET_CFP_JIT_RETURN), (ZJIT_JIT_RETURN_C_FRAME as usize).into());
     }
 
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SELF), frame.recv);
