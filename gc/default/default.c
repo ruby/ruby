@@ -96,15 +96,6 @@
 # include <mach/mach_port.h>
 #endif
 
-#ifndef VM_CHECK_MODE
-# define VM_CHECK_MODE RUBY_DEBUG
-#endif
-
-// From ractor_core.h
-#ifndef RACTOR_CHECK_MODE
-# define RACTOR_CHECK_MODE (VM_CHECK_MODE || RUBY_DEBUG) && (SIZEOF_UINT64_T == SIZEOF_VALUE)
-#endif
-
 #ifndef RUBY_DEBUG_LOG
 # define RUBY_DEBUG_LOG(...)
 #endif
@@ -691,10 +682,10 @@ typedef struct rb_objspace {
 #define HEAP_PAGE_ALIGN_LOG 16
 #endif
 
-#if RACTOR_CHECK_MODE || GC_DEBUG
+#if RB_GC_OBJ_HAS_SUFFIX || GC_DEBUG
 struct rvalue_overhead {
-# if RACTOR_CHECK_MODE
-    uint32_t _ractor_belonging_id;
+# ifdef RB_GC_OBJ_HAS_SUFFIX
+    struct rb_gc_obj_suffix suffix;
 # endif
 # if GC_DEBUG
     const char *file;
