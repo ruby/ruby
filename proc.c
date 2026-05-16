@@ -3595,6 +3595,7 @@ method_to_proc(VALUE method)
 }
 
 extern VALUE rb_find_defined_class_by_owner(VALUE current_class, VALUE target_owner);
+extern int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
 
 /*
  * call-seq:
@@ -3621,11 +3622,64 @@ method_super_method(VALUE method)
         mid = data->me->def->body.alias.original_me->def->original_id;
     }
     else {
-        super_class = RCLASS_SUPER(RCLASS_ORIGIN(iclass));
+        VALUE klass = iclass;
+        if (RICLASS_FOR_REFINEMENT_P(klass)) {
+            // Refined methods need this check before superclass determination
+            klass = RBASIC(klass)->klass;
+        }
+        super_class = RCLASS_SUPER(RCLASS_ORIGIN(klass));
         mid = data->me->def->original_id;
     }
     if (!super_class) return Qnil;
-    me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(super_class, mid, &iclass);
+
+    // For refined methods, skip refinements for the same definition, but consider
+    // refinements for superclass methods
+    const rb_method_definition_t *skip_def = RICLASS_FOR_REFINEMENT_P(iclass) ? data->me->def : NULL;
+
+    // Use the CREF of the Method/UnboundMethod, not the CREF of the caller of super_method.
+    // We must avoid the use of rb_callable_method_entry_with_refinements, as that will
+    // implicitly use the refinements activated in of the caller of super_method.
+    const rb_cref_t *cref = NULL;
+    if (data->me->def->type == VM_METHOD_TYPE_ISEQ) {
+        cref = data->me->def->body.iseq.cref;
+    }
+    VALUE klass = super_class;
+    me = NULL;
+    while (klass) {
+        const rb_callable_method_entry_t *cme = rb_callable_method_entry(klass, mid);
+        if (!cme) break;
+        if (cme->def->type != VM_METHOD_TYPE_REFINED) {
+            me = (rb_method_entry_t *)cme;
+            iclass = cme->defined_class;
+            break;
+        }
+        // Look through all CREF scopes for a refinement for cme->owner, mirroring
+        // the loop in search_refined_method.
+        const rb_cref_t *c;
+        for (c = cref; c; c = CREF_NEXT(c)) {
+            VALUE refs = CREF_REFINEMENTS(c);
+            if (NIL_P(refs)) continue;
+            VALUE r = rb_hash_lookup(refs, cme->owner);
+            if (NIL_P(r)) continue;
+            const rb_callable_method_entry_t *ref_cme = rb_callable_method_entry(r, mid);
+            if (!ref_cme) break;
+            if (ref_cme->def->type == VM_METHOD_TYPE_REFINED) continue;
+            if (skip_def && rb_method_definition_eq(ref_cme->def, skip_def)) continue;
+            me = (rb_method_entry_t *)ref_cme;
+            iclass = ref_cme->defined_class;
+            break;
+        }
+        if (me) break;
+        // No refined method found. Use orig_me if available, or normal method lookup
+        // in superclass otherwise.
+        const rb_method_entry_t *orig_me = cme->def->body.refined.orig_me;
+        if (orig_me) {
+            me = (rb_method_entry_t *)orig_me;
+            iclass = orig_me->defined_class ? orig_me->defined_class : cme->defined_class;
+            break;
+        }
+        klass = RCLASS_SUPER(cme->defined_class);
+    }
     if (!me) return Qnil;
     return mnew_internal(me, me->owner, iclass, data->recv, mid, rb_obj_class(method), FALSE, FALSE);
 }

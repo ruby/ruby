@@ -646,6 +646,14 @@ RICLASS_OWNS_M_TBL_P(VALUE iclass)
     return RCLASSEXT_ICLASS_IS_ORIGIN(ext) && !RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(ext);
 }
 
+static inline bool
+RICLASS_FOR_REFINEMENT_P(VALUE iclass)
+{
+    return BUILTIN_TYPE(iclass) == T_ICLASS &&
+            RB_TYPE_P(RBASIC(iclass)->klass, T_MODULE) &&
+            FL_TEST_RAW(RBASIC(iclass)->klass, RMODULE_IS_REFINEMENT);
+}
+
 static inline void
 RCLASS_SET_INCLUDER(VALUE iclass, VALUE klass)
 {
