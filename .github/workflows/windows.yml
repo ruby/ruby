@@ -80,6 +80,7 @@ jobs:
 
       - name: Install tools with scoop
         run: |
+          if ((vcpkg.exe help install) -match "manifest") { exit }
           Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
           iwr -useb get.scoop.sh | iex
           Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
