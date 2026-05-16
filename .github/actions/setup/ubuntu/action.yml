@@ -33,6 +33,7 @@ runs:
         setarch="${arch:+setarch $arch --}"
         # normalize `uname`
         if uname=$(${setarch} uname -m 2> /dev/null); then
+          # `setarch` works, `$arch` is a valid architecture name.
           echo "setarch=${setarch}" >> "$GITHUB_OUTPUT"
         else
           # if `setarch` failed, take the given `arch` as-is.
@@ -46,13 +47,15 @@ runs:
       shell: bash
       run: echo "SETARCH=${setarch}" >> "$GITHUB_ENV" # zizmor: ignore[github-env]
       env:
-        setarch: ${{ steps.uname.outputs.setarch }}
+        setarch: ${{ steps.uname.outputs.setarch }} # validated
 
     - name: dpkg setup
       shell: bash
-      run: |
-        sudo dpkg --add-architecture ${{ steps.uname.outputs.dpkg }}
+      run: sudo dpkg --add-architecture "${dpkg}"
+      # `dpkg` is valid, also `uname`.
       if: ${{ inputs.arch }}
+      env:
+        dpkg: ${{ steps.uname.outputs.dpkg }}
 
     - name: apt-get
       shell: bash
