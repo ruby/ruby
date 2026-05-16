@@ -1337,19 +1337,24 @@ class Pathname    # * FileTest *
   # The returned value is OS-dependent; on Windows, almost always +false+.
   def blockdev?() FileTest.blockdev?(@path) end
 
+  # :markup: markdown
+  #
   # call-seq:
   #   chardev? => true or false
   #
-  # Returns whether +self+ represents a character device
+  # Returns whether `self` represents a path to  a character device
   # (i.e., a sequential-access device):
   #
-  #   Pathname.new('/dev/tty').chardev?     # => true
-  #   Pathname.new('/dev/null').chardev?    # => true
-  #   Pathname.new('/dev/nvme0n1').chardev? # => false
-  #   Pathname.new('/dev/loop0').chardev?   # => false
-  #   Pathname.new('nosuch').chardev?       # => false
-  #
-  # The returned value is OS-dependent; on Windows, almost always +false+.
+  # ```ruby
+  # Pathname('/dev/tty').chardev?     # => true
+  # Pathname('/dev/null').chardev?    # => true
+  # Pathname('/dev/nvme0n1').chardev? # => false
+  # Pathname('/dev/loop0').chardev?   # => false
+  # Pathname($stdin).chardev?         # => false
+  # Pathname('nosuch').chardev?       # => false
+  # ```
+  # 
+  # The returned value is OS-dependent; on Windows, almost always `false`.
   def chardev?() FileTest.chardev?(@path) end
 
   # Tests the file is empty.
