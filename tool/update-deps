@@ -328,6 +328,7 @@ def read_make_deps(cwd)
       next if /libyjit.o\z/ =~ target.to_s # skip YJIT Rust object (no corresponding C source)
       next if /libzjit.o\z/ =~ target.to_s # skip ZJIT Rust object (no corresponding C source)
       next if /target\/release\/libruby.o\z/ =~ target.to_s # skip YJIT+ZJIT Rust object (no corresponding C source)
+      next if /\.bundle\// =~ curdir.to_s
       next if /\.bundle\// =~ target.to_s
       next if /\A\./ =~ target.to_s # skip rules such as ".c.o"
       #p [curdir, target, deps]
