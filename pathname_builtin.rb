@@ -747,22 +747,22 @@ class Pathname
   # :markup: markdown
   #
   # call-seq:
-  #   children(full_paths = true) -> array_of_pathnames
+  #   children(with_dirnames = true) -> array_of_pathnames
   #
   # Returns an array of pathnames;
   # each represents a child of the entry represented by `self`,
   # which must be an existing directory in the underlying file system.
   #
-  # With `full_paths` given as `true` (the default),
-  # each pathname contains a full path:
+  # With `with_dirnames` given as `true` (the default),
+  # each pathname contains the full entry:
   #
   # ```ruby
   # Pathname('lib').children.size # => 72
   # Pathname('lib').children.take(3)
   # # => [#<Pathname:lib/bundled_gems.rb>, #<Pathname:lib/bundler>, #<Pathname:lib/bundler.rb>]
   # ```
-  # With `full_path` given as `false`,
-  # each pathname contains only the basename of the path:
+  # With `with_dirnames` given as `false`,
+  # each pathname contains only the basename of the entry:
   #
   # ```ruby
   # Pathname('lib').children(false).take(3)
