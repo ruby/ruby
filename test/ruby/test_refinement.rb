@@ -3339,6 +3339,234 @@ class TestRefinement < Test::Unit::TestCase
     RUBY
   end
 
+  def test_method_super_method_single_refinements
+    assert_separately([], <<~RUBY)
+      class A
+        def b = "A"
+      end
+      module M
+        R = refine(A) { def b; "M" + super; end }
+      end
+      using M
+      a = A.new
+      m = a.method(:b)
+      assert_equal("MA", a.b)
+      assert_equal("MA", m.call)
+      assert_equal(M::R, m.owner)
+      assert_equal(A, m.owner.target)
+
+      m = m.super_method
+      assert_equal(A, m.owner)
+      assert_nil(m.super_method)
+    RUBY
+  end
+
+  def test_method_super_method_multiple_refinements_with_activated_refinements_during_super
+    assert_separately([], <<~RUBY)
+      class A
+        def b = "A"
+      end
+      module M
+        R = refine(A) { def b; "M" + super; end }
+      end
+      module N
+        using M
+        R = refine(A) { def b; "N" + super; end }
+      end
+      using M
+      using N
+      a = A.new
+      m = a.method(:b)
+      assert_equal("NMA", a.b)
+      assert_equal("NMA", m.call)
+      assert_equal(N::R, m.owner)
+      assert_equal(A, m.owner.target)
+
+      m = m.super_method
+      assert_equal(M::R, m.owner)
+      assert_equal(A, m.owner.target)
+
+      m = m.super_method
+      assert_equal(A, m.owner)
+      assert_nil(m.super_method)
+    RUBY
+  end
+
+  def test_method_super_method_multiple_refinements_without_activated_refinements_during_super
+    assert_separately([], <<~RUBY)
+      class A
+        def b = "A"
+      end
+      module M
+        R = refine(A) { def b; "M" + super; end }
+      end
+      module N
+        R = refine(A) { def b; "N" + super; end }
+      end
+      using M
+      using N
+      a = A.new
+      m = a.method(:b)
+      assert_equal("NA", a.b)
+      assert_equal("NA", m.call)
+      assert_equal(N::R, m.owner)
+      assert_equal(A, m.owner.target)
+
+      m = m.super_method
+      assert_equal(A, m.owner)
+      assert_nil(m.super_method)
+    RUBY
+  end
+
+  def test_unbound_method_super_method_single_refinements
+    assert_separately([], <<~RUBY)
+      class A
+        def b = "A"
+      end
+      module M
+        R = refine(A) { def b; "M" + super; end }
+      end
+      using M
+      m = A.instance_method(:b)
+      assert_equal(M::R, m.owner)
+      assert_equal(A, m.owner.target)
+
+      m = m.super_method
+      assert_equal(A, m.owner)
+      assert_nil(m.super_method)
+    RUBY
+  end
+
+  def test_method_super_method_nonrefined_finds_refined_super
+    assert_separately([], <<~RUBY)
+      class A
+        def b = "A"
+      end
+      module M
+        R = refine(A) { def b; "M" + super; end }
+      end
+      using M
+      class B < A
+        def b = "B" + super
+      end
+      b = B.new
+      m = b.method(:b)
+      assert_equal("BMA", b.b)
+      assert_equal("BMA", m.call)
+      assert_equal(B, m.owner)
+      m = m.super_method
+      assert_equal(M::R, m.owner)
+      assert_equal(A, m.owner.target)
+
+      m = m.super_method
+      assert_equal(A, m.owner)
+      assert_nil(m.super_method)
+    RUBY
+  end
+
+  def test_method_super_method_refined_finds_refined_method_in_superclass
+    assert_separately([], <<~RUBY)
+      class A
+        def b = "A"
+      end
+      class B < A
+      end
+      module M
+        R = refine(A) { def b; "M" + super; end }
+      end
+      using M
+      module N
+        R = refine(B) { def b; "N" + super; end }
+      end
+      using N
+
+      b = B.new
+      m = b.method(:b)
+      assert_equal("NMA", b.b)
+      assert_equal("NMA", m.call)
+      assert_equal(N::R, m.owner)
+      assert_equal(B, m.owner.target)
+
+      m = m.super_method
+      assert_equal(M::R, m.owner)
+      assert_equal(A, m.owner.target)
+
+      m = m.super_method
+      assert_equal(A, m.owner)
+      assert_nil(m.super_method)
+    RUBY
+  end
+
+  def test_method_super_method_uses_cref_of_method_not_cref_of_caller
+    assert_separately([], <<~RUBY)
+      class A
+        def b = "A"
+      end
+      class B < A
+      end
+      module M
+        R = refine(A) { def b; "M" + super; end }
+      end
+      module N
+        R = refine(B) do
+          using M
+          def b; "N" + super; end
+        end
+      end
+      using N
+
+      b = B.new
+      m = b.method(:b)
+      assert_equal("NMA", b.b)
+      assert_equal("NMA", m.call)
+      assert_equal(N::R, m.owner)
+      assert_equal(B, m.owner.target)
+
+      m = m.super_method
+      assert_equal(M::R, m.owner)
+      assert_equal(A, m.owner.target)
+
+      m = m.super_method
+      assert_equal(A, m.owner)
+      assert_nil(m.super_method)
+    RUBY
+  end
+
+  def test_method_super_method_only_considers_activated_refinements
+    assert_separately([], <<~RUBY)
+      class A
+        def b = "A"
+      end
+      class B < A
+        def b = "B" + super
+      end
+      module M
+        R = refine(A){def b = "M" + super}
+      end
+      module N
+        R = refine(B){def b = "N" + super}
+      end
+
+      module O
+        using M
+        using N
+
+        b = B.new
+        m = b.method(:b)
+        assert_equal("NBA", b.b)
+        assert_equal("NBA", m.call)
+        assert_equal(N::R, m.owner)
+        assert_equal(B, m.owner.target)
+
+        m = m.super_method
+        assert_equal(B, m.owner)
+        m = m.super_method
+        assert_equal(A, m.owner)
+        assert_nil(m.super_method)
+      end
+    RUBY
+  end
+
   private
 
   def eval_using(mod, s)
