@@ -1322,19 +1322,24 @@ end
 
 class Pathname    # * FileTest *
 
+  # :markup: markdown
+  #
   # call-seq:
   #   blockdev? => true or false
   #
-  # Returns whether +self+ represents a block device
-  # (i.e., a random-access device):
+  # Returns whether `self` represents a path to a block device
+  # (i.e., a direct-access device):
   #
-  #   Pathname.new('/dev/nvme0n1').blockdev? # => true
-  #   Pathname.new('/dev/loop0').blockdev?   # => true
-  #   Pathname.new('/dev/tty').blockdev?     # => false
-  #   Pathname.new('/dev/null').blockdev?    # => false
-  #   Pathname.new('nosuch').blockdev?       # => false
+  # ```ruby
+  # Pathname('/dev/nvme0n1').blockdev? # => true
+  # Pathname('/dev/loop0').blockdev?   # => true
+  # Pathname('/dev/tty').blockdev?     # => false
+  # Pathname('/dev/null').blockdev?    # => false
+  # Pathname('nosuch').blockdev?       # => false
+  # Pathname($stdin).blockdev?         # => false
+  # ```
   #
-  # The returned value is OS-dependent; on Windows, almost always +false+.
+  # The returned value is OS-dependent; on Windows, almost always `false`.
   def blockdev?() FileTest.blockdev?(@path) end
 
   # call-seq:
