@@ -813,19 +813,25 @@ rb_gc_impl_get_vm_context(void *objspace_ptr)
 // Object allocation
 
 static VALUE
-rb_mmtk_alloc_fast_path(struct objspace *objspace, struct MMTk_ractor_cache *ractor_cache, size_t size)
+rb_mmtk_alloc_fast_path(struct objspace *objspace, struct MMTk_ractor_cache *ractor_cache, size_t size, size_t align)
 {
     MMTk_BumpPointer *bump_pointer = ractor_cache->bump_pointer;
     if (bump_pointer == NULL) return 0;
 
-    uintptr_t new_cursor = bump_pointer->cursor + size;
+    uintptr_t cursor = bump_pointer->cursor;
 
-    if (new_cursor > bump_pointer->limit) {
+    // Ensure cursor is aligned
+    size_t mask = align - 1;
+    cursor = (cursor + mask) & ~mask;
+
+    cursor += size;
+
+    if (cursor > bump_pointer->limit) {
         return 0;
     }
     else {
-        VALUE obj = (VALUE)bump_pointer->cursor;
-        bump_pointer->cursor = new_cursor;
+        VALUE obj = cursor - size;
+        bump_pointer->cursor = cursor;
         return obj;
     }
 }
@@ -910,7 +916,7 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     // Layout: [hidden size header (sizeof(VALUE))][payload (alloc_size)][suffix (RVALUE_SUFFIX_SIZE)]
     alloc_size += sizeof(VALUE) + RVALUE_SUFFIX_SIZE;
 
-    VALUE *alloc_obj = (VALUE *)rb_mmtk_alloc_fast_path(objspace, ractor_cache, alloc_size);
+    VALUE *alloc_obj = (VALUE *)rb_mmtk_alloc_fast_path(objspace, ractor_cache, alloc_size, MMTk_MIN_OBJ_ALIGN);
     if (!alloc_obj) {
         alloc_obj = mmtk_alloc(ractor_cache->mutator, alloc_size, MMTk_MIN_OBJ_ALIGN, 0, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
     }
