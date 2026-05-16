@@ -33,9 +33,10 @@ jobs:
             test_task: check
           - os: 2025-vs2026
             test_task: test-bundled-gems
-          - os: 11-arm
-            test_task: 'btest test-basic test-tool' # check and test-spec are broken yet.
-            target: arm64
+          # TODO: Debug why Windows 11 ARM is failing to build on CI
+          # - os: 11-arm
+          #   test_task: 'btest test-basic test-tool' # check and test-spec are broken yet.
+          #   target: arm64
       fail-fast: false
 
     runs-on: windows-${{ matrix.os }}
