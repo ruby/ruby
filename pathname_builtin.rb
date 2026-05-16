@@ -1145,7 +1145,7 @@ class Pathname    # * File *
   def lchmod(mode) File.lchmod(mode, @path) end
 
   # :markup: markdown
-  # 
+  #
   # call-seq:
   #   chown(owner_id, group_id) -> 0
   #
