@@ -504,8 +504,6 @@ pub enum SideExitReason {
     UnhandledNewarraySend(vm_opt_newarray_send_type),
     UnhandledDuparraySend(u64),
     UnknownSpecialVariable(u64),
-    UnhandledHIRArrayMax,
-    UnhandledHIRFixnumDiv,
     UnhandledHIRThrow,
     UnhandledHIRInvokeBuiltin,
     UnhandledHIRUnknown(InsnId),
