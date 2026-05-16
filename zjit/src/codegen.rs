@@ -492,8 +492,6 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                             debug!("ZJIT: gen_function: Failed to compile insn: {insn_id} {insn}. Generating side-exit.");
                             gen_incr_counter(&mut asm, exit_counter_for_unhandled_hir_insn(&insn));
                             let reason = match insn {
-                                Insn::ArrayMax { .. }      => SideExitReason::UnhandledHIRArrayMax,
-                                Insn::FixnumDiv { .. }     => SideExitReason::UnhandledHIRFixnumDiv,
                                 Insn::Throw { .. }         => SideExitReason::UnhandledHIRThrow,
                                 Insn::InvokeBuiltin { .. } => SideExitReason::UnhandledHIRInvokeBuiltin,
                                 _                          => SideExitReason::UnhandledHIRUnknown(insn_id),
