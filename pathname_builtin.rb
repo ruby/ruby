@@ -772,26 +772,33 @@ class Pathname
     self + result
   end
 
+  # :markup: markdown
   #
-  # Returns the children of the directory (files and subdirectories, not
-  # recursive) as an array of Pathname objects.
+  # call-seq:
+  #   children(with_dirnames = true) -> array_of_pathnames
   #
-  # By default, the returned pathnames will have enough information to access
-  # the files. If you set +with_directory+ to +false+, then the returned
-  # pathnames will contain the filename only.
+  # Returns an array of pathnames;
+  # each represents a child of the entry represented by `self`,
+  # which must be an existing directory in the underlying file system.
   #
-  # For example:
-  #   pn = Pathname("/usr/lib/ruby/1.8")
-  #   pn.children
-  #       # -> [ Pathname:/usr/lib/ruby/1.8/English.rb,
-  #              Pathname:/usr/lib/ruby/1.8/Env.rb,
-  #              Pathname:/usr/lib/ruby/1.8/abbrev.rb, ... ]
-  #   pn.children(false)
-  #       # -> [ Pathname:English.rb, Pathname:Env.rb, Pathname:abbrev.rb, ... ]
+  # With `with_dirnames` given as `true` (the default),
+  # each pathname contains the full entry:
   #
-  # Note that the results never contain the entries +.+ and +..+ in
-  # the directory because they are not children.
+  # ```ruby
+  # Pathname('lib').children.size # => 72
+  # Pathname('lib').children.take(3)
+  # # => [#<Pathname:lib/bundled_gems.rb>, #<Pathname:lib/bundler>, #<Pathname:lib/bundler.rb>]
+  # ```
+  # With `with_dirnames` given as `false`,
+  # each pathname contains only the basename of the entry:
   #
+  # ```ruby
+  # Pathname('lib').children(false).take(3)
+  # # => [#<Pathname:bundled_gems.rb>, #<Pathname:bundler>, #<Pathname:bundler.rb>]
+  # ```
+  #
+  # Note that entries `.` and `..` in directory are not actually children,
+  # and so are never included in the result.
   def children(with_directory=true)
     with_directory = false if @path == '.'
     result = Dir.children(@path)
