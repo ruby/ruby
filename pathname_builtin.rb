@@ -1149,51 +1149,56 @@ class Pathname    # * File *
   # See <tt>File.lchmod</tt>.
   def lchmod(mode) File.lchmod(mode, @path) end
 
+  # :markup: markdown
+  #
   # call-seq:
   #   chown(owner_id, group_id) -> 0
   #
   # Changes the owner and group of an entry (directory or file):
   #
-  #   # Work in a temporary directory.
-  #   require 'tmpdir'
-  #   Dir.mktmpdir do |tmpdirpath|
-  #     # A subdirectory therein, and its Pathname.
-  #     dirpath = File.join(tmpdirpath, 'subdir')
-  #     Dir.mkdir(dirpath)
-  #     dir_stat = File.stat(dirpath)
-  #     puts "Original directory owner: #{dir_stat.uid}"
-  #     puts "Original directory group: #{dir_stat.gid}"
-  #     dir_pn = Pathname(dirpath)
-  #     dir_pn.chown(1000, 1000)
-  #     dir_stat = File.stat(dirpath)
-  #     puts "New directory owner:      #{dir_stat.uid}"
-  #     puts "New directory group:      #{dir_stat.gid}"
+  # ```ruby
+  # # Work in a temporary directory.
+  # Pathname.mktmpdir do |tmpdirpath|
+  #   # A subdirectory therein, and its Pathname.
+  #   dirpath = File.join(tmpdirpath, 'subdir')
+  #   dir_pn = Pathname(dirpath)
+  #   dir_pn.mkdir
+  #   dir_stat = File.stat(dirpath)
+  #   puts "Original directory owner: #{dir_stat.uid}"
+  #   puts "Original directory group: #{dir_stat.gid}"
+  #   dir_pn.chown(1000, 1000)
+  #   dir_stat = File.stat(dirpath)
+  #   puts "New directory owner:      #{dir_stat.uid}"
+  #   puts "New directory group:      #{dir_stat.gid}"
   #
-  #     # A file in the subdirectory, and its Pathname.
-  #     filepath = File.join(dirpath, 't.txt')
-  #     file_pn = Pathname(filepath)
-  #     # Create the file.
-  #     File.write(filepath, 'foo')
-  #     file_stat = File.stat(filepath)
-  #     puts "Original file owner:      #{file_stat.uid}"
-  #     puts "Original file group:      #{file_stat.gid}"
-  #     file_pn = Pathname(dirpath)
-  #     file_pn.chown(1000, 1000)
-  #     file_stat = File.stat(dirpath)
-  #     puts "New file owner:           #{file_stat.uid}"
-  #     puts "New file group:           #{file_stat.gid}"
-  #   end
+  #   # A file in the subdirectory, and its Pathname.
+  #   filepath = File.join(dirpath, 't.txt')
+  #   file_pn = Pathname(filepath)
+  #   # Create the file.
+  #   file_pn.write('foo')
+  #   file_stat = File.stat(filepath)
+  #   puts "Original file owner:      #{file_stat.uid}"
+  #   puts "Original file group:      #{file_stat.gid}"
+  #   file_pn = Pathname(dirpath)
+  #   file_pn.chown(1000, 1000)
+  #   file_stat = File.stat(dirpath)
+  #   puts "New file owner:           #{file_stat.uid}"
+  #   puts "New file group:           #{file_stat.gid}"
+  # end
+  # ```
   #
   # Output:
   #
-  #   Original directory owner: 0
-  #   Original directory group: 0
-  #   New directory owner:      1000
-  #   New directory group:      1000
-  #   Original file owner:      0
-  #   Original file group:      0
-  #   New file owner:           1000
-  #   New file group:           1000
+  # ```text
+  # Original directory owner: 0
+  # Original directory group: 0
+  # New directory owner:      1000
+  # New directory group:      1000
+  # Original file owner:      0
+  # Original file group:      0
+  # New file owner:           1000
+  # New file group:           1000
+  # ```
   #
   # Notes:
   #
