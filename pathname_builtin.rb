@@ -1353,7 +1353,7 @@ class Pathname    # * FileTest *
   # Pathname($stdin).chardev?         # => false
   # Pathname('nosuch').chardev?       # => false
   # ```
-  # 
+  #
   # The returned value is OS-dependent; on Windows, almost always `false`.
   def chardev?() FileTest.chardev?(@path) end
 
