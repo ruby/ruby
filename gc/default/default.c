@@ -684,7 +684,7 @@ typedef struct rb_objspace {
 
 #if RB_GC_OBJ_HAS_SUFFIX || GC_DEBUG
 struct rvalue_overhead {
-# ifdef RB_GC_OBJ_HAS_SUFFIX
+# if RB_GC_OBJ_HAS_SUFFIX
     struct rb_gc_obj_suffix suffix;
 # endif
 # if GC_DEBUG

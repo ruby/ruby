@@ -33,6 +33,7 @@ struct rb_gc_obj_suffix {
 # define RB_GC_OBJ_HAS_SUFFIX 1
 # define RB_GC_OBJ_SUFFIX_SIZE (sizeof(struct rb_gc_obj_suffix))
 #else
+# define RB_GC_OBJ_HAS_SUFFIX 0
 # define RB_GC_OBJ_SUFFIX_SIZE 0
 #endif
 
