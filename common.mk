@@ -346,7 +346,8 @@ $(EXTS_MK): ext/configure-ext.mk $(srcdir)/template/exts.mk.tmpl \
 	    $(srcdir)/template/exts.mk.tmpl --gnumake=$(gnumake) --configure-exts=ext/configure-ext.mk
 
 ext/configure-ext.mk: $(PREP) all-incs $(MKFILES) $(RBCONFIG) $(LIBRUBY) \
-		$(srcdir)/template/configure-ext.mk.tmpl update-default-gemspecs
+		$(srcdir)/template/configure-ext.mk.tmpl update-default-gemspecs \
+		$(HAVE_BASERUBY:yes=extract-gems)
 	$(ECHO) generating makefiles $@
 	$(Q)$(MAKEDIRS) $(@D)
 	$(Q)$(MINIRUBY) $(tooldir)/generic_erb.rb -o $@ -c \
