@@ -4992,54 +4992,90 @@ impl Function {
             .unwrap_or(insn_id)
     }
 
-    /// Block-local canonicalize: rewrite each operand through union-find and a
-    /// per-block map of the most recent `Guard*` for that value. Forwards
-    /// guarded values into branch-edge args (so `infer_types` narrows merge-block
-    /// parameters and `fold_constants` drops redundant CFG-join guards) and
-    /// ordinary in-block uses.
+    /// Dominator-scoped canonicalize: forward `Guard*` results to dominated
+    /// uses. While processing a block B, `rewrite_map` holds the guards
+    /// established on the dom-tree path from the root down to (and including)
+    /// the prefix of B already processed: i.e. every guard from a strict
+    /// dominator of B plus the guards introduced earlier in B itself. Any use
+    /// we rewrite is therefore dominated by the guard's defining position in
+    /// SSA.
     ///
-    /// `Guard*` substitutions are unconditional within a block: a guard's
-    /// side-exit semantics guarantee the substituted value type holds for every
-    /// downstream use in the same block.
+    /// `Guard*` substitutions are unconditional within the dominator scope: a
+    /// guard's side-exit semantics guarantee the substituted value type holds
+    /// for every dominated downstream use.
     ///
-    /// `RefineType` is intentionally skipped: its narrowing is only valid on one
-    /// branch arm, which would require dropping refine-derived rewrites at each
-    /// `IfTrue`/`IfFalse`. Cross-arm refine forwarding is left for a follow-up
-    /// dominator-scoped pass.
+    /// `RefineType` is intentionally skipped: its narrowing is only valid on
+    /// one `IfTrue`/`IfFalse` arm, which the dominator scope does not respect
+    /// (the dom-tree scope is a strict superset of the refine arm scope).
+    /// Cross-arm refine forwarding is left for a follow-up arm-scoped pass.
     ///
     /// Inspired by Cranelift's aegraph canonicalize step
     /// (<https://cfallin.org/blog/2026/04/09/aegraph/>).
     fn canonicalize(&mut self) {
-        let mut rewrite_map: HashMap<InsnId, InsnId> = HashMap::new();
-        for block in self.rpo() {
-            rewrite_map.clear();
-            for i in 0..self.blocks[block.0].insns.len() {
-                let insn_id = self.blocks[block.0].insns[i];
-                let canonical_id = self.union_find.borrow().find_const(insn_id);
+        enum Action { Visit(BlockId), Leave(usize) }
 
-                let union_find = &self.union_find;
-                self.insns[canonical_id.0].for_each_operand_mut(|operand| {
-                    let canon = union_find.borrow().find_const(*operand);
-                    *operand = rewrite_map.get(&canon).copied().unwrap_or(canon);
-                });
+        let doms = Dominators::new(self);
+        let children = doms.children();
+        // This pass must not allocate new insns; `rewrite_map` is sized to the
+        // current `self.insns.len()` and indexed by `InsnId.0` without bounds
+        // checks, so any new insn would OOB-panic on the next iteration.
+        let mut rewrite_map: Vec<Option<InsnId>> = vec![None; self.insns.len()];
+        let mut undo: Vec<(InsnId, Option<InsnId>)> = Vec::with_capacity(self.blocks.len());
+        let mut stack: Vec<Action> = Vec::with_capacity(self.blocks.len() * 2);
+        stack.push(Action::Visit(self.entries_block));
 
-                // For the binary guards only `left` is registered because their infer_type is
-                // type_of(left).
-                match &self.insns[canonical_id.0] {
-                    Insn::GuardType      { val:  src, .. }
-                    | Insn::GuardBitEquals { val:  src, .. }
-                    | Insn::GuardAnyBitSet { val:  src, .. }
-                    | Insn::GuardNoBitsSet { val:  src, .. }
-                    | Insn::GuardGreaterEq { left: src, .. }
-                    | Insn::GuardLess      { left: src, .. } => {
-                        rewrite_map.insert(*src, canonical_id);
+        while let Some(action) = stack.pop() {
+            match action {
+                Action::Visit(block) => {
+                    let mark = undo.len();
+                    for i in 0..self.blocks[block.0].insns.len() {
+                        let insn_id = self.blocks[block.0].insns[i];
+                        self.canonicalize_insn(insn_id, &mut rewrite_map, &mut undo);
                     }
-                    _ => {}
+                    stack.push(Action::Leave(mark));
+                    for &child in &children[block.0] {
+                        stack.push(Action::Visit(child));
+                    }
+                }
+                Action::Leave(mark) => {
+                    for (key, prev) in undo.drain(mark..).rev() {
+                        rewrite_map[key.0] = prev;
+                    }
                 }
             }
         }
 
         crate::stats::trace_compile_phase("infer_types", || self.infer_types());
+    }
+
+    fn canonicalize_insn(
+        &mut self,
+        insn_id: InsnId,
+        rewrite_map: &mut [Option<InsnId>],
+        undo: &mut Vec<(InsnId, Option<InsnId>)>,
+    ) {
+        let canonical_id = self.union_find.borrow().find_const(insn_id);
+
+        let union_find = &self.union_find;
+        self.insns[canonical_id.0].for_each_operand_mut(|operand| {
+            let canon = union_find.borrow().find_const(*operand);
+            *operand = rewrite_map[canon.0].unwrap_or(canon);
+        });
+
+        // For the binary guards only `left` is registered because their infer_type is
+        // type_of(left).
+        match &self.insns[canonical_id.0] {
+            Insn::GuardType      { val:  src, .. }
+            | Insn::GuardBitEquals { val:  src, .. }
+            | Insn::GuardAnyBitSet { val:  src, .. }
+            | Insn::GuardNoBitsSet { val:  src, .. }
+            | Insn::GuardGreaterEq { left: src, .. }
+            | Insn::GuardLess      { left: src, .. } => {
+                let prev = rewrite_map[src.0].replace(canonical_id);
+                undo.push((*src, prev));
+            }
+            _ => {}
+        }
     }
 
     /// Use type information left by `infer_types` to fold away operations that can be evaluated at compile-time.
@@ -8678,6 +8714,20 @@ impl Dominators {
             if self.idom(block) == block { return false; }
             block = self.idom(block);
         }
+    }
+
+    /// Dominator-tree children for each block, indexed by `BlockId.0`.
+    /// Unreachable blocks and the root's self-loop contribute no child.
+    pub fn children(&self) -> Vec<Vec<BlockId>> {
+        let mut children = vec![Vec::new(); self.idoms.len()];
+        for (i, &idom) in self.idoms.iter().enumerate() {
+            if idom == IDOM_NONE { continue; }
+            let b = BlockId(i);
+            // The root idoms itself; skip so it doesn't become its own child.
+            if idom == b { continue; }
+            children[idom.0].push(b);
+        }
+        children
     }
 
     /// Compute the full dominator set for `block` by walking the idom chain to the root.

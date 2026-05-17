@@ -5873,6 +5873,113 @@ pub(crate) mod hir_build_tests {
 
         assert!(!dominators.is_dominated_by(bb1, bb2));
     }
+
+    #[test]
+    fn test_dominator_children_linear() {
+        let mut function = Function::new(std::ptr::null());
+
+        let entries = function.entries_block;
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+
+        function.push_insn(bb0, Insn::Jump(edge(bb1)));
+        function.push_insn(bb1, Insn::Jump(edge(bb2)));
+        let retval = function.push_insn(bb2, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb2, Insn::Return { val: retval });
+
+        function.seal_entries();
+
+        let children = Dominators::new(&function).children();
+
+        assert_eq!(children[entries.0], vec![bb0]);
+        assert_eq!(children[bb0.0], vec![bb1]);
+        assert_eq!(children[bb1.0], vec![bb2]);
+        assert_eq!(children[bb2.0], Vec::<BlockId>::new());
+    }
+
+    #[test]
+    fn test_dominator_children_diamond() {
+        let mut function = Function::new(std::ptr::null());
+
+        let entries = function.entries_block;
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+        let bb3 = function.new_block(0);
+
+        let val = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb0, Insn::CondBranch { val, if_true: edge(bb1), if_false: edge(bb2) });
+
+        function.push_insn(bb1, Insn::Jump(edge(bb3)));
+        function.push_insn(bb2, Insn::Jump(edge(bb3)));
+
+        let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb3, Insn::Return { val: retval });
+
+        function.seal_entries();
+
+        let children = Dominators::new(&function).children();
+
+        assert_eq!(children[entries.0], vec![bb0]);
+        assert_eq!(children[bb0.0], vec![bb1, bb2, bb3]);
+        assert_eq!(children[bb1.0], Vec::<BlockId>::new());
+        assert_eq!(children[bb2.0], Vec::<BlockId>::new());
+        assert_eq!(children[bb3.0], Vec::<BlockId>::new());
+    }
+
+    #[test]
+    fn test_dominator_children_with_jit_entries() {
+        let mut function = Function::new(std::ptr::null());
+
+        let entries = function.entries_block;
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        function.jit_entry_blocks.push(bb1);
+        let bb2 = function.new_block(0);
+
+        function.push_insn(bb0, Insn::Jump(edge(bb2)));
+        function.push_insn(bb1, Insn::Jump(edge(bb2)));
+
+        let retval = function.push_insn(bb2, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb2, Insn::Return { val: retval });
+
+        function.seal_entries();
+
+        let children = Dominators::new(&function).children();
+
+        assert_eq!(children[entries.0], vec![bb0, bb1, bb2]);
+        assert_eq!(children[bb0.0], Vec::<BlockId>::new());
+        assert_eq!(children[bb1.0], Vec::<BlockId>::new());
+        assert_eq!(children[bb2.0], Vec::<BlockId>::new());
+    }
+
+    #[test]
+    fn test_dominator_children_unreachable() {
+        let mut function = Function::new(std::ptr::null());
+
+        let entries = function.entries_block;
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+
+        function.push_insn(bb0, Insn::Jump(edge(bb1)));
+        let retval = function.push_insn(bb1, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb1, Insn::Return { val: retval });
+
+        // bb2 is unreachable but needs a terminator for validity.
+        let v = function.push_insn(bb2, Insn::Const { val: Const::CBool(false) });
+        function.push_insn(bb2, Insn::Return { val: v });
+
+        function.seal_entries();
+
+        let children = Dominators::new(&function).children();
+
+        assert_eq!(children[entries.0], vec![bb0]);
+        assert_eq!(children[bb0.0], vec![bb1]);
+        assert_eq!(children[bb1.0], Vec::<BlockId>::new());
+        assert_eq!(children[bb2.0], Vec::<BlockId>::new());
+    }
  }
 
  /// Test loop information computation.
