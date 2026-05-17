@@ -96,7 +96,7 @@ jobs:
 
       - name: Install libraries with vcpkg
         run: |
-          vcpkg install --vcpkg-root=%USERPROFILE%\scoop\apps\vcpkg\current
+          vcpkg install
         working-directory: src
         if: ${{ ! steps.restore-vcpkg.outputs.cache-hit }}
 
