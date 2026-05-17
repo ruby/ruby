@@ -692,6 +692,7 @@ rb_imemo_free(VALUE obj)
             struct rb_subclasses *subs = (struct rb_subclasses *)obj;
             SIZED_FREE_N(subs->as.external, subs->capacity);
         }
+        RB_DEBUG_COUNTER_INC(obj_imemo_subclasses);
         break;
       }
       default:
