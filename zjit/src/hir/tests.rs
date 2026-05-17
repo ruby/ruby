@@ -5525,6 +5525,66 @@ pub(crate) mod hir_build_tests {
         assert!(hir.contains("BreakPoint"));
         assert!(hir.contains("Return v"));
     }
+
+    #[test]
+    fn test_getspecialnumber() {
+      eval("
+        def test(a)
+          a =~/(hello)/
+          $1
+        end
+      ");
+      assert_snapshot!(hir_string("test"), @"
+      fn test@<compiled>:3:
+      bb1():
+        EntryPoint interpreter
+        v1:BasicObject = LoadSelf
+        v2:CPtr = LoadSP
+        v3:BasicObject = LoadField v2, :a@0x1000
+        Jump bb3(v1, v3)
+      bb2():
+        EntryPoint JIT(0)
+        v6:BasicObject = LoadArg :self@0
+        v7:BasicObject = LoadArg :a@1
+        Jump bb3(v6, v7)
+      bb3(v9:BasicObject, v10:BasicObject):
+        v15:RegexpExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+        v18:BasicObject = Send v10, :=~, v15 # SendFallbackReason: Uncategorized(opt_regexpmatch2)
+        v22:StringExact|NilClass = GetSpecialNumber 2
+        CheckInterrupts
+        Return v22
+      ");
+    }
+
+    #[test]
+    fn test_getspecialsymbol() {
+      eval("
+        def test(a)
+          a =~/(hello)/
+          $&
+        end
+      ");
+      assert_snapshot!(hir_string("test"), @"
+      fn test@<compiled>:3:
+      bb1():
+        EntryPoint interpreter
+        v1:BasicObject = LoadSelf
+        v2:CPtr = LoadSP
+        v3:BasicObject = LoadField v2, :a@0x1000
+        Jump bb3(v1, v3)
+      bb2():
+        EntryPoint JIT(0)
+        v6:BasicObject = LoadArg :self@0
+        v7:BasicObject = LoadArg :a@1
+        Jump bb3(v6, v7)
+      bb3(v9:BasicObject, v10:BasicObject):
+        v15:RegexpExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+        v18:BasicObject = Send v10, :=~, v15 # SendFallbackReason: Uncategorized(opt_regexpmatch2)
+        v22:StringExact|NilClass = GetSpecialSymbol LastMatch
+        CheckInterrupts
+        Return v22
+      ");
+    }
 }
 
  /// Test successor and predecessor set computations.
