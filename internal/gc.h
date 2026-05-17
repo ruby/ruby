@@ -254,6 +254,8 @@ struct rb_gc_object_metadata_entry *rb_gc_object_metadata(VALUE obj);
 void rb_gc_mark_values(long n, const VALUE *values);
 void rb_gc_mark_vm_stack_values(long n, const VALUE *values);
 void rb_gc_update_values(long n, VALUE *values);
+void rb_gc_mark_set_no_pin(st_table *);
+void rb_gc_update_set_refs(st_table *);
 
 const char *rb_gc_active_gc_name(void);
 int rb_gc_modular_gc_loaded_p(void);

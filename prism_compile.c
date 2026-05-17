@@ -7606,7 +7606,7 @@ pm_compile_case_node_dispatch(rb_iseq_t *iseq, VALUE dispatch, const pm_node_t *
         return Qundef;
     }
 
-    cdhash_aset_if_missing(dispatch, key, ((VALUE) label) | 1);
+    cdhash_aset_if_missing(dispatch, key, (VALUE)label);
     return dispatch;
 }
 
