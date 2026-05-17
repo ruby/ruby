@@ -43,6 +43,7 @@ enum imemo_type {
     imemo_constcache     = 12,
     imemo_fields         = 13,
     imemo_subclasses     = 14,
+    imemo_cdhash         = 15,
 };
 
 /* CREF (Class REFerence) is defined in method.h */
@@ -96,6 +97,11 @@ struct rb_imemo_tmpbuf_struct {
     VALUE flags;
     VALUE *ptr; /* malloc'ed buffer */
     size_t size; /* buffer size in bytes */
+};
+
+struct rb_imemo_cdhash {
+    VALUE flags;
+    st_table tbl;
 };
 
 /* Set on imemo_memo when u3 holds a VALUE that GC must mark.
@@ -221,6 +227,15 @@ static inline void
 MEMO_V2_SET(struct MEMO *m, VALUE v)
 {
     RB_OBJ_WRITE(m, &m->v2, v);
+}
+
+VALUE rb_imemo_cdhash_new(size_t size, const struct st_hash_type *type);
+
+static inline st_table *
+rb_imemo_cdhash_tbl(VALUE obj)
+{
+    RUBY_ASSERT(IMEMO_TYPE_P(obj, imemo_cdhash));
+    return &((struct rb_imemo_cdhash *)obj)->tbl;
 }
 
 struct rb_fields {

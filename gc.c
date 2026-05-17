@@ -1350,6 +1350,7 @@ rb_gc_imemo_needs_cleanup_p(VALUE obj)
       case imemo_ment:
       case imemo_iseq:
       case imemo_callinfo:
+      case imemo_cdhash:
         return true;
 
       case imemo_subclasses:

@@ -316,6 +316,7 @@ RB_DEBUG_COUNTER(obj_imemo_callcache)
 RB_DEBUG_COUNTER(obj_imemo_constcache)
 RB_DEBUG_COUNTER(obj_imemo_fields)
 RB_DEBUG_COUNTER(obj_imemo_subclasses)
+RB_DEBUG_COUNTER(obj_imemo_cdhash)
 
 RB_DEBUG_COUNTER(opt_new_hit)
 RB_DEBUG_COUNTER(opt_new_miss)
