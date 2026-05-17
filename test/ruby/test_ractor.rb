@@ -81,6 +81,22 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+
+  def test_class_variables
+    # [Bug #22072]
+    assert_ractor(<<~'RUBY')
+      module Foo
+        def self.foo = @@foo
+      end
+
+      Foo.class_variable_set(:@@foo, 1)
+
+      10.times { |i| Foo.class_variable_set(:"@@bar#{i}", i) }
+
+      assert_equal(Foo.foo, 1)
+    RUBY
+  end
+
   def test_struct_instance_variables
     assert_ractor(<<~'RUBY')
       StructIvar = Struct.new(:member) do
