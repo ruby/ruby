@@ -4960,7 +4960,7 @@ rb_raw_obj_info_common(char *const buff, const size_t buff_size, const VALUE obj
             APPEND_S("(temporary internal)");
         }
         else if (RTEST(RBASIC(obj)->klass)) {
-            VALUE class_path = rb_class_path_cached(RBASIC(obj)->klass);
+            VALUE class_path = rb_mod_name(RBASIC(obj)->klass);
             if (!NIL_P(class_path)) {
                 APPEND_F("%s ", RSTRING_PTR(class_path));
             }
@@ -5046,7 +5046,7 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
           case T_CLASS:
           case T_MODULE:
             {
-                VALUE class_path = rb_class_path_cached(obj);
+                VALUE class_path = rb_mod_name(obj);
                 if (!NIL_P(class_path)) {
                     APPEND_F("%s", RSTRING_PTR(class_path));
                 }
@@ -5057,7 +5057,7 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
             }
           case T_ICLASS:
             {
-                VALUE class_path = rb_class_path_cached(RBASIC_CLASS(obj));
+                VALUE class_path = rb_mod_name(RBASIC_CLASS(obj));
                 if (!NIL_P(class_path)) {
                     APPEND_F("src:%s", RSTRING_PTR(class_path));
                 }
@@ -5148,7 +5148,7 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
               case imemo_callcache:
                 {
                     const struct rb_callcache *cc = (const struct rb_callcache *)obj;
-                    VALUE class_path = vm_cc_valid(cc) ? rb_class_path_cached(cc->klass) : Qnil;
+                    VALUE class_path = vm_cc_valid(cc) ? rb_mod_name(cc->klass) : Qnil;
                     const rb_callable_method_entry_t *cme = vm_cc_cme(cc);
 
                     APPEND_F("(klass:%s cme:%s%s (%p) call:%p",
