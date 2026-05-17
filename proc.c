@@ -385,19 +385,31 @@ rb_f_binding(VALUE self)
 }
 
 /*
- *  call-seq:
- *     binding.eval(string [, filename [,lineno]])  -> obj
+ * call-seq:
+ *    binding.eval(string, filename = default_filename, lineno = 1) -> obj
  *
- *  Evaluates the Ruby expression(s) in <em>string</em>, in the
- *  <em>binding</em>'s context.  If the optional <em>filename</em> and
- *  <em>lineno</em> parameters are present, they will be used when
- *  reporting syntax errors.
+ * Evaluates the Ruby expression(s) in +string+ in the context of
+ * +self+. Returns the result of the last expression:
  *
- *     def get_binding(param)
- *       binding
- *     end
+ *     def get_binding(param) = binding
  *     b = get_binding("hello")
  *     b.eval("param")   #=> "hello"
+ *
+ * If the optional +filename+ is given, it will be used as the
+ * filename of the evaluation (for <tt>__FILE__</tt> and errors).
+ * Otherwise, it will default to <tt>(eval at __FILE__:__LINE__)</tt>
+ * where <tt>__FILE__</tt> and <tt>__LINE__</tt> are the filename and
+ * line number of the caller, respectively:
+ *
+ *     b.eval("puts __FILE__") # => "(eval at test.rb:4)"
+ *     b.eval("puts __FILE__", "foobar.rb") # => "foobar.rb"
+ *
+ * If the optional +lineno+ is given, it will be used as the
+ * line number of the evaluation (for <tt>__LINE__</tt> and errors).
+ * Otherwise, it will default to 1:
+ *
+ *     b.eval("puts __LINE__") # => 1
+ *     b.eval("puts __LINE__", "foobar.rb", 10) # => 10
  */
 
 static VALUE
