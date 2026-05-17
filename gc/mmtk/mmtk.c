@@ -16,21 +16,6 @@
 #include <sys/sysctl.h>
 #endif
 
-#ifndef VM_CHECK_MODE
-# define VM_CHECK_MODE RUBY_DEBUG
-#endif
-
-// From ractor_core.h
-#ifndef RACTOR_CHECK_MODE
-# define RACTOR_CHECK_MODE (VM_CHECK_MODE || RUBY_DEBUG) && (SIZEOF_UINT64_T == SIZEOF_VALUE)
-#endif
-
-#if RACTOR_CHECK_MODE
-# define RVALUE_SUFFIX_SIZE sizeof(VALUE)
-#else
-# define RVALUE_SUFFIX_SIZE 0
-#endif
-
 struct objspace {
     bool measure_gc_time;
     bool gc_stress;
@@ -575,7 +560,7 @@ rb_gc_impl_objspace_alloc(void)
 {
     MMTk_Builder *builder = rb_mmtk_builder_init();
     MMTk_RubyBindingOptions binding_options = {
-        .suffix_size = RVALUE_SUFFIX_SIZE,
+        .suffix_size = RB_GC_OBJ_SUFFIX_SIZE,
     };
     mmtk_init_binding(builder, &binding_options, &ruby_upcalls);
 
@@ -913,8 +898,8 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
         mmtk_handle_user_collection_request(ractor_cache, false, false);
     }
 
-    // Layout: [hidden size header (sizeof(VALUE))][payload (alloc_size)][suffix (RVALUE_SUFFIX_SIZE)]
-    alloc_size += sizeof(VALUE) + RVALUE_SUFFIX_SIZE;
+    // Layout: [hidden size header (sizeof(VALUE))][payload (alloc_size)][suffix (RB_GC_OBJ_SUFFIX_SIZE)]
+    alloc_size += sizeof(VALUE) + RB_GC_OBJ_SUFFIX_SIZE;
 
     VALUE *alloc_obj = (VALUE *)rb_mmtk_alloc_fast_path(objspace, ractor_cache, alloc_size, MMTk_MIN_OBJ_ALIGN);
     if (!alloc_obj) {
@@ -922,7 +907,7 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     }
 
     alloc_obj++;
-    alloc_obj[-1] = alloc_size - sizeof(VALUE) - RVALUE_SUFFIX_SIZE;
+    alloc_obj[-1] = alloc_size - sizeof(VALUE) - RB_GC_OBJ_SUFFIX_SIZE;
     alloc_obj[0] = flags;
     alloc_obj[1] = klass;
 
