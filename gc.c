@@ -3743,11 +3743,14 @@ rb_gc_register_address(VALUE *addr)
 
     VALUE obj = *addr;
 
-    struct global_object_list *tmp = ALLOC(struct global_object_list);
     RB_VM_LOCKING() {
-        tmp->next = vm->global_object_list;
-        tmp->varptr = addr;
-        vm->global_object_list = tmp;
+        if (vm->global_object_list_size == vm->global_object_list_capa) {
+            size_t new_capa = vm->global_object_list_capa ? vm->global_object_list_capa * 2 : 64;
+            vm->global_object_list = SIZED_REALLOC_N(vm->global_object_list, VALUE *, new_capa, vm->global_object_list_capa);
+            vm->global_object_list_capa = new_capa;
+        }
+
+        vm->global_object_list[vm->global_object_list_size++] = addr;
     }
 
     /*
@@ -3766,23 +3769,18 @@ void
 rb_gc_unregister_address(VALUE *addr)
 {
     rb_vm_t *vm = GET_VM();
-    struct global_object_list *tmp;
     RB_VM_LOCKING() {
-        tmp = vm->global_object_list;
-        if (tmp->varptr == addr) {
-            vm->global_object_list = tmp->next;
-            SIZED_FREE(tmp);
-        }
-        else {
-            while (tmp->next) {
-                if (tmp->next->varptr == addr) {
-                    struct global_object_list *t = tmp->next;
-
-                    tmp->next = tmp->next->next;
-                    SIZED_FREE(t);
-                    break;
-                }
-                tmp = tmp->next;
+        size_t index;
+        for (index = 0; index < vm->global_object_list_size; index++) {
+            if (addr == vm->global_object_list[index]) {
+                MEMMOVE(
+                    vm->global_object_list[index],
+                    &vm->global_object_list[index + 1],
+                    VALUE *,
+                    vm->global_object_list_size - index - 1
+                );
+                vm->global_object_list_size--;
+                break;
             }
         }
     }
