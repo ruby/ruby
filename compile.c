@@ -2330,6 +2330,35 @@ static const struct st_hash_type cdhash_type = {
     rb_iseq_cdhash_hash,
 };
 
+static VALUE
+cdhash_new(size_t size)
+{
+    VALUE cdhash = rb_imemo_cdhash_new(size, &cdhash_type);
+    RB_OBJ_SET_SHAREABLE(cdhash);
+    return cdhash;
+}
+
+static void
+cdhash_aset(VALUE cdhash, VALUE key, VALUE val)
+{
+    st_table *tbl = rb_imemo_cdhash_tbl(cdhash);
+    st_insert(tbl, key, val);
+    RB_OBJ_WRITTEN(cdhash, Qundef, key);
+    RB_OBJ_WRITTEN(cdhash, Qundef, val);
+}
+
+static void
+cdhash_aset_if_missing(VALUE cdhash, VALUE key, VALUE val)
+{
+    st_table *tbl = rb_imemo_cdhash_tbl(cdhash);
+    VALUE dontcare;
+    if (!st_lookup(tbl, key, &dontcare)) {
+        st_insert(tbl, key, val);
+        RB_OBJ_WRITTEN(cdhash, Qundef, key);
+        RB_OBJ_WRITTEN(cdhash, Qundef, val);
+    }
+}
+
 struct cdhash_set_label_struct {
     VALUE hash;
     int pos;
@@ -2341,10 +2370,9 @@ cdhash_set_label_i(VALUE key, VALUE val, VALUE ptr)
 {
     struct cdhash_set_label_struct *data = (struct cdhash_set_label_struct *)ptr;
     LABEL *lobj = (LABEL *)(val & ~1);
-    rb_hash_aset(data->hash, key, INT2FIX(lobj->position - (data->pos+data->len)));
+    cdhash_aset(data->hash, key, INT2FIX(lobj->position - (data->pos+data->len)));
     return ST_CONTINUE;
 }
-
 
 static inline VALUE
 get_ivar_ic_value(rb_iseq_t *iseq,ID id)
@@ -2729,10 +2757,8 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                             data.hash = map;
                             data.pos = code_index;
                             data.len = len;
-                            rb_hash_foreach(map, cdhash_set_label_i, (VALUE)&data);
+                            st_foreach(rb_imemo_cdhash_tbl(map), cdhash_set_label_i, (VALUE)&data);
 
-                            freeze_hide_obj(map);
-                            rb_ractor_make_shareable(map);
                             generated_iseq[code_index + 1 + j] = map;
                             ISEQ_MBITS_SET(mark_offset_bits, code_index + 1 + j);
                             RB_OBJ_WRITTEN(iseq, Qundef, map);
@@ -5526,8 +5552,8 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NODE *vals,
         if (UNDEF_P(lit)) {
             only_special_literals = 0;
         }
-        else if (NIL_P(rb_hash_lookup(literals, lit))) {
-            rb_hash_aset(literals, lit, (VALUE)(l1) | 1);
+        else {
+            cdhash_aset_if_missing(literals, lit, (VALUE)(l1) | 1);
         }
 
         if (nd_type_p(val, NODE_STR) || nd_type_p(val, NODE_FILE)) {
@@ -7069,7 +7095,7 @@ compile_case(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const orig_nod
     DECL_ANCHOR(body_seq);
     DECL_ANCHOR(cond_seq);
     int only_special_literals = 1;
-    VALUE literals = rb_hash_new_with_size_and_type(0, 0, &cdhash_type);
+    VALUE literals = cdhash_new(0);
     int line;
     enum node_type type;
     const NODE *line_node;
@@ -12166,7 +12192,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
                       case TS_CDHASH:
                         {
                             int i;
-                            VALUE map = rb_hash_new_with_size_and_type(0, RARRAY_LEN(op)/2, &cdhash_type);
+                            VALUE map = cdhash_new(RARRAY_LEN(op) / 2);
 
                             op = rb_to_array_type(op);
                             for (i=0; i<RARRAY_LEN(op); i+=2) {
@@ -13003,20 +13029,6 @@ ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq)
     return offset;
 }
 
-static int
-cdhash_copy_i(st_data_t key, st_data_t val, st_data_t arg)
-{
-    rb_hash_aset((VALUE)arg, (VALUE)key, (VALUE)val);
-    return ST_CONTINUE;
-}
-
-static VALUE
-cdhash_copy(VALUE dest, VALUE src)
-{
-    rb_hash_stlike_foreach(src, cdhash_copy_i, dest);
-    return dest;
-}
-
 static VALUE *
 ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecode_offset, ibf_offset_t bytecode_size, unsigned int iseq_size)
 {
@@ -13070,10 +13082,7 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
               case TS_CDHASH:
                 {
                     VALUE op = ibf_load_small_value(load, &reading_pos);
-                    VALUE src = ibf_load_object(load, op);
-                    VALUE v = rb_hash_new_with_size_and_type(0, RHASH_SIZE(src), &cdhash_type);
-                    rb_hash_rehash(cdhash_copy(v, src));
-                    RB_OBJ_SET_SHAREABLE(v);
+                    VALUE v = ibf_load_object(load, op);
 
                     // Overwrite the existing hash in the object list.  This
                     // is to keep the object alive during load time.
@@ -14356,6 +14365,43 @@ ibf_load_object_hash(const struct ibf_load *load, const struct ibf_object_header
 }
 
 static void
+ibf_dump_object_imemo(struct ibf_dump *dump, VALUE obj)
+{
+    switch (imemo_type(obj)) {
+      case imemo_cdhash: {
+        st_table *tbl = rb_imemo_cdhash_tbl(obj);
+
+        long len = tbl->num_entries;
+        ibf_dump_write_small_value(dump, (VALUE)len);
+        if (len > 0) st_foreach(tbl, ibf_dump_object_hash_i, (VALUE)dump);
+        break;
+      }
+      default:
+        ibf_dump_object_unsupported(dump, obj);
+        break;
+    }
+}
+
+static VALUE
+ibf_load_object_imemo(const struct ibf_load *load, const struct ibf_object_header *header, ibf_offset_t offset)
+{
+    long len = (long)ibf_load_small_value(load, &offset);
+    VALUE obj = cdhash_new(len);
+
+    int i;
+    for (i = 0; i < len; i++) {
+        VALUE key_index = ibf_load_small_value(load, &offset);
+        VALUE val_index = ibf_load_small_value(load, &offset);
+
+        VALUE key = ibf_load_object(load, key_index);
+        VALUE val = ibf_load_object(load, val_index);
+        cdhash_aset(obj, key, val);
+    }
+
+    return obj;
+}
+
+static void
 ibf_dump_object_struct(struct ibf_dump *dump, VALUE obj)
 {
     if (rb_obj_is_kind_of(obj, rb_cRange)) {
@@ -14531,7 +14577,7 @@ static const ibf_dump_object_function dump_object_functions[RUBY_T_MASK+1] = {
     ibf_dump_object_unsupported, /* 0x17 */
     ibf_dump_object_unsupported, /* 0x18 */
     ibf_dump_object_unsupported, /* 0x19 */
-    ibf_dump_object_unsupported, /* T_IMEMO 0x1a */
+    ibf_dump_object_imemo,       /* T_IMEMO 0x1a */
     ibf_dump_object_unsupported, /* T_NODE 0x1b */
     ibf_dump_object_unsupported, /* T_ICLASS 0x1c */
     ibf_dump_object_unsupported, /* T_ZOMBIE 0x1d */
@@ -14624,7 +14670,7 @@ static const ibf_load_object_function load_object_functions[RUBY_T_MASK+1] = {
     ibf_load_object_unsupported, /* 0x17 */
     ibf_load_object_unsupported, /* 0x18 */
     ibf_load_object_unsupported, /* 0x19 */
-    ibf_load_object_unsupported, /* T_IMEMO 0x1a */
+    ibf_load_object_imemo,       /* T_IMEMO 0x1a */
     ibf_load_object_unsupported, /* T_NODE 0x1b */
     ibf_load_object_unsupported, /* T_ICLASS 0x1c */
     ibf_load_object_unsupported, /* T_ZOMBIE 0x1d */

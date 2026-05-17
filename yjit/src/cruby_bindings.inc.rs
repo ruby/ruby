@@ -264,13 +264,6 @@ pub const ST_DELETE: st_retval = 2;
 pub const ST_CHECK: st_retval = 3;
 pub const ST_REPLACE: st_retval = 4;
 pub type st_retval = u32;
-pub type st_foreach_callback_func = ::std::option::Option<
-    unsafe extern "C" fn(
-        arg1: st_data_t,
-        arg2: st_data_t,
-        arg3: st_data_t,
-    ) -> ::std::os::raw::c_int,
->;
 pub const RARRAY_EMBED_FLAG: ruby_rarray_flags = 8192;
 pub const RARRAY_EMBED_LEN_MASK: ruby_rarray_flags = 4161536;
 pub type ruby_rarray_flags = u32;
@@ -362,6 +355,7 @@ pub const imemo_callcache: imemo_type = 11;
 pub const imemo_constcache: imemo_type = 12;
 pub const imemo_fields: imemo_type = 13;
 pub const imemo_subclasses: imemo_type = 14;
+pub const imemo_cdhash: imemo_type = 15;
 pub type imemo_type = u32;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -1141,11 +1135,6 @@ extern "C" {
         chilled: bool,
     ) -> VALUE;
     pub fn rb_to_hash_type(obj: VALUE) -> VALUE;
-    pub fn rb_hash_stlike_foreach(
-        hash: VALUE,
-        func: st_foreach_callback_func,
-        arg: st_data_t,
-    ) -> ::std::os::raw::c_int;
     pub fn rb_hash_new_with_size(size: st_index_t) -> VALUE;
     pub fn rb_hash_resurrect(hash: VALUE) -> VALUE;
     pub fn rb_hash_stlike_lookup(
@@ -1218,6 +1207,12 @@ extern "C" {
         leave_exception: *mut ::std::os::raw::c_void,
     );
     pub fn rb_vm_instruction_size() -> u32;
+    pub fn rb_yjit_cdhash_all_fixnum_p(cdhash: VALUE) -> bool;
+    pub fn rb_yjit_cdhash_lookup(
+        cdhash: VALUE,
+        key: st_data_t,
+        val: *mut st_data_t,
+    ) -> ::std::os::raw::c_int;
     pub fn rb_iseq_encoded_size(iseq: *const rb_iseq_t) -> ::std::os::raw::c_uint;
     pub fn rb_iseq_pc_at_idx(iseq: *const rb_iseq_t, insn_idx: u32) -> *mut VALUE;
     pub fn rb_iseq_opcode_at_pc(iseq: *const rb_iseq_t, pc: *const VALUE) -> ::std::os::raw::c_int;
