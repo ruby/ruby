@@ -3274,6 +3274,14 @@ rb_mark_tbl_no_pin(st_table *tbl)
     gc_mark_tbl_no_pin(tbl);
 }
 
+void
+rb_gc_mark_set_no_pin(st_table *tbl)
+{
+    if (!tbl || tbl->num_entries == 0) return;
+
+    st_foreach(tbl, gc_mark_set_no_pin_i, 0);
+}
+
 static bool
 gc_declarative_marking_p(const rb_data_type_t *type)
 {
@@ -3917,6 +3925,12 @@ void
 rb_gc_update_tbl_refs(st_table *ptr)
 {
     gc_update_table_refs(ptr);
+}
+
+void
+rb_gc_update_set_refs(st_table *ptr)
+{
+    gc_update_set_refs(ptr);
 }
 
 static void

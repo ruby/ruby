@@ -4683,7 +4683,7 @@ fn gen_opt_case_dispatch(
             // NOTE: If we hit the else branch with various values, it could negatively impact the performance.
             else_offset
         } else {
-            (offset as u32) >> 1 // FIX2LONG
+            offset as u32
         };
 
         // Jump to the offset of case or else

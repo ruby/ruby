@@ -2344,7 +2344,6 @@ cdhash_aset(VALUE cdhash, VALUE key, VALUE val)
     st_table *tbl = rb_imemo_cdhash_tbl(cdhash);
     st_insert(tbl, key, val);
     RB_OBJ_WRITTEN(cdhash, Qundef, key);
-    RB_OBJ_WRITTEN(cdhash, Qundef, val);
 }
 
 static void
@@ -2355,7 +2354,6 @@ cdhash_aset_if_missing(VALUE cdhash, VALUE key, VALUE val)
     if (!st_lookup(tbl, key, &dontcare)) {
         st_insert(tbl, key, val);
         RB_OBJ_WRITTEN(cdhash, Qundef, key);
-        RB_OBJ_WRITTEN(cdhash, Qundef, val);
     }
 }
 
@@ -2366,11 +2364,17 @@ struct cdhash_set_label_struct {
 };
 
 static int
-cdhash_set_label_i(VALUE key, VALUE val, VALUE ptr)
+cdhash_set_label_check_i(st_data_t key, st_data_t value, st_data_t argp, int error)
+{
+    return ST_REPLACE;
+}
+
+static int
+cdhash_set_label_replace_i(st_data_t *key, st_data_t *value, st_data_t ptr, int existing)
 {
     struct cdhash_set_label_struct *data = (struct cdhash_set_label_struct *)ptr;
-    LABEL *lobj = (LABEL *)(val & ~1);
-    cdhash_aset(data->hash, key, INT2FIX(lobj->position - (data->pos+data->len)));
+    LABEL *lobj = (LABEL *)(*value & ~1);
+    *value = lobj->position - (data->pos+data->len);
     return ST_CONTINUE;
 }
 
@@ -2757,7 +2761,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                             data.hash = map;
                             data.pos = code_index;
                             data.len = len;
-                            st_foreach(rb_imemo_cdhash_tbl(map), cdhash_set_label_i, (VALUE)&data);
+                            st_foreach_with_replace(rb_imemo_cdhash_tbl(map), cdhash_set_label_check_i, cdhash_set_label_replace_i, (VALUE)&data);
 
                             generated_iseq[code_index + 1 + j] = map;
                             ISEQ_MBITS_SET(mark_offset_bits, code_index + 1 + j);
@@ -5553,7 +5557,7 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NODE *vals,
             only_special_literals = 0;
         }
         else {
-            cdhash_aset_if_missing(literals, lit, (VALUE)(l1) | 1);
+            cdhash_aset_if_missing(literals, lit, (VALUE)(l1));
         }
 
         if (nd_type_p(val, NODE_STR) || nd_type_p(val, NODE_FILE)) {
@@ -14364,6 +14368,18 @@ ibf_load_object_hash(const struct ibf_load *load, const struct ibf_object_header
     return obj;
 }
 
+static int
+ibf_dump_cdhash_i(st_data_t key, st_data_t val, st_data_t ptr)
+{
+    struct ibf_dump *dump = (struct ibf_dump *)ptr;
+
+    VALUE key_index = ibf_dump_object(dump, (VALUE)key);
+
+    ibf_dump_write_small_value(dump, key_index);
+    ibf_dump_write_small_value(dump, val);
+    return ST_CONTINUE;
+}
+
 static void
 ibf_dump_object_imemo(struct ibf_dump *dump, VALUE obj)
 {
@@ -14373,7 +14389,7 @@ ibf_dump_object_imemo(struct ibf_dump *dump, VALUE obj)
 
         long len = tbl->num_entries;
         ibf_dump_write_small_value(dump, (VALUE)len);
-        if (len > 0) st_foreach(tbl, ibf_dump_object_hash_i, (VALUE)dump);
+        if (len > 0) st_foreach(tbl, ibf_dump_cdhash_i, (VALUE)dump);
         break;
       }
       default:
@@ -14391,10 +14407,9 @@ ibf_load_object_imemo(const struct ibf_load *load, const struct ibf_object_heade
     int i;
     for (i = 0; i < len; i++) {
         VALUE key_index = ibf_load_small_value(load, &offset);
-        VALUE val_index = ibf_load_small_value(load, &offset);
+        VALUE val = ibf_load_small_value(load, &offset);
 
         VALUE key = ibf_load_object(load, key_index);
-        VALUE val = ibf_load_object(load, val_index);
         cdhash_aset(obj, key, val);
     }
 

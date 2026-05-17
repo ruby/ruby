@@ -596,10 +596,10 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
       case imemo_cdhash: {
         st_table *tbl = rb_imemo_cdhash_tbl(obj);
         if (reference_updating) {
-            rb_gc_update_tbl_refs(tbl);
+            rb_gc_update_set_refs(tbl);
         }
         else {
-            rb_mark_tbl_no_pin(tbl);
+            rb_gc_mark_set_no_pin(tbl);
         }
         break;
       }

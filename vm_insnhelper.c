@@ -6578,7 +6578,7 @@ vm_case_dispatch(CDHASH hash, OFFSET else_offset, VALUE key)
                 }
             }
             if (st_lookup(rb_imemo_cdhash_tbl(hash), key, &val)) {
-                return FIX2LONG((VALUE)val);
+                return (VALUE)val;
             }
             else {
                 return else_offset;
