@@ -11109,7 +11109,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_dont_inline_integer_xor_with_bignum_or_boolean() {
+    fn test_dont_inline_integer_xor_with_bignum_lhs() {
         eval("
             def test(x, y) = x ^ y
             test(4 << 70, 1)
@@ -11136,7 +11136,10 @@ mod hir_opt_tests {
           CheckInterrupts
           Return v28
         ");
+    }
 
+    #[test]
+    fn test_dont_inline_integer_xor_with_bignum_rhs() {
         eval("
             def test(x, y) = x ^ y
             test(1, 4 << 70)
@@ -11163,7 +11166,10 @@ mod hir_opt_tests {
           CheckInterrupts
           Return v28
         ");
+    }
 
+    #[test]
+    fn test_dont_inline_integer_xor_with_boolean() {
         eval("
             def test(x, y) = x ^ y
             test(true, 0)
