@@ -11,7 +11,7 @@ use crate::{
     state,
 };
 use std::{
-    cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, rc::Rc, slice::Iter,
+    cell::RefCell, collections::{HashMap, HashSet, VecDeque}, ffi::{c_void, c_uint, c_int, CStr}, fmt::Display, mem::{align_of, size_of}, ptr, slice::Iter,
     sync::atomic::Ordering,
 };
 use crate::hir_type::{Type, types};
@@ -4561,18 +4561,17 @@ impl Function {
                 incr_counter!(inline_method_count);
                 did_inline = true;
 
-                // Capture the caller's FrameState at the call site for use in the
-                // inlined body's Snapshots.
-                let caller_frame_state = Rc::new(self.frame_state(state));
-
-                // Stamp caller_state on every Snapshot that add_iseq_to_hir emitted
-                // for this callee. Each opcode emits a Snapshot, so this is the only
-                // place the chain of caller frames is woven into the inlined HIR;
-                // without it, side exits from inlined code would lose the outer
-                // frame and the interpreter would resume in the wrong place.
+                // Stamp the caller's call-site Snapshot InsnId on every Snapshot that
+                // add_iseq_to_hir emitted for this callee. The bytecode translation
+                // loop emits a Snapshot before each YARV instruction (and a few extras
+                // at block entry and inside some control-flow arms), so this single
+                // linear pass is the only place the chain of caller frames is woven
+                // into the inlined HIR. Without it, side exits from inlined code would
+                // lose the outer frame and the interpreter would resume in the wrong
+                // place.
                 for idx in pre_insns_len..self.insns.len() {
-                    if let Insn::Snapshot { ref mut state } = self.insns[idx] {
-                        state.caller_state = Some(Rc::clone(&caller_frame_state));
+                    if let Insn::Snapshot { state: inlined_state } = &mut self.insns[idx] {
+                        inlined_state.caller = Some(state);
                     }
                 }
 
@@ -6902,11 +6901,12 @@ pub struct FrameState {
     stack: Vec<InsnId>,
     locals: Vec<InsnId>,
 
-    // For inlined frames, the caller's state at the call site. This allows
-    // side exits from inlined code to reconstruct the full frame chain.
-    // Rc is used because all Snapshots within an inlined callee share the
-    // same caller state, avoiding redundant deep clones during remapping.
-    caller_state: Option<Rc<FrameState>>,
+    /// `InsnId` of the caller's call-site `Snapshot` for inlined frames; `None`
+    /// for non-inlined frames. Stored as an instruction reference rather than
+    /// an owned `FrameState` so that value remapping in the caller's `Snapshot`
+    /// propagates here automatically, and so the caller's state has a single
+    /// source of truth in the IR.
+    caller: Option<InsnId>,
 }
 
 impl FrameState {
@@ -6950,9 +6950,6 @@ impl FrameState {
                 *slot = new;
             }
         }
-        if let Some(ref mut caller) = self.caller_state {
-            Rc::make_mut(caller).replace(old, new);
-        }
     }
 }
 
@@ -6990,7 +6987,7 @@ fn ep_offset_to_local_idx(iseq: IseqPtr, ep_offset: u32) -> usize {
 
 impl FrameState {
     fn new(iseq: IseqPtr) -> FrameState {
-        FrameState { iseq, pc: std::ptr::null::<VALUE>(), insn_idx: 0, stack: vec![], locals: vec![], caller_state: None }
+        FrameState { iseq, pc: std::ptr::null::<VALUE>(), insn_idx: 0, stack: vec![], locals: vec![], caller: None }
     }
 
     /// Get the number of stack operands
@@ -7092,8 +7089,8 @@ impl Display for FrameStatePrinter<'_> {
             write!(f, "{name}={local}")?;
         }
         write!(f, "]")?;
-        if let Some(ref caller) = inner.caller_state {
-            write!(f, ", caller: {}", caller.print(self.ptr_map))?;
+        if let Some(caller) = inner.caller {
+            write!(f, ", caller: {caller}")?;
         }
         write!(f, " }}")
     }
