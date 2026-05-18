@@ -24,6 +24,18 @@ pub type NumProfiles = u16;
 pub const DEFAULT_CALL_THRESHOLD: CallThreshold = 30;
 pub type CallThreshold = u64;
 
+/// Default --zjit-inline-threshold
+pub const DEFAULT_INLINE_THRESHOLD: InlineThreshold = 0;
+pub type InlineThreshold = usize;
+
+/// Default --zjit-inline-budget
+pub const DEFAULT_INLINE_BUDGET: InlineBudget = 500;
+pub type InlineBudget = usize;
+
+/// Default --zjit-inline-max-iterations
+pub const DEFAULT_INLINE_MAX_ITERATIONS: InlineMaxIterations = 10;
+pub type InlineMaxIterations = u8;
+
 /// Number of calls to start profiling YARV instructions.
 /// They are profiled `rb_zjit_call_threshold - rb_zjit_profile_threshold` times,
 /// which is equal to --zjit-num-profiles.
@@ -120,7 +132,7 @@ pub struct Options {
     /// 0 disables inlining entirely.
     ///
     /// Note: this is a different unit than `inline_budget`; see that field's doc comment.
-    pub inline_threshold: usize,
+    pub inline_threshold: InlineThreshold,
 
     /// Per-caller cumulative size budget for inlining, measured as the caller
     /// `Function`'s `insns.len()` at the moment `should_inline` is consulted (during
@@ -144,7 +156,7 @@ pub struct Options {
     /// Note: this is a different unit than `inline_threshold` — that field is callee
     /// YARV bytecode words; this one is caller HIR instructions, allocation high-water
     /// mark. They aren't directly comparable; YARV → HIR typically expands roughly 1-3x.
-    pub inline_budget: usize,
+    pub inline_budget: InlineBudget,
 
     /// Set of qualified method names (e.g. `Class#method`, `Module::Class.method`) that
     /// `should_inline` will refuse to inline. Populated from `--zjit-inline-deny=…` as a
@@ -162,7 +174,7 @@ pub struct Options {
     /// terminates as soon as an iteration fails to inline anything new. The cap
     /// exists to bound compile time when something pathological prevents the loop
     /// from reaching a fixed point.
-    pub inline_max_iterations: usize,
+    pub inline_max_iterations: InlineMaxIterations,
 }
 
 impl Default for Options {
@@ -191,10 +203,10 @@ impl Default for Options {
             allowed_iseqs: None,
             log_compiled_iseqs: None,
             max_versions: 2,
-            inline_threshold: 0,
-            inline_budget: 500,
+            inline_threshold: DEFAULT_INLINE_THRESHOLD,
+            inline_budget: DEFAULT_INLINE_BUDGET as InlineBudget,
             inline_deny: HashSet::new(),
-            inline_max_iterations: 10,
+            inline_max_iterations: DEFAULT_INLINE_MAX_ITERATIONS,
         }
     }
 }

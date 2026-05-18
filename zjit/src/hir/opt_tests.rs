@@ -18661,4 +18661,150 @@ mod hir_opt_tests {
           Return v67
         ");
     }
+
+    #[test]
+    fn test_inline_object_new_no_escape() {
+        // Mirrors the object-new-no-escape benchmark from ruby-bench.
+        eval("
+            class Point
+              attr_reader :x, :y
+              def initialize(x, y)
+                @x = x
+                @y = y
+              end
+
+              def ==(other)
+                @x == other.x && @y == other.y
+              end
+            end
+
+            def test
+              Point.new(1, 2) == Point.new(1, 2)
+            end
+            test
+            test
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+
+        let result = hir_string_with_inlining("test");
+
+        assert!(counters.inline_method_count > inline_count_before,
+            "Expected Point#initialize / Point#== to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
+        assert!(result.contains("PushLightweightFrame"),
+            "Expected PushLightweightFrame in inlined HIR:\n{result}");
+        assert!(!result.contains("SendDirect"),
+            "Expected SendDirect to be replaced after inlining:\n{result}");
+
+        assert_snapshot!(result, @r"
+        fn test@<compiled>:15:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, Point)
+          v87:Class[Point@0x1008] = Const Value(VALUE(0x1008))
+          v12:NilClass = Const Value(nil)
+          v15:Fixnum[1] = Const Value(1)
+          v17:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(Point@0x1008, new@0x1009, cme:0x1010)
+          v90:ObjectSubclass[class_exact:Point] = ObjectAllocClass Point:VALUE(0x1008)
+          PatchPoint NoSingletonClass(Point@0x1008)
+          PatchPoint MethodRedefined(Point@0x1008, initialize@0x1038, cme:0x1040)
+          PushLightweightFrame v90 (0x1068), v15, v17
+          PatchPoint SingleRactorMode
+          v209:CShape = LoadField v90, :shape_id@0x1070
+          v210:CShape[0x1071] = GuardBitEquals v209, CShape(0x1071)
+          StoreField v90, :@x@0x1072, v15
+          WriteBarrier v90, v15
+          v213:CShape[0x1073] = Const CShape(0x1073)
+          StoreField v90, :shape_id@0x1070, v213
+          v116:ObjectSubclass[class_exact:Point] = RefineType v90, HeapBasicObject
+          PatchPoint NoEPEscape(initialize)
+          PatchPoint SingleRactorMode
+          StoreField v116, :@y@0x1074, v17
+          WriteBarrier v116, v17
+          v220:CShape[0x1075] = Const CShape(0x1075)
+          StoreField v116, :shape_id@0x1070, v220
+          CheckInterrupts
+          PopLightweightFrame
+          CheckInterrupts
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1078, Point)
+          v96:Class[Point@0x1008] = Const Value(VALUE(0x1008))
+          v45:NilClass = Const Value(nil)
+          v48:Fixnum[1] = Const Value(1)
+          v50:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(Point@0x1008, new@0x1009, cme:0x1010)
+          v99:ObjectSubclass[class_exact:Point] = ObjectAllocClass Point:VALUE(0x1008)
+          PatchPoint NoSingletonClass(Point@0x1008)
+          PatchPoint MethodRedefined(Point@0x1008, initialize@0x1038, cme:0x1040)
+          PushLightweightFrame v99 (0x1068), v48, v50
+          PatchPoint SingleRactorMode
+          v223:CShape = LoadField v99, :shape_id@0x1070
+          v224:CShape[0x1071] = GuardBitEquals v223, CShape(0x1071)
+          StoreField v99, :@x@0x1072, v48
+          WriteBarrier v99, v48
+          v227:CShape[0x1073] = Const CShape(0x1073)
+          StoreField v99, :shape_id@0x1070, v227
+          v143:ObjectSubclass[class_exact:Point] = RefineType v99, HeapBasicObject
+          PatchPoint NoEPEscape(initialize)
+          PatchPoint SingleRactorMode
+          StoreField v143, :@y@0x1074, v50
+          WriteBarrier v143, v50
+          v234:CShape[0x1075] = Const CShape(0x1075)
+          StoreField v143, :shape_id@0x1070, v234
+          CheckInterrupts
+          PopLightweightFrame
+          CheckInterrupts
+          PatchPoint NoSingletonClass(Point@0x1008)
+          PatchPoint MethodRedefined(Point@0x1008, ==@0x1080, cme:0x1088)
+          PushLightweightFrame v90 (0x1068), v99
+          PatchPoint SingleRactorMode
+          v237:CShape = LoadField v90, :shape_id@0x1070
+          v238:CShape[0x1075] = GuardBitEquals v237, CShape(0x1075)
+          v239:BasicObject = LoadField v90, :@x@0x1072
+          PatchPoint NoEPEscape(==)
+          PatchPoint NoSingletonClass(Point@0x1008)
+          PatchPoint MethodRedefined(Point@0x1008, x@0x10b0, cme:0x10b8)
+          v263:CShape = LoadField v99, :shape_id@0x1070
+          v264:CShape[0x1075] = GuardBitEquals v263, CShape(0x1075)
+          v265:BasicObject = LoadField v99, :@x@0x1072
+          PatchPoint MethodRedefined(Integer@0x10e0, ==@0x1080, cme:0x10e8)
+          v246:Fixnum = GuardType v239, Fixnum
+          v247:Fixnum = GuardType v265, Fixnum
+          v248:BoolExact = FixnumEq v246, v247
+          CheckInterrupts
+          v179:CBool = Test v248
+          v180:FalseClass = RefineType v248, Falsy
+          CondBranch v179, bb17(), bb16(v90, v99, v180)
+        bb17():
+          PatchPoint SingleRactorMode
+          v241:CShape = LoadField v90, :shape_id@0x1070
+          v242:CShape[0x1075] = GuardBitEquals v241, CShape(0x1075)
+          v243:BasicObject = LoadField v90, :@y@0x1074
+          PatchPoint NoEPEscape(==)
+          PatchPoint NoSingletonClass(Point@0x1008)
+          PatchPoint MethodRedefined(Point@0x1008, y@0x1110, cme:0x1118)
+          v267:CShape = LoadField v99, :shape_id@0x1070
+          v268:CShape[0x1075] = GuardBitEquals v267, CShape(0x1075)
+          v269:BasicObject = LoadField v99, :@y@0x1074
+          PatchPoint MethodRedefined(Integer@0x10e0, ==@0x1080, cme:0x10e8)
+          v251:Fixnum = GuardType v243, Fixnum
+          v252:Fixnum = GuardType v269, Fixnum
+          v253:BoolExact = FixnumEq v251, v252
+          Jump bb16(v90, v99, v253)
+        bb16(v196:ObjectSubclass[class_exact:Point], v197:ObjectSubclass[class_exact:Point], v198:BoolExact):
+          CheckInterrupts
+          PopLightweightFrame
+          CheckInterrupts
+          Return v198
+        ");
+    }
 }
