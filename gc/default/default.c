@@ -196,18 +196,6 @@ static RB_THREAD_LOCAL_SPECIFIER int malloc_increase_local;
     SLOT(32) SLOT(64) SLOT(128) SLOT(256) SLOT(512)
 #endif
 
-/* Precomputed reciprocals for fast slot index calculation.
- * For slot size d: reciprocal = ceil(2^48 / d).
- * Then offset / d == (uint32_t)((offset * reciprocal) >> 48)
- * for all offset < HEAP_PAGE_SIZE. */
-#define SLOT_RECIPROCAL_SHIFT 48
-#define SLOT_RECIPROCAL(size) (((1ULL << SLOT_RECIPROCAL_SHIFT) + (size) - 1) / (size))
-
-static const uint64_t heap_slot_reciprocal_table[HEAP_COUNT] = {
-#define SLOT(size) SLOT_RECIPROCAL(size),
-    EACH_POOL_SLOT_SIZE(SLOT)
-#undef SLOT
-};
 typedef struct ractor_newobj_heap_cache {
     struct free_slot *freelist;
     struct heap_page *using_page;
@@ -711,11 +699,23 @@ size_t rb_gc_impl_obj_slot_size(VALUE obj);
 #define RVALUE_SLOT_SIZE (sizeof(struct RBasic) + sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX]) + RVALUE_OVERHEAD)
 
 static const size_t pool_slot_sizes[HEAP_COUNT] = {
-#define SLOT(size) size,
+#define SLOT(size) ((size) + RVALUE_OVERHEAD),
     EACH_POOL_SLOT_SIZE(SLOT)
 #undef SLOT
 };
 
+/* Precomputed reciprocals for fast slot index calculation.
+ * For slot size d: reciprocal = ceil(2^48 / d).
+ * Then offset / d == (uint32_t)((offset * reciprocal) >> 48)
+ * for all offset < HEAP_PAGE_SIZE. */
+#define SLOT_RECIPROCAL_SHIFT 48
+#define SLOT_RECIPROCAL(size) (((1ULL << SLOT_RECIPROCAL_SHIFT) + (size) - 1) / (size))
+
+static const uint64_t heap_slot_reciprocal_table[HEAP_COUNT] = {
+#define SLOT(size) SLOT_RECIPROCAL((size) + RVALUE_OVERHEAD),
+    EACH_POOL_SLOT_SIZE(SLOT)
+#undef SLOT
+};
 
 #if SIZEOF_VALUE >= 8
 static uint8_t size_to_heap_idx[1024 / 8 + 1];
