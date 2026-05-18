@@ -175,19 +175,19 @@ class TestPathname < Test::Unit::TestCase
 
   if DOSISH_UNC
     defassert(:del_trailing_separator, "//", "//")
-    defassert(:del_trailing_separator, "//a", "//a")
-    defassert(:del_trailing_separator, "//a", "//a/")
-    defassert(:del_trailing_separator, "//a", "//a//")
-    defassert(:del_trailing_separator, "//a/b", "//a/b")
-    defassert(:del_trailing_separator, "//a/b", "//a/b/")
-    defassert(:del_trailing_separator, "//a/b", "//a/b//")
-    defassert(:del_trailing_separator, "//a/b/c", "//a/b/c")
-    defassert(:del_trailing_separator, "//a/b/c", "//a/b/c/")
-    defassert(:del_trailing_separator, "//a/b/c", "//a/b/c//")
   else
     defassert(:del_trailing_separator, "/", "///")
-    defassert(:del_trailing_separator, "///a", "///a/")
   end
+  defassert(:del_trailing_separator, "//a", "//a")
+  defassert(:del_trailing_separator, "//a", "//a/")
+  defassert(:del_trailing_separator, "//a", "//a//")
+  defassert(:del_trailing_separator, "//a/b", "//a/b")
+  defassert(:del_trailing_separator, "//a/b", "//a/b/")
+  defassert(:del_trailing_separator, "//a/b", "//a/b//")
+  defassert(:del_trailing_separator, "//a/b/c", "//a/b/c")
+  defassert(:del_trailing_separator, "//a/b/c", "//a/b/c/")
+  defassert(:del_trailing_separator, "//a/b/c", "//a/b/c//")
+  defassert(:del_trailing_separator, "///a", "///a/")
 
   if DOSISH
     defassert(:del_trailing_separator, "a", "a\\")
