@@ -289,6 +289,35 @@ class TestPathname < Test::Unit::TestCase
     defassert(:relative?, false, '//a/b/c')
   end
 
+  def relative_path?(path)
+    path = Pathname.new(path)
+    relative = path.relative_path?
+    absolute = path.absolute_path?
+    assert_equal(!relative, absolute)
+    relative
+  end
+
+  defassert(:relative_path?, true, '')
+  defassert(:relative_path?, DOSISH_DRIVE_LETTER, '/')
+  defassert(:relative_path?, DOSISH_DRIVE_LETTER, '/a')
+  defassert(:relative_path?, DOSISH_DRIVE_LETTER, '/..')
+  defassert(:relative_path?, true, 'a')
+  defassert(:relative_path?, true, 'a/b')
+
+  defassert(:relative_path?, true, 'A:.')
+  defassert(:relative_path?, true, 'A:')
+  defassert(:relative_path?, !DOSISH_DRIVE_LETTER, 'A:/')
+  defassert(:relative_path?, !DOSISH_DRIVE_LETTER, 'A:/a')
+
+  if DOSISH_UNC
+    defassert(:relative_path?, false, '//')
+    defassert(:relative_path?, false, '//a')
+    defassert(:relative_path?, false, '//a/')
+    defassert(:relative_path?, false, '//a/b')
+    defassert(:relative_path?, false, '//a/b/')
+    defassert(:relative_path?, false, '//a/b/c')
+  end
+
   def relative_path_from(dest_directory, base_directory)
     Pathname.new(dest_directory).relative_path_from(base_directory).to_s
   end

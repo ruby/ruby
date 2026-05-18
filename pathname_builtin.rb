@@ -110,6 +110,8 @@
 # - #join
 # - #parent
 # - #root?
+# - #absolute_path?
+# - #relative_path?
 # - #absolute?
 # - #relative?
 # - #relative_path_from
@@ -560,11 +562,33 @@ class Pathname
   #   Pathname('C:.').relative?   # => true   # Elsewhere.
   #
   # Note that this differs from the standard definition of a relative
-  # path on Windows.
+  # path on Windows.  For that purpose, Use #relative_path?.
   #
   # The opposite of #absolute?.
   def relative?
     !absolute?
+  end
+
+  # call-seq:
+  #  relative_path? -> true or false
+  #
+  # Returns whether +self+ contains a non-absolute path; see
+  # File.absolute_path?.
+  #
+  # What an "absolute path" means is OS-dependent:
+  #
+  #   Pathname('/home').relative_path?   # => true   # On Windows.
+  #   Pathname('/home').relative_path?   # => false  # Elsewhere.
+  #   Pathname('C:/').relative_path?     # => false  # On Windows.
+  #   Pathname('C:/').relative_path?     # => true   # Elsewhere.
+  #
+  #   Pathname('lib').relative_path?     # => true
+  #   Pathname('C:Users').relative_path? # => true
+  #   Pathname('./bin').relative_path?   # => true
+  #
+  # The opposite of #absolute_path?.
+  def relative_path?
+    !absolute_path?
   end
 
   #
