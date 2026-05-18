@@ -154,7 +154,8 @@ path_root_p(VALUE self)
  * call-seq:
  *   absolute? -> true or false
  *
- * Returns whether +self+ contains an absolute path:
+ * Returns +true+ if +self+ contains a path that is not relative from
+ * the current working directory (of the current drive on Windows):
  *
  *   Pathname('/home').absolute? # => true
  *   Pathname('lib').absolute?   # => false
@@ -163,7 +164,13 @@ path_root_p(VALUE self)
  *
  *   Pathname('C:/').absolute?   # => true   # On Windows.
  *   Pathname('C:/').absolute?   # => false  # Elsewhere.
+ *   Pathname('C:.').absolute?   # => true   # On Windows.
+ *   Pathname('C:.').absolute?   # => false  # Elsewhere.
  *
+ * Note that this differs from the standard definition of an absolute
+ * path on Windows.
+ *
+ * The opposite of #relative?.
  */
 static VALUE
 path_absolute_p(VALUE self)

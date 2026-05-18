@@ -542,17 +542,27 @@ class Pathname
     end
   end
 
-  # The opposite of Pathname#absolute?
+  # call-seq:
   #
-  # It returns +false+ if the pathname begins with a slash.
+  #   relative? -> true or false
   #
-  #   p = Pathname.new('/im/sure')
-  #   p.relative?
-  #       #=> false
+  # Returns +true+ if +self+ contains a path that is relative from the
+  # current working directory (of the current drive on Windows):
   #
-  #   p = Pathname.new('not/so/sure')
-  #   p.relative?
-  #       #=> true
+  #   Pathname('/home').relative? # => false
+  #   Pathname('lib').relative?   # => true
+  #
+  # The result is OS-dependent for some paths:
+  #
+  #   Pathname('C:/').relative?   # => false  # On Windows.
+  #   Pathname('C:/').relative?   # => true   # Elsewhere.
+  #   Pathname('C:.').relative?   # => false  # On Windows.
+  #   Pathname('C:.').relative?   # => true   # Elsewhere.
+  #
+  # Note that this differs from the standard definition of a relative
+  # path on Windows.
+  #
+  # The opposite of #absolute?.
   def relative?
     !absolute?
   end
