@@ -3755,7 +3755,7 @@ rb_gc_register_address(VALUE *addr)
     RB_VM_LOCKING() {
         if (vm->global_object_list_size == vm->global_object_list_capa) {
             size_t new_capa = vm->global_object_list_capa ? vm->global_object_list_capa * 2 : 64;
-            vm->global_object_list = SIZED_REALLOC_N(vm->global_object_list, VALUE *, new_capa, vm->global_object_list_capa);
+            SIZED_REALLOC_N(vm->global_object_list, VALUE *, new_capa, vm->global_object_list_capa);
             vm->global_object_list_capa = new_capa;
         }
 
