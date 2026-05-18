@@ -710,6 +710,7 @@ class TestIOBuffer < Test::Unit::TestCase
     mask = IO::Buffer.for("ABCDEFGH")
     assert_raise(IO::Buffer::InvalidatedError) { slice & mask }
     assert_raise(IO::Buffer::InvalidatedError) { slice | mask }
+    assert_raise(IO::Buffer::InvalidatedError) { slice ^ mask }
   end
 
   def test_operators_raise_on_freed_mask
@@ -720,6 +721,7 @@ class TestIOBuffer < Test::Unit::TestCase
     source = IO::Buffer.for("ABCDEFGH")
     assert_raise(IO::Buffer::InvalidatedError) { source & mask_slice }
     assert_raise(IO::Buffer::InvalidatedError) { source | mask_slice }
+    assert_raise(IO::Buffer::InvalidatedError) { source ^ mask_slice }
   end
 
   def test_bit_count
