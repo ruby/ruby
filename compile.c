@@ -12204,7 +12204,7 @@ iseq_build_from_ary_body(rb_iseq_t *iseq, LINK_ANCHOR *const anchor,
                                 VALUE sym = RARRAY_AREF(op, i+1);
                                 LABEL *label =
                                   register_label(iseq, labels_table, sym);
-                                rb_hash_aset(map, key, (VALUE)label | 1);
+                                cdhash_aset(map, key, (VALUE)label);
                             }
                             RB_GC_GUARD(op);
                             RB_OBJ_SET_SHAREABLE(map); // allow mutation while compiling
