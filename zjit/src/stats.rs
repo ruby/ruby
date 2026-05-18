@@ -440,7 +440,7 @@ make_counters! {
     complex_arg_pass_caller_forwarding,
 
     // Writes to the VM frame
-    vm_write_pc_count,
+    vm_write_jit_frame_count,
     vm_write_sp_count,
     vm_write_locals_count,
     vm_write_stack_count,
