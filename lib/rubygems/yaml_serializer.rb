@@ -95,6 +95,25 @@ module Gem
 
         if stripped.start_with?("- ") || stripped == "-"
           parse_sequence(indent, anchor)
+        elsif stripped.start_with?("\"") && stripped.end_with?("\"")
+          # We don't need to care about the following case here:
+          #   1. "value with comment" # ...
+          #   2. "key": "value"
+          #
+          # 1. must not happen because YAMLSerializer doesn't emit any
+          # comment. YAMLSerializer parses only YAML that is generated
+          # by YAMLSerializer.
+          #
+          # 2. must not happen because #parse_node isn't used non
+          # top-level mapping. Non top-level mapping always uses
+          # #parse_mapping. Top-level mapping never use the '"key":
+          # "value"' form because all top-level keys
+          # ("!ruby/object:Gem::Specification"'s keys) are known and
+          # #emit_specification doesn't quote anything.
+          parse_plain_scalar(indent, anchor)
+        elsif stripped.start_with?("'") && stripped.end_with?("'")
+          # See also the above note for double quotation.
+          parse_plain_scalar(indent, anchor)
         elsif stripped =~ MAPPING_KEY_RE && !stripped.start_with?("!ruby/object:")
           parse_mapping(indent, anchor)
         elsif stripped.start_with?("!ruby/object:")
