@@ -3472,7 +3472,7 @@ io_buffer_or(VALUE self, VALUE mask)
 }
 
 static void
-memory_xor(unsigned char * restrict output, unsigned char * restrict base, size_t size, unsigned char * restrict mask, size_t mask_size)
+memory_xor(unsigned char * restrict output, const unsigned char * restrict base, size_t size, const unsigned char * restrict mask, size_t mask_size)
 {
     for (size_t offset = 0; offset < size; offset += 1) {
         output[offset] = base[offset] ^ mask[offset % mask_size];
@@ -3512,7 +3512,7 @@ io_buffer_xor(VALUE self, VALUE mask)
 }
 
 static void
-memory_not(unsigned char * restrict output, unsigned char * restrict base, size_t size)
+memory_not(unsigned char * restrict output, const unsigned char * restrict base, size_t size)
 {
     for (size_t offset = 0; offset < size; offset += 1) {
         output[offset] = ~base[offset];
