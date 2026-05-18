@@ -1675,6 +1675,33 @@ class TestRefinement < Test::Unit::TestCase
     end
   end
 
+  def test_zsuper_refinement_method_arity_and_parameters
+    assert_separately([], <<-"end;")
+      class A
+        private def a(b) = b
+      end
+
+      class B < A
+        public :a
+      end
+
+      module R
+        refine A do
+          public :a
+        end
+      end
+      using R
+
+      m = B.instance_method(:a)
+      assert_equal(1, m.arity)
+      assert_equal([[:req, :b]], m.parameters)
+
+      m = A.instance_method(:a)
+      assert_equal(1, m.arity)
+      assert_equal([[:req, :b]], m.parameters)
+    end;
+  end
+
   def test_instance_methods
     bug8881 = '[ruby-core:57080] [Bug #8881]'
     assert_not_include(Foo.instance_methods(false), :z, bug8881)
