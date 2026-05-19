@@ -28,7 +28,7 @@ on:
         type: boolean
         default: true
       remove-gnupg:
-        description: 'Forcely remove ~/.gnupg after tests'
+        description: 'Forcibly remove ~/.gnupg after tests'
         required: false
         type: boolean
         default: false
@@ -192,7 +192,7 @@ jobs:
           RUBY_TESTOPTS: "-q --tty=no"
       # not sure why ~/.gnupg is remained
       # see tool/test/test_sync_default_gems.rb
-      - name: Forcely remove test directory
+      - name: Forcibly remove test directory
         run: rm -rf $HOME/.gnupg
         if: inputs.remove-gnupg
       - name: Diff stats of HOME
