@@ -14,7 +14,7 @@ USDT_GROUPS = {
     ['gc__exit',          "default",  'GCEnterExit',      'E',  1],
   ],
   'event_hooks' => [
-    ['gc__obj_free',      "ruby",     'gc_obj_free',      'i',  2],
+    ['gc__event_hook',    "ruby",     'gc_event_hook',    'i',  1],
   ],
   'xmalloc' => [
     ['gc__xmalloc',       "ruby",     'gc_xmalloc',       'i',  2],
