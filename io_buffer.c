@@ -3545,11 +3545,15 @@ io_buffer_not(VALUE self)
     struct rb_io_buffer *buffer = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
 
-    VALUE output = rb_io_buffer_new(NULL, buffer->size, io_flags_for_size(buffer->size));
+    const void *base;
+    size_t size;
+    io_buffer_get_bytes_for_reading(buffer, &base, &size);
+
+    VALUE output = rb_io_buffer_new(NULL, size, io_flags_for_size(size));
     struct rb_io_buffer *output_buffer = NULL;
     TypedData_Get_Struct(output, struct rb_io_buffer, &rb_io_buffer_type, output_buffer);
 
-    memory_not(output_buffer->base, buffer->base, buffer->size);
+    memory_not(output_buffer->base, base, size);
 
     return output;
 }
