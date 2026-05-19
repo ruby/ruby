@@ -253,11 +253,11 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SNAPSHOT_SLACK_WEBHOOK_URL }}
-        if: failure()
+        if: failure() && github.event_name == 'schedule'
       - name: Get ruby/ruby sha
         id: ruby_sha
         run: cd snapshot-*/ && ./ruby -e 'puts "sha=#{RUBY_REVISION}"' >> $GITHUB_OUTPUT
-        if: failure() && inputs.notify-ruby-sha
+        if: failure() && inputs.notify-ruby-sha && github.event_name == 'schedule'
       - uses: ruby/action-slack@54175162371f1f7c8eb94d7c8644ee2479fcd375 # v3.2.2
         with:
           payload: |
@@ -270,4 +270,4 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }}
-        if: failure() && inputs.notify-ruby-sha
+        if: failure() && inputs.notify-ruby-sha && github.event_name == 'schedule'
