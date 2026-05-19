@@ -27,11 +27,11 @@ jobs:
   macos:
     strategy:
       matrix:
-        test_task: [check, test-bundled-gems]
-        os: [macos-14, macos-15, macos-15-intel]
+        test_task: [check, test-bundled-gems, test-bundler-parallel]
+        os: [macos-14, macos-15]
         include:
-          - os: macos-14
-            test_task: test-bundler-parallel
+          - os: macos-15-intel
+            test_task: check
       fail-fast: false
     runs-on: ${{ matrix.os }}
     env:
