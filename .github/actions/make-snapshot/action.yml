@@ -1,6 +1,9 @@
 name: 'make-snapshot'
 description: 'Make snapshot tarballs'
 inputs:
+  archname:
+    description: 'archname passed to tool/make-snapshot (e.g. snapshot-master)'
+    required: true
   version:
     description: 'Target Version'
     required: false
@@ -54,15 +57,16 @@ runs:
       shell: bash
     - name: Make snapshot
       env:
+        ARCHNAME: ${{ inputs.archname }}
         SRCDIR: ${{ inputs.srcdir }}
         GENERATE_TAR_BZ2: ${{ inputs.generate-tar-bz2 }}
         VERSION: ${{ inputs.version }}
       run: |
         [ -z "$SRCDIR" ] && SRCDIR=ruby
         if [ -n "$GENERATE_TAR_BZ2" ]; then
-          ruby "$SRCDIR/tool/make-snapshot" -archname=$archname -srcdir="$SRCDIR" pkg $VERSION
+          ruby "$SRCDIR/tool/make-snapshot" "-archname=$ARCHNAME" -srcdir="$SRCDIR" pkg $VERSION
         else
-          ruby "$SRCDIR/tool/make-snapshot" -archname=$archname -srcdir="$SRCDIR" -packages=gzip,xz,zip pkg $VERSION
+          ruby "$SRCDIR/tool/make-snapshot" "-archname=$ARCHNAME" -srcdir="$SRCDIR" -packages=gzip,xz,zip pkg $VERSION
         fi
       shell: bash
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
