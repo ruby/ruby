@@ -25,40 +25,46 @@ permissions:
 jobs:
   tarball:
     runs-on: ubuntu-latest
+    # Cherry-pick to maintenance branches by changing only env.BRANCH below;
+    # archname / branch-label / Materialize all derive from it.
+    env:
+      BRANCH: master
+    outputs:
+      branch: ${{ env.BRANCH }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
       # tool/make-snapshot derives the branch name from HEAD and looks up
       # the upstream during ChangeLog generation. Detached checkouts
-      # (pull_request, merge_group) lack a local master with tracking, so
-      # pin one to HEAD and connect it to origin/master.
-      - name: Materialize local master branch
+      # (pull_request, merge_group) lack a local branch with tracking, so
+      # pin one to HEAD and connect it to the matching origin ref.
+      - name: Materialize local branch
         run: |
-          git fetch --no-tags --depth=1 origin +refs/heads/master:refs/remotes/origin/master
-          git checkout -B master HEAD
-          git branch --set-upstream-to=origin/master master
+          git fetch --no-tags --depth=1 origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH"
+          git checkout -B "$BRANCH" HEAD
+          git branch --set-upstream-to="origin/$BRANCH" "$BRANCH"
       - uses: ./.github/actions/make-snapshot
         with:
-          archname: snapshot-master
+          archname: snapshot-${{ env.BRANCH }}
           srcdir: '.'
 
   ubuntu:
     needs: tarball
     uses: ./.github/workflows/tarball-ubuntu.yml
     with:
-      archname: snapshot-master
+      archname: snapshot-${{ needs.tarball.outputs.branch }}
       allow-failures: power_assert
       remove-gnupg: true
       notify-ruby-sha: true
-      branch-label: master
+      branch-label: ${{ needs.tarball.outputs.branch }}
     secrets: inherit
 
   macos:
     needs: tarball
     uses: ./.github/workflows/tarball-macos.yml
     with:
-      archname: snapshot-master
+      archname: snapshot-${{ needs.tarball.outputs.branch }}
       allow-failures: power_assert
     secrets: inherit
 
@@ -66,7 +72,7 @@ jobs:
     needs: tarball
     uses: ./.github/workflows/tarball-windows.yml
     with:
-      archname: snapshot-master
+      archname: snapshot-${{ needs.tarball.outputs.branch }}
       mode: modern
     secrets: inherit
 
