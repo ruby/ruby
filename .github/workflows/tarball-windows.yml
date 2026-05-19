@@ -80,11 +80,12 @@ jobs:
         run: |
           set -x
           curl -sSL "${RUBY_PATCH_URL}" -o ruby.patch
-          cd ${{ inputs.archname }}/
+          cd "$ARCHNAME"
           git apply ../ruby.patch
         shell: bash
         env:
           RUBY_PATCH_URL: ${{ inputs.patch-url }}
+          ARCHNAME: ${{ inputs.archname }}
         if: inputs.patch-url != ''
         working-directory:
 
@@ -96,9 +97,11 @@ jobs:
       - name: setup env (modern)
         # %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
         # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
+        env:
+          ARCHNAME: ${{ inputs.archname }}
         run: |
           set > old.env
-          call ..\${{ inputs.archname }}\win32\vssetup.cmd
+          call ..\%ARCHNAME%\win32\vssetup.cmd
           set TMP=%USERPROFILE%\AppData\Local\Temp
           set TEMP=%USERPROFILE%\AppData\Local\Temp
           set /a TEST_JOBS=(15 * %NUMBER_OF_PROCESSORS% / 10) > nul
@@ -133,8 +136,10 @@ jobs:
             if not %%~nI == readline mklink %%~nxI %%I
           )
       - name: Configure
+        env:
+          ARCHNAME: ${{ inputs.archname }}
         run: >-
-          ../${{ inputs.archname }}/win32/configure.bat --disable-install-doc
+          ../%ARCHNAME%/win32/configure.bat --disable-install-doc
           --with-opt-dir=C:/vcpkg/installed/x64-windows
       - run: nmake incs
       - run: nmake extract-extlibs

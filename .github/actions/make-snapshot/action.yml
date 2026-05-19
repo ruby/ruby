@@ -34,11 +34,14 @@ runs:
       shell: bash
     - name: Fetch branches and notes (clone mode)
       if: inputs.srcdir == ''
+      env:
+        SHALLOW_SINCE: ${{ inputs.shallow-since }}
+        FETCH_BRANCH: ${{ inputs.fetch-branch }}
       run: |
         set -x
         cd ruby
-        git fetch --shallow-since='${{ inputs.shallow-since }}'
-        [ -n "${{ inputs.fetch-branch }}" ] && git fetch origin '+${{ inputs.fetch-branch }}:${{ inputs.fetch-branch }}'
+        git fetch --shallow-since="$SHALLOW_SINCE"
+        [ -n "$FETCH_BRANCH" ] && git fetch origin "+$FETCH_BRANCH:$FETCH_BRANCH"
         git fetch origin '+refs/notes/commits:refs/notes/commits'
         git fetch origin '+refs/notes/log-fix:refs/notes/log-fix'
       shell: bash
@@ -50,13 +53,16 @@ runs:
         git fetch origin '+refs/notes/log-fix:refs/notes/log-fix' || :
       shell: bash
     - name: Make snapshot
+      env:
+        SRCDIR: ${{ inputs.srcdir }}
+        GENERATE_TAR_BZ2: ${{ inputs.generate-tar-bz2 }}
+        VERSION: ${{ inputs.version }}
       run: |
-        SRCDIR="${{ inputs.srcdir }}"
         [ -z "$SRCDIR" ] && SRCDIR=ruby
-        if [ -n "${{ inputs.generate-tar-bz2 }}" ]; then
-          ruby "$SRCDIR/tool/make-snapshot" -archname=$archname -srcdir="$SRCDIR" pkg ${{ inputs.version }}
+        if [ -n "$GENERATE_TAR_BZ2" ]; then
+          ruby "$SRCDIR/tool/make-snapshot" -archname=$archname -srcdir="$SRCDIR" pkg $VERSION
         else
-          ruby "$SRCDIR/tool/make-snapshot" -archname=$archname -srcdir="$SRCDIR" -packages=gzip,xz,zip pkg ${{ inputs.version }}
+          ruby "$SRCDIR/tool/make-snapshot" -archname=$archname -srcdir="$SRCDIR" -packages=gzip,xz,zip pkg $VERSION
         fi
       shell: bash
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
