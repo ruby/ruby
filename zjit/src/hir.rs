@@ -1157,7 +1157,7 @@ pub enum Insn {
     /// Side-exit if left is not greater than or equal to right (both operands are C long).
     GuardGreaterEq { left: InsnId, right: InsnId, reason: SideExitReason, state: InsnId },
     /// Side-exit if left is not less than right (both operands are C long).
-    GuardLess { left: InsnId, right: InsnId, state: InsnId },
+    GuardLess { left: InsnId, right: InsnId, reason: SideExitReason, state: InsnId },
 
     /// Generate no code (or padding if necessary) and insert a patch point
     /// that can be rewritten to a side exit when the Invariant is broken.
@@ -1311,7 +1311,7 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(state);
             }
             Insn::GuardGreaterEq { left, right, state, .. }
-            | Insn::GuardLess { left, right, state } => {
+            | Insn::GuardLess { left, right, state, .. } => {
                 $visit_one!(left);
                 $visit_one!(right);
                 $visit_one!(state);
@@ -5109,6 +5109,18 @@ impl Function {
                         let right_num = self.type_of(right).cint64_value();
                         match (left_num, right_num) {
                             (Some(l), Some(r)) if l >= r => {
+                                self.make_equal_to(insn_id, left);
+                                continue
+                            },
+                            (Some(_), Some(_)) => self.new_insn(Insn::SideExit { state, reason, recompile: None }),
+                            _ => insn_id,
+                        }
+                    },
+                    Insn::GuardLess { left, right, state, reason } => {
+                        let left_num = self.type_of(left).cint64_value();
+                        let right_num = self.type_of(right).cint64_value();
+                        match (left_num, right_num) {
+                            (Some(l), Some(r)) if l < r => {
                                 self.make_equal_to(insn_id, left);
                                 continue
                             },
