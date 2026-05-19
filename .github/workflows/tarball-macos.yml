@@ -106,4 +106,4 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SNAPSHOT_SLACK_WEBHOOK_URL }}
-        if: failure()
+        if: failure() && github.event_name == 'schedule'
