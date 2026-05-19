@@ -13641,6 +13641,39 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_print_nil_module_name() {
+        eval(r#"
+            X = [Module.new].freeze
+            def test = X[0]
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, X)
+          v23:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v12:Fixnum[0] = Const Value(0)
+          PatchPoint NoSingletonClass(Array@0x1010)
+          PatchPoint MethodRedefined(Array@0x1010, []@0x1018, cme:0x1020)
+          v34:CInt64[0] = Const CInt64(0)
+          v28:CInt64 = ArrayLength v23
+          v29:CInt64[0] = GuardLess v34, v28
+          v35:ModuleExact[nil@0x1048] = Const Value(VALUE(0x1048))
+          CheckInterrupts
+          Return v35
+        ");
+    }
+
+    #[test]
     fn no_load_from_ep_right_after_entrypoint() {
       let formatted = eval("
           def read_nil_local(a, _b, _c)
