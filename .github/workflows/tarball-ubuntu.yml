@@ -236,7 +236,9 @@ jobs:
         run: cd snapshot-*/ && sudo make $JOBS install
         if: matrix.test_task == 'check'
       - name: ruby -v
-        run: ${{ inputs.ruby-bin }} -v
+        env:
+          RUBY_BIN: ${{ inputs.ruby-bin }}
+        run: '"$RUBY_BIN" -v'
         if: matrix.test_task == 'check'
       - name: Show .local
         run: find $HOME/.local -ls
