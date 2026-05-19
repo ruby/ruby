@@ -95,7 +95,10 @@ fn profile_insn(bare_opcode: ruby_vminsn_type, ec: EcPtr) {
         YARVINSN_invokesuper   => profile_invokesuper(profiler, profile),
         YARVINSN_opt_send_without_block | YARVINSN_send => {
             let cd: *const rb_call_data = profiler.insn_opnd(0).as_ptr();
-            let argc = unsafe { vm_ci_argc((*cd).ci) };
+            let ci = unsafe { rb_get_call_data_ci(cd) };
+            let flags = unsafe { rb_vm_ci_flag(ci) };
+            let has_blockarg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
+            let argc = unsafe { vm_ci_argc(ci) } + has_blockarg as u32;
             // Profile all the arguments and self (+1).
             profile_operands(profiler, profile, (argc + 1) as usize);
         }
