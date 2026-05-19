@@ -5518,7 +5518,7 @@ rb_file_join_fastpath(long argc, VALUE *args)
         long tmp_len;
         RSTRING_GETMEM(tmp, tmp_s, tmp_len);
 
-        if (isdirsep(tmp_s[0])) {
+        if (tmp_len > 0 && isdirsep(tmp_s[0])) {
             // right side has a leading separator, remove left side separators.
             long trailing_seps = 0;
             while (isdirsep(name[len - trailing_seps - 1])) {
@@ -5526,7 +5526,7 @@ rb_file_join_fastpath(long argc, VALUE *args)
             }
             rb_str_set_len(result, len - trailing_seps);
         }
-        else if (!isdirsep(name[len - 1])) {
+        else if (len < 1 || !isdirsep(name[len - 1])) {
             // neither side have a separator, append one;
             rb_str_cat(result, "/", 1);
         }
