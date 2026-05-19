@@ -9382,12 +9382,19 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
         const char *substr_start = ptr;
         const char *sptr = RSTRING_PTR(spat);
         long slen = RSTRING_LEN(spat);
+        struct rb_memsearch_qs_state qs;
+        bool use_qs;
 
         if (result) result = rb_ary_new();
         mustnot_broken(str);
         enc = rb_enc_check(str, spat);
-        while (ptr < eptr &&
-               (end = rb_memsearch(sptr, slen, ptr, eptr - ptr, enc)) >= 0) {
+        use_qs = rb_memsearch_qs_usable_p(slen, enc);
+        if (use_qs) rb_memsearch_qs_prepare(&qs, sptr, slen);
+        while (ptr < eptr) {
+            end = use_qs ?
+                rb_memsearch_qs_search(&qs, ptr, eptr - ptr) :
+                rb_memsearch(sptr, slen, ptr, eptr - ptr, enc);
+            if (end < 0) break;
             /* Check we are at the start of a char */
             const char *t = rb_enc_right_char_head(ptr, ptr + end, eptr, enc);
             if (t != ptr + end) {
@@ -9398,6 +9405,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
             str_mod_check(spat, sptr, slen);
             ptr += end + slen;
             substr_start = ptr;
+            if (use_qs && !result && ptr < eptr) rb_memsearch_qs_prepare(&qs, sptr, slen);
             if (!NIL_P(limit) && lim <= ++i) break;
         }
         beg = ptr - str_start;
@@ -9531,6 +9539,8 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
     const char *pend, *subptr, *subend, *rsptr, *hit, *adjusted;
     long pos, rslen;
     int rsnewline = 0;
+    struct rb_memsearch_qs_state qs;
+    bool use_qs = false;
 
     if (rb_scan_args(argc, argv, "01:", &rs, &opts) == 0)
         rs = rb_rs;
@@ -9616,8 +9626,12 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
         rslen = RSTRING_LEN(rs);
     }
 
+    use_qs = rb_memsearch_qs_usable_p(rslen, enc);
+    if (use_qs) rb_memsearch_qs_prepare(&qs, rsptr, rslen);
     while (subptr < pend) {
-        pos = rb_memsearch(rsptr, rslen, subptr, pend - subptr, enc);
+        pos = use_qs ?
+            rb_memsearch_qs_search(&qs, subptr, pend - subptr) :
+            rb_memsearch(rsptr, rslen, subptr, pend - subptr, enc);
         if (pos < 0) break;
         hit = subptr + pos;
         adjusted = rb_enc_right_char_head(subptr, hit, pend, enc);
@@ -9639,6 +9653,7 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
             str_mod_check(str, ptr, len);
         }
         subptr = hit;
+        if (use_qs && !ary && subptr < pend) rb_memsearch_qs_prepare(&qs, rsptr, rslen);
     }
 
     if (subptr != pend) {
