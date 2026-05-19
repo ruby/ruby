@@ -4706,7 +4706,7 @@ InitVM_Enumerator(void)
     rb_eStopIteration = rb_define_class("StopIteration", rb_eIndexError);
     rb_define_method(rb_eStopIteration, "result", stop_result, 0);
 
-    /* Generator */
+    /* :nodoc: Generator */
     rb_cGenerator = rb_define_class_under(rb_cEnumerator, "Generator", rb_cObject);
     rb_include_module(rb_cGenerator, rb_mEnumerable);
     rb_define_alloc_func(rb_cGenerator, generator_allocate);
@@ -4714,7 +4714,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cGenerator, "initialize_copy", generator_init_copy, 1);
     rb_define_method(rb_cGenerator, "each", generator_each, -1);
 
-    /* Yielder */
+    /* :nodoc: Yielder */
     rb_cYielder = rb_define_class_under(rb_cEnumerator, "Yielder", rb_cObject);
     rb_define_alloc_func(rb_cYielder, yielder_allocate);
     rb_define_method(rb_cYielder, "initialize", yielder_initialize, 0);
@@ -4722,7 +4722,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cYielder, "<<", yielder_yield_push, 1);
     rb_define_method(rb_cYielder, "to_proc", yielder_to_proc, 0);
 
-    /* Producer */
+    /* :nodoc: Producer */
     rb_cEnumProducer = rb_define_class_under(rb_cEnumerator, "Producer", rb_cObject);
     rb_define_alloc_func(rb_cEnumProducer, producer_allocate);
     rb_define_method(rb_cEnumProducer, "each", producer_each, 0);
