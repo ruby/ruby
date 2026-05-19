@@ -703,6 +703,7 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_raise(IO::Buffer::InvalidatedError) { slice & mask }
     assert_raise(IO::Buffer::InvalidatedError) { slice | mask }
     assert_raise(IO::Buffer::InvalidatedError) { slice ^ mask }
+    assert_raise(IO::Buffer::InvalidatedError) { ~slice }
   end
 
   def test_operators_raise_on_freed_mask
