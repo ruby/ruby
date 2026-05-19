@@ -140,6 +140,27 @@ class LogProcessor
       result[:args].update({
         event: GCEnterEvent.key(event)
       })
+    when 'rts_set_running'
+      old_thread = args[0].to_i
+      new_thread = args[1].to_i
+      if old_thread == 0
+        result[:name] = 'RTS'
+        result[:ph] = 'B'
+        result[:args].update({
+          thread: new_thread,
+        })
+      elsif new_thread == 0
+        result[:name] = 'RTS'
+        result[:ph] = 'E'
+        result[:args].update({
+          thread: old_thread,
+        })
+      else
+        result[:args].update({
+          old_thread:,
+          new_thread:,
+        })
+      end
     end
 
     @results << result

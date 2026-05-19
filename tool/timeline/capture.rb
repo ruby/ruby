@@ -26,6 +26,13 @@ USDT_GROUPS = {
   'obj_free' => [
     ['gc__obj_free',      "ruby",     'gc_obj_free',      'i',  2],
   ],
+  'gvl' => [
+    ['gvl__acquire',      "ruby",     'GVL',              'B',  0],
+    ['gvl__release',      "ruby",     'GVL',              'E',  0],
+  ],
+  'rts' => [ # ractor.thread.sched
+    ['rts__set_running',  "ruby",     'rts_set_running',  'i',  2],
+  ]
 }
 
 DEFAULT_GROUP = USDT_GROUPS['default']

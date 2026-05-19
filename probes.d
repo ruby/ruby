@@ -187,6 +187,11 @@ provider ruby {
   probe insn__operand(const char *val, const char *insns_name);
 #endif
 
+  probe gvl__acquire();
+  probe gvl__release();
+
+  probe rts__set_running(const void *old_thread, const void *new_thread);
+
   /*
      ruby:::gc-mark-begin();
 
