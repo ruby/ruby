@@ -29,6 +29,15 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
+      # tool/make-snapshot derives the branch name from HEAD and looks up
+      # the upstream during ChangeLog generation. Detached checkouts
+      # (pull_request, merge_group) lack a local master with tracking, so
+      # pin one to HEAD and connect it to origin/master.
+      - name: Materialize local master branch
+        run: |
+          git fetch --no-tags --depth=1 origin +refs/heads/master:refs/remotes/origin/master
+          git checkout -B master HEAD
+          git branch --set-upstream-to=origin/master master
       - uses: ./.github/actions/make-snapshot
         with:
           srcdir: '.'
