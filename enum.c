@@ -5147,7 +5147,7 @@ enum_compact(VALUE obj)
  *   end
  *
  * The result of the size function should represent the number of iterations
- * (i.e., the number of times Enumerator::Yielder#yield is called).
+ * (i.e., the number of times you yield to the block argument).
  * In the above example, the block calls #yield three times, and
  * the size function, +-> { 3 }+, returns 3 accordingly.
  * The result of the size function can be an integer, +Float::INFINITY+,
