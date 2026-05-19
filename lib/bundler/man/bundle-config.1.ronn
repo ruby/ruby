@@ -106,6 +106,11 @@ the environment variable `BUNDLE_LOCAL__RACK`.
 The following is a list of all configuration keys and their purpose. You can
 learn more about their operation in [bundle install(1)](bundle-install.1.html).
 
+* `api_request_size` (`BUNDLE_API_REQUEST_SIZE`):
+   Configure how many dependencies to fetch when resolving the specifications.
+   This configuration is only used when fetchig specifications from RubyGems
+   servers that didn't implement the Compact Index API.
+   Defaults to 100.
 * `auto_install` (`BUNDLE_AUTO_INSTALL`):
    Automatically run `bundle install` when gems are missing.
 * `bin` (`BUNDLE_BIN`):
@@ -187,8 +192,8 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 * `init_gems_rb` (`BUNDLE_INIT_GEMS_RB`):
    Generate a `gems.rb` instead of a `Gemfile` when running `bundle init`.
 * `jobs` (`BUNDLE_JOBS`):
-   The number of gems Bundler can install in parallel. Defaults to the number of
-   available processors.
+   The number of gems Bundler can download and install in parallel.
+   Defaults to the number of available processors.
 * `lockfile` (`BUNDLE_LOCKFILE`):
    The path to the lockfile that bundler should use. By default, Bundler adds
    `.lock` to the end of the `gemfile` entry. Can be set to `false` in the

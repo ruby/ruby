@@ -35,6 +35,15 @@ require "rbconfig"
 # Starting in RubyGems 2.0, a Specification can hold arbitrary
 # metadata.  See #metadata for restrictions on the format and size of metadata
 # items you may add to a specification.
+#
+# Specifications must be deterministic, as in the example above. For instance,
+# you cannot define attributes conditionally:
+#
+#   # INVALID: do not do this.
+#   unless RUBY_ENGINE == "jruby"
+#     s.extensions << "ext/example/extconf.rb"
+#   end
+#
 
 class Gem::Specification < Gem::BasicSpecification
   # REFACTOR: Consider breaking out this version stuff into a separate
@@ -2062,6 +2071,7 @@ class Gem::Specification < Gem::BasicSpecification
   # probably want to build_extensions
 
   def missing_extensions?
+    return false if RUBY_ENGINE == "jruby"
     return false if extensions.empty?
     return false if default_gem?
     return false if File.exist? gem_build_complete_path

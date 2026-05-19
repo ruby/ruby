@@ -5,7 +5,7 @@ require_relative "text"
 # A Source knows how to list and fetch gems from a RubyGems marshal index.
 #
 # There are other Source subclasses for installed gems, local gems, the
-# bundler dependency API and so-forth.
+# Compact Index API and so-forth.
 
 class Gem::Source
   include Comparable

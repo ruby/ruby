@@ -9,6 +9,7 @@ module Bundler
 
       # Ask for X gems per API request
       API_REQUEST_SIZE = 100
+      REQUIRE_MUTEX = Mutex.new
 
       attr_accessor :remotes
 
@@ -21,6 +22,8 @@ module Bundler
         @allow_local = options["allow_local"] || false
         @prefer_local = false
         @checksum_store = Checksum::Store.new
+        @gem_installers = {}
+        @gem_installers_mutex = Mutex.new
 
         Array(options["remotes"]).reverse_each {|r| add_remote(r) }
 
@@ -162,49 +165,40 @@ module Bundler
         end
       end
 
-      def install(spec, options = {})
+      def download(spec, options = {})
         if (spec.default_gem? && !cached_built_in_gem(spec, local: options[:local])) || (installed?(spec) && !options[:force])
-          print_using_message "Using #{version_message(spec, options[:previous_spec])}"
-          return nil # no post-install message
+          return true
         end
 
-        path = fetch_gem_if_possible(spec, options[:previous_spec])
-        raise GemNotFound, "Could not find #{spec.file_name} for installation" unless path
-
-        return if Bundler.settings[:no_install]
-
-        install_path = rubygems_dir
-        bin_path     = Bundler.system_bindir
-
-        require_relative "../rubygems_gem_installer"
-
-        installer = Bundler::RubyGemsGemInstaller.at(
-          path,
-          security_policy: Bundler.rubygems.security_policies[Bundler.settings["trust-policy"]],
-          install_dir: install_path.to_s,
-          bin_dir: bin_path.to_s,
-          ignore_dependencies: true,
-          wrappers: true,
-          env_shebang: true,
-          build_args: options[:build_args],
-          bundler_extension_cache_path: extension_cache_path(spec)
-        )
+        installer = rubygems_gem_installer(spec, options)
 
         if spec.remote
           s = begin
             installer.spec
           rescue Gem::Package::FormatError
-            Bundler.rm_rf(path)
+            Bundler.rm_rf(installer.gem)
             raise
           rescue Gem::Security::Exception => e
             raise SecurityError,
-             "The gem #{File.basename(path, ".gem")} can't be installed because " \
+             "The gem #{installer.gem} can't be installed because " \
              "the security policy didn't allow it, with the message: #{e.message}"
           end
 
           spec.__swap__(s)
         end
 
+        spec
+      end
+
+      def install(spec, options = {})
+        if (spec.default_gem? && !cached_built_in_gem(spec, local: options[:local])) || (installed?(spec) && !options[:force])
+          print_using_message "Using #{version_message(spec, options[:previous_spec])}"
+          return nil # no post-install message
+        end
+
+        return if Bundler.settings[:no_install]
+
+        installer = rubygems_gem_installer(spec, options)
         spec.source.checksum_store.register(spec, installer.gem_checksum)
 
         message = "Installing #{version_message(spec, options[:previous_spec])}"
@@ -510,6 +504,34 @@ module Bundler
       def extension_cache_slug(spec)
         return unless remote = spec.remote
         remote.cache_slug
+      end
+
+      # We are using a mutex to reaed and write from/to the hash.
+      # The reason this double synchronization was added is for performance
+      # and lock the mutex for the shortest possible amount of time. Otherwise,
+      # all threads are fighting over this mutex and when it gets acquired it gets locked
+      # until a threads finishes downloading a gem, leaving the other threads waiting
+      # doing nothing.
+      def rubygems_gem_installer(spec, options)
+        @gem_installers_mutex.synchronize { @gem_installers[spec.name] } || begin
+          path = fetch_gem_if_possible(spec, options[:previous_spec])
+          raise GemNotFound, "Could not find #{spec.file_name} for installation" unless path
+
+          REQUIRE_MUTEX.synchronize { require_relative "../rubygems_gem_installer" }
+
+          installer = Bundler::RubyGemsGemInstaller.at(
+            path,
+            security_policy: Bundler.rubygems.security_policies[Bundler.settings["trust-policy"]],
+            install_dir: rubygems_dir.to_s,
+            bin_dir: Bundler.system_bindir.to_s,
+            ignore_dependencies: true,
+            wrappers: true,
+            env_shebang: true,
+            build_args: options[:build_args],
+            bundler_extension_cache_path: extension_cache_path(spec)
+          )
+          @gem_installers_mutex.synchronize { @gem_installers[spec.name] ||= installer }
+        end
       end
     end
   end

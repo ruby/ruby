@@ -222,7 +222,7 @@ RSpec.describe Bundler::GemHelper do
           mock_confirm_message "#{app_name} (#{app_version}) installed."
           subject.install_gem(nil, :local)
           expect(app_gem_path).to exist
-          gem_command :list
+          installed_gems_list
           expect(out).to include("#{app_name} (#{app_version})")
         end
       end

@@ -1734,6 +1734,19 @@ dummy
       assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 9, 1, 20], [1, 9, 1, 14], [1, 14, 1, 15], [1, 19, 1, 20]])
     end
 
+    def test_negative_numeric_locations
+      node = ast_parse("-1")
+      assert_locations(node.children.last.locations, [[1, 0, 1, 2]])
+    end
+
+    def test_numeric_location_with_nonsuffix
+      node = ast_parse("1if true")
+      assert_locations(node.children.last.children[1].locations, [[1, 0, 1, 1]])
+
+      node = ast_parse("1q", error_tolerant: true)
+      assert_locations(node.children.last.locations, [[1, 0, 1, 1]])
+    end
+
     private
     def ast_parse(src, **options)
       begin

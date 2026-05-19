@@ -110,7 +110,8 @@ module Bundler
         paths = {}
 
         specs.each do |spec|
-          spec.source.install spec
+          spec.source.download(spec)
+          spec.source.install(spec)
 
           paths[spec.name] = spec
         end

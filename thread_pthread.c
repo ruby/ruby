@@ -1558,6 +1558,8 @@ get_native_thread_id(void)
 #endif
 
 #if defined(HAVE_WORKING_FORK)
+void rb_internal_thread_event_hooks_rw_lock_atfork(void);
+
 static void
 thread_sched_atfork(struct rb_thread_sched *sched)
 {
@@ -1588,6 +1590,8 @@ thread_sched_atfork(struct rb_thread_sched *sched)
     ccan_list_head_init(&vm->ractor.sched.grq);
     ccan_list_head_init(&vm->ractor.sched.timeslice_threads);
     ccan_list_head_init(&vm->ractor.sched.running_threads);
+
+    rb_internal_thread_event_hooks_rw_lock_atfork();
 
     VM_ASSERT(sched->is_running);
     sched->is_running_timeslice = false;
@@ -3399,6 +3403,22 @@ struct rb_internal_thread_event_hook {
 };
 
 static pthread_rwlock_t rb_internal_thread_event_hooks_rw_lock = PTHREAD_RWLOCK_INITIALIZER;
+
+#if defined(HAVE_WORKING_FORK)
+void
+rb_internal_thread_event_hooks_rw_lock_atfork(void)
+{
+  // After fork(), this rwlock may have been held by a now-dead thread.
+  //
+  // pthread_rwlock_destroy() on a held lock is undefined behavior, and
+  // pthread_rwlock_init() on an already-initialized lock is also undefined
+  // behavior
+  //
+  // Direct assignment of PTHREAD_RWLOCK_INITIALIZER is safe and portable.
+  rb_internal_thread_event_hooks_rw_lock =
+      (pthread_rwlock_t)PTHREAD_RWLOCK_INITIALIZER;
+}
+#endif
 
 rb_internal_thread_event_hook_t *
 rb_internal_thread_add_event_hook(rb_internal_thread_event_callback callback, rb_event_flag_t internal_event, void *user_data)

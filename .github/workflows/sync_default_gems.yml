@@ -1,7 +1,7 @@
 name: Sync default gems
 
 env:
-  DEFAULT_GEM_SYNC_ENABLED: false
+  DEFAULT_GEM_SYNC_ENABLED: true
 
 on:
   workflow_dispatch:

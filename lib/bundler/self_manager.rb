@@ -63,6 +63,7 @@ module Bundler
     end
 
     def install(spec)
+      spec.source.download(spec)
       spec.source.install(spec)
     end
 

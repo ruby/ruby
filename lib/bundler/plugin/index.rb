@@ -119,6 +119,12 @@ module Bundler
         @plugin_paths[name]
       end
 
+      def up_to_date?(spec)
+        path = installed?(spec.name)
+
+        path == spec.full_gem_path
+      end
+
       def installed_plugins
         @plugin_paths.keys
       end

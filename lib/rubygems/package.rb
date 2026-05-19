@@ -552,6 +552,15 @@ EOM
       tar = Gem::Package::TarReader.new gzio
 
       yield tar
+    ensure
+      # Consume remaining gzip data to prevent the
+      # "attempt to close unfinished zstream; reset forced" warning
+      # when the GzipReader is closed with unconsumed compressed data.
+      begin
+        IO.copy_stream(gzio, IO::NULL)
+      rescue Zlib::GzipFile::Error, IOError
+        nil
+      end
     end
   end
 

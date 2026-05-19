@@ -154,6 +154,37 @@ class TestBox < Test::Unit::TestCase
     assert Ruby::Box.current.inspect.include?("main")
   end
 
+  def test_class_variables
+    # [Bug #21952]
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "here = '#{__dir__}'; #{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      Ruby::Box.root.eval(<<~RUBY)
+        module M
+          @@x = 1
+        end
+
+        class A
+          include M
+        end
+
+        class B < A
+        end
+      RUBY
+
+      code = <<~REPRO
+        class ::B
+          @@x += 1
+        end
+      REPRO
+
+      b1 = Ruby::Box.new
+      assert_equal 2, b1.eval(code)
+
+      b2 = Ruby::Box.new
+      assert_equal 2, b2.eval(code)
+    end;
+  end
+
   def test_autoload_in_box
     setup_box
 
@@ -531,6 +562,69 @@ class TestBox < Test::Unit::TestCase
     end
   end
 
+  def test_match_variables_are_not_cached_in_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      /(?<a>foo)/ =~ 'bar'
+      /(?<b>baz)/ =~ 'baz'
+      assert_equal "baz", b
+      assert_equal "baz", $~.to_s
+
+      /foo/ =~ 'bar'
+      assert_nil $~
+      /(?<word>foo)(bar)?/ =~ 'foo'
+      assert_equal "foo", word
+      assert_equal "foo", $~.to_s
+      assert_equal "foo", $&
+      assert_equal "", $`
+      assert_equal "", $'
+      assert_equal "foo", $+
+    end;
+  end
+
+  def test_lastline_not_cached_in_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      r, w = IO.pipe
+      w.write("first\nsecond\n")
+      w.close
+      STDIN.reopen(r)
+      via_gets = Ruby::Box.new.eval(<<~'CODE')
+        gets
+        _ = $_
+        gets
+        $_
+      CODE
+      assert_equal "second\n", via_gets
+    end;
+  end
+
+  def test_lastline_not_cached_in_nested_boxes
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      r, w = IO.pipe
+      w.write("outer1\ninner1\ninner2\nouter2\n")
+      w.close
+      STDIN.reopen(r)
+      inner_via_gets, outer_via_gets = Ruby::Box.new.eval(<<~'CODE')
+        gets
+        _ = $_
+
+        inner_result = Ruby::Box.new.eval(<<~'INNER')
+          gets
+          _ = $_
+          gets
+          $_
+        INNER
+
+        gets
+        [inner_result, $_]
+      CODE
+      assert_equal "inner2\n", inner_via_gets
+      assert_equal "outer2\n", outer_via_gets
+    end;
+  end
+
   def test_load_path_and_loaded_features
     setup_box
 
@@ -868,6 +962,24 @@ class TestBox < Test::Unit::TestCase
       assert_raise NoMethodError do
         Ruby::Box.root.eval("IMath.new.foo")
       end
+    end;
+  end
+
+  def test_user_box_iclass_with_module_modified_in_another_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      # A user box creates a class that includes a core module.
+      # The ICLASS is allocated in the user box context (non-boxable).
+      box1 = Ruby::Box.new
+      box1.eval("class IMath; include Math; end")
+
+      # A second user box adds an instance method on that module,
+      # triggering classext duplication which iterates the module's
+      # subclass list and encounters box1's non-boxable ICLASS.
+      box2 = Ruby::Box.new
+      box2.eval("module Math; def box2_test = :box2; end")
+
+      assert_equal :box2, box2.eval("Class.new { include Math }.new.box2_test")
     end;
   end
 end

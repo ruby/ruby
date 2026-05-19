@@ -716,15 +716,17 @@ num_members(VALUE klass)
 struct struct_hash_set_arg {
     VALUE self;
     VALUE unknown_keywords;
+    VALUE missing_keywords;
+    long missing_count;
 };
 
-static int rb_struct_pos(VALUE s, VALUE *name);
+static int rb_struct_pos(VALUE s, VALUE *name, bool name_only);
+static VALUE deconstruct_keys(VALUE s, VALUE keys, bool name_only);
 
 static int
-struct_hash_set_i(VALUE key, VALUE val, VALUE arg)
+struct_hash_aset(VALUE key, VALUE val, struct struct_hash_set_arg *args, bool name_only)
 {
-    struct struct_hash_set_arg *args = (struct struct_hash_set_arg *)arg;
-    int i = rb_struct_pos(args->self, &key);
+    int i = rb_struct_pos(args->self, &key, name_only);
     if (i < 0) {
         if (NIL_P(args->unknown_keywords)) {
             args->unknown_keywords = rb_ary_new();
@@ -735,6 +737,14 @@ struct_hash_set_i(VALUE key, VALUE val, VALUE arg)
         rb_struct_modify(args->self);
         RSTRUCT_SET(args->self, i, val);
     }
+    return i;
+}
+
+static int
+struct_hash_set_i(VALUE key, VALUE val, VALUE arg)
+{
+    struct struct_hash_set_arg *args = (struct struct_hash_set_arg *)arg;
+    struct_hash_aset(key, val, args, false);
     return ST_CONTINUE;
 }
 
@@ -767,12 +777,13 @@ rb_struct_initialize_m(int argc, const VALUE *argv, VALUE self)
         break;
     }
     if (keyword_init) {
-        struct struct_hash_set_arg arg;
+        struct struct_hash_set_arg arg = {
+            .self = self,
+            .unknown_keywords = Qnil,
+        };
         rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self), n);
-        arg.self = self;
-        arg.unknown_keywords = Qnil;
         rb_hash_foreach(argv[0], struct_hash_set_i, (VALUE)&arg);
-        if (arg.unknown_keywords != Qnil) {
+        if (UNLIKELY(!NIL_P(arg.unknown_keywords))) {
             rb_raise(rb_eArgError, "unknown keywords: %s",
                      RSTRING_PTR(rb_ary_join(arg.unknown_keywords, rb_str_new2(", "))));
         }
@@ -1114,6 +1125,12 @@ rb_struct_to_h(VALUE s)
 static VALUE
 rb_struct_deconstruct_keys(VALUE s, VALUE keys)
 {
+    return deconstruct_keys(s, keys, false);
+}
+
+static VALUE
+deconstruct_keys(VALUE s, VALUE keys, bool name_only)
+{
     VALUE h;
     long i;
 
@@ -1132,7 +1149,7 @@ rb_struct_deconstruct_keys(VALUE s, VALUE keys)
     h = rb_hash_new_with_size(RARRAY_LEN(keys));
     for (i=0; i<RARRAY_LEN(keys); i++) {
         VALUE key = RARRAY_AREF(keys, i);
-        int i = rb_struct_pos(s, &key);
+        int i = rb_struct_pos(s, &key, name_only);
         if (i < 0) {
             return h;
         }
@@ -1160,7 +1177,7 @@ rb_struct_init_copy(VALUE copy, VALUE s)
 }
 
 static int
-rb_struct_pos(VALUE s, VALUE *name)
+rb_struct_pos(VALUE s, VALUE *name, bool name_only)
 {
     long i;
     VALUE idx = *name;
@@ -1168,7 +1185,7 @@ rb_struct_pos(VALUE s, VALUE *name)
     if (SYMBOL_P(idx)) {
         return struct_member_pos(s, idx);
     }
-    else if (RB_TYPE_P(idx, T_STRING)) {
+    else if (name_only || RB_TYPE_P(idx, T_STRING)) {
         idx = rb_check_symbol(name);
         if (NIL_P(idx)) return -1;
         return struct_member_pos(s, idx);
@@ -1240,7 +1257,7 @@ invalid_struct_pos(VALUE s, VALUE idx)
 VALUE
 rb_struct_aref(VALUE s, VALUE idx)
 {
-    int i = rb_struct_pos(s, &idx);
+    int i = rb_struct_pos(s, &idx, false);
     if (i < 0) invalid_struct_pos(s, idx);
     return RSTRUCT_GET(s, i);
 }
@@ -1278,7 +1295,7 @@ rb_struct_aref(VALUE s, VALUE idx)
 VALUE
 rb_struct_aset(VALUE s, VALUE idx, VALUE val)
 {
-    int i = rb_struct_pos(s, &idx);
+    int i = rb_struct_pos(s, &idx, false);
     if (i < 0) invalid_struct_pos(s, idx);
     rb_struct_modify(s);
     RSTRUCT_SET(s, i, val);
@@ -1286,18 +1303,18 @@ rb_struct_aset(VALUE s, VALUE idx, VALUE val)
 }
 
 FUNC_MINIMIZED(VALUE rb_struct_lookup(VALUE s, VALUE idx));
-NOINLINE(static VALUE rb_struct_lookup_default(VALUE s, VALUE idx, VALUE notfound));
+NOINLINE(static VALUE rb_struct_lookup_default(VALUE s, VALUE idx, VALUE notfound, bool name_only));
 
 VALUE
 rb_struct_lookup(VALUE s, VALUE idx)
 {
-    return rb_struct_lookup_default(s, idx, Qnil);
+    return rb_struct_lookup_default(s, idx, Qnil, false);
 }
 
 static VALUE
-rb_struct_lookup_default(VALUE s, VALUE idx, VALUE notfound)
+rb_struct_lookup_default(VALUE s, VALUE idx, VALUE notfound, bool name_only)
 {
-    int i = rb_struct_pos(s, &idx);
+    int i = rb_struct_pos(s, &idx, name_only);
     if (i < 0) return notfound;
     return RSTRUCT_GET(s, i);
 }
@@ -1733,6 +1750,21 @@ rb_data_define(VALUE super, ...)
     return klass;
 }
 
+static int
+data_hash_set_i(VALUE key, VALUE val, VALUE arg)
+{
+    struct struct_hash_set_arg *args = (struct struct_hash_set_arg *)arg;
+    int i = struct_hash_aset(key, val, args, true);
+    if (i >= 0 && args->missing_count > 0) {
+        VALUE k = RARRAY_AREF(args->missing_keywords, i);
+        if (!NIL_P(k)) {
+            RARRAY_ASET(args->missing_keywords, i, Qnil);
+            args->missing_count--;
+        }
+    }
+    return ST_CONTINUE;
+}
+
 /*
  *  call-seq:
  *    DataClass::members -> array_of_symbols
@@ -1816,22 +1848,31 @@ rb_data_initialize_m(int argc, const VALUE *argv, VALUE self)
         rb_error_arity(argc, 0, 0);
     }
 
-    if (RHASH_SIZE(argv[0]) < num_members) {
-        VALUE missing = rb_ary_diff(members, rb_hash_keys(argv[0]));
-        rb_exc_raise(rb_keyword_error_new("missing", missing));
-    }
-
-    struct struct_hash_set_arg arg;
+    VALUE missing = rb_ary_dup(members);
+    RBASIC_CLEAR_CLASS(missing);
+    struct struct_hash_set_arg arg = {
+        .self = self,
+        .unknown_keywords = Qnil,
+        .missing_keywords = missing,
+        .missing_count = (long)num_members,
+    };
     rb_mem_clear((VALUE *)RSTRUCT_CONST_PTR(self), num_members);
-    arg.self = self;
-    arg.unknown_keywords = Qnil;
-    rb_hash_foreach(argv[0], struct_hash_set_i, (VALUE)&arg);
+    rb_hash_foreach(argv[0], data_hash_set_i, (VALUE)&arg);
     // Freeze early before potentially raising, so that we don't leave an
     // unfrozen copy on the heap, which could get exposed via ObjectSpace.
     OBJ_FREEZE(self);
-    if (arg.unknown_keywords != Qnil) {
-        rb_exc_raise(rb_keyword_error_new("unknown", arg.unknown_keywords));
+    if (UNLIKELY(arg.missing_count > 0)) {
+        rb_ary_compact_bang(missing);
+        RUBY_ASSERT(RARRAY_LEN(missing) == arg.missing_count, "missing_count=%ld but %ld", arg.missing_count, RARRAY_LEN(missing));
+        RBASIC_SET_CLASS_RAW(missing, rb_cArray);
+        rb_exc_raise(rb_keyword_error_new("missing", missing));
     }
+    VALUE unknown_keywords = arg.unknown_keywords;
+    if (UNLIKELY(!NIL_P(unknown_keywords))) {
+        RBASIC_SET_CLASS_RAW(unknown_keywords, rb_cArray);
+        rb_exc_raise(rb_keyword_error_new("unknown", unknown_keywords));
+    }
+
     return Qnil;
 }
 
@@ -2086,7 +2127,11 @@ rb_data_inspect(VALUE s)
  *    end
  */
 
-#define rb_data_deconstruct_keys rb_struct_deconstruct_keys
+static VALUE
+rb_data_deconstruct_keys(VALUE s, VALUE keys)
+{
+    return deconstruct_keys(s, keys, true);
+}
 
 /*
  *  Document-class: Struct

@@ -487,6 +487,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
   end
 
   def test_with_webauthn_enabled_failure
+    pend "Flaky on TruffleRuby" if RUBY_ENGINE == "truffleruby"
     response_success = "Successfully registered gem: freewill (1.0.0)"
     server = Gem::MockTCPServer.new
     error = Gem::WebauthnVerificationError.new("Something went wrong")

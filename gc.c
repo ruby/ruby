@@ -2270,9 +2270,6 @@ classext_memsize(rb_classext_t *ext, bool prime, VALUE box_value, void *arg)
     if (RCLASSEXT_M_TBL(ext)) {
         s += rb_id_table_memsize(RCLASSEXT_M_TBL(ext));
     }
-    if (RCLASSEXT_CVC_TBL(ext)) {
-        s += rb_id_table_memsize(RCLASSEXT_CVC_TBL(ext));
-    }
     if (RCLASSEXT_CONST_TBL(ext)) {
         s += rb_id_table_memsize(RCLASSEXT_CONST_TBL(ext));
     }
@@ -2818,26 +2815,6 @@ mark_const_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl)
     rb_id_table_foreach_values(tbl, mark_const_entry_i, objspace);
 }
 
-static enum rb_id_table_iterator_result
-mark_cvc_tbl_i(VALUE cvc_entry, void *objspace)
-{
-    struct rb_cvar_class_tbl_entry *entry;
-
-    entry = (struct rb_cvar_class_tbl_entry *)cvc_entry;
-
-    RUBY_ASSERT(entry->cref == 0 || (BUILTIN_TYPE((VALUE)entry->cref) == T_IMEMO && IMEMO_TYPE_P(entry->cref, imemo_cref)));
-    gc_mark_internal((VALUE)entry->cref);
-
-    return ID_TABLE_CONTINUE;
-}
-
-static void
-mark_cvc_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl)
-{
-    if (!tbl) return;
-    rb_id_table_foreach_values(tbl, mark_cvc_tbl_i, objspace);
-}
-
 #if STACK_GROW_DIRECTION < 0
 #define GET_STACK_BOUNDS(start, end, appendix) ((start) = STACK_END, (end) = STACK_START)
 #elif STACK_GROW_DIRECTION > 0
@@ -3082,6 +3059,7 @@ gc_mark_classext_module(rb_classext_t *ext, bool prime, VALUE box_value, void *a
     if (!rb_gc_checking_shareable()) {
         // unshareable
         gc_mark_internal(RCLASSEXT_FIELDS_OBJ(ext));
+        gc_mark_internal(RCLASSEXT_CVC_TBL(ext));
     }
 
     if (!RCLASSEXT_SHARED_CONST_TBL(ext) && RCLASSEXT_CONST_TBL(ext)) {
@@ -3089,7 +3067,6 @@ gc_mark_classext_module(rb_classext_t *ext, bool prime, VALUE box_value, void *a
     }
     mark_m_tbl(objspace, RCLASSEXT_CALLABLE_M_TBL(ext));
     gc_mark_internal(RCLASSEXT_CC_TBL(ext));
-    mark_cvc_tbl(objspace, RCLASSEXT_CVC_TBL(ext));
     gc_mark_internal(RCLASSEXT_CLASSPATH(ext));
 }
 
@@ -3716,29 +3693,6 @@ update_m_tbl(void *objspace, struct rb_id_table *tbl)
 }
 
 static enum rb_id_table_iterator_result
-update_cvc_tbl_i(VALUE cvc_entry, void *objspace)
-{
-    struct rb_cvar_class_tbl_entry *entry;
-
-    entry = (struct rb_cvar_class_tbl_entry *)cvc_entry;
-
-    if (entry->cref) {
-        TYPED_UPDATE_IF_MOVED(objspace, rb_cref_t *, entry->cref);
-    }
-
-    entry->class_value = gc_location_internal(objspace, entry->class_value);
-
-    return ID_TABLE_CONTINUE;
-}
-
-static void
-update_cvc_tbl(void *objspace, struct rb_id_table *tbl)
-{
-    if (!tbl) return;
-    rb_id_table_foreach_values(tbl, update_cvc_tbl_i, objspace);
-}
-
-static enum rb_id_table_iterator_result
 update_const_tbl_i(VALUE value, void *objspace)
 {
     rb_const_entry_t *ce = (rb_const_entry_t *)value;
@@ -3764,10 +3718,8 @@ update_const_tbl(void *objspace, struct rb_id_table *tbl)
 static void
 update_subclasses(void *objspace, rb_classext_t *ext)
 {
-    rb_subclass_entry_t *entry;
-    rb_subclass_anchor_t *anchor = RCLASSEXT_SUBCLASSES(ext);
-    if (!anchor) return;
-    entry = anchor->head;
+    rb_subclass_entry_t *entry = RCLASSEXT_SUBCLASSES(ext);
+    if (!entry) return;
     while (entry) {
         if (entry->klass)
             UPDATE_IF_MOVED(objspace, entry->klass);
@@ -3814,7 +3766,7 @@ update_classext(rb_classext_t *ext, bool is_prime, VALUE box_value, void *arg)
         update_const_tbl(objspace, RCLASSEXT_CONST_TBL(ext));
     }
     UPDATE_IF_MOVED(objspace, RCLASSEXT_CC_TBL(ext));
-    update_cvc_tbl(objspace, RCLASSEXT_CVC_TBL(ext));
+    UPDATE_IF_MOVED(objspace, RCLASSEXT_CVC_TBL(ext));
     update_superclasses(objspace, ext);
     update_subclasses(objspace, ext);
 
@@ -3833,6 +3785,7 @@ update_iclass_classext(rb_classext_t *ext, bool is_prime, VALUE box_value, void 
     update_m_tbl(objspace, RCLASSEXT_M_TBL(ext));
     update_m_tbl(objspace, RCLASSEXT_CALLABLE_M_TBL(ext));
     UPDATE_IF_MOVED(objspace, RCLASSEXT_CC_TBL(ext));
+    UPDATE_IF_MOVED(objspace, RCLASSEXT_CVC_TBL(ext));
     update_subclasses(objspace, ext);
 
     update_classext_values(objspace, ext, true);
