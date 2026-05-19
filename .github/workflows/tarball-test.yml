@@ -1,0 +1,66 @@
+name: tarball-test
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man/*'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+      - '.*.yml'
+  pull_request:
+    # Do not use paths-ignore for required status checks
+    # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
+
+permissions:
+  contents: read
+
+jobs:
+  tarball:
+    runs-on: ubuntu-latest
+    env:
+      archname: snapshot-master
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - uses: ./.github/actions/make-snapshot
+        with:
+          srcdir: '.'
+
+  ubuntu:
+    needs: tarball
+    uses: ./.github/workflows/tarball-ubuntu.yml
+    with:
+      archname: snapshot-master
+      allow-failures: power_assert
+      remove-gnupg: true
+      notify-ruby-sha: true
+      branch-label: master
+    secrets: inherit
+
+  macos:
+    needs: tarball
+    uses: ./.github/workflows/tarball-macos.yml
+    with:
+      archname: snapshot-master
+      allow-failures: power_assert
+    secrets: inherit
+
+  windows:
+    needs: tarball
+    uses: ./.github/workflows/tarball-windows.yml
+    with:
+      archname: snapshot-master
+      mode: modern
+    secrets: inherit
+
+  non_development:
+    needs: tarball
+    uses: ./.github/workflows/tarball-non-development.yml
+    secrets: inherit
