@@ -5088,6 +5088,15 @@ impl Function {
                             _ => insn_id,
                         }
                     }
+                    Insn::ArrayLength { array } => {
+                        match self.type_of(array).ruby_object() {
+                            Some(array_obj) if array_obj.is_frozen() => {
+                                let length = unsafe { rb_jit_array_len(array_obj) };
+                                self.new_insn(Insn::Const { val: Const::CInt64(length) })
+                            }
+                            _ => insn_id,
+                        }
+                    }
                     Insn::UnboxFixnum { val } => {
                         let recv_type = self.type_of(val);
                         match recv_type.fixnum_value() {
