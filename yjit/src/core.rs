@@ -34,7 +34,7 @@ use crate::invariants::*;
 pub const MAX_CTX_TEMPS: usize = 8;
 
 // Maximum number of local variable types or registers we keep track of
-const MAX_CTX_LOCALS: usize = 8;
+pub const MAX_CTX_LOCALS: usize = 8;
 
 /// An index into `ISEQ_BODY(iseq)->iseq_encoded`. Points
 /// to a YARV instruction or an instruction operand.
