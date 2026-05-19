@@ -5471,10 +5471,10 @@ rb_file_join_ary(VALUE ary)
         }
         else {
             tail = chompdirsep(name, name + len, true, rb_enc_get(result));
-            if (RSTRING_PTR(tmp) && isdirsep(RSTRING_PTR(tmp)[0])) {
+            if (RSTRING_LEN(tmp) > 0 && isdirsep(RSTRING_PTR(tmp)[0])) {
                 rb_str_set_len(result, tail - name);
             }
-            else if (!*tail) {
+            else if (tail == name + len) {
                 rb_str_cat(result, "/", 1);
             }
         }
