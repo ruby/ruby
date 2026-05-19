@@ -3577,6 +3577,7 @@ method_to_proc(VALUE method)
 
 extern VALUE rb_find_defined_class_by_owner(VALUE current_class, VALUE target_owner);
 extern int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
+rb_cref_t * rb_vm_get_cref(const VALUE *ep);
 
 /*
  * call-seq:
@@ -3621,8 +3622,20 @@ method_super_method(VALUE method)
     // We must avoid the use of rb_callable_method_entry_with_refinements, as that will
     // implicitly use the refinements activated in of the caller of super_method.
     const rb_cref_t *cref = NULL;
-    if (data->me->def->type == VM_METHOD_TYPE_ISEQ) {
+    switch (data->me->def->type) {
+      case VM_METHOD_TYPE_ISEQ:
         cref = data->me->def->body.iseq.cref;
+        break;
+      case VM_METHOD_TYPE_BMETHOD: {
+        const rb_proc_t *proc;
+        GetProcPtr(data->me->def->body.bmethod.proc, proc);
+        const struct rb_block *block = &proc->block;
+        if (vm_block_type(block) == block_type_iseq)
+            cref = rb_vm_get_cref(block->as.captured.ep);
+        break;
+      }
+      default:
+        break;
     }
     VALUE klass = super_class;
     me = NULL;

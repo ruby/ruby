@@ -3567,6 +3567,35 @@ class TestRefinement < Test::Unit::TestCase
     RUBY
   end
 
+  def test_method_super_method_bmethod_finds_refinements
+    assert_separately([], <<~RUBY)
+      class A
+        def b = "A"
+      end
+      module M
+        R = refine(A) { def b; "M" + super; end }
+      end
+      using M
+      class B < A
+        define_method(:b) { "B" + super() }
+      end
+
+      b = B.new
+      m = b.method(:b)
+      assert_equal("BMA", b.b)
+      assert_equal("BMA", m.call)
+      assert_equal(B, m.owner)
+
+      m = m.super_method
+      assert_equal(M::R, m.owner)
+      assert_equal(A, m.owner.target)
+
+      m = m.super_method
+      assert_equal(A, m.owner)
+      assert_nil(m.super_method)
+    RUBY
+  end
+
   private
 
   def eval_using(mod, s)
