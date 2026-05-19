@@ -475,6 +475,7 @@ rb_mmtk_special_const_p(MMTk_ObjectReference object)
 }
 
 RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 1, 2)
+RBIMPL_ATTR_NORETURN()
 static void
 rb_mmtk_gc_thread_bug(const char *msg, ...)
 {
@@ -505,6 +506,7 @@ rb_mmtk_gc_thread_panic_handler(void)
     rb_mmtk_gc_thread_bug("MMTk GC thread panicked");
 }
 
+RBIMPL_ATTR_NORETURN()
 static void
 rb_mmtk_mutator_thread_panic_handler(void)
 {
