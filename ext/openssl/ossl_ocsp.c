@@ -905,8 +905,8 @@ ossl_ocspbres_get_status(VALUE self)
     int count = OCSP_resp_count(bs);
     for (int i = 0; i < count; i++) {
         OCSP_SINGLERESP *single = OCSP_resp_get0(bs, i);
-        ASN1_TIME *revtime, *thisupd, *nextupd;
-        int reason;
+        ASN1_TIME *revtime = NULL, *thisupd = NULL, *nextupd = NULL;
+        int reason = -1;
 
         int status = OCSP_single_get0_status(single, &reason, &revtime, &thisupd, &nextupd);
         if (status < 0)
@@ -922,7 +922,7 @@ ossl_ocspbres_get_status(VALUE self)
         VALUE ext = rb_ary_new();
         int ext_count = OCSP_SINGLERESP_get_ext_count(single);
         for (int j = 0; j < ext_count; j++) {
-            X509_EXTENSION *x509ext = OCSP_SINGLERESP_get_ext(single, j);
+            const X509_EXTENSION *x509ext = OCSP_SINGLERESP_get_ext(single, j);
             rb_ary_push(ext, ossl_x509ext_new(x509ext));
         }
         rb_ary_push(ary, ext);
@@ -1341,7 +1341,6 @@ static VALUE
 ossl_ocspsres_get_extensions(VALUE self)
 {
     OCSP_SINGLERESP *sres;
-    X509_EXTENSION *ext;
     int count, i;
     VALUE ary;
 
@@ -1350,7 +1349,7 @@ ossl_ocspsres_get_extensions(VALUE self)
     count = OCSP_SINGLERESP_get_ext_count(sres);
     ary = rb_ary_new2(count);
     for (i = 0; i < count; i++) {
-        ext = OCSP_SINGLERESP_get_ext(sres, i);
+        const X509_EXTENSION *ext = OCSP_SINGLERESP_get_ext(sres, i);
         rb_ary_push(ary, ossl_x509ext_new(ext)); /* will dup */
     }
 

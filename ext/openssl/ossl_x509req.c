@@ -231,7 +231,7 @@ static VALUE
 ossl_x509req_get_subject(VALUE self)
 {
     X509_REQ *req;
-    X509_NAME *name;
+    const X509_NAME *name;
 
     GetX509Req(self, req);
     if (!(name = X509_REQ_get_subject_name(req))) { /* NO DUP - don't free */
@@ -351,7 +351,7 @@ ossl_x509req_get_attributes(VALUE self)
 {
     X509_REQ *req;
     int count, i;
-    X509_ATTRIBUTE *attr;
+    const X509_ATTRIBUTE *attr;
     VALUE ary;
 
     GetX509Req(self, req);

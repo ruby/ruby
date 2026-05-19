@@ -215,6 +215,35 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
     assert_equal bres.to_der, bres.dup.to_der
   end
 
+  def test_basic_response_status_good
+    bres = OpenSSL::OCSP::BasicResponse.new
+    cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest.new('SHA1'))
+    bres.add_status(cid, OpenSSL::OCSP::V_CERTSTATUS_GOOD, 0, nil, -300, 500, nil)
+    bres.sign(@ocsp_cert, @ocsp_key, [@ca_cert])
+
+    statuses = bres.status
+    assert_equal 1, statuses.size
+    status = statuses[0]
+    assert_equal cid.to_der, status[0].to_der
+    assert_equal OpenSSL::OCSP::V_CERTSTATUS_GOOD, status[1]
+    assert_nil status[3] # revtime should be nil for GOOD status
+  end
+
+  def test_basic_response_status_revoked
+    bres = OpenSSL::OCSP::BasicResponse.new
+    now = Time.at(Time.now.to_i)
+    cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest.new('SHA1'))
+    bres.add_status(cid, OpenSSL::OCSP::V_CERTSTATUS_REVOKED,
+                    OpenSSL::OCSP::REVOKED_STATUS_UNSPECIFIED, now - 400, -300, nil, nil)
+    bres.sign(@ocsp_cert, @ocsp_key, [@ca_cert])
+
+    statuses = bres.status
+    assert_equal 1, statuses.size
+    status = statuses[0]
+    assert_equal OpenSSL::OCSP::V_CERTSTATUS_REVOKED, status[1]
+    assert_equal now - 400, status[3] # revtime should be the revocation time
+  end
+
   def test_basic_response_response_operations
     bres = OpenSSL::OCSP::BasicResponse.new
     now = Time.at(Time.now.to_i)

@@ -80,11 +80,11 @@ jobs:
 
       - name: Install tools with scoop
         run: |
+          if ((vcpkg.exe help install) -match "manifest") { exit }
           Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
           iwr -useb get.scoop.sh | iex
           Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
           scoop install vcpkg
-          scoop install uutils-coreutils@0.5.0
         shell: pwsh
 
       - name: Restore vcpkg artifact
@@ -96,7 +96,7 @@ jobs:
 
       - name: Install libraries with vcpkg
         run: |
-          vcpkg install --vcpkg-root=%USERPROFILE%\scoop\apps\vcpkg\current
+          vcpkg install
         working-directory: src
         if: ${{ ! steps.restore-vcpkg.outputs.cache-hit }}
 
@@ -113,7 +113,7 @@ jobs:
         # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
         run: |
           ::- Set up VC ${{ matrix.vc }}
-          set | coreutils sort > old.env
+          set > old.env
           call ..\src\win32\vssetup.cmd ^
             -arch=${{ matrix.target || 'amd64' }} ^
             ${{ matrix.vcvars && '-vcvars_ver=' || '' }}${{ matrix.vcvars }}
@@ -123,9 +123,17 @@ jobs:
           set MAKEFLAGS=l
           set /a TEST_JOBS=(15 * %NUMBER_OF_PROCESSORS% / 10) > nul
           set RUBY_OPT_DIR=%GITHUB_WORKSPACE:\=/%/src/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%
-          set | coreutils sort > new.env
-          coreutils comm -13 old.env new.env >> %GITHUB_ENV%
+          set > new.env
+
+      - name: update env
+        shell: pwsh
+        run: |
+          $old = (Get-Content old.env); $new = (Get-Content new.env)
           del *.env
+          Compare-Object $old $new |
+            Where-Object { $_.SideIndicator -eq '=>' } |
+            Select-Object -ExpandProperty InputObject |
+            Add-Content -Path $env:GITHUB_ENV
 
       - name: baseruby version
         run: ruby -v
