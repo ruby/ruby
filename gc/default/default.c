@@ -496,18 +496,10 @@ enum gc_mode {
     gc_mode_compacting,
 };
 
-#if SIZEOF_SIZE_T >= 8
-typedef size_t gc_counter_t;
-#else
-typedef RBIMPL_ALIGNAS(8) uint64_t gc_counter_t;
-#endif
+typedef rbimpl_atomic_uint64_t gc_counter_t;
 
-#if SIZEOF_SIZE_T >= 8
-# define MALLOC_COUNTERS_ATOMIC_NATIVE 1
-#elif defined(HAVE_GCC_ATOMIC_BUILTINS_64) || defined(_WIN32) || \
-      (defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx)))
-# define MALLOC_COUNTERS_ATOMIC_U64 1
-#else
+#if !defined(HAVE_GCC_ATOMIC_BUILTINS_64) && !defined(_WIN32) && \
+    !(defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx)))
 # define MALLOC_COUNTERS_NEED_LOCK 1
 #endif
 
@@ -985,42 +977,40 @@ RVALUE_AGE_SET(VALUE obj, int age)
 static inline void
 gc_counter_add(gc_counter_t *p, size_t delta)
 {
-#if defined(MALLOC_COUNTERS_ATOMIC_NATIVE)
-    RUBY_ATOMIC_SIZE_ADD(*p, delta);
-#elif defined(MALLOC_COUNTERS_ATOMIC_U64)
-    rbimpl_atomic_u64_fetch_add_relaxed((volatile rbimpl_atomic_uint64_t *)p, (uint64_t)delta);
-#else
+#ifdef MALLOC_COUNTERS_NEED_LOCK
     *p += (gc_counter_t)delta;
+#else
+    rbimpl_atomic_u64_fetch_add_relaxed(p, (uint64_t)delta);
 #endif
 }
 
 static inline gc_counter_t
 gc_counter_load_relaxed(const gc_counter_t *p)
 {
-#if defined(MALLOC_COUNTERS_ATOMIC_U64)
-    return (gc_counter_t)rbimpl_atomic_u64_load_relaxed((const volatile rbimpl_atomic_uint64_t *)p);
-#else
+#ifdef MALLOC_COUNTERS_NEED_LOCK
     return *p;
+#else
+    return rbimpl_atomic_u64_load_relaxed(p);
 #endif
 }
 
 static inline gc_counter_t
 gc_counter_load_acquire(const gc_counter_t *p)
 {
-#if defined(MALLOC_COUNTERS_ATOMIC_U64)
-    return (gc_counter_t)rbimpl_atomic_u64_load_acquire((const volatile rbimpl_atomic_uint64_t *)p);
-#else
+#ifdef MALLOC_COUNTERS_NEED_LOCK
     return *p;
+#else
+    return rbimpl_atomic_u64_load_acquire(p);
 #endif
 }
 
 static inline void
 gc_counter_store_release(gc_counter_t *p, gc_counter_t v)
 {
-#if defined(MALLOC_COUNTERS_ATOMIC_U64)
-    rbimpl_atomic_u64_set_release((volatile rbimpl_atomic_uint64_t *)p, (uint64_t)v);
-#else
+#ifdef MALLOC_COUNTERS_NEED_LOCK
     *p = v;
+#else
+    rbimpl_atomic_u64_set_release(p, v);
 #endif
 }
 
