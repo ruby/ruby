@@ -1077,8 +1077,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
           v32:CInt64[-10] = Const CInt64(-10)
           v33:CInt64[3] = Const CInt64(3)
-          v27:CInt64[-10] = GuardLess v32, v33
-          v28:CInt64 = AdjustBounds v27, v33
+          v28:CInt64 = AdjustBounds v32, v33
           v29:CInt64[0] = Const CInt64(0)
           v30:CInt64 = GuardGreaterEq v28, v29
           v31:BasicObject = ArrayAref v11, v30
@@ -6491,9 +6490,6 @@ mod hir_opt_tests {
           v13:Fixnum[1] = Const Value(1)
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
-          v32:CInt64[1] = Const CInt64(1)
-          v33:CInt64[3] = Const CInt64(3)
-          v27:CInt64[1] = GuardLess v32, v33
           v34:Fixnum[5] = Const Value(5)
           CheckInterrupts
           Return v34
@@ -6523,8 +6519,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
           v32:CInt64[-3] = Const CInt64(-3)
           v33:CInt64[3] = Const CInt64(3)
-          v27:CInt64[-3] = GuardLess v32, v33
-          v28:CInt64 = AdjustBounds v27, v33
+          v28:CInt64 = AdjustBounds v32, v33
           v29:CInt64[0] = Const CInt64(0)
           v30:CInt64 = GuardGreaterEq v28, v29
           v31:BasicObject = ArrayAref v11, v30
@@ -6556,8 +6551,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
           v32:CInt64[-10] = Const CInt64(-10)
           v33:CInt64[3] = Const CInt64(3)
-          v27:CInt64[-10] = GuardLess v32, v33
-          v28:CInt64 = AdjustBounds v27, v33
+          v28:CInt64 = AdjustBounds v32, v33
           v29:CInt64[0] = Const CInt64(0)
           v30:CInt64 = GuardGreaterEq v28, v29
           v31:BasicObject = ArrayAref v11, v30
@@ -6587,12 +6581,7 @@ mod hir_opt_tests {
           v13:Fixnum[10] = Const Value(10)
           PatchPoint NoSingletonClass(Array@0x1008)
           PatchPoint MethodRedefined(Array@0x1008, []@0x1010, cme:0x1018)
-          v32:CInt64[10] = Const CInt64(10)
-          v33:CInt64[3] = Const CInt64(3)
-          v27:CInt64[10] = GuardLess v32, v33
-          v34:NilClass = Const Value(nil)
-          CheckInterrupts
-          Return v34
+          SideExit GuardLess
         ");
     }
 
@@ -13664,12 +13653,9 @@ mod hir_opt_tests {
           v12:Fixnum[0] = Const Value(0)
           PatchPoint NoSingletonClass(Array@0x1010)
           PatchPoint MethodRedefined(Array@0x1010, []@0x1018, cme:0x1020)
-          v34:CInt64[0] = Const CInt64(0)
-          v28:CInt64 = ArrayLength v23
-          v29:CInt64[0] = GuardLess v34, v28
-          v35:ModuleExact[VALUE(0x1048)] = Const Value(VALUE(0x1048))
+          v36:ModuleExact[VALUE(0x1048)] = Const Value(VALUE(0x1048))
           CheckInterrupts
-          Return v35
+          Return v36
         ");
     }
 
