@@ -1833,7 +1833,7 @@ str_shared_replace(VALUE str, VALUE str2)
 
         STR_SET_NOEMBED(str);
         FL_UNSET(str, STR_SHARED);
-        RSTRING(str)->as.heap.ptr = RSTRING_PTR(str2);
+        RSTRING(str)->as.heap.ptr = RSTRING_START(str2);
 
         if (FL_TEST(str2, STR_SHARED)) {
             VALUE shared = RSTRING(str2)->as.heap.aux.shared;
@@ -1883,7 +1883,7 @@ str_replace(VALUE str, VALUE str2)
         RUBY_ASSERT(OBJ_FROZEN(shared));
         STR_SET_NOEMBED(str);
         STR_SET_LEN(str, len);
-        RSTRING(str)->as.heap.ptr = RSTRING_PTR(str2);
+        RSTRING(str)->as.heap.ptr = RSTRING_START(str2);
         STR_SET_SHARED(str, shared);
         rb_enc_cr_str_exact_copy(str, str2);
     }
