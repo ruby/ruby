@@ -2,14 +2,13 @@
 
 #![allow(non_upper_case_globals)]
 use crate::cruby;
-use crate::cruby::{rb_block_param_proxy, Qfalse, Qnil, Qtrue, RUBY_T_ARRAY, RUBY_T_CLASS, RUBY_T_HASH, RUBY_T_MODULE, RUBY_T_STRING, VALUE};
-use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cRange, rb_cModule, rb_zjit_singleton_class_p};
+use crate::cruby::{rb_block_param_proxy, Qfalse, Qnil, Qtrue, RUBY_T_ARRAY, RUBY_T_HASH, RUBY_T_STRING, VALUE};
+use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cRange, rb_zjit_singleton_class_p};
 use crate::cruby::ClassRelationship;
 use crate::cruby::get_class_name;
 use crate::cruby::get_module_name;
 use crate::cruby::ruby_sym_to_rust_string;
 use crate::cruby::rb_mRubyVMFrozenCore;
-use crate::cruby::rb_obj_class;
 use crate::hir::{Const, PtrPrintMap};
 use crate::profile::ProfiledType;
 
@@ -178,18 +177,6 @@ fn is_range_exact(val: VALUE) -> bool {
     val.class_of() == unsafe { rb_cRange }
 }
 
-fn is_module_exact(val: VALUE) -> bool {
-    if val.builtin_type() != RUBY_T_MODULE {
-        return false;
-    }
-
-    // For Class and Module instances, `class_of` will return the singleton class of the object.
-    // Using `rb_obj_class` will give us the actual class of the module so we can check if the
-    // object is an instance of Module, or an instance of Module subclass.
-    let klass = unsafe { rb_obj_class(val) };
-    klass == unsafe { rb_cModule }
-}
-
 impl Type {
     /// Create a `Type` from the given integer.
     pub const fn fixnum(val: i64) -> Type {
@@ -221,9 +208,6 @@ impl Type {
             if is_array_exact(val) { bits::ArrayExact }
             else if is_hash_exact(val) { bits::HashExact }
             else if is_string_exact(val) { bits::StringExact }
-            // Singleton classes
-            else if is_module_exact(val) { bits::ModuleExact }
-            else if val.builtin_type() == RUBY_T_CLASS { bits::Class }
             // Classes that have an immediate/heap split
             else if val.class_of() == unsafe { rb_cInteger } { bits::Bignum }
             else if val.class_of() == unsafe { rb_cFloat } { bits::HeapFloat }
