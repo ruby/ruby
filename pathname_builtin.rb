@@ -810,42 +810,39 @@ class Pathname
     result
   end
 
-  # Iterates over the children of the directory
-  # (files and subdirectories, not recursive).
+  # :markup: markdown
   #
-  # It yields Pathname object for each child.
+  # call-seq:
+  #   each_child(with_dirnames = true) {|entry| ... } -> array_of_pathnames
+  #   each_child(with_dirnames = true) -> new_enumerator
   #
-  # By default, the yielded pathnames will have enough information to access
-  # the files.
+  # With a block given and `with_dirnames` given as `true` (the default),
+  # yields a new pathname for each child
+  # of the entry represented by `self`;
+  # returns an array of those pathnames:
   #
-  # If you set +with_directory+ to +false+, then the returned pathnames will
-  # contain the filename only.
+  # ```ruby
+  # Pathname('include').each_child {|child| p child }
+  # #<Pathname:include/ruby>
+  # #<Pathname:include/ruby.h>
+  # => [#<Pathname:include/ruby>, #<Pathname:include/ruby.h>]
+  # ```
   #
-  #   Pathname("/usr/local").each_child {|f| p f }
-  #   #=> #<Pathname:/usr/local/share>
-  #   #   #<Pathname:/usr/local/bin>
-  #   #   #<Pathname:/usr/local/games>
-  #   #   #<Pathname:/usr/local/lib>
-  #   #   #<Pathname:/usr/local/include>
-  #   #   #<Pathname:/usr/local/sbin>
-  #   #   #<Pathname:/usr/local/src>
-  #   #   #<Pathname:/usr/local/man>
+  # With a block given and `with_dirnames` given as `false`,
+  # yields a new pathname for each child
+  # of the entry represented by `self` with its dirname omitted;
+  # returns an array of those pathnames:
   #
-  #   Pathname("/usr/local").each_child(false) {|f| p f }
-  #   #=> #<Pathname:share>
-  #   #   #<Pathname:bin>
-  #   #   #<Pathname:games>
-  #   #   #<Pathname:lib>
-  #   #   #<Pathname:include>
-  #   #   #<Pathname:sbin>
-  #   #   #<Pathname:src>
-  #   #   #<Pathname:man>
+  # ```ruby
+  # Pathname('include').each_child(false) {|child| p child }
+  # #<Pathname:ruby>
+  # #<Pathname:ruby.h>
+  # => [#<Pathname:ruby>, #<Pathname:ruby.h>]
+  # ```
   #
-  # Note that the results never contain the entries +.+ and +..+ in
-  # the directory because they are not children.
+  # Note that entries `'.'`+ and `'..'` are not children.
   #
-  # See Pathname#children
-  #
+  # With no block given, returns a new Enumerator.
   def each_child(with_directory=true, &b)
     children(with_directory).each(&b)
   end
