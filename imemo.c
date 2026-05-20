@@ -129,6 +129,7 @@ VALUE
 rb_imemo_cdhash_new(size_t size, const struct st_hash_type *type)
 {
     struct rb_imemo_cdhash *memo = IMEMO_NEW(struct rb_imemo_cdhash, imemo_cdhash, 0);
+    memo->tbl.num_entries = 0;
     st_init_existing_table_with_size(&memo->tbl, type, size);
     return (VALUE)memo;
 }
