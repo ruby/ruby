@@ -12,19 +12,16 @@ on:
         required: false
         type: string
         default: ''
-      mode:
-        description: '"modern" (vssetup + 2022/2025-vs2026) or "legacy" (vs2022 + vcvars 14.2 + test-all/test-spec split)'
-        required: false
-        type: string
-        default: 'modern'
 
 jobs:
   windows:
     strategy:
       matrix:
-        include: ${{ fromJSON(inputs.mode == 'legacy'
-          && '[{"os":"2022","vs":2022,"vcvars":"10.0.22621.0 -vcvars_ver=14.2","test_task":"check"}]'
-          || '[{"os":"2022","test_task":"check"},{"os":"2025-vs2026","test_task":"check"}]') }}
+        include:
+          - os: '2022'
+            vs: 2022
+            vcvars: '10.0.22621.0 -vcvars_ver=14.2'
+            test_task: check
       fail-fast: false
     runs-on: windows-${{ matrix.os }}
     defaults:
@@ -94,20 +91,7 @@ jobs:
           path: snapshot-*/.downloaded-cache
           key: downloaded-cache
 
-      - name: setup env (modern)
-        # %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
-        # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
-        env:
-          ARCHNAME: ${{ inputs.archname }}
-        run: |
-          set > old.env
-          call ..\%ARCHNAME%\win32\vssetup.cmd
-          set TMP=%USERPROFILE%\AppData\Local\Temp
-          set TEMP=%USERPROFILE%\AppData\Local\Temp
-          set /a TEST_JOBS=(15 * %NUMBER_OF_PROCESSORS% / 10) > nul
-          set > new.env
-        if: inputs.mode == 'modern'
-      - name: setup env (legacy)
+      - name: setup env
         run: |
           if not "%VCVARS%" == "" goto :vcset
             set VCVARS="C:\Program Files (x86)\Microsoft Visual Studio\${{ matrix.vs }}\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
@@ -119,7 +103,6 @@ jobs:
           set TEMP=%USERPROFILE%\AppData\Local\Temp
           set /a TEST_JOBS=(15 * %NUMBER_OF_PROCESSORS% / 10) > nul
           set > new.env
-        if: inputs.mode == 'legacy'
 
       - name: update env
         shell: pwsh
