@@ -913,7 +913,7 @@ rb_enc_cr_str_copy_for_substr(VALUE dest, VALUE src)
         break;
       case ENC_CODERANGE_VALID:
         if (!rb_enc_asciicompat(STR_ENC_GET(src)) ||
-            search_nonascii(RSTRING_PTR(dest), RSTRING_END(dest)))
+            search_nonascii(RSTRING_START(dest), RSTRING_END(dest)))
             ENC_CODERANGE_SET(dest, ENC_CODERANGE_VALID);
         else
             ENC_CODERANGE_SET(dest, ENC_CODERANGE_7BIT);
@@ -3099,7 +3099,7 @@ str_offset(const char *p, const char *e, long nth, rb_encoding *enc, int singleb
 long
 rb_str_offset(VALUE str, long pos)
 {
-    return str_offset(RSTRING_PTR(str), RSTRING_END(str), pos,
+    return str_offset(RSTRING_START(str), RSTRING_END(str), pos,
                       STR_ENC_GET(str), single_byte_optimizable(str));
 }
 
@@ -4630,7 +4630,7 @@ rb_str_index_m(int argc, VALUE *argv, VALUE str)
     }
 
     if (RB_TYPE_P(sub, T_REGEXP)) {
-        pos = str_offset(RSTRING_PTR(str), RSTRING_END(str), pos,
+        pos = str_offset(RSTRING_START(str), RSTRING_END(str), pos,
                          enc, single_byte_optimizable(str));
 
         if (rb_reg_search(sub, str, pos, 0) >= 0) {
@@ -4886,7 +4886,7 @@ rb_str_rindex_m(int argc, VALUE *argv, VALUE str)
 
     if (RB_TYPE_P(sub, T_REGEXP)) {
         /* enc = rb_enc_check(str, sub); */
-        pos = str_offset(RSTRING_PTR(str), RSTRING_END(str), pos,
+        pos = str_offset(RSTRING_START(str), RSTRING_END(str), pos,
                          enc, single_byte_optimizable(str));
 
         if (rb_reg_search(sub, str, pos, 1) >= 0) {
@@ -5904,12 +5904,12 @@ rb_str_update(VALUE str, long beg, long len, VALUE val)
     if (len > slen - beg) {
         len = slen - beg;
     }
-    p = str_nth(RSTRING_PTR(str), RSTRING_END(str), beg, enc, singlebyte);
+    p = str_nth(RSTRING_START(str), RSTRING_END(str), beg, enc, singlebyte);
     if (!p) p = RSTRING_END(str);
     e = str_nth(p, RSTRING_END(str), len, enc, singlebyte);
     if (!e) e = RSTRING_END(str);
     /* error check */
-    beg = p - RSTRING_PTR(str);	/* physical position */
+    beg = p - RSTRING_START(str);	/* physical position */
     len = e - p;		/* physical length */
     rb_str_update_0(str, beg, len, val);
     rb_enc_associate(str, enc);
@@ -11104,8 +11104,7 @@ static VALUE
 rb_str_ord(VALUE s)
 {
     unsigned int c;
-
-    c = rb_enc_codepoint(RSTRING_PTR(s), RSTRING_END(s), STR_ENC_GET(s));
+    c = rb_enc_codepoint(RSTRING_START(s), RSTRING_END(s), STR_ENC_GET(s));
     return UINT2NUM(c);
 }
 /*
