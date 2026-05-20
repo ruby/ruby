@@ -130,7 +130,7 @@ jobs:
           esac
           sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev bison- autoconf- $APT_INSTALL_RUBY $APT_INSTALL_GIT
         if: inputs.apt-mode == 'ruby-and-git'
-      - uses: ruby/setup-ruby@c4e5b1316158f92e3d49443a9d58b31d25ac0f8f # v1.306.0
+      - uses: ruby/setup-ruby@97ecb7b512899eb71ab1bf2310a624c6f1589ac6 # v1.308.0
         with:
           ruby-version: 3.2
         # test-bundled-gems requires executable host ruby
@@ -243,7 +243,7 @@ jobs:
         if: matrix.test_task == 'check'
       - name: Show .local
         run: find $HOME/.local -ls
-      - uses: ruby/action-slack@54175162371f1f7c8eb94d7c8644ee2479fcd375 # v3.2.2
+      - uses: ruby/action-slack@d260b61aa817726d5bedd22dd6cc305787fa4cdd # v4.0.0
         with:
           payload: |
             {
@@ -259,7 +259,7 @@ jobs:
         id: ruby_sha
         run: cd "$ARCHNAME/" && ./ruby -e 'puts "sha=#{RUBY_REVISION}"' >> $GITHUB_OUTPUT
         if: failure() && inputs.notify-ruby-sha && github.event_name == 'schedule'
-      - uses: ruby/action-slack@54175162371f1f7c8eb94d7c8644ee2479fcd375 # v3.2.2
+      - uses: ruby/action-slack@d260b61aa817726d5bedd22dd6cc305787fa4cdd # v4.0.0
         with:
           payload: |
             {

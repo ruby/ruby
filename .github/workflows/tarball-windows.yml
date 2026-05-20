@@ -39,7 +39,7 @@ jobs:
       - run: md build
         working-directory:
 
-      - uses: ruby/setup-ruby@c4e5b1316158f92e3d49443a9d58b31d25ac0f8f # v1.306.0
+      - uses: ruby/setup-ruby@97ecb7b512899eb71ab1bf2310a624c6f1589ac6 # v1.308.0
         with:
           ruby-version: '3.1'
           bundler: none
@@ -143,7 +143,7 @@ jobs:
         timeout-minutes: 70
         continue-on-error: ${{ matrix.continue-on-error || false }}
 
-      - uses: ruby/action-slack@54175162371f1f7c8eb94d7c8644ee2479fcd375 # v3.2.2
+      - uses: ruby/action-slack@d260b61aa817726d5bedd22dd6cc305787fa4cdd # v4.0.0
         with:
           payload: |
             {
