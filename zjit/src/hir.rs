@@ -2099,7 +2099,13 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GuardType { val, guard_type, .. } => { write!(f, "GuardType {val}, {}", guard_type.print(self.ptr_map)) },
             Insn::RefineType { val, new_type, .. } => { write!(f, "RefineType {val}, {}", new_type.print(self.ptr_map)) },
             Insn::HasType { val, expected, .. } => { write!(f, "HasType {val}, {}", expected.print(self.ptr_map)) },
-            Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map)) },
+            Insn::GuardBitEquals { val, expected, recompile, .. } => {
+                write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map))?;
+                if recompile.is_some() {
+                    write!(f, " recompile")?;
+                }
+                return Ok(())
+            },
             Insn::GuardAnyBitSet { val, mask, mask_name: Some(name), .. } => { write!(f, "GuardAnyBitSet {val}, {name}={}", mask.print(self.ptr_map)) },
             Insn::GuardAnyBitSet { val, mask, .. } => { write!(f, "GuardAnyBitSet {val}, {}", mask.print(self.ptr_map)) },
             Insn::GuardNoBitsSet { val, mask, mask_name: Some(name), .. } => { write!(f, "GuardNoBitsSet {val}, {name}={}", mask.print(self.ptr_map)) },

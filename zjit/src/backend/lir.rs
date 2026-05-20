@@ -2661,14 +2661,7 @@ impl Assembler
             asm.cret(Opnd::UImm(Qundef.as_u64()));
         }
 
-        /// Compile the main side-exit code. This function takes only SideExit so
-        /// that it can be safely deduplicated by using SideExit as a dedup key.
-        fn compile_exit(asm: &mut Assembler, exit: &SideExit) {
-            compile_exit_save_state(asm, exit);
-            // If this side exit should trigger recompilation, call the recompile
-            // function after saving VM state. The ccall must happen after
-            // compile_exit_save_state because it clobbers caller-saved registers
-            // that may hold stack/local operands we need to save.
+        fn compile_exit_recompile(asm: &mut Assembler, exit: &SideExit) {
             if let Some(recompile) = &exit.recompile {
                 if cfg!(feature = "runtime_checks") {
                     // Clear jit_return to fully materialize the frame. This must happen
@@ -2692,6 +2685,17 @@ impl Assembler
                     })
                 );
             }
+        }
+
+        /// Compile the main side-exit code. This function takes only SideExit so
+        /// that it can be safely deduplicated by using SideExit as a dedup key.
+        fn compile_exit(asm: &mut Assembler, exit: &SideExit) {
+            compile_exit_save_state(asm, exit);
+            // If this side exit should trigger recompilation, call the recompile
+            // function after saving VM state. The ccall must happen after
+            // compile_exit_save_state because it clobbers caller-saved registers
+            // that may hold stack/local operands we need to save.
+            compile_exit_recompile(asm, exit);
             compile_exit_return(asm);
         }
 
@@ -2778,6 +2782,7 @@ impl Assembler
                             .unwrap_or_else(|_| std::ffi::CString::new("unknown").unwrap());
                         let reason_ptr = reason_cstr.into_raw() as *const u8;
                         asm_ccall!(self, rb_zjit_record_exit_stack, Opnd::const_ptr(reason_ptr));
+                        compile_exit_recompile(self, &exit);
                         compile_exit_return(self);
                     } else {
                         // If the side exit has already been compiled, jump to it.
