@@ -50,10 +50,10 @@ mod snapshot_tests {
           v12:Fixnum[2] = Const Value(2)
           v13:Any = Snapshot FrameState { pc: 0x1008, stack: [v10, v12], locals: [] }
           PatchPoint MethodRedefined(Integer@0x1010, +@0x1018, cme:0x1020)
-          v33:Fixnum[6] = Const Value(6)
-          v21:Any = Snapshot FrameState { pc: 0x1048, stack: [v33], locals: [] }
+          v35:Fixnum[6] = Const Value(6)
+          v21:Any = Snapshot FrameState { pc: 0x1048, stack: [v35], locals: [] }
           CheckInterrupts
-          Return v33
+          Return v35
         ");
     }
 
