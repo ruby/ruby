@@ -7875,7 +7875,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }
                     let block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
 
-                    let args = state.stack_pop_n(crate::profile::real_argc(cd))?;
+                    let args = state.stack_pop_n(crate::profile::num_arguments_on_stack(cd))?;
                     let recv = state.stack_pop()?;
                     let block_handler = if !blockiseq.is_null() {
                         Some(BlockHandler::BlockIseq(blockiseq))
@@ -7972,7 +7972,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::SendWhileTracing, recompile: None });
                         break;
                     }
-                    let args = state.stack_pop_n(crate::profile::real_argc(cd))?;
+                    let args = state.stack_pop_n(crate::profile::num_arguments_on_stack(cd))?;
                     let recv = state.stack_pop()?;
                     let blockiseq: IseqPtr = get_arg(pc, 1).as_ptr();
                     let result = fun.push_insn(block, Insn::InvokeSuper { recv, cd, blockiseq, args, state: exit_id, reason: Uncategorized(opcode) });
@@ -8064,7 +8064,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::SendWhileTracing, recompile: None });
                         break;
                     }
-                    let args = state.stack_pop_n(crate::profile::real_argc(cd))?;
+                    let args = state.stack_pop_n(crate::profile::num_arguments_on_stack(cd))?;
 
                     // Check if this is a monomorphic IFUNC block handler we can specialize
                     let block_handler_types = profiles.payload.profile.get_operand_types(exit_state.insn_idx);
