@@ -1471,16 +1471,16 @@ pub fn get_class_name(class: VALUE) -> String {
     name
 }
 
-// Return the module name for a given module or class. For anonymous modules, returns "nil" since
+// Return the module name for a given module or class. For anonymous modules, returns None since
 // rb_mod_name returns Qnil.
-pub fn get_module_name(module: VALUE) -> String {
+pub fn get_module_name(module: VALUE) -> Option<String> {
     // type checks for rb_mod_name()
     assert!(unsafe { RB_TYPE_P(module, RUBY_T_MODULE) || RB_TYPE_P(module, RUBY_T_CLASS) }, "Expected class or module");
     let name = unsafe { rb_mod_name(module) };
     if name == Qnil {
-        "nil".to_string()
+        None
     } else {
-        ruby_str_to_rust_string(name)
+        Some(ruby_str_to_rust_string(name))
     }
 }
 

@@ -13667,7 +13667,7 @@ mod hir_opt_tests {
           v34:CInt64[0] = Const CInt64(0)
           v28:CInt64 = ArrayLength v23
           v29:CInt64[0] = GuardLess v34, v28
-          v35:ModuleExact[nil@0x1048] = Const Value(VALUE(0x1048))
+          v35:ModuleExact[VALUE(0x1048)] = Const Value(VALUE(0x1048))
           CheckInterrupts
           Return v35
         ");
