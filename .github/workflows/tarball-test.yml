@@ -70,7 +70,6 @@ jobs:
     uses: ./.github/workflows/tarball-windows.yml
     with:
       archname: snapshot-${{ needs.tarball.outputs.branch }}
-      mode: legacy
     secrets: inherit
 
   non_development:
