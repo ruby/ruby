@@ -74,7 +74,7 @@ jobs:
         run: |
           set -x
           curl -sSL "${RUBY_PATCH_URL}" -o ruby.patch
-          cd snapshot-*/
+          cd "${{ inputs.archname }}/"
           git apply ../ruby.patch
         shell: bash
         env:
@@ -154,13 +154,13 @@ jobs:
         run: |
           echo "JOBS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
       - name: configure
-        run: cd snapshot-*/ && ./configure
+        run: cd "${{ inputs.archname }}/" && ./configure
       - name: make
-        run: cd snapshot-*/ && make $JOBS
+        run: cd "${{ inputs.archname }}/" && make $JOBS
       - name: Save stats of HOME
         run: |
           set -euxo pipefail
-          cd snapshot-*/
+          cd "${{ inputs.archname }}/"
           cat >test.rb <<'EOF'
           require 'pathname'
           require 'digest'
@@ -187,7 +187,7 @@ jobs:
           make runruby
           rm -f test.rb
       - name: Tests
-        run: cd snapshot-*/ && make $JOBS -s ${{ matrix.test_task }}
+        run: cd "${{ inputs.archname }}/" && make $JOBS -s ${{ matrix.test_task }}
         env:
           RUBY_TESTOPTS: "-q --tty=no"
       # not sure why ~/.gnupg is remained
@@ -198,7 +198,7 @@ jobs:
       - name: Diff stats of HOME
         run: |
           set -euxo pipefail
-          cd snapshot-*/
+          cd "${{ inputs.archname }}/"
           cat >test.rb <<'EOF'
           require 'pathname'
           require 'digest'
@@ -227,13 +227,13 @@ jobs:
           diff -u /tmp/stat-before-tests.txt /tmp/stat-after-tests.txt
       # leaked-globals since 2.7
       - name: Leaked Globals
-        run: cd snapshot-*/ && make -s leaked-globals
+        run: cd "${{ inputs.archname }}/" && make -s leaked-globals
         if: matrix.test_task == 'check'
       - name: make install without root privilege
-        run: cd snapshot-*/ && make $JOBS install DESTDIR="/tmp/destdir"
+        run: cd "${{ inputs.archname }}/" && make $JOBS install DESTDIR="/tmp/destdir"
         if: matrix.test_task == 'check'
       - name: make install
-        run: cd snapshot-*/ && sudo make $JOBS install
+        run: cd "${{ inputs.archname }}/" && sudo make $JOBS install
         if: matrix.test_task == 'check'
       - name: ruby -v
         env:
@@ -256,7 +256,7 @@ jobs:
         if: failure() && github.event_name == 'schedule'
       - name: Get ruby/ruby sha
         id: ruby_sha
-        run: cd snapshot-*/ && ./ruby -e 'puts "sha=#{RUBY_REVISION}"' >> $GITHUB_OUTPUT
+        run: cd "${{ inputs.archname }}/" && ./ruby -e 'puts "sha=#{RUBY_REVISION}"' >> $GITHUB_OUTPUT
         if: failure() && inputs.notify-ruby-sha && github.event_name == 'schedule'
       - uses: ruby/action-slack@54175162371f1f7c8eb94d7c8644ee2479fcd375 # v3.2.2
         with:
