@@ -696,7 +696,7 @@ rb_vm_ci_lookup(ID mid, unsigned int flag, unsigned int argc, const struct rb_ca
     const struct rb_callinfo *ci = NULL;
 
     if (kwarg) {
-        ((struct rb_callinfo_kwarg *)kwarg)->references++;
+        RUBY_ATOMIC_FETCH_ADD(((struct rb_callinfo_kwarg *)kwarg)->references, 1);
     }
 
     struct rb_callinfo *new_ci = SHAREABLE_IMEMO_NEW(struct rb_callinfo, imemo_callinfo, (VALUE)kwarg);

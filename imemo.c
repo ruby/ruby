@@ -579,8 +579,9 @@ rb_imemo_free(VALUE obj)
         const struct rb_callinfo *ci = ((const struct rb_callinfo *)obj);
 
         if (ci->kwarg) {
-            ((struct rb_callinfo_kwarg *)ci->kwarg)->references--;
-            if (ci->kwarg->references == 0) xfree((void *)ci->kwarg);
+            if (RUBY_ATOMIC_FETCH_SUB(((struct rb_callinfo_kwarg *)ci->kwarg)->references, 1) == 1) {
+                xfree((void *)ci->kwarg);
+            }
         }
         RB_DEBUG_COUNTER_INC(obj_imemo_callinfo);
 
