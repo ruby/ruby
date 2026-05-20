@@ -47,7 +47,7 @@ jobs:
         run: |
           set -x
           curl -sSL "${RUBY_PATCH_URL}" -o ruby.patch
-          cd snapshot-*/
+          cd "${{ inputs.archname }}/"
           git apply ../ruby.patch
         shell: bash
         env:
@@ -71,26 +71,26 @@ jobs:
         run: |
           echo "JOBS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
       - name: configure
-        run: cd snapshot-*/ && ./configure --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline) --with-libyaml-dir=$(brew --prefix libyaml)
+        run: cd "${{ inputs.archname }}/" && ./configure --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline) --with-libyaml-dir=$(brew --prefix libyaml)
       - name: make
-        run: cd snapshot-*/ && make $JOBS
+        run: cd "${{ inputs.archname }}/" && make $JOBS
       - name: Reinstall Homebrew Ruby
         run: brew install ruby
         if: inputs.rebuild-homebrew-ruby && matrix.os == 'macos-15-intel' && (matrix.test_task == 'test-bundled-gems' || matrix.test_task == 'test-bundler-parallel')
       - name: Tests
-        run: cd snapshot-*/ && make $JOBS -s ${{ matrix.test_task }}
+        run: cd "${{ inputs.archname }}/" && make $JOBS -s ${{ matrix.test_task }}
         env:
           RUBY_TESTOPTS: "-q --tty=no"
           RUBY_DEBUG_TEST_NO_REMOTE: "1"
       # leaked-globals since 2.7
       - name: Leaked Globals
-        run: cd snapshot-*/ && make -s leaked-globals
+        run: cd "${{ inputs.archname }}/" && make -s leaked-globals
         if: matrix.test_task == 'check'
       - name: make install without root privilege
-        run: cd snapshot-*/ && make $JOBS install DESTDIR="/tmp/destdir"
+        run: cd "${{ inputs.archname }}/" && make $JOBS install DESTDIR="/tmp/destdir"
         if: matrix.test_task == 'check'
       - name: make install
-        run: cd snapshot-*/ && sudo make $JOBS install
+        run: cd "${{ inputs.archname }}/" && sudo make $JOBS install
         if: matrix.test_task == 'check'
       - name: ruby -v
         run: /usr/local/bin/ruby -v
