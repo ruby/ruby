@@ -240,36 +240,6 @@ gc_update_table_refs(st_table *tbl)
     }
 }
 
-static int
-rb_set_foreach_replace(st_data_t key, st_data_t value, st_data_t argp, int error)
-{
-    if (rb_gc_location((VALUE)key) != (VALUE)key) {
-        return ST_REPLACE;
-    }
-
-    return ST_CONTINUE;
-}
-
-static int
-rb_set_replace_ref(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
-{
-    if (rb_gc_location((VALUE)*key) != (VALUE)*key) {
-        *key = rb_gc_location((VALUE)*key);
-    }
-
-    return ST_CONTINUE;
-}
-
-static void
-gc_update_set_refs(st_table *tbl)
-{
-    if (!tbl || tbl->num_entries == 0) return;
-
-    if (st_foreach_with_replace(tbl, rb_set_foreach_replace, rb_set_replace_ref, 0)) {
-        rb_raise(rb_eRuntimeError, "hash modified during iteration");
-    }
-}
-
 static inline size_t
 xmalloc2_size(const size_t count, const size_t elsize)
 {
