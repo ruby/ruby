@@ -2536,7 +2536,7 @@ interpret_seek_whence(VALUE vwhence)
  *      f.tell            # => 12
  *      f.close
  *
- *  - +:SET+ or <tt>IO:SEEK_SET</tt>:
+ *  - +:SET+ or <tt>IO::SEEK_SET</tt>:
  *    Repositions the stream to the given +offset+:
  *
  *      f = File.open('t.txt')
