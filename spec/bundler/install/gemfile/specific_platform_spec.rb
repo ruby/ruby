@@ -261,6 +261,50 @@ RSpec.describe "bundle install with specific platforms" do
         expect(the_bundle).not_to include_gem("nokogiri 1.18.10 x86_64-linux")
       end
     end
+
+    it "installs the ruby variant but Bundler.setup still complains when only an incompatible platform-specific variant is locked" do
+      build_repo4 do
+        build_gem "nokogiri", "1.18.10"
+        build_gem "nokogiri", "1.18.10" do |s|
+          s.platform = "x86_64-linux"
+          s.required_ruby_version = "< #{Gem.ruby_version}"
+        end
+      end
+
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "nokogiri"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            nokogiri (1.18.10-x86_64-linux)
+
+        PLATFORMS
+          x86_64-linux
+
+        DEPENDENCIES
+          nokogiri
+
+        BUNDLED WITH
+          #{Bundler::VERSION}
+      L
+
+      simulate_platform "x86_64-linux" do
+        bundle "install --verbose", env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
+        expect(exitstatus).to eq(0)
+        expect(out).to include("Fetching nokogiri 1.18.10\n")
+        expect(out).to include("Installing nokogiri 1.18.10\n")
+
+        # FIXME: We should not install an alternative and then refuse to use it.
+        ruby "require 'bundler'; Bundler.setup", env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
+        expect(exitstatus).not_to eq(0)
+        expect(err).to include("Could not find nokogiri-1.18.10-x86_64-linux in locally installed gems")
+      end
+    end
   end
 
   it "doesn't discard previously installed platform specific gem and fall back to ruby on subsequent bundles" do
