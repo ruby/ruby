@@ -577,31 +577,32 @@ class Pathname
     nil
   end
 
-  # Iterates over and yields a new Pathname object
-  # for each element in the given path in descending order.
+  # :markup: markdown
   #
-  #  Pathname.new('/path/to/some/file.rb').descend {|v| p v}
-  #     #<Pathname:/>
-  #     #<Pathname:/path>
-  #     #<Pathname:/path/to>
-  #     #<Pathname:/path/to/some>
-  #     #<Pathname:/path/to/some/file.rb>
+  # call-seq:
+  #   descend {|entry| ... } -> nil
+  #   descend -> new_enumerator
   #
-  #  Pathname.new('path/to/some/file.rb').descend {|v| p v}
-  #     #<Pathname:path>
-  #     #<Pathname:path/to>
-  #     #<Pathname:path/to/some>
-  #     #<Pathname:path/to/some/file.rb>
+  # With a block given, yields a new pathname for each successive dirname
+  # in the stored path; see File.dirname:
   #
-  # Returns an Enumerator if no block was given.
+  # ```ruby
+  # # Absolute path.
+  # Pathname('/path/to/some/file.rb').descend {|pn| p pn }
+  # #<Pathname:/>
+  # #<Pathname:/path>
+  # #<Pathname:/path/to>
+  # #<Pathname:/path/to/some>
+  # #<Pathname:/path/to/some/file.rb>
+  # # Relative path.
+  # Pathname('path/to/some/file.rb').descend {|pn| p pn }
+  # #<Pathname:path>
+  # #<Pathname:path/to>
+  # #<Pathname:path/to/some>
+  # #<Pathname:path/to/some/file.rb>
+  # ```
   #
-  #   enum = Pathname.new("/usr/bin/ruby").descend
-  #     # ... do stuff ...
-  #   enum.each { |e| ... }
-  #     # yields Pathnames /, /usr, /usr/bin, and /usr/bin/ruby.
-  #
-  # It doesn't access the filesystem.
-  #
+  # With no block given, returns a new Enumerator.
   def descend
     return to_enum(__method__) unless block_given?
     vs = []
