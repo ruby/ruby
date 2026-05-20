@@ -178,8 +178,8 @@ VALUE rb_cSymbol;
 
 #define STR_SET_SHARED(str, shared_str) do { \
     if (!FL_TEST(str, STR_FAKESTR)) { \
-        RUBY_ASSERT(RSTRING_PTR(shared_str) <= RSTRING_PTR(str)); \
-        RUBY_ASSERT(RSTRING_PTR(str) <= RSTRING_PTR(shared_str) + RSTRING_LEN(shared_str)); \
+        RUBY_ASSERT(RSTRING_START(shared_str) <= RSTRING_START(str)); \
+        RUBY_ASSERT(RSTRING_START(str) <= RSTRING_START(shared_str) + RSTRING_LEN(shared_str)); \
         RB_OBJ_WRITE((str), &RSTRING(str)->as.heap.aux.shared, (shared_str)); \
         FL_SET((str), STR_SHARED); \
         rb_gc_register_pinning_obj(str); \
@@ -1462,18 +1462,18 @@ str_replace_shared_without_enc(VALUE str2, VALUE str)
     char *ptr;
     long len;
 
-    RSTRING_GETMEM(str, ptr, len);
+    ptr = RSTRING_START(str);
+    len = RSTRING_LEN(str);
     if (str_embed_capa(str2) >= len + termlen) {
         char *ptr2 = RSTRING(str2)->as.embed.ary;
         STR_SET_EMBED(str2);
-        memcpy(ptr2, RSTRING_PTR(str), len);
+        memcpy(ptr2, ptr, len);
         TERM_FILL(ptr2+len, termlen);
     }
     else {
         VALUE root;
         if (STR_SHARED_P(str)) {
             root = RSTRING(str)->as.heap.aux.shared;
-            RSTRING_GETMEM(str, ptr, len);
         }
         else {
             root = rb_str_new_frozen(str);
