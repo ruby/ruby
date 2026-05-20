@@ -1488,7 +1488,20 @@ class Pathname    # * FileTest *
   # See <tt>FileTest.grpowned?</tt>.
   def grpowned?() FileTest.grpowned?(@path) end
 
-  # See <tt>FileTest.directory?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   directory? -> true or false
+  #
+  # Returns whether the entry represented by `self` is a directory:
+  #
+  # ```ruby
+  # Pathname('/etc').directory?      # => true
+  # Pathname('lib').directory?       # => true
+  # Pathname('README.md').directory? # => false
+  # Pathname('nosuch').directory?    # => false
+  # ```
+  #
   def directory?() FileTest.directory?(@path) end
 
   # See <tt>FileTest.file?</tt>.
