@@ -352,6 +352,17 @@ void rb_check_safe_str(VALUE);
  * @param[in]  func           The function name where encountered NULL pointer.
  */
 void rb_debug_rstring_null_ptr(const char *func);
+
+/**
+ * @private
+ *
+ * Implementation  helper  for  RSTRING_PTR().  Ensures  the string has  a null
+ * terminator after its content.
+ *
+ * @param[in]  str  A shared heap string that may lack a null terminator.
+ * @return     Pointer to the (now null-terminated) string contents.
+ */
+char *rbimpl_str_ptr_guarantee_null_term(VALUE str);
 RBIMPL_SYMBOL_EXPORT_END()
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
@@ -371,10 +382,33 @@ RSTRING_LEN(VALUE str)
 
 RBIMPL_ATTR_ARTIFICIAL()
 /**
- * Queries the contents pointer of the string.
+ * Queries  the raw contents pointer  of  the string  without guaranteeing null
+ * termination.
  *
  * @param[in]  str  String in question.
  * @return     Pointer to its contents.
+ * @pre        `str` must be an instance of ::RString.
+ */
+static inline char *
+RSTRING_START(VALUE str)
+{
+    char *ptr = RB_FL_TEST_RAW(str, RSTRING_NOEMBED) ?
+        RSTRING(str)->as.heap.ptr :
+        RSTRING(str)->as.embed.ary;
+
+    if (RUBY_DEBUG && RB_UNLIKELY(! ptr)) {
+        rb_debug_rstring_null_ptr("RSTRING_START");
+    }
+
+    return ptr;
+}
+
+RBIMPL_ATTR_ARTIFICIAL()
+/**
+ * Queries the contents pointer of the string.
+ *
+ * @param[in]  str  String in question.
+ * @return     Pointer to its null-terminated contents.
  * @pre        `str` must be an instance of ::RString.
  */
 static inline char *
@@ -392,6 +426,14 @@ RSTRING_PTR(VALUE str)
          * during GC (see  what obj_info() does).  rb_warn()  needs to allocate
          * Ruby objects.  That is not possible at this moment. */
         rb_debug_rstring_null_ptr("RSTRING_PTR");
+    }
+
+    /* Heap strings  may  lack  a null terminator  (SHARABLE_MIDDLE_SUBSTRING).
+     * rbimpl_str_ptr_guarantee_null_term()   checks   all  termlen  bytes  and
+     * returns immediately for already-terminated strings. */
+    if (RB_FL_TEST_RAW(str, RSTRING_NOEMBED) &&
+                RB_FL_TEST_RAW(str, RUBY_ELTS_SHARED)) {
+        ptr = rbimpl_str_ptr_guarantee_null_term(str);
     }
 
     return ptr;
