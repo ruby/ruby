@@ -1034,7 +1034,8 @@ class Pathname    # * File *
   #   atime -> new_time
   #
   # Returns a new Time object containing the time of the most recent
-  # access (read or write) to the entry represented by +self+:
+  # access (read or write) to the entry represented by `self`;
+  # see {File System Timestamps}[rdoc-ref:file/timestamps.md]:
   #
   #   # Work in a temporary directory.
   #   require 'tmpdir'
@@ -1072,7 +1073,6 @@ class Pathname    # * File *
   #     File atime:      2026-05-14 14:36:45 +0100
   #     Directory atime: 2026-05-14 14:36:45 +0100
   #
-  # See {File System Timestamps}[rdoc-ref:file/timestamps.md].
   def atime() File.atime(@path) end
 
   # :markup: markdown
@@ -1081,7 +1081,8 @@ class Pathname    # * File *
   #   birthtime -> new_time
   #
   # Returns a new Time object containing the create time of the entry
-  # represented by +self+:
+  # represented by `self`;
+  # see [File System Timestamps](rdoc-ref:file/timestamps.md):
   #
   # ```ruby
   # # Work in a temporary directory.
@@ -1122,10 +1123,67 @@ class Pathname    # * File *
   #   Directory birthtime: 2026-05-14 23:41:12 +0100
   # ```
   #
-  # See [File System Timestamps](rdoc-ref:file/timestamps.md).
   def birthtime() File.birthtime(@path) end
 
-  # See <tt>File.ctime</tt>.  Returns last (directory entry, not file) change time.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   ctime -> new_time
+  #
+  # On Windows, returns the #birthtime.
+  #
+  # On other systems,
+  # returns a new Time object containing the time of the most recent
+  # metadata change to the entry represented by `self`;
+  # see {File System Timestamps}[rdoc-ref:file/timestamps.md]:
+  #
+  # ```ruby
+  # # Work in a temporary directory.
+  # Pathname.mktmpdir do |tmpdirpath|
+  #   # A subdirectory therein, and its Pathname.
+  #   dirpath = File.join(tmpdirpath, 'subdir')
+  #   dir_pn = Pathname(dirpath)
+  #   puts "Create directory; directory ctime established."
+  #   dir_pn.mkdir
+  #   puts "  Directory ctime: #{dir_pn.ctime}"
+  #   sleep(1)
+  #
+  #   # A file in the subdirectory, and its Pathname.
+  #   filepath = File.join(dirpath, 't.txt')
+  #   file_pn = Pathname(filepath)
+  #   puts "Create file; file ctime established; directory ctime updated."
+  #   file_pn.write('foo')
+  #   puts "  File ctime:      #{file_pn.ctime}"
+  #   puts "  Directory ctime: #{dir_pn.ctime}"
+  #   sleep(1)
+  #   puts "Write file; file ctime updated; directory ctime not updated."
+  #   file_pn.write('bar')
+  #   puts "  File ctime:      #{file_pn.ctime}"
+  #   puts "  Directory ctime: #{dir_pn.ctime}"
+  #   sleep(1)
+  #   puts "Read file; neither ctime not updated."
+  #   file_pn.read
+  #   puts "  File ctime:      #{file_pn.ctime}"
+  #   puts "  Directory ctime: #{dir_pn.ctime}"
+  # end
+  # ```
+  #
+  # Output:
+  #
+  # ```text
+  # Create directory; directory ctime established.
+  #   Directory ctime: 2026-05-20 14:05:05 -0500
+  # Create file; file ctime established; directory ctime updated.
+  #   File ctime:      2026-05-20 14:05:06 -0500
+  #   Directory ctime: 2026-05-20 14:05:06 -0500
+  # Write file; file ctime updated; directory ctime not updated.
+  #   File ctime:      2026-05-20 14:05:07 -0500
+  #   Directory ctime: 2026-05-20 14:05:06 -0500
+  # Read file; neither ctime not updated.
+  #   File ctime:      2026-05-20 14:05:07 -0500
+  #   Directory ctime: 2026-05-20 14:05:06 -0500
+  # ```
+  #
   def ctime() File.ctime(@path) end
 
   # See <tt>File.mtime</tt>.  Returns last modification time.
