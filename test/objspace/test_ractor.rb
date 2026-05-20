@@ -53,6 +53,195 @@ class TestObjSpaceRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_finalizer_fires_on_registering_ractor
+    assert_ractor(<<~'RUBY', timeout: 20, require: 'objspace')
+      ready = Ractor::Port.new
+
+      r = Ractor.new(ready) do |ready|
+        me = Ractor.current
+        result = Ractor::Port.new
+        callback = ->(_id) { result.send(Ractor.current == me) }
+        obj = Object.new
+        ObjectSpace.define_finalizer(obj, callback)
+        obj = nil
+
+        # Signal main that the object is ready to collect
+        ready.send(true)
+
+        # Wait for the finalizer to fire on this ractor
+        result.receive
+      end
+
+      ready.receive
+      GC.start
+
+      assert_equal true, r.value
+    RUBY
+  end
+
+  FINALIZER_HELPER = <<~'RUBY'
+    module FinalizerHelper
+      def self.define(port)
+        unshareable_object = Object.new
+        ->(_id) {
+          unshareable_object.inspect
+          port.send(Ractor.current)
+        }
+      end
+    end
+  RUBY
+
+  def test_finalizer_fires_on_main_when_main_is_successor
+    assert_ractor(FINALIZER_HELPER + <<~'RUBY', require: 'objspace')
+      GC.disable
+      result = Ractor::Port.new
+
+      r = Ractor.new(result) do |result|
+        callback = FinalizerHelper.define(result)
+        obj = Object.new
+        ObjectSpace.define_finalizer(obj, callback)
+        obj = nil
+      end
+
+      r.value # main becomes r's successor; r's finalizer queue splices onto main
+      GC.start
+
+      assert_equal Ractor.current, result.receive
+    RUBY
+  end
+
+  def test_finalizer_fires_on_successor_ractor
+    assert_ractor(FINALIZER_HELPER + <<~'RUBY', require: 'objspace')
+      GC.disable
+      result = Ractor::Port.new
+
+      r1 = Ractor.new(result) do |result|
+        callback = FinalizerHelper.define(result)
+        obj = Object.new
+        ObjectSpace.define_finalizer(obj, callback)
+        obj = nil
+      end
+      r1.join
+
+      r2 = Ractor.new(r1) do |r1|
+        r1.value # r2 becomes r1's successor; r1's queue splices onto r2
+        Ractor.receive # stay alive so the finalizer can fire here
+      end
+
+      GC.start
+
+      fired_on = result.receive
+      r2.send(:done)
+
+      assert_equal r2, fired_on
+    RUBY
+  end
+
+  def test_finalizer_fires_on_main_when_no_successor
+    assert_ractor(FINALIZER_HELPER + <<~'RUBY', require: 'objspace')
+      GC.disable
+      result = Ractor::Port.new
+
+      r = Ractor.new(result) do |result|
+        callback = FinalizerHelper.define(result)
+        obj = Object.new
+        ObjectSpace.define_finalizer(obj, callback)
+        obj = nil
+      end
+      r.join
+      r = nil
+
+      GC.start
+
+      assert_equal Ractor.current, result.receive
+    RUBY
+  end
+
+  def test_finalizer_queue_waits_for_successor
+    assert_ractor(FINALIZER_HELPER + <<~'RUBY', require: 'objspace')
+      GC.disable
+      result = Ractor::Port.new
+
+      r = Ractor.new(result) do |result|
+        callback = FinalizerHelper.define(result)
+        obj = Object.new
+        ObjectSpace.define_finalizer(obj, callback)
+        obj = nil
+      end
+      r.join
+
+      GC.start
+
+      r.value
+      assert_equal Ractor.current, result.receive
+    RUBY
+  end
+
+  def test_finalizer_redirects_to_alive_successor_when_orphan_ractor_gced
+    assert_ractor(FINALIZER_HELPER + <<~'RUBY', require: 'objspace')
+      GC.disable
+      result = Ractor::Port.new
+
+      r = Ractor.new(result) do |result|
+        callback = FinalizerHelper.define(result)
+        obj = Object.new
+        ObjectSpace.define_finalizer(obj, callback)
+        obj = nil
+      end
+      r.join
+
+      s = Ractor.new(r) do |r|
+        r.value
+        Ractor.receive
+      end
+
+      r = nil
+
+      GC.start
+
+      fired_on = result.receive
+      s.send(:done)
+
+      refute_equal Ractor.current, fired_on
+      assert_equal s, fired_on
+    RUBY
+  end
+
+  def test_finalizer_walks_dying_successor_chain
+    assert_ractor(FINALIZER_HELPER + <<~'RUBY', require: 'objspace')
+      GC.disable
+      result = Ractor::Port.new
+
+      r = Ractor.new(result) do |result|
+        callback = FinalizerHelper.define(result)
+        obj = Object.new
+        ObjectSpace.define_finalizer(obj, callback)
+        obj = nil
+      end
+      r.join
+
+      s = Ractor.new(r) do |r|
+        r.value
+      end
+      s.join
+
+      t = Ractor.new(s) do |s|
+        s.value
+        Ractor.receive
+      end
+
+      r = nil
+      s = nil
+
+      GC.start
+
+      fired_on = result.receive
+      t.send(:done)
+
+      assert_equal t, fired_on
+    RUBY
+  end
+
   def test_trace_object_allocations_with_ractor_tracepoint
     # Test that ObjectSpace.trace_object_allocations works globally across all Ractors
     assert_ractor(<<~'RUBY', require: 'objspace')

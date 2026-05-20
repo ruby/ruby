@@ -728,7 +728,11 @@ ractor_set_successor_once(rb_ractor_t *r, rb_ractor_t *cr)
 {
     if (r->sync.successor == NULL) {
         rb_ractor_t *successor = ATOMIC_PTR_CAS(r->sync.successor, NULL, cr);
-        return successor == NULL ? cr : successor;
+        if (successor == NULL) {
+            rb_gc_ractor_inherit_finalizer_queue(cr, r);
+            return cr;
+        }
+        return successor;
     }
 
     return r->sync.successor;

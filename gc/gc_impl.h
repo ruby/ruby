@@ -98,10 +98,6 @@ GC_IMPL_FN void rb_gc_impl_writebarrier_remember(void *objspace_ptr, VALUE obj);
 GC_IMPL_FN void rb_gc_impl_each_objects(void *objspace_ptr, int (*callback)(void *, void *, size_t, void *), void *data);
 GC_IMPL_FN void rb_gc_impl_each_object(void *objspace_ptr, void (*func)(VALUE obj, void *data), void *data);
 // Finalizers
-GC_IMPL_FN void rb_gc_impl_make_zombie(void *objspace_ptr, VALUE obj, void (*dfree)(void *), void *data);
-GC_IMPL_FN VALUE rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block);
-GC_IMPL_FN void rb_gc_impl_undefine_finalizer(void *objspace_ptr, VALUE obj);
-GC_IMPL_FN void rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj);
 GC_IMPL_FN void rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr);
 // Forking
 GC_IMPL_FN void rb_gc_impl_before_fork(void *objspace_ptr);

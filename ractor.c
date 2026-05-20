@@ -552,6 +552,7 @@ ractor_init(rb_ractor_t *r, VALUE name, VALUE loc)
     if (!SPECIAL_CONST_P(loc)) RB_OBJ_SET_SHAREABLE(loc);
     r->loc = loc;
     r->name = name;
+    r->finalizer_queue = 0;
 }
 
 void

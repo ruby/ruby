@@ -151,7 +151,6 @@ module GC
   #    heap_available_slots: 539590,
   #    heap_live_slots: 422243,
   #    heap_free_slots: 117347,
-  #    heap_final_slots: 0,
   #    heap_marked_slots: 264877,
   #    heap_eden_pages: 521,
   #    total_allocated_pages: 521,
@@ -206,8 +205,6 @@ module GC
   #   The total number of slots which contain live objects.
   # - +:heap_free_slots+:
   #   The total number of slots which do not contain live objects.
-  # - +:heap_final_slots+:
-  #   The total number of slots with pending finalizers to be run.
   # - +:heap_marked_slots+:
   #   The total number of objects marked in the last \GC.
   # - +:heap_eden_pages+:

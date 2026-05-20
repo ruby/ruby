@@ -203,6 +203,7 @@ rb_execution_context_t *rb_gc_get_ec(void);
 
 void *rb_gc_ractor_cache_alloc(rb_ractor_t *ractor);
 void rb_gc_ractor_cache_free(void *cache);
+void rb_gc_ractor_inherit_finalizer_queue(rb_ractor_t *successor, rb_ractor_t *predecessor);
 
 bool rb_gc_size_allocatable_p(size_t size);
 size_t *rb_gc_heap_sizes(void);
@@ -212,6 +213,7 @@ void rb_gc_mark_and_move(VALUE *ptr);
 
 void rb_gc_declare_weak_references(VALUE obj);
 bool rb_gc_handle_weak_references_alive_p(VALUE obj);
+void rb_gc_register_deferred_free(VALUE obj);
 
 void rb_gc_ref_update_table_values_only(st_table *tbl);
 
