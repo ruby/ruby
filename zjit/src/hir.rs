@@ -7208,7 +7208,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     // Check if #new resolves to rb_class_new_instance_pass_kw.
                     // TODO: Guard on a profiled class and add a patch point for #new redefinition
-                    let argc = unsafe { vm_ci_argc((*cd).ci) } as usize;
+                    let argc = crate::profile::num_arguments_on_stack(cd);
+                    let ci = unsafe { get_call_data_ci(cd) };
+                    let flags = unsafe { rb_vm_ci_flag(ci) };
+                    assert_eq!(flags & VM_CALL_ARGS_BLOCKARG, 0);
                     let val = state.stack_topn(argc)?;
                     let test_id = fun.push_insn(block, Insn::IsMethodCfunc { val, cd, cfunc: rb_class_new_instance_pass_kw as *const u8, state: exit_id });
 
@@ -7634,7 +7637,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type), recompile: None });
                         break;  // End the block
                     }
-                    let argc = unsafe { vm_ci_argc((*cd).ci) };
+                    let argc = crate::profile::num_arguments_on_stack(cd);
+                    assert_eq!(flags & VM_CALL_ARGS_BLOCKARG, 0);
 
                     // Side-exit send fallbacks while tracing to avoid FLAG_FINISH breaking throw TAG_RETURN semantics
                     if unsafe { rb_zjit_iseq_tracing_currently_enabled() } {
@@ -7739,7 +7743,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type), recompile: None });
                         break;  // End the block
                     }
-                    let argc = unsafe { vm_ci_argc((*cd).ci) };
+                    let argc = crate::profile::num_arguments_on_stack(cd);
                     let mid = unsafe { rb_vm_ci_mid(call_info) };
 
                     // Check for calls to directives
@@ -8310,7 +8314,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_objtostring => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
-                    let argc = unsafe { vm_ci_argc((*cd).ci) };
+                    let argc = crate::profile::num_arguments_on_stack(cd);
                     assert_eq!(0, argc, "objtostring should not have args");
 
                     let recv = state.stack_pop()?;

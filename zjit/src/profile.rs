@@ -193,7 +193,7 @@ fn profile_invokesuper(profiler: &mut Profiler, profile: &mut IseqProfile) {
     unsafe { rb_gc_writebarrier(profiler.iseq.into(), cme_value) };
 
     let cd: *const rb_call_data = profiler.insn_opnd(0).as_ptr();
-    let argc = unsafe { vm_ci_argc((*cd).ci) };
+    let argc = num_arguments_on_stack(cd);
 
     // Profile all the arguments and self (+1).
     profile_operands(profiler, profile, (argc + 1) as usize);
