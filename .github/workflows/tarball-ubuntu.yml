@@ -92,6 +92,10 @@ jobs:
         run: cd "$ARCHNAME/" && make $JOBS -s ${{ matrix.test_task }}
         env:
           RUBY_TESTOPTS: "-q --tty=no"
+      # test_sync_default_gems triggers gpg, whose agent processes leave
+      # $HOME/.gnupg around even when GNUPGHOME points elsewhere.
+      - name: Forcibly remove ~/.gnupg
+        run: rm -rf $HOME/.gnupg
       - name: Diff stats of HOME
         run: |
           set -euxo pipefail
