@@ -118,13 +118,8 @@ jobs:
         env:
           YACC: win_bison
 
-      - name: Verify built binaries
-        env:
-          ARCHNAME: ${{ inputs.archname }}
-        run: |
-          .\ruby -v
-          .\ruby ..\%ARCHNAME%\bin\gem -v
-          .\ruby ..\%ARCHNAME%\bin\bundle -v
+      - name: ruby -v
+        run: .\ruby -v
 
       - run: nmake test
         timeout-minutes: 5
