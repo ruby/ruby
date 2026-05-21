@@ -1812,8 +1812,9 @@ impl Assembler
             Opnd::Reg(ALLOC_REGS[idx])
         } else {
             // With FrameSetup, the address that NATIVE_BASE_PTR points to stores an old value in the register.
-            // To avoid clobbering it, we need to start from the next slot, hence `+ 1` for the index.
-            Opnd::mem(64, NATIVE_BASE_PTR, (idx - ALLOC_REGS.len() + 1) as i32 * -SIZEOF_VALUE_I32)
+            // To avoid clobbering it, we need to start from the next slot, and we also reserve one space for
+            // JITFrame, hence `+ 2` for the index.
+            Opnd::mem(64, NATIVE_BASE_PTR, (idx - ALLOC_REGS.len() + 2) as i32 * -SIZEOF_VALUE_I32)
         }
     }
 
@@ -2690,15 +2691,11 @@ impl Assembler
             // holding stack/local operands.
             compile_exit_save_state(asm, exit);
             if trace_reason.is_some() || exit.recompile.is_some() {
-                if cfg!(feature = "runtime_checks") {
-                    // Clear jit_return to fully materialize the frame. This must happen
-                    // before any C call in the exit path because that C call can trigger
-                    // GC, which walks the stack and would hit the CFP_JIT_RETURN assertion
-                    // if jit_return still holds the runtime_checks poison value
-                    // (JIT_RETURN_POISON).
-                    asm_comment!(asm, "clear cfp->jit_return");
-                    asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), 0.into());
-                }
+                // Clear cfp->jit_return to prepare for a C call. Normally, cfp->jit_return
+                // is cleared by the caller jit_exec() or JIT_EXEC(), but if we're about to
+                // make a C call, we need to clear any stale JITFrame.
+                asm_comment!(asm, "clear cfp->jit_return");
+                asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), 0.into());
             }
             if let Some(reason) = trace_reason {
                 // Leak a CString with the reason so it's available at runtime
