@@ -1306,6 +1306,37 @@ RSpec.describe "bundle install with gem sources" do
     end
   end
 
+  describe "when using umask 002 and setgid bit", :permissions do
+    let(:gems_path) { bundled_app("vendor/#{Bundler.ruby_scope}/gems") }
+    let(:foo_path) { gems_path.join("foo-1.0.0") }
+
+    before do
+      build_repo4 do
+        build_gem "foo", "1.0.0" do |s|
+          s.write "CHANGELOG.md", "foo"
+        end
+      end
+
+      gemfile <<-G
+        source "https://gem.repo4"
+        gem 'foo'
+      G
+
+      FileUtils.mkdir_p(gems_path)
+      FileUtils.chmod("g+s", gems_path)
+    end
+
+    it "should create the gem directory with proper permissions" do
+      with_umask(0o002) do
+        bundle_config "path vendor"
+        bundle :install
+        expect(out).to include("Bundle complete!")
+        expect(err).to be_empty
+        expect(File.stat(foo_path).mode & 0o7777).to eq(0o2775)
+      end
+    end
+  end
+
   describe "parallel make" do
     before do
       unless Gem::Installer.private_method_defined?(:build_jobs)
