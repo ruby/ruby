@@ -1745,7 +1745,7 @@ class TestRactor < Test::Unit::TestCase
       # in this test can put a flag back: the only writer of GPR_FLAG_MAJOR_BY_FORCE is
       # objspace_absorb, which needs a join or an orphaned zombie objspace to merge
       # (_blocker never terminates and no other Ractor is created), and the sweep's own
-      # GPR_FLAG_MAJOR_BY_NOFREE is ruled out by the last_major_gc step 5 just set.
+      # GPR_FLAG_MAJOR_BY_NOFREE is ruled out because the global sweep is a full mark.
       GC.start
       assert_nil GC.latest_gc_info(:need_major_by)
       assert_equal :none, GC.latest_gc_info(:state)
