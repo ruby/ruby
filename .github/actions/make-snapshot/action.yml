@@ -18,6 +18,10 @@ inputs:
     description: 'srcdir for tool/make-snapshot. Empty = clone ruby/ruby into ./ruby.'
     required: false
     default: ''
+  upload-artifact:
+    description: 'Upload Packages and Info as workflow artifacts. Pass "false" when callers run in a matrix that would collide on artifact names.'
+    required: false
+    default: 'true'
 
 runs:
   using: "composite"
@@ -65,7 +69,9 @@ runs:
       with:
         name: Packages
         path: pkg
+      if: ${{ inputs.upload-artifact == 'true' }}
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: Info
         path: pkg/info
+      if: ${{ inputs.upload-artifact == 'true' }}
