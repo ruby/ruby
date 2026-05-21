@@ -7,6 +7,11 @@ on:
         description: 'archname (e.g. snapshot-master, snapshot-ruby_3_3)'
         required: true
         type: string
+      notify-release-channel:
+        description: 'Also send failure notifications to SNAPSHOT_SLACK_WEBHOOK_URL (schedule/release builds).'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   macos:
@@ -67,6 +72,19 @@ jobs:
         with:
           payload: |
             {
+              "ci": "GitHub Actions",
+              "env": "snapshot: ${{ matrix.os }} / ${{ matrix.test_task }}",
+              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "commit": "${{ github.sha }}",
+              "branch": "${{ github.ref_name }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }}
+        if: failure()
+      - uses: ruby/action-slack@54175162371f1f7c8eb94d7c8644ee2479fcd375 # v3.2.2
+        with:
+          payload: |
+            {
               "attachments": [{
                 "text": "${{ job.status }}: ${{ matrix.os }} / ${{ matrix.test_task }} <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }}>",
                 "color": "danger"
@@ -74,4 +92,4 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SNAPSHOT_SLACK_WEBHOOK_URL }}
-        if: failure() && github.event_name == 'schedule'
+        if: failure() && inputs.notify-release-channel
