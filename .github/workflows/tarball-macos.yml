@@ -12,11 +12,6 @@ on:
         required: false
         type: string
         default: ''
-      rebuild-homebrew-ruby:
-        description: 'Uninstall and reinstall Homebrew Ruby on macos-15-intel'
-        required: false
-        type: boolean
-        default: false
 
 jobs:
   macos:
@@ -46,13 +41,6 @@ jobs:
           }
           set -x
           with_retry brew install gmp libffi openssl@1.1 zlib autoconf automake libtool readline libyaml
-      - name: Uninstall Homebrew Ruby
-        run: |
-          for formula in $(brew list 2>/dev/null | grep '^ruby'); do
-            brew uninstall --force "$formula"
-          done
-          sudo rm -rf /usr/local/lib/ruby
-        if: inputs.rebuild-homebrew-ruby && matrix.os == 'macos-15-intel'
       - name: Set ENV
         run: |
           echo "JOBS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
@@ -60,9 +48,6 @@ jobs:
         run: cd "$ARCHNAME/" && ./configure --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline) --with-libyaml-dir=$(brew --prefix libyaml)
       - name: make
         run: cd "$ARCHNAME/" && make $JOBS
-      - name: Reinstall Homebrew Ruby
-        run: brew install ruby
-        if: inputs.rebuild-homebrew-ruby && matrix.os == 'macos-15-intel' && (matrix.test_task == 'test-bundled-gems' || matrix.test_task == 'test-bundler-parallel')
       - name: Tests
         run: cd "$ARCHNAME/" && make $JOBS -s ${{ matrix.test_task }}
         env:
