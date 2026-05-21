@@ -134,6 +134,7 @@ jobs:
         with:
           sparse-checkout: .github/actions/slack
           sparse-checkout-cone-mode: false
+          persist-credentials: false
         if: ${{ failure() }}
       - uses: ./.github/actions/slack
         with:
