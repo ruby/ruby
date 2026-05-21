@@ -589,17 +589,17 @@ class Pathname
   # ```ruby
   # # Absolute path.
   # Pathname('/path/to/some/file.rb').descend {|pn| p pn }
-  # #<Pathname:/>
-  # #<Pathname:/path>
-  # #<Pathname:/path/to>
-  # #<Pathname:/path/to/some>
-  # #<Pathname:/path/to/some/file.rb>
+  # # #<Pathname:/>
+  # # #<Pathname:/path>
+  # # #<Pathname:/path/to>
+  # # #<Pathname:/path/to/some>
+  # # #<Pathname:/path/to/some/file.rb>
   # # Relative path.
   # Pathname('path/to/some/file.rb').descend {|pn| p pn }
-  # #<Pathname:path>
-  # #<Pathname:path/to>
-  # #<Pathname:path/to/some>
-  # #<Pathname:path/to/some/file.rb>
+  # # #<Pathname:path>
+  # # #<Pathname:path/to>
+  # # #<Pathname:path/to/some>
+  # # #<Pathname:path/to/some/file.rb>
   # ```
   #
   # With no block given, returns a new Enumerator.
@@ -824,9 +824,9 @@ class Pathname
   #
   # ```ruby
   # Pathname('include').each_child {|child| p child }
-  # #<Pathname:include/ruby>
-  # #<Pathname:include/ruby.h>
-  # => [#<Pathname:include/ruby>, #<Pathname:include/ruby.h>]
+  # # #<Pathname:include/ruby>
+  # # #<Pathname:include/ruby.h>
+  # # => [#<Pathname:include/ruby>, #<Pathname:include/ruby.h>]
   # ```
   #
   # With a block given and `with_dirnames` given as `false`,
@@ -836,9 +836,9 @@ class Pathname
   #
   # ```ruby
   # Pathname('include').each_child(false) {|child| p child }
-  # #<Pathname:ruby>
-  # #<Pathname:ruby.h>
-  # => [#<Pathname:ruby>, #<Pathname:ruby.h>]
+  # # #<Pathname:ruby>
+  # # #<Pathname:ruby.h>
+  # # => [#<Pathname:ruby>, #<Pathname:ruby.h>]
   # ```
   #
   # Note that entries `'.'` and `'..'` are not children.
@@ -1649,11 +1649,11 @@ class Pathname    # * Dir *
   #
   # ```ruby
   # Pathname('include').each_entry {|entry| p entry }
-  # #<Pathname:ruby>
-  # #<Pathname:..>
-  # #<Pathname:ruby.h>
-  # #<Pathname:.>
-  # => nil
+  # # #<Pathname:ruby>
+  # # #<Pathname:..>
+  # # #<Pathname:ruby.h>
+  # # #<Pathname:.>
+  # # => nil
   # ```
   #
   # With no block given, returns a new Enumerator.
