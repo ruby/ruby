@@ -1636,10 +1636,27 @@ class Pathname    # * Dir *
   # Pathname object.
   def entries() Dir.entries(@path).map {|f| self.class.new(f) } end
 
-  # Iterates over the entries (files and subdirectories) in the directory.  It
-  # yields a Pathname object for each entry.
+  # :markup: markdown
   #
-  # This method has existed since 1.8.1.
+  # call-seq:
+  #   each_entry {|entry| ... } -> nil
+  #   each_entry -> new_enumerator
+  #
+  # With a block given,
+  # yields a new pathname for each entry
+  # in the entry represented by `self`;
+  # returns `nil`:
+  #
+  # ```ruby
+  # Pathname('include').each_entry {|entry| p entry }
+  # #<Pathname:ruby>
+  # #<Pathname:..>
+  # #<Pathname:ruby.h>
+  # #<Pathname:.>
+  # => nil
+  # ```
+  #
+  # With no block given, returns a new Enumerator.
   def each_entry(&block) # :yield: pathname
     return to_enum(__method__) unless block_given?
     Dir.foreach(@path) {|f| yield self.class.new(f) }
