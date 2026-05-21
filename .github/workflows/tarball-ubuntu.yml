@@ -7,11 +7,6 @@ on:
         description: 'archname (e.g. snapshot-master, snapshot-ruby_3_3)'
         required: true
         type: string
-      apt-mode:
-        description: '"none" | "git-only" | "ruby-and-git" — controls per-test_task apt install handling'
-        required: false
-        type: string
-        default: 'none'
       fixed-dirs-extra:
         description: 'Create $HOME/.local/share, $HOME/.ssh on top of minimal fixed dirs'
         required: false
@@ -50,55 +45,11 @@ jobs:
           path: pkg
       - name: Extract
         run: tar xf pkg/*.tar.xz
-      - name: Install libraries (apt-mode=none)
+      - name: Install libraries
         run: |
           set -x
           sudo apt-get update -q
           sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev bison- autoconf-
-        if: inputs.apt-mode == 'none'
-      - name: Install libraries (apt-mode=git-only)
-        run: |
-          set -x
-          sudo apt-get update -q || :
-          # postfix `-` means `uninstall`
-          APT_INSTALL_GIT=git-
-          case "${{ matrix.test_task }}" in
-            test-bundled-gems)
-              # test-bundled-gems-fetch requires git
-              unset APT_INSTALL_GIT
-              ;;
-            test-bundler*)
-              # avoid Bundler::Source::Git::GitNotInstalledError
-              unset APT_INSTALL_GIT
-              ;;
-            *)
-              ;;
-          esac
-          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev bison- autoconf- $APT_INSTALL_GIT
-        if: inputs.apt-mode == 'git-only'
-      - name: Install libraries (apt-mode=ruby-and-git)
-        run: |
-          set -x
-          sudo apt-get update -q || :
-          # postfix `-` means `uninstall`
-          APT_INSTALL_RUBY=ruby-
-          APT_INSTALL_GIT=git-
-          case "${{ matrix.test_task }}" in
-            test-bundled-gems)
-              # test-bundled-gems requires executable host ruby
-              APT_INSTALL_RUBY=ruby
-              # test-bundled-gems-fetch requires git
-              unset APT_INSTALL_GIT
-              ;;
-            test-bundler*)
-              # avoid Bundler::Source::Git::GitNotInstalledError
-              unset APT_INSTALL_GIT
-              ;;
-            *)
-              ;;
-          esac
-          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev bison- autoconf- $APT_INSTALL_RUBY $APT_INSTALL_GIT
-        if: inputs.apt-mode == 'ruby-and-git'
       - uses: ruby/setup-ruby@c4e5b1316158f92e3d49443a9d58b31d25ac0f8f # v1.306.0
         with:
           ruby-version: 3.2
