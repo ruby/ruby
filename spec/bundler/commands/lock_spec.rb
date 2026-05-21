@@ -1083,8 +1083,10 @@ RSpec.describe "bundle lock" do
     simulate_platform("x86-mingw32") { bundle :lock }
 
     checksums = checksums_section_when_enabled do |c|
+      c.checksum gem_repo4, "ffi", "1.9.14"
       c.checksum gem_repo4, "ffi", "1.9.14", "x86-mingw32"
       c.checksum gem_repo4, "gssapi", "1.2.0"
+      c.checksum gem_repo4, "mixlib-shellout", "2.2.6"
       c.checksum gem_repo4, "mixlib-shellout", "2.2.6", "universal-mingw32"
       c.checksum gem_repo4, "win32-process", "0.8.3"
     end
@@ -1093,9 +1095,11 @@ RSpec.describe "bundle lock" do
       GEM
         remote: https://gem.repo4/
         specs:
+          ffi (1.9.14)
           ffi (1.9.14-x86-mingw32)
           gssapi (1.2.0)
             ffi (>= 1.0.1)
+          mixlib-shellout (2.2.6)
           mixlib-shellout (2.2.6-universal-mingw32)
             win32-process (~> 0.8.2)
           win32-process (0.8.3)

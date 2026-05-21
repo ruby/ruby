@@ -262,7 +262,62 @@ RSpec.describe "bundle install with specific platforms" do
       end
     end
 
-    it "installs the ruby variant but Bundler.setup still complains when only an incompatible platform-specific variant is locked" do
+    it "adds and installs the ruby variant when only an incompatible platform-specific variant was locked" do
+      build_repo4 do
+        build_gem "nokogiri", "1.18.10"
+        build_gem "nokogiri", "1.18.10" do |s|
+          s.platform = "x86_64-linux"
+          s.required_ruby_version = "< #{Gem.ruby_version}"
+        end
+      end
+
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "nokogiri"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            nokogiri (1.18.10-x86_64-linux)
+
+        PLATFORMS
+          x86_64-linux
+
+        DEPENDENCIES
+          nokogiri
+
+        BUNDLED WITH
+          #{Bundler::VERSION}
+      L
+
+      simulate_platform "x86_64-linux" do
+        bundle "install --verbose"
+        expect(out).to include("Installing nokogiri 1.18.10")
+        expect(the_bundle).to include_gem("nokogiri 1.18.10")
+      end
+
+      expect(lockfile).to eq <<~L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            nokogiri (1.18.10)
+            nokogiri (1.18.10-x86_64-linux)
+
+        PLATFORMS
+          x86_64-linux
+
+        DEPENDENCIES
+          nokogiri
+
+        BUNDLED WITH
+          #{Bundler::VERSION}
+      L
+    end
+
+    it "fails at install time when only an incompatible platform-specific variant is locked" do
       build_repo4 do
         build_gem "nokogiri", "1.18.10"
         build_gem "nokogiri", "1.18.10" do |s|
@@ -295,14 +350,8 @@ RSpec.describe "bundle install with specific platforms" do
 
       simulate_platform "x86_64-linux" do
         bundle "install --verbose", env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
-        expect(exitstatus).to eq(0)
-        expect(out).to include("Fetching nokogiri 1.18.10\n")
-        expect(out).to include("Installing nokogiri 1.18.10\n")
-
-        # FIXME: We should not install an alternative and then refuse to use it.
-        ruby "require 'bundler'; Bundler.setup", env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
         expect(exitstatus).not_to eq(0)
-        expect(err).to include("Could not find nokogiri-1.18.10-x86_64-linux in locally installed gems")
+        expect(err).to include("nokogiri-1.18.10-x86_64-linux requires ruby version < #{Gem.ruby_version}")
       end
     end
   end
@@ -810,10 +859,13 @@ RSpec.describe "bundle install with specific platforms" do
       bundle "update --conservative nokogiri"
     end
 
+    checksums.checksum gem_repo4, "nokogiri", "1.13.0"
+
     expect(lockfile).to eq <<~L
       GEM
         remote: https://gem.repo4/
         specs:
+          nokogiri (1.13.0)
           nokogiri (1.13.0-x86_64-darwin)
           sorbet-static (0.5.10601-x86_64-darwin)
 
@@ -822,6 +874,61 @@ RSpec.describe "bundle install with specific platforms" do
 
       DEPENDENCIES
         nokogiri
+        sorbet-static
+      #{checksums}
+      BUNDLED WITH
+        #{Bundler::VERSION}
+    L
+  end
+
+  it "locks ruby fallback variant dependencies without adding the ruby platform" do
+    build_repo4 do
+      build_gem "native_tool", "1.0" do |s|
+        s.add_dependency "rake"
+      end
+
+      build_gem "native_tool", "1.0" do |s|
+        s.platform = "x86_64-linux"
+      end
+
+      build_gem "rake"
+
+      build_gem "sorbet-static", "0.5.10601" do |s|
+        s.platform = "x86_64-linux"
+      end
+    end
+
+    simulate_platform "x86_64-linux" do
+      install_gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "native_tool"
+        gem "sorbet-static"
+      G
+    end
+
+    checksums = checksums_section_when_enabled do |c|
+      c.checksum gem_repo4, "native_tool", "1.0"
+      c.checksum gem_repo4, "native_tool", "1.0", "x86_64-linux"
+      c.checksum gem_repo4, "rake", "1.0"
+      c.checksum gem_repo4, "sorbet-static", "0.5.10601", "x86_64-linux"
+    end
+
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: https://gem.repo4/
+        specs:
+          native_tool (1.0)
+            rake
+          native_tool (1.0-x86_64-linux)
+          rake (1.0)
+          sorbet-static (0.5.10601-x86_64-linux)
+
+      PLATFORMS
+        x86_64-linux
+
+      DEPENDENCIES
+        native_tool
         sorbet-static
       #{checksums}
       BUNDLED WITH
