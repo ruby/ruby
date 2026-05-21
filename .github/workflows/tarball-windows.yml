@@ -7,11 +7,11 @@ on:
         description: 'archname (e.g. snapshot-master)'
         required: true
         type: string
-      patch-url:
-        description: 'Patch URL forwarded from workflow_dispatch'
+      notify-release-channel:
+        description: 'Also send failure notifications to SNAPSHOT_SLACK_WEBHOOK_URL (schedule/release builds).'
         required: false
-        type: string
-        default: ''
+        type: boolean
+        default: false
 
 jobs:
   windows:
@@ -73,18 +73,6 @@ jobs:
       - name: Extract
         run: 7z x pkg/*.zip
         working-directory:
-      - name: Apply patch
-        run: |
-          set -x
-          curl -sSL "${RUBY_PATCH_URL}" -o ruby.patch
-          cd "$ARCHNAME"
-          git apply ../ruby.patch
-        shell: bash
-        env:
-          RUBY_PATCH_URL: ${{ inputs.patch-url }}
-          ARCHNAME: ${{ inputs.archname }}
-        if: inputs.patch-url != ''
-        working-directory:
 
       - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
@@ -131,8 +119,7 @@ jobs:
           YACC: win_bison
 
       - name: ruby -v
-        run: |
-          .\ruby -v
+        run: .\ruby -v
 
       - run: nmake test
         timeout-minutes: 5
@@ -147,6 +134,19 @@ jobs:
         with:
           payload: |
             {
+              "ci": "GitHub Actions",
+              "env": "snapshot: ${{ env.OS_VER }} / ${{ matrix.test_task }}",
+              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "commit": "${{ github.sha }}",
+              "branch": "${{ github.ref_name }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }}
+        if: failure()
+      - uses: ruby/action-slack@54175162371f1f7c8eb94d7c8644ee2479fcd375 # v3.2.2
+        with:
+          payload: |
+            {
               "attachments": [{
                 "text": "${{ job.status }}: ${{ env.OS_VER }} / ${{ matrix.test_task }} <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }}>",
                 "color": "danger"
@@ -154,4 +154,4 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SNAPSHOT_SLACK_WEBHOOK_URL }}
-        if: failure() && github.event_name == 'schedule'
+        if: failure() && inputs.notify-release-channel
