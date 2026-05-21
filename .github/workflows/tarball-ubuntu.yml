@@ -62,8 +62,7 @@ jobs:
       - name: Save stats of HOME
         run: |
           set -euxo pipefail
-          cd "$ARCHNAME/"
-          cat >test.rb <<'EOF'
+          cat >"$ARCHNAME/save-stats.rb" <<'EOF'
           require 'pathname'
           require 'digest'
           out = []
@@ -82,12 +81,11 @@ jobs:
               out << [pn.to_s, $!.inspect].to_s
             end
           end
-          File.open("/tmp/stat-before-tests.txt", "w") do |io|
+          File.open(ARGV.shift, "w") do |io|
             io.puts out.sort
           end
           EOF
-          make runruby
-          rm -f test.rb
+          make -C "$ARCHNAME" TESTRUN_SCRIPT=save-stats.rb RUNOPT=/tmp/stat-before-tests.txt runruby
       - name: Tests
         run: cd "$ARCHNAME/" && make $JOBS -s ${{ matrix.test_task }}
         env:
@@ -98,33 +96,8 @@ jobs:
         run: rm -rf $HOME/.gnupg
       - name: Diff stats of HOME
         run: |
-          set -euxo pipefail
-          cd "$ARCHNAME/"
-          cat >test.rb <<'EOF'
-          require 'pathname'
-          require 'digest'
-          out = []
-          [
-            Dir.home,
-          ].each do |dir|
-            Pathname(dir).each_child do |pn|
-              st = pn.stat
-              if st.file?
-                content = Digest::SHA1.hexdigest(pn.read)
-              elsif st.directory? && st.nlink <= 10
-                content = pn.children.map(&:basename).map(&:to_s).sort
-              end
-              out << [pn.to_s, "%o"%st.mode, st.nlink, st.uid, st.gid, st.size, content].to_s
-            rescue
-              out << [pn.to_s, $!.inspect].to_s
-            end
-          end
-          File.open("/tmp/stat-after-tests.txt", "w") do |io|
-            io.puts out.sort
-          end
-          EOF
-          make runruby
-          rm -f test.rb
+          make -C "$ARCHNAME" TESTRUN_SCRIPT=save-stats.rb RUNOPT=/tmp/stat-after-tests.txt runruby
+          rm -f "$ARCHNAME/save-stats.rb"
           diff -u /tmp/stat-before-tests.txt /tmp/stat-after-tests.txt
       # leaked-globals since 2.7
       - name: Leaked Globals
