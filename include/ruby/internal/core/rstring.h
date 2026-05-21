@@ -413,9 +413,18 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline char *
 RSTRING_PTR(VALUE str)
 {
-    char *ptr = RB_FL_TEST_RAW(str, RSTRING_NOEMBED) ?
-        RSTRING(str)->as.heap.ptr :
-        RSTRING(str)->as.embed.ary;
+    char *ptr;
+    if (RB_FL_TEST_RAW(str, RSTRING_NOEMBED)) {
+        if (RB_FL_TEST_RAW(str, RUBY_ELTS_SHARED)) {
+            ptr = rbimpl_str_ensure_terminator(str);
+        }
+        else {
+            ptr = RSTRING(str)->as.heap.ptr;
+        }
+    }
+    else {
+        ptr = RSTRING(str)->as.embed.ary;
+    }
 
     if (RUBY_DEBUG && RB_UNLIKELY(! ptr)) {
         /* :BEWARE: @shyouhei thinks  that currently, there are  rooms for this
@@ -425,14 +434,6 @@ RSTRING_PTR(VALUE str)
          * during GC (see  what obj_info() does).  rb_warn()  needs to allocate
          * Ruby objects.  That is not possible at this moment. */
         rb_debug_rstring_null_ptr("RSTRING_PTR");
-    }
-
-    /* Heap strings  may  lack  a null terminator  (SHARABLE_MIDDLE_SUBSTRING).
-     * rbimpl_str_ptr_guarantee_null_term()   checks   all  termlen  bytes  and
-     * returns immediately for already-terminated strings. */
-    if (RB_FL_TEST_RAW(str, RSTRING_NOEMBED) &&
-                RB_FL_TEST_RAW(str, RUBY_ELTS_SHARED)) {
-        ptr = rbimpl_str_ptr_guarantee_null_term(str);
     }
 
     return ptr;

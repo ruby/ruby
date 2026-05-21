@@ -2978,9 +2978,9 @@ rbimpl_str_ensure_terminator(VALUE str)
     RUBY_ASSERT(FL_TEST_RAW(str, STR_NOEMBED | STR_SHARED));
 
     if (!ruby_thread_has_gvl_p()) {
-        /* We are inside the GC and cannot allocate.  Return the raw pointer;
-         * any null-termination guarantee is relaxed in this context (the
-         * pointer is only used for diagnostic display, not C-string APIs). */
+        /* We don't hold the GVL. Calling str_make_independent_expand without
+         * it would modify shared object state without synchronization.
+         * Return the raw pointer; null-termination is not guaranteed. */
         return RSTRING(str)->as.heap.ptr;
     }
 
@@ -2989,7 +2989,8 @@ rbimpl_str_ensure_terminator(VALUE str)
     char *ptr = RSTRING(str)->as.heap.ptr;
 
     if (zero_filled(ptr + len, termlen)) return ptr;
-    return str_fill_term(str, ptr, len, termlen);
+    str_make_independent_expand(str, len, 0L, termlen);
+    return RSTRING_START(str);
 }
 
 VALUE
