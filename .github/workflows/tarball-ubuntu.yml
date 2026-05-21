@@ -17,11 +17,6 @@ on:
         required: false
         type: boolean
         default: true
-      remove-gnupg:
-        description: 'Forcibly remove ~/.gnupg after tests'
-        required: false
-        type: boolean
-        default: false
       fixed-dirs-extra:
         description: 'Create $HOME/.local/share, $HOME/.ssh on top of minimal fixed dirs'
         required: false
@@ -170,11 +165,6 @@ jobs:
         run: cd "$ARCHNAME/" && make $JOBS -s ${{ matrix.test_task }}
         env:
           RUBY_TESTOPTS: "-q --tty=no"
-      # not sure why ~/.gnupg is remained
-      # see tool/test/test_sync_default_gems.rb
-      - name: Forcibly remove test directory
-        run: rm -rf $HOME/.gnupg
-        if: inputs.remove-gnupg
       - name: Diff stats of HOME
         run: |
           set -euxo pipefail
