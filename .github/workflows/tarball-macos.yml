@@ -7,11 +7,6 @@ on:
         description: 'archname (e.g. snapshot-master, snapshot-ruby_3_3)'
         required: true
         type: string
-      allow-failures:
-        description: 'TEST_BUNDLED_GEMS_ALLOW_FAILURES value'
-        required: false
-        type: string
-        default: ''
 
 jobs:
   macos:
@@ -26,7 +21,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       ARCHNAME: ${{ inputs.archname }}
-      TEST_BUNDLED_GEMS_ALLOW_FAILURES: ${{ inputs.allow-failures }}
     steps:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:

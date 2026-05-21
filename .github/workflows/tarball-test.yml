@@ -53,7 +53,6 @@ jobs:
     uses: ./.github/workflows/tarball-ubuntu.yml
     with:
       archname: snapshot-${{ needs.tarball.outputs.branch }}
-      allow-failures: power_assert
       remove-gnupg: true
       notify-ruby-sha: true
       branch-label: ${{ needs.tarball.outputs.branch }}
@@ -64,7 +63,6 @@ jobs:
     uses: ./.github/workflows/tarball-macos.yml
     with:
       archname: snapshot-${{ needs.tarball.outputs.branch }}
-      allow-failures: power_assert
     secrets: inherit
 
   windows:
