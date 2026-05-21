@@ -58,7 +58,7 @@ jobs:
     uses: ./.github/workflows/tarball-ubuntu.yml
     with:
       archname: snapshot-${{ needs.tarball.outputs.branch }}
-      notify-release-channel: ${{ inputs.notify-release-channel || false }}
+      notify-release-channel: ${{ github.event_name == 'workflow_dispatch' && inputs.notify-release-channel || false }}
     secrets: inherit
 
   macos:
@@ -66,7 +66,7 @@ jobs:
     uses: ./.github/workflows/tarball-macos.yml
     with:
       archname: snapshot-${{ needs.tarball.outputs.branch }}
-      notify-release-channel: ${{ inputs.notify-release-channel || false }}
+      notify-release-channel: ${{ github.event_name == 'workflow_dispatch' && inputs.notify-release-channel || false }}
     secrets: inherit
 
   windows:
@@ -74,7 +74,7 @@ jobs:
     uses: ./.github/workflows/tarball-windows.yml
     with:
       archname: snapshot-${{ needs.tarball.outputs.branch }}
-      notify-release-channel: ${{ inputs.notify-release-channel || false }}
+      notify-release-channel: ${{ github.event_name == 'workflow_dispatch' && inputs.notify-release-channel || false }}
     secrets: inherit
 
   non_development:
