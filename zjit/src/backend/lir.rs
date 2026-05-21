@@ -2678,8 +2678,11 @@ impl Assembler
             }
         }
 
-        /// Compile the main side-exit code. This function takes only SideExit so
-        /// that it can be safely deduplicated by using SideExit as a dedup key.
+        /// Compile the main side-exit code.  The side exit will optionally record a traced exit
+        /// stack, optionally trigger recompilation, and then return to the interpreter. Shared
+        /// exits pass no trace reason so they can still be deduplicated by SideExit.
+        /// IOW, we should never pass a trace reason if we expect the exit to be
+        /// deduplicated.
         fn compile_exit(asm: &mut Assembler, exit: &SideExit, trace_reason: Option<SideExitReason>) {
             // Save VM state before the ccall so that
             // rb_profile_frames sees valid cfp->pc and the
