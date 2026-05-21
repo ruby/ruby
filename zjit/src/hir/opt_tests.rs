@@ -3207,7 +3207,7 @@ mod hir_opt_tests {
         bb3(v8:BasicObject, v9:NilClass):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, M)
-          v29:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v29:ModuleExact[M@0x1008] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(Module@0x1010)
           PatchPoint MethodRedefined(Module@0x1010, name@0x1018, cme:0x1020)
           v33:StringExact|NilClass = CCall v29, :Module#name@0x1048
@@ -3323,9 +3323,9 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, Enumerable)
-          v22:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v22:ModuleExact[Enumerable@0x1008] = Const Value(VALUE(0x1008))
           PatchPoint StableConstantNames(0x1010, Kernel)
-          v25:ModuleExact[VALUE(0x1018)] = Const Value(VALUE(0x1018))
+          v25:ModuleExact[Kernel@0x1018] = Const Value(VALUE(0x1018))
           v14:ArrayExact = NewArray v22, v25
           CheckInterrupts
           Return v14
@@ -3353,7 +3353,7 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, MY_MODULE)
-          v18:ModuleSubclass[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v18:ModuleSubclass[MY_MODULE@0x1008] = Const Value(VALUE(0x1008))
           CheckInterrupts
           Return v18
         ");
@@ -3575,7 +3575,7 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, M)
-          v20:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v20:ModuleExact[M@0x1008] = Const Value(VALUE(0x1008))
           PatchPoint NoSingletonClass(Module@0x1010)
           PatchPoint MethodRedefined(Module@0x1010, class@0x1018, cme:0x1020)
           v25:Class[Module@0x1010] = Const Value(VALUE(0x1010))
@@ -4392,7 +4392,7 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, Kernel)
-          v18:ModuleExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v18:ModuleExact[Kernel@0x1008] = Const Value(VALUE(0x1008))
           CheckInterrupts
           Return v18
         ");
@@ -13010,7 +13010,7 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1008, Kernel)
-          v27:ModuleExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+          v27:ModuleExact[Kernel@0x1010] = Const Value(VALUE(0x1010))
           PatchPoint NoEPEscape(test)
           PatchPoint MethodRedefined(Module@0x1018, ===@0x1020, cme:0x1028)
           v30:BoolExact = CCall v27, :Module#===@0x1050, v10
@@ -13073,7 +13073,7 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1008, Kernel)
-          v25:ModuleExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+          v25:ModuleExact[Kernel@0x1010] = Const Value(VALUE(0x1010))
           PatchPoint NoSingletonClass(String@0x1018)
           PatchPoint MethodRedefined(String@0x1018, is_a?@0x1020, cme:0x1028)
           v29:StringExact = GuardType v10, StringExact
@@ -13206,7 +13206,7 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1008, Kernel)
-          v25:ModuleExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+          v25:ModuleExact[Kernel@0x1010] = Const Value(VALUE(0x1010))
           PatchPoint NoSingletonClass(String@0x1018)
           PatchPoint MethodRedefined(String@0x1018, kind_of?@0x1020, cme:0x1028)
           v29:StringExact = GuardType v10, StringExact
@@ -13637,6 +13637,39 @@ mod hir_opt_tests {
           v21:Class[Object@0x1038] = Const Value(VALUE(0x1038))
           CheckInterrupts
           Return v21
+        ");
+    }
+
+    #[test]
+    fn test_print_nil_module_name() {
+        eval(r#"
+            X = [Module.new].freeze
+            def test = X[0]
+            test
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, X)
+          v23:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v12:Fixnum[0] = Const Value(0)
+          PatchPoint NoSingletonClass(Array@0x1010)
+          PatchPoint MethodRedefined(Array@0x1010, []@0x1018, cme:0x1020)
+          v34:CInt64[0] = Const CInt64(0)
+          v28:CInt64 = ArrayLength v23
+          v29:CInt64[0] = GuardLess v34, v28
+          v35:ModuleExact[VALUE(0x1048)] = Const Value(VALUE(0x1048))
+          CheckInterrupts
+          Return v35
         ");
     }
 
