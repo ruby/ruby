@@ -146,8 +146,11 @@ jobs:
       - name: make install
         run: cd "$ARCHNAME/" && sudo make $JOBS install
         if: matrix.test_task == 'check'
-      - name: ruby -v
-        run: /usr/local/bin/ruby -v
+      - name: Verify installed binaries
+        run: |
+          /usr/local/bin/ruby -v
+          /usr/local/bin/gem -v
+          /usr/local/bin/bundle -v
         if: matrix.test_task == 'check'
       - name: Show .local
         run: find $HOME/.local -ls
