@@ -840,7 +840,7 @@ class Pathname
   # => [#<Pathname:ruby>, #<Pathname:ruby.h>]
   # ```
   #
-  # Note that entries `'.'`+ and `'..'` are not children.
+  # Note that entries `'.'` and `'..'` are not children.
   #
   # With no block given, returns a new Enumerator.
   def each_child(with_directory=true, &b)
