@@ -1658,8 +1658,24 @@ class Pathname    # * Dir *
 end
 
 class Pathname    # * mixed *
-  # Removes a file or directory, using <tt>File.unlink</tt> or
-  # <tt>Dir.unlink</tt> as necessary.
+  #
+  # :markup: markdown
+  #
+  # call-seq:
+  #   unlink -> 1 or 0
+  #
+  # Removes the file or directory represented by `self`, using:
+  #
+  # - File.unlink, if `self` represents a file; returns `1`.
+  # - Dir.unlink, if `self` represents a directory; returns `0`.
+  #
+  # Examples:
+  #
+  # ```ruby
+  # Pathname(Tempfile.create).unlink   # => 1
+  # Pathname(Pathname.mktmpdir).unlink # => 0
+  # ```
+  #
   def unlink()
     Dir.unlink @path
   rescue Errno::ENOTDIR
