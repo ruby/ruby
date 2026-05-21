@@ -1603,27 +1603,8 @@ class Pathname    # * mixed *
   # Examples:
   #
   # ```ruby
-  # # Work in a temporary directory.
-  # Pathname.mktmpdir do |tmpdirpath|
-  #   # A subdirectory therein, and its Pathname.
-  #   dirpath = File.join(tmpdirpath, 'subdir')
-  #   dir_pn = Pathname(dirpath)
-  #   dir_pn.mkdir
-  #   # A file in the subdirectory, and its Pathname.
-  #   filepath = File.join(dirpath, 't.txt')
-  #   file_pn = Pathname(filepath)
-  #   file_pn.write('foo')
-  #
-  #   puts file_pn.delete
-  #   puts dir_pn.delete
-  # end
-  # ```
-  #
-  # Output:
-  #
-  # ```text
-  # 1
-  # 0
+  # Pathname(Tempfile.create).unlink   # => 1
+  # Pathname(Pathname.mktmpdir).unlink # => 0
   # ```
   #
   def unlink()
