@@ -2973,7 +2973,7 @@ rb_str_fill_terminator(VALUE str, const int newminlen)
 }
 
 char *
-rbimpl_str_ptr_guarantee_null_term(VALUE str)
+rbimpl_str_ensure_terminator(VALUE str)
 {
     RUBY_ASSERT(FL_TEST_RAW(str, STR_NOEMBED | STR_SHARED));
 

@@ -356,13 +356,12 @@ void rb_debug_rstring_null_ptr(const char *func);
 /**
  * @private
  *
- * Implementation  helper  for  RSTRING_PTR().  Ensures  the string has  a null
- * terminator after its content.
+ * Ensures the string has a null terminator after its content.
  *
  * @param[in]  str  A shared heap string that may lack a null terminator.
  * @return     Pointer to the (now null-terminated) string contents.
  */
-char *rbimpl_str_ptr_guarantee_null_term(VALUE str);
+char *rbimpl_str_ensure_terminator(VALUE str);
 RBIMPL_SYMBOL_EXPORT_END()
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
