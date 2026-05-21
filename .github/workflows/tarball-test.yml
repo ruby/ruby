@@ -48,7 +48,7 @@ jobs:
           git fetch --no-tags --depth=1 origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH"
           git checkout -B "$BRANCH" HEAD
           git branch --set-upstream-to="origin/$BRANCH" "$BRANCH"
-      - uses: ./.github/actions/make-snapshot
+      - uses: ruby/ruby/.github/actions/make-snapshot@master
         with:
           archname: snapshot-${{ env.BRANCH }}
           srcdir: '.'
