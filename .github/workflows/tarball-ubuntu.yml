@@ -7,16 +7,11 @@ on:
         description: 'archname (e.g. snapshot-master, snapshot-ruby_3_3)'
         required: true
         type: string
-      notify-ruby-sha:
-        description: 'Post ruby SHA failure notification to SIMPLER_ALERTS_URL'
+      notify-release-channel:
+        description: 'Also send failure notifications to SNAPSHOT_SLACK_WEBHOOK_URL (schedule/release builds).'
         required: false
         type: boolean
         default: false
-      branch-label:
-        description: 'Branch label for SIMPLER_ALERTS_URL notification. Defaults to "master".'
-        required: false
-        type: string
-        default: 'master'
 
 jobs:
   ubuntu:
@@ -149,6 +144,19 @@ jobs:
         with:
           payload: |
             {
+              "ci": "GitHub Actions",
+              "env": "snapshot: ${{ matrix.os }} / ${{ matrix.test_task }}",
+              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "commit": "${{ github.sha }}",
+              "branch": "${{ github.ref_name }}"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }}
+        if: failure()
+      - uses: ruby/action-slack@54175162371f1f7c8eb94d7c8644ee2479fcd375 # v3.2.2
+        with:
+          payload: |
+            {
               "attachments": [{
                 "text": "${{ job.status }}: ${{ matrix.os }} / ${{ matrix.test_task }} <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }}>",
                 "color": "danger"
@@ -156,21 +164,4 @@ jobs:
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SNAPSHOT_SLACK_WEBHOOK_URL }}
-        if: failure() && github.event_name == 'schedule'
-      - name: Get ruby/ruby sha
-        id: ruby_sha
-        run: cd "$ARCHNAME/" && ./ruby -e 'puts "sha=#{RUBY_REVISION}"' >> $GITHUB_OUTPUT
-        if: failure() && inputs.notify-ruby-sha && github.event_name == 'schedule'
-      - uses: ruby/action-slack@54175162371f1f7c8eb94d7c8644ee2479fcd375 # v3.2.2
-        with:
-          payload: |
-            {
-              "ci": "GitHub Actions",
-              "env": "snapshot: ${{ matrix.os }} / ${{ matrix.test_task }}",
-              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "commit": "${{ steps.ruby_sha.outputs.sha }}",
-              "branch": "${{ inputs.branch-label }}"
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }}
-        if: failure() && inputs.notify-ruby-sha && github.event_name == 'schedule'
+        if: failure() && inputs.notify-release-channel

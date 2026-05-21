@@ -13,6 +13,11 @@ on:
     # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
   merge_group:
   workflow_dispatch:
+    inputs:
+      notify-release-channel:
+        description: 'Also send failure notifications to SNAPSHOT_SLACK_WEBHOOK_URL (set by tarball-test-schedule).'
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
@@ -53,8 +58,7 @@ jobs:
     uses: ./.github/workflows/tarball-ubuntu.yml
     with:
       archname: snapshot-${{ needs.tarball.outputs.branch }}
-      notify-ruby-sha: true
-      branch-label: ${{ needs.tarball.outputs.branch }}
+      notify-release-channel: ${{ inputs.notify-release-channel || false }}
     secrets: inherit
 
   macos:
@@ -62,6 +66,7 @@ jobs:
     uses: ./.github/workflows/tarball-macos.yml
     with:
       archname: snapshot-${{ needs.tarball.outputs.branch }}
+      notify-release-channel: ${{ inputs.notify-release-channel || false }}
     secrets: inherit
 
   windows:
@@ -69,6 +74,7 @@ jobs:
     uses: ./.github/workflows/tarball-windows.yml
     with:
       archname: snapshot-${{ needs.tarball.outputs.branch }}
+      notify-release-channel: ${{ inputs.notify-release-channel || false }}
     secrets: inherit
 
   non_development:

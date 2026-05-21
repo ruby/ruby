@@ -19,7 +19,7 @@ jobs:
           - ruby_3_3
     steps:
       - name: Trigger tarball-test on ${{ matrix.branch }}
-        run: gh workflow run tarball-test.yml --ref "$BRANCH" --repo "$GITHUB_REPOSITORY"
+        run: gh workflow run tarball-test.yml --ref "$BRANCH" --repo "$GITHUB_REPOSITORY" -f notify-release-channel=true
         env:
           BRANCH: ${{ matrix.branch }}
           GH_TOKEN: ${{ secrets.MATZBOT_GITHUB_ACTION_TOKEN }}
