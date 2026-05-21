@@ -57,8 +57,11 @@ jobs:
       - name: make install
         run: cd "$ARCHNAME/" && sudo make $JOBS install
         if: matrix.test_task == 'check'
-      - name: ruby -v
-        run: /usr/local/bin/ruby -v
+      - name: Verify installed binaries
+        run: |
+          /usr/local/bin/ruby -v
+          /usr/local/bin/gem -v
+          /usr/local/bin/bundle -v
         if: matrix.test_task == 'check'
       - uses: ruby/action-slack@54175162371f1f7c8eb94d7c8644ee2479fcd375 # v3.2.2
         with:
