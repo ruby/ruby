@@ -557,19 +557,24 @@ class Pathname
     !absolute?
   end
 
+  # :markup: markdown
   #
-  # Iterates over each component of the path.
+  # call-seq:
+  #   each_filename {|element| ... } -> nil
+  #   each_filename -> new_enumerator
   #
-  #   Pathname.new("/usr/bin/ruby").each_filename {|filename| ... }
-  #     # yields "usr", "bin", and "ruby".
   #
-  # Returns an Enumerator if no block was given.
+  # With a block given, yields each element of the stored path:
   #
-  #   enum = Pathname.new("/usr/bin/ruby").each_filename
-  #     # ... do stuff ...
-  #   enum.each { |e| ... }
-  #     # yields "usr", "bin", and "ruby".
+  # ```ruby
+  # Pathname('/foo/bar/baz').each_filename {|filename| p filename }
+  # "foo"
+  # "bar"
+  # "baz"
+  # => nil
+  # ```
   #
+  # With no block given, returns a new Enumerator.
   def each_filename # :yield: filename
     return to_enum(__method__) unless block_given?
     _, names = split_names(@path)
