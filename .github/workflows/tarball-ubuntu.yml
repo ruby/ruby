@@ -12,11 +12,6 @@ on:
         required: false
         type: string
         default: 'none'
-      setup-host-ruby:
-        description: 'Install Ruby 3.2 via ruby/setup-ruby for test-bundled-gems'
-        required: false
-        type: boolean
-        default: true
       fixed-dirs-extra:
         description: 'Create $HOME/.local/share, $HOME/.ssh on top of minimal fixed dirs'
         required: false
@@ -108,7 +103,7 @@ jobs:
         with:
           ruby-version: 3.2
         # test-bundled-gems requires executable host ruby
-        if: inputs.setup-host-ruby && matrix.test_task == 'test-bundled-gems'
+        if: matrix.test_task == 'test-bundled-gems'
       - name: Fixed world writable dirs
         run: |
           mkdir -p $HOME/.local
