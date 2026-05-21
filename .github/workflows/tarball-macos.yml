@@ -12,11 +12,6 @@ on:
         required: false
         type: string
         default: ''
-      patch-url:
-        description: 'Patch URL forwarded from workflow_dispatch'
-        required: false
-        type: string
-        default: ''
       rebuild-homebrew-ruby:
         description: 'Uninstall and reinstall Homebrew Ruby on macos-15-intel'
         required: false
@@ -44,16 +39,6 @@ jobs:
           path: pkg
       - name: Extract
         run: tar xf pkg/*.tar.xz
-      - name: Apply patch
-        run: |
-          set -x
-          curl -sSL "${RUBY_PATCH_URL}" -o ruby.patch
-          cd "$ARCHNAME/"
-          git apply ../ruby.patch
-        shell: bash
-        env:
-          RUBY_PATCH_URL: ${{ inputs.patch-url }}
-        if: inputs.patch-url != ''
       - name: Install libraries
         run: |
           with_retry () {

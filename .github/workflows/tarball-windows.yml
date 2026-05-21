@@ -7,11 +7,6 @@ on:
         description: 'archname (e.g. snapshot-master)'
         required: true
         type: string
-      patch-url:
-        description: 'Patch URL forwarded from workflow_dispatch'
-        required: false
-        type: string
-        default: ''
 
 jobs:
   windows:
@@ -72,18 +67,6 @@ jobs:
           path: pkg
       - name: Extract
         run: 7z x pkg/*.zip
-        working-directory:
-      - name: Apply patch
-        run: |
-          set -x
-          curl -sSL "${RUBY_PATCH_URL}" -o ruby.patch
-          cd "$ARCHNAME"
-          git apply ../ruby.patch
-        shell: bash
-        env:
-          RUBY_PATCH_URL: ${{ inputs.patch-url }}
-          ARCHNAME: ${{ inputs.archname }}
-        if: inputs.patch-url != ''
         working-directory:
 
       - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
