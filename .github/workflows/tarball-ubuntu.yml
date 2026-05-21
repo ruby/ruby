@@ -12,11 +12,6 @@ on:
         required: false
         type: boolean
         default: true
-      ruby-bin:
-        description: 'Path to ruby for post-install version check'
-        required: false
-        type: string
-        default: '/usr/local/bin/ruby'
       notify-ruby-sha:
         description: 'Post ruby SHA failure notification to SIMPLER_ALERTS_URL'
         required: false
@@ -152,9 +147,7 @@ jobs:
         run: cd "$ARCHNAME/" && sudo make $JOBS install
         if: matrix.test_task == 'check'
       - name: ruby -v
-        env:
-          RUBY_BIN: ${{ inputs.ruby-bin }}
-        run: '"$RUBY_BIN" -v'
+        run: /usr/local/bin/ruby -v
         if: matrix.test_task == 'check'
       - name: Show .local
         run: find $HOME/.local -ls
