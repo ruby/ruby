@@ -7,11 +7,6 @@ on:
         description: 'archname (e.g. snapshot-master, snapshot-ruby_3_3)'
         required: true
         type: string
-      fixed-dirs-extra:
-        description: 'Create $HOME/.local/share, $HOME/.ssh on top of minimal fixed dirs'
-        required: false
-        type: boolean
-        default: true
       notify-ruby-sha:
         description: 'Post ruby SHA failure notification to SIMPLER_ALERTS_URL'
         required: false
@@ -52,20 +47,16 @@ jobs:
         if: matrix.test_task == 'test-bundled-gems'
       - name: Fixed world writable dirs
         run: |
-          mkdir -p $HOME/.local
+          mkdir -p $HOME/.local/share
           mkdir -p $HOME/.cache/gem/specs
           mkdir -p $HOME/.bundle/cache
+          mkdir -p $HOME/.ssh
           chmod a-w $HOME/.bundle
           # chmod a-w $HOME
           # allow to write $HOME and check stats of HOME around tests (see below)
           chmod -v a-w $HOME/.config
           sudo chmod -R a-w /usr/share
           sudo bash -c 'IFS=:; for d in '"$PATH"'; do chmod -v a-w $d; done' || :
-      - name: Fixed world writable dirs (extra)
-        run: |
-          mkdir -p $HOME/.local/share
-          mkdir -p $HOME/.ssh
-        if: inputs.fixed-dirs-extra
       - name: Set ENV
         run: |
           echo "JOBS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
