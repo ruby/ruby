@@ -34,7 +34,7 @@ jobs:
         run: |
           set -x
           sudo apt-get update -q
-          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev bison- autoconf-
+          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev zlib1g-dev libffi-dev bison- autoconf-
       - uses: ruby/setup-ruby@c4e5b1316158f92e3d49443a9d58b31d25ac0f8f # v1.306.0
         with:
           ruby-version: 3.2
