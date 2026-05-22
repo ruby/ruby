@@ -1418,7 +1418,19 @@ class Pathname    # * FileTest *
     end
   end
 
-  # See <tt>FileTest.executable?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   executable? -> true or false
+  #
+  # Returns whether the entry represented by `self` is executable;
+  # calls FileTest.executable? with argument `self.to_s`:
+  #
+  # ```ruby
+  # Pathname('bin/gem').executable?   # => true
+  # Pathname('README.md').executable? # => false
+  # ```
+  #
   def executable?() FileTest.executable?(@path) end
 
   # See <tt>FileTest.executable_real?</tt>.
