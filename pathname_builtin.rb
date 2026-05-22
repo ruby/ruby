@@ -1463,9 +1463,31 @@ class Pathname    # * FileTest *
   # The returned value is OS-dependent; on Windows, almost always `false`.
   def chardev?() FileTest.chardev?(@path) end
 
-  # Tests the file is empty.
+  # :markup: markdown
   #
-  # See Dir#empty? and FileTest.empty?.
+  # call-seq:
+  #   empty? -> true or false
+  #
+  # Returns whether the entry represented by `self` exists and is empty:
+  #
+  # ```ruby
+  # dir_pn = Pathname('example_dir')
+  # dir_pn.empty?  # => false  # Dir does not exist.
+  # dir_pn.mkdir
+  # dir_pn.empty?  # => true   # Dir exists and is empty.
+  #
+  # file_pn = Pathname('example_dir/example.txt')
+  # file_pn.empty? # => false  # File does not exist.
+  # file_pn.write('')
+  # file_pn.empty? # => true   # File exists and is empty.
+  # dir_pn.empty?  # => false  # Dir exists and is not empty.
+  # file_pn.write('foo')
+  # file_pn.empty? # => false  # File exists and is not empty.
+  #
+  # file_pn.delete
+  # dir_pn.delete
+  # ```
+  #
   def empty?
     if FileTest.directory?(@path)
       Dir.empty?(@path)
