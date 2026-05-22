@@ -39,12 +39,12 @@ jobs:
             "$@" || { sleep 5 && "$@"; } || { sleep 60 && "$@"; }
           }
           set -x
-          with_retry brew install gmp libffi openssl@1.1 zlib autoconf automake libtool libyaml
+          with_retry brew install gmp libffi openssl zlib autoconf automake libtool libyaml
       - name: Set ENV
         run: |
           echo "JOBS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
       - name: configure
-        run: cd "$ARCHNAME/" && ./configure --with-openssl-dir=$(brew --prefix openssl@1.1) --with-libyaml-dir=$(brew --prefix libyaml)
+        run: cd "$ARCHNAME/" && ./configure --with-openssl-dir=$(brew --prefix openssl) --with-libyaml-dir=$(brew --prefix libyaml)
       - name: make
         run: cd "$ARCHNAME/" && make $JOBS
       - name: Tests
