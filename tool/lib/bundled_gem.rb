@@ -131,10 +131,26 @@ module BundledGem
     system(command, chdir: gemdir) or raise "failed: #{command}"
   end
 
+  class GemspecLoader
+    module NoPipe
+      refine IO.singleton_class do
+        def popen(...) ""; end
+      end
+    end
+    using NoPipe
+
+    def `(command) ""; end
+
+    def load_gemspec(file)
+      code = File.read(file, encoding: "utf-8:-")
+      eval(code, binding, file)
+    rescue
+      nil
+    end
+  end
+
   def load_gemspec(g)
-    dir, base = File.split(g)
-    spec = Dir.chdir(dir) {Gem::Specification.load(base)} || Gem::Specification.load(g) or
-      return false
+    spec = GemspecLoader.new.load_gemspec(g)
     spec.files.clear
     spec.extensions.clear
     src = spec.to_ruby
