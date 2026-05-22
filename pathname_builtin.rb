@@ -560,11 +560,10 @@ class Pathname
   # :markup: markdown
   #
   # call-seq:
-  #   each_filename {|element| ... } -> nil
+  #   each_filename {|component| ... } -> nil
   #   each_filename -> new_enumerator
   #
-  #
-  # With a block given, yields each element of the stored path:
+  # With a block given, yields each component of the stored path:
   #
   # ```ruby
   # Pathname('/foo/bar/baz').each_filename {|filename| p filename }
