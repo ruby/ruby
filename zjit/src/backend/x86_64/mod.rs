@@ -1109,7 +1109,6 @@ impl Assembler {
                 Insn::CSelGE { truthy, falsy, out } => {
                     emit_csel(cb, *truthy, *falsy, *out, cmovge, cmovl);
                 }
-                Insn::LiveReg { .. } => (), // just a reg alloc signal, no code
             };
 
             insn_idx += 1;

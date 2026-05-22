@@ -787,9 +787,6 @@ pub enum Insn {
     // Load effective address
     Lea { opnd: Opnd, out: Opnd },
 
-    /// Take a specific register. Signal the register allocator to not use it.
-    LiveReg { opnd: Opnd, out: Opnd },
-
     // A low-level instruction that loads a value into a register.
     Load { opnd: Opnd, out: Opnd },
 
@@ -935,7 +932,6 @@ impl Insn {
             Insn::Label(_) => "Label",
             Insn::LeaJumpTarget { .. } => "LeaJumpTarget",
             Insn::Lea { .. } => "Lea",
-            Insn::LiveReg { .. } => "LiveReg",
             Insn::Load { .. } => "Load",
             Insn::LoadInto { .. } => "LoadInto",
             Insn::LoadSExt { .. } => "LoadSExt",
@@ -974,7 +970,6 @@ impl Insn {
             Insn::CSelZ { out, .. } |
             Insn::Lea { out, .. } |
             Insn::LeaJumpTarget { out, .. } |
-            Insn::LiveReg { out, .. } |
             Insn::Load { out, .. } |
             Insn::LoadSExt { out, .. } |
             Insn::LShift { out, .. } |
@@ -1007,7 +1002,6 @@ impl Insn {
             Insn::CSelZ { out, .. } |
             Insn::Lea { out, .. } |
             Insn::LeaJumpTarget { out, .. } |
-            Insn::LiveReg { out, .. } |
             Insn::Load { out, .. } |
             Insn::LoadSExt { out, .. } |
             Insn::LShift { out, .. } |
@@ -1198,7 +1192,6 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::CRet(opnd) |
             Insn::JmpOpnd(opnd) |
             Insn::Lea { opnd, .. } |
-            Insn::LiveReg { opnd, .. } |
             Insn::Load { opnd, .. } |
             Insn::LoadSExt { opnd, .. } |
             Insn::Not { opnd, .. } => {
@@ -1378,7 +1371,6 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::CRet(opnd) |
             Insn::JmpOpnd(opnd) |
             Insn::Lea { opnd, .. } |
-            Insn::LiveReg { opnd, .. } |
             Insn::Load { opnd, .. } |
             Insn::LoadSExt { opnd, .. } |
             Insn::Not { opnd, .. } => {
@@ -3657,13 +3649,6 @@ impl Assembler {
     pub fn lea_jump_target(&mut self, target: Target) -> Opnd {
         let out = self.new_vreg(Opnd::DEFAULT_NUM_BITS);
         self.push_insn(Insn::LeaJumpTarget { target, out });
-        out
-    }
-
-    #[must_use]
-    pub fn live_reg_opnd(&mut self, opnd: Opnd) -> Opnd {
-        let out = self.new_vreg(Opnd::match_num_bits(&[opnd]));
-        self.push_insn(Insn::LiveReg { opnd, out });
         out
     }
 
