@@ -39,12 +39,12 @@ jobs:
             "$@" || { sleep 5 && "$@"; } || { sleep 60 && "$@"; }
           }
           set -x
-          with_retry brew install gmp libffi openssl@1.1 zlib autoconf automake libtool readline libyaml
+          with_retry brew install gmp libffi openssl zlib autoconf automake libtool libyaml
       - name: Set ENV
         run: |
           echo "JOBS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
       - name: configure
-        run: cd "$ARCHNAME/" && ./configure --with-openssl-dir=$(brew --prefix openssl@1.1) --with-readline-dir=$(brew --prefix readline) --with-libyaml-dir=$(brew --prefix libyaml)
+        run: cd "$ARCHNAME/" && ./configure --with-openssl-dir=$(brew --prefix openssl) --with-libyaml-dir=$(brew --prefix libyaml)
       - name: make
         run: cd "$ARCHNAME/" && make $JOBS
       - name: Tests
@@ -68,25 +68,23 @@ jobs:
           /usr/local/bin/gem -v
           /usr/local/bin/bundle -v
         if: matrix.test_task == 'check'
-      - uses: ruby/action-slack@54175162371f1f7c8eb94d7c8644ee2479fcd375 # v3.2.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          payload: |
-            {
-              "ci": "GitHub Actions",
-              "env": "snapshot: ${{ matrix.os }} / ${{ matrix.test_task }}",
-              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "commit": "${{ github.sha }}",
-              "branch": "${{ github.ref_name }}"
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }}
-        if: failure()
+          sparse-checkout: .github/actions/slack
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+        if: ${{ failure() }}
+      - uses: ./.github/actions/slack
+        with:
+          label: "${{ matrix.os }} / ${{ matrix.test_task }}"
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() }}
       - uses: ruby/action-slack@54175162371f1f7c8eb94d7c8644ee2479fcd375 # v3.2.2
         with:
           payload: |
             {
               "attachments": [{
-                "text": "${{ job.status }}: ${{ matrix.os }} / ${{ matrix.test_task }} <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }}>",
+                "text": "${{ job.status }}: ${{ matrix.os }} / ${{ matrix.test_task }} <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ inputs.archname }}>",
                 "color": "danger"
               }]
             }
