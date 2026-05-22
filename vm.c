@@ -553,8 +553,6 @@ zjit_compile(rb_execution_context_t *ec)
 # define zjit_compile(ec) ((rb_jit_func_t)0)
 #endif
 
-static inline void zjit_materialize_frames(rb_control_frame_t *cfp);
-
 #if USE_YJIT || USE_ZJIT
 // Execute JIT code compiled by yjit_compile() or zjit_compile()
 static inline VALUE
@@ -580,8 +578,8 @@ jit_exec(rb_execution_context_t *ec)
             // This is done here (once per JIT entry) instead of in each side exit
             // to reduce generated code size.
             if (UNDEF_P(result)) {
-                ec->cfp->jit_return = 0;
-                zjit_materialize_frames(ec->cfp);
+                ec->cfp->jit_return = 0; // exit code already cleared most fields except jit_return
+                rb_zjit_materialize_frames(ec, ec->cfp);
             }
             return result;
         }
@@ -2841,10 +2839,14 @@ vm_exec_loop(rb_execution_context_t *ec, enum ruby_tag_type state,
     return result;
 }
 
-static inline void
-zjit_materialize_frames(rb_control_frame_t *cfp)
+#if USE_ZJIT
+// Materialize JITFrame-enabled CFP into interpreter-compatible CFP
+void
+rb_zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_frame_t *cfp)
 {
     if (!rb_zjit_enabled_p) return;
+    const rb_control_frame_t *end_cfp = ec->tag->cfp;
+    VM_ASSERT(cfp <= end_cfp);
 
     while (true) {
         if (CFP_ZJIT_FRAME_P(cfp)) {
@@ -2856,16 +2858,11 @@ zjit_materialize_frames(rb_control_frame_t *cfp)
             }
             cfp->jit_return = 0;
         }
-        if (VM_FRAME_FINISHED_P(cfp)) break;
+        if (end_cfp == cfp) break;
         cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     }
 }
-
-void
-rb_zjit_materialize_frames(rb_control_frame_t *cfp)
-{
-    zjit_materialize_frames(cfp);
-}
+#endif
 
 static inline VALUE
 vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, VALUE errinfo)
@@ -2938,7 +2935,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
                     /* TAG_BREAK */
                     *cfp->sp++ = THROW_DATA_VAL(err);
                     ec->errinfo = Qnil;
-                    zjit_materialize_frames(cfp);
+                    rb_zjit_materialize_frames(ec, cfp);
                     return Qundef;
                 }
             }
@@ -2976,7 +2973,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
                         const rb_control_frame_t *escape_cfp;
                         escape_cfp = THROW_DATA_CATCH_FRAME(err);
                         if (cfp == escape_cfp) {
-                            zjit_materialize_frames(cfp);
+                            rb_zjit_materialize_frames(ec, cfp);
                             cfp->pc = ISEQ_BODY(CFP_ISEQ(cfp))->iseq_encoded + entry->cont;
                             ec->errinfo = Qnil;
                             return Qundef;
@@ -3007,7 +3004,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
                         break;
                     }
                     else if (entry->type == type) {
-                        zjit_materialize_frames(cfp);
+                        rb_zjit_materialize_frames(ec, cfp);
                         cfp->pc = ISEQ_BODY(CFP_ISEQ(cfp))->iseq_encoded + entry->cont;
                         cfp->sp = vm_base_ptr(cfp) + entry->sp;
 
@@ -3042,7 +3039,7 @@ vm_exec_handle_exception(rb_execution_context_t *ec, enum ruby_tag_type state, V
             const int arg_size = 1;
 
             rb_iseq_check(catch_iseq);
-            zjit_materialize_frames(cfp); // vm_base_ptr looks at cfp->_iseq
+            rb_zjit_materialize_frames(ec, cfp); // vm_base_ptr looks at cfp->_iseq
             cfp->sp = vm_base_ptr(cfp) + cont_sp;
             cfp->pc = ISEQ_BODY(CFP_ISEQ(cfp))->iseq_encoded + cont_pc;
 
