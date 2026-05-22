@@ -154,10 +154,9 @@ impl Assembler {
         while let Some((_index, mut insn)) = iterator.next(asm) {
             let is_load = matches!(insn, Insn::Load { .. } | Insn::LoadInto { .. });
             let is_jump = insn.is_jump();
-            let mut opnd_iter = insn.opnd_iter_mut();
 
             if !is_jump {
-                while let Some(opnd) = opnd_iter.next() {
+                insn.for_each_operand_mut(|opnd| {
                     // Lower Opnd::Value to Opnd::VReg or Opnd::UImm
                     if let Opnd::Value(value) = opnd {
                         // If the value is a special constant, and it fits in 32 bits,
@@ -176,7 +175,7 @@ impl Assembler {
                             *opnd = asm.load(*opnd);
                         }
                     }
-                }
+                });
             }
 
             // We are replacing instructions here so we know they are already

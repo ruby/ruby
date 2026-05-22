@@ -409,9 +409,8 @@ impl Assembler {
             // if they were just unsigned integer.
             let is_load = matches!(insn, Insn::Load { .. } | Insn::LoadInto { .. });
             let is_jump = insn.is_jump();
-            let mut opnd_iter = insn.opnd_iter_mut();
 
-            while let Some(opnd) = opnd_iter.next() {
+            insn.for_each_operand_mut(|opnd| {
                 if let Opnd::Value(value) = opnd {
                     if value.special_const_p() {
                         *opnd = Opnd::UImm(value.as_u64());
@@ -419,7 +418,7 @@ impl Assembler {
                         *opnd = asm.load(*opnd);
                     }
                 };
-            }
+            });
 
             // We are replacing instructions here so we know they are already
             // being used. It is okay not to use their output here.
