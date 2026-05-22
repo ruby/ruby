@@ -2384,27 +2384,16 @@ impl Assembler
                             _ => unreachable!(),
                         })
                         .collect();
-                    let survivor_push_groups: Vec<Vec<Opnd>> = survivor_regs
-                        .chunks(2)
-                        .map(|group| group.to_vec())
-                        .collect();
 
                     // Push all survivors on the stack, pairing adjacent pushes when possible.
-                    let needs_alignment = cfg!(target_arch = "x86_64") && survivors.len() % 2 == 1;
-                    for group in &survivor_push_groups {
-                        match group.as_slice() {
-                            [left, right] => new_insns.push(Insn::CPushPair(*left, *right)),
-                            [reg] => new_insns.push(Insn::CPush(*reg)),
+                    for group in survivor_regs.chunks(2) {
+                        match group {
+                            &[left, right] => new_insns.push(Insn::CPushPair(left, right)),
+                            &[reg]         => new_insns.push(Insn::CPushPair(reg, 0.into())),
                             _ => unreachable!(),
                         }
                         new_ids.push(None);
                     }
-                    // Maintain 16-byte stack alignment for x86_64
-                    if needs_alignment {
-                        new_insns.push(Insn::CPush(Opnd::Reg(ALLOC_REGS[0])));
-                        new_ids.push(None);
-                    }
-
                     // Extract arguments from CCall, clear opnds
 
                     assert!(opnds.len() <= regs.len());
@@ -2472,17 +2461,11 @@ impl Assembler
                             new_ids.push(None);
                         }
 
-                        // Pop alignment padding (if needed)
-                        if needs_alignment {
-                            new_insns.push(Insn::CPopInto(Opnd::Reg(ALLOC_REGS[0])));
-                            new_ids.push(None);
-                        }
-
                         // Restore all survivors in reverse stack order, pairing adjacent pops when possible.
-                        for group in survivor_push_groups.iter().rev() {
-                            match group.as_slice() {
-                                [left, right] => new_insns.push(Insn::CPopPairInto(*right, *left)),
-                                [reg] => new_insns.push(Insn::CPopInto(*reg)),
+                        for group in survivor_regs.chunks(2).rev() {
+                            match group {
+                                &[reg]         => new_insns.push(Insn::CPopPairInto(reg, reg)),
+                                &[left, right] => new_insns.push(Insn::CPopPairInto(right, left)),
                                 _ => unreachable!(),
                             }
                             new_ids.push(None);
@@ -4673,8 +4656,8 @@ mod tests {
         let insns = &asm.basic_blocks[b1.0].insns;
 
         // Find CPush and CPopInto - they should be balanced.
-        let pushes: Vec<_> = insns.iter().filter(|i| matches!(i, Insn::CPush(_))).collect();
-        let pops: Vec<_> = insns.iter().filter(|i| matches!(i, Insn::CPopInto(_))).collect();
+        let pushes: Vec<_> = insns.iter().filter(|i| matches!(i, Insn::CPushPair(..))).collect();
+        let pops: Vec<_> = insns.iter().filter(|i| matches!(i, Insn::CPopPairInto(..))).collect();
         assert_eq!(pushes.len(), pops.len(), "CPush/CPopInto should be balanced");
         assert!(!pushes.is_empty(), "Expected at least one saved register across CCall");
 
@@ -4684,10 +4667,10 @@ mod tests {
             Allocation::Fixed(reg) => Opnd::Reg(reg),
             _ => unreachable!(),
         };
-        let pushed_v1 = pushes.iter().any(|insn| matches!(insn, Insn::CPush(opnd) if *opnd == v1_reg));
-        let popped_v1 = pops.iter().any(|insn| matches!(insn, Insn::CPopInto(opnd) if *opnd == v1_reg));
-        assert!(pushed_v1, "CPush should save v1's register");
-        assert!(popped_v1, "CPopInto should restore v1's register");
+        let pushed_v1 = pushes.iter().any(|insn| matches!(**insn, Insn::CPushPair(first, second) if first == v1_reg || second == v1_reg));
+        let popped_v1 = pops.iter().any(|insn| matches!(**insn, Insn::CPopPairInto(first, second) if first == v1_reg || second == v1_reg));
+        assert!(pushed_v1, "CPushPair should save v1's register");
+        assert!(popped_v1, "CPopPairInto should restore v1's register");
 
         // The CCall should have empty opnds and out = C_RET_OPND (rewritten to regs[0])
         let ccall = insns.iter().find(|i| matches!(i, Insn::CCall { .. })).unwrap();

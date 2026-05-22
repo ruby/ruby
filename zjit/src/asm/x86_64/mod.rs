@@ -1145,6 +1145,9 @@ pub fn push(cb: &mut CodeBlock, opnd: X86Opnd) {
         X86Opnd::Mem(_mem) => {
             write_rm(cb, false, false, X86Opnd::None, opnd, Some(6), &[0xff]);
         },
+        X86Opnd::Imm(X86Imm { value: 0, .. }) | X86Opnd::UImm(X86UImm { value: 0, .. }) => {
+            cb.write_bytes(&[0x6a, 0x00]);
+        }
         _ => unreachable!()
     }
 }
