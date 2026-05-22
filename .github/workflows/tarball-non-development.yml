@@ -5,6 +5,13 @@ on:
 
 jobs:
   non_development:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { variant: default,     remove_ruby: false, configure_extra: '' }
+          - { variant: no-ruby,     remove_ruby: true,  configure_extra: '' }
+          - { variant: baseruby-no, remove_ruby: false, configure_extra: '--with-baseruby=no' }
     runs-on: ubuntu-24.04
     env:
       ruby_prefix: /tmp/ruby-snapshot
@@ -26,12 +33,19 @@ jobs:
         run: |
           set -x
           sudo apt-get update -q || :
-          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev bison- autoconf-
+          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev zlib1g-dev libffi-dev libgmp-dev bison- autoconf-
+      - name: Remove host ruby
+        if: matrix.remove_ruby
+        run: |
+          set -x
+          sudo apt-get purge -y -q 'ruby*' || :
+          sudo rm -rf /opt/hostedtoolcache/Ruby
+          ! command -v ruby
       - name: Set ENV
         run: |
           echo "JOBS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
       - name: configure
-        run: cd snapshot-*/ && ./configure --prefix="${ruby_prefix}"
+        run: cd snapshot-*/ && ./configure --prefix="${ruby_prefix}" ${{ matrix.configure_extra }}
       - name: make
         run: cd snapshot-*/ && make $JOBS
       - name: Leaked Globals
