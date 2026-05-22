@@ -846,17 +846,140 @@ pub enum Insn {
     Xor { left: Opnd, right: Opnd, out: Opnd }
 }
 
+macro_rules! target_for_each_operand_impl {
+    ($self:expr, $visit_many:ident) => {
+        match $self {
+            Target::SideExit { exit: SideExit { stack, locals, .. }, .. } => {
+                visit_many!(stack);
+                visit_many!(locals);
+            }
+            Target::Block(edge) => {
+                visit_many!(edge.args);
+            }
+            Target::CodePtr(_) | Target::Label(_) => {}
+        }
+    }
+}
+
+/// Macro that enumerates all operands of an Insn, dispatching to caller-provided `$visit_one`
+/// macro for a single `Opnd` field and `$visit_many` macro for a slice/`Vec` of `Opnd`s. Used by
+/// both `for_each_operand` and `for_each_operand_mut`.
+macro_rules! for_each_operand_impl {
+    ($self:expr, $visit_one:ident, $visit_many:ident $(, $const:expr)?) => {
+        match $self {
+            Insn::Jbe(target) |
+            Insn::Jb(target) |
+            Insn::Je(target) |
+            Insn::Jl(target) |
+            Insn::Jg(target) |
+            Insn::Jge(target) |
+            Insn::Jmp(target) |
+            Insn::Jne(target) |
+            Insn::Jnz(target) |
+            Insn::Jo(target) |
+            Insn::JoMul(target) |
+            Insn::Jz(target) |
+            Insn::Label(target) |
+            Insn::LeaJumpTarget { target, .. } |
+            Insn::PatchPoint { target, .. } => {
+                target_for_each_operand_impl!(target, $visit_many);
+            }
+            Insn::Joz(opnd, target) |
+            Insn::Jonz(opnd, target) => {
+                visit_one!(opnd);
+                target_for_each_operand_impl!(target, $visit_many);
+            }
+
+            Insn::BakeString(_) |
+            Insn::Breakpoint | Insn::Abort |
+            Insn::Comment(_) |
+            Insn::CPop { .. } |
+            Insn::PadPatchPoint |
+            Insn::PosMarker(_) => {},
+
+            Insn::CPopInto(opnd) |
+            Insn::CPush(opnd) |
+            Insn::CRet(opnd) |
+            Insn::JmpOpnd(opnd) |
+            Insn::Lea { opnd, .. } |
+            Insn::Load { opnd, .. } |
+            Insn::LoadSExt { opnd, .. } |
+            Insn::Not { opnd, .. } => {
+                visit_one!(opnd);
+            }
+            Insn::Add { left: opnd0, right: opnd1, .. } |
+            Insn::And { left: opnd0, right: opnd1, .. } |
+            Insn::CPushPair(opnd0, opnd1) |
+            Insn::CPopPairInto(opnd0, opnd1) |
+            Insn::Cmp { left: opnd0, right: opnd1 } |
+            Insn::CSelE { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::CSelG { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::CSelGE { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::CSelL { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::CSelLE { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::CSelNE { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::CSelNZ { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::CSelZ { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::IncrCounter { mem: opnd0, value: opnd1, .. } |
+            Insn::LoadInto { dest: opnd0, opnd: opnd1 } |
+            Insn::LShift { opnd: opnd0, shift: opnd1, .. } |
+            Insn::Mov { dest: opnd0, src: opnd1 } |
+            Insn::Or { left: opnd0, right: opnd1, .. } |
+            Insn::RShift { opnd: opnd0, shift: opnd1, .. } |
+            Insn::Store { dest: opnd0, src: opnd1 } |
+            Insn::Sub { left: opnd0, right: opnd1, .. } |
+            Insn::Mul { left: opnd0, right: opnd1, .. } |
+            Insn::Test { left: opnd0, right: opnd1 } |
+            Insn::URShift { opnd: opnd0, shift: opnd1, .. } |
+            Insn::Xor { left: opnd0, right: opnd1, .. } => {
+                visit_one!(opnd0);
+                visit_one!(opnd1);
+            }
+            Insn::CCall { opnds, .. } => {
+                visit_many!(opnds);
+            }
+            // only iterate over preserved in the const iterator
+            #[allow(unused_variables)]
+            Insn::FrameSetup { preserved, .. } |
+            Insn::FrameTeardown { preserved } => {
+            $(
+                visit_many!(preserved);
+                $const;
+            )?
+            }
+        }
+    }
+}
+
 impl Insn {
-    /// Create an iterator that will yield a non-mutable reference to each
-    /// operand in turn for this instruction.
-    pub(super) fn opnd_iter(&self) -> InsnOpndIterator<'_> {
-        InsnOpndIterator::new(self)
+    pub fn opnd_count(&self) -> usize {
+        let mut count = 0;
+        self.for_each_operand(|_| count += 1);
+        count
     }
 
-    /// Create an iterator that will yield a mutable reference to each operand
-    /// in turn for this instruction.
-    pub(super) fn opnd_iter_mut(&mut self) -> InsnOpndMutIterator<'_> {
-        InsnOpndMutIterator::new(self)
+    /// Call `f` on each operand (Opnd) of this instruction.
+    pub fn for_each_operand(&self, mut f: impl FnMut(Opnd)) {
+        macro_rules! visit_one { ($id:expr) => { f(*$id) }; }
+        macro_rules! visit_many { ($s:expr) => { for id in ($s).iter() { f(*id) } }; }
+        // Extra () is a throw-away parameter to avoid iterating over FrameSetup/FrameTeardown
+        // preserved in the mutable iterator.
+        for_each_operand_impl!(self, visit_one, visit_many, ());
+    }
+
+    /// Call `f` on a mutable reference to each operand (Opnd) of this instruction.
+    pub fn for_each_operand_mut(&mut self, mut f: impl FnMut(&mut Opnd)) {
+        macro_rules! visit_one { ($id:expr) => { f($id) }; }
+        macro_rules! visit_many { ($s:expr) => { for id in ($s).iter_mut() { f(id) } }; }
+        for_each_operand_impl!(self, visit_one, visit_many);
+    }
+
+    /// Call `f` on each operand, short-circuiting on the first error.
+    pub fn try_for_each_operand<E>(&self, mut f: impl FnMut(Opnd) -> Result<(), E>) -> Result<(), E> {
+        macro_rules! visit_one { ($id:expr) => { f(*$id)? }; }
+        macro_rules! visit_many { ($s:expr) => { for id in ($s).iter() { f(*id)? } }; }
+        for_each_operand_impl!(self, visit_one, visit_many, ());
+        Ok(())
     }
 
     /// Get a mutable reference to a Target if it exists.
@@ -1081,372 +1204,19 @@ impl Insn {
     }
 }
 
-/// An iterator that will yield a non-mutable reference to each operand in turn
-/// for the given instruction.
-pub(super) struct InsnOpndIterator<'a> {
-    insn: &'a Insn,
-    idx: usize,
-}
-
-impl<'a> InsnOpndIterator<'a> {
-    fn new(insn: &'a Insn) -> Self {
-        Self { insn, idx: 0 }
-    }
-}
-
-impl<'a> Iterator for InsnOpndIterator<'a> {
-    type Item = &'a Opnd;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self.insn {
-            Insn::Jbe(target) |
-            Insn::Jb(target) |
-            Insn::Je(target) |
-            Insn::Jl(target) |
-            Insn::Jg(target) |
-            Insn::Jge(target) |
-            Insn::Jmp(target) |
-            Insn::Jne(target) |
-            Insn::Jnz(target) |
-            Insn::Jo(target) |
-            Insn::JoMul(target) |
-            Insn::Jz(target) |
-            Insn::Label(target) |
-            Insn::LeaJumpTarget { target, .. } |
-            Insn::PatchPoint { target, .. } => {
-                match target {
-                    Target::SideExit { exit: SideExit { stack, locals, .. }, .. } => {
-                        let stack_idx = self.idx;
-                        if stack_idx < stack.len() {
-                            let opnd = &stack[stack_idx];
-                            self.idx += 1;
-                            return Some(opnd);
-                        }
-
-                        let local_idx = self.idx - stack.len();
-                        if local_idx < locals.len() {
-                            let opnd = &locals[local_idx];
-                            self.idx += 1;
-                            return Some(opnd);
-                        }
-                        None
-                    }
-                    Target::Block(edge) => {
-                        if self.idx < edge.args.len() {
-                            let opnd = &edge.args[self.idx];
-                            self.idx += 1;
-                            return Some(opnd);
-                        }
-                        None
-                    }
-                    _ => None
-                }
-            }
-
-            Insn::Joz(opnd, target) |
-            Insn::Jonz(opnd, target) => {
-                if self.idx == 0 {
-                    self.idx += 1;
-                    return Some(opnd);
-                }
-
-                match target {
-                    Target::SideExit { exit: SideExit { stack, locals, .. }, .. } => {
-                        let stack_idx = self.idx - 1;
-                        if stack_idx < stack.len() {
-                            let opnd = &stack[stack_idx];
-                            self.idx += 1;
-                            return Some(opnd);
-                        }
-
-                        let local_idx = stack_idx - stack.len();
-                        if local_idx < locals.len() {
-                            let opnd = &locals[local_idx];
-                            self.idx += 1;
-                            return Some(opnd);
-                        }
-                        None
-                    }
-                    Target::Block(edge) => {
-                        let arg_idx = self.idx - 1;
-                        if arg_idx < edge.args.len() {
-                            let opnd = &edge.args[arg_idx];
-                            self.idx += 1;
-                            return Some(opnd);
-                        }
-                        None
-                    }
-                    _ => None
-                }
-            }
-
-            Insn::BakeString(_) |
-            Insn::Breakpoint | Insn::Abort |
-            Insn::Comment(_) |
-            Insn::CPop { .. } |
-            Insn::PadPatchPoint |
-            Insn::PosMarker(_) => None,
-
-            Insn::CPopInto(opnd) |
-            Insn::CPush(opnd) |
-            Insn::CRet(opnd) |
-            Insn::JmpOpnd(opnd) |
-            Insn::Lea { opnd, .. } |
-            Insn::Load { opnd, .. } |
-            Insn::LoadSExt { opnd, .. } |
-            Insn::Not { opnd, .. } => {
-                match self.idx {
-                    0 => {
-                        self.idx += 1;
-                        Some(opnd)
-                    },
-                    _ => None
-                }
-            },
-            Insn::Add { left: opnd0, right: opnd1, .. } |
-            Insn::And { left: opnd0, right: opnd1, .. } |
-            Insn::CPushPair(opnd0, opnd1) |
-            Insn::CPopPairInto(opnd0, opnd1) |
-            Insn::Cmp { left: opnd0, right: opnd1 } |
-            Insn::CSelE { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::CSelG { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::CSelGE { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::CSelL { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::CSelLE { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::CSelNE { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::CSelNZ { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::CSelZ { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::IncrCounter { mem: opnd0, value: opnd1, .. } |
-            Insn::LoadInto { dest: opnd0, opnd: opnd1 } |
-            Insn::LShift { opnd: opnd0, shift: opnd1, .. } |
-            Insn::Mov { dest: opnd0, src: opnd1 } |
-            Insn::Or { left: opnd0, right: opnd1, .. } |
-            Insn::RShift { opnd: opnd0, shift: opnd1, .. } |
-            Insn::Store { dest: opnd0, src: opnd1 } |
-            Insn::Sub { left: opnd0, right: opnd1, .. } |
-            Insn::Mul { left: opnd0, right: opnd1, .. } |
-            Insn::Test { left: opnd0, right: opnd1 } |
-            Insn::URShift { opnd: opnd0, shift: opnd1, .. } |
-            Insn::Xor { left: opnd0, right: opnd1, .. } => {
-                match self.idx {
-                    0 => {
-                        self.idx += 1;
-                        Some(opnd0)
-                    }
-                    1 => {
-                        self.idx += 1;
-                        Some(opnd1)
-                    }
-                    _ => None
-                }
-            },
-            Insn::CCall { opnds, .. } => {
-                if self.idx < opnds.len() {
-                    let opnd = &opnds[self.idx];
-                    self.idx += 1;
-                    Some(opnd)
-                } else {
-                    None
-                }
-            },
-            Insn::FrameSetup { preserved, .. } |
-            Insn::FrameTeardown { preserved } => {
-                if self.idx < preserved.len() {
-                    let opnd = &preserved[self.idx];
-                    self.idx += 1;
-                    Some(opnd)
-                } else {
-                    None
-                }
-            }
-        }
-    }
-}
-
-/// An iterator that will yield each operand in turn for the given instruction.
-pub(super) struct InsnOpndMutIterator<'a> {
-    insn: &'a mut Insn,
-    idx: usize,
-}
-
-impl<'a> InsnOpndMutIterator<'a> {
-    fn new(insn: &'a mut Insn) -> Self {
-        Self { insn, idx: 0 }
-    }
-
-    pub(super) fn next(&mut self) -> Option<&mut Opnd> {
-        match self.insn {
-            Insn::Jbe(target) |
-            Insn::Jb(target) |
-            Insn::Je(target) |
-            Insn::Jl(target) |
-            Insn::Jg(target) |
-            Insn::Jge(target) |
-            Insn::Jmp(target) |
-            Insn::Jne(target) |
-            Insn::Jnz(target) |
-            Insn::Jo(target) |
-            Insn::JoMul(target) |
-            Insn::Jz(target) |
-            Insn::Label(target) |
-            Insn::LeaJumpTarget { target, .. } |
-            Insn::PatchPoint { target, .. } => {
-                match target {
-                    Target::SideExit { exit: SideExit { stack, locals, .. }, .. } => {
-                        let stack_idx = self.idx;
-                        if stack_idx < stack.len() {
-                            let opnd = &mut stack[stack_idx];
-                            self.idx += 1;
-                            return Some(opnd);
-                        }
-
-                        let local_idx = self.idx - stack.len();
-                        if local_idx < locals.len() {
-                            let opnd = &mut locals[local_idx];
-                            self.idx += 1;
-                            return Some(opnd);
-                        }
-                        None
-                    }
-                    Target::Block(edge) => {
-                        if self.idx < edge.args.len() {
-                            let opnd = &mut edge.args[self.idx];
-                            self.idx += 1;
-                            return Some(opnd);
-                        }
-                        None
-                    }
-                    _ => None
-                }
-            }
-
-            Insn::Joz(opnd, target) |
-            Insn::Jonz(opnd, target) => {
-                if self.idx == 0 {
-                    self.idx += 1;
-                    return Some(opnd);
-                }
-
-                match target {
-                    Target::SideExit { exit: SideExit { stack, locals, .. }, .. } => {
-                        let stack_idx = self.idx - 1;
-                        if stack_idx < stack.len() {
-                            let opnd = &mut stack[stack_idx];
-                            self.idx += 1;
-                            return Some(opnd);
-                        }
-
-                        let local_idx = stack_idx - stack.len();
-                        if local_idx < locals.len() {
-                            let opnd = &mut locals[local_idx];
-                            self.idx += 1;
-                            return Some(opnd);
-                        }
-                        None
-                    }
-                    Target::Block(edge) => {
-                        let arg_idx = self.idx - 1;
-                        if arg_idx < edge.args.len() {
-                            let opnd = &mut edge.args[arg_idx];
-                            self.idx += 1;
-                            return Some(opnd);
-                        }
-                        None
-                    }
-                    _ => None
-                }
-            }
-
-            Insn::BakeString(_) |
-            Insn::Breakpoint | Insn::Abort |
-            Insn::Comment(_) |
-            Insn::CPop { .. } |
-            Insn::FrameSetup { .. } |
-            Insn::FrameTeardown { .. } |
-            Insn::PadPatchPoint |
-            Insn::PosMarker(_) => None,
-
-            Insn::CPopInto(opnd) |
-            Insn::CPush(opnd) |
-            Insn::CRet(opnd) |
-            Insn::JmpOpnd(opnd) |
-            Insn::Lea { opnd, .. } |
-            Insn::Load { opnd, .. } |
-            Insn::LoadSExt { opnd, .. } |
-            Insn::Not { opnd, .. } => {
-                match self.idx {
-                    0 => {
-                        self.idx += 1;
-                        Some(opnd)
-                    },
-                    _ => None
-                }
-            },
-            Insn::Add { left: opnd0, right: opnd1, .. } |
-            Insn::And { left: opnd0, right: opnd1, .. } |
-            Insn::CPushPair(opnd0, opnd1) |
-            Insn::CPopPairInto(opnd0, opnd1) |
-            Insn::Cmp { left: opnd0, right: opnd1 } |
-            Insn::CSelE { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::CSelG { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::CSelGE { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::CSelL { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::CSelLE { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::CSelNE { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::CSelNZ { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::CSelZ { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::IncrCounter { mem: opnd0, value: opnd1, .. } |
-            Insn::LoadInto { dest: opnd0, opnd: opnd1 } |
-            Insn::LShift { opnd: opnd0, shift: opnd1, .. } |
-            Insn::Mov { dest: opnd0, src: opnd1 } |
-            Insn::Or { left: opnd0, right: opnd1, .. } |
-            Insn::RShift { opnd: opnd0, shift: opnd1, .. } |
-            Insn::Store { dest: opnd0, src: opnd1 } |
-            Insn::Sub { left: opnd0, right: opnd1, .. } |
-            Insn::Mul { left: opnd0, right: opnd1, .. } |
-            Insn::Test { left: opnd0, right: opnd1 } |
-            Insn::URShift { opnd: opnd0, shift: opnd1, .. } |
-            Insn::Xor { left: opnd0, right: opnd1, .. } => {
-                match self.idx {
-                    0 => {
-                        self.idx += 1;
-                        Some(opnd0)
-                    }
-                    1 => {
-                        self.idx += 1;
-                        Some(opnd1)
-                    }
-                    _ => None
-                }
-            },
-            Insn::CCall { opnds, .. } => {
-                if self.idx < opnds.len() {
-                    let opnd = &mut opnds[self.idx];
-                    self.idx += 1;
-                    Some(opnd)
-                } else {
-                    None
-                }
-            },
-        }
-    }
-}
-
 impl fmt::Debug for Insn {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         write!(fmt, "{}(", self.op())?;
 
-        // Print list of operands
-        let mut opnd_iter = self.opnd_iter();
         if let Insn::FrameSetup { slot_count, .. } = self {
             write!(fmt, "{slot_count}")?;
         }
-        if let Some(first_opnd) = opnd_iter.next() {
-            write!(fmt, "{first_opnd:?}")?;
-        }
-        for opnd in opnd_iter {
-            write!(fmt, ", {opnd:?}")?;
-        }
+        // Print list of operands
+        let mut sep = "";
+        self.for_each_operand(|opnd| {
+             write!(fmt, "{sep}{opnd:?}").unwrap();
+             sep = ", ";
+        });
         write!(fmt, ")")?;
 
         // Print text, target, and pos if they are present
@@ -1932,10 +1702,9 @@ impl Assembler
     pub fn push_insn(&mut self, insn: Insn) {
         // If this Assembler should not accept scratch registers, assert no use of them.
         if !self.accept_scratch_reg {
-            let opnd_iter = insn.opnd_iter();
-            for opnd in opnd_iter {
-                assert!(!Self::has_scratch_reg(*opnd), "should not use scratch register: {opnd:?}");
-            }
+            insn.for_each_operand(|opnd| {
+                assert!(!Self::has_scratch_reg(opnd), "should not use scratch register: {opnd:?}");
+            });
         }
 
         self.idx += 1;
@@ -2487,10 +2256,9 @@ impl Assembler
     fn rewrite_instructions(&mut self, assignments: &[Option<Allocation>]) {
         for block_id in self.block_order() {
             for insn in self.basic_blocks[block_id.0].insns.iter_mut() {
-                let mut iter = insn.opnd_iter_mut();
-                while let Some(opnd) = iter.next() {
+                insn.for_each_operand_mut(|opnd| {
                     Self::rewrite_opnd(opnd, assignments);
-                }
+                });
                 if let Some(out) = insn.out_opnd_mut() {
                     Self::rewrite_opnd(out, assignments);
                 }
@@ -2908,12 +2676,12 @@ impl Assembler
                 }
 
                 // For all input operands that are VRegs (including memory base VRegs), add to gen set
-                for opnd in insn.opnd_iter() {
+                insn.for_each_operand(|opnd| {
                     for idx in opnd.vreg_ids() {
                         assert!(!kill_set.get(idx.0));
                         gen_set.insert(idx.0);
                     }
-                }
+                });
             }
 
             // Add block parameters to kill set
@@ -2973,11 +2741,11 @@ impl Assembler
                 }
 
                 // For each VReg input (including memory base VRegs), add_range from block start to insn
-                for opnd in insn.opnd_iter() {
+                insn.for_each_operand(|opnd| {
                     for idx in opnd.vreg_ids() {
                         intervals[idx.0].add_range(block.from.0, insn_id.0);
                     }
-                }
+                });
             }
         }
 
@@ -3198,14 +2966,12 @@ fn format_insn_compact(asm: &Assembler, insn: &Insn) -> String {
             }
             _ => {}
         }
-    } else if insn.opnd_iter().count() > 0 {
-        for (i, opnd) in insn.opnd_iter().enumerate() {
-            if i == 0 {
-                output.push_str(&format!(" {opnd}"));
-            } else {
-                output.push_str(&format!(", {opnd}"));
-            }
-        }
+    } else if insn.opnd_count() > 0 {
+        let mut sep = "";
+        insn.for_each_operand(|opnd| {
+            output.push_str(&format!("{sep}{opnd}"));
+            sep = ", ";
+        });
     }
 
     output
@@ -3329,8 +3095,13 @@ impl fmt::Display for Assembler {
                                 }
                                 _ => {}
                             }
-                        } else if insn.opnd_iter().count() > 0 {
-                            insn.opnd_iter().try_fold(" ", |prefix, opnd| write!(f, "{prefix}{opnd}").and(Ok(", ")))?;
+                        } else if insn.opnd_count() > 0 {
+                            let mut sep = " ";
+                            insn.try_for_each_operand(|opnd| {
+                                let result = write!(f, "{sep}{opnd}");
+                                sep = ", ";
+                                result
+                            })?;
                         }
 
                         write!(f, "\n")?;
@@ -3838,25 +3609,27 @@ mod tests {
     }
 
     #[test]
-    fn test_opnd_iter() {
+    fn test_for_each_operand() {
         let insn = Insn::Add { left: Opnd::None, right: Opnd::None, out: Opnd::None };
 
-        let mut opnd_iter = insn.opnd_iter();
-        assert!(matches!(opnd_iter.next(), Some(Opnd::None)));
-        assert!(matches!(opnd_iter.next(), Some(Opnd::None)));
-
-        assert!(opnd_iter.next().is_none());
+        let mut result = vec![];
+        insn.for_each_operand(|opnd| result.push(opnd));
+        assert_eq!(result, vec![Opnd::None, Opnd::None]);
     }
 
     #[test]
-    fn test_opnd_iter_mut() {
+    fn test_for_each_operand_mut() {
         let mut insn = Insn::Add { left: Opnd::None, right: Opnd::None, out: Opnd::None };
 
-        let mut opnd_iter = insn.opnd_iter_mut();
-        assert!(matches!(opnd_iter.next(), Some(Opnd::None)));
-        assert!(matches!(opnd_iter.next(), Some(Opnd::None)));
-
-        assert!(opnd_iter.next().is_none());
+        let mut counter = 0;
+        insn.for_each_operand_mut(|opnd| {
+            *opnd = Opnd::Imm(counter);
+            counter += 1;
+        });
+        assert!(matches!(insn, Insn::Add { left: Opnd::Imm(0), right: Opnd::Imm(1), out: Opnd::None }));
+        let mut result = vec![];
+        insn.for_each_operand(|opnd| result.push(opnd));
+        assert_eq!(result, vec![Opnd::Imm(0), Opnd::Imm(1)]);
     }
 
     #[test]
