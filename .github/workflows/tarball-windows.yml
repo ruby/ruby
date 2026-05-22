@@ -39,9 +39,9 @@ jobs:
       - run: md build
         working-directory:
 
-      - uses: ruby/setup-ruby@c4e5b1316158f92e3d49443a9d58b31d25ac0f8f # v1.306.0
+      - uses: ruby/setup-ruby@6aaa311d81eba98ae12eaffbcb63296ace0efcde # v1.307.0
         with:
-          ruby-version: '3.1'
+          ruby-version: '3.2'
           bundler: none
           windows-toolchain: none
 
@@ -64,7 +64,7 @@ jobs:
             ${{ runner.os }}-vcpkg-installed-
       - name: Install libraries with vcpkg
         run: |
-          vcpkg --triplet x64-windows install libffi libyaml openssl readline zlib
+          vcpkg --triplet x64-windows install gmp libffi libyaml openssl zlib
 
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -104,7 +104,7 @@ jobs:
       - name: link libraries
         run: |
           for %%I in (C:\vcpkg\installed\x64-windows\bin\*.dll) do (
-            if not %%~nI == readline mklink %%~nxI %%I
+            mklink %%~nxI %%I
           )
       - name: Configure
         env:
@@ -130,25 +130,23 @@ jobs:
         timeout-minutes: 70
         continue-on-error: ${{ matrix.continue-on-error || false }}
 
-      - uses: ruby/action-slack@54175162371f1f7c8eb94d7c8644ee2479fcd375 # v3.2.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          payload: |
-            {
-              "ci": "GitHub Actions",
-              "env": "snapshot: ${{ env.OS_VER }} / ${{ matrix.test_task }}",
-              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "commit": "${{ github.sha }}",
-              "branch": "${{ github.ref_name }}"
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }}
-        if: failure()
+          sparse-checkout: .github/actions/slack
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+        if: ${{ failure() }}
+      - uses: ./.github/actions/slack
+        with:
+          label: "${{ env.OS_VER }} / ${{ matrix.test_task }}"
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() }}
       - uses: ruby/action-slack@54175162371f1f7c8eb94d7c8644ee2479fcd375 # v3.2.2
         with:
           payload: |
             {
               "attachments": [{
-                "text": "${{ job.status }}: ${{ env.OS_VER }} / ${{ matrix.test_task }} <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }}>",
+                "text": "${{ job.status }}: ${{ env.OS_VER }} / ${{ matrix.test_task }} <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ inputs.archname }}>",
                 "color": "danger"
               }]
             }
