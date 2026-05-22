@@ -1508,7 +1508,19 @@ class Pathname    # * FileTest *
   #
   def executable_real?() FileTest.executable_real?(@path) end
 
-  # See <tt>FileTest.exist?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   exist? -> true or false
+  #
+  # Returns whether the entry represented by `self` exists:
+  #
+  # ```ruby
+  # Pathname('.').exist?         # => true
+  # Pathname('README.md').exist? # => true
+  # Pathname('nosuch').exist?    # => false
+  # ```
+  #
   def exist?() FileTest.exist?(@path) end
 
   # See <tt>FileTest.grpowned?</tt>.
