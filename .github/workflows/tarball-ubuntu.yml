@@ -35,7 +35,7 @@ jobs:
           set -x
           sudo apt-get update -q
           sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev zlib1g-dev libffi-dev libgmp-dev bison- autoconf-
-      - uses: ruby/setup-ruby@6aaa311d81eba98ae12eaffbcb63296ace0efcde # v1.307.0
+      - uses: ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f # v1.310.0
         with:
           ruby-version: '3.2'
         # test-bundled-gems requires executable host ruby
@@ -128,7 +128,7 @@ jobs:
           label: "${{ matrix.os }} / ${{ matrix.test_task }}"
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
-      - uses: ruby/action-slack@54175162371f1f7c8eb94d7c8644ee2479fcd375 # v3.2.2
+      - uses: ruby/action-slack@d260b61aa817726d5bedd22dd6cc305787fa4cdd # v4.0.0
         with:
           payload: |
             {
