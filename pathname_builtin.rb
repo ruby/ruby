@@ -1489,7 +1489,23 @@ class Pathname    # * FileTest *
   #
   def executable?() FileTest.executable?(@path) end
 
-  # See <tt>FileTest.executable_real?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   executable_real? -> true or false
+  #
+  # Returns whether the entry represented by `self` is executable
+  # by the real user and group id of the current process;
+  # calls FileTest.executable_real? with argument `self.to_s`:
+  #
+  # ```ruby
+  # pn = Pathname('example')
+  # pn.write('')
+  # pn.executable_real? # => false
+  # pn.chmod(0100)
+  # pn.executable_real? # => true
+  # ```
+  #
   def executable_real?() FileTest.executable_real?(@path) end
 
   # See <tt>FileTest.exist?</tt>.
