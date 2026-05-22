@@ -8,6 +8,7 @@ permissions: {}
 
 jobs:
   dispatch:
+    if: ${{ github.event_name != 'schedule' || github.repository == 'ruby/ruby' }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
