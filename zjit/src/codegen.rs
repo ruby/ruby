@@ -2111,19 +2111,17 @@ fn gen_new_hash(
     elements: Vec<Opnd>,
     state: &FrameState,
 ) -> lir::Opnd {
-    gen_prepare_non_leaf_call(jit, asm, state);
+    if elements.is_empty() {
+        gen_prepare_leaf_call_with_gc(asm, state);
+        asm_ccall!(asm, rb_hash_new,)
+    } else {
+        gen_prepare_non_leaf_call(jit, asm, state);
 
-    let cap: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
-    let new_hash = asm_ccall!(asm, rb_hash_new_with_size, lir::Opnd::Imm(cap));
-
-    if !elements.is_empty() {
         let argv = gen_push_opnds(asm, &elements);
-        asm_ccall!(asm, rb_hash_bulk_insert, elements.len().into(), argv, new_hash);
-
+        let hash = asm_ccall!(asm, rb_hash_new_with_bulk_insert, elements.len().into(), argv);
         gen_pop_opnds(asm, &elements);
+        hash
     }
-
-    new_hash
 }
 
 /// Compile a new range instruction
@@ -3401,11 +3399,7 @@ fn gen_toregexp(jit: &mut JITState, asm: &mut Assembler, opt: usize, values: Vec
     gen_prepare_non_leaf_call(jit, asm, state);
 
     let first_opnd_ptr = gen_push_opnds(asm, &values);
-
-    let tmp_ary = asm_ccall!(asm, rb_ary_tmp_new_from_values, Opnd::Imm(0), values.len().into(), first_opnd_ptr);
-    let result = asm_ccall!(asm, rb_reg_new_ary, tmp_ary, opt.into());
-    asm_ccall!(asm, rb_ary_clear, tmp_ary);
-
+    let result = asm_ccall!(asm, rb_reg_new_from_values, values.len().into(), first_opnd_ptr, opt.into());
     gen_pop_opnds(asm, &values);
 
     result
