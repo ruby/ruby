@@ -359,7 +359,7 @@ rb_binding_new(void)
  *
  *     # evaluate template in context of the object
  *     eval(template, user.get_binding)
- *     #=> {:name=>"Joan", :position=>"manager"}
+ *     #=> {name: "Joan", position: "manager"}
  *
  *  Binding#local_variable_get can be used to access the variables
  *  whose names are reserved Ruby keywords:
