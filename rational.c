@@ -1592,6 +1592,18 @@ rb_flo_round_by_rational(VALUE num, int ndigits, enum ruby_num_rounding_mode mod
     return nurat_to_f(f_round_n(float_to_r(num), INT2NUM(ndigits), round_func));
 }
 
+VALUE
+rb_flo_ceil_by_rational(VALUE num, int ndigits)
+{
+    return nurat_to_f(f_round_n(float_to_r(num), INT2NUM(ndigits), nurat_ceil));
+}
+
+VALUE
+rb_flo_floor_by_rational(VALUE num, int ndigits)
+{
+    return nurat_to_f(f_round_n(float_to_r(num), INT2NUM(ndigits), nurat_floor));
+}
+
 static double
 nurat_to_double(VALUE self)
 {
