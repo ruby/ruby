@@ -920,10 +920,10 @@ class Pathname    # * File *
   # lines = []
   # Pathname('COPYING').each_line {|line| lines << line }
   # lines.take(3)
-  # =>
-  # ["{日本語}[rdoc-ref:COPYING.ja]\n",
-  #  "\n",
-  #  "Ruby is copyrighted free software by Yukihiro Matsumoto <matz@netlab.jp>.\n"]
+  # # =>
+  # # ["{日本語}[rdoc-ref:COPYING.ja]\n",
+  # #  "\n",
+  # #  "Ruby is copyrighted free software by Yukihiro Matsumoto <matz@netlab.jp>.\n"]
   # ```
   #
   # The lines are read using IO.foreach,
