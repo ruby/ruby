@@ -69,16 +69,16 @@ jobs:
           [
             Dir.home,
           ].each do |dir|
-            Pathname(dir).each_child do |pn|
-              st = pn.stat
+            Dir.each_child(dir) do |pn|
+              st = File.stat(pn)
               if st.file?
-                content = Digest::SHA1.hexdigest(pn.read)
+                content = Digest::SHA1.file(pn).hexdigest
               elsif st.directory? && st.nlink <= 10
-                content = pn.children.map(&:basename).map(&:to_s).sort
+                content = Dir.children(pn).sort
               end
-              out << [pn.to_s, "%o"%st.mode, st.nlink, st.uid, st.gid, st.size, content].to_s
+              out << [pn, "%o"%st.mode, st.nlink, st.uid, st.gid, st.size, content].to_s
             rescue
-              out << [pn.to_s, $!.inspect].to_s
+              out << [pn, $!.inspect].to_s
             end
           end
           File.open(ARGV.shift, "w") do |io|
