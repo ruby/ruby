@@ -2724,7 +2724,7 @@ fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int kw_splat, rb_fi
 
     // We cannot free the stack until the pthread is joined:
 #ifndef COROUTINE_PTHREAD_CONTEXT
-    if (resuming_fiber && FIBER_TERMINATED_P(fiber)) {
+    if (FIBER_TERMINATED_P(fiber)) {
         fiber_stack_release(fiber);
     }
 #endif
