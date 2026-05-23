@@ -489,6 +489,11 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
 
                         // replace the cme that will be invalid in the all classexts
                         invalidate_callable_method_entry_in_every_m_table(klass_housing_cme, mid, cme);
+                        // owner may be a boxable class with per-box classext copies of its m_tbl
+                        // (klass_housing_cme may be a non-boxable origin ICLASS that doesn't cover them)
+                        if (klass_housing_cme != owner) {
+                            invalidate_callable_method_entry_in_every_m_table(owner, mid, cme);
+                        }
                     }
 
                     vm_cme_invalidate((rb_callable_method_entry_t *)cme);
