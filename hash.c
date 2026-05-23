@@ -3995,8 +3995,8 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
  *    h == {bar: 1, foo: 0} # => true   # Equal entries (different order).
  *    h == 1                            # => false  # Object not a hash.
  *    h == {}                           # => false  # Different number of entries.
- *    h == {foo: 0, bar: 1} # => false  # Different key.
- *    h == {foo: 0, bar: 1} # => false  # Different value.
+ *    h == {foo: 0, bat: 1} # => false  # Different key.
+ *    h == {foo: 0, bar: 2} # => false  # Different value.
  *
  *  Related: see {Methods for Comparing}[rdoc-ref:Hash@Methods+for+Comparing].
  */
@@ -4927,8 +4927,8 @@ rb_hash_le(VALUE hash, VALUE other)
  *    h < {baz: 2, bar: 1, foo: 0} # => true   # Order may differ.
  *    h < h                        # => false  # Not a proper subset.
  *    h < {bar: 1, foo: 0}         # => false  # Not a proper subset.
- *    h < {foo: 0, bar: 1, baz: 2} # => false  # Different key.
- *    h < {foo: 0, bar: 1, baz: 2} # => false  # Different value.
+ *    h < {foo: 0, bat: 1, baz: 2} # => false  # Different key.
+ *    h < {foo: 0, bar: 3, baz: 2} # => false  # Different value.
  *
  *  See {Hash Inclusion}[rdoc-ref:language/hash_inclusion.rdoc].
  *
@@ -4981,8 +4981,8 @@ rb_hash_ge(VALUE hash, VALUE other)
  *    h > {bar: 1, foo: 0}         # => true   # Order may differ.
  *    h > h                        # => false  # Not a proper superset.
  *    h > {baz: 2, bar: 1, foo: 0} # => false  # Not a proper superset.
- *    h > {foo: 0, bar: 1}         # => false  # Different key.
- *    h > {foo: 0, bar: 1}         # => false  # Different value.
+ *    h > {foo: 0, bat: 1}         # => false  # Different key.
+ *    h > {foo: 0, bar: 3}         # => false  # Different value.
  *
  *  See {Hash Inclusion}[rdoc-ref:language/hash_inclusion.rdoc].
  *
