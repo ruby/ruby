@@ -235,7 +235,7 @@ impl GCTriggerPolicy<Ruby> for CpuHeapTrigger {
 
             self.target_heap_pages.store(new_target, Ordering::Relaxed);
 
-            debug!(
+            info!(
                 "CpuHeapTrigger: gc_cpu={:.4} target={:.4} factor={:.4} \
                  pages {} -> {} (used={}, clamp=[{}, {}])",
                 gc_cpu,
