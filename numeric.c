@@ -74,6 +74,8 @@
 #define DBL_EPSILON 2.2204460492503131e-16
 #endif
 
+#define ACCURATE_POW10(ndigits) ((ndigits) < DBL_DIG)
+
 #ifndef USE_RB_INFINITY
 #elif !defined(WORDS_BIGENDIAN) /* BYTE_ORDER == LITTLE_ENDIAN */
 const union bytesequence4_or_float rb_infinity = {{0x00, 0x00, 0x80, 0x7f}};
@@ -2487,9 +2489,8 @@ flo_round(int argc, VALUE *argv, VALUE num)
         frexp(number, &binexp);
         if (float_round_overflow(ndigits, binexp)) return num;
         if (float_round_underflow(ndigits, binexp)) return DBL2NUM(0);
-        if (ndigits >= DBL_DIG) {
-            /* In this case, pow(10, ndigits) may not be accurate. */
-            return rb_flo_round_by_rational(argc, argv, num);
+        if (!ACCURATE_POW10(ndigits)) {
+            return rb_flo_round_by_rational(num, ndigits, mode);
         }
         f = pow(10, ndigits);
         x = ROUND_CALL(mode, round, (number, f));
