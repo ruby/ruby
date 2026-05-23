@@ -2020,6 +2020,9 @@ rb_float_floor(VALUE num, int ndigits)
         if (float_round_overflow(ndigits, binexp)) return num;
         if (number > 0.0 && float_round_underflow(ndigits, binexp))
             return DBL2NUM(0.0);
+        if (!ACCURATE_POW10(ndigits)) {
+            return rb_flo_floor_by_rational(num, ndigits);
+        }
         f = pow(10, ndigits);
         mul = floor(number * f);
         res = (mul + 1) / f;
@@ -2228,6 +2231,9 @@ rb_float_ceil(VALUE num, int ndigits)
         if (float_round_overflow(ndigits, binexp)) return num;
         if (number < 0.0 && float_round_underflow(ndigits, binexp))
             return DBL2NUM(0.0);
+        if (!ACCURATE_POW10(ndigits)) {
+            return rb_flo_ceil_by_rational(num, ndigits);
+        }
         f = pow(10, ndigits);
         f = ceil(number * f) / f;
         return DBL2NUM(f);
