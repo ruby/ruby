@@ -74,6 +74,8 @@
 #define DBL_EPSILON 2.2204460492503131e-16
 #endif
 
+#define ACCURATE_POW10(ndigits) ((ndigits) < DBL_DIG)
+
 #ifndef USE_RB_INFINITY
 #elif !defined(WORDS_BIGENDIAN) /* BYTE_ORDER == LITTLE_ENDIAN */
 const union bytesequence4_or_float rb_infinity = {{0x00, 0x00, 0x80, 0x7f}};
@@ -2112,6 +2114,9 @@ rb_float_floor(VALUE num, int ndigits)
         if (float_round_overflow(ndigits, binexp)) return num;
         if (number > 0.0 && float_round_underflow(ndigits, binexp))
             return DBL2NUM(0.0);
+        if (!ACCURATE_POW10(ndigits)) {
+            return rb_flo_floor_by_rational(num, ndigits);
+        }
         f = pow(10, ndigits);
         mul = floor(number * f);
         res = (mul + 1) / f;
@@ -2320,6 +2325,9 @@ rb_float_ceil(VALUE num, int ndigits)
         if (float_round_overflow(ndigits, binexp)) return num;
         if (number < 0.0 && float_round_underflow(ndigits, binexp))
             return DBL2NUM(0.0);
+        if (!ACCURATE_POW10(ndigits)) {
+            return rb_flo_ceil_by_rational(num, ndigits);
+        }
         f = pow(10, ndigits);
         f = ceil(number * f) / f;
         return DBL2NUM(f);
@@ -2584,9 +2592,8 @@ flo_round(int argc, VALUE *argv, VALUE num)
         frexp(number, &binexp);
         if (float_round_overflow(ndigits, binexp)) return num;
         if (float_round_underflow(ndigits, binexp)) return DBL2NUM(0);
-        if (ndigits > 14) {
-            /* In this case, pow(10, ndigits) may not be accurate. */
-            return rb_flo_round_by_rational(argc, argv, num);
+        if (!ACCURATE_POW10(ndigits)) {
+            return rb_flo_round_by_rational(num, ndigits, mode);
         }
         f = pow(10, ndigits);
         x = ROUND_CALL(mode, round, (number, f));

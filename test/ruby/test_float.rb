@@ -492,6 +492,22 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(-1.26, -1.255.round(2))
   end
 
+  def test_round_ndigits
+    bug14635 = "[ruby-core:86323]"
+    f = 0.5
+    31.times do |i|
+      assert_equal(0.5, f.round(i+1), bug14635 + " (argument: #{i+1})")
+    end
+  end
+
+  def test_round_with_precision_min
+    (0..3).each do |n|
+      n -= Float::MIN_10_EXP
+      f = Float::MIN.round(n)
+      assert_include([Float::MIN.floor(n), Float::MIN.ceil(n)], f, "round(#{n})")
+    end
+  end
+
   def test_round_half_even_with_precision
     assert_equal(767573.18759, 767573.1875850001.round(5, half: :even))
     assert_equal(767573.18758, 767573.187585.round(5, half: :even))
@@ -536,6 +552,16 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(-100000000000000000000000000000000000000000000000000, -1.0.floor(-50), "[Bug #20654]")
   end
 
+  def test_floor_with_precision_min
+    min = Float::MIN
+    (0..3).each do |n|
+      n -= Float::MIN_10_EXP
+      f = min.floor(n)
+      assert_operator(f, :<=, Float::MIN, "floor(#{n})")
+      assert_operator(f, :>=, Float::MIN.floor(n-1), "ceil(#{n})")
+    end
+  end
+
   def test_ceil_with_precision
     assert_equal(+0.1, +0.001.ceil(1))
     assert_equal(-0.0, -0.001.ceil(1))
@@ -565,6 +591,19 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(10000000000, 1.0.ceil(-10), "[Bug #20654]")
     assert_equal(100000000000000000000, 1.0.ceil(-20), "[Bug #20654]")
     assert_equal(100000000000000000000000000000000000000000000000000, 1.0.ceil(-50), "[Bug #20654]")
+  end
+
+  def test_ceil_with_precision_min
+    min = Float::MIN
+    (-Float::MIN_10_EXP).times do |n|
+      assert_equal(10.pow(-n), min.ceil(n))
+    end
+    (0..3).each do |n|
+      n -= Float::MIN_10_EXP
+      f = min.ceil(n)
+      assert_operator(f, :>=, Float::MIN, "ceil(#{n})")
+      assert_operator(f, :<=, Float::MIN.ceil(n-1), "ceil(#{n})")
+    end
   end
 
   def test_truncate_with_precision
