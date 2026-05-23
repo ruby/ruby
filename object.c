@@ -1555,10 +1555,10 @@ rb_true_to_s(VALUE obj)
 
 
 /*
- *  call-seq:
- *    true & object -> true or false
+ * call-seq:
+ *   true & object -> true or false
  *
- *  Returns +false+ if +object+ is +false+ or +nil+, +true+ otherwise:
+ * Returns +false+ if +object+ is +false+ or +nil+, +true+ otherwise:
  *
  *  true & Object.new # => true
  *  true & false      # => false
