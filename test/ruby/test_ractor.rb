@@ -269,7 +269,8 @@ class TestRactor < Test::Unit::TestCase
   end
 
   def test_mn_threads
-    # Ideally, we would assert that vm->ractor.sched.max_cpu equals n when RUBY_MAX_CPU is not set.
+    # Ideally, we would assert that vm->ractor.sched.max_cpu equals sysconf(_SC_NPROCESSORS_ONLN)
+    # when RUBY_MAX_CPU is not set.
     assert_ractor(<<~'RUBY', args: [{ "RUBY_MN_THREADS" => "1" }])
       require "etc"
       n = Etc.respond_to?(:nprocessors) ? Etc.nprocessors : 8
