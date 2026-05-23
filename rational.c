@@ -1390,10 +1390,12 @@ nurat_round_half_even(VALUE self)
     return num;
 }
 
+static VALUE f_round_n(VALUE self, VALUE n, VALUE (*func)(VALUE)) ;
+
 static VALUE
 f_round_common(int argc, VALUE *argv, VALUE self, VALUE (*func)(VALUE))
 {
-    VALUE n, b, s;
+    VALUE n;
 
     if (rb_check_arity(argc, 0, 1) == 0)
         return (*func)(self);
@@ -1402,6 +1404,14 @@ f_round_common(int argc, VALUE *argv, VALUE self, VALUE (*func)(VALUE))
 
     if (!k_integer_p(n))
         rb_raise(rb_eTypeError, "not an integer");
+
+    return f_round_n(self, n, func);
+}
+
+static VALUE
+f_round_n(VALUE self, VALUE n, VALUE (*func)(VALUE))
+{
+    VALUE b, s;
 
     b = f_expt10(n);
     s = rb_rational_mul(self, b);
@@ -1433,8 +1443,7 @@ rb_rational_floor(VALUE self, int ndigits)
         return nurat_floor(self);
     }
     else {
-        VALUE n = INT2NUM(ndigits);
-        return f_round_common(1, &n, self, nurat_floor);
+        return f_round_n(self, INT2NUM(ndigits), nurat_floor);
     }
 }
 
@@ -1577,9 +1586,10 @@ nurat_round_n(int argc, VALUE *argv, VALUE self)
 }
 
 VALUE
-rb_flo_round_by_rational(int argc, VALUE *argv, VALUE num)
+rb_flo_round_by_rational(VALUE num, int ndigits, enum ruby_num_rounding_mode mode)
 {
-    return nurat_to_f(nurat_round_n(argc, argv, float_to_r(num)));
+    VALUE (*round_func)(VALUE) = ROUND_FUNC(mode, nurat_round);
+    return nurat_to_f(f_round_n(float_to_r(num), INT2NUM(ndigits), round_func));
 }
 
 static double
