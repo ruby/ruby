@@ -2204,7 +2204,7 @@ check_exec_options_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
         if (SYMBOL_P(key))
             rb_raise(rb_eArgError, "wrong exec option symbol: % "PRIsVALUE,
                      key);
-        rb_raise(rb_eArgError, "wrong exec option");
+        rb_raise(rb_eArgError, "wrong exec option: %"PRIsVALUE, rb_obj_class(key));
     }
     return ST_CONTINUE;
 }
