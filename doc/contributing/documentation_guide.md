@@ -126,9 +126,47 @@ consider aligning `# => ...` in successive lines.
 Alignment may sometimes aid readability:
 
 ```ruby
-a = [1, 2, 3] #=> [1, 2, 3]
-a.shuffle!    #=> [2, 3, 1]
-a             #=> [2, 3, 1]
+a = [1, 2, 3] # => [1, 2, 3]
+a.shuffle!    # => [2, 3, 1]
+a             # => [2, 3, 1]
+```
+
+Consider modifying `irb` prompts to reduce clutter.
+
+With the default prompts:
+
+```bash
+$ irb
+irb(main):001> File.write('t.tmp', 'foo')
+=> 3
+irb(main):002> File.read('t.tmp')
+=> "foo"
+irb(main):003> File.delete('t.tmp')
+=> 1
+```
+
+You can modify the prompts in the [irb configuration] file:
+
+```ruby
+IRB.conf[:PROMPT][:MY_PROMPT] = {
+  PROMPT_I: '',
+  PROMPT_C: '',
+  PROMPT_S: '',
+  RETURN: '# => %s'
+}
+IRB.conf[:PROMPT_MODE] = :MY_PROMPT
+```
+
+Then:
+
+```bash
+$ irb
+File.write('t.tmp', 'foo')
+# => 3
+File.read('t.tmp')
+# => "foo"
+File.delete('t.tmp')
+# => 1
 ```
 
 ### Headings
@@ -651,6 +689,7 @@ best to use a separate paragraph for each case you are discussing.
 [fragment]:              https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Fragment
 [headings]:              https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#headings
 [irb]:                   https://ruby.github.io/irb/index.html
+[irb configuration]:     https://ruby.github.io/irb/Configurations_md.html#configuration-file-path-resolution
 [links]:                 https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#links
 [lists]:                 https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#lists
 [monofont]:              https://ruby.github.io/rdoc/doc/markup_reference/rdoc_rdoc.html#monofont
