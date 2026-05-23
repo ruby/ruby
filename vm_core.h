@@ -679,11 +679,6 @@ typedef struct rb_hook_list_struct {
 // see builtin.h for definition
 typedef const struct rb_builtin_function *RB_BUILTIN;
 
-struct global_object_list {
-    VALUE *varptr;
-    struct global_object_list *next;
-};
-
 typedef struct rb_vm_struct {
     VALUE self;
 
@@ -770,7 +765,9 @@ typedef struct rb_vm_struct {
 
     /* object management */
     VALUE mark_object_ary;
-    struct global_object_list *global_object_list;
+    VALUE **global_object_list;
+    size_t global_object_list_size;
+    size_t global_object_list_capa;
     const VALUE special_exceptions[ruby_special_error_count];
 
     /* Ruby Box */
@@ -1018,6 +1015,10 @@ struct rb_vm_tag {
     struct rb_vm_tag *prev;
     enum ruby_tag_type state;
     unsigned int lock_rec;
+#if USE_ZJIT
+    // ec->cfp as of EC_PUSH_TAG, which is saved for materializing JITFrame.
+    rb_control_frame_t *cfp;
+#endif
 };
 
 STATIC_ASSERT(rb_vm_tag_buf_offset, offsetof(struct rb_vm_tag, buf) > 0);

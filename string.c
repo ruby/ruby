@@ -9772,6 +9772,7 @@ rb_str_enumerate_codepoints(VALUE str, VALUE ary)
     unsigned int c;
     const char *ptr, *end;
     rb_encoding *enc;
+    int enc_asciicompat;
 
     if (single_byte_optimizable(str))
         return rb_str_enumerate_bytes(str, ary);
@@ -9780,9 +9781,15 @@ rb_str_enumerate_codepoints(VALUE str, VALUE ary)
     ptr = RSTRING_PTR(str);
     end = RSTRING_END(str);
     enc = STR_ENC_GET(str);
+    enc_asciicompat = rb_enc_asciicompat(enc);
 
     while (ptr < end) {
-        c = rb_enc_codepoint_len(ptr, end, &n, enc);
+        /* Fast path: ASCII byte in an ASCII-compatible encoding is its own codepoint;
+         * skip rb_enc_codepoint_len and return the byte directly.
+         */
+        n = 1;
+        c = (enc_asciicompat && ISASCII(*ptr)) ?
+            (unsigned char)*ptr : rb_enc_codepoint_len(ptr, end, &n, enc);
         ENUM_ELEM(ary, UINT2NUM(c));
         ptr += n;
     }
@@ -11122,48 +11129,48 @@ rb_str_justify(int argc, VALUE *argv, VALUE str, char jflag)
     rlen = n - llen;
     cr = ENC_CODERANGE(str);
     if (flen > 1) {
-       llen2 = str_offset(f, f + flen, llen % fclen, enc, singlebyte);
-       rlen2 = str_offset(f, f + flen, rlen % fclen, enc, singlebyte);
+        llen2 = str_offset(f, f + flen, llen % fclen, enc, singlebyte);
+        rlen2 = str_offset(f, f + flen, rlen % fclen, enc, singlebyte);
     }
     size = RSTRING_LEN(str);
     if ((len = llen / fclen + rlen / fclen) >= LONG_MAX / flen ||
-       (len *= flen) >= LONG_MAX - llen2 - rlen2 ||
-       (len += llen2 + rlen2) >= LONG_MAX - size) {
-       rb_raise(rb_eArgError, "argument too big");
+        (len *= flen) >= LONG_MAX - llen2 - rlen2 ||
+        (len += llen2 + rlen2) >= LONG_MAX - size) {
+        rb_raise(rb_eArgError, "argument too big");
     }
     len += size;
     res = str_enc_new(rb_cString, 0, len, enc);
     p = RSTRING_PTR(res);
     if (flen <= 1) {
-       memset(p, *f, llen);
-       p += llen;
+        memset(p, *f, llen);
+        p += llen;
     }
     else {
-       while (llen >= fclen) {
+        while (llen >= fclen) {
             memcpy(p,f,flen);
             p += flen;
             llen -= fclen;
         }
-       if (llen > 0) {
-           memcpy(p, f, llen2);
-           p += llen2;
+        if (llen > 0) {
+            memcpy(p, f, llen2);
+            p += llen2;
         }
     }
     memcpy(p, RSTRING_PTR(str), size);
     p += size;
     if (flen <= 1) {
-       memset(p, *f, rlen);
-       p += rlen;
+        memset(p, *f, rlen);
+        p += rlen;
     }
     else {
-       while (rlen >= fclen) {
+        while (rlen >= fclen) {
             memcpy(p,f,flen);
             p += flen;
             rlen -= fclen;
         }
-       if (rlen > 0) {
-           memcpy(p, f, rlen2);
-           p += rlen2;
+        if (rlen > 0) {
+            memcpy(p, f, rlen2);
+            p += rlen2;
         }
     }
     TERM_FILL(p, termlen);

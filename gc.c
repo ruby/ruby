@@ -1350,6 +1350,7 @@ rb_gc_imemo_needs_cleanup_p(VALUE obj)
       case imemo_ment:
       case imemo_iseq:
       case imemo_callinfo:
+      case imemo_cdhash:
         return true;
 
       case imemo_subclasses:
@@ -3273,6 +3274,14 @@ rb_mark_tbl_no_pin(st_table *tbl)
     gc_mark_tbl_no_pin(tbl);
 }
 
+void
+rb_gc_mark_set_no_pin(st_table *tbl)
+{
+    if (!tbl || tbl->num_entries == 0) return;
+
+    st_foreach(tbl, gc_mark_set_no_pin_i, 0);
+}
+
 static bool
 gc_declarative_marking_p(const rb_data_type_t *type)
 {
@@ -3743,11 +3752,14 @@ rb_gc_register_address(VALUE *addr)
 
     VALUE obj = *addr;
 
-    struct global_object_list *tmp = ALLOC(struct global_object_list);
     RB_VM_LOCKING() {
-        tmp->next = vm->global_object_list;
-        tmp->varptr = addr;
-        vm->global_object_list = tmp;
+        if (vm->global_object_list_size == vm->global_object_list_capa) {
+            size_t new_capa = vm->global_object_list_capa ? vm->global_object_list_capa * 2 : 64;
+            SIZED_REALLOC_N(vm->global_object_list, VALUE *, new_capa, vm->global_object_list_capa);
+            vm->global_object_list_capa = new_capa;
+        }
+
+        vm->global_object_list[vm->global_object_list_size++] = addr;
     }
 
     /*
@@ -3766,23 +3778,18 @@ void
 rb_gc_unregister_address(VALUE *addr)
 {
     rb_vm_t *vm = GET_VM();
-    struct global_object_list *tmp;
     RB_VM_LOCKING() {
-        tmp = vm->global_object_list;
-        if (tmp->varptr == addr) {
-            vm->global_object_list = tmp->next;
-            SIZED_FREE(tmp);
-        }
-        else {
-            while (tmp->next) {
-                if (tmp->next->varptr == addr) {
-                    struct global_object_list *t = tmp->next;
-
-                    tmp->next = tmp->next->next;
-                    SIZED_FREE(t);
-                    break;
-                }
-                tmp = tmp->next;
+        size_t index;
+        for (index = 0; index < vm->global_object_list_size; index++) {
+            if (addr == vm->global_object_list[index]) {
+                MEMMOVE(
+                    vm->global_object_list[index],
+                    &vm->global_object_list[index + 1],
+                    VALUE *,
+                    vm->global_object_list_size - index - 1
+                );
+                vm->global_object_list_size--;
+                break;
             }
         }
     }
@@ -3918,6 +3925,36 @@ void
 rb_gc_update_tbl_refs(st_table *ptr)
 {
     gc_update_table_refs(ptr);
+}
+
+static int
+rb_gc_update_set_refs_i(st_data_t key, st_data_t value, st_data_t argp, int error)
+{
+    if (rb_gc_location((VALUE)key) != (VALUE)key) {
+        return ST_REPLACE;
+    }
+
+    return ST_CONTINUE;
+}
+
+static int
+rb_gc_update_set_refs_replace_i(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
+{
+    if (rb_gc_location((VALUE)*key) != (VALUE)*key) {
+        *key = rb_gc_location((VALUE)*key);
+    }
+
+    return ST_CONTINUE;
+}
+
+void
+rb_gc_update_set_refs(st_table *tbl)
+{
+    if (!tbl || tbl->num_entries == 0) return;
+
+    if (st_foreach_with_replace(tbl, rb_gc_update_set_refs_i, rb_gc_update_set_refs_replace_i, 0)) {
+        rb_raise(rb_eRuntimeError, "hash modified during iteration");
+    }
 }
 
 static void
@@ -4960,7 +4997,7 @@ rb_raw_obj_info_common(char *const buff, const size_t buff_size, const VALUE obj
             APPEND_S("(temporary internal)");
         }
         else if (RTEST(RBASIC(obj)->klass)) {
-            VALUE class_path = rb_class_path_cached(RBASIC(obj)->klass);
+            VALUE class_path = rb_mod_name(RBASIC(obj)->klass);
             if (!NIL_P(class_path)) {
                 APPEND_F("%s ", RSTRING_PTR(class_path));
             }
@@ -5046,7 +5083,7 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
           case T_CLASS:
           case T_MODULE:
             {
-                VALUE class_path = rb_class_path_cached(obj);
+                VALUE class_path = rb_mod_name(obj);
                 if (!NIL_P(class_path)) {
                     APPEND_F("%s", RSTRING_PTR(class_path));
                 }
@@ -5057,7 +5094,7 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
             }
           case T_ICLASS:
             {
-                VALUE class_path = rb_class_path_cached(RBASIC_CLASS(obj));
+                VALUE class_path = rb_mod_name(RBASIC_CLASS(obj));
                 if (!NIL_P(class_path)) {
                     APPEND_F("src:%s", RSTRING_PTR(class_path));
                 }
@@ -5148,7 +5185,7 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
               case imemo_callcache:
                 {
                     const struct rb_callcache *cc = (const struct rb_callcache *)obj;
-                    VALUE class_path = vm_cc_valid(cc) ? rb_class_path_cached(cc->klass) : Qnil;
+                    VALUE class_path = vm_cc_valid(cc) ? rb_mod_name(cc->klass) : Qnil;
                     const rb_callable_method_entry_t *cme = vm_cc_cme(cc);
 
                     APPEND_F("(klass:%s cme:%s%s (%p) call:%p",

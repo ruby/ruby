@@ -7606,9 +7606,7 @@ pm_compile_case_node_dispatch(rb_iseq_t *iseq, VALUE dispatch, const pm_node_t *
         return Qundef;
     }
 
-    if (NIL_P(rb_hash_lookup(dispatch, key))) {
-        rb_hash_aset(dispatch, key, ((VALUE) label) | 1);
-    }
+    cdhash_aset_if_missing(dispatch, key, (VALUE)label);
     return dispatch;
 }
 
@@ -7747,8 +7745,7 @@ pm_compile_case_node(rb_iseq_t *iseq, const pm_case_node_t *cast, const pm_node_
         // lookup to jump directly to the correct when clause body.
         VALUE dispatch = Qundef;
         if (ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
-            dispatch = rb_hash_new();
-            RHASH_TBL_RAW(dispatch)->type = &cdhash_type;
+            dispatch = cdhash_new(0);
         }
 
         // We're going to loop through each of the conditions in the case

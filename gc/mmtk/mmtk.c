@@ -16,21 +16,6 @@
 #include <sys/sysctl.h>
 #endif
 
-#ifndef VM_CHECK_MODE
-# define VM_CHECK_MODE RUBY_DEBUG
-#endif
-
-// From ractor_core.h
-#ifndef RACTOR_CHECK_MODE
-# define RACTOR_CHECK_MODE (VM_CHECK_MODE || RUBY_DEBUG) && (SIZEOF_UINT64_T == SIZEOF_VALUE)
-#endif
-
-#if RACTOR_CHECK_MODE
-# define RVALUE_SUFFIX_SIZE sizeof(VALUE)
-#else
-# define RVALUE_SUFFIX_SIZE 0
-#endif
-
 struct objspace {
     bool measure_gc_time;
     bool gc_stress;
@@ -490,6 +475,7 @@ rb_mmtk_special_const_p(MMTk_ObjectReference object)
 }
 
 RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 1, 2)
+RBIMPL_ATTR_NORETURN()
 static void
 rb_mmtk_gc_thread_bug(const char *msg, ...)
 {
@@ -520,6 +506,7 @@ rb_mmtk_gc_thread_panic_handler(void)
     rb_mmtk_gc_thread_bug("MMTk GC thread panicked");
 }
 
+RBIMPL_ATTR_NORETURN()
 static void
 rb_mmtk_mutator_thread_panic_handler(void)
 {
@@ -575,7 +562,7 @@ rb_gc_impl_objspace_alloc(void)
 {
     MMTk_Builder *builder = rb_mmtk_builder_init();
     MMTk_RubyBindingOptions binding_options = {
-        .suffix_size = RVALUE_SUFFIX_SIZE,
+        .suffix_size = RB_GC_OBJ_SUFFIX_SIZE,
     };
     mmtk_init_binding(builder, &binding_options, &ruby_upcalls);
 
@@ -813,19 +800,25 @@ rb_gc_impl_get_vm_context(void *objspace_ptr)
 // Object allocation
 
 static VALUE
-rb_mmtk_alloc_fast_path(struct objspace *objspace, struct MMTk_ractor_cache *ractor_cache, size_t size)
+rb_mmtk_alloc_fast_path(struct objspace *objspace, struct MMTk_ractor_cache *ractor_cache, size_t size, size_t align)
 {
     MMTk_BumpPointer *bump_pointer = ractor_cache->bump_pointer;
     if (bump_pointer == NULL) return 0;
 
-    uintptr_t new_cursor = bump_pointer->cursor + size;
+    uintptr_t cursor = bump_pointer->cursor;
 
-    if (new_cursor > bump_pointer->limit) {
+    // Ensure cursor is aligned
+    size_t mask = align - 1;
+    cursor = (cursor + mask) & ~mask;
+
+    cursor += size;
+
+    if (cursor > bump_pointer->limit) {
         return 0;
     }
     else {
-        VALUE obj = (VALUE)bump_pointer->cursor;
-        bump_pointer->cursor = new_cursor;
+        VALUE obj = cursor - size;
+        bump_pointer->cursor = cursor;
         return obj;
     }
 }
@@ -907,16 +900,16 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
         mmtk_handle_user_collection_request(ractor_cache, false, false);
     }
 
-    // Layout: [hidden size header (sizeof(VALUE))][payload (alloc_size)][suffix (RVALUE_SUFFIX_SIZE)]
-    alloc_size += sizeof(VALUE) + RVALUE_SUFFIX_SIZE;
+    // Layout: [hidden size header (sizeof(VALUE))][payload (alloc_size)][suffix (RB_GC_OBJ_SUFFIX_SIZE)]
+    alloc_size += sizeof(VALUE) + RB_GC_OBJ_SUFFIX_SIZE;
 
-    VALUE *alloc_obj = (VALUE *)rb_mmtk_alloc_fast_path(objspace, ractor_cache, alloc_size);
+    VALUE *alloc_obj = (VALUE *)rb_mmtk_alloc_fast_path(objspace, ractor_cache, alloc_size, MMTk_MIN_OBJ_ALIGN);
     if (!alloc_obj) {
         alloc_obj = mmtk_alloc(ractor_cache->mutator, alloc_size, MMTk_MIN_OBJ_ALIGN, 0, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
     }
 
     alloc_obj++;
-    alloc_obj[-1] = alloc_size - sizeof(VALUE) - RVALUE_SUFFIX_SIZE;
+    alloc_obj[-1] = alloc_size - sizeof(VALUE) - RB_GC_OBJ_SUFFIX_SIZE;
     alloc_obj[0] = flags;
     alloc_obj[1] = klass;
 

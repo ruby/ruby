@@ -673,9 +673,6 @@ set_i_to_a(VALUE set)
  *
  *  Without a block, if +self+ is an instance of +Set+, returns +self+.
  *  Otherwise, calls <tt>Set.new(self, &block)</tt>.
- *
- *  A form with arguments is _deprecated_. It converts the set to another
- *  with <tt>klass.new(self, *args, &block)</tt>.
  */
 static VALUE
 set_i_to_set(VALUE set)

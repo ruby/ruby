@@ -4980,9 +4980,7 @@ vm_call_super_method(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, st
 static inline VALUE
 vm_search_normal_superclass(VALUE klass)
 {
-    if (BUILTIN_TYPE(klass) == T_ICLASS &&
-            RB_TYPE_P(RBASIC(klass)->klass, T_MODULE) &&
-        FL_TEST_RAW(RBASIC(klass)->klass, RMODULE_IS_REFINEMENT)) {
+    if (RICLASS_FOR_REFINEMENT_P(klass)) {
         klass = RBASIC(klass)->klass;
     }
     klass = RCLASS_ORIGIN(klass);
@@ -5060,6 +5058,13 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
         /* bound instance method of module */
         cc = vm_cc_new(Qundef, NULL, vm_call_method_missing, cc_type_super);
         RB_OBJ_WRITE(iseq, &cd->cc, cc);
+    }
+    else if (klass == rb_cBasicObject &&
+             RB_TYPE_P(me->defined_class, T_ICLASS) &&
+             RCLASS_INCLUDER(me->defined_class) == 0) {
+        rb_raise(rb_eNoMethodError,
+                 "super in a method in a module that has been refined and that is called via super"
+                 " from a refinement method is not supported.");
     }
     else {
         cc = vm_search_method_fastpath(reg_cfp, cd, klass);
@@ -5480,21 +5485,21 @@ vm_defined(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_num_t op_
         break;
       case DEFINED_METHOD:{
         VALUE klass = CLASS_OF(v);
-        const rb_method_entry_t *me = rb_method_entry_with_refinements(klass, SYM2ID(obj), NULL);
+        const rb_callable_method_entry_t *cme = rb_callable_method_entry_with_refinements(klass, SYM2ID(obj), NULL);
 
-        if (me) {
-            switch (METHOD_ENTRY_VISI(me)) {
+        if (cme) {
+            switch (METHOD_ENTRY_VISI(cme)) {
               case METHOD_VISI_PRIVATE:
                 break;
               case METHOD_VISI_PROTECTED:
-                if (!rb_obj_is_kind_of(GET_SELF(), rb_class_real(me->defined_class))) {
+                if (!rb_obj_is_kind_of(GET_SELF(), vm_defined_class_for_protected_call(cme))) {
                     break;
                 }
               case METHOD_VISI_PUBLIC:
                 return true;
                 break;
               default:
-                rb_bug("vm_defined: unreachable: %u", (unsigned int)METHOD_ENTRY_VISI(me));
+                rb_bug("vm_defined: unreachable: %u", (unsigned int)METHOD_ENTRY_VISI(cme));
             }
         }
         else {
@@ -6570,8 +6575,8 @@ vm_case_dispatch(CDHASH hash, OFFSET else_offset, VALUE key)
                     key = FIXABLE(kval) ? LONG2FIX((long)kval) : rb_dbl2big(kval);
                 }
             }
-            if (rb_hash_stlike_lookup(hash, key, &val)) {
-                return FIX2LONG((VALUE)val);
+            if (st_lookup(rb_imemo_cdhash_tbl(hash), key, &val)) {
+                return (VALUE)val;
             }
             else {
                 return else_offset;

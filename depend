@@ -2839,6 +2839,7 @@ debug.$(OBJEXT): {$(VPATH)}vm_core.h
 debug.$(OBJEXT): {$(VPATH)}vm_debug.h
 debug.$(OBJEXT): {$(VPATH)}vm_opts.h
 debug.$(OBJEXT): {$(VPATH)}vm_sync.h
+debug.$(OBJEXT): {$(VPATH)}zjit.h
 debug_counter.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 debug_counter.$(OBJEXT): {$(VPATH)}assert.h
 debug_counter.$(OBJEXT): {$(VPATH)}backward/2/assume.h
@@ -8352,6 +8353,7 @@ load.$(OBJEXT): {$(VPATH)}util.h
 load.$(OBJEXT): {$(VPATH)}vm_core.h
 load.$(OBJEXT): {$(VPATH)}vm_debug.h
 load.$(OBJEXT): {$(VPATH)}vm_opts.h
+load.$(OBJEXT): {$(VPATH)}zjit.h
 loadpath.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 loadpath.$(OBJEXT): $(hdrdir)/ruby/version.h
 loadpath.$(OBJEXT): $(top_srcdir)/version.h
@@ -13275,6 +13277,7 @@ proc.$(OBJEXT): {$(VPATH)}vm_debug.h
 proc.$(OBJEXT): {$(VPATH)}vm_opts.h
 proc.$(OBJEXT): {$(VPATH)}vm_sync.h
 proc.$(OBJEXT): {$(VPATH)}yjit.h
+proc.$(OBJEXT): {$(VPATH)}zjit.h
 process.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 process.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 process.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -15864,6 +15867,7 @@ ruby.$(OBJEXT): {$(VPATH)}util.h
 ruby.$(OBJEXT): {$(VPATH)}vm_core.h
 ruby.$(OBJEXT): {$(VPATH)}vm_opts.h
 ruby.$(OBJEXT): {$(VPATH)}yjit.h
+ruby.$(OBJEXT): {$(VPATH)}zjit.h
 ruby_parser.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 ruby_parser.$(OBJEXT): $(top_srcdir)/internal/array.h
 ruby_parser.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
@@ -16271,6 +16275,7 @@ scheduler.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 scheduler.$(OBJEXT): {$(VPATH)}thread_native.h
 scheduler.$(OBJEXT): {$(VPATH)}vm_core.h
 scheduler.$(OBJEXT): {$(VPATH)}vm_opts.h
+scheduler.$(OBJEXT): {$(VPATH)}zjit.h
 set.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 set.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 set.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -17075,6 +17080,7 @@ signal.$(OBJEXT): {$(VPATH)}thread_native.h
 signal.$(OBJEXT): {$(VPATH)}vm_core.h
 signal.$(OBJEXT): {$(VPATH)}vm_debug.h
 signal.$(OBJEXT): {$(VPATH)}vm_opts.h
+signal.$(OBJEXT): {$(VPATH)}zjit.h
 sprintf.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 sprintf.$(OBJEXT): $(hdrdir)/ruby/version.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h

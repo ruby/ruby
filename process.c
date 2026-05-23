@@ -2888,7 +2888,6 @@ void
 rb_execarg_parent_end(VALUE execarg_obj)
 {
     execarg_parent_end(execarg_obj);
-    RB_GC_GUARD(execarg_obj);
 }
 
 static void

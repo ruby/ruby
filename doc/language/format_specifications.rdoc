@@ -168,7 +168,7 @@ if the integer is longer than the precision:
   sprintf('%.d', 0)  # => ""
   sprintf('%.0d', 0) # => ""
 
-For the +a+/+A+, +e+/+E+, +f+/+F+ specifiers, the precision specifies
+For the +a+/+A+, +e+/+E+, +f+ specifiers, the precision specifies
 the number of digits after the decimal point to be written:
 
   sprintf('%.2f', 3.14159)  # => "3.14"

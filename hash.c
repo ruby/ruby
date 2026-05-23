@@ -1470,14 +1470,6 @@ rb_hash_new_with_size(st_index_t size)
 }
 
 VALUE
-rb_hash_new_with_size_and_type(VALUE klass, st_index_t size, const struct st_hash_type *type)
-{
-    VALUE ret = hash_alloc_flags(klass, 0, Qnil, true);
-    hash_st_table_init(ret, type, size);
-    return ret;
-}
-
-VALUE
 rb_hash_new_capa(long capa)
 {
     return rb_hash_new_with_size((st_index_t)capa);
@@ -4003,8 +3995,8 @@ hash_equal(VALUE hash1, VALUE hash2, int eql)
  *    h == {bar: 1, foo: 0} # => true   # Equal entries (different order).
  *    h == 1                            # => false  # Object not a hash.
  *    h == {}                           # => false  # Different number of entries.
- *    h == {foo: 0, bar: 1} # => false  # Different key.
- *    h == {foo: 0, bar: 1} # => false  # Different value.
+ *    h == {foo: 0, bat: 1} # => false  # Different key.
+ *    h == {foo: 0, bar: 2} # => false  # Different value.
  *
  *  Related: see {Methods for Comparing}[rdoc-ref:Hash@Methods+for+Comparing].
  */
@@ -4935,8 +4927,8 @@ rb_hash_le(VALUE hash, VALUE other)
  *    h < {baz: 2, bar: 1, foo: 0} # => true   # Order may differ.
  *    h < h                        # => false  # Not a proper subset.
  *    h < {bar: 1, foo: 0}         # => false  # Not a proper subset.
- *    h < {foo: 0, bar: 1, baz: 2} # => false  # Different key.
- *    h < {foo: 0, bar: 1, baz: 2} # => false  # Different value.
+ *    h < {foo: 0, bat: 1, baz: 2} # => false  # Different key.
+ *    h < {foo: 0, bar: 3, baz: 2} # => false  # Different value.
  *
  *  See {Hash Inclusion}[rdoc-ref:language/hash_inclusion.rdoc].
  *
@@ -4989,8 +4981,8 @@ rb_hash_ge(VALUE hash, VALUE other)
  *    h > {bar: 1, foo: 0}         # => true   # Order may differ.
  *    h > h                        # => false  # Not a proper superset.
  *    h > {baz: 2, bar: 1, foo: 0} # => false  # Not a proper superset.
- *    h > {foo: 0, bar: 1}         # => false  # Different key.
- *    h > {foo: 0, bar: 1}         # => false  # Different value.
+ *    h > {foo: 0, bat: 1}         # => false  # Different key.
+ *    h > {foo: 0, bar: 3}         # => false  # Different value.
  *
  *  See {Hash Inclusion}[rdoc-ref:language/hash_inclusion.rdoc].
  *
@@ -5115,6 +5107,14 @@ rb_hash_bulk_insert(long argc, const VALUE *argv, VALUE hash)
             rb_hash_bulk_insert_into_st_table(argc, argv, hash);
         }
     }
+}
+
+VALUE
+rb_hash_new_with_bulk_insert(long argc, const VALUE *argv)
+{
+    VALUE val = rb_hash_new_with_size(argc / 2);
+    rb_hash_bulk_insert(argc, argv, val);
+    return val;
 }
 
 static char **origenviron;

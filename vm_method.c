@@ -668,7 +668,7 @@ rb_vm_ci_lookup(ID mid, unsigned int flag, unsigned int argc, const struct rb_ca
     const struct rb_callinfo *ci = NULL;
 
     if (kwarg) {
-        ((struct rb_callinfo_kwarg *)kwarg)->references++;
+        RUBY_ATOMIC_FETCH_ADD(((struct rb_callinfo_kwarg *)kwarg)->references, 1);
     }
 
     struct rb_callinfo *new_ci = SHAREABLE_IMEMO_NEW(struct rb_callinfo, imemo_callinfo, (VALUE)kwarg);
@@ -1370,8 +1370,8 @@ check_override_opt_method(VALUE klass, VALUE mid)
     }
 }
 
-static VALUE
-zsuper_to_super(int argc, VALUE *argv, VALUE self)
+VALUE
+rb_zsuper_to_super(int argc, VALUE *argv, VALUE self)
 {
     return rb_call_super_kw(argc, argv, RB_PASS_CALLED_KEYWORDS);
 }
@@ -1486,7 +1486,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
         def = rb_method_definition_create(type, original_id);
         if (turn_zsuper_to_super) {
           def->type = VM_METHOD_TYPE_CFUNC;
-          def->body.cfunc.func = (rb_cfunc_t)zsuper_to_super;
+          def->body.cfunc.func = (rb_cfunc_t)rb_zsuper_to_super;
           def->body.cfunc.invoker = ractor_safe_call_cfunc_m1;
           def->body.cfunc.argc = -1;
         }

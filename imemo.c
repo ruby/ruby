@@ -32,6 +32,7 @@ rb_imemo_name(enum imemo_type type)
         IMEMO_NAME(cvar_entry);
         IMEMO_NAME(fields);
         IMEMO_NAME(subclasses);
+        IMEMO_NAME(cdhash);
 #undef IMEMO_NAME
     }
     rb_bug("unreachable");
@@ -122,6 +123,15 @@ rb_imemo_memo_new_value(VALUE a, VALUE b, VALUE c)
     memo->flags |= MEMO_U3_IS_VALUE;
 
     return memo;
+}
+
+VALUE
+rb_imemo_cdhash_new(size_t size, const struct st_hash_type *type)
+{
+    struct rb_imemo_cdhash *memo = IMEMO_NEW(struct rb_imemo_cdhash, imemo_cdhash, 0);
+    memo->tbl.num_entries = 0;
+    st_init_existing_table_with_size(&memo->tbl, type, size);
+    return (VALUE)memo;
 }
 
 VALUE
@@ -289,14 +299,20 @@ rb_imemo_memsize(VALUE obj)
         if (rb_obj_shape_complex_p(obj)) {
             size += st_memsize(IMEMO_OBJ_FIELDS(obj)->as.complex.table);
         }
+
         break;
       case imemo_subclasses: {
         if (FL_TEST_RAW(obj, IMEMO_SUBCLASSES_HEAP)) {
             struct rb_subclasses *subs = (struct rb_subclasses *)obj;
             size += subs->capacity * sizeof(VALUE);
         }
+
         break;
       }
+      case imemo_cdhash:
+        size += st_memsize(rb_imemo_cdhash_tbl(obj)) - sizeof(st_table);
+
+        break;
       default:
         rb_bug("unreachable");
     }
@@ -578,6 +594,16 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
         }
         break;
       }
+      case imemo_cdhash: {
+        st_table *tbl = rb_imemo_cdhash_tbl(obj);
+        if (reference_updating) {
+            rb_gc_update_set_refs(tbl);
+        }
+        else {
+            rb_gc_mark_set_no_pin(tbl);
+        }
+        break;
+      }
       default:
         rb_bug("unreachable");
     }
@@ -623,8 +649,7 @@ rb_imemo_free(VALUE obj)
         const struct rb_callinfo *ci = ((const struct rb_callinfo *)obj);
 
         if (ci->kwarg) {
-            ((struct rb_callinfo_kwarg *)ci->kwarg)->references--;
-            if (ci->kwarg->references == 0) {
+            if (RUBY_ATOMIC_FETCH_SUB(((struct rb_callinfo_kwarg *)ci->kwarg)->references, 1) == 1) {
                 ruby_xfree_sized((void *)ci->kwarg, rb_callinfo_kwarg_bytes(ci->kwarg->keyword_len));
             }
         }
@@ -686,14 +711,21 @@ rb_imemo_free(VALUE obj)
       case imemo_fields:
         imemo_fields_free(IMEMO_OBJ_FIELDS(obj));
         RB_DEBUG_COUNTER_INC(obj_imemo_fields);
+
         break;
       case imemo_subclasses: {
         if (FL_TEST_RAW(obj, IMEMO_SUBCLASSES_HEAP)) {
             struct rb_subclasses *subs = (struct rb_subclasses *)obj;
             SIZED_FREE_N(subs->as.external, subs->capacity);
         }
+        RB_DEBUG_COUNTER_INC(obj_imemo_subclasses);
         break;
       }
+      case imemo_cdhash:
+        st_free_embedded_table(rb_imemo_cdhash_tbl(obj));
+        RB_DEBUG_COUNTER_INC(obj_imemo_cdhash);
+
+        break;
       default:
         rb_bug("unreachable");
     }

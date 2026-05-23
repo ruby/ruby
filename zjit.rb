@@ -157,7 +157,7 @@ class << RubyVM::ZJIT
       :gc_time_ns,
       :invalidation_time_ns,
 
-      :vm_write_pc_count,
+      :vm_write_jit_frame_count,
       :vm_write_sp_count,
       :vm_write_locals_count,
       :vm_write_stack_count,

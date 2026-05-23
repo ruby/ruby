@@ -156,13 +156,14 @@ path_root_p(VALUE self)
  *
  * Returns whether +self+ contains an absolute path:
  *
- *   Pathname.new('/home').absolute? # => true
- *   Pathname.new('lib').absolute?   # => false
+ *   Pathname('/home').absolute? # => true
+ *   Pathname('lib').absolute?   # => false
  *
- * OS-dependent for some paths:
+ * The result is OS-dependent for some paths:
  *
- *   Pathname.new('C:/').absolute?   # => true   # On Windows.
- *   Pathname.new('C:/').absolute?   # => false  # Elsewhere.
+ *   Pathname('C:/').absolute?   # => true   # On Windows.
+ *   Pathname('C:/').absolute?   # => false  # Elsewhere.
+ *
  */
 static VALUE
 path_absolute_p(VALUE self)

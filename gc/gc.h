@@ -10,8 +10,32 @@
  *             first introduced for [Feature #20470].
  */
 #include "ruby/ruby.h"
+#include "ruby/assert.h"
 
 #include "ruby/thread_native.h"
+
+#ifndef VM_CHECK_MODE
+# define VM_CHECK_MODE RUBY_DEBUG
+#endif
+
+// From ractor_core.h
+#ifndef RACTOR_CHECK_MODE
+# define RACTOR_CHECK_MODE (VM_CHECK_MODE || RUBY_DEBUG) && (SIZEOF_UINT64_T == SIZEOF_VALUE)
+#endif
+
+#if RACTOR_CHECK_MODE
+void rb_ractor_setup_belonging(VALUE obj);
+
+struct rb_gc_obj_suffix {
+    uint32_t _ractor_belonging_id;
+};
+
+# define RB_GC_OBJ_HAS_SUFFIX 1
+# define RB_GC_OBJ_SUFFIX_SIZE (sizeof(struct rb_gc_obj_suffix))
+#else
+# define RB_GC_OBJ_HAS_SUFFIX 0
+# define RB_GC_OBJ_SUFFIX_SIZE 0
+#endif
 
 struct rb_gc_vm_context {
     rb_nativethread_lock_t lock;
@@ -166,6 +190,14 @@ static int
 gc_mark_tbl_no_pin_i(st_data_t key, st_data_t value, st_data_t data)
 {
     rb_gc_mark_movable((VALUE)value);
+
+    return ST_CONTINUE;
+}
+
+static int
+gc_mark_set_no_pin_i(st_data_t key, st_data_t value, st_data_t data)
+{
+    rb_gc_mark_movable((VALUE)key);
 
     return ST_CONTINUE;
 }

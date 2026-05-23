@@ -367,7 +367,7 @@ fn inline_array_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
             let index = fun.coerce_to(block, index, types::Fixnum, state);
             let index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
             let length = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
-            let index = fun.push_insn(block, hir::Insn::GuardLess { left: index, right: length, state });
+            let index = fun.push_insn(block, hir::Insn::GuardLess { left: index, right: length, reason: SideExitReason::GuardLess, state });
             let index = fun.push_insn(block, hir::Insn::AdjustBounds { index, length });
             let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
             use crate::hir::SideExitReason;
@@ -392,7 +392,7 @@ fn inline_array_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
             // Bounds check: unbox Fixnum index and guard 0 <= idx < length.
             let index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
             let length = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
-            let index = fun.push_insn(block, hir::Insn::GuardLess { left: index, right: length, state });
+            let index = fun.push_insn(block, hir::Insn::GuardLess { left: index, right: length, reason: SideExitReason::GuardLess, state });
             let index = fun.push_insn(block, hir::Insn::AdjustBounds { index, length });
             let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
             use crate::hir::SideExitReason;
@@ -492,7 +492,7 @@ fn inline_string_getbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
         // the data dependency is gone (say, the StringGetbyte is elided), they can also be elided.
         //
         // This is unlike most other guards.
-        let unboxed_index = fun.push_insn(block, hir::Insn::GuardLess { left: unboxed_index, right: len, state });
+        let unboxed_index = fun.push_insn(block, hir::Insn::GuardLess { left: unboxed_index, right: len, reason: SideExitReason::GuardLess, state });
         let unboxed_index = fun.push_insn(block, hir::Insn::AdjustBounds { index: unboxed_index, length: len });
         let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
         use crate::hir::SideExitReason;
@@ -516,7 +516,7 @@ fn inline_string_setbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
             offset: RUBY_OFFSET_RSTRING_LEN as i32,
             return_type: types::CInt64,
         });
-        let unboxed_index = fun.push_insn(block, hir::Insn::GuardLess { left: unboxed_index, right: len, state });
+        let unboxed_index = fun.push_insn(block, hir::Insn::GuardLess { left: unboxed_index, right: len, reason: SideExitReason::GuardLess, state });
         let unboxed_index = fun.push_insn(block, hir::Insn::AdjustBounds { index: unboxed_index, length: len });
         let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });
         use crate::hir::SideExitReason;

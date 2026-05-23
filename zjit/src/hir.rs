@@ -504,8 +504,6 @@ pub enum SideExitReason {
     UnhandledNewarraySend(vm_opt_newarray_send_type),
     UnhandledDuparraySend(u64),
     UnknownSpecialVariable(u64),
-    UnhandledHIRArrayMax,
-    UnhandledHIRFixnumDiv,
     UnhandledHIRThrow,
     UnhandledHIRInvokeBuiltin,
     UnhandledHIRUnknown(InsnId),
@@ -1159,7 +1157,7 @@ pub enum Insn {
     /// Side-exit if left is not greater than or equal to right (both operands are C long).
     GuardGreaterEq { left: InsnId, right: InsnId, reason: SideExitReason, state: InsnId },
     /// Side-exit if left is not less than right (both operands are C long).
-    GuardLess { left: InsnId, right: InsnId, state: InsnId },
+    GuardLess { left: InsnId, right: InsnId, reason: SideExitReason, state: InsnId },
 
     /// Generate no code (or padding if necessary) and insert a patch point
     /// that can be rewritten to a side exit when the Invariant is broken.
@@ -1313,7 +1311,7 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(state);
             }
             Insn::GuardGreaterEq { left, right, state, .. }
-            | Insn::GuardLess { left, right, state } => {
+            | Insn::GuardLess { left, right, state, .. } => {
                 $visit_one!(left);
                 $visit_one!(right);
                 $visit_one!(state);
@@ -2101,7 +2099,13 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GuardType { val, guard_type, .. } => { write!(f, "GuardType {val}, {}", guard_type.print(self.ptr_map)) },
             Insn::RefineType { val, new_type, .. } => { write!(f, "RefineType {val}, {}", new_type.print(self.ptr_map)) },
             Insn::HasType { val, expected, .. } => { write!(f, "HasType {val}, {}", expected.print(self.ptr_map)) },
-            Insn::GuardBitEquals { val, expected, .. } => { write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map)) },
+            Insn::GuardBitEquals { val, expected, recompile, .. } => {
+                write!(f, "GuardBitEquals {val}, {}", expected.print(self.ptr_map))?;
+                if recompile.is_some() {
+                    write!(f, " recompile")?;
+                }
+                return Ok(())
+            },
             Insn::GuardAnyBitSet { val, mask, mask_name: Some(name), .. } => { write!(f, "GuardAnyBitSet {val}, {name}={}", mask.print(self.ptr_map)) },
             Insn::GuardAnyBitSet { val, mask, .. } => { write!(f, "GuardAnyBitSet {val}, {}", mask.print(self.ptr_map)) },
             Insn::GuardNoBitsSet { val, mask, mask_name: Some(name), .. } => { write!(f, "GuardNoBitsSet {val}, {name}={}", mask.print(self.ptr_map)) },
@@ -3000,8 +3004,8 @@ impl Function {
             Insn::GetEP { .. } => types::CPtr,
             Insn::LoadSelf => types::BasicObject,
             &Insn::LoadField { return_type, .. } => return_type,
-            Insn::GetSpecialSymbol { .. } => types::BasicObject,
-            Insn::GetSpecialNumber { .. } => types::BasicObject,
+            Insn::GetSpecialSymbol { .. } => types::StringExact.union(types::NilClass),
+            Insn::GetSpecialNumber { .. } => types::StringExact.union(types::NilClass),
             Insn::GetClassVar { .. } => types::BasicObject,
             Insn::ToNewArray { .. } => types::ArrayExact,
             Insn::ToArray { .. } => types::ArrayExact,
@@ -3325,10 +3329,18 @@ impl Function {
     /// - `StaticallyKnown` if the receiver's exact class is known at compile-time
     /// - Result of [`Self::resolve_receiver_type_from_profile`] if we need to check profile data
     fn resolve_receiver_type(&self, recv: InsnId, recv_type: Type, insn_idx: YarvInsnIdx) -> ReceiverTypeResolution {
-        if let Some(class) = recv_type.runtime_exact_ruby_class() {
-            return ReceiverTypeResolution::StaticallyKnown { class };
+        match self.resolve_receiver_type_from_profile(recv, insn_idx) {
+            ReceiverTypeResolution::NoProfile => {
+                // Use known type information as a fallback because it doesn't have shape
+                // information (and we can generally eliminate duplicate guards).
+                if let Some(class) = recv_type.runtime_exact_ruby_class() {
+                    ReceiverTypeResolution::StaticallyKnown { class }
+                } else {
+                    ReceiverTypeResolution::NoProfile
+                }
+            }
+            resolution => resolution,
         }
-        self.resolve_receiver_type_from_profile(recv, insn_idx)
     }
 
     fn polymorphic_summary(&self, profiles: &ProfileOracle, recv: InsnId, insn_idx: YarvInsnIdx) -> Option<TypeDistributionSummary> {
@@ -5090,6 +5102,15 @@ impl Function {
                             _ => insn_id,
                         }
                     }
+                    Insn::ArrayLength { array } => {
+                        match self.type_of(array).ruby_object() {
+                            Some(array_obj) if array_obj.is_frozen() => {
+                                let length = unsafe { rb_jit_array_len(array_obj) };
+                                self.new_insn(Insn::Const { val: Const::CInt64(length) })
+                            }
+                            _ => insn_id,
+                        }
+                    }
                     Insn::UnboxFixnum { val } => {
                         let recv_type = self.type_of(val);
                         match recv_type.fixnum_value() {
@@ -5102,6 +5123,18 @@ impl Function {
                         let right_num = self.type_of(right).cint64_value();
                         match (left_num, right_num) {
                             (Some(l), Some(r)) if l >= r => {
+                                self.make_equal_to(insn_id, left);
+                                continue
+                            },
+                            (Some(_), Some(_)) => self.new_insn(Insn::SideExit { state, reason, recompile: None }),
+                            _ => insn_id,
+                        }
+                    },
+                    Insn::GuardLess { left, right, state, reason } => {
+                        let left_num = self.type_of(left).cint64_value();
+                        let right_num = self.type_of(right).cint64_value();
+                        match (left_num, right_num) {
+                            (Some(l), Some(r)) if l < r => {
                                 self.make_equal_to(insn_id, left);
                                 continue
                             },
@@ -6574,16 +6607,14 @@ impl ProfileOracle {
     }
 
     /// Map the interpreter-recorded types of the stack onto the HIR operands on our compile-time virtual stack.
-    /// `stack_offset` is the number of extra stack entries above the profiled operands (e.g. 1 for
-    /// sends with ARGS_BLOCKARG, where the block arg sits on top of the regular args).
-    fn profile_stack(&mut self, state: &FrameState, stack_offset: usize) {
+    fn profile_stack(&mut self, state: &FrameState) {
         let iseq_insn_idx = state.insn_idx;
         let Some(operand_types) = self.payload.profile.get_operand_types(iseq_insn_idx) else { return };
         let entry = self.types.entry(iseq_insn_idx).or_default();
         // operand_types is always going to be <= stack size (otherwise it would have an underflow
         // at run-time) so use that to drive iteration.
         for (idx, insn_type_distribution) in operand_types.iter().rev().enumerate() {
-            let insn = state.stack_topn(idx + stack_offset).expect("Unexpected stack underflow in profiling");
+            let insn = state.stack_topn(idx).expect("Unexpected stack underflow in profiling");
             entry.push((insn, TypeDistributionSummary::new(insn_type_distribution)))
         }
     }
@@ -6786,17 +6817,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
             }
             else {
-                // For sends with ARGS_BLOCKARG, the block arg sits on the stack above
-                // the profiled operands (receiver + regular args). Skip it so that the
-                // profile types map onto the correct HIR operands.
-                let stack_offset = if opcode == YARVINSN_send || opcode == YARVINSN_opt_send_without_block {
-                    let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
-                    let flags = unsafe { vm_ci_flag(rb_get_call_data_ci(cd)) };
-                    usize::from(flags & VM_CALL_ARGS_BLOCKARG != 0)
-                } else {
-                    0
-                };
-                profiles.profile_stack(&exit_state, stack_offset);
+                profiles.profile_stack(&exit_state);
             }
 
             // Flag a future getlocal/setlocal to add a patch point if this instruction is not leaf.
@@ -7222,7 +7243,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 
                     // Check if #new resolves to rb_class_new_instance_pass_kw.
                     // TODO: Guard on a profiled class and add a patch point for #new redefinition
-                    let argc = unsafe { vm_ci_argc((*cd).ci) } as usize;
+                    let argc = crate::profile::num_arguments_on_stack(cd);
+                    let ci = unsafe { get_call_data_ci(cd) };
+                    let flags = unsafe { rb_vm_ci_flag(ci) };
+                    assert_eq!(flags & VM_CALL_ARGS_BLOCKARG, 0);
                     let val = state.stack_topn(argc)?;
                     let test_id = fun.push_insn(block, Insn::IsMethodCfunc { val, cd, cfunc: rb_class_new_instance_pass_kw as *const u8, state: exit_id });
 
@@ -7648,7 +7672,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type), recompile: None });
                         break;  // End the block
                     }
-                    let argc = unsafe { vm_ci_argc((*cd).ci) };
+                    let argc = crate::profile::num_arguments_on_stack(cd);
+                    assert_eq!(flags & VM_CALL_ARGS_BLOCKARG, 0);
 
                     // Side-exit send fallbacks while tracing to avoid FLAG_FINISH breaking throw TAG_RETURN semantics
                     if unsafe { rb_zjit_iseq_tracing_currently_enabled() } {
@@ -7753,7 +7778,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledCallType(call_type), recompile: None });
                         break;  // End the block
                     }
-                    let argc = unsafe { vm_ci_argc((*cd).ci) };
+                    let argc = crate::profile::num_arguments_on_stack(cd);
                     let mid = unsafe { rb_vm_ci_mid(call_info) };
 
                     // Check for calls to directives
@@ -7887,10 +7912,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::SendWhileTracing, recompile: None });
                         break;
                     }
-                    let argc = unsafe { vm_ci_argc((*cd).ci) };
                     let block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
 
-                    let args = state.stack_pop_n(argc as usize + usize::from(block_arg))?;
+                    let args = state.stack_pop_n(crate::profile::num_arguments_on_stack(cd))?;
                     let recv = state.stack_pop()?;
                     let block_handler = if !blockiseq.is_null() {
                         Some(BlockHandler::BlockIseq(blockiseq))
@@ -7987,9 +8011,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::SendWhileTracing, recompile: None });
                         break;
                     }
-                    let argc = unsafe { vm_ci_argc((*cd).ci) };
-                    let block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
-                    let args = state.stack_pop_n(argc as usize + usize::from(block_arg))?;
+                    let args = state.stack_pop_n(crate::profile::num_arguments_on_stack(cd))?;
                     let recv = state.stack_pop()?;
                     let blockiseq: IseqPtr = get_arg(pc, 1).as_ptr();
                     let result = fun.push_insn(block, Insn::InvokeSuper { recv, cd, blockiseq, args, state: exit_id, reason: Uncategorized(opcode) });
@@ -8081,9 +8103,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::SendWhileTracing, recompile: None });
                         break;
                     }
-                    let argc = unsafe { vm_ci_argc((*cd).ci) };
-                    let block_arg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
-                    let args = state.stack_pop_n(argc as usize + usize::from(block_arg))?;
+                    let args = state.stack_pop_n(crate::profile::num_arguments_on_stack(cd))?;
 
                     // Check if this is a monomorphic IFUNC block handler we can specialize
                     let block_handler_types = profiles.payload.profile.get_operand_types(exit_state.insn_idx);
@@ -8329,7 +8349,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 }
                 YARVINSN_objtostring => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
-                    let argc = unsafe { vm_ci_argc((*cd).ci) };
+                    let argc = crate::profile::num_arguments_on_stack(cd);
                     assert_eq!(0, argc, "objtostring should not have args");
 
                     let recv = state.stack_pop()?;

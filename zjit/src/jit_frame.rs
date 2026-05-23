@@ -20,11 +20,6 @@ impl JITFrame {
         Self::alloc(JITFrame { pc, iseq, materialize_block_code })
     }
 
-    /// Create a JITFrame for a C frame (no PC, no ISEQ).
-    pub fn new_cfunc() -> *const Self {
-        Self::alloc(JITFrame { pc: std::ptr::null(), iseq: std::ptr::null(), materialize_block_code: false })
-    }
-
     /// Mark the iseq pointer for GC. Called from rb_zjit_root_mark.
     pub fn mark(&self) {
         if !self.iseq.is_null() {

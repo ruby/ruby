@@ -509,6 +509,30 @@ rb_vm_instruction_size(void)
     return VM_INSTRUCTION_SIZE;
 }
 
+static int
+yjit_cdhash_all_fixnum_i(st_data_t key, st_data_t _val, st_data_t data)
+{
+    if (!FIXNUM_P((VALUE)key)) {
+        *((bool *)data) = false;
+        return ST_STOP;
+    }
+    return ST_CONTINUE;
+}
+
+bool
+rb_yjit_cdhash_all_fixnum_p(VALUE cdhash)
+{
+    bool all_fixnum = true;
+    st_foreach(rb_imemo_cdhash_tbl(cdhash), yjit_cdhash_all_fixnum_i, (st_data_t)&all_fixnum);
+    return all_fixnum;
+}
+
+int
+rb_yjit_cdhash_lookup(VALUE cdhash, st_data_t key, st_data_t *val)
+{
+    return st_lookup(rb_imemo_cdhash_tbl(cdhash), key, val);
+}
+
 // Primitives used by yjit.rb
 VALUE rb_yjit_stats_enabled_p(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_print_stats_p(rb_execution_context_t *ec, VALUE self);

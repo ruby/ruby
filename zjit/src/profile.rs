@@ -95,9 +95,9 @@ fn profile_insn(bare_opcode: ruby_vminsn_type, ec: EcPtr) {
         YARVINSN_invokesuper   => profile_invokesuper(profiler, profile),
         YARVINSN_opt_send_without_block | YARVINSN_send => {
             let cd: *const rb_call_data = profiler.insn_opnd(0).as_ptr();
-            let argc = unsafe { vm_ci_argc((*cd).ci) };
+            let argc = num_arguments_on_stack(cd);
             // Profile all the arguments and self (+1).
-            profile_operands(profiler, profile, (argc + 1) as usize);
+            profile_operands(profiler, profile, argc + 1);
         }
         YARVINSN_splatkw => profile_operands(profiler, profile, 2),
         _ => {}
@@ -109,6 +109,15 @@ fn profile_insn(bare_opcode: ruby_vminsn_type, ec: EcPtr) {
     if entry.profiles_remaining == 0 {
         unsafe { rb_zjit_iseq_insn_set(profiler.iseq, profiler.insn_idx as u32, bare_opcode); }
     }
+}
+
+/// Return the argc as stated in the calldata plus:
+/// * 1 if there is an explicit blockarg, since that will be passed on the stack
+pub fn num_arguments_on_stack(cd: *const rb_call_data) -> usize {
+    let ci = unsafe { rb_get_call_data_ci(cd) };
+    let flags = unsafe { rb_vm_ci_flag(ci) };
+    let has_blockarg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
+    (unsafe { vm_ci_argc(ci) }) as usize + has_blockarg as usize
 }
 
 const DISTRIBUTION_SIZE: usize = 4;
@@ -184,7 +193,7 @@ fn profile_invokesuper(profiler: &mut Profiler, profile: &mut IseqProfile) {
     unsafe { rb_gc_writebarrier(profiler.iseq.into(), cme_value) };
 
     let cd: *const rb_call_data = profiler.insn_opnd(0).as_ptr();
-    let argc = unsafe { vm_ci_argc((*cd).ci) };
+    let argc = num_arguments_on_stack(cd);
 
     // Profile all the arguments and self (+1).
     profile_operands(profiler, profile, (argc + 1) as usize);

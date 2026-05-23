@@ -75,9 +75,9 @@ releases.
 ### The following default gems are updated.
 
 * RubyGems 4.1.0.dev
-  * 4.0.3 to [v4.0.4][RubyGems-v4.0.4], [v4.0.5][RubyGems-v4.0.5], [v4.0.6][RubyGems-v4.0.6], [v4.0.7][RubyGems-v4.0.7], [v4.0.8][RubyGems-v4.0.8], [v4.0.9][RubyGems-v4.0.9], [v4.0.10][RubyGems-v4.0.10], [v4.0.11][RubyGems-v4.0.11]
+  * 4.0.3 to [v4.0.4][RubyGems-v4.0.4], [v4.0.5][RubyGems-v4.0.5], [v4.0.6][RubyGems-v4.0.6], [v4.0.7][RubyGems-v4.0.7], [v4.0.8][RubyGems-v4.0.8], [v4.0.9][RubyGems-v4.0.9], [v4.0.10][RubyGems-v4.0.10], [v4.0.11][RubyGems-v4.0.11], [v4.0.12][RubyGems-v4.0.12]
 * bundler 4.1.0.dev
-  * 4.0.3 to [v4.0.4][bundler-v4.0.4], [v4.0.5][bundler-v4.0.5], [v4.0.6][bundler-v4.0.6], [v4.0.7][bundler-v4.0.7], [v4.0.8][bundler-v4.0.8], [v4.0.9][bundler-v4.0.9], [v4.0.10][bundler-v4.0.10], [v4.0.11][bundler-v4.0.11]
+  * 4.0.3 to [v4.0.4][bundler-v4.0.4], [v4.0.5][bundler-v4.0.5], [v4.0.6][bundler-v4.0.6], [v4.0.7][bundler-v4.0.7], [v4.0.8][bundler-v4.0.8], [v4.0.9][bundler-v4.0.9], [v4.0.10][bundler-v4.0.10], [v4.0.11][bundler-v4.0.11], [v4.0.12][bundler-v4.0.12]
 * erb 6.0.4
   * 6.0.1 to [v6.0.1.1][erb-v6.0.1.1], [v6.0.2][erb-v6.0.2], [v6.0.3][erb-v6.0.3], [v6.0.4][erb-v6.0.4]
 * ipaddr 1.2.9
@@ -123,11 +123,11 @@ releases.
 * pstore 0.2.1
   * 0.2.0 to [v0.2.1][pstore-v0.2.1]
 * rdoc 7.2.0
-  * 7.0.3 to [v7.1.0][rdoc-v7.1.0], [v7.2.0][rdoc-v7.2.0]
+  * 7.0.3 to [v7.0.4][rdoc-v7.0.4], [v7.1.0][rdoc-v7.1.0], [v7.2.0][rdoc-v7.2.0]
 * win32ole 1.9.3
   * 1.9.2 to [v1.9.3][win32ole-v1.9.3]
 * irb 1.18.0
-  * 1.16.0 to [v1.17.0][irb-v1.17.0]
+  * 1.16.0 to [v1.17.0][irb-v1.17.0], [v1.18.0][irb-v1.18.0]
 
 ### RubyGems and Bundler
 
@@ -186,6 +186,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [RubyGems-v4.0.9]: https://github.com/rubygems/rubygems/releases/tag/v4.0.9
 [RubyGems-v4.0.10]: https://github.com/rubygems/rubygems/releases/tag/v4.0.10
 [RubyGems-v4.0.11]: https://github.com/rubygems/rubygems/releases/tag/v4.0.11
+[RubyGems-v4.0.12]: https://github.com/rubygems/rubygems/releases/tag/v4.0.12
 [bundler-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.4
 [bundler-v4.0.5]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.5
 [bundler-v4.0.6]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.6
@@ -194,6 +195,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [bundler-v4.0.9]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.9
 [bundler-v4.0.10]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.10
 [bundler-v4.0.11]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.11
+[bundler-v4.0.12]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.12
 [erb-v6.0.1.1]: https://github.com/ruby/erb/releases/tag/v6.0.1.1
 [erb-v6.0.2]: https://github.com/ruby/erb/releases/tag/v6.0.2
 [erb-v6.0.3]: https://github.com/ruby/erb/releases/tag/v6.0.3
@@ -239,7 +241,9 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [repl_type_completor-v0.1.14]: https://github.com/ruby/repl_type_completor/releases/tag/v0.1.14
 [repl_type_completor-v0.1.15]: https://github.com/ruby/repl_type_completor/releases/tag/v0.1.15
 [pstore-v0.2.1]: https://github.com/ruby/pstore/releases/tag/v0.2.1
+[rdoc-v7.0.4]: https://github.com/ruby/rdoc/releases/tag/v7.0.4
 [rdoc-v7.1.0]: https://github.com/ruby/rdoc/releases/tag/v7.1.0
 [rdoc-v7.2.0]: https://github.com/ruby/rdoc/releases/tag/v7.2.0
 [win32ole-v1.9.3]: https://github.com/ruby/win32ole/releases/tag/v1.9.3
 [irb-v1.17.0]: https://github.com/ruby/irb/releases/tag/v1.17.0
+[irb-v1.18.0]: https://github.com/ruby/irb/releases/tag/v1.18.0

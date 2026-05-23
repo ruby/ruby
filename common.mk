@@ -69,6 +69,7 @@ LIBRUBY_EXTS  = ./.libruby-with-ext.time
 REVISION_H    = ./.revision.time
 PLATFORM_D    = $(TIMESTAMPDIR)/.$(PLATFORM_DIR).time
 ENC_TRANS_D   = $(TIMESTAMPDIR)/.enc-trans.time
+yes_cross_compiling = $(CROSS_COMPILING:no=)
 X_$(CROSS_COMPILING:yes=)BASERUBY = $(BASERUBY)
 X_$(CROSS_COMPILING:no=)BASERUBY = $(XRUBY)
 RDOC          = $(X_BASERUBY) --enable-gems "$(tooldir)/rdoc-srcdir"
@@ -346,12 +347,14 @@ $(EXTS_MK): ext/configure-ext.mk $(srcdir)/template/exts.mk.tmpl \
 	    $(srcdir)/template/exts.mk.tmpl --gnumake=$(gnumake) --configure-exts=ext/configure-ext.mk
 
 ext/configure-ext.mk: $(PREP) all-incs $(MKFILES) $(RBCONFIG) $(LIBRUBY) \
-		$(srcdir)/template/configure-ext.mk.tmpl update-default-gemspecs
+		$(srcdir)/template/configure-ext.mk.tmpl update-default-gemspecs \
+		$(HAVE_BASERUBY:yes=extract-gems)
 	$(ECHO) generating makefiles $@
 	$(Q)$(MAKEDIRS) $(@D)
 	$(Q)$(MINIRUBY) $(tooldir)/generic_erb.rb -o $@ -c \
 	    $(srcdir)/template/$(@F).tmpl --srcdir="$(srcdir)" \
-	    --miniruby="$(MINIRUBY)" --script-args='$(SCRIPT_ARGS)'
+	    --miniruby="$(MINIRUBY)" --script-args='$(SCRIPT_ARGS)' \
+	    $(yes_cross_compiling:yes=--without-ext=-test-)
 
 configure-ext: $(EXTS_MK)
 

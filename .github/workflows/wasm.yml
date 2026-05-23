@@ -65,7 +65,7 @@ jobs:
           sparse-checkout: /.github
           persist-credentials: false
 
-      - uses: ruby/setup-ruby@6aaa311d81eba98ae12eaffbcb63296ace0efcde # v1.307.0
+      - uses: ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f # v1.310.0
         with:
           ruby-version: '3.1'
           bundler: none
@@ -104,17 +104,10 @@ jobs:
         run: |
           echo "WASI_SDK_PATH=/opt/wasi-sdk" >> $GITHUB_ENV
 
-      - name: Build baseruby
+      - uses: ./.github/actions/setup/baseruby
         id: baseruby
-        run: |
-          set -ex
-          mkdir ../baseruby
-          pushd ../baseruby
-          echo "ruby=$PWD/install/bin/ruby" >> $GITHUB_OUTPUT
-          echo "dump_ast=$PWD/dump_ast" >> $GITHUB_OUTPUT
-          ../src/configure --prefix=$PWD/install
-          make
-          make install
+        with:
+          srcdir: src
 
       - name: Download config.guess with wasi version
         run: |

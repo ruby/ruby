@@ -4651,21 +4651,8 @@ fn gen_opt_case_dispatch(
 
     // Check that all cases are fixnums to avoid having to register BOP assumptions on
     // all the types that case hashes support. This spends compile time to save memory.
-    fn case_hash_all_fixnum_p(hash: VALUE) -> bool {
-        let mut all_fixnum = true;
-        unsafe {
-            unsafe extern "C" fn per_case(key: st_data_t, _value: st_data_t, data: st_data_t) -> c_int {
-                (if VALUE(key as usize).fixnum_p() {
-                    ST_CONTINUE
-                } else {
-                    (data as *mut bool).write(false);
-                    ST_STOP
-                }) as c_int
-            }
-            rb_hash_stlike_foreach(hash, Some(per_case), (&mut all_fixnum) as *mut _ as st_data_t);
-        }
-
-        all_fixnum
+    fn case_hash_all_fixnum_p(cdhash: VALUE) -> bool {
+        unsafe { rb_yjit_cdhash_all_fixnum_p(cdhash) }
     }
 
     // If megamorphic, fallback to compiling branch instructions after opt_case_dispatch
@@ -4692,12 +4679,11 @@ fn gen_opt_case_dispatch(
 
         // Get the offset for the compile-time key
         let mut offset = 0;
-        unsafe { rb_hash_stlike_lookup(case_hash, comptime_key.0 as _, &mut offset) };
-        let jump_offset = if offset == 0 {
+        let jump_offset = if unsafe { rb_yjit_cdhash_lookup(case_hash, comptime_key.0 as _, &mut offset) } == 0 {
             // NOTE: If we hit the else branch with various values, it could negatively impact the performance.
             else_offset
         } else {
-            (offset as u32) >> 1 // FIX2LONG
+            offset as u32
         };
 
         // Jump to the offset of case or else

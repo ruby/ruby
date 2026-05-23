@@ -70,4 +70,44 @@ rbimpl_atomic_u64_set_relaxed(volatile rbimpl_atomic_uint64_t *address, uint64_t
 }
 #define ATOMIC_U64_SET_RELAXED(var, val) rbimpl_atomic_u64_set_relaxed(&(var), val)
 
+static inline uint64_t
+rbimpl_atomic_u64_fetch_add_relaxed(volatile rbimpl_atomic_uint64_t *value, uint64_t addend)
+{
+#if defined(HAVE_GCC_ATOMIC_BUILTINS_64)
+    return __atomic_fetch_add(value, addend, __ATOMIC_RELAXED);
+#elif defined(_WIN32)
+    return (uint64_t)InterlockedExchangeAdd64((LONG64 *)value, (LONG64)addend);
+#elif defined(__sun) && defined(HAVE_ATOMIC_H) && (defined(_LP64) || defined(_I32LPx))
+    return atomic_add_64_nv(value, addend) - addend;
+#else
+    // TODO: stdatomic
+    uint64_t prev = *value;
+    *value = prev + addend;
+    return prev;
+#endif
+}
+#define ATOMIC_U64_FETCH_ADD_RELAXED(var, val) rbimpl_atomic_u64_fetch_add_relaxed(&(var), val)
+
+static inline uint64_t
+rbimpl_atomic_u64_load_acquire(const volatile rbimpl_atomic_uint64_t *value)
+{
+#if defined(HAVE_GCC_ATOMIC_BUILTINS_64)
+    return __atomic_load_n(value, __ATOMIC_ACQUIRE);
+#else
+    return rbimpl_atomic_u64_load_relaxed(value);
+#endif
+}
+#define ATOMIC_U64_LOAD_ACQUIRE(var) rbimpl_atomic_u64_load_acquire(&(var))
+
+static inline void
+rbimpl_atomic_u64_set_release(volatile rbimpl_atomic_uint64_t *address, uint64_t value)
+{
+#if defined(HAVE_GCC_ATOMIC_BUILTINS_64)
+    __atomic_store_n(address, value, __ATOMIC_RELEASE);
+#else
+    rbimpl_atomic_u64_set_relaxed(address, value);
+#endif
+}
+#define ATOMIC_U64_SET_RELEASE(var, val) rbimpl_atomic_u64_set_release(&(var), val)
+
 #endif

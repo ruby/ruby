@@ -47,7 +47,7 @@ enum vm_call_flag_bits {
 
 struct rb_callinfo_kwarg {
     int keyword_len;
-    int references;
+    rb_atomic_t references;
     VALUE keywords[];
 };
 

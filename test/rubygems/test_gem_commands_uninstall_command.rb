@@ -513,7 +513,7 @@ WARNING:  Use your OS package manager to uninstall vendor gems
     end
 
     msg = "ERROR:  Can't use --version with multiple gems. You can specify multiple gems with" \
-      " version requirements using `gem uninstall 'my_gem:1.0.0' 'my_other_gem:~>2.0.0'`"
+      " version requirements using `gem uninstall 'my_gem:1.0.0' 'my_other_gem:>=2'`"
 
     assert_empty @ui.output
     assert_equal msg, @ui.error.lines.last.chomp

@@ -440,7 +440,7 @@ make_counters! {
     complex_arg_pass_caller_forwarding,
 
     // Writes to the VM frame
-    vm_write_pc_count,
+    vm_write_jit_frame_count,
     vm_write_sp_count,
     vm_write_locals_count,
     vm_write_stack_count,
@@ -584,8 +584,6 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         UnhandledCallType(Splat)      => exit_unhandled_splat,
         UnhandledCallType(Kwarg)      => exit_unhandled_kwarg,
         UnknownSpecialVariable(_)     => exit_unknown_special_variable,
-        UnhandledHIRArrayMax          => exit_unhandled_hir_insn,
-        UnhandledHIRFixnumDiv         => exit_unhandled_hir_insn,
         UnhandledHIRThrow             => exit_unhandled_hir_insn,
         UnhandledHIRInvokeBuiltin     => exit_unhandled_hir_insn,
         UnhandledHIRUnknown(_)        => exit_unhandled_hir_insn,
