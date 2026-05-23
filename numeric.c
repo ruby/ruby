@@ -2487,7 +2487,7 @@ flo_round(int argc, VALUE *argv, VALUE num)
         frexp(number, &binexp);
         if (float_round_overflow(ndigits, binexp)) return num;
         if (float_round_underflow(ndigits, binexp)) return DBL2NUM(0);
-        if (ndigits > 14) {
+        if (ndigits >= DBL_DIG) {
             /* In this case, pow(10, ndigits) may not be accurate. */
             return rb_flo_round_by_rational(argc, argv, num);
         }

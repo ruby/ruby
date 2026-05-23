@@ -492,6 +492,14 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(-1.26, -1.255.round(2))
   end
 
+  def test_round_ndigits
+    bug14635 = "[ruby-core:86323]"
+    f = 0.5
+    31.times do |i|
+      assert_equal(0.5, f.round(i+1), bug14635 + " (argument: #{i+1})")
+    end
+  end
+
   def test_round_half_even_with_precision
     assert_equal(767573.18759, 767573.1875850001.round(5, half: :even))
     assert_equal(767573.18758, 767573.187585.round(5, half: :even))
