@@ -35,7 +35,18 @@ jobs:
       BRANCH: ruby_3_4
     outputs:
       branch: ${{ env.BRANCH }}
+      skip: ${{ steps.skipping.outputs.skip }}
     steps:
+      - id: skipping
+        run:
+          echo 'skip=true' >> $GITHUB_OUTPUT
+        if: >-
+          ${{(false
+          || contains(github.event.head_commit.message, '[DOC]')
+          || contains(github.event.pull_request.title, '[DOC]')
+          || contains(github.event.pull_request.labels.*.name, 'Documentation')
+          || (github.event.pull_request.user.login == 'dependabot[bot]')
+          )}}
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
@@ -55,6 +66,7 @@ jobs:
 
   ubuntu:
     needs: tarball
+    if: ${{ ! needs.tarball.outputs.skip }}
     uses: ./.github/workflows/tarball-ubuntu.yml
     with:
       archname: snapshot-${{ needs.tarball.outputs.branch }}
@@ -63,6 +75,7 @@ jobs:
 
   macos:
     needs: tarball
+    if: ${{ ! needs.tarball.outputs.skip }}
     uses: ./.github/workflows/tarball-macos.yml
     with:
       archname: snapshot-${{ needs.tarball.outputs.branch }}
@@ -71,6 +84,7 @@ jobs:
 
   windows:
     needs: tarball
+    if: ${{ ! needs.tarball.outputs.skip }}
     uses: ./.github/workflows/tarball-windows.yml
     with:
       archname: snapshot-${{ needs.tarball.outputs.branch }}
