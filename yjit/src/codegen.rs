@@ -10180,45 +10180,18 @@ fn gen_toregexp(
     let opt = jit.get_arg(0).as_i64();
     let cnt = jit.get_arg(1).as_usize();
 
-    // Save the PC and SP because this allocates an object and could
-    // raise an exception.
+    // Allocates objects and could raise an exception.
     jit_prepare_non_leaf_call(jit, asm);
 
     let values_ptr = asm.lea(asm.ctx.sp_opnd(-(cnt as i32)));
 
-    let ary = asm.ccall(
-        rb_ary_tmp_new_from_values as *const u8,
-        vec![
-            Opnd::Imm(0),
-            cnt.into(),
-            values_ptr,
-        ]
+    let regexp = asm.ccall(
+        rb_reg_new_from_values as _,
+        vec![cnt.into(), values_ptr, opt.into()],
     );
     asm.stack_pop(cnt); // Let ccall spill them
-
-    // Save the array so we can clear it later
-    asm.cpush(ary);
-    asm.cpush(ary); // Alignment
-
-    let val = asm.ccall(
-        rb_reg_new_ary as *const u8,
-        vec![
-            ary,
-            Opnd::Imm(opt),
-        ]
-    );
-
-    // The actual regex is in RAX now.  Pop the temp array from
-    // rb_ary_tmp_new_from_values into C arg regs so we can clear it
-    let ary = asm.cpop(); // Alignment
-    asm.cpop_into(ary);
-
-    // The value we want to push on the stack is in RAX right now
     let stack_ret = asm.stack_push(Type::UnknownHeap);
-    asm.mov(stack_ret, val);
-
-    // Clear the temp array.
-    asm.ccall(rb_ary_clear as *const u8, vec![ary]);
+    asm.mov(stack_ret, regexp);
 
     Some(KeepCompiling)
 }
