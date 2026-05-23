@@ -5109,6 +5109,14 @@ rb_hash_bulk_insert(long argc, const VALUE *argv, VALUE hash)
     }
 }
 
+VALUE
+rb_hash_new_with_bulk_insert(long argc, const VALUE *argv)
+{
+    VALUE val = rb_hash_new_with_size(argc / 2);
+    rb_hash_bulk_insert(argc, argv, val);
+    return val;
+}
+
 static char **origenviron;
 #ifdef _WIN32
 #define GET_ENVIRON(e) ((e) = rb_w32_get_environ())
