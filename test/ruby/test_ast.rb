@@ -1496,6 +1496,11 @@ dummy
       assert_locations(node.children[-1].locations, [[1, 0, 1, 9], [1, 2, 1, 7], nil])
     end
 
+    def test_negative_numeric_locations
+      node = ast_parse("-1")
+      assert_locations(node.children.last.locations, [[1, 0, 1, 2]])
+    end
+
     private
     def ast_parse(src, **options)
       begin
