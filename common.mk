@@ -1352,7 +1352,7 @@ build-tool/Makefile: $(tooldir)/dump_ast.mkmf.rb prism-srcs prism-incs
 	+$(BASERUBY) -s $(tooldir)/dump_ast.mkmf.rb "-INCFLAGS=$(INCFLAGS)" "-make=$(MAKE)" build-tool $(tooldir)/dump_ast.c dump_ast.$(OBJEXT) $(LIBPRISM_OBJS)
 
 build-tool/dump_ast$(BUILD_EXEEXT): build-tool/Makefile
-	cd build-tool && MAKEFLAGS= MFLAGS= && unset MAKEFLAGS MFLAGS && $(MAKE)
+	cd build-tool && MAKEFLAGS= MFLAGS= && unset MAKEFLAGS MFLAGS && $(MAKE) Q=$(Q)
 
 clean-local:: clean-build-tool
 clean-build-tool:

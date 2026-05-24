@@ -22,16 +22,17 @@ Dir.chdir(workdir) {
   File.write('Makefile', [MakeMakefile.configuration(srcdir.to_s), <<~MAKEFILE].join(""))
     target = #{target}#{$EXEEXT}
     objs = #{objs.join(' ')}
+    Q =
 
     $(target): $(objs)
-    \t#{link} $(objs)
+    \t$(Q) #{link} $(objs)
 
     objs: $(objs)
     .c.#{$OBJEXT}:
-    \t#{MakeMakefile::COMPILE_C}
+    \t$(Q) #{MakeMakefile::COMPILE_C}
 
     clean:
-    \t$(RM) $(target) $(objs) Makefile
-    \t$(RMDIRS) #{dirs.join(' ')}
+    \t$(Q) $(RM) $(target) $(objs) Makefile
+    \t$(Q) $(RMDIRS) #{dirs.join(' ')}
   MAKEFILE
 }
