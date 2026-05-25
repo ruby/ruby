@@ -405,6 +405,7 @@ struct RTypedData {
 };
 
 #if !defined(__cplusplus) || __cplusplus >= 201103L
+RBIMPL_STATIC_ASSERT(fields_obj_in_rdata, offsetof(struct RData, fields_obj) == offsetof(struct RTypedData, fields_obj));
 RBIMPL_STATIC_ASSERT(data_in_rtypeddata, offsetof(struct RData, data) == offsetof(struct RTypedData, data));
 #endif
 
