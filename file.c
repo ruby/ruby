@@ -5328,10 +5328,16 @@ ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
  *  beginning from the last period:
  *
  *  ```ruby
- *  File.extname('t.rb')               # => ".rb"
- *  File.extname('foo.bar.t.rb')       # => ".rb"
- *  File.extname('foo/bar/t.rb')       # => ".rb"
- *  File.extname('/lib.usr-is-merged') # => ".usr-is-merged"  # Directory.
+ *  File.extname('t.rb')         # => ".rb"
+ *  File.extname('foo.bar.t.rb') # => ".rb"
+ *  File.extname('foo/bar/t.rb') # => ".rb"
+ *  File.extname('nosuch.txt')   # => ".txt"  # Path need not exist.
+ *  ```
+ *
+ *  Returns the entire string when there is no period:
+ *
+ *  ```ruby
+ *  Pathname('foo').extname # => ""
  *  ```
  *
  *  Returns an empty string when the only period is the first character:

@@ -1347,7 +1347,13 @@ class Pathname    # * File *
   # Pathname('t.rb').extname               # => ".rb"
   # Pathname('foo.bar.t.rb').extname       # => ".rb"
   # Pathname('foo/bar/t.rb').extname       # => ".rb"
-  # Pathname('/lib.usr-is-merged').extname # => ".usr-is-merged"  # Directory.
+  # Pathname('nosuch.txt').extname         # => ".txt"  # Path need not exist.
+  # ```
+  #
+  # Returns the entire string when there is no period:
+  #
+  # ```ruby
+  # Pathname('foo').extname # => ""
   # ```
   #
   # Returns an empty string when the only period is the first character:
