@@ -7912,8 +7912,8 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_optimize_getivar_on_typed_data() {
-        // Thread is typed T_DATA: uses LoadField chain via RTypedData fields_obj
+    fn test_optimize_getivar_on_t_data() {
+        // T_DATA uses fields_obj for instance variables.
         eval("
             class C < Thread
               def test = @a
@@ -7936,7 +7936,7 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           PatchPoint SingleRactorMode
-          v17:TypedTData = GuardType v6, TypedTData
+          v17:TData = GuardType v6, TData
           v18:CShape = LoadField v17, :shape_id@0x1000
           v19:CShape[0x1001] = GuardBitEquals v18, CShape(0x1001) recompile
           v20:RubyValue = LoadField v17, :fields_obj@0x1002
@@ -7947,8 +7947,8 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_optimize_getivar_on_typed_data_complex_fields() {
-        // Typed T_DATA with enough ivars to force heap field storage
+    fn test_optimize_getivar_on_t_data_complex_fields() {
+        // T_DATA with enough ivars to force heap field storage
         eval("
             class C < Thread
               def test = @var1000
@@ -8260,7 +8260,7 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_getivar_polymorphic_t_class_and_typed_data() {
+    fn test_getivar_polymorphic_t_class_and_t_data() {
         set_call_threshold(3);
         eval(r#"
           module Reader
@@ -8295,7 +8295,7 @@ mod hir_opt_tests {
           PatchPoint SingleRactorMode
           v11:HeapBasicObject = GuardType v6, HeapBasicObject
           v12:CUInt64 = LoadField v11, :RBASIC_FLAGS@0x1000
-          v14:CUInt64[0xffffffff0000005f] = Const CUInt64(0xffffffff0000005f)
+          v14:CUInt64[0xffffffff0000001f] = Const CUInt64(0xffffffff0000001f)
           v15:CPtr[CPtr(0x1001)] = Const CPtr(0x1001)
           v16 = RefineType v15, CUInt64
           v17:CInt64 = IntAnd v12, v14

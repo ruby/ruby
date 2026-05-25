@@ -4,7 +4,7 @@ mod bits {
   pub const Array: u64 = ArrayExact | ArraySubclass;
   pub const ArrayExact: u64 = 1u64 << 0;
   pub const ArraySubclass: u64 = 1u64 << 1;
-  pub const BasicObject: u64 = BasicObjectExact | BasicObjectSubclass | Object | TypedTData;
+  pub const BasicObject: u64 = BasicObjectExact | BasicObjectSubclass | Object | TData;
   pub const BasicObjectExact: u64 = 1u64 << 2;
   pub const BasicObjectSubclass: u64 = 1u64 << 3;
   pub const Bignum: u64 = 1u64 << 4;
@@ -76,7 +76,7 @@ mod bits {
   pub const Symbol: u64 = DynamicSymbol | StaticSymbol;
   pub const TrueClass: u64 = 1u64 << 45;
   pub const Truthy: u64 = BasicObject & !Falsy;
-  pub const TypedTData: u64 = 1u64 << 46;
+  pub const TData: u64 = 1u64 << 46;
   pub const Undef: u64 = 1u64 << 47;
   pub const AllBitPatterns: [(&str, u64); 78] = [
     ("Any", Any),
@@ -87,7 +87,7 @@ mod bits {
     ("NotNil", NotNil),
     ("Truthy", Truthy),
     ("HeapBasicObject", HeapBasicObject),
-    ("TypedTData", TypedTData),
+    ("TData", TData),
     ("Object", Object),
     ("BuiltinExact", BuiltinExact),
     ("BoolExact", BoolExact),
@@ -238,7 +238,7 @@ pub mod types {
   pub const Symbol: Type = Type::from_bits(bits::Symbol);
   pub const TrueClass: Type = Type::from_bits(bits::TrueClass);
   pub const Truthy: Type = Type::from_bits(bits::Truthy);
-  pub const TypedTData: Type = Type::from_bits(bits::TypedTData);
+  pub const TData: Type = Type::from_bits(bits::TData);
   pub const Undef: Type = Type::from_bits(bits::Undef);
   pub const ExactBitsAndClass: [(u64, *const VALUE); 17] = [
     (bits::ObjectExact, &raw const crate::cruby::rb_cObject),

@@ -4336,8 +4336,8 @@ impl Function {
             self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::Class, state })
         } else if recv_type.flags().is_t_module() {
             self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::Module, state })
-        } else if recv_type.flags().is_typed_data() {
-            self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::TypedTData, state })
+        } else if recv_type.flags().is_t_data() {
+            self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::TData, state })
         } else {
             // HeapBasicObject is wider than T_OBJECT, but shapes for T_OBJECTs are in a pool of
             // its own and are guaranteed to be different from shapes of any other T_* types. So
@@ -4373,11 +4373,10 @@ impl Function {
             });
             return self.load_ivar_from_fields(block, fields_obj, recv_type.flags().is_fields_embedded(), id, ivar_index);
         }
-        if recv_type.flags().is_typed_data() {
-            // Typed T_DATA: load from fields_obj at fixed offset in RTypedData
+        if recv_type.flags().is_t_data() {
             let fields_obj = self.push_insn(block, Insn::LoadField {
                 recv: self_val, id: FieldName::fields_obj,
-                offset: RTYPEDDATA_OFFSET_FIELDS_OBJ as i32,
+                offset: TDATA_OFFSET_FIELDS_OBJ as i32,
                 return_type: types::RubyValue,
             });
             return self.load_ivar_from_fields(block, fields_obj, recv_type.flags().is_fields_embedded(), id, ivar_index);
