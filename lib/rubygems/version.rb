@@ -1,5 +1,10 @@
 # frozen_string_literal: true
 
+#--
+# Workaround for directly loading Gem::Version in some cases
+module Gem; end
+#++
+
 ##
 # The Version class processes string versions into comparable
 # values. A version string should normally be a series of numbers
@@ -165,9 +170,6 @@
 # version constraint would likely be warranted. However, outside of
 # specific situations, you should avoid using pessimistic versioning, as the
 # costs typically exceed the benefits.
-
-# Workaround for directly loading Gem::Version in some cases
-module Gem; end
 
 class Gem::Version
   include Comparable
