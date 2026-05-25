@@ -337,7 +337,8 @@ rb_gc_shutdown_call_finalizer_p(VALUE obj)
 {
     switch (BUILTIN_TYPE(obj)) {
       case T_DATA:
-        if (!ruby_free_at_exit_p() && (!DATA_PTR(obj) || !RDATA(obj)->dfree)) return false;
+        if (!ruby_free_at_exit_p() && !DATA_PTR(obj)) return false;
+        if (!ruby_free_at_exit_p() && !RTYPEDDATA_P(obj) && !RDATA(obj)->dfree) return false;
         if (rb_obj_is_thread(obj)) return false;
         if (rb_obj_is_mutex(obj)) return false;
         if (rb_obj_is_fiber(obj)) return false;
@@ -1142,14 +1143,16 @@ rb_data_object_wrap(VALUE klass, void *datap, RUBY_DATA_FUNC dmark, RUBY_DATA_FU
 {
     RUBY_ASSERT_ALWAYS(dfree != (RUBY_DATA_FUNC)1);
     if (klass) rb_data_object_check(klass);
-    VALUE obj = rb_newobj(GET_EC(), klass, T_DATA, ROOT_SHAPE_ID, !dmark, sizeof(struct RTypedData));
+    VALUE obj = rb_newobj(GET_EC(), klass, T_DATA, ROOT_SHAPE_ID, !dmark, sizeof(struct RData));
 
     rb_gc_register_pinning_obj(obj);
 
     struct RData *data = (struct RData *)obj;
+    data->fields_obj = 0;
+    data->_reserved = 0;
+    data->data = datap;
     data->dmark = dmark;
     data->dfree = dfree;
-    data->data = datap;
 
     return obj;
 }
@@ -3512,9 +3515,7 @@ rb_gc_mark_children(void *objspace, VALUE obj)
         bool typed_data = RTYPEDDATA_P(obj);
         void *const ptr = typed_data ? RTYPEDDATA_GET_DATA(obj) : DATA_PTR(obj);
 
-        if (typed_data) {
-            gc_mark_internal(RTYPEDDATA(obj)->fields_obj);
-        }
+        gc_mark_internal(RTYPEDDATA(obj)->fields_obj);
 
         if (ptr) {
             if (typed_data && gc_declarative_marking_p(RTYPEDDATA_TYPE(obj))) {
@@ -4462,9 +4463,7 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
             bool typed_data = RTYPEDDATA_P(obj);
             void *const ptr = typed_data ? RTYPEDDATA_GET_DATA(obj) : DATA_PTR(obj);
 
-            if (typed_data) {
-                UPDATE_IF_MOVED(objspace, RTYPEDDATA(obj)->fields_obj);
-            }
+            UPDATE_IF_MOVED(objspace, RTYPEDDATA(obj)->fields_obj);
 
             if (ptr) {
                 if (typed_data && gc_declarative_marking_p(RTYPEDDATA_TYPE(obj))) {

@@ -1284,11 +1284,8 @@ rb_obj_fields(VALUE obj, ID field_name)
     if (rb_obj_shape_has_fields(obj)) {
         switch (BUILTIN_TYPE(obj)) {
           case T_DATA:
-            if (LIKELY(RTYPEDDATA_P(obj))) {
-                fields_obj = RTYPEDDATA(obj)->fields_obj;
-                break;
-            }
-            goto generic_fields;
+            fields_obj = RTYPEDDATA(obj)->fields_obj;
+            break;
           case T_STRUCT:
             if (LIKELY(!FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS))) {
                 fields_obj = RSTRUCT_FIELDS_OBJ(obj);
@@ -1321,11 +1318,8 @@ rb_free_generic_ivar(VALUE obj)
         st_data_t key = (st_data_t)obj, value;
         switch (BUILTIN_TYPE(obj)) {
           case T_DATA:
-            if (LIKELY(RTYPEDDATA_P(obj))) {
-                RB_OBJ_WRITE(obj, &RTYPEDDATA(obj)->fields_obj, 0);
-                break;
-            }
-            goto generic_fields;
+            RB_OBJ_WRITE(obj, &RTYPEDDATA(obj)->fields_obj, 0);
+            break;
           case T_STRUCT:
             if (LIKELY(!FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS))) {
                 RSTRUCT_SET_FIELDS_OBJ(obj, 0);
@@ -1371,11 +1365,8 @@ rb_obj_set_fields(VALUE obj, VALUE fields_obj, ID field_name, VALUE original_fie
     if (fields_obj != original_fields_obj) {
         switch (BUILTIN_TYPE(obj)) {
           case T_DATA:
-            if (LIKELY(RTYPEDDATA_P(obj))) {
-                RB_OBJ_WRITE(obj, &RTYPEDDATA(obj)->fields_obj, fields_obj);
-                break;
-            }
-            goto generic_fields;
+            RB_OBJ_WRITE(obj, &RTYPEDDATA(obj)->fields_obj, fields_obj);
+            break;
           case T_STRUCT:
             if (LIKELY(!FL_TEST_RAW(obj, RSTRUCT_GEN_FIELDS))) {
                 RSTRUCT_SET_FIELDS_OBJ(obj, fields_obj);
