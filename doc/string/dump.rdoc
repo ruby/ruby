@@ -46,7 +46,7 @@ In a dump, certain special characters are escaped:
 
 In a dump, unprintable characters are replaced by printable ones;
 the unprintable characters are the whitespace characters (other than space itself);
-here we see the ordinals for those characers, together with explanatory text:
+here we see the ordinals for those characters, together with explanatory text:
 
   h = {
      7 => 'Alert (BEL)',
