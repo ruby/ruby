@@ -563,7 +563,7 @@ class Pathname
   #   each_filename {|component| ... } -> nil
   #   each_filename -> new_enumerator
   #
-  # With a block given, yields each component of the stored path:
+  # With a block given, yields each component of the string path:
   #
   # ```ruby
   # Pathname('/foo/bar/baz').each_filename {|filename| p filename }
