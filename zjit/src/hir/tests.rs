@@ -6146,6 +6146,117 @@ pub(crate) mod hir_build_tests {
             }
         }
     }
+
+    fn return_val(function: &Function, ret: InsnId) -> InsnId {
+        match &function.insns[ret.0] {
+            Insn::Return { val } => *val,
+            other => panic!("expected Return, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn canonicalize_forwards_guard_use_within_block() {
+        let mut function = Function::new(std::ptr::null());
+        let bb0 = function.entry_block;
+
+        let v_state = function.push_insn(bb0, Insn::Const { val: Const::CBool(true) });
+        let v_val   = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let v_guard = function.push_insn(bb0, Insn::GuardType {
+            val: v_val, guard_type: types::Fixnum, state: v_state,
+        });
+        let ret = function.push_insn(bb0, Insn::Return { val: v_val });
+
+        function.seal_entries();
+        function.dom_scope_rewrite();
+
+        assert_eq!(return_val(&function, ret), v_guard);
+    }
+
+    #[test]
+    fn canonicalize_forwards_across_dominated_block() {
+        let mut function = Function::new(std::ptr::null());
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+
+        let v_state = function.push_insn(bb0, Insn::Const { val: Const::CBool(true) });
+        let v_val   = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let v_guard = function.push_insn(bb0, Insn::GuardType {
+            val: v_val, guard_type: types::Fixnum, state: v_state,
+        });
+        function.push_insn(bb0, Insn::Jump(edge(bb1)));
+        let ret = function.push_insn(bb1, Insn::Return { val: v_val });
+
+        function.seal_entries();
+        function.dom_scope_rewrite();
+
+        assert_eq!(return_val(&function, ret), v_guard);
+    }
+
+    // bb0 -> {bb1, bb2} -> bb3. bb1's guard must not leak into sibling bb2.
+    #[test]
+    fn canonicalize_does_not_forward_to_sibling_block() {
+        let mut function = Function::new(std::ptr::null());
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+        let bb3 = function.new_block(0);
+
+        let v_state = function.push_insn(bb0, Insn::Const { val: Const::CBool(true) });
+        let v_val   = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let v_cond  = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        function.push_insn(bb0, Insn::CondBranch {
+            val: v_cond, if_true: edge(bb1), if_false: edge(bb2),
+        });
+
+        function.push_insn(bb1, Insn::GuardType {
+            val: v_val, guard_type: types::Fixnum, state: v_state,
+        });
+        function.push_insn(bb1, Insn::Jump(edge(bb3)));
+
+        let ret_in_sibling = function.push_insn(bb2, Insn::Return { val: v_val });
+        function.push_insn(bb3, Insn::Unreachable);
+
+        function.seal_entries();
+        function.dom_scope_rewrite();
+
+        assert_eq!(return_val(&function, ret_in_sibling), v_val);
+    }
+
+    // Nested guards on the same value: bb0 installs g0, bb1 installs g1 over g0.
+    // A use of g0 inside bb1 must forward to g1; back in sibling bb2, g0 stays.
+    #[test]
+    fn canonicalize_nested_guards_on_same_value_restore_parent_binding() {
+        let mut function = Function::new(std::ptr::null());
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+
+        let v_state = function.push_insn(bb0, Insn::Const { val: Const::CBool(true) });
+        let v_val   = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let v_cond  = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let g0 = function.push_insn(bb0, Insn::GuardType {
+            val: v_val, guard_type: types::Fixnum, state: v_state,
+        });
+        function.push_insn(bb0, Insn::CondBranch {
+            val: v_cond, if_true: edge(bb1), if_false: edge(bb2),
+        });
+
+        let g1 = function.push_insn(bb1, Insn::GuardBitEquals {
+            val: v_val,
+            expected: Const::Value(Qfalse),
+            reason: SideExitReason::GuardSuperMethodEntry,
+            state: v_state,
+            recompile: None,
+        });
+        let ret_inner = function.push_insn(bb1, Insn::Return { val: g0 });
+        let ret_sibling = function.push_insn(bb2, Insn::Return { val: g0 });
+
+        function.seal_entries();
+        function.dom_scope_rewrite();
+
+        assert_eq!(return_val(&function, ret_inner), g1);
+        assert_eq!(return_val(&function, ret_sibling), g0);
+    }
  }
 
  /// Test loop information computation.

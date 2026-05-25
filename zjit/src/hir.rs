@@ -4993,58 +4993,67 @@ impl Function {
     }
 
     /// Dominator-scoped canonicalize: forward `Guard*` results to dominated
-    /// uses. While processing a block B, `rewrite_map` holds the guards
-    /// established on the dom-tree path from the root down to (and including)
-    /// the prefix of B already processed: i.e. every guard from a strict
-    /// dominator of B plus the guards introduced earlier in B itself. Any use
-    /// we rewrite is therefore dominated by the guard's defining position in
-    /// SSA.
-    ///
-    /// `Guard*` substitutions are unconditional within the dominator scope: a
-    /// guard's side-exit semantics guarantee the substituted value type holds
-    /// for every dominated downstream use.
-    ///
-    /// `RefineType` is intentionally skipped: its narrowing is only valid on
-    /// one `IfTrue`/`IfFalse` arm, which the dominator scope does not respect
-    /// (the dom-tree scope is a strict superset of the refine arm scope).
-    /// Cross-arm refine forwarding is left for a follow-up arm-scoped pass.
+    /// uses. `RefineType` is intentionally skipped because its narrowing is
+    /// only valid on one `IfTrue`/`IfFalse` arm, which the dominator scope
+    /// does not respect.
     ///
     /// Inspired by Cranelift's aegraph canonicalize step
     /// (<https://cfallin.org/blog/2026/04/09/aegraph/>).
     fn canonicalize(&mut self) {
-        enum Action { Visit(BlockId), Leave(usize) }
+        self.dom_scope_rewrite();
+        crate::stats::trace_compile_phase("infer_types", || self.infer_types());
+    }
+
+    /// DFS body of `canonicalize`, split out so tests can skip `infer_types`.
+    ///
+    /// Iterative encoding of this recursive DFS (iterative to keep
+    /// native-stack use O(1) on deep HIR):
+    /// ```text
+    /// fn visit(block):
+    ///     let mark = undo.len()
+    ///     for insn in block.insns: canonicalize_insn(insn)
+    ///     for child in dominators.children(block): visit(child)
+    ///     while undo.len() > mark:
+    ///         let (k, prev) = undo.pop(); rewrite_map[k] = prev
+    /// ```
+    /// Each call sees its parent's `rewrite_map`, mutates only within its
+    /// subtree, and restores before returning. Below, the per-frame `mark`
+    /// becomes `Action::Leave(mark)` and LIFO ordering drains the children
+    /// before the parent's `Leave` fires — which is why `Leave(mark)` is
+    /// pushed *before* the children below.
+    fn dom_scope_rewrite(&mut self) {
+        enum Action { Enter(BlockId), Leave(usize) }
 
         let dominators = Dominators::new(self);
-        // This pass must not allocate new insns; `rewrite_map` is sized to the
-        // current `self.insns.len()` and indexed by `InsnId.0` without bounds
-        // checks, so any new insn would OOB-panic on the next iteration.
+        // `rewrite_map` is sized to the current `insns.len()` and indexed
+        // without bounds checks, so this pass must not allocate new insns.
         let mut rewrite_map: Vec<Option<InsnId>> = vec![None; self.insns.len()];
         let mut undo: Vec<(InsnId, Option<InsnId>)> = Vec::with_capacity(self.blocks.len());
         let mut stack: Vec<Action> = Vec::with_capacity(self.blocks.len() * 2);
-        stack.push(Action::Visit(self.entries_block));
+        stack.push(Action::Enter(self.entries_block));
 
         while let Some(action) = stack.pop() {
             match action {
-                Action::Visit(block) => {
+                Action::Enter(block) => {
                     let mark = undo.len();
                     for i in 0..self.blocks[block.0].insns.len() {
                         let insn_id = self.blocks[block.0].insns[i];
                         self.canonicalize_insn(insn_id, &mut rewrite_map, &mut undo);
                     }
+                    // Push Leave before children so it pops last (LIFO).
                     stack.push(Action::Leave(mark));
                     for child in dominators.children(block) {
-                        stack.push(Action::Visit(child));
+                        stack.push(Action::Enter(child));
                     }
                 }
                 Action::Leave(mark) => {
                     for (key, prev) in undo.drain(mark..).rev() {
+                        debug_assert!(rewrite_map[key.0].is_some(), "scope leak at v{}", key.0);
                         rewrite_map[key.0] = prev;
                     }
                 }
             }
         }
-
-        crate::stats::trace_compile_phase("infer_types", || self.infer_types());
     }
 
     fn canonicalize_insn(
