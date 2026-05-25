@@ -56,9 +56,11 @@ jobs:
       # pin one to HEAD and connect it to the matching origin ref.
       - name: Materialize local branch
         run: |
-          git fetch --no-tags --depth=1 origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH"
+          git fetch --no-tags --depth=1 origin "+refs/heads/$BASE:refs/remotes/origin/$BASE"
           git checkout -B "$BRANCH" HEAD
-          git branch --set-upstream-to="origin/$BRANCH" "$BRANCH"
+          git branch --set-upstream-to="origin/$BASE" "$BRANCH"
+        env:
+          BASE: ${{ github.base_ref || env.BRANCH }}
       - uses: ruby/ruby/.github/actions/make-snapshot@master
         with:
           archname: snapshot-${{ env.BRANCH }}
