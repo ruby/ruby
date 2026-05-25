@@ -2551,7 +2551,7 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
 
         asm.cmp(klass, Opnd::Value(expected_class));
         asm.jne(jit, side_exit);
-    } else if guard_type.is_subtype(types::TypedTData) {
+    } else if guard_type.is_subtype(types::TData) {
         let side = side_exit(jit, state, GuardType(guard_type));
 
         // Check special constant
@@ -2562,11 +2562,11 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, guard
         asm.cmp(val, Qfalse.into());
         asm.je(jit, side.clone());
 
-        // Check the builtin type and RUBY_TYPED_FL_IS_TYPED_DATA with mask and compare
+        // Check the T_DATA builtin type.
         let val = asm.load_mem(val);
         let flags = asm.load(Opnd::mem(VALUE_BITS, val, RUBY_OFFSET_RBASIC_FLAGS));
-        let mask     = RUBY_T_MASK.to_usize() | RUBY_TYPED_FL_IS_TYPED_DATA.to_usize();
-        let expected = RUBY_T_DATA.to_usize() | RUBY_TYPED_FL_IS_TYPED_DATA.to_usize();
+        let mask     = RUBY_T_MASK.to_usize();
+        let expected = RUBY_T_DATA.to_usize();
         let masked = asm.and(flags, mask.into());
         asm.cmp(masked, expected.into());
         asm.jne(jit, side);

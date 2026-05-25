@@ -219,8 +219,8 @@ impl Flags {
     const IS_T_CLASS: u32 = 1 << 6;
     /// Object is a T_MODULE
     const IS_T_MODULE: u32 = 1 << 7;
-    /// Object is a typed T_DATA (RTYPEDDATA_P)
-    const IS_TYPED_DATA: u32 = 1 << 8;
+    /// Object is a T_DATA
+    const IS_T_DATA: u32 = 1 << 8;
 
     pub fn none() -> Self { Self(Self::NONE) }
 
@@ -233,7 +233,7 @@ impl Flags {
     pub fn is_fields_embedded(self) -> bool { (self.0 & Self::IS_FIELDS_EMBEDDED) != 0 }
     pub fn is_t_class(self) -> bool { (self.0 & Self::IS_T_CLASS) != 0 }
     pub fn is_t_module(self) -> bool { (self.0 & Self::IS_T_MODULE) != 0 }
-    pub fn is_typed_data(self) -> bool { (self.0 & Self::IS_TYPED_DATA) != 0 }
+    pub fn is_t_data(self) -> bool { (self.0 & Self::IS_T_DATA) != 0 }
 }
 
 /// opt_send_without_block/opt_plus/... should store:
@@ -322,9 +322,9 @@ impl ProfiledType {
                 flags.0 |= Flags::IS_FIELDS_EMBEDDED;
             }
         }
-        if obj.typed_data_p() {
-            flags.0 |= Flags::IS_TYPED_DATA;
-            if obj.typed_data_fields_embedded_p() {
+        if obj.data_p() {
+            flags.0 |= Flags::IS_T_DATA;
+            if obj.data_fields_embedded_p() {
                 flags.0 |= Flags::IS_FIELDS_EMBEDDED;
             }
         }
@@ -365,8 +365,8 @@ impl ProfiledType {
             (RUBY_T_CLASS, RUBY_T_MASK)
         } else if self.flags().is_t_module() {
             (RUBY_T_MODULE, RUBY_T_MASK)
-        } else if self.flags().is_typed_data() {
-            (RUBY_T_DATA | RUBY_TYPED_FL_IS_TYPED_DATA, RUBY_T_MASK | RUBY_TYPED_FL_IS_TYPED_DATA)
+        } else if self.flags().is_t_data() {
+            (RUBY_T_DATA, RUBY_T_MASK)
         } else {
             (0, 0)
         };
