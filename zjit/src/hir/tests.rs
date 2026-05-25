@@ -5890,12 +5890,12 @@ pub(crate) mod hir_build_tests {
 
         function.seal_entries();
 
-        let children = Dominators::new(&function).children();
+        let dominators = Dominators::new(&function);
 
-        assert_eq!(children[entries.0], vec![bb0]);
-        assert_eq!(children[bb0.0], vec![bb1]);
-        assert_eq!(children[bb1.0], vec![bb2]);
-        assert_eq!(children[bb2.0], Vec::<BlockId>::new());
+        assert_eq!(dominators.children(entries).collect::<Vec<_>>(), vec![bb0]);
+        assert_eq!(dominators.children(bb0).collect::<Vec<_>>(), vec![bb1]);
+        assert_eq!(dominators.children(bb1).collect::<Vec<_>>(), vec![bb2]);
+        assert_eq!(dominators.children(bb2).collect::<Vec<_>>(), Vec::<BlockId>::new());
     }
 
     #[test]
@@ -5919,13 +5919,13 @@ pub(crate) mod hir_build_tests {
 
         function.seal_entries();
 
-        let children = Dominators::new(&function).children();
+        let dominators = Dominators::new(&function);
 
-        assert_eq!(children[entries.0], vec![bb0]);
-        assert_eq!(children[bb0.0], vec![bb1, bb2, bb3]);
-        assert_eq!(children[bb1.0], Vec::<BlockId>::new());
-        assert_eq!(children[bb2.0], Vec::<BlockId>::new());
-        assert_eq!(children[bb3.0], Vec::<BlockId>::new());
+        assert_eq!(dominators.children(entries).collect::<Vec<_>>(), vec![bb0]);
+        assert_eq!(dominators.children(bb0).collect::<Vec<_>>(), vec![bb1, bb2, bb3]);
+        assert_eq!(dominators.children(bb1).collect::<Vec<_>>(), Vec::<BlockId>::new());
+        assert_eq!(dominators.children(bb2).collect::<Vec<_>>(), Vec::<BlockId>::new());
+        assert_eq!(dominators.children(bb3).collect::<Vec<_>>(), Vec::<BlockId>::new());
     }
 
     #[test]
@@ -5946,12 +5946,12 @@ pub(crate) mod hir_build_tests {
 
         function.seal_entries();
 
-        let children = Dominators::new(&function).children();
+        let dominators = Dominators::new(&function);
 
-        assert_eq!(children[entries.0], vec![bb0, bb1, bb2]);
-        assert_eq!(children[bb0.0], Vec::<BlockId>::new());
-        assert_eq!(children[bb1.0], Vec::<BlockId>::new());
-        assert_eq!(children[bb2.0], Vec::<BlockId>::new());
+        assert_eq!(dominators.children(entries).collect::<Vec<_>>(), vec![bb0, bb1, bb2]);
+        assert_eq!(dominators.children(bb0).collect::<Vec<_>>(), Vec::<BlockId>::new());
+        assert_eq!(dominators.children(bb1).collect::<Vec<_>>(), Vec::<BlockId>::new());
+        assert_eq!(dominators.children(bb2).collect::<Vec<_>>(), Vec::<BlockId>::new());
     }
 
     #[test]
@@ -5973,12 +5973,178 @@ pub(crate) mod hir_build_tests {
 
         function.seal_entries();
 
-        let children = Dominators::new(&function).children();
+        let dominators = Dominators::new(&function);
 
-        assert_eq!(children[entries.0], vec![bb0]);
-        assert_eq!(children[bb0.0], vec![bb1]);
-        assert_eq!(children[bb1.0], Vec::<BlockId>::new());
-        assert_eq!(children[bb2.0], Vec::<BlockId>::new());
+        assert_eq!(dominators.children(entries).collect::<Vec<_>>(), vec![bb0]);
+        assert_eq!(dominators.children(bb0).collect::<Vec<_>>(), vec![bb1]);
+        assert_eq!(dominators.children(bb1).collect::<Vec<_>>(), Vec::<BlockId>::new());
+        assert_eq!(dominators.children(bb2).collect::<Vec<_>>(), Vec::<BlockId>::new());
+    }
+
+    /// Reference impl: idom-chain walk, independent of `is_dominated_by`.
+    fn is_dominated_by_chain_walk(dominators: &Dominators, left: BlockId, right: BlockId) -> bool {
+        if dominators.idom(left) == NONE_BLOCK {
+            return false;
+        }
+        let mut b = left;
+        loop {
+            if b == right {
+                return true;
+            }
+            if dominators.idom(b) == b {
+                return false;
+            }
+            b = dominators.idom(b);
+        }
+    }
+
+    fn diamond() -> (Function, [BlockId; 4]) {
+        let mut function = Function::new(std::ptr::null());
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+        let bb3 = function.new_block(0);
+        let val = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb0, Insn::CondBranch { val, if_true: edge(bb1), if_false: edge(bb2) });
+        function.push_insn(bb1, Insn::Jump(edge(bb3)));
+        function.push_insn(bb2, Insn::Jump(edge(bb3)));
+        let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb3, Insn::Return { val: retval });
+        function.seal_entries();
+        (function, [bb0, bb1, bb2, bb3])
+    }
+
+    /// bb0 -> bb1 -> bb2 -> bb1, bb2 -> bb3 (back-edge).
+    fn loop_cfg() -> (Function, [BlockId; 4]) {
+        let mut function = Function::new(std::ptr::null());
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+        let bb3 = function.new_block(0);
+        function.push_insn(bb0, Insn::Jump(edge(bb1)));
+        function.push_insn(bb1, Insn::Jump(edge(bb2)));
+        let cond = function.push_insn(bb2, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb2, Insn::CondBranch { val: cond, if_true: edge(bb1), if_false: edge(bb3) });
+        let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb3, Insn::Return { val: retval });
+        function.seal_entries();
+        (function, [bb0, bb1, bb2, bb3])
+    }
+
+    #[test]
+    fn test_dom_tree_is_dominated_by_o1_correctness() {
+        let mut cases: Vec<Function> = Vec::new();
+        {
+            // linear: bb0 -> bb1 -> bb2
+            let mut function = Function::new(std::ptr::null());
+            let bb0 = function.entry_block;
+            let bb1 = function.new_block(0);
+            let bb2 = function.new_block(0);
+            function.push_insn(bb0, Insn::Jump(edge(bb1)));
+            function.push_insn(bb1, Insn::Jump(edge(bb2)));
+            let retval = function.push_insn(bb2, Insn::Const { val: Const::CBool(true) });
+            function.push_insn(bb2, Insn::Return { val: retval });
+            function.seal_entries();
+            cases.push(function);
+        }
+        cases.push(diamond().0);
+        cases.push(loop_cfg().0);
+        {
+            // unreachable: bb2 is not reachable from entry.
+            let mut function = Function::new(std::ptr::null());
+            let bb0 = function.entry_block;
+            let bb1 = function.new_block(0);
+            let bb2 = function.new_block(0);
+            function.push_insn(bb0, Insn::Jump(edge(bb1)));
+            let retval = function.push_insn(bb1, Insn::Const { val: Const::CBool(true) });
+            function.push_insn(bb1, Insn::Return { val: retval });
+            let v = function.push_insn(bb2, Insn::Const { val: Const::CBool(false) });
+            function.push_insn(bb2, Insn::Return { val: v });
+            function.seal_entries();
+            cases.push(function);
+        }
+        {
+            // multi-entry: two jit entries merging at bb2.
+            let mut function = Function::new(std::ptr::null());
+            let bb0 = function.entry_block;
+            let bb1 = function.new_block(0);
+            function.jit_entry_blocks.push(bb1);
+            let bb2 = function.new_block(0);
+            function.push_insn(bb0, Insn::Jump(edge(bb2)));
+            function.push_insn(bb1, Insn::Jump(edge(bb2)));
+            let retval = function.push_insn(bb2, Insn::Const { val: Const::CBool(true) });
+            function.push_insn(bb2, Insn::Return { val: retval });
+            function.seal_entries();
+            cases.push(function);
+        }
+
+        for function in &cases {
+            let dominators = Dominators::new(function);
+            let n = function.blocks.len();
+            for i in 0..n {
+                for j in 0..n {
+                    let left = BlockId(i);
+                    let right = BlockId(j);
+                    assert_eq!(
+                        dominators.is_dominated_by(left, right),
+                        is_dominated_by_chain_walk(&dominators, left, right),
+                        "is_dominated_by({:?}, {:?}) disagrees with chain walk",
+                        left, right,
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_dom_tree_preorder_invariant() {
+        let (function, _) = diamond();
+        let dominators = Dominators::new(&function);
+        let n = function.blocks.len();
+        for i in 0..n {
+            let parent = BlockId(i);
+            if dominators.idom(parent) == NONE_BLOCK {
+                continue;
+            }
+            let pre = dominators.nodes[parent.0].dom_pre;
+            let pre_max = dominators.nodes[parent.0].dom_pre_max;
+            assert!(pre >= 1);
+            assert!(pre_max >= pre);
+            for j in 0..n {
+                let other = BlockId(j);
+                if dominators.idom(other) == NONE_BLOCK {
+                    continue;
+                }
+                let other_pre = dominators.nodes[other.0].dom_pre;
+                let in_subtree = is_dominated_by_chain_walk(&dominators, other, parent);
+                let in_interval = pre <= other_pre && other_pre <= pre_max;
+                assert_eq!(in_subtree, in_interval,
+                    "subtree membership for {:?} under {:?} disagrees with interval",
+                    other, parent);
+            }
+        }
+    }
+
+    #[test]
+    fn test_dom_tree_child_iter_rpo_order() {
+        let (function, _) = diamond();
+        let rpo = function.rpo();
+        let rpo_idx: HashMap<BlockId, usize> = rpo
+            .iter()
+            .enumerate()
+            .map(|(i, &b)| (b, i))
+            .collect();
+        let dominators = Dominators::new(&function);
+        for &parent in &rpo {
+            let kids: Vec<BlockId> = dominators.children(parent).collect();
+            for w in kids.windows(2) {
+                assert!(
+                    rpo_idx[&w[0]] < rpo_idx[&w[1]],
+                    "children of {:?} not in RPO order: {:?}",
+                    parent, kids,
+                );
+            }
+        }
     }
  }
 
