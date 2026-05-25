@@ -1574,11 +1574,11 @@ class Pathname    # * Dir *
   # ```ruby
   # Pathname('.').entries.take(5)
   # # =>
-  # [#<Pathname:.>,
-  #  #<Pathname:..>,
-  #  #<Pathname:gc.rb>,
-  #  #<Pathname:yjit.rb>,
-  #  #<Pathname:iseq.h>]
+  # # [#<Pathname:.>,
+  # #  #<Pathname:..>,
+  # #  #<Pathname:gc.rb>,
+  # #  #<Pathname:yjit.rb>,
+  # #  #<Pathname:iseq.h>]
   # ```
   #
   def entries() Dir.entries(@path).map {|f| self.class.new(f) } end
