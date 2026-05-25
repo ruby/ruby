@@ -567,10 +567,15 @@ class Pathname
   #
   # ```ruby
   # Pathname('/foo/bar/baz').each_filename {|filename| p filename }
+  # => nil
+  # ```
+  #
+  # Output:
+  #
+  # ```text
   # "foo"
   # "bar"
   # "baz"
-  # => nil
   # ```
   #
   # With no block given, returns a new Enumerator.
