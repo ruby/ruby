@@ -70,6 +70,19 @@ class TestGemSafeYAML < Gem::TestCase
     assert_match(/unspecified class/, exception.message)
   end
 
+  def test_plain_tag_key_does_not_construct_specification
+    yaml = <<~YAML
+      tag: "!ruby/object:Gem::Specification"
+      name: pwned
+      arbitrary_ivar: hello
+    YAML
+
+    result = Gem::SafeYAML.safe_load(yaml)
+    assert_kind_of Hash, result
+    assert_equal "!ruby/object:Gem::Specification", result["tag"]
+    assert_equal "pwned", result["name"]
+  end
+
   def test_disallowed_symbol_rejected
     yaml = <<~YAML
       --- !ruby/object:Gem::Dependency

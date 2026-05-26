@@ -454,9 +454,7 @@ module Gem
 
         result = build_node(node)
 
-        if result.is_a?(Hash) &&
-           (result[:tag] == "!ruby/object:Gem::Specification" ||
-            result["tag"] == "!ruby/object:Gem::Specification")
+        if result.is_a?(Hash) && result[:tag] == "!ruby/object:Gem::Specification"
           build_specification(result)
         else
           result
