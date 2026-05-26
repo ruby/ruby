@@ -46,44 +46,41 @@ RSpec.describe Bundler::Source::Rubygems do
   end
 
   describe "#clear_cache" do
-    it "clears the installed_specs cache" do
+    it "invalidates memoized indexes so subsequent reads rebuild them" do
       source = described_class.new
 
-      # Access installed_specs to populate the cache
-      source.send(:installed_specs)
-      expect(source.instance_variable_get(:@installed_specs)).not_to be_nil
+      first_specs = source.specs
+      first_installed = source.send(:installed_specs)
+      first_default = source.send(:default_specs)
+      first_cached = source.send(:cached_specs)
 
-      # Expire the cache
+      expect(source.specs).to equal(first_specs)
+      expect(source.send(:installed_specs)).to equal(first_installed)
+      expect(source.send(:default_specs)).to equal(first_default)
+      expect(source.send(:cached_specs)).to equal(first_cached)
+
       source.clear_cache
 
-      # Cache should be cleared
-      expect(source.instance_variable_get(:@installed_specs)).to be_nil
+      expect(source.specs).not_to equal(first_specs)
+      expect(source.send(:installed_specs)).not_to equal(first_installed)
+      expect(source.send(:default_specs)).not_to equal(first_default)
+      expect(source.send(:cached_specs)).not_to equal(first_cached)
     end
 
-    it "clears the default_specs cache" do
+    it "reflects newly-discovered installed gems after clear_cache" do
       source = described_class.new
+      foo = Gem::Specification.new("foo", "1.0.0")
+      bar = Gem::Specification.new("bar", "1.0.0")
 
-      # Access default_specs to populate the cache
-      source.send(:default_specs)
-      expect(source.instance_variable_get(:@default_specs)).not_to be_nil
+      allow(Bundler.rubygems).to receive(:installed_specs).and_return([foo])
+      expect(source.send(:installed_specs).search("bar")).to be_empty
 
-      # Expire the cache
-      source.clear_cache
-
-      # Cache should be cleared
-      expect(source.instance_variable_get(:@default_specs)).to be_nil
-    end
-
-    it "clears the merged specs cache" do
-      source = described_class.new
-
-      source.instance_variable_set(:@specs, Bundler::Index.new)
-      source.instance_variable_set(:@cached_specs, Bundler::Index.new)
+      allow(Bundler.rubygems).to receive(:installed_specs).and_return([foo, bar])
+      expect(source.send(:installed_specs).search("bar")).to be_empty
 
       source.clear_cache
 
-      expect(source.instance_variable_get(:@specs)).to be_nil
-      expect(source.instance_variable_get(:@cached_specs)).to be_nil
+      expect(source.send(:installed_specs).search("bar")).not_to be_empty
     end
   end
 
