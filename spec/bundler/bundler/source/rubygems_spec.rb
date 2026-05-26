@@ -73,6 +73,18 @@ RSpec.describe Bundler::Source::Rubygems do
       # Cache should be cleared
       expect(source.instance_variable_get(:@default_specs)).to be_nil
     end
+
+    it "clears the merged specs cache" do
+      source = described_class.new
+
+      source.instance_variable_set(:@specs, Bundler::Index.new)
+      source.instance_variable_set(:@cached_specs, Bundler::Index.new)
+
+      source.clear_cache
+
+      expect(source.instance_variable_get(:@specs)).to be_nil
+      expect(source.instance_variable_get(:@cached_specs)).to be_nil
+    end
   end
 
   describe "log debug information" do

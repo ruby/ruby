@@ -315,8 +315,10 @@ module Bundler
       end
 
       def clear_cache
+        @specs = nil
         @installed_specs = nil
         @default_specs = nil
+        @cached_specs = nil
       end
 
       protected
