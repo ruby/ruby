@@ -15984,6 +15984,133 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_dedup_guard_type_across_dominator_chain() {
+        let src = "
+            def test(n)
+              return -1 if n < 0
+              return  0 if n == 0
+              n * 2
+            end
+            test(1); test(0); test(-1)
+        ";
+        eval(src);
+        let hir = hir_string("test");
+        assert_eq!(hir.matches("GuardType").count(), 1, "{hir}");
+    }
+
+    #[test]
+    fn test_dedup_guard_type_through_nested_conditionals() {
+        let src = "
+            def test(n, a)
+              return -1 if n < 0
+              if a
+                n + 1
+              else
+                n + 2
+              end
+            end
+            test(1, true); test(1, false); test(-1, true)
+        ";
+        eval(src);
+        let hir = hir_string("test");
+        assert_eq!(hir.matches("GuardType").count(), 1, "{hir}");
+    }
+
+    #[test]
+    fn test_no_dedup_when_not_dominated() {
+        let src = "
+            def test(cond, a)
+              if cond
+                a + 1
+              else
+                a + 2
+              end
+            end
+            test(true, 1); test(false, 1)
+        ";
+        eval(src);
+        let hir = hir_string("test");
+        assert_eq!(hir.matches("GuardType").count(), 2, "{hir}");
+    }
+
+    #[test]
+    fn test_dedup_guard_type_in_loop_body() {
+        // `m = n + 0` is a pre-header use of `n` so a `GuardType n` lands
+        // before the loop body, which the body's use of `n` must then reuse.
+        let src = "
+            def test(n)
+              m = n + 0
+              i = 0
+              while i < 3
+                i = i + n
+              end
+              m + i
+            end
+            test(1); test(2)
+        ";
+        eval(src);
+        let hir = hir_string("test");
+        assert_eq!(hir.matches("GuardType").count(), 1, "{hir}");
+    }
+
+    #[test]
+    fn test_dedup_guard_type_across_dominator_chain_snapshot() {
+        // Snapshot variant: locks in *which* insn the surviving `GuardType`
+        // forwards, since count alone misses wrong-target rewrites.
+        eval("
+            def test(n)
+              return -1 if n < 0
+              return  0 if n == 0
+              n * 2
+            end
+            test(1); test(0); test(-1)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v15:Fixnum[0] = Const Value(0)
+          PatchPoint MethodRedefined(Integer@0x1008, <@0x1010, cme:0x1018)
+          v70:Fixnum = GuardType v10, Fixnum
+          v71:BoolExact = FixnumLt v70, v15
+          CheckInterrupts
+          v21:CBool = Test v71
+          CondBranch v21, bb6(), bb4(v9, v70)
+        bb6():
+          v26:Fixnum[-1] = Const Value(-1)
+          CheckInterrupts
+          Return v26
+        bb4(v31:BasicObject, v32:Fixnum):
+          v37:Fixnum[0] = Const Value(0)
+          PatchPoint MethodRedefined(Integer@0x1008, ==@0x1040, cme:0x1048)
+          v75:BoolExact = FixnumEq v32, v37
+          CheckInterrupts
+          v43:CBool = Test v75
+          CondBranch v43, bb7(), bb5(v31, v32)
+        bb7():
+          v48:Fixnum[0] = Const Value(0)
+          CheckInterrupts
+          Return v48
+        bb5(v53:BasicObject, v54:Fixnum):
+          v59:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(Integer@0x1008, *@0x1070, cme:0x1078)
+          v79:Fixnum = FixnumMult v54, v59
+          CheckInterrupts
+          Return v79
+        ");
+    }
+
+    #[test]
     fn test_infer_types_across_non_maximal_basic_blocks() {
         // Previous worklist-based type inference only worked for maximal SSA. This is a regression
         // test for hanging.

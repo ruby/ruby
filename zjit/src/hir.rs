@@ -5006,54 +5006,98 @@ impl Function {
             .unwrap_or(insn_id)
     }
 
-    /// Block-local canonicalize: rewrite each operand through union-find and a
-    /// per-block map of the most recent `Guard*` for that value. Forwards
-    /// guarded values into branch-edge args (so `infer_types` narrows merge-block
-    /// parameters and `fold_constants` drops redundant CFG-join guards) and
-    /// ordinary in-block uses.
-    ///
-    /// `Guard*` substitutions are unconditional within a block: a guard's
-    /// side-exit semantics guarantee the substituted value type holds for every
-    /// downstream use in the same block.
-    ///
-    /// `RefineType` is intentionally skipped: its narrowing is only valid on one
-    /// branch arm, which would require dropping refine-derived rewrites at each
-    /// `IfTrue`/`IfFalse`. Cross-arm refine forwarding is left for a follow-up
-    /// dominator-scoped pass.
+    /// Dominator-scoped canonicalize: forward `Guard*` results to dominated
+    /// uses. `RefineType` is intentionally skipped because its narrowing is
+    /// only valid on one `IfTrue`/`IfFalse` arm, which the dominator scope
+    /// does not respect.
     ///
     /// Inspired by Cranelift's aegraph canonicalize step
     /// (<https://cfallin.org/blog/2026/04/09/aegraph/>).
     fn canonicalize(&mut self) {
-        let mut rewrite_map: HashMap<InsnId, InsnId> = HashMap::new();
-        for block in self.rpo() {
-            rewrite_map.clear();
-            for i in 0..self.blocks[block.0].insns.len() {
-                let insn_id = self.blocks[block.0].insns[i];
-                let canonical_id = self.union_find.borrow().find_const(insn_id);
+        self.dom_scope_rewrite();
+        crate::stats::trace_compile_phase("infer_types", || self.infer_types());
+    }
 
-                let union_find = &self.union_find;
-                self.insns[canonical_id.0].for_each_operand_mut(|operand| {
-                    let canon = union_find.borrow().find_const(*operand);
-                    *operand = rewrite_map.get(&canon).copied().unwrap_or(canon);
-                });
+    /// DFS body of `canonicalize`, split out so tests can skip `infer_types`.
+    ///
+    /// Iterative encoding of this recursive DFS (iterative to keep
+    /// native-stack use O(1) on deep HIR):
+    /// ```text
+    /// fn visit(block):
+    ///     let mark = undo.len()
+    ///     for insn in block.insns: canonicalize_insn(insn)
+    ///     for child in dominators.children(block): visit(child)
+    ///     while undo.len() > mark:
+    ///         let (k, prev) = undo.pop(); rewrite_map[k] = prev
+    /// ```
+    /// Each call sees its parent's `rewrite_map`, mutates only within its
+    /// subtree, and restores before returning. Below, the per-frame `mark`
+    /// becomes `Action::Leave(mark)` and LIFO ordering drains the children
+    /// before the parent's `Leave` fires — which is why `Leave(mark)` is
+    /// pushed *before* the children below.
+    fn dom_scope_rewrite(&mut self) {
+        enum Action { Enter(BlockId), Leave(usize) }
 
-                // For the binary guards only `left` is registered because their infer_type is
-                // type_of(left).
-                match &self.insns[canonical_id.0] {
-                    Insn::GuardType      { val:  src, .. }
-                    | Insn::GuardBitEquals { val:  src, .. }
-                    | Insn::GuardAnyBitSet { val:  src, .. }
-                    | Insn::GuardNoBitsSet { val:  src, .. }
-                    | Insn::GuardGreaterEq { left: src, .. }
-                    | Insn::GuardLess      { left: src, .. } => {
-                        rewrite_map.insert(*src, canonical_id);
+        let dominators = Dominators::new(self);
+        // `rewrite_map` is sized to the current `insns.len()` and indexed
+        // without bounds checks, so this pass must not allocate new insns.
+        let mut rewrite_map: Vec<Option<InsnId>> = vec![None; self.insns.len()];
+        let mut undo: Vec<(InsnId, Option<InsnId>)> = Vec::with_capacity(self.blocks.len());
+        let mut stack: Vec<Action> = Vec::with_capacity(self.blocks.len() * 2);
+        stack.push(Action::Enter(self.entries_block));
+
+        while let Some(action) = stack.pop() {
+            match action {
+                Action::Enter(block) => {
+                    let mark = undo.len();
+                    for i in 0..self.blocks[block.0].insns.len() {
+                        let insn_id = self.blocks[block.0].insns[i];
+                        self.canonicalize_insn(insn_id, &mut rewrite_map, &mut undo);
                     }
-                    _ => {}
+                    // Push Leave before children so it pops last (LIFO).
+                    stack.push(Action::Leave(mark));
+                    for child in dominators.children(block) {
+                        stack.push(Action::Enter(child));
+                    }
+                }
+                Action::Leave(mark) => {
+                    for (key, prev) in undo.drain(mark..).rev() {
+                        debug_assert!(rewrite_map[key.0].is_some(), "scope leak at v{}", key.0);
+                        rewrite_map[key.0] = prev;
+                    }
                 }
             }
         }
+    }
 
-        crate::stats::trace_compile_phase("infer_types", || self.infer_types());
+    fn canonicalize_insn(
+        &mut self,
+        insn_id: InsnId,
+        rewrite_map: &mut [Option<InsnId>],
+        undo: &mut Vec<(InsnId, Option<InsnId>)>,
+    ) {
+        let canonical_id = self.union_find.borrow().find_const(insn_id);
+
+        let union_find = &self.union_find;
+        self.insns[canonical_id.0].for_each_operand_mut(|operand| {
+            let canon = union_find.borrow().find_const(*operand);
+            *operand = rewrite_map[canon.0].unwrap_or(canon);
+        });
+
+        // For the binary guards only `left` is registered because their infer_type is
+        // type_of(left).
+        match &self.insns[canonical_id.0] {
+            Insn::GuardType      { val:  src, .. }
+            | Insn::GuardBitEquals { val:  src, .. }
+            | Insn::GuardAnyBitSet { val:  src, .. }
+            | Insn::GuardNoBitsSet { val:  src, .. }
+            | Insn::GuardGreaterEq { left: src, .. }
+            | Insn::GuardLess      { left: src, .. } => {
+                let prev = rewrite_map[src.0].replace(canonical_id);
+                undo.push((*src, prev));
+            }
+            _ => {}
+        }
     }
 
     /// Use type information left by `infer_types` to fold away operations that can be evaluated at compile-time.
@@ -8604,14 +8648,35 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
     (self_param, entry_state)
 }
 
-pub struct Dominators {
-    /// Immediate dominator for each block, indexed by BlockId.
-    /// idom(root) = root (self-loop is sentinel), idom[unreachable] == IDOM_NONE.
-    idoms: Vec<BlockId>,
+/// Sentinel for "no block": unreachable idom, end of child/sibling list.
+const NONE_BLOCK: BlockId = BlockId(usize::MAX);
+
+/// Dom-tree node. Tree shape (parent / first-child / next-sibling) plus an
+/// interval-encoded preorder numbering for O(1) `is_dominated_by`.
+#[derive(Clone, Copy)]
+struct DomTreeNode {
+    /// `NONE_BLOCK` for unreachable; root holds a self-loop sentinel.
+    idom: BlockId,
+    child: BlockId,
+    sibling: BlockId,
+    /// `0` marks unreachable; reachable blocks get `1..=N`.
+    dom_pre: u32,
+    /// Max `dom_pre` over this subtree. `[dom_pre, dom_pre_max]` is the
+    /// preorder interval of the subtree, so dominance is one range test.
+    dom_pre_max: u32,
 }
 
-/// Sentinel value for "no idom computed yet".
-const IDOM_NONE: BlockId = BlockId(usize::MAX);
+/// Dominator tree, modeled after Cranelift's `DominatorTree`: a single
+/// `Vec<DomTreeNode>` with intrusive child/sibling links plus an interval
+/// encoding of preorder numbers for O(1) dominance queries.
+///
+/// Refs:
+/// - Cranelift: <https://github.com/bytecodealliance/wasmtime/blob/main/cranelift/codegen/src/dominator_tree.rs>
+/// - Cooper, Harvey & Kennedy, "A Simple, Fast Dominance Algorithm" (2001):
+///   <https://www.cs.tufts.edu/~nr/cs257/archive/keith-cooper/dom14.pdf>
+pub struct Dominators {
+    nodes: Vec<DomTreeNode>,
+}
 
 impl Dominators {
     pub fn new(f: &Function) -> Self {
@@ -8619,9 +8684,10 @@ impl Dominators {
         Self::with_cfi(f, &mut cfi)
     }
 
-    /// Compute immediate dominators using the "engineered algorithm" from
-    /// Cooper, Harvey & Kennedy, "A Simple, Fast Dominance Algorithm" (2001),
-    /// Figure 3: <https://www.cs.tufts.edu/~nr/cs257/archive/keith-cooper/dom14.pdf>
+    /// Three passes:
+    ///   1. Cooper-Harvey-Kennedy "engineered algorithm" computes idoms.
+    ///   2. Reverse-RPO prepend builds each parent's child list (RPO-ascending).
+    ///   3. DFS assigns preorder numbers and propagates subtree maxima.
     pub fn with_cfi(f: &Function, cfi: &mut ControlFlowInfo) -> Self {
         let rpo = f.rpo();
         let num_blocks = f.blocks.len();
@@ -8632,8 +8698,8 @@ impl Dominators {
             rpo_order[block.0] = idx;
         }
 
-        // Initialize idom: root's idom is itself, everything else is undefined.
-        let mut idoms = vec![IDOM_NONE; num_blocks];
+        // Pass 1: Cooper-Harvey-Kennedy idom computation.
+        let mut idoms = vec![NONE_BLOCK; num_blocks];
         let root = f.entries_block;
         idoms[root.0] = root;
 
@@ -8643,21 +8709,19 @@ impl Dominators {
             for &block in &rpo {
                 if block == root { continue; }
 
-                // Find the first predecessor that already has an idom computed.
                 let preds: Vec<BlockId> = cfi.predecessors(block).collect();
-                let mut new_idom = IDOM_NONE;
+                let mut new_idom = NONE_BLOCK;
                 for &p in &preds {
-                    if idoms[p.0] != IDOM_NONE {
+                    if idoms[p.0] != NONE_BLOCK {
                         new_idom = p;
                         break;
                     }
                 }
-                if new_idom == IDOM_NONE { continue; }
+                if new_idom == NONE_BLOCK { continue; }
 
-                // Intersect with remaining processed predecessors.
                 for &p in &preds {
                     if p == new_idom { continue; }
-                    if idoms[p.0] != IDOM_NONE {
+                    if idoms[p.0] != NONE_BLOCK {
                         new_idom = Self::intersect(&idoms, &rpo_order, p, new_idom);
                     }
                 }
@@ -8669,7 +8733,35 @@ impl Dominators {
             }
         }
 
-        Self { idoms }
+        let mut nodes = Vec::with_capacity(num_blocks);
+        for i in 0..num_blocks {
+            nodes.push(DomTreeNode {
+                idom: idoms[i],
+                child: NONE_BLOCK,
+                sibling: NONE_BLOCK,
+                dom_pre: 0,
+                dom_pre_max: 0,
+            });
+        }
+
+        // Pass 2: reverse-RPO prepend leaves each child list RPO-ascending.
+        for &block in rpo.iter().rev() {
+            let parent = nodes[block.0].idom;
+            if parent == NONE_BLOCK { continue; }
+            // Skip root's self-loop sentinel so it isn't its own child.
+            if parent == block { continue; }
+            nodes[block.0].sibling = nodes[parent.0].child;
+            nodes[parent.0].child = block;
+        }
+
+        let mut tree = Dominators { nodes };
+
+        // Pass 3.
+        if num_blocks > 0 {
+            tree.assign_preorder(root);
+        }
+
+        tree
     }
 
     /// Walk up the dominator tree from two fingers until they meet.
@@ -8686,20 +8778,55 @@ impl Dominators {
         b1
     }
 
-    /// Return the immediate dominator of `block`.
-    pub fn idom(&self, block: BlockId) -> BlockId {
-        self.idoms[block.0]
+    /// Iterative DFS (avoids stack overflow on deep CFGs): preorder on enter,
+    /// subtree max on leave.
+    fn assign_preorder(&mut self, root: BlockId) {
+        enum Step { Enter(BlockId), Leave(BlockId) }
+        let mut counter: u32 = 0;
+        let mut stack = vec![Step::Enter(root)];
+        while let Some(step) = stack.pop() {
+            match step {
+                Step::Enter(b) => {
+                    // `dom_pre == 0` is the "unreachable" sentinel; wrap would corrupt it.
+                    counter = counter.checked_add(1).expect("dom-tree preorder counter overflowed u32");
+                    self.nodes[b.0].dom_pre = counter;
+                    stack.push(Step::Leave(b));
+                    let mut c = self.nodes[b.0].child;
+                    while c != NONE_BLOCK {
+                        stack.push(Step::Enter(c));
+                        c = self.nodes[c.0].sibling;
+                    }
+                }
+                Step::Leave(b) => {
+                    let mut max = self.nodes[b.0].dom_pre;
+                    let mut c = self.nodes[b.0].child;
+                    while c != NONE_BLOCK {
+                        max = max.max(self.nodes[c.0].dom_pre_max);
+                        c = self.nodes[c.0].sibling;
+                    }
+                    self.nodes[b.0].dom_pre_max = max;
+                }
+            }
+        }
     }
 
-    /// Return true if `left` is dominated by `right`.
+    /// Root → self; unreachable → `NONE_BLOCK`.
+    pub fn idom(&self, block: BlockId) -> BlockId {
+        self.nodes[block.0].idom
+    }
+
+    /// O(1): `left`'s preorder must fall in `right`'s `[dom_pre, dom_pre_max]`.
     pub fn is_dominated_by(&self, left: BlockId, right: BlockId) -> bool {
-        if self.idom(left) == IDOM_NONE { return false; }
-        let mut block = left;
-        loop {
-            if block == right { return true; }
-            if self.idom(block) == block { return false; }
-            block = self.idom(block);
-        }
+        let l = &self.nodes[left.0];
+        let r = &self.nodes[right.0];
+        l.dom_pre != 0
+            && r.dom_pre <= l.dom_pre
+            && l.dom_pre <= r.dom_pre_max
+    }
+
+    /// Dom-tree children of `block`, RPO-ascending.
+    pub fn children(&self, block: BlockId) -> ChildIter<'_> {
+        ChildIter { dominators: self, next: self.nodes[block.0].child }
     }
 
     /// Compute the full dominator set for `block` by walking the idom chain to the root.
@@ -8707,7 +8834,7 @@ impl Dominators {
     /// production code should use `idom()` or `is_dominated_by()` instead.
     pub fn dominators(&self, block: BlockId) -> Vec<BlockId> {
         let mut doms = Vec::new();
-        if self.idom(block) != IDOM_NONE {
+        if self.idom(block) != NONE_BLOCK {
             let mut b = block;
             loop {
                 doms.push(b);
@@ -8717,6 +8844,23 @@ impl Dominators {
         }
         doms.sort();
         doms
+    }
+}
+
+pub struct ChildIter<'a> {
+    dominators: &'a Dominators,
+    next: BlockId,
+}
+
+impl<'a> Iterator for ChildIter<'a> {
+    type Item = BlockId;
+    fn next(&mut self) -> Option<BlockId> {
+        if self.next == NONE_BLOCK {
+            return None;
+        }
+        let cur = self.next;
+        self.next = self.dominators.nodes[cur.0].sibling;
+        Some(cur)
     }
 }
 

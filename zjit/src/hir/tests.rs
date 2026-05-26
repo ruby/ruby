@@ -5933,6 +5933,390 @@ pub(crate) mod hir_build_tests {
 
         assert!(!dominators.is_dominated_by(bb1, bb2));
     }
+
+    #[test]
+    fn test_dominator_children_linear() {
+        let mut function = Function::new(std::ptr::null());
+
+        let entries = function.entries_block;
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+
+        function.push_insn(bb0, Insn::Jump(edge(bb1)));
+        function.push_insn(bb1, Insn::Jump(edge(bb2)));
+        let retval = function.push_insn(bb2, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb2, Insn::Return { val: retval });
+
+        function.seal_entries();
+
+        let dominators = Dominators::new(&function);
+
+        assert_eq!(dominators.children(entries).collect::<Vec<_>>(), vec![bb0]);
+        assert_eq!(dominators.children(bb0).collect::<Vec<_>>(), vec![bb1]);
+        assert_eq!(dominators.children(bb1).collect::<Vec<_>>(), vec![bb2]);
+        assert_eq!(dominators.children(bb2).collect::<Vec<_>>(), Vec::<BlockId>::new());
+    }
+
+    #[test]
+    fn test_dominator_children_diamond() {
+        let mut function = Function::new(std::ptr::null());
+
+        let entries = function.entries_block;
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+        let bb3 = function.new_block(0);
+
+        let val = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb0, Insn::CondBranch { val, if_true: edge(bb1), if_false: edge(bb2) });
+
+        function.push_insn(bb1, Insn::Jump(edge(bb3)));
+        function.push_insn(bb2, Insn::Jump(edge(bb3)));
+
+        let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb3, Insn::Return { val: retval });
+
+        function.seal_entries();
+
+        let dominators = Dominators::new(&function);
+
+        assert_eq!(dominators.children(entries).collect::<Vec<_>>(), vec![bb0]);
+        assert_eq!(dominators.children(bb0).collect::<Vec<_>>(), vec![bb1, bb2, bb3]);
+        assert_eq!(dominators.children(bb1).collect::<Vec<_>>(), Vec::<BlockId>::new());
+        assert_eq!(dominators.children(bb2).collect::<Vec<_>>(), Vec::<BlockId>::new());
+        assert_eq!(dominators.children(bb3).collect::<Vec<_>>(), Vec::<BlockId>::new());
+    }
+
+    #[test]
+    fn test_dominator_children_with_jit_entries() {
+        let mut function = Function::new(std::ptr::null());
+
+        let entries = function.entries_block;
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        function.jit_entry_blocks.push(bb1);
+        let bb2 = function.new_block(0);
+
+        function.push_insn(bb0, Insn::Jump(edge(bb2)));
+        function.push_insn(bb1, Insn::Jump(edge(bb2)));
+
+        let retval = function.push_insn(bb2, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb2, Insn::Return { val: retval });
+
+        function.seal_entries();
+
+        let dominators = Dominators::new(&function);
+
+        assert_eq!(dominators.children(entries).collect::<Vec<_>>(), vec![bb0, bb1, bb2]);
+        assert_eq!(dominators.children(bb0).collect::<Vec<_>>(), Vec::<BlockId>::new());
+        assert_eq!(dominators.children(bb1).collect::<Vec<_>>(), Vec::<BlockId>::new());
+        assert_eq!(dominators.children(bb2).collect::<Vec<_>>(), Vec::<BlockId>::new());
+    }
+
+    #[test]
+    fn test_dominator_children_unreachable() {
+        let mut function = Function::new(std::ptr::null());
+
+        let entries = function.entries_block;
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+
+        function.push_insn(bb0, Insn::Jump(edge(bb1)));
+        let retval = function.push_insn(bb1, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb1, Insn::Return { val: retval });
+
+        // bb2 is unreachable but needs a terminator for validity.
+        let v = function.push_insn(bb2, Insn::Const { val: Const::CBool(false) });
+        function.push_insn(bb2, Insn::Return { val: v });
+
+        function.seal_entries();
+
+        let dominators = Dominators::new(&function);
+
+        assert_eq!(dominators.children(entries).collect::<Vec<_>>(), vec![bb0]);
+        assert_eq!(dominators.children(bb0).collect::<Vec<_>>(), vec![bb1]);
+        assert_eq!(dominators.children(bb1).collect::<Vec<_>>(), Vec::<BlockId>::new());
+        assert_eq!(dominators.children(bb2).collect::<Vec<_>>(), Vec::<BlockId>::new());
+    }
+
+    /// Reference impl: idom-chain walk, independent of `is_dominated_by`.
+    fn is_dominated_by_chain_walk(dominators: &Dominators, left: BlockId, right: BlockId) -> bool {
+        if dominators.idom(left) == NONE_BLOCK {
+            return false;
+        }
+        let mut b = left;
+        loop {
+            if b == right {
+                return true;
+            }
+            if dominators.idom(b) == b {
+                return false;
+            }
+            b = dominators.idom(b);
+        }
+    }
+
+    fn diamond() -> (Function, [BlockId; 4]) {
+        let mut function = Function::new(std::ptr::null());
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+        let bb3 = function.new_block(0);
+        let val = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb0, Insn::CondBranch { val, if_true: edge(bb1), if_false: edge(bb2) });
+        function.push_insn(bb1, Insn::Jump(edge(bb3)));
+        function.push_insn(bb2, Insn::Jump(edge(bb3)));
+        let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb3, Insn::Return { val: retval });
+        function.seal_entries();
+        (function, [bb0, bb1, bb2, bb3])
+    }
+
+    /// bb0 -> bb1 -> bb2 -> bb1, bb2 -> bb3 (back-edge).
+    fn loop_cfg() -> (Function, [BlockId; 4]) {
+        let mut function = Function::new(std::ptr::null());
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+        let bb3 = function.new_block(0);
+        function.push_insn(bb0, Insn::Jump(edge(bb1)));
+        function.push_insn(bb1, Insn::Jump(edge(bb2)));
+        let cond = function.push_insn(bb2, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb2, Insn::CondBranch { val: cond, if_true: edge(bb1), if_false: edge(bb3) });
+        let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
+        function.push_insn(bb3, Insn::Return { val: retval });
+        function.seal_entries();
+        (function, [bb0, bb1, bb2, bb3])
+    }
+
+    #[test]
+    fn test_dom_tree_is_dominated_by_o1_correctness() {
+        let mut cases: Vec<Function> = Vec::new();
+        {
+            // linear: bb0 -> bb1 -> bb2
+            let mut function = Function::new(std::ptr::null());
+            let bb0 = function.entry_block;
+            let bb1 = function.new_block(0);
+            let bb2 = function.new_block(0);
+            function.push_insn(bb0, Insn::Jump(edge(bb1)));
+            function.push_insn(bb1, Insn::Jump(edge(bb2)));
+            let retval = function.push_insn(bb2, Insn::Const { val: Const::CBool(true) });
+            function.push_insn(bb2, Insn::Return { val: retval });
+            function.seal_entries();
+            cases.push(function);
+        }
+        cases.push(diamond().0);
+        cases.push(loop_cfg().0);
+        {
+            // unreachable: bb2 is not reachable from entry.
+            let mut function = Function::new(std::ptr::null());
+            let bb0 = function.entry_block;
+            let bb1 = function.new_block(0);
+            let bb2 = function.new_block(0);
+            function.push_insn(bb0, Insn::Jump(edge(bb1)));
+            let retval = function.push_insn(bb1, Insn::Const { val: Const::CBool(true) });
+            function.push_insn(bb1, Insn::Return { val: retval });
+            let v = function.push_insn(bb2, Insn::Const { val: Const::CBool(false) });
+            function.push_insn(bb2, Insn::Return { val: v });
+            function.seal_entries();
+            cases.push(function);
+        }
+        {
+            // multi-entry: two jit entries merging at bb2.
+            let mut function = Function::new(std::ptr::null());
+            let bb0 = function.entry_block;
+            let bb1 = function.new_block(0);
+            function.jit_entry_blocks.push(bb1);
+            let bb2 = function.new_block(0);
+            function.push_insn(bb0, Insn::Jump(edge(bb2)));
+            function.push_insn(bb1, Insn::Jump(edge(bb2)));
+            let retval = function.push_insn(bb2, Insn::Const { val: Const::CBool(true) });
+            function.push_insn(bb2, Insn::Return { val: retval });
+            function.seal_entries();
+            cases.push(function);
+        }
+
+        for function in &cases {
+            let dominators = Dominators::new(function);
+            let n = function.blocks.len();
+            for i in 0..n {
+                for j in 0..n {
+                    let left = BlockId(i);
+                    let right = BlockId(j);
+                    assert_eq!(
+                        dominators.is_dominated_by(left, right),
+                        is_dominated_by_chain_walk(&dominators, left, right),
+                        "is_dominated_by({:?}, {:?}) disagrees with chain walk",
+                        left, right,
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_dom_tree_preorder_invariant() {
+        let (function, _) = diamond();
+        let dominators = Dominators::new(&function);
+        let n = function.blocks.len();
+        for i in 0..n {
+            let parent = BlockId(i);
+            if dominators.idom(parent) == NONE_BLOCK {
+                continue;
+            }
+            let pre = dominators.nodes[parent.0].dom_pre;
+            let pre_max = dominators.nodes[parent.0].dom_pre_max;
+            assert!(pre >= 1);
+            assert!(pre_max >= pre);
+            for j in 0..n {
+                let other = BlockId(j);
+                if dominators.idom(other) == NONE_BLOCK {
+                    continue;
+                }
+                let other_pre = dominators.nodes[other.0].dom_pre;
+                let in_subtree = is_dominated_by_chain_walk(&dominators, other, parent);
+                let in_interval = pre <= other_pre && other_pre <= pre_max;
+                assert_eq!(in_subtree, in_interval,
+                    "subtree membership for {:?} under {:?} disagrees with interval",
+                    other, parent);
+            }
+        }
+    }
+
+    #[test]
+    fn test_dom_tree_child_iter_rpo_order() {
+        let (function, _) = diamond();
+        let rpo = function.rpo();
+        let rpo_idx: HashMap<BlockId, usize> = rpo
+            .iter()
+            .enumerate()
+            .map(|(i, &b)| (b, i))
+            .collect();
+        let dominators = Dominators::new(&function);
+        for &parent in &rpo {
+            let kids: Vec<BlockId> = dominators.children(parent).collect();
+            for w in kids.windows(2) {
+                assert!(
+                    rpo_idx[&w[0]] < rpo_idx[&w[1]],
+                    "children of {:?} not in RPO order: {:?}",
+                    parent, kids,
+                );
+            }
+        }
+    }
+
+    fn return_val(function: &Function, ret: InsnId) -> InsnId {
+        match &function.insns[ret.0] {
+            Insn::Return { val } => *val,
+            other => panic!("expected Return, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn canonicalize_forwards_guard_use_within_block() {
+        let mut function = Function::new(std::ptr::null());
+        let bb0 = function.entry_block;
+
+        let v_state = function.push_insn(bb0, Insn::Const { val: Const::CBool(true) });
+        let v_val   = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let v_guard = function.push_insn(bb0, Insn::GuardType {
+            val: v_val, guard_type: types::Fixnum, state: v_state,
+        });
+        let ret = function.push_insn(bb0, Insn::Return { val: v_val });
+
+        function.seal_entries();
+        function.dom_scope_rewrite();
+
+        assert_eq!(return_val(&function, ret), v_guard);
+    }
+
+    #[test]
+    fn canonicalize_forwards_across_dominated_block() {
+        let mut function = Function::new(std::ptr::null());
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+
+        let v_state = function.push_insn(bb0, Insn::Const { val: Const::CBool(true) });
+        let v_val   = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let v_guard = function.push_insn(bb0, Insn::GuardType {
+            val: v_val, guard_type: types::Fixnum, state: v_state,
+        });
+        function.push_insn(bb0, Insn::Jump(edge(bb1)));
+        let ret = function.push_insn(bb1, Insn::Return { val: v_val });
+
+        function.seal_entries();
+        function.dom_scope_rewrite();
+
+        assert_eq!(return_val(&function, ret), v_guard);
+    }
+
+    // bb0 -> {bb1, bb2} -> bb3. bb1's guard must not leak into sibling bb2.
+    #[test]
+    fn canonicalize_does_not_forward_to_sibling_block() {
+        let mut function = Function::new(std::ptr::null());
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+        let bb3 = function.new_block(0);
+
+        let v_state = function.push_insn(bb0, Insn::Const { val: Const::CBool(true) });
+        let v_val   = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let v_cond  = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        function.push_insn(bb0, Insn::CondBranch {
+            val: v_cond, if_true: edge(bb1), if_false: edge(bb2),
+        });
+
+        function.push_insn(bb1, Insn::GuardType {
+            val: v_val, guard_type: types::Fixnum, state: v_state,
+        });
+        function.push_insn(bb1, Insn::Jump(edge(bb3)));
+
+        let ret_in_sibling = function.push_insn(bb2, Insn::Return { val: v_val });
+        function.push_insn(bb3, Insn::Unreachable);
+
+        function.seal_entries();
+        function.dom_scope_rewrite();
+
+        assert_eq!(return_val(&function, ret_in_sibling), v_val);
+    }
+
+    // Nested guards on the same value: bb0 installs g0, bb1 installs g1 over g0.
+    // A use of g0 inside bb1 must forward to g1; back in sibling bb2, g0 stays.
+    #[test]
+    fn canonicalize_nested_guards_on_same_value_restore_parent_binding() {
+        let mut function = Function::new(std::ptr::null());
+        let bb0 = function.entry_block;
+        let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
+
+        let v_state = function.push_insn(bb0, Insn::Const { val: Const::CBool(true) });
+        let v_val   = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let v_cond  = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
+        let g0 = function.push_insn(bb0, Insn::GuardType {
+            val: v_val, guard_type: types::Fixnum, state: v_state,
+        });
+        function.push_insn(bb0, Insn::CondBranch {
+            val: v_cond, if_true: edge(bb1), if_false: edge(bb2),
+        });
+
+        let g1 = function.push_insn(bb1, Insn::GuardBitEquals {
+            val: v_val,
+            expected: Const::Value(Qfalse),
+            reason: SideExitReason::GuardSuperMethodEntry,
+            state: v_state,
+            recompile: None,
+        });
+        let ret_inner = function.push_insn(bb1, Insn::Return { val: g0 });
+        let ret_sibling = function.push_insn(bb2, Insn::Return { val: g0 });
+
+        function.seal_entries();
+        function.dom_scope_rewrite();
+
+        assert_eq!(return_val(&function, ret_inner), g1);
+        assert_eq!(return_val(&function, ret_sibling), g0);
+    }
  }
 
  /// Test loop information computation.
