@@ -126,7 +126,7 @@ jobs:
 
       - name: Adjust test timeout
         run: |
-          echo 'RUBY_TEST_TIMEOUT_SCALE=5' >> $GITHUB_ENV
+          echo 'RUBY_TEST_TIMEOUT_SCALE=10' >> $GITHUB_ENV
         if: ${{ matrix.gc.name == 'wbcheck' }}
 
       - run: ${SETARCH} make
