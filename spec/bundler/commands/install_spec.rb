@@ -1332,7 +1332,13 @@ RSpec.describe "bundle install with gem sources" do
         bundle :install
         expect(out).to include("Bundle complete!")
         expect(err).to be_empty
-        expect(File.stat(foo_path).mode & 0o7777).to eq(0o2775)
+        # Linux's SysV-derived mkdir(2) propagates the set-group-ID bit
+        # from the parent directory to newly created subdirectories. BSD
+        # (including macOS) inherits the parent's group via mkdir(2) but
+        # does not copy the set-group-ID bit itself, so the expected
+        # mode differs by platform.
+        expected = RUBY_PLATFORM.include?("darwin") ? 0o0775 : 0o2775
+        expect(File.stat(foo_path).mode & 0o7777).to eq(expected)
       end
     end
   end
