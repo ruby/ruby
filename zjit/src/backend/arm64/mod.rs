@@ -1407,8 +1407,10 @@ impl Assembler {
                     emit_push(cb, opnd.into());
                 },
                 Insn::CPushPair(opnd0, opnd1) => {
+                    let first_push = if let Opnd::UImm(0) | Opnd::Imm(0) = opnd0 { X31 } else { opnd0.into() };
+                    let second_push = if let Opnd::UImm(0) | Opnd::Imm(0) = opnd1 { X31 } else { opnd1.into() };
                     // Second operand ends up at the lower stack address
-                    stp_pre(cb, opnd1.into(), opnd0.into(), A64Opnd::new_mem(64, C_SP_REG, -C_SP_STEP));
+                    stp_pre(cb, second_push, first_push, A64Opnd::new_mem(64, C_SP_REG, -C_SP_STEP));
                 },
                 Insn::CPop { out } => {
                     emit_pop(cb, out.into());
@@ -1417,8 +1419,15 @@ impl Assembler {
                     emit_pop(cb, opnd.into());
                 },
                 Insn::CPopPairInto(opnd0, opnd1) => {
+                    let mut first_pop = opnd0.into();
+                    let second_pop = opnd1.into();
+                    // Avoid illegal load pair into the same register
+                    // by sinking the first pop to the zero register.
+                    if first_pop == second_pop {
+                        first_pop = X31;
+                    }
                     // First operand is popped from the lower stack address
-                    ldp_post(cb, opnd0.into(), opnd1.into(), A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
+                    ldp_post(cb, first_pop, second_pop, A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
                 },
                 Insn::CCall { fptr, .. } => {
                     match fptr {
@@ -2792,17 +2801,17 @@ mod tests {
         0x10: mov x4, #5
         0x14: stp x1, x0, [sp, #-0x10]!
         0x18: stp x3, x2, [sp, #-0x10]!
-        0x1c: str x4, [sp, #-0x10]!
+        0x1c: stp xzr, x4, [sp, #-0x10]!
         0x20: mov x16, #0
         0x24: blr x16
-        0x28: ldr x4, [sp], #0x10
+        0x28: ldp xzr, x4, [sp], #0x10
         0x2c: ldp x3, x2, [sp], #0x10
         0x30: ldp x1, x0, [sp], #0x10
         0x34: adds x0, x0, x1
         0x38: adds x0, x2, x3
         0x3c: adds x0, x2, x4
         ");
-        assert_snapshot!(cb.hexdump(), @"200080d2410080d2620080d2830080d2a40080d2e103bfa9e30bbfa9e40f1ff8100080d200023fd6e40741f8e30bc1a8e103c1a8000001ab400003ab400004ab");
+        assert_snapshot!(cb.hexdump(), @"200080d2410080d2620080d2830080d2a40080d2e103bfa9e30bbfa9ff13bfa9100080d200023fd6ff13c1a8e30bc1a8e103c1a8000001ab400003ab400004ab");
     }
 
     #[test]

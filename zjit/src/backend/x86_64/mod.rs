@@ -1985,22 +1985,22 @@ mod tests {
         0x1c: push rdx
         0x1d: push rcx
         0x1e: push r8
-        0x20: push rdi
-        0x21: mov eax, 0
-        0x26: call rax
-        0x28: pop rdi
+        0x20: push 0
+        0x22: mov eax, 0
+        0x27: call rax
         0x29: pop r8
-        0x2b: pop rcx
-        0x2c: pop rdx
-        0x2d: pop rsi
-        0x2e: pop rdi
-        0x2f: add rdi, rsi
-        0x32: mov rdi, rdx
-        0x35: add rdi, rcx
-        0x38: mov rdi, rdx
-        0x3b: add rdi, r8
+        0x2b: pop r8
+        0x2d: pop rcx
+        0x2e: pop rdx
+        0x2f: pop rsi
+        0x30: pop rdi
+        0x31: add rdi, rsi
+        0x34: mov rdi, rdx
+        0x37: add rdi, rcx
+        0x3a: mov rdi, rdx
+        0x3d: add rdi, r8
         ");
-        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b80500000057565251415057b800000000ffd05f4158595a5e5f4801f74889d74801cf4889d74c01c7");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b8050000005756525141506a00b800000000ffd041584158595a5e5f4801f74889d74801cf4889d74c01c7");
     }
 
     #[test]
