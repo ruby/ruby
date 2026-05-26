@@ -2812,7 +2812,7 @@ impl Assembler
     }
 
     /// Return a traversal of the block graph in reverse post-order.
-    pub fn rpo(&self) -> Vec<BlockId> {
+    pub fn reverse_post_order(&self) -> Vec<BlockId> {
         let entry_blocks: Vec<BlockId> = self.basic_blocks.iter()
             .filter(|block| block.is_entry)
             .map(|block| block.id)
@@ -2937,7 +2937,7 @@ impl Assembler
     }
 
     pub fn block_order(&self) -> Vec<BlockId> {
-        self.rpo()
+        self.reverse_post_order()
     }
 
     /// Calculate live intervals for each VReg.
