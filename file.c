@@ -5520,11 +5520,11 @@ rb_file_join_fastpath(long argc, VALUE *args)
 
         if (tmp_len > 0 && isdirsep(tmp_s[0])) {
             // right side has a leading separator, remove left side separators.
-            long trailing_seps = 0;
-            while (isdirsep(name[len - trailing_seps - 1])) {
-                trailing_seps++;
+            long chomp = len;
+            while (chomp > 0 && isdirsep(name[chomp - 1])) {
+                --chomp;
             }
-            rb_str_set_len(result, len - trailing_seps);
+            rb_str_set_len(result, chomp);
         }
         else if (len < 1 || !isdirsep(name[len - 1])) {
             // neither side have a separator, append one;
