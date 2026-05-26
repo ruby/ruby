@@ -252,6 +252,27 @@ RSpec.describe Bundler::LockfileParser do
       end
     end
 
+    context "when lockfile_path is given" do
+      it "uses the provided path in error messages instead of looking up Bundler.default_lockfile" do
+        expect(Bundler::SharedHelpers).not_to receive(:relative_lockfile_path)
+        parser = described_class.new(lockfile_contents, lockfile_path: "custom/path.lock")
+        expect(parser.valid?).to be(true)
+        rake_spec = parser.specs.last
+        checksums = parser.sources.last.checksum_store.to_lock(rake_spec)
+        expected_checksum = Bundler::Checksum.from_lock(
+          "sha256=814828c34f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e8",
+          "custom/path.lock:20:17"
+        )
+        expect(checksums).to eq("#{rake_spec.lock_name} #{expected_checksum.to_lock}")
+      end
+
+      it "raises with the provided path when the lockfile contains merge conflicts" do
+        expect do
+          described_class.new("<<<<<<<\n", lockfile_path: "custom/path.lock")
+        end.to raise_error(Bundler::LockfileError, %r{custom/path\.lock contains merge conflicts})
+      end
+    end
+
     context "when CHECKSUMS has duplicate checksums in the lockfile that don't match" do
       let(:bad_checksum) { "sha256=c0ffee11c0ffee11c0ffee11c0ffee11c0ffee11c0ffee11c0ffee11c0ffee11" }
       let(:lockfile_contents) { super().split(/(?<=CHECKSUMS\n)/m).insert(1, "  rake (10.3.2) #{bad_checksum}\n").join }

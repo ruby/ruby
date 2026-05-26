@@ -109,7 +109,7 @@ RSpec.describe "The library itself" do
 
   it "does not include any unresolved merge conflicts" do
     error_messages = []
-    exempt = %r{lock/lockfile_spec|quality_spec|vcr_cassettes|\.ronn|lockfile_parser\.rb}
+    exempt = %r{lock/lockfile_spec|quality_spec|vcr_cassettes|\.ronn|lockfile_parser}
     tracked_files.each do |filename|
       next if filename&.match?(exempt)
       error_messages << check_for_git_merge_conflicts(filename)

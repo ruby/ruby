@@ -95,14 +95,14 @@ module Bundler
       lockfile_contents.split(BUNDLED).last.strip
     end
 
-    def initialize(lockfile, strict: false)
+    def initialize(lockfile, strict: false, lockfile_path: nil)
       @platforms    = []
       @sources      = []
       @metadata_source = Source::Metadata.new
       @dependencies = {}
       @parse_method = nil
       @specs        = {}
-      @lockfile_path = begin
+      @lockfile_path = lockfile_path || begin
         SharedHelpers.relative_lockfile_path
       rescue GemfileNotFound
         "Gemfile.lock"
