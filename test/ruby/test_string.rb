@@ -851,7 +851,6 @@ CODE
     assert_equal(S("\u{AB}"), S('"\\u00AB"').undump)
     assert_equal(S("\u{ABC}"), S('"\\u0ABC"').undump)
     assert_equal(S("\uABCD"), S('"\\uABCD"').undump)
-    assert_equal(S("\uABCD"), S('"\\uABCD"').undump)
     assert_equal(S("\u{ABCDE}"), S('"\\u{ABCDE}"').undump)
     assert_equal(S("\u{10ABCD}"), S('"\\u{10ABCD}"').undump)
     assert_equal(S("\u{ABCDE 10ABCD}"), S('"\\u{ABCDE 10ABCD}"').undump)
@@ -2629,7 +2628,7 @@ CODE
   end
 
   def test_upcase
-    assert_equal(S("HELLO"), S("hello").upcase)
+    assert_equal(S("HELLO"), S("helLO").upcase)
     assert_equal(S("HELLO"), S("hello").upcase)
     assert_equal(S("HELLO"), S("HELLO").upcase)
     assert_equal(S("ABC HELLO 123"), S("abc HELLO 123").upcase)
