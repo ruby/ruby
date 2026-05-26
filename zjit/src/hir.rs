@@ -1254,8 +1254,9 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write!(f, " # SendFallbackReason: {reason}")?;
                 Ok(())
             }
-            Insn::SendWithoutBlockDirect { recv, cd, iseq, args, .. } => {
-                write!(f, "SendWithoutBlockDirect {recv}, :{} ({:?})", ruby_call_method_name(*cd), self.ptr_map.map_ptr(iseq))?;
+            Insn::SendWithoutBlockDirect { recv, cme, iseq, args, .. } => {
+                let method_name = unsafe { (**cme).called_id };
+                write!(f, "SendWithoutBlockDirect {recv}, :{} ({:?})", method_name, self.ptr_map.map_ptr(iseq))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
