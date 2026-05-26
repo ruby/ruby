@@ -107,6 +107,33 @@ class TestGemSafeYAML < Gem::TestCase
     assert_match(/unspecified class/, exception.message)
   end
 
+  def test_disallowed_symbol_not_interned
+    unique = "rejected_symbol_#{rand(1 << 30)}"
+    yaml = <<~YAML
+      --- !ruby/object:Gem::Dependency
+      name: test
+      requirement: !ruby/object:Gem::Requirement
+        requirements:
+        - - ">="
+          - !ruby/object:Gem::Version
+            version: 0
+      type: :#{unique}
+      prerelease: false
+      version_requirements: !ruby/object:Gem::Requirement
+        requirements:
+        - - ">="
+          - !ruby/object:Gem::Version
+            version: 0
+    YAML
+
+    assert_raise(Psych::DisallowedClass) do
+      Gem::YAMLSerializer.load(yaml,
+                               permitted_classes: Gem::SafeYAML::PERMITTED_CLASSES,
+                               permitted_symbols: Gem::SafeYAML::PERMITTED_SYMBOLS)
+    end
+    refute_includes Symbol.all_symbols.map(&:to_s), unique
+  end
+
   def test_yaml_serializer_aliases_disabled
     aliases_enabled = Gem::SafeYAML.aliases_enabled?
     Gem::SafeYAML.aliases_enabled = false

@@ -590,9 +590,14 @@ module Gem
 
         d.instance_variable_set(:@requirement, hash["requirement"] || hash["version_requirements"])
 
-        type = hash["type"]
-        type = type ? type.to_s.sub(/^:/, "").to_sym : :runtime
-        validate_symbol!(type)
+        raw_type = hash["type"]
+        if raw_type
+          name = raw_type.to_s.sub(/^:/, "")
+          validate_symbol!(name)
+          type = name.to_sym
+        else
+          type = :runtime
+        end
         d.instance_variable_set(:@type, type)
 
         d.instance_variable_set(:@prerelease, ["true", true].include?(hash["prerelease"]))
@@ -632,13 +637,14 @@ module Gem
         end
       end
 
-      def validate_symbol!(sym)
-        if @permitted_symbols.any? && !@permitted_symbols.include?(sym.to_s)
-          if defined?(Psych::VERSION)
-            raise Psych::DisallowedClass.new("load", sym.inspect)
-          else
-            raise Psych::DisallowedClass, "Tried to load unspecified class: #{sym.inspect}"
-          end
+      def validate_symbol!(name)
+        return if @permitted_symbols.empty? || @permitted_symbols.include?(name)
+
+        label = ":#{name}"
+        if defined?(Psych::VERSION)
+          raise Psych::DisallowedClass.new("load", label)
+        else
+          raise Psych::DisallowedClass, "Tried to load unspecified class: #{label}"
         end
       end
 
