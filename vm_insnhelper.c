@@ -6178,8 +6178,23 @@ rb_vm_invokesuper(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, CALL_
 {
     stack_check(ec);
 
-    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), cd->ci, blockiseq, true);
-    VALUE val = vm_sendish(ec, GET_CFP(), cd, bh, mexp_search_super);
+    struct rb_callinfo adjusted_ci = VM_CI_ON_STACK(vm_ci_mid(cd->ci),
+                                                   vm_ci_flag(cd->ci),
+                                                   vm_ci_argc(cd->ci),
+                                                   vm_ci_kwarg(cd->ci));
+    const struct rb_callcache *original_cc = rbimpl_atomic_ptr_load((void **)&cd->cc, RBIMPL_ATOMIC_ACQUIRE);
+    struct rb_call_data adjusted_cd = {
+        .ci = &adjusted_ci,
+        .cc = original_cc,
+    };
+
+    VALUE bh = vm_caller_setup_arg_block(ec, GET_CFP(), adjusted_cd.ci, blockiseq, true);
+    VALUE val = vm_sendish(ec, GET_CFP(), &adjusted_cd, bh, mexp_search_super);
+
+    if (original_cc != adjusted_cd.cc && vm_cc_markable(adjusted_cd.cc)) {
+        rbimpl_atomic_ptr_store((volatile void **)&cd->cc, (void *)adjusted_cd.cc, RBIMPL_ATOMIC_RELEASE);
+        RB_OBJ_WRITTEN(GET_ISEQ(), Qundef, adjusted_cd.cc);
+    }
 
     VM_EXEC(ec, val);
     return val;
