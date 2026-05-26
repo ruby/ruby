@@ -44,14 +44,14 @@ mod snapshot_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          v8:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [] }
+          v8:Any = Snapshot FrameState { pc: 0x1000, stack: [] }
           PatchPoint NoTracePoint
           v10:Fixnum[1] = Const Value(1)
           v12:Fixnum[2] = Const Value(2)
-          v13:Any = Snapshot FrameState { pc: 0x1008, stack: [v10, v12], locals: [] }
+          v13:Any = Snapshot FrameState { pc: 0x1008, stack: [v10, v12] }
           PatchPoint MethodRedefined(Integer@0x1010, +@0x1018, cme:0x1020)
           v35:Fixnum[6] = Const Value(6)
-          v21:Any = Snapshot FrameState { pc: 0x1048, stack: [v35], locals: [] }
+          v21:Any = Snapshot FrameState { pc: 0x1048, stack: [v35] }
           CheckInterrupts
           Return v35
         ");
@@ -67,27 +67,31 @@ mod snapshot_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v14:Any = Snapshot FrameState { pc: 0x1008, stack: [], locals: [a=v12, b=v13] }
-          v15:Any = Snapshot FrameState { pc: 0x1010, stack: [], locals: [a=v12, b=v13] }
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v12:Any = Snapshot FrameState { pc: 0x1008, stack: [] }
+          v13:Any = Snapshot FrameState { pc: 0x1010, stack: [] }
           PatchPoint NoTracePoint
-          v17:Any = Snapshot FrameState { pc: 0x1018, stack: [v12], locals: [a=v12, b=v13] }
-          v18:Any = Snapshot FrameState { pc: 0x1020, stack: [v12, v13], locals: [a=v12, b=v13] }
-          v19:ArrayExact = NewArray v12, v13
-          v20:Any = Snapshot FrameState { pc: 0x1028, stack: [v19], locals: [a=v12, b=v13] }
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :a@0x1000
+          v17:Any = Snapshot FrameState { pc: 0x1018, stack: [v16] }
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :b@0x1001
+          v20:Any = Snapshot FrameState { pc: 0x1020, stack: [v16, v19] }
+          v21:ArrayExact = NewArray v16, v19
+          v22:Any = Snapshot FrameState { pc: 0x1028, stack: [v21] }
           PatchPoint NoTracePoint
           CheckInterrupts
-          Return v19
+          Return v21
         ");
     }
 
@@ -112,17 +116,17 @@ mod snapshot_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          v8:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [] }
+          v8:Any = Snapshot FrameState { pc: 0x1000, stack: [] }
           PatchPoint NoTracePoint
           v11:Fixnum[3] = Const Value(3)
           v13:Fixnum[1] = Const Value(1)
           v15:Fixnum[2] = Const Value(2)
-          v16:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13, v15], locals: [] }
-          v23:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v13, v15, v11], locals: [] }
+          v16:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13, v15] }
+          v23:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v13, v15, v11] }
           PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
           v25:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)]
           v26:BasicObject = SendDirect v25, 0x1048, :foo (0x1058), v13, v15, v11
-          v18:Any = Snapshot FrameState { pc: 0x1060, stack: [v26], locals: [] }
+          v18:Any = Snapshot FrameState { pc: 0x1060, stack: [v26] }
           PatchPoint NoTracePoint
           CheckInterrupts
           Return v26
@@ -150,15 +154,15 @@ mod snapshot_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          v8:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [] }
+          v8:Any = Snapshot FrameState { pc: 0x1000, stack: [] }
           PatchPoint NoTracePoint
           v11:Fixnum[1] = Const Value(1)
           v13:Fixnum[2] = Const Value(2)
-          v14:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13], locals: [] }
+          v14:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13] }
           PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
           v22:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)]
           v23:BasicObject = SendDirect v22, 0x1048, :foo (0x1058), v11, v13
-          v16:Any = Snapshot FrameState { pc: 0x1060, stack: [v23], locals: [] }
+          v16:Any = Snapshot FrameState { pc: 0x1060, stack: [v23] }
           PatchPoint NoTracePoint
           CheckInterrupts
           Return v23
@@ -186,7 +190,7 @@ mod snapshot_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          v8:Any = Snapshot FrameState { pc: 0x1000, stack: [], locals: [] }
+          v8:Any = Snapshot FrameState { pc: 0x1000, stack: [] }
           PatchPoint NoTracePoint
           v11:Fixnum[5] = Const Value(5)
           v13:Fixnum[6] = Const Value(6)
@@ -196,9 +200,9 @@ mod snapshot_tests {
           v21:Fixnum[2] = Const Value(2)
           v23:Fixnum[7] = Const Value(7)
           v25:Fixnum[8] = Const Value(8)
-          v26:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13, v15, v17, v19, v21, v23, v25], locals: [] }
+          v26:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13, v15, v17, v19, v21, v23, v25] }
           v27:BasicObject = Send v6, :foo, v11, v13, v15, v17, v19, v21, v23, v25 # SendFallbackReason: Too many arguments for LIR
-          v28:Any = Snapshot FrameState { pc: 0x1010, stack: [v27], locals: [] }
+          v28:Any = Snapshot FrameState { pc: 0x1010, stack: [v27] }
           PatchPoint NoTracePoint
           CheckInterrupts
           Return v27
@@ -291,31 +295,34 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :x@0x1000
-          v4:CPtr = LoadPC
-          v5:CPtr[CPtr(0x1001)] = Const CPtr(0x1001)
-          v6:CBool = IsBitEqual v4, v5
-          CondBranch v6, bb3(v1, v3), bb6()
+          v2:CPtr = LoadPC
+          v3:CPtr[CPtr(0x1000)] = Const CPtr(0x1000)
+          v4:CBool = IsBitEqual v2, v3
+          CondBranch v4, bb3(v1), bb6()
         bb6():
-          Jump bb5(v1, v3)
+          Jump bb5(v1)
         bb2():
           EntryPoint JIT(0)
-          v10:BasicObject = LoadArg :self@0
-          v11:NilClass = Const Value(nil)
-          Jump bb3(v10, v11)
-        bb3(v17:BasicObject, v18:BasicObject):
-          v21:Fixnum[1] = Const Value(1)
-          Jump bb5(v17, v21)
+          v8:BasicObject = LoadArg :self@0
+          v9:NilClass = Const Value(nil)
+          v10:CPtr = GetEP 0
+          StoreField v10, :x@0x1001, v9
+          Jump bb3(v8)
+        bb3(v19:BasicObject):
+          v22:Fixnum[1] = Const Value(1)
+          SetLocal :x, l0, EP@3, v22
+          Jump bb5(v19)
         bb4():
           EntryPoint JIT(1)
           v14:BasicObject = LoadArg :self@0
           v15:BasicObject = LoadArg :x@1
-          Jump bb5(v14, v15)
-        bb5(v24:BasicObject, v25:BasicObject):
-          v29:Fixnum[123] = Const Value(123)
+          v16:CPtr = GetEP 0
+          StoreField v16, :x@0x1001, v15
+          Jump bb5(v14)
+        bb5(v26:BasicObject):
+          v30:Fixnum[123] = Const Value(123)
           CheckInterrupts
-          Return v29
+          Return v30
         ");
     }
 
@@ -359,31 +366,33 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :o@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :o@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v14:NilClass = Const Value(nil)
-          v18:BasicObject = GetConstantPath 0x1008
-          v20:BasicObject = CheckMatch v10, v18, CASE
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :o@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :o@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v13:NilClass = Const Value(nil)
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :o@0x1000
+          v19:BasicObject = GetConstantPath 0x1008
+          v21:BasicObject = CheckMatch v16, v19, CASE
           CheckInterrupts
-          v23:CBool = Test v20
-          v24:Truthy = RefineType v20, Truthy
-          CondBranch v23, bb4(v9, v10, v14, v10), bb5()
-        bb4(v36:BasicObject, v37:BasicObject, v38:NilClass, v39:BasicObject):
+          v24:CBool = Test v21
+          v25:Truthy = RefineType v21, Truthy
+          CondBranch v24, bb4(v9, v13, v16), bb5()
+        bb4(v37:BasicObject, v38:NilClass, v39:BasicObject):
           v44:Fixnum[1] = Const Value(1)
           CheckInterrupts
           Return v44
         bb5():
-          v26:Falsy = RefineType v20, Falsy
-          v31:Fixnum[2] = Const Value(2)
+          v27:Falsy = RefineType v21, Falsy
+          v32:Fixnum[2] = Const Value(2)
           CheckInterrupts
-          Return v31
+          Return v32
         ");
     }
 
@@ -406,31 +415,33 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :o@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :o@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v16:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          v17:ArrayExact = ArrayDup v16
-          v19:BasicObject = CheckMatch v10, v17, CASE|ARRAY
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :o@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :o@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v13:CPtr = GetEP 0
+          v14:BasicObject = LoadField v13, :o@0x1000
+          v17:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v18:ArrayExact = ArrayDup v17
+          v20:BasicObject = CheckMatch v14, v18, CASE|ARRAY
           CheckInterrupts
-          v22:CBool = Test v19
-          v23:Truthy = RefineType v19, Truthy
-          CondBranch v22, bb4(v9, v10, v10), bb5()
-        bb4(v34:BasicObject, v35:BasicObject, v36:BasicObject):
+          v23:CBool = Test v20
+          v24:Truthy = RefineType v20, Truthy
+          CondBranch v23, bb4(v9, v14), bb5()
+        bb4(v35:BasicObject, v36:BasicObject):
           v41:Fixnum[1] = Const Value(1)
           CheckInterrupts
           Return v41
         bb5():
-          v25:Falsy = RefineType v19, Falsy
-          v29:Fixnum[2] = Const Value(2)
+          v26:Falsy = RefineType v20, Falsy
+          v30:Fixnum[2] = Const Value(2)
           CheckInterrupts
-          Return v29
+          Return v30
         ");
     }
 
@@ -509,18 +520,20 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v15:ArrayExact = NewArray v10
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v13:CPtr = GetEP 0
+          v14:BasicObject = LoadField v13, :a@0x1000
+          v16:ArrayExact = NewArray v14
           CheckInterrupts
-          Return v15
+          Return v16
         ");
     }
 
@@ -533,20 +546,24 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v19:ArrayExact = NewArray v12, v13
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :a@0x1000
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :b@0x1001
+          v21:ArrayExact = NewArray v16, v19
           CheckInterrupts
-          Return v19
+          Return v21
         ");
     }
 
@@ -559,19 +576,21 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v15:Fixnum[10] = Const Value(10)
-          v17:RangeExact = NewRange v10 NewRangeInclusive v15
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v13:CPtr = GetEP 0
+          v14:BasicObject = LoadField v13, :a@0x1000
+          v16:Fixnum[10] = Const Value(10)
+          v18:RangeExact = NewRange v14 NewRangeInclusive v16
           CheckInterrupts
-          Return v17
+          Return v18
         ");
     }
 
@@ -584,20 +603,24 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v19:RangeExact = NewRange v12 NewRangeInclusive v13
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :a@0x1000
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :b@0x1001
+          v21:RangeExact = NewRange v16 NewRangeInclusive v19
           CheckInterrupts
-          Return v19
+          Return v21
         ");
     }
 
@@ -610,19 +633,21 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v15:Fixnum[10] = Const Value(10)
-          v17:RangeExact = NewRange v10 NewRangeExclusive v15
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v13:CPtr = GetEP 0
+          v14:BasicObject = LoadField v13, :a@0x1000
+          v16:Fixnum[10] = Const Value(10)
+          v18:RangeExact = NewRange v14 NewRangeExclusive v16
           CheckInterrupts
-          Return v17
+          Return v18
         ");
     }
 
@@ -635,20 +660,24 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v19:RangeExact = NewRange v12 NewRangeExclusive v13
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :a@0x1000
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :b@0x1001
+          v21:RangeExact = NewRange v16 NewRangeExclusive v19
           CheckInterrupts
-          Return v19
+          Return v21
         ");
     }
 
@@ -726,22 +755,26 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :aval@0x1000
-          v4:BasicObject = LoadField v2, :bval@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :aval@1
-          v9:BasicObject = LoadArg :bval@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v17:StaticSymbol[:a] = Const Value(VALUE(0x1008))
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :aval@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :aval@0x1000, v5
+          v8:BasicObject = LoadArg :bval@2
+          StoreField v6, :bval@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:StaticSymbol[:a] = Const Value(VALUE(0x1008))
+          v17:CPtr = GetEP 0
+          v18:BasicObject = LoadField v17, :aval@0x1000
           v20:StaticSymbol[:b] = Const Value(VALUE(0x1010))
-          v23:HashExact = NewHash v17: v12, v20: v13
+          v22:CPtr = GetEP 0
+          v23:BasicObject = LoadField v22, :bval@0x1001
+          v25:HashExact = NewHash v15: v18, v20: v23
           CheckInterrupts
-          Return v23
+          Return v25
         ");
     }
 
@@ -1080,17 +1113,21 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          v4:BasicObject = LoadArg :self@0
+          v5:NilClass = Const Value(nil)
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
           v13:Fixnum[1] = Const Value(1)
+          SetLocal :a, l0, EP@3, v13
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :a@0x1000
           CheckInterrupts
-          Return v13
+          Return v19
         ");
     }
 
@@ -1159,34 +1196,43 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:NilClass = Const Value(nil)
-          v5:CPtr = LoadPC
-          v6:CPtr[CPtr(0x1001)] = Const CPtr(0x1001)
-          v7:CBool = IsBitEqual v5, v6
-          CondBranch v7, bb3(v1, v3, v4), bb6()
+          v2:CPtr = LoadPC
+          v3:CPtr[CPtr(0x1000)] = Const CPtr(0x1000)
+          v4:CBool = IsBitEqual v2, v3
+          CondBranch v4, bb3(v1), bb6()
         bb6():
-          Jump bb5(v1, v3, v4)
+          Jump bb5(v1)
         bb2():
           EntryPoint JIT(0)
-          v11:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :self@0
+          v9:NilClass = Const Value(nil)
+          v10:CPtr = GetEP 0
+          StoreField v10, :a@0x1001, v9
           v12:NilClass = Const Value(nil)
-          v13:NilClass = Const Value(nil)
-          Jump bb3(v11, v12, v13)
-        bb3(v20:BasicObject, v21:BasicObject, v22:NilClass):
-          v26:Fixnum[1] = Const Value(1)
-          Jump bb5(v20, v26, v26)
+          StoreField v10, :b@0x1002, v12
+          Jump bb3(v8)
+        bb3(v23:BasicObject):
+          v27:Fixnum[1] = Const Value(1)
+          SetLocal :b, l0, EP@3, v27
+          SetLocal :a, l0, EP@4, v27
+          Jump bb5(v23)
         bb4():
           EntryPoint JIT(1)
           v16:BasicObject = LoadArg :self@0
           v17:BasicObject = LoadArg :a@1
-          v18:NilClass = Const Value(nil)
-          Jump bb5(v16, v17, v18)
-        bb5(v31:BasicObject, v32:BasicObject, v33:NilClass|Fixnum):
-          v39:ArrayExact = NewArray v32, v33
+          v18:CPtr = GetEP 0
+          StoreField v18, :a@0x1001, v17
+          v20:NilClass = Const Value(nil)
+          StoreField v18, :b@0x1002, v20
+          Jump bb5(v16)
+        bb5(v34:BasicObject):
+          v38:CPtr = GetEP 0
+          v39:BasicObject = LoadField v38, :a@0x1001
+          v41:CPtr = GetEP 0
+          v42:BasicObject = LoadField v41, :b@0x1002
+          v44:ArrayExact = NewArray v39, v42
           CheckInterrupts
-          Return v39
+          Return v44
         ");
     }
 
@@ -1202,33 +1248,40 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:NilClass = Const Value(nil)
-          v5:CPtr = LoadPC
-          v6:CPtr[CPtr(0x1001)] = Const CPtr(0x1001)
-          v7:CBool = IsBitEqual v5, v6
-          CondBranch v7, bb3(v1, v3, v4), bb6()
+          v2:CPtr = LoadPC
+          v3:CPtr[CPtr(0x1000)] = Const CPtr(0x1000)
+          v4:CBool = IsBitEqual v2, v3
+          CondBranch v4, bb3(v1), bb6()
         bb6():
-          Jump bb5(v1, v3, v4)
+          Jump bb5(v1)
         bb2():
           EntryPoint JIT(0)
-          v11:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :self@0
+          v9:NilClass = Const Value(nil)
+          v10:CPtr = GetEP 0
+          StoreField v10, :a@0x1001, v9
           v12:NilClass = Const Value(nil)
-          v13:NilClass = Const Value(nil)
-          Jump bb3(v11, v12, v13)
-        bb3(v20:BasicObject, v21:BasicObject, v22:NilClass):
+          StoreField v10, :b@0x1002, v12
+          Jump bb3(v8)
+        bb3(v23:BasicObject):
           SideExit UnhandledYARVInsn(trace_putobject_INT2FIX_1_)
         bb4():
           EntryPoint JIT(1)
           v16:BasicObject = LoadArg :self@0
           v17:BasicObject = LoadArg :a@1
-          v18:NilClass = Const Value(nil)
-          Jump bb5(v16, v17, v18)
-        bb5(v27:BasicObject, v28:BasicObject, v29:NilClass):
-          v35:ArrayExact = NewArray v28, v29
+          v18:CPtr = GetEP 0
+          StoreField v18, :a@0x1001, v17
+          v20:NilClass = Const Value(nil)
+          StoreField v18, :b@0x1002, v20
+          Jump bb5(v16)
+        bb5(v28:BasicObject):
+          v32:CPtr = GetEP 0
+          v33:BasicObject = LoadField v32, :a@0x1001
+          v35:CPtr = GetEP 0
+          v36:BasicObject = LoadField v35, :b@0x1002
+          v38:ArrayExact = NewArray v33, v36
           CheckInterrupts
-          Return v35
+          Return v38
         ");
     }
 
@@ -1242,29 +1295,33 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:CPtr = LoadPC
-          v5:CPtr[CPtr(0x1001)] = Const CPtr(0x1001)
-          v6:CBool = IsBitEqual v4, v5
-          CondBranch v6, bb3(v1, v3), bb6()
+          v2:CPtr = LoadPC
+          v3:CPtr[CPtr(0x1000)] = Const CPtr(0x1000)
+          v4:CBool = IsBitEqual v2, v3
+          CondBranch v4, bb3(v1), bb6()
         bb6():
-          Jump bb5(v1, v3)
+          Jump bb5(v1)
         bb2():
           EntryPoint JIT(0)
-          v10:BasicObject = LoadArg :self@0
-          v11:NilClass = Const Value(nil)
-          Jump bb3(v10, v11)
-        bb3(v17:BasicObject, v18:BasicObject):
+          v8:BasicObject = LoadArg :self@0
+          v9:NilClass = Const Value(nil)
+          v10:CPtr = GetEP 0
+          StoreField v10, :a@0x1001, v9
+          Jump bb3(v8)
+        bb3(v19:BasicObject):
           SideExit UnhandledYARVInsn(definemethod)
         bb4():
           EntryPoint JIT(1)
           v14:BasicObject = LoadArg :self@0
           v15:BasicObject = LoadArg :a@1
-          Jump bb5(v14, v15)
-        bb5(v23:BasicObject, v24:BasicObject):
+          v16:CPtr = GetEP 0
+          StoreField v16, :a@0x1001, v15
+          Jump bb5(v14)
+        bb5(v24:BasicObject):
+          v28:CPtr = GetEP 0
+          v29:BasicObject = LoadField v28, :a@0x1001
           CheckInterrupts
-          Return v24
+          Return v29
         ");
     }
 
@@ -1278,22 +1335,26 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:NilClass = Const Value(nil)
-          Jump bb3(v6, v7)
+          v4:BasicObject = LoadArg :self@0
+          v5:NilClass = Const Value(nil)
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          Jump bb3(v4)
         bb4():
           EntryPoint JIT(1)
           v10:BasicObject = LoadArg :self@0
           v11:BasicObject = LoadArg :a@1
-          Jump bb3(v10, v11)
-        bb3(v13:BasicObject, v14:BasicObject):
+          v12:CPtr = GetEP 0
+          StoreField v12, :a@0x1000, v11
+          Jump bb3(v10)
+        bb3(v15:BasicObject):
+          v21:CPtr = GetEP 0
+          v22:BasicObject = LoadField v21, :a@0x1000
           CheckInterrupts
-          Return v14
+          Return v22
         ");
     }
 
@@ -1453,25 +1514,27 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :cond@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :cond@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :cond@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :cond@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v13:CPtr = GetEP 0
+          v14:BasicObject = LoadField v13, :cond@0x1000
           CheckInterrupts
-          v16:CBool = Test v10
-          v17:Falsy = RefineType v10, Falsy
-          CondBranch v16, bb5(), bb4(v9, v17)
+          v17:CBool = Test v14
+          v18:Falsy = RefineType v14, Falsy
+          CondBranch v17, bb5(), bb4(v9)
         bb5():
-          v19:Truthy = RefineType v10, Truthy
-          v22:Fixnum[3] = Const Value(3)
+          v20:Truthy = RefineType v14, Truthy
+          v23:Fixnum[3] = Const Value(3)
           CheckInterrupts
-          Return v22
-        bb4(v27:BasicObject, v28:Falsy):
+          Return v23
+        bb4(v28:BasicObject):
           v32:Fixnum[4] = Const Value(4)
           CheckInterrupts
           Return v32
@@ -1495,32 +1558,38 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :cond@0x1000
-          v4:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :cond@1
-          v9:NilClass = Const Value(nil)
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :cond@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :cond@0x1000, v5
+          v8:NilClass = Const Value(nil)
+          StoreField v6, :result@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :cond@0x1000
           CheckInterrupts
-          v19:CBool = Test v12
-          v20:Falsy = RefineType v12, Falsy
-          CondBranch v19, bb6(), bb4(v11, v20, v13)
+          v19:CBool = Test v16
+          v20:Falsy = RefineType v16, Falsy
+          CondBranch v19, bb6(), bb4(v11)
         bb6():
-          v22:Truthy = RefineType v12, Truthy
+          v22:Truthy = RefineType v16, Truthy
           v25:Fixnum[3] = Const Value(3)
+          SetLocal :result, l0, EP@3, v25
           CheckInterrupts
-          Jump bb5(v11, v22, v25)
-        bb4(v30:BasicObject, v31:Falsy, v32:NilClass):
-          v36:Fixnum[4] = Const Value(4)
-          Jump bb5(v30, v31, v36)
-        bb5(v39:BasicObject, v40:BasicObject, v41:Fixnum):
+          Jump bb5(v11)
+        bb4(v31:BasicObject):
+          v35:Fixnum[4] = Const Value(4)
+          SetLocal :result, l0, EP@3, v35
+          Jump bb5(v31)
+        bb5(v39:BasicObject):
+          v43:CPtr = GetEP 0
+          v44:BasicObject = LoadField v43, :result@0x1001
           CheckInterrupts
-          Return v41
+          Return v44
         ");
     }
 
@@ -1536,20 +1605,24 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v20:BasicObject = Send v12, :+, v13 # SendFallbackReason: Uncategorized(opt_plus)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :a@0x1000
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :b@0x1001
+          v22:BasicObject = Send v16, :+, v19 # SendFallbackReason: Uncategorized(opt_plus)
           CheckInterrupts
-          Return v20
+          Return v22
         ");
     }
 
@@ -1565,20 +1638,24 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v20:BasicObject = Send v12, :-, v13 # SendFallbackReason: Uncategorized(opt_minus)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :a@0x1000
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :b@0x1001
+          v22:BasicObject = Send v16, :-, v19 # SendFallbackReason: Uncategorized(opt_minus)
           CheckInterrupts
-          Return v20
+          Return v22
         ");
     }
 
@@ -1594,20 +1671,24 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v20:BasicObject = Send v12, :*, v13 # SendFallbackReason: Uncategorized(opt_mult)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :a@0x1000
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :b@0x1001
+          v22:BasicObject = Send v16, :*, v19 # SendFallbackReason: Uncategorized(opt_mult)
           CheckInterrupts
-          Return v20
+          Return v22
         ");
     }
 
@@ -1623,20 +1704,24 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v20:BasicObject = Send v12, :/, v13 # SendFallbackReason: Uncategorized(opt_div)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :a@0x1000
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :b@0x1001
+          v22:BasicObject = Send v16, :/, v19 # SendFallbackReason: Uncategorized(opt_div)
           CheckInterrupts
-          Return v20
+          Return v22
         ");
     }
 
@@ -1652,20 +1737,24 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v20:BasicObject = Send v12, :%, v13 # SendFallbackReason: Uncategorized(opt_mod)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :a@0x1000
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :b@0x1001
+          v22:BasicObject = Send v16, :%, v19 # SendFallbackReason: Uncategorized(opt_mod)
           CheckInterrupts
-          Return v20
+          Return v22
         ");
     }
 
@@ -1681,20 +1770,24 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v20:BasicObject = Send v12, :==, v13 # SendFallbackReason: Uncategorized(opt_eq)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :a@0x1000
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :b@0x1001
+          v22:BasicObject = Send v16, :==, v19 # SendFallbackReason: Uncategorized(opt_eq)
           CheckInterrupts
-          Return v20
+          Return v22
         ");
     }
 
@@ -1710,20 +1803,24 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v20:BasicObject = Send v12, :!=, v13 # SendFallbackReason: Uncategorized(opt_neq)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :a@0x1000
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :b@0x1001
+          v22:BasicObject = Send v16, :!=, v19 # SendFallbackReason: Uncategorized(opt_neq)
           CheckInterrupts
-          Return v20
+          Return v22
         ");
     }
 
@@ -1739,20 +1836,24 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v20:BasicObject = Send v12, :<, v13 # SendFallbackReason: Uncategorized(opt_lt)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :a@0x1000
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :b@0x1001
+          v22:BasicObject = Send v16, :<, v19 # SendFallbackReason: Uncategorized(opt_lt)
           CheckInterrupts
-          Return v20
+          Return v22
         ");
     }
 
@@ -1768,20 +1869,24 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v20:BasicObject = Send v12, :<=, v13 # SendFallbackReason: Uncategorized(opt_le)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :a@0x1000
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :b@0x1001
+          v22:BasicObject = Send v16, :<=, v19 # SendFallbackReason: Uncategorized(opt_le)
           CheckInterrupts
-          Return v20
+          Return v22
         ");
     }
 
@@ -1797,20 +1902,24 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v20:BasicObject = Send v12, :>, v13 # SendFallbackReason: Uncategorized(opt_gt)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :a@0x1000
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :b@0x1001
+          v22:BasicObject = Send v16, :>, v19 # SendFallbackReason: Uncategorized(opt_gt)
           CheckInterrupts
-          Return v20
+          Return v22
         ");
     }
 
@@ -1833,38 +1942,51 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          v3:NilClass = Const Value(nil)
-          Jump bb3(v1, v2, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:NilClass = Const Value(nil)
+          v4:BasicObject = LoadArg :self@0
+          v5:NilClass = Const Value(nil)
+          v6:CPtr = GetEP 0
+          StoreField v6, :result@0x1000, v5
           v8:NilClass = Const Value(nil)
-          Jump bb3(v6, v7, v8)
-        bb3(v10:BasicObject, v11:NilClass, v12:NilClass):
-          v16:Fixnum[0] = Const Value(0)
+          StoreField v6, :times@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:Fixnum[0] = Const Value(0)
+          SetLocal :result, l0, EP@4, v15
           v20:Fixnum[10] = Const Value(10)
+          SetLocal :times, l0, EP@3, v20
           CheckInterrupts
-          Jump bb5(v10, v16, v20)
-        bb5(v26:BasicObject, v27:BasicObject, v28:BasicObject):
-          v32:Fixnum[0] = Const Value(0)
-          v35:BasicObject = Send v28, :>, v32 # SendFallbackReason: Uncategorized(opt_gt)
+          Jump bb5(v11)
+        bb5(v27:BasicObject):
+          v30:CPtr = GetEP 0
+          v31:BasicObject = LoadField v30, :times@0x1001
+          v33:Fixnum[0] = Const Value(0)
+          v36:BasicObject = Send v31, :>, v33 # SendFallbackReason: Uncategorized(opt_gt)
           CheckInterrupts
-          v38:CBool = Test v35
-          v39:Truthy = RefineType v35, Truthy
-          CondBranch v38, bb4(v26, v27, v28), bb6()
-        bb4(v51:BasicObject, v52:BasicObject, v53:BasicObject):
-          v58:Fixnum[1] = Const Value(1)
-          v61:BasicObject = Send v52, :+, v58 # SendFallbackReason: Uncategorized(opt_plus)
-          v66:Fixnum[1] = Const Value(1)
-          v69:BasicObject = Send v53, :-, v66 # SendFallbackReason: Uncategorized(opt_minus)
-          Jump bb5(v51, v61, v69)
+          v39:CBool = Test v36
+          v40:Truthy = RefineType v36, Truthy
+          CondBranch v39, bb4(v27), bb6()
+        bb4(v54:BasicObject):
+          v58:CPtr = GetEP 0
+          v59:BasicObject = LoadField v58, :result@0x1000
+          v61:Fixnum[1] = Const Value(1)
+          v64:BasicObject = Send v59, :+, v61 # SendFallbackReason: Uncategorized(opt_plus)
+          SetLocal :result, l0, EP@4, v64
+          v69:CPtr = GetEP 0
+          v70:BasicObject = LoadField v69, :times@0x1001
+          v72:Fixnum[1] = Const Value(1)
+          v75:BasicObject = Send v70, :-, v72 # SendFallbackReason: Uncategorized(opt_minus)
+          SetLocal :times, l0, EP@3, v75
+          Jump bb5(v54)
         bb6():
-          v41:Falsy = RefineType v35, Falsy
-          v43:NilClass = Const Value(nil)
+          v42:Falsy = RefineType v36, Falsy
+          v44:NilClass = Const Value(nil)
+          v48:CPtr = GetEP 0
+          v49:BasicObject = LoadField v48, :result@0x1000
           CheckInterrupts
-          Return v27
+          Return v49
         ");
     }
 
@@ -1880,20 +2002,24 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v20:BasicObject = Send v12, :>=, v13 # SendFallbackReason: Uncategorized(opt_ge)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :a@0x1000
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :b@0x1001
+          v22:BasicObject = Send v16, :>=, v19 # SendFallbackReason: Uncategorized(opt_ge)
           CheckInterrupts
-          Return v20
+          Return v22
         ");
     }
 
@@ -1914,28 +2040,32 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          v4:BasicObject = LoadArg :self@0
+          v5:NilClass = Const Value(nil)
+          v6:CPtr = GetEP 0
+          StoreField v6, :cond@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
           v13:TrueClass = Const Value(true)
+          SetLocal :cond, l0, EP@3, v13
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :cond@0x1000
           CheckInterrupts
-          v19:CBool[true] = Test v13
-          v20 = RefineType v13, Falsy
-          CondBranch v19, bb5(), bb4(v8, v20)
+          v22:CBool = Test v19
+          v23:Falsy = RefineType v19, Falsy
+          CondBranch v22, bb5(), bb4(v9)
         bb5():
-          v22:TrueClass = RefineType v13, Truthy
-          v25:Fixnum[3] = Const Value(3)
+          v25:Truthy = RefineType v19, Truthy
+          v28:Fixnum[3] = Const Value(3)
           CheckInterrupts
-          Return v25
-        bb4(v30, v31):
-          v35 = Const Value(4)
+          Return v28
+        bb4(v33:BasicObject):
+          v37:Fixnum[4] = Const Value(4)
           CheckInterrupts
-          Return v35
+          Return v37
         ");
     }
 
@@ -1985,21 +2115,20 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v15:BasicObject = Send v10, 0x1008, :each # SendFallbackReason: Uncategorized(send)
-          PatchPoint NoEPEscape(test)
-          v18:CPtr = LoadSP
-          v19:BasicObject = LoadField v18, :a@0x1000
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v13:CPtr = GetEP 0
+          v14:BasicObject = LoadField v13, :a@0x1000
+          v16:BasicObject = Send v14, 0x1008, :each # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v15
+          Return v16
         ");
     }
 
@@ -2073,19 +2202,21 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v16:ArrayExact = ToArray v10
-          v18:BasicObject = Send v9, :foo, v16 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v14:CPtr = GetEP 0
+          v15:BasicObject = LoadField v14, :a@0x1000
+          v17:ArrayExact = ToArray v15
+          v19:BasicObject = Send v9, :foo, v17 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
-          Return v18
+          Return v19
         ");
     }
 
@@ -2099,18 +2230,20 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v16:BasicObject = Send v9, &block, :foo, v10 # SendFallbackReason: Uncategorized(send)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v14:CPtr = GetEP 0
+          v15:BasicObject = LoadField v14, :a@0x1000
+          v17:BasicObject = Send v9, &block, :foo, v15 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v16
+          Return v17
         ");
     }
 
@@ -2124,19 +2257,19 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v15:Fixnum[1] = Const Value(1)
-          v17:BasicObject = Send v9, :foo, v15 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v14:Fixnum[1] = Const Value(1)
+          v16:BasicObject = Send v9, :foo, v14 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
-          Return v17
+          Return v16
         ");
     }
 
@@ -2150,18 +2283,20 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v16:BasicObject = Send v9, :foo, v10 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v14:CPtr = GetEP 0
+          v15:BasicObject = LoadField v14, :a@0x1000
+          v17:BasicObject = Send v9, :foo, v15 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
-          Return v16
+          Return v17
         ");
     }
 
@@ -2244,18 +2379,20 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :...@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :...@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v16:BasicObject = InvokeSuperForward v9, 0x1008, v10 # SendFallbackReason: InvokeSuperForward: not yet specialized
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :...@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :...@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v14:CPtr = GetEP 0
+          v15:BasicObject = LoadField v14, :...@0x1000
+          v17:BasicObject = InvokeSuperForward v9, 0x1008, v15 # SendFallbackReason: InvokeSuperForward: not yet specialized
           CheckInterrupts
-          Return v16
+          Return v17
         ");
     }
 
@@ -2269,21 +2406,20 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :...@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :...@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v16:BasicObject = InvokeSuperForward v9, 0x1008, v10 # SendFallbackReason: InvokeSuperForward: not yet specialized
-          PatchPoint NoEPEscape(test)
-          v19:CPtr = LoadSP
-          v20:BasicObject = LoadField v19, :...@0x1000
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :...@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :...@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v14:CPtr = GetEP 0
+          v15:BasicObject = LoadField v14, :...@0x1000
+          v17:BasicObject = InvokeSuperForward v9, 0x1008, v15 # SendFallbackReason: InvokeSuperForward: not yet specialized
           CheckInterrupts
-          Return v16
+          Return v17
         ");
     }
 
@@ -2297,20 +2433,22 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :...@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :...@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v16:BasicObject = InvokeSuperForward v9, 0x1008, v10 # SendFallbackReason: InvokeSuperForward: not yet specialized
-          v18:Fixnum[1] = Const Value(1)
-          v21:BasicObject = Send v16, :+, v18 # SendFallbackReason: Uncategorized(opt_plus)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :...@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :...@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v14:CPtr = GetEP 0
+          v15:BasicObject = LoadField v14, :...@0x1000
+          v17:BasicObject = InvokeSuperForward v9, 0x1008, v15 # SendFallbackReason: InvokeSuperForward: not yet specialized
+          v19:Fixnum[1] = Const Value(1)
+          v22:BasicObject = Send v17, :+, v19 # SendFallbackReason: Uncategorized(opt_plus)
           CheckInterrupts
-          Return v21
+          Return v22
         ");
     }
 
@@ -2324,19 +2462,21 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :...@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :...@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v15:Fixnum[1] = Const Value(1)
-          v18:BasicObject = InvokeSuperForward v9, 0x1008, v15, v10 # SendFallbackReason: InvokeSuperForward: not yet specialized
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :...@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :...@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v14:Fixnum[1] = Const Value(1)
+          v16:CPtr = GetEP 0
+          v17:BasicObject = LoadField v16, :...@0x1000
+          v19:BasicObject = InvokeSuperForward v9, 0x1008, v14, v17 # SendFallbackReason: InvokeSuperForward: not yet specialized
           CheckInterrupts
-          Return v18
+          Return v19
         ");
     }
 
@@ -2348,18 +2488,18 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :...@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :...@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v14:NilClass = Const Value(nil)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :...@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :...@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v13:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v14
+          Return v13
         ");
     }
 
@@ -2375,26 +2515,27 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v15:ClassSubclass[VMFrozenCore] = Const Value(VALUE(0x1008))
-          v17:HashExact = NewHash
-          PatchPoint NoEPEscape(test)
-          v22:BasicObject = Send v15, :core#hash_merge_kwd, v17, v10 # SendFallbackReason: Uncategorized(opt_send_without_block)
-          v24:ClassSubclass[VMFrozenCore] = Const Value(VALUE(0x1008))
-          v27:StaticSymbol[:b] = Const Value(VALUE(0x1010))
-          v29:Fixnum[1] = Const Value(1)
-          v31:BasicObject = Send v24, :core#hash_merge_ptr, v22, v27, v29 # SendFallbackReason: Uncategorized(opt_send_without_block)
-          v33:BasicObject = Send v9, :foo, v31 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v14:ClassSubclass[VMFrozenCore] = Const Value(VALUE(0x1008))
+          v16:HashExact = NewHash
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :a@0x1000
+          v21:BasicObject = Send v14, :core#hash_merge_kwd, v16, v19 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v23:ClassSubclass[VMFrozenCore] = Const Value(VALUE(0x1008))
+          v26:StaticSymbol[:b] = Const Value(VALUE(0x1010))
+          v28:Fixnum[1] = Const Value(1)
+          v30:BasicObject = Send v23, :core#hash_merge_ptr, v21, v26, v28 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v32:BasicObject = Send v9, :foo, v30 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
-          Return v33
+          Return v32
         ");
     }
 
@@ -2408,23 +2549,25 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:ArrayExact = LoadField v2, :*@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :*@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v16:ArrayExact = ToNewArray v10
-          v18:Fixnum[1] = Const Value(1)
-          v20:CUInt64 = LoadField v16, :RBASIC_FLAGS@0x1001
-          v21:CUInt64 = GuardNoBitsSet v20, RUBY_FL_FREEZE=CUInt64(2048)
-          ArrayPush v16, v18
-          v24:BasicObject = Send v9, :foo, v16 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :*@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :*@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v14:CPtr = GetEP 0
+          v15:BasicObject = LoadField v14, :*@0x1000
+          v17:ArrayExact = ToNewArray v15
+          v19:Fixnum[1] = Const Value(1)
+          v21:CUInt64 = LoadField v17, :RBASIC_FLAGS@0x1001
+          v22:CUInt64 = GuardNoBitsSet v21, RUBY_FL_FREEZE=CUInt64(2048)
+          ArrayPush v17, v19
+          v25:BasicObject = Send v9, :foo, v17 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
-          Return v24
+          Return v25
         ");
     }
 
@@ -2438,18 +2581,20 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :...@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :...@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v16:BasicObject = SendForward v9, 0x1008, :foo, v10 # SendFallbackReason: SendForward: not yet specialized
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :...@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :...@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v14:CPtr = GetEP 0
+          v15:BasicObject = LoadField v14, :...@0x1000
+          v17:BasicObject = SendForward v9, 0x1008, :foo, v15 # SendFallbackReason: SendForward: not yet specialized
           CheckInterrupts
-          Return v16
+          Return v17
         ");
     }
 
@@ -2463,38 +2608,43 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:ArrayExact = LoadField v2, :*@0x1001
-          v5:BasicObject = LoadField v2, :**@0x1002
-          v6:BasicObject = LoadField v2, :&@0x1003
-          v7:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4, v5, v6, v7)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v10:BasicObject = LoadArg :self@0
-          v11:BasicObject = LoadArg :a@1
-          v12:BasicObject = LoadArg :*@2
-          v13:BasicObject = LoadArg :**@3
-          v14:BasicObject = LoadArg :&@4
-          v15:NilClass = Const Value(nil)
-          Jump bb3(v10, v11, v12, v13, v14, v15)
-        bb3(v17:BasicObject, v18:BasicObject, v19:BasicObject, v20:BasicObject, v21:BasicObject, v22:NilClass):
-          v29:ArrayExact = ToArray v19
-          PatchPoint NoEPEscape(test)
-          v36:CPtr = GetEP 0
-          v37:CUInt64 = LoadField v36, :VM_ENV_DATA_INDEX_FLAGS@0x1004
-          v38:CBool = IsBlockParamModified v37
-          CondBranch v38, bb4(), bb5()
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :*@2
+          StoreField v6, :*@0x1001, v8
+          v10:BasicObject = LoadArg :**@3
+          StoreField v6, :**@0x1002, v10
+          v12:BasicObject = LoadArg :&@4
+          StoreField v6, :&@0x1003, v12
+          v14:NilClass = Const Value(nil)
+          StoreField v6, :...@0x1004, v14
+          Jump bb3(v4)
+        bb3(v17:BasicObject):
+          v22:CPtr = GetEP 0
+          v23:BasicObject = LoadField v22, :a@0x1000
+          v25:CPtr = GetEP 0
+          v26:BasicObject = LoadField v25, :*@0x1001
+          v28:ArrayExact = ToArray v26
+          v30:CPtr = GetEP 0
+          v31:BasicObject = LoadField v30, :**@0x1002
+          v34:CPtr = GetEP 0
+          v35:CUInt64 = LoadField v34, :VM_ENV_DATA_INDEX_FLAGS@0x1005
+          v36:CBool = IsBlockParamModified v35
+          CondBranch v36, bb4(), bb5()
         bb4():
-          v40:BasicObject = LoadField v36, :&@0x1005
-          Jump bb6(v40, v40)
+          v38:BasicObject = LoadField v34, :&@0x1003
+          Jump bb6(v38)
         bb5():
-          v42:CInt64 = LoadField v36, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
-          v43:CInt64 = GuardAnyBitSet v42, CUInt64(1)
-          v44:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v44, v21)
-        bb6(v34:BasicObject, v35:BasicObject):
+          v40:CInt64 = LoadField v34, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
+          v41:CInt64 = GuardAnyBitSet v40, CUInt64(1)
+          v42:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v42)
+        bb6(v33:BasicObject):
           SideExit SplatKwNotProfiled
         ");
     }
@@ -2571,21 +2721,25 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :a@0x1000
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :b@0x1001
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_MAX)
-          v20:BasicObject = ArrayMax v12, v13
+          v22:BasicObject = ArrayMax v16, v19
           CheckInterrupts
-          Return v20
+          Return v22
         ");
     }
 
@@ -2607,17 +2761,21 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :a@0x1000
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :b@0x1001
           SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_MAX))
         ");
     }
@@ -2658,21 +2816,25 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :a@0x1000
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :b@0x1001
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_MIN)
-          v20:BasicObject = ArrayMin v12, v13
+          v22:BasicObject = ArrayMin v16, v19
           CheckInterrupts
-          Return v20
+          Return v22
         ");
     }
 
@@ -2694,17 +2856,21 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :a@0x1000
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :b@0x1001
           SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_MIN))
         ");
     }
@@ -2725,31 +2891,41 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          v5:NilClass = Const Value(nil)
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4, v5, v6)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v9:BasicObject = LoadArg :self@0
-          v10:BasicObject = LoadArg :a@1
-          v11:BasicObject = LoadArg :b@2
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          v10:NilClass = Const Value(nil)
+          StoreField v6, :sum@0x1002, v10
           v12:NilClass = Const Value(nil)
-          v13:NilClass = Const Value(nil)
-          Jump bb3(v9, v10, v11, v12, v13)
-        bb3(v15:BasicObject, v16:BasicObject, v17:BasicObject, v18:NilClass, v19:NilClass):
-          v26:BasicObject = Send v16, :+, v17 # SendFallbackReason: Uncategorized(opt_plus)
+          StoreField v6, :result@0x1003, v12
+          Jump bb3(v4)
+        bb3(v15:BasicObject):
+          v19:CPtr = GetEP 0
+          v20:BasicObject = LoadField v19, :a@0x1000
+          v22:CPtr = GetEP 0
+          v23:BasicObject = LoadField v22, :b@0x1001
+          v26:BasicObject = Send v20, :+, v23 # SendFallbackReason: Uncategorized(opt_plus)
+          SetLocal :sum, l0, EP@4, v26
+          v31:CPtr = GetEP 0
+          v32:BasicObject = LoadField v31, :a@0x1000
+          v34:CPtr = GetEP 0
+          v35:BasicObject = LoadField v34, :b@0x1001
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_HASH)
-          v33:Fixnum = ArrayHash v16, v17
-          PatchPoint NoEPEscape(test)
-          v40:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          v41:ArrayExact = ArrayDup v40
-          v43:BasicObject = Send v15, :puts, v41 # SendFallbackReason: Uncategorized(opt_send_without_block)
-          PatchPoint NoEPEscape(test)
+          v38:Fixnum = ArrayHash v32, v35
+          SetLocal :result, l0, EP@3, v38
+          v44:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v45:ArrayExact = ArrayDup v44
+          v47:BasicObject = Send v15, :puts, v45 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v51:CPtr = GetEP 0
+          v52:BasicObject = LoadField v51, :result@0x1003
           CheckInterrupts
-          Return v33
+          Return v52
         ");
     }
 
@@ -2771,22 +2947,31 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          v5:NilClass = Const Value(nil)
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4, v5, v6)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v9:BasicObject = LoadArg :self@0
-          v10:BasicObject = LoadArg :a@1
-          v11:BasicObject = LoadArg :b@2
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          v10:NilClass = Const Value(nil)
+          StoreField v6, :sum@0x1002, v10
           v12:NilClass = Const Value(nil)
-          v13:NilClass = Const Value(nil)
-          Jump bb3(v9, v10, v11, v12, v13)
-        bb3(v15:BasicObject, v16:BasicObject, v17:BasicObject, v18:NilClass, v19:NilClass):
-          v26:BasicObject = Send v16, :+, v17 # SendFallbackReason: Uncategorized(opt_plus)
+          StoreField v6, :result@0x1003, v12
+          Jump bb3(v4)
+        bb3(v15:BasicObject):
+          v19:CPtr = GetEP 0
+          v20:BasicObject = LoadField v19, :a@0x1000
+          v22:CPtr = GetEP 0
+          v23:BasicObject = LoadField v22, :b@0x1001
+          v26:BasicObject = Send v20, :+, v23 # SendFallbackReason: Uncategorized(opt_plus)
+          SetLocal :sum, l0, EP@4, v26
+          v31:CPtr = GetEP 0
+          v32:BasicObject = LoadField v31, :a@0x1000
+          v34:CPtr = GetEP 0
+          v35:BasicObject = LoadField v34, :b@0x1001
           SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_HASH))
         ");
     }
@@ -2807,33 +2992,43 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          v5:NilClass = Const Value(nil)
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4, v5, v6)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v9:BasicObject = LoadArg :self@0
-          v10:BasicObject = LoadArg :a@1
-          v11:BasicObject = LoadArg :b@2
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          v10:NilClass = Const Value(nil)
+          StoreField v6, :sum@0x1002, v10
           v12:NilClass = Const Value(nil)
-          v13:NilClass = Const Value(nil)
-          Jump bb3(v9, v10, v11, v12, v13)
-        bb3(v15:BasicObject, v16:BasicObject, v17:BasicObject, v18:NilClass, v19:NilClass):
-          v26:BasicObject = Send v16, :+, v17 # SendFallbackReason: Uncategorized(opt_plus)
-          v32:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          v33:StringExact = StringCopy v32
+          StoreField v6, :result@0x1003, v12
+          Jump bb3(v4)
+        bb3(v15:BasicObject):
+          v19:CPtr = GetEP 0
+          v20:BasicObject = LoadField v19, :a@0x1000
+          v22:CPtr = GetEP 0
+          v23:BasicObject = LoadField v22, :b@0x1001
+          v26:BasicObject = Send v20, :+, v23 # SendFallbackReason: Uncategorized(opt_plus)
+          SetLocal :sum, l0, EP@4, v26
+          v31:CPtr = GetEP 0
+          v32:BasicObject = LoadField v31, :a@0x1000
+          v34:CPtr = GetEP 0
+          v35:BasicObject = LoadField v34, :b@0x1001
+          v37:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v38:StringExact = StringCopy v37
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_PACK)
-          v36:String = ArrayPackBuffer v16, v17, fmt: v33
-          PatchPoint NoEPEscape(test)
-          v43:ArrayExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
-          v44:ArrayExact = ArrayDup v43
-          v46:BasicObject = Send v15, :puts, v44 # SendFallbackReason: Uncategorized(opt_send_without_block)
-          PatchPoint NoEPEscape(test)
+          v41:String = ArrayPackBuffer v32, v35, fmt: v38
+          SetLocal :result, l0, EP@3, v41
+          v47:ArrayExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+          v48:ArrayExact = ArrayDup v47
+          v50:BasicObject = Send v15, :puts, v48 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v54:CPtr = GetEP 0
+          v55:BasicObject = LoadField v54, :result@0x1003
           CheckInterrupts
-          Return v36
+          Return v55
         ");
     }
 
@@ -2856,24 +3051,33 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          v5:NilClass = Const Value(nil)
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4, v5, v6)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v9:BasicObject = LoadArg :self@0
-          v10:BasicObject = LoadArg :a@1
-          v11:BasicObject = LoadArg :b@2
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          v10:NilClass = Const Value(nil)
+          StoreField v6, :sum@0x1002, v10
           v12:NilClass = Const Value(nil)
-          v13:NilClass = Const Value(nil)
-          Jump bb3(v9, v10, v11, v12, v13)
-        bb3(v15:BasicObject, v16:BasicObject, v17:BasicObject, v18:NilClass, v19:NilClass):
-          v26:BasicObject = Send v16, :+, v17 # SendFallbackReason: Uncategorized(opt_plus)
-          v32:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          v33:StringExact = StringCopy v32
+          StoreField v6, :result@0x1003, v12
+          Jump bb3(v4)
+        bb3(v15:BasicObject):
+          v19:CPtr = GetEP 0
+          v20:BasicObject = LoadField v19, :a@0x1000
+          v22:CPtr = GetEP 0
+          v23:BasicObject = LoadField v22, :b@0x1001
+          v26:BasicObject = Send v20, :+, v23 # SendFallbackReason: Uncategorized(opt_plus)
+          SetLocal :sum, l0, EP@4, v26
+          v31:CPtr = GetEP 0
+          v32:BasicObject = LoadField v31, :a@0x1000
+          v34:CPtr = GetEP 0
+          v35:BasicObject = LoadField v34, :b@0x1001
+          v37:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v38:StringExact = StringCopy v37
           SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_PACK))
         ");
     }
@@ -2894,31 +3098,44 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          v5:NilClass = Const Value(nil)
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4, v5, v6)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v9:BasicObject = LoadArg :self@0
-          v10:BasicObject = LoadArg :a@1
-          v11:BasicObject = LoadArg :b@2
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          v10:NilClass = Const Value(nil)
+          StoreField v6, :sum@0x1002, v10
           v12:NilClass = Const Value(nil)
-          v13:NilClass = Const Value(nil)
-          Jump bb3(v9, v10, v11, v12, v13)
-        bb3(v15:BasicObject, v16:BasicObject, v17:BasicObject, v18:NilClass, v19:NilClass):
-          v26:BasicObject = Send v16, :+, v17 # SendFallbackReason: Uncategorized(opt_plus)
-          v30:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          v31:StringExact = StringCopy v30
-          v37:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
-          v38:StringExact = StringCopy v37
+          StoreField v6, :buf@0x1003, v12
+          Jump bb3(v4)
+        bb3(v15:BasicObject):
+          v19:CPtr = GetEP 0
+          v20:BasicObject = LoadField v19, :a@0x1000
+          v22:CPtr = GetEP 0
+          v23:BasicObject = LoadField v22, :b@0x1001
+          v26:BasicObject = Send v20, :+, v23 # SendFallbackReason: Uncategorized(opt_plus)
+          SetLocal :sum, l0, EP@4, v26
+          v31:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v32:StringExact = StringCopy v31
+          SetLocal :buf, l0, EP@3, v32
+          v37:CPtr = GetEP 0
+          v38:BasicObject = LoadField v37, :a@0x1000
+          v40:CPtr = GetEP 0
+          v41:BasicObject = LoadField v40, :b@0x1001
+          v43:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+          v44:StringExact = StringCopy v43
+          v46:CPtr = GetEP 0
+          v47:BasicObject = LoadField v46, :buf@0x1003
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_PACK)
-          v42:String = ArrayPackBuffer v16, v17, fmt: v38, buf: v31
-          PatchPoint NoEPEscape(test)
+          v50:String = ArrayPackBuffer v38, v41, fmt: v44, buf: v47
+          v54:CPtr = GetEP 0
+          v55:BasicObject = LoadField v54, :buf@0x1003
           CheckInterrupts
-          Return v31
+          Return v55
         ");
     }
 
@@ -2941,26 +3158,38 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          v5:NilClass = Const Value(nil)
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4, v5, v6)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v9:BasicObject = LoadArg :self@0
-          v10:BasicObject = LoadArg :a@1
-          v11:BasicObject = LoadArg :b@2
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          v10:NilClass = Const Value(nil)
+          StoreField v6, :sum@0x1002, v10
           v12:NilClass = Const Value(nil)
-          v13:NilClass = Const Value(nil)
-          Jump bb3(v9, v10, v11, v12, v13)
-        bb3(v15:BasicObject, v16:BasicObject, v17:BasicObject, v18:NilClass, v19:NilClass):
-          v26:BasicObject = Send v16, :+, v17 # SendFallbackReason: Uncategorized(opt_plus)
-          v30:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          v31:StringExact = StringCopy v30
-          v37:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
-          v38:StringExact = StringCopy v37
+          StoreField v6, :buf@0x1003, v12
+          Jump bb3(v4)
+        bb3(v15:BasicObject):
+          v19:CPtr = GetEP 0
+          v20:BasicObject = LoadField v19, :a@0x1000
+          v22:CPtr = GetEP 0
+          v23:BasicObject = LoadField v22, :b@0x1001
+          v26:BasicObject = Send v20, :+, v23 # SendFallbackReason: Uncategorized(opt_plus)
+          SetLocal :sum, l0, EP@4, v26
+          v31:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v32:StringExact = StringCopy v31
+          SetLocal :buf, l0, EP@3, v32
+          v37:CPtr = GetEP 0
+          v38:BasicObject = LoadField v37, :a@0x1000
+          v40:CPtr = GetEP 0
+          v41:BasicObject = LoadField v40, :b@0x1001
+          v43:StringExact[VALUE(0x1010)] = Const Value(VALUE(0x1010))
+          v44:StringExact = StringCopy v43
+          v46:CPtr = GetEP 0
+          v47:BasicObject = LoadField v46, :buf@0x1003
           SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_PACK))
         ");
     }
@@ -2981,31 +3210,43 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          v5:NilClass = Const Value(nil)
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4, v5, v6)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v9:BasicObject = LoadArg :self@0
-          v10:BasicObject = LoadArg :a@1
-          v11:BasicObject = LoadArg :b@2
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          v10:NilClass = Const Value(nil)
+          StoreField v6, :sum@0x1002, v10
           v12:NilClass = Const Value(nil)
-          v13:NilClass = Const Value(nil)
-          Jump bb3(v9, v10, v11, v12, v13)
-        bb3(v15:BasicObject, v16:BasicObject, v17:BasicObject, v18:NilClass, v19:NilClass):
-          v26:BasicObject = Send v16, :+, v17 # SendFallbackReason: Uncategorized(opt_plus)
+          StoreField v6, :result@0x1003, v12
+          Jump bb3(v4)
+        bb3(v15:BasicObject):
+          v19:CPtr = GetEP 0
+          v20:BasicObject = LoadField v19, :a@0x1000
+          v22:CPtr = GetEP 0
+          v23:BasicObject = LoadField v22, :b@0x1001
+          v26:BasicObject = Send v20, :+, v23 # SendFallbackReason: Uncategorized(opt_plus)
+          SetLocal :sum, l0, EP@4, v26
+          v31:CPtr = GetEP 0
+          v32:BasicObject = LoadField v31, :a@0x1000
+          v34:CPtr = GetEP 0
+          v35:BasicObject = LoadField v34, :b@0x1001
+          v37:CPtr = GetEP 0
+          v38:BasicObject = LoadField v37, :b@0x1001
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_INCLUDE_P)
-          v34:BoolExact = ArrayInclude v16, v17 | v17
-          PatchPoint NoEPEscape(test)
-          v41:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-          v42:ArrayExact = ArrayDup v41
-          v44:BasicObject = Send v15, :puts, v42 # SendFallbackReason: Uncategorized(opt_send_without_block)
-          PatchPoint NoEPEscape(test)
+          v41:BoolExact = ArrayInclude v32, v35 | v38
+          SetLocal :result, l0, EP@3, v41
+          v47:ArrayExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v48:ArrayExact = ArrayDup v47
+          v50:BasicObject = Send v15, :puts, v48 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v54:CPtr = GetEP 0
+          v55:BasicObject = LoadField v54, :result@0x1003
           CheckInterrupts
-          Return v34
+          Return v55
         ");
     }
 
@@ -3032,22 +3273,33 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          v5:NilClass = Const Value(nil)
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4, v5, v6)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v9:BasicObject = LoadArg :self@0
-          v10:BasicObject = LoadArg :a@1
-          v11:BasicObject = LoadArg :b@2
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          v10:NilClass = Const Value(nil)
+          StoreField v6, :sum@0x1002, v10
           v12:NilClass = Const Value(nil)
-          v13:NilClass = Const Value(nil)
-          Jump bb3(v9, v10, v11, v12, v13)
-        bb3(v15:BasicObject, v16:BasicObject, v17:BasicObject, v18:NilClass, v19:NilClass):
-          v26:BasicObject = Send v16, :+, v17 # SendFallbackReason: Uncategorized(opt_plus)
+          StoreField v6, :result@0x1003, v12
+          Jump bb3(v4)
+        bb3(v15:BasicObject):
+          v19:CPtr = GetEP 0
+          v20:BasicObject = LoadField v19, :a@0x1000
+          v22:CPtr = GetEP 0
+          v23:BasicObject = LoadField v22, :b@0x1001
+          v26:BasicObject = Send v20, :+, v23 # SendFallbackReason: Uncategorized(opt_plus)
+          SetLocal :sum, l0, EP@4, v26
+          v31:CPtr = GetEP 0
+          v32:BasicObject = LoadField v31, :a@0x1000
+          v34:CPtr = GetEP 0
+          v35:BasicObject = LoadField v34, :b@0x1001
+          v37:CPtr = GetEP 0
+          v38:BasicObject = LoadField v37, :b@0x1001
           SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_INCLUDE_P))
         ");
     }
@@ -3065,19 +3317,21 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :x@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :x@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :x@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v13:CPtr = GetEP 0
+          v14:BasicObject = LoadField v13, :x@0x1000
           PatchPoint BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_INCLUDE_P)
-          v16:BoolExact = DupArrayInclude VALUE(0x1008) | v10
+          v17:BoolExact = DupArrayInclude VALUE(0x1008) | v14
           CheckInterrupts
-          Return v16
+          Return v17
         ");
     }
 
@@ -3100,15 +3354,17 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :x@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :x@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :x@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v13:CPtr = GetEP 0
+          v14:BasicObject = LoadField v13, :x@0x1000
           SideExit PatchPoint(BOPRedefined(ARRAY_REDEFINED_OP_FLAG, BOP_INCLUDE_P))
         ");
     }
@@ -3124,21 +3380,25 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v19:ArrayExact = NewArray v12, v13
-          v22:BasicObject = Send v19, :length # SendFallbackReason: Uncategorized(opt_length)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :a@0x1000
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :b@0x1001
+          v21:ArrayExact = NewArray v16, v19
+          v24:BasicObject = Send v21, :length # SendFallbackReason: Uncategorized(opt_length)
           CheckInterrupts
-          Return v22
+          Return v24
         ");
     }
 
@@ -3153,21 +3413,25 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v19:ArrayExact = NewArray v12, v13
-          v22:BasicObject = Send v19, :size # SendFallbackReason: Uncategorized(opt_size)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :a@0x1000
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :b@0x1001
+          v21:ArrayExact = NewArray v16, v19
+          v24:BasicObject = Send v21, :size # SendFallbackReason: Uncategorized(opt_size)
           CheckInterrupts
-          Return v22
+          Return v24
         ");
     }
 
@@ -3184,19 +3448,21 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :klass@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :klass@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v15:FalseClass = Const Value(false)
-          v17:BasicObject = GetConstant v10, :ARGV, v15
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :klass@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :klass@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v13:CPtr = GetEP 0
+          v14:BasicObject = LoadField v13, :klass@0x1000
+          v16:FalseClass = Const Value(false)
+          v18:BasicObject = GetConstant v14, :ARGV, v16
           CheckInterrupts
-          Return v17
+          Return v18
         ");
     }
 
@@ -3393,28 +3659,28 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :block@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :block@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v15:CPtr = GetEP 0
-          v16:CUInt64 = LoadField v15, :VM_ENV_DATA_INDEX_FLAGS@0x1001
-          v17:CBool = IsBlockParamModified v16
-          CondBranch v17, bb4(), bb5()
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :block@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :block@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v14:CPtr = GetEP 0
+          v15:CUInt64 = LoadField v14, :VM_ENV_DATA_INDEX_FLAGS@0x1001
+          v16:CBool = IsBlockParamModified v15
+          CondBranch v16, bb4(), bb5()
         bb4():
-          v19:BasicObject = LoadField v15, :block@0x1002
-          Jump bb6(v19)
+          v18:BasicObject = LoadField v14, :block@0x1000
+          Jump bb6(v18)
         bb5():
-          v21:BasicObject = GetBlockParam :block, l0, EP@3
-          Jump bb6(v21)
-        bb6(v14:BasicObject):
+          v20:BasicObject = GetBlockParam :block, l0, EP@3
+          Jump bb6(v20)
+        bb6(v13:BasicObject):
           CheckInterrupts
-          Return v14
+          Return v13
         ");
     }
 
@@ -3429,31 +3695,31 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :block@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :block@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v17:CPtr = GetEP 0
-          v18:CUInt64 = LoadField v17, :VM_ENV_DATA_INDEX_FLAGS@0x1001
-          v19:CBool = IsBlockParamModified v18
-          CondBranch v19, bb4(), bb5()
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :block@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :block@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v15:CPtr = GetEP 0
+          v16:CUInt64 = LoadField v15, :VM_ENV_DATA_INDEX_FLAGS@0x1001
+          v17:CBool = IsBlockParamModified v16
+          CondBranch v17, bb4(), bb5()
         bb4():
-          v21:BasicObject = LoadField v17, :block@0x1002
-          Jump bb6(v21, v21)
+          v19:BasicObject = LoadField v15, :block@0x1000
+          Jump bb6(v19)
         bb5():
-          v23:CInt64 = LoadField v17, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
-          v24:CInt64 = GuardAnyBitSet v23, CUInt64(1)
-          v25:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v25, v10)
-        bb6(v15:BasicObject, v16:BasicObject):
-          v28:BasicObject = Send v9, &block, :tap, v15 # SendFallbackReason: Uncategorized(send)
+          v21:CInt64 = LoadField v15, :VM_ENV_DATA_INDEX_SPECVAL@0x1002
+          v22:CInt64 = GuardAnyBitSet v21, CUInt64(1)
+          v23:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v23)
+        bb6(v14:BasicObject):
+          v26:BasicObject = Send v9, &block, :tap, v14 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v28
+          Return v26
         ");
     }
 
@@ -3471,44 +3737,45 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :block@0x1000
-          v4:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :block@1
-          v9:NilClass = Const Value(nil)
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
-          v18:CPtr = GetEP 0
-          v19:CUInt64 = LoadField v18, :VM_ENV_DATA_INDEX_FLAGS@0x1001
-          v20:CBool = IsBlockParamModified v19
-          CondBranch v20, bb4(), bb5()
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :block@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :block@0x1000, v5
+          v8:NilClass = Const Value(nil)
+          StoreField v6, :b@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v16:CPtr = GetEP 0
+          v17:CUInt64 = LoadField v16, :VM_ENV_DATA_INDEX_FLAGS@0x1002
+          v18:CBool = IsBlockParamModified v17
+          CondBranch v18, bb4(), bb5()
         bb4():
-          v22:BasicObject = LoadField v18, :block@0x1002
-          Jump bb6(v22)
+          v20:BasicObject = LoadField v16, :block@0x1000
+          Jump bb6(v20)
         bb5():
-          v24:BasicObject = GetBlockParam :block, l0, EP@4
-          Jump bb6(v24)
-        bb6(v17:BasicObject):
-          v32:CPtr = GetEP 0
-          v33:CUInt64 = LoadField v32, :VM_ENV_DATA_INDEX_FLAGS@0x1001
-          v34:CBool = IsBlockParamModified v33
-          CondBranch v34, bb7(), bb8()
+          v22:BasicObject = GetBlockParam :block, l0, EP@4
+          Jump bb6(v22)
+        bb6(v15:BasicObject):
+          SetLocal :b, l0, EP@3, v15
+          v30:CPtr = GetEP 0
+          v31:CUInt64 = LoadField v30, :VM_ENV_DATA_INDEX_FLAGS@0x1002
+          v32:CBool = IsBlockParamModified v31
+          CondBranch v32, bb7(), bb8()
         bb7():
-          v36:BasicObject = LoadField v32, :block@0x1002
-          Jump bb9(v36, v36)
+          v34:BasicObject = LoadField v30, :block@0x1000
+          Jump bb9(v34)
         bb8():
-          v38:CInt64 = LoadField v32, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
-          v39:CInt64 = GuardAnyBitSet v38, CUInt64(1)
-          v40:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb9(v40, v17)
-        bb9(v30:BasicObject, v31:BasicObject):
-          v43:BasicObject = Send v11, &block, :tap, v30 # SendFallbackReason: Uncategorized(send)
+          v36:CInt64 = LoadField v30, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
+          v37:CInt64 = GuardAnyBitSet v36, CUInt64(1)
+          v38:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb9(v38)
+        bb9(v29:BasicObject):
+          v41:BasicObject = Send v11, &block, :tap, v29 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v43
+          Return v41
         ");
     }
 
@@ -3527,41 +3794,43 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          v4:BasicObject = LoadArg :self@0
+          v5:NilClass = Const Value(nil)
+          v6:CPtr = GetEP 0
+          StoreField v6, :b@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
           v14:CPtr = GetEP 1
-          v15:CUInt64 = LoadField v14, :VM_ENV_DATA_INDEX_FLAGS@0x1000
+          v15:CUInt64 = LoadField v14, :VM_ENV_DATA_INDEX_FLAGS@0x1001
           v16:CBool = IsBlockParamModified v15
           CondBranch v16, bb4(), bb5()
         bb4():
-          v18:BasicObject = LoadField v14, :block@0x1001
+          v18:BasicObject = LoadField v14, :block@0x1000
           Jump bb6(v18)
         bb5():
           v20:BasicObject = GetBlockParam :block, l1, EP@3
           Jump bb6(v20)
         bb6(v13:BasicObject):
-          v27:CPtr = GetEP 1
-          v28:CUInt64 = LoadField v27, :VM_ENV_DATA_INDEX_FLAGS@0x1000
-          v29:CBool = IsBlockParamModified v28
-          CondBranch v29, bb7(), bb8()
+          SetLocal :b, l0, EP@3, v13
+          v28:CPtr = GetEP 1
+          v29:CUInt64 = LoadField v28, :VM_ENV_DATA_INDEX_FLAGS@0x1001
+          v30:CBool = IsBlockParamModified v29
+          CondBranch v30, bb7(), bb8()
         bb7():
-          v31:BasicObject = LoadField v27, :block@0x1001
-          Jump bb9(v31)
+          v32:BasicObject = LoadField v28, :block@0x1000
+          Jump bb9(v32)
         bb8():
-          v33:CInt64 = LoadField v27, :VM_ENV_DATA_INDEX_SPECVAL@0x1002
-          v34:CInt64 = GuardAnyBitSet v33, CUInt64(1)
-          v35:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb9(v35)
-        bb9(v26:BasicObject):
-          v38:BasicObject = Send v8, &block, :tap, v26 # SendFallbackReason: Uncategorized(send)
+          v34:CInt64 = LoadField v28, :VM_ENV_DATA_INDEX_SPECVAL@0x1002
+          v35:CInt64 = GuardAnyBitSet v34, CUInt64(1)
+          v36:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb9(v36)
+        bb9(v27:BasicObject):
+          v39:BasicObject = Send v9, &block, :tap, v27 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v38
+          Return v39
         ");
     }
 
@@ -3582,43 +3851,43 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :block@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :block@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v14:Fixnum[0] = Const Value(0)
-          v18:CPtr = GetEP 0
-          v19:CUInt64 = LoadField v18, :VM_ENV_DATA_INDEX_FLAGS@0x1001
-          v20:CBool = IsBlockParamModified v19
-          CondBranch v20, bb4(), bb5()
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :block@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :block@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v13:Fixnum[0] = Const Value(0)
+          v16:CPtr = GetEP 0
+          v17:CUInt64 = LoadField v16, :VM_ENV_DATA_INDEX_FLAGS@0x1001
+          v18:CBool = IsBlockParamModified v17
+          CondBranch v18, bb4(), bb5()
         bb4():
-          v22:BasicObject = LoadField v18, :block@0x1002
-          Jump bb6(v22, v22)
+          v20:BasicObject = LoadField v16, :block@0x1000
+          Jump bb6(v20)
         bb5():
-          v24:CInt64 = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
-          v25:CInt64[1] = Const CInt64(1)
-          v26:CInt64 = IntAnd v24, v25
-          v27:CBool = IsBitEqual v26, v25
-          CondBranch v27, bb7(), bb9()
+          v22:CInt64 = LoadField v16, :VM_ENV_DATA_INDEX_SPECVAL@0x1002
+          v23:CInt64[1] = Const CInt64(1)
+          v24:CInt64 = IntAnd v22, v23
+          v25:CBool = IsBitEqual v24, v23
+          CondBranch v25, bb7(), bb9()
         bb7():
-          v29:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v29, v10)
+          v27:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v27)
         bb9():
-          v31:CInt64[0] = Const CInt64(0)
-          v32:CBool = IsBitEqual v24, v31
-          CondBranch v32, bb8(), bb10()
+          v29:CInt64[0] = Const CInt64(0)
+          v30:CBool = IsBitEqual v22, v29
+          CondBranch v30, bb8(), bb10()
         bb8():
-          v34:NilClass = Const Value(nil)
-          Jump bb6(v34, v10)
-        bb6(v16:BasicObject, v17:BasicObject):
-          v38:BasicObject = Send v14, &block, :then, v16 # SendFallbackReason: Uncategorized(send)
+          v32:NilClass = Const Value(nil)
+          Jump bb6(v32)
+        bb6(v15:BasicObject):
+          v36:BasicObject = Send v13, &block, :then, v15 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v38
+          Return v36
         bb10():
           SideExit BlockParamProxyProfileNotCovered
         ");
@@ -3673,24 +3942,24 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :block@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :block@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v14:NilClass = Const Value(nil)
-          SetLocal :block, l0, EP@3, v14
-          v18:CPtr = GetEP 0
-          v19:CInt64 = LoadField v18, :VM_ENV_DATA_INDEX_FLAGS@0x1001
-          v20:CInt64[512] = Const CInt64(512)
-          v21:CInt64 = IntOr v19, v20
-          StoreField v18, :VM_ENV_DATA_INDEX_FLAGS@0x1001, v21
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :block@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :block@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v13:NilClass = Const Value(nil)
+          SetLocal :block, l0, EP@3, v13
+          v17:CPtr = GetEP 0
+          v18:CInt64 = LoadField v17, :VM_ENV_DATA_INDEX_FLAGS@0x1001
+          v19:CInt64[512] = Const CInt64(512)
+          v20:CInt64 = IntOr v18, v19
+          StoreField v17, :VM_ENV_DATA_INDEX_FLAGS@0x1001, v20
           CheckInterrupts
-          Return v14
+          Return v13
         ");
     }
 
@@ -3738,30 +4007,32 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :kw@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :kw@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v21:CPtr = GetEP 0
-          v22:CUInt64 = LoadField v21, :VM_ENV_DATA_INDEX_FLAGS@0x1002
-          v23:CBool = IsBlockParamModified v22
-          CondBranch v23, bb4(), bb5()
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :kw@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :kw@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v16:CPtr = GetEP 0
+          v17:BasicObject = LoadField v16, :kw@0x1000
+          v20:CPtr = GetEP 0
+          v21:CUInt64 = LoadField v20, :VM_ENV_DATA_INDEX_FLAGS@0x1002
+          v22:CBool = IsBlockParamModified v21
+          CondBranch v22, bb4(), bb5()
         bb4():
-          v25:BasicObject = LoadField v21, :b@0x1003
-          Jump bb6(v25, v25)
+          v24:BasicObject = LoadField v20, :b@0x1001
+          Jump bb6(v24)
         bb5():
-          v27:CInt64 = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
-          v28:CInt64 = GuardAnyBitSet v27, CUInt64(1)
-          v29:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v29, v13)
-        bb6(v19:BasicObject, v20:BasicObject):
+          v26:CInt64 = LoadField v20, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
+          v27:CInt64 = GuardAnyBitSet v26, CUInt64(1)
+          v28:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v28)
+        bb6(v19:BasicObject):
           SideExit SplatKwNotProfiled
         ");
     }
@@ -3779,42 +4050,47 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:ArrayExact = LoadField v2, :*@0x1001
-          v5:BasicObject = LoadField v2, :**@0x1002
-          v6:BasicObject = LoadField v2, :&@0x1003
-          v7:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4, v5, v6, v7)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v10:BasicObject = LoadArg :self@0
-          v11:BasicObject = LoadArg :a@1
-          v12:BasicObject = LoadArg :*@2
-          v13:BasicObject = LoadArg :**@3
-          v14:BasicObject = LoadArg :&@4
-          v15:NilClass = Const Value(nil)
-          Jump bb3(v10, v11, v12, v13, v14, v15)
-        bb3(v17:BasicObject, v18:BasicObject, v19:BasicObject, v20:BasicObject, v21:BasicObject, v22:NilClass):
-          v29:ArrayExact = ToArray v19
-          PatchPoint NoEPEscape(test)
-          v36:CPtr = GetEP 0
-          v37:CUInt64 = LoadField v36, :VM_ENV_DATA_INDEX_FLAGS@0x1004
-          v38:CBool = IsBlockParamModified v37
-          CondBranch v38, bb4(), bb5()
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :*@2
+          StoreField v6, :*@0x1001, v8
+          v10:BasicObject = LoadArg :**@3
+          StoreField v6, :**@0x1002, v10
+          v12:BasicObject = LoadArg :&@4
+          StoreField v6, :&@0x1003, v12
+          v14:NilClass = Const Value(nil)
+          StoreField v6, :...@0x1004, v14
+          Jump bb3(v4)
+        bb3(v17:BasicObject):
+          v22:CPtr = GetEP 0
+          v23:BasicObject = LoadField v22, :a@0x1000
+          v25:CPtr = GetEP 0
+          v26:BasicObject = LoadField v25, :*@0x1001
+          v28:ArrayExact = ToArray v26
+          v30:CPtr = GetEP 0
+          v31:BasicObject = LoadField v30, :**@0x1002
+          v34:CPtr = GetEP 0
+          v35:CUInt64 = LoadField v34, :VM_ENV_DATA_INDEX_FLAGS@0x1005
+          v36:CBool = IsBlockParamModified v35
+          CondBranch v36, bb4(), bb5()
         bb4():
-          v40:BasicObject = LoadField v36, :&@0x1005
-          Jump bb6(v40, v40)
+          v38:BasicObject = LoadField v34, :&@0x1003
+          Jump bb6(v38)
         bb5():
-          v42:CInt64 = LoadField v36, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
-          v43:CInt64[0] = GuardBitEquals v42, CInt64(0)
-          v44:NilClass = Const Value(nil)
-          Jump bb6(v44, v21)
-        bb6(v34:BasicObject, v35:BasicObject):
-          v47:NilClass = GuardType v20, NilClass
-          v49:BasicObject = Send v17, &block, :foo, v18, v29, v47, v34 # SendFallbackReason: Uncategorized(send)
+          v40:CInt64 = LoadField v34, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
+          v41:CInt64[0] = GuardBitEquals v40, CInt64(0)
+          v42:NilClass = Const Value(nil)
+          Jump bb6(v42)
+        bb6(v33:BasicObject):
+          v45:NilClass = GuardType v31, NilClass
+          v47:BasicObject = Send v17, &block, :foo, v23, v28, v45, v33 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v49
+          Return v47
         ");
     }
 
@@ -3831,34 +4107,36 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :kw@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :kw@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v21:CPtr = GetEP 0
-          v22:CUInt64 = LoadField v21, :VM_ENV_DATA_INDEX_FLAGS@0x1002
-          v23:CBool = IsBlockParamModified v22
-          CondBranch v23, bb4(), bb5()
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :kw@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :kw@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v16:CPtr = GetEP 0
+          v17:BasicObject = LoadField v16, :kw@0x1000
+          v20:CPtr = GetEP 0
+          v21:CUInt64 = LoadField v20, :VM_ENV_DATA_INDEX_FLAGS@0x1002
+          v22:CBool = IsBlockParamModified v21
+          CondBranch v22, bb4(), bb5()
         bb4():
-          v25:BasicObject = LoadField v21, :b@0x1003
-          Jump bb6(v25, v25)
+          v24:BasicObject = LoadField v20, :b@0x1001
+          Jump bb6(v24)
         bb5():
-          v27:CInt64 = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
-          v28:CInt64 = GuardAnyBitSet v27, CUInt64(1)
-          v29:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v29, v13)
-        bb6(v19:BasicObject, v20:BasicObject):
-          v32:HashExact = GuardType v12, HashExact
-          v34:BasicObject = Send v11, &block, :foo, v32, v19 # SendFallbackReason: Uncategorized(send)
+          v26:CInt64 = LoadField v20, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
+          v27:CInt64 = GuardAnyBitSet v26, CUInt64(1)
+          v28:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v28)
+        bb6(v19:BasicObject):
+          v31:HashExact = GuardType v17, HashExact
+          v33:BasicObject = Send v11, &block, :foo, v31, v19 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v34
+          Return v33
         ");
     }
 
@@ -3875,34 +4153,36 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :kw@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :kw@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v21:CPtr = GetEP 0
-          v22:CUInt64 = LoadField v21, :VM_ENV_DATA_INDEX_FLAGS@0x1002
-          v23:CBool = IsBlockParamModified v22
-          CondBranch v23, bb4(), bb5()
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :kw@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :kw@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v16:CPtr = GetEP 0
+          v17:BasicObject = LoadField v16, :kw@0x1000
+          v20:CPtr = GetEP 0
+          v21:CUInt64 = LoadField v20, :VM_ENV_DATA_INDEX_FLAGS@0x1002
+          v22:CBool = IsBlockParamModified v21
+          CondBranch v22, bb4(), bb5()
         bb4():
-          v25:BasicObject = LoadField v21, :b@0x1003
-          Jump bb6(v25, v25)
+          v24:BasicObject = LoadField v20, :b@0x1001
+          Jump bb6(v24)
         bb5():
-          v27:CInt64 = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
-          v28:CInt64 = GuardAnyBitSet v27, CUInt64(1)
-          v29:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v29, v13)
-        bb6(v19:BasicObject, v20:BasicObject):
-          v32:HashExact = GuardType v12, HashExact
-          v34:BasicObject = Send v11, &block, :foo, v32, v19 # SendFallbackReason: Uncategorized(send)
+          v26:CInt64 = LoadField v20, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
+          v27:CInt64 = GuardAnyBitSet v26, CUInt64(1)
+          v28:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v28)
+        bb6(v19:BasicObject):
+          v31:HashExact = GuardType v17, HashExact
+          v33:BasicObject = Send v11, &block, :foo, v31, v19 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v34
+          Return v33
         ");
     }
 
@@ -3921,38 +4201,43 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:ArrayExact = LoadField v2, :*@0x1001
-          v5:BasicObject = LoadField v2, :**@0x1002
-          v6:BasicObject = LoadField v2, :&@0x1003
-          v7:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4, v5, v6, v7)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v10:BasicObject = LoadArg :self@0
-          v11:BasicObject = LoadArg :a@1
-          v12:BasicObject = LoadArg :*@2
-          v13:BasicObject = LoadArg :**@3
-          v14:BasicObject = LoadArg :&@4
-          v15:NilClass = Const Value(nil)
-          Jump bb3(v10, v11, v12, v13, v14, v15)
-        bb3(v17:BasicObject, v18:BasicObject, v19:BasicObject, v20:BasicObject, v21:BasicObject, v22:NilClass):
-          v29:ArrayExact = ToArray v19
-          PatchPoint NoEPEscape(test)
-          v36:CPtr = GetEP 0
-          v37:CUInt64 = LoadField v36, :VM_ENV_DATA_INDEX_FLAGS@0x1004
-          v38:CBool = IsBlockParamModified v37
-          CondBranch v38, bb4(), bb5()
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :*@2
+          StoreField v6, :*@0x1001, v8
+          v10:BasicObject = LoadArg :**@3
+          StoreField v6, :**@0x1002, v10
+          v12:BasicObject = LoadArg :&@4
+          StoreField v6, :&@0x1003, v12
+          v14:NilClass = Const Value(nil)
+          StoreField v6, :...@0x1004, v14
+          Jump bb3(v4)
+        bb3(v17:BasicObject):
+          v22:CPtr = GetEP 0
+          v23:BasicObject = LoadField v22, :a@0x1000
+          v25:CPtr = GetEP 0
+          v26:BasicObject = LoadField v25, :*@0x1001
+          v28:ArrayExact = ToArray v26
+          v30:CPtr = GetEP 0
+          v31:BasicObject = LoadField v30, :**@0x1002
+          v34:CPtr = GetEP 0
+          v35:CUInt64 = LoadField v34, :VM_ENV_DATA_INDEX_FLAGS@0x1005
+          v36:CBool = IsBlockParamModified v35
+          CondBranch v36, bb4(), bb5()
         bb4():
-          v40:BasicObject = LoadField v36, :&@0x1005
-          Jump bb6(v40, v40)
+          v38:BasicObject = LoadField v34, :&@0x1003
+          Jump bb6(v38)
         bb5():
-          v42:CInt64 = LoadField v36, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
-          v43:CInt64[0] = GuardBitEquals v42, CInt64(0)
-          v44:NilClass = Const Value(nil)
-          Jump bb6(v44, v21)
-        bb6(v34:BasicObject, v35:BasicObject):
+          v40:CInt64 = LoadField v34, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
+          v41:CInt64[0] = GuardBitEquals v40, CInt64(0)
+          v42:NilClass = Const Value(nil)
+          Jump bb6(v42)
+        bb6(v33:BasicObject):
           SideExit SplatKwPolymorphic
         ");
     }
@@ -3972,30 +4257,32 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :obj@0x1000
-          v4:BasicObject = LoadField v2, :block@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :obj@1
-          v9:BasicObject = LoadArg :block@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v21:CPtr = GetEP 0
-          v22:CUInt64 = LoadField v21, :VM_ENV_DATA_INDEX_FLAGS@0x1002
-          v23:CBool = IsBlockParamModified v22
-          CondBranch v23, bb4(), bb5()
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :obj@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :obj@0x1000, v5
+          v8:BasicObject = LoadArg :block@2
+          StoreField v6, :block@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v16:CPtr = GetEP 0
+          v17:BasicObject = LoadField v16, :obj@0x1000
+          v20:CPtr = GetEP 0
+          v21:CUInt64 = LoadField v20, :VM_ENV_DATA_INDEX_FLAGS@0x1002
+          v22:CBool = IsBlockParamModified v21
+          CondBranch v22, bb4(), bb5()
         bb4():
-          v25:BasicObject = LoadField v21, :block@0x1003
-          Jump bb6(v25, v25)
+          v24:BasicObject = LoadField v20, :block@0x1001
+          Jump bb6(v24)
         bb5():
-          v27:CInt64 = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
-          v28:CInt64 = GuardAnyBitSet v27, CUInt64(1)
-          v29:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v29, v13)
-        bb6(v19:BasicObject, v20:BasicObject):
+          v26:CInt64 = LoadField v20, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
+          v27:CInt64 = GuardAnyBitSet v26, CUInt64(1)
+          v28:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v28)
+        bb6(v19:BasicObject):
           SideExit SplatKwNotNilOrHash
         ");
     }
@@ -4011,18 +4298,20 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v15:ArrayExact = ToNewArray v10
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v13:CPtr = GetEP 0
+          v14:BasicObject = LoadField v13, :a@0x1000
+          v16:ArrayExact = ToNewArray v14
           CheckInterrupts
-          Return v15
+          Return v16
         ");
     }
 
@@ -4037,21 +4326,23 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v14:Fixnum[1] = Const Value(1)
-          v16:ArrayExact = NewArray v14
-          v19:ArrayExact = ToArray v10
-          ArrayExtend v16, v19
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v13:Fixnum[1] = Const Value(1)
+          v15:ArrayExact = NewArray v13
+          v17:CPtr = GetEP 0
+          v18:BasicObject = LoadField v17, :a@0x1000
+          v20:ArrayExact = ToArray v18
+          ArrayExtend v15, v20
           CheckInterrupts
-          Return v16
+          Return v15
         ");
     }
 
@@ -4066,22 +4357,24 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v15:ArrayExact = ToNewArray v10
-          v17:Fixnum[1] = Const Value(1)
-          v19:CUInt64 = LoadField v15, :RBASIC_FLAGS@0x1001
-          v20:CUInt64 = GuardNoBitsSet v19, RUBY_FL_FREEZE=CUInt64(2048)
-          ArrayPush v15, v17
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v13:CPtr = GetEP 0
+          v14:BasicObject = LoadField v13, :a@0x1000
+          v16:ArrayExact = ToNewArray v14
+          v18:Fixnum[1] = Const Value(1)
+          v20:CUInt64 = LoadField v16, :RBASIC_FLAGS@0x1001
+          v21:CUInt64 = GuardNoBitsSet v20, RUBY_FL_FREEZE=CUInt64(2048)
+          ArrayPush v16, v18
           CheckInterrupts
-          Return v15
+          Return v16
         ");
     }
 
@@ -4096,26 +4389,28 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :a@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v15:ArrayExact = ToNewArray v10
-          v17:Fixnum[1] = Const Value(1)
-          v19:Fixnum[2] = Const Value(2)
-          v21:Fixnum[3] = Const Value(3)
-          v23:CUInt64 = LoadField v15, :RBASIC_FLAGS@0x1001
-          v24:CUInt64 = GuardNoBitsSet v23, RUBY_FL_FREEZE=CUInt64(2048)
-          ArrayPush v15, v17
-          ArrayPush v15, v19
-          ArrayPush v15, v21
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v13:CPtr = GetEP 0
+          v14:BasicObject = LoadField v13, :a@0x1000
+          v16:ArrayExact = ToNewArray v14
+          v18:Fixnum[1] = Const Value(1)
+          v20:Fixnum[2] = Const Value(2)
+          v22:Fixnum[3] = Const Value(3)
+          v24:CUInt64 = LoadField v16, :RBASIC_FLAGS@0x1001
+          v25:CUInt64 = GuardNoBitsSet v24, RUBY_FL_FREEZE=CUInt64(2048)
+          ArrayPush v16, v18
+          ArrayPush v16, v20
+          ArrayPush v16, v22
           CheckInterrupts
-          Return v15
+          Return v16
         ");
     }
 
@@ -4130,22 +4425,26 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v17:NilClass = Const Value(nil)
-          v21:Fixnum[1] = Const Value(1)
-          v25:BasicObject = Send v12, :[]=, v13, v21 # SendFallbackReason: Uncategorized(opt_aset)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:NilClass = Const Value(nil)
+          v17:CPtr = GetEP 0
+          v18:BasicObject = LoadField v17, :a@0x1000
+          v20:CPtr = GetEP 0
+          v21:BasicObject = LoadField v20, :b@0x1001
+          v23:Fixnum[1] = Const Value(1)
+          v27:BasicObject = Send v18, :[]=, v21, v23 # SendFallbackReason: Uncategorized(opt_aset)
           CheckInterrupts
-          Return v21
+          Return v23
         ");
     }
 
@@ -4160,20 +4459,24 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :a@0x1000
-          v4:BasicObject = LoadField v2, :b@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :a@1
-          v9:BasicObject = LoadArg :b@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v20:BasicObject = Send v12, :[], v13 # SendFallbackReason: Uncategorized(opt_aref)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :a@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:BasicObject = LoadArg :b@2
+          StoreField v6, :b@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :a@0x1000
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :b@0x1001
+          v22:BasicObject = Send v16, :[], v19 # SendFallbackReason: Uncategorized(opt_aref)
           CheckInterrupts
-          Return v20
+          Return v22
         ");
     }
 
@@ -4188,18 +4491,20 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :x@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v16:BasicObject = Send v10, :empty? # SendFallbackReason: Uncategorized(opt_empty_p)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :x@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :x@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v13:CPtr = GetEP 0
+          v14:BasicObject = LoadField v13, :x@0x1000
+          v17:BasicObject = Send v14, :empty? # SendFallbackReason: Uncategorized(opt_empty_p)
           CheckInterrupts
-          Return v16
+          Return v17
         ");
     }
 
@@ -4214,18 +4519,20 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :x@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v16:BasicObject = Send v10, :succ # SendFallbackReason: Uncategorized(opt_succ)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :x@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :x@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v13:CPtr = GetEP 0
+          v14:BasicObject = LoadField v13, :x@0x1000
+          v17:BasicObject = Send v14, :succ # SendFallbackReason: Uncategorized(opt_succ)
           CheckInterrupts
-          Return v16
+          Return v17
         ");
     }
 
@@ -4240,20 +4547,24 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :x@0x1000
-          v4:BasicObject = LoadField v2, :y@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :x@1
-          v9:BasicObject = LoadArg :y@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v20:BasicObject = Send v12, :&, v13 # SendFallbackReason: Uncategorized(opt_and)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :x@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :x@0x1000, v5
+          v8:BasicObject = LoadArg :y@2
+          StoreField v6, :y@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :x@0x1000
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :y@0x1001
+          v22:BasicObject = Send v16, :&, v19 # SendFallbackReason: Uncategorized(opt_and)
           CheckInterrupts
-          Return v20
+          Return v22
         ");
     }
 
@@ -4268,20 +4579,24 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :x@0x1000
-          v4:BasicObject = LoadField v2, :y@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :x@1
-          v9:BasicObject = LoadArg :y@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v20:BasicObject = Send v12, :|, v13 # SendFallbackReason: Uncategorized(opt_or)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :x@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :x@0x1000, v5
+          v8:BasicObject = LoadArg :y@2
+          StoreField v6, :y@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :x@0x1000
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :y@0x1001
+          v22:BasicObject = Send v16, :|, v19 # SendFallbackReason: Uncategorized(opt_or)
           CheckInterrupts
-          Return v20
+          Return v22
         ");
     }
 
@@ -4296,18 +4611,20 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :x@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v16:BasicObject = Send v10, :! # SendFallbackReason: Uncategorized(opt_not)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :x@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :x@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v13:CPtr = GetEP 0
+          v14:BasicObject = LoadField v13, :x@0x1000
+          v17:BasicObject = Send v14, :! # SendFallbackReason: Uncategorized(opt_not)
           CheckInterrupts
-          Return v16
+          Return v17
         ");
     }
 
@@ -4322,20 +4639,24 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :regexp@0x1000
-          v4:BasicObject = LoadField v2, :matchee@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :regexp@1
-          v9:BasicObject = LoadArg :matchee@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v20:BasicObject = Send v12, :=~, v13 # SendFallbackReason: Uncategorized(opt_regexpmatch2)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :regexp@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :regexp@0x1000, v5
+          v8:BasicObject = LoadArg :matchee@2
+          StoreField v6, :matchee@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :regexp@0x1000
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :matchee@0x1001
+          v22:BasicObject = Send v16, :=~, v19 # SendFallbackReason: Uncategorized(opt_regexpmatch2)
           CheckInterrupts
-          Return v20
+          Return v22
         ");
     }
 
@@ -4390,59 +4711,80 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          v3:NilClass = Const Value(nil)
-          v4:NilClass = Const Value(nil)
-          Jump bb3(v1, v2, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
+          v4:BasicObject = LoadArg :self@0
+          v5:NilClass = Const Value(nil)
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
           v8:NilClass = Const Value(nil)
-          v9:NilClass = Const Value(nil)
+          StoreField v6, :b@0x1001, v8
           v10:NilClass = Const Value(nil)
-          Jump bb3(v7, v8, v9, v10)
-        bb3(v12:BasicObject, v13:NilClass, v14:NilClass, v15:NilClass):
+          StoreField v6, :c@0x1002, v10
+          Jump bb3(v4)
+        bb3(v13:BasicObject):
           PatchPoint SingleRactorMode
-          v20:BasicObject = GetIvar v12, :@a
+          v18:BasicObject = GetIvar v13, :@a
           PatchPoint SingleRactorMode
-          v23:BasicObject = GetIvar v12, :@b
+          v21:BasicObject = GetIvar v13, :@b
           PatchPoint SingleRactorMode
-          v26:BasicObject = GetIvar v12, :@c
-          PatchPoint NoEPEscape(reverse_odd)
-          v38:ArrayExact = NewArray v20, v23, v26
+          v24:BasicObject = GetIvar v13, :@c
+          SetLocal :a, l0, EP@5, v18
+          SetLocal :b, l0, EP@4, v21
+          SetLocal :c, l0, EP@3, v24
+          v34:CPtr = GetEP 0
+          v35:BasicObject = LoadField v34, :a@0x1000
+          v37:CPtr = GetEP 0
+          v38:BasicObject = LoadField v37, :b@0x1001
+          v40:CPtr = GetEP 0
+          v41:BasicObject = LoadField v40, :c@0x1002
+          v43:ArrayExact = NewArray v35, v38, v41
           CheckInterrupts
-          Return v38
+          Return v43
 
         fn reverse_even@<compiled>:8:
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          v3:NilClass = Const Value(nil)
-          v4:NilClass = Const Value(nil)
-          v5:NilClass = Const Value(nil)
-          Jump bb3(v1, v2, v3, v4, v5)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v8:BasicObject = LoadArg :self@0
-          v9:NilClass = Const Value(nil)
+          v4:BasicObject = LoadArg :self@0
+          v5:NilClass = Const Value(nil)
+          v6:CPtr = GetEP 0
+          StoreField v6, :a@0x1000, v5
+          v8:NilClass = Const Value(nil)
+          StoreField v6, :b@0x1001, v8
           v10:NilClass = Const Value(nil)
-          v11:NilClass = Const Value(nil)
+          StoreField v6, :c@0x1002, v10
           v12:NilClass = Const Value(nil)
-          Jump bb3(v8, v9, v10, v11, v12)
-        bb3(v14:BasicObject, v15:NilClass, v16:NilClass, v17:NilClass, v18:NilClass):
+          StoreField v6, :d@0x1003, v12
+          Jump bb3(v4)
+        bb3(v15:BasicObject):
           PatchPoint SingleRactorMode
-          v23:BasicObject = GetIvar v14, :@a
+          v20:BasicObject = GetIvar v15, :@a
           PatchPoint SingleRactorMode
-          v26:BasicObject = GetIvar v14, :@b
+          v23:BasicObject = GetIvar v15, :@b
           PatchPoint SingleRactorMode
-          v29:BasicObject = GetIvar v14, :@c
+          v26:BasicObject = GetIvar v15, :@c
           PatchPoint SingleRactorMode
-          v32:BasicObject = GetIvar v14, :@d
-          PatchPoint NoEPEscape(reverse_even)
-          v46:ArrayExact = NewArray v23, v26, v29, v32
+          v29:BasicObject = GetIvar v15, :@d
+          SetLocal :a, l0, EP@6, v20
+          SetLocal :b, l0, EP@5, v23
+          SetLocal :c, l0, EP@4, v26
+          SetLocal :d, l0, EP@3, v29
+          v41:CPtr = GetEP 0
+          v42:BasicObject = LoadField v41, :a@0x1000
+          v44:CPtr = GetEP 0
+          v45:BasicObject = LoadField v44, :b@0x1001
+          v47:CPtr = GetEP 0
+          v48:BasicObject = LoadField v47, :c@0x1002
+          v50:CPtr = GetEP 0
+          v51:BasicObject = LoadField v50, :d@0x1003
+          v53:ArrayExact = NewArray v42, v45, v48, v51
           CheckInterrupts
-          Return v46
+          Return v53
         ");
     }
 
@@ -4457,24 +4799,26 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :x@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :x@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :x@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v13:CPtr = GetEP 0
+          v14:BasicObject = LoadField v13, :x@0x1000
           CheckInterrupts
-          v17:CBool = IsNil v10
-          v18:NilClass = Const Value(nil)
-          CondBranch v17, bb4(v9, v18, v18), bb5()
+          v18:CBool = IsNil v14
+          v19:NilClass = Const Value(nil)
+          CondBranch v18, bb4(v9, v19), bb5()
         bb5():
-          v20:NotNil = RefineType v10, NotNil
-          v22:BasicObject = Send v20, :itself # SendFallbackReason: Uncategorized(opt_send_without_block)
-          Jump bb4(v9, v20, v22)
-        bb4(v24:BasicObject, v25:BasicObject, v26:BasicObject):
+          v21:NotNil = RefineType v14, NotNil
+          v23:BasicObject = Send v21, :itself # SendFallbackReason: Uncategorized(opt_send_without_block)
+          Jump bb4(v9, v23)
+        bb4(v25:BasicObject, v26:BasicObject):
           CheckInterrupts
           Return v26
         ");
@@ -4498,36 +4842,40 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :x@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :x@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :x@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v13:CPtr = GetEP 0
+          v14:BasicObject = LoadField v13, :x@0x1000
           CheckInterrupts
-          v16:CBool = Test v10
-          v17:Falsy = RefineType v10, Falsy
-          CondBranch v16, bb6(), bb4(v9, v17)
+          v17:CBool = Test v14
+          v18:Falsy = RefineType v14, Falsy
+          CondBranch v17, bb6(), bb4(v9)
         bb6():
-          v19:Truthy = RefineType v10, Truthy
+          v20:Truthy = RefineType v14, Truthy
+          v23:CPtr = GetEP 0
+          v24:BasicObject = LoadField v23, :x@0x1000
           CheckInterrupts
-          v25:CBool[false] = IsNil v19
-          v26:NilClass = Const Value(nil)
-          CondBranch v25, bb5(v9, v26, v26), bb7()
+          v28:CBool = IsNil v24
+          v29:NilClass = Const Value(nil)
+          CondBranch v28, bb5(v9, v29), bb7()
         bb7():
-          v28:Truthy = RefineType v19, NotNil
-          v30:BasicObject = Send v28, :itself # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v31:NotNil = RefineType v24, NotNil
+          v33:BasicObject = Send v31, :itself # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
-          Return v30
-        bb4(v35:BasicObject, v36:Falsy):
-          v40:Fixnum[4] = Const Value(4)
-          Jump bb5(v35, v36, v40)
-        bb5(v42:BasicObject, v43:Falsy, v44:Fixnum[4]):
+          Return v33
+        bb4(v38:BasicObject):
+          v42:Fixnum[4] = Const Value(4)
+          Jump bb5(v38, v42)
+        bb5(v44:BasicObject, v45:NilClass|Fixnum):
           CheckInterrupts
-          Return v44
+          Return v45
         ");
     }
 
@@ -4555,48 +4903,54 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :x@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :x@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :x@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v13:CPtr = GetEP 0
+          v14:BasicObject = LoadField v13, :x@0x1000
           CheckInterrupts
-          v16:CBool = Test v10
-          v17:Falsy = RefineType v10, Falsy
-          CondBranch v16, bb7(), bb6(v9, v17)
+          v17:CBool = Test v14
+          v18:Falsy = RefineType v14, Falsy
+          CondBranch v17, bb7(), bb6(v9)
         bb7():
-          v19:Truthy = RefineType v10, Truthy
+          v20:Truthy = RefineType v14, Truthy
+          v23:CPtr = GetEP 0
+          v24:BasicObject = LoadField v23, :x@0x1000
           CheckInterrupts
-          v24:CBool[true] = Test v19
-          v25 = RefineType v19, Falsy
-          CondBranch v24, bb8(), bb5(v9, v25)
+          v27:CBool = Test v24
+          v28:Falsy = RefineType v24, Falsy
+          CondBranch v27, bb8(), bb5(v9)
         bb8():
-          v27:Truthy = RefineType v19, Truthy
+          v30:Truthy = RefineType v24, Truthy
+          v33:CPtr = GetEP 0
+          v34:BasicObject = LoadField v33, :x@0x1000
           CheckInterrupts
-          v32:CBool[true] = Test v27
-          v33 = RefineType v27, Falsy
-          CondBranch v32, bb9(), bb4(v9, v33)
+          v37:CBool = Test v34
+          v38:Falsy = RefineType v34, Falsy
+          CondBranch v37, bb9(), bb4(v9)
         bb9():
-          v35:Truthy = RefineType v27, Truthy
-          v38:Fixnum[3] = Const Value(3)
+          v40:Truthy = RefineType v34, Truthy
+          v43:Fixnum[3] = Const Value(3)
           CheckInterrupts
-          Return v38
-        bb4(v63, v64):
-          v68 = Const Value(4)
+          Return v43
+        bb4(v66:BasicObject):
+          v70:Fixnum[4] = Const Value(4)
           CheckInterrupts
-          Return v68
-        bb5(v53, v54):
-          v58 = Const Value(5)
+          Return v70
+        bb5(v57:BasicObject):
+          v61:Fixnum[5] = Const Value(5)
           CheckInterrupts
-          Return v58
-        bb6(v43:BasicObject, v44:Falsy):
-          v48:Fixnum[6] = Const Value(6)
+          Return v61
+        bb6(v48:BasicObject):
+          v52:Fixnum[6] = Const Value(6)
           CheckInterrupts
-          Return v48
+          Return v52
         ");
     }
 
@@ -4608,25 +4962,26 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :arg@0x1000
-          v4:BasicObject = LoadField v2, :exception@0x1001
-          v5:BasicObject = LoadField v2, :<empty>@0x1002
-          Jump bb3(v1, v3, v4, v5)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v8:BasicObject = LoadArg :self@0
-          v9:BasicObject = LoadArg :arg@1
-          v10:BasicObject = LoadArg :exception@2
-          v11:CPtr = GetEP 0
-          v12:BasicObject = LoadField v11, :<empty>@0x1003
-          Jump bb3(v8, v9, v10, v12)
-        bb3(v14:BasicObject, v15:BasicObject, v16:BasicObject, v17:BasicObject):
-          v21:Float = InvokeBuiltin rb_f_float, v14, v15, v16
-          Jump bb4(v14, v15, v16, v17, v21)
-        bb4(v23:BasicObject, v24:BasicObject, v25:BasicObject, v26:BasicObject, v27:Float):
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :arg@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :arg@0x1000, v5
+          v8:BasicObject = LoadArg :exception@2
+          StoreField v6, :exception@0x1001, v8
+          v10:BasicObject = LoadField v6, :<empty>@0x1002
+          Jump bb3(v4)
+        bb3(v12:BasicObject):
+          v16:CPtr = GetEP 0
+          v17:BasicObject = LoadField v16, :arg@0x1000
+          v18:BasicObject = LoadField v16, :exception@0x1001
+          v19:Float = InvokeBuiltin rb_f_float, v12, v17, v18
+          Jump bb4(v12, v19)
+        bb4(v21:BasicObject, v22:Float):
           CheckInterrupts
-          Return v27
+          Return v22
         ");
     }
 
@@ -4644,11 +4999,12 @@ pub(crate) mod hir_build_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          v10:Class = InvokeBuiltin leaf <inline_expr>, v6
-          Jump bb4(v6, v10)
-        bb4(v12:BasicObject, v13:Class):
+          v10:CPtr = GetEP 0
+          v11:Class = InvokeBuiltin leaf <inline_expr>, v6
+          Jump bb4(v6, v11)
+        bb4(v13:BasicObject, v14:Class):
           CheckInterrupts
-          Return v13
+          Return v14
         ");
     }
 
@@ -4663,52 +5019,59 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :name@0x1000
-          v4:BasicObject = LoadField v2, :encoding@0x1001
-          v5:BasicObject = LoadField v2, :<empty>@0x1002
-          v6:BasicObject = LoadField v2, :block@0x1003
-          v7:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4, v5, v6, v7)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v10:BasicObject = LoadArg :self@0
-          v11:BasicObject = LoadArg :name@1
-          v12:BasicObject = LoadArg :encoding@2
-          v13:CPtr = GetEP 0
-          v14:BasicObject = LoadField v13, :<empty>@0x1003
-          v15:BasicObject = LoadArg :block@3
-          v16:NilClass = Const Value(nil)
-          Jump bb3(v10, v11, v12, v14, v15, v16)
-        bb3(v18:BasicObject, v19:BasicObject, v20:BasicObject, v21:BasicObject, v22:BasicObject, v23:NilClass):
-          v27:BasicObject = InvokeBuiltin dir_s_open, v18, v19, v20
-          PatchPoint NoEPEscape(open)
-          v35:CPtr = GetEP 0
-          v36:CUInt64 = LoadField v35, :VM_ENV_DATA_INDEX_FLAGS@0x1004
-          v37:CBool = IsBlockParamModified v36
-          CondBranch v37, bb5(), bb6()
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :name@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :name@0x1000, v5
+          v8:BasicObject = LoadArg :encoding@2
+          StoreField v6, :encoding@0x1001, v8
+          v10:BasicObject = LoadField v6, :<empty>@0x1002
+          v11:BasicObject = LoadArg :block@3
+          StoreField v6, :block@0x1003, v11
+          v13:NilClass = Const Value(nil)
+          StoreField v6, :dir@0x1004, v13
+          Jump bb3(v4)
+        bb3(v16:BasicObject):
+          v20:CPtr = GetEP 0
+          v21:BasicObject = LoadField v20, :name@0x1000
+          v22:BasicObject = LoadField v20, :encoding@0x1001
+          v23:BasicObject = InvokeBuiltin dir_s_open, v16, v21, v22
+          SetLocal :dir, l0, EP@3, v23
+          v29:CPtr = GetEP 0
+          v30:CUInt64 = LoadField v29, :VM_ENV_DATA_INDEX_FLAGS@0x1005
+          v31:CBool = IsBlockParamModified v30
+          CondBranch v31, bb5(), bb6()
         bb5():
-          v39:BasicObject = LoadField v35, :block@0x1005
-          Jump bb7(v39, v39)
+          v33:BasicObject = LoadField v29, :block@0x1003
+          Jump bb7(v33)
         bb6():
-          v41:CInt64 = LoadField v35, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
-          v42:CInt64 = GuardAnyBitSet v41, CUInt64(1)
-          v43:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb7(v43, v22)
-        bb7(v33:BasicObject, v34:BasicObject):
+          v35:CInt64 = LoadField v29, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
+          v36:CInt64 = GuardAnyBitSet v35, CUInt64(1)
+          v37:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb7(v37)
+        bb7(v28:BasicObject):
           CheckInterrupts
-          v47:CBool = Test v33
-          v48:Falsy = RefineType v33, Falsy
-          CondBranch v47, bb8(), bb4(v18, v19, v20, v21, v34, v27)
+          v41:CBool = Test v28
+          v42:Falsy = RefineType v28, Falsy
+          CondBranch v41, bb8(), bb4(v16)
         bb8():
-          v50:Truthy = RefineType v33, Truthy
-          v54:BasicObject = InvokeBlock, v27 # SendFallbackReason: InvokeBlock: not yet specialized
-          v57:BasicObject = InvokeBuiltin dir_s_close, v18, v27
+          v44:Truthy = RefineType v28, Truthy
+          v47:CPtr = GetEP 0
+          v48:BasicObject = LoadField v47, :dir@0x1004
+          v50:BasicObject = InvokeBlock, v48 # SendFallbackReason: InvokeBlock: not yet specialized
+          v53:CPtr = GetEP 0
+          v54:BasicObject = LoadField v53, :dir@0x1004
+          v55:BasicObject = InvokeBuiltin dir_s_close, v16, v54
           CheckInterrupts
-          Return v54
-        bb4(v63:BasicObject, v64:BasicObject, v65:BasicObject, v66:BasicObject, v67:BasicObject, v68:BasicObject):
+          Return v50
+        bb4(v61:BasicObject):
+          v65:CPtr = GetEP 0
+          v66:BasicObject = LoadField v65, :dir@0x1004
           CheckInterrupts
-          Return v68
+          Return v66
         ");
     }
 
@@ -4728,11 +5091,12 @@ pub(crate) mod hir_build_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          v10:BasicObject = InvokeBuiltin gc_enable, v6
-          Jump bb4(v6, v10)
-        bb4(v12:BasicObject, v13:BasicObject):
+          v10:CPtr = GetEP 0
+          v11:BasicObject = InvokeBuiltin gc_enable, v6
+          Jump bb4(v6, v11)
+        bb4(v13:BasicObject, v14:BasicObject):
           CheckInterrupts
-          Return v13
+          Return v14
         ");
     }
 
@@ -4746,24 +5110,28 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :full_mark@0x1000
-          v4:BasicObject = LoadField v2, :immediate_mark@0x1001
-          v5:BasicObject = LoadField v2, :immediate_sweep@0x1002
-          v6:BasicObject = LoadField v2, :<empty>@0x1003
-          Jump bb3(v1, v3, v4, v5, v6)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v9:BasicObject = LoadArg :self@0
-          v10:BasicObject = LoadArg :full_mark@1
-          v11:BasicObject = LoadArg :immediate_mark@2
-          v12:BasicObject = LoadArg :immediate_sweep@3
-          v13:CPtr = GetEP 0
-          v14:BasicObject = LoadField v13, :<empty>@0x1004
-          Jump bb3(v9, v10, v11, v12, v14)
-        bb3(v16:BasicObject, v17:BasicObject, v18:BasicObject, v19:BasicObject, v20:BasicObject):
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :full_mark@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :full_mark@0x1000, v5
+          v8:BasicObject = LoadArg :immediate_mark@2
+          StoreField v6, :immediate_mark@0x1001, v8
+          v10:BasicObject = LoadArg :immediate_sweep@3
+          StoreField v6, :immediate_sweep@0x1002, v10
+          v12:BasicObject = LoadField v6, :<empty>@0x1003
+          Jump bb3(v4)
+        bb3(v14:BasicObject):
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :full_mark@0x1000
+          v21:CPtr = GetEP 0
+          v22:BasicObject = LoadField v21, :immediate_mark@0x1001
+          v24:CPtr = GetEP 0
+          v25:BasicObject = LoadField v24, :immediate_sweep@0x1002
           v27:FalseClass = Const Value(false)
-          v29:BasicObject = InvokeBuiltin gc_start_internal, v16, v17, v18, v19, v27
+          v29:BasicObject = InvokeBuiltin gc_start_internal, v14, v19, v22, v25, v27
           CheckInterrupts
           Return v29
         ");
@@ -4784,11 +5152,12 @@ pub(crate) mod hir_build_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          v10:StringExact = InvokeBuiltin leaf <inline_expr>, v6
-          Jump bb4(v6, v10)
-        bb4(v12:BasicObject, v13:StringExact):
+          v10:CPtr = GetEP 0
+          v11:StringExact = InvokeBuiltin leaf <inline_expr>, v6
+          Jump bb4(v6, v11)
+        bb4(v13:BasicObject, v14:StringExact):
           CheckInterrupts
-          Return v13
+          Return v14
         ");
     }
 
@@ -4807,11 +5176,12 @@ pub(crate) mod hir_build_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          v10:StringExact = InvokeBuiltin leaf <inline_expr>, v6
-          Jump bb4(v6, v10)
-        bb4(v12:BasicObject, v13:StringExact):
+          v10:CPtr = GetEP 0
+          v11:StringExact = InvokeBuiltin leaf <inline_expr>, v6
+          Jump bb4(v6, v11)
+        bb4(v13:BasicObject, v14:StringExact):
           CheckInterrupts
-          Return v13
+          Return v14
         ");
     }
 
@@ -4826,32 +5196,34 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :x@0x1000
-          Jump bb3(v1, v3)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
-          v7:BasicObject = LoadArg :x@1
-          Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
-          v14:NilClass = Const Value(nil)
-          v17:Fixnum[0] = Const Value(0)
-          v19:Fixnum[1] = Const Value(1)
-          v22:BasicObject = Send v10, :[], v17, v19 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :x@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :x@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
+          v13:NilClass = Const Value(nil)
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :x@0x1000
+          v18:Fixnum[0] = Const Value(0)
+          v20:Fixnum[1] = Const Value(1)
+          v23:BasicObject = Send v16, :[], v18, v20 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
-          v26:CBool = Test v22
-          v27:Truthy = RefineType v22, Truthy
-          CondBranch v26, bb4(v9, v10, v14, v10, v17, v19, v27), bb5()
-        bb4(v41:BasicObject, v42:BasicObject, v43:NilClass, v44:BasicObject, v45:Fixnum[0], v46:Fixnum[1], v47:Truthy):
+          v27:CBool = Test v23
+          v28:Truthy = RefineType v23, Truthy
+          CondBranch v27, bb4(v9, v13, v16, v18, v20, v28), bb5()
+        bb4(v42:BasicObject, v43:NilClass, v44:BasicObject, v45:Fixnum[0], v46:Fixnum[1], v47:Truthy):
           CheckInterrupts
           Return v47
         bb5():
-          v29:Falsy = RefineType v22, Falsy
-          v32:Fixnum[2] = Const Value(2)
-          v35:BasicObject = Send v10, :[]=, v17, v19, v32 # SendFallbackReason: Uncategorized(opt_send_without_block)
+          v30:Falsy = RefineType v23, Falsy
+          v33:Fixnum[2] = Const Value(2)
+          v36:BasicObject = Send v16, :[]=, v18, v20, v33 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
-          Return v32
+          Return v33
         ");
     }
 
@@ -5075,20 +5447,24 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :x@0x1000
-          v4:BasicObject = LoadField v2, :y@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :x@1
-          v9:BasicObject = LoadArg :y@2
-          Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v19:BasicObject = InvokeBlock, v12, v13 # SendFallbackReason: InvokeBlock: not yet specialized
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :x@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :x@0x1000, v5
+          v8:BasicObject = LoadArg :y@2
+          StoreField v6, :y@0x1001, v8
+          Jump bb3(v4)
+        bb3(v11:BasicObject):
+          v15:CPtr = GetEP 0
+          v16:BasicObject = LoadField v15, :x@0x1000
+          v18:CPtr = GetEP 0
+          v19:BasicObject = LoadField v18, :y@0x1001
+          v21:BasicObject = InvokeBlock, v16, v19 # SendFallbackReason: InvokeBlock: not yet specialized
           CheckInterrupts
-          Return v19
+          Return v21
         ");
     }
 
@@ -5105,30 +5481,33 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :o@0x1000
-          v4:NilClass = Const Value(nil)
-          v5:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4, v5)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v8:BasicObject = LoadArg :self@0
-          v9:BasicObject = LoadArg :o@1
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :o@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :o@0x1000, v5
+          v8:NilClass = Const Value(nil)
+          StoreField v6, :a@0x1001, v8
           v10:NilClass = Const Value(nil)
-          v11:NilClass = Const Value(nil)
-          Jump bb3(v8, v9, v10, v11)
-        bb3(v13:BasicObject, v14:BasicObject, v15:NilClass, v16:NilClass):
-          v22:ArrayExact = GuardType v14, ArrayExact
-          v23:CInt64 = ArrayLength v22
-          v24:CInt64[2] = Const CInt64(2)
-          v25:CInt64 = GuardGreaterEq v23, v24
-          v26:CInt64[1] = Const CInt64(1)
-          v27:BasicObject = ArrayAref v22, v26
-          v28:CInt64[0] = Const CInt64(0)
-          v29:BasicObject = ArrayAref v22, v28
-          PatchPoint NoEPEscape(test)
+          StoreField v6, :b@0x1002, v10
+          Jump bb3(v4)
+        bb3(v13:BasicObject):
+          v17:CPtr = GetEP 0
+          v18:BasicObject = LoadField v17, :o@0x1000
+          v21:ArrayExact = GuardType v18, ArrayExact
+          v22:CInt64 = ArrayLength v21
+          v23:CInt64[2] = Const CInt64(2)
+          v24:CInt64 = GuardGreaterEq v22, v23
+          v25:CInt64[1] = Const CInt64(1)
+          v26:BasicObject = ArrayAref v21, v25
+          v27:CInt64[0] = Const CInt64(0)
+          v28:BasicObject = ArrayAref v21, v27
+          SetLocal :a, l0, EP@4, v28
+          SetLocal :b, l0, EP@3, v26
           CheckInterrupts
-          Return v14
+          Return v18
         ");
     }
 
@@ -5145,19 +5524,21 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :o@0x1000
-          v4:NilClass = Const Value(nil)
-          v5:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4, v5)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v8:BasicObject = LoadArg :self@0
-          v9:BasicObject = LoadArg :o@1
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :o@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :o@0x1000, v5
+          v8:NilClass = Const Value(nil)
+          StoreField v6, :a@0x1001, v8
           v10:NilClass = Const Value(nil)
-          v11:NilClass = Const Value(nil)
-          Jump bb3(v8, v9, v10, v11)
-        bb3(v13:BasicObject, v14:BasicObject, v15:NilClass, v16:NilClass):
+          StoreField v6, :b@0x1002, v10
+          Jump bb3(v4)
+        bb3(v13:BasicObject):
+          v17:CPtr = GetEP 0
+          v18:BasicObject = LoadField v17, :o@0x1000
           SideExit UnhandledYARVInsn(expandarray)
         ");
     }
@@ -5175,21 +5556,23 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :o@0x1000
-          v4:NilClass = Const Value(nil)
-          v5:NilClass = Const Value(nil)
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v1, v3, v4, v5, v6)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v9:BasicObject = LoadArg :self@0
-          v10:BasicObject = LoadArg :o@1
-          v11:NilClass = Const Value(nil)
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :o@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :o@0x1000, v5
+          v8:NilClass = Const Value(nil)
+          StoreField v6, :a@0x1001, v8
+          v10:NilClass = Const Value(nil)
+          StoreField v6, :b@0x1002, v10
           v12:NilClass = Const Value(nil)
-          v13:NilClass = Const Value(nil)
-          Jump bb3(v9, v10, v11, v12, v13)
-        bb3(v15:BasicObject, v16:BasicObject, v17:NilClass, v18:NilClass, v19:NilClass):
+          StoreField v6, :c@0x1003, v12
+          Jump bb3(v4)
+        bb3(v15:BasicObject):
+          v19:CPtr = GetEP 0
+          v20:BasicObject = LoadField v19, :o@0x1000
           SideExit UnhandledYARVInsn(expandarray)
         ");
     }
@@ -5205,32 +5588,35 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :kw@0x1000
-          v4:BasicObject = LoadField v2, :<empty>@0x1001
-          Jump bb3(v1, v3, v4)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
-          v8:BasicObject = LoadArg :kw@1
-          v9:CPtr = GetEP 0
-          v10:BasicObject = LoadField v9, :<empty>@0x1002
-          Jump bb3(v7, v8, v10)
-        bb3(v12:BasicObject, v13:BasicObject, v14:BasicObject):
-          v17:BoolExact = FixnumBitCheck v14, 0
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :kw@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :kw@0x1000, v5
+          v8:BasicObject = LoadField v6, :<empty>@0x1001
+          Jump bb3(v4)
+        bb3(v10:BasicObject):
+          v13:CPtr = GetEP 0
+          v14:BasicObject = LoadField v13, :<empty>@0x1001
+          v15:BoolExact = FixnumBitCheck v14, 0
           CheckInterrupts
-          v20:CBool = Test v17
-          v21:TrueClass = RefineType v17, Truthy
-          CondBranch v20, bb4(v12, v13, v14), bb5()
+          v18:CBool = Test v15
+          v19:TrueClass = RefineType v15, Truthy
+          CondBranch v18, bb4(v10), bb5()
         bb5():
-          v23:FalseClass = RefineType v17, Falsy
+          v21:FalseClass = RefineType v15, Falsy
+          v23:Fixnum[1] = Const Value(1)
           v25:Fixnum[1] = Const Value(1)
-          v27:Fixnum[1] = Const Value(1)
-          v30:BasicObject = Send v25, :+, v27 # SendFallbackReason: Uncategorized(opt_plus)
-          Jump bb4(v12, v30, v14)
-        bb4(v33:BasicObject, v34:BasicObject, v35:BasicObject):
+          v28:BasicObject = Send v23, :+, v25 # SendFallbackReason: Uncategorized(opt_plus)
+          SetLocal :kw, l0, EP@4, v28
+          Jump bb4(v10)
+        bb4(v32:BasicObject):
+          v36:CPtr = GetEP 0
+          v37:BasicObject = LoadField v36, :kw@0x1000
           CheckInterrupts
-          Return v34
+          Return v37
         ");
     }
 
@@ -5251,82 +5637,80 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:CPtr = LoadSP
-          v3:BasicObject = LoadField v2, :k1@0x1000
-          v4:BasicObject = LoadField v2, :k2@0x1001
-          v5:BasicObject = LoadField v2, :k3@0x1002
-          v6:BasicObject = LoadField v2, :k4@0x1003
-          v7:BasicObject = LoadField v2, :k5@0x1004
-          v8:BasicObject = LoadField v2, :k6@0x1005
-          v9:BasicObject = LoadField v2, :k7@0x1006
-          v10:BasicObject = LoadField v2, :k8@0x1007
-          v11:BasicObject = LoadField v2, :k9@0x1008
-          v12:BasicObject = LoadField v2, :k10@0x1009
-          v13:BasicObject = LoadField v2, :k11@0x100a
-          v14:BasicObject = LoadField v2, :k12@0x100b
-          v15:BasicObject = LoadField v2, :k13@0x100c
-          v16:BasicObject = LoadField v2, :k14@0x100d
-          v17:BasicObject = LoadField v2, :k15@0x100e
-          v18:BasicObject = LoadField v2, :k16@0x100f
-          v19:BasicObject = LoadField v2, :k17@0x1010
-          v20:BasicObject = LoadField v2, :k18@0x1011
-          v21:BasicObject = LoadField v2, :k19@0x1012
-          v22:BasicObject = LoadField v2, :k20@0x1013
-          v23:BasicObject = LoadField v2, :k21@0x1014
-          v24:BasicObject = LoadField v2, :k22@0x1015
-          v25:BasicObject = LoadField v2, :k23@0x1016
-          v26:BasicObject = LoadField v2, :k24@0x1017
-          v27:BasicObject = LoadField v2, :k25@0x1018
-          v28:BasicObject = LoadField v2, :k26@0x1019
-          v29:BasicObject = LoadField v2, :k27@0x101a
-          v30:BasicObject = LoadField v2, :k28@0x101b
-          v31:BasicObject = LoadField v2, :k29@0x101c
-          v32:BasicObject = LoadField v2, :k30@0x101d
-          v33:BasicObject = LoadField v2, :k31@0x101e
-          v34:BasicObject = LoadField v2, :k32@0x101f
-          v35:BasicObject = LoadField v2, :k33@0x1020
-          v36:BasicObject = LoadField v2, :<empty>@0x1021
-          Jump bb3(v1, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22, v23, v24, v25, v26, v27, v28, v29, v30, v31, v32, v33, v34, v35, v36)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v39:BasicObject = LoadArg :self@0
-          v40:BasicObject = LoadArg :k1@1
-          v41:BasicObject = LoadArg :k2@2
-          v42:BasicObject = LoadArg :k3@3
-          v43:BasicObject = LoadArg :k4@4
-          v44:BasicObject = LoadArg :k5@5
-          v45:BasicObject = LoadArg :k6@6
-          v46:BasicObject = LoadArg :k7@7
-          v47:BasicObject = LoadArg :k8@8
-          v48:BasicObject = LoadArg :k9@9
-          v49:BasicObject = LoadArg :k10@10
-          v50:BasicObject = LoadArg :k11@11
-          v51:BasicObject = LoadArg :k12@12
-          v52:BasicObject = LoadArg :k13@13
-          v53:BasicObject = LoadArg :k14@14
-          v54:BasicObject = LoadArg :k15@15
-          v55:BasicObject = LoadArg :k16@16
-          v56:BasicObject = LoadArg :k17@17
-          v57:BasicObject = LoadArg :k18@18
-          v58:BasicObject = LoadArg :k19@19
-          v59:BasicObject = LoadArg :k20@20
-          v60:BasicObject = LoadArg :k21@21
-          v61:BasicObject = LoadArg :k22@22
-          v62:BasicObject = LoadArg :k23@23
-          v63:BasicObject = LoadArg :k24@24
-          v64:BasicObject = LoadArg :k25@25
-          v65:BasicObject = LoadArg :k26@26
-          v66:BasicObject = LoadArg :k27@27
-          v67:BasicObject = LoadArg :k28@28
-          v68:BasicObject = LoadArg :k29@29
-          v69:BasicObject = LoadArg :k30@30
-          v70:BasicObject = LoadArg :k31@31
-          v71:BasicObject = LoadArg :k32@32
-          v72:BasicObject = LoadArg :k33@33
-          v73:CPtr = GetEP 0
-          v74:BasicObject = LoadField v73, :<empty>@0x1022
-          Jump bb3(v39, v40, v41, v42, v43, v44, v45, v46, v47, v48, v49, v50, v51, v52, v53, v54, v55, v56, v57, v58, v59, v60, v61, v62, v63, v64, v65, v66, v67, v68, v69, v70, v71, v72, v74)
-        bb3(v76:BasicObject, v77:BasicObject, v78:BasicObject, v79:BasicObject, v80:BasicObject, v81:BasicObject, v82:BasicObject, v83:BasicObject, v84:BasicObject, v85:BasicObject, v86:BasicObject, v87:BasicObject, v88:BasicObject, v89:BasicObject, v90:BasicObject, v91:BasicObject, v92:BasicObject, v93:BasicObject, v94:BasicObject, v95:BasicObject, v96:BasicObject, v97:BasicObject, v98:BasicObject, v99:BasicObject, v100:BasicObject, v101:BasicObject, v102:BasicObject, v103:BasicObject, v104:BasicObject, v105:BasicObject, v106:BasicObject, v107:BasicObject, v108:BasicObject, v109:BasicObject, v110:BasicObject):
+          v4:BasicObject = LoadArg :self@0
+          v5:BasicObject = LoadArg :k1@1
+          v6:CPtr = GetEP 0
+          StoreField v6, :k1@0x1000, v5
+          v8:BasicObject = LoadArg :k2@2
+          StoreField v6, :k2@0x1001, v8
+          v10:BasicObject = LoadArg :k3@3
+          StoreField v6, :k3@0x1002, v10
+          v12:BasicObject = LoadArg :k4@4
+          StoreField v6, :k4@0x1003, v12
+          v14:BasicObject = LoadArg :k5@5
+          StoreField v6, :k5@0x1004, v14
+          v16:BasicObject = LoadArg :k6@6
+          StoreField v6, :k6@0x1005, v16
+          v18:BasicObject = LoadArg :k7@7
+          StoreField v6, :k7@0x1006, v18
+          v20:BasicObject = LoadArg :k8@8
+          StoreField v6, :k8@0x1007, v20
+          v22:BasicObject = LoadArg :k9@9
+          StoreField v6, :k9@0x1008, v22
+          v24:BasicObject = LoadArg :k10@10
+          StoreField v6, :k10@0x1009, v24
+          v26:BasicObject = LoadArg :k11@11
+          StoreField v6, :k11@0x100a, v26
+          v28:BasicObject = LoadArg :k12@12
+          StoreField v6, :k12@0x100b, v28
+          v30:BasicObject = LoadArg :k13@13
+          StoreField v6, :k13@0x100c, v30
+          v32:BasicObject = LoadArg :k14@14
+          StoreField v6, :k14@0x100d, v32
+          v34:BasicObject = LoadArg :k15@15
+          StoreField v6, :k15@0x100e, v34
+          v36:BasicObject = LoadArg :k16@16
+          StoreField v6, :k16@0x100f, v36
+          v38:BasicObject = LoadArg :k17@17
+          StoreField v6, :k17@0x1010, v38
+          v40:BasicObject = LoadArg :k18@18
+          StoreField v6, :k18@0x1011, v40
+          v42:BasicObject = LoadArg :k19@19
+          StoreField v6, :k19@0x1012, v42
+          v44:BasicObject = LoadArg :k20@20
+          StoreField v6, :k20@0x1013, v44
+          v46:BasicObject = LoadArg :k21@21
+          StoreField v6, :k21@0x1014, v46
+          v48:BasicObject = LoadArg :k22@22
+          StoreField v6, :k22@0x1015, v48
+          v50:BasicObject = LoadArg :k23@23
+          StoreField v6, :k23@0x1016, v50
+          v52:BasicObject = LoadArg :k24@24
+          StoreField v6, :k24@0x1017, v52
+          v54:BasicObject = LoadArg :k25@25
+          StoreField v6, :k25@0x1018, v54
+          v56:BasicObject = LoadArg :k26@26
+          StoreField v6, :k26@0x1019, v56
+          v58:BasicObject = LoadArg :k27@27
+          StoreField v6, :k27@0x101a, v58
+          v60:BasicObject = LoadArg :k28@28
+          StoreField v6, :k28@0x101b, v60
+          v62:BasicObject = LoadArg :k29@29
+          StoreField v6, :k29@0x101c, v62
+          v64:BasicObject = LoadArg :k30@30
+          StoreField v6, :k30@0x101d, v64
+          v66:BasicObject = LoadArg :k31@31
+          StoreField v6, :k31@0x101e, v66
+          v68:BasicObject = LoadArg :k32@32
+          StoreField v6, :k32@0x101f, v68
+          v70:BasicObject = LoadArg :k33@33
+          StoreField v6, :k33@0x1020, v70
+          v72:BasicObject = LoadField v6, :<empty>@0x1021
+          Jump bb3(v4)
+        bb3(v74:BasicObject):
           SideExit TooManyKeywordParameters
         ");
     }
@@ -5338,47 +5722,56 @@ pub(crate) mod hir_build_tests {
         bb1():
           EntryPoint interpreter
           v1:BasicObject = LoadSelf
-          v2:NilClass = Const Value(nil)
-          Jump bb3(v1, v2)
+          Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
-          v6:NilClass = Const Value(nil)
-          Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+          v4:BasicObject = LoadArg :self@0
+          v5:NilClass = Const Value(nil)
+          v6:CPtr = GetEP 0
+          StoreField v6, :i@0x1000, v5
+          Jump bb3(v4)
+        bb3(v9:BasicObject):
           v13:NilClass = Const Value(nil)
           v15:TrueClass|NilClass = Defined yield, v13
           v17:CBool = Test v15
           v18:NilClass = RefineType v15, Falsy
-          CondBranch v17, bb9(), bb4(v8, v9)
+          CondBranch v17, bb9(), bb4(v9)
         bb9():
           v20:TrueClass = RefineType v15, Truthy
-          Jump bb6(v8, v9)
-        bb6(v30:BasicObject, v31:NilClass):
-          v35:Fixnum[0] = Const Value(0)
-          Jump bb8(v30, v35)
-        bb8(v48:BasicObject, v49:Fixnum):
-          v52:BoolExact = InvokeBuiltin rb_jit_ary_at_end, v48, v49
+          Jump bb6(v9)
+        bb6(v30:BasicObject):
+          v34:Fixnum[0] = Const Value(0)
+          SetLocal :i, l0, EP@3, v34
+          Jump bb8(v30)
+        bb8(v47:BasicObject):
+          v50:CPtr = GetEP 0
+          v51:BasicObject = LoadField v50, :i@0x1000
+          v52:BoolExact = InvokeBuiltin rb_jit_ary_at_end, v47, v51
           v54:CBool = Test v52
           v55:FalseClass = RefineType v52, Falsy
-          CondBranch v54, bb10(), bb7(v48, v49)
+          CondBranch v54, bb10(), bb7(v47)
         bb10():
           v57:TrueClass = RefineType v52, Truthy
           v59:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v48
-        bb7(v67:BasicObject, v68:Fixnum):
-          v72:BasicObject = InvokeBuiltin rb_jit_ary_at, v67, v68
-          v74:BasicObject = InvokeBlock, v72 # SendFallbackReason: InvokeBlock: not yet specialized
-          v78:Fixnum = InvokeBuiltin rb_jit_fixnum_inc, v67, v68
-          PatchPoint NoEPEscape(each)
-          Jump bb8(v67, v78)
-        bb4(v23:BasicObject, v24:NilClass):
+          Return v47
+        bb7(v67:BasicObject):
+          v71:CPtr = GetEP 0
+          v72:BasicObject = LoadField v71, :i@0x1000
+          v73:BasicObject = InvokeBuiltin rb_jit_ary_at, v67, v72
+          v75:BasicObject = InvokeBlock, v73 # SendFallbackReason: InvokeBlock: not yet specialized
+          v79:CPtr = GetEP 0
+          v80:BasicObject = LoadField v79, :i@0x1000
+          v81:Fixnum = InvokeBuiltin rb_jit_fixnum_inc, v67, v80
+          SetLocal :i, l0, EP@3, v81
+          Jump bb8(v67)
+        bb4(v23:BasicObject):
+          v27:CPtr = GetEP 0
           v28:BasicObject = InvokeBuiltin <inline_expr>, v23
-          Jump bb5(v23, v24, v28)
-        bb5(v40:BasicObject, v41:NilClass, v42:BasicObject):
+          Jump bb5(v23, v28)
+        bb5(v40:BasicObject, v41:BasicObject):
           CheckInterrupts
-          Return v42
+          Return v41
         ");
     }
 
@@ -5539,20 +5932,22 @@ pub(crate) mod hir_build_tests {
       bb1():
         EntryPoint interpreter
         v1:BasicObject = LoadSelf
-        v2:CPtr = LoadSP
-        v3:BasicObject = LoadField v2, :a@0x1000
-        Jump bb3(v1, v3)
+        Jump bb3(v1)
       bb2():
         EntryPoint JIT(0)
-        v6:BasicObject = LoadArg :self@0
-        v7:BasicObject = LoadArg :a@1
-        Jump bb3(v6, v7)
-      bb3(v9:BasicObject, v10:BasicObject):
-        v15:RegexpExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-        v18:BasicObject = Send v10, :=~, v15 # SendFallbackReason: Uncategorized(opt_regexpmatch2)
-        v22:StringExact|NilClass = GetSpecialNumber 2
+        v4:BasicObject = LoadArg :self@0
+        v5:BasicObject = LoadArg :a@1
+        v6:CPtr = GetEP 0
+        StoreField v6, :a@0x1000, v5
+        Jump bb3(v4)
+      bb3(v9:BasicObject):
+        v13:CPtr = GetEP 0
+        v14:BasicObject = LoadField v13, :a@0x1000
+        v16:RegexpExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+        v19:BasicObject = Send v14, :=~, v16 # SendFallbackReason: Uncategorized(opt_regexpmatch2)
+        v23:StringExact|NilClass = GetSpecialNumber 2
         CheckInterrupts
-        Return v22
+        Return v23
       ");
     }
 
@@ -5569,20 +5964,22 @@ pub(crate) mod hir_build_tests {
       bb1():
         EntryPoint interpreter
         v1:BasicObject = LoadSelf
-        v2:CPtr = LoadSP
-        v3:BasicObject = LoadField v2, :a@0x1000
-        Jump bb3(v1, v3)
+        Jump bb3(v1)
       bb2():
         EntryPoint JIT(0)
-        v6:BasicObject = LoadArg :self@0
-        v7:BasicObject = LoadArg :a@1
-        Jump bb3(v6, v7)
-      bb3(v9:BasicObject, v10:BasicObject):
-        v15:RegexpExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
-        v18:BasicObject = Send v10, :=~, v15 # SendFallbackReason: Uncategorized(opt_regexpmatch2)
-        v22:StringExact|NilClass = GetSpecialSymbol LastMatch
+        v4:BasicObject = LoadArg :self@0
+        v5:BasicObject = LoadArg :a@1
+        v6:CPtr = GetEP 0
+        StoreField v6, :a@0x1000, v5
+        Jump bb3(v4)
+      bb3(v9:BasicObject):
+        v13:CPtr = GetEP 0
+        v14:BasicObject = LoadField v13, :a@0x1000
+        v16:RegexpExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+        v19:BasicObject = Send v14, :=~, v16 # SendFallbackReason: Uncategorized(opt_regexpmatch2)
+        v23:StringExact|NilClass = GetSpecialSymbol LastMatch
         CheckInterrupts
-        Return v22
+        Return v23
       ");
     }
 }

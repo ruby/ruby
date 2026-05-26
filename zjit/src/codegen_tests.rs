@@ -6,7 +6,7 @@ use crate::backend::lir::Assembler;
 use crate::codegen::max_iseq_versions;
 use crate::cruby::*;
 use crate::hir::{Insn, iseq_to_hir};
-use crate::options::{rb_zjit_prepare_options, set_call_threshold};
+use crate::options::{rb_zjit_prepare_options, set_call_threshold, self};
 use crate::payload::IseqVersion;
 use crate::hir::tests::hir_build_tests::assert_contains_opcode;
 use crate::payload::*;
@@ -5710,4 +5710,42 @@ fn test_getlocal_level_zero_after_setlocal_wc_0() {
         end
         test
     "#), @"2");
+}
+
+#[test]
+fn test_disable_hir_opt_with_eval() {
+    // Regression test: --zjit-disable-hir-opt did not properly
+    // use speculations related to environment escape
+    set_call_threshold(1);
+    options::disable_hir_opt();
+    assert_snapshot!(inspect("
+        def test
+          ofor = nil
+          n = 0
+          eval('n = 2')
+          raise unless ofor.nil?
+          raise %Q(n=#{n} and !=2) unless n == 2
+        end
+        test
+        test
+    "), @"nil");
+}
+
+#[test]
+fn test_local_access_around_trivial_inlining() {
+    // Regression test for https://github.com/Shopify/ruby/issues/976
+    // where local variable reloading logic had a conflict with
+    // the trivial inliner, giving incorrect results.
+    set_call_threshold(2);
+    assert_snapshot!(inspect("
+        def foo(&block) = 1
+
+        def test
+          a = 1
+          foo {}
+          a
+        end
+
+        [test, test]
+    "), @"[1, 1]");
 }

@@ -1013,6 +1013,7 @@ fn inline_kernel_class(fun: &mut hir::Function, block: hir::BlockId, _recv: hir:
 /// num is always a Fixnum (starts at 0 and is incremented by fixnum_inc).
 fn inline_fixnum_inc(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[_self, num] = args else { return None; };
+    let num = fun.coerce_to(block, num, types::Fixnum, state);
     let one = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(VALUE::fixnum_from_usize(1)) });
     let result = fun.push_insn(block, hir::Insn::FixnumAdd { left: num, right: one, state });
     Some(result)
@@ -1023,6 +1024,7 @@ fn inline_fixnum_inc(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::I
 fn inline_ary_at(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
     let &[recv, index] = args else { return None; };
     let recv = fun.push_insn(block, hir::Insn::RefineType { val: recv, new_type: types::Array });
+    let index = fun.coerce_to(block, index, types::Fixnum, _state);
     let index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
     let result = fun.push_insn(block, hir::Insn::ArrayAref { array: recv, index });
     Some(result)
@@ -1033,6 +1035,7 @@ fn inline_ary_at(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnI
 fn inline_ary_at_end(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[recv, index] = args else { return None; };
     let recv = fun.push_insn(block, hir::Insn::RefineType { val: recv, new_type: types::Array });
+    let index = fun.coerce_to(block, index, types::Fixnum, state);
     let length_cint = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });
     let length = fun.push_insn(block, hir::Insn::BoxFixnum { val: length_cint, state });
     let result = fun.push_insn(block, hir::Insn::FixnumGe { left: index, right: length });

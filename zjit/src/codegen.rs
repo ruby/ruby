@@ -2777,14 +2777,9 @@ fn gen_save_sp(asm: &mut Assembler, stack_size: usize) {
     asm.mov(cfp_sp, sp_addr);
 }
 
-/// Spill locals onto the stack.
-fn gen_spill_locals(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
-    // TODO: Avoid spilling locals that have been spilled before and not changed.
-    gen_incr_counter(asm, Counter::vm_write_locals_count);
-    asm_comment!(asm, "spill locals");
-    for (idx, &insn_id) in state.locals().enumerate() {
-        asm.mov(Opnd::mem(64, SP, (-local_idx_to_ep_offset(state.iseq, idx) - 1) * SIZEOF_VALUE_I32), jit.get_opnd(insn_id));
-    }
+/// Spill locals onto the stack. Does nothing for now since locals are eagerly
+/// written through EP.
+fn gen_spill_locals(_jit: &JITState, _asm: &mut Assembler, _state: &FrameState) {
 }
 
 /// Spill the virtual stack onto the stack.
@@ -2972,15 +2967,9 @@ fn build_side_exit(jit: &JITState, state: &FrameState) -> SideExit {
         stack.push(jit.get_opnd(insn_id));
     }
 
-    let mut locals = Vec::new();
-    for &insn_id in state.locals() {
-        locals.push(jit.get_opnd(insn_id));
-    }
-
     SideExit{
         pc: Opnd::const_ptr(state.pc),
         stack,
-        locals,
         iseq: state.iseq,
         recompile: None,
     }

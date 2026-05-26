@@ -537,6 +537,13 @@ pub fn enable_zjit_stats() {
     unsafe { OPTIONS.as_mut() }.unwrap().stats = true;
 }
 
+/// Enable --zjit-disable-hir-opt for testing
+#[cfg(test)]
+pub fn disable_hir_opt() {
+    rb_zjit_prepare_options();
+    unsafe { OPTIONS.as_mut() }.unwrap().disable_hir_opt = true;
+}
+
 /// Print ZJIT options for `ruby --help`. `width` is width of option parts, and
 /// `columns` is indent width of descriptions.
 #[unsafe(no_mangle)]

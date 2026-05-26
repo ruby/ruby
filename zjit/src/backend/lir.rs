@@ -3,7 +3,7 @@ use std::fmt;
 use std::mem::take;
 use std::rc::Rc;
 use crate::bitset::BitSet;
-use crate::codegen::{local_size_and_idx_to_ep_offset, perf_symbol_range_start, perf_symbol_range_end};
+use crate::codegen::{perf_symbol_range_start, perf_symbol_range_end};
 use crate::cruby::{IseqPtr, Qundef, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
@@ -548,7 +548,6 @@ impl From<VALUE> for Opnd {
 pub struct SideExit {
     pub pc: Opnd,
     pub stack: Vec<Opnd>,
-    pub locals: Vec<Opnd>,
     pub iseq: IseqPtr,
     /// If set, the side exit will call the recompile function with these arguments
     /// to profile the send and invalidate the ISEQ for recompilation.
@@ -1121,17 +1120,10 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::LeaJumpTarget { target, .. } |
             Insn::PatchPoint { target, .. } => {
                 match target {
-                    Target::SideExit { exit: SideExit { stack, locals, .. }, .. } => {
+                    Target::SideExit { exit: SideExit { stack, .. }, .. } => {
                         let stack_idx = self.idx;
                         if stack_idx < stack.len() {
                             let opnd = &stack[stack_idx];
-                            self.idx += 1;
-                            return Some(opnd);
-                        }
-
-                        let local_idx = self.idx - stack.len();
-                        if local_idx < locals.len() {
-                            let opnd = &locals[local_idx];
                             self.idx += 1;
                             return Some(opnd);
                         }
@@ -1157,17 +1149,10 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
                 }
 
                 match target {
-                    Target::SideExit { exit: SideExit { stack, locals, .. }, .. } => {
+                    Target::SideExit { exit: SideExit { stack, .. }, .. } => {
                         let stack_idx = self.idx - 1;
                         if stack_idx < stack.len() {
                             let opnd = &stack[stack_idx];
-                            self.idx += 1;
-                            return Some(opnd);
-                        }
-
-                        let local_idx = stack_idx - stack.len();
-                        if local_idx < locals.len() {
-                            let opnd = &locals[local_idx];
                             self.idx += 1;
                             return Some(opnd);
                         }
@@ -1299,17 +1284,10 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::LeaJumpTarget { target, .. } |
             Insn::PatchPoint { target, .. } => {
                 match target {
-                    Target::SideExit { exit: SideExit { stack, locals, .. }, .. } => {
+                    Target::SideExit { exit: SideExit { stack, .. }, .. } => {
                         let stack_idx = self.idx;
                         if stack_idx < stack.len() {
                             let opnd = &mut stack[stack_idx];
-                            self.idx += 1;
-                            return Some(opnd);
-                        }
-
-                        let local_idx = self.idx - stack.len();
-                        if local_idx < locals.len() {
-                            let opnd = &mut locals[local_idx];
                             self.idx += 1;
                             return Some(opnd);
                         }
@@ -1335,17 +1313,10 @@ impl<'a> InsnOpndMutIterator<'a> {
                 }
 
                 match target {
-                    Target::SideExit { exit: SideExit { stack, locals, .. }, .. } => {
+                    Target::SideExit { exit: SideExit { stack, .. }, .. } => {
                         let stack_idx = self.idx - 1;
                         if stack_idx < stack.len() {
                             let opnd = &mut stack[stack_idx];
-                            self.idx += 1;
-                            return Some(opnd);
-                        }
-
-                        let local_idx = stack_idx - stack.len();
-                        if local_idx < locals.len() {
-                            let opnd = &mut locals[local_idx];
                             self.idx += 1;
                             return Some(opnd);
                         }
@@ -2620,9 +2591,9 @@ impl Assembler
     /// Returns the exit code as a list of instructions to be appended after the main
     /// code is linearized and split.
     pub fn compile_exits(&mut self) -> Vec<Insn> {
-        /// Restore VM state (cfp->pc, cfp->sp, stack, locals) for the side exit.
+        /// Restore VM state (cfp->pc, cfp->sp, stack) for the side exit.
         fn compile_exit_save_state(asm: &mut Assembler, exit: &SideExit) {
-            let SideExit { pc, stack, locals, iseq, .. } = exit;
+            let SideExit { pc, stack, iseq, .. } = exit;
 
             // Side exit blocks are not part of the CFG at the moment,
             // so we need to manually ensure that patchpoints get padded
@@ -2644,13 +2615,6 @@ impl Assembler
                 asm_comment!(asm, "write stack slots: {}", join_opnds(&stack, ", "));
                 for (idx, &opnd) in stack.iter().enumerate() {
                     asm.store(Opnd::mem(64, SP, idx as i32 * SIZEOF_VALUE_I32), opnd);
-                }
-            }
-
-            if !locals.is_empty() {
-                asm_comment!(asm, "write locals: {}", join_opnds(&locals, ", "));
-                for (idx, &opnd) in locals.iter().enumerate() {
-                    asm.store(Opnd::mem(64, SP, (-local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32), opnd);
                 }
             }
         }
