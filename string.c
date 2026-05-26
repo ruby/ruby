@@ -9772,6 +9772,7 @@ rb_str_enumerate_codepoints(VALUE str, VALUE ary)
     unsigned int c;
     const char *ptr, *end;
     rb_encoding *enc;
+    int enc_asciicompat;
 
     if (single_byte_optimizable(str))
         return rb_str_enumerate_bytes(str, ary);
@@ -9780,9 +9781,15 @@ rb_str_enumerate_codepoints(VALUE str, VALUE ary)
     ptr = RSTRING_PTR(str);
     end = RSTRING_END(str);
     enc = STR_ENC_GET(str);
+    enc_asciicompat = rb_enc_asciicompat(enc);
 
     while (ptr < end) {
-        c = rb_enc_codepoint_len(ptr, end, &n, enc);
+        /* Fast path: ASCII byte in an ASCII-compatible encoding is its own codepoint;
+         * skip rb_enc_codepoint_len and return the byte directly.
+         */
+        n = 1;
+        c = (enc_asciicompat && ISASCII(*ptr)) ?
+            (unsigned char)*ptr : rb_enc_codepoint_len(ptr, end, &n, enc);
         ENUM_ELEM(ary, UINT2NUM(c));
         ptr += n;
     }
@@ -11843,6 +11850,18 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
             else if (MBCLEN_CHARFOUND_P(ret)) {
                 cr = ENC_CODERANGE_VALID;
                 p += MBCLEN_CHARFOUND_LEN(ret);
+                /*
+                 * After a valid multibyte character, skip the following ASCII run.
+                 * If the next byte is already non-ASCII, search_nonascii would only
+                 * rediscover p after its word-at-a-time setup.
+                 */
+                if (p < e && ISASCII(*p)) {
+                    p = search_nonascii(p, e);
+                    if (!p) {
+                        p = e;
+                        break;
+                    }
+                }
             }
             else if (MBCLEN_INVALID_P(ret)) {
                 /*

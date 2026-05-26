@@ -453,6 +453,11 @@ EOM
           directories << mkdir
         end
 
+        real_mkdir = File.realpath(mkdir)
+        unless real_mkdir == destination_dir || normalize_path(real_mkdir).start_with?(normalize_path(destination_dir + "/"))
+          raise Gem::Package::PathError.new(real_mkdir, destination_dir)
+        end
+
         if entry.file?
           File.open(destination, "wb") do |out|
             copy_stream(tar.io, out, entry.size)

@@ -3927,10 +3927,34 @@ rb_gc_update_tbl_refs(st_table *ptr)
     gc_update_table_refs(ptr);
 }
 
-void
-rb_gc_update_set_refs(st_table *ptr)
+static int
+rb_gc_update_set_refs_i(st_data_t key, st_data_t value, st_data_t argp, int error)
 {
-    gc_update_set_refs(ptr);
+    if (rb_gc_location((VALUE)key) != (VALUE)key) {
+        return ST_REPLACE;
+    }
+
+    return ST_CONTINUE;
+}
+
+static int
+rb_gc_update_set_refs_replace_i(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
+{
+    if (rb_gc_location((VALUE)*key) != (VALUE)*key) {
+        *key = rb_gc_location((VALUE)*key);
+    }
+
+    return ST_CONTINUE;
+}
+
+void
+rb_gc_update_set_refs(st_table *tbl)
+{
+    if (!tbl || tbl->num_entries == 0) return;
+
+    if (st_foreach_with_replace(tbl, rb_gc_update_set_refs_i, rb_gc_update_set_refs_replace_i, 0)) {
+        rb_raise(rb_eRuntimeError, "hash modified during iteration");
+    }
 }
 
 static void

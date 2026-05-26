@@ -462,6 +462,7 @@ pub struct vm_ifunc {
     pub data: *const ::std::os::raw::c_void,
     pub argc: vm_ifunc_argc,
 }
+pub type rb_atomic_t = ::std::os::raw::c_uint;
 pub const METHOD_VISI_UNDEF: rb_method_visibility_t = 0;
 pub const METHOD_VISI_PUBLIC: rb_method_visibility_t = 1;
 pub const METHOD_VISI_PRIVATE: rb_method_visibility_t = 2;
@@ -1535,7 +1536,7 @@ pub type vm_call_flag_bits = u32;
 #[repr(C)]
 pub struct rb_callinfo_kwarg {
     pub keyword_len: ::std::os::raw::c_int,
-    pub references: ::std::os::raw::c_int,
+    pub references: rb_atomic_t,
     pub keywords: __IncompleteArrayField<VALUE>,
 }
 #[repr(C)]
@@ -2059,6 +2060,11 @@ unsafe extern "C" {
     pub fn rb_class_allocate_instance(klass: VALUE) -> VALUE;
     pub fn rb_obj_equal(obj1: VALUE, obj2: VALUE) -> VALUE;
     pub fn rb_reg_new_ary(ary: VALUE, options: ::std::os::raw::c_int) -> VALUE;
+    pub fn rb_reg_new_from_values(
+        cnt: ::std::os::raw::c_long,
+        elements: *const VALUE,
+        opt: ::std::os::raw::c_int,
+    ) -> VALUE;
     pub fn rb_ary_tmp_new_from_values(
         arg1: VALUE,
         arg2: ::std::os::raw::c_long,
@@ -2131,6 +2137,7 @@ unsafe extern "C" {
         arg: st_data_t,
     ) -> ::std::os::raw::c_int;
     pub fn rb_hash_new_with_size(size: st_index_t) -> VALUE;
+    pub fn rb_hash_new_with_bulk_insert(argc: ::std::os::raw::c_long, argv: *const VALUE) -> VALUE;
     pub fn rb_hash_resurrect(hash: VALUE) -> VALUE;
     pub fn rb_hash_stlike_lookup(
         hash: VALUE,

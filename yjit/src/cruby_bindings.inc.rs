@@ -371,6 +371,7 @@ pub struct vm_ifunc {
     pub data: *const ::std::os::raw::c_void,
     pub argc: vm_ifunc_argc,
 }
+pub type rb_atomic_t = ::std::os::raw::c_uint;
 pub const METHOD_VISI_UNDEF: rb_method_visibility_t = 0;
 pub const METHOD_VISI_PUBLIC: rb_method_visibility_t = 1;
 pub const METHOD_VISI_PRIVATE: rb_method_visibility_t = 2;
@@ -660,7 +661,7 @@ pub type vm_call_flag_bits = u32;
 #[repr(C)]
 pub struct rb_callinfo_kwarg {
     pub keyword_len: ::std::os::raw::c_int,
-    pub references: ::std::os::raw::c_int,
+    pub references: rb_atomic_t,
     pub keywords: __IncompleteArrayField<VALUE>,
 }
 #[repr(C)]

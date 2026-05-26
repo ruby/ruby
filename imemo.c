@@ -129,6 +129,7 @@ VALUE
 rb_imemo_cdhash_new(size_t size, const struct st_hash_type *type)
 {
     struct rb_imemo_cdhash *memo = IMEMO_NEW(struct rb_imemo_cdhash, imemo_cdhash, 0);
+    memo->tbl.num_entries = 0;
     st_init_existing_table_with_size(&memo->tbl, type, size);
     return (VALUE)memo;
 }
@@ -648,8 +649,7 @@ rb_imemo_free(VALUE obj)
         const struct rb_callinfo *ci = ((const struct rb_callinfo *)obj);
 
         if (ci->kwarg) {
-            ((struct rb_callinfo_kwarg *)ci->kwarg)->references--;
-            if (ci->kwarg->references == 0) {
+            if (RUBY_ATOMIC_FETCH_SUB(((struct rb_callinfo_kwarg *)ci->kwarg)->references, 1) == 1) {
                 ruby_xfree_sized((void *)ci->kwarg, rb_callinfo_kwarg_bytes(ci->kwarg->keyword_len));
             }
         }

@@ -305,6 +305,10 @@ module SyncDefaultGems
     ]),
   }.transform_keys(&:to_s)
 
+  def REPOSITORIES.[](gem)
+    fetch(gem) {raise "unknown repository - #{gem}"}
+  end
+
   class << Repository
     def find_upstream(file)
       return if NO_UPSTREAM.any? {|dst| file.start_with?(dst) }

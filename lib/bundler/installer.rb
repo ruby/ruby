@@ -63,6 +63,11 @@ module Bundler
       Bundler.create_bundle_path
 
       ProcessLock.lock do
+        # Invalidate any stale gem specification cache from before we acquired the lock.
+        # Another process may have installed gems while we were waiting.
+        Gem::Specification.reset
+        @definition.sources.clear_cache
+
         @definition.ensure_equivalent_gemfile_and_lockfile(options[:deployment])
 
         if @definition.dependencies.empty?

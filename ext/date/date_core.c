@@ -6003,7 +6003,7 @@ dup_obj_with_new_start(VALUE obj, double sg)
 
 /*
  * call-seq:
- *   new_start(start = Date::ITALY]) -> new_date
+ *   new_start(start = Date::ITALY) -> new_date
  *
  * Returns a copy of +self+ with the given +start+ value:
  *

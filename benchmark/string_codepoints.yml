@@ -1,0 +1,9 @@
+prelude: |
+  mixed_ascii64 = ("a" * 63 + "\u{100}") * 2048
+  mixed_ascii256 = ("a" * 255 + "\u{100}") * 512
+  utf8_2byte = "\u{100}" * 65536
+
+benchmark:
+  codepoints_mixed_ascii64: mixed_ascii64.codepoints
+  codepoints_mixed_ascii256: mixed_ascii256.codepoints
+  codepoints_utf8_2byte: utf8_2byte.codepoints

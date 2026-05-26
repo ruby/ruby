@@ -13,6 +13,11 @@ on:
     # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
   merge_group:
   workflow_dispatch:
+    inputs:
+      notify-release-channel:
+        description: 'Also send failure notifications to SNAPSHOT_SLACK_WEBHOOK_URL (set by tarball-test-schedule).'
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
@@ -30,19 +35,32 @@ jobs:
       BRANCH: master
     outputs:
       branch: ${{ env.BRANCH }}
+      skip: ${{ steps.skipping.outputs.skip }}
     steps:
+      - id: skipping
+        run:
+          echo 'skip=true' >> $GITHUB_OUTPUT
+        if: >-
+          ${{(false
+          || contains(github.event.head_commit.message, '[DOC]')
+          || contains(github.event.pull_request.title, '[DOC]')
+          || contains(github.event.pull_request.labels.*.name, 'Documentation')
+          || (github.event.pull_request.user.login == 'dependabot[bot]')
+          )}}
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          fetch-depth: 0
+          fetch-depth: 1 # actions/checkout fetches all heads/tags unless > 0
       # tool/make-snapshot derives the branch name from HEAD and looks up
       # the upstream during ChangeLog generation. Detached checkouts
       # (pull_request, merge_group) lack a local branch with tracking, so
       # pin one to HEAD and connect it to the matching origin ref.
       - name: Materialize local branch
         run: |
-          git fetch --no-tags --depth=1 origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH"
+          git fetch --no-tags --depth=1 origin "+refs/heads/$BASE:refs/remotes/origin/$BASE"
           git checkout -B "$BRANCH" HEAD
-          git branch --set-upstream-to="origin/$BRANCH" "$BRANCH"
+          git branch --set-upstream-to="origin/$BASE" "$BRANCH"
+        env:
+          BASE: ${{ github.base_ref || env.BRANCH }}
       - uses: ./.github/actions/make-snapshot
         with:
           archname: snapshot-${{ env.BRANCH }}
@@ -50,28 +68,29 @@ jobs:
 
   ubuntu:
     needs: tarball
+    if: ${{ ! needs.tarball.outputs.skip }}
     uses: ./.github/workflows/tarball-ubuntu.yml
     with:
       archname: snapshot-${{ needs.tarball.outputs.branch }}
-      allow-failures: power_assert
-      remove-gnupg: true
-      notify-ruby-sha: true
-      branch-label: ${{ needs.tarball.outputs.branch }}
+      notify-release-channel: ${{ github.event_name == 'workflow_dispatch' && inputs.notify-release-channel || false }}
     secrets: inherit
 
   macos:
     needs: tarball
+    if: ${{ ! needs.tarball.outputs.skip }}
     uses: ./.github/workflows/tarball-macos.yml
     with:
       archname: snapshot-${{ needs.tarball.outputs.branch }}
-      allow-failures: power_assert
+      notify-release-channel: ${{ github.event_name == 'workflow_dispatch' && inputs.notify-release-channel || false }}
     secrets: inherit
 
   windows:
     needs: tarball
+    if: ${{ ! needs.tarball.outputs.skip }}
     uses: ./.github/workflows/tarball-windows.yml
     with:
       archname: snapshot-${{ needs.tarball.outputs.branch }}
+      notify-release-channel: ${{ github.event_name == 'workflow_dispatch' && inputs.notify-release-channel || false }}
     secrets: inherit
 
   non_development:

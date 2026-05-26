@@ -69,6 +69,7 @@ VALUE rb_backref_set_string(VALUE string, long pos, long len);
 void rb_match_unbusy(VALUE);
 int rb_match_count(VALUE match);
 VALUE rb_reg_new_ary(VALUE ary, int options);
+VALUE rb_reg_new_from_values(long cnt, const VALUE *elements, int opt);
 VALUE rb_reg_last_defined(VALUE match);
 
 #define ARG_REG_OPTION_MASK \

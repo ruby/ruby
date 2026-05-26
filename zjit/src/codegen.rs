@@ -19,7 +19,7 @@ use crate::state::ZJITState;
 use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_for_unhandled_hir_insn, incr_counter, incr_counter_by, send_fallback_counter, send_fallback_counter_for_method_type, send_fallback_counter_for_super_method_type, send_fallback_counter_ptr_for_opcode, send_without_block_fallback_counter_for_method_type, send_without_block_fallback_counter_for_optimized_method_type};
 use crate::stats::{counter_ptr, with_time_stat, trace_compile_phase, Counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
-use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_STACK_PTR, Opnd, SP, SideExit, SideExitRecompile, Target, asm_ccall, asm_comment};
+use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_BASE_PTR, NATIVE_STACK_PTR, Opnd, SP, SideExit, SideExitRecompile, Target, asm_ccall, asm_comment};
 use crate::hir::{iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
 use crate::hir::{BlockHandler, Const, FieldName, FrameState, Function, Insn, InsnId, Recompile, SendFallbackReason};
 use crate::hir_type::{types, Type};
@@ -376,7 +376,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
     let (mut jit, asm) = trace_compile_phase("codegen", || {
         let num_spilled_params = max_num_params(function).saturating_sub(ALLOC_REGS.len());
         let mut jit = JITState::new(version, function.num_insns(), function.num_blocks());
-        let mut asm = Assembler::new_with_stack_slots(num_spilled_params);
+        let mut asm = Assembler::new_with_stack_slots(num_spilled_params + 1); // +1 for JITFrame
 
         // Mapping from HIR block IDs to LIR block IDs.
         // This is is a one-to-one mapping from HIR to LIR blocks used for finding
@@ -679,7 +679,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::GuardBitEquals { val, expected, reason, state, recompile } => gen_guard_bit_equals(jit, asm, opnd!(val), expected, reason, recompile, &function.frame_state(state)),
         &Insn::GuardAnyBitSet { val, mask, reason, state, .. } => gen_guard_any_bit_set(jit, asm, opnd!(val), mask, reason, &function.frame_state(state)),
         &Insn::GuardNoBitsSet { val, mask, reason, state, .. } => gen_guard_no_bits_set(jit, asm, opnd!(val), mask, reason, &function.frame_state(state)),
-        &Insn::GuardLess { left, right, state } => gen_guard_less(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
+        &Insn::GuardLess { left, right, reason, state } => gen_guard_less(jit, asm, opnd!(left), opnd!(right), reason, &function.frame_state(state)),
         &Insn::GuardGreaterEq { left, right, state, .. } => gen_guard_greater_eq(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, invariant, &function.frame_state(*state))),
         Insn::CCall { cfunc, recv, args, name, owner: _, return_type: _, elidable: _ } => gen_ccall(asm, *cfunc, *name, opnd!(recv), opnds!(args)),
@@ -885,9 +885,9 @@ fn gen_getblockparam(jit: &mut JITState, asm: &mut Assembler, ep_offset: u32, le
     asm.load(Opnd::mem(VALUE_BITS, ep, offset))
 }
 
-fn gen_guard_less(jit: &mut JITState, asm: &mut Assembler, left: Opnd, right: Opnd, state: &FrameState) -> Opnd {
+fn gen_guard_less(jit: &mut JITState, asm: &mut Assembler, left: Opnd, right: Opnd, reason: SideExitReason, state: &FrameState) -> Opnd {
     asm.cmp(left, right);
-    asm.jge(jit, side_exit(jit, state, SideExitReason::GuardLess));
+    asm.jge(jit, side_exit(jit, state, reason));
     left
 }
 
@@ -2111,19 +2111,17 @@ fn gen_new_hash(
     elements: Vec<Opnd>,
     state: &FrameState,
 ) -> lir::Opnd {
-    gen_prepare_non_leaf_call(jit, asm, state);
+    if elements.is_empty() {
+        gen_prepare_leaf_call_with_gc(asm, state);
+        asm_ccall!(asm, rb_hash_new,)
+    } else {
+        gen_prepare_non_leaf_call(jit, asm, state);
 
-    let cap: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
-    let new_hash = asm_ccall!(asm, rb_hash_new_with_size, lir::Opnd::Imm(cap));
-
-    if !elements.is_empty() {
         let argv = gen_push_opnds(asm, &elements);
-        asm_ccall!(asm, rb_hash_bulk_insert, elements.len().into(), argv, new_hash);
-
+        let hash = asm_ccall!(asm, rb_hash_new_with_bulk_insert, elements.len().into(), argv);
         gen_pop_opnds(asm, &elements);
+        hash
     }
-
-    new_hash
 }
 
 /// Compile a new range instruction
@@ -2186,6 +2184,17 @@ fn gen_entry_point(jit: &mut JITState, asm: &mut Assembler, jit_entry_idx: Optio
         });
     }
     asm.frame_setup(&[]);
+
+    // Publish the JITFrame slot's location via cfp->jit_return. The slot at
+    // [NATIVE_BASE_PTR - 8] is left uninitialized here; the JIT design relies on
+    // gen_save_pc_for_gc() to populate it before any C call, and on cross-ractor
+    // barriers ensuring that no other ractor scans this CFP before such a call.
+    asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), NATIVE_BASE_PTR);
+
+    // Poison the JITFrame slot. It should be read only after gen_save_pc_for_gc().
+    if let Some(jit_return_poison) = JIT_RETURN_POISON {
+        asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, -SIZEOF_VALUE_I32), jit_return_poison.into());
+    }
 }
 
 /// Compile code that exits from JIT code with a return value
@@ -2710,11 +2719,16 @@ fn gen_save_pc_for_gc(asm: &mut Assembler, state: &FrameState) {
 
     gen_incr_counter(asm, Counter::vm_write_jit_frame_count);
     asm_comment!(asm, "save JITFrame to CFP");
-    if let Some(pc) = PC_POISON {
-        asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_PC), Opnd::const_ptr(pc));
-    }
     let jit_frame = JITFrame::new_iseq(next_pc, state.iseq, !iseq_may_write_block_code(state.iseq));
-    asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), Opnd::const_ptr(jit_frame));
+    asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, -SIZEOF_VALUE_I32), Opnd::const_ptr(jit_frame));
+
+    // CFP_PC for a live JIT frame routes through the JITFrame on the native
+    // stack (cfp->jit_return points to NATIVE_BASE_PTR), so we don't need to
+    // touch cfp->pc here. Poisoning cfp->pc with PC_POISON would actively
+    // break the case where rb_zjit_materialize_frames() previously copied
+    // jit_frame->pc into cfp->pc and cleared cfp->jit_return: the JIT keeps
+    // running, lands on this routine again, and the poison would replace
+    // the valid materialized pc behind the GC's back.
 }
 
 /// Save the current PC on the CFP as a preparation for calling a C function
@@ -2843,9 +2857,7 @@ fn gen_push_frame(asm: &mut Assembler, argc: usize, state: &FrameState, frame: C
 
     if frame.iseq.is_some() {
         // PC, SP, and ISEQ are written lazily by the callee on side-exits, non-leaf calls, or GC.
-        if let Some(jit_return_poison) = JIT_RETURN_POISON {
-            asm.mov(cfp_opnd(RUBY_OFFSET_CFP_JIT_RETURN), jit_return_poison.into());
-        }
+        // cfp->jit_return will be written by gen_entry_point() on the callee after this frame push.
         if frame.write_block_code {
             asm_comment!(asm, "write block_code for iseq that may use it");
             asm.mov(cfp_opnd(RUBY_OFFSET_CFP_BLOCK_CODE), 0.into());
@@ -3387,11 +3399,7 @@ fn gen_toregexp(jit: &mut JITState, asm: &mut Assembler, opt: usize, values: Vec
     gen_prepare_non_leaf_call(jit, asm, state);
 
     let first_opnd_ptr = gen_push_opnds(asm, &values);
-
-    let tmp_ary = asm_ccall!(asm, rb_ary_tmp_new_from_values, Opnd::Imm(0), values.len().into(), first_opnd_ptr);
-    let result = asm_ccall!(asm, rb_reg_new_ary, tmp_ary, opt.into());
-    asm_ccall!(asm, rb_ary_clear, tmp_ary);
-
+    let result = asm_ccall!(asm, rb_reg_new_from_values, values.len().into(), first_opnd_ptr, opt.into());
     gen_pop_opnds(asm, &values);
 
     result

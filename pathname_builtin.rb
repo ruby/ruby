@@ -577,31 +577,32 @@ class Pathname
     nil
   end
 
-  # Iterates over and yields a new Pathname object
-  # for each element in the given path in descending order.
+  # :markup: markdown
   #
-  #  Pathname.new('/path/to/some/file.rb').descend {|v| p v}
-  #     #<Pathname:/>
-  #     #<Pathname:/path>
-  #     #<Pathname:/path/to>
-  #     #<Pathname:/path/to/some>
-  #     #<Pathname:/path/to/some/file.rb>
+  # call-seq:
+  #   descend {|entry| ... } -> nil
+  #   descend -> new_enumerator
   #
-  #  Pathname.new('path/to/some/file.rb').descend {|v| p v}
-  #     #<Pathname:path>
-  #     #<Pathname:path/to>
-  #     #<Pathname:path/to/some>
-  #     #<Pathname:path/to/some/file.rb>
+  # With a block given, yields a new pathname for each successive dirname
+  # in the stored path; see File.dirname:
   #
-  # Returns an Enumerator if no block was given.
+  # ```ruby
+  # # Absolute path.
+  # Pathname('/path/to/some/file.rb').descend {|pn| p pn }
+  # # #<Pathname:/>
+  # # #<Pathname:/path>
+  # # #<Pathname:/path/to>
+  # # #<Pathname:/path/to/some>
+  # # #<Pathname:/path/to/some/file.rb>
+  # # Relative path.
+  # Pathname('path/to/some/file.rb').descend {|pn| p pn }
+  # # #<Pathname:path>
+  # # #<Pathname:path/to>
+  # # #<Pathname:path/to/some>
+  # # #<Pathname:path/to/some/file.rb>
+  # ```
   #
-  #   enum = Pathname.new("/usr/bin/ruby").descend
-  #     # ... do stuff ...
-  #   enum.each { |e| ... }
-  #     # yields Pathnames /, /usr, /usr/bin, and /usr/bin/ruby.
-  #
-  # It doesn't access the filesystem.
-  #
+  # With no block given, returns a new Enumerator.
   def descend
     return to_enum(__method__) unless block_given?
     vs = []
@@ -810,42 +811,39 @@ class Pathname
     result
   end
 
-  # Iterates over the children of the directory
-  # (files and subdirectories, not recursive).
+  # :markup: markdown
   #
-  # It yields Pathname object for each child.
+  # call-seq:
+  #   each_child(with_dirnames = true) {|entry| ... } -> array_of_pathnames
+  #   each_child(with_dirnames = true) -> new_enumerator
   #
-  # By default, the yielded pathnames will have enough information to access
-  # the files.
+  # With a block given and `with_dirnames` given as `true` (the default),
+  # yields a new pathname for each child
+  # of the entry represented by `self`;
+  # returns an array of those pathnames:
   #
-  # If you set +with_directory+ to +false+, then the returned pathnames will
-  # contain the filename only.
+  # ```ruby
+  # Pathname('include').each_child {|child| p child }
+  # # #<Pathname:include/ruby>
+  # # #<Pathname:include/ruby.h>
+  # # => [#<Pathname:include/ruby>, #<Pathname:include/ruby.h>]
+  # ```
   #
-  #   Pathname("/usr/local").each_child {|f| p f }
-  #   #=> #<Pathname:/usr/local/share>
-  #   #   #<Pathname:/usr/local/bin>
-  #   #   #<Pathname:/usr/local/games>
-  #   #   #<Pathname:/usr/local/lib>
-  #   #   #<Pathname:/usr/local/include>
-  #   #   #<Pathname:/usr/local/sbin>
-  #   #   #<Pathname:/usr/local/src>
-  #   #   #<Pathname:/usr/local/man>
+  # With a block given and `with_dirnames` given as `false`,
+  # yields a new pathname for each child
+  # of the entry represented by `self` with its dirname omitted;
+  # returns an array of those pathnames:
   #
-  #   Pathname("/usr/local").each_child(false) {|f| p f }
-  #   #=> #<Pathname:share>
-  #   #   #<Pathname:bin>
-  #   #   #<Pathname:games>
-  #   #   #<Pathname:lib>
-  #   #   #<Pathname:include>
-  #   #   #<Pathname:sbin>
-  #   #   #<Pathname:src>
-  #   #   #<Pathname:man>
+  # ```ruby
+  # Pathname('include').each_child(false) {|child| p child }
+  # # #<Pathname:ruby>
+  # # #<Pathname:ruby.h>
+  # # => [#<Pathname:ruby>, #<Pathname:ruby.h>]
+  # ```
   #
-  # Note that the results never contain the entries +.+ and +..+ in
-  # the directory because they are not children.
+  # Note that entries `'.'` and `'..'` are not children.
   #
-  # See Pathname#children
-  #
+  # With no block given, returns a new Enumerator.
   def each_child(with_directory=true, &b)
     children(with_directory).each(&b)
   end
@@ -1034,7 +1032,8 @@ class Pathname    # * File *
   #   atime -> new_time
   #
   # Returns a new Time object containing the time of the most recent
-  # access (read or write) to the entry represented by +self+:
+  # access (read or write) to the entry represented by `self`;
+  # see {File System Timestamps}[rdoc-ref:file/timestamps.md]:
   #
   #   # Work in a temporary directory.
   #   require 'tmpdir'
@@ -1072,7 +1071,6 @@ class Pathname    # * File *
   #     File atime:      2026-05-14 14:36:45 +0100
   #     Directory atime: 2026-05-14 14:36:45 +0100
   #
-  # See {File System Timestamps}[rdoc-ref:file/timestamps.md].
   def atime() File.atime(@path) end
 
   # :markup: markdown
@@ -1081,7 +1079,8 @@ class Pathname    # * File *
   #   birthtime -> new_time
   #
   # Returns a new Time object containing the create time of the entry
-  # represented by +self+:
+  # represented by `self`;
+  # see [File System Timestamps](rdoc-ref:file/timestamps.md):
   #
   # ```ruby
   # # Work in a temporary directory.
@@ -1122,10 +1121,67 @@ class Pathname    # * File *
   #   Directory birthtime: 2026-05-14 23:41:12 +0100
   # ```
   #
-  # See [File System Timestamps](rdoc-ref:file/timestamps.md).
   def birthtime() File.birthtime(@path) end
 
-  # See <tt>File.ctime</tt>.  Returns last (directory entry, not file) change time.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   ctime -> new_time
+  #
+  # On Windows, returns the #birthtime.
+  #
+  # On other systems,
+  # returns a new Time object containing the time of the most recent
+  # metadata change to the entry represented by `self`;
+  # see {File System Timestamps}[rdoc-ref:file/timestamps.md]:
+  #
+  # ```ruby
+  # # Work in a temporary directory.
+  # Pathname.mktmpdir do |tmpdirpath|
+  #   # A subdirectory therein, and its Pathname.
+  #   dirpath = File.join(tmpdirpath, 'subdir')
+  #   dir_pn = Pathname(dirpath)
+  #   puts "Create directory; directory ctime established."
+  #   dir_pn.mkdir
+  #   puts "  Directory ctime: #{dir_pn.ctime}"
+  #   sleep(1)
+  #
+  #   # A file in the subdirectory, and its Pathname.
+  #   filepath = File.join(dirpath, 't.txt')
+  #   file_pn = Pathname(filepath)
+  #   puts "Create file; file ctime established; directory ctime updated."
+  #   file_pn.write('foo')
+  #   puts "  File ctime:      #{file_pn.ctime}"
+  #   puts "  Directory ctime: #{dir_pn.ctime}"
+  #   sleep(1)
+  #   puts "Write file; file ctime updated; directory ctime not updated."
+  #   file_pn.write('bar')
+  #   puts "  File ctime:      #{file_pn.ctime}"
+  #   puts "  Directory ctime: #{dir_pn.ctime}"
+  #   sleep(1)
+  #   puts "Read file; neither ctime not updated."
+  #   file_pn.read
+  #   puts "  File ctime:      #{file_pn.ctime}"
+  #   puts "  Directory ctime: #{dir_pn.ctime}"
+  # end
+  # ```
+  #
+  # Output:
+  #
+  # ```text
+  # Create directory; directory ctime established.
+  #   Directory ctime: 2026-05-20 14:05:05 -0500
+  # Create file; file ctime established; directory ctime updated.
+  #   File ctime:      2026-05-20 14:05:06 -0500
+  #   Directory ctime: 2026-05-20 14:05:06 -0500
+  # Write file; file ctime updated; directory ctime not updated.
+  #   File ctime:      2026-05-20 14:05:07 -0500
+  #   Directory ctime: 2026-05-20 14:05:06 -0500
+  # Read file; neither ctime not updated.
+  #   File ctime:      2026-05-20 14:05:07 -0500
+  #   Directory ctime: 2026-05-20 14:05:06 -0500
+  # ```
+  #
   def ctime() File.ctime(@path) end
 
   # See <tt>File.mtime</tt>.  Returns last modification time.
@@ -1407,9 +1463,31 @@ class Pathname    # * FileTest *
   # The returned value is OS-dependent; on Windows, almost always `false`.
   def chardev?() FileTest.chardev?(@path) end
 
-  # Tests the file is empty.
+  # :markup: markdown
   #
-  # See Dir#empty? and FileTest.empty?.
+  # call-seq:
+  #   empty? -> true or false
+  #
+  # Returns whether the entry represented by `self` exists and is empty:
+  #
+  # ```ruby
+  # dir_pn = Pathname('example_dir')
+  # dir_pn.empty?  # => false  # Dir does not exist.
+  # dir_pn.mkdir
+  # dir_pn.empty?  # => true   # Dir exists and is empty.
+  #
+  # file_pn = Pathname('example_dir/example.txt')
+  # file_pn.empty? # => false  # File does not exist.
+  # file_pn.write('')
+  # file_pn.empty? # => true   # File exists and is empty.
+  # dir_pn.empty?  # => false  # Dir exists and is not empty.
+  # file_pn.write('foo')
+  # file_pn.empty? # => false  # File exists and is not empty.
+  #
+  # file_pn.delete
+  # dir_pn.delete
+  # ```
+  #
   def empty?
     if FileTest.directory?(@path)
       Dir.empty?(@path)
@@ -1418,19 +1496,72 @@ class Pathname    # * FileTest *
     end
   end
 
-  # See <tt>FileTest.executable?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   executable? -> true or false
+  #
+  # Returns whether the entry represented by `self` is executable;
+  # calls FileTest.executable? with argument `self.to_s`:
+  #
+  # ```ruby
+  # Pathname('bin/gem').executable?   # => true
+  # Pathname('README.md').executable? # => false
+  # ```
+  #
   def executable?() FileTest.executable?(@path) end
 
-  # See <tt>FileTest.executable_real?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   executable_real? -> true or false
+  #
+  # Returns whether the entry represented by `self` is executable
+  # by the real user and group id of the current process;
+  # calls FileTest.executable_real? with argument `self.to_s`:
+  #
+  # ```ruby
+  # pn = Pathname('example')
+  # pn.write('')
+  # pn.executable_real? # => false
+  # pn.chmod(0100)
+  # pn.executable_real? # => true
+  # ```
+  #
   def executable_real?() FileTest.executable_real?(@path) end
 
-  # See <tt>FileTest.exist?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   exist? -> true or false
+  #
+  # Returns whether the entry represented by `self` exists:
+  #
+  # ```ruby
+  # Pathname('.').exist?         # => true
+  # Pathname('README.md').exist? # => true
+  # Pathname('nosuch').exist?    # => false
+  # ```
+  #
   def exist?() FileTest.exist?(@path) end
 
   # See <tt>FileTest.grpowned?</tt>.
   def grpowned?() FileTest.grpowned?(@path) end
 
-  # See <tt>FileTest.directory?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   directory? -> true or false
+  #
+  # Returns whether the entry represented by `self` is a directory:
+  #
+  # ```ruby
+  # Pathname('/etc').directory?      # => true
+  # Pathname('lib').directory?       # => true
+  # Pathname('README.md').directory? # => false
+  # Pathname('nosuch').directory?    # => false
+  # ```
+  #
   def directory?() FileTest.directory?(@path) end
 
   # See <tt>FileTest.file?</tt>.
@@ -1567,10 +1698,27 @@ class Pathname    # * Dir *
   # Pathname object.
   def entries() Dir.entries(@path).map {|f| self.class.new(f) } end
 
-  # Iterates over the entries (files and subdirectories) in the directory.  It
-  # yields a Pathname object for each entry.
+  # :markup: markdown
   #
-  # This method has existed since 1.8.1.
+  # call-seq:
+  #   each_entry {|entry| ... } -> nil
+  #   each_entry -> new_enumerator
+  #
+  # With a block given,
+  # yields a new pathname for each entry
+  # in the entry represented by `self`;
+  # returns `nil`:
+  #
+  # ```ruby
+  # Pathname('include').each_entry {|entry| p entry }
+  # # #<Pathname:ruby>
+  # # #<Pathname:..>
+  # # #<Pathname:ruby.h>
+  # # #<Pathname:.>
+  # # => nil
+  # ```
+  #
+  # With no block given, returns a new Enumerator.
   def each_entry(&block) # :yield: pathname
     return to_enum(__method__) unless block_given?
     Dir.foreach(@path) {|f| yield self.class.new(f) }
@@ -1589,8 +1737,24 @@ class Pathname    # * Dir *
 end
 
 class Pathname    # * mixed *
-  # Removes a file or directory, using <tt>File.unlink</tt> or
-  # <tt>Dir.unlink</tt> as necessary.
+  #
+  # :markup: markdown
+  #
+  # call-seq:
+  #   unlink -> 1 or 0
+  #
+  # Removes the file or directory represented by `self`, using:
+  #
+  # - File.unlink, if `self` represents a file; returns `1`.
+  # - Dir.unlink, if `self` represents a directory; returns `0`.
+  #
+  # Examples:
+  #
+  # ```ruby
+  # Pathname(Tempfile.create).unlink   # => 1
+  # Pathname(Pathname.mktmpdir).unlink # => 0
+  # ```
+  #
   def unlink()
     Dir.unlink @path
   rescue Errno::ENOTDIR

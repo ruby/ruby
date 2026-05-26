@@ -314,6 +314,13 @@ module Bundler
         @allow_remote && api_fetchers.any?
       end
 
+      def clear_cache
+        @specs = nil
+        @installed_specs = nil
+        @default_specs = nil
+        @cached_specs = nil
+      end
+
       protected
 
       def remote_names

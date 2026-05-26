@@ -822,7 +822,7 @@ strscan_scan(VALUE self, VALUE re)
  * :include: strscan/link_refs.txt
  *
  * call-seq:
- *   match?(pattern) -> updated_position or nil
+ *   match?(pattern) -> match_size or nil
  *
  * Attempts to [match][17] the given `pattern`
  * at the beginning of the [target substring][3];
@@ -882,7 +882,7 @@ strscan_match_p(VALUE self, VALUE re)
 /*
  * :markup: markdown
  * call-seq:
- *   skip(pattern) match_size or nil
+ *   skip(pattern) -> match_size or nil
  *
  * :include: strscan/link_refs.txt
  * :include: strscan/methods/skip.md
@@ -956,7 +956,7 @@ strscan_check(VALUE self, VALUE re)
 
 /*
  * call-seq:
- *   scan_full(pattern, advance_pointer_p, return_string_p) -> matched_substring or nil
+ *   scan_full(pattern, advance_pointer_p, return_string_p) -> matched_substring or length or nil
  *
  * Equivalent to one of the following:
  *
@@ -1202,7 +1202,7 @@ strscan_getch(VALUE self)
 
 /*
  * call-seq:
- *   scan_byte -> integer_byte
+ *   scan_byte -> integer_byte or nil
  *
  * Scans one byte and returns it as an integer.
  * This method is not multibyte character sensitive.
@@ -2220,8 +2220,8 @@ named_captures_iter(const OnigUChar *name,
  * call-seq:
  *   named_captures -> hash
  *
- * Returns the array of captured match values at indexes (1..)
- * if the most recent match attempt succeeded, or nil otherwise;
+ * Returns a hash of named captures for the most recent regexp match,
+ * or an empty hash if there are no named captures;
  * see [Captured Match Values][13]:
  *
  * ```rb

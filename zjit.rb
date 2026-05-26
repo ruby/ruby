@@ -7,7 +7,7 @@
 # This module may not exist if ZJIT does not support the particular platform
 # for which CRuby is built.
 module RubyVM::ZJIT
-  # Blocks that are called when YJIT is enabled
+  # Blocks that are called when ZJIT is enabled
   @jit_hooks = []
   # Avoid calling a Ruby method here to avoid interfering with compilation tests
   if Primitive.rb_zjit_get_stats_file_path_p

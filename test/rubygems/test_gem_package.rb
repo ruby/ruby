@@ -615,6 +615,32 @@ class TestGemPackage < Gem::Package::TarTestCase
                  File.read(extracted)
   end
 
+  def test_extract_tar_gz_rejects_preexisting_symlink_escape
+    omit "Symlinks not supported or not enabled" unless symlink_supported?
+
+    package = Gem::Package.new @gem
+
+    tgz_io = util_tar_gz do |tar|
+      tar.add_file "lib/owned.txt", 0o644 do |io|
+        io.write "poc-content"
+      end
+    end
+
+    escape_dir = File.join(@tempdir, "escape")
+    FileUtils.mkdir_p escape_dir
+
+    FileUtils.rm_rf File.join(@destination, "lib")
+    File.symlink escape_dir, File.join(@destination, "lib")
+
+    escaped = File.join(escape_dir, "owned.txt")
+
+    assert_raise Gem::Package::PathError do
+      package.extract_tar_gz tgz_io, @destination
+    end
+
+    refute File.exist?(escaped), "must not write outside extraction root via symlink"
+  end
+
   def test_extract_symlink_into_symlink_dir
     omit "Symlinks not supported or not enabled" unless symlink_supported?
     package = Gem::Package.new @gem

@@ -50,10 +50,10 @@ mod snapshot_tests {
           v12:Fixnum[2] = Const Value(2)
           v13:Any = Snapshot FrameState { pc: 0x1008, stack: [v10, v12], locals: [] }
           PatchPoint MethodRedefined(Integer@0x1010, +@0x1018, cme:0x1020)
-          v33:Fixnum[6] = Const Value(6)
-          v21:Any = Snapshot FrameState { pc: 0x1048, stack: [v33], locals: [] }
+          v35:Fixnum[6] = Const Value(6)
+          v21:Any = Snapshot FrameState { pc: 0x1048, stack: [v35], locals: [] }
           CheckInterrupts
-          Return v33
+          Return v35
         ");
     }
 
@@ -2384,11 +2384,11 @@ pub(crate) mod hir_build_tests {
           v7:BasicObject = LoadArg :a@1
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
-          v15:Class[VMFrozenCore] = Const Value(VALUE(0x1008))
+          v15:ClassSubclass[VMFrozenCore] = Const Value(VALUE(0x1008))
           v17:HashExact = NewHash
           PatchPoint NoEPEscape(test)
           v22:BasicObject = Send v15, :core#hash_merge_kwd, v17, v10 # SendFallbackReason: Uncategorized(opt_send_without_block)
-          v24:Class[VMFrozenCore] = Const Value(VALUE(0x1008))
+          v24:ClassSubclass[VMFrozenCore] = Const Value(VALUE(0x1008))
           v27:StaticSymbol[:b] = Const Value(VALUE(0x1010))
           v29:Fixnum[1] = Const Value(1)
           v31:BasicObject = Send v24, :core#hash_merge_ptr, v22, v27, v29 # SendFallbackReason: Uncategorized(opt_send_without_block)
@@ -4360,7 +4360,7 @@ pub(crate) mod hir_build_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          v10:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
+          v10:ClassSubclass[VMFrozenCore] = Const Value(VALUE(0x1000))
           v12:BasicObject = PutSpecialObject CBase
           v14:StaticSymbol[:aliased] = Const Value(VALUE(0x1008))
           v16:StaticSymbol[:__callee__] = Const Value(VALUE(0x1010))

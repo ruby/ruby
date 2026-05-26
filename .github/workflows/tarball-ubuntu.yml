@@ -7,51 +7,11 @@ on:
         description: 'archname (e.g. snapshot-master, snapshot-ruby_3_3)'
         required: true
         type: string
-      allow-failures:
-        description: 'TEST_BUNDLED_GEMS_ALLOW_FAILURES value'
-        required: false
-        type: string
-        default: ''
-      patch-url:
-        description: 'Patch URL forwarded from workflow_dispatch'
-        required: false
-        type: string
-        default: ''
-      apt-mode:
-        description: '"none" | "git-only" | "ruby-and-git" — controls per-test_task apt install handling'
-        required: false
-        type: string
-        default: 'none'
-      setup-host-ruby:
-        description: 'Install Ruby 3.2 via ruby/setup-ruby for test-bundled-gems'
-        required: false
-        type: boolean
-        default: true
-      remove-gnupg:
-        description: 'Forcibly remove ~/.gnupg after tests'
+      notify-release-channel:
+        description: 'Also send failure notifications to SNAPSHOT_SLACK_WEBHOOK_URL (schedule/release builds).'
         required: false
         type: boolean
         default: false
-      fixed-dirs-extra:
-        description: 'Create $HOME/.local/share, $HOME/.ssh on top of minimal fixed dirs'
-        required: false
-        type: boolean
-        default: true
-      ruby-bin:
-        description: 'Path to ruby for post-install version check'
-        required: false
-        type: string
-        default: '/usr/local/bin/ruby'
-      notify-ruby-sha:
-        description: 'Post ruby SHA failure notification to SIMPLER_ALERTS_URL'
-        required: false
-        type: boolean
-        default: false
-      branch-label:
-        description: 'Branch label for SIMPLER_ALERTS_URL notification. Defaults to "master".'
-        required: false
-        type: string
-        default: 'master'
 
 jobs:
   ubuntu:
@@ -63,7 +23,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       ARCHNAME: ${{ inputs.archname }}
-      TEST_BUNDLED_GEMS_ALLOW_FAILURES: ${{ inputs.allow-failures }}
     steps:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -71,86 +30,28 @@ jobs:
           path: pkg
       - name: Extract
         run: tar xf pkg/*.tar.xz
-      - name: Apply patch
-        run: |
-          set -x
-          curl -sSL "${RUBY_PATCH_URL}" -o ruby.patch
-          cd "$ARCHNAME/"
-          git apply ../ruby.patch
-        shell: bash
-        env:
-          RUBY_PATCH_URL: ${{ inputs.patch-url }}
-        if: inputs.patch-url != ''
-      - name: Install libraries (apt-mode=none)
+      - name: Install libraries
         run: |
           set -x
           sudo apt-get update -q
-          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev bison- autoconf-
-        if: inputs.apt-mode == 'none'
-      - name: Install libraries (apt-mode=git-only)
-        run: |
-          set -x
-          sudo apt-get update -q || :
-          # postfix `-` means `uninstall`
-          APT_INSTALL_GIT=git-
-          case "${{ matrix.test_task }}" in
-            test-bundled-gems)
-              # test-bundled-gems-fetch requires git
-              unset APT_INSTALL_GIT
-              ;;
-            test-bundler*)
-              # avoid Bundler::Source::Git::GitNotInstalledError
-              unset APT_INSTALL_GIT
-              ;;
-            *)
-              ;;
-          esac
-          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev bison- autoconf- $APT_INSTALL_GIT
-        if: inputs.apt-mode == 'git-only'
-      - name: Install libraries (apt-mode=ruby-and-git)
-        run: |
-          set -x
-          sudo apt-get update -q || :
-          # postfix `-` means `uninstall`
-          APT_INSTALL_RUBY=ruby-
-          APT_INSTALL_GIT=git-
-          case "${{ matrix.test_task }}" in
-            test-bundled-gems)
-              # test-bundled-gems requires executable host ruby
-              APT_INSTALL_RUBY=ruby
-              # test-bundled-gems-fetch requires git
-              unset APT_INSTALL_GIT
-              ;;
-            test-bundler*)
-              # avoid Bundler::Source::Git::GitNotInstalledError
-              unset APT_INSTALL_GIT
-              ;;
-            *)
-              ;;
-          esac
-          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev libreadline6-dev zlib1g-dev libncurses5-dev libffi-dev bison- autoconf- $APT_INSTALL_RUBY $APT_INSTALL_GIT
-        if: inputs.apt-mode == 'ruby-and-git'
-      - uses: ruby/setup-ruby@c4e5b1316158f92e3d49443a9d58b31d25ac0f8f # v1.306.0
+          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev zlib1g-dev libffi-dev libgmp-dev bison- autoconf-
+      - uses: ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f # v1.310.0
         with:
-          ruby-version: 3.2
+          ruby-version: '3.2'
         # test-bundled-gems requires executable host ruby
-        if: inputs.setup-host-ruby && matrix.test_task == 'test-bundled-gems'
+        if: matrix.test_task == 'test-bundled-gems'
       - name: Fixed world writable dirs
         run: |
-          mkdir -p $HOME/.local
+          mkdir -p $HOME/.local/share
           mkdir -p $HOME/.cache/gem/specs
           mkdir -p $HOME/.bundle/cache
+          mkdir -p $HOME/.ssh
           chmod a-w $HOME/.bundle
           # chmod a-w $HOME
           # allow to write $HOME and check stats of HOME around tests (see below)
           chmod -v a-w $HOME/.config
           sudo chmod -R a-w /usr/share
           sudo bash -c 'IFS=:; for d in '"$PATH"'; do chmod -v a-w $d; done' || :
-      - name: Fixed world writable dirs (extra)
-        run: |
-          mkdir -p $HOME/.local/share
-          mkdir -p $HOME/.ssh
-        if: inputs.fixed-dirs-extra
       - name: Set ENV
         run: |
           echo "JOBS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
@@ -161,70 +62,42 @@ jobs:
       - name: Save stats of HOME
         run: |
           set -euxo pipefail
-          cd "$ARCHNAME/"
-          cat >test.rb <<'EOF'
+          cat >"$ARCHNAME/save-stats.rb" <<'EOF'
           require 'pathname'
           require 'digest'
           out = []
           [
             Dir.home,
           ].each do |dir|
-            Pathname(dir).each_child do |pn|
-              st = pn.stat
+            Dir.each_child(dir) do |pn|
+              st = File.stat(pn)
               if st.file?
-                content = Digest::SHA1.hexdigest(pn.read)
+                content = Digest::SHA1.file(pn).hexdigest
               elsif st.directory? && st.nlink <= 10
-                content = pn.children.map(&:basename).map(&:to_s).sort
+                content = Dir.children(pn).sort
               end
-              out << [pn.to_s, "%o"%st.mode, st.nlink, st.uid, st.gid, st.size, content].to_s
+              out << [pn, "%o"%st.mode, st.nlink, st.uid, st.gid, st.size, content].to_s
             rescue
-              out << [pn.to_s, $!.inspect].to_s
+              out << [pn, $!.inspect].to_s
             end
           end
-          File.open("/tmp/stat-before-tests.txt", "w") do |io|
+          File.open(ARGV.shift, "w") do |io|
             io.puts out.sort
           end
           EOF
-          make runruby
-          rm -f test.rb
+          make -C "$ARCHNAME" TESTRUN_SCRIPT=save-stats.rb RUNOPT=/tmp/stat-before-tests.txt runruby
       - name: Tests
         run: cd "$ARCHNAME/" && make $JOBS -s ${{ matrix.test_task }}
         env:
           RUBY_TESTOPTS: "-q --tty=no"
-      # not sure why ~/.gnupg is remained
-      # see tool/test/test_sync_default_gems.rb
-      - name: Forcibly remove test directory
+      # test_sync_default_gems triggers gpg, whose agent processes leave
+      # $HOME/.gnupg around even when GNUPGHOME points elsewhere.
+      - name: Forcibly remove ~/.gnupg
         run: rm -rf $HOME/.gnupg
-        if: inputs.remove-gnupg
       - name: Diff stats of HOME
         run: |
-          set -euxo pipefail
-          cd "$ARCHNAME/"
-          cat >test.rb <<'EOF'
-          require 'pathname'
-          require 'digest'
-          out = []
-          [
-            Dir.home,
-          ].each do |dir|
-            Pathname(dir).each_child do |pn|
-              st = pn.stat
-              if st.file?
-                content = Digest::SHA1.hexdigest(pn.read)
-              elsif st.directory? && st.nlink <= 10
-                content = pn.children.map(&:basename).map(&:to_s).sort
-              end
-              out << [pn.to_s, "%o"%st.mode, st.nlink, st.uid, st.gid, st.size, content].to_s
-            rescue
-              out << [pn.to_s, $!.inspect].to_s
-            end
-          end
-          File.open("/tmp/stat-after-tests.txt", "w") do |io|
-            io.puts out.sort
-          end
-          EOF
-          make runruby
-          rm -f test.rb
+          make -C "$ARCHNAME" TESTRUN_SCRIPT=save-stats.rb RUNOPT=/tmp/stat-after-tests.txt runruby
+          rm -f "$ARCHNAME/save-stats.rb"
           diff -u /tmp/stat-before-tests.txt /tmp/stat-after-tests.txt
       # leaked-globals since 2.7
       - name: Leaked Globals
@@ -236,39 +109,34 @@ jobs:
       - name: make install
         run: cd "$ARCHNAME/" && sudo make $JOBS install
         if: matrix.test_task == 'check'
-      - name: ruby -v
-        env:
-          RUBY_BIN: ${{ inputs.ruby-bin }}
-        run: '"$RUBY_BIN" -v'
+      - name: Verify installed binaries
+        run: |
+          /usr/local/bin/ruby -v
+          /usr/local/bin/gem -v
+          /usr/local/bin/bundle -v
         if: matrix.test_task == 'check'
       - name: Show .local
         run: find $HOME/.local -ls
-      - uses: ruby/action-slack@54175162371f1f7c8eb94d7c8644ee2479fcd375 # v3.2.2
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github/actions/slack
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+        if: ${{ failure() }}
+      - uses: ./.github/actions/slack
+        with:
+          label: "${{ matrix.os }} / ${{ matrix.test_task }}"
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() }}
+      - uses: ruby/action-slack@d260b61aa817726d5bedd22dd6cc305787fa4cdd # v4.0.0
         with:
           payload: |
             {
               "attachments": [{
-                "text": "${{ job.status }}: ${{ matrix.os }} / ${{ matrix.test_task }} <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ github.workflow }}>",
+                "text": "${{ job.status }}: ${{ matrix.os }} / ${{ matrix.test_task }} <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ inputs.archname }}>",
                 "color": "danger"
               }]
             }
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SNAPSHOT_SLACK_WEBHOOK_URL }}
-        if: failure() && github.event_name == 'schedule'
-      - name: Get ruby/ruby sha
-        id: ruby_sha
-        run: cd "$ARCHNAME/" && ./ruby -e 'puts "sha=#{RUBY_REVISION}"' >> $GITHUB_OUTPUT
-        if: failure() && inputs.notify-ruby-sha && github.event_name == 'schedule'
-      - uses: ruby/action-slack@54175162371f1f7c8eb94d7c8644ee2479fcd375 # v3.2.2
-        with:
-          payload: |
-            {
-              "ci": "GitHub Actions",
-              "env": "snapshot: ${{ matrix.os }} / ${{ matrix.test_task }}",
-              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "commit": "${{ steps.ruby_sha.outputs.sha }}",
-              "branch": "${{ inputs.branch-label }}"
-            }
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }}
-        if: failure() && inputs.notify-ruby-sha && github.event_name == 'schedule'
+        if: failure() && inputs.notify-release-channel
