@@ -285,7 +285,11 @@ module Gem
         Scalar.new(value: result)
       end
 
-      def coerce(val)
+      def coerce(val, depth = 0)
+        if depth > MAX_NESTING_DEPTH
+          raise Psych::SyntaxError, "exceeded maximum nesting depth (#{MAX_NESTING_DEPTH})"
+        end
+
         val = val.sub(/^! /, "") if val.start_with?("! ")
 
         if val =~ /^"(.*)"$/
@@ -311,7 +315,7 @@ module Gem
         elsif val =~ /^\[(.*)\]$/
           inner = $1.strip
           return Sequence.new if inner.empty?
-          items = inner.split(/\s*,\s*/).reject(&:empty?).map {|e| Scalar.new(value: coerce(e)) }
+          items = inner.split(/\s*,\s*/).reject(&:empty?).map {|e| Scalar.new(value: coerce(e, depth + 1)) }
           Sequence.new(items: items)
         elsif /\A\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2}:\d{2})?/.match?(val)
           begin

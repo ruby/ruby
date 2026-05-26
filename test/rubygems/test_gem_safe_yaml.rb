@@ -134,6 +134,15 @@ class TestGemSafeYAML < Gem::TestCase
     refute_includes Symbol.all_symbols.map(&:to_s), unique
   end
 
+  def test_inline_array_nesting_capped
+    depth = Gem::YAMLSerializer::Parser::MAX_NESTING_DEPTH + 1
+    yaml = "x: " + ("[" * depth) + "a" + ("]" * depth) + "\n"
+
+    assert_raise(Psych::SyntaxError) do
+      Gem::YAMLSerializer.load(yaml, permitted_classes: [])
+    end
+  end
+
   def test_yaml_serializer_aliases_disabled
     aliases_enabled = Gem::SafeYAML.aliases_enabled?
     Gem::SafeYAML.aliases_enabled = false
