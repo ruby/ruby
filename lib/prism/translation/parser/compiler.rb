@@ -2178,7 +2178,7 @@ module Prism
                   else
                     lines.sum do |line|
                       count = line.scan(/(\\*)n/).count { |(backslashes)| backslashes&.length&.odd? }
-                      count -= 1 if !line.end_with?("\n") && count > 0
+                      count -= 1 if line.match?(/(?:\A|[^\\])(?:\\\\)*\\n\z/) && count > 0
                       count
                     end
                   end
