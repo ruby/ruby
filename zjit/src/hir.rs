@@ -4930,28 +4930,67 @@ impl Function {
         }
     }
 
+    /// Load store optimization performs two functions:
+    /// 1. Elide duplicate LoadField and StoreField instructions, and replace
+    /// redundant loads or stores with their values when possible.
+    /// 2. Remove "dead stores". A store is dead when it is never used before
+    ///    getting overwritten by a second store. If this pass proves no use,
+    ///    the first store is elided.
+    ///
+    /// These two optimizations use very similar abstract interpretations and are
+    /// currently combined into one pass. The primary difference is that load
+    /// store optimization runs forward (from top to bottom of a block) while
+    /// dead store elimination runs in reverse. A subtle secondary difference is
+    /// that our use of extended basic blocks induces an asymmetry between these
+    /// two optimizations. When scanning in reverse, dead store elimination needs
+    /// to consider the "multi-exit" nature of EBBs. Stores that appear to be
+    /// dead can sometimes have early exits that make the optimization unsound
+    /// if we don't handle this special case. Basic blocks avoid this problem.
+    ///
+    /// Note for future improvements:
+    /// Load & store optimizations currently operate at a block level, but could
+    /// be expanded to operate on methods. This likely means the two passes
+    /// should be split into their own methods as instead of "one forwards, one
+    /// backwards" we need to traverse dominator and post dominator trees and it
+    /// becomes tricky enough that splitting may be cleaner.
+    ///
+    /// For further reading, see the following Rails at Scale blog post.
+    /// <https://railsatscale.com/2026-03-18-how-zjit-removes-redundant-object-loads-and-stores/>
     fn optimize_load_store(&mut self) {
+        #[derive(PartialEq, Eq, Hash, Clone, Copy)]
+        struct HeapKey {
+            object: InsnId,
+            offset: i32,
+        }
+
+        // This helper function is used to clear the cache for matching offsets
+        // while we don't have type based alias.
+        // TBAA will primarily modify any part of this optimization that
+        // currently uses this helper function.
+        fn flush_aliasing(map: &mut HashMap<HeapKey, InsnId>, offset: i32) {
+            map.retain(|HeapKey { object: _, offset: off }, _| *off != offset);
+        }
+
+        // Redundant load and store optimization
         for block in self.rpo() {
-            let mut compile_time_heap: HashMap<(InsnId, i32), InsnId>  = HashMap::new();
+            let mut compile_time_heap: HashMap<HeapKey, InsnId> = HashMap::new();
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             let mut new_insns = vec![];
+
             for insn_id in old_insns {
-                let replacement_insn: InsnId = match self.find(insn_id) {
+                match self.find(insn_id) {
                     Insn::StoreField { recv, offset, val, .. } => {
-                        let key = (self.chase_insn(recv), offset);
+                        let key = HeapKey { object: self.chase_insn(recv), offset };
                         let heap_entry = compile_time_heap.get(&key).copied();
-                        // TODO(Jacob): Switch from actual to partial equality
                         if Some(val) == heap_entry {
                             // If the value is already stored, short circuit and don't add an instruction to the block
                             continue
                         }
-                        // TODO(Jacob): Add TBAA to avoid removing so many entries
-                        compile_time_heap.retain(|(_, off), _| *off != offset);
+                        flush_aliasing(&mut compile_time_heap, offset);
                         compile_time_heap.insert(key, val);
-                        insn_id
                     },
                     Insn::LoadField { recv, offset, .. } => {
-                        let key = (self.chase_insn(recv), offset);
+                        let key = HeapKey { object: self.chase_insn(recv), offset };
                         match compile_time_heap.entry(key) {
                             std::collections::hash_map::Entry::Occupied(entry) => {
                                 // If the value is stored already, we should short circuit.
@@ -4964,28 +5003,65 @@ impl Function {
                                 compile_time_heap.insert(key, insn_id);
                             }
                         }
-                        insn_id
                     }
                     Insn::WriteBarrier { .. } => {
                         // Currently, WriteBarrier write effects are Allocator and Memory when we'd really like them to be flags.
                         // We don't use LoadField for mark bits so we can ignore them for now.
                         // But flags does not exist in our effects abstract heap modeling and we don't want to add special casing to effects.
                         // This special casing in this pass here should be removed once we refine our effects system to provide greater granularity for WriteBarrier.
-                        // TODO: use TBAA
                         let offset = RUBY_OFFSET_RBASIC_FLAGS;
-                        compile_time_heap.retain(|(_, off), _| *off != offset);
-                        insn_id
+                        flush_aliasing(&mut compile_time_heap, offset);
                     },
                     insn => {
                         // If an instruction affects memory and we haven't modeled it, the compile_time_heap is invalidated
                         if insn.effects_of().includes(Effect::write(abstract_heaps::Memory)) {
                             compile_time_heap.clear();
                         }
-                        insn_id
                     }
                 };
-                new_insns.push(replacement_insn);
+                new_insns.push(insn_id);
             }
+
+            // Set up for dead store elimination
+            let mut reversed_insns = std::mem::take(&mut new_insns);
+            reversed_insns.reverse();
+            compile_time_heap.clear();
+
+            // Dead store elimnination
+            for insn_id in reversed_insns {
+                match self.find(insn_id) {
+                    Insn::StoreField { recv, offset, .. } => {
+                        let key = HeapKey { object: self.chase_insn(recv), offset };
+                        if compile_time_heap.contains_key(&key) {
+                            // We've found a second store with no uses between. eliminate the earlier one
+                            continue
+                        }
+                        else {
+                            flush_aliasing(&mut compile_time_heap, offset);
+                            compile_time_heap.insert(key, insn_id);
+                        }
+                    }
+                    Insn::LoadField{ offset, .. } => {
+                        flush_aliasing(&mut compile_time_heap, offset);
+                    }
+                    Insn::WriteBarrier { .. } => {
+                        let offset = RUBY_OFFSET_RBASIC_FLAGS;
+                        flush_aliasing(&mut compile_time_heap, offset);
+                    },
+                    insn => {
+                        let insn_can_read_memory = insn.effects_of().includes(Effect::read(abstract_heaps::Memory));
+                        let insn_can_modify_control_flow = insn.effects_of().includes(Effect::write(abstract_heaps::Control));
+                        // TODO(Jacob): We should refine the control flow check
+                        // For instance, we could sink the StoreField instruction into failed guards
+                        // This allows us to preserve the dead store optimization.
+                        if insn_can_read_memory || insn_can_modify_control_flow {
+                            compile_time_heap.clear();
+                        }
+                    }
+                }
+                new_insns.push(insn_id);
+            }
+            new_insns.reverse();
             self.blocks[block.0].insns = new_insns;
         }
     }
