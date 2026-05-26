@@ -11850,6 +11850,18 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
             else if (MBCLEN_CHARFOUND_P(ret)) {
                 cr = ENC_CODERANGE_VALID;
                 p += MBCLEN_CHARFOUND_LEN(ret);
+                /*
+                 * After a valid multibyte character, skip the following ASCII run.
+                 * If the next byte is already non-ASCII, search_nonascii would only
+                 * rediscover p after its word-at-a-time setup.
+                 */
+                if (p < e && ISASCII(*p)) {
+                    p = search_nonascii(p, e);
+                    if (!p) {
+                        p = e;
+                        break;
+                    }
+                }
             }
             else if (MBCLEN_INVALID_P(ret)) {
                 /*
