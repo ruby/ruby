@@ -5752,7 +5752,7 @@ impl Function {
         }
 
         use std::io::Write;
-        let dir = format!("/tmp/zjit-iongraph-{}", std::process::id());
+        let dir = format!("zjit-iongraph-{}", std::process::id());
         std::fs::create_dir_all(&dir).expect("Unable to create directory.");
         let sanitized = sanitize_for_filename(function_name);
         let path = format!("{dir}/func_{sanitized}.json");
