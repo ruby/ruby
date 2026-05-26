@@ -516,4 +516,3 @@ end
 
 require_relative "request_set/gem_dependency_api"
 require_relative "request_set/lockfile"
-require_relative "request_set/lockfile/tokenizer"
