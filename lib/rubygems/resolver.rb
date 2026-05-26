@@ -346,9 +346,8 @@ class Gem::Resolver
 
     unless @soft_missing
       filtered = filtered.select do |s|
-        actual = s.respond_to?(:spec) ? s.spec : s
-        actual.required_ruby_version.satisfied_by?(Gem.ruby_version) &&
-          actual.required_rubygems_version.satisfied_by?(Gem.rubygems_version)
+        s.required_ruby_version.satisfied_by?(Gem.ruby_version) &&
+          s.required_rubygems_version.satisfied_by?(Gem.rubygems_version)
       rescue StandardError
         true
       end
@@ -385,8 +384,7 @@ class Gem::Resolver
     deps = {}
     root_names = @needed.map(&:name)
 
-    actual_spec = spec.respond_to?(:spec) ? spec.spec : spec
-    actual_spec.dependencies.each do |d|
+    spec.dependencies.each do |d|
       next if d.name == package.to_s
       next if d.type == :development && !@development
       next if d.type == :development && @development_shallow && !root_names.include?(package.to_s)
