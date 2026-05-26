@@ -407,6 +407,30 @@ invalidate_callable_method_entry_in_every_m_table_i(rb_classext_t *ext, bool is_
     }
 }
 
+struct collect_per_box_origins_arg {
+    VALUE owner;
+    VALUE klass_housing_cme;
+    VALUE origins; // Array of origins
+};
+
+static void
+collect_per_box_origins_i(rb_classext_t *ext, bool is_prime, VALUE box_value, void *data)
+{
+    struct collect_per_box_origins_arg *arg = (struct collect_per_box_origins_arg *)data;
+    VALUE origin = RCLASSEXT_ORIGIN(ext);
+
+    if (origin == arg->owner || origin == arg->klass_housing_cme) {
+        return;
+    }
+    long len = RARRAY_LEN(arg->origins);
+    for (long i = 0; i < len; i++) {
+        if (RARRAY_AREF(arg->origins, i) == origin) {
+            return;
+        }
+    }
+    rb_ary_push(arg->origins, origin);
+}
+
 static void
 invalidate_callable_method_entry_in_every_m_table(VALUE klass, ID mid, const rb_callable_method_entry_t *cme)
 {
@@ -493,6 +517,23 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                         // (klass_housing_cme may be a non-boxable origin ICLASS that doesn't cover them)
                         if (klass_housing_cme != owner) {
                             invalidate_callable_method_entry_in_every_m_table(owner, mid, cme);
+                        }
+                        // Also update per-box origin ICLASSes. When ensure_origin is called in
+                        // one box's context, it creates a per-box origin ICLASS whose m_tbl is
+                        // a copy of owner's m_tbl at that time. The current execution box may
+                        // not see these origins via RCLASS_ORIGIN(owner), so we find them by
+                        // iterating all of owner's classexts and checking their origin_ fields.
+                        {
+                            VALUE origins = rb_ary_new();
+                            struct collect_per_box_origins_arg origins_arg = {
+                                .owner = owner,
+                                .klass_housing_cme = klass_housing_cme,
+                                .origins = origins,
+                            };
+                            rb_class_classext_foreach(owner, collect_per_box_origins_i, &origins_arg);
+                            for (long i = 0; i < RARRAY_LEN(origins); i++) {
+                                invalidate_callable_method_entry_in_every_m_table(RARRAY_AREF(origins, i), mid, cme);
+                            }
                         }
                     }
 
