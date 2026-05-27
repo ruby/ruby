@@ -203,7 +203,7 @@ pub use crate::backend::current::{
     mem_base_reg,
     Reg,
     EC, CFP, SP,
-    NATIVE_STACK_PTR, NATIVE_BASE_PTR,
+    NATIVE_BASE_PTR,
     C_ARG_OPNDS, C_RET_OPND,
 };
 
@@ -1406,10 +1406,9 @@ pub struct Assembler {
     /// On `compile`, it also disables the backend's use of them.
     pub(super) accept_scratch_reg: bool,
 
-    /// The Assembler can use NATIVE_BASE_PTR + stack_base_idx as the
-    /// first stack slot in case it needs to allocate memory. This is
-    /// equal to the number of spilled basic block arguments.
-    pub(super) stack_base_idx: usize,
+    /// The maximum number of stack slots that have been reserved
+    /// by Assembler::alloc_stack().
+    pub stack_base_idx: usize,
 
     /// If Some, the next ccall should verify its leafness
     leaf_ccall_stack_size: Option<usize>,
@@ -3603,6 +3602,7 @@ pub(crate) use asm_ccall;
 mod tests {
     use super::*;
     use insta::assert_snapshot;
+    use crate::backend::current::NATIVE_STACK_PTR;
 
     fn scratch_reg() -> Opnd {
         Assembler::new_with_scratch_reg().1
