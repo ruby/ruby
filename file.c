@@ -4484,21 +4484,20 @@ rb_file_s_expand_path(int argc, const VALUE *argv)
  *  call-seq:
  *    File.expand_path(path, dirpath = '.') -> absolute_path
  *
- *  Returns the absolute path for the given `path`,
- *  which may point to a file or to a directory.
+ *  Returns the string absolute path for the given `path`.
  *
  *  Evaluates a relative path with respect to the directory given by `dirpath`:
  *
  *  ```ruby
- *  Dir.pwd                        # => "/snap"
+ *  Dir.chdir('/snap')
  *  # Default dirpath.
- *  File.expand_path('README')     # => "/snap/README"
- *  File.expand_path('bin')        # => "/snap/bin"
- *  File.expand_path('bin/../var') # => "/snap/var"  # Cleaned.
+ *  File.expand_path('README')                  # => "/snap/README"
+ *  File.expand_path('bin')                     # => "/snap/bin"
+ *  File.expand_path('bin/../var')              # => "/snap/var"  # Cleaned.
  *  # Other dirpath.
- *  File.expand_path("../config", "/home/app/lib") # => "/home/app/config"
+ *  File.expand_path('../zip', '/usr/bin/ruby') # => "/usr/bin/zip"
  *  Dir.chdir('/usr/bin')
- *  File.expand_path('../../snap', __FILE__) # => "/usr/snap"
+ *  File.expand_path('../../snap', __FILE__)    # => "/usr/snap"
  *  ```
  *
  *  Evaluates an absolute path without respect to `dirpath`:
