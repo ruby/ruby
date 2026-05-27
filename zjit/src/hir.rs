@@ -7210,6 +7210,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         state.stack_push(join_param);
                         block = join_block;
                     } else {
+                        // TODO: Handle monomorphic definedivar specialization here too, including the
+                        // no_side_exits policy, so optimize_getivar doesn't need a separate DefinedIvar
+                        // path. Unlike GetIvar, DefinedIvar isn't emitted by later lowering passes.
                         state.stack_push(fun.push_insn(block, Insn::DefinedIvar { self_val: self_param, id, pushval, state: exit_id }));
                     }
                 }
