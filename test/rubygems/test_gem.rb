@@ -201,7 +201,8 @@ class TestGem < Gem::TestCase
     end
     assert_equal(expected, result)
   ensure
-    File.chmod(0o755, *Dir.glob(@gemhome + "/gems/**/"))
+    files = Dir.glob(@gemhome + "/gems/**/")
+    File.chmod(0o755, *files) unless files.empty?
   end
 
   def test_require_missing
