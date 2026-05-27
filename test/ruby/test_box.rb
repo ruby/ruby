@@ -1180,4 +1180,40 @@ class TestBox < Test::Unit::TestCase
       assert_equal :box2, box2.eval("Class.new { include Math }.new.box2_test")
     end;
   end
+
+  def test_method_invalidation_between_boxes_1
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      b = Ruby::Box.new
+      b.eval(<<~'RUBY')
+      Module.prepend(Module.new)
+        class C; end
+        class D < C; end
+        def C.===(x) = true
+      RUBY
+
+      assert String === "x"
+      assert b # to prevent GCing b
+    end;
+  end
+
+  def test_method_invalidation_between_boxes_2
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      PrepM = Module.new
+      Module.prepend(PrepM)
+      Module.new.include?(Module.new)
+
+      b = Ruby::Box.new
+      b.eval(<<~'RUBY')
+        Module.class_eval { def _test_method; end }
+
+        class C; end
+        class D < C; end
+        def C.include?(x) = true
+      RUBY
+
+      Module.new.include?(Module.new)
+    end;
+  end
 end

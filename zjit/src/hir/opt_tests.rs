@@ -16604,4 +16604,49 @@ mod hir_opt_tests {
           Return v27
         ");
     }
+
+    #[test]
+    fn test_elide_test_of_box_bool() {
+        eval(r#"
+            def test(a, b)
+              if a == b
+                3
+              else
+                4
+              end
+            end
+            test(:a, :b)
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :a@0x1000
+          v4:BasicObject = LoadField v2, :b@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :a@1
+          v9:BasicObject = LoadArg :b@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          PatchPoint MethodRedefined(Symbol@0x1008, ==@0x1010, cme:0x1018)
+          v48:StaticSymbol = GuardType v12, StaticSymbol
+          v49:CBool = IsBitEqual v48, v13
+          v50:BoolExact = BoxBool v49
+          CheckInterrupts
+          CondBranch v49, bb5(), bb4(v11, v48, v13)
+        bb5():
+          v29:Fixnum[3] = Const Value(3)
+          CheckInterrupts
+          Return v29
+        bb4(v34:BasicObject, v35:StaticSymbol, v36:BasicObject):
+          v40:Fixnum[4] = Const Value(4)
+          CheckInterrupts
+          Return v40
+        ");
+    }
 }

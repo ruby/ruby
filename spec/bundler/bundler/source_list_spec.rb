@@ -442,6 +442,16 @@ RSpec.describe Bundler::SourceList do
     end
   end
 
+  describe "#clear_cache" do
+    let(:rubygems_source) { source_list.add_rubygems_source("remotes" => ["https://rubygems.org"]) }
+
+    it "calls #clear_cache on all rubygems sources" do
+      expect(rubygems_source).to receive(:clear_cache)
+      expect(source_list.global_rubygems_source).to receive(:clear_cache)
+      source_list.clear_cache
+    end
+  end
+
   describe "implicit_global_source?" do
     context "when a global rubygem source provided" do
       it "returns a falsy value" do

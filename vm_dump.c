@@ -90,6 +90,9 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
         break;
       case VM_FRAME_MAGIC_CFUNC:
         magic = "CFUNC";
+        if (me) {
+            box = me->def->box;
+        }
         break;
       case VM_FRAME_MAGIC_IFUNC:
         magic = "IFUNC";

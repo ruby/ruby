@@ -297,11 +297,6 @@ module Prism
 
           if node.call_operator_loc.nil?
             case name
-            when :-@
-              case (receiver = node.receiver).type
-              when :integer_node, :float_node, :rational_node, :imaginary_node
-                return visit(numeric_negate(node.message_loc, receiver))
-              end
             when :!
               return visit_block(builder.not_op(token(node.message_loc), token(node.opening_loc), visit(node.receiver), token(node.closing_loc)), block)
             when :=~
@@ -1973,22 +1968,6 @@ module Prism
           elements
         end
 
-        # Negate the value of a numeric node. This is a special case where you
-        # have a negative sign on one line and then a number on the next line.
-        # In normal Ruby, this will always be a method call. The parser gem,
-        # however, marks this as a numeric literal. We have to massage the tree
-        # here to get it into the correct form.
-        def numeric_negate(message_loc, receiver)
-          case receiver.type
-          when :integer_node, :float_node
-            receiver.copy(value: -receiver.value, location: message_loc.join(receiver.location))
-          when :rational_node
-            receiver.copy(numerator: -receiver.numerator, location: message_loc.join(receiver.location))
-          when :imaginary_node
-            receiver.copy(numeric: numeric_negate(message_loc, receiver.numeric), location: message_loc.join(receiver.location))
-          end
-        end
-
         # Blocks can have a special set of parameters that automatically expand
         # when given arrays if they have a single required parameter and no
         # other parameters.
@@ -2199,7 +2178,7 @@ module Prism
                   else
                     lines.sum do |line|
                       count = line.scan(/(\\*)n/).count { |(backslashes)| backslashes&.length&.odd? }
-                      count -= 1 if !line.end_with?("\n") && count > 0
+                      count -= 1 if line.match?(/(?:\A|[^\\])(?:\\\\)*\\n\z/) && count > 0
                       count
                     end
                   end

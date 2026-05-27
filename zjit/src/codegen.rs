@@ -383,7 +383,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
         // jump targets in LIR (LIR should always jump to the head of an HIR block)
         let mut hir_to_lir: Vec<Option<lir::BlockId>> = vec![None; function.num_blocks()];
 
-        let reverse_post_order = function.rpo();
+        let reverse_post_order = function.reverse_post_order();
 
         // Create all LIR basic blocks corresponding to HIR basic blocks
         for (rpo_idx, &block_id) in reverse_post_order.iter().enumerate() {
@@ -509,7 +509,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
             assert!(asm.current_block().insns.last().unwrap().is_terminator());
         }
 
-        assert!(!asm.rpo().is_empty());
+        assert!(!asm.reverse_post_order().is_empty());
 
         // Validate CFG invariants after HIR to LIR lowering
         asm.validate_jump_positions();
@@ -2988,7 +2988,7 @@ fn build_side_exit(jit: &JITState, state: &FrameState) -> SideExit {
 
 /// Returne the maximum number of arguments for a block in a given function
 fn max_num_params(function: &Function) -> usize {
-    let reverse_post_order = function.rpo();
+    let reverse_post_order = function.reverse_post_order();
     reverse_post_order
         .iter()
         .filter(|&&block_id| function.is_entry_block(block_id))

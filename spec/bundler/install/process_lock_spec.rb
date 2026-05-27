@@ -53,5 +53,61 @@ RSpec.describe "process lock spec" do
         expect(processed).to eq true
       end
     end
+
+    it "refreshes gem specification cache after waiting for lock" do
+      build_repo2 do
+        build_gem "myrack", "1.0.0"
+      end
+
+      gemfile <<-G
+        source "https://gem.repo2"
+        gem "myrack"
+      G
+
+      # First, install the gem so it's available
+      bundle "install"
+      expect(out).to include("Installing myrack")
+
+      # Queue for thread-safe communication
+      lock_acquired = Queue.new
+      can_release_lock = Queue.new
+      install_output = Queue.new
+
+      # Thread holds lock (simulating another bundle process that just finished installing)
+      thread = Thread.new do
+        Bundler::ProcessLock.lock(default_bundle_path) do
+          # Signal that we have the lock
+          lock_acquired << true
+          # Wait until main thread signals we can release
+          can_release_lock.pop
+        end
+      end
+
+      # Wait for thread to acquire lock
+      lock_acquired.pop
+
+      # Start another install in a thread - it will wait for the lock
+      install_thread = Thread.new do
+        bundle "install", verbose: true
+        install_output << out
+      end
+
+      # Give subprocess time to start and begin waiting for lock
+      sleep 0.5
+
+      # Signal thread to release the lock
+      can_release_lock << true
+
+      # Wait for both threads to complete
+      thread.join
+      install_thread.join
+
+      second_install_out = install_output.pop
+
+      expect(the_bundle).to include_gems "myrack 1.0.0"
+      # The second install should have refreshed its cache after acquiring
+      # the lock and seen that myrack was already installed
+      expect(second_install_out).to include("Using myrack")
+    end
   end
 end

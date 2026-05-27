@@ -318,6 +318,20 @@ class TestGemSafeYAML < Gem::TestCase
     assert_kind_of Hash, reqs
   end
 
+  def test_requirement_quote
+    yaml = <<~YAML
+      requirements:
+        - "system: arrow-glib>=25.0.0: amazon_linux: arrow-glib-devel"
+        - 'system: arrow-glib>=25.0.0: fedora: libarrow-glib-devel'
+    YAML
+
+    expected = [
+      "system: arrow-glib>=25.0.0: amazon_linux: arrow-glib-devel",
+      "system: arrow-glib>=25.0.0: fedora: libarrow-glib-devel",
+    ]
+    assert_equal expected, yaml_load(yaml)["requirements"]
+  end
+
   def test_rdoc_options_hash_converted_to_array
     # Some gemspecs incorrectly have rdoc_options: {} instead of rdoc_options: []
     yaml = <<~YAML

@@ -180,7 +180,7 @@ fn main() {
         .allowlist_function("rb_reg_match_post")
         .allowlist_function("rb_reg_match_last")
         .allowlist_function("rb_reg_nth_match")
-        .allowlist_function("rb_reg_new_ary")
+        .allowlist_function("rb_reg_new_from_values")
 
         // `ruby_value_type` is a C enum and this stops it from
         // prefixing all the members with the name of the type

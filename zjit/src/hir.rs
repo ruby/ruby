@@ -3084,7 +3084,7 @@ impl Function {
         reachable.insert(self.entries_block);
 
         // Walk the graph, computing types until fixpoint
-        let rpo = self.rpo();
+        let rpo = self.reverse_post_order();
         loop {
             let mut changed = false;
             for &block in &rpo {
@@ -3564,7 +3564,7 @@ impl Function {
     /// Also try and inline constant caches, specialize object allocations, and more.
     /// Calls to C functions are handled separately in optimize_c_calls.
     fn type_specialize(&mut self) {
-        for block in self.rpo() {
+        for block in self.reverse_post_order() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
@@ -4211,7 +4211,7 @@ impl Function {
     }
 
     fn inline(&mut self) {
-        for block in self.rpo() {
+        for block in self.reverse_post_order() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
@@ -4391,7 +4391,7 @@ impl Function {
     }
 
     fn optimize_getivar(&mut self) {
-        for block in self.rpo() {
+        for block in self.reverse_post_order() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
@@ -4858,7 +4858,7 @@ impl Function {
             }
         }
 
-        for block in self.rpo() {
+        for block in self.reverse_post_order() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
@@ -4910,7 +4910,7 @@ impl Function {
         if payload.versions.len() + 1 >= crate::codegen::max_iseq_versions() {
             return;
         }
-        for block in self.rpo() {
+        for block in self.reverse_post_order() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
@@ -4930,7 +4930,7 @@ impl Function {
     }
 
     fn optimize_load_store(&mut self) {
-        for block in self.rpo() {
+        for block in self.reverse_post_order() {
             let mut compile_time_heap: HashMap<(InsnId, i32), InsnId>  = HashMap::new();
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             let mut new_insns = vec![];
@@ -5024,7 +5024,7 @@ impl Function {
     /// (<https://cfallin.org/blog/2026/04/09/aegraph/>).
     fn canonicalize(&mut self) {
         let mut rewrite_map: HashMap<InsnId, InsnId> = HashMap::new();
-        for block in self.rpo() {
+        for block in self.reverse_post_order() {
             rewrite_map.clear();
             for i in 0..self.blocks[block.0].insns.len() {
                 let insn_id = self.blocks[block.0].insns[i];
@@ -5065,7 +5065,7 @@ impl Function {
         //
         // This would require 1) fixpointing, 2) worklist, or 3) (slightly less powerful) calling a
         // function-level infer_types after each pruned branch.
-        for block in self.rpo() {
+        for block in self.reverse_post_order() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             let mut new_insns = vec![];
             for insn_id in old_insns {
@@ -5317,6 +5317,14 @@ impl Function {
                     Insn::Test { val } if self.type_of(val).is_known_truthy() => {
                         self.new_insn(Insn::Const { val: Const::CBool(true) })
                     }
+                    Insn::Test { val: test_val } => {
+                        if let Insn::BoxBool { val: bool_val } = self.find(test_val) {
+                            self.make_equal_to(insn_id, bool_val);
+                            continue;
+                        } else {
+                            insn_id
+                        }
+                    }
                     Insn::CondBranch { val, if_true, .. } if self.is_a(val, Type::from_cbool(true)) => {
                         self.new_insn(Insn::Jump(if_true))
                     }
@@ -5345,7 +5353,7 @@ impl Function {
     /// Remove instructions that do not have side effects and are not referenced by any other
     /// instruction.
     fn eliminate_dead_code(&mut self) {
-        let rpo = self.rpo();
+        let rpo = self.reverse_post_order();
         let mut worklist = VecDeque::new();
         // Find all of the instructions that have side effects, are control instructions, or are
         // otherwise necessary to keep around
@@ -5406,7 +5414,7 @@ impl Function {
         // * blocks that get absorbed are not in RPO anymore
         // * blocks pointed to by blocks that get absorbed retain the same number of in-edges
         let mut num_in_edges = vec![0; self.blocks.len()];
-        for block in self.rpo() {
+        for block in self.reverse_post_order() {
             for target in self.successors(block) {
                 num_in_edges[target.0] += 1;
             }
@@ -5414,7 +5422,7 @@ impl Function {
         let mut changed = false;
         loop {
             let mut iter_changed = false;
-            for block in self.rpo() {
+            for block in self.reverse_post_order() {
                 // Ignore transient empty blocks
                 if self.blocks[block.0].insns.is_empty() { continue; }
                 loop {
@@ -5435,7 +5443,7 @@ impl Function {
     /// Two PatchPoints are redundant if they assert the same Invariant and no
     /// intervening instruction could invalidate it (i.e., writes to PatchPoint).
     fn remove_redundant_patch_points(&mut self) {
-        for block_id in self.rpo() {
+        for block_id in self.reverse_post_order() {
             let mut seen = HashSet::new();
             let insns = std::mem::take(&mut self.blocks[block_id.0].insns);
             let mut new_insns = Vec::with_capacity(insns.len());
@@ -5458,7 +5466,7 @@ impl Function {
     /// Only the first CheckInterrupts in a block is needed unless an intervening
     /// instruction writes to InterruptFlag (e.g. a call), which resets tracking.
     fn remove_duplicate_check_interrupts(&mut self) {
-        for block_id in self.rpo() {
+        for block_id in self.reverse_post_order() {
             let mut seen = false;
             let insns = std::mem::take(&mut self.blocks[block_id.0].insns);
             let mut new_insns = Vec::with_capacity(insns.len());
@@ -5495,7 +5503,7 @@ impl Function {
     }
 
     /// Return a traversal of the `Function`'s `BlockId`s in reverse post-order.
-    pub fn rpo(&self) -> Vec<BlockId> {
+    pub fn reverse_post_order(&self) -> Vec<BlockId> {
         let mut result = self.po_from(self.entries_block);
         result.reverse();
         result
@@ -5593,7 +5601,7 @@ impl Function {
         let loop_info = LoopInfo::new(&cfi, &dominators);
 
         // Push each block from the iteration in reverse post order to `hir_blocks`.
-        for block_id in self.rpo() {
+        for block_id in self.reverse_post_order() {
             // Create the block with instructions.
             let block = &self.blocks[block_id.0];
             let predecessors = cfi.predecessors(block_id).collect();
@@ -5777,7 +5785,7 @@ impl Function {
             Ok(())
         };
 
-        for block_id in self.rpo() {
+        for block_id in self.reverse_post_order() {
             let insns = &self.blocks[block_id.0].insns;
             for (idx, insn_id) in insns.iter().enumerate() {
                 let insn = self.find(*insn_id);
@@ -5818,7 +5826,7 @@ impl Function {
         // Initialize with all missing values at first, to catch if a jump target points to a
         // missing location.
         let mut assigned_in = vec![None; self.num_blocks()];
-        let rpo = self.rpo();
+        let rpo = self.reverse_post_order();
         // Begin with every block having every variable defined, except for entries_block, which
         // starts with nothing defined.
         for &block in &rpo {
@@ -5893,7 +5901,7 @@ impl Function {
     /// Checks that each instruction('s representative) appears only once in the CFG.
     fn validate_insn_uniqueness(&self) -> Result<(), ValidationError> {
         let mut seen = InsnSet::with_capacity(self.insns.len());
-        for block_id in self.rpo() {
+        for block_id in self.reverse_post_order() {
             for &insn_id in &self.blocks[block_id.0].insns {
                 let insn_id = self.union_find.borrow().find_const(insn_id);
                 if !seen.insert(insn_id) {
@@ -6228,7 +6236,7 @@ impl Function {
 
     /// Check that insn types match the expected types for each instruction.
     fn validate_types(&self) -> Result<(), ValidationError> {
-        for block_id in self.rpo() {
+        for block_id in self.reverse_post_order() {
             for &insn_id in &self.blocks[block_id.0].insns {
                 self.validate_insn_type(insn_id)?;
             }
@@ -6263,7 +6271,7 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
             iseq_name
         };
         writeln!(f, "fn {iseq_name}:")?;
-        for block_id in fun.rpo() {
+        for block_id in fun.reverse_post_order() {
             if !self.display_snapshot_and_tp_patchpoints && block_id == fun.entries_block {
                 // Unless we're doing --zjit-dump-hir=all, skip the entries superblock -- it's an
                 // internal CFG artifact
@@ -8622,7 +8630,7 @@ impl Dominators {
     /// Cooper, Harvey & Kennedy, "A Simple, Fast Dominance Algorithm" (2001),
     /// Figure 3: <https://www.cs.tufts.edu/~nr/cs257/archive/keith-cooper/dom14.pdf>
     pub fn with_cfi(f: &Function, cfi: &mut ControlFlowInfo) -> Self {
-        let rpo = f.rpo();
+        let rpo = f.reverse_post_order();
         let num_blocks = f.blocks.len();
 
         // Map BlockId -> RPO index for O(1) lookup in intersect.
@@ -8730,7 +8738,7 @@ impl<'a> ControlFlowInfo<'a> {
         let mut successor_map: HashMap<BlockId, Vec<BlockId>> = HashMap::new();
         let mut predecessor_map: HashMap<BlockId, Vec<BlockId>> = HashMap::new();
 
-        for block_id in function.rpo() {
+        for block_id in function.reverse_post_order() {
             let mut successors = function.successors(block_id);
             successors.dedup();
 
@@ -8783,7 +8791,7 @@ impl<'a> LoopInfo<'a> {
         let mut loop_headers: BlockSet = BlockSet::with_capacity(cfi.function.num_blocks());
         let mut loop_depths: HashMap<BlockId, u32> = HashMap::new();
         let mut back_edge_sources: BlockSet = BlockSet::with_capacity(cfi.function.num_blocks());
-        let rpo = cfi.function.rpo();
+        let rpo = cfi.function.reverse_post_order();
 
         for &block in &rpo {
             loop_depths.insert(block, 0);
@@ -8908,7 +8916,7 @@ mod rpo_tests {
         let val = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(entry, Insn::Return { val });
         function.seal_entries();
-        assert_eq!(function.rpo(), vec![entries, entry]);
+        assert_eq!(function.reverse_post_order(), vec![entries, entry]);
     }
 
     #[test]
@@ -8921,7 +8929,7 @@ mod rpo_tests {
         let val = function.push_insn(exit, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(exit, Insn::Return { val });
         function.seal_entries();
-        assert_eq!(function.rpo(), vec![entries, entry, exit]);
+        assert_eq!(function.reverse_post_order(), vec![entries, entry, exit]);
     }
 
     #[test]
@@ -8941,7 +8949,7 @@ mod rpo_tests {
         let val = function.push_insn(exit, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(exit, Insn::Return { val });
         function.seal_entries();
-        assert_eq!(function.rpo(), vec![entries, entry, side, exit]);
+        assert_eq!(function.reverse_post_order(), vec![entries, entry, side, exit]);
     }
 
     #[test]
@@ -8961,7 +8969,7 @@ mod rpo_tests {
         let val = function.push_insn(exit, Insn::Const { val: Const::Value(Qnil) });
         function.push_insn(exit, Insn::Return { val });
         function.seal_entries();
-        assert_eq!(function.rpo(), vec![entries, entry, side, exit]);
+        assert_eq!(function.reverse_post_order(), vec![entries, entry, side, exit]);
     }
 
     #[test]
@@ -8971,7 +8979,7 @@ mod rpo_tests {
         let entry = function.entry_block;
         function.push_insn(entry, Insn::Jump(BranchEdge { target: entry, args: vec![] }));
         function.seal_entries();
-        assert_eq!(function.rpo(), vec![entries, entry]);
+        assert_eq!(function.reverse_post_order(), vec![entries, entry]);
     }
 }
 

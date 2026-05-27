@@ -215,7 +215,6 @@ fn main() {
         .allowlist_function("rb_reg_match_post")
         .allowlist_function("rb_reg_match_last")
         .allowlist_function("rb_reg_nth_match")
-        .allowlist_function("rb_reg_new_ary")
         .allowlist_function("rb_reg_new_from_values")
         .allowlist_var("ARG_ENCODING_FIXED")
         .allowlist_var("ARG_ENCODING_NONE")

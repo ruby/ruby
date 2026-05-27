@@ -136,6 +136,10 @@ module Bundler
       all_sources.each(&:remote!)
     end
 
+    def clear_cache
+      rubygems_sources.each(&:clear_cache)
+    end
+
     private
 
     def map_sources(replacement_sources)

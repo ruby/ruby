@@ -297,6 +297,7 @@ RCLASS_PRIME_CLASSEXT_WRITABLE_P(VALUE klass)
 {
     VM_ASSERT(klass != 0, "klass should be a valid object");
     VM_ASSERT_BOXABLE_TYPE(klass);
+    RBIMPL_ASSUME(klass != 0);
     return FL_TEST_RAW(klass, RCLASS_PRIME_CLASSEXT_WRITABLE);
 }
 
