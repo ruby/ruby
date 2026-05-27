@@ -121,14 +121,12 @@ class TestGemPathSupport < Gem::TestCase
   end
 
   def test_gem_paths_do_not_contain_symlinks
+    pend "symlinks not supported" unless symlink_supported?
+
     dir = "#{@tempdir}/realgemdir"
     symlink = "#{@tempdir}/symdir"
     Dir.mkdir dir
-    begin
-      File.symlink(dir, symlink)
-    rescue NotImplementedError, SystemCallError
-      pend "symlinks not supported"
-    end
+    File.symlink(dir, symlink)
     not_existing = "#{@tempdir}/does_not_exist"
     path = "#{symlink}#{File::PATH_SEPARATOR}#{not_existing}"
 

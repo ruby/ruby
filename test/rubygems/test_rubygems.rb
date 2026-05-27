@@ -10,6 +10,7 @@ class GemTest < Gem::TestCase
 
   def test_operating_system_other_exceptions
     pend "does not apply to truffleruby" if RUBY_ENGINE == "truffleruby"
+    omit "JRuby on Windows loads a different operating_system defaults file" if Gem.win_platform? && Gem.java_platform?
 
     path = util_install_operating_system_rb <<-RUBY
       intentionally_not_implemented_method
