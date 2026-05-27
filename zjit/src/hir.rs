@@ -4147,7 +4147,6 @@ impl Function {
                                     if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
                                         // Copy contents of tmp_block to block
                                         assert_ne!(block, tmp_block);
-                                        emit_super_call_guards(self, block, super_cme, current_cme, mid, state);
                                         let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
                                         self.blocks[block.0].insns.extend(insns);
                                         self.count(block, Counter::inline_cfunc_optimized_send_count);
