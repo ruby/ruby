@@ -374,9 +374,8 @@ fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, mut version: IseqVersionRef,
 /// Compile a function
 fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, function: &Function) -> Result<(IseqCodePtrs, Vec<CodePtr>, Vec<IseqCallRef>), CompileError> {
     let (mut jit, asm) = trace_compile_phase("codegen", || {
-        let num_spilled_params = max_num_params(function).saturating_sub(ALLOC_REGS.len());
         let mut jit = JITState::new(version, function.num_insns(), function.num_blocks());
-        let mut asm = Assembler::new_with_stack_slots(num_spilled_params + 1); // +1 for JITFrame
+        let mut asm = Assembler::new_with_stack_slots(1); // 1 for JITFrame
 
         // Mapping from HIR block IDs to LIR block IDs.
         // This is is a one-to-one mapping from HIR to LIR blocks used for finding
@@ -2984,20 +2983,6 @@ fn build_side_exit(jit: &JITState, state: &FrameState) -> SideExit {
         iseq: state.iseq,
         recompile: None,
     }
-}
-
-/// Returne the maximum number of arguments for a block in a given function
-fn max_num_params(function: &Function) -> usize {
-    let reverse_post_order = function.reverse_post_order();
-    reverse_post_order
-        .iter()
-        .filter(|&&block_id| function.is_entry_block(block_id))
-        .map(|&block_id| {
-            let block = function.block(block_id);
-            block.params().len()
-        })
-        .max()
-        .unwrap_or(0)
 }
 
 #[cfg(target_arch = "x86_64")]
