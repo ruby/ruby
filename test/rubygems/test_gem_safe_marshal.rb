@@ -252,6 +252,8 @@ class TestGemSafeMarshal < Gem::TestCase
   end
 
   def test_hash_with_compare_by_identity
+    pend "Marshal.dump of a compare_by_identity Hash emits an unexpected ivar on jruby" if RUBY_ENGINE == "jruby"
+
     with_const(Gem::SafeMarshal, :PERMITTED_CLASSES, %w[Hash]) do
       assert_safe_load_as Hash.new.compare_by_identity.tap {|h|
                             h[+"a"] = 1
