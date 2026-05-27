@@ -7251,6 +7251,21 @@ rb_str_escape(VALUE str)
     return result;
 }
 
+/* Lookup table for the inspect fast path. 1 marks bytes that need
+ * no escaping. 0 marks bytes that need escape inspection: 0x00-0x1F
+ * (control), 0x22 ("), 0x23 (#), 0x5C (\), 0x7F (DEL), 0x80-0xFF
+ * (non-ASCII). */
+static const bool inspect_no_escape[256] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* 0x00-0x0F */
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* 0x10-0x1F */
+    1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* 0x20-0x2F */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* 0x30-0x3F */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* 0x40-0x4F */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, /* 0x50-0x5F */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* 0x60-0x6F */
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, /* 0x70-0x7F */
+};
+
 /*
  *  call-seq:
  *    inspect -> string
@@ -7266,10 +7281,11 @@ rb_str_inspect(VALUE str)
     rb_encoding *enc = rb_enc_from_index(encidx);
     const char *p, *pend, *prev;
     char buf[CHAR_ESC_LEN + 1];
-    VALUE result = rb_str_buf_new(0);
+    VALUE result = rb_str_buf_new(RSTRING_LEN(str) + 2); /* string content + surrounding quotes */
     rb_encoding *resenc = rb_default_internal_encoding();
     int unicode_p = rb_enc_unicode_p(enc);
     int asciicompat = rb_enc_asciicompat(enc);
+    int cr = rb_enc_str_coderange(str);
 
     if (resenc == NULL) resenc = rb_default_external_encoding();
     if (!rb_enc_asciicompat(resenc)) resenc = rb_usascii_encoding();
@@ -7281,6 +7297,15 @@ rb_str_inspect(VALUE str)
     while (p < pend) {
         unsigned int c, cc;
         int n;
+
+        /* Fast path: bulk-skip runs of safe ASCII bytes via a lookup table.
+         * Only well-formed strings (CR=7BIT for any encoding, or UTF-8 VALID)
+         * are eligible. */
+        if (cr == ENC_CODERANGE_7BIT ||
+            (encidx == ENCINDEX_UTF_8 && cr == ENC_CODERANGE_VALID)) {
+            while (p < pend && inspect_no_escape[(unsigned char)*p]) p++;
+            if (p >= pend) break;
+        }
 
         n = rb_enc_precise_mbclen(p, pend, enc);
         if (!MBCLEN_CHARFOUND_P(n)) {
