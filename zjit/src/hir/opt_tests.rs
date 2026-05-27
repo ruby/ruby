@@ -5638,7 +5638,40 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_dont_specialize_definedivar_with_t_data() {
+    fn test_dont_specialize_definedivar_with_immediate() {
+        eval("
+            module M
+              def test = defined?(@a)
+            end
+
+            class Integer
+              include M
+            end
+
+            1.test
+            2.test
+            TEST = M.instance_method(:test)
+        ");
+        assert_snapshot!(hir_string_proc("TEST"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:StringExact|NilClass = DefinedIvar v6, :@a
+          CheckInterrupts
+          Return v10
+        ");
+    }
+
+    #[test]
+    fn test_dont_specialize_definedivar_with_t_struct() {
+        // Range is T_STRUCT (not T_OBJECT): falls back to DefinedIvar.
         eval("
             class C < Range
               def test = defined?(@a)
@@ -5715,6 +5748,60 @@ mod hir_opt_tests {
         bb8():
           v29:StringExact|NilClass = DefinedIvar v10, :@a
           Jump bb4(v29)
+        bb4(v12:StringExact|NilClass):
+          CheckInterrupts
+          Return v12
+        ");
+    }
+
+    #[test]
+    fn test_optimize_definedivar_polymorphic_with_unsupported_bucket() {
+        set_call_threshold(3);
+        eval(r#"
+            module M
+              def test = defined?(@a)
+            end
+
+            class C
+              include M
+            end
+
+            class Integer
+              include M
+            end
+
+            obj = C.new
+            obj.instance_variable_set(:@a, 1)
+
+            obj.test
+            1.test
+            TEST = M.instance_method(:test)
+        "#);
+        assert_snapshot!(hir_string_proc("TEST"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:HeapBasicObject = GuardType v6, HeapBasicObject
+          v11:CUInt64 = LoadField v10, :RBASIC_FLAGS@0x1000
+          v13:CUInt64[0xffffffff0000001f] = Const CUInt64(0xffffffff0000001f)
+          v14:CPtr[CPtr(0x1001)] = Const CPtr(0x1001)
+          v15 = RefineType v14, CUInt64
+          v16:CInt64 = IntAnd v11, v13
+          v17:CBool = IsBitEqual v16, v15
+          CondBranch v17, bb5(), bb6()
+        bb5():
+          v19:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          Jump bb4(v19)
+        bb6():
+          v21:StringExact|NilClass = DefinedIvar v10, :@a
+          Jump bb4(v21)
         bb4(v12:StringExact|NilClass):
           CheckInterrupts
           Return v12
