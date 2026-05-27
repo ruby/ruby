@@ -26,6 +26,7 @@ fn test_breakpoint_hir_codegen() {
         IseqVersion::new(iseq),
         function.num_insns(),
         function.num_blocks(),
+        0,
     );
     let mut asm = Assembler::new();
     asm.new_block_without_id("test");
