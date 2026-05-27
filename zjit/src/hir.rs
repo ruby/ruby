@@ -5318,6 +5318,14 @@ impl Function {
                     Insn::Test { val } if self.type_of(val).is_known_truthy() => {
                         self.new_insn(Insn::Const { val: Const::CBool(true) })
                     }
+                    Insn::Test { val: test_val } => {
+                        if let Insn::BoxBool { val: bool_val } = self.find(test_val) {
+                            self.make_equal_to(insn_id, bool_val);
+                            continue;
+                        } else {
+                            insn_id
+                        }
+                    }
                     Insn::CondBranch { val, if_true, .. } if self.is_a(val, Type::from_cbool(true)) => {
                         self.new_insn(Insn::Jump(if_true))
                     }
