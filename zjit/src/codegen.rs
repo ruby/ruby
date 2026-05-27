@@ -3358,8 +3358,7 @@ fn gen_push_opnds(jit: &JITState, asm: &mut Assembler, opnds: &[Opnd]) -> lir::O
         Opnd::UImm(0)
     };
 
-    // gen_function() allocates `jit.reserved_stack_size` slots for spilled block params and JITFrame.
-    // The above asm.alloc_stack() reserves extra slots on top of it, so use stack slots from that index.
+    // Write operands into stack slots allocated by asm.alloc_stack()
     for (idx, &opnd) in opnds.iter().enumerate() {
         asm.mov(Opnd::mem(VALUE_BITS, argv, idx as i32 * SIZEOF_VALUE_I32), opnd);
     }
