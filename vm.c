@@ -574,13 +574,6 @@ jit_exec(rb_execution_context_t *ec)
         rb_jit_func_t func = zjit_compile(ec);
         if (func) {
             VALUE result = ((rb_zjit_func_t)zjit_entry)(ec, ec->cfp, func);
-            // Materialize any remaining lightweight ZJIT frames on side exit.
-            // This is done here (once per JIT entry) instead of in each side exit
-            // to reduce generated code size.
-            if (UNDEF_P(result)) {
-                ec->cfp->jit_return = 0; // exit code already cleared most fields except jit_return
-                rb_zjit_materialize_frames(ec, ec->cfp);
-            }
             return result;
         }
     }

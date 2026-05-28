@@ -3098,7 +3098,7 @@ c_callable! {
             // If we side-exit from function_stub_hit (before JIT code runs), we need to set them here.
             fn prepare_for_exit(iseq: IseqPtr, cfp: CfpPtr, sp: *mut VALUE, argc: u16, num_opts_filled: u16, compile_error: &CompileError) {
                 unsafe {
-                    // Caller frames are materialized by jit_exec() after the entry trampoline returns.
+                    // Caller frames are materialized by the materialize_exit trampoline before unwinding native frames.
                     // The current frame's pc and iseq are already set by function_stub_hit before this point.
 
                     // Set SP which gen_push_frame() doesn't set
@@ -3186,7 +3186,7 @@ c_callable! {
                 unsafe { Rc::increment_strong_count(iseq_call_ptr as *const IseqCall); }
 
                 prepare_for_exit(iseq, cfp, sp, argc, num_opts_filled, compile_error);
-                return ZJITState::get_exit_trampoline_with_counter().raw_ptr(cb);
+                return ZJITState::get_materialize_exit_trampoline_with_counter().raw_ptr(cb);
             }
 
             // Otherwise, attempt to compile the ISEQ. We have to mark_all_executable() beyond this point.
@@ -3201,7 +3201,7 @@ c_callable! {
                 unsafe { Rc::increment_strong_count(iseq_call_ptr as *const IseqCall); }
 
                 prepare_for_exit(iseq, cfp, sp, argc, num_opts_filled, &compile_error);
-                ZJITState::get_exit_trampoline_with_counter()
+                ZJITState::get_materialize_exit_trampoline_with_counter()
             });
             cb.mark_all_executable();
             code_ptr.raw_ptr(cb)
@@ -3332,14 +3332,34 @@ pub fn gen_exit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> 
     })
 }
 
-/// Generate a trampoline that increments exit_compilation_failure and jumps to exit_trampoline.
-pub fn gen_exit_trampoline_with_counter(cb: &mut CodeBlock, exit_trampoline: CodePtr) -> Result<CodePtr, CompileError> {
+/// Generate a trampoline that materializes ZJIT frames before unwinding native frames.
+pub fn gen_materialize_exit_trampoline(cb: &mut CodeBlock, exit_trampoline: CodePtr) -> Result<CodePtr, CompileError> {
+    unsafe extern "C" {
+        fn rb_zjit_materialize_frames(ec: EcPtr, cfp: CfpPtr);
+    }
+
     let mut asm = Assembler::new();
-    asm.new_block_without_id("exit_trampoline_with_counter");
+    asm.new_block_without_id("materialize_exit_trampoline");
+
+    asm_comment!(asm, "materialize ZJIT frames");
+    asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), 0.into());
+    asm_ccall!(asm, rb_zjit_materialize_frames, EC, CFP);
+    asm.jmp(Target::CodePtr(exit_trampoline));
+
+    asm.compile(cb).map(|(code_ptr, gc_offsets)| {
+        assert_eq!(gc_offsets.len(), 0);
+        code_ptr
+    })
+}
+
+/// Generate a trampoline that increments exit_compilation_failure and jumps to materialize_exit_trampoline.
+pub fn gen_materialize_exit_trampoline_with_counter(cb: &mut CodeBlock, materialize_exit_trampoline: CodePtr) -> Result<CodePtr, CompileError> {
+    let mut asm = Assembler::new();
+    asm.new_block_without_id("materialize_exit_trampoline_with_counter");
 
     asm_comment!(asm, "function stub exit trampoline");
     gen_incr_counter(&mut asm, exit_compile_error);
-    asm.jmp(Target::CodePtr(exit_trampoline));
+    asm.jmp(Target::CodePtr(materialize_exit_trampoline));
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
         assert_eq!(gc_offsets.len(), 0);

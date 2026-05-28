@@ -4,7 +4,7 @@ use std::mem::take;
 use std::rc::Rc;
 use crate::bitset::BitSet;
 use crate::codegen::{local_size_and_idx_to_ep_offset, perf_symbol_range_start, perf_symbol_range_end};
-use crate::cruby::{IseqPtr, Qundef, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
+use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
 use crate::options::{TraceExits, PerfMap, get_option};
@@ -13,7 +13,7 @@ use crate::payload::IseqVersionRef;
 use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, side_exit_counter, CompileError};
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
-use crate::state::rb_zjit_record_exit_stack;
+use crate::state::{ZJITState, rb_zjit_record_exit_stack};
 
 /// LIR Block ID. Unique ID for each block, and also defined in LIR so
 /// we can differentiate it from HIR block ids.
@@ -2380,7 +2380,7 @@ impl Assembler
             asm_comment!(asm, "save cfp->iseq");
             asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ), VALUE::from(*iseq).into());
 
-            // cfp->block_code and cfp->jit_return are cleared by the caller jit_exec() or JIT_EXEC()
+            // cfp->block_code and cfp->jit_return are cleared by the materialize_exit trampoline
 
             if !stack.is_empty() {
                 asm_comment!(asm, "write stack slots: {}", join_opnds(&stack, ", "));
@@ -2400,8 +2400,7 @@ impl Assembler
         /// Tear down the JIT frame and return to the interpreter.
         fn compile_exit_return(asm: &mut Assembler) {
             asm_comment!(asm, "exit to the interpreter");
-            asm.frame_teardown(&[]); // matching the setup in gen_entry_point()
-            asm.cret(Opnd::UImm(Qundef.as_u64()));
+            asm.jmp(Target::CodePtr(ZJITState::get_materialize_exit_trampoline()));
         }
 
         fn compile_exit_recompile(asm: &mut Assembler, exit: &SideExit) {
@@ -2434,7 +2433,7 @@ impl Assembler
             compile_exit_save_state(asm, exit);
             if trace_reason.is_some() || exit.recompile.is_some() {
                 // Clear cfp->jit_return to prepare for a C call. Normally, cfp->jit_return
-                // is cleared by the caller jit_exec() or JIT_EXEC(), but if we're about to
+                // is cleared by the materialize_exit trampoline, but if we're about to
                 // make a C call, we need to clear any stale JITFrame.
                 asm_comment!(asm, "clear cfp->jit_return");
                 asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), 0.into());
