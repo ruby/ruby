@@ -26,6 +26,8 @@ module Bundler
     def run
       check_for_deployment_mode!
 
+      Bundler.settings.set_command_option_if_given :cooldown, options[:cooldown]
+
       Bundler.definition.validate_runtime!
       current_specs = Bundler.ui.silence { Bundler.definition.resolve }
 
