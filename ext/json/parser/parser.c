@@ -1457,18 +1457,21 @@ static void json_ensure_eof(JSON_ParserState *state)
 
 static VALUE convert_encoding(VALUE source)
 {
-  int encindex = RB_ENCODING_GET(source);
+    StringValue(source);
+    int encindex = RB_ENCODING_GET(source);
 
-  if (RB_LIKELY(encindex == utf8_encindex)) {
+    if (RB_LIKELY(encindex == utf8_encindex)) {
+        return source;
+    }
+
+    if (encindex == binary_encindex) {
+        // For historical reason, we silently reinterpret binary strings as UTF-8
+        return rb_enc_associate_index(rb_str_dup(source), utf8_encindex);
+    }
+
+    source = rb_funcall(source, i_encode, 1, Encoding_UTF_8);
+    StringValue(source);
     return source;
-  }
-
- if (encindex == binary_encindex) {
-    // For historical reason, we silently reinterpret binary strings as UTF-8
-    return rb_enc_associate_index(rb_str_dup(source), utf8_encindex);
-  }
-
-  return rb_funcall(source, i_encode, 1, Encoding_UTF_8);
 }
 
 struct parser_config_init_args {
@@ -1583,10 +1586,16 @@ static VALUE cParserConfig_initialize(VALUE self, VALUE opts)
     return self;
 }
 
-static VALUE cParser_parse(JSON_ParserConfig *config, VALUE Vsource)
+static VALUE cParser_parse(JSON_ParserConfig *config, VALUE src)
 {
-    Vsource = convert_encoding(StringValue(Vsource));
-    StringValue(Vsource);
+    VALUE Vsource = convert_encoding(src);
+
+    // Ensure the string isn't mutated under us.
+    // The classic API to use is `rb_str_locktmp`, but then we'd
+    // need to use `rb_protect` to make sure we always unlock.
+    if (Vsource == src) {
+        Vsource = rb_str_new_frozen(Vsource);
+    }
 
     VALUE rvalue_stack_buffer[RVALUE_STACK_INITIAL_CAPA];
     rvalue_stack stack = {
@@ -1597,6 +1606,7 @@ static VALUE cParser_parse(JSON_ParserConfig *config, VALUE Vsource)
 
     long len;
     const char *start;
+
     RSTRING_GETMEM(Vsource, start, len);
 
     VALUE stack_handle = 0;
@@ -1615,6 +1625,7 @@ static VALUE cParser_parse(JSON_ParserConfig *config, VALUE Vsource)
     // it won't cause a leak.
     rvalue_stack_eagerly_release(stack_handle);
     RB_GC_GUARD(stack_handle);
+    RB_GC_GUARD(Vsource);
     json_ensure_eof(state);
 
     return result;
@@ -1635,9 +1646,6 @@ static VALUE cParserConfig_parse(VALUE self, VALUE Vsource)
 
 static VALUE cParser_m_parse(VALUE klass, VALUE Vsource, VALUE opts)
 {
-    Vsource = convert_encoding(StringValue(Vsource));
-    StringValue(Vsource);
-
     JSON_ParserConfig _config = {0};
     JSON_ParserConfig *config = &_config;
     parser_config_init(config, opts, false);

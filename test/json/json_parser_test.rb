@@ -878,6 +878,22 @@ class JSONParserTest < Test::Unit::TestCase
     end
   end
 
+  def test_mutating_source_string_during_parsing
+    expected = ([1] * 100) + [2.3] + ([1] * 100)
+    source = JSON.generate(expected)
+    expected.delete_at(100)
+
+    fake_decimal_class = Class.new
+    fake_decimal_class.define_method(:initialize) do |number|
+      source.tr!('1', '0')
+      number.to_f
+    end
+
+    actual = JSON.parse(source, decimal_class: fake_decimal_class)
+    actual.delete_at(100)
+    assert_equal expected, actual
+  end
+
   private
 
   def assert_equal_float(expected, actual, delta = 1e-2)
