@@ -16,6 +16,7 @@ module Bundler
       def initialize(options = {})
         @options = options
         @remotes = []
+        @remote_cooldowns = {}
         @dependency_names = []
         @allow_remote = false
         @allow_cached = false
@@ -25,7 +26,8 @@ module Bundler
         @gem_installers = {}
         @gem_installers_mutex = Mutex.new
 
-        Array(options["remotes"]).reverse_each {|r| add_remote(r) }
+        cooldown = options["cooldown"]
+        Array(options["remotes"]).reverse_each {|r| add_remote(r, cooldown: cooldown) }
 
         @lockfile_remotes = @remotes if options["from_lockfile"]
       end
@@ -243,9 +245,14 @@ module Bundler
         cached_path
       end
 
-      def add_remote(source)
+      def add_remote(source, cooldown: nil)
         uri = normalize_uri(source)
         @remotes.unshift(uri) unless @remotes.include?(uri)
+        @remote_cooldowns[uri] = cooldown if cooldown
+      end
+
+      def cooldown_for(uri)
+        @remote_cooldowns[uri]
       end
 
       def spec_names
@@ -266,7 +273,7 @@ module Bundler
 
       def remote_fetchers
         @remote_fetchers ||= remotes.to_h do |uri|
-          remote = Source::Rubygems::Remote.new(uri)
+          remote = Source::Rubygems::Remote.new(uri, cooldown: cooldown_for(uri))
           [remote, Bundler::Fetcher.new(remote)]
         end.freeze
       end

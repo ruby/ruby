@@ -129,6 +129,12 @@ RSpec.describe Bundler::SourceList do
           Gem::URI("https://rubygems.org/"),
         ]
       end
+
+      it "records the per-remote cooldown when supplied" do
+        source_list.add_global_rubygems_remote("https://othersource.org", cooldown: 7)
+        expect(returned_source.cooldown_for(Gem::URI("https://othersource.org/"))).to eq(7)
+        expect(returned_source.cooldown_for(Gem::URI("https://rubygems.org/"))).to be_nil
+      end
     end
 
     describe "#add_plugin_source" do

@@ -367,6 +367,48 @@ RSpec.describe Bundler::Dsl do
     end
   end
 
+  describe "#source with cooldown" do
+    before do
+      allow(@rubygems).to receive(:add_remote)
+    end
+
+    it "accepts a non-negative integer" do
+      expect do
+        subject.source("https://rubygems.org", cooldown: 7)
+      end.not_to raise_error
+    end
+
+    it "accepts 0 as an explicit disable" do
+      expect do
+        subject.source("https://rubygems.org", cooldown: 0)
+      end.not_to raise_error
+    end
+
+    it "rejects a string" do
+      expect do
+        subject.source("https://rubygems.org", cooldown: "7")
+      end.to raise_error(Bundler::InvalidOption, /non-negative integer/)
+    end
+
+    it "rejects a float" do
+      expect do
+        subject.source("https://rubygems.org", cooldown: 7.5)
+      end.to raise_error(Bundler::InvalidOption, /non-negative integer/)
+    end
+
+    it "rejects a negative integer" do
+      expect do
+        subject.source("https://rubygems.org", cooldown: -7)
+      end.to raise_error(Bundler::InvalidOption, /non-negative integer/)
+    end
+
+    it "rejects an array" do
+      expect do
+        subject.source("https://rubygems.org", cooldown: [7])
+      end.to raise_error(Bundler::InvalidOption, /non-negative integer/)
+    end
+  end
+
   describe "#override" do
     it "stores an Override for a gem with a version: operation" do
       subject.override("rails", version: ">= 8.0")
