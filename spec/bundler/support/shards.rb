@@ -143,6 +143,7 @@ module Spec
         "spec/bundler/ci_detector_spec.rb",
       ],
       shard_d: [
+        "spec/bundler/resolver/cooldown_spec.rb",
         "spec/commands/outdated_spec.rb",
         "spec/commands/update_spec.rb",
         "spec/lock/lockfile_spec.rb",
