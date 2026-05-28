@@ -44,6 +44,7 @@
 #include "ruby/encoding.h"
 #include "ruby/re.h"
 #include "ruby/thread.h"
+#include "ruby/thread_native.h"
 #include "ruby/util.h"
 #include "ruby/ractor.h"
 #include "ruby_assert.h"
@@ -1754,9 +1755,35 @@ rb_str_tmp_new(long len)
     return str_new(0, 0, len);
 }
 
+/*
+ * Global table for null-terminated copies of shared middle substrings created
+ * without the GVL.
+ */
+static rb_nativethread_lock_t ephemeral_term_lock;
+static st_table *ephemeral_term_table;
+static rb_atomic_t ephemeral_term_count;
+
+static void
+ephemeral_term_cleanup(VALUE str)
+{
+    /* Skip the mutex when the table is empty. */
+    if (RUBY_ATOMIC_LOAD(ephemeral_term_count) == 0) return;
+
+    st_data_t key = (st_data_t)str;
+    st_data_t buf;
+    rb_nativethread_lock_lock(&ephemeral_term_lock);
+    bool deleted = st_delete(ephemeral_term_table, &key, &buf);
+    if (deleted) RUBY_ATOMIC_DEC(ephemeral_term_count);
+    rb_nativethread_lock_unlock(&ephemeral_term_lock);
+    if (deleted) ruby_mimfree((void *)buf);
+}
+
 void
 rb_str_free(VALUE str)
 {
+    /* Clean up any ephemeral null-termination buffer for this string. */
+    ephemeral_term_cleanup(str);
+
     if (STR_EMBED_P(str)) {
         RB_DEBUG_COUNTER_INC(obj_str_embed);
     }
@@ -2977,18 +3004,38 @@ rbimpl_str_ensure_terminator(VALUE str)
 {
     RUBY_ASSERT(FL_TEST_RAW(str, STR_NOEMBED | STR_SHARED));
 
-    if (!ruby_thread_has_gvl_p()) {
-        /* We don't hold the GVL. Calling str_make_independent_expand without
-         * it would modify shared object state without synchronization.
-         * Return the raw pointer; null-termination is not guaranteed. */
-        return RSTRING(str)->as.heap.ptr;
-    }
-
     int termlen = TERM_LEN(str);
     long len = RSTRING_LEN(str);
     char *ptr = RSTRING(str)->as.heap.ptr;
 
     if (zero_filled(ptr + len, termlen)) return ptr;
+
+    if (!ruby_thread_has_gvl_p()) {
+        /* Allocate a null-terminated copy outside the GC heap and
+         * cache it in ephemeral_term_table, keyed by this string's VALUE.
+         * The copy is freed when the string is freed (rb_str_free). */
+        char *result;
+        rb_nativethread_lock_lock(&ephemeral_term_lock);
+        if (st_lookup(ephemeral_term_table, (st_data_t)str, (st_data_t *)&result)) {
+            rb_nativethread_lock_unlock(&ephemeral_term_lock);
+            return result;
+        }
+        result = ruby_mimmalloc((size_t)len + (size_t)termlen);
+        if (!result) {
+            rb_nativethread_lock_unlock(&ephemeral_term_lock);
+            /* OOM for a small allocation is catastrophic and we cannot raise a
+             * Ruby exception without the GVL. */
+            rb_bug("Cannot allocate ephemeral null-termination buffer for "
+                   "RSTRING_PTR called without GVL: out of memory");
+        }
+        memcpy(result, ptr, (size_t)len);
+        memset(result + len, 0, (size_t)termlen);
+        st_insert(ephemeral_term_table, (st_data_t)str, (st_data_t)result);
+        RUBY_ATOMIC_INC(ephemeral_term_count);
+        rb_nativethread_lock_unlock(&ephemeral_term_lock);
+        return result;
+    }
+
     str_make_independent_expand(str, len, 0L, termlen);
     return RSTRING_START(str);
 }
@@ -10957,7 +11004,6 @@ rb_str_oct(VALUE str)
 }
 
 #ifndef HAVE_CRYPT_R
-# include "ruby/thread_native.h"
 # include "ruby/atomic.h"
 
 static struct {
@@ -12905,6 +12951,9 @@ fstring_set_class_i(VALUE *str, void *data)
 void
 Init_String(void)
 {
+    rb_nativethread_lock_initialize(&ephemeral_term_lock);
+    ephemeral_term_table = st_init_numtable();
+
     rb_cString  = rb_define_class("String", rb_cObject);
 
     rb_concurrent_set_foreach_with_replace(fstring_table_obj, fstring_set_class_i, NULL);
