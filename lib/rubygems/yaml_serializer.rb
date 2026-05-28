@@ -497,7 +497,6 @@ module Gem
       end
 
       def build_mapping(node)
-        check_anchor!(node)
         validate_tag!(node.tag) if node.tag
 
         result = case node.tag
@@ -653,12 +652,6 @@ module Gem
           raise Psych::DisallowedClass.new("load", label)
         else
           raise Psych::DisallowedClass, "Tried to load unspecified class: #{label}"
-        end
-      end
-
-      def check_anchor!(node)
-        if node.anchor
-          raise Psych::AliasesNotEnabled unless @aliases
         end
       end
 

@@ -152,6 +152,16 @@ class TestGemSafeYAML < Gem::TestCase
     assert_raise(Psych::BadAlias) { Gem::SafeYAML.safe_load(yaml) }
   end
 
+  def test_unused_anchor_with_aliases_disabled_is_allowed
+    aliases_enabled = Gem::SafeYAML.aliases_enabled?
+    Gem::SafeYAML.aliases_enabled = false
+
+    result = Gem::SafeYAML.safe_load("foo: &unused 1\nbar: 2\n")
+    assert_equal({ "foo" => 1, "bar" => 2 }, result)
+  ensure
+    Gem::SafeYAML.aliases_enabled = aliases_enabled
+  end
+
   def test_yaml_serializer_aliases_disabled
     aliases_enabled = Gem::SafeYAML.aliases_enabled?
     Gem::SafeYAML.aliases_enabled = false
