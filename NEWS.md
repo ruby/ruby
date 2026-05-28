@@ -161,6 +161,19 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 
   [[Feature #21861]]
 
+### Removed APIs
+
+The following APIs, which have been deprecated for many years, are removed.
+[[Feature #21768]]
+
+* old postponed job functions,
+* untyped data object type/functions,
+* old APIs to allocate a data object,
+* taintedness/trustedness enums/macros,
+* `rb_gc_force_recycle` function,
+* `rb_iterate` function,
+* and some functions and constants for internal use.
+
 ## Implementation improvements
 
 ### Ractor
@@ -172,6 +185,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #8948]: https://bugs.ruby-lang.org/issues/8948
 [Feature #15330]: https://bugs.ruby-lang.org/issues/15330
 [Feature #21390]: https://bugs.ruby-lang.org/issues/21390
+[Feature #21768]: https://bugs.ruby-lang.org/issues/21768
 [Feature #21785]: https://bugs.ruby-lang.org/issues/21785
 [Feature #21796]: https://bugs.ruby-lang.org/issues/21796
 [Feature #21853]: https://bugs.ruby-lang.org/issues/21853
