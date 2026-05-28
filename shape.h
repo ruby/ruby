@@ -6,6 +6,7 @@
 
 typedef uint8_t attr_index_t;
 typedef uint32_t shape_id_t;
+shape_id_t rb_shape_layout(VALUE obj);
 #define SHAPE_ID_NUM_BITS 32
 #define SHAPE_ID_OFFSET_NUM_BITS 19
 
@@ -27,12 +28,14 @@ STATIC_ASSERT(shape_id_num_bits, SHAPE_ID_NUM_BITS == sizeof(shape_id_t) * CHAR_
 //      19-22 SHAPE_ID_HEAP_INDEX_MASK
 //              index in rb_shape_tree.capacities. Allow to access slot size.
 //              Currently always 0 except for T_OBJECT.
-//      23 SHAPE_ID_FL_FROZEN
-//              Whether the object is frozen or not.
-//      24 SHAPE_ID_FL_HAS_OBJECT_ID
-//              Whether the object has an `SHAPE_OBJ_ID` transition.
-//      25 SHAPE_ID_FL_COMPLEX
+//      23 SHAPE_ID_FL_COMPLEX
 //              The object is backed by a `st_table`.
+//      24 SHAPE_ID_FL_FROZEN
+//              Whether the object is frozen or not.
+//      25 SHAPE_ID_FL_HAS_OBJECT_ID
+//              Whether the object has an `SHAPE_OBJ_ID` transition.
+//      26-27 SHAPE_ID_LAYOUT_MASK
+//              The object's physical field layout.
 
 enum shape_id_fl_type {
 #define RBIMPL_SHAPE_ID_FL(n) (1<<(SHAPE_ID_FL_USHIFT+n))
@@ -43,8 +46,26 @@ enum shape_id_fl_type {
     SHAPE_ID_FL_FROZEN = RBIMPL_SHAPE_ID_FL(1),
     SHAPE_ID_FL_HAS_OBJECT_ID = RBIMPL_SHAPE_ID_FL(2),
 
+    // Means IVs are found at an offset from the object's addr, or in a
+    // malloc allocated side table
+    SHAPE_ID_LAYOUT_ROBJECT = 0,
+
+    // Means this object is a class/module that is NOT RCLASS_BOXABLE, and IV's
+    // are found in the fields_obj found on the rclass struct
+    SHAPE_ID_LAYOUT_RCLASS = RBIMPL_SHAPE_ID_FL(3),
+
+    // Means this object is an RData or RTypedData and IVs are found in the
+    // fields_obj found on the RData/RTypedData struct
+    SHAPE_ID_LAYOUT_RDATA = RBIMPL_SHAPE_ID_FL(4),
+
+    // Means this is a complicated object: boxable classes, structs, objects
+    // that store IVs on the geniv table
+    SHAPE_ID_LAYOUT_OTHER = SHAPE_ID_LAYOUT_RCLASS | SHAPE_ID_LAYOUT_RDATA,
+
+    SHAPE_ID_LAYOUT_MASK = SHAPE_ID_LAYOUT_OTHER,
+
     SHAPE_ID_FL_NON_CANONICAL_MASK = SHAPE_ID_FL_FROZEN | SHAPE_ID_FL_HAS_OBJECT_ID,
-    SHAPE_ID_FLAGS_MASK = SHAPE_ID_HEAP_INDEX_MASK | SHAPE_ID_FL_NON_CANONICAL_MASK | SHAPE_ID_FL_COMPLEX,
+    SHAPE_ID_FLAGS_MASK = SHAPE_ID_HEAP_INDEX_MASK | SHAPE_ID_FL_NON_CANONICAL_MASK | SHAPE_ID_FL_COMPLEX | SHAPE_ID_LAYOUT_MASK,
 
 #undef RBIMPL_SHAPE_ID_FL
 };
@@ -55,12 +76,13 @@ enum shape_id_mask {
     SHAPE_ID_HAS_IVAR_MASK = SHAPE_ID_FL_COMPLEX | (SHAPE_ID_OFFSET_MASK - 1),
 };
 
-// The interpreter doesn't care about frozen status, slot size or object id when reading ivars.
+// The interpreter doesn't care about frozen status, slot size, or object id, and
+// has its own checks for physical field layout when reading ivars.
 // So we normalize shape_id by clearing these bits to improve cache hits.
 // JITs however might care about some of it.
-#define SHAPE_ID_READ_ONLY_MASK (~(SHAPE_ID_FL_FROZEN | SHAPE_ID_HEAP_INDEX_MASK | SHAPE_ID_FL_HAS_OBJECT_ID))
+#define SHAPE_ID_READ_ONLY_MASK (~(SHAPE_ID_FL_FROZEN | SHAPE_ID_HEAP_INDEX_MASK | SHAPE_ID_FL_HAS_OBJECT_ID | SHAPE_ID_LAYOUT_MASK))
 // For write it's the same idea, but here we do care about frozen status.
-#define SHAPE_ID_WRITE_MASK (~(SHAPE_ID_HEAP_INDEX_MASK | SHAPE_ID_FL_HAS_OBJECT_ID))
+#define SHAPE_ID_WRITE_MASK (~(SHAPE_ID_HEAP_INDEX_MASK | SHAPE_ID_FL_HAS_OBJECT_ID | SHAPE_ID_LAYOUT_MASK))
 
 typedef uint32_t redblack_id_t;
 
@@ -153,11 +175,18 @@ RBASIC_SET_SHAPE_ID_NO_CHECKS(VALUE obj, shape_id_t shape_id)
 #endif
 }
 
+static inline shape_id_t
+rb_shape_id_layout(shape_id_t shape_id)
+{
+    return shape_id & SHAPE_ID_LAYOUT_MASK;
+}
+
 static inline void
 RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
 {
     RUBY_ASSERT(!RB_SPECIAL_CONST_P(obj));
     RUBY_ASSERT(!RB_TYPE_P(obj, T_IMEMO) || IMEMO_TYPE_P(obj, imemo_fields));
+    RUBY_ASSERT(!IMEMO_TYPE_P(obj, imemo_fields) || rb_shape_id_layout(shape_id) == SHAPE_ID_LAYOUT_ROBJECT);
 
     RBASIC_SET_SHAPE_ID_NO_CHECKS(obj, shape_id);
 
@@ -230,6 +259,12 @@ static inline bool
 rb_shape_canonical_p(shape_id_t shape_id)
 {
     return !(shape_id & SHAPE_ID_FL_NON_CANONICAL_MASK);
+}
+
+static inline shape_id_t
+rb_shape_id_with_robject_layout(shape_id_t shape_id)
+{
+    return (shape_id & ~SHAPE_ID_LAYOUT_MASK) | SHAPE_ID_LAYOUT_ROBJECT;
 }
 
 static inline uint8_t
@@ -450,10 +485,10 @@ rb_shape_transition_frozen(shape_id_t shape_id)
 static inline shape_id_t
 rb_shape_transition_complex(shape_id_t shape_id)
 {
-    shape_id_t next_shape_id = ROOT_COMPLEX_SHAPE_ID;
+    shape_id_t next_shape_id = rb_shape_id_layout(shape_id) | ROOT_COMPLEX_SHAPE_ID;
 
     if (rb_shape_has_object_id(shape_id)) {
-        next_shape_id = ROOT_COMPLEX_WITH_OBJ_ID;
+        next_shape_id = rb_shape_id_layout(shape_id) | ROOT_COMPLEX_WITH_OBJ_ID;
     }
 
     uint8_t heap_index = rb_shape_heap_index(shape_id);

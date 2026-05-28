@@ -409,10 +409,11 @@ rb_obj_shape_id(VALUE obj)
 
     if (BUILTIN_TYPE(obj) == T_CLASS || BUILTIN_TYPE(obj) == T_MODULE) {
         VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
+        shape_id_t base = ROOT_SHAPE_ID;
         if (fields_obj) {
-            return RBASIC_SHAPE_ID(fields_obj);
+            base = RBASIC_SHAPE_ID(fields_obj) & ~SHAPE_ID_LAYOUT_MASK;
         }
-        return ROOT_SHAPE_ID;
+        return rb_shape_id_layout(RBASIC_SHAPE_ID(obj)) | base;
     }
     return RBASIC_SHAPE_ID(obj);
 }
@@ -697,7 +698,7 @@ rb_shape_transition_object_id(shape_id_t original_shape_id)
     bool dont_care;
     rb_shape_t *shape = get_next_shape_internal(RSHAPE(original_shape_id), id_object_id, SHAPE_OBJ_ID, &dont_care, true);
     if (!shape) {
-        return ROOT_COMPLEX_WITH_OBJ_ID | RSHAPE_FLAGS(original_shape_id);
+        return rb_shape_id_layout(original_shape_id) | ROOT_COMPLEX_WITH_OBJ_ID | RSHAPE_FLAGS(original_shape_id);
     }
 
     RUBY_ASSERT(shape);
@@ -1225,15 +1226,53 @@ rb_shape_foreach_field(shape_id_t initial_shape_id, rb_shape_foreach_transition_
 }
 
 #if RUBY_DEBUG
+/*
+ * Get the layout of this object.  The "layout" indicates what strategy
+ * we should use for fetching instance variables from `obj`.  It's based
+ * on the C struct layout for each particular object.
+ *
+ * TODO: make Struct have a similar layout to RDATA
+ */
+static shape_id_t
+rb_shape_expected_layout(VALUE obj)
+{
+    switch (BUILTIN_TYPE(obj)) {
+      case T_OBJECT:
+        return SHAPE_ID_LAYOUT_ROBJECT;
+      case T_CLASS:
+      case T_MODULE:
+        if (FL_TEST_RAW(obj, RCLASS_BOXABLE)) {
+            return SHAPE_ID_LAYOUT_OTHER;
+        }
+        return SHAPE_ID_LAYOUT_RCLASS;
+      case T_DATA:
+        return SHAPE_ID_LAYOUT_RDATA;
+      case T_IMEMO:
+        if (IMEMO_TYPE_P(obj, imemo_fields)) {
+            return SHAPE_ID_LAYOUT_ROBJECT;
+        }
+        return SHAPE_ID_LAYOUT_OTHER;
+      default:
+        return SHAPE_ID_LAYOUT_OTHER;
+    }
+}
+
 bool
 rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
 {
-    if (shape_id == ROOT_SHAPE_ID) {
-        return true;
-    }
-
     if (shape_id == INVALID_SHAPE_ID) {
         rb_bug("Can't set INVALID_SHAPE_ID on an object");
+    }
+
+    shape_id_t actual_layout = rb_shape_id_layout(rb_obj_shape_id(obj));
+    shape_id_t expected_layout = rb_shape_expected_layout(obj);
+    if (actual_layout != expected_layout) {
+        rb_bug("shape_id layout mismatch: expected=%x actual=%x shape_id=%u obj=%s",
+                expected_layout, actual_layout, shape_id, rb_obj_info(obj));
+    }
+
+    if (shape_id == ROOT_SHAPE_ID) {
+        return true;
     }
 
     rb_shape_t *shape = RSHAPE(shape_id);
@@ -1249,13 +1288,11 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
 
     if (rb_shape_has_object_id(shape_id)) {
         if (!has_object_id) {
-            rb_p(obj);
             rb_bug("shape_id claim having obj_id but doesn't shape_id=%u, obj=%s", shape_id, rb_obj_info(obj));
         }
     }
     else {
         if (has_object_id) {
-            rb_p(obj);
             rb_bug("shape_id claim not having obj_id but it does shape_id=%u, obj=%s", shape_id, rb_obj_info(obj));
         }
     }
@@ -1327,6 +1364,25 @@ shape_has_object_id_p(VALUE self)
 {
     shape_id_t shape_id = NUM2INT(rb_struct_getmember(self, rb_intern("id")));
     return RBOOL(rb_shape_has_object_id(shape_id));
+}
+
+static VALUE
+shape_layout(VALUE self)
+{
+    shape_id_t shape_id = NUM2UINT(rb_struct_getmember(self, rb_intern("id")));
+
+    switch (rb_shape_id_layout(shape_id)) {
+      case SHAPE_ID_LAYOUT_ROBJECT:
+        return ID2SYM(rb_intern("robject"));
+      case SHAPE_ID_LAYOUT_RCLASS:
+        return ID2SYM(rb_intern("rclass"));
+      case SHAPE_ID_LAYOUT_RDATA:
+        return ID2SYM(rb_intern("rdata"));
+      case SHAPE_ID_LAYOUT_OTHER:
+        return ID2SYM(rb_intern("other"));
+      default:
+        rb_bug("unknown shape layout: %u", rb_shape_id_layout(shape_id));
+    }
 }
 
 static VALUE
@@ -1628,6 +1684,7 @@ Init_shape(void)
     rb_define_method(rb_cShape, "complex?", shape_complex, 0);
     rb_define_method(rb_cShape, "shape_frozen?", shape_frozen, 0);
     rb_define_method(rb_cShape, "has_object_id?", shape_has_object_id_p, 0);
+    rb_define_method(rb_cShape, "layout", shape_layout, 0);
 
     rb_define_const(rb_cShape, "SHAPE_ROOT", INT2NUM(SHAPE_ROOT));
     rb_define_const(rb_cShape, "SHAPE_IVAR", INT2NUM(SHAPE_IVAR));
