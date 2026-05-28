@@ -450,9 +450,18 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline char *
 RSTRING_END(VALUE str)
 {
-    char *ptr = RB_FL_TEST_RAW(str, RSTRING_NOEMBED) ?
-        RSTRING(str)->as.heap.ptr :
-        RSTRING(str)->as.embed.ary;
+    char *ptr;
+    if (RB_FL_TEST_RAW(str, RSTRING_NOEMBED)) {
+        if (RB_FL_TEST_RAW(str, RUBY_ELTS_SHARED)) {
+            ptr = rbimpl_str_ensure_terminator(str);
+        }
+        else {
+            ptr = RSTRING(str)->as.heap.ptr;
+        }
+    }
+    else {
+        ptr = RSTRING(str)->as.embed.ary;
+    }
     long len = RSTRING_LEN(str);
 
     if (RUBY_DEBUG && RB_UNLIKELY(!ptr)) {
