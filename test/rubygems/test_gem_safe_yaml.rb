@@ -138,7 +138,11 @@ class TestGemSafeYAML < Gem::TestCase
     depth = Gem::YAMLSerializer::Parser::MAX_NESTING_DEPTH + 1
     yaml = "x: " + ("[" * depth) + "a" + ("]" * depth) + "\n"
 
-    assert_raise(Psych::SyntaxError) do
+    expected = [Psych::SyntaxError]
+    # JRuby's JVM stack overflows before the Ruby-level nesting cap fires.
+    expected << ::Java::JavaLang::StackOverflowError if RUBY_ENGINE == "jruby"
+
+    assert_raise(*expected) do
       Gem::YAMLSerializer.load(yaml, permitted_classes: [])
     end
   end
