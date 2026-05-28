@@ -149,7 +149,8 @@ class TestGemSafeYAML < Gem::TestCase
       bar: *missing
     YAML
 
-    assert_raise(Psych::BadAlias) { Gem::SafeYAML.safe_load(yaml) }
+    expected_error = defined?(Psych::AnchorNotDefined) ? Psych::AnchorNotDefined : Psych::BadAlias
+    assert_raise(expected_error) { Gem::SafeYAML.safe_load(yaml) }
   end
 
   def test_unused_anchor_with_aliases_disabled_is_allowed

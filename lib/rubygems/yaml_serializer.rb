@@ -72,9 +72,7 @@ module Gem
 
       def parse_node(base_indent)
         @depth += 1
-        if @depth > MAX_NESTING_DEPTH
-          raise Psych::SyntaxError, "exceeded maximum nesting depth (#{MAX_NESTING_DEPTH})"
-        end
+        raise_max_nesting! if @depth > MAX_NESTING_DEPTH
 
         skip_blank_and_comments
         return nil if @lines.empty?
@@ -286,9 +284,7 @@ module Gem
       end
 
       def coerce(val, depth = 0)
-        if depth > MAX_NESTING_DEPTH
-          raise Psych::SyntaxError, "exceeded maximum nesting depth (#{MAX_NESTING_DEPTH})"
-        end
+        raise_max_nesting! if depth > MAX_NESTING_DEPTH
 
         val = val.sub(/^! /, "") if val.start_with?("! ")
 
@@ -394,6 +390,15 @@ module Gem
           node.anchor = name if node.respond_to?(:anchor=)
         end
         node
+      end
+
+      def raise_max_nesting!
+        message = "exceeded maximum nesting depth (#{MAX_NESTING_DEPTH})"
+        if defined?(Psych::VERSION)
+          raise Psych::SyntaxError.new(nil, 0, 0, 0, message, nil)
+        else
+          raise Psych::SyntaxError, message
+        end
       end
 
       def skip_blank_and_comments
