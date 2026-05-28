@@ -1202,7 +1202,11 @@ static inline VALUE json_parse_number(JSON_ParserState *state, JSON_ParserConfig
             raise_parse_error_at("invalid number: %s", state, start);
         }
 
-        exponent = negative_exponent ? -abs_exponent : abs_exponent;
+        if (RB_UNLIKELY(exponent_digits >= 20 || abs_exponent > (uint64_t)INT64_MAX)) {
+            exponent = negative_exponent ? INT64_MIN : INT64_MAX;
+        } else {
+            exponent = negative_exponent ? -(int64_t)abs_exponent : (int64_t)abs_exponent;
+        }
     }
 
     if (integer) {

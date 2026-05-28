@@ -179,5 +179,13 @@ class JSONRyuFallbackTest < Test::Unit::TestCase
     assert_equal(-0.0, JSON.parse("-99999999999999999e-4294967296"))
     assert_equal(-Float::INFINITY, JSON.parse("-1e4294967295"))
     assert_equal(-Float::INFINITY, JSON.parse("-1e4294967297"))
+
+    assert_equal(Float::INFINITY, JSON.parse("1e9223372036854775808"))
+    assert_equal(Float::INFINITY, JSON.parse("1e9999999999999999999"))
+    assert_equal(Float::INFINITY, JSON.parse("1e18446744073709551616"))
+    assert_equal(Float::INFINITY, JSON.parse("1e10000000000000000000"))
+    assert_equal(Float::INFINITY, JSON.parse("1e184467440737095516160"))
+    assert_equal 0.0, JSON.parse("1e-18446744073709551615")
+    assert_equal 0.0, JSON.parse("1e-9223372036854775809")
   end
 end
