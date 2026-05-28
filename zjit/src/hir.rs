@@ -6848,6 +6848,46 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
             // Move to the next instruction to compile
             insn_idx += insn_len(opcode as usize);
 
+            struct Inserter<'a>(&'a mut Function, BlockId, usize, InsnId, IseqPtr, usize /* block_size on entry */);
+
+            // People use `break` in the opcode handling loop, so we impl Drop to run after `break`.
+            impl<'a> Drop for Inserter<'a> {
+                fn drop(&mut self) {
+                    let fun = &mut *self.0;
+                    let block = self.1;
+                    // XXX: This is incomplete, since the opcode handler can call fun.new_block and
+                    // we ought to scan instructions in the new block as well, but we don't.
+                    if self.5 != fun.blocks.len() {
+                        return;
+                    }
+                    for insn in &fun.blocks[block.0].insns[(self.2)..] {
+                        let insn = fun.find(*insn);
+                        if insn.effects_of().includes(Effect::write(abstract_heaps::Frame)) && !fun.find(*fun.blocks[block.0].insns.last().unwrap()).is_terminator() {
+                            fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(self.4), state: self.3 });
+                            break;
+                        }
+                    }
+                }
+            }
+
+            impl<'a> std::ops::Deref for Inserter<'a> {
+                type Target = Function;
+
+                fn deref(&self) -> &Self::Target {
+                    self.0
+                }
+            }
+
+            impl<'a> std::ops::DerefMut for Inserter<'a> {
+                fn deref_mut(&mut self) -> &mut Self::Target {
+                    self.0
+                }
+            }
+
+            let current_block_highwater = fun.blocks[block.0].insns.len().saturating_sub(1);
+            let entry_block_count = fun.blocks.len();
+            let mut fun = Inserter(&mut fun, block, current_block_highwater, exit_id, iseq, entry_block_count);
+
             match opcode {
                 YARVINSN_nop => {},
                 YARVINSN_putnil => { state.stack_push(fun.push_insn(block, Insn::Const { val: Const::Value(Qnil) })); },
