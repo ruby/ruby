@@ -5707,6 +5707,15 @@ rb_io_fptr_finalize(struct rb_io *io)
     return 1;
 }
 
+bool
+rb_io_fptr_finalize_closed(struct rb_io *io)
+{
+    if (!io) return true;
+    if (io->fd >= 0) return false;
+    rb_io_fptr_finalize(io);
+    return true;
+}
+
 size_t
 rb_io_memsize(const rb_io_t *io)
 {

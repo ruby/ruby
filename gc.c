@@ -1637,9 +1637,10 @@ rb_gc_obj_free(void *objspace, VALUE obj)
         break;
       case T_FILE:
         if (RFILE(obj)->fptr) {
-            make_io_zombie(objspace, obj);
+            bool closed = rb_io_fptr_finalize_closed(RFILE(obj)->fptr);
+            if (!closed) make_io_zombie(objspace, obj);
             RB_DEBUG_COUNTER_INC(obj_file_ptr);
-            return FALSE;
+            return closed;
         }
         break;
       case T_RATIONAL:
