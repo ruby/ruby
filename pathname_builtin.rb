@@ -110,6 +110,8 @@
 # - #join
 # - #parent
 # - #root?
+# - #absolute_path?
+# - #relative_path?
 # - #absolute?
 # - #relative?
 # - #relative_path_from
@@ -542,19 +544,51 @@ class Pathname
     end
   end
 
-  # The opposite of Pathname#absolute?
+  # call-seq:
   #
-  # It returns +false+ if the pathname begins with a slash.
+  #   relative? -> true or false
   #
-  #   p = Pathname.new('/im/sure')
-  #   p.relative?
-  #       #=> false
+  # Returns +true+ if +self+ contains a path that is relative from the
+  # current working directory (of the current drive on Windows):
   #
-  #   p = Pathname.new('not/so/sure')
-  #   p.relative?
-  #       #=> true
+  #   Pathname('/home').relative? # => false
+  #   Pathname('lib').relative?   # => true
+  #
+  # The result is OS-dependent for some paths:
+  #
+  #   Pathname('C:/').relative?   # => false  # On Windows.
+  #   Pathname('C:/').relative?   # => true   # Elsewhere.
+  #   Pathname('C:.').relative?   # => false  # On Windows.
+  #   Pathname('C:.').relative?   # => true   # Elsewhere.
+  #
+  # Note that this differs from the standard definition of a relative
+  # path on Windows.  For that purpose, Use #relative_path?.
+  #
+  # The opposite of #absolute?.
   def relative?
     !absolute?
+  end
+
+  # call-seq:
+  #  relative_path? -> true or false
+  #
+  # Returns whether +self+ contains a non-absolute path; see
+  # File.absolute_path?.
+  #
+  # What an "absolute path" means is OS-dependent:
+  #
+  #   Pathname('/home').relative_path?   # => true   # On Windows.
+  #   Pathname('/home').relative_path?   # => false  # Elsewhere.
+  #   Pathname('C:/').relative_path?     # => false  # On Windows.
+  #   Pathname('C:/').relative_path?     # => true   # Elsewhere.
+  #
+  #   Pathname('lib').relative_path?     # => true
+  #   Pathname('C:Users').relative_path? # => true
+  #   Pathname('./bin').relative_path?   # => true
+  #
+  # The opposite of #absolute_path?.
+  def relative_path?
+    !absolute_path?
   end
 
   #

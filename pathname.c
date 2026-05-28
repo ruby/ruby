@@ -154,7 +154,8 @@ path_root_p(VALUE self)
  * call-seq:
  *   absolute? -> true or false
  *
- * Returns whether +self+ contains an absolute path:
+ * Returns +true+ if +self+ contains a path that is not relative from
+ * the current working directory (of the current drive on Windows):
  *
  *   Pathname('/home').absolute? # => true
  *   Pathname('lib').absolute?   # => false
@@ -163,7 +164,13 @@ path_root_p(VALUE self)
  *
  *   Pathname('C:/').absolute?   # => true   # On Windows.
  *   Pathname('C:/').absolute?   # => false  # Elsewhere.
+ *   Pathname('C:.').absolute?   # => true   # On Windows.
+ *   Pathname('C:.').absolute?   # => false  # Elsewhere.
  *
+ * Note that this differs from the standard definition of an absolute
+ * path on Windows.  For that purpose, use #absolute_path? instead.
+ *
+ * The opposite of #relative?.
  */
 static VALUE
 path_absolute_p(VALUE self)
@@ -176,6 +183,33 @@ path_absolute_p(VALUE self)
         if (len >= 2 && ISALPHA(ptr[0]) && (ptr[1] == ':')) return Qtrue;
     }
     return RBOOL(isdirsep(ptr[0]));
+}
+
+/*
+ * call-seq:
+ *   absolute_path? -> true or false
+ *
+ * Returns whether +self+ contains an absolute path; see
+ * File.absolute_path?.
+ *
+ * What an "absolute path" means is OS-dependent:
+ *
+ *   Pathname('/home').absolute_path?   # => false  # On Windows.
+ *   Pathname('/home').absolute_path?   # => true   # Elsewhere.
+ *   Pathname('C:/').absolute_path?     # => true   # On Windows.
+ *   Pathname('C:/').absolute_path?     # => false  # Elsewhere.
+ *
+ *   Pathname('lib').absolute_path?     # => false
+ *   Pathname('C:Users').absolute_path? # => false
+ *   Pathname('./bin').absolute_path?   # => false
+ *
+ * The opposite of #relative_path?.
+ */
+static VALUE
+path_absolute_path_p(VALUE self)
+{
+    VALUE path = get_strpath(self);
+    return RBOOL(rb_is_absolute_path(RSTRING_PTR(path)));
 }
 
 /* :nodoc: */
@@ -350,6 +384,7 @@ InitVM_pathname(void)
     rb_define_method(rb_cPathname, "sub", path_sub, -1);
     rb_define_method(rb_cPathname, "sub_ext", path_sub_ext, 1);
     rb_define_method(rb_cPathname, "root?", path_root_p, 0);
+    rb_define_method(rb_cPathname, "absolute_path?", path_absolute_path_p, 0);
     rb_define_method(rb_cPathname, "absolute?", path_absolute_p, 0);
 
     rb_define_private_method(rb_cPathname, "same_paths?", same_paths, 2);
