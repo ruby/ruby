@@ -30,7 +30,7 @@ jobs:
   cargo:
     name: cargo test
 
-    runs-on: macos-14
+    runs-on: macos-26
 
     if: >-
       ${{!(false
@@ -74,7 +74,7 @@ jobs:
       RUN_OPTS: ${{ matrix.yjit_opts }}
       SPECOPTS: ${{ matrix.specopts }}
 
-    runs-on: macos-14
+    runs-on: macos-26
 
     if: >-
       ${{!(false
@@ -134,7 +134,7 @@ jobs:
         id: launchable
         uses: ./.github/actions/launchable/setup
         with:
-          os: macos-14
+          os: macos-26
           test-opts: ${{ matrix.configure }}
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build

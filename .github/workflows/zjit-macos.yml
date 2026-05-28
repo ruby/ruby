@@ -58,7 +58,7 @@ jobs:
       RUST_BACKTRACE: 1
       ZJIT_RB_BUG: 1
 
-    runs-on: macos-14
+    runs-on: macos-26
 
     if: >-
       ${{!(false
@@ -118,7 +118,7 @@ jobs:
         id: launchable
         uses: ./.github/actions/launchable/setup
         with:
-          os: macos-14
+          os: macos-26
           test-opts: ${{ matrix.configure }}
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build
@@ -181,7 +181,7 @@ jobs:
             bench_opts: '--warmup=1 --bench=1 --excludes=shipit'
             configure: '--enable-zjit=dev_nodebug' # --enable-zjit=dev is too slow
 
-    runs-on: macos-14
+    runs-on: macos-26
 
     if: >-
       ${{!(false
