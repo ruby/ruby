@@ -4094,7 +4094,7 @@ impl Function {
 
                                     // Try inlining the cfunc into HIR
                                     let tmp_block = self.new_block(u32::MAX);
-                                    if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
+                                    if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state, Some(super_cme)) {
                                         // Copy contents of tmp_block to block
                                         assert_ne!(block, tmp_block);
                                         let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
@@ -4144,7 +4144,7 @@ impl Function {
 
                                     // Try inlining the cfunc into HIR
                                     let tmp_block = self.new_block(u32::MAX);
-                                    if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
+                                    if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state, Some(super_cme)) {
                                         // Copy contents of tmp_block to block
                                         assert_ne!(block, tmp_block);
                                         let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);
@@ -4737,7 +4737,7 @@ impl Function {
                     // Try inlining the cfunc into HIR. Only inline if we don't have a block argument
                     if blockiseq.is_none() {
                         let tmp_block = fun.new_block(u32::MAX);
-                        if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args, state) {
+                        if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args, state, Some(cme)) {
                             // Copy contents of tmp_block to block
                             assert_ne!(block, tmp_block);
                             let insns = std::mem::take(&mut fun.blocks[tmp_block.0].insns);
@@ -4803,7 +4803,7 @@ impl Function {
                     // Try inlining the cfunc into HIR. Only inline if we don't have a block argument
                     if blockiseq.is_none() {
                         let tmp_block = fun.new_block(u32::MAX);
-                        if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args, state) {
+                        if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args, state, Some(cme)) {
                             // Copy contents of tmp_block to block
                             assert_ne!(block, tmp_block);
                             let insns = std::mem::take(&mut fun.blocks[tmp_block.0].insns);
@@ -4873,7 +4873,7 @@ impl Function {
                         let props = ZJITState::get_method_annotations().get_builtin_properties(&bf).unwrap_or_default();
                         // Try inlining the cfunc into HIR
                         let tmp_block = self.new_block(u32::MAX);
-                        if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
+                        if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state, None) {
                             // Copy contents of tmp_block to block
                             assert_ne!(block, tmp_block);
                             let insns = std::mem::take(&mut self.blocks[tmp_block.0].insns);

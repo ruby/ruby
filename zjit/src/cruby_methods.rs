@@ -38,7 +38,7 @@ pub struct FnProperties {
     pub return_type: Type,
     /// Whether it's legal to remove the call if the result is unused
     pub elidable: bool,
-    pub inline: fn(&mut hir::Function, hir::BlockId, hir::InsnId, &[hir::InsnId], hir::InsnId) -> Option<hir::InsnId>,
+    pub inline: fn(&mut hir::Function, hir::BlockId, hir::InsnId, &[hir::InsnId], hir::InsnId, Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId>,
 }
 
 /// A safe default for un-annotated Ruby methods: we can't optimize them or their returned values.
@@ -303,11 +303,11 @@ pub fn init() -> Annotations {
     }
 }
 
-fn no_inline(_fun: &mut hir::Function, _block: hir::BlockId, _recv: hir::InsnId, _args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn no_inline(_fun: &mut hir::Function, _block: hir::BlockId, _recv: hir::InsnId, _args: &[hir::InsnId], _state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     None
 }
 
-fn inline_string_to_s(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_string_to_s(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     if args.is_empty() && fun.likely_a(recv, types::StringExact, state) {
         let recv = fun.coerce_to(block, recv, types::StringExact, state);
         return Some(recv);
@@ -315,7 +315,7 @@ fn inline_string_to_s(fun: &mut hir::Function, block: hir::BlockId, recv: hir::I
     None
 }
 
-fn inline_thread_current(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_thread_current(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[] = args else { return None; };
     let ec = fun.push_insn(block, hir::Insn::LoadEC);
     let thread_ptr = fun.push_insn(block, hir::Insn::LoadField {
@@ -335,7 +335,7 @@ fn inline_thread_current(fun: &mut hir::Function, block: hir::BlockId, _recv: hi
     Some(thread_self)
 }
 
-fn inline_kernel_itself(_fun: &mut hir::Function, _block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_kernel_itself(_fun: &mut hir::Function, _block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     if args.is_empty() {
         // No need to coerce the receiver; that is done by the Send rewriting.
         return Some(recv);
@@ -343,7 +343,7 @@ fn inline_kernel_itself(_fun: &mut hir::Function, _block: hir::BlockId, recv: hi
     None
 }
 
-fn inline_kernel_block_given_p(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_kernel_block_given_p(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[] = args else { return None; };
 
     let local_iseq = unsafe { rb_get_iseq_body_local_iseq(fun.iseq()) };
@@ -358,7 +358,7 @@ fn inline_kernel_block_given_p(fun: &mut hir::Function, block: hir::BlockId, _re
     }
 }
 
-fn inline_array_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_array_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     if let &[index] = args {
         if fun.likely_a(recv, types::Array, state)
             && fun.likely_a(index, types::Fixnum, state)
@@ -379,7 +379,7 @@ fn inline_array_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
     None
 }
 
-fn inline_array_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_array_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     if let &[index, val] = args {
         if fun.likely_a(recv, types::ArrayExact, state)
             && fun.likely_a(index, types::Fixnum, state)
@@ -406,7 +406,7 @@ fn inline_array_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
     None
 }
 
-fn inline_array_push(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_array_push(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     // Inline only the case of `<<` or `push` when called with a single argument.
     if let &[val] = args {
         if !fun.likely_a(recv, types::Array, state) { return None; }
@@ -418,7 +418,7 @@ fn inline_array_push(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
     None
 }
 
-fn inline_array_pop(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_array_pop(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     // Only inline the case of no arguments.
     let &[] = args else { return None; };
     if !fun.likely_a(recv, types::Array, state) { return None; }
@@ -428,7 +428,11 @@ fn inline_array_pop(fun: &mut hir::Function, block: hir::BlockId, recv: hir::Ins
     Some(fun.push_insn(block, hir::Insn::ArrayPop { array: recv, state }))
 }
 
-fn inline_hash_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_hash_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
+    // Hash#[] is not leaf. We should inline its call only when the interpreter uses opt_aref (called with #[]).
+    let cme = cme.expect("Hash#[] should be called with a CME");
+    if unsafe { (*cme).called_id != get_def_original_id((*cme).def) } { return None; }
+
     let &[key] = args else { return None; };
 
     // Only optimize exact Hash, not subclasses
@@ -441,7 +445,7 @@ fn inline_hash_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::Ins
     }
 }
 
-fn inline_hash_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_hash_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[key, val] = args else { return None; };
 
     // Only optimize exact Hash, not subclasses
@@ -455,7 +459,7 @@ fn inline_hash_aset(fun: &mut hir::Function, block: hir::BlockId, recv: hir::Ins
     }
 }
 
-fn inline_string_bytesize(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_string_bytesize(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     if args.is_empty() && fun.likely_a(recv, types::String, state) {
         let recv = fun.coerce_to(block, recv, types::String, state);
         let len = fun.push_insn(block, hir::Insn::LoadField {
@@ -475,7 +479,7 @@ fn inline_string_bytesize(fun: &mut hir::Function, block: hir::BlockId, recv: hi
     None
 }
 
-fn inline_string_getbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_string_getbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[index] = args else { return None; };
     if fun.likely_a(index, types::Fixnum, state) {
         // String#getbyte with a Fixnum is leaf and nogc; otherwise it may run arbitrary Ruby code
@@ -503,7 +507,7 @@ fn inline_string_getbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
     None
 }
 
-fn inline_string_setbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_string_setbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[index, value] = args else { return None; };
     if fun.likely_a(index, types::Fixnum, state) && fun.likely_a(value, types::Fixnum, state) {
         let index = fun.coerce_to(block, index, types::Fixnum, state);
@@ -531,7 +535,7 @@ fn inline_string_setbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
     }
 }
 
-fn inline_string_empty_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_string_empty_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[] = args else { return None; };
     let len = fun.push_insn(block, hir::Insn::LoadField {
         recv,
@@ -545,7 +549,7 @@ fn inline_string_empty_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir
     Some(result)
 }
 
-fn inline_string_append(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_string_append(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     // Inline only StringExact << String, which matches original type check from
     // `vm_opt_ltlt`, which checks `RB_TYPE_P(obj, T_STRING)`.
@@ -574,12 +578,12 @@ fn try_inline_string_equal(fun: &mut hir::Function, block: hir::BlockId, recv: h
     None
 }
 
-fn inline_string_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_string_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_string_equal(fun, block, recv, other, state)
 }
 
-fn inline_module_eqq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_module_eqq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     if fun.is_a(recv, types::Class) {
         let result = fun.push_insn(block, hir::Insn::IsA { val: other, class: recv });
@@ -588,7 +592,7 @@ fn inline_module_eqq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::In
     None
 }
 
-fn inline_array_length(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_array_length(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[] = args else { return None; };
     if fun.likely_a(recv, types::Array, state) {
         let recv = fun.coerce_to(block, recv, types::Array, state);
@@ -599,7 +603,7 @@ fn inline_array_length(fun: &mut hir::Function, block: hir::BlockId, recv: hir::
     None
 }
 
-fn inline_array_empty_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_array_empty_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[] = args else { return None; };
     if fun.likely_a(recv, types::Array, state) {
         let recv = fun.coerce_to(block, recv, types::Array, state);
@@ -612,7 +616,7 @@ fn inline_array_empty_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir:
     None
 }
 
-fn inline_integer_succ(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_succ(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     if !args.is_empty() { return None; }
     if fun.likely_a(recv, types::Fixnum, state) {
         let left = fun.coerce_to(block, recv, types::Fixnum, state);
@@ -623,7 +627,7 @@ fn inline_integer_succ(fun: &mut hir::Function, block: hir::BlockId, recv: hir::
     None
 }
 
-fn inline_integer_xor(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_xor(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[right] = args else { return None; };
     if fun.likely_a(recv, types::Fixnum, state) && fun.likely_a(right, types::Fixnum, state) {
         let left = fun.coerce_to(block, recv, types::Fixnum, state);
@@ -653,27 +657,27 @@ fn try_inline_float_op(fun: &mut hir::Function, block: hir::BlockId, f: &dyn Fn(
     None
 }
 
-fn inline_float_plus(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_float_plus(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_float_op(fun, block, &|recv, other| hir::Insn::FloatAdd { recv, other, state }, BOP_PLUS, recv, other, state)
 }
 
-fn inline_float_minus(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_float_minus(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_float_op(fun, block, &|recv, other| hir::Insn::FloatSub { recv, other, state }, BOP_MINUS, recv, other, state)
 }
 
-fn inline_float_mul(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_float_mul(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_float_op(fun, block, &|recv, other| hir::Insn::FloatMul { recv, other, state }, BOP_MULT, recv, other, state)
 }
 
-fn inline_float_div(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_float_div(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_float_op(fun, block, &|recv, other| hir::Insn::FloatDiv { recv, other, state }, BOP_DIV, recv, other, state)
 }
 
-fn inline_float_to_i(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_float_to_i(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[] = args else { return None; };
     if fun.likely_a(recv, types::Flonum, state) {
         let recv = fun.coerce_to(block, recv, types::Flonum, state);
@@ -700,67 +704,67 @@ fn try_inline_fixnum_op(fun: &mut hir::Function, block: hir::BlockId, f: &dyn Fn
     None
 }
 
-fn inline_integer_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumEq { left, right }, BOP_EQ, recv, other, state)
 }
 
-fn inline_integer_plus(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_plus(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumAdd { left, right, state }, BOP_PLUS, recv, other, state)
 }
 
-fn inline_integer_minus(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_minus(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumSub { left, right, state }, BOP_MINUS, recv, other, state)
 }
 
-fn inline_integer_mult(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_mult(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumMult { left, right, state }, BOP_MULT, recv, other, state)
 }
 
-fn inline_integer_div(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_div(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumDiv { left, right, state }, BOP_DIV, recv, other, state)
 }
 
-fn inline_integer_mod(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_mod(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumMod { left, right, state }, BOP_MOD, recv, other, state)
 }
 
-fn inline_integer_and(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_and(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumAnd { left, right, }, BOP_AND, recv, other, state)
 }
 
-fn inline_integer_or(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_or(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumOr { left, right, }, BOP_OR, recv, other, state)
 }
 
-fn inline_integer_gt(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_gt(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumGt { left, right }, BOP_GT, recv, other, state)
 }
 
-fn inline_integer_ge(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_ge(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumGe { left, right }, BOP_GE, recv, other, state)
 }
 
-fn inline_integer_lt(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_lt(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumLt { left, right }, BOP_LT, recv, other, state)
 }
 
-fn inline_integer_le(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_le(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumLe { left, right }, BOP_LE, recv, other, state)
 }
 
-fn inline_integer_lshift(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_lshift(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     // Only convert to FixnumLShift if we know the shift amount is known at compile-time and could
     // plausibly create a fixnum.
@@ -769,7 +773,7 @@ fn inline_integer_lshift(fun: &mut hir::Function, block: hir::BlockId, recv: hir
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumLShift { left, right, state }, BOP_LTLT, recv, other, state)
 }
 
-fn inline_integer_rshift(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_rshift(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     // Only convert to FixnumLShift if we know the shift amount is known at compile-time and could
     // plausibly create a fixnum.
@@ -779,7 +783,7 @@ fn inline_integer_rshift(fun: &mut hir::Function, block: hir::BlockId, recv: hir
     try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumRShift { left, right }, BOP_GTGT, recv, other, state)
 }
 
-fn inline_integer_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_integer_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[index] = args else { return None; };
     if fun.likely_a(recv, types::Fixnum, state) && fun.likely_a(index, types::Fixnum, state) {
         let recv = fun.coerce_to(block, recv, types::Fixnum, state);
@@ -790,14 +794,14 @@ fn inline_integer_aref(fun: &mut hir::Function, block: hir::BlockId, recv: hir::
     None
 }
 
-fn inline_basic_object_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_basic_object_eq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     let c_result = fun.push_insn(block, hir::Insn::IsBitEqual { left: recv, right: other });
     let result = fun.push_insn(block, hir::Insn::BoxBool { val: c_result });
     Some(result)
 }
 
-fn inline_basic_object_not(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_basic_object_not(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[] = args else { return None; };
     if fun.type_of(recv).is_known_truthy() {
         let result = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qfalse) });
@@ -830,7 +834,7 @@ fn try_inline_string_not_equal(fun: &mut hir::Function, block: hir::BlockId, rec
     Some(fun.push_insn(block, hir::Insn::BoxBool { val: not_equal }))
 }
 
-fn inline_basic_object_neq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_basic_object_neq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     if let Some(result) = try_inline_fixnum_op(fun, block, &|left, right| hir::Insn::FixnumNeq { left, right }, BOP_NEQ, recv, other, state) {
         return Some(result);
@@ -849,25 +853,25 @@ fn inline_basic_object_neq(fun: &mut hir::Function, block: hir::BlockId, recv: h
     Some(result)
 }
 
-fn inline_class_allocate(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_class_allocate(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     if !args.is_empty() { return None; }
 
     // Inline only in the case we have a leaf allocator
     fun.try_inline_object_alloc(block, recv, state)
 }
 
-fn inline_basic_object_initialize(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_basic_object_initialize(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     if !args.is_empty() { return None; }
     let result = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qnil) });
     Some(result)
 }
 
-fn inline_nilclass_nil_p(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_nilclass_nil_p(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     if !args.is_empty() { return None; }
     Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qtrue) }))
 }
 
-fn inline_eqq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_eqq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     let recv_class = fun.type_of(recv).runtime_exact_ruby_class()?;
     if !fun.assume_expected_cfunc(block, recv_class, ID!(eq), rb_obj_equal as _, state) {
@@ -878,7 +882,7 @@ fn inline_eqq(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, a
     Some(result)
 }
 
-fn inline_kernel_is_a_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_kernel_is_a_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[other] = args else { return None; };
     if fun.is_a(other, types::Class) {
         let result = fun.push_insn(block, hir::Insn::IsA { val: recv, class: other });
@@ -887,7 +891,7 @@ fn inline_kernel_is_a_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir:
     None
 }
 
-fn inline_kernel_nil_p(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_kernel_nil_p(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     if !args.is_empty() { return None; }
     Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(Qfalse) }))
 }
@@ -898,6 +902,7 @@ fn inline_kernel_respond_to_p(
     recv: hir::InsnId,
     args: &[hir::InsnId],
     state: hir::InsnId,
+    _cme: Option<*const rb_callable_method_entry_t>,
 ) -> Option<hir::InsnId> {
     // Parse arguments: respond_to?(method_name, allow_priv = false)
     let (method_name, allow_priv) = match *args {
@@ -1002,7 +1007,7 @@ fn inline_kernel_respond_to_p(
     Some(fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(result) }))
 }
 
-fn inline_kernel_class(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_kernel_class(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[recv] = args else { return None; };
     let recv_class = fun.type_of(recv).runtime_exact_ruby_class()?;
     let real_class = unsafe { rb_class_real(recv_class) };
@@ -1011,7 +1016,7 @@ fn inline_kernel_class(fun: &mut hir::Function, block: hir::BlockId, _recv: hir:
 
 /// Inline `fixnum_inc(ec, self, num)` implies FixnumAdd(num, 1).
 /// num is always a Fixnum (starts at 0 and is incremented by fixnum_inc).
-fn inline_fixnum_inc(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_fixnum_inc(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[_self, num] = args else { return None; };
     let one = fun.push_insn(block, hir::Insn::Const { val: hir::Const::Value(VALUE::fixnum_from_usize(1)) });
     let result = fun.push_insn(block, hir::Insn::FixnumAdd { left: num, right: one, state });
@@ -1020,7 +1025,7 @@ fn inline_fixnum_inc(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::I
 
 /// Inline `ary_at(ec, self, index)` implies ArrayAref.
 /// Called from Array#each etc. where self is Array and index is in bounds.
-fn inline_ary_at(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_ary_at(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[recv, index] = args else { return None; };
     let recv = fun.push_insn(block, hir::Insn::RefineType { val: recv, new_type: types::Array });
     let index = fun.push_insn(block, hir::Insn::UnboxFixnum { val: index });
@@ -1030,7 +1035,7 @@ fn inline_ary_at(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnI
 
 /// Inline `ary_at_end(ec, self, index)` implies index >= ArrayLength(self).
 /// Called from Array#each etc. where self is Array and index is Fixnum.
-fn inline_ary_at_end(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_ary_at_end(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId, _cme: Option<*const rb_callable_method_entry_t>) -> Option<hir::InsnId> {
     let &[recv, index] = args else { return None; };
     let recv = fun.push_insn(block, hir::Insn::RefineType { val: recv, new_type: types::Array });
     let length_cint = fun.push_insn(block, hir::Insn::ArrayLength { array: recv });

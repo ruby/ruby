@@ -2985,6 +2985,28 @@ fn test_array_aref_non_fixnum_index() {
 }
 
 #[test]
+fn test_hash_aref_alias_pushes_frame() {
+    eval("
+        class Hash
+          alias get []
+        end
+
+        def test_get(hash) = hash.get(1)
+        def test_aref(hash) = hash[1]
+
+        test_get(Hash.new { caller(1) })
+        test_aref(Hash.new { caller(1) })
+    ");
+    assert_contains_opcode("test_aref", YARVINSN_opt_aref);
+    assert_snapshot!(assert_compiles("
+        [
+          test_get(Hash.new { caller(1) }).first(2),
+          test_aref(Hash.new { caller(1) }).first(1),
+        ].map { |caller| caller.map { |frame| frame[/in '([^']+)'/, 1] } }
+    "), @r#"[["Hash#[]", "Object#test_get"], ["Object#test_aref"]]"#);
+}
+
+#[test]
 fn test_array_fixnum_aset() {
     eval("
         def test(arr, idx)
