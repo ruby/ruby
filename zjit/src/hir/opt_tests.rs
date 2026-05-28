@@ -17918,11 +17918,11 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
           v70:Fixnum = GuardType v10, Fixnum
           v71:Fixnum = FixnumAdd v70, v31
-          v74:Fixnum = FixnumAdd v71, v40
+          v75:Fixnum = FixnumAdd v71, v40
           CheckInterrupts
           PopLightweightFrame
           CheckInterrupts
-          Return v74
+          Return v75
         ");
     }
 
@@ -17975,11 +17975,11 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
           v71:Fixnum = GuardType v10, Fixnum
           v72:Fixnum = FixnumAdd v71, v16
-          v75:Fixnum = FixnumAdd v72, v42
+          v76:Fixnum = FixnumAdd v72, v42
           CheckInterrupts
           PopLightweightFrame
           CheckInterrupts
-          Return v75
+          Return v76
         ");
     }
 
@@ -18198,11 +18198,11 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
           v72:Fixnum = GuardType v10, Fixnum
           v73:Fixnum = FixnumAdd v72, v16
-          v76:Fixnum = FixnumAdd v73, v18
+          v77:Fixnum = FixnumAdd v73, v18
           CheckInterrupts
           PopLightweightFrame
           CheckInterrupts
-          Return v76
+          Return v77
         ");
     }
 
@@ -18253,12 +18253,12 @@ mod hir_opt_tests {
           PushLightweightFrame v23 (0x1040), v10
           v30:Fixnum[10] = Const Value(10)
           PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
-          v54:Fixnum = GuardType v10, Fixnum
-          v55:Fixnum = FixnumAdd v30, v54
+          v55:Fixnum = GuardType v10, Fixnum
+          v56:Fixnum = FixnumAdd v30, v55
           CheckInterrupts
           PopLightweightFrame
           CheckInterrupts
-          Return v55
+          Return v56
         ");
     }
 
@@ -18312,11 +18312,11 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
           v62:Fixnum = GuardType v10, Fixnum
           v63:Fixnum = FixnumAdd v62, v33
-          v66:Fixnum = FixnumAdd v63, v16
+          v67:Fixnum = FixnumAdd v63, v16
           CheckInterrupts
           PopLightweightFrame
           CheckInterrupts
-          Return v66
+          Return v67
         ");
     }
 
@@ -18528,14 +18528,14 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Integer@0x1048, *@0x1050, cme:0x1058)
           v67:Fixnum = GuardType v10, Fixnum
           v68:Fixnum = FixnumMult v67, v39
-          v78:Fixnum[20] = Const Value(20)
+          v81:Fixnum[20] = Const Value(20)
           PatchPoint MethodRedefined(Integer@0x1048, +@0x1080, cme:0x1088)
-          v74:Fixnum = FixnumAdd v68, v78
-          v77:Fixnum = FixnumAdd v74, v16
+          v76:Fixnum = FixnumAdd v68, v81
+          v80:Fixnum = FixnumAdd v76, v16
           CheckInterrupts
           PopLightweightFrame
           CheckInterrupts
-          Return v77
+          Return v80
         ");
     }
 
@@ -18654,11 +18654,11 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
           v63:Fixnum = GuardType v10, Fixnum
           v64:Fixnum = FixnumAdd v63, v16
-          v67:Fixnum = FixnumAdd v64, v18
+          v68:Fixnum = FixnumAdd v64, v18
           CheckInterrupts
           PopLightweightFrame
           CheckInterrupts
-          Return v67
+          Return v68
         ");
     }
 
@@ -18696,7 +18696,7 @@ mod hir_opt_tests {
         assert!(!result.contains("SendDirect"),
             "Expected SendDirect to be replaced after inlining:\n{result}");
 
-        assert_snapshot!(result, @r"
+        assert_snapshot!(result, @"
         fn test@<compiled>:15:
         bb1():
           EntryPoint interpreter
@@ -18709,7 +18709,7 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1000, Point)
-          v87:Class[Point@0x1008] = Const Value(VALUE(0x1008))
+          v87:ClassSubclass[Point@0x1008] = Const Value(VALUE(0x1008))
           v12:NilClass = Const Value(nil)
           v15:Fixnum[1] = Const Value(1)
           v17:Fixnum[2] = Const Value(2)
@@ -18719,92 +18719,92 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Point@0x1008, initialize@0x1038, cme:0x1040)
           PushLightweightFrame v90 (0x1068), v15, v17
           PatchPoint SingleRactorMode
-          v209:CShape = LoadField v90, :shape_id@0x1070
-          v210:CShape[0x1071] = GuardBitEquals v209, CShape(0x1071)
+          v211:CShape = LoadField v90, :shape_id@0x1070
+          v212:CShape[0x1071] = GuardBitEquals v211, CShape(0x1071) recompile
           StoreField v90, :@x@0x1072, v15
           WriteBarrier v90, v15
-          v213:CShape[0x1073] = Const CShape(0x1073)
-          StoreField v90, :shape_id@0x1070, v213
-          v116:ObjectSubclass[class_exact:Point] = RefineType v90, HeapBasicObject
+          v215:CShape[0x1073] = Const CShape(0x1073)
+          StoreField v90, :shape_id@0x1070, v215
+          v118:ObjectSubclass[class_exact:Point] = RefineType v90, HeapBasicObject
           PatchPoint NoEPEscape(initialize)
           PatchPoint SingleRactorMode
-          StoreField v116, :@y@0x1074, v17
-          WriteBarrier v116, v17
-          v220:CShape[0x1075] = Const CShape(0x1075)
-          StoreField v116, :shape_id@0x1070, v220
+          StoreField v118, :@y@0x1074, v17
+          WriteBarrier v118, v17
+          v222:CShape[0x1075] = Const CShape(0x1075)
+          StoreField v118, :shape_id@0x1070, v222
           CheckInterrupts
           PopLightweightFrame
           CheckInterrupts
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1078, Point)
-          v96:Class[Point@0x1008] = Const Value(VALUE(0x1008))
+          v97:ClassSubclass[Point@0x1008] = Const Value(VALUE(0x1008))
           v45:NilClass = Const Value(nil)
           v48:Fixnum[1] = Const Value(1)
           v50:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Point@0x1008, new@0x1009, cme:0x1010)
-          v99:ObjectSubclass[class_exact:Point] = ObjectAllocClass Point:VALUE(0x1008)
+          v100:ObjectSubclass[class_exact:Point] = ObjectAllocClass Point:VALUE(0x1008)
           PatchPoint NoSingletonClass(Point@0x1008)
           PatchPoint MethodRedefined(Point@0x1008, initialize@0x1038, cme:0x1040)
-          PushLightweightFrame v99 (0x1068), v48, v50
+          PushLightweightFrame v100 (0x1068), v48, v50
           PatchPoint SingleRactorMode
-          v223:CShape = LoadField v99, :shape_id@0x1070
-          v224:CShape[0x1071] = GuardBitEquals v223, CShape(0x1071)
-          StoreField v99, :@x@0x1072, v48
-          WriteBarrier v99, v48
-          v227:CShape[0x1073] = Const CShape(0x1073)
-          StoreField v99, :shape_id@0x1070, v227
-          v143:ObjectSubclass[class_exact:Point] = RefineType v99, HeapBasicObject
+          v225:CShape = LoadField v100, :shape_id@0x1070
+          v226:CShape[0x1071] = GuardBitEquals v225, CShape(0x1071) recompile
+          StoreField v100, :@x@0x1072, v48
+          WriteBarrier v100, v48
+          v229:CShape[0x1073] = Const CShape(0x1073)
+          StoreField v100, :shape_id@0x1070, v229
+          v145:ObjectSubclass[class_exact:Point] = RefineType v100, HeapBasicObject
           PatchPoint NoEPEscape(initialize)
           PatchPoint SingleRactorMode
-          StoreField v143, :@y@0x1074, v50
-          WriteBarrier v143, v50
-          v234:CShape[0x1075] = Const CShape(0x1075)
-          StoreField v143, :shape_id@0x1070, v234
+          StoreField v145, :@y@0x1074, v50
+          WriteBarrier v145, v50
+          v236:CShape[0x1075] = Const CShape(0x1075)
+          StoreField v145, :shape_id@0x1070, v236
           CheckInterrupts
           PopLightweightFrame
           CheckInterrupts
           PatchPoint NoSingletonClass(Point@0x1008)
           PatchPoint MethodRedefined(Point@0x1008, ==@0x1080, cme:0x1088)
-          PushLightweightFrame v90 (0x1068), v99
+          PushLightweightFrame v90 (0x1068), v100
           PatchPoint SingleRactorMode
-          v237:CShape = LoadField v90, :shape_id@0x1070
-          v238:CShape[0x1075] = GuardBitEquals v237, CShape(0x1075)
-          v239:BasicObject = LoadField v90, :@x@0x1072
+          v239:CShape = LoadField v90, :shape_id@0x1070
+          v240:CShape[0x1075] = GuardBitEquals v239, CShape(0x1075) recompile
+          v241:BasicObject = LoadField v90, :@x@0x1072
           PatchPoint NoEPEscape(==)
           PatchPoint NoSingletonClass(Point@0x1008)
           PatchPoint MethodRedefined(Point@0x1008, x@0x10b0, cme:0x10b8)
-          v263:CShape = LoadField v99, :shape_id@0x1070
-          v264:CShape[0x1075] = GuardBitEquals v263, CShape(0x1075)
-          v265:BasicObject = LoadField v99, :@x@0x1072
+          v267:CShape = LoadField v100, :shape_id@0x1070
+          v268:CShape[0x1075] = GuardBitEquals v267, CShape(0x1075) recompile
+          v269:BasicObject = LoadField v100, :@x@0x1072
           PatchPoint MethodRedefined(Integer@0x10e0, ==@0x1080, cme:0x10e8)
-          v246:Fixnum = GuardType v239, Fixnum
-          v247:Fixnum = GuardType v265, Fixnum
-          v248:BoolExact = FixnumEq v246, v247
+          v248:Fixnum = GuardType v241, Fixnum
+          v249:Fixnum = GuardType v269, Fixnum
+          v250:BoolExact = FixnumEq v248, v249
           CheckInterrupts
-          v179:CBool = Test v248
-          v180:FalseClass = RefineType v248, Falsy
-          CondBranch v179, bb17(), bb16(v90, v99, v180)
+          v181:CBool = Test v250
+          v182:FalseClass = RefineType v250, Falsy
+          CondBranch v181, bb17(), bb16(v90, v100, v182)
         bb17():
           PatchPoint SingleRactorMode
-          v241:CShape = LoadField v90, :shape_id@0x1070
-          v242:CShape[0x1075] = GuardBitEquals v241, CShape(0x1075)
-          v243:BasicObject = LoadField v90, :@y@0x1074
+          v243:CShape = LoadField v90, :shape_id@0x1070
+          v244:CShape[0x1075] = GuardBitEquals v243, CShape(0x1075) recompile
+          v245:BasicObject = LoadField v90, :@y@0x1074
           PatchPoint NoEPEscape(==)
           PatchPoint NoSingletonClass(Point@0x1008)
           PatchPoint MethodRedefined(Point@0x1008, y@0x1110, cme:0x1118)
-          v267:CShape = LoadField v99, :shape_id@0x1070
-          v268:CShape[0x1075] = GuardBitEquals v267, CShape(0x1075)
-          v269:BasicObject = LoadField v99, :@y@0x1074
+          v271:CShape = LoadField v100, :shape_id@0x1070
+          v272:CShape[0x1075] = GuardBitEquals v271, CShape(0x1075) recompile
+          v273:BasicObject = LoadField v100, :@y@0x1074
           PatchPoint MethodRedefined(Integer@0x10e0, ==@0x1080, cme:0x10e8)
-          v251:Fixnum = GuardType v243, Fixnum
-          v252:Fixnum = GuardType v269, Fixnum
-          v253:BoolExact = FixnumEq v251, v252
-          Jump bb16(v90, v99, v253)
-        bb16(v196:ObjectSubclass[class_exact:Point], v197:ObjectSubclass[class_exact:Point], v198:BoolExact):
+          v253:Fixnum = GuardType v245, Fixnum
+          v254:Fixnum = GuardType v273, Fixnum
+          v255:BoolExact = FixnumEq v253, v254
+          Jump bb16(v90, v100, v255)
+        bb16(v198:ObjectSubclass[class_exact:Point], v199:ObjectSubclass[class_exact:Point], v200:BoolExact):
           CheckInterrupts
           PopLightweightFrame
           CheckInterrupts
-          Return v198
+          Return v200
         ");
     }
 }
