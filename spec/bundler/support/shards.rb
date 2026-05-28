@@ -144,6 +144,7 @@ module Spec
       ],
       shard_d: [
         "spec/bundler/resolver/cooldown_spec.rb",
+        "spec/install/cooldown_spec.rb",
         "spec/commands/outdated_spec.rb",
         "spec/commands/update_spec.rb",
         "spec/lock/lockfile_spec.rb",
