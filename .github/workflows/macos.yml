@@ -28,7 +28,7 @@ jobs:
           - test_task: check
             os: macos-26
           - test_task: check
-            os: macos-26
+            os: macos-15
             configure_args: '--with-gcc=gcc-14'
           - test_task: check
             os: macos-26
