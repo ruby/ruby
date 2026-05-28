@@ -1590,6 +1590,9 @@ static long depth_config(VALUE num)
     if (RB_UNLIKELY(d < 0)) {
         rb_raise(rb_eArgError, "depth must be >= 0 (got %ld)", d);
     }
+    if (RB_UNLIKELY(d > INT_MAX)) {
+        rb_raise(rb_eArgError, "depth is too large (got %ld)", d);
+    }
     return d;
 }
 
