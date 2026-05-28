@@ -143,6 +143,15 @@ class TestGemSafeYAML < Gem::TestCase
     end
   end
 
+  def test_unknown_alias_raises
+    yaml = <<~YAML
+      foo: 1
+      bar: *missing
+    YAML
+
+    assert_raise(Psych::BadAlias) { Gem::SafeYAML.safe_load(yaml) }
+  end
+
   def test_yaml_serializer_aliases_disabled
     aliases_enabled = Gem::SafeYAML.aliases_enabled?
     Gem::SafeYAML.aliases_enabled = false
