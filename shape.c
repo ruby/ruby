@@ -411,7 +411,7 @@ rb_obj_shape_id(VALUE obj)
         VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
         shape_id_t base = ROOT_SHAPE_ID;
         if (fields_obj) {
-            base = RBASIC_SHAPE_ID(fields_obj) & ~SHAPE_ID_LAYOUT_MASK;
+            base = rb_shape_id_layout(RBASIC_SHAPE_ID(fields_obj));
         }
         return rb_shape_layout(RBASIC_SHAPE_ID(obj)) | base;
     }
