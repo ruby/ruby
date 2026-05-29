@@ -176,7 +176,7 @@ RBASIC_SET_SHAPE_ID_NO_CHECKS(VALUE obj, shape_id_t shape_id)
 }
 
 static inline shape_id_t
-rb_shape_id_layout(shape_id_t shape_id)
+rb_shape_layout(shape_id_t shape_id)
 {
     return shape_id & SHAPE_ID_LAYOUT_MASK;
 }
