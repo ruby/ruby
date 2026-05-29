@@ -110,7 +110,7 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
 
   def test_initialize
     cipher = OpenSSL::Cipher.new("AES-256-CBC")
-    assert_raise(RuntimeError) { cipher.__send__(:initialize, "AES-256-CBC") }
+    assert_raise(TypeError) { cipher.__send__(:initialize, "AES-256-CBC") }
     assert_raise(RuntimeError) { OpenSSL::Cipher.allocate.final }
     assert_raise(OpenSSL::Cipher::CipherError) {
       OpenSSL::Cipher.new("no such algorithm")

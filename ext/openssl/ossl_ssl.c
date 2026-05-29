@@ -1669,18 +1669,15 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
     SSL *ssl;
     SSL_CTX *ctx;
 
-    TypedData_Get_Struct(self, SSL, &ossl_ssl_type, ssl);
-    if (ssl)
-        ossl_raise(eSSLError, "SSL already initialized");
-
-    if (rb_scan_args(argc, argv, "11:", &io, &v_ctx, &opts) == 1)
-        v_ctx = rb_funcall(cSSLContext, rb_intern("new"), 0);
-
+    argc = rb_scan_args(argc, argv, "11:", &io, &v_ctx, &opts);
     if (!kw_ids[0]) {
         kw_ids[0] = rb_intern_const("sync_close");
     }
-
     rb_get_kwargs(opts, kw_ids, 0, 1, kw_args);
+    ossl_want_uninitialized(self, &ossl_ssl_type);
+
+    if (argc == 1)
+        v_ctx = rb_funcall(cSSLContext, rb_intern("new"), 0);
     if (kw_args[0] != Qundef) {
         rb_ivar_set(self, id_i_sync_close, kw_args[0]);
     }
