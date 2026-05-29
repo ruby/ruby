@@ -901,12 +901,34 @@ class Pathname
 end
 
 class Pathname    # * File *
+
+  # :markup: markdown
   #
-  # #each_line iterates over the line in the file.  It yields a String object
-  # for each line.
+  # call-seq:
+  #   each_line(sep = $/, **opts) {|line| ... } → nil
+  #   each_line(limit, **opts) {|line| ... } → nil
+  #   each_line(sep, limit, **opts) {|line| ... } → nil
+  #   each_line(...) → new_enumerator
   #
-  # This method has existed since 1.8.1.
+  # With a block given, calls the block with each line
+  # from the file represented by `self`;
+  # returns `nil`:
   #
+  # ```ruby
+  # lines = []
+  # Pathname('COPYING').each_line {|line| lines << line }
+  # lines.take(3)
+  # # =>
+  # # ["{日本語}[rdoc-ref:COPYING.ja]\n",
+  # #  "\n",
+  # #  "Ruby is copyrighted free software by Yukihiro Matsumoto <matz@netlab.jp>.\n"]
+  # ```
+  #
+  # The lines are read using IO.foreach,
+  # all arguments and options are passed to that method;
+  # see details at IO.foreach.
+  #
+  # With no block given, returns a new Enumerator.
   def each_line(...) # :yield: line
     File.foreach(@path, ...)
   end
