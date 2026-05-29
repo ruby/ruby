@@ -3,6 +3,9 @@ name: tarball-non-development (reusable)
 on:
   workflow_call: {}
 
+permissions:
+  contents: read
+
 jobs:
   non_development:
     strategy:
