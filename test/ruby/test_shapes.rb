@@ -1067,6 +1067,37 @@ class TestShapes < Test::Unit::TestCase
     assert_nil shape.parent
   end
 
+  def test_shape_layout
+    assert_equal :robject, RubyVM::Shape.of(TestObject.new).layout
+
+    if ENV["RUBY_BOX"]
+      assert_equal :other, RubyVM::Shape.of(Kernel).layout
+      assert_equal :other, RubyVM::Shape.of(String).layout
+    else
+      assert_equal :rclass, RubyVM::Shape.of(Kernel).layout
+      assert_equal :rclass, RubyVM::Shape.of(String).layout
+    end
+
+    assert_equal :rclass, RubyVM::Shape.of(Class.new).layout
+    assert_equal :rclass, RubyVM::Shape.of(Module.new).layout
+
+    klass = Class.new
+    assert_equal :rclass, RubyVM::Shape.of(klass).layout
+    klass.instance_variable_set(:@a, 123)
+    assert_equal :rclass, RubyVM::Shape.of(klass).layout
+
+    assert_equal :rdata, RubyVM::Shape.of(Thread.current).layout
+    assert_equal :rdata, RubyVM::Shape.of(lambda {}).layout
+
+    assert_equal :other, RubyVM::Shape.of(Struct.new(:x).new(1)).layout
+    assert_equal :other, RubyVM::Shape.of([]).layout
+    assert_equal :other, RubyVM::Shape.of("hello").layout
+    assert_equal :other, RubyVM::Shape.of(/foo/).layout
+    assert_equal :other, RubyVM::Shape.of(2..3).layout
+    assert_equal :other, RubyVM::Shape.of(2**67).layout
+    assert_equal :other, RubyVM::Shape.of(:"aaroniscool#{123}").layout
+  end
+
   def test_str_has_root_shape
     assert_shape_equal(RubyVM::Shape.root_shape, RubyVM::Shape.of(""))
   end
