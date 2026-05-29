@@ -3,41 +3,43 @@
 # find.rb: the Find module for processing all files under a given directory.
 #
 
+# :markup: markdown
 #
-# The +Find+ module supports the top-down traversal of a set of file paths.
-#
-# For example, to total the size of all files under your home directory,
-# ignoring anything in a "dot" directory (e.g. $HOME/.ssh):
-#
-#   require 'find'
-#
-#   total_size = 0
-#
-#   Find.find(ENV["HOME"]) do |path|
-#     if FileTest.directory?(path)
-#       if File.basename(path).start_with?('.')
-#         Find.prune       # Don't look any further into this directory.
-#       else
-#         next
-#       end
-#     else
-#       total_size += FileTest.size(path)
-#     end
-#   end
-#
+# \Module \Find supports the top-down traversal of entries in the file system.
 module Find
 
   # The version string
   VERSION = "0.2.0"
 
+  # :markup: markdown
   #
-  # Calls the associated block with the name of every file and directory listed
-  # as arguments, then recursively on their subdirectories, and so on.
+  # call-seq:
+  #   find(*paths, ignore_error: true) {|entry|} -> nil
   #
-  # Returns an enumerator if no block is given.
+  # With a block given, performs a depth-first traversal of each given path in `paths`;
+  # calls the block with each found path:
   #
-  # See the +Find+ module documentation for an example.
+  # ```ruby
+  # paths = []
+  # Find.find('bin', 'jit') {|path| paths << path }
+  # paths
+  # # =>
+  # # ["bin",
+  # #  "bin/gem",
+  # #  "jit",
+  # #  "jit/Cargo.toml",
+  # #  "jit/src",
+  # #  "jit/src/lib.rs"]
+  # ```
   #
+  # Raises an exception if a given path cannot be read.
+  #
+  # When keyword argument `ignore_error` is given as `true` (the default),
+  # certain exceptions during traversal are ignored (i.e., silently rescued):
+  # Errno::ENOENT, Errno::EACCES, Errno::ENOTDIR, Errno::ELOOP, Errno::ENAMETOOLONG, Errno::EINVAL;
+  # when given as `false`, no exceptions are rescued.
+  #
+  # With no block given, returns a new Enumerator.
   def find(*paths, ignore_error: true) # :yield: path
     block_given? or return enum_for(__method__, *paths, ignore_error: ignore_error)
 
@@ -75,13 +77,27 @@ module Find
     nil
   end
 
+  # :markup: markdown
   #
-  # Skips the current file or directory, restarting the loop with the next
-  # entry. If the current file is a directory, that directory will not be
-  # recursively entered. Meaningful only within the block associated with
-  # Find::find.
+  # call-seq:
+  #   Find.prune
   #
-  # See the +Find+ module documentation for an example.
+  # This method is meaningful only within a block given with Find.find.
+  #
+  # Inside such a block,
+  # "prunes" the traversed file tree by not descending into the current directory:
+  #
+  # ```ruby
+  # files = []
+  # Find.find('.') do |path|
+  #   Find.prune if File.basename(path) == 'test'
+  #   next unless File.file?(path) && File.extname(path) == '.rb'
+  #   files << path
+  # end
+  # files.size    # => 6690
+  # files.take(3) # => ["./KNOWNBUGS.rb", "./array.rb", "./ast.rb"]ath
+  # end
+  # ```
   #
   def prune
     throw :prune
