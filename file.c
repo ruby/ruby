@@ -4479,31 +4479,43 @@ rb_file_s_expand_path(int argc, const VALUE *argv)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     File.expand_path(file_name [, dir_string] )  ->  abs_file_name
+ *    File.expand_path(path, dirpath = '.') -> absolute_path
  *
- *  Converts a pathname to an absolute pathname. Relative paths are
- *  referenced from the current working directory of the process unless
- *  +dir_string+ is given, in which case it will be used as the
- *  starting point. The given pathname may start with a
- *  ``<code>~</code>'', which expands to the process owner's home
- *  directory (the environment variable +HOME+ must be set
- *  correctly). ``<code>~</code><i>user</i>'' expands to the named
- *  user's home directory.
+ *  Returns the string absolute path for the given `path`.
  *
- *     File.expand_path("~oracle/bin")           #=> "/home/oracle/bin"
+ *  Evaluates a relative path with respect to the directory given by `dirpath`:
  *
- *  A simple example of using +dir_string+ is as follows.
- *     File.expand_path("ruby", "/usr/bin")      #=> "/usr/bin/ruby"
+ *  ```ruby
+ *  Dir.chdir('/snap')
+ *  # Default dirpath.
+ *  File.expand_path('README')                  # => "/snap/README"
+ *  File.expand_path('bin')                     # => "/snap/bin"
+ *  File.expand_path('bin/../var')              # => "/snap/var"  # Cleaned.
+ *  # Other dirpath.
+ *  File.expand_path('../zip', '/usr/bin/ruby') # => "/usr/bin/zip"
+ *  Dir.chdir('/usr/bin')
+ *  File.expand_path('../../snap', __FILE__)    # => "/usr/snap"
+ *  ```
  *
- *  A more complex example which also resolves parent directory is as follows.
- *  Suppose we are in bin/mygem and want the absolute path of lib/mygem.rb.
+ *  Evaluates an absolute path without respect to `dirpath`:
  *
- *     File.expand_path("../../lib/mygem.rb", __FILE__)
- *     #=> ".../path/to/project/lib/mygem.rb"
+ *  ```ruby
+ *  File.expand_path('/snap')           # => "/snap"
+ *  File.expand_path('/snap', 'nosuch') # => "/snap"
+ *  File.expand_path('/snap/../snap')   # => "/snap"  # Cleaned.
+ *  ```
  *
- *  So first it resolves the parent of __FILE__, that is bin/, then go to the
- *  parent, the root of the project and appends +lib/mygem.rb+.
+ *  More examples:
+ *
+ *  ```
+ *  Dir.chdir('/usr/bin')
+ *  File.expand_path('../../snap', __FILE__) # => "/usr/snap"
+ *  File.expand_path('../../snap')           # => "/snap"
+ *  ```
+ *
  */
 
 static VALUE

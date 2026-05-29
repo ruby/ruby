@@ -1460,7 +1460,43 @@ class Pathname    # * File *
   #
   def extname() File.extname(@path) end
 
-  # See <tt>File.expand_path</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   expand_path(dirpath = '.') -> new_pathname
+  #
+  # Returns a new pathname containing the absolute path for `self`.
+  #
+  # Evaluates a relative path with respect to the directory given by `dirpath`:
+  #
+  # ```ruby
+  # Dir.chdir('/snap')
+  # # Default dirpath.
+  # Pathname('README').expand_path                  # => #<Pathname:/snap/README>
+  # Pathname('bin').expand_path                     # => #<Pathname:/snap/bin>
+  # Pathname('bin/../var').expand_path              # => #<Pathname:/snap/var>  # Cleaned.
+  # # Other dirpath.
+  # Pathname('../zip').expand_path('/usr/bin/ruby') # => #<Pathname:/usr/bin/zip>
+  # Dir.chdir('/usr/bin')
+  # Pathname('../../snap').expand_path(__FILE__)    # => #<Pathname:/usr/snap>
+  # ```
+  #
+  # Evaluates an absolute path without respect to `dirpath`:
+  #
+  # ```ruby
+  # Pathname('/snap').expand_path                       # => #<Pathname:/snap>
+  # Pathname('/snap').expand_path.expand_path('nosuch') # => #<Pathname:/snap>
+  # Pathname('/snap/../snap').expand_path               # => #<Pathname:/snap>  # Cleaned.
+  # ```
+  #
+  # More examples:
+  #
+  # ```
+  # Dir.chdir('/usr/bin')
+  # Pathname('../../snap').expand_path(__FILE__) # => #<Pathname:/usr/snap>
+  # Pathname('../../snap').expand_path           # => #<Pathname:/snap>
+  # ```
+  #
   def expand_path(...) self.class.new(File.expand_path(@path, ...)) end
 
   # See <tt>File.split</tt>.  Returns the #dirname and the #basename in an
