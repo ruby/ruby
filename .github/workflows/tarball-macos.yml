@@ -12,6 +12,11 @@ on:
         required: false
         type: boolean
         default: false
+    secrets:
+      SIMPLER_ALERTS_URL:
+        required: false
+      SNAPSHOT_SLACK_WEBHOOK_URL:
+        required: false
 
 permissions:
   contents: read

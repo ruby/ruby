@@ -74,7 +74,9 @@ jobs:
     with:
       archname: snapshot-${{ needs.tarball.outputs.branch }}
       notify-release-channel: ${{ github.event_name == 'workflow_dispatch' && inputs.notify-release-channel || false }}
-    secrets: inherit
+    secrets:
+      SIMPLER_ALERTS_URL: ${{ secrets.SIMPLER_ALERTS_URL }}
+      SNAPSHOT_SLACK_WEBHOOK_URL: ${{ secrets.SNAPSHOT_SLACK_WEBHOOK_URL }}
 
   macos:
     needs: tarball
@@ -83,7 +85,9 @@ jobs:
     with:
       archname: snapshot-${{ needs.tarball.outputs.branch }}
       notify-release-channel: ${{ github.event_name == 'workflow_dispatch' && inputs.notify-release-channel || false }}
-    secrets: inherit
+    secrets:
+      SIMPLER_ALERTS_URL: ${{ secrets.SIMPLER_ALERTS_URL }}
+      SNAPSHOT_SLACK_WEBHOOK_URL: ${{ secrets.SNAPSHOT_SLACK_WEBHOOK_URL }}
 
   windows:
     needs: tarball
@@ -92,9 +96,10 @@ jobs:
     with:
       archname: snapshot-${{ needs.tarball.outputs.branch }}
       notify-release-channel: ${{ github.event_name == 'workflow_dispatch' && inputs.notify-release-channel || false }}
-    secrets: inherit
+    secrets:
+      SIMPLER_ALERTS_URL: ${{ secrets.SIMPLER_ALERTS_URL }}
+      SNAPSHOT_SLACK_WEBHOOK_URL: ${{ secrets.SNAPSHOT_SLACK_WEBHOOK_URL }}
 
   non_development:
     needs: tarball
     uses: ./.github/workflows/tarball-non-development.yml
-    secrets: inherit
