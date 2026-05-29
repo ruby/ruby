@@ -1547,6 +1547,37 @@ pub fn class_has_leaf_allocator(class: VALUE) -> bool {
     unsafe { rb_zjit_class_has_default_allocator(class) }
 }
 
+/// Whether a method ISEQ defined on `owner` is guaranteed to run with a `self`
+/// that is a heap (non-immediate) object.
+///
+/// True only for plain `def` methods (`ISEQ_TYPE_METHOD`) defined on a normal,
+/// initialized, non-singleton class that uses the default allocator
+/// (`rb_class_allocate_instance`). The receiver of such a method is always
+/// `kind_of?` the owner, and no user class with the default allocator can be
+/// inserted into the ancestry of an immediate, so `self` cannot be an immediate.
+///
+/// The default-allocator check alone is not sufficient: `Object`, `BasicObject`,
+/// and `Numeric` use the default allocator yet are ancestors of immediates (e.g.
+/// `Integer`). Every such class is also an ancestor of `Integer`, so a single
+/// `rb_obj_is_kind_of(<a fixnum>, owner)` check rules all of them out.
+///
+/// Returns `false` conservatively for anything that doesn't clearly qualify
+/// (modules, singleton classes, custom allocators, non-`def` ISEQs, etc.).
+pub fn iseq_self_is_heap_object(iseq: IseqPtr, owner: VALUE) -> bool {
+    if unsafe { rb_get_iseq_body_type(iseq) } != ISEQ_TYPE_METHOD { return false; }
+    if !unsafe { RB_TYPE_P(owner, RUBY_T_CLASS) } { return false; }
+    // class_has_leaf_allocator checks initialized + non-singleton before reading
+    // the allocator (reading it otherwise raises), so reuse those guards here.
+    if !unsafe { rb_zjit_class_initialized_p(owner) } { return false; }
+    if unsafe { rb_zjit_singleton_class_p(owner) } { return false; }
+    if !unsafe { rb_zjit_class_has_default_allocator(owner) } { return false; }
+    // Exclude Object/BasicObject/Numeric and friends: classes that use the default
+    // allocator but sit above an immediate class in the ancestry chain. They are
+    // all ancestors of Integer, so this single check covers every immediate type.
+    if unsafe { rb_obj_is_kind_of(VALUE::fixnum_from_usize(0), owner) }.test() { return false; }
+    true
+}
+
 /// Interned ID values for Ruby symbols and method names.
 /// See [type@crate::cruby::ID] and usages outside of ZJIT.
 pub(crate) mod ids {

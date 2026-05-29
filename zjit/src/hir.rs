@@ -2539,6 +2539,11 @@ pub struct Function {
     /// Whether previously, a function for this ISEQ was invalidated due to
     /// singleton class creation (violation of NoSingletonClass invariant).
     was_invalidated_for_singleton_class_creation: bool,
+    /// Whether `self` is guaranteed to be a heap (non-immediate) object. When set,
+    /// the `self`-producing instructions (`LoadSelf` and the `SelfParam` `LoadArg`)
+    /// are typed `HeapBasicObject` instead of `BasicObject`. Sourced from
+    /// `IseqPayload::self_is_heap_object`.
+    self_is_heap_object: bool,
     /// Controls code generation strategy for optimization passes.
     policy: CompilePolicy,
     /// The types for the parameters of this function. They are copied to the type
@@ -2648,6 +2653,7 @@ impl Function {
         Function {
             iseq,
             was_invalidated_for_singleton_class_creation: false,
+            self_is_heap_object: false,
             policy: CompilePolicy::new(iseq),
             insns: vec![],
             insn_types: vec![],
@@ -3003,7 +3009,7 @@ impl Function {
             Insn::LoadSP => types::CPtr,
             Insn::LoadEC => types::CPtr,
             Insn::GetEP { .. } => types::CPtr,
-            Insn::LoadSelf => types::BasicObject,
+            Insn::LoadSelf => if self.self_is_heap_object { types::HeapBasicObject } else { types::BasicObject },
             &Insn::LoadField { return_type, .. } => return_type,
             Insn::GetSpecialSymbol { .. } => types::StringExact.union(types::NilClass),
             Insn::GetSpecialNumber { .. } => types::StringExact.union(types::NilClass),
@@ -6669,6 +6675,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     let mut profiles = ProfileOracle::new(payload);
     let mut fun = Function::new(iseq);
     fun.was_invalidated_for_singleton_class_creation = payload.was_invalidated_for_singleton_class_creation;
+    fun.self_is_heap_object = payload.self_is_heap_object;
 
     // Compute a map of PC->Block by finding jump targets
     let jit_entry_insns = unsafe { iseq.params() }.opt_table_slice().iter().copied().map(VALUE::as_u32).collect::<Vec<_>>();
@@ -8576,7 +8583,10 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
     };
 
     let mut arg_idx: u32 = 0;
-    let self_param = fun.push_insn(jit_entry_block, Insn::LoadArg { idx: arg_idx, id: FieldName::SelfParam, val_type: types::BasicObject });
+    // For `def` methods on classes that can only produce heap (non-immediate)
+    // instances, `self` is a HeapBasicObject. See `iseq_self_is_heap_object`.
+    let self_type = if fun.self_is_heap_object { types::HeapBasicObject } else { types::BasicObject };
+    let self_param = fun.push_insn(jit_entry_block, Insn::LoadArg { idx: arg_idx, id: FieldName::SelfParam, val_type: self_type });
     arg_idx += 1;
     let mut entry_state = FrameState::new(iseq);
     let mut ep: Option<InsnId> = None;
