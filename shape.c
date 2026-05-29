@@ -413,7 +413,7 @@ rb_obj_shape_id(VALUE obj)
         if (fields_obj) {
             base = RBASIC_SHAPE_ID(fields_obj) & ~SHAPE_ID_LAYOUT_MASK;
         }
-        return rb_shape_id_layout(RBASIC_SHAPE_ID(obj)) | base;
+        return rb_shape_layout(RBASIC_SHAPE_ID(obj)) | base;
     }
     return RBASIC_SHAPE_ID(obj);
 }
@@ -698,7 +698,7 @@ rb_shape_transition_object_id(shape_id_t original_shape_id)
     bool dont_care;
     rb_shape_t *shape = get_next_shape_internal(RSHAPE(original_shape_id), id_object_id, SHAPE_OBJ_ID, &dont_care, true);
     if (!shape) {
-        return rb_shape_id_layout(original_shape_id) | ROOT_COMPLEX_WITH_OBJ_ID | RSHAPE_FLAGS(original_shape_id);
+        return rb_shape_layout(original_shape_id) | ROOT_COMPLEX_WITH_OBJ_ID | RSHAPE_FLAGS(original_shape_id);
     }
 
     RUBY_ASSERT(shape);
@@ -1264,7 +1264,7 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
         rb_bug("Can't set INVALID_SHAPE_ID on an object");
     }
 
-    shape_id_t actual_layout = rb_shape_id_layout(rb_obj_shape_id(obj));
+    shape_id_t actual_layout = rb_shape_layout(rb_obj_shape_id(obj));
     shape_id_t expected_layout = rb_shape_expected_layout(obj);
     if (actual_layout != expected_layout) {
         rb_bug("shape_id layout mismatch: expected=%x actual=%x shape_id=%u obj=%s",
@@ -1371,7 +1371,7 @@ shape_layout(VALUE self)
 {
     shape_id_t shape_id = NUM2UINT(rb_struct_getmember(self, rb_intern("id")));
 
-    switch (rb_shape_id_layout(shape_id)) {
+    switch (rb_shape_layout(shape_id)) {
       case SHAPE_ID_LAYOUT_ROBJECT:
         return ID2SYM(rb_intern("robject"));
       case SHAPE_ID_LAYOUT_RCLASS:
@@ -1381,7 +1381,7 @@ shape_layout(VALUE self)
       case SHAPE_ID_LAYOUT_OTHER:
         return ID2SYM(rb_intern("other"));
       default:
-        rb_bug("unknown shape layout: %u", rb_shape_id_layout(shape_id));
+        rb_bug("unknown shape layout: %u", rb_shape_layout(shape_id));
     }
 }
 

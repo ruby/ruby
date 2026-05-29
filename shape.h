@@ -6,7 +6,6 @@
 
 typedef uint8_t attr_index_t;
 typedef uint32_t shape_id_t;
-shape_id_t rb_shape_layout(VALUE obj);
 #define SHAPE_ID_NUM_BITS 32
 #define SHAPE_ID_OFFSET_NUM_BITS 19
 
@@ -186,7 +185,7 @@ RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
 {
     RUBY_ASSERT(!RB_SPECIAL_CONST_P(obj));
     RUBY_ASSERT(!RB_TYPE_P(obj, T_IMEMO) || IMEMO_TYPE_P(obj, imemo_fields));
-    RUBY_ASSERT(!IMEMO_TYPE_P(obj, imemo_fields) || rb_shape_id_layout(shape_id) == SHAPE_ID_LAYOUT_ROBJECT);
+    RUBY_ASSERT(!IMEMO_TYPE_P(obj, imemo_fields) || rb_shape_layout(shape_id) == SHAPE_ID_LAYOUT_ROBJECT);
 
     RBASIC_SET_SHAPE_ID_NO_CHECKS(obj, shape_id);
 
@@ -485,10 +484,10 @@ rb_shape_transition_frozen(shape_id_t shape_id)
 static inline shape_id_t
 rb_shape_transition_complex(shape_id_t shape_id)
 {
-    shape_id_t next_shape_id = rb_shape_id_layout(shape_id) | ROOT_COMPLEX_SHAPE_ID;
+    shape_id_t next_shape_id = rb_shape_layout(shape_id) | ROOT_COMPLEX_SHAPE_ID;
 
     if (rb_shape_has_object_id(shape_id)) {
-        next_shape_id = rb_shape_id_layout(shape_id) | ROOT_COMPLEX_WITH_OBJ_ID;
+        next_shape_id = rb_shape_layout(shape_id) | ROOT_COMPLEX_WITH_OBJ_ID;
     }
 
     uint8_t heap_index = rb_shape_heap_index(shape_id);
