@@ -189,10 +189,6 @@ default:                        \
             rb_jit_func_t func = zjit_compile(ec); \
             if (func) { \
                 val = zjit_entry(ec, ec->cfp, func); \
-                if (UNDEF_P(val)) { \
-                    ec->cfp->jit_return = 0; \
-                    rb_zjit_materialize_frames(ec, ec->cfp); \
-                } \
             } \
         } \
     } \
