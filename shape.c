@@ -411,7 +411,10 @@ rb_obj_shape_id(VALUE obj)
         VALUE fields_obj = RCLASS_WRITABLE_FIELDS_OBJ(obj);
         shape_id_t base = ROOT_SHAPE_ID;
         if (fields_obj) {
-            base = rb_shape_layout(RBASIC_SHAPE_ID(fields_obj));
+            // Remove the layout from the fields object.  We want to
+            // combine the shape of the fields object with the layout of the
+            // class / module object.
+            base = RBASIC_SHAPE_ID(fields_obj) & ~SHAPE_ID_LAYOUT_MASK;
         }
         return rb_shape_layout(RBASIC_SHAPE_ID(obj)) | base;
     }
