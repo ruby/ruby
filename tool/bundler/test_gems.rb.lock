@@ -57,7 +57,6 @@ PLATFORMS
 
 DEPENDENCIES
   builder (~> 3.2)
-  compact_index (~> 0.15.0)
   concurrent-ruby
   etc
   fiddle
