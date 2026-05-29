@@ -385,6 +385,13 @@ static inline char peek(JSON_ParserState *state)
 
 static void cursor_position(JSON_ParserState *state, long *line_out, long *column_out)
 {
+    JSON_ASSERT(state->cursor <= state->end);
+
+    // Redundant but helpful for hardening
+    if (RB_UNLIKELY(state->cursor > state->end)) {
+        state->cursor = state->end;
+    }
+
     const char *cursor = state->cursor;
     long column = 0;
     long line = 1;
@@ -1022,6 +1029,13 @@ ALWAYS_INLINE(static) bool string_scan(JSON_ParserState *state)
         }
         state->cursor++;
     }
+
+    // If the string ended with an unterminated escape sequence, we might
+    // have gone past the end.
+    if (RB_UNLIKELY(state->cursor > state->end)) {
+        state->cursor = state->end;
+    }
+
     return false;
 }
 

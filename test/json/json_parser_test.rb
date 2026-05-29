@@ -545,22 +545,26 @@ class JSONParserTest < Test::Unit::TestCase
   end
 
   def test_backslash
+    assert_raise(JSON::ParserError) do
+      JSON.parse('"\\')
+    end
+
     data = [ '\\.(?i:gif|jpe?g|png)$' ]
     json = '["\\\\.(?i:gif|jpe?g|png)$"]'
     assert_equal data, parse(json)
-    #
+
     data = [ '\\"' ]
     json = '["\\\\\""]'
     assert_equal data, parse(json)
-    #
+
     json = '["/"]'
     data = [ '/' ]
     assert_equal data, parse(json)
-    #
+
     json = '["\""]'
     data = ['"']
     assert_equal data, parse(json)
-    #
+
     json = '["\\/"]'
     data = ["/"]
     assert_equal data, parse(json)
