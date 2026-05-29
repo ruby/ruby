@@ -4197,7 +4197,10 @@ vm_weak_table_gen_fields_foreach(st_data_t key, st_data_t value, st_data_t data)
         break;
 
       case ST_DELETE:
-        // TODO: Why do we need to set the shape id on the object?
+        // When we're removing an object from the weak ref table, we need to
+        // set the shape on it so that the GC finalizer won't try to remove
+        // it again.  A "root shape" indicates to the GC that this object
+        // has no fields on it, hence it won't be in the gen fields table.
         RBASIC_SET_SHAPE_ID((VALUE)key, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER);
         return ST_DELETE;
 
