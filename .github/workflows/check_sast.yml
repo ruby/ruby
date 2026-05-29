@@ -92,7 +92,7 @@ jobs:
           output: sarif-results
 
       - name: filter-sarif
-        uses: advanced-security/filter-sarif@2da736ff05ef065cb2894ac6892e47b5eac2c3c0 # v1.1.0.1.1
+        uses: advanced-security/filter-sarif@2da736ff05ef065cb2894ac6892e47b5eac2c3c0 # v1.1
         with:
           patterns: |
             +**/*.rb
@@ -115,7 +115,7 @@ jobs:
         continue-on-error: true
 
       - name: filter-sarif
-        uses: advanced-security/filter-sarif@2da736ff05ef065cb2894ac6892e47b5eac2c3c0 # v1.1.0.1.1
+        uses: advanced-security/filter-sarif@2da736ff05ef065cb2894ac6892e47b5eac2c3c0 # v1.1
         with:
           patterns: |
             +**/*.c
