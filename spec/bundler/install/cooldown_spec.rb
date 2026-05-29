@@ -44,6 +44,12 @@ RSpec.describe "bundle install with the cooldown setting" do
 
       expect(the_bundle).to include_gems("myrack 1.0.0")
     end
+
+    it "rejects a negative --cooldown value" do
+      bundle "install --cooldown=-7", artifice: "compact_index", raise_on_error: false
+
+      expect(err).to match(/non-negative integer/)
+    end
   end
 
   context "configuration" do
@@ -153,6 +159,88 @@ RSpec.describe "bundle install with the cooldown setting" do
       bundle "install --cooldown 7", artifice: "compact_index_cooldown"
 
       expect(the_bundle).to include_gems("ripe_gem 2.0.0")
+    end
+
+    it "annotates in-cooldown versions in bundle outdated table output" do
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "ripe_gem", "1.0.0"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            ripe_gem (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          ripe_gem (= 1.0.0)
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "outdated --cooldown 7", artifice: "compact_index_cooldown", raise_on_error: false
+
+      expect(out).to match(/ripe_gem.*\(cooldown \d+d\)/)
+    end
+
+    it "annotates in-cooldown versions in bundle outdated --parseable output" do
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "ripe_gem", "1.0.0"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            ripe_gem (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          ripe_gem (= 1.0.0)
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "outdated --cooldown 7 --parseable", artifice: "compact_index_cooldown", raise_on_error: false
+
+      expect(out).to match(/ripe_gem.*in cooldown for \d+ more day/)
+    end
+
+    it "surfaces a cooldown hint when bundle update filters every candidate" do
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "ripe_gem"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            ripe_gem (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          ripe_gem
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "update ripe_gem --cooldown 99999", artifice: "compact_index_cooldown", raise_on_error: false
+
+      expect(err).to match(/excluded by the cooldown setting/)
+      expect(err).to match(/--cooldown 0/)
     end
   end
 end
