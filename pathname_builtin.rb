@@ -1694,8 +1694,24 @@ class Pathname    # * Dir *
     alias pwd getwd
   end
 
-  # Return the entries (files and subdirectories) in the directory, each as a
-  # Pathname object.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   entries -> array_of_pathnames
+  #
+  # Returns an array of pathnames,
+  # one for each entry in the directory represented by `self`:
+  #
+  # ```ruby
+  # Pathname('.').entries.take(5)
+  # # =>
+  # # [#<Pathname:.>,
+  # #  #<Pathname:..>,
+  # #  #<Pathname:gc.rb>,
+  # #  #<Pathname:yjit.rb>,
+  # #  #<Pathname:iseq.h>]
+  # ```
+  #
   def entries() Dir.entries(@path).map {|f| self.class.new(f) } end
 
   # :markup: markdown
