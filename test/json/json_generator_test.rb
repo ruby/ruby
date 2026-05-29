@@ -601,6 +601,8 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal too_deep, ok
     ok = generate too_deep_ary, :max_nesting => 0
     assert_equal too_deep, ok
+
+    assert_raise(TypeError) { generate too_deep_ary, max_nesting: "garbage" }
   end
 
   def test_backslash

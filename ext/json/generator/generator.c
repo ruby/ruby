@@ -1581,7 +1581,7 @@ static VALUE cState_max_nesting(VALUE self)
 
 static long long_config(VALUE num)
 {
-    return RTEST(num) ? FIX2LONG(num) : 0;
+    return RTEST(num) ? NUM2LONG(num) : 0;
 }
 
 // depth must never be negative; reject early with a clear error.
