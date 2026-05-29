@@ -141,11 +141,7 @@ rb_imemo_fields_new(VALUE owner, shape_id_t shape_id, bool shareable)
     size_t embedded_size = offsetof(struct rb_fields, as.embed) + capa * sizeof(VALUE);
     RUBY_ASSERT(rb_gc_size_allocatable_p(embedded_size));
     VALUE fields = rb_imemo_new(imemo_fields, owner, embedded_size, shareable);
-    // imemo fields objects should always have "RObject" layout.  The
-    // layout in the shape describes the layout of the thing on which it is set.
-    // Imemo fields have the same layout as robject, therefore the layout
-    // should reflect that fact.
-    RBASIC_SET_SHAPE_ID(fields, rb_shape_id_with_robject_layout(shape_id));
+    RBASIC_SET_SHAPE_ID(fields, shape_id);
     RUBY_ASSERT(IMEMO_TYPE_P(fields, imemo_fields));
     return fields;
 }
@@ -156,11 +152,7 @@ rb_imemo_fields_new_complex(VALUE owner, shape_id_t shape_id, size_t capa, bool 
     VALUE fields = rb_imemo_new(imemo_fields, owner, sizeof(struct rb_fields), shareable);
     IMEMO_OBJ_FIELDS(fields)->as.complex.table = st_init_numtable_with_size(capa);
     FL_SET_RAW(fields, OBJ_FIELD_HEAP);
-    // imemo fields objects should always have "RObject" layout.  The
-    // layout in the shape describes the layout of the thing on which it is set.
-    // Imemo fields have the same layout as robject, therefore the layout
-    // should reflect that fact.
-    RBASIC_SET_SHAPE_ID(fields, rb_shape_id_with_robject_layout(shape_id));
+    RBASIC_SET_SHAPE_ID(fields, shape_id);
     return fields;
 }
 
@@ -185,11 +177,7 @@ rb_imemo_fields_new_complex_tbl(VALUE owner, shape_id_t shape_id, st_table *tbl,
     VALUE fields = rb_imemo_new(imemo_fields, owner, sizeof(struct rb_fields), shareable);
     IMEMO_OBJ_FIELDS(fields)->as.complex.table = tbl;
     FL_SET_RAW(fields, OBJ_FIELD_HEAP);
-    // imemo fields objects should always have "RObject" layout.  The
-    // layout in the shape describes the layout of the thing on which it is set.
-    // Imemo fields have the same layout as robject, therefore the layout
-    // should reflect that fact.
-    RBASIC_SET_SHAPE_ID(fields, rb_shape_id_with_robject_layout(shape_id));
+    RBASIC_SET_SHAPE_ID(fields, shape_id);
     st_foreach(tbl, imemo_fields_trigger_wb_i, (st_data_t)fields);
     return fields;
 }

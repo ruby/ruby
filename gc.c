@@ -1056,15 +1056,7 @@ rb_newobj(rb_execution_context_t *ec, VALUE klass, VALUE flags, shape_id_t shape
 VALUE
 rb_ec_newobj_of(rb_execution_context_t *ec, VALUE klass, VALUE flags, size_t size)
 {
-    VALUE type = flags & T_MASK;
-    RUBY_ASSERT(type != T_OBJECT);
-    RUBY_ASSERT(type != T_DATA);
-    RUBY_ASSERT(type != T_CLASS);
-    RUBY_ASSERT(type != T_MODULE);
-    RUBY_ASSERT(type != T_ICLASS);
-    (void)type;
-
-    return rb_newobj(ec, klass, flags, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER, true, size);
+    return rb_newobj(ec, klass, flags, ROOT_SHAPE_ID, true, size);
 }
 
 VALUE
@@ -1076,13 +1068,13 @@ rb_newobj_of_with_shape(VALUE klass, VALUE flags, shape_id_t shape_id, size_t si
 VALUE
 rb_newobj_of(VALUE klass, VALUE flags, size_t size)
 {
-    return rb_newobj(GET_EC(), klass, flags, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER, true, size);
+    return rb_newobj(GET_EC(), klass, flags, ROOT_SHAPE_ID, true, size);
 }
 
 static
 VALUE class_allocate_complex_instance(VALUE klass, uint32_t capacity)
 {
-    shape_id_t initial_shape_id = rb_shape_id_with_robject_layout(rb_shape_root(rb_gc_heap_id_for_size(sizeof(struct RObject))));
+    shape_id_t initial_shape_id = rb_shape_root(rb_gc_heap_id_for_size(sizeof(struct RObject)));
     VALUE obj = rb_newobj_of_with_shape(klass, T_OBJECT, initial_shape_id, sizeof(struct RObject));
     rb_obj_init_complex(obj, rb_st_init_numtable_with_size(capacity));
     return obj;
@@ -1107,7 +1099,7 @@ rb_class_allocate_instance(VALUE klass)
 
         // There might be a NEWOBJ tracepoint callback, and it may set fields.
         // So the shape must be passed to `NEWOBJ_OF`.
-        obj = rb_newobj_of_with_shape(klass, T_OBJECT, rb_shape_id_with_robject_layout(rb_shape_root(rb_gc_heap_id_for_size(size))), size);
+        obj = rb_newobj_of_with_shape(klass, T_OBJECT, rb_shape_root(rb_gc_heap_id_for_size(size)), size);
 
         #if RUBY_DEBUG
             VALUE *ptr = ROBJECT_FIELDS(obj);
@@ -1157,7 +1149,7 @@ typed_data_alloc(VALUE klass, VALUE typed_flag, void *datap, const rb_data_type_
     RBIMPL_NONNULL_ARG(type);
     if (klass) rb_data_object_check(klass);
     bool wb_protected = (type->flags & RUBY_FL_WB_PROTECTED) || !type->function.dmark;
-    VALUE obj = rb_newobj(GET_EC(), klass, T_DATA, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_RDATA, wb_protected, size);
+    VALUE obj = rb_newobj(GET_EC(), klass, T_DATA, ROOT_SHAPE_ID, wb_protected, size);
 
     rb_gc_register_pinning_obj(obj);
 
@@ -4197,11 +4189,7 @@ vm_weak_table_gen_fields_foreach(st_data_t key, st_data_t value, st_data_t data)
         break;
 
       case ST_DELETE:
-        // When we're removing an object from the weak ref table, we need to
-        // set the shape on it so that the GC finalizer won't try to remove
-        // it again.  A "root shape" indicates to the GC that this object
-        // has no fields on it, hence it won't be in the gen fields table.
-        RBASIC_SET_SHAPE_ID((VALUE)key, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER);
+        RBASIC_SET_SHAPE_ID((VALUE)key, ROOT_SHAPE_ID);
         return ST_DELETE;
 
       case ST_REPLACE: {
