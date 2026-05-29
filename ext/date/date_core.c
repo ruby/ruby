@@ -4528,6 +4528,7 @@ date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
     rb_scan_args(argc, argv, "11", &vstr, &vfmt);
 
     StringValue(vstr);
+    if (argc > 1) StringValue(vfmt);
     if (!rb_enc_str_asciicompat_p(vstr))
 	rb_raise(rb_eArgError,
 		 "string should have ASCII compatible encoding");
@@ -4538,7 +4539,6 @@ date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
 	flen = strlen(default_fmt);
     }
     else {
-	StringValue(vfmt);
 	if (!rb_enc_str_asciicompat_p(vfmt))
 	    rb_raise(rb_eArgError,
 		     "format should have ASCII compatible encoding");
