@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
-# This group classifies test files into 4 groups by running `bin/rspec --profile 10000`
+# This classifies test files into 4 shards by running `bin/rspec --profile 10000`
 # to ensure balanced execution times. When adding new test files, it is recommended to
-# re-aggregate and adjust the groups to keep them balanced.
-# For now, please add new files to group 'windows_d'.
+# re-aggregate and adjust the shards to keep them balanced.
+# For now, please add new files to shard 'shard_d'.
 
 module Spec
-  module WindowsTagGroup
+  module Shards
     EXAMPLE_MAPPINGS = {
-      windows_a: [
+      shard_a: [
         "spec/runtime/setup_spec.rb",
         "spec/commands/install_spec.rb",
         "spec/commands/add_spec.rb",
@@ -53,7 +53,7 @@ module Spec
         "spec/bundler/plugin/source_list_spec.rb",
         "spec/bundler/source/path_spec.rb",
       ],
-      windows_b: [
+      shard_b: [
         "spec/install/gemfile/git_spec.rb",
         "spec/install/gems/standalone_spec.rb",
         "spec/commands/lock_spec.rb",
@@ -97,7 +97,7 @@ module Spec
         "spec/bundler/index_spec.rb",
         "spec/other/cli_man_pages_spec.rb",
       ],
-      windows_c: [
+      shard_c: [
         "spec/commands/newgem_spec.rb",
         "spec/commands/exec_spec.rb",
         "spec/commands/clean_spec.rb",
@@ -142,7 +142,7 @@ module Spec
         "spec/bundler/cli_common_spec.rb",
         "spec/bundler/ci_detector_spec.rb",
       ],
-      windows_d: [
+      shard_d: [
         "spec/commands/outdated_spec.rb",
         "spec/commands/update_spec.rb",
         "spec/lock/lockfile_spec.rb",
