@@ -2684,6 +2684,12 @@ ary_enum_length(VALUE ary, VALUE args, VALUE eobj)
     return rb_ary_length(ary);
 }
 
+// These array primitives enable tight compatibility with the C implementation
+// in terms of what method calls happen. They can use unchecked utilities such as
+// FIX2LONG since unlike userland Ruby code, these methods cannot be traced with
+// TracePoint (or ruby/debug.h APIs) and have their local variables changed from
+// underneath them.
+
 // Return true if the index is at or past the end of the array.
 VALUE
 rb_jit_ary_at_end(rb_execution_context_t *ec, VALUE self, VALUE index)
