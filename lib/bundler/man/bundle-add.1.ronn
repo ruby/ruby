@@ -5,7 +5,7 @@ bundle-add(1) -- Add gem to the Gemfile and run bundle install
 
 `bundle add` <GEM_NAME> [--group=GROUP] [--version=VERSION] [--source=SOURCE]
            [--path=PATH] [--git=GIT|--github=GITHUB] [--branch=BRANCH] [--ref=REF]
-           [--quiet] [--skip-install] [--strict|--optimistic]
+           [--cooldown=NUMBER] [--quiet] [--skip-install] [--strict|--optimistic]
 
 ## DESCRIPTION
 
@@ -58,6 +58,11 @@ Adds the named gem to the [`Gemfile(5)`][Gemfile(5)] and run `bundle install`.
 
 * `--strict`:
   Adds strict declaration of version.
+
+* `--cooldown=<number>`:
+  Only consider gem versions published at least <number> days ago when
+  resolving. Pass `0` to disable cooldown for this run. See `cooldown`
+  in bundle-config(1) for precedence rules.
 
 ## EXAMPLES
 
