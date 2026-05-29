@@ -1721,8 +1721,29 @@ impl Insn {
             Insn::InvokeBlock { .. } => effects::Any,
             Insn::InvokeBlockIfunc { .. } => effects::Any,
             Insn::SendDirect { .. } => effects::Any,
-            Insn::PushLightweightFrame { .. } => effects::Any,
-            Insn::PopLightweightFrame { .. } => effects::Any,
+            // TODO (nirvdrum 2026-05-28): Revisit when PushLightweightFrame is
+            // actually lightweight. The frame writes here pay for the spill
+            // ceremony in the current full frame-push codegen. A lightweight
+            // push that keeps caller state in SSA should drop Frame (and likely
+            // most of Other) from the write set, and PopLightweightFrame could
+            // collapse to Empty.
+            //
+            // Currently, spills caller PC, SP, locals, and stack and installs a
+            // new CFP. It may side-exit on stack overflow. It does not allocate,
+            // invalidate PatchPoint invariants, or set the interrupt flag, so
+            // optimizations tracking those heaps can flow across an inlined call.
+            Insn::PushLightweightFrame { .. } => Effect::read_write(
+                abstract_heaps::Memory,
+                abstract_heaps::Frame
+                    .union(abstract_heaps::Other)
+                    .union(abstract_heaps::Control),
+            ),
+            // Restores SP/CFP and updates ec->cfp.
+            // No side exit, no allocation, no PatchPoint invalidation, no interrupt flag write.
+            Insn::PopLightweightFrame { .. } => Effect::read_write(
+                abstract_heaps::Empty,
+                abstract_heaps::Other,
+            ),
             Insn::InvokeBuiltin { .. } => effects::Any,
             Insn::EntryPoint { .. } => effects::Any,
             Insn::Return { .. } => effects::Any,

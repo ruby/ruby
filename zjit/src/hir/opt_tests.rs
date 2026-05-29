@@ -17720,7 +17720,6 @@ mod hir_opt_tests {
           v46:Fixnum = FixnumAdd v44, v44
           CheckInterrupts
           PopLightweightFrame
-          CheckInterrupts
           Return v46
         ");
     }
@@ -17814,7 +17813,6 @@ mod hir_opt_tests {
           v46:Fixnum = FixnumAdd v45, v31
           CheckInterrupts
           PopLightweightFrame
-          CheckInterrupts
           Return v46
         ");
     }
@@ -17921,7 +17919,6 @@ mod hir_opt_tests {
           v75:Fixnum = FixnumAdd v71, v40
           CheckInterrupts
           PopLightweightFrame
-          CheckInterrupts
           Return v75
         ");
     }
@@ -17978,7 +17975,6 @@ mod hir_opt_tests {
           v76:Fixnum = FixnumAdd v72, v42
           CheckInterrupts
           PopLightweightFrame
-          CheckInterrupts
           Return v76
         ");
     }
@@ -18034,7 +18030,6 @@ mod hir_opt_tests {
           v47:Fixnum = FixnumAdd v46, v31
           CheckInterrupts
           PopLightweightFrame
-          CheckInterrupts
           Return v47
         ");
     }
@@ -18145,7 +18140,6 @@ mod hir_opt_tests {
           v49:BasicObject = CCallWithFrame v62, :String#+@0x10c8, v33
           CheckInterrupts
           PopLightweightFrame
-          CheckInterrupts
           Return v49
         ");
     }
@@ -18201,7 +18195,6 @@ mod hir_opt_tests {
           v77:Fixnum = FixnumAdd v73, v18
           CheckInterrupts
           PopLightweightFrame
-          CheckInterrupts
           Return v77
         ");
     }
@@ -18257,7 +18250,6 @@ mod hir_opt_tests {
           v56:Fixnum = FixnumAdd v30, v55
           CheckInterrupts
           PopLightweightFrame
-          CheckInterrupts
           Return v56
         ");
     }
@@ -18315,7 +18307,6 @@ mod hir_opt_tests {
           v67:Fixnum = FixnumAdd v63, v16
           CheckInterrupts
           PopLightweightFrame
-          CheckInterrupts
           Return v67
         ");
     }
@@ -18368,7 +18359,6 @@ mod hir_opt_tests {
           v50:Fixnum = FixnumAdd v49, v16
           CheckInterrupts
           PopLightweightFrame
-          CheckInterrupts
           Return v50
         ");
     }
@@ -18421,7 +18411,6 @@ mod hir_opt_tests {
           v50:Fixnum = FixnumAdd v49, v16
           CheckInterrupts
           PopLightweightFrame
-          CheckInterrupts
           Return v50
         ");
     }
@@ -18474,7 +18463,6 @@ mod hir_opt_tests {
           v50:Fixnum = FixnumAdd v49, v22
           CheckInterrupts
           PopLightweightFrame
-          CheckInterrupts
           Return v50
         ");
     }
@@ -18534,7 +18522,6 @@ mod hir_opt_tests {
           v80:Fixnum = FixnumAdd v76, v16
           CheckInterrupts
           PopLightweightFrame
-          CheckInterrupts
           Return v80
         ");
     }
@@ -18600,7 +18587,6 @@ mod hir_opt_tests {
           v76:Fixnum = FixnumAdd v74, v75
           CheckInterrupts
           PopLightweightFrame
-          CheckInterrupts
           Return v76
         ");
     }
@@ -18657,7 +18643,6 @@ mod hir_opt_tests {
           v68:Fixnum = FixnumAdd v64, v18
           CheckInterrupts
           PopLightweightFrame
-          CheckInterrupts
           Return v68
         ");
     }
@@ -18718,7 +18703,6 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Point@0x1008)
           PatchPoint MethodRedefined(Point@0x1008, initialize@0x1038, cme:0x1040)
           PushLightweightFrame v90 (0x1068), v15, v17
-          PatchPoint SingleRactorMode
           v211:CShape = LoadField v90, :shape_id@0x1070
           v212:CShape[0x1071] = GuardBitEquals v211, CShape(0x1071) recompile
           StoreField v90, :@x@0x1072, v15
@@ -18734,7 +18718,6 @@ mod hir_opt_tests {
           StoreField v118, :shape_id@0x1070, v222
           CheckInterrupts
           PopLightweightFrame
-          CheckInterrupts
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1078, Point)
           v97:ClassSubclass[Point@0x1008] = Const Value(VALUE(0x1008))
@@ -18746,7 +18729,6 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Point@0x1008)
           PatchPoint MethodRedefined(Point@0x1008, initialize@0x1038, cme:0x1040)
           PushLightweightFrame v100 (0x1068), v48, v50
-          PatchPoint SingleRactorMode
           v225:CShape = LoadField v100, :shape_id@0x1070
           v226:CShape[0x1071] = GuardBitEquals v225, CShape(0x1071) recompile
           StoreField v100, :@x@0x1072, v48
@@ -18762,7 +18744,6 @@ mod hir_opt_tests {
           StoreField v145, :shape_id@0x1070, v236
           CheckInterrupts
           PopLightweightFrame
-          CheckInterrupts
           PatchPoint NoSingletonClass(Point@0x1008)
           PatchPoint MethodRedefined(Point@0x1008, ==@0x1080, cme:0x1088)
           PushLightweightFrame v90 (0x1068), v100
@@ -18771,16 +18752,10 @@ mod hir_opt_tests {
           v240:CShape[0x1075] = GuardBitEquals v239, CShape(0x1075) recompile
           v241:BasicObject = LoadField v90, :@x@0x1072
           PatchPoint NoEPEscape(==)
-          PatchPoint NoSingletonClass(Point@0x1008)
           PatchPoint MethodRedefined(Point@0x1008, x@0x10b0, cme:0x10b8)
-          v267:CShape = LoadField v100, :shape_id@0x1070
-          v268:CShape[0x1075] = GuardBitEquals v267, CShape(0x1075) recompile
-          v269:BasicObject = LoadField v100, :@x@0x1072
           PatchPoint MethodRedefined(Integer@0x10e0, ==@0x1080, cme:0x10e8)
           v248:Fixnum = GuardType v241, Fixnum
-          v249:Fixnum = GuardType v269, Fixnum
-          v250:BoolExact = FixnumEq v248, v249
-          CheckInterrupts
+          v250:BoolExact = FixnumEq v248, v48
           v181:CBool = Test v250
           v182:FalseClass = RefineType v250, Falsy
           CondBranch v181, bb17(), bb16(v90, v100, v182)
@@ -18803,7 +18778,6 @@ mod hir_opt_tests {
         bb16(v198:ObjectSubclass[class_exact:Point], v199:ObjectSubclass[class_exact:Point], v200:BoolExact):
           CheckInterrupts
           PopLightweightFrame
-          CheckInterrupts
           Return v200
         ");
     }
