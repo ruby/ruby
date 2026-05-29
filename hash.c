@@ -528,7 +528,7 @@ hash_st_table_init(VALUE hash, const struct st_hash_type *type, st_index_t size)
     RHASH_SET_ST_FLAG(hash);
 }
 
-void
+static void
 rb_hash_st_table_set(VALUE hash, st_table *st)
 {
     HASH_ASSERT(st != NULL);
@@ -730,7 +730,7 @@ ar_force_convert_table(VALUE hash, const char *file, int line)
         st_init_existing_table_with_size(new_tab, &objhash, size);
         ar_each_key(ar, bound, ar_each_key_insert, NULL, new_tab, hashes);
         hash_ar_free_and_clear_table(hash);
-        RHASH_ST_TABLE_SET(hash, new_tab);
+        rb_hash_st_table_set(hash, new_tab);
         return RHASH_ST_TABLE(hash);
     }
 }
@@ -1986,7 +1986,7 @@ rb_hash_rehash(VALUE hash)
         rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)tmp);
 
         hash_st_free(hash);
-        RHASH_ST_TABLE_SET(hash, tbl);
+        rb_hash_st_table_set(hash, tbl);
         RHASH_ST_CLEAR(tmp);
     }
     hash_verify(hash);
@@ -4669,7 +4669,7 @@ rb_hash_compare_by_id(VALUE hash)
 
         // We know for sure `identtable` is an st table,
         // so we can skip `ar_force_convert_table` here.
-        RHASH_ST_TABLE_SET(hash, identtable);
+        rb_hash_st_table_set(hash, identtable);
         RHASH_ST_CLEAR(tmp);
     }
 
