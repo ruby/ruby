@@ -1422,7 +1422,42 @@ class Pathname    # * File *
   # See <tt>File.dirname</tt>.  Returns all but the last component of the path.
   def dirname() self.class.new(File.dirname(@path)) end
 
-  # See <tt>File.extname</tt>.  Returns the file's extension.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   extname -> extension
+  #
+  # Returns the filename extension of `self` --
+  # usually the portion of the string path beginning from the last period:
+  #
+  # ```ruby
+  # Pathname('t.rb').extname               # => ".rb"
+  # Pathname('foo.bar.t.rb').extname       # => ".rb"
+  # Pathname('foo/bar/t.rb').extname       # => ".rb"
+  # Pathname('nosuch.txt').extname         # => ".txt"  # Path need not exist.
+  # ```
+  #
+  # Returns the entire string when there is no period:
+  #
+  # ```ruby
+  # Pathname('foo').extname # => ""
+  # ```
+  #
+  # Returns an empty string when the only period is the first character:
+  #
+  # ```ruby
+  # Pathname('.irbrc').extname # => ""
+  # ```
+  #
+  # Returns an empty string or `'.'` when `path` ends with a period:
+  #
+  # ```ruby
+  # Pathname('foo.').extname    # => ""   # On Windows.
+  # Pathname('foo.').extname    # => "."  # Elsewhere.
+  # Pathname('foo....').extname # => ""   # On Windows.
+  # Pathname('foo....').extname # => "."  # Elsewhere.
+  # ```
+  #
   def extname() File.extname(@path) end
 
   # See <tt>File.expand_path</tt>.

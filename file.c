@@ -5318,28 +5318,42 @@ ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     File.extname(path)  ->  string
+ *     File.extname(path) -> extension
  *
- *  Returns the extension (the portion of file name in +path+
- *  starting from the last period).
+ *  Returns the filename extension --
+ *  usually the portion of the string `path`
+ *  beginning from the last period:
  *
- *  If +path+ is a dotfile, or starts with a period, then the starting
- *  dot is not dealt with the start of the extension.
+ *  ```ruby
+ *  File.extname('t.rb')         # => ".rb"
+ *  File.extname('foo.bar.t.rb') # => ".rb"
+ *  File.extname('foo/bar/t.rb') # => ".rb"
+ *  File.extname('nosuch.txt')   # => ".txt"  # Path need not exist.
+ *  ```
  *
- *  An empty string will also be returned when the period is the last character
- *  in +path+.
+ *  Returns the entire string when there is no period:
  *
- *  On Windows, trailing dots are truncated.
+ *  ```ruby
+ *  Pathname('foo').extname # => ""
+ *  ```
  *
- *     File.extname("test.rb")         #=> ".rb"
- *     File.extname("a/b/d/test.rb")   #=> ".rb"
- *     File.extname(".a/b/d/test.rb")  #=> ".rb"
- *     File.extname("foo.")            #=> "" on Windows
- *     File.extname("foo.")            #=> "." on non-Windows
- *     File.extname("test")            #=> ""
- *     File.extname(".profile")        #=> ""
- *     File.extname(".profile.sh")     #=> ".sh"
+ *  Returns an empty string when the only period is the first character:
+ *
+ *  ```ruby
+ *  File.extname('.irbrc') # => ""
+ *  ```
+ *
+ *  Returns an empty string or `'.'` when `path` ends with a period:
+ *
+ *  ```
+ *  File.extname('foo.') # => ""      # On Windows.
+ *  File.extname('foo.') # => "."     # Elsewhere.
+ *  File.extname('foo....') # => ""   # On Windows.
+ *  File.extname('foo....') # => "."  # Elsewhere.
+ *  ```
  *
  */
 
