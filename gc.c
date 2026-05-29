@@ -1062,6 +1062,7 @@ rb_ec_newobj_of(rb_execution_context_t *ec, VALUE klass, VALUE flags, size_t siz
     RUBY_ASSERT(type != T_CLASS);
     RUBY_ASSERT(type != T_MODULE);
     RUBY_ASSERT(type != T_ICLASS);
+    (void)type;
 
     return rb_newobj(ec, klass, flags, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER, true, size);
 }
