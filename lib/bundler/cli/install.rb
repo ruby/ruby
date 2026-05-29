@@ -112,6 +112,7 @@ module Bundler
 
       Bundler.settings.set_command_option_if_given :jobs, options["jobs"]
 
+      Bundler::CLI::Common.validate_cooldown!(options["cooldown"])
       Bundler.settings.set_command_option_if_given :cooldown, options["cooldown"]
 
       Bundler.settings.set_command_option_if_given :no_prune, options["no-prune"]
