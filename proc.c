@@ -3211,10 +3211,18 @@ rb_method_entry_location(const rb_method_entry_t *me)
 
 /*
  * call-seq:
- *    meth.source_location  -> [String, Integer]
+ *    source_location -> location
  *
- * Returns the Ruby source filename and line number containing this method
- * or nil if this method was not defined in Ruby (i.e. native).
+ * Returns a two-element array containing the Ruby source filename
+ * as a string and the line number integer where +self+ is defined:
+ *
+ *     def greeting = "hello"
+ *     method(:greeting).source_location # => ["test.rb", 1]
+ *
+ * Returns nil if +self+ is not a method defined in Ruby (i.e. defined
+ * using native code):
+ *
+ *     Kernel.method(:puts).source_location # => nil
  */
 
 VALUE
