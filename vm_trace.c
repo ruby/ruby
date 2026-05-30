@@ -890,20 +890,21 @@ typedef struct rb_tp_struct {
 } rb_tp_t;
 
 static void
-tp_mark(void *ptr)
+tp_mark_and_move(void *ptr)
 {
     rb_tp_t *tp = ptr;
-    rb_gc_mark(tp->proc);
-    rb_gc_mark(tp->local_target_set);
-    if (tp->target_th) rb_gc_mark(tp->target_th->self);
+    rb_gc_mark_and_move(&tp->proc);
+    rb_gc_mark_and_move(&tp->local_target_set);
+    if (tp->target_th) rb_gc_mark_and_move(&tp->target_th->self);
 }
 
 static const rb_data_type_t tp_data_type = {
     "tracepoint",
     {
-        tp_mark,
+        tp_mark_and_move,
         RUBY_TYPED_DEFAULT_FREE,
         NULL, // Nothing allocated externally, so don't need a memsize function
+        tp_mark_and_move,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
