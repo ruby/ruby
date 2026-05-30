@@ -83,10 +83,44 @@ File.fnmatch('\[a-c]', 'b')     # => false  # Escaped.
 
 #### Alternatives
 
+Flag File::FNM_EXTGLOB enables the alternatives pattern;
+the pattern consists of zero or more unquoted strings,
+separated by commas, and enclosed in curly brackets:
 
+```ruby
+File.fnmatch('R{ub,foo,bar}y', 'Ruby', File::FNM_EXTGLOB)  # => true
+File.fnmatch('R{foo,ub,bar}y', 'Ruby', File::FNM_EXTGLOB)  # => true
+File.fnmatch('R{foo,bar,ub}y', 'Ruby', File::FNM_EXTGLOB)  # => true
+File.fnmatch('R{ub,foo,bar}y', 'Ruby', File::FNM_EXTGLOB)  # => true
+# Also valid, but probably not useful.
+File.fnmatch('R{foo,ub,bar}y', 'Ruby', File::FNM_EXTGLOB)  # => true
+File.fnmatch('R{foo,bar,ub}y', 'Ruby', File::FNM_EXTGLOB)  # => true
+# Whitespace matters.
+File.fnmatch('R{ub ,foo,bar}y', 'Ruby', File::FNM_EXTGLOB) # => false
+File.fnmatch('R{ ub,foo,bar}y', 'Ruby', File::FNM_EXTGLOB) # => false
+# All characters are treated as just ordinary characters:
+File.fnmatch('{*,?}', '?', File::FNM_EXTGLOB)              # => true
+File.fnmatch('{*,?}', '*', File::FNM_EXTGLOB)              # => true
+# With the flag not given.
+File.fnmatch('R{ub,foo,bar}y', 'Ruby')                     # => false
+```
 
 #### Recursive Directory Matching
 
+The double-asterisk notation (`'**'`) matches any sequence of directory-like substrings:
+
+```ruby
+target = 'a/b/c/d/e/t.rb'
+File.fnmatch('**/t.rb', target)           # => true   # '**' matches 'a/b/c/d/e'
+File.fnmatch('a/**/t.rb', target)         # => true   # '**' matches 'b/c/d/e'
+File.fnmatch('a/b/**/t.rb', target)       # => true   # '**' matches 'c/d/e'
+File.fnmatch('a/b/c/d/e/**/t.rb', target) # => false
+```
+
+#### Escaping
 
 
-#### Escape
+
+### Flags
+
+
