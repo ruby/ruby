@@ -20,21 +20,22 @@ which match patterns against string paths found in the actual file system:
 These are the basic elements of filename matching patterns;
 see the sections below for details:
 
-|    Pattern     | Meaning                                    | Examples                  |
-|:--------------:|--------------------------------------------|---------------------------|
-| Simple string. | Matches itself.                            | `'Rakefile'`, `'LEGAL'`   |
-|     `'*'`      | Matches any sequence of characters.        | `'*.txt'`                 |
-|     `'?'`      | Matches any single character.              | `'?.txt'`                 |
-|   `'[abc]'`    | Matches a single character from a set.     | `'file[12].txt'`          |
-|   `'[a-z]`'    | Matches a single character from a range.   | `'image[0-9].png'`        |
-|   `'[^a-z]'`   | Matches a single character not in a range. | `'[^0-9]'`                |
-|   `'{ , }'`    | Alternatives (with `File::FNM_EXTGLOB`).   | `'{ab,cd}'`               |
-|     `'**'`     | Matches a directory-like substring.        | `'**/test.rb'`            |
-|     `'\'`      | Escapes the next character.                | `'\*'`, `'\?'`            |
+|         Pattern          | Meaning                                    | Examples                     |
+|:------------------------:|--------------------------------------------|------------------------------|
+|      Simple string.      | Matches itself.                            | `'Rakefile'`, `'LEGAL'`      |
+|          `'*'`           | Matches any sequence of characters.        | `'*.txt'`                    |
+|           `'?'`          | Matches any single character.              | `'?.txt'`                    |
+| `'[abc]'`,<br>`'[^abc]'` | Matches a single character from a set.     | `'x[abc]y'`,<br>`'x[^abc]y'` |
+| `'[a-z]`',<br>`'[^a-z]'` | Matches a single character from a range.   | `'x[0-9]y'`,<br>`'x[^0-9]y'` |
+|          `'**'`          | Matches a directory-like substring.        | `'**/test.rb'`               |
+|          `'\'`           | Escapes the next character.                | `'\\*'`, `'\?'`              |
+
+There is one other pattern, for alternatives, that is disabled by default;
+see [`File::FNM_EXTGLOB`](#constant-filefnmextglob) below.
 
 #### Simple \String
 
-A "simple string" is one that does not contain filename-matching special characters;
+A "simple string" is one that does not contain special filename-matching patterns;
 see the table above.
 
 A simple string matches itself:
@@ -45,43 +46,83 @@ File.fnmatch('one_two_three', 'one_two_three') # => true
 File.fnmatch('123', '123')                     # => true
 File.fnmatch('Form 27B/6', 'Form 27B/6')       # => true
 File.fnmatch('bcd', 'abcde')                   # => false  # Must be exact.
-
-File.fnmatch('abc', 'ABC')                 # => false  # See flag File::FNM_CASEFOLD.
-File.fnmatch('*', '.document')             # => false  # See flag File::FNM_DOTMATCH.
-File.fnmatch('R{ub,foo}y', 'Ruby')         # => false  # See flag File::FNM_EXTGLOB.
-File.fnmatch('\*\?\*\*', '*?**')           # => true   # See File::FNM_NOESCAPE.
-File.fnmatch?('*.rb', 'lib/test.rb')       # => true   # See File::FNM_PATHNAME.
-File.fnmatch('foo?boo', 'foo/boo')         # => true   # See File::FNM_PATHNAME.
-File.fnmatch('PROGRAM~1', 'Program Files') # => false  # See File::FNM_SHORTNAME.
-File.fnmatch('abc', 'ABC')                 # => false  # See File::FNM_SYSCASE.
 ```
+
+By default, the matching is case-sensitive:
+
+```ruby
+File.fnmatch('abc', 'ABC') # => false
+```
+
+Case-sensitivity may be modified by flags:
+
+- [`File::FNM_CASEFOLD`](#constant-filefnmcasefold).
+- [`File::FNM_SYSCASE`](#constant-filefnmsyscase).
+
+By default, the alternatives pattern is disabled:
+
+```rutby
+File.fnmatch('R{ub,foo}y', 'Ruby') # => false
+```
+
+It may be enabled by flag [`File::FNM_EXTGLOB`](#constant-filefnmextglob).
+
+By default, the Windows short name pattern is disabled:
+
+```ruby
+File.fnmatch('PROGRAM~1', 'Program Files') # => false
+```
+
+It may be enabled by flag [`File::FNM_SHORTNAME`](#constant-filefnmshortname).
 
 #### Any Sequence of Characters (`'*'`)
 
-The asterisk character (`'*'`) matches any sequence of characters:
+The asterisk pattern (`'*'`) matches any sequence of characters:
 
 ```ruby
-File.fnmatch('*', 'foo')  # => true
-File.fnmatch('*', '')     # => true
-File.fnmatch('*', '*')    # => true
-File.fnmatch('\*', 'foo') # => false  # Escaped.
+File.fnmatch('*', 'foo')            # => true
+File.fnmatch('*', '')               # => true
+File.fnmatch('*', '*')              # => true
+File.fnmatch('\*', 'foo')           # => false  # Escaped.
 ```
+
+By default, the asterisk pattern does not match a leading period (as in a dot-file):
+
+```ruby
+File.fnmatch('*', '.document') # => false
+```
+
+That matching may be enabled by flag [`File::FNM_DOTMATCH`](#constant-filefnmdotmatch).
+
+By default, the asterisk pattern matches across file separators:
+
+```ruby
+File.fnmatch('*.rb', 'lib/test.rb') # => true
+```
+
+That matching may be disabled by flag [`File::FNM_PATHNAME`](#constant-filefnmpathname).
 
 #### Single Character (`'?'`)
 
-The question-mark character (`'?'`) matches any single character:
+The question-mark pattern (`'?'`) matches any single character:
 
 ```ruby
-File.fnmatch('?', 'f')     # => true
-File.fnmatch('?*', 'foo')  # => true
-File.fnmatch('*?*', 'foo') # => true
-File.fnmatch('*?', 'foo')  # => true
-File.fnmatch('?', 'foo')   # => false
-File.fnmatch('?', '')      # => false
-File.fnmatch('\?', 'f')    # => false  # Escaped.
+File.fnmatch('?', 'f')                 # => true
+File.fnmatch("foo-?.txt", "foo-1.txt") # => true
+File.fnmatch('?', 'foo')               # => false
+File.fnmatch('?', '')                  # => false
+File.fnmatch('\?', 'f')                # => false  # Escaped.
 ```
 
-#### Single Character from a Set (`'[abc]'`)
+By default, pattern `'?'` matches the file separator:
+
+```ruby
+File.fnmatch('foo?boo', 'foo/boo') # => true
+```
+
+That matching may be disabled by flag [`File::FNM_PATHNAME`](#constant-filefnmpathname).
+
+#### Single Character from a Set (`'[abc]'`, `'[^abc]'`)
 
 Characters enclosed in square brackets define a set of characters,
 any of which matches a single character:
@@ -91,13 +132,17 @@ File.fnmatch('[ruby]', 'r')      # => true
 File.fnmatch('[ruby]', 'u')      # => true
 File.fnmatch('[ruby]', 'y')      # => true
 File.fnmatch('[ruby]', 'ruby')   # => false
-File.fnmatch('*[ruby]', 'ruby')  # => true
-File.fnmatch('[ruby]*', 'ruby')  # => true
-File.fnmatch('*[ruby]*', 'ruby') # => true
 File.fnmatch('\[ruby]', 'r')     # => false  # Escaped.
 ```
 
-#### Single Character from a \Range (`'[a-c]'`)
+The character set may be negated:
+
+```ruby
+File.fnmatch('[^ruby]', 'r') # => false
+File.fnmatch('[^ruby]', 'u') # => false
+```
+
+#### Single Character from a \Range (`'[a-c]'`, `'[^a-c]'`)
 
 A range of characters enclosed in square brackets defines a set of characters,
 any of which matches a single character:
@@ -113,16 +158,23 @@ File.fnmatch('R[t-v][a-c]y', 'Ruby') # => true   # Multiple ranges allowed.
 File.fnmatch('\[a-c]', 'b')          # => false  # Escaped.
 ```
 
-#### Directory-Like Substring (`'**'`)
-
-The double-asterisk string (`'**'`) matches any sequence of directory-like substrings:
+The range may be negated:
 
 ```ruby
-target = 'a/b/c/d/e/t.rb'
-File.fnmatch('**/t.rb', target)           # => true   # '**' matches 'a/b/c/d/e'
-File.fnmatch('a/**/t.rb', target)         # => true   # '**' matches 'b/c/d/e'
-File.fnmatch('a/b/**/t.rb', target)       # => true   # '**' matches 'c/d/e'
-File.fnmatch('a/b/c/d/e/**/t.rb', target) # => false
+File.fnmatch('[^a-c]', 'b') # => false
+File.fnmatch('[^a-c]', 'd') # => true
+```
+
+#### Directory-Like Substring (`'**'`)
+
+The double-asterisk pattern (`'**'`) matches any sequence of directory-like substrings;
+unless flag [`File::FNM_PATHNAME`](#constant-filefnmpathname) is given,
+the pattern is equivalent to pattern `'*'`:
+
+```ruby
+File.fnmatch('*', 'a/b/c')                        # => true
+File.fnmatch('*', 'a/b/c', File::FNM_PATHNAME)    # => false
+File.fnmatch('**/*', 'a/b/c', File::FNM_PATHNAME) # => true
 ```
 
 #### Escape (`'\'`)
@@ -131,8 +183,6 @@ The backslash character (`'\'`) may be used to escape any of the characters
 that filename matching treats as special:
 
 ```ruby
-File.fnmatch('\*\?\*\*', '*?**') # => true
-
 File.fnmatch('[a-c]', 'b')  # => true
 File.fnmatch('\[a-c]', 'b') # => false
 File.fnmatch('[a-c\]', 'b') # => false
@@ -149,6 +199,9 @@ Use a double-backslash to represent an ordinary backslash:
 ```ruby
 File.fnmatch('\\\\', '\\') # => true
 ```
+
+By default escape pattern `'\'` is enabled;
+it may be disabled by flag [`File::FNM_NOESCAPE`](#constant-filefnmnoescape).
 
 ### Flags
 
@@ -208,20 +261,15 @@ separated by commas, and enclosed in curly braces:
 ```ruby
 File.fnmatch('R{ub,foo,bar}y', 'Ruby')                     # => false  # Not enabled.
 File.fnmatch('R{ub,foo,bar}y', 'Ruby', File::FNM_EXTGLOB)  # => true
-File.fnmatch('R{foo,ub,bar}y', 'Ruby', File::FNM_EXTGLOB)  # => true
-File.fnmatch('R{foo,bar,ub}y', 'Ruby', File::FNM_EXTGLOB)  # => true
-File.fnmatch('R{ub,foo,bar}y', 'Ruby', File::FNM_EXTGLOB)  # => true
-# Also valid, but probably not useful.
-File.fnmatch('R{foo,ub,bar}y', 'Ruby', File::FNM_EXTGLOB)  # => true
-File.fnmatch('R{foo,bar,ub}y', 'Ruby', File::FNM_EXTGLOB)  # => true
 # Whitespace matters.
 File.fnmatch('R{ub ,foo,bar}y', 'Ruby', File::FNM_EXTGLOB) # => false
 File.fnmatch('R{ ub,foo,bar}y', 'Ruby', File::FNM_EXTGLOB) # => false
-# All characters are treated as just ordinary characters:
-File.fnmatch('{*,?}', '?', File::FNM_EXTGLOB)              # => true
-File.fnmatch('{*,?}', '*', File::FNM_EXTGLOB)              # => true
+# Special characters remain in force:
+File.fnmatch('{*,?}', 'hello', File::FNM_EXTGLOB)          # => true
+File.fnmatch('{*ello,?}', 'hello', File::FNM_EXTGLOB)      # => true
+File.fnmatch('{*ELLO,?}', 'hello', File::FNM_EXTGLOB)      # => false
+File.fnmatch('{*ELLO,?????}', 'hello', File::FNM_EXTGLOB)  # => true
 # With the flag not given.
-
 File.fnmatch('R{ub,foo,bar}y', 'Ruby')                     # => false
 ```
 
@@ -245,8 +293,8 @@ to disable such matching:
 
 ```ruby
 File::SEPARATOR                                          # => "/"
-File.fnmatch?('*.rb', 'lib/test.rb')                     # => true
-File.fnmatch?('*.rb', 'lib/test.rb', File::FNM_PATHNAME) # => false
+File.fnmatch('*.rb', 'lib/test.rb')                      # => true
+File.fnmatch('*.rb', 'lib/test.rb', File::FNM_PATHNAME)  # => false
 File.fnmatch('foo?boo', 'foo/boo')                       # => true
 File.fnmatch('foo?boo', 'foo/boo', File::FNM_PATHNAME)   # => false
 ```
@@ -261,7 +309,7 @@ Using that constant allows patterns to match short names
 in filename matching on Windows,
 which can be useful for compatibility with legacy applications
 that rely on these short names;
-see [8.3 filename][https://en.wikipedia.org/wiki/8.3_filename].
+see [8.3 filename](https://en.wikipedia.org/wiki/8.3_filename).
 This feature helps ensure that file operations work correctly
 even when dealing with files that have long names.
 
@@ -288,5 +336,4 @@ File.fnmatch('abc', 'ABC')                    # => false  # Ruby; case-sensitive
 File.fnmatch('abc', 'ABC', File::FNM_SYSCASE) # => true   # Windows; case-insensitive.
 File.fnmatch('abc', 'ABC', File::FNM_SYSCASE) # => false  # Linus; case-sensitive.
 ```
-
 
