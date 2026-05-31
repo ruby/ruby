@@ -179,8 +179,8 @@ VALUE rb_cSymbol;
 
 #define STR_SET_SHARED(str, shared_str) do { \
     if (!FL_TEST(str, STR_FAKESTR)) { \
-        RUBY_ASSERT(RSTRING_START(shared_str) <= RSTRING_START(str)); \
-        RUBY_ASSERT(RSTRING_START(str) <= RSTRING_START(shared_str) + RSTRING_LEN(shared_str)); \
+        RUBY_ASSERT(RSTRING_RAW_PTR(shared_str) <= RSTRING_RAW_PTR(str)); \
+        RUBY_ASSERT(RSTRING_RAW_PTR(str) <= RSTRING_RAW_PTR(shared_str) + RSTRING_LEN(shared_str)); \
         RB_OBJ_WRITE((str), &RSTRING(str)->as.heap.aux.shared, (shared_str)); \
         FL_SET((str), STR_SHARED); \
         rb_gc_register_pinning_obj(str); \
@@ -1463,7 +1463,7 @@ str_replace_shared_without_enc(VALUE str2, VALUE str)
     char *ptr;
     long len;
 
-    ptr = RSTRING_START(str);
+    ptr = RSTRING_RAW_PTR(str);
     len = RSTRING_LEN(str);
     if (str_embed_capa(str2) >= len + termlen) {
         char *ptr2 = RSTRING(str2)->as.embed.ary;
@@ -1876,7 +1876,7 @@ str_shared_replace(VALUE str, VALUE str2)
 
         STR_SET_NOEMBED(str);
         FL_UNSET(str, STR_SHARED);
-        RSTRING(str)->as.heap.ptr = RSTRING_START(str2);
+        RSTRING(str)->as.heap.ptr = RSTRING_RAW_PTR(str2);
 
         if (FL_TEST(str2, STR_SHARED)) {
             VALUE shared = RSTRING(str2)->as.heap.aux.shared;
@@ -1926,7 +1926,7 @@ str_replace(VALUE str, VALUE str2)
         RUBY_ASSERT(OBJ_FROZEN(shared));
         STR_SET_NOEMBED(str);
         STR_SET_LEN(str, len);
-        RSTRING(str)->as.heap.ptr = RSTRING_START(str2);
+        RSTRING(str)->as.heap.ptr = RSTRING_RAW_PTR(str2);
         STR_SET_SHARED(str, shared);
         rb_enc_cr_str_exact_copy(str, str2);
     }
@@ -2005,7 +2005,7 @@ str_duplicate_setup_heap(VALUE klass, VALUE str, VALUE dup)
     RUBY_ASSERT(!STR_SHARED_P(root));
     RUBY_ASSERT(RB_OBJ_FROZEN_RAW(root));
 
-    RSTRING(dup)->as.heap.ptr = RSTRING_START(str);
+    RSTRING(dup)->as.heap.ptr = RSTRING_RAW_PTR(str);
     FL_SET_RAW(dup, RSTRING_NOEMBED);
     STR_SET_SHARED(dup, root);
     flags |= RSTRING_NOEMBED | STR_SHARED;
@@ -2761,7 +2761,7 @@ str_make_independent_expand(VALUE str, long len, long expand, const int termlen)
     }
 
     ptr = ALLOC_N(char, (size_t)capa + termlen);
-    oldptr = RSTRING_START(str);
+    oldptr = RSTRING_RAW_PTR(str);
     if (oldptr) {
         memcpy(ptr, oldptr, len);
     }
@@ -2894,7 +2894,7 @@ str_fill_term(VALUE str, char *s, long len, int termlen)
         TERM_FILL(s + len, termlen);
         return s;
     }
-    return RSTRING_START(str);
+    return RSTRING_RAW_PTR(str);
 }
 
 void
@@ -2929,7 +2929,7 @@ rb_str_change_terminator_length(VALUE str, const int oldtermlen, const int terml
 static char *
 str_null_check(VALUE str, int *w)
 {
-    char *s = RSTRING_START(str);
+    char *s = RSTRING_RAW_PTR(str);
     long len = RSTRING_LEN(str);
     int minlen = 1;
 
@@ -3010,7 +3010,7 @@ str_to_cstr(VALUE str)
 char *
 rb_str_fill_terminator(VALUE str, const int newminlen)
 {
-    char *s = RSTRING_START(str);
+    char *s = RSTRING_RAW_PTR(str);
     long len = RSTRING_LEN(str);
     return str_fill_term(str, s, len, newminlen);
 }
@@ -3053,7 +3053,7 @@ rbimpl_str_ensure_terminator(VALUE str)
     }
 
     str_make_independent_expand(str, len, 0L, termlen);
-    return RSTRING_START(str);
+    return RSTRING_RAW_PTR(str);
 }
 
 VALUE

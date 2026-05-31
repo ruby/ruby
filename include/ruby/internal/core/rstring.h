@@ -387,16 +387,25 @@ RBIMPL_ATTR_ARTIFICIAL()
  * @param[in]  str  String in question.
  * @return     Pointer to its contents.
  * @pre        `str` must be an instance of ::RString.
+ *
+ * @warning    The   returned   pointer  is  invalidated   if  the  string   is
+ *             subsequently   unshared.   Operations   such  as   RSTRING_PTR()
+ *             and   RSTRING_END()  may  unshare  the  string  and   reallocate
+ *             its  buffer,  making  this  pointer  dangling.  Only  call  this
+ *             function  after  all  unsharing   operations   on   `str`   have
+ *             completed,  or  when  `str`  is  known  to  be  independent.  To
+ *             obtain   the  end  pointer   without  risking  invalidation, use
+ *             `RSTRING_RAW_PTR(str) + RSTRING_LEN(str)`.
  */
 static inline char *
-RSTRING_START(VALUE str)
+RSTRING_RAW_PTR(VALUE str)
 {
     char *ptr = RB_FL_TEST_RAW(str, RSTRING_NOEMBED) ?
         RSTRING(str)->as.heap.ptr :
         RSTRING(str)->as.embed.ary;
 
     if (RUBY_DEBUG && RB_UNLIKELY(! ptr)) {
-        rb_debug_rstring_null_ptr("RSTRING_START");
+        rb_debug_rstring_null_ptr("RSTRING_RAW_PTR");
     }
 
     return ptr;
