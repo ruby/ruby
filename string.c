@@ -3039,10 +3039,8 @@ rbimpl_str_ensure_terminator(VALUE str)
         result = ruby_mimmalloc((size_t)len + (size_t)termlen);
         if (!result) {
             rb_nativethread_lock_unlock(&ephemeral_term_lock);
-            /* OOM for a small allocation is catastrophic and we cannot raise a
-             * Ruby exception without the GVL. */
-            rb_bug("Cannot allocate ephemeral null-termination buffer for "
-                   "RSTRING_PTR called without GVL: out of memory");
+            fprintf(stderr, "[FATAL] failed to allocate memory\n");
+            exit(EXIT_FAILURE);
         }
         memcpy(result, ptr, (size_t)len);
         memset(result + len, 0, (size_t)termlen);
