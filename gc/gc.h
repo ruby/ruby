@@ -219,12 +219,14 @@ hash_foreach_replace(st_data_t key, st_data_t value, st_data_t argp, int error)
 static int
 hash_replace_ref(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
 {
-    if (rb_gc_location((VALUE)*key) != (VALUE)*key) {
-        *key = rb_gc_location((VALUE)*key);
+    VALUE new_key = rb_gc_location((VALUE)*key);
+    if (new_key != (VALUE)*key) {
+        *key = new_key;
     }
 
-    if (rb_gc_location((VALUE)*value) != (VALUE)*value) {
-        *value = rb_gc_location((VALUE)*value);
+    VALUE new_value = rb_gc_location((VALUE)*value);
+    if (new_value != (VALUE)*value) {
+        *value = new_value;
     }
 
     return ST_CONTINUE;
