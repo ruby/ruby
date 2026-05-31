@@ -514,6 +514,7 @@ pub enum SideExitReason {
     FixnumAddOverflow,
     FixnumSubOverflow,
     FixnumMultOverflow,
+    FixnumDivOverflow,
     FixnumLShiftOverflow,
     GuardType(Type),
     GuardShape(ShapeId),

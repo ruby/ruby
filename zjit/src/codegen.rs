@@ -2252,6 +2252,15 @@ fn gen_fixnum_div(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, righ
     // Side exit if rhs is 0
     asm.cmp(right, Opnd::from(VALUE::fixnum_from_usize(0)));
     asm.je(jit, side_exit(jit, state, FixnumDivByZero));
+
+    // Side exit on FIXNUM_MIN / -1, which overflows to a Bignum, not a Fixnum.
+    // Branchless (left == FIXNUM_MIN && right == -1): (left ^ MIN) | (right ^ -1) == 0.
+    let left_diff = asm.xor(left, Opnd::from(VALUE::fixnum_from_isize(RUBY_FIXNUM_MIN)));
+    let right_diff = asm.xor(right, Opnd::from(VALUE::fixnum_from_isize(-1)));
+    let combined = asm.or(left_diff, right_diff);
+    asm.test(combined, combined);
+    asm.je(jit, side_exit(jit, state, FixnumDivOverflow));
+
     asm_ccall!(asm, rb_jit_fix_div_fix, left, right)
 }
 
