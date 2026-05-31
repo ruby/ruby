@@ -1778,6 +1778,22 @@ ephemeral_term_cleanup(VALUE str)
     if (deleted) ruby_mimfree((void *)buf);
 }
 
+static int
+ephemeral_term_free_i(st_data_t str, st_data_t buf, st_data_t arg)
+{
+    ruby_mimfree((void *)buf);
+    return ST_CONTINUE;
+}
+
+void
+rb_free_ephemeral_term_table(void)
+{
+    st_foreach(ephemeral_term_table, ephemeral_term_free_i, 0);
+    RUBY_ATOMIC_SET(ephemeral_term_count, 0);
+    st_free_table(ephemeral_term_table);
+    ephemeral_term_table = NULL;
+}
+
 void
 rb_str_free(VALUE str)
 {
