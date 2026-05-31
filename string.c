@@ -713,6 +713,10 @@ search_nonascii(const char *p, const char *e)
 {
     const char *s, *t;
 
+    if (p < e && !ISASCII(*p)) {
+        return p;
+    }
+
 #if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
 # if SIZEOF_UINTPTR_T == 8
 #  define NONASCII_MASK UINT64_C(0x8080808080808080)
@@ -2297,26 +2301,22 @@ enc_strlen(const char *p, const char *e, rb_encoding *enc, int cr)
         c = 0;
         if (ENC_CODERANGE_CLEAN_P(cr)) {
             while (p < e) {
-                if (ISASCII(*p)) {
-                    q = search_nonascii(p, e);
-                    if (!q)
-                        return c + (e - p);
-                    c += q - p;
-                    p = q;
-                }
+                q = search_nonascii(p, e);
+                if (!q)
+                    return c + (e - p);
+                c += q - p;
+                p = q;
                 p += rb_enc_fast_mbclen(p, e, enc);
                 c++;
             }
         }
         else {
             while (p < e) {
-                if (ISASCII(*p)) {
-                    q = search_nonascii(p, e);
-                    if (!q)
-                        return c + (e - p);
-                    c += q - p;
-                    p = q;
-                }
+                q = search_nonascii(p, e);
+                if (!q)
+                    return c + (e - p);
+                c += q - p;
+                p = q;
                 p += rb_enc_mbclen(p, e, enc);
                 c++;
             }
@@ -2354,15 +2354,13 @@ rb_enc_strlen_cr(const char *p, const char *e, rb_encoding *enc, int *cr)
     else if (rb_enc_asciicompat(enc)) {
         c = 0;
         while (p < e) {
-            if (ISASCII(*p)) {
-                q = search_nonascii(p, e);
-                if (!q) {
-                    if (!*cr) *cr = ENC_CODERANGE_7BIT;
-                    return c + (e - p);
-                }
-                c += q - p;
-                p = q;
+            q = search_nonascii(p, e);
+            if (!q) {
+                if (!*cr) *cr = ENC_CODERANGE_7BIT;
+                return c + (e - p);
             }
+            c += q - p;
+            p = q;
             ret = rb_enc_precise_mbclen(p, e, enc);
             if (MBCLEN_CHARFOUND_P(ret)) {
                 *cr |= ENC_CODERANGE_VALID;
@@ -3020,16 +3018,14 @@ str_nth_len(const char *p, const char *e, long *nthp, rb_encoding *enc)
                 *nthp = nth;
                 return (char *)e;
             }
-            if (ISASCII(*p)) {
-                p2 = search_nonascii(p, e2);
-                if (!p2) {
-                    nth -= e2 - p;
-                    *nthp = nth;
-                    return (char *)e2;
-                }
-                nth -= p2 - p;
-                p = p2;
+            p2 = search_nonascii(p, e2);
+            if (!p2) {
+                nth -= e2 - p;
+                *nthp = nth;
+                return (char *)e2;
             }
+            nth -= p2 - p;
+            p = p2;
             n = rb_enc_mbclen(p, e, enc);
             p += n;
             nth--;
@@ -11850,17 +11846,11 @@ enc_str_scrub(rb_encoding *enc, VALUE str, VALUE repl, int cr)
             else if (MBCLEN_CHARFOUND_P(ret)) {
                 cr = ENC_CODERANGE_VALID;
                 p += MBCLEN_CHARFOUND_LEN(ret);
-                /*
-                 * After a valid multibyte character, skip the following ASCII run.
-                 * If the next byte is already non-ASCII, search_nonascii would only
-                 * rediscover p after its word-at-a-time setup.
-                 */
-                if (p < e && ISASCII(*p)) {
-                    p = search_nonascii(p, e);
-                    if (!p) {
-                        p = e;
-                        break;
-                    }
+                /* After a multibyte character, fast-skip the following ASCII run. */
+                p = search_nonascii(p, e);
+                if (!p) {
+                    p = e;
+                    break;
                 }
             }
             else if (MBCLEN_INVALID_P(ret)) {
