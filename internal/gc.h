@@ -257,8 +257,10 @@ void rb_gc_update_values(long n, VALUE *values);
 void rb_gc_mark_set_no_pin(st_table *);
 void rb_gc_update_set_refs(st_table *);
 
+#if USE_MODULAR_GC
 const char *rb_gc_active_gc_name(void);
 int rb_gc_modular_gc_loaded_p(void);
+#endif
 
 RUBY_SYMBOL_EXPORT_END
 
