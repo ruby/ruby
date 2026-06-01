@@ -417,13 +417,19 @@ impl ProfiledType {
 
 /// Per-instruction profile entry, stored sparsely in a sorted Vec.
 #[derive(Debug)]
-struct ProfileEntry {
+pub struct ProfileEntry {
     /// YARV instruction index
     insn_idx: u32,
     /// Type information of YARV instruction operands
     opnd_types: Vec<TypeDistribution>,
     /// Number of profiles remaining before recompilation. Counts down from --zjit-num-profiles.
     profiles_remaining: NumProfiles,
+}
+
+impl ProfileEntry {
+    pub fn set_profiles_remaining(&mut self, num_profiles: NumProfiles) {
+        self.profiles_remaining = num_profiles;
+    }
 }
 
 #[derive(Debug)]
@@ -445,7 +451,7 @@ impl IseqProfile {
     }
 
     /// Get or create a mutable profile entry for the given instruction index.
-    fn entry_mut(&mut self, insn_idx: YarvInsnIdx) -> &mut ProfileEntry {
+    pub fn entry_mut(&mut self, insn_idx: YarvInsnIdx) -> &mut ProfileEntry {
         let idx = insn_idx as u32;
         match self.entries.binary_search_by_key(&idx, |e| e.insn_idx) {
             Ok(i) => &mut self.entries[i],
@@ -479,6 +485,11 @@ impl IseqProfile {
     pub fn profile_send_at(&mut self, iseq: IseqPtr, insn_idx: YarvInsnIdx, sp: *const VALUE, argc: usize) -> bool {
         let n = argc + 1; // args + receiver
         let entry = self.entry_mut(insn_idx);
+        // Reset profiling if the previous round already finished (stale YARV profiles).
+        // This ensures we collect num_profiles samples of the new shapes before recompiling.
+        if entry.profiles_remaining == 0 {
+            entry.profiles_remaining = get_option!(num_profiles);
+        }
         if entry.opnd_types.is_empty() {
             entry.opnd_types.resize(n, TypeDistribution::new());
         }
