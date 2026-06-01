@@ -121,7 +121,7 @@ mod hir_opt_tests {
     fn test_fold_fixnum_add_zero() {
         eval("
             def test(n)
-              0 + n + 0;
+              0 + n + 0
             end
             test 1; test 2;
         ");
@@ -205,7 +205,7 @@ mod hir_opt_tests {
     fn test_fold_fixnum_sub_zero() {
         eval("
             def test(n)
-              n - 0;
+              n - 0
             end
             test 1; test 2;
         ");
@@ -295,7 +295,7 @@ mod hir_opt_tests {
     fn test_fold_fixnum_mult_one() {
         eval("
             def test(n)
-              1 * n + n * 1;
+              1 * n + n * 1
             end
             test 1; test 2
         ");
@@ -435,7 +435,7 @@ mod hir_opt_tests {
     fn test_fold_fixnum_div_one() {
         eval("
             def test(n)
-              n / 1;
+              n / 1
             end
             test 1; test 2
         ");
