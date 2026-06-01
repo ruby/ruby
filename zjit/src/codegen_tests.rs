@@ -462,6 +462,35 @@ fn test_getblockparamproxy_polymorphic_none_and_iseq() {
 }
 
 #[test]
+fn test_getblockparamproxy_proc() {
+    eval("
+        val = proc { 1 }
+        def test(&block)
+          0.then(&block)
+        end
+        test(&val)
+    ");
+    assert_contains_opcode("test", YARVINSN_getblockparamproxy);
+    assert_snapshot!(assert_compiles("val = proc { 2 }; test(&val)"), @"2");
+}
+
+#[test]
+fn test_getblockparamproxy_polymorphic_none_and_iseq_and_proc() {
+    set_call_threshold(4);
+    eval("
+        val = proc { 3 }
+        def test(&block)
+          0.then(&block)
+        end
+        test
+        test { 1 }
+        test(&val)
+    ");
+    assert_contains_opcode("test", YARVINSN_getblockparamproxy);
+    assert_snapshot!(assert_compiles("val = proc { 2 }; test(&val)"), @"2");
+}
+
+#[test]
 fn test_getblockparam() {
     eval("
         def test(&blk)

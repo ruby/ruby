@@ -1643,6 +1643,7 @@ pub(crate) mod ids {
         name: freeze
         name: minusat            content: b"-@"
         name: aref               content: b"[]"
+        name: rb_obj_is_proc
         name: rb_ivar_get_at_no_ractor_check
         name: RUBY_FL_FREEZE
         name: RUBY_ELTS_SHARED
