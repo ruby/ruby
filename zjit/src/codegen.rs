@@ -23,12 +23,8 @@ use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NAT
 use crate::hir::{iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
 use crate::hir::{BlockHandler, Const, FieldName, FrameState, Function, Insn, InsnId, Recompile, SendFallbackReason};
 use crate::hir_type::{types, Type};
-use crate::options::{get_option, PerfMap};
+use crate::options::{get_option, InlineDepth, PerfMap};
 use crate::cast::IntoUsize;
-
-/// The number of stack slots used for JITFrame. gen_save_pc_for_gc() writes
-/// JITFrame into this number of slots at the bottom of the native stack.
-const JIT_FRAME_SIZE: usize = 1;
 
 /// Default maximum number of compiled versions per ISEQ.
 const DEFAULT_MAX_VERSIONS: usize = 2;
@@ -64,8 +60,10 @@ struct JITState {
     /// ISEQ calls that need to be compiled later
     iseq_calls: Vec<IseqCallRef>,
 
-    /// The number of native stack slots reserved for JITFrame.
-    /// gen_save_pc_for_gc() writes JITFrame into the allocated space.
+    /// The number of native stack slots reserved for JITFrame, one per
+    /// simultaneously live frame (`inlining_depth() + 1`). gen_save_pc_for_gc()
+    /// and the inlined frame push write a JITFrame into the slot selected by the
+    /// current frame's depth.
     jit_frame_size: usize,
 }
 
@@ -396,8 +394,16 @@ fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, mut version: IseqVersionRef,
 /// Compile a function
 fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, function: &Function) -> Result<(IseqCodePtrs, Vec<CodePtr>, Vec<IseqCallRef>), CompileError> {
     let (mut jit, asm) = trace_compile_phase("codegen", || {
-        let mut jit = JITState::new(version, function.num_insns(), function.num_blocks(), JIT_FRAME_SIZE);
-        let mut asm = Assembler::new_with_stack_slots(JIT_FRAME_SIZE);
+        // Reserve one JITFrame slot per simultaneously live frame. The top-level
+        // frame is depth 0, and each level of inlining adds another frame that
+        // can be on the CFP chain at the same time, so we need
+        // `inlining_depth() + 1` slots. gen_save_pc_for_gc() and the inlined
+        // frame push select among these slots by the frame's depth, keeping each
+        // frame's `cfp->jit_return` pointed at its own slot rather than a shared
+        // one.
+        let jit_frame_size = function.inlining_depth() + 1;
+        let mut jit = JITState::new(version, function.num_insns(), function.num_blocks(), jit_frame_size);
+        let mut asm = Assembler::new_with_stack_slots(jit_frame_size);
 
         // Mapping from HIR block IDs to LIR block IDs.
         // This is is a one-to-one mapping from HIR to LIR blocks used for finding
@@ -1608,13 +1614,17 @@ fn gen_push_lightweight_frame(
     // way to tell whether it points at a valid JITFrame slot.
     //
     // We install a pre-baked JITFrame for the callee's entry by writing its address into
-    // the native-stack JITFrame slot at [NATIVE_BASE_PTR - 8] and pointing the callee's
-    // cfp->jit_return at that slot (NATIVE_BASE_PTR), matching the protocol established
-    // by gen_entry_point + gen_save_pc_for_gc. CFP_ZJIT_FRAME in zjit.h reads the
-    // JITFrame via ((VALUE *)cfp->jit_return)[-1], so the field must be the slot's
-    // address, not the JITFrame pointer itself. Once the inlined body runs its first
-    // gen_save_pc_for_gc, that call overwrites the slot with a JITFrame carrying the
-    // current PC, just as the non-inlined path does.
+    // the callee's own JITFrame slot and pointing the callee's cfp->jit_return at that
+    // slot, matching the protocol established by gen_entry_point + gen_save_pc_for_gc.
+    // The callee runs one level deeper than the caller, so it uses the slot for
+    // `state.depth + 1` (state is the caller's FrameState). Giving each inlining depth a
+    // distinct slot keeps the caller's and callee's cfp->jit_return from aliasing the same
+    // native stack location, which would otherwise make rb_zjit_materialize_frames copy
+    // one frame's PC/ISEQ into every aliased CFP on the chain. CFP_ZJIT_FRAME in zjit.h
+    // reads the JITFrame via ((VALUE *)cfp->jit_return)[-1], so the field must be the
+    // slot's address, not the JITFrame pointer itself. Once the inlined body runs its
+    // first gen_save_pc_for_gc, that call overwrites the same slot with a JITFrame
+    // carrying the current PC, just as the non-inlined path does.
     //
     // cfp->sp is left stale at frame push, matching the non-inlined gen_push_frame, which
     // also skips the cfp->sp write for ISEQ frames. The first gen_save_sp call inside the
@@ -1624,11 +1634,13 @@ fn gen_push_lightweight_frame(
     fn cfp_opnd(offset: i32) -> Opnd {
         Opnd::mem(64, CFP, offset - (RUBY_SIZEOF_CONTROL_FRAME as i32))
     }
+    let callee_depth = state.depth + 1;
     let callee_entry_pc = unsafe { rb_iseq_pc_at_idx(iseq, 0) };
-    let callee_entry_frame = JITFrame::new_iseq(callee_entry_pc, iseq, !iseq_may_write_block_code(iseq));
+    let callee_entry_frame = JITFrame::new_iseq(callee_entry_pc, iseq);
     asm_comment!(asm, "install entry JITFrame for inlined callee");
-    asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, -SIZEOF_VALUE_I32), Opnd::const_ptr(callee_entry_frame));
-    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_JIT_RETURN), NATIVE_BASE_PTR);
+    asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, jit_frame_slot_offset(callee_depth)), Opnd::const_ptr(callee_entry_frame));
+    let callee_jit_return = cfp_jit_return_for_depth(asm, callee_depth);
+    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_JIT_RETURN), callee_jit_return);
 
     // The callee's hidden `kw_bits` local does not need a runtime store here:
     // the inliner aliases the local to a `Const::Value` carrying the
@@ -2350,7 +2362,9 @@ fn gen_entry_point(jit: &mut JITState, asm: &mut Assembler, jit_entry_idx: Optio
     }
     asm.frame_setup(&[]);
 
-    // Publish a valid entry JITFrame before setting cfp->jit_return.
+    // Publish a valid entry JITFrame before setting cfp->jit_return. The entry point is
+    // always the top-level frame (depth 0). Inlined frames get their own deeper
+    // slots in gen_push_lightweight_frame().
     let jit_frame = JITFrame::new_iseq(entry_pc(jit.iseq(), jit_entry_idx), jit.iseq());
     asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, -SIZEOF_VALUE_I32), Opnd::const_ptr(jit_frame));
     asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), NATIVE_BASE_PTR);
@@ -2851,6 +2865,29 @@ pub(crate) fn iseq_may_write_block_code(iseq: IseqPtr) -> bool {
     false
 }
 
+/// Byte offset from NATIVE_BASE_PTR of the JITFrame storage slot for a frame at
+/// the given inlining depth. Depth 0 (the top-level frame) lives at
+/// `[NATIVE_BASE_PTR - 8]`; each deeper inlined frame gets the next slot below.
+/// gen_function() reserves `inlining_depth() + 1` slots, so every live frame's
+/// depth maps to a distinct slot inside that reserved region.
+fn jit_frame_slot_offset(depth: InlineDepth) -> i32 {
+    -(SIZEOF_VALUE_I32 * (depth as i32 + 1))
+}
+
+/// Compute the value to store in a frame's `cfp->jit_return` for the given
+/// inlining depth. CFP_ZJIT_FRAME(cfp) reads the JITFrame pointer from
+/// `((VALUE *)cfp->jit_return)[-1]`, so jit_return must point one VALUE above
+/// the frame's storage slot (see jit_frame_slot_offset()). Depth 0 lands exactly
+/// on NATIVE_BASE_PTR, matching the non-inlined protocol; deeper frames need an
+/// address computed relative to it.
+fn cfp_jit_return_for_depth(asm: &mut Assembler, depth: InlineDepth) -> Opnd {
+    if depth == 0 {
+        NATIVE_BASE_PTR
+    } else {
+        asm.lea(Opnd::mem(64, NATIVE_BASE_PTR, -(SIZEOF_VALUE_I32 * depth as i32)))
+    }
+}
+
 /// Save only the PC to CFP. Use this when you need to call gen_save_sp()
 /// immediately after with a custom stack size (e.g., gen_ccall_with_frame
 /// adjusts SP to exclude receiver and arguments).
@@ -2861,10 +2898,10 @@ fn gen_save_pc_for_gc(asm: &mut Assembler, state: &FrameState) {
     gen_incr_counter(asm, Counter::vm_write_jit_frame_count);
     asm_comment!(asm, "save JITFrame to CFP");
     let jit_frame = JITFrame::new_iseq(next_pc, state.iseq);
-    asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, -SIZEOF_VALUE_I32), Opnd::const_ptr(jit_frame));
+    asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, jit_frame_slot_offset(state.depth)), Opnd::const_ptr(jit_frame));
 
     // CFP_PC for a live JIT frame routes through the JITFrame on the native
-    // stack (cfp->jit_return points to NATIVE_BASE_PTR), so we don't need to
+    // stack (cfp->jit_return points at this frame's slot), so we don't need to
     // touch cfp->pc here. Poisoning cfp->pc with PC_POISON would actively
     // break the case where rb_zjit_materialize_frames() previously copied
     // jit_frame->pc into cfp->pc and cleared cfp->jit_return: the JIT keeps
@@ -3625,9 +3662,13 @@ impl Assembler {
         // +------------------------+
         // | return address         |
         // +------------------------+
-        // | previous frame pointer | <- NATIVE_BASE_PTR == cfp->jit_return
+        // | previous frame pointer | <- NATIVE_BASE_PTR (== depth-0 cfp->jit_return)
         // +------------------------+
-        // | JITFrame pointer       | <- jit.jit_frame_size, read by CFP_ZJIT_FRAME(cfp)
+        // | JITFrame slot depth 0  | <- [NATIVE_BASE_PTR - 8]; read by CFP_ZJIT_FRAME for the top-level frame
+        // +------------------------+
+        // |          ...           |    one slot per inlining depth (jit.jit_frame_size slots total)
+        // +------------------------+
+        // | JITFrame slot depth N  | <- innermost inlined frame's slot
         // +------------------------+
         // | opnds.last()           |
         // +------------------------+

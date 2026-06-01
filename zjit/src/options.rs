@@ -33,8 +33,14 @@ pub const DEFAULT_INLINE_BUDGET: InlineBudget = 500;
 pub type InlineBudget = usize;
 
 /// Default --zjit-inline-max-iterations
-pub const DEFAULT_INLINE_MAX_ITERATIONS: InlineMaxIterations = 10;
-pub type InlineMaxIterations = u8;
+pub const DEFAULT_INLINE_MAX_ITERATIONS: InlineDepth = 10;
+/// Inlining nesting depth. Shared by `FrameState::depth` and the
+/// `inline_max_iterations` cap: the inliner adds at most one level per
+/// fixed-point iteration, so the maximum reachable depth equals
+/// `inline_max_iterations` and the two share this exact domain. A `usize`
+/// because depth is consumed as a JITFrame stack-slot index and as a term in
+/// native stack size computations, where every consumer is already `usize`.
+pub type InlineDepth = usize;
 
 /// Number of calls to start profiling YARV instructions.
 /// They are profiled `rb_zjit_call_threshold - rb_zjit_profile_threshold` times,
@@ -174,7 +180,7 @@ pub struct Options {
     /// terminates as soon as an iteration fails to inline anything new. The cap
     /// exists to bound compile time when something pathological prevents the loop
     /// from reaching a fixed point.
-    pub inline_max_iterations: InlineMaxIterations,
+    pub inline_max_iterations: InlineDepth,
 }
 
 impl Default for Options {

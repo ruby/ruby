@@ -7,7 +7,7 @@
 #![allow(clippy::match_like_matches_macro)]
 use crate::{
     backend::lir::C_ARG_OPNDS,
-    cast::IntoUsize, codegen::{local_idx_to_ep_offset, max_iseq_versions}, cruby::*, invariants::{self}, payload::get_or_create_iseq_payload, options::{debug, get_option, DumpHIR}, state::ZJITState, json::Json,
+    cast::IntoUsize, codegen::{local_idx_to_ep_offset, max_iseq_versions}, cruby::*, invariants::{self}, payload::get_or_create_iseq_payload, options::{debug, get_option, DumpHIR, InlineDepth}, state::ZJITState, json::Json,
     state,
 };
 use std::{
@@ -2800,6 +2800,19 @@ impl Function {
         self.insns.len()
     }
 
+    /// Return the deepest inlining nesting present in this function's frames.
+    /// The top-level frame is depth 0, so a function that inlines nothing
+    /// returns 0. Codegen uses this to size the per-function JITFrame slot
+    /// region, which needs one slot per simultaneously live frame, i.e.
+    /// `inlining_depth() + 1` slots. This is a measurement of what the function
+    /// actually contains, not a configured limit.
+    pub fn inlining_depth(&self) -> InlineDepth {
+        self.insns.iter().filter_map(|insn| match insn {
+            Insn::Snapshot { state } => Some(state.depth),
+            _ => None,
+        }).max().unwrap_or(0)
+    }
+
     /// Return a FrameState at the given instruction index.
     pub fn frame_state(&self, insn_id: InsnId) -> FrameState {
         match self.find(insn_id) {
@@ -4590,9 +4603,18 @@ impl Function {
                 // into the inlined HIR. Without it, side exits from inlined code would
                 // lose the outer frame and the interpreter would resume in the wrong
                 // place.
+                //
+                // Each callee Snapshot also inherits a frame depth one greater than
+                // the call-site frame's. Because a callee's own calls only become
+                // inlinable in a later fixed-point iteration (after type
+                // specialization promotes them to SendDirect), frames are always
+                // woven in outermost-first, so the call-site frame's depth is already
+                // final here.
+                let caller_depth = self.frame_state(state).depth;
                 for idx in pre_insns_len..self.insns.len() {
                     if let Insn::Snapshot { state: inlined_state } = &mut self.insns[idx] {
                         inlined_state.caller = Some(state);
+                        inlined_state.depth = caller_depth + 1;
                     }
                 }
 
@@ -6928,6 +6950,13 @@ pub struct FrameState {
     /// propagates here automatically, and so the caller's state has a single
     /// source of truth in the IR.
     caller: Option<InsnId>,
+
+    /// Inlining nesting depth of this frame. The top-level (non-inlined) frame
+    /// is depth 0; each level of inlining increments it by one. Codegen uses
+    /// this to pick a distinct JITFrame slot per active inlined frame so that
+    /// `cfp->jit_return` values do not alias across the shared native stack frame.
+    /// This value's upper bound is the `inline_max_iterations` value.
+    pub depth: InlineDepth,
 }
 
 impl FrameState {
@@ -7008,7 +7037,7 @@ fn ep_offset_to_local_idx(iseq: IseqPtr, ep_offset: u32) -> usize {
 
 impl FrameState {
     fn new(iseq: IseqPtr) -> FrameState {
-        FrameState { iseq, pc: std::ptr::null::<VALUE>(), insn_idx: 0, stack: vec![], locals: vec![], caller: None }
+        FrameState { iseq, pc: std::ptr::null::<VALUE>(), insn_idx: 0, stack: vec![], locals: vec![], caller: None, depth: 0 }
     }
 
     /// Get the number of stack operands
