@@ -56,7 +56,7 @@ describe "Data#deconstruct_keys" do
     d.deconstruct_keys(nil).should == {x: 1, y: 2}
   end
 
-  ruby_bug "Bug #21844", ""..."4.1" do
+  ruby_version_is "4.0" do # https://bugs.ruby-lang.org/issues/21844
     it "tries to convert a key with #to_str if index is not a String nor a Symbol, but responds to #to_str" do
       klass = Data.define(:x, :y)
       d = klass.new(1, 2)

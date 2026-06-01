@@ -107,13 +107,14 @@ describe 'Kernel#caller' do
     end
 
     ruby_version_is "4.0" do
-      it "includes core library methods defined in Ruby" do
+      it "does not include core library methods defined in Ruby" do
         file, line = Kernel.instance_method(:tap).source_location
         file.should.start_with?('<internal:')
 
         loc = nil
         tap { loc = caller(1, 1)[0] }
-        loc.should =~ /\A#{__FILE__}:.*in 'Kernel#tap'\z/
+        # CRuby hides the file which defines the method: https://bugs.ruby-lang.org/issues/20968
+        loc.should =~ /\A(<internal:|#{__FILE__}:).*in 'Kernel#tap'\z/
       end
     end
   end

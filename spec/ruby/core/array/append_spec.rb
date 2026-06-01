@@ -1,6 +1,5 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
-require_relative 'shared/push'
 
 describe "Array#<<" do
   it "pushes the object onto the end of the array" do
@@ -36,5 +35,7 @@ describe "Array#<<" do
 end
 
 describe "Array#append" do
-  it_behaves_like :array_push, :append
+  it "is an alias of Array#push" do
+    Array.instance_method(:append).should == Array.instance_method(:push)
+  end
 end

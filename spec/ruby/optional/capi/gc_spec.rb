@@ -7,6 +7,24 @@ describe "CApiGCSpecs" do
     @f = CApiGCSpecs.new
   end
 
+  describe "RB_GC_GUARD" do
+    it "forces an object to on stack so it cannot be GC'd early" do
+      @f.RB_GC_GUARD_keep_alive([%w[ab cd ef].join]).should == "abc"
+    end
+
+    it "can be used with any Ruby object" do
+      @f.RB_GC_GUARD(true).should == true
+      @f.RB_GC_GUARD(42).should == 42
+      @f.RB_GC_GUARD(self).should == self
+    end
+
+    it "tolerates being passed invalid pointers" do
+      (0...256).each do |address|
+        @f.RB_GC_GUARD_raw(address).should == nil
+      end
+    end
+  end
+
   describe "rb_gc_register_address" do
     it "correctly gets the value from a registered address" do
       @f.registered_tagged_address.should == 10

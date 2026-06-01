@@ -1149,7 +1149,7 @@ describe "C-API String function" do
     end
 
     it "can format a nil VALUE as a pointer and gives the same output as sprintf in C" do
-      res = @s.rb_sprintf7("%p", nil);
+      res = @s.rb_sprintf7("%p", nil)
       res[0].should == res[1]
     end
 
@@ -1159,14 +1159,14 @@ describe "C-API String function" do
     end
 
     it "can format a raw number a pointer and gives the same output as sprintf in C" do
-      res = @s.rb_sprintf7("%p", 0x223643);
+      res = @s.rb_sprintf7("%p", 0x223643)
       res[0].should == res[1]
     end
   end
 
   describe "rb_vsprintf" do
     it "returns a formatted String from a variable number of arguments" do
-      s = @s.rb_vsprintf("%s, %d, %.2f", "abc", 42, 2.7);
+      s = @s.rb_vsprintf("%s, %d, %.2f", "abc", 42, 2.7)
       s.should == "abc, 42, 2.70"
     end
   end

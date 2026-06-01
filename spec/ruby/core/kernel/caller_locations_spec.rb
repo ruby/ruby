@@ -103,7 +103,10 @@ describe 'Kernel#caller_locations' do
         loc = nil
         tap { loc = caller_locations(1, 1)[0] }
         loc.label.should == "Kernel#tap"
-        loc.path.should == __FILE__
+        # CRuby hides the file which defines the method: https://bugs.ruby-lang.org/issues/20968
+        unless loc.path == __FILE__
+          loc.path.should.start_with? "<internal:"
+        end
       end
     end
   end

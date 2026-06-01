@@ -14,7 +14,9 @@ describe :kernel_integer, shared: true do
     obj = mock("object")
     obj.should_receive(:to_int).and_return("1")
     obj.should_receive(:to_i).and_return(nil)
-    -> { Integer(obj) }.should.raise(TypeError)
+    -> {
+      Integer(obj)
+    }.should raise_consistent_error(TypeError, "can't convert MockObject into Integer (MockObject#to_i gives nil)")
   end
 
   it "return a result of to_i when to_int does not return an Integer" do
@@ -24,8 +26,31 @@ describe :kernel_integer, shared: true do
     Integer(obj).should == 42
   end
 
+  it "returns a result of to_str" do
+    obj = mock("obj")
+    obj.should_receive(:to_str).and_return("1")
+
+    Integer(obj).should == 1
+  end
+
+  it "returns a result of to_int when both to_int and to_str are defined" do
+    obj = mock("obj")
+    obj.should_receive(:to_int).and_return(1)
+    obj.should_not_receive(:to_str)
+
+    Integer(obj).should == 1
+  end
+
+  it "returns a result of to_str when both to_str and to_i are defined" do
+    obj = mock("obj")
+    obj.should_receive(:to_str).and_return("1")
+    obj.should_not_receive(:to_i)
+
+    Integer(obj).should == 1
+  end
+
   it "raises a TypeError when passed nil" do
-    -> { Integer(nil) }.should.raise(TypeError)
+    -> { Integer(nil) }.should.raise(TypeError, "can't convert nil into Integer")
   end
 
   it "returns an Integer object" do
@@ -67,18 +92,24 @@ describe :kernel_integer, shared: true do
   it "raises a TypeError if to_i returns a value that is not an Integer" do
     obj = mock("object")
     obj.should_receive(:to_i).and_return("1")
-    -> { Integer(obj) }.should.raise(TypeError)
+    -> {
+      Integer(obj)
+    }.should raise_consistent_error(TypeError, "can't convert MockObject into Integer (MockObject#to_i gives String)")
   end
 
   it "raises a TypeError if no to_int or to_i methods exist" do
     obj = mock("object")
-    -> { Integer(obj) }.should.raise(TypeError)
+    -> {
+      Integer(obj)
+    }.should.raise(TypeError, "can't convert MockObject into Integer")
   end
 
   it "raises a TypeError if to_int returns nil and no to_i exists" do
     obj = mock("object")
     obj.should_receive(:to_i).and_return(nil)
-    -> { Integer(obj) }.should.raise(TypeError)
+    -> {
+      Integer(obj)
+    }.should raise_consistent_error(TypeError, "can't convert MockObject into Integer (MockObject#to_i gives nil)")
   end
 
   it "raises a FloatDomainError when passed NaN" do
@@ -576,7 +607,7 @@ describe :kernel_integer_string_base, shared: true do
   end
 
   it "raises an ArgumentError if a base is given for a non-String value" do
-    -> { Integer(98, 15) }.should.raise(ArgumentError)
+    -> { Integer(98, 15) }.should.raise(ArgumentError, "base specified for non string value")
   end
 
   it "tries to convert the base to an integer using to_int" do

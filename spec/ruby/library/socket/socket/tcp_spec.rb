@@ -56,15 +56,33 @@ describe 'Socket.tcp' do
 
   it 'connects to the server' do
     @client = Socket.tcp(@host, @port)
-
     @client.write('hello')
-
     connection, _ = @server.accept
-
     begin
       connection.recv(5).should == 'hello'
     ensure
       connection.close
+    end
+  end
+
+  ruby_version_is "4.0" do
+    it 'connects to the server when passed open_timeout argument' do
+      @client = Socket.tcp(@host, @port, open_timeout: 60)
+      @client.write('open_timeout')
+      connection, _ = @server.accept
+      begin
+        connection.recv(12).should == 'open_timeout'
+      ensure
+        connection.close
+      end
+    end
+
+    it 'raises Errno::ETIMEDOUT with :open_timeout when no server is listening on the given address' do
+      -> {
+        Socket.tcp("192.0.2.1", 80, open_timeout: 0)
+      }.should.raise(Errno::ETIMEDOUT)
+    rescue Errno::ENETUNREACH
+      skip "all network interfaces down"
     end
   end
 end

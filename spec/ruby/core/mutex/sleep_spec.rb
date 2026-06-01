@@ -82,6 +82,14 @@ describe "Mutex#sleep" do
     th.value.should.is_a?(Integer)
   end
 
+  it "accepts nil as a sleep duration" do
+    m = Mutex.new
+    -> {
+      m.lock
+      m.sleep(nil)
+    }.should block_caller
+  end
+
   it "wakes up when requesting sleep times near or equal to zero" do
     times = []
     val = 1

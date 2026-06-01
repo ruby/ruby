@@ -1,7 +1,5 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
-require_relative 'shared/iteration'
-require_relative 'shared/update'
 
 describe "Hash#merge" do
   it "returns a new hash by combining self with the contents of other" do
@@ -119,5 +117,7 @@ describe "Hash#merge" do
 end
 
 describe "Hash#merge!" do
-  it_behaves_like :hash_update, :merge!
+  it "is an alias of Hash#update" do
+    Hash.instance_method(:merge!).should == Hash.instance_method(:update)
+  end
 end

@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 describe "Process::Constants" do
   platform_is :darwin, :netbsd, :freebsd do
-    it "are all present on BSD-like systems" do
+    describe "on BSD-like systems" do
       %i[
           WNOHANG
           WUNTRACED
@@ -20,27 +20,31 @@ describe "Process::Constants" do
           RLIMIT_NPROC
           RLIMIT_NOFILE
       ].each do |const|
-        Process.const_defined?(const).should == true
-        Process.const_get(const).should.instance_of?(Integer)
+        it "defines #{const}" do
+          Process.const_defined?(const).should == true
+          Process.const_get(const).should.instance_of?(Integer)
+        end
       end
     end
   end
 
   platform_is :darwin do
-    it "are all present on Darwin" do
+    describe "on Darwin" do
       %i[
         RLIM_SAVED_MAX
         RLIM_SAVED_CUR
         RLIMIT_AS
       ].each do |const|
-        Process.const_defined?(const).should == true
-        Process.const_get(const).should.instance_of?(Integer)
+        it "defines #{const}" do
+          Process.const_defined?(const).should == true
+          Process.const_get(const).should.instance_of?(Integer)
+        end
       end
     end
   end
 
   platform_is :linux do
-    it "are all present on Linux" do
+    describe "on Linux" do
       %i[
         WNOHANG
         WUNTRACED
@@ -61,37 +65,43 @@ describe "Process::Constants" do
         RLIM_SAVED_MAX
         RLIM_SAVED_CUR
       ].each do |const|
-        Process.const_defined?(const).should == true
-        Process.const_get(const).should.instance_of?(Integer)
+        it "defines #{const}" do
+          Process.const_defined?(const).should == true
+          Process.const_get(const).should.instance_of?(Integer)
+        end
       end
     end
   end
 
   platform_is :netbsd, :freebsd do
-    it "are all present on NetBSD and FreeBSD" do
+    describe "on NetBSD and FreeBSD" do
       %i[
         RLIMIT_SBSIZE
         RLIMIT_AS
       ].each do |const|
-        Process.const_defined?(const).should == true
-        Process.const_get(const).should.instance_of?(Integer)
+        it "defines #{const}" do
+          Process.const_defined?(const).should == true
+          Process.const_get(const).should.instance_of?(Integer)
+        end
       end
     end
   end
 
   platform_is :freebsd do
-    it "are all present on FreeBSD" do
+    describe "on FreeBSD" do
       %i[
         RLIMIT_NPTS
       ].each do |const|
-        Process.const_defined?(const).should == true
-        Process.const_get(const).should.instance_of?(Integer)
+        it "defines #{const}" do
+          Process.const_defined?(const).should == true
+          Process.const_get(const).should.instance_of?(Integer)
+        end
       end
     end
   end
 
   platform_is :windows do
-    it "does not define RLIMIT constants" do
+    describe "on Windows" do
       %i[
           RLIMIT_CPU
           RLIMIT_FSIZE
@@ -107,7 +117,9 @@ describe "Process::Constants" do
           RLIM_SAVED_MAX
           RLIM_SAVED_CUR
       ].each do |const|
-        Process.const_defined?(const).should == false
+        it "does not define #{const}" do
+          Process.const_defined?(const).should == false
+        end
       end
     end
   end
