@@ -127,6 +127,18 @@ Dir.glob('[^k-m][h-j][a-c]')  # => []
 Dir.glob('[^a-c][^k-m][^h-j]') # => ["GPL", "doc", "enc", "ext", "jit", "lib", "man"]
 ```
 
+#### Alternatives (`'{ , }'`)
+
+The alternatives pattern consists of comma-separated strings
+enclosed in curly braces:
+
+```ruby
+Dir.glob('{k,L,R}*')  # => ["kernel.rb", "LEGAL", "README.ja.md", "README.md"]
+Dir.glob('{R,L,k}*')  # => ["README.ja.md", "README.md", "LEGAL", "kernel.rb"]
+# Whitespace matters:
+Dir.glob('{k ,L,R}*') # => ["LEGAL", "README.ja.md", "README.md"]
+```
+
 ### Keyword Argument `flags`
 
 
