@@ -91,8 +91,9 @@ describe "IO::Buffer#transfer" do
   context "with a slice of a buffer" do
     it "transfers source to a new slice, not touching the buffer" do
       @buffer = IO::Buffer.new(4)
-      slice = @buffer.slice(0, 2)
       @buffer.set_string("test")
+      slice = @buffer.slice(0, 2)
+      slice.get_string.should == "te"
 
       new_slice = slice.transfer
       slice.null?.should == true

@@ -58,11 +58,6 @@ describe :kernel_sprintf, shared: true do
         it "works well with large numbers" do
           @method.call("%#{f}", 1234567890987654321).should == "1234567890987654321"
         end
-
-        it "converts to the empty string if precision is 0 and value is 0" do
-          @method.call("%.#{f}", 0).should == ""
-          @method.call("%.0#{f}", 0).should == ""
-        end
       end
     end
 
@@ -108,6 +103,20 @@ describe :kernel_sprintf, shared: true do
       it "collapse negative number representation if it equals F" do
         @method.call("%X", -1).should_not == "..FF"
         @method.call("%X", -1).should == "..F"
+      end
+    end
+
+    %w[b B d i u o x X].each do |f|
+      describe f do
+        it "converts to the empty string if precision is 0 and value is 0" do
+          @method.call("%.#{f}", 0).should == ""
+          @method.call("%.0#{f}", 0).should == ""
+        end
+
+        it "pads the empty string if precision is 0 and value is 0" do
+          @method.call("%2.#{f}", 0).should == "  "
+          @method.call("%2.0#{f}", 0).should == "  "
+        end
       end
     end
   end
@@ -297,6 +306,10 @@ describe :kernel_sprintf, shared: true do
 
       it "displays only the first character if argument is a string of several characters" do
         @method.call("%c", "abc").should == "a"
+      end
+
+      it "displays only the first character if argument is a string of several multibyte characters" do
+        @method.call("%c", "あいうえお").should == "あ"
       end
 
       it "displays no characters if argument is an empty string" do
@@ -594,10 +607,27 @@ describe :kernel_sprintf, shared: true do
           @method.call("%#b", 0).should == "0"
           @method.call("%#B", 0).should == "0"
 
-          @method.call("%#o", 0).should == "0"
-
           @method.call("%#x", 0).should == "0"
           @method.call("%#X", 0).should == "0"
+        end
+
+        it "does nothing for zero argument when combined with zero precision" do
+          @method.call("%#.0b", 0).should == ""
+          @method.call("%#.0B", 0).should == ""
+
+          @method.call("%#.0x", 0).should == ""
+          @method.call("%#.0X", 0).should == ""
+        end
+      end
+
+      context "applies to format o" do
+        it "does nothing for zero argument" do
+          @method.call("%#o", 0).should == "0"
+          @method.call("%#.1o", 0).should == "0"
+        end
+
+        it "increases the precision if precision zero is requested with zero argument" do
+          @method.call("%#.0o", 0).should == "0"
         end
       end
 

@@ -155,8 +155,12 @@ describe "The unpacking splat operator (*)" do
     b = [1, 0]
     [*a, 3, *a, *b].should == [1, 2, 3, 1, 2, 1, 0]
   end
-end
 
-describe "The packing splat operator (*)" do
-
+  ruby_version_is "4.0" do
+    it "does not call #to_a on nil" do
+      e = nil
+      e.should_not_receive(:to_a)
+      [*e].should == []
+    end
+  end
 end

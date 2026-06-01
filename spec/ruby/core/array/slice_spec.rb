@@ -1,6 +1,5 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
-require_relative 'shared/slice'
 
 describe "Array#slice!" do
   it "removes and return the element at index" do
@@ -214,5 +213,7 @@ describe "Array#slice!" do
 end
 
 describe "Array#slice" do
-  it_behaves_like :array_slice, :slice
+  it "is an alias of Array#[]" do
+    Array.instance_method(:slice).should == Array.instance_method(:[])
+  end
 end

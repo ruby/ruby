@@ -211,6 +211,22 @@ describe "The defined? keyword when called with a method name" do
       }.should complain(/warning: possibly useless use of defined\? in void context/, verbose: true)
     end
   end
+
+  describe "for a protected method" do
+    it "returns 'method' when the receiver is a subclass instance" do
+      DefinedSpecs::ProtectedBase.new.defined_on(DefinedSpecs::ProtectedSubclass.new).should == "method"
+    end
+
+    it "returns 'method' when the receiver is the base class instance" do
+      DefinedSpecs::ProtectedSubclass.new.defined_on(DefinedSpecs::ProtectedBase.new).should == "method"
+    end
+
+    ruby_bug "#22076", ""..."4.1" do
+      it "returns 'method' when the receiver is a sibling class instance via a shared included module" do
+        DefinedSpecs::ProtectedIncluderA.new.defined_on(DefinedSpecs::ProtectedIncluderB.new).should == "method"
+      end
+    end
+  end
 end
 
 describe "The defined? keyword for an expression" do

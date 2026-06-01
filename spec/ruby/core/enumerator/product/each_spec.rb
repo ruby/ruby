@@ -68,4 +68,18 @@ describe "Enumerator::Product#each" do
     enum.each { |x, y, z| acc << z }
     acc.should == [nil, nil, nil, nil]
   end
+
+  it "yields no element when any enumerable is empty" do
+    enum = Enumerator::Product.new([], [1])
+
+    acc = []
+    enum.each { |x| acc << x }
+    acc.should == []
+
+    enum = Enumerator::Product.new([1], [])
+
+    acc = []
+    enum.each { |x| acc << x }
+    acc.should == []
+  end
 end

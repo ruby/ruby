@@ -46,14 +46,36 @@ describe :string_each_line, shared: true do
     a.should == ["one\ntwo\r\nthree"]
   end
 
-  it "yields paragraphs (broken by 2 or more successive newlines) when passed '' and replaces multiple newlines with only two ones" do
-    a = []
-    "hello\nworld\n\n\nand\nuniverse\n\n\n\n\n".send(@method, '') { |s| a << s }
-    a.should == ["hello\nworld\n\n", "and\nuniverse\n\n"]
+  context "when passed '' (paragraph mode, broken by 2 or more successive newlines)" do
+    it "replaces multiple newlines with only two ones" do
+      a = []
+      "hello\nworld\n\n\nand\nuniverse\n\n\n\n\n".send(@method, '') { |s| a << s }
+      a.should == ["hello\nworld\n\n", "and\nuniverse\n\n"]
 
-    a = []
-    "hello\nworld\n\n\nand\nuniverse\n\n\n\n\ndog".send(@method, '') { |s| a << s }
-    a.should == ["hello\nworld\n\n", "and\nuniverse\n\n", "dog"]
+      a = []
+      "hello\nworld\n\n\nand\nuniverse\n\n\n\n\ndog".send(@method, '') { |s| a << s }
+      a.should == ["hello\nworld\n\n", "and\nuniverse\n\n", "dog"]
+    end
+
+    it 'handles \r\n-style newlines' do
+      a = []
+      "hello\nworld\r\n\r\n\nand\nuniverse\n\r\n\n\n\n".send(@method, '') { |s| a << s }
+      a.should == ["hello\nworld\r\n\r\n", "and\nuniverse\n\r\n"]
+
+      a = []
+      "hello\r\nworld\n\n\nand\nuniverse\n\n\n\r\n\r\ndog".send(@method, '') { |s| a << s }
+      a.should == ["hello\r\nworld\n\n", "and\nuniverse\n\n", "dog"]
+    end
+
+    it "removes trailing newlines with `chomp: true`" do
+      a = []
+      "hello\nworld\n\n\nand\nuniverse\n\n\n\n\n".send(@method, '', chomp: true) { |s| a << s }
+      a.should == ["hello\nworld", "and\nuniverse"]
+
+      a = []
+      "hello\nworld\n\n\nand\nuniverse\n\n\n\n\ndog".send(@method, '', chomp: true) { |s| a << s }
+      a.should == ["hello\nworld", "and\nuniverse", "dog"]
+    end
   end
 
   describe "uses $/" do
