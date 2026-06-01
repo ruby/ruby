@@ -110,7 +110,9 @@ module Spec
           url = "https://raw.githubusercontent.com/rubygems/rubygems.org/#{ref}/#{path}"
           target = target_root.join(path)
           FileUtils.mkdir_p(File.dirname(target))
-          File.write(target, URI.parse(url).open(&:read))
+          tmp = "#{target}.tmp"
+          File.write(tmp, URI.parse(url).open(&:read))
+          File.rename(tmp, target)
         end
       end
     end
