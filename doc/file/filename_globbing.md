@@ -94,7 +94,6 @@ Dir.glob('?')   # => []      # No entries with a 1-character name.
 Dir.glob('\?')  # => []      # No entries containing character '?'.
 ```
 
-
 #### Single Character from a Set (`'[abc]'`, `'[^abc]'`)
 
 Characters enclosed in square brackets define a set of characters,
@@ -109,6 +108,23 @@ The character set may be negated:
 
 ```ruby
 Dir.glob('[^abcd][^efgh]') # => ["gc"]
+```
+
+#### Single Character from a \Range (`'[a-c]'`, `'[^a-c]'`)
+
+A range of characters enclosed in square brackets defines a set of characters,
+any of which matches a single character:
+
+```ruby
+Dir.glob('[k-m][h-j][a-c]')  # => ["lib"]
+Dir.glob('\[k-m][h-j][a-c]') # => []  # Escaped.
+```
+
+The range may be negated:
+
+```ruby
+Dir.glob('[^k-m][h-j][a-c]')  # => []
+Dir.glob('[^a-c][^k-m][^h-j]') # => ["GPL", "doc", "enc", "ext", "jit", "lib", "man"]
 ```
 
 ### Keyword Argument `flags`
