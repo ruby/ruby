@@ -5195,18 +5195,32 @@ impl Function {
                         }
                     }
                     Insn::FixnumAdd { left, right, .. } => {
+                        match (self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value()) {
+                            (Some(0), _) => { self.make_equal_to(insn_id, right); continue; }
+                            (_, Some(0)) => { self.make_equal_to(insn_id, left); continue; }
+                            _ => {}
+                        }
                         self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => l.checked_add(r),
                             _ => None,
                         })
                     }
                     Insn::FixnumSub { left, right, .. } => {
+                        match (self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value()) {
+                            (_, Some(0)) => { self.make_equal_to(insn_id, left); continue; }
+                            _ => {}
+                        }
                         self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => l.checked_sub(r),
                             _ => None,
                         })
                     }
                     Insn::FixnumMult { left, right, .. } => {
+                        match (self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value()) {
+                            (Some(1), _) => { self.make_equal_to(insn_id, right); continue; }
+                            (_, Some(1)) => { self.make_equal_to(insn_id, left); continue; }
+                            _ => {}
+                        }
                         self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => l.checked_mul(r),
                             (Some(0), _) | (_, Some(0)) => Some(0),
@@ -5214,6 +5228,10 @@ impl Function {
                         })
                     }
                     Insn::FixnumDiv { left, right, .. } => {
+                        match (self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value()) {
+                            (_, Some(1)) => { self.make_equal_to(insn_id, left); continue; }
+                            _ => {}
+                        }
                         self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) if l == (RUBY_FIXNUM_MIN as i64) && r == -1 => None, // Avoid Fixnum overflow
                             (Some(_l), Some(r)) if r == 0 => None, // Avoid Divide by zero.
