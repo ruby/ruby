@@ -1,4 +1,4 @@
-## Filename Globbing
+# Filename Globbing
 
 Filename globbing is a pattern-matching feature implemented in certain Ruby methods.
 
@@ -32,9 +32,9 @@ see the sections below for details:
 |          `'**'`          | Matches directories recursively.         | `'**/test.rb'`               |
 |          `'\'`           | Escapes the next character.              | `'\\*'`, `'\?'`              |
 
-### Patterns
+## Patterns
 
-#### Simple \String
+### Simple \String
 
 A "simple string" is one that does not contain special filename-globbing patterns;
 see the table above.
@@ -58,7 +58,7 @@ Dir.glob('PROGRAM~1') # => []
 It may be enabled by flag [`File::FNM_SHORTNAME`](#constant-filefnmshortname).
 
 
-#### Any Sequence of Characters (`'*'`)
+### Any Sequence of Characters (`'*'`)
 
 The asterisk pattern (`'*'`) matches any sequence of characters:
 
@@ -83,7 +83,7 @@ Dir.glob('*.rb').select {|entry| entry.include?('/') } # => []
 
 Therefore flag File::FNM_PATHNAME does not affect the pattern.
 
-#### Single Character (`'?'`)
+### Single Character (`'?'`)
 
 The question-mark pattern (`'?'`) matches any single character:
 
@@ -94,7 +94,7 @@ Dir.glob('?')   # => []      # No entries with a 1-character name.
 Dir.glob('\?')  # => []      # No entries containing character '?'.
 ```
 
-#### Single Character from a Set (`'[abc]'`, `'[^abc]'`)
+### Single Character from a Set (`'[abc]'`, `'[^abc]'`)
 
 Characters enclosed in square brackets define a set of characters,
 any of which matches a single character:
@@ -110,7 +110,7 @@ The character set may be negated:
 Dir.glob('[^abcd][^efgh]') # => ["gc"]
 ```
 
-#### Single Character from a \Range (`'[a-c]'`, `'[^a-c]'`)
+### Single Character from a \Range (`'[a-c]'`, `'[^a-c]'`)
 
 A range of characters enclosed in square brackets defines a set of characters,
 any of which matches a single character:
@@ -127,7 +127,7 @@ Dir.glob('[^k-m][h-j][a-c]')  # => []
 Dir.glob('[^a-c][^k-m][^h-j]') # => ["GPL", "doc", "enc", "ext", "jit", "lib", "man"]
 ```
 
-#### Alternatives (`'{ , }'`)
+### Alternatives (`'{ , }'`)
 
 The alternatives pattern consists of comma-separated strings
 enclosed in curly braces:
@@ -139,7 +139,7 @@ Dir.glob('{R,L,k}*')  # => ["README.ja.md", "README.md", "LEGAL", "kernel.rb"]
 Dir.glob('{k ,L,R}*') # => ["LEGAL", "README.ja.md", "README.md"]
 ```
 
-#### Recursive Directory Matching (`'**'`)
+### Recursive Directory Matching (`'**'`)
 
 The double-asterisk pattern (`'**'`) matches directories recursively:
 
@@ -170,13 +170,123 @@ Dir.glob('test/ruby/**/*.rb').take(3)
 #  "test/ruby/box/a.1_1_0.rb"]
 
 # Escaped.
-Dir.glob('\**/*.rb').take(3) # => []
+Dir.glob('\**/*.rb') # => []
 ```
 
-### Keyword Argument `flags`
+
+### Escape (`'\'`)
+
+The backslash character (`'\'`) may be used to escape any of the characters
+that filename globbing treats as special:
+
+```ruby
+Dir.glob('\*')               # => []
+Dir.glob('\?')               # => []
+Dir.glob('\[efgh][abcd]')    # => []
+Dir.glob('\[k-m][h-j][a-c]') # => []
+Dir.glob('\**/*.rb')         # => []
+```
+
+## Keyword Arguments
+
+| Keyword           | Value                    | Default | Meaning                                 |
+|-------------------|--------------------------|:-------:|-----------------------------------------|
+| [`base`](#base)   | \String path.            |  `'.'`  | Root for searching.                     |
+| [`flags`](#flags) | Logical OR of constants. |   `0`   | Modify globbing behavior.               |
+| [`sort`](#sort)   | `true` or `false`        | `true`  | Whether returned array is to be sorted. |
+
+### `base`
+
+Optional keyword argument `base` (defaults to `'.'`)
+specifies where in the filesystem the searching is to begin:
+
+```ruby
+Dir.glob('*').size                  # => 241
+Dir.glob('*').take(3)
+# => ["BSDL", "CONTRIBUTING.md", "COPYING"]
+
+Dir.glob('*', base: 'lib').size     # => 72
+Dir.glob('*', base: 'lib').take(3)
+# => ["English.gemspec", "English.rb", "bundled_gems.rb"]
+
+Dir.glob('*', base: 'lib/net').size # => 5
+Dir.glob('*', base: 'lib/net').take(3)
+# => ["http", "http.rb", "https.rb"]
+```
+
+### `flags`
+
+Optional keyword argument `flags` (defaults to `0`) may be the bitwise OR
+of the constants `File::FNM*`:
+
+```ruby
+Dir.glob('*', flags: File::FNM_DOTMATCH || File::FNM_NOESCAPE)
+```
+
+These are the constants for filename-globbing patterns;
+see the sections below for details:
 
 
-### Keyword Argument `base`
+| Constant                                            | Meaning                                                     |
+|-----------------------------------------------------|-------------------------------------------------------------|
+| [`File::FNM_DOTMATCH`](#constant-filefnmdotmatch)   | Make pattern `'*'` match a leading period..                   |
+| [`File::FNM_NOESCAPE`](#constant-filefnmnoescape)   | Disable escaping.                                           |
+| [`File::FNM_SHORTNAME`](#constant-filefnmshortname) | Enable short-name matching (Windows only).                  |
 
+These constants do not affect filename globbing:
 
-### Keyword Argument `sort`
+- File::FNM_CASEFOLD.
+- File::FNM_EXTGLOB.
+- File::FNM_PATHNAME.
+- File::FNM_SYSCASE.
+
+#### Constant File::FNM_DOTMATCH
+
+By default, filename globbing does not allow pattern `'*'` to match a dotfile name
+(i.e, an entry name beginning with a dot);
+use constant [`File::FNM_DOTMATCH`](#constant-filefnmdotmatch)
+to enable the match:
+
+```ruby
+Dir.glob('*').size                               # => 241
+Dir.glob('*', flags: File::FNM_DOTMATCH).size    # => 256
+Dir.glob('*', flags: File::FNM_DOTMATCH).take(3) # => [".", ".dir-locals.el", ".document"]
+```
+
+#### Constant File::FNM_NOESCAPE
+
+By default filename globbing has escaping enabled;
+use constant [`File::FNM_NOESCAPE`](#constant-filefnmnoescape)
+to disable it:
+
+```ruby
+Dir.glob('*').size  # => 241
+Dir.glob('\*').size # => 0
+```
+
+#### Constant File::FNM_SHORTNAME
+
+By default, Windows shortname matching is disabled;
+use constant [`File::FNM_SHORTNAME`](#constant-filefnmshortname)
+to enable it (on Windows only).
+
+Using that constant allows patterns to match short names
+in filename globbing on Windows,
+which can be useful for compatibility with legacy applications
+that rely on these short names;
+see [8.3 filename](https://en.wikipedia.org/wiki/8.3_filename).
+This feature helps ensure that file operations work correctly
+even when dealing with files that have long names.
+
+### `sort`
+
+Optional keyword argument `sort` (defaults to `'true'`)
+specifies whether the returned array is to be sorted:
+
+```ruby
+Dir.glob('*').take(3)
+# => ["BSDL", "CONTRIBUTING.md", "COPYING"]
+Dir.glob('*', sort: false).take(3)
+# => ["gc.rb", "yjit.rb", "iseq.h"]
+```
+
