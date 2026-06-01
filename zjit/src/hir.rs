@@ -3474,7 +3474,7 @@ impl Function {
 
     pub fn coerce_to(&mut self, block: BlockId, val: InsnId, guard_type: Type, state: InsnId) -> InsnId {
         if self.is_a(val, guard_type) { return val; }
-        self.push_insn(block, Insn::GuardType { val, guard_type, state , recompile: None})
+        self.push_insn(block, Insn::GuardType { val, guard_type, state, recompile: None})
     }
 
     fn count_complex_call_features(&mut self, block: BlockId, ci_flags: c_uint) {
@@ -4380,16 +4380,16 @@ impl Function {
     fn load_ivar_guard_type(&mut self, block: BlockId, recv: InsnId, recv_type: ProfiledType, state: InsnId) -> InsnId {
         if recv_type.flags().is_t_class() {
             // Check class first since `Class < Module`
-            self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::Class, state , recompile: None})
+            self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::Class, state, recompile: None})
         } else if recv_type.flags().is_t_module() {
-            self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::Module, state , recompile: None})
+            self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::Module, state, recompile: None})
         } else if recv_type.flags().is_t_data() {
-            self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::TData, state , recompile: None})
+            self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::TData, state, recompile: None})
         } else {
             // HeapBasicObject is wider than T_OBJECT, but shapes for T_OBJECTs are in a pool of
             // its own and are guaranteed to be different from shapes of any other T_* types. So
             // the shape check that follows already covers checking for T_OBJECT.
-            self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::HeapBasicObject, state , recompile: None})
+            self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::HeapBasicObject, state, recompile: None})
         }
     }
 
