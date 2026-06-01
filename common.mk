@@ -1975,7 +1975,9 @@ gc/distclean gc/realclean::
 
 modular-gc-precheck:
 modular-gc: probes.h gc/Makefile
-	$(Q) $(RUNRUBY) $(srcdir)/ext/extmk.rb \
+	$(Q) DTRACE='$(DTRACE)' DTRACE_EXT='$(DTRACE_EXT)' \
+		DTRACE_OBJ='$(DTRACE_OBJ)' DTRACE_REBUILD='$(DTRACE_REBUILD)' \
+		$(RUNRUBY) $(srcdir)/ext/extmk.rb \
 		$(SCRIPT_ARGS) \
 		--make='$(MAKE)' --make-flags="V=$(V) MINIRUBY='$(MINIRUBY)'" \
 		--gnumake=$(gnumake) --extflags="$(EXTLDFLAGS)" \
