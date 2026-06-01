@@ -73,6 +73,33 @@ module Spec
 
       require_relative "helpers"
       Helpers.install_dev_bundler
+
+      install_vendored_compact_index
+    end
+
+    # Vendor `rubygems/rubygems.org#lib/compact_index/` under `tmp/compact_index/`
+    # so the artifice can serve compact-index responses without a runtime gem
+    # dependency. Pinned to a reviewed commit; override with COMPACT_INDEX_REF.
+    def install_vendored_compact_index
+      target_root = Path.tmp_root.join("compact_index")
+      return if File.exist?(target_root.join("lib/compact_index.rb"))
+
+      require "open-uri"
+      require "fileutils"
+
+      ref = ENV["COMPACT_INDEX_REF"] || "7c68a7b39761c61a66f9299f85b889ec39afc02c"
+      %w[
+        lib/compact_index.rb
+        lib/compact_index/dependency.rb
+        lib/compact_index/gem.rb
+        lib/compact_index/gem_version.rb
+        lib/compact_index/versions_file.rb
+      ].each do |path|
+        url = "https://raw.githubusercontent.com/rubygems/rubygems.org/#{ref}/#{path}"
+        target = target_root.join(path)
+        FileUtils.mkdir_p(File.dirname(target))
+        File.write(target, URI.parse(url).open(&:read))
+      end
     end
 
     def check_source_control_changes(success_message:, error_message:)
