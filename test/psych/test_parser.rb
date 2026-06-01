@@ -198,6 +198,29 @@ module Psych
       assert_called :end_stream
     end
 
+    def test_parse_io_returns_more_bytes_than_requested
+      # An IO-like source whose #read returns more bytes than the size it was
+      # asked for must not overflow libyaml's read buffer.
+      io = Object.new
+      def io.external_encoding; Encoding::UTF_8 end
+      def io.read len
+        return nil if @done
+        @done = true
+        "--- a\n" + ("#" * (len + (1 << 20)))
+      end
+
+      # CRuby clamps the over-read and parses; JRuby's parser rejects the
+      # over-reading IO with an IOError. Either way there is no overflow.
+      begin
+        @parser.parse io
+      rescue IOError
+        return
+      end
+      assert_called :start_stream
+      assert_called :scalar
+      assert_called :end_stream
+    end
+
     def test_syntax_error
       assert_raise(Psych::SyntaxError) do
         @parser.parse("---\n\"foo\"\n\"bar\"\n")

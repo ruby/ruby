@@ -33,8 +33,15 @@ static int io_reader(void * data, unsigned char *buf, size_t size, size_t *read)
 
     if(! NIL_P(string)) {
         void * str = (void *)StringValuePtr(string);
-        *read = (size_t)RSTRING_LEN(string);
-        memcpy(buf, str, *read);
+        size_t len = (size_t)RSTRING_LEN(string);
+
+        /* IO#read(size) is documented to return at most `size` bytes, but a
+         * misbehaving IO-like object may return more. Clamp the copy to the
+         * buffer libyaml gave us to avoid writing past its end. */
+        if(len > size) len = size;
+
+        *read = len;
+        memcpy(buf, str, len);
     }
 
     return 1;
