@@ -123,7 +123,7 @@ mod hir_opt_tests {
             def test(n)
               0 + n + 0
             end
-            test 1; test 2;
+            test 1; test 2
         ");
         assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
@@ -207,7 +207,7 @@ mod hir_opt_tests {
             def test(n)
               n - 0
             end
-            test 1; test 2;
+            test 1; test 2
         ");
         assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
