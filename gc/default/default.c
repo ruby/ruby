@@ -34,9 +34,7 @@
 #include "gc/gc.h"
 #include "gc/gc_impl.h"
 
-#ifndef BUILDING_MODULAR_GC
-# include "probes.h"
-#endif
+#include "probes.h"
 
 #ifdef BUILDING_MODULAR_GC
 # define RB_DEBUG_COUNTER_INC(_name) ((void)0)
@@ -8940,12 +8938,8 @@ gc_prof_timer_stop(rb_objspace_t *objspace)
     }
 }
 
-#ifdef BUILDING_MODULAR_GC
-# define RUBY_DTRACE_GC_HOOK(name)
-#else
-# define RUBY_DTRACE_GC_HOOK(name) \
+#define RUBY_DTRACE_GC_HOOK(name) \
     do {if (RUBY_DTRACE_GC_##name##_ENABLED()) RUBY_DTRACE_GC_##name();} while (0)
-#endif
 
 static inline void
 gc_prof_mark_timer_start(rb_objspace_t *objspace)
