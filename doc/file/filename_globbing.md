@@ -139,6 +139,40 @@ Dir.glob('{R,L,k}*')  # => ["README.ja.md", "README.md", "LEGAL", "kernel.rb"]
 Dir.glob('{k ,L,R}*') # => ["LEGAL", "README.ja.md", "README.md"]
 ```
 
+#### Recursive Directory Matching (`'**'`)
+
+The double-asterisk pattern (`'**'`) matches directories recursively:
+
+```ruby
+# Find all entries everywhere ending with '.ja'.
+Dir.glob('**/*.ja')
+# => ["COPYING.ja", "doc/pty/README.expect.ja", "doc/pty/README.ja"]
+
+# Find all entries everywhere ending with '.rb'.
+Dir.glob('**/*.rb').size    # => 7574
+Dir.glob('**/*.rb').take(3)
+# => ["KNOWNBUGS.rb", "array.rb", "ast.rb"]
+
+# Find all entries in directory 'lib' ending with `.rb'.
+Dir.glob('lib/**/*.rb').size # => 626
+Dir.glob('lib/**/*.rb').take(3)
+# # =>
+# ["lib/English.rb",
+#  "lib/bundled_gems.rb",
+#  "lib/bundler/build_metadata.rb"]
+
+# Find all entries in directory 'test/ruby' ending with '.rb'.
+Dir.glob('test/ruby/**/*.rb').size # => 200
+Dir.glob('test/ruby/**/*.rb').take(3)
+# # =>
+# ["test/ruby/allpairs.rb",
+#  "test/ruby/beginmainend.rb",
+#  "test/ruby/box/a.1_1_0.rb"]
+
+# Escaped.
+Dir.glob('\**/*.rb').take(3) # => []
+```
+
 ### Keyword Argument `flags`
 
 
