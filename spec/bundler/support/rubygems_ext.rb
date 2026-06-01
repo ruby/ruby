@@ -84,26 +84,34 @@ module Spec
     def install_vendored_compact_index
       target_root = Path.tmp_root.join("compact_index")
       require "fileutils"
+      FileUtils.mkdir_p(Path.tmp_root)
 
-      if ENV["COMPACT_INDEX_REF"]
-        FileUtils.rm_rf(target_root)
-      elsif File.exist?(target_root.join("lib/compact_index.rb"))
-        return
-      end
-
-      require "open-uri"
-      ref = ENV["COMPACT_INDEX_REF"] || "7c68a7b39761c61a66f9299f85b889ec39afc02c"
-      %w[
+      files = %w[
         lib/compact_index.rb
         lib/compact_index/dependency.rb
         lib/compact_index/gem.rb
         lib/compact_index/gem_version.rb
         lib/compact_index/versions_file.rb
-      ].each do |path|
-        url = "https://raw.githubusercontent.com/rubygems/rubygems.org/#{ref}/#{path}"
-        target = target_root.join(path)
-        FileUtils.mkdir_p(File.dirname(target))
-        File.write(target, URI.parse(url).open(&:read))
+      ]
+
+      # Serialize installs so parallel test setups don't race on the same
+      # vendor tree, and only skip the download when every file is present so
+      # an interrupted run can't leave a partial copy behind.
+      File.open(Path.tmp_root.join("compact_index.lock"), File::CREAT | File::RDWR) do |lock|
+        lock.flock(File::LOCK_EX)
+
+        FileUtils.rm_rf(target_root) if ENV["COMPACT_INDEX_REF"]
+
+        next if files.all? {|path| File.exist?(target_root.join(path)) }
+
+        require "open-uri"
+        ref = ENV["COMPACT_INDEX_REF"] || "7c68a7b39761c61a66f9299f85b889ec39afc02c"
+        files.each do |path|
+          url = "https://raw.githubusercontent.com/rubygems/rubygems.org/#{ref}/#{path}"
+          target = target_root.join(path)
+          FileUtils.mkdir_p(File.dirname(target))
+          File.write(target, URI.parse(url).open(&:read))
+        end
       end
     end
 
