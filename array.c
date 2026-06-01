@@ -30,6 +30,7 @@
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "ruby/ractor.h"
+#include "shape.h"
 #include "vm_core.h"
 #include "builtin.h"
 
@@ -909,6 +910,7 @@ init_fake_ary_flags(void)
     struct RArray fake_ary = {0};
     fake_ary.basic.flags = T_ARRAY;
     VALUE ary = (VALUE)&fake_ary;
+    RBASIC_SET_SHAPE_ID(ary, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER);
     rb_ary_freeze(ary);
     return fake_ary.basic.flags;
 }

@@ -124,7 +124,7 @@ struct rb_objspace; /* in vm_core.h */
     T *(var) = (T *)rb_ec_newobj_of((ec), (c), (f), s)
 #define NEWOBJ_OF(var, T, c, f, s) EC_NEWOBJ_OF(var, T, c, f, s, GET_EC())
 #define UNPROTECTED_NEWOBJ_OF(var, T, c, f, s) \
-    T *(var) = (T *)rb_newobj((GET_EC()), (c), (f), 0 /* ROOT_SHAPE_ID */, false, s)
+    T *(var) = (T *)rb_newobj((GET_EC()), (c), (f), ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER, false, s)
 
 #ifndef RB_GC_OBJECT_METADATA_ENTRY_DEFINED
 # define RB_GC_OBJECT_METADATA_ENTRY_DEFINED
