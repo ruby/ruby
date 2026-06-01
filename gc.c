@@ -3650,14 +3650,11 @@ rb_gc_copy_attributes(VALUE dest, VALUE obj)
     rb_gc_impl_copy_attributes(rb_gc_get_objspace(), dest, obj);
 }
 
+#if USE_MODULAR_GC
 int
 rb_gc_modular_gc_loaded_p(void)
 {
-#if USE_MODULAR_GC
     return rb_gc_functions.modular_gc_loaded_p;
-#else
-    return false;
-#endif
 }
 
 const char *
@@ -3673,6 +3670,7 @@ rb_gc_active_gc_name(void)
 
     return gc_name;
 }
+#endif
 
 struct rb_gc_object_metadata_entry *
 rb_gc_object_metadata(VALUE obj)
