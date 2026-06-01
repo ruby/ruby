@@ -5965,7 +5965,6 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
 static bool
 gc_marks(rb_objspace_t *objspace, int full_mark)
 {
-    gc_prof_mark_timer_start(objspace);
     gc_marking_enter(objspace);
 
     bool marking_finished = false;
@@ -5986,7 +5985,6 @@ gc_marks(rb_objspace_t *objspace, int full_mark)
 #endif
 
     gc_marking_exit(objspace);
-    gc_prof_mark_timer_stop(objspace);
 
     return marking_finished;
 }
@@ -6882,6 +6880,8 @@ gc_marking_enter(rb_objspace_t *objspace)
 {
     GC_ASSERT(during_gc != 0);
 
+    gc_prof_mark_timer_start(objspace);
+
     if (MEASURE_GC) {
         gc_clock_start(&objspace->profile.marking_start_time);
     }
@@ -6897,6 +6897,8 @@ gc_marking_exit(rb_objspace_t *objspace)
     if (MEASURE_GC) {
         objspace->profile.marking_time_ns += gc_clock_end(&objspace->profile.marking_start_time);
     }
+
+    gc_prof_mark_timer_stop(objspace);
 }
 
 static void
