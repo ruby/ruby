@@ -3458,6 +3458,50 @@ pub(crate) mod hir_build_tests {
     }
 
     #[test]
+    fn test_getblockparamproxy_proc() {
+        eval("
+            val = proc { 1 }
+            def test(&block)
+              0.then(&block)
+            end
+            test(&val)
+        ");
+        assert_contains_opcode("test", YARVINSN_getblockparamproxy);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :block@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :block@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:Fixnum[0] = Const Value(0)
+          v18:CPtr = GetEP 0
+          v19:CUInt64 = LoadField v18, :VM_ENV_DATA_INDEX_FLAGS@0x1001
+          v20:CBool = IsBlockParamModified v19
+          CondBranch v20, bb4(), bb5()
+        bb4():
+          v22:BasicObject = LoadField v18, :block@0x1002
+          Jump bb6(v22, v22)
+        bb5():
+          v24:BasicObject = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
+          v25:BasicObject = CCall v24, :rb_obj_is_proc@0x1008
+          v26:TrueClass = GuardBitEquals v25, Value(true)
+          Jump bb6(v24, v10)
+        bb6(v16:BasicObject, v17:BasicObject):
+          v29:BasicObject = Send v14, &block, :then, v16 # SendFallbackReason: Uncategorized(send)
+          CheckInterrupts
+          Return v29
+        ");
+    }
+
+    #[test]
     fn test_getblockparamproxy_modified() {
         eval("
             def test(&block)
@@ -3620,6 +3664,76 @@ pub(crate) mod hir_build_tests {
           CheckInterrupts
           Return v38
         bb10():
+          SideExit BlockParamProxyProfileNotCovered
+        ");
+    }
+
+    #[test]
+    fn test_getblockparamproxy_polymorphic_none_and_iseq_and_proc() {
+        set_call_threshold(4);
+        eval("
+            val = proc { 3 }
+            def test(&block)
+              0.then(&block)
+            end
+            test
+            test { 1 }
+            test(&val)
+        ");
+        assert_contains_opcode("test", YARVINSN_getblockparamproxy);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :block@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :block@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v14:Fixnum[0] = Const Value(0)
+          v18:CPtr = GetEP 0
+          v19:CUInt64 = LoadField v18, :VM_ENV_DATA_INDEX_FLAGS@0x1001
+          v20:CBool = IsBlockParamModified v19
+          CondBranch v20, bb4(), bb5()
+        bb4():
+          v22:BasicObject = LoadField v18, :block@0x1002
+          Jump bb6(v22, v22)
+        bb5():
+          v24:CInt64 = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
+          Jump bb10()
+        bb10():
+          v26:BasicObject = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
+          v27:BasicObject = CCall v26, :rb_obj_is_proc@0x1008
+          v28:TrueClass = Const Value(true)
+          v29:CBool = IsBitEqual v27, v28
+          CondBranch v29, bb7(), bb11()
+        bb7():
+          Jump bb6(v26, v10)
+        bb11():
+          v32:CInt64[0] = Const CInt64(0)
+          v33:CBool = IsBitEqual v24, v32
+          CondBranch v33, bb8(), bb12()
+        bb8():
+          v35:NilClass = Const Value(nil)
+          Jump bb6(v35, v10)
+        bb12():
+          v37:CInt64[1] = Const CInt64(1)
+          v38:CInt64 = IntAnd v24, v37
+          v39:CBool = IsBitEqual v38, v37
+          CondBranch v39, bb9(), bb13()
+        bb9():
+          v41:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1010))
+          Jump bb6(v41, v10)
+        bb6(v16:BasicObject, v17:BasicObject):
+          v45:BasicObject = Send v14, &block, :then, v16 # SendFallbackReason: Uncategorized(send)
+          CheckInterrupts
+          Return v45
+        bb13():
           SideExit BlockParamProxyProfileNotCovered
         ");
     }
@@ -3850,10 +3964,10 @@ pub(crate) mod hir_build_tests {
           v25:BasicObject = LoadField v21, :b@0x1003
           Jump bb6(v25, v25)
         bb5():
-          v27:CInt64 = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
-          v28:CInt64 = GuardAnyBitSet v27, CUInt64(1)
-          v29:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v29, v13)
+          v27:BasicObject = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
+          v28:BasicObject = CCall v27, :rb_obj_is_proc@0x1008
+          v29:TrueClass = GuardBitEquals v28, Value(true)
+          Jump bb6(v27, v13)
         bb6(v19:BasicObject, v20:BasicObject):
           v32:HashExact = GuardType v12, HashExact
           v34:BasicObject = Send v11, &block, :foo, v32, v19 # SendFallbackReason: Uncategorized(send)
@@ -3894,10 +4008,10 @@ pub(crate) mod hir_build_tests {
           v25:BasicObject = LoadField v21, :b@0x1003
           Jump bb6(v25, v25)
         bb5():
-          v27:CInt64 = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
-          v28:CInt64 = GuardAnyBitSet v27, CUInt64(1)
-          v29:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v29, v13)
+          v27:BasicObject = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
+          v28:BasicObject = CCall v27, :rb_obj_is_proc@0x1008
+          v29:TrueClass = GuardBitEquals v28, Value(true)
+          Jump bb6(v27, v13)
         bb6(v19:BasicObject, v20:BasicObject):
           v32:HashExact = GuardType v12, HashExact
           v34:BasicObject = Send v11, &block, :foo, v32, v19 # SendFallbackReason: Uncategorized(send)

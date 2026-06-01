@@ -549,6 +549,7 @@ pub enum SideExitReason {
     Interrupt,
     BlockParamProxyNotIseqOrIfunc,
     BlockParamProxyNotNil,
+    BlockParamProxyNotProc,
     BlockParamProxyFallbackMiss,
     BlockParamProxyProfileNotCovered,
     BlockParamWbRequired,
@@ -7547,6 +7548,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     enum ProfiledBlockHandlerFamily {
                         Nil,
                         IseqOrIfunc,
+                        Proc,
                     }
                     impl ProfiledBlockHandlerFamily {
                         fn from_profiled_type(profiled_type: ProfiledType) -> Option<Self> {
@@ -7558,6 +7560,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                                     || rb_IMEMO_TYPE_P(obj, imemo_ifunc) == 1
                             } {
                                 Some(Self::IseqOrIfunc)
+                            } else if unsafe { rb_obj_is_proc(obj).test() } {
+                                Some(Self::Proc)
                             } else {
                                 None
                             }
@@ -7593,9 +7597,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     if level == 0 { modified_args.push(modified_val); }
                     fun.push_insn(modified_block, Insn::Jump(BranchEdge { target: join_block, args: modified_args }));
 
-                    // Push unmodified block: inspect the current block handler to
-                    // decide whether this path returns `nil` or `BlockParamProxy`.
-                    let block_handler = fun.push_insn(unmodified_block, Insn::LoadField { recv: ep, id: FieldName::VM_ENV_DATA_INDEX_SPECVAL, offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, return_type: types::CInt64 });
                     let original_local = if level == 0 { Some(state.getlocal(ep_offset)) } else { None };
                     // `block_handler & 1 == 1` accepts both ISEQ (0b01) and ifunc
                     // (0b11) handlers. Keep a compile-time check that this shortcut
@@ -7627,6 +7628,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         // No supported profiled families. Keep the generic fallback iseq/ifunc fallback
                         // for sites we do not specialize, such as no-profile and megamorphic sites.
                         [] => {
+                            let block_handler = fun.push_insn(unmodified_block, Insn::LoadField { recv: ep, id: FieldName::VM_ENV_DATA_INDEX_SPECVAL, offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, return_type: types::CInt64 });
                             // This handles two cases which are nearly identical.
                             // Block handler is a tagged pointer. Look at the tag.
                             //   VM_BH_ISEQ_BLOCK_P(): block_handler & 0x03 == 0x01
@@ -7646,6 +7648,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         // A single supported profiled family. Emit a monomorphic fast path
                         [profiled_handler] => match profiled_handler {
                             ProfiledBlockHandlerFamily::Nil => {
+                                let block_handler = fun.push_insn(unmodified_block, Insn::LoadField { recv: ep, id: FieldName::VM_ENV_DATA_INDEX_SPECVAL, offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, return_type: types::CInt64 });
                                 fun.push_insn(unmodified_block, Insn::GuardBitEquals { val: block_handler, expected: Const::CInt64(VM_BLOCK_HANDLER_NONE.into()), reason: SideExitReason::BlockParamProxyNotNil, state: exit_id, recompile: None });
                                 let nil_val = fun.push_insn(unmodified_block, Insn::Const { val: Const::Value(Qnil) });
                                 let mut args = vec![nil_val];
@@ -7655,6 +7658,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                                 fun.push_insn(unmodified_block, Insn::Jump(BranchEdge { target: join_block, args }));
                             }
                             ProfiledBlockHandlerFamily::IseqOrIfunc => {
+                                let block_handler = fun.push_insn(unmodified_block, Insn::LoadField { recv: ep, id: FieldName::VM_ENV_DATA_INDEX_SPECVAL, offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, return_type: types::CInt64 });
                                 // This handles two cases which are nearly identical.
                                 // Block handler is a tagged pointer. Look at the tag.
                                 //   VM_BH_ISEQ_BLOCK_P(): block_handler & 0x03 == 0x01
@@ -7671,9 +7675,28 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                                 }
                                 fun.push_insn(unmodified_block, Insn::Jump(BranchEdge { target: join_block, args }));
                             }
+                            ProfiledBlockHandlerFamily::Proc => {
+                                let proc_val = fun.push_insn(unmodified_block, Insn::LoadField { recv: ep, id: FieldName::VM_ENV_DATA_INDEX_SPECVAL, offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, return_type: types::BasicObject });
+                                let is_proc = fun.push_insn(unmodified_block, Insn::CCall {
+                                    cfunc: rb_obj_is_proc as *const u8,
+                                    recv: proc_val,
+                                    args: vec![],
+                                    name: ID!(rb_obj_is_proc),
+                                    owner: Qnil,
+                                    return_type: types::BasicObject,
+                                    elidable: true,
+                                });
+                                fun.push_insn(unmodified_block, Insn::GuardBitEquals { val: is_proc, expected: Const::Value(Qtrue), reason: SideExitReason::BlockParamProxyNotProc, state: exit_id, recompile: None });
+                                let mut args = vec![proc_val];
+                                if let Some(local) = original_local {
+                                    args.push(local);
+                                }
+                                fun.push_insn(unmodified_block, Insn::Jump(BranchEdge { target: join_block, args }));
+                            }
                         },
                         // Multiple supported profiled families. Emit a polymorphic dispatch
                         _ => {
+                            let block_handler = fun.push_insn(unmodified_block, Insn::LoadField { recv: ep, id: FieldName::VM_ENV_DATA_INDEX_SPECVAL, offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, return_type: types::CInt64 });
                             let profiled_blocks = profiled_handlers.iter()
                             .map(|&kind| (kind, fun.new_block(branch_insn_idx)))
                             .collect::<Vec<_>>();
@@ -7736,6 +7759,34 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                                         if let Some(local) = original_local { args.push(local); }
                                         fun.push_insn(profiled_block, Insn::Jump(BranchEdge { target: join_block, args }));
                                     },
+                                    ProfiledBlockHandlerFamily::Proc => {
+                                        let proc_check_block = fun.new_block(branch_insn_idx);
+                                        let next_block = fun.new_block(branch_insn_idx);
+                                        fun.push_insn(current_block, Insn::Jump(BranchEdge { target: proc_check_block, args: vec![] }));
+
+                                        let proc_val = fun.push_insn(proc_check_block, Insn::LoadField { recv: ep, id: FieldName::VM_ENV_DATA_INDEX_SPECVAL, offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, return_type: types::BasicObject });
+                                        let proc_result = fun.push_insn(proc_check_block, Insn::CCall {
+                                            cfunc: rb_obj_is_proc as *const u8,
+                                            recv: proc_val,
+                                            args: vec![],
+                                            name: ID!(rb_obj_is_proc),
+                                            owner: Qnil,
+                                            return_type: types::BasicObject,
+                                            elidable: true,
+                                        });
+                                        let true_val = fun.push_insn(proc_check_block, Insn::Const { val: Const::Value(Qtrue) });
+                                        let is_proc = fun.push_insn(proc_check_block, Insn::IsBitEqual { left: proc_result, right: true_val });
+                                        fun.push_insn(proc_check_block, Insn::CondBranch {
+                                            val: is_proc,
+                                            if_true: BranchEdge { target: profiled_block, args: vec![] },
+                                            if_false: BranchEdge { target: next_block, args: vec![] },
+                                        });
+                                        current_block = next_block;
+
+                                        let mut args = vec![proc_val];
+                                        if let Some(local) = original_local { args.push(local); }
+                                        fun.push_insn(profiled_block, Insn::Jump(BranchEdge { target: join_block, args }));
+                                    }
                                 }
                             }
 
