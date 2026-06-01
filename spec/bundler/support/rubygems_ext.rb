@@ -79,14 +79,19 @@ module Spec
 
     # Vendor `rubygems/rubygems.org#lib/compact_index/` under `tmp/compact_index/`
     # so the artifice can serve compact-index responses without a runtime gem
-    # dependency. Pinned to a reviewed commit; override with COMPACT_INDEX_REF.
+    # dependency. Pinned to a reviewed commit; override with COMPACT_INDEX_REF
+    # to refresh against another ref (the existing vendor copy is discarded).
     def install_vendored_compact_index
       target_root = Path.tmp_root.join("compact_index")
-      return if File.exist?(target_root.join("lib/compact_index.rb"))
-
-      require "open-uri"
       require "fileutils"
 
+      if ENV["COMPACT_INDEX_REF"]
+        FileUtils.rm_rf(target_root)
+      elsif File.exist?(target_root.join("lib/compact_index.rb"))
+        return
+      end
+
+      require "open-uri"
       ref = ENV["COMPACT_INDEX_REF"] || "7c68a7b39761c61a66f9299f85b889ec39afc02c"
       %w[
         lib/compact_index.rb
