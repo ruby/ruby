@@ -151,9 +151,6 @@ any of which matches a single character:
 File.fnmatch('[a-c]', 'b')           # => true
 File.fnmatch('[a-c]', 'd')           # => false
 File.fnmatch('[a-c]', 'abc')         # => false
-File.fnmatch('*[a-c]', 'abc')        # => true
-File.fnmatch('[a-c]*', 'abc')        # => true
-File.fnmatch('*[a-c]*', 'abc')       # => true
 File.fnmatch('R[t-v][a-c]y', 'Ruby') # => true   # Multiple ranges allowed.
 File.fnmatch('\[a-c]', 'b')          # => false  # Escaped.
 ```
