@@ -465,6 +465,23 @@ module Gem
     Resolver::APISet::GemParser.prepend(UnfreezeCompactIndexParsedResponse)
   end
 
+  # RubyGems before 4.0.13 split compact index dependency/requirement entries
+  # on every colon, which mangles metadata values that contain colons such as
+  # the `created_at` timestamps the cooldown feature relies on. Split only on
+  # the first colon so those values survive on older RubyGems.
+  unless Gem.rubygems_version >= Gem::Version.new("4.0.13")
+    module SplitCompactIndexEntryOnFirstColon
+      def parse_dependency(string)
+        dependency = string.split(":", 2)
+        dependency[-1] = dependency[-1].split("&") if dependency.size > 1
+        dependency[0] = -dependency[0]
+        dependency
+      end
+    end
+
+    Resolver::APISet::GemParser.prepend(SplitCompactIndexEntryOnFirstColon)
+  end
+
   if Gem.rubygems_version < Gem::Version.new("3.6.0")
     class Package; end
     require "rubygems/package/tar_reader"
