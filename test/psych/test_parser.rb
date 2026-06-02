@@ -221,6 +221,25 @@ module Psych
       assert_called :end_stream
     end
 
+    def test_parse_io_returns_more_bytes_than_requested_multibyte
+      # The over-read is rounded down to a character boundary so a multibyte
+      # character is never split when the copy is clamped.
+      io = Object.new
+      def io.external_encoding; Encoding::UTF_8 end
+      def io.read len
+        return nil if @done
+        @done = true
+        "--- a\n#" + ("あ" * (len + (1 << 20)))
+      end
+
+      begin
+        @parser.parse io
+      rescue IOError
+        return
+      end
+      assert_called :scalar
+    end
+
     def test_syntax_error
       assert_raise(Psych::SyntaxError) do
         @parser.parse("---\n\"foo\"\n\"bar\"\n")
