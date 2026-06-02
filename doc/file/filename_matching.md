@@ -27,11 +27,14 @@ see the sections below for details:
 |           `'?'`          | Matches any single character.              | `'?.txt'`                    |
 | `'[abc]'`,<br>`'[^abc]'` | Matches a single character from a set.     | `'x[abc]y'`,<br>`'x[^abc]y'` |
 | `'[a-z]`',<br>`'[^a-z]'` | Matches a single character from a range.   | `'x[0-9]y'`,<br>`'x[^0-9]y'` |
-|          `'**'`          | Matches a directory-like substring.        | `'**/test.rb'`               |
 |          `'\'`           | Escapes the next character.                | `'\\*'`, `'\?'`              |
 
-There is one other pattern, for alternatives, that is disabled by default;
-see [`File::FNM_EXTGLOB`](#constant-filefnmextglob) below.
+There are two other patterns that are disabled by default:
+
+- Directory-like substring (`'**'`);
+  see [`File::FNM_PATHNAME`](#constant-filefnmpathname) below.
+- Alternatives (`'{ , }'`);
+  see [`File::FNM_EXTGLOB`](#constant-filefnmextglob) below.
 
 #### Simple \String
 
@@ -162,18 +165,6 @@ File.fnmatch('[^a-c]', 'b') # => false
 File.fnmatch('[^a-c]', 'd') # => true
 ```
 
-#### Directory-Like Substring (`'**'`)
-
-The double-asterisk pattern (`'**'`) matches any sequence of directory-like substrings;
-unless flag [`File::FNM_PATHNAME`](#constant-filefnmpathname) is given,
-the pattern is equivalent to pattern `'*'`:
-
-```ruby
-File.fnmatch('*', 'a/b/c')                        # => true
-File.fnmatch('*', 'a/b/c', File::FNM_PATHNAME)    # => false
-File.fnmatch('**/*', 'a/b/c', File::FNM_PATHNAME) # => true
-```
-
 #### Escape (`'\'`)
 
 The backslash character (`'\'`) may be used to escape any of the characters
@@ -283,7 +274,27 @@ File.fnmatch('\*\?\*\*', '*?**', File::FNM_NOESCAPE) # => false
 
 #### Constant File::FNM_PATHNAME
 
-By default, filename matching enables patterns `'*'` and `'?'` to match
+Flag [`File::FNM_PATHNAME`](#constant-filefnmpathname) affects
+patterns `'**'`, `'*'`, and `'?'`.
+
+By default, the double-asterisk pattern (`'**'`) is equivalent to pattern `'*'`,
+and matches any sequence of directory-like substrings:
+
+```ruby
+File.fnmatch('**', 'a/b/c') # => true
+File.fnmatch('*', 'a/b/c')  # => true
+```
+
+When flag [`File::FNM_PATHNAME`](#constant-filefnmpathname) is given,
+the pattern matches only
+
+```ruby
+File.fnmatch('**', 'a/b/c')                       # => true   # Matches 'a/b/c'.
+File.fnmatch('**', 'a/b/c', File::FNM_PATHNAME)   # => false  # Matches only 'a'.
+File.fnmatch('**/*', 'a/b/c', File::FNM_PATHNAME) # => true   # Matches 'a', then 'b/c'.
+```
+
+By default, filename matching enables pattern `'*'` to match
 at or across the file separator (`File::SEPARATOR`);
 use constant [`File::FNM_PATHNAME`](#constant-filefnmpathname)
 to disable such matching:
@@ -292,6 +303,14 @@ to disable such matching:
 File::SEPARATOR                                          # => "/"
 File.fnmatch('*.rb', 'lib/test.rb')                      # => true
 File.fnmatch('*.rb', 'lib/test.rb', File::FNM_PATHNAME)  # => false
+```
+
+By default, filename matching enables pattern `'?'` to match
+at or across the file separator (`File::SEPARATOR`);
+use constant [`File::FNM_PATHNAME`](#constant-filefnmpathname)
+to disable such matching:
+
+```ruby
 File.fnmatch('foo?boo', 'foo/boo')                       # => true
 File.fnmatch('foo?boo', 'foo/boo', File::FNM_PATHNAME)   # => false
 ```
