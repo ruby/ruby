@@ -220,7 +220,7 @@ Optional keyword argument `flags` (defaults to `0`) may be the bitwise OR
 of the constants `File::FNM*`:
 
 ```ruby
-Dir.glob('*', flags: File::FNM_DOTMATCH || File::FNM_NOESCAPE)
+Dir.glob('*', flags: File::FNM_DOTMATCH | File::FNM_NOESCAPE)
 ```
 
 These are the constants for filename-globbing patterns;
