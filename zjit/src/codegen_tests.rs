@@ -2286,6 +2286,36 @@ fn test_fixnum_floor() {
 }
 
 #[test]
+fn test_fixnum_mod() {
+    eval("
+        def test(a, b) = a % b
+        test(13, 4) # profile opt_mod
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_mod);
+    assert_snapshot!(assert_compiles("[test(13, 4), test(13, 13), test(5, 7)]"), @"[1, 0, 5]");
+}
+
+#[test]
+fn test_fixnum_mod_negative() {
+    eval("
+        def test(a, b) = a % b
+        test(7, 3) # profile opt_mod
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_mod);
+    assert_snapshot!(assert_compiles("[test(-7, 3), test(7, -3), test(-7, -3)]"), @"[2, -2, -1]");
+}
+
+#[test]
+fn test_fixnum_mod_by_zero() {
+    eval("
+        def test(a, b) = a % b rescue :zero_div
+        test(13, 4) # profile opt_mod
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_mod);
+    assert_snapshot!(assert_compiles_allowing_exits("test(13, 0)"), @":zero_div");
+}
+
+#[test]
 fn test_opt_not() {
     eval("
         def test(obj) = !obj
