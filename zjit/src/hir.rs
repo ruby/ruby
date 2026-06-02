@@ -2955,7 +2955,9 @@ impl Function {
             Insn::FixnumAdd  { .. } => types::Fixnum,
             Insn::FixnumSub  { .. } => types::Fixnum,
             Insn::FixnumMult { .. } => types::Fixnum,
-            Insn::FixnumDiv  { .. } => types::Fixnum,
+            // FIXNUM_MIN / -1 overflows to a Bignum, so the result is Integer, not Fixnum.
+            // Downstream Fixnum ops insert their own GuardType(Fixnum)
+            Insn::FixnumDiv  { .. } => types::Integer,
             Insn::FixnumMod  { .. } => types::Fixnum,
             Insn::FloatAdd   { .. } => types::Float,
             Insn::FloatSub   { .. } => types::Float,
