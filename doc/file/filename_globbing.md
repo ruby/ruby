@@ -242,7 +242,7 @@ These constants do not affect filename globbing:
 
 #### Constant File::FNM_DOTMATCH
 
-By default, filename globbing does not allow pattern `'*'` to match a dotfile name
+By default, filename globbing does not allow pattern `'*'` and `'?'` to match a dotfile name
 (i.e, an entry name beginning with a dot);
 use constant [`File::FNM_DOTMATCH`](#constant-filefnmdotmatch)
 to enable the match:
