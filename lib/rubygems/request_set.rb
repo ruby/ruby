@@ -234,10 +234,6 @@ class Gem::RequestSet
       sorted_requests.each do |spec|
         puts "  #{spec.full_name}"
       end
-
-      if Gem.configuration.really_verbose
-        @resolver.stats.display
-      end
     else
       installed = install options, &block
 
