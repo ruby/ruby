@@ -99,7 +99,7 @@ mod snapshot_tests {
             test
             test
         ");
-        assert_snapshot!(optimized_hir_string("test"), @"
+        assert_snapshot!(optimized_hir_string("test"), @r"
         fn test@<compiled>:3:
         bb0():
           Entries bb1, bb2
@@ -120,7 +120,7 @@ mod snapshot_tests {
           v16:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13, v15], locals: [] }
           v23:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v13, v15, v11], locals: [] }
           PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
-          v25:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)]
+          v25:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
           v26:BasicObject = SendDirect v25, 0x1048, :foo (0x1058), v13, v15, v11
           v18:Any = Snapshot FrameState { pc: 0x1060, stack: [v26], locals: [] }
           PatchPoint NoTracePoint
@@ -137,7 +137,7 @@ mod snapshot_tests {
             test
             test
         ");
-        assert_snapshot!(optimized_hir_string("test"), @"
+        assert_snapshot!(optimized_hir_string("test"), @r"
         fn test@<compiled>:3:
         bb0():
           Entries bb1, bb2
@@ -156,7 +156,7 @@ mod snapshot_tests {
           v13:Fixnum[2] = Const Value(2)
           v14:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13], locals: [] }
           PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
-          v22:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)]
+          v22:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
           v23:BasicObject = SendDirect v22, 0x1048, :foo (0x1058), v11, v13
           v16:Any = Snapshot FrameState { pc: 0x1060, stack: [v23], locals: [] }
           PatchPoint NoTracePoint
