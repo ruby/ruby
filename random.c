@@ -566,20 +566,14 @@ fill_random_bytes_lib(void *buf, size_t size)
 static const HCRYPTPROV INVALID_HCRYPTPROV = (HCRYPTPROV)INVALID_HANDLE_VALUE;
 
 static void
-release_crypt(void *p)
+release_crypt(VALUE arg)
 {
-    HCRYPTPROV *ptr = p;
+    HCRYPTPROV *ptr = (void *)arg;
     HCRYPTPROV prov = (HCRYPTPROV)ATOMIC_PTR_EXCHANGE(*ptr, INVALID_HCRYPTPROV);
     if (prov && prov != INVALID_HCRYPTPROV) {
         CryptReleaseContext(prov, 0);
     }
 }
-
-static const rb_data_type_t crypt_prov_type = {
-    "HCRYPTPROV",
-    {0, release_crypt,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
-};
 
 static int
 fill_random_bytes_crypt(void *seed, size_t size)
@@ -587,15 +581,14 @@ fill_random_bytes_crypt(void *seed, size_t size)
     static HCRYPTPROV perm_prov;
     HCRYPTPROV prov = perm_prov, old_prov;
     if (!prov) {
-        VALUE wrapper = TypedData_Wrap_Struct(0, &crypt_prov_type, 0);
         if (!CryptAcquireContext(&prov, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
             prov = INVALID_HCRYPTPROV;
         }
         old_prov = (HCRYPTPROV)ATOMIC_PTR_CAS(perm_prov, 0, prov);
         if (LIKELY(!old_prov)) { /* no other threads acquired */
             if (prov != INVALID_HCRYPTPROV) {
-                DATA_PTR(wrapper) = (void *)prov;
-                rb_vm_register_global_object(wrapper);
+                /* register only once; perm_prov == 0 at the first call only */
+                rb_set_end_proc(release_crypt, (VALUE)&perm_prov);
             }
         }
         else {			/* another thread acquired */
