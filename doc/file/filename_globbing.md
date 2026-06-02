@@ -94,6 +94,14 @@ Dir.glob('?')   # => []      # No entries with a 1-character name.
 Dir.glob('\?')  # => []      # No entries containing character '?'.
 ```
 
+By default, the question-mark pattern does not match a leading period (as in a dot-file):
+
+```ruby
+Dir.glob('?').select {|entry| entry.start_with?('.') } # => []
+```
+
+That matching may be enabled by flag [`File::FNM_DOTMATCH`](#constant-filefnmdotmatch).
+
 ### Single Character from a Set (`'[abc]'`, `'[^abc]'`)
 
 Characters enclosed in square brackets define a set of characters,
@@ -227,11 +235,11 @@ These are the constants for filename-globbing patterns;
 see the sections below for details:
 
 
-| Constant                                            | Meaning                                                     |
-|-----------------------------------------------------|-------------------------------------------------------------|
-| [`File::FNM_DOTMATCH`](#constant-filefnmdotmatch)   | Make pattern `'*'` match a leading period..                   |
-| [`File::FNM_NOESCAPE`](#constant-filefnmnoescape)   | Disable escaping.                                           |
-| [`File::FNM_SHORTNAME`](#constant-filefnmshortname) | Enable short-name matching (Windows only).                  |
+| Constant                                            | Meaning                                    |
+|-----------------------------------------------------|--------------------------------------------|
+| [`File::FNM_DOTMATCH`](#constant-filefnmdotmatch)   | Make pattern `'*'` match a leading period. |
+| [`File::FNM_NOESCAPE`](#constant-filefnmnoescape)   | Disable escaping.                          |
+| [`File::FNM_SHORTNAME`](#constant-filefnmshortname) | Enable short-name matching (Windows only). |
 
 These constants do not affect filename globbing:
 
@@ -242,7 +250,7 @@ These constants do not affect filename globbing:
 
 #### Constant File::FNM_DOTMATCH
 
-By default, filename globbing does not allow pattern `'*'` and `'?'` to match a dotfile name
+By default, filename globbing does not allow patterns `'*'` and `'?'` to match a dotfile name
 (i.e, an entry name beginning with a dot);
 use constant [`File::FNM_DOTMATCH`](#constant-filefnmdotmatch)
 to enable the match:
