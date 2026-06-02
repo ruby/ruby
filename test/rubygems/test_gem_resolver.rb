@@ -991,4 +991,99 @@ class TestGemResolver < Gem::TestCase
     # With soft_missing (--force), the dep should be skipped.
     assert_resolves_to [a], r
   end
+
+  def test_backtracks_to_clean_sibling_when_higher_version_has_missing_dep
+    a1 = util_spec "a", "1"
+    a2 = util_spec "a", "2" do |s|
+      s.add_dependency "zzz", ">= 1"
+    end
+
+    r = Gem::Resolver.new([make_dep("a")], set(a1, a2))
+
+    # 'zzz' has zero specs anywhere, so a-2 is unusable, but a-1 is clean
+    # and resolution must backtrack to it rather than declaring every
+    # version of 'a' invalid.
+    assert_resolves_to [a1], r
+  end
+
+  def test_backtracks_over_band_of_bad_high_versions_to_clean_lower
+    a1 = util_spec "a", "1"
+    a2 = util_spec "a", "2" do |s|
+      s.add_dependency "zzz", ">= 1"
+    end
+    a3 = util_spec "a", "3" do |s|
+      s.add_dependency "zzz", ">= 1"
+    end
+
+    r = Gem::Resolver.new([make_dep("a")], set(a1, a2, a3))
+
+    # Only the a-2..a-3 band shares the missing 'zzz' dep and should be
+    # eliminated; band scoping is load-bearing here, not just sibling
+    # presence.
+    assert_resolves_to [a1], r
+  end
+
+  def test_backtracks_when_one_of_several_deps_is_missing
+    good = util_spec "good", "1"
+    a1 = util_spec "a", "1" do |s|
+      s.add_dependency "good", ">= 1"
+    end
+    a2 = util_spec "a", "2" do |s|
+      s.add_dependency "good", ">= 1"
+      s.add_dependency "zzz", ">= 1"
+    end
+
+    r = Gem::Resolver.new([make_dep("a")], set(a1, a2, good))
+
+    # Only a-2, which carries the missing 'zzz' dep, is eliminated; the
+    # per-dep check inside a multi-dep version must not poison a-1.
+    assert_resolves_to [a1, good], r
+  end
+
+  def test_fails_when_every_version_depends_on_missing_package
+    a1 = util_spec "a", "1" do |s|
+      s.add_dependency "zzz", ">= 1"
+    end
+    a2 = util_spec "a", "2" do |s|
+      s.add_dependency "zzz", ">= 1"
+    end
+
+    r = Gem::Resolver.new([make_dep("a")], set(a1, a2))
+
+    e = assert_raise Gem::DependencyResolutionError do
+      r.resolve
+    end
+
+    assert_match(/every version of a depends on unknown package zzz/, e.message)
+  end
+
+  def test_resolves_when_only_lowest_version_has_missing_dep
+    a1 = util_spec "a", "1" do |s|
+      s.add_dependency "zzz", ">= 1"
+    end
+    a2 = util_spec "a", "2"
+
+    r = Gem::Resolver.new([make_dep("a")], set(a1, a2))
+
+    # a-2 is preferred/tried first, so this is already green; it guards
+    # against the bug being re-introduced in an order-sensitive way.
+    assert_resolves_to [a2], r
+  end
+
+  def test_filtered_platform_dep_lets_clean_sibling_backtrack
+    a1 = util_spec "a", "1"
+    a2 = util_spec "a", "2" do |s|
+      s.add_dependency "b", ">= 1.0"
+    end
+    b_java = util_spec "b", "1.0" do |s|
+      s.platform = "java"
+    end
+
+    r = Gem::Resolver.new([make_dep("a")], set(a1, a2, b_java))
+
+    # 'b' EXISTS in the unfiltered specs but is platform-filtered, so a-2
+    # is unusable via NoVersions (not InvalidDependency). Resolution must
+    # backtrack to the clean a-1 rather than eliminating it.
+    assert_resolves_to [a1], r
+  end
 end

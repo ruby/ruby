@@ -235,19 +235,6 @@ class Gem::Resolver
     package_deps[version].filter_map do |dep_package_name, dep_constraint|
       dep_package = dep_constraint.package
 
-      # If no specs exist at all for this dependency (not even for other
-      # platforms or Ruby versions), mark this version as invalid.
-      # When specs exist but were filtered out, let PubGrub discover it
-      # via NoVersions so platform/ruby hints are generated.
-      if @unfiltered_specs[dep_package_name].empty?
-        self_constraint = Gem::PubGrub::VersionConstraint.new(package, range: Gem::PubGrub::VersionRange.any)
-        cause = Gem::PubGrub::Incompatibility::InvalidDependency.new(dep_package, dep_constraint)
-        return [Gem::PubGrub::Incompatibility.new(
-          [Gem::PubGrub::Term.new(self_constraint, true)],
-          cause: cause
-        )]
-      end
-
       low = high = @version_to_index[package][version]
 
       # find version low such that all >= low share the same dep
@@ -277,21 +264,25 @@ class Gem::Resolver
       range = Gem::PubGrub::VersionRange.new(min: low, max: high, include_min: !low.nil?)
       self_constraint = Gem::PubGrub::VersionConstraint.new(package, range: range)
 
+      # No specs anywhere means an unknown package. Check @unfiltered_specs, not
+      # the filtered set, so a dep filtered out by platform/Ruby/prerelease falls
+      # through to NoVersions for proper hints instead. The band-scoped
+      # self_constraint lets clean sibling versions still resolve via backtracking.
+      if @unfiltered_specs[dep_package_name].empty?
+        cause = Gem::PubGrub::Incompatibility::InvalidDependency.new(dep_package, dep_constraint)
+        return [Gem::PubGrub::Incompatibility.new(
+          [Gem::PubGrub::Term.new(self_constraint, true)],
+          cause: cause
+        )]
+      end
+
+      # An empty range means the requirement is self-contradictory (e.g. `> 2, < 1`).
       if dep_constraint.range.empty?
-        if @unfiltered_specs[dep_package_name].any?
-          # Package exists but requirement is self-contradictory
-          return [Gem::Resolver::Incompatibility.new(
-            [Gem::PubGrub::Term.new(self_constraint, true)],
-            cause: Gem::PubGrub::Incompatibility::NoVersions.new(dep_constraint),
-            custom_explanation: "#{dep_package_name} cannot satisfy contradictory requirements #{dep_constraint.constraint_string}"
-          )]
-        else
-          cause = Gem::PubGrub::Incompatibility::InvalidDependency.new(dep_package, dep_constraint)
-          return [Gem::PubGrub::Incompatibility.new(
-            [Gem::PubGrub::Term.new(self_constraint, true)],
-            cause: cause
-          )]
-        end
+        return [Gem::Resolver::Incompatibility.new(
+          [Gem::PubGrub::Term.new(self_constraint, true)],
+          cause: Gem::PubGrub::Incompatibility::NoVersions.new(dep_constraint),
+          custom_explanation: "#{dep_package_name} cannot satisfy contradictory requirements #{dep_constraint.constraint_string}"
+        )]
       end
 
       Gem::PubGrub::Incompatibility.new(
