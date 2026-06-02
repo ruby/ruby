@@ -159,6 +159,17 @@ define_split_jumps! {
     jz => Jz,
 }
 
+/// Record on the ISEQ payload whether `self` is guaranteed to be a heap object,
+/// derived from the owning class of the method entry on `cfp`. Called from compile
+/// triggers before the HIR is built so the `self`-producing instructions can be
+/// typed precisely. Must be called while holding the VM lock (it writes the payload).
+fn update_self_is_heap_object(iseq: IseqPtr, cfp: CfpPtr) {
+    let cme = unsafe { rb_vm_frame_method_entry(cfp) };
+    let self_is_heap_object = !cme.is_null()
+        && iseq_self_is_heap_object(iseq, unsafe { (*cme).owner });
+    get_or_create_iseq_payload(iseq).self_is_heap_object = self_is_heap_object;
+}
+
 /// CRuby API to compile a given ISEQ.
 /// If jit_exception is true, compile JIT code for handling exceptions.
 /// See jit_compile_exception() for details.
@@ -173,6 +184,10 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exc
     // Take a lock to avoid writing to ISEQ in parallel with Ractors.
     // with_vm_lock() does nothing if the program doesn't use Ractors.
     with_vm_lock(src_loc!(), || {
+        // The current frame is this ISEQ's method frame, so its method entry tells
+        // us the owning class and thus whether `self` is always a heap object.
+        update_self_is_heap_object(iseq, unsafe { get_ec_cfp(ec) });
+
         let cb = ZJITState::get_code_block();
         let mut code_ptr = with_time_stat(compile_time_ns, || gen_iseq_entry_point(cb, iseq, jit_exception));
 
@@ -3152,6 +3167,11 @@ c_callable! {
             let cb = ZJITState::get_code_block();
             let native_stack_full = unsafe { rb_ec_stack_check(ec as _) } != 0;
             let payload = get_or_create_iseq_payload(iseq);
+            // cfp is the callee's (this ISEQ's) frame here, so its method entry gives
+            // the owning class and thus whether `self` is always a heap object.
+            let cme = unsafe { rb_vm_frame_method_entry(cfp) };
+            payload.self_is_heap_object = !cme.is_null()
+                && iseq_self_is_heap_object(iseq, unsafe { (*cme).owner });
             let last_status = payload.versions.last().map(|version| &unsafe { version.as_ref() }.status);
             let compile_error = match last_status {
                 Some(IseqStatus::CantCompile(err)) => Some(err),

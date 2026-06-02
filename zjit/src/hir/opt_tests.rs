@@ -371,7 +371,7 @@ mod hir_opt_tests {
           v10:Fixnum[7] = Const Value(7)
           v12:Fixnum[0] = Const Value(0)
           PatchPoint MethodRedefined(Integer@0x1000, /@0x1008, cme:0x1010)
-          v23:Fixnum = FixnumDiv v10, v12
+          v23:Integer = FixnumDiv v10, v12
           CheckInterrupts
           Return v23
         ");
@@ -425,7 +425,7 @@ mod hir_opt_tests {
           v10:Fixnum[-4611686018427387904] = Const Value(-4611686018427387904)
           v12:Fixnum[-1] = Const Value(-1)
           PatchPoint MethodRedefined(Integer@0x1000, /@0x1008, cme:0x1010)
-          v23:Fixnum = FixnumDiv v10, v12
+          v23:Integer = FixnumDiv v10, v12
           CheckInterrupts
           Return v23
         ");
@@ -2916,7 +2916,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Integer@0x1008, /@0x1010, cme:0x1018)
           v32:Fixnum = GuardType v12, Fixnum
           v33:Fixnum = GuardType v13, Fixnum
-          v34:Fixnum = FixnumDiv v32, v33
+          v34:Integer = FixnumDiv v32, v33
           v24:Fixnum[5] = Const Value(5)
           CheckInterrupts
           Return v24
@@ -7696,16 +7696,15 @@ mod hir_opt_tests {
         fn foo@<compiled>:7:
         bb1():
           EntryPoint interpreter
-          v1:BasicObject = LoadSelf
+          v1:HeapBasicObject = LoadSelf
           Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v4:BasicObject = LoadArg :self@0
+          v4:HeapBasicObject = LoadArg :self@0
           Jump bb3(v4)
-        bb3(v6:BasicObject):
+        bb3(v6:HeapBasicObject):
           PatchPoint SingleRactorMode
-          v11:HeapBasicObject = GuardType v6, HeapBasicObject
-          v12:CUInt64 = LoadField v11, :RBASIC_FLAGS@0x1000
+          v12:CUInt64 = LoadField v6, :RBASIC_FLAGS@0x1000
           v14:CUInt64[0xffffffff0000001f] = Const CUInt64(0xffffffff0000001f)
           v15:CPtr[CPtr(0x1001)] = Const CPtr(0x1001)
           v16 = RefineType v15, CUInt64
@@ -7713,7 +7712,7 @@ mod hir_opt_tests {
           v18:CBool = IsBitEqual v17, v16
           CondBranch v18, bb5(), bb6()
         bb5():
-          v20:BasicObject = LoadField v11, :@foo@0x1002
+          v20:BasicObject = LoadField v6, :@foo@0x1002
           Jump bb4(v20)
         bb6():
           v22:CUInt64[0xffffffff0000001f] = Const CUInt64(0xffffffff0000001f)
@@ -7723,14 +7722,271 @@ mod hir_opt_tests {
           v26:CBool = IsBitEqual v25, v24
           CondBranch v26, bb7(), bb8()
         bb7():
-          v28:BasicObject = LoadField v11, :@foo@0x1004
+          v28:BasicObject = LoadField v6, :@foo@0x1004
           Jump bb4(v28)
         bb8():
-          v30:BasicObject = GetIvar v11, :@foo
+          v30:BasicObject = GetIvar v6, :@foo
           Jump bb4(v30)
         bb4(v13:BasicObject):
           CheckInterrupts
           Return v13
+        ");
+    }
+
+    // The following tests pin down the soundness boundary of the `self:
+    // HeapBasicObject` inference (see `iseq_self_is_heap_object`). A `def` method
+    // gets `self: HeapBasicObject` only when its owning class can never produce an
+    // immediate receiver. For each class below, `self` must stay `BasicObject`:
+    // the six immediate classes have no default allocator, and Object/BasicObject/
+    // Numeric use the default allocator but are ancestors of immediates (caught by
+    // the Integer kind_of check). Each test reopens the class, compiles the method
+    // (call threshold is 30), then checks the resulting `self` type.
+
+    #[test]
+    fn test_self_not_heap_object_owner_integer() {
+        eval("
+            class Integer
+              def probe = @foo
+            end
+            100.times { 5.probe }
+        ");
+        assert_snapshot!(hir_string_proc("5.method(:probe)"), @"
+        fn probe@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          v11:BasicObject = GetIvar v6, :@foo
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
+    fn test_self_not_heap_object_owner_symbol() {
+        eval("
+            class Symbol
+              def probe = @foo
+            end
+            100.times { :sym.probe }
+        ");
+        assert_snapshot!(hir_string_proc(":sym.method(:probe)"), @"
+        fn probe@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          v11:BasicObject = GetIvar v6, :@foo
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
+    fn test_self_not_heap_object_owner_float() {
+        eval("
+            class Float
+              def probe = @foo
+            end
+            100.times { 1.5.probe }
+        ");
+        assert_snapshot!(hir_string_proc("1.5.method(:probe)"), @"
+        fn probe@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          v11:BasicObject = GetIvar v6, :@foo
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
+    fn test_self_not_heap_object_owner_nil_class() {
+        eval("
+            class NilClass
+              def probe = @foo
+            end
+            100.times { nil.probe }
+        ");
+        assert_snapshot!(hir_string_proc("nil.method(:probe)"), @"
+        fn probe@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          v11:BasicObject = GetIvar v6, :@foo
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
+    fn test_self_not_heap_object_owner_true_class() {
+        eval("
+            class TrueClass
+              def probe = @foo
+            end
+            100.times { true.probe }
+        ");
+        assert_snapshot!(hir_string_proc("true.method(:probe)"), @"
+        fn probe@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          v11:BasicObject = GetIvar v6, :@foo
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
+    fn test_self_not_heap_object_owner_false_class() {
+        eval("
+            class FalseClass
+              def probe = @foo
+            end
+            100.times { false.probe }
+        ");
+        assert_snapshot!(hir_string_proc("false.method(:probe)"), @"
+        fn probe@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          v11:BasicObject = GetIvar v6, :@foo
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
+    fn test_self_not_heap_object_owner_object() {
+        // Object uses the default allocator, but Integer (and every other immediate)
+        // descends from it, so a method on Object can run with an immediate self.
+        eval("
+            class Object
+              def probe = @foo
+            end
+            o = Object.new
+            100.times { o.probe }
+        ");
+        assert_snapshot!(hir_string_proc("Object.new.method(:probe)"), @"
+        fn probe@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          v17:HeapBasicObject = GuardType v6, HeapBasicObject
+          v18:CShape = LoadField v17, :shape_id@0x1000
+          v19:CShape[0x1001] = GuardBitEquals v18, CShape(0x1001) recompile
+          v20:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v20
+        ");
+    }
+
+    #[test]
+    fn test_self_not_heap_object_owner_basic_object() {
+        // Same as Object: BasicObject has the default allocator but is the root of
+        // the immediate classes' ancestry.
+        eval("
+            class BasicObject
+              def probe = @foo
+            end
+            o = Object.new
+            100.times { o.probe }
+        ");
+        assert_snapshot!(hir_string_proc("Object.new.method(:probe)"), @"
+        fn probe@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          v17:HeapBasicObject = GuardType v6, HeapBasicObject
+          v18:CShape = LoadField v17, :shape_id@0x1000
+          v19:CShape[0x1001] = GuardBitEquals v18, CShape(0x1001) recompile
+          v20:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v20
+        ");
+    }
+
+    #[test]
+    fn test_self_not_heap_object_owner_numeric() {
+        // Numeric has the default allocator but Integer/Float descend from it, so a
+        // method on Numeric can run with an immediate self.
+        eval("
+            class Numeric
+              def probe = @foo
+            end
+            100.times { 5.probe }
+        ");
+        assert_snapshot!(hir_string_proc("5.method(:probe)"), @"
+        fn probe@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          v11:BasicObject = GetIvar v6, :@foo
+          CheckInterrupts
+          Return v11
         ");
     }
 
@@ -7759,13 +8015,13 @@ mod hir_opt_tests {
         fn has_foo@<compiled>:7:
         bb1():
           EntryPoint interpreter
-          v1:BasicObject = LoadSelf
+          v1:HeapBasicObject = LoadSelf
           Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v4:BasicObject = LoadArg :self@0
+          v4:HeapBasicObject = LoadArg :self@0
           Jump bb3(v4)
-        bb3(v6:BasicObject):
+        bb3(v6:HeapBasicObject):
           v10:StringExact|NilClass = DefinedIvar v6, :@foo
           CheckInterrupts
           Return v10
@@ -7797,13 +8053,13 @@ mod hir_opt_tests {
         fn foo@<compiled>:7:
         bb1():
           EntryPoint interpreter
-          v1:BasicObject = LoadSelf
+          v1:HeapBasicObject = LoadSelf
           Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v4:BasicObject = LoadArg :self@0
+          v4:HeapBasicObject = LoadArg :self@0
           Jump bb3(v4)
-        bb3(v6:BasicObject):
+        bb3(v6:HeapBasicObject):
           v10:Fixnum[5] = Const Value(5)
           PatchPoint SingleRactorMode
           SetIvar v6, :@foo, v10
@@ -7842,16 +8098,16 @@ mod hir_opt_tests {
         fn write@<compiled>:12:
         bb1():
           EntryPoint interpreter
-          v1:BasicObject = LoadSelf
+          v1:HeapBasicObject = LoadSelf
           v2:CPtr = LoadSP
           v3:BasicObject = LoadField v2, :obj@0x1000
           Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
+          v6:HeapBasicObject = LoadArg :self@0
           v7:BasicObject = LoadArg :obj@1
           Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
+        bb3(v9:HeapBasicObject, v10:BasicObject):
           v17:Fixnum[5] = Const Value(5)
           PatchPoint MethodRedefined(C@0x1008, foo=@0x1010, cme:0x1018)
           v28:ObjectSubclass[class_exact:C] = GuardType v10, ObjectSubclass[class_exact:C]
@@ -14574,13 +14830,13 @@ mod hir_opt_tests {
         fn foo@<compiled>:10:
         bb1():
           EntryPoint interpreter
-          v1:BasicObject = LoadSelf
+          v1:HeapBasicObject = LoadSelf
           Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v4:BasicObject = LoadArg :self@0
+          v4:HeapBasicObject = LoadArg :self@0
           Jump bb3(v4)
-        bb3(v6:BasicObject):
+        bb3(v6:HeapBasicObject):
           PatchPoint MethodRedefined(A@0x1000, foo@0x1008, cme:0x1010)
           v18:CPtr = GetEP 0
           v19:RubyValue = LoadField v18, :VM_ENV_DATA_INDEX_ME_CREF@0x1038
@@ -14643,16 +14899,16 @@ mod hir_opt_tests {
         fn foo@<compiled>:10:
         bb1():
           EntryPoint interpreter
-          v1:BasicObject = LoadSelf
+          v1:HeapBasicObject = LoadSelf
           v2:CPtr = LoadSP
           v3:BasicObject = LoadField v2, :x@0x1000
           Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
+          v6:HeapBasicObject = LoadArg :self@0
           v7:BasicObject = LoadArg :x@1
           Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
+        bb3(v9:HeapBasicObject, v10:BasicObject):
           PatchPoint MethodRedefined(A@0x1008, foo@0x1010, cme:0x1018)
           v28:CPtr = GetEP 0
           v29:RubyValue = LoadField v28, :VM_ENV_DATA_INDEX_ME_CREF@0x1040
@@ -14695,16 +14951,16 @@ mod hir_opt_tests {
         fn foo@<compiled>:10:
         bb1():
           EntryPoint interpreter
-          v1:BasicObject = LoadSelf
+          v1:HeapBasicObject = LoadSelf
           v2:CPtr = LoadSP
           v3:ArrayExact = LoadField v2, :x@0x1000
           Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
+          v6:HeapBasicObject = LoadArg :self@0
           v7:BasicObject = LoadArg :x@1
           Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
+        bb3(v9:HeapBasicObject, v10:BasicObject):
           v16:ArrayExact = ToArray v10
           v18:BasicObject = InvokeSuper v9, 0x1008, v16 # SendFallbackReason: super: complex argument passing to `super` call
           CheckInterrupts
@@ -14739,13 +14995,13 @@ mod hir_opt_tests {
         fn foo@<compiled>:10:
         bb1():
           EntryPoint interpreter
-          v1:BasicObject = LoadSelf
+          v1:HeapBasicObject = LoadSelf
           Jump bb3(v1)
         bb2():
           EntryPoint JIT(0)
-          v4:BasicObject = LoadArg :self@0
+          v4:HeapBasicObject = LoadArg :self@0
           Jump bb3(v4)
-        bb3(v6:BasicObject):
+        bb3(v6:HeapBasicObject):
           v11:BasicObject = InvokeSuper v6, 0x1000 # SendFallbackReason: super: call made with a block
           CheckInterrupts
           Return v11
@@ -14909,18 +15165,18 @@ mod hir_opt_tests {
         fn foo@<compiled>:10:
         bb1():
           EntryPoint interpreter
-          v1:BasicObject = LoadSelf
+          v1:HeapBasicObject = LoadSelf
           v2:CPtr = LoadSP
           v3:BasicObject = LoadField v2, :blk@0x1000
           v4:NilClass = Const Value(nil)
           Jump bb3(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
-          v7:BasicObject = LoadArg :self@0
+          v7:HeapBasicObject = LoadArg :self@0
           v8:BasicObject = LoadArg :blk@1
           v9:NilClass = Const Value(nil)
           Jump bb3(v7, v8, v9)
-        bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
+        bb3(v11:HeapBasicObject, v12:BasicObject, v13:NilClass):
           PatchPoint NoSingletonClass(B@0x1008)
           PatchPoint MethodRedefined(B@0x1008, proc@0x1010, cme:0x1018)
           v39:ObjectSubclass[class_exact:B] = GuardType v11, ObjectSubclass[class_exact:B]
@@ -14962,16 +15218,16 @@ mod hir_opt_tests {
         fn foo@<compiled>:10:
         bb1():
           EntryPoint interpreter
-          v1:BasicObject = LoadSelf
+          v1:HeapBasicObject = LoadSelf
           v2:CPtr = LoadSP
           v3:BasicObject = LoadField v2, :items@0x1000
           Jump bb3(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v6:BasicObject = LoadArg :self@0
+          v6:HeapBasicObject = LoadArg :self@0
           v7:BasicObject = LoadArg :items@1
           Jump bb3(v6, v7)
-        bb3(v9:BasicObject, v10:BasicObject):
+        bb3(v9:HeapBasicObject, v10:BasicObject):
           v16:StaticSymbol[:succ] = Const Value(VALUE(0x1008))
           v18:BasicObject = InvokeSuper v9, 0x1010, v10, v16 # SendFallbackReason: super: complex argument passing to `super` call
           CheckInterrupts
@@ -15004,7 +15260,7 @@ mod hir_opt_tests {
         fn foo@<compiled>:9:
         bb1():
           EntryPoint interpreter
-          v1:BasicObject = LoadSelf
+          v1:HeapBasicObject = LoadSelf
           v2:CPtr = LoadSP
           v3:BasicObject = LoadField v2, :content@0x1000
           v4:CPtr = LoadPC
@@ -15015,19 +15271,19 @@ mod hir_opt_tests {
           Jump bb5(v1, v3)
         bb2():
           EntryPoint JIT(0)
-          v10:BasicObject = LoadArg :self@0
+          v10:HeapBasicObject = LoadArg :self@0
           v11:NilClass = Const Value(nil)
           Jump bb3(v10, v11)
-        bb3(v17:BasicObject, v18:BasicObject):
+        bb3(v17:HeapBasicObject, v18:BasicObject):
           v21:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
           v22:StringExact = StringCopy v21
           Jump bb5(v17, v22)
         bb4():
           EntryPoint JIT(1)
-          v14:BasicObject = LoadArg :self@0
+          v14:HeapBasicObject = LoadArg :self@0
           v15:BasicObject = LoadArg :content@1
           Jump bb5(v14, v15)
-        bb5(v25:BasicObject, v26:BasicObject):
+        bb5(v25:HeapBasicObject, v26:BasicObject):
           v32:BasicObject = InvokeSuper v25, 0x1010, v26 # SendFallbackReason: super: complex argument passing to `super` call
           CheckInterrupts
           Return v32
@@ -16116,29 +16372,28 @@ mod hir_opt_tests {
         fn set_value_loop@<compiled>:4:
         bb1():
           EntryPoint interpreter
-          v1:BasicObject = LoadSelf
+          v1:HeapBasicObject = LoadSelf
           v2:NilClass = Const Value(nil)
           Jump bb3(v1, v2)
         bb2():
           EntryPoint JIT(0)
-          v5:BasicObject = LoadArg :self@0
+          v5:HeapBasicObject = LoadArg :self@0
           v6:NilClass = Const Value(nil)
           Jump bb3(v5, v6)
-        bb3(v8:BasicObject, v9:NilClass):
+        bb3(v8:HeapBasicObject, v9:NilClass):
           v13:Fixnum[0] = Const Value(0)
           CheckInterrupts
           Jump bb6(v8, v13)
-        bb6(v19:BasicObject, v20:Fixnum):
+        bb6(v19:HeapBasicObject, v20:Fixnum):
           v24:Fixnum[10] = Const Value(10)
           PatchPoint MethodRedefined(Integer@0x1000, <@0x1008, cme:0x1010)
           v110:BoolExact = FixnumLt v20, v24
           CheckInterrupts
           v30:CBool = Test v110
           CondBranch v30, bb4(v19, v20), bb7()
-        bb4(v40:BasicObject, v41:Fixnum):
+        bb4(v40:HeapBasicObject, v41:Fixnum):
           PatchPoint SingleRactorMode
-          v46:HeapBasicObject = GuardType v40, HeapBasicObject
-          v47:CUInt64 = LoadField v46, :RBASIC_FLAGS@0x1038
+          v47:CUInt64 = LoadField v40, :RBASIC_FLAGS@0x1038
           v49:CUInt64[0xffffffff0000001f] = Const CUInt64(0xffffffff0000001f)
           v50:CPtr[CPtr(0x1039)] = Const CPtr(0x1039)
           v51 = RefineType v50, CUInt64
@@ -16146,7 +16401,7 @@ mod hir_opt_tests {
           v53:CBool = IsBitEqual v52, v51
           CondBranch v53, bb9(), bb10()
         bb9():
-          v55:BasicObject = LoadField v46, :@levar@0x103a
+          v55:BasicObject = LoadField v40, :@levar@0x103a
           Jump bb8(v55)
         bb10():
           v57:CUInt64[0xffffffff0000001f] = Const CUInt64(0xffffffff0000001f)
@@ -16159,24 +16414,24 @@ mod hir_opt_tests {
           v63:NilClass = Const Value(nil)
           Jump bb8(v63)
         bb12():
-          v97:CShape = LoadField v46, :shape_id@0x103c
+          v97:CShape = LoadField v40, :shape_id@0x103c
           v98:CShape[0x103d] = GuardBitEquals v97, CShape(0x103d) recompile
-          v99:BasicObject = LoadField v46, :@levar@0x103a
+          v99:BasicObject = LoadField v40, :@levar@0x103a
           Jump bb8(v99)
         bb8(v48:BasicObject):
           CheckInterrupts
           v69:CBool = Test v48
-          CondBranch v69, bb5(v46, v41), bb13()
+          CondBranch v69, bb5(v40, v41), bb13()
         bb13():
           PatchPoint NoEPEscape(set_value_loop)
           PatchPoint SingleRactorMode
-          v101:CShape = LoadField v46, :shape_id@0x103c
+          v101:CShape = LoadField v40, :shape_id@0x103c
           v102:CShape[0x103e] = GuardBitEquals v101, CShape(0x103e) recompile
-          StoreField v46, :@levar@0x103a, v41
-          WriteBarrier v46, v41
+          StoreField v40, :@levar@0x103a, v41
+          WriteBarrier v40, v41
           v105:CShape[0x103d] = Const CShape(0x103d)
-          StoreField v46, :shape_id@0x103c, v105
-          v79:HeapBasicObject = RefineType v46, HeapBasicObject
+          StoreField v40, :shape_id@0x103c, v105
+          v79:HeapBasicObject = RefineType v40, HeapBasicObject
           Jump bb5(v79, v41)
         bb5(v81:HeapBasicObject, v82:Fixnum):
           PatchPoint NoEPEscape(set_value_loop)
