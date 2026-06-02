@@ -817,7 +817,7 @@ class TestGemDependencyInstaller < Gem::TestCase
         inst.install "b"
       end
 
-      assert_match(/depends on unknown package a/, e.message)
+      assert_match(/depends on a >= 0 which could not be found in any repository/, e.message)
     end
 
     assert_equal [], inst.installed_gems.map(&:full_name)

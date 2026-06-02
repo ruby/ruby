@@ -127,7 +127,14 @@ class Gem::Resolver
   # Proceed with resolution! Returns an array of ActivationRequest objects.
 
   def resolve
-    # Pre-check: raise UnsatisfiableDependencyError for root deps with no matches
+    # Pre-check: raise UnsatisfiableDependencyError for root deps with no
+    # platform match. We filter by platform ONLY here (not required_ruby_version
+    # / required_rubygems_version): a foreign-platform gem is genuinely "not
+    # found", but a gem that exists yet is incompatible with the running Ruby
+    # should flow through the solver to a DependencyResolutionError that names
+    # the Ruby requirement. That matches Bundler (which models Ruby as a
+    # synthetic dependency, so this surfaces as a solve failure) and gives a
+    # clearer message than the platform-oriented UnsatisfiableDependencyError.
     @needed.each do |dep|
       next if @soft_missing
       dep_request = DependencyRequest.new(dep, nil)
@@ -175,6 +182,21 @@ class Gem::Resolver
     name = package.to_s
 
     if (skip_dep_gems = skip_gems[name]) && !skip_dep_gems.empty?
+      # Conservative mode: float the already-installed (skip) versions to the
+      # front so the solver prefers them. This sets *preference* only (it feeds
+      # the strategy's version-index map); it does not restrict availability, so
+      # every version stays selectable via versions_for. When an installed
+      # version is made impossible by a downstream conflict, the solver
+      # backtracks to a newer version instead of failing. Molinillo instead
+      # hard-restricted the candidate set to skip versions and raised.
+      #
+      # This reaches the same outcome as Bundler (upgrade-over-raise) for the
+      # common single-blocked-gem case, though the mechanism differs: Bundler
+      # hard-pins locked gems and selectively unlocks + re-solves on conflict,
+      # whereas we float as a preference and let PubGrub backtrack in one solve.
+      # The float can therefore over-upgrade when several installed gems are
+      # jointly involved in a conflict; that outcome-level divergence is
+      # accepted (see test_conservative_upgrades_when_installed_blocked).
       skip_versions = skip_dep_gems.map(&:version)
       preferred, rest = versions.partition {|v| skip_versions.include?(v) }
       preferred + rest
@@ -270,9 +292,16 @@ class Gem::Resolver
       # self_constraint lets clean sibling versions still resolve via backtracking.
       if @unfiltered_specs[dep_package_name].empty?
         cause = Gem::PubGrub::Incompatibility::InvalidDependency.new(dep_package, dep_constraint)
+        self_term = Gem::PubGrub::Term.new(self_constraint, true)
+        # PubGrub's default InvalidDependency rendering drops the version
+        # requirement ("depends on unknown package bar"). Supply a custom
+        # explanation so the missing dependency's constraint is preserved
+        # ("depends on bar = 0.5 which could not be found in any repository"),
+        # matching Molinillo's diagnostics.
         return [Gem::PubGrub::Incompatibility.new(
-          [Gem::PubGrub::Term.new(self_constraint, true)],
-          cause: cause
+          [self_term],
+          cause: cause,
+          custom_explanation: "#{self_term.to_s(allow_every: true)} depends on #{dep_constraint} which could not be found in any repository"
         )]
       end
 

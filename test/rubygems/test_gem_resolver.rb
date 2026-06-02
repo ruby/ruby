@@ -140,6 +140,34 @@ class TestGemResolver < Gem::TestCase
     assert_resolves_to [a2_spec, b2_spec, c1_spec, d2_spec, e1_spec], res
   end
 
+  def test_conservative_upgrades_when_installed_blocked
+    # Conservative mode floats the installed (skip) version to the front but
+    # keeps newer versions selectable. When the installed version cannot be
+    # used because its own dependency is unsatisfiable, the solver backtracks
+    # to a newer version instead of failing. This intentionally diverges from
+    # Molinillo (which hard-restricted to skip versions and raised) and reaches
+    # Bundler's upgrade-over-raise outcome. See the comment in
+    # Gem::Resolver#all_versions_for.
+    a1_spec = util_spec "a", 1 do |s|
+      s.add_dependency "b", ">= 2"
+    end
+    a2_spec = util_spec "a", 2 do |s|
+      s.add_dependency "b", ">= 1"
+    end
+    b1_spec = util_spec "b", 1
+
+    # b-2 is intentionally absent, so a-1's `b >= 2` cannot be satisfied.
+    deps = [make_dep("a", ">= 1")]
+    s = set a1_spec, a2_spec, b1_spec
+
+    res = Gem::Resolver.new deps, s
+    # a-1 is already installed and satisfies `a >= 1`, so conservative mode
+    # prefers it - but it is blocked by the missing b-2, forcing an upgrade.
+    res.skip_gems = { "a" => [a1_spec] }
+
+    assert_resolves_to [a2_spec, b1_spec], res
+  end
+
   def test_resolve_development
     a_spec = util_spec "a", 1 do |s|
       s.add_development_dependency "b"
@@ -516,7 +544,7 @@ class TestGemResolver < Gem::TestCase
       r.resolve
     end
 
-    assert_match(/depends on unknown package b/, e.message)
+    assert_match(/depends on b = 2 which could not be found in any repository/, e.message)
   end
 
   def test_raises_when_possibles_are_exhausted
@@ -945,6 +973,28 @@ class TestGemResolver < Gem::TestCase
     assert_match(/you have/, e.message)
   end
 
+  def test_root_gem_incompatible_ruby_version_names_ruby_requirement
+    # A requested (root) gem available only for an incompatible Ruby version
+    # flows through the solver to a DependencyResolutionError whose message
+    # names the Ruby requirement. This matches Bundler (which models Ruby as a
+    # synthetic dependency and reports a solve failure) and is clearer than the
+    # platform-oriented UnsatisfiableDependencyError. Contrast the foreign-
+    # *platform* case (test_raises_and_explains_when_platform_prevents_install),
+    # which is genuinely "not found" and does raise UnsatisfiableDependencyError.
+    a = util_spec "a", "1.0" do |s|
+      s.required_ruby_version = ">= 999.0"
+    end
+
+    ad = make_dep "a", "= 1.0"
+    r = Gem::Resolver.new([ad], set(a))
+
+    e = assert_raise Gem::DependencyResolutionError do
+      r.resolve
+    end
+
+    assert_match(/requires Ruby >= 999.0/, e.message)
+  end
+
   def test_self_dependency_does_not_crash
     a = util_spec "a", "1.0" do |s|
       s.add_dependency "a"
@@ -1090,7 +1140,7 @@ class TestGemResolver < Gem::TestCase
       r.resolve
     end
 
-    assert_match(/every version of a depends on unknown package zzz/, e.message)
+    assert_match(/every version of a depends on zzz >= 1 which could not be found in any repository/, e.message)
   end
 
   def test_resolves_when_only_lowest_version_has_missing_dep
