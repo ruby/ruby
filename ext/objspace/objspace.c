@@ -665,7 +665,30 @@ collect_values_of_values(VALUE category, VALUE category_objects, VALUE categorie
  *  call-seq:
  *     ObjectSpace.reachable_objects_from_root -> hash
  *
- *  [MRI specific feature] Return all reachable objects from root.
+ *  Returns a hash of objects directly reachable from the VM roots,
+ *  grouped by the root that reaches them.
+ *
+ *  The roots are the entry points the garbage collector starts from when it
+ *  marks live objects, such as the virtual machine and the global variable
+ *  table. The keys of the returned hash are strings naming each root, and each
+ *  value is an array of the objects reachable from that root:
+ *
+ *    require 'objspace'
+ *
+ *    reachable = ObjectSpace.reachable_objects_from_root
+ *    reachable.keys           # => ["vm", "global_tbl", "machine_context", "global_symbols"]
+ *    reachable.values.first   # => [#<Ractor:#1 running>, ...]
+ *
+ *  The returned hash compares its keys by identity, so it cannot be indexed
+ *  with a string literal; iterate over it (or over its #values) instead.
+ *
+ *  Any reference to an internal object is wrapped in an
+ *  ObjectSpace::InternalObjectWrapper object.
+ *
+ *  This method is useful for debugging the object graph, for example when
+ *  tracking down the cause of a memory leak.
+ *
+ *  This method is only expected to work with C Ruby.
  */
 static VALUE
 reachable_objects_from_root(VALUE self)
