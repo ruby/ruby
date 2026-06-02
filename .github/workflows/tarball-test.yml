@@ -38,8 +38,7 @@ jobs:
       skip: ${{ steps.skipping.outputs.skip }}
     steps:
       - id: skipping
-        run:
-          echo 'skip=true' >> $GITHUB_OUTPUT
+        run: echo 'skip=true' >> $GITHUB_OUTPUT
         if: >-
           ${{(false
           || contains(github.event.head_commit.message, '[DOC]')
