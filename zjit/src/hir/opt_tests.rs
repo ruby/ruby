@@ -7622,6 +7622,32 @@ mod hir_opt_tests {
     // (call threshold is 30), then checks the resulting `self` type.
 
     #[test]
+    fn test_self_not_heap_object_owner_singleton() {
+        eval("
+            class C; end
+            Obj = C.new
+            class << Obj
+              def probe = self
+            end
+            100.times { Obj.probe }
+        ");
+        assert_snapshot!(hir_string_proc("Obj.method(:probe)"), @"
+        fn probe@<compiled>:5:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          CheckInterrupts
+          Return v6
+        ");
+    }
+
+    #[test]
     fn test_self_not_heap_object_owner_integer() {
         eval("
             class Integer

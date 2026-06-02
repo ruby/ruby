@@ -1569,7 +1569,7 @@ pub fn iseq_self_is_heap_object(iseq: IseqPtr, owner: VALUE) -> bool {
     // class_has_leaf_allocator checks initialized + non-singleton before reading
     // the allocator (reading it otherwise raises), so reuse those guards here.
     if !unsafe { rb_zjit_class_initialized_p(owner) } { return false; }
-    if unsafe { rb_zjit_singleton_class_p(owner) } { return false; }
+    // TODO(max): Determine if we can widen to allow methods defined in singleton classes.
     if !unsafe { rb_zjit_class_has_default_allocator(owner) } { return false; }
     // Exclude Object/BasicObject/Numeric and friends: classes that use the default
     // allocator but sit above an immediate class in the ancestry chain. They are
