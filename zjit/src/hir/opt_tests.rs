@@ -5813,13 +5813,12 @@ mod hir_opt_tests {
           WriteBarrier v28, v10
           v33:CShape[0x1003] = Const CShape(0x1003)
           StoreField v28, :shape_id@0x1000, v33
-          v14:HeapBasicObject = RefineType v28, HeapBasicObject
           v17:Fixnum[2] = Const Value(2)
           PatchPoint SingleRactorMode
-          StoreField v14, :@bar@0x1004, v17
-          WriteBarrier v14, v17
+          StoreField v28, :@bar@0x1004, v17
+          WriteBarrier v28, v17
           v40:CShape[0x1005] = Const CShape(0x1005)
-          StoreField v14, :shape_id@0x1000, v40
+          StoreField v28, :shape_id@0x1000, v40
           CheckInterrupts
           Return v17
         ");
@@ -6549,9 +6548,8 @@ mod hir_opt_tests {
         bb3(v8:BasicObject, v9:NilClass):
           v13:Fixnum[1] = Const Value(1)
           CheckInterrupts
-          v23:Fixnum[1] = RefineType v13, NotNil
           PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008, cme:0x1010)
-          Return v23
+          Return v13
         ");
     }
 
@@ -15921,10 +15919,9 @@ mod hir_opt_tests {
           WriteBarrier v35, v13
           v40:CShape[0x1003] = Const CShape(0x1003)
           StoreField v35, :shape_id@0x1000, v40
-          v20:HeapBasicObject = RefineType v35, HeapBasicObject
           PatchPoint NoEPEscape(initialize)
           PatchPoint SingleRactorMode
-          WriteBarrier v20, v13
+          WriteBarrier v35, v13
           CheckInterrupts
           Return v13
         ");
@@ -15969,13 +15966,12 @@ mod hir_opt_tests {
           WriteBarrier v49, v16
           v54:CShape[0x1003] = Const CShape(0x1003)
           StoreField v49, :shape_id@0x1000, v54
-          v23:HeapBasicObject = RefineType v49, HeapBasicObject
           v26:Fixnum[5] = Const Value(5)
           PatchPoint NoEPEscape(initialize)
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
           v65:Fixnum[6] = Const Value(6)
           PatchPoint SingleRactorMode
-          WriteBarrier v23, v16
+          WriteBarrier v49, v16
           CheckInterrupts
           Return v16
         ");
@@ -16017,12 +16013,10 @@ mod hir_opt_tests {
           WriteBarrier v43, v13
           v48:CShape[0x1003] = Const CShape(0x1003)
           StoreField v43, :shape_id@0x1000, v48
-          v20:HeapBasicObject = RefineType v43, HeapBasicObject
           PatchPoint NoEPEscape(initialize)
           PatchPoint SingleRactorMode
-          WriteBarrier v20, v13
-          v28:HeapBasicObject = RefineType v20, HeapBasicObject
-          WriteBarrier v28, v13
+          WriteBarrier v43, v13
+          WriteBarrier v43, v13
           CheckInterrupts
           Return v13
         ");
@@ -16431,8 +16425,7 @@ mod hir_opt_tests {
           WriteBarrier v40, v41
           v105:CShape[0x103d] = Const CShape(0x103d)
           StoreField v40, :shape_id@0x103c, v105
-          v79:HeapBasicObject = RefineType v40, HeapBasicObject
-          Jump bb5(v79, v41)
+          Jump bb5(v40, v41)
         bb5(v81:HeapBasicObject, v82:Fixnum):
           PatchPoint NoEPEscape(set_value_loop)
           v89:Fixnum[1] = Const Value(1)
