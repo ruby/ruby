@@ -2252,7 +2252,6 @@ fn gen_fixnum_div(jit: &mut JITState, asm: &mut Assembler, left: lir::Opnd, righ
     // Side exit if rhs is 0
     asm.cmp(right, Opnd::from(VALUE::fixnum_from_usize(0)));
     asm.je(jit, side_exit(jit, state, FixnumDivByZero));
-
     asm_ccall!(asm, rb_jit_fix_div_fix, left, right)
 }
 
