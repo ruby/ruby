@@ -439,7 +439,12 @@ module Bundler
     end
 
     def cooldown_excluded_versions(specs)
-      specs.select {|spec| cooldown_excluded?(spec) }.map {|spec| [spec.name, spec.version] }.uniq
+      excluded = {}
+      specs.each do |spec|
+        next unless cooldown_excluded?(spec)
+        excluded[[spec.name, spec.version]] = true
+      end
+      excluded
     end
 
     def cooldown_hint(specs)

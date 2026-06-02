@@ -485,25 +485,22 @@ module Bundler
         snapshot = {}
         index.each do |spec|
           next unless spec.respond_to?(:created_at) && spec.created_at
-          snapshot[[spec.name, spec.version]] = spec.created_at
+          # Remember the remote that supplied the date too: when a source has
+          # several remotes with different per-URI cooldown settings we must
+          # restore the same one during backfill so `effective_cooldown` agrees.
+          snapshot[[spec.name, spec.version]] = [spec.created_at, spec.remote]
         end
         snapshot
       end
 
       def backfill_created_at(index, snapshot)
-        first_remote = remote_fetchers.keys.first
         index.each do |spec|
           next unless spec.respond_to?(:created_at=)
           next if spec.created_at
-          remote_created_at = snapshot[[spec.name, spec.version]]
+          remote_created_at, remote = snapshot[[spec.name, spec.version]]
           next unless remote_created_at
           spec.created_at = remote_created_at
-          # The cooldown filter consults `spec.remote.effective_cooldown`, so a
-          # backfilled stub also needs a Source::Rubygems::Remote reference. Any
-          # remote on the source carries the right `effective_cooldown` because
-          # the setting is source-wide and `Bundler.settings[:cooldown]`
-          # overrides per-source.
-          spec.remote ||= first_remote if first_remote && spec.respond_to?(:remote=)
+          spec.remote ||= remote if remote && spec.respond_to?(:remote=)
         end
       end
 
