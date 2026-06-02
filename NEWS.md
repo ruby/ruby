@@ -88,6 +88,7 @@ releases.
   * 4.0.0 to [v4.0.1][openssl-v4.0.1], [v4.0.2][openssl-v4.0.2]
 * prism 1.9.0
   * 1.7.0 to [v1.8.0][prism-v1.8.0], [v1.8.1][prism-v1.8.1], [v1.9.0][prism-v1.9.0]
+* psych 5.4.0
 * resolv 0.7.1
   * 0.7.0 to [v0.7.1][resolv-v0.7.1]
 * stringio 3.2.1.dev
