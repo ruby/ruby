@@ -4398,10 +4398,11 @@ impl Function {
         }
     }
 
-    fn load_ivar(&mut self, block: BlockId, self_val: InsnId, recv_type: ProfiledType, id: ID, state: InsnId) -> InsnId {
+    fn load_ivar(&mut self, block: BlockId, self_val: InsnId, recv_type: ProfiledType, id: ID) -> InsnId {
         // Too-complex shapes use hash tables; rb_shape_get_iv_index doesn't support them.
         // Callers must filter these out before calling load_ivar.
         assert!(!recv_type.shape().is_complex(), "load_ivar called with too-complex shape");
+
         let mut ivar_index: attr_index_t = 0;
         if ! unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
             // If there is no IVAR index, then the ivar was undefined when we
@@ -4409,37 +4410,41 @@ impl Function {
             // shape + iv name
             return self.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
         }
-        if recv_type.flags().is_t_class() || recv_type.flags().is_t_module() {
-            // Class/module ivar: load from prime classext's fields_obj
-            if !self.assume_root_box(block, state) {
-                // Non-root box active: fall back to C call
+
+        let layout = recv_type.shape().layout();
+
+        match layout {
+            // If we have an rclass layout, we load it from the fields obj from
+            // the class ext.  When RUBY_BOX is enabled, boxable classes
+            // (classes like String which are defined at boot time), those classes
+            // will have the "other" layout, so we are free to rely on this check
+            // whether or not RUBY_BOX is enabled
+            ShapeLayout::RClass | ShapeLayout::RData => {
+                // RClass and RData are very similar, but the fields object
+                // is stored at a different offset.
+                let offset = if layout == ShapeLayout::RClass {
+                    RCLASS_OFFSET_PRIME_FIELDS_OBJ as i32
+                } else {
+                    TDATA_OFFSET_FIELDS_OBJ as i32
+                };
+
+                let fields_obj = self.push_insn(block, Insn::LoadField {
+                    recv: self_val, id: FieldName::fields_obj,
+                    offset: offset,
+                    return_type: types::RubyValue,
+                });
+                self.load_ivar_from_fields(block, fields_obj, recv_type.flags().is_fields_embedded(), id, ivar_index)
+            },
+            ShapeLayout::RObject => {
+                self.load_ivar_from_fields(block, self_val, recv_type.flags().is_embedded(), id, ivar_index)
+            },
+            ShapeLayout::Other => {
+                // Non-T_OBJECT, non-class/module, non-typed-data: fall back to C call
                 // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
                 // getinstancevariable does assume_single_ractor_mode()
-                return self.load_ivar_c_call(block, self_val, ivar_index);
+                self.load_ivar_c_call(block, self_val, ivar_index)
             }
-            // Root box only: load directly from prime classext
-            let fields_obj = self.push_insn(block, Insn::LoadField {
-                recv: self_val, id: FieldName::fields_obj,
-                offset: RCLASS_OFFSET_PRIME_FIELDS_OBJ as i32,
-                return_type: types::RubyValue,
-            });
-            return self.load_ivar_from_fields(block, fields_obj, recv_type.flags().is_fields_embedded(), id, ivar_index);
         }
-        if recv_type.flags().is_t_data() {
-            let fields_obj = self.push_insn(block, Insn::LoadField {
-                recv: self_val, id: FieldName::fields_obj,
-                offset: TDATA_OFFSET_FIELDS_OBJ as i32,
-                return_type: types::RubyValue,
-            });
-            return self.load_ivar_from_fields(block, fields_obj, recv_type.flags().is_fields_embedded(), id, ivar_index);
-        }
-        if recv_type.flags().is_t_object() {
-            return self.load_ivar_from_fields(block, self_val, recv_type.flags().is_embedded(), id, ivar_index);
-        }
-        // Non-T_OBJECT, non-class/module, non-typed-data: fall back to C call
-        // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
-        // getinstancevariable does assume_single_ractor_mode()
-        return self.load_ivar_c_call(block, self_val, ivar_index);
     }
 
     fn optimize_getivar(&mut self) {
@@ -4473,10 +4478,17 @@ impl Function {
                             // need to wrap it again here.
                             self.push_insn_id(block, insn_id); continue;
                         }
+
+                        // Guard that the object is a heap object
                         let self_val = self.load_ivar_guard_type(block, self_val, recv_type, state);
+
+                        // Get the runtime shape value
                         let shape = self.load_shape(block, self_val);
+
+                        // Test that runtime shape is equal to the compile time shape
                         self.guard_shape(block, shape, recv_type.shape(), state, Some(Recompile::ProfileSelf));
-                        let replacement = self.load_ivar(block, self_val, recv_type, id, state);
+
+                        let replacement = self.load_ivar(block, self_val, recv_type, id);
                         self.make_equal_to(insn_id, replacement);
                     }
                     Insn::DefinedIvar { self_val, id, pushval, state } => {
@@ -7176,12 +7188,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let pushval = get_arg(pc, 2);
                     if let Some(summary) = fun.polymorphic_summary(&profiles, self_param, exit_state.insn_idx) {
                         self_param = fun.push_insn(block, Insn::GuardType { val: self_param, guard_type: types::HeapBasicObject, state: exit_id, recompile: None });
-                        let rbasic_flags = fun.load_rbasic_flags(block, self_param);
                         let join_block = insn_idx_to_block.get(&insn_idx).copied().unwrap_or_else(|| fun.new_block(insn_idx));
                         let join_param = fun.push_insn(join_block, Insn::Param);
-                        // Dedup by expected shape and type so objects with different classes
-                        // but the same shape can share code.
-                        let mut seen_shape_and_flags = Vec::with_capacity(summary.buckets().len());
+                        // Dedup by expected shape so objects with different classes but the
+                        // same shape can share code.
+                        let mut seen_shape = Vec::with_capacity(summary.buckets().len());
                         for &profiled_type in summary.buckets() {
                             // End of the buckets
                             if profiled_type.is_empty() { break; }
@@ -7191,34 +7202,36 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             // Class/module/T_DATA ivars use different storage rules.
                             // Let the fallthrough DefinedIvar handle these.
                             if !profiled_type.flags().is_t_object() { continue; }
-                            let expected_shape = profiled_type.shape();
-                            let (expected_rbasic_flags, rbasic_flags_mask) = profiled_type.rbasic_flags_and_mask();
-                            assert!(expected_shape.is_valid());
+                            let profiled_shape = profiled_type.shape();
+                            assert!(profiled_shape.is_valid());
                             // Too-complex shapes use hash tables for ivars;
                             // rb_shape_get_iv_index doesn't work for them.
                             // Let the fallthrough DefinedIvar handle these.
-                            if expected_shape.is_complex() { continue; }
-                            if seen_shape_and_flags.contains(&expected_rbasic_flags) { continue; }
-                            seen_shape_and_flags.push(expected_rbasic_flags);
-                            let rbasic_flags_mask = fun.push_insn(block, Insn::Const { val: Const::CUInt64(rbasic_flags_mask) });
+                            if profiled_shape.is_complex() { continue; }
+                            if seen_shape.contains(&profiled_shape) { continue; }
+                            seen_shape.push(profiled_shape);
+
+                            // Load the runtime shape from the object, we know
+                            // it's OK to do this because we did GuardType above.
+                            let runtime_shape = fun.load_shape(block, self_param);
+
                             // The expected shape can change over run, so we put it
                             // as a pointer to keep it stable in snapshot tests.
-                            let expected_rbasic_flags = fun.push_insn(block, Insn::Const { val: Const::CPtr(ptr::without_provenance(expected_rbasic_flags.to_usize())) });
-                            let expected_rbasic_flags = fun.push_insn(block, Insn::RefineType { val: expected_rbasic_flags, new_type: types::CUInt64 });
-                            let masked = fun.push_insn(block, Insn::IntAnd { left: rbasic_flags, right: rbasic_flags_mask});
-                            let has_shape_and_type = fun.push_insn(block, Insn::IsBitEqual { left: masked, right: expected_rbasic_flags });
+                            let expected_shape = fun.push_insn(block, Insn::Const { val: Const::CShape(profiled_shape) });
+
+                            let has_shape = fun.push_insn(block, Insn::IsBitEqual { left: expected_shape, right: runtime_shape });
                             let iftrue_block = fun.new_block(insn_idx);
                             let target = BranchEdge { target: iftrue_block, args: vec![] };
                             let fall_through = fun.new_block(insn_idx);
 
-                            fun.push_insn(block, Insn::CondBranch { val: has_shape_and_type,
+                            fun.push_insn(block, Insn::CondBranch { val: has_shape,
                                 if_true: target,
                                 if_false: BranchEdge { target: fall_through, args: vec![] }
                             });
 
                             block = fall_through;
                             let mut ivar_index: attr_index_t = 0;
-                            let result = if unsafe { rb_shape_get_iv_index(expected_shape.0, id, &mut ivar_index) } {
+                            let result = if unsafe { rb_shape_get_iv_index(profiled_shape.0, id, &mut ivar_index) } {
                                 fun.push_insn(iftrue_block, Insn::Const { val: Const::Value(pushval) })
                             } else {
                                 fun.push_insn(iftrue_block, Insn::Const { val: Const::Value(Qnil) })
@@ -8347,45 +8360,52 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }
                     if let Some(summary) = fun.polymorphic_summary(&profiles, self_param, exit_state.insn_idx) {
                         self_param = fun.push_insn(block, Insn::GuardType { val: self_param, guard_type: types::HeapBasicObject, state: exit_id, recompile: None });
-                        let rbasic_flags = fun.load_rbasic_flags(block, self_param);
                         let join_block = insn_idx_to_block.get(&insn_idx).copied().unwrap_or_else(|| fun.new_block(insn_idx));
                         let join_param = fun.push_insn(join_block, Insn::Param);
                         // Dedup by expected shape so objects with different classes but the same shape can share code
                         // TODO(max): De-duplicate further by checking ivar offsets to allow
                         // different shapes with the same ivar layout to share code
-                        let mut seen_shape_and_flags = Vec::with_capacity(summary.buckets().len());
+                        let mut seen_shape = Vec::with_capacity(summary.buckets().len());
                         for &profiled_type in summary.buckets() {
                             // End of the buckets
                             if profiled_type.is_empty() { break; }
                             // Instance variable lookups on immediate values are always nil; don't bother
                             if profiled_type.flags().is_immediate() { continue; }
-                            let expected_shape = profiled_type.shape();
-                            let (expected_rbasic_flags, rbasic_flags_mask) = profiled_type.rbasic_flags_and_mask();
-                            assert!(expected_shape.is_valid());
+
+                            let profiled_shape = profiled_type.shape();
+
                             // Too-complex shapes use hash tables for ivars;
                             // rb_shape_get_iv_index doesn't work for them.
                             // Let the fallthrough GetIvar handle these.
-                            if expected_shape.is_complex() { continue; }
-                            if seen_shape_and_flags.contains(&expected_rbasic_flags) { continue; }
-                            seen_shape_and_flags.push(expected_rbasic_flags);
-                            let rbasic_flags_mask = fun.push_insn(block, Insn::Const { val: Const::CUInt64(rbasic_flags_mask) });
-                            // The expected shape can change over run, so we put it
-                            // as a pointer to keep it stable in snapshot tests.
-                            let expected_rbasic_flags = fun.push_insn(block, Insn::Const { val: Const::CPtr(ptr::without_provenance(expected_rbasic_flags.to_usize())) });
-                            let expected_rbasic_flags = fun.push_insn(block, Insn::RefineType { val: expected_rbasic_flags, new_type: types::CUInt64 });
-                            let masked = fun.push_insn(block, Insn::IntAnd { left: rbasic_flags, right: rbasic_flags_mask});
-                            let has_shape_and_type = fun.push_insn(block, Insn::IsBitEqual { left: masked, right: expected_rbasic_flags });
+                            if profiled_shape.is_complex() { continue; }
+
+                            // If we've generated code for this shape already,
+                            // then skip it
+                            if seen_shape.contains(&profiled_shape) { continue; }
+                            seen_shape.push(profiled_shape);
+
+                            // Load the runtime shape from the object, we know
+                            // it's OK to do this because we did GuardType above
+                            let runtime_shape = fun.load_shape(block, self_param);
+
+                            // Load the expected shape to a variable
+                            let expected_shape = fun.push_insn(block, Insn::Const { val: Const::CShape(profiled_shape) });
+
+                            // If the expected is equal to the actual, then
+                            // we're good and can load the IV.  Otherwise jump
+                            // to the next block.
+                            let has_shape = fun.push_insn(block, Insn::IsBitEqual { left: expected_shape, right: runtime_shape });
                             let iftrue_block = fun.new_block(insn_idx);
                             let target = BranchEdge { target: iftrue_block, args: vec![] };
                             let fall_through = fun.new_block(insn_idx);
 
-                            fun.push_insn(block, Insn::CondBranch { val: has_shape_and_type,
+                            fun.push_insn(block, Insn::CondBranch { val: has_shape,
                                 if_true: target,
                                 if_false: BranchEdge { target: fall_through, args: vec![] }
                             });
 
                             block = fall_through;
-                            let result = fun.load_ivar(iftrue_block, self_param, profiled_type, id, exit_id);
+                            let result = fun.load_ivar(iftrue_block, self_param, profiled_type, id);
                             fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
                         }
                         // In the fallthrough case, do a generic interpreter getivar and then join.

@@ -351,28 +351,6 @@ impl ProfiledType {
         self.flags
     }
 
-    /// For ivar access, you need to know the index in the fields array (described by the shape)
-    /// and the way to get the fields array (described by the builtin type). Both pieces of
-    /// information are on the `RBasic::flags` field. This method returns expected masked flags
-    /// for guarding.
-    pub fn rbasic_flags_and_mask(&self) -> (u64, u64) {
-        let shape_flag_shift = u64::from(RB_SHAPE_FLAG_SHIFT);
-        let (shape, shape_mask) = (u64::from(self.shape().0) << shape_flag_shift, !0 << shape_flag_shift);
-        let (builtin_type, type_mask) = if self.flags().is_t_object() {
-            (RUBY_T_OBJECT, RUBY_T_MASK)
-        } else if self.flags().is_t_class() {
-            // Check class first since `Class < Module`
-            (RUBY_T_CLASS, RUBY_T_MASK)
-        } else if self.flags().is_t_module() {
-            (RUBY_T_MODULE, RUBY_T_MASK)
-        } else if self.flags().is_t_data() {
-            (RUBY_T_DATA, RUBY_T_MASK)
-        } else {
-            (0, 0)
-        };
-        (shape | u64::from(builtin_type), shape_mask | u64::from(type_mask))
-    }
-
     pub fn is_fixnum(&self) -> bool {
         self.class == unsafe { rb_cInteger } && self.flags.is_immediate()
     }
