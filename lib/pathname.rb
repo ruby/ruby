@@ -69,6 +69,16 @@ class Pathname
   # Errno::ENOENT, Errno::EACCES, Errno::ENOTDIR, Errno::ELOOP, Errno::ENAMETOOLONG, Errno::EINVAL;
   # when given as `false`, no exceptions are rescued.
   #
+  # Note that these exceptions may be ignored only in `Pathname#find` traversal code;
+  # an exception raised before traversal begins,
+  # or raised while in the block is not ignored.
+  # Each of the calls below raises an Errno::ENOENT exception that is not ignored:
+  #
+  # ```ruby
+  # Pathname('nosuch').find { }
+  # Pathname('lib').find {|entry| raise Errno::ENOENT }
+  # ```
+  #
   # With no block given, returns a new Enumerator.
   def find(ignore_error: true) # :yield: pathname
     return to_enum(__method__, ignore_error: ignore_error) unless block_given?
