@@ -77,7 +77,8 @@ jobs:
           [
             Dir.home,
           ].each do |dir|
-            Dir.each_child(dir) do |pn|
+            Dir.each_child(dir) do |name|
+              pn = File.join(dir, name)
               st = File.stat(pn)
               if st.file?
                 content = Digest::SHA1.file(pn).hexdigest
