@@ -16,6 +16,14 @@ pub struct IseqPayload {
     /// Whether a previous compilation of this ISEQ was invalidated due to
     /// singleton class creation (violation of [`crate::hir::Invariant::NoSingletonClass`]).
     pub was_invalidated_for_singleton_class_creation: bool,
+    /// Whether `self` is guaranteed to be a heap (non-immediate) object for this
+    /// ISEQ. Set at compile triggers (entry point / function stub hit) where the
+    /// owning class is known via the method entry, and consumed in `iseq_to_hir`
+    /// to type the `self`-producing instructions (`LoadSelf` / `SelfParam`
+    /// `LoadArg`) as `HeapBasicObject`. Defaults to `false` (the conservative
+    /// `BasicObject`) when the owner is unknown.
+    /// See [`crate::cruby::iseq_self_is_heap_object`].
+    pub self_is_heap_object: bool,
 }
 
 impl IseqPayload {
@@ -24,6 +32,7 @@ impl IseqPayload {
             profile: IseqProfile::new(),
             versions: vec![],
             was_invalidated_for_singleton_class_creation: false,
+            self_is_heap_object: false,
         }
     }
 }
