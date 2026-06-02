@@ -600,7 +600,7 @@ fill_random_bytes_crypt(void *seed, size_t size)
     }
     if (prov == INVALID_HCRYPTPROV) return -1;
     while (size > 0) {
-        DWORD n = (size > (size_t)DWORD_MAX) ? DWORD_MAX : (DWORD)size;
+        DWORD n = (size > (size_t)DWORD_MAX) ? DWORD_MAX/2+1 : (DWORD)size;
         if (!CryptGenRandom(prov, n, seed)) return -1;
         seed = (char *)seed + n;
         size -= n;
@@ -615,7 +615,7 @@ static int
 fill_random_bytes_bcrypt(void *seed, size_t size)
 {
     while (size > 0) {
-        ULONG n = (size > (size_t)ULONG_MAX) ? LONG_MAX : (ULONG)size;
+        ULONG n = (size > (size_t)ULONG_MAX) ? ULONG_MAX/2+1 : (ULONG)size;
         if (BCryptGenRandom(NULL, seed, n, BCRYPT_USE_SYSTEM_PREFERRED_RNG))
             return -1;
         seed = (char *)seed + n;
