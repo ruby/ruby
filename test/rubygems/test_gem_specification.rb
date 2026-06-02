@@ -817,7 +817,7 @@ dependencies: []
       write_file full_path do |io|
         io.write @a2.to_ruby_for_cache
       end
-    rescue Errno::EINVAL
+    rescue Errno::EINVAL, Errno::EACCES
       pend "cannot create '#{full_path}' on this platform"
     end
 
@@ -836,7 +836,7 @@ dependencies: []
       write_file full_path do |io|
         io.write @a2.to_ruby_for_cache
       end
-    rescue Errno::EINVAL
+    rescue Errno::EINVAL, Errno::EACCES
       pend "cannot create '#{full_path}' on this platform"
     end
 
@@ -855,7 +855,7 @@ dependencies: []
       write_file full_path do |io|
         io.write @a2.to_ruby_for_cache
       end
-    rescue Errno::EINVAL
+    rescue Errno::EINVAL, Errno::EACCES
       pend "cannot create '#{full_path}' on this platform"
     end
 

@@ -188,7 +188,7 @@ pub extern "C" fn rb_zjit_bop_redefined(klass: RedefinitionFlag, bop: ruby_basic
 
     with_vm_lock(src_loc!(), || {
         let invariants = ZJITState::get_invariants();
-        if let Some(patch_points) = invariants.bop_patch_points.get(&(klass, bop)) {
+        if let Some(patch_points) = invariants.bop_patch_points.remove(&(klass, bop)) {
             let cb = ZJITState::get_code_block();
             let bop = Invariant::BOPRedefined { klass, bop };
             debug!("BOP is redefined: {}", bop);
@@ -372,7 +372,7 @@ pub extern "C" fn rb_zjit_constant_state_changed(id: ID) {
 
     with_vm_lock(src_loc!(), || {
         let invariants = ZJITState::get_invariants();
-        if let Some(patch_points) = invariants.constant_state_patch_points.get(&id) {
+        if let Some(patch_points) = invariants.constant_state_patch_points.remove(&id) {
             let cb = ZJITState::get_code_block();
             debug!("Constant state changed: {:?}", id);
 

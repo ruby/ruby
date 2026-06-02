@@ -44,7 +44,7 @@ describe "CGI.unescapeURIComponent" do
   end
 
   it "raises ArgumentError if specified encoding is unknown" do
-    -> { CGI.unescapeURIComponent("ABC", "ISO-JOKE-1") }.should raise_error(ArgumentError, "unknown encoding name - ISO-JOKE-1")
+    -> { CGI.unescapeURIComponent("ABC", "ISO-JOKE-1") }.should.raise(ArgumentError, "unknown encoding name - ISO-JOKE-1")
   end
 
   ruby_version_is ""..."4.0" do
@@ -91,7 +91,7 @@ describe "CGI.unescapeURIComponent" do
       decoded = CGI.unescapeURIComponent(string, Encoding::US_ASCII)
       decoded.encoding.should == Encoding::SHIFT_JIS
       decoded.should == "｢ｦ｣".encode(Encoding::SHIFT_JIS)
-      decoded.valid_encoding?.should be_true
+      decoded.valid_encoding?.should == true
     end
 
     it "uses source string's encoding even if it's also invalid" do
@@ -99,7 +99,7 @@ describe "CGI.unescapeURIComponent" do
       decoded = CGI.unescapeURIComponent(string, Encoding::SHIFT_JIS)
       decoded.encoding.should == Encoding::US_ASCII
       decoded.should == "\xFF".dup.force_encoding(Encoding::US_ASCII)
-      decoded.valid_encoding?.should be_false
+      decoded.valid_encoding?.should == false
     end
   end
 
@@ -114,7 +114,7 @@ describe "CGI.unescapeURIComponent" do
   it "raises a TypeError with nil" do
     -> {
       CGI.unescapeURIComponent(nil)
-    }.should raise_error(TypeError, "no implicit conversion of nil into String")
+    }.should.raise(TypeError, "no implicit conversion of nil into String")
   end
 
   it "uses implicit type conversion to String" do

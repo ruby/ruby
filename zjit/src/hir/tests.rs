@@ -50,10 +50,10 @@ mod snapshot_tests {
           v12:Fixnum[2] = Const Value(2)
           v13:Any = Snapshot FrameState { pc: 0x1008, stack: [v10, v12], locals: [] }
           PatchPoint MethodRedefined(Integer@0x1010, +@0x1018, cme:0x1020)
-          v33:Fixnum[6] = Const Value(6)
-          v21:Any = Snapshot FrameState { pc: 0x1048, stack: [v33], locals: [] }
+          v35:Fixnum[6] = Const Value(6)
+          v21:Any = Snapshot FrameState { pc: 0x1048, stack: [v35], locals: [] }
           CheckInterrupts
-          Return v33
+          Return v35
         ");
     }
 
@@ -296,7 +296,8 @@ pub(crate) mod hir_build_tests {
           v4:CPtr = LoadPC
           v5:CPtr[CPtr(0x1001)] = Const CPtr(0x1001)
           v6:CBool = IsBitEqual v4, v5
-          IfTrue v6, bb3(v1, v3)
+          CondBranch v6, bb3(v1, v3), bb6()
+        bb6():
           Jump bb5(v1, v3)
         bb2():
           EntryPoint JIT(0)
@@ -373,15 +374,16 @@ pub(crate) mod hir_build_tests {
           CheckInterrupts
           v23:CBool = Test v20
           v24:Truthy = RefineType v20, Truthy
-          IfTrue v23, bb4(v9, v10, v14, v10)
-          v26:Falsy = RefineType v20, Falsy
-          v31:Fixnum[2] = Const Value(2)
-          CheckInterrupts
-          Return v31
+          CondBranch v23, bb4(v9, v10, v14, v10), bb5()
         bb4(v36:BasicObject, v37:BasicObject, v38:NilClass, v39:BasicObject):
           v44:Fixnum[1] = Const Value(1)
           CheckInterrupts
           Return v44
+        bb5():
+          v26:Falsy = RefineType v20, Falsy
+          v31:Fixnum[2] = Const Value(2)
+          CheckInterrupts
+          Return v31
         ");
     }
 
@@ -419,15 +421,16 @@ pub(crate) mod hir_build_tests {
           CheckInterrupts
           v22:CBool = Test v19
           v23:Truthy = RefineType v19, Truthy
-          IfTrue v22, bb4(v9, v10, v10)
-          v25:Falsy = RefineType v19, Falsy
-          v29:Fixnum[2] = Const Value(2)
-          CheckInterrupts
-          Return v29
+          CondBranch v22, bb4(v9, v10, v10), bb5()
         bb4(v34:BasicObject, v35:BasicObject, v36:BasicObject):
           v41:Fixnum[1] = Const Value(1)
           CheckInterrupts
           Return v41
+        bb5():
+          v25:Falsy = RefineType v19, Falsy
+          v29:Fixnum[2] = Const Value(2)
+          CheckInterrupts
+          Return v29
         ");
     }
 
@@ -463,15 +466,16 @@ pub(crate) mod hir_build_tests {
           CheckInterrupts
           v18:CBool = Test v15
           v19:Truthy = RefineType v15, Truthy
-          IfTrue v18, bb4(v6)
-          v21:Falsy = RefineType v15, Falsy
-          v24:Fixnum[2] = Const Value(2)
-          CheckInterrupts
-          Return v24
+          CondBranch v18, bb4(v6), bb5()
         bb4(v29:BasicObject):
           v33:Fixnum[1] = Const Value(1)
           CheckInterrupts
           Return v33
+        bb5():
+          v21:Falsy = RefineType v15, Falsy
+          v24:Fixnum[2] = Const Value(2)
+          CheckInterrupts
+          Return v24
         ");
     }
 
@@ -1161,7 +1165,8 @@ pub(crate) mod hir_build_tests {
           v5:CPtr = LoadPC
           v6:CPtr[CPtr(0x1001)] = Const CPtr(0x1001)
           v7:CBool = IsBitEqual v5, v6
-          IfTrue v7, bb3(v1, v3, v4)
+          CondBranch v7, bb3(v1, v3, v4), bb6()
+        bb6():
           Jump bb5(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
@@ -1203,7 +1208,8 @@ pub(crate) mod hir_build_tests {
           v5:CPtr = LoadPC
           v6:CPtr[CPtr(0x1001)] = Const CPtr(0x1001)
           v7:CBool = IsBitEqual v5, v6
-          IfTrue v7, bb3(v1, v3, v4)
+          CondBranch v7, bb3(v1, v3, v4), bb6()
+        bb6():
           Jump bb5(v1, v3, v4)
         bb2():
           EntryPoint JIT(0)
@@ -1241,7 +1247,8 @@ pub(crate) mod hir_build_tests {
           v4:CPtr = LoadPC
           v5:CPtr[CPtr(0x1001)] = Const CPtr(0x1001)
           v6:CBool = IsBitEqual v4, v5
-          IfTrue v6, bb3(v1, v3)
+          CondBranch v6, bb3(v1, v3), bb6()
+        bb6():
           Jump bb5(v1, v3)
         bb2():
           EntryPoint JIT(0)
@@ -1340,7 +1347,8 @@ pub(crate) mod hir_build_tests {
           CheckInterrupts
           v13:CBool = Test v10
           v14:NilClass = RefineType v10, Falsy
-          IfFalse v13, bb4(v6)
+          CondBranch v13, bb5(), bb4(v6)
+        bb5():
           v16:TrueClass = RefineType v10, Truthy
           v19:Fixnum[3] = Const Value(3)
           CheckInterrupts
@@ -1457,7 +1465,8 @@ pub(crate) mod hir_build_tests {
           CheckInterrupts
           v16:CBool = Test v10
           v17:Falsy = RefineType v10, Falsy
-          IfFalse v16, bb4(v9, v17)
+          CondBranch v16, bb5(), bb4(v9, v17)
+        bb5():
           v19:Truthy = RefineType v10, Truthy
           v22:Fixnum[3] = Const Value(3)
           CheckInterrupts
@@ -1500,7 +1509,8 @@ pub(crate) mod hir_build_tests {
           CheckInterrupts
           v19:CBool = Test v12
           v20:Falsy = RefineType v12, Falsy
-          IfFalse v19, bb4(v11, v20, v13)
+          CondBranch v19, bb6(), bb4(v11, v20, v13)
+        bb6():
           v22:Truthy = RefineType v12, Truthy
           v25:Fixnum[3] = Const Value(3)
           CheckInterrupts
@@ -1843,17 +1853,18 @@ pub(crate) mod hir_build_tests {
           CheckInterrupts
           v38:CBool = Test v35
           v39:Truthy = RefineType v35, Truthy
-          IfTrue v38, bb4(v26, v27, v28)
-          v41:Falsy = RefineType v35, Falsy
-          v43:NilClass = Const Value(nil)
-          CheckInterrupts
-          Return v27
+          CondBranch v38, bb4(v26, v27, v28), bb6()
         bb4(v51:BasicObject, v52:BasicObject, v53:BasicObject):
           v58:Fixnum[1] = Const Value(1)
           v61:BasicObject = Send v52, :+, v58 # SendFallbackReason: Uncategorized(opt_plus)
           v66:Fixnum[1] = Const Value(1)
           v69:BasicObject = Send v53, :-, v66 # SendFallbackReason: Uncategorized(opt_minus)
           Jump bb5(v51, v61, v69)
+        bb6():
+          v41:Falsy = RefineType v35, Falsy
+          v43:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v27
         ");
     }
 
@@ -1915,7 +1926,8 @@ pub(crate) mod hir_build_tests {
           CheckInterrupts
           v19:CBool[true] = Test v13
           v20 = RefineType v13, Falsy
-          IfFalse v19, bb4(v8, v20)
+          CondBranch v19, bb5(), bb4(v8, v20)
+        bb5():
           v22:TrueClass = RefineType v13, Truthy
           v25:Fixnum[3] = Const Value(3)
           CheckInterrupts
@@ -2372,11 +2384,11 @@ pub(crate) mod hir_build_tests {
           v7:BasicObject = LoadArg :a@1
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
-          v15:Class[VMFrozenCore] = Const Value(VALUE(0x1008))
+          v15:ClassSubclass[VMFrozenCore] = Const Value(VALUE(0x1008))
           v17:HashExact = NewHash
           PatchPoint NoEPEscape(test)
           v22:BasicObject = Send v15, :core#hash_merge_kwd, v17, v10 # SendFallbackReason: Uncategorized(opt_send_without_block)
-          v24:Class[VMFrozenCore] = Const Value(VALUE(0x1008))
+          v24:ClassSubclass[VMFrozenCore] = Const Value(VALUE(0x1008))
           v27:StaticSymbol[:b] = Const Value(VALUE(0x1010))
           v29:Fixnum[1] = Const Value(1)
           v31:BasicObject = Send v24, :core#hash_merge_ptr, v22, v27, v29 # SendFallbackReason: Uncategorized(opt_send_without_block)
@@ -2407,7 +2419,7 @@ pub(crate) mod hir_build_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           v16:ArrayExact = ToNewArray v10
           v18:Fixnum[1] = Const Value(1)
-          v20:CUInt64 = LoadField v16, :_rbasic_flags@0x1001
+          v20:CUInt64 = LoadField v16, :RBASIC_FLAGS@0x1001
           v21:CUInt64 = GuardNoBitsSet v20, RUBY_FL_FREEZE=CUInt64(2048)
           ArrayPush v16, v18
           v24:BasicObject = Send v9, :foo, v16 # SendFallbackReason: Uncategorized(opt_send_without_block)
@@ -2471,18 +2483,17 @@ pub(crate) mod hir_build_tests {
           v29:ArrayExact = ToArray v19
           PatchPoint NoEPEscape(test)
           v36:CPtr = GetEP 0
-          v37:CUInt64 = LoadField v36, :_ep_flags@0x1004
+          v37:CUInt64 = LoadField v36, :VM_ENV_DATA_INDEX_FLAGS@0x1004
           v38:CBool = IsBlockParamModified v37
-          IfTrue v38, bb4()
-          Jump bb5()
+          CondBranch v38, bb4(), bb5()
         bb4():
-          v41:BasicObject = LoadField v36, :&@0x1005
-          Jump bb6(v41, v41)
+          v40:BasicObject = LoadField v36, :&@0x1005
+          Jump bb6(v40, v40)
         bb5():
-          v43:CInt64 = LoadField v36, :_env_data_index_specval@0x1006
-          v44:CInt64 = GuardAnyBitSet v43, CUInt64(1)
-          v45:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v45, v21)
+          v42:CInt64 = LoadField v36, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
+          v43:CInt64 = GuardAnyBitSet v42, CUInt64(1)
+          v44:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v44, v21)
         bb6(v34:BasicObject, v35:BasicObject):
           SideExit SplatKwNotProfiled
         ");
@@ -2509,7 +2520,8 @@ pub(crate) mod hir_build_tests {
           v10:BasicObject = GetConstantPath 0x1000
           v12:NilClass = Const Value(nil)
           v15:CBool = IsMethodCFunc v10, :new
-          IfFalse v15, bb4(v6, v12, v10)
+          CondBranch v15, bb6(), bb4(v6, v12, v10)
+        bb6():
           v17:HeapBasicObject = ObjectAlloc v10
           v19:BasicObject = Send v17, :initialize # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
@@ -3391,16 +3403,15 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           v15:CPtr = GetEP 0
-          v16:CUInt64 = LoadField v15, :_ep_flags@0x1001
+          v16:CUInt64 = LoadField v15, :VM_ENV_DATA_INDEX_FLAGS@0x1001
           v17:CBool = IsBlockParamModified v16
-          IfTrue v17, bb4()
-          Jump bb5()
+          CondBranch v17, bb4(), bb5()
         bb4():
-          v20:BasicObject = LoadField v15, :block@0x1002
-          Jump bb6(v20)
+          v19:BasicObject = LoadField v15, :block@0x1002
+          Jump bb6(v19)
         bb5():
-          v22:BasicObject = GetBlockParam :block, l0, EP@3
-          Jump bb6(v22)
+          v21:BasicObject = GetBlockParam :block, l0, EP@3
+          Jump bb6(v21)
         bb6(v14:BasicObject):
           CheckInterrupts
           Return v14
@@ -3428,22 +3439,21 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           v17:CPtr = GetEP 0
-          v18:CUInt64 = LoadField v17, :_ep_flags@0x1001
+          v18:CUInt64 = LoadField v17, :VM_ENV_DATA_INDEX_FLAGS@0x1001
           v19:CBool = IsBlockParamModified v18
-          IfTrue v19, bb4()
-          Jump bb5()
+          CondBranch v19, bb4(), bb5()
         bb4():
-          v22:BasicObject = LoadField v17, :block@0x1002
-          Jump bb6(v22, v22)
+          v21:BasicObject = LoadField v17, :block@0x1002
+          Jump bb6(v21, v21)
         bb5():
-          v24:CInt64 = LoadField v17, :_env_data_index_specval@0x1003
-          v25:CInt64 = GuardAnyBitSet v24, CUInt64(1)
-          v26:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v26, v10)
+          v23:CInt64 = LoadField v17, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
+          v24:CInt64 = GuardAnyBitSet v23, CUInt64(1)
+          v25:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v25, v10)
         bb6(v15:BasicObject, v16:BasicObject):
-          v29:BasicObject = Send v9, &block, :tap, v15 # SendFallbackReason: Uncategorized(send)
+          v28:BasicObject = Send v9, &block, :tap, v15 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v29
+          Return v28
         ");
     }
 
@@ -3473,34 +3483,32 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:NilClass):
           v18:CPtr = GetEP 0
-          v19:CUInt64 = LoadField v18, :_ep_flags@0x1001
+          v19:CUInt64 = LoadField v18, :VM_ENV_DATA_INDEX_FLAGS@0x1001
           v20:CBool = IsBlockParamModified v19
-          IfTrue v20, bb4()
-          Jump bb5()
+          CondBranch v20, bb4(), bb5()
         bb4():
-          v23:BasicObject = LoadField v18, :block@0x1002
-          Jump bb6(v23)
+          v22:BasicObject = LoadField v18, :block@0x1002
+          Jump bb6(v22)
         bb5():
-          v25:BasicObject = GetBlockParam :block, l0, EP@4
-          Jump bb6(v25)
+          v24:BasicObject = GetBlockParam :block, l0, EP@4
+          Jump bb6(v24)
         bb6(v17:BasicObject):
-          v33:CPtr = GetEP 0
-          v34:CUInt64 = LoadField v33, :_ep_flags@0x1001
-          v35:CBool = IsBlockParamModified v34
-          IfTrue v35, bb7()
-          Jump bb8()
+          v32:CPtr = GetEP 0
+          v33:CUInt64 = LoadField v32, :VM_ENV_DATA_INDEX_FLAGS@0x1001
+          v34:CBool = IsBlockParamModified v33
+          CondBranch v34, bb7(), bb8()
         bb7():
-          v38:BasicObject = LoadField v33, :block@0x1002
-          Jump bb9(v38, v38)
+          v36:BasicObject = LoadField v32, :block@0x1002
+          Jump bb9(v36, v36)
         bb8():
-          v40:CInt64 = LoadField v33, :_env_data_index_specval@0x1003
-          v41:CInt64 = GuardAnyBitSet v40, CUInt64(1)
-          v42:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb9(v42, v17)
-        bb9(v31:BasicObject, v32:BasicObject):
-          v45:BasicObject = Send v11, &block, :tap, v31 # SendFallbackReason: Uncategorized(send)
+          v38:CInt64 = LoadField v32, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
+          v39:CInt64 = GuardAnyBitSet v38, CUInt64(1)
+          v40:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb9(v40, v17)
+        bb9(v30:BasicObject, v31:BasicObject):
+          v43:BasicObject = Send v11, &block, :tap, v30 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v45
+          Return v43
         ");
     }
 
@@ -3528,34 +3536,32 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v5, v6)
         bb3(v8:BasicObject, v9:NilClass):
           v14:CPtr = GetEP 1
-          v15:CUInt64 = LoadField v14, :_ep_flags@0x1000
+          v15:CUInt64 = LoadField v14, :VM_ENV_DATA_INDEX_FLAGS@0x1000
           v16:CBool = IsBlockParamModified v15
-          IfTrue v16, bb4()
-          Jump bb5()
+          CondBranch v16, bb4(), bb5()
         bb4():
-          v19:BasicObject = LoadField v14, :block@0x1001
-          Jump bb6(v19)
+          v18:BasicObject = LoadField v14, :block@0x1001
+          Jump bb6(v18)
         bb5():
-          v21:BasicObject = GetBlockParam :block, l1, EP@3
-          Jump bb6(v21)
+          v20:BasicObject = GetBlockParam :block, l1, EP@3
+          Jump bb6(v20)
         bb6(v13:BasicObject):
-          v28:CPtr = GetEP 1
-          v29:CUInt64 = LoadField v28, :_ep_flags@0x1000
-          v30:CBool = IsBlockParamModified v29
-          IfTrue v30, bb7()
-          Jump bb8()
+          v27:CPtr = GetEP 1
+          v28:CUInt64 = LoadField v27, :VM_ENV_DATA_INDEX_FLAGS@0x1000
+          v29:CBool = IsBlockParamModified v28
+          CondBranch v29, bb7(), bb8()
         bb7():
-          v33:BasicObject = LoadField v28, :block@0x1001
-          Jump bb9(v33)
+          v31:BasicObject = LoadField v27, :block@0x1001
+          Jump bb9(v31)
         bb8():
-          v35:CInt64 = LoadField v28, :_env_data_index_specval@0x1002
-          v36:CInt64 = GuardAnyBitSet v35, CUInt64(1)
-          v37:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb9(v37)
-        bb9(v27:BasicObject):
-          v40:BasicObject = Send v8, &block, :tap, v27 # SendFallbackReason: Uncategorized(send)
+          v33:CInt64 = LoadField v27, :VM_ENV_DATA_INDEX_SPECVAL@0x1002
+          v34:CInt64 = GuardAnyBitSet v33, CUInt64(1)
+          v35:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb9(v35)
+        bb9(v26:BasicObject):
+          v38:BasicObject = Send v8, &block, :tap, v26 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v40
+          Return v38
         ");
     }
 
@@ -3587,33 +3593,34 @@ pub(crate) mod hir_build_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           v14:Fixnum[0] = Const Value(0)
           v18:CPtr = GetEP 0
-          v19:CUInt64 = LoadField v18, :_ep_flags@0x1001
+          v19:CUInt64 = LoadField v18, :VM_ENV_DATA_INDEX_FLAGS@0x1001
           v20:CBool = IsBlockParamModified v19
-          IfTrue v20, bb4()
-          Jump bb5()
+          CondBranch v20, bb4(), bb5()
         bb4():
-          v23:BasicObject = LoadField v18, :block@0x1002
-          Jump bb6(v23, v23)
+          v22:BasicObject = LoadField v18, :block@0x1002
+          Jump bb6(v22, v22)
         bb5():
-          v25:CInt64 = LoadField v18, :_env_data_index_specval@0x1003
-          v26:CInt64[1] = Const CInt64(1)
-          v27:CInt64 = IntAnd v25, v26
-          v28:CBool = IsBitEqual v27, v26
-          IfTrue v28, bb7()
-          v32:CInt64[0] = Const CInt64(0)
-          v33:CBool = IsBitEqual v25, v32
-          IfTrue v33, bb8()
-          SideExit BlockParamProxyProfileNotCovered
+          v24:CInt64 = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
+          v25:CInt64[1] = Const CInt64(1)
+          v26:CInt64 = IntAnd v24, v25
+          v27:CBool = IsBitEqual v26, v25
+          CondBranch v27, bb7(), bb9()
         bb7():
-          v30:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v30, v10)
+          v29:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v29, v10)
+        bb9():
+          v31:CInt64[0] = Const CInt64(0)
+          v32:CBool = IsBitEqual v24, v31
+          CondBranch v32, bb8(), bb10()
         bb8():
-          v35:NilClass = Const Value(nil)
-          Jump bb6(v35, v10)
+          v34:NilClass = Const Value(nil)
+          Jump bb6(v34, v10)
         bb6(v16:BasicObject, v17:BasicObject):
-          v39:BasicObject = Send v14, &block, :then, v16 # SendFallbackReason: Uncategorized(send)
+          v38:BasicObject = Send v14, &block, :then, v16 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v39
+          Return v38
+        bb10():
+          SideExit BlockParamProxyProfileNotCovered
         ");
     }
 
@@ -3638,16 +3645,15 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v11:CPtr = GetEP 1
-          v12:CUInt64 = LoadField v11, :_ep_flags@0x1000
+          v12:CUInt64 = LoadField v11, :VM_ENV_DATA_INDEX_FLAGS@0x1000
           v13:CBool = IsBlockParamModified v12
-          IfTrue v13, bb4()
-          Jump bb5()
+          CondBranch v13, bb4(), bb5()
         bb4():
-          v16:BasicObject = LoadField v11, :block@0x1001
-          Jump bb6(v16)
+          v15:BasicObject = LoadField v11, :block@0x1001
+          Jump bb6(v15)
         bb5():
-          v18:BasicObject = GetBlockParam :block, l1, EP@3
-          Jump bb6(v18)
+          v17:BasicObject = GetBlockParam :block, l1, EP@3
+          Jump bb6(v17)
         bb6(v10:BasicObject):
           CheckInterrupts
           Return v10
@@ -3679,10 +3685,10 @@ pub(crate) mod hir_build_tests {
           v14:NilClass = Const Value(nil)
           SetLocal :block, l0, EP@3, v14
           v18:CPtr = GetEP 0
-          v19:CInt64 = LoadField v18, :_env_data_index_flags@0x1001
+          v19:CInt64 = LoadField v18, :VM_ENV_DATA_INDEX_FLAGS@0x1001
           v20:CInt64[512] = Const CInt64(512)
           v21:CInt64 = IntOr v19, v20
-          StoreField v18, :_env_data_index_flags@0x1001, v21
+          StoreField v18, :VM_ENV_DATA_INDEX_FLAGS@0x1001, v21
           CheckInterrupts
           Return v14
         ");
@@ -3711,10 +3717,10 @@ pub(crate) mod hir_build_tests {
           v10:NilClass = Const Value(nil)
           SetLocal :block, l1, EP@3, v10
           v14:CPtr = GetEP 1
-          v15:CInt64 = LoadField v14, :_env_data_index_flags@0x1000
+          v15:CInt64 = LoadField v14, :VM_ENV_DATA_INDEX_FLAGS@0x1000
           v16:CInt64[512] = Const CInt64(512)
           v17:CInt64 = IntOr v15, v16
-          StoreField v14, :_env_data_index_flags@0x1000, v17
+          StoreField v14, :VM_ENV_DATA_INDEX_FLAGS@0x1000, v17
           CheckInterrupts
           Return v10
         ");
@@ -3744,18 +3750,17 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           v21:CPtr = GetEP 0
-          v22:CUInt64 = LoadField v21, :_ep_flags@0x1002
+          v22:CUInt64 = LoadField v21, :VM_ENV_DATA_INDEX_FLAGS@0x1002
           v23:CBool = IsBlockParamModified v22
-          IfTrue v23, bb4()
-          Jump bb5()
+          CondBranch v23, bb4(), bb5()
         bb4():
-          v26:BasicObject = LoadField v21, :b@0x1003
-          Jump bb6(v26, v26)
+          v25:BasicObject = LoadField v21, :b@0x1003
+          Jump bb6(v25, v25)
         bb5():
-          v28:CInt64 = LoadField v21, :_env_data_index_specval@0x1004
-          v29:CInt64 = GuardAnyBitSet v28, CUInt64(1)
-          v30:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v30, v13)
+          v27:CInt64 = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
+          v28:CInt64 = GuardAnyBitSet v27, CUInt64(1)
+          v29:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v29, v13)
         bb6(v19:BasicObject, v20:BasicObject):
           SideExit SplatKwNotProfiled
         ");
@@ -3794,23 +3799,22 @@ pub(crate) mod hir_build_tests {
           v29:ArrayExact = ToArray v19
           PatchPoint NoEPEscape(test)
           v36:CPtr = GetEP 0
-          v37:CUInt64 = LoadField v36, :_ep_flags@0x1004
+          v37:CUInt64 = LoadField v36, :VM_ENV_DATA_INDEX_FLAGS@0x1004
           v38:CBool = IsBlockParamModified v37
-          IfTrue v38, bb4()
-          Jump bb5()
+          CondBranch v38, bb4(), bb5()
         bb4():
-          v41:BasicObject = LoadField v36, :&@0x1005
-          Jump bb6(v41, v41)
+          v40:BasicObject = LoadField v36, :&@0x1005
+          Jump bb6(v40, v40)
         bb5():
-          v43:CInt64 = LoadField v36, :_env_data_index_specval@0x1006
-          v44:CInt64[0] = GuardBitEquals v43, CInt64(0)
-          v45:NilClass = Const Value(nil)
-          Jump bb6(v45, v21)
+          v42:CInt64 = LoadField v36, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
+          v43:CInt64[0] = GuardBitEquals v42, CInt64(0)
+          v44:NilClass = Const Value(nil)
+          Jump bb6(v44, v21)
         bb6(v34:BasicObject, v35:BasicObject):
-          v48:NilClass = GuardType v20, NilClass
-          v50:BasicObject = Send v17, &block, :foo, v18, v29, v48, v34 # SendFallbackReason: Uncategorized(send)
+          v47:NilClass = GuardType v20, NilClass
+          v49:BasicObject = Send v17, &block, :foo, v18, v29, v47, v34 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v50
+          Return v49
         ");
     }
 
@@ -3839,23 +3843,22 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           v21:CPtr = GetEP 0
-          v22:CUInt64 = LoadField v21, :_ep_flags@0x1002
+          v22:CUInt64 = LoadField v21, :VM_ENV_DATA_INDEX_FLAGS@0x1002
           v23:CBool = IsBlockParamModified v22
-          IfTrue v23, bb4()
-          Jump bb5()
+          CondBranch v23, bb4(), bb5()
         bb4():
-          v26:BasicObject = LoadField v21, :b@0x1003
-          Jump bb6(v26, v26)
+          v25:BasicObject = LoadField v21, :b@0x1003
+          Jump bb6(v25, v25)
         bb5():
-          v28:CInt64 = LoadField v21, :_env_data_index_specval@0x1004
-          v29:CInt64 = GuardAnyBitSet v28, CUInt64(1)
-          v30:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v30, v13)
+          v27:CInt64 = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
+          v28:CInt64 = GuardAnyBitSet v27, CUInt64(1)
+          v29:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v29, v13)
         bb6(v19:BasicObject, v20:BasicObject):
-          v33:HashExact = GuardType v12, HashExact
-          v35:BasicObject = Send v11, &block, :foo, v33, v19 # SendFallbackReason: Uncategorized(send)
+          v32:HashExact = GuardType v12, HashExact
+          v34:BasicObject = Send v11, &block, :foo, v32, v19 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v35
+          Return v34
         ");
     }
 
@@ -3884,23 +3887,22 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           v21:CPtr = GetEP 0
-          v22:CUInt64 = LoadField v21, :_ep_flags@0x1002
+          v22:CUInt64 = LoadField v21, :VM_ENV_DATA_INDEX_FLAGS@0x1002
           v23:CBool = IsBlockParamModified v22
-          IfTrue v23, bb4()
-          Jump bb5()
+          CondBranch v23, bb4(), bb5()
         bb4():
-          v26:BasicObject = LoadField v21, :b@0x1003
-          Jump bb6(v26, v26)
+          v25:BasicObject = LoadField v21, :b@0x1003
+          Jump bb6(v25, v25)
         bb5():
-          v28:CInt64 = LoadField v21, :_env_data_index_specval@0x1004
-          v29:CInt64 = GuardAnyBitSet v28, CUInt64(1)
-          v30:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v30, v13)
+          v27:CInt64 = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
+          v28:CInt64 = GuardAnyBitSet v27, CUInt64(1)
+          v29:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v29, v13)
         bb6(v19:BasicObject, v20:BasicObject):
-          v33:HashExact = GuardType v12, HashExact
-          v35:BasicObject = Send v11, &block, :foo, v33, v19 # SendFallbackReason: Uncategorized(send)
+          v32:HashExact = GuardType v12, HashExact
+          v34:BasicObject = Send v11, &block, :foo, v32, v19 # SendFallbackReason: Uncategorized(send)
           CheckInterrupts
-          Return v35
+          Return v34
         ");
     }
 
@@ -3939,18 +3941,17 @@ pub(crate) mod hir_build_tests {
           v29:ArrayExact = ToArray v19
           PatchPoint NoEPEscape(test)
           v36:CPtr = GetEP 0
-          v37:CUInt64 = LoadField v36, :_ep_flags@0x1004
+          v37:CUInt64 = LoadField v36, :VM_ENV_DATA_INDEX_FLAGS@0x1004
           v38:CBool = IsBlockParamModified v37
-          IfTrue v38, bb4()
-          Jump bb5()
+          CondBranch v38, bb4(), bb5()
         bb4():
-          v41:BasicObject = LoadField v36, :&@0x1005
-          Jump bb6(v41, v41)
+          v40:BasicObject = LoadField v36, :&@0x1005
+          Jump bb6(v40, v40)
         bb5():
-          v43:CInt64 = LoadField v36, :_env_data_index_specval@0x1006
-          v44:CInt64[0] = GuardBitEquals v43, CInt64(0)
-          v45:NilClass = Const Value(nil)
-          Jump bb6(v45, v21)
+          v42:CInt64 = LoadField v36, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
+          v43:CInt64[0] = GuardBitEquals v42, CInt64(0)
+          v44:NilClass = Const Value(nil)
+          Jump bb6(v44, v21)
         bb6(v34:BasicObject, v35:BasicObject):
           SideExit SplatKwPolymorphic
         ");
@@ -3983,18 +3984,17 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
           v21:CPtr = GetEP 0
-          v22:CUInt64 = LoadField v21, :_ep_flags@0x1002
+          v22:CUInt64 = LoadField v21, :VM_ENV_DATA_INDEX_FLAGS@0x1002
           v23:CBool = IsBlockParamModified v22
-          IfTrue v23, bb4()
-          Jump bb5()
+          CondBranch v23, bb4(), bb5()
         bb4():
-          v26:BasicObject = LoadField v21, :block@0x1003
-          Jump bb6(v26, v26)
+          v25:BasicObject = LoadField v21, :block@0x1003
+          Jump bb6(v25, v25)
         bb5():
-          v28:CInt64 = LoadField v21, :_env_data_index_specval@0x1004
-          v29:CInt64 = GuardAnyBitSet v28, CUInt64(1)
-          v30:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb6(v30, v13)
+          v27:CInt64 = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
+          v28:CInt64 = GuardAnyBitSet v27, CUInt64(1)
+          v29:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb6(v29, v13)
         bb6(v19:BasicObject, v20:BasicObject):
           SideExit SplatKwNotNilOrHash
         ");
@@ -4077,7 +4077,7 @@ pub(crate) mod hir_build_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           v15:ArrayExact = ToNewArray v10
           v17:Fixnum[1] = Const Value(1)
-          v19:CUInt64 = LoadField v15, :_rbasic_flags@0x1001
+          v19:CUInt64 = LoadField v15, :RBASIC_FLAGS@0x1001
           v20:CUInt64 = GuardNoBitsSet v19, RUBY_FL_FREEZE=CUInt64(2048)
           ArrayPush v15, v17
           CheckInterrupts
@@ -4109,7 +4109,7 @@ pub(crate) mod hir_build_tests {
           v17:Fixnum[1] = Const Value(1)
           v19:Fixnum[2] = Const Value(2)
           v21:Fixnum[3] = Const Value(3)
-          v23:CUInt64 = LoadField v15, :_rbasic_flags@0x1001
+          v23:CUInt64 = LoadField v15, :RBASIC_FLAGS@0x1001
           v24:CUInt64 = GuardNoBitsSet v23, RUBY_FL_FREEZE=CUInt64(2048)
           ArrayPush v15, v17
           ArrayPush v15, v19
@@ -4360,7 +4360,7 @@ pub(crate) mod hir_build_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          v10:Class[VMFrozenCore] = Const Value(VALUE(0x1000))
+          v10:ClassSubclass[VMFrozenCore] = Const Value(VALUE(0x1000))
           v12:BasicObject = PutSpecialObject CBase
           v14:StaticSymbol[:aliased] = Const Value(VALUE(0x1008))
           v16:StaticSymbol[:__callee__] = Const Value(VALUE(0x1010))
@@ -4469,7 +4469,8 @@ pub(crate) mod hir_build_tests {
           CheckInterrupts
           v17:CBool = IsNil v10
           v18:NilClass = Const Value(nil)
-          IfTrue v17, bb4(v9, v18, v18)
+          CondBranch v17, bb4(v9, v18, v18), bb5()
+        bb5():
           v20:NotNil = RefineType v10, NotNil
           v22:BasicObject = Send v20, :itself # SendFallbackReason: Uncategorized(opt_send_without_block)
           Jump bb4(v9, v20, v22)
@@ -4509,12 +4510,14 @@ pub(crate) mod hir_build_tests {
           CheckInterrupts
           v16:CBool = Test v10
           v17:Falsy = RefineType v10, Falsy
-          IfFalse v16, bb4(v9, v17)
+          CondBranch v16, bb6(), bb4(v9, v17)
+        bb6():
           v19:Truthy = RefineType v10, Truthy
           CheckInterrupts
           v25:CBool[false] = IsNil v19
           v26:NilClass = Const Value(nil)
-          IfTrue v25, bb5(v9, v26, v26)
+          CondBranch v25, bb5(v9, v26, v26), bb7()
+        bb7():
           v28:Truthy = RefineType v19, NotNil
           v30:BasicObject = Send v28, :itself # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
@@ -4564,33 +4567,36 @@ pub(crate) mod hir_build_tests {
           CheckInterrupts
           v16:CBool = Test v10
           v17:Falsy = RefineType v10, Falsy
-          IfFalse v16, bb6(v9, v17)
+          CondBranch v16, bb7(), bb6(v9, v17)
+        bb7():
           v19:Truthy = RefineType v10, Truthy
           CheckInterrupts
           v24:CBool[true] = Test v19
           v25 = RefineType v19, Falsy
-          IfFalse v24, bb5(v9, v25)
+          CondBranch v24, bb8(), bb5(v9, v25)
+        bb8():
           v27:Truthy = RefineType v19, Truthy
           CheckInterrupts
           v32:CBool[true] = Test v27
           v33 = RefineType v27, Falsy
-          IfFalse v32, bb4(v9, v33)
+          CondBranch v32, bb9(), bb4(v9, v33)
+        bb9():
           v35:Truthy = RefineType v27, Truthy
           v38:Fixnum[3] = Const Value(3)
           CheckInterrupts
           Return v38
-        bb6(v43:BasicObject, v44:Falsy):
-          v48:Fixnum[6] = Const Value(6)
-          CheckInterrupts
-          Return v48
-        bb5(v53, v54):
-          v58 = Const Value(5)
-          CheckInterrupts
-          Return v58
         bb4(v63, v64):
           v68 = Const Value(4)
           CheckInterrupts
           Return v68
+        bb5(v53, v54):
+          v58 = Const Value(5)
+          CheckInterrupts
+          Return v58
+        bb6(v43:BasicObject, v44:Falsy):
+          v48:Fixnum[6] = Const Value(6)
+          CheckInterrupts
+          Return v48
         ");
     }
 
@@ -4638,9 +4644,9 @@ pub(crate) mod hir_build_tests {
           v4:BasicObject = LoadArg :self@0
           Jump bb3(v4)
         bb3(v6:BasicObject):
-          v10:HeapObject = InvokeBuiltin leaf <inline_expr>, v6
+          v10:Class = InvokeBuiltin leaf <inline_expr>, v6
           Jump bb4(v6, v10)
-        bb4(v12:BasicObject, v13:HeapObject):
+        bb4(v12:BasicObject, v13:Class):
           CheckInterrupts
           Return v13
         ");
@@ -4678,31 +4684,31 @@ pub(crate) mod hir_build_tests {
           v27:BasicObject = InvokeBuiltin dir_s_open, v18, v19, v20
           PatchPoint NoEPEscape(open)
           v35:CPtr = GetEP 0
-          v36:CUInt64 = LoadField v35, :_ep_flags@0x1004
+          v36:CUInt64 = LoadField v35, :VM_ENV_DATA_INDEX_FLAGS@0x1004
           v37:CBool = IsBlockParamModified v36
-          IfTrue v37, bb5()
-          Jump bb6()
+          CondBranch v37, bb5(), bb6()
         bb5():
-          v40:BasicObject = LoadField v35, :block@0x1005
-          Jump bb7(v40, v40)
+          v39:BasicObject = LoadField v35, :block@0x1005
+          Jump bb7(v39, v39)
         bb6():
-          v42:CInt64 = LoadField v35, :_env_data_index_specval@0x1006
-          v43:CInt64 = GuardAnyBitSet v42, CUInt64(1)
-          v44:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb7(v44, v22)
+          v41:CInt64 = LoadField v35, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
+          v42:CInt64 = GuardAnyBitSet v41, CUInt64(1)
+          v43:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
+          Jump bb7(v43, v22)
         bb7(v33:BasicObject, v34:BasicObject):
           CheckInterrupts
-          v48:CBool = Test v33
-          v49:Falsy = RefineType v33, Falsy
-          IfFalse v48, bb4(v18, v19, v20, v21, v34, v27)
-          v51:Truthy = RefineType v33, Truthy
-          v55:BasicObject = InvokeBlock, v27 # SendFallbackReason: InvokeBlock: not yet specialized
-          v58:BasicObject = InvokeBuiltin dir_s_close, v18, v27
+          v47:CBool = Test v33
+          v48:Falsy = RefineType v33, Falsy
+          CondBranch v47, bb8(), bb4(v18, v19, v20, v21, v34, v27)
+        bb8():
+          v50:Truthy = RefineType v33, Truthy
+          v54:BasicObject = InvokeBlock, v27 # SendFallbackReason: InvokeBlock: not yet specialized
+          v57:BasicObject = InvokeBuiltin dir_s_close, v18, v27
           CheckInterrupts
-          Return v55
-        bb4(v64:BasicObject, v65:BasicObject, v66:BasicObject, v67:BasicObject, v68:BasicObject, v69:BasicObject):
+          Return v54
+        bb4(v63:BasicObject, v64:BasicObject, v65:BasicObject, v66:BasicObject, v67:BasicObject, v68:BasicObject):
           CheckInterrupts
-          Return v69
+          Return v68
         ");
     }
 
@@ -4836,15 +4842,16 @@ pub(crate) mod hir_build_tests {
           CheckInterrupts
           v26:CBool = Test v22
           v27:Truthy = RefineType v22, Truthy
-          IfTrue v26, bb4(v9, v10, v14, v10, v17, v19, v27)
+          CondBranch v26, bb4(v9, v10, v14, v10, v17, v19, v27), bb5()
+        bb4(v41:BasicObject, v42:BasicObject, v43:NilClass, v44:BasicObject, v45:Fixnum[0], v46:Fixnum[1], v47:Truthy):
+          CheckInterrupts
+          Return v47
+        bb5():
           v29:Falsy = RefineType v22, Falsy
           v32:Fixnum[2] = Const Value(2)
           v35:BasicObject = Send v10, :[]=, v17, v19, v32 # SendFallbackReason: Uncategorized(opt_send_without_block)
           CheckInterrupts
           Return v32
-        bb4(v41:BasicObject, v42:BasicObject, v43:NilClass, v44:BasicObject, v45:Fixnum[0], v46:Fixnum[1], v47:Truthy):
-          CheckInterrupts
-          Return v47
         ");
     }
 
@@ -5214,7 +5221,8 @@ pub(crate) mod hir_build_tests {
           CheckInterrupts
           v20:CBool = Test v17
           v21:TrueClass = RefineType v17, Truthy
-          IfTrue v20, bb4(v12, v13, v14)
+          CondBranch v20, bb4(v12, v13, v14), bb5()
+        bb5():
           v23:FalseClass = RefineType v17, Falsy
           v25:Fixnum[1] = Const Value(1)
           v27:Fixnum[1] = Const Value(1)
@@ -5342,15 +5350,10 @@ pub(crate) mod hir_build_tests {
           v15:TrueClass|NilClass = Defined yield, v13
           v17:CBool = Test v15
           v18:NilClass = RefineType v15, Falsy
-          IfFalse v17, bb4(v8, v9)
+          CondBranch v17, bb9(), bb4(v8, v9)
+        bb9():
           v20:TrueClass = RefineType v15, Truthy
           Jump bb6(v8, v9)
-        bb4(v23:BasicObject, v24:NilClass):
-          v28:BasicObject = InvokeBuiltin <inline_expr>, v23
-          Jump bb5(v23, v24, v28)
-        bb5(v40:BasicObject, v41:NilClass, v42:BasicObject):
-          CheckInterrupts
-          Return v42
         bb6(v30:BasicObject, v31:NilClass):
           v35:Fixnum[0] = Const Value(0)
           Jump bb8(v30, v35)
@@ -5358,7 +5361,8 @@ pub(crate) mod hir_build_tests {
           v52:BoolExact = InvokeBuiltin rb_jit_ary_at_end, v48, v49
           v54:CBool = Test v52
           v55:FalseClass = RefineType v52, Falsy
-          IfFalse v54, bb7(v48, v49)
+          CondBranch v54, bb10(), bb7(v48, v49)
+        bb10():
           v57:TrueClass = RefineType v52, Truthy
           v59:NilClass = Const Value(nil)
           CheckInterrupts
@@ -5369,6 +5373,12 @@ pub(crate) mod hir_build_tests {
           v78:Fixnum = InvokeBuiltin rb_jit_fixnum_inc, v67, v68
           PatchPoint NoEPEscape(each)
           Jump bb8(v67, v78)
+        bb4(v23:BasicObject, v24:NilClass):
+          v28:BasicObject = InvokeBuiltin <inline_expr>, v23
+          Jump bb5(v23, v24, v28)
+        bb5(v40:BasicObject, v41:NilClass, v42:BasicObject):
+          CheckInterrupts
+          Return v42
         ");
     }
 
@@ -5515,6 +5525,66 @@ pub(crate) mod hir_build_tests {
         assert!(hir.contains("BreakPoint"));
         assert!(hir.contains("Return v"));
     }
+
+    #[test]
+    fn test_getspecialnumber() {
+      eval("
+        def test(a)
+          a =~/(hello)/
+          $1
+        end
+      ");
+      assert_snapshot!(hir_string("test"), @"
+      fn test@<compiled>:3:
+      bb1():
+        EntryPoint interpreter
+        v1:BasicObject = LoadSelf
+        v2:CPtr = LoadSP
+        v3:BasicObject = LoadField v2, :a@0x1000
+        Jump bb3(v1, v3)
+      bb2():
+        EntryPoint JIT(0)
+        v6:BasicObject = LoadArg :self@0
+        v7:BasicObject = LoadArg :a@1
+        Jump bb3(v6, v7)
+      bb3(v9:BasicObject, v10:BasicObject):
+        v15:RegexpExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+        v18:BasicObject = Send v10, :=~, v15 # SendFallbackReason: Uncategorized(opt_regexpmatch2)
+        v22:StringExact|NilClass = GetSpecialNumber 2
+        CheckInterrupts
+        Return v22
+      ");
+    }
+
+    #[test]
+    fn test_getspecialsymbol() {
+      eval("
+        def test(a)
+          a =~/(hello)/
+          $&
+        end
+      ");
+      assert_snapshot!(hir_string("test"), @"
+      fn test@<compiled>:3:
+      bb1():
+        EntryPoint interpreter
+        v1:BasicObject = LoadSelf
+        v2:CPtr = LoadSP
+        v3:BasicObject = LoadField v2, :a@0x1000
+        Jump bb3(v1, v3)
+      bb2():
+        EntryPoint JIT(0)
+        v6:BasicObject = LoadArg :self@0
+        v7:BasicObject = LoadArg :a@1
+        Jump bb3(v6, v7)
+      bb3(v9:BasicObject, v10:BasicObject):
+        v15:RegexpExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+        v18:BasicObject = Send v10, :=~, v15 # SendFallbackReason: Uncategorized(opt_regexpmatch2)
+        v22:StringExact|NilClass = GetSpecialSymbol LastMatch
+        CheckInterrupts
+        Return v22
+      ");
+    }
 }
 
  /// Test successor and predecessor set computations.
@@ -5560,8 +5630,7 @@ pub(crate) mod hir_build_tests {
         let bb3 = function.new_block(0);
 
         let v1 = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
-        let _ = function.push_insn(bb0, Insn::IfTrue { val: v1, target: edge(bb2)});
-        function.push_insn(bb0, Insn::Jump(edge(bb1)));
+        let _ = function.push_insn(bb0, Insn::CondBranch { val: v1, if_true: edge(bb2), if_false: edge(bb1) });
         function.push_insn(bb1, Insn::Jump(edge(bb3)));
         function.push_insn(bb2, Insn::Jump(edge(bb3)));
 
@@ -5587,8 +5656,7 @@ pub(crate) mod hir_build_tests {
 
          // Construct two separate jump instructions.
          let v1 = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
-         let _ = function.push_insn(bb0, Insn::IfTrue { val: v1, target: edge(bb1)});
-         function.push_insn(bb0, Insn::Jump(edge(bb1)));
+         let _ = function.push_insn(bb0, Insn::CondBranch { val: v1, if_true: edge(bb1), if_false: edge(bb1)});
 
          let retval = function.push_insn(bb1, Insn::Const { val: Const::CBool(true) });
          function.push_insn(bb1, Insn::Return { val: retval });
@@ -5668,8 +5736,7 @@ pub(crate) mod hir_build_tests {
         let bb3 = function.new_block(0);
 
         let val = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
-        let _ = function.push_insn(bb0, Insn::IfTrue { val, target: edge(bb1)});
-        function.push_insn(bb0, Insn::Jump(edge(bb2)));
+        let _ = function.push_insn(bb0, Insn::CondBranch { val, if_true: edge(bb1), if_false: edge(bb2) });
 
         function.push_insn(bb2, Insn::Jump(edge(bb3)));
         function.push_insn(bb1, Insn::Jump(edge(bb3)));
@@ -5682,15 +5749,14 @@ pub(crate) mod hir_build_tests {
         fn <manual>:
         bb1():
           v0:Any = Const Value(false)
-          IfTrue v0, bb2()
-          Jump bb3()
+          CondBranch v0, bb2(), bb3()
         bb2():
           Jump bb4()
         bb3():
           Jump bb4()
         bb4():
-          v5:Any = Const CBool(true)
-          Return v5
+          v4:Any = Const CBool(true)
+          Return v4
         ");
 
         let dominators = Dominators::new(&function);
@@ -5718,14 +5784,12 @@ pub(crate) mod hir_build_tests {
         function.push_insn(bb0, Insn::Jump(edge(bb1)));
 
         let v0 = function.push_insn(bb1, Insn::Const { val: Const::Value(Qfalse) });
-        let _ = function.push_insn(bb1, Insn::IfTrue { val: v0, target: edge(bb2)});
-        function.push_insn(bb1, Insn::Jump(edge(bb4)));
+        let _ = function.push_insn(bb1, Insn::CondBranch { val: v0, if_true: edge(bb2), if_false: edge(bb4) });
 
         function.push_insn(bb2, Insn::Jump(edge(bb3)));
 
         let v1 = function.push_insn(bb3, Insn::Const { val: Const::Value(Qfalse) });
-        let _ = function.push_insn(bb3, Insn::IfTrue { val: v1, target: edge(bb5)});
-        function.push_insn(bb3, Insn::Jump(edge(bb7)));
+        let _ = function.push_insn(bb3, Insn::CondBranch { val: v1, if_true: edge(bb5), if_false: edge(bb7) });
 
         function.push_insn(bb4, Insn::Jump(edge(bb5)));
 
@@ -5743,14 +5807,12 @@ pub(crate) mod hir_build_tests {
           Jump bb2()
         bb2():
           v1:Any = Const Value(false)
-          IfTrue v1, bb3()
-          Jump bb5()
+          CondBranch v1, bb3(), bb5()
         bb3():
           Jump bb4()
         bb4():
-          v5:Any = Const Value(false)
-          IfTrue v5, bb6()
-          Jump bb8()
+          v4:Any = Const Value(false)
+          CondBranch v4, bb6(), bb8()
         bb5():
           Jump bb6()
         bb6():
@@ -5758,8 +5820,8 @@ pub(crate) mod hir_build_tests {
         bb7():
           Jump bb8()
         bb8():
-          v11:Any = Const CBool(true)
-          Return v11
+          v9:Any = Const CBool(true)
+          Return v9
         ");
 
         let dominators = Dominators::new(&function);
@@ -5787,20 +5849,17 @@ pub(crate) mod hir_build_tests {
         let bb5 = function.new_block(0);
 
         let v0 = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
-        let _ = function.push_insn(bb0, Insn::IfTrue { val: v0, target: edge(bb1)});
-        function.push_insn(bb0, Insn::Jump(edge(bb4)));
+        let _ = function.push_insn(bb0, Insn::CondBranch { val: v0, if_true: edge(bb1), if_false: edge(bb4) });
 
         let v1 = function.push_insn(bb1, Insn::Const { val: Const::Value(Qfalse) });
-        let _ = function.push_insn(bb1, Insn::IfTrue { val: v1, target: edge(bb2)});
-        function.push_insn(bb1, Insn::Jump(edge(bb3)));
+        let _ = function.push_insn(bb1, Insn::CondBranch { val: v1, if_true: edge(bb2), if_false: edge(bb3) });
 
         function.push_insn(bb2, Insn::Jump(edge(bb3)));
 
         function.push_insn(bb4, Insn::Jump(edge(bb5)));
 
         let v2 = function.push_insn(bb5, Insn::Const { val: Const::Value(Qfalse) });
-        let _ = function.push_insn(bb5, Insn::IfTrue { val: v2, target: edge(bb3)});
-        function.push_insn(bb5, Insn::Jump(edge(bb4)));
+        let _ = function.push_insn(bb5, Insn::CondBranch { val: v2, if_true: edge(bb3), if_false: edge(bb4) });
 
         let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
         function.push_insn(bb3, Insn::Return { val: retval });
@@ -5810,23 +5869,20 @@ pub(crate) mod hir_build_tests {
         fn <manual>:
         bb1():
           v0:Any = Const Value(false)
-          IfTrue v0, bb2()
-          Jump bb5()
+          CondBranch v0, bb2(), bb5()
         bb2():
-          v3:Any = Const Value(false)
-          IfTrue v3, bb3()
-          Jump bb4()
+          v2:Any = Const Value(false)
+          CondBranch v2, bb3(), bb4()
         bb3():
           Jump bb4()
         bb5():
           Jump bb6()
         bb6():
-          v8:Any = Const Value(false)
-          IfTrue v8, bb4()
-          Jump bb5()
+          v6:Any = Const Value(false)
+          CondBranch v6, bb4(), bb5()
         bb4():
-          v11:Any = Const CBool(true)
-          Return v11
+          v8:Any = Const CBool(true)
+          Return v8
         ");
 
         let dominators = Dominators::new(&function);
@@ -5891,26 +5947,31 @@ mod loop_info_tests {
 
     #[test]
     fn test_loop_depth() {
-        // ┌─────┐
-        // │ bb0 │
-        // └──┬──┘
-        //    │
-        // ┌──▼──┐      ┌─────┐
-        // │ bb2 ◄──────┼ bb1 ◄─┐
-        // └──┬──┘      └─────┘ │
-        //    └─────────────────┘
+        //    ┌─────┐
+        //    │ bb0 │
+        //    └──┬──┘
+        //       │
+        //    ┌──▼──┐      ┌─────┐
+        //  ┌►│ bb2 ├─────►│ bb1 │
+        //  │ └──┬──┘  T   └──┬──┘
+        //  │   F│            │
+        //  │ ┌──▼──┐         │
+        //  │ │ bb3 │         │
+        //  │ └─────┘         │
+        //  └─────────────────┘
         let mut function = Function::new(std::ptr::null());
 
         let bb0 = function.entry_block;
         let bb1 = function.new_block(0);
         let bb2 = function.new_block(0);
+        let bb3 = function.new_block(0);
 
         function.push_insn(bb0, Insn::Jump(edge(bb2)));
 
-        let val = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
-        let _ = function.push_insn(bb2, Insn::IfTrue { val, target: edge(bb1)});
-        let retval = function.push_insn(bb2, Insn::Const { val: Const::CBool(true) });
-        let _ = function.push_insn(bb2, Insn::Return { val: retval });
+        let val = function.push_insn(bb2, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb2, Insn::CondBranch { val, if_true: edge(bb1), if_false: edge(bb3) });
+        let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
+        let _ = function.push_insn(bb3, Insn::Return { val: retval });
 
         function.push_insn(bb1, Insn::Jump(edge(bb2)));
 
@@ -5923,13 +5984,14 @@ mod loop_info_tests {
         fn <manual>:
         bb1():
           Jump bb3()
-          v1:Any = Const Value(false)
         bb3():
-          IfTrue v1, bb2()
-          v3:Any = Const CBool(true)
-          Return v3
+          v1:Any = Const Value(false)
+          CondBranch v1, bb2(), bb4()
         bb2():
           Jump bb3()
+        bb4():
+          v3:Any = Const CBool(true)
+          Return v3
         ");
 
         assert!(loop_info.is_loop_header(bb2));
@@ -5971,12 +6033,10 @@ mod loop_info_tests {
         function.push_insn(bb1, Insn::Jump(edge(bb2)));
 
         let cond = function.push_insn(bb2, Insn::Const { val: Const::Value(Qfalse) });
-        let _ = function.push_insn(bb2, Insn::IfTrue { val: cond, target: edge(bb1) });
-        function.push_insn(bb2, Insn::Jump(edge(bb3)));
+        let _ = function.push_insn(bb2, Insn::CondBranch { val: cond, if_true: edge(bb1), if_false: edge(bb3) });
 
         let cond = function.push_insn(bb3, Insn::Const { val: Const::Value(Qtrue) });
-        let _ = function.push_insn(bb3, Insn::IfTrue { val: cond, target: edge(bb0) });
-        function.push_insn(bb3, Insn::Jump(edge(bb4)));
+        let _ = function.push_insn(bb3, Insn::CondBranch { val: cond, if_true: edge(bb0), if_false: edge(bb4) });
 
         let retval = function.push_insn(bb4, Insn::Const { val: Const::CBool(true) });
         let _ = function.push_insn(bb4, Insn::Return { val: retval });
@@ -5994,15 +6054,13 @@ mod loop_info_tests {
           Jump bb3()
         bb3():
           v2:Any = Const Value(false)
-          IfTrue v2, bb2()
-          Jump bb4()
+          CondBranch v2, bb2(), bb4()
         bb4():
-          v5:Any = Const Value(true)
-          IfTrue v5, bb1()
-          Jump bb5()
+          v4:Any = Const Value(true)
+          CondBranch v4, bb1(), bb5()
         bb5():
-          v8:Any = Const CBool(true)
-          Return v8
+          v6:Any = Const CBool(true)
+          Return v6
         ");
 
         assert!(loop_info.is_loop_header(bb0));
@@ -6050,21 +6108,17 @@ mod loop_info_tests {
         let bb6 = function.new_block(0);
 
         let cond = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
-        let _ = function.push_insn(bb0, Insn::IfTrue { val: cond, target: edge(bb1) });
-        function.push_insn(bb0, Insn::Jump(edge(bb3)));
+        let _ = function.push_insn(bb0, Insn::CondBranch { val: cond, if_true: edge(bb1), if_false: edge(bb3) });
 
         function.push_insn(bb1, Insn::Jump(edge(bb2)));
 
-        let _ = function.push_insn(bb2, Insn::IfTrue { val: cond, target: edge(bb1) });
-        function.push_insn(bb2, Insn::Jump(edge(bb5)));
+        let _ = function.push_insn(bb2, Insn::CondBranch { val: cond, if_true: edge(bb1), if_false: edge(bb5) });
 
         function.push_insn(bb3, Insn::Jump(edge(bb4)));
 
-        let _ = function.push_insn(bb4, Insn::IfTrue { val: cond, target: edge(bb3) });
-        function.push_insn(bb4, Insn::Jump(edge(bb5)));
+        let _ = function.push_insn(bb4, Insn::CondBranch { val: cond, if_true: edge(bb3), if_false: edge(bb5) });
 
-        let _ = function.push_insn(bb5, Insn::IfTrue { val: cond, target: edge(bb0) });
-        function.push_insn(bb5, Insn::Jump(edge(bb6)));
+        let _ = function.push_insn(bb5, Insn::CondBranch { val: cond, if_true: edge(bb0), if_false: edge(bb6) });
 
         let retval = function.push_insn(bb6, Insn::Const { val: Const::CBool(true) });
         let _ = function.push_insn(bb6, Insn::Return { val: retval });
@@ -6078,24 +6132,20 @@ mod loop_info_tests {
         fn <manual>:
         bb1():
           v0:Any = Const Value(false)
-          IfTrue v0, bb2()
-          Jump bb4()
+          CondBranch v0, bb2(), bb4()
         bb2():
           Jump bb3()
         bb3():
-          IfTrue v0, bb2()
-          Jump bb6()
+          CondBranch v0, bb2(), bb6()
         bb4():
           Jump bb5()
         bb5():
-          IfTrue v0, bb4()
-          Jump bb6()
+          CondBranch v0, bb4(), bb6()
         bb6():
-          IfTrue v0, bb1()
-          Jump bb7()
+          CondBranch v0, bb1(), bb7()
         bb7():
-          v11:Any = Const CBool(true)
-          Return v11
+          v7:Any = Const CBool(true)
+          Return v7
         ");
 
         assert!(loop_info.is_loop_header(bb0));
@@ -6206,16 +6256,16 @@ mod loop_info_tests {
         let bb3 = function.new_block(0);
         let bb4 = function.new_block(0);
         let bb5 = function.new_block(0);
+        let bb6 = function.new_block(0);
 
         let cond = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
         let _ = function.push_insn(bb0, Insn::Jump(edge(bb1)));
         let _ = function.push_insn(bb1, Insn::Jump(edge(bb2)));
         let _ = function.push_insn(bb2, Insn::Jump(edge(bb3)));
-        let _ = function.push_insn(bb3, Insn::Jump(edge(bb4)));
-        let _ = function.push_insn(bb3, Insn::IfTrue {val: cond, target: edge(bb2)});
-        let _ = function.push_insn(bb4, Insn::Jump(edge(bb5)));
-        let _ = function.push_insn(bb4, Insn::IfTrue {val: cond, target: edge(bb1)});
-        let _ = function.push_insn(bb5, Insn::IfTrue {val: cond, target: edge(bb0)});
+        let _ = function.push_insn(bb3, Insn::CondBranch {val: cond, if_true: edge(bb2), if_false: edge(bb4) });
+        let _ = function.push_insn(bb4, Insn::CondBranch {val: cond, if_true: edge(bb1), if_false: edge(bb5) });
+        let _ = function.push_insn(bb5, Insn::CondBranch {val: cond, if_true: edge(bb0), if_false: edge(bb6) });
+        function.push_insn(bb6, Insn::Unreachable);
 
         function.seal_entries();
         assert_snapshot!(format!("{}", FunctionPrinter::without_snapshot(&function)), @"
@@ -6228,13 +6278,13 @@ mod loop_info_tests {
         bb3():
           Jump bb4()
         bb4():
-          Jump bb5()
-          IfTrue v0, bb3()
+          CondBranch v0, bb3(), bb5()
         bb5():
-          Jump bb6()
-          IfTrue v0, bb2()
+          CondBranch v0, bb2(), bb6()
         bb6():
-          IfTrue v0, bb1()
+          CondBranch v0, bb1(), bb7()
+        bb7():
+          Unreachable
         ");
 
         let cfi = ControlFlowInfo::new(&function);
@@ -6281,9 +6331,10 @@ mod iongraph_tests {
 
         let retval = function.push_insn(bb0, Insn::Const { val: Const::CBool(true) });
         function.push_insn(bb0, Insn::Return { val: retval });
+        function.seal_entries();
 
         let json = function.to_iongraph_pass("simple");
-        assert_snapshot!(json.to_string(), @r#"{"name":"simple", "mir":{"blocks":[{"ptr":4096, "id":0, "loopDepth":0, "attributes":[], "predecessors":[], "successors":[], "instructions":[]}]}, "lir":{"blocks":[]}}"#);
+        assert_snapshot!(json.to_string(), @r#"{"name":"simple", "mir":{"blocks":[{"ptr":4096, "id":0, "loopDepth":0, "attributes":[], "predecessors":[], "successors":[1], "instructions":[{"ptr":4098, "id":2, "opcode":"Entries bb1", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":""}]}, {"ptr":4097, "id":1, "loopDepth":0, "attributes":[], "predecessors":[0], "successors":[], "instructions":[{"ptr":4096, "id":0, "opcode":"Const CBool(true)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4097, "id":1, "opcode":"Return v0", "attributes":[], "inputs":[0], "uses":[], "memInputs":[], "type":""}]}]}, "lir":{"blocks":[]}}"#);
     }
 
     #[test]
@@ -6297,8 +6348,9 @@ mod iongraph_tests {
         let retval = function.push_insn(bb1, Insn::Const { val: Const::CBool(false) });
         function.push_insn(bb1, Insn::Return { val: retval });
 
+        function.seal_entries();
         let json = function.to_iongraph_pass("two_blocks");
-        assert_snapshot!(json.to_string(), @r#"{"name":"two_blocks", "mir":{"blocks":[{"ptr":4096, "id":0, "loopDepth":0, "attributes":[], "predecessors":[], "successors":[], "instructions":[]}]}, "lir":{"blocks":[]}}"#);
+        assert_snapshot!(json.to_string(), @r#"{"name":"two_blocks", "mir":{"blocks":[{"ptr":4096, "id":0, "loopDepth":0, "attributes":[], "predecessors":[], "successors":[1], "instructions":[{"ptr":4099, "id":3, "opcode":"Entries bb1", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":""}]}, {"ptr":4097, "id":1, "loopDepth":0, "attributes":[], "predecessors":[0], "successors":[2], "instructions":[{"ptr":4096, "id":0, "opcode":"Jump bb2()", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":""}]}, {"ptr":4098, "id":2, "loopDepth":0, "attributes":[], "predecessors":[1], "successors":[], "instructions":[{"ptr":4097, "id":1, "opcode":"Const CBool(false)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4098, "id":2, "opcode":"Return v1", "attributes":[], "inputs":[1], "uses":[], "memInputs":[], "type":""}]}]}, "lir":{"blocks":[]}}"#);
     }
 
     #[test]
@@ -6309,8 +6361,9 @@ mod iongraph_tests {
         let val1 = function.push_insn(bb0, Insn::Const { val: Const::CBool(true) });
         function.push_insn(bb0, Insn::Return { val: val1 });
 
+        function.seal_entries();
         let json = function.to_iongraph_pass("multiple_instructions");
-        assert_snapshot!(json.to_string(), @r#"{"name":"multiple_instructions", "mir":{"blocks":[{"ptr":4096, "id":0, "loopDepth":0, "attributes":[], "predecessors":[], "successors":[], "instructions":[]}]}, "lir":{"blocks":[]}}"#);
+        assert_snapshot!(json.to_string(), @r#"{"name":"multiple_instructions", "mir":{"blocks":[{"ptr":4096, "id":0, "loopDepth":0, "attributes":[], "predecessors":[], "successors":[1], "instructions":[{"ptr":4098, "id":2, "opcode":"Entries bb1", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":""}]}, {"ptr":4097, "id":1, "loopDepth":0, "attributes":[], "predecessors":[0], "successors":[], "instructions":[{"ptr":4096, "id":0, "opcode":"Const CBool(true)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4097, "id":1, "opcode":"Return v0", "attributes":[], "inputs":[0], "uses":[], "memInputs":[], "type":""}]}]}, "lir":{"blocks":[]}}"#);
     }
 
     #[test]
@@ -6318,18 +6371,20 @@ mod iongraph_tests {
         let mut function = Function::new(std::ptr::null());
         let bb0 = function.entry_block;
         let bb1 = function.new_block(0);
+        let bb2 = function.new_block(0);
 
         let cond = function.push_insn(bb0, Insn::Const { val: Const::CBool(true) });
-        function.push_insn(bb0, Insn::IfTrue { val: cond, target: edge(bb1) });
+        function.push_insn(bb0, Insn::CondBranch { val: cond, if_true: edge(bb1), if_false: edge(bb2) });
 
-        let retval1 = function.push_insn(bb0, Insn::Const { val: Const::CBool(false) });
-        function.push_insn(bb0, Insn::Return { val: retval1 });
+        let retval1 = function.push_insn(bb2, Insn::Const { val: Const::CBool(false) });
+        function.push_insn(bb2, Insn::Return { val: retval1 });
 
         let retval2 = function.push_insn(bb1, Insn::Const { val: Const::CBool(true) });
         function.push_insn(bb1, Insn::Return { val: retval2 });
 
+        function.seal_entries();
         let json = function.to_iongraph_pass("conditional_branch");
-        assert_snapshot!(json.to_string(), @r#"{"name":"conditional_branch", "mir":{"blocks":[{"ptr":4096, "id":0, "loopDepth":0, "attributes":[], "predecessors":[], "successors":[], "instructions":[]}]}, "lir":{"blocks":[]}}"#);
+        assert_snapshot!(json.to_string(), @r#"{"name":"conditional_branch", "mir":{"blocks":[{"ptr":4096, "id":0, "loopDepth":0, "attributes":[], "predecessors":[], "successors":[1], "instructions":[{"ptr":4102, "id":6, "opcode":"Entries bb1", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":""}]}, {"ptr":4097, "id":1, "loopDepth":0, "attributes":[], "predecessors":[0], "successors":[2, 3], "instructions":[{"ptr":4096, "id":0, "opcode":"Const CBool(true)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4097, "id":1, "opcode":"CondBranch v0, bb2(), bb3()", "attributes":[], "inputs":[0], "uses":[], "memInputs":[], "type":""}]}, {"ptr":4098, "id":2, "loopDepth":0, "attributes":[], "predecessors":[1], "successors":[], "instructions":[{"ptr":4100, "id":4, "opcode":"Const CBool(true)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4101, "id":5, "opcode":"Return v4", "attributes":[], "inputs":[4], "uses":[], "memInputs":[], "type":""}]}, {"ptr":4099, "id":3, "loopDepth":0, "attributes":[], "predecessors":[1], "successors":[], "instructions":[{"ptr":4098, "id":2, "opcode":"Const CBool(false)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4099, "id":3, "opcode":"Return v2", "attributes":[], "inputs":[2], "uses":[], "memInputs":[], "type":""}]}]}, "lir":{"blocks":[]}}"#);
     }
 
     #[test]
@@ -6339,18 +6394,20 @@ mod iongraph_tests {
         let bb0 = function.entry_block;
         let bb1 = function.new_block(0);
         let bb2 = function.new_block(0);
+        let bb3 = function.new_block(0);
 
         function.push_insn(bb0, Insn::Jump(edge(bb2)));
 
-        let val = function.push_insn(bb0, Insn::Const { val: Const::Value(Qfalse) });
-        let _ = function.push_insn(bb2, Insn::IfTrue { val, target: edge(bb1)});
-        let retval = function.push_insn(bb2, Insn::Const { val: Const::CBool(true) });
-        let _ = function.push_insn(bb2, Insn::Return { val: retval });
+        let val = function.push_insn(bb2, Insn::Const { val: Const::Value(Qfalse) });
+        let _ = function.push_insn(bb2, Insn::CondBranch { val, if_true: edge(bb1), if_false: edge(bb3) });
+        let retval = function.push_insn(bb3, Insn::Const { val: Const::CBool(true) });
+        let _ = function.push_insn(bb3, Insn::Return { val: retval });
 
         function.push_insn(bb1, Insn::Jump(edge(bb2)));
 
+        function.seal_entries();
         let json = function.to_iongraph_pass("loop_structure");
-        assert_snapshot!(json.to_string(), @r#"{"name":"loop_structure", "mir":{"blocks":[{"ptr":4096, "id":0, "loopDepth":0, "attributes":[], "predecessors":[], "successors":[], "instructions":[]}]}, "lir":{"blocks":[]}}"#);
+        assert_snapshot!(json.to_string(), @r#"{"name":"loop_structure", "mir":{"blocks":[{"ptr":4096, "id":0, "loopDepth":0, "attributes":[], "predecessors":[], "successors":[1], "instructions":[{"ptr":4102, "id":6, "opcode":"Entries bb1", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":""}]}, {"ptr":4097, "id":1, "loopDepth":0, "attributes":[], "predecessors":[0], "successors":[3], "instructions":[{"ptr":4096, "id":0, "opcode":"Jump bb3()", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":""}]}, {"ptr":4099, "id":3, "loopDepth":1, "attributes":["loopheader"], "predecessors":[1, 2], "successors":[2, 4], "instructions":[{"ptr":4097, "id":1, "opcode":"Const Value(false)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4098, "id":2, "opcode":"CondBranch v1, bb2(), bb4()", "attributes":[], "inputs":[1], "uses":[], "memInputs":[], "type":""}]}, {"ptr":4098, "id":2, "loopDepth":1, "attributes":["backedge"], "predecessors":[3], "successors":[3], "instructions":[{"ptr":4101, "id":5, "opcode":"Jump bb3()", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":""}]}, {"ptr":4100, "id":4, "loopDepth":0, "attributes":[], "predecessors":[3], "successors":[], "instructions":[{"ptr":4099, "id":3, "opcode":"Const CBool(true)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4100, "id":4, "opcode":"Return v3", "attributes":[], "inputs":[3], "uses":[], "memInputs":[], "type":""}]}]}, "lir":{"blocks":[]}}"#);
     }
 
     #[test]
@@ -6361,8 +6418,7 @@ mod iongraph_tests {
         let bb2 = function.new_block(0);
 
         let cond = function.push_insn(bb0, Insn::Const { val: Const::CBool(true) });
-        function.push_insn(bb0, Insn::IfTrue { val: cond, target: edge(bb1) });
-        function.push_insn(bb0, Insn::Jump(edge(bb2)));
+        function.push_insn(bb0, Insn::CondBranch { val: cond, if_true: edge(bb1), if_false: edge(bb2) });
 
         let retval1 = function.push_insn(bb1, Insn::Const { val: Const::CBool(true) });
         function.push_insn(bb1, Insn::Return { val: retval1 });
@@ -6370,7 +6426,8 @@ mod iongraph_tests {
         let retval2 = function.push_insn(bb2, Insn::Const { val: Const::CBool(false) });
         function.push_insn(bb2, Insn::Return { val: retval2 });
 
+        function.seal_entries();
         let json = function.to_iongraph_pass("multiple_successors");
-        assert_snapshot!(json.to_string(), @r#"{"name":"multiple_successors", "mir":{"blocks":[{"ptr":4096, "id":0, "loopDepth":0, "attributes":[], "predecessors":[], "successors":[], "instructions":[]}]}, "lir":{"blocks":[]}}"#);
+        assert_snapshot!(json.to_string(), @r#"{"name":"multiple_successors", "mir":{"blocks":[{"ptr":4096, "id":0, "loopDepth":0, "attributes":[], "predecessors":[], "successors":[1], "instructions":[{"ptr":4102, "id":6, "opcode":"Entries bb1", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":""}]}, {"ptr":4097, "id":1, "loopDepth":0, "attributes":[], "predecessors":[0], "successors":[2, 3], "instructions":[{"ptr":4096, "id":0, "opcode":"Const CBool(true)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4097, "id":1, "opcode":"CondBranch v0, bb2(), bb3()", "attributes":[], "inputs":[0], "uses":[], "memInputs":[], "type":""}]}, {"ptr":4098, "id":2, "loopDepth":0, "attributes":[], "predecessors":[1], "successors":[], "instructions":[{"ptr":4098, "id":2, "opcode":"Const CBool(true)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4099, "id":3, "opcode":"Return v2", "attributes":[], "inputs":[2], "uses":[], "memInputs":[], "type":""}]}, {"ptr":4099, "id":3, "loopDepth":0, "attributes":[], "predecessors":[1], "successors":[], "instructions":[{"ptr":4100, "id":4, "opcode":"Const CBool(false)", "attributes":[], "inputs":[], "uses":[], "memInputs":[], "type":"Any"}, {"ptr":4101, "id":5, "opcode":"Return v4", "attributes":[], "inputs":[4], "uses":[], "memInputs":[], "type":""}]}]}, "lir":{"blocks":[]}}"#);
     }
  }

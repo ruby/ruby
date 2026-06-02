@@ -31,7 +31,7 @@ describe :socket_pack_sockaddr_in, shared: true do
     it 'returns a String of 16 bytes' do
       str = Socket.public_send(@method, 80, '127.0.0.1')
 
-      str.should be_an_instance_of(String)
+      str.should.instance_of?(String)
       str.bytesize.should == 16
     end
   end
@@ -40,7 +40,7 @@ describe :socket_pack_sockaddr_in, shared: true do
     it 'returns a String of 28 bytes' do
       str = Socket.public_send(@method, 80, '::1')
 
-      str.should be_an_instance_of(String)
+      str.should.instance_of?(String)
       str.bytesize.should == 28
     end
   end
@@ -68,7 +68,7 @@ describe :socket_pack_sockaddr_un, shared: true do
     it 'returns a String of 110 bytes' do
       str = Socket.public_send(@method, '/tmp/test.sock')
 
-      str.should be_an_instance_of(String)
+      str.should.instance_of?(String)
       str.bytesize.should == 110
     end
   end
@@ -77,7 +77,7 @@ describe :socket_pack_sockaddr_un, shared: true do
     it 'returns a String of 106 bytes' do
       str = Socket.public_send(@method, '/tmp/test.sock')
 
-      str.should be_an_instance_of(String)
+      str.should.instance_of?(String)
       str.bytesize.should == 106
     end
   end
@@ -86,7 +86,7 @@ describe :socket_pack_sockaddr_un, shared: true do
     it "raises ArgumentError for paths that are too long" do
       # AIX doesn't raise error
       long_path = 'a' * 110
-      -> { Socket.public_send(@method, long_path) }.should raise_error(ArgumentError)
+      -> { Socket.public_send(@method, long_path) }.should.raise(ArgumentError)
     end
   end
 end

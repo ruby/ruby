@@ -49,7 +49,7 @@ describe :getoptlong_get, shared: true do
 
   it "raises a if an argument was required, but none given" do
     argv [ "--size" ] do
-      -> { @opts.send(@method) }.should raise_error(GetoptLong::MissingArgument)
+      -> { @opts.send(@method) }.should.raise(GetoptLong::MissingArgument)
     end
   end
 

@@ -33,15 +33,15 @@ describe "ENV.shift" do
     Encoding.default_internal = nil
 
     pair = ENV.shift
-    pair.first.encoding.should equal(ENVSpecs.encoding)
-    pair.last.encoding.should equal(ENVSpecs.encoding)
+    pair.first.encoding.should.equal?(ENVSpecs.encoding)
+    pair.last.encoding.should.equal?(ENVSpecs.encoding)
   end
 
   it "transcodes from the locale encoding to Encoding.default_internal if set" do
     Encoding.default_internal = Encoding::IBM437
 
     pair = ENV.shift
-    pair.first.encoding.should equal(Encoding::IBM437)
-    pair.last.encoding.should equal(Encoding::IBM437)
+    pair.first.encoding.should.equal?(Encoding::IBM437)
+    pair.last.encoding.should.equal?(Encoding::IBM437)
   end
 end

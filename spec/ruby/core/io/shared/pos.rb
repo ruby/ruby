@@ -19,7 +19,7 @@ describe :io_pos, shared: true do
   end
 
   it "raises IOError on closed stream" do
-    -> { IOSpecs.closed_io.send(@method) }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.send(@method) }.should.raise(IOError)
   end
 
   it "resets #eof?" do
@@ -62,17 +62,17 @@ describe :io_set_pos, shared: true do
 
   it "raises TypeError when cannot convert implicitly argument to Integer" do
     File.open @fname do |io|
-      -> { io.send @method, Object.new }.should raise_error(TypeError, "no implicit conversion of Object into Integer")
+      -> { io.send @method, Object.new }.should.raise(TypeError, "no implicit conversion of Object into Integer")
     end
   end
 
   it "does not accept Integers that don't fit in a C off_t" do
     File.open @fname do |io|
-      -> { io.send @method, 2**128 }.should raise_error(RangeError)
+      -> { io.send @method, 2**128 }.should.raise(RangeError)
     end
   end
 
   it "raises IOError on closed stream" do
-    -> { IOSpecs.closed_io.send @method, 0 }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.send @method, 0 }.should.raise(IOError)
   end
 end

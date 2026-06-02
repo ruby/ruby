@@ -124,6 +124,14 @@ struct set_object {
 };
 
 static int
+mark_and_pin_key(st_data_t key, st_data_t data)
+{
+    rb_gc_mark((VALUE)key);
+
+    return ST_CONTINUE;
+}
+
+static int
 mark_key(st_data_t key, st_data_t data)
 {
     rb_gc_mark_movable((VALUE)key);
@@ -135,7 +143,14 @@ static void
 set_mark(void *ptr)
 {
     struct set_object *sobj = ptr;
-    if (sobj->table.entries) set_table_foreach(&sobj->table, mark_key, 0);
+    if (sobj->table.entries) {
+        if (sobj->table.type == &identhash) {
+            set_table_foreach(&sobj->table, mark_and_pin_key, 0);
+        }
+        else {
+            set_table_foreach(&sobj->table, mark_key, 0);
+        }
+    }
 }
 
 static void
@@ -658,9 +673,6 @@ set_i_to_a(VALUE set)
  *
  *  Without a block, if +self+ is an instance of +Set+, returns +self+.
  *  Otherwise, calls <tt>Set.new(self, &block)</tt>.
- *
- *  A form with arguments is _deprecated_. It converts the set to another
- *  with <tt>klass.new(self, *args, &block)</tt>.
  */
 static VALUE
 set_i_to_set(VALUE set)

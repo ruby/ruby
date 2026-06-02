@@ -1020,8 +1020,20 @@ check_reserved_signal_(const char *name, size_t name_len, int signo)
 #if __has_feature(address_sanitizer) || \
     __has_feature(memory_sanitizer) || \
     defined(HAVE_VALGRIND_MEMCHECK_H)
-        ruby_posix_signal(signo, SIG_DFL);
+# define SANITIZING true
+#else
+# define SANITIZING false
 #endif
+
+#ifdef SIGABRT
+// Avoid infinite loop when already aborting
+# define RECURSIVE (signo == SIGABRT)
+#else
+# define RECURSIVE false
+#endif
+        if (SANITIZING || RECURSIVE) ruby_signal(signo, SIG_DFL);
+# undef SANITIZING
+# undef RECURSIVE
         W(name, name_len);
         W(msg1, sizeof(msg1));
         W(prev, strlen(prev));

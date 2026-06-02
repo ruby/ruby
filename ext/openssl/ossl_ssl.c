@@ -2196,9 +2196,12 @@ ossl_ssl_write(VALUE self, VALUE str)
 /*
  * call-seq:
  *    ssl.syswrite_nonblock(string) => Integer
+ *    ssl.syswrite_nonblock(string, opts) => Integer
  *
  * Writes _string_ to the SSL connection in a non-blocking manner.  Raises an
- * SSLError if writing would block.
+ * SSLError if writing would block.  If "exception: false" is passed, this
+ * method returns a symbol of :wait_readable or :wait_writable, rather than
+ * raising an exception.
  */
 static VALUE
 ossl_ssl_write_nonblock(int argc, VALUE *argv, VALUE self)

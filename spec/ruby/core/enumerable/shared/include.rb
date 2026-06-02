@@ -28,7 +28,7 @@ describe :enumerable_include, shared: true do
 
   it "gathers whole arrays as elements when each yields multiple" do
     multi = EnumerableSpecs::YieldsMulti.new
-    multi.send(@method, [1,2]).should be_true
+    multi.send(@method, [1,2]).should == true
   end
 
 end

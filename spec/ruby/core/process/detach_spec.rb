@@ -5,7 +5,7 @@ describe "Process.detach" do
     it "returns a thread" do
       pid = Process.fork { Process.exit! }
       thr = Process.detach(pid)
-      thr.should be_kind_of(Thread)
+      thr.should.is_a?(Thread)
       thr.join
     end
 
@@ -15,7 +15,7 @@ describe "Process.detach" do
       thr.join
 
       status = thr.value
-      status.should be_kind_of(Process::Status)
+      status.should.is_a?(Process::Status)
       status.pid.should == pid
     end
 
@@ -23,7 +23,7 @@ describe "Process.detach" do
       it "reaps the child process's status automatically" do
         pid = Process.fork { Process.exit! }
         Process.detach(pid).join
-        -> { Process.waitpid(pid) }.should raise_error(Errno::ECHILD)
+        -> { Process.waitpid(pid) }.should.raise(Errno::ECHILD)
       end
     end
 
@@ -52,12 +52,12 @@ describe "Process.detach" do
       # Command `kill 0 pid`:
       # - returns "1" if a process exists and
       # - raises Errno::ESRCH otherwise
-      -> {  Process.kill(0, pid_not_existing) }.should raise_error(Errno::ESRCH)
+      -> {  Process.kill(0, pid_not_existing) }.should.raise(Errno::ESRCH)
 
       thr = Process.detach(pid_not_existing)
       thr.join
 
-      thr.should be_kind_of(Thread)
+      thr.should.is_a?(Thread)
     end
 
     it "calls #to_int to implicitly convert non-Integer pid to Integer" do
@@ -68,7 +68,7 @@ describe "Process.detach" do
     end
 
     it "raises TypeError when pid argument does not have #to_int method" do
-      -> { Process.detach(Object.new) }.should raise_error(TypeError, "no implicit conversion of Object into Integer")
+      -> { Process.detach(Object.new) }.should.raise(TypeError, "no implicit conversion of Object into Integer")
     end
 
     it "raises TypeError when #to_int returns non-Integer value" do

@@ -7,11 +7,11 @@ describe :symbol_slice, shared: true do
     end
 
     it "returns nil if the index starts from the end and is greater than the length" do
-      :symbol.send(@method, -10).should be_nil
+      :symbol.send(@method, -10).should == nil
     end
 
     it "returns nil if the index is greater than the length" do
-      :symbol.send(@method, 42).should be_nil
+      :symbol.send(@method, 42).should == nil
     end
   end
 
@@ -31,14 +31,14 @@ describe :symbol_slice, shared: true do
       end
 
       it "returns nil if the index is greater than the length" do
-        :symbol.send(@method, 10,1).should be_nil
+        :symbol.send(@method, 10,1).should == nil
       end
     end
 
     describe "and a positive index and negative length" do
       it "returns nil" do
-        :symbol.send(@method, 0,-1).should be_nil
-        :symbol.send(@method, 1,-1).should be_nil
+        :symbol.send(@method, 0,-1).should == nil
+        :symbol.send(@method, 1,-1).should == nil
       end
     end
 
@@ -56,13 +56,13 @@ describe :symbol_slice, shared: true do
       end
 
       it "returns nil if the index is past the start" do
-        :symbol.send(@method, -10,1).should be_nil
+        :symbol.send(@method, -10,1).should == nil
       end
     end
 
     describe "and a negative index and negative length" do
       it "returns nil" do
-        :symbol.send(@method, -1,-1).should be_nil
+        :symbol.send(@method, -1,-1).should == nil
       end
     end
 
@@ -74,21 +74,21 @@ describe :symbol_slice, shared: true do
 
     describe "and a nil length" do
       it "raises a TypeError" do
-        -> { :symbol.send(@method, 1,nil) }.should raise_error(TypeError)
+        -> { :symbol.send(@method, 1,nil) }.should.raise(TypeError)
       end
     end
 
     describe "and a length that cannot be converted into an Integer" do
       it "raises a TypeError when given an Array" do
-        -> { :symbol.send(@method, 1,Array.new) }.should raise_error(TypeError)
+        -> { :symbol.send(@method, 1,Array.new) }.should.raise(TypeError)
       end
 
       it "raises a TypeError when given an Hash" do
-        -> { :symbol.send(@method, 1,Hash.new) }.should raise_error(TypeError)
+        -> { :symbol.send(@method, 1,Hash.new) }.should.raise(TypeError)
       end
 
       it "raises a TypeError when given an Object" do
-        -> { :symbol.send(@method, 1,Object.new) }.should raise_error(TypeError)
+        -> { :symbol.send(@method, 1,Object.new) }.should.raise(TypeError)
       end
     end
   end
@@ -101,21 +101,21 @@ describe :symbol_slice, shared: true do
 
   describe "with a nil index" do
     it "raises a TypeError" do
-      -> { :symbol.send(@method, nil) }.should raise_error(TypeError)
+      -> { :symbol.send(@method, nil) }.should.raise(TypeError)
     end
   end
 
   describe "with an index that cannot be converted into an Integer" do
     it "raises a TypeError when given an Array" do
-      -> { :symbol.send(@method, Array.new) }.should raise_error(TypeError)
+      -> { :symbol.send(@method, Array.new) }.should.raise(TypeError)
     end
 
     it "raises a TypeError when given an Hash" do
-      -> { :symbol.send(@method, Hash.new) }.should raise_error(TypeError)
+      -> { :symbol.send(@method, Hash.new) }.should.raise(TypeError)
     end
 
     it "raises a TypeError when given an Object" do
-      -> { :symbol.send(@method, Object.new) }.should raise_error(TypeError)
+      -> { :symbol.send(@method, Object.new) }.should.raise(TypeError)
     end
   end
 
@@ -136,7 +136,7 @@ describe :symbol_slice, shared: true do
 
     describe "that is out of bounds" do
       it "returns nil if the first range value begins past the end" do
-        :symbol.send(@method, 10..12).should be_nil
+        :symbol.send(@method, 10..12).should == nil
       end
 
       it "returns a blank string if the first range value is within bounds and the last range value is not" do
@@ -145,11 +145,11 @@ describe :symbol_slice, shared: true do
       end
 
       it "returns nil if the first range value starts from the end and is within bounds and the last value starts from the end and is greater than the length" do
-        :symbol.send(@method, -10..-12).should be_nil
+        :symbol.send(@method, -10..-12).should == nil
       end
 
       it "returns nil if the first range value starts from the end and is out of bounds and the last value starts from the end and is less than the length" do
-        :symbol.send(@method, -10..-2).should be_nil
+        :symbol.send(@method, -10..-2).should == nil
       end
     end
 
@@ -178,7 +178,7 @@ describe :symbol_slice, shared: true do
       end
 
       it "returns nil if the expression does not match" do
-        :symbol.send(@method, /0-9/).should be_nil
+        :symbol.send(@method, /0-9/).should == nil
       end
 
       it "sets $~ to the MatchData if there is a match" do
@@ -188,7 +188,7 @@ describe :symbol_slice, shared: true do
 
       it "does not set $~ if there if there is not a match" do
         :symbol.send(@method, /[0-9]+/)
-        $~.should be_nil
+        $~.should == nil
       end
     end
 
@@ -203,8 +203,8 @@ describe :symbol_slice, shared: true do
       end
 
       it "returns nil if there is no capture for the index" do
-        :symbol.send(@method, /(sy)(mb)(ol)/, 4).should be_nil
-        :symbol.send(@method, /(sy)(mb)(ol)/, -4).should be_nil
+        :symbol.send(@method, /(sy)(mb)(ol)/, 4).should == nil
+        :symbol.send(@method, /(sy)(mb)(ol)/, -4).should == nil
       end
 
       it "converts the index to an Integer" do
@@ -213,20 +213,20 @@ describe :symbol_slice, shared: true do
 
       describe "and an index that cannot be converted to an Integer" do
         it "raises a TypeError when given an Hash" do
-          -> { :symbol.send(@method, /(sy)(mb)(ol)/, Hash.new) }.should raise_error(TypeError)
+          -> { :symbol.send(@method, /(sy)(mb)(ol)/, Hash.new) }.should.raise(TypeError)
         end
 
         it "raises a TypeError when given an Array" do
-          -> { :symbol.send(@method, /(sy)(mb)(ol)/, Array.new) }.should raise_error(TypeError)
+          -> { :symbol.send(@method, /(sy)(mb)(ol)/, Array.new) }.should.raise(TypeError)
         end
 
         it "raises a TypeError when given an Object" do
-          -> { :symbol.send(@method, /(sy)(mb)(ol)/, Object.new) }.should raise_error(TypeError)
+          -> { :symbol.send(@method, /(sy)(mb)(ol)/, Object.new) }.should.raise(TypeError)
         end
       end
 
       it "raises a TypeError if the index is nil" do
-        -> { :symbol.send(@method, /(sy)(mb)(ol)/, nil) }.should raise_error(TypeError)
+        -> { :symbol.send(@method, /(sy)(mb)(ol)/, nil) }.should.raise(TypeError)
       end
 
       it "sets $~ to the MatchData if there is a match" do
@@ -239,7 +239,7 @@ describe :symbol_slice, shared: true do
 
       it "does not set $~ to the MatchData if there is not a match" do
         :symbol.send(@method, /0-9/, 0)
-        $~.should be_nil
+        $~.should == nil
       end
     end
   end
@@ -248,7 +248,7 @@ describe :symbol_slice, shared: true do
     it "does not set $~" do
       $~ = nil
       :symbol.send(@method, "sym")
-      $~.should be_nil
+      $~.should == nil
     end
 
     it "returns a string if there is match" do
@@ -256,7 +256,7 @@ describe :symbol_slice, shared: true do
     end
 
     it "returns nil if there is not a match" do
-      :symbol.send(@method, "foo").should be_nil
+      :symbol.send(@method, "foo").should == nil
     end
   end
 end

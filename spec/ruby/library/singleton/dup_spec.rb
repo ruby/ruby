@@ -3,6 +3,6 @@ require_relative 'fixtures/classes'
 
 describe "Singleton#dup" do
   it "is prevented" do
-    -> { SingletonSpecs::MyClass.instance.dup }.should raise_error(TypeError)
+    -> { SingletonSpecs::MyClass.instance.dup }.should.raise(TypeError)
   end
 end

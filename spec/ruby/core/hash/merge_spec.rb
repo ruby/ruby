@@ -1,7 +1,5 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
-require_relative 'shared/iteration'
-require_relative 'shared/update'
 
 describe "Hash#merge" do
   it "returns a new hash by combining self with the contents of other" do
@@ -30,7 +28,7 @@ describe "Hash#merge" do
 
     -> {
       h1.merge(h2) { |k, x, y| raise(IndexError) }
-    }.should raise_error(IndexError)
+    }.should.raise(IndexError)
 
     r = h1.merge(h1) { |k,x,y| :x }
     r.should == { a: :x, b: :x, d: :x }
@@ -47,8 +45,8 @@ describe "Hash#merge" do
   end
 
   it "returns subclass instance for subclasses" do
-    HashSpecs::MyHash[1 => 2, 3 => 4].merge({ 1 => 2 }).should be_an_instance_of(HashSpecs::MyHash)
-    HashSpecs::MyHash[].merge({ 1 => 2 }).should be_an_instance_of(HashSpecs::MyHash)
+    HashSpecs::MyHash[1 => 2, 3 => 4].merge({ 1 => 2 }).should.instance_of?(HashSpecs::MyHash)
+    HashSpecs::MyHash[].merge({ 1 => 2 }).should.instance_of?(HashSpecs::MyHash)
 
     { 1 => 2, 3 => 4 }.merge(HashSpecs::MyHash[1 => 2]).class.should == Hash
     {}.merge(HashSpecs::MyHash[1 => 2]).class.should == Hash
@@ -90,8 +88,8 @@ describe "Hash#merge" do
     hash = { a: 1 }
     merged = hash.merge
 
-    merged.should eql(hash)
-    merged.should_not equal(hash)
+    merged.should.eql?(hash)
+    merged.should_not.equal?(hash)
   end
 
   it "retains the default value" do
@@ -119,5 +117,7 @@ describe "Hash#merge" do
 end
 
 describe "Hash#merge!" do
-  it_behaves_like :hash_update, :merge!
+  it "is an alias of Hash#update" do
+    Hash.instance_method(:merge!).should == Hash.instance_method(:update)
+  end
 end

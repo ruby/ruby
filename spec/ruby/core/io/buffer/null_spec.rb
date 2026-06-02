@@ -11,17 +11,17 @@ describe "IO::Buffer#null?" do
 
   it "is false for a 0-length String-backed buffer created with .for" do
     @buffer = IO::Buffer.for("")
-    @buffer.null?.should be_false
+    @buffer.null?.should == false
   end
 
   it "is false for a 0-length String-backed buffer created with .string" do
     IO::Buffer.string(0) do |buffer|
-      buffer.null?.should be_false
+      buffer.null?.should == false
     end
   end
 
   it "is false for a 0-length slice of a buffer with size > 0" do
     @buffer = IO::Buffer.new(4)
-    @buffer.slice(3, 0).null?.should be_false
+    @buffer.slice(3, 0).null?.should == false
   end
 end

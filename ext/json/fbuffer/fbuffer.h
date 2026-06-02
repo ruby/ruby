@@ -131,6 +131,15 @@ static inline void fbuffer_inc_capa(FBuffer *fb, size_t requested)
     }
 }
 
+static inline size_t fbuffer_size_mul_or_raise(size_t a, size_t b)
+{
+    size_t result = a * b;
+    if (RB_UNLIKELY(a != 0 && (result / a) != b)) {
+        rb_raise(rb_eArgError, "Buffer overflow, the resulting document is too large to be generated");
+    }
+    return result;
+}
+
 static inline void fbuffer_append_reserved(FBuffer *fb, const char *newstr, size_t len)
 {
     MEMCPY(fb->ptr + fb->len, newstr, char, len);
@@ -175,7 +184,7 @@ static void fbuffer_append_str_repeat(FBuffer *fb, VALUE str, size_t repeat)
     size_t len;
     RSTRING_GETMEM(str, ptr, len);
 
-    fbuffer_inc_capa(fb, repeat * len);
+    fbuffer_inc_capa(fb, fbuffer_size_mul_or_raise(repeat, len));
     while (repeat) {
 #if JSON_DEBUG
         fb->requested = len;

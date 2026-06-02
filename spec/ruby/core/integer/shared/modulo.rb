@@ -41,24 +41,24 @@ describe :integer_modulo, shared: true do
     end
 
     it "raises a ZeroDivisionError when the given argument is 0" do
-      -> { 13.send(@method, 0)  }.should raise_error(ZeroDivisionError)
-      -> { 0.send(@method, 0)   }.should raise_error(ZeroDivisionError)
-      -> { -10.send(@method, 0) }.should raise_error(ZeroDivisionError)
+      -> { 13.send(@method, 0)  }.should.raise(ZeroDivisionError)
+      -> { 0.send(@method, 0)   }.should.raise(ZeroDivisionError)
+      -> { -10.send(@method, 0) }.should.raise(ZeroDivisionError)
     end
 
     it "raises a ZeroDivisionError when the given argument is 0 and a Float" do
-      -> { 0.send(@method, 0.0) }.should raise_error(ZeroDivisionError)
-      -> { 10.send(@method, 0.0) }.should raise_error(ZeroDivisionError)
-      -> { -10.send(@method, 0.0) }.should raise_error(ZeroDivisionError)
+      -> { 0.send(@method, 0.0) }.should.raise(ZeroDivisionError)
+      -> { 10.send(@method, 0.0) }.should.raise(ZeroDivisionError)
+      -> { -10.send(@method, 0.0) }.should.raise(ZeroDivisionError)
     end
 
     it "raises a TypeError when given a non-Integer" do
       -> {
         (obj = mock('10')).should_receive(:to_int).any_number_of_times.and_return(10)
         13.send(@method, obj)
-      }.should raise_error(TypeError)
-      -> { 13.send(@method, "10")    }.should raise_error(TypeError)
-      -> { 13.send(@method, :symbol) }.should raise_error(TypeError)
+      }.should.raise(TypeError)
+      -> { 13.send(@method, "10")    }.should.raise(TypeError)
+      -> { 13.send(@method, :symbol) }.should.raise(TypeError)
     end
   end
 
@@ -96,19 +96,19 @@ describe :integer_modulo, shared: true do
     end
 
     it "raises a ZeroDivisionError when the given argument is 0" do
-      -> { @bignum.send(@method, 0) }.should raise_error(ZeroDivisionError)
-      -> { (-@bignum).send(@method, 0) }.should raise_error(ZeroDivisionError)
+      -> { @bignum.send(@method, 0) }.should.raise(ZeroDivisionError)
+      -> { (-@bignum).send(@method, 0) }.should.raise(ZeroDivisionError)
     end
 
     it "raises a ZeroDivisionError when the given argument is 0 and a Float" do
-      -> { @bignum.send(@method, 0.0) }.should raise_error(ZeroDivisionError)
-      -> { -@bignum.send(@method, 0.0) }.should raise_error(ZeroDivisionError)
+      -> { @bignum.send(@method, 0.0) }.should.raise(ZeroDivisionError)
+      -> { -@bignum.send(@method, 0.0) }.should.raise(ZeroDivisionError)
     end
 
     it "raises a TypeError when given a non-Integer" do
-      -> { @bignum.send(@method, mock('10')) }.should raise_error(TypeError)
-      -> { @bignum.send(@method, "10") }.should raise_error(TypeError)
-      -> { @bignum.send(@method, :symbol) }.should raise_error(TypeError)
+      -> { @bignum.send(@method, mock('10')) }.should.raise(TypeError)
+      -> { @bignum.send(@method, "10") }.should.raise(TypeError)
+      -> { @bignum.send(@method, :symbol) }.should.raise(TypeError)
     end
   end
 end

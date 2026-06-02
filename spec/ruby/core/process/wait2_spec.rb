@@ -12,7 +12,7 @@ describe "Process.wait2" do
       leaked = Process.waitall
       $stderr.puts "leaked before wait2 specs: #{leaked}" unless leaked.empty?
       # Ruby-space should not see PIDs used by rjit
-      leaked.should be_empty
+      leaked.should.empty?
     rescue Errno::ECHILD # No child processes
     rescue NotImplementedError
     end
@@ -30,15 +30,15 @@ describe "Process.wait2" do
   end
 
   it "raises a StandardError if no child processes exist" do
-    -> { Process.wait2 }.should raise_error(Errno::ECHILD)
-    -> { Process.wait2 }.should raise_error(StandardError)
+    -> { Process.wait2 }.should.raise(Errno::ECHILD)
+    -> { Process.wait2 }.should.raise(StandardError)
   end
 
   it "returns nil if the child process is still running when given the WNOHANG flag" do
     IO.popen(ruby_cmd('STDIN.getbyte'), "w") do |io|
       pid, status = Process.wait2(io.pid, Process::WNOHANG)
-      pid.should be_nil
-      status.should be_nil
+      pid.should == nil
+      status.should == nil
       io.write('a')
     end
   end

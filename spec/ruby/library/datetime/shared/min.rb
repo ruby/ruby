@@ -14,23 +14,23 @@ describe :datetime_min, shared: true do
   end
 
   it "raises an error for Rational" do
-    -> { new_datetime minute: 5 + Rational(1,2) }.should raise_error(ArgumentError)
+    -> { new_datetime minute: 5 + Rational(1,2) }.should.raise(ArgumentError)
   end
 
   it "raises an error for Float" do
-    -> { new_datetime minute: 5.5 }.should raise_error(ArgumentError)
+    -> { new_datetime minute: 5.5 }.should.raise(ArgumentError)
   end
 
   it "raises an error for Rational" do
-    -> { new_datetime(hour: 2 + Rational(1,2)) }.should raise_error(ArgumentError)
+    -> { new_datetime(hour: 2 + Rational(1,2)) }.should.raise(ArgumentError)
   end
 
   it "raises an error, when the minute is smaller than -60" do
-    -> { new_datetime(minute: -61) }.should raise_error(ArgumentError)
+    -> { new_datetime(minute: -61) }.should.raise(ArgumentError)
   end
 
   it "raises an error, when the minute is greater or equal than 60" do
-    -> { new_datetime(minute: 60) }.should raise_error(ArgumentError)
+    -> { new_datetime(minute: 60) }.should.raise(ArgumentError)
   end
 
   it "raises an error for minute fractions smaller than -60" do

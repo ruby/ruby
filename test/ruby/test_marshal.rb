@@ -933,6 +933,41 @@ class TestMarshal < Test::Unit::TestCase
     end
   end
 
+  def test_load_overread
+    input = Struct.new(:bytes, :used) do
+      def initialize
+        super("\x04\x08[\x07".bytes, false)
+      end
+
+      def getbyte
+        bytes.shift
+      end
+
+      def read(_len, _outbuf = nil)
+        return nil if used
+        self.used = true
+        "0" * (1024 * 128)
+      end
+    end.new
+
+    assert_equal([nil, nil], Marshal.load(input))
+  end
+
+  def test_bignum_len_overflow
+    assert_raise(ArgumentError) do
+      Marshal.load("\x04\x08l+\x04\x00\x00\x00\x40")
+    end
+    assert_raise(ArgumentError) do
+      Marshal.load("\x04\x08l+\xfc\x00\x00\x00\x80")
+    end
+  end
+
+  def test_bignum_invalid_sign
+    assert_raise(ArgumentError) do
+      Marshal.load("\x04\bl?")
+    end
+  end
+
   class TestMarshalFreezeProc < Test::Unit::TestCase
     include MarshalTestLib
 

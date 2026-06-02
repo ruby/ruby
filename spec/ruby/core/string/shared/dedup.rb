@@ -4,7 +4,7 @@ describe :string_dedup, shared: true do
     input  = 'foo'.freeze
     output = input.send(@method)
 
-    output.should equal(input)
+    output.should.equal?(input)
     output.should.frozen?
   end
 
@@ -13,7 +13,7 @@ describe :string_dedup, shared: true do
     output = input.send(@method)
 
     output.should.frozen?
-    output.should_not equal(input)
+    output.should_not.equal?(input)
     output.should == 'foo'
   end
 
@@ -21,22 +21,22 @@ describe :string_dedup, shared: true do
     origin = "this is a string"
     dynamic = %w(this is a string).join(' ')
 
-    origin.should_not equal(dynamic)
-    origin.send(@method).should equal(dynamic.send(@method))
+    origin.should_not.equal?(dynamic)
+    origin.send(@method).should.equal?(dynamic.send(@method))
   end
 
   it "returns the same object when it's called on the same String literal" do
-    "unfrozen string".send(@method).should equal("unfrozen string".send(@method))
-    "unfrozen string".send(@method).should_not equal("another unfrozen string".send(@method))
+    "unfrozen string".send(@method).should.equal?("unfrozen string".send(@method))
+    "unfrozen string".send(@method).should_not.equal?("another unfrozen string".send(@method))
   end
 
   it "deduplicates frozen strings" do
     dynamic = %w(this string is frozen).join(' ').freeze
 
-    dynamic.should_not equal("this string is frozen".freeze)
+    dynamic.should_not.equal?("this string is frozen".freeze)
 
-    dynamic.send(@method).should equal("this string is frozen".freeze)
-    dynamic.send(@method).should equal("this string is frozen".send(@method).freeze)
+    dynamic.send(@method).should.equal?("this string is frozen".freeze)
+    dynamic.send(@method).should.equal?("this string is frozen".send(@method).freeze)
   end
 
   it "does not deduplicate a frozen string when it has instance variables" do
@@ -44,8 +44,8 @@ describe :string_dedup, shared: true do
     dynamic.instance_variable_set(:@a, 1)
     dynamic.freeze
 
-    dynamic.send(@method).should_not equal("this string is frozen".freeze)
-    dynamic.send(@method).should_not equal("this string is frozen".send(@method).freeze)
-    dynamic.send(@method).should equal(dynamic)
+    dynamic.send(@method).should_not.equal?("this string is frozen".freeze)
+    dynamic.send(@method).should_not.equal?("this string is frozen".send(@method).freeze)
+    dynamic.send(@method).should.equal?(dynamic)
   end
 end

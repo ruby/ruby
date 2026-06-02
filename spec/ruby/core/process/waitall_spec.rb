@@ -13,7 +13,7 @@ describe "Process.waitall" do
   end
 
   it "takes no arguments" do
-    -> { Process.waitall(0) }.should raise_error(ArgumentError)
+    -> { Process.waitall(0) }.should.raise(ArgumentError)
   end
 
   platform_is_not :windows do
@@ -24,7 +24,7 @@ describe "Process.waitall" do
       pids << Process.fork { Process.exit! 0 }
       Process.waitall
       pids.each { |pid|
-        -> { Process.kill(0, pid) }.should raise_error(Errno::ESRCH)
+        -> { Process.kill(0, pid) }.should.raise(Errno::ESRCH)
       }
     end
 
@@ -34,14 +34,14 @@ describe "Process.waitall" do
       pids << Process.fork { Process.exit! 1 }
       pids << Process.fork { Process.exit! 0 }
       a = Process.waitall
-      a.should be_kind_of(Array)
+      a.should.is_a?(Array)
       a.size.should == 3
       pids.each { |pid|
         pid_status = a.assoc(pid)
-        pid_status.should be_kind_of(Array)
+        pid_status.should.is_a?(Array)
         pid_status.size.should == 2
         pid_status.first.should == pid
-        pid_status.last.should be_kind_of(Process::Status)
+        pid_status.last.should.is_a?(Process::Status)
       }
     end
   end

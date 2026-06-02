@@ -70,7 +70,6 @@ struct RHash {
 #endif
 
 /* hash.c */
-void rb_hash_st_table_set(VALUE hash, st_table *st);
 VALUE rb_hash_default_value(VALUE hash, VALUE key);
 VALUE rb_hash_set_default(VALUE hash, VALUE ifnone);
 VALUE rb_hash_set_default_proc(VALUE hash, VALUE proc);
@@ -112,7 +111,7 @@ int rb_hash_stlike_foreach(VALUE hash, st_foreach_callback_func *func, st_data_t
 RUBY_SYMBOL_EXPORT_END
 
 VALUE rb_hash_new_with_size(st_index_t size);
-VALUE rb_hash_new_with_size_and_type(VALUE klass, st_index_t size, const struct st_hash_type *type);
+VALUE rb_hash_new_with_bulk_insert(long argc, const VALUE *argv);
 VALUE rb_hash_resurrect(VALUE hash);
 int rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval);
 VALUE rb_hash_keys(VALUE hash);
@@ -197,7 +196,6 @@ RHASH_AR_TABLE_SIZE_RAW(VALUE h)
   ((unsigned int)((RBASIC(h)->flags >> RHASH_AR_TABLE_BOUND_SHIFT) & \
                   (RHASH_AR_TABLE_BOUND_MASK >> RHASH_AR_TABLE_BOUND_SHIFT)))
 
-#define RHASH_ST_TABLE_SET(h, s)  rb_hash_st_table_set(h, s)
 #define RHASH_TYPE(hash) (RHASH_AR_TABLE_P(hash) ? &objhash : RHASH_ST_TABLE(hash)->type)
 
 static inline unsigned int

@@ -150,6 +150,8 @@ class TestGem < Gem::TestCase
   end
 
   def assert_self_install_permissions(format_executable: false, data_mode: 0o640)
+    omit "FileUtils.install signature differs on JRuby/Windows" if Gem.win_platform? && Gem.java_platform?
+
     mask = Gem.win_platform? ? 0o700 : 0o777
     options = {
       dir_mode: 0o500,
@@ -199,7 +201,8 @@ class TestGem < Gem::TestCase
     end
     assert_equal(expected, result)
   ensure
-    File.chmod(0o755, *Dir.glob(@gemhome + "/gems/**/"))
+    files = Dir.glob(@gemhome + "/gems/**/")
+    File.chmod(0o755, *files) unless files.empty?
   end
 
   def test_require_missing

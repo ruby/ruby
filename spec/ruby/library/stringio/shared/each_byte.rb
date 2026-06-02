@@ -19,16 +19,16 @@ describe :stringio_each_byte, shared: true do
     @io.pos = 1000
     seen = nil
     @io.send(@method) { |b| seen = b }
-    seen.should be_nil
+    seen.should == nil
   end
 
   it "returns self" do
-    @io.send(@method) {}.should equal(@io)
+    @io.send(@method) {}.should.equal?(@io)
   end
 
   it "returns an Enumerator when passed no block" do
     enum = @io.send(@method)
-    enum.instance_of?(Enumerator).should be_true
+    enum.instance_of?(Enumerator).should == true
 
     seen = []
     enum.each { |b| seen << b }
@@ -39,10 +39,10 @@ end
 describe :stringio_each_byte_not_readable, shared: true do
   it "raises an IOError" do
     io = StringIO.new(+"xyz", "w")
-    -> { io.send(@method) { |b| b } }.should raise_error(IOError)
+    -> { io.send(@method) { |b| b } }.should.raise(IOError)
 
     io = StringIO.new("xyz")
     io.close_read
-    -> { io.send(@method) { |b| b } }.should raise_error(IOError)
+    -> { io.send(@method) { |b| b } }.should.raise(IOError)
   end
 end

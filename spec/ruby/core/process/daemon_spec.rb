@@ -112,7 +112,7 @@ platform_is :windows do
     it "raises a NotImplementedError" do
       -> {
         Process.daemon
-      }.should raise_error(NotImplementedError)
+      }.should.raise(NotImplementedError)
     end
   end
 end

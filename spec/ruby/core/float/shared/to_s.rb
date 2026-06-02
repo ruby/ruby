@@ -297,12 +297,12 @@ describe :float_to_s, shared: true do
 
     it "returns a String in US-ASCII encoding when Encoding.default_internal is nil" do
       Encoding.default_internal = nil
-      1.23.send(@method).encoding.should equal(Encoding::US_ASCII)
+      1.23.send(@method).encoding.should.equal?(Encoding::US_ASCII)
     end
 
     it "returns a String in US-ASCII encoding when Encoding.default_internal is not nil" do
       Encoding.default_internal = Encoding::IBM437
-      5.47.send(@method).encoding.should equal(Encoding::US_ASCII)
+      5.47.send(@method).encoding.should.equal?(Encoding::US_ASCII)
     end
   end
 end

@@ -208,7 +208,8 @@ RSpec.describe "bundle gem" do
       builder.eval_gemfile(bundled_app("#{gem_name}/Gemfile"))
       builder.dependencies
       rubocop_dep = builder.dependencies.find {|d| d.name == "rubocop" }
-      expect(rubocop_dep).not_to be_nil
+      expect(rubocop_dep).not_to be_specific
+      expect(rubocop_dep.requirement).to eq(Gem::Requirement.new([">= 0"]))
     end
 
     it "generates a default .rubocop.yml" do
@@ -239,7 +240,8 @@ RSpec.describe "bundle gem" do
       builder.eval_gemfile(bundled_app("#{gem_name}/Gemfile"))
       builder.dependencies
       standard_dep = builder.dependencies.find {|d| d.name == "standard" }
-      expect(standard_dep).not_to be_nil
+      expect(standard_dep).not_to be_specific
+      expect(standard_dep.requirement).to eq(Gem::Requirement.new([">= 0"]))
     end
 
     it "generates a default .standard.yml" do
@@ -746,13 +748,14 @@ RSpec.describe "bundle gem" do
       expect(ignore_paths).to include("spec/")
     end
 
-    it "depends on a specific version of rspec in generated Gemfile" do
+    it "depends on a non-specific version of rspec in generated Gemfile" do
       allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
       builder = Bundler::Dsl.new
       builder.eval_gemfile(bundled_app("#{gem_name}/Gemfile"))
       builder.dependencies
       rspec_dep = builder.dependencies.find {|d| d.name == "rspec" }
-      expect(rspec_dep).to be_specific
+      expect(rspec_dep).not_to be_specific
+      expect(rspec_dep.requirement).to eq(Gem::Requirement.new([">= 0"]))
     end
   end
 
@@ -831,13 +834,14 @@ RSpec.describe "bundle gem" do
       bundle "gem #{gem_name} --test=minitest"
     end
 
-    it "depends on a specific version of minitest" do
+    it "depends on a non-specific version of minitest" do
       allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
       builder = Bundler::Dsl.new
       builder.eval_gemfile(bundled_app("#{gem_name}/Gemfile"))
       builder.dependencies
       minitest_dep = builder.dependencies.find {|d| d.name == "minitest" }
-      expect(minitest_dep).to be_specific
+      expect(minitest_dep).not_to be_specific
+      expect(minitest_dep.requirement).to eq(Gem::Requirement.new([">= 0"]))
     end
 
     it "builds spec skeleton" do
@@ -892,13 +896,14 @@ RSpec.describe "bundle gem" do
       bundle "gem #{gem_name} --test=test-unit"
     end
 
-    it "depends on a specific version of test-unit" do
+    it "depends on a non-specific version of test-unit" do
       allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
       builder = Bundler::Dsl.new
       builder.eval_gemfile(bundled_app("#{gem_name}/Gemfile"))
       builder.dependencies
       test_unit_dep = builder.dependencies.find {|d| d.name == "test-unit" }
-      expect(test_unit_dep).to be_specific
+      expect(test_unit_dep).not_to be_specific
+      expect(test_unit_dep.requirement).to eq(Gem::Requirement.new([">= 0"]))
     end
 
     it "builds spec skeleton" do
@@ -1829,7 +1834,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes go_gem in gem_name.gemspec" do
-        expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to include('spec.add_dependency "go_gem", "~> 0.2"')
+        expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to include('spec.add_dependency "go_gem", ">= 0.2"')
       end
 
       it "includes go_gem extension in extconf.rb" do

@@ -245,13 +245,20 @@ VALUE
 rb_get_path_check_convert(VALUE obj)
 {
     obj = file_path_convert(obj);
+    rb_get_path_check_no_convert(obj);
+    return rb_str_new_frozen(obj);
+}
 
+/* TODO: name */
+VALUE
+rb_get_path_check_no_convert(VALUE obj)
+{
     check_path_encoding(obj);
     if (!rb_str_to_cstr(obj)) {
         rb_raise(rb_eArgError, "path name contains null byte");
     }
 
-    return rb_str_new_frozen(obj);
+    return obj;
 }
 
 VALUE
@@ -3760,6 +3767,11 @@ skipprefixroot(const char *path, const char *end, rb_encoding *enc)
 #endif
 }
 
+char *
+rb_enc_path_skip_prefix_root(const char *path, const char *end, rb_encoding *enc)
+{
+    return skipprefixroot(path, end, enc);
+}
 
 static char *
 enc_path_last_separator(const char *path, const char *end, bool mb_enc, rb_encoding *enc)
@@ -3913,10 +3925,6 @@ static VALUE
 copy_home_path(VALUE result, const char *dir)
 {
     char *buf;
-#if defined DOSISH || defined __CYGWIN__
-    char *p, *bend;
-    rb_encoding *enc;
-#endif
     long dirlen;
     int encidx;
 
@@ -3925,11 +3933,11 @@ copy_home_path(VALUE result, const char *dir)
     memcpy(buf = RSTRING_PTR(result), dir, dirlen);
     encidx = rb_filesystem_encindex();
     rb_enc_associate_index(result, encidx);
-#if defined DOSISH || defined __CYGWIN__
-    enc = rb_enc_from_index(encidx);
+#if defined FILE_ALT_SEPARATOR
+    rb_encoding *enc = rb_enc_from_index(encidx);
     bool mb_enc = enc_mbclen_needed(enc);
-    for (bend = (p = buf) + dirlen; p < bend; Inc(p, bend, mb_enc, enc)) {
-        if (*p == '\\') {
+    for (char *p = buf, *bend = p + dirlen; p < bend; Inc(p, bend, mb_enc, enc)) {
+        if (*p == FILE_ALT_SEPARATOR) {
             *p = '/';
         }
     }
@@ -4173,14 +4181,14 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
             BUFINIT();
             p = e;
         }
-#if defined DOSISH || defined __CYGWIN__
+#if defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC
         if (s < fend && isdirsep(*s)) {
             /* specified full path, but not drive letter nor UNC */
             /* we need to get the drive letter or UNC share name */
             p = skipprefix(buf, p, mb_enc, enc);
         }
         else
-#endif /* defined DOSISH || defined __CYGWIN__ */
+#endif /* defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC */
             p = chompdirsep(skiproot(buf, p), p, mb_enc, enc);
     }
     else {
@@ -4237,8 +4245,8 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 #endif /* USE_NTFS */
                     break;
                   case '/':
-#if defined DOSISH || defined __CYGWIN__
-                  case '\\':
+#if defined FILE_ALT_SEPARATOR
+                  case FILE_ALT_SEPARATOR:
 #endif
                     b = ++s;
                     break;
@@ -4262,8 +4270,8 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 #endif /* USE_NTFS */
             break;
           case '/':
-#if defined DOSISH || defined __CYGWIN__
-          case '\\':
+#if defined FILE_ALT_SEPARATOR
+          case FILE_ALT_SEPARATOR:
 #endif
             if (s > b) {
                 WITH_ROOTDIFF(BUFCOPY(b, s-b));
@@ -4471,31 +4479,43 @@ rb_file_s_expand_path(int argc, const VALUE *argv)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     File.expand_path(file_name [, dir_string] )  ->  abs_file_name
+ *    File.expand_path(path, dirpath = '.') -> absolute_path
  *
- *  Converts a pathname to an absolute pathname. Relative paths are
- *  referenced from the current working directory of the process unless
- *  +dir_string+ is given, in which case it will be used as the
- *  starting point. The given pathname may start with a
- *  ``<code>~</code>'', which expands to the process owner's home
- *  directory (the environment variable +HOME+ must be set
- *  correctly). ``<code>~</code><i>user</i>'' expands to the named
- *  user's home directory.
+ *  Returns the string absolute path for the given `path`.
  *
- *     File.expand_path("~oracle/bin")           #=> "/home/oracle/bin"
+ *  Evaluates a relative path with respect to the directory given by `dirpath`:
  *
- *  A simple example of using +dir_string+ is as follows.
- *     File.expand_path("ruby", "/usr/bin")      #=> "/usr/bin/ruby"
+ *  ```ruby
+ *  Dir.chdir('/snap')
+ *  # Default dirpath.
+ *  File.expand_path('README')                  # => "/snap/README"
+ *  File.expand_path('bin')                     # => "/snap/bin"
+ *  File.expand_path('bin/../var')              # => "/snap/var"  # Cleaned.
+ *  # Other dirpath.
+ *  File.expand_path('../zip', '/usr/bin/ruby') # => "/usr/bin/zip"
+ *  Dir.chdir('/usr/bin')
+ *  File.expand_path('../../snap', __FILE__)    # => "/usr/snap"
+ *  ```
  *
- *  A more complex example which also resolves parent directory is as follows.
- *  Suppose we are in bin/mygem and want the absolute path of lib/mygem.rb.
+ *  Evaluates an absolute path without respect to `dirpath`:
  *
- *     File.expand_path("../../lib/mygem.rb", __FILE__)
- *     #=> ".../path/to/project/lib/mygem.rb"
+ *  ```ruby
+ *  File.expand_path('/snap')           # => "/snap"
+ *  File.expand_path('/snap', 'nosuch') # => "/snap"
+ *  File.expand_path('/snap/../snap')   # => "/snap"  # Cleaned.
+ *  ```
  *
- *  So first it resolves the parent of __FILE__, that is bin/, then go to the
- *  parent, the root of the project and appends +lib/mygem.rb+.
+ *  More examples:
+ *
+ *  ```
+ *  Dir.chdir('/usr/bin')
+ *  File.expand_path('../../snap', __FILE__) # => "/usr/snap"
+ *  File.expand_path('../../snap')           # => "/snap"
+ *  ```
+ *
  */
 
 static VALUE
@@ -4985,9 +5005,6 @@ static inline const char *
 enc_find_basename(const char *name, long *baselen, long *alllen, bool mb_enc, rb_encoding *enc)
 {
     const char *p, *q, *e, *end;
-#if defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC
-    const char *root;
-#endif
     long f = 0, n = -1;
 
     long len = (alllen ? (size_t)*alllen : strlen(name));
@@ -4999,7 +5016,7 @@ enc_find_basename(const char *name, long *baselen, long *alllen, bool mb_enc, rb
     end = name + len;
     name = skipprefix(name, end, mb_enc, enc);
 #if defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC
-    root = name;
+    const char *root = name;
 #endif
 
     while (name < end && isdirsep(*name)) {
@@ -5313,28 +5330,42 @@ ruby_enc_find_extname(const char *name, long *len, rb_encoding *enc)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     File.extname(path)  ->  string
+ *     File.extname(path) -> extension
  *
- *  Returns the extension (the portion of file name in +path+
- *  starting from the last period).
+ *  Returns the filename extension --
+ *  usually the portion of the string `path`
+ *  beginning from the last period:
  *
- *  If +path+ is a dotfile, or starts with a period, then the starting
- *  dot is not dealt with the start of the extension.
+ *  ```ruby
+ *  File.extname('t.rb')         # => ".rb"
+ *  File.extname('foo.bar.t.rb') # => ".rb"
+ *  File.extname('foo/bar/t.rb') # => ".rb"
+ *  File.extname('nosuch.txt')   # => ".txt"  # Path need not exist.
+ *  ```
  *
- *  An empty string will also be returned when the period is the last character
- *  in +path+.
+ *  Returns the entire string when there is no period:
  *
- *  On Windows, trailing dots are truncated.
+ *  ```ruby
+ *  Pathname('foo').extname # => ""
+ *  ```
  *
- *     File.extname("test.rb")         #=> ".rb"
- *     File.extname("a/b/d/test.rb")   #=> ".rb"
- *     File.extname(".a/b/d/test.rb")  #=> ".rb"
- *     File.extname("foo.")            #=> "" on Windows
- *     File.extname("foo.")            #=> "." on non-Windows
- *     File.extname("test")            #=> ""
- *     File.extname(".profile")        #=> ""
- *     File.extname(".profile.sh")     #=> ".sh"
+ *  Returns an empty string when the only period is the first character:
+ *
+ *  ```ruby
+ *  File.extname('.irbrc') # => ""
+ *  ```
+ *
+ *  Returns an empty string or `'.'` when `path` ends with a period:
+ *
+ *  ```
+ *  File.extname('foo.') # => ""      # On Windows.
+ *  File.extname('foo.') # => "."     # Elsewhere.
+ *  File.extname('foo....') # => ""   # On Windows.
+ *  File.extname('foo....') # => "."  # Elsewhere.
+ *  ```
  *
  */
 
@@ -5466,10 +5497,10 @@ rb_file_join_ary(VALUE ary)
         }
         else {
             tail = chompdirsep(name, name + len, true, rb_enc_get(result));
-            if (RSTRING_PTR(tmp) && isdirsep(RSTRING_PTR(tmp)[0])) {
+            if (RSTRING_LEN(tmp) > 0 && isdirsep(RSTRING_PTR(tmp)[0])) {
                 rb_str_set_len(result, tail - name);
             }
-            else if (!*tail) {
+            else if (tail == name + len) {
                 rb_str_cat(result, "/", 1);
             }
         }
@@ -5513,15 +5544,15 @@ rb_file_join_fastpath(long argc, VALUE *args)
         long tmp_len;
         RSTRING_GETMEM(tmp, tmp_s, tmp_len);
 
-        if (isdirsep(tmp_s[0])) {
+        if (tmp_len > 0 && isdirsep(tmp_s[0])) {
             // right side has a leading separator, remove left side separators.
-            long trailing_seps = 0;
-            while (isdirsep(name[len - trailing_seps - 1])) {
-                trailing_seps++;
+            long chomp = len;
+            while (chomp > 0 && isdirsep(name[chomp - 1])) {
+                --chomp;
             }
-            rb_str_set_len(result, len - trailing_seps);
+            rb_str_set_len(result, chomp);
         }
-        else if (!isdirsep(name[len - 1])) {
+        else if (len < 1 || !isdirsep(name[len - 1])) {
             // neither side have a separator, append one;
             rb_str_cat(result, "/", 1);
         }

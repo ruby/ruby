@@ -7,7 +7,7 @@ describe "Process::Status#termsig" do
     end
 
     it "returns nil" do
-      $?.termsig.should be_nil
+      $?.termsig.should == nil
     end
   end
 
@@ -36,7 +36,7 @@ describe "Process::Status#termsig" do
 
     platform_is :windows do
       it "always returns nil" do
-        $?.termsig.should be_nil
+        $?.termsig.should == nil
       end
     end
   end

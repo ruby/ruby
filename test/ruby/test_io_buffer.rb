@@ -494,6 +494,14 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal string.bytes[3, 5], buffer.each_byte(3, 5).to_a
   end
 
+  def test_each_byte_bounds_error
+    buffer = IO::Buffer.for("A")
+
+    assert_raise(ArgumentError) { buffer.each_byte(0, 2).to_a }
+    assert_raise(ArgumentError) { buffer.each_byte(1, 1).to_a }
+    assert_raise(ArgumentError) { buffer.each_byte(SIZE_MAX, 0).to_a }
+  end
+
   def test_zero_length_each_byte
     buffer = IO::Buffer.new(0)
 
@@ -692,6 +700,29 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal IO::Buffer.for("1334133413"), source.dup.or!(mask)
     assert_equal IO::Buffer.for("\x00\x01\x004\x00\x01\x004\x00\x01"), source.dup.xor!(mask)
     assert_equal IO::Buffer.for("\xce\xcd\xcc\xcb\xce\xcd\xcc\xcb\xce\xcd"), source.dup.not!
+  end
+
+  def test_operators_raise_on_freed_self
+    inner = IO::Buffer.new(IO::Buffer::PAGE_SIZE)
+    slice = inner.slice(0, 8)
+    inner.free
+
+    mask = IO::Buffer.for("ABCDEFGH")
+    assert_raise(IO::Buffer::InvalidatedError) { slice & mask }
+    assert_raise(IO::Buffer::InvalidatedError) { slice | mask }
+    assert_raise(IO::Buffer::InvalidatedError) { slice ^ mask }
+    assert_raise(IO::Buffer::InvalidatedError) { ~slice }
+  end
+
+  def test_operators_raise_on_freed_mask
+    inner = IO::Buffer.new(IO::Buffer::PAGE_SIZE)
+    mask_slice = inner.slice(0, 8)
+    inner.free
+
+    source = IO::Buffer.for("ABCDEFGH")
+    assert_raise(IO::Buffer::InvalidatedError) { source & mask_slice }
+    assert_raise(IO::Buffer::InvalidatedError) { source | mask_slice }
+    assert_raise(IO::Buffer::InvalidatedError) { source ^ mask_slice }
   end
 
   def test_bit_count

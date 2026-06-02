@@ -1,22 +1,22 @@
 describe :syslog_reopen, shared: true do
   platform_is_not :windows do
     before :each do
-      Syslog.opened?.should be_false
+      Syslog.opened?.should == false
     end
 
     after :each do
-      Syslog.opened?.should be_false
+      Syslog.opened?.should == false
     end
 
     it "reopens the log" do
       Syslog.open
-      -> { Syslog.send(@method)}.should_not raise_error
-      Syslog.opened?.should be_true
+      -> { Syslog.send(@method)}.should_not.raise
+      Syslog.opened?.should == true
       Syslog.close
     end
 
     it "fails with RuntimeError if the log is closed" do
-      -> { Syslog.send(@method)}.should raise_error(RuntimeError)
+      -> { Syslog.send(@method)}.should.raise(RuntimeError)
     end
 
     it "receives the same parameters as Syslog.open" do
@@ -26,9 +26,9 @@ describe :syslog_reopen, shared: true do
         s.ident.should == "rubyspec"
         s.options.should == 3
         s.facility.should == Syslog::LOG_USER
-        s.opened?.should be_true
+        s.opened?.should == true
       end
-      Syslog.opened?.should be_false
+      Syslog.opened?.should == false
     end
 
     it "returns the module" do

@@ -1,10 +1,10 @@
 describe :enum_for, shared: true do
   it "is defined in Kernel" do
-    Kernel.method_defined?(@method).should be_true
+    Kernel.method_defined?(@method).should == true
   end
 
   it "returns a new enumerator" do
-    "abc".send(@method).should be_an_instance_of(Enumerator)
+    "abc".send(@method).should.instance_of?(Enumerator)
   end
 
   it "defaults the first argument to :each" do
@@ -49,7 +49,7 @@ describe :enum_for, shared: true do
       100
     end
 
-    ScratchPad.recorded.should be_empty
+    ScratchPad.recorded.should.empty?
 
     enum.size
     ScratchPad.recorded.should == [:called]

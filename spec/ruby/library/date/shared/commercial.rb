@@ -25,15 +25,15 @@ describe :date_commercial, shared: true do
   end
 
   it "creates only Date objects for valid weeks" do
-    -> { Date.send(@method, 2004, 53, 1) }.should_not raise_error(ArgumentError)
-    -> { Date.send(@method, 2004, 53, 0) }.should raise_error(ArgumentError)
-    -> { Date.send(@method, 2004, 53, 8) }.should raise_error(ArgumentError)
-    -> { Date.send(@method, 2004, 54, 1) }.should raise_error(ArgumentError)
-    -> { Date.send(@method, 2004,  0, 1) }.should raise_error(ArgumentError)
+    -> { Date.send(@method, 2004, 53, 1) }.should_not.raise(ArgumentError)
+    -> { Date.send(@method, 2004, 53, 0) }.should.raise(ArgumentError)
+    -> { Date.send(@method, 2004, 53, 8) }.should.raise(ArgumentError)
+    -> { Date.send(@method, 2004, 54, 1) }.should.raise(ArgumentError)
+    -> { Date.send(@method, 2004,  0, 1) }.should.raise(ArgumentError)
 
-    -> { Date.send(@method, 2003, 52, 1) }.should_not raise_error(ArgumentError)
-    -> { Date.send(@method, 2003, 53, 1) }.should raise_error(ArgumentError)
-    -> { Date.send(@method, 2003, 52, 0) }.should raise_error(ArgumentError)
-    -> { Date.send(@method, 2003, 52, 8) }.should raise_error(ArgumentError)
+    -> { Date.send(@method, 2003, 52, 1) }.should_not.raise(ArgumentError)
+    -> { Date.send(@method, 2003, 53, 1) }.should.raise(ArgumentError)
+    -> { Date.send(@method, 2003, 52, 0) }.should.raise(ArgumentError)
+    -> { Date.send(@method, 2003, 52, 8) }.should.raise(ArgumentError)
   end
 end

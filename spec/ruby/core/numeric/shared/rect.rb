@@ -14,7 +14,7 @@ describe :numeric_rect, shared: true do
 
   it "returns an Array" do
     @numbers.each do |number|
-      number.send(@method).should be_an_instance_of(Array)
+      number.send(@method).should.instance_of?(Array)
     end
   end
 
@@ -27,7 +27,7 @@ describe :numeric_rect, shared: true do
   it "returns self as the first element" do
     @numbers.each do |number|
       if Float === number and number.nan?
-        number.send(@method).first.nan?.should be_true
+        number.send(@method).first.nan?.should == true
       else
         number.send(@method).first.should == number
       end
@@ -42,7 +42,7 @@ describe :numeric_rect, shared: true do
 
   it "raises an ArgumentError if given any arguments" do
     @numbers.each do |number|
-      -> { number.send(@method, number) }.should raise_error(ArgumentError)
+      -> { number.send(@method, number) }.should.raise(ArgumentError)
     end
   end
 end

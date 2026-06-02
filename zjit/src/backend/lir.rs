@@ -1,12 +1,10 @@
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::fmt;
 use std::mem::take;
-use std::panic;
 use std::rc::Rc;
-use std::sync::{Arc, Mutex};
 use crate::bitset::BitSet;
 use crate::codegen::{local_size_and_idx_to_ep_offset, perf_symbol_range_start, perf_symbol_range_end};
-use crate::cruby::{IseqPtr, Qundef, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
+use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
 use crate::options::{TraceExits, PerfMap, get_option};
@@ -15,7 +13,7 @@ use crate::payload::IseqVersionRef;
 use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, side_exit_counter, CompileError};
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
-use crate::state::rb_zjit_record_exit_stack;
+use crate::state::{ZJITState, rb_zjit_record_exit_stack};
 
 /// LIR Block ID. Unique ID for each block, and also defined in LIR so
 /// we can differentiate it from HIR block ids.
@@ -205,7 +203,7 @@ pub use crate::backend::current::{
     mem_base_reg,
     Reg,
     EC, CFP, SP,
-    NATIVE_STACK_PTR, NATIVE_BASE_PTR,
+    NATIVE_BASE_PTR,
     C_ARG_OPNDS, C_RET_OPND,
 };
 
@@ -653,6 +651,9 @@ pub enum Insn {
     #[allow(dead_code)]
     Breakpoint,
 
+    // Abort the process
+    Abort,
+
     /// Add a comment into the IR at the point that this instruction is added.
     /// It won't have any impact on that actual compiled code.
     Comment(String),
@@ -786,9 +787,6 @@ pub enum Insn {
     // Load effective address
     Lea { opnd: Opnd, out: Opnd },
 
-    /// Take a specific register. Signal the register allocator to not use it.
-    LiveReg { opnd: Opnd, out: Opnd },
-
     // A low-level instruction that loads a value into a register.
     Load { opnd: Opnd, out: Opnd },
 
@@ -848,17 +846,140 @@ pub enum Insn {
     Xor { left: Opnd, right: Opnd, out: Opnd }
 }
 
+macro_rules! target_for_each_operand_impl {
+    ($self:expr, $visit_many:ident) => {
+        match $self {
+            Target::SideExit { exit: SideExit { stack, locals, .. }, .. } => {
+                visit_many!(stack);
+                visit_many!(locals);
+            }
+            Target::Block(edge) => {
+                visit_many!(edge.args);
+            }
+            Target::CodePtr(_) | Target::Label(_) => {}
+        }
+    }
+}
+
+/// Macro that enumerates all operands of an Insn, dispatching to caller-provided `$visit_one`
+/// macro for a single `Opnd` field and `$visit_many` macro for a slice/`Vec` of `Opnd`s. Used by
+/// both `for_each_operand` and `for_each_operand_mut`.
+macro_rules! for_each_operand_impl {
+    ($self:expr, $visit_one:ident, $visit_many:ident $(, $const:expr)?) => {
+        match $self {
+            Insn::Jbe(target) |
+            Insn::Jb(target) |
+            Insn::Je(target) |
+            Insn::Jl(target) |
+            Insn::Jg(target) |
+            Insn::Jge(target) |
+            Insn::Jmp(target) |
+            Insn::Jne(target) |
+            Insn::Jnz(target) |
+            Insn::Jo(target) |
+            Insn::JoMul(target) |
+            Insn::Jz(target) |
+            Insn::Label(target) |
+            Insn::LeaJumpTarget { target, .. } |
+            Insn::PatchPoint { target, .. } => {
+                target_for_each_operand_impl!(target, $visit_many);
+            }
+            Insn::Joz(opnd, target) |
+            Insn::Jonz(opnd, target) => {
+                visit_one!(opnd);
+                target_for_each_operand_impl!(target, $visit_many);
+            }
+
+            Insn::BakeString(_) |
+            Insn::Breakpoint | Insn::Abort |
+            Insn::Comment(_) |
+            Insn::CPop { .. } |
+            Insn::PadPatchPoint |
+            Insn::PosMarker(_) => {},
+
+            Insn::CPopInto(opnd) |
+            Insn::CPush(opnd) |
+            Insn::CRet(opnd) |
+            Insn::JmpOpnd(opnd) |
+            Insn::Lea { opnd, .. } |
+            Insn::Load { opnd, .. } |
+            Insn::LoadSExt { opnd, .. } |
+            Insn::Not { opnd, .. } => {
+                visit_one!(opnd);
+            }
+            Insn::Add { left: opnd0, right: opnd1, .. } |
+            Insn::And { left: opnd0, right: opnd1, .. } |
+            Insn::CPushPair(opnd0, opnd1) |
+            Insn::CPopPairInto(opnd0, opnd1) |
+            Insn::Cmp { left: opnd0, right: opnd1 } |
+            Insn::CSelE { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::CSelG { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::CSelGE { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::CSelL { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::CSelLE { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::CSelNE { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::CSelNZ { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::CSelZ { truthy: opnd0, falsy: opnd1, .. } |
+            Insn::IncrCounter { mem: opnd0, value: opnd1, .. } |
+            Insn::LoadInto { dest: opnd0, opnd: opnd1 } |
+            Insn::LShift { opnd: opnd0, shift: opnd1, .. } |
+            Insn::Mov { dest: opnd0, src: opnd1 } |
+            Insn::Or { left: opnd0, right: opnd1, .. } |
+            Insn::RShift { opnd: opnd0, shift: opnd1, .. } |
+            Insn::Store { dest: opnd0, src: opnd1 } |
+            Insn::Sub { left: opnd0, right: opnd1, .. } |
+            Insn::Mul { left: opnd0, right: opnd1, .. } |
+            Insn::Test { left: opnd0, right: opnd1 } |
+            Insn::URShift { opnd: opnd0, shift: opnd1, .. } |
+            Insn::Xor { left: opnd0, right: opnd1, .. } => {
+                visit_one!(opnd0);
+                visit_one!(opnd1);
+            }
+            Insn::CCall { opnds, .. } => {
+                visit_many!(opnds);
+            }
+            // only iterate over preserved in the const iterator
+            #[allow(unused_variables)]
+            Insn::FrameSetup { preserved, .. } |
+            Insn::FrameTeardown { preserved } => {
+            $(
+                visit_many!(preserved);
+                $const;
+            )?
+            }
+        }
+    }
+}
+
 impl Insn {
-    /// Create an iterator that will yield a non-mutable reference to each
-    /// operand in turn for this instruction.
-    pub(super) fn opnd_iter(&self) -> InsnOpndIterator<'_> {
-        InsnOpndIterator::new(self)
+    pub fn opnd_count(&self) -> usize {
+        let mut count = 0;
+        self.for_each_operand(|_| count += 1);
+        count
     }
 
-    /// Create an iterator that will yield a mutable reference to each operand
-    /// in turn for this instruction.
-    pub(super) fn opnd_iter_mut(&mut self) -> InsnOpndMutIterator<'_> {
-        InsnOpndMutIterator::new(self)
+    /// Call `f` on each operand (Opnd) of this instruction.
+    pub fn for_each_operand(&self, mut f: impl FnMut(Opnd)) {
+        macro_rules! visit_one { ($id:expr) => { f(*$id) }; }
+        macro_rules! visit_many { ($s:expr) => { for id in ($s).iter() { f(*id) } }; }
+        // Extra () is a throw-away parameter to avoid iterating over FrameSetup/FrameTeardown
+        // preserved in the mutable iterator.
+        for_each_operand_impl!(self, visit_one, visit_many, ());
+    }
+
+    /// Call `f` on a mutable reference to each operand (Opnd) of this instruction.
+    pub fn for_each_operand_mut(&mut self, mut f: impl FnMut(&mut Opnd)) {
+        macro_rules! visit_one { ($id:expr) => { f($id) }; }
+        macro_rules! visit_many { ($s:expr) => { for id in ($s).iter_mut() { f(id) } }; }
+        for_each_operand_impl!(self, visit_one, visit_many);
+    }
+
+    /// Call `f` on each operand, short-circuiting on the first error.
+    pub fn try_for_each_operand<E>(&self, mut f: impl FnMut(Opnd) -> Result<(), E>) -> Result<(), E> {
+        macro_rules! visit_one { ($id:expr) => { f(*$id)? }; }
+        macro_rules! visit_many { ($s:expr) => { for id in ($s).iter() { f(*id)? } }; }
+        for_each_operand_impl!(self, visit_one, visit_many, ());
+        Ok(())
     }
 
     /// Get a mutable reference to a Target if it exists.
@@ -895,6 +1016,7 @@ impl Insn {
             Insn::And { .. } => "And",
             Insn::BakeString(_) => "BakeString",
             Insn::Breakpoint => "Breakpoint",
+            Insn::Abort => "Abort",
             Insn::Comment(_) => "Comment",
             Insn::Cmp { .. } => "Cmp",
             Insn::CPop { .. } => "CPop",
@@ -933,7 +1055,6 @@ impl Insn {
             Insn::Label(_) => "Label",
             Insn::LeaJumpTarget { .. } => "LeaJumpTarget",
             Insn::Lea { .. } => "Lea",
-            Insn::LiveReg { .. } => "LiveReg",
             Insn::Load { .. } => "Load",
             Insn::LoadInto { .. } => "LoadInto",
             Insn::LoadSExt { .. } => "LoadSExt",
@@ -972,7 +1093,6 @@ impl Insn {
             Insn::CSelZ { out, .. } |
             Insn::Lea { out, .. } |
             Insn::LeaJumpTarget { out, .. } |
-            Insn::LiveReg { out, .. } |
             Insn::Load { out, .. } |
             Insn::LoadSExt { out, .. } |
             Insn::LShift { out, .. } |
@@ -1005,7 +1125,6 @@ impl Insn {
             Insn::CSelZ { out, .. } |
             Insn::Lea { out, .. } |
             Insn::LeaJumpTarget { out, .. } |
-            Insn::LiveReg { out, .. } |
             Insn::Load { out, .. } |
             Insn::LoadSExt { out, .. } |
             Insn::LShift { out, .. } |
@@ -1085,374 +1204,19 @@ impl Insn {
     }
 }
 
-/// An iterator that will yield a non-mutable reference to each operand in turn
-/// for the given instruction.
-pub(super) struct InsnOpndIterator<'a> {
-    insn: &'a Insn,
-    idx: usize,
-}
-
-impl<'a> InsnOpndIterator<'a> {
-    fn new(insn: &'a Insn) -> Self {
-        Self { insn, idx: 0 }
-    }
-}
-
-impl<'a> Iterator for InsnOpndIterator<'a> {
-    type Item = &'a Opnd;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self.insn {
-            Insn::Jbe(target) |
-            Insn::Jb(target) |
-            Insn::Je(target) |
-            Insn::Jl(target) |
-            Insn::Jg(target) |
-            Insn::Jge(target) |
-            Insn::Jmp(target) |
-            Insn::Jne(target) |
-            Insn::Jnz(target) |
-            Insn::Jo(target) |
-            Insn::JoMul(target) |
-            Insn::Jz(target) |
-            Insn::Label(target) |
-            Insn::LeaJumpTarget { target, .. } |
-            Insn::PatchPoint { target, .. } => {
-                match target {
-                    Target::SideExit { exit: SideExit { stack, locals, .. }, .. } => {
-                        let stack_idx = self.idx;
-                        if stack_idx < stack.len() {
-                            let opnd = &stack[stack_idx];
-                            self.idx += 1;
-                            return Some(opnd);
-                        }
-
-                        let local_idx = self.idx - stack.len();
-                        if local_idx < locals.len() {
-                            let opnd = &locals[local_idx];
-                            self.idx += 1;
-                            return Some(opnd);
-                        }
-                        None
-                    }
-                    Target::Block(edge) => {
-                        if self.idx < edge.args.len() {
-                            let opnd = &edge.args[self.idx];
-                            self.idx += 1;
-                            return Some(opnd);
-                        }
-                        None
-                    }
-                    _ => None
-                }
-            }
-
-            Insn::Joz(opnd, target) |
-            Insn::Jonz(opnd, target) => {
-                if self.idx == 0 {
-                    self.idx += 1;
-                    return Some(opnd);
-                }
-
-                match target {
-                    Target::SideExit { exit: SideExit { stack, locals, .. }, .. } => {
-                        let stack_idx = self.idx - 1;
-                        if stack_idx < stack.len() {
-                            let opnd = &stack[stack_idx];
-                            self.idx += 1;
-                            return Some(opnd);
-                        }
-
-                        let local_idx = stack_idx - stack.len();
-                        if local_idx < locals.len() {
-                            let opnd = &locals[local_idx];
-                            self.idx += 1;
-                            return Some(opnd);
-                        }
-                        None
-                    }
-                    Target::Block(edge) => {
-                        let arg_idx = self.idx - 1;
-                        if arg_idx < edge.args.len() {
-                            let opnd = &edge.args[arg_idx];
-                            self.idx += 1;
-                            return Some(opnd);
-                        }
-                        None
-                    }
-                    _ => None
-                }
-            }
-
-            Insn::BakeString(_) |
-            Insn::Breakpoint |
-            Insn::Comment(_) |
-            Insn::CPop { .. } |
-            Insn::PadPatchPoint |
-            Insn::PosMarker(_) => None,
-
-            Insn::CPopInto(opnd) |
-            Insn::CPush(opnd) |
-            Insn::CRet(opnd) |
-            Insn::JmpOpnd(opnd) |
-            Insn::Lea { opnd, .. } |
-            Insn::LiveReg { opnd, .. } |
-            Insn::Load { opnd, .. } |
-            Insn::LoadSExt { opnd, .. } |
-            Insn::Not { opnd, .. } => {
-                match self.idx {
-                    0 => {
-                        self.idx += 1;
-                        Some(opnd)
-                    },
-                    _ => None
-                }
-            },
-            Insn::Add { left: opnd0, right: opnd1, .. } |
-            Insn::And { left: opnd0, right: opnd1, .. } |
-            Insn::CPushPair(opnd0, opnd1) |
-            Insn::CPopPairInto(opnd0, opnd1) |
-            Insn::Cmp { left: opnd0, right: opnd1 } |
-            Insn::CSelE { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::CSelG { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::CSelGE { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::CSelL { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::CSelLE { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::CSelNE { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::CSelNZ { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::CSelZ { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::IncrCounter { mem: opnd0, value: opnd1, .. } |
-            Insn::LoadInto { dest: opnd0, opnd: opnd1 } |
-            Insn::LShift { opnd: opnd0, shift: opnd1, .. } |
-            Insn::Mov { dest: opnd0, src: opnd1 } |
-            Insn::Or { left: opnd0, right: opnd1, .. } |
-            Insn::RShift { opnd: opnd0, shift: opnd1, .. } |
-            Insn::Store { dest: opnd0, src: opnd1 } |
-            Insn::Sub { left: opnd0, right: opnd1, .. } |
-            Insn::Mul { left: opnd0, right: opnd1, .. } |
-            Insn::Test { left: opnd0, right: opnd1 } |
-            Insn::URShift { opnd: opnd0, shift: opnd1, .. } |
-            Insn::Xor { left: opnd0, right: opnd1, .. } => {
-                match self.idx {
-                    0 => {
-                        self.idx += 1;
-                        Some(opnd0)
-                    }
-                    1 => {
-                        self.idx += 1;
-                        Some(opnd1)
-                    }
-                    _ => None
-                }
-            },
-            Insn::CCall { opnds, .. } => {
-                if self.idx < opnds.len() {
-                    let opnd = &opnds[self.idx];
-                    self.idx += 1;
-                    Some(opnd)
-                } else {
-                    None
-                }
-            },
-            Insn::FrameSetup { preserved, .. } |
-            Insn::FrameTeardown { preserved } => {
-                if self.idx < preserved.len() {
-                    let opnd = &preserved[self.idx];
-                    self.idx += 1;
-                    Some(opnd)
-                } else {
-                    None
-                }
-            }
-        }
-    }
-}
-
-/// An iterator that will yield each operand in turn for the given instruction.
-pub(super) struct InsnOpndMutIterator<'a> {
-    insn: &'a mut Insn,
-    idx: usize,
-}
-
-impl<'a> InsnOpndMutIterator<'a> {
-    fn new(insn: &'a mut Insn) -> Self {
-        Self { insn, idx: 0 }
-    }
-
-    pub(super) fn next(&mut self) -> Option<&mut Opnd> {
-        match self.insn {
-            Insn::Jbe(target) |
-            Insn::Jb(target) |
-            Insn::Je(target) |
-            Insn::Jl(target) |
-            Insn::Jg(target) |
-            Insn::Jge(target) |
-            Insn::Jmp(target) |
-            Insn::Jne(target) |
-            Insn::Jnz(target) |
-            Insn::Jo(target) |
-            Insn::JoMul(target) |
-            Insn::Jz(target) |
-            Insn::Label(target) |
-            Insn::LeaJumpTarget { target, .. } |
-            Insn::PatchPoint { target, .. } => {
-                match target {
-                    Target::SideExit { exit: SideExit { stack, locals, .. }, .. } => {
-                        let stack_idx = self.idx;
-                        if stack_idx < stack.len() {
-                            let opnd = &mut stack[stack_idx];
-                            self.idx += 1;
-                            return Some(opnd);
-                        }
-
-                        let local_idx = self.idx - stack.len();
-                        if local_idx < locals.len() {
-                            let opnd = &mut locals[local_idx];
-                            self.idx += 1;
-                            return Some(opnd);
-                        }
-                        None
-                    }
-                    Target::Block(edge) => {
-                        if self.idx < edge.args.len() {
-                            let opnd = &mut edge.args[self.idx];
-                            self.idx += 1;
-                            return Some(opnd);
-                        }
-                        None
-                    }
-                    _ => None
-                }
-            }
-
-            Insn::Joz(opnd, target) |
-            Insn::Jonz(opnd, target) => {
-                if self.idx == 0 {
-                    self.idx += 1;
-                    return Some(opnd);
-                }
-
-                match target {
-                    Target::SideExit { exit: SideExit { stack, locals, .. }, .. } => {
-                        let stack_idx = self.idx - 1;
-                        if stack_idx < stack.len() {
-                            let opnd = &mut stack[stack_idx];
-                            self.idx += 1;
-                            return Some(opnd);
-                        }
-
-                        let local_idx = stack_idx - stack.len();
-                        if local_idx < locals.len() {
-                            let opnd = &mut locals[local_idx];
-                            self.idx += 1;
-                            return Some(opnd);
-                        }
-                        None
-                    }
-                    Target::Block(edge) => {
-                        let arg_idx = self.idx - 1;
-                        if arg_idx < edge.args.len() {
-                            let opnd = &mut edge.args[arg_idx];
-                            self.idx += 1;
-                            return Some(opnd);
-                        }
-                        None
-                    }
-                    _ => None
-                }
-            }
-
-            Insn::BakeString(_) |
-            Insn::Breakpoint |
-            Insn::Comment(_) |
-            Insn::CPop { .. } |
-            Insn::FrameSetup { .. } |
-            Insn::FrameTeardown { .. } |
-            Insn::PadPatchPoint |
-            Insn::PosMarker(_) => None,
-
-            Insn::CPopInto(opnd) |
-            Insn::CPush(opnd) |
-            Insn::CRet(opnd) |
-            Insn::JmpOpnd(opnd) |
-            Insn::Lea { opnd, .. } |
-            Insn::LiveReg { opnd, .. } |
-            Insn::Load { opnd, .. } |
-            Insn::LoadSExt { opnd, .. } |
-            Insn::Not { opnd, .. } => {
-                match self.idx {
-                    0 => {
-                        self.idx += 1;
-                        Some(opnd)
-                    },
-                    _ => None
-                }
-            },
-            Insn::Add { left: opnd0, right: opnd1, .. } |
-            Insn::And { left: opnd0, right: opnd1, .. } |
-            Insn::CPushPair(opnd0, opnd1) |
-            Insn::CPopPairInto(opnd0, opnd1) |
-            Insn::Cmp { left: opnd0, right: opnd1 } |
-            Insn::CSelE { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::CSelG { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::CSelGE { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::CSelL { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::CSelLE { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::CSelNE { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::CSelNZ { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::CSelZ { truthy: opnd0, falsy: opnd1, .. } |
-            Insn::IncrCounter { mem: opnd0, value: opnd1, .. } |
-            Insn::LoadInto { dest: opnd0, opnd: opnd1 } |
-            Insn::LShift { opnd: opnd0, shift: opnd1, .. } |
-            Insn::Mov { dest: opnd0, src: opnd1 } |
-            Insn::Or { left: opnd0, right: opnd1, .. } |
-            Insn::RShift { opnd: opnd0, shift: opnd1, .. } |
-            Insn::Store { dest: opnd0, src: opnd1 } |
-            Insn::Sub { left: opnd0, right: opnd1, .. } |
-            Insn::Mul { left: opnd0, right: opnd1, .. } |
-            Insn::Test { left: opnd0, right: opnd1 } |
-            Insn::URShift { opnd: opnd0, shift: opnd1, .. } |
-            Insn::Xor { left: opnd0, right: opnd1, .. } => {
-                match self.idx {
-                    0 => {
-                        self.idx += 1;
-                        Some(opnd0)
-                    }
-                    1 => {
-                        self.idx += 1;
-                        Some(opnd1)
-                    }
-                    _ => None
-                }
-            },
-            Insn::CCall { opnds, .. } => {
-                if self.idx < opnds.len() {
-                    let opnd = &mut opnds[self.idx];
-                    self.idx += 1;
-                    Some(opnd)
-                } else {
-                    None
-                }
-            },
-        }
-    }
-}
-
 impl fmt::Debug for Insn {
     fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
         write!(fmt, "{}(", self.op())?;
 
-        // Print list of operands
-        let mut opnd_iter = self.opnd_iter();
         if let Insn::FrameSetup { slot_count, .. } = self {
             write!(fmt, "{slot_count}")?;
         }
-        if let Some(first_opnd) = opnd_iter.next() {
-            write!(fmt, "{first_opnd:?}")?;
-        }
-        for opnd in opnd_iter {
-            write!(fmt, ", {opnd:?}")?;
-        }
+        // Print list of operands
+        let mut sep = "";
+        self.for_each_operand(|opnd| {
+             write!(fmt, "{sep}{opnd:?}").unwrap();
+             sep = ", ";
+        });
         write!(fmt, ")")?;
 
         // Print text, target, and pos if they are present
@@ -1642,10 +1406,9 @@ pub struct Assembler {
     /// On `compile`, it also disables the backend's use of them.
     pub(super) accept_scratch_reg: bool,
 
-    /// The Assembler can use NATIVE_BASE_PTR + stack_base_idx as the
-    /// first stack slot in case it needs to allocate memory. This is
-    /// equal to the number of spilled basic block arguments.
-    pub(super) stack_base_idx: usize,
+    /// The maximum number of stack slots that have been reserved
+    /// by Assembler::alloc_stack().
+    pub stack_base_idx: usize,
 
     /// If Some, the next ccall should verify its leafness
     leaf_ccall_stack_size: Option<usize>,
@@ -1799,22 +1562,6 @@ impl Assembler
         iter
     }
 
-    /// Return an operand for a basic block argument at a given index.
-    /// To simplify the implementation, we allocate a fixed register or a stack slot
-    /// for each basic block argument.
-    pub fn param_opnd(idx: usize) -> Opnd {
-        use crate::backend::current::ALLOC_REGS;
-        use crate::cruby::SIZEOF_VALUE_I32;
-
-        if idx < ALLOC_REGS.len() {
-            Opnd::Reg(ALLOC_REGS[idx])
-        } else {
-            // With FrameSetup, the address that NATIVE_BASE_PTR points to stores an old value in the register.
-            // To avoid clobbering it, we need to start from the next slot, hence `+ 1` for the index.
-            Opnd::mem(64, NATIVE_BASE_PTR, (idx - ALLOC_REGS.len() + 1) as i32 * -SIZEOF_VALUE_I32)
-        }
-    }
-
     pub fn linearize_instructions(&self) -> Vec<Insn> {
         // Emit instructions with labels, expanding branch parameters
         let mut insns = Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY);
@@ -1937,10 +1684,9 @@ impl Assembler
     pub fn push_insn(&mut self, insn: Insn) {
         // If this Assembler should not accept scratch registers, assert no use of them.
         if !self.accept_scratch_reg {
-            let opnd_iter = insn.opnd_iter();
-            for opnd in opnd_iter {
-                assert!(!Self::has_scratch_reg(*opnd), "should not use scratch register: {opnd:?}");
-            }
+            insn.for_each_operand(|opnd| {
+                assert!(!Self::has_scratch_reg(opnd), "should not use scratch register: {opnd:?}");
+            });
         }
 
         self.idx += 1;
@@ -2277,11 +2023,25 @@ impl Assembler
             if self.basic_blocks[block_id.0].is_dummy() { continue; }
             let params = self.basic_blocks[block_id.0].parameters.clone();
 
+            // JIT-to-JIT entries that would need more argument registers should
+            // be unreachable because can_direct_send() refuses to call them.
+            // Keep compiling the function body, but make the unsupported entry
+            // abort if control ever reaches it. TODO: Remove this (Shopify/ruby#916)
+            if params.len() > C_ARG_OPNDS.len() {
+                let insert_pos = self.basic_blocks[block_id.0].insns.iter()
+                    .position(|insn| matches!(insn, Insn::FrameSetup { .. }))
+                    .or_else(|| self.basic_blocks[block_id.0].insns.iter().position(|insn| matches!(insn, Insn::Label(_))).map(|idx| idx + 1))
+                    .unwrap_or(0);
+                self.basic_blocks[block_id.0].insns.insert(insert_pos, Insn::Abort);
+                self.basic_blocks[block_id.0].insn_ids.insert(insert_pos, None);
+                continue;
+            }
+
             // Rewrite VRegs to physical registers before sequentialization
             // so the parcopy algorithm can detect physical register conflicts.
             let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = params.iter().enumerate()
                 .map(|(i, param)| parcopy::RegisterCopy::<Opnd> {
-                    source: Assembler::param_opnd(i),
+                    source: C_ARG_OPNDS[i],
                     destination: Self::rewritten_opnd(*param, assignments),
                 })
                 .filter(|copy| copy.source != copy.destination)
@@ -2381,27 +2141,16 @@ impl Assembler
                             _ => unreachable!(),
                         })
                         .collect();
-                    let survivor_push_groups: Vec<Vec<Opnd>> = survivor_regs
-                        .chunks(2)
-                        .map(|group| group.to_vec())
-                        .collect();
 
                     // Push all survivors on the stack, pairing adjacent pushes when possible.
-                    let needs_alignment = cfg!(target_arch = "x86_64") && survivors.len() % 2 == 1;
-                    for group in &survivor_push_groups {
-                        match group.as_slice() {
-                            [left, right] => new_insns.push(Insn::CPushPair(*left, *right)),
-                            [reg] => new_insns.push(Insn::CPush(*reg)),
+                    for group in survivor_regs.chunks(2) {
+                        match group {
+                            &[left, right] => new_insns.push(Insn::CPushPair(left, right)),
+                            &[reg]         => new_insns.push(Insn::CPushPair(reg, 0.into())),
                             _ => unreachable!(),
                         }
                         new_ids.push(None);
                     }
-                    // Maintain 16-byte stack alignment for x86_64
-                    if needs_alignment {
-                        new_insns.push(Insn::CPush(Opnd::Reg(ALLOC_REGS[0])));
-                        new_ids.push(None);
-                    }
-
                     // Extract arguments from CCall, clear opnds
 
                     assert!(opnds.len() <= regs.len());
@@ -2456,7 +2205,7 @@ impl Assembler
 
                     if survivors.is_empty() {
                         if call_result_live {
-                            // No survivors to restore — move result directly to output.
+                            // No survivors to restore -- move result directly to output.
                             let out = Self::rewritten_opnd(out, assignments);
                             new_insns.push(Insn::Mov { dest: out, src: C_RET_OPND });
                             new_ids.push(None);
@@ -2469,17 +2218,11 @@ impl Assembler
                             new_ids.push(None);
                         }
 
-                        // Pop alignment padding (if needed)
-                        if needs_alignment {
-                            new_insns.push(Insn::CPopInto(Opnd::Reg(ALLOC_REGS[0])));
-                            new_ids.push(None);
-                        }
-
                         // Restore all survivors in reverse stack order, pairing adjacent pops when possible.
-                        for group in survivor_push_groups.iter().rev() {
-                            match group.as_slice() {
-                                [left, right] => new_insns.push(Insn::CPopPairInto(*right, *left)),
-                                [reg] => new_insns.push(Insn::CPopInto(*reg)),
+                        for group in survivor_regs.chunks(2).rev() {
+                            match group {
+                                &[reg]         => new_insns.push(Insn::CPopPairInto(reg, reg)),
+                                &[left, right] => new_insns.push(Insn::CPopPairInto(right, left)),
                                 _ => unreachable!(),
                             }
                             new_ids.push(None);
@@ -2509,10 +2252,9 @@ impl Assembler
     fn rewrite_instructions(&mut self, assignments: &[Option<Allocation>]) {
         for block_id in self.block_order() {
             for insn in self.basic_blocks[block_id.0].insns.iter_mut() {
-                let mut iter = insn.opnd_iter_mut();
-                while let Some(opnd) = iter.next() {
+                insn.for_each_operand_mut(|opnd| {
                     Self::rewrite_opnd(opnd, assignments);
-                }
+                });
                 if let Some(out) = insn.out_opnd_mut() {
                     Self::rewrite_opnd(out, assignments);
                 }
@@ -2635,7 +2377,7 @@ impl Assembler
             asm_comment!(asm, "save cfp->iseq");
             asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ), VALUE::from(*iseq).into());
 
-            // cfp->block_code and cfp->jit_return are cleared by the caller jit_exec() or JIT_EXEC()
+            // cfp->block_code and cfp->jit_return are cleared by the materialize_exit trampoline
 
             if !stack.is_empty() {
                 asm_comment!(asm, "write stack slots: {}", join_opnds(&stack, ", "));
@@ -2655,28 +2397,11 @@ impl Assembler
         /// Tear down the JIT frame and return to the interpreter.
         fn compile_exit_return(asm: &mut Assembler) {
             asm_comment!(asm, "exit to the interpreter");
-            asm.frame_teardown(&[]); // matching the setup in gen_entry_point()
-            asm.cret(Opnd::UImm(Qundef.as_u64()));
+            asm.jmp(Target::CodePtr(ZJITState::get_materialize_exit_trampoline()));
         }
 
-        /// Compile the main side-exit code. This function takes only SideExit so
-        /// that it can be safely deduplicated by using SideExit as a dedup key.
-        fn compile_exit(asm: &mut Assembler, exit: &SideExit) {
-            compile_exit_save_state(asm, exit);
-            // If this side exit should trigger recompilation, call the recompile
-            // function after saving VM state. The ccall must happen after
-            // compile_exit_save_state because it clobbers caller-saved registers
-            // that may hold stack/local operands we need to save.
+        fn compile_exit_recompile(asm: &mut Assembler, exit: &SideExit) {
             if let Some(recompile) = &exit.recompile {
-                if cfg!(feature = "runtime_checks") {
-                    // Clear jit_return to fully materialize the frame. This must happen
-                    // before any C call in the exit path (e.g. exit_recompile)
-                    // because that C call can trigger GC, which walks the stack and would
-                    // hit the CFP_JIT_RETURN assertion if jit_return still holds the
-                    // runtime_checks poison value (JIT_RETURN_POISON).
-                    asm_comment!(asm, "clear cfp->jit_return");
-                    asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), 0.into());
-                }
 
                 use crate::codegen::exit_recompile;
                 asm_comment!(asm, "profile and maybe recompile");
@@ -2690,6 +2415,34 @@ impl Assembler
                     })
                 );
             }
+        }
+
+        /// Compile the main side-exit code.  The side exit will optionally record a traced exit
+        /// stack, optionally trigger recompilation, and then return to the interpreter. Shared
+        /// exits pass no trace reason so they can still be deduplicated by SideExit.
+        /// IOW, we should never pass a trace reason if we expect the exit to be
+        /// deduplicated.
+        fn compile_exit(asm: &mut Assembler, exit: &SideExit, trace_reason: Option<SideExitReason>) {
+            // Save VM state before the ccall so that
+            // rb_profile_frames sees valid cfp->pc and the
+            // ccall doesn't clobber caller-saved registers
+            // holding stack/local operands.
+            compile_exit_save_state(asm, exit);
+            if trace_reason.is_some() || exit.recompile.is_some() {
+                // Clear cfp->jit_return to prepare for a C call. Normally, cfp->jit_return
+                // is cleared by the materialize_exit trampoline, but if we're about to
+                // make a C call, we need to clear any stale JITFrame.
+                asm_comment!(asm, "clear cfp->jit_return");
+                asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), 0.into());
+            }
+            if let Some(reason) = trace_reason {
+                // Leak a CString with the reason so it's available at runtime
+                let reason_cstr = std::ffi::CString::new(reason.to_string())
+                    .unwrap_or_else(|_| std::ffi::CString::new("unknown").unwrap());
+                let reason_ptr = reason_cstr.into_raw() as *const u8;
+                asm_ccall!(asm, rb_zjit_record_exit_stack, Opnd::const_ptr(reason_ptr));
+            }
+            compile_exit_recompile(asm, exit);
             compile_exit_return(asm);
         }
 
@@ -2766,17 +2519,7 @@ impl Assembler
                     }
 
                     if should_record_exit {
-                        // Save VM state before the ccall so that
-                        // rb_profile_frames sees valid cfp->pc and the
-                        // ccall doesn't clobber caller-saved registers
-                        // holding stack/local operands.
-                        compile_exit_save_state(self, &exit);
-                        // Leak a CString with the reason so it's available at runtime
-                        let reason_cstr = std::ffi::CString::new(reason.to_string())
-                            .unwrap_or_else(|_| std::ffi::CString::new("unknown").unwrap());
-                        let reason_ptr = reason_cstr.into_raw() as *const u8;
-                        asm_ccall!(self, rb_zjit_record_exit_stack, Opnd::const_ptr(reason_ptr));
-                        compile_exit_return(self);
+                        compile_exit(self, &exit, Some(reason));
                     } else {
                         // If the side exit has already been compiled, jump to it.
                         // Otherwise, let it fall through and compile the exit next.
@@ -2796,7 +2539,7 @@ impl Assembler
                     let new_exit = self.new_label("side_exit");
                     self.write_label(new_exit.clone());
                     asm_comment!(self, "Exit: {pc}");
-                    compile_exit(self, &exit);
+                    compile_exit(self, &exit, None);
                     compiled_exits.insert(exit, new_exit.unwrap_label());
                     new_exit
                 };
@@ -2824,7 +2567,7 @@ impl Assembler
     }
 
     /// Return a traversal of the block graph in reverse post-order.
-    pub fn rpo(&self) -> Vec<BlockId> {
+    pub fn reverse_post_order(&self) -> Vec<BlockId> {
         let entry_blocks: Vec<BlockId> = self.basic_blocks.iter()
             .filter(|block| block.is_entry)
             .map(|block| block.id)
@@ -2928,12 +2671,12 @@ impl Assembler
                 }
 
                 // For all input operands that are VRegs (including memory base VRegs), add to gen set
-                for opnd in insn.opnd_iter() {
+                insn.for_each_operand(|opnd| {
                     for idx in opnd.vreg_ids() {
                         assert!(!kill_set.get(idx.0));
                         gen_set.insert(idx.0);
                     }
-                }
+                });
             }
 
             // Add block parameters to kill set
@@ -2949,7 +2692,7 @@ impl Assembler
     }
 
     pub fn block_order(&self) -> Vec<BlockId> {
-        self.rpo()
+        self.reverse_post_order()
     }
 
     /// Calculate live intervals for each VReg.
@@ -2993,11 +2736,11 @@ impl Assembler
                 }
 
                 // For each VReg input (including memory base VRegs), add_range from block start to insn
-                for opnd in insn.opnd_iter() {
+                insn.for_each_operand(|opnd| {
                     for idx in opnd.vreg_ids() {
                         intervals[idx.0].add_range(block.from.0, insn_id.0);
                     }
-                }
+                });
             }
         }
 
@@ -3218,14 +2961,12 @@ fn format_insn_compact(asm: &Assembler, insn: &Insn) -> String {
             }
             _ => {}
         }
-    } else if insn.opnd_iter().count() > 0 {
-        for (i, opnd) in insn.opnd_iter().enumerate() {
-            if i == 0 {
-                output.push_str(&format!(" {opnd}"));
-            } else {
-                output.push_str(&format!(", {opnd}"));
-            }
-        }
+    } else if insn.opnd_count() > 0 {
+        let mut sep = "";
+        insn.for_each_operand(|opnd| {
+            output.push_str(&format!("{sep}{opnd}"));
+            sep = ", ";
+        });
     }
 
     output
@@ -3255,7 +2996,7 @@ impl fmt::Display for Assembler {
         }
 
         // Use sorted_blocks() instead of block_order() because block_order()
-        // calls rpo() → edges() which requires all blocks end with terminators.
+        // calls rpo() -> edges() which requires all blocks end with terminators.
         // After arm64_scratch_split, blocks may not have terminators.
         for bb in self.sorted_blocks() {
             let params = &bb.parameters;
@@ -3349,8 +3090,13 @@ impl fmt::Display for Assembler {
                                 }
                                 _ => {}
                             }
-                        } else if insn.opnd_iter().count() > 0 {
-                            insn.opnd_iter().try_fold(" ", |prefix, opnd| write!(f, "{prefix}{opnd}").and(Ok(", ")))?;
+                        } else if insn.opnd_count() > 0 {
+                            let mut sep = " ";
+                            insn.try_for_each_operand(|opnd| {
+                                let result = write!(f, "{sep}{opnd}");
+                                sep = ", ";
+                                result
+                            })?;
                         }
 
                         write!(f, "\n")?;
@@ -3463,6 +3209,11 @@ impl Assembler {
     #[allow(dead_code)]
     pub fn breakpoint(&mut self) {
         self.push_insn(Insn::Breakpoint);
+    }
+
+    #[allow(dead_code)]
+    pub fn abort(&mut self) {
+        self.push_insn(Insn::Abort);
     }
 
     /// Call a C function without PosMarkers
@@ -3668,13 +3419,6 @@ impl Assembler {
     }
 
     #[must_use]
-    pub fn live_reg_opnd(&mut self, opnd: Opnd) -> Opnd {
-        let out = self.new_vreg(Opnd::match_num_bits(&[opnd]));
-        self.push_insn(Insn::LiveReg { opnd, out });
-        out
-    }
-
-    #[must_use]
     pub fn load(&mut self, opnd: Opnd) -> Opnd {
         let out = self.new_vreg(Opnd::match_num_bits(&[opnd]));
         self.push_insn(Insn::Load { opnd, out });
@@ -3850,120 +3594,38 @@ macro_rules! asm_ccall {
 }
 pub(crate) use asm_ccall;
 
-// Allow moving Assembler to panic hooks. Since we take the VM lock on compilation,
-// no other threads should reference the same Assembler instance.
-unsafe impl Send for Insn {}
-unsafe impl Sync for Insn {}
-
-/// Dump Assembler with insn_idx on panic. Restore the original panic hook on drop.
-pub struct AssemblerPanicHook {
-    /// Original panic hook before AssemblerPanicHook is installed.
-    prev_hook: Box<dyn Fn(&panic::PanicHookInfo<'_>) + Sync + Send + 'static>,
-}
-
-impl AssemblerPanicHook {
-    /// Maximum number of lines [`Self::dump_asm`] is allowed to dump by default.
-    /// When --zjit-dump-lir is given, this limit is ignored.
-    const MAX_DUMP_LINES: usize = 10;
-
-    /// Install a panic hook to dump Assembler with insn_idx on dev builds.
-    /// This returns shared references to the previous hook and insn_idx.
-    /// It takes insn_idx as an argument so that you can manually use it
-    /// on non-emit passes that keep mutating the Assembler to be dumped.
-    pub fn new(asm: &Assembler, insn_idx: usize) -> (Option<Arc<Self>>, Option<Arc<Mutex<usize>>>) {
-        if cfg!(debug_assertions) {
-            // Wrap prev_hook with Arc to share it among the new hook and Self to be dropped.
-            let prev_hook = panic::take_hook();
-            let panic_hook_ref = Arc::new(Self { prev_hook });
-            let weak_hook = Arc::downgrade(&panic_hook_ref);
-
-            // Wrap insn_idx with Arc to share it among the new hook and the caller mutating it.
-            let insn_idx = Arc::new(Mutex::new(insn_idx));
-            let insn_idx_ref = insn_idx.clone();
-
-            // Install a new hook to dump Assembler with insn_idx
-            let asm = asm.clone();
-            panic::set_hook(Box::new(move |panic_info| {
-                if let Some(panic_hook) = weak_hook.upgrade() {
-                    if let Ok(insn_idx) = insn_idx_ref.lock() {
-                        // Dump Assembler, highlighting the insn_idx line
-                        Self::dump_asm(&asm, *insn_idx);
-                    }
-
-                    // Call the previous panic hook
-                    (panic_hook.prev_hook)(panic_info);
-                }
-            }));
-
-            (Some(panic_hook_ref), Some(insn_idx))
-        } else {
-            (None, None)
-        }
-    }
-
-    /// Dump Assembler, highlighting the insn_idx line
-    fn dump_asm(asm: &Assembler, insn_idx: usize) {
-        let colors = crate::ttycolors::get_colors();
-        let bold_begin = colors.bold_begin;
-        let bold_end = colors.bold_end;
-        let lir_string = lir_string(asm);
-        let lines: Vec<&str> = lir_string.split('\n').collect();
-
-        // By default, dump only MAX_DUMP_LINES lines.
-        // Ignore it if --zjit-dump-lir is given.
-        let (min_idx, max_idx) = if get_option!(dump_lir).is_some() {
-            (0, lines.len())
-        } else {
-            (insn_idx.saturating_sub(Self::MAX_DUMP_LINES / 2), insn_idx.saturating_add(Self::MAX_DUMP_LINES / 2))
-        };
-
-        eprintln!("Failed to compile LIR at insn_idx={insn_idx}:");
-        for (idx, line) in lines.iter().enumerate().filter(|(idx, _)| (min_idx..=max_idx).contains(idx)) {
-            if idx == insn_idx && line.starts_with("  ") {
-                eprintln!("{bold_begin}=>{}{bold_end}", &line["  ".len()..]);
-            } else {
-                eprintln!("{line}");
-            }
-        }
-    }
-}
-
-impl Drop for AssemblerPanicHook {
-    fn drop(&mut self) {
-        // Restore the original hook
-        panic::set_hook(std::mem::replace(&mut self.prev_hook, Box::new(|_| {})));
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use insta::assert_snapshot;
+    use crate::backend::current::NATIVE_STACK_PTR;
 
     fn scratch_reg() -> Opnd {
         Assembler::new_with_scratch_reg().1
     }
 
     #[test]
-    fn test_opnd_iter() {
+    fn test_for_each_operand() {
         let insn = Insn::Add { left: Opnd::None, right: Opnd::None, out: Opnd::None };
 
-        let mut opnd_iter = insn.opnd_iter();
-        assert!(matches!(opnd_iter.next(), Some(Opnd::None)));
-        assert!(matches!(opnd_iter.next(), Some(Opnd::None)));
-
-        assert!(opnd_iter.next().is_none());
+        let mut result = vec![];
+        insn.for_each_operand(|opnd| result.push(opnd));
+        assert_eq!(result, vec![Opnd::None, Opnd::None]);
     }
 
     #[test]
-    fn test_opnd_iter_mut() {
+    fn test_for_each_operand_mut() {
         let mut insn = Insn::Add { left: Opnd::None, right: Opnd::None, out: Opnd::None };
 
-        let mut opnd_iter = insn.opnd_iter_mut();
-        assert!(matches!(opnd_iter.next(), Some(Opnd::None)));
-        assert!(matches!(opnd_iter.next(), Some(Opnd::None)));
-
-        assert!(opnd_iter.next().is_none());
+        let mut counter = 0;
+        insn.for_each_operand_mut(|opnd| {
+            *opnd = Opnd::Imm(counter);
+            counter += 1;
+        });
+        assert!(matches!(insn, Insn::Add { left: Opnd::Imm(0), right: Opnd::Imm(1), out: Opnd::None }));
+        let mut result = vec![];
+        insn.for_each_operand(|opnd| result.push(opnd));
+        assert_eq!(result, vec![Opnd::Imm(0), Opnd::Imm(1)]);
     }
 
     #[test]
@@ -4401,7 +4063,7 @@ mod tests {
         asm.number_instructions(16);
         let intervals = asm.build_intervals(live_in);
 
-        // 3 registers — only r10 needs to spill
+        // 3 registers -- only r10 needs to spill
         let preferred_registers = asm.preferred_register_assignments(&intervals);
         let (assignments, num_stack_slots) = asm.linear_scan(intervals, 3, &preferred_registers);
 
@@ -4429,7 +4091,7 @@ mod tests {
         asm.number_instructions(16);
         let intervals = asm.build_intervals(live_in);
 
-        // Only 1 register available — forces spills
+        // Only 1 register available -- forces spills
         let preferred_registers = asm.preferred_register_assignments(&intervals);
         let (assignments, num_stack_slots) = asm.linear_scan(intervals, 1, &preferred_registers);
 
@@ -4509,9 +4171,9 @@ mod tests {
         use crate::backend::current::ALLOC_REGS;
         let regs = &ALLOC_REGS[..5];
 
-        // Edge b1→b2 (single succ): args=[UImm(1), v1], params=[v2, v3]
-        // v1→Reg(1), v2→Reg(1), v3→Reg(2)
-        // Reg copy: Reg(1)→Reg(2) → Mov(regs[2], regs[1])
+        // Edge b1->b2 (single succ): args=[UImm(1), v1], params=[v2, v3]
+        // v1->Reg(1), v2->Reg(1), v3->Reg(2)
+        // Reg copy: Reg(1)->Reg(2) -> Mov(regs[2], regs[1])
         // Imm move: Mov(regs[1], UImm(1))
         // Inserted in b1 before Jmp: [Label, Mov, Mov, Jmp]
         let b1_insns = &asm.basic_blocks[b1.0].insns;
@@ -4521,10 +4183,10 @@ mod tests {
         assert!(matches!(&b1_insns[2], Insn::Mov { dest, src }
             if *dest == Opnd::Reg(regs[1]) && *src == Opnd::UImm(1)));
 
-        // Edge b3→b2 (single succ): args=[v4, v5], params=[v2, v3]
-        // v4→Reg(3), v5→Reg(2), v2→Reg(1), v3→Reg(2)
-        // Reg copy: Reg(3)→Reg(1) → Mov(regs[1], regs[3])
-        // Reg(2)→Reg(2) is self-move, filtered
+        // Edge b3->b2 (single succ): args=[v4, v5], params=[v2, v3]
+        // v4->Reg(3), v5->Reg(2), v2->Reg(1), v3->Reg(2)
+        // Reg copy: Reg(3)->Reg(1) -> Mov(regs[1], regs[3])
+        // Reg(2)->Reg(2) is self-move, filtered
         // Inserted in b3 before Jmp: [Label, Mul, Sub, Mov, Jmp]
         let b3_insns = &asm.basic_blocks[b3.0].insns;
         assert_eq!(b3_insns.len(), 5);
@@ -4533,7 +4195,7 @@ mod tests {
 
         // Verify original instructions in b3 are rewritten to physical registers.
         // b3: Mul { left: r12, right: r13, out: r14 }, Sub { left: r13, right: UImm(1), out: r15 }
-        // r12→Reg(1), r13→Reg(2), r14→Reg(3), r15→Reg(2)
+        // r12->Reg(1), r13->Reg(2), r14->Reg(3), r15->Reg(2)
         assert!(matches!(&b3_insns[1], Insn::Mul { left, right, out }
             if *left == Opnd::Reg(regs[1]) && *right == Opnd::Reg(regs[2]) && *out == Opnd::Reg(regs[3])));
         assert!(matches!(&b3_insns[2], Insn::Sub { left, right, out }
@@ -4551,8 +4213,8 @@ mod tests {
         let (assignments, _) = asm.linear_scan(intervals.clone(), 5, &preferred_registers);
 
         // Entry block b1 has parameters [v0, v1].
-        // With 5 registers: v0 → Reg(0) = regs[0], arrival = param_opnd(0) = regs[0] → self-move, filtered
-        //                    v1 → Reg(1) = regs[1], arrival = param_opnd(1) = regs[1] → self-move, filtered
+        // With 5 registers: v0 -> Reg(0) = regs[0], arrival = C_ARG_OPNDS[0] = regs[0] -> self-move, filtered
+        //                    v1 -> Reg(1) = regs[1], arrival = C_ARG_OPNDS[1] = regs[1] -> self-move, filtered
         // Before resolve_ssa, b1 has: [Label, Jmp] = 2 insns
         assert_eq!(asm.basic_blocks[b1.0].insns.len(), 2);
 
@@ -4560,7 +4222,7 @@ mod tests {
 
         // After resolve_ssa, b1 should still have the same number of insns
         // (plus any edge moves, but no entry param moves since they're all self-moves).
-        // Edge b1→b2 inserts 2 moves before Jmp: [Label, Mov, Mov, Jmp] = 4 insns
+        // Edge b1->b2 inserts 2 moves before Jmp: [Label, Mov, Mov, Jmp] = 4 insns
         // No additional entry param moves.
         let b1_insns = &asm.basic_blocks[b1.0].insns;
         assert_eq!(b1_insns.len(), 4);
@@ -4577,6 +4239,31 @@ mod tests {
         }
     }
 
+    #[test]
+    fn test_resolve_ssa_entry_params_too_many_abort() {
+        let mut asm = Assembler::new();
+        let block = asm.new_block(hir::BlockId(0), true, 0);
+        asm.set_current_block(block);
+        let label = asm.new_label("bb0");
+        asm.write_label(label);
+
+        for _ in 0..=C_ARG_OPNDS.len() {
+            let param = asm.new_vreg(64);
+            asm.basic_blocks[block.0].add_parameter(param);
+        }
+        asm.basic_blocks[block.0].push_insn(Insn::CRet(Opnd::UImm(0)));
+
+        let live_in = asm.analyze_liveness();
+        asm.number_instructions(0);
+        let intervals = asm.build_intervals(live_in);
+        let preferred_registers = asm.preferred_register_assignments(&intervals);
+        let (assignments, _) = asm.linear_scan(intervals.clone(), 5, &preferred_registers);
+
+        asm.resolve_ssa(&intervals, &assignments);
+
+        assert!(matches!(asm.basic_blocks[block.0].insns[1], Insn::Abort));
+    }
+
     fn build_critical_edge() -> (Assembler, Opnd, Opnd, Opnd, Opnd, Opnd, BlockId, BlockId, BlockId) {
         let mut asm = Assembler::new();
 
@@ -4586,8 +4273,8 @@ mod tests {
         let b3 = asm.new_block(hir::BlockId(2), false, 2);
 
         // b1: v0 = Add(123, 0), v1 = Add(v0, 456), Cmp(v1, 0), Jl(b2, [v0]), Jmp(b3, [v1])
-        // v0 is live across b1→b2 edge AND v1 is live across b1→b3 edge
-        // This forces v0 and v1 to have overlapping live ranges → different registers
+        // v0 is live across b1->b2 edge AND v1 is live across b1->b3 edge
+        // This forces v0 and v1 to have overlapping live ranges -> different registers
         asm.set_current_block(b1);
         let label_b1 = asm.new_label("bb0");
         asm.write_label(label_b1);
@@ -4640,8 +4327,8 @@ mod tests {
 
         asm.resolve_ssa(&intervals, &assignments);
 
-        // A new interstitial block should have been created for the critical edge b1→b3
-        // b1→b3 is critical because b1 has 2 successors and b3 has 2 predecessors
+        // A new interstitial block should have been created for the critical edge b1->b3
+        // b1->b3 is critical because b1 has 2 successors and b3 has 2 predecessors
         assert_eq!(asm.basic_blocks.len(), 4);
         let split_block_id = BlockId(3);
 
@@ -4665,11 +4352,11 @@ mod tests {
             panic!("Expected Jmp(b3) at end of split block");
         }
 
-        // The split block should have a Mov for v1→v4
+        // The split block should have a Mov for v1->v4
         let has_mov = split_insns.iter().any(|insn| matches!(insn, Insn::Mov { .. }));
-        assert!(has_mov, "Expected Mov in split block for v1→v4");
+        assert!(has_mov, "Expected Mov in split block for v1->v4");
 
-        // b2→b3 is not a critical edge (b2 has single succ), so moves go before Jmp in b2
+        // b2->b3 is not a critical edge (b2 has single succ), so moves go before Jmp in b2
         let v3_alloc = assignments[v3.vreg_idx().0].unwrap();
         let b2_insns = &asm.basic_blocks[b2.0].insns;
         if v3_alloc != v4_alloc {
@@ -4748,8 +4435,8 @@ mod tests {
         let insns = &asm.basic_blocks[b1.0].insns;
 
         // Find CPush and CPopInto - they should be balanced.
-        let pushes: Vec<_> = insns.iter().filter(|i| matches!(i, Insn::CPush(_))).collect();
-        let pops: Vec<_> = insns.iter().filter(|i| matches!(i, Insn::CPopInto(_))).collect();
+        let pushes: Vec<_> = insns.iter().filter(|i| matches!(i, Insn::CPushPair(..))).collect();
+        let pops: Vec<_> = insns.iter().filter(|i| matches!(i, Insn::CPopPairInto(..))).collect();
         assert_eq!(pushes.len(), pops.len(), "CPush/CPopInto should be balanced");
         assert!(!pushes.is_empty(), "Expected at least one saved register across CCall");
 
@@ -4759,10 +4446,10 @@ mod tests {
             Allocation::Fixed(reg) => Opnd::Reg(reg),
             _ => unreachable!(),
         };
-        let pushed_v1 = pushes.iter().any(|insn| matches!(insn, Insn::CPush(opnd) if *opnd == v1_reg));
-        let popped_v1 = pops.iter().any(|insn| matches!(insn, Insn::CPopInto(opnd) if *opnd == v1_reg));
-        assert!(pushed_v1, "CPush should save v1's register");
-        assert!(popped_v1, "CPopInto should restore v1's register");
+        let pushed_v1 = pushes.iter().any(|insn| matches!(**insn, Insn::CPushPair(first, second) if first == v1_reg || second == v1_reg));
+        let popped_v1 = pops.iter().any(|insn| matches!(**insn, Insn::CPopPairInto(first, second) if first == v1_reg || second == v1_reg));
+        assert!(pushed_v1, "CPushPair should save v1's register");
+        assert!(popped_v1, "CPopPairInto should restore v1's register");
 
         // The CCall should have empty opnds and out = C_RET_OPND (rewritten to regs[0])
         let ccall = insns.iter().find(|i| matches!(i, Insn::CCall { .. })).unwrap();

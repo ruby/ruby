@@ -11,12 +11,12 @@ describe :stringio_each_char, shared: true do
   end
 
   it "returns self" do
-    @io.send(@method) {}.should equal(@io)
+    @io.send(@method) {}.should.equal?(@io)
   end
 
   it "returns an Enumerator when passed no block" do
     enum = @io.send(@method)
-    enum.instance_of?(Enumerator).should be_true
+    enum.instance_of?(Enumerator).should == true
 
     seen = []
     enum.each { |c| seen << c }
@@ -27,10 +27,10 @@ end
 describe :stringio_each_char_not_readable, shared: true do
   it "raises an IOError" do
     io = StringIO.new(+"xyz", "w")
-    -> { io.send(@method) { |b| b } }.should raise_error(IOError)
+    -> { io.send(@method) { |b| b } }.should.raise(IOError)
 
     io = StringIO.new("xyz")
     io.close_read
-    -> { io.send(@method) { |b| b } }.should raise_error(IOError)
+    -> { io.send(@method) { |b| b } }.should.raise(IOError)
   end
 end

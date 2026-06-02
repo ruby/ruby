@@ -56,7 +56,7 @@ describe "Logger#add" do
       @logger.log(nil, "test", "TestApp") do
         1+1
       end
-    }.should_not raise_error
+    }.should_not.raise
   end
 
   it "calls the block if message is nil" do
@@ -65,7 +65,7 @@ describe "Logger#add" do
       @logger.log(nil, nil, "TestApp") do
         temp = 1+1
       end
-    }.should_not raise_error
+    }.should_not.raise
     temp.should == 2
   end
 
@@ -75,7 +75,7 @@ describe "Logger#add" do
       @logger.log(nil, "not nil", "TestApp") do
         temp = 1+1
       end
-    }.should_not raise_error
+    }.should_not.raise
     temp.should == 0
   end
 end

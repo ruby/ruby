@@ -14,7 +14,9 @@ use crate::abi::RubyBindingOptions;
 use crate::abi::RubyUpcalls;
 use crate::binding;
 use crate::binding::RubyBinding;
+use crate::heap::CpuHeapTriggerConfig;
 use crate::heap::RubyHeapTriggerConfig;
+use crate::heap::CPU_HEAP_TRIGGER_CONFIG;
 use crate::heap::RUBY_HEAP_TRIGGER_CONFIG;
 use crate::mmtk;
 use crate::utils::default_heap_max;
@@ -131,6 +133,42 @@ fn mmtk_builder_default_parse_heap_mode(heap_min: usize, heap_max: usize) -> GCT
 
             Some(GCTriggerSelector::Delegated)
         }
+        "cpu" => {
+            // CPU-overhead-driven heap sizing based on Tavakolisomeh et al.,
+            // "Heap Size Adjustment with CPU Control", MPLR '23.
+            //
+            // Target is expressed as a percentage (0, 100) via
+            // `MMTK_GC_CPU_TARGET`. The paper recommends 15 for ZGC (a
+            // concurrent collector); we default to 5 for MMTk-Ruby. With
+            // MMTk's stop-the-world Immix, every percent of GC CPU is also
+            // a percent of wall-clock the mutator is blocked on, so a much
+            // smaller budget is appropriate. An empirical sweep across
+            // ruby-bench (railsbench, lobsters, psych-load, liquid-render,
+            // lee) found target=5 to be Pareto-optimal: ~6% geomean speedup
+            // vs. the `ruby` heap mode with effectively identical geomean
+            // peak RSS.
+            let target_percent = parse_float_env_var("MMTK_GC_CPU_TARGET", 5.0, 0.0, 100.0);
+            let window_size = parse_env_var::<usize>("MMTK_GC_CPU_WINDOW").unwrap_or(3);
+            let window_size = window_size.max(1);
+
+            let min_heap_pages = conversions::bytes_to_pages_up(heap_min);
+            let max_heap_pages = conversions::bytes_to_pages_up(heap_max);
+            // Start at the min heap size, as the other delegated triggers do.
+            // The control loop will adjust from here after the first GC cycle.
+            let initial_heap_pages = min_heap_pages;
+
+            CPU_HEAP_TRIGGER_CONFIG
+                .set(CpuHeapTriggerConfig {
+                    min_heap_pages,
+                    max_heap_pages,
+                    initial_heap_pages,
+                    target_gc_cpu: target_percent / 100.0,
+                    window_size,
+                })
+                .unwrap_or_else(|_| panic!("CPU_HEAP_TRIGGER_CONFIG is already set"));
+
+            Some(GCTriggerSelector::Delegated)
+        }
         _ => None,
     })
     .unwrap_or_else(make_dynamic)
@@ -181,7 +219,7 @@ pub extern "C" fn mmtk_builder_default() -> *mut MMTKBuilder {
 #[no_mangle]
 pub unsafe extern "C" fn mmtk_init_binding(
     builder: *mut MMTKBuilder,
-    _binding_options: *const RubyBindingOptions,
+    binding_options: *const RubyBindingOptions,
     upcalls: *const RubyUpcalls,
 ) {
     crate::MUTATOR_THREAD_PANIC_HANDLER
@@ -191,10 +229,7 @@ pub unsafe extern "C" fn mmtk_init_binding(
     crate::set_panic_hook();
 
     let builder: Box<MMTKBuilder> = unsafe { Box::from_raw(builder) };
-    let binding_options = RubyBindingOptions {
-        ractor_check_mode: false,
-        suffix_size: 0,
-    };
+    let binding_options = unsafe { (*binding_options).clone() };
     let mmtk_boxed = mmtk_init(&builder);
     let mmtk_static = Box::leak(Box::new(mmtk_boxed));
 
@@ -449,11 +484,20 @@ pub extern "C" fn mmtk_heap_mode() -> *const u8 {
     static FIXED_HEAP: &[u8] = b"fixed\0";
     static DYNAMIC_HEAP: &[u8] = b"dynamic\0";
     static RUBY_HEAP: &[u8] = b"ruby\0";
+    static CPU_HEAP: &[u8] = b"cpu\0";
 
     match *crate::BINDING.get().unwrap().mmtk.get_options().gc_trigger {
         GCTriggerSelector::FixedHeapSize(_) => FIXED_HEAP.as_ptr(),
         GCTriggerSelector::DynamicHeapSize(_, _) => DYNAMIC_HEAP.as_ptr(),
-        GCTriggerSelector::Delegated => RUBY_HEAP.as_ptr(),
+        GCTriggerSelector::Delegated => {
+            // Two delegated triggers exist; disambiguate via the populated
+            // config singleton.
+            if CPU_HEAP_TRIGGER_CONFIG.get().is_some() {
+                CPU_HEAP.as_ptr()
+            } else {
+                RUBY_HEAP.as_ptr()
+            }
+        }
     }
 }
 
@@ -462,12 +506,18 @@ pub extern "C" fn mmtk_heap_min() -> usize {
     match *crate::BINDING.get().unwrap().mmtk.get_options().gc_trigger {
         GCTriggerSelector::FixedHeapSize(_) => 0,
         GCTriggerSelector::DynamicHeapSize(min_size, _) => min_size,
-        GCTriggerSelector::Delegated => conversions::pages_to_bytes(
-            RUBY_HEAP_TRIGGER_CONFIG
-                .get()
-                .expect("RUBY_HEAP_TRIGGER_CONFIG not set")
-                .min_heap_pages,
-        ),
+        GCTriggerSelector::Delegated => {
+            if let Some(cfg) = CPU_HEAP_TRIGGER_CONFIG.get() {
+                conversions::pages_to_bytes(cfg.min_heap_pages)
+            } else {
+                conversions::pages_to_bytes(
+                    RUBY_HEAP_TRIGGER_CONFIG
+                        .get()
+                        .expect("RUBY_HEAP_TRIGGER_CONFIG not set")
+                        .min_heap_pages,
+                )
+            }
+        }
     }
 }
 
@@ -476,12 +526,18 @@ pub extern "C" fn mmtk_heap_max() -> usize {
     match *crate::BINDING.get().unwrap().mmtk.get_options().gc_trigger {
         GCTriggerSelector::FixedHeapSize(max_size) => max_size,
         GCTriggerSelector::DynamicHeapSize(_, max_size) => max_size,
-        GCTriggerSelector::Delegated => conversions::pages_to_bytes(
-            RUBY_HEAP_TRIGGER_CONFIG
-                .get()
-                .expect("RUBY_HEAP_TRIGGER_CONFIG not set")
-                .max_heap_pages,
-        ),
+        GCTriggerSelector::Delegated => {
+            if let Some(cfg) = CPU_HEAP_TRIGGER_CONFIG.get() {
+                conversions::pages_to_bytes(cfg.max_heap_pages)
+            } else {
+                conversions::pages_to_bytes(
+                    RUBY_HEAP_TRIGGER_CONFIG
+                        .get()
+                        .expect("RUBY_HEAP_TRIGGER_CONFIG not set")
+                        .max_heap_pages,
+                )
+            }
+        }
     }
 }
 

@@ -10,6 +10,6 @@ describe "FalseClass#to_s" do
   end
 
   it "always returns the same string" do
-    false.to_s.should equal(false.to_s)
+    false.to_s.should.equal?(false.to_s)
   end
 end

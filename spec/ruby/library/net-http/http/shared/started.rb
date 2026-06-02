@@ -11,16 +11,16 @@ describe :net_http_started_p, shared: true do
 
   it "returns true when self has been started" do
     @http.start
-    @http.send(@method).should be_true
+    @http.send(@method).should == true
   end
 
   it "returns false when self has not been started yet" do
-    @http.send(@method).should be_false
+    @http.send(@method).should == false
   end
 
   it "returns false when self has been stopped again" do
     @http.start
     @http.finish
-    @http.send(@method).should be_false
+    @http.send(@method).should == false
   end
 end

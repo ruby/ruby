@@ -51,7 +51,10 @@ Adds the named gem to the [`Gemfile(5)`][Gemfile(5)] and run `bundle install`.
   Adds the gem to the Gemfile but does not install it.
 
 * `--optimistic`:
-  Adds optimistic declaration of version.
+  Ignored (now default behavior)
+
+* `--pessimistic`:
+  Adds pessimistic declaration of version.
 
 * `--strict`:
   Adds strict declaration of version.
@@ -70,7 +73,7 @@ Adds the named gem to the [`Gemfile(5)`][Gemfile(5)] and run `bundle install`.
 3. You can use the `https://gems.example.com` custom source and assign the gem
    to a group.
 
-   `bundle add rails --version "~> 5.0.0" --source "https://gems.example.com" --group "development"`
+   `bundle add rails --version ">= 5.0.0" --source "https://gems.example.com" --group "development"`
 
 4. The following adds the `gem` entry to the Gemfile without installing the
    gem. You can install gems later via `bundle install`.

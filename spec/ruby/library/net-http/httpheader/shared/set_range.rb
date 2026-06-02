@@ -5,13 +5,13 @@ describe :net_httpheader_set_range, shared: true do
 
   describe "when passed nil" do
     it "returns nil" do
-      @headers.send(@method, nil).should be_nil
+      @headers.send(@method, nil).should == nil
     end
 
     it "deletes the 'Range' header entry" do
       @headers["Range"] = "bytes 0-499/1234"
       @headers.send(@method, nil)
-      @headers["Range"].should be_nil
+      @headers["Range"].should == nil
     end
   end
 
@@ -50,15 +50,15 @@ describe :net_httpheader_set_range, shared: true do
     end
 
     it "raises a Net::HTTPHeaderSyntaxError when the first Range element is negative" do
-      -> { @headers.send(@method, -10..5) }.should raise_error(Net::HTTPHeaderSyntaxError)
+      -> { @headers.send(@method, -10..5) }.should.raise(Net::HTTPHeaderSyntaxError)
     end
 
     it "raises a Net::HTTPHeaderSyntaxError when the last Range element is negative" do
-      -> { @headers.send(@method, 10..-5) }.should raise_error(Net::HTTPHeaderSyntaxError)
+      -> { @headers.send(@method, 10..-5) }.should.raise(Net::HTTPHeaderSyntaxError)
     end
 
     it "raises a Net::HTTPHeaderSyntaxError when the last Range element is smaller than the first" do
-      -> { @headers.send(@method, 10..5) }.should raise_error(Net::HTTPHeaderSyntaxError)
+      -> { @headers.send(@method, 10..5) }.should.raise(Net::HTTPHeaderSyntaxError)
     end
   end
 
@@ -75,15 +75,15 @@ describe :net_httpheader_set_range, shared: true do
     end
 
     it "raises a Net::HTTPHeaderSyntaxError when start is negative" do
-      -> { @headers.send(@method, -10, 5) }.should raise_error(Net::HTTPHeaderSyntaxError)
+      -> { @headers.send(@method, -10, 5) }.should.raise(Net::HTTPHeaderSyntaxError)
     end
 
     it "raises a Net::HTTPHeaderSyntaxError when start + length is negative" do
-      -> { @headers.send(@method, 10, -15) }.should raise_error(Net::HTTPHeaderSyntaxError)
+      -> { @headers.send(@method, 10, -15) }.should.raise(Net::HTTPHeaderSyntaxError)
     end
 
     it "raises a Net::HTTPHeaderSyntaxError when length is negative" do
-      -> { @headers.send(@method, 10, -4) }.should raise_error(Net::HTTPHeaderSyntaxError)
+      -> { @headers.send(@method, 10, -4) }.should.raise(Net::HTTPHeaderSyntaxError)
     end
   end
 end

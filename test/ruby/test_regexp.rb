@@ -1011,6 +1011,18 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_regsub_no_memory_leak_many_captures
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~"end;"}", rss: true)
+      code = proc do
+        "aaaaaaaaaaa".gsub(/(a)(b)?(c)?(d)?(e)?(f)?(g)?(h)?/, "")
+      end
+
+      1_000.times(&code)
+    begin;
+      100_000.times(&code)
+    end;
+  end
+
   def test_ignorecase
     v = assert_deprecated_warning(/variable \$= is no longer effective/) { $= }
     assert_equal(false, v)
@@ -1694,7 +1706,7 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_match_integer_at
-    m = /(\d+{4})(\d+{2})(\d+{2})/.match("20260308")
+    m = /(\d{4})(\d{2})(\d{2})/.match("20260308")
     assert_equal(20260308, m.integer_at(0))
     assert_equal(2026,     m.integer_at(1))
     assert_equal(3,        m.integer_at(2))
@@ -1711,7 +1723,7 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def test_match_integer_at_name
-    m = /(?<y>\d+{4})(?<m>\d+{2})(?<d>\d+{2})/.match("20260308")
+    m = /(?<y>\d{4})(?<m>\d{2})(?<d>\d{2})/.match("20260308")
     assert_equal(2026,     m.integer_at("y"))
     assert_equal(3,        m.integer_at("m"))
     assert_equal(8,        m.integer_at("d"))
@@ -2035,6 +2047,7 @@ class TestRegexp < Test::Unit::TestCase
       Regexp.timeout = 1e300
       assert_equal(((1<<64)-1) / 1000000000.0, Regexp.timeout)
 
+      assert_raise(ArgumentError) { Regexp.timeout = Float::NAN }
       assert_raise(ArgumentError) { Regexp.timeout = 0 }
       assert_raise(ArgumentError) { Regexp.timeout = -1 }
 
@@ -2127,6 +2140,7 @@ class TestRegexp < Test::Unit::TestCase
 
       assert_equal(((1<<64)-1) / 1000000000.0, Regexp.new("foo", timeout: 1e300).timeout)
 
+      assert_raise(ArgumentError) { Regexp.new("foo", timeout: Float::NAN) }
       assert_raise(ArgumentError) { Regexp.new("foo", timeout: 0) }
       assert_raise(ArgumentError) { Regexp.new("foo", timeout: -1) }
     end;

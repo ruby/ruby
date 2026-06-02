@@ -1,0 +1,150 @@
+name: tarball-ubuntu (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      archname:
+        description: 'archname (e.g. snapshot-master, snapshot-ruby_3_3)'
+        required: true
+        type: string
+      notify-release-channel:
+        description: 'Also send failure notifications to SNAPSHOT_SLACK_WEBHOOK_URL (schedule/release builds).'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      SIMPLER_ALERTS_URL:
+        required: false
+      SNAPSHOT_SLACK_WEBHOOK_URL:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  ubuntu:
+    strategy:
+      matrix:
+        test_task: [check, test-bundler-parallel, test-bundled-gems]
+        os: [ubuntu-24.04, ubuntu-22.04]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    env:
+      ARCHNAME: ${{ inputs.archname }}
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: Packages
+          path: pkg
+      - name: Extract
+        run: tar xf pkg/*.tar.xz
+      - name: Install libraries
+        run: |
+          set -x
+          sudo apt-get update -q
+          sudo apt-get install --no-install-recommends -q -y build-essential libssl-dev libyaml-dev zlib1g-dev libffi-dev libgmp-dev bison- autoconf-
+      - uses: ruby/setup-ruby@afeafc3d1ab54a631816aba4c914a0081c12ff2f # v1.310.0
+        with:
+          ruby-version: '3.2'
+        # test-bundled-gems requires executable host ruby
+        if: matrix.test_task == 'test-bundled-gems'
+      - name: Fixed world writable dirs
+        run: |
+          mkdir -p $HOME/.local/share
+          mkdir -p $HOME/.cache/gem/specs
+          mkdir -p $HOME/.bundle/cache
+          mkdir -p $HOME/.ssh
+          chmod a-w $HOME/.bundle
+          # chmod a-w $HOME
+          # allow to write $HOME and check stats of HOME around tests (see below)
+          chmod -v a-w $HOME/.config
+          sudo chmod -R a-w /usr/share
+          sudo bash -c 'IFS=:; for d in '"$PATH"'; do chmod -v a-w $d; done' || :
+      - name: Set ENV
+        run: |
+          echo "JOBS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
+      - name: configure
+        run: cd "$ARCHNAME/" && ./configure
+      - name: make
+        run: cd "$ARCHNAME/" && make $JOBS
+      - name: Save stats of HOME
+        run: |
+          set -euxo pipefail
+          cat >"$ARCHNAME/save-stats.rb" <<'EOF'
+          require 'pathname'
+          require 'digest'
+          out = []
+          [
+            Dir.home,
+          ].each do |dir|
+            Dir.each_child(dir) do |pn|
+              st = File.stat(pn)
+              if st.file?
+                content = Digest::SHA1.file(pn).hexdigest
+              elsif st.directory? && st.nlink <= 10
+                content = Dir.children(pn).sort
+              end
+              out << [pn, "%o"%st.mode, st.nlink, st.uid, st.gid, st.size, content].to_s
+            rescue
+              out << [pn, $!.inspect].to_s
+            end
+          end
+          File.open(ARGV.shift, "w") do |io|
+            io.puts out.sort
+          end
+          EOF
+          make -C "$ARCHNAME" TESTRUN_SCRIPT=save-stats.rb RUNOPT=/tmp/stat-before-tests.txt runruby
+      - name: Tests
+        run: cd "$ARCHNAME/" && make $JOBS -s ${{ matrix.test_task }}
+        env:
+          RUBY_TESTOPTS: "-q --tty=no"
+      # test_sync_default_gems triggers gpg, whose agent processes leave
+      # $HOME/.gnupg around even when GNUPGHOME points elsewhere.
+      - name: Forcibly remove ~/.gnupg
+        run: rm -rf $HOME/.gnupg
+      - name: Diff stats of HOME
+        run: |
+          make -C "$ARCHNAME" TESTRUN_SCRIPT=save-stats.rb RUNOPT=/tmp/stat-after-tests.txt runruby
+          rm -f "$ARCHNAME/save-stats.rb"
+          diff -u /tmp/stat-before-tests.txt /tmp/stat-after-tests.txt
+      # leaked-globals since 2.7
+      - name: Leaked Globals
+        run: cd "$ARCHNAME/" && make -s leaked-globals
+        if: matrix.test_task == 'check'
+      - name: make install without root privilege
+        run: cd "$ARCHNAME/" && make $JOBS install DESTDIR="/tmp/destdir"
+        if: matrix.test_task == 'check'
+      - name: make install
+        run: cd "$ARCHNAME/" && sudo make $JOBS install
+        if: matrix.test_task == 'check'
+      - name: Verify installed binaries
+        run: |
+          /usr/local/bin/ruby -v
+          /usr/local/bin/gem -v
+          /usr/local/bin/bundle -v
+        if: matrix.test_task == 'check'
+      - name: Show .local
+        run: find $HOME/.local -ls
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github/actions/slack
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+        if: ${{ failure() }}
+      - uses: ./.github/actions/slack
+        with:
+          label: "${{ matrix.os }} / ${{ matrix.test_task }}"
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() }}
+      - uses: ruby/action-slack@d260b61aa817726d5bedd22dd6cc305787fa4cdd # v4.0.0
+        with:
+          payload: |
+            {
+              "attachments": [{
+                "text": "${{ job.status }}: ${{ matrix.os }} / ${{ matrix.test_task }} <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ inputs.archname }}>",
+                "color": "danger"
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SNAPSHOT_SLACK_WEBHOOK_URL }}
+        if: failure() && inputs.notify-release-channel

@@ -17,7 +17,7 @@ describe 'Process.setproctitle' do
       title = 'rubyspec-proctitle-test'
 
       Process.setproctitle(title).should == title
-      `ps -ocommand= -p#{$$}`.should include(title)
+      `ps -ocommand= -p#{$$}`.should.include?(title)
     end
   end
 end

@@ -14,7 +14,7 @@ describe :net_httpresponse_body, shared: true do
 
   it "returns the previously read body if called a second time" do
     @res.reading_body(@socket, true) do
-      @res.send(@method).should equal(@res.send(@method))
+      @res.send(@method).should.equal?(@res.send(@method))
     end
   end
 end

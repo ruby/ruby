@@ -13,7 +13,7 @@ describe :io_codepoints, shared: true do
 
   describe "when no block is given" do
     it "returns an Enumerator" do
-      @enum.should be_an_instance_of(Enumerator)
+      @enum.should.instance_of?(Enumerator)
     end
 
     describe "returned Enumerator" do
@@ -39,7 +39,7 @@ describe :io_codepoints, shared: true do
 
   it "raises an error if reading invalid sequence" do
     @io.pos = 60  # inside of a multibyte sequence
-    -> { @enum.first }.should raise_error(ArgumentError)
+    -> { @enum.first }.should.raise(ArgumentError)
   end
 
   it "does not change $_" do
@@ -49,6 +49,6 @@ describe :io_codepoints, shared: true do
   end
 
   it "raises an IOError when self is not readable" do
-    -> { IOSpecs.closed_io.send(@method).to_a }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.send(@method).to_a }.should.raise(IOError)
   end
 end

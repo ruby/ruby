@@ -16,8 +16,8 @@ describe "Dir.mktmpdir when passed no arguments" do
   it "creates a new writable directory in the path provided by Dir.tmpdir" do
     Dir.should_receive(:tmpdir).and_return(tmp(""))
     @tmpdir = Dir.mktmpdir
-    File.directory?(@tmpdir).should be_true
-    File.writable?(@tmpdir).should be_true
+    File.directory?(@tmpdir).should == true
+    File.writable?(@tmpdir).should == true
   end
 end
 
@@ -41,15 +41,15 @@ describe "Dir.mktmpdir when passed a block" do
       called = true
       path.should.start_with?(@real_tmp_root)
     end
-    called.should be_true
+    called.should == true
   end
 
   it "creates the tmp-dir before yielding" do
     Dir.should_receive(:tmpdir).and_return(tmp(""))
     Dir.mktmpdir do |path|
       @tmpdir = path
-      File.directory?(path).should be_true
-      File.writable?(path).should be_true
+      File.directory?(path).should == true
+      File.writable?(path).should == true
     end
   end
 
@@ -67,7 +67,7 @@ describe "Dir.mktmpdir when passed a block" do
       @tmpdir = path
       :test
     end
-    result.should equal(:test)
+    result.should.equal?(:test)
   end
 end
 
@@ -110,8 +110,8 @@ end
 
 describe "Dir.mktmpdir when passed [Object]" do
   it "raises an ArgumentError" do
-    -> { Dir.mktmpdir(Object.new) }.should raise_error(ArgumentError)
-    -> { Dir.mktmpdir(:symbol) }.should raise_error(ArgumentError)
-    -> { Dir.mktmpdir(10) }.should raise_error(ArgumentError)
+    -> { Dir.mktmpdir(Object.new) }.should.raise(ArgumentError)
+    -> { Dir.mktmpdir(:symbol) }.should.raise(ArgumentError)
+    -> { Dir.mktmpdir(10) }.should.raise(ArgumentError)
   end
 end

@@ -98,6 +98,7 @@ static rb_encoding *global_enc_ascii,
                    *global_enc_us_ascii;
 
 static int filesystem_encindex = ENCINDEX_ASCII_8BIT;
+static rb_atomic_t locale_alias_registered;
 
 #define GLOBAL_ENC_TABLE_LOCKING(tbl) \
     for (struct enc_table *tbl = &global_enc_table, **locking = &tbl; \
@@ -126,7 +127,7 @@ static const rb_data_type_t encoding_data_type = {
 };
 
 #define is_encoding_type(obj) (RTYPEDDATA_TYPE(obj) == &encoding_data_type)
-#define is_data_encoding(obj) (rbimpl_rtypeddata_p(obj) && is_encoding_type(obj))
+#define is_data_encoding(obj) is_encoding_type(obj)
 #define is_obj_encoding(obj) (rbimpl_obj_typeddata_p(obj) && is_encoding_type(obj))
 
 int
@@ -1568,15 +1569,16 @@ rb_locale_encindex(void)
 
     if (idx < 0) idx = ENCINDEX_UTF_8;
 
-    GLOBAL_ENC_TABLE_LOCKING(enc_table) {
-        if (enc_registered(enc_table, "locale") < 0) {
+    if (!RUBY_ATOMIC_LOAD(locale_alias_registered)) {
+        GLOBAL_ENC_TABLE_LOCKING(enc_table) {
+            if (enc_registered(enc_table, "locale") < 0) {
 # if defined _WIN32
-            void Init_w32_codepage(void);
-            Init_w32_codepage();
+                void Init_w32_codepage(void);
+                Init_w32_codepage();
 # endif
-            GLOBAL_ENC_TABLE_LOCKING(enc_table) {
                 enc_alias_internal(enc_table, "locale", idx);
             }
+            RUBY_ATOMIC_SET(locale_alias_registered, 1);
         }
     }
 

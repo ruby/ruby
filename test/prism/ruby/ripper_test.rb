@@ -224,6 +224,12 @@ module Prism
       assert_equal(Ripper.tokenize(source), Translation::Ripper.tokenize(source))
     end
 
+    def test_encoding
+      source = '"わたし"'.encode(Encoding::Windows_31J)
+      assert_equal(Ripper.tokenize(source), Translation::Ripper.tokenize(source))
+      assert_equal(Ripper.sexp(source), Translation::Ripper.sexp(source))
+    end
+
     def test_sexp_coercion
       string_like = Object.new
       def string_like.to_str

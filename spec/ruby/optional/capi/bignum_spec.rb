@@ -35,8 +35,8 @@ describe "CApiBignumSpecs" do
     end
 
     it "raises RangeError if passed Bignum overflow long" do
-      -> { @s.rb_big2long(ensure_bignum(@max_long + 1)) }.should raise_error(RangeError)
-      -> { @s.rb_big2long(ensure_bignum(@min_long - 1)) }.should raise_error(RangeError)
+      -> { @s.rb_big2long(ensure_bignum(@max_long + 1)) }.should.raise(RangeError)
+      -> { @s.rb_big2long(ensure_bignum(@min_long - 1)) }.should.raise(RangeError)
     end
   end
 
@@ -49,8 +49,8 @@ describe "CApiBignumSpecs" do
     end
 
     it "raises RangeError if passed Bignum overflow long" do
-      -> { @s.rb_big2ll(ensure_bignum(@max_long << 40)) }.should raise_error(RangeError)
-      -> { @s.rb_big2ll(ensure_bignum(@min_long << 40)) }.should raise_error(RangeError)
+      -> { @s.rb_big2ll(ensure_bignum(@max_long << 40)) }.should.raise(RangeError)
+      -> { @s.rb_big2ll(ensure_bignum(@min_long << 40)) }.should.raise(RangeError)
     end
   end
 
@@ -67,8 +67,8 @@ describe "CApiBignumSpecs" do
     end
 
     it "raises RangeError if passed Bignum overflow long" do
-      -> { @s.rb_big2ulong(ensure_bignum(@max_ulong + 1)) }.should raise_error(RangeError)
-      -> { @s.rb_big2ulong(ensure_bignum(@min_long - 1)) }.should raise_error(RangeError)
+      -> { @s.rb_big2ulong(ensure_bignum(@max_ulong + 1)) }.should.raise(RangeError)
+      -> { @s.rb_big2ulong(ensure_bignum(@min_long - 1)) }.should.raise(RangeError)
     end
   end
 
@@ -214,13 +214,13 @@ describe "CApiBignumSpecs" do
     it "raises FloatDomainError for Infinity values" do
       inf = 1.0 / 0
 
-      -> { @s.rb_dbl2big(inf) }.should raise_error(FloatDomainError)
+      -> { @s.rb_dbl2big(inf) }.should.raise(FloatDomainError)
     end
 
     it "raises FloatDomainError for NaN values" do
       nan = 0.0 / 0
 
-      -> { @s.rb_dbl2big(nan) }.should raise_error(FloatDomainError)
+      -> { @s.rb_dbl2big(nan) }.should.raise(FloatDomainError)
     end
   end
 end

@@ -60,9 +60,9 @@ describe :string_succ, shared: true do
   end
 
   it "returns String instances when called on a subclass" do
-    StringSpecs::MyString.new("").send(@method).should be_an_instance_of(String)
-    StringSpecs::MyString.new("a").send(@method).should be_an_instance_of(String)
-    StringSpecs::MyString.new("z").send(@method).should be_an_instance_of(String)
+    StringSpecs::MyString.new("").send(@method).should.instance_of?(String)
+    StringSpecs::MyString.new("a").send(@method).should.instance_of?(String)
+    StringSpecs::MyString.new("z").send(@method).should.instance_of?(String)
   end
 
   it "returns a String in the same encoding as self" do
@@ -75,13 +75,13 @@ describe :string_succ_bang, shared: true do
     ["", "abcd", "THX1138"].each do |s|
       s = +s
       r = s.dup.send(@method)
-      s.send(@method).should equal(s)
+      s.send(@method).should.equal?(s)
       s.should == r
     end
   end
 
   it "raises a FrozenError if self is frozen" do
-    -> { "".freeze.send(@method)     }.should raise_error(FrozenError)
-    -> { "abcd".freeze.send(@method) }.should raise_error(FrozenError)
+    -> { "".freeze.send(@method)     }.should.raise(FrozenError)
+    -> { "abcd".freeze.send(@method) }.should.raise(FrozenError)
   end
 end

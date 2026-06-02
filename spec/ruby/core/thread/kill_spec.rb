@@ -15,7 +15,7 @@ platform_is_not :mingw do
       Thread.pass while thread.status and thread.status != "sleep"
       Thread.kill(thread).should == thread
       thread.join
-      thread.status.should be_false
+      thread.status.should == false
     end
   end
 end

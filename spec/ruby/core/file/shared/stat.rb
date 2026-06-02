@@ -10,13 +10,13 @@ describe :file_stat, shared: true do
 
   it "returns a File::Stat object if the given file exists" do
     st = File.send(@method, @file)
-    st.should be_an_instance_of(File::Stat)
+    st.should.instance_of?(File::Stat)
   end
 
   it "returns a File::Stat object when called on an instance of File" do
     File.open(@file) do |f|
       st = f.send(@method)
-      st.should be_an_instance_of(File::Stat)
+      st.should.instance_of?(File::Stat)
     end
   end
 
@@ -27,6 +27,6 @@ describe :file_stat, shared: true do
   it "raises an Errno::ENOENT if the file does not exist" do
     -> {
       File.send(@method, "fake_file")
-    }.should raise_error(Errno::ENOENT)
+    }.should.raise(Errno::ENOENT)
   end
 end

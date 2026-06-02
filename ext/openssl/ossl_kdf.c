@@ -39,6 +39,10 @@ pbkdf2_hmac_nogvl(void *args_)
  * For more information about PBKDF2, see RFC 2898 Section 5.2
  * (https://www.rfc-editor.org/rfc/rfc2898#section-5.2).
  *
+ * *NOTE*: This method cannot be interrupted by Timeout.timeout from the
+ * "timeout" library. Do not take parameters from untrusted sources without
+ * enforcing reasonable limits.
+ *
  * === Parameters
  * pass       :: The password.
  * salt       :: The salt. Salts prevent attacks based on dictionaries of common
@@ -142,6 +146,10 @@ scrypt_nogvl(void *args_)
  * that using values r=8 and p=1 appears to yield good results.
  *
  * See RFC 7914 (https://www.rfc-editor.org/rfc/rfc7914) for more information.
+ *
+ * *NOTE*: This method cannot be interrupted by Timeout.timeout from the
+ * "timeout" library. Do not take parameters from untrusted sources without
+ * enforcing reasonable limits.
  *
  * === Parameters
  * pass   :: Passphrase.

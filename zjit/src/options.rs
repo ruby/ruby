@@ -537,7 +537,7 @@ pub fn enable_zjit_stats() {
     unsafe { OPTIONS.as_mut() }.unwrap().stats = true;
 }
 
-/// Print YJIT options for `ruby --help`. `width` is width of option parts, and
+/// Print ZJIT options for `ruby --help`. `width` is width of option parts, and
 /// `columns` is indent width of descriptions.
 #[unsafe(no_mangle)]
 pub extern "C" fn rb_zjit_show_usage(help: c_int, highlight: c_int, width: c_uint, columns: c_int) {

@@ -23,15 +23,15 @@ describe :datetime_sec, shared: true do
   end
 
   it "raises an error when minute is given as a rational" do
-    -> { new_datetime(minute: 5 + Rational(1,2)) }.should raise_error(ArgumentError)
+    -> { new_datetime(minute: 5 + Rational(1,2)) }.should.raise(ArgumentError)
   end
 
   it "raises an error, when the second is smaller than -60" do
-    -> { new_datetime(second: -61) }.should raise_error(ArgumentError)
+    -> { new_datetime(second: -61) }.should.raise(ArgumentError)
   end
 
   it "raises an error, when the second is greater or equal than 60" do
-    -> { new_datetime(second: 60) }.should raise_error(ArgumentError)
+    -> { new_datetime(second: 60) }.should.raise(ArgumentError)
   end
 
   it "raises an error for second fractions smaller than -60" do

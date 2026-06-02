@@ -10,7 +10,7 @@ describe "SecureRandom.random_number" do
   it "generates a random positive number smaller then the positive integer argument" do
     (1..64).each do |idx|
       num = SecureRandom.random_number(idx)
-      num.should be_kind_of(Integer)
+      num.should.is_a?(Integer)
       0.should <= num
       num.should < idx
     end
@@ -20,7 +20,7 @@ describe "SecureRandom.random_number" do
     max = 12345678901234567890
     11.times do
       num = SecureRandom.random_number max
-      num.should be_kind_of(Integer)
+      num.should.is_a?(Integer)
       0.should <= num
       num.should < max
     end
@@ -29,7 +29,7 @@ describe "SecureRandom.random_number" do
   it "generates a random float number between 0.0 and 1.0 if no argument provided" do
     64.times do
       num = SecureRandom.random_number
-      num.should be_kind_of(Float)
+      num.should.is_a?(Float)
       0.0.should <= num
       num.should < 1.0
     end
@@ -38,7 +38,7 @@ describe "SecureRandom.random_number" do
   it "generates a random value in given (integer) range limits" do
     64.times do
       num = SecureRandom.random_number 11...13
-      num.should be_kind_of(Integer)
+      num.should.is_a?(Integer)
       11.should <= num
       num.should < 13
     end
@@ -49,7 +49,7 @@ describe "SecureRandom.random_number" do
     upper = 12345678901234567890 + 5
     32.times do
       num = SecureRandom.random_number lower..upper
-      num.should be_kind_of(Integer)
+      num.should.is_a?(Integer)
       lower.should <= num
       num.should <= upper
     end
@@ -58,7 +58,7 @@ describe "SecureRandom.random_number" do
   it "generates a random value in given (float) range limits" do
     64.times do
       num = SecureRandom.random_number 0.6..0.9
-      num.should be_kind_of(Float)
+      num.should.is_a?(Float)
       0.6.should <= num
       num.should <= 0.9
     end
@@ -66,14 +66,14 @@ describe "SecureRandom.random_number" do
 
   it "generates a random float number between 0.0 and 1.0 if argument is negative" do
     num = SecureRandom.random_number(-10)
-    num.should be_kind_of(Float)
+    num.should.is_a?(Float)
     0.0.should <= num
     num.should < 1.0
   end
 
   it "generates a random float number between 0.0 and 1.0 if argument is negative float" do
     num = SecureRandom.random_number(-11.1)
-    num.should be_kind_of(Float)
+    num.should.is_a?(Float)
     0.0.should <= num
     num.should < 1.0
   end
@@ -84,7 +84,7 @@ describe "SecureRandom.random_number" do
     256.times do
       val = SecureRandom.random_number
       # make sure the random values are not repeating
-      values.should_not include(val)
+      values.should_not.include?(val)
       values << val
     end
   end
@@ -92,6 +92,6 @@ describe "SecureRandom.random_number" do
   it "raises ArgumentError if the argument is non-numeric" do
     -> {
       SecureRandom.random_number(Object.new)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 end

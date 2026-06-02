@@ -3,12 +3,12 @@ describe :process_fork, shared: true do
     it "returns false from #respond_to?" do
       # Workaround for Kernel::Method being public and losing the "non-respond_to? magic"
       mod = @object.class.name == "KernelSpecs::Method" ? Object.new : @object
-      mod.respond_to?(:fork).should be_false
-      mod.respond_to?(:fork, true).should be_false
+      mod.respond_to?(:fork).should == false
+      mod.respond_to?(:fork, true).should == false
     end
 
     it "raises a NotImplementedError when called" do
-      -> { @object.fork }.should raise_error(NotImplementedError)
+      -> { @object.fork }.should.raise(NotImplementedError)
     end
   end
 

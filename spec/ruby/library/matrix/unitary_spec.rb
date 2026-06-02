@@ -26,7 +26,7 @@ describe "Matrix.unitary?" do
     ].each do |rectangular_matrix|
       -> {
         rectangular_matrix.unitary?
-      }.should raise_error(Matrix::ErrDimensionMismatch)
+      }.should.raise(Matrix::ErrDimensionMismatch)
     end
   end
 end

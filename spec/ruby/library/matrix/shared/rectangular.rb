@@ -12,7 +12,7 @@ describe :matrix_rectangular, shared: true do
 
   describe "for a subclass of Matrix" do
     it "returns instances of that subclass" do
-      MatrixSub.ins.send(@method).each{|m| m.should be_an_instance_of(MatrixSub) }
+      MatrixSub.ins.send(@method).each{|m| m.should.instance_of?(MatrixSub) }
     end
   end
 end

@@ -15,7 +15,7 @@ describe "Data#deconstruct_keys" do
 
     -> {
       d.deconstruct_keys
-    }.should raise_error(ArgumentError, /wrong number of arguments \(given 0, expected 1\)/)
+    }.should.raise(ArgumentError, /wrong number of arguments \(given 0, expected 1\)/)
   end
 
   it "returns only specified keys" do
@@ -56,7 +56,7 @@ describe "Data#deconstruct_keys" do
     d.deconstruct_keys(nil).should == {x: 1, y: 2}
   end
 
-  ruby_bug "Bug #21844", ""..."4.1" do
+  ruby_version_is "4.0" do # https://bugs.ruby-lang.org/issues/21844
     it "tries to convert a key with #to_str if index is not a String nor a Symbol, but responds to #to_str" do
       klass = Data.define(:x, :y)
       d = klass.new(1, 2)
@@ -73,7 +73,7 @@ describe "Data#deconstruct_keys" do
 
       -> {
         d.deconstruct_keys([0, 1])
-      }.should raise_error(TypeError, "0 is not a symbol nor a string")
+      }.should.raise(TypeError, "0 is not a symbol nor a string")
     end
 
     it "raises a TypeError if the conversion with #to_str does not return a String" do
@@ -88,13 +88,13 @@ describe "Data#deconstruct_keys" do
       }.should raise_consistent_error(TypeError, /can't convert MockObject into String/)
     end
 
-    it "raises TypeError if index is not a Symbol and not convertible to String " do
+    it "raises TypeError if index is not a Symbol and not convertible to String" do
       klass = Data.define(:x, :y)
       d = klass.new(1, 2)
 
       -> {
         d.deconstruct_keys([0, []])
-      }.should raise_error(TypeError, "0 is not a symbol nor a string")
+      }.should.raise(TypeError, "0 is not a symbol nor a string")
     end
   end
 
@@ -102,9 +102,9 @@ describe "Data#deconstruct_keys" do
     klass = Data.define(:x, :y)
     d = klass.new(1, 2)
 
-    -> { d.deconstruct_keys('x') }.should raise_error(TypeError, /expected Array or nil/)
-    -> { d.deconstruct_keys(1)   }.should raise_error(TypeError, /expected Array or nil/)
-    -> { d.deconstruct_keys(:x)  }.should raise_error(TypeError, /expected Array or nil/)
-    -> { d.deconstruct_keys({})  }.should raise_error(TypeError, /expected Array or nil/)
+    -> { d.deconstruct_keys('x') }.should.raise(TypeError, /expected Array or nil/)
+    -> { d.deconstruct_keys(1)   }.should.raise(TypeError, /expected Array or nil/)
+    -> { d.deconstruct_keys(:x)  }.should.raise(TypeError, /expected Array or nil/)
+    -> { d.deconstruct_keys({})  }.should.raise(TypeError, /expected Array or nil/)
   end
 end

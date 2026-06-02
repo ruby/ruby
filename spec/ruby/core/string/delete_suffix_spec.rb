@@ -12,13 +12,13 @@ describe "String#delete_suffix" do
   it "returns a copy of the string, when the suffix isn't found" do
     s = 'hello'
     r = s.delete_suffix('!hello')
-    r.should_not equal s
+    r.should_not.equal? s
     r.should == s
     r = s.delete_suffix('ell')
-    r.should_not equal s
+    r.should_not.equal? s
     r.should == s
     r = s.delete_suffix('')
-    r.should_not equal s
+    r.should_not.equal? s
     r.should == s
   end
 
@@ -41,7 +41,7 @@ describe "String#delete_suffix" do
 
   it "returns a String instance when called on a subclass instance" do
     s = StringSpecs::MyString.new('hello')
-    s.delete_suffix('ello').should be_an_instance_of(String)
+    s.delete_suffix('ello').should.instance_of?(String)
   end
 
   it "returns a String in the same encoding as self" do
@@ -52,7 +52,7 @@ end
 describe "String#delete_suffix!" do
   it "removes the found prefix" do
     s = 'hello'
-    s.delete_suffix!('ello').should equal(s)
+    s.delete_suffix!('ello').should.equal?(s)
     s.should == 'h'
   end
 
@@ -76,8 +76,8 @@ describe "String#delete_suffix!" do
   end
 
   it "raises a FrozenError when self is frozen" do
-    -> { 'hello'.freeze.delete_suffix!('ello') }.should raise_error(FrozenError)
-    -> { 'hello'.freeze.delete_suffix!('') }.should raise_error(FrozenError)
-    -> { ''.freeze.delete_suffix!('') }.should raise_error(FrozenError)
+    -> { 'hello'.freeze.delete_suffix!('ello') }.should.raise(FrozenError)
+    -> { 'hello'.freeze.delete_suffix!('') }.should.raise(FrozenError)
+    -> { ''.freeze.delete_suffix!('') }.should.raise(FrozenError)
   end
 end

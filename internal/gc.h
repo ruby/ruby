@@ -124,7 +124,7 @@ struct rb_objspace; /* in vm_core.h */
     T *(var) = (T *)rb_ec_newobj_of((ec), (c), (f), s)
 #define NEWOBJ_OF(var, T, c, f, s) EC_NEWOBJ_OF(var, T, c, f, s, GET_EC())
 #define UNPROTECTED_NEWOBJ_OF(var, T, c, f, s) \
-    T *(var) = (T *)rb_newobj((GET_EC()), (c), (f), 0 /* ROOT_SHAPE_ID */, false, s)
+    T *(var) = (T *)rb_newobj((GET_EC()), (c), (f), ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER, false, s)
 
 #ifndef RB_GC_OBJECT_METADATA_ENTRY_DEFINED
 # define RB_GC_OBJECT_METADATA_ENTRY_DEFINED
@@ -254,9 +254,13 @@ struct rb_gc_object_metadata_entry *rb_gc_object_metadata(VALUE obj);
 void rb_gc_mark_values(long n, const VALUE *values);
 void rb_gc_mark_vm_stack_values(long n, const VALUE *values);
 void rb_gc_update_values(long n, VALUE *values);
+void rb_gc_mark_set_no_pin(st_table *);
+void rb_gc_update_set_refs(st_table *);
 
+#if USE_MODULAR_GC
 const char *rb_gc_active_gc_name(void);
 int rb_gc_modular_gc_loaded_p(void);
+#endif
 
 RUBY_SYMBOL_EXPORT_END
 

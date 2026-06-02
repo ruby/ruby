@@ -19,7 +19,7 @@ describe :net_httpheader_each_name, shared: true do
   describe "when passed no block" do
     it "returns an Enumerator" do
       enumerator = @headers.send(@method)
-      enumerator.should be_an_instance_of(Enumerator)
+      enumerator.should.instance_of?(Enumerator)
 
       res = []
       enumerator.each do |key|

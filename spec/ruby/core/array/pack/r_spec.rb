@@ -33,8 +33,8 @@ ruby_version_is "4.1" do
     end
 
     it "raises an ArgumentError when passed a negative value" do
-      -> { [-1].pack("R") }.should raise_error(ArgumentError)
-      -> { [-100].pack("R") }.should raise_error(ArgumentError)
+      -> { [-1].pack("R") }.should.raise(ArgumentError)
+      -> { [-100].pack("R") }.should.raise(ArgumentError)
     end
 
     it "round-trips values through pack and unpack" do

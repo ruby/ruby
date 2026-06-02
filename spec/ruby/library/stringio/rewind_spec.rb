@@ -9,7 +9,7 @@ describe "StringIO#rewind" do
   end
 
   it "returns 0" do
-    @io.rewind.should eql(0)
+    @io.rewind.should.eql?(0)
   end
 
   it "resets the position" do

@@ -1024,9 +1024,10 @@ pack_unpack_internal(VALUE str, VALUE fmt, enum unpack_mode mode, long offset)
     StringValue(fmt);
     rb_must_asciicompat(fmt);
 
-    if (offset < 0) rb_raise(rb_eArgError, "offset can't be negative");
     len = RSTRING_LEN(str);
-    if (offset > len) rb_raise(rb_eArgError, "offset outside of string");
+    if (offset < 0 ? (offset += len) < 0 : offset > len) {
+        rb_raise(rb_eArgError, "offset outside of string");
+    }
 
     s = RSTRING_PTR(str);
     send = s + len;

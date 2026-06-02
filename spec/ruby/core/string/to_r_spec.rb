@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 describe "String#to_r" do
   it "returns a Rational object" do
-    String.new.to_r.should be_an_instance_of(Rational)
+    String.new.to_r.should.instance_of?(Rational)
   end
 
   it "returns (0/1) for the empty String" do

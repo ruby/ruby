@@ -69,7 +69,10 @@ LIBRUBY_EXTS  = ./.libruby-with-ext.time
 REVISION_H    = ./.revision.time
 PLATFORM_D    = $(TIMESTAMPDIR)/.$(PLATFORM_DIR).time
 ENC_TRANS_D   = $(TIMESTAMPDIR)/.enc-trans.time
-RDOC          = $(XRUBY) "$(tooldir)/rdoc-srcdir"
+yes_cross_compiling = $(CROSS_COMPILING:no=)
+X_$(CROSS_COMPILING:yes=)BASERUBY = $(BASERUBY)
+X_$(CROSS_COMPILING:no=)BASERUBY = $(XRUBY)
+RDOC          = $(X_BASERUBY) --enable-gems "$(tooldir)/rdoc-srcdir"
 RDOCOUT       = $(EXTOUT)/rdoc
 HTMLOUT       = $(EXTOUT)/html
 CAPIOUT       = doc/capi
@@ -344,12 +347,14 @@ $(EXTS_MK): ext/configure-ext.mk $(srcdir)/template/exts.mk.tmpl \
 	    $(srcdir)/template/exts.mk.tmpl --gnumake=$(gnumake) --configure-exts=ext/configure-ext.mk
 
 ext/configure-ext.mk: $(PREP) all-incs $(MKFILES) $(RBCONFIG) $(LIBRUBY) \
-		$(srcdir)/template/configure-ext.mk.tmpl
+		$(srcdir)/template/configure-ext.mk.tmpl update-default-gemspecs \
+		$(HAVE_BASERUBY:yes=extract-gems)
 	$(ECHO) generating makefiles $@
 	$(Q)$(MAKEDIRS) $(@D)
 	$(Q)$(MINIRUBY) $(tooldir)/generic_erb.rb -o $@ -c \
 	    $(srcdir)/template/$(@F).tmpl --srcdir="$(srcdir)" \
-	    --miniruby="$(MINIRUBY)" --script-args='$(SCRIPT_ARGS)'
+	    --miniruby="$(MINIRUBY)" --script-args='$(SCRIPT_ARGS)' \
+	    $(yes_cross_compiling:yes=--without-ext=-test-)
 
 configure-ext: $(EXTS_MK)
 
@@ -623,11 +628,11 @@ post-install-dbg::
 srcs-doc: prepare-gems
 
 RDOC_DEPENDS = main srcs-doc
-rdoc: PHONY $(RDOC_DEPENDS) $(RBCONFIG)
+rdoc: PHONY $(RDOC_DEPENDS) $(RBCONFIG) update-default-gemspecs
 	@echo Generating RDoc documentation
 	$(Q) $(RDOC) --ri --op "$(RDOCOUT)" $(RDOC_GEN_OPTS) $(RDOCFLAGS) .
 
-html: PHONY $(RDOC_DEPENDS) $(RBCONFIG)
+html: PHONY $(RDOC_DEPENDS) $(RBCONFIG) update-default-gemspecs
 	@echo Generating RDoc HTML files
 	$(Q) $(RDOC) --op "$(HTMLOUT)" $(RDOC_GEN_OPTS) $(RDOCFLAGS) .
 
@@ -1485,7 +1490,7 @@ dist:
 up:: update-remote
 
 up$(DOT_WAIT)::
-	-$(Q)$(MAKE) $(mflags) Q=$(Q) REVISION_FORCE=PHONY ALWAYS_UPDATE_UNICODE= after-update
+	-$(Q)$(MAKE) $(mflags) Q=$(Q) REVISION_FORCE=PHONY ALWAYS_UPDATE_UNICODE= MINIRUBY=$(BASERUBY) after-update
 
 yes::
 no::
@@ -1494,6 +1499,7 @@ after-update:: common-srcs
 after-update:: $(REVISION_H)
 after-update:: extract-extlibs
 after-update:: extract-gems
+after-update:: update-default-gemspecs
 
 update-src::
 	$(Q) $(RM) $(REVISION_H) revision.h "$(srcdir)/$(REVISION_H)" "$(srcdir)/revision.h"
@@ -1576,31 +1582,13 @@ test-bundled-gems-precheck: $(TEST_RUNNABLE)-test-bundled-gems-precheck
 yes-test-bundled-gems-precheck: $(PRECHECK_BUNDLED_GEMS:yes=main)
 no-test-bundled-gems-precheck:
 
-update-default-gemspecs: $(TEST_RUNNABLE)-update-default-gemspecs
-no-update-default-gemspecs:
-yes-update-default-gemspecs: $(PRECHECK_BUNDLED_GEMS:yes=main) $(PROGRAM)
+yes-update-default-gemspecs no-update-default-gemspecs: update-default-gemspecs
+update-default-gemspecs: $(PREP) $(RBCONFIG)
 	@$(MAKEDIRS) $(srcdir)/.bundle/specifications
-	@$(XRUBY) -W0 -C "$(srcdir)" -rrubygems \
-	    -e "destdir = ARGV.shift" \
-	    -e "ARGV.each do |basedir|" \
-	    -e   "Dir.glob(basedir+'/**/*.gemspec') do |g|" \
-	    -e     "dir, base = File.split(g)" \
-	    -e     "spec = Dir.chdir(dir) {Gem::Specification.load(base)} ||" \
-	    -e         "Gem::Specification.load(g)" \
-	    -e     "unless spec" \
-	    -e       "puts %[Ignoring #{g}]" \
-	    -e       "next" \
-	    -e     "end" \
-	    -e     "spec.files.clear" \
-	    -e     "spec.extensions.clear" \
-	    -e     "src = spec.to_ruby" \
-	    -e     "src.sub!(/^$$/) {" \
-	    -e       "%[# default: #{g} #{File.mtime(g).strftime(%[%s.%N])}\n]" \
-	    -e     "}" \
-	    -e     "File.binwrite(File.join(destdir, spec.full_name+'.gemspec'), src)" \
-	    -e   "end" \
-	    -e "end" \
-	    -- .bundle/specifications lib ext
+	$(Q)$(MINIRUBY) -W0 -C "$(srcdir)" -I tool/lib -roptparse -routput -rbundled_gem \
+	    -e "(out = Output.new).def_options(ARGV.options)" \
+	    -e "BundledGem.update_default_gemspecs(ARGV.parse!, out, quiet: $(V).zero?)" \
+	    -- -c -o .bundle/specifications lib ext
 
 install-for-test-bundled-gems: $(TEST_RUNNABLE)-install-for-test-bundled-gems
 no-install-for-test-bundled-gems: no-update-default-gemspecs
@@ -1687,7 +1675,7 @@ BUNDLER_SPECS =
 PREPARE_BUNDLER = $(TEST_RUNNABLE)-test-bundler-prepare
 test-bundler: $(TEST_RUNNABLE)-test-bundler
 yes-test-bundler: $(PREPARE_BUNDLER)
-	$(gnumake_recursive)$(XRUBY) \
+	$(gnumake_recursive)$(XRUBY) --enable-gems \
 		-r./$(arch)-fake \
 		-r$(tooldir)/lib/_tmpdir \
 		-I$(srcdir)/spec/bundler -I$(srcdir)/spec/lib \

@@ -10,7 +10,7 @@ platform_is :windows do
     end
 
     it "returns a String" do
-      @var.send(@method).should be_kind_of String
+      @var.send(@method).should.is_a? String
     end
 
   end

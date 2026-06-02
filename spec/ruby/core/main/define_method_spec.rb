@@ -14,15 +14,15 @@ describe "main#define_method" do
 
   it 'creates a public method in TOPLEVEL_BINDING' do
     eval @code, TOPLEVEL_BINDING
-    Object.should have_method :boom
+    Object.should.respond_to? :boom
   end
 
   it 'creates a public method in script binding' do
     eval @code, script_binding
-    Object.should have_method :boom
+    Object.should.respond_to? :boom
   end
 
   it 'returns the method name as symbol' do
-    eval(@code, TOPLEVEL_BINDING).should equal :boom
+    eval(@code, TOPLEVEL_BINDING).should.equal? :boom
   end
 end

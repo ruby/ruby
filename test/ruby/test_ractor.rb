@@ -42,6 +42,59 @@ class TestRactor < Test::Unit::TestCase
 =end
   end
 
+  def test_shareable_proc_define_method_super_method_missing
+    assert_ractor(<<~'RUBY', timeout: 30)
+      iterations = 1_000_000
+
+      class SuperFromShareableProcMethodMissingBase
+        def method_missing(mid, *) = mid
+      end
+
+      class SuperFromShareableProcMethodMissingChild < SuperFromShareableProcMethodMissingBase
+        BODY = Ractor.shareable_proc { super() }
+        define_method(:foo, &BODY)
+        define_method(:bar, &BODY)
+      end
+
+      [:foo, :bar].map do |mid|
+        Ractor.new(mid, iterations) do |mid, iterations|
+          obj = SuperFromShareableProcMethodMissingChild.new
+          iterations.times do
+            got = obj.__send__(mid)
+            raise "#{mid} returned #{got.inspect}" unless got == mid
+          end
+        end
+      end.each(&:value)
+    RUBY
+  end
+
+  def test_shareable_proc_define_method_super_method_entry
+    assert_ractor(<<~'RUBY', timeout: 30)
+      iterations = 1_000_000
+
+      class SuperFromShareableProcBase
+        def foo = :foo
+        def bar = :bar
+      end
+
+      class SuperFromShareableProcChild < SuperFromShareableProcBase
+        BODY = Ractor.shareable_proc { super() }
+        define_method(:foo, &BODY)
+        define_method(:bar, &BODY)
+      end
+
+      [:foo, :bar].map do |mid|
+        Ractor.new(mid, iterations) do |mid, iterations|
+          obj = SuperFromShareableProcChild.new
+          iterations.times do
+            got = obj.__send__(mid)
+            raise "#{mid} returned #{got.inspect}" unless got == mid
+          end
+        end
+      end.each(&:value)
+    RUBY
+  end
+
   def test_shareability_error_uses_inspect
     x = (+"").instance_exec { method(:to_s) }
     def x.to_s
@@ -129,6 +182,22 @@ class TestRactor < Test::Unit::TestCase
       assert_nil TestClass.instance_variable_get(:@d)
       assert_equal 4, TestClass.instance_variable_set(:@d, 4)
       assert_equal 4, TestClass.instance_variable_get(:@d)
+    RUBY
+  end
+
+
+  def test_class_variables
+    # [Bug #22072]
+    assert_ractor(<<~'RUBY')
+      module Foo
+        def self.foo = @@foo
+      end
+
+      Foo.class_variable_set(:@@foo, 1)
+
+      10.times { |i| Foo.class_variable_set(:"@@bar#{i}", i) }
+
+      assert_equal(Foo.foo, 1)
     RUBY
   end
 

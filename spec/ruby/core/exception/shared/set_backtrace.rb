@@ -43,22 +43,22 @@ describe :exception_set_backtrace, shared: true do
 
   it "accepts nil" do
     err = @method.call(nil)
-    err.backtrace.should be_nil
+    err.backtrace.should == nil
   end
 
   it "raises a TypeError when passed a Symbol" do
-    -> { @method.call(:unhappy) }.should raise_error(TypeError)
+    -> { @method.call(:unhappy) }.should.raise(TypeError)
   end
 
   it "raises a TypeError when the Array contains a Symbol" do
-    -> { @method.call(["String", :unhappy]) }.should raise_error(TypeError)
+    -> { @method.call(["String", :unhappy]) }.should.raise(TypeError)
   end
 
   it "raises a TypeError when the array contains nil" do
-    -> { @method.call(["String", nil]) }.should raise_error(TypeError)
+    -> { @method.call(["String", nil]) }.should.raise(TypeError)
   end
 
   it "raises a TypeError when the argument is a nested array" do
-    -> { @method.call(["String", ["String"]]) }.should raise_error(TypeError)
+    -> { @method.call(["String", ["String"]]) }.should.raise(TypeError)
   end
 end

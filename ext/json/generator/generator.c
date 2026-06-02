@@ -1367,12 +1367,14 @@ static VALUE cState_init_copy(VALUE obj, VALUE orig)
     if (!objState) rb_raise(rb_eArgError, "unallocated JSON::State");
 
     MEMCPY(objState, origState, JSON_Generator_State, 1);
-    objState->indent = origState->indent;
-    objState->space = origState->space;
-    objState->space_before = origState->space_before;
-    objState->object_nl = origState->object_nl;
-    objState->array_nl = origState->array_nl;
-    objState->as_json = origState->as_json;
+
+    RB_OBJ_WRITTEN(obj, Qundef, objState->indent);
+    RB_OBJ_WRITTEN(obj, Qundef, objState->space);
+    RB_OBJ_WRITTEN(obj, Qundef, objState->space_before);
+    RB_OBJ_WRITTEN(obj, Qundef, objState->object_nl);
+    RB_OBJ_WRITTEN(obj, Qundef, objState->array_nl);
+    RB_OBJ_WRITTEN(obj, Qundef, objState->as_json);
+
     return obj;
 }
 
@@ -1579,7 +1581,7 @@ static VALUE cState_max_nesting(VALUE self)
 
 static long long_config(VALUE num)
 {
-    return RTEST(num) ? FIX2LONG(num) : 0;
+    return RTEST(num) ? NUM2LONG(num) : 0;
 }
 
 // depth must never be negative; reject early with a clear error.
@@ -1589,6 +1591,9 @@ static long depth_config(VALUE num)
     long d = NUM2LONG(num);
     if (RB_UNLIKELY(d < 0)) {
         rb_raise(rb_eArgError, "depth must be >= 0 (got %ld)", d);
+    }
+    if (RB_UNLIKELY(d > INT_MAX)) {
+        rb_raise(rb_eArgError, "depth is too large (got %ld)", d);
     }
     return d;
 }

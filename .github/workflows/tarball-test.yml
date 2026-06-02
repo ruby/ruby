@@ -1,0 +1,105 @@
+name: tarball-test
+on:
+  push:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man/*'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
+      - '.*.yml'
+  pull_request:
+    # Do not use paths-ignore for required status checks
+    # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
+  merge_group:
+  workflow_dispatch:
+    inputs:
+      notify-release-channel:
+        description: 'Also send failure notifications to SNAPSHOT_SLACK_WEBHOOK_URL (set by tarball-test-schedule).'
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
+  cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
+
+permissions:
+  contents: read
+
+jobs:
+  tarball:
+    runs-on: ubuntu-latest
+    # Cherry-pick to maintenance branches by changing only env.BRANCH below;
+    # archname / branch-label / Materialize all derive from it.
+    env:
+      BRANCH: master
+    outputs:
+      branch: ${{ env.BRANCH }}
+      skip: ${{ steps.skipping.outputs.skip }}
+    steps:
+      - id: skipping
+        run:
+          echo 'skip=true' >> $GITHUB_OUTPUT
+        if: >-
+          ${{(false
+          || contains(github.event.head_commit.message, '[DOC]')
+          || contains(github.event.pull_request.title, '[DOC]')
+          || contains(github.event.pull_request.labels.*.name, 'Documentation')
+          || (github.event.pull_request.user.login == 'dependabot[bot]')
+          )}}
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 1 # actions/checkout fetches all heads/tags unless > 0
+          persist-credentials: false
+      # tool/make-snapshot derives the branch name from HEAD and looks up
+      # the upstream during ChangeLog generation. Detached checkouts
+      # (pull_request, merge_group) lack a local branch with tracking, so
+      # pin one to HEAD and connect it to the matching origin ref.
+      - name: Materialize local branch
+        run: |
+          git fetch --no-tags --depth=1 origin "+refs/heads/$BASE:refs/remotes/origin/$BASE"
+          git checkout -B "$BRANCH" HEAD
+          git branch --set-upstream-to="origin/$BASE" "$BRANCH"
+        env:
+          BASE: ${{ github.base_ref || env.BRANCH }}
+      - uses: ./.github/actions/make-snapshot
+        with:
+          archname: snapshot-${{ env.BRANCH }}
+          srcdir: '.'
+
+  ubuntu:
+    needs: tarball
+    if: ${{ ! needs.tarball.outputs.skip }}
+    uses: ./.github/workflows/tarball-ubuntu.yml
+    with:
+      archname: snapshot-${{ needs.tarball.outputs.branch }}
+      notify-release-channel: ${{ github.event_name == 'workflow_dispatch' && inputs.notify-release-channel || false }}
+    secrets:
+      SIMPLER_ALERTS_URL: ${{ secrets.SIMPLER_ALERTS_URL }}
+      SNAPSHOT_SLACK_WEBHOOK_URL: ${{ secrets.SNAPSHOT_SLACK_WEBHOOK_URL }}
+
+  macos:
+    needs: tarball
+    if: ${{ ! needs.tarball.outputs.skip }}
+    uses: ./.github/workflows/tarball-macos.yml
+    with:
+      archname: snapshot-${{ needs.tarball.outputs.branch }}
+      notify-release-channel: ${{ github.event_name == 'workflow_dispatch' && inputs.notify-release-channel || false }}
+    secrets:
+      SIMPLER_ALERTS_URL: ${{ secrets.SIMPLER_ALERTS_URL }}
+      SNAPSHOT_SLACK_WEBHOOK_URL: ${{ secrets.SNAPSHOT_SLACK_WEBHOOK_URL }}
+
+  windows:
+    needs: tarball
+    if: ${{ ! needs.tarball.outputs.skip }}
+    uses: ./.github/workflows/tarball-windows.yml
+    with:
+      archname: snapshot-${{ needs.tarball.outputs.branch }}
+      notify-release-channel: ${{ github.event_name == 'workflow_dispatch' && inputs.notify-release-channel || false }}
+    secrets:
+      SIMPLER_ALERTS_URL: ${{ secrets.SIMPLER_ALERTS_URL }}
+      SNAPSHOT_SLACK_WEBHOOK_URL: ${{ secrets.SNAPSHOT_SLACK_WEBHOOK_URL }}
+
+  non_development:
+    needs: tarball
+    uses: ./.github/workflows/tarball-non-development.yml

@@ -31,6 +31,8 @@ rb_imemo_name(enum imemo_type type)
         IMEMO_NAME(tmpbuf);
         IMEMO_NAME(cvar_entry);
         IMEMO_NAME(fields);
+        IMEMO_NAME(subclasses);
+        IMEMO_NAME(cdhash);
 #undef IMEMO_NAME
     }
     rb_bug("unreachable");
@@ -124,13 +126,26 @@ rb_imemo_memo_new_value(VALUE a, VALUE b, VALUE c)
 }
 
 VALUE
+rb_imemo_cdhash_new(size_t size, const struct st_hash_type *type)
+{
+    struct rb_imemo_cdhash *memo = IMEMO_NEW(struct rb_imemo_cdhash, imemo_cdhash, 0);
+    memo->tbl.num_entries = 0;
+    st_init_existing_table_with_size(&memo->tbl, type, size);
+    return (VALUE)memo;
+}
+
+VALUE
 rb_imemo_fields_new(VALUE owner, shape_id_t shape_id, bool shareable)
 {
     size_t capa = RSHAPE_CAPACITY(shape_id);
     size_t embedded_size = offsetof(struct rb_fields, as.embed) + capa * sizeof(VALUE);
     RUBY_ASSERT(rb_gc_size_allocatable_p(embedded_size));
     VALUE fields = rb_imemo_new(imemo_fields, owner, embedded_size, shareable);
-    RBASIC_SET_SHAPE_ID(fields, shape_id);
+    // imemo fields objects should always have "RObject" layout.  The
+    // layout in the shape describes the layout of the thing on which it is set.
+    // Imemo fields have the same layout as robject, therefore the layout
+    // should reflect that fact.
+    RBASIC_SET_SHAPE_ID(fields, rb_shape_id_with_robject_layout(shape_id));
     RUBY_ASSERT(IMEMO_TYPE_P(fields, imemo_fields));
     return fields;
 }
@@ -141,7 +156,11 @@ rb_imemo_fields_new_complex(VALUE owner, shape_id_t shape_id, size_t capa, bool 
     VALUE fields = rb_imemo_new(imemo_fields, owner, sizeof(struct rb_fields), shareable);
     IMEMO_OBJ_FIELDS(fields)->as.complex.table = st_init_numtable_with_size(capa);
     FL_SET_RAW(fields, OBJ_FIELD_HEAP);
-    RBASIC_SET_SHAPE_ID(fields, shape_id);
+    // imemo fields objects should always have "RObject" layout.  The
+    // layout in the shape describes the layout of the thing on which it is set.
+    // Imemo fields have the same layout as robject, therefore the layout
+    // should reflect that fact.
+    RBASIC_SET_SHAPE_ID(fields, rb_shape_id_with_robject_layout(shape_id));
     return fields;
 }
 
@@ -166,7 +185,11 @@ rb_imemo_fields_new_complex_tbl(VALUE owner, shape_id_t shape_id, st_table *tbl,
     VALUE fields = rb_imemo_new(imemo_fields, owner, sizeof(struct rb_fields), shareable);
     IMEMO_OBJ_FIELDS(fields)->as.complex.table = tbl;
     FL_SET_RAW(fields, OBJ_FIELD_HEAP);
-    RBASIC_SET_SHAPE_ID(fields, shape_id);
+    // imemo fields objects should always have "RObject" layout.  The
+    // layout in the shape describes the layout of the thing on which it is set.
+    // Imemo fields have the same layout as robject, therefore the layout
+    // should reflect that fact.
+    RBASIC_SET_SHAPE_ID(fields, rb_shape_id_with_robject_layout(shape_id));
     st_foreach(tbl, imemo_fields_trigger_wb_i, (st_data_t)fields);
     return fields;
 }
@@ -213,6 +236,32 @@ rb_imemo_fields_clear(VALUE fields_obj)
     }
     // Invalidate the ec->gen_fields_cache.
     RBASIC_CLEAR_CLASS(fields_obj);
+}
+
+VALUE
+rb_imemo_subclasses_new(uint32_t capacity)
+{
+    size_t embed_size = offsetof(struct rb_subclasses, as) + capacity * sizeof(VALUE);
+    struct rb_subclasses *subs;
+
+    if (rb_gc_size_allocatable_p(embed_size)) {
+        subs = (struct rb_subclasses *)rb_imemo_new(imemo_subclasses, 0, embed_size, true);
+        subs->count = 0;
+        subs->capacity = capacity;
+        memset(subs->as.embed, 0, capacity * sizeof(VALUE));
+        rb_gc_declare_weak_references((VALUE)subs);
+    }
+    else {
+        subs = (struct rb_subclasses *)rb_imemo_new(imemo_subclasses, 0, sizeof(struct rb_subclasses), true);
+        subs->as.external = NULL;
+        subs->count = 0;
+        subs->capacity = 0;
+        FL_SET_RAW((VALUE)subs, IMEMO_SUBCLASSES_HEAP);
+        rb_gc_declare_weak_references((VALUE)subs);
+        subs->as.external = ZALLOC_N(VALUE, capacity);
+        subs->capacity = capacity;
+    }
+    return (VALUE)subs;
 }
 
 /* =========================================================================
@@ -262,6 +311,19 @@ rb_imemo_memsize(VALUE obj)
         if (rb_obj_shape_complex_p(obj)) {
             size += st_memsize(IMEMO_OBJ_FIELDS(obj)->as.complex.table);
         }
+
+        break;
+      case imemo_subclasses: {
+        if (FL_TEST_RAW(obj, IMEMO_SUBCLASSES_HEAP)) {
+            struct rb_subclasses *subs = (struct rb_subclasses *)obj;
+            size += subs->capacity * sizeof(VALUE);
+        }
+
+        break;
+      }
+      case imemo_cdhash:
+        size += st_memsize(rb_imemo_cdhash_tbl(obj)) - sizeof(st_table);
+
         break;
       default:
         rb_bug("unreachable");
@@ -506,6 +568,18 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
           rb_gc_mark_and_move((VALUE *)&ent->cref);
           break;
       }
+      case imemo_subclasses: {
+        if (reference_updating) {
+            struct rb_subclasses *subs = (struct rb_subclasses *)obj;
+            VALUE *entries = rb_imemo_subclasses_entries(obj);
+            for (uint32_t i = 0; i < subs->count; i++) {
+                if (entries[i]) {
+                    entries[i] = rb_gc_location(entries[i]);
+                }
+            }
+        }
+        break;
+      }
       case imemo_fields: {
         rb_gc_mark_and_move((VALUE *)&RBASIC(obj)->klass);
 
@@ -529,6 +603,16 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
                     rb_gc_mark_and_move(&fields[i]);
                 }
             }
+        }
+        break;
+      }
+      case imemo_cdhash: {
+        st_table *tbl = rb_imemo_cdhash_tbl(obj);
+        if (reference_updating) {
+            rb_gc_update_set_refs(tbl);
+        }
+        else {
+            rb_gc_mark_set_no_pin(tbl);
         }
         break;
       }
@@ -560,8 +644,7 @@ static inline void
 imemo_fields_free(struct rb_fields *fields)
 {
     if (FL_TEST_RAW((VALUE)fields, OBJ_FIELD_HEAP)) {
-        shape_id_t shape_id = RBASIC_SHAPE_ID((VALUE)fields);
-        RUBY_ASSERT(rb_shape_complex_p(shape_id));
+        RUBY_ASSERT(rb_shape_complex_p(RBASIC_SHAPE_ID((VALUE)fields)));
         st_free_table(fields->as.complex.table);
     }
 }
@@ -578,8 +661,7 @@ rb_imemo_free(VALUE obj)
         const struct rb_callinfo *ci = ((const struct rb_callinfo *)obj);
 
         if (ci->kwarg) {
-            ((struct rb_callinfo_kwarg *)ci->kwarg)->references--;
-            if (ci->kwarg->references == 0) {
+            if (RUBY_ATOMIC_FETCH_SUB(((struct rb_callinfo_kwarg *)ci->kwarg)->references, 1) == 1) {
                 ruby_xfree_sized((void *)ci->kwarg, rb_callinfo_kwarg_bytes(ci->kwarg->keyword_len));
             }
         }
@@ -641,6 +723,20 @@ rb_imemo_free(VALUE obj)
       case imemo_fields:
         imemo_fields_free(IMEMO_OBJ_FIELDS(obj));
         RB_DEBUG_COUNTER_INC(obj_imemo_fields);
+
+        break;
+      case imemo_subclasses: {
+        if (FL_TEST_RAW(obj, IMEMO_SUBCLASSES_HEAP)) {
+            struct rb_subclasses *subs = (struct rb_subclasses *)obj;
+            SIZED_FREE_N(subs->as.external, subs->capacity);
+        }
+        RB_DEBUG_COUNTER_INC(obj_imemo_subclasses);
+        break;
+      }
+      case imemo_cdhash:
+        st_free_embedded_table(rb_imemo_cdhash_tbl(obj));
+        RB_DEBUG_COUNTER_INC(obj_imemo_cdhash);
+
         break;
       default:
         rb_bug("unreachable");

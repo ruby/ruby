@@ -90,7 +90,9 @@ Use #gem to declare which gems you directly depend upon:
 
 To depend on a specific set of versions:
 
-  gem 'rake', '~> 10.3', '>= 10.3.2'
+  gem 'rake', '>= 10.3.2'
+  # or for multiple version restrictions
+  gem 'rake', '>= 10.3.2', "< 13"
 
 RubyGems will require the gem name when activating the gem using
 the RUBYGEMS_GEMDEPS environment variable or Gem::use_gemdeps.  Use the

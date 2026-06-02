@@ -31,8 +31,8 @@ describe :enumerable_inject, shared: true do
   end
 
   it "raises TypeError when the second argument is not Symbol or String and it cannot be converted to String if two arguments" do
-    -> { EnumerableSpecs::Numerous.new(1, 2, 3).send(@method, 10, Object.new) }.should raise_error(TypeError, /is not a symbol nor a string/)
-    -> { [1, 2, 3].send(@method, 10, Object.new) }.should raise_error(TypeError, /is not a symbol nor a string/)
+    -> { EnumerableSpecs::Numerous.new(1, 2, 3).send(@method, 10, Object.new) }.should.raise(TypeError, /is not a symbol nor a string/)
+    -> { [1, 2, 3].send(@method, 10, Object.new) }.should.raise(TypeError, /is not a symbol nor a string/)
   end
 
   it "ignores the block if two arguments" do
@@ -73,8 +73,8 @@ describe :enumerable_inject, shared: true do
   end
 
   it "raises TypeError when passed not Symbol or String method name argument and it cannot be converted to String" do
-    -> { EnumerableSpecs::Numerous.new(10, 1, 2, 3).send(@method, Object.new) }.should raise_error(TypeError, /is not a symbol nor a string/)
-    -> { [10, 1, 2, 3].send(@method, Object.new) }.should raise_error(TypeError, /is not a symbol nor a string/)
+    -> { EnumerableSpecs::Numerous.new(10, 1, 2, 3).send(@method, Object.new) }.should.raise(TypeError, /is not a symbol nor a string/)
+    -> { [10, 1, 2, 3].send(@method, Object.new) }.should.raise(TypeError, /is not a symbol nor a string/)
   end
 
   it "without argument takes a block with an accumulator (with first element as initial value) and the current element. Value of block becomes new accumulator" do
@@ -136,7 +136,7 @@ describe :enumerable_inject, shared: true do
   end
 
   it "raises an ArgumentError when no parameters or block is given" do
-    -> { [1,2].send(@method) }.should raise_error(ArgumentError)
-    -> { {one: 1, two: 2}.send(@method) }.should raise_error(ArgumentError)
+    -> { [1,2].send(@method) }.should.raise(ArgumentError)
+    -> { {one: 1, two: 2}.send(@method) }.should.raise(ArgumentError)
   end
 end

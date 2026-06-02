@@ -3340,7 +3340,7 @@ static int
 cdhash_each(VALUE key, VALUE value, VALUE ary)
 {
     rb_ary_push(ary, obj_resurrect(key));
-    rb_ary_push(ary, value);
+    rb_ary_push(ary, INT2FIX(value));
     return ST_CONTINUE;
 }
 
@@ -3581,11 +3581,11 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
                 break;
               case TS_CDHASH:
                 {
-                    VALUE hash = *seq;
+                    VALUE cdhash = *seq;
                     VALUE val = rb_ary_new();
                     int i;
 
-                    rb_hash_foreach(hash, cdhash_each, val);
+                    st_foreach(rb_imemo_cdhash_tbl(cdhash), cdhash_each, val);
 
                     for (i=0; i<RARRAY_LEN(val); i+=2) {
                         VALUE pos = FIX2INT(rb_ary_entry(val, i+1));

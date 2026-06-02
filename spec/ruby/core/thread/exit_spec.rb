@@ -10,6 +10,6 @@ describe "Thread.exit" do
   it "causes the current thread to exit" do
     thread = Thread.new { Thread.exit; sleep }
     thread.join
-    thread.status.should be_false
+    thread.status.should == false
   end
 end

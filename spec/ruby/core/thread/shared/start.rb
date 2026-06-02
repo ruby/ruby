@@ -6,22 +6,22 @@ describe :thread_start, shared: true do
   it "raises an ArgumentError if not passed a block" do
     -> {
       Thread.send(@method)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "spawns a new Thread running the block" do
     run = false
     t = Thread.send(@method) { run = true }
-    t.should be_kind_of(Thread)
+    t.should.is_a?(Thread)
     t.join
 
-    run.should be_true
+    run.should == true
   end
 
   it "respects Thread subclasses" do
     c = Class.new(Thread)
     t = c.send(@method) { }
-    t.should be_kind_of(c)
+    t.should.is_a?(c)
 
     t.join
   end

@@ -7,7 +7,7 @@
 # This module may not exist if ZJIT does not support the particular platform
 # for which CRuby is built.
 module RubyVM::ZJIT
-  # Blocks that are called when YJIT is enabled
+  # Blocks that are called when ZJIT is enabled
   @jit_hooks = []
   # Avoid calling a Ruby method here to avoid interfering with compilation tests
   if Primitive.rb_zjit_get_stats_file_path_p
@@ -148,6 +148,7 @@ class << RubyVM::ZJIT
       :compile_hir_time_ns,
       :compile_hir_build_time_ns,
       :compile_hir_strength_reduce_time_ns,
+      :compile_hir_canonicalize_time_ns,
       :compile_hir_fold_constants_time_ns,
       :compile_hir_clean_cfg_time_ns,
       :compile_hir_eliminate_dead_code_time_ns,
@@ -156,7 +157,7 @@ class << RubyVM::ZJIT
       :gc_time_ns,
       :invalidation_time_ns,
 
-      :vm_write_pc_count,
+      :vm_write_jit_frame_count,
       :vm_write_sp_count,
       :vm_write_locals_count,
       :vm_write_stack_count,

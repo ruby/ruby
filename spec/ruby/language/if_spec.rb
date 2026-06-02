@@ -330,7 +330,7 @@ describe "The if expression" do
           a
         end
         RUBY
-      }.should raise_error(SyntaxError, /void value expression/)
+      }.should.raise(SyntaxError, /void value expression/)
     end
 
     it "does not raise SyntaxError if one branch returns a value" do

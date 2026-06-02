@@ -4,7 +4,7 @@ require 'matrix'
 describe :inverse, shared: true do
 
   it "returns a Matrix" do
-    Matrix[ [1,2], [2,1] ].send(@method).should be_an_instance_of(Matrix)
+    Matrix[ [1,2], [2,1] ].send(@method).should.instance_of?(Matrix)
   end
 
   it "returns the inverse of the Matrix" do
@@ -27,12 +27,12 @@ describe :inverse, shared: true do
   it "raises a ErrDimensionMismatch if the Matrix is not square" do
     ->{
       Matrix[ [1,2,3], [1,2,3] ].send(@method)
-    }.should raise_error(Matrix::ErrDimensionMismatch)
+    }.should.raise(Matrix::ErrDimensionMismatch)
   end
 
   describe "for a subclass of Matrix" do
     it "returns an instance of that subclass" do
-      MatrixSub.ins.send(@method).should be_an_instance_of(MatrixSub)
+      MatrixSub.ins.send(@method).should.instance_of?(MatrixSub)
     end
   end
 end

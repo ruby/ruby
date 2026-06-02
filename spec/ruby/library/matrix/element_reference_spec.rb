@@ -16,8 +16,8 @@ describe "Matrix#[]" do
   end
 
   it "returns nil for an invalid index pair" do
-    @m[8,1].should be_nil
-    @m[1,8].should be_nil
+    @m[8,1].should == nil
+    @m[1,8].should == nil
   end
 
 end

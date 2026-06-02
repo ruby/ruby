@@ -16,8 +16,8 @@ describe :enumerator_lazy_select, shared: true do
 
   it "returns a new instance of Enumerator::Lazy" do
     ret = @yieldsmixed.send(@method) {}
-    ret.should be_an_instance_of(Enumerator::Lazy)
-    ret.should_not equal(@yieldsmixed)
+    ret.should.instance_of?(Enumerator::Lazy)
+    ret.should_not.equal?(@yieldsmixed)
   end
 
   it "sets #size to nil" do
@@ -40,7 +40,7 @@ describe :enumerator_lazy_select, shared: true do
   end
 
   it "raises an ArgumentError when not given a block" do
-    -> { @yieldsmixed.send(@method) }.should raise_error(ArgumentError)
+    -> { @yieldsmixed.send(@method) }.should.raise(ArgumentError)
   end
 
   describe "on a nested Lazy" do

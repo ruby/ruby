@@ -13,23 +13,23 @@ describe "ObjectSpace.dump" do
 
   it "dumps to string when passed output: :string" do
     string = ObjectSpace.dump("abc", output: :string)
-    string.should be_kind_of(String)
-    string.should include('"value":"abc"')
+    string.should.is_a?(String)
+    string.should.include?('"value":"abc"')
   end
 
   it "dumps to string when :output not specified" do
     string = ObjectSpace.dump("abc")
-    string.should be_kind_of(String)
-    string.should include('"value":"abc"')
+    string.should.is_a?(String)
+    string.should.include?('"value":"abc"')
   end
 
   it "dumps to a temporary file when passed output: :file" do
     file = ObjectSpace.dump("abc", output: :file)
-    file.should be_kind_of(File)
+    file.should.is_a?(File)
 
     file.rewind
     content = file.read
-    content.should include('"value":"abc"')
+    content.should.include?('"value":"abc"')
   ensure
     file.close
     File.unlink file.path
@@ -37,10 +37,10 @@ describe "ObjectSpace.dump" do
 
   it "dumps to a temporary file when passed output: :nil" do
     file = ObjectSpace.dump("abc", output: nil)
-    file.should be_kind_of(File)
+    file.should.is_a?(File)
 
     file.rewind
-    file.read.should include('"value":"abc"')
+    file.read.should.include?('"value":"abc"')
   ensure
     file.close
     File.unlink file.path
@@ -48,7 +48,7 @@ describe "ObjectSpace.dump" do
 
   it "dumps to stdout when passed output: :stdout" do
     stdout = ruby_exe('ObjectSpace.dump("abc", output: :stdout)', options: "-robjspace").chomp
-    stdout.should include('"value":"abc"')
+    stdout.should.include?('"value":"abc"')
   end
 
   it "dumps to provided IO when passed output: IO" do
@@ -58,13 +58,13 @@ describe "ObjectSpace.dump" do
     result.should.equal? io
 
     io.rewind
-    io.read.should include('"value":"abc"')
+    io.read.should.include?('"value":"abc"')
   ensure
     io.close
     rm_r filename
   end
 
   it "raises ArgumentError when passed not supported :output value" do
-    -> { ObjectSpace.dump("abc", output: Object.new) }.should raise_error(ArgumentError, /wrong output option/)
+    -> { ObjectSpace.dump("abc", output: Object.new) }.should.raise(ArgumentError, /wrong output option/)
   end
 end

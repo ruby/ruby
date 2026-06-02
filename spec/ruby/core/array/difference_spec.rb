@@ -8,11 +8,11 @@ describe "Array#difference" do
   it "returns a copy when called without any parameter" do
     x = [1, 2, 3, 2]
     x.difference.should == x
-    x.difference.should_not equal x
+    x.difference.should_not.equal? x
   end
 
   it "does not return subclass instances for Array subclasses" do
-    ArraySpecs::MyArray[1, 2, 3].difference.should be_an_instance_of(Array)
+    ArraySpecs::MyArray[1, 2, 3].difference.should.instance_of?(Array)
   end
 
   it "accepts multiple arguments" do

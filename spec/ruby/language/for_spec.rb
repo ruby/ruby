@@ -155,7 +155,7 @@ describe "The for expression" do
         n += 1
       end
     RUBY
-    ofor.should be_nil
+    ofor.should == nil
     n.should == 3
   end
 

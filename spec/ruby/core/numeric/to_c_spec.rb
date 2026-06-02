@@ -22,7 +22,7 @@ describe "Numeric#to_c" do
 
   it "returns a Complex object" do
     @numbers.each do |number|
-      number.to_c.should be_an_instance_of(Complex)
+      number.to_c.should.instance_of?(Complex)
     end
   end
 
@@ -30,7 +30,7 @@ describe "Numeric#to_c" do
     @numbers.each do |number|
       real = number.to_c.real
       if Float === number and number.nan?
-        real.nan?.should be_true
+        real.nan?.should == true
       else
         real.should == number
       end

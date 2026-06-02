@@ -41,12 +41,12 @@ describe :enumerable_collect_concat, shared: true do
     obj = mock("to_ary defined")
     obj.should_receive(:to_ary).and_return("array")
 
-    -> { [1, obj, 3].send(@method) { |i| i } }.should raise_error(TypeError)
+    -> { [1, obj, 3].send(@method) { |i| i } }.should.raise(TypeError)
   end
 
   it "returns an enumerator when no block given" do
     enum = EnumerableSpecs::Numerous.new(1, 2).send(@method)
-    enum.should be_an_instance_of(Enumerator)
+    enum.should.instance_of?(Enumerator)
     enum.each{ |i| [i] * i }.should == [1, 2, 2]
   end
 

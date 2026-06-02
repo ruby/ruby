@@ -30,6 +30,7 @@
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "ruby/ractor.h"
+#include "shape.h"
 #include "vm_core.h"
 #include "builtin.h"
 
@@ -909,6 +910,7 @@ init_fake_ary_flags(void)
     struct RArray fake_ary = {0};
     fake_ary.basic.flags = T_ARRAY;
     VALUE ary = (VALUE)&fake_ary;
+    RBASIC_SET_SHAPE_ID(ary, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER);
     rb_ary_freeze(ary);
     return fake_ary.basic.flags;
 }
@@ -2681,6 +2683,12 @@ ary_enum_length(VALUE ary, VALUE args, VALUE eobj)
 {
     return rb_ary_length(ary);
 }
+
+// These array primitives enable tight compatibility with the C implementation
+// in terms of what method calls happen. They can use unchecked utilities such as
+// FIX2LONG since unlike userland Ruby code, these methods cannot be traced with
+// TracePoint (or ruby/debug.h APIs) and have their local variables changed from
+// underneath them.
 
 // Return true if the index is at or past the end of the array.
 VALUE

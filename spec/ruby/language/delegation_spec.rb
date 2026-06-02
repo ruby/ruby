@@ -113,7 +113,7 @@ describe "delegation with def(*)" do
     it "does not allow delegating rest" do
       -> {
         eval "def m(*); proc { |*| n(*) } end"
-      }.should raise_error(SyntaxError, /anonymous rest parameter is also used within block/)
+      }.should.raise(SyntaxError, /anonymous rest parameter is also used within block/)
     end
   end
 end
@@ -134,7 +134,7 @@ describe "delegation with def(**)" do
     it "does not allow delegating kwargs" do
       -> {
         eval "def m(**); proc { |**| n(**) } end"
-      }.should raise_error(SyntaxError, /anonymous keyword rest parameter is also used within block/)
+      }.should.raise(SyntaxError, /anonymous keyword rest parameter is also used within block/)
     end
   end
 end
@@ -156,7 +156,7 @@ describe "delegation with def(&)" do
     it "does not allow delegating a block" do
       -> {
         eval "def m(&); proc { |&| n(&) } end"
-      }.should raise_error(SyntaxError, /anonymous block parameter is also used within block/)
+      }.should.raise(SyntaxError, /anonymous block parameter is also used within block/)
     end
   end
 end

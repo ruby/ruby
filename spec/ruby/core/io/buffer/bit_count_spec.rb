@@ -50,14 +50,14 @@ ruby_version_is "4.1" do
 
     it "raises ArgumentError when offset + length exceeds buffer size" do
       IO::Buffer.for(+"\xFF") do |buffer|
-        -> { buffer.bit_count(0, 2) }.should raise_error(ArgumentError)
-        -> { buffer.bit_count(1, 1) }.should raise_error(ArgumentError)
+        -> { buffer.bit_count(0, 2) }.should.raise(ArgumentError)
+        -> { buffer.bit_count(1, 1) }.should.raise(ArgumentError)
       end
     end
 
     it "returns an Integer" do
       IO::Buffer.for(+"\xFF") do |buffer|
-        buffer.bit_count.should be_kind_of(Integer)
+        buffer.bit_count.should.is_a?(Integer)
       end
     end
   end

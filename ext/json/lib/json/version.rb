@@ -1,5 +1,5 @@
 # frozen_string_literal: true
 
 module JSON
-  VERSION = '2.19.5'
+  VERSION = '2.19.7'
 end

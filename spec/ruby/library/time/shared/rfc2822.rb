@@ -60,6 +60,6 @@ describe :time_rfc2822, shared: true do
     -> {
       # inner comment is not supported.
       Time.send(@method, "Fri, 21 Nov 1997 09(comment):   55  :  06 -0600")
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 end

@@ -15332,9 +15332,6 @@ parse_block_exit(pm_parser_t *parser, pm_node_t *node) {
                     if (parser->version < PM_OPTIONS_VERSION_CRUBY_4_1) {
                         return;
                     }
-                    if (PM_NODE_TYPE_P(node, PM_NEXT_NODE)) {
-                        return;
-                    }
                 }
             PRISM_FALLTHROUGH
             case PM_CONTEXT_DEF:
@@ -15489,7 +15486,7 @@ parse_conditional(pm_parser_t *parser, pm_context_t context, size_t opening_newl
     pm_token_t keyword = parser->previous;
     pm_token_t then_keyword = { 0 };
 
-    pm_node_t *predicate = parse_predicate(parser, PM_BINDING_POWER_MODIFIER, context, &then_keyword, (uint16_t) (depth + 1));
+    pm_node_t *predicate = parse_predicate(parser, PM_BINDING_POWER_COMPOSITION, context, &then_keyword, (uint16_t) (depth + 1));
     pm_statements_node_t *statements = NULL;
 
     if (!match3(parser, PM_TOKEN_KEYWORD_ELSIF, PM_TOKEN_KEYWORD_ELSE, PM_TOKEN_KEYWORD_END)) {
@@ -15527,7 +15524,7 @@ parse_conditional(pm_parser_t *parser, pm_context_t context, size_t opening_newl
             pm_token_t elsif_keyword = parser->current;
             parser_lex(parser);
 
-            pm_node_t *predicate = parse_predicate(parser, PM_BINDING_POWER_MODIFIER, PM_CONTEXT_ELSIF, &then_keyword, (uint16_t) (depth + 1));
+            pm_node_t *predicate = parse_predicate(parser, PM_BINDING_POWER_COMPOSITION, PM_CONTEXT_ELSIF, &then_keyword, (uint16_t) (depth + 1));
             pm_accepts_block_stack_push(parser, true);
 
             pm_statements_node_t *statements = parse_statements(parser, PM_CONTEXT_ELSIF, (uint16_t) (depth + 1));
@@ -22280,8 +22277,8 @@ parse_program(pm_parser_t *parser) {
 
 /**
  * A vendored version of strnstr that is used to find a substring within a
- * string with a given length. This function is used to search for the Ruby
- * engine name within a shebang when the -x option is passed to Ruby.
+ * string with a given length. This function is used to search for "ruby"
+ * within a shebang when the -x option is passed to Ruby.
  *
  * The only modification that we made here is that we don't do NULL byte checks
  * because we know the little parameter will not have a NULL byte and we allow

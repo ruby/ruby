@@ -8,28 +8,28 @@ describe "Set#subset?" do
   end
 
   it "returns true if passed a Set that is equal to self or self is a subset of" do
-    @set.subset?(@set).should be_true
-    Set[].subset?(Set[]).should be_true
+    @set.subset?(@set).should == true
+    Set[].subset?(Set[]).should == true
 
-    Set[].subset?(@set).should be_true
-    Set[].subset?(Set[1, 2, 3]).should be_true
-    Set[].subset?(Set["a", :b, ?c]).should be_true
+    Set[].subset?(@set).should == true
+    Set[].subset?(Set[1, 2, 3]).should == true
+    Set[].subset?(Set["a", :b, ?c]).should == true
 
-    Set[1, 2, 3].subset?(@set).should be_true
-    Set[1, 3].subset?(@set).should be_true
-    Set[1, 2].subset?(@set).should be_true
-    Set[1].subset?(@set).should be_true
+    Set[1, 2, 3].subset?(@set).should == true
+    Set[1, 3].subset?(@set).should == true
+    Set[1, 2].subset?(@set).should == true
+    Set[1].subset?(@set).should == true
 
-    Set[5].subset?(@set).should be_false
-    Set[1, 5].subset?(@set).should be_false
-    Set[nil].subset?(@set).should be_false
-    Set["test"].subset?(@set).should be_false
+    Set[5].subset?(@set).should == false
+    Set[1, 5].subset?(@set).should == false
+    Set[nil].subset?(@set).should == false
+    Set["test"].subset?(@set).should == false
   end
 
   it "raises an ArgumentError when passed a non-Set" do
-    -> { Set[].subset?([]) }.should raise_error(ArgumentError)
-    -> { Set[].subset?(1) }.should raise_error(ArgumentError)
-    -> { Set[].subset?("test") }.should raise_error(ArgumentError)
-    -> { Set[].subset?(Object.new) }.should raise_error(ArgumentError)
+    -> { Set[].subset?([]) }.should.raise(ArgumentError)
+    -> { Set[].subset?(1) }.should.raise(ArgumentError)
+    -> { Set[].subset?("test") }.should.raise(ArgumentError)
+    -> { Set[].subset?(Object.new) }.should.raise(ArgumentError)
   end
 end

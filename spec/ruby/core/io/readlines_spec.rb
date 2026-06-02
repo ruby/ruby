@@ -17,7 +17,7 @@ describe "IO#readlines" do
 
   it "raises an IOError if the stream is closed" do
     @io.close
-    -> { @io.readlines }.should raise_error(IOError)
+    -> { @io.readlines }.should.raise(IOError)
   end
 
   describe "when passed no arguments" do
@@ -37,12 +37,12 @@ describe "IO#readlines" do
   describe "when passed no arguments" do
     it "updates self's position" do
       @io.readlines
-      @io.pos.should eql(137)
+      @io.pos.should.eql?(137)
     end
 
     it "updates self's lineno based on the number of lines read" do
       @io.readlines
-      @io.lineno.should eql(9)
+      @io.lineno.should.eql?(9)
     end
 
     it "does not change $_" do
@@ -81,12 +81,12 @@ describe "IO#readlines" do
 
     it "updates self's lineno based on the number of lines read" do
       @io.readlines("r")
-      @io.lineno.should eql(5)
+      @io.lineno.should.eql?(5)
     end
 
     it "updates self's position based on the number of characters read" do
       @io.readlines("r")
-      @io.pos.should eql(137)
+      @io.pos.should.eql?(137)
     end
 
     it "does not change $_" do
@@ -104,11 +104,11 @@ describe "IO#readlines" do
 
   describe "when passed limit" do
     it "raises ArgumentError when passed 0 as a limit" do
-      -> { @io.readlines(0) }.should raise_error(ArgumentError)
+      -> { @io.readlines(0) }.should.raise(ArgumentError)
     end
 
     it "does not accept Integers that don't fit in a C off_t" do
-      -> { @io.readlines(2**128) }.should raise_error(RangeError)
+      -> { @io.readlines(2**128) }.should.raise(RangeError)
     end
   end
 
@@ -118,11 +118,11 @@ describe "IO#readlines" do
     end
 
     it "raises exception when options passed as Hash" do
-      -> { @io.readlines({ chomp: true }) }.should raise_error(TypeError)
+      -> { @io.readlines({ chomp: true }) }.should.raise(TypeError)
 
       -> {
         @io.readlines("\n", 1, { chomp: true })
-      }.should raise_error(ArgumentError, "wrong number of arguments (given 3, expected 0..2)")
+      }.should.raise(ArgumentError, "wrong number of arguments (given 3, expected 0..2)")
     end
   end
 
@@ -145,13 +145,13 @@ describe "IO#readlines" do
   it "raises an IOError if the stream is opened for append only" do
     -> do
       File.open(@name, "a:utf-8") { |f| f.readlines }
-    end.should raise_error(IOError)
+    end.should.raise(IOError)
   end
 
   it "raises an IOError if the stream is opened for write only" do
     -> do
       File.open(@name, "w:utf-8") { |f| f.readlines }
-    end.should raise_error(IOError)
+    end.should.raise(IOError)
   end
 end
 
@@ -237,7 +237,7 @@ describe "IO.readlines" do
   it "encodes lines using the default external encoding" do
     Encoding.default_external = Encoding::UTF_8
     lines = IO.readlines(@name)
-    lines.all? { |s| s.encoding == Encoding::UTF_8 }.should be_true
+    lines.all? { |s| s.encoding == Encoding::UTF_8 }.should == true
   end
 
   it "encodes lines using the default internal encoding, when set" do
@@ -245,13 +245,13 @@ describe "IO.readlines" do
     Encoding.default_internal = Encoding::UTF_16
     suppress_warning {$/ = $/.encode Encoding::UTF_16}
     lines = IO.readlines(@name)
-    lines.all? { |s| s.encoding == Encoding::UTF_16 }.should be_true
+    lines.all? { |s| s.encoding == Encoding::UTF_16 }.should == true
   end
 
   it "ignores the default internal encoding if the external encoding is BINARY" do
     Encoding.default_external = Encoding::BINARY
     Encoding.default_internal = Encoding::UTF_8
     lines = IO.readlines(@name)
-    lines.all? { |s| s.encoding == Encoding::BINARY }.should be_true
+    lines.all? { |s| s.encoding == Encoding::BINARY }.should == true
   end
 end

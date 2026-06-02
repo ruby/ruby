@@ -1,0 +1,101 @@
+name: tarball-macos (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      archname:
+        description: 'archname (e.g. snapshot-master, snapshot-ruby_3_3)'
+        required: true
+        type: string
+      notify-release-channel:
+        description: 'Also send failure notifications to SNAPSHOT_SLACK_WEBHOOK_URL (schedule/release builds).'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      SIMPLER_ALERTS_URL:
+        required: false
+      SNAPSHOT_SLACK_WEBHOOK_URL:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    strategy:
+      matrix:
+        test_task: [check, test-bundled-gems, test-bundler-parallel]
+        os: [macos-26, macos-15, macos-14]
+        include:
+          - os: macos-15-intel
+            test_task: check
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    env:
+      ARCHNAME: ${{ inputs.archname }}
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: Packages
+          path: pkg
+      - name: Extract
+        run: tar xf pkg/*.tar.xz
+      - name: Install libraries
+        run: |
+          with_retry () {
+            "$@" || { sleep 5 && "$@"; } || { sleep 60 && "$@"; }
+          }
+          set -x
+          with_retry brew install gmp libffi openssl zlib autoconf automake libtool libyaml
+      - name: Set ENV
+        run: |
+          echo "JOBS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
+      - name: configure
+        run: cd "$ARCHNAME/" && ./configure --with-openssl-dir=$(brew --prefix openssl) --with-libyaml-dir=$(brew --prefix libyaml)
+      - name: make
+        run: cd "$ARCHNAME/" && make $JOBS
+      - name: Tests
+        run: cd "$ARCHNAME/" && make $JOBS -s ${{ matrix.test_task }}
+        env:
+          RUBY_TESTOPTS: "-q --tty=no"
+          RUBY_DEBUG_TEST_NO_REMOTE: "1"
+      # leaked-globals since 2.7
+      - name: Leaked Globals
+        run: cd "$ARCHNAME/" && make -s leaked-globals
+        if: matrix.test_task == 'check'
+      - name: make install without root privilege
+        run: cd "$ARCHNAME/" && make $JOBS install DESTDIR="/tmp/destdir"
+        if: matrix.test_task == 'check'
+      - name: make install
+        run: cd "$ARCHNAME/" && sudo make $JOBS install
+        if: matrix.test_task == 'check'
+      - name: Verify installed binaries
+        run: |
+          /usr/local/bin/ruby -v
+          /usr/local/bin/gem -v
+          /usr/local/bin/bundle -v
+        if: matrix.test_task == 'check'
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          sparse-checkout: .github/actions/slack
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+        if: ${{ failure() }}
+      - uses: ./.github/actions/slack
+        with:
+          label: "${{ matrix.os }} / ${{ matrix.test_task }}"
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() }}
+      - uses: ruby/action-slack@d260b61aa817726d5bedd22dd6cc305787fa4cdd # v4.0.0
+        with:
+          payload: |
+            {
+              "attachments": [{
+                "text": "${{ job.status }}: ${{ matrix.os }} / ${{ matrix.test_task }} <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|${{ inputs.archname }}>",
+                "color": "danger"
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SNAPSHOT_SLACK_WEBHOOK_URL }}
+        if: failure() && inputs.notify-release-channel

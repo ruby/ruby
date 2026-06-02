@@ -41,7 +41,7 @@ describe 'BasicSocket#recvmsg' do
           end
 
           it 'returns an Array containing the data, an Addrinfo and the flags' do
-            @server.recvmsg.should be_an_instance_of(Array)
+            @server.recvmsg.should.instance_of?(Array)
           end
 
           describe 'without a maximum message length' do
@@ -66,12 +66,12 @@ describe 'BasicSocket#recvmsg' do
             end
 
             it 'stores an Addrinfo at index 1' do
-              @array[1].should be_an_instance_of(Addrinfo)
+              @array[1].should.instance_of?(Addrinfo)
             end
 
             platform_is_not :windows do
               it 'stores the flags at index 2' do
-                @array[2].should be_kind_of(Integer)
+                @array[2].should.is_a?(Integer)
               end
             end
 
@@ -144,7 +144,7 @@ describe 'BasicSocket#recvmsg' do
           end
 
           it 'returns an Array containing the data, an Addrinfo and the flags' do
-            @socket.recvmsg.should be_an_instance_of(Array)
+            @socket.recvmsg.should.instance_of?(Array)
           end
 
           describe 'the returned Array' do
@@ -157,11 +157,11 @@ describe 'BasicSocket#recvmsg' do
             end
 
             it 'stores an Addrinfo at index 1' do
-              @array[1].should be_an_instance_of(Addrinfo)
+              @array[1].should.instance_of?(Addrinfo)
             end
 
             it 'stores the flags at index 2' do
-              @array[2].should be_kind_of(Integer)
+              @array[2].should.is_a?(Integer)
             end
 
             describe 'the returned Addrinfo' do
@@ -170,7 +170,7 @@ describe 'BasicSocket#recvmsg' do
               end
 
               it 'raises when receiving the ip_address message' do
-                -> { @addr.ip_address }.should raise_error(SocketError)
+                -> { @addr.ip_address }.should.raise(SocketError)
               end
 
               it 'uses the correct address family' do
@@ -186,7 +186,7 @@ describe 'BasicSocket#recvmsg' do
               end
 
               it 'raises when receiving the ip_port message' do
-                -> { @addr.ip_port }.should raise_error(SocketError)
+                -> { @addr.ip_port }.should.raise(SocketError)
               end
             end
           end
@@ -218,12 +218,12 @@ describe 'BasicSocket#recvmsg' do
           end
 
           Thread.pass while t.status and t.status != "sleep"
-          t.status.should_not be_nil
+          t.status.should_not == nil
 
           socket = TCPSocket.new('127.0.0.1', @port)
           socket.close
 
-          t.value.should be_nil
+          t.value.should == nil
         end
       end
     end

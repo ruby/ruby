@@ -32,7 +32,7 @@ describe :kernel_String, shared: true do
       undef_method :to_s
     end
 
-    -> { @object.send(@method, obj) }.should raise_error(TypeError)
+    -> { @object.send(@method, obj) }.should.raise(TypeError)
   end
 
   # #5158
@@ -44,7 +44,7 @@ describe :kernel_String, shared: true do
       end
     end
 
-    -> { @object.send(@method, obj) }.should raise_error(TypeError)
+    -> { @object.send(@method, obj) }.should.raise(TypeError)
   end
 
   it "raises a TypeError if #to_s is not defined, even though #respond_to?(:to_s) returns true" do
@@ -57,7 +57,7 @@ describe :kernel_String, shared: true do
       end
     end
 
-    -> { @object.send(@method, obj) }.should raise_error(TypeError)
+    -> { @object.send(@method, obj) }.should.raise(TypeError)
   end
 
   it "calls #to_s if #respond_to?(:to_s) returns true" do
@@ -74,14 +74,14 @@ describe :kernel_String, shared: true do
 
   it "raises a TypeError if #to_s does not return a String" do
     (obj = mock('123')).should_receive(:to_s).and_return(123)
-    -> { @object.send(@method, obj) }.should raise_error(TypeError)
+    -> { @object.send(@method, obj) }.should.raise(TypeError)
   end
 
   it "returns the same object if it is already a String" do
     string = +"Hello"
     string.should_not_receive(:to_s)
     string2 = @object.send(@method, string)
-    string.should equal(string2)
+    string.should.equal?(string2)
   end
 
   it "returns the same object if it is an instance of a String subclass" do
@@ -89,7 +89,7 @@ describe :kernel_String, shared: true do
     string = subklass.new("Hello")
     string.should_not_receive(:to_s)
     string2 = @object.send(@method, string)
-    string.should equal(string2)
+    string.should.equal?(string2)
   end
 end
 
@@ -101,6 +101,6 @@ describe "Kernel#String" do
   it_behaves_like :kernel_String, :String, Object.new
 
   it "is a private method" do
-    Kernel.should have_private_instance_method(:String)
+    Kernel.private_instance_methods(false).should.include?(:String)
   end
 end

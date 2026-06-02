@@ -385,6 +385,13 @@ static inline char peek(JSON_ParserState *state)
 
 static void cursor_position(JSON_ParserState *state, long *line_out, long *column_out)
 {
+    JSON_ASSERT(state->cursor <= state->end);
+
+    // Redundant but helpful for hardening
+    if (RB_UNLIKELY(state->cursor > state->end)) {
+        state->cursor = state->end;
+    }
+
     const char *cursor = state->cursor;
     long column = 0;
     long line = 1;
@@ -1022,6 +1029,13 @@ ALWAYS_INLINE(static) bool string_scan(JSON_ParserState *state)
         }
         state->cursor++;
     }
+
+    // If the string ended with an unterminated escape sequence, we might
+    // have gone past the end.
+    if (RB_UNLIKELY(state->cursor > state->end)) {
+        state->cursor = state->end;
+    }
+
     return false;
 }
 
@@ -1202,7 +1216,11 @@ static inline VALUE json_parse_number(JSON_ParserState *state, JSON_ParserConfig
             raise_parse_error_at("invalid number: %s", state, start);
         }
 
-        exponent = negative_exponent ? -abs_exponent : abs_exponent;
+        if (RB_UNLIKELY(exponent_digits >= 20 || abs_exponent > (uint64_t)INT64_MAX)) {
+            exponent = negative_exponent ? INT64_MIN : INT64_MAX;
+        } else {
+            exponent = negative_exponent ? -(int64_t)abs_exponent : (int64_t)abs_exponent;
+        }
     }
 
     if (integer) {
@@ -1457,23 +1475,39 @@ static void json_ensure_eof(JSON_ParserState *state)
 
 static VALUE convert_encoding(VALUE source)
 {
-  int encindex = RB_ENCODING_GET(source);
+    StringValue(source);
+    int encindex = RB_ENCODING_GET(source);
 
-  if (RB_LIKELY(encindex == utf8_encindex)) {
+    if (RB_LIKELY(encindex == utf8_encindex)) {
+        return source;
+    }
+
+    if (encindex == binary_encindex) {
+        // For historical reason, we silently reinterpret binary strings as UTF-8
+        return rb_enc_associate_index(rb_str_dup(source), utf8_encindex);
+    }
+
+    source = rb_funcall(source, i_encode, 1, Encoding_UTF_8);
+    StringValue(source);
     return source;
-  }
+}
 
- if (encindex == binary_encindex) {
-    // For historical reason, we silently reinterpret binary strings as UTF-8
-    return rb_enc_associate_index(rb_str_dup(source), utf8_encindex);
-  }
+struct parser_config_init_args {
+    JSON_ParserConfig *config;
+    VALUE self;
+};
 
-  return rb_funcall(source, i_encode, 1, Encoding_UTF_8);
+static void parser_config_wb_write(VALUE self, VALUE *dest, VALUE val)
+{
+    *dest = val;
+    if (self) RB_OBJ_WRITTEN(self, Qundef, val);
 }
 
 static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
 {
-    JSON_ParserConfig *config = (JSON_ParserConfig *)data;
+    struct parser_config_init_args *args = (struct parser_config_init_args *)data;
+    JSON_ParserConfig *config = args->config;
+    VALUE self = args->self;
 
          if (key == sym_max_nesting)                { config->max_nesting = RTEST(val) ? FIX2INT(val) : 0; }
     else if (key == sym_allow_nan)                  { config->allow_nan = RTEST(val); }
@@ -1482,15 +1516,15 @@ static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
     else if (key == sym_allow_invalid_escape)       { config->allow_invalid_escape = RTEST(val); }
     else if (key == sym_symbolize_names)            { config->symbolize_names = RTEST(val); }
     else if (key == sym_freeze)                     { config->freeze = RTEST(val); }
-    else if (key == sym_on_load)                    { config->on_load_proc = RTEST(val) ? val : Qfalse; }
+    else if (key == sym_on_load)                    { parser_config_wb_write(self, &config->on_load_proc, RTEST(val) ? val : Qfalse); }
     else if (key == sym_allow_duplicate_key)        { config->on_duplicate_key = RTEST(val) ? JSON_IGNORE : JSON_RAISE; }
     else if (key == sym_decimal_class)              {
         if (RTEST(val)) {
             if (rb_respond_to(val, i_try_convert)) {
-                config->decimal_class = val;
+                parser_config_wb_write(self, &config->decimal_class, val);
                 config->decimal_method_id = i_try_convert;
             } else if (rb_respond_to(val, i_new)) {
-                config->decimal_class = val;
+                parser_config_wb_write(self, &config->decimal_class, val);
                 config->decimal_method_id = i_new;
             } else if (RB_TYPE_P(val, T_CLASS)) {
                 VALUE name = rb_class_name(val);
@@ -1499,7 +1533,7 @@ static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
                 if (last_colon) {
                     const char *mod_path_end = last_colon - 1;
                     VALUE mod_path = rb_str_substr(name, 0, mod_path_end - name_cstr);
-                    config->decimal_class = rb_path_to_class(mod_path);
+                    parser_config_wb_write(self, &config->decimal_class, rb_path_to_class(mod_path));
 
                     const char *method_name_beg = last_colon + 1;
                     long before_len = method_name_beg - name_cstr;
@@ -1507,7 +1541,7 @@ static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
                     VALUE method_name = rb_str_substr(name, before_len, len);
                     config->decimal_method_id = SYM2ID(rb_str_intern(method_name));
                 } else {
-                    config->decimal_class = rb_mKernel;
+                    parser_config_wb_write(self, &config->decimal_class, rb_mKernel);
                     config->decimal_method_id = SYM2ID(rb_str_intern(name));
                 }
             }
@@ -1517,16 +1551,21 @@ static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
     return ST_CONTINUE;
 }
 
-static void parser_config_init(JSON_ParserConfig *config, VALUE opts)
+static void parser_config_init(JSON_ParserConfig *config, VALUE opts, VALUE self)
 {
     config->max_nesting = 100;
+
+    struct parser_config_init_args args = {
+        .config = config,
+        .self = self,
+    };
 
     if (!NIL_P(opts)) {
         Check_Type(opts, T_HASH);
         if (RHASH_SIZE(opts) > 0) {
             // We assume in most cases few keys are set so it's faster to go over
             // the provided keys than to check all possible keys.
-            rb_hash_foreach(opts, parser_config_init_i, (VALUE)config);
+            rb_hash_foreach(opts, parser_config_init_i, (VALUE)&args);
         }
 
     }
@@ -1560,17 +1599,21 @@ static VALUE cParserConfig_initialize(VALUE self, VALUE opts)
     rb_check_frozen(self);
     GET_PARSER_CONFIG;
 
-    parser_config_init(config, opts);
-
-    RB_OBJ_WRITTEN(self, Qundef, config->decimal_class);
+    parser_config_init(config, opts, self);
 
     return self;
 }
 
-static VALUE cParser_parse(JSON_ParserConfig *config, VALUE Vsource)
+static VALUE cParser_parse(JSON_ParserConfig *config, VALUE src)
 {
-    Vsource = convert_encoding(StringValue(Vsource));
-    StringValue(Vsource);
+    VALUE Vsource = convert_encoding(src);
+
+    // Ensure the string isn't mutated under us.
+    // The classic API to use is `rb_str_locktmp`, but then we'd
+    // need to use `rb_protect` to make sure we always unlock.
+    if (Vsource == src) {
+        Vsource = rb_str_new_frozen(Vsource);
+    }
 
     VALUE rvalue_stack_buffer[RVALUE_STACK_INITIAL_CAPA];
     rvalue_stack stack = {
@@ -1581,6 +1624,7 @@ static VALUE cParser_parse(JSON_ParserConfig *config, VALUE Vsource)
 
     long len;
     const char *start;
+
     RSTRING_GETMEM(Vsource, start, len);
 
     VALUE stack_handle = 0;
@@ -1599,6 +1643,7 @@ static VALUE cParser_parse(JSON_ParserConfig *config, VALUE Vsource)
     // it won't cause a leak.
     rvalue_stack_eagerly_release(stack_handle);
     RB_GC_GUARD(stack_handle);
+    RB_GC_GUARD(Vsource);
     json_ensure_eof(state);
 
     return result;
@@ -1619,12 +1664,9 @@ static VALUE cParserConfig_parse(VALUE self, VALUE Vsource)
 
 static VALUE cParser_m_parse(VALUE klass, VALUE Vsource, VALUE opts)
 {
-    Vsource = convert_encoding(StringValue(Vsource));
-    StringValue(Vsource);
-
     JSON_ParserConfig _config = {0};
     JSON_ParserConfig *config = &_config;
-    parser_config_init(config, opts);
+    parser_config_init(config, opts, false);
 
     return cParser_parse(config, Vsource);
 }

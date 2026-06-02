@@ -221,23 +221,26 @@ type2sym(enum ruby_value_type i)
 
 /*
  *  call-seq:
- *    ObjectSpace.count_objects_size([result_hash]) -> hash
+ *    ObjectSpace.count_objects_size(result_hash = {}) -> result_hash
  *
  *  Counts objects size (in bytes) for each type.
  *
- *  Note that this information is incomplete.  You need to deal with
- *  this information as only a *HINT*.  Especially, total size of
- *  T_DATA may be wrong.
+ *  Note that the returned size may not be accurate, so it should only
+ *  be used as a hint. Specifically, the size for +T_DATA+ may be
+ *  inaccurate because these are custom objects defined in Ruby and
+ *  native extensions and so they may not accurately report their
+ *  memory size.
  *
- *  It returns a hash as:
+ *  It returns a hash that looks like:
+ *
  *    {TOTAL: 1461154, T_CLASS: 158280, T_MODULE: 20672, T_STRING: 527249, ...}
  *
- *  If the optional argument, result_hash, is given,
- *  it is overwritten and returned.
- *  This is intended to avoid probe effect.
+ *  The contents of the returned hash are implementation specific and
+ *  may be changed in future versions without notice.
  *
- *  The contents of the returned hash is implementation defined.
- *  It may be changed in future.
+ *  If the optional argument, +result_hash+, is given,
+ *  it is overwritten and returned.
+ *  This is intended to avoid the probe effect.
  *
  *  This method is only expected to work with C Ruby.
  */
@@ -456,6 +459,8 @@ count_imemo_objects(int argc, VALUE *argv, VALUE self)
         INIT_IMEMO_TYPE_ID(imemo_callcache);
         INIT_IMEMO_TYPE_ID(imemo_constcache);
         INIT_IMEMO_TYPE_ID(imemo_fields);
+        INIT_IMEMO_TYPE_ID(imemo_subclasses);
+        INIT_IMEMO_TYPE_ID(imemo_cdhash);
 #undef INIT_IMEMO_TYPE_ID
     }
 
@@ -554,42 +559,37 @@ collect_values(st_data_t key, st_data_t value, st_data_t data)
  *  call-seq:
  *     ObjectSpace.reachable_objects_from(obj) -> array or nil
  *
- *  [MRI specific feature] Return all reachable objects from `obj'.
+ *  Returns all reachable objects from +obj+ as an array:
  *
- *  This method returns all reachable objects from `obj'.
+ *      ObjectSpace.reachable_objects_from(['a', 'b', 'c'])
+ *      #=> [Array, 'a', 'b', 'c']
  *
- *  If `obj' has two or more references to the same object `x', then returned
- *  array only includes one `x' object.
+ *  The returned array is deduplicated, meaning that if +obj+ refers
+ *  to another object more than once, it will only be added to the array
+ *  once:
  *
- *  If `obj' is a non-markable (non-heap management) object such as true,
- *  false, nil, symbols and Fixnums (and Flonum) then it simply returns nil.
+ *      ObjectSpace.reachable_objects_from([v = 'a', v, v])
+ *      #=> [Array, 'a']
  *
- *  If `obj' has references to an internal object, then it returns instances of
- *  ObjectSpace::InternalObjectWrapper class. This object contains a reference
- *  to an internal object and you can check the type of internal object with
- *  `type' method.
+ *  Returns +nil+ if +obj+ is not a markable object (i.e. non-heap
+ *  managed) object. Non-markable objects include +true+, +false+,
+ *  +nil+, certain symbols, small integers, and floats:
  *
- *  If `obj' is instance of ObjectSpace::InternalObjectWrapper class, then this
- *  method returns all reachable object from an internal object, which is
- *  pointed by `obj'.
+ *      ObjectSpace.reachable_objects_from(1)
+ *      #=> nil
  *
- *  With this method, you can find memory leaks.
+ *  All references to internal objects in the returned array are wrapped
+ *  using ObjectSpace::InternalObjectWrapper objects. This object contains
+ *  a reference to the internal object and the type of the object can
+ *  be accessed using the ObjectSpace::InternalObjectWrapper#type method.
+ *
+ *  If +obj+ is instance of ObjectSpace::InternalObjectWrapper, then this
+ *  method returns all reachable object from the internal object.
+ *
+ *  This method is useful for debugging purposes, such as finding
+ *  memory leaks.
  *
  *  This method is only expected to work with C Ruby.
- *
- *  Example:
- *    ObjectSpace.reachable_objects_from(['a', 'b', 'c'])
- *    #=> [Array, 'a', 'b', 'c']
- *
- *    ObjectSpace.reachable_objects_from(['a', 'a', 'a'])
- *    #=> [Array, 'a', 'a', 'a'] # all 'a' strings have different object id
- *
- *    ObjectSpace.reachable_objects_from([v = 'a', v, v])
- *    #=> [Array, 'a']
- *
- *    ObjectSpace.reachable_objects_from(1)
- *    #=> nil # 1 is not markable (heap managed) object
- *
  */
 
 static VALUE

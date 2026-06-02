@@ -20,6 +20,6 @@ describe "Net::HTTP#head" do
   end
 
   it "returns a Net::HTTPResponse" do
-    @http.move("/request").should be_kind_of(Net::HTTPResponse)
+    @http.move("/request").should.is_a?(Net::HTTPResponse)
   end
 end

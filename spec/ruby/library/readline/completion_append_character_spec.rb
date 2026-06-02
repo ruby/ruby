@@ -3,7 +3,7 @@ require_relative 'spec_helper'
 with_feature :readline do
   describe "Readline.completion_append_character" do
     it "returns not nil" do
-      Readline.completion_append_character.should_not be_nil
+      Readline.completion_append_character.should_not == nil
     end
   end
 

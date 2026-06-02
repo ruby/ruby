@@ -8,9 +8,9 @@ describe :env_each, shared: true do
       ENV.clear
       ENV["foo"] = "bar"
       ENV["baz"] = "boo"
-      ENV.send(@method) { |k, v| e << [k, v] }.should equal(ENV)
-      e.should include(["foo", "bar"])
-      e.should include(["baz", "boo"])
+      ENV.send(@method) { |k, v| e << [k, v] }.should.equal?(ENV)
+      e.should.include?(["foo", "bar"])
+      e.should.include?(["baz", "boo"])
     ensure
       ENV.replace orig
     end
@@ -18,7 +18,7 @@ describe :env_each, shared: true do
 
   it "returns an Enumerator if called without a block" do
     enum = ENV.send(@method)
-    enum.should be_an_instance_of(Enumerator)
+    enum.should.instance_of?(Enumerator)
     enum.each do |name, value|
       ENV[name].should == value
     end
@@ -55,9 +55,9 @@ describe :env_each, shared: true do
       Encoding.default_internal = internal = Encoding::IBM437
 
       ENV.send(@method) do |key, value|
-        key.encoding.should equal(internal)
+        key.encoding.should.equal?(internal)
         if value.ascii_only?
-          value.encoding.should equal(internal)
+          value.encoding.should.equal?(internal)
         end
       end
     end

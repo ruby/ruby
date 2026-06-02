@@ -17,7 +17,7 @@ describe "Enumerator::Product#initialize_copy" do
   end
 
   it "is a private method" do
-    Enumerator::Product.should have_private_instance_method(:initialize_copy, false)
+    Enumerator::Product.private_instance_methods(false).should.include?(:initialize_copy)
   end
 
   it "does nothing if the argument is the same as the receiver" do
@@ -32,21 +32,21 @@ describe "Enumerator::Product#initialize_copy" do
     enum = Enumerator::Product.new(1..2)
     enum2 = Enumerator::Product.new(3..4)
 
-    -> { enum.freeze.send(:initialize_copy, enum2) }.should raise_error(FrozenError)
+    -> { enum.freeze.send(:initialize_copy, enum2) }.should.raise(FrozenError)
   end
 
   it "raises TypeError if the objects are of different class" do
     enum = Enumerator::Product.new(1..2)
     enum2 = Class.new(Enumerator::Product).new(3..4)
 
-    -> { enum.send(:initialize_copy, enum2) }.should raise_error(TypeError, 'initialize_copy should take same class object')
-    -> { enum2.send(:initialize_copy, enum) }.should raise_error(TypeError, 'initialize_copy should take same class object')
+    -> { enum.send(:initialize_copy, enum2) }.should.raise(TypeError, 'initialize_copy should take same class object')
+    -> { enum2.send(:initialize_copy, enum) }.should.raise(TypeError, 'initialize_copy should take same class object')
   end
 
   it "raises ArgumentError if the argument is not initialized yet" do
     enum = Enumerator::Product.new(1..2)
     enum2 = Enumerator::Product.allocate
 
-    -> { enum.send(:initialize_copy, enum2) }.should raise_error(ArgumentError, 'uninitialized product')
+    -> { enum.send(:initialize_copy, enum2) }.should.raise(ArgumentError, 'uninitialized product')
   end
 end

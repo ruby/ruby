@@ -1451,7 +1451,7 @@ allow_frozen_shareable_p(VALUE obj)
     if (!RB_TYPE_P(obj, T_DATA)) {
         return true;
     }
-    else if (RTYPEDDATA_P(obj)) {
+    else {
         const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
         if (type->flags & RUBY_TYPED_FROZEN_SHAREABLE) {
             return true;
@@ -2015,7 +2015,7 @@ move_enter(VALUE obj, struct obj_traverse_replace_data *data)
     else {
         VALUE type = RB_BUILTIN_TYPE(obj);
         size_t slot_size = rb_gc_obj_slot_size(obj);
-        VALUE moved = rb_newobj(GET_EC(), 0, type, 0, wb_protected_types[type], slot_size);
+        VALUE moved = rb_newobj(GET_EC(), 0, type, RBASIC_SHAPE_ID(obj), wb_protected_types[type], slot_size);
         MEMZERO(((struct RBasic *)moved) + 1, char, slot_size - sizeof(struct RBasic));
         data->replacement = (VALUE)moved;
         return traverse_cont;

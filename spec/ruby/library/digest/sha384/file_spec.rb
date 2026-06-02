@@ -15,7 +15,7 @@ describe "Digest::SHA384.file" do
     end
 
     it "returns a Digest::SHA384 object" do
-      Digest::SHA384.file(@file).should be_kind_of(Digest::SHA384)
+      Digest::SHA384.file(@file).should.is_a?(Digest::SHA384)
     end
 
     it "returns a Digest::SHA384 object with the correct digest" do
@@ -26,7 +26,7 @@ describe "Digest::SHA384.file" do
       obj = mock("to_str")
       obj.should_receive(:to_str).and_return(@file)
       result = Digest::SHA384.file(obj)
-      result.should be_kind_of(Digest::SHA384)
+      result.should.is_a?(Digest::SHA384)
       result.digest.should == SHA384Constants::Digest
     end
   end
@@ -34,10 +34,10 @@ describe "Digest::SHA384.file" do
   it_behaves_like :file_read_directory, :file, Digest::SHA384
 
   it "raises a Errno::ENOENT when passed a path that does not exist" do
-    -> { Digest::SHA384.file("") }.should raise_error(Errno::ENOENT)
+    -> { Digest::SHA384.file("") }.should.raise(Errno::ENOENT)
   end
 
   it "raises a TypeError when passed nil" do
-    -> { Digest::SHA384.file(nil) }.should raise_error(TypeError)
+    -> { Digest::SHA384.file(nil) }.should.raise(TypeError)
   end
 end

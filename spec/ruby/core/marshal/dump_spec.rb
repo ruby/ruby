@@ -116,7 +116,7 @@ describe "Marshal.dump" do
     end
 
     it "raises TypeError if an Object is an instance of an anonymous class" do
-      -> { Marshal.dump(Class.new(UserMarshal).new) }.should raise_error(TypeError, /can't dump anonymous class/)
+      -> { Marshal.dump(Class.new(UserMarshal).new) }.should.raise(TypeError, /can't dump anonymous class/)
     end
 
     it "uses object links for objects repeatedly dumped" do
@@ -157,11 +157,11 @@ describe "Marshal.dump" do
     it "raises a TypeError if _dump returns a non-string" do
       m = mock("marshaled")
       m.should_receive(:_dump).and_return(0)
-      -> { Marshal.dump(m) }.should raise_error(TypeError)
+      -> { Marshal.dump(m) }.should.raise(TypeError)
     end
 
     it "raises TypeError if an Object is an instance of an anonymous class" do
-      -> { Marshal.dump(Class.new(UserDefined).new) }.should raise_error(TypeError, /can't dump anonymous class/)
+      -> { Marshal.dump(Class.new(UserDefined).new) }.should.raise(TypeError, /can't dump anonymous class/)
     end
 
     it "favors marshal_dump over _dump" do
@@ -244,11 +244,11 @@ describe "Marshal.dump" do
     end
 
     it "raises TypeError with an anonymous Class" do
-      -> { Marshal.dump(Class.new) }.should raise_error(TypeError, /can't dump anonymous class/)
+      -> { Marshal.dump(Class.new) }.should.raise(TypeError, /can't dump anonymous class/)
     end
 
     it "raises TypeError with a singleton Class" do
-      -> { Marshal.dump(class << self; self end) }.should raise_error(TypeError)
+      -> { Marshal.dump(class << self; self end) }.should.raise(TypeError)
     end
   end
 
@@ -274,7 +274,7 @@ describe "Marshal.dump" do
     end
 
     it "raises TypeError with an anonymous Module" do
-      -> { Marshal.dump(Module.new) }.should raise_error(TypeError, /can't dump anonymous module/)
+      -> { Marshal.dump(Module.new) }.should.raise(TypeError, /can't dump anonymous module/)
     end
   end
 
@@ -388,7 +388,7 @@ describe "Marshal.dump" do
     end
 
     it "raises TypeError with an anonymous Struct" do
-      -> { Marshal.dump(Data.define(:a).new(1)) }.should raise_error(TypeError, /can't dump anonymous class/)
+      -> { Marshal.dump(Data.define(:a).new(1)) }.should.raise(TypeError, /can't dump anonymous class/)
     end
   end
 
@@ -630,7 +630,7 @@ describe "Marshal.dump" do
     end
 
     it "raises a TypeError with hash having default proc" do
-      -> { Marshal.dump(Hash.new {}) }.should raise_error(TypeError, "can't dump hash with default proc")
+      -> { Marshal.dump(Hash.new {}) }.should.raise(TypeError, "can't dump hash with default proc")
     end
 
     it "dumps a Hash with instance variables" do
@@ -706,7 +706,7 @@ describe "Marshal.dump" do
     end
 
     it "raises TypeError with an anonymous Struct" do
-      -> { Marshal.dump(Struct.new(:a).new(1)) }.should raise_error(TypeError, /can't dump anonymous class/)
+      -> { Marshal.dump(Struct.new(:a).new(1)) }.should.raise(TypeError, /can't dump anonymous class/)
     end
 
     it "adds instance variables after the object itself into the objects table" do
@@ -765,7 +765,7 @@ describe "Marshal.dump" do
       def obj.foo; end
       -> {
         Marshal.dump(obj)
-      }.should raise_error(TypeError, "singleton can't be dumped")
+      }.should.raise(TypeError, "singleton can't be dumped")
     end
 
     it "raises TypeError if an Object has a singleton class and singleton instance variables" do
@@ -776,14 +776,14 @@ describe "Marshal.dump" do
 
       -> {
         Marshal.dump(obj)
-      }.should raise_error(TypeError, "singleton can't be dumped")
+      }.should.raise(TypeError, "singleton can't be dumped")
     end
 
     it "raises TypeError if an Object is an instance of an anonymous class" do
       anonymous_class = Class.new
       obj = anonymous_class.new
 
-      -> { Marshal.dump(obj) }.should raise_error(TypeError, /can't dump anonymous class/)
+      -> { Marshal.dump(obj) }.should.raise(TypeError, /can't dump anonymous class/)
     end
 
     it "raises TypeError if an Object extends an anonymous module" do
@@ -791,7 +791,7 @@ describe "Marshal.dump" do
       obj = Object.new
       obj.extend(anonymous_module)
 
-      -> { Marshal.dump(obj) }.should raise_error(TypeError, /can't dump anonymous class/)
+      -> { Marshal.dump(obj) }.should.raise(TypeError, /can't dump anonymous class/)
     end
 
     it "dumps a BasicObject subclass if it defines respond_to?" do
@@ -847,7 +847,7 @@ describe "Marshal.dump" do
     end
 
     it "raises TypeError with an anonymous Range subclass" do
-      -> { Marshal.dump(Class.new(Range).new(1, 2)) }.should raise_error(TypeError, /can't dump anonymous class/)
+      -> { Marshal.dump(Class.new(Range).new(1, 2)) }.should.raise(TypeError, /can't dump anonymous class/)
     end
   end
 
@@ -877,7 +877,7 @@ describe "Marshal.dump" do
         base = "\x04\bIu:\tTime\r#{@t_dump}\a"
         offset = ":\voffseti\x020*"
         zone = ":\tzoneI\"\bAST\x06:\x06EF" # Last is 'F' (US-ASCII)
-        [ "#{base}#{offset}#{zone}", "#{base}#{zone}#{offset}" ].should include(dump)
+        [ "#{base}#{offset}#{zone}", "#{base}#{zone}#{offset}" ].should.include?(dump)
       end
     end
 
@@ -889,7 +889,7 @@ describe "Marshal.dump" do
 
     it "ignores overridden name method" do
       obj = MarshalSpec::TimeWithOverriddenName.new
-      Marshal.dump(obj).should include("MarshalSpec::TimeWithOverriddenName")
+      Marshal.dump(obj).should.include?("MarshalSpec::TimeWithOverriddenName")
     end
 
     ruby_version_is "4.0" do
@@ -921,7 +921,7 @@ describe "Marshal.dump" do
     end
 
     it "raises TypeError with an anonymous Time subclass" do
-      -> { Marshal.dump(Class.new(Time).now) }.should raise_error(TypeError)
+      -> { Marshal.dump(Class.new(Time).now) }.should.raise(TypeError)
     end
   end
 
@@ -954,13 +954,13 @@ describe "Marshal.dump" do
         begin
           raise RuntimeError, "the consequence"
         rescue RuntimeError => e
-          e.cause.should equal(cause)
+          e.cause.should.equal?(cause)
           exc = e
         end
       end
 
       reloaded = Marshal.load(Marshal.dump(exc))
-      reloaded.cause.should be_an_instance_of(StandardError)
+      reloaded.cause.should.instance_of?(StandardError)
       reloaded.cause.message.should == "the cause"
     end
 
@@ -993,7 +993,7 @@ describe "Marshal.dump" do
       anonymous_class = Class.new(Exception)
       obj = anonymous_class.new
 
-      -> { Marshal.dump(obj) }.should raise_error(TypeError, /can't dump anonymous class/)
+      -> { Marshal.dump(obj) }.should.raise(TypeError, /can't dump anonymous class/)
     end
   end
 
@@ -1014,10 +1014,10 @@ describe "Marshal.dump" do
 
   it "raises an ArgumentError when the recursion limit is exceeded" do
     h = {'one' => {'two' => {'three' => 0}}}
-    -> { Marshal.dump(h, 3) }.should raise_error(ArgumentError)
-    -> { Marshal.dump([h], 4) }.should raise_error(ArgumentError)
-    -> { Marshal.dump([], 0) }.should raise_error(ArgumentError)
-    -> { Marshal.dump([[[]]], 1) }.should raise_error(ArgumentError)
+    -> { Marshal.dump(h, 3) }.should.raise(ArgumentError)
+    -> { Marshal.dump([h], 4) }.should.raise(ArgumentError)
+    -> { Marshal.dump([], 0) }.should.raise(ArgumentError)
+    -> { Marshal.dump([[[]]], 1) }.should.raise(ArgumentError)
   end
 
   it "ignores the recursion limit if the limit is negative" do
@@ -1039,7 +1039,7 @@ describe "Marshal.dump" do
 
     it "raises an Error when the IO-Object does not respond to #write" do
       obj = mock('test')
-      -> { Marshal.dump("test", obj) }.should raise_error(TypeError)
+      -> { Marshal.dump("test", obj) }.should.raise(TypeError)
     end
 
 
@@ -1054,29 +1054,29 @@ describe "Marshal.dump" do
   describe "when passed a StringIO" do
     it "should raise an error" do
       require "stringio"
-      -> { Marshal.dump(StringIO.new) }.should raise_error(TypeError)
+      -> { Marshal.dump(StringIO.new) }.should.raise(TypeError)
     end
   end
 
   it "raises a TypeError if marshalling a Method instance" do
-    -> { Marshal.dump(Marshal.method(:dump)) }.should raise_error(TypeError)
+    -> { Marshal.dump(Marshal.method(:dump)) }.should.raise(TypeError)
   end
 
   it "raises a TypeError if marshalling a Proc" do
-    -> { Marshal.dump(proc {}) }.should raise_error(TypeError)
+    -> { Marshal.dump(proc {}) }.should.raise(TypeError)
   end
 
   it "raises a TypeError if dumping a IO/File instance" do
-    -> { Marshal.dump(STDIN) }.should raise_error(TypeError)
-    -> { File.open(__FILE__) { |f| Marshal.dump(f) } }.should raise_error(TypeError)
+    -> { Marshal.dump(STDIN) }.should.raise(TypeError)
+    -> { File.open(__FILE__) { |f| Marshal.dump(f) } }.should.raise(TypeError)
   end
 
   it "raises a TypeError if dumping a MatchData instance" do
-    -> { Marshal.dump(/(.)/.match("foo")) }.should raise_error(TypeError)
+    -> { Marshal.dump(/(.)/.match("foo")) }.should.raise(TypeError)
   end
 
   it "raises a TypeError if dumping a Mutex instance" do
     m = Mutex.new
-    -> { Marshal.dump(m) }.should raise_error(TypeError)
+    -> { Marshal.dump(m) }.should.raise(TypeError)
   end
 end

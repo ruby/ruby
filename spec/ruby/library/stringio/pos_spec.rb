@@ -17,7 +17,7 @@ describe "StringIO#pos=" do
   end
 
   it "raises an EINVAL if given a negative argument" do
-    -> { @io.pos = -10 }.should raise_error(Errno::EINVAL)
+    -> { @io.pos = -10 }.should.raise(Errno::EINVAL)
   end
 
   it "updates the current byte offset after reaching EOF" do

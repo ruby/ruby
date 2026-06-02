@@ -6,7 +6,7 @@ describe "Hash#rassoc" do
   end
 
   it "returns an Array if the argument is a value of the Hash" do
-    @h.rassoc(:green).should be_an_instance_of(Array)
+    @h.rassoc(:green).should.instance_of?(Array)
   end
 
   it "returns a 2-element Array if the argument is a value of the Hash" do
@@ -28,15 +28,15 @@ describe "Hash#rassoc" do
   it "uses #== to compare the argument to the values" do
     @h[:key] = 1.0
     1.should == 1.0
-    @h.rassoc(1).should eql [:key, 1.0]
+    @h.rassoc(1).should.eql? [:key, 1.0]
   end
 
   it "returns nil if the argument is not a value of the Hash" do
-    @h.rassoc(:banana).should be_nil
+    @h.rassoc(:banana).should == nil
   end
 
   it "returns nil if the argument is not a value of the Hash even when there is a default" do
-    Hash.new(42).merge!( foo: :bar ).rassoc(42).should be_nil
-    Hash.new{|h, k| h[k] = 42}.merge!( foo: :bar ).rassoc(42).should be_nil
+    Hash.new(42).merge!( foo: :bar ).rassoc(42).should == nil
+    Hash.new{|h, k| h[k] = 42}.merge!( foo: :bar ).rassoc(42).should == nil
   end
 end

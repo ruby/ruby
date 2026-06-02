@@ -234,6 +234,7 @@ pub const VM_ENV_DATA_INDEX_SPECVAL: i32 = -1;
 pub const VM_ENV_DATA_INDEX_FLAGS: u32 = 0;
 pub const VM_BLOCK_HANDLER_NONE: u32 = 0;
 pub const SHAPE_ID_NUM_BITS: u32 = 32;
+pub const ZJIT_JIT_RETURN_C_FRAME: u32 = 1;
 pub const ZJIT_JIT_RETURN_POISON: i64 = -4981057192772781345;
 pub type rb_alloc_func_t = ::std::option::Option<unsafe extern "C" fn(klass: VALUE) -> VALUE>;
 pub const RUBY_Qfalse: ruby_special_consts = 0;
@@ -285,7 +286,7 @@ pub const RUBY_FL_USHIFT: ruby_fl_ushift = 12;
 pub type ruby_fl_ushift = u32;
 pub const RUBY_FL_WB_PROTECTED: ruby_fl_type = 32;
 pub const RUBY_FL_PROMOTED: ruby_fl_type = 32;
-pub const RUBY_FL_USERPRIV0: ruby_fl_type = 64;
+pub const RUBY_FL_UNUSED6: ruby_fl_type = 64;
 pub const RUBY_FL_FINALIZE: ruby_fl_type = 128;
 pub const RUBY_FL_EXIVAR: ruby_fl_type = 0;
 pub const RUBY_FL_SHAREABLE: ruby_fl_type = 256;
@@ -346,7 +347,6 @@ pub const RUBY_TYPED_FREE_IMMEDIATELY: rbimpl_typeddata_flags = 1;
 pub const RUBY_TYPED_EMBEDDABLE: rbimpl_typeddata_flags = 2;
 pub const RUBY_TYPED_FROZEN_SHAREABLE: rbimpl_typeddata_flags = 256;
 pub const RUBY_TYPED_WB_PROTECTED: rbimpl_typeddata_flags = 32;
-pub const RUBY_TYPED_FL_IS_TYPED_DATA: rbimpl_typeddata_flags = 64;
 pub const RUBY_TYPED_DECL_MARKING: rbimpl_typeddata_flags = 16384;
 pub type rbimpl_typeddata_flags = u32;
 pub type rb_event_flag_t = u32;
@@ -444,6 +444,8 @@ pub const imemo_callinfo: imemo_type = 10;
 pub const imemo_callcache: imemo_type = 11;
 pub const imemo_constcache: imemo_type = 12;
 pub const imemo_fields: imemo_type = 13;
+pub const imemo_subclasses: imemo_type = 14;
+pub const imemo_cdhash: imemo_type = 15;
 pub type imemo_type = u32;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
@@ -459,6 +461,7 @@ pub struct vm_ifunc {
     pub data: *const ::std::os::raw::c_void,
     pub argc: vm_ifunc_argc,
 }
+pub type rb_atomic_t = ::std::os::raw::c_uint;
 pub const METHOD_VISI_UNDEF: rb_method_visibility_t = 0;
 pub const METHOD_VISI_PUBLIC: rb_method_visibility_t = 1;
 pub const METHOD_VISI_PRIVATE: rb_method_visibility_t = 2;
@@ -1488,8 +1491,13 @@ pub const SHAPE_ID_HEAP_INDEX_MASK: shape_id_fl_type = 7864320;
 pub const SHAPE_ID_FL_COMPLEX: shape_id_fl_type = 8388608;
 pub const SHAPE_ID_FL_FROZEN: shape_id_fl_type = 16777216;
 pub const SHAPE_ID_FL_HAS_OBJECT_ID: shape_id_fl_type = 33554432;
+pub const SHAPE_ID_LAYOUT_ROBJECT: shape_id_fl_type = 0;
+pub const SHAPE_ID_LAYOUT_RCLASS: shape_id_fl_type = 67108864;
+pub const SHAPE_ID_LAYOUT_RDATA: shape_id_fl_type = 134217728;
+pub const SHAPE_ID_LAYOUT_OTHER: shape_id_fl_type = 201326592;
+pub const SHAPE_ID_LAYOUT_MASK: shape_id_fl_type = 201326592;
 pub const SHAPE_ID_FL_NON_CANONICAL_MASK: shape_id_fl_type = 50331648;
-pub const SHAPE_ID_FLAGS_MASK: shape_id_fl_type = 66584576;
+pub const SHAPE_ID_FLAGS_MASK: shape_id_fl_type = 267911168;
 pub type shape_id_fl_type = u32;
 pub const CONST_DEPRECATED: rb_const_flag_t = 256;
 pub const CONST_VISIBILITY_MASK: rb_const_flag_t = 255;
@@ -1532,7 +1540,7 @@ pub type vm_call_flag_bits = u32;
 #[repr(C)]
 pub struct rb_callinfo_kwarg {
     pub keyword_len: ::std::os::raw::c_int,
-    pub references: ::std::os::raw::c_int,
+    pub references: rb_atomic_t,
     pub keywords: __IncompleteArrayField<VALUE>,
 }
 #[repr(C)]
@@ -1925,7 +1933,7 @@ pub type zjit_struct_offsets = u32;
 pub const ROBJECT_OFFSET_AS_HEAP_FIELDS: jit_bindgen_constants = 16;
 pub const ROBJECT_OFFSET_AS_ARY: jit_bindgen_constants = 16;
 pub const RCLASS_OFFSET_PRIME_FIELDS_OBJ: jit_bindgen_constants = 40;
-pub const RTYPEDDATA_OFFSET_FIELDS_OBJ: jit_bindgen_constants = 16;
+pub const TDATA_OFFSET_FIELDS_OBJ: jit_bindgen_constants = 16;
 pub const RUBY_OFFSET_RSTRING_LEN: jit_bindgen_constants = 16;
 pub const RB_SHAPE_FLAG_SHIFT: jit_bindgen_constants = 32;
 pub const RUBY_OFFSET_EC_CFP: jit_bindgen_constants = 16;
@@ -2055,7 +2063,11 @@ unsafe extern "C" {
     pub fn rb_const_get(space: VALUE, name: ID) -> VALUE;
     pub fn rb_class_allocate_instance(klass: VALUE) -> VALUE;
     pub fn rb_obj_equal(obj1: VALUE, obj2: VALUE) -> VALUE;
-    pub fn rb_reg_new_ary(ary: VALUE, options: ::std::os::raw::c_int) -> VALUE;
+    pub fn rb_reg_new_from_values(
+        cnt: ::std::os::raw::c_long,
+        elements: *const VALUE,
+        opt: ::std::os::raw::c_int,
+    ) -> VALUE;
     pub fn rb_ary_tmp_new_from_values(
         arg1: VALUE,
         arg2: ::std::os::raw::c_long,
@@ -2128,6 +2140,7 @@ unsafe extern "C" {
         arg: st_data_t,
     ) -> ::std::os::raw::c_int;
     pub fn rb_hash_new_with_size(size: st_index_t) -> VALUE;
+    pub fn rb_hash_new_with_bulk_insert(argc: ::std::os::raw::c_long, argv: *const VALUE) -> VALUE;
     pub fn rb_hash_resurrect(hash: VALUE) -> VALUE;
     pub fn rb_hash_stlike_lookup(
         hash: VALUE,
@@ -2285,7 +2298,7 @@ unsafe extern "C" {
     pub fn rb_jit_shape_complex_p(shape_id: shape_id_t) -> bool;
     pub fn rb_jit_multi_ractor_p() -> bool;
     pub fn rb_jit_class_fields_embedded_p(klass: VALUE) -> bool;
-    pub fn rb_jit_typed_data_fields_embedded_p(obj: VALUE) -> bool;
+    pub fn rb_jit_data_fields_embedded_p(obj: VALUE) -> bool;
     pub fn rb_jit_vm_lock_then_barrier(
         recursive_lock_level: *mut ::std::os::raw::c_uint,
         file: *const ::std::os::raw::c_char,

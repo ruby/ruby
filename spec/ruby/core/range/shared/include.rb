@@ -5,13 +5,13 @@ require_relative '../fixtures/classes'
 describe :range_include, shared: true do
   describe "on string elements" do
     it "returns true if other is matched by element.succ" do
-      ('a'..'c').send(@method, 'b').should be_true
-      ('a'...'c').send(@method, 'b').should be_true
+      ('a'..'c').send(@method, 'b').should == true
+      ('a'...'c').send(@method, 'b').should == true
     end
 
     it "returns false if other is not matched by element.succ" do
-      ('a'..'c').send(@method, 'bc').should be_false
-      ('a'...'c').send(@method, 'bc').should be_false
+      ('a'..'c').send(@method, 'bc').should == false
+      ('a'...'c').send(@method, 'bc').should == false
     end
   end
 
@@ -22,27 +22,27 @@ describe :range_include, shared: true do
       end
 
       it "returns false if other is less than first element" do
-        @range.send(@method, RangeSpecs::TenfoldSucc.new(0)).should be_false
+        @range.send(@method, RangeSpecs::TenfoldSucc.new(0)).should == false
       end
 
       it "returns true if other is equal as first element" do
-        @range.send(@method, RangeSpecs::TenfoldSucc.new(1)).should be_true
+        @range.send(@method, RangeSpecs::TenfoldSucc.new(1)).should == true
       end
 
       it "returns true if other is matched by element.succ" do
-        @range.send(@method, RangeSpecs::TenfoldSucc.new(10)).should be_true
+        @range.send(@method, RangeSpecs::TenfoldSucc.new(10)).should == true
       end
 
       it "returns false if other is not matched by element.succ" do
-        @range.send(@method, RangeSpecs::TenfoldSucc.new(2)).should be_false
+        @range.send(@method, RangeSpecs::TenfoldSucc.new(2)).should == false
       end
 
       it "returns false if other is equal as last element but not matched by element.succ" do
-        @range.send(@method, RangeSpecs::TenfoldSucc.new(99)).should be_false
+        @range.send(@method, RangeSpecs::TenfoldSucc.new(99)).should == false
       end
 
       it "returns false if other is greater than last element but matched by element.succ" do
-        @range.send(@method, RangeSpecs::TenfoldSucc.new(100)).should be_false
+        @range.send(@method, RangeSpecs::TenfoldSucc.new(100)).should == false
       end
     end
 
@@ -52,27 +52,27 @@ describe :range_include, shared: true do
       end
 
       it "returns false if other is less than first element" do
-        @range.send(@method, RangeSpecs::TenfoldSucc.new(0)).should be_false
+        @range.send(@method, RangeSpecs::TenfoldSucc.new(0)).should == false
       end
 
       it "returns true if other is equal as first element" do
-        @range.send(@method, RangeSpecs::TenfoldSucc.new(1)).should be_true
+        @range.send(@method, RangeSpecs::TenfoldSucc.new(1)).should == true
       end
 
       it "returns true if other is matched by element.succ" do
-        @range.send(@method, RangeSpecs::TenfoldSucc.new(10)).should be_true
+        @range.send(@method, RangeSpecs::TenfoldSucc.new(10)).should == true
       end
 
       it "returns false if other is not matched by element.succ" do
-        @range.send(@method, RangeSpecs::TenfoldSucc.new(2)).should be_false
+        @range.send(@method, RangeSpecs::TenfoldSucc.new(2)).should == false
       end
 
       it "returns false if other is equal as last element but not matched by element.succ" do
-        @range.send(@method, RangeSpecs::TenfoldSucc.new(99)).should be_false
+        @range.send(@method, RangeSpecs::TenfoldSucc.new(99)).should == false
       end
 
       it "returns false if other is greater than last element but matched by element.succ" do
-        @range.send(@method, RangeSpecs::TenfoldSucc.new(100)).should be_false
+        @range.send(@method, RangeSpecs::TenfoldSucc.new(100)).should == false
       end
     end
   end

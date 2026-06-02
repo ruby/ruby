@@ -875,8 +875,8 @@ rb_load_protect(VALUE fname, int wrap, int *pstate)
     if (state != TAG_NONE) *pstate = state;
 }
 
-static VALUE
-load_entrypoint_internal(VALUE fname, VALUE wrap)
+VALUE
+rb_load_entrypoint(VALUE fname, VALUE wrap)
 {
     VALUE path, orig_fname;
 
@@ -895,18 +895,6 @@ load_entrypoint_internal(VALUE fname, VALUE wrap)
     RUBY_DTRACE_HOOK(LOAD_RETURN, RSTRING_PTR(orig_fname));
 
     return Qtrue;
-}
-
-VALUE
-rb_load_entrypoint(VALUE args)
-{
-    VALUE fname, wrap;
-    if (RARRAY_LEN(args) != 2) {
-        rb_bug("invalid arguments: %ld", RARRAY_LEN(args));
-    }
-    fname = rb_ary_entry(args, 0);
-    wrap = rb_ary_entry(args, 1);
-    return load_entrypoint_internal(fname, wrap);
 }
 
 /*
@@ -944,7 +932,7 @@ rb_f_load(int argc, VALUE *argv, VALUE _)
 {
     VALUE fname, wrap;
     rb_scan_args(argc, argv, "11", &fname, &wrap);
-    return load_entrypoint_internal(fname, wrap);
+    return rb_load_entrypoint(fname, wrap);
 }
 
 static char *

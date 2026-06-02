@@ -3,13 +3,13 @@ require 'rbconfig/sizeof'
 
 describe "RbConfig::SIZEOF" do
   it "is a Hash" do
-    RbConfig::SIZEOF.should be_kind_of(Hash)
+    RbConfig::SIZEOF.should.is_a?(Hash)
   end
 
   it "has string keys and integer values" do
     RbConfig::SIZEOF.each do |key, value|
-      key.should be_kind_of String
-      value.should be_kind_of Integer
+      key.should.is_a? String
+      value.should.is_a? Integer
     end
   end
 

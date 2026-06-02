@@ -27,13 +27,6 @@
 # undef RCLASS_SUPER
 #endif
 
-struct rb_subclass_entry {
-    VALUE klass;
-    struct rb_subclass_entry *next;
-    struct rb_subclass_entry *prev;
-};
-typedef struct rb_subclass_entry rb_subclass_entry_t;
-
 struct rb_cvar_class_tbl_entry {
     VALUE imemo_flags;
     uint32_t index;
@@ -54,21 +47,10 @@ struct rb_classext_struct {
     VALUE cvc_tbl;
     VALUE *superclasses;
     /**
-     * The head of the subclasses linked list. This is a dummy entry (klass == 0)
-     * whose `next` points to the first real entry. Only used in prime classext.
+     * imemo_subclasses VALUE tracking this class's subclasses.
+     * Only used in prime classext. Lazily allocated on first subclass addition.
      */
-    struct rb_subclass_entry *subclasses;
-    /**
-     * Back-pointer to this class's entry in its superclass's subclasses list.
-     * Used for O(1) removal when the class is freed.
-     */
-    struct rb_subclass_entry *subclass_entry;
-    /**
-     * In the case that this is an `ICLASS`, `module_subclass_entry` points to the
-     * entry in the module's `subclasses` list that indicates that the klass has been
-     * included. Used for O(1) removal.
-     */
-    struct rb_subclass_entry *module_subclass_entry;
+    VALUE subclasses;
 
     const VALUE origin_;
     const VALUE refined_class;
@@ -87,7 +69,6 @@ struct rb_classext_struct {
     attr_index_t max_iv_count;
     uint8_t variation_count;
     bool permanent_classpath : 1;
-    bool cloned : 1;
     bool shared_const_tbl : 1;
     bool iclass_is_origin : 1;
     bool iclass_origin_shared_mtbl : 1;
@@ -152,14 +133,11 @@ static inline rb_classext_t * RCLASS_EXT_WRITABLE(VALUE obj);
 #define RCLASSEXT_SUPERCLASS_DEPTH(ext) (ext->superclass_depth)
 #define RCLASSEXT_SUPERCLASSES(ext) (ext->superclasses)
 #define RCLASSEXT_SUBCLASSES(ext) (ext->subclasses)
-#define RCLASSEXT_SUBCLASS_ENTRY(ext) (ext->subclass_entry)
-#define RCLASSEXT_MODULE_SUBCLASS_ENTRY(ext) (ext->module_subclass_entry)
 #define RCLASSEXT_ORIGIN(ext) (ext->origin_)
 #define RCLASSEXT_REFINED_CLASS(ext) (ext->refined_class)
 // class.allocator/singleton_class.attached_object are not accessed directly via RCLASSEXT_*
 #define RCLASSEXT_INCLUDER(ext) (ext->as.iclass.includer)
 #define RCLASSEXT_PERMANENT_CLASSPATH(ext) (ext->permanent_classpath)
-#define RCLASSEXT_CLONED(ext) (ext->cloned)
 #define RCLASSEXT_SHARED_CONST_TBL(ext) (ext->shared_const_tbl)
 #define RCLASSEXT_ICLASS_IS_ORIGIN(ext) (ext->iclass_is_origin)
 #define RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(ext) (ext->iclass_origin_shared_mtbl)
@@ -192,11 +170,9 @@ static inline void RCLASSEXT_SET_INCLUDER(rb_classext_t *ext, VALUE klass, VALUE
  */
 #define RCLASS_CVC_TBL(c) (RCLASS_EXT_READABLE(c)->cvc_tbl)
 #define RCLASS_SUBCLASSES(c) (RCLASS_EXT_PRIME(c)->subclasses)
-#define RCLASS_SUBCLASSES_FIRST(c) (RCLASS_EXT_PRIME(c)->subclasses ? RCLASS_EXT_PRIME(c)->subclasses->next : NULL)
 #define RCLASS_ORIGIN(c) (RCLASS_EXT_READABLE(c)->origin_)
 #define RICLASS_IS_ORIGIN_P(c) (RCLASS_EXT_READABLE(c)->iclass_is_origin)
 #define RCLASS_PERMANENT_CLASSPATH_P(c) (RCLASS_EXT_READABLE(c)->permanent_classpath)
-#define RCLASS_CLONED_P(c) (RCLASS_EXT_READABLE(c)->cloned)
 #define RCLASS_CLASSPATH(c) (RCLASS_EXT_READABLE(c)->classpath)
 
 // Superclasses can't be changed after initialization
@@ -232,7 +208,7 @@ static inline void RCLASS_SET_CVC_TBL(VALUE klass, VALUE table);
 static inline void RCLASS_WRITE_CVC_TBL(VALUE klass, VALUE table);
 
 static inline void RCLASS_WRITE_SUPERCLASSES(VALUE klass, size_t depth, VALUE *superclasses, bool with_self);
-static inline void RCLASS_SET_SUBCLASSES(VALUE klass, rb_subclass_entry_t *head);
+static inline void RCLASS_SET_SUBCLASSES(VALUE klass, VALUE subclasses);
 
 static inline void RCLASS_SET_ORIGIN(VALUE klass, VALUE origin);
 static inline void RCLASS_WRITE_ORIGIN(VALUE klass, VALUE origin);
@@ -247,7 +223,6 @@ static inline VALUE RCLASS_SET_ATTACHED_OBJECT(VALUE klass, VALUE attached_objec
 
 static inline void RCLASS_SET_INCLUDER(VALUE iclass, VALUE klass);
 static inline void RCLASS_SET_MAX_IV_COUNT(VALUE klass, attr_index_t count);
-static inline void RCLASS_SET_CLONED(VALUE klass, bool cloned);
 static inline void RCLASS_SET_CLASSPATH(VALUE klass, VALUE classpath, bool permanent);
 static inline void RCLASS_WRITE_CLASSPATH(VALUE klass, VALUE classpath, bool permanent);
 
@@ -289,7 +264,7 @@ RCLASS_SET_BOX_CLASSEXT(VALUE obj, const rb_box_t *box, rb_classext_t *ext)
 {
     int first_set = 0;
     st_table *tbl = RCLASS_CLASSEXT_TBL(obj);
-    VM_ASSERT(BOX_USER_P(box)); // non-prime classext is only for user box, with box_object
+    VM_ASSERT(BOX_MUTABLE_P(box)); // Setting non-prime classext never happens on the master box
     VM_ASSERT(box->box_object);
     VM_ASSERT(RCLASSEXT_BOX(ext) == box);
     if (!tbl) {
@@ -322,7 +297,8 @@ RCLASS_PRIME_CLASSEXT_WRITABLE_P(VALUE klass)
 {
     VM_ASSERT(klass != 0, "klass should be a valid object");
     VM_ASSERT_BOXABLE_TYPE(klass);
-    return FL_TEST(klass, RCLASS_PRIME_CLASSEXT_WRITABLE);
+    RBIMPL_ASSUME(klass != 0);
+    return FL_TEST_RAW(klass, RCLASS_PRIME_CLASSEXT_WRITABLE);
 }
 
 static inline void
@@ -331,10 +307,10 @@ RCLASS_SET_PRIME_CLASSEXT_WRITABLE(VALUE klass, bool writable)
     VM_ASSERT(klass != 0, "klass should be a valid object");
     VM_ASSERT_BOXABLE_TYPE(klass);
     if (writable) {
-        FL_SET(klass, RCLASS_PRIME_CLASSEXT_WRITABLE);
+        FL_SET_RAW(klass, RCLASS_PRIME_CLASSEXT_WRITABLE);
     }
     else {
-        FL_UNSET(klass, RCLASS_PRIME_CLASSEXT_WRITABLE);
+        FL_UNSET_RAW(klass, RCLASS_PRIME_CLASSEXT_WRITABLE);
     }
 }
 
@@ -364,7 +340,7 @@ RCLASS_EXT_READABLE_LOOKUP(VALUE obj, const rb_box_t *box)
 static inline rb_classext_t *
 RCLASS_EXT_READABLE_IN_BOX(VALUE obj, const rb_box_t *box)
 {
-    if (BOX_ROOT_P(box)
+    if (BOX_MASTER_P(box)
         || RCLASS_PRIME_CLASSEXT_READABLE_P(obj)) {
         return RCLASS_EXT_PRIME(obj);
     }
@@ -380,7 +356,7 @@ RCLASS_EXT_READABLE(VALUE obj)
     }
     // delay determining the current box to optimize for unmodified classes
     box = rb_current_box();
-    if (BOX_ROOT_P(box)) {
+    if (BOX_MASTER_P(box)) {
         return RCLASS_EXT_PRIME(obj);
     }
     return RCLASS_EXT_READABLE_LOOKUP(obj, box);
@@ -414,7 +390,7 @@ RCLASS_EXT_WRITABLE_LOOKUP(VALUE obj, const rb_box_t *box)
 static inline rb_classext_t *
 RCLASS_EXT_WRITABLE_IN_BOX(VALUE obj, const rb_box_t *box)
 {
-    if (BOX_ROOT_P(box)
+    if (BOX_MASTER_P(box)
         || RCLASS_PRIME_CLASSEXT_WRITABLE_P(obj)) {
         return RCLASS_EXT_PRIME(obj);
     }
@@ -430,7 +406,7 @@ RCLASS_EXT_WRITABLE(VALUE obj)
     }
     // delay determining the current box to optimize for unmodified classes
     box = rb_current_box();
-    if (BOX_ROOT_P(box)) {
+    if (BOX_MASTER_P(box)) {
         return RCLASS_EXT_PRIME(obj);
     }
     return RCLASS_EXT_WRITABLE_LOOKUP(obj, box);
@@ -671,6 +647,14 @@ RICLASS_OWNS_M_TBL_P(VALUE iclass)
     return RCLASSEXT_ICLASS_IS_ORIGIN(ext) && !RCLASSEXT_ICLASS_ORIGIN_SHARED_MTBL(ext);
 }
 
+static inline bool
+RICLASS_FOR_REFINEMENT_P(VALUE iclass)
+{
+    return BUILTIN_TYPE(iclass) == T_ICLASS &&
+            RB_TYPE_P(RBASIC(iclass)->klass, T_MODULE) &&
+            FL_TEST_RAW(RBASIC(iclass)->klass, RMODULE_IS_REFINEMENT);
+}
+
 static inline void
 RCLASS_SET_INCLUDER(VALUE iclass, VALUE klass)
 {
@@ -690,10 +674,10 @@ RCLASS_WRITE_SUPERCLASSES(VALUE klass, size_t depth, VALUE *superclasses, bool w
 }
 
 static inline void
-RCLASS_SET_SUBCLASSES(VALUE klass, rb_subclass_entry_t *head)
+RCLASS_SET_SUBCLASSES(VALUE klass, VALUE subclasses)
 {
     rb_classext_t *ext = RCLASS_EXT_PRIME(klass);
-    RCLASSEXT_SUBCLASSES(ext) = head;
+    RB_OBJ_WRITE(klass, &RCLASSEXT_SUBCLASSES(ext), subclasses);
 }
 
 static inline void
@@ -748,12 +732,6 @@ static inline bool
 RCLASS_EXPECT_NO_IVAR(VALUE klass)
 {
     return RCLASS_EXT_PRIME(klass)->expect_no_ivar;
-}
-
-static inline void
-RCLASS_SET_CLONED(VALUE klass, bool cloned)
-{
-    RCLASSEXT_CLONED(RCLASS_EXT_PRIME(klass)) = cloned;
 }
 
 static inline bool

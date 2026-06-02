@@ -17,7 +17,7 @@ describe :net_http_request_get, shared: true do
 
     it "returns a Net::HTTPResponse object" do
       response = @http.send(@method, "/request")
-      response.should be_kind_of(Net::HTTPResponse)
+      response.should.is_a?(Net::HTTPResponse)
     end
   end
 
@@ -35,7 +35,7 @@ describe :net_http_request_get, shared: true do
 
     it "returns a Net::HTTPResponse object" do
       response = @http.send(@method, "/request") {}
-      response.should be_kind_of(Net::HTTPResponse)
+      response.should.is_a?(Net::HTTPResponse)
     end
   end
 end

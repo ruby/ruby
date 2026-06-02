@@ -24,14 +24,14 @@ describe "Encoding::Converter.asciicompat_encoding" do
   end
 
   it "returns nil when the given encoding is ASCII compatible" do
-    Encoding::Converter.asciicompat_encoding('ASCII').should be_nil
-    Encoding::Converter.asciicompat_encoding('UTF-8').should be_nil
+    Encoding::Converter.asciicompat_encoding('ASCII').should == nil
+    Encoding::Converter.asciicompat_encoding('UTF-8').should == nil
   end
 
   it "handles encoding names who resolve to nil encodings" do
     internal = Encoding.default_internal
     Encoding.default_internal = nil
-    Encoding::Converter.asciicompat_encoding('internal').should be_nil
+    Encoding::Converter.asciicompat_encoding('internal').should == nil
     Encoding.default_internal = internal
   end
 end

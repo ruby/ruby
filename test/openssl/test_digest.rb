@@ -155,6 +155,22 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
     assert_include digests, "sha256"
     assert_include digests, "sha512"
   end
+
+  if respond_to?(:ractor) && defined?(Ractor.shareable_proc)
+    ractor
+
+    def test_ractor
+      assert_nothing_raised do
+        Ractor.new {
+          [
+            OpenSSL::Digest::SHA256.new(""),
+            OpenSSL::Digest::SHA256.hexdigest(""),
+            OpenSSL::Digest::SHA256.digest(""),
+          ]
+        }.value
+      end
+    end
+  end
 end
 
 end

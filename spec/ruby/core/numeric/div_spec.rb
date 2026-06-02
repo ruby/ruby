@@ -15,8 +15,8 @@ describe "Numeric#div" do
   end
 
   it "raises ZeroDivisionError for 0" do
-    -> { @obj.div(0) }.should raise_error(ZeroDivisionError)
-    -> { @obj.div(0.0) }.should raise_error(ZeroDivisionError)
-    -> { @obj.div(Complex(0,0)) }.should raise_error(ZeroDivisionError)
+    -> { @obj.div(0) }.should.raise(ZeroDivisionError)
+    -> { @obj.div(0.0) }.should.raise(ZeroDivisionError)
+    -> { @obj.div(Complex(0,0)) }.should.raise(ZeroDivisionError)
   end
 end

@@ -689,8 +689,11 @@ class TestGemInstaller < Gem::InstallerTestCase
 
   def test_generate_bin_symlink_win32
     old_win_platform = Gem.win_platform?
-    Gem.win_platform = true
     old_alt_separator = File::ALT_SEPARATOR
+
+    omit "JRuby on Windows still creates the symlink so the wrapper branch is not exercised" if Gem.win_platform? && Gem.java_platform?
+
+    Gem.win_platform = true
     File.__send__(:remove_const, :ALT_SEPARATOR)
     File.const_set(:ALT_SEPARATOR, "\\")
 
@@ -743,6 +746,8 @@ class TestGemInstaller < Gem::InstallerTestCase
   end
 
   def test_generate_bin_with_dangling_symlink
+    omit "JRuby on Windows still creates the symlink so the wrapper branch is not exercised" if Gem.win_platform? && Gem.java_platform?
+
     gem_with_dangling_symlink = File.expand_path("packages/ascii_binder-0.1.10.1.gem", __dir__)
 
     installer = Gem::Installer.at(

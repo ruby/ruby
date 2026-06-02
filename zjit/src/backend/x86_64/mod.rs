@@ -112,7 +112,7 @@ const SCRATCH1_OPND: Opnd = Opnd::Reg(R10_REG);
 pub const SCRATCH_REG: Reg = R11_REG;
 
 impl Assembler {
-    // This keeps frame growth below the ±4096-byte displacement range we rely
+    // This keeps frame growth below the +/-4096-byte displacement range we rely
     // on for common stack-slot accesses on x86_64.
     const MAX_FRAME_STACK_SLOTS: usize = 2048;
 
@@ -142,7 +142,7 @@ impl Assembler {
     }
 
     // These are the callee-saved registers in the x86-64 SysV ABI
-    // RBX, RSP, RBP, and R12–R15
+    // RBX, RSP, RBP, and R12-R15
 
     /// Split IR instructions for the x86 platform
     fn x86_split(mut self) -> Assembler
@@ -154,10 +154,9 @@ impl Assembler {
         while let Some((_index, mut insn)) = iterator.next(asm) {
             let is_load = matches!(insn, Insn::Load { .. } | Insn::LoadInto { .. });
             let is_jump = insn.is_jump();
-            let mut opnd_iter = insn.opnd_iter_mut();
 
             if !is_jump {
-                while let Some(opnd) = opnd_iter.next() {
+                insn.for_each_operand_mut(|opnd| {
                     // Lower Opnd::Value to Opnd::VReg or Opnd::UImm
                     if let Opnd::Value(value) = opnd {
                         // If the value is a special constant, and it fits in 32 bits,
@@ -176,7 +175,7 @@ impl Assembler {
                             *opnd = asm.load(*opnd);
                         }
                     }
-                }
+                });
             }
 
             // We are replacing instructions here so we know they are already
@@ -357,7 +356,7 @@ impl Assembler {
                     // Convert MemBase::Stack to MemBase::Reg(NATIVE_BASE_PTR) with the
                     // correct stack displacement. The stack slot value lives directly at
                     // [NATIVE_BASE_PTR + stack_disp], so we just adjust the base and
-                    // combine displacements — no indirection needed.
+                    // combine displacements -- no indirection needed.
                     let Mem { base, disp: stack_disp, .. } = stack_state.stack_membase_to_mem(stack_membase);
                     Opnd::Mem(Mem { base, disp: stack_disp + opnd_disp, num_bits: opnd_num_bits })
                 }
@@ -760,18 +759,12 @@ impl Assembler {
         // The write_pos for the last Insn::PatchPoint, if any
         let mut last_patch_pos: Option<usize> = None;
 
-        // Install a panic hook to dump Assembler with insn_idx on dev builds
-        let (_hook, mut hook_insn_idx) = AssemblerPanicHook::new(self, 0);
-
         // For each instruction
         let mut insn_idx: usize = 0;
         assert_eq!(self.basic_blocks.len(), 1, "Assembler should be linearized into a single block before arm64_emit");
         let insns = &self.basic_blocks[0].insns;
 
         while let Some(insn) = insns.get(insn_idx) {
-            // Update insn_idx that is shown on panic
-            hook_insn_idx.as_mut().map(|idx| idx.lock().map(|mut idx| *idx = insn_idx).unwrap());
-
             match insn {
                 Insn::Comment(text) => {
                     cb.add_comment(text);
@@ -1089,6 +1082,7 @@ impl Assembler {
                 },
 
                 Insn::Breakpoint => int3(cb),
+                Insn::Abort => ud2(cb),
 
                 Insn::CSelZ { truthy, falsy, out } => {
                     emit_csel(cb, *truthy, *falsy, *out, cmovz, cmovnz);
@@ -1114,7 +1108,6 @@ impl Assembler {
                 Insn::CSelGE { truthy, falsy, out } => {
                     emit_csel(cb, *truthy, *falsy, *out, cmovge, cmovl);
                 }
-                Insn::LiveReg { .. } => (), // just a reg alloc signal, no code
             };
 
             insn_idx += 1;
@@ -1990,22 +1983,22 @@ mod tests {
         0x1c: push rdx
         0x1d: push rcx
         0x1e: push r8
-        0x20: push rdi
-        0x21: mov eax, 0
-        0x26: call rax
-        0x28: pop rdi
+        0x20: push 0
+        0x22: mov eax, 0
+        0x27: call rax
         0x29: pop r8
-        0x2b: pop rcx
-        0x2c: pop rdx
-        0x2d: pop rsi
-        0x2e: pop rdi
-        0x2f: add rdi, rsi
-        0x32: mov rdi, rdx
-        0x35: add rdi, rcx
-        0x38: mov rdi, rdx
-        0x3b: add rdi, r8
+        0x2b: pop r8
+        0x2d: pop rcx
+        0x2e: pop rdx
+        0x2f: pop rsi
+        0x30: pop rdi
+        0x31: add rdi, rsi
+        0x34: mov rdi, rdx
+        0x37: add rdi, rcx
+        0x3a: mov rdi, rdx
+        0x3d: add rdi, r8
         ");
-        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b80500000057565251415057b800000000ffd05f4158595a5e5f4801f74889d74801cf4889d74c01c7");
+        assert_snapshot!(cb.hexdump(), @"bf01000000be02000000ba03000000b90400000041b8050000005756525141506a00b800000000ffd041584158595a5e5f4801f74889d74801cf4889d74c01c7");
     }
 
     #[test]

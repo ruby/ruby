@@ -99,7 +99,6 @@ fn main() {
         .allowlist_function("rb_hash_new")
         .allowlist_function("rb_hash_new_with_size")
         .allowlist_function("rb_hash_resurrect")
-        .allowlist_function("rb_hash_stlike_foreach")
         .allowlist_function("rb_to_hash_type")
         .allowlist_type("st_retval")
         .allowlist_function("rb_hash_aset")
@@ -181,7 +180,7 @@ fn main() {
         .allowlist_function("rb_reg_match_post")
         .allowlist_function("rb_reg_match_last")
         .allowlist_function("rb_reg_nth_match")
-        .allowlist_function("rb_reg_new_ary")
+        .allowlist_function("rb_reg_new_from_values")
 
         // `ruby_value_type` is a C enum and this stops it from
         // prefixing all the members with the name of the type
@@ -284,6 +283,8 @@ fn main() {
         .allowlist_function("rb_jit_for_each_iseq")
         .allowlist_type("jit_bindgen_constants")
         .allowlist_function("rb_vm_barrier")
+        .allowlist_function("rb_yjit_cdhash_all_fixnum_p")
+        .allowlist_function("rb_yjit_cdhash_lookup")
 
         // Not sure why it's picking these up, but don't.
         .blocklist_type("FILE")

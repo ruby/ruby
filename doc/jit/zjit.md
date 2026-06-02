@@ -365,7 +365,6 @@ Note that this disables profiling. To inject interpreter profiles into ZJIT, con
 ```bash
 ./miniruby --zjit --zjit-dump-hir -e "30.times { 1 + 1 }"
 ```
-```
 
 ### Viewing HIR in Iongraph
 

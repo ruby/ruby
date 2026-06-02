@@ -2536,7 +2536,7 @@ interpret_seek_whence(VALUE vwhence)
  *      f.tell            # => 12
  *      f.close
  *
- *  - +:SET+ or <tt>IO:SEEK_SET</tt>:
+ *  - +:SET+ or <tt>IO::SEEK_SET</tt>:
  *    Repositions the stream to the given +offset+:
  *
  *      f = File.open('t.txt')
@@ -5705,6 +5705,15 @@ rb_io_fptr_finalize(struct rb_io *io)
     free(io);
 
     return 1;
+}
+
+bool
+rb_io_fptr_finalize_closed(struct rb_io *io)
+{
+    if (!io) return true;
+    if (io->fd >= 0) return false;
+    rb_io_fptr_finalize(io);
+    return true;
 }
 
 size_t

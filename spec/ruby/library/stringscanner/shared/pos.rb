@@ -50,10 +50,10 @@ describe :strscan_pos_set, shared: true do
   it "raises a RangeError if position too far backward" do
     -> {
       @s.send(@method, -20)
-    }.should raise_error(RangeError)
+    }.should.raise(RangeError)
   end
 
   it "raises a RangeError when the passed argument is out of range" do
-    -> { @s.send(@method, 20) }.should raise_error(RangeError)
+    -> { @s.send(@method, 20) }.should.raise(RangeError)
   end
 end

@@ -31,7 +31,7 @@ describe "BigDecimal#to_s" do
   end
 
   it "takes an optional argument" do
-    -> {@bigdec.to_s("F")}.should_not raise_error()
+    -> {@bigdec.to_s("F")}.should_not.raise()
   end
 
   it "starts with + if + is supplied and value is positive" do
@@ -88,11 +88,11 @@ describe "BigDecimal#to_s" do
 
   it "returns a String in US-ASCII encoding when Encoding.default_internal is nil" do
     Encoding.default_internal = nil
-    BigDecimal('1.23').to_s.encoding.should equal(Encoding::US_ASCII)
+    BigDecimal('1.23').to_s.encoding.should.equal?(Encoding::US_ASCII)
   end
 
   it "returns a String in US-ASCII encoding when Encoding.default_internal is not nil" do
     Encoding.default_internal = Encoding::IBM437
-    BigDecimal('1.23').to_s.encoding.should equal(Encoding::US_ASCII)
+    BigDecimal('1.23').to_s.encoding.should.equal?(Encoding::US_ASCII)
   end
 end

@@ -75,8 +75,8 @@ $inexact_c_names = {
 
 # Define a new type that can be subclassed (most of them).
 # If c_name is given, mark the rb_cXYZ object as equivalent to this exact type.
-def base_type name, c_name: nil
-  type = $object.subtype name
+def base_type name, base: $object, c_name: nil
+  type = base.subtype name
   exact = type.subtype(name+"Exact")
   subclass = type.subtype(name+"Subclass")
   if c_name
@@ -111,7 +111,7 @@ base_type "Regexp", c_name: "rb_cRegexp"
 module_class, _ = base_type "Module", c_name: "rb_cModule"
 # Class cannot be subclassed by doing `class Sub < Class`,
 # but every metaclass is a subclass of `Class`. It's not final.
-module_class.subtype "Class"
+base_type "Class", base: module_class, c_name: "rb_cClass"
 
 numeric, _ = base_type "Numeric", c_name: "rb_cNumeric"
 
@@ -134,10 +134,9 @@ nil_exact = final_type "NilClass", c_name: "rb_cNilClass"
 true_exact = final_type "TrueClass", c_name: "rb_cTrueClass"
 false_exact = final_type "FalseClass", c_name: "rb_cFalseClass"
 
-# Typed T_DATA objects (RTYPEDDATA_P). These have a distinct memory layout
-# for field access (fields_obj at a fixed offset in RTypedData). These
-# don't have a common class ancestor below BasicObject.
-basic_object.subtype "TypedTData"
+# T_DATA objects have a distinct memory layout for field access and don't have a
+# common class ancestor below BasicObject.
+basic_object.subtype "TData"
 
 # Build the cvalue object universe. This is for C-level types that may be
 # passed around when calling into the Ruby VM or after some strength reduction

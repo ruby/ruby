@@ -12,11 +12,11 @@ describe "String#unpack with format 'U'" do
   it_behaves_like :string_unpack_taint, 'U'
 
   it "raises ArgumentError on a malformed byte sequence" do
-    -> { "\xE3".unpack('U') }.should raise_error(ArgumentError)
+    -> { "\xE3".unpack('U') }.should.raise(ArgumentError)
   end
 
   it "raises ArgumentError on a malformed byte sequence and doesn't continue when used with the * modifier" do
-    -> { "\xE3".unpack('U*') }.should raise_error(ArgumentError)
+    -> { "\xE3".unpack('U*') }.should.raise(ArgumentError)
   end
 end
 

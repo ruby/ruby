@@ -608,15 +608,13 @@ impl VALUE {
         unsafe { rb_jit_class_fields_embedded_p(self) }
     }
 
-    /// Typed `T_DATA` made from `TypedData_Make_Struct()` (e.g. Thread, ARGF)
-    pub fn typed_data_p(self) -> bool {
+    pub fn data_p(self) -> bool {
         !self.special_const_p() &&
-            self.builtin_type() == RUBY_T_DATA &&
-            0 != (self.builtin_flags() & RUBY_TYPED_FL_IS_TYPED_DATA.to_usize())
+            self.builtin_type() == RUBY_T_DATA
     }
 
-    pub fn typed_data_fields_embedded_p(self) -> bool {
-        unsafe { rb_jit_typed_data_fields_embedded_p(self) }
+    pub fn data_fields_embedded_p(self) -> bool {
+        unsafe { rb_jit_data_fields_embedded_p(self) }
     }
 
     pub fn as_fixnum(self) -> i64 {
@@ -1471,6 +1469,19 @@ pub fn get_class_name(class: VALUE) -> String {
     name
 }
 
+// Return the module name for a given module or class. For anonymous modules, returns None since
+// rb_mod_name returns Qnil.
+pub fn get_module_name(module: VALUE) -> Option<String> {
+    // type checks for rb_mod_name()
+    assert!(unsafe { RB_TYPE_P(module, RUBY_T_MODULE) || RB_TYPE_P(module, RUBY_T_CLASS) }, "Expected class or module");
+    let name = unsafe { rb_mod_name(module) };
+    if name == Qnil {
+        None
+    } else {
+        Some(ruby_str_to_rust_string(name))
+    }
+}
+
 
 #[cfg(test)]
 mod class_name_tests {
@@ -1593,22 +1604,9 @@ pub(crate) mod ids {
         name: freeze
         name: minusat            content: b"-@"
         name: aref               content: b"[]"
-        name: len
-        name: _as_heap
-        name: _fields_obj
-        name: thread_ptr
-        name: self_              content: b"self"
         name: rb_ivar_get_at_no_ractor_check
-        name: _shape_id
-        name: _env_data_index_flags
-        name: _env_data_index_specval
-        name: _ep_method_entry
-        name: _ep_specval
-        name: _ep_flags
-        name: _rbasic_flags
         name: RUBY_FL_FREEZE
         name: RUBY_ELTS_SHARED
-        name: VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM
         name: RubyVM
         name: ZJIT
         name: induce_side_exit_bang       content: b"induce_side_exit!"
