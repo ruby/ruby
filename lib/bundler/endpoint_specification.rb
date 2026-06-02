@@ -165,11 +165,10 @@ module Bundler
         when "created_at"
           value = v.is_a?(Array) ? v.last : v
           if value.is_a?(String)
-            require "time"
-            begin
-              @created_at = Time.iso8601(value)
+            @created_at = begin
+              Time.new(value)
             rescue ArgumentError
-              @created_at = nil
+              nil
             end
           end
         end
