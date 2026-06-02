@@ -4964,9 +4964,11 @@ impl Function {
         }
 
         // This helper function is used to clear the cache for matching offsets
-        // while we don't have type based alias.
+        // while we don't have type based alias analysis.
         // TBAA will primarily modify any part of this optimization that
         // currently uses this helper function.
+        // TODO: Rename this to talk about preserving valid (non-aliased values)
+        // TODO: Add more comments
         fn flush_aliasing(map: &mut HashMap<HeapKey, InsnId>, offset: i32) {
             map.retain(|HeapKey { object: _, offset: off }, _| *off != offset);
         }
