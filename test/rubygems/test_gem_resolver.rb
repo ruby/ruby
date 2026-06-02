@@ -722,6 +722,42 @@ class TestGemResolver < Gem::TestCase
     assert_resolves_to [spec_a_2], resolver
   end
 
+  def test_same_version_prefers_earlier_source
+    source_a = Gem::Source.new "http://example.com/a"
+    source_b = Gem::Source.new "http://example.com/b"
+
+    spec_a = util_spec "some-dep", "1.0.0"
+    spec_b = util_spec "some-dep", "1.0.0"
+
+    set = StaticSet.new [
+      Gem::Resolver::SpecSpecification.new(nil, spec_a, source_a),
+      Gem::Resolver::SpecSpecification.new(nil, spec_b, source_b),
+    ]
+
+    resolver = Gem::Resolver.new [make_dep("some-dep", "> 0")], set
+    result = resolver.resolve
+
+    assert_equal source_a, result.first.spec.source
+  end
+
+  def test_same_version_prefers_earlier_source_when_order_flipped
+    source_a = Gem::Source.new "http://example.com/a"
+    source_b = Gem::Source.new "http://example.com/b"
+
+    spec_a = util_spec "some-dep", "1.0.0"
+    spec_b = util_spec "some-dep", "1.0.0"
+
+    set = StaticSet.new [
+      Gem::Resolver::SpecSpecification.new(nil, spec_b, source_b),
+      Gem::Resolver::SpecSpecification.new(nil, spec_a, source_a),
+    ]
+
+    resolver = Gem::Resolver.new [make_dep("some-dep", "> 0")], set
+    result = resolver.resolve
+
+    assert_equal source_b, result.first.spec.source
+  end
+
   def test_select_local_platforms
     r = Gem::Resolver.new nil, nil
 

@@ -352,6 +352,13 @@ class Gem::Resolver
   end
 
   def build_spec_for_cache(name)
+    # Rank sources by the order they were first supplied so that, when multiple
+    # sources offer the same version and platform, the earlier source wins.
+    source_rank = {}
+    @all_specs[name].each do |s|
+      source_rank[s.source] ||= source_rank.size
+    end
+
     @all_specs[name].group_by(&:version).transform_values do |candidates|
       next candidates.first if candidates.length == 1
 
@@ -360,8 +367,12 @@ class Gem::Resolver
       next installed.first if installed.length == 1
       candidates = installed if installed.any?
 
-      # Among remaining candidates, prefer the most specific platform
-      candidates.min_by {|s| Gem::Platform.platform_specificity_match(s.platform, Gem::Platform.local) }
+      # Among remaining candidates, prefer the most specific platform, then the
+      # earlier-supplied source.
+      candidates.min_by do |s|
+        [Gem::Platform.platform_specificity_match(s.platform, Gem::Platform.local),
+         source_rank[s.source]]
+      end
     end
   end
 
