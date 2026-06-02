@@ -1566,8 +1566,9 @@ pub fn class_has_leaf_allocator(class: VALUE) -> bool {
 pub fn iseq_self_is_heap_object(iseq: IseqPtr, owner: VALUE) -> bool {
     if unsafe { rb_get_iseq_body_type(iseq) } != ISEQ_TYPE_METHOD { return false; }
     if !unsafe { RB_TYPE_P(owner, RUBY_T_CLASS) } { return false; }
-    // class_has_leaf_allocator checks initialized + non-singleton before reading
-    // the allocator (reading it otherwise aborts), so reuse those guards here.
+    // Check initialized + non-singleton before reading the allocator (reading it otherwise
+    // aborts).
+    // TODO(max): Determine if we can loosen this to allow methods defined on singleton classes.
     if !unsafe { rb_zjit_class_initialized_p(owner) } { return false; }
     if unsafe { rb_zjit_singleton_class_p(owner) } { return false; }
     if !unsafe { rb_zjit_class_has_default_allocator(owner) } { return false; }
