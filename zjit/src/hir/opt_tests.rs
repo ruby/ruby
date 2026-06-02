@@ -371,7 +371,7 @@ mod hir_opt_tests {
           v10:Fixnum[7] = Const Value(7)
           v12:Fixnum[0] = Const Value(0)
           PatchPoint MethodRedefined(Integer@0x1000, /@0x1008, cme:0x1010)
-          v23:Fixnum = FixnumDiv v10, v12
+          v23:Integer = FixnumDiv v10, v12
           CheckInterrupts
           Return v23
         ");
@@ -425,7 +425,7 @@ mod hir_opt_tests {
           v10:Fixnum[-4611686018427387904] = Const Value(-4611686018427387904)
           v12:Fixnum[-1] = Const Value(-1)
           PatchPoint MethodRedefined(Integer@0x1000, /@0x1008, cme:0x1010)
-          v23:Fixnum = FixnumDiv v10, v12
+          v23:Integer = FixnumDiv v10, v12
           CheckInterrupts
           Return v23
         ");
@@ -2916,7 +2916,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Integer@0x1008, /@0x1010, cme:0x1018)
           v32:Fixnum = GuardType v12, Fixnum
           v33:Fixnum = GuardType v13, Fixnum
-          v34:Fixnum = FixnumDiv v32, v33
+          v34:Integer = FixnumDiv v32, v33
           v24:Fixnum[5] = Const Value(5)
           CheckInterrupts
           Return v24

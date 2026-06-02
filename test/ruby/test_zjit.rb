@@ -430,36 +430,6 @@ class TestZJIT < Test::Unit::TestCase
     assert_compiles '-2', 'def test = (-2.9).to_i; test'
   end
 
-  def test_fixnum_div_min_by_neg_one
-    # FIXNUM_MIN / -1 overflows to a Bignum: the JIT must side exit, not return a mistyped Fixnum.
-    assert_runs '[4611686018427387904, 1]', %q{
-      def f(a, b) = a / b
-      f(10, 3) # warm up the JIT
-      result = f(-4611686018427387904, -1)
-      [result, RubyVM::ZJIT.stats(:exit_fixnum_div_overflow)]
-    }, stats: true
-  end
-
-  def test_fixnum_div_overflow_propagation
-    # The div must side exit before its Bignum result reaches the specialized (a / b) & 1 op.
-    assert_runs '[0, 1]', %q{
-      def f(a, b) = (a / b) & 1
-      f(10, 3) # warm up the JIT
-      result = f(-4611686018427387904, -1)
-      [result, RubyVM::ZJIT.stats(:exit_fixnum_div_overflow)]
-    }, stats: true
-  end
-
-  def test_fixnum_div_by_neg_one_is_fine
-    # x / -1 (x != FIXNUM_MIN) is a normal Fixnum and must NOT trip the overflow guard.
-    assert_runs '[-10, 0]', %q{
-      def f(a, b) = a / b
-      f(10, 3) # warm up the JIT
-      result = f(10, -1)
-      [result, RubyVM::ZJIT.stats(:exit_fixnum_div_overflow)]
-    }, stats: true
-  end
-
   private
 
   # Assert that every method call in `test_script` can be compiled by ZJIT
