@@ -215,6 +215,32 @@ RSpec.describe "bundle install with the cooldown setting" do
       expect(out).to match(/ripe_gem.*in cooldown for \d+ more day/)
     end
 
+    it "excludes a locally-installed version that is still within the cooldown window" do
+      system_gems "ripe_gem-2.0.0", gem_repo: gem_repo3
+
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "ripe_gem"
+      G
+
+      bundle "install --cooldown 7", artifice: "compact_index_cooldown"
+
+      expect(the_bundle).to include_gems("ripe_gem 1.0.0")
+    end
+
+    it "selects a locally-installed in-cooldown version when --cooldown 0 bypasses the filter" do
+      system_gems "ripe_gem-2.0.0", gem_repo: gem_repo3
+
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "ripe_gem"
+      G
+
+      bundle "install --cooldown 0", artifice: "compact_index_cooldown"
+
+      expect(the_bundle).to include_gems("ripe_gem 2.0.0")
+    end
+
     it "surfaces a cooldown hint when bundle update filters every candidate" do
       gemfile <<-G
         source "https://gem.repo3"

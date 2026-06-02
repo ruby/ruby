@@ -7,8 +7,8 @@ RSpec.describe Bundler::Resolver do
     instance_double(Bundler::Source::Rubygems::Remote, effective_cooldown: cooldown)
   end
 
-  def spec(created_at:, remote:)
-    Struct.new(:created_at, :remote).new(created_at, remote)
+  def spec(created_at:, remote:, name: "myrack", version: "1.0.0")
+    Struct.new(:name, :version, :created_at, :remote).new(name, Gem::Version.new(version), created_at, remote)
   end
 
   describe "#filter_cooldown" do
@@ -18,8 +18,8 @@ RSpec.describe Bundler::Resolver do
       let(:r) { remote(cooldown: 7) }
 
       it "rejects versions published within the window" do
-        recent = spec(created_at: now - (2 * 86_400), remote: r)
-        old = spec(created_at: now - (30 * 86_400), remote: r)
+        recent = spec(version: "1.1.0", created_at: now - (2 * 86_400), remote: r)
+        old = spec(version: "1.0.0", created_at: now - (30 * 86_400), remote: r)
 
         expect(resolver.send(:filter_cooldown, [recent, old])).to eq([old])
       end
@@ -32,13 +32,36 @@ RSpec.describe Bundler::Resolver do
 
       it "leaves rolling-delay history intact" do
         # 7-day cooldown with frequent releases must still expose an older candidate.
-        in_cooldown = spec(created_at: now - 86_400, remote: r)
-        also_in_cooldown = spec(created_at: now - (3 * 86_400), remote: r)
-        eligible = spec(created_at: now - (10 * 86_400), remote: r)
+        in_cooldown = spec(version: "1.2.0", created_at: now - 86_400, remote: r)
+        also_in_cooldown = spec(version: "1.1.0", created_at: now - (3 * 86_400), remote: r)
+        eligible = spec(version: "1.0.0", created_at: now - (10 * 86_400), remote: r)
 
         result = resolver.send(:filter_cooldown, [in_cooldown, also_in_cooldown, eligible])
 
         expect(result).to eq([eligible])
+      end
+
+      it "drops every spec sharing an excluded [name, version] tuple" do
+        # The cooldown check is by version, not per-spec: a StubSpecification for an
+        # in-cooldown release would otherwise slip through on local install paths.
+        endpoint = spec(version: "2.0.0", created_at: now - 86_400, remote: r)
+        local_stub = Struct.new(:name, :version).new("myrack", Gem::Version.new("2.0.0"))
+        eligible = spec(version: "1.0.0", created_at: now - (30 * 86_400), remote: r)
+
+        result = resolver.send(:filter_cooldown, [endpoint, local_stub, eligible])
+
+        expect(result).to eq([eligible])
+      end
+
+      it "keeps stub-only versions that no endpoint marks as in cooldown" do
+        # If no remote spec carries created_at for a version, cooldown cannot judge it;
+        # the stub stays in.
+        local_only = Struct.new(:name, :version).new("myrack", Gem::Version.new("2.0.0"))
+        eligible = spec(version: "1.0.0", created_at: now - (30 * 86_400), remote: r)
+
+        result = resolver.send(:filter_cooldown, [local_only, eligible])
+
+        expect(result).to eq([local_only, eligible])
       end
     end
 
@@ -111,9 +134,15 @@ RSpec.describe Bundler::Resolver do
     end
 
     it "uses plural wording when multiple versions are excluded" do
-      excluded = Array.new(3) { spec(created_at: now - 86_400, remote: r) }
+      excluded = %w[1.0.0 1.1.0 1.2.0].map {|v| spec(version: v, created_at: now - 86_400, remote: r) }
 
       expect(resolver.send(:cooldown_hint, excluded)).to match(/3 versions excluded/)
+    end
+
+    it "counts each unique version once even when multiple spec instances share it" do
+      duplicates = Array.new(3) { spec(created_at: now - 86_400, remote: r) }
+
+      expect(resolver.send(:cooldown_hint, duplicates)).to match(/1 version excluded/)
     end
   end
 end

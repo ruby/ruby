@@ -422,7 +422,7 @@ module Bundler
     end
 
     def filter_specs(specs, package)
-      filter_cooldown(filter_remote_specs(filter_prereleases(specs, package), package))
+      filter_remote_specs(filter_cooldown(filter_prereleases(specs, package)), package)
     end
 
     def filter_prereleases(specs, package)
@@ -433,19 +433,19 @@ module Bundler
 
     def filter_cooldown(specs)
       return specs if specs.empty?
-      excluded = cooldown_excluded_specs(specs)
-      return specs if excluded.empty?
-      specs - excluded
+      excluded_versions = cooldown_excluded_versions(specs)
+      return specs if excluded_versions.empty?
+      specs.reject {|s| excluded_versions.include?([s.name, s.version]) }
     end
 
-    def cooldown_excluded_specs(specs)
-      specs.select {|spec| cooldown_excluded?(spec) }
+    def cooldown_excluded_versions(specs)
+      specs.select {|spec| cooldown_excluded?(spec) }.map {|spec| [spec.name, spec.version] }.uniq
     end
 
     def cooldown_hint(specs)
-      excluded = cooldown_excluded_specs(specs)
-      return nil if excluded.empty?
-      "#{excluded.size} version#{"s" if excluded.size > 1} excluded by the cooldown setting; pass `--cooldown 0` to bypass"
+      excluded_versions = cooldown_excluded_versions(specs)
+      return nil if excluded_versions.empty?
+      "#{excluded_versions.size} version#{"s" if excluded_versions.size > 1} excluded by the cooldown setting; pass `--cooldown 0` to bypass"
     end
 
     def cooldown_excluded?(spec)
