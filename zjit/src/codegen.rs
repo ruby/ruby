@@ -47,13 +47,6 @@ const PC_POISON: Option<*const VALUE> = if cfg!(feature = "runtime_checks") {
     None
 };
 
-/// Sentinel jit_return stored on ISEQ frame push when runtime checks are enabled.
-const JIT_RETURN_POISON: Option<usize> = if cfg!(feature = "runtime_checks") {
-    Some(ZJIT_JIT_RETURN_POISON as usize)
-} else {
-    None
-};
-
 /// Ephemeral code generation state
 struct JITState {
     /// ISEQ version that is being compiled, which will be used by PatchPoint
@@ -92,6 +85,11 @@ impl JITState {
     /// Retrieve the output of a given instruction that has been compiled
     fn get_opnd(&self, insn_id: InsnId) -> lir::Opnd {
         self.opnds[insn_id.0].unwrap_or_else(|| panic!("Failed to get_opnd({insn_id})"))
+    }
+
+    /// Get the ISEQ for the version currently being compiled.
+    fn iseq(&self) -> IseqPtr {
+        unsafe { self.version.as_ref().iseq }
     }
 
     /// Find or create a label for a given BlockId
@@ -2189,6 +2187,19 @@ fn gen_object_alloc_class(asm: &mut Assembler, class: VALUE, state: &FrameState)
     }
 }
 
+/// Map an entry point to the bytecode PC used by its initial JITFrame.
+/// JIT call entries use `opt_table[jit_entry_idx]`; the interpreter entry uses
+/// `opt_table.last()` for the fall-through path where all optionals are filled.
+fn entry_pc(iseq: IseqPtr, jit_entry_idx: Option<usize>) -> *const VALUE {
+    let params = unsafe { iseq.params() };
+    let opt_table = params.opt_table_slice();
+    let entry_idx = jit_entry_idx.unwrap_or_else(|| opt_table.len() - 1);
+    let entry_insn_idx = opt_table.get(entry_idx)
+        .unwrap_or_else(|| panic!("entry_pc: opt_table out of bounds. {params:#?}, entry_idx={entry_idx}"))
+        .as_u32();
+    unsafe { rb_iseq_pc_at_idx(iseq, entry_insn_idx) }
+}
+
 /// Compile a frame setup. If jit_entry_idx is Some, remember the address of it as a JIT entry.
 fn gen_entry_point(jit: &mut JITState, asm: &mut Assembler, jit_entry_idx: Option<usize>) {
     if let Some(jit_entry_idx) = jit_entry_idx {
@@ -2200,16 +2211,10 @@ fn gen_entry_point(jit: &mut JITState, asm: &mut Assembler, jit_entry_idx: Optio
     }
     asm.frame_setup(&[]);
 
-    // Publish the JITFrame slot's location via cfp->jit_return. The slot at
-    // [NATIVE_BASE_PTR - 8] is left uninitialized here; the JIT design relies on
-    // gen_save_pc_for_gc() to populate it before any C call, and on cross-ractor
-    // barriers ensuring that no other ractor scans this CFP before such a call.
+    // Publish a valid entry JITFrame before setting cfp->jit_return.
+    let jit_frame = JITFrame::new_iseq(entry_pc(jit.iseq(), jit_entry_idx), jit.iseq());
+    asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, -SIZEOF_VALUE_I32), Opnd::const_ptr(jit_frame));
     asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), NATIVE_BASE_PTR);
-
-    // Poison the JITFrame slot. It should be read only after gen_save_pc_for_gc().
-    if let Some(jit_return_poison) = JIT_RETURN_POISON {
-        asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, -SIZEOF_VALUE_I32), jit_return_poison.into());
-    }
 }
 
 /// Compile code that exits from JIT code with a return value
@@ -2683,7 +2688,7 @@ fn gen_incr_send_fallback_counter(asm: &mut Assembler, reason: SendFallbackReaso
 /// (send, sendforward, invokesuper, invokesuperforward, invokeblock).
 /// These instructions call vm_caller_setup_arg_block which writes to cfp->block_code.
 #[allow(non_upper_case_globals)]
-fn iseq_may_write_block_code(iseq: IseqPtr) -> bool {
+pub(crate) fn iseq_may_write_block_code(iseq: IseqPtr) -> bool {
     let encoded_size = unsafe { rb_iseq_encoded_size(iseq) };
     let mut insn_idx: u32 = 0;
 
@@ -2715,7 +2720,7 @@ fn gen_save_pc_for_gc(asm: &mut Assembler, state: &FrameState) {
 
     gen_incr_counter(asm, Counter::vm_write_jit_frame_count);
     asm_comment!(asm, "save JITFrame to CFP");
-    let jit_frame = JITFrame::new_iseq(next_pc, state.iseq, !iseq_may_write_block_code(state.iseq));
+    let jit_frame = JITFrame::new_iseq(next_pc, state.iseq);
     asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, -SIZEOF_VALUE_I32), Opnd::const_ptr(jit_frame));
 
     // CFP_PC for a live JIT frame routes through the JITFrame on the native

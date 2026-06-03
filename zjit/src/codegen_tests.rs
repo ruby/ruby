@@ -4269,14 +4269,9 @@ fn test_getspecial_multiple_groups() {
     assert_snapshot!(assert_compiles(r#"test("123-456")"#), @r#""456""#);
 }
 
-// In a JIT-to-JIT call, gen_push_frame writes JIT_RETURN_POISON to the
-// callee's cfp->jit_return (runtime_checks builds). On the *first* such
-// call the function stub trampoline clears jit_return to NULL, so the
-// crash only manifests on the second JIT-to-JIT hit when the stub has
-// been patched to jump directly to the callee's JIT entry. Putting $& as
-// the first C call in the callee keeps the poison live until
-// gen_getspecial_symbol calls rb_backref_get → rb_vm_svar_lep → CFP_PC →
-// CFP_ZJIT_FRAME, which dereferences the poison without the prep fix.
+// In a JIT-to-JIT call, the callee's cfp->jit_return is published at entry.
+// Putting $& as the first C call in the callee exercises CFP_ZJIT_FRAME before
+// gen_save_pc_for_gc has a chance to update the entry JITFrame.
 #[test]
 fn test_getspecial_symbol_in_jit_to_jit_callee() {
     eval(r#"
@@ -4287,10 +4282,6 @@ fn test_getspecial_symbol_in_jit_to_jit_callee() {
         callee
         callee
 
-        # First call to caller_method profiles; second JITs caller_method
-        # and runs through the function-stub-hit path which clears
-        # jit_return. The third call goes through the patched stub with
-        # POISON intact, hitting the bug.
         caller_method
         caller_method
     "#);

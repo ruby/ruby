@@ -57,9 +57,6 @@ void rb_zjit_materialize_frames(const rb_execution_context_t *ec, rb_control_fra
 // instead of a heap-allocated JITFrame pointer.
 #define ZJIT_JIT_RETURN_C_FRAME 0x1
 
-// BADFrame. The high bit is set, so likely SEGV on linux and darwin if dereferenced.
-#define ZJIT_JIT_RETURN_POISON 0xbadfbadfbadfbadfULL
-
 static inline const zjit_jit_frame_t *
 CFP_ZJIT_FRAME(const rb_control_frame_t *cfp)
 {
@@ -67,9 +64,6 @@ CFP_ZJIT_FRAME(const rb_control_frame_t *cfp)
         return &rb_zjit_c_frame;
     }
     else {
-#if USE_ZJIT
-        RUBY_ASSERT((unsigned long long)((VALUE *)cfp->jit_return)[-1] != ZJIT_JIT_RETURN_POISON);
-#endif
         // Read JITFrame from the stack slot. gen_entry_point() writes an initial
         // frame describing the entry PC + iseq; subsequent gen_save_pc_for_gc()
         // calls update it with a more accurate PC before any non-leaf C call.
