@@ -286,7 +286,7 @@ File.fnmatch('*', 'a/b/c')  # => true
 ```
 
 When flag [`File::FNM_PATHNAME`](#constant-filefnmpathname) is given,
-the pattern matches only
+the pattern matches only one component of a file path:
 
 ```ruby
 File.fnmatch('**', 'a/b/c')                       # => true   # Matches 'a/b/c'.
