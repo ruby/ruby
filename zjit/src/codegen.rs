@@ -698,7 +698,10 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::UnboxFixnum { val } => gen_unbox_fixnum(asm, opnd!(val)),
         Insn::Test { val } => gen_test(asm, opnd!(val)),
         Insn::RefineType { val, .. } => opnd!(val),
-        Insn::HasType { val, expected } => gen_has_type(jit, asm, opnd!(val), *expected),
+        Insn::HasType { val, expected } => {
+            let val_type = function.type_of(*val);
+            gen_has_type(jit, asm, opnd!(val), val_type, *expected)
+        }
         Insn::GuardType { val, guard_type, state } => {
             let val_type = function.type_of(*val);
             gen_guard_type(jit, asm, opnd!(val), val_type, *guard_type, &function.frame_state(*state))
@@ -2450,7 +2453,7 @@ fn gen_test(asm: &mut Assembler, val: lir::Opnd) -> lir::Opnd {
     asm.csel_e(0.into(), 1.into())
 }
 
-fn gen_has_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, ty: Type) -> lir::Opnd {
+fn gen_has_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, val_type: Type, ty: Type) -> lir::Opnd {
     if ty.is_subtype(types::Fixnum) {
         asm.test(val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
         asm.csel_nz(Opnd::Imm(1), Opnd::Imm(0))
@@ -2493,13 +2496,16 @@ fn gen_has_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, ty: Typ
         // TODO: Max thinks codegen should not care about the shapes of the operands except to create them. (Shopify/ruby#685)
         let val = asm.load_mem(val);
 
-        // Immediate -> definitely not the class
-        asm.test(val, (RUBY_IMMEDIATE_MASK as u64).into());
-        asm.jnz(jit, result_edge(Opnd::Imm(0)));
+        let is_known_heap_basic_object = val_type.is_subtype(types::HeapBasicObject);
+        if !is_known_heap_basic_object {
+            // Immediate -> definitely not the class
+            asm.test(val, (RUBY_IMMEDIATE_MASK as u64).into());
+            asm.jnz(jit, result_edge(Opnd::Imm(0)));
 
-        // Qfalse -> definitely not the class
-        asm.cmp(val, Qfalse.into());
-        asm.je(jit, result_edge(Opnd::Imm(0)));
+            // Qfalse -> definitely not the class
+            asm.cmp(val, Qfalse.into());
+            asm.je(jit, result_edge(Opnd::Imm(0)));
+        }
 
         // Heap object -> check klass field
         let klass = asm.load(Opnd::mem(64, val, RUBY_OFFSET_RBASIC_KLASS));
