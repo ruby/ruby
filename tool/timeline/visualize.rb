@@ -6,16 +6,6 @@ require 'optparse'
 require 'pathname'
 require 'zlib'
 
-RubyInternalEvent = {
-  :NEWOBJ        =>  0x100000,  # /**< Object allocated. */
-  :FREEOBJ       =>  0x200000,  # /**< Object swept. */
-  :GC_START      =>  0x400000,  # /**< GC started. */
-  :GC_END_MARK   =>  0x800000,  # /**< GC ended mark phase. */
-  :GC_END_SWEEP  =>  0x1000000, # /**< GC ended sweep phase. */
-  :GC_ENTER      =>  0x2000000, # /**< `gc_enter()` is called. */
-  :GC_EXIT       =>  0x4000000, # /**< `gc_exit()` is called. */
-}
-
 GCEnterEvent = {
   :start        => 0,
   :continue     => 1,
@@ -139,12 +129,6 @@ class LogProcessor
       result[:args].update({
         event: GCEnterEvent.key(event)
       })
-    when 'gc_event_hook'
-      event = args[0].to_i
-      result[:args].update({
-        event: event
-      })
-      result[:name] = RubyInternalEvent.key(event)
     when 'gc_obj_new'
       obj = args[0].to_i
       flags_value = args[1].to_i

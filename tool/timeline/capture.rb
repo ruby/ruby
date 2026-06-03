@@ -13,9 +13,6 @@ USDT_GROUPS = {
     ['gc__enter',         "default",  'GCEnterExit',      'B',  1],
     ['gc__exit',          "default",  'GCEnterExit',      'E',  1],
   ],
-  'event_hooks' => [
-    ['gc__event_hook',    "ruby",     'gc_event_hook',    'i',  1],
-  ],
   'obj_new' => [
     ['gc__obj_new',       "ruby",     'gc_obj_new',       'i',  2],
   ],

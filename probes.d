@@ -216,15 +216,6 @@ provider ruby {
   probe gc__sweep__end();
 
   /*
-     ruby:::gc-event-hook(event);
-
-     Fired when the `rb_gc_event_hook` function is called.
-
-     * `event` the `event` argument passed to rb_gc_event_hook
-  */
-  probe gc__event_hook(int event);
-
-  /*
      ruby:::gc-enter(event);
 
      Fired when the `gc_enter` function in default.c is called.

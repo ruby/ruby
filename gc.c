@@ -208,10 +208,6 @@ rb_gc_event_hook_required_p(rb_event_flag_t event)
 void
 rb_gc_event_hook(VALUE obj, rb_event_flag_t event)
 {
-    if (RUBY_DTRACE_GC_EVENT_HOOK_ENABLED()) {
-        RUBY_DTRACE_GC_EVENT_HOOK(event);
-    }
-
     if (LIKELY(!rb_gc_event_hook_required_p(event))) return;
 
     rb_execution_context_t *ec = rb_gc_get_ec();
