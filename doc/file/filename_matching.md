@@ -291,7 +291,8 @@ the pattern matches only
 ```ruby
 File.fnmatch('**', 'a/b/c')                       # => true   # Matches 'a/b/c'.
 File.fnmatch('**', 'a/b/c', File::FNM_PATHNAME)   # => false  # Matches only 'a'.
-File.fnmatch('**/*', 'a/b/c', File::FNM_PATHNAME) # => true   # Matches 'a', then 'b/c'.
+File.fnmatch('**', 'a/b/c', File::FNM_PATHNAME)   # => false  # Matches only 'a/b'.
+File.fnmatch('**/*', 'a/b/c', File::FNM_PATHNAME) # => true   # Matches 'a/b', then 'c'.
 ```
 
 By default, filename matching enables pattern `'*'` to match
