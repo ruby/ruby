@@ -1419,9 +1419,7 @@ RSpec.describe "bundle update --ruby" do
          #{lockfile_platforms}
 
        DEPENDENCIES
-
-       CHECKSUMS
-
+       #{checksums_section_when_enabled}
        RUBY VERSION
          #{Bundler::RubyVersion.system}
 
@@ -1537,6 +1535,7 @@ RSpec.describe "bundle update --bundler" do
 
     checksums = checksums_section do |c|
       c.checksum(gem_repo4, "myrack", "1.0")
+      c.checksum(gem_repo4, "bundler", "999.0.0")
     end
 
     install_gemfile <<-G
@@ -1621,6 +1620,7 @@ RSpec.describe "bundle update --bundler" do
 
     checksums = checksums_section do |c|
       c.checksum(gem_repo4, "myrack", "1.0")
+      c.checksum(gem_repo4, "bundler", "9.9.9")
     end
 
     install_gemfile <<-G
@@ -1706,6 +1706,7 @@ RSpec.describe "bundle update --bundler" do
     checksums = checksums_section_when_enabled do |c|
       c.checksum(gem_repo4, "myrack", "1.0")
     end
+    checksums.delete("bundler")
 
     expect(lockfile).to eq <<~L
         GEM
@@ -1745,6 +1746,7 @@ RSpec.describe "bundle update --bundler" do
     # Only updates properly on modern RubyGems.
     checksums = checksums_section_when_enabled do |c|
       c.checksum(gem_repo4, "myrack", "1.0")
+      c.checksum(local_gem_path, "bundler", "9.0.0", Gem::Platform::RUBY, "cache")
     end
 
     expect(lockfile).to eq <<~L

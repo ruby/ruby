@@ -6,7 +6,7 @@ require_relative "gem_installer"
 module Bundler
   class ParallelInstaller
     class SpecInstallation
-      attr_accessor :spec, :name, :full_name, :post_install_message, :state, :error
+      attr_accessor :spec, :name, :full_name, :post_install_message, :state, :error, :dependencies
       def initialize(spec)
         @spec = spec
         @name = spec.name
@@ -46,25 +46,11 @@ module Bundler
         !post_install_message.empty?
       end
 
-      def ignorable_dependency?(dep)
-        dep.type == :development || dep.name == @name
-      end
-
-      # Checks installed dependencies against spec's dependencies to make
-      # sure needed dependencies have been installed.
+      # Recursively checks that all dependencies (direct and transitive) have been installed.
       def dependencies_installed?(installed_specs)
-        dependencies.all? {|d| installed_specs.include? d.name }
-      end
-
-      # Represents only the non-development dependencies, the ones that are
-      # itself and are in the total list.
-      def dependencies
-        @dependencies ||= all_dependencies.reject {|dep| ignorable_dependency? dep }
-      end
-
-      # Represents all dependencies
-      def all_dependencies
-        @spec.dependencies
+        dependencies.all? do |dep|
+          installed_specs.include?(dep.name) && dep.dependencies_installed?(installed_specs)
+        end
       end
 
       def to_s
@@ -85,6 +71,12 @@ module Bundler
       @force = force
       @local = local
       @specs = all_specs.map {|s| SpecInstallation.new(s) }
+      specs_by_name = @specs.to_h {|s| [s.name, s] }
+      @specs.each do |spec_install|
+        spec_install.dependencies = spec_install.spec.dependencies.filter_map do |dep|
+          specs_by_name[dep.name] unless dep.type == :development || dep.name == spec_install.name
+        end
+      end
       @specs.each do |spec_install|
         spec_install.state = :installed if skip.include?(spec_install.name)
       end if skip
