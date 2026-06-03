@@ -97,7 +97,8 @@ Dir.glob('\?')  # => []      # No entries containing character '?'.
 By default, the question-mark pattern does not match a leading period (as in a dot-file):
 
 ```ruby
-Dir.glob('?').select {|entry| entry.start_with?('.') } # => []
+Dir.glob(".???") # => [".git"]
+Dir.glob("????").select {|entry| entry.start_with?('.') } # => []
 ```
 
 That matching may be enabled by flag [`File::FNM_DOTMATCH`](#constant-filefnmdotmatch).
