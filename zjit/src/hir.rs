@@ -926,8 +926,6 @@ pub enum Insn {
     /// Check if the value is truthy and "return" a C boolean. In reality, we will likely fuse this
     /// with IfTrue/IfFalse in the backend to generate jcc.
     Test { val: InsnId },
-    /// Return C `true` if `val` is `Qnil`, else `false`.
-    IsNil { val: InsnId },
     /// Return C `true` if `val`'s method on cd resolves to the cfunc.
     IsMethodCfunc { val: InsnId, cd: *const rb_call_data, cfunc: *const u8, state: InsnId },
     /// Return C `true` if left == right
@@ -1314,8 +1312,7 @@ macro_rules! for_each_operand_impl {
             | Insn::Return { val }
             | Insn::Test { val }
             | Insn::SetLocal { val, .. }
-            | Insn::BoxBool { val }
-            | Insn::IsNil { val } => {
+            | Insn::BoxBool { val } => {
                 $visit_one!(val);
             }
             Insn::SetGlobal { val, state, .. }
@@ -1635,7 +1632,6 @@ impl Insn {
             Insn::ObjectAlloc { .. } => effects::Any,
             Insn::ObjectAllocClass { .. } => allocates,
             Insn::Test { .. } => effects::Empty,
-            Insn::IsNil { .. } => effects::Empty,
             Insn::IsMethodCfunc { .. } => effects::Any,
             Insn::IsBitEqual { .. } => effects::Empty,
             Insn::IsBitNotEqual { .. } => effects::Empty,
@@ -2007,7 +2003,6 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 Ok(())
             }
             Insn::Test { val } => { write!(f, "Test {val}") }
-            Insn::IsNil { val } => { write!(f, "IsNil {val}") }
             Insn::IsMethodCfunc { val, cd, .. } => { write!(f, "IsMethodCFunc {val}, :{}", ruby_call_method_name(*cd)) }
             Insn::IsBitEqual { left, right } => write!(f, "IsBitEqual {left}, {right}"),
             Insn::IsBitNotEqual { left, right } => write!(f, "IsBitNotEqual {left}, {right}"),
@@ -2949,9 +2944,6 @@ impl Function {
             Insn::Test { val } if self.type_of(*val).is_known_falsy() => Type::from_cbool(false),
             Insn::Test { val } if self.type_of(*val).is_known_truthy() => Type::from_cbool(true),
             Insn::Test { .. } => types::CBool,
-            Insn::IsNil { val } if self.is_a(*val, types::NilClass) => Type::from_cbool(true),
-            Insn::IsNil { val } if !self.type_of(*val).could_be(types::NilClass) => Type::from_cbool(false),
-            Insn::IsNil { .. } => types::CBool,
             Insn::IsMethodCfunc { .. } => types::CBool,
             Insn::IsBitEqual { .. } => types::CBool,
             Insn::IsBitNotEqual { .. } => types::CBool,
@@ -2990,6 +2982,8 @@ impl Function {
             Insn::CheckMatch { .. } => types::BasicObject,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
             Insn::RefineType { val, new_type, .. } => self.type_of(*val).intersection(*new_type),
+            &Insn::HasType { val, expected } if self.is_a(val, expected) => Type::from_cbool(true),
+            &Insn::HasType { val, expected } if !self.type_of(val).could_be(expected) => Type::from_cbool(false),
             Insn::HasType { .. } => types::CBool,
             Insn::GuardBitEquals { val, expected, .. } => self.type_of(*val).intersection(Type::from_const(*expected)),
             Insn::GuardAnyBitSet { val, .. } => self.type_of(*val),
@@ -6025,7 +6019,6 @@ impl Function {
             }
             // Instructions with 1 Ruby object operand
             Insn::Test { val }
-            | Insn::IsNil { val }
             | Insn::IsMethodCfunc { val, .. }
             | Insn::SetGlobal { val, .. }
             | Insn::SetLocal { val, .. }
@@ -7347,7 +7340,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }
                     let offset = get_arg(pc, 0).as_i64();
                     let val = state.stack_pop()?;
-                    let test_id = fun.push_insn(block, Insn::IsNil { val });
+                    let test_id = fun.push_insn(block, Insn::HasType { val, expected: types::NilClass });
                     let target_idx = insn_idx_at_offset(insn_idx, offset);
                     let target = insn_idx_to_block[&target_idx];
                     let nil = fun.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
