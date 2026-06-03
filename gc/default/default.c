@@ -17,6 +17,9 @@
 
 #ifdef BUILDING_MODULAR_GC
 # define nlz_int64(x) (x == 0 ? 64 : (unsigned int)__builtin_clzll((unsigned long long)x))
+# define ntz_intptr(x) \
+    ((x) == 0 ? (int)(sizeof(uintptr_t) * CHAR_BIT) : \
+     (int)__builtin_ctzll((unsigned long long)(x)))
 #else
 # include "internal/bits.h"
 #endif
@@ -3529,86 +3532,85 @@ struct gc_sweep_context {
 };
 
 static inline void
-gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t p, bits_t bitset, struct gc_sweep_context *ctx)
+gc_sweep_plane(rb_objspace_t *objspace, rb_heap_t *heap, uintptr_t base, bits_t bitset, struct gc_sweep_context *ctx)
 {
     struct heap_page *sweep_page = ctx->page;
     short slot_size = sweep_page->slot_size;
 
+    /* Callers guarantee bitset != 0 on entry. */
     do {
+        uintptr_t p = base + (uintptr_t)ntz_intptr(bitset) * slot_size;
         VALUE vp = (VALUE)p;
         GC_ASSERT(vp % sizeof(VALUE) == 0);
 
         rb_asan_unpoison_object(vp, false);
-        if (bitset & 1) {
-            switch (BUILTIN_TYPE(vp)) {
-              case T_MOVED:
-                if (objspace->flags.during_compacting) {
-                    /* The sweep cursor shouldn't have made it to any
-                     * T_MOVED slots while the compact flag is enabled.
-                     * The sweep cursor and compact cursor move in
-                     * opposite directions, and when they meet references will
-                     * get updated and "during_compacting" should get disabled */
-                    rb_bug("T_MOVED shouldn't be seen until compaction is finished");
-                }
-                gc_report(3, objspace, "page_sweep: %s is added to freelist\n", rb_obj_info(vp));
-                ctx->empty_slots++;
-                heap_page_add_freeobj(objspace, sweep_page, vp);
-                break;
-              case T_ZOMBIE:
-                /* already counted */
-                break;
-              case T_NONE:
-                ctx->empty_slots++; /* already freed */
-                break;
+        switch (BUILTIN_TYPE(vp)) {
+          case T_MOVED:
+            if (objspace->flags.during_compacting) {
+                /* The sweep cursor shouldn't have made it to any
+                 * T_MOVED slots while the compact flag is enabled.
+                 * The sweep cursor and compact cursor move in
+                 * opposite directions, and when they meet references will
+                 * get updated and "during_compacting" should get disabled */
+                rb_bug("T_MOVED shouldn't be seen until compaction is finished");
+            }
+            gc_report(3, objspace, "page_sweep: %s is added to freelist\n", rb_obj_info(vp));
+            ctx->empty_slots++;
+            heap_page_add_freeobj(objspace, sweep_page, vp);
+            break;
+          case T_ZOMBIE:
+            /* already counted */
+            break;
+          case T_NONE:
+            ctx->empty_slots++; /* already freed */
+            break;
 
-              default:
+          default:
 #if RGENGC_CHECK_MODE
-                if (!is_full_marking(objspace)) {
-                    if (RVALUE_OLD_P(objspace, vp)) rb_bug("page_sweep: %p - old while minor GC.", (void *)p);
-                    if (RVALUE_REMEMBERED(objspace, vp)) rb_bug("page_sweep: %p - remembered.", (void *)p);
-                }
+            if (!is_full_marking(objspace)) {
+                if (RVALUE_OLD_P(objspace, vp)) rb_bug("page_sweep: %p - old while minor GC.", (void *)p);
+                if (RVALUE_REMEMBERED(objspace, vp)) rb_bug("page_sweep: %p - remembered.", (void *)p);
+            }
 #endif
 
 #if RGENGC_CHECK_MODE
 #define CHECK(x) if (x(objspace, vp) != FALSE) rb_bug("obj_free: " #x "(%s) != FALSE", rb_obj_info(vp))
-                CHECK(RVALUE_WB_UNPROTECTED);
-                CHECK(RVALUE_MARKED);
-                CHECK(RVALUE_MARKING);
-                CHECK(RVALUE_UNCOLLECTIBLE);
+            CHECK(RVALUE_WB_UNPROTECTED);
+            CHECK(RVALUE_MARKED);
+            CHECK(RVALUE_MARKING);
+            CHECK(RVALUE_UNCOLLECTIBLE);
 #undef CHECK
 #endif
 
-                if (!rb_gc_obj_needs_cleanup_p(vp)) {
-                    if (RB_UNLIKELY(objspace->hook_events & RUBY_INTERNAL_EVENT_FREEOBJ)) {
-                        rb_gc_event_hook(vp, RUBY_INTERNAL_EVENT_FREEOBJ);
-                    }
+            if (!rb_gc_obj_needs_cleanup_p(vp)) {
+                if (RB_UNLIKELY(objspace->hook_events & RUBY_INTERNAL_EVENT_FREEOBJ)) {
+                    rb_gc_event_hook(vp, RUBY_INTERNAL_EVENT_FREEOBJ);
+                }
 
+                (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, slot_size);
+                heap_page_add_freeobj(objspace, sweep_page, vp);
+                gc_report(3, objspace, "page_sweep: %s (fast path) added to freelist\n", rb_obj_info(vp));
+                ctx->freed_slots++;
+            }
+            else {
+                gc_report(2, objspace, "page_sweep: free %p\n", (void *)p);
+
+                rb_gc_event_hook(vp, RUBY_INTERNAL_EVENT_FREEOBJ);
+
+                rb_gc_obj_free_vm_weak_references(vp);
+                if (rb_gc_obj_free(objspace, vp)) {
                     (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, slot_size);
                     heap_page_add_freeobj(objspace, sweep_page, vp);
-                    gc_report(3, objspace, "page_sweep: %s (fast path) added to freelist\n", rb_obj_info(vp));
+                    gc_report(3, objspace, "page_sweep: %s is added to freelist\n", rb_obj_info(vp));
                     ctx->freed_slots++;
                 }
                 else {
-                    gc_report(2, objspace, "page_sweep: free %p\n", (void *)p);
-
-                    rb_gc_event_hook(vp, RUBY_INTERNAL_EVENT_FREEOBJ);
-
-                    rb_gc_obj_free_vm_weak_references(vp);
-                    if (rb_gc_obj_free(objspace, vp)) {
-                        (void)VALGRIND_MAKE_MEM_UNDEFINED((void*)p, slot_size);
-                        heap_page_add_freeobj(objspace, sweep_page, vp);
-                        gc_report(3, objspace, "page_sweep: %s is added to freelist\n", rb_obj_info(vp));
-                        ctx->freed_slots++;
-                    }
-                    else {
-                        ctx->final_slots++;
-                    }
+                    ctx->final_slots++;
                 }
-                break;
             }
+            break;
         }
-        p += slot_size;
-        bitset >>= 1;
+        bitset &= bitset - 1;
     } while (bitset);
 }
 
