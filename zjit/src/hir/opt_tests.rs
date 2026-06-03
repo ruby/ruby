@@ -6767,7 +6767,6 @@ mod hir_opt_tests {
         bb3(v8:BasicObject, v9:NilClass):
           v13:NilClass = Const Value(nil)
           CheckInterrupts
-          v20:CBool[true] = HasType v13, NilClass
           v21:NilClass = Const Value(nil)
           Return v21
         ");
@@ -6797,7 +6796,6 @@ mod hir_opt_tests {
         bb3(v8:BasicObject, v9:NilClass):
           v13:Fixnum[1] = Const Value(1)
           CheckInterrupts
-          v20:CBool[false] = HasType v13, NilClass
           PatchPoint MethodRedefined(Integer@0x1000, itself@0x1008, cme:0x1010)
           Return v13
         ");

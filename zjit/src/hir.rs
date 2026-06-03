@@ -1747,7 +1747,7 @@ impl Insn {
             Insn::HasType { expected, .. }
                 => Effect::read_write(
                     if expected.is_subtype(types::Immediate) { abstract_heaps::Empty } else { abstract_heaps::Memory },
-                    abstract_heaps::Control
+                    abstract_heaps::Empty
                 ),
             Insn::Entries { .. } => effects::Any,
             Insn::BreakPoint | Insn::Unreachable => Effect::read_write(abstract_heaps::Empty, abstract_heaps::Control),
