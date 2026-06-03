@@ -74,7 +74,7 @@ else
 end
 
 script_path = Pathname(__dir__) / 'capture.bt'
-script = IO.read(script_path)
+script = File.read(script_path)
 template = ERB.new(script, trim_mode: '%<>')
 template.location = [script_path.to_s, 1]
 
