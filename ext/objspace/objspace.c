@@ -697,12 +697,28 @@ wrap_klass_iow(VALUE klass)
 
 /*
  *  call-seq:
- *     ObjectSpace.internal_class_of(obj) -> Class or Module
+ *     ObjectSpace.internal_class_of(obj) -> class or module
  *
- *  [MRI specific feature] Return internal class of obj.
- *  obj can be an instance of InternalObjectWrapper.
+ *  Returns the real class of +obj+, which may differ from the class returned
+ *  by Object#class.
+ *
+ *  Ruby inserts hidden classes into an object's ancestry, such as a singleton
+ *  class or an included module's iclass. Object#class skips over these, but
+ *  this method returns the first one, including any hidden class:
+ *
+ *    require 'objspace'
+ *
+ *    s = "x"
+ *    def s.foo; end                     # gives +s+ a singleton class
+ *    s.class                            # => String
+ *    ObjectSpace.internal_class_of(s)   # => #<Class:#<String:0x000000012574c1f8>>
+ *
+ *  +obj+ may be an ObjectSpace::InternalObjectWrapper, in which case the class
+ *  of the wrapped internal object is returned.
  *
  *  Note that you should not use this method in your application.
+ *
+ *  This method is only expected to work with C Ruby.
  */
 static VALUE
 objspace_internal_class_of(VALUE self, VALUE obj)
