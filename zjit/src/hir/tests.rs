@@ -4467,7 +4467,7 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           CheckInterrupts
-          v17:CBool = IsNil v10
+          v17:CBool = HasType v10, NilClass
           v18:NilClass = Const Value(nil)
           CondBranch v17, bb4(v9, v18, v18), bb5()
         bb5():
@@ -4514,7 +4514,7 @@ pub(crate) mod hir_build_tests {
         bb6():
           v19:Truthy = RefineType v10, Truthy
           CheckInterrupts
-          v25:CBool[false] = IsNil v19
+          v25:CBool[false] = HasType v19, NilClass
           v26:NilClass = Const Value(nil)
           CondBranch v25, bb5(v9, v26, v26), bb7()
         bb7():
