@@ -53,6 +53,28 @@ RubyBuiltinType = {
   :RUBY_T_MOVED    => 0x1e, # /**< @see struct ::RMoved */
 }
 
+RUBY_T_MASK     = 0x1f
+
+RubyFlags = {
+  :RUBY_FL_WB_PROTECTED   => (1<<5),
+  :RUBY_FL_UNUSED6        => (1<<6),
+  :RUBY_FL_FINALIZE       => (1<<7),
+  :RUBY_FL_SHAREABLE      => (1<<8),
+  :RUBY_FL_WEAK_REFERENCE => (1<<9),
+  :RUBY_FL_UNUSED10       => (1<<10),
+  :RUBY_FL_FREEZE         => (1<<11),
+}
+
+def decode_flags(flags)
+  decoded = {}
+  decoded['builtin_type'] = RubyBuiltinType.key(flags & RUBY_T_MASK)
+  decoded['flags'] = {}
+  RubyFlags.each do |k, v|
+    decoded['flags'][k.to_s] = (flags & v) != 0
+  end
+  decoded
+end
+
 class LogProcessor
   def initialize(verbose: false)
     @verbose = verbose
@@ -128,6 +150,14 @@ class LogProcessor
         n: args[0].to_i,
         size: args[1].to_i,
       })
+    when 'gc_obj_new'
+      obj = args[0].to_i
+      flags_value = args[1].to_i
+      decoded_flags = decode_flags(flags_value)
+      result[:args].update({
+        obj: obj,
+        flags_value: flags_value,
+      }).update(decoded_flags)
     when 'gc_obj_free'
       obj = args[0].to_i
       builtin_type = RubyBuiltinType.key(args[1].to_i)

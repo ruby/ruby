@@ -263,9 +263,16 @@ provider ruby {
   probe gc__xfree();
 
   /*
+     ruby:::gc-obj_new();
+
+     Fired when an object is allocated
+  */
+  probe gc__obj_new(void *obj, int flags);
+
+  /*
      ruby:::gc-obj_free();
 
-     Fired when de-allocating memory with xfree.
+     Fired when finalizing an object with rb_gc_obj_free.
   */
   probe gc__obj_free(void *obj, int builtin_type);
 };

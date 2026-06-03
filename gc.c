@@ -1042,6 +1042,10 @@ rb_newobj(rb_execution_context_t *ec, VALUE klass, VALUE flags, shape_id_t shape
         gc_newobj_hook(obj);
     }
 
+    if (RUBY_DTRACE_GC_OBJ_NEW_ENABLED()) {
+        RUBY_DTRACE_GC_OBJ_NEW((void*)obj, flags);
+    }
+
 #if RGENGC_CHECK_MODE
 # ifndef GC_DEBUG_SLOT_FILL_SPECIAL_VALUE
 #  define GC_DEBUG_SLOT_FILL_SPECIAL_VALUE 255

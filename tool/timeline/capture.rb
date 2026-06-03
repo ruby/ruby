@@ -23,6 +23,9 @@ USDT_GROUPS = {
   'xfree' => [
     ['gc__xfree',         "ruby",     'gc_xfree',         'i',  0],
   ],
+  'obj_new' => [
+    ['gc__obj_new',       "ruby",     'gc_obj_new',       'i',  2],
+  ],
   'obj_free' => [
     ['gc__obj_free',      "ruby",     'gc_obj_free',      'i',  2],
   ],
