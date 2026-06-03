@@ -283,10 +283,35 @@ provider ruby {
   */
   probe gc__xfree(void *obj, int size);
 
+  /*
+     ruby:::gvl-acquire();
+
+     Fired the global VM lock is acquired
+  */
   probe gvl__acquire();
+
+  /*
+     ruby:::gvl-release();
+
+     Fired the global VM lock is release
+  */
   probe gvl__release();
 
-  probe rts__set_running(const void *old_thread, const void *new_thread);
+  /*
+     ruby:::rts-set_running();
+
+     Fired when setting the running thread of a Ractor (`rb_thread_sched::running`).
+
+     This probe is mainly used to identify the duration in which a thread occupies a Ractor. If the
+     `old_thread` is NULL and the `new_thread` is not NULL, it means the `new_thread` is scheduled
+     onto a Ractor.  If the `old_thread` is not NULL but the `new_thread` is NULL, it means the
+     `old_thread` is de-scheduled form a Ractor.
+
+     * `sched` the `rb_thread_sched` instance
+     * `old_thread` the old thread running on the ractor
+     * `new_thread` the new thread running on the ractor
+  */
+  probe rts__set_running(void *sched, void *old_thread, void *new_thread);
 };
 
 #pragma D attributes Stable/Evolving/Common provider ruby provider

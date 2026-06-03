@@ -693,7 +693,7 @@ thread_sched_set_running(struct rb_thread_sched *sched, rb_thread_t *th)
 
     if (RUBY_DTRACE_RTS_SET_RUNNING_ENABLED()) {
         rb_thread_t *old = sched->running;
-        RUBY_DTRACE_RTS_SET_RUNNING(old, th);
+        RUBY_DTRACE_RTS_SET_RUNNING(sched, old, th);
     }
 
     sched->running = th;

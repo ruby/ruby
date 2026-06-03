@@ -161,18 +161,21 @@ class LogProcessor
         size: args[1].to_i,
       })
     when 'rts_set_running'
-      old_thread = args[0].to_i
-      new_thread = args[1].to_i
+      sched = args[0].to_i
+      old_thread = args[1].to_i
+      new_thread = args[2].to_i
       if old_thread == 0
         result[:name] = 'RTS'
         result[:ph] = 'B'
         result[:args].update({
+          sched: sched,
           thread: new_thread,
         })
       elsif new_thread == 0
         result[:name] = 'RTS'
         result[:ph] = 'E'
         result[:args].update({
+          sched: sched,
           thread: old_thread,
         })
       else

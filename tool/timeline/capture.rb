@@ -31,7 +31,7 @@ USDT_GROUPS = {
     ['gvl__release',      "ruby",     'GVL',              'E',  0],
   ],
   'rts' => [ # ractor.thread.sched
-    ['rts__set_running',  "ruby",     'rts_set_running',  'i',  2],
+    ['rts__set_running',  "ruby",     'rts_set_running',  'i',  3],
   ]
 }
 
