@@ -4529,6 +4529,209 @@ fn test_getspecial_number_in_jit_to_jit_callee() {
     assert_snapshot!(assert_compiles("caller_method"), @"nil");
 }
 
+#[cfg(all(target_os = "linux", target_env = "gnu", target_arch = "x86_64"))]
+mod signal_profiler {
+    use super::*;
+    use std::ffi::c_void;
+    use std::os::raw::{c_int, c_long, c_ulong};
+    use std::ptr::null_mut;
+    use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+
+    const SIGPROF: c_int = 27;
+    const SA_RESTART: c_int = 0x10000000;
+    const SIGEV_THREAD_ID: c_int = 4;
+    const CLOCK_THREAD_CPUTIME_ID: c_int = 3;
+    const PROFILE_FRAMES_LIMIT: usize = 128;
+
+    const SYS_GETTID: c_long = 186;
+
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    struct SigSet {
+        val: [c_ulong; 16],
+    }
+
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    struct SigAction {
+        sa_handler: usize,
+        sa_mask: SigSet,
+        sa_flags: c_int,
+        sa_restorer: usize,
+    }
+
+    #[repr(C)]
+    struct Sigevent {
+        sigev_value: usize,
+        sigev_signo: c_int,
+        sigev_notify: c_int,
+        sigev_notify_thread_id: c_int,
+        pad: [c_int; 11],
+    }
+
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    struct Timespec {
+        tv_sec: c_long,
+        tv_nsec: c_long,
+    }
+
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    struct Itimerspec {
+        it_interval: Timespec,
+        it_value: Timespec,
+    }
+
+    type TimerT = *mut c_void;
+
+    unsafe extern "C" {
+        fn sigemptyset(set: *mut SigSet) -> c_int;
+        fn sigaction(signum: c_int, act: *const SigAction, oldact: *mut SigAction) -> c_int;
+        fn timer_create(clockid: c_int, sevp: *mut Sigevent, timerid: *mut TimerT) -> c_int;
+        fn timer_settime(timerid: TimerT, flags: c_int, new_value: *const Itimerspec, old_value: *mut Itimerspec) -> c_int;
+        fn timer_delete(timerid: TimerT) -> c_int;
+        fn syscall(num: c_long, ...) -> c_long;
+    }
+
+    static SAMPLES: AtomicUsize = AtomicUsize::new(0);
+    static IN_HANDLER: AtomicBool = AtomicBool::new(false);
+
+    extern "C" fn sample_profile_frames(signum: c_int) {
+        if signum != SIGPROF || IN_HANDLER.swap(true, Ordering::Relaxed) {
+            return;
+        }
+
+        let mut frames = [VALUE(0); PROFILE_FRAMES_LIMIT];
+        let mut lines = [0; PROFILE_FRAMES_LIMIT];
+        let collected_size = unsafe {
+            rb_profile_frames(
+                0,
+                PROFILE_FRAMES_LIMIT as c_int,
+                frames.as_mut_ptr(),
+                lines.as_mut_ptr(),
+            )
+        };
+        if collected_size > 0 {
+            SAMPLES.fetch_add(1, Ordering::Relaxed);
+        }
+
+        IN_HANDLER.store(false, Ordering::Relaxed);
+    }
+
+    pub struct Profiler {
+        timerid: TimerT,
+        old_sigprof: SigAction,
+        timer_created: bool,
+    }
+
+    impl Profiler {
+        pub fn start(interval_usec: c_long) -> Self {
+            assert!(interval_usec > 0);
+            assert_eq!(std::mem::size_of::<SigAction>(), 152);
+            assert_eq!(std::mem::size_of::<Sigevent>(), 64);
+            SAMPLES.store(0, Ordering::Relaxed);
+            IN_HANDLER.store(false, Ordering::Relaxed);
+
+            let mut handler: SigAction = unsafe { std::mem::zeroed() };
+            assert_eq!(unsafe { sigemptyset(&mut handler.sa_mask) }, 0, "sigemptyset failed");
+            handler.sa_handler = sample_profile_frames as usize;
+            handler.sa_flags = SA_RESTART;
+
+            let mut old_sigprof: SigAction = unsafe { std::mem::zeroed() };
+            assert_eq!(
+                unsafe { sigaction(SIGPROF, &handler, &mut old_sigprof) },
+                0,
+                "sigaction failed",
+            );
+
+            let mut profiler = Self {
+                timerid: null_mut(),
+                old_sigprof,
+                timer_created: false,
+            };
+
+            let mut event: Sigevent = unsafe { std::mem::zeroed() };
+            event.sigev_notify = SIGEV_THREAD_ID;
+            event.sigev_signo = SIGPROF;
+            event.sigev_notify_thread_id = unsafe { syscall(SYS_GETTID) as c_int };
+
+            assert_eq!(
+                unsafe { timer_create(CLOCK_THREAD_CPUTIME_ID, &mut event, &mut profiler.timerid) },
+                0,
+                "timer_create failed",
+            );
+            profiler.timer_created = true;
+
+            let interval = usec_to_timespec(interval_usec);
+            let timer = Itimerspec {
+                it_interval: interval,
+                it_value: interval,
+            };
+            assert_eq!(
+                unsafe { timer_settime(profiler.timerid, 0, &timer, null_mut()) },
+                0,
+                "timer_settime failed",
+            );
+
+            profiler
+        }
+
+        pub fn samples(&self) -> usize {
+            SAMPLES.load(Ordering::Relaxed)
+        }
+    }
+
+    impl Drop for Profiler {
+        fn drop(&mut self) {
+            if self.timer_created {
+                let timer = Itimerspec {
+                    it_interval: usec_to_timespec(0),
+                    it_value: usec_to_timespec(0),
+                };
+                unsafe {
+                    timer_settime(self.timerid, 0, &timer, null_mut());
+                    timer_delete(self.timerid);
+                }
+            }
+            unsafe {
+                sigaction(SIGPROF, &self.old_sigprof, null_mut());
+            }
+        }
+    }
+
+    fn usec_to_timespec(usec: c_long) -> Timespec {
+        Timespec {
+            tv_sec: usec / 1_000_000,
+            tv_nsec: (usec % 1_000_000) * 1_000,
+        }
+    }
+}
+
+// Simulate sampling profilers such as stackprof/vernier: a SIGPROF handler
+// interrupts a JIT frame and calls rb_profile_frames().
+#[cfg(all(target_os = "linux", target_env = "gnu", target_arch = "x86_64"))]
+#[test]
+fn test_profile_frames_from_signal_handler() {
+    eval(r#"
+        def profiled_leaf_loop(n)
+          i = 0
+          while i < n
+            i += 1
+          end
+          i
+        end
+
+        # Compile the method before arming the timer so samples land in JIT code.
+        profiled_leaf_loop(1)
+        profiled_leaf_loop(1)
+    "#);
+
+    let profiler = signal_profiler::Profiler::start(100);
+    assert_snapshot!(assert_compiles("profiled_leaf_loop(20_000_000)"), @"20000000");
+    assert!(profiler.samples() > 0, "rb_profile_frames was not called from SIGPROF handler");
+}
+
 #[test]
 fn test_profile_under_nested_jit_call() {
     assert_snapshot!(inspect("
