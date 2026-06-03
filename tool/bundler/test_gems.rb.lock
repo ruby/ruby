@@ -59,7 +59,6 @@ PLATFORMS
 
 DEPENDENCIES
   builder (~> 3.2)
-  compact_index (~> 0.15.0)
   concurrent-ruby
   etc
   fiddle
@@ -103,4 +102,4 @@ CHECKSUMS
   tilt (2.6.1) sha256=35a99bba2adf7c1e362f5b48f9b581cce4edfba98117e34696dde6d308d84770
 
 BUNDLED WITH
-  4.0.12
+  4.0.13

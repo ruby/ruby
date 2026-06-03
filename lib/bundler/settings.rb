@@ -42,6 +42,7 @@ module Bundler
     ].freeze
 
     NUMBER_KEYS = %w[
+      cooldown
       jobs
       redirect
       retry

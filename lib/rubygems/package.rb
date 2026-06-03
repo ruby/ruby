@@ -449,6 +449,11 @@ EOM
           directories << mkdir
         end
 
+        real_mkdir = File.realpath(mkdir)
+        unless real_mkdir == destination_dir || normalize_path(real_mkdir).start_with?(normalize_path(destination_dir + "/"))
+          raise Gem::Package::PathError.new(real_mkdir, destination_dir)
+        end
+
         if entry.file?
           File.open(destination, "wb") do |out|
             copy_stream(tar.io, out, entry.size)
@@ -466,7 +471,7 @@ EOM
 
     symlinks.each do |name, target, destination, real_destination|
       if File.exist?(real_destination)
-        File.symlink(target, destination)
+        create_symlink(target, destination)
       else
         alert_warning "#{@spec.full_name} ships with a dangling symlink named #{name} pointing to missing #{target} file. Ignoring"
       end
@@ -746,6 +751,21 @@ EOM
     bytes = io.read(limit + 1)
     raise Gem::Package::FormatError, "#{name} is too big (over #{limit} bytes)" if bytes.size > limit
     bytes
+  end
+
+  if Gem.win_platform?
+    # Create a symlink and fallback to copy the file or directory on Windows,
+    # where symlink creation needs special privileges in form of the Developer Mode.
+    def create_symlink(old_name, new_name)
+      File.symlink(old_name, new_name)
+    rescue Errno::EACCES
+      from = File.expand_path(old_name, File.dirname(new_name))
+      FileUtils.cp_r(from, new_name)
+    end
+  else
+    def create_symlink(old_name, new_name)
+      File.symlink(old_name, new_name)
+    end
   end
 end
 
