@@ -73,6 +73,19 @@ describe "Kernel#inspect" do
       inspected.should ==  %{#<Object:0x00 @host="localhost", @user="root", @password="hunter2">}
     end
 
+    it "displays all instance variables if #instance_variables_to_inspect is not defined" do
+      obj = BasicObject.new
+      obj.instance_eval do
+        @host = "localhost"
+        @user = "root"
+        @password = "hunter2"
+      end
+      method_inspect = Kernel.instance_method(:inspect)
+
+      inspected = method_inspect.bind(obj).call.sub(/^#<BasicObject:0x[0-9a-f]+/, '#<BasicObject:0x00')
+      inspected.should ==  %{#<BasicObject:0x00 @host="localhost", @user="root", @password="hunter2">}
+    end
+
     it "raises an error if #instance_variables_to_inspect returns an invalid value" do
       obj = Object.new
       obj.instance_eval do

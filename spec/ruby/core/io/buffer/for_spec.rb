@@ -66,6 +66,7 @@ describe "IO::Buffer.for" do
           buffer.get_string.should == @string.b
 
           buffer.should_not.readonly?
+          buffer.should_not.locked?
 
           buffer.set_string("ghost shell")
           @string.should == "ghost shellg"

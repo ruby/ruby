@@ -152,7 +152,7 @@ describe :kernel_raise_with_cause, shared: true do
 
     it "supports automatic cause chaining from a previous exception" do
       begin
-        raise StandardError,"first error"
+        raise StandardError, "first error"
       rescue => cause
         -> { @object.raise("second error") }.should.raise(RuntimeError, "second error", cause:)
       end

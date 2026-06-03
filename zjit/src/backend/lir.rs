@@ -4,7 +4,7 @@ use std::mem::take;
 use std::rc::Rc;
 use crate::bitset::BitSet;
 use crate::codegen::{local_size_and_idx_to_ep_offset, perf_symbol_range_start, perf_symbol_range_end};
-use crate::cruby::{IseqPtr, Qundef, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
+use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, vm_stack_canary};
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
 use crate::options::{TraceExits, PerfMap, get_option};
@@ -13,7 +13,7 @@ use crate::payload::IseqVersionRef;
 use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, side_exit_counter, CompileError};
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
-use crate::state::rb_zjit_record_exit_stack;
+use crate::state::{ZJITState, rb_zjit_record_exit_stack};
 
 /// LIR Block ID. Unique ID for each block, and also defined in LIR so
 /// we can differentiate it from HIR block ids.
@@ -1562,23 +1562,6 @@ impl Assembler
         iter
     }
 
-    /// Return an operand for a basic block argument at a given index.
-    /// To simplify the implementation, we allocate a fixed register or a stack slot
-    /// for each basic block argument.
-    pub fn param_opnd(idx: usize) -> Opnd {
-        use crate::backend::current::ALLOC_REGS;
-        use crate::cruby::SIZEOF_VALUE_I32;
-
-        if idx < ALLOC_REGS.len() {
-            Opnd::Reg(ALLOC_REGS[idx])
-        } else {
-            // With FrameSetup, the address that NATIVE_BASE_PTR points to stores an old value in the register.
-            // To avoid clobbering it, we need to start from the next slot, and we also reserve one space for
-            // JITFrame, hence `+ 2` for the index.
-            Opnd::mem(64, NATIVE_BASE_PTR, (idx - ALLOC_REGS.len() + 2) as i32 * -SIZEOF_VALUE_I32)
-        }
-    }
-
     pub fn linearize_instructions(&self) -> Vec<Insn> {
         // Emit instructions with labels, expanding branch parameters
         let mut insns = Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY);
@@ -2040,11 +2023,25 @@ impl Assembler
             if self.basic_blocks[block_id.0].is_dummy() { continue; }
             let params = self.basic_blocks[block_id.0].parameters.clone();
 
+            // JIT-to-JIT entries that would need more argument registers should
+            // be unreachable because can_direct_send() refuses to call them.
+            // Keep compiling the function body, but make the unsupported entry
+            // abort if control ever reaches it. TODO: Remove this (Shopify/ruby#916)
+            if params.len() > C_ARG_OPNDS.len() {
+                let insert_pos = self.basic_blocks[block_id.0].insns.iter()
+                    .position(|insn| matches!(insn, Insn::FrameSetup { .. }))
+                    .or_else(|| self.basic_blocks[block_id.0].insns.iter().position(|insn| matches!(insn, Insn::Label(_))).map(|idx| idx + 1))
+                    .unwrap_or(0);
+                self.basic_blocks[block_id.0].insns.insert(insert_pos, Insn::Abort);
+                self.basic_blocks[block_id.0].insn_ids.insert(insert_pos, None);
+                continue;
+            }
+
             // Rewrite VRegs to physical registers before sequentialization
             // so the parcopy algorithm can detect physical register conflicts.
             let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = params.iter().enumerate()
                 .map(|(i, param)| parcopy::RegisterCopy::<Opnd> {
-                    source: Assembler::param_opnd(i),
+                    source: C_ARG_OPNDS[i],
                     destination: Self::rewritten_opnd(*param, assignments),
                 })
                 .filter(|copy| copy.source != copy.destination)
@@ -2380,7 +2377,7 @@ impl Assembler
             asm_comment!(asm, "save cfp->iseq");
             asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_ISEQ), VALUE::from(*iseq).into());
 
-            // cfp->block_code and cfp->jit_return are cleared by the caller jit_exec() or JIT_EXEC()
+            // cfp->block_code and cfp->jit_return are cleared by the materialize_exit trampoline
 
             if !stack.is_empty() {
                 asm_comment!(asm, "write stack slots: {}", join_opnds(&stack, ", "));
@@ -2400,8 +2397,7 @@ impl Assembler
         /// Tear down the JIT frame and return to the interpreter.
         fn compile_exit_return(asm: &mut Assembler) {
             asm_comment!(asm, "exit to the interpreter");
-            asm.frame_teardown(&[]); // matching the setup in gen_entry_point()
-            asm.cret(Opnd::UImm(Qundef.as_u64()));
+            asm.jmp(Target::CodePtr(ZJITState::get_materialize_exit_trampoline()));
         }
 
         fn compile_exit_recompile(asm: &mut Assembler, exit: &SideExit) {
@@ -2434,7 +2430,7 @@ impl Assembler
             compile_exit_save_state(asm, exit);
             if trace_reason.is_some() || exit.recompile.is_some() {
                 // Clear cfp->jit_return to prepare for a C call. Normally, cfp->jit_return
-                // is cleared by the caller jit_exec() or JIT_EXEC(), but if we're about to
+                // is cleared by the materialize_exit trampoline, but if we're about to
                 // make a C call, we need to clear any stale JITFrame.
                 asm_comment!(asm, "clear cfp->jit_return");
                 asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), 0.into());
@@ -4217,8 +4213,8 @@ mod tests {
         let (assignments, _) = asm.linear_scan(intervals.clone(), 5, &preferred_registers);
 
         // Entry block b1 has parameters [v0, v1].
-        // With 5 registers: v0 -> Reg(0) = regs[0], arrival = param_opnd(0) = regs[0] -> self-move, filtered
-        //                    v1 -> Reg(1) = regs[1], arrival = param_opnd(1) = regs[1] -> self-move, filtered
+        // With 5 registers: v0 -> Reg(0) = regs[0], arrival = C_ARG_OPNDS[0] = regs[0] -> self-move, filtered
+        //                    v1 -> Reg(1) = regs[1], arrival = C_ARG_OPNDS[1] = regs[1] -> self-move, filtered
         // Before resolve_ssa, b1 has: [Label, Jmp] = 2 insns
         assert_eq!(asm.basic_blocks[b1.0].insns.len(), 2);
 
@@ -4241,6 +4237,31 @@ mod tests {
         } else {
             panic!("Expected Jmp at end of b1");
         }
+    }
+
+    #[test]
+    fn test_resolve_ssa_entry_params_too_many_abort() {
+        let mut asm = Assembler::new();
+        let block = asm.new_block(hir::BlockId(0), true, 0);
+        asm.set_current_block(block);
+        let label = asm.new_label("bb0");
+        asm.write_label(label);
+
+        for _ in 0..=C_ARG_OPNDS.len() {
+            let param = asm.new_vreg(64);
+            asm.basic_blocks[block.0].add_parameter(param);
+        }
+        asm.basic_blocks[block.0].push_insn(Insn::CRet(Opnd::UImm(0)));
+
+        let live_in = asm.analyze_liveness();
+        asm.number_instructions(0);
+        let intervals = asm.build_intervals(live_in);
+        let preferred_registers = asm.preferred_register_assignments(&intervals);
+        let (assignments, _) = asm.linear_scan(intervals.clone(), 5, &preferred_registers);
+
+        asm.resolve_ssa(&intervals, &assignments);
+
+        assert!(matches!(asm.basic_blocks[block.0].insns[1], Insn::Abort));
     }
 
     fn build_critical_edge() -> (Assembler, Opnd, Opnd, Opnd, Opnd, Opnd, BlockId, BlockId, BlockId) {

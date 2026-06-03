@@ -313,7 +313,7 @@ class TestGem < Gem::TestCase
     assert_equal %w[a-1 b-2 c-2], loaded_spec_names
   end
 
-  def test_activate_bin_path_raises_a_meaningful_error_if_a_gem_thats_finally_activated_has_orphaned_dependencies
+  def test_activate_bin_path_backtracks_when_highest_version_has_orphaned_dependencies
     a1 = util_spec "a", "1" do |s|
       s.executables = ["exec"]
       s.add_dependency "b"
@@ -331,13 +331,11 @@ class TestGem < Gem::TestCase
 
     install_specs c1, b1, b2, a1
 
-    # c2 is missing, and b2 which has it as a dependency will be activated, so we should get an error about the orphaned dependency
+    # c2 is missing, but the resolver backtracks from b2 to b1 which
+    # works with c1, finding a valid solution despite partial installation
+    load Gem.activate_bin_path("a", "exec", ">= 0")
 
-    e = assert_raise Gem::UnsatisfiableDependencyError do
-      load Gem.activate_bin_path("a", "exec", ">= 0")
-    end
-
-    assert_equal "Unable to resolve dependency: 'b (>= 0)' requires 'c (= 2)'", e.message
+    assert_equal %w[a-1 b-1 c-1], loaded_spec_names
   end
 
   def test_activate_bin_path_in_debug_mode

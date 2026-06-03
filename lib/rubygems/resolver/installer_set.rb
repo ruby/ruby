@@ -160,7 +160,7 @@ class Gem::Resolver::InstallerSet < Gem::Resolver::Set
       res.concat matching_local
 
       begin
-        if local_spec = @local_source.find_gem(name, dep.requirement)
+        @local_source.find_all_gems(name, dep.requirement).each do |local_spec|
           res << Gem::Resolver::IndexSpecification.new(
             self, local_spec.name, local_spec.version,
             @local_source, local_spec.platform

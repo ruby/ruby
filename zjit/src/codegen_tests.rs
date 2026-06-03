@@ -2286,6 +2286,69 @@ fn test_fixnum_floor() {
 }
 
 #[test]
+fn test_fixnum_mod() {
+    eval("
+        def test(a, b) = a % b
+        test(13, 4) # profile opt_mod
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_mod);
+    assert_snapshot!(assert_compiles("[test(13, 4), test(13, 13), test(5, 7)]"), @"[1, 0, 5]");
+}
+
+#[test]
+fn test_fixnum_mod_negative() {
+    eval("
+        def test(a, b) = a % b
+        test(7, 3) # profile opt_mod
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_mod);
+    assert_snapshot!(assert_compiles("[test(-7, 3), test(7, -3), test(-7, -3)]"), @"[2, -2, -1]");
+}
+
+#[test]
+fn test_fixnum_mod_by_zero() {
+    eval("
+        def test(a, b) = a % b rescue :zero_div
+        test(13, 4) # profile opt_mod
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_mod);
+    assert_snapshot!(assert_compiles_allowing_exits("test(13, 0)"), @":zero_div");
+}
+
+#[test]
+fn test_fixnum_div_min_by_neg_one() {
+    // FIXNUM_MIN / -1 overflows to a Bignum: the JIT must side exit, not return a mistyped Fixnum.
+    eval("
+        def test(a, b) = a / b
+        test(10, 3) # profile opt_div
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_div);
+    assert_snapshot!(assert_compiles_allowing_exits("test(-4611686018427387904, -1)"), @"4611686018427387904");
+}
+
+#[test]
+fn test_fixnum_div_overflow_propagation() {
+    // The div must side exit before its Bignum result reaches the specialized (a / b) & 1 op.
+    eval("
+        def test(a, b) = (a / b) & 1
+        test(10, 3) # profile opt_div
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_div);
+    assert_snapshot!(assert_compiles_allowing_exits("test(-4611686018427387904, -1)"), @"0");
+}
+
+#[test]
+fn test_fixnum_div_by_neg_one_is_fine() {
+    // x / -1 (x != FIXNUM_MIN) is a normal Fixnum and must NOT trip the overflow guard.
+    eval("
+        def test(a, b) = a / b
+        test(10, 3) # profile opt_div
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_div);
+    assert_snapshot!(assert_compiles("test(10, -1)"), @"-10");
+}
+
+#[test]
 fn test_opt_not() {
     eval("
         def test(obj) = !obj

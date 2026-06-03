@@ -49,6 +49,24 @@ typedef unsigned char _Bool;
 #endif
 #endif
 
+#ifndef HAVE_RUBY_XFREE_SIZED
+static inline void ruby_xfree_sized(void *ptr, size_t oldsize)
+{
+    ruby_xfree(ptr);
+}
+
+static inline void *ruby_xrealloc2_sized(void *ptr, size_t new_elems, size_t elem_size, size_t old_elems)
+{
+    return ruby_xrealloc2(ptr, new_elems, elem_size);
+}
+#endif
+
+# define JSON_SIZED_REALLOC_N(v, T, m, n) \
+    ((v) = (T *)ruby_xrealloc2_sized((void *)(v), (m), sizeof(T), (n)))
+
+# define JSON_SIZED_FREE(v) ruby_xfree_sized((void *)(v), sizeof(*(v)))
+# define JSON_SIZED_FREE_N(v, n) ruby_xfree_sized((void *)(v), sizeof(*(v)) * (n))
+
 #ifndef HAVE_RB_EXT_RACTOR_SAFE
 #   undef RUBY_TYPED_FROZEN_SHAREABLE
 #   define RUBY_TYPED_FROZEN_SHAREABLE 0

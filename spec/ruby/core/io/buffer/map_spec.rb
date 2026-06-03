@@ -73,7 +73,7 @@ describe "IO::Buffer.map" do
     @buffer.should.valid?
   end
 
-  platform_is_not :windows, :openbsd do
+  guard -> { Process.respond_to?(:fork) } do
     it "is shareable across processes" do
       file_name = tmp("shared_buffer")
       @file = File.open(file_name, "w+")
@@ -312,7 +312,7 @@ describe "IO::Buffer.map" do
         @file.read.should == "abcâdef\n".b
       end
 
-      platform_is_not :windows do
+      guard -> { Process.respond_to?(:fork) } do
         it "is not shared across processes" do
           file_name = tmp("shared_buffer")
           @file = File.open(file_name, "w+")

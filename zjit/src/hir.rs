@@ -24,6 +24,26 @@ use SendFallbackReason::*;
 pub(crate) mod tests;
 mod opt_tests;
 
+#[allow(unused_macros)]
+macro_rules! hir_comment {
+    ($func:expr, $block:expr, $($arg:tt)*) => {
+        // If a diagnostic dump is requested, enrich it with HIR comments. Otherwise, avoid
+        // allocating comment strings or adding comment instructions that nobody can observe.
+        let enable_comment = $crate::options::get_option_ref!(dump_hir_init).is_some() ||
+            $crate::options::get_option_ref!(dump_hir_opt).is_some() ||
+            $crate::options::get_option_ref!(dump_hir_graphviz).is_some() ||
+            $crate::options::get_option!(dump_hir_iongraph) ||
+            $crate::options::get_option_ref!(dump_lir).is_some() ||
+            $crate::options::get_option_ref!(dump_disasm).is_some();
+        if enable_comment {
+            $func.push_comment($block, format!($($arg)*));
+        }
+    };
+}
+
+#[allow(unused_imports)]
+pub(crate) use hir_comment;
+
 /// An index of an [`Insn`] in a [`Function`]. This is a popular
 /// type since this effectively acts as a pointer to an [`Insn`].
 /// See also: [`Function::find`].
@@ -829,6 +849,9 @@ impl From<ID> for FieldName {
 /// helps with editing.
 #[derive(Debug, Clone)]
 pub enum Insn {
+    /// Comment that can be inserted into HIR for diagnostics.
+    Comment { message: String },
+
     Const { val: Const },
     /// SSA block parameter. Also used for function parameters in the function's entry block.
     Param,
@@ -1192,7 +1215,8 @@ pub enum Insn {
 macro_rules! for_each_operand_impl {
     ($self:expr, $visit_one:ident, $visit_many:ident) => {
         match $self {
-            Insn::Const { .. }
+            Insn::Comment { .. }
+            | Insn::Const { .. }
             | Insn::Param
             | Insn::LoadArg { .. }
             | Insn::Entries { .. }
@@ -1501,7 +1525,8 @@ impl Insn {
     /// Not every instruction returns a value. Return true if the instruction does and false otherwise.
     pub fn has_output(&self) -> bool {
         match self {
-            Insn::Jump(_)
+            Insn::Comment { .. }
+            | Insn::Jump(_)
             | Insn::Entries { .. }
             | Insn::CondBranch { .. } | Insn::EntryPoint { .. } | Insn::Return { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
@@ -1561,6 +1586,7 @@ impl Insn {
     fn effects_of(&self) -> Effect {
         const allocates: Effect = Effect::read_write(abstract_heaps::PC.union(abstract_heaps::Allocator), abstract_heaps::Allocator);
         match &self {
+            Insn::Comment { .. } => effects::Empty,
             Insn::Const { .. } => effects::Empty,
             Insn::Param { .. } => effects::Empty,
             Insn::LoadArg { .. } => effects::Empty,
@@ -1745,6 +1771,12 @@ impl Insn {
     /// Note: These are restrictions on the `write` `EffectSet` only. Even instructions with
     /// `read: effects::Any` could potentially be omitted.
     fn is_elidable(&self) -> bool {
+        // Comments intentionally have no semantic effect, but they are diagnostics that should
+        // survive DCE so optimized HIR dumps retain the information callers inserted.
+        if matches!(self, Insn::Comment { .. }) {
+            return false;
+        }
+
         abstract_heaps::Allocator.includes(self.effects_of().write_bits())
     }
 }
@@ -1813,6 +1845,7 @@ static REGEXP_FLAGS: &[(u32, &str)] = &[
 impl<'a> std::fmt::Display for InsnPrinter<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match &self.inner {
+            Insn::Comment { message } => write!(f, "# {message}"),
             Insn::Const { val } => { write!(f, "Const {}", val.print(self.ptr_map)) }
             Insn::Param => { write!(f, "Param") }
             Insn::LoadArg { idx, id, .. } => { write!(f, "LoadArg :{id}@{idx}") }
@@ -2539,6 +2572,11 @@ pub struct Function {
     /// Whether previously, a function for this ISEQ was invalidated due to
     /// singleton class creation (violation of NoSingletonClass invariant).
     was_invalidated_for_singleton_class_creation: bool,
+    /// Whether `self` is guaranteed to be a heap (non-immediate) object. When set,
+    /// the `self`-producing instructions (`LoadSelf` and the `SelfParam` `LoadArg`)
+    /// are typed `HeapBasicObject` instead of `BasicObject`. Sourced from
+    /// `IseqPayload::self_is_heap_object`.
+    self_is_heap_object: bool,
     /// Controls code generation strategy for optimization passes.
     policy: CompilePolicy,
     /// The types for the parameters of this function. They are copied to the type
@@ -2648,6 +2686,7 @@ impl Function {
         Function {
             iseq,
             was_invalidated_for_singleton_class_creation: false,
+            self_is_heap_object: false,
             policy: CompilePolicy::new(iseq),
             insns: vec![],
             insn_types: vec![],
@@ -2687,6 +2726,10 @@ impl Function {
             self.blocks[block.0].insns.push(id);
         }
         id
+    }
+
+    pub fn push_comment(&mut self, block: BlockId, message: String) -> InsnId {
+        self.push_insn(block, Insn::Comment { message })
     }
 
     // Add an instruction to an SSA block
@@ -2881,6 +2924,7 @@ impl Function {
             Insn::Param => unimplemented!("params should not be present in block.insns"),
             Insn::LoadArg { val_type, .. } => *val_type,
             Insn::SetGlobal { .. } | Insn::Jump(_) | Insn::Entries { .. } | Insn::EntryPoint { .. }
+            | Insn::Comment { .. }
             | Insn::CondBranch { .. } | Insn::Return { .. } | Insn::Throw { .. }
             | Insn::PatchPoint { .. } | Insn::SetIvar { .. } | Insn::SetClassVar { .. } | Insn::ArrayExtend { .. }
             | Insn::ArrayPush { .. } | Insn::SideExit { .. } | Insn::SetLocal { .. }
@@ -2955,7 +2999,9 @@ impl Function {
             Insn::FixnumAdd  { .. } => types::Fixnum,
             Insn::FixnumSub  { .. } => types::Fixnum,
             Insn::FixnumMult { .. } => types::Fixnum,
-            Insn::FixnumDiv  { .. } => types::Fixnum,
+            // FIXNUM_MIN / -1 overflows to a Bignum, so the result is Integer, not Fixnum.
+            // Downstream Fixnum ops insert their own GuardType(Fixnum)
+            Insn::FixnumDiv  { .. } => types::Integer,
             Insn::FixnumMod  { .. } => types::Fixnum,
             Insn::FloatAdd   { .. } => types::Float,
             Insn::FloatSub   { .. } => types::Float,
@@ -3003,7 +3049,7 @@ impl Function {
             Insn::LoadSP => types::CPtr,
             Insn::LoadEC => types::CPtr,
             Insn::GetEP { .. } => types::CPtr,
-            Insn::LoadSelf => types::BasicObject,
+            Insn::LoadSelf => if self.self_is_heap_object { types::HeapBasicObject } else { types::BasicObject },
             &Insn::LoadField { return_type, .. } => return_type,
             Insn::GetSpecialSymbol { .. } => types::StringExact.union(types::NilClass),
             Insn::GetSpecialNumber { .. } => types::StringExact.union(types::NilClass),
@@ -4451,8 +4497,6 @@ impl Function {
                             self.push_insn_id(block, insn_id); continue;
                         }
                         if self.policy.no_side_exits {
-                            // TODO: Support polymorphic DefinedIvar shape-specialized paths.
-                            // https://github.com/Shopify/ruby/issues/980
                             // On the final version, keep the DefinedIvar fallback instead of another shape guard.
                             self.push_insn_id(block, insn_id); continue;
                         }
@@ -5075,6 +5119,11 @@ impl Function {
                         // Don't bother re-inferring the type of val; we already know it.
                         continue;
                     }
+                    Insn::RefineType { val, new_type, .. } if self.is_a(val, new_type) => {
+                        self.make_equal_to(insn_id, val);
+                        // Don't bother re-inferring the type of val; we already know it.
+                        continue;
+                    }
                     Insn::LoadField { recv, offset, return_type, .. } if return_type.is_subtype(types::BasicObject) &&
                             u32::try_from(offset).is_ok() => {
                         let offset = (offset as u32).to_usize();
@@ -5195,18 +5244,32 @@ impl Function {
                         }
                     }
                     Insn::FixnumAdd { left, right, .. } => {
+                        match (self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value()) {
+                            (Some(0), _) => { self.make_equal_to(insn_id, right); continue; }
+                            (_, Some(0)) => { self.make_equal_to(insn_id, left); continue; }
+                            _ => {}
+                        }
                         self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => l.checked_add(r),
                             _ => None,
                         })
                     }
                     Insn::FixnumSub { left, right, .. } => {
+                        match (self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value()) {
+                            (_, Some(0)) => { self.make_equal_to(insn_id, left); continue; }
+                            _ => {}
+                        }
                         self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => l.checked_sub(r),
                             _ => None,
                         })
                     }
                     Insn::FixnumMult { left, right, .. } => {
+                        match (self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value()) {
+                            (Some(1), _) => { self.make_equal_to(insn_id, right); continue; }
+                            (_, Some(1)) => { self.make_equal_to(insn_id, left); continue; }
+                            _ => {}
+                        }
                         self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) => l.checked_mul(r),
                             (Some(0), _) | (_, Some(0)) => Some(0),
@@ -5214,6 +5277,10 @@ impl Function {
                         })
                     }
                     Insn::FixnumDiv { left, right, .. } => {
+                        match (self.type_of(left).fixnum_value(), self.type_of(right).fixnum_value()) {
+                            (_, Some(1)) => { self.make_equal_to(insn_id, left); continue; }
+                            _ => {}
+                        }
                         self.fold_fixnum_bop(insn_id, left, right, |l, r| match (l, r) {
                             (Some(l), Some(r)) if l == (RUBY_FIXNUM_MIN as i64) && r == -1 => None, // Avoid Fixnum overflow
                             (Some(_l), Some(r)) if r == 0 => None, // Avoid Divide by zero.
@@ -5926,6 +5993,7 @@ impl Function {
         match insn {
             // Instructions with no InsnId operands (except state) or nothing to assert
             Insn::Const { .. }
+            | Insn::Comment { .. }
             | Insn::Param
             | Insn::LoadArg { .. }
             | Insn::PutSpecialObject { .. }
@@ -6669,6 +6737,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     let mut profiles = ProfileOracle::new(payload);
     let mut fun = Function::new(iseq);
     fun.was_invalidated_for_singleton_class_creation = payload.was_invalidated_for_singleton_class_creation;
+    fun.self_is_heap_object = payload.self_is_heap_object;
 
     // Compute a map of PC->Block by finding jump targets
     let jit_entry_insns = unsafe { iseq.params() }.opt_table_slice().iter().copied().map(VALUE::as_u32).collect::<Vec<_>>();
@@ -7084,7 +7153,68 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     // (ID id, IVC ic, VALUE pushval)
                     let id = ID(get_arg(pc, 0).as_u64());
                     let pushval = get_arg(pc, 2);
-                    state.stack_push(fun.push_insn(block, Insn::DefinedIvar { self_val: self_param, id, pushval, state: exit_id }));
+                    if let Some(summary) = fun.polymorphic_summary(&profiles, self_param, exit_state.insn_idx) {
+                        self_param = fun.push_insn(block, Insn::GuardType { val: self_param, guard_type: types::HeapBasicObject, state: exit_id });
+                        let rbasic_flags = fun.load_rbasic_flags(block, self_param);
+                        let join_block = insn_idx_to_block.get(&insn_idx).copied().unwrap_or_else(|| fun.new_block(insn_idx));
+                        let join_param = fun.push_insn(join_block, Insn::Param);
+                        // Dedup by expected shape and type so objects with different classes
+                        // but the same shape can share code.
+                        let mut seen_shape_and_flags = Vec::with_capacity(summary.buckets().len());
+                        for &profiled_type in summary.buckets() {
+                            // End of the buckets
+                            if profiled_type.is_empty() { break; }
+                            // Runtime immediates cannot pass the HeapBasicObject guard, so don't
+                            // generate unreachable shape branches for profiled immediate buckets.
+                            if profiled_type.flags().is_immediate() { continue; }
+                            // Class/module/T_DATA ivars use different storage rules.
+                            // Let the fallthrough DefinedIvar handle these.
+                            if !profiled_type.flags().is_t_object() { continue; }
+                            let expected_shape = profiled_type.shape();
+                            let (expected_rbasic_flags, rbasic_flags_mask) = profiled_type.rbasic_flags_and_mask();
+                            assert!(expected_shape.is_valid());
+                            // Too-complex shapes use hash tables for ivars;
+                            // rb_shape_get_iv_index doesn't work for them.
+                            // Let the fallthrough DefinedIvar handle these.
+                            if expected_shape.is_complex() { continue; }
+                            if seen_shape_and_flags.contains(&expected_rbasic_flags) { continue; }
+                            seen_shape_and_flags.push(expected_rbasic_flags);
+                            let rbasic_flags_mask = fun.push_insn(block, Insn::Const { val: Const::CUInt64(rbasic_flags_mask) });
+                            // The expected shape can change over run, so we put it
+                            // as a pointer to keep it stable in snapshot tests.
+                            let expected_rbasic_flags = fun.push_insn(block, Insn::Const { val: Const::CPtr(ptr::without_provenance(expected_rbasic_flags.to_usize())) });
+                            let expected_rbasic_flags = fun.push_insn(block, Insn::RefineType { val: expected_rbasic_flags, new_type: types::CUInt64 });
+                            let masked = fun.push_insn(block, Insn::IntAnd { left: rbasic_flags, right: rbasic_flags_mask});
+                            let has_shape_and_type = fun.push_insn(block, Insn::IsBitEqual { left: masked, right: expected_rbasic_flags });
+                            let iftrue_block = fun.new_block(insn_idx);
+                            let target = BranchEdge { target: iftrue_block, args: vec![] };
+                            let fall_through = fun.new_block(insn_idx);
+
+                            fun.push_insn(block, Insn::CondBranch { val: has_shape_and_type,
+                                if_true: target,
+                                if_false: BranchEdge { target: fall_through, args: vec![] }
+                            });
+
+                            block = fall_through;
+                            let mut ivar_index: attr_index_t = 0;
+                            let result = if unsafe { rb_shape_get_iv_index(expected_shape.0, id, &mut ivar_index) } {
+                                fun.push_insn(iftrue_block, Insn::Const { val: Const::Value(pushval) })
+                            } else {
+                                fun.push_insn(iftrue_block, Insn::Const { val: Const::Value(Qnil) })
+                            };
+                            fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
+                        }
+                        // In the fallthrough case, do a generic interpreter definedivar and then join.
+                        let result = fun.push_insn(block, Insn::DefinedIvar { self_val: self_param, id, pushval, state: exit_id });
+                        fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
+                        state.stack_push(join_param);
+                        block = join_block;
+                    } else {
+                        // TODO: Handle monomorphic definedivar specialization here too, including the
+                        // no_side_exits policy, so optimize_getivar doesn't need a separate DefinedIvar
+                        // path. Unlike GetIvar, DefinedIvar isn't emitted by later lowering passes.
+                        state.stack_push(fun.push_insn(block, Insn::DefinedIvar { self_val: self_param, id, pushval, state: exit_id }));
+                    }
                 }
                 YARVINSN_checkkeyword => {
                     // When a keyword is unspecified past index 32, a hash will be used instead.
@@ -8576,7 +8706,10 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
     };
 
     let mut arg_idx: u32 = 0;
-    let self_param = fun.push_insn(jit_entry_block, Insn::LoadArg { idx: arg_idx, id: FieldName::SelfParam, val_type: types::BasicObject });
+    // For `def` methods on classes that can only produce heap (non-immediate)
+    // instances, `self` is a HeapBasicObject. See `iseq_self_is_heap_object`.
+    let self_type = if fun.self_is_heap_object { types::HeapBasicObject } else { types::BasicObject };
+    let self_param = fun.push_insn(jit_entry_block, Insn::LoadArg { idx: arg_idx, id: FieldName::SelfParam, val_type: self_type });
     arg_idx += 1;
     let mut entry_state = FrameState::new(iseq);
     let mut ep: Option<InsnId> = None;

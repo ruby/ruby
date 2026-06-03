@@ -1,11 +1,13 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
-require_relative 'shared/collect'
 
 describe "Array#map" do
-  it_behaves_like :array_collect, :map
+  it "is an alias of Array#collect" do
+    Array.instance_method(:map).should == Array.instance_method(:collect)
+  end
 end
 
 describe "Array#map!" do
-  it_behaves_like :array_collect_b, :map!
+  it "is an alias of Array#collect!" do
+    Array.instance_method(:map!).should == Array.instance_method(:collect!)
+  end
 end

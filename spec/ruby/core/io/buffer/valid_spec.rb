@@ -57,17 +57,6 @@ describe "IO::Buffer#valid?" do
         @buffer.resize(3)
         slice.valid?.should == false
       end
-
-      platform_is_not :linux do
-        # This test does not cause a copy-resize on Linux.
-        # `#resize` MAY cause the buffer to move, but there is no guarantee.
-        it "is false when buffer is copied on resize" do
-          @buffer = IO::Buffer.new(4, IO::Buffer::MAPPED)
-          slice = @buffer.slice(0, 2)
-          @buffer.resize(8)
-          slice.valid?.should == false
-        end
-      end
     end
 
     it "is false for a slice of a transferred buffer" do

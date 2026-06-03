@@ -40,4 +40,20 @@ describe "Method#original_name" do
     klass.new.method(:renamed).original_name.should == :my_method
     klass.new.method(:aliased).original_name.should == :my_method
   end
+
+  it "returns the source UnboundMethod's name for Kernel#is_a? and Kernel#kind_of?" do
+    klass = Class.new { define_method(:my_is_a?, ::Kernel.instance_method(:is_a?)) }
+    klass.new.method(:my_is_a?).original_name.should == :is_a?
+
+    klass = Class.new { define_method(:my_kind_of?, ::Kernel.instance_method(:kind_of?)) }
+    klass.new.method(:my_kind_of?).original_name.should == :kind_of?
+  end
+
+  it "preserves the source name when aliasing a define_method'd Kernel method" do
+    klass = Class.new do
+      define_method(:my_is_a?, ::Kernel.instance_method(:is_a?))
+      alias_method :renamed_is_a?, :my_is_a?
+    end
+    klass.new.method(:renamed_is_a?).original_name.should == :is_a?
+  end
 end

@@ -500,6 +500,7 @@ rb_mmtk_gc_thread_bug(const char *msg, ...)
     rb_bug("rb_mmtk_gc_thread_bug");
 }
 
+RBIMPL_ATTR_NORETURN()
 static void
 rb_mmtk_gc_thread_panic_handler(void)
 {
@@ -983,7 +984,7 @@ static inline VALUE
 rb_mmtk_call_object_closure(VALUE obj, bool pin)
 {
     if (RB_UNLIKELY(RB_BUILTIN_TYPE(obj) == T_NONE)) {
-        const size_t info_size = 256;
+        enum { info_size = 256 };
         char obj_info_buf[info_size];
         rb_raw_obj_info(obj_info_buf, info_size, obj);
 

@@ -42,34 +42,73 @@ describe "Enumerator.new" do
       enum.to_a.should == ["a\n", "b\n", "c"]
     end
 
-    describe 'yielded values' do
-      it 'handles yield arguments properly' do
+    describe '#yield' do
+      it 'accepts a single argument' do
         Enumerator.new { |y| y.yield(1) }.to_a.should == [1]
         Enumerator.new { |y| y.yield(1) }.first.should == 1
+      end
 
-        Enumerator.new { |y| y.yield([1]) }.to_a.should == [[1]]
-        Enumerator.new { |y| y.yield([1]) }.first.should == [1]
-
+      it 'accepts multiple arguments' do
         Enumerator.new { |y| y.yield(1, 2) }.to_a.should == [[1, 2]]
         Enumerator.new { |y| y.yield(1, 2) }.first.should == [1, 2]
+      end
+
+      it "doesn't double-wrap arrays" do
+        Enumerator.new { |y| y.yield([1]) }.to_a.should == [[1]]
+        Enumerator.new { |y| y.yield([1]) }.first.should == [1]
 
         Enumerator.new { |y| y.yield([1, 2]) }.to_a.should == [[1, 2]]
         Enumerator.new { |y| y.yield([1, 2]) }.first.should == [1, 2]
       end
 
-      it 'handles << arguments properly' do
+      it 'returns nil' do
+        ScratchPad.record []
+        Enumerator.new do |y|
+          ScratchPad << y.yield(1)
+        end.to_a
+
+        ScratchPad.recorded.should == [nil]
+      end
+
+      it 'accepts keyword arguments and treats them as a positional hash' do
+        Enumerator.new { |y| y.yield(foo: 42) }.to_a.should == [{ foo: 42 }]
+        Enumerator.new { |y| y.yield(foo: 42) }.first.should == { foo: 42 }
+
+        Enumerator.new { |y| y.yield(123, foo: 42) }.to_a.should == [[123, { foo: 42 }]]
+        Enumerator.new { |y| y.yield(123, foo: 42) }.first.should == [123, { foo: 42 }]
+      end
+    end
+
+    describe '#<<' do
+      it 'accepts a single argument' do
         Enumerator.new { |y| y.<<(1) }.to_a.should == [1]
         Enumerator.new { |y| y.<<(1) }.first.should == 1
+      end
 
+      it "doesn't double-wrap arrays" do
         Enumerator.new { |y| y.<<([1]) }.to_a.should == [[1]]
         Enumerator.new { |y| y.<<([1]) }.first.should == [1]
 
-        # << doesn't accept multiple arguments
-        # Enumerator.new { |y| y.<<(1, 2) }.to_a.should == [[1, 2]]
-        # Enumerator.new { |y| y.<<(1, 2) }.first.should == [1, 2]
-
         Enumerator.new { |y| y.<<([1, 2]) }.to_a.should == [[1, 2]]
         Enumerator.new { |y| y.<<([1, 2]) }.first.should == [1, 2]
+      end
+
+      it 'accepts keyword arguments and treats them as a positional hash' do
+        Enumerator.new { |y| y.<<(foo: 42) }.to_a.should == [{ foo: 42 }]
+        Enumerator.new { |y| y.<<(foo: 42) }.first.should == { foo: 42 }
+      end
+
+      it 'can be chained' do
+        enum = Enumerator.new do |y|
+          y << 1 << 2
+        end
+        enum.to_a.should == [1, 2]
+      end
+
+      it 'raises ArgumentError when given more than one argument' do
+        -> {
+          Enumerator.new { |y| y.<<(1, 2) }.to_a
+        }.should.raise(ArgumentError, "wrong number of arguments (given 2, expected 1)")
       end
     end
   end

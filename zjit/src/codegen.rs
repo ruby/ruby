@@ -159,6 +159,17 @@ define_split_jumps! {
     jz => Jz,
 }
 
+/// Record on the ISEQ payload whether `self` is guaranteed to be a heap object,
+/// derived from the owning class of the method entry on `cfp`. Called from compile
+/// triggers before the HIR is built so the `self`-producing instructions can be
+/// typed precisely. Must be called while holding the VM lock (it writes the payload).
+fn update_self_is_heap_object(iseq: IseqPtr, cfp: CfpPtr) {
+    let cme = unsafe { rb_vm_frame_method_entry(cfp) };
+    let self_is_heap_object = !cme.is_null()
+        && iseq_self_is_heap_object(iseq, unsafe { (*cme).owner });
+    get_or_create_iseq_payload(iseq).self_is_heap_object = self_is_heap_object;
+}
+
 /// CRuby API to compile a given ISEQ.
 /// If jit_exception is true, compile JIT code for handling exceptions.
 /// See jit_compile_exception() for details.
@@ -173,6 +184,10 @@ pub extern "C" fn rb_zjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exc
     // Take a lock to avoid writing to ISEQ in parallel with Ractors.
     // with_vm_lock() does nothing if the program doesn't use Ractors.
     with_vm_lock(src_loc!(), || {
+        // The current frame is this ISEQ's method frame, so its method entry tells
+        // us the owning class and thus whether `self` is always a heap object.
+        update_self_is_heap_object(iseq, unsafe { get_ec_cfp(ec) });
+
         let cb = ZJITState::get_code_block();
         let mut code_ptr = with_time_stat(compile_time_ns, || gen_iseq_entry_point(cb, iseq, jit_exception));
 
@@ -579,6 +594,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
     }
 
     let out_opnd = match insn {
+        Insn::Comment { .. } => return Ok(()), // comment instruction, no code generation
         &Insn::Const { val: Const::Value(val) } => gen_const_value(val),
         &Insn::Const { val: Const::CPtr(val) } => gen_const_cptr(val),
         &Insn::Const { val: Const::CInt64(val) } => gen_const_long(val),
@@ -2557,27 +2573,6 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, val_t
 
         asm.cmp(klass, Opnd::Value(expected_class));
         asm.jne(jit, side_exit);
-    } else if guard_type.is_subtype(types::TData) {
-        let side = side_exit(jit, state, GuardType(guard_type));
-
-        if !is_known_heap_basic_object {
-            // Check special constant
-            asm.test(val, Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
-            asm.jnz(jit, side.clone());
-
-            // Check false
-            asm.cmp(val, Qfalse.into());
-            asm.je(jit, side.clone());
-        }
-
-        // Check the T_DATA builtin type.
-        let val = asm.load_mem(val);
-        let flags = asm.load(Opnd::mem(VALUE_BITS, val, RUBY_OFFSET_RBASIC_FLAGS));
-        let mask     = RUBY_T_MASK.to_usize();
-        let expected = RUBY_T_DATA.to_usize();
-        let masked = asm.and(flags, mask.into());
-        asm.cmp(masked, expected.into());
-        asm.jne(jit, side);
     } else if let Some(builtin_type) = guard_type.builtin_type_equivalent() {
         let side = side_exit(jit, state, GuardType(guard_type));
 
@@ -3108,7 +3103,7 @@ c_callable! {
             // If we side-exit from function_stub_hit (before JIT code runs), we need to set them here.
             fn prepare_for_exit(iseq: IseqPtr, cfp: CfpPtr, sp: *mut VALUE, argc: u16, num_opts_filled: u16, compile_error: &CompileError) {
                 unsafe {
-                    // Caller frames are materialized by jit_exec() after the entry trampoline returns.
+                    // Caller frames are materialized by the materialize_exit trampoline before unwinding native frames.
                     // The current frame's pc and iseq are already set by function_stub_hit before this point.
 
                     // Set SP which gen_push_frame() doesn't set
@@ -3181,6 +3176,11 @@ c_callable! {
             let cb = ZJITState::get_code_block();
             let native_stack_full = unsafe { rb_ec_stack_check(ec as _) } != 0;
             let payload = get_or_create_iseq_payload(iseq);
+            // cfp is the callee's (this ISEQ's) frame here, so its method entry gives
+            // the owning class and thus whether `self` is always a heap object.
+            let cme = unsafe { rb_vm_frame_method_entry(cfp) };
+            payload.self_is_heap_object = !cme.is_null()
+                && iseq_self_is_heap_object(iseq, unsafe { (*cme).owner });
             let last_status = payload.versions.last().map(|version| &unsafe { version.as_ref() }.status);
             let compile_error = match last_status {
                 Some(IseqStatus::CantCompile(err)) => Some(err),
@@ -3196,7 +3196,7 @@ c_callable! {
                 unsafe { Rc::increment_strong_count(iseq_call_ptr as *const IseqCall); }
 
                 prepare_for_exit(iseq, cfp, sp, argc, num_opts_filled, compile_error);
-                return ZJITState::get_exit_trampoline_with_counter().raw_ptr(cb);
+                return ZJITState::get_materialize_exit_trampoline_with_counter().raw_ptr(cb);
             }
 
             // Otherwise, attempt to compile the ISEQ. We have to mark_all_executable() beyond this point.
@@ -3211,7 +3211,7 @@ c_callable! {
                 unsafe { Rc::increment_strong_count(iseq_call_ptr as *const IseqCall); }
 
                 prepare_for_exit(iseq, cfp, sp, argc, num_opts_filled, &compile_error);
-                ZJITState::get_exit_trampoline_with_counter()
+                ZJITState::get_materialize_exit_trampoline_with_counter()
             });
             cb.mark_all_executable();
             code_ptr.raw_ptr(cb)
@@ -3342,14 +3342,34 @@ pub fn gen_exit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> 
     })
 }
 
-/// Generate a trampoline that increments exit_compilation_failure and jumps to exit_trampoline.
-pub fn gen_exit_trampoline_with_counter(cb: &mut CodeBlock, exit_trampoline: CodePtr) -> Result<CodePtr, CompileError> {
+/// Generate a trampoline that materializes ZJIT frames before unwinding native frames.
+pub fn gen_materialize_exit_trampoline(cb: &mut CodeBlock, exit_trampoline: CodePtr) -> Result<CodePtr, CompileError> {
+    unsafe extern "C" {
+        fn rb_zjit_materialize_frames(ec: EcPtr, cfp: CfpPtr);
+    }
+
     let mut asm = Assembler::new();
-    asm.new_block_without_id("exit_trampoline_with_counter");
+    asm.new_block_without_id("materialize_exit_trampoline");
+
+    asm_comment!(asm, "materialize ZJIT frames");
+    asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), 0.into());
+    asm_ccall!(asm, rb_zjit_materialize_frames, EC, CFP);
+    asm.jmp(Target::CodePtr(exit_trampoline));
+
+    asm.compile(cb).map(|(code_ptr, gc_offsets)| {
+        assert_eq!(gc_offsets.len(), 0);
+        code_ptr
+    })
+}
+
+/// Generate a trampoline that increments exit_compilation_failure and jumps to materialize_exit_trampoline.
+pub fn gen_materialize_exit_trampoline_with_counter(cb: &mut CodeBlock, materialize_exit_trampoline: CodePtr) -> Result<CodePtr, CompileError> {
+    let mut asm = Assembler::new();
+    asm.new_block_without_id("materialize_exit_trampoline_with_counter");
 
     asm_comment!(asm, "function stub exit trampoline");
     gen_incr_counter(&mut asm, exit_compile_error);
-    asm.jmp(Target::CodePtr(exit_trampoline));
+    asm.jmp(Target::CodePtr(materialize_exit_trampoline));
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
         assert_eq!(gc_offsets.len(), 0);

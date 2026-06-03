@@ -14,6 +14,12 @@ describe "A lambda literal -> () { }" do
     klass.new.create_lambda.should.instance_of?(Proc)
   end
 
+  it "is not just syntactic sugar for Kernel#lambda" do
+    should_not_receive(:lambda)
+
+    -> {}
+  end
+
   it "does not execute the block" do
     -> { fail }.should.instance_of?(Proc)
   end

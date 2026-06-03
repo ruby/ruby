@@ -1,6 +1,6 @@
 //! Runtime state of ZJIT.
 
-use crate::codegen::{gen_entry_trampoline, gen_exit_trampoline, gen_exit_trampoline_with_counter, gen_function_stub_hit_trampoline};
+use crate::codegen::{gen_entry_trampoline, gen_exit_trampoline, gen_function_stub_hit_trampoline, gen_materialize_exit_trampoline, gen_materialize_exit_trampoline_with_counter};
 use crate::cruby::{self, rb_bug_panic_hook, rb_vm_insn_count, src_loc, EcPtr, Qnil, Qtrue, rb_profile_frames, rb_profile_frame_full_label, rb_profile_frame_absolute_path, rb_profile_frame_path, VALUE, VM_INSTRUCTION_SIZE, with_vm_lock, rust_str_to_id, rb_funcallv, rb_const_get, rb_cRubyVM};
 use crate::cruby_methods;
 use cruby::{ID, rb_callable_method_entry, get_def_method_serial, rb_gc_register_mark_object, ruby_str_to_rust_string_result};
@@ -51,8 +51,11 @@ pub struct ZJITState {
     /// Trampoline to side-exit without restoring PC or the stack
     exit_trampoline: CodePtr,
 
-    /// Trampoline to side-exit and increment exit_compilation_failure
-    exit_trampoline_with_counter: CodePtr,
+    /// Trampoline to materialize JIT frames before side-exiting
+    materialize_exit_trampoline: CodePtr,
+
+    /// Trampoline to materialize JIT frames and increment exit_compilation_failure
+    materialize_exit_trampoline_with_counter: CodePtr,
 
     /// Trampoline to call function_stub_hit
     function_stub_hit_trampoline: CodePtr,
@@ -126,6 +129,7 @@ impl ZJITState {
 
         let entry_trampoline = gen_entry_trampoline(&mut cb).unwrap().raw_ptr(&cb);
         let exit_trampoline = gen_exit_trampoline(&mut cb).unwrap();
+        let materialize_exit_trampoline = gen_materialize_exit_trampoline(&mut cb, exit_trampoline).unwrap();
         let function_stub_hit_trampoline = gen_function_stub_hit_trampoline(&mut cb).unwrap();
 
         let perfetto_tracer = if get_option!(trace_side_exits).is_some() || get_option!(trace_compiles) || get_option!(trace_invalidation) {
@@ -144,8 +148,9 @@ impl ZJITState {
             assert_compiles: false,
             method_annotations,
             exit_trampoline,
+            materialize_exit_trampoline,
+            materialize_exit_trampoline_with_counter: materialize_exit_trampoline,
             function_stub_hit_trampoline,
-            exit_trampoline_with_counter: exit_trampoline,
             full_frame_cfunc_counter_pointers: HashMap::new(),
             not_annotated_frame_cfunc_counter_pointers: HashMap::new(),
             ccall_counter_pointers: HashMap::new(),
@@ -160,8 +165,8 @@ impl ZJITState {
         // on the counter, so ZJIT_STATE needs to be initialized first.
         if get_option!(stats) {
             let cb = ZJITState::get_code_block();
-            let code_ptr = gen_exit_trampoline_with_counter(cb, exit_trampoline).unwrap();
-            ZJITState::get_instance().exit_trampoline_with_counter = code_ptr;
+            let code_ptr = gen_materialize_exit_trampoline_with_counter(cb, materialize_exit_trampoline).unwrap();
+            ZJITState::get_instance().materialize_exit_trampoline_with_counter = code_ptr;
         }
 
         entry_trampoline
@@ -288,9 +293,14 @@ impl ZJITState {
         ZJITState::get_instance().exit_trampoline
     }
 
-    /// Return a code pointer to the exit trampoline for function stubs
-    pub fn get_exit_trampoline_with_counter() -> CodePtr {
-        ZJITState::get_instance().exit_trampoline_with_counter
+    /// Return a code pointer to the materialize_exit trampoline
+    pub fn get_materialize_exit_trampoline() -> CodePtr {
+        ZJITState::get_instance().materialize_exit_trampoline
+    }
+
+    /// Return a code pointer to the materialize_exit trampoline for function stubs
+    pub fn get_materialize_exit_trampoline_with_counter() -> CodePtr {
+        ZJITState::get_instance().materialize_exit_trampoline_with_counter
     }
 
     /// Return a code pointer to the function stub hit trampoline

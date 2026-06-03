@@ -54,10 +54,6 @@ Lint/RedundantRequireStatement:
     - library/fiber/**/*.rb
     - optional/capi/fiber_spec.rb
 
-Lint/RedundantSafeNavigation:
-  Exclude:
-    - language/safe_navigator_spec.rb
-
 Lint/RedundantSplatExpansion:
   Enabled: false
 

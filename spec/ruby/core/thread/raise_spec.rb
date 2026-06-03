@@ -136,6 +136,31 @@ describe "Thread#raise on a sleeping thread" do
       [ScratchPad.recorded, @thr, []]
     ]
   end
+
+  it "calls #set_backtrace only in the caller thread" do
+    cls = Class.new(Exception) do
+      attr_accessor :log
+      def initialize(*args)
+        @log = [] # This is shared because the super #exception uses a shallow clone
+        super
+      end
+
+      def set_backtrace(backtrace)
+        @log << [Thread.current, backtrace]
+        super
+      end
+    end
+    exc = cls.new
+
+    backtrace = ["a.rb:1"]
+
+    @thr.raise exc, "Thread#raise #set_backtrace spec", backtrace
+    @thr.join
+    ScratchPad.recorded.should.is_a?(cls)
+    exc.log.should == [
+      [Thread.current, backtrace]
+    ]
+  end
 end
 
 describe "Thread#raise on a running thread" do

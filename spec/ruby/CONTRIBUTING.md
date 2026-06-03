@@ -229,7 +229,7 @@ to avoid duplication of specs, we have shared specs that are re-used in other sp
 bit tricky however, so let's go over it.
 
 Commonly, if a shared spec is only reused within its own module, the shared spec will live within a
-shared directory inside that module's directory. For example, the `core/hash/shared/key.rb` spec is
+shared directory inside that module's directory. For example, the `core/hash/shared/iteration.rb` spec is
 only used by `Hash` specs, and so it lives inside `core/hash/shared/`.
 
 When a shared spec is used across multiple modules or classes, it lives within the `shared/` directory.
@@ -243,25 +243,25 @@ variables from the implementor spec: `@method` and `@object`, which the implemen
 Here's an example of a snippet of a shared spec and two specs which integrates it:
 
 ```ruby
-# core/hash/shared/key.rb
-describe :hash_key_p, shared: true do
-  it "returns true if the key's matching value was false" do
-    { xyz: false }.send(@method, :xyz).should == true
+# core/hash/shared/iteration.rb
+describe :hash_iteration_no_block, shared: true do
+  it "returns an Enumerator if called on a non-empty hash without a block" do
+    { 1 => 2 }.send(@method).should.instance_of?(Enumerator)
   end
 end
 
-# core/hash/key_spec.rb
-describe "Hash#key?" do
-  it_behaves_like :hash_key_p, :key?
+# core/hash/select_spec.rb
+describe "Hash#select" do
+  it_behaves_like :hash_iteration_no_block, :select
 end
 
-# core/hash/include_spec.rb
-describe "Hash#include?" do
-  it_behaves_like :hash_key_p, :include?
+# core/hash/reject_spec.rb
+describe "Hash#reject" do
+  it_behaves_like :hash_iteration_no_block, :reject
 end
 ```
 
-In the example, the first `describe` defines the shared spec `:hash_key_p`, which defines a spec that
+In the example, the first `describe` defines the shared spec `:hash_iteration_no_block`, which defines a spec that
 calls the `@method` method with an expectation. In the implementor spec, we use `it_behaves_like` to
 integrate the shared spec. `it_behaves_like` takes 3 parameters: the key of the shared spec, a method,
 and an object. These last two parameters are accessible via `@method` and `@object` in the shared spec.

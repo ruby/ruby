@@ -665,7 +665,30 @@ collect_values_of_values(VALUE category, VALUE category_objects, VALUE categorie
  *  call-seq:
  *     ObjectSpace.reachable_objects_from_root -> hash
  *
- *  [MRI specific feature] Return all reachable objects from root.
+ *  Returns a hash of objects directly reachable from the VM roots,
+ *  grouped by the root that reaches them.
+ *
+ *  The roots are the entry points the garbage collector starts from when it
+ *  marks live objects, such as the virtual machine and the global variable
+ *  table. The keys of the returned hash are strings naming each root, and each
+ *  value is an array of the objects reachable from that root:
+ *
+ *    require 'objspace'
+ *
+ *    reachable = ObjectSpace.reachable_objects_from_root
+ *    reachable.keys           # => ["vm", "global_tbl", "machine_context", "global_symbols"]
+ *    reachable.values.first   # => [#<Ractor:#1 running>, ...]
+ *
+ *  The returned hash compares its keys by identity, so it cannot be indexed
+ *  with a string literal; iterate over it (or over its #values) instead.
+ *
+ *  Any reference to an internal object is wrapped in an
+ *  ObjectSpace::InternalObjectWrapper object.
+ *
+ *  This method is useful for debugging the object graph, for example when
+ *  tracking down the cause of a memory leak.
+ *
+ *  This method is only expected to work with C Ruby.
  */
 static VALUE
 reachable_objects_from_root(VALUE self)
@@ -697,12 +720,28 @@ wrap_klass_iow(VALUE klass)
 
 /*
  *  call-seq:
- *     ObjectSpace.internal_class_of(obj) -> Class or Module
+ *     ObjectSpace.internal_class_of(obj) -> class or module
  *
- *  [MRI specific feature] Return internal class of obj.
- *  obj can be an instance of InternalObjectWrapper.
+ *  Returns the real class of +obj+, which may differ from the class returned
+ *  by Object#class.
+ *
+ *  Ruby inserts hidden classes into an object's ancestry, such as a singleton
+ *  class or an included module's iclass. Object#class skips over these, but
+ *  this method returns the first one, including any hidden class:
+ *
+ *    require 'objspace'
+ *
+ *    s = "x"
+ *    def s.foo; end                     # gives +s+ a singleton class
+ *    s.class                            # => String
+ *    ObjectSpace.internal_class_of(s)   # => #<Class:#<String:0x000000012574c1f8>>
+ *
+ *  +obj+ may be an ObjectSpace::InternalObjectWrapper, in which case the class
+ *  of the wrapped internal object is returned.
  *
  *  Note that you should not use this method in your application.
+ *
+ *  This method is only expected to work with C Ruby.
  */
 static VALUE
 objspace_internal_class_of(VALUE self, VALUE obj)

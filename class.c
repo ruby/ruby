@@ -585,7 +585,15 @@ class_alloc0(enum ruby_value_type type, VALUE klass, bool boxable)
     VALUE flags = type | FL_SHAREABLE;
     if (boxable) flags |= RCLASS_BOXABLE;
 
-    NEWOBJ_OF(obj, struct RClass, klass, flags, alloc_size);
+    shape_id_t shape_id = ROOT_SHAPE_ID;
+    if (boxable) {
+        shape_id |= SHAPE_ID_LAYOUT_OTHER;
+    }
+    else {
+        shape_id |= SHAPE_ID_LAYOUT_RCLASS;
+    }
+
+    struct RClass *obj = (struct RClass *)rb_newobj(GET_EC(), klass, flags, shape_id, true, alloc_size);
 
     obj->object_id = 0;
 

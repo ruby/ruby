@@ -1,6 +1,12 @@
 # frozen_string_literal: true
 
 class StringScanner
+  unless method_defined?(:integer_at) # For JRuby
+    def integer_at(specifier, *to_i_args)
+      self[specifier]&.to_i(*to_i_args)
+    end
+  end
+
   # :markup: markdown
   #
   # call-seq:

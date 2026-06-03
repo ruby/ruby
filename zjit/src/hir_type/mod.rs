@@ -444,8 +444,9 @@ impl Type {
             Some(cruby::RUBY_T_STRING)
         } else if self.bit_equal(types::Hash) {
             Some(cruby::RUBY_T_HASH)
+        } else if self.bit_equal(types::TData) {
+            Some(cruby::RUBY_T_DATA)
         } else {
-            // T_DATA uses a specialized guard, so not here.
             None
         }
     }

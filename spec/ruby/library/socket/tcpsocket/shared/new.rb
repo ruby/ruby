@@ -19,8 +19,17 @@ describe :tcpsocket_new, shared: true do
       TCPSocket.send(@method, "192.0.2.1", 80, connect_timeout: 0)
     }.should.raise(IO::TimeoutError)
   rescue Errno::ENETUNREACH
-    # In the case all network interfaces down.
-    # raise_error cannot deal with multiple expected exceptions
+    skip "all network interfaces down"
+  end
+
+  ruby_version_is "4.0" do
+    it 'raises IO::TimeoutError with :open_timeout when no server is listening on the given address' do
+      -> {
+        TCPSocket.send(@method, "192.0.2.1", 80, open_timeout: 0)
+      }.should.raise(IO::TimeoutError)
+    rescue Errno::ENETUNREACH
+      skip "all network interfaces down"
+    end
   end
 
   describe "with a running server" do
@@ -97,6 +106,13 @@ describe :tcpsocket_new, shared: true do
     it "connects to a server when passed connect_timeout argument" do
       @socket = TCPSocket.send(@method, @hostname, @server.port, connect_timeout: 1)
       @socket.should.instance_of?(TCPSocket)
+    end
+
+    ruby_version_is "4.0" do
+      it "connects to a server when passed open_timeout argument" do
+        @socket = TCPSocket.send(@method, @hostname, @server.port, open_timeout: 1)
+        @socket.should.instance_of?(TCPSocket)
+      end
     end
   end
 end

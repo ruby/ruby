@@ -76,6 +76,10 @@ class Gem::Source::Local < Gem::Source
   end
 
   def find_gem(gem_name, version = Gem::Requirement.default, prerelease = false) # :nodoc:
+    find_all_gems(gem_name, version, prerelease).max_by(&:version)
+  end
+
+  def find_all_gems(gem_name, version = Gem::Requirement.default, prerelease = false) # :nodoc:
     load_specs :complete
 
     found = []
@@ -93,7 +97,7 @@ class Gem::Source::Local < Gem::Source
       end
     end
 
-    found.max_by(&:version)
+    found
   end
 
   def fetch_spec(name) # :nodoc:
