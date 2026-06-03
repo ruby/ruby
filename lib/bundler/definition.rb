@@ -783,7 +783,25 @@ module Bundler
     end
 
     def precompute_source_requirements_for_indirect_dependencies?
-      sources.non_global_rubygems_sources.all?(&:dependency_api_available?)
+      if sources.non_global_rubygems_sources.all?(&:dependency_api_available?)
+        true
+      else
+        non_dependency_api_warning
+        false
+      end
+    end
+
+    def non_dependency_api_warning
+      non_api_sources = sources.non_global_rubygems_sources.reject(&:dependency_api_available?)
+      non_api_source_names = non_api_sources.map {|d| "  * #{d}" }.join("\n")
+
+      msg = String.new
+      msg << "Your Gemfile contains scoped sources that don't implement a dependency API, namely:\n\n"
+      msg << non_api_source_names
+      msg << "\n\nUsing the above gem servers may result in installing unexpected gems. " \
+        "To resolve this warning, make sure you use gem servers that implement dependency APIs, " \
+        "such as gemstash or geminabox gem servers."
+      Bundler.ui.warn msg
     end
 
     def current_platform_locked?
@@ -1159,16 +1177,20 @@ module Bundler
     def find_source_requirements
       preload_git_sources
 
+      # Only safe to exclude when locked_requirements (merged below) backfills the gap.
+      nothing_changed = nothing_changed?
+      excluded = nothing_changed ? excluded_git_sources : []
+
       # Record the specs available in each gem's source, so that those
       # specs will be available later when the resolver knows where to
       # look for that gemspec (or its dependencies)
       source_requirements = if precompute_source_requirements_for_indirect_dependencies?
-        all_requirements = source_map.all_requirements(excluded_git_sources)
+        all_requirements = source_map.all_requirements(excluded)
         { default: default_source }.merge(all_requirements)
       else
-        { default: Source::RubygemsAggregate.new(sources, source_map, excluded_git_sources) }.merge(source_map.direct_requirements)
+        { default: Source::RubygemsAggregate.new(sources, source_map, excluded) }.merge(source_map.direct_requirements)
       end
-      source_requirements.merge!(source_map.locked_requirements) if nothing_changed?
+      source_requirements.merge!(source_map.locked_requirements) if nothing_changed
       metadata_dependencies.each do |dep|
         source_requirements[dep.name] = sources.metadata_source
       end
