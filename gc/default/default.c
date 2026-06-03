@@ -1750,21 +1750,16 @@ rb_gc_impl_garbage_object_p(void *objspace_ptr, VALUE ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
-    bool dead = false;
-
+    /* Asking whether a freed (T_NONE), moved (T_MOVED), or finalized (T_ZOMBIE)
+     * object is garbage gives an unreliable answer: the slot may since have been
+     * reused for an unrelated object. A reference to one of these is stale and a
+     * bug in the caller. */
     asan_unpoisoning_object(ptr) {
-        switch (BUILTIN_TYPE(ptr)) {
-          case T_NONE:
-          case T_MOVED:
-          case T_ZOMBIE:
-            dead = true;
-            break;
-          default:
-            break;
-        }
+        GC_ASSERT(BUILTIN_TYPE(ptr) != T_NONE);
+        GC_ASSERT(BUILTIN_TYPE(ptr) != T_MOVED);
+        GC_ASSERT(BUILTIN_TYPE(ptr) != T_ZOMBIE);
     }
 
-    if (dead) return true;
     return is_lazy_sweeping(objspace) && GET_HEAP_PAGE(ptr)->flags.before_sweep &&
         !RVALUE_MARKED(objspace, ptr);
 }
@@ -5369,6 +5364,22 @@ check_children_i(const VALUE child, void *ptr)
     }
 }
 
+/* Whether a heap slot currently holds a live object. Returns false for empty
+ * (T_NONE), moved (T_MOVED), and zombie (T_ZOMBIE) slots, and for garbage
+ * objects about to be swept. */
+static bool
+gc_slot_live_object_p(rb_objspace_t *objspace, VALUE obj)
+{
+    switch (BUILTIN_TYPE(obj)) {
+      case T_NONE:
+      case T_MOVED:
+      case T_ZOMBIE:
+        return false;
+      default:
+        return !rb_gc_impl_garbage_object_p(objspace, obj);
+    }
+}
+
 static int
 verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
                               struct verify_internal_consistency_struct *data)
@@ -5378,7 +5389,7 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
 
     for (obj = (VALUE)page_start; obj != (VALUE)page_end; obj += stride) {
         asan_unpoisoning_object(obj) {
-            if (!rb_gc_impl_garbage_object_p(objspace, obj)) {
+            if (gc_slot_live_object_p(objspace, obj)) {
                 /* count objects */
                 data->live_object_count++;
                 data->parent = obj;
