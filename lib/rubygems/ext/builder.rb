@@ -102,7 +102,8 @@ class Gem::Ext::Builder
       # Set $SOURCE_DATE_EPOCH for the subprocess.
       build_env = { "SOURCE_DATE_EPOCH" => Gem.source_date_epoch_string }.merge(env)
       output, status = begin
-                         Open3.popen2e(build_env, *command, chdir: dir) do |_stdin, stdouterr, wait_thread|
+                         Open3.popen2e(build_env, *command, chdir: dir) do |stdin, stdouterr, wait_thread|
+                           stdin.close
                            output = String.new
                            while line = stdouterr.gets
                              output << line

@@ -432,9 +432,14 @@ module Bundler
         end
 
         def capture3_args_for(cmd, dir)
-          return ["git", *cmd] unless dir
+          # Disable automatic maintenance so a background commit-graph write in
+          # the source repo can't race the hardlinking local clone and fail with
+          # "hardlink different from source".
+          opts = ["-c", "gc.auto=0", "-c", "maintenance.auto=false"]
 
-          ["git", "-C", dir.to_s, *cmd]
+          return ["git", *opts, *cmd] unless dir
+
+          ["git", "-C", dir.to_s, *opts, *cmd]
         end
 
         def extra_clone_args

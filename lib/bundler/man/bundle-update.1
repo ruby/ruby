@@ -4,7 +4,7 @@
 .SH "NAME"
 \fBbundle\-update\fR \- Update your gems to the latest available versions
 .SH "SYNOPSIS"
-\fBbundle update\fR \fI*gems\fR [\-\-all] [\-\-group=NAME] [\-\-source=NAME] [\-\-local] [\-\-ruby] [\-\-bundler[=VERSION]] [\-\-force] [\-\-full\-index] [\-\-gemfile=GEMFILE] [\-\-jobs=NUMBER] [\-\-quiet] [\-\-patch|\-\-minor|\-\-major] [\-\-pre] [\-\-strict] [\-\-conservative]
+\fBbundle update\fR \fI*gems\fR [\-\-all] [\-\-group=NAME] [\-\-source=NAME] [\-\-local] [\-\-ruby] [\-\-bundler[=VERSION]] [\-\-cooldown=NUMBER] [\-\-force] [\-\-full\-index] [\-\-gemfile=GEMFILE] [\-\-jobs=NUMBER] [\-\-quiet] [\-\-patch|\-\-minor|\-\-major] [\-\-pre] [\-\-strict] [\-\-conservative]
 .SH "DESCRIPTION"
 Update the gems specified (all gems, if \fB\-\-all\fR flag is used), ignoring the previously installed gems specified in the \fBGemfile\.lock\fR\. In general, you should use bundle install(1) \fIbundle\-install\.1\.html\fR to install the same exact gems and versions across machines\.
 .P
@@ -64,6 +64,9 @@ Do not allow any gem to be updated past latest \fB\-\-patch\fR | \fB\-\-minor\fR
 .TP
 \fB\-\-conservative\fR
 Use bundle install conservative update behavior and do not allow indirect dependencies to be updated\.
+.TP
+\fB\-\-cooldown=<number>\fR
+Only consider gem versions published at least \fInumber\fR days ago when resolving\. Pass \fB0\fR to disable cooldown for this run, overriding any per\-source or global configuration\. Combine with \fB\-\-conservative\fR to minimize transitive churn when bypassing cooldown for an urgent update\. See \fBcooldown\fR in bundle\-config(1)\.
 .SH "UPDATING ALL GEMS"
 If you run \fBbundle update \-\-all\fR, bundler will ignore any previously installed gems and resolve all dependencies again based on the latest versions of all gems available in the sources\.
 .P

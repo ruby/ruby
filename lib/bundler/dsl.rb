@@ -116,6 +116,10 @@ module Bundler
       options = args.last.is_a?(Hash) ? args.pop.dup : {}
       options = normalize_hash(options)
       source = normalize_source(source)
+      cooldown = options["cooldown"]
+      if cooldown && !(cooldown.is_a?(Integer) && cooldown >= 0)
+        raise InvalidOption, "Expected `cooldown` to be a non-negative integer, got #{cooldown.inspect}"
+      end
 
       if options.key?("type")
         options["type"] = options["type"].to_s
@@ -130,9 +134,9 @@ module Bundler
         source_opts = options.merge("uri" => source)
         with_source(@sources.add_plugin_source(options["type"], source_opts), &blk)
       elsif block_given?
-        with_source(@sources.add_rubygems_source("remotes" => source), &blk)
+        with_source(@sources.add_rubygems_source("remotes" => source, "cooldown" => cooldown), &blk)
       else
-        @sources.add_global_rubygems_remote(source)
+        @sources.add_global_rubygems_remote(source, cooldown: cooldown)
       end
     end
 

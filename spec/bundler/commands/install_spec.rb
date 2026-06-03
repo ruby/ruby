@@ -1306,6 +1306,43 @@ RSpec.describe "bundle install with gem sources" do
     end
   end
 
+  describe "when using umask 002 and setgid bit", :permissions do
+    let(:gems_path) { bundled_app("vendor/#{Bundler.ruby_scope}/gems") }
+    let(:foo_path) { gems_path.join("foo-1.0.0") }
+
+    before do
+      build_repo4 do
+        build_gem "foo", "1.0.0" do |s|
+          s.write "CHANGELOG.md", "foo"
+        end
+      end
+
+      gemfile <<-G
+        source "https://gem.repo4"
+        gem 'foo'
+      G
+
+      FileUtils.mkdir_p(gems_path)
+      FileUtils.chmod("g+s", gems_path)
+    end
+
+    it "should create the gem directory with proper permissions" do
+      with_umask(0o002) do
+        bundle "config set --local path vendor"
+        bundle :install
+        expect(out).to include("Bundle complete!")
+        expect(err).to be_empty
+        # Linux's SysV-derived mkdir(2) propagates the set-group-ID bit
+        # from the parent directory to newly created subdirectories. BSD
+        # (including macOS) inherits the parent's group via mkdir(2) but
+        # does not copy the set-group-ID bit itself, so the expected
+        # mode differs by platform.
+        expected = RUBY_PLATFORM.include?("darwin") ? 0o0775 : 0o2775
+        expect(File.stat(foo_path).mode & 0o7777).to eq(expected)
+      end
+    end
+  end
+
   describe "parallel make" do
     before do
       unless Gem::Installer.private_method_defined?(:build_jobs)

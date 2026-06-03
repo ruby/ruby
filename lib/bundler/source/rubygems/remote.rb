@@ -4,9 +4,9 @@ module Bundler
   class Source
     class Rubygems
       class Remote
-        attr_reader :uri, :anonymized_uri, :original_uri
+        attr_reader :uri, :anonymized_uri, :original_uri, :cooldown
 
-        def initialize(uri)
+        def initialize(uri, cooldown: nil)
           orig_uri = uri
           uri = Bundler.settings.mirror_for(uri)
           @original_uri = orig_uri if orig_uri != uri
@@ -14,6 +14,16 @@ module Bundler
 
           @uri = apply_auth(uri, fallback_auth).freeze
           @anonymized_uri = remove_auth(@uri).freeze
+          @cooldown = cooldown
+        end
+
+        # Returns the cooldown days that apply to this remote, resolving the
+        # precedence CLI > config > Gemfile per-source. Returns nil if no
+        # cooldown applies.
+        def effective_cooldown
+          override = Bundler.settings[:cooldown]
+          return override if override
+          @cooldown
         end
 
         MAX_CACHE_SLUG_HOST_SIZE = 255 - 1 - 32 # 255 minus dot minus MD5 length

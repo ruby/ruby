@@ -184,6 +184,9 @@ module Bundler
 
         platforms_explanation = specs_matching_other_platforms.any? ? " for any resolution platforms (#{package.platforms.join(", ")})" : ""
         custom_explanation = "#{constraint} could not be found in #{repository_for(package)}#{platforms_explanation}"
+        if hint = cooldown_hint(specs_matching_other_platforms)
+          custom_explanation += " (#{hint})"
+        end
 
         label = "#{name} (#{constraint_string})"
         extended_explanation = other_specs_matching_message(specs_matching_other_platforms, label) if specs_matching_other_platforms.any?
@@ -353,6 +356,10 @@ module Bundler
         message << "\n#{other_specs_matching_message(specs, matching_part)}"
       end
 
+      if hint = cooldown_hint(specs_matching_requirement)
+        message << "\n\n#{hint}."
+      end
+
       if specs_matching_requirement.any? && (hint = platform_mismatch_hint)
         message << "\n\n#{hint}"
       end
@@ -396,13 +403,47 @@ module Bundler
     end
 
     def filter_specs(specs, package)
-      filter_remote_specs(filter_prereleases(specs, package), package)
+      filter_remote_specs(filter_cooldown(filter_prereleases(specs, package)), package)
     end
 
     def filter_prereleases(specs, package)
       return specs unless package.ignores_prereleases? && specs.size > 1
 
       specs.reject {|s| s.version.prerelease? }
+    end
+
+    def filter_cooldown(specs)
+      return specs if specs.empty?
+      excluded_versions = cooldown_excluded_versions(specs)
+      return specs if excluded_versions.empty?
+      specs.reject {|s| excluded_versions.include?([s.name, s.version]) }
+    end
+
+    def cooldown_excluded_versions(specs)
+      excluded = {}
+      specs.each do |spec|
+        next unless cooldown_excluded?(spec)
+        excluded[[spec.name, spec.version]] = true
+      end
+      excluded
+    end
+
+    def cooldown_hint(specs)
+      excluded_versions = cooldown_excluded_versions(specs)
+      return nil if excluded_versions.empty?
+      "#{excluded_versions.size} version#{"s" if excluded_versions.size > 1} excluded by the cooldown setting; pass `--cooldown 0` to bypass"
+    end
+
+    def cooldown_excluded?(spec)
+      return false unless spec.respond_to?(:created_at) && spec.created_at
+      return false unless spec.respond_to?(:remote) && spec.remote
+      days = spec.remote.effective_cooldown
+      return false if days.nil? || days <= 0
+      (cooldown_now - spec.created_at) < (days * 86_400)
+    end
+
+    def cooldown_now
+      @cooldown_now ||= Time.now
     end
 
     def filter_remote_specs(specs, package)

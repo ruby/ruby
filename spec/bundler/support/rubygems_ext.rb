@@ -62,6 +62,48 @@ module Spec
 
       require_relative "helpers"
       Helpers.install_dev_bundler
+
+      install_vendored_compact_index
+    end
+
+    # Vendor `rubygems/rubygems.org#lib/compact_index/` under `tmp/compact_index/`
+    # so the artifice can serve compact-index responses without a runtime gem
+    # dependency. Pinned to a reviewed commit; override with COMPACT_INDEX_REF
+    # to refresh against another ref (the existing vendor copy is discarded).
+    def install_vendored_compact_index
+      target_root = Path.tmp_root.join("compact_index")
+      require "fileutils"
+      FileUtils.mkdir_p(Path.tmp_root)
+
+      files = %w[
+        lib/compact_index.rb
+        lib/compact_index/dependency.rb
+        lib/compact_index/gem.rb
+        lib/compact_index/gem_version.rb
+        lib/compact_index/versions_file.rb
+      ]
+
+      # Serialize installs so parallel test setups don't race on the same
+      # vendor tree, and only skip the download when every file is present so
+      # an interrupted run can't leave a partial copy behind.
+      File.open(Path.tmp_root.join("compact_index.lock"), File::CREAT | File::RDWR) do |lock|
+        lock.flock(File::LOCK_EX)
+
+        FileUtils.rm_rf(target_root) if ENV["COMPACT_INDEX_REF"]
+
+        next if files.all? {|path| File.exist?(target_root.join(path)) }
+
+        require "open-uri"
+        ref = ENV["COMPACT_INDEX_REF"] || "7c68a7b39761c61a66f9299f85b889ec39afc02c"
+        files.each do |path|
+          url = "https://raw.githubusercontent.com/rubygems/rubygems.org/#{ref}/#{path}"
+          target = target_root.join(path)
+          FileUtils.mkdir_p(File.dirname(target))
+          tmp = "#{target}.tmp"
+          File.write(tmp, URI.parse(url).open(&:read))
+          File.rename(tmp, target)
+        end
+      end
     end
 
     def check_source_control_changes(success_message:, error_message:)
