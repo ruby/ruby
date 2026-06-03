@@ -16,18 +16,18 @@ USDT_GROUPS = {
   'event_hooks' => [
     ['gc__event_hook',    "ruby",     'gc_event_hook',    'i',  1],
   ],
-  'xmalloc' => [
-    ['gc__xmalloc',       "ruby",     'gc_xmalloc',       'i',  2],
-    ['gc__xcalloc',       "ruby",     'gc_xcalloc',       'i',  2],
-  ],
-  'xfree' => [
-    ['gc__xfree',         "ruby",     'gc_xfree',         'i',  0],
-  ],
   'obj_new' => [
     ['gc__obj_new',       "ruby",     'gc_obj_new',       'i',  2],
   ],
   'obj_free' => [
     ['gc__obj_free',      "ruby",     'gc_obj_free',      'i',  2],
+  ],
+  'xmalloc' => [
+    ['gc__xmalloc',       "ruby",     'gc_xmalloc',       'i',  2],
+    ['gc__xcalloc',       "ruby",     'gc_xcalloc',       'i',  2],
+  ],
+  'xfree' => [
+    ['gc__xfree',         "ruby",     'gc_xfree',         'i',  2],
   ],
   'gvl' => [
     ['gvl__acquire',      "ruby",     'GVL',              'B',  0],

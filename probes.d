@@ -187,11 +187,6 @@ provider ruby {
   probe insn__operand(const char *val, const char *insns_name);
 #endif
 
-  probe gvl__acquire();
-  probe gvl__release();
-
-  probe rts__set_running(const void *old_thread, const void *new_thread);
-
   /*
      ruby:::gc-mark-begin();
 
@@ -221,60 +216,86 @@ provider ruby {
   probe gc__sweep__end();
 
   /*
-     ruby:::gc-event-hook();
+     ruby:::gc-event-hook(event);
 
-     Fired when rb_gc_event_hook is called.
+     Fired when the `rb_gc_event_hook` function is called.
+
+     * `event` the `event` argument passed to rb_gc_event_hook
   */
   probe gc__event_hook(int event);
 
   /*
-     ruby:::gc-enter();
+     ruby:::gc-enter(event);
 
-     Fired when gc_enter in default.c is called.
+     Fired when the `gc_enter` function in default.c is called.
+
+     * `event` the `event` argument passed to gc_enter
   */
   probe gc__enter(int event);
 
   /*
-     ruby:::gc-exit();
+     ruby:::gc-exit(event);
 
-     Fired when gc_exit in default.c is called.
+     Fired when the `gc_exit` function in default.c is called.
+
+     * `event` the `event` argument passed to gc_exit
   */
   probe gc__exit(int event);
-
-  /*
-     ruby:::gc-xmalloc();
-
-     Fired when allocating memory with xmalloc.
-  */
-  probe gc__xmalloc(int n, int size);
-
-  /*
-     ruby:::gc-xcalloc();
-
-     Fired when allocating memory with xcalloc.
-  */
-  probe gc__xcalloc(int n, int size);
-
-  /*
-     ruby:::gc-xfree();
-
-     Fired when de-allocating memory with xfree.
-  */
-  probe gc__xfree();
 
   /*
      ruby:::gc-obj_new();
 
      Fired when an object is allocated
+
+     * `obj` the pointer to the allocated object
+     * `flags` the initial flags of the object
   */
   probe gc__obj_new(void *obj, int flags);
 
   /*
      ruby:::gc-obj_free();
 
-     Fired when finalizing an object with rb_gc_obj_free.
+     Fired when finalizing an object with `rb_gc_obj_free`.
+
+     * `obj` the pointer to the finalized object
+     * `flags` the flags of the object when it is finalized
   */
   probe gc__obj_free(void *obj, int flags);
+
+  /*
+     ruby:::gc-xmalloc(n, size);
+
+     Fired when allocating memory with `ruby_xmalloc` or `ruby_xmalloc2`.
+
+     * `n` the number of elements.  For `ruby_xmalloc` it is 1.
+     * `size` the size of each element
+  */
+  probe gc__xmalloc(int n, int size);
+
+  /*
+     ruby:::gc-xcalloc();
+
+     Fired when allocating memory with `ruby_xcalloc`.
+
+     * `n` the number of elements.  For `ruby_xmalloc` it is 1.
+     * `size` the size of each element
+  */
+  probe gc__xcalloc(int n, int size);
+
+  /*
+     ruby:::gc-xfree(ptr, size);
+
+     Fired when de-allocating memory with `ruby_xfree` or `ruby_xfree_sized`.
+
+     * `ptr` the pointer to the object
+     * `size` the size of the object.  0 if called with `xfree`
+  */
+  probe gc__xfree(void *obj, int size);
+
+  probe gvl__acquire();
+  probe gvl__release();
+
+  probe rts__set_running(const void *old_thread, const void *new_thread);
 };
 
 #pragma D attributes Stable/Evolving/Common provider ruby provider

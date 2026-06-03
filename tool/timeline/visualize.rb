@@ -134,22 +134,17 @@ class LogProcessor
     }
 
     case name
+    when 'GCEnterExit'
+      event = args[0].to_i
+      result[:args].update({
+        event: GCEnterEvent.key(event)
+      })
     when 'gc_event_hook'
       event = args[0].to_i
       result[:args].update({
         event: event
       })
       result[:name] = RubyInternalEvent.key(event)
-    when 'gc_xmalloc'
-      result[:args].update({
-        n: args[0].to_i,
-        size: args[1].to_i,
-      })
-    when 'gc_xcalloc'
-      result[:args].update({
-        n: args[0].to_i,
-        size: args[1].to_i,
-      })
     when 'gc_obj_new'
       obj = args[0].to_i
       flags_value = args[1].to_i
@@ -166,10 +161,20 @@ class LogProcessor
         obj: obj,
         flags_value: flags_value,
       }).update(decoded_flags)
-    when 'GCEnterExit'
-      event = args[0].to_i
+    when 'gc_xmalloc'
       result[:args].update({
-        event: GCEnterEvent.key(event)
+        n: args[0].to_i,
+        size: args[1].to_i,
+      })
+    when 'gc_xcalloc'
+      result[:args].update({
+        n: args[0].to_i,
+        size: args[1].to_i,
+      })
+    when 'gc_xfree'
+      result[:args].update({
+        ptr: args[0].to_i,
+        size: args[1].to_i,
       })
     when 'rts_set_running'
       old_thread = args[0].to_i
