@@ -1,7 +1,7 @@
 # frozen_string_literal: false
 
 module Bundler
-  VERSION = "4.0.11".freeze
+  VERSION = "4.0.12".freeze
 
   def self.bundler_major_version
     @bundler_major_version ||= gem_version.segments.first
