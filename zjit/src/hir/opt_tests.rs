@@ -16379,7 +16379,7 @@ mod hir_opt_tests {
 
         // After profiling via the side exit, rebuilding HIR should now
         // have a SendDirect for greet_recompile instead of SideExit.
-        assert_snapshot!(hir_string("test_no_profile_recompile"), @"
+        assert_snapshot!(hir_string("test_no_profile_recompile"), @r"
         fn test_no_profile_recompile@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -16438,7 +16438,7 @@ mod hir_opt_tests {
         eval("3.times { test_final_version(false) }");
 
         // On the final version, greet_final should be a Send fallback, not a SideExit.
-        assert_snapshot!(hir_string("test_final_version"), @"
+        assert_snapshot!(hir_string("test_final_version"), @r"
         fn test_final_version@<compiled>:4:
         bb1():
           EntryPoint interpreter

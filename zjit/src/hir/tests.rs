@@ -99,7 +99,7 @@ mod snapshot_tests {
             test
             test
         ");
-        assert_snapshot!(optimized_hir_string("test"), @r"
+        assert_snapshot!(optimized_hir_string("test"), @"
         fn test@<compiled>:3:
         bb0():
           Entries bb1, bb2
@@ -137,7 +137,7 @@ mod snapshot_tests {
             test
             test
         ");
-        assert_snapshot!(optimized_hir_string("test"), @r"
+        assert_snapshot!(optimized_hir_string("test"), @"
         fn test@<compiled>:3:
         bb0():
           Entries bb1, bb2
