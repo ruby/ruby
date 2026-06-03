@@ -64,7 +64,7 @@ static inline void fbuffer_consumed(FBuffer *fb, size_t consumed)
 static void fbuffer_free(FBuffer *fb)
 {
     if (fb->ptr && fb->type == FBUFFER_HEAP_ALLOCATED) {
-        ruby_xfree(fb->ptr);
+        JSON_SIZED_FREE_N(fb->ptr, fb->capa);
     }
 }
 
@@ -88,7 +88,7 @@ static void fbuffer_realloc(FBuffer *fb, size_t required)
             fb->type = FBUFFER_HEAP_ALLOCATED;
             MEMCPY(fb->ptr, old_buffer, char, fb->len);
         } else {
-            REALLOC_N(fb->ptr, char, required);
+            JSON_SIZED_REALLOC_N(fb->ptr, char, required, fb->capa);
         }
         fb->capa = required;
     }

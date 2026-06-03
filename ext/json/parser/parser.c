@@ -211,7 +211,7 @@ static rvalue_stack *rvalue_stack_grow(rvalue_stack *stack, VALUE *handle, rvalu
     if (stack->type == RVALUE_STACK_STACK_ALLOCATED) {
         stack = rvalue_stack_spill(stack, handle, stack_ref);
     } else {
-        REALLOC_N(stack->ptr, VALUE, required);
+        JSON_SIZED_REALLOC_N(stack->ptr, VALUE, required, stack->capa);
         stack->capa = required;
     }
     return stack;
@@ -250,7 +250,7 @@ static void rvalue_stack_mark(void *ptr)
 
 static void rvalue_stack_free_buffer(rvalue_stack *stack)
 {
-    ruby_xfree(stack->ptr);
+    JSON_SIZED_FREE_N(stack->ptr, stack->capa);
     stack->ptr = NULL;
 }
 
@@ -260,7 +260,7 @@ static void rvalue_stack_free(void *ptr)
     if (stack) {
         rvalue_stack_free_buffer(stack);
 #ifndef HAVE_RUBY_TYPED_EMBEDDABLE
-        ruby_xfree(stack);
+        JSON_SIZED_FREE(stack);
 #endif
     }
 }
