@@ -8112,7 +8112,11 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
     n = 0;
     r = Qundef;
 
-    if (!FIXNUM_P(v) && !RB_BIGNUM_TYPE_P(v) && !RB_TYPE_P(v, T_RATIONAL)) {
+    bool init_is_float = RB_FLOAT_TYPE_P(v);
+    if (init_is_float) {
+        v = LONG2FIX(0);
+    }
+    else if (!RB_INTEGER_TYPE_P(v) && !RB_TYPE_P(v, T_RATIONAL)) {
         i = 0;
         goto init_is_a_value;
     }
@@ -8140,12 +8144,13 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
             goto not_exact;
     }
     v = finish_exact_sum(n, r, v, argc!=0);
+    if (init_is_float) v = rb_float_plus(argv[0], v);
     return v;
 
   not_exact:
     v = finish_exact_sum(n, r, v, i!=0);
 
-    if (RB_FLOAT_TYPE_P(e)) {
+    if (init_is_float ? (--i, e = argv[0], true) : RB_FLOAT_TYPE_P(e)) {
         /*
          * Kahan-Babuska balancing compensated summation algorithm
          * See https://link.springer.com/article/10.1007/s00607-005-0139-x
