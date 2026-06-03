@@ -209,7 +209,7 @@ mod hir_opt_tests {
             end
             test 1; test 2
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -439,7 +439,7 @@ mod hir_opt_tests {
             end
             test 1; test 2
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -1115,7 +1115,7 @@ mod hir_opt_tests {
             def test(arr) = arr[0]
             test([1,2,3])
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -1148,7 +1148,7 @@ mod hir_opt_tests {
             def test(arr) = arr[0]
             test([1,2,3])
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -1232,7 +1232,7 @@ mod hir_opt_tests {
             custom.count
         ");
         assert_eq!(VALUE::fixnum_from_usize(2), result);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:13:
         bb1():
           EntryPoint interpreter
@@ -1264,7 +1264,7 @@ mod hir_opt_tests {
             end
             test(2); test(3)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -1394,7 +1394,7 @@ mod hir_opt_tests {
             end
             test; test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -1422,7 +1422,7 @@ mod hir_opt_tests {
             def test = baz
             test; test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:5:
         bb1():
           EntryPoint interpreter
@@ -1449,7 +1449,7 @@ mod hir_opt_tests {
             def test = baz
             test; test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -1485,7 +1485,7 @@ mod hir_opt_tests {
             def test = foo(1)
             test; test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:8:
         bb1():
           EntryPoint interpreter
@@ -1514,7 +1514,7 @@ mod hir_opt_tests {
             def test(o) = o.fun_new_map {|e| e }
             test C.new; test C.new
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:5:
         bb1():
           EntryPoint interpreter
@@ -1551,7 +1551,7 @@ mod hir_opt_tests {
             def test(o) = o.bar { |x| x }
             test C.new; test C.new
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:7:
         bb1():
           EntryPoint interpreter
@@ -1588,7 +1588,7 @@ mod hir_opt_tests {
             def test(a) = a.length
             test([1,2,3]); test([1,2,3])
         ", "{ specialized_instruction: false }");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -1650,7 +1650,7 @@ mod hir_opt_tests {
             end
             test; test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:5:
         bb1():
           EntryPoint interpreter
@@ -1677,7 +1677,7 @@ mod hir_opt_tests {
             end
             test; test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -1706,7 +1706,7 @@ mod hir_opt_tests {
             end
             test; test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -1738,7 +1738,7 @@ mod hir_opt_tests {
             end
             test; test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:5:
         bb1():
           EntryPoint interpreter
@@ -1766,7 +1766,7 @@ mod hir_opt_tests {
             def test = foo
             test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -1792,7 +1792,7 @@ mod hir_opt_tests {
             def test = foo 3
             test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -1819,7 +1819,7 @@ mod hir_opt_tests {
             def test = foo 3, 4
             test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -1848,7 +1848,7 @@ mod hir_opt_tests {
             test
             test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -1887,7 +1887,7 @@ mod hir_opt_tests {
             end
             test; test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -1919,7 +1919,7 @@ mod hir_opt_tests {
             def test(a, b) = a + b
             test(1,2); test(3,4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:7:
         bb1():
           EntryPoint interpreter
@@ -1949,7 +1949,7 @@ mod hir_opt_tests {
             def test(a, b) = a + b
             test(1,2); test(3,4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -1980,7 +1980,7 @@ mod hir_opt_tests {
             def test(a) = a + 1
             test(1); test(3)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -2038,7 +2038,7 @@ mod hir_opt_tests {
             def test(a, b) = a[b]
             test(3, 4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -2149,7 +2149,7 @@ mod hir_opt_tests {
             def test(a, b) = a < b
             test(1,2); test(3,4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -2180,7 +2180,7 @@ mod hir_opt_tests {
             def test(a) = a < 1
             test(1); test(3)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -2467,7 +2467,7 @@ mod hir_opt_tests {
             def test(arr) = arr[0]
             test(arr)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -2502,7 +2502,7 @@ mod hir_opt_tests {
             def test(arr) = arr[0]
             test(arr)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -2813,7 +2813,7 @@ mod hir_opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -2847,7 +2847,7 @@ mod hir_opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -2881,7 +2881,7 @@ mod hir_opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -2915,7 +2915,7 @@ mod hir_opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -2950,7 +2950,7 @@ mod hir_opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -2985,7 +2985,7 @@ mod hir_opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -3019,7 +3019,7 @@ mod hir_opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -3053,7 +3053,7 @@ mod hir_opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -3087,7 +3087,7 @@ mod hir_opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -3121,7 +3121,7 @@ mod hir_opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -3155,7 +3155,7 @@ mod hir_opt_tests {
             end
             test(1, 2); test(3, 4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -3244,7 +3244,7 @@ mod hir_opt_tests {
             test(0) # profile
             test(1)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -3558,7 +3558,7 @@ mod hir_opt_tests {
             def test = block_given?
             test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -3584,7 +3584,7 @@ mod hir_opt_tests {
             TEST = proc { block_given? }
             TEST.call
         ");
-        assert_snapshot!(hir_string_proc("TEST"), @r"
+        assert_snapshot!(hir_string_proc("TEST"), @"
         fn block in <compiled>@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -3612,7 +3612,7 @@ mod hir_opt_tests {
             end
             test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -3735,7 +3735,7 @@ mod hir_opt_tests {
             test c
         ");
 
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:6:
         bb1():
           EntryPoint interpreter
@@ -3767,7 +3767,7 @@ mod hir_opt_tests {
             test
         ");
         assert_eq!(VALUE::fixnum_from_usize(3), result);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -3800,7 +3800,7 @@ mod hir_opt_tests {
             test
             test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -3838,7 +3838,7 @@ mod hir_opt_tests {
             test
             test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -3907,7 +3907,7 @@ mod hir_opt_tests {
             test
             test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -3936,7 +3936,7 @@ mod hir_opt_tests {
             test
         ");
         assert_eq!(VALUE::fixnum_from_usize(110), result);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -3965,7 +3965,7 @@ mod hir_opt_tests {
             test
             test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -3994,7 +3994,7 @@ mod hir_opt_tests {
             test
             test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -4024,7 +4024,7 @@ mod hir_opt_tests {
             test
             test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -4054,7 +4054,7 @@ mod hir_opt_tests {
             test
             test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -4083,7 +4083,7 @@ mod hir_opt_tests {
             test
             test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -4120,7 +4120,7 @@ mod hir_opt_tests {
             test
             test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -4157,7 +4157,7 @@ mod hir_opt_tests {
             test
             test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -4199,7 +4199,7 @@ mod hir_opt_tests {
             test
             test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -4314,7 +4314,7 @@ mod hir_opt_tests {
             test
             test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -4767,7 +4767,7 @@ mod hir_opt_tests {
             def test = Set.new
             test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -5450,7 +5450,7 @@ mod hir_opt_tests {
             end
             test p
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -5483,7 +5483,7 @@ mod hir_opt_tests {
             end
             test p
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -5516,7 +5516,7 @@ mod hir_opt_tests {
             end
             test p
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -5549,7 +5549,7 @@ mod hir_opt_tests {
             end
             test p
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -7102,7 +7102,7 @@ mod hir_opt_tests {
             def test = one(zero)
             test
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:5:
         bb1():
           EntryPoint interpreter
@@ -7313,7 +7313,7 @@ mod hir_opt_tests {
 
             test(nil)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -7342,7 +7342,7 @@ mod hir_opt_tests {
 
             test(false)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -7371,7 +7371,7 @@ mod hir_opt_tests {
 
             test(true)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -7400,7 +7400,7 @@ mod hir_opt_tests {
 
             test(:foo)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -7429,7 +7429,7 @@ mod hir_opt_tests {
 
             test(1)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -7458,7 +7458,7 @@ mod hir_opt_tests {
 
             test(1.0)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -7487,7 +7487,7 @@ mod hir_opt_tests {
 
             test('foo')
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -7517,7 +7517,7 @@ mod hir_opt_tests {
 
             test([])
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -7547,7 +7547,7 @@ mod hir_opt_tests {
 
             test(false)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -7576,7 +7576,7 @@ mod hir_opt_tests {
 
             test(nil)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -7608,7 +7608,7 @@ mod hir_opt_tests {
             test(false)
             test(true)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -7664,7 +7664,7 @@ mod hir_opt_tests {
 
             test([])
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -7697,7 +7697,7 @@ mod hir_opt_tests {
 
             test({})
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -7728,7 +7728,7 @@ mod hir_opt_tests {
 
             test(C.new, C.new)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -7761,7 +7761,7 @@ mod hir_opt_tests {
 
             test(1, 2)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -7793,7 +7793,7 @@ mod hir_opt_tests {
 
             test(1, 2)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -7827,7 +7827,7 @@ mod hir_opt_tests {
             test; test
         ");
 
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -7861,7 +7861,7 @@ mod hir_opt_tests {
             test O
             test O
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:10:
         bb1():
           EntryPoint interpreter
@@ -7904,7 +7904,7 @@ mod hir_opt_tests {
             test O
             test O
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:13:
         bb1():
           EntryPoint interpreter
@@ -8377,7 +8377,7 @@ mod hir_opt_tests {
             e = C.new(true)  # same class, different shape
             100.times { d.write(e) }  # shape guard exits, but no recompile
         ");
-        assert_snapshot!(hir_string_proc("D.new.method(:write)"), @r"
+        assert_snapshot!(hir_string_proc("D.new.method(:write)"), @"
         fn write@<compiled>:12:
         bb1():
           EntryPoint interpreter
@@ -8720,7 +8720,7 @@ mod hir_opt_tests {
             O1.foo
             O2.foo
         "#);
-        assert_snapshot!(hir_string_proc("C.instance_method(:foo)"), @r"
+        assert_snapshot!(hir_string_proc("C.instance_method(:foo)"), @"
         fn foo@<compiled>:15:
         bb1():
           EntryPoint interpreter
@@ -8799,7 +8799,7 @@ mod hir_opt_tests {
             O1.foo
             O2.foo
         "#);
-        assert_snapshot!(hir_string_proc("C.instance_method(:foo)"), @r"
+        assert_snapshot!(hir_string_proc("C.instance_method(:foo)"), @"
         fn foo@<compiled>:15:
         bb1():
           EntryPoint interpreter
@@ -8873,7 +8873,7 @@ mod hir_opt_tests {
             O1.foo
             O2.foo
         "#);
-        assert_snapshot!(hir_string_proc("C.instance_method(:foo)"), @r"
+        assert_snapshot!(hir_string_proc("C.instance_method(:foo)"), @"
         fn foo@<compiled>:7:
         bb1():
           EntryPoint interpreter
@@ -9059,7 +9059,7 @@ mod hir_opt_tests {
             def test(o) = o.foo
             test obj
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:12:
         bb1():
           EntryPoint interpreter
@@ -9285,7 +9285,7 @@ mod hir_opt_tests {
             test; test
         "#);
         assert_eq!(VALUE::fixnum_from_usize(2), result);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:6:
         bb1():
           EntryPoint interpreter
@@ -9315,7 +9315,7 @@ mod hir_opt_tests {
             test
         ");
         assert_eq!(VALUE::fixnum_from_usize(42), result);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:5:
         bb1():
           EntryPoint interpreter
@@ -9345,7 +9345,7 @@ mod hir_opt_tests {
             test
         ");
         assert_eq!(VALUE::fixnum_from_usize(42), result);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:5:
         bb1():
           EntryPoint interpreter
@@ -9448,7 +9448,7 @@ mod hir_opt_tests {
             test C.new
             test C.new
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:6:
         bb1():
           EntryPoint interpreter
@@ -9484,7 +9484,7 @@ mod hir_opt_tests {
             test C.new
             test C.new
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:6:
         bb1():
           EntryPoint interpreter
@@ -9520,7 +9520,7 @@ mod hir_opt_tests {
             test C.new
             test C.new
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:6:
         bb1():
           EntryPoint interpreter
@@ -9559,7 +9559,7 @@ mod hir_opt_tests {
             test C.new
             test C.new
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:6:
         bb1():
           EntryPoint interpreter
@@ -9595,7 +9595,7 @@ mod hir_opt_tests {
             test C.new
             test C.new
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -9626,7 +9626,7 @@ mod hir_opt_tests {
             test C.new
             test C.new
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -9661,7 +9661,7 @@ mod hir_opt_tests {
             test C.new
             test C.new
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -9693,7 +9693,7 @@ mod hir_opt_tests {
             test C.new, value
             test C.new, value
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -9730,7 +9730,7 @@ mod hir_opt_tests {
             test C.new, value
             test C.new, value
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -9895,7 +9895,7 @@ mod hir_opt_tests {
             def test(o) = o.to_s
             test "foo"
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -9923,7 +9923,7 @@ mod hir_opt_tests {
             def test(x) = x.to_s
             test 5
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -9951,7 +9951,7 @@ mod hir_opt_tests {
             def test(x) = x.to_s
             test (2**65)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -10046,7 +10046,7 @@ mod hir_opt_tests {
             end
             test([1, 2, 3], 0)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -10087,7 +10087,7 @@ mod hir_opt_tests {
             end
             test(C.new([1, 2, 3]), 0)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -10159,7 +10159,7 @@ mod hir_opt_tests {
             end
             test({1 => 3}, 1)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -10193,7 +10193,7 @@ mod hir_opt_tests {
             end
             test(C.new({0 => 3}), 0)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -10289,7 +10289,7 @@ mod hir_opt_tests {
             end
             test({}, 0, 1)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -10325,7 +10325,7 @@ mod hir_opt_tests {
             end
             test(C.new, 0, 1)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -10389,7 +10389,7 @@ mod hir_opt_tests {
             end
             test([])
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -10429,7 +10429,7 @@ mod hir_opt_tests {
             end
             test([], 0, 1)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -10477,7 +10477,7 @@ mod hir_opt_tests {
             a = MyArray.new
             test(a, 0, 1)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -10512,7 +10512,7 @@ mod hir_opt_tests {
             end
             test([])
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -10546,7 +10546,7 @@ mod hir_opt_tests {
             end
             test([])
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -10580,7 +10580,7 @@ mod hir_opt_tests {
             end
             test([])
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -10765,7 +10765,7 @@ mod hir_opt_tests {
             test([])
         ");
         assert_contains_opcode("test", YARVINSN_opt_length);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -10796,7 +10796,7 @@ mod hir_opt_tests {
             test([])
         ");
         assert_contains_opcode("test", YARVINSN_opt_size);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -10827,7 +10827,7 @@ mod hir_opt_tests {
             test("foo")
         "#);
         assert_contains_opcode("test", YARVINSN_opt_regexpmatch2);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -10857,7 +10857,7 @@ mod hir_opt_tests {
             def test(s, i) = s.getbyte(i)
             test("foo", 0)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -10898,7 +10898,7 @@ mod hir_opt_tests {
             end
             test("foo", 0)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -10938,7 +10938,7 @@ mod hir_opt_tests {
             end
             test("foo", 0, 127)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -10985,7 +10985,7 @@ mod hir_opt_tests {
             end
             test(MyString.new('foo'), 0, 127)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:5:
         bb1():
           EntryPoint interpreter
@@ -11030,7 +11030,7 @@ mod hir_opt_tests {
             end
             test("foo", 0, 3.14)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -11065,7 +11065,7 @@ mod hir_opt_tests {
             end
             test("asdf")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -11100,7 +11100,7 @@ mod hir_opt_tests {
             end
             test("this should get removed")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -11130,7 +11130,7 @@ mod hir_opt_tests {
             test(4)
         ");
         assert_contains_opcode("test", YARVINSN_opt_succ);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -11160,7 +11160,7 @@ mod hir_opt_tests {
             test(4 << 70)
         ");
         assert_contains_opcode("test", YARVINSN_opt_succ);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -11189,7 +11189,7 @@ mod hir_opt_tests {
             test(4)
         ");
         assert_contains_opcode("test", YARVINSN_opt_ltlt);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -11219,7 +11219,7 @@ mod hir_opt_tests {
             test(4)
         ");
         assert_contains_opcode("test", YARVINSN_opt_ltlt);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -11249,7 +11249,7 @@ mod hir_opt_tests {
             test(4)
         ");
         assert_contains_opcode("test", YARVINSN_opt_ltlt);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -11279,7 +11279,7 @@ mod hir_opt_tests {
             test(4, 5)
         ");
         assert_contains_opcode("test", YARVINSN_opt_ltlt);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -11309,7 +11309,7 @@ mod hir_opt_tests {
             def test(x) = x >> 5
             test(4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -11338,7 +11338,7 @@ mod hir_opt_tests {
             def test(x) = x >> -5
             test(4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -11367,7 +11367,7 @@ mod hir_opt_tests {
             def test(x) = x >> 64
             test(4)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -11396,7 +11396,7 @@ mod hir_opt_tests {
             def test(x, y) = x >> y
             test(4, 5)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -11426,7 +11426,7 @@ mod hir_opt_tests {
             def test(x, y) = x << y
             test("iron", "fish")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -11458,7 +11458,7 @@ mod hir_opt_tests {
             def test(x, y) = x << y
             test("iron", 4)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -11492,7 +11492,7 @@ mod hir_opt_tests {
             def test(x, y) = x << y
             test("iron", MyString.new)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -11526,7 +11526,7 @@ mod hir_opt_tests {
             def test(x, y) = x << y
             test(MyString.new, "iron")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -11611,7 +11611,7 @@ mod hir_opt_tests {
             def test(x) = x.ascii_only?
             test("iron")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -11688,7 +11688,7 @@ mod hir_opt_tests {
             def test(x, y) = x ^ y
             test(1, 2)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -11722,7 +11722,7 @@ mod hir_opt_tests {
             end
             test(1, 2)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -11753,7 +11753,7 @@ mod hir_opt_tests {
             def test(x, y) = x ^ y
             test(4 << 70, 1)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -11783,7 +11783,7 @@ mod hir_opt_tests {
             def test(x, y) = x ^ y
             test(1, 4 << 70)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -11813,7 +11813,7 @@ mod hir_opt_tests {
             def test(x, y) = x ^ y
             test(true, 0)
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -11868,7 +11868,7 @@ mod hir_opt_tests {
             def test(hash) = hash.size
             test({foo: 3, bar: 1, baz: 4})
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -11900,7 +11900,7 @@ mod hir_opt_tests {
             end
             test({foo: 3, bar: 1, baz: 4})
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -11932,7 +11932,7 @@ mod hir_opt_tests {
             def test(o) = o.respond_to?(:foo)
             test(C.new)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:5:
         bb1():
           EntryPoint interpreter
@@ -11965,7 +11965,7 @@ mod hir_opt_tests {
             def test(o) = o.respond_to?(:foo)
             test(C.new)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -12001,7 +12001,7 @@ mod hir_opt_tests {
             def test(o) = o.respond_to?(:foo)
             test(C.new)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:6:
         bb1():
           EntryPoint interpreter
@@ -12036,7 +12036,7 @@ mod hir_opt_tests {
             def test(o) = o.respond_to?(:foo, false)
             test(C.new)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:6:
         bb1():
           EntryPoint interpreter
@@ -12072,7 +12072,7 @@ mod hir_opt_tests {
             def test(o) = o.respond_to?(:foo, nil)
             test(C.new)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:6:
         bb1():
           EntryPoint interpreter
@@ -12108,7 +12108,7 @@ mod hir_opt_tests {
             def test(o) = o.respond_to?(:foo, true)
             test(C.new)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:6:
         bb1():
           EntryPoint interpreter
@@ -12143,7 +12143,7 @@ mod hir_opt_tests {
             def test(o) = o.respond_to?(:foo, 4)
             test(C.new)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:5:
         bb1():
           EntryPoint interpreter
@@ -12178,7 +12178,7 @@ mod hir_opt_tests {
             def test(o) = o.respond_to?(:foo, nil)
             test(C.new)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:5:
         bb1():
           EntryPoint interpreter
@@ -12212,7 +12212,7 @@ mod hir_opt_tests {
             def test(o) = o.respond_to?(:foo)
             test(C.new)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -12249,7 +12249,7 @@ mod hir_opt_tests {
             def test(o) = o.respond_to?(:foo)
             test(C.new)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:7:
         bb1():
           EntryPoint interpreter
@@ -12280,7 +12280,7 @@ mod hir_opt_tests {
             def test = callee
             test
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -12306,7 +12306,7 @@ mod hir_opt_tests {
             def test = callee
             test
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -12332,7 +12332,7 @@ mod hir_opt_tests {
             def test = callee
             test
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -12358,7 +12358,7 @@ mod hir_opt_tests {
             def test = callee
             test
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -12384,7 +12384,7 @@ mod hir_opt_tests {
             def test = callee
             test
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -12410,7 +12410,7 @@ mod hir_opt_tests {
             def test = callee
             test
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -12436,7 +12436,7 @@ mod hir_opt_tests {
             def test = callee
             test
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -12462,7 +12462,7 @@ mod hir_opt_tests {
             def test = callee 3
             test
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -12488,7 +12488,7 @@ mod hir_opt_tests {
             def test = callee 1, 2, 3
             test
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -12558,7 +12558,7 @@ mod hir_opt_tests {
             def test(o) = o.to_sym
             test :foo
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -12585,7 +12585,7 @@ mod hir_opt_tests {
             def test(o) = o.to_i
             test 5
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -12772,7 +12772,7 @@ mod hir_opt_tests {
             def test(l, r) = l == r
             test("a", "b")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -12806,7 +12806,7 @@ mod hir_opt_tests {
             def test(l, r) = l == r
             test(C.new("a"), C.new("b"))
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -12840,7 +12840,7 @@ mod hir_opt_tests {
             def test(l, r) = l == r
             test("a", C.new("b"))
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -12872,7 +12872,7 @@ mod hir_opt_tests {
             def test(l, r) = l === r
             test("a", "b")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -12906,7 +12906,7 @@ mod hir_opt_tests {
             def test(l, r) = l === r
             test(C.new("a"), C.new("b"))
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -12940,7 +12940,7 @@ mod hir_opt_tests {
             def test(l, r) = l === r
             test("a", C.new("b"))
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -12972,7 +12972,7 @@ mod hir_opt_tests {
             def test(s) = s == s
             test("x")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -13001,7 +13001,7 @@ mod hir_opt_tests {
             def test(s) = s === s
             test("x")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -13273,7 +13273,7 @@ mod hir_opt_tests {
             test("x", "x")
             test("x", "x")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -13341,7 +13341,7 @@ mod hir_opt_tests {
             test("x")
             test("x")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -13373,7 +13373,7 @@ mod hir_opt_tests {
             test("x", "x")
         "#);
         assert_contains_opcode("test", YARVINSN_opt_neq);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -13411,7 +13411,7 @@ mod hir_opt_tests {
             test("x")
         "#);
         assert_contains_opcode("test", YARVINSN_opt_neq);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -13446,7 +13446,7 @@ mod hir_opt_tests {
             end
             test("asdf")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -13478,7 +13478,7 @@ mod hir_opt_tests {
             end
             test("asdf")
         "#);
-       assert_snapshot!(hir_string("test"), @r"
+       assert_snapshot!(hir_string("test"), @"
        fn test@<compiled>:3:
        bb1():
          EntryPoint interpreter
@@ -13509,7 +13509,7 @@ mod hir_opt_tests {
             end
             test("asdf")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -13542,7 +13542,7 @@ mod hir_opt_tests {
             end
             test("asdf")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -13573,7 +13573,7 @@ mod hir_opt_tests {
             end
             test("asdf")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -13664,7 +13664,7 @@ mod hir_opt_tests {
             def test(o) = o.is_a?(String)
             test("asdf")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -13696,7 +13696,7 @@ mod hir_opt_tests {
             def test(o) = o.is_a?(Kernel)
             test("asdf")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -13731,7 +13731,7 @@ mod hir_opt_tests {
             end
             test("asdf")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -13797,7 +13797,7 @@ mod hir_opt_tests {
             def test(o) = o.kind_of?(String)
             test("asdf")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -13829,7 +13829,7 @@ mod hir_opt_tests {
             def test(o) = o.kind_of?(Kernel)
             test("asdf")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -13864,7 +13864,7 @@ mod hir_opt_tests {
             end
             test("asdf")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -14098,7 +14098,7 @@ mod hir_opt_tests {
             end
             test("this should get removed")
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -14141,7 +14141,7 @@ mod hir_opt_tests {
             C.new  # warm up
             TEST = C.instance_method(:initialize)
         "#);
-        assert_snapshot!(hir_string_proc("TEST"), @r"
+        assert_snapshot!(hir_string_proc("TEST"), @"
         fn initialize@<compiled>:9:
         bb1():
           EntryPoint interpreter
@@ -14174,7 +14174,7 @@ mod hir_opt_tests {
             def test(o) = o.class.name
             test(C.new)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -14206,7 +14206,7 @@ mod hir_opt_tests {
             def test(o) = o.class
             test(C.new)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -14260,7 +14260,7 @@ mod hir_opt_tests {
             def test = self.class
             test
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -14697,7 +14697,7 @@ mod hir_opt_tests {
             test o
             test o
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:9:
         bb1():
           EntryPoint interpreter
@@ -14807,7 +14807,7 @@ mod hir_opt_tests {
             end
             C.new.callprivate
         "#);
-        assert_snapshot!(hir_string_proc("C.instance_method(:callprivate)"), @r"
+        assert_snapshot!(hir_string_proc("C.instance_method(:callprivate)"), @"
         fn callprivate@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -14865,7 +14865,7 @@ mod hir_opt_tests {
             end
             Obj = BasicObject.new.callprivate
         "#);
-        assert_snapshot!(hir_string_proc("BasicObject.instance_method(:callprivate)"), @r"
+        assert_snapshot!(hir_string_proc("BasicObject.instance_method(:callprivate)"), @"
         fn callprivate@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -14949,7 +14949,7 @@ mod hir_opt_tests {
             end
             C.new.callprotected
         "#);
-        assert_snapshot!(hir_string_proc("C.instance_method(:callprotected)"), @r"
+        assert_snapshot!(hir_string_proc("C.instance_method(:callprotected)"), @"
         fn callprotected@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -15026,7 +15026,7 @@ mod hir_opt_tests {
         // fall back to SendWithoutBlock instead of the optimized CCall path.
         let hir = hir_string("test");
         assert!(! hir.contains("NoSingletonClass(String"), "{hir}");
-        assert_snapshot!(hir, @r"
+        assert_snapshot!(hir, @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -15178,7 +15178,7 @@ mod hir_opt_tests {
         assert!(!hir.contains("InvokeSuper "), "InvokeSuper should optimize to SendDirect but got:\n{hir}");
         assert!(hir.contains("SendDirect"), "Should optimize to SendDirect for call without args or block:\n{hir}");
 
-        assert_snapshot!(hir, @r"
+        assert_snapshot!(hir, @"
         fn foo@<compiled>:10:
         bb1():
           EntryPoint interpreter
@@ -15444,7 +15444,7 @@ mod hir_opt_tests {
         assert!(hir.contains("InvokeSuper "), "Expected unoptimized InvokeSuper but got:\n{hir}");
         assert!(!hir.contains("SendDirect"), "Should not optimize to SendDirect for explicit blockarg:\n{hir}");
 
-        assert_snapshot!(hir, @r"
+        assert_snapshot!(hir, @"
         fn foo@<compiled>:10:
         bb1():
           EntryPoint interpreter
@@ -15640,7 +15640,7 @@ mod hir_opt_tests {
 
         test C.new; test D.new; test C.new; test D.new
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:11:
         bb1():
           EntryPoint interpreter
@@ -16032,7 +16032,7 @@ mod hir_opt_tests {
                 test_ep_escape([1], lambda { }) { |x| }
             }
         ");
-        assert_snapshot!(hir_string("test_ep_escape"), @r"
+        assert_snapshot!(hir_string("test_ep_escape"), @"
         fn test_ep_escape@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -16379,7 +16379,7 @@ mod hir_opt_tests {
 
         // After profiling via the side exit, rebuilding HIR should now
         // have a SendDirect for greet_recompile instead of SideExit.
-        assert_snapshot!(hir_string("test_no_profile_recompile"), @r"
+        assert_snapshot!(hir_string("test_no_profile_recompile"), @"
         fn test_no_profile_recompile@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -16438,7 +16438,7 @@ mod hir_opt_tests {
         eval("3.times { test_final_version(false) }");
 
         // On the final version, greet_final should be a Send fallback, not a SideExit.
-        assert_snapshot!(hir_string("test_final_version"), @r"
+        assert_snapshot!(hir_string("test_final_version"), @"
         fn test_final_version@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -16539,7 +16539,7 @@ mod hir_opt_tests {
             end
             test 1; test 2
         ");
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
@@ -16730,7 +16730,7 @@ mod hir_opt_tests {
             def test(x) = x.nan?
             test(1.0)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -16758,7 +16758,7 @@ mod hir_opt_tests {
             def test(x) = x.finite?
             test(1.0)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -16786,7 +16786,7 @@ mod hir_opt_tests {
             def test(x) = x.infinite?
             test(1.0)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -16814,7 +16814,7 @@ mod hir_opt_tests {
             def test(x) = x.even?
             test(2)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -16842,7 +16842,7 @@ mod hir_opt_tests {
             def test(x) = x.odd?
             test(3)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -16870,7 +16870,7 @@ mod hir_opt_tests {
             def test(x) = x.zero?
             test(1.0)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -16898,7 +16898,7 @@ mod hir_opt_tests {
             def test(x) = x.positive?
             test(1.0)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -16926,7 +16926,7 @@ mod hir_opt_tests {
             def test(x) = x.negative?
             test(-1.0)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -16953,7 +16953,7 @@ mod hir_opt_tests {
             def test(a, b) = a + b
             test(1.0, 2.0)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -16984,7 +16984,7 @@ mod hir_opt_tests {
             def test(a, b) = a * b
             test(1.5, 2.5)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -17015,7 +17015,7 @@ mod hir_opt_tests {
             def test(a, b) = a - b
             test(5.0, 3.0)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -17046,7 +17046,7 @@ mod hir_opt_tests {
             def test(a, b) = a / b
             test(10.0, 3.0)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -17077,7 +17077,7 @@ mod hir_opt_tests {
             def test(a) = a.to_i
             test(3.7)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -17105,7 +17105,7 @@ mod hir_opt_tests {
             def test(a, b) = a * b
             test(1.5, 3)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:2:
         bb1():
           EntryPoint interpreter
@@ -17150,7 +17150,7 @@ mod hir_opt_tests {
             end
             test(C.new(3))
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -17260,7 +17260,7 @@ mod hir_opt_tests {
             end
             test(:a, :b)
         "#);
-        assert_snapshot!(hir_string("test"), @r"
+        assert_snapshot!(hir_string("test"), @"
         fn test@<compiled>:3:
         bb1():
           EntryPoint interpreter
