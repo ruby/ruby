@@ -160,11 +160,12 @@ class LogProcessor
       }).update(decoded_flags)
     when 'gc_obj_free'
       obj = args[0].to_i
-      builtin_type = RubyBuiltinType.key(args[1].to_i)
+      flags_value = args[1].to_i
+      decoded_flags = decode_flags(flags_value)
       result[:args].update({
         obj: obj,
-        builtin_type: builtin_type,
-      })
+        flags_value: flags_value,
+      }).update(decoded_flags)
     when 'GCEnterExit'
       event = args[0].to_i
       result[:args].update({

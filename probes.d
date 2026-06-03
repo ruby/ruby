@@ -274,7 +274,7 @@ provider ruby {
 
      Fired when finalizing an object with rb_gc_obj_free.
   */
-  probe gc__obj_free(void *obj, int builtin_type);
+  probe gc__obj_free(void *obj, int flags);
 };
 
 #pragma D attributes Stable/Evolving/Common provider ruby provider

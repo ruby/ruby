@@ -1533,7 +1533,7 @@ rb_gc_obj_free(void *objspace, VALUE obj)
     enum ruby_value_type builtin_type = BUILTIN_TYPE(obj);
 
     if (RUBY_DTRACE_GC_OBJ_FREE_ENABLED()) {
-        RUBY_DTRACE_GC_OBJ_FREE((void*)obj, builtin_type);
+        RUBY_DTRACE_GC_OBJ_FREE((void*)obj, RBASIC(obj)->flags);
     }
 
     switch (builtin_type) {
