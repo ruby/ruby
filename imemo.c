@@ -336,12 +336,6 @@ rb_imemo_memsize(VALUE obj)
  * mark
  * ========================================================================= */
 
-static bool
-moved_or_living_object_strictly_p(VALUE obj)
-{
-    return !SPECIAL_CONST_P(obj) && (!rb_objspace_garbage_object_p(obj) || BUILTIN_TYPE(obj) == T_MOVED);
-}
-
 static void
 mark_and_move_method_entry(rb_method_entry_t *ment, bool reference_updating)
 {
@@ -424,17 +418,12 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
              */
         }
         else if (reference_updating) {
-            if (moved_or_living_object_strictly_p((VALUE)cc->cme_)) {
-                *((VALUE *)&cc->klass) = rb_gc_location(cc->klass);
-                *((struct rb_callable_method_entry_struct **)&cc->cme_) =
-                    (struct rb_callable_method_entry_struct *)rb_gc_location((VALUE)cc->cme_);
+            *((VALUE *)&cc->klass) = rb_gc_location(cc->klass);
+            *((struct rb_callable_method_entry_struct **)&cc->cme_) =
+                (struct rb_callable_method_entry_struct *)rb_gc_location((VALUE)cc->cme_);
 
-                RUBY_ASSERT(RB_TYPE_P(cc->klass, T_CLASS) || RB_TYPE_P(cc->klass, T_ICLASS));
-                RUBY_ASSERT(IMEMO_TYPE_P((VALUE)cc->cme_, imemo_ment));
-            }
-            else {
-                vm_cc_invalidate(cc);
-            }
+            RUBY_ASSERT(RB_TYPE_P(cc->klass, T_CLASS) || RB_TYPE_P(cc->klass, T_ICLASS));
+            RUBY_ASSERT(IMEMO_TYPE_P((VALUE)cc->cme_, imemo_ment));
         }
         else {
             RUBY_ASSERT(RB_TYPE_P(cc->klass, T_CLASS) || RB_TYPE_P(cc->klass, T_ICLASS));
