@@ -529,7 +529,7 @@ static uint32_t unescape_unicode(JSON_ParserState *state, const char *sp, const 
 
 static const rb_data_type_t JSON_ParserConfig_type;
 
-static void
+NOINLINE(static) void
 json_eat_comments(JSON_ParserState *state)
 {
     const char *start = state->cursor;
