@@ -4497,8 +4497,6 @@ impl Function {
                             self.push_insn_id(block, insn_id); continue;
                         }
                         if self.policy.no_side_exits {
-                            // TODO: Support polymorphic DefinedIvar shape-specialized paths.
-                            // https://github.com/Shopify/ruby/issues/980
                             // On the final version, keep the DefinedIvar fallback instead of another shape guard.
                             self.push_insn_id(block, insn_id); continue;
                         }
@@ -7155,7 +7153,68 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     // (ID id, IVC ic, VALUE pushval)
                     let id = ID(get_arg(pc, 0).as_u64());
                     let pushval = get_arg(pc, 2);
-                    state.stack_push(fun.push_insn(block, Insn::DefinedIvar { self_val: self_param, id, pushval, state: exit_id }));
+                    if let Some(summary) = fun.polymorphic_summary(&profiles, self_param, exit_state.insn_idx) {
+                        self_param = fun.push_insn(block, Insn::GuardType { val: self_param, guard_type: types::HeapBasicObject, state: exit_id });
+                        let rbasic_flags = fun.load_rbasic_flags(block, self_param);
+                        let join_block = insn_idx_to_block.get(&insn_idx).copied().unwrap_or_else(|| fun.new_block(insn_idx));
+                        let join_param = fun.push_insn(join_block, Insn::Param);
+                        // Dedup by expected shape and type so objects with different classes
+                        // but the same shape can share code.
+                        let mut seen_shape_and_flags = Vec::with_capacity(summary.buckets().len());
+                        for &profiled_type in summary.buckets() {
+                            // End of the buckets
+                            if profiled_type.is_empty() { break; }
+                            // Runtime immediates cannot pass the HeapBasicObject guard, so don't
+                            // generate unreachable shape branches for profiled immediate buckets.
+                            if profiled_type.flags().is_immediate() { continue; }
+                            // Class/module/T_DATA ivars use different storage rules.
+                            // Let the fallthrough DefinedIvar handle these.
+                            if !profiled_type.flags().is_t_object() { continue; }
+                            let expected_shape = profiled_type.shape();
+                            let (expected_rbasic_flags, rbasic_flags_mask) = profiled_type.rbasic_flags_and_mask();
+                            assert!(expected_shape.is_valid());
+                            // Too-complex shapes use hash tables for ivars;
+                            // rb_shape_get_iv_index doesn't work for them.
+                            // Let the fallthrough DefinedIvar handle these.
+                            if expected_shape.is_complex() { continue; }
+                            if seen_shape_and_flags.contains(&expected_rbasic_flags) { continue; }
+                            seen_shape_and_flags.push(expected_rbasic_flags);
+                            let rbasic_flags_mask = fun.push_insn(block, Insn::Const { val: Const::CUInt64(rbasic_flags_mask) });
+                            // The expected shape can change over run, so we put it
+                            // as a pointer to keep it stable in snapshot tests.
+                            let expected_rbasic_flags = fun.push_insn(block, Insn::Const { val: Const::CPtr(ptr::without_provenance(expected_rbasic_flags.to_usize())) });
+                            let expected_rbasic_flags = fun.push_insn(block, Insn::RefineType { val: expected_rbasic_flags, new_type: types::CUInt64 });
+                            let masked = fun.push_insn(block, Insn::IntAnd { left: rbasic_flags, right: rbasic_flags_mask});
+                            let has_shape_and_type = fun.push_insn(block, Insn::IsBitEqual { left: masked, right: expected_rbasic_flags });
+                            let iftrue_block = fun.new_block(insn_idx);
+                            let target = BranchEdge { target: iftrue_block, args: vec![] };
+                            let fall_through = fun.new_block(insn_idx);
+
+                            fun.push_insn(block, Insn::CondBranch { val: has_shape_and_type,
+                                if_true: target,
+                                if_false: BranchEdge { target: fall_through, args: vec![] }
+                            });
+
+                            block = fall_through;
+                            let mut ivar_index: attr_index_t = 0;
+                            let result = if unsafe { rb_shape_get_iv_index(expected_shape.0, id, &mut ivar_index) } {
+                                fun.push_insn(iftrue_block, Insn::Const { val: Const::Value(pushval) })
+                            } else {
+                                fun.push_insn(iftrue_block, Insn::Const { val: Const::Value(Qnil) })
+                            };
+                            fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
+                        }
+                        // In the fallthrough case, do a generic interpreter definedivar and then join.
+                        let result = fun.push_insn(block, Insn::DefinedIvar { self_val: self_param, id, pushval, state: exit_id });
+                        fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
+                        state.stack_push(join_param);
+                        block = join_block;
+                    } else {
+                        // TODO: Handle monomorphic definedivar specialization here too, including the
+                        // no_side_exits policy, so optimize_getivar doesn't need a separate DefinedIvar
+                        // path. Unlike GetIvar, DefinedIvar isn't emitted by later lowering passes.
+                        state.stack_push(fun.push_insn(block, Insn::DefinedIvar { self_val: self_param, id, pushval, state: exit_id }));
+                    }
                 }
                 YARVINSN_checkkeyword => {
                     // When a keyword is unspecified past index 32, a hash will be used instead.
