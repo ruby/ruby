@@ -1283,7 +1283,12 @@ end
     end
 
     context "is not present" do
-      it "does not change the lock" do
+      # Skipped on ruby-core because `ruby "require 'bundler/setup'"` does not
+      # activate bundler as a gem there, so Source::Metadata falls back to a
+      # synthetic spec whose cache_file does not exist on disk and
+      # LockfileGenerator#bundler_checksum drops the bundler checksum, while
+      # the on-disk lockfile still has it.
+      it "does not change the lock", :ruby_repo do
         expect { ruby "require 'bundler/setup'" }.not_to change { lockfile }
       end
     end
@@ -1329,7 +1334,7 @@ end
         gem "bar", :git => "#{lib_path("bar-1.0")}"
       G
 
-      bundle :install
+      bundle :install, env: { "BUNDLE_LOCKFILE_CHECKSUMS" => "false" }
 
       ruby <<-RUBY, artifice: nil
         require 'bundler/setup'
