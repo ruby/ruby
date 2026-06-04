@@ -1694,4 +1694,22 @@ q.pop
       1000.times { Object.new }
     end;
   end
+
+  def test_thread_interrupt_mask_stack_cleared_after_fork_in_child
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 60)
+    begin;
+      Thread.handle_interrupt(Object => :never) do
+        pid = fork do
+          th = Thread.new do
+            loop do
+            end
+          end
+          while th.status
+            th.kill
+          end
+        end
+        Process.waitpid(pid)
+      end
+    end;
+  end if Process.respond_to?(:fork)
 end
