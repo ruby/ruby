@@ -182,18 +182,34 @@ Characters enclosed in square brackets define a set of characters,
 any of which matches a single character:
 
 ```ruby
-File.fnmatch('[ruby]', 'r')      # => true
-File.fnmatch('[ruby]', 'u')      # => true
-File.fnmatch('[ruby]', 'y')      # => true
-File.fnmatch('[ruby]', 'ruby')   # => false
-File.fnmatch('\[ruby]', 'r')     # => false  # Escaped.
+pattern = '[ruby]'
+File.fnmatch(pattern, 'r')        # => true
+File.fnmatch(pattern, 'u')        # => true
+File.fnmatch(pattern, 'y')        # => true
+
+Pathname('r').fnmatch(pattern)    # => true
+Pathname('u').fnmatch(pattern)    # => true
+Pathname('y').fnmatch(pattern)    # => true
+
+# Matches a single character.
+File.fnmatch(pattern, 'ruby')     # => false
+Pathname('ruby').fnmatch(pattern) # => false
+
+# Escaped.
+pattern = '\[ruby]'
+File.fnmatch(pattern, 'r')        # => false
+Pathname('r').fnmatch(pattern)    # => false
 ```
 
 The character set may be negated:
 
 ```ruby
-File.fnmatch('[^ruby]', 'r') # => false
-File.fnmatch('[^ruby]', 'u') # => false
+pattern = '[^ruby]'
+File.fnmatch(pattern, 'r')     # => false
+File.fnmatch(pattern, 'u')     # => false
+
+Pathname('r').fnmatch(pattern) # => false
+Pathname('u').fnmatch(pattern) # => false
 ```
 
 #### Single Character from a \Range (`'[a-c]'`, `'[^a-c]'`)
