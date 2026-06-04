@@ -10,8 +10,9 @@ module Gem::Text
   def clean_text(text)
     text = text.gsub(/[\000-\b\v-\f\016-\037\177]/, ".")
 
-    # C1 control characters (U+0080-U+009F) only occur in UTF-8 text and must
-    # be matched as codepoints so that multibyte characters are preserved.
+    # Match C1 control characters (U+0080-U+009F) as codepoints. This requires
+    # a valid UTF-8 string so the regexp does not split a multibyte sequence;
+    # strings in other encodings are left unchanged.
     if text.encoding == Encoding::UTF_8 && text.valid_encoding?
       text = text.gsub(/[\u0080-\u009f]/, ".")
     end
