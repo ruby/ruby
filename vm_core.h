@@ -1039,7 +1039,7 @@ typedef struct rb_fiber_struct rb_fiber_t;
 struct rb_waiting_list {
     struct rb_waiting_list *next;
     struct rb_thread_struct *thread;
-    struct rb_fiber_struct *fiber;
+    VALUE fiber;
 };
 
 struct rb_execution_context_struct {
