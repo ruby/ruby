@@ -1093,6 +1093,27 @@ NORETURN(static) void raise_duplicate_key_error(JSON_ParserState *state, VALUE d
     rb_exc_raise(parse_error_new(message, line, column));
 }
 
+NOINLINE(static) void json_on_duplicate_key(JSON_ParserState *state, JSON_ParserConfig *config, size_t count, const VALUE *pairs)
+{
+    switch (config->on_duplicate_key) {
+        case JSON_IGNORE:
+            return;
+
+        case JSON_DEPRECATED:
+            // Only emit the first few deprecations to avoid spamming.
+            if (state->emitted_deprecations < 5) {
+                emit_duplicate_key_warning(state, json_find_duplicated_key(count, pairs));
+                state->emitted_deprecations++;
+            }
+            return;
+
+        case JSON_RAISE:
+            raise_duplicate_key_error(state, json_find_duplicated_key(count, pairs));
+            return;
+    }
+    UNREACHABLE;
+}
+
 static inline VALUE json_decode_object(JSON_ParserState *state, JSON_ParserConfig *config, size_t count)
 {
     size_t entries_count = count / 2;
@@ -1101,21 +1122,7 @@ static inline VALUE json_decode_object(JSON_ParserState *state, JSON_ParserConfi
     rb_hash_bulk_insert(count, pairs, object);
 
     if (RB_UNLIKELY(RHASH_SIZE(object) < entries_count)) {
-        switch (config->on_duplicate_key) {
-            case JSON_IGNORE:
-                break;
-            case JSON_DEPRECATED:
-                // Only emit the first few deprecations to avoid spamming.
-                if (state->emitted_deprecations < 5) {
-                    emit_duplicate_key_warning(state, json_find_duplicated_key(count, pairs));
-                    state->emitted_deprecations++;
-                }
-
-                break;
-            case JSON_RAISE:
-                raise_duplicate_key_error(state, json_find_duplicated_key(count, pairs));
-                break;
-        }
+        json_on_duplicate_key(state, config, count, pairs);
     }
 
     rvalue_stack_pop(state->value_stack, count);
@@ -1414,18 +1421,18 @@ static inline long json_frame_entry_count(const json_frame *frame, const rvalue_
 // after a container close is the freshly re-exposed parent.
 static inline void json_value_completed(json_frame *frame)
 {
-    // TODO: consider a lookup table?
     switch (frame->type) {
         case JSON_FRAME_ROOT:
             frame->phase = JSON_PHASE_DONE;
-            break;
+            return;
         case JSON_FRAME_ARRAY:
             frame->phase = JSON_PHASE_ARRAY_COMMA;
-            break;
+            return;
         case JSON_FRAME_OBJECT:
             frame->phase = JSON_PHASE_OBJECT_COMMA;
-            break;
+            return;
     }
+    UNREACHABLE;
 }
 
 // Parse an arbitrary JSON value iteratively. This is a state machine driven
