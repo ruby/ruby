@@ -31,6 +31,7 @@ see the sections below for details:
 
 There are two other patterns that are disabled by default:
 
+-
 - Directory-like substring (`'**'`);
   see [`File::FNM_PATHNAME`](#constant-filefnmpathname) below.
 - Alternatives (`'{ , }'`);
@@ -109,7 +110,7 @@ The asterisk pattern (`'*'`) matches any sequence of characters:
 pattern = '*'
 File.fnmatch(pattern, 'foo')     # => true
 File.fnmatch(pattern, '')        # => true
-File.fnmatch('\*', 'foo')        # => false
+File.fnmatch(pattern, 'foo')     # => true
 
 Pathname('foo').fnmatch(pattern) # => true
 Pathname('').fnmatch(pattern)    # => true
@@ -125,8 +126,9 @@ By default, the asterisk pattern does not match a leading period (as in a dot-fi
 
 ```ruby
 pattern = '*'
-File.fnmatch(pattern, '.document')     # => false
-Pathname('.document').fnmatch(pattern) # => false
+path = '.document'
+File.fnmatch(pattern, path)     # => false
+Pathname(path).fnmatch(pattern) # => false
 
 ```
 
@@ -136,8 +138,10 @@ By default, the asterisk pattern matches across file separators:
 
 ```ruby
 pattern = '*.rb'
-File.fnmatch(pattern, 'lib/test.rb')     # => true
-Pathname('lib/test.rb').fnmatch(pattern) # => true
+path = 'lib/test.rb'
+File.fnmatch(pattern, path)     # => true
+Pathname(path)
+    .fnmatch(pattern) # => true
 ```
 
 That matching may be disabled by flag [`File::FNM_PATHNAME`](#constant-filefnmpathname).
@@ -157,21 +161,24 @@ Pathname('').fnmatch(pattern)          # => false
 Pathname('foo').fnmatch(pattern)       # => false
 
 pattern = 'foo-?.txt'
-File.fnmatch(pattern, 'foo-1.txt')     # => true
-Pathname('foo-1.txt').fnmatch(pattern) # => true
+path = 'foo-1.txt'
+File.fnmatch(pattern, path)     # => true
+Pathname(path).fnmatch(pattern) # => true
 
 # Escaped.
 pattern = '\?'
-File.fnmatch(pattern, 'f')             # => false
-Pathname('f').fnmatch(pattern)         # => false
+path = 'f'
+File.fnmatch(pattern, path)             # => false
+Pathname(path).fnmatch(pattern)         # => false
 ```
 
 By default, pattern `'?'` matches the file separator:
 
 ```ruby
 pattern = 'foo?bar'
-File.fnmatch(pattern, 'foo/bar')     # => true
-Pathname('foo/bar').fnmatch(pattern) # => true
+path = 'foo/bar'
+File.fnmatch(pattern, path)     # => true
+Pathname(path).fnmatch(pattern) # => true
 ```
 
 That matching may be disabled by flag [`File::FNM_PATHNAME`](#constant-filefnmpathname).
@@ -192,13 +199,16 @@ Pathname('u').fnmatch(pattern)    # => true
 Pathname('y').fnmatch(pattern)    # => true
 
 # Matches a single character.
-File.fnmatch(pattern, 'ruby')     # => false
-Pathname('ruby').fnmatch(pattern) # => false
+pattern = '[ruby]'
+path = 'ruby'
+File.fnmatch(pattern, path)     # => false
+Pathname(path).fnmatch(pattern) # => false
 
 # Escaped.
 pattern = '\[ruby]'
-File.fnmatch(pattern, 'r')        # => false
-Pathname('r').fnmatch(pattern)    # => false
+path = 'r'
+File.fnmatch(pattern, path)        # => false
+Pathname(path).fnmatch(pattern)    # => false
 ```
 
 The character set may be negated:
@@ -229,8 +239,9 @@ Pathname('abc').fnmatch(pattern) # => false
 
 # Escaped.
 pattern = '\[a-c]'
-File.fnmatch(pattern, 'b')       # => false
-Pathname('b').fnmatch(pattern)   # => false
+path = 'b'
+File.fnmatch(pattern, path)       # => false
+Pathname(path).fnmatch(pattern)   # => false
 
 ```
 
@@ -238,16 +249,18 @@ Multiple ranges are allowed:
 
 ```ruby
 pattern = 'R[t-v][a-c]y'
-File.fnmatch(pattern, 'Ruby')     # => true
-Pathname('Ruby').fnmatch(pattern) # => true
+path = 'Ruby'
+File.fnmatch(pattern, path)     # => true
+Pathname(path).fnmatch(pattern) # => true
 ```
 
 The range may be negated:
 
 ```ruby
 pattern = '[^a-c]'
-File.fnmatch(pattern, 'b')     # => false
-Pathname('b').fnmatch(pattern) # => false
+path = 'b'
+File.fnmatch(pattern, path)     # => false
+Pathname(path).fnmatch(pattern) # => false
 ```
 
 #### Escape (`'\'`)
@@ -256,21 +269,36 @@ The backslash character (`'\'`) may be used to escape any of the characters
 that filename matching treats as special:
 
 ```ruby
-File.fnmatch('[a-c]', 'b')  # => true
-File.fnmatch('\[a-c]', 'b') # => false
-File.fnmatch('[a-c\]', 'b') # => false
-File.fnmatch('[a\-c]', 'b') # => false
+path = 'b'
+File.fnmatch('[a-c]', path)                         # => true
+File.fnmatch('\[a-c]', path)                        # => false
+File.fnmatch('[a-c\]', path)                        # => false
+File.fnmatch('[a\-c]', path)                        # => false
 
-File.fnmatch('{a,b}', 'b', File::FNM_EXTGLOB)  # => true
-File.fnmatch('\{a,b}', 'b', File::FNM_EXTGLOB) # => false
-File.fnmatch('{a\,b}', 'b', File::FNM_EXTGLOB) # => false
-File.fnmatch('{a,b\}', 'b', File::FNM_EXTGLOB) # => false
+Pathname(path).fnmatch('[a-c]')                     # => true
+Pathname(path).fnmatch('\[a-c]')                    # => false
+Pathname(path).fnmatch('[a-c\]')                    # => false
+Pathname(path).fnmatch('[a\-c]')                    # => false
+
+File.fnmatch('{a,b}', path, File::FNM_EXTGLOB)      # => true
+File.fnmatch('\{a,b}', path, File::FNM_EXTGLOB)     # => false
+File.fnmatch('{a\,b}', path, File::FNM_EXTGLOB)     # => false
+File.fnmatch('{a,b\}', path, File::FNM_EXTGLOB)     # => false
+
+athname(path).fnmatch('{a,b}', File::FNM_EXTGLOB)   # => true
+Pathname(path).fnmatch('\{a,b}', File::FNM_EXTGLOB) # => false
+Pathname(path).fnmatch('{a,b\}', File::FNM_EXTGLOB) # => false
+Pathname(path).fnmatch('{a\,b}', File::FNM_EXTGLOB) # => false
+
 ```
 
 Use a double-backslash to represent an ordinary backslash:
 
 ```ruby
-File.fnmatch('\\\\', '\\') # => true
+pattern = '\\\\'
+path = '\\'
+File.fnmatch(pattern, path)     # => true
+Pathname(path).fnmatch(pattern) # => true
 ```
 
 By default escape pattern `'\'` is enabled;
