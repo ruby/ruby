@@ -730,6 +730,7 @@ class Gem::Installer
   def app_script_text(bin_file_name)
     # NOTE: that the `load` lines cannot be indented, as old RG versions match
     # against the beginning of the line
+    escaped_bin_file_name = bin_file_name.gsub(/[\\']/) {|c| "\\#{c}" }
     <<~TEXT
       #{shebang bin_file_name}
       #
@@ -753,9 +754,9 @@ class Gem::Installer
       end
 
       if Gem.respond_to?(:activate_and_load_bin_path)
-        Gem.activate_and_load_bin_path('#{spec.name}', '#{bin_file_name}', version)
+        Gem.activate_and_load_bin_path('#{spec.name}', '#{escaped_bin_file_name}', version)
       else
-        load Gem.activate_bin_path('#{spec.name}', '#{bin_file_name}', version)
+        load Gem.activate_bin_path('#{spec.name}', '#{escaped_bin_file_name}', version)
       end
     TEXT
   end

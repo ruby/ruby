@@ -60,6 +60,21 @@ class TestGemInstaller < Gem::InstallerTestCase
     end
   end
 
+  def test_app_script_text_escapes_executable_name
+    installer = setup_base_installer
+
+    malicious = "evil');system('id');#"
+    @spec.bindir = "bin"
+    write_file @spec.bin_file(malicious) do |io|
+      io.puts "#!/usr/bin/ruby"
+    end
+
+    wrapper = installer.app_script_text malicious
+
+    assert_includes wrapper, %q{Gem.activate_and_load_bin_path('a', 'evil\');system(\'id\');#', version)}
+    assert_includes wrapper, %q{load Gem.activate_bin_path('a', 'evil\');system(\'id\');#', version)}
+  end
+
   def test_check_executable_overwrite
     installer = setup_base_installer
 
