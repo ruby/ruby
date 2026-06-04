@@ -100,4 +100,19 @@ Without the wrapping, the text might not look good in the RSS feed.
   def test_clean_text
     assert_equal ".]2;nyan.", clean_text("\e]2;nyan\a")
   end
+
+  def test_clean_text_strips_c1_control_characters
+    text = [0x41, 0x9b, 0x42].pack("U*") # "A", CSI (U+009B), "B"
+    assert_equal "A.B", clean_text(text)
+  end
+
+  def test_clean_text_preserves_multibyte_characters
+    text = [0xe9, 0x85].pack("U*") # U+00E9 kept, NEL (U+0085) stripped
+    assert_equal [0xe9, 0x2e].pack("U*"), clean_text(text)
+  end
+
+  def test_clean_text_passes_through_non_unicode_encodings
+    text = "x\x9by".dup.force_encoding("ISO-8859-1")
+    assert_equal text, clean_text(text)
+  end
 end

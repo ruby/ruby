@@ -8,7 +8,15 @@ module Gem::Text
   # Remove any non-printable characters and make the text suitable for
   # printing.
   def clean_text(text)
-    text.gsub(/[\000-\b\v-\f\016-\037\177]/, ".")
+    text = text.gsub(/[\000-\b\v-\f\016-\037\177]/, ".")
+
+    # C1 control characters (U+0080-U+009F) only occur in UTF-8 text and must
+    # be matched as codepoints so that multibyte characters are preserved.
+    if text.encoding == Encoding::UTF_8 && text.valid_encoding?
+      text = text.gsub(/[\u0080-\u009f]/, ".")
+    end
+
+    text
   end
 
   def truncate_text(text, description, max_length = 100_000)
