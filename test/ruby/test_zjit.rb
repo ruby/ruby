@@ -224,26 +224,6 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 2
   end
 
-  def test_super_to_cfunc_with_too_many_args
-    assert_runs '[1, 2, 3, 4, 5, 6]', %q{
-      require "-test-/zjit"
-
-      class Foo < Bug::ZJIT
-        def six(a, b, c, d, e, f)
-          super
-        end
-      end
-
-      def test
-        Foo.new.six(1, 2, 3, 4, 5, 6)
-      end
-
-      test
-      test
-      test
-    }, call_threshold: 2
-  end
-
   # tool/ruby_vm/views/*.erb relies on the zjit instructions a) being contiguous and
   # b) being reliably ordered after all the other instructions.
   def test_instruction_order

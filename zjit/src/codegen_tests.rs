@@ -11,6 +11,19 @@ use crate::payload::IseqVersion;
 use crate::hir::tests::hir_build_tests::assert_contains_opcode;
 use crate::payload::*;
 use insta::assert_snapshot;
+use std::ffi::CString;
+
+unsafe extern "C" fn test_six_args(
+    _self: VALUE,
+    a: VALUE,
+    b: VALUE,
+    c: VALUE,
+    d: VALUE,
+    e: VALUE,
+    f: VALUE,
+) -> VALUE {
+    unsafe { rb_ary_new_from_args(6, a, b, c, d, e, f) }
+}
 
 #[test]
 fn test_breakpoint_hir_codegen() {
@@ -1206,6 +1219,41 @@ fn test_invokesuper_to_cfunc_varargs() {
         test  # profile invokesuper
         test  # compile + run compiled code
     "#), @r#"["MyString", true]"#);
+}
+
+#[test]
+fn test_invokesuper_to_cfunc_with_too_many_args_exits() {
+    with_rubyvm(|| {
+        let superclass = define_class("ZJITSixArgs", unsafe { rb_cObject });
+        let method_name = CString::new("six").unwrap();
+        unsafe {
+            rb_define_method(
+                superclass,
+                method_name.as_ptr(),
+                Some(std::mem::transmute::<
+                    unsafe extern "C" fn(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) -> VALUE,
+                    unsafe extern "C" fn(VALUE) -> VALUE,
+                >(test_six_args)),
+                6,
+            );
+        }
+    });
+
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        class ZJITSixArgsSubclass < ZJITSixArgs
+          def six(a, b, c, d, e, f)
+            super
+          end
+        end
+
+        def test
+          ZJITSixArgsSubclass.new.six(1, 2, 3, 4, 5, 6)
+        end
+
+        test
+        test
+        test
+    "#), @"[1, 2, 3, 4, 5, 6]");
 }
 
 #[test]
