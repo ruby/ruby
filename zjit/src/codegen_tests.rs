@@ -1229,7 +1229,7 @@ fn test_invokesuper_to_cfunc_with_too_many_args_exits() {
         unsafe {
             rb_define_method(
                 superclass,
-                method_name.as_ptr(),
+                c"six".as_ptr(),
                 Some(std::mem::transmute::<
                     unsafe extern "C" fn(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) -> VALUE,
                     unsafe extern "C" fn(VALUE) -> VALUE,
