@@ -210,9 +210,6 @@ size_t rb_gc_heap_id_for_size(size_t size);
 
 void rb_gc_mark_and_move(VALUE *ptr);
 
-void rb_gc_declare_weak_references(VALUE obj);
-bool rb_gc_handle_weak_references_alive_p(VALUE obj);
-
 void rb_gc_ref_update_table_values_only(st_table *tbl);
 
 void rb_gc_initial_stress_set(VALUE flag);
@@ -233,6 +230,8 @@ void rb_objspace_reachable_objects_from_root(void (func)(const char *category, V
 int rb_objspace_internal_object_p(VALUE obj);
 int rb_objspace_garbage_object_p(VALUE obj);
 bool rb_gc_pointer_to_heap_p(VALUE obj);
+void rb_gc_declare_weak_references(VALUE obj);
+bool rb_gc_handle_weak_references_alive_p(VALUE obj);
 
 void rb_objspace_each_objects(
     int (*callback)(void *start, void *end, size_t stride, void *data),
