@@ -19,6 +19,9 @@
 // For `ruby_thread_has_gvl_p`:
 #include "internal/thread.h"
 
+// For `rb_fiberptr_self`:
+#include "internal/cont.h"
+
 // For atomic operations:
 #include "ruby_atomic.h"
 
@@ -629,6 +632,28 @@ rb_fiber_scheduler_process_wait(VALUE scheduler, rb_pid_t pid, int flags)
     return rb_check_funcall(scheduler, id_process_wait, 2, arguments);
 }
 
+struct fiber_scheduler_block_arguments {
+    VALUE scheduler;
+    VALUE blocker;
+    VALUE timeout;
+    struct rb_fiber_blocking_node blocking;
+};
+
+static VALUE
+fiber_scheduler_block_call(VALUE _arguments)
+{
+    struct fiber_scheduler_block_arguments *arguments = (struct fiber_scheduler_block_arguments *)_arguments;
+    return rb_funcall(arguments->scheduler, id_block, 2, arguments->blocker, arguments->timeout);
+}
+
+static VALUE
+fiber_scheduler_block_ensure(VALUE _arguments)
+{
+    struct fiber_scheduler_block_arguments *arguments = (struct fiber_scheduler_block_arguments *)_arguments;
+    ccan_list_del(&arguments->blocking.node);
+    return Qnil;
+}
+
 /*
  *  Document-method: Fiber::Scheduler#block
  *  call-seq: block(blocker, timeout = nil)
@@ -646,7 +671,21 @@ rb_fiber_scheduler_process_wait(VALUE scheduler, rb_pid_t pid, int flags)
 VALUE
 rb_fiber_scheduler_block(VALUE scheduler, VALUE blocker, VALUE timeout)
 {
-    return rb_funcall(scheduler, id_block, 2, blocker, timeout);
+    rb_execution_context_t *ec = GET_EC();
+    rb_thread_t *thread = rb_ec_thread_ptr(ec);
+
+    struct fiber_scheduler_block_arguments arguments = {
+        .scheduler = scheduler,
+        .blocker = blocker,
+        .timeout = timeout,
+        .blocking = {.fiber = rb_fiberptr_self(ec->fiber_ptr)},
+    };
+
+    // Keep the fiber rooted for the duration of the block.
+    ccan_list_add_tail(&thread->blocking_fibers, &arguments.blocking.node);
+
+    return rb_ensure(fiber_scheduler_block_call, (VALUE)&arguments,
+                     fiber_scheduler_block_ensure, (VALUE)&arguments);
 }
 
 /*

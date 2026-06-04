@@ -1139,6 +1139,11 @@ typedef struct rb_ractor_struct rb_ractor_t;
 
 struct rb_native_thread;
 
+struct rb_fiber_blocking_node {
+    VALUE fiber;
+    struct ccan_list_node node;
+};
+
 typedef struct rb_thread_struct {
     struct ccan_list_node lt_node; // managed by a ractor (r->threads.set)
     VALUE self;
@@ -1192,6 +1197,7 @@ typedef struct rb_thread_struct {
     struct rb_unblock_callback unblock;
     VALUE locking_mutex;
     struct rb_mutex_struct *keeping_mutexes;
+    struct ccan_list_head blocking_fibers;
     struct ccan_list_head interrupt_exec_tasks;
 
     struct rb_waiting_list *join_list;

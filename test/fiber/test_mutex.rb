@@ -70,6 +70,57 @@ class TestFiberMutex < Test::Unit::TestCase
     thread.join
   end
 
+  # Regression test: a fiber parked in Fiber::Scheduler#block while waiting on a
+  # locked mutex links an on-stack waiter into the mutex's wait queue. That wait
+  # queue is not a GC root, and a scheduler is not required to retain the blocked
+  # fiber, so nothing else necessarily keeps it reachable -- the VM must root the
+  # parked fiber on its thread. Otherwise GC frees the fiber while it is parked,
+  # and unlocking the mutex walks a dangling waiter node and crashes.
+  def test_mutex_blocking_fiber_gc
+    assert_separately([], <<~'RUBY')
+      # A deliberately minimal scheduler: #block does not retain the blocked
+      # fiber and #fiber discards the fiber it resumes, so the only thing that
+      # can keep the parked fiber alive is the VM rooting it on its thread.
+      class MinScheduler
+        def block(blocker, timeout = nil)
+          Fiber.yield
+        end
+        def unblock(blocker, fiber)
+        end
+        def fiber(&block)
+          Fiber.new(blocking: false, &block).resume
+          nil
+        end
+        def fiber_interrupt(fiber, exception); end
+        def close; end
+        def kernel_sleep(*); end
+        def io_wait(*); end
+        def process_wait(*); end
+        def timeout_after(*); yield; end
+        def blocking_operation_wait(work); work.call; end
+      end
+
+      mutex = Thread::Mutex.new
+      mutex.lock
+
+      Fiber.set_scheduler(MinScheduler.new)
+      # Parks a fiber inside #block, linked into mutex's wait queue, then discards
+      # every Ruby-level reference to it.
+      Fiber.schedule do
+        mutex.lock
+        mutex.unlock
+      end
+
+      # If the parked fiber were not rooted by the VM, GC would free it here and
+      # leave a dangling waiter in the mutex's wait queue.
+      5.times { GC.start }
+
+      # Walks the wait queue -- must not touch a freed fiber/waiter.
+      mutex.unlock
+      assert_equal(false, mutex.locked?)
+    RUBY
+  end
+
   def test_mutex_fiber_raise
     mutex = Thread::Mutex.new
     ran = false
