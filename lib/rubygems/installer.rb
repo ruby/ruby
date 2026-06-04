@@ -712,6 +712,10 @@ class Gem::Installer
     if spec.dependencies.any? {|dep| dep.name =~ /(?:\R|[<>])/ }
       raise Gem::InstallError, "#{spec} has an invalid dependencies"
     end
+
+    if spec.executables.any? {|name| name != File.basename(name) || /\A\.\.?\z|\R/.match?(name) }
+      raise Gem::InstallError, "#{spec} has an invalid executable"
+    end
   end
 
   ##
