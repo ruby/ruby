@@ -1,4 +1,4 @@
-## Filename Matching
+# Filename Matching
 
 Filename matching is a pattern-matching feature implemented in certain Ruby methods:
 
@@ -8,14 +8,11 @@ Filename matching is a pattern-matching feature implemented in certain Ruby meth
 Each `fnmatch` method matches a pattern against a string _path_;
 these methods operate only on strings, and do not access the file system.
 
-These are quite different from filename globbing methods (not discussed here),
-which match patterns against string paths found in the actual file system:
+These methods are quite different
+from [filename-globbing](rdoc-ref:filename_globbing.md) methods,
+which match patterns against string paths found in the actual file system.
 
-- Dir.glob.
-- Pathname.glob.
-- Pathname#glob.
-
-### Patterns
+## Patterns
 
 These are the basic elements of filename matching patterns;
 see the sections below for details:
@@ -36,7 +33,7 @@ There are two other patterns that are disabled by default:
 - Alternatives (`'{ , }'`);
   see [`File::FNM_EXTGLOB`](#constant-filefnmextglob) below.
 
-#### Simple \String
+### Simple \String
 
 A "simple string" is one that does not contain special filename-matching patterns;
 see the table above.
@@ -78,7 +75,7 @@ File.fnmatch('PROGRAM~1', 'Program Files') # => false
 
 It may be enabled by flag [`File::FNM_SHORTNAME`](#constant-filefnmshortname).
 
-#### Any Sequence of Characters (`'*'`)
+### Any Sequence of Characters (`'*'`)
 
 The asterisk pattern (`'*'`) matches any sequence of characters:
 
@@ -105,7 +102,7 @@ File.fnmatch('*.rb', 'lib/test.rb') # => true
 
 That matching may be disabled by flag [`File::FNM_PATHNAME`](#constant-filefnmpathname).
 
-#### Single Character (`'?'`)
+### Single Character (`'?'`)
 
 The question-mark pattern (`'?'`) matches any single character:
 
@@ -125,7 +122,7 @@ File.fnmatch('foo?boo', 'foo/boo') # => true
 
 That matching may be disabled by flag [`File::FNM_PATHNAME`](#constant-filefnmpathname).
 
-#### Single Character from a Set (`'[abc]'`, `'[^abc]'`)
+### Single Character from a Set (`'[abc]'`, `'[^abc]'`)
 
 Characters enclosed in square brackets define a set of characters,
 any of which matches a single character:
@@ -145,7 +142,7 @@ File.fnmatch('[^ruby]', 'r') # => false
 File.fnmatch('[^ruby]', 'u') # => false
 ```
 
-#### Single Character from a \Range (`'[a-c]'`, `'[^a-c]'`)
+### Single Character from a \Range (`'[a-c]'`, `'[^a-c]'`)
 
 A range of characters enclosed in square brackets defines a set of characters,
 any of which matches a single character:
@@ -165,7 +162,7 @@ File.fnmatch('[^a-c]', 'b') # => false
 File.fnmatch('[^a-c]', 'd') # => true
 ```
 
-#### Escape (`'\'`)
+### Escape (`'\'`)
 
 The backslash character (`'\'`) may be used to escape any of the characters
 that filename matching treats as special:
@@ -191,7 +188,7 @@ File.fnmatch('\\\\', '\\') # => true
 By default escape pattern `'\'` is enabled;
 it may be disabled by flag [`File::FNM_NOESCAPE`](#constant-filefnmnoescape).
 
-### Flags
+## Flags
 
 Optional argument `flags` (defaults to `0`) may be the bitwise OR
 of the constants `File::FNM*`.
@@ -210,7 +207,7 @@ see the sections below for details:
 | [`File::FNM_SYSCASE`](#constant-filefnmsyscase)     | Make the pattern use OS's case sensitivity.                 |
 
 
-#### Constant File::FNM_CASEFOLD
+### Constant File::FNM_CASEFOLD
 
 By default, filename matching is case-sensitive;
 use constant [`File::FNM_CASEFOLD`](#constant-filefnmcasefold)
@@ -221,7 +218,7 @@ File.fnmatch('abc', 'ABC')                     # => false
 File.fnmatch('abc', 'ABC', File::FNM_CASEFOLD) # => true
 ```
 
-#### Constant File::FNM_DOTMATCH
+### Constant File::FNM_DOTMATCH
 
 By default, filename matching does not allow pattern `'*'` to match a dotfile name
 (i.e, a filename beginning with a dot);
@@ -232,7 +229,7 @@ to enable the match:
 File.fnmatch('*', '.document')                     # => false
 File.fnmatch('*', '.document', File::FNM_DOTMATCH) # => true
 ```
-#### Constant File::FNM_EXTGLOB
+### Constant File::FNM_EXTGLOB
 
 By default, filename matching has the alternative notation disabled;
 use constant [`File::FNM_EXTGLOB`](#constant-filefnmextglob)
@@ -261,7 +258,7 @@ File.fnmatch('{*ELLO,?????}', 'hello', File::FNM_EXTGLOB)  # => true
 File.fnmatch('R{ub,foo,bar}y', 'Ruby')                     # => false
 ```
 
-#### Constant File::FNM_NOESCAPE
+### Constant File::FNM_NOESCAPE
 
 By default filename matching has escaping enabled;
 use constant [`File::FNM_NOESCAPE`](#constant-filefnmnoescape)
@@ -272,7 +269,7 @@ File.fnmatch('\*\?\*\*', '*?**')                     # => true
 File.fnmatch('\*\?\*\*', '*?**', File::FNM_NOESCAPE) # => false
 ```
 
-#### Constant File::FNM_PATHNAME
+### Constant File::FNM_PATHNAME
 
 Flag [`File::FNM_PATHNAME`](#constant-filefnmpathname) affects
 patterns `'**'`, `'*'`, and `'?'`.
@@ -316,7 +313,7 @@ File.fnmatch('foo?boo', 'foo/boo')                       # => true
 File.fnmatch('foo?boo', 'foo/boo', File::FNM_PATHNAME)   # => false
 ```
 
-#### Constant File::FNM_SHORTNAME
+### Constant File::FNM_SHORTNAME
 
 By default, Windows shortname matching is disabled;
 use constant [`File::FNM_SHORTNAME`](#constant-filefnmshortname)
@@ -339,7 +336,7 @@ File.fnmatch('PROGRAM~1', 'Program Files') # => false
 File.fnmatch('PROGRAM~1', 'Program Files', File::FNM_SHORTNAME) # => true
 ```
 
-#### Constant File::FNM_SYSCASE
+### Constant File::FNM_SYSCASE
 
 By default, filename matching uses Ruby's own case-sensitivity rules;
 use constant [`File::FNM_SYSCASE`](#constant-filefnmsyscase)
