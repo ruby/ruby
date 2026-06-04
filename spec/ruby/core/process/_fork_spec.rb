@@ -20,5 +20,15 @@ describe "Process._fork" do
       pid = Process.fork {}
       pid.should.equal?(42)
     end
+
+    ruby_version_is "4.1" do
+      it "allows Process#fork to return an Integer-like object from Process._fork" do
+        mock_pid = Data.define(:to_int) { alias to_i to_int }.new(42)
+        Process.should_receive(:_fork).once.and_return(mock_pid)
+
+        pid = Process.fork {}
+        pid.should.equal?(mock_pid)
+      end
+    end
   end
 end

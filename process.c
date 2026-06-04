@@ -582,7 +582,175 @@ proc_get_ppid(VALUE _)
  *
  */
 
+/*********************************************************************
+ *
+ * Document-class: Process::ID
+ *
+ *  A Process::ID represents a system process ID returned by Process.spawn.
+ *
+ *    pid = Process.spawn('ruby', '-e', 'exit 1')
+ *    pid.class      # => Process::ID
+ *    pid.to_i       # => 12345
+ *    pid.wait       # => #<Process::Status: pid 12345 exit 1>
+ *    pid <=> 12345  # => 0
+ *
+ */
+
+static VALUE rb_cProcessID;
 static VALUE rb_cProcessStatus;
+
+struct rb_process_id {
+    rb_pid_t pid;
+};
+
+static const rb_data_type_t rb_process_id_type = {
+    .wrap_struct_name = "Process::ID",
+    .function = {
+        .dmark = NULL,
+        .dfree = RUBY_DEFAULT_FREE,
+        .dsize = NULL,
+    },
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+};
+
+VALUE
+rb_process_id_new(rb_pid_t pid)
+{
+    VALUE id = rb_data_typed_object_zalloc(rb_cProcessID, sizeof(struct rb_process_id), &rb_process_id_type);
+    struct rb_process_id *data = RTYPEDDATA_GET_DATA(id);
+    data->pid = pid;
+
+    rb_obj_freeze(id);
+    return id;
+}
+
+static rb_pid_t
+process_id_pid(VALUE self)
+{
+    struct rb_process_id *data;
+    TypedData_Get_Struct(self, struct rb_process_id, &rb_process_id_type, data);
+    return data->pid;
+}
+
+/*
+ *  call-seq:
+ *    pid.to_i -> integer
+ *
+ *  Returns the integer process ID.
+ */
+
+static VALUE
+process_id_to_i(VALUE self)
+{
+    return PIDT2NUM(process_id_pid(self));
+}
+
+/*
+ *  call-seq:
+ *    pid.to_s -> string
+ *
+ *  Returns the integer process ID as a string.
+ */
+
+static VALUE
+process_id_to_s(VALUE self)
+{
+    return rb_String(process_id_to_i(self));
+}
+
+/*
+ *  call-seq:
+ *    pid.inspect -> string
+ *
+ *  Returns a string representation of +self+:
+ *
+ *    pid = Process.spawn('ruby', '-e', 'exit')
+ *    pid.inspect # => "#<Process::ID: pid 12345>"
+ */
+
+static VALUE
+process_id_inspect(VALUE self)
+{
+    return rb_sprintf("#<%"PRIsVALUE": pid %"PRI_PIDT_PREFIX"d>",
+                      rb_class_name(CLASS_OF(self)), process_id_pid(self));
+}
+
+/*
+ *  call-seq:
+ *    pid == other -> true or false
+ *
+ *  Returns +true+ if +other+ represents the same process ID.
+ */
+
+static VALUE
+process_id_equal(VALUE self, VALUE other)
+{
+    if (rb_typeddata_is_kind_of(other, &rb_process_id_type)) {
+        return RBOOL(process_id_pid(self) == process_id_pid(other));
+    }
+    return rb_equal(process_id_to_i(self), other);
+}
+
+/*
+ *  call-seq:
+ *    pid <=> other -> -1, 0, 1, or nil
+ *
+ *  Compares the process ID with +other+.
+ *
+ *    pid = Process.spawn('ruby', '-e', 'exit')
+ *    pid <=> pid.to_i # => 0
+ */
+
+static VALUE
+process_id_cmp(VALUE self, VALUE other)
+{
+    if (rb_typeddata_is_kind_of(other, &rb_process_id_type)) {
+        other = process_id_to_i(other);
+    }
+    return rb_funcall(process_id_to_i(self), idCmp, 1, other);
+}
+
+VALUE rb_process_status_wait(rb_pid_t pid, int flags);
+VALUE rb_detach_process(rb_pid_t pid);
+
+/*
+ *  call-seq:
+ *    pid.wait(flags = 0) -> Process::Status or nil
+ *
+ *  Waits for the process and returns a Process::Status object.
+ *
+ *    pid = Process.spawn('ruby', '-e', 'exit 1')
+ *    pid.wait.success? # => false
+ */
+
+static VALUE
+process_id_wait(int argc, VALUE *argv, VALUE self)
+{
+    rb_check_arity(argc, 0, 1);
+
+    int flags = 0;
+    if (argc >= 1) {
+        flags = RB_NUM2INT(argv[0]);
+    }
+
+    return rb_process_status_wait(process_id_pid(self), flags);
+}
+
+/*
+ *  call-seq:
+ *    pid.detach -> thread
+ *
+ *  Detaches the process and returns a Process::Waiter thread.
+ *
+ *    pid = Process.spawn('ruby', '-e', 'exit')
+ *    pid.detach.value.success? # => true
+ */
+
+static VALUE
+process_id_detach(VALUE self)
+{
+    return rb_detach_process(process_id_pid(self));
+}
 
 struct rb_process_status {
     rb_pid_t pid;
@@ -4174,17 +4342,18 @@ proc_fork_pid(void)
     return pid;
 }
 
-rb_pid_t
+VALUE
 rb_call_proc__fork(void)
 {
     ID id__fork;
     CONST_ID(id__fork, "_fork");
     if (rb_method_basic_definition_p(CLASS_OF(rb_mProcess), id__fork)) {
-        return proc_fork_pid();
+        rb_pid_t pid = proc_fork_pid();
+        if (pid == 0) return INT2FIX(0);
+        return rb_process_id_new(pid);
     }
     else {
-        VALUE pid = rb_funcall(rb_mProcess, id__fork, 0);
-        return NUM2PIDT(pid);
+        return rb_funcall(rb_mProcess, id__fork, 0);
     }
 }
 #endif
@@ -4192,7 +4361,7 @@ rb_call_proc__fork(void)
 #if defined(HAVE_WORKING_FORK) && !defined(CANNOT_FORK_WITH_PTHREAD)
 /*
  *  call-seq:
- *     Process._fork   -> integer
+ *     Process._fork -> Process::ID or 0
  *
  *  An internal API for fork. Do not call this method directly.
  *  Currently, this is called via Kernel#fork, Process.fork, and
@@ -4213,13 +4382,14 @@ VALUE
 rb_proc__fork(VALUE _obj)
 {
     rb_pid_t pid = proc_fork_pid();
-    return PIDT2NUM(pid);
+    if (pid == 0) return INT2FIX(0);
+    return rb_process_id_new(pid);
 }
 
 /*
  *  call-seq:
- *    Process.fork { ... } -> integer or nil
- *    Process.fork -> integer or nil
+ *    Process.fork { ... } -> Process::ID or nil
+ *    Process.fork -> Process::ID or nil
  *
  *  Creates a child process.
  *
@@ -4240,7 +4410,8 @@ rb_proc__fork(VALUE _obj)
  *
  *  With no block given, the +fork+ call returns twice:
  *
- *  - Once in the parent process, returning the pid of the child process.
+ *  - Once in the parent process, returning the process ID of the child
+ *    process as a Process::ID.
  *  - Once in the child process, returning +nil+.
  *
  *  Example:
@@ -4279,9 +4450,11 @@ rb_proc__fork(VALUE _obj)
 static VALUE
 rb_f_fork(VALUE obj)
 {
+    VALUE fork_pid;
     rb_pid_t pid;
 
-    pid = rb_call_proc__fork();
+    fork_pid = rb_call_proc__fork();
+    pid = NUM2PIDT(fork_pid);
 
     if (pid == 0) {
         if (rb_block_given_p()) {
@@ -4292,7 +4465,7 @@ rb_f_fork(VALUE obj)
         return Qnil;
     }
 
-    return PIDT2NUM(pid);
+    return fork_pid;
 }
 #else
 #define rb_proc__fork rb_f_notimplement
@@ -4808,8 +4981,8 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
 
 /*
  *  call-seq:
- *    spawn([env, ] command_line, options = {}) -> pid
- *    spawn([env, ] exe_path, *args, options  = {}) -> pid
+ *    spawn([env, ] command_line, options = {}) -> Process::ID
+ *    spawn([env, ] exe_path, *args, options  = {}) -> Process::ID
  *
  *  Creates a new child process by doing one of the following
  *  in that process:
@@ -4820,7 +4993,7 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
  *  This method has potential security vulnerabilities if called with untrusted input;
  *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
- *  Returns the process ID (pid) of the new process,
+ *  Returns the process ID of the new process as a Process::ID,
  *  without waiting for it to complete.
  *
  *  To avoid zombie processes, the parent process should call either:
@@ -4930,7 +5103,7 @@ rb_f_spawn(int argc, VALUE *argv, VALUE _)
         rb_syserr_fail_str(err, fail_str);
     }
 #if defined(HAVE_WORKING_FORK) || defined(HAVE_SPAWNV)
-    return PIDT2NUM(pid);
+    return rb_process_id_new(pid);
 #else
     return Qnil;
 #endif
@@ -9238,6 +9411,21 @@ InitVM_process(void)
     rb_undef_alloc_func(rb_cWaiter);
     rb_undef_method(CLASS_OF(rb_cWaiter), "new");
     rb_define_method(rb_cWaiter, "pid", detach_process_pid, 0);
+
+    rb_cProcessID = rb_define_class_under(rb_mProcess, "ID", rb_cObject);
+    rb_include_module(rb_cProcessID, rb_mComparable);
+    rb_undef_alloc_func(rb_cProcessID);
+    rb_undef_method(CLASS_OF(rb_cProcessID), "new");
+
+    rb_define_method(rb_cProcessID, "==", process_id_equal, 1);
+    rb_define_method(rb_cProcessID, "<=>", process_id_cmp, 1);
+    rb_define_method(rb_cProcessID, "to_i", process_id_to_i, 0);
+    rb_define_method(rb_cProcessID, "to_int", process_id_to_i, 0);
+    rb_define_method(rb_cProcessID, "to_s", process_id_to_s, 0);
+    rb_define_method(rb_cProcessID, "inspect", process_id_inspect, 0);
+    rb_define_method(rb_cProcessID, "pid", process_id_to_i, 0);
+    rb_define_method(rb_cProcessID, "wait", process_id_wait, -1);
+    rb_define_method(rb_cProcessID, "detach", process_id_detach, 0);
 
     rb_cProcessStatus = rb_define_class_under(rb_mProcess, "Status", rb_cObject);
     rb_define_alloc_func(rb_cProcessStatus, rb_process_status_allocate);

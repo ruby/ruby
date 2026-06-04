@@ -1,3 +1,5 @@
+require_relative 'id'
+
 describe :process_fork, shared: true do
   platform_is :windows do
     it "returns false from #respond_to?" do
@@ -27,6 +29,8 @@ describe :process_fork, shared: true do
       _, result = Process.wait2(pid)
       result.exitstatus.should == 0
     end
+
+    it_returns_process_id { @object.fork { exit! 0 } }
 
     it "returns status zero" do
       pid = @object.fork { exit 0 }
