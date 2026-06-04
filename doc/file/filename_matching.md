@@ -57,8 +57,8 @@ Pathname('Form 27B/6').fnmatch('Form 27B/6')       # => true
 # Must be exact.
 pattern = 'abcde'
 path = 'abc'
-File.fnmatch(pattern, path)     # => false
-Pathname(path).fnmatch(pattern) # => false
+File.fnmatch(pattern, path)                        # => false
+Pathname(path).fnmatch(pattern)                    # => false
 
 ```
 
@@ -218,18 +218,36 @@ A range of characters enclosed in square brackets defines a set of characters,
 any of which matches a single character:
 
 ```ruby
-File.fnmatch('[a-c]', 'b')           # => true
-File.fnmatch('[a-c]', 'd')           # => false
-File.fnmatch('[a-c]', 'abc')         # => false
-File.fnmatch('R[t-v][a-c]y', 'Ruby') # => true   # Multiple ranges allowed.
-File.fnmatch('\[a-c]', 'b')          # => false  # Escaped.
+pattern = '[a-c]'
+File.fnmatch(pattern, 'b')       # => true
+File.fnmatch(pattern, 'd')       # => false
+File.fnmatch(pattern, 'abc')     # => false
+
+Pathname('b').fnmatch(pattern)   # => true
+Pathname('d').fnmatch(pattern)   # => false
+Pathname('abc').fnmatch(pattern) # => false
+
+# Escaped.
+pattern = '\[a-c]'
+File.fnmatch(pattern, 'b')       # => false
+Pathname('b').fnmatch(pattern)   # => false
+
+```
+
+Multiple ranges are allowed:
+
+```ruby
+pattern = 'R[t-v][a-c]y'
+File.fnmatch(pattern, 'Ruby')     # => true
+Pathname('Ruby').fnmatch(pattern) # => true
 ```
 
 The range may be negated:
 
 ```ruby
-File.fnmatch('[^a-c]', 'b') # => false
-File.fnmatch('[^a-c]', 'd') # => true
+pattern = '[^a-c]'
+File.fnmatch(pattern, 'b')     # => false
+Pathname('b').fnmatch(pattern) # => false
 ```
 
 #### Escape (`'\'`)
