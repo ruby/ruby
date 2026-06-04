@@ -2804,7 +2804,27 @@ is_pointer_to_heap(rb_objspace_t *objspace, const void *ptr)
 bool
 rb_gc_impl_pointer_to_heap_p(void *objspace_ptr, const void *ptr)
 {
-    return is_pointer_to_heap(objspace_ptr, ptr);
+    rb_objspace_t *objspace = objspace_ptr;
+
+    /* Whether ptr refers to a live object. is_pointer_to_heap is the
+     * address-only check; T_NONE, T_MOVED, and T_ZOMBIE slots are valid heap
+     * addresses but not live objects. */
+    if (!is_pointer_to_heap(objspace, ptr)) return false;
+
+    VALUE obj = (VALUE)ptr;
+    bool live = false;
+    asan_unpoisoning_object(obj) {
+        switch (BUILTIN_TYPE(obj)) {
+          case T_NONE:
+          case T_MOVED:
+          case T_ZOMBIE:
+            break;
+          default:
+            live = true;
+            break;
+        }
+    }
+    return live;
 }
 
 #define ZOMBIE_OBJ_KEPT_FLAGS (FL_FINALIZE)
@@ -4368,6 +4388,8 @@ VALUE
 rb_gc_impl_location(void *objspace_ptr, VALUE value)
 {
     VALUE destination;
+
+    GC_ASSERT(is_pointer_to_heap(objspace_ptr, (void *)value));
 
     asan_unpoisoning_object(value) {
         if (BUILTIN_TYPE(value) == T_MOVED) {

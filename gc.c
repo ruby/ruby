@@ -2038,12 +2038,6 @@ rb_objspace_garbage_object_p(VALUE obj)
     return !SPECIAL_CONST_P(obj) && rb_gc_impl_garbage_object_p(rb_gc_get_objspace(), obj);
 }
 
-bool
-rb_gc_pointer_to_heap_p(VALUE obj)
-{
-    return rb_gc_impl_pointer_to_heap_p(rb_gc_get_objspace(), (void *)obj);
-}
-
 #define OBJ_ID_INCREMENT (RUBY_IMMEDIATE_MASK + 1)
 #define LAST_OBJECT_ID() (object_id_counter * OBJ_ID_INCREMENT)
 static VALUE id2ref_value = 0;
@@ -3138,8 +3132,6 @@ gc_location_internal(void *objspace, VALUE value)
     if (SPECIAL_CONST_P(value)) {
         return value;
     }
-
-    GC_ASSERT(rb_gc_impl_pointer_to_heap_p(objspace, (void *)value));
 
     return rb_gc_impl_location(objspace, value);
 }
