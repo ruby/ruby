@@ -713,9 +713,11 @@ class Gem::Installer
       raise Gem::InstallError, "#{spec} has an invalid dependencies"
     end
 
-    if spec.executables.any? {|name| name != File.basename(name) || /\A\.\.?\z|\R/.match?(name) }
+    if spec.executables.any? {|name| !name.is_a?(String) || name != File.basename(name) || /\A\.\.?\z|\R/.match?(name) }
       raise Gem::InstallError, "#{spec} has an invalid executable"
     end
+
+    raise Gem::InstallError, "#{spec} has an invalid bindir" unless spec.bindir.is_a?(String)
 
     expanded_gem_dir = File.expand_path(gem_dir)
     expanded_bindir = File.expand_path(File.join(gem_dir, spec.bindir))

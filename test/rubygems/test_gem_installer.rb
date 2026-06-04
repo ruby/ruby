@@ -2013,6 +2013,38 @@ class TestGemInstaller < Gem::InstallerTestCase
     end
   end
 
+  def test_pre_install_checks_non_string_executable
+    spec = util_spec "malicious", "1"
+    def spec.validate(*args); end
+    spec.executables = [nil]
+
+    installer = Gem::Installer.for_spec spec
+    installer.gem_home = @gemhome
+
+    use_ui @ui do
+      e = assert_raise Gem::InstallError do
+        installer.pre_install_checks
+      end
+      assert_equal "#<Gem::Specification name=malicious version=1> has an invalid executable", e.message
+    end
+  end
+
+  def test_pre_install_checks_non_string_bindir
+    spec = util_spec "malicious", "1"
+    def spec.validate(*args); end
+    spec.bindir = true
+
+    installer = Gem::Installer.for_spec spec
+    installer.gem_home = @gemhome
+
+    use_ui @ui do
+      e = assert_raise Gem::InstallError do
+        installer.pre_install_checks
+      end
+      assert_equal "#<Gem::Specification name=malicious version=1> has an invalid bindir", e.message
+    end
+  end
+
   def test_pre_install_checks_malicious_platform_before_eval
     gem_with_ill_formatted_platform = File.expand_path("packages/ill-formatted-platform-1.0.0.10.gem", __dir__)
 
