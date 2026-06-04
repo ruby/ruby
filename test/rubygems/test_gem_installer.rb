@@ -1976,6 +1976,28 @@ class TestGemInstaller < Gem::InstallerTestCase
     end
   end
 
+  def test_pre_install_checks_malicious_bindir_before_eval
+    spec = util_spec "malicious", "1"
+    def spec.full_name # so the spec is buildable
+      "malicious-1"
+    end
+
+    def spec.validate(*args); end
+    spec.bindir = "../../../tmp/malicious"
+
+    util_build_gem spec
+
+    gem = File.join(@gemhome, "cache", spec.file_name)
+
+    use_ui @ui do
+      installer = Gem::Installer.at gem
+      e = assert_raise Gem::InstallError do
+        installer.pre_install_checks
+      end
+      assert_equal "#<Gem::Specification name=malicious version=1> has an invalid bindir", e.message
+    end
+  end
+
   def test_pre_install_checks_malicious_platform_before_eval
     gem_with_ill_formatted_platform = File.expand_path("packages/ill-formatted-platform-1.0.0.10.gem", __dir__)
 
