@@ -1481,6 +1481,23 @@ class TestGemInstaller < Gem::InstallerTestCase
     refute_match(/I am a shiny gem!/, @ui.output)
   end
 
+  def test_install_sanitizes_post_install_message
+    # Use for_spec so the in-memory message reaches the installer verbatim;
+    # building a gem would escape the control characters during serialization.
+    @spec = setup_base_spec
+    @spec.post_install_message = "shiny \e]2;pwn\a gem"
+
+    installer = Gem::Installer.for_spec @spec, post_install_message: true
+    installer.gem_home = @gemhome
+
+    use_ui @ui do
+      installer.install
+    end
+
+    assert_match(/shiny \.\]2;pwn\. gem/, @ui.output)
+    refute_match(/\e\]2;pwn/, @ui.output)
+  end
+
   def test_install_extension_dir
     gemhome2 = "#{@gemhome}2"
 

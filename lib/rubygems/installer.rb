@@ -299,7 +299,7 @@ class Gem::Installer
 
     File.chmod(dir_mode, gem_dir) if dir_mode
 
-    say spec.post_install_message if options[:post_install_message] && !spec.post_install_message.nil?
+    say clean_text(spec.post_install_message) if options[:post_install_message] && !spec.post_install_message.nil?
 
     Gem::Specification.add_spec(spec) unless @install_dir
 
