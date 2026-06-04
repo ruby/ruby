@@ -225,5 +225,13 @@ RSpec.describe Bundler::Env do
         expect(described_class.report).to include("Git           1.2.3 (Apple Git-BS)")
       end
     end
+
+    it "no longer reports the Tools section or external tool versions" do
+      report = described_class.report
+      expect(report).not_to include("Tools")
+      ["rbenv", "RVM", "chruby"].each do |tool|
+        expect(report).not_to include(tool)
+      end
+    end
   end
 end
