@@ -485,11 +485,6 @@ impl IseqProfile {
     pub fn profile_send_at(&mut self, iseq: IseqPtr, insn_idx: YarvInsnIdx, sp: *const VALUE, argc: usize) -> bool {
         let n = argc + 1; // args + receiver
         let entry = self.entry_mut(insn_idx);
-        // Reset profiling if the previous round already finished (stale YARV profiles).
-        // This ensures we collect num_profiles samples of the new shapes before recompiling.
-        if entry.profiles_remaining == 0 {
-            entry.profiles_remaining = get_option!(num_profiles);
-        }
         if entry.opnd_types.is_empty() {
             entry.opnd_types.resize(n, TypeDistribution::new());
         }
