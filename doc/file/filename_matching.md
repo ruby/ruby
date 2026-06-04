@@ -44,17 +44,33 @@ see the table above.
 A simple string matches itself:
 
 ```ruby
-File.fnmatch('xyzzy', 'xyzzy')                 # => true
-File.fnmatch('one_two_three', 'one_two_three') # => true
-File.fnmatch('123', '123')                     # => true
-File.fnmatch('Form 27B/6', 'Form 27B/6')       # => true
-File.fnmatch('bcd', 'abcde')                   # => false  # Must be exact.
+File.fnmatch('xyzzy', 'xyzzy')                     # => true
+File.fnmatch('one_two_three', 'one_two_three')     # => true
+File.fnmatch('123', '123')                         # => true
+File.fnmatch('Form 27B/6', 'Form 27B/6')           # => true
+
+Pathname('xyzzy').fnmatch('xyzzy')                 # => true
+Pathname('one_two_three').fnmatch('one_two_three') # => true
+Pathname('123').fnmatch('123')                     # => true
+Pathname('Form 27B/6').fnmatch('Form 27B/6')       # => true
+
+# Must be exact.
+pattern = 'abcde'
+path = 'abc'
+File.fnmatch(pattern, path)     # => false
+Pathname(path).fnmatch(pattern) # => false
+
 ```
 
 By default, the matching is case-sensitive:
 
 ```ruby
-File.fnmatch('abc', 'ABC') # => false
+pattern = 'abc'
+path = 'ABC'
+File.fnmatch(pattern, path)     # => false
+Pathname(path).fnmatch(pattern) # => false
+
+
 ```
 
 Case-sensitivity may be modified by flags:
@@ -64,8 +80,11 @@ Case-sensitivity may be modified by flags:
 
 By default, the alternatives pattern is disabled:
 
-```rutby
-File.fnmatch('R{ub,foo}y', 'Ruby') # => false
+```ruby
+pattern = 'R{ub,foo}y'
+path = 'Ruby'
+File.fnmatch(pattern, path)     # => false
+Pathname(path).fnmatch(pattern) # => false
 ```
 
 It may be enabled by flag [`File::FNM_EXTGLOB`](#constant-filefnmextglob).
@@ -73,7 +92,11 @@ It may be enabled by flag [`File::FNM_EXTGLOB`](#constant-filefnmextglob).
 By default, the Windows short name pattern is disabled:
 
 ```ruby
-File.fnmatch('PROGRAM~1', 'Program Files') # => false
+pattern ='PROGRAM~1'
+path = 'Program Files'
+File.fnmatch(pattern, path)     # => false
+Pathname(path).fnmatch(pattern) # => false
+
 ```
 
 It may be enabled by flag [`File::FNM_SHORTNAME`](#constant-filefnmshortname).
@@ -83,16 +106,28 @@ It may be enabled by flag [`File::FNM_SHORTNAME`](#constant-filefnmshortname).
 The asterisk pattern (`'*'`) matches any sequence of characters:
 
 ```ruby
-File.fnmatch('*', 'foo')            # => true
-File.fnmatch('*', '')               # => true
-File.fnmatch('*', '*')              # => true
-File.fnmatch('\*', 'foo')           # => false  # Escaped.
+pattern = '*'
+File.fnmatch(pattern, 'foo')     # => true
+File.fnmatch(pattern, '')        # => true
+File.fnmatch('\*', 'foo')        # => false
+
+Pathname('foo').fnmatch(pattern) # => true
+Pathname('').fnmatch(pattern)    # => true
+Pathname('*').fnmatch(pattern)   # => true
+
+# Escaped.
+pattern = '\*'
+File.fnmatch(pattern, 'foo')     # => false
+Pathname('foo').fnmatch(pattern) # => false
 ```
 
 By default, the asterisk pattern does not match a leading period (as in a dot-file):
 
 ```ruby
-File.fnmatch('*', '.document') # => false
+pattern = '*'
+File.fnmatch(pattern, '.document')     # => false
+Pathname('.document').fnmatch(pattern) # => false
+
 ```
 
 That matching may be enabled by flag [`File::FNM_DOTMATCH`](#constant-filefnmdotmatch).
@@ -100,7 +135,9 @@ That matching may be enabled by flag [`File::FNM_DOTMATCH`](#constant-filefnmdot
 By default, the asterisk pattern matches across file separators:
 
 ```ruby
-File.fnmatch('*.rb', 'lib/test.rb') # => true
+pattern = '*.rb'
+File.fnmatch(pattern, 'lib/test.rb')     # => true
+Pathname('lib/test.rb').fnmatch(pattern) # => true
 ```
 
 That matching may be disabled by flag [`File::FNM_PATHNAME`](#constant-filefnmpathname).
@@ -110,17 +147,31 @@ That matching may be disabled by flag [`File::FNM_PATHNAME`](#constant-filefnmpa
 The question-mark pattern (`'?'`) matches any single character:
 
 ```ruby
-File.fnmatch('?', 'f')                 # => true
-File.fnmatch("foo-?.txt", "foo-1.txt") # => true
-File.fnmatch('?', 'foo')               # => false
-File.fnmatch('?', '')                  # => false
-File.fnmatch('\?', 'f')                # => false  # Escaped.
+pattern = '?'
+File.fnmatch(pattern, 'f')             # => true
+File.fnmatch(pattern, '')              # => false
+File.fnmatch(pattern, 'foo')           # => false
+
+Pathname('f').fnmatch(pattern)         # => true
+Pathname('').fnmatch(pattern)          # => false
+Pathname('foo').fnmatch(pattern)       # => false
+
+pattern = 'foo-?.txt'
+File.fnmatch(pattern, 'foo-1.txt')     # => true
+Pathname('foo-1.txt').fnmatch(pattern) # => true
+
+# Escaped.
+pattern = '\?'
+File.fnmatch(pattern, 'f')             # => false
+Pathname('f').fnmatch(pattern)         # => false
 ```
 
 By default, pattern `'?'` matches the file separator:
 
 ```ruby
-File.fnmatch('foo?boo', 'foo/boo') # => true
+pattern = 'foo?bar'
+File.fnmatch(pattern, 'foo/bar')     # => true
+Pathname('foo/bar').fnmatch(pattern) # => true
 ```
 
 That matching may be disabled by flag [`File::FNM_PATHNAME`](#constant-filefnmpathname).
