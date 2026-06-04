@@ -1498,6 +1498,22 @@ class TestGemInstaller < Gem::InstallerTestCase
     refute_match(/\e\]2;pwn/, @ui.output)
   end
 
+  def test_install_handles_non_string_post_install_message
+    # post_install_message may be a non-String (the gemspec schema allows an
+    # array), so sanitizing must not assume it responds to gsub.
+    @spec = setup_base_spec
+    @spec.post_install_message = %w[one two]
+
+    installer = Gem::Installer.for_spec @spec, post_install_message: true
+    installer.gem_home = @gemhome
+
+    use_ui @ui do
+      installer.install
+    end
+
+    assert_match(/one/, @ui.output)
+  end
+
   def test_install_extension_dir
     gemhome2 = "#{@gemhome}2"
 
