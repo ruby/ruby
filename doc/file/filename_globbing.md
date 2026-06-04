@@ -1,22 +1,20 @@
 # Filename Globbing
 
-Filename globbing is a pattern-matching feature implemented in certain Ruby methods.
-
-Filename-globbing methods find filesystem entries (files and directories)
-that match certain patterns;
-these methods are:
+Filename globbing is a pattern-matching feature implemented in certain Ruby methods:
 
 - Dir.glob.
 - [`Dir[]`](https://docs.ruby-lang.org/en/master/Dir.html#method-c-5B-5D).
 - Pathname.glob.
 - Pathname#glob.
 
-These methods are quite different from filename-matching methods (not discussed here),
-which match patterns against string paths, and do not access the filesystem;
-those methods are:
+Each `glob` method finds filesystem entries (files and directories)
+that match certain patterns.
 
-- File.fnmatch.
-- Pathname#fnmatch.
+These methods are quite different
+from [filename-matching](rdoc-ref:filename_matching.md) methods,
+which match patterns against string paths, and do not access the filesystem.
+
+## Patterns
 
 These are the basic elements of filename-globbing patterns;
 see the sections below for details:
