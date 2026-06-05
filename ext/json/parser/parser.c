@@ -1425,9 +1425,7 @@ static inline VALUE json_parse_positive_number(JSON_ParserState *state, JSON_Par
 
 static inline VALUE json_parse_negative_number(JSON_ParserState *state, JSON_ParserConfig *config)
 {
-    const char *start = state->cursor;
-    state->cursor++;
-    return json_parse_number(state, config, true, start);
+    return json_parse_number(state, config, true, state->cursor - 1);
 }
 
 // How many values (array elements, or interleaved object keys+values) have been
@@ -1450,6 +1448,22 @@ static inline void json_value_completed(json_frame *frame)
     JSON_ASSERT((int)JSON_PHASE_OBJECT_COMMA == (int)JSON_FRAME_OBJECT);
 
     frame->phase = (enum json_frame_phase) frame->type;
+}
+
+static inline bool json_match_keyword(JSON_ParserState *state, const char *keyword, size_t offset)
+{
+    // It is assumed that since `keyword` is always a literal, the compiler is able to constantize this
+    // `strlen` and several other computations in that routine, such as eliminating the `if (resumable)` branch.
+
+    size_t len = strlen(keyword);
+
+    // Note: memcmp with a small power of two and a literal string compile to an integer comparison /
+    // That's why we sometime compare starting from the first byte and sometimes from the second.
+    if (rest(state) >= len && (memcmp(state->cursor + offset, keyword + offset, len - offset) == 0)) {
+        state->cursor += len;
+        return true;
+    }
+    return false;
 }
 
 // Parse an arbitrary JSON value iteratively. This is a state machine driven
@@ -1475,8 +1489,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
 
                 switch (peek(state)) {
                     case 'n':
-                        if (rest(state) >= 4 && (memcmp(state->cursor, "null", 4) == 0)) {
-                            state->cursor += 4;
+                        if (json_match_keyword(state, "null", 0)) {
                             json_push_value(state, config, Qnil);
                             json_value_completed(frame);
                             break;
@@ -1484,8 +1497,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
 
                         raise_parse_error("unexpected token %s", state);
                     case 't':
-                        if (rest(state) >= 4 && (memcmp(state->cursor, "true", 4) == 0)) {
-                            state->cursor += 4;
+                        if (json_match_keyword(state, "true", 0)) {
                             json_push_value(state, config, Qtrue);
                             json_value_completed(frame);
                             break;
@@ -1493,9 +1505,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
 
                         raise_parse_error("unexpected token %s", state);
                     case 'f':
-                        // Note: memcmp with a small power of two compile to an integer comparison
-                        if (rest(state) >= 5 && (memcmp(state->cursor + 1, "alse", 4) == 0)) {
-                            state->cursor += 5;
+                        if (json_match_keyword(state, "false", 1)) {
                             json_push_value(state, config, Qfalse);
                             json_value_completed(frame);
                             break;
@@ -1504,8 +1514,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                         raise_parse_error("unexpected token %s", state);
                     case 'N':
                         // Note: memcmp with a small power of two compile to an integer comparison
-                        if (config->allow_nan && rest(state) >= 3 && (memcmp(state->cursor + 1, "aN", 2) == 0)) {
-                            state->cursor += 3;
+                        if (config->allow_nan && json_match_keyword(state, "NaN", 1)) {
                             json_push_value(state, config, CNaN);
                             json_value_completed(frame);
                             break;
@@ -1513,8 +1522,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
 
                         raise_parse_error("unexpected token %s", state);
                     case 'I':
-                        if (config->allow_nan && rest(state) >= 8 && (memcmp(state->cursor, "Infinity", 8) == 0)) {
-                            state->cursor += 8;
+                        if (config->allow_nan && json_match_keyword(state, "Infinity", 0)) {
                             json_push_value(state, config, CInfinity);
                             json_value_completed(frame);
                             break;
@@ -1522,17 +1530,13 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
 
                         raise_parse_error("unexpected token %s", state);
                     case '-': {
-                        // Note: memcmp with a small power of two compile to an integer comparison
-                        if (rest(state) >= 9 && (memcmp(state->cursor + 1, "Infinity", 8) == 0)) {
-                            if (config->allow_nan) {
-                                state->cursor += 9;
-                                json_push_value(state, config, CMinusInfinity);
-                                json_value_completed(frame);
-                                break;
-                            } else {
-                                raise_parse_error("unexpected token %s", state);
-                            }
+                        state->cursor++;
+                        if (config->allow_nan && json_match_keyword(state, "Infinity", 0)) {
+                            json_push_value(state, config, CMinusInfinity);
+                            json_value_completed(frame);
+                            break;
                         }
+
                         json_push_value(state, config, json_parse_negative_number(state, config));
                         json_value_completed(frame);
                         break;
