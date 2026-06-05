@@ -143,6 +143,64 @@ RSpec.describe "bundle install with the cooldown setting" do
       expect(the_bundle).to include_gems("ripe_gem 1.0.0")
     end
 
+    it "applies per-source Gemfile cooldown on bundle update when a lockfile exists" do
+      # Converging the Gemfile sources with the lockfile sources used to drop
+      # the per-source cooldown, so it only ever worked on a first resolve
+      # without a lockfile.
+      gemfile <<-G
+        source "https://gem.repo3", cooldown: 7
+        gem "ripe_gem"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            ripe_gem (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          ripe_gem
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "update ripe_gem", artifice: "compact_index_cooldown"
+
+      expect(the_bundle).to include_gems("ripe_gem 1.0.0")
+    end
+
+    it "applies per-source Gemfile cooldown to gems added after the lockfile was written" do
+      gemfile <<-G
+        source "https://gem.repo3", cooldown: 7
+        gem "ripe_gem"
+        gem "child"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            ripe_gem (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          ripe_gem
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "install", artifice: "compact_index_cooldown"
+
+      expect(the_bundle).to include_gems("ripe_gem 1.0.0", "child 1.0.0")
+    end
+
     it "is overridden by CLI --cooldown when Gemfile sets a different per-source value" do
       gemfile <<-G
         source "https://gem.repo3", cooldown: 0
