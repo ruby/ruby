@@ -17316,6 +17316,33 @@ mod hir_opt_tests {
 
         ");
         assert_snapshot!(hir_string_proc("C.new.method(:f)"), @"
+        fn f@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:HeapBasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          v4:NilClass = Const Value(nil)
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:HeapBasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :x@1
+          v9:NilClass = Const Value(nil)
+          Jump bb3(v7, v8, v9)
+        bb3(v11:HeapBasicObject, v12:BasicObject, v13:NilClass):
+          v17:Fixnum[1] = Const Value(1)
+          PatchPoint SingleRactorMode
+          SetIvar v11, :@a, v17
+          PatchPoint NoEPEscape(f)
+          v27:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
+          v46:Fixnum = GuardType v12, Fixnum recompile
+          v47:Fixnum = FixnumAdd v46, v27
+          PatchPoint SingleRactorMode
+          SetIvar v11, :@a, v47
+          CheckInterrupts
+          Return v47
         ");
 
         let iseq = with_rubyvm(|| get_proc_iseq("C.new.method(:f)"));
@@ -17324,12 +17351,59 @@ mod hir_opt_tests {
         );
 
         eval("
+            # Supposed to be the same as the earlier Ruby method in this test
+            num_to_compile = 30
             c = C.new
             # Call this with a float in order to trigger a guard failure
             # Do this enough times to cause a recompilation
             num_to_compile.times { c.f(1.5) }
         ");
         assert_snapshot!(hir_string_proc("C.new.method(:f)"), @"
+        fn f@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:HeapBasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :x@0x1000
+          v4:NilClass = Const Value(nil)
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:HeapBasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :x@1
+          v9:NilClass = Const Value(nil)
+          Jump bb3(v7, v8, v9)
+        bb3(v11:HeapBasicObject, v12:BasicObject, v13:NilClass):
+          v17:Fixnum[1] = Const Value(1)
+          PatchPoint SingleRactorMode
+          SetIvar v11, :@a, v17
+          PatchPoint NoEPEscape(f)
+          v27:Fixnum[1] = Const Value(1)
+          v30:CBool = HasType v12, Flonum
+          CondBranch v30, bb5(v11, v12, v13, v12, v27), bb6()
+        bb5(v31:HeapBasicObject, v32:BasicObject, v33:NilClass, v34:BasicObject, v35:Fixnum[1]):
+          v37:Flonum = RefineType v34, Flonum
+          PatchPoint MethodRedefined(Float@0x1008, +@0x1010, cme:0x1018)
+          v74:Float = FloatAdd v37, v35
+          Jump bb4(v31, v32, v33, v74)
+        bb6():
+          v41:CBool = HasType v12, Fixnum
+          CondBranch v41, bb7(v11, v12, v13, v12, v27), bb8()
+        bb7(v42:HeapBasicObject, v43:BasicObject, v44:NilClass, v45:BasicObject, v46:Fixnum[1]):
+          v48:Fixnum = RefineType v45, Fixnum
+          PatchPoint MethodRedefined(Integer@0x1040, +@0x1010, cme:0x1048)
+          v77:Fixnum = FixnumAdd v48, v46
+          Jump bb4(v42, v43, v44, v77)
+        bb8():
+          PatchPoint MethodRedefined(Float@0x1008, +@0x1010, cme:0x1018)
+          v80:Flonum = GuardType v12, Flonum recompile
+          v81:Float = FloatAdd v80, v27
+          Jump bb4(v11, v80, v13, v81)
+        bb4(v54:HeapBasicObject, v55:BasicObject, v56:NilClass, v57:Float|Fixnum):
+          PatchPoint SingleRactorMode
+          SetIvar v54, :@a, v57
+          CheckInterrupts
+          Return v57
         ");
     }
 }
