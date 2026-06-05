@@ -96,6 +96,7 @@ jobs:
 
       - name: Install libraries with vcpkg
         run: |
+          git -C "%VCPKG_INSTALLATION_ROOT%" pull --quiet
           vcpkg install
         working-directory: src
         if: ${{ ! steps.restore-vcpkg.outputs.cache-hit }}
