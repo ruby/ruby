@@ -38,7 +38,7 @@ impl IseqPayload {
     }
 
     /// Profile counts are used for compilation policy.
-    /// When we deoptimize a method that can be recompiled, we need to update the count.
+    /// When we deoptimize a method that can be recompiled, we need to update the count to collect more profiles.
     /// Otherwise, we will generate the same code that was just deoptimized.
     pub fn reset_profiles_remaining(&mut self, insn_idx: YarvInsnIdx) {
         let num_profiles = get_option!(num_profiles);
