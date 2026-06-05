@@ -724,7 +724,11 @@ static void State_compact(void *ptr)
 
 static size_t State_memsize(const void *ptr)
 {
+#ifdef HAVE_RUBY_TYPED_EMBEDDABLE
+    return 0;
+#else
     return sizeof(JSON_Generator_State);
+#endif
 }
 
 static const rb_data_type_t JSON_Generator_State_type = {

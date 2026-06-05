@@ -268,7 +268,11 @@ static void rvalue_stack_free(void *ptr)
 static size_t rvalue_stack_memsize(const void *ptr)
 {
     const rvalue_stack *stack = (const rvalue_stack *)ptr;
-    return sizeof(rvalue_stack) + sizeof(VALUE) * stack->capa;
+    size_t memsize = sizeof(VALUE) * stack->capa;
+#ifndef HAVE_RUBY_TYPED_EMBEDDABLE
+    memsize += sizeof(rvalue_stack);
+#endif
+    return memsize;
 }
 
 static const rb_data_type_t JSON_Parser_rvalue_stack_type = {
@@ -452,7 +456,12 @@ static void json_frame_stack_free(void *ptr)
 static size_t json_frame_stack_memsize(const void *ptr)
 {
     const json_frame_stack *stack = (const json_frame_stack *)ptr;
-    return sizeof(json_frame_stack) + sizeof(json_frame) * stack->capa;
+
+    size_t memsize = sizeof(json_frame) * stack->capa;
+#ifndef HAVE_RUBY_TYPED_EMBEDDABLE
+    memsize += sizeof(json_frame_stack);
+#endif
+    return memsize;
 }
 
 static const rb_data_type_t JSON_Parser_frame_stack_type = {
@@ -1961,7 +1970,11 @@ static void JSON_ParserConfig_mark(void *ptr)
 
 static size_t JSON_ParserConfig_memsize(const void *ptr)
 {
+#ifdef HAVE_RUBY_TYPED_EMBEDDABLE
+    return 0;
+#else
     return sizeof(JSON_ParserConfig);
+#endif
 }
 
 static const rb_data_type_t JSON_ParserConfig_type = {
