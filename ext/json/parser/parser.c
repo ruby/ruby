@@ -1236,7 +1236,7 @@ static VALUE json_parse_escaped_string(JSON_ParserState *state, JSON_ParserConfi
             case '"': {
                 VALUE string = json_string_unescape(state, config, start, state->cursor, is_name, &positions);
                 state->cursor++;
-                return json_push_value(state, config, string);
+                return string;
             }
             case '\\': {
                 if (RB_LIKELY(positions.size < JSON_MAX_UNESCAPE_POSITIONS)) {
@@ -1271,12 +1271,16 @@ ALWAYS_INLINE(static) VALUE json_parse_string(JSON_ParserState *state, JSON_Pars
         raise_parse_error("unexpected end of input, expected closing \"", state);
     }
 
+    VALUE string;
     if (RB_LIKELY(*state->cursor == '"')) {
-        VALUE string = json_string_fastpath(state, config, start, state->cursor, is_name);
+        string = json_string_fastpath(state, config, start, state->cursor, is_name);
         state->cursor++;
-        return json_push_value(state, config, string);
     }
-    return json_parse_escaped_string(state, config, is_name, start);
+    else {
+        string = json_parse_escaped_string(state, config, is_name, start);
+    }
+
+    return string;
 }
 
 #if JSON_CPU_LITTLE_ENDIAN_64BITS
@@ -1487,27 +1491,25 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                 JSON_PHASE_VALUE:
                 json_eat_whitespace(state);
 
+                VALUE value;
                 switch (peek(state)) {
                     case 'n':
                         if (json_match_keyword(state, "null", 0)) {
-                            json_push_value(state, config, Qnil);
-                            json_value_completed(frame);
+                            value = Qnil;
                             break;
                         }
 
                         raise_parse_error("unexpected token %s", state);
                     case 't':
                         if (json_match_keyword(state, "true", 0)) {
-                            json_push_value(state, config, Qtrue);
-                            json_value_completed(frame);
+                            value = Qtrue;
                             break;
                         }
 
                         raise_parse_error("unexpected token %s", state);
                     case 'f':
                         if (json_match_keyword(state, "false", 1)) {
-                            json_push_value(state, config, Qfalse);
-                            json_value_completed(frame);
+                            value = Qfalse;
                             break;
                         }
 
@@ -1515,16 +1517,14 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                     case 'N':
                         // Note: memcmp with a small power of two compile to an integer comparison
                         if (config->allow_nan && json_match_keyword(state, "NaN", 1)) {
-                            json_push_value(state, config, CNaN);
-                            json_value_completed(frame);
+                            value = CNaN;
                             break;
                         }
 
                         raise_parse_error("unexpected token %s", state);
                     case 'I':
                         if (config->allow_nan && json_match_keyword(state, "Infinity", 0)) {
-                            json_push_value(state, config, CInfinity);
-                            json_value_completed(frame);
+                            value = CInfinity;
                             break;
                         }
 
@@ -1532,23 +1532,18 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                     case '-': {
                         state->cursor++;
                         if (config->allow_nan && json_match_keyword(state, "Infinity", 0)) {
-                            json_push_value(state, config, CMinusInfinity);
-                            json_value_completed(frame);
-                            break;
+                            value = CMinusInfinity;
+                        } else {
+                            value = json_parse_negative_number(state, config);
                         }
-
-                        json_push_value(state, config, json_parse_negative_number(state, config));
-                        json_value_completed(frame);
                         break;
                     }
                     case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
-                        json_push_value(state, config, json_parse_positive_number(state, config));
-                        json_value_completed(frame);
+                        value = json_parse_positive_number(state, config);
                         break;
                     case '"':
                         // %r{\A"[^"\\\t\n\x00]*(?:\\[bfnrtu\\/"][^"\\]*)*"}
-                        json_parse_string(state, config, false);
-                        json_value_completed(frame);
+                        value = json_parse_string(state, config, false);
                         break;
                     case '[': {
                         state->cursor++;
@@ -1556,8 +1551,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
 
                         if (peek(state) == ']') {
                             state->cursor++;
-                            json_push_value(state, config, json_decode_array(state, config, 0));
-                            json_value_completed(frame);
+                            value = json_decode_array(state, config, 0);
                             break;
                         }
 
@@ -1584,8 +1578,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
 
                         if (peek(state) == '}') {
                             state->cursor++;
-                            json_push_value(state, config, json_decode_object(state, config, 0));
-                            json_value_completed(frame);
+                            value = json_decode_object(state, config, 0);
                             break;
                         }
 
@@ -1611,6 +1604,9 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                     default:
                         raise_parse_error("unexpected character: %s", state);
                 }
+
+                json_push_value(state, config, value);
+                json_value_completed(frame);
                 break;
             }
 
@@ -1621,7 +1617,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                 json_eat_whitespace(state);
 
                 if (RB_LIKELY(peek(state) == '"')) {
-                    json_parse_string(state, config, true);
+                    json_push_value(state, config, json_parse_string(state, config, true));
                     frame->phase = JSON_PHASE_OBJECT_COLON;
                     goto JSON_PHASE_OBJECT_COLON;
                 } else {
