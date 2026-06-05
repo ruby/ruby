@@ -243,7 +243,7 @@ static void rvalue_stack_mark(void *ptr)
     long index;
     if (stack && stack->ptr) {
         for (index = 0; index < stack->head; index++) {
-            rb_gc_mark(stack->ptr[index]);
+            rb_gc_mark_movable(stack->ptr[index]);
         }
     }
 }
@@ -275,12 +275,24 @@ static size_t rvalue_stack_memsize(const void *ptr)
     return memsize;
 }
 
+static void rvalue_stack_compact(void *ptr)
+{
+    rvalue_stack *stack = (rvalue_stack *)ptr;
+    long index;
+    if (stack && stack->ptr) {
+        for (index = 0; index < stack->head; index++) {
+            stack->ptr[index] = rb_gc_location(stack->ptr[index]);
+        }
+    }
+}
+
 static const rb_data_type_t JSON_Parser_rvalue_stack_type = {
     .wrap_struct_name = "JSON::Ext::Parser/rvalue_stack",
     .function = {
         .dmark = rvalue_stack_mark,
         .dfree = rvalue_stack_free,
         .dsize = rvalue_stack_memsize,
+        .dcompact = rvalue_stack_compact,
     },
     .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE,
 };
@@ -1964,8 +1976,8 @@ static VALUE cParser_m_parse(VALUE klass, VALUE Vsource, VALUE opts)
 static void JSON_ParserConfig_mark(void *ptr)
 {
     JSON_ParserConfig *config = ptr;
-    rb_gc_mark(config->on_load_proc);
-    rb_gc_mark(config->decimal_class);
+    rb_gc_mark_movable(config->on_load_proc);
+    rb_gc_mark_movable(config->decimal_class);
 }
 
 static size_t JSON_ParserConfig_memsize(const void *ptr)
@@ -1977,12 +1989,20 @@ static size_t JSON_ParserConfig_memsize(const void *ptr)
 #endif
 }
 
+static void JSON_ParserConfig_compact(void *ptr)
+{
+    JSON_ParserConfig *config = ptr;
+    config->on_load_proc = rb_gc_location(config->on_load_proc);
+    config->decimal_class = rb_gc_location(config->decimal_class);
+}
+
 static const rb_data_type_t JSON_ParserConfig_type = {
     .wrap_struct_name = "JSON::Ext::Parser/ParserConfig",
     .function = {
-        JSON_ParserConfig_mark,
-        RUBY_DEFAULT_FREE,
-        JSON_ParserConfig_memsize,
+        .dmark = JSON_ParserConfig_mark,
+        .dfree = RUBY_DEFAULT_FREE,
+        .dsize = JSON_ParserConfig_memsize,
+        .dcompact = JSON_ParserConfig_compact,
     },
     .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_EMBEDDABLE,
 };
