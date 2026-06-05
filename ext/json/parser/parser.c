@@ -345,22 +345,25 @@ static void rvalue_stack_eagerly_release(VALUE handle)
 #define JSON_FRAME_STACK_INITIAL_CAPA 32
 
 enum json_frame_type {
-    JSON_FRAME_ROOT,
-    JSON_FRAME_ARRAY,
-    JSON_FRAME_OBJECT,
+    JSON_FRAME_ROOT,   // == JSON_PHASE_DONE
+    JSON_FRAME_ARRAY,  // == JSON_PHASE_ARRAY_COMMA
+    JSON_FRAME_OBJECT, // = JSON_PHASE_OBJECT_COMMA
 };
 
 // Where a frame is within its container's grammar. This is the entirety of the
 // parser's "what to do next" state: json_parse_any dispatches on the top
 // frame's phase and holds no resume state in C locals, so a parse can stop at
 // any value boundary and be resumed purely from the (persistable) frame stack.
+//
+// The first three phases are deliberately equal to the corresponding json_frame_type
+// to simplify the transition of phase in json_value_completed.
 enum json_frame_phase {
+    JSON_PHASE_DONE         = JSON_FRAME_ROOT,   // root only: the document value has been parsed
+    JSON_PHASE_ARRAY_COMMA  = JSON_FRAME_ARRAY,  // after a value: expecting ',' or the closing ']'
+    JSON_PHASE_OBJECT_COMMA = JSON_FRAME_OBJECT,  // after a value: expecting ',' or the closing '}'
     JSON_PHASE_VALUE,  // expecting a value (document root, array element, or object value after ':')
-    JSON_PHASE_ARRAY_COMMA,  // after a value: expecting ',' or the closing ']'
     JSON_PHASE_OBJECT_KEY,    // expecting a '"' key (after '{' or ',')
-    JSON_PHASE_OBJECT_COMMA,  // after a value: expecting ',' or the closing '}'
     JSON_PHASE_OBJECT_COLON,  // object only: after a key, expecting ':'
-    JSON_PHASE_DONE,   // root only: the document value has been parsed
 };
 
 typedef struct json_frame_struct {
@@ -1442,18 +1445,11 @@ static inline long json_frame_entry_count(const json_frame *frame, const rvalue_
 // after a container close is the freshly re-exposed parent.
 static inline void json_value_completed(json_frame *frame)
 {
-    switch (frame->type) {
-        case JSON_FRAME_ROOT:
-            frame->phase = JSON_PHASE_DONE;
-            return;
-        case JSON_FRAME_ARRAY:
-            frame->phase = JSON_PHASE_ARRAY_COMMA;
-            return;
-        case JSON_FRAME_OBJECT:
-            frame->phase = JSON_PHASE_OBJECT_COMMA;
-            return;
-    }
-    UNREACHABLE;
+    JSON_ASSERT((int)JSON_PHASE_DONE         == (int)JSON_FRAME_ROOT);
+    JSON_ASSERT((int)JSON_PHASE_ARRAY_COMMA  == (int)JSON_FRAME_ARRAY);
+    JSON_ASSERT((int)JSON_PHASE_OBJECT_COMMA == (int)JSON_FRAME_OBJECT);
+
+    frame->phase = (enum json_frame_phase) frame->type;
 }
 
 // Parse an arbitrary JSON value iteratively. This is a state machine driven
