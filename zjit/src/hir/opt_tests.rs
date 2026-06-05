@@ -17292,4 +17292,44 @@ mod hir_opt_tests {
           Return v40
         ");
     }
+
+    #[test]
+    fn test_trigger_guard_type_recompilation() {
+        eval("
+            class C
+              def f(x)
+                @a = 1
+                y = x + 1
+                @a = y
+              end
+            end
+
+            # As of 06/04/2026, zjit/src/options.rs uses 5 as the default number of profiles
+            # Let's pick a number that is reasonably larger to ensure compilation, even if
+            # the default value changes a bit
+            num_to_compile = 30
+
+            c = C.new
+
+            # Repeatedly call an integer until this fast path gets JITed
+            num_to_compile.times { c.f(1) }
+
+        ");
+        assert_snapshot!(hir_string_proc("C.new.method(:f)"), @"
+        ");
+
+        let iseq = with_rubyvm(|| get_proc_iseq("C.new.method(:f)"));
+        assert_eq!(get_or_create_iseq_payload(iseq).versions.len(), 2,
+                  "expected a recompile to produce a second ISEQ version"
+        );
+
+        eval("
+            c = C.new
+            # Call this with a float in order to trigger a guard failure
+            # Do this enough times to cause a recompilation
+            num_to_compile.times { c.f(1.5) }
+        ");
+        assert_snapshot!(hir_string_proc("C.new.method(:f)"), @"
+        ");
+    }
 }
