@@ -1454,7 +1454,7 @@ static inline void json_value_completed(json_frame *frame)
     frame->phase = (enum json_frame_phase) frame->type;
 }
 
-static inline bool json_match_keyword(JSON_ParserState *state, const char *keyword, size_t offset)
+ALWAYS_INLINE(static) bool json_match_keyword(JSON_ParserState *state, const char *keyword, size_t offset)
 {
     // It is assumed that since `keyword` is always a literal, the compiler is able to constantize this
     // `strlen` and several other computations in that routine, such as eliminating the `if (resumable)` branch.
