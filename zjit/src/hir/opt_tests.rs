@@ -17315,7 +17315,21 @@ mod hir_opt_tests {
             num_to_compile.times { c.f(1) }
 
         ");
-        assert_snapshot!(hir_string_proc("C.new.method(:f)"), @"
+
+        let intermediate_hir = hir_string_proc("C.new.method(:f)");
+
+        eval("
+            # Supposed to be the same as the earlier Ruby method in this test
+            num_to_compile = 30
+            c = C.new
+            # Call this with a float in order to trigger a guard failure
+            # Do this enough times to cause a recompilation
+            num_to_compile.times { c.f(1.5) }
+        ");
+
+        let final_hir = hir_string_proc("C.new.method(:f)");
+
+        assert_snapshot!(format!("{intermediate_hir}\n{final_hir}"), @"
         fn f@<compiled>:4:
         bb1():
           EntryPoint interpreter
@@ -17343,22 +17357,7 @@ mod hir_opt_tests {
           SetIvar v11, :@a, v47
           CheckInterrupts
           Return v47
-        ");
 
-        let iseq = with_rubyvm(|| get_proc_iseq("C.new.method(:f)"));
-        assert_eq!(get_or_create_iseq_payload(iseq).versions.len(), 2,
-                  "expected a recompile to produce a second ISEQ version"
-        );
-
-        eval("
-            # Supposed to be the same as the earlier Ruby method in this test
-            num_to_compile = 30
-            c = C.new
-            # Call this with a float in order to trigger a guard failure
-            # Do this enough times to cause a recompilation
-            num_to_compile.times { c.f(1.5) }
-        ");
-        assert_snapshot!(hir_string_proc("C.new.method(:f)"), @"
         fn f@<compiled>:4:
         bb1():
           EntryPoint interpreter
