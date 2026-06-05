@@ -4987,14 +4987,28 @@ impl Function {
                         compile_time_heap.insert(key, val);
                         insn_id
                     },
-                    Insn::LoadField { recv, offset, .. } => {
+                    Insn::LoadField { recv, offset, return_type, .. } => {
                         let key = (self.chase_insn(recv), offset);
                         match compile_time_heap.entry(key) {
                             std::collections::hash_map::Entry::Occupied(entry) => {
-                                // If the value is stored already, we should short circuit.
-                                // However, we need to replace insn_id with its representative in the SSA union.
-                                self.make_equal_to(insn_id, *entry.get());
-                                continue
+                                let cached_insn = *entry.get();
+
+                                // TODO (nirvdrum 2026-06-04): Remove the return type guard and supporting code when the type checker becomes more accurate.
+                                // If there's an an embedded<=>heap shape storage transition, it's possible for this `LoadField` to have a different return
+                                // type than the cached entry (`CPtr` vs `BasicObject`). While the loaded value would be the same in either case, the
+                                // difference in associated type causes type checking to fail. Consequently, we conservatively retain the duplicate `LoadField`.
+                                // The `optimize_load_store_does_not_alias_loads_with_incompatible_return_types` test checks the problematic case.
+                                let can_forward_cached_insn = match self.find(cached_insn) {
+                                    Insn::LoadField { return_type : cached_return_type,.. } => cached_return_type.is_subtype(return_type),
+                                    _ => true
+                                };
+
+                                if can_forward_cached_insn {
+                                    // If the value is stored already, we should short circuit.
+                                    // However, we need to replace insn_id with its representative in the SSA union.
+                                    self.make_equal_to(insn_id, cached_insn);
+                                    continue
+                                }
                             }
                             std::collections::hash_map::Entry::Vacant(_) => {
                                 // If the value has not been accessed, cache a copy to optimize future loads or stores.
@@ -9306,6 +9320,81 @@ mod validation_tests {
         function.push_insn(exit, Insn::Return { val });
         function.seal_entries();
         assert_matches_err(function.validate(), ValidationError::DuplicateInstruction(exit, val));
+    }
+
+    // The heap-fields pointer (`as_heap`, a CPtr) and the first embedded
+    // instance variable both live at ROBJECT_OFFSET_AS_HEAP_FIELDS ==
+    // ROBJECT_OFFSET_AS_ARY == 0x10 on a Ruby object. They are distinct fields
+    // with incompatible value types that happen to share a base and an offset.
+    // Since we could end up with two `LoadField` on different shape types
+    // (e.g., as the result of inlining), `optimize_load_store` must not satisfy
+    // one load from another cached load with a different return type. The fault
+    // surfaces here as the forwarded value flowing into a `Return` with the
+    // wrong type (`CPtr` rather than `BasicObject`).
+    #[test]
+    fn optimize_load_store_does_not_alias_loads_with_incompatible_return_types() {
+        assert_eq!(ROBJECT_OFFSET_AS_HEAP_FIELDS, ROBJECT_OFFSET_AS_ARY,
+            "Conflicting field offsets changed, rendering the rest of this test incorrect");
+
+        let mut function = Function::new(std::ptr::null());
+        let entry = function.entry_block;
+        let recv = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        function.push_insn(entry, Insn::LoadField {
+            recv,
+            id: FieldName::as_heap,
+            offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32,
+            return_type: types::CPtr,
+        });
+        let ivar = function.push_insn(entry, Insn::LoadField {
+            recv,
+            id: FieldName::Id(ID(1)),
+            offset: ROBJECT_OFFSET_AS_ARY as i32,
+            return_type: types::BasicObject,
+        });
+        function.push_insn(entry, Insn::Return { val: ivar });
+        function.seal_entries();
+
+        function.infer_types();
+        function.optimize_load_store();
+
+        assert!(
+            function.validate().is_ok(),
+            "optimize_load_store aliased two loads with different return types: {:?}",
+            function.validate(),
+        );
+    }
+
+    #[test]
+    fn optimize_load_store_does_not_alias_loads_with_compatible_return_types() {
+        assert_eq!(ROBJECT_OFFSET_AS_HEAP_FIELDS, ROBJECT_OFFSET_AS_ARY,
+                   "Conflicting field offsets changed, rendering the rest of this test incorrect");
+
+        let mut function = Function::new(std::ptr::null());
+        let entry = function.entry_block;
+        let recv = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        function.push_insn(entry, Insn::LoadField {
+            recv,
+            id: FieldName::as_heap,
+            offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32,
+            return_type: types::BasicObject,
+        });
+        let ivar = function.push_insn(entry, Insn::LoadField {
+            recv,
+            id: FieldName::Id(ID(1)),
+            offset: ROBJECT_OFFSET_AS_ARY as i32,
+            return_type: types::Array,
+        });
+        function.push_insn(entry, Insn::Return { val: ivar });
+        function.seal_entries();
+
+        function.infer_types();
+        function.optimize_load_store();
+
+        assert!(
+            function.validate().is_ok(),
+            "optimize_load_store failed to alias two loads with different, but compatible, return types: {:?}",
+            function.validate(),
+        );
     }
 }
 
