@@ -73,30 +73,34 @@ describe "IO::Buffer.map" do
     @buffer.should.valid?
   end
 
-  guard -> { Process.respond_to?(:fork) } do
-    it "is shareable across processes" do
-      file_name = tmp("shared_buffer")
-      @file = File.open(file_name, "w+")
-      @file << "I'm private"
-      @file.rewind
-      @buffer = IO::Buffer.map(@file)
+  # IO::Buffer.map seems not shareable across processes on OpenBSD.
+  # See https://rubyci.s3.amazonaws.com/openbsd-current/ruby-master/log/20260129T163005Z.fail.html.gz
+  platform_is_not :openbsd do
+    guard -> { Process.respond_to?(:fork) } do
+      it "is shareable across processes" do
+        file_name = tmp("shared_buffer")
+        @file = File.open(file_name, "w+")
+        @file << "I'm private"
+        @file.rewind
+        @buffer = IO::Buffer.map(@file)
 
-      IO.popen("-") do |child_pipe|
-        if child_pipe
-          # Synchronize on child's output.
-          child_pipe.readlines.first.chomp.should == @buffer.to_s
-          @buffer.get_string.should == "I'm shared!"
+        IO.popen("-") do |child_pipe|
+          if child_pipe
+            # Synchronize on child's output.
+            child_pipe.readlines.first.chomp.should == @buffer.to_s
+            @buffer.get_string.should == "I'm shared!"
 
-          @file.read.should == "I'm shared!"
-        else
-          @buffer.set_string("I'm shared!")
-          puts @buffer
+            @file.read.should == "I'm shared!"
+          else
+            @buffer.set_string("I'm shared!")
+            puts @buffer
+          end
+        ensure
+          child_pipe&.close
         end
       ensure
-        child_pipe&.close
+        File.unlink(file_name)
       end
-    ensure
-      File.unlink(file_name)
     end
   end
 
