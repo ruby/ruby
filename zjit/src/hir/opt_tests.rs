@@ -18709,13 +18709,12 @@ mod hir_opt_tests {
           WriteBarrier v90, v15
           v215:CShape[0x1073] = Const CShape(0x1073)
           StoreField v90, :shape_id@0x1070, v215
-          v118:ObjectSubclass[class_exact:Point] = RefineType v90, HeapBasicObject
           PatchPoint NoEPEscape(initialize)
           PatchPoint SingleRactorMode
-          StoreField v118, :@y@0x1074, v17
-          WriteBarrier v118, v17
+          StoreField v90, :@y@0x1074, v17
+          WriteBarrier v90, v17
           v222:CShape[0x1075] = Const CShape(0x1075)
-          StoreField v118, :shape_id@0x1070, v222
+          StoreField v90, :shape_id@0x1070, v222
           CheckInterrupts
           PopLightweightFrame
           PatchPoint SingleRactorMode
@@ -18735,13 +18734,12 @@ mod hir_opt_tests {
           WriteBarrier v100, v48
           v229:CShape[0x1073] = Const CShape(0x1073)
           StoreField v100, :shape_id@0x1070, v229
-          v145:ObjectSubclass[class_exact:Point] = RefineType v100, HeapBasicObject
           PatchPoint NoEPEscape(initialize)
           PatchPoint SingleRactorMode
-          StoreField v145, :@y@0x1074, v50
-          WriteBarrier v145, v50
+          StoreField v100, :@y@0x1074, v50
+          WriteBarrier v100, v50
           v236:CShape[0x1075] = Const CShape(0x1075)
-          StoreField v145, :shape_id@0x1070, v236
+          StoreField v100, :shape_id@0x1070, v236
           CheckInterrupts
           PopLightweightFrame
           PatchPoint NoSingletonClass(Point@0x1008)
