@@ -285,7 +285,7 @@ File.fnmatch('\{a,b}', path, File::FNM_EXTGLOB)     # => false
 File.fnmatch('{a\,b}', path, File::FNM_EXTGLOB)     # => false
 File.fnmatch('{a,b\}', path, File::FNM_EXTGLOB)     # => false
 
-athname(path).fnmatch('{a,b}', File::FNM_EXTGLOB)   # => true
+Pathname(path).fnmatch('{a,b}', File::FNM_EXTGLOB)   # => true
 Pathname(path).fnmatch('\{a,b}', File::FNM_EXTGLOB) # => false
 Pathname(path).fnmatch('{a,b\}', File::FNM_EXTGLOB) # => false
 Pathname(path).fnmatch('{a\,b}', File::FNM_EXTGLOB) # => false
