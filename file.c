@@ -3653,11 +3653,12 @@ has_drive_letter(const char *buf)
 }
 
 #ifndef _WIN32
-static char*
+static VALUE
 getcwdofdrv(int drv)
 {
     char drive[4];
-    char *drvcwd, *oldcwd;
+    char *oldcwd;
+    VALUE drvcwd;
 
     drive[0] = drv;
     drive[1] = ':';
@@ -3669,13 +3670,13 @@ getcwdofdrv(int drv)
     */
     oldcwd = ruby_getcwd();
     if (chdir(drive) == 0) {
-        drvcwd = ruby_getcwd();
+        drvcwd = rb_dir_getwd_ospath();
         chdir(oldcwd);
         xfree(oldcwd);
     }
     else {
         /* perhaps the drive is not exist. we return only drive letter */
-        drvcwd = strdup(drive);
+        drvcwd = rb_enc_str_new_cstr(drive, rb_filesystem_encoding());
     }
     return drvcwd;
 }
@@ -4045,16 +4046,19 @@ ospath_new(const char *ptr, long len, rb_encoding *fsenc)
 }
 
 static char *
-append_fspath(VALUE result, VALUE fname, char *dir, rb_encoding **enc, rb_encoding *fsenc)
+append_fspath(VALUE result, VALUE fname, VALUE dirname, rb_encoding **enc, rb_encoding *fsenc)
 {
-    char *buf, *cwdp = dir;
-    VALUE dirname = Qnil;
-    size_t dirlen = strlen(dir), buflen = rb_str_capacity(result);
+    if (RB_UNLIKELY(!rb_enc_asciicompat(fsenc) || rb_enc_str_coderange(dirname) != ENC_CODERANGE_7BIT)) {
+        dirname = rb_str_new_shared(dirname);
+        rb_enc_associate(dirname, fsenc);
+    }
+
+    char *buf, *cwdp;
+    size_t dirlen = RSTRING_LEN(dirname);
+    size_t buflen = rb_str_capacity(result);
 
     if (NORMALIZE_UTF8PATH || *enc != fsenc) {
-        dirname = ospath_new(dir, dirlen, fsenc);
         if (!rb_enc_compatible(fname, dirname)) {
-            xfree(dir);
             /* rb_enc_check must raise because the two encodings are not
              * compatible. */
             rb_enc_check(fname, dirname);
@@ -4063,19 +4067,15 @@ append_fspath(VALUE result, VALUE fname, char *dir, rb_encoding **enc, rb_encodi
         rb_encoding *direnc = fs_enc_check(fname, dirname);
         if (direnc != fsenc) {
             dirname = rb_str_conv_enc(dirname, fsenc, direnc);
-            RSTRING_GETMEM(dirname, cwdp, dirlen);
-        }
-        else if (NORMALIZE_UTF8PATH) {
-            RSTRING_GETMEM(dirname, cwdp, dirlen);
         }
         *enc = direnc;
     }
+
+    RSTRING_GETMEM(dirname, cwdp, dirlen);
     do {buflen *= 2;} while (dirlen > buflen);
     rb_str_resize(result, buflen);
     buf = RSTRING_PTR(result);
     memcpy(buf, cwdp, dirlen);
-    xfree(dir);
-    if (!NIL_P(dirname)) rb_str_resize(dirname, 0);
     rb_enc_associate(result, *enc);
     return buf + dirlen;
 }
@@ -4177,7 +4177,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
             p = pend;
         }
         else {
-            char *e = append_fspath(result, fname, ruby_getcwd(), &enc, fsenc);
+            char *e = append_fspath(result, fname, rb_dir_getwd_ospath(), &enc, fsenc);
             BUFINIT();
             p = e;
         }

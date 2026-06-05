@@ -87,6 +87,26 @@ RSpec.describe "bundle install with the cooldown setting" do
         build_gem "ripe_gem", "2.0.0" do |s|
           s.date = now - (1 * 86_400)
         end
+
+        # parent only resolves with the in-cooldown child 2.0.0
+        build_gem "child", "1.0.0" do |s|
+          s.date = now - (30 * 86_400)
+        end
+        build_gem "child", "2.0.0" do |s|
+          s.date = now - (1 * 86_400)
+        end
+        build_gem "parent", "1.0.0" do |s|
+          s.add_dependency "child", ">= 2.0.0"
+          s.date = now - (30 * 86_400)
+        end
+
+        # a cooldown-eligible version exists above the in-cooldown locked one
+        build_gem "upgradable", "2.0.0" do |s|
+          s.date = now - (1 * 86_400)
+        end
+        build_gem "upgradable", "3.0.0" do |s|
+          s.date = now - (30 * 86_400)
+        end
       end
     end
 
@@ -267,6 +287,147 @@ RSpec.describe "bundle install with the cooldown setting" do
 
       expect(err).to match(/excluded by the cooldown setting/)
       expect(err).to match(/--cooldown 0/)
+    end
+
+    it "keeps an in-cooldown locked version on bundle update --all instead of failing" do
+      # Lockfile written before cooldown was enabled pins the now-in-cooldown
+      # latest version. A full update must not downgrade below it, and cooldown
+      # must not filter it out, otherwise resolution becomes impossible (#9598).
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "ripe_gem"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            ripe_gem (2.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          ripe_gem
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "update --all --cooldown 7", artifice: "compact_index_cooldown"
+
+      expect(the_bundle).to include_gems("ripe_gem 2.0.0")
+    end
+
+    it "does not fail bundle outdated when the locked version is in cooldown" do
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "ripe_gem"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            ripe_gem (2.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          ripe_gem
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "outdated --cooldown 7", artifice: "compact_index_cooldown", raise_on_error: false
+
+      # exit 0 means no outdated gems and, crucially, no resolution failure (exit 7)
+      expect(exitstatus).to eq(0)
+    end
+
+    it "still applies cooldown and downgrades a gem that is updated explicitly" do
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "ripe_gem"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            ripe_gem (2.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          ripe_gem
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "update ripe_gem --cooldown 7", artifice: "compact_index_cooldown"
+
+      expect(the_bundle).to include_gems("ripe_gem 1.0.0")
+    end
+
+    it "keeps an in-cooldown transitive dependency on bundle update --all" do
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "parent"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            child (2.0.0)
+            parent (1.0.0)
+              child (>= 2.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          parent
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "update --all --cooldown 7", artifice: "compact_index_cooldown"
+
+      expect(the_bundle).to include_gems("parent 1.0.0", "child 2.0.0")
+    end
+
+    it "still upgrades to a cooldown-eligible version above the locked one" do
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "upgradable"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            upgradable (2.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          upgradable
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "update --all --cooldown 7", artifice: "compact_index_cooldown"
+
+      expect(the_bundle).to include_gems("upgradable 3.0.0")
     end
   end
 end
