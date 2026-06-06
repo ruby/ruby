@@ -31,7 +31,6 @@ see the sections below for details:
 
 There are two other patterns that are disabled by default:
 
--
 - Directory-like substring (`'**'`);
   see [`File::FNM_PATHNAME`](#constant-filefnmpathname) below.
 - Alternatives (`'{ , }'`);
