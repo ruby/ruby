@@ -2443,17 +2443,25 @@ rb_file_ftype(mode_t mode)
 
 /*
  *  call-seq:
- *     File.ftype(file_name)   -> string
+ *    File.ftype(path) -> string
  *
- *  Identifies the type of the named file; the return string is one of
- *  ``<code>file</code>'', ``<code>directory</code>'',
- *  ``<code>characterSpecial</code>'', ``<code>blockSpecial</code>'',
- *  ``<code>fifo</code>'', ``<code>link</code>'',
- *  ``<code>socket</code>'', or ``<code>unknown</code>''.
+ *  Returns the string type of the object at +path+:
  *
- *     File.ftype("testfile")            #=> "file"
- *     File.ftype("/dev/tty")            #=> "characterSpecial"
- *     File.ftype("/tmp/.X11-unix/X0")   #=> "socket"
+ *    File.ftype('README.md')   # => "file"
+ *    File.ftype('lib')         # => "directory"
+ *    File.ftype("/dev/null")   # => "characterSpecial"
+ *    File.ftype("/dev/loop0")  # => "blockSpecial"
+ *
+ *    File.mkfifo('/tmp/pipe', 0666)
+ *    File.ftype('/tmp/pipe')   # => "fifo"
+ *
+ *    File.symlink('lib', 'lib_link')
+ *    File.ftype('lib_link')    # => "link"
+ *
+ *    UNIXServer.new('/tmp/socket')
+ *    File.ftype('/tmp/socket') # => "socket"
+ *
+ *  Returns <tt>'unknown'</tt> if the type cannot be determined.
  */
 
 static VALUE
@@ -6162,16 +6170,32 @@ rb_stat_init_copy(VALUE copy, VALUE orig)
 
 /*
  *  call-seq:
- *     stat.ftype   -> string
+ *     stat.ftype -> string
  *
- *  Identifies the type of <i>stat</i>. The return string is one of:
- *  ``<code>file</code>'', ``<code>directory</code>'',
- *  ``<code>characterSpecial</code>'', ``<code>blockSpecial</code>'',
- *  ``<code>fifo</code>'', ``<code>link</code>'',
- *  ``<code>socket</code>'', or ``<code>unknown</code>''.
+ *  call-seq:
+ *    File.ftype(path) -> string
  *
- *     File.stat("/dev/tty").ftype   #=> "characterSpecial"
+ *  Returns the string type of the object at +path+:
  *
+ *    File.stat('README.md').ftype  # => "file"
+ *    File.stat('lib').ftype        # => "directory"
+ *    File.stat('/dev/null').ftype  # => "characterSpecial"
+ *    File.stat('/dev/loop0').ftype # => "blockSpecial"
+ *
+ *    File.mkfifo('/tmp/pipe', 0666)
+ *    File.stat('/tmp/pipe').ftype  # => "fifo"
+ *
+ *    # Follows symbolic link.
+ *    File.symlink('lib', 'lib_link')
+ *    File.stat('lib_link').ftype   # => "directory"
+ *    # Does not follow symbolic link.
+ *    File.lstat('lib_link').ftype  # => "link"
+ *
+ *    require 'socket'
+ *    UNIXServer.new('/tmp/socket')
+ *    File.stat('/tmp/socket').ftype # => "socket"
+ *
+ *  Returns <tt>'unknown'</tt> if the type cannot be determined.
  */
 
 static VALUE

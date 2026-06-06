@@ -1343,8 +1343,27 @@ class Pathname    # * File *
   # See <tt>File.fnmatch?</tt> (same as #fnmatch).
   def fnmatch?(pattern, ...) File.fnmatch?(pattern, @path, ...) end
 
-  # See <tt>File.ftype</tt>.  Returns "type" of file ("file", "directory",
-  # etc).
+  #  call-seq:
+  #    pathname.ftype -> string
+  #
+  #  Returns the string type of the object at the path in +self+:
+  #
+  #    Pathname('README.md').ftype   # => "file"
+  #    Pathname('lib').ftype         # => "directory"
+  #    Pathname('/dev/null').ftype   # => "characterSpecial"
+  #    Pathname('/dev/loop0').ftype  # => "blockSpecial"
+  #
+  #    File.mkfifo('/tmp/pipe', 0666)
+  #    Pathname('/tmp/pipe').ftype   # => "fifo"
+  #
+  #    File.symlink('lib', 'lib_link')
+  #    Pathname('lib_link').ftype    # => "link"
+  #
+  #    require 'socket'
+  #    UNIXServer.new('/tmp/socket')
+  #    Pathname('/tmp/socket').ftype # => "socket"
+  #
+  #  Returns <tt>'unknown'</tt> if the type cannot be determined.
   def ftype() File.ftype(@path) end
 
   # See <tt>File.link</tt>.  Creates a hard link.
