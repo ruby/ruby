@@ -2912,6 +2912,8 @@ str_null_check(VALUE str, int *w)
     return s;
 }
 
+static char *str_to_cstr(VALUE str);
+
 const char *
 rb_str_null_check(VALUE str)
 {
@@ -2927,14 +2929,7 @@ rb_str_null_check(VALUE str)
         }
     }
     else {
-        int w;
-        const char *s = str_null_check(str, &w);
-        if (!s) {
-            if (w) {
-                rb_raise(rb_eArgError, "string contains null char");
-            }
-            rb_raise(rb_eArgError, "string contains null byte");
-        }
+        str_to_cstr(str);
     }
 
     return s;
@@ -2951,6 +2946,12 @@ char *
 rb_string_value_cstr(volatile VALUE *ptr)
 {
     VALUE str = rb_string_value(ptr);
+    return str_to_cstr(str);
+}
+
+static char *
+str_to_cstr(VALUE str)
+{
     int w;
     char *s = str_null_check(str, &w);
     if (!s) {
