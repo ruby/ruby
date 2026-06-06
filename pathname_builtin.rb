@@ -246,9 +246,11 @@ class Pathname
     raise e.class, "Pathname.new requires a String, #to_path or #to_str", cause: nil
   end
 
+  #  call-seq:
+  #    pathname.freeze -> self
   #
-  # Freze self.
-  #
+  #  Freezes `self`, preventing further modifications;
+  #  see {Frozen Objects}[rdoc-ref:frozen_objects.md].
   def freeze
     super
     @path.freeze
