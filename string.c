@@ -2486,7 +2486,8 @@ rb_str_plus(VALUE str1, VALUE str2)
 {
     VALUE str3;
     rb_encoding *enc;
-    char *ptr1, *ptr2, *ptr3;
+    const char *ptr1, *ptr2;
+    char *ptr3;
     long len1, len2;
     int termlen;
 
@@ -2919,7 +2920,7 @@ rb_str_null_check(VALUE str)
 {
     RUBY_ASSERT(RB_TYPE_P(str, T_STRING));
 
-    char *s;
+    const char *s;
     long len;
     RSTRING_GETMEM(str, s, len);
 
@@ -3128,7 +3129,7 @@ rb_str_sublen(VALUE str, long pos)
     if (single_byte_optimizable(str) || pos < 0)
         return pos;
     else {
-        char *p = RSTRING_PTR(str);
+        const char *p = RSTRING_PTR(str);
         return enc_strlen(p, p + pos, STR_ENC_GET(str), ENC_CODERANGE(str));
     }
 }
@@ -3197,7 +3198,7 @@ rb_str_subpos(VALUE str, long beg, long *lenp)
     long slen = -1L;
     const long blen = RSTRING_LEN(str);
     rb_encoding *enc = STR_ENC_GET(str);
-    char *p, *s = RSTRING_PTR(str), *e = s + blen;
+    const char *p, *s = RSTRING_PTR(str), *e = s + blen;
 
     if (len < 0) return 0;
     if (beg < 0 && -beg < 0) return 0;
@@ -3274,7 +3275,7 @@ rb_str_subpos(VALUE str, long beg, long *lenp)
   end:
     *lenp = len;
     RB_GC_GUARD(str);
-    return p;
+    return (char *)p;
 }
 
 static VALUE str_substr(VALUE str, long beg, long len, int empty);
@@ -3294,7 +3295,7 @@ rb_str_substr_two_fixnums(VALUE str, VALUE beg, VALUE len, int empty)
 static VALUE
 str_substr(VALUE str, long beg, long len, int empty)
 {
-    char *p = rb_str_subpos(str, beg, &len);
+    const char *p = rb_str_subpos(str, beg, &len);
 
     if (!p) return Qnil;
     if (!len && !empty) return Qnil;
@@ -4768,10 +4769,9 @@ memrchr(const char *search_str, int chr, long search_len)
 static long
 str_rindex(VALUE str, VALUE sub, const char *s, rb_encoding *enc)
 {
-    char *hit, *adjusted;
+    const char *hit, *adjusted, *sbeg, *e, *t;
     int c;
     long slen, searchlen;
-    char *sbeg, *e, *t;
 
     sbeg = RSTRING_PTR(str);
     slen = RSTRING_LEN(sub);
@@ -4806,7 +4806,7 @@ static long
 rb_str_rindex(VALUE str, VALUE sub, long pos)
 {
     long len, slen;
-    char *sbeg, *s;
+    const char *sbeg, *s;
     rb_encoding *enc;
     int singlebyte;
 
@@ -4890,7 +4890,7 @@ static long
 rb_str_byterindex(VALUE str, VALUE sub, long pos)
 {
     long len, slen;
-    char *sbeg, *s;
+    const char *sbeg, *s;
     rb_encoding *enc;
 
     enc = rb_enc_check(str, sub);
@@ -8283,7 +8283,7 @@ typedef unsigned char *USTR;
 struct tr {
     int gen;
     unsigned int now, max;
-    char *p, *pend;
+    const char *p, *pend;
 };
 
 static unsigned int
@@ -9013,7 +9013,7 @@ rb_str_count(int argc, VALUE *argv, VALUE str)
     char table[TR_TABLE_SIZE];
     rb_encoding *enc = 0;
     VALUE del = 0, nodel = 0, tstr;
-    char *s, *send;
+    const char *s, *send;
     int i;
     int ascompat;
     size_t n = 0;
@@ -9244,12 +9244,12 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
         str_mod_check(str, str_start, str_len))
 
     beg = 0;
-    char *ptr = RSTRING_PTR(str);
-    char *const str_start = ptr;
+    const char *ptr = RSTRING_PTR(str);
+    const char *const str_start = ptr;
     const long str_len = RSTRING_LEN(str);
-    char *const eptr = str_start + str_len;
+    const char *const eptr = str_start + str_len;
     if (split_type == SPLIT_TYPE_AWK) {
-        char *bptr = ptr;
+        const char *bptr = ptr;
         int skip = 1;
         unsigned int c;
 
@@ -9308,8 +9308,8 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
         }
     }
     else if (split_type == SPLIT_TYPE_STRING) {
-        char *substr_start = ptr;
-        char *sptr = RSTRING_PTR(spat);
+        const char *substr_start = ptr;
+        const char *sptr = RSTRING_PTR(spat);
         long slen = RSTRING_LEN(spat);
 
         if (result) result = rb_ary_new();
@@ -9318,7 +9318,7 @@ rb_str_split_m(int argc, VALUE *argv, VALUE str)
         while (ptr < eptr &&
                (end = rb_memsearch(sptr, slen, ptr, eptr - ptr, enc)) >= 0) {
             /* Check we are at the start of a char */
-            char *t = rb_enc_right_char_head(ptr, ptr + end, eptr, enc);
+            const char *t = rb_enc_right_char_head(ptr, ptr + end, eptr, enc);
             if (t != ptr + end) {
                 ptr = t;
                 continue;
@@ -9457,8 +9457,8 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
 {
     rb_encoding *enc;
     VALUE line, rs, orig = str, opts = Qnil, chomp = Qfalse;
-    const char *ptr, *pend, *subptr, *subend, *rsptr, *hit, *adjusted;
-    long pos, len, rslen;
+    const char *pend, *subptr, *subend, *rsptr, *hit, *adjusted;
+    long pos, rslen;
     int rsnewline = 0;
 
     if (rb_scan_args(argc, argv, "01:", &rs, &opts) == 0)
@@ -9483,9 +9483,9 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
 
     if (!RSTRING_LEN(str)) goto end;
     str = rb_str_new_frozen(str);
-    ptr = subptr = RSTRING_PTR(str);
+    const char *const ptr = subptr = RSTRING_PTR(str);
+    const long len = RSTRING_LEN(str);
     pend = RSTRING_END(str);
-    len = RSTRING_LEN(str);
     StringValue(rs);
     rslen = RSTRING_LEN(rs);
 
@@ -10122,9 +10122,9 @@ chompped_length(VALUE str, VALUE rs)
 {
     rb_encoding *enc;
     int newline;
-    char *pp, *e, *rsptr;
+    const char *pp, *e, *rsptr;
     long rslen;
-    char *const p = RSTRING_PTR(str);
+    const char *const p = RSTRING_PTR(str);
     long len = RSTRING_LEN(str);
 
     if (len == 0) return 0;
@@ -10337,7 +10337,7 @@ static VALUE
 rb_str_lstrip_bang(int argc, VALUE *argv, VALUE str)
 {
     rb_encoding *enc;
-    char *start, *s;
+    char *start;
     long olen, loffset;
 
     str_modify_keep_cr(str);
@@ -10356,8 +10356,7 @@ rb_str_lstrip_bang(int argc, VALUE *argv, VALUE str)
 
     if (loffset > 0) {
         long len = olen-loffset;
-        s = start + loffset;
-        memmove(start, s, len);
+        memmove(start, start + loffset, len);
         STR_SET_LEN(str, len);
         TERM_FILL(start+len, rb_enc_mbminlen(enc));
         return str;
@@ -10396,7 +10395,7 @@ rb_str_lstrip_bang(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_lstrip(int argc, VALUE *argv, VALUE str)
 {
-    char *start;
+    const char *start;
     long len, loffset;
 
     RSTRING_GETMEM(str, start, len);
@@ -10432,7 +10431,7 @@ rstrip_offset(VALUE str, const char *s, const char *e, rb_encoding *enc)
         while (s < t && ((c = *(t-1)) == '\0' || ascii_isspace(c))) t--;
     }
     else {
-        char *tp;
+        const char *tp;
 
         while ((tp = rb_enc_prev_char(s, t, e, enc)) != NULL) {
             unsigned int c = rb_enc_codepoint(tp, e, enc);
@@ -10447,8 +10446,7 @@ static long
 rstrip_offset_table(VALUE str, const char *s, const char *e, rb_encoding *enc,
                     char table[TR_TABLE_SIZE], VALUE del, VALUE nodel)
 {
-    const char *t;
-    char *tp;
+    const char *t, *tp;
 
     rb_str_check_dummy_enc(enc);
     if (rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN) {
@@ -10540,7 +10538,7 @@ static VALUE
 rb_str_rstrip(int argc, VALUE *argv, VALUE str)
 {
     rb_encoding *enc;
-    char *start;
+    const char *start;
     long olen, roffset;
 
     enc = STR_ENC_GET(str);
@@ -10640,7 +10638,7 @@ rb_str_strip_bang(int argc, VALUE *argv, VALUE str)
 static VALUE
 rb_str_strip(int argc, VALUE *argv, VALUE str)
 {
-    char *start;
+    const char *start;
     long olen, loffset, roffset;
     rb_encoding *enc = STR_ENC_GET(str);
 
@@ -10733,7 +10731,8 @@ rb_str_scan(VALUE str, VALUE pat)
     VALUE result;
     long start = 0;
     long last = -1, prev = 0;
-    char *p = RSTRING_PTR(str); long len = RSTRING_LEN(str);
+    const char *p = RSTRING_PTR(str);
+    long len = RSTRING_LEN(str);
 
     pat = get_pat_quoted(pat, 1);
     mustnot_broken(str);
@@ -10981,8 +10980,7 @@ rb_str_crypt(VALUE str, VALUE salt)
 #   define CRYPT_END() rb_nativethread_lock_unlock(&crypt_mutex.lock)
 #endif
     VALUE result;
-    const char *s, *saltp;
-    char *res;
+    const char *s, *saltp, *res;
 #ifdef BROKEN_CRYPT
     char salt_8bit_clean[3];
 #endif
@@ -11027,12 +11025,11 @@ rb_str_crypt(VALUE str, VALUE salt)
     // before allocating a new object (the string to be returned). If we allocate while
     // holding the lock, we could run GC which fires the VM barrier and causes a deadlock
     // if other ractors are waiting on this lock.
-    size_t res_size = strlen(res)+1;
+    size_t res_size = strlen(res);
     tmp_buf = ALLOCA_N(char, res_size); // should be small enough to alloca
     memcpy(tmp_buf, res, res_size);
-    res = tmp_buf;
     CRYPT_END();
-    result = rb_str_new_cstr(res);
+    result = rb_str_new(tmp_buf, res_size);
 #endif
     return result;
 }
