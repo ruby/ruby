@@ -124,7 +124,6 @@ pattern = '*'
 path = '.document'
 File.fnmatch(pattern, path)     # => false
 Pathname(path).fnmatch(pattern) # => false
-
 ```
 
 That matching may be enabled by flag [`File::FNM_DOTMATCH`](#constant-filefnmdotmatch).
