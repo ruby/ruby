@@ -522,7 +522,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                         // not see these origins via RCLASS_ORIGIN(owner), so we find them by
                         // iterating all of owner's classexts and checking their origin_ fields.
                         {
-                            VALUE origins = rb_ary_new();
+                            VALUE origins = rb_ary_hidden_new(1);
                             struct collect_per_box_origins_arg origins_arg = {
                                 .owner = owner,
                                 .klass_housing_cme = klass_housing_cme,
@@ -532,6 +532,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                             for (long i = 0; i < RARRAY_LEN(origins); i++) {
                                 invalidate_callable_method_entry_in_every_m_table(RARRAY_AREF(origins, i), mid, cme);
                             }
+                            RB_GC_GUARD(origins);
                         }
                     }
 
