@@ -110,8 +110,11 @@ File.fnmatch(pattern, 'foo')     # => true
 Pathname('foo').fnmatch(pattern) # => true
 Pathname('').fnmatch(pattern)    # => true
 Pathname('*').fnmatch(pattern)   # => true
+```
 
-# Escaped.
+The pattern may be escaped:
+
+```ruby
 pattern = '\*'
 File.fnmatch(pattern, 'foo')     # => false
 Pathname('foo').fnmatch(pattern) # => false
@@ -157,8 +160,11 @@ pattern = 'foo-?.txt'
 path = 'foo-1.txt'
 File.fnmatch(pattern, path)     # => true
 Pathname(path).fnmatch(pattern) # => true
+```
 
-# Escaped.
+The pattern may be escaped:
+
+```ruby
 pattern = '\?'
 path = 'f'
 File.fnmatch(pattern, path)             # => false
@@ -196,8 +202,11 @@ pattern = '[ruby]'
 path = 'ruby'
 File.fnmatch(pattern, path)     # => false
 Pathname(path).fnmatch(pattern) # => false
+```
 
-# Escaped.
+The pattern may be escaped:
+
+```ruby
 pattern = '\[ruby]'
 path = 'r'
 File.fnmatch(pattern, path)        # => false
@@ -229,8 +238,11 @@ File.fnmatch(pattern, 'abc')     # => false
 Pathname('b').fnmatch(pattern)   # => true
 Pathname('d').fnmatch(pattern)   # => false
 Pathname('abc').fnmatch(pattern) # => false
+```
 
-# Escaped.
+The pattern may be escaped:
+
+```ruby
 pattern = '\[a-c]'
 path = 'b'
 File.fnmatch(pattern, path)       # => false
