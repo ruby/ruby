@@ -59,7 +59,6 @@ pattern = 'abcde'
 path = 'abc'
 File.fnmatch(pattern, path)                        # => false
 Pathname(path).fnmatch(pattern)                    # => false
-
 ```
 
 By default, the matching is case-sensitive:
