@@ -1,7 +1,8 @@
 require_relative '../../../spec_helper'
-require_relative 'shared/constants'
-require_relative 'shared/update'
+require 'digest'
 
 describe "Digest::MD5#update" do
-  it_behaves_like :md5_update, :update
+  it "is an alias of Digest::MD5#<<" do
+    Digest::MD5.instance_method(:update).should == Digest::MD5.instance_method(:<<)
+  end
 end

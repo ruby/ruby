@@ -119,13 +119,3 @@ describe :bigdecimal_modulo, shared: true do
     }.should.raise(TypeError)
   end
 end
-
-describe :bigdecimal_modulo_zerodivisionerror, shared: true do
-  it "raises ZeroDivisionError if other is zero" do
-    bd5667 = BigDecimal("5667.19")
-
-    -> { bd5667.send(@method, 0) }.should.raise(ZeroDivisionError)
-    -> { bd5667.send(@method, BigDecimal("0")) }.should.raise(ZeroDivisionError)
-    -> { @zero.send(@method, @zero) }.should.raise(ZeroDivisionError)
-  end
-end

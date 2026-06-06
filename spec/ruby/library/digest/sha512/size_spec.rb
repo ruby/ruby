@@ -1,7 +1,8 @@
 require_relative '../../../spec_helper'
-require_relative 'shared/constants'
-require_relative 'shared/length'
+require 'digest'
 
 describe "Digest::SHA512#size" do
-  it_behaves_like :sha512_length, :size
+  it "is an alias of Digest::SHA512#length" do
+    Digest::SHA512.instance_method(:size).should == Digest::SHA512.instance_method(:length)
+  end
 end

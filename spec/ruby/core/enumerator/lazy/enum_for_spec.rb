@@ -1,8 +1,8 @@
-# -*- encoding: us-ascii -*-
-
 require_relative '../../../spec_helper'
-require_relative 'shared/to_enum'
 
 describe "Enumerator::Lazy#enum_for" do
-  it_behaves_like :enumerator_lazy_to_enum, :enum_for
+  it "is an alias of Enumerator::Lazy#to_enum" do
+    Enumerator::Lazy.instance_method(:enum_for).should ==
+      Enumerator::Lazy.instance_method(:to_enum)
+  end
 end

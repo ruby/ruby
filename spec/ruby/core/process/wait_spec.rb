@@ -17,19 +17,30 @@ describe "Process.wait" do
     -> { Process.wait }.should.raise(Errno::ECHILD)
   end
 
+  it "returns its child pid" do
+    pid = Process.spawn(ruby_cmd('exit'))
+    Process.wait.should == pid
+  end
+
+  it "returns nil when the process has not yet completed and WNOHANG is specified" do
+    cmd = platform_is(:windows) ? "timeout" : "sleep"
+    pid = spawn("#{cmd} 5")
+    begin
+      Process.wait(pid, Process::WNOHANG).should == nil
+      Process.kill("KILL", pid)
+    ensure
+      Process.wait(pid)
+    end
+  end
+
+  it "sets $? to a Process::Status" do
+    pid = Process.spawn(ruby_cmd('exit'))
+    Process.wait
+    $?.should.is_a?(Process::Status)
+    $?.pid.should == pid
+  end
+
   platform_is_not :windows do
-    it "returns its child pid" do
-      pid = Process.spawn(ruby_cmd('exit'))
-      Process.wait.should == pid
-    end
-
-    it "sets $? to a Process::Status" do
-      pid = Process.spawn(ruby_cmd('exit'))
-      Process.wait
-      $?.should.is_a?(Process::Status)
-      $?.pid.should == pid
-    end
-
     it "waits for any child process if no pid is given" do
       pid = Process.spawn(ruby_cmd('exit'))
       Process.wait.should == pid
@@ -59,8 +70,10 @@ describe "Process.wait" do
       Process.wait(0).should == pid2
       Process.wait.should == pid1
     end
+  end
 
-    # This spec is probably system-dependent.
+  # This spec is probably system-dependent.
+  guard -> { Process.respond_to?(:fork) } do
     it "doesn't block if no child is available when WNOHANG is used" do
       read, write = IO.pipe
       pid = Process.fork do
@@ -81,7 +94,9 @@ describe "Process.wait" do
       Process.kill("TERM", pid)
       Process.wait.should == pid
     end
+  end
 
+  platform_is_not :windows do
     it "always accepts flags=0" do
       pid = Process.spawn(ruby_cmd('exit'))
       Process.wait(-1, 0).should == pid

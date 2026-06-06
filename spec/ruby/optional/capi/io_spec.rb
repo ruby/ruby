@@ -142,7 +142,7 @@ describe "C-API IO function" do
 
   describe "rb_io_check_closed" do
     it "does not raise an exception if the IO is not closed" do
-      # The MRI function is void, so we use should_not raise_error
+      # The MRI function is void, so we use should_not.raise
       -> { @o.rb_io_check_closed(@io) }.should_not.raise
     end
 
@@ -221,7 +221,7 @@ describe "C-API IO function" do
 
   describe "rb_io_check_readable" do
     it "does not raise an exception if the IO is opened for reading" do
-      # The MRI function is void, so we use should_not raise_error
+      # The MRI function is void, so we use should_not.raise
       -> { @o.rb_io_check_readable(@r_io) }.should_not.raise
     end
 
@@ -237,7 +237,7 @@ describe "C-API IO function" do
 
   describe "rb_io_check_writable" do
     it "does not raise an exception if the IO is opened for writing" do
-      # The MRI function is void, so we use should_not raise_error
+      # The MRI function is void, so we use should_not.raise
       -> { @o.rb_io_check_writable(@w_io) }.should_not.raise
     end
 

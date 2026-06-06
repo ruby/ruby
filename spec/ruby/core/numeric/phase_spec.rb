@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/arg'
 
 describe "Numeric#phase" do
-  it_behaves_like :numeric_arg, :phase
+  it "is an alias of Numeric#arg" do
+    Numeric.instance_method(:phase).should == Numeric.instance_method(:arg)
+  end
 end

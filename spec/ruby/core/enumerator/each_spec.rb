@@ -1,6 +1,21 @@
 require_relative '../../spec_helper'
+require_relative 'shared/each'
 
 describe "Enumerator#each" do
+  describe "passing source-yielded arguments to the block" do
+    before :each do
+      @object = -> e { e }
+    end
+    it_behaves_like :enum_each, nil
+  end
+
+  describe "passing source-yielded arguments to the block (lazy)" do
+    before :each do
+      @object = -> e { e.lazy }
+    end
+    it_behaves_like :enum_each, nil
+  end
+
   before :each do
     object_each_with_arguments = Object.new
     def object_each_with_arguments.each_with_arguments(arg, *args)

@@ -1031,4 +1031,27 @@ describe :kernel_sprintf, shared: true do
   it "does not raise error when passed more arguments than needed" do
     sprintf("%s %d %c", "string", 2, "c", []).should == "string 2 c"
   end
+
+  describe "when $VERBOSE is true" do
+    it "warns if too many arguments are passed" do
+      -> {
+        format("test", 1)
+      }.should complain(/too many arguments for format string/, verbose: true)
+    end
+
+    it "does not warns if too many keyword arguments are passed" do
+      -> {
+        format("test %{test}", test: 1, unused: 2)
+      }.should_not complain(verbose: true)
+    end
+
+    ruby_bug "#20593", ""..."3.4" do
+      it "doesn't warns if keyword arguments are passed and none are used" do
+        -> {
+          format("test", test: 1)
+          format("test", {})
+        }.should_not complain(verbose: true)
+      end
+    end
+  end
 end

@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/difference'
 
 describe "Set#difference" do
-  it_behaves_like :set_difference, :difference
+  it "is an alias of Set#-" do
+    Set.instance_method(:difference).should == Set.instance_method(:-)
+  end
 end

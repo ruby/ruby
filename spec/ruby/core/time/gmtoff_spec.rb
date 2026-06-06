@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/gmt_offset'
 
 describe "Time#gmtoff" do
-  it_behaves_like :time_gmt_offset, :gmtoff
+  it "is an alias of Time#utc_offset" do
+    Time.instance_method(:gmtoff).should == Time.instance_method(:utc_offset)
+  end
 end

@@ -1,6 +1,9 @@
 require_relative '../../spec_helper'
+require_relative 'fixtures/common'
 
 describe "Process.waitall" do
+  ProcessSpecs.use_system_ruby(self)
+
   before :all do
     begin
       Process.waitall
@@ -17,23 +20,16 @@ describe "Process.waitall" do
   end
 
   platform_is_not :windows do
-    it "waits for all children" do
+    it "waits for all children and returns an array of pid/status pairs" do
       pids = []
-      pids << Process.fork { Process.exit! 2 }
-      pids << Process.fork { Process.exit! 1 }
-      pids << Process.fork { Process.exit! 0 }
-      Process.waitall
+      pids << Process.spawn(ruby_cmd('exit 2'))
+      pids << Process.spawn(ruby_cmd('exit 1'))
+      pids << Process.spawn(ruby_cmd('exit 0'))
+      a = Process.waitall
       pids.each { |pid|
         -> { Process.kill(0, pid) }.should.raise(Errno::ESRCH)
       }
-    end
 
-    it "returns an array of pid/status pairs" do
-      pids = []
-      pids << Process.fork { Process.exit! 2 }
-      pids << Process.fork { Process.exit! 1 }
-      pids << Process.fork { Process.exit! 0 }
-      a = Process.waitall
       a.should.is_a?(Array)
       a.size.should == 3
       pids.each { |pid|

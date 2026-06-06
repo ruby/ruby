@@ -1,14 +1,22 @@
 require_relative '../../spec_helper'
 
 describe "Set#eql?" do
-  it "returns true when the passed argument is a Set and contains the same elements" do
-    Set[].should.eql?(Set[])
-    Set[1, 2, 3].should.eql?(Set[1, 2, 3])
-    Set[1, 2, 3].should.eql?(Set[3, 2, 1])
-    Set["a", :b, ?c].should.eql?(Set[?c, :b, "a"])
+  ruby_version_is ""..."4.0" do
+    it "returns true when the passed argument is a Set and contains the same elements" do
+      Set[].should.eql?(Set[])
+      Set[1, 2, 3].should.eql?(Set[1, 2, 3])
+      Set[1, 2, 3].should.eql?(Set[3, 2, 1])
+      Set["a", :b, ?c].should.eql?(Set[?c, :b, "a"])
 
-    Set[1, 2, 3].should_not.eql?(Set[1.0, 2, 3])
-    Set[1, 2, 3].should_not.eql?(Set[2, 3])
-    Set[1, 2, 3].should_not.eql?(Set[])
+      Set[1, 2, 3].should_not.eql?(Set[1.0, 2, 3])
+      Set[1, 2, 3].should_not.eql?(Set[2, 3])
+      Set[1, 2, 3].should_not.eql?(Set[])
+    end
+  end
+
+  ruby_version_is "4.0" do
+    it "is an alias of Set#==" do
+      Set.instance_method(:eql?).should == Set.instance_method(:==)
+    end
   end
 end

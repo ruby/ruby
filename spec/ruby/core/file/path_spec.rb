@@ -1,8 +1,9 @@
 require_relative '../../spec_helper'
-require_relative 'shared/path'
 
 describe "File#path" do
-  it_behaves_like :file_path, :path
+  it "is an alias of File#to_path" do
+    File.instance_method(:path).should == File.instance_method(:to_path)
+  end
 end
 
 describe "File.path" do
