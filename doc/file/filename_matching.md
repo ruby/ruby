@@ -93,7 +93,6 @@ pattern ='PROGRAM~1'
 path = 'Program Files'
 File.fnmatch(pattern, path)     # => false
 Pathname(path).fnmatch(pattern) # => false
-
 ```
 
 It may be enabled by flag [`File::FNM_SHORTNAME`](#constant-filefnmshortname).
