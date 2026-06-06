@@ -134,8 +134,7 @@ By default, the asterisk pattern matches across file separators:
 pattern = '*.rb'
 path = 'lib/test.rb'
 File.fnmatch(pattern, path)     # => true
-Pathname(path)
-    .fnmatch(pattern) # => true
+Pathname(path).fnmatch(pattern) # => true
 ```
 
 That matching may be disabled by flag [`File::FNM_PATHNAME`](#constant-filefnmpathname).
