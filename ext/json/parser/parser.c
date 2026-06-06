@@ -1477,258 +1477,291 @@ ALWAYS_INLINE(static) bool json_match_keyword(JSON_ParserState *state, const cha
 // itself is just another frame whose value, once parsed, leaves its phase DONE.
 static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
 {
-    while (true) {
-        json_frame *frame = json_frame_stack_peek(state->frames);
+    json_frame *frame = json_frame_stack_peek(state->frames);
+
+    switch (frame->phase) {
+        case JSON_PHASE_DONE:           goto JSON_PHASE_DONE;
+        case JSON_PHASE_ARRAY_COMMA:    goto JSON_PHASE_ARRAY_COMMA;
+        case JSON_PHASE_OBJECT_COMMA:   goto JSON_PHASE_OBJECT_COMMA;
+        case JSON_PHASE_VALUE:          goto JSON_PHASE_VALUE;
+        case JSON_PHASE_OBJECT_KEY:     goto JSON_PHASE_OBJECT_KEY;
+        case JSON_PHASE_OBJECT_COLON:   goto JSON_PHASE_OBJECT_COLON;
+    }
+    UNREACHABLE_RETURN(Qundef);
+
+    JSON_PHASE_DONE: {
+        // The root document value is parsed; it is the lone survivor on
+        // the rvalue stack.
+        return *rvalue_stack_peek(state->value_stack, 1);
+    }
+
+    JSON_PHASE_VALUE: {
+        json_eat_whitespace(state);
+
+        VALUE value;
+        switch (peek(state)) {
+            case 'n':
+                if (json_match_keyword(state, "null", 0)) {
+                    value = Qnil;
+                    break;
+                }
+                raise_parse_error("unexpected token %s", state);
+
+            case 't':
+                if (json_match_keyword(state, "true", 0)) {
+                    value = Qtrue;
+                    break;
+                }
+                raise_parse_error("unexpected token %s", state);
+
+            case 'f':
+                if (json_match_keyword(state, "false", 1)) {
+                    value = Qfalse;
+                    break;
+                }
+                raise_parse_error("unexpected token %s", state);
+
+            case 'N':
+                // Note: memcmp with a small power of two compile to an integer comparison
+                if (config->allow_nan && json_match_keyword(state, "NaN", 1)) {
+                    value = CNaN;
+                    break;
+                }
+                raise_parse_error("unexpected token %s", state);
+
+            case 'I':
+                if (config->allow_nan && json_match_keyword(state, "Infinity", 0)) {
+                    value = CInfinity;
+                    break;
+                }
+                raise_parse_error("unexpected token %s", state);
+
+            case '-': {
+                state->cursor++;
+                if (config->allow_nan && json_match_keyword(state, "Infinity", 0)) {
+                    value = CMinusInfinity;
+                } else {
+                    value = json_parse_negative_number(state, config);
+                }
+                break;
+            }
+
+            case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
+                value = json_parse_positive_number(state, config);
+                break;
+
+            case '"':
+                // %r{\A"[^"\\\t\n\x00]*(?:\\[bfnrtu\\/"][^"\\]*)*"}
+                value = json_parse_string(state, config, false);
+                break;
+
+            case '[': {
+                state->cursor++;
+                json_eat_whitespace(state);
+
+                if (peek(state) == ']') {
+                    state->cursor++;
+                    value = json_decode_array(state, config, 0);
+                    break;
+                }
+
+                state->current_nesting++;
+                if (RB_UNLIKELY(config->max_nesting && (config->max_nesting < state->current_nesting))) {
+                    rb_raise(eNestingError, "nesting of %d is too deep", state->current_nesting);
+                }
+                state->in_array++;
+
+                // Phase stays VALUE: the next iteration reads the first element.
+                frame = json_frame_stack_push(state, (json_frame){
+                    .type = JSON_FRAME_ARRAY,
+                    .phase = JSON_PHASE_VALUE,
+                    .value_stack_head = state->value_stack->head,
+                });
+                goto JSON_PHASE_VALUE;
+            }
+            case '{': {
+                const char *object_start_cursor = state->cursor;
+
+                state->cursor++;
+                json_eat_whitespace(state);
+
+                if (peek(state) == '}') {
+                    state->cursor++;
+                    value = json_decode_object(state, config, 0);
+                    break;
+                }
+
+                state->current_nesting++;
+                if (RB_UNLIKELY(config->max_nesting && (config->max_nesting < state->current_nesting))) {
+                    rb_raise(eNestingError, "nesting of %d is too deep", state->current_nesting);
+                }
+
+                // Phase KEY: the next iteration reads the first key.
+                frame = json_frame_stack_push(state, (json_frame){
+                    .type = JSON_FRAME_OBJECT,
+                    .phase = JSON_PHASE_OBJECT_KEY,
+                    .value_stack_head = state->value_stack->head,
+                    .start_cursor = object_start_cursor,
+                });
+                goto JSON_PHASE_OBJECT_KEY;
+            }
+
+            case 0:
+                raise_parse_error("unexpected end of input", state);
+
+            default:
+                raise_parse_error("unexpected character: %s", state);
+        }
+
+        json_push_value(state, config, value);
+        json_value_completed(frame);
 
         switch (frame->phase) {
-            case JSON_PHASE_DONE: {
-                // The root document value is parsed; it is the lone survivor on
-                // the rvalue stack.
-                return *rvalue_stack_peek(state->value_stack, 1);
-            }
+            case JSON_PHASE_DONE:           goto JSON_PHASE_DONE;
+            case JSON_PHASE_ARRAY_COMMA:    goto JSON_PHASE_ARRAY_COMMA;
+            case JSON_PHASE_OBJECT_COMMA:   goto JSON_PHASE_OBJECT_COMMA;
+            case JSON_PHASE_VALUE:          goto JSON_PHASE_VALUE;
+            case JSON_PHASE_OBJECT_KEY:     UNREACHABLE_RETURN(Qundef);
+            case JSON_PHASE_OBJECT_COLON:   goto JSON_PHASE_OBJECT_COLON;
+        }
+        UNREACHABLE_RETURN(Qundef);
+    }
 
-            case JSON_PHASE_VALUE: {
-                JSON_PHASE_VALUE:
-                json_eat_whitespace(state);
+    JSON_PHASE_OBJECT_KEY: {
+        JSON_ASSERT(frame->type == JSON_FRAME_OBJECT);
 
-                VALUE value;
-                switch (peek(state)) {
-                    case 'n':
-                        if (json_match_keyword(state, "null", 0)) {
-                            value = Qnil;
-                            break;
-                        }
+        json_eat_whitespace(state);
 
-                        raise_parse_error("unexpected token %s", state);
-                    case 't':
-                        if (json_match_keyword(state, "true", 0)) {
-                            value = Qtrue;
-                            break;
-                        }
-
-                        raise_parse_error("unexpected token %s", state);
-                    case 'f':
-                        if (json_match_keyword(state, "false", 1)) {
-                            value = Qfalse;
-                            break;
-                        }
-
-                        raise_parse_error("unexpected token %s", state);
-                    case 'N':
-                        // Note: memcmp with a small power of two compile to an integer comparison
-                        if (config->allow_nan && json_match_keyword(state, "NaN", 1)) {
-                            value = CNaN;
-                            break;
-                        }
-
-                        raise_parse_error("unexpected token %s", state);
-                    case 'I':
-                        if (config->allow_nan && json_match_keyword(state, "Infinity", 0)) {
-                            value = CInfinity;
-                            break;
-                        }
-
-                        raise_parse_error("unexpected token %s", state);
-                    case '-': {
-                        state->cursor++;
-                        if (config->allow_nan && json_match_keyword(state, "Infinity", 0)) {
-                            value = CMinusInfinity;
-                        } else {
-                            value = json_parse_negative_number(state, config);
-                        }
-                        break;
-                    }
-                    case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
-                        value = json_parse_positive_number(state, config);
-                        break;
-                    case '"':
-                        // %r{\A"[^"\\\t\n\x00]*(?:\\[bfnrtu\\/"][^"\\]*)*"}
-                        value = json_parse_string(state, config, false);
-                        break;
-                    case '[': {
-                        state->cursor++;
-                        json_eat_whitespace(state);
-
-                        if (peek(state) == ']') {
-                            state->cursor++;
-                            value = json_decode_array(state, config, 0);
-                            break;
-                        }
-
-                        state->current_nesting++;
-                        if (RB_UNLIKELY(config->max_nesting && (config->max_nesting < state->current_nesting))) {
-                            rb_raise(eNestingError, "nesting of %d is too deep", state->current_nesting);
-                        }
-                        state->in_array++;
-
-                        // Phase stays VALUE: the next iteration reads the first element.
-                        frame = json_frame_stack_push(state, (json_frame){
-                            .type = JSON_FRAME_ARRAY,
-                            .phase = JSON_PHASE_VALUE,
-                            .value_stack_head = state->value_stack->head,
-                        });
-                        goto JSON_PHASE_VALUE;
-                        break;
-                    }
-                    case '{': {
-                        const char *object_start_cursor = state->cursor;
-
-                        state->cursor++;
-                        json_eat_whitespace(state);
-
-                        if (peek(state) == '}') {
-                            state->cursor++;
-                            value = json_decode_object(state, config, 0);
-                            break;
-                        }
-
-                        state->current_nesting++;
-                        if (RB_UNLIKELY(config->max_nesting && (config->max_nesting < state->current_nesting))) {
-                            rb_raise(eNestingError, "nesting of %d is too deep", state->current_nesting);
-                        }
-
-                        // Phase KEY: the next iteration reads the first key.
-                        frame = json_frame_stack_push(state, (json_frame){
-                            .type = JSON_FRAME_OBJECT,
-                            .phase = JSON_PHASE_OBJECT_KEY,
-                            .value_stack_head = state->value_stack->head,
-                            .start_cursor = object_start_cursor,
-                        });
-                        goto JSON_PHASE_OBJECT_KEY;
-                        break;
-                    }
-
-                    case 0:
-                        raise_parse_error("unexpected end of input", state);
-
-                    default:
-                        raise_parse_error("unexpected character: %s", state);
-                }
-
-                json_push_value(state, config, value);
-                json_value_completed(frame);
-                break;
-            }
-
-            case JSON_PHASE_OBJECT_KEY: {
-                JSON_PHASE_OBJECT_KEY:
-                JSON_ASSERT(frame->type == JSON_FRAME_OBJECT);
-
-                json_eat_whitespace(state);
-
-                if (RB_LIKELY(peek(state) == '"')) {
-                    json_push_value(state, config, json_parse_string(state, config, true));
-                    frame->phase = JSON_PHASE_OBJECT_COLON;
-                    goto JSON_PHASE_OBJECT_COLON;
-                } else {
-                    // The message differs for the first key vs. a key after a
-                    // ',': the first is the only one reached with nothing pushed
-                    // for this object yet.
-                    if (json_frame_entry_count(frame, state->value_stack) == 0) {
-                        raise_parse_error("expected object key, got %s", state);
-                    } else {
-                        raise_parse_error("expected object key, got: %s", state);
-                    }
-                }
-                break;
-            }
-
-            case JSON_PHASE_OBJECT_COLON: {
-                JSON_PHASE_OBJECT_COLON:
-                JSON_ASSERT(frame->type == JSON_FRAME_OBJECT);
-
-                json_eat_whitespace(state);
-
-                if (RB_LIKELY(peek(state) == ':')) {
-                    state->cursor++;
-                    frame->phase = JSON_PHASE_VALUE;
-                    goto JSON_PHASE_VALUE;
-                } else {
-                    // First colon (only the first pair's key is pushed, nothing
-                    // else) vs. a later one.
-                    if (json_frame_entry_count(frame, state->value_stack) == 1) {
-                        raise_parse_error("expected ':' after object key", state);
-                    } else {
-                        raise_parse_error("expected ':' after object key, got: %s", state);
-                    }
-                }
-                break;
-            }
-
-            case JSON_PHASE_ARRAY_COMMA: {
-                JSON_ASSERT(frame->type == JSON_FRAME_ARRAY);
-
-                json_eat_whitespace(state);
-
-                const char next_char = peek(state);
-
-                if (RB_LIKELY(next_char == ',')) {
-                    state->cursor++;
-                    if (config->allow_trailing_comma) {
-                        json_eat_whitespace(state);
-                        if (peek(state) == ']') {
-                            // Trailing comma: stay in COMMA to close on the next iteration.
-                            break;
-                        }
-                    }
-                    frame->phase = JSON_PHASE_VALUE;
-                    goto JSON_PHASE_VALUE;
-                } else if (next_char == ']') {
-                    state->cursor++;
-                    long count = json_frame_entry_count(frame, state->value_stack);
-                    state->current_nesting--;
-                    state->in_array--;
-                    json_frame_stack_pop(state->frames);
-                    json_push_value(state, config, json_decode_array(state, config, count));
-                    json_value_completed(json_frame_stack_peek(state->frames));
-                } else {
-                    raise_parse_error("expected ',' or ']' after array value", state);
-                }
-                break;
-            }
-
-            case JSON_PHASE_OBJECT_COMMA: {
-                JSON_ASSERT(frame->type == JSON_FRAME_OBJECT);
-
-                json_eat_whitespace(state);
-                const char next_char = peek(state);
-
-                if (RB_LIKELY(next_char == ',')) {
-                    state->cursor++;
-                    json_eat_whitespace(state);
-
-                    if (config->allow_trailing_comma) {
-                        if (peek(state) == '}') {
-                            // Trailing comma: stay in COMMA to close on the next iteration.
-                            break;
-                        }
-                    }
-
-                    frame->phase = JSON_PHASE_OBJECT_KEY;
-                    goto JSON_PHASE_OBJECT_KEY;
-
-                    break;
-                } else if (next_char == '}') {
-                    state->cursor++;
-                    state->current_nesting--;
-                    size_t count = json_frame_entry_count(frame, state->value_stack);
-
-                    // Temporary rewind cursor in case an error is raised
-                    const char *final_cursor = state->cursor;
-                    state->cursor = frame->start_cursor;
-                    VALUE object = json_decode_object(state, config, count);
-                    state->cursor = final_cursor;
-
-                    json_frame_stack_pop(state->frames);
-                    json_push_value(state, config, object);
-                    json_value_completed(json_frame_stack_peek(state->frames));
-                    break;
-                } else {
-                    raise_parse_error("expected ',' or '}' after object value, got: %s", state);
-                }
+        if (RB_LIKELY(peek(state) == '"')) {
+            json_push_value(state, config, json_parse_string(state, config, true));
+            frame->phase = JSON_PHASE_OBJECT_COLON;
+            goto JSON_PHASE_OBJECT_COLON;
+        } else {
+            // The message differs for the first key vs. a key after a
+            // ',': the first is the only one reached with nothing pushed
+            // for this object yet.
+            if (json_frame_entry_count(frame, state->value_stack) == 0) {
+                raise_parse_error("expected object key, got %s", state);
+            } else {
+                raise_parse_error("expected object key, got: %s", state);
             }
         }
+        UNREACHABLE_RETURN(Qundef);
     }
+
+    JSON_PHASE_OBJECT_COLON: {
+        JSON_ASSERT(frame->type == JSON_FRAME_OBJECT);
+
+        json_eat_whitespace(state);
+
+        if (RB_LIKELY(peek(state) == ':')) {
+            state->cursor++;
+            frame->phase = JSON_PHASE_VALUE;
+            goto JSON_PHASE_VALUE;
+        } else {
+            // First colon (only the first pair's key is pushed, nothing
+            // else) vs. a later one.
+            if (json_frame_entry_count(frame, state->value_stack) == 1) {
+                raise_parse_error("expected ':' after object key", state);
+            } else {
+                raise_parse_error("expected ':' after object key, got: %s", state);
+            }
+        }
+        UNREACHABLE_RETURN(Qundef);
+    }
+
+    JSON_PHASE_ARRAY_COMMA: {
+        JSON_ASSERT(frame->type == JSON_FRAME_ARRAY);
+
+        json_eat_whitespace(state);
+
+        const char next_char = peek(state);
+
+        if (RB_LIKELY(next_char == ',')) {
+            state->cursor++;
+            if (config->allow_trailing_comma) {
+                json_eat_whitespace(state);
+                if (peek(state) == ']') {
+                    // Trailing comma: stay in COMMA to close on the next iteration.
+                    goto JSON_PHASE_ARRAY_COMMA;
+                }
+            }
+            frame->phase = JSON_PHASE_VALUE;
+            goto JSON_PHASE_VALUE;
+        } else if (next_char == ']') {
+            state->cursor++;
+            long count = json_frame_entry_count(frame, state->value_stack);
+            state->current_nesting--;
+            state->in_array--;
+            json_frame_stack_pop(state->frames);
+            json_push_value(state, config, json_decode_array(state, config, count));
+            frame = json_frame_stack_peek(state->frames);
+            json_value_completed(frame);
+
+            switch (frame->phase) {
+                case JSON_PHASE_DONE:           goto JSON_PHASE_DONE;
+                case JSON_PHASE_ARRAY_COMMA:    goto JSON_PHASE_ARRAY_COMMA;
+                case JSON_PHASE_OBJECT_COMMA:   goto JSON_PHASE_OBJECT_COMMA;
+                case JSON_PHASE_VALUE:          goto JSON_PHASE_VALUE;
+                case JSON_PHASE_OBJECT_KEY:     UNREACHABLE_RETURN(Qundef);
+                case JSON_PHASE_OBJECT_COLON:   goto JSON_PHASE_OBJECT_COLON;
+            }
+        } else {
+            raise_parse_error("expected ',' or ']' after array value", state);
+        }
+        UNREACHABLE_RETURN(Qundef);
+    }
+
+    JSON_PHASE_OBJECT_COMMA: {
+        JSON_ASSERT(frame->type == JSON_FRAME_OBJECT);
+
+        json_eat_whitespace(state);
+        const char next_char = peek(state);
+
+        if (RB_LIKELY(next_char == ',')) {
+            state->cursor++;
+
+            if (config->allow_trailing_comma) {
+                json_eat_whitespace(state);
+                if (peek(state) == '}') {
+                    // Trailing comma: stay in COMMA to close on the next iteration.
+                    goto JSON_PHASE_OBJECT_COMMA;
+                }
+            }
+
+            frame->phase = JSON_PHASE_OBJECT_KEY;
+            goto JSON_PHASE_OBJECT_KEY;
+        } else if (next_char == '}') {
+            state->cursor++;
+            state->current_nesting--;
+            size_t count = json_frame_entry_count(frame, state->value_stack);
+
+            // Temporary rewind cursor in case an error is raised
+            const char *final_cursor = state->cursor;
+            state->cursor = frame->start_cursor;
+            VALUE object = json_decode_object(state, config, count);
+            state->cursor = final_cursor;
+
+            json_push_value(state, config, object);
+            json_frame_stack_pop(state->frames);
+            frame = json_frame_stack_peek(state->frames);
+            json_value_completed(frame);
+
+            switch (frame->phase) {
+                case JSON_PHASE_DONE:           goto JSON_PHASE_DONE;
+                case JSON_PHASE_ARRAY_COMMA:    goto JSON_PHASE_ARRAY_COMMA;
+                case JSON_PHASE_OBJECT_COMMA:   goto JSON_PHASE_OBJECT_COMMA;
+                case JSON_PHASE_VALUE:          goto JSON_PHASE_VALUE;
+                case JSON_PHASE_OBJECT_KEY:     UNREACHABLE_RETURN(Qundef);
+                case JSON_PHASE_OBJECT_COLON:   goto JSON_PHASE_OBJECT_COLON;
+            }
+        } else {
+            raise_parse_error("expected ',' or '}' after object value, got: %s", state);
+        }
+        UNREACHABLE_RETURN(Qundef);
+    }
+
+    UNREACHABLE_RETURN(Qundef);
 }
 
 static void json_ensure_eof(JSON_ParserState *state)
