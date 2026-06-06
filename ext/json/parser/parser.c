@@ -294,6 +294,8 @@ static const rb_data_type_t JSON_Parser_rvalue_stack_type = {
         .dsize = rvalue_stack_memsize,
         .dcompact = rvalue_stack_compact,
     },
+    // We deliberately don't declare rvalue_stack as RUBY_TYPED_WB_PROTECTED
+    // because it churns a lot of values so trigering write barriers every time is very costly.
     .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE,
 };
 
