@@ -19,7 +19,7 @@ RSpec.describe RaiseErrorMatcher do
     ensure_mspec_method(-> {}.method(:should))
 
     run = false
-    -> { raise ExpectedException }.should PublicMSpecMatchers.raise_error { |error|
+    -> { raise ExpectedException }.should.raise { |error|
       expect(error.class).to eq(ExpectedException)
       run = true
     }
@@ -30,7 +30,7 @@ RSpec.describe RaiseErrorMatcher do
     ensure_mspec_method(-> {}.method(:should))
 
     run = false
-    -> { raise ExpectedException }.should PublicMSpecMatchers.raise_error do |error|
+    -> { raise ExpectedException }.should.raise do |error|
       expect(error.class).to eq(ExpectedException)
       run = true
     end

@@ -15,6 +15,7 @@ end
 
 module MSpecMatchers
   private def be_empty
+    MSpec.deprecate __method__, '.should.empty?'
     BeEmptyMatcher.new
   end
 end

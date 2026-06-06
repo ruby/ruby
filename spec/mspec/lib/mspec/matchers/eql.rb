@@ -21,6 +21,7 @@ end
 
 module MSpecMatchers
   private def eql(expected)
+    MSpec.deprecate __method__, '.should.eql?'
     EqlMatcher.new(expected)
   end
 end
