@@ -80,6 +80,7 @@ array.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 array.$(OBJEXT): $(top_srcdir)/internal/serial.h
 array.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 array.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+array.$(OBJEXT): $(top_srcdir)/internal/string.h
 array.$(OBJEXT): $(top_srcdir)/internal/struct.h
 array.$(OBJEXT): $(top_srcdir)/internal/variable.h
 array.$(OBJEXT): $(top_srcdir)/internal/vm.h
@@ -102,6 +103,7 @@ array.$(OBJEXT): {$(VPATH)}config.h
 array.$(OBJEXT): {$(VPATH)}constant.h
 array.$(OBJEXT): {$(VPATH)}debug_counter.h
 array.$(OBJEXT): {$(VPATH)}defines.h
+array.$(OBJEXT): {$(VPATH)}encindex.h
 array.$(OBJEXT): {$(VPATH)}encoding.h
 array.$(OBJEXT): {$(VPATH)}id.h
 array.$(OBJEXT): {$(VPATH)}id_table.h
