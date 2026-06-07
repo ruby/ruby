@@ -489,7 +489,7 @@ class JSONParserTest < Test::Unit::TestCase
     JSON
     assert_equal(
       { "key1" => "value1", "key2" => "value2", "key3" => "value3" },
-      parse(json))
+      parse(json, allow_comments: true))
     json = <<~JSON
       {
         "key1":"value1"  /* multi line
@@ -498,7 +498,7 @@ class JSONParserTest < Test::Unit::TestCase
                           *  comment */
       }
     JSON
-    assert_raise(ParserError) { parse(json) }
+    assert_raise(ParserError) { parse(json, allow_comments: true) }
     json = <<~JSON
       {
         "key1":"value1"  /* multi line
@@ -506,7 +506,7 @@ class JSONParserTest < Test::Unit::TestCase
                           /* legal nested multi line comment start sequence */
       }
     JSON
-    assert_equal({ "key1" => "value1" }, parse(json))
+    assert_equal({ "key1" => "value1" }, parse(json, allow_comments: true))
     json = <<~JSON
       {
         "key1":"value1"  /* multi line
@@ -515,18 +515,28 @@ class JSONParserTest < Test::Unit::TestCase
                          and again, throw an Error */
       }
     JSON
-    assert_raise(ParserError) { parse(json) }
+    assert_raise(ParserError) { parse(json, allow_comments: true) }
     json = <<~JSON
       {
         "key1":"value1"  /*/*/
       }
     JSON
-    assert_equal({ "key1" => "value1" }, parse(json))
-    assert_equal({}, parse('{} /**/'))
-    assert_raise(ParserError) { parse('{} /* comment not closed') }
-    assert_raise(ParserError) { parse('{} /*/') }
-    assert_raise(ParserError) { parse('{} /x wrong comment') }
-    assert_raise(ParserError) { parse('{} /') }
+    assert_equal({ "key1" => "value1" }, parse(json, allow_comments: true))
+    assert_equal({}, parse('{} /**/', allow_comments: true))
+    assert_raise(ParserError) { parse('{} /* comment not closed', allow_comments: true) }
+    assert_raise(ParserError) { parse('{} /*/', allow_comments: true) }
+    assert_raise(ParserError) { parse('{} /x wrong comment', allow_comments: true) }
+    assert_raise(ParserError) { parse('{} /', allow_comments: true) }
+  end
+
+  def test_parse_comments_deprecation
+    assert_equal({}, parse('/**/ {}', allow_comments: true))
+    assert_raise(ParserError) { parse('/**/ {}', allow_comments: false) }
+    if RUBY_ENGINE == 'ruby'
+      assert_deprecated_warning(/Encountered comment in JSON/) do
+        parse('/**/ {}')
+      end
+    end
   end
 
   def test_nesting

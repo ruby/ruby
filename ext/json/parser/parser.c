@@ -7,9 +7,9 @@ static VALUE CNaN, CInfinity, CMinusInfinity;
 
 static ID i_new, i_try_convert, i_uminus, i_encode;
 
-static VALUE sym_max_nesting, sym_allow_nan, sym_allow_trailing_comma, sym_allow_control_characters,
-             sym_allow_invalid_escape, sym_symbolize_names, sym_freeze, sym_decimal_class, sym_on_load,
-             sym_allow_duplicate_key;
+static VALUE sym_max_nesting, sym_allow_nan, sym_allow_trailing_comma, sym_allow_comments,
+             sym_allow_control_characters, sym_allow_invalid_escape, sym_symbolize_names,
+             sym_freeze, sym_decimal_class, sym_on_load, sym_allow_duplicate_key;
 
 static int binary_encindex;
 static int utf8_encindex;
@@ -382,7 +382,7 @@ typedef struct json_frame_stack_struct {
     json_frame *ptr;
 } json_frame_stack;
 
-enum duplicate_key_action {
+enum deprecatable_action {
     JSON_DEPRECATED = 0,
     JSON_IGNORE,
     JSON_RAISE,
@@ -392,7 +392,8 @@ typedef struct JSON_ParserStruct {
     VALUE on_load_proc;
     VALUE decimal_class;
     ID decimal_method_id;
-    enum duplicate_key_action on_duplicate_key;
+    enum deprecatable_action on_duplicate_key;
+    enum deprecatable_action on_comment;
     int max_nesting;
     bool allow_nan;
     bool allow_trailing_comma;
@@ -590,6 +591,8 @@ static void cursor_position(JSON_ParserState *state, long *line_out, long *colum
     *column_out = column;
 }
 
+static const unsigned int MAX_DEPRECATIONS = 5;
+
 static void emit_parse_warning(const char *message, JSON_ParserState *state)
 {
     long line, column;
@@ -707,9 +710,14 @@ static uint32_t unescape_unicode(JSON_ParserState *state, const char *sp, const 
 
 static const rb_data_type_t JSON_ParserConfig_type;
 
+const char *COMMENT_DEPRECATION_MESSAGE = "Encountered comment in JSON. This will raise an error in json 3.0 unless enabled via `allow_comments: true`";
 NOINLINE(static) void
-json_eat_comments(JSON_ParserState *state)
+json_eat_comments(JSON_ParserState *state, JSON_ParserConfig *config)
 {
+    if (config->on_comment == JSON_RAISE) {
+        raise_parse_error("unexpected token %s", state);
+    }
+
     const char *start = state->cursor;
     state->cursor++;
 
@@ -744,10 +752,15 @@ json_eat_comments(JSON_ParserState *state)
             raise_parse_error_at("unexpected token %s", state, start);
             break;
     }
+
+    if (config->on_comment == JSON_DEPRECATED && state->emitted_deprecations < MAX_DEPRECATIONS) {
+        state->emitted_deprecations++;
+        emit_parse_warning(COMMENT_DEPRECATION_MESSAGE, state);
+    }
 }
 
 ALWAYS_INLINE(static) void
-json_eat_whitespace(JSON_ParserState *state)
+json_eat_whitespace(JSON_ParserState *state, JSON_ParserConfig *config)
 {
     while (true) {
         switch (peek(state)) {
@@ -778,7 +791,7 @@ json_eat_whitespace(JSON_ParserState *state)
                 state->cursor++;
                 break;
             case '/':
-                json_eat_comments(state);
+                json_eat_comments(state, config);
                 break;
 
             default:
@@ -1127,9 +1140,9 @@ NOINLINE(static) void json_on_duplicate_key(JSON_ParserState *state, JSON_Parser
 
         case JSON_DEPRECATED:
             // Only emit the first few deprecations to avoid spamming.
-            if (state->emitted_deprecations < 5) {
-                emit_duplicate_key_warning(state, json_find_duplicated_key(count, pairs));
+            if (state->emitted_deprecations < MAX_DEPRECATIONS) {
                 state->emitted_deprecations++;
+                emit_duplicate_key_warning(state, json_find_duplicated_key(count, pairs));
             }
             return;
 
@@ -1498,7 +1511,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
     }
 
     JSON_PHASE_VALUE: {
-        json_eat_whitespace(state);
+        json_eat_whitespace(state, config);
 
         VALUE value;
         switch (peek(state)) {
@@ -1559,7 +1572,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
 
             case '[': {
                 state->cursor++;
-                json_eat_whitespace(state);
+                json_eat_whitespace(state, config);
 
                 if (peek(state) == ']') {
                     state->cursor++;
@@ -1585,7 +1598,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                 const char *object_start_cursor = state->cursor;
 
                 state->cursor++;
-                json_eat_whitespace(state);
+                json_eat_whitespace(state, config);
 
                 if (peek(state) == '}') {
                     state->cursor++;
@@ -1632,7 +1645,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
     JSON_PHASE_OBJECT_KEY: {
         JSON_ASSERT(frame->type == JSON_FRAME_OBJECT);
 
-        json_eat_whitespace(state);
+        json_eat_whitespace(state, config);
 
         if (RB_LIKELY(peek(state) == '"')) {
             json_push_value(state, config, json_parse_string(state, config, true));
@@ -1654,7 +1667,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
     JSON_PHASE_OBJECT_COLON: {
         JSON_ASSERT(frame->type == JSON_FRAME_OBJECT);
 
-        json_eat_whitespace(state);
+        json_eat_whitespace(state, config);
 
         if (RB_LIKELY(peek(state) == ':')) {
             state->cursor++;
@@ -1675,14 +1688,14 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
     JSON_PHASE_ARRAY_COMMA: {
         JSON_ASSERT(frame->type == JSON_FRAME_ARRAY);
 
-        json_eat_whitespace(state);
+        json_eat_whitespace(state, config);
 
         const char next_char = peek(state);
 
         if (RB_LIKELY(next_char == ',')) {
             state->cursor++;
             if (config->allow_trailing_comma) {
-                json_eat_whitespace(state);
+                json_eat_whitespace(state, config);
                 if (peek(state) == ']') {
                     // Trailing comma: stay in COMMA to close on the next iteration.
                     goto JSON_PHASE_ARRAY_COMMA;
@@ -1717,14 +1730,14 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
     JSON_PHASE_OBJECT_COMMA: {
         JSON_ASSERT(frame->type == JSON_FRAME_OBJECT);
 
-        json_eat_whitespace(state);
+        json_eat_whitespace(state, config);
         const char next_char = peek(state);
 
         if (RB_LIKELY(next_char == ',')) {
             state->cursor++;
 
             if (config->allow_trailing_comma) {
-                json_eat_whitespace(state);
+                json_eat_whitespace(state, config);
                 if (peek(state) == '}') {
                     // Trailing comma: stay in COMMA to close on the next iteration.
                     goto JSON_PHASE_OBJECT_COMMA;
@@ -1766,9 +1779,9 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
     JSON_UNREACHABLE_RETURN(Qundef);
 }
 
-static void json_ensure_eof(JSON_ParserState *state)
+static void json_ensure_eof(JSON_ParserState *state, JSON_ParserConfig *config)
 {
-    json_eat_whitespace(state);
+    json_eat_whitespace(state, config);
     if (!eos(state)) {
         raise_parse_error("unexpected token at end of stream %s", state);
     }
@@ -1825,6 +1838,7 @@ static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
          if (key == sym_max_nesting)                { config->max_nesting = RTEST(val) ? FIX2INT(val) : 0; }
     else if (key == sym_allow_nan)                  { config->allow_nan = RTEST(val); }
     else if (key == sym_allow_trailing_comma)       { config->allow_trailing_comma = RTEST(val); }
+    else if (key == sym_allow_comments)             { config->on_comment = RTEST(val) ? JSON_IGNORE : JSON_RAISE; }
     else if (key == sym_allow_control_characters)   { config->allow_control_characters = RTEST(val); }
     else if (key == sym_allow_invalid_escape)       { config->allow_invalid_escape = RTEST(val); }
     else if (key == sym_symbolize_names)            { config->symbolize_names = RTEST(val); }
@@ -1977,7 +1991,7 @@ static VALUE cParser_parse(JSON_ParserConfig *config, VALUE src)
     RB_GC_GUARD(value_stack_handle);
     RB_GC_GUARD(frame_stack_handle);
     RB_GC_GUARD(Vsource);
-    json_ensure_eof(state);
+    json_ensure_eof(state, config);
 
     return result;
 }
@@ -2079,6 +2093,7 @@ void Init_parser(void)
     sym_max_nesting = ID2SYM(rb_intern("max_nesting"));
     sym_allow_nan = ID2SYM(rb_intern("allow_nan"));
     sym_allow_trailing_comma = ID2SYM(rb_intern("allow_trailing_comma"));
+    sym_allow_comments = ID2SYM(rb_intern("allow_comments"));
     sym_allow_control_characters = ID2SYM(rb_intern("allow_control_characters"));
     sym_allow_invalid_escape = ID2SYM(rb_intern("allow_invalid_escape"));
     sym_symbolize_names = ID2SYM(rb_intern("symbolize_names"));
