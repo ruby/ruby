@@ -2,6 +2,8 @@
 
 #![allow(clippy::let_and_return)]
 
+mod gc_fastpath;
+
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::ffi::{c_int, c_long, c_void};
@@ -1965,7 +1967,7 @@ fn gen_array_dup(
 
 /// Compile a new array instruction
 fn gen_new_array(
-    jit: &JITState,
+    jit: &mut JITState,
     asm: &mut Assembler,
     elements: Vec<Opnd>,
     state: &FrameState,
@@ -1974,12 +1976,19 @@ fn gen_new_array(
 
     let num: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
 
-    if elements.is_empty() {
-        asm_ccall!(asm, rb_ec_ary_new_from_values, EC, 0i64.into(), Opnd::UImm(0))
-    } else {
+    if !elements.is_empty() {
         let argv = gen_push_opnds(jit, asm, &elements);
-        asm_ccall!(asm, rb_ec_ary_new_from_values, EC, num.into(), argv)
+        return asm_ccall!(asm, rb_ec_ary_new_from_values, EC, num.into(), argv);
     }
+
+    let alloc_size = std::mem::size_of::<RArray>();
+
+    let flags = (RUBY_T_ARRAY as u64) | (RARRAY_EMBED_FLAG as u64);
+    let klass = unsafe { rb_cArray };
+
+    gc_fastpath::gc_fast_path_new_obj(jit, asm, alloc_size, flags, klass, |asm| {
+        asm_ccall!(asm, rb_ec_ary_new_from_values, EC, 0i64.into(), Opnd::UImm(0))
+    })
 }
 
 /// Adjust potentially-negative index by the given length, returning the adjusted index. If still negative,

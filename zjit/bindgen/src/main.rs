@@ -53,6 +53,10 @@ fn main() {
         .header(src_root.join(c_file).to_str().unwrap())
         .header(src_root.join("jit.c").to_str().unwrap())
 
+        .header(src_root.join("gc/gc_impl.h").to_str().unwrap())
+        .header(src_root.join("gc/default/zjit_fastpath.h").to_str().unwrap())
+        .header(src_root.join("gc/mmtk/zjit_fastpath.h").to_str().unwrap())
+
         // Don't want to copy over C comment
         .generate_comments(false)
 
@@ -85,6 +89,15 @@ fn main() {
 
         // This struct is public to Ruby C extensions
         .allowlist_type("RBasic")
+
+        .allowlist_type("RArray")
+        .allowlist_type("gc_bump_pointer_heap")
+        .allowlist_type("rb_gc_zjit_fastpath_kind")
+        .allowlist_type("rb_gc_zjit_fastpath")
+        .allowlist_type("rb_gc_zjit_fastpath_data")
+        .allowlist_type("rb_gc_zjit_default_new_obj_fastpath")
+        .allowlist_type("rb_gc_zjit_mmtk_new_obj_fastpath")
+        .allowlist_var("RB_GC_ZJIT_FASTPATH_.*")
 
         .allowlist_type("ruby_rstring_flags")
 

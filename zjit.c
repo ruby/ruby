@@ -23,6 +23,7 @@
 #include "iseq.h"
 #include "ruby/debug.h"
 #include "internal/cont.h"
+#include "ractor_core.h"
 
 // This build config impacts the pointer tagging scheme and we only want to
 // support one scheme for simplicity.
@@ -30,7 +31,8 @@ STATIC_ASSERT(pointer_tagging_scheme, USE_FLONUM);
 
 enum zjit_struct_offsets {
     ISEQ_BODY_OFFSET_PARAM = offsetof(struct rb_iseq_constant_body, param),
-    ISEQ_BODY_OFFSET_OUTER_VARIABLES = offsetof(struct rb_iseq_constant_body, outer_variables)
+    ISEQ_BODY_OFFSET_OUTER_VARIABLES = offsetof(struct rb_iseq_constant_body, outer_variables),
+    RUBY_OFFSET_THREAD_RACTOR = offsetof(rb_thread_t, ractor),
 };
 
 // Special JITFrame used by all C method calls. We don't control the native
@@ -164,6 +166,12 @@ bool
 rb_zjit_singleton_class_p(VALUE klass)
 {
     return RCLASS_SINGLETON_P(klass);
+}
+
+size_t
+rb_zjit_offset_ractor_newobj_cache(void)
+{
+    return offsetof(rb_ractor_t, newobj_cache);
 }
 
 VALUE

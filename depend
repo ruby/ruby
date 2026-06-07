@@ -5936,6 +5936,7 @@ gc.$(OBJEXT): $(hdrdir)/ruby.h
 gc.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 gc.$(OBJEXT): $(hdrdir)/ruby/version.h
 gc.$(OBJEXT): $(top_srcdir)/gc/default/default.c
+gc.$(OBJEXT): $(top_srcdir)/gc/default/zjit_fastpath.h
 gc.$(OBJEXT): $(top_srcdir)/gc/gc.h
 gc.$(OBJEXT): $(top_srcdir)/gc/gc_impl.h
 gc.$(OBJEXT): $(top_srcdir)/internal/array.h
@@ -21717,6 +21718,8 @@ zjit.$(OBJEXT): {$(VPATH)}prism_xallocator.h
 zjit.$(OBJEXT): {$(VPATH)}probes.dmyh
 zjit.$(OBJEXT): {$(VPATH)}probes.h
 zjit.$(OBJEXT): {$(VPATH)}probes_helper.h
+zjit.$(OBJEXT): {$(VPATH)}ractor.h
+zjit.$(OBJEXT): {$(VPATH)}ractor_core.h
 zjit.$(OBJEXT): {$(VPATH)}ruby_assert.h
 zjit.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 zjit.$(OBJEXT): {$(VPATH)}rubyparser.h

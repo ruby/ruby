@@ -10,6 +10,33 @@
  */
 #include "ruby/ruby.h"
 
+#include <stddef.h>
+#include <stdint.h>
+
+struct gc_bump_pointer_heap {
+    uintptr_t cursor;
+    uintptr_t cursor_end;
+    uintptr_t jit_cursor_end;
+    uintptr_t region_start;
+    size_t    slot_size;
+};
+
+enum rb_gc_zjit_fastpath_kind {
+    RB_GC_ZJIT_FASTPATH_DEFAULT = 1,
+    RB_GC_ZJIT_FASTPATH_MMTK = 2,
+};
+
+#define RB_GC_ZJIT_FASTPATH_DATA_WORDS 19
+
+union rb_gc_zjit_fastpath_data {
+    uintptr_t words[RB_GC_ZJIT_FASTPATH_DATA_WORDS];
+};
+
+struct rb_gc_zjit_fastpath {
+    enum rb_gc_zjit_fastpath_kind kind;
+    union rb_gc_zjit_fastpath_data data;
+};
+
 #ifndef RB_GC_OBJECT_METADATA_ENTRY_DEFINED
 # define RB_GC_OBJECT_METADATA_ENTRY_DEFINED
 struct rb_gc_object_metadata_entry {
@@ -56,6 +83,16 @@ GC_IMPL_FN void rb_gc_impl_config_set(void *objspace_ptr, VALUE hash);
 GC_IMPL_FN struct rb_gc_vm_context *rb_gc_impl_get_vm_context(void *objspace_ptr);
 // Object allocation
 GC_IMPL_FN VALUE rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size, size_t *actual_alloc_size);
+/* This is an (optional) function that allows the GC implementation to return
+ * metadata for ZJIT's fast path object allocator. Returns `true` if ZJIT can
+ * use the fast path allocator, `false` otherwise.
+ *
+ * The GC is provided `alloc_size`, `flags`, and `class` which describe the
+ * object to be allocated. The GC can use this information to perform
+ * precomputation and fill `fastpath` with GC-specific metadata. ZJIT owns the
+ * generated instruction sequence; see zjit/src/gc_fastpath.rs.
+ */
+GC_IMPL_FN bool rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t alloc_size, VALUE flags, VALUE klass, struct rb_gc_zjit_fastpath *fastpath);
 GC_IMPL_FN size_t rb_gc_impl_obj_slot_size(VALUE obj);
 GC_IMPL_FN size_t rb_gc_impl_size_slot_size(void *objspace_ptr, size_t size);
 GC_IMPL_FN bool rb_gc_impl_size_allocatable_p(size_t size);

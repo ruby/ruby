@@ -498,6 +498,13 @@ rb_gc_impl_ractor_cache_alloc(void *objspace_ptr, void *ractor)
     return NULL;
 }
 
+bool
+rb_gc_impl_zjit_new_obj_fastpath(void *objspace_ptr, size_t alloc_size, VALUE flags, VALUE klass,
+                                 struct rb_gc_zjit_fastpath *fastpath)
+{
+    return false;
+}
+
 void
 rb_gc_impl_set_params(void *objspace_ptr)
 {
