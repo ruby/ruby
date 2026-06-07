@@ -23,6 +23,7 @@
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/rational.h"
+#include "internal/string.h"
 #include "internal/vm.h"
 #include "probes.h"
 #include "ruby/encoding.h"
@@ -2993,6 +2994,67 @@ ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result, int *first)
     }
 }
 
+/* Fast path for Array#join: when every element is a String in one fast-path encoding
+ * (UTF-8 / US-ASCII / ASCII-8BIT) and the separator is byte-compatible, the result can
+ * be produced with a single memcpy pass instead of appending each element through
+ * rb_str_buf_append. Returns the joined String, or Qundef when any of those invariants
+ * does not hold -- the caller then uses the general path. No user code runs here, so
+ * the array cannot be mutated underneath us. */
+static VALUE
+ary_join_fast(VALUE ary, VALUE sep)
+{
+    long n = RARRAY_LEN(ary);
+    if (n == 0) return Qundef;
+
+    VALUE first = RARRAY_AREF(ary, 0);
+    if (!RB_TYPE_P(first, T_STRING)) return Qundef;
+    int encidx = ENCODING_GET(first);
+    if (!rb_str_encindex_fastpath(encidx)) return Qundef;
+
+    /* cr accumulates the result code range exactly as rb_str_buf_append would. */
+    enum ruby_coderange_type cr = ENC_CODERANGE_7BIT;
+    long sep_len = 0;
+    const char *sep_ptr = NULL;
+    if (!NIL_P(sep)) {
+        int sep_cr = rb_enc_str_coderange(sep);
+        /* The separator must share the element encoding, or be 7-bit (encidx is
+           ASCII-compatible, so a 7-bit separator concatenates without negotiation). */
+        if (ENCODING_GET(sep) != encidx && sep_cr != ENC_CODERANGE_7BIT) return Qundef;
+        sep_ptr = RSTRING_PTR(sep);
+        sep_len = RSTRING_LEN(sep);
+        if (n > 1) cr = ENC_CODERANGE_AND(cr, sep_cr);
+    }
+
+    /* One pass: confirm the shared encoding, measure the length, merge code ranges. */
+    long len = 1 + sep_len * (n - 1);
+    for (long i = 0; i < n; i++) {
+        VALUE s = RARRAY_AREF(ary, i);
+        if (!RB_TYPE_P(s, T_STRING) || ENCODING_GET(s) != encidx) return Qundef;
+        len += RSTRING_LEN(s);
+        cr = ENC_CODERANGE_AND(cr, rb_enc_str_coderange(s));
+    }
+
+    VALUE result = rb_str_buf_new(len);
+    rb_enc_associate_index(result, encidx);
+    char *const buf = RSTRING_PTR(result);
+    char *p = buf;
+    for (long i = 0; i < n; i++) {
+        VALUE s = RARRAY_AREF(ary, i);
+        long slen = RSTRING_LEN(s);
+        if (i > 0 && sep_len) {
+            memcpy(p, sep_ptr, sep_len);
+            p += sep_len;
+        }
+        memcpy(p, RSTRING_PTR(s), slen);
+        p += slen;
+    }
+
+    ENC_CODERANGE_CLEAR(result);  /* keep rb_str_set_len from rescanning the bytes */
+    rb_str_set_len(result, p - buf);
+    ENC_CODERANGE_SET(result, cr);
+    return result;
+}
+
 VALUE
 rb_ary_join(VALUE ary, VALUE sep)
 {
@@ -3001,8 +3063,12 @@ rb_ary_join(VALUE ary, VALUE sep)
 
     if (RARRAY_LEN(ary) == 0) return rb_usascii_str_new(0, 0);
 
+    if (!NIL_P(sep)) StringValue(sep);
+
+    result = ary_join_fast(ary, sep);
+    if (!UNDEF_P(result)) return result;
+
     if (!NIL_P(sep)) {
-        StringValue(sep);
         len += RSTRING_LEN(sep) * (RARRAY_LEN(ary) - 1);
     }
     long len_memo = RARRAY_LEN(ary);
