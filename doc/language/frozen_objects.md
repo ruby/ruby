@@ -66,7 +66,7 @@ CONFIG = {foo: 0, bar: 1}.freeze
 # => {foo: 0, bar: 1}
 ```
 
-Freezing string objects may enable certain automatic optimizations:
+Freezing string objects enables deduplication, which can save memory and improve performance:
 
 ```ruby
 'foo'.object_id == 'foo'.object_id               # => false  # Two objects are stored.
