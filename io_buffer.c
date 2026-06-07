@@ -3616,6 +3616,10 @@ io_buffer_and_inplace(VALUE self, VALUE mask)
     size_t size;
     io_buffer_get_bytes_for_writing(buffer, &base, &size);
 
+    const void *mask_base;
+    size_t mask_size;
+    io_buffer_get_bytes_for_reading(mask_buffer, &mask_base, &mask_size);
+
     memory_and_inplace(base, size, mask_buffer->base, mask_buffer->size);
 
     return self;
@@ -3662,6 +3666,10 @@ io_buffer_or_inplace(VALUE self, VALUE mask)
     size_t size;
     io_buffer_get_bytes_for_writing(buffer, &base, &size);
 
+    const void *mask_base;
+    size_t mask_size;
+    io_buffer_get_bytes_for_reading(mask_buffer, &mask_base, &mask_size);
+
     memory_or_inplace(base, size, mask_buffer->base, mask_buffer->size);
 
     return self;
@@ -3707,6 +3715,10 @@ io_buffer_xor_inplace(VALUE self, VALUE mask)
     void *base;
     size_t size;
     io_buffer_get_bytes_for_writing(buffer, &base, &size);
+
+    const void *mask_base;
+    size_t mask_size;
+    io_buffer_get_bytes_for_reading(mask_buffer, &mask_base, &mask_size);
 
     memory_xor_inplace(base, size, mask_buffer->base, mask_buffer->size);
 
