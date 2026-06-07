@@ -27,7 +27,7 @@ such objects may include:
 
 ## Frozen Objects in Ruby
 
-An instances of any of these Ruby classes is always frozen:
+Instances of these Ruby classes are always frozen:
 
 - `Symbol`.
 - `Integer`.
@@ -42,11 +42,16 @@ Other Ruby classes, including container classes (such as Array, Hash, and Set)
 are by default not frozen.
 
 \String objects are by default not frozen,
-but many Ruby libraries freeze their string objects.
+but many Ruby libraries freeze their string objects,
+commonly by placing a "magic comment" at the top of source files:
+
+```ruby
+# frozen_string_literal: true
+```
 
 ## Frozen User Objects
 
-Almost any object may be frozen via these methods:
+Each of these methods freezes `self`:
 
 - Array#freeze
 - Object#freeze
@@ -59,12 +64,6 @@ KEYWORDS = %w[foo bar baz].freeze
 # => ["foo", "bar", "baz"]
 CONFIG = {foo: 0, bar: 1}.freeze
 # => {foo: 0, bar: 1}
-```
-
-But not ENV:
-
-```ruby
-ENV.freeze # Raises TypeError; cannot freeze ENV
 ```
 
 Freezing string objects may enable certain automatic optimizations:
