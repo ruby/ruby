@@ -704,6 +704,10 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_raise(IO::Buffer::InvalidatedError) { slice | mask }
     assert_raise(IO::Buffer::InvalidatedError) { slice ^ mask }
     assert_raise(IO::Buffer::InvalidatedError) { ~slice }
+
+    assert_raise(IO::Buffer::InvalidatedError) { slice.and!(mask) }
+    assert_raise(IO::Buffer::InvalidatedError) { slice.or!(mask) }
+    assert_raise(IO::Buffer::InvalidatedError) { slice.xor!(mask) }
   end
 
   def test_operators_raise_on_freed_mask
@@ -715,6 +719,11 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_raise(IO::Buffer::InvalidatedError) { source & mask_slice }
     assert_raise(IO::Buffer::InvalidatedError) { source | mask_slice }
     assert_raise(IO::Buffer::InvalidatedError) { source ^ mask_slice }
+
+    source = source.dup
+    assert_raise(IO::Buffer::InvalidatedError) { source.and!(mask_slice) }
+    assert_raise(IO::Buffer::InvalidatedError) { source.or!(mask_slice) }
+    assert_raise(IO::Buffer::InvalidatedError) { source.xor!(mask_slice) }
   end
 
   def test_shared
