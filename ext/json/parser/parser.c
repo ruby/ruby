@@ -1489,7 +1489,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
         case JSON_PHASE_OBJECT_KEY:     goto JSON_PHASE_OBJECT_KEY;
         case JSON_PHASE_OBJECT_COLON:   goto JSON_PHASE_OBJECT_COLON;
     }
-    UNREACHABLE_RETURN(Qundef);
+    JSON_UNREACHABLE_RETURN(Qundef);
 
     JSON_PHASE_DONE: {
         // The root document value is parsed; it is the lone survivor on
@@ -1623,10 +1623,10 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             case JSON_PHASE_ARRAY_COMMA:    goto JSON_PHASE_ARRAY_COMMA;
             case JSON_PHASE_OBJECT_COMMA:   goto JSON_PHASE_OBJECT_COMMA;
             case JSON_PHASE_VALUE:          goto JSON_PHASE_VALUE;
-            case JSON_PHASE_OBJECT_KEY:     UNREACHABLE_RETURN(Qundef);
+            case JSON_PHASE_OBJECT_KEY:     JSON_UNREACHABLE_RETURN(Qundef);
             case JSON_PHASE_OBJECT_COLON:   goto JSON_PHASE_OBJECT_COLON;
         }
-        UNREACHABLE_RETURN(Qundef);
+        JSON_UNREACHABLE_RETURN(Qundef);
     }
 
     JSON_PHASE_OBJECT_KEY: {
@@ -1648,7 +1648,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                 raise_parse_error("expected object key, got: %s", state);
             }
         }
-        UNREACHABLE_RETURN(Qundef);
+        JSON_UNREACHABLE_RETURN(Qundef);
     }
 
     JSON_PHASE_OBJECT_COLON: {
@@ -1669,7 +1669,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                 raise_parse_error("expected ':' after object key, got: %s", state);
             }
         }
-        UNREACHABLE_RETURN(Qundef);
+        JSON_UNREACHABLE_RETURN(Qundef);
     }
 
     JSON_PHASE_ARRAY_COMMA: {
@@ -1705,13 +1705,13 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                 case JSON_PHASE_ARRAY_COMMA:    goto JSON_PHASE_ARRAY_COMMA;
                 case JSON_PHASE_OBJECT_COMMA:   goto JSON_PHASE_OBJECT_COMMA;
                 case JSON_PHASE_VALUE:          goto JSON_PHASE_VALUE;
-                case JSON_PHASE_OBJECT_KEY:     UNREACHABLE_RETURN(Qundef);
+                case JSON_PHASE_OBJECT_KEY:     JSON_UNREACHABLE_RETURN(Qundef);
                 case JSON_PHASE_OBJECT_COLON:   goto JSON_PHASE_OBJECT_COLON;
             }
         } else {
             raise_parse_error("expected ',' or ']' after array value", state);
         }
-        UNREACHABLE_RETURN(Qundef);
+        JSON_UNREACHABLE_RETURN(Qundef);
     }
 
     JSON_PHASE_OBJECT_COMMA: {
@@ -1754,16 +1754,16 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                 case JSON_PHASE_ARRAY_COMMA:    goto JSON_PHASE_ARRAY_COMMA;
                 case JSON_PHASE_OBJECT_COMMA:   goto JSON_PHASE_OBJECT_COMMA;
                 case JSON_PHASE_VALUE:          goto JSON_PHASE_VALUE;
-                case JSON_PHASE_OBJECT_KEY:     UNREACHABLE_RETURN(Qundef);
+                case JSON_PHASE_OBJECT_KEY:     JSON_UNREACHABLE_RETURN(Qundef);
                 case JSON_PHASE_OBJECT_COLON:   goto JSON_PHASE_OBJECT_COLON;
             }
         } else {
             raise_parse_error("expected ',' or '}' after object value, got: %s", state);
         }
-        UNREACHABLE_RETURN(Qundef);
+        JSON_UNREACHABLE_RETURN(Qundef);
     }
 
-    UNREACHABLE_RETURN(Qundef);
+    JSON_UNREACHABLE_RETURN(Qundef);
 }
 
 static void json_ensure_eof(JSON_ParserState *state)
