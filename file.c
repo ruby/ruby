@@ -2445,7 +2445,17 @@ rb_file_ftype(mode_t mode)
  *  call-seq:
  *    File.ftype(path) -> string
  *
- *  Returns the string type of the object at +path+:
+ *  Returns the string type of the object at +path+, one of:
+ *
+ *  - <tt>'file'</tt>.
+ *  - <tt>'directory'</tt>.
+ *  - <tt>'characterSpecial'</tt>.
+ *  - <tt>'blockSpecial'</tt>.
+ *  - <tt>'fifo'</tt>.
+ *  - <tt>'link'</tt>.
+ *  - <tt>'socket'</tt>.
+ *
+ *  Examples:
  *
  *    File.ftype('README.md')   # => "file"
  *    File.ftype('lib')         # => "directory"
@@ -6171,9 +6181,6 @@ rb_stat_init_copy(VALUE copy, VALUE orig)
 /*
  *  call-seq:
  *     stat.ftype -> string
- *
- *  call-seq:
- *    File.ftype(path) -> string
  *
  *  Returns the string type of the object at +path+:
  *
