@@ -57,7 +57,6 @@ By default, the Windows short name pattern is disabled:
 ```ruby
 Dir.glob('PROGRAM~1')           # => []
 Pathname('.').glob('PROGRAM~1') # => []
-
 ```
 
 It may be enabled by flag [`File::FNM_SHORTNAME`](#constant-filefnmshortname).
@@ -375,7 +374,6 @@ Dir.glob('\*', File::FNM_NOESCAPE).size           # => 0
 Pathname('.').glob('*').size                      # => 241
 Pathname('.').glob('\*').size                     # => 0
 Pathname('.').glob('\*', File::FNM_NOESCAPE).size # => 0
-
 ```
 
 #### Constant File::FNM_SHORTNAME
