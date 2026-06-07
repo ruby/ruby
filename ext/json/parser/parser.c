@@ -2,10 +2,10 @@
 #include "../vendor/ryu.h"
 #include "../simd/simd.h"
 
-static VALUE mJSON, eNestingError, Encoding_UTF_8;
+static VALUE mJSON, eNestingError, eParserError, Encoding_UTF_8;
 static VALUE CNaN, CInfinity, CMinusInfinity;
 
-static ID i_new, i_try_convert, i_uminus, i_encode;
+static ID i_new, i_try_convert, i_uminus, i_encode, i_at_line, i_at_column;
 
 static VALUE sym_max_nesting, sym_allow_nan, sym_allow_trailing_comma, sym_allow_comments,
              sym_allow_control_characters, sym_allow_invalid_escape, sym_symbolize_names,
@@ -645,9 +645,9 @@ static VALUE build_parse_error_message(const char *format, JSON_ParserState *sta
 
 static VALUE parse_error_new(VALUE message, long line, long column)
 {
-    VALUE exc = rb_exc_new_str(rb_path2class("JSON::ParserError"), message);
-    rb_ivar_set(exc, rb_intern("@line"), LONG2NUM(line));
-    rb_ivar_set(exc, rb_intern("@column"), LONG2NUM(column));
+    VALUE exc = rb_exc_new_str(eParserError, message);
+    rb_ivar_set(exc, i_at_line, LONG2NUM(line));
+    rb_ivar_set(exc, i_at_column, LONG2NUM(column));
     return exc;
 }
 
@@ -2069,8 +2069,13 @@ void Init_parser(void)
     mJSON = rb_define_module("JSON");
     VALUE mExt = rb_define_module_under(mJSON, "Ext");
     VALUE cParserConfig = rb_define_class_under(mExt, "ParserConfig", rb_cObject);
+
+    rb_global_variable(&eParserError);
+    eParserError = rb_path2class("JSON::ParserError");
+
+    rb_global_variable(&eNestingError);
     eNestingError = rb_path2class("JSON::NestingError");
-    rb_gc_register_mark_object(eNestingError);
+
     rb_define_alloc_func(cParserConfig, cJSON_parser_s_allocate);
     rb_define_method(cParserConfig, "initialize", cParserConfig_initialize, 1);
     rb_define_method(cParserConfig, "parse", cParserConfig_parse, 1);
@@ -2078,14 +2083,14 @@ void Init_parser(void)
     VALUE cParser = rb_define_class_under(mExt, "Parser", rb_cObject);
     rb_define_singleton_method(cParser, "parse", cParser_m_parse, 2);
 
+    rb_global_variable(&CNaN);
     CNaN = rb_const_get(mJSON, rb_intern("NaN"));
-    rb_gc_register_mark_object(CNaN);
 
+    rb_global_variable(&CInfinity);
     CInfinity = rb_const_get(mJSON, rb_intern("Infinity"));
-    rb_gc_register_mark_object(CInfinity);
 
+    rb_global_variable(&CMinusInfinity);
     CMinusInfinity = rb_const_get(mJSON, rb_intern("MinusInfinity"));
-    rb_gc_register_mark_object(CMinusInfinity);
 
     rb_global_variable(&Encoding_UTF_8);
     Encoding_UTF_8 = rb_const_get(rb_path2class("Encoding"), rb_intern("UTF_8"));
@@ -2106,6 +2111,8 @@ void Init_parser(void)
     i_try_convert = rb_intern("try_convert");
     i_uminus = rb_intern("-@");
     i_encode = rb_intern("encode");
+    i_at_line = rb_intern("@line");
+    i_at_column = rb_intern("@column");
 
     binary_encindex = rb_ascii8bit_encindex();
     utf8_encindex = rb_utf8_encindex();
