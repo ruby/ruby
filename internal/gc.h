@@ -16,6 +16,8 @@
 #include "ruby/ruby.h"          /* for rb_event_flag_t */
 #include "vm_core.h"            /* for GET_EC() */
 
+struct rb_gc_zjit_fastpath;
+
 #ifndef USE_MODULAR_GC
 # define USE_MODULAR_GC 0
 #endif
@@ -203,6 +205,7 @@ rb_execution_context_t *rb_gc_get_ec(void);
 
 void *rb_gc_ractor_cache_alloc(rb_ractor_t *ractor);
 void rb_gc_ractor_cache_free(void *cache);
+bool rb_gc_zjit_new_obj_fastpath(size_t alloc_size, VALUE flags, VALUE klass, struct rb_gc_zjit_fastpath *fastpath);
 
 bool rb_gc_size_allocatable_p(size_t size);
 size_t rb_gc_size_slot_size(size_t size);
