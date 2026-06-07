@@ -309,6 +309,12 @@ Dir.glob('*', base: 'lib').take(3)
 # => ["English.gemspec", "English.rb", "bundled_gems.rb"]
 Dir.glob('*', base: 'lib/net').take(3)
 # => ["http", "http.rb", "https.rb"]
+Pathname('.').glob('*').take(3)
+# => [#<Pathname:BSDL>, #<Pathname:CONTRIBUTING.md>, #<Pathname:COPYING>]
+Pathname('lib').glob('*').take(3)
+# => [#<Pathname:lib/English.gemspec>, #<Pathname:lib/English.rb>, #<Pathname:lib/bundled_gems.rb>]
+Pathname('lib/net').glob('*').take(3)
+# => [#<Pathname:lib/net/http>, #<Pathname:lib/net/http.rb>, #<Pathname:lib/net/https.rb>]
 ```
 
 ### `flags`
