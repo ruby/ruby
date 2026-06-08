@@ -930,11 +930,17 @@ rb_io_buffer_get_bytes_for_writing(VALUE self, void **base, size_t *size)
 }
 
 static void
-io_buffer_get_bytes_for_reading(struct rb_io_buffer *buffer, const void **base, size_t *size)
+io_buffer_validate_for_reading(struct rb_io_buffer *buffer)
 {
     if (!io_buffer_validate(buffer)) {
         rb_raise(rb_eIOBufferInvalidatedError, "Buffer has been invalidated!");
     }
+}
+
+static void
+io_buffer_get_bytes_for_reading(struct rb_io_buffer *buffer, const void **base, size_t *size)
+{
+    io_buffer_validate_for_reading(buffer);
 
     if (buffer->base) {
         *base = buffer->base;
@@ -1548,6 +1554,8 @@ size_sum_is_bigger_than(size_t a, size_t b, size_t x)
 static inline void
 io_buffer_validate_range(struct rb_io_buffer *buffer, size_t offset, size_t length)
 {
+    io_buffer_validate_for_reading(buffer);
+
     if (size_sum_is_bigger_than(offset, length, buffer->size)) {
         rb_raise(rb_eArgError, "Specified offset+length is bigger than the buffer size!");
     }
@@ -1751,6 +1759,8 @@ rb_io_buffer_resize(VALUE self, size_t size)
 {
     struct rb_io_buffer *buffer = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+
+    io_buffer_validate_for_reading(buffer);
 
     if (buffer->flags & RB_IO_BUFFER_LOCKED) {
         rb_raise(rb_eIOBufferLockedError, "Cannot resize locked buffer!");
