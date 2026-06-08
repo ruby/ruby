@@ -489,12 +489,13 @@ RSpec.describe "bundle install with the cooldown setting" do
     end
 
     it "keeps a top-level source cooldown through a partial update with multiple sources" do
+      now = Time.now.utc
       build_repo4 do
         build_gem "solo_gem", "1.0.0" do |s|
-          s.date = Time.now.utc - (30 * 86_400)
+          s.date = now - (30 * 86_400)
         end
         build_gem "solo_gem", "2.0.0" do |s|
-          s.date = Time.now.utc - (1 * 86_400)
+          s.date = now - (1 * 86_400)
         end
       end
 
@@ -537,12 +538,13 @@ RSpec.describe "bundle install with the cooldown setting" do
     end
 
     it "carries cooldown declared on a gem-block source" do
+      now = Time.now.utc
       build_repo4 do
         build_gem "solo_gem", "1.0.0" do |s|
-          s.date = Time.now.utc - (30 * 86_400)
+          s.date = now - (30 * 86_400)
         end
         build_gem "solo_gem", "2.0.0" do |s|
-          s.date = Time.now.utc - (1 * 86_400)
+          s.date = now - (1 * 86_400)
         end
       end
 
