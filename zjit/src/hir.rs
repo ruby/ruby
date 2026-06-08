@@ -6281,6 +6281,7 @@ impl Function {
             (optimize_c_calls) => { Counter::compile_hir_strength_reduce_time_ns };
             (convert_no_profile_sends) => { Counter::compile_hir_strength_reduce_time_ns };
             // End strength reduction bucket
+            (inline_methods) => { Counter::compile_hir_inline_methods_time_ns };
             (optimize_load_store) => { Counter::compile_hir_optimize_load_store_time_ns };
             (canonicalize) => { Counter::compile_hir_canonicalize_time_ns };
             (fold_constants) => { Counter::compile_hir_fold_constants_time_ns };
@@ -6292,9 +6293,9 @@ impl Function {
         }
 
         macro_rules! run_pass {
-            ($name:ident) => {
+            ($name:ident) => {{
                 let counter = counter_for!($name);
-                crate::stats::trace_compile_phase(stringify!($name), ||
+                let result = crate::stats::trace_compile_phase(stringify!($name), ||
                     crate::stats::with_time_stat(counter, || self.$name())
                 );
                 #[cfg(debug_assertions)] crate::stats::trace_compile_phase("validate", || self.assert_validates());
@@ -6303,7 +6304,9 @@ impl Function {
                         self.to_iongraph_pass(stringify!($name))
                     );
                 }
-            }
+
+                result
+            }};
         }
 
         if should_dump {
@@ -6323,12 +6326,7 @@ impl Function {
             // parameter returns, etc.) without frame push/pop overhead. The general
             // inliner then handles more complex methods that require full inlining.
             run_pass!(inline);
-            let did_inline = self.inline_methods();
-
-            #[cfg(debug_assertions)] self.assert_validates();
-            if should_dump {
-                passes.push(self.to_iongraph_pass("inline_methods"));
-            }
+            let did_inline = run_pass!(inline_methods);
             run_pass!(optimize_getivar);
             run_pass!(optimize_c_calls);
             run_pass!(convert_no_profile_sends);
