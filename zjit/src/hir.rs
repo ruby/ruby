@@ -4566,7 +4566,7 @@ impl Function {
                 // (zjit_opt_* bytecodes). Disable it so add_iseq_to_hir sees the
                 // original opcodes.
                 unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
-                let add_result = match add_iseq_to_hir(self, iseq, false, Some(continuation)) {
+                let add_result = match add_iseq_to_hir(self, iseq, AddIseqMode::Inlined { return_block: continuation }) {
                     Ok(r) => r,
                     Err(_) => {
                         self.insns.truncate(pre_insns_len);
@@ -7361,6 +7361,13 @@ fn invalidates_locals(opcode: u32, operands: *const VALUE) -> bool {
 /// The index of the self parameter in the HIR function
 pub const SELF_PARAM_IDX: usize = 0;
 
+/// Controls how an ISEQ's bytecode is added to HIR.
+#[derive(Clone, Copy)]
+enum AddIseqMode {
+    Standalone,
+    Inlined { return_block: BlockId },
+}
+
 /// Result of populating a Function with HIR for an ISEQ.
 struct AddIseqResult {
     /// Body entry block per `jit_entry_idx`. Indexed by the same `passed_opt_num`
@@ -7389,7 +7396,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
     fun.was_invalidated_for_singleton_class_creation = payload.was_invalidated_for_singleton_class_creation;
     fun.self_is_heap_object = payload.self_is_heap_object;
 
-    let result = add_iseq_to_hir(&mut fun, iseq, true, None)?;
+    let result = add_iseq_to_hir(&mut fun, iseq, AddIseqMode::Standalone)?;
     fun.profiles = Some(result.profiles);
 
     if let Err(err) = crate::stats::trace_compile_phase("validate", || fun.validate()) {
@@ -7403,23 +7410,22 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 /// compilation (`iseq_to_hir`) and for inlining an ISEQ directly into a caller
 /// (the method inliner).
 ///
-/// When `make_entry_blocks` is true, generate the interpreter entry block and a
-/// JIT entry block for each opt-table entry, push the JIT entry blocks onto
-/// `fun.jit_entry_blocks`, and run the post-translation passes
+/// When `mode` is `AddIseqMode::Standalone`, generate the interpreter entry
+/// block and a JIT entry block for each opt-table entry, push the JIT entry
+/// blocks onto `fun.jit_entry_blocks`, and run the post-translation passes
 /// (`seal_entries`, `set_param_types`, `infer_types`) before returning. When
-/// false, only the body blocks are produced and the post-translation passes are
-/// skipped; the caller is expected to run them once translation of all
-/// constituent ISEQs is complete.
+/// `mode` is `AddIseqMode::Inlined`, only the body blocks are produced and the
+/// post-translation passes are skipped; the caller is expected to run them once
+/// translation of all constituent ISEQs is complete.
 ///
-/// When `return_block` is `Some(target)`, `YARVINSN_leave` emits a
-/// `Jump(target, [retval])` instead of `Insn::Return { val }`. The inliner uses
-/// this to wire the callee's return paths directly to a continuation block in
-/// the caller, avoiding a second rewrite pass.
+/// In inlined mode, `YARVINSN_leave` emits a `Jump(return_block, [retval])`
+/// instead of `Insn::Return { val }`. The inliner uses this to wire the
+/// callee's return paths directly to a continuation block in the caller,
+/// avoiding a second rewrite pass.
 fn add_iseq_to_hir(
     fun: &mut Function,
     iseq: *const rb_iseq_t,
-    make_entry_blocks: bool,
-    return_block: Option<BlockId>,
+    mode: AddIseqMode,
 ) -> Result<AddIseqResult, ParseError> {
     let payload = get_or_create_iseq_payload(iseq);
     let mut profiles = ProfileOracle::new(iseq);
@@ -7435,7 +7441,7 @@ fn add_iseq_to_hir(
     let mut body_entry_blocks = Vec::with_capacity(jit_entry_insns.len());
     // Make blocks for optionals first, and put them right next to their JIT entrypoint
     for insn_idx in jit_entry_insns.iter().copied() {
-        if make_entry_blocks {
+        if matches!(mode, AddIseqMode::Standalone) {
             let jit_entry_block = fun.new_block(insn_idx);
             fun.jit_entry_blocks.push(jit_entry_block);
         }
@@ -7449,7 +7455,7 @@ fn add_iseq_to_hir(
     // Done, drop `mut`.
     let insn_idx_to_block = insn_idx_to_block;
 
-    if make_entry_blocks {
+    if matches!(mode, AddIseqMode::Standalone) {
         // Compile an entry_block for the interpreter
         compile_entry_block(fun, jit_entry_insns.as_slice(), &insn_idx_to_block);
 
@@ -8596,11 +8602,10 @@ fn add_iseq_to_hir(
                     fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
                     let val = state.stack_pop()?;
                     num_returns += 1;
-                    if let Some(target) = return_block {
-                        fun.push_insn(block, Insn::Jump(BranchEdge { target, args: vec![val] }));
-                    } else {
-                        fun.push_insn(block, Insn::Return { val });
-                    }
+                    match mode {
+                        AddIseqMode::Standalone => fun.push_insn(block, Insn::Return { val }),
+                        AddIseqMode::Inlined { return_block } => { fun.push_insn(block, Insn::Jump(BranchEdge { target: return_block, args: vec![val] })) }
+                    };
                     break;  // Don't enqueue the next block as a successor
                 }
                 YARVINSN_throw => {
@@ -9284,7 +9289,7 @@ fn add_iseq_to_hir(
         }
     }
 
-    if make_entry_blocks {
+    if matches!(mode, AddIseqMode::Standalone) {
         // Populate the entries superblock with an Entries instruction targeting all entry blocks
         fun.seal_entries();
 
