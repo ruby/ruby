@@ -87,6 +87,7 @@ module Psych
           DateTime.civil(*t.to_a[0, 6].reverse, Rational(t.utc_offset, 86400)) +
             (t.subsec/86400)
         when '!ruby/encoding'
+          class_loader.encoding
           ::Encoding.find o.value
         when "!ruby/object:Complex"
           class_loader.complex
