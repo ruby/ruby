@@ -219,7 +219,9 @@ class JSONParserTest < Test::Unit::TestCase
   def test_parse_json_primitive_values
     assert_raise(JSON::ParserError) { parse('') }
     assert_raise(TypeError) { parse(nil) }
-    assert_raise(JSON::ParserError) { parse('  /* foo */ ') }
+    EnvUtil.suppress_warning do # still no warning in JRuby verions
+      assert_raise(JSON::ParserError) { parse('  /* foo */ ') }
+    end
     assert_equal nil, parse('null')
     assert_equal false, parse('false')
     assert_equal true, parse('true')
