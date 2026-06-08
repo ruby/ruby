@@ -583,6 +583,33 @@ RSpec.describe "bundle install with the cooldown setting" do
       # its in-window 2.0.0 stays excluded.
       expect(the_bundle).to include_gems("ripe_gem 1.0.0", "solo_gem 1.0.0")
     end
+
+    it "applies per-source Gemfile cooldown to a gem added via bundle add" do
+      gemfile <<-G
+        source "https://gem.repo3", cooldown: 7
+        gem "ripe_gem"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            ripe_gem (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          ripe_gem
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "add child", artifice: "compact_index_cooldown"
+
+      expect(the_bundle).to include_gems("child 1.0.0")
+    end
   end
 
   context "with a source that does not provide publish dates" do
