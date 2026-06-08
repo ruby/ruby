@@ -4402,7 +4402,6 @@ impl Function {
         // Too-complex shapes use hash tables; rb_shape_get_iv_index doesn't support them.
         // Callers must filter these out before calling load_ivar.
         assert!(!recv_type.shape().is_complex(), "load_ivar called with too-complex shape");
-
         let mut ivar_index: attr_index_t = 0;
         if ! unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
             // If there is no IVAR index, then the ivar was undefined when we
@@ -4414,14 +4413,7 @@ impl Function {
         let layout = recv_type.shape().layout();
 
         match layout {
-            // If we have an rclass layout, we load it from the fields obj from
-            // the class ext.  When RUBY_BOX is enabled, boxable classes
-            // (classes like String which are defined at boot time), those classes
-            // will have the "other" layout, so we are free to rely on this check
-            // whether or not RUBY_BOX is enabled
             ShapeLayout::RClass | ShapeLayout::RData => {
-                // RClass and RData are very similar, but the fields object
-                // is stored at a different offset.
                 let offset = if layout == ShapeLayout::RClass {
                     RCLASS_OFFSET_PRIME_FIELDS_OBJ as i32
                 } else {
@@ -4478,16 +4470,9 @@ impl Function {
                             // need to wrap it again here.
                             self.push_insn_id(block, insn_id); continue;
                         }
-
-                        // Guard that the object is a heap object
                         let self_val = self.load_ivar_guard_type(block, self_val, recv_type, state);
-
-                        // Get the runtime shape value
                         let shape = self.load_shape(block, self_val);
-
-                        // Test that runtime shape is equal to the compile time shape
                         self.guard_shape(block, shape, recv_type.shape(), state, Some(Recompile::ProfileSelf));
-
                         let replacement = self.load_ivar(block, self_val, recv_type, id);
                         self.make_equal_to(insn_id, replacement);
                     }
@@ -7210,15 +7195,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             if profiled_shape.is_complex() { continue; }
                             if seen_shape.contains(&profiled_shape) { continue; }
                             seen_shape.push(profiled_shape);
-
-                            // Load the runtime shape from the object, we know
-                            // it's OK to do this because we did GuardType above.
                             let runtime_shape = fun.load_shape(block, self_param);
-
                             // The expected shape can change over run, so we put it
                             // as a pointer to keep it stable in snapshot tests.
                             let expected_shape = fun.push_insn(block, Insn::Const { val: Const::CShape(profiled_shape) });
-
                             let has_shape = fun.push_insn(block, Insn::IsBitEqual { left: runtime_shape, right: expected_shape });
                             let iftrue_block = fun.new_block(insn_idx);
                             let target = BranchEdge { target: iftrue_block, args: vec![] };
@@ -8371,29 +8351,16 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             if profiled_type.is_empty() { break; }
                             // Instance variable lookups on immediate values are always nil; don't bother
                             if profiled_type.flags().is_immediate() { continue; }
-
                             let profiled_shape = profiled_type.shape();
-
                             // Too-complex shapes use hash tables for ivars;
                             // rb_shape_get_iv_index doesn't work for them.
                             // Let the fallthrough GetIvar handle these.
                             if profiled_shape.is_complex() { continue; }
-
-                            // If we've generated code for this shape already,
-                            // then skip it
                             if seen_shape.contains(&profiled_shape) { continue; }
                             seen_shape.push(profiled_shape);
-
-                            // Load the runtime shape from the object, we know
-                            // it's OK to do this because we did GuardType above
                             let runtime_shape = fun.load_shape(block, self_param);
-
                             // Load the expected shape to a variable
                             let expected_shape = fun.push_insn(block, Insn::Const { val: Const::CShape(profiled_shape) });
-
-                            // If the expected is equal to the actual, then
-                            // we're good and can load the IV.  Otherwise jump
-                            // to the next block.
                             let has_shape = fun.push_insn(block, Insn::IsBitEqual { left: runtime_shape, right: expected_shape });
                             let iftrue_block = fun.new_block(insn_idx);
                             let target = BranchEdge { target: iftrue_block, args: vec![] };
