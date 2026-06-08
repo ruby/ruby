@@ -1193,7 +1193,7 @@ VALUE
 rb_data_typed_object_zalloc(VALUE klass, size_t size, const rb_data_type_t *type)
 {
     if (RB_DATA_TYPE_EMBEDDABLE_P(type)) {
-        if (!(type->flags & RUBY_TYPED_FREE_IMMEDIATELY)) {
+        if (!(type->flags & (RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_THREAD_SAFE_FREE))) {
             rb_raise(rb_eTypeError, "Embeddable TypedData must be freed immediately");
         }
 
@@ -1474,7 +1474,7 @@ rb_data_free(void *objspace, VALUE obj)
 
         if (dfree) {
             bool embedded = RTYPEDDATA_EMBEDDED_P(obj);
-            int free_immediately = (type->flags & RUBY_TYPED_FREE_IMMEDIATELY) != 0;
+            int free_immediately = (type->flags & (RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_THREAD_SAFE_FREE)) != 0;
             bool free_embeddable_data = RB_DATA_TYPE_EMBEDDABLE_P(type) && !embedded;
 
             if (dfree == RUBY_DEFAULT_FREE) {
