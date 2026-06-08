@@ -4786,7 +4786,7 @@ impl Function {
         did_inline
     }
 
-    fn inline(&mut self) {
+    fn inline_trivial(&mut self) {
         for block in self.reverse_post_order() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             assert!(self.blocks[block.0].insns.is_empty());
@@ -6276,7 +6276,7 @@ impl Function {
         macro_rules! counter_for {
             // Bucket all strength reduction together
             (type_specialize) => { Counter::compile_hir_strength_reduce_time_ns };
-            (inline) => { Counter::compile_hir_strength_reduce_time_ns };
+            (inline_trivial) => { Counter::compile_hir_strength_reduce_time_ns };
             (optimize_getivar) => { Counter::compile_hir_strength_reduce_time_ns };
             (optimize_c_calls) => { Counter::compile_hir_strength_reduce_time_ns };
             (convert_no_profile_sends) => { Counter::compile_hir_strength_reduce_time_ns };
@@ -6325,7 +6325,7 @@ impl Function {
             // The trivial inliner runs first to handle simple cases (constant returns,
             // parameter returns, etc.) without frame push/pop overhead. The general
             // inliner then handles more complex methods that require full inlining.
-            run_pass!(inline);
+            run_pass!(inline_trivial);
             let did_inline = run_pass!(inline_methods);
             run_pass!(optimize_getivar);
             run_pass!(optimize_c_calls);
