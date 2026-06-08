@@ -6,11 +6,22 @@ use crate::backend::lir::Assembler;
 use crate::codegen::max_iseq_versions;
 use crate::cruby::*;
 use crate::hir::{Insn, iseq_to_hir};
-use crate::options::{rb_zjit_prepare_options, set_call_threshold};
+use crate::options::{OPTIONS, get_option, rb_zjit_prepare_options, set_call_threshold};
 use crate::payload::IseqVersion;
 use crate::hir::tests::hir_build_tests::assert_contains_opcode;
 use crate::payload::*;
 use insta::assert_snapshot;
+
+#[track_caller]
+fn with_inlining<T>(mut f: impl FnMut() -> T) -> T {
+    with_rubyvm(|| {
+        let old_threshold = get_option!(inline_threshold);
+        unsafe { OPTIONS.as_mut().unwrap().inline_threshold = 30; }
+        let result = f();
+        unsafe { OPTIONS.as_mut().unwrap().inline_threshold = old_threshold; }
+        result
+    })
+}
 
 #[test]
 fn test_breakpoint_hir_codegen() {
@@ -5778,6 +5789,263 @@ fn test_send_block_unused_warning_emitted_from_jit() {
         test
         test
     "#), @"true");
+}
+
+#[test]
+fn test_inlined_method_returns_correct_value() {
+    with_inlining(|| {
+        assert_snapshot!(assert_compiles("
+            def add_one(x) = x + 1
+            def test(n) = add_one(n)
+
+            test(2)
+        "), @"3");
+    });
+}
+
+#[test]
+fn test_inlined_method_deoptimizes_on_redefinition() {
+    with_inlining(|| {
+        assert_snapshot!(assert_compiles("
+            def callee(x) = x + 1
+            def test(n) = callee(n)
+
+            test(1)
+            test(1)
+
+            def callee(x) = x * 100
+
+            test(1)
+        "), @"100");
+    });
+}
+
+#[test]
+fn test_inlined_method_survives_compact_between_calls() {
+    with_inlining(|| {
+        assert_snapshot!(assert_compiles("
+            def callee(x) = x + 1
+            def test(n) = callee(n)
+
+            test(1)
+            test(1)
+
+            GC.compact
+
+            test(1)
+        "), @"2");
+    });
+}
+
+#[test]
+fn test_inlined_method_survives_compact_during_call() {
+    with_inlining(|| {
+        assert_snapshot!(assert_compiles("
+            def trigger_compact = GC.compact
+            def callee(x)
+              trigger_compact
+              x + 1
+            end
+            def test(n) = callee(n)
+
+            test(1)
+            test(1)
+
+            test(1)
+        "), @"2");
+    });
+}
+
+#[test]
+fn test_inlined_method_with_required_keyword() {
+    with_inlining(|| {
+        assert_snapshot!(assert_compiles("
+            def callee(x, y:) = x + y
+            def test(n) = callee(n, y: 10)
+
+            test(2)
+        "), @"12");
+    });
+}
+
+#[test]
+fn test_inlined_method_with_optional_keyword_supplied() {
+    with_inlining(|| {
+        assert_snapshot!(assert_compiles("
+            def callee(x, y: 100) = x + y
+            def test(n) = callee(n, y: 5)
+
+            test(2)
+        "), @"7");
+    });
+}
+
+#[test]
+fn test_inlined_method_with_optional_keyword_omitted() {
+    with_inlining(|| {
+        assert_snapshot!(assert_compiles("
+            def callee(x, y: 100) = x + y
+            def test(n) = callee(n)
+
+            test(2)
+        "), @"102");
+    });
+}
+
+#[test]
+fn test_inlined_method_with_reordered_keywords() {
+    with_inlining(|| {
+        assert_snapshot!(assert_compiles("
+            def callee(a:, b:) = a - b
+            def test = callee(b: 1, a: 10)
+
+            test
+        "), @"9");
+    });
+}
+
+#[test]
+fn test_inlined_method_with_keyword_default_using_prior_param() {
+    with_inlining(|| {
+        assert_snapshot!(assert_compiles("
+            def callee(x, y: x * 100) = x + y
+            def test(n) = callee(n)
+
+            test(2)
+        "), @"202");
+    });
+}
+
+#[test]
+fn test_inlined_method_with_rescue_caught_in_callee() {
+    // The callee's begin/rescue catches an exception raised inside the same
+    // callee. The runtime exception walker must find the rescue clause via the
+    // inlined callee's CFP.
+    with_inlining(|| {
+        assert_snapshot!(assert_compiles(r#"
+            def callee(x)
+              begin
+                raise "boom" if x.negative?
+                0
+              rescue
+                42
+              end
+            end
+            def test(n) = callee(n)
+
+            test(-1)
+        "#), @"42");
+    });
+}
+
+#[test]
+fn test_inlined_method_with_rescue_caught_in_caller() {
+    // The callee re-raises and the caller catches the exception after unwinding
+    // the inlined callee frame.
+    with_inlining(|| {
+        assert_snapshot!(assert_compiles(r#"
+            def callee(x)
+              raise "boom" if x.negative?
+              0
+            end
+            def test(n)
+              begin
+                callee(n)
+              rescue
+                99
+              end
+            end
+
+            test(-1)
+        "#), @"99");
+    });
+}
+
+#[test]
+fn test_inlined_method_with_ensure_runs_on_propagation() {
+    with_inlining(|| {
+        assert_snapshot!(assert_compiles(r##"
+            $log = []
+            def callee(x)
+              begin
+                raise "boom" if x.negative?
+                $log << "no_raise"
+              ensure
+                $log << "ensured"
+              end
+            end
+            def test(n)
+              begin
+                callee(n)
+                "no_rescue"
+              rescue
+                "caught"
+              end
+            end
+
+            result = test(-1)
+            "#{$log.first}: #{result}"
+        "##), @r#""ensured: caught""#);
+    });
+}
+
+#[test]
+fn test_inlined_method_with_retry_resumes_begin_block() {
+    with_inlining(|| {
+        assert_snapshot!(assert_compiles(r#"
+            def callee(counter)
+              begin
+                counter[0] += 1
+                raise "boom" if counter[0] < 2
+                counter[0]
+              rescue
+                retry
+              end
+            end
+            def test(c) = callee(c)
+
+            test([0])
+        "#), @"2");
+    });
+}
+
+#[test]
+fn test_inlined_method_with_super_call() {
+    with_inlining(|| {
+        assert_snapshot!(assert_compiles("
+            class Parent
+              def greet = 'hi'
+            end
+
+            class Child < Parent
+              def greet = super + '!'
+            end
+
+            def test(c) = c.greet
+
+            child = Child.new
+            test(child)
+            test(child)
+        "), @r#""hi!""#);
+    });
+}
+
+#[test]
+fn test_inlined_method_with_block_break_across_inlined_boundary() {
+    // A `break` from the literal block unwinds to the inlined callee's CFP,
+    // where the callee's CATCH_TYPE_BREAK entry must match.
+    with_inlining(|| {
+        assert_snapshot!(assert_compiles_allowing_exits("
+            def callee(arr)
+              arr.each do |x|
+                break 7 if x > 5
+              end
+            end
+            def test(a) = callee(a)
+
+            test([1, 6, 99])
+        "), @"7");
+    });
 }
 
 #[test]
