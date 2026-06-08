@@ -488,4 +488,28 @@ RSpec.describe "bundle install with the cooldown setting" do
       expect(the_bundle).to include_gems("upgradable 3.0.0")
     end
   end
+
+  context "with a source that does not provide publish dates" do
+    before do
+      build_repo3 do
+        build_gem "ripe_gem", "1.0.0"
+        build_gem "ripe_gem", "2.0.0"
+      end
+    end
+
+    it "cannot apply cooldown and installs the latest version" do
+      # The legacy dependency API does not expose per-version publish dates, so
+      # the cooldown filter has nothing to compare against and is silently
+      # inactive. This pins that limitation; flip the expectation if publish
+      # dates ever become available over this endpoint.
+      gemfile <<-G
+        source "https://gem.repo3", cooldown: 7
+        gem "ripe_gem"
+      G
+
+      bundle "install", artifice: "endpoint"
+
+      expect(the_bundle).to include_gems("ripe_gem 2.0.0")
+    end
+  end
 end
