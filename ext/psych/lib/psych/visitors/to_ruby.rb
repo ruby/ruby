@@ -302,7 +302,7 @@ module Psych
           set
 
         when /^!ruby\/hash-with-ivars(?::(.*))?$/
-          hash = $1 ? resolve_class($1).allocate : {}
+          hash = $1 ? resolve_subclass($1, Hash).allocate : {}
           register o, hash
           o.children.each_slice(2) do |key, value|
             case key.value
@@ -317,7 +317,7 @@ module Psych
           hash
 
         when /^!map:(.*)$/, /^!ruby\/hash:(.*)$/
-          revive_hash register(o, resolve_class($1).allocate), o
+          revive_hash register(o, resolve_subclass($1, Hash).allocate), o
 
         when '!omap', 'tag:yaml.org,2002:omap'
           map = register(o, class_loader.psych_omap.new)
@@ -468,6 +468,19 @@ module Psych
       # Convert +klassname+ to a Class
       def resolve_class klassname
         class_loader.load klassname
+      end
+
+      # Resolve +klassname+ and ensure it is +parent+ or one of its
+      # subclasses. Tags such as !ruby/hash-with-ivars are only ever emitted
+      # for subclasses of a specific core class; without this check a crafted
+      # document could name an unrelated (but permitted) class and have its
+      # state populated directly, bypassing the class's own init_with.
+      def resolve_subclass klassname, parent
+        klass = resolve_class(klassname)
+        if klass && !(klass <= parent)
+          raise ArgumentError, "Invalid tag: expected a subclass of #{parent}, got #{klass}"
+        end
+        klass
       end
     end
 
