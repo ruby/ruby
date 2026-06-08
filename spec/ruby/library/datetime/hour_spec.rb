@@ -35,8 +35,7 @@ describe "DateTime#hour" do
   end
 
   it "raises an error for hour fractions smaller than -24" do
-    -> { new_datetime(hour: -24 - Rational(1,2)) }.should(
-      raise_error(ArgumentError))
+    -> { new_datetime(hour: -24 - Rational(1,2)) }.should.raise(ArgumentError)
   end
 
   it "adds 1 to day, when 24 hours given" do

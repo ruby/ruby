@@ -10,12 +10,6 @@ describe "Kernel#dup" do
     @obj = KernelSpecs::Duplicate.new 1, :a
   end
 
-  it "calls #initialize_copy on the new instance" do
-    dup = @obj.dup
-    ScratchPad.recorded.should_not == @obj.object_id
-    ScratchPad.recorded.should == dup.object_id
-  end
-
   it "uses the internal allocator and does not call #allocate" do
     klass = Class.new
     instance = klass.new

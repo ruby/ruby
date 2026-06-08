@@ -1,9 +1,17 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
-require_relative 'shared/tell'
 
 describe "StringIO#pos" do
-  it_behaves_like :stringio_tell, :pos
+  before :each do
+    @io = StringIOSpecs.build
+  end
+
+  it "returns the current byte offset" do
+    @io.getc
+    @io.pos.should == 1
+    @io.read(7)
+    @io.pos.should == 8
+  end
 end
 
 describe "StringIO#pos=" do

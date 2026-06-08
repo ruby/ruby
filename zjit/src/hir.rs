@@ -1168,7 +1168,7 @@ pub enum Insn {
     HasType { val: InsnId, expected: Type },
 
     /// Side-exit if val doesn't have the expected type.
-    GuardType { val: InsnId, guard_type: Type, state: InsnId },
+    GuardType { val: InsnId, guard_type: Type, state: InsnId, recompile: Option<Recompile> },
     /// Side-exit if val is not the expected Const.
     GuardBitEquals { val: InsnId, expected: Const, reason: SideExitReason, state: InsnId, recompile: Option<Recompile> },
     /// Side-exit if (val & mask) == 0
@@ -2125,7 +2125,13 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::IntOr      { left, right } => { write!(f, "IntOr {left}, {right}") },
             Insn::FixnumLShift { left, right, .. } => { write!(f, "FixnumLShift {left}, {right}") },
             Insn::FixnumRShift { left, right, .. } => { write!(f, "FixnumRShift {left}, {right}") },
-            Insn::GuardType { val, guard_type, .. } => { write!(f, "GuardType {val}, {}", guard_type.print(self.ptr_map)) },
+            Insn::GuardType { val, guard_type, recompile, .. } => {
+                write!(f, "GuardType {val}, {}", guard_type.print(self.ptr_map))?;
+                if recompile.is_some() {
+                    write!(f, " recompile")?;
+                }
+                return Ok(())
+            },
             Insn::RefineType { val, new_type, .. } => { write!(f, "RefineType {val}, {}", new_type.print(self.ptr_map)) },
             Insn::HasType { val, expected, .. } => { write!(f, "HasType {val}, {}", expected.print(self.ptr_map)) },
             Insn::GuardBitEquals { val, expected, recompile, .. } => {
@@ -3468,7 +3474,7 @@ impl Function {
 
     pub fn coerce_to(&mut self, block: BlockId, val: InsnId, guard_type: Type, state: InsnId) -> InsnId {
         if self.is_a(val, guard_type) { return val; }
-        self.push_insn(block, Insn::GuardType { val, guard_type, state })
+        self.push_insn(block, Insn::GuardType { val, guard_type, state, recompile: None })
     }
 
     fn count_complex_call_features(&mut self, block: BlockId, ci_flags: c_uint) {
@@ -3711,7 +3717,8 @@ impl Function {
 
                             // Add GuardType for profiled receiver
                             if let Some(profiled_type) = profiled_type {
-                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                                let argc = unsafe { vm_ci_argc(ci) } as i32;
+                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile::ProfileSend { argc }) });
                             }
 
                             let send_direct = self.push_insn(block, Insn::SendDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, block: send_block });
@@ -3754,7 +3761,8 @@ impl Function {
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
 
                             if let Some(profiled_type) = profiled_type {
-                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                                let argc = unsafe { vm_ci_argc(ci) } as i32;
+                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile::ProfileSend{ argc }) });
                             }
 
                             let send_direct = self.push_insn(block, Insn::SendDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, block: None });
@@ -3774,7 +3782,8 @@ impl Function {
 
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
                             if let Some(profiled_type) = profiled_type {
-                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                                let argc = unsafe { vm_ci_argc(ci) } as i32;
+                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile::ProfileSend{ argc }) });
                             }
                             let id = unsafe { get_cme_def_body_attr_id(cme) };
 
@@ -3790,7 +3799,8 @@ impl Function {
 
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
                             if let Some(profiled_type) = profiled_type {
-                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                                let argc = unsafe { vm_ci_argc(ci) } as i32;
+                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile::ProfileSend{ argc }) });
                             }
                             let id = unsafe { get_cme_def_body_attr_id(cme) };
 
@@ -3812,7 +3822,8 @@ impl Function {
                                     }
                                     self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
                                     if let Some(profiled_type) = profiled_type {
-                                        recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                                        let argc = unsafe { vm_ci_argc(ci) } as i32;
+                                        recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile::ProfileSend{ argc }) });
                                     }
                                     let kw_splat = flags & VM_CALL_KW_SPLAT != 0;
                                     let invoke_proc = self.push_insn(block, Insn::InvokeProc { recv, args: args.clone(), state, kw_splat });
@@ -3850,7 +3861,8 @@ impl Function {
                                     }
                                     self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
                                     if let Some(profiled_type) = profiled_type {
-                                        recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                                        let argc = unsafe { vm_ci_argc(ci) } as i32;
+                                        recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile::ProfileSend{ argc }) });
                                     }
                                     // All structs from the same Struct class should have the same
                                     // length. So if our recv is embedded all runtime
@@ -3921,12 +3933,12 @@ impl Function {
 
                         if recv_type.is_string() {
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_type.class() }, state });
-                            let guard = self.push_insn(block, Insn::GuardType { val, guard_type: types::String, state });
+                            let guard = self.push_insn(block, Insn::GuardType { val, guard_type: types::String, state, recompile: None });
                             // Infer type so AnyToString can fold off this
                             self.insn_types[guard.0] = self.infer_type(guard);
                             self.make_equal_to(insn_id, guard);
                         } else {
-                            let recv = self.push_insn(block, Insn::GuardType { val, guard_type: Type::from_profiled_type(recv_type), state});
+                            let recv = self.push_insn(block, Insn::GuardType { val, guard_type: Type::from_profiled_type(recv_type), state, recompile: None });
                             let send_to_s = self.push_insn(block, Insn::Send { recv, cd, block: None, args: vec![], state, reason: ObjToStringNotString });
                             self.make_equal_to(insn_id, send_to_s);
                         }
@@ -4373,16 +4385,16 @@ impl Function {
     fn load_ivar_guard_type(&mut self, block: BlockId, recv: InsnId, recv_type: ProfiledType, state: InsnId) -> InsnId {
         if recv_type.flags().is_t_class() {
             // Check class first since `Class < Module`
-            self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::Class, state })
+            self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::Class, state, recompile: None })
         } else if recv_type.flags().is_t_module() {
-            self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::Module, state })
+            self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::Module, state, recompile: None })
         } else if recv_type.flags().is_t_data() {
-            self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::TData, state })
+            self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::TData, state, recompile: None })
         } else {
             // HeapBasicObject is wider than T_OBJECT, but shapes for T_OBJECTs are in a pool of
             // its own and are guaranteed to be different from shapes of any other T_* types. So
             // the shape check that follows already covers checking for T_OBJECT.
-            self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::HeapBasicObject, state })
+            self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::HeapBasicObject, state, recompile: None })
         }
     }
 
@@ -4769,7 +4781,8 @@ impl Function {
 
                     if let Some(profiled_type) = profiled_type {
                         // Guard receiver class
-                        recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                        let argc = unsafe { vm_ci_argc(call_info) } as i32;
+                        recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile::ProfileSend { argc }) });
                         fun.insn_types[recv.0] = fun.infer_type(recv);
                     }
 
@@ -4835,7 +4848,8 @@ impl Function {
 
                     if let Some(profiled_type) = profiled_type {
                         // Guard receiver class
-                        recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state });
+                        let argc = unsafe { vm_ci_argc(call_info) } as i32;
+                        recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile::ProfileSend { argc }) });
                         fun.insn_types[recv.0] = fun.infer_type(recv);
                     }
 
@@ -4987,14 +5001,28 @@ impl Function {
                         compile_time_heap.insert(key, val);
                         insn_id
                     },
-                    Insn::LoadField { recv, offset, .. } => {
+                    Insn::LoadField { recv, offset, return_type, .. } => {
                         let key = (self.chase_insn(recv), offset);
                         match compile_time_heap.entry(key) {
                             std::collections::hash_map::Entry::Occupied(entry) => {
-                                // If the value is stored already, we should short circuit.
-                                // However, we need to replace insn_id with its representative in the SSA union.
-                                self.make_equal_to(insn_id, *entry.get());
-                                continue
+                                let cached_insn = *entry.get();
+
+                                // TODO (nirvdrum 2026-06-04): Remove the return type guard and supporting code when the type checker becomes more accurate.
+                                // If there's an an embedded<=>heap shape storage transition, it's possible for this `LoadField` to have a different return
+                                // type than the cached entry (`CPtr` vs `BasicObject`). While the loaded value would be the same in either case, the
+                                // difference in associated type causes type checking to fail. Consequently, we conservatively retain the duplicate `LoadField`.
+                                // The `optimize_load_store_does_not_alias_loads_with_incompatible_return_types` test checks the problematic case.
+                                let can_forward_cached_insn = match self.find(cached_insn) {
+                                    Insn::LoadField { return_type : cached_return_type,.. } => cached_return_type.is_subtype(return_type),
+                                    _ => true
+                                };
+
+                                if can_forward_cached_insn {
+                                    // If the value is stored already, we should short circuit.
+                                    // However, we need to replace insn_id with its representative in the SSA union.
+                                    self.make_equal_to(insn_id, cached_insn);
+                                    continue
+                                }
                             }
                             std::collections::hash_map::Entry::Vacant(_) => {
                                 // If the value has not been accessed, cache a copy to optimize future loads or stores.
@@ -7079,9 +7107,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }
                     let ty = Type::from_profiled_type(summary.bucket(0));
                     let obj = if ty.is_subtype(types::NilClass) {
-                        fun.push_insn(block, Insn::GuardType { val: hash, guard_type: types::NilClass, state: exit_id })
+                        fun.push_insn(block, Insn::GuardType { val: hash, guard_type: types::NilClass, state: exit_id, recompile: None })
                     } else if ty.is_subtype(types::HashExact) {
-                        fun.push_insn(block, Insn::GuardType { val: hash, guard_type: types::HashExact, state: exit_id })
+                        fun.push_insn(block, Insn::GuardType { val: hash, guard_type: types::HashExact, state: exit_id, recompile: None })
                     } else {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::SplatKwNotNilOrHash, recompile: None });
                         break;  // End the block
@@ -7147,7 +7175,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let id = ID(get_arg(pc, 0).as_u64());
                     let pushval = get_arg(pc, 2);
                     if let Some(summary) = fun.polymorphic_summary(&profiles, self_param, exit_state.insn_idx) {
-                        self_param = fun.push_insn(block, Insn::GuardType { val: self_param, guard_type: types::HeapBasicObject, state: exit_id });
+                        self_param = fun.push_insn(block, Insn::GuardType { val: self_param, guard_type: types::HeapBasicObject, state: exit_id, recompile: None });
                         let rbasic_flags = fun.load_rbasic_flags(block, self_param);
                         let join_block = insn_idx_to_block.get(&insn_idx).copied().unwrap_or_else(|| fun.new_block(insn_idx));
                         let join_param = fun.push_insn(join_block, Insn::Param);
@@ -8318,7 +8346,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         break;  // End the block
                     }
                     if let Some(summary) = fun.polymorphic_summary(&profiles, self_param, exit_state.insn_idx) {
-                        self_param = fun.push_insn(block, Insn::GuardType { val: self_param, guard_type: types::HeapBasicObject, state: exit_id });
+                        self_param = fun.push_insn(block, Insn::GuardType { val: self_param, guard_type: types::HeapBasicObject, state: exit_id, recompile: None });
                         let rbasic_flags = fun.load_rbasic_flags(block, self_param);
                         let join_block = insn_idx_to_block.get(&insn_idx).copied().unwrap_or_else(|| fun.new_block(insn_idx));
                         let join_param = fun.push_insn(join_block, Insn::Param);
@@ -8526,7 +8554,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         break;  // End the block
                     }
                     let val = state.stack_pop()?;
-                    let array = fun.push_insn(block, Insn::GuardType { val, guard_type: types::ArrayExact, state: exit_id, });
+                    let array = fun.push_insn(block, Insn::GuardType { val, guard_type: types::ArrayExact, state: exit_id, recompile: None });
                     let length = fun.push_insn(block, Insn::ArrayLength { array });
                     let expected = fun.push_insn(block, Insn::Const { val: Const::CInt64(num as i64) });
                     fun.push_insn(block, Insn::GuardGreaterEq { left: length, right: expected, reason: SideExitReason::ExpandArray, state: exit_id });
@@ -9306,6 +9334,81 @@ mod validation_tests {
         function.push_insn(exit, Insn::Return { val });
         function.seal_entries();
         assert_matches_err(function.validate(), ValidationError::DuplicateInstruction(exit, val));
+    }
+
+    // The heap-fields pointer (`as_heap`, a CPtr) and the first embedded
+    // instance variable both live at ROBJECT_OFFSET_AS_HEAP_FIELDS ==
+    // ROBJECT_OFFSET_AS_ARY == 0x10 on a Ruby object. They are distinct fields
+    // with incompatible value types that happen to share a base and an offset.
+    // Since we could end up with two `LoadField` on different shape types
+    // (e.g., as the result of inlining), `optimize_load_store` must not satisfy
+    // one load from another cached load with a different return type. The fault
+    // surfaces here as the forwarded value flowing into a `Return` with the
+    // wrong type (`CPtr` rather than `BasicObject`).
+    #[test]
+    fn optimize_load_store_does_not_alias_loads_with_incompatible_return_types() {
+        assert_eq!(ROBJECT_OFFSET_AS_HEAP_FIELDS, ROBJECT_OFFSET_AS_ARY,
+            "Conflicting field offsets changed, rendering the rest of this test incorrect");
+
+        let mut function = Function::new(std::ptr::null());
+        let entry = function.entry_block;
+        let recv = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        function.push_insn(entry, Insn::LoadField {
+            recv,
+            id: FieldName::as_heap,
+            offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32,
+            return_type: types::CPtr,
+        });
+        let ivar = function.push_insn(entry, Insn::LoadField {
+            recv,
+            id: FieldName::Id(ID(1)),
+            offset: ROBJECT_OFFSET_AS_ARY as i32,
+            return_type: types::BasicObject,
+        });
+        function.push_insn(entry, Insn::Return { val: ivar });
+        function.seal_entries();
+
+        function.infer_types();
+        function.optimize_load_store();
+
+        assert!(
+            function.validate().is_ok(),
+            "optimize_load_store aliased two loads with different return types: {:?}",
+            function.validate(),
+        );
+    }
+
+    #[test]
+    fn optimize_load_store_does_not_alias_loads_with_compatible_return_types() {
+        assert_eq!(ROBJECT_OFFSET_AS_HEAP_FIELDS, ROBJECT_OFFSET_AS_ARY,
+                   "Conflicting field offsets changed, rendering the rest of this test incorrect");
+
+        let mut function = Function::new(std::ptr::null());
+        let entry = function.entry_block;
+        let recv = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        function.push_insn(entry, Insn::LoadField {
+            recv,
+            id: FieldName::as_heap,
+            offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32,
+            return_type: types::BasicObject,
+        });
+        let ivar = function.push_insn(entry, Insn::LoadField {
+            recv,
+            id: FieldName::Id(ID(1)),
+            offset: ROBJECT_OFFSET_AS_ARY as i32,
+            return_type: types::Array,
+        });
+        function.push_insn(entry, Insn::Return { val: ivar });
+        function.seal_entries();
+
+        function.infer_types();
+        function.optimize_load_store();
+
+        assert!(
+            function.validate().is_ok(),
+            "optimize_load_store failed to alias two loads with different, but compatible, return types: {:?}",
+            function.validate(),
+        );
     }
 }
 

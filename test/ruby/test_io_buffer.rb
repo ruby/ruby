@@ -242,6 +242,16 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
+  def test_resize_invalidated_slice
+    inner = IO::Buffer.new(IO::Buffer::PAGE_SIZE)
+    slice = inner.slice(0, 8)
+    inner.free
+
+    assert_raise(IO::Buffer::InvalidatedError) do
+      slice.resize(16)
+    end
+  end
+
   def test_compare_same_size
     buffer1 = IO::Buffer.new(1)
     assert_equal buffer1, buffer1
@@ -376,6 +386,17 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /Offset can't be negative/) do
       buffer.get_string(-1)
     end
+
+    encoding = Struct.new(:buffer) do
+      def to_str
+        buffer.free
+        "BINARY"
+      end
+    end.new(buffer.dup)
+    slice = encoding.buffer.slice(0, 8)
+    assert_raise(IO::Buffer::InvalidatedError) do
+      slice.get_string(0, 8, encoding)
+    end
   end
 
   def test_zero_length_get_string
@@ -447,6 +468,26 @@ class TestIOBuffer < Test::Unit::TestCase
       buffer.set_values(format, 0, values)
       assert_equal values, buffer.get_values(format, 0), "Converting #{values} as #{format}."
     end
+  end
+
+  def test_set_values_invalidated_slice
+    to_int = Struct.new(:buffer) do
+      def to_int
+        buffer.free
+        0x41
+      end
+    end
+    buffer = IO::Buffer.new(128)
+    slice = buffer.slice(0, 8)
+    value = to_int.new(buffer)
+    assert_raise(IO::Buffer::InvalidatedError) {slice.set_value(:U8, 0, value)}
+
+    buffer = IO::Buffer.new(128)
+    slice = buffer.slice(0, 8)
+    value = to_int.new(buffer)
+    assert_raise(IO::Buffer::InvalidatedError) {
+      slice.set_values([:U8, :U8], 0, [0, value])
+    }
   end
 
   def test_zero_length_get_set_values
@@ -712,6 +753,10 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_raise(IO::Buffer::InvalidatedError) { slice | mask }
     assert_raise(IO::Buffer::InvalidatedError) { slice ^ mask }
     assert_raise(IO::Buffer::InvalidatedError) { ~slice }
+
+    assert_raise(IO::Buffer::InvalidatedError) { slice.and!(mask) }
+    assert_raise(IO::Buffer::InvalidatedError) { slice.or!(mask) }
+    assert_raise(IO::Buffer::InvalidatedError) { slice.xor!(mask) }
   end
 
   def test_operators_raise_on_freed_mask
@@ -723,6 +768,11 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_raise(IO::Buffer::InvalidatedError) { source & mask_slice }
     assert_raise(IO::Buffer::InvalidatedError) { source | mask_slice }
     assert_raise(IO::Buffer::InvalidatedError) { source ^ mask_slice }
+
+    source = source.dup
+    assert_raise(IO::Buffer::InvalidatedError) { source.and!(mask_slice) }
+    assert_raise(IO::Buffer::InvalidatedError) { source.or!(mask_slice) }
+    assert_raise(IO::Buffer::InvalidatedError) { source.xor!(mask_slice) }
   end
 
   def test_bit_count

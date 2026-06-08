@@ -91,7 +91,7 @@
 use std::convert::From;
 use std::ffi::{c_void, CString, CStr};
 use std::fmt::{Debug, Display, Formatter};
-use std::os::raw::{c_char, c_int, c_uint};
+use std::os::raw::{c_char, c_int, c_long, c_uint};
 use std::panic::{catch_unwind, UnwindSafe};
 
 use crate::cast::IntoUsize as _;
@@ -132,6 +132,7 @@ unsafe extern "C" {
     pub fn rb_float_new(d: f64) -> VALUE;
 
     pub fn rb_hash_empty_p(hash: VALUE) -> VALUE;
+    pub fn rb_ary_new_from_args(n: c_long, ...) -> VALUE;
     pub fn rb_str_setbyte(str: VALUE, index: VALUE, value: VALUE) -> VALUE;
     pub fn rb_str_getbyte(str: VALUE, index: VALUE) -> VALUE;
     pub fn rb_vm_splat_array(flag: VALUE, ary: VALUE) -> VALUE;
@@ -165,6 +166,12 @@ unsafe extern "C" {
     pub fn rb_vm_stack_canary() -> VALUE;
     pub fn rb_vm_push_cfunc_frame(cme: *const rb_callable_method_entry_t, recv_idx: c_int);
     pub fn rb_obj_class(klass: VALUE) -> VALUE;
+    pub fn rb_define_method(
+        klass: VALUE,
+        mid: *const c_char,
+        func: Option<unsafe extern "C" fn(args: VALUE) -> VALUE>,
+        arity: c_int,
+    );
     pub fn rb_vm_objtostring(reg_cfp: CfpPtr, recv: VALUE, cd: *const rb_call_data) -> VALUE;
 }
 

@@ -28,7 +28,7 @@ describe "IO.foreach" do
         ScratchPad.recorded.should == ["hello\n", "line2\n"]
       end
 
-      platform_is_not :windows do
+      guard -> { Process.respond_to?(:fork) } do
         it "gets data from a fork when passed -" do
           parent_pid = $$
 

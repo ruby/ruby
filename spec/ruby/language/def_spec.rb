@@ -306,32 +306,21 @@ end
 describe "Redefining a singleton method" do
   it "does not inherit a previously set visibility" do
     o = Object.new
+    sc = o.singleton_class
 
-    class << o; private; def foo; end; end;
+    class << o
+      private
+      def foo; end
+    end
 
-    class << o; should have_private_instance_method(:foo); end
+    sc.private_instance_methods(false).should.include?(:foo)
 
-    class << o; def foo; end; end;
+    class << o
+      def foo; end
+    end
 
-    class << o; should_not have_private_instance_method(:foo); end
-    class << o; should have_instance_method(:foo); end
-
-  end
-end
-
-describe "Redefining a singleton method" do
-  it "does not inherit a previously set visibility" do
-    o = Object.new
-
-    class << o; private; def foo; end; end;
-
-    class << o; should have_private_instance_method(:foo); end
-
-    class << o; def foo; end; end;
-
-    class << o; should_not have_private_instance_method(:foo); end
-    class << o; should have_instance_method(:foo); end
-
+    sc.private_instance_methods(false).should_not.include?(:foo)
+    sc.should.method_defined?(:foo)
   end
 end
 

@@ -163,7 +163,7 @@ ruby_version_is ""..."4.0" do
       end
     end
 
-    platform_is_not :windows do
+    guard -> { Process.respond_to?(:fork) } do
       it "opens a pipe to a fork if the rest is -" do
         str = nil
         suppress_warning do # https://bugs.ruby-lang.org/issues/19630

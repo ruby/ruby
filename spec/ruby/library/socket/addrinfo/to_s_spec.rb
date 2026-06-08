@@ -1,6 +1,7 @@
 require_relative '../spec_helper'
-require_relative 'shared/to_sockaddr'
 
 describe "Addrinfo#to_s" do
-  it_behaves_like :socket_addrinfo_to_sockaddr, :to_s
+  it "is an alias of Addrinfo#to_sockaddr" do
+    Addrinfo.instance_method(:to_s).should == Addrinfo.instance_method(:to_sockaddr)
+  end
 end

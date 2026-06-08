@@ -1,4 +1,4 @@
-## Filename Matching
+# Filename Matching
 
 Filename matching is a pattern-matching feature implemented in certain Ruby methods:
 
@@ -8,14 +8,11 @@ Filename matching is a pattern-matching feature implemented in certain Ruby meth
 Each `fnmatch` method matches a pattern against a string _path_;
 these methods operate only on strings, and do not access the file system.
 
-These are quite different from filename globbing methods (not discussed here),
-which match patterns against string paths found in the actual file system:
+These methods are quite different
+from [filename-globbing](rdoc-ref:filename_globbing.md) methods,
+which match patterns against string paths found in the actual file system.
 
-- Dir.glob.
-- Pathname.glob.
-- Pathname#glob.
-
-### Patterns
+## Patterns
 
 These are the basic elements of filename matching patterns;
 see the sections below for details:
@@ -36,7 +33,7 @@ There are two other patterns that are disabled by default:
 - Alternatives (`'{ , }'`);
   see [`File::FNM_EXTGLOB`](#constant-filefnmextglob) below.
 
-#### Simple \String
+### Simple \String
 
 A "simple string" is one that does not contain special filename-matching patterns;
 see the table above.
@@ -48,6 +45,7 @@ File.fnmatch('xyzzy', 'xyzzy')                     # => true
 File.fnmatch('one_two_three', 'one_two_three')     # => true
 File.fnmatch('123', '123')                         # => true
 File.fnmatch('Form 27B/6', 'Form 27B/6')           # => true
+
 Pathname('xyzzy').fnmatch('xyzzy')                 # => true
 Pathname('one_two_three').fnmatch('one_two_three') # => true
 Pathname('123').fnmatch('123')                     # => true
@@ -96,7 +94,7 @@ Pathname(path).fnmatch(pattern) # => false
 
 It may be enabled by flag [`File::FNM_SHORTNAME`](#constant-filefnmshortname).
 
-#### Any Sequence of Characters (`'*'`)
+### Any Sequence of Characters (`'*'`)
 
 The asterisk pattern (`'*'`) matches any sequence of characters:
 
@@ -105,6 +103,7 @@ pattern = '*'
 File.fnmatch(pattern, 'foo')     # => true
 File.fnmatch(pattern, '')        # => true
 File.fnmatch(pattern, 'foo')     # => true
+
 Pathname('foo').fnmatch(pattern) # => true
 Pathname('').fnmatch(pattern)    # => true
 Pathname('*').fnmatch(pattern)   # => true
@@ -140,7 +139,7 @@ Pathname(path).fnmatch(pattern) # => true
 
 That matching may be disabled by flag [`File::FNM_PATHNAME`](#constant-filefnmpathname).
 
-#### Single Character (`'?'`)
+### Single Character (`'?'`)
 
 The question-mark pattern (`'?'`) matches any single character:
 
@@ -149,6 +148,7 @@ pattern = '?'
 File.fnmatch(pattern, 'f')             # => true
 File.fnmatch(pattern, '')              # => false
 File.fnmatch(pattern, 'foo')           # => false
+
 Pathname('f').fnmatch(pattern)         # => true
 Pathname('').fnmatch(pattern)          # => false
 Pathname('foo').fnmatch(pattern)       # => false
@@ -179,7 +179,7 @@ Pathname(path).fnmatch(pattern) # => true
 
 That matching may be disabled by flag [`File::FNM_PATHNAME`](#constant-filefnmpathname).
 
-#### Single Character from a Set (`'[abc]'`, `'[^abc]'`)
+### Single Character from a Set (`'[abc]'`, `'[^abc]'`)
 
 Characters enclosed in square brackets define a set of characters,
 any of which matches a single character:
@@ -189,6 +189,7 @@ pattern = '[ruby]'
 File.fnmatch(pattern, 'r')        # => true
 File.fnmatch(pattern, 'u')        # => true
 File.fnmatch(pattern, 'y')        # => true
+
 Pathname('r').fnmatch(pattern)    # => true
 Pathname('u').fnmatch(pattern)    # => true
 Pathname('y').fnmatch(pattern)    # => true
@@ -215,11 +216,12 @@ The character set may be negated:
 pattern = '[^ruby]'
 File.fnmatch(pattern, 'r')     # => false
 File.fnmatch(pattern, 'u')     # => false
+
 Pathname('r').fnmatch(pattern) # => false
 Pathname('u').fnmatch(pattern) # => false
 ```
 
-#### Single Character from a \Range (`'[a-c]'`, `'[^a-c]'`)
+### Single Character from a \Range (`'[a-c]'`, `'[^a-c]'`)
 
 A range of characters enclosed in square brackets defines a set of characters,
 any of which matches a single character:
@@ -229,6 +231,7 @@ pattern = '[a-c]'
 File.fnmatch(pattern, 'b')       # => true
 File.fnmatch(pattern, 'd')       # => false
 File.fnmatch(pattern, 'abc')     # => false
+
 Pathname('b').fnmatch(pattern)   # => true
 Pathname('d').fnmatch(pattern)   # => false
 Pathname('abc').fnmatch(pattern) # => false
@@ -241,6 +244,7 @@ pattern = '\[a-c]'
 path = 'b'
 File.fnmatch(pattern, path)       # => false
 Pathname(path).fnmatch(pattern)   # => false
+
 ```
 
 Multiple ranges are allowed:
@@ -261,7 +265,7 @@ File.fnmatch(pattern, path)     # => false
 Pathname(path).fnmatch(pattern) # => false
 ```
 
-#### Escape (`'\'`)
+### Escape (`'\'`)
 
 The backslash character (`'\'`) may be used to escape any of the characters
 that filename matching treats as special:
@@ -272,6 +276,7 @@ File.fnmatch('[a-c]', path)                         # => true
 File.fnmatch('\[a-c]', path)                        # => false
 File.fnmatch('[a-c\]', path)                        # => false
 File.fnmatch('[a\-c]', path)                        # => false
+
 Pathname(path).fnmatch('[a-c]')                     # => true
 Pathname(path).fnmatch('\[a-c]')                    # => false
 Pathname(path).fnmatch('[a-c\]')                    # => false
@@ -301,7 +306,7 @@ Pathname(path).fnmatch(pattern) # => true
 By default escape pattern `'\'` is enabled;
 it may be disabled by flag [`File::FNM_NOESCAPE`](#constant-filefnmnoescape).
 
-### Flags
+## Flags
 
 Optional argument `flags` (defaults to `0`) may be the bitwise OR
 of the constants `File::FNM*`.
@@ -320,7 +325,7 @@ see the sections below for details:
 | [`File::FNM_SYSCASE`](#constant-filefnmsyscase)     | Make the pattern use OS's case sensitivity.                 |
 
 
-#### Constant File::FNM_CASEFOLD
+### Constant File::FNM_CASEFOLD
 
 By default, filename matching is case-sensitive;
 use constant [`File::FNM_CASEFOLD`](#constant-filefnmcasefold)
@@ -335,7 +340,7 @@ Pathname(path).fnmatch(pattern)                     # => false
 Pathname(path).fnmatch(pattern, File::FNM_CASEFOLD) # => true
 ```
 
-#### Constant File::FNM_DOTMATCH
+### Constant File::FNM_DOTMATCH
 
 By default, filename matching does not allow pattern `'*'` to match a dotfile name
 (i.e, a filename beginning with a dot);
@@ -350,7 +355,7 @@ File.fnmatch(pattern, path, File::FNM_DOTMATCH)     # => true
 Pathname(path).fnmatch(pattern)                     # => false
 Pathname(path).fnmatch(pattern, File::FNM_DOTMATCH) # => true
 ```
-#### Constant File::FNM_EXTGLOB
+### Constant File::FNM_EXTGLOB
 
 By default, filename matching has the alternative notation disabled;
 use constant [`File::FNM_EXTGLOB`](#constant-filefnmextglob)
@@ -403,7 +408,7 @@ Pathname(path).fnmatch('{*ELLO,?}', File::FNM_EXTGLOB)     # => false
 Pathname(path).fnmatch('{*ELLO,?????}', File::FNM_EXTGLOB) # => true
 ```
 
-#### Constant File::FNM_NOESCAPE
+### Constant File::FNM_NOESCAPE
 
 By default filename matching has escaping enabled;
 use constant [`File::FNM_NOESCAPE`](#constant-filefnmnoescape)
@@ -418,7 +423,7 @@ Pathname(path).fnmatch(pattern)                     # => true
 Pathname(path).fnmatch(pattern, File::FNM_NOESCAPE) # => false
 ```
 
-#### Constant File::FNM_PATHNAME
+### Constant File::FNM_PATHNAME
 
 Flag [`File::FNM_PATHNAME`](#constant-filefnmpathname) affects
 patterns `'**'`, `'*'`, and `'?'`.
@@ -478,7 +483,7 @@ Pathname(path).fnmatch(pattern)                     # => true
 Pathname(path).fnmatch(pattern, File::FNM_PATHNAME) # => false
 ```
 
-#### Constant File::FNM_SHORTNAME
+### Constant File::FNM_SHORTNAME
 
 By default, Windows shortname matching is disabled;
 use constant [`File::FNM_SHORTNAME`](#constant-filefnmshortname)
@@ -504,7 +509,7 @@ File.fnmatch(pattern, path, File::FNM_SHORTNAME)     # => true
 Pathname(path).fnmatch(pattern, File::FNM_SHORTNAME) # => true
 ```
 
-#### Constant File::FNM_SYSCASE
+### Constant File::FNM_SYSCASE
 
 By default, filename matching uses Ruby's own case-sensitivity rules;
 use constant [`File::FNM_SYSCASE`](#constant-filefnmsyscase)
