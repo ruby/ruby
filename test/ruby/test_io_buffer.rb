@@ -242,6 +242,16 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
+  def test_resize_invalidated_slice
+    inner = IO::Buffer.new(IO::Buffer::PAGE_SIZE)
+    slice = inner.slice(0, 8)
+    inner.free
+
+    assert_raise(IO::Buffer::InvalidatedError) do
+      slice.resize(16)
+    end
+  end
+
   def test_compare_same_size
     buffer1 = IO::Buffer.new(1)
     assert_equal buffer1, buffer1
@@ -375,6 +385,17 @@ class TestIOBuffer < Test::Unit::TestCase
 
     assert_raise_with_message(ArgumentError, /Offset can't be negative/) do
       buffer.get_string(-1)
+    end
+
+    encoding = Struct.new(:buffer) do
+      def to_str
+        buffer.free
+        "BINARY"
+      end
+    end.new(buffer.dup)
+    slice = encoding.buffer.slice(0, 8)
+    assert_raise(IO::Buffer::InvalidatedError) do
+      slice.get_string(0, 8, encoding)
     end
   end
 
