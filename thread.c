@@ -446,18 +446,33 @@ rb_threadptr_join_list_wakeup(rb_thread_t *thread)
     }
 }
 
+// This lock protects thread->keeping_mutexes when a mutex and its owning
+// thread are concurrently freed.
+static void keeping_mutexes_lock_lock(rb_thread_t *th);
+static void keeping_mutexes_lock_unlock(rb_thread_t *th);
+
 void
 rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
 {
-    while (th->keeping_mutexes) {
-        rb_mutex_t *mutex = th->keeping_mutexes;
-        th->keeping_mutexes = mutex->next_mutex;
+    keeping_mutexes_lock_lock(th);
+    {
+        while (th->keeping_mutexes) {
+            rb_mutex_t *mutex = th->keeping_mutexes;
+            rb_mutex_t *next = mutex->next_mutex;
+            th->keeping_mutexes = next;
+            mutex->next_mutex = NULL;
 
-        // rb_warn("mutex #<%p> was not unlocked by thread #<%p>", (void *)mutex, (void*)th);
-        VM_ASSERT(mutex->ec_serial);
-        const char *error_message = rb_mutex_unlock_th(mutex, th, 0);
-        if (error_message) rb_bug("invalid keeping_mutexes: %s", error_message);
+            keeping_mutexes_lock_unlock(th);
+
+            // rb_warn("mutex #<%p> was not unlocked by thread #<%p>", (void *)mutex, (void*)th);
+            VM_ASSERT(mutex->ec_serial);
+            const char *error_message = rb_mutex_unlock_th(mutex, th, 0, false);
+            if (error_message) rb_bug("invalid keeping_mutexes: %s", error_message);
+            if (!next) return;
+            keeping_mutexes_lock_lock(th);
+        }
     }
+    keeping_mutexes_lock_unlock(th);
 }
 
 void
@@ -539,6 +554,7 @@ thread_cleanup_func(void *th_ptr, int atfork)
     }
 
     rb_native_mutex_destroy(&th->interrupt_lock);
+    rb_native_mutex_destroy(&th->keeping_mutexes_lock);
 }
 
 void
@@ -888,6 +904,7 @@ thread_create_core(VALUE thval, struct thread_create_params *params)
     RBASIC_CLEAR_CLASS(th->pending_interrupt_mask_stack);
 
     rb_native_mutex_initialize(&th->interrupt_lock);
+    rb_native_mutex_initialize(&th->keeping_mutexes_lock);
 
     RUBY_DEBUG_LOG("r:%u th:%u", rb_ractor_id(th->ractor), rb_th_serial(th));
 
@@ -5001,6 +5018,7 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
 
     /* may be held by any thread in parent */
     rb_native_mutex_initialize(&th->interrupt_lock);
+    rb_native_mutex_initialize(&th->keeping_mutexes_lock);
     ccan_list_head_init(&th->interrupt_exec_tasks);
 
     vm->fork_gen++;
@@ -5023,6 +5041,7 @@ terminate_atfork_i(rb_thread_t *th, const rb_thread_t *current_th)
         th->scheduler = Qnil;
 
         rb_native_mutex_initialize(&th->interrupt_lock);
+        rb_native_mutex_initialize(&th->keeping_mutexes_lock);
         rb_mutex_abandon_keeping_mutexes(th);
         rb_mutex_abandon_locking_mutex(th);
         thread_cleanup_func(th, TRUE);
@@ -5674,6 +5693,7 @@ Init_Thread_Mutex(void)
 
     rb_native_mutex_initialize(&th->vm->workqueue_lock);
     rb_native_mutex_initialize(&th->interrupt_lock);
+    rb_native_mutex_initialize(&th->keeping_mutexes_lock);
 }
 
 /*

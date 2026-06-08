@@ -80,7 +80,7 @@ static void rb_mutex_abandon_all(rb_mutex_t *mutexes);
 static void rb_mutex_abandon_keeping_mutexes(rb_thread_t *th);
 static void rb_mutex_abandon_locking_mutex(rb_thread_t *th);
 #endif
-static const char* rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial);
+static const char* rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial, bool unlink_from_keeping);
 
 static size_t
 rb_mutex_num_waiting(rb_mutex_t *mutex)
@@ -93,6 +93,46 @@ rb_mutex_num_waiting(rb_mutex_t *mutex)
     }
 
     return n;
+}
+
+static inline void
+ASSERT_keeping_mutexes_lock_locked(rb_thread_t *th)
+{
+#ifdef RUBY_THREAD_PTHREAD_H
+    VM_ASSERT(pthread_self() == th->keeping_mutexes_lock_owner);
+#else
+    (void)th;
+#endif
+}
+
+static inline void
+ASSERT_keeping_mutexes_lock_unlocked(rb_thread_t *th)
+{
+#ifdef RUBY_THREAD_PTHREAD_H
+    VM_ASSERT(pthread_self() != th->keeping_mutexes_lock_owner);
+#else
+    (void)th;
+#endif
+}
+
+static void
+keeping_mutexes_lock_lock(rb_thread_t *th)
+{
+    ASSERT_keeping_mutexes_lock_unlocked(th);
+    rb_native_mutex_lock(&th->keeping_mutexes_lock);
+#ifdef RUBY_THREAD_PTHREAD_H
+    th->keeping_mutexes_lock_owner = pthread_self();
+#endif
+}
+
+static void
+keeping_mutexes_lock_unlock(rb_thread_t *th)
+{
+    ASSERT_keeping_mutexes_lock_locked(th);
+#ifdef RUBY_THREAD_PTHREAD_H
+    th->keeping_mutexes_lock_owner = 0;
+#endif
+    rb_native_mutex_unlock(&th->keeping_mutexes_lock);
 }
 
 rb_thread_t* rb_fiber_threadptr(const rb_fiber_t *fiber);
@@ -108,7 +148,7 @@ mutex_free(void *ptr)
 {
     rb_mutex_t *mutex = ptr;
     if (mutex_locked_p(mutex)) {
-        const char *err = rb_mutex_unlock_th(mutex, mutex->th, 0);
+        const char *err = rb_mutex_unlock_th(mutex, mutex->th, 0, true);
         if (err) rb_bug("%s", err);
     }
     ruby_xfree(ptr);
@@ -172,27 +212,35 @@ static void
 thread_mutex_insert(rb_thread_t *thread, rb_mutex_t *mutex)
 {
     RUBY_ASSERT(!mutex->next_mutex);
-    if (thread->keeping_mutexes) {
-        mutex->next_mutex = thread->keeping_mutexes;
-    }
+    keeping_mutexes_lock_lock(thread);
+    {
+        if (thread->keeping_mutexes) {
+            mutex->next_mutex = thread->keeping_mutexes;
+        }
 
-    thread->keeping_mutexes = mutex;
+        thread->keeping_mutexes = mutex;
+    }
+    keeping_mutexes_lock_unlock(thread);
 }
 
 static void
 thread_mutex_remove(rb_thread_t *thread, rb_mutex_t *mutex)
 {
-    rb_mutex_t **keeping_mutexes = &thread->keeping_mutexes;
+    keeping_mutexes_lock_lock(thread);
+    {
+        rb_mutex_t **keeping_mutexes = &thread->keeping_mutexes;
 
-    while (*keeping_mutexes && *keeping_mutexes != mutex) {
-        // Move to the next mutex in the list:
-        keeping_mutexes = &(*keeping_mutexes)->next_mutex;
-    }
+        while (*keeping_mutexes && *keeping_mutexes != mutex) {
+            // Move to the next mutex in the list:
+            keeping_mutexes = &(*keeping_mutexes)->next_mutex;
+        }
 
-    if (*keeping_mutexes) {
-        *keeping_mutexes = mutex->next_mutex;
-        mutex->next_mutex = NULL;
+        if (*keeping_mutexes) {
+            *keeping_mutexes = mutex->next_mutex;
+            mutex->next_mutex = NULL;
+        }
     }
+    keeping_mutexes_lock_unlock(thread);
 }
 
 static void
@@ -441,7 +489,7 @@ rb_mutex_owned_p(VALUE self)
 }
 
 static const char *
-rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
+rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial, bool unlink_from_keeping)
 {
     RUBY_DEBUG_LOG("%p", mutex);
 
@@ -455,7 +503,9 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
     struct sync_waiter *cur = 0, *next;
 
     mutex->ec_serial = 0;
-    thread_mutex_remove(th, mutex);
+    if (unlink_from_keeping) {
+        thread_mutex_remove(th, mutex);
+    }
 
     ccan_list_for_each_safe(&mutex->waitq, cur, next, node) {
         ccan_list_del_init(&cur->node);
@@ -492,7 +542,7 @@ do_mutex_unlock(struct mutex_args *args)
     rb_mutex_t *mutex = args->mutex;
     rb_thread_t *th = rb_ec_thread_ptr(args->ec);
 
-    err = rb_mutex_unlock_th(mutex, th, rb_ec_serial(args->ec));
+    err = rb_mutex_unlock_th(mutex, th, rb_ec_serial(args->ec), true);
     if (err) rb_raise(rb_eThreadError, "%s", err);
 }
 
@@ -535,8 +585,12 @@ rb_mut_unlock(rb_execution_context_t *ec, VALUE self)
 static void
 rb_mutex_abandon_keeping_mutexes(rb_thread_t *th)
 {
-    rb_mutex_abandon_all(th->keeping_mutexes);
-    th->keeping_mutexes = NULL;
+    keeping_mutexes_lock_lock(th);
+    {
+        rb_mutex_abandon_all(th->keeping_mutexes);
+        th->keeping_mutexes = NULL;
+    }
+    keeping_mutexes_lock_unlock(th);
 }
 
 static void

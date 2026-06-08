@@ -1192,6 +1192,14 @@ typedef struct rb_thread_struct {
     struct rb_unblock_callback unblock;
     VALUE locking_mutex;
     struct rb_mutex_struct *keeping_mutexes;
+
+    // Protects `keeping_mutexes` against concurrent modification when a mutex
+    // and its owning thread are freed at the same time.
+    rb_nativethread_lock_t keeping_mutexes_lock;
+#ifdef RUBY_THREAD_PTHREAD_H
+    pthread_t keeping_mutexes_lock_owner;
+#endif
+
     struct ccan_list_head interrupt_exec_tasks;
 
     struct rb_waiting_list *join_list;
