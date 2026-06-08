@@ -1673,18 +1673,6 @@ proc_exec_sh(const char *str, VALUE envp_str)
 
 #ifdef _WIN32
     rb_w32_uspawn(P_OVERLAY, (char *)str, 0);
-#elif defined(__CYGWIN32__)
-    {
-        char fbuf[MAXPATHLEN];
-        char *shell = dln_find_exe_r("sh", 0, fbuf, sizeof(fbuf));
-        int status = -1;
-        if (shell)
-            execl(shell, "sh", "-c", str, (char *) NULL);
-        else
-            status = system(str);
-        if (status != -1)
-            exit(status);
-    }
 #else
     if (envp_str)
         execle("/bin/sh", "sh", "-c", str, (char *)NULL, RB_IMEMO_TMPBUF_PTR(envp_str)); /* async-signal-safe */
