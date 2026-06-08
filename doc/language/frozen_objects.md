@@ -51,13 +51,7 @@ commonly by placing a "magic comment" at the top of source files:
 
 ## Frozen User Objects
 
-Each of these methods freezes `self`:
-
-- Array#freeze
-- Object#freeze
-- Pathname#freeze
-
-Examples:
+Almost any object may be frozen:
 
 ```ruby
 KEYWORDS = %w[foo bar baz].freeze
