@@ -41,6 +41,32 @@ class TestFileUtils < Test::Unit::TestCase
       /mswin|mingw|bcc|emx/ !~ RUBY_PLATFORM
     end
 
+    @@assignable_groups = nil
+
+    # Filter the given group IDs down to those the current process can actually
+    # assign to a file with chown.  Some environments (e.g. user-namespace
+    # containers) report supplementary groups such as the overflow GID
+    # (65534/nobody) that the kernel refuses to chgrp to; without this the
+    # group-ownership tests would fail with EPERM instead of being skipped.
+    def assignable_groups(groups)
+      @@assignable_groups ||= {}
+      groups.select do |gid|
+        @@assignable_groups.fetch(gid) do
+          Dir.mktmpdir("fileutils") do |dir|
+            probe = File.join(dir, "probe")
+            File.write(probe, "")
+            @@assignable_groups[gid] =
+              begin
+                File.chown(nil, gid, probe)
+                true
+              rescue Errno::EPERM
+                false
+              end
+          end
+        end
+      end
+    end
+
     @@have_symlink = nil
 
     def have_symlink?
@@ -182,7 +208,7 @@ class TestFileUtils < Test::Unit::TestCase
 
   def setup
     @prevdir = Dir.pwd
-    @groups = [Process.gid] | Process.groups if have_file_perm?
+    @groups = assignable_groups([Process.gid] | Process.groups) if have_file_perm?
     tmproot = @tmproot = Dir.mktmpdir "fileutils"
     Dir.chdir tmproot
     my_rm_rf 'data'; mymkdir 'data'
