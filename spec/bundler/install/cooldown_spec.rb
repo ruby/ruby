@@ -668,6 +668,23 @@ RSpec.describe "bundle install with the cooldown setting" do
 
       expect(the_bundle).to include_gems("ripe_gem 2.0.0")
     end
+
+    it "keys per-source cooldown by the declared URI even behind a mirror" do
+      # A mirror rewrites the fetch URI, but cooldown is recorded under the URI
+      # written in the Gemfile. The cooldown must still apply through the
+      # redirect to the mirror that actually serves the gems.
+      bundle "config set mirror.https://gem.repo2 https://gem.repo3"
+
+      gemfile <<-G
+        source "https://gem.repo2", cooldown: 7
+        gem "ripe_gem"
+      G
+
+      bundle "install", artifice: "compact_index_cooldown",
+                        env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo3.to_s }
+
+      expect(the_bundle).to include_gems("ripe_gem 1.0.0")
+    end
   end
 
   context "with a source that does not provide publish dates" do
