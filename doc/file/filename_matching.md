@@ -45,12 +45,10 @@ File.fnmatch('xyzzy', 'xyzzy')                     # => true
 File.fnmatch('one_two_three', 'one_two_three')     # => true
 File.fnmatch('123', '123')                         # => true
 File.fnmatch('Form 27B/6', 'Form 27B/6')           # => true
-
 Pathname('xyzzy').fnmatch('xyzzy')                 # => true
 Pathname('one_two_three').fnmatch('one_two_three') # => true
 Pathname('123').fnmatch('123')                     # => true
 Pathname('Form 27B/6').fnmatch('Form 27B/6')       # => true
-
 # Must be exact.
 pattern = 'abcde'
 path = 'abc'
@@ -103,7 +101,6 @@ pattern = '*'
 File.fnmatch(pattern, 'foo')     # => true
 File.fnmatch(pattern, '')        # => true
 File.fnmatch(pattern, 'foo')     # => true
-
 Pathname('foo').fnmatch(pattern) # => true
 Pathname('').fnmatch(pattern)    # => true
 Pathname('*').fnmatch(pattern)   # => true
@@ -148,7 +145,6 @@ pattern = '?'
 File.fnmatch(pattern, 'f')             # => true
 File.fnmatch(pattern, '')              # => false
 File.fnmatch(pattern, 'foo')           # => false
-
 Pathname('f').fnmatch(pattern)         # => true
 Pathname('').fnmatch(pattern)          # => false
 Pathname('foo').fnmatch(pattern)       # => false
@@ -189,7 +185,6 @@ pattern = '[ruby]'
 File.fnmatch(pattern, 'r')        # => true
 File.fnmatch(pattern, 'u')        # => true
 File.fnmatch(pattern, 'y')        # => true
-
 Pathname('r').fnmatch(pattern)    # => true
 Pathname('u').fnmatch(pattern)    # => true
 Pathname('y').fnmatch(pattern)    # => true
@@ -216,7 +211,6 @@ The character set may be negated:
 pattern = '[^ruby]'
 File.fnmatch(pattern, 'r')     # => false
 File.fnmatch(pattern, 'u')     # => false
-
 Pathname('r').fnmatch(pattern) # => false
 Pathname('u').fnmatch(pattern) # => false
 ```
@@ -231,7 +225,6 @@ pattern = '[a-c]'
 File.fnmatch(pattern, 'b')       # => true
 File.fnmatch(pattern, 'd')       # => false
 File.fnmatch(pattern, 'abc')     # => false
-
 Pathname('b').fnmatch(pattern)   # => true
 Pathname('d').fnmatch(pattern)   # => false
 Pathname('abc').fnmatch(pattern) # => false
@@ -276,7 +269,6 @@ File.fnmatch('[a-c]', path)                         # => true
 File.fnmatch('\[a-c]', path)                        # => false
 File.fnmatch('[a-c\]', path)                        # => false
 File.fnmatch('[a\-c]', path)                        # => false
-
 Pathname(path).fnmatch('[a-c]')                     # => true
 Pathname(path).fnmatch('\[a-c]')                    # => false
 Pathname(path).fnmatch('[a-c\]')                    # => false
@@ -286,8 +278,7 @@ File.fnmatch('{a,b}', path, File::FNM_EXTGLOB)      # => true
 File.fnmatch('\{a,b}', path, File::FNM_EXTGLOB)     # => false
 File.fnmatch('{a\,b}', path, File::FNM_EXTGLOB)     # => false
 File.fnmatch('{a,b\}', path, File::FNM_EXTGLOB)     # => false
-
-Pathname(path).fnmatch('{a,b}', File::FNM_EXTGLOB)   # => true
+Pathname(path).fnmatch('{a,b}', File::FNM_EXTGLOB)  # => true
 Pathname(path).fnmatch('\{a,b}', File::FNM_EXTGLOB) # => false
 Pathname(path).fnmatch('{a,b\}', File::FNM_EXTGLOB) # => false
 Pathname(path).fnmatch('{a\,b}', File::FNM_EXTGLOB) # => false
