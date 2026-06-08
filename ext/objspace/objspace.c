@@ -777,12 +777,27 @@ objspace_internal_class_of(VALUE self, VALUE obj)
 
 /*
  *  call-seq:
- *     ObjectSpace.internal_super_of(cls) -> Class or Module
+ *     ObjectSpace.internal_super_of(cls) -> class or module
  *
- *  [MRI specific feature] Return internal super class of cls (Class or Module).
- *  obj can be an instance of InternalObjectWrapper.
+ *  Returns the immediate superclass of +cls+, including any hidden class such
+ *  as an included module's iclass.
+ *
+ *  Unlike Class#superclass, this does not skip over the iclasses that Ruby
+ *  inserts for included modules:
+ *
+ *    require 'objspace'
+ *
+ *    module M; end
+ *    class A; include M; end
+ *    A.superclass                       # => Object
+ *    ObjectSpace.internal_super_of(A)   # => #<InternalObject:0x... T_ICLASS>
+ *
+ *  +cls+ must be a Class or Module, or an ObjectSpace::InternalObjectWrapper
+ *  that wraps one.
  *
  *  Note that you should not use this method in your application.
+ *
+ *  This method is only expected to work with C Ruby.
  */
 static VALUE
 objspace_internal_super_of(VALUE self, VALUE obj)
