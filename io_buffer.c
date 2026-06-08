@@ -2082,6 +2082,15 @@ io_buffer_buffer_type_size(ID buffer_type)
     rb_raise(rb_eArgError, "Invalid type name!");
 }
 
+static inline ID
+io_buffer_type_id(VALUE name)
+{
+    Check_Type(name, T_SYMBOL);
+    if (!STATIC_SYM_P(name)) return 0;
+    return rb_sym2id(name);
+}
+#define TYPE_ID(name) io_buffer_type_id(name)
+
 /*
  *  call-seq:
  *    size_of(buffer_type) -> byte size
@@ -2098,12 +2107,12 @@ io_buffer_size_of(VALUE klass, VALUE buffer_type)
     if (RB_TYPE_P(buffer_type, T_ARRAY)) {
         size_t total = 0;
         for (long i = 0; i < RARRAY_LEN(buffer_type); i++) {
-            total += io_buffer_buffer_type_size(RB_SYM2ID(RARRAY_AREF(buffer_type, i)));
+            total += io_buffer_buffer_type_size(TYPE_ID(RARRAY_AREF(buffer_type, i)));
         }
         return SIZET2NUM(total);
     }
     else {
-        return SIZET2NUM(io_buffer_buffer_type_size(RB_SYM2ID(buffer_type)));
+        return SIZET2NUM(io_buffer_buffer_type_size(TYPE_ID(buffer_type)));
     }
 }
 
@@ -2190,7 +2199,7 @@ io_buffer_get_value(VALUE self, VALUE type, VALUE _offset)
 
     rb_io_buffer_get_bytes_for_reading(self, &base, &size);
 
-    return rb_io_buffer_get_value(base, size, RB_SYM2ID(type), &offset);
+    return rb_io_buffer_get_value(base, size, TYPE_ID(type), &offset);
 }
 
 /*
@@ -2220,7 +2229,7 @@ io_buffer_get_values(VALUE self, VALUE buffer_types, VALUE _offset)
 
     for (long i = 0; i < RARRAY_LEN(buffer_types); i++) {
         VALUE type = rb_ary_entry(buffer_types, i);
-        VALUE value = rb_io_buffer_get_value(base, size, RB_SYM2ID(type), &offset);
+        VALUE value = rb_io_buffer_get_value(base, size, TYPE_ID(type), &offset);
         rb_ary_push(array, value);
     }
 
@@ -2289,7 +2298,7 @@ io_buffer_each(int argc, VALUE *argv, VALUE self)
 
     ID buffer_type;
     if (argc >= 1) {
-        buffer_type = RB_SYM2ID(argv[0]);
+        buffer_type = TYPE_ID(argv[0]);
     }
     else {
         buffer_type = RB_IO_BUFFER_DATA_TYPE_U8;
@@ -2327,7 +2336,7 @@ io_buffer_values(int argc, VALUE *argv, VALUE self)
 
     ID buffer_type;
     if (argc >= 1) {
-        buffer_type = RB_SYM2ID(argv[0]);
+        buffer_type = TYPE_ID(argv[0]);
     }
     else {
         buffer_type = RB_IO_BUFFER_DATA_TYPE_U8;
@@ -2389,7 +2398,7 @@ io_buffer_each_byte(int argc, VALUE *argv, VALUE self)
 static inline void
 rb_io_buffer_set_value(struct rb_io_buffer *buffer, VALUE buffer_type, size_t *offset, VALUE value)
 {
-    ID type = RB_SYM2ID(buffer_type);
+    ID type = TYPE_ID(buffer_type);
 #define IO_BUFFER_SET_VALUE(name) if (type == RB_IO_BUFFER_DATA_TYPE_##name) {io_buffer_write_##name(buffer, offset, value); return;}
     IO_BUFFER_SET_VALUE(U8);
     IO_BUFFER_SET_VALUE(S8);
