@@ -7219,7 +7219,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             // as a pointer to keep it stable in snapshot tests.
                             let expected_shape = fun.push_insn(block, Insn::Const { val: Const::CShape(profiled_shape) });
 
-                            let has_shape = fun.push_insn(block, Insn::IsBitEqual { left: expected_shape, right: runtime_shape });
+                            let has_shape = fun.push_insn(block, Insn::IsBitEqual { left: runtime_shape, right: expected_shape });
                             let iftrue_block = fun.new_block(insn_idx);
                             let target = BranchEdge { target: iftrue_block, args: vec![] };
                             let fall_through = fun.new_block(insn_idx);
@@ -8394,7 +8394,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             // If the expected is equal to the actual, then
                             // we're good and can load the IV.  Otherwise jump
                             // to the next block.
-                            let has_shape = fun.push_insn(block, Insn::IsBitEqual { left: expected_shape, right: runtime_shape });
+                            let has_shape = fun.push_insn(block, Insn::IsBitEqual { left: runtime_shape, right: expected_shape });
                             let iftrue_block = fun.new_block(insn_idx);
                             let target = BranchEdge { target: iftrue_block, args: vec![] };
                             let fall_through = fun.new_block(insn_idx);
