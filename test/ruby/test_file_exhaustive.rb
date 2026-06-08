@@ -368,7 +368,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_readable_p
-    return if Process.euid == 0
+    return if EnvUtil.superuser?
     File.chmod(0200, regular_file)
     assert_file.not_readable?(regular_file)
     File.chmod(0600, regular_file)
@@ -383,7 +383,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end if POSIX
 
   def test_readable_real_p
-    return if Process.euid == 0
+    return if EnvUtil.superuser?
     File.chmod(0200, regular_file)
     assert_file.not_readable_real?(regular_file)
     File.chmod(0600, regular_file)
@@ -416,7 +416,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end if POSIX
 
   def test_writable_p
-    return if Process.euid == 0
+    return if EnvUtil.superuser?
     File.chmod(0400, regular_file)
     assert_file.not_writable?(regular_file)
     File.chmod(0600, regular_file)
@@ -431,7 +431,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end if POSIX
 
   def test_writable_real_p
-    return if Process.euid == 0
+    return if EnvUtil.superuser?
     File.chmod(0400, regular_file)
     assert_file.not_writable_real?(regular_file)
     File.chmod(0600, regular_file)
@@ -1702,7 +1702,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_stat_readable_p
-    return if Process.euid == 0
+    return if EnvUtil.superuser?
     File.chmod(0200, regular_file)
     assert_not_predicate(File::Stat.new(regular_file), :readable?)
     File.chmod(0600, regular_file)
@@ -1710,7 +1710,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end if POSIX
 
   def test_stat_readable_real_p
-    return if Process.euid == 0
+    return if EnvUtil.superuser?
     File.chmod(0200, regular_file)
     assert_not_predicate(File::Stat.new(regular_file), :readable_real?)
     File.chmod(0600, regular_file)
@@ -1727,7 +1727,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end if POSIX
 
   def test_stat_writable_p
-    return if Process.euid == 0
+    return if EnvUtil.superuser?
     File.chmod(0400, regular_file)
     assert_not_predicate(File::Stat.new(regular_file), :writable?)
     File.chmod(0600, regular_file)
@@ -1735,7 +1735,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end if POSIX
 
   def test_stat_writable_real_p
-    return if Process.euid == 0
+    return if EnvUtil.superuser?
     File.chmod(0400, regular_file)
     assert_not_predicate(File::Stat.new(regular_file), :writable_real?)
     File.chmod(0600, regular_file)
