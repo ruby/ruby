@@ -470,6 +470,26 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
+  def test_set_values_invalidated_slice
+    to_int = Struct.new(:buffer) do
+      def to_int
+        buffer.free
+        0x41
+      end
+    end
+    buffer = IO::Buffer.new(128)
+    slice = buffer.slice(0, 8)
+    value = to_int.new(buffer)
+    assert_raise(IO::Buffer::InvalidatedError) {slice.set_value(:U8, 0, value)}
+
+    buffer = IO::Buffer.new(128)
+    slice = buffer.slice(0, 8)
+    value = to_int.new(buffer)
+    assert_raise(IO::Buffer::InvalidatedError) {
+      slice.set_values([:U8, :U8], 0, [0, value])
+    }
+  end
+
   def test_zero_length_get_set_values
     buffer = IO::Buffer.new(0)
 
