@@ -5754,6 +5754,94 @@ mod hir_opt_tests {
         ");
     }
 
+    // Two consecutive polymorphic `defined?` on the same `self` must both get
+    // inline shape branches. Specializing the first rewrites `self` to a GuardType
+    // wrapper, so `polymorphic_summary` must peel it (`chase_insn`, not `find_const`)
+    // to match the profile entry; otherwise the second falls back to a generic DefinedIvar.
+    #[test]
+    fn test_optimize_two_consecutive_definedivar_polymorphic() {
+        set_call_threshold(3);
+        eval("
+            class C
+              def test = [defined?(@a), defined?(@b)]
+            end
+            obj = C.new
+            obj.instance_variable_set(:@a, 1)
+            obj.instance_variable_set(:@b, 1)
+            obj.test
+            obj = C.new
+            obj.instance_variable_set(:@x, 1)
+            obj.instance_variable_set(:@a, 1)
+            obj.instance_variable_set(:@b, 1)
+            obj.test
+            TEST = C.instance_method(:test)
+        ");
+        assert_snapshot!(hir_string_proc("TEST"), @r"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:HeapBasicObject = GuardType v6, HeapBasicObject
+          v11:CUInt64 = LoadField v10, :RBASIC_FLAGS@0x1000
+          v13:CUInt64[0xffffffff0000001f] = Const CUInt64(0xffffffff0000001f)
+          v14:CPtr[CPtr(0x1001)] = Const CPtr(0x1001)
+          v15 = RefineType v14, CUInt64
+          v16:CInt64 = IntAnd v11, v13
+          v17:CBool = IsBitEqual v16, v15
+          CondBranch v17, bb5(), bb6()
+        bb5():
+          v19:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          Jump bb4(v19)
+        bb6():
+          v21:CUInt64[0xffffffff0000001f] = Const CUInt64(0xffffffff0000001f)
+          v22:CPtr[CPtr(0x1010)] = Const CPtr(0x1010)
+          v23 = RefineType v22, CUInt64
+          v24:CInt64 = IntAnd v11, v21
+          v25:CBool = IsBitEqual v24, v23
+          CondBranch v25, bb7(), bb8()
+        bb7():
+          v27:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          Jump bb4(v27)
+        bb8():
+          v29:StringExact|NilClass = DefinedIvar v10, :@a
+          Jump bb4(v29)
+        bb4(v12:StringExact|NilClass):
+          v33:CUInt64 = LoadField v10, :RBASIC_FLAGS@0x1000
+          v35:CUInt64[0xffffffff0000001f] = Const CUInt64(0xffffffff0000001f)
+          v36:CPtr[CPtr(0x1001)] = Const CPtr(0x1001)
+          v37 = RefineType v36, CUInt64
+          v38:CInt64 = IntAnd v33, v35
+          v39:CBool = IsBitEqual v38, v37
+          CondBranch v39, bb10(), bb11()
+        bb10():
+          v41:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          Jump bb9(v41)
+        bb11():
+          v43:CUInt64[0xffffffff0000001f] = Const CUInt64(0xffffffff0000001f)
+          v44:CPtr[CPtr(0x1010)] = Const CPtr(0x1010)
+          v45 = RefineType v44, CUInt64
+          v46:CInt64 = IntAnd v33, v43
+          v47:CBool = IsBitEqual v46, v45
+          CondBranch v47, bb12(), bb13()
+        bb12():
+          v49:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          Jump bb9(v49)
+        bb13():
+          v51:StringExact|NilClass = DefinedIvar v10, :@b
+          Jump bb9(v51)
+        bb9(v34:StringExact|NilClass):
+          v54:ArrayExact = NewArray v12, v34
+          CheckInterrupts
+          Return v54
+        ");
+    }
+
     #[test]
     fn test_optimize_definedivar_polymorphic_with_immediate() {
         set_call_threshold(3);
