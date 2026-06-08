@@ -72,7 +72,7 @@ module Psych
         when '!binary', 'tag:yaml.org,2002:binary'
           o.value.unpack('m').first
         when /^!(?:str|ruby\/string)(?::(.*))?$/, 'tag:yaml.org,2002:str'
-          klass = resolve_class($1)
+          klass = resolve_subclass($1, String)
           if klass
             klass.allocate.replace o.value
           else
@@ -157,7 +157,7 @@ module Psych
           }
           map
         when /^!(?:seq|ruby\/array):(.*)$/
-          klass = resolve_class($1)
+          klass = resolve_subclass($1, Array)
           list  = register(o, klass.allocate)
           o.children.each { |c| list.push accept c }
           list
@@ -247,7 +247,7 @@ module Psych
           end
 
         when /^!(?:str|ruby\/string)(?::(.*))?$/, 'tag:yaml.org,2002:str'
-          klass   = resolve_class($1)
+          klass   = resolve_subclass($1, String)
           members = {}
           string  = nil
 
@@ -268,7 +268,7 @@ module Psych
           end
           init_with(string, members.map { |k,v| [k.to_s.sub(/^@/, ''),v] }, o)
         when /^!ruby\/array:(.*)$/
-          klass = resolve_class($1)
+          klass = resolve_subclass($1, Array)
           list  = register(o, klass.allocate)
 
           members = Hash[o.children.map { |c| accept c }.each_slice(2).to_a]
