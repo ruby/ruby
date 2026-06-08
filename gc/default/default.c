@@ -2802,7 +2802,7 @@ is_pointer_to_heap(rb_objspace_t *objspace, const void *ptr)
 }
 
 bool
-rb_gc_impl_pointer_to_heap_p(void *objspace_ptr, const void *ptr)
+rb_gc_impl_live_object_p(void *objspace_ptr, const void *ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
