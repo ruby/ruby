@@ -1530,7 +1530,7 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
     }
 
     {
-#ifndef RUBY_ASAN_ENABLED
+#if !defined(RUBY_ASAN_ENABLED) && !USE_MODULAR_GC
 # ifdef PROC_MAPS_NAME
         {
             FILE *fp = fopen(PROC_MAPS_NAME, "r");
