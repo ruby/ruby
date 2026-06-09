@@ -4422,7 +4422,7 @@ impl Function {
 
                 let fields_obj = self.push_insn(block, Insn::LoadField {
                     recv: self_val, id: FieldName::fields_obj,
-                    offset: offset,
+                    offset,
                     return_type: types::RubyValue,
                 });
                 self.load_ivar_from_fields(block, fields_obj, recv_type.flags().is_fields_embedded(), id, ivar_index)
