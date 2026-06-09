@@ -1338,11 +1338,15 @@ class Pathname    # * File *
   # See <tt>File.lchown</tt>.
   def lchown(owner, group) File.lchown(owner, group, @path) end
 
-  # See <tt>File.fnmatch</tt>.  Return +true+ if the receiver matches the given
-  # pattern.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   File.fnmatch(pattern, flags = 0) -> true or false
+  #
+  # Returns whether string `pattern` matches against the string path in `self`,
+  # under the control of the given `flags`;
+  # see [Filename Matching](rdoc-ref:file/filename_matching.md).
   def fnmatch(pattern, ...) File.fnmatch(pattern, @path, ...) end
-
-  # See <tt>File.fnmatch?</tt> (same as #fnmatch).
   def fnmatch?(pattern, ...) File.fnmatch?(pattern, @path, ...) end
 
   #  call-seq:
