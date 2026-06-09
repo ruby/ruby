@@ -427,7 +427,7 @@ impl Assembler {
                 Insn::Add { left, right, .. } => {
                     match (*left, *right) {
                         // When one operand is a register, legalize the other operand
-                        // into possibly an immdiate and swap the order if necessary.
+                        // into possibly an immediate and swap the order if necessary.
                         // Only the rhs of ADD can be an immediate, but addition is commutative.
                         (reg_opnd @ (Opnd::Reg(_) | Opnd::VReg { .. }), other_opnd) |
                         (other_opnd, reg_opnd @ (Opnd::Reg(_) | Opnd::VReg { .. })) => {
