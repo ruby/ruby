@@ -1644,6 +1644,10 @@ Init_default_shapes(void)
 #endif
 
     rb_gc_register_address(&shape_tree_obj);
+
+    // The shape tree's data lives in the `rb_shape_tree` global variable, so there's no struct to wrap here.
+    // We can't use NULL, because then the GC would skip the mark/compact callbacks,
+    // so instead we pass a fake non-NULL pointer that will never be dereferenced.
     shape_tree_obj = TypedData_Wrap_Struct(0, &shape_tree_type, (void *)1);
 
     // Root shape
