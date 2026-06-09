@@ -1352,7 +1352,7 @@ rb_obj_dummy1(VALUE _x, VALUE _y)
  *  call-seq:
  *     obj.freeze -> self
  *
- *  Freezes `self`, preventing further modifications;
+ *  Freezes +self+, preventing further modifications;
  *  see {Frozen Objects}[rdoc-ref:frozen_objects.md].
  */
 
