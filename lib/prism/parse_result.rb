@@ -26,7 +26,8 @@ module Prism
     # source is a subset of a larger source or if this is an eval. offsets is an
     # array of byte offsets for the start of each line in the source code, which
     # can be calculated by iterating through the source code and recording the
-    # byte offset whenever a newline character is encountered.
+    # byte offset whenever a newline character is encountered.  The first
+    # element is always 0 to mark the first line.
     #--
     #: (String source, Integer start_line, Array[Integer] offsets) -> Source
     def self.for(source, start_line, offsets)
@@ -58,16 +59,26 @@ module Prism
     # The line number where this source starts.
     attr_reader :start_line #: Integer
 
-    # The list of newline byte offsets in the source code.
-    attr_reader :offsets #: Array[Integer]
-
-    # Create a new source object with the given source code.
+    # The list of newline byte offsets in the source code. When initialized from
+    # the C extension, this may be a packed binary string of uint32_t values
+    # that is lazily unpacked on first access.
     #--
-    #: (String source, Integer start_line, Array[Integer] offsets) -> void
+    #: () -> Array[Integer]
+    def offsets
+      offsets = @offsets
+      return offsets if offsets.is_a?(Array)
+      @offsets = offsets.unpack("L*")
+    end
+
+    # Create a new source object with the given source code. The offsets
+    # parameter can be either an Array of Integer byte offsets or a packed
+    # binary string of uint32_t values (from the C extension).
+    #--
+    #: (String source, Integer start_line, Array[Integer] | String offsets) -> void
     def initialize(source, start_line, offsets)
       @source = source
-      @start_line = start_line # set after parsing is done
-      @offsets = offsets # set after parsing is done
+      @start_line = start_line
+      @offsets = offsets
     end
 
     # Replace the value of start_line with the given value.
@@ -81,7 +92,7 @@ module Prism
     #--
     #: (Array[Integer] offsets) -> void
     def replace_offsets(offsets)
-      @offsets.replace(offsets)
+      @offsets = offsets
     end
 
     # Returns the encoding of the source code, which is set by parameters to the
@@ -178,6 +189,8 @@ module Prism
     #--
     #: (Integer byte_offset, Encoding encoding) -> Integer
     def code_units_offset(byte_offset, encoding)
+      return byte_offset if encoding == Encoding::UTF_8
+
       byteslice = (source.byteslice(0, byte_offset) or raise).encode(encoding, invalid: :replace, undef: :replace)
 
       if encoding == Encoding::UTF_16LE || encoding == Encoding::UTF_16BE
@@ -212,9 +225,7 @@ module Prism
       freeze
     end
 
-    private
-
-    # Binary search through the offsets to find the line number for the given
+    # Binary search through the offsets to find the index for the given
     # byte offset.
     #--
     #: (Integer byte_offset) -> Integer
@@ -239,6 +250,14 @@ module Prism
   #   has not yet been implemented.
   #
   class CodeUnitsCache
+    # Counter used for UTF-8, where one code unit equals one byte.
+    class UTF8Counter # :nodoc:
+      #: (Integer byte_offset, Integer byte_length) -> Integer
+      def count(byte_offset, byte_length)
+        byte_length
+      end
+    end
+
     class UTF16Counter # :nodoc:
       # @rbs @source: String
       # @rbs @encoding: Encoding
@@ -255,7 +274,10 @@ module Prism
       end
     end
 
-    class LengthCounter # :nodoc:
+    # Counter used for UTF-32, where one code unit equals one code point and
+    # matches String#length. Also used as a best-effort fallback for any other
+    # encoding that does not have a dedicated counter.
+    class UTF32Counter # :nodoc:
       # @rbs @source: String
       # @rbs @encoding: Encoding
 
@@ -271,10 +293,10 @@ module Prism
       end
     end
 
-    private_constant :UTF16Counter, :LengthCounter
+    private_constant :UTF8Counter, :UTF16Counter, :UTF32Counter
 
     # @rbs @source: String
-    # @rbs @counter: UTF16Counter | LengthCounter
+    # @rbs @counter: UTF8Counter | UTF16Counter | UTF32Counter
     # @rbs @cache: Hash[Integer, Integer]
     # @rbs @offsets: Array[Integer]
 
@@ -284,10 +306,13 @@ module Prism
     def initialize(source, encoding)
       @source = source
       @counter =
-        if encoding == Encoding::UTF_16LE || encoding == Encoding::UTF_16BE
+        case encoding
+        when Encoding::UTF_8
+          UTF8Counter.new
+        when Encoding::UTF_16LE, Encoding::UTF_16BE
           UTF16Counter.new(source, encoding)
         else
-          LengthCounter.new(source, encoding)
+          UTF32Counter.new(source, encoding)
         end
 
       @cache = {} #: Hash[Integer, Integer]

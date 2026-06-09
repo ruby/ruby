@@ -14,7 +14,7 @@ describe "An ensure block inside a begin block" do
       ensure
         ScratchPad << :ensure
       end
-    }.should raise_error(EnsureSpec::Error)
+    }.should.raise(EnsureSpec::Error)
 
     ScratchPad.recorded.should == [:begin, :ensure]
   end
@@ -74,7 +74,7 @@ describe "An ensure block inside a begin block" do
       ensure
         raise "from ensure"
       end
-    }.should raise_error(RuntimeError, "from ensure") { |e|
+    }.should.raise(RuntimeError, "from ensure") { |e|
       e.cause.message.should == "from block"
     }
   end
@@ -108,7 +108,7 @@ describe "An ensure block inside a method" do
   end
 
   it "is executed when an exception is raised in the method" do
-    -> { @obj.raise_in_method_with_ensure }.should raise_error(EnsureSpec::Error)
+    -> { @obj.raise_in_method_with_ensure }.should.raise(EnsureSpec::Error)
     @obj.executed.should == [:method, :ensure]
   end
 
@@ -149,13 +149,13 @@ describe "An ensure block inside a method" do
   it "overrides exception raised in rescue if raises exception itself" do
     -> {
       @obj.raise_in_rescue_and_raise_in_ensure
-    }.should raise_error(RuntimeError, "raised in ensure")
+    }.should.raise(RuntimeError, "raised in ensure")
   end
 
   it "suppresses exception raised in method if raises exception itself" do
     -> {
       @obj.raise_in_method_and_raise_in_ensure
-    }.should raise_error(RuntimeError, "raised in ensure")
+    }.should.raise(RuntimeError, "raised in ensure")
   end
 end
 
@@ -174,7 +174,7 @@ describe "An ensure block inside a class" do
           ScratchPad << :ensure
         end
       ruby
-    }.should raise_error(EnsureSpec::Error)
+    }.should.raise(EnsureSpec::Error)
 
     ScratchPad.recorded.should == [:class, :ensure]
   end
@@ -247,7 +247,7 @@ describe "An ensure block inside {} block" do
         ensure
         }
       ruby
-    }.should raise_error(SyntaxError)
+    }.should.raise(SyntaxError)
   end
 end
 
@@ -266,7 +266,7 @@ describe "An ensure block inside 'do end' block" do
           ScratchPad << :ensure
         end
       ruby
-    }.should raise_error(EnsureSpec::Error)
+    }.should.raise(EnsureSpec::Error)
 
     ScratchPad.recorded.should == [:begin, :ensure]
   end

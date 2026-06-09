@@ -13,15 +13,15 @@ ruby_version_is "4.0" do
     end
 
     it "raises a TypeError if the argument cannot be coerced with Float()" do
-      -> { Math.expm1("test") }.should raise_error(TypeError, "can't convert String into Float")
+      -> { Math.expm1("test") }.should.raise(TypeError, "can't convert String into Float")
     end
 
     it "returns NaN given NaN" do
-      Math.expm1(nan_value).nan?.should be_true
+      Math.expm1(nan_value).nan?.should == true
     end
 
     it "raises a TypeError if the argument is nil" do
-      -> { Math.expm1(nil) }.should raise_error(TypeError, "can't convert nil into Float")
+      -> { Math.expm1(nil) }.should.raise(TypeError, "can't convert nil into Float")
     end
 
     it "accepts any argument that can be coerced with Float()" do

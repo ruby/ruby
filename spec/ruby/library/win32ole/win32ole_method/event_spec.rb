@@ -10,11 +10,11 @@ platform_is :windows do
       end
 
       it "raises ArgumentError if argument is given" do
-        -> { @on_dbl_click_method.event?(1) }.should raise_error ArgumentError
+        -> { @on_dbl_click_method.event?(1) }.should.raise ArgumentError
       end
 
       it "returns true for System Monitor Control's 'OnDblClick' method" do
-        @on_dbl_click_method.event?.should be_true
+        @on_dbl_click_method.event?.should == true
       end
 
     end

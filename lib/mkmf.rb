@@ -573,11 +573,16 @@ MSG
                      conf)
   end
 
-  def cpp_command(outfile, opt="")
+  def cpp_config(opt)
     conf = cc_config(opt)
     if $universal and (arch_flag = conf['ARCH_FLAG']) and !arch_flag.empty?
       conf['ARCH_FLAG'] = arch_flag.gsub(/(?:\G|\s)-arch\s+\S+/, '')
     end
+    conf
+  end
+
+  def cpp_command(outfile, opt="")
+    conf = cpp_config(opt)
     RbConfig::expand("$(CPP) #$INCFLAGS #$CPPFLAGS #$CFLAGS #{opt} #{CONFTEST_C} #{outfile}",
                      conf)
   end
@@ -926,20 +931,12 @@ SRC
     xpopen(cpp_command('', opt)) do |f|
       if Regexp === pat
         puts("    ruby -ne 'print if #{pat.inspect}'")
-        f.grep(pat) {|l|
+        !f.grep(pat) {|l|
           puts "#{f.lineno}: #{l}"
-          return true
-        }
-        false
+        }.empty?
       else
         puts("    egrep '#{pat}'")
-        begin
-          stdin = $stdin.dup
-          $stdin.reopen(f)
-          system("egrep", pat)
-        ensure
-          $stdin.reopen(stdin)
-        end
+        system("egrep", pat, in: f)
       end
     end
   ensure
@@ -3033,13 +3030,30 @@ realclean: distclean
 
     def cc_command(opt="")
       conf = cc_config(opt)
+      cxx_command(opt, conf)
       RbConfig::expand("$(CXX) #$INCFLAGS #$CPPFLAGS #$CXXFLAGS #$ARCH_FLAG #{opt} -c #{CONFTEST_CXX}",
+                       conf)
+    end
+
+    def cpp_command(outfile, opt="")
+      conf = cpp_config(opt)
+      cxx = cxx_command(opt, conf)
+      cpp = conf['CPP'].sub(/(\A|\s)#{Regexp.quote(conf['CC'])}(?=\z|\s)/) {
+        "#$1#{cxx}"
+      }
+      RbConfig::expand("#{cpp} #$INCFLAGS #$CPPFLAGS #$CXXFLAGS #{opt} #{CONFTEST_CXX} #{outfile}",
                        conf)
     end
 
     def link_command(ldflags, *opts)
       conf = link_config(ldflags, *opts)
       RbConfig::expand(TRY_LINK_CXX.dup, conf)
+    end
+
+    def cxx_command(opt="", conf = cc_config(opt))
+      cxx = conf['CXX']
+      raise Errno::ENOENT, "C++ compiler not found" if !cxx or cxx == 'false'
+      cxx
     end
 
     # :startdoc:

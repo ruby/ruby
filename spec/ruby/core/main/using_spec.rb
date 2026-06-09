@@ -5,11 +5,11 @@ describe "main.using" do
   it "requires one Module argument" do
     -> do
       eval('using', TOPLEVEL_BINDING)
-    end.should raise_error(ArgumentError)
+    end.should.raise(ArgumentError)
 
     -> do
       eval('using "foo"', TOPLEVEL_BINDING)
-    end.should raise_error(TypeError)
+    end.should.raise(TypeError)
   end
 
   it "uses refinements from the given module only in the target file" do
@@ -19,7 +19,7 @@ describe "main.using" do
     MainSpecs::DATA[:toplevel].should == 'foo'
     -> do
       'hello'.foo
-    end.should raise_error(NoMethodError)
+    end.should.raise(NoMethodError)
   end
 
   it "uses refinements from the given module for method calls in the target file" do
@@ -27,7 +27,7 @@ describe "main.using" do
     load File.expand_path('../fixtures/string_refinement_user.rb', __FILE__)
     -> do
       'hello'.foo
-    end.should raise_error(NoMethodError)
+    end.should.raise(NoMethodError)
     MainSpecs.call_foo('hello').should == 'foo'
   end
 
@@ -133,18 +133,18 @@ describe "main.using" do
   it "raises error when called from method in wrapped script" do
     -> do
       load File.expand_path('../fixtures/using_in_method.rb', __FILE__), true
-    end.should raise_error(RuntimeError)
+    end.should.raise(RuntimeError)
   end
 
   it "raises error when called on toplevel from module" do
     -> do
       load File.expand_path('../fixtures/using_in_main.rb', __FILE__), true
-    end.should raise_error(RuntimeError)
+    end.should.raise(RuntimeError)
   end
 
   it "does not raise error when wrapped with module" do
     -> do
       load File.expand_path('../fixtures/using.rb', __FILE__), true
-    end.should_not raise_error
+    end.should_not.raise
   end
 end

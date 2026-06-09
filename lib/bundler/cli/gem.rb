@@ -7,12 +7,6 @@ module Bundler
   end
 
   class CLI::Gem
-    TEST_FRAMEWORK_VERSIONS = {
-      "rspec" => "3.0",
-      "minitest" => "5.16",
-      "test-unit" => "3.0",
-    }.freeze
-
     DEFAULT_GITHUB_USERNAME = "[USERNAME]"
 
     attr_reader :options, :gem_name, :thor, :name, :target, :extension
@@ -117,7 +111,6 @@ module Bundler
 
       if test_framework = ask_and_set_test_framework
         config[:test] = test_framework
-        config[:test_framework_version] = TEST_FRAMEWORK_VERSIONS[test_framework]
 
         case test_framework
         when "rspec"
@@ -203,12 +196,10 @@ module Bundler
       config[:linter] = ask_and_set_linter
       case config[:linter]
       when "rubocop"
-        config[:linter_version] = rubocop_version
         Bundler.ui.info "RuboCop enabled in config"
         templates.merge!("rubocop.yml.tt" => ".rubocop.yml")
         config[:ignore_paths] << ".rubocop.yml"
       when "standard"
-        config[:linter_version] = standard_version
         Bundler.ui.info "Standard enabled in config"
         templates.merge!("standard.yml.tt" => ".standard.yml")
         config[:ignore_paths] << ".standard.yml"
@@ -288,7 +279,7 @@ module Bundler
       open_editor(options["edit"], target.join("#{name}.gemspec")) if options[:edit]
 
       Bundler.ui.info "\nGem '#{name}' was successfully created. " \
-        "For more information on making a RubyGem visit https://bundler.io/guides/creating_gem.html"
+        "For more information on making a RubyGem visit https://guides.rubygems.org/make-your-own-gem/"
     end
 
     private
@@ -470,14 +461,6 @@ module Bundler
 
     def required_ruby_version
       "3.2.0"
-    end
-
-    def rubocop_version
-      "1.21"
-    end
-
-    def standard_version
-      "1.3"
     end
 
     def github_username(git_username)

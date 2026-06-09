@@ -18,7 +18,7 @@ updates:
     exclude-paths:
       - 'gc/mmtk/**'
     schedule:
-      interval: 'daily'
+      interval: 'monthly'
     groups:
       jit:
         patterns:

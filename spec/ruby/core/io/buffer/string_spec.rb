@@ -49,14 +49,14 @@ describe "IO::Buffer.string" do
   end
 
   it "raises ArgumentError if size is negative" do
-    -> { IO::Buffer.string(-1) {} }.should raise_error(ArgumentError, "negative string size (or size too big)")
+    -> { IO::Buffer.string(-1) {} }.should.raise(ArgumentError, "negative string size (or size too big)")
   end
 
   it "raises RangeError if size is too large" do
-    -> { IO::Buffer.string(2 ** 232) {} }.should raise_error(RangeError, /\Abignum too big to convert into [`']long'\z/)
+    -> { IO::Buffer.string(2 ** 232) {} }.should.raise(RangeError, /\Abignum too big to convert into [`']long'\z/)
   end
 
   it "raises LocalJumpError if no block is given" do
-    -> { IO::Buffer.string(7) }.should raise_error(LocalJumpError, "no block given")
+    -> { IO::Buffer.string(7) }.should.raise(LocalJumpError, "no block given")
   end
 end

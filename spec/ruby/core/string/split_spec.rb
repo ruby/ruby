@@ -6,15 +6,15 @@ describe "String#split with String" do
   it "throws an ArgumentError if the string  is not a valid" do
     s = "\xDF".dup.force_encoding(Encoding::UTF_8)
 
-    -> { s.split }.should raise_error(ArgumentError)
-    -> { s.split(':') }.should raise_error(ArgumentError)
+    -> { s.split }.should.raise(ArgumentError)
+    -> { s.split(':') }.should.raise(ArgumentError)
   end
 
   it "throws an ArgumentError if the pattern is not a valid string" do
     str = 'проверка'
     broken_str = "\xDF".dup.force_encoding(Encoding::UTF_8)
 
-    -> { str.split(broken_str) }.should raise_error(ArgumentError)
+    -> { str.split(broken_str) }.should.raise(ArgumentError)
   end
 
   it "splits on multibyte characters" do
@@ -94,7 +94,7 @@ describe "String#split with String" do
   end
 
   it "raises a RangeError when the limit is larger than int" do
-    -> { "a,b".split(" ", 2147483649) }.should raise_error(RangeError)
+    -> { "a,b".split(" ", 2147483649) }.should.raise(RangeError)
   end
 
   it "defaults to $; when string isn't given or nil" do
@@ -197,11 +197,11 @@ describe "String#split with String" do
       ["", ".", " "].each do |pat|
         [-1, 0, 1, 2].each do |limit|
           StringSpecs::MyString.new(str).split(pat, limit).each do |x|
-            x.should be_an_instance_of(String)
+            x.should.instance_of?(String)
           end
 
           str.split(StringSpecs::MyString.new(pat), limit).each do |x|
-            x.should be_an_instance_of(String)
+            x.should.instance_of?(String)
           end
         end
       end
@@ -231,7 +231,7 @@ describe "String#split with Regexp" do
   it "throws an ArgumentError if the string  is not a valid" do
     s = "\xDF".dup.force_encoding(Encoding::UTF_8)
 
-    -> { s.split(/./) }.should raise_error(ArgumentError)
+    -> { s.split(/./) }.should.raise(ArgumentError)
   end
 
   it "divides self on regexp matches" do
@@ -367,8 +367,8 @@ describe "String#split with Regexp" do
   end
 
   it "returns a type error if limit can't be converted to an integer" do
-    -> {"1.2.3.4".split(".", "three")}.should raise_error(TypeError)
-    -> {"1.2.3.4".split(".", nil)    }.should raise_error(TypeError)
+    -> {"1.2.3.4".split(".", "three")}.should.raise(TypeError)
+    -> {"1.2.3.4".split(".", nil)    }.should.raise(TypeError)
   end
 
   it "doesn't set $~" do
@@ -391,7 +391,7 @@ describe "String#split with Regexp" do
       [//, /:/, /\s+/].each do |pat|
         [-1, 0, 1, 2].each do |limit|
           StringSpecs::MyString.new(str).split(pat, limit).each do |x|
-            x.should be_an_instance_of(String)
+            x.should.instance_of?(String)
           end
         end
       end
@@ -413,7 +413,7 @@ describe "String#split with Regexp" do
     broken_str.force_encoding('binary')
     broken_str.chop!
     broken_str.force_encoding('utf-8')
-    ->{ broken_str.split(/\r\n|\r|\n/) }.should raise_error(ArgumentError)
+    ->{ broken_str.split(/\r\n|\r|\n/) }.should.raise(ArgumentError)
   end
 
   # See https://bugs.ruby-lang.org/issues/12689 and https://github.com/jruby/jruby/issues/4868
@@ -522,19 +522,19 @@ describe "String#split with Regexp" do
       StringSpecs::MyString.new("a|b").split("|") { |str| a << str }
       first, last = a
 
-      first.should be_an_instance_of(String)
+      first.should.instance_of?(String)
       first.should == "a"
 
-      last.should be_an_instance_of(String)
+      last.should.instance_of?(String)
       last.should == "b"
     end
   end
 
   it "raises a TypeError when not called with nil, String, or Regexp" do
-    -> { "hello".split(42) }.should raise_error(TypeError)
-    -> { "hello".split(:ll) }.should raise_error(TypeError)
-    -> { "hello".split(false) }.should raise_error(TypeError)
-    -> { "hello".split(Object.new) }.should raise_error(TypeError)
+    -> { "hello".split(42) }.should.raise(TypeError)
+    -> { "hello".split(:ll) }.should.raise(TypeError)
+    -> { "hello".split(false) }.should.raise(TypeError)
+    -> { "hello".split(Object.new) }.should.raise(TypeError)
   end
 
   it "returns Strings in the same encoding as self" do

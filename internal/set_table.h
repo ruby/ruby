@@ -42,6 +42,8 @@ set_table *rb_set_init_table_with_size(set_table *tab, const struct st_hash_type
 set_table *rb_set_init_numtable(void);
 #define set_init_numtable_with_size rb_set_init_numtable_with_size
 set_table *rb_set_init_numtable_with_size(st_index_t size);
+#define set_init_embedded_numtable_with_size rb_set_init_embedded_numtable_with_size
+set_table *rb_set_init_embedded_numtable_with_size(struct set_table *tbl, st_index_t size);
 #define set_table_delete rb_set_table_delete
 int rb_set_table_delete(set_table *, st_data_t *); /* returns 0:notfound 1:deleted */
 #define set_insert rb_set_insert

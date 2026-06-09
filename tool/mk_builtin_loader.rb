@@ -398,12 +398,6 @@ def mk_builtin_header dump_ast, file
 end
 
 dump_ast = ARGV.shift
-if !File.executable?(dump_ast)
-  # dump_ast may not be available during `make up` (CC=false). In that case,
-  # silently skip rbinc generation — the files will be generated during the
-  # actual build when CC is available and dump_ast has been compiled.
-  exit
-end
 
 ARGV.each{|file|
   # feature.rb => load_feature.inc

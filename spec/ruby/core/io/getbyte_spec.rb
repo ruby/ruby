@@ -23,7 +23,7 @@ describe "IO#getbyte" do
   end
 
   it "raises an IOError on closed stream" do
-    -> { IOSpecs.closed_io.getbyte }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.getbyte }.should.raise(IOError)
   end
 end
 
@@ -53,6 +53,6 @@ describe "IO#getbyte" do
   end
 
   it "raises an IOError if the stream is not readable" do
-    -> { @io.getbyte }.should raise_error(IOError)
+    -> { @io.getbyte }.should.raise(IOError)
   end
 end

@@ -11,11 +11,12 @@ module Bundler
       API_REQUEST_SIZE = 100
       REQUIRE_MUTEX = Mutex.new
 
-      attr_accessor :remotes
+      attr_accessor :remotes, :remote_cooldowns
 
       def initialize(options = {})
         @options = options
         @remotes = []
+        @remote_cooldowns = {}
         @dependency_names = []
         @allow_remote = false
         @allow_cached = false
@@ -25,7 +26,8 @@ module Bundler
         @gem_installers = {}
         @gem_installers_mutex = Mutex.new
 
-        Array(options["remotes"]).reverse_each {|r| add_remote(r) }
+        cooldown = options["cooldown"]
+        Array(options["remotes"]).reverse_each {|r| add_remote(r, cooldown: cooldown) }
 
         @lockfile_remotes = @remotes if options["from_lockfile"]
       end
@@ -148,6 +150,13 @@ module Bundler
           # sources, and large_idx.merge! small_idx is way faster than
           # small_idx.merge! large_idx.
           index = @allow_remote ? remote_specs.dup : Index.new
+
+          # Snapshot per-version `created_at` from the remote info before installed
+          # / cached specs overwrite the EndpointSpecification objects that carry
+          # it. The cooldown filter consults `created_at` on every candidate, so
+          # local stubs need the published date back-filled to participate.
+          remote_created_at = collect_remote_created_at(index)
+
           index.merge!(cached_specs) if @allow_cached
           index.merge!(installed_specs) if @allow_local
 
@@ -160,6 +169,8 @@ module Bundler
               index.use(default_specs)
             end
           end
+
+          backfill_created_at(index, remote_created_at) unless remote_created_at.empty?
 
           index
         end
@@ -243,9 +254,14 @@ module Bundler
         cached_path
       end
 
-      def add_remote(source)
+      def add_remote(source, cooldown: nil)
         uri = normalize_uri(source)
         @remotes.unshift(uri) unless @remotes.include?(uri)
+        @remote_cooldowns[uri] = cooldown if cooldown
+      end
+
+      def cooldown_for(uri)
+        @remote_cooldowns[uri]
       end
 
       def spec_names
@@ -266,7 +282,7 @@ module Bundler
 
       def remote_fetchers
         @remote_fetchers ||= remotes.to_h do |uri|
-          remote = Source::Rubygems::Remote.new(uri)
+          remote = Source::Rubygems::Remote.new(uri, cooldown: cooldown_for(uri))
           [remote, Bundler::Fetcher.new(remote)]
         end.freeze
       end
@@ -312,6 +328,13 @@ module Bundler
 
       def dependency_api_available?
         @allow_remote && api_fetchers.any?
+      end
+
+      def clear_cache
+        @specs = nil
+        @installed_specs = nil
+        @default_specs = nil
+        @cached_specs = nil
       end
 
       protected
@@ -456,6 +479,31 @@ module Bundler
 
       private
 
+      def collect_remote_created_at(index)
+        return {} unless @allow_remote
+
+        snapshot = {}
+        index.each do |spec|
+          next unless spec.respond_to?(:created_at) && spec.created_at
+          # Remember the remote that supplied the date too: when a source has
+          # several remotes with different per-URI cooldown settings we must
+          # restore the same one during backfill so `effective_cooldown` agrees.
+          snapshot[[spec.name, spec.version]] = [spec.created_at, spec.remote]
+        end
+        snapshot
+      end
+
+      def backfill_created_at(index, snapshot)
+        index.each do |spec|
+          next unless spec.respond_to?(:created_at=)
+          next if spec.created_at
+          remote_created_at, remote = snapshot[[spec.name, spec.version]]
+          next unless remote_created_at
+          spec.created_at = remote_created_at
+          spec.remote ||= remote if remote && spec.respond_to?(:remote=)
+        end
+      end
+
       def lockfile_remotes
         @lockfile_remotes || credless_remotes
       end
@@ -477,8 +525,13 @@ module Bundler
         Bundler.ui.confirm("Fetching #{version_message(spec, previous_spec)}")
         gem_remote_fetcher = remote_fetchers.fetch(spec.remote).gem_remote_fetcher
 
-        Gem.time("Downloaded #{spec.name} in", 0, true) do
-          Bundler.rubygems.download_gem(spec, uri, download_cache_path, gem_remote_fetcher)
+        Plugin.hook(Plugin::Events::GEM_BEFORE_FETCH, spec)
+        begin
+          Gem.time("Downloaded #{spec.name} in", 0, true) do
+            Bundler.rubygems.download_gem(spec, uri, download_cache_path, gem_remote_fetcher)
+          end
+        ensure
+          Plugin.hook(Plugin::Events::GEM_AFTER_FETCH, spec)
         end
       end
 
@@ -511,11 +564,11 @@ module Bundler
         remote.cache_slug
       end
 
-      # We are using a mutex to reaed and write from/to the hash.
+      # We are using a mutex to read and write from/to the hash.
       # The reason this double synchronization was added is for performance
-      # and lock the mutex for the shortest possible amount of time. Otherwise,
+      # and to lock the mutex for the shortest possible amount of time. Otherwise,
       # all threads are fighting over this mutex and when it gets acquired it gets locked
-      # until a threads finishes downloading a gem, leaving the other threads waiting
+      # until a thread finishes downloading a gem, leaving the other threads waiting
       # doing nothing.
       def rubygems_gem_installer(spec, options)
         @gem_installers_mutex.synchronize { @gem_installers[spec.name] } || begin
@@ -533,7 +586,9 @@ module Bundler
             wrappers: true,
             env_shebang: true,
             build_args: options[:build_args],
-            bundler_extension_cache_path: extension_cache_path(spec)
+            bundler_extension_cache_path: extension_cache_path(spec),
+            build_extension: Bundler.settings[:no_build_extension] ? false : nil,
+            install_plugin: Bundler.settings[:no_install_plugin] ? false : nil
           )
           @gem_installers_mutex.synchronize { @gem_installers[spec.name] ||= installer }
         end

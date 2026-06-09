@@ -33,39 +33,4 @@ class TestPostponed_job < Test::Unit::TestCase
       assert_equal [3, 4], values
     RUBY
   end
-
-  def test_legacy_register
-    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
-      require '-test-/postponed_job'
-      direct, registered = [], []
-
-      Bug.postponed_job_call_direct(direct)
-      Bug.postponed_job_register(registered)
-
-      assert_equal([0], direct)
-      assert_equal([3], registered)
-
-      Bug.postponed_job_register_one(ary = [])
-      assert_equal [1], ary
-    RUBY
-  end
-
-  def test_legacy_register_one_same
-    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
-      require '-test-/postponed_job'
-      # Registering the same job three times should result in three of the same handle
-      handles = Bug.postponed_job_register_one_same
-      assert_equal [handles[0]], handles.uniq
-    RUBY
-  end
-
-  if Bug.respond_to?(:postponed_job_register_in_c_thread)
-    def test_legacy_register_in_c_thread
-      assert_separately([], __FILE__, __LINE__, <<-'RUBY')
-        require '-test-/postponed_job'
-        assert Bug.postponed_job_register_in_c_thread(ary = [])
-        assert_equal [1], ary
-      RUBY
-    end
-  end
 end

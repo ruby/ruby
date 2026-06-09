@@ -28,6 +28,7 @@ module Bundler
 
     attr_reader(
       :sources,
+      :metadata_source,
       :dependencies,
       :specs,
       :platforms,
@@ -94,13 +95,14 @@ module Bundler
       lockfile_contents.split(BUNDLED).last.strip
     end
 
-    def initialize(lockfile, strict: false)
+    def initialize(lockfile, strict: false, lockfile_path: nil)
       @platforms    = []
       @sources      = []
+      @metadata_source = Source::Metadata.new
       @dependencies = {}
       @parse_method = nil
       @specs        = {}
-      @lockfile_path = begin
+      @lockfile_path = lockfile_path || begin
         SharedHelpers.relative_lockfile_path
       rescue GemfileNotFound
         "Gemfile.lock"
@@ -111,6 +113,17 @@ module Bundler
       if lockfile.match?(/<<<<<<<|=======|>>>>>>>|\|\|\|\|\|\|\|/)
         raise LockfileError, "Your #{@lockfile_path} contains merge conflicts.\n" \
           "Run `git checkout HEAD -- #{@lockfile_path}` first to get a clean lock."
+      end
+
+      @valid = lockfile.strip.empty? ||
+               lockfile.split(/(?:\r?\n)+/).any? {|l| KNOWN_SECTIONS.include?(l) }
+
+      unless @valid
+        SharedHelpers.feature_deprecated!(
+          "Your #{@lockfile_path} does not appear to be a valid lockfile. " \
+          "Run `rm #{@lockfile_path}` and then `bundle install` to generate a new lockfile. " \
+          "This will raise a LockfileError in a future version of Bundler."
+        )
       end
 
       lockfile.split(/((?:\r?\n)+)/) do |line|
@@ -160,6 +173,10 @@ module Bundler
 
     def may_include_redundant_platform_specific_gems?
       bundler_version.nil? || bundler_version < Gem::Version.new("1.16.2")
+    end
+
+    def valid?
+      @valid
     end
 
     private
@@ -252,7 +269,12 @@ module Bundler
       version = Gem::Version.new(version)
       platform = platform ? Gem::Platform.new(platform) : Gem::Platform::RUBY
       full_name = Gem::NameTuple.new(name, version, platform).full_name
-      return unless spec = @specs[full_name]
+      spec = @specs[full_name]
+
+      if name == "bundler"
+        spec ||= LazySpecification.new(name, version, platform, @metadata_source)
+      end
+      return unless spec
 
       if checksums
         checksums.split(",") do |lock_checksum|

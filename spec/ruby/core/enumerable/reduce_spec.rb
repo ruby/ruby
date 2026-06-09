@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
-require_relative 'shared/inject'
 
 describe "Enumerable#reduce" do
-  it_behaves_like :enumerable_inject, :reduce
+  it "is an alias of Enumerable#inject" do
+    Enumerable.instance_method(:reduce).should == Enumerable.instance_method(:inject)
+  end
 end

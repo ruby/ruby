@@ -45,13 +45,13 @@ describe "Random.rand" do
   it "coerces arguments to Integers with #to_int" do
     obj = mock_numeric('int')
     obj.should_receive(:to_int).and_return(99)
-    Random.rand(obj).should be_kind_of(Integer)
+    Random.rand(obj).should.is_a?(Integer)
   end
 end
 
 describe "Random#rand with Fixnum" do
   it "returns an Integer" do
-    Random.new.rand(20).should be_an_instance_of(Integer)
+    Random.new.rand(20).should.instance_of?(Integer)
   end
 
   it "returns a Fixnum greater than or equal to 0" do
@@ -82,20 +82,20 @@ describe "Random#rand with Fixnum" do
   it "raises an ArgumentError when the argument is 0" do
     -> do
       Random.new.rand(0)
-    end.should raise_error(ArgumentError)
+    end.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the argument is negative" do
     -> do
       Random.new.rand(-12)
-    end.should raise_error(ArgumentError)
+    end.should.raise(ArgumentError)
   end
 end
 
 describe "Random#rand with Bignum" do
   it "typically returns a Bignum" do
     rnd = Random.new(1)
-    10.times.map{ rnd.rand(bignum_value*2) }.max.should be_an_instance_of(Integer)
+    10.times.map{ rnd.rand(bignum_value*2) }.max.should.instance_of?(Integer)
   end
 
   it "returns a Bignum greater than or equal to 0" do
@@ -121,13 +121,13 @@ describe "Random#rand with Bignum" do
   it "raises an ArgumentError when the argument is negative" do
     -> do
       Random.new.rand(-bignum_value)
-    end.should raise_error(ArgumentError)
+    end.should.raise(ArgumentError)
   end
 end
 
 describe "Random#rand with Float" do
   it "returns a Float" do
-    Random.new.rand(20.43).should be_an_instance_of(Float)
+    Random.new.rand(20.43).should.instance_of?(Float)
   end
 
   it "returns a Float greater than or equal to 0.0" do
@@ -153,25 +153,25 @@ describe "Random#rand with Float" do
   it "raises an ArgumentError when the argument is negative" do
     -> do
       Random.new.rand(-1.234567)
-    end.should raise_error(ArgumentError)
+    end.should.raise(ArgumentError)
   end
 end
 
 describe "Random#rand with Range" do
   it "returns an element from the Range" do
-    Random.new.rand(20..43).should be_an_instance_of(Integer)
+    Random.new.rand(20..43).should.instance_of?(Integer)
   end
 
   it "supports custom object types" do
-    rand(RandomSpecs::CustomRangeInteger.new(1)..RandomSpecs::CustomRangeInteger.new(42)).should be_an_instance_of(RandomSpecs::CustomRangeInteger)
-    rand(RandomSpecs::CustomRangeFloat.new(1.0)..RandomSpecs::CustomRangeFloat.new(42.0)).should be_an_instance_of(RandomSpecs::CustomRangeFloat)
-    rand(Time.now..Time.now).should be_an_instance_of(Time)
+    rand(RandomSpecs::CustomRangeInteger.new(1)..RandomSpecs::CustomRangeInteger.new(42)).should.instance_of?(RandomSpecs::CustomRangeInteger)
+    rand(RandomSpecs::CustomRangeFloat.new(1.0)..RandomSpecs::CustomRangeFloat.new(42.0)).should.instance_of?(RandomSpecs::CustomRangeFloat)
+    rand(Time.now..Time.now).should.instance_of?(Time)
   end
 
   it "returns an object that is a member of the Range" do
     prng = Random.new
     r = 20..30
-    20.times { r.member?(prng.rand(r)).should be_true }
+    20.times { r.member?(prng.rand(r)).should == true }
   end
 
   it "works with inclusive ranges" do
@@ -201,8 +201,8 @@ describe "Random#rand with Range" do
   end
 
   it "considers Integers as Floats if one end point is a float" do
-    Random.new(42).rand(0.0..1).should be_kind_of(Float)
-    Random.new(42).rand(0..1.0).should be_kind_of(Float)
+    Random.new(42).rand(0.0..1).should.is_a?(Float)
+    Random.new(42).rand(0..1.0).should.is_a?(Float)
   end
 
   it "returns a float within a given float range" do
@@ -213,12 +213,12 @@ describe "Random#rand with Range" do
   it "raises an ArgumentError when the startpoint lacks #+ and #- methods" do
     -> do
       Random.new.rand(Object.new..67)
-    end.should raise_error(ArgumentError)
+    end.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when the endpoint lacks #+ and #- methods" do
     -> do
       Random.new.rand(68..Object.new)
-    end.should raise_error(ArgumentError)
+    end.should.raise(ArgumentError)
   end
 end

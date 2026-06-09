@@ -358,7 +358,7 @@ RSpec.describe "bundle install with install-time dependencies" do
               #{lockfile_platforms}
 
             DEPENDENCIES
-              parallel_tests
+              rubocop
             #{checksums}
             BUNDLED WITH
               #{Bundler::VERSION}
@@ -440,7 +440,9 @@ RSpec.describe "bundle install with install-time dependencies" do
             The source contains the following gems matching 'sorbet-static (= 0.5.10554)':
               * sorbet-static-0.5.10554-universal-darwin-21
           E
-          expect(err).to end_with(nice_error)
+          expect(err).to include(nice_error)
+          expect(err).to include("Your current platform (aarch64-linux) is not included in the lockfile's platforms (arm64-darwin-21)")
+          expect(err).to include("bundle lock --add-platform aarch64-linux")
         end
       end
 

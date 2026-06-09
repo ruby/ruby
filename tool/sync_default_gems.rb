@@ -108,12 +108,6 @@ module SyncDefaultGems
     ]),
     "open-uri": lib("ruby/open-uri"),
     English: lib("ruby/English"),
-    cgi: repo("ruby/cgi", [
-      ["ext/cgi", "ext/cgi"],
-      ["lib/cgi/escape.rb", "lib/cgi/escape.rb"],
-      ["test/cgi/test_cgi_escape.rb", "test/cgi/test_cgi_escape.rb"],
-      ["test/cgi/update_env.rb", "test/cgi/update_env.rb"],
-    ]),
     date: repo("ruby/date", [
       ["doc/date", "doc/date"],
       ["ext/date", "ext/date"],
@@ -202,12 +196,6 @@ module SyncDefaultGems
     optparse: lib("ruby/optparse", gemspec_in_subdir: true).tap {
       it.mappings << ["doc/optparse", "doc/optparse"]
     },
-    pathname: repo("ruby/pathname", [
-      ["ext/pathname/pathname.c", "pathname.c"],
-      ["lib/pathname_builtin.rb", "pathname_builtin.rb"],
-      ["lib/pathname.rb", "lib/pathname.rb"],
-      ["test/pathname", "test/pathname"],
-    ]),
     pp: lib("ruby/pp"),
     prettyprint: lib("ruby/prettyprint"),
     prism: repo(["ruby/prism", "main"], [
@@ -258,9 +246,9 @@ module SyncDefaultGems
       ["bundler/exe/bundle", "libexec/bundle"],
       ["bundler/exe/bundler", "libexec/bundler"],
       ["bundler/bundler.gemspec", "lib/bundler/bundler.gemspec"],
-      ["bundler/spec", "spec/bundler"],
+      ["spec", "spec/bundler"],
       *["bundle", "parallel_rspec", "rspec"].map {|binstub|
-        ["bundler/bin/#{binstub}", "spec/bin/#{binstub}"]
+        ["bin/#{binstub}", "spec/bin/#{binstub}"]
       },
       *%w[dev_gems test_gems rubocop_gems standard_gems].flat_map {|gemfile|
         ["rb.lock", "rb"].map do |ext|
@@ -293,8 +281,15 @@ module SyncDefaultGems
     ], exclude: [
       "ext/strscan/regenc.h",
       "ext/strscan/regint.h",
+      "ext/strscan/lib/strscan/truffleruby.rb",
     ]),
-    syntax_suggest: lib(["ruby/syntax_suggest", "main"], gemspec_in_subdir: true),
+    syntax_suggest: repo(["ruby/syntax_suggest", "main"], [
+      ["lib/syntax_suggest.rb", "lib/syntax_suggest.rb"],
+      ["lib/syntax_suggest", "lib/syntax_suggest"],
+      ["syntax_suggest.gemspec", "lib/syntax_suggest/syntax_suggest.gemspec"],
+      ["exe/syntax_suggest", "libexec/syntax_suggest"],
+      ["spec", "spec/syntax_suggest"],
+    ]),
     tempfile: lib("ruby/tempfile"),
     time: lib("ruby/time"),
     timeout: lib("ruby/timeout"),
@@ -309,6 +304,10 @@ module SyncDefaultGems
       ["zlib.gemspec", "ext/zlib/zlib.gemspec"],
     ]),
   }.transform_keys(&:to_s)
+
+  def REPOSITORIES.[](gem)
+    fetch(gem) {raise "unknown repository - #{gem}"}
+  end
 
   class << Repository
     def find_upstream(file)
@@ -438,7 +437,7 @@ module SyncDefaultGems
   end
 
   def check_prerelease_version(gem)
-    return if ["rubygems", "mmtk", "cgi", "pathname", "Onigmo"].include?(gem)
+    return if ["rubygems", "mmtk", "Onigmo"].include?(gem)
 
     require "net/https"
     require "json"

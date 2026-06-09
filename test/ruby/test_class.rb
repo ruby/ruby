@@ -435,21 +435,24 @@ class TestClass < Test::Unit::TestCase
   end
 
   class CloneTest
+    TEST = :C0
     def foo; TEST; end
   end
 
   CloneTest1 = CloneTest.clone
   CloneTest2 = CloneTest.clone
   class CloneTest1
+    remove_const :TEST
     TEST = :C1
   end
   class CloneTest2
+    remove_const :TEST
     TEST = :C2
   end
 
   def test_constant_access_from_method_in_cloned_class
-    assert_equal :C1, CloneTest1.new.foo, '[Bug #15877]'
-    assert_equal :C2, CloneTest2.new.foo, '[Bug #15877]'
+    assert_equal :C0, CloneTest1.new.foo, 'originally [Bug #15877], but behaviour changed'
+    assert_equal :C0, CloneTest2.new.foo, 'originally [Bug #15877], but behaviour changed'
   end
 
   def test_invalid_superclass
@@ -733,6 +736,29 @@ class TestClass < Test::Unit::TestCase
     }
   end
 
+  def test_dynamic_module_cpath_constant_namespace # [Bug #20948]
+    assert_separately([], <<~'RUBY')
+      module M1
+        module Foo
+          X = 1
+        end
+      end
+
+      module M2
+        module Foo
+          X = 2
+        end
+      end
+
+      results = [M1, M2].map do
+        module it::Foo
+          X
+        end
+      end
+      assert_equal([1, 2], results)
+    RUBY
+  end
+
   def test_namescope_error_message
     m = Module.new
     o = m.module_eval "class A\u{3042}; self; end.new"
@@ -885,6 +911,16 @@ CODE
     begin;
       GC.stress = true
       class C; end
+    end;
+  end
+
+  def test_define_singleton_initialize
+    assert_normal_exit "#{<<~"begin;"}\n#{<<~'end;'}"
+    begin;
+      class C
+        def self.initialize
+        end
+      end
     end;
   end
 

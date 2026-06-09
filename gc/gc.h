@@ -10,16 +10,38 @@
  *             first introduced for [Feature #20470].
  */
 #include "ruby/ruby.h"
+#include "ruby/assert.h"
 
-#if USE_MODULAR_GC
 #include "ruby/thread_native.h"
+
+#ifndef VM_CHECK_MODE
+# define VM_CHECK_MODE RUBY_DEBUG
+#endif
+
+// From ractor_core.h
+#ifndef RACTOR_CHECK_MODE
+# define RACTOR_CHECK_MODE (VM_CHECK_MODE || RUBY_DEBUG) && (SIZEOF_UINT64_T == SIZEOF_VALUE)
+#endif
+
+#if RACTOR_CHECK_MODE
+void rb_ractor_setup_belonging(VALUE obj);
+
+struct rb_gc_obj_suffix {
+    uint32_t _ractor_belonging_id;
+};
+
+# define RB_GC_OBJ_HAS_SUFFIX 1
+# define RB_GC_OBJ_SUFFIX_SIZE (sizeof(struct rb_gc_obj_suffix))
+#else
+# define RB_GC_OBJ_HAS_SUFFIX 0
+# define RB_GC_OBJ_SUFFIX_SIZE 0
+#endif
 
 struct rb_gc_vm_context {
     rb_nativethread_lock_t lock;
 
     struct rb_execution_context_struct *ec;
 };
-#endif
 
 typedef int (*vm_table_foreach_callback_func)(VALUE value, void *data);
 typedef int (*vm_table_update_callback_func)(VALUE *value, void *data);
@@ -88,9 +110,7 @@ MODULAR_GC_FN void rb_gc_mark_roots(void *objspace, const char **categoryp);
 MODULAR_GC_FN void rb_gc_ractor_newobj_cache_foreach(void (*func)(void *cache, void *data), void *data);
 MODULAR_GC_FN bool rb_gc_multi_ractor_p(void);
 MODULAR_GC_FN bool rb_gc_shutdown_call_finalizer_p(VALUE obj);
-MODULAR_GC_FN uint32_t rb_gc_get_shape(VALUE obj);
-MODULAR_GC_FN void rb_gc_set_shape(VALUE obj, uint32_t shape_id);
-MODULAR_GC_FN uint32_t rb_gc_rebuild_shape(VALUE obj, size_t heap_id);
+MODULAR_GC_FN void rb_gc_obj_changed_pool(VALUE obj, size_t heap_id);
 MODULAR_GC_FN void rb_gc_prepare_heap_process_object(VALUE obj);
 MODULAR_GC_FN bool rb_memerror_reentered(void);
 MODULAR_GC_FN bool rb_obj_id_p(VALUE);
@@ -105,8 +125,6 @@ MODULAR_GC_FN bool rb_gc_obj_needs_cleanup_p(VALUE obj);
 MODULAR_GC_FN bool rb_gc_event_hook_required_p(rb_event_flag_t event);
 MODULAR_GC_FN void *rb_gc_get_ractor_newobj_cache(void);
 MODULAR_GC_FN void rb_gc_initialize_vm_context(struct rb_gc_vm_context *context);
-MODULAR_GC_FN void rb_gc_worker_thread_set_vm_context(struct rb_gc_vm_context *context);
-MODULAR_GC_FN void rb_gc_worker_thread_unset_vm_context(struct rb_gc_vm_context *context);
 MODULAR_GC_FN void rb_gc_move_obj_during_marking(VALUE from, VALUE to);
 MODULAR_GC_FN void rb_gc_print_backtrace();
 #endif
@@ -177,6 +195,14 @@ gc_mark_tbl_no_pin_i(st_data_t key, st_data_t value, st_data_t data)
 }
 
 static int
+gc_mark_set_no_pin_i(st_data_t key, st_data_t value, st_data_t data)
+{
+    rb_gc_mark_movable((VALUE)key);
+
+    return ST_CONTINUE;
+}
+
+static int
 hash_foreach_replace(st_data_t key, st_data_t value, st_data_t argp, int error)
 {
     if (rb_gc_location((VALUE)key) != (VALUE)key) {
@@ -193,12 +219,14 @@ hash_foreach_replace(st_data_t key, st_data_t value, st_data_t argp, int error)
 static int
 hash_replace_ref(st_data_t *key, st_data_t *value, st_data_t argp, int existing)
 {
-    if (rb_gc_location((VALUE)*key) != (VALUE)*key) {
-        *key = rb_gc_location((VALUE)*key);
+    VALUE new_key = rb_gc_location((VALUE)*key);
+    if (new_key != (VALUE)*key) {
+        *key = new_key;
     }
 
-    if (rb_gc_location((VALUE)*value) != (VALUE)*value) {
-        *value = rb_gc_location((VALUE)*value);
+    VALUE new_value = rb_gc_location((VALUE)*value);
+    if (new_value != (VALUE)*value) {
+        *value = new_value;
     }
 
     return ST_CONTINUE;

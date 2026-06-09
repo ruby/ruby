@@ -20,8 +20,19 @@ prelude: |
   }
   ESCAPE_PATTERN = Regexp.union(ESCAPED_CHARS.keys)
 
+  NO_MATCH_SHARED_STRING = ("a" * 100_000).freeze
 
 benchmark:
+  gsub_no_match_shared: |
+    str = NO_MATCH_SHARED_STRING.dup
+    str.gsub!("z", "x")
+    str
+
+  sub_no_match_shared: |
+    str = NO_MATCH_SHARED_STRING.dup
+    str.sub!("z", "x")
+    str
+
   escape: |
     str = STR.dup
     str.gsub!(ESCAPE_PATTERN, ESCAPED_CHARS)

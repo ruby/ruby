@@ -371,7 +371,7 @@ RSpec.describe "bundler plugin install" do
           gem 'myrack', "1.0.0"
         G
 
-        bundle "config set --local deployment true"
+        bundle_config "deployment true"
         install_gemfile <<-G
           source 'https://gem.repo2'
           plugin 'foo'

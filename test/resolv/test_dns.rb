@@ -721,8 +721,8 @@ class TestResolvDNS < Test::Unit::TestCase
 
         client_thread = Thread.new do
           Resolv::DNS.open(nameserver_port: [[server1_address, server1_port], [server2_address, server2_port]]) do |dns|
-            dns.timeouts = [EnvUtil.apply_timeout_scale(0.1),
-                            EnvUtil.apply_timeout_scale(0.2)]
+            dns.timeouts = [EnvUtil.apply_timeout_scale(0.5),
+                            EnvUtil.apply_timeout_scale(1)]
             dns.getresources('foo.example.org', Resolv::DNS::Resource::IN::A)
           end
         end

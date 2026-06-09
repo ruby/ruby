@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+require 'rbconfig/sizeof'
 
 class TestSprintf < Test::Unit::TestCase
   def test_positional
@@ -539,6 +540,11 @@ class TestSprintf < Test::Unit::TestCase
   def test_width_underflow
     bug = 'https://github.com/mruby/mruby/issues/3347'
     assert_equal("!", sprintf("%*c", 0, ?!.ord), bug)
+
+    int_max = RbConfig::LIMITS["INT_MAX"]
+    assert_raise_with_message(ArgumentError, /width too big/) {
+      sprintf "%*c", int_max, 0x80
+    }
   end
 
   def test_negative_width_overflow

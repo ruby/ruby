@@ -24,7 +24,7 @@ describe "Tempfile#initialize" do
     end
 
     path[0, tmpdir.length].should == tmpdir
-    path.should include("basename")
+    path.should.include?("basename")
   end
 
   platform_is_not :windows do

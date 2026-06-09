@@ -5,7 +5,7 @@ ruby_version_is ""..."4.0" do
 
   describe "CGI#initialize" do
     it "is private" do
-      CGI.should have_private_instance_method(:initialize)
+      CGI.private_instance_methods(false).should.include?(:initialize)
     end
   end
 
@@ -21,21 +21,21 @@ ruby_version_is ""..."4.0" do
 
     it "extends self with CGI::QueryExtension" do
       @cgi.send(:initialize)
-      @cgi.should be_kind_of(CGI::QueryExtension)
+      @cgi.should.is_a?(CGI::QueryExtension)
     end
 
     it "does not extend self with CGI::HtmlExtension" do
       @cgi.send(:initialize)
-      @cgi.should_not be_kind_of(CGI::HtmlExtension)
+      @cgi.should_not.is_a?(CGI::HtmlExtension)
     end
 
     it "does not extend self with any of the other HTML modules" do
       @cgi.send(:initialize)
-      @cgi.should_not be_kind_of(CGI::HtmlExtension)
-      @cgi.should_not be_kind_of(CGI::Html3)
-      @cgi.should_not be_kind_of(CGI::Html4)
-      @cgi.should_not be_kind_of(CGI::Html4Tr)
-      @cgi.should_not be_kind_of(CGI::Html4Fr)
+      @cgi.should_not.is_a?(CGI::HtmlExtension)
+      @cgi.should_not.is_a?(CGI::Html3)
+      @cgi.should_not.is_a?(CGI::Html4)
+      @cgi.should_not.is_a?(CGI::Html4Tr)
+      @cgi.should_not.is_a?(CGI::Html4Fr)
     end
 
     it "sets #cookies based on ENV['HTTP_COOKIE']" do
@@ -86,51 +86,51 @@ ruby_version_is ""..."4.0" do
 
     it "extends self with CGI::QueryExtension" do
       @cgi.send(:initialize, "test")
-      @cgi.should be_kind_of(CGI::QueryExtension)
+      @cgi.should.is_a?(CGI::QueryExtension)
     end
 
     it "extends self with CGI::QueryExtension, CGI::Html3 and CGI::HtmlExtension when the passed type is 'html3'" do
       @cgi.send(:initialize, "html3")
-      @cgi.should be_kind_of(CGI::Html3)
-      @cgi.should be_kind_of(CGI::HtmlExtension)
-      @cgi.should be_kind_of(CGI::QueryExtension)
+      @cgi.should.is_a?(CGI::Html3)
+      @cgi.should.is_a?(CGI::HtmlExtension)
+      @cgi.should.is_a?(CGI::QueryExtension)
 
-      @cgi.should_not be_kind_of(CGI::Html4)
-      @cgi.should_not be_kind_of(CGI::Html4Tr)
-      @cgi.should_not be_kind_of(CGI::Html4Fr)
+      @cgi.should_not.is_a?(CGI::Html4)
+      @cgi.should_not.is_a?(CGI::Html4Tr)
+      @cgi.should_not.is_a?(CGI::Html4Fr)
     end
 
     it "extends self with CGI::QueryExtension, CGI::Html4 and CGI::HtmlExtension when the passed type is 'html4'" do
       @cgi.send(:initialize, "html4")
-      @cgi.should be_kind_of(CGI::Html4)
-      @cgi.should be_kind_of(CGI::HtmlExtension)
-      @cgi.should be_kind_of(CGI::QueryExtension)
+      @cgi.should.is_a?(CGI::Html4)
+      @cgi.should.is_a?(CGI::HtmlExtension)
+      @cgi.should.is_a?(CGI::QueryExtension)
 
-      @cgi.should_not be_kind_of(CGI::Html3)
-      @cgi.should_not be_kind_of(CGI::Html4Tr)
-      @cgi.should_not be_kind_of(CGI::Html4Fr)
+      @cgi.should_not.is_a?(CGI::Html3)
+      @cgi.should_not.is_a?(CGI::Html4Tr)
+      @cgi.should_not.is_a?(CGI::Html4Fr)
     end
 
     it "extends self with CGI::QueryExtension, CGI::Html4Tr and CGI::HtmlExtension when the passed type is 'html4Tr'" do
       @cgi.send(:initialize, "html4Tr")
-      @cgi.should be_kind_of(CGI::Html4Tr)
-      @cgi.should be_kind_of(CGI::HtmlExtension)
-      @cgi.should be_kind_of(CGI::QueryExtension)
+      @cgi.should.is_a?(CGI::Html4Tr)
+      @cgi.should.is_a?(CGI::HtmlExtension)
+      @cgi.should.is_a?(CGI::QueryExtension)
 
-      @cgi.should_not be_kind_of(CGI::Html3)
-      @cgi.should_not be_kind_of(CGI::Html4)
-      @cgi.should_not be_kind_of(CGI::Html4Fr)
+      @cgi.should_not.is_a?(CGI::Html3)
+      @cgi.should_not.is_a?(CGI::Html4)
+      @cgi.should_not.is_a?(CGI::Html4Fr)
     end
 
     it "extends self with CGI::QueryExtension, CGI::Html4Tr, CGI::Html4Fr and CGI::HtmlExtension when the passed type is 'html4Fr'" do
       @cgi.send(:initialize, "html4Fr")
-      @cgi.should be_kind_of(CGI::Html4Tr)
-      @cgi.should be_kind_of(CGI::Html4Fr)
-      @cgi.should be_kind_of(CGI::HtmlExtension)
-      @cgi.should be_kind_of(CGI::QueryExtension)
+      @cgi.should.is_a?(CGI::Html4Tr)
+      @cgi.should.is_a?(CGI::Html4Fr)
+      @cgi.should.is_a?(CGI::HtmlExtension)
+      @cgi.should.is_a?(CGI::QueryExtension)
 
-      @cgi.should_not be_kind_of(CGI::Html3)
-      @cgi.should_not be_kind_of(CGI::Html4)
+      @cgi.should_not.is_a?(CGI::Html3)
+      @cgi.should_not.is_a?(CGI::Html4)
     end
   end
 end

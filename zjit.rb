@@ -7,7 +7,7 @@
 # This module may not exist if ZJIT does not support the particular platform
 # for which CRuby is built.
 module RubyVM::ZJIT
-  # Blocks that are called when YJIT is enabled
+  # Blocks that are called when ZJIT is enabled
   @jit_hooks = []
   # Avoid calling a Ruby method here to avoid interfering with compilation tests
   if Primitive.rb_zjit_get_stats_file_path_p
@@ -15,9 +15,6 @@ module RubyVM::ZJIT
   end
   if Primitive.rb_zjit_print_stats_p
     at_exit { print_stats }
-  end
-  if Primitive.rb_zjit_trace_exit_locations_enabled_p
-    at_exit { dump_locations }
   end
 end
 
@@ -58,109 +55,10 @@ class << RubyVM::ZJIT
   # Actually running this method does nothing, whether ZJIT sees the call or not.
   def induce_side_exit! = nil
 
-  # If --zjit-trace-exits is enabled parse the hashes from
-  # Primitive.rb_zjit_get_exit_locations into a format readable
-  # by Stackprof. This will allow us to find the exact location of a
-  # side exit in ZJIT based on the instruction that is exiting.
-  def exit_locations
-    return unless trace_exit_locations_enabled?
-
-    results = Primitive.rb_zjit_get_exit_locations
-    raw_samples = results[:raw]
-    line_samples = results[:lines]
-    frames = results[:frames]
-    samples_count = 0
-
-    # Use nonexistent.def as a dummy file name.
-    frame_template = { samples: 0, total_samples: 0, edges: {}, name: name, file: "nonexistent.def", line: nil, lines: {} }
-
-    # Loop through all possible instructions and setup the frame hash.
-    RubyVM::INSTRUCTION_NAMES.each_with_index do |name, frame_id|
-      frames[frame_id] = frame_template.dup.tap { |h| h[:name] = name }
-    end
-
-    # Loop through the raw_samples and build the hashes for StackProf.
-    # The loop is based off an example in the StackProf documentation and therefore
-    # this functionality can only work with that library.
-    #
-    # Raw Samples:
-    # [ length, frame1, frame2, frameN, ..., instruction, count
-    #
-    # Line Samples
-    # [ length, line_1, line_2, line_n, ..., dummy value, count
-    i = 0
-    while i < raw_samples.length
-      stack_length = raw_samples[i]
-      i += 1 # consume the stack length
-
-      sample_count = raw_samples[i + stack_length]
-
-      prev_frame_id = nil
-      stack_length.times do |idx|
-        idx += i
-        frame_id = raw_samples[idx]
-
-        if prev_frame_id
-          prev_frame = frames[prev_frame_id]
-          prev_frame[:edges][frame_id] ||= 0
-          prev_frame[:edges][frame_id] += sample_count
-        end
-
-        frame_info = frames[frame_id]
-        frame_info[:total_samples] += sample_count
-
-        frame_info[:lines][line_samples[idx]] ||= [0, 0]
-        frame_info[:lines][line_samples[idx]][0] += sample_count
-
-        prev_frame_id = frame_id
-      end
-
-      i += stack_length # consume the stack
-
-      top_frame_id = prev_frame_id
-      top_frame_line = 1
-
-      frames[top_frame_id][:samples] += sample_count
-      frames[top_frame_id][:lines] ||= {}
-      frames[top_frame_id][:lines][top_frame_line] ||= [0, 0]
-      frames[top_frame_id][:lines][top_frame_line][1] += sample_count
-
-      samples_count += sample_count
-      i += 1
-    end
-
-    results[:samples] = samples_count
-
-    # These values are mandatory to include for stackprof, but we don't use them.
-    results[:missed_samples] = 0
-    results[:gc_samples] = 0
-    results
-  end
-
-  # Marshal dumps exit locations to the given filename.
-  #
-  # Usage:
-  #
-  # In a script call:
-  #
-  #   RubyVM::ZJIT.dump_exit_locations("my_file.dump")
-  #
-  # Then run the file with the following options:
-  #
-  #   ruby --zjit --zjit-stats --zjit-trace-exits test.rb
-  #
-  # Once the code is done running, use Stackprof to read the dump file.
-  # See Stackprof documentation for options.
-  def dump_exit_locations(filename)
-    unless trace_exit_locations_enabled?
-      raise ArgumentError, "--zjit-trace-exits must be enabled to use dump_exit_locations."
-    end
-
-    File.open(filename, "wb") do |file|
-      Marshal.dump(RubyVM::ZJIT.exit_locations, file)
-      file.size
-    end
-  end
+  # A directive for the compiler to emit a breakpoint instruction at the call site of this method.
+  # To show this to ZJIT, say `::RubyVM::ZJIT.induce_breakpoint!` verbatim.
+  # Other forms are too dynamic to detect during compilation.
+  def induce_breakpoint! = nil
 
   # Check if `--zjit-stats` is used
   def stats_enabled?
@@ -241,6 +139,7 @@ class << RubyVM::ZJIT
     ], buf:, stats:, right_align: true, base: :send_count)
     print_counters([
       :compiled_iseq_count,
+      :compiled_side_exit_count,
       :failed_iseq_count,
 
       :compile_time_ns,
@@ -249,6 +148,7 @@ class << RubyVM::ZJIT
       :compile_hir_time_ns,
       :compile_hir_build_time_ns,
       :compile_hir_strength_reduce_time_ns,
+      :compile_hir_canonicalize_time_ns,
       :compile_hir_fold_constants_time_ns,
       :compile_hir_clean_cfg_time_ns,
       :compile_hir_eliminate_dead_code_time_ns,
@@ -257,7 +157,7 @@ class << RubyVM::ZJIT
       :gc_time_ns,
       :invalidation_time_ns,
 
-      :vm_write_pc_count,
+      :vm_write_jit_frame_count,
       :vm_write_sp_count,
       :vm_write_locals_count,
       :vm_write_stack_count,
@@ -343,13 +243,14 @@ class << RubyVM::ZJIT
     return if counters.empty?
 
     counters.transform_keys! { |key| key.to_s.delete_prefix(prefix) }
-    key_pad = counters.keys.map(&:size).max
-    value_pad = counters.values.map { |value| number_with_delimiter(value).size }.max
     total = counters.values.sum
 
     counters = counters.to_a
     counters.sort_by! { |_, value| -value }
     counters = counters.first(limit) if limit
+
+    key_pad = counters.map { |key, _| key.size }.max
+    value_pad = counters.map { |_, value| number_with_delimiter(value).size }.max
 
     buf << "Top-#{counters.size} " if limit
     buf << "#{prompt}"
@@ -380,13 +281,4 @@ class << RubyVM::ZJIT
     end
   end
 
-  def dump_locations # :nodoc:
-    return unless trace_exit_locations_enabled?
-
-    filename = "zjit_exits_#{Process.pid}.dump"
-    n_bytes = dump_exit_locations(filename)
-
-    absolute_filename = File.expand_path(filename)
-    $stderr.puts("#{n_bytes} bytes written to #{absolute_filename}")
-  end
 end

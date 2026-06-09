@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/union'
 
 describe "Set#+" do
-  it_behaves_like :set_union, :+
+  it "is an alias of Set#|" do
+    Set.instance_method(:+).should == Set.instance_method(:|)
+  end
 end

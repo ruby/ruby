@@ -547,7 +547,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_opt_getconstant_path_slowpath
-    assert_compiles(<<~RUBY, exits: { opt_getconstant_path: 1 }, result: [42, 42, 1, 1], call_threshold: 2)
+    assert_compiles(<<~RUBY, result: [42, 42, 1, 1], call_threshold: 2)
       class A
         FOO = 42
         class << self
@@ -641,6 +641,40 @@ class TestYJIT < Test::Unit::TestCase
       Foo = Struct.new(:foo, :bar)
       foo(Foo.new(123))
       foo(Foo.new(123))
+    RUBY
+  end
+
+  STRUCT_MAX_EMBEDDED_MEMBERS = (
+    GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE] -
+    GC::INTERNAL_CONSTANTS[:RBASIC_SIZE] -
+    GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]
+  ) / RbConfig::SIZEOF["void*"]
+
+  def test_spilled_struct_aref
+    omit("FIXME: https://github.com/Shopify/ruby/issues/977")
+    assert_compiles(<<~RUBY)
+      LargeStruct = Struct.new(:foo, :bar, *(#{STRUCT_MAX_EMBEDDED_MEMBERS} - 2).times.map { :"m_\#{it}" })
+
+      def foo(obj)
+        foo = obj.foo
+        raise "Expected 1, got: \#{foo}" unless foo == 1
+        bar = obj.bar
+        raise "Expected 2, got: \#{bar}" unless bar == 2
+      end
+
+      embedded_struct = LargeStruct.new(1, 2)
+      # Bump RCLASS_MAX_IV_COUNT for LargeStruct
+      embedded_struct.instance_variable_set(:@test, 1)
+
+      # Next allocation reserves space for the imemo/fields reference.
+      heap_struct = LargeStruct.new(1, 2)
+
+      RubyVM::YJIT.reset_stats!
+
+      foo(embedded_struct)
+      foo(embedded_struct)
+      foo(heap_struct)
+      foo(heap_struct)
     RUBY
   end
 
@@ -1859,6 +1893,27 @@ class TestYJIT < Test::Unit::TestCase
       f.flush
       assert_separately([{ "BUNDLER_SETUP" => f.path }, "--enable=gems", "--yjit"], "", ignore_stderr: true)
     end
+  end
+
+  def test_exceptional_entry_into_env_escaped_before_yjit_enablement
+    threshold = 2
+    assert_separately(["--disable-all", "--yjit-disable", "--yjit-call-threshold=#{threshold}"], <<~RUBY)
+      def run
+        @captured_env = ->{}
+        RubyVM::YJIT.enable
+
+        i = 0
+        while i < #{threshold}
+          next_i = i + 1
+          from_break = tap { break i + 1 } # break from the block generates an exceptional entry
+          assert_equal(from_break, next_i, '[Bug #21941]')
+          i = next_i
+        end
+      end
+
+      run
+      assert_equal(#{threshold}, @captured_env.binding.local_variable_get(:i))
+    RUBY
   end
 
   private

@@ -698,8 +698,12 @@ thread_sched_readyq_contain_p(struct rb_thread_sched *sched, rb_thread_t *th)
 {
     rb_thread_t *rth;
     ccan_list_for_each(&sched->readyq, rth, sched.node.readyq) {
-        if (rth == th) return true;
+        if (rth == th) {
+            VM_ASSERT(th->sched.node.is_ready);
+            return true;
+        }
     }
+    VM_ASSERT(!th->sched.node.is_ready);
     return false;
 }
 
@@ -720,6 +724,8 @@ thread_sched_deq(struct rb_thread_sched *sched)
     }
     else {
         next_th = ccan_list_pop(&sched->readyq, rb_thread_t, sched.node.readyq);
+        VM_ASSERT(next_th->sched.node.is_ready);
+        next_th->sched.node.is_ready = false;
 
         VM_ASSERT(sched->readyq_cnt > 0);
         sched->readyq_cnt--;
@@ -753,6 +759,7 @@ thread_sched_enq(struct rb_thread_sched *sched, rb_thread_t *ready_th)
     }
 
     ccan_list_add_tail(&sched->readyq, &ready_th->sched.node.readyq);
+    ready_th->sched.node.is_ready = true;
     sched->readyq_cnt++;
 }
 
@@ -836,6 +843,30 @@ thread_sched_wait_running_turn(struct rb_thread_sched *sched, rb_thread_t *th, b
     VM_ASSERT(th == rb_ec_thread_ptr(rb_current_ec_noinline()));
 
     if (th != sched->running) {
+        // TODO: This optimization should also be made to work for MN_THREADS
+        if (th->has_dedicated_nt && th == sched->runnable_hot_th && (sched->running == NULL || sched->running->has_dedicated_nt)) {
+            RUBY_DEBUG_LOG("(nt) stealing: hot-th:%u.  running:%u", rb_th_serial(th), rb_th_serial(sched->running));
+
+            // If there is a thread set to run, move it back to the front of the readyq
+            if (sched->running != NULL) {
+                rb_thread_t *running = sched->running;
+                VM_ASSERT(!thread_sched_readyq_contain_p(sched, running));
+                running->sched.node.is_ready = true;
+                ccan_list_add(&sched->readyq, &running->sched.node.readyq);
+                sched->readyq_cnt++;
+            }
+
+            // Pull off the ready queue and start running.
+            if (th->sched.node.is_ready) {
+                VM_ASSERT(thread_sched_readyq_contain_p(sched, th));
+                ccan_list_del_init(&th->sched.node.readyq);
+                th->sched.node.is_ready = false;
+                sched->readyq_cnt--;
+            }
+            thread_sched_set_running(sched, th);
+            rb_ractor_thread_switch(th->ractor, th, false);
+        }
+
         // already deleted from running threads
         // VM_ASSERT(!ractor_sched_running_threads_contain_p(th->vm, th)); // need locking
 
@@ -851,6 +882,15 @@ thread_sched_wait_running_turn(struct rb_thread_sched *sched, rb_thread_t *th, b
                     rb_native_cond_wait(&th->nt->cond.readyq, &sched->lock_);
                 }
                 thread_sched_set_locked(sched, th);
+
+                if (sched->runnable_hot_th != NULL && sched->runnable_hot_th_waiting) {
+                    VM_ASSERT(sched->runnable_hot_th != th);
+                    // Give the hot thread a chance to preempt, if it's actively spinning.
+                    // On multicore, this reduces the rate of core-switching. On single-core it
+                    // should mostly be a nop, since the other thread can't be concurrently spinning.
+                    thread_sched_unlock(sched, th);
+                    thread_sched_lock(sched, th);
+                }
 
                 RUBY_DEBUG_LOG("(nt) wakeup %s", sched->running == th ? "success" : "failed");
                 if (th == sched->running) {
@@ -900,6 +940,11 @@ thread_sched_wait_running_turn(struct rb_thread_sched *sched, rb_thread_t *th, b
         thread_sched_add_running_thread(sched, th);
     }
 
+    // Control transfer to the current thread is now complete. The original thread
+    // cannot steal control at this point.
+    sched->runnable_hot_th = NULL;
+    sched->runnable_hot_th_waiting = 0;
+
     // VM_ASSERT(ractor_sched_running_threads_contain_p(th->vm, th)); need locking
     RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_RESUMED, th);
 }
@@ -936,6 +981,13 @@ thread_sched_to_running_common(struct rb_thread_sched *sched, rb_thread_t *th)
 static void
 thread_sched_to_running(struct rb_thread_sched *sched, rb_thread_t *th)
 {
+    // We are reading and writing these sched fields without lock cover, but
+    // there are no correctness issues resulting from stale cache or delayed writeback.
+    // When it works, this causes the next-scheduled thread to yield the sched lock
+    // briefly so that we can grab it if we're still spinning (not descheduled yet).
+    if (sched->runnable_hot_th == th) {
+        sched->runnable_hot_th_waiting = 1;
+    }
     thread_sched_lock(sched, th);
     {
         thread_sched_to_running_common(sched, th);
@@ -1000,13 +1052,17 @@ thread_sched_to_dead(struct rb_thread_sched *sched, rb_thread_t *th)
 //
 // This thread will run dedicated task (th->nt->dedicated++).
 static void
-thread_sched_to_waiting_common(struct rb_thread_sched *sched, rb_thread_t *th)
+thread_sched_to_waiting_common(struct rb_thread_sched *sched, rb_thread_t *th, bool yield_immediately)
 {
     RUBY_DEBUG_LOG("th:%u DNT:%d", rb_th_serial(th), th->nt->dedicated);
 
     RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
 
     native_thread_dedicated_inc(th->vm, th->ractor, th->nt);
+    if (!yield_immediately) {
+        sched->runnable_hot_th = th;
+        sched->runnable_hot_th_waiting = 0;
+    }
     thread_sched_wakeup_next_thread(sched, th, false);
 }
 
@@ -1014,11 +1070,11 @@ thread_sched_to_waiting_common(struct rb_thread_sched *sched, rb_thread_t *th)
 //
 // This thread will run a dedicated task.
 static void
-thread_sched_to_waiting(struct rb_thread_sched *sched, rb_thread_t *th)
+thread_sched_to_waiting(struct rb_thread_sched *sched, rb_thread_t *th, bool yield_immediately)
 {
     thread_sched_lock(sched, th);
     {
-        thread_sched_to_waiting_common(sched, th);
+        thread_sched_to_waiting_common(sched, th, yield_immediately);
     }
     thread_sched_unlock(sched, th);
 }
@@ -1026,7 +1082,7 @@ thread_sched_to_waiting(struct rb_thread_sched *sched, rb_thread_t *th)
 // mini utility func
 // return true if any there are any interrupts
 static bool
-ubf_set(rb_thread_t *th, rb_unblock_function_t *func, void *arg)
+ubf_set(rb_thread_t *th, rb_unblock_function_t *func, void *arg, rb_atomic_t *event_serial)
 {
     VM_ASSERT(func != NULL);
 
@@ -1046,6 +1102,10 @@ ubf_set(rb_thread_t *th, rb_unblock_function_t *func, void *arg)
         VM_ASSERT(th->unblock.func == NULL);
         th->unblock.func = func;
         th->unblock.arg  = arg;
+        if (event_serial) {
+            rb_atomic_t prev_serial = RUBY_ATOMIC_FETCH_ADD(th->unblock.event_serial, 1);
+            *event_serial = prev_serial+1;
+        }
     }
     rb_native_mutex_unlock(&th->interrupt_lock);
 
@@ -1053,12 +1113,15 @@ ubf_set(rb_thread_t *th, rb_unblock_function_t *func, void *arg)
 }
 
 static void
-ubf_clear(rb_thread_t *th)
+ubf_clear(rb_thread_t *th, bool clear_serial)
 {
     rb_native_mutex_lock(&th->interrupt_lock);
     {
         th->unblock.func = NULL;
         th->unblock.arg  = NULL;
+        if (clear_serial) {
+            RUBY_ATOMIC_ADD(th->unblock.event_serial, 1);
+        }
     }
     rb_native_mutex_unlock(&th->interrupt_lock);
 }
@@ -1103,7 +1166,7 @@ thread_sched_to_waiting_until_wakeup(struct rb_thread_sched *sched, rb_thread_t 
     thread_sched_lock(sched, th);
     {
         // NOTE: there's a lock ordering inversion here with the ubf call, but it's benign.
-        if (ubf_set(th, ubf_waiting, (void *)th)) {
+        if (ubf_set(th, ubf_waiting, (void *)th, NULL)) {
             RUBY_DEBUG_LOG("th:%u interrupted", rb_th_serial(th));
         }
         else {
@@ -1115,7 +1178,7 @@ thread_sched_to_waiting_until_wakeup(struct rb_thread_sched *sched, rb_thread_t 
     }
     thread_sched_unlock(sched, th);
 
-    ubf_clear(th);
+    ubf_clear(th, false);
 }
 
 // run another thread in the ready queue.
@@ -1333,8 +1396,9 @@ rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_fun
 
     rb_thread_t * volatile th = rb_ec_thread_ptr(ec);
     struct rb_thread_sched *sched = TH_SCHED(th);
+    struct ractor_waiter *waiter = (struct ractor_waiter*)ubf_arg;
 
-    if (ubf_set(th, ubf, ubf_arg)) {
+    if (ubf_set(th, ubf, ubf_arg, &waiter->event_serial)) {
         // interrupted
         return;
     }
@@ -1355,7 +1419,7 @@ rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_fun
     thread_sched_unlock(sched, th);
     rb_ractor_lock_self(cr);
 
-    ubf_clear(th);
+    ubf_clear(th, true);
 
     RUBY_DEBUG_LOG("end%s", "");
 }
@@ -1363,7 +1427,7 @@ rb_ractor_sched_wait(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_fun
 void
 rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *r_th)
 {
-    // ractor lock of r is NOT acquired
+    // ractor lock of r acquired
     struct rb_thread_sched *sched = TH_SCHED(r_th);
 
     RUBY_DEBUG_LOG("r:%u th:%d", (unsigned int)rb_ractor_id(r), r_th->serial);
@@ -1371,6 +1435,7 @@ rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *r_th)
     thread_sched_lock(sched, r_th);
     {
         if (r_th->status == THREAD_STOPPED_FOREVER) {
+            RUBY_ATOMIC_ADD(r_th->unblock.event_serial, 1);
             thread_sched_to_ready_common(sched, r_th, true, false);
         }
     }
@@ -1556,6 +1621,8 @@ get_native_thread_id(void)
 #endif
 
 #if defined(HAVE_WORKING_FORK)
+void rb_internal_thread_event_hooks_rw_lock_atfork(void);
+
 static void
 thread_sched_atfork(struct rb_thread_sched *sched)
 {
@@ -1586,6 +1653,8 @@ thread_sched_atfork(struct rb_thread_sched *sched)
     ccan_list_head_init(&vm->ractor.sched.grq);
     ccan_list_head_init(&vm->ractor.sched.timeslice_threads);
     ccan_list_head_init(&vm->ractor.sched.running_threads);
+
+    rb_internal_thread_event_hooks_rw_lock_atfork();
 
     VM_ASSERT(sched->is_running);
     sched->is_running_timeslice = false;
@@ -1730,7 +1799,12 @@ ruby_mn_threads_params(void)
     main_ractor->threads.sched.enable_mn_threads = enable_mn_threads;
 
     const char *max_cpu_cstr = getenv("RUBY_MAX_CPU");
-    const int default_max_cpu = 8; // TODO: CPU num?
+#if defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_ONLN)
+    long nprocessors = sysconf(_SC_NPROCESSORS_ONLN);
+    const int default_max_cpu = (nprocessors > 0) ? (int)nprocessors : 8;
+#else
+    const int default_max_cpu = 8;
+#endif
     int max_cpu = default_max_cpu;
 
     if (USE_MN_THREADS && max_cpu_cstr)  {
@@ -3389,6 +3463,22 @@ struct rb_internal_thread_event_hook {
 };
 
 static pthread_rwlock_t rb_internal_thread_event_hooks_rw_lock = PTHREAD_RWLOCK_INITIALIZER;
+
+#if defined(HAVE_WORKING_FORK)
+void
+rb_internal_thread_event_hooks_rw_lock_atfork(void)
+{
+  // After fork(), this rwlock may have been held by a now-dead thread.
+  //
+  // pthread_rwlock_destroy() on a held lock is undefined behavior, and
+  // pthread_rwlock_init() on an already-initialized lock is also undefined
+  // behavior
+  //
+  // Direct assignment of PTHREAD_RWLOCK_INITIALIZER is safe and portable.
+  rb_internal_thread_event_hooks_rw_lock =
+      (pthread_rwlock_t)PTHREAD_RWLOCK_INITIALIZER;
+}
+#endif
 
 rb_internal_thread_event_hook_t *
 rb_internal_thread_add_event_hook(rb_internal_thread_event_callback callback, rb_event_flag_t internal_event, void *user_data)

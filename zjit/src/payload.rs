@@ -3,6 +3,9 @@ use std::ptr::NonNull;
 use crate::codegen::IseqCallRef;
 use crate::stats::CompileError;
 use crate::{cruby::*, profile::IseqProfile, virtualmem::CodePtr};
+use crate::options::get_option;
+
+pub use crate::jit_frame::JITFrame;
 
 /// This is all the data ZJIT stores on an ISEQ. We mark objects in this struct on GC.
 #[derive(Debug)]
@@ -11,14 +14,35 @@ pub struct IseqPayload {
     pub profile: IseqProfile,
     /// JIT code versions. Different versions should have different assumptions.
     pub versions: Vec<IseqVersionRef>,
+    /// Whether a previous compilation of this ISEQ was invalidated due to
+    /// singleton class creation (violation of [`crate::hir::Invariant::NoSingletonClass`]).
+    pub was_invalidated_for_singleton_class_creation: bool,
+    /// Whether `self` is guaranteed to be a heap (non-immediate) object for this
+    /// ISEQ. Set at compile triggers (entry point / function stub hit) where the
+    /// owning class is known via the method entry, and consumed in `iseq_to_hir`
+    /// to type the `self`-producing instructions (`LoadSelf` / `SelfParam`
+    /// `LoadArg`) as `HeapBasicObject`. Defaults to `false` (the conservative
+    /// `BasicObject`) when the owner is unknown.
+    /// See [`crate::cruby::iseq_self_is_heap_object`].
+    pub self_is_heap_object: bool,
 }
 
 impl IseqPayload {
-    fn new(iseq_size: u32) -> Self {
+    fn new() -> Self {
         Self {
-            profile: IseqProfile::new(iseq_size),
+            profile: IseqProfile::new(),
             versions: vec![],
+            was_invalidated_for_singleton_class_creation: false,
+            self_is_heap_object: false,
         }
+    }
+
+    /// Profile counts are used for compilation policy.
+    /// When we deoptimize a method that can be recompiled, we need to update the count to collect more profiles.
+    /// Otherwise, we will generate the same code that was just deoptimized.
+    pub fn reset_profiles_remaining(&mut self, insn_idx: YarvInsnIdx) {
+        let num_profiles = get_option!(num_profiles);
+        self.profile.entry_mut(insn_idx).set_profiles_remaining(num_profiles);
     }
 }
 
@@ -45,6 +69,11 @@ pub struct IseqVersion {
 pub type IseqVersionRef = NonNull<IseqVersion>;
 
 impl IseqVersion {
+    /// Check if this version was invalidated
+    pub fn is_invalidated(&self) -> bool {
+        self.status == IseqStatus::Invalidated
+    }
+
     /// Allocate a new IseqVersion to be compiled
     pub fn new(iseq: IseqPtr) -> IseqVersionRef {
         let version = Self {
@@ -87,8 +116,7 @@ pub fn get_or_create_iseq_payload_ptr(iseq: IseqPtr) -> *mut IseqPayload {
             // We drop the payload with Box::from_raw when the GC frees the ISEQ and calls us.
             // NOTE(alan): Sometimes we read from an ISEQ without ever writing to it.
             // We allocate in those cases anyways.
-            let iseq_size = get_iseq_encoded_size(iseq);
-            let new_payload = IseqPayload::new(iseq_size);
+            let new_payload = IseqPayload::new();
             let new_payload = Box::into_raw(Box::new(new_payload));
             rb_iseq_set_zjit_payload(iseq, new_payload as VoidPtr);
 

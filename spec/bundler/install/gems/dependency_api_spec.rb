@@ -60,7 +60,7 @@ RSpec.describe "gemcutter's dependency API" do
     G
     bundle :install, artifice: "endpoint"
 
-    bundle "config set --local deployment true"
+    bundle_config "deployment true"
     bundle :install, artifice: "endpoint"
     expect(out).to include("Fetching gem metadata from #{source_uri}")
     expect(the_bundle).to include_gems "myrack 1.0.0"
@@ -97,7 +97,7 @@ RSpec.describe "gemcutter's dependency API" do
 
     bundle :install, artifice: "endpoint"
 
-    bundle "config set --local deployment true"
+    bundle_config "deployment true"
     bundle :install, artifice: "endpoint"
 
     expect(the_bundle).to include_gems("rails 2.3.2")
@@ -111,7 +111,7 @@ RSpec.describe "gemcutter's dependency API" do
     G
 
     bundle "install", artifice: "endpoint"
-    bundle "config set --local deployment true"
+    bundle_config "deployment true"
     bundle :install, artifice: "endpoint"
 
     expect(the_bundle).to include_gems("foo 1.0")
@@ -378,7 +378,7 @@ RSpec.describe "gemcutter's dependency API" do
     G
 
     bundle :install, artifice: "endpoint_extra"
-    bundle "config set --local deployment true"
+    bundle_config "deployment true"
     bundle "install", artifice: "endpoint_extra"
     expect(the_bundle).to include_gems "back_deps 1.0"
   end

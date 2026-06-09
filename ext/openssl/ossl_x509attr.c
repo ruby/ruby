@@ -48,13 +48,14 @@ static const rb_data_type_t ossl_x509attr_type = {
  * Public
  */
 VALUE
-ossl_x509attr_new(X509_ATTRIBUTE *attr)
+ossl_x509attr_new(const X509_ATTRIBUTE *attr)
 {
     X509_ATTRIBUTE *new;
     VALUE obj;
 
     obj = NewX509Attr(cX509Attr);
-    new = X509_ATTRIBUTE_dup(attr);
+    /* OpenSSL 1.1.1 takes a non-const pointer */
+    new = X509_ATTRIBUTE_dup((X509_ATTRIBUTE *)attr);
     if (!new)
         ossl_raise(eX509AttrError, "X509_ATTRIBUTE_dup");
     SetX509Attr(obj, new);
@@ -196,7 +197,7 @@ ossl_x509attr_set_value(VALUE self, VALUE value)
         ossl_raise(eX509AttrError, "attribute value must be ASN1::Set");
 
     if (X509_ATTRIBUTE_count(attr)) { /* populated, reset first */
-        ASN1_OBJECT *obj = X509_ATTRIBUTE_get0_object(attr);
+        const ASN1_OBJECT *obj = X509_ATTRIBUTE_get0_object(attr);
         X509_ATTRIBUTE *new_attr = X509_ATTRIBUTE_create_by_OBJ(NULL, obj, 0, NULL, -1);
         if (!new_attr) {
             sk_ASN1_TYPE_pop_free(sk, ASN1_TYPE_free);
@@ -234,13 +235,22 @@ ossl_x509attr_get_value(VALUE self)
     unsigned char *p;
 
     GetX509Attr(self, attr);
+    count = X509_ATTRIBUTE_count(attr);
     /* there is no X509_ATTRIBUTE_get0_set() :( */
+#ifdef HAVE_OPENSSL_SK_NEW_RESERVE
+    if (!(sk = sk_ASN1_TYPE_new_reserve(NULL, count)))
+        ossl_raise(eX509AttrError, "sk_new_reserve");
+#else
     if (!(sk = sk_ASN1_TYPE_new_null()))
         ossl_raise(eX509AttrError, "sk_new");
+#endif
 
-    count = X509_ATTRIBUTE_count(attr);
-    for (i = 0; i < count; i++)
-        sk_ASN1_TYPE_push(sk, X509_ATTRIBUTE_get0_type(attr, i));
+    for (i = 0; i < count; i++) {
+        if (!sk_ASN1_TYPE_push(sk, (ASN1_TYPE *)X509_ATTRIBUTE_get0_type(attr, i))) {
+            sk_ASN1_TYPE_free(sk);
+            ossl_raise(eX509AttrError, NULL);
+        }
+    }
 
     if ((len = i2d_ASN1_SET_ANY(sk, NULL)) <= 0) {
         sk_ASN1_TYPE_free(sk);

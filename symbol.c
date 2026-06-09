@@ -27,13 +27,6 @@
 #include "builtin.h"
 #include "ruby/internal/attr/nonstring.h"
 
-#if defined(USE_SYMBOL_GC) && !(USE_SYMBOL_GC+0)
-# undef USE_SYMBOL_GC
-# define USE_SYMBOL_GC 0
-#else
-# undef USE_SYMBOL_GC
-# define USE_SYMBOL_GC 1
-#endif
 #if defined(SYMBOL_DEBUG) && (SYMBOL_DEBUG+0)
 # undef SYMBOL_DEBUG
 # define SYMBOL_DEBUG 1
@@ -310,7 +303,7 @@ sym_set_create(VALUE sym, void *data)
     VALUE str = dup_string_for_create(static_sym_entry->str);
 
     if (create_dynamic_symbol) {
-        NEWOBJ_OF(obj, struct RSymbol, rb_cSymbol, T_SYMBOL | FL_WB_PROTECTED, sizeof(struct RSymbol), 0);
+        NEWOBJ_OF(obj, struct RSymbol, rb_cSymbol, T_SYMBOL, sizeof(struct RSymbol));
 
         rb_encoding *enc = rb_enc_get(str);
         rb_enc_set_index((VALUE)obj, rb_enc_to_index(enc));

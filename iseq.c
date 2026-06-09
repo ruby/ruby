@@ -88,7 +88,7 @@ free_arena(struct iseq_compile_data_storage *cur)
 
     while (cur) {
         next = cur->next;
-        ruby_sized_xfree(cur, offsetof(struct iseq_compile_data_storage, buff) + cur->size * sizeof(char));
+        ruby_xfree_sized(cur, offsetof(struct iseq_compile_data_storage, buff) + cur->size * sizeof(char));
         cur = next;
     }
 }
@@ -113,14 +113,14 @@ remove_from_constant_cache(ID id, IC ic)
     VALUE lookup_result;
     st_data_t ic_data = (st_data_t)ic;
 
-    if (rb_id_table_lookup(vm->constant_cache, id, &lookup_result)) {
+    if (rb_id_table_lookup(&vm->constant_cache, id, &lookup_result)) {
         set_table *ics = (set_table *)lookup_result;
         set_table_delete(ics, &ic_data);
 
         if (ics->num_entries == 0 &&
                 // See comment in vm_track_constant_cache on why we need this check
                 id != vm->inserting_constant_cache_id) {
-            rb_id_table_delete(vm->constant_cache, id);
+            rb_id_table_delete(&vm->constant_cache, id);
             set_free_table(ics);
         }
     }
@@ -208,7 +208,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
         SIZED_FREE_N(body->is_entries, ISEQ_IS_SIZE(body));
         SIZED_FREE_N(body->call_data, body->ci_size);
         if (body->catch_table) {
-            ruby_sized_xfree(body->catch_table, iseq_catch_table_bytes(body->catch_table->size));
+            ruby_xfree_sized(body->catch_table, iseq_catch_table_bytes(body->catch_table->size));
         }
         SIZED_FREE_N(body->param.opt_table, body->param.opt_num + 1);
         if (ISEQ_MBITS_BUFLEN(body->iseq_size) > 1 && body->mark_bits.list) {
@@ -302,9 +302,7 @@ rb_iseq_mark_and_move_each_body_value(const rb_iseq_t *iseq, VALUE *original_ise
         for (unsigned int i = 0; i < body->icvarc_size; i++, is_entries++) {
             ICVARC icvarc = (ICVARC)is_entries;
             if (icvarc->entry) {
-                RUBY_ASSERT(!RB_TYPE_P(icvarc->entry->class_value, T_NONE));
-
-                rb_gc_mark_and_move(&icvarc->entry->class_value);
+                rb_gc_mark_and_move((VALUE *)&icvarc->entry);
             }
         }
 
@@ -866,10 +864,6 @@ set_compile_option_from_hash(rb_compile_option_t *option, VALUE opt)
 static rb_compile_option_t *
 set_compile_option_from_ast(rb_compile_option_t *option, const rb_ast_body_t *ast)
 {
-#define SET_COMPILE_OPTION(o, a, mem) \
-    ((a)->mem < 0 ? 0 : ((o)->mem = (a)->mem > 0))
-    SET_COMPILE_OPTION(option, ast, coverage_enabled);
-#undef SET_COMPILE_OPTION
     if (ast->frozen_string_literal >= 0) {
         option->frozen_string_literal = ast->frozen_string_literal;
     }
@@ -982,7 +976,7 @@ rb_iseq_new_top(const VALUE ast_value, VALUE name, VALUE path, VALUE realpath, c
 rb_iseq_t *
 pm_iseq_new_top(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent, int *error_state)
 {
-    iseq_new_setup_coverage(path, (int) (node->parser->line_offsets.size - 1));
+    iseq_new_setup_coverage(path, (int) (pm_parser_line_offsets(node->parser)->size - 1));
 
     return pm_iseq_new_with_opt(node, name, path, realpath, 0, parent, 0,
                                 ISEQ_TYPE_TOP, &COMPILE_OPTION_DEFAULT, error_state);
@@ -1006,7 +1000,7 @@ rb_iseq_new_main(const VALUE ast_value, VALUE path, VALUE realpath, const rb_ise
 rb_iseq_t *
 pm_iseq_new_main(pm_scope_node_t *node, VALUE path, VALUE realpath, const rb_iseq_t *parent, int opt, int *error_state)
 {
-    iseq_new_setup_coverage(path, (int) (node->parser->line_offsets.size - 1));
+    iseq_new_setup_coverage(path, (int) (pm_parser_line_offsets(node->parser)->size - 1));
 
     return pm_iseq_new_with_opt(node, rb_fstring_lit("<main>"),
                                 path, realpath, 0,
@@ -1023,8 +1017,13 @@ rb_iseq_new_eval(const VALUE ast_value, VALUE name, VALUE path, VALUE realpath, 
         }
     }
 
+    rb_compile_option_t option = COMPILE_OPTION_DEFAULT;
+    rb_ast_t *ast = rb_ruby_ast_data_get(ast_value);
+    if (ast->body.coverage_enabled >= 0) {
+        option.coverage_enabled = ast->body.coverage_enabled;
+    }
     return rb_iseq_new_with_opt(ast_value, name, path, realpath, first_lineno,
-                                parent, isolated_depth, ISEQ_TYPE_EVAL, &COMPILE_OPTION_DEFAULT,
+                                parent, isolated_depth, ISEQ_TYPE_EVAL, &option,
                                 Qnil);
 }
 
@@ -1035,7 +1034,7 @@ pm_iseq_new_eval(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath,
     if (rb_get_coverage_mode() & COVERAGE_TARGET_EVAL) {
         VALUE coverages = rb_get_coverages();
         if (RTEST(coverages) && RTEST(path) && !RTEST(rb_hash_has_key(coverages, path))) {
-            iseq_setup_coverage(coverages, path, ((int) (node->parser->line_offsets.size - 1)) + first_lineno - 1);
+            iseq_setup_coverage(coverages, path, ((int) (pm_parser_line_offsets(node->parser)->size - 1)) + first_lineno - 1);
         }
     }
 
@@ -1096,41 +1095,15 @@ rb_iseq_new_with_opt(VALUE ast_value, VALUE name, VALUE path, VALUE realpath,
     return iseq_translate(iseq);
 }
 
-struct pm_iseq_new_with_opt_data {
-    rb_iseq_t *iseq;
-    pm_scope_node_t *node;
-};
-
-VALUE
-pm_iseq_new_with_opt_try(VALUE d)
-{
-    struct pm_iseq_new_with_opt_data *data = (struct pm_iseq_new_with_opt_data *)d;
-
-    // This can compile child iseqs, which can raise syntax errors
-    pm_iseq_compile_node(data->iseq, data->node);
-
-    // This raises an exception if there is a syntax error
-    finish_iseq_build(data->iseq);
-
-    return Qundef;
-}
-
 /**
- * This is a step in the prism compiler that is called once all of the various
- * options have been established. It is called from one of the pm_iseq_new_*
- * functions or from the RubyVM::InstructionSequence APIs. It is responsible for
- * allocating the instruction sequence, calling into the compiler, and returning
- * the built instruction sequence.
- *
- * Importantly, this is also the function where the compiler is re-entered to
- * compile child instruction sequences. A child instruction sequence is always
- * compiled using a scope node, which is why we cast it explicitly to that here
- * in the parameters (as opposed to accepting a generic pm_node_t *).
+ * Core implementation for building a prism iseq. This does not use rb_protect,
+ * so any exceptions (e.g. from finish_iseq_build) propagate normally up the
+ * call stack — matching the parse.y compiler's behavior.
  */
 rb_iseq_t *
-pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath,
-                     int first_lineno, const rb_iseq_t *parent, int isolated_depth,
-                     enum rb_iseq_type type, const rb_compile_option_t *option, int *error_state)
+pm_iseq_build(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath,
+              int first_lineno, const rb_iseq_t *parent, int isolated_depth,
+              enum rb_iseq_type type, const rb_compile_option_t *option)
 {
     rb_iseq_t *iseq = iseq_alloc();
     ISEQ_BODY(iseq)->prism = true;
@@ -1143,10 +1116,11 @@ pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpa
     option = &next_option;
 
     pm_location_t *location = &node->base.location;
-    int32_t start_line = node->parser->start_line;
+    int32_t start_line = pm_parser_start_line(node->parser);
+    const pm_line_offset_list_t *line_offsets = pm_parser_line_offsets(node->parser);
 
-    pm_line_column_t start = pm_line_offset_list_line_column(&node->parser->line_offsets, location->start, start_line);
-    pm_line_column_t end = pm_line_offset_list_line_column(&node->parser->line_offsets, location->start + location->length, start_line);
+    pm_line_column_t start = pm_line_offset_list_line_column(line_offsets, location->start, start_line);
+    pm_line_column_t end = pm_line_offset_list_line_column(line_offsets, location->start + location->length, start_line);
 
     rb_code_location_t code_location = (rb_code_location_t) {
         .beg_pos = { .lineno = (int) start.line, .column = (int) start.column },
@@ -1156,15 +1130,59 @@ pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpa
     prepare_iseq_build(iseq, name, path, realpath, first_lineno, &code_location, node->ast_node->node_id,
                        parent, isolated_depth, type, node->script_lines == NULL ? Qnil : *node->script_lines, option);
 
+    pm_iseq_compile_node(iseq, node);
+    finish_iseq_build(iseq);
+
+    return iseq_translate(iseq);
+}
+
+struct pm_iseq_new_with_opt_data {
+    rb_iseq_t *iseq;
+    pm_scope_node_t *node;
+    VALUE name, path, realpath;
+    int first_lineno, isolated_depth;
+    const rb_iseq_t *parent;
+    enum rb_iseq_type type;
+    const rb_compile_option_t *option;
+};
+
+static VALUE
+pm_iseq_new_with_opt_try(VALUE d)
+{
+    struct pm_iseq_new_with_opt_data *data = (struct pm_iseq_new_with_opt_data *)d;
+    data->iseq = pm_iseq_build(data->node, data->name, data->path, data->realpath,
+                               data->first_lineno, data->parent, data->isolated_depth,
+                               data->type, data->option);
+    return Qundef;
+}
+
+/**
+ * This is a step in the prism compiler that is called once all of the various
+ * options have been established. It is called from one of the pm_iseq_new_*
+ * functions or from the RubyVM::InstructionSequence APIs.
+ *
+ * This function uses rb_protect to catch exceptions, storing the error state
+ * in the provided out parameter. This is only needed at top-level entry points
+ * where the caller wants to handle errors gracefully. Child iseqs compiled
+ * during the compilation process do NOT go through this function — they use
+ * pm_iseq_build directly, letting exceptions propagate naturally (matching
+ * the parse.y compiler's behavior).
+ */
+rb_iseq_t *
+pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath,
+                     int first_lineno, const rb_iseq_t *parent, int isolated_depth,
+                     enum rb_iseq_type type, const rb_compile_option_t *option, int *error_state)
+{
     struct pm_iseq_new_with_opt_data data = {
-        .iseq = iseq,
-        .node = node
+        .node = node, .name = name, .path = path, .realpath = realpath,
+        .first_lineno = first_lineno, .parent = parent,
+        .isolated_depth = isolated_depth, .type = type, .option = option
     };
     rb_protect(pm_iseq_new_with_opt_try, (VALUE)&data, error_state);
 
     if (*error_state) return NULL;
 
-    return iseq_translate(iseq);
+    return data.iseq;
 }
 
 rb_iseq_t *
@@ -1192,7 +1210,7 @@ rb_iseq_load_iseq(VALUE fname)
     VALUE iseqv = rb_check_funcall(rb_cISeq, rb_intern("load_iseq"), 1, &fname);
 
     if (!SPECIAL_CONST_P(iseqv) && RBASIC_CLASS(iseqv) == rb_cISeq) {
-        return  iseqw_check(iseqv);
+        return iseqw_check(iseqv);
     }
 
     return NULL;
@@ -1380,6 +1398,7 @@ rb_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
         rb_exc_raise(GET_EC()->errinfo);
     }
     else {
+        iseq_new_setup_coverage(file, ast_line_count(ast_value));
         iseq = rb_iseq_new_with_opt(ast_value, name, file, realpath, ln,
                                     NULL, 0, ISEQ_TYPE_TOP, &option,
                                     Qnil);
@@ -1411,19 +1430,20 @@ pm_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
         src = StringValue(src);
     }
 
-    pm_parse_result_t result = { 0 };
-    pm_options_line_set(&result.options, NUM2INT(line));
-    pm_options_scopes_init(&result.options, 1);
+    pm_parse_result_t result;
+    pm_parse_result_init(&result);
+    pm_options_line_set(result.options, NUM2INT(line));
+    pm_options_scopes_init(result.options, 1);
     result.node.coverage_enabled = 1;
 
     switch (option.frozen_string_literal) {
       case ISEQ_FROZEN_STRING_LITERAL_UNSET:
         break;
       case ISEQ_FROZEN_STRING_LITERAL_DISABLED:
-        pm_options_frozen_string_literal_set(&result.options, false);
+        pm_options_frozen_string_literal_set(result.options, false);
         break;
       case ISEQ_FROZEN_STRING_LITERAL_ENABLED:
-        pm_options_frozen_string_literal_set(&result.options, true);
+        pm_options_frozen_string_literal_set(result.options, true);
         break;
       default:
         rb_bug("pm_iseq_compile_with_option: invalid frozen_string_literal=%d", option.frozen_string_literal);
@@ -1444,6 +1464,7 @@ pm_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
 
     if (error == Qnil) {
         int error_state;
+        iseq_new_setup_coverage(file, (int) (pm_parser_line_offsets(result.node.parser)->size - 1));
         iseq = pm_iseq_new_with_opt(&result.node, name, file, realpath, ln, NULL, 0, ISEQ_TYPE_TOP, &option, &error_state);
 
         pm_parse_result_free(&result);
@@ -1783,6 +1804,8 @@ iseqw_s_compile_prism(int argc, VALUE *argv, VALUE self)
     return iseqw_s_compile_parser(argc, argv, self, true);
 }
 
+static VALUE iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self);
+
 /*
  *  call-seq:
  *      InstructionSequence.compile_file(file[, options]) -> iseq
@@ -1806,6 +1829,10 @@ iseqw_s_compile_prism(int argc, VALUE *argv, VALUE self)
 static VALUE
 iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
 {
+    if (rb_ruby_prism_p()) {
+        return iseqw_s_compile_file_prism(argc, argv, self);
+    }
+
     VALUE file, opt = Qnil;
     VALUE parser, f, exc = Qnil, ret;
     rb_ast_t *ast;
@@ -1829,6 +1856,7 @@ iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
     parser = rb_parser_new();
     rb_parser_set_context(parser, NULL, FALSE);
     ast_value = rb_parser_load_file(parser, file);
+    iseq_new_setup_coverage(file, ast_line_count(ast_value));
     ast = rb_ruby_ast_data_get(ast_value);
     if (!ast->body.root) exc = GET_EC()->errinfo;
 
@@ -1892,17 +1920,32 @@ iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self)
     rb_execution_context_t *ec = GET_EC();
     VALUE v = rb_vm_push_frame_fname(ec, file);
 
-    pm_parse_result_t result = { 0 };
-    result.options.line = 1;
+    make_compile_option(&option, opt);
+
+    pm_parse_result_t result;
+    pm_parse_result_init(&result);
     result.node.coverage_enabled = 1;
+
+    switch (option.frozen_string_literal) {
+      case ISEQ_FROZEN_STRING_LITERAL_UNSET:
+        break;
+      case ISEQ_FROZEN_STRING_LITERAL_DISABLED:
+        pm_options_frozen_string_literal_set(result.options, false);
+        break;
+      case ISEQ_FROZEN_STRING_LITERAL_ENABLED:
+        pm_options_frozen_string_literal_set(result.options, true);
+        break;
+      default:
+        rb_bug("iseqw_s_compile_file_prism: invalid frozen_string_literal=%d", option.frozen_string_literal);
+        break;
+    }
 
     VALUE script_lines;
     VALUE error = pm_load_parse_file(&result, file, ruby_vm_keep_script_lines ? &script_lines : NULL);
 
     if (error == Qnil) {
-        make_compile_option(&option, opt);
-
         int error_state;
+        iseq_new_setup_coverage(file, (int) (pm_parser_line_offsets(result.node.parser)->size - 1));
         rb_iseq_t *iseq = pm_iseq_new_with_opt(&result.node, rb_fstring_lit("<main>"),
                                                file,
                                                rb_realpath_internal(Qnil, file, 1),
@@ -2987,24 +3030,31 @@ rb_iseq_disasm(const rb_iseq_t *iseq)
 attr_index_t
 rb_estimate_iv_count(VALUE klass, const rb_iseq_t * initialize_iseq)
 {
-    struct rb_id_table * iv_names = rb_id_table_create(0);
+    set_table iv_names = { 0 };
+    set_init_embedded_numtable_with_size(&iv_names, 0);
 
     for (unsigned int i = 0; i < ISEQ_BODY(initialize_iseq)->ivc_size; i++) {
         IVC cache = (IVC)&ISEQ_BODY(initialize_iseq)->is_entries[i];
 
         if (cache->iv_set_name) {
-            rb_id_table_insert(iv_names, cache->iv_set_name, Qtrue);
+            set_insert(&iv_names, cache->iv_set_name);
         }
     }
 
-    attr_index_t count = (attr_index_t)rb_id_table_size(iv_names);
+    size_t count = iv_names.num_entries;
 
     VALUE superclass = rb_class_superclass(klass);
-    count += RCLASS_MAX_IV_COUNT(superclass);
+    if (!NIL_P(superclass)) { // BasicObject doesn't have a superclass
+        count += RCLASS_MAX_IV_COUNT(superclass);
+    }
 
-    rb_id_table_free(iv_names);
+    set_free_embedded_table(&iv_names);
 
-    return count;
+    if (count > (attr_index_t)-1) {
+        return (attr_index_t)-1;
+    }
+
+    return (attr_index_t)count;
 }
 
 /*
@@ -3225,7 +3275,7 @@ iseqw_s_of(VALUE klass, VALUE body)
  *    0000 trace            8                                               (   1)
  *    0002 trace            1                                               (   2)
  *    0004 putself
- *    0005 putstring        "hello, world"
+ *    0005 dupstring        "hello, world"
  *    0007 send             :puts, 1, nil, 8, <ic:0>
  *    0013 trace            16                                              (   3)
  *    0015 leave                                                            (   2)
@@ -3290,7 +3340,7 @@ static int
 cdhash_each(VALUE key, VALUE value, VALUE ary)
 {
     rb_ary_push(ary, obj_resurrect(key));
-    rb_ary_push(ary, value);
+    rb_ary_push(ary, INT2FIX(value));
     return ST_CONTINUE;
 }
 
@@ -3531,11 +3581,11 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
                 break;
               case TS_CDHASH:
                 {
-                    VALUE hash = *seq;
+                    VALUE cdhash = *seq;
                     VALUE val = rb_ary_new();
                     int i;
 
-                    rb_hash_foreach(hash, cdhash_each, val);
+                    st_foreach(rb_imemo_cdhash_tbl(cdhash), cdhash_each, val);
 
                     for (i=0; i<RARRAY_LEN(val); i+=2) {
                         VALUE pos = FIX2INT(rb_ary_entry(val, i+1));

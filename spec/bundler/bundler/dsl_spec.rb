@@ -162,7 +162,7 @@ RSpec.describe Bundler::Dsl do
 
   describe "#method_missing" do
     it "raises an error for unknown DSL methods" do
-      expect(Bundler).to receive(:read_file).with(source_root.join("Gemfile").to_s).
+      expect(Bundler).to receive(:read_file).with(git_root.join("Gemfile").to_s).
         and_return("unknown")
 
       error_msg = "There was an error parsing `Gemfile`: Undefined local variable or method `unknown' for Gemfile. Bundler cannot continue."
@@ -173,13 +173,13 @@ RSpec.describe Bundler::Dsl do
 
   describe "#eval_gemfile" do
     it "handles syntax errors with a useful message" do
-      expect(Bundler).to receive(:read_file).with(source_root.join("Gemfile").to_s).and_return("}")
+      expect(Bundler).to receive(:read_file).with(git_root.join("Gemfile").to_s).and_return("}")
       expect { subject.eval_gemfile("Gemfile") }.
         to raise_error(Bundler::GemfileError, /There was an error parsing `Gemfile`: (syntax error, unexpected tSTRING_DEND|(compile error - )?syntax error, unexpected '\}'|.+?unexpected '}', ignoring it\n). Bundler cannot continue./m)
     end
 
     it "distinguishes syntax errors from evaluation errors" do
-      expect(Bundler).to receive(:read_file).with(source_root.join("Gemfile").to_s).and_return(
+      expect(Bundler).to receive(:read_file).with(git_root.join("Gemfile").to_s).and_return(
         "ruby '2.1.5', :engine => 'ruby', :engine_version => '1.2.4'"
       )
       expect { subject.eval_gemfile("Gemfile") }.
@@ -187,13 +187,13 @@ RSpec.describe Bundler::Dsl do
     end
 
     it "populates __dir__ and __FILE__ correctly" do
-      abs_path = source_root.join("../fragment.rb").to_s
+      abs_path = git_root.join("../fragment.rb").to_s
       expect(Bundler).to receive(:read_file).with(abs_path).and_return(<<~RUBY)
         @fragment_dir = __dir__
         @fragment_file = __FILE__
       RUBY
       subject.eval_gemfile("../fragment.rb")
-      expect(subject.instance_variable_get(:@fragment_dir)).to eq(source_root.dirname.to_s)
+      expect(subject.instance_variable_get(:@fragment_dir)).to eq(git_root.dirname.to_s)
       expect(subject.instance_variable_get(:@fragment_file)).to eq(abs_path)
     end
   end
@@ -364,6 +364,195 @@ RSpec.describe Bundler::Dsl do
 
         expect(subject.dependencies.last.source).to eq(other_source)
       end
+    end
+  end
+
+  describe "#source with cooldown" do
+    before do
+      allow(@rubygems).to receive(:add_remote)
+    end
+
+    it "accepts a non-negative integer" do
+      expect do
+        subject.source("https://rubygems.org", cooldown: 7)
+      end.not_to raise_error
+    end
+
+    it "accepts 0 as an explicit disable" do
+      expect do
+        subject.source("https://rubygems.org", cooldown: 0)
+      end.not_to raise_error
+    end
+
+    it "rejects a string" do
+      expect do
+        subject.source("https://rubygems.org", cooldown: "7")
+      end.to raise_error(Bundler::InvalidOption, /non-negative integer/)
+    end
+
+    it "rejects a float" do
+      expect do
+        subject.source("https://rubygems.org", cooldown: 7.5)
+      end.to raise_error(Bundler::InvalidOption, /non-negative integer/)
+    end
+
+    it "rejects a negative integer" do
+      expect do
+        subject.source("https://rubygems.org", cooldown: -7)
+      end.to raise_error(Bundler::InvalidOption, /non-negative integer/)
+    end
+
+    it "rejects an array" do
+      expect do
+        subject.source("https://rubygems.org", cooldown: [7])
+      end.to raise_error(Bundler::InvalidOption, /non-negative integer/)
+    end
+  end
+
+  describe "#override" do
+    it "stores an Override for a gem with a version: operation" do
+      subject.override("rails", version: ">= 8.0")
+
+      expect(subject.overrides.size).to eq(1)
+      override = subject.overrides.first
+      expect(override.target).to eq("rails")
+      expect(override.field).to eq(:version)
+      expect(override.operation).to eq(">= 8.0")
+    end
+
+    it "accepts :ignore_upper as the operation" do
+      subject.override("nokogiri", version: :ignore_upper)
+      expect(subject.overrides.first.operation).to eq(:ignore_upper)
+    end
+
+    it "accepts nil as the operation" do
+      subject.override("legacy", version: nil)
+      expect(subject.overrides.first.operation).to be_nil
+    end
+
+    it "appends to overrides across multiple statements" do
+      subject.override("rails", version: ">= 8.0")
+      subject.override("nokogiri", version: :ignore_upper)
+      expect(subject.overrides.map(&:target)).to eq(["rails", "nokogiri"])
+    end
+
+    it "is empty by default" do
+      expect(subject.overrides).to eq([])
+    end
+
+    it "raises ArgumentError when target is :all and version: is given" do
+      expect do
+        subject.override(:all, version: ">= 8.0")
+      end.to raise_error(ArgumentError, /`override :all, version:` is not allowed/)
+    end
+
+    it "rejects :all + version: even when other fields are also given" do
+      expect do
+        subject.override(:all, required_ruby_version: :ignore_upper, version: ">= 8.0")
+      end.to raise_error(ArgumentError, /`override :all, version:` is not allowed/)
+    end
+
+    it "does not record any override when :all + version: is rejected" do
+      expect do
+        subject.override(:all, version: ">= 8.0")
+      end.to raise_error(ArgumentError)
+      expect(subject.overrides).to eq([])
+    end
+
+    it "raises ArgumentError when target is neither :all nor a string" do
+      expect do
+        subject.override(:rails, version: ">= 8.0")
+      end.to raise_error(ArgumentError, /target must be :all or a gem name string/)
+    end
+
+    it "raises ArgumentError for an unsupported field" do
+      expect do
+        subject.override("rails", as: "y")
+      end.to raise_error(ArgumentError, /unsupported override field `as:`/)
+    end
+
+    it "stores an Override for a gem with a required_ruby_version: operation" do
+      subject.override("rails", required_ruby_version: :ignore_upper)
+      override = subject.overrides.first
+      expect(override.target).to eq("rails")
+      expect(override.field).to eq(:required_ruby_version)
+      expect(override.operation).to eq(:ignore_upper)
+    end
+
+    it "stores an Override for a gem with a required_rubygems_version: operation" do
+      subject.override("rails", required_rubygems_version: nil)
+      override = subject.overrides.first
+      expect(override.field).to eq(:required_rubygems_version)
+      expect(override.operation).to be_nil
+    end
+
+    it "stores an Override targeting :all with a metadata field" do
+      subject.override(:all, required_ruby_version: :ignore_upper)
+      override = subject.overrides.first
+      expect(override.target).to eq(:all)
+      expect(override.field).to eq(:required_ruby_version)
+      expect(override.operation).to eq(:ignore_upper)
+    end
+
+    it "stores an Override targeting :all with required_rubygems_version" do
+      subject.override(:all, required_rubygems_version: nil)
+      override = subject.overrides.first
+      expect(override.target).to eq(:all)
+      expect(override.field).to eq(:required_rubygems_version)
+    end
+
+    it "raises ArgumentError for a non-string, non-symbol, non-nil operation" do
+      expect do
+        subject.override("rails", version: 42)
+      end.to raise_error(ArgumentError, /override operation must be a String, Symbol, or nil/)
+    end
+
+    it "raises ArgumentError for an unsupported symbol operation" do
+      expect do
+        subject.override("rails", version: :explode)
+      end.to raise_error(ArgumentError, /unsupported override operation/)
+    end
+
+    it "raises ArgumentError for an unparsable version string" do
+      expect do
+        subject.override("rails", version: "not a version")
+      end.to raise_error(ArgumentError, /invalid override version requirement/)
+    end
+
+    it "does not record an override when the version string is invalid" do
+      expect do
+        subject.override("rails", version: "not a version")
+      end.to raise_error(ArgumentError)
+      expect(subject.overrides).to eq([])
+    end
+
+    it "rejects atomically when one field in a multi-field call is invalid" do
+      expect do
+        subject.override("rails", version: ">= 8.0", as: "y")
+      end.to raise_error(ArgumentError, /unsupported override field/)
+      expect(subject.overrides).to eq([])
+    end
+
+    it "raises ArgumentError when the same target and field are overridden twice" do
+      subject.override("rails", version: ">= 8.0")
+      expect do
+        subject.override("rails", version: :ignore_upper)
+      end.to raise_error(ArgumentError, /duplicate override for "rails" `version:`/)
+    end
+
+    it "keeps the original override when a duplicate is rejected" do
+      subject.override("rails", version: ">= 8.0")
+      expect do
+        subject.override("rails", version: :ignore_upper)
+      end.to raise_error(ArgumentError)
+      expect(subject.overrides.size).to eq(1)
+      expect(subject.overrides.first.operation).to eq(">= 8.0")
+    end
+
+    it "allows different targets with the same field" do
+      subject.override("rails", version: ">= 8.0")
+      subject.override("nokogiri", version: :ignore_upper)
+      expect(subject.overrides.size).to eq(2)
     end
   end
 end

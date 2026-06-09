@@ -10,6 +10,6 @@ describe "File::Stat#dev" do
   end
 
   it "returns the number of the device on which the file exists" do
-    File.stat(@name).dev.should be_kind_of(Integer)
+    File.stat(@name).dev.should.is_a?(Integer)
   end
 end

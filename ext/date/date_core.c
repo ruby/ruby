@@ -27,7 +27,7 @@ static VALUE eDateError;
 static VALUE half_days_in_day, day_in_nanoseconds;
 static double positive_inf, negative_inf;
 
-// used by deconstruct_keys
+/* used by deconstruct_keys */
 static VALUE sym_year, sym_month, sym_day, sym_yday, sym_wday;
 static VALUE sym_hour, sym_min, sym_sec, sym_sec_fraction, sym_zone;
 
@@ -4528,6 +4528,7 @@ date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
     rb_scan_args(argc, argv, "11", &vstr, &vfmt);
 
     StringValue(vstr);
+    if (argc > 1) StringValue(vfmt);
     if (!rb_enc_str_asciicompat_p(vstr))
 	rb_raise(rb_eArgError,
 		 "string should have ASCII compatible encoding");
@@ -4538,7 +4539,6 @@ date_s__strptime_internal(int argc, VALUE *argv, VALUE klass,
 	flen = strlen(default_fmt);
     }
     else {
-	StringValue(vfmt);
 	if (!rb_enc_str_asciicompat_p(vfmt))
 	    rb_raise(rb_eArgError,
 		     "format should have ASCII compatible encoding");
@@ -6003,7 +6003,7 @@ dup_obj_with_new_start(VALUE obj, double sg)
 
 /*
  * call-seq:
- *   new_start(start = Date::ITALY]) -> new_date
+ *   new_start(start = Date::ITALY) -> new_date
  *
  * Returns a copy of +self+ with the given +start+ value:
  *
@@ -7478,7 +7478,7 @@ strftimev(const char *fmt, VALUE self,
  *
  *   Date.new(2001, 2, 3).asctime # => "Sat Feb  3 00:00:00 2001"
  *
- * See {asctime}[https://linux.die.net/man/3/asctime].
+ * See {asctime}[https://man7.org/linux/man-pages/man3/asctime.3p.html].
  *
  */
 static VALUE

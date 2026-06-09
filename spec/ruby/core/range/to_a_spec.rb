@@ -6,7 +6,7 @@ describe "Range#to_a" do
     ('A'..'D').to_a.should == ['A','B','C','D']
     ('A'...'D').to_a.should == ['A','B','C']
     (0xfffd...0xffff).to_a.should == [0xfffd,0xfffe]
-    -> { (0.5..2.4).to_a }.should raise_error(TypeError)
+    -> { (0.5..2.4).to_a }.should.raise(TypeError)
   end
 
   it "returns empty array for descending-ordered" do
@@ -30,10 +30,10 @@ describe "Range#to_a" do
   end
 
   it "throws an exception for endless ranges" do
-    -> { eval("(1..)").to_a }.should raise_error(RangeError)
+    -> { eval("(1..)").to_a }.should.raise(RangeError)
   end
 
   it "throws an exception for beginless ranges" do
-    -> { (..1).to_a }.should raise_error(TypeError)
+    -> { (..1).to_a }.should.raise(TypeError)
   end
 end

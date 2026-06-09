@@ -64,7 +64,7 @@ static inline void fbuffer_consumed(FBuffer *fb, size_t consumed)
 static void fbuffer_free(FBuffer *fb)
 {
     if (fb->ptr && fb->type == FBUFFER_HEAP_ALLOCATED) {
-        ruby_xfree(fb->ptr);
+        JSON_SIZED_FREE_N(fb->ptr, fb->capa);
     }
 }
 
@@ -88,7 +88,7 @@ static void fbuffer_realloc(FBuffer *fb, size_t required)
             fb->type = FBUFFER_HEAP_ALLOCATED;
             MEMCPY(fb->ptr, old_buffer, char, fb->len);
         } else {
-            REALLOC_N(fb->ptr, char, required);
+            JSON_SIZED_REALLOC_N(fb->ptr, char, required, fb->capa);
         }
         fb->capa = required;
     }
@@ -129,6 +129,15 @@ static inline void fbuffer_inc_capa(FBuffer *fb, size_t requested)
     if (RB_UNLIKELY(requested > fb->capa - fb->len)) {
         fbuffer_do_inc_capa(fb, requested);
     }
+}
+
+static inline size_t fbuffer_size_mul_or_raise(size_t a, size_t b)
+{
+    size_t result = a * b;
+    if (RB_UNLIKELY(a != 0 && (result / a) != b)) {
+        rb_raise(rb_eArgError, "Buffer overflow, the resulting document is too large to be generated");
+    }
+    return result;
 }
 
 static inline void fbuffer_append_reserved(FBuffer *fb, const char *newstr, size_t len)
@@ -175,7 +184,7 @@ static void fbuffer_append_str_repeat(FBuffer *fb, VALUE str, size_t repeat)
     size_t len;
     RSTRING_GETMEM(str, ptr, len);
 
-    fbuffer_inc_capa(fb, repeat * len);
+    fbuffer_inc_capa(fb, fbuffer_size_mul_or_raise(repeat, len));
     while (repeat) {
 #if JSON_DEBUG
         fb->requested = len;

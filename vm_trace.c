@@ -812,7 +812,7 @@ get_path_and_lineno(const rb_execution_context_t *ec, const rb_control_frame_t *
     cfp = rb_vm_get_ruby_level_next_cfp(ec, cfp);
 
     if (cfp) {
-        const rb_iseq_t *iseq = cfp->iseq;
+        const rb_iseq_t *iseq = CFP_ISEQ(cfp);
         *pathp = rb_iseq_path(iseq);
 
         if (event & (RUBY_EVENT_CLASS |
@@ -862,7 +862,7 @@ call_trace_func(rb_event_flag_t event, VALUE proc, VALUE self, ID id, VALUE klas
     if (self && (filename != Qnil) &&
         event != RUBY_EVENT_C_CALL &&
         event != RUBY_EVENT_C_RETURN &&
-        (VM_FRAME_RUBYFRAME_P(ec->cfp) && imemo_type_p((VALUE)ec->cfp->iseq, imemo_iseq))) {
+        (VM_FRAME_RUBYFRAME_P(ec->cfp) && imemo_type_p((VALUE)CFP_ISEQ(ec->cfp), imemo_iseq))) {
         argv[4] = rb_binding_new();
     }
     argv[5] = klass ? klass : Qnil;
@@ -890,20 +890,21 @@ typedef struct rb_tp_struct {
 } rb_tp_t;
 
 static void
-tp_mark(void *ptr)
+tp_mark_and_move(void *ptr)
 {
     rb_tp_t *tp = ptr;
-    rb_gc_mark(tp->proc);
-    rb_gc_mark(tp->local_target_set);
-    if (tp->target_th) rb_gc_mark(tp->target_th->self);
+    rb_gc_mark_and_move(&tp->proc);
+    rb_gc_mark_and_move(&tp->local_target_set);
+    if (tp->target_th) rb_gc_mark_and_move(&tp->target_th->self);
 }
 
 static const rb_data_type_t tp_data_type = {
     "tracepoint",
     {
-        tp_mark,
+        tp_mark_and_move,
         RUBY_TYPED_DEFAULT_FREE,
         NULL, // Nothing allocated externally, so don't need a memsize function
+        tp_mark_and_move,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
@@ -1041,7 +1042,7 @@ rb_tracearg_parameters(rb_trace_arg_t *trace_arg)
             if (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_BLOCK && !VM_FRAME_LAMBDA_P(cfp)) {
                 is_proc = 1;
             }
-            return rb_iseq_parameters(cfp->iseq, is_proc);
+            return rb_iseq_parameters(CFP_ISEQ(cfp), is_proc);
         }
         break;
       }
@@ -1103,7 +1104,7 @@ rb_tracearg_binding(rb_trace_arg_t *trace_arg)
     }
     cfp = rb_vm_get_binding_creatable_next_cfp(trace_arg->ec, trace_arg->cfp);
 
-    if (cfp && imemo_type_p((VALUE)cfp->iseq, imemo_iseq)) {
+    if (cfp && imemo_type_p((VALUE)CFP_ISEQ(cfp), imemo_iseq)) {
         return rb_vm_make_binding(trace_arg->ec, cfp);
     }
     else {
@@ -1117,15 +1118,18 @@ rb_tracearg_self(rb_trace_arg_t *trace_arg)
     return trace_arg->self;
 }
 
+static void
+check_event_support(rb_trace_arg_t *trace_arg, rb_event_flag_t supported)
+{
+    if (!(trace_arg->event & supported)) {
+        rb_raise(rb_eRuntimeError, "not supported by this event");
+    }
+}
+
 VALUE
 rb_tracearg_return_value(rb_trace_arg_t *trace_arg)
 {
-    if (trace_arg->event & (RUBY_EVENT_RETURN | RUBY_EVENT_C_RETURN | RUBY_EVENT_B_RETURN)) {
-        /* ok */
-    }
-    else {
-        rb_raise(rb_eRuntimeError, "not supported by this event");
-    }
+    check_event_support(trace_arg, RUBY_EVENT_RETURN | RUBY_EVENT_C_RETURN | RUBY_EVENT_B_RETURN);
     if (UNDEF_P(trace_arg->data)) {
         rb_bug("rb_tracearg_return_value: unreachable");
     }
@@ -1135,12 +1139,7 @@ rb_tracearg_return_value(rb_trace_arg_t *trace_arg)
 VALUE
 rb_tracearg_raised_exception(rb_trace_arg_t *trace_arg)
 {
-    if (trace_arg->event & (RUBY_EVENT_RAISE | RUBY_EVENT_RESCUE)) {
-        /* ok */
-    }
-    else {
-        rb_raise(rb_eRuntimeError, "not supported by this event");
-    }
+    check_event_support(trace_arg, RUBY_EVENT_RAISE | RUBY_EVENT_RESCUE);
     if (UNDEF_P(trace_arg->data)) {
         rb_bug("rb_tracearg_raised_exception: unreachable");
     }
@@ -1152,12 +1151,7 @@ rb_tracearg_eval_script(rb_trace_arg_t *trace_arg)
 {
     VALUE data = trace_arg->data;
 
-    if (trace_arg->event & (RUBY_EVENT_SCRIPT_COMPILED)) {
-        /* ok */
-    }
-    else {
-        rb_raise(rb_eRuntimeError, "not supported by this event");
-    }
+    check_event_support(trace_arg, RUBY_EVENT_SCRIPT_COMPILED);
     if (UNDEF_P(data)) {
         rb_bug("rb_tracearg_eval_script: unreachable");
     }
@@ -1176,12 +1170,7 @@ rb_tracearg_instruction_sequence(rb_trace_arg_t *trace_arg)
 {
     VALUE data = trace_arg->data;
 
-    if (trace_arg->event & (RUBY_EVENT_SCRIPT_COMPILED)) {
-        /* ok */
-    }
-    else {
-        rb_raise(rb_eRuntimeError, "not supported by this event");
-    }
+    check_event_support(trace_arg, RUBY_EVENT_SCRIPT_COMPILED);
     if (UNDEF_P(data)) {
         rb_bug("rb_tracearg_instruction_sequence: unreachable");
     }
@@ -1201,12 +1190,7 @@ rb_tracearg_instruction_sequence(rb_trace_arg_t *trace_arg)
 VALUE
 rb_tracearg_object(rb_trace_arg_t *trace_arg)
 {
-    if (trace_arg->event & (RUBY_INTERNAL_EVENT_NEWOBJ | RUBY_INTERNAL_EVENT_FREEOBJ)) {
-        /* ok */
-    }
-    else {
-        rb_raise(rb_eRuntimeError, "not supported by this event");
-    }
+    check_event_support(trace_arg, RUBY_INTERNAL_EVENT_NEWOBJ | RUBY_INTERNAL_EVENT_FREEOBJ);
     if (UNDEF_P(trace_arg->data)) {
         rb_bug("rb_tracearg_object: unreachable");
     }
@@ -1357,7 +1341,7 @@ rb_method_def_local_hooks(rb_method_definition_t *def, rb_ractor_t *cr, bool cre
     else if (create) {
         hook_list = ZALLOC(rb_hook_list_t);
         hook_list->type = hook_list_type_targeted_def;
-        st_insert(cr->pub.targeted_hooks, (st_data_t)def, (st_data_t)hook_list);
+        st_insert(&cr->pub.targeted_hooks, (st_data_t)def, (st_data_t)hook_list);
     }
     return hook_list;
 }
@@ -1937,33 +1921,6 @@ rb_postponed_job_trigger(rb_postponed_job_handle_t h)
     RUBY_ATOMIC_OR(pjq->triggered_bitset, (((rb_atomic_t)1UL) << h));
     RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(get_valid_ec(GET_VM()));
 }
-
-
-static int
-pjob_register_legacy_impl(unsigned int flags, rb_postponed_job_func_t func, void *data)
-{
-    /* We _know_ calling preregister from a signal handler like this is racy; what is
-     * and is not promised is very exhaustively documented in debug.h */
-    rb_postponed_job_handle_t h = rb_postponed_job_preregister(0, func, data);
-    if (h == POSTPONED_JOB_HANDLE_INVALID) {
-        return 0;
-    }
-    rb_postponed_job_trigger(h);
-    return 1;
-}
-
-int
-rb_postponed_job_register(unsigned int flags, rb_postponed_job_func_t func, void *data)
-{
-    return pjob_register_legacy_impl(flags, func, data);
-}
-
-int
-rb_postponed_job_register_one(unsigned int flags, rb_postponed_job_func_t func, void *data)
-{
-    return pjob_register_legacy_impl(flags, func, data);
-}
-
 
 void
 rb_postponed_job_flush(rb_vm_t *vm)

@@ -47,8 +47,13 @@ RSpec.describe "bundle gem" do
     git("config --global user.email user@example.com")
     git("config --global github.user bundleuser")
 
-    global_config "BUNDLE_GEM__MIT" => "false", "BUNDLE_GEM__TEST" => "false", "BUNDLE_GEM__COC" => "false", "BUNDLE_GEM__LINTER" => "false",
-                  "BUNDLE_GEM__CI" => "false", "BUNDLE_GEM__CHANGELOG" => "false", "BUNDLE_GEM__BUNDLE" => "false"
+    bundle_config_global "gem.mit false"
+    bundle_config_global "gem.test false"
+    bundle_config_global "gem.coc false"
+    bundle_config_global "gem.linter false"
+    bundle_config_global "gem.ci false"
+    bundle_config_global "gem.changelog false"
+    bundle_config_global "gem.bundle false"
   end
 
   describe "git repo initialization" do
@@ -203,7 +208,8 @@ RSpec.describe "bundle gem" do
       builder.eval_gemfile(bundled_app("#{gem_name}/Gemfile"))
       builder.dependencies
       rubocop_dep = builder.dependencies.find {|d| d.name == "rubocop" }
-      expect(rubocop_dep).not_to be_nil
+      expect(rubocop_dep).not_to be_specific
+      expect(rubocop_dep.requirement).to eq(Gem::Requirement.new([">= 0"]))
     end
 
     it "generates a default .rubocop.yml" do
@@ -234,7 +240,8 @@ RSpec.describe "bundle gem" do
       builder.eval_gemfile(bundled_app("#{gem_name}/Gemfile"))
       builder.dependencies
       standard_dep = builder.dependencies.find {|d| d.name == "standard" }
-      expect(standard_dep).not_to be_nil
+      expect(standard_dep).not_to be_specific
+      expect(standard_dep.requirement).to eq(Gem::Requirement.new([">= 0"]))
     end
 
     it "generates a default .standard.yml" do
@@ -524,7 +531,7 @@ RSpec.describe "bundle gem" do
   shared_examples_for "github_username configuration" do
     context "with github_username setting set to some value" do
       before do
-        global_config "BUNDLE_GEM__GITHUB_USERNAME" => "different_username"
+        bundle_config_global "gem.github_username different_username"
         bundle "gem #{gem_name}"
       end
 
@@ -540,7 +547,7 @@ RSpec.describe "bundle gem" do
 
     context "with github_username setting set to false" do
       before do
-        global_config "BUNDLE_GEM__GITHUB_USERNAME" => "false"
+        bundle_config_global "gem.github_username false"
         bundle "gem #{gem_name}"
       end
 
@@ -645,6 +652,15 @@ RSpec.describe "bundle gem" do
       to match(/example\.com/)
   end
 
+  it "includes a commented-out rubygems_mfa_required metadata hint" do
+    bundle "gem #{gem_name}"
+
+    gemspec_contents = bundled_app("#{gem_name}/#{gem_name}.gemspec").read
+
+    expect(gemspec_contents).to include('# spec.metadata["rubygems_mfa_required"] = "true"')
+    expect(gemspec_contents).to include("https://guides.rubygems.org/mfa-requirement-opt-in/")
+  end
+
   it "sets a minimum ruby version" do
     bundle "gem #{gem_name}"
 
@@ -732,19 +748,20 @@ RSpec.describe "bundle gem" do
       expect(ignore_paths).to include("spec/")
     end
 
-    it "depends on a specific version of rspec in generated Gemfile" do
+    it "depends on a non-specific version of rspec in generated Gemfile" do
       allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
       builder = Bundler::Dsl.new
       builder.eval_gemfile(bundled_app("#{gem_name}/Gemfile"))
       builder.dependencies
       rspec_dep = builder.dependencies.find {|d| d.name == "rspec" }
-      expect(rspec_dep).to be_specific
+      expect(rspec_dep).not_to be_specific
+      expect(rspec_dep.requirement).to eq(Gem::Requirement.new([">= 0"]))
     end
   end
 
   context "init_gems_rb setting to true" do
     before do
-      bundle "config set init_gems_rb true"
+      bundle_config "init_gems_rb true"
       bundle "gem #{gem_name}"
     end
 
@@ -762,7 +779,7 @@ RSpec.describe "bundle gem" do
 
   context "init_gems_rb setting to false" do
     before do
-      bundle "config set init_gems_rb false"
+      bundle_config "init_gems_rb false"
       bundle "gem #{gem_name}"
     end
 
@@ -780,7 +797,7 @@ RSpec.describe "bundle gem" do
 
   context "gem.test setting set to rspec" do
     before do
-      bundle "config set gem.test rspec"
+      bundle_config "gem.test rspec"
       bundle "gem #{gem_name}"
     end
 
@@ -798,7 +815,7 @@ RSpec.describe "bundle gem" do
 
   context "gem.test setting set to rspec and --test is set to minitest" do
     before do
-      bundle "config set gem.test rspec"
+      bundle_config "gem.test rspec"
       bundle "gem #{gem_name} --test=minitest"
     end
 
@@ -817,13 +834,14 @@ RSpec.describe "bundle gem" do
       bundle "gem #{gem_name} --test=minitest"
     end
 
-    it "depends on a specific version of minitest" do
+    it "depends on a non-specific version of minitest" do
       allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
       builder = Bundler::Dsl.new
       builder.eval_gemfile(bundled_app("#{gem_name}/Gemfile"))
       builder.dependencies
       minitest_dep = builder.dependencies.find {|d| d.name == "minitest" }
-      expect(minitest_dep).to be_specific
+      expect(minitest_dep).not_to be_specific
+      expect(minitest_dep.requirement).to eq(Gem::Requirement.new([">= 0"]))
     end
 
     it "builds spec skeleton" do
@@ -853,7 +871,7 @@ RSpec.describe "bundle gem" do
 
   context "gem.test setting set to minitest" do
     before do
-      bundle "config set gem.test minitest"
+      bundle_config "gem.test minitest"
       bundle "gem #{gem_name}"
     end
 
@@ -878,13 +896,14 @@ RSpec.describe "bundle gem" do
       bundle "gem #{gem_name} --test=test-unit"
     end
 
-    it "depends on a specific version of test-unit" do
+    it "depends on a non-specific version of test-unit" do
       allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
       builder = Bundler::Dsl.new
       builder.eval_gemfile(bundled_app("#{gem_name}/Gemfile"))
       builder.dependencies
       test_unit_dep = builder.dependencies.find {|d| d.name == "test-unit" }
-      expect(test_unit_dep).to be_specific
+      expect(test_unit_dep).not_to be_specific
+      expect(test_unit_dep.requirement).to eq(Gem::Requirement.new([">= 0"]))
     end
 
     it "builds spec skeleton" do
@@ -929,7 +948,7 @@ RSpec.describe "bundle gem" do
 
   context "gem.test set to rspec and --test with no arguments" do
     before do
-      bundle "config set gem.test rspec"
+      bundle_config "gem.test rspec"
       bundle "gem #{gem_name} --test"
     end
 
@@ -951,7 +970,7 @@ RSpec.describe "bundle gem" do
 
   context "gem.test setting set to false and --test with no arguments", :readline do
     before do
-      bundle "config set gem.test false"
+      bundle_config "gem.test false"
       bundle "gem #{gem_name} --test" do |input, _, _|
         input.puts
       end
@@ -970,7 +989,7 @@ RSpec.describe "bundle gem" do
 
   context "gem.test setting not set and --test with no arguments", :readline do
     before do
-      global_config "BUNDLE_GEM__TEST" => nil
+      bundle_config_global "BUNDLE_GEM__TEST" => nil
       bundle "gem #{gem_name} --test" do |input, _, _|
         input.puts
       end
@@ -991,7 +1010,7 @@ RSpec.describe "bundle gem" do
 
   context "gem.test setting set to a test framework and --no-test" do
     before do
-      bundle "config set gem.test rspec"
+      bundle_config "gem.test rspec"
       bundle "gem #{gem_name} --no-test"
     end
 
@@ -1079,7 +1098,7 @@ RSpec.describe "bundle gem" do
 
   context "gem.ci setting set to github" do
     it "generates a GitHub Actions config file" do
-      bundle "config set gem.ci github"
+      bundle_config "gem.ci github"
       bundle "gem #{gem_name}"
 
       expect(bundled_app("#{gem_name}/.github/workflows/main.yml")).to exist
@@ -1088,7 +1107,7 @@ RSpec.describe "bundle gem" do
 
   context "gem.ci setting set to gitlab" do
     it "generates a GitLab CI config file" do
-      bundle "config set gem.ci gitlab"
+      bundle_config "gem.ci gitlab"
       bundle "gem #{gem_name}"
 
       expect(bundled_app("#{gem_name}/.gitlab-ci.yml")).to exist
@@ -1097,7 +1116,7 @@ RSpec.describe "bundle gem" do
 
   context "gem.ci setting set to circle" do
     it "generates a CircleCI config file" do
-      bundle "config set gem.ci circle"
+      bundle_config "gem.ci circle"
       bundle "gem #{gem_name}"
 
       expect(bundled_app("#{gem_name}/.circleci/config.yml")).to exist
@@ -1106,7 +1125,7 @@ RSpec.describe "bundle gem" do
 
   context "gem.ci set to github and --ci with no arguments" do
     before do
-      bundle "config set gem.ci github"
+      bundle_config "gem.ci github"
       bundle "gem #{gem_name} --ci"
     end
 
@@ -1121,7 +1140,7 @@ RSpec.describe "bundle gem" do
 
   context "gem.ci setting set to false and --ci with no arguments", :readline do
     before do
-      bundle "config set gem.ci false"
+      bundle_config "gem.ci false"
       bundle "gem #{gem_name} --ci" do |input, _, _|
         input.puts "github"
       end
@@ -1138,7 +1157,7 @@ RSpec.describe "bundle gem" do
 
   context "gem.ci setting not set and --ci with no arguments", :readline do
     before do
-      global_config "BUNDLE_GEM__CI" => nil
+      bundle_config_global "BUNDLE_GEM__CI" => nil
       bundle "gem #{gem_name} --ci" do |input, _, _|
         input.puts "github"
       end
@@ -1157,7 +1176,7 @@ RSpec.describe "bundle gem" do
 
   context "gem.ci setting set to a CI service and --no-ci" do
     before do
-      bundle "config set gem.ci github"
+      bundle_config "gem.ci github"
       bundle "gem #{gem_name} --no-ci"
     end
 
@@ -1245,7 +1264,7 @@ RSpec.describe "bundle gem" do
 
   context "gem.linter setting set to rubocop" do
     before do
-      bundle "config set gem.linter rubocop"
+      bundle_config "gem.linter rubocop"
       bundle "gem #{gem_name}"
     end
 
@@ -1260,7 +1279,7 @@ RSpec.describe "bundle gem" do
 
   context "gem.linter setting set to standard" do
     before do
-      bundle "config set gem.linter standard"
+      bundle_config "gem.linter standard"
       bundle "gem #{gem_name}"
     end
 
@@ -1275,7 +1294,7 @@ RSpec.describe "bundle gem" do
 
   context "gem.linter set to rubocop and --linter with no arguments" do
     before do
-      bundle "config set gem.linter rubocop"
+      bundle_config "gem.linter rubocop"
       bundle "gem #{gem_name} --linter"
     end
 
@@ -1294,7 +1313,7 @@ RSpec.describe "bundle gem" do
 
   context "gem.linter setting set to false and --linter with no arguments", :readline do
     before do
-      bundle "config set gem.linter false"
+      bundle_config "gem.linter false"
       bundle "gem #{gem_name} --linter" do |input, _, _|
         input.puts "rubocop"
       end
@@ -1311,7 +1330,7 @@ RSpec.describe "bundle gem" do
 
   context "gem.linter setting not set and --linter with no arguments", :readline do
     before do
-      global_config "BUNDLE_GEM__LINTER" => nil
+      bundle_config_global "BUNDLE_GEM__LINTER" => nil
       bundle "gem #{gem_name} --linter" do |input, _, _|
         input.puts "rubocop"
       end
@@ -1330,7 +1349,7 @@ RSpec.describe "bundle gem" do
 
   context "gem.linter setting set to a linter and --no-linter" do
     before do
-      bundle "config set gem.linter rubocop"
+      bundle_config "gem.linter rubocop"
       bundle "gem #{gem_name} --no-linter"
     end
 
@@ -1433,7 +1452,7 @@ RSpec.describe "bundle gem" do
 
   context "with mit option in bundle config settings set to true" do
     before do
-      global_config "BUNDLE_GEM__MIT" => "true"
+      bundle_config_global "gem.mit true"
     end
     it_behaves_like "--mit flag"
     it_behaves_like "--no-mit flag"
@@ -1441,7 +1460,7 @@ RSpec.describe "bundle gem" do
 
   context "with mit option in bundle config settings set to false" do
     before do
-      global_config "BUNDLE_GEM__MIT" => "false"
+      bundle_config_global "gem.mit false"
     end
     it_behaves_like "--mit flag"
     it_behaves_like "--no-mit flag"
@@ -1449,7 +1468,7 @@ RSpec.describe "bundle gem" do
 
   context "with coc option in bundle config settings set to true" do
     before do
-      global_config "BUNDLE_GEM__COC" => "true"
+      bundle_config_global "gem.coc true"
     end
     it_behaves_like "--coc flag"
     it_behaves_like "--no-coc flag"
@@ -1457,7 +1476,7 @@ RSpec.describe "bundle gem" do
 
   context "with coc option in bundle config settings set to false" do
     before do
-      global_config "BUNDLE_GEM__COC" => "false"
+      bundle_config_global "gem.coc false"
     end
     it_behaves_like "--coc flag"
     it_behaves_like "--no-coc flag"
@@ -1465,7 +1484,7 @@ RSpec.describe "bundle gem" do
 
   context "with rubocop option in bundle config settings set to true" do
     before do
-      global_config "BUNDLE_GEM__RUBOCOP" => "true"
+      bundle_config_global "gem.rubocop true"
     end
     it_behaves_like "--linter=rubocop flag"
     it_behaves_like "--linter=standard flag"
@@ -1474,7 +1493,7 @@ RSpec.describe "bundle gem" do
 
   context "with rubocop option in bundle config settings set to false" do
     before do
-      global_config "BUNDLE_GEM__RUBOCOP" => "false"
+      bundle_config_global "gem.rubocop false"
     end
     it_behaves_like "--linter=rubocop flag"
     it_behaves_like "--linter=standard flag"
@@ -1483,7 +1502,7 @@ RSpec.describe "bundle gem" do
 
   context "with linter option in bundle config settings set to rubocop" do
     before do
-      global_config "BUNDLE_GEM__LINTER" => "rubocop"
+      bundle_config_global "gem.linter rubocop"
     end
     it_behaves_like "--linter=rubocop flag"
     it_behaves_like "--linter=standard flag"
@@ -1492,7 +1511,7 @@ RSpec.describe "bundle gem" do
 
   context "with linter option in bundle config settings set to standard" do
     before do
-      global_config "BUNDLE_GEM__LINTER" => "standard"
+      bundle_config_global "gem.linter standard"
     end
     it_behaves_like "--linter=rubocop flag"
     it_behaves_like "--linter=standard flag"
@@ -1501,7 +1520,7 @@ RSpec.describe "bundle gem" do
 
   context "with linter option in bundle config settings set to false" do
     before do
-      global_config "BUNDLE_GEM__LINTER" => "false"
+      bundle_config_global "gem.linter false"
     end
     it_behaves_like "--linter=rubocop flag"
     it_behaves_like "--linter=standard flag"
@@ -1510,7 +1529,7 @@ RSpec.describe "bundle gem" do
 
   context "with changelog option in bundle config settings set to true" do
     before do
-      global_config "BUNDLE_GEM__CHANGELOG" => "true"
+      bundle_config_global "gem.changelog true"
     end
     it_behaves_like "--changelog flag"
     it_behaves_like "--no-changelog flag"
@@ -1518,7 +1537,7 @@ RSpec.describe "bundle gem" do
 
   context "with changelog option in bundle config settings set to false" do
     before do
-      global_config "BUNDLE_GEM__CHANGELOG" => "false"
+      bundle_config_global "gem.changelog false"
     end
     it_behaves_like "--changelog flag"
     it_behaves_like "--no-changelog flag"
@@ -1526,7 +1545,7 @@ RSpec.describe "bundle gem" do
 
   context "with bundle option in bundle config settings set to true" do
     before do
-      global_config "BUNDLE_GEM__BUNDLE" => "true"
+      bundle_config_global "gem.bundle true"
     end
     it_behaves_like "--bundle flag"
     it_behaves_like "--no-bundle flag"
@@ -1539,7 +1558,7 @@ RSpec.describe "bundle gem" do
 
   context "with bundle option in bundle config settings set to false" do
     before do
-      global_config "BUNDLE_GEM__BUNDLE" => "false"
+      bundle_config_global "gem.bundle false"
     end
     it_behaves_like "--bundle flag"
     it_behaves_like "--no-bundle flag"
@@ -1556,7 +1575,7 @@ RSpec.describe "bundle gem" do
     end
     context "with github-username option in bundle config settings set to some value" do
       before do
-        global_config "BUNDLE_GEM__GITHUB_USERNAME" => "different_username"
+        bundle_config_global "gem.github_username different_username"
       end
       it_behaves_like "--github-username option", "gh_user"
     end
@@ -1565,7 +1584,7 @@ RSpec.describe "bundle gem" do
 
     context "with github-username option in bundle config settings set to false" do
       before do
-        global_config "BUNDLE_GEM__GITHUB_USERNAME" => "false"
+        bundle_config_global "gem.github_username false"
       end
       it_behaves_like "--github-username option", "gh_user"
     end
@@ -1597,7 +1616,7 @@ RSpec.describe "bundle gem" do
   context "with git config github.user set" do
     context "with github-username option in bundle config settings set to some value" do
       before do
-        global_config "BUNDLE_GEM__GITHUB_USERNAME" => "different_username"
+        bundle_config_global "gem.github_username different_username"
       end
       it_behaves_like "--github-username option", "gh_user"
     end
@@ -1606,7 +1625,7 @@ RSpec.describe "bundle gem" do
 
     context "with github-username option in bundle config settings set to false" do
       before do
-        global_config "BUNDLE_GEM__GITHUB_USERNAME" => "false"
+        bundle_config_global "gem.github_username false"
       end
       it_behaves_like "--github-username option", "gh_user"
     end
@@ -1736,8 +1755,9 @@ RSpec.describe "bundle gem" do
         expect(bundled_app("#{gem_name}/ext/#{gem_name}/build.rs")).to exist
       end
 
-      it "includes rake-compiler constraint" do
+      it "includes rake-compiler and rb_sys gems constraint" do
         expect(bundled_app("#{gem_name}/Gemfile").read).to include('gem "rake-compiler"')
+        expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to include('spec.add_dependency "rb_sys"')
       end
 
       it "depends on compile task for build" do
@@ -1814,7 +1834,7 @@ RSpec.describe "bundle gem" do
       end
 
       it "includes go_gem in gem_name.gemspec" do
-        expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to include('spec.add_dependency "go_gem", "~> 0.2"')
+        expect(bundled_app("#{gem_name}/#{gem_name}.gemspec").read).to include('spec.add_dependency "go_gem", ">= 0.2"')
       end
 
       it "includes go_gem extension in extconf.rb" do
@@ -2031,7 +2051,7 @@ Usage: "bundle gem NAME [OPTIONS]"
 
   context "on first run", :readline do
     it "asks about test framework" do
-      global_config "BUNDLE_GEM__TEST" => nil
+      bundle_config_global "BUNDLE_GEM__TEST" => nil
 
       bundle "gem foobar" do |input, _, _|
         input.puts "rspec"
@@ -2054,7 +2074,7 @@ Usage: "bundle gem NAME [OPTIONS]"
     end
 
     it "asks about CI service" do
-      global_config "BUNDLE_GEM__CI" => nil
+      bundle_config_global "BUNDLE_GEM__CI" => nil
 
       bundle "gem foobar" do |input, _, _|
         input.puts "github"
@@ -2064,7 +2084,7 @@ Usage: "bundle gem NAME [OPTIONS]"
     end
 
     it "asks about MIT license just once" do
-      global_config "BUNDLE_GEM__MIT" => nil
+      bundle_config_global "BUNDLE_GEM__MIT" => nil
 
       bundle "config list"
 
@@ -2077,7 +2097,7 @@ Usage: "bundle gem NAME [OPTIONS]"
     end
 
     it "asks about CoC just once" do
-      global_config "BUNDLE_GEM__COC" => nil
+      bundle_config_global "BUNDLE_GEM__COC" => nil
 
       bundle "gem foobar" do |input, _, _|
         input.puts "yes"
@@ -2088,7 +2108,7 @@ Usage: "bundle gem NAME [OPTIONS]"
     end
 
     it "asks about CHANGELOG just once" do
-      global_config "BUNDLE_GEM__CHANGELOG" => nil
+      bundle_config_global "BUNDLE_GEM__CHANGELOG" => nil
 
       bundle "gem foobar" do |input, _, _|
         input.puts "yes"

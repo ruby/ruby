@@ -119,6 +119,11 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
         settings.set_local :ssl_verify_mode, "1"
         expect(settings[:ssl_verify_mode]).to be 1
       end
+
+      it "coerces cooldown to integer" do
+        settings.set_local :cooldown, "7"
+        expect(settings[:cooldown]).to be 7
+      end
     end
 
     context "when it's not possible to create the settings directory" do
@@ -318,12 +323,12 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
     let(:settings) { described_class.new(bundled_app(".bundle")) }
 
     it "converts older keys without double underscore" do
-      config("BUNDLE_MY__PERSONAL.MYRACK" => "~/Work/git/myrack")
+      bundle_config("BUNDLE_MY__PERSONAL.MYRACK" => "~/Work/git/myrack")
       expect(settings["my.personal.myrack"]).to eq("~/Work/git/myrack")
     end
 
     it "converts older keys without trailing slashes and double underscore" do
-      config("BUNDLE_MIRROR__HTTPS://RUBYGEMS.ORG" => "http://example-mirror.rubygems.org")
+      bundle_config("BUNDLE_MIRROR__HTTPS://RUBYGEMS.ORG" => "http://example-mirror.rubygems.org")
       expect(settings["mirror.https://rubygems.org/"]).to eq("http://example-mirror.rubygems.org")
     end
 
@@ -337,7 +342,7 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
     end
 
     it "converts older keys with dashes" do
-      config("BUNDLE_MY-PERSONAL-SERVER__ORG" => "my-personal-server.org")
+      bundle_config("BUNDLE_MY-PERSONAL-SERVER__ORG" => "my-personal-server.org")
       expect(Bundler.ui).to receive(:warn).with(
         "Your #{bundled_app(".bundle/config")} config includes `BUNDLE_MY-PERSONAL-SERVER__ORG`, which contains the dash character (`-`).\n" \
         "This is deprecated, because configuration through `ENV` should be possible, but `ENV` keys cannot include dashes.\n" \
@@ -347,8 +352,29 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
     end
 
     it "reads newer keys format properly" do
-      config("BUNDLE_MIRROR__HTTPS://RUBYGEMS__ORG/" => "http://example-mirror.rubygems.org")
+      bundle_config("BUNDLE_MIRROR__HTTPS://RUBYGEMS__ORG/" => "http://example-mirror.rubygems.org")
       expect(settings["mirror.https://rubygems.org/"]).to eq("http://example-mirror.rubygems.org")
+    end
+  end
+
+  describe "default_cli_command validation" do
+    it "accepts 'install' as a valid value" do
+      expect { settings.set_local("default_cli_command", "install") }.not_to raise_error
+    end
+
+    it "accepts 'cli_help' as a valid value" do
+      expect { settings.set_local("default_cli_command", "cli_help") }.not_to raise_error
+    end
+
+    it "rejects invalid values" do
+      expect { settings.set_local("default_cli_command", "invalid") }.to raise_error(
+        Bundler::InvalidOption,
+        /Setting `default_cli_command` to "invalid" failed:\n - default_cli_command must be either 'install' or 'cli_help'\n - must be one of: install, cli_help/
+      )
+    end
+
+    it "accepts nil values" do
+      expect { settings.set_local("default_cli_command", nil) }.not_to raise_error
     end
   end
 end

@@ -23,6 +23,7 @@ module Prism
   autoload :InspectVisitor, "prism/inspect_visitor"
   autoload :LexCompat, "prism/lex_compat"
   autoload :MutationCompiler, "prism/mutation_compiler"
+  autoload :NodeFind, "prism/node_find"
   autoload :Pattern, "prism/pattern"
   autoload :Reflection, "prism/reflection"
   autoload :Relocation, "prism/relocation"
@@ -34,7 +35,10 @@ module Prism
   # Some of these constants are not meant to be exposed, so marking them as
   # private here.
 
-  private_constant :LexCompat
+  if RUBY_ENGINE != "jruby"
+    private_constant :LexCompat
+    private_constant :NodeFind
+  end
 
   # Raised when requested to parse as the currently running Ruby version but Prism has no support for it.
   class CurrentVersionError < ArgumentError
@@ -79,6 +83,16 @@ module Prism
   #: (String source, String serialized, ?bool freeze) -> ParseResult
   def self.load(source, serialized, freeze = false)
     Serialize.load_parse(source, serialized, freeze)
+  end
+
+  # Given a Method, UnboundMethod, Proc, or Thread::Backtrace::Location,
+  # returns the Prism node representing it. On CRuby, this uses node_id for
+  # an exact match. On other implementations, it falls back to best-effort
+  # matching by source location line number.
+  #--
+  #: (Method | UnboundMethod | Proc | Thread::Backtrace::Location callable, ?rubyvm: bool) -> Node?
+  def self.find(callable, rubyvm: !!defined?(RubyVM))
+    NodeFind.find(callable, rubyvm)
   end
 
   # @rbs!

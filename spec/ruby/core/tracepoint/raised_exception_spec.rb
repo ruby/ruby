@@ -14,7 +14,7 @@ describe 'TracePoint#raised_exception' do
       rescue => e
         error_result = e
       end
-      raised_exception.should equal(error_result)
+      raised_exception.should.equal?(error_result)
     end
   end
 
@@ -30,7 +30,7 @@ describe 'TracePoint#raised_exception' do
       rescue => e
         error_result = e
       end
-      raised_exception.should equal(error_result)
+      raised_exception.should.equal?(error_result)
     end
   end
 end

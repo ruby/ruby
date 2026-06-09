@@ -924,7 +924,7 @@ module Prism
     end
 
     def test_all_tested
-      expected = Prism.constants.grep(/.Node$/).sort - %i[MissingNode ProgramNode]
+      expected = Prism.constants.grep(/.Node$/).sort - %i[ErrorRecoveryNode ProgramNode]
       actual = SourceLocationTest.instance_methods(false).grep(/.Node$/).map { |name| name[5..].to_sym }.sort
       assert_equal expected, actual
     end

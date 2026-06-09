@@ -120,7 +120,7 @@ RSpec.describe "bundle outdated" do
     end
 
     it "shows the location of the latest version's gemspec if installed" do
-      bundle "config set clean false"
+      bundle_config "clean false"
 
       update_repo2 { build_gem "activesupport", "3.0" }
       update_repo2 { build_gem "terranova", "9" }
@@ -333,7 +333,7 @@ RSpec.describe "bundle outdated" do
         build_gem "activesupport", "2.3.4"
       end
 
-      bundle "config set clean false"
+      bundle_config "clean false"
 
       install_gemfile <<-G
         source "https://gem.repo2"
@@ -748,7 +748,7 @@ RSpec.describe "bundle outdated" do
       gem "foo"
     G
 
-    bundle "config set auto_install 1"
+    bundle_config "auto_install 1"
     bundle :outdated, raise_on_error: false
     expect(out).to include("Installing foo 1.0")
   end
@@ -764,7 +764,7 @@ RSpec.describe "bundle outdated" do
         gem "foo"
       G
       bundle :lock
-      bundle "config deployment true"
+      bundle_config "deployment true"
     end
 
     it "outputs a helpful message about being in deployment mode" do
@@ -792,7 +792,7 @@ RSpec.describe "bundle outdated" do
         gem "myrack"
         gem "foo"
       G
-      bundle "config set --local deployment true"
+      bundle_config "deployment true"
     end
 
     it "outputs a helpful message about being in deployment mode" do

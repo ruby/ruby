@@ -16,6 +16,7 @@
 #include "internal/ractor.h"
 #include "internal/rational.h"
 #include "internal/struct.h"
+#include "internal/st.h"
 #include "internal/thread.h"
 #include "variable.h"
 #include "yjit.h"
@@ -246,8 +247,8 @@ ractor_mark(void *ptr)
         ractor_sync_mark(r);
 
         rb_hook_list_mark(&r->pub.hooks);
-        if (r->pub.targeted_hooks) {
-            st_foreach(r->pub.targeted_hooks, mark_targeted_hook_list, 0);
+        if (r->pub.targeted_hooks.num_entries) {
+            st_foreach(&r->pub.targeted_hooks, mark_targeted_hook_list, 0);
         }
 
         if (r->threads.cnt > 0) {
@@ -281,14 +282,14 @@ ractor_free(void *ptr)
 {
     rb_ractor_t *r = (rb_ractor_t *)ptr;
     RUBY_DEBUG_LOG("free r:%d", rb_ractor_id(r));
-    free_targeted_hooks(r->pub.targeted_hooks);
+    free_targeted_hooks(&r->pub.targeted_hooks);
     rb_native_mutex_destroy(&r->sync.lock);
 #ifdef RUBY_THREAD_WIN32_H
     rb_native_cond_destroy(&r->sync.wakeup_cond);
 #endif
     ractor_local_storage_free(r);
     rb_hook_list_free(&r->pub.hooks);
-    st_free_table(r->pub.targeted_hooks);
+    rb_st_free_embedded_table(&r->pub.targeted_hooks);
 
     if (r->newobj_cache) {
         RUBY_ASSERT(r == ruby_single_main_ractor);
@@ -342,7 +343,8 @@ RACTOR_PTR(VALUE self)
     return r;
 }
 
-static rb_atomic_t ractor_last_id;
+#define MAIN_RACTOR_ID 1
+static rb_atomic_t ractor_last_id = MAIN_RACTOR_ID;
 
 #if RACTOR_CHECK_MODE > 0
 uint32_t
@@ -466,23 +468,20 @@ ractor_alloc(VALUE klass)
     return rv;
 }
 
-static rb_ractor_t _main_ractor;
+static rb_ractor_t _main_ractor = {
+    .loc = Qnil,
+    .name = Qnil,
+    .pub.id = MAIN_RACTOR_ID,
+    .pub.self = Qnil,
+    .next_ec_serial = 1,
+    .main_ractor = true,
+};
 
 rb_ractor_t *
 rb_ractor_main_alloc(void)
 {
     rb_ractor_t *r = &_main_ractor;
-    if (r == NULL) {
-        fprintf(stderr, "[FATAL] failed to allocate memory for main ractor\n");
-        exit(EXIT_FAILURE);
-    }
-    r->pub.id = ++ractor_last_id;
-    r->loc = Qnil;
-    r->name = Qnil;
-    r->pub.self = Qnil;
     r->newobj_cache = rb_gc_ractor_cache_alloc(r);
-    r->next_ec_serial = 1;
-    r->main_ractor = true;
     ruby_single_main_ractor = r;
 
     return r;
@@ -531,7 +530,7 @@ static void
 ractor_init(rb_ractor_t *r, VALUE name, VALUE loc)
 {
     ractor_sync_init(r);
-    r->pub.targeted_hooks = st_init_numtable();
+    st_init_existing_numtable_with_size(&r->pub.targeted_hooks, 0);
     r->pub.hooks.type = hook_list_type_ractor_local;
 
     // thread management
@@ -1163,7 +1162,7 @@ rb_ractor_hooks(rb_ractor_t *cr)
 st_table *
 rb_ractor_targeted_hooks(rb_ractor_t *cr)
 {
-    return cr->pub.targeted_hooks;
+    return &cr->pub.targeted_hooks;
 }
 
 static void
@@ -1271,6 +1270,7 @@ obj_traverse_rec(struct obj_traverse_data *data)
 {
     if (UNLIKELY(!data->rec)) {
         data->rec_hash = rb_ident_hash_new();
+        rb_obj_hide(data->rec_hash);
         data->rec = RHASH_ST_TABLE(data->rec_hash);
     }
     return data->rec;
@@ -1451,7 +1451,7 @@ allow_frozen_shareable_p(VALUE obj)
     if (!RB_TYPE_P(obj, T_DATA)) {
         return true;
     }
-    else if (RTYPEDDATA_P(obj)) {
+    else {
         const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
         if (type->flags & RUBY_TYPED_FROZEN_SHAREABLE) {
             return true;
@@ -1809,7 +1809,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
     if (UNLIKELY(rb_obj_gen_fields_p(obj))) {
         VALUE fields_obj = rb_obj_fields_no_ractor_check(obj);
 
-        if (UNLIKELY(rb_shape_obj_too_complex_p(obj))) {
+        if (UNLIKELY(rb_obj_shape_complex_p(obj))) {
             struct obj_traverse_replace_callback_data d = {
                 .stop = false,
                 .data = data,
@@ -1846,7 +1846,7 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 
       case T_OBJECT:
         {
-            if (rb_shape_obj_too_complex_p(obj)) {
+            if (rb_obj_shape_complex_p(obj)) {
                 struct obj_traverse_replace_callback_data d = {
                     .stop = false,
                     .data = data,
@@ -1993,16 +1993,16 @@ rb_obj_traverse_replace(VALUE obj,
 }
 
 static const bool wb_protected_types[RUBY_T_MASK] = {
-    [T_OBJECT] = RGENGC_WB_PROTECTED_OBJECT,
-    [T_HASH] = RGENGC_WB_PROTECTED_HASH,
-    [T_ARRAY] = RGENGC_WB_PROTECTED_ARRAY,
-    [T_STRING] = RGENGC_WB_PROTECTED_STRING,
-    [T_STRUCT] = RGENGC_WB_PROTECTED_STRUCT,
-    [T_COMPLEX] = RGENGC_WB_PROTECTED_COMPLEX,
-    [T_REGEXP] = RGENGC_WB_PROTECTED_REGEXP,
-    [T_MATCH] = RGENGC_WB_PROTECTED_MATCH,
-    [T_FLOAT] = RGENGC_WB_PROTECTED_FLOAT,
-    [T_RATIONAL] = RGENGC_WB_PROTECTED_RATIONAL,
+    [T_OBJECT] = true,
+    [T_HASH] = true,
+    [T_ARRAY] = true,
+    [T_STRING] = true,
+    [T_STRUCT] = true,
+    [T_COMPLEX] = true,
+    [T_REGEXP] = true,
+    [T_MATCH] = true,
+    [T_FLOAT] = true,
+    [T_RATIONAL] = true,
 };
 
 static enum obj_traverse_iterator_result
@@ -2015,9 +2015,8 @@ move_enter(VALUE obj, struct obj_traverse_replace_data *data)
     else {
         VALUE type = RB_BUILTIN_TYPE(obj);
         size_t slot_size = rb_gc_obj_slot_size(obj);
-        type |= wb_protected_types[type] ? FL_WB_PROTECTED : 0;
-        NEWOBJ_OF(moved, struct RBasic, 0, type, slot_size, 0);
-        MEMZERO(&moved[1], char, slot_size - sizeof(*moved));
+        VALUE moved = rb_newobj(GET_EC(), 0, type, RBASIC_SHAPE_ID(obj), wb_protected_types[type], slot_size);
+        MEMZERO(((struct RBasic *)moved) + 1, char, slot_size - sizeof(struct RBasic));
         data->replacement = (VALUE)moved;
         return traverse_cont;
     }
@@ -2067,6 +2066,31 @@ ractor_move(VALUE obj)
     }
 }
 
+static VALUE
+ractor_call_clone_try(VALUE obj)
+{
+    return rb_funcall(obj, idClone, 0);
+}
+
+static VALUE
+ractor_call_clone_rescue(VALUE obj, VALUE exc)
+{
+    rb_raise(rb_eRactorError, "can't clone unshareable instance of %"PRIsVALUE, rb_class_of(obj));
+    UNREACHABLE_RETURN(Qnil);
+}
+
+static VALUE
+ractor_obj_clone(VALUE obj)
+{
+    VALUE clone = rb_rescue(ractor_call_clone_try, obj, ractor_call_clone_rescue, obj);
+
+    if (obj == clone) {
+        rb_raise(rb_eRactorError, "#clone returned self");
+    }
+
+    return clone;
+}
+
 static enum obj_traverse_iterator_result
 copy_enter(VALUE obj, struct obj_traverse_replace_data *data)
 {
@@ -2075,10 +2099,7 @@ copy_enter(VALUE obj, struct obj_traverse_replace_data *data)
         return traverse_skip;
     }
     else {
-        if (!rb_get_alloc_func(rb_obj_class(obj))) {
-            rb_raise(rb_eRactorError, "can not copy unshareable object %+"PRIsVALUE, obj);
-        }
-        data->replacement = rb_obj_clone(obj);
+        data->replacement = ractor_obj_clone(obj);
         return traverse_cont;
     }
 }

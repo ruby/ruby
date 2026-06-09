@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/to_s'
 
 describe "Thread#inspect" do
-  it_behaves_like :thread_to_s, :inspect
+  it "is an alias of Thread#to_s" do
+    Thread.instance_method(:inspect).should == Thread.instance_method(:to_s)
+  end
 end

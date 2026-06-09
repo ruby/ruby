@@ -798,6 +798,25 @@ require_libraries(VALUE *req_list)
     *req_list = 0;
 }
 
+static void
+require_libraries_in_main_box(VALUE *req_list)
+{
+    const rb_box_t *main_box = rb_main_box();
+    VALUE list = *req_list;
+    ID require;
+    rb_encoding *extenc = rb_default_external_encoding();
+
+    CONST_ID(require, "require");
+    while (list && RARRAY_LEN(list) > 0) {
+        VALUE feature = rb_ary_shift(list);
+        rb_enc_associate(feature, extenc);
+        RBASIC_SET_CLASS_RAW(feature, rb_cString);
+        OBJ_FREEZE(feature);
+        rb_funcallv(main_box->box_object, require, 1, &feature);
+    }
+    *req_list = 0;
+}
+
 static const struct rb_block*
 toplevel_context(rb_binding_t *bind)
 {
@@ -1373,7 +1392,7 @@ proc_0_option(ruby_cmdline_options_t *opt, const char *s)
 static void
 proc_encoding_option(ruby_cmdline_options_t *opt, const char *s, const char *opt_name)
 {
-    char *p;
+    const char *p;
 # define set_encoding_part(type) \
     if (!(p = strchr(s, ':'))) {                        \
         set_##type##_encoding_once(opt, s, 0);          \
@@ -1771,6 +1790,7 @@ proc_options(long argc, char **argv, ruby_cmdline_options_t *opt, int envopt)
     return argc0 - argc;
 }
 
+VALUE rb_define_gem_modules(VALUE, VALUE);
 void Init_builtin_features(void);
 
 static void
@@ -1798,19 +1818,6 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 
     if (opt->dump & dump_exit_bits) return;
 
-    if (FEATURE_SET_P(opt->features, gems)) {
-        rb_define_module("Gem");
-        if (opt->features.set & FEATURE_BIT(error_highlight)) {
-            rb_define_module("ErrorHighlight");
-        }
-        if (opt->features.set & FEATURE_BIT(did_you_mean)) {
-            rb_define_module("DidYouMean");
-        }
-        if (opt->features.set & FEATURE_BIT(syntax_suggest)) {
-            rb_define_module("SyntaxSuggest");
-        }
-    }
-
     Init_ext(); /* load statically linked extensions before rubygems */
     Init_extra_exts();
 
@@ -1829,13 +1836,40 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
     rb_zjit_init_builtin_cmes();
 #endif
 
-    ruby_init_prelude();
+    /**
+     * Initialize the root/main boxes before loading libraries to run them
+     * (including RubyGems, written in Ruby) in those boxes themselves
+     */
+    if (rb_box_available()) {
+        rb_initialize_mandatory_boxes();
+    }
 
-    /* Initialize the main box after loading libraries (including rubygems)
-     * to enable those in both root and main */
-    if (rb_box_available())
-        rb_initialize_main_box();
     rb_box_init_done();
+
+    if (FEATURE_SET_P(opt->features, gems)) {
+        rb_box_gem_flags_t gem_flags = {
+            .gem = FEATURE_SET_P(opt->features, gems),
+            .error_highlight = opt->features.set & FEATURE_BIT(error_highlight),
+            .did_you_mean    = opt->features.set & FEATURE_BIT(did_you_mean),
+            .syntax_suggest  = opt->features.set & FEATURE_BIT(syntax_suggest)
+        };
+
+        if (rb_box_available()) {
+            rb_vm_call_cfunc_in_box(Qnil, rb_define_gem_modules, (VALUE)&gem_flags, Qnil,
+                                    rb_str_new_cstr("before_prelude.root.dummy"), rb_root_box());
+            rb_vm_call_cfunc_in_box(Qnil, rb_define_gem_modules, (VALUE)&gem_flags, Qnil,
+                                    rb_str_new_cstr("before_prelude.main.dummy"), rb_main_box());
+
+            rb_box_set_gem_flags(&gem_flags);
+        }
+        else {
+            rb_define_gem_modules((VALUE)&gem_flags, Qnil);
+        }
+    }
+
+    // The root/main boxes load gem_prelude here.
+    // User boxes will load it in those #initialize instead.
+    ruby_init_prelude();
 
     // Enable JITs after ruby_init_prelude() to avoid JITing prelude code.
 #if USE_YJIT
@@ -1847,7 +1881,12 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 #endif
 
     ruby_set_script_name(opt->script_name);
-    require_libraries(&opt->req_list);
+    if (rb_box_available()) {
+        require_libraries_in_main_box(&opt->req_list);
+    }
+    else {
+        require_libraries(&opt->req_list);
+    }
 }
 
 static int
@@ -2181,10 +2220,8 @@ prism_script_shebang_callback(pm_options_t *options, const uint8_t *source, size
 static void
 prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
 {
-    memset(result, 0, sizeof(pm_parse_result_t));
-
-    pm_options_t *options = &result->options;
-    pm_options_line_set(options, 1);
+    pm_parse_result_init(result);
+    pm_options_t *options = result->options;
     pm_options_main_script_set(options, true);
 
     const bool read_stdin = (strcmp(opt->script, "-") == 0);
@@ -2210,7 +2247,7 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
         // If we found an __END__ marker, then we're going to define a global
         // DATA constant that is a file object that can be read to read the
         // contents after the marker.
-        if (NIL_P(error) && result->parser.data_loc.length != 0) {
+        if (NIL_P(error) && pm_parser_data_loc(result->parser)->length != 0) {
             rb_define_global_const("DATA", rb_stdin);
         }
     }
@@ -2247,15 +2284,18 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
         // If we found an __END__ marker, then we're going to define a global
         // DATA constant that is a file object that can be read to read the
         // contents after the marker.
-        if (NIL_P(error) && result->parser.data_loc.length != 0) {
+        if (NIL_P(error) && pm_parser_data_loc(result->parser)->length != 0) {
             int xflag = opt->xflag;
             VALUE file = open_load_file(script_name, &xflag);
 
-            const pm_parser_t *parser = &result->parser;
-            uint32_t offset = parser->data_loc.start + 7;
+            const pm_parser_t *parser = result->parser;
+            const pm_location_t *data_loc = pm_parser_data_loc(parser);
+            const uint8_t *start = pm_parser_start(parser);
+            const uint8_t *end = pm_parser_end(parser);
+            uint32_t offset = data_loc->start + 7;
 
-            if ((parser->start + offset < parser->end) && parser->start[offset] == '\r') offset++;
-            if ((parser->start + offset < parser->end) && parser->start[offset] == '\n') offset++;
+            if ((start + offset < end) && start[offset] == '\r') offset++;
+            if ((start + offset < end) && start[offset] == '\n') offset++;
 
             rb_funcall(file, rb_intern_const("seek"), 2, UINT2NUM(offset), INT2FIX(SEEK_SET));
             rb_define_global_const("DATA", file);
@@ -2271,11 +2311,11 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
 static VALUE
 prism_dump_tree(pm_parse_result_t *result)
 {
-    pm_buffer_t output_buffer = { 0 };
+    pm_buffer_t *output_buffer = pm_buffer_new();
 
-    pm_prettyprint(&output_buffer, &result->parser, result->node.ast_node);
-    VALUE tree = rb_str_new(output_buffer.value, output_buffer.length);
-    pm_buffer_free(&output_buffer);
+    pm_prettyprint(output_buffer, result->parser, result->node.ast_node);
+    VALUE tree = rb_str_new(pm_buffer_value(output_buffer), pm_buffer_length(output_buffer));
+    pm_buffer_free(output_buffer);
     return tree;
 }
 

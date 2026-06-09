@@ -3,15 +3,15 @@ require_relative 'fixtures/classes'
 
 describe "Thread.list" do
   it "includes the current and main thread" do
-    Thread.list.should include(Thread.current)
-    Thread.list.should include(Thread.main)
+    Thread.list.should.include?(Thread.current)
+    Thread.list.should.include?(Thread.main)
   end
 
   it "includes threads of non-default thread groups" do
     t = Thread.new { sleep }
     begin
       ThreadGroup.new.add(t)
-      Thread.list.should include(t)
+      Thread.list.should.include?(t)
     ensure
       t.kill
       t.join
@@ -21,7 +21,7 @@ describe "Thread.list" do
   it "does not include deceased threads" do
     t = Thread.new { 1; }
     t.join
-    Thread.list.should_not include(t)
+    Thread.list.should_not.include?(t)
   end
 
   it "includes waiting threads" do
@@ -29,7 +29,7 @@ describe "Thread.list" do
     t = Thread.new { q.pop }
     begin
       Thread.pass while t.status and t.status != 'sleep'
-      Thread.list.should include(t)
+      Thread.list.should.include?(t)
     ensure
       q << nil
       t.join
@@ -45,7 +45,7 @@ describe "Thread.list" do
 
     begin
       Thread.list.each { |th|
-        th.should be_kind_of(Thread)
+        th.should.is_a?(Thread)
       }
     end while spawner.alive?
 

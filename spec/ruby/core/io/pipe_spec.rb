@@ -16,14 +16,14 @@ describe "IO.pipe" do
 
   it "returns two IO objects" do
     @r, @w = IO.pipe
-    @r.should be_kind_of(IO)
-    @w.should be_kind_of(IO)
+    @r.should.is_a?(IO)
+    @w.should.is_a?(IO)
   end
 
   it "returns instances of a subclass when called on a subclass" do
     @r, @w = IOSpecs::SubIO.pipe
-    @r.should be_an_instance_of(IOSpecs::SubIO)
-    @w.should be_an_instance_of(IOSpecs::SubIO)
+    @r.should.instance_of?(IOSpecs::SubIO)
+    @w.should.instance_of?(IOSpecs::SubIO)
   end
 
   it "does not use IO.new method to create pipes and allows its overriding" do
@@ -33,8 +33,8 @@ describe "IO.pipe" do
     @r, @w = IOSpecs::SubIOWithRedefinedNew.pipe
     ScratchPad.recorded.should == [:call_original_initialize, :call_original_initialize] # called 2 times - for each pipe (r and w)
 
-    @r.should be_an_instance_of(IOSpecs::SubIOWithRedefinedNew)
-    @w.should be_an_instance_of(IOSpecs::SubIOWithRedefinedNew)
+    @r.should.instance_of?(IOSpecs::SubIOWithRedefinedNew)
+    @w.should.instance_of?(IOSpecs::SubIOWithRedefinedNew)
   end
 end
 
@@ -42,8 +42,8 @@ describe "IO.pipe" do
   describe "passed a block" do
     it "yields two IO objects" do
       IO.pipe do |r, w|
-        r.should be_kind_of(IO)
-        w.should be_kind_of(IO)
+        r.should.is_a?(IO)
+        w.should.is_a?(IO)
       end
     end
 
@@ -67,7 +67,7 @@ describe "IO.pipe" do
           w = _w
           raise RuntimeError
         end
-      end.should raise_error(RuntimeError)
+      end.should.raise(RuntimeError)
       r.should.closed?
       w.should.closed?
     end
@@ -100,7 +100,7 @@ describe "IO.pipe" do
 
     IO.pipe do |r, w|
       r.external_encoding.should == Encoding::ISO_8859_1
-      r.internal_encoding.should be_nil
+      r.internal_encoding.should == nil
     end
   end
 
@@ -120,14 +120,14 @@ describe "IO.pipe" do
 
     IO.pipe do |r, w|
       r.external_encoding.should == Encoding::UTF_8
-      r.internal_encoding.should be_nil
+      r.internal_encoding.should == nil
     end
   end
 
   it "sets the external encoding of the read end when passed an Encoding argument" do
     IO.pipe(Encoding::UTF_8) do |r, w|
       r.external_encoding.should == Encoding::UTF_8
-      r.internal_encoding.should be_nil
+      r.internal_encoding.should == nil
     end
   end
 
@@ -141,14 +141,14 @@ describe "IO.pipe" do
   it "sets the external encoding of the read end when passed the name of an Encoding" do
     IO.pipe("UTF-8") do |r, w|
       r.external_encoding.should == Encoding::UTF_8
-      r.internal_encoding.should be_nil
+      r.internal_encoding.should == nil
     end
   end
 
   it "accepts 'bom|' prefix for external encoding" do
     IO.pipe("BOM|UTF-8") do |r, w|
       r.external_encoding.should == Encoding::UTF_8
-      r.internal_encoding.should be_nil
+      r.internal_encoding.should == nil
     end
   end
 
@@ -213,13 +213,13 @@ describe "IO.pipe" do
 
   it "sets no external encoding for the write end" do
     IO.pipe(Encoding::UTF_8) do |r, w|
-      w.external_encoding.should be_nil
+      w.external_encoding.should == nil
     end
   end
 
   it "sets no internal encoding for the write end" do
     IO.pipe(Encoding::UTF_8) do |r, w|
-      w.external_encoding.should be_nil
+      w.external_encoding.should == nil
     end
   end
 end

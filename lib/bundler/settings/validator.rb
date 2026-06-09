@@ -74,6 +74,13 @@ module Bundler
           fail!(key, value, "`#{other_key}` is current set to #{other_setting.inspect}", "the `#{conflicting.join("`, `")}` groups conflict")
         end
       end
+
+      rule %w[default_cli_command], "default_cli_command must be either 'install' or 'cli_help'" do |key, value, _settings|
+        valid_values = %w[install cli_help]
+        if !value.nil? && !valid_values.include?(value.to_s)
+          fail!(key, value, "must be one of: #{valid_values.join(", ")}")
+        end
+      end
     end
   end
 end

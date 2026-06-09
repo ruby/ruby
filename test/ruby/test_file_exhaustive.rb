@@ -1360,14 +1360,19 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_join
-    s = "foo" + File::SEPARATOR + "bar" + File::SEPARATOR + "baz"
+    sep = File::SEPARATOR
+    s = "foo" + sep + "bar" + sep + "baz"
     assert_equal(s, File.join("foo", "bar", "baz"))
     assert_equal(s, File.join(["foo", "bar", "baz"]))
+    assert_equal(s, File.join("foo" + sep, "bar", sep + "baz"))
+    assert_equal(s, File.join("foo" + sep, sep + "bar" + sep, sep + "baz"))
 
     o = Object.new
     def o.to_path; "foo"; end
     assert_equal(s, File.join(o, "bar", "baz"))
-    assert_equal(s, File.join("foo" + File::SEPARATOR, "bar", File::SEPARATOR + "baz"))
+
+    s = sep + "foo"
+    assert_equal(s, File.join(sep, s))
   end
 
   def test_join_alt_separator

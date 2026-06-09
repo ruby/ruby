@@ -30,8 +30,8 @@ describe "Integer#allbits?" do
     -> {
       (obj = mock('10')).should_receive(:coerce).any_number_of_times.and_return([42,10])
       13.allbits?(obj)
-    }.should raise_error(TypeError)
-    -> { 13.allbits?("10")    }.should raise_error(TypeError)
-    -> { 13.allbits?(:symbol) }.should raise_error(TypeError)
+    }.should.raise(TypeError)
+    -> { 13.allbits?("10")    }.should.raise(TypeError)
+    -> { 13.allbits?(:symbol) }.should.raise(TypeError)
   end
 end

@@ -182,7 +182,7 @@ class Gem::RequestSet
     # Install requested gems after they have been downloaded
     sorted_requests.each do |req|
       if req.installed? && @always_install.none? {|spec| spec == req.spec.spec }
-        req.spec.spec.build_extensions
+        req.spec.spec.build_extensions unless options[:build_extension] == false
         yield req, nil if block_given?
         next
       end
@@ -233,10 +233,6 @@ class Gem::RequestSet
 
       sorted_requests.each do |spec|
         puts "  #{spec.full_name}"
-      end
-
-      if Gem.configuration.really_verbose
-        @resolver.stats.display
       end
     else
       installed = install options, &block
@@ -322,17 +318,71 @@ class Gem::RequestSet
     @git_set.root_dir = @install_dir
 
     lock_file = "#{File.expand_path(path)}.lock"
-    begin
-      tokenizer = Gem::RequestSet::Lockfile::Tokenizer.from_file lock_file
-      parser = tokenizer.make_parser self, []
-      parser.parse
-    rescue Errno::ENOENT
+    if File.exist?(lock_file)
+      load_lockfile lock_file
     end
 
     gf = Gem::RequestSet::GemDependencyAPI.new self, path
     gf.installing = installing
     gf.without_groups = without_groups if without_groups
     gf.load
+  end
+
+  def load_lockfile(lock_file) # :nodoc:
+    require "bundler"
+    require "bundler/lockfile_parser"
+
+    # Bundler::Source::Path resolves relative `remote:` paths against
+    # Bundler.root, which raises when there is no Gemfile in the working
+    # directory. Anchor it to the lockfile's directory so PATH sections in a
+    # `gem install -g` lockfile can be parsed without a Bundler environment.
+    previous_root = Bundler.instance_variable_get(:@root)
+    Bundler.instance_variable_set(:@root, Pathname.new(File.expand_path(File.dirname(lock_file))))
+
+    parser = Bundler::LockfileParser.new(File.read(lock_file), lockfile_path: lock_file)
+
+    parser.specs.group_by(&:source).each do |source, specs|
+      case source
+      when Bundler::Source::Rubygems
+        remotes = source.remotes.map {|remote| Gem::Source.new(remote.to_s) }
+        remotes << Gem::Source.new(Gem::DEFAULT_HOST) if remotes.empty?
+        lock_set = Gem::Resolver::LockSet.new(remotes)
+        specs.each do |spec|
+          added = lock_set.add(spec.name, spec.version.to_s, spec.platform)
+          spec.dependencies.each do |dep|
+            added.each {|s| s.add_dependency dep }
+          end
+        end
+        @sets << lock_set
+      when Bundler::Source::Git
+        git_set = Gem::Resolver::GitSet.new
+        git_set.root_dir = @install_dir
+        specs.each do |spec|
+          git_spec = git_set.add_git_spec(
+            spec.name,
+            spec.version.to_s,
+            source.uri.to_s,
+            source.revision,
+            source.submodules || false
+          )
+          spec.dependencies.each {|dep| git_spec.add_dependency dep }
+        end
+        @sets << git_set
+      when Bundler::Source::Path
+        vendor_set = Gem::Resolver::VendorSet.new
+        specs.each do |spec|
+          loaded = vendor_set.add_vendor_gem(spec.name, source.path.to_s)
+          spec.dependencies.each {|dep| loaded.dependencies << dep }
+        end
+        @sets << vendor_set
+      end
+    end
+
+    parser.dependencies.each_value do |dep|
+      gem dep.name, *dep.requirement.as_list
+    end
+  ensure
+    Bundler.instance_variable_set(:@root, previous_root) if defined?(previous_root)
   end
 
   def pretty_print(q) # :nodoc:
@@ -462,4 +512,3 @@ end
 
 require_relative "request_set/gem_dependency_api"
 require_relative "request_set/lockfile"
-require_relative "request_set/lockfile/tokenizer"

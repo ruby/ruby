@@ -39,7 +39,7 @@ rsock_raise_user_specified_timeout(struct addrinfo *ai, VALUE host, VALUE port)
         message = rb_sprintf("user specified timeout for %" PRIsVALUE " port %" PRIsVALUE, host, port);
     }
 
-    rb_raise(rb_eIOTimeoutError, "%" PRIsVALUE, message);
+    rb_exc_raise(rb_exc_new_str(rb_eIOTimeoutError, message));
 }
 
 static VALUE

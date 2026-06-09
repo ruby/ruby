@@ -1,8 +1,9 @@
 require_relative '../../spec_helper'
-require_relative 'shared/include'
 
 describe "ENV.key?" do
-  it_behaves_like :env_include, :key?
+  it "is an alias of ENV.include?" do
+    ENV.method(:key?).should == ENV.method(:include?)
+  end
 end
 
 describe "ENV.key" do
@@ -21,7 +22,7 @@ describe "ENV.key" do
 
   it "returns nil if the passed value is not found" do
     ENV.delete("foo")
-    ENV.key("foo").should be_nil
+    ENV.key("foo").should == nil
   end
 
   it "coerces the key element with #to_str" do
@@ -34,6 +35,6 @@ describe "ENV.key" do
   it "raises TypeError if the argument is not a String and does not respond to #to_str" do
     -> {
       ENV.key(Object.new)
-    }.should raise_error(TypeError, "no implicit conversion of Object into String")
+    }.should.raise(TypeError, "no implicit conversion of Object into String")
   end
 end

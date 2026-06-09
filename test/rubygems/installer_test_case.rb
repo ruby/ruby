@@ -237,21 +237,4 @@ class Gem::InstallerTestCase < Gem::TestCase
     assert_directory_exists non_existent_parent, "Parent directory should exist now"
     assert_directory_exists target_dir, "Target directory should exist now"
   end
-
-  @@symlink_supported = nil
-
-  # This is needed for Windows environment without symlink support enabled (the default
-  # for non admin) to be able to skip test for features using symlinks.
-  def symlink_supported?
-    if @@symlink_supported.nil?
-      begin
-        File.symlink("", "")
-      rescue Errno::ENOENT, Errno::EEXIST
-        @@symlink_supported = true
-      rescue NotImplementedError, SystemCallError
-        @@symlink_supported = false
-      end
-    end
-    @@symlink_supported
-  end
 end

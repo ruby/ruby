@@ -35,7 +35,7 @@ describe "StringScanner#captures" do
 
       -> {
         @s.values_at("foo")
-      }.should raise_error(IndexError, "undefined group name reference: foo")
+      }.should.raise(IndexError, "undefined group name reference: foo")
     end
   end
 
@@ -54,7 +54,7 @@ describe "StringScanner#captures" do
 
     -> {
       @s.values_at([])
-    }.should raise_error(TypeError, "no implicit conversion of Array into Integer")
+    }.should.raise(TypeError, "no implicit conversion of Array into Integer")
   end
 
   it "returns nil if the most recent matching fails" do

@@ -411,10 +411,7 @@ $(srcdir)/.bundle/gems:
 
 ifneq ($(DOT_WAIT),)
 up:: $(DOT_WAIT) after-update
-endif
-
-ifneq ($(CC),false)
-$(BUILTIN_RB_INCS): $(DUMP_AST)
+after-update:: MINIRUBY = $(BASERUBY)
 endif
 
 ifneq ($(filter update-bundled_gems refresh-gems,$(MAKECMDGOALS)),)
@@ -438,7 +435,7 @@ ifneq ($(DOT_WAIT),)
 endif
 
 ifeq ($(HAVE_GIT),yes)
-REVISION_LATEST := $(shell $(GIT_IN_SRC) rev-parse HEAD)
+REVISION_LATEST := $(shell $(GIT_IN_SRC) rev-parse HEAD 2>/dev/null)
 else
 REVISION_LATEST := update
 endif

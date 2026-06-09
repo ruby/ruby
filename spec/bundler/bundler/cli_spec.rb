@@ -100,7 +100,7 @@ RSpec.describe "bundle executable" do
     end
 
     it "runs bundle install when default_cli_command set to install" do
-      bundle "config set default_cli_command install"
+      bundle_config "default_cli_command install"
       bundle "", raise_on_error: false
       expect(out).to_not include("In a future version of Bundler")
       expect(err).to include("Could not locate Gemfile")
@@ -135,7 +135,7 @@ RSpec.describe "bundle executable" do
     end
 
     it "prints the simulated version too when setting is enabled" do
-      bundle "config simulate_version 4", verbose: true
+      bundle "config set simulate_version 4", verbose: true
       bundle "info bundler", verbose: true
       expect(out).to start_with("Running `bundle info bundler --verbose` with bundler #{Bundler::VERSION} (simulating Bundler 4)")
     end
@@ -143,7 +143,7 @@ RSpec.describe "bundle executable" do
 
   context "with verbose configuration" do
     before do
-      bundle "config verbose true"
+      bundle_config "verbose true"
     end
 
     it "prints the running command" do
@@ -210,7 +210,7 @@ RSpec.describe "bundle executable" do
     let(:bundler_version) { "2.0" }
     let(:latest_version) { nil }
     before do
-      bundle "config set --global disable_version_check false"
+      bundle_config_global "disable_version_check false"
 
       pristine_system_gems "bundler-#{bundler_version}"
       if latest_version
@@ -251,8 +251,10 @@ To update to the most recent version, run `bundle update --bundler`
 
       context "running a parseable command" do
         it "prints no warning" do
+          bundle "config set foo value", env: { "BUNDLER_VERSION" => bundler_version }
           bundle "config get --parseable foo", env: { "BUNDLER_VERSION" => bundler_version }
-          expect(stdboth).to eq ""
+          expect(out).to eq "foo=value"
+          expect(err).to eq ""
 
           bundle "platform --ruby", env: { "BUNDLER_VERSION" => bundler_version }, raise_on_error: false
           expect(stdboth).to eq "Could not locate Gemfile"
@@ -278,7 +280,7 @@ RSpec.describe "bundler executable" do
     bundler "--version"
     expect(out).to eq(Bundler::VERSION.to_s)
 
-    bundle "config simulate_version 5"
+    bundle_config "simulate_version 5"
     bundler "--version"
     expect(out).to eq("#{Bundler::VERSION} (simulating Bundler 5)")
   end

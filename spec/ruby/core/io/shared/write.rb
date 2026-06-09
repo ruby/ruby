@@ -23,7 +23,7 @@ describe :io_write, shared: true do
   end
 
   it "checks if the file is writable if writing more than zero bytes" do
-    -> { @readonly_file.send(@method, "abcde") }.should raise_error(IOError)
+    -> { @readonly_file.send(@method, "abcde") }.should.raise(IOError)
   end
 
   it "returns the number of bytes written" do
@@ -66,7 +66,7 @@ describe :io_write, shared: true do
   end
 
   it "raises IOError on closed stream" do
-    -> { IOSpecs.closed_io.send(@method, "hello") }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.send(@method, "hello") }.should.raise(IOError)
   end
 
   describe "on a pipe" do
@@ -92,7 +92,7 @@ describe :io_write, shared: true do
     guard_not -> { defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? } do
       it "raises Errno::EPIPE if the read end is closed and does not die from SIGPIPE" do
         @r.close
-        -> { @w.send(@method, "foo") }.should raise_error(Errno::EPIPE, /Broken pipe/)
+        -> { @w.send(@method, "foo") }.should.raise(Errno::EPIPE, /Broken pipe/)
       end
     end
   end
@@ -126,7 +126,7 @@ describe :io_write_transcode, shared: true do
 
     File.open(@transcode_filename, "w", external_encoding: Encoding::UTF_16BE) do |file|
       file.external_encoding.should == Encoding::UTF_16BE
-      -> { file.send(@method, str) }.should raise_error(Encoding::UndefinedConversionError)
+      -> { file.send(@method, str) }.should.raise(Encoding::UndefinedConversionError)
     end
   end
 end

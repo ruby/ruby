@@ -12,6 +12,7 @@
 #include "insns.inc"
 #include "insns_info.inc"
 #include "iseq.h"
+#include "internal/compile.h"
 #include "internal/gc.h"
 #include "vm_sync.h"
 #include "internal/fixnum.h"
@@ -19,6 +20,11 @@
 #include "internal/class.h"
 #include "internal/imemo.h"
 #include "ruby/internal/core/rtypeddata.h"
+#include "zjit.h"
+
+#ifndef _WIN32
+#include <sys/mman.h>
+#endif
 
 enum jit_bindgen_constants {
     // Field offsets for the RObject struct
@@ -28,11 +34,14 @@ enum jit_bindgen_constants {
     // Field offset for prime classext's fields_obj from a class pointer
     RCLASS_OFFSET_PRIME_FIELDS_OBJ = offsetof(struct RClass_and_rb_classext_t, classext.fields_obj),
 
-    // Field offset for fields_obj in RTypedData
-    RTYPEDDATA_OFFSET_FIELDS_OBJ = offsetof(struct RTypedData, fields_obj),
+    // Field offset for fields_obj in T_DATA
+    TDATA_OFFSET_FIELDS_OBJ = offsetof(struct RTypedData, fields_obj),
 
     // Field offsets for the RString struct
     RUBY_OFFSET_RSTRING_LEN = offsetof(struct RString, len),
+
+    // Shape constant related to RBasic::flags. (See RBASIC_SET_SHAPE_ID())
+    RB_SHAPE_FLAG_SHIFT = SHAPE_FLAG_SHIFT,
 
     // Field offsets for rb_execution_context_t
     RUBY_OFFSET_EC_CFP = offsetof(rb_execution_context_t, cfp),
@@ -76,6 +85,19 @@ rb_iseq_opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
 
     const VALUE at_pc = *pc;
     return rb_vm_insn_addr2opcode((const void *)at_pc);
+}
+
+// Get the bare opcode given a program counter. Always returns the base
+// instruction, stripping trace/zjit variants.
+int
+rb_iseq_bare_opcode_at_pc(const rb_iseq_t *iseq, const VALUE *pc)
+{
+    if (OPT_DIRECT_THREADED_CODE || OPT_CALL_THREADED_CODE) {
+        RUBY_ASSERT_ALWAYS(FL_TEST_RAW((VALUE)iseq, ISEQ_TRANSLATED));
+    }
+
+    const VALUE at_pc = *pc;
+    return rb_vm_insn_addr2insn((const void *)at_pc);
 }
 
 unsigned long
@@ -384,7 +406,7 @@ rb_get_ec_cfp(const rb_execution_context_t *ec)
 const rb_iseq_t *
 rb_get_cfp_iseq(struct rb_control_frame_struct *cfp)
 {
-    return cfp->iseq;
+    return CFP_ISEQ(cfp);
 }
 
 VALUE *
@@ -527,9 +549,9 @@ rb_set_cfp_sp(struct rb_control_frame_struct *cfp, VALUE *sp)
 }
 
 bool
-rb_jit_shape_too_complex_p(shape_id_t shape_id)
+rb_jit_shape_complex_p(shape_id_t shape_id)
 {
-    return rb_shape_too_complex_p(shape_id);
+    return rb_shape_complex_p(shape_id);
 }
 
 bool
@@ -546,7 +568,7 @@ rb_jit_class_fields_embedded_p(VALUE klass)
 }
 
 bool
-rb_jit_typed_data_fields_embedded_p(VALUE obj)
+rb_jit_data_fields_embedded_p(VALUE obj)
 {
     VALUE fields_obj = RTYPEDDATA(obj)->fields_obj;
     return !fields_obj || !FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP);

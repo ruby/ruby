@@ -24,7 +24,7 @@ describe 'Coverage.start' do
 
     -> {
       Coverage.start
-    }.should raise_error(RuntimeError, 'coverage measurement is already setup')
+    }.should.raise(RuntimeError, 'coverage measurement is already setup')
   end
 
   it "accepts :all optional argument" do
@@ -65,13 +65,13 @@ describe 'Coverage.start' do
   it "expects a Hash if not passed :all" do
     -> {
       Coverage.start(42)
-    }.should raise_error(TypeError, "no implicit conversion of Integer into Hash")
+    }.should.raise(TypeError, "no implicit conversion of Integer into Hash")
   end
 
   it "does not accept both lines: and oneshot_lines: keyword arguments" do
     -> {
       Coverage.start(lines: true, oneshot_lines: true)
-    }.should raise_error(RuntimeError, "cannot enable lines and oneshot_lines simultaneously")
+    }.should.raise(RuntimeError, "cannot enable lines and oneshot_lines simultaneously")
   end
 
   it "enables the coverage measurement if passed options with `false` value" do

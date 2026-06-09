@@ -132,6 +132,11 @@ extensions will be restored.
     specs = specs.select {|spec| spec.platform == RUBY_ENGINE || Gem::Platform.local === spec.platform || spec.platform == Gem::Platform::RUBY }
 
     if specs.to_a.empty?
+      if options[:only_missing_extensions]
+        say "No gems with missing extensions to restore"
+        return
+      end
+
       raise Gem::Exception,
             "Failed to find gems #{options[:args]} #{options[:version]}"
     end

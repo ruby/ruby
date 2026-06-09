@@ -65,7 +65,7 @@ RSpec.describe "bundle install" do
         gem 'myrack'
       G
 
-      bundle "config set --local gemfile #{bundled_app("NotGemfile")}"
+      bundle_config "gemfile #{bundled_app("NotGemfile")}"
     end
     it "uses the gemfile to install" do
       bundle "install"

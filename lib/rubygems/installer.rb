@@ -287,18 +287,23 @@ class Gem::Installer
     run_post_build_hooks
 
     generate_bin
-    generate_plugins
+    if options[:install_plugin] == false
+      remove_stale_plugins
+      warn_skipped_plugins
+    else
+      generate_plugins
+    end
 
     write_spec
     write_cache_file
 
     File.chmod(dir_mode, gem_dir) if dir_mode
 
-    say spec.post_install_message if options[:post_install_message] && !spec.post_install_message.nil?
+    say clean_text(spec.post_install_message.to_s) if options[:post_install_message] && !spec.post_install_message.nil?
 
     Gem::Specification.add_spec(spec) unless @install_dir
 
-    load_plugin
+    load_plugin unless options[:install_plugin] == false
 
     run_post_install_hooks
 
@@ -707,6 +712,18 @@ class Gem::Installer
     if spec.dependencies.any? {|dep| dep.name =~ /(?:\R|[<>])/ }
       raise Gem::InstallError, "#{spec} has an invalid dependencies"
     end
+
+    if spec.executables.any? {|name| !name.is_a?(String) || name != File.basename(name) || /\A\.\.?\z|\R/.match?(name) }
+      raise Gem::InstallError, "#{spec} has an invalid executable"
+    end
+
+    raise Gem::InstallError, "#{spec} has an invalid bindir" unless spec.bindir.is_a?(String)
+
+    expanded_gem_dir = File.expand_path(gem_dir)
+    expanded_bindir = File.expand_path(File.join(gem_dir, spec.bindir))
+    unless expanded_bindir == expanded_gem_dir || expanded_bindir.start_with?("#{expanded_gem_dir}/")
+      raise Gem::InstallError, "#{spec} has an invalid bindir"
+    end
   end
 
   ##
@@ -715,6 +732,7 @@ class Gem::Installer
   def app_script_text(bin_file_name)
     # NOTE: that the `load` lines cannot be indented, as old RG versions match
     # against the beginning of the line
+    escaped_bin_file_name = bin_file_name.gsub(/[\\']/) {|c| "\\#{c}" }
     <<~TEXT
       #{shebang bin_file_name}
       #
@@ -738,9 +756,9 @@ class Gem::Installer
       end
 
       if Gem.respond_to?(:activate_and_load_bin_path)
-        Gem.activate_and_load_bin_path('#{spec.name}', '#{bin_file_name}', version)
+        Gem.activate_and_load_bin_path('#{spec.name}', '#{escaped_bin_file_name}', version)
       else
-        load Gem.activate_bin_path('#{spec.name}', '#{bin_file_name}', version)
+        load Gem.activate_bin_path('#{spec.name}', '#{escaped_bin_file_name}', version)
       end
     TEXT
   end
@@ -804,9 +822,35 @@ class Gem::Installer
   # configure scripts and rakefiles or mkrf_conf files.
 
   def build_extensions
+    if options[:build_extension] == false
+      warn_skipped_extensions
+      return
+    end
+
     builder = Gem::Ext::Builder.new spec, build_args, Gem.target_rbconfig, build_jobs
 
     builder.build_extensions
+  end
+
+  def warn_skipped_extensions # :nodoc:
+    return if spec.extensions.empty?
+
+    alert_warning "#{spec.full_name} contains native extensions that were not built.\n" \
+                  "To build extensions, run: gem pristine #{spec.name} --extensions"
+  end
+
+  def warn_skipped_plugins # :nodoc:
+    return if spec.plugins.empty?
+
+    alert_warning "#{spec.full_name} contains plugins that were not installed.\n" \
+                  "To install plugins, run: gem pristine #{spec.name} --only-plugins"
+  end
+
+  def remove_stale_plugins # :nodoc:
+    return unless spec.plugins.empty?
+
+    ensure_writable_dir @plugins_dir
+    remove_plugins_for(spec, @plugins_dir)
   end
 
   ##
@@ -990,9 +1034,10 @@ class Gem::Installer
     # are loaded at the same time.
     return unless specs.size == 1
 
-    plugin_files = spec.plugins.map do |plugin|
-      File.join(@plugins_dir, "#{spec.name}_plugin#{File.extname(plugin)}")
+    plugin_files = spec.plugins.filter_map do |plugin|
+      path = File.join(@plugins_dir, "#{spec.name}_plugin#{File.extname(plugin)}")
+      path if File.exist?(path)
     end
-    Gem.load_plugin_files(plugin_files)
+    Gem.load_plugin_files(plugin_files) unless plugin_files.empty?
   end
 end

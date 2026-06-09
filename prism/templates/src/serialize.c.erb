@@ -1,19 +1,42 @@
+#include "prism/excludes.h"
+
+/* We optionally support serializing to a binary string. For systems that do not
+ * want or need this functionality, it can be turned off with the
+ * PRISM_EXCLUDE_SERIALIZATION define. */
+#ifdef PRISM_EXCLUDE_SERIALIZATION
+
+/* Ensure this translation unit is never empty, even when serialization is
+ * excluded. */
+typedef int pm_serialize_unused_t;
+
+#else
+
+#include "prism/compiler/inline.h"
+
+#include "prism/internal/buffer.h"
+#include "prism/internal/comments.h"
+#include "prism/internal/diagnostic.h"
+#include "prism/internal/encoding.h"
+#include "prism/internal/list.h"
+#include "prism/internal/magic_comments.h"
+#include "prism/internal/options.h"
+#include "prism/internal/parser.h"
+
 #include "prism.h"
+#include "prism/ast.h"
+#include "prism/line_offset_list.h"
 
-// We optionally support serializing to a binary string. For systems that don't
-// want or need this functionality, it can be turned off with the
-// PRISM_EXCLUDE_SERIALIZATION define.
-#ifndef PRISM_EXCLUDE_SERIALIZATION
-
+#include <assert.h>
 #include <stdio.h>
+#include <string.h>
 
-static inline uint32_t
+static PRISM_INLINE uint32_t
 pm_ptrdifft_to_u32(ptrdiff_t value) {
     assert(value >= 0 && ((unsigned long) value) < UINT32_MAX);
     return (uint32_t) value;
 }
 
-static inline uint32_t
+static PRISM_INLINE uint32_t
 pm_sizet_to_u32(size_t value) {
     assert(value < UINT32_MAX);
     return (uint32_t) value;
@@ -298,7 +321,7 @@ pm_serialize_content(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) 
 }
 
 static void
-serialize_token(void *data, pm_parser_t *parser, pm_token_t *token) {
+serialize_token(pm_parser_t *parser, pm_token_t *token, void *data) {
     pm_buffer_t *buffer = (pm_buffer_t *) data;
 
     pm_buffer_append_varuint(buffer, token->type);
@@ -310,7 +333,7 @@ serialize_token(void *data, pm_parser_t *parser, pm_token_t *token) {
 /**
  * Lex the given source and serialize to the given buffer.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_serialize_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data) {
     pm_options_t options = { 0 };
     pm_options_read(&options, data);
@@ -319,12 +342,7 @@ pm_serialize_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const 
     pm_parser_t parser;
     pm_parser_init(&arena, &parser, source, size, &options);
 
-    pm_lex_callback_t lex_callback = (pm_lex_callback_t) {
-        .data = (void *) buffer,
-        .callback = serialize_token,
-    };
-
-    parser.lex_callback = &lex_callback;
+    pm_parser_lex_callback_set(&parser, serialize_token, buffer);
     pm_parse(&parser);
 
     // Append 0 to mark end of tokens.
@@ -332,16 +350,16 @@ pm_serialize_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const 
 
     pm_serialize_metadata(&parser, buffer);
 
-    pm_parser_free(&parser);
-    pm_arena_free(&arena);
-    pm_options_free(&options);
+    pm_parser_cleanup(&parser);
+    pm_arena_cleanup(&arena);
+    pm_options_cleanup(&options);
 }
 
 /**
  * Parse and serialize both the AST and the tokens represented by the given
  * source to the given buffer.
  */
-PRISM_EXPORTED_FUNCTION void
+void
 pm_serialize_parse_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data) {
     pm_options_t options = { 0 };
     pm_options_read(&options, data);
@@ -350,20 +368,37 @@ pm_serialize_parse_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, 
     pm_parser_t parser;
     pm_parser_init(&arena, &parser, source, size, &options);
 
-    pm_lex_callback_t lex_callback = (pm_lex_callback_t) {
-        .data = (void *) buffer,
-        .callback = serialize_token,
-    };
-
-    parser.lex_callback = &lex_callback;
+    pm_parser_lex_callback_set(&parser, serialize_token, buffer);
     pm_node_t *node = pm_parse(&parser);
 
     pm_buffer_append_byte(buffer, 0);
     pm_serialize(&parser, node, buffer);
 
-    pm_parser_free(&parser);
-    pm_arena_free(&arena);
-    pm_options_free(&options);
+    pm_parser_cleanup(&parser);
+    pm_arena_cleanup(&arena);
+    pm_options_cleanup(&options);
+}
+
+/**
+ * Parse the source and return true if it parses without errors or warnings.
+ */
+bool
+pm_serialize_parse_success_p(const uint8_t *source, size_t size, const char *data) {
+    pm_options_t options = { 0 };
+    pm_options_read(&options, data);
+
+    pm_arena_t arena = { 0 };
+    pm_parser_t parser;
+    pm_parser_init(&arena, &parser, source, size, &options);
+
+    pm_parse(&parser);
+
+    bool result = parser.error_list.size == 0;
+    pm_parser_cleanup(&parser);
+    pm_arena_cleanup(&arena);
+    pm_options_cleanup(&options);
+
+    return result;
 }
 
 #endif

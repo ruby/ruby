@@ -1,13 +1,14 @@
 //! High-level intermediate representation types.
 
 #![allow(non_upper_case_globals)]
-use crate::cruby::{rb_block_param_proxy, Qfalse, Qnil, Qtrue, RUBY_T_ARRAY, RUBY_T_CLASS, RUBY_T_HASH, RUBY_T_MODULE, RUBY_T_STRING, VALUE};
-use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cRange, rb_cModule, rb_zjit_singleton_class_p};
+use crate::cruby;
+use crate::cruby::{rb_block_param_proxy, Qfalse, Qnil, Qtrue, RUBY_T_ARRAY, RUBY_T_HASH, RUBY_T_STRING, VALUE};
+use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cRange, rb_zjit_singleton_class_p};
 use crate::cruby::ClassRelationship;
 use crate::cruby::get_class_name;
+use crate::cruby::get_module_name;
 use crate::cruby::ruby_sym_to_rust_string;
 use crate::cruby::rb_mRubyVMFrozenCore;
-use crate::cruby::rb_obj_class;
 use crate::hir::{Const, PtrPrintMap};
 use crate::profile::ProfiledType;
 
@@ -79,6 +80,14 @@ fn write_spec(f: &mut std::fmt::Formatter, printer: &TypePrinter) -> std::fmt::R
         Specialization::Object(val) if ty.is_subtype(types::Symbol) => write!(f, "[:{}]", ruby_sym_to_rust_string(val)),
         Specialization::Object(val) if ty.is_subtype(types::Class) =>
             write!(f, "[{}@{:p}]", get_class_name(val), printer.ptr_map.map_ptr(val.0 as *const std::ffi::c_void)),
+        Specialization::Object(val) if ty.is_subtype(types::Module) => {
+            if let Some(name) = get_module_name(val) {
+                write!(f, "[{}@{:p}]", name, printer.ptr_map.map_ptr(val.0 as *const std::ffi::c_void))
+            } else {
+                // Same as generic Specialization::Object
+                write!(f, "[{}]", val.print(printer.ptr_map))
+            }
+        }
         Specialization::Object(val) => write!(f, "[{}]", val.print(printer.ptr_map)),
         // TODO(max): Ensure singleton classes never have Type specialization
         Specialization::Type(val) if unsafe { rb_zjit_singleton_class_p(val) } =>
@@ -98,7 +107,14 @@ fn write_spec(f: &mut std::fmt::Formatter, printer: &TypePrinter) -> std::fmt::R
         Specialization::Int(val) if ty.is_subtype(types::CUInt8) => write!(f, "[{}]", val & u8::MAX as u64),
         Specialization::Int(val) if ty.is_subtype(types::CUInt16) => write!(f, "[{}]", val & u16::MAX as u64),
         Specialization::Int(val) if ty.is_subtype(types::CUInt32) => write!(f, "[{}]", val & u32::MAX as u64),
-        Specialization::Int(val) if ty.is_subtype(types::CUInt64) => write!(f, "[{val}]"),
+        Specialization::Int(val) if ty.is_subtype(types::CUInt64) => {
+            // Print in hex if signed bit is set
+            if 0 != val & (1 << (u64::BITS - 1)) {
+                write!(f, "[0x{val:x}]")
+            } else {
+                write!(f, "[{val}]")
+            }
+        }
         Specialization::Int(val) if ty.is_subtype(types::CPtr) => write!(f, "[{}]", Const::CPtr(val as *const u8).print(printer.ptr_map)),
         Specialization::Int(val) => write!(f, "[{val}]"),
         Specialization::Double(val) => write!(f, "[{val}]"),
@@ -161,18 +177,6 @@ fn is_range_exact(val: VALUE) -> bool {
     val.class_of() == unsafe { rb_cRange }
 }
 
-fn is_module_exact(val: VALUE) -> bool {
-    if val.builtin_type() != RUBY_T_MODULE {
-        return false;
-    }
-
-    // For Class and Module instances, `class_of` will return the singleton class of the object.
-    // Using `rb_obj_class` will give us the actual class of the module so we can check if the
-    // object is an instance of Module, or an instance of Module subclass.
-    let klass = unsafe { rb_obj_class(val) };
-    klass == unsafe { rb_cModule }
-}
-
 impl Type {
     /// Create a `Type` from the given integer.
     pub const fn fixnum(val: i64) -> Type {
@@ -204,15 +208,13 @@ impl Type {
             if is_array_exact(val) { bits::ArrayExact }
             else if is_hash_exact(val) { bits::HashExact }
             else if is_string_exact(val) { bits::StringExact }
-            // Singleton classes
-            else if is_module_exact(val) { bits::ModuleExact }
-            else if val.builtin_type() == RUBY_T_CLASS { bits::Class }
             // Classes that have an immediate/heap split
             else if val.class_of() == unsafe { rb_cInteger } { bits::Bignum }
             else if val.class_of() == unsafe { rb_cFloat } { bits::HeapFloat }
             else if val.class_of() == unsafe { rb_cSymbol } { bits::DynamicSymbol }
             else if let Some(bits) = Self::bits_from_exact_class(val.class_of()) { bits }
             else if let Some(bits) = Self::bits_from_subclass(val.class_of()) { bits }
+            else if val.data_p() { bits::TData }
             else {
                 unreachable!("Class {} is not a subclass of BasicObject! Don't know what to do.",
                              get_class_name(val.class_of()))
@@ -260,6 +262,7 @@ impl Type {
             Const::CUInt8(v) => Self::from_cint(types::CUInt8, v as i64),
             Const::CUInt16(v) => Self::from_cint(types::CUInt16, v as i64),
             Const::CUInt32(v) => Self::from_cint(types::CUInt32, v as i64),
+            Const::CAttrIndex(v) => Self::from_cint(types::CAttrIndex, v as i64),
             Const::CShape(v) => Self::from_cint(types::CShape, v.0 as i64),
             Const::CUInt64(v) => Self::from_cint(types::CUInt64, v as i64),
             Const::CPtr(v) => Self::from_cptr(v),
@@ -411,9 +414,41 @@ impl Type {
         }
     }
 
+    fn int_spec_signed(&self) -> Option<i64> {
+        assert!(self.is_subtype(types::CSigned), "int_spec_signed() only makes sense for signed integer types");
+        match self.spec {
+            Specialization::Int(val) => Some(val as i64),
+            _ => None,
+        }
+    }
+
+    pub fn known_nonnegative(&self) -> bool {
+        assert!(self.is_subtype(types::CSigned), "nonnegative() only makes sense for signed integer types");
+        self.int_spec_signed().map_or(false, |val| val >= 0)
+    }
+
     /// Return true if the Type has object specialization and false otherwise.
     pub fn ruby_object_known(&self) -> bool {
         matches!(self.spec, Specialization::Object(_))
+    }
+
+    /// Find a `T_*` type that is exactly as wide as `self`.
+    pub fn builtin_type_equivalent(&self) -> Option<cruby::ruby_value_type> {
+        if self.bit_equal(types::Array) {
+            Some(cruby::RUBY_T_ARRAY)
+        } else if self.bit_equal(types::Class) {
+            Some(cruby::RUBY_T_CLASS)
+        } else if self.bit_equal(types::Module) {
+            Some(cruby::RUBY_T_MODULE)
+        } else if self.bit_equal(types::String) {
+            Some(cruby::RUBY_T_STRING)
+        } else if self.bit_equal(types::Hash) {
+            Some(cruby::RUBY_T_HASH)
+        } else if self.bit_equal(types::TData) {
+            Some(cruby::RUBY_T_DATA)
+        } else {
+            None
+        }
     }
 
     fn is_builtin(class: VALUE) -> bool {
@@ -848,7 +883,7 @@ mod tests {
         assert_eq!(format!("{}", Type::from_cint(types::CInt32, -1)), "CInt32[-1]");
         assert_eq!(format!("{}", Type::from_cint(types::CUInt32, -1)), "CUInt32[4294967295]");
         assert_eq!(format!("{}", Type::from_cint(types::CInt64, -1)), "CInt64[-1]");
-        assert_eq!(format!("{}", Type::from_cint(types::CUInt64, -1)), "CUInt64[18446744073709551615]");
+        assert_eq!(format!("{}", Type::from_cint(types::CUInt64, -1)), "CUInt64[0xffffffffffffffff]");
         assert_eq!(format!("{}", Type::from_cbool(true)), "CBool[true]");
         assert_eq!(format!("{}", Type::from_cbool(false)), "CBool[false]");
         assert_eq!(format!("{}", types::Fixnum), "Fixnum");

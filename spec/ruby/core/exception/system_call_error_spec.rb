@@ -14,8 +14,8 @@ describe "SystemCallError" do
     end
 
     exc = ExceptionSpecs::SCESub.new
-    ScratchPad.recorded.should equal(:initialize)
-    exc.should be_an_instance_of(ExceptionSpecs::SCESub)
+    ScratchPad.recorded.should.equal?(:initialize)
+    exc.should.instance_of?(ExceptionSpecs::SCESub)
   ensure
     ExceptionSpecs.send(:remove_const, :SCESub)
   end
@@ -31,7 +31,7 @@ describe "SystemCallError.new" do
   end
 
   it "requires at least one argument" do
-    -> { SystemCallError.new }.should raise_error(ArgumentError)
+    -> { SystemCallError.new }.should.raise(ArgumentError)
   end
 
   it "accepts single Integer argument as errno" do
@@ -44,16 +44,16 @@ describe "SystemCallError.new" do
   end
 
   it "constructs a SystemCallError for an unknown error number" do
-    SystemCallError.new(-2**24).should be_an_instance_of(SystemCallError)
-    SystemCallError.new(-1).should be_an_instance_of(SystemCallError)
-    SystemCallError.new(@unknown_errno).should be_an_instance_of(SystemCallError)
-    SystemCallError.new(2**24).should be_an_instance_of(SystemCallError)
+    SystemCallError.new(-2**24).should.instance_of?(SystemCallError)
+    SystemCallError.new(-1).should.instance_of?(SystemCallError)
+    SystemCallError.new(@unknown_errno).should.instance_of?(SystemCallError)
+    SystemCallError.new(2**24).should.instance_of?(SystemCallError)
   end
 
   it "constructs the appropriate Errno class" do
     e = SystemCallError.new(@example_errno)
-    e.should be_kind_of(SystemCallError)
-    e.should be_an_instance_of(@example_errno_class)
+    e.should.is_a?(SystemCallError)
+    e.should.instance_of?(@example_errno_class)
   end
 
   it "sets an error message corresponding to an appropriate Errno class" do
@@ -63,14 +63,14 @@ describe "SystemCallError.new" do
 
   it "accepts an optional custom message preceding the errno" do
     exc = SystemCallError.new("custom message", @example_errno)
-    exc.should be_an_instance_of(@example_errno_class)
+    exc.should.instance_of?(@example_errno_class)
     exc.errno.should == @example_errno
     exc.message.should == 'Invalid argument - custom message'
   end
 
   it "accepts an optional third argument specifying the location" do
     exc = SystemCallError.new("custom message", @example_errno, "location")
-    exc.should be_an_instance_of(@example_errno_class)
+    exc.should.instance_of?(@example_errno_class)
     exc.errno.should == @example_errno
     exc.message.should == 'Invalid argument @ location - custom message'
   end
@@ -90,7 +90,7 @@ describe "SystemCallError.new" do
   end
 
   it "treats nil errno as unknown error value" do
-    SystemCallError.new(nil).should be_an_instance_of(SystemCallError)
+    SystemCallError.new(nil).should.instance_of?(SystemCallError)
   end
 
   it "treats nil custom message as if it is not passed at all" do
@@ -111,15 +111,15 @@ describe "SystemCallError.new" do
   end
 
   it "raises TypeError if message is not a String" do
-    -> { SystemCallError.new(:foo, 1) }.should raise_error(TypeError, /no implicit conversion of Symbol into String/)
+    -> { SystemCallError.new(:foo, 1) }.should.raise(TypeError, /no implicit conversion of Symbol into String/)
   end
 
   it "raises TypeError if errno is not an Integer" do
-    -> { SystemCallError.new('foo', 'bar') }.should raise_error(TypeError, /no implicit conversion of String into Integer/)
+    -> { SystemCallError.new('foo', 'bar') }.should.raise(TypeError, /no implicit conversion of String into Integer/)
   end
 
   it "raises RangeError if errno is a Complex not convertible to Integer" do
-    -> { SystemCallError.new('foo', Complex(2.9, 1)) }.should raise_error(RangeError, /can't convert/)
+    -> { SystemCallError.new('foo', Complex(2.9, 1)) }.should.raise(RangeError, /can't convert/)
   end
 end
 

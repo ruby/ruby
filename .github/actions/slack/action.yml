@@ -35,7 +35,7 @@ runs:
   using: composite
 
   steps:
-    - uses: ruby/action-slack@54175162371f1f7c8eb94d7c8644ee2479fcd375 # v3.2.2
+    - uses: ruby/action-slack@d260b61aa817726d5bedd22dd6cc305787fa4cdd # v4.0.0
       with:
         payload: |
           {

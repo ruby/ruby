@@ -38,7 +38,7 @@ describe "Math.lgamma" do
   end
 
   it "raises Math::DomainError when passed -Infinity" do
-    -> { Math.lgamma(-infinity_value) }.should raise_error(Math::DomainError)
+    -> { Math.lgamma(-infinity_value) }.should.raise(Math::DomainError)
   end
 
   it "returns [Infinity, 1] when passed Infinity" do

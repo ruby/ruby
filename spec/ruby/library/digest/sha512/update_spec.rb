@@ -1,7 +1,8 @@
 require_relative '../../../spec_helper'
-require_relative 'shared/constants'
-require_relative 'shared/update'
+require 'digest'
 
 describe "Digest::SHA512#update" do
-  it_behaves_like :sha512_update, :update
+  it "is an alias of Digest::SHA512#<<" do
+    Digest::SHA512.instance_method(:update).should == Digest::SHA512.instance_method(:<<)
+  end
 end

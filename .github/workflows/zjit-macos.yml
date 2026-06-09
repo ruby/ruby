@@ -55,20 +55,21 @@ jobs:
       RUN_OPTS: ${{ matrix.run_opts }}
       SPECOPTS: ${{ matrix.specopts }}
       TESTOPTS: ${{ matrix.testopts }}
+      RUST_BACKTRACE: 1
       ZJIT_RB_BUG: 1
 
-    runs-on: macos-14
+    runs-on: macos-26
 
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
-      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
+      || (github.event.pull_request.user.login == 'dependabot[bot]' && !startsWith(github.head_ref, 'dependabot/cargo'))
       )}}
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -92,7 +93,7 @@ jobs:
           rustup install ${{ matrix.rust_version }} --profile minimal
           rustup default ${{ matrix.rust_version }}
 
-      - uses: taiki-e/install-action@5ab5d1729c22acd8f798b267eadcfe5e5be6f5c2 # v2.68.27
+      - uses: taiki-e/install-action@0631aa6515c7d545823c67cfae7ef4fc7f490154 # v2.81.8
         with:
           tool: nextest@0.9
         if: ${{ matrix.test_task == 'zjit-check' }}
@@ -113,8 +114,24 @@ jobs:
         run: |
           echo "RUBY_CRASH_REPORT=$(pwd)/rb_crash_%p.txt" >> $GITHUB_ENV
 
+      - name: Set up Launchable
+        id: launchable
+        uses: ./.github/actions/launchable/setup
+        with:
+          os: macos-26
+          test-opts: ${{ matrix.configure }}
+          launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
+          builddir: build
+          srcdir: src
+          is-zjit: true
+        continue-on-error: true
+        timeout-minutes: 3
+
       - name: make ${{ matrix.test_task }}
         run: |
+          test -n "${LAUNCHABLE_STDOUT}" && exec 1> >(tee "${LAUNCHABLE_STDOUT}")
+          test -n "${LAUNCHABLE_STDERR}" && exec 2> >(tee "${LAUNCHABLE_STDERR}")
+
           set -x
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"} \
             RUN_OPTS="$RUN_OPTS" \
@@ -125,8 +142,10 @@ jobs:
           RUBY_TESTOPTS: '-q --tty=no'
           EXCLUDES: '../src/test/.excludes-zjit'
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
-          SYNTAX_SUGGEST_TIMEOUT: '5'
+          SYNTAX_SUGGEST_TIMEOUT: '30'
           PRECHECK_BUNDLED_GEMS: 'no'
+          LAUNCHABLE_STDOUT: ${{ steps.launchable.outputs.stdout_report_path }}
+          LAUNCHABLE_STDERR: ${{ steps.launchable.outputs.stderr_report_path }}
         continue-on-error: ${{ matrix.continue-on-test_task || false }}
 
       - name: Dump crash logs
@@ -145,7 +164,7 @@ jobs:
   result:
     if: ${{ always() }}
     name: ${{ github.workflow }} result
-    runs-on: macos-14
+    runs-on: ubuntu-latest
     needs: [make]
     steps:
       - run: exit 1
@@ -162,18 +181,18 @@ jobs:
             bench_opts: '--warmup=1 --bench=1 --excludes=shipit'
             configure: '--enable-zjit=dev_nodebug' # --enable-zjit=dev is too slow
 
-    runs-on: macos-14
+    runs-on: macos-26
 
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
-      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
+      || (github.event.pull_request.user.login == 'dependabot[bot]' && !startsWith(github.head_ref, 'dependabot/cargo'))
       )}}
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
 
@@ -195,7 +214,7 @@ jobs:
         run: echo "MAKEFLAGS=" >> "$GITHUB_ENV"
 
       - name: Checkout ruby-bench
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
           repository: ruby/ruby-bench
@@ -206,6 +225,8 @@ jobs:
       - name: Run ruby-bench
         run: ruby run_benchmarks.rb -e "zjit::../build/install/bin/ruby ${{ matrix.ruby_opts }}" ${{ matrix.bench_opts }}
         working-directory: ruby-bench
+        env:
+          BUNDLER_VERSION: 0
 
       - uses: ./.github/actions/slack
         with:

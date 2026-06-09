@@ -73,7 +73,7 @@ RSpec.describe "bundle fund" do
   end
 
   it "considers fund information for installed optional dependencies" do
-    bundle "config set with whatever"
+    bundle_config "with whatever"
 
     install_gemfile <<-G
       source "https://gem.repo2"

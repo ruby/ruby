@@ -6,7 +6,7 @@ describe "MatchData#inspect" do
   end
 
   it "returns a String" do
-    @match_data.inspect.should be_kind_of(String)
+    @match_data.inspect.should.is_a?(String)
   end
 
   it "returns a human readable representation that contains entire matched string and the captures" do

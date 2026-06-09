@@ -1,0 +1,15 @@
+prelude: |
+  abs = Pathname("/a")
+  rel = Pathname("a")
+  p1 = Pathname.new('foo/././././bar')
+  p2 = Pathname.new('foo/bar/./../..')
+  p3 = Pathname.new('foo/bar/zot')
+benchmark:
+  p1+p2: p1+p2
+  abs.root?: abs.root?
+  rel.root?: rel.root?
+  abs.absolute?: abs.absolute?
+  rel.absolute?: rel.absolute?
+  p1.cleanpath: p1.cleanpath
+  p2.cleanpath: p2.cleanpath
+  relative_path_from: p3.relative_path_from('foo/bar/qux/quax')

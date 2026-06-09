@@ -19,6 +19,9 @@ on:
         description: 'Gem commit SHA after sync'
         type: string
 
+permissions:
+  contents: read
+
 jobs:
   sync_default_gems:
     name: Sync default gem ${{ github.event.inputs.gem }}
@@ -31,12 +34,12 @@ jobs:
     if: ${{ github.repository == 'ruby/ruby' }}
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2 # zizmor: ignore[artipacked]
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         name: Check out ruby/ruby
         with:
           token: ${{ github.repository == 'ruby/ruby' && secrets.MATZBOT_AUTO_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
 
-      - uses: ruby/setup-ruby@4eb9f110bac952a8b68ecf92e3b5c7a987594ba6 # v1.292.0
+      - uses: ruby/setup-ruby@12fd324f1d0b43274fdc8130f6980590a667c455 # v1.312.0
         with:
           ruby-version: '3.4'
           bundler: none

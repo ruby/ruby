@@ -163,6 +163,8 @@ module Bundler
       # @param [Pathname] index file path
       # @param [Boolean] is the index file global index
       def load_index(index_file, global = false)
+        base = base_for_index(global)
+
         SharedHelpers.filesystem_access(index_file, :read) do |index_f|
           valid_file = index_f&.exist? && !index_f.size.zero?
           break unless valid_file
@@ -174,8 +176,8 @@ module Bundler
 
           @commands.merge!(index["commands"])
           @hooks.merge!(index["hooks"])
-          @load_paths.merge!(index["load_paths"])
-          @plugin_paths.merge!(index["plugin_paths"])
+          @load_paths.merge!(transform_index_paths(index["load_paths"]) {|p| absolutize_path(p, base) })
+          @plugin_paths.merge!(transform_index_paths(index["plugin_paths"]) {|p| absolutize_path(p, base) })
           @sources.merge!(index["sources"]) unless global
         end
       end
@@ -184,11 +186,13 @@ module Bundler
       # instance variables in YAML format. (The instance variables are supposed
       # to be only String key value pairs)
       def save_index
+        base = base_for_index(false)
+
         index = {
           "commands" => @commands,
           "hooks" => @hooks,
-          "load_paths" => @load_paths,
-          "plugin_paths" => @plugin_paths,
+          "load_paths" => transform_index_paths(@load_paths) {|p| relativize_path(p, base) },
+          "plugin_paths" => transform_index_paths(@plugin_paths) {|p| relativize_path(p, base) },
           "sources" => @sources,
         }
 
@@ -197,6 +201,40 @@ module Bundler
           FileUtils.mkdir_p(index_f.dirname)
           File.open(index_f, "w") {|f| f.puts YAMLSerializer.dump(index) }
         end
+      end
+
+      def base_for_index(global)
+        global ? Plugin.global_root : Plugin.root
+      end
+
+      def transform_index_paths(paths)
+        return {} unless paths
+
+        paths.transform_values do |value|
+          if value.is_a?(Array)
+            value.map {|path| yield path }
+          else
+            yield value
+          end
+        end
+      end
+
+      def relativize_path(path, base)
+        pathname = Pathname.new(path)
+        return path unless pathname.absolute?
+
+        base_path = Pathname.new(base)
+        if pathname == base_path || pathname.to_s.start_with?(base_path.to_s + File::SEPARATOR)
+          pathname.relative_path_from(base_path).to_s
+        else
+          path
+        end
+      end
+
+      def absolutize_path(path, base)
+        pathname = Pathname.new(path)
+        pathname = Pathname.new(base).join(pathname) unless pathname.absolute?
+        pathname.to_s
       end
     end
   end

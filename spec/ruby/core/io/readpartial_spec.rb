@@ -15,10 +15,10 @@ describe "IO#readpartial" do
   end
 
   it "raises IOError on closed stream" do
-    -> { IOSpecs.closed_io.readpartial(10) }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.readpartial(10) }.should.raise(IOError)
 
     @rd.close
-    -> { @rd.readpartial(10) }.should raise_error(IOError)
+    -> { @rd.readpartial(10) }.should.raise(IOError)
   end
 
   it "reads at most the specified number of bytes" do
@@ -70,23 +70,23 @@ describe "IO#readpartial" do
     @wr.write("abc")
     @wr.close
     @rd.readpartial(10).should == 'abc'
-    -> { @rd.readpartial(10) }.should raise_error(EOFError)
+    -> { @rd.readpartial(10) }.should.raise(EOFError)
   end
 
   it "discards the existing buffer content upon error" do
     buffer = +'hello'
     @wr.close
-    -> { @rd.readpartial(1, buffer) }.should raise_error(EOFError)
-    buffer.should be_empty
+    -> { @rd.readpartial(1, buffer) }.should.raise(EOFError)
+    buffer.should.empty?
   end
 
   it "raises IOError if the stream is closed" do
     @wr.close
-    -> { @rd.readpartial(1) }.should raise_error(IOError)
+    -> { @rd.readpartial(1) }.should.raise(IOError)
   end
 
   it "raises ArgumentError if the negative argument is provided" do
-    -> { @rd.readpartial(-1) }.should raise_error(ArgumentError)
+    -> { @rd.readpartial(-1) }.should.raise(ArgumentError)
   end
 
   it "immediately returns an empty string if the length argument is 0" do
@@ -95,7 +95,7 @@ describe "IO#readpartial" do
 
   it "raises IOError if the stream is closed and the length argument is 0" do
     @rd.close
-    -> { @rd.readpartial(0) }.should raise_error(IOError, "closed stream")
+    -> { @rd.readpartial(0) }.should.raise(IOError, "closed stream")
   end
 
   it "clears and returns the given buffer if the length argument is 0" do

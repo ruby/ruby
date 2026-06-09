@@ -4,12 +4,12 @@ require_relative 'fixtures/classes'
 describe "Array#concat" do
   it "returns the array itself" do
     ary = [1,2,3]
-    ary.concat([4,5,6]).equal?(ary).should be_true
+    ary.concat([4,5,6]).equal?(ary).should == true
   end
 
   it "appends the elements in the other array" do
     ary = [1, 2, 3]
-    ary.concat([9, 10, 11]).should equal(ary)
+    ary.concat([9, 10, 11]).should.equal?(ary)
     ary.should == [1, 2, 3, 9, 10, 11]
     ary.concat([])
     ary.should == [1, 2, 3, 9, 10, 11]
@@ -33,12 +33,12 @@ describe "Array#concat" do
   end
 
   it "raises a FrozenError when Array is frozen and modification occurs" do
-    -> { ArraySpecs.frozen_array.concat [1] }.should raise_error(FrozenError)
+    -> { ArraySpecs.frozen_array.concat [1] }.should.raise(FrozenError)
   end
 
   # see [ruby-core:23666]
   it "raises a FrozenError when Array is frozen and no modification occurs" do
-    -> { ArraySpecs.frozen_array.concat([]) }.should raise_error(FrozenError)
+    -> { ArraySpecs.frozen_array.concat([]) }.should.raise(FrozenError)
   end
 
   it "appends elements to an Array with enough capacity that has been shifted" do
@@ -68,7 +68,7 @@ describe "Array#concat" do
 
   it "returns self when given no arguments" do
     ary = [1, 2]
-    ary.concat.should equal(ary)
+    ary.concat.should.equal?(ary)
     ary.should == [1, 2]
   end
 end

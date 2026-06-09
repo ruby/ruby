@@ -2,20 +2,20 @@ require_relative '../../spec_helper'
 
 describe "Integer#chr without argument" do
   it "returns a String" do
-    17.chr.should be_an_instance_of(String)
+    17.chr.should.instance_of?(String)
   end
 
   it "returns a new String for each call" do
-    82.chr.should_not equal(82.chr)
+    82.chr.should_not.equal?(82.chr)
   end
 
   it "raises a RangeError is self is less than 0" do
-    -> { -1.chr }.should raise_error(RangeError, /-1 out of char range/)
-    -> { (-bignum_value).chr }.should raise_error(RangeError, /bignum out of char range/)
+    -> { -1.chr }.should.raise(RangeError, /-1 out of char range/)
+    -> { (-bignum_value).chr }.should.raise(RangeError, /bignum out of char range/)
   end
 
   it "raises a RangeError if self is too large" do
-    -> { 2206368128.chr(Encoding::UTF_8) }.should raise_error(RangeError, /2206368128 out of char range/)
+    -> { 2206368128.chr(Encoding::UTF_8) }.should.raise(RangeError, /2206368128 out of char range/)
   end
 
   describe "when Encoding.default_internal is nil" do
@@ -48,8 +48,8 @@ describe "Integer#chr without argument" do
     end
 
     it "raises a RangeError is self is greater than 255" do
-      -> { 256.chr }.should raise_error(RangeError, /256 out of char range/)
-      -> { bignum_value.chr }.should raise_error(RangeError, /bignum out of char range/)
+      -> { 256.chr }.should.raise(RangeError, /256 out of char range/)
+      -> { bignum_value.chr }.should.raise(RangeError, /bignum out of char range/)
     end
   end
 
@@ -137,7 +137,7 @@ describe "Integer#chr without argument" do
           [620,    "TIS-620"]
         ].each do |integer, encoding_name|
           Encoding.default_internal = Encoding.find(encoding_name)
-          -> { integer.chr }.should raise_error(RangeError, /(invalid codepoint|out of char range)/)
+          -> { integer.chr }.should.raise(RangeError, /(invalid codepoint|out of char range)/)
         end
       end
     end
@@ -146,15 +146,15 @@ end
 
 describe "Integer#chr with an encoding argument" do
   it "returns a String" do
-    900.chr(Encoding::UTF_8).should be_an_instance_of(String)
+    900.chr(Encoding::UTF_8).should.instance_of?(String)
   end
 
   it "returns a new String for each call" do
-    8287.chr(Encoding::UTF_8).should_not equal(8287.chr(Encoding::UTF_8))
+    8287.chr(Encoding::UTF_8).should_not.equal?(8287.chr(Encoding::UTF_8))
   end
 
   it "accepts a String as an argument" do
-    -> { 0xA4A2.chr('euc-jp') }.should_not raise_error
+    -> { 0xA4A2.chr('euc-jp') }.should_not.raise
   end
 
   it "converts a String to an Encoding as Encoding.find does" do
@@ -165,12 +165,12 @@ describe "Integer#chr with an encoding argument" do
 
   # http://redmine.ruby-lang.org/issues/4869
   it "raises a RangeError is self is less than 0" do
-    -> { -1.chr(Encoding::UTF_8) }.should raise_error(RangeError, /-1 out of char range/)
-    -> { (-bignum_value).chr(Encoding::EUC_JP) }.should raise_error(RangeError, /bignum out of char range/)
+    -> { -1.chr(Encoding::UTF_8) }.should.raise(RangeError, /-1 out of char range/)
+    -> { (-bignum_value).chr(Encoding::EUC_JP) }.should.raise(RangeError, /bignum out of char range/)
   end
 
   it "raises a RangeError if self is too large" do
-    -> { 2206368128.chr(Encoding::UTF_8) }.should raise_error(RangeError, /2206368128 out of char range/)
+    -> { 2206368128.chr(Encoding::UTF_8) }.should.raise(RangeError, /2206368128 out of char range/)
   end
 
   it "returns a String with the specified encoding" do
@@ -223,25 +223,25 @@ describe "Integer#chr with an encoding argument" do
 
   # #5864
   it "raises RangeError if self is invalid as a codepoint in the specified encoding" do
-    -> { 0x80.chr("US-ASCII") }.should raise_error(RangeError)
-    -> { 0x0100.chr("BINARY") }.should raise_error(RangeError)
-    -> { 0x0100.chr("EUC-JP") }.should raise_error(RangeError)
-    -> { 0xA1A0.chr("EUC-JP") }.should raise_error(RangeError)
-    -> { 0xA1.chr("EUC-JP") }.should raise_error(RangeError)
-    -> { 0x80.chr("SHIFT_JIS") }.should raise_error(RangeError)
-    -> { 0xE0.chr("SHIFT_JIS") }.should raise_error(RangeError)
-    -> { 0x0100.chr("ISO-8859-9") }.should raise_error(RangeError)
-    -> { 620.chr("TIS-620") }.should raise_error(RangeError)
+    -> { 0x80.chr("US-ASCII") }.should.raise(RangeError)
+    -> { 0x0100.chr("BINARY") }.should.raise(RangeError)
+    -> { 0x0100.chr("EUC-JP") }.should.raise(RangeError)
+    -> { 0xA1A0.chr("EUC-JP") }.should.raise(RangeError)
+    -> { 0xA1.chr("EUC-JP") }.should.raise(RangeError)
+    -> { 0x80.chr("SHIFT_JIS") }.should.raise(RangeError)
+    -> { 0xE0.chr("SHIFT_JIS") }.should.raise(RangeError)
+    -> { 0x0100.chr("ISO-8859-9") }.should.raise(RangeError)
+    -> { 620.chr("TIS-620") }.should.raise(RangeError)
     # UTF-16 surrogate range
-    -> { 0xD800.chr("UTF-8") }.should raise_error(RangeError)
-    -> { 0xDBFF.chr("UTF-8") }.should raise_error(RangeError)
-    -> { 0xDC00.chr("UTF-8") }.should raise_error(RangeError)
-    -> { 0xDFFF.chr("UTF-8") }.should raise_error(RangeError)
+    -> { 0xD800.chr("UTF-8") }.should.raise(RangeError)
+    -> { 0xDBFF.chr("UTF-8") }.should.raise(RangeError)
+    -> { 0xDC00.chr("UTF-8") }.should.raise(RangeError)
+    -> { 0xDFFF.chr("UTF-8") }.should.raise(RangeError)
     # UTF-16 surrogate range
-    -> { 0xD800.chr("UTF-16") }.should raise_error(RangeError)
-    -> { 0xDBFF.chr("UTF-16") }.should raise_error(RangeError)
-    -> { 0xDC00.chr("UTF-16") }.should raise_error(RangeError)
-    -> { 0xDFFF.chr("UTF-16") }.should raise_error(RangeError)
+    -> { 0xD800.chr("UTF-16") }.should.raise(RangeError)
+    -> { 0xDBFF.chr("UTF-16") }.should.raise(RangeError)
+    -> { 0xDC00.chr("UTF-16") }.should.raise(RangeError)
+    -> { 0xDFFF.chr("UTF-16") }.should.raise(RangeError)
   end
 
   it 'returns a String encoding self interpreted as a codepoint in the CESU-8 encoding' do

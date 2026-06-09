@@ -36,6 +36,6 @@ describe "Array#delete_at" do
   end
 
   it "raises a FrozenError on a frozen array" do
-    -> { [1,2,3].freeze.delete_at(0) }.should raise_error(FrozenError)
+    -> { [1,2,3].freeze.delete_at(0) }.should.raise(FrozenError)
   end
 end

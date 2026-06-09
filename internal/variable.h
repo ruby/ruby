@@ -29,6 +29,7 @@ rb_gvar_setter_t *rb_gvar_setter_function_of(ID);
 void rb_gvar_readonly_setter(VALUE v, ID id, VALUE *_);
 void rb_gvar_ractor_local(const char *name);
 void rb_gvar_box_ready(const char *name);
+void rb_gvar_box_dynamic(const char *name);
 
 /**
  * Sets the name of a module.
@@ -47,10 +48,11 @@ void rb_gvar_box_ready(const char *name);
 VALUE rb_mod_set_temporary_name(VALUE, VALUE);
 
 void rb_obj_copy_ivs_to_hash_table(VALUE obj, st_table *table);
-void rb_obj_init_too_complex(VALUE obj, st_table *table);
+void rb_obj_init_complex(VALUE obj, st_table *table);
 void rb_evict_ivars_to_hash(VALUE obj);
 VALUE rb_obj_field_get(VALUE obj, shape_id_t target_shape_id);
 void rb_ivar_set_internal(VALUE obj, ID id, VALUE val);
+void rb_ivar_foreach_buffered(VALUE obj, int (*func)(ID name, VALUE val, st_data_t arg), st_data_t arg);
 attr_index_t rb_ivar_set_index(VALUE obj, ID id, VALUE val);
 attr_index_t rb_obj_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE val);
 VALUE rb_ivar_get_at(VALUE obj, attr_index_t index, ID id);

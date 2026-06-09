@@ -729,8 +729,8 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
         VALUE realpath_map = box->loaded_features_realpath_map;
 
         if (rb_ruby_prism_p()) {
-            pm_parse_result_t result = { 0 };
-            result.options.line = 1;
+            pm_parse_result_t result;
+            pm_parse_result_init(&result);
             result.node.coverage_enabled = 1;
 
             VALUE error = pm_load_parse_file(&result, fname, NULL);
@@ -875,8 +875,8 @@ rb_load_protect(VALUE fname, int wrap, int *pstate)
     if (state != TAG_NONE) *pstate = state;
 }
 
-static VALUE
-load_entrypoint_internal(VALUE fname, VALUE wrap)
+VALUE
+rb_load_entrypoint(VALUE fname, VALUE wrap)
 {
     VALUE path, orig_fname;
 
@@ -895,18 +895,6 @@ load_entrypoint_internal(VALUE fname, VALUE wrap)
     RUBY_DTRACE_HOOK(LOAD_RETURN, RSTRING_PTR(orig_fname));
 
     return Qtrue;
-}
-
-VALUE
-rb_load_entrypoint(VALUE args)
-{
-    VALUE fname, wrap;
-    if (RARRAY_LEN(args) != 2) {
-        rb_bug("invalid arguments: %ld", RARRAY_LEN(args));
-    }
-    fname = rb_ary_entry(args, 0);
-    wrap = rb_ary_entry(args, 1);
-    return load_entrypoint_internal(fname, wrap);
 }
 
 /*
@@ -944,7 +932,7 @@ rb_f_load(int argc, VALUE *argv, VALUE _)
 {
     VALUE fname, wrap;
     rb_scan_args(argc, argv, "11", &fname, &wrap);
-    return load_entrypoint_internal(fname, wrap);
+    return rb_load_entrypoint(fname, wrap);
 }
 
 static char *
@@ -1139,7 +1127,7 @@ search_required(const rb_box_t *box, VALUE fname, volatile VALUE *path, feature_
     // not already a feature and not found as a dynamic library.
     if (!ft && type != loadable_ext_rb) {
         rb_vm_t *vm = GET_VM();
-        if (vm->static_ext_inits) {
+        if (vm->static_ext_inits.num_entries) {
             VALUE lookup_name = tmp;
             // Append ".so" if not already present so for example "etc" can find "etc.so".
             // We always register statically linked extensions with a ".so" extension.
@@ -1149,7 +1137,7 @@ search_required(const rb_box_t *box, VALUE fname, volatile VALUE *path, feature_
                 rb_str_cat_cstr(lookup_name, ".so");
             }
             ftptr = RSTRING_PTR(lookup_name);
-            if (st_lookup(vm->static_ext_inits, (st_data_t)ftptr, NULL)) {
+            if (st_lookup(&vm->static_ext_inits, (st_data_t)ftptr, NULL)) {
                 *path = rb_filesystem_str_new_cstr(ftptr);
                 RB_GC_GUARD(lookup_name);
                 return 's';
@@ -1215,7 +1203,7 @@ run_static_ext_init(VALUE vm_ptr, VALUE feature_value)
     st_data_t key = (st_data_t)feature;
     st_data_t init_func;
 
-    if (vm->static_ext_inits && st_delete(vm->static_ext_inits, &key, &init_func)) {
+    if (st_delete(&vm->static_ext_inits, &key, &init_func)) {
         ((void (*)(void))init_func)();
         return Qtrue;
     }
@@ -1490,19 +1478,13 @@ register_init_ext(st_data_t *key, st_data_t *value, st_data_t init, int existing
 void
 ruby_init_ext(const char *name, void (*init)(void))
 {
-    st_table *inits_table;
     rb_vm_t *vm = GET_VM();
     const rb_box_t *box = rb_loading_box();
 
     if (feature_provided((rb_box_t *)box, name, 0))
         return;
 
-    inits_table = vm->static_ext_inits;
-    if (!inits_table) {
-        inits_table = st_init_strtable();
-        vm->static_ext_inits = inits_table;
-    }
-    st_update(inits_table, (st_data_t)name, register_init_ext, (st_data_t)init);
+    st_update(&vm->static_ext_inits, (st_data_t)name, register_init_ext, (st_data_t)init);
 }
 
 /*
@@ -1718,7 +1700,7 @@ rb_ext_resolve_symbol(const char* fname, const char* symbol)
     VALUE handle;
     VALUE resolved;
     VALUE path;
-    char *ext;
+    const char *ext;
     VALUE fname_str = rb_str_new_cstr(fname);
     const rb_box_t *box = rb_loading_box();
 

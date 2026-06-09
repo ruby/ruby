@@ -10,7 +10,7 @@ describe "Hash#compact" do
 
   it "returns new object that rejects pair has nil value" do
     ret = @hash.compact
-    ret.should_not equal(@hash)
+    ret.should_not.equal?(@hash)
     ret.should == @compact
   end
 
@@ -50,7 +50,7 @@ describe "Hash#compact!" do
   end
 
   it "returns self" do
-    @hash.compact!.should equal(@hash)
+    @hash.compact!.should.equal?(@hash)
   end
 
   it "rejects own pair has nil value" do
@@ -64,7 +64,7 @@ describe "Hash#compact!" do
     end
 
     it "returns nil" do
-      @hash.compact!.should be_nil
+      @hash.compact!.should == nil
     end
   end
 
@@ -74,7 +74,7 @@ describe "Hash#compact!" do
     end
 
     it "keeps pairs and raises a FrozenError" do
-      ->{ @hash.compact! }.should raise_error(FrozenError)
+      ->{ @hash.compact! }.should.raise(FrozenError)
       @hash.should == @initial_pairs
     end
   end

@@ -14,7 +14,7 @@ RSpec.describe "bundle version" do
       bundle "-v"
       expect(out).to eq(Bundler::VERSION.to_s)
 
-      bundle "config simulate_version 5"
+      bundle_config "simulate_version 5"
       bundle "-v"
       expect(out).to eq("#{Bundler::VERSION} (simulating Bundler 5)")
     end
@@ -25,7 +25,7 @@ RSpec.describe "bundle version" do
       bundle "--version"
       expect(out).to eq(Bundler::VERSION.to_s)
 
-      bundle "config simulate_version 5"
+      bundle_config "simulate_version 5"
       bundle "--version"
       expect(out).to eq("#{Bundler::VERSION} (simulating Bundler 5)")
     end
@@ -41,7 +41,7 @@ RSpec.describe "bundle version" do
         bundle "version"
         expect(out).to match(/\A4\.9\.9 \(2100-01-01 commit #{COMMIT_HASH}\)\z/)
 
-        bundle "config simulate_version 5"
+        bundle_config "simulate_version 5"
         bundle "version"
         expect(out).to match(/\A4\.9\.9 \(simulating Bundler 5\) \(2100-01-01 commit #{COMMIT_HASH}\)\z/)
       end
@@ -56,7 +56,7 @@ RSpec.describe "bundle version" do
         bundle "version"
         expect(out).to match(/\A4\.9\.9 \(20\d{2}-\d{2}-\d{2} commit #{COMMIT_HASH}\)\z/)
 
-        bundle "config simulate_version 5"
+        bundle_config "simulate_version 5"
         bundle "version"
         expect(out).to match(/\A4\.9\.9 \(simulating Bundler 5\) \(20\d{2}-\d{2}-\d{2} commit #{COMMIT_HASH}\)\z/)
       end

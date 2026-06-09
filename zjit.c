@@ -32,109 +32,26 @@ enum zjit_struct_offsets {
     ISEQ_BODY_OFFSET_PARAM = offsetof(struct rb_iseq_constant_body, param)
 };
 
-// For a given raw_sample (frame), set the hash with the caller's
-// name, file, and line number. Return the  hash with collected frame_info.
-static void
-rb_zjit_add_frame(VALUE hash, VALUE frame)
-{
-    VALUE frame_id = PTR2NUM(frame);
-
-    if (RTEST(rb_hash_aref(hash, frame_id))) {
-        return;
-    }
-    else {
-        VALUE frame_info = rb_hash_new();
-        // Full label for the frame
-        VALUE name = rb_profile_frame_full_label(frame);
-        // Absolute path of the frame from rb_iseq_realpath
-        VALUE file = rb_profile_frame_absolute_path(frame);
-        // Line number of the frame
-        VALUE line = rb_profile_frame_first_lineno(frame);
-
-        // If absolute path isn't available use the rb_iseq_path
-        if (NIL_P(file)) {
-            file = rb_profile_frame_path(frame);
-        }
-
-        rb_hash_aset(frame_info, ID2SYM(rb_intern("name")), name);
-        rb_hash_aset(frame_info, ID2SYM(rb_intern("file")), file);
-        rb_hash_aset(frame_info, ID2SYM(rb_intern("samples")), INT2NUM(0));
-        rb_hash_aset(frame_info, ID2SYM(rb_intern("total_samples")), INT2NUM(0));
-        rb_hash_aset(frame_info, ID2SYM(rb_intern("edges")), rb_hash_new());
-        rb_hash_aset(frame_info, ID2SYM(rb_intern("lines")), rb_hash_new());
-
-        if (line != INT2FIX(0)) {
-            rb_hash_aset(frame_info, ID2SYM(rb_intern("line")), line);
-        }
-
-       rb_hash_aset(hash, frame_id, frame_info);
-    }
-}
-
-// Parses the ZjitExitLocations raw_samples and line_samples collected by
-// rb_zjit_record_exit_stack and turns them into 3 hashes (raw, lines, and frames) to
-// be used by RubyVM::ZJIT.exit_locations. zjit_raw_samples represents the raw frames information
-// (without name, file, and line), and zjit_line_samples represents the line information
-// of the iseq caller.
-VALUE
-rb_zjit_exit_locations_dict(VALUE *zjit_raw_samples, int *zjit_line_samples, int samples_len)
-{
-    VALUE result = rb_hash_new();
-    VALUE raw_samples = rb_ary_new_capa(samples_len);
-    VALUE line_samples = rb_ary_new_capa(samples_len);
-    VALUE frames = rb_hash_new();
-    int idx = 0;
-
-    // While the index is less than samples_len, parse zjit_raw_samples and
-    // zjit_line_samples, then add casted values to raw_samples and line_samples array.
-    while (idx < samples_len) {
-        int num = (int)zjit_raw_samples[idx];
-        int line_num = (int)zjit_line_samples[idx];
-        idx++;
-
-        // + 1 as we append an additional sample for the insn
-        rb_ary_push(raw_samples, SIZET2NUM(num + 1));
-        rb_ary_push(line_samples, INT2NUM(line_num + 1));
-
-        // Loop through the length of samples_len and add data to the
-        // frames hash. Also push the current value onto the raw_samples
-        // and line_samples array respectively.
-        for (int o = 0; o < num; o++) {
-            rb_zjit_add_frame(frames, zjit_raw_samples[idx]);
-            rb_ary_push(raw_samples, SIZET2NUM(zjit_raw_samples[idx]));
-            rb_ary_push(line_samples, INT2NUM(zjit_line_samples[idx]));
-            idx++;
-        }
-
-        rb_ary_push(raw_samples, SIZET2NUM(zjit_raw_samples[idx]));
-        rb_ary_push(line_samples, INT2NUM(zjit_line_samples[idx]));
-        idx++;
-
-        rb_ary_push(raw_samples, SIZET2NUM(zjit_raw_samples[idx]));
-        rb_ary_push(line_samples, INT2NUM(zjit_line_samples[idx]));
-        idx++;
-    }
-
-    // Set add the raw_samples, line_samples, and frames to the results
-    // hash.
-    rb_hash_aset(result, ID2SYM(rb_intern("raw")), raw_samples);
-    rb_hash_aset(result, ID2SYM(rb_intern("lines")), line_samples);
-    rb_hash_aset(result, ID2SYM(rb_intern("frames")), frames);
-
-    return result;
-}
+// Special JITFrame used by all C method calls. We don't control the native
+// stack layout for C frames, so cfp->jit_return points at this static frame
+// via the ZJIT_JIT_RETURN_C_FRAME sentinel instead of a per-call allocation.
+const zjit_jit_frame_t rb_zjit_c_frame = (zjit_jit_frame_t) {
+    .pc = 0,
+    .iseq = 0,
+    .materialize_block_code = false,
+};
 
 void rb_zjit_profile_disable(const rb_iseq_t *iseq);
 
 void
-rb_zjit_compile_iseq(const rb_iseq_t *iseq, bool jit_exception)
+rb_zjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception)
 {
     RB_VM_LOCKING() {
         rb_vm_barrier();
 
         // Compile a block version starting at the current instruction
-        uint8_t *rb_zjit_iseq_gen_entry_point(const rb_iseq_t *iseq, bool jit_exception); // defined in Rust
-        uintptr_t code_ptr = (uintptr_t)rb_zjit_iseq_gen_entry_point(iseq, jit_exception);
+        uint8_t *rb_zjit_iseq_gen_entry_point(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception); // defined in Rust
+        uintptr_t code_ptr = (uintptr_t)rb_zjit_iseq_gen_entry_point(iseq, ec, jit_exception);
 
         if (jit_exception) {
             iseq->body->jit_exception = (rb_jit_func_t)code_ptr;
@@ -264,6 +181,25 @@ rb_zjit_method_tracing_currently_enabled(void)
     return tracing_events & (RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN);
 }
 
+// Check if any ISEQ trace events are currently enabled.
+// Used to prevent ZJIT from compiling while tracing is active, since ZJIT's
+// send fallback (rb_vm_opt_send_without_block) uses VM_EXEC which sets
+// VM_FRAME_FLAG_FINISH on the callee frame, changing exception handling
+// semantics for throw TAG_RETURN (e.g. return from rescue).
+bool
+rb_zjit_iseq_tracing_currently_enabled(void)
+{
+    rb_event_flag_t tracing_events;
+    if (rb_multi_ractor_p()) {
+        tracing_events = ruby_vm_event_enabled_global_flags;
+    }
+    else {
+        tracing_events = rb_ec_ractor_hooks(GET_EC())->events;
+    }
+
+    return tracing_events & ISEQ_TRACE_EVENTS;
+}
+
 bool
 rb_zjit_insn_leaf(int insn, const VALUE *opes)
 {
@@ -303,14 +239,6 @@ rb_zjit_class_has_default_allocator(VALUE klass)
 
 VALUE rb_vm_untag_block_handler(VALUE block_handler);
 VALUE rb_vm_get_untagged_block_handler(rb_control_frame_t *reg_cfp);
-
-void
-rb_zjit_writebarrier_check_immediate(VALUE recv, VALUE val)
-{
-    if (!RB_SPECIAL_CONST_P(val)) {
-        rb_gc_writebarrier(recv, val);
-    }
-}
 
 // Primitives used by zjit.rb. Don't put other functions below, which wouldn't use them.
 VALUE rb_zjit_enable(rb_execution_context_t *ec, VALUE self);

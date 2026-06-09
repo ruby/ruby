@@ -6,7 +6,7 @@ Expressions in Ruby are separated by line breaks:
     y = 2
     z = x + y
 
-Line breaks also used as logical separators of the headers of some of control structures from their bodies:
+Line breaks are also used as logical separators of the headers of some control structures from their bodies:
 
     if z > 3       # line break ends the condition and starts the body
       puts "more"
@@ -21,7 +21,7 @@ Line breaks also used as logical separators of the headers of some of control st
     x = 1; y = 2; z = x + y
     if z > 3; puts "more"; end
 
-Traditionally, expressions separated by <tt>;</tt> is used only in short scripts and experiments.
+Traditionally, expressions separated by <tt>;</tt> are used only in short scripts and experiments.
 
 In some control structures, there is an optional keyword that can be used instead of a line break to separate their elements:
 

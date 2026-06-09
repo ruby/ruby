@@ -1496,8 +1496,10 @@ ossl_pkey_derive(int argc, VALUE *argv, VALUE self)
         EVP_PKEY_CTX_free(ctx);
         ossl_raise(ePKeyError, "EVP_PKEY_derive");
     }
-    if (keylen > LONG_MAX)
+    if (keylen > LONG_MAX) {
+        EVP_PKEY_CTX_free(ctx);
         rb_raise(ePKeyError, "derived key would be too large");
+    }
     str = ossl_str_new(NULL, (long)keylen, &state);
     if (state) {
         EVP_PKEY_CTX_free(ctx);

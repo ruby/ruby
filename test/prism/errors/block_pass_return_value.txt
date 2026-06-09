@@ -1,0 +1,33 @@
+return &b
+       ^ unexpected '&', expecting end-of-input
+       ^ unexpected '&', ignoring it
+
+return(&b)
+       ^ unexpected '&', ignoring it
+       ^ unexpected '&', expecting end-of-input
+       ^ unexpected '&', ignoring it
+       ^ expected a matching `)`
+       ^ unexpected '&', expecting end-of-input
+       ^ unexpected '&', ignoring it
+         ^ unexpected ')', expecting end-of-input
+         ^ unexpected ')', ignoring it
+
+return a, &b
+          ^~ block argument should not be given
+
+return(a, &b)
+       ^~ unexpected write target
+          ^ unexpected '&', expecting end-of-input
+          ^ unexpected '&', ignoring it
+         ^ expected a matching `)`
+          ^ unexpected '&', expecting end-of-input
+          ^ unexpected '&', ignoring it
+            ^ unexpected ')', expecting end-of-input
+            ^ unexpected ')', ignoring it
+
+tap { break a, &b }
+               ^~ block argument should not be given
+
+tap { next a, &b }
+              ^~ block argument should not be given
+

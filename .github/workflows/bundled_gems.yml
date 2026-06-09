@@ -34,11 +34,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2 # zizmor: ignore[artipacked]
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           token: ${{ (github.repository == 'ruby/ruby' && !startsWith(github.event_name, 'pull')) && secrets.MATZBOT_AUTO_UPDATE_TOKEN || secrets.GITHUB_TOKEN }}
 
-      - uses: ruby/setup-ruby@4eb9f110bac952a8b68ecf92e3b5c7a987594ba6 # v1.292.0
+      - uses: ruby/setup-ruby@12fd324f1d0b43274fdc8130f6980590a667c455 # v1.312.0
         with:
           ruby-version: 4.0
 
@@ -56,21 +56,13 @@ jobs:
           mkdir -p .downloaded-cache
           for data in bundled_gems.json default_gems.json; do
             ln -s .downloaded-cache/$data .
-            curl -O -R -z ./$data https://stdgems.org/$data
+            curl --retry 5 --retry-connrefused --retry-delay 2 --retry-max-time 60 -O -R -z ./$data https://stdgems.org/$data
           done
 
       - name: Update bundled gems list
         id: bundled_gems
         run: |
           ruby -i~ tool/update-bundled_gems.rb gems/bundled_gems >> $GITHUB_OUTPUT
-        if: ${{ env.UPDATE_ENABLED == 'true' }}
-
-      - name: Update spec/bundler/support/builders.rb
-        run: |
-          #!ruby
-          rake_version = File.read("gems/bundled_gems")[/^rake\s+(\S+)/, 1]
-          print ARGF.read.sub(/^ *def rake_version\s*\K".*?"/) {rake_version.dump}
-        shell: ruby -i~ {0} spec/bundler/support/builders.rb
         if: ${{ env.UPDATE_ENABLED == 'true' }}
 
       - name: Maintain updated gems list in NEWS
@@ -88,7 +80,6 @@ jobs:
           git diff --color --no-ext-diff --ignore-submodules --exit-code -- gems/bundled_gems ||
           gems=true
           git add -- NEWS.md gems/bundled_gems
-          git add -- spec/bundler/support/builders.rb
           echo news=$news >> $GITHUB_OUTPUT
           echo gems=$gems >> $GITHUB_OUTPUT
           echo update=${news:-$gems} >> $GITHUB_OUTPUT

@@ -1,9 +1,9 @@
 # -*- frozen-string-literal: true -*-
 
-# :stopdoc:
-module Gem
+module Gem # :nodoc:
+  # TODO: the nodoc above is a workaround for RDoc's Prism parser handling stopdoc differently, we may want to use
+  # stopdoc/startdoc pair like before
 end
-# :startdoc:
 
 module Gem::BUNDLED_GEMS # :nodoc:
   SINCE = {
@@ -137,8 +137,8 @@ module Gem::BUNDLED_GEMS # :nodoc:
       # Don't warn if the feature is found outside the standard library
       # (e.g., benchmark-ips's lib dir is on $LOAD_PATH but not in specs)
       resolved = $LOAD_PATH.resolve_feature_path(feature) rescue nil
-      if resolved
-        return unless resolved[1].start_with?(LIBDIR) || resolved[1].start_with?(ARCHDIR)
+      if resolved && !resolved[1].start_with?(LIBDIR, ARCHDIR)
+        return
       end
     end
 

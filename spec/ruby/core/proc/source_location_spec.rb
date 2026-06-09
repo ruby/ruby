@@ -10,71 +10,64 @@ describe "Proc#source_location" do
   end
 
   it "returns an Array" do
-    @proc.source_location.should be_an_instance_of(Array)
-    @proc_new.source_location.should be_an_instance_of(Array)
-    @lambda.source_location.should be_an_instance_of(Array)
-    @method.source_location.should be_an_instance_of(Array)
+    @proc.source_location.should.instance_of?(Array)
+    @proc_new.source_location.should.instance_of?(Array)
+    @lambda.source_location.should.instance_of?(Array)
+    @method.source_location.should.instance_of?(Array)
   end
 
   it "sets the first value to the path of the file in which the proc was defined" do
-    file = @proc.source_location[0]
-    file.should be_an_instance_of(String)
+    file = @proc.source_location.first
+    file.should.instance_of?(String)
     file.should == File.realpath('fixtures/source_location.rb', __dir__)
 
-    file = @proc_new.source_location[0]
-    file.should be_an_instance_of(String)
+    file = @proc_new.source_location.first
+    file.should.instance_of?(String)
     file.should == File.realpath('fixtures/source_location.rb', __dir__)
 
-    file = @lambda.source_location[0]
-    file.should be_an_instance_of(String)
+    file = @lambda.source_location.first
+    file.should.instance_of?(String)
     file.should == File.realpath('fixtures/source_location.rb', __dir__)
 
-    file = @method.source_location[0]
-    file.should be_an_instance_of(String)
+    file = @method.source_location.first
+    file.should.instance_of?(String)
     file.should == File.realpath('fixtures/source_location.rb', __dir__)
   end
 
-  it "sets the second value to an Integer representing the line on which the proc was defined" do
-    line = @proc.source_location[1]
-    line.should be_an_instance_of(Integer)
+  it "sets the last value to an Integer representing the line on which the proc was defined" do
+    line = @proc.source_location.last
+    line.should.instance_of?(Integer)
     line.should == 4
 
-    line = @proc_new.source_location[1]
-    line.should be_an_instance_of(Integer)
+    line = @proc_new.source_location.last
+    line.should.instance_of?(Integer)
     line.should == 12
 
-    line = @lambda.source_location[1]
-    line.should be_an_instance_of(Integer)
+    line = @lambda.source_location.last
+    line.should.instance_of?(Integer)
     line.should == 8
 
-    line = @method.source_location[1]
-    line.should be_an_instance_of(Integer)
+    line = @method.source_location.last
+    line.should.instance_of?(Integer)
     line.should == 15
   end
 
   it "works even if the proc was created on the same line" do
-    ruby_version_is(""..."4.1") do
-      proc { true }.source_location.should == [__FILE__, __LINE__]
-      Proc.new { true }.source_location.should == [__FILE__, __LINE__]
-      -> { true }.source_location.should == [__FILE__, __LINE__]
-    end
-    ruby_version_is("4.1") do
-      proc { true }.source_location.should == [__FILE__, __LINE__, 11, __LINE__, 19]
-      Proc.new { true }.source_location.should == [__FILE__, __LINE__, 15, __LINE__, 23]
-      -> { true }.source_location.should == [__FILE__, __LINE__, 6, __LINE__, 17]
-    end
+    proc { true }.source_location.should == [__FILE__, __LINE__]
+    Proc.new { true }.source_location.should == [__FILE__, __LINE__]
+    -> { true }.source_location.should == [__FILE__, __LINE__]
   end
 
   it "returns the first line of a multi-line proc (i.e. the line containing 'proc do')" do
-    ProcSpecs::SourceLocation.my_multiline_proc.source_location[1].should == 20
-    ProcSpecs::SourceLocation.my_multiline_proc_new.source_location[1].should == 34
-    ProcSpecs::SourceLocation.my_multiline_lambda.source_location[1].should == 27
+    ProcSpecs::SourceLocation.my_multiline_proc.source_location.last.should == 20
+    ProcSpecs::SourceLocation.my_multiline_proc_new.source_location.last.should == 34
+    ProcSpecs::SourceLocation.my_multiline_lambda.source_location.last.should == 27
   end
 
   it "returns the location of the proc's body; not necessarily the proc itself" do
-    ProcSpecs::SourceLocation.my_detached_proc.source_location[1].should == 41
-    ProcSpecs::SourceLocation.my_detached_proc_new.source_location[1].should == 51
-    ProcSpecs::SourceLocation.my_detached_lambda.source_location[1].should == 46
+    ProcSpecs::SourceLocation.my_detached_proc.source_location.last.should == 41
+    ProcSpecs::SourceLocation.my_detached_proc_new.source_location.last.should == 51
+    ProcSpecs::SourceLocation.my_detached_lambda.source_location.last.should == 46
   end
 
   it "returns the same value for a proc-ified method as the method reports" do
@@ -93,12 +86,6 @@ describe "Proc#source_location" do
 
   it "works for eval with a given line" do
     proc = eval('-> {}', nil, "foo", 100)
-    location = proc.source_location
-    ruby_version_is(""..."4.1") do
-      location.should == ["foo", 100]
-    end
-    ruby_version_is("4.1") do
-      location.should == ["foo", 100, 0, 100, 5]
-    end
+    proc.source_location.should == ["foo", 100]
   end
 end

@@ -286,7 +286,7 @@ struct iseq_inline_constant_cache {
 };
 
 struct iseq_inline_iv_cache_entry {
-    uint64_t value; // dest_shape_id in former half, attr_index in latter half
+    uint64_t value; // Either rb_setivar_cache or rb_getivar_cache packed in a uint64_t.
     ID iv_set_name;
 };
 
@@ -679,11 +679,6 @@ typedef struct rb_hook_list_struct {
 // see builtin.h for definition
 typedef const struct rb_builtin_function *RB_BUILTIN;
 
-struct global_object_list {
-    VALUE *varptr;
-    struct global_object_list *next;
-};
-
 typedef struct rb_vm_struct {
     VALUE self;
 
@@ -770,17 +765,20 @@ typedef struct rb_vm_struct {
 
     /* object management */
     VALUE mark_object_ary;
-    struct global_object_list *global_object_list;
+    VALUE **global_object_list;
+    size_t global_object_list_size;
+    size_t global_object_list_capa;
     const VALUE special_exceptions[ruby_special_error_count];
 
     /* Ruby Box */
+    rb_box_t *master_box;
     rb_box_t *root_box;
     rb_box_t *main_box;
 
     /* load */
     // For running the init function of statically linked
     // extensions when they are loaded
-    struct st_table *static_ext_inits;
+    struct st_table static_ext_inits;
 
     /* signal */
     struct {
@@ -812,23 +810,24 @@ typedef struct rb_vm_struct {
 
     const struct rb_builtin_function *builtin_function_table;
 
-    st_table *ci_table;
-    struct rb_id_table *negative_cme_table;
-    st_table *overloaded_cme_table; // cme -> overloaded_cme
-    set_table *unused_block_warning_table;
+    st_table ci_table;
+    struct rb_id_table negative_cme_table;
+    st_table overloaded_cme_table; // cme -> overloaded_cme
+    set_table unused_block_warning_table;
     VALUE cc_refinement_set;
 
     // This id table contains a mapping from ID to ICs. It does this with ID
     // keys and nested st_tables as values. The nested tables have ICs as keys
     // and Qtrue as values. It is used when inline constant caches need to be
     // invalidated or ISEQs are being freed.
-    struct rb_id_table *constant_cache;
+    struct rb_id_table constant_cache;
     ID inserting_constant_cache_id;
 
 #ifndef VM_GLOBAL_CC_CACHE_TABLE_SIZE
 #define VM_GLOBAL_CC_CACHE_TABLE_SIZE 1023
 #endif
     const struct rb_callcache *global_cc_cache_table[VM_GLOBAL_CC_CACHE_TABLE_SIZE]; // vm_eval.c
+    bool global_cc_cache_table_used; // vm_eval.c
 
 #if defined(USE_VM_CLOCK) && USE_VM_CLOCK
     uint32_t clock;
@@ -919,7 +918,7 @@ struct rb_block {
 typedef struct rb_control_frame_struct {
     const VALUE *pc;        // cfp[0]
     VALUE *sp;              // cfp[1]
-    const rb_iseq_t *iseq;  // cfp[2]
+    const rb_iseq_t *_iseq; // cfp[2] -- use CFP_ISEQ(cfp) to read
     VALUE self;             // cfp[3] / block[0]
     const VALUE *ep;        // cfp[4] / block[1]
     const void *block_code; // cfp[5] / block[2] -- iseq, ifunc, or forwarded block handler
@@ -1016,6 +1015,10 @@ struct rb_vm_tag {
     struct rb_vm_tag *prev;
     enum ruby_tag_type state;
     unsigned int lock_rec;
+#if USE_ZJIT
+    // ec->cfp as of EC_PUSH_TAG, which is saved for materializing JITFrame.
+    rb_control_frame_t *cfp;
+#endif
 };
 
 STATIC_ASSERT(rb_vm_tag_buf_offset, offsetof(struct rb_vm_tag, buf) > 0);
@@ -1026,6 +1029,7 @@ STATIC_ASSERT(rb_vm_tag_buf_end,
 struct rb_unblock_callback {
     rb_unblock_function_t *func;
     void *arg;
+    rb_atomic_t event_serial;
 };
 
 struct rb_mutex_struct;
@@ -1241,9 +1245,12 @@ typedef enum {
 #define VM_DEFINECLASS_TYPE(x) ((rb_vm_defineclass_type_t)(x) & VM_DEFINECLASS_TYPE_MASK)
 #define VM_DEFINECLASS_FLAG_SCOPED         0x08
 #define VM_DEFINECLASS_FLAG_HAS_SUPERCLASS 0x10
+#define VM_DEFINECLASS_FLAG_DYNAMIC_CREF  0x20
 #define VM_DEFINECLASS_SCOPED_P(x) ((x) & VM_DEFINECLASS_FLAG_SCOPED)
 #define VM_DEFINECLASS_HAS_SUPERCLASS_P(x) \
     ((x) & VM_DEFINECLASS_FLAG_HAS_SUPERCLASS)
+#define VM_DEFINECLASS_DYNAMIC_CREF_P(x) \
+    ((x) & VM_DEFINECLASS_FLAG_DYNAMIC_CREF)
 
 /* iseq.c */
 RUBY_SYMBOL_EXPORT_BEGIN
@@ -1530,7 +1537,10 @@ static inline int
 VM_FRAME_CFRAME_P(const rb_control_frame_t *cfp)
 {
     int cframe_p = VM_ENV_FLAGS(cfp->ep, VM_FRAME_FLAG_CFRAME) != 0;
-    VM_ASSERT(RUBY_VM_NORMAL_ISEQ_P(cfp->iseq) != cframe_p ||
+    // With ZJIT lightweight frames, cfp->_iseq may be stale (not yet materialized),
+    // so skip this assertion when jit_return is set (zjit.h is not available here).
+    VM_ASSERT(cfp->jit_return ||
+              RUBY_VM_NORMAL_ISEQ_P(cfp->_iseq) != cframe_p ||
               (VM_FRAME_TYPE(cfp) & VM_FRAME_MAGIC_MASK) == VM_FRAME_MAGIC_DUMMY);
     return cframe_p;
 }
@@ -2017,8 +2027,6 @@ void rb_vm_register_special_exception_str(enum ruby_special_exceptions sp, VALUE
 
 void rb_gc_mark_machine_context(const rb_execution_context_t *ec);
 
-rb_cref_t *rb_vm_rewrite_cref(rb_cref_t *node, VALUE old_klass, VALUE new_klass);
-
 const rb_callable_method_entry_t *rb_vm_frame_method_entry(const rb_control_frame_t *cfp);
 const rb_callable_method_entry_t *rb_vm_frame_method_entry_unchecked(const rb_control_frame_t *cfp);
 
@@ -2340,7 +2348,7 @@ struct rb_ractor_pub {
     VALUE self;
     uint32_t id;
     rb_hook_list_t hooks;
-    st_table *targeted_hooks; // also called "local hooks". {ISEQ => hook_list, def => hook_list...}
+    st_table targeted_hooks; // also called "local hooks". {ISEQ => hook_list, def => hook_list...}
     unsigned int targeted_hooks_cnt; // ex: tp.enabled(target: method(:puts))
 };
 

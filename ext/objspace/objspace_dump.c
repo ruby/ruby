@@ -573,10 +573,15 @@ dump_object(VALUE obj, struct dump_config *dc)
         break;
 
       case T_DATA:
-        if (RTYPEDDATA_P(obj)) {
+        {
+            const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
             dump_append(dc, ", \"struct\":\"");
-            dump_append(dc, RTYPEDDATA_TYPE(obj)->wrap_struct_name);
+            dump_append(dc, type->wrap_struct_name);
             dump_append(dc, "\"");
+            if (!(type->flags & RUBY_TYPED_FREE_IMMEDIATELY) &&
+                    type->function.dfree != RUBY_DEFAULT_FREE) {
+                dump_append(dc, ", \"free_immediately\":false");
+            }
         }
         break;
 
@@ -593,8 +598,8 @@ dump_object(VALUE obj, struct dump_config *dc)
 
         dump_append(dc, ", \"ivars\":");
         dump_append_lu(dc, ROBJECT_FIELDS_COUNT(obj));
-        if (rb_shape_obj_too_complex_p(obj)) {
-            dump_append(dc, ", \"too_complex_shape\":true");
+        if (rb_obj_shape_complex_p(obj)) {
+            dump_append(dc, ", \"complex_shape\":true");
         }
         break;
 
@@ -815,7 +820,7 @@ shape_id_i(shape_id_t shape_id, void *data)
 
     if (RSHAPE_TYPE(shape_id) != SHAPE_ROOT) {
         dump_append(dc, ", \"parent_id\":");
-        dump_append_lu(dc, RSHAPE_PARENT_RAW_ID(shape_id));
+        dump_append_lu(dc, RSHAPE_PARENT_OFFSET(shape_id));
     }
 
     dump_append(dc, ", \"depth\":");

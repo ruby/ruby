@@ -38,7 +38,38 @@ require_relative "support/indexes"
 require_relative "support/matchers"
 require_relative "support/permissions"
 require_relative "support/platforms"
-require_relative "support/windows_tag_group"
+require_relative "support/shards"
+
+begin
+  raise LoadError if File.exist?(File.expand_path("../../lib/bundler/bundler.gemspec", __dir__))
+
+  gem "simplecov_json_formatter"
+  require "simplecov"
+
+  SimpleCov.start do
+    command_name "bundler:#{Process.pid}"
+    root File.expand_path("../bundler", __dir__)
+    coverage_dir File.expand_path("../coverage", __dir__)
+
+    add_filter "/spec/"
+    add_filter "/test/"
+    add_filter "/lib/rubygems/"
+    add_filter "/lib/bundler/vendor/"
+    add_filter "/tool/"
+    add_filter "/tmp/"
+    add_filter ".gemspec"
+  end
+
+  SimpleCov.print_error_status = false
+  SimpleCov.at_exit do
+    $stdout = File.open(File::NULL, "w")
+    SimpleCov.result.format!
+  ensure
+    $stdout = STDOUT
+  end
+rescue LoadError
+  # SimpleCov is not installed
+end
 
 $debug = false
 
@@ -57,7 +88,7 @@ RSpec.configure do |config|
   config.include Spec::Path
   config.include Spec::Platforms
   config.include Spec::Permissions
-  config.include Spec::WindowsTagGroup
+  config.include Spec::Shards
 
   # Enable flags like --only-failures and --next-failure
   config.example_status_persistence_file_path = ".rspec_status"
@@ -93,6 +124,9 @@ RSpec.configure do |config|
     require_relative "support/rubygems_ext"
     Spec::Rubygems.test_setup
 
+    # Disable retry delays in tests to speed them up
+    Bundler::Retry.default_base_delay = 0
+
     # Simulate bundler has not yet been loaded
     ENV.replace(ENV.to_hash.delete_if {|k, _v| k.start_with?(Bundler::EnvironmentPreserver::BUNDLER_PREFIX) })
 
@@ -104,6 +138,14 @@ RSpec.configure do |config|
     ENV["XDG_CONFIG_HOME"] = nil
     ENV["XDG_CACHE_HOME"] = nil
     ENV["GEMRC"] = nil
+
+    # Prevent tests from modifying the user's global git config.
+    # GIT_CONFIG_GLOBAL and GIT_CONFIG_NOSYSTEM are available since Git 2.32.
+    git_version = `git --version`[/(\d+\.\d+\.\d+)/, 1]
+    if Gem::Version.new(git_version) >= Gem::Version.new("2.32")
+      ENV["GIT_CONFIG_GLOBAL"] = File.join(ENV["HOME"], ".gitconfig")
+      ENV["GIT_CONFIG_NOSYSTEM"] = "1"
+    end
 
     # Don't wrap output in tests
     ENV["THOR_COLUMNS"] = "10000"
@@ -133,7 +175,7 @@ RSpec.configure do |config|
     reset!
   end
 
-  Spec::WindowsTagGroup::EXAMPLE_MAPPINGS.each do |tag, file_paths|
+  Spec::Shards::EXAMPLE_MAPPINGS.each do |tag, file_paths|
     file_pattern = Regexp.union(file_paths.map {|path| Regexp.new(Regexp.escape(path) + "$") })
 
     config.define_derived_metadata(file_path: file_pattern) do |metadata|
@@ -143,8 +185,8 @@ RSpec.configure do |config|
 
   config.before(:context) do |example|
     metadata = example.class.metadata
-    if metadata[:type] != :aruba && !metadata[:realworld] && metadata.keys.none? {|k| Spec::WindowsTagGroup::EXAMPLE_MAPPINGS.keys.include?(k) }
-      warn "#{metadata[:file_path]} is not assigned to any Windows runner group. see spec/support/windows_tag_group.rb for details."
+    if metadata[:type] != :aruba && !metadata[:realworld] && metadata.keys.none? {|k| Spec::Shards::EXAMPLE_MAPPINGS.keys.include?(k) }
+      warn "#{metadata[:file_path]} is not assigned to any shard. see spec/support/shards.rb for details."
     end
   end unless Spec::Path.ruby_core?
 end

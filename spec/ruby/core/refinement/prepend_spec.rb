@@ -6,7 +6,7 @@ describe "Refinement#prepend" do
       refine String do
         -> {
           prepend Module.new
-        }.should raise_error(TypeError, "Refinement#prepend has been removed")
+        }.should.raise(TypeError, "Refinement#prepend has been removed")
       end
     end
   end

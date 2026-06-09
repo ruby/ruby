@@ -71,7 +71,7 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
     thread_sched_lock(sched, th);
     {
         // NOTE: there's a lock ordering inversion here with the ubf call, but it's benign.
-        if (ubf_set(th, ubf_event_waiting, (void *)th)) {
+        if (ubf_set(th, ubf_event_waiting, (void *)th, NULL)) {
             thread_sched_unlock(sched, th);
             return false;
         }
@@ -117,7 +117,7 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
     thread_sched_unlock(sched, th);
 
     // if ubf triggered between sched unlock and ubf clear, sched->running == th here
-    ubf_clear(th);
+    ubf_clear(th, false);
 
     VM_ASSERT(sched->running == th);
 

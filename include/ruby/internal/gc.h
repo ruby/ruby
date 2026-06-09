@@ -440,153 +440,6 @@ RBIMPL_SYMBOL_EXPORT_END()
 #endif
 
 /**
- * @private
- *
- * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
- * struct ::RArray.  It has to be set  at the time ruby itself compiles.  Makes
- * no sense for 3rd parties.
- */
-#ifndef RGENGC_WB_PROTECTED_ARRAY
-# define RGENGC_WB_PROTECTED_ARRAY 1
-#endif
-
-/**
- * @private
- *
- * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
- * struct ::RHash.  It has  to be set at the time  ruby itself compiles.  Makes
- * no sense for 3rd parties.
- */
-#ifndef RGENGC_WB_PROTECTED_HASH
-# define RGENGC_WB_PROTECTED_HASH 1
-#endif
-
-/**
- * @private
- *
- * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
- * struct ::RStruct.  It has to be set at the time ruby itself compiles.  Makes
- * no sense for 3rd parties.
- */
-#ifndef RGENGC_WB_PROTECTED_STRUCT
-# define RGENGC_WB_PROTECTED_STRUCT 1
-#endif
-
-/**
- * @private
- *
- * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
- * struct ::RString.  It has to be set at the time ruby itself compiles.  Makes
- * no sense for 3rd parties.
- */
-#ifndef RGENGC_WB_PROTECTED_STRING
-# define RGENGC_WB_PROTECTED_STRING 1
-#endif
-
-/**
- * @private
- *
- * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
- * struct ::RObject.  It has to be set at the time ruby itself compiles.  Makes
- * no sense for 3rd parties.
- */
-#ifndef RGENGC_WB_PROTECTED_OBJECT
-# define RGENGC_WB_PROTECTED_OBJECT 1
-#endif
-
-/**
- * @private
- *
- * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
- * struct ::RRegexp.  It has to be set at the time ruby itself compiles.  Makes
- * no sense for 3rd parties.
- */
-#ifndef RGENGC_WB_PROTECTED_REGEXP
-# define RGENGC_WB_PROTECTED_REGEXP 1
-#endif
-
-/**
- * @private
- *
- * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
- * struct ::RMatch.  It has to be set at the time ruby itself compiles.  Makes
- * no sense for 3rd parties.
- */
-#ifndef RGENGC_WB_PROTECTED_MATCH
-# define RGENGC_WB_PROTECTED_MATCH 1
-#endif
-
-/**
- * @private
- *
- * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
- * struct ::RClass.  It has to be set  at the time ruby itself compiles.  Makes
- * no sense for 3rd parties.
- */
-#ifndef RGENGC_WB_PROTECTED_CLASS
-# define RGENGC_WB_PROTECTED_CLASS 1
-#endif
-
-/**
- * @private
- *
- * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
- * struct ::RFloat.  It has to be set  at the time ruby itself compiles.  Makes
- * no sense for 3rd parties.
- */
-#ifndef RGENGC_WB_PROTECTED_FLOAT
-# define RGENGC_WB_PROTECTED_FLOAT 1
-#endif
-
-/**
- * @private
- *
- * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
- * struct ::RComplex.   It has  to be  set at  the time  ruby itself  compiles.
- * Makes no sense for 3rd parties.
- */
-#ifndef RGENGC_WB_PROTECTED_COMPLEX
-# define RGENGC_WB_PROTECTED_COMPLEX 1
-#endif
-
-/**
- * @private
- *
- * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
- * struct ::RRational.  It  has to  be set  at the  time ruby  itself compiles.
- * Makes no sense for 3rd parties.
- */
-#ifndef RGENGC_WB_PROTECTED_RATIONAL
-# define RGENGC_WB_PROTECTED_RATIONAL 1
-#endif
-
-/**
- * @private
- *
- * This  is   a  compile-time   flag  to   enable/disable  write   barrier  for
- * struct ::RBignum.  It has to be set at the time ruby itself compiles.  Makes
- * no sense for 3rd parties.
- */
-#ifndef RGENGC_WB_PROTECTED_BIGNUM
-# define RGENGC_WB_PROTECTED_BIGNUM 1
-#endif
-
-/**
- * @private
- *
- * @deprecated  This macro once was a thing in the old days, but makes no sense
- *              any  longer today.   Exists  here  for backwards  compatibility
- *              only.  You can safely forget about it.
- *
- * @internal
- *
- * @shyouhei doesn't think anybody uses this right now.
- */
-#ifndef RGENGC_WB_PROTECTED_NODE_CREF
-# define RGENGC_WB_PROTECTED_NODE_CREF 1
-#endif
-
-/**
  * @defgroup rgengc Write barrier (WB) interfaces:
  *
  * @note The following  core interfaces can  be changed in the  future.  Please
@@ -625,11 +478,11 @@ RBIMPL_SYMBOL_EXPORT_END()
 #define OBJ_WB_UNPROTECT RB_OBJ_WB_UNPROTECT /**< @old{RB_OBJ_WB_UNPROTECT} */
 
 /**
- * Asserts that the passed object is  not fenced by write barriers.  Objects of
- * such  property do  not contribute  to  generational GCs.   They are  scanned
- * always.
+ * Marks the object as not protected by write barriers. These objects do not
+ * participate in generational GCs which means that, as long as the object is
+ * alive, they will be scanned on every GC cycle.
  *
- * @param[out]  x  An object that would not be protected by the barrier.
+ * @param[out]  x  An object that is not protected by the write barrier.
  */
 #define RB_OBJ_WB_UNPROTECT(x) rb_obj_wb_unprotect(x, __FILE__, __LINE__)
 
@@ -644,8 +497,7 @@ RBIMPL_SYMBOL_EXPORT_END()
  *
  * @shyouhei doesn't understand why this has to be visible from extensions.
  */
-#define RB_OBJ_WB_UNPROTECT_FOR(type, obj) \
-    (RGENGC_WB_PROTECTED_##type ? OBJ_WB_UNPROTECT(obj) : obj)
+#define RB_OBJ_WB_UNPROTECT_FOR(type, obj) OBJ_WB_UNPROTECT(obj)
 
 /**
  * @private

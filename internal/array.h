@@ -37,6 +37,7 @@ size_t rb_ary_size_as_embedded(VALUE ary);
 void rb_ary_make_embedded(VALUE ary);
 bool rb_ary_embeddable_p(VALUE ary);
 VALUE rb_ary_diff(VALUE ary1, VALUE ary2);
+VALUE rb_ary_compact_bang(VALUE ary);
 RUBY_EXTERN VALUE rb_cArray_empty_frozen;
 
 static inline VALUE rb_ary_entry_internal(VALUE ary, long offset);

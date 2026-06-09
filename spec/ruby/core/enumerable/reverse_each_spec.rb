@@ -11,7 +11,7 @@ describe "Enumerable#reverse_each" do
 
   it "returns an Enumerator if no block given" do
     enum = EnumerableSpecs::Numerous.new.reverse_each
-    enum.should be_an_instance_of(Enumerator)
+    enum.should.instance_of?(Enumerator)
     enum.to_a.should == [4, 1, 6, 3, 5, 2]
   end
 

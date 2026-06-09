@@ -1393,10 +1393,6 @@ class TestIO < Test::Unit::TestCase
     args = ['-e', '$>.write($<.read)'] if args.empty?
     ruby = EnvUtil.rubybin
     opts = {}
-    if defined?(Process::RLIMIT_NPROC)
-      lim = Process.getrlimit(Process::RLIMIT_NPROC)[1]
-      opts[:rlimit_nproc] = [lim, 2048].min
-    end
     f = IO.popen([ruby] + args, 'r+', opts)
     pid = f.pid
     yield(f)

@@ -99,6 +99,7 @@
 #include "ractor_core.h"
 #include "vm_debug.h"
 #include "vm_sync.h"
+#include "zjit.h"
 
 #include "ccan/list/list.h"
 
@@ -170,7 +171,7 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
 #define THREAD_BLOCKING_BEGIN(th) do { \
   struct rb_thread_sched * const sched = TH_SCHED(th); \
   RB_VM_SAVE_MACHINE_CONTEXT(th); \
-  thread_sched_to_waiting((sched), (th));
+  thread_sched_to_waiting((sched), (th), true);
 
 #define THREAD_BLOCKING_END(th) \
   thread_sched_to_running((sched), (th)); \
@@ -194,7 +195,7 @@ static inline void blocking_region_end(rb_thread_t *th, struct rb_blocking_regio
         /* Important that this is inlined into the macro, and not part of \
          * blocking_region_begin - see bug #20493 */ \
         RB_VM_SAVE_MACHINE_CONTEXT(th); \
-        thread_sched_to_waiting(TH_SCHED(th), th); \
+        thread_sched_to_waiting(TH_SCHED(th), th, false); \
         exec; \
         blocking_region_end(th, &__region); \
     }; \
@@ -2092,7 +2093,7 @@ rb_thread_call_with_gvl(void *(*func)(void *), void *data1)
     int released = blocking_region_begin(th, brb, prev_unblock.func, prev_unblock.arg, FALSE);
     RUBY_ASSERT_ALWAYS(released);
     RB_VM_SAVE_MACHINE_CONTEXT(th);
-    thread_sched_to_waiting(TH_SCHED(th), th);
+    thread_sched_to_waiting(TH_SCHED(th), th, true);
     return r;
 }
 
@@ -4288,7 +4289,7 @@ rb_fd_init_copy(rb_fdset_t *dst, rb_fdset_t *src)
 void
 rb_fd_term(rb_fdset_t *fds)
 {
-    ruby_sized_xfree(fds->fdset, fdset_memsize(fds->maxfd));
+    ruby_xfree_sized(fds->fdset, fdset_memsize(fds->maxfd));
     fds->maxfd = 0;
     fds->fdset = 0;
 }
@@ -4307,7 +4308,7 @@ rb_fd_resize(int n, rb_fdset_t *fds)
     size_t o = fdset_memsize(fds->maxfd);
 
     if (m > o) {
-        fds->fdset = ruby_sized_xrealloc(fds->fdset, m, o);
+        fds->fdset = ruby_xrealloc_sized(fds->fdset, m, o);
         memset((char *)fds->fdset + o, 0, m - o);
     }
     if (n >= fds->maxfd) fds->maxfd = n + 1;
@@ -4338,7 +4339,7 @@ void
 rb_fd_copy(rb_fdset_t *dst, const fd_set *src, int max)
 {
     size_t size = fdset_memsize(max);
-    dst->fdset = ruby_sized_xrealloc(dst->fdset, size, fdset_memsize(dst->maxfd));
+    dst->fdset = ruby_xrealloc_sized(dst->fdset, size, fdset_memsize(dst->maxfd));
     dst->maxfd = max;
     memcpy(dst->fdset, src, size);
 }
@@ -4347,7 +4348,7 @@ void
 rb_fd_dup(rb_fdset_t *dst, const rb_fdset_t *src)
 {
     size_t size = fdset_memsize(rb_fd_max(src));
-    dst->fdset = ruby_sized_xrealloc(dst->fdset, size, fdset_memsize(dst->maxfd));
+    dst->fdset = ruby_xrealloc_sized(dst->fdset, size, fdset_memsize(dst->maxfd));
     dst->maxfd = src->maxfd;
     memcpy(dst->fdset, src->fdset, size);
 }
@@ -4412,7 +4413,7 @@ fdset_memsize(int capa)
 void
 rb_fd_term(rb_fdset_t *set)
 {
-    ruby_sized_xfree(set->fdset, fdset_memsize(set->capa));
+    ruby_xfree_sized(set->fdset, fdset_memsize(set->capa));
     set->fdset = NULL;
     set->capa = 0;
 }
@@ -5905,7 +5906,7 @@ static void
 update_line_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
 {
     const rb_control_frame_t *cfp = GET_EC()->cfp;
-    VALUE coverage = rb_iseq_coverage(cfp->iseq);
+    VALUE coverage = rb_iseq_coverage(CFP_ISEQ(cfp));
     if (RB_TYPE_P(coverage, T_ARRAY) && !RBASIC_CLASS(coverage)) {
         VALUE lines = RARRAY_AREF(coverage, COVERAGE_INDEX_LINES);
         if (lines) {
@@ -5915,7 +5916,7 @@ update_line_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
             VALUE num;
             void rb_iseq_clear_event_flags(const rb_iseq_t *iseq, size_t pos, rb_event_flag_t reset);
             if (GET_VM()->coverage_mode & COVERAGE_TARGET_ONESHOT_LINES) {
-                rb_iseq_clear_event_flags(cfp->iseq, cfp->pc - ISEQ_BODY(cfp->iseq)->iseq_encoded - 1, RUBY_EVENT_COVERAGE_LINE);
+                rb_iseq_clear_event_flags(CFP_ISEQ(cfp), CFP_PC(cfp) - ISEQ_BODY(CFP_ISEQ(cfp))->iseq_encoded - 1, RUBY_EVENT_COVERAGE_LINE);
                 rb_ary_push(lines, LONG2FIX(line + 1));
                 return;
             }
@@ -5936,12 +5937,12 @@ static void
 update_branch_coverage(VALUE data, const rb_trace_arg_t *trace_arg)
 {
     const rb_control_frame_t *cfp = GET_EC()->cfp;
-    VALUE coverage = rb_iseq_coverage(cfp->iseq);
+    VALUE coverage = rb_iseq_coverage(CFP_ISEQ(cfp));
     if (RB_TYPE_P(coverage, T_ARRAY) && !RBASIC_CLASS(coverage)) {
         VALUE branches = RARRAY_AREF(coverage, COVERAGE_INDEX_BRANCHES);
         if (branches) {
-            long pc = cfp->pc - ISEQ_BODY(cfp->iseq)->iseq_encoded - 1;
-            long idx = FIX2INT(RARRAY_AREF(ISEQ_PC2BRANCHINDEX(cfp->iseq), pc)), count;
+            long pc = CFP_PC(cfp) - ISEQ_BODY(CFP_ISEQ(cfp))->iseq_encoded - 1;
+            long idx = FIX2INT(RARRAY_AREF(ISEQ_PC2BRANCHINDEX(CFP_ISEQ(cfp)), pc)), count;
             VALUE counters = RARRAY_AREF(branches, 1);
             VALUE num = RARRAY_AREF(counters, idx);
             count = FIX2LONG(num) + 1;

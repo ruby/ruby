@@ -23,15 +23,15 @@ describe "File.rename" do
 
   it "raises an Errno::ENOENT if the source does not exist" do
     rm_r @old
-    -> { File.rename(@old, @new) }.should raise_error(Errno::ENOENT)
+    -> { File.rename(@old, @new) }.should.raise(Errno::ENOENT)
   end
 
   it "raises an ArgumentError if not passed two arguments" do
-    -> { File.rename        }.should raise_error(ArgumentError)
-    -> { File.rename(@file) }.should raise_error(ArgumentError)
+    -> { File.rename        }.should.raise(ArgumentError)
+    -> { File.rename(@file) }.should.raise(ArgumentError)
   end
 
   it "raises a TypeError if not passed String types" do
-    -> { File.rename(1, 2)  }.should raise_error(TypeError)
+    -> { File.rename(1, 2)  }.should.raise(TypeError)
   end
 end

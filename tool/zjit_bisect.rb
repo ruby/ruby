@@ -5,6 +5,9 @@ require 'shellwords'
 require 'tempfile'
 require 'timeout'
 
+required_ruby_version = Gem::Version.new("3.4.0")
+raise "Ruby version #{required_ruby_version} or higher is required" if Gem::Version.new(RUBY_VERSION) < required_ruby_version
+
 ARGS = {timeout: 5}
 OptionParser.new do |opts|
   opts.banner += " <path_to_ruby> -- <options>"
@@ -79,6 +82,9 @@ def add_zjit_options cmd
     zjit_opts = cmd.select { |arg| arg.start_with?("--zjit") }
     run_opts_index = cmd.find_index { |arg| arg.start_with?("RUN_OPTS=") }
     specopts_index = cmd.find_index { |arg| arg.start_with?("SPECOPTS=") }
+    if run_opts_index && specopts_index
+      raise "Expected only one of RUN_OPTS or SPECOPTS to be present in make command, but both were found"
+    end
     if run_opts_index
       run_opts = Shellwords.split(cmd[run_opts_index].delete_prefix("RUN_OPTS="))
       run_opts.concat(zjit_opts)
@@ -129,7 +135,7 @@ end
 
 # Try running with no JIT list to get a stable baseline
 unless run_with_jit_list(RUBY, OPTIONS, []).success?
-  cmd = [RUBY, "--zjit-allowed-iseqs=/dev/null", *OPTIONS].shelljoin
+  cmd = add_zjit_options([RUBY, "--zjit-allowed-iseqs=/dev/null", *OPTIONS]).shelljoin
   raise "The command failed unexpectedly with an empty JIT list. To reproduce, try running the following: `#{cmd}`"
 end
 # Collect the JIT list from the failing Ruby process

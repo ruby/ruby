@@ -132,7 +132,8 @@ zjit-test-rr: libminiruby.a
 #  - Less likely to break since later stages of the build process also rely on miniruby.
 libminiruby.a: miniruby$(EXEEXT)
 	$(ECHO) linking static-library $@
-	$(Q) $(AR) $(ARFLAGS) $@ $(MINIOBJS) $(COMMONOBJS)
+	$(Q) $(RM) $@
+	$(Q) $(AR) $(ARFLAGS) $@ $(MINIOBJS) $(COMMONOBJS:$(RUST_LIBOBJ)=)
 
 libminiruby: libminiruby.a
 

@@ -90,11 +90,6 @@ static ID id_instance_variables_to_inspect;
 
 /*! \endcond */
 
-size_t
-rb_obj_embedded_size(uint32_t fields_count)
-{
-    return offsetof(struct RObject, as.ary) + (sizeof(VALUE) * fields_count);
-}
 
 VALUE
 rb_obj_hide(VALUE obj)
@@ -114,36 +109,6 @@ rb_obj_reveal(VALUE obj, VALUE klass)
     return obj;
 }
 
-VALUE
-rb_class_allocate_instance(VALUE klass)
-{
-    uint32_t index_tbl_num_entries = RCLASS_MAX_IV_COUNT(klass);
-
-    size_t size = rb_obj_embedded_size(index_tbl_num_entries);
-    if (!rb_gc_size_allocatable_p(size)) {
-        size = sizeof(struct RObject);
-    }
-
-    // There might be a NEWOBJ tracepoint callback, and it may set fields.
-    // So the shape must be passed to `NEWOBJ_OF`.
-    VALUE flags = T_OBJECT | (RGENGC_WB_PROTECTED_OBJECT ? FL_WB_PROTECTED : 0);
-    NEWOBJ_OF_WITH_SHAPE(o, struct RObject, klass, flags, rb_shape_root(rb_gc_heap_id_for_size(size)), size, 0);
-    VALUE obj = (VALUE)o;
-
-#if RUBY_DEBUG
-    RUBY_ASSERT(!rb_shape_obj_too_complex_p(obj));
-    VALUE *ptr = ROBJECT_FIELDS(obj);
-    size_t fields_count = RSHAPE_LEN(RBASIC_SHAPE_ID(obj));
-    for (size_t i = fields_count; i < ROBJECT_FIELDS_CAPACITY(obj); i++) {
-        ptr[i] = Qundef;
-    }
-    if (rb_obj_class(obj) != rb_class_real(klass)) {
-        rb_bug("Expected rb_class_allocate_instance to set the class correctly");
-    }
-#endif
-
-    return obj;
-}
 
 VALUE
 rb_obj_setup(VALUE obj, VALUE klass, VALUE type)
@@ -299,8 +264,14 @@ static inline VALUE
 class_real(VALUE cl)
 {
     RUBY_ASSERT(cl);
+
+    // TODO: In the future we should only call this with T_CLASS
+    RUBY_ASSERT(RB_TYPE_P(cl, T_CLASS) || RB_TYPE_P(cl, T_ICLASS) || RB_TYPE_P(cl, T_MODULE));
+
     while (RB_UNLIKELY(fake_class_p(cl))) {
-        cl = RCLASS_SUPER(cl);
+        // All paths through super in any box will eventually result in the
+        // same class.
+        cl = RCLASSEXT_SUPER(RCLASS_EXT_PRIME(cl));
     }
     return cl;
 }
@@ -357,8 +328,8 @@ rb_obj_singleton_class(VALUE obj)
 void
 rb_obj_copy_ivar(VALUE dest, VALUE obj)
 {
-    RUBY_ASSERT(!RB_TYPE_P(obj, T_CLASS) && !RB_TYPE_P(obj, T_MODULE));
-    RUBY_ASSERT(BUILTIN_TYPE(dest) == BUILTIN_TYPE(obj));
+    RUBY_ASSERT(RB_TYPE_P(obj, T_OBJECT));
+    RUBY_ASSERT(RB_TYPE_P(dest, T_OBJECT));
 
     unsigned long src_num_ivs = rb_ivar_count(obj);
     if (!src_num_ivs) {
@@ -367,7 +338,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
 
     shape_id_t src_shape_id = RBASIC_SHAPE_ID(obj);
 
-    if (rb_shape_too_complex_p(src_shape_id)) {
+    if (rb_shape_complex_p(src_shape_id)) {
         rb_shape_copy_complex_ivars(dest, obj, src_shape_id, ROBJECT_FIELDS_HASH(obj));
         return;
     }
@@ -376,10 +347,10 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     RUBY_ASSERT(RSHAPE_TYPE_P(initial_shape_id, SHAPE_ROOT));
 
     shape_id_t dest_shape_id = rb_shape_rebuild(initial_shape_id, src_shape_id);
-    if (UNLIKELY(rb_shape_too_complex_p(dest_shape_id))) {
+    if (UNLIKELY(rb_shape_complex_p(dest_shape_id))) {
         st_table *table = rb_st_init_numtable_with_size(src_num_ivs);
         rb_obj_copy_ivs_to_hash_table(obj, table);
-        rb_obj_init_too_complex(dest, table);
+        rb_obj_init_complex(dest, table);
 
         return;
     }
@@ -530,7 +501,7 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
         }
 
         if (RB_OBJ_FROZEN(obj)) {
-            shape_id_t next_shape_id = rb_shape_transition_frozen(clone);
+            shape_id_t next_shape_id = rb_obj_shape_transition_frozen(clone);
             RBASIC_SET_SHAPE_ID(clone, next_shape_id);
         }
         break;
@@ -798,7 +769,7 @@ inspect_obj(VALUE obj, VALUE a, int recur)
         rb_str_cat2(str, " ...");
     }
     else {
-        rb_ivar_foreach(obj, inspect_i, a);
+        rb_ivar_foreach_buffered(obj, inspect_i, a);
     }
     rb_str_cat2(str, ">");
     RSTRING_PTR(str)[0] = '#';
@@ -1379,26 +1350,10 @@ rb_obj_dummy1(VALUE _x, VALUE _y)
 
 /*
  *  call-seq:
- *     obj.freeze    -> obj
+ *     obj.freeze -> self
  *
- *  Prevents further modifications to <i>obj</i>. A
- *  FrozenError will be raised if modification is attempted.
- *  There is no way to unfreeze a frozen object. See also
- *  Object#frozen?.
- *
- *  This method returns self.
- *
- *     a = [ "a", "b", "c" ]
- *     a.freeze
- *     a << "z"
- *
- *  <em>produces:</em>
- *
- *     prog.rb:3:in `<<': can't modify frozen Array (FrozenError)
- *     	from prog.rb:3
- *
- *  Objects of the following classes are always frozen: Integer,
- *  Float, Symbol.
+ *  Freezes +self+, preventing further modifications;
+ *  see {Frozen Objects}[rdoc-ref:frozen_objects.md].
  */
 
 VALUE
@@ -1584,10 +1539,10 @@ rb_true_to_s(VALUE obj)
 
 
 /*
- *  call-seq:
- *    true & object -> true or false
+ * call-seq:
+ *   true & object -> true or false
  *
- *  Returns +false+ if +object+ is +false+ or +nil+, +true+ otherwise:
+ * Returns +false+ if +object+ is +false+ or +nil+, +true+ otherwise:
  *
  *  true & Object.new # => true
  *  true & false      # => false
@@ -2253,6 +2208,8 @@ rb_class_initialize(int argc, VALUE *argv, VALUE klass)
         }
     }
     rb_class_set_super(klass, super);
+    RCLASS_SET_MAX_IV_COUNT(klass, RCLASS_MAX_IV_COUNT(super));
+    RCLASS_SET_ALLOCATOR(klass, RCLASS_ALLOCATOR(super));
     rb_make_metaclass(klass, RBASIC(super)->klass);
     rb_class_inherited(super, klass);
     rb_mod_initialize_exec(klass);
@@ -2296,6 +2253,7 @@ static VALUE class_call_alloc_func(rb_alloc_func_t allocator, VALUE klass);
 static VALUE
 rb_class_alloc(VALUE klass)
 {
+    RBIMPL_ASSERT_TYPE(klass, T_CLASS);
     rb_alloc_func_t allocator = class_get_alloc_func(klass);
     return class_call_alloc_func(allocator, klass);
 }
@@ -2336,11 +2294,7 @@ class_call_alloc_func(rb_alloc_func_t allocator, VALUE klass)
 
     obj = (*allocator)(klass);
 
-    if (UNLIKELY(RBASIC_CLASS(obj) != klass)) {
-        if (rb_obj_class(obj) != rb_class_real(klass)) {
-            rb_raise(rb_eTypeError, "wrong instance allocation");
-        }
-    }
+    RUBY_ASSERT(rb_obj_class(obj) == rb_class_real(klass));
     return obj;
 }
 
@@ -4101,7 +4055,7 @@ rb_Hash(VALUE val)
  *
  *  Examples:
  *
- *    Hash({foo: 0, bar: 1}) # => {:foo=>0, :bar=>1}
+ *    Hash({foo: 0, bar: 1}) # => {foo: 0, bar: 1}
  *    Hash(nil)              # => {}
  *    Hash([])               # => {}
  *
@@ -4448,7 +4402,6 @@ InitVM_Object(void)
 #endif
 
     rb_define_private_method(rb_cBasicObject, "initialize", rb_obj_initialize, 0);
-    rb_define_alloc_func(rb_cBasicObject, rb_class_allocate_instance);
     rb_define_method(rb_cBasicObject, "==", rb_obj_equal, 1);
     rb_define_method(rb_cBasicObject, "equal?", rb_obj_equal, 1);
     rb_define_method(rb_cBasicObject, "!", rb_obj_not, 0);

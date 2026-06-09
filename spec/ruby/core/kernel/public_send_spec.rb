@@ -29,7 +29,7 @@ describe "Kernel#public_send" do
         'done'
       end
     end
-    -> { KernelSpecs::Foo.new.public_send(:bar)}.should raise_error(NoMethodError)
+    -> { KernelSpecs::Foo.new.public_send(:bar)}.should.raise(NoMethodError)
   end
 
   it "raises a NoMethodError if the named method is private" do
@@ -41,7 +41,7 @@ describe "Kernel#public_send" do
     end
     -> {
       KernelSpecs::Foo.new.public_send(:bar)
-    }.should raise_error(NoMethodError)
+    }.should.raise(NoMethodError)
   end
 
   context 'called from own public method' do
@@ -70,11 +70,11 @@ describe "Kernel#public_send" do
     end
 
     it "raises a NoMethodError if the method is protected" do
-      -> { @receiver.call_protected_method }.should raise_error(NoMethodError)
+      -> { @receiver.call_protected_method }.should.raise(NoMethodError)
     end
 
     it "raises a NoMethodError if the method is private" do
-      -> { @receiver.call_private_method }.should raise_error(NoMethodError)
+      -> { @receiver.call_private_method }.should.raise(NoMethodError)
     end
   end
 
@@ -88,7 +88,7 @@ describe "Kernel#public_send" do
     end
     -> {
       KernelSpecs::Foo.new.public_send(:aka)
-    }.should raise_error(NoMethodError)
+    }.should.raise(NoMethodError)
   end
 
   it "raises a NoMethodError if the named method is an alias of a protected method" do
@@ -101,15 +101,15 @@ describe "Kernel#public_send" do
     end
     -> {
       KernelSpecs::Foo.new.public_send(:aka)
-    }.should raise_error(NoMethodError)
+    }.should.raise(NoMethodError)
   end
 
   it "includes `public_send` in the backtrace when passed not enough arguments" do
-    -> { public_send() }.should raise_error(ArgumentError) { |e| e.backtrace[0].should =~ /[`'](?:Kernel#)?public_send'/ }
+    -> { public_send() }.should.raise(ArgumentError) { |e| e.backtrace[0].should =~ /[`'](?:Kernel#)?public_send'/ }
   end
 
   it "includes `public_send` in the backtrace when passed a single incorrect argument" do
-    -> { public_send(Object.new) }.should raise_error(TypeError) { |e| e.backtrace[0].should =~ /[`'](?:Kernel#)?public_send'/ }
+    -> { public_send(Object.new) }.should.raise(TypeError) { |e| e.backtrace[0].should =~ /[`'](?:Kernel#)?public_send'/ }
   end
 
   it_behaves_like :basicobject_send, :public_send

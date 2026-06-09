@@ -190,8 +190,9 @@ ossl_x509store_set_vfy_cb(VALUE self, VALUE cb)
     X509_STORE *store;
 
     GetX509Store(self, store);
+    if (!X509_STORE_set_ex_data(store, store_ex_verify_cb_idx, (void *)cb))
+        ossl_raise(eX509StoreError, "X509_STORE_set_ex_data");
     rb_iv_set(self, "@verify_callback", cb);
-    X509_STORE_set_ex_data(store, store_ex_verify_cb_idx, (void *)cb);
     RB_OBJ_WRITTEN(self, Qundef, cb);
 
     return cb;
@@ -512,10 +513,8 @@ static void
 ossl_x509stctx_free(void *ptr)
 {
     X509_STORE_CTX *ctx = ptr;
-    if (X509_STORE_CTX_get0_untrusted(ctx))
-        sk_X509_pop_free(X509_STORE_CTX_get0_untrusted(ctx), X509_free);
-    if (X509_STORE_CTX_get0_cert(ctx))
-        X509_free(X509_STORE_CTX_get0_cert(ctx));
+    sk_X509_pop_free(X509_STORE_CTX_get0_untrusted(ctx), X509_free);
+    X509_free((X509 *)X509_STORE_CTX_get0_cert(ctx));
     X509_STORE_CTX_free(ctx);
 }
 
@@ -610,7 +609,8 @@ ossl_x509stctx_verify(VALUE self)
 
     GetX509StCtx(self, ctx);
     VALUE cb = rb_iv_get(self, "@verify_callback");
-    X509_STORE_CTX_set_ex_data(ctx, stctx_ex_verify_cb_idx, (void *)cb);
+    if (!X509_STORE_CTX_set_ex_data(ctx, stctx_ex_verify_cb_idx, (void *)cb))
+        ossl_raise(eX509StoreError, "X509_STORE_CTX_set_ex_data");
     RB_OBJ_WRITTEN(self, Qundef, cb);
 
     switch (X509_verify_cert(ctx)) {
@@ -736,7 +736,7 @@ static VALUE
 ossl_x509stctx_get_curr_cert(VALUE self)
 {
     X509_STORE_CTX *ctx;
-    X509 *x509;
+    const X509 *x509;
 
     GetX509StCtx(self, ctx);
     x509 = X509_STORE_CTX_get_current_cert(ctx);
@@ -758,7 +758,7 @@ static VALUE
 ossl_x509stctx_get_curr_crl(VALUE self)
 {
     X509_STORE_CTX *ctx;
-    X509_CRL *crl;
+    const X509_CRL *crl;
 
     GetX509StCtx(self, ctx);
     crl = X509_STORE_CTX_get0_current_crl(ctx);

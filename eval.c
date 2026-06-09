@@ -37,6 +37,7 @@
 #include "ruby/vm.h"
 #include "vm_core.h"
 #include "ractor_core.h"
+#include "zjit.h"
 
 NORETURN(static void rb_raise_jump(VALUE, VALUE));
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
@@ -80,7 +81,7 @@ ruby_setup(void)
     rb_vm_encoded_insn_data_table_init();
     Init_enable_box();
     Init_vm_objects();
-    Init_root_box();
+    Init_master_box();
     Init_fstring_table();
 
     EC_PUSH_TAG(GET_EC());
@@ -1436,6 +1437,8 @@ rb_using_refinement(rb_cref_t *cref, VALUE klass, VALUE module)
 
     RCLASS_WRITE_M_TBL(c, RCLASS_M_TBL(module));
 
+    rb_class_subclass_add(klass, iclass);
+
     rb_hash_aset(CREF_REFINEMENTS(cref), klass, iclass);
 }
 
@@ -1536,10 +1539,12 @@ add_activated_refinement(VALUE activated_refinements,
     superclass = refinement_superclass(superclass);
     c = iclass = rb_include_class_new(refinement, superclass);
     RCLASS_SET_REFINED_CLASS(c, klass);
+    rb_class_subclass_add(klass, iclass);
     refinement = RCLASS_SUPER(refinement);
     while (refinement && refinement != klass) {
         c = rb_class_set_super(c, rb_include_class_new(refinement, RCLASS_SUPER(c)));
         RCLASS_SET_REFINED_CLASS(c, klass);
+        rb_class_subclass_add(klass, c);
         refinement = RCLASS_SUPER(refinement);
     }
     rb_hash_aset(activated_refinements, klass, iclass);
@@ -2006,10 +2011,10 @@ errinfo_place(const rb_execution_context_t *ec)
 
     while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
         if (VM_FRAME_RUBYFRAME_P(cfp)) {
-            if (ISEQ_BODY(cfp->iseq)->type == ISEQ_TYPE_RESCUE) {
+            if (ISEQ_BODY(CFP_ISEQ(cfp))->type == ISEQ_TYPE_RESCUE) {
                 return &cfp->ep[VM_ENV_INDEX_LAST_LVAR];
             }
-            else if (ISEQ_BODY(cfp->iseq)->type == ISEQ_TYPE_ENSURE &&
+            else if (ISEQ_BODY(CFP_ISEQ(cfp))->type == ISEQ_TYPE_ENSURE &&
                      !THROW_DATA_P(cfp->ep[VM_ENV_INDEX_LAST_LVAR]) &&
                      !FIXNUM_P(cfp->ep[VM_ENV_INDEX_LAST_LVAR])) {
                 return &cfp->ep[VM_ENV_INDEX_LAST_LVAR];
@@ -2218,6 +2223,9 @@ Init_eval(void)
 
     rb_gvar_ractor_local("$@");
     rb_gvar_ractor_local("$!");
+
+    rb_gvar_box_dynamic("$@");
+    rb_gvar_box_dynamic("$!");
 
     rb_define_global_function("raise", f_raise, -1);
     rb_define_global_function("fail", f_raise, -1);

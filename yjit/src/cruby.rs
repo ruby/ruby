@@ -444,8 +444,8 @@ impl VALUE {
         unsafe { rb_obj_frozen_p(self) != VALUE(0) }
     }
 
-    pub fn shape_too_complex(self) -> bool {
-        unsafe { rb_yjit_shape_obj_too_complex_p(self) }
+    pub fn shape_complex(self) -> bool {
+        unsafe { rb_yjit_shape_obj_complex_p(self) }
     }
 
     pub fn shape_id_of(self) -> u32 {
@@ -596,6 +596,13 @@ impl From<VALUE> for u16 {
         let VALUE(uimm) = value;
         uimm.try_into().unwrap()
     }
+}
+
+/// Check whether a control frame has an escaped environment
+pub unsafe fn cfp_env_has_escaped(cfp: *mut rb_control_frame_struct) -> bool {
+    use crate::utils::IntoUsize;
+    let ep = get_cfp_ep(cfp);
+    0 != ep.offset(VM_ENV_DATA_INDEX_FLAGS as isize).read().0 & VM_ENV_FLAG_ESCAPED.as_usize()
 }
 
 /// Produce a Ruby string from a Rust string slice

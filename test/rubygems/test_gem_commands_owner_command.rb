@@ -32,9 +32,12 @@ class TestGemCommandsOwnerCommand < Gem::TestCase
 - email: user1@example.com
   id: 1
   handle: user1
+  role: owner
 - email: user2@example.com
+  role: maintainer
 - id: 3
   handle: user3
+  role: owner
 - id: 4
 EOF
 
@@ -48,9 +51,9 @@ EOF
     assert_equal Gem.configuration.rubygems_api_key, @stub_fetcher.last_request["Authorization"]
 
     assert_match(/Owners for gem: freewill/, @stub_ui.output)
-    assert_match(/- user1@example.com/, @stub_ui.output)
-    assert_match(/- user2@example.com/, @stub_ui.output)
-    assert_match(/- user3/, @stub_ui.output)
+    assert_match(/- user1@example.com \(owner\)/, @stub_ui.output)
+    assert_match(/- user2@example.com \(maintainer\)/, @stub_ui.output)
+    assert_match(/- user3 \(owner\)/, @stub_ui.output)
     assert_match(/- 4/, @stub_ui.output)
   end
 
@@ -413,7 +416,8 @@ EOF
       end
     end
 
-    assert_match @stub_fetcher.last_request["Authorization"], Gem.configuration.rubygems_api_key
+    webauthn_verification_request = @stub_fetcher.requests.find {|req| req.path == "/api/v1/webauthn_verification" }
+    assert_match webauthn_verification_request["Authorization"], Gem.configuration.rubygems_api_key
     assert_match "You have enabled multi-factor authentication. Please visit the following URL " \
       "to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, " \
       "you can re-run the gem signin command with the `--otp [your_code]` option.", @stub_ui.output

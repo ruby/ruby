@@ -23,7 +23,8 @@ prelude_ast_value(VALUE name, VALUE code, int line)
 static void
 pm_prelude_load(pm_parse_result_t *result, VALUE name, VALUE code, int line)
 {
-    pm_options_line_set(&result->options, line);
+    pm_parse_result_init(result);
+    pm_options_line_set(result->options, line);
     VALUE error = pm_parse_string(result, code, name, NULL);
 
     if (!NIL_P(error)) {
@@ -60,7 +61,7 @@ builtin_iseq_load(const char *feature_name, const struct rb_builtin_function *ta
     };
 
     if (rb_ruby_prism_p()) {
-        pm_parse_result_t result = { 0 };
+        pm_parse_result_t result;
         pm_prelude_load(&result, name_str, code, start_line);
 
         vm->builtin_function_table = table;
@@ -101,4 +102,17 @@ rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin
 {
     const rb_iseq_t *iseq = builtin_iseq_load(feature_name, table);
     rb_iseq_eval(iseq, rb_root_box());
+}
+
+VALUE
+rb_define_gem_modules(VALUE _a, VALUE _b)
+{
+    // do nothing - moniruby doesn't load gem_prelude.rb.
+    return Qnil;
+}
+
+void
+rb_load_gem_prelude(VALUE _)
+{
+    // do nothing - miniruby doesn't support loading RubyGems.
 }

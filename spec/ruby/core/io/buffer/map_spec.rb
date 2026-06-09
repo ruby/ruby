@@ -73,30 +73,34 @@ describe "IO::Buffer.map" do
     @buffer.should.valid?
   end
 
-  platform_is_not :windows, :openbsd do
-    it "is shareable across processes" do
-      file_name = tmp("shared_buffer")
-      @file = File.open(file_name, "w+")
-      @file << "I'm private"
-      @file.rewind
-      @buffer = IO::Buffer.map(@file)
+  # IO::Buffer.map seems not shareable across processes on OpenBSD.
+  # See https://rubyci.s3.amazonaws.com/openbsd-current/ruby-master/log/20260129T163005Z.fail.html.gz
+  platform_is_not :openbsd do
+    guard -> { Process.respond_to?(:fork) } do
+      it "is shareable across processes" do
+        file_name = tmp("shared_buffer")
+        @file = File.open(file_name, "w+")
+        @file << "I'm private"
+        @file.rewind
+        @buffer = IO::Buffer.map(@file)
 
-      IO.popen("-") do |child_pipe|
-        if child_pipe
-          # Synchronize on child's output.
-          child_pipe.readlines.first.chomp.should == @buffer.to_s
-          @buffer.get_string.should == "I'm shared!"
+        IO.popen("-") do |child_pipe|
+          if child_pipe
+            # Synchronize on child's output.
+            child_pipe.readlines.first.chomp.should == @buffer.to_s
+            @buffer.get_string.should == "I'm shared!"
 
-          @file.read.should == "I'm shared!"
-        else
-          @buffer.set_string("I'm shared!")
-          puts @buffer
+            @file.read.should == "I'm shared!"
+          else
+            @buffer.set_string("I'm shared!")
+            puts @buffer
+          end
+        ensure
+          child_pipe&.close
         end
       ensure
-        child_pipe&.close
+        File.unlink(file_name)
       end
-    ensure
-      File.unlink(file_name)
     end
   end
 
@@ -106,7 +110,7 @@ describe "IO::Buffer.map" do
         file_name = tmp("empty.txt")
         @file = File.open(file_name, "wb+")
         @tmp_files << file_name
-        -> { IO::Buffer.map(@file) }.should raise_error(ArgumentError, "Invalid negative or zero file size!")
+        -> { IO::Buffer.map(@file) }.should.raise(ArgumentError, "Invalid negative or zero file size!")
       end
     end
   end
@@ -114,7 +118,7 @@ describe "IO::Buffer.map" do
   context "with a file opened only for reading" do
     it "raises a SystemCallError unless read-only" do
       @file = File.open(fixture(__dir__, "read_text.txt"), "rb")
-      -> { IO::Buffer.map(@file) }.should raise_error(SystemCallError)
+      -> { IO::Buffer.map(@file) }.should.raise(SystemCallError)
     end
   end
 
@@ -138,20 +142,20 @@ describe "IO::Buffer.map" do
       ruby_version_is "4.0" do
         it "raises ArgumentError" do
           @file = open_fixture
-          -> { IO::Buffer.map(@file, 0) }.should raise_error(ArgumentError, "Size can't be zero!")
+          -> { IO::Buffer.map(@file, 0) }.should.raise(ArgumentError, "Size can't be zero!")
         end
       end
     end
 
     it "raises TypeError if size is not an Integer or nil" do
       @file = open_fixture
-      -> { IO::Buffer.map(@file, "10") }.should raise_error(TypeError, "not an Integer")
-      -> { IO::Buffer.map(@file, 10.0) }.should raise_error(TypeError, "not an Integer")
+      -> { IO::Buffer.map(@file, "10") }.should.raise(TypeError, "not an Integer")
+      -> { IO::Buffer.map(@file, 10.0) }.should.raise(TypeError, "not an Integer")
     end
 
     it "raises ArgumentError if size is negative" do
       @file = open_fixture
-      -> { IO::Buffer.map(@file, -1) }.should raise_error(ArgumentError, "Size can't be negative!")
+      -> { IO::Buffer.map(@file, -1) }.should.raise(ArgumentError, "Size can't be negative!")
     end
 
     ruby_version_is ""..."4.0" do
@@ -162,7 +166,7 @@ describe "IO::Buffer.map" do
     ruby_version_is "4.0" do
       it "raises ArgumentError if size is larger than file size" do
         @file = open_fixture
-        -> { IO::Buffer.map(@file, 8192) }.should raise_error(ArgumentError, "Size can't be larger than file size!")
+        -> { IO::Buffer.map(@file, 8192) }.should.raise(ArgumentError, "Size can't be larger than file size!")
       end
     end
   end
@@ -232,7 +236,7 @@ describe "IO::Buffer.map" do
     ruby_version_is "4.0" do
       it "raises ArgumentError if offset+size is larger than file size" do
         @file = open_big_file_fixture
-        -> { IO::Buffer.map(@file, 17, IO::Buffer::PAGE_SIZE) }.should raise_error(ArgumentError, "Offset too large!")
+        -> { IO::Buffer.map(@file, 17, IO::Buffer::PAGE_SIZE) }.should.raise(ArgumentError, "Offset too large!")
       ensure
         # Windows requires the file to be closed before deletion.
         @file.close unless @file.closed?
@@ -241,14 +245,14 @@ describe "IO::Buffer.map" do
 
     it "raises TypeError if offset is not convertible to Integer" do
       @file = open_fixture
-      -> { IO::Buffer.map(@file, 4, "4096") }.should raise_error(TypeError, /no implicit conversion/)
-      -> { IO::Buffer.map(@file, 4, nil) }.should raise_error(TypeError, /no implicit conversion/)
+      -> { IO::Buffer.map(@file, 4, "4096") }.should.raise(TypeError, /no implicit conversion/)
+      -> { IO::Buffer.map(@file, 4, nil) }.should.raise(TypeError, /no implicit conversion/)
     end
 
     ruby_version_is "4.0" do
       it "raises ArgumentError if offset is negative" do
         @file = open_fixture
-        -> { IO::Buffer.map(@file, 4, -1) }.should raise_error(ArgumentError, "Offset can't be negative!")
+        -> { IO::Buffer.map(@file, 4, -1) }.should.raise(ArgumentError, "Offset can't be negative!")
       end
     end
   end
@@ -277,7 +281,7 @@ describe "IO::Buffer.map" do
         @file = open_fixture
         @buffer = IO::Buffer.map(@file, nil, 0, IO::Buffer::READONLY)
 
-        -> { @buffer.set_string("test") }.should raise_error(IO::Buffer::AccessError, "Buffer is not writable!")
+        -> { @buffer.set_string("test") }.should.raise(IO::Buffer::AccessError, "Buffer is not writable!")
       end
     end
 
@@ -312,7 +316,7 @@ describe "IO::Buffer.map" do
         @file.read.should == "abcâdef\n".b
       end
 
-      platform_is_not :windows do
+      guard -> { Process.respond_to?(:fork) } do
         it "is not shared across processes" do
           file_name = tmp("shared_buffer")
           @file = File.open(file_name, "w+")

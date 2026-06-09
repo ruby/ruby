@@ -362,6 +362,7 @@ LIBRUBY_LDSHARED = $(LDSHARED)
 LIBRUBY_DLDFLAGS = $(EXTLDFLAGS) -implib:dummy.lib -def:$(RUBYDEF)
 
 EXEEXT = .exe
+BUILD_EXEEXT = $(EXEEXT)
 EXECUTABLE_EXTS = ".exe",".com",".cmd",".bat"
 !if !defined(PROGRAM)
 PROGRAM=$(RUBY_INSTALL_NAME)$(EXEEXT)
@@ -558,7 +559,12 @@ ACTIONS_ENDGROUP = @::
 
 ABI_VERSION_HDR = $(hdrdir)/ruby/internal/abi.h
 
-DUMP_AST = dump_ast$(EXEEXT)
+!if defined(DUMP_AST)
+DUMP_AST_TARGET = $(empty)
+!else
+DUMP_AST = dump_ast$(BUILD_EXEEXT)
+DUMP_AST_TARGET = $(DUMP_AST)
+!endif
 
 !include $(srcdir)/common.mk
 
@@ -1403,6 +1409,20 @@ loadpath: verconf.h
 	@$(CPP) $(XCFLAGS) $(CPPFLAGS) $(srcdir)/loadpath.c | \
 	sed -e '1,/^const char ruby_initial_load_paths/d;/;/,$$d' \
 	    -e '/^^ /!d;s/ *"\\\\0"$$//;s/" *"//g'
+
+!if [exit > rbincs.mk]
+!else if [for %I in ($(BUILTIN_RB_SRCS)) do \
+	@for %J in (\
+"%~nI.rbinc: %I $$(tooldir)/mk_builtin_loader.rb $$(DUMP_AST_TARGET)" \
+"	$$(ECHO) making $$@" \
+"	$$(Q) $$(BASERUBY) $$(tooldir)/mk_builtin_loader.rb $$(DUMP_AST) %I" \
+"" \
+) do @echo.%~J>>rbincs.mk]
+!else
+! include rbincs.mk
+! if [del rbincs.mk > nul]
+! endif
+!endif
 
 RUBYSPEC_CAPIEXT_EXTS =
 

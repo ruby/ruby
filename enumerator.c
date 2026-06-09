@@ -1103,6 +1103,7 @@ enumerator_rewind(VALUE obj)
 
 static struct generator *generator_ptr(VALUE obj);
 static VALUE append_method(VALUE obj, VALUE str, ID default_method, VALUE default_args);
+static VALUE append_method_args(VALUE obj, VALUE str, VALUE default_args);
 
 static VALUE
 inspect_enumerator(VALUE obj, VALUE dummy, int recur)
@@ -1175,7 +1176,7 @@ kwd_append(VALUE key, VALUE val, VALUE str)
 static VALUE
 append_method(VALUE obj, VALUE str, ID default_method, VALUE default_args)
 {
-    VALUE method, eargs;
+    VALUE method;
 
     method = rb_attr_get(obj, id_method);
     if (method != Qfalse) {
@@ -1189,6 +1190,13 @@ append_method(VALUE obj, VALUE str, ID default_method, VALUE default_args)
         rb_str_buf_cat2(str, ":");
         rb_str_buf_append(str, method);
     }
+    return append_method_args(obj, str, default_args);
+}
+
+static VALUE
+append_method_args(VALUE obj, VALUE str, VALUE default_args)
+{
+    VALUE eargs;
 
     eargs = rb_attr_get(obj, id_arguments);
     if (NIL_P(eargs)) {
@@ -1218,10 +1226,11 @@ append_method(VALUE obj, VALUE str, ID default_method, VALUE default_args)
             if (!NIL_P(kwds)) {
                 rb_hash_foreach(kwds, kwd_append, str);
             }
-            rb_str_set_len(str, RSTRING_LEN(str)-2);
+            rb_str_set_len(str, RSTRING_LEN(str)-2); /* drop the last ", " */
             rb_str_buf_cat2(str, ")");
         }
     }
+    RB_GC_GUARD(eargs);
 
     return str;
 }
@@ -2771,6 +2780,52 @@ lazy_with_index(int argc, VALUE *argv, VALUE obj)
     return lazy_add_method(obj, 0, 0, memo, rb_ary_new_from_values(1, &memo), &lazy_with_index_funcs);
 }
 
+static struct MEMO *
+lazy_tap_each_proc(VALUE proc_entry, struct MEMO *result, VALUE memos, long memo_index)
+{
+    struct proc_entry *entry = proc_entry_ptr(proc_entry);
+
+    rb_proc_call_with_block(entry->proc, 1, &result->memo_value, Qnil);
+
+    return result;
+}
+
+static const lazyenum_funcs lazy_tap_each_funcs = {
+    lazy_tap_each_proc, 0,
+};
+
+/*
+ *  call-seq:
+ *     lazy.tap_each { |item| ... } -> lazy_enumerator
+ *
+ *  Passes each element through to the block for side effects only,
+ *  without modifying the element or affecting the enumeration.
+ *  Returns a new lazy enumerator.
+ *
+ *  This is useful for debugging or logging inside lazy chains,
+ *  without breaking laziness or misusing +map+.
+ *
+ *     (1..).lazy
+ *           .tap_each { |x| puts "got #{x}" }
+ *           .select(&:even?)
+ *           .first(3)
+ *     # prints: got 1, got 2, ..., got 6
+ *     # returns: [2, 4, 6]
+ *
+ *  Similar in intent to Java's Stream#peek.
+ */
+
+static VALUE
+lazy_tap_each(VALUE obj)
+{
+    if (!rb_block_given_p())
+    {
+        rb_raise(rb_eArgError, "tried to call lazy tap_each without a block");
+    }
+
+    return lazy_add_method(obj, 0, 0, Qnil, Qnil, &lazy_tap_each_funcs);
+}
+
 #if 0 /* for RDoc */
 
 /*
@@ -4294,7 +4349,7 @@ static VALUE
 arith_seq_inspect(VALUE self)
 {
     struct enumerator *e;
-    VALUE eobj, str, eargs;
+    VALUE eobj, str;
     int range_p;
 
     TypedData_Get_Struct(self, struct enumerator, &enumerator_data_type, e);
@@ -4308,39 +4363,7 @@ arith_seq_inspect(VALUE self)
     str = rb_sprintf("(%s%"PRIsVALUE"%s.", range_p ? "(" : "", eobj, range_p ? ")" : "");
 
     rb_str_buf_append(str, rb_id2str(e->meth));
-
-    eargs = rb_attr_get(eobj, id_arguments);
-    if (NIL_P(eargs)) {
-        eargs = e->args;
-    }
-    if (eargs != Qfalse) {
-        long argc = RARRAY_LEN(eargs);
-        const VALUE *argv = RARRAY_CONST_PTR(eargs); /* WB: no new reference */
-
-        if (argc > 0) {
-            VALUE kwds = Qnil;
-
-            rb_str_buf_cat2(str, "(");
-
-            if (RB_TYPE_P(argv[argc-1], T_HASH)) {
-                int all_key = TRUE;
-                rb_hash_foreach(argv[argc-1], key_symbol_p, (VALUE)&all_key);
-                if (all_key) kwds = argv[--argc];
-            }
-
-            while (argc--) {
-                VALUE arg = *argv++;
-
-                rb_str_append(str, rb_inspect(arg));
-                rb_str_buf_cat2(str, ", ");
-            }
-            if (!NIL_P(kwds)) {
-                rb_hash_foreach(kwds, kwd_append, str);
-            }
-            rb_str_set_len(str, RSTRING_LEN(str)-2); /* drop the last ", " */
-            rb_str_buf_cat2(str, ")");
-        }
-    }
+    append_method_args(eobj, str, e->args);
 
     rb_str_buf_cat2(str, ")");
 
@@ -4646,6 +4669,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cLazy, "uniq", lazy_uniq, 0);
     rb_define_method(rb_cLazy, "compact", lazy_compact, 0);
     rb_define_method(rb_cLazy, "with_index", lazy_with_index, -1);
+    rb_define_method(rb_cLazy, "tap_each", lazy_tap_each, 0);
 
     lazy_use_super_method = rb_hash_new_with_size(18);
     rb_hash_aset(lazy_use_super_method, sym("map"), sym("_enumerable_map"));
@@ -4682,7 +4706,7 @@ InitVM_Enumerator(void)
     rb_eStopIteration = rb_define_class("StopIteration", rb_eIndexError);
     rb_define_method(rb_eStopIteration, "result", stop_result, 0);
 
-    /* Generator */
+    /* :nodoc: Generator */
     rb_cGenerator = rb_define_class_under(rb_cEnumerator, "Generator", rb_cObject);
     rb_include_module(rb_cGenerator, rb_mEnumerable);
     rb_define_alloc_func(rb_cGenerator, generator_allocate);
@@ -4690,7 +4714,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cGenerator, "initialize_copy", generator_init_copy, 1);
     rb_define_method(rb_cGenerator, "each", generator_each, -1);
 
-    /* Yielder */
+    /* :nodoc: Yielder */
     rb_cYielder = rb_define_class_under(rb_cEnumerator, "Yielder", rb_cObject);
     rb_define_alloc_func(rb_cYielder, yielder_allocate);
     rb_define_method(rb_cYielder, "initialize", yielder_initialize, 0);
@@ -4698,7 +4722,7 @@ InitVM_Enumerator(void)
     rb_define_method(rb_cYielder, "<<", yielder_yield_push, 1);
     rb_define_method(rb_cYielder, "to_proc", yielder_to_proc, 0);
 
-    /* Producer */
+    /* :nodoc: Producer */
     rb_cEnumProducer = rb_define_class_under(rb_cEnumerator, "Producer", rb_cObject);
     rb_define_alloc_func(rb_cEnumProducer, producer_allocate);
     rb_define_method(rb_cEnumProducer, "each", producer_each, 0);

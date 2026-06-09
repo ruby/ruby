@@ -68,7 +68,7 @@ describe "File.chown" do
     it "raises an error for a non existent path" do
       -> {
         File.chown(nil, nil, "#{@fname}_not_existing")
-      }.should raise_error(Errno::ENOENT)
+      }.should.raise(Errno::ENOENT)
     end
   end
 

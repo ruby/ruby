@@ -32,11 +32,11 @@ describe :prime_each, shared: true do
       all_prime &&= (2..Math.sqrt(prime)).all? { |d| prime % d != 0 }
     end
 
-    all_prime.should be_true
+    all_prime.should == true
   end
 
   it "returns the last evaluated expression in the passed block" do
-    @object.each { break :value }.should equal(:value)
+    @object.each { break :value }.should.equal?(:value)
   end
 
   describe "when not passed a block" do
@@ -45,23 +45,23 @@ describe :prime_each, shared: true do
     end
 
     it "returns an object that is Enumerable" do
-      @prime_enum.each.should be_kind_of(Enumerable)
+      @prime_enum.each.should.is_a?(Enumerable)
     end
 
     it "returns an object that responds to #with_index" do
-      @prime_enum.should respond_to(:with_index)
+      @prime_enum.should.respond_to?(:with_index)
     end
 
     it "returns an object that responds to #with_object" do
-      @prime_enum.should respond_to(:with_object)
+      @prime_enum.should.respond_to?(:with_object)
     end
 
     it "returns an object that responds to #next" do
-      @prime_enum.should respond_to(:next)
+      @prime_enum.should.respond_to?(:next)
     end
 
     it "returns an object that responds to #rewind" do
-      @prime_enum.should respond_to(:rewind)
+      @prime_enum.should.respond_to?(:rewind)
     end
 
     it "yields primes starting at 2 independent of prior enumerators" do
@@ -106,13 +106,13 @@ describe :prime_each_with_arguments, shared: true do
 
     ScratchPad.recorded.all? do |prime|
       (2..Math.sqrt(prime)).all? { |d| prime % d != 0 }
-    end.should be_true
+    end.should == true
 
-    ScratchPad.recorded.all? { |prime| prime <= bound }.should be_true
+    ScratchPad.recorded.all? { |prime| prime <= bound }.should == true
   end
 
   it "returns nil when no prime is generated" do
-    @object.each(1) { :value }.should be_nil
+    @object.each(1) { :value }.should == nil
   end
 
   it "yields primes starting at 2 independent of prior enumeration" do
@@ -132,7 +132,7 @@ describe :prime_each_with_arguments, shared: true do
   describe "when not passed a block" do
     it "returns an object that returns primes less than or equal to the bound" do
       bound = 100
-      @object.each(bound).all? { |prime| prime <= bound }.should be_true
+      @object.each(bound).all? { |prime| prime <= bound }.should == true
     end
   end
 end

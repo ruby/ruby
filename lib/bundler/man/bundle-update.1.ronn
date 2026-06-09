@@ -9,6 +9,7 @@ bundle-update(1) -- Update your gems to the latest available versions
                         [--local]
                         [--ruby]
                         [--bundler[=VERSION]]
+                        [--cooldown=NUMBER]
                         [--force]
                         [--full-index]
                         [--gemfile=GEMFILE]
@@ -90,6 +91,13 @@ gem.
 
 * `--conservative`:
   Use bundle install conservative update behavior and do not allow indirect dependencies to be updated.
+
+* `--cooldown=<number>`:
+  Only consider gem versions published at least <number> days ago when
+  resolving. Pass `0` to disable cooldown for this run, overriding any
+  per-source or global configuration. Combine with `--conservative` to
+  minimize transitive churn when bypassing cooldown for an urgent
+  update. See `cooldown` in bundle-config(1).
 
 ## UPDATING ALL GEMS
 

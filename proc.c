@@ -359,7 +359,7 @@ rb_binding_new(void)
  *
  *     # evaluate template in context of the object
  *     eval(template, user.get_binding)
- *     #=> {:name=>"Joan", :position=>"manager"}
+ *     #=> {name: "Joan", position: "manager"}
  *
  *  Binding#local_variable_get can be used to access the variables
  *  whose names are reserved Ruby keywords:
@@ -385,19 +385,31 @@ rb_f_binding(VALUE self)
 }
 
 /*
- *  call-seq:
- *     binding.eval(string [, filename [,lineno]])  -> obj
+ * call-seq:
+ *    binding.eval(string, filename = default_filename, lineno = 1) -> obj
  *
- *  Evaluates the Ruby expression(s) in <em>string</em>, in the
- *  <em>binding</em>'s context.  If the optional <em>filename</em> and
- *  <em>lineno</em> parameters are present, they will be used when
- *  reporting syntax errors.
+ * Evaluates the Ruby expression(s) in +string+ in the context of
+ * +self+. Returns the result of the last expression:
  *
- *     def get_binding(param)
- *       binding
- *     end
+ *     def get_binding(param) = binding
  *     b = get_binding("hello")
  *     b.eval("param")   #=> "hello"
+ *
+ * If the optional +filename+ is given, it will be used as the
+ * filename of the evaluation (for <tt>__FILE__</tt> and errors).
+ * Otherwise, it will default to <tt>(eval at __FILE__:__LINE__)</tt>
+ * where <tt>__FILE__</tt> and <tt>__LINE__</tt> are the filename and
+ * line number of the caller, respectively:
+ *
+ *     b.eval("puts __FILE__") # => "(eval at test.rb:4)"
+ *     b.eval("puts __FILE__", "foobar.rb") # => "foobar.rb"
+ *
+ * If the optional +lineno+ is given, it will be used as the
+ * line number of the evaluation (for <tt>__LINE__</tt> and errors).
+ * Otherwise, it will default to 1:
+ *
+ *     b.eval("puts __LINE__") # => 1
+ *     b.eval("puts __LINE__", "foobar.rb", 10) # => 10
  */
 
 static VALUE
@@ -1132,7 +1144,12 @@ rb_proc_call_kw(VALUE self, VALUE args, int kw_splat)
     VALUE vret;
     rb_proc_t *proc;
     int argc = check_argc(RARRAY_LEN(args));
-    const VALUE *argv = RARRAY_CONST_PTR(args);
+
+    // rb_vm_invoke_proc may end up modifying argv as part of calling and so we
+    // must use RARRAY_PTR, which marks the array as WB_UNPROTECTED instead of
+    // RARRAY_CONST_PTR. Unfortunately this is worse for GC.
+    // See invoke_block_from_c_proc
+    VALUE *argv = RARRAY_PTR(args);
     GetProcPtr(self, proc);
     vret = rb_vm_invoke_proc(GET_EC(), proc, argc, argv,
                              kw_splat, VM_BLOCK_HANDLER_NONE);
@@ -1515,20 +1532,14 @@ proc_eq(VALUE self, VALUE other)
 static VALUE
 iseq_location(const rb_iseq_t *iseq)
 {
-    VALUE loc[5];
-    int i = 0;
+    VALUE loc[2];
 
     if (!iseq) return Qnil;
     rb_iseq_check(iseq);
-    loc[i++] = rb_iseq_path(iseq);
-    const rb_code_location_t *cl = &ISEQ_BODY(iseq)->location.code_location;
-    loc[i++] = RB_INT2NUM(cl->beg_pos.lineno);
-    loc[i++] = RB_INT2NUM(cl->beg_pos.column);
-    loc[i++] = RB_INT2NUM(cl->end_pos.lineno);
-    loc[i++] = RB_INT2NUM(cl->end_pos.column);
-    RUBY_ASSERT_ALWAYS(i == numberof(loc));
+    loc[0] = rb_iseq_path(iseq);
+    loc[1] = RB_INT2NUM(ISEQ_BODY(iseq)->location.first_lineno);
 
-    return rb_ary_new_from_values(i, loc);
+    return rb_ary_new4(2, loc);
 }
 
 VALUE
@@ -1539,17 +1550,10 @@ rb_iseq_location(const rb_iseq_t *iseq)
 
 /*
  * call-seq:
- *    prc.source_location  -> [String, Integer, Integer, Integer, Integer]
+ *    prc.source_location  -> [String, Integer]
  *
- * Returns the location where the Proc was defined.
- * The returned Array contains:
- *   (1) the Ruby source filename
- *   (2) the line number where the definition starts
- *   (3) the position where the definition starts, in number of bytes from the start of the line
- *   (4) the line number where the definition ends
- *   (5) the position where the definitions ends, in number of bytes from the start of the line
- *
- * This method will return +nil+ if the Proc was not defined in Ruby (i.e. native).
+ * Returns the Ruby source filename and line number containing this proc
+ * or +nil+ if this proc was not defined in Ruby (i.e. native).
  */
 
 VALUE
@@ -1861,6 +1865,8 @@ mnew_missing_by_name(VALUE klass, VALUE obj, VALUE *name, int scope, VALUE mclas
     return mnew_missing(klass, obj, SYM2ID(vid), mclass);
 }
 
+VALUE rb_zsuper_to_super(int argc, VALUE *argv, VALUE self);
+
 static VALUE
 mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
               VALUE obj, ID id, VALUE mclass, int scope, int error)
@@ -1886,8 +1892,9 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
             rb_print_inaccessible(klass, id, visi);
         }
     }
-    if (me->def->type == VM_METHOD_TYPE_ZSUPER) {
-        if (me->defined_class) {
+    if (me->def->type == VM_METHOD_TYPE_ZSUPER ||
+            (me->def->type == VM_METHOD_TYPE_CFUNC && me->def->body.cfunc.func == (rb_cfunc_t)rb_zsuper_to_super)) {
+        if (me->def->type == VM_METHOD_TYPE_ZSUPER && me->defined_class) {
             VALUE klass = RCLASS_SUPER(RCLASS_ORIGIN(me->defined_class));
             id = me->def->original_id;
             me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(klass, id, &iclass);
@@ -2626,7 +2633,7 @@ method_clone(VALUE self)
     struct METHOD *orig, *data;
 
     TypedData_Get_Struct(self, struct METHOD, &method_data_type, orig);
-    clone = TypedData_Make_Struct(CLASS_OF(self), struct METHOD, &method_data_type, data);
+    clone = TypedData_Make_Struct(rb_obj_class(self), struct METHOD, &method_data_type, data);
     rb_obj_clone_setup(self, clone, Qnil);
     RB_OBJ_WRITE(clone, &data->recv, orig->recv);
     RB_OBJ_WRITE(clone, &data->klass, orig->klass);
@@ -2644,7 +2651,7 @@ method_dup(VALUE self)
     struct METHOD *orig, *data;
 
     TypedData_Get_Struct(self, struct METHOD, &method_data_type, orig);
-    clone = TypedData_Make_Struct(CLASS_OF(self), struct METHOD, &method_data_type, data);
+    clone = TypedData_Make_Struct(rb_obj_class(self), struct METHOD, &method_data_type, data);
     rb_obj_dup_setup(self, clone);
     RB_OBJ_WRITE(clone, &data->recv, orig->recv);
     RB_OBJ_WRITE(clone, &data->klass, orig->klass);
@@ -3079,7 +3086,11 @@ original_method_entry(VALUE mod, ID id)
 
     while ((me = rb_method_entry(mod, id)) != 0) {
         const rb_method_definition_t *def = me->def;
-        if (def->type != VM_METHOD_TYPE_ZSUPER) break;
+
+        if (def->type != VM_METHOD_TYPE_ZSUPER &&
+            (def->type != VM_METHOD_TYPE_CFUNC ||
+             def->body.cfunc.func != (rb_cfunc_t)rb_zsuper_to_super)) break;
+
         mod = RCLASS_SUPER(me->owner);
         id = def->original_id;
     }
@@ -3200,17 +3211,18 @@ rb_method_entry_location(const rb_method_entry_t *me)
 
 /*
  * call-seq:
- *    meth.source_location  -> [String, Integer, Integer, Integer, Integer]
+ *    source_location -> location
  *
- * Returns the location where the method was defined.
- * The returned Array contains:
- *   (1) the Ruby source filename
- *   (2) the line number where the definition starts
- *   (3) the position where the definition starts, in number of bytes from the start of the line
- *   (4) the line number where the definition ends
- *   (5) the position where the definitions ends, in number of bytes from the start of the line
+ * Returns a two-element array containing the Ruby source filename
+ * as a string and the line number integer where +self+ is defined:
  *
- * This method will return +nil+ if the method was not defined in Ruby (i.e. native).
+ *     def greeting = "hello"
+ *     method(:greeting).source_location # => ["test.rb", 1]
+ *
+ * Returns nil if +self+ is not a method defined in Ruby (i.e. defined
+ * using native code):
+ *
+ *     Kernel.method(:puts).source_location # => nil
  */
 
 VALUE
@@ -3305,6 +3317,18 @@ static VALUE
 rb_method_parameters(VALUE method)
 {
     return method_def_parameters(rb_method_def(method));
+}
+
+static inline VALUE
+append_param_name(VALUE str, VALUE name, const char *unnamed)
+{
+    if (!NIL_P(name)) {
+        rb_str_append(str, rb_sym2str(name));
+    }
+    else if (unnamed) {
+        rb_str_cat_cstr(str, unnamed);
+    }
+    return str;
 }
 
 /*
@@ -3455,50 +3479,30 @@ method_inspect(VALUE method)
                 name = RARRAY_AREF(pair, 1);
             }
             else {
-                // FIXME: can it be reduced to switch/case?
-                if (kind == req || kind == opt) {
-                    name = rb_str_new2("_");
-                }
-                else if (kind == rest || kind == keyrest) {
-                    name = rb_str_new2("");
-                }
-                else if (kind == block) {
-                    name = rb_str_new2("block");
-                }
-                else if (kind == nokey) {
-                    name = rb_str_new2("nil");
-                }
-                else if (kind == noblock) {
-                    name = rb_str_new2("nil");
-                }
-                else {
-                    name = Qnil;
-                }
+                name = Qnil;
             }
 
             if (kind == req) {
-                rb_str_catf(str, "%"PRIsVALUE, name);
+                append_param_name(str, name, "_");
             }
             else if (kind == opt) {
-                rb_str_catf(str, "%"PRIsVALUE"=...", name);
+                rb_str_cat_cstr(append_param_name(str, name, "_"), "=...");
             }
             else if (kind == keyreq) {
-                rb_str_catf(str, "%"PRIsVALUE":", name);
+                rb_str_cat_cstr(append_param_name(str, name, NULL), ":");
             }
             else if (kind == key) {
-                rb_str_catf(str, "%"PRIsVALUE": ...", name);
+                rb_str_cat_cstr(append_param_name(str, name, NULL), ": ...");
             }
             else if (kind == rest) {
-                if (name == ID2SYM('*')) {
-                    rb_str_cat_cstr(str, forwarding ? "..." : "*");
-                }
-                else {
-                    rb_str_catf(str, "*%"PRIsVALUE, name);
+                rb_str_cat_cstr(str, forwarding ? "..." : "*");
+                if (name != ID2SYM('*')) {
+                    append_param_name(str, name, NULL);
                 }
             }
             else if (kind == keyrest) {
                 if (name != ID2SYM(idPow)) {
-                    rb_str_catf(str, "**%"PRIsVALUE, name);
+                    append_param_name(rb_str_cat_cstr(str, "**"), name, NULL);
                 }
                 else if (i > 0) {
                     rb_str_set_len(str, RSTRING_LEN(str) - 2);
@@ -3517,7 +3521,7 @@ method_inspect(VALUE method)
                     }
                 }
                 else {
-                    rb_str_catf(str, "&%"PRIsVALUE, name);
+                    append_param_name(rb_str_cat_cstr(str, "&"), name, NULL);
                 }
             }
             else if (kind == nokey) {
@@ -3591,6 +3595,8 @@ method_to_proc(VALUE method)
 }
 
 extern VALUE rb_find_defined_class_by_owner(VALUE current_class, VALUE target_owner);
+extern int rb_method_definition_eq(const rb_method_definition_t *d1, const rb_method_definition_t *d2);
+rb_cref_t * rb_vm_get_cref(const VALUE *ep);
 
 /*
  * call-seq:
@@ -3617,11 +3623,76 @@ method_super_method(VALUE method)
         mid = data->me->def->body.alias.original_me->def->original_id;
     }
     else {
-        super_class = RCLASS_SUPER(RCLASS_ORIGIN(iclass));
+        VALUE klass = iclass;
+        if (RICLASS_FOR_REFINEMENT_P(klass)) {
+            // Refined methods need this check before superclass determination
+            klass = RBASIC(klass)->klass;
+        }
+        super_class = RCLASS_SUPER(RCLASS_ORIGIN(klass));
         mid = data->me->def->original_id;
     }
     if (!super_class) return Qnil;
-    me = (rb_method_entry_t *)rb_callable_method_entry_with_refinements(super_class, mid, &iclass);
+
+    // For refined methods, skip refinements for the same definition, but consider
+    // refinements for superclass methods
+    const rb_method_definition_t *skip_def = RICLASS_FOR_REFINEMENT_P(iclass) ? data->me->def : NULL;
+
+    // Use the CREF of the Method/UnboundMethod, not the CREF of the caller of super_method.
+    // We must avoid the use of rb_callable_method_entry_with_refinements, as that will
+    // implicitly use the refinements activated in of the caller of super_method.
+    const rb_cref_t *cref = NULL;
+    switch (data->me->def->type) {
+      case VM_METHOD_TYPE_ISEQ:
+        cref = data->me->def->body.iseq.cref;
+        break;
+      case VM_METHOD_TYPE_BMETHOD: {
+        const rb_proc_t *proc;
+        GetProcPtr(data->me->def->body.bmethod.proc, proc);
+        const struct rb_block *block = &proc->block;
+        if (vm_block_type(block) == block_type_iseq)
+            cref = rb_vm_get_cref(block->as.captured.ep);
+        break;
+      }
+      default:
+        break;
+    }
+    VALUE klass = super_class;
+    me = NULL;
+    while (klass) {
+        const rb_callable_method_entry_t *cme = rb_callable_method_entry(klass, mid);
+        if (!cme) break;
+        if (cme->def->type != VM_METHOD_TYPE_REFINED) {
+            me = (rb_method_entry_t *)cme;
+            iclass = cme->defined_class;
+            break;
+        }
+        // Look through all CREF scopes for a refinement for cme->owner, mirroring
+        // the loop in search_refined_method.
+        const rb_cref_t *c;
+        for (c = cref; c; c = CREF_NEXT(c)) {
+            VALUE refs = CREF_REFINEMENTS(c);
+            if (NIL_P(refs)) continue;
+            VALUE r = rb_hash_lookup(refs, cme->owner);
+            if (NIL_P(r)) continue;
+            const rb_callable_method_entry_t *ref_cme = rb_callable_method_entry(r, mid);
+            if (!ref_cme) break;
+            if (ref_cme->def->type == VM_METHOD_TYPE_REFINED) continue;
+            if (skip_def && rb_method_definition_eq(ref_cme->def, skip_def)) continue;
+            me = (rb_method_entry_t *)ref_cme;
+            iclass = ref_cme->defined_class;
+            break;
+        }
+        if (me) break;
+        // No refined method found. Use orig_me if available, or normal method lookup
+        // in superclass otherwise.
+        const rb_method_entry_t *orig_me = cme->def->body.refined.orig_me;
+        if (orig_me) {
+            me = (rb_method_entry_t *)orig_me;
+            iclass = orig_me->defined_class ? orig_me->defined_class : cme->defined_class;
+            break;
+        }
+        klass = RCLASS_SUPER(cme->defined_class);
+    }
     if (!me) return Qnil;
     return mnew_internal(me, me->owner, iclass, data->recv, mid, rb_obj_class(method), FALSE, FALSE);
 }

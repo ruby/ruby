@@ -63,6 +63,11 @@ module Bundler
       Bundler.create_bundle_path
 
       ProcessLock.lock do
+        # Invalidate any stale gem specification cache from before we acquired the lock.
+        # Another process may have installed gems while we were waiting.
+        Gem::Specification.reset
+        @definition.sources.clear_cache
+
         @definition.ensure_equivalent_gemfile_and_lockfile(options[:deployment])
 
         if @definition.dependencies.empty?
@@ -189,19 +194,11 @@ module Bundler
       standalone = options[:standalone]
       force = options[:force]
       local = options[:local] || options[:"prefer-local"]
-      jobs = installation_parallelization
+      jobs = Bundler.settings.installation_parallelization
       spec_installations = ParallelInstaller.call(self, @definition.specs, jobs, standalone, force, local: local)
       spec_installations.each do |installation|
         post_install_messages[installation.name] = installation.post_install_message if installation.has_post_install_message?
       end
-    end
-
-    def installation_parallelization
-      if jobs = Bundler.settings[:jobs]
-        return jobs
-      end
-
-      Bundler.settings.processor_count
     end
 
     def load_plugins
@@ -219,12 +216,13 @@ module Bundler
     end
 
     def ensure_specs_are_compatible!
+      overrides = @definition.overrides
       @definition.specs.each do |spec|
-        unless spec.matches_current_ruby?
+        unless spec.matches_current_ruby_with_overrides?(overrides)
           raise InstallError, "#{spec.full_name} requires ruby version #{spec.required_ruby_version}, " \
             "which is incompatible with the current version, #{Gem.ruby_version}"
         end
-        unless spec.matches_current_rubygems?
+        unless spec.matches_current_rubygems_with_overrides?(overrides)
           raise InstallError, "#{spec.full_name} requires rubygems version #{spec.required_rubygems_version}, " \
             "which is incompatible with the current version, #{Gem.rubygems_version}"
         end

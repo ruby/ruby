@@ -28,7 +28,7 @@ describe "Array#last" do
   end
 
   it "raises an ArgumentError when count is negative" do
-    -> { [1, 2].last(-1) }.should raise_error(ArgumentError)
+    -> { [1, 2].last(-1) }.should.raise(ArgumentError)
   end
 
   it "returns the entire array when count > length" do
@@ -47,10 +47,10 @@ describe "Array#last" do
 
   it "properly handles recursive arrays" do
     empty = ArraySpecs.empty_recursive_array
-    empty.last.should equal(empty)
+    empty.last.should.equal?(empty)
 
     array = ArraySpecs.recursive_array
-    array.last.should equal(array)
+    array.last.should.equal?(array)
   end
 
   it "tries to convert the passed argument to an Integer using #to_int" do
@@ -60,19 +60,19 @@ describe "Array#last" do
   end
 
   it "raises a TypeError if the passed argument is not numeric" do
-    -> { [1,2].last(nil) }.should raise_error(TypeError)
-    -> { [1,2].last("a") }.should raise_error(TypeError)
+    -> { [1,2].last(nil) }.should.raise(TypeError)
+    -> { [1,2].last("a") }.should.raise(TypeError)
 
     obj = mock("nonnumeric")
-    -> { [1,2].last(obj) }.should raise_error(TypeError)
+    -> { [1,2].last(obj) }.should.raise(TypeError)
   end
 
   it "does not return subclass instance on Array subclasses" do
-    ArraySpecs::MyArray[].last(0).should be_an_instance_of(Array)
-    ArraySpecs::MyArray[].last(2).should be_an_instance_of(Array)
-    ArraySpecs::MyArray[1, 2, 3].last(0).should be_an_instance_of(Array)
-    ArraySpecs::MyArray[1, 2, 3].last(1).should be_an_instance_of(Array)
-    ArraySpecs::MyArray[1, 2, 3].last(2).should be_an_instance_of(Array)
+    ArraySpecs::MyArray[].last(0).should.instance_of?(Array)
+    ArraySpecs::MyArray[].last(2).should.instance_of?(Array)
+    ArraySpecs::MyArray[1, 2, 3].last(0).should.instance_of?(Array)
+    ArraySpecs::MyArray[1, 2, 3].last(1).should.instance_of?(Array)
+    ArraySpecs::MyArray[1, 2, 3].last(2).should.instance_of?(Array)
   end
 
   it "is not destructive" do

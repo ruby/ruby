@@ -64,7 +64,9 @@ module Bundler
 
       @cached_dependencies = Hash.new do |dependencies, package|
         dependencies[package] = Hash.new do |versions, version|
-          versions[version] = to_dependency_hash(version.dependencies.reject {|d| d.name == package.name }, @packages)
+          deps = version.dependencies.reject {|d| d.name == package.name }
+          deps = apply_metadata_overrides(deps, package.name)
+          versions[version] = to_dependency_hash(deps, @packages)
         end
       end
 
@@ -80,6 +82,7 @@ module Bundler
       solver = PubGrub::VersionSolver.new(source: self, root: root, strategy: Strategy.new(self), logger: logger)
       result = solver.solve
       resolved_specs = result.flat_map {|package, version| version.to_specs(package, @most_specific_locked_platform) }
+      Override.attach(resolved_specs, @base.overrides)
       SpecSet.new(resolved_specs).specs_with_additional_variants_from(@base.locked_specs)
     rescue PubGrub::SolveFailure => e
       incompatibility = e.incompatibility
@@ -120,7 +123,23 @@ module Bundler
         explanation << extended_explanation
       end
 
+      override_summary = override_diagnostic_summary
+      explanation << override_summary if override_summary
+
       raise SolveFailure.new(explanation)
+    end
+
+    def override_diagnostic_summary
+      return nil if @base.overrides.empty?
+
+      lines = ["Bundler applied the following overrides while resolving:"]
+      @base.overrides.each do |override|
+        target = override.target == :all ? ":all" : override.target.inspect
+        location = override.source_location_label
+        lines << "  override #{target}, #{override.field}: #{override.operation.inspect}" \
+          "#{location ? " (declared at #{location})" : ""}"
+      end
+      "\n\n#{lines.join("\n")}"
     end
 
     def find_names_to_relax(incompatibility)
@@ -184,6 +203,9 @@ module Bundler
 
         platforms_explanation = specs_matching_other_platforms.any? ? " for any resolution platforms (#{package.platforms.join(", ")})" : ""
         custom_explanation = "#{constraint} could not be found in #{repository_for(package)}#{platforms_explanation}"
+        if hint = cooldown_hint(specs_matching_other_platforms)
+          custom_explanation += " (#{hint})"
+        end
 
         label = "#{name} (#{constraint_string})"
         extended_explanation = other_specs_matching_message(specs_matching_other_platforms, label) if specs_matching_other_platforms.any?
@@ -353,7 +375,29 @@ module Bundler
         message << "\n#{other_specs_matching_message(specs, matching_part)}"
       end
 
+      if hint = cooldown_hint(specs_matching_requirement)
+        message << "\n\n#{hint}."
+      end
+
+      if specs_matching_requirement.any? && (hint = platform_mismatch_hint)
+        message << "\n\n#{hint}"
+      end
+
       raise GemNotFound, message
+    end
+
+    def platform_mismatch_hint
+      locked_platforms = Bundler.locked_gems&.platforms
+      return unless locked_platforms
+
+      local_platform = Bundler.local_platform
+      return if locked_platforms.include?(local_platform)
+      return if locked_platforms.any? {|p| p == Gem::Platform::RUBY }
+
+      "Your current platform (#{local_platform}) is not included in the lockfile's platforms (#{locked_platforms.join(", ")}). " \
+        "Add the current platform to the lockfile with\n`bundle lock --add-platform #{local_platform}` and try again."
+    rescue GemfileNotFound
+      nil
     end
 
     def filtered_versions_for(package)
@@ -378,13 +422,63 @@ module Bundler
     end
 
     def filter_specs(specs, package)
-      filter_remote_specs(filter_prereleases(specs, package), package)
+      filter_remote_specs(filter_cooldown(filter_prereleases(specs, package)), package)
     end
 
     def filter_prereleases(specs, package)
       return specs unless package.ignores_prereleases? && specs.size > 1
 
       specs.reject {|s| s.version.prerelease? }
+    end
+
+    def filter_cooldown(specs)
+      return specs if specs.empty?
+      excluded_versions = cooldown_excluded_versions(specs)
+      return specs if excluded_versions.empty?
+      specs.reject {|s| excluded_versions.include?([s.name, s.version]) }
+    end
+
+    def cooldown_excluded_versions(specs)
+      excluded = {}
+      specs.each do |spec|
+        next unless cooldown_excluded?(spec)
+        excluded[[spec.name, spec.version]] = true
+      end
+      excluded
+    end
+
+    def cooldown_hint(specs)
+      excluded_versions = cooldown_excluded_versions(specs)
+      return nil if excluded_versions.empty?
+      "#{excluded_versions.size} version#{"s" if excluded_versions.size > 1} excluded by the cooldown setting; pass `--cooldown 0` to bypass"
+    end
+
+    def cooldown_excluded?(spec)
+      return false unless spec.respond_to?(:created_at) && spec.created_at
+      return false unless spec.respond_to?(:remote) && spec.remote
+      return false if pinned_by_lockfile_floor?(spec)
+      days = spec.remote.effective_cooldown
+      return false if days.nil? || days <= 0
+      (cooldown_now - spec.created_at) < (days * 86_400)
+    end
+
+    # A spec sitting exactly at a `>= locked_version` prevent-downgrade floor is
+    # the version the lockfile currently pins. `bundle update` and `bundle
+    # outdated` install that floor so resolution never moves a gem backwards.
+    # Filtering it out for cooldown would then make resolution impossible
+    # whenever the locked version is itself inside the cooldown window, which is
+    # exactly what happens to a lockfile written before cooldown was enabled.
+    # Keep it eligible; gems being explicitly updated carry an exact `=`
+    # requirement instead and stay subject to the cooldown filter.
+    def pinned_by_lockfile_floor?(spec)
+      return false unless defined?(@base) && @base
+      requirement = base_requirements[spec.name]
+      return false unless requirement && !requirement.exact?
+      requirement.requirements.any? {|op, version| op == ">=" && version == spec.version }
+    end
+
+    def cooldown_now
+      @cooldown_now ||= Time.now
     end
 
     def filter_remote_specs(specs, package)
@@ -492,7 +586,7 @@ module Bundler
     end
 
     def to_dependency_hash(dependencies, packages)
-      dependencies.inject({}) do |deps, dep|
+      apply_overrides(dependencies).inject({}) do |deps, dep|
         package = packages[dep.name]
 
         current_req = deps[package]
@@ -505,6 +599,33 @@ module Bundler
         end
 
         deps
+      end
+    end
+
+    def apply_overrides(dependencies)
+      return dependencies if @base.overrides.empty?
+
+      dependencies.map do |dep|
+        override = Override.find_for(@base.overrides, dep.name, :version)
+        next dep unless override
+        Gem::Dependency.new(dep.name, override.apply_to(dep.requirement))
+      end
+    end
+
+    METADATA_DEP_FIELD = {
+      "Ruby\0" => :required_ruby_version,
+      "RubyGems\0" => :required_rubygems_version,
+    }.freeze
+
+    def apply_metadata_overrides(dependencies, name)
+      return dependencies if @base.overrides.empty?
+
+      dependencies.map do |dep|
+        field = METADATA_DEP_FIELD[dep.name]
+        next dep unless field
+        override = Override.find_for(@base.overrides, name, field)
+        next dep unless override
+        Gem::Dependency.new(dep.name, override.apply_to(dep.requirement))
       end
     end
 

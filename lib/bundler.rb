@@ -62,6 +62,7 @@ module Bundler
   autoload :MatchRemoteMetadata,    File.expand_path("bundler/match_remote_metadata", __dir__)
   autoload :Materialization,        File.expand_path("bundler/materialization", __dir__)
   autoload :NULL,                   File.expand_path("bundler/constants", __dir__)
+  autoload :Override,               File.expand_path("bundler/override", __dir__)
   autoload :ProcessLock,            File.expand_path("bundler/process_lock", __dir__)
   autoload :RemoteSpecification,    File.expand_path("bundler/remote_specification", __dir__)
   autoload :Resolver,               File.expand_path("bundler/resolver", __dir__)
@@ -156,6 +157,7 @@ module Bundler
       # Return if all groups are already loaded
       return @setup if defined?(@setup) && @setup
 
+      configure_custom_gemfile
       definition.validate_runtime!
 
       SharedHelpers.print_major_deprecations!
@@ -584,6 +586,15 @@ module Bundler
       configure_gem_path
       configure_gem_home(path)
       Bundler.rubygems.clear_paths
+    end
+
+    def configure_custom_gemfile(custom_gemfile = nil)
+      custom_gemfile ||= Bundler.settings[:gemfile]
+
+      if custom_gemfile && !custom_gemfile.empty?
+        Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", File.expand_path(custom_gemfile)
+        reset_settings_and_root!
+      end
     end
 
     def self_manager

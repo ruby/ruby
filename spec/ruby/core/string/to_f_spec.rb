@@ -123,7 +123,7 @@ describe "String#to_f" do
   it "raises Encoding::CompatibilityError if String is in not ASCII-compatible encoding" do
     -> {
       '1.2'.encode("UTF-16").to_f
-    }.should raise_error(Encoding::CompatibilityError, "ASCII incompatible encoding: UTF-16")
+    }.should.raise(Encoding::CompatibilityError, "ASCII incompatible encoding: UTF-16")
   end
 
   it "allows String representation without a fractional part" do

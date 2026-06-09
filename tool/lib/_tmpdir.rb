@@ -90,6 +90,9 @@ END {
             else
               File.unlink(path)
             end
+          rescue Errno::EACCES
+            # On Windows, a killed process may still hold file locks briefly.
+            # Ignore and let FileUtils.rm_rf handle it below.
           end
         end
       end

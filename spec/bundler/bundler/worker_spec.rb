@@ -20,6 +20,26 @@ RSpec.describe Bundler::Worker do
     end
   end
 
+  describe "priority queue" do
+    it "process elements from the priority queue first" do
+      processed_elements = []
+
+      function = proc do |element, _|
+        processed_elements << element
+      end
+
+      worker = described_class.new(1, "Spec Worker", function)
+      worker.instance_variable_set(:@threads, []) # Prevent the enqueueing from starting work.
+      worker.enq("Normal element")
+      worker.enq("Priority element", priority: true)
+      worker.send(:create_threads)
+
+      worker.stop
+
+      expect(processed_elements).to eq(["Priority element", "Normal element"])
+    end
+  end
+
   describe "handling interrupts" do
     let(:status) do
       pid = Process.fork do

@@ -875,11 +875,11 @@ rb_transcoding_close(rb_transcoding *tc)
         (tr->state_fini_func)(TRANSCODING_STATE(tc)); /* check return value? */
     }
     if (TRANSCODING_STATE_EMBED_MAX < tr->state_size)
-        ruby_sized_xfree(tc->state.ptr, tr->state_size);
+        ruby_xfree_sized(tc->state.ptr, tr->state_size);
     if ((int)sizeof(tc->readbuf.ary) < tr->max_input)
-        ruby_sized_xfree(tc->readbuf.ptr, tr->max_input);
+        ruby_xfree_sized(tc->readbuf.ptr, tr->max_input);
     if ((int)sizeof(tc->writebuf.ary) < tr->max_output)
-        ruby_sized_xfree(tc->writebuf.ptr, tr->max_output);
+        ruby_xfree_sized(tc->writebuf.ptr, tr->max_output);
     SIZED_FREE(tc);
 }
 
@@ -1472,12 +1472,12 @@ output_hex_charref(rb_econv_t *ec)
     }
 
     if (utf_allocated)
-        ruby_sized_xfree((void *)utf, utf_bufsize);
+        ruby_xfree_sized((void *)utf, utf_bufsize);
     return 0;
 
   fail:
     if (utf_allocated)
-        ruby_sized_xfree((void *)utf, utf_bufsize);
+        ruby_xfree_sized((void *)utf, utf_bufsize);
     return -1;
 }
 
@@ -1601,7 +1601,7 @@ allocate_converted_string(const char *sname, const char *dname,
             dst_str = tmp;
         }
         else {
-            dst_str = ruby_sized_xrealloc(dst_str, dst_bufsize, dst_bufsize / 2);
+            dst_str = ruby_xrealloc_sized(dst_str, dst_bufsize, dst_bufsize / 2);
         }
         dp = dst_str+dst_len;
         res = rb_econv_convert(ec, &sp, str+len, &dp, dst_str+dst_bufsize, 0);
@@ -1617,7 +1617,7 @@ allocate_converted_string(const char *sname, const char *dname,
 
   fail:
     if (dst_str != caller_dst_buf)
-        ruby_sized_xfree(dst_str, dst_bufsize);
+        ruby_xfree_sized(dst_str, dst_bufsize);
     rb_econv_close(ec);
     return NULL;
 }
@@ -1712,7 +1712,7 @@ rb_econv_insert_output(rb_econv_t *ec,
             size_t s = (*data_end_p - *buf_start_p) + need;
             if (s < need)
                 goto fail;
-            buf = ruby_sized_xrealloc(*buf_start_p, s, buf_end_p - buf_start_p);
+            buf = ruby_xrealloc_sized(*buf_start_p, s, buf_end_p - buf_start_p);
             *data_start_p = buf;
             *data_end_p = buf + (*data_end_p - *buf_start_p);
             *buf_start_p = buf;
@@ -1729,12 +1729,12 @@ rb_econv_insert_output(rb_econv_t *ec,
     }
 
     if (insert_str != str && insert_str != insert_buf)
-        ruby_sized_xfree((void *)insert_str, insert_bufsize);
+        ruby_xfree_sized((void *)insert_str, insert_bufsize);
     return 0;
 
   fail:
     if (insert_str != str && insert_str != insert_buf)
-        ruby_sized_xfree((void *)insert_str, insert_bufsize);
+        ruby_xfree_sized((void *)insert_str, insert_bufsize);
     return -1;
 }
 
@@ -1748,7 +1748,7 @@ rb_econv_close(rb_econv_t *ec)
     }
     for (i = 0; i < ec->num_trans; i++) {
         rb_transcoding_close(ec->elems[i].tc);
-        ruby_sized_xfree(ec->elems[i].out_buf_start, ec->elems[i].out_buf_end - ec->elems[i].out_buf_start);
+        ruby_xfree_sized(ec->elems[i].out_buf_start, ec->elems[i].out_buf_end - ec->elems[i].out_buf_start);
     }
     SIZED_FREE_N(ec->in_buf_start, ec->in_buf_end - ec->in_buf_start);
     SIZED_FREE_N(ec->elems, ec->num_allocated);
@@ -2047,7 +2047,7 @@ rb_econv_binmode(rb_econv_t *ec)
         for (i=0; i < num_trans; i++) {
             if (transcoder == ec->elems[i].tc->transcoder) {
                 rb_transcoding_close(ec->elems[i].tc);
-                ruby_sized_xfree(ec->elems[i].out_buf_start, ec->elems[i].out_buf_end - ec->elems[i].out_buf_start);
+                ruby_xfree_sized(ec->elems[i].out_buf_start, ec->elems[i].out_buf_end - ec->elems[i].out_buf_start);
                 ec->num_trans--;
             }
             else

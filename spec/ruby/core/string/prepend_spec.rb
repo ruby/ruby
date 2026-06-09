@@ -5,7 +5,7 @@ require_relative 'fixtures/classes'
 describe "String#prepend" do
   it "prepends the given argument to self and returns self" do
     str = "world"
-    str.prepend("hello ").should equal(str)
+    str.prepend("hello ").should.equal?(str)
     str.should == "hello world"
   end
 
@@ -17,16 +17,16 @@ describe "String#prepend" do
   end
 
   it "raises a TypeError if the given argument can't be converted to a String" do
-    -> { "hello ".prepend [] }.should raise_error(TypeError)
-    -> { 'hello '.prepend mock('x') }.should raise_error(TypeError)
+    -> { "hello ".prepend [] }.should.raise(TypeError)
+    -> { 'hello '.prepend mock('x') }.should.raise(TypeError)
   end
 
   it "raises a FrozenError when self is frozen" do
     a = "hello"
     a.freeze
 
-    -> { a.prepend "" }.should raise_error(FrozenError)
-    -> { a.prepend "test" }.should raise_error(FrozenError)
+    -> { a.prepend "" }.should.raise(FrozenError)
+    -> { a.prepend "test" }.should.raise(FrozenError)
   end
 
   it "works when given a subclass instance" do
@@ -49,7 +49,7 @@ describe "String#prepend" do
 
   it "returns self when given no arguments" do
     str = "hello"
-    str.prepend.should equal(str)
+    str.prepend.should.equal?(str)
     str.should == "hello"
   end
 end

@@ -60,6 +60,21 @@ class TestGemInstaller < Gem::InstallerTestCase
     end
   end
 
+  def test_app_script_text_escapes_executable_name
+    installer = setup_base_installer
+
+    malicious = "evil');system('id');#"
+    @spec.bindir = "bin"
+    write_file @spec.bin_file(malicious) do |io|
+      io.puts "#!/usr/bin/ruby"
+    end
+
+    wrapper = installer.app_script_text malicious
+
+    assert_includes wrapper, %q{Gem.activate_and_load_bin_path('a', 'evil\');system(\'id\');#', version)}
+    assert_includes wrapper, %q{load Gem.activate_bin_path('a', 'evil\');system(\'id\');#', version)}
+  end
+
   def test_check_executable_overwrite
     installer = setup_base_installer
 
@@ -689,8 +704,11 @@ class TestGemInstaller < Gem::InstallerTestCase
 
   def test_generate_bin_symlink_win32
     old_win_platform = Gem.win_platform?
-    Gem.win_platform = true
     old_alt_separator = File::ALT_SEPARATOR
+
+    omit "JRuby on Windows still creates the symlink so the wrapper branch is not exercised" if Gem.win_platform? && Gem.java_platform?
+
+    Gem.win_platform = true
     File.__send__(:remove_const, :ALT_SEPARATOR)
     File.const_set(:ALT_SEPARATOR, "\\")
 
@@ -743,6 +761,8 @@ class TestGemInstaller < Gem::InstallerTestCase
   end
 
   def test_generate_bin_with_dangling_symlink
+    omit "JRuby on Windows still creates the symlink so the wrapper branch is not exercised" if Gem.win_platform? && Gem.java_platform?
+
     gem_with_dangling_symlink = File.expand_path("packages/ascii_binder-0.1.10.1.gem", __dir__)
 
     installer = Gem::Installer.at(
@@ -759,8 +779,12 @@ class TestGemInstaller < Gem::InstallerTestCase
 
     errors = @ui.error.split("\n")
     assert_equal "WARNING:  ascii_binder-0.1.10.1 ships with a dangling symlink named bin/ascii_binder pointing to missing bin/asciibinder file. Ignoring", errors.shift
-    assert_empty errors
-
+    if symlink_supported?
+      assert_empty errors
+    else
+      assert_match(/Unable to use symlinks, installing wrapper/i,
+                   errors.to_s)
+    end
     assert_empty @ui.output
   end
 
@@ -1472,6 +1496,39 @@ class TestGemInstaller < Gem::InstallerTestCase
     refute_match(/I am a shiny gem!/, @ui.output)
   end
 
+  def test_install_sanitizes_post_install_message
+    # Use for_spec so the in-memory message reaches the installer verbatim;
+    # building a gem would escape the control characters during serialization.
+    @spec = setup_base_spec
+    @spec.post_install_message = "shiny \e]2;pwn\a gem"
+
+    installer = Gem::Installer.for_spec @spec, post_install_message: true
+    installer.gem_home = @gemhome
+
+    use_ui @ui do
+      installer.install
+    end
+
+    assert_match(/shiny \.\]2;pwn\. gem/, @ui.output)
+    refute_match(/\e\]2;pwn/, @ui.output)
+  end
+
+  def test_install_handles_non_string_post_install_message
+    # post_install_message may be a non-String (the gemspec schema allows an
+    # array), so sanitizing must not assume it responds to gsub.
+    @spec = setup_base_spec
+    @spec.post_install_message = %w[one two]
+
+    installer = Gem::Installer.for_spec @spec, post_install_message: true
+    installer.gem_home = @gemhome
+
+    use_ui @ui do
+      installer.install
+    end
+
+    assert_match(/one/, @ui.output)
+  end
+
   def test_install_extension_dir
     gemhome2 = "#{@gemhome}2"
 
@@ -1909,6 +1966,82 @@ class TestGemInstaller < Gem::InstallerTestCase
         installer.pre_install_checks
       end
       assert_equal "#<Gem::Specification name=malicious version=1> has an invalid dependencies", e.message
+    end
+  end
+
+  def test_pre_install_checks_malicious_executables_before_eval
+    spec = util_spec "malicious", "1"
+    def spec.full_name # so the spec is buildable
+      "malicious-1"
+    end
+
+    def spec.validate(*args); end
+    spec.executables = ["../../../tmp/malicious"]
+
+    util_build_gem spec
+
+    gem = File.join(@gemhome, "cache", spec.file_name)
+
+    use_ui @ui do
+      installer = Gem::Installer.at gem
+      e = assert_raise Gem::InstallError do
+        installer.pre_install_checks
+      end
+      assert_equal "#<Gem::Specification name=malicious version=1> has an invalid executable", e.message
+    end
+  end
+
+  def test_pre_install_checks_malicious_bindir_before_eval
+    spec = util_spec "malicious", "1"
+    def spec.full_name # so the spec is buildable
+      "malicious-1"
+    end
+
+    def spec.validate(*args); end
+    spec.bindir = "../../../tmp/malicious"
+
+    util_build_gem spec
+
+    gem = File.join(@gemhome, "cache", spec.file_name)
+
+    use_ui @ui do
+      installer = Gem::Installer.at gem
+      e = assert_raise Gem::InstallError do
+        installer.pre_install_checks
+      end
+      assert_equal "#<Gem::Specification name=malicious version=1> has an invalid bindir", e.message
+    end
+  end
+
+  def test_pre_install_checks_non_string_executable
+    spec = util_spec "malicious", "1"
+    def spec.validate(*args); end
+    spec.executables = [nil]
+
+    installer = Gem::Installer.for_spec spec
+    installer.gem_home = @gemhome
+
+    use_ui @ui do
+      e = assert_raise Gem::InstallError do
+        installer.pre_install_checks
+      end
+      assert_equal "#<Gem::Specification name=malicious version=1> has an invalid executable", e.message
+    end
+  end
+
+  def test_pre_install_checks_non_string_bindir
+    spec = util_spec "malicious", "1"
+    def spec.validate(*args); end
+    spec.bindir = true
+
+    installer = Gem::Installer.for_spec spec
+    installer.gem_home = @gemhome
+
+    use_ui @ui do
+      e = assert_raise Gem::InstallError do
+        installer.pre_install_checks
+      end
+      assert_equal "#<Gem::Specification name=malicious version=1> has an invalid bindir", e.message
     end
   end
 
@@ -2436,6 +2569,136 @@ class TestGemInstaller < Gem::InstallerTestCase
     installer = util_installer(gem, @gemhome)
     assert_respond_to(installer, :gem)
     assert_kind_of(String, installer.gem)
+  end
+
+  def test_install_no_build_extension
+    installer = util_setup_installer
+
+    gemdir = File.join @gemhome, "gems", @spec.full_name
+
+    installer.options[:build_extension] = false
+
+    use_ui @ui do
+      installer.install
+    end
+
+    assert_path_exist gemdir
+    assert_path_not_exist File.join(@spec.extension_dir, "gem.build_complete")
+    assert_match "contains native extensions that were not built", @ui.error
+    assert_match "gem pristine #{@spec.name} --extensions", @ui.error
+  end
+
+  def test_install_no_build_extension_without_extensions
+    spec = quick_gem "b", 2
+
+    util_build_gem spec
+
+    installer = util_installer spec, @gemhome
+    installer.options[:build_extension] = false
+
+    use_ui @ui do
+      installer.install
+    end
+
+    refute_match "contains native extensions", @ui.error
+  end
+
+  def test_install_no_install_plugin
+    installer = util_setup_installer do |spec|
+      write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
+        io.write "# do nothing"
+      end
+
+      spec.files += %w[lib/rubygems_plugin.rb]
+    end
+
+    installer.options[:install_plugin] = false
+
+    build_rake_in do
+      use_ui @ui do
+        installer.install
+      end
+    end
+
+    plugin_path = File.join Gem.plugindir, "a_plugin.rb"
+    refute File.exist?(plugin_path), "plugin must not be written when --no-install-plugin"
+    assert_match "contains plugins that were not installed", @ui.error
+    assert_match "gem pristine #{@spec.name} --only-plugins", @ui.error
+  end
+
+  def test_install_no_install_plugin_skips_load_plugin
+    installer = util_setup_installer do |spec|
+      write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
+        io.write "$no_install_plugin_test_loaded = true"
+      end
+
+      spec.files += %w[lib/rubygems_plugin.rb]
+    end
+
+    # Simulate a pre-existing plugin wrapper from a previous install
+    FileUtils.mkdir_p Gem.plugindir
+    plugin_path = File.join Gem.plugindir, "a_plugin.rb"
+    File.write(plugin_path, "require_relative '../../gems/#{@spec.full_name}/lib/rubygems_plugin'")
+
+    installer.options[:install_plugin] = false
+
+    build_rake_in do
+      use_ui @ui do
+        installer.install
+      end
+    end
+
+    refute defined?($no_install_plugin_test_loaded) && $no_install_plugin_test_loaded,
+           "plugin must not be loaded when --no-install-plugin"
+  ensure
+    $no_install_plugin_test_loaded = nil
+  end
+
+  def test_install_no_install_plugin_without_plugins
+    installer = util_setup_installer
+
+    installer.options[:install_plugin] = false
+
+    build_rake_in do
+      use_ui @ui do
+        installer.install
+      end
+    end
+
+    refute_match "contains plugins", @ui.error
+  end
+
+  def test_install_no_install_plugin_removes_stale_wrappers
+    # First install a version with a plugin
+    installer = util_setup_installer do |spec|
+      write_file File.join(@tempdir, "lib", "rubygems_plugin.rb") do |io|
+        io.write "# plugin code"
+      end
+
+      spec.files += %w[lib/rubygems_plugin.rb]
+    end
+
+    build_rake_in do
+      use_ui @ui do
+        installer.install
+      end
+    end
+
+    plugin_path = File.join Gem.plugindir, "a_plugin.rb"
+    assert File.exist?(plugin_path), "plugin wrapper should exist after first install"
+
+    # Now install a new version without plugins, using --no-install-plugin
+    spec2 = quick_gem "a", 3
+    util_build_gem spec2
+
+    installer2 = util_installer spec2, @gemhome
+    installer2.options[:install_plugin] = false
+
+    use_ui @ui do
+      installer2.install
+    end
+
+    refute File.exist?(plugin_path), "stale plugin wrapper must be removed"
   end
 
   private

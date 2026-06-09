@@ -12,8 +12,8 @@ RSpec.describe "fetching dependencies with a not available mirror" do
 
   context "with a specific fallback timeout" do
     before do
-      global_config("BUNDLE_MIRROR__HTTPS://GEM__REPO2/__FALLBACK_TIMEOUT/" => "true",
-                    "BUNDLE_MIRROR__HTTPS://GEM__REPO2/" => "https://gem.mirror")
+      bundle_config_global("BUNDLE_MIRROR__HTTPS://GEM__REPO2/__FALLBACK_TIMEOUT/" => "true",
+                           "BUNDLE_MIRROR__HTTPS://GEM__REPO2/" => "https://gem.mirror")
     end
 
     it "install a gem using the original uri when the mirror is not responding" do
@@ -27,8 +27,8 @@ RSpec.describe "fetching dependencies with a not available mirror" do
 
   context "with a global fallback timeout" do
     before do
-      global_config("BUNDLE_MIRROR__ALL__FALLBACK_TIMEOUT/" => "1",
-                    "BUNDLE_MIRROR__ALL" => "https://gem.mirror")
+      bundle_config_global("BUNDLE_MIRROR__ALL__FALLBACK_TIMEOUT/" => "1",
+                           "BUNDLE_MIRROR__ALL" => "https://gem.mirror")
     end
 
     it "install a gem using the original uri when the mirror is not responding" do
@@ -42,7 +42,7 @@ RSpec.describe "fetching dependencies with a not available mirror" do
 
   context "with a specific mirror without a fallback timeout" do
     before do
-      global_config("BUNDLE_MIRROR__HTTPS://GEM__REPO2/" => "https://gem.mirror")
+      bundle_config_global("BUNDLE_MIRROR__HTTPS://GEM__REPO2/" => "https://gem.mirror")
     end
 
     it "fails to install the gem with a timeout error when the mirror is not responding" do
@@ -55,7 +55,7 @@ RSpec.describe "fetching dependencies with a not available mirror" do
 
   context "with a global mirror without a fallback timeout" do
     before do
-      global_config("BUNDLE_MIRROR__ALL" => "https://gem.mirror")
+      bundle_config_global("BUNDLE_MIRROR__ALL" => "https://gem.mirror")
     end
 
     it "fails to install the gem with a timeout error when the mirror is not responding" do

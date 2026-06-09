@@ -37,7 +37,7 @@ ruby_version_is ""..."4.0" do
         cookie2.value.send(method, *args)
         fail << method unless cookie1.value == cookie2.value
       end
-      fail.should be_empty
+      fail.should.empty?
     end
   end
 

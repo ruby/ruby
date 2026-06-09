@@ -97,6 +97,7 @@ lcov*.info
 /enc.mk
 /encdb.h
 /exts.mk
+/gc/*/exts.mk
 /goruby
 /id.[ch]
 /largefile.h
@@ -264,16 +265,20 @@ lcov*.info
 /lib/prism/reflection.rb
 /lib/prism/serialize.rb
 /lib/prism/visitor.rb
+/prism/internal/diagnostic.h
 /prism/api_node.c
 /prism/ast.h
 /prism/diagnostic.c
-/prism/diagnostic.h
+/prism/json.c
 /prism/node.c
 /prism/prettyprint.c
 /prism/serialize.c
-/prism/token_type.c
+/prism/tokens.c
 /prism/srcs.mk
 /dump_ast
+
+# prism (old file)
+/prism/token_type.c
 
 # tool/update-NEWS-gemlist.rb
 /bundled_gems.json

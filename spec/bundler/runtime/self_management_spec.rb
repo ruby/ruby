@@ -31,7 +31,7 @@ RSpec.describe "Self management" do
     it "installs locked version when using system path and uses it" do
       lockfile_bundled_with(previous_minor)
 
-      bundle "config set --local path.system true"
+      bundle_config "path.system true"
       bundle "install"
       expect(out).to include("Bundler #{current_version} is running, but your lockfile was generated with #{previous_minor}. Installing Bundler #{previous_minor} and restarting using that version.")
 
@@ -67,7 +67,7 @@ RSpec.describe "Self management" do
     it "installs locked version when using local path and uses it" do
       lockfile_bundled_with(previous_minor)
 
-      bundle "config set --local path vendor/bundle"
+      bundle_config "path vendor/bundle"
       bundle "install"
       expect(out).to include("Bundler #{current_version} is running, but your lockfile was generated with #{previous_minor}. Installing Bundler #{previous_minor} and restarting using that version.")
       expect(vendored_gems("gems/bundler-#{previous_minor}")).to exist
@@ -108,7 +108,7 @@ RSpec.describe "Self management" do
     it "installs locked version when using deployment option and uses it" do
       lockfile_bundled_with(previous_minor)
 
-      bundle "config set --local deployment true"
+      bundle_config "deployment true"
       bundle "install"
       expect(out).to include("Bundler #{current_version} is running, but your lockfile was generated with #{previous_minor}. Installing Bundler #{previous_minor} and restarting using that version.")
       expect(vendored_gems("gems/bundler-#{previous_minor}")).to exist
@@ -163,7 +163,7 @@ RSpec.describe "Self management" do
     it "installs BUNDLE_VERSION version when using bundle config version x.y.z" do
       lockfile_bundled_with(current_version)
 
-      bundle "config set --local version #{previous_minor}"
+      bundle_config "version #{previous_minor}"
       bundle "install"
       expect(out).to include("Bundler #{current_version} is running, but your configuration was #{previous_minor}. Installing Bundler #{previous_minor} and restarting using that version.")
 
@@ -178,8 +178,8 @@ RSpec.describe "Self management" do
 
       lockfile_bundled_with(current_version)
 
-      bundle "config set --local version #{previous_minor}"
-      bundle "config set --local path.system true"
+      bundle_config "version #{previous_minor}"
+      bundle_config "path.system true"
       bundle "install"
 
       script = bundled_app("script.rb")
@@ -192,7 +192,7 @@ RSpec.describe "Self management" do
     it "does not try to install when using bundle config version global" do
       lockfile_bundled_with(previous_minor)
 
-      bundle "config set version system"
+      bundle_config "version system"
       bundle "install"
       expect(out).not_to match(/restarting using that version/)
 
@@ -203,7 +203,7 @@ RSpec.describe "Self management" do
     it "does not try to install when using bundle config version <dev-version>" do
       lockfile_bundled_with(previous_minor)
 
-      bundle "config set version #{previous_minor}.dev"
+      bundle_config "version #{previous_minor}.dev"
       bundle "install"
       expect(out).not_to match(/restarting using that version/)
 

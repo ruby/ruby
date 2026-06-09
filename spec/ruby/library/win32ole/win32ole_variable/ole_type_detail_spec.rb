@@ -11,8 +11,8 @@ platform_is :windows do
     end
 
     it "returns a nonempty Array" do
-      @var.ole_type_detail.should be_kind_of Array
-      @var.ole_type_detail.should_not be_empty
+      @var.ole_type_detail.should.is_a? Array
+      @var.ole_type_detail.should_not.empty?
     end
 
   end

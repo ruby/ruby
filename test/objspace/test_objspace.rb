@@ -350,6 +350,21 @@ class TestObjSpace < Test::Unit::TestCase
     RUBY
   end
 
+  def test_trace_object_allocations_does_not_reuse_freed_allocation_info
+    assert_separately(%w(-robjspace), <<~RUBY)
+      ObjectSpace.trace_object_allocations do
+        1_000_000.times.map { Object.new }
+      end
+
+      GC.start
+
+      objs = 1_000_000.times.map { Object.new }
+
+      leaked = objs.count { |obj| ObjectSpace.allocation_sourcefile(obj) }
+      assert_equal 0, leaked
+    RUBY
+  end
+
   def test_dump_flags
     # Ensure that the fstring is promoted to old generation
     4.times { GC.start }
@@ -376,7 +391,7 @@ class TestObjSpace < Test::Unit::TestCase
   if defined?(RubyVM::Shape)
     class TooComplex; end
 
-    def test_dump_too_complex_shape
+    def test_dump_complex_shape
       omit "flaky test"
 
       RubyVM::Shape::SHAPE_MAX_VARIATIONS.times do
@@ -385,26 +400,26 @@ class TestObjSpace < Test::Unit::TestCase
 
       tc = TooComplex.new
       info = ObjectSpace.dump(tc)
-      assert_not_match(/"too_complex_shape"/, info)
+      assert_not_match(/"complex_shape"/, info)
       tc.instance_variable_set(:@new_ivar, 1)
       info = ObjectSpace.dump(tc)
-      assert_match(/"too_complex_shape":true/, info)
+      assert_match(/"complex_shape":true/, info)
       if defined?(JSON)
-        assert_true(JSON.parse(info)["too_complex_shape"])
+        assert_true(JSON.parse(info)["complex_shape"])
       end
     end
   end
 
   class NotTooComplex ; end
 
-  def test_dump_not_too_complex_shape
+  def test_dump_not_complex_shape
     tc = NotTooComplex.new
     tc.instance_variable_set(:@new_ivar, 1)
     info = ObjectSpace.dump(tc)
 
-    assert_not_match(/"too_complex_shape"/, info)
+    assert_not_match(/"complex_shape"/, info)
     if defined?(JSON)
-      assert_nil(JSON.parse(info)["too_complex_shape"])
+      assert_nil(JSON.parse(info)["complex_shape"])
     end
   end
 
@@ -473,12 +488,12 @@ class TestObjSpace < Test::Unit::TestCase
     assert_include(info, '"embedded":true')
     assert_include(info, '"ivars":0')
 
-    # Non-embed object
+    # Non-embed object (needs > 6 ivars to exceed pool 0 embed capacity)
     obj = klass.new
-    5.times { |i| obj.instance_variable_set("@ivar#{i}", 0) }
+    7.times { |i| obj.instance_variable_set("@ivar#{i}", 0) }
     info = ObjectSpace.dump(obj)
     assert_not_include(info, '"embedded":true')
-    assert_include(info, '"ivars":5')
+    assert_include(info, '"ivars":7')
   end
 
   def test_dump_control_char
@@ -648,7 +663,8 @@ class TestObjSpace < Test::Unit::TestCase
         next if obj["type"] == "SHAPE"
 
         assert_not_nil obj["slot_size"]
-        assert_equal 0, obj["slot_size"] % GC.stat_heap(0, :slot_size)
+        slot_sizes = GC::INTERNAL_CONSTANTS[:HEAP_COUNT].times.map { |i| GC.stat_heap(i, :slot_size) }
+        assert_include slot_sizes, obj["slot_size"]
       }
     end
   end
@@ -1019,6 +1035,20 @@ class TestObjSpace < Test::Unit::TestCase
     class_name = '" little boby table [Bug #20892]'
     json = ObjectSpace.dump(Class.new.tap { |c| c.set_temporary_name(class_name) })
     assert_equal class_name, JSON.parse(json)["name"]
+  end
+
+  def test_dump_free_immediately
+    require '-test-/typeddata'
+
+    # Bug::TypedData has flags=0 (no FREE_IMMEDIATELY)
+    info = ObjectSpace.dump(Bug::TypedData.new)
+    assert_include(info, '"struct":"typed_data"')
+    assert_include(info, '"free_immediately":false')
+
+    # Most typed data objects have FREE_IMMEDIATELY, so the field should be absent
+    info = ObjectSpace.dump(Thread.current.group)
+    assert_include(info, '"struct":"thgroup"')
+    assert_not_include(info, '"free_immediately"')
   end
 
   def test_dump_include_shareable

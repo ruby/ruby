@@ -17,7 +17,7 @@ RSpec.describe "bundle install with a lockfile present" do
 
     context "with plugins disabled" do
       before do
-        bundle "config set plugins false"
+        bundle_config "plugins false"
       end
 
       it "does not evaluate the gemfile twice when the gem is already installed" do

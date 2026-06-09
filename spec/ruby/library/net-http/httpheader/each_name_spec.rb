@@ -1,8 +1,10 @@
 require_relative '../../../spec_helper'
 require 'net/http'
 require_relative 'fixtures/classes'
-require_relative 'shared/each_name'
 
 describe "Net::HTTPHeader#each_name" do
-  it_behaves_like :net_httpheader_each_name, :each_name
+  it "is an alias of Net::HTTPHeader#each_key" do
+    Net::HTTPHeader.instance_method(:each_name).should ==
+      Net::HTTPHeader.instance_method(:each_key)
+  end
 end

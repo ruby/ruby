@@ -21,6 +21,8 @@ class TestGemCommandsOpenCommand < Gem::TestCase
   end
 
   def test_execute
+    omit "JRuby on Windows spawns the editor with a different cwd" if Gem.win_platform? && Gem.java_platform?
+
     @cmd.options[:args] = %w[foo]
     @cmd.options[:editor] = (ruby_with_rubygems_in_load_path + ["-e", "puts(ARGV,Dir.pwd)", "--"]).join(" ")
 

@@ -65,6 +65,8 @@ class TestGemSourceGit < Gem::TestCase
   end
 
   def test_checkout_submodules
+    omit "JRuby on Windows hits git submodule path differences" if Gem.win_platform? && Gem.java_platform?
+
     # We need to allow to checkout submodules with file:// protocol
     # CVE-2022-39253
     # https://lore.kernel.org/lkml/xmqq4jw1uku5.fsf@gitster.g/
