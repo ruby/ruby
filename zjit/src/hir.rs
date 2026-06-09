@@ -2844,6 +2844,22 @@ impl Function {
         true
     }
 
+    pub fn assume_bop_not_redefined(&mut self, block: BlockId, klass: RedefinitionFlag, bop: ruby_basic_operators, state: InsnId) -> bool {
+        if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, klass) } {
+            return false;
+        }
+        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass, bop }, state });
+        true
+    }
+
+    pub fn guard_bop_not_redefined(&mut self, block: BlockId, klass: RedefinitionFlag, bop: ruby_basic_operators, state: InsnId) -> bool {
+        if self.assume_bop_not_redefined(block, klass, bop, state) {
+            return true;
+        }
+        self.push_insn(block, Insn::SideExit { state, reason: SideExitReason::PatchPoint(Invariant::BOPRedefined { klass, bop }), recompile: None });
+        false
+    }
+
     pub fn count(&mut self, block: BlockId, counter: Counter) {
         if get_option!(stats) {
             self.push_insn(block, Insn::IncrCounter(counter));
@@ -7025,12 +7041,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             break;  // End the block
                         }
                     };
-                    if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, ARRAY_REDEFINED_OP_FLAG) } {
+                    if !fun.guard_bop_not_redefined(block, ARRAY_REDEFINED_OP_FLAG, bop, exit_id) {
                         // If the basic operation is already redefined, we cannot optimize it.
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop }), recompile: None });
                         break;  // End the block
                     }
-                    fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop }, state: exit_id });
                     state.stack_push(fun.push_insn(block, insn));
                 }
                 YARVINSN_duparray => {
@@ -7053,11 +7067,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             break;
                         },
                     };
-                    if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, ARRAY_REDEFINED_OP_FLAG) } {
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop }), recompile: None });
-                        break;
+                    if !fun.guard_bop_not_redefined(block, ARRAY_REDEFINED_OP_FLAG, bop, exit_id) {
+                        break;  // End the block
                     }
-                    fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop }, state: exit_id });
                     let insn_id = fun.push_insn(block, Insn::DupArrayInclude { ary, target, state: exit_id });
                     state.stack_push(insn_id);
                 }
@@ -7846,48 +7858,40 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_opt_hash_freeze => {
                     let klass = HASH_REDEFINED_OP_FLAG;
                     let bop = BOP_FREEZE;
-                    if unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, klass) } {
-                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass, bop }, state: exit_id });
+                    if fun.guard_bop_not_redefined(block, klass, bop, exit_id) {
                         let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
                         state.stack_push(recv);
                     } else {
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Invariant::BOPRedefined { klass, bop }), recompile: None });
                         break;  // End the block
                     }
                 }
                 YARVINSN_opt_ary_freeze => {
                     let klass = ARRAY_REDEFINED_OP_FLAG;
                     let bop = BOP_FREEZE;
-                    if unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, klass) } {
-                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass, bop }, state: exit_id });
+                    if fun.guard_bop_not_redefined(block, klass, bop, exit_id) {
                         let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
                         state.stack_push(recv);
                     } else {
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Invariant::BOPRedefined { klass, bop }), recompile: None });
                         break;  // End the block
                     }
                 }
                 YARVINSN_opt_str_freeze => {
                     let klass = STRING_REDEFINED_OP_FLAG;
                     let bop = BOP_FREEZE;
-                    if unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, klass) } {
-                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass, bop }, state: exit_id });
+                    if fun.guard_bop_not_redefined(block, klass, bop, exit_id) {
                         let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
                         state.stack_push(recv);
                     } else {
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Invariant::BOPRedefined { klass, bop }), recompile: None });
                         break;  // End the block
                     }
                 }
                 YARVINSN_opt_str_uminus => {
                     let klass = STRING_REDEFINED_OP_FLAG;
                     let bop = BOP_UMINUS;
-                    if unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, klass) } {
-                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass, bop }, state: exit_id });
+                    if fun.guard_bop_not_redefined(block, klass, bop, exit_id) {
                         let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
                         state.stack_push(recv);
                     } else {
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Invariant::BOPRedefined { klass, bop }), recompile: None });
                         break;  // End the block
                     }
                 }
