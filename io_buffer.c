@@ -2413,15 +2413,6 @@ struct io_buffer_set_value_arguments {
     VALUE type, value;
 };
 
-static VALUE
-io_buffer_set_value_try(VALUE arguments)
-{
-    struct io_buffer_set_value_arguments *args = (void *)arguments;
-    size_t offset = args->offset;
-    rb_io_buffer_set_value(args->buffer, args->type, &offset, args->value);
-    return SIZET2NUM(offset);
-}
-
 /*
  *  call-seq: set_value(type, offset, value) -> offset
  *
@@ -2455,31 +2446,9 @@ io_buffer_set_value_try(VALUE arguments)
 static VALUE
 io_buffer_set_value(VALUE self, VALUE type, VALUE _offset, VALUE value)
 {
-    struct io_buffer_set_value_arguments arguments = {
-        .buffer = get_io_buffer_for_writing(self),
-        .offset = io_buffer_extract_offset(_offset),
-        .type = type,
-        .value = value,
-    };
-
-    if (!io_buffer_try_lock(arguments.buffer)) {
-        return io_buffer_set_value_try((VALUE)&arguments);
-    }
-    return rb_ensure(io_buffer_set_value_try, (VALUE)&arguments, rb_io_buffer_locked_ensure, self);
-}
-
-static VALUE
-io_buffer_set_values_try(VALUE arguments)
-{
-    struct io_buffer_set_value_arguments *args = (void *)arguments;
-    size_t offset = args->offset;
-
-    for (long i = 0; i < RARRAY_LEN(args->type); i++) {
-        VALUE type = rb_ary_entry(args->type, i);
-        VALUE value = rb_ary_entry(args->value, i);
-        rb_io_buffer_set_value(args->buffer, type, &offset, value);
-    }
-
+    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
+    size_t offset = io_buffer_extract_offset(_offset);
+    rb_io_buffer_set_value(buffer, type, &offset, value);
     return SIZET2NUM(offset);
 }
 
@@ -2500,31 +2469,29 @@ io_buffer_set_values_try(VALUE arguments)
 static VALUE
 io_buffer_set_values(VALUE self, VALUE buffer_types, VALUE _offset, VALUE values)
 {
-    struct io_buffer_set_value_arguments arguments = {
-        .buffer = get_io_buffer_for_writing(self),
-    };
+    struct rb_io_buffer *buffer = get_io_buffer_for_writing(self);
 
     if (!RB_TYPE_P(buffer_types, T_ARRAY)) {
         rb_raise(rb_eArgError, "Argument buffer_types should be an array!");
     }
-    arguments.type = buffer_types;
 
-    arguments.offset = io_buffer_extract_offset(_offset);
+    size_t offset = io_buffer_extract_offset(_offset);
 
     if (!RB_TYPE_P(values, T_ARRAY)) {
         rb_raise(rb_eArgError, "Argument values should be an array!");
     }
-    arguments.value = values;
 
     if (RARRAY_LEN(buffer_types) != RARRAY_LEN(values)) {
         rb_raise(rb_eArgError, "Argument buffer_types and values should have the same length!");
     }
 
-    if (!io_buffer_try_lock(arguments.buffer)) {
-        return io_buffer_set_values_try((VALUE)&arguments);
+    for (long i = 0; i < RARRAY_LEN(buffer_types); i++) {
+        VALUE type = rb_ary_entry(buffer_types, i);
+        VALUE value = rb_ary_entry(values, i);
+        rb_io_buffer_set_value(buffer, type, &offset, value);
     }
-    return rb_ensure(io_buffer_set_values_try, (VALUE)&arguments, rb_io_buffer_locked_ensure, self);
 
+    return SIZET2NUM(offset);
 }
 
 static size_t IO_BUFFER_BLOCKING_SIZE = 1024*1024;
