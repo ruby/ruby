@@ -249,7 +249,7 @@ class Pathname
   #  call-seq:
   #    pathname.freeze -> self
   #
-  #  Freezes `self`, preventing further modifications;
+  #  Freezes +self+, preventing further modifications;
   #  see {Frozen Objects}[rdoc-ref:frozen_objects.md].
   def freeze
     super
