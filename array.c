@@ -7199,7 +7199,7 @@ static VALUE
 rb_ary_permutation_size(VALUE ary, VALUE args, VALUE eobj)
 {
     long n = RARRAY_LEN(ary);
-    long k = (args && (RARRAY_LEN(args) > 0) && !NIL_P(RARRAY_AREF(args, 0))) ? NUM2LONG(RARRAY_AREF(args, 0)) : n;
+    long k = (args && !NIL_P(rb_ary_elt(args, 0))) ? NUM2LONG(RARRAY_AREF(args, 0)) : n;
 
     return descending_factorial(n, k);
 }
