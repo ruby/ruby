@@ -637,7 +637,7 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
  *  call-seq:
  *    freeze -> self
  *
- *  Freezes `self`, preventing further modifications;
+ *  Freezes +self+, preventing further modifications;
  *  see {Frozen Objects}[rdoc-ref:frozen_objects.md].
  */
 
