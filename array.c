@@ -6945,9 +6945,10 @@ ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE
         });
     }
     else if (n <= memo_threshold / 2) {
-        long max_idx = 0;
         st_table *memo = st_init_numtable_with_size(n);
         VALUE vmemo = TypedData_Wrap_Struct(0, &ary_sample_memo_type, memo);
+
+        long max_idx = 0;
         result = rb_ary_new_capa(n);
         RARRAY_PTR_USE(result, ptr_result, {
             for (i=0; i<n; i++) {
@@ -6970,7 +6971,9 @@ ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE
                 }
             });
         });
-        RTYPEDDATA_DATA(vmemo) = 0;
+
+        // Eagerly free without waiting for GC.
+        RTYPEDDATA_DATA(vmemo) = NULL;
         st_free_table(memo);
         RB_GC_GUARD(vmemo);
     }
