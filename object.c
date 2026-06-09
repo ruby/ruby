@@ -1350,26 +1350,10 @@ rb_obj_dummy1(VALUE _x, VALUE _y)
 
 /*
  *  call-seq:
- *     obj.freeze    -> obj
+ *     obj.freeze -> self
  *
- *  Prevents further modifications to <i>obj</i>. A
- *  FrozenError will be raised if modification is attempted.
- *  There is no way to unfreeze a frozen object. See also
- *  Object#frozen?.
- *
- *  This method returns self.
- *
- *     a = [ "a", "b", "c" ]
- *     a.freeze
- *     a << "z"
- *
- *  <em>produces:</em>
- *
- *     prog.rb:3:in `<<': can't modify frozen Array (FrozenError)
- *     	from prog.rb:3
- *
- *  Objects of the following classes are always frozen: Integer,
- *  Float, Symbol.
+ *  Freezes +self+, preventing further modifications;
+ *  see {Frozen Objects}[rdoc-ref:frozen_objects.md].
  */
 
 VALUE
