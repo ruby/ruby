@@ -41,10 +41,10 @@ def create_gc_makefile(name, &block)
     conf = Array(conf).join.sub(/^OBJS = .*$/, "OBJS = #{gc_objs} #{dtrace_obj}")
     conf + <<~MAKE
 
-      GC_DTRACE = #{ENV.fetch("DTRACE")}
-      GC_DTRACE_OBJ = #{dtrace_obj}
-      GC_DTRACE_OBJS = #{gc_objs}
-      GC_DTRACE_REBUILD = #{ENV.fetch("DTRACE_REBUILD", "")}
+    \tGC_DTRACE = #{ENV.fetch("DTRACE")}
+    \tGC_DTRACE_OBJ = #{dtrace_obj}
+    \tGC_DTRACE_OBJS = #{gc_objs}
+    \tGC_DTRACE_REBUILD = #{ENV.fetch("DTRACE_REBUILD", "")}
     MAKE
   end
 
