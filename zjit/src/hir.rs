@@ -7195,11 +7195,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             if profiled_shape.is_complex() { continue; }
                             if seen_shape.contains(&profiled_shape) { continue; }
                             seen_shape.push(profiled_shape);
-                            let runtime_shape = fun.load_shape(block, self_param);
+                            let actual_shape = fun.load_shape(block, self_param);
                             // The expected shape can change over run, so we put it
                             // as a pointer to keep it stable in snapshot tests.
                             let expected_shape = fun.push_insn(block, Insn::Const { val: Const::CShape(profiled_shape) });
-                            let has_shape = fun.push_insn(block, Insn::IsBitEqual { left: runtime_shape, right: expected_shape });
+                            let has_shape = fun.push_insn(block, Insn::IsBitEqual { left: actual_shape, right: expected_shape });
                             let iftrue_block = fun.new_block(insn_idx);
                             let target = BranchEdge { target: iftrue_block, args: vec![] };
                             let fall_through = fun.new_block(insn_idx);
@@ -8358,10 +8358,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             if profiled_shape.is_complex() { continue; }
                             if seen_shape.contains(&profiled_shape) { continue; }
                             seen_shape.push(profiled_shape);
-                            let runtime_shape = fun.load_shape(block, self_param);
+                            let actual_shape = fun.load_shape(block, self_param);
                             // Load the expected shape to a variable
                             let expected_shape = fun.push_insn(block, Insn::Const { val: Const::CShape(profiled_shape) });
-                            let has_shape = fun.push_insn(block, Insn::IsBitEqual { left: runtime_shape, right: expected_shape });
+                            let has_shape = fun.push_insn(block, Insn::IsBitEqual { left: actual_shape, right: expected_shape });
                             let iftrue_block = fun.new_block(insn_idx);
                             let target = BranchEdge { target: iftrue_block, args: vec![] };
                             let fall_through = fun.new_block(insn_idx);
