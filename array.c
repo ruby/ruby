@@ -6946,9 +6946,8 @@ ary_sample(rb_execution_context_t *ec, VALUE ary, VALUE randgen, VALUE nv, VALUE
     }
     else if (n <= memo_threshold / 2) {
         long max_idx = 0;
-        VALUE vmemo = TypedData_Wrap_Struct(0, &ary_sample_memo_type, 0);
         st_table *memo = st_init_numtable_with_size(n);
-        RTYPEDDATA_DATA(vmemo) = memo;
+        VALUE vmemo = TypedData_Wrap_Struct(0, &ary_sample_memo_type, memo);
         result = rb_ary_new_capa(n);
         RARRAY_PTR_USE(result, ptr_result, {
             for (i=0; i<n; i++) {
