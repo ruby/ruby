@@ -1554,7 +1554,7 @@ impl Assembler {
                     add(cb, Self::EMIT_OPND, Self::EMIT_OPND, value.into());
 
                     // The status register that gets used to track whether or
-                    // not the store was successful must be 32 bytes. Since we
+                    // not the store was successful must be 32 bits. Since we
                     // store the EMIT registers as their 64-bit versions, we
                     // need to rewrap it here.
                     let status = A64Opnd::Reg(status_reg.unwrap_reg().with_num_bits(32));
