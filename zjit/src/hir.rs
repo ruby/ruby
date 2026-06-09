@@ -3396,7 +3396,7 @@ impl Function {
         };
         let recv = self.chase_insn(recv);
         for (entry_insn, entry_type_summary) in entries {
-            if self.union_find.borrow().find_const(*entry_insn) == recv {
+            if self.chase_insn(*entry_insn) == recv {
                 if entry_type_summary.is_polymorphic() || entry_type_summary.is_skewed_polymorphic() {
                     return Some(entry_type_summary.clone());
                 }
