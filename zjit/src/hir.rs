@@ -7851,42 +7851,38 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_opt_hash_freeze => {
                     let klass = HASH_REDEFINED_OP_FLAG;
                     let bop = BOP_FREEZE;
-                    if fun.guard_bop_not_redefined(block, klass, bop, exit_id) {
-                        let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
-                        state.stack_push(recv);
-                    } else {
+                    if !fun.guard_bop_not_redefined(block, klass, bop, exit_id) {
                         break;  // End the block
                     }
+                    let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
+                    state.stack_push(recv);
                 }
                 YARVINSN_opt_ary_freeze => {
                     let klass = ARRAY_REDEFINED_OP_FLAG;
                     let bop = BOP_FREEZE;
-                    if fun.guard_bop_not_redefined(block, klass, bop, exit_id) {
-                        let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
-                        state.stack_push(recv);
-                    } else {
+                    if !fun.guard_bop_not_redefined(block, klass, bop, exit_id) {
                         break;  // End the block
                     }
+                    let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
+                    state.stack_push(recv);
                 }
                 YARVINSN_opt_str_freeze => {
                     let klass = STRING_REDEFINED_OP_FLAG;
                     let bop = BOP_FREEZE;
-                    if fun.guard_bop_not_redefined(block, klass, bop, exit_id) {
-                        let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
-                        state.stack_push(recv);
-                    } else {
+                    if !fun.guard_bop_not_redefined(block, klass, bop, exit_id) {
                         break;  // End the block
                     }
+                    let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
+                    state.stack_push(recv);
                 }
                 YARVINSN_opt_str_uminus => {
                     let klass = STRING_REDEFINED_OP_FLAG;
                     let bop = BOP_UMINUS;
-                    if fun.guard_bop_not_redefined(block, klass, bop, exit_id) {
-                        let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
-                        state.stack_push(recv);
-                    } else {
+                    if !fun.guard_bop_not_redefined(block, klass, bop, exit_id) {
                         break;  // End the block
                     }
+                    let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
+                    state.stack_push(recv);
                 }
                 YARVINSN_leave => {
                     fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
