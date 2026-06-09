@@ -45,12 +45,10 @@ File.fnmatch('xyzzy', 'xyzzy')                     # => true
 File.fnmatch('one_two_three', 'one_two_three')     # => true
 File.fnmatch('123', '123')                         # => true
 File.fnmatch('Form 27B/6', 'Form 27B/6')           # => true
-
 Pathname('xyzzy').fnmatch('xyzzy')                 # => true
 Pathname('one_two_three').fnmatch('one_two_three') # => true
 Pathname('123').fnmatch('123')                     # => true
 Pathname('Form 27B/6').fnmatch('Form 27B/6')       # => true
-
 # Must be exact.
 pattern = 'abcde'
 path = 'abc'
@@ -103,7 +101,6 @@ pattern = '*'
 File.fnmatch(pattern, 'foo')     # => true
 File.fnmatch(pattern, '')        # => true
 File.fnmatch(pattern, 'foo')     # => true
-
 Pathname('foo').fnmatch(pattern) # => true
 Pathname('').fnmatch(pattern)    # => true
 Pathname('*').fnmatch(pattern)   # => true
@@ -148,7 +145,6 @@ pattern = '?'
 File.fnmatch(pattern, 'f')             # => true
 File.fnmatch(pattern, '')              # => false
 File.fnmatch(pattern, 'foo')           # => false
-
 Pathname('f').fnmatch(pattern)         # => true
 Pathname('').fnmatch(pattern)          # => false
 Pathname('foo').fnmatch(pattern)       # => false
@@ -189,7 +185,6 @@ pattern = '[ruby]'
 File.fnmatch(pattern, 'r')        # => true
 File.fnmatch(pattern, 'u')        # => true
 File.fnmatch(pattern, 'y')        # => true
-
 Pathname('r').fnmatch(pattern)    # => true
 Pathname('u').fnmatch(pattern)    # => true
 Pathname('y').fnmatch(pattern)    # => true
@@ -216,7 +211,6 @@ The character set may be negated:
 pattern = '[^ruby]'
 File.fnmatch(pattern, 'r')     # => false
 File.fnmatch(pattern, 'u')     # => false
-
 Pathname('r').fnmatch(pattern) # => false
 Pathname('u').fnmatch(pattern) # => false
 ```
@@ -231,7 +225,6 @@ pattern = '[a-c]'
 File.fnmatch(pattern, 'b')       # => true
 File.fnmatch(pattern, 'd')       # => false
 File.fnmatch(pattern, 'abc')     # => false
-
 Pathname('b').fnmatch(pattern)   # => true
 Pathname('d').fnmatch(pattern)   # => false
 Pathname('abc').fnmatch(pattern) # => false
@@ -276,7 +269,6 @@ File.fnmatch('[a-c]', path)                         # => true
 File.fnmatch('\[a-c]', path)                        # => false
 File.fnmatch('[a-c\]', path)                        # => false
 File.fnmatch('[a\-c]', path)                        # => false
-
 Pathname(path).fnmatch('[a-c]')                     # => true
 Pathname(path).fnmatch('\[a-c]')                    # => false
 Pathname(path).fnmatch('[a-c\]')                    # => false
@@ -286,8 +278,7 @@ File.fnmatch('{a,b}', path, File::FNM_EXTGLOB)      # => true
 File.fnmatch('\{a,b}', path, File::FNM_EXTGLOB)     # => false
 File.fnmatch('{a\,b}', path, File::FNM_EXTGLOB)     # => false
 File.fnmatch('{a,b\}', path, File::FNM_EXTGLOB)     # => false
-
-Pathname(path).fnmatch('{a,b}', File::FNM_EXTGLOB)   # => true
+Pathname(path).fnmatch('{a,b}', File::FNM_EXTGLOB)  # => true
 Pathname(path).fnmatch('\{a,b}', File::FNM_EXTGLOB) # => false
 Pathname(path).fnmatch('{a,b\}', File::FNM_EXTGLOB) # => false
 Pathname(path).fnmatch('{a\,b}', File::FNM_EXTGLOB) # => false
@@ -332,8 +323,12 @@ use constant [`File::FNM_CASEFOLD`](#constant-filefnmcasefold)
 to make the matching case-insensitive:
 
 ```ruby
-File.fnmatch('abc', 'ABC')                     # => false
-File.fnmatch('abc', 'ABC', File::FNM_CASEFOLD) # => true
+pattern = 'abc'
+path = 'ABC'
+File.fnmatch(pattern, path)                         # => false
+File.fnmatch(pattern, path, File::FNM_CASEFOLD)     # => true
+Pathname(path).fnmatch(pattern)                     # => false
+Pathname(path).fnmatch(pattern, File::FNM_CASEFOLD) # => true
 ```
 
 ### Constant File::FNM_DOTMATCH
@@ -344,8 +339,12 @@ use constant [`File::FNM_DOTMATCH`](#constant-filefnmdotmatch)
 to enable the match:
 
 ```ruby
-File.fnmatch('*', '.document')                     # => false
-File.fnmatch('*', '.document', File::FNM_DOTMATCH) # => true
+pattern = '*'
+path = '.document'
+File.fnmatch(pattern, path)                         # => false
+File.fnmatch(pattern, path, File::FNM_DOTMATCH)     # => true
+Pathname(path).fnmatch(pattern)                     # => false
+Pathname(path).fnmatch(pattern, File::FNM_DOTMATCH) # => true
 ```
 ### Constant File::FNM_EXTGLOB
 
@@ -354,26 +353,50 @@ use constant [`File::FNM_EXTGLOB`](#constant-filefnmextglob)
 to enable it:
 
 ```ruby
-File.fnmatch('R{ub,foo}y', 'Ruby')                    # => false
-File.fnmatch('R{ub,foo}y', 'Ruby', File::FNM_EXTGLOB) # => true
+pattern = 'R{ub,foo}y'
+path = 'Ruby'
+File.fnmatch(pattern, path)                        # => false
+Pathname(path).fnmatch(pattern, File::FNM_EXTGLOB) # => true
+Pathname(path).fnmatch(pattern)                    # => false
+Pathname(path).fnmatch(pattern, File::FNM_EXTGLOB) # => true
 ```
 
 The alternatives pattern consists of zero or more unquoted strings,
 separated by commas, and enclosed in curly braces:
 
 ```ruby
-File.fnmatch('R{ub,foo,bar}y', 'Ruby')                     # => false  # Not enabled.
-File.fnmatch('R{ub,foo,bar}y', 'Ruby', File::FNM_EXTGLOB)  # => true
-# Whitespace matters.
-File.fnmatch('R{ub ,foo,bar}y', 'Ruby', File::FNM_EXTGLOB) # => false
-File.fnmatch('R{ ub,foo,bar}y', 'Ruby', File::FNM_EXTGLOB) # => false
-# Special characters remain in force:
-File.fnmatch('{*,?}', 'hello', File::FNM_EXTGLOB)          # => true
-File.fnmatch('{*ello,?}', 'hello', File::FNM_EXTGLOB)      # => true
-File.fnmatch('{*ELLO,?}', 'hello', File::FNM_EXTGLOB)      # => false
-File.fnmatch('{*ELLO,?????}', 'hello', File::FNM_EXTGLOB)  # => true
-# With the flag not given.
-File.fnmatch('R{ub,foo,bar}y', 'Ruby')                     # => false
+pattern = 'R{ub,foo,bar}y'
+path = 'Ruby'
+File.fnmatch(pattern, path)                        # => false
+File.fnmatch(pattern, path, File::FNM_EXTGLOB)     # => true
+Pathname(path).fnmatch(pattern)                    # => false
+Pathname(path).fnmatch(pattern, File::FNM_EXTGLOB) # => true
+```
+
+Whitespace matters:
+
+```ruby
+path = 'Ruby'
+pattern = 'R{ub ,foo,bar}y'
+File.fnmatch(pattern, path, File::FNM_EXTGLOB)     # => false
+Pathname(path).fnmatch(pattern, File::FNM_EXTGLOB) # => false
+pattern = 'R{ ub,foo,bar}y'
+File.fnmatch(pattern, path, File::FNM_EXTGLOB)     # => false
+Pathname(path).fnmatch(pattern, File::FNM_EXTGLOB) # => false
+```
+
+Special characters remain in force:
+
+```ruby
+path = 'hello'
+File.fnmatch('{*,?}', path, File::FNM_EXTGLOB)             # => true
+File.fnmatch('{*ello,?}', path, File::FNM_EXTGLOB)         # => true
+File.fnmatch('{*ELLO,?}', path, File::FNM_EXTGLOB)         # => false
+File.fnmatch('{*ELLO,?????}', path, File::FNM_EXTGLOB)     # => true
+Pathname(path).fnmatch('{*,?}', File::FNM_EXTGLOB)         # => true
+Pathname(path).fnmatch('{*ello,?}', File::FNM_EXTGLOB)     # => true
+Pathname(path).fnmatch('{*ELLO,?}', File::FNM_EXTGLOB)     # => false
+Pathname(path).fnmatch('{*ELLO,?????}', File::FNM_EXTGLOB) # => true
 ```
 
 ### Constant File::FNM_NOESCAPE
@@ -383,8 +406,12 @@ use constant [`File::FNM_NOESCAPE`](#constant-filefnmnoescape)
 to disable it:
 
 ```ruby
-File.fnmatch('\*\?\*\*', '*?**')                     # => true
-File.fnmatch('\*\?\*\*', '*?**', File::FNM_NOESCAPE) # => false
+pattern = '\*\?\*\*'
+path = '*?**'
+File.fnmatch(pattern, path)                         # => true
+File.fnmatch(pattern, path, File::FNM_NOESCAPE)     # => false
+Pathname(path).fnmatch(pattern)                     # => true
+Pathname(path).fnmatch(pattern, File::FNM_NOESCAPE) # => false
 ```
 
 ### Constant File::FNM_PATHNAME
@@ -396,18 +423,26 @@ By default, the double-asterisk pattern (`'**'`) is equivalent to pattern `'*'`,
 and matches any sequence of directory-like substrings:
 
 ```ruby
-File.fnmatch('**', 'a/b/c') # => true
-File.fnmatch('*', 'a/b/c')  # => true
+path = 'a/b/c'
+File.fnmatch('**', path)     # => true
+File.fnmatch('*', path)      # => true
+Pathname(path).fnmatch('**') # => true
+Pathname(path).fnmatch('*')  # => true
 ```
 
 When flag [`File::FNM_PATHNAME`](#constant-filefnmpathname) is given,
 the pattern matches only one component of a file path:
 
 ```ruby
-File.fnmatch('**', 'a/b/c')                       # => true   # Matches 'a/b/c'.
-File.fnmatch('**', 'a/b/c', File::FNM_PATHNAME)   # => false  # Matches only 'a'.
-File.fnmatch('**', 'a/b/c', File::FNM_PATHNAME)   # => false  # Matches only 'a/b'.
-File.fnmatch('**/*', 'a/b/c', File::FNM_PATHNAME) # => true   # Matches 'a/b', then 'c'.
+path = 'a/b/c'
+File.fnmatch('**', path)                           # => true   # Matches 'a/b/c'.
+File.fnmatch('**', path, File::FNM_PATHNAME)       # => false  # Matches only 'a'.
+File.fnmatch('*/*', path, File::FNM_PATHNAME)      # => false  # Matches only 'a/b'.
+File.fnmatch('**/*', path, File::FNM_PATHNAME)     # => true   # Matches 'a/b', then 'c'.
+Pathname(path).fnmatch('**')                       # => true   # Matches 'a/b/c'.
+Pathname(path).fnmatch('**', File::FNM_PATHNAME)   # => false  # Matches only 'a'.
+Pathname(path).fnmatch('*/*', File::FNM_PATHNAME)  # => false  # Matches only 'a/b'.
+Pathname(path).fnmatch('**/*', File::FNM_PATHNAME) # => true   # Matches 'a/b', then 'c'.
 ```
 
 By default, filename matching enables pattern `'*'` to match
@@ -417,8 +452,12 @@ to disable such matching:
 
 ```ruby
 File::SEPARATOR                                          # => "/"
-File.fnmatch('*.rb', 'lib/test.rb')                      # => true
-File.fnmatch('*.rb', 'lib/test.rb', File::FNM_PATHNAME)  # => false
+pattern = '*.rb'
+path = 'lib/test.rb'
+File.fnmatch(pattern, path)                         # => true
+File.fnmatch(pattern, path, File::FNM_PATHNAME)     # => false
+Pathname(path).fnmatch(pattern)                     # => true
+Pathname(path).fnmatch(pattern, File::FNM_PATHNAME) # => false
 ```
 
 By default, filename matching enables pattern `'?'` to match
@@ -427,8 +466,12 @@ use constant [`File::FNM_PATHNAME`](#constant-filefnmpathname)
 to disable such matching:
 
 ```ruby
-File.fnmatch('foo?boo', 'foo/boo')                       # => true
-File.fnmatch('foo?boo', 'foo/boo', File::FNM_PATHNAME)   # => false
+pattern = 'foo?boo'
+path = 'foo/boo'
+File.fnmatch(pattern, path)                         # => true
+File.fnmatch(pattern, path, File::FNM_PATHNAME)     # => false
+Pathname(path).fnmatch(pattern)                     # => true
+Pathname(path).fnmatch(pattern, File::FNM_PATHNAME) # => false
 ```
 
 ### Constant File::FNM_SHORTNAME
@@ -448,10 +491,13 @@ even when dealing with files that have long names.
 ```ruby
 File::FNM_SHORTNAME.zero? # => false  # On Windows, not zero; may be enabled.
 File::FNM_SHORTNAME.zero? # => true   # Elsewhere, always zero; may not be enabled.
-
-File.fnmatch('PROGRAM~1', 'Program Files') # => false
-# This will be true if and only if on Windows and short name 'PROGRAM~1' exists.
-File.fnmatch('PROGRAM~1', 'Program Files', File::FNM_SHORTNAME) # => true
+pattern = 'PROGRAM~1'
+path = 'Program Files'
+File.fnmatch(pattern, path)                          # => false
+Pathname(path).fnmatch(pattern)                      # => false
+# These will return true if and only if on Windows and short name 'PROGRAM~1' exists.
+File.fnmatch(pattern, path, File::FNM_SHORTNAME)     # => true
+Pathname(path).fnmatch(pattern, File::FNM_SHORTNAME) # => true
 ```
 
 ### Constant File::FNM_SYSCASE
@@ -463,9 +509,13 @@ to use the case-sensitivity rules of the underlying file system:
 ```ruby
 File::FNM_SYSCASE.zero? # => false  # On Windows, not zero; may be enabled.
 File::FNM_SYSCASE.zero? # => true   # Elsewhere, always zero; may not be enabled.
-
-File.fnmatch('abc', 'ABC')                    # => false  # Ruby; case-sensitive.
-File.fnmatch('abc', 'ABC', File::FNM_SYSCASE) # => true   # Windows; case-insensitive.
-File.fnmatch('abc', 'ABC', File::FNM_SYSCASE) # => false  # Linus; case-sensitive.
+pattern = 'abc'
+path = 'ABC'
+File.fnmatch(pattern, path)                        # => false  # Ruby; case-sensitive.
+File.fnmatch(pattern, path, File::FNM_SYSCASE)     # => true   # Windows; case-insensitive.
+File.fnmatch(pattern, path, File::FNM_SYSCASE)     # => false  # Linux; case-sensitive.
+Pathname(path).fnmatch(pattern)                    # => false  # Ruby; case-sensitive.
+Pathname(path).fnmatch(pattern, File::FNM_SYSCASE) # => true   # Windows; case-insensitive.
+Pathname(path).fnmatch(pattern, File::FNM_SYSCASE) # => false  # Linux; case-sensitive.
 ```
 
