@@ -1,5 +1,5 @@
 describe :process_fork, shared: true do
-  platform_is :windows do
+  guard_not -> { Process.respond_to?(:fork) } do
     it "returns false from #respond_to?" do
       # Workaround for Kernel::Method being public and losing the "non-respond_to? magic"
       mod = @object.class.name == "KernelSpecs::Method" ? Object.new : @object
@@ -12,7 +12,7 @@ describe :process_fork, shared: true do
     end
   end
 
-  platform_is_not :windows do
+  guard -> { Process.respond_to?(:fork) } do
     before :each do
       @file = tmp('i_exist')
       rm_r @file

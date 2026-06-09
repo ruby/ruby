@@ -1103,7 +1103,7 @@ describe "Execution variable $:" do
 end
 
 describe "Global variable $\"" do
-  it "is an alias for $LOADED_FEATURES" do
+  it "is an alias of $LOADED_FEATURES" do
     $".should.equal? $LOADED_FEATURES
   end
 

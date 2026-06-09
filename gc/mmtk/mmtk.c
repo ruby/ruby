@@ -345,7 +345,9 @@ rb_mmtk_call_obj_free(MMTk_ObjectReference object)
         pthread_mutex_unlock(&objspace->event_hook_mutex);
     }
 
-    rb_gc_obj_free(objspace, obj);
+    if (RB_UNLIKELY(rb_gc_obj_needs_cleanup_p(obj))) {
+        rb_gc_obj_free(objspace, obj);
+    }
 
 #ifdef MMTK_DEBUG
     memset((void *)obj, 0, rb_gc_impl_obj_slot_size(obj));

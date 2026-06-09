@@ -522,7 +522,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                         // not see these origins via RCLASS_ORIGIN(owner), so we find them by
                         // iterating all of owner's classexts and checking their origin_ fields.
                         {
-                            VALUE origins = rb_ary_new();
+                            VALUE origins = rb_ary_hidden_new(1);
                             struct collect_per_box_origins_arg origins_arg = {
                                 .owner = owner,
                                 .klass_housing_cme = klass_housing_cme,
@@ -532,6 +532,7 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                             for (long i = 0; i < RARRAY_LEN(origins); i++) {
                                 invalidate_callable_method_entry_in_every_m_table(RARRAY_AREF(origins, i), mid, cme);
                             }
+                            RB_GC_GUARD(origins);
                         }
                     }
 
@@ -2005,6 +2006,18 @@ static const rb_callable_method_entry_t *
 callable_method_entry_or_negative(VALUE klass, ID mid, VALUE *defined_class_ptr)
 {
     const rb_callable_method_entry_t *cme;
+
+    VM_ASSERT(!SPECIAL_CONST_P(klass));
+
+    if (RB_BUILTIN_TYPE(klass) == T_NONE) {
+      // If we find a T_NONE here, it's most likely we called CLASS_OF(obj) on a
+      // garbage collected object (the freelist is stored in the class pointer),
+      // but it's possible that just the class was GC'd.
+      // This message intentionally tries to imply the former, but make an
+      // accurate statement for either case.
+      rb_bug("attempted to search method '%s' on a garbage collected object",
+             rb_id2name(mid));
+    }
 
     VM_ASSERT_TYPE2(klass, T_CLASS, T_ICLASS);
 

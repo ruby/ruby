@@ -1,10 +1,11 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/common'
 
-platform_is_not :windows do
-  # macOS 15 is not working this examples
-  return if /darwin/ =~ RUBY_PLATFORM && /15/ =~ `sw_vers -productVersion`
-
+guard -> {
+  Process.respond_to?(:fork) and
+    # macOS 15 is not working for these examples
+    !(/darwin/ =~ RUBY_PLATFORM && /15/ =~ `sw_vers -productVersion`)
+} do
   describe :process_daemon_keep_stdio_open_false, shared: true do
     it "redirects stdout to /dev/null" do
       @daemon.invoke("keep_stdio_open_false_stdout", @object).should == ""
@@ -107,8 +108,12 @@ platform_is_not :windows do
   end
 end
 
-platform_is :windows do
+guard_not -> { Process.respond_to?(:fork) } do
   describe "Process.daemon" do
+    it "returns false from #respond_to?" do
+      Process.respond_to?(:daemon).should == false
+    end
+
     it "raises a NotImplementedError" do
       -> {
         Process.daemon

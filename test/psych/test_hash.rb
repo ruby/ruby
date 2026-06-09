@@ -92,6 +92,31 @@ module Psych
       assert_equal X, x.class
     end
 
+    class NotAHash
+      def init_with(coder)
+        @string = coder.map["string"].to_s
+      end
+    end
+
+    def test_hash_with_ivars_rejects_non_hash_class
+      assert_raise(ArgumentError) do
+        Psych.unsafe_load <<~eoyml
+          --- !ruby/hash-with-ivars:#{NotAHash}
+          ivars:
+            '@string': ["a surprise array!"]
+        eoyml
+      end
+    end
+
+    def test_hash_tag_rejects_non_hash_class
+      assert_raise(ArgumentError) do
+        Psych.unsafe_load "--- !ruby/hash:#{NotAHash} {}\n"
+      end
+      assert_raise(ArgumentError) do
+        Psych.unsafe_load "--- !map:#{NotAHash} {}\n"
+      end
+    end
+
     def test_self_referential
       @hash['self'] = @hash
       assert_cycle(@hash)

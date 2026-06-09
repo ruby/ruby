@@ -70,25 +70,27 @@ describe "Process::Status.wait" do
     end
 
     # This spec is probably system-dependent.
-    it "doesn't block if no child is available when WNOHANG is used" do
-      read, write = IO.pipe
-      pid = Process.fork do
-        read.close
-        Signal.trap("TERM") { Process.exit! }
-        write << 1
+    guard -> { Process.respond_to?(:fork) } do
+      it "doesn't block if no child is available when WNOHANG is used" do
+        read, write = IO.pipe
+        pid = Process.fork do
+          read.close
+          Signal.trap("TERM") { Process.exit! }
+          write << 1
+          write.close
+          sleep
+        end
+
+        Process::Status.wait(pid, Process::WNOHANG).should == nil
+
+        # wait for the child to setup its TERM handler
         write.close
-        sleep
+        read.read(1)
+        read.close
+
+        Process.kill("TERM", pid)
+        Process::Status.wait.pid.should == pid
       end
-
-      Process::Status.wait(pid, Process::WNOHANG).should == nil
-
-      # wait for the child to setup its TERM handler
-      write.close
-      read.read(1)
-      read.close
-
-      Process.kill("TERM", pid)
-      Process::Status.wait.pid.should == pid
     end
 
     it "always accepts flags=0" do

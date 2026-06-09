@@ -30,19 +30,33 @@
 
 /*
  *  call-seq:
- *    ObjectSpace.memsize_of(obj) -> Integer
+ *    ObjectSpace.memsize_of(obj) -> integer
  *
- *  Return consuming memory size of obj in bytes.
+ *  Returns the amount of memory in bytes consumed by +obj+.
  *
- *  Note that the return size is incomplete.  You need to deal with this
- *  information as only a *HINT*. Especially, the size of +T_DATA+ may not be
- *  correct.
+ *  The returned size includes the slot that +obj+ occupies plus any memory
+ *  that +obj+ allocates outside of that slot, such as the storage backing a
+ *  large String, Array, or Hash:
+ *
+ *    require 'objspace'
+ *
+ *    ObjectSpace.memsize_of("small")        # => 40
+ *    ObjectSpace.memsize_of("a" * 1000)     # => 1041
+ *    ObjectSpace.memsize_of([1, 2, 3])      # => 40
+ *    ObjectSpace.memsize_of(Array.new(100)) # => 840
+ *
+ *  Special constants such as +true+, +false+, +nil+, small integers, and some
+ *  symbols do not occupy a slot, so their size is reported as +0+:
+ *
+ *    ObjectSpace.memsize_of(true)   # => 0
+ *    ObjectSpace.memsize_of(42)     # => 0
+ *
+ *  The returned size is only a hint and may be an underestimate, since it does
+ *  not account for all of the memory that +obj+ references. In particular, the
+ *  size of a +T_DATA+ object (an object implemented in C, such as one defined
+ *  by a C extension) may not be reported correctly.
  *
  *  This method is only expected to work with CRuby.
- *
- *  From Ruby 3.2 with Variable Width Allocation, it returns the actual slot
- *  size used plus any additional memory allocated outside the slot (such
- *  as external strings, arrays, or hash tables).
  */
 
 static VALUE
@@ -763,12 +777,27 @@ objspace_internal_class_of(VALUE self, VALUE obj)
 
 /*
  *  call-seq:
- *     ObjectSpace.internal_super_of(cls) -> Class or Module
+ *     ObjectSpace.internal_super_of(cls) -> class or module
  *
- *  [MRI specific feature] Return internal super class of cls (Class or Module).
- *  obj can be an instance of InternalObjectWrapper.
+ *  Returns the immediate superclass of +cls+, including any hidden class such
+ *  as an included module's iclass.
+ *
+ *  Unlike Class#superclass, this does not skip over the iclasses that Ruby
+ *  inserts for included modules:
+ *
+ *    require 'objspace'
+ *
+ *    module M; end
+ *    class A; include M; end
+ *    A.superclass                       # => Object
+ *    ObjectSpace.internal_super_of(A)   # => #<InternalObject:0x... T_ICLASS>
+ *
+ *  +cls+ must be a Class or Module, or an ObjectSpace::InternalObjectWrapper
+ *  that wraps one.
  *
  *  Note that you should not use this method in your application.
+ *
+ *  This method is only expected to work with C Ruby.
  */
 static VALUE
 objspace_internal_super_of(VALUE self, VALUE obj)

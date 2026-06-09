@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/quo'
 
 describe "Float#quo" do
-  it_behaves_like :float_quo, :quo
+  it "is an alias of Float#fdiv" do
+    Float.instance_method(:quo).should == Float.instance_method(:fdiv)
+  end
 end

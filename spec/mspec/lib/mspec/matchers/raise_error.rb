@@ -116,6 +116,7 @@ end
 
 module MSpecMatchers
   private def raise_error(exception = Exception, message = nil, options = nil, &block)
+    MSpec.deprecate __method__, '.should.raise'
     RaiseErrorMatcher.new(exception, message, options, &block)
   end
 

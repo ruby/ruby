@@ -11,6 +11,9 @@
 
 #if defined(RUBY_DEBUG) && RUBY_DEBUG
 # define JSON_ASSERT RUBY_ASSERT
+# ifndef JSON_DEBUG
+#  define JSON_DEBUG 1
+# endif
 #else
 # ifdef JSON_DEBUG
 #  include <assert.h>
@@ -20,6 +23,11 @@
 # endif
 #endif
 
+#ifdef JSON_DEBUG
+# define JSON_UNREACHABLE_RETURN(val) rb_bug("Unreachable")
+#else
+# define JSON_UNREACHABLE_RETURN UNREACHABLE_RETURN
+#endif
 /* shims */
 
 #if SIZEOF_UINT64_T == SIZEOF_LONG_LONG

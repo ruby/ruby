@@ -1,7 +1,8 @@
 require_relative '../../../spec_helper'
 require 'digest'
-require_relative 'shared/update'
 
 describe "Digest::Instance#update" do
-  it_behaves_like :digest_instance_update, :update
+  it "is an alias of Digest::Instance#<<" do
+    Digest::Instance.instance_method(:update).should == Digest::Instance.instance_method(:<<)
+  end
 end

@@ -1806,18 +1806,21 @@ os_obj_of(VALUE of)
 
 /*
  *  call-seq:
- *     ObjectSpace.each_object([module]) {|obj| ... } -> integer
- *     ObjectSpace.each_object([module])              -> an_enumerator
+ *     ObjectSpace.each_object         {|obj| ... } -> integer
+ *     ObjectSpace.each_object(module) {|obj| ... } -> integer
+ *     ObjectSpace.each_object                      -> enumerator
+ *     ObjectSpace.each_object(module)              -> enumerator
  *
- *  Calls the block once for each living, nonimmediate object in this
- *  Ruby process. If <i>module</i> is specified, calls the block
- *  for only those classes or modules that match (or are a subclass of)
- *  <i>module</i>. Returns the number of objects found. Immediate
- *  objects (such as <code>Fixnum</code>s, static <code>Symbol</code>s
- *  <code>true</code>, <code>false</code> and <code>nil</code>) are
- *  never returned.
+ *  Calls the block once for each living, non-immediate object in this Ruby
+ *  process, and returns the number of objects found.
  *
- *  If no block is given, an enumerator is returned instead.
+ *  If +module+ is given, calls the block only for objects that are an instance
+ *  of +module+ or one of its subclasses.
+ *
+ *  Immediate objects (such as small integers, static symbols, +true+, +false+,
+ *  and +nil+) are never yielded.
+ *
+ *  With no block given, returns a new Enumerator.
  *
  *     Job = Class.new
  *     jobs = [Job.new, Job.new]
@@ -1828,18 +1831,21 @@ os_obj_of(VALUE of)
  *
  *    #<Job:0x000000011d6cbbf0>
  *    #<Job:0x000000011d6cbc68>
- *     Total count: 2
+ *    Total count: 2
+ *
+ *  Because every live object is visited, this method is mainly useful for
+ *  debugging, profiling, and introspecting a running process.
  *
  *  Due to a current Ractor implementation issue, this method does not yield
- *  Ractor-unshareable objects when the process is in multi-Ractor mode. Multi-ractor
- *  mode is enabled when <code>Ractor.new</code> has been called for the first time.
- *  See https://bugs.ruby-lang.org/issues/19387 for more information.
+ *  Ractor-unshareable objects when the process is in multi-Ractor mode.
+ *  Multi-Ractor mode is enabled when Ractor.new has been called for the first
+ *  time. See https://bugs.ruby-lang.org/issues/19387 for more information.
  *
  *     a = 12345678987654321 # shareable
- *     b = [].freeze # shareable
- *     c = {} # not shareable
+ *     b = [].freeze         # shareable
+ *     c = {}                # not shareable
  *     ObjectSpace.each_object {|x| x } # yields a, b, and c
- *     Ractor.new {} # enter multi-Ractor mode
+ *     Ractor.new {}                    # enter multi-Ractor mode
  *     ObjectSpace.each_object {|x| x } # does not yield c
  *
  */
@@ -1856,10 +1862,12 @@ os_each_obj(int argc, VALUE *argv, VALUE os)
 
 /*
  *  call-seq:
- *     ObjectSpace.undefine_finalizer(obj)
+ *     ObjectSpace.undefine_finalizer(obj) -> obj
  *
- *  Removes all finalizers for <i>obj</i>.
+ *  Removes all finalizers registered for +obj+ with
+ *  ObjectSpace.define_finalizer, and returns +obj+.
  *
+ *  Does nothing if +obj+ has no finalizers.
  */
 
 static VALUE

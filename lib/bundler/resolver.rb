@@ -456,9 +456,25 @@ module Bundler
     def cooldown_excluded?(spec)
       return false unless spec.respond_to?(:created_at) && spec.created_at
       return false unless spec.respond_to?(:remote) && spec.remote
+      return false if pinned_by_lockfile_floor?(spec)
       days = spec.remote.effective_cooldown
       return false if days.nil? || days <= 0
       (cooldown_now - spec.created_at) < (days * 86_400)
+    end
+
+    # A spec sitting exactly at a `>= locked_version` prevent-downgrade floor is
+    # the version the lockfile currently pins. `bundle update` and `bundle
+    # outdated` install that floor so resolution never moves a gem backwards.
+    # Filtering it out for cooldown would then make resolution impossible
+    # whenever the locked version is itself inside the cooldown window, which is
+    # exactly what happens to a lockfile written before cooldown was enabled.
+    # Keep it eligible; gems being explicitly updated carry an exact `=`
+    # requirement instead and stay subject to the cooldown filter.
+    def pinned_by_lockfile_floor?(spec)
+      return false unless defined?(@base) && @base
+      requirement = base_requirements[spec.name]
+      return false unless requirement && !requirement.exact?
+      requirement.requirements.any? {|op, version| op == ">=" && version == spec.version }
     end
 
     def cooldown_now

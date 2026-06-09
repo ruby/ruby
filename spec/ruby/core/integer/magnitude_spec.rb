@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/abs'
 
 describe "Integer#magnitude" do
-  it_behaves_like :integer_abs, :magnitude
+  it "is an alias of Integer#abs" do
+    Integer.instance_method(:magnitude).should == Integer.instance_method(:abs)
+  end
 end

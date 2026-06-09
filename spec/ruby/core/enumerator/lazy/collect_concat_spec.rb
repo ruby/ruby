@@ -1,8 +1,8 @@
-# -*- encoding: us-ascii -*-
-
 require_relative '../../../spec_helper'
-require_relative 'shared/collect_concat'
 
 describe "Enumerator::Lazy#collect_concat" do
-  it_behaves_like :enumerator_lazy_collect_concat, :collect_concat
+  it "is an alias of Enumerator::Lazy#flat_map" do
+    Enumerator::Lazy.instance_method(:collect_concat).should ==
+      Enumerator::Lazy.instance_method(:flat_map)
+  end
 end

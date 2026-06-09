@@ -1,37 +1,3 @@
-describe :io_pos, shared: true do
-  before :each do
-    @fname = tmp('test.txt')
-    File.open(@fname, 'w') { |f| f.write "123" }
-  end
-
-  after :each do
-    rm_r @fname
-  end
-
-  it "gets the offset" do
-    File.open @fname do |f|
-      f.send(@method).should == 0
-      f.read 1
-      f.send(@method).should == 1
-      f.read 2
-      f.send(@method).should == 3
-    end
-  end
-
-  it "raises IOError on closed stream" do
-    -> { IOSpecs.closed_io.send(@method) }.should.raise(IOError)
-  end
-
-  it "resets #eof?" do
-    open @fname do |io|
-      io.read 1
-      io.read 1
-      io.send(@method)
-      io.should_not.eof?
-    end
-  end
-end
-
 describe :io_set_pos, shared: true do
   before :each do
     @fname = tmp('test.txt')

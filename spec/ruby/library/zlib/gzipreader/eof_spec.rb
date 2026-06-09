@@ -52,3 +52,10 @@ describe "Zlib::GzipReader#eof?" do
     gz.eof?.should == true
   end
 end
+
+describe "Zlib::GzipReader#eof" do
+  it "is an alias of Zlib::GzipReader#eof?" do
+    Zlib::GzipReader.instance_method(:eof).should ==
+      Zlib::GzipReader.instance_method(:eof?)
+  end
+end

@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/quote'
 
 describe "Regexp.escape" do
-  it_behaves_like :regexp_quote, :escape
+  it "is an alias of Regexp.quote" do
+    Regexp.method(:escape).should == Regexp.method(:quote)
+  end
 end

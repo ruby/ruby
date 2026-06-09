@@ -1,5 +1,5 @@
 require_relative '../../spec_helper'
-require "ostruct"
+require 'ostruct'
 require_relative 'fixtures/classes'
 
 describe "OpenStruct#==" do

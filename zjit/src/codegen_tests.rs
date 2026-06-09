@@ -1209,6 +1209,52 @@ fn test_invokesuper_to_cfunc_varargs() {
 }
 
 #[test]
+fn test_invokesuper_to_cfunc_with_too_many_args_exits() {
+    unsafe extern "C" fn test_six_args(
+        _self: VALUE,
+        a: VALUE,
+        b: VALUE,
+        c: VALUE,
+        d: VALUE,
+        e: VALUE,
+        f: VALUE,
+    ) -> VALUE {
+        unsafe { rb_ary_new_from_args(6, a, b, c, d, e, f) }
+    }
+
+    with_rubyvm(|| {
+        let superclass = define_class("ZJITSixArgs", unsafe { rb_cObject });
+        unsafe {
+            rb_define_method(
+                superclass,
+                c"six".as_ptr(),
+                Some(std::mem::transmute::<
+                    unsafe extern "C" fn(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) -> VALUE,
+                    unsafe extern "C" fn(VALUE) -> VALUE,
+                >(test_six_args)),
+                6,
+            );
+        }
+    });
+
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        class ZJITSixArgsSubclass < ZJITSixArgs
+          def six(a, b, c, d, e, f)
+            super
+          end
+        end
+
+        def test
+          ZJITSixArgsSubclass.new.six(1, 2, 3, 4, 5, 6)
+        end
+
+        test
+        test
+        test
+    "#), @"[1, 2, 3, 4, 5, 6]");
+}
+
+#[test]
 fn test_string_new_preserves_string_arg() {
     assert_snapshot!(inspect(r#"
         def test

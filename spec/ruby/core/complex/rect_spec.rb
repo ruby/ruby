@@ -7,7 +7,7 @@ describe "Complex#rect" do
 end
 
 describe "Complex.rect" do
-  it "is an alias of Complex#rectangular" do
+  it "is an alias of Complex.rectangular" do
     Complex.method(:rect).should == Complex.method(:rectangular)
   end
 end

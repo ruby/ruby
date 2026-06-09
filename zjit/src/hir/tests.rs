@@ -120,7 +120,7 @@ mod snapshot_tests {
           v16:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13, v15], locals: [] }
           v23:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v13, v15, v11], locals: [] }
           PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
-          v25:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)]
+          v25:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
           v26:BasicObject = SendDirect v25, 0x1048, :foo (0x1058), v13, v15, v11
           v18:Any = Snapshot FrameState { pc: 0x1060, stack: [v26], locals: [] }
           PatchPoint NoTracePoint
@@ -156,7 +156,7 @@ mod snapshot_tests {
           v13:Fixnum[2] = Const Value(2)
           v14:Any = Snapshot FrameState { pc: 0x1008, stack: [v6, v11, v13], locals: [] }
           PatchPoint MethodRedefined(Object@0x1010, foo@0x1018, cme:0x1020)
-          v22:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)]
+          v22:ObjectSubclass[class_exact*:Object@VALUE(0x1010)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1010)] recompile
           v23:BasicObject = SendDirect v22, 0x1048, :foo (0x1058), v11, v13
           v16:Any = Snapshot FrameState { pc: 0x1060, stack: [v23], locals: [] }
           PatchPoint NoTracePoint
@@ -4467,7 +4467,7 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           CheckInterrupts
-          v17:CBool = IsNil v10
+          v17:CBool = HasType v10, NilClass
           v18:NilClass = Const Value(nil)
           CondBranch v17, bb4(v9, v18, v18), bb5()
         bb5():
@@ -4514,7 +4514,7 @@ pub(crate) mod hir_build_tests {
         bb6():
           v19:Truthy = RefineType v10, Truthy
           CheckInterrupts
-          v25:CBool[false] = IsNil v19
+          v25:CBool[false] = HasType v19, NilClass
           v26:NilClass = Const Value(nil)
           CondBranch v25, bb5(v9, v26, v26), bb7()
         bb7():

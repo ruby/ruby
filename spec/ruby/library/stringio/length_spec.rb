@@ -1,7 +1,8 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
-require_relative 'shared/length'
+require 'stringio'
 
 describe "StringIO#length" do
-  it_behaves_like :stringio_length, :length
+  it "returns the length of the wrapped string" do
+    StringIO.new("example").length.should == 7
+  end
 end
