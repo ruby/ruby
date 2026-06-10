@@ -1,18 +1,29 @@
 # Filename Globbing
 
-Filename globbing is a pattern-matching feature implemented in certain Ruby methods:
-
-- Dir.glob.
-- [`Dir[]`](https://docs.ruby-lang.org/en/master/Dir.html#method-c-5B-5D).
-- Pathname.glob.
-- Pathname#glob.
-
+Filename globbing is a pattern-matching feature implemented in certain Ruby methods.
 Each `glob` method finds filesystem entries (files and directories)
-that match certain patterns.
+that match certain patterns,
+under the control of keyword arguments `base` and `flags`;
+the returned array may be sorted, according to keyword argument `sort`.
 
 These methods are quite different
 from [filename-matching](rdoc-ref:filename_matching.md) methods,
 which match patterns against string paths, and do not access the filesystem.
+
+Inputs to the methods:
+
+- The argument `patterns` is a string or an array of strings,
+  which are _not_ Regexp objects;
+  see [Patterns](#patterns).
+- Keyword argument `base` specifies the entry in the filesystem where searching is to begin;
+  see [base](#base).
+- Keyword argument `flags` specifies an integer value that may be defined by constants;
+  see [flags](#flags).
+  This argument is not available
+  in method [`Dir[]`](https://docs.ruby-lang.org/en/master/Dir.html#method-c-5B-5D),
+  for which the flags value is zero.
+- Keyword argument `sort` specifies whether the returned array is to be sorted.
+  see [sort](#sort).
 
 ## Patterns
 
