@@ -939,6 +939,21 @@ EXPECTED
     assert_equal [nil], "a".unpack("C", offset: 1)
   end
 
+  def test_pack_alignment
+    assert_equal "\x01\x00\x00\x00\x02".b, [1, 2].pack("C x!4 C")
+    assert_equal [1, 2], "\x01\x00\x00\x00\x02".b.unpack("C x!4 C")
+
+    buffer = +"z"
+    [1, 2].pack("C x!4 C", buffer: buffer)
+    assert_equal "z\x01\x00\x00\x00\x02".b, buffer
+    assert_equal [1, 2], buffer.unpack("C x!4 C", offset: 1)
+
+    buffer = +"z"
+    [1, 2].pack("C @!4 C", buffer: buffer)
+    assert_equal "z\x01\x00\x00\x02".b, buffer
+    assert_equal [1, 2], buffer.unpack("C @!4 C", offset: 1)
+  end
+
   def test_monkey_pack
     assert_separately([], <<-'end;')
       $-w = false
