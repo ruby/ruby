@@ -1,16 +1,22 @@
 # Filename Globbing
 
-Filename globbing is a pattern-matching feature implemented in certain Ruby methods.
-Each `glob` method finds filesystem entries (files and directories)
+Filename globbing is a pattern-matching feature implemented in certain Ruby methods:
+
+- Dir.glob.
+- Pathname#glob.
+- [`Dir[]`](https://docs.ruby-lang.org/en/master/Dir.html#method-c-5B-5D),
+  which is like Dir.glob except that it does not accept keyword argument `flags`.
+
+Each `glob` method selects filesystem entries (file and directory names)
 that match certain patterns,
 under the control of keyword arguments `base` and `flags`;
-the returned array may be sorted, according to keyword argument `sort`.
+the selected entries may be sorted, according to keyword argument `sort`.
 
-These methods are quite different
+These filename-globbing methods are quite different
 from [filename-matching](rdoc-ref:filename_matching.md) methods,
 which match patterns against string paths, and do not access the filesystem.
 
-Inputs to the methods:
+Inputs to the filename-globbing methods:
 
 - The argument `patterns` is a string or an array of strings,
   which are _not_ Regexp objects;
@@ -24,6 +30,30 @@ Inputs to the methods:
   for which the flags value is zero.
 - Keyword argument `sort` specifies whether the returned array is to be sorted.
   see [sort](#sort).
+
+Their return values:
+
+- Each of the methods `Dir[]` and Dir.glob returns an array of the selected string entries.
+- \Method Pathname#glob with no block returns an array of Pathname objects
+  each based on a selected string entry.
+- \Method Pathname#glob with a block calls the block with each pathname
+  based on a selected string entry.
+
+Examples:
+
+```ruby
+Dir['*'].take(3)
+# => ["BSDL", "CONTRIBUTING.md", "COPYING"]
+Dir.glob('*').take(3)
+# => ["BSDL", "CONTRIBUTING.md", "COPYING"]
+Pathname('.').glob('*').take(3)
+# => [#<Pathname:BSDL>, #<Pathname:CONTRIBUTING.md>, #<Pathname:COPYING>]
+a = []
+Pathname('.').glob('*') {|pn| a << pn if pn.to_s.end_with?('.c') } # => nil
+a.take(3) # => [#<Pathname:addr2line.c>, #<Pathname:array.c>, #<Pathname:ast.c>]
+```
+
+The examples below for Pathname#glob do not give blocks.
 
 ## Patterns
 
@@ -324,6 +354,8 @@ Pathname('lib').glob('*').take(3)
 Pathname('lib/net').glob('*').take(3)
 # => [#<Pathname:lib/net/http>, #<Pathname:lib/net/http.rb>, #<Pathname:lib/net/https.rb>]
 ```
+
+Note that the base directory is not prepended to the entry names in the result.
 
 ### `flags`
 
