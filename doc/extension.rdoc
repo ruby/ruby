@@ -657,23 +657,27 @@ work.
 
 ==== C struct to Ruby object
 
-You can convert sval, a pointer to your struct, into a Ruby object
-with the next macro.
+You can convert _sval_, a pointer to your struct, into a Ruby object with the
+next macro.
 
   TypedData_Wrap_Struct(klass, data_type, sval)
 
 <tt>TypedData_Wrap_Struct()</tt> returns a created Ruby object as a
 VALUE.
 
-The _klass_ argument is the class for the object.  The klass should
-derive from +rb_cObject+, and the allocator must be set by calling
+This macro cannot be used with data types that have the +RUBY_TYPED_EMBEDDABLE+
+flag; use +TypedData_Make_Struct+ or +rb_data_typed_object_zalloc+ for such
+types.
+
+The _klass_ argument is the class for the object.  The _klass_ should derive
+from _rb_cObject_, and the allocator must be set by calling
 +rb_define_alloc_func+ or +rb_undef_alloc_func+.
 
-_data_type_ is a pointer to a <tt>const rb_data_type_t</tt> which
-describes how Ruby should manage the struct.
+_data_type_ is a pointer to a const +rb_data_type_t+ which describes how Ruby
+should manage the struct.
 
-+rb_data_type_t+ is defined like this.  Let's take a look at each
-member of the struct.
++rb_data_type_t+ is roughly defined like this.  Fields reserved for future use
+are omitted.
 
   typedef struct rb_data_type_struct rb_data_type_t;
 
@@ -684,54 +688,50 @@ member of the struct.
           void (*dfree)(void*);
           size_t (*dsize)(const void *);
           void (*dcompact)(void*);
-          void *reserved[1];
+          /* reserved fields */
       } function;
       const rb_data_type_t *parent;
       void *data;
       VALUE flags;
   };
 
-+wrap_struct_name+ is an identifier of this instance of the struct.
-It is basically used for collecting and emitting statistics.
-So the identifier must be unique in the process, but doesn't need
-to be valid as a C or Ruby identifier.
++wrap_struct_name+ is an identifier of this instance of the struct.  It is
+basically used for collecting and emitting statistics.  So the identifier should
+be unique in the process, but doesn't need to be valid as a C or Ruby
+identifier.
 
-These +dmark+ / +dfree+ functions are invoked during GC execution.  No
-object allocations are allowed during it, so do not allocate ruby
-objects inside them.
+These +dmark+ / +dfree+ functions are invoked during GC execution.  No object
+allocations are allowed during it, so do not allocate ruby objects inside them.
 
-+dmark+ is a function to mark Ruby objects referred from your struct.
-It must mark all references from your struct with +rb_gc_mark+ or
-its family if your struct keeps such references.
++dmark+ is a function to mark Ruby objects referred from your struct.  It must
+mark all references from your struct with +rb_gc_mark+ or its family if your
+struct keeps such references.
 
 --
 Note that it is recommended to avoid such a reference.
 ++
 
-+dfree+ is a function to free the pointer allocation.
-If this is +RUBY_DEFAULT_FREE+, the pointer will be just freed.
++dfree+ is a function to free the pointer allocation.  If this is
++RUBY_DEFAULT_FREE+, the pointer will be just freed.
 
-+dsize+ calculates memory consumption in bytes by the struct.
-Its parameter is a pointer to your struct.
-You can pass 0 as dsize if it is hard to implement such a function.
-But it is still recommended to avoid 0.
++dsize+ calculates memory consumption in bytes by the struct.  Its parameter is
+a pointer to your struct.  You can pass 0 as dsize if it is hard to implement
+such a function.  But it is still recommended to avoid 0.
 
-+dcompact+ is invoked when memory compaction took place.  Referred
-Ruby objects that were marked by <tt>rb_gc_mark_movable()</tt> can
-here be updated per <tt>rb_gc_location()</tt>.
-
-You have to fill +reserved+ with 0.
++dcompact+ is invoked when memory compaction took place.  Referred Ruby objects
+that were marked by <tt>rb_gc_mark_movable()</tt> can here be updated per
+<tt>rb_gc_location()</tt>.
 
 +parent+ can point to another C type definition that the Ruby object is
 inherited from.  Then <tt>TypedData_Get_Struct()</tt> does also accept
 derived objects.
 
-You can fill +data+ with an arbitrary value for your use.
-Ruby does nothing with the member.
+You can fill +data+ with an arbitrary value for your use.  Ruby does nothing
+with the member.
 
-+flags+ is a bitwise-OR of the following flag values.
-Since they require deep understanding of garbage collector in Ruby,
-you can just set 0 to +flags+ if you are not sure.
++flags+ is a bitwise-OR of the following flag values.  Since they require deep
+understanding of garbage collector in Ruby, you can just set 0 to +flags+ if you
+are not sure.
 
 +RUBY_TYPED_FREE_IMMEDIATELY+ ::
 
@@ -773,8 +773,8 @@ you can just set 0 to +flags+ if you are not sure.
   For instance if it's too large to fit into one of the available slot sizes.
 
   Embedding the C struct inside the object slot reduces pointer chasing,
-  malloc overhead, and improves sweep performance.
-  In some cases, it can also reduce the memory footprint of the object.
+  +malloc+ overhead, and improves sweep performance.  In some cases, it can also
+  reduce the memory footprint of the object.
 
   To be embeddable, types must abide by some restrictions:
 
@@ -790,10 +790,10 @@ you can just set 0 to +flags+ if you are not sure.
     argument from Ruby to C, i.e. as a parameter of a function used with
     +rb_define_method+ and similar.
 
-  * The +DATA_PTR+ and +RTYPEDDATA_DATA+ macro can't be used.
-    Only +RTYPEDDATA_GET_DATA+ or +TypedData_Get_Struct+ macros can be used
-    with embeddable objects.
-    Accessing <tt>RDATA(obj)->data</tt> or <tt>RTYPEDDATA(obj)->data</tt> is invalid too.
+  * The +DATA_PTR+, +RTYPEDDATA_DATA+ and +TypedData_Wrap_Struct+ macro can't be
+    used.
+    Only +RTYPEDDATA_GET_DATA+ or +TypedData_Get_Struct+ macros can be used with
+    embeddable objects.  Accessing <tt>RTYPEDDATA(obj)->data</tt> is invalid too.
 
   * The +dfree+ function MUST NOT free the C struct itself.
     Setting +dfree+ to +RUBY_DEFAULT_FREE+ is fine.
@@ -808,29 +808,43 @@ you can just set 0 to +flags+ if you are not sure.
   See {Embedded TypedData}[rdoc-ref:@Appendix+G.+Embedded+TypedData] for a
   commented example of how to use +RUBY_TYPED_EMBEDDABLE+.
 
+Fields other than those listed above are reserved for future use, and
+initializers are typically omitted.  In the rare case that you need to
+dynamically allocate a +rb_data_type_t+, these fields must be filled with
+zeros.
 
-Note that this macro can raise an exception.  If sval to be wrapped
-holds a resource needs to be released (e.g., allocated memory, handle
-from an external library, and etc), you will have to use rb_protect.
+Note that this macro can raise an exception.  If _sval_ already holds a
+resource that must be released, such as allocated memory or a handle from an
+external library, protect the call with +rb_protect+ and release the resource
+when an exception is raised.  Alternatively, create the object first with a
++NULL+ data pointer, then allocate the resource and store it in the object.
 
 You can allocate and wrap the structure in one step, in more
 preferable manner.
 
-  TypedData_Make_Struct(klass, type, data_type, sval)
+  obj = TypedData_Make_Struct(klass, type, data_type, sval)
 
-This macro returns an allocated +T_DATA+ object, wrapping the pointer to
-the structure, which is also allocated.  This macro works like:
+This macro returns an allocated +T_DATA+ object, wrapping the pointer to the
+structure, which is also allocated.  This macro works like:
 
-  (sval = ZALLOC(type), TypedData_Wrap_Struct(klass, data_type, sval))
+  obj = TypedData_Wrap_Struct(klass, data_type, NULL);
+  RTYPEDDATA_DATA(obj) = sval = ZALLOC(type);
 
-However, you should use this macro instead of "allocation then wrap"
-like the above code if it is simply allocated, because the latter can
-raise a NoMemoryError and sval will be memory leaked in that case.
+However, you should use this macro instead of "allocation then wrap" like the
+above code if it is simply allocated, because the "wrap" can raise a
++NoMemoryError+ and _sval_ will be memory leaked in that case.
 
-Arguments klass and data_type work like their counterparts in
-<tt>TypedData_Wrap_Struct()</tt>.  A pointer to the allocated
-structure will be assigned to sval, which should be a pointer of the
-type specified.
+Arguments _klass_ and _data_type_ work like their counterparts in
+<tt>TypedData_Wrap_Struct()</tt>.  A pointer to the allocated structure will be
+assigned to _sval_, which should be a pointer of the type specified.
+
+Same for other than simple memory allocation:
+
+  obj = TypedData_Wrap_Struct(klass, data_type, NULL);
+  sval = allocate_some_resource();
+  if (success(sval)) RTYPEDDATA_DATA(obj) = sval;
+
+You may have to cast _sval_ to <tt>void*</tt>, if it is not a pointer type.
 
 ==== Declaratively marking/compacting struct references
 
@@ -898,7 +912,7 @@ To retrieve the C pointer from the +T_DATA+ object, use the macro
 
   TypedData_Get_Struct(obj, type, &data_type, sval)
 
-A pointer to the structure will be assigned to the variable sval.
+A pointer to the structure will be assigned to the variable _sval_.
 
 See the example below for details.
 
@@ -1337,26 +1351,6 @@ golf_prelude.rb         :: goruby specific libraries.
 +Qfalse+ ::
 
   +false+ object
-
-=== C pointer wrapping
-
-<tt>Data_Wrap_Struct(VALUE klass, void (*mark)(), void (*free)(), void *sval)</tt> ::
-
-  Wrap a C pointer into a Ruby object.  If object has references to other
-  Ruby objects, they should be marked by using the _mark_ function during
-  the GC process.  Otherwise, _mark_ should be 0.  When this object is no
-  longer referred by anywhere, the pointer will be discarded by _free_
-  function.
-
-<tt>Data_Make_Struct(klass, type, mark, free, sval)</tt> ::
-
-  This macro allocates memory using malloc(), assigns it to the variable
-  _sval_, and returns the DATA encapsulating the pointer to memory region.
-
-<tt>Data_Get_Struct(data, type, sval)</tt> ::
-
-  This macro retrieves the pointer value from DATA, and assigns it to
-  the variable _sval_.
 
 === Checking VALUE types
 
