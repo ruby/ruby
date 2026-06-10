@@ -510,7 +510,25 @@ iow_newobj(VALUE obj)
     return TypedData_Wrap_Struct(rb_cInternalObjectWrapper, &iow_data_type, (void *)obj);
 }
 
-/* Returns the type of the internal object. */
+/*
+ *  call-seq:
+ *     type -> symbol
+ *
+ *  Returns the type of the wrapped internal object as a symbol.
+ *
+ *  For example, an included module is represented internally as a +T_ICLASS+
+ *  object:
+ *
+ *    require 'objspace'
+ *
+ *    module M; end
+ *    class A; include M; end
+ *
+ *    iclass = ObjectSpace.internal_super_of(A)
+ *    iclass.type # => :T_ICLASS
+ *
+ *  The exact set of returned symbols is implementation specific.
+ */
 static VALUE
 iow_type(VALUE self)
 {
