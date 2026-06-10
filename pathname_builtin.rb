@@ -1347,6 +1347,8 @@ class Pathname    # * File *
   # under the control of the given `flags`;
   # see [Filename Matching](rdoc-ref:file/filename_matching.md).
   def fnmatch(pattern, ...) File.fnmatch(pattern, @path, ...) end
+
+  # See <tt>File.fnmatch?</tt> (same as #fnmatch).
   def fnmatch?(pattern, ...) File.fnmatch?(pattern, @path, ...) end
 
   #  call-seq:
