@@ -29,7 +29,7 @@ abbrev              0.1.2   https://github.com/ruby/abbrev
 resolv-replace      0.2.0   https://github.com/ruby/resolv-replace
 rinda               0.2.0   https://github.com/ruby/rinda
 drb                 2.2.3   https://github.com/ruby/drb
-nkf                 0.2.0   https://github.com/ruby/nkf
+nkf                 0.3.0   https://github.com/ruby/nkf
 syslog              0.4.0   https://github.com/ruby/syslog
 csv                 3.3.5   https://github.com/ruby/csv
 repl_type_completor 0.1.15  https://github.com/ruby/repl_type_completor
