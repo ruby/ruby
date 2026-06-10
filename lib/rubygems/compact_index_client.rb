@@ -16,4 +16,5 @@ class Gem::CompactIndexClient
   class Error < StandardError; end
 
   require_relative "compact_index_client/cache_file"
+  require_relative "compact_index_client/updater"
 end
