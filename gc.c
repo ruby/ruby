@@ -1181,14 +1181,22 @@ make_io_zombie(void *objspace, VALUE obj)
 static bool
 rb_data_free(void *objspace, VALUE obj)
 {
-    void *data = RTYPEDDATA_P(obj) ? RTYPEDDATA_GET_DATA(obj) : DATA_PTR(obj);
+    bool typed = RTYPEDDATA_P(obj);
+    void *data = typed ? RTYPEDDATA_GET_DATA(obj) : DATA_PTR(obj);
     if (data) {
         int free_immediately = false;
+        bool embedded = false;
+        bool free_embeddable_data = false;
         void (*dfree)(void *);
 
-        if (RTYPEDDATA_P(obj)) {
-            free_immediately = (RTYPEDDATA_TYPE(obj)->flags & RUBY_TYPED_FREE_IMMEDIATELY) != 0;
-            dfree = RTYPEDDATA_TYPE(obj)->function.dfree;
+        if (typed) {
+            const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
+            dfree = type->function.dfree;
+            if (dfree) {
+                embedded = RTYPEDDATA_EMBEDDED_P(obj);
+                free_immediately = (type->flags & RUBY_TYPED_FREE_IMMEDIATELY) != 0;
+                free_embeddable_data = (type->flags & RUBY_TYPED_EMBEDDABLE) && !embedded;
+            }
         }
         else {
             dfree = RDATA(obj)->dfree;
@@ -1196,14 +1204,14 @@ rb_data_free(void *objspace, VALUE obj)
 
         if (dfree) {
             if (dfree == RUBY_DEFAULT_FREE) {
-                if (!RTYPEDDATA_P(obj) || !RTYPEDDATA_EMBEDDED_P(obj)) {
+                if (!typed || !embedded) {
                     xfree(data);
                     RB_DEBUG_COUNTER_INC(obj_data_xfree);
                 }
             }
             else if (free_immediately) {
                 (*dfree)(data);
-                if (RTYPEDDATA_TYPE(obj)->flags & RUBY_TYPED_EMBEDDABLE && !RTYPEDDATA_EMBEDDED_P(obj)) {
+                if (free_embeddable_data) {
                     xfree(data);
                 }
 
