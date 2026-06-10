@@ -36,6 +36,9 @@
 
 #include "probes.h"
 
+#define RUBY_DTRACE_GC_HOOK(name, ...) \
+    do {if (RUBY_DTRACE_GC_##name##_ENABLED()) RUBY_DTRACE_GC_##name(__VA_ARGS__);} while (0)
+
 #ifdef BUILDING_MODULAR_GC
 # define RB_DEBUG_COUNTER_INC(_name) ((void)0)
 # define RB_DEBUG_COUNTER_INC_IF(_name, cond) (!!(cond))
@@ -8948,9 +8951,6 @@ gc_prof_timer_stop(rb_objspace_t *objspace)
         record->gc_invoke_time -= objspace->profile.invoke_time;
     }
 }
-
-#define RUBY_DTRACE_GC_HOOK(name) \
-    do {if (RUBY_DTRACE_GC_##name##_ENABLED()) RUBY_DTRACE_GC_##name();} while (0)
 
 static inline void
 gc_prof_mark_timer_start(rb_objspace_t *objspace)
