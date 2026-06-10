@@ -36,73 +36,6 @@
 
 #ifndef BUILDING_MODULAR_GC
 # include "probes.h"
-# define RUBY_DTRACE_GC_HOOK(name, ...) \
-    do {if (RUBY_DTRACE_GC_##name##_ENABLED()) RUBY_DTRACE_GC_##name(__VA_ARGS__);} while (0)
-#else
-#include <sys/sdt.h>
-// This is copied from
-//   grep DTRACE_PROBE -B 1 --no-group-separator probes.h
-// Not the most elegant way to implement it, but it works for now.
-#define RUBY_DTRACE_METHOD_ENTRY(arg1, arg2, arg3, arg4) \
-DTRACE_PROBE4 (ruby, method__entry, arg1, arg2, arg3, arg4)
-#define RUBY_DTRACE_METHOD_RETURN(arg1, arg2, arg3, arg4) \
-DTRACE_PROBE4 (ruby, method__return, arg1, arg2, arg3, arg4)
-#define RUBY_DTRACE_CMETHOD_ENTRY(arg1, arg2, arg3, arg4) \
-DTRACE_PROBE4 (ruby, cmethod__entry, arg1, arg2, arg3, arg4)
-#define RUBY_DTRACE_CMETHOD_RETURN(arg1, arg2, arg3, arg4) \
-DTRACE_PROBE4 (ruby, cmethod__return, arg1, arg2, arg3, arg4)
-#define RUBY_DTRACE_REQUIRE_ENTRY(arg1, arg2, arg3) \
-DTRACE_PROBE3 (ruby, require__entry, arg1, arg2, arg3)
-#define RUBY_DTRACE_REQUIRE_RETURN(arg1, arg2, arg3) \
-DTRACE_PROBE3 (ruby, require__return, arg1, arg2, arg3)
-#define RUBY_DTRACE_FIND_REQUIRE_ENTRY(arg1, arg2, arg3) \
-DTRACE_PROBE3 (ruby, find__require__entry, arg1, arg2, arg3)
-#define RUBY_DTRACE_FIND_REQUIRE_RETURN(arg1, arg2, arg3) \
-DTRACE_PROBE3 (ruby, find__require__return, arg1, arg2, arg3)
-#define RUBY_DTRACE_LOAD_ENTRY(arg1, arg2, arg3) \
-DTRACE_PROBE3 (ruby, load__entry, arg1, arg2, arg3)
-#define RUBY_DTRACE_LOAD_RETURN(arg1, arg2, arg3) \
-DTRACE_PROBE3 (ruby, load__return, arg1, arg2, arg3)
-#define RUBY_DTRACE_RAISE(arg1, arg2, arg3) \
-DTRACE_PROBE3 (ruby, raise, arg1, arg2, arg3)
-#define RUBY_DTRACE_OBJECT_CREATE(arg1, arg2, arg3) \
-DTRACE_PROBE3 (ruby, object__create, arg1, arg2, arg3)
-#define RUBY_DTRACE_ARRAY_CREATE(arg1, arg2, arg3) \
-DTRACE_PROBE3 (ruby, array__create, arg1, arg2, arg3)
-#define RUBY_DTRACE_HASH_CREATE(arg1, arg2, arg3) \
-DTRACE_PROBE3 (ruby, hash__create, arg1, arg2, arg3)
-#define RUBY_DTRACE_STRING_CREATE(arg1, arg2, arg3) \
-DTRACE_PROBE3 (ruby, string__create, arg1, arg2, arg3)
-#define RUBY_DTRACE_SYMBOL_CREATE(arg1, arg2, arg3) \
-DTRACE_PROBE3 (ruby, symbol__create, arg1, arg2, arg3)
-#define RUBY_DTRACE_PARSE_BEGIN(arg1, arg2) \
-DTRACE_PROBE2 (ruby, parse__begin, arg1, arg2)
-#define RUBY_DTRACE_PARSE_END(arg1, arg2) \
-DTRACE_PROBE2 (ruby, parse__end, arg1, arg2)
-#define RUBY_DTRACE_GC_MARK_BEGIN() \
-DTRACE_PROBE (ruby, gc__mark__begin)
-#define RUBY_DTRACE_GC_MARK_END() \
-DTRACE_PROBE (ruby, gc__mark__end)
-#define RUBY_DTRACE_GC_SWEEP_BEGIN() \
-DTRACE_PROBE (ruby, gc__sweep__begin)
-#define RUBY_DTRACE_GC_SWEEP_END() \
-DTRACE_PROBE (ruby, gc__sweep__end)
-#define RUBY_DTRACE_GC_EVENT_HOOK(arg1) \
-DTRACE_PROBE1 (ruby, gc__event_hook, arg1)
-#define RUBY_DTRACE_GC_ENTER(arg1) \
-DTRACE_PROBE1 (ruby, gc__enter, arg1)
-#define RUBY_DTRACE_GC_EXIT(arg1) \
-DTRACE_PROBE1 (ruby, gc__exit, arg1)
-#define RUBY_DTRACE_GC_XMALLOC(arg1, arg2) \
-DTRACE_PROBE2 (ruby, gc__xmalloc, arg1, arg2)
-#define RUBY_DTRACE_GC_XCALLOC(arg1, arg2) \
-DTRACE_PROBE2 (ruby, gc__xcalloc, arg1, arg2)
-#define RUBY_DTRACE_GC_XFREE() \
-DTRACE_PROBE (ruby, gc__xfree)
-#define RUBY_DTRACE_GC_OBJ_FREE(arg1, arg2) \
-DTRACE_PROBE2 (ruby, gc__obj_free, arg1, arg2)
-# define RUBY_DTRACE_GC_HOOK(name, ...) \
-    do { RUBY_DTRACE_GC_##name(__VA_ARGS__);} while (0)
 #endif
 
 #ifdef BUILDING_MODULAR_GC
@@ -8881,6 +8814,13 @@ gc_prof_timer_stop(rb_objspace_t *objspace)
         record->gc_invoke_time -= objspace->profile.invoke_time;
     }
 }
+
+#ifdef BUILDING_MODULAR_GC
+# define RUBY_DTRACE_GC_HOOK(name)
+#else
+# define RUBY_DTRACE_GC_HOOK(name) \
+    do {if (RUBY_DTRACE_GC_##name##_ENABLED()) RUBY_DTRACE_GC_##name();} while (0)
+#endif
 
 static inline void
 gc_prof_mark_timer_start(rb_objspace_t *objspace)
