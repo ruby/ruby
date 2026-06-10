@@ -30,6 +30,19 @@ class HTTPHeaderTest < Test::Unit::TestCase
     assert_raise(ArgumentError){ @c.initialize_http_header("foo"=>"a\rb") }
   end
 
+  def test_invalid_field_name
+    assert_raise(ArgumentError){ @c.initialize_http_header("foo\nbar"=>"abc") }
+    assert_raise(ArgumentError){ @c.initialize_http_header("foo\rbar"=>"abc") }
+    assert_raise(ArgumentError){ @c.initialize_http_header("foo:bar"=>"abc") }
+    assert_raise(ArgumentError){ @c.initialize_http_header("foo\x00bar"=>"abc") }
+    assert_raise(ArgumentError){ @c['foo'.b << 0x0a << 'bar'] = 'abc' }
+    assert_raise(ArgumentError){ @c["foo\rbar"] = 'abc' }
+    assert_raise(ArgumentError){ @c["foo:bar"] = 'abc' }
+    assert_raise(ArgumentError){ @c["foo\x7fbar"] = 'abc' }
+    assert_raise(ArgumentError){ @c.add_field "foo\nbar", 'abc' }
+    assert_raise(ArgumentError){ @c.add_field "foo\nbar", ['abc'] }
+  end
+
   def test_initialize_with_broken_coderange
     error = RUBY_VERSION >= "3.2" ? Encoding::CompatibilityError : ArgumentError
     assert_raise(error){ @c.initialize_http_header("foo"=>"a\xff") }

@@ -196,6 +196,7 @@ module Net::HTTPHeader
         if key.to_s.bytesize > MAX_KEY_LENGTH
           raise ArgumentError, "too long (#{key.bytesize} bytes) header: #{key[0, 30].inspect}..."
         end
+        validate_field_name(key)
         if value.to_s.bytesize > MAX_FIELD_LENGTH
           raise ArgumentError, "header #{key} has too long field value: #{value.bytesize}"
         end
@@ -270,7 +271,14 @@ module Net::HTTPHeader
   end
 
   # :stopdoc:
+  private def validate_field_name(key)
+    if /[\x00-\x1f\x7f:]/n.match?(key.to_s.b)
+      raise ArgumentError, "header field name cannot include control characters or colon: #{key.to_s[0, 30].inspect}"
+    end
+  end
+
   private def set_field(key, val)
+    validate_field_name(key)
     case val
     when Enumerable
       ary = []
