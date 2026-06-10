@@ -4,7 +4,7 @@
 .SH "NAME"
 \fBbundle\-outdated\fR \- List installed gems with newer versions available
 .SH "SYNOPSIS"
-\fBbundle outdated\fR [GEM] [\-\-local] [\-\-pre] [\-\-source] [\-\-filter\-strict | \-\-strict] [\-\-update\-strict] [\-\-parseable | \-\-porcelain] [\-\-group=GROUP] [\-\-groups] [\-\-patch|\-\-minor|\-\-major] [\-\-filter\-major] [\-\-filter\-minor] [\-\-filter\-patch] [\-\-only\-explicit]
+\fBbundle outdated\fR [GEM] [\-\-local] [\-\-pre] [\-\-source] [\-\-filter\-strict | \-\-strict] [\-\-update\-strict] [\-\-parseable | \-\-porcelain] [\-\-group=GROUP] [\-\-groups] [\-\-patch|\-\-minor|\-\-major] [\-\-filter\-major] [\-\-filter\-minor] [\-\-filter\-patch] [\-\-only\-explicit] [\-\-cooldown=NUMBER]
 .SH "DESCRIPTION"
 Outdated lists the names and versions of gems that have a newer version available in the given source\. Calling outdated with [GEM [GEM]] will only check for newer versions of the given gems\. Prerelease gems are ignored by default\. If your gems are up to date, Bundler will exit with a status of 0\. Otherwise, it will exit 1\.
 .SH "OPTIONS"
@@ -53,6 +53,9 @@ Only list patch newer versions\.
 .TP
 \fB\-\-only\-explicit\fR
 Only list gems specified in your Gemfile, not their dependencies\.
+.TP
+\fB\-\-cooldown=<number>\fR
+Annotate (rather than hide) versions that are still inside the cooldown window of \fInumber\fR days\. The prose output appends "in cooldown for Nd more days" and the table form adds "(cooldown Nd)" to the Latest column\. See \fBcooldown\fR in bundle\-config(1)\.
 .SH "PATCH LEVEL OPTIONS"
 See bundle update(1) \fIbundle\-update\.1\.html\fR for details\.
 .SH "FILTERING OUTPUT"

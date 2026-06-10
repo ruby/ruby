@@ -1806,7 +1806,12 @@ ruby_mn_threads_params(void)
     main_ractor->threads.sched.enable_mn_threads = enable_mn_threads;
 
     const char *max_cpu_cstr = getenv("RUBY_MAX_CPU");
-    const int default_max_cpu = 8; // TODO: CPU num?
+#if defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_ONLN)
+    long nprocessors = sysconf(_SC_NPROCESSORS_ONLN);
+    const int default_max_cpu = (nprocessors > 0) ? (int)nprocessors : 8;
+#else
+    const int default_max_cpu = 8;
+#endif
     int max_cpu = default_max_cpu;
 
     if (USE_MN_THREADS && max_cpu_cstr)  {

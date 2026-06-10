@@ -109,9 +109,9 @@ describe "Kernel#require_relative with a relative path" do
 
     -> {
       require_relative(path)
-    }.should(raise_error(LoadError) { |e|
+    }.should.raise(LoadError) { |e|
       e.path.should == File.expand_path(path, @abs_dir)
-    })
+    }
   end
 
   it "calls #to_str on non-String objects" do
@@ -311,9 +311,9 @@ describe "Kernel#require_relative with an absolute path" do
 
     -> {
       require_relative(path)
-    }.should(raise_error(LoadError) { |e|
+    }.should.raise(LoadError) { |e|
       e.path.should == File.expand_path(path, @abs_dir)
-    })
+    }
   end
 
   it "calls #to_str on non-String objects" do

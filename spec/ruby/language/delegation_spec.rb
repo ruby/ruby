@@ -59,6 +59,20 @@ describe "delegation with def(...)" do
 
     a.new.delegate(1, b: 2).should == Range.new([[], {}, nil], nil, true)
   end
+
+  it "passes non-keyword trailing hash through without modification" do
+    a = Class.new(DelegationSpecs::Target)
+    a.class_eval(<<-RUBY)
+      def delegate(...)
+        target_single(...)
+      end
+    RUBY
+
+    h = {a:1}
+    h.freeze
+    h2 = a.new.delegate(h)
+    h2.should.equal?(h)
+  end
 end
 
 describe "delegation with def(x, ...)" do

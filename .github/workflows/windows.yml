@@ -65,7 +65,7 @@ jobs:
           bundler: none
           windows-toolchain: none
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
           sparse-checkout-cone-mode: false
@@ -95,7 +95,9 @@ jobs:
           key: windows-${{ matrix.os }}-vcpkg-${{ hashFiles('src/vcpkg.json') }}
 
       - name: Install libraries with vcpkg
+        id: build-vcpkg
         run: |
+          git -C "%VCPKG_INSTALLATION_ROOT%" pull --quiet
           vcpkg install
         working-directory: src
         if: ${{ ! steps.restore-vcpkg.outputs.cache-hit }}
@@ -105,7 +107,13 @@ jobs:
         with:
           path: src\vcpkg_installed
           key: windows-${{ matrix.os }}-vcpkg-${{ hashFiles('src/vcpkg.json') }}
-        if: ${{ ! steps.restore-vcpkg.outputs.cache-hit && (github.ref_name == 'master' || startsWith(github.ref_name, 'ruby_')) }}
+        if: >-
+          steps.build-vcpkg.outcome == 'success' &&
+          (  github.ref_name == 'master'
+          || startsWith(github.ref_name, 'ruby_')
+          || ( github.event.pull_request.user.login == 'dependabot[bot]'
+          &&   startsWith(github.head_ref || github.ref_name, 'dependabot/vcpkg'))
+          )
 
       - name: setup env
         # Available Ruby versions: https://github.com/actions/runner-images/blob/main/images/windows/Windows2019-Readme.md#ruby

@@ -105,3 +105,9 @@ describe "IO#eof?" do
     @r.should.eof?
   end
 end
+
+describe "IO#eof" do
+  it "is an alias of IO#eof?" do
+    IO.instance_method(:eof).should == IO.instance_method(:eof?)
+  end
+end

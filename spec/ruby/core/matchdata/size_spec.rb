@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/length'
 
 describe "MatchData#size" do
-  it_behaves_like :matchdata_length, :size
+  it "should return the number of elements in the match array" do
+    /(.)(.)(\d+)(\d)/.match("THX1138.").size.should == 5
+  end
 end

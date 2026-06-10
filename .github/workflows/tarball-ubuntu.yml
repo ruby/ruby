@@ -77,7 +77,8 @@ jobs:
           [
             Dir.home,
           ].each do |dir|
-            Dir.each_child(dir) do |pn|
+            Dir.each_child(dir) do |name|
+              pn = File.join(dir, name)
               st = File.stat(pn)
               if st.file?
                 content = Digest::SHA1.file(pn).hexdigest
@@ -125,7 +126,7 @@ jobs:
         if: matrix.test_task == 'check'
       - name: Show .local
         run: find $HOME/.local -ls
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           sparse-checkout: .github/actions/slack
           sparse-checkout-cone-mode: false

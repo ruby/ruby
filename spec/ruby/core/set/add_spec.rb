@@ -1,8 +1,18 @@
 require_relative '../../spec_helper'
-require_relative 'shared/add'
 
 describe "Set#add" do
-  it_behaves_like :set_add, :add
+  before :each do
+    @set = Set.new
+  end
+
+  it "adds the passed Object to self" do
+    @set.add("dog")
+    @set.should.include?("dog")
+  end
+
+  it "returns self" do
+    @set.add("dog").should.equal?(@set)
+  end
 end
 
 describe "Set#add?" do

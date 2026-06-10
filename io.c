@@ -8798,14 +8798,14 @@ rb_io_print(int argc, const VALUE *argv, VALUE out)
  *
  *  Writes the given objects to <tt>$stdout</tt>; returns +nil+.
  *  Appends the output record separator <tt>$OUTPUT_RECORD_SEPARATOR</tt>
- *  <tt>$\\</tt>), if it is not +nil+.
+ *  (<tt>$\\</tt>), if it is not +nil+.
  *
  *  With argument +objects+ given, for each object:
  *
  *  - Converts via its method +to_s+ if not a string.
  *  - Writes to <tt>stdout</tt>.
  *  - If not the last object, writes the output field separator
- *    <tt>$OUTPUT_FIELD_SEPARATOR</tt> (<tt>$,</tt> if it is not +nil+.
+ *    <tt>$OUTPUT_FIELD_SEPARATOR</tt> (<tt>$,</tt>) if it is not +nil+.
  *
  *  With default separators:
  *

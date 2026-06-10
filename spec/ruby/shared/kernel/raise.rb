@@ -92,6 +92,21 @@ describe :kernel_raise, shared: true do
     -> { @object.raise("message", {cause: RuntimeError.new()}) }.should.raise(TypeError, "exception class/object expected")
   end
 
+  it "raises result from #exception when passed a non-Exception object" do
+    e = Object.new
+    def e.exception = StandardError.new
+
+    -> { @object.raise e }.should.raise(StandardError)
+  end
+
+  it "raises result from #exception with given arguments when passed a non-Exception object" do
+    e = Object.new
+    def e.exception(msg) = StandardError.new(msg)
+
+    -> { @object.raise e, "foo" }.should.raise(StandardError, "foo")
+    -> { @object.raise e }.should.raise(ArgumentError, "wrong number of arguments (given 0, expected 1)")
+  end
+
   it "raises TypeError when passed a non-Exception object but it responds to #exception method that doesn't return an instance of Exception class" do
     e = Object.new
     def e.exception

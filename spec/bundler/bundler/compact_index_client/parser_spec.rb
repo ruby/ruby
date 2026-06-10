@@ -47,7 +47,7 @@ RSpec.describe Bundler::CompactIndexClient::Parser do
   INFO
   let(:c_info) { <<~INFO }
     3.0.0 a:= 1.0.0,b:~> 2.0|checksum:ccc1,ruby:>= 2.7.0,rubygems:>= 3.0.0
-    3.3.3 a:>= 1.1.0,b:~> 2.0|checksum:ccc3,ruby:>= 3.0.0,rubygems:>= 3.2.3
+    3.3.3 a:>= 1.1.0,b:~> 2.0|checksum:ccc3,ruby:>= 3.0.0,rubygems:>= 3.2.3,created_at:2026-05-12T10:00:00Z
   INFO
 
   describe "#available?" do
@@ -195,7 +195,7 @@ RSpec.describe Bundler::CompactIndexClient::Parser do
           "3.3.3",
           nil,
           [["a", [">= 1.1.0"]], ["b", ["~> 2.0"]]],
-          [["checksum", ["ccc3"]], ["ruby", [">= 3.0.0"]], ["rubygems", [">= 3.2.3"]]],
+          [["checksum", ["ccc3"]], ["ruby", [">= 3.0.0"]], ["rubygems", [">= 3.2.3"]], ["created_at", ["2026-05-12T10:00:00Z"]]],
         ],
       ]
     end

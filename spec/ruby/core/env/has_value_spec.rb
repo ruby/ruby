@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/value'
 
 describe "ENV.has_value?" do
-  it_behaves_like :env_value, :has_value?
+  it "is an alias of ENV.value?" do
+    ENV.method(:has_value?).should == ENV.method(:value?)
+  end
 end

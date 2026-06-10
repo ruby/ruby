@@ -1,7 +1,8 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
-require_relative 'shared/isatty'
+require 'stringio'
 
 describe "StringIO#isatty" do
-  it_behaves_like :stringio_isatty, :isatty
+  it "is an alias of StringIO#tty?" do
+    StringIO.instance_method(:isatty).should == StringIO.instance_method(:tty?)
+  end
 end

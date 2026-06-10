@@ -856,4 +856,33 @@ class TestGemCommandsExecCommand < Gem::TestCase
       assert_equal %w[a-1.1.a], @installed_specs.map(&:full_name)
     end
   end
+
+  def test_install_dependency_resolution_error
+    spec_fetcher do |fetcher|
+      fetcher.gem "a", 2 do |s|
+        s.executables = %w[a]
+        s.add_dependency "b", "~> 1.0"
+        s.add_dependency "c", "~> 1.0"
+      end
+      fetcher.gem "b", 1 do |s|
+        s.add_dependency "d", "= 1.0"
+      end
+      fetcher.gem "c", 1 do |s|
+        s.add_dependency "d", "= 2.0"
+      end
+      fetcher.gem "d", 1
+      fetcher.gem "d", 2
+    end
+
+    util_clear_gems
+
+    use_ui @ui do
+      e = assert_raise Gem::MockGemUi::TermError do
+        @cmd.invoke "a:2"
+      end
+      assert_equal 2, e.exit_code
+    end
+
+    assert_match(/ERROR:.*Error installing a:/, @ui.error)
+  end
 end

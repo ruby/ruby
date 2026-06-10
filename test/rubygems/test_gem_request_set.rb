@@ -93,6 +93,34 @@ Gems to install:
     end
   end
 
+  def test_install_from_gemdeps_explain_verbose
+    spec_fetcher do |fetcher|
+      fetcher.gem "a", 2
+    end
+
+    rs = Gem::RequestSet.new
+
+    verbose = Gem.configuration.verbose
+    Gem.configuration.verbose = :really
+
+    File.open "gem.deps.rb", "w" do |io|
+      io.puts 'gem "a"'
+      io.flush
+
+      expected = <<-EXPECTED
+Gems to install:
+  a-2
+      EXPECTED
+
+      actual, _ = capture_output do
+        rs.install_from_gemdeps gemdeps: io.path, explain: true
+      end
+      assert_equal(expected, actual)
+    end
+  ensure
+    Gem.configuration.verbose = verbose
+  end
+
   def test_install_from_gemdeps_install_dir
     spec_fetcher do |fetcher|
       fetcher.gem "a", 2

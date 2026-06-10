@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/arg'
 
 describe "Float#angle" do
-  it_behaves_like :float_arg, :angle
+  it "is an alias of Float#arg" do
+    Float.instance_method(:angle).should == Float.instance_method(:arg)
+  end
 end

@@ -1,3 +1,5 @@
+require 'mspec/utils/deprecate'
+
 module MSpecMatchers
 end
 

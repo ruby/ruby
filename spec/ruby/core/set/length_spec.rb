@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/length'
 
 describe "Set#length" do
-  it_behaves_like :set_length, :length
+  it "is an alias of Set#size" do
+    Set.instance_method(:length).should == Set.instance_method(:size)
+  end
 end
