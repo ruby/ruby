@@ -108,12 +108,6 @@ module SyncDefaultGems
     ]),
     "open-uri": lib("ruby/open-uri"),
     English: lib("ruby/English"),
-    cgi: repo("ruby/cgi", [
-      ["ext/cgi", "ext/cgi"],
-      ["lib/cgi/escape.rb", "lib/cgi/escape.rb"],
-      ["test/cgi/test_cgi_escape.rb", "test/cgi/test_cgi_escape.rb"],
-      ["test/cgi/update_env.rb", "test/cgi/update_env.rb"],
-    ]),
     date: repo("ruby/date", [
       ["doc/date", "doc/date"],
       ["ext/date", "ext/date"],
@@ -202,12 +196,6 @@ module SyncDefaultGems
     optparse: lib("ruby/optparse", gemspec_in_subdir: true).tap {
       it.mappings << ["doc/optparse", "doc/optparse"]
     },
-    pathname: repo("ruby/pathname", [
-      ["ext/pathname/pathname.c", "pathname.c"],
-      ["lib/pathname_builtin.rb", "pathname_builtin.rb"],
-      ["lib/pathname.rb", "lib/pathname.rb"],
-      ["test/pathname", "test/pathname"],
-    ]),
     pp: lib("ruby/pp"),
     prettyprint: lib("ruby/prettyprint"),
     prism: repo(["ruby/prism", "main"], [
@@ -316,6 +304,10 @@ module SyncDefaultGems
       ["zlib.gemspec", "ext/zlib/zlib.gemspec"],
     ]),
   }.transform_keys(&:to_s)
+
+  def REPOSITORIES.[](gem)
+    fetch(gem) {raise "unknown repository - #{gem}"}
+  end
 
   class << Repository
     def find_upstream(file)
@@ -445,7 +437,7 @@ module SyncDefaultGems
   end
 
   def check_prerelease_version(gem)
-    return if ["rubygems", "mmtk", "cgi", "pathname", "Onigmo"].include?(gem)
+    return if ["rubygems", "mmtk", "Onigmo"].include?(gem)
 
     require "net/https"
     require "json"

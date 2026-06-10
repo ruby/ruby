@@ -30,7 +30,7 @@ jobs:
   cargo:
     name: cargo test
 
-    runs-on: macos-14
+    runs-on: macos-26
 
     if: >-
       ${{!(false
@@ -41,7 +41,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
 
@@ -74,7 +74,7 @@ jobs:
       RUN_OPTS: ${{ matrix.yjit_opts }}
       SPECOPTS: ${{ matrix.specopts }}
 
-    runs-on: macos-14
+    runs-on: macos-26
 
     if: >-
       ${{!(false
@@ -85,7 +85,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -134,7 +134,7 @@ jobs:
         id: launchable
         uses: ./.github/actions/launchable/setup
         with:
-          os: macos-14
+          os: macos-26
           test-opts: ${{ matrix.configure }}
           launchable-token: ${{ secrets.LAUNCHABLE_TOKEN }}
           builddir: build

@@ -21,7 +21,7 @@ describe "IO.popen" do
 
   it "returns an open IO" do
     @io = IO.popen(ruby_cmd('exit'), "r")
-    @io.closed?.should be_false
+    @io.closed?.should == false
   end
 
   it "reads a read-only pipe" do
@@ -31,7 +31,7 @@ describe "IO.popen" do
 
   it "raises IOError when writing a read-only pipe" do
     @io = IO.popen('echo foo', "r")
-    -> { @io.write('bar') }.should raise_error(IOError)
+    -> { @io.write('bar') }.should.raise(IOError)
     @io.read.should == "foo\n"
   end
 
@@ -52,7 +52,7 @@ describe "IO.popen" do
 
   it "raises IOError when reading a write-only pipe" do
     @io = IO.popen(ruby_cmd('IO.copy_stream(STDIN,STDOUT)'), "w")
-    -> { @io.read }.should raise_error(IOError)
+    -> { @io.read }.should.raise(IOError)
   end
 
   it "reads and writes a read/write pipe" do
@@ -86,7 +86,7 @@ describe "IO.popen" do
 
   it "returns an instance of a subclass when called on a subclass" do
     @io = IOSpecs::SubIO.popen(ruby_cmd('exit'), "r")
-    @io.should be_an_instance_of(IOSpecs::SubIO)
+    @io.should.instance_of?(IOSpecs::SubIO)
   end
 
   it "coerces mode argument with #to_str" do
@@ -114,24 +114,24 @@ describe "IO.popen" do
   describe "with a block" do
     it "yields an open IO to the block" do
       IO.popen(ruby_cmd('exit'), "r") do |io|
-        io.closed?.should be_false
+        io.closed?.should == false
       end
     end
 
     it "yields an instance of a subclass when called on a subclass" do
       IOSpecs::SubIO.popen(ruby_cmd('exit'), "r") do |io|
-        io.should be_an_instance_of(IOSpecs::SubIO)
+        io.should.instance_of?(IOSpecs::SubIO)
       end
     end
 
     it "closes the IO after yielding" do
       io = IO.popen(ruby_cmd('exit'), "r") { |_io| _io }
-      io.closed?.should be_true
+      io.closed?.should == true
     end
 
     it "allows the IO to be closed inside the block" do
       io = IO.popen(ruby_cmd('exit'), 'r') { |_io| _io.close; _io }
-      io.closed?.should be_true
+      io.closed?.should == true
     end
 
     it "returns the value of the block" do
@@ -169,7 +169,7 @@ describe "IO.popen" do
   it "sets the internal encoding to nil if it's the same as the external encoding" do
     @io = IO.popen(ruby_cmd('exit'), external_encoding: Encoding::EUC_JP,
                           internal_encoding: Encoding::EUC_JP)
-    @io.internal_encoding.should be_nil
+    @io.internal_encoding.should == nil
   end
 
   context "with a leading ENV Hash" do

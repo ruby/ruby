@@ -23,7 +23,7 @@ describe 'TCPSocket#local_address' do
       end
 
       it 'returns an Addrinfo' do
-        @sock.local_address.should be_an_instance_of(Addrinfo)
+        @sock.local_address.should.instance_of?(Addrinfo)
       end
 
       describe 'the returned Addrinfo' do

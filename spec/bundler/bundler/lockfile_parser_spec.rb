@@ -129,6 +129,7 @@ RSpec.describe Bundler::LockfileParser do
 
     shared_examples_for "parsing" do
       it "parses correctly" do
+        expect(subject.valid?).to be(true)
         expect(subject.sources).to eq sources
         expect(subject.dependencies).to eq dependencies
         expect(subject.specs).to eq specs
@@ -189,6 +190,87 @@ RSpec.describe Bundler::LockfileParser do
       end
       let(:rake_checksums) { [rake_sha256_checksum, rake_sha512_checksum] }
       include_examples "parsing"
+    end
+
+    context "when the content does not contain any recognized lockfile sections" do
+      let(:lockfile_contents) { "hello world\nlorem ipsum\n" }
+
+      it "does not raise, is not valid, and deprecates" do
+        expect(Bundler::SharedHelpers).to receive(:feature_deprecated!).with(
+          /does not appear to be a valid lockfile.*future version of Bundler/m
+        )
+        parser = described_class.new(lockfile_contents)
+        expect(parser.valid?).to be(false)
+        expect(parser.specs).to eq([])
+        expect(parser.dependencies).to eq({})
+      end
+
+      it "does not raise when strict: true, and still deprecates" do
+        expect(Bundler::SharedHelpers).to receive(:feature_deprecated!).with(
+          /does not appear to be a valid lockfile.*future version of Bundler/m
+        )
+        parser = described_class.new(lockfile_contents, strict: true)
+        expect(parser.valid?).to be(false)
+        expect(parser.specs).to eq([])
+        expect(parser.dependencies).to eq({})
+      end
+    end
+
+    context "when the content looks like a Gemfile DSL" do
+      let(:lockfile_contents) { <<~G }
+        source "https://rubygems.org"
+        gem "rake"
+      G
+
+      it "does not raise, is not valid, and deprecates" do
+        expect(Bundler::SharedHelpers).to receive(:feature_deprecated!).with(
+          /does not appear to be a valid lockfile.*future version of Bundler/m
+        )
+        parser = described_class.new(lockfile_contents)
+        expect(parser.valid?).to be(false)
+        expect(parser.specs).to eq([])
+        expect(parser.dependencies).to eq({})
+      end
+
+      it "does not raise when strict: true, and still deprecates" do
+        expect(Bundler::SharedHelpers).to receive(:feature_deprecated!).with(
+          /does not appear to be a valid lockfile.*future version of Bundler/m
+        )
+        parser = described_class.new(lockfile_contents, strict: true)
+        expect(parser.valid?).to be(false)
+        expect(parser.specs).to eq([])
+        expect(parser.dependencies).to eq({})
+      end
+    end
+
+    context "when the content is empty" do
+      let(:lockfile_contents) { "" }
+
+      it "does not raise and is valid" do
+        expect { subject }.not_to raise_error
+        expect(subject.valid?).to be(true)
+      end
+    end
+
+    context "when lockfile_path is given" do
+      it "uses the provided path in error messages instead of looking up Bundler.default_lockfile" do
+        expect(Bundler::SharedHelpers).not_to receive(:relative_lockfile_path)
+        parser = described_class.new(lockfile_contents, lockfile_path: "custom/path.lock")
+        expect(parser.valid?).to be(true)
+        rake_spec = parser.specs.last
+        checksums = parser.sources.last.checksum_store.to_lock(rake_spec)
+        expected_checksum = Bundler::Checksum.from_lock(
+          "sha256=814828c34f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e8",
+          "custom/path.lock:20:17"
+        )
+        expect(checksums).to eq("#{rake_spec.lock_name} #{expected_checksum.to_lock}")
+      end
+
+      it "raises with the provided path when the lockfile contains merge conflicts" do
+        expect do
+          described_class.new("<<<<<<<\n", lockfile_path: "custom/path.lock")
+        end.to raise_error(Bundler::LockfileError, %r{custom/path\.lock contains merge conflicts})
+      end
     end
 
     context "when CHECKSUMS has duplicate checksums in the lockfile that don't match" do

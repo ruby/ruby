@@ -182,6 +182,18 @@ string: &70121654388580 !ruby/string
       assert_equal 1, y.val
     end
 
+    class NotAString
+    end
+
+    def test_string_tag_rejects_non_string_class
+      assert_raise(ArgumentError) do
+        Psych.unsafe_load "--- !ruby/string:#{NotAString} foo\n"
+      end
+      assert_raise(ArgumentError) do
+        Psych.unsafe_load "--- !ruby/string:#{NotAString}\nstr: foo\n"
+      end
+    end
+
     def test_string_with_base_60
       yaml = Psych.dump '01:03:05'
       assert_match "'01:03:05'", yaml

@@ -48,9 +48,9 @@ describe "BigDecimal#ceil" do
   end
 
   it "raise exception, if self is special value" do
-    -> { @infinity.ceil }.should raise_error(FloatDomainError)
-    -> { @infinity_neg.ceil }.should raise_error(FloatDomainError)
-    -> { @nan.ceil }.should raise_error(FloatDomainError)
+    -> { @infinity.ceil }.should.raise(FloatDomainError)
+    -> { @infinity_neg.ceil }.should.raise(FloatDomainError)
+    -> { @nan.ceil }.should.raise(FloatDomainError)
   end
 
   it "returns n digits right of the decimal point if given n > 0" do

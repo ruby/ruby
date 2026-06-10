@@ -16,7 +16,7 @@ describe "Warning.warn" do
   end
 
   it "extends itself" do
-    Warning.singleton_class.ancestors.should include(Warning)
+    Warning.singleton_class.ancestors.should.include?(Warning)
   end
 
   it "has Warning as the method owner" do

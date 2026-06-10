@@ -15,7 +15,7 @@ describe "Hash.new" do
 
   it "does not create a copy of the default argument" do
     str = "foo"
-    Hash.new(str).default.should equal(str)
+    Hash.new(str).default.should.equal?(str)
   end
 
   it "creates a Hash with a default_proc if passed a block" do
@@ -27,12 +27,12 @@ describe "Hash.new" do
   end
 
   it "raises an ArgumentError if more than one argument is passed" do
-    -> { Hash.new(5,6) }.should raise_error(ArgumentError)
+    -> { Hash.new(5,6) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if passed both default argument and default block" do
-    -> { Hash.new(5) { 0 }   }.should raise_error(ArgumentError)
-    -> { Hash.new(nil) { 0 } }.should raise_error(ArgumentError)
+    -> { Hash.new(5) { 0 }   }.should.raise(ArgumentError)
+    -> { Hash.new(nil) { 0 } }.should.raise(ArgumentError)
   end
 
   ruby_version_is ""..."3.4" do
@@ -41,8 +41,8 @@ describe "Hash.new" do
         Regexp.new(Regexp.escape("Calling Hash.new with keyword arguments is deprecated and will be removed in Ruby 3.4; use Hash.new({ key: value }) instead"))
       )
 
-      -> { Hash.new(1, unknown: true) }.should raise_error(ArgumentError)
-      -> { Hash.new(unknown: true) { 0 } }.should raise_error(ArgumentError)
+      -> { Hash.new(1, unknown: true) }.should.raise(ArgumentError)
+      -> { Hash.new(unknown: true) { 0 } }.should.raise(ArgumentError)
 
       Hash.new({ unknown: true }).default.should == { unknown: true }
     end
@@ -56,13 +56,13 @@ describe "Hash.new" do
     end
 
     it "ignores negative capacity" do
-      -> { Hash.new(capacity: -42) }.should_not raise_error
+      -> { Hash.new(capacity: -42) }.should_not.raise
     end
 
     it "raises an error if unknown keyword arguments are passed" do
-      -> { Hash.new(unknown: true) }.should raise_error(ArgumentError)
-      -> { Hash.new(1, unknown: true) }.should raise_error(ArgumentError)
-      -> { Hash.new(unknown: true) { 0 } }.should raise_error(ArgumentError)
+      -> { Hash.new(unknown: true) }.should.raise(ArgumentError)
+      -> { Hash.new(1, unknown: true) }.should.raise(ArgumentError)
+      -> { Hash.new(unknown: true) { 0 } }.should.raise(ArgumentError)
     end
   end
 end

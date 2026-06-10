@@ -90,6 +90,9 @@ control_frame_dump(const rb_execution_context_t *ec, const rb_control_frame_t *c
         break;
       case VM_FRAME_MAGIC_CFUNC:
         magic = "CFUNC";
+        if (me) {
+            box = me->def->box;
+        }
         break;
       case VM_FRAME_MAGIC_IFUNC:
         magic = "IFUNC";
@@ -1527,7 +1530,7 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
     }
 
     {
-#ifndef RUBY_ASAN_ENABLED
+#if !defined(RUBY_ASAN_ENABLED) && !USE_MODULAR_GC
 # ifdef PROC_MAPS_NAME
         {
             FILE *fp = fopen(PROC_MAPS_NAME, "r");

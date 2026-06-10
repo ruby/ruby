@@ -1,6 +1,8 @@
 require_relative '../../spec_helper'
-require_relative 'shared/length'
 
 describe "Set#size" do
-  it_behaves_like :set_length, :size
+  it "returns the number of elements in the set" do
+    set = Set[:a, :b, :c]
+    set.size.should == 3
+  end
 end

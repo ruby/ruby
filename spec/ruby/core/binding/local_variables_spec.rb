@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 describe "Binding#local_variables" do
   it "returns an Array" do
-    binding.local_variables.should be_kind_of(Array)
+    binding.local_variables.should.is_a?(Array)
   end
 
   it "includes local variables in the current scope" do

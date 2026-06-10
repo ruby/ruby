@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/include'
 
 describe "ENV.member?" do
-  it_behaves_like :env_include, :member?
+  it "is an alias of ENV.include?" do
+    ENV.method(:member?).should == ENV.method(:include?)
+  end
 end

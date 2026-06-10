@@ -89,10 +89,10 @@ module Bundler
     def version_prefix
       if @options[:strict]
         "= "
-      elsif @options[:optimistic]
-        ">= "
-      else
+      elsif @options[:pessimistic]
         "~> "
+      else
+        ">= "
       end
     end
 

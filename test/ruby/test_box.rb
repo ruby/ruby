@@ -2,6 +2,7 @@
 
 require 'test/unit'
 require 'rbconfig'
+require 'tempfile'
 
 class TestBox < Test::Unit::TestCase
   EXPERIMENTAL_WARNING_LINE_PATTERNS = [
@@ -155,8 +156,7 @@ class TestBox < Test::Unit::TestCase
     assert_include Ruby::Box.current.inspect, "main"
   end
 
-  def test_class_variables
-    # [Bug #21952]
+  def test_class_variables_in_root_are_invisible_in_other_boxes
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "here = '#{__dir__}'; #{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
       Ruby::Box.root.eval(<<~RUBY)
@@ -179,10 +179,9 @@ class TestBox < Test::Unit::TestCase
       REPRO
 
       b1 = Ruby::Box.new
-      assert_equal 2, b1.eval(code)
-
-      b2 = Ruby::Box.new
-      assert_equal 2, b2.eval(code)
+      assert_raise(NameError, "uninitialized class variable @@x in B") {
+        b1.eval(code)
+      }
     end;
   end
 
@@ -626,6 +625,126 @@ class TestBox < Test::Unit::TestCase
     end;
   end
 
+  def test_errinfo_not_cached_in_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      first, second = Ruby::Box.new.eval(<<~'CODE')
+        a = begin; raise "first"; rescue RuntimeError; $!.message; end
+        b = begin; raise "second"; rescue RuntimeError; $!.message; end
+        [a, b]
+      CODE
+      assert_equal "first", first
+      assert_equal "second", second
+    end;
+  end
+
+  def test_errinfo_not_cached_in_nested_boxes
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      inner_msg, outer_msg = Ruby::Box.new.eval(<<~'CODE')
+        outer_a = begin; raise "outer1"; rescue RuntimeError; $!.message; end
+
+        inner_msg = Ruby::Box.new.eval(<<~'INNER')
+          begin; raise "inner1"; rescue RuntimeError; $!; end
+          begin; raise "inner2"; rescue RuntimeError; $!.message; end
+        INNER
+
+        outer_b = begin; raise "outer2"; rescue RuntimeError; $!.message; end
+        [inner_msg, outer_b]
+      CODE
+      assert_equal "inner2", inner_msg
+      assert_equal "outer2", outer_msg
+    end;
+  end
+
+  def test_backtrace_not_cached_in_box
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      a_actual, b_actual = Ruby::Box.new.eval(<<~'CODE')
+        a_actual = begin; raise "first"; rescue RuntimeError; $@.first[/:(\d+):/, 1].to_i; end
+        b_actual = begin; raise "second"; rescue RuntimeError; $@.first[/:(\d+):/, 1].to_i; end
+        [a_actual, b_actual]
+      CODE
+      assert_equal 1, a_actual
+      assert_equal 2, b_actual
+    end;
+  end
+
+  def test_backtrace_not_cached_in_nested_boxes
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      inner_actual, outer_actual = Ruby::Box.new.eval(<<~'CODE')
+        begin; raise "outer1"; rescue RuntimeError; $@; end
+        inner_actual = Ruby::Box.new.eval(<<~'INNER')
+          begin; raise "inner1"; rescue RuntimeError; $@; end
+          begin; raise "inner2"; rescue RuntimeError; $@.first[/:(\d+):/, 1].to_i; end
+        INNER
+        outer_actual = begin; raise "outer2"; rescue RuntimeError; $@.first[/:(\d+):/, 1].to_i; end
+        [inner_actual, outer_actual]
+      CODE
+      assert_equal 2, inner_actual
+      assert_equal 6, outer_actual
+    end;
+  end
+
+  def test_errinfo_isolated_between_boxes
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      box_a = Ruby::Box.new
+      box_b = Ruby::Box.new
+
+      a = box_a.eval('begin; raise "a"; rescue; $!.message; end')
+      b = box_b.eval('begin; raise "b"; rescue; $!.message; end')
+
+      assert_equal "a", a
+      assert_equal "b", b
+    end;
+  end
+
+  def test_backtrace_isolated_between_boxes
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      box_a = Ruby::Box.new
+      box_b = Ruby::Box.new
+
+      a_line = box_a.eval("\nbegin; raise; rescue; $@.first[/:(\\d+):/, 1].to_i; end")
+      b_line = box_b.eval('begin; raise; rescue; $@.first[/:(\d+):/, 1].to_i; end')
+
+      assert_equal 2, a_line
+      assert_equal 1, b_line
+    end;
+  end
+
+  def test_inner_box_rescue_does_not_disturb_outer_box_errinfo
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      box_a = Ruby::Box.new
+      errinfo_in_inner_rescue, errinfo_after_inner_rescue, errinfo_back_in_outer_rescue = box_a.eval(<<~'A')
+        errinfo_in_inner_rescue = errinfo_after_inner_rescue = errinfo_back_in_outer_rescue = nil
+        begin
+          raise "outer"
+        rescue
+          errinfo_in_inner_rescue, errinfo_after_inner_rescue = Ruby::Box.new.eval(<<~'B')
+            in_rescue = after_rescue = nil
+            begin
+              raise "inner"
+            rescue
+              in_rescue = $! && $!.message
+            end
+            after_rescue = $! && $!.message
+            [in_rescue, after_rescue]
+          B
+          errinfo_back_in_outer_rescue = $! && $!.message
+        end
+        [errinfo_in_inner_rescue, errinfo_after_inner_rescue, errinfo_back_in_outer_rescue]
+      A
+
+      assert_equal "inner", errinfo_in_inner_rescue
+      assert_equal "outer", errinfo_after_inner_rescue
+      assert_equal "outer", errinfo_back_in_outer_rescue
+    end;
+  end
+
   def test_load_path_and_loaded_features
     setup_box
 
@@ -779,6 +898,72 @@ class TestBox < Test::Unit::TestCase
     end
   end
 
+  def test_calling_root_box_methods_does_not_change_user_boxes_newly_created
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true, timeout: 60)
+    begin;
+      assert_not_include Object.constants.sort, :Find # required by Pathname#find
+      assert_not_include Ruby::Box.root.eval("Object.constants.sort"), :Find
+      b1 = Ruby::Box.new
+      assert_not_include b1.eval("Object.constants.sort"), :Find
+
+      require 'pathname'
+      Pathname.new('.').find{|path| path.directory?}
+      assert_include Object.constants.sort, :Find # required by Pathname#find
+
+      assert_not_include Ruby::Box.root.eval("Object.constants.sort"), :Find
+      assert_not_include b1.eval("Object.constants.sort"), :Find
+
+      Ruby::Box.root.eval("require 'pathname'; Pathname.new('.').find{|path| path.directory? }")
+      assert_include Ruby::Box.root.eval("Object.constants.sort"), :Find
+
+      assert_not_include b1.eval("Object.constants.sort"), :Find
+      b2 = Ruby::Box.new
+      assert_not_include b2.eval("Object.constants.sort"), :Find
+    end;
+  end
+
+  def test_boxes_have_different_rubygems
+    # assert_separately w/ ENV_ENABLE_BOX and --enable=gems causes timeouts on CI @ Windows
+    assert_in_out_err([ENV_ENABLE_BOX, "--enable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+      begin;
+        require "json"
+        h = {main: Gem.object_id, root: Ruby::Box.root.eval("Gem").object_id, box: Ruby::Box.new.eval("Gem").object_id}
+        puts h.to_json
+      end;
+      require "json"
+      result = JSON.parse(output.first, symbolize_names: true)
+      assert_not_equal result[:main], result[:root]
+      assert_not_equal result[:box], result[:root]
+      assert_not_equal result[:main], result[:box]
+    end
+  end
+
+  def test_require_list_loaded_only_in_main_box
+    Tempfile.create(["req_a", ".rb"]) do |t1|
+      Tempfile.create(["req_b", ".rb"]) do |t2|
+        t1.puts "module FooBarA; end"
+        t1.close
+        t2.puts "module FooBarB; end"
+        t2.close
+
+        opts = [ENV_ENABLE_BOX, "-r#{t1.path}", "-r#{t2.path}"]
+        assert_separately(opts, __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+        begin;
+          main_constants = Object.constants
+          assert_include main_constants, :FooBarA
+          assert_include main_constants, :FooBarB
+
+          root_constants = Ruby::Box.root.eval("Object.constants.sort")
+          master_constants = Ruby::Box.master.eval("Object.constants.sort")
+          assert_not_include root_constants, :FooBarA
+          assert_not_include root_constants, :FooBarB
+          assert_not_include master_constants, :FooBarA
+          assert_not_include master_constants, :FooBarB
+        end;
+      end
+    end
+  end
+
   def test_root_and_main_methods
     assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
     begin;
@@ -874,6 +1059,18 @@ class TestBox < Test::Unit::TestCase
 
       assert_equal "Foo", box::FOO_NAME
       assert_equal "Foo", box::Foo.name
+    end;
+  end
+
+  def test_very_basic_method_calls_and_constants
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      code = <<~EOC
+      consts = Object.constants
+      [consts.include?(:String), consts.include?(:Array)]
+      EOC
+      assert_equal([true, true], Ruby::Box.current.eval(code))
+      assert_equal([true, true], Ruby::Box.root.eval(code))
     end;
   end
 
@@ -981,6 +1178,42 @@ class TestBox < Test::Unit::TestCase
       box2.eval("module Math; def box2_test = :box2; end")
 
       assert_equal :box2, box2.eval("Class.new { include Math }.new.box2_test")
+    end;
+  end
+
+  def test_method_invalidation_between_boxes_1
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      b = Ruby::Box.new
+      b.eval(<<~'RUBY')
+      Module.prepend(Module.new)
+        class C; end
+        class D < C; end
+        def C.===(x) = true
+      RUBY
+
+      assert String === "x"
+      assert b # to prevent GCing b
+    end;
+  end
+
+  def test_method_invalidation_between_boxes_2
+    assert_separately([ENV_ENABLE_BOX], __FILE__, __LINE__, "#{<<~"begin;"}\n#{<<~'end;'}", ignore_stderr: true)
+    begin;
+      PrepM = Module.new
+      Module.prepend(PrepM)
+      Module.new.include?(Module.new)
+
+      b = Ruby::Box.new
+      b.eval(<<~'RUBY')
+        Module.class_eval { def _test_method; end }
+
+        class C; end
+        class D < C; end
+        def C.include?(x) = true
+      RUBY
+
+      Module.new.include?(Module.new)
     end;
   end
 end

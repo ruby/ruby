@@ -3,21 +3,21 @@ require_relative 'fixtures/classes'
 
 describe "BasicObject#instance_exec" do
   it "is a public instance method" do
-    BasicObject.should have_public_instance_method(:instance_exec)
+    BasicObject.public_instance_methods(false).should.include?(:instance_exec)
   end
 
   it "sets self to the receiver in the context of the passed block" do
     a = BasicObject.new
-    a.instance_exec { self }.equal?(a).should be_true
+    a.instance_exec { self }.equal?(a).should == true
   end
 
   it "passes arguments to the block" do
     a = BasicObject.new
-    a.instance_exec(1) { |b| b }.should equal(1)
+    a.instance_exec(1) { |b| b }.should.equal?(1)
   end
 
   it "raises a LocalJumpError unless given a block" do
-    -> { "hola".instance_exec }.should raise_error(LocalJumpError)
+    -> { "hola".instance_exec }.should.raise(LocalJumpError)
   end
 
   it "has an arity of -1" do
@@ -25,15 +25,21 @@ describe "BasicObject#instance_exec" do
   end
 
   it "accepts arguments with a block" do
-    -> { "hola".instance_exec(4, 5) { |a,b| a + b } }.should_not raise_error
+    -> { "hola".instance_exec(4, 5) { |a,b| a + b } }.should_not.raise
   end
 
   it "doesn't pass self to the block as an argument" do
-    "hola".instance_exec { |o| o }.should be_nil
+    "hola".instance_exec { |o| o }.should == nil
   end
 
   it "passes any arguments to the block" do
     Object.new.instance_exec(1,2) {|one, two| one + two}.should == 3
+  end
+
+  describe "with optional argument" do
+    it "does not destructure a single array argument" do
+      Object.new.instance_exec([1, 2, 3]) { |a = 99| a }.should == [1, 2, 3]
+    end
   end
 
   it "only binds the exec to the receiver" do
@@ -44,7 +50,7 @@ describe "BasicObject#instance_exec" do
       end
     end
     f.foo.should == 1
-    -> { Object.new.foo }.should raise_error(NoMethodError)
+    -> { Object.new.foo }.should.raise(NoMethodError)
   end
 
   # TODO: This should probably be replaced with a "should behave like" that uses
@@ -71,17 +77,17 @@ describe "BasicObject#instance_exec" do
   end
 
   it "sets class variables in the receiver" do
-    BasicObjectSpecs::InstExec.class_variables.should include(:@@count)
+    BasicObjectSpecs::InstExec.class_variables.should.include?(:@@count)
     BasicObjectSpecs::InstExec.send(:class_variable_get, :@@count).should == 2
   end
 
   it "raises a TypeError when defining methods on an immediate" do
     -> do
       1.instance_exec { def foo; end }
-    end.should raise_error(TypeError)
+    end.should.raise(TypeError)
     -> do
       :foo.instance_exec { def foo; end }
-    end.should raise_error(TypeError)
+    end.should.raise(TypeError)
   end
 
   quarantine! do # Not clean, leaves cvars lying around to break other specs
@@ -99,9 +105,9 @@ describe "BasicObject#instance_exec" do
   it "raises a TypeError when defining methods on numerics" do
     -> do
       (1.0).instance_exec { def foo; end }
-    end.should raise_error(TypeError)
+    end.should.raise(TypeError)
     -> do
       (1 << 64).instance_exec { def foo; end }
-    end.should raise_error(TypeError)
+    end.should.raise(TypeError)
   end
 end

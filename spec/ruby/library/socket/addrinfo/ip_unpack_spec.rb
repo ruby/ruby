@@ -27,7 +27,7 @@ describe "Addrinfo#ip_unpack" do
     end
 
     it "raises an exception" do
-      -> { @addrinfo.ip_unpack }.should raise_error(SocketError)
+      -> { @addrinfo.ip_unpack }.should.raise(SocketError)
     end
   end
 end

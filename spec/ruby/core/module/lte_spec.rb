@@ -28,6 +28,6 @@ describe "Module#<=" do
   end
 
   it "raises a TypeError if the argument is not a class/module" do
-    -> { ModuleSpecs::Parent <= mock('x') }.should raise_error(TypeError)
+    -> { ModuleSpecs::Parent <= mock('x') }.should.raise(TypeError)
   end
 end

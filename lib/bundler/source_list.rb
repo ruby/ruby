@@ -59,8 +59,8 @@ module Bundler
       add_source_to_list Plugin.source(source).new(options), @plugin_sources
     end
 
-    def add_global_rubygems_remote(uri)
-      global_rubygems_source.add_remote(uri)
+    def add_global_rubygems_remote(uri, cooldown: nil)
+      global_rubygems_source.add_remote(uri, cooldown: cooldown)
       global_rubygems_source
     end
 
@@ -136,6 +136,10 @@ module Bundler
       all_sources.each(&:remote!)
     end
 
+    def clear_cache
+      rubygems_sources.each(&:clear_cache)
+    end
+
     private
 
     def map_sources(replacement_sources)
@@ -164,6 +168,10 @@ module Bundler
       replace_source(replacement_sources, gemfile_source) do |replacement_source|
         # locked sources never include credentials so always prefer remotes from the gemfile
         replacement_source.remotes = gemfile_source.remotes
+
+        # cooldowns are only ever declared in the Gemfile, so carry them over
+        # along with the remotes they apply to
+        replacement_source.remote_cooldowns = gemfile_source.remote_cooldowns
 
         yield replacement_source if block_given?
 

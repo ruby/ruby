@@ -299,7 +299,7 @@ class Gem::Installer
 
     File.chmod(dir_mode, gem_dir) if dir_mode
 
-    say spec.post_install_message if options[:post_install_message] && !spec.post_install_message.nil?
+    say clean_text(spec.post_install_message.to_s) if options[:post_install_message] && !spec.post_install_message.nil?
 
     Gem::Specification.add_spec(spec) unless @install_dir
 
@@ -712,6 +712,18 @@ class Gem::Installer
     if spec.dependencies.any? {|dep| dep.name =~ /(?:\R|[<>])/ }
       raise Gem::InstallError, "#{spec} has an invalid dependencies"
     end
+
+    if spec.executables.any? {|name| !name.is_a?(String) || name != File.basename(name) || /\A\.\.?\z|\R/.match?(name) }
+      raise Gem::InstallError, "#{spec} has an invalid executable"
+    end
+
+    raise Gem::InstallError, "#{spec} has an invalid bindir" unless spec.bindir.is_a?(String)
+
+    expanded_gem_dir = File.expand_path(gem_dir)
+    expanded_bindir = File.expand_path(File.join(gem_dir, spec.bindir))
+    unless expanded_bindir == expanded_gem_dir || expanded_bindir.start_with?("#{expanded_gem_dir}/")
+      raise Gem::InstallError, "#{spec} has an invalid bindir"
+    end
   end
 
   ##
@@ -720,6 +732,7 @@ class Gem::Installer
   def app_script_text(bin_file_name)
     # NOTE: that the `load` lines cannot be indented, as old RG versions match
     # against the beginning of the line
+    escaped_bin_file_name = bin_file_name.gsub(/[\\']/) {|c| "\\#{c}" }
     <<~TEXT
       #{shebang bin_file_name}
       #
@@ -743,9 +756,9 @@ class Gem::Installer
       end
 
       if Gem.respond_to?(:activate_and_load_bin_path)
-        Gem.activate_and_load_bin_path('#{spec.name}', '#{bin_file_name}', version)
+        Gem.activate_and_load_bin_path('#{spec.name}', '#{escaped_bin_file_name}', version)
       else
-        load Gem.activate_bin_path('#{spec.name}', '#{bin_file_name}', version)
+        load Gem.activate_bin_path('#{spec.name}', '#{escaped_bin_file_name}', version)
       end
     TEXT
   end

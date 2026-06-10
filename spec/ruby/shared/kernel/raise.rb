@@ -7,9 +7,9 @@ describe :kernel_raise, shared: true do
     -> do
       @object.raise Exception, "abort"
       ScratchPad.record :no_abort
-    end.should raise_error(Exception, "abort")
+    end.should.raise(Exception, "abort")
 
-    ScratchPad.recorded.should be_nil
+    ScratchPad.recorded.should == nil
   end
 
   it "accepts an exception that implements to_hash" do
@@ -19,7 +19,7 @@ describe :kernel_raise, shared: true do
       end
     end
     error = custom_error.new
-    -> { @object.raise(error) }.should raise_error(custom_error)
+    -> { @object.raise(error) }.should.raise(custom_error)
   end
 
   it "allows the message parameter to be a hash" do
@@ -30,7 +30,7 @@ describe :kernel_raise, shared: true do
       end
     end
 
-    -> { @object.raise(data_error, {data: 42}) }.should raise_error(data_error) do |ex|
+    -> { @object.raise(data_error, {data: 42}) }.should.raise(data_error) do |ex|
       ex.data.should == {data: 42}
     end
   end
@@ -44,22 +44,22 @@ describe :kernel_raise, shared: true do
       end
     end
 
-    -> { @object.raise(data_error, data: 42) }.should raise_error(data_error) do |ex|
+    -> { @object.raise(data_error, data: 42) }.should.raise(data_error) do |ex|
       ex.data.should == {data: 42}
     end
   end
 
   it "raises RuntimeError if no exception class is given" do
-    -> { @object.raise }.should raise_error(RuntimeError, "")
+    -> { @object.raise }.should.raise(RuntimeError, "")
   end
 
   it "raises a given Exception instance" do
     error = RuntimeError.new
-    -> { @object.raise(error) }.should raise_error(error)
+    -> { @object.raise(error) }.should.raise(error)
   end
 
   it "raises a RuntimeError if string given" do
-    -> { @object.raise("a bad thing") }.should raise_error(RuntimeError, "a bad thing")
+    -> { @object.raise("a bad thing") }.should.raise(RuntimeError, "a bad thing")
   end
 
   it "passes no arguments to the constructor when given only an exception class" do
@@ -67,29 +67,44 @@ describe :kernel_raise, shared: true do
       def initialize
       end
     end
-    -> { @object.raise(klass) }.should raise_error(klass) { |e| e.message.should == klass.to_s }
+    -> { @object.raise(klass) }.should.raise(klass) { |e| e.message.should == klass.to_s }
   end
 
   it "raises a TypeError when passed a non-Exception object" do
-    -> { @object.raise(Object.new) }.should raise_error(TypeError, "exception class/object expected")
-    -> { @object.raise(Object.new, "message") }.should raise_error(TypeError, "exception class/object expected")
-    -> { @object.raise(Object.new, "message", []) }.should raise_error(TypeError, "exception class/object expected")
+    -> { @object.raise(Object.new) }.should.raise(TypeError, "exception class/object expected")
+    -> { @object.raise(Object.new, "message") }.should.raise(TypeError, "exception class/object expected")
+    -> { @object.raise(Object.new, "message", []) }.should.raise(TypeError, "exception class/object expected")
   end
 
   it "raises a TypeError when passed true" do
-    -> { @object.raise(true) }.should raise_error(TypeError, "exception class/object expected")
+    -> { @object.raise(true) }.should.raise(TypeError, "exception class/object expected")
   end
 
   it "raises a TypeError when passed false" do
-    -> { @object.raise(false) }.should raise_error(TypeError, "exception class/object expected")
+    -> { @object.raise(false) }.should.raise(TypeError, "exception class/object expected")
   end
 
   it "raises a TypeError when passed nil" do
-    -> { @object.raise(nil) }.should raise_error(TypeError, "exception class/object expected")
+    -> { @object.raise(nil) }.should.raise(TypeError, "exception class/object expected")
   end
 
   it "raises a TypeError when passed a message and an extra argument" do
-    -> { @object.raise("message", {cause: RuntimeError.new()}) }.should raise_error(TypeError, "exception class/object expected")
+    -> { @object.raise("message", {cause: RuntimeError.new()}) }.should.raise(TypeError, "exception class/object expected")
+  end
+
+  it "raises result from #exception when passed a non-Exception object" do
+    e = Object.new
+    def e.exception = StandardError.new
+
+    -> { @object.raise e }.should.raise(StandardError)
+  end
+
+  it "raises result from #exception with given arguments when passed a non-Exception object" do
+    e = Object.new
+    def e.exception(msg) = StandardError.new(msg)
+
+    -> { @object.raise e, "foo" }.should.raise(StandardError, "foo")
+    -> { @object.raise e }.should.raise(ArgumentError, "wrong number of arguments (given 0, expected 1)")
   end
 
   it "raises TypeError when passed a non-Exception object but it responds to #exception method that doesn't return an instance of Exception class" do
@@ -100,7 +115,7 @@ describe :kernel_raise, shared: true do
 
     -> {
       @object.raise e
-    }.should raise_error(TypeError, "exception object expected")
+    }.should.raise(TypeError, "exception object expected")
   end
 
   it "re-raises a previously rescued exception without overwriting the backtrace" do
@@ -127,7 +142,7 @@ describe :kernel_raise, shared: true do
   it "allows Exception, message, and backtrace parameters" do
     -> do
       @object.raise(ArgumentError, "message", caller)
-    end.should raise_error(ArgumentError, "message")
+    end.should.raise(ArgumentError, "message")
   end
 
   ruby_version_is "3.4" do
@@ -135,7 +150,7 @@ describe :kernel_raise, shared: true do
     it "allows Exception, message, and backtrace_locations parameters" do
       -> do
         @object.raise(ArgumentError, "message", locations)
-      end.should raise_error(ArgumentError, "message") { |error|
+      end.should.raise(ArgumentError, "message") { |error|
         error.backtrace_locations.map(&:to_s).should == locations.map(&:to_s)
       }
     end
@@ -147,21 +162,14 @@ describe :kernel_raise_with_cause, shared: true do
     it "sets cause to nil when there is no previous exception" do
       -> do
         @object.raise("error without a cause")
-      end.should raise_error(RuntimeError, "error without a cause") do |error|
-        error.cause.should == nil
-      end
+      end.should.raise(RuntimeError, "error without a cause", cause: nil)
     end
 
     it "supports automatic cause chaining from a previous exception" do
-      -> do
-        begin
-          raise StandardError,"first error"
-        rescue
-          @object.raise("second error")
-        end
-      end.should raise_error(RuntimeError, "second error") do |error|
-        error.cause.should be_kind_of(StandardError)
-        error.cause.message.should == "first error"
+      begin
+        raise StandardError, "first error"
+      rescue => cause
+        -> { @object.raise("second error") }.should.raise(RuntimeError, "second error", cause:)
       end
     end
   end
@@ -171,16 +179,14 @@ describe :kernel_raise_with_cause, shared: true do
       cause = StandardError.new("original error")
 
       -> do
-        @object.raise("new error", cause: cause)
-      end.should raise_error(RuntimeError, "new error") do |error|
-        error.cause.should == cause
-      end
+        @object.raise("new error", cause:)
+      end.should.raise(RuntimeError, "new error", cause:)
     end
 
     it "allows setting cause to nil" do
       -> do
         @object.raise("error without a cause", cause: nil)
-      end.should raise_error(RuntimeError, "error without a cause") do |error|
+      end.should.raise(RuntimeError, "error without a cause") do |error|
         error.cause.should == nil
       end
     end
@@ -188,32 +194,29 @@ describe :kernel_raise_with_cause, shared: true do
     it "raises an ArgumentError when only cause is given" do
       cause = StandardError.new("cause")
       -> do
-        @object.raise(cause: cause)
-      end.should raise_error(ArgumentError, "only cause is given with no arguments")
+        @object.raise(cause:)
+      end.should.raise(ArgumentError, "only cause is given with no arguments")
     end
 
     it "raises an ArgumentError when only cause is given and is nil" do
       -> do
         @object.raise(cause: nil)
-      end.should raise_error(ArgumentError, "only cause is given with no arguments")
+      end.should.raise(ArgumentError, "only cause is given with no arguments")
     end
 
     it "raises a TypeError when given cause is not an instance of Exception or nil" do
       cause = Object.new
       -> do
-        @object.raise("message", cause: cause)
-      end.should raise_error(TypeError, "exception object expected")
+        @object.raise("message", cause:)
+      end.should.raise(TypeError, "exception object expected")
     end
 
     it "doesn't set given cause when it equals the raised exception" do
       cause = StandardError.new("cause")
 
       -> do
-        @object.raise(cause, cause: cause)
-      end.should raise_error(StandardError, "cause") do |error|
-        error.should == cause
-        error.cause.should == nil
-      end
+        @object.raise(cause, cause:)
+      end.should.raise(StandardError, "cause", cause: nil)
     end
 
     it "raises ArgumentError when cause creates a circular reference" do
@@ -231,19 +234,15 @@ describe :kernel_raise_with_cause, shared: true do
             end
           end
         end
-      }.should raise_error(ArgumentError, "circular causes")
+      }.should.raise(ArgumentError, "circular causes")
     end
 
     it "supports exception class with message and cause" do
       cause = StandardError.new("cause message")
 
       -> do
-        @object.raise(ArgumentError, "argument error message", cause: cause)
-      end.should raise_error(ArgumentError, "argument error message") do |error|
-        error.should be_kind_of(ArgumentError)
-        error.message.should == "argument error message"
-        error.cause.should == cause
-      end
+        @object.raise(ArgumentError, "argument error message", cause:)
+      end.should.raise(ArgumentError, "argument error message", cause:)
     end
 
     it "supports exception class with message, backtrace and cause" do
@@ -251,11 +250,8 @@ describe :kernel_raise_with_cause, shared: true do
       backtrace = ["line1", "line2"]
 
       -> do
-        @object.raise(ArgumentError, "argument error message", backtrace, cause: cause)
-      end.should raise_error(ArgumentError, "argument error message") do |error|
-        error.should be_kind_of(ArgumentError)
-        error.message.should == "argument error message"
-        error.cause.should == cause
+        @object.raise(ArgumentError, "argument error message", backtrace, cause:)
+      end.should.raise(ArgumentError, "argument error message", cause:) do |error|
         error.backtrace.should == backtrace
       end
     end
@@ -268,10 +264,7 @@ describe :kernel_raise_with_cause, shared: true do
         rescue
           @object.raise("second error", cause: custom_error)
         end
-      end.should raise_error(RuntimeError, "second error") do |error|
-        error.cause.should be_kind_of(StandardError)
-        error.cause.message.should == "custom error"
-      end
+      end.should.raise(RuntimeError, "second error", cause: custom_error)
     end
 
     it "supports cause: nil, discarding previous exception" do
@@ -282,9 +275,7 @@ describe :kernel_raise_with_cause, shared: true do
           # Explicit nil prevents chaining:
           @object.raise("second error", cause: nil)
         end
-      end.should raise_error(RuntimeError, "second error") do |error|
-        error.cause.should == nil
-      end
+      end.should.raise(RuntimeError, "second error", cause: nil)
     end
   end
 end
@@ -310,7 +301,7 @@ describe :kernel_raise_across_contexts, shared: true do
           end
         end
 
-        result.should be_kind_of(RuntimeError)
+        result.should.is_a?(RuntimeError)
         result.message.should == "second error"
         result.cause.should == nil
       end
@@ -338,7 +329,7 @@ describe :kernel_raise_across_contexts, shared: true do
           end
         end
 
-        result.should be_kind_of(RuntimeError)
+        result.should.is_a?(RuntimeError)
         result.message.should == "second error"
         result.cause.should == override_cause
       end
@@ -358,7 +349,7 @@ describe :kernel_raise_across_contexts, shared: true do
           end
         end
 
-        result.should be_kind_of(RuntimeError)
+        result.should.is_a?(RuntimeError)
         result.message.should == "new error"
         # Calling context has no current exception:
         result.cause.should == nil
@@ -382,7 +373,7 @@ describe :kernel_raise_across_contexts, shared: true do
             end
           end
 
-          result.should be_kind_of(RuntimeError)
+          result.should.is_a?(RuntimeError)
           result.message.should == "new error"
           result.cause.should == nil
         end
@@ -397,7 +388,7 @@ describe :kernel_raise_across_contexts, shared: true do
               # Ignore - we expect the TypeError to be raised in the calling context
             end
           end
-        }.should raise_error(TypeError, "exception object expected")
+        }.should.raise(TypeError, "exception object expected")
       end
 
       it "raises ArgumentError when only cause is given with no arguments" do
@@ -409,7 +400,7 @@ describe :kernel_raise_across_contexts, shared: true do
               # Ignore - we expect the ArgumentError to be raised in the calling context
             end
           end
-        }.should raise_error(ArgumentError, "only cause is given with no arguments")
+        }.should.raise(ArgumentError, "only cause is given with no arguments")
       end
     end
   end

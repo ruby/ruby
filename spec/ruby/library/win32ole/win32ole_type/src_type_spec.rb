@@ -12,7 +12,7 @@ platform_is :windows do
     end
 
     it "returns nil" do
-      @ole_type.src_type.should be_nil
+      @ole_type.src_type.should == nil
     end
 
   end

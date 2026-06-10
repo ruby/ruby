@@ -30,6 +30,7 @@
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "ruby/ractor.h"
+#include "shape.h"
 #include "vm_core.h"
 #include "builtin.h"
 
@@ -636,17 +637,8 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
  *  call-seq:
  *    freeze -> self
  *
- *  Freezes +self+ (if not already frozen); returns +self+:
- *
- *    a = []
- *    a.frozen? # => false
- *    a.freeze
- *    a.frozen? # => true
- *
- *  No further changes may be made to +self+;
- *  raises FrozenError if a change is attempted.
- *
- *  Related: Kernel#frozen?.
+ *  Freezes +self+, preventing further modifications;
+ *  see {Frozen Objects}[rdoc-ref:frozen_objects.md].
  */
 
 VALUE
@@ -909,6 +901,7 @@ init_fake_ary_flags(void)
     struct RArray fake_ary = {0};
     fake_ary.basic.flags = T_ARRAY;
     VALUE ary = (VALUE)&fake_ary;
+    RBASIC_SET_SHAPE_ID(ary, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER);
     rb_ary_freeze(ary);
     return fake_ary.basic.flags;
 }
@@ -2681,6 +2674,12 @@ ary_enum_length(VALUE ary, VALUE args, VALUE eobj)
 {
     return rb_ary_length(ary);
 }
+
+// These array primitives enable tight compatibility with the C implementation
+// in terms of what method calls happen. They can use unchecked utilities such as
+// FIX2LONG since unlike userland Ruby code, these methods cannot be traced with
+// TracePoint (or ruby/debug.h APIs) and have their local variables changed from
+// underneath them.
 
 // Return true if the index is at or past the end of the array.
 VALUE
@@ -8247,7 +8246,11 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
     n = 0;
     r = Qundef;
 
-    if (!FIXNUM_P(v) && !RB_BIGNUM_TYPE_P(v) && !RB_TYPE_P(v, T_RATIONAL)) {
+    bool init_is_float = RB_FLOAT_TYPE_P(v);
+    if (init_is_float) {
+        v = LONG2FIX(0);
+    }
+    else if (!RB_INTEGER_TYPE_P(v) && !RB_TYPE_P(v, T_RATIONAL)) {
         i = 0;
         goto init_is_a_value;
     }
@@ -8275,12 +8278,13 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
             goto not_exact;
     }
     v = finish_exact_sum(n, r, v, argc!=0);
+    if (init_is_float) v = rb_float_plus(argv[0], v);
     return v;
 
   not_exact:
     v = finish_exact_sum(n, r, v, i!=0);
 
-    if (RB_FLOAT_TYPE_P(e)) {
+    if (init_is_float ? (--i, e = argv[0], true) : RB_FLOAT_TYPE_P(e)) {
         /*
          * Kahan-Babuska balancing compensated summation algorithm
          * See https://link.springer.com/article/10.1007/s00607-005-0139-x

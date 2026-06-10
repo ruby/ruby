@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "Kernel.loop" do
   it "is a private method" do
-    Kernel.should have_private_instance_method(:loop)
+    Kernel.private_instance_methods(false).should.include?(:loop)
   end
 
   it "calls block until it is terminated by a break" do
@@ -30,7 +30,7 @@ describe "Kernel.loop" do
 
   it "returns an enumerator if no block given" do
     enum = loop
-    enum.instance_of?(Enumerator).should be_true
+    enum.instance_of?(Enumerator).should == true
     cnt = 0
     enum.each do |*args|
       raise "Args should be empty #{args.inspect}" unless args.empty?
@@ -55,7 +55,7 @@ describe "Kernel.loop" do
   end
 
   it "does not rescue other errors" do
-    ->{ loop do raise StandardError end }.should raise_error( StandardError )
+    ->{ loop do raise StandardError end }.should.raise( StandardError )
   end
 
   it "returns StopIteration#result, the result value of a finished iterator" do

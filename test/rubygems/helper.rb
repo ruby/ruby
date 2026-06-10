@@ -38,12 +38,31 @@ require "test/unit"
 require "fileutils"
 require "pathname"
 require "pp"
+require "rubygems/installer"
 require "rubygems/package"
 require "shellwords"
 require "tmpdir"
 require "rubygems/vendor/uri/lib/uri"
 require "zlib"
 require_relative "mock_gem_ui"
+
+# JRuby on Windows raises TypeError inside File.symlink (the wincode helper
+# trips on a nil path), so any test that exercises Gem::Installer's symlink
+# branch fails to even install the gem. Real users hit the wrapper branch via
+# `gem install` (DependencyInstaller passes wrappers: true), so mirror that
+# default for direct Gem::Installer.at callers in the test suite.
+if Gem.win_platform? && Gem.java_platform?
+  module Gem::InstallerDefaultWrappersOnJRubyWindows
+    def at(path, options = {})
+      super(path, { wrappers: true }.merge(options))
+    end
+
+    def for_spec(spec, options = {})
+      super(spec, { wrappers: true }.merge(options))
+    end
+  end
+  Gem::Installer.singleton_class.prepend(Gem::InstallerDefaultWrappersOnJRubyWindows)
+end
 
 module Gem
   ##
@@ -1268,11 +1287,13 @@ Also, a list:
     if @@symlink_supported.nil?
       begin
         File.symlink(File.join(@tempdir, "a"), File.join(@tempdir, "b"))
+        File.readlink(File.join(@tempdir, "b"))
       rescue NotImplementedError, SystemCallError
         @@symlink_supported = false
       else
-        File.unlink(File.join(@tempdir, "b"))
         @@symlink_supported = true
+      ensure
+        File.unlink(File.join(@tempdir, "b")) if File.symlink?(File.join(@tempdir, "b"))
       end
     end
     @@symlink_supported

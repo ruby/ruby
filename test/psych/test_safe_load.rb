@@ -74,6 +74,19 @@ module Psych
       assert_equal :foo, Psych.safe_load('--- !ruby/symbol foo', permitted_classes: [Symbol])
     end
 
+    def test_encoding
+      yaml = "--- !ruby/encoding UTF-8\n"
+      assert_raise(Psych::DisallowedClass) do
+        Psych.safe_load yaml
+      end
+      assert_raise(Psych::DisallowedClass) do
+        Psych.safe_load yaml, permitted_classes: []
+      end
+
+      assert_equal Encoding::UTF_8, Psych.safe_load(yaml, permitted_classes: [Encoding])
+      assert_equal Encoding::UTF_8, Psych.safe_load(yaml, permitted_classes: %w{ Encoding })
+    end
+
     def test_foo
       assert_raise(Psych::DisallowedClass) do
         Psych.safe_load '--- !ruby/object:Foo {}', permitted_classes: [Foo]

@@ -17,7 +17,7 @@ platform_is :windows, :darwin, :freebsd, :netbsd, :linux do
 
     it "returns the birth time for the named file as a Time object" do
       File.birthtime(@file)
-      File.birthtime(@file).should be_kind_of(Time)
+      File.birthtime(@file).should.is_a?(Time)
     rescue NotImplementedError => e
       e.message.should.start_with?(*not_implemented_messages)
     end
@@ -30,7 +30,7 @@ platform_is :windows, :darwin, :freebsd, :netbsd, :linux do
     end
 
     it "raises an Errno::ENOENT exception if the file is not found" do
-      -> { File.birthtime('bogus') }.should raise_error(Errno::ENOENT)
+      -> { File.birthtime('bogus') }.should.raise(Errno::ENOENT)
     rescue NotImplementedError => e
       e.message.should.start_with?(*not_implemented_messages)
     end
@@ -48,7 +48,7 @@ platform_is :windows, :darwin, :freebsd, :netbsd, :linux do
 
     it "returns the birth time for self" do
       @file.birthtime
-      @file.birthtime.should be_kind_of(Time)
+      @file.birthtime.should.is_a?(Time)
     rescue NotImplementedError => e
       e.message.should.start_with?(*not_implemented_messages)
     end

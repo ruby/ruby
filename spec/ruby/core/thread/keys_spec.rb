@@ -16,22 +16,22 @@ describe "Thread#keys" do
     fib = Fiber.new do
       Thread.current[:val1] = 1
       Fiber.yield
-      Thread.current.keys.should include(:val1)
-      Thread.current.keys.should_not include(:val2)
+      Thread.current.keys.should.include?(:val1)
+      Thread.current.keys.should_not.include?(:val2)
     end
-    Thread.current.keys.should_not include(:val1)
+    Thread.current.keys.should_not.include?(:val1)
     fib.resume
     Thread.current[:val2] = 2
     fib.resume
-    Thread.current.keys.should include(:val2)
-    Thread.current.keys.should_not include(:val1)
+    Thread.current.keys.should.include?(:val2)
+    Thread.current.keys.should_not.include?(:val1)
   end
 
   it "stores a local in another thread when in a fiber" do
     fib = Fiber.new do
       t = Thread.new do
         sleep
-        Thread.current.keys.should include(:value)
+        Thread.current.keys.should.include?(:value)
       end
 
       Thread.pass while t.status and t.status != "sleep"

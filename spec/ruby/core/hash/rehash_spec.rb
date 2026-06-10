@@ -20,7 +20,7 @@ describe "Hash#rehash" do
 
     h.keys.include?(k1).should == true
 
-    h.rehash.should equal(h)
+    h.rehash.should.equal?(h)
     h.key?(k1).should == true
     h[k1].should == :v1
   end
@@ -108,7 +108,7 @@ describe "Hash#rehash" do
   end
 
   it "raises a FrozenError if called on a frozen instance" do
-    -> { HashSpecs.frozen_hash.rehash  }.should raise_error(FrozenError)
-    -> { HashSpecs.empty_frozen_hash.rehash }.should raise_error(FrozenError)
+    -> { HashSpecs.frozen_hash.rehash  }.should.raise(FrozenError)
+    -> { HashSpecs.empty_frozen_hash.rehash }.should.raise(FrozenError)
   end
 end

@@ -7,7 +7,7 @@ describe "Kernel#respond_to_missing?" do
   end
 
   it "is a private method" do
-    Kernel.should have_private_instance_method(:respond_to_missing?, false)
+    Kernel.private_instance_methods(false).should.include?(:respond_to_missing?)
   end
 
   it "is only an instance method" do
@@ -18,7 +18,7 @@ describe "Kernel#respond_to_missing?" do
     obj = mock('object')
     obj.stub!(:glark)
     obj.should_not_receive(:respond_to_missing?)
-    obj.respond_to?(:glark).should be_true
+    obj.respond_to?(:glark).should == true
   end
 
   it "is called with a 2nd argument of false when #respond_to? is" do
@@ -48,39 +48,39 @@ describe "Kernel#respond_to_missing?" do
   it "causes #respond_to? to return true if called and not returning false" do
     obj = mock('object')
     obj.should_receive(:respond_to_missing?).with(:undefined_method, false).and_return(:glark)
-    obj.respond_to?(:undefined_method).should be_true
+    obj.respond_to?(:undefined_method).should == true
   end
 
   it "causes #respond_to? to return false if called and returning false" do
     obj = mock('object')
     obj.should_receive(:respond_to_missing?).with(:undefined_method, false).and_return(false)
-    obj.respond_to?(:undefined_method).should be_false
+    obj.respond_to?(:undefined_method).should == false
   end
 
   it "causes #respond_to? to return false if called and returning nil" do
     obj = mock('object')
     obj.should_receive(:respond_to_missing?).with(:undefined_method, false).and_return(nil)
-    obj.respond_to?(:undefined_method).should be_false
+    obj.respond_to?(:undefined_method).should == false
   end
 
   it "isn't called when obj responds to the given public method" do
     @a.should_not_receive(:respond_to_missing?)
-    @a.respond_to?(:pub_method).should be_true
+    @a.respond_to?(:pub_method).should == true
   end
 
   it "isn't called when obj responds to the given public method, include_private = true" do
     @a.should_not_receive(:respond_to_missing?)
-    @a.respond_to?(:pub_method, true).should be_true
+    @a.respond_to?(:pub_method, true).should == true
   end
 
   it "is called when obj responds to the given protected method, include_private = false" do
     @a.should_receive(:respond_to_missing?)
-    @a.respond_to?(:protected_method, false).should be_false
+    @a.respond_to?(:protected_method, false).should == false
   end
 
   it "isn't called when obj responds to the given protected method, include_private = true" do
     @a.should_not_receive(:respond_to_missing?)
-    @a.respond_to?(:protected_method, true).should be_true
+    @a.respond_to?(:protected_method, true).should == true
   end
 
   it "is called when obj responds to the given private method, include_private = false" do
@@ -90,7 +90,7 @@ describe "Kernel#respond_to_missing?" do
 
   it "isn't called when obj responds to the given private method, include_private = true" do
     @a.should_not_receive(:respond_to_missing?)
-    @a.respond_to?(:private_method, true).should be_true
+    @a.respond_to?(:private_method, true).should == true
   end
 
   it "is called for missing class methods" do

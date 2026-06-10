@@ -10,13 +10,13 @@ describe "Array#repeated_permutation" do
 
   it "returns an Enumerator of all repeated permutations of given length when called without a block" do
     enum = @numbers.repeated_permutation(2)
-    enum.should be_an_instance_of(Enumerator)
+    enum.should.instance_of?(Enumerator)
     enum.to_a.sort.should == @permutations
   end
 
   it "yields all repeated_permutations to the block then returns self when called with block but no arguments" do
     yielded = []
-    @numbers.repeated_permutation(2) {|n| yielded << n}.should equal(@numbers)
+    @numbers.repeated_permutation(2) {|n| yielded << n}.should.equal?(@numbers)
     yielded.sort.should == @permutations
   end
 

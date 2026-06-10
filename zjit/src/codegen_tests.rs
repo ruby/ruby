@@ -26,6 +26,7 @@ fn test_breakpoint_hir_codegen() {
         IseqVersion::new(iseq),
         function.num_insns(),
         function.num_blocks(),
+        0,
     );
     let mut asm = Assembler::new();
     asm.new_block_without_id("test");
@@ -1208,6 +1209,52 @@ fn test_invokesuper_to_cfunc_varargs() {
 }
 
 #[test]
+fn test_invokesuper_to_cfunc_with_too_many_args_exits() {
+    unsafe extern "C" fn test_six_args(
+        _self: VALUE,
+        a: VALUE,
+        b: VALUE,
+        c: VALUE,
+        d: VALUE,
+        e: VALUE,
+        f: VALUE,
+    ) -> VALUE {
+        unsafe { rb_ary_new_from_args(6, a, b, c, d, e, f) }
+    }
+
+    with_rubyvm(|| {
+        let superclass = define_class("ZJITSixArgs", unsafe { rb_cObject });
+        unsafe {
+            rb_define_method(
+                superclass,
+                c"six".as_ptr(),
+                Some(std::mem::transmute::<
+                    unsafe extern "C" fn(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) -> VALUE,
+                    unsafe extern "C" fn(VALUE) -> VALUE,
+                >(test_six_args)),
+                6,
+            );
+        }
+    });
+
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        class ZJITSixArgsSubclass < ZJITSixArgs
+          def six(a, b, c, d, e, f)
+            super
+          end
+        end
+
+        def test
+          ZJITSixArgsSubclass.new.six(1, 2, 3, 4, 5, 6)
+        end
+
+        test
+        test
+        test
+    "#), @"[1, 2, 3, 4, 5, 6]");
+}
+
+#[test]
 fn test_string_new_preserves_string_arg() {
     assert_snapshot!(inspect(r#"
         def test
@@ -2282,6 +2329,69 @@ fn test_fixnum_floor() {
     ");
     assert_contains_opcode("test", YARVINSN_opt_div);
     assert_snapshot!(assert_compiles("test(4)"), @"0");
+}
+
+#[test]
+fn test_fixnum_mod() {
+    eval("
+        def test(a, b) = a % b
+        test(13, 4) # profile opt_mod
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_mod);
+    assert_snapshot!(assert_compiles("[test(13, 4), test(13, 13), test(5, 7)]"), @"[1, 0, 5]");
+}
+
+#[test]
+fn test_fixnum_mod_negative() {
+    eval("
+        def test(a, b) = a % b
+        test(7, 3) # profile opt_mod
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_mod);
+    assert_snapshot!(assert_compiles("[test(-7, 3), test(7, -3), test(-7, -3)]"), @"[2, -2, -1]");
+}
+
+#[test]
+fn test_fixnum_mod_by_zero() {
+    eval("
+        def test(a, b) = a % b rescue :zero_div
+        test(13, 4) # profile opt_mod
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_mod);
+    assert_snapshot!(assert_compiles_allowing_exits("test(13, 0)"), @":zero_div");
+}
+
+#[test]
+fn test_fixnum_div_min_by_neg_one() {
+    // FIXNUM_MIN / -1 overflows to a Bignum: the JIT must side exit, not return a mistyped Fixnum.
+    eval("
+        def test(a, b) = a / b
+        test(10, 3) # profile opt_div
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_div);
+    assert_snapshot!(assert_compiles_allowing_exits("test(-4611686018427387904, -1)"), @"4611686018427387904");
+}
+
+#[test]
+fn test_fixnum_div_overflow_propagation() {
+    // The div must side exit before its Bignum result reaches the specialized (a / b) & 1 op.
+    eval("
+        def test(a, b) = (a / b) & 1
+        test(10, 3) # profile opt_div
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_div);
+    assert_snapshot!(assert_compiles_allowing_exits("test(-4611686018427387904, -1)"), @"0");
+}
+
+#[test]
+fn test_fixnum_div_by_neg_one_is_fine() {
+    // x / -1 (x != FIXNUM_MIN) is a normal Fixnum and must NOT trip the overflow guard.
+    eval("
+        def test(a, b) = a / b
+        test(10, 3) # profile opt_div
+    ");
+    assert_contains_opcode("test", YARVINSN_opt_div);
+    assert_snapshot!(assert_compiles("test(10, -1)"), @"-10");
 }
 
 #[test]
@@ -4205,6 +4315,43 @@ fn test_getspecial_multiple_groups() {
     assert_snapshot!(assert_compiles(r#"test("123-456")"#), @r#""456""#);
 }
 
+// In a JIT-to-JIT call, the callee's cfp->jit_return is published at entry.
+// Putting $& as the first C call in the callee exercises CFP_ZJIT_FRAME before
+// gen_save_pc_for_gc has a chance to update the entry JITFrame.
+#[test]
+fn test_getspecial_symbol_in_jit_to_jit_callee() {
+    eval(r#"
+        def callee = $&
+        def caller_method = callee
+
+        # Warm up callee so it JITs
+        callee
+        callee
+
+        caller_method
+        caller_method
+    "#);
+    assert_contains_opcode("callee", YARVINSN_getspecial);
+    assert_snapshot!(assert_compiles("caller_method"), @"nil");
+}
+
+// Same JIT-to-JIT setup, exercising gen_getspecial_number ($N).
+#[test]
+fn test_getspecial_number_in_jit_to_jit_callee() {
+    eval(r#"
+        def callee = $1
+        def caller_method = callee
+
+        callee
+        callee
+
+        caller_method
+        caller_method
+    "#);
+    assert_contains_opcode("callee", YARVINSN_getspecial);
+    assert_snapshot!(assert_compiles("caller_method"), @"nil");
+}
+
 #[test]
 fn test_profile_under_nested_jit_call() {
     assert_snapshot!(inspect("
@@ -5492,7 +5639,7 @@ fn test_tracepoint_return_value_with_rescue() {
 // Too-complex shapes use hash tables for ivar storage, and rb_shape_get_iv_index()
 // doesn't work for them. The polymorphic path must fall through to GetIvar instead.
 #[test]
-fn test_polymorphic_getivar_too_complex_shape() {
+fn test_polymorphic_getivar_complex_shape() {
     // Need threshold >= 3 so both shapes get profiled before compilation
     set_call_threshold(3);
     assert_snapshot!(inspect(r#"

@@ -465,10 +465,10 @@ class TestHash < Test::Unit::TestCase
   def test_each_value
     res = []
     @cls[].each_value { |v| res << v }
-    assert_equal(0, [].length)
+    assert_equal(0, res.length)
 
     @h.each_value { |v| res << v }
-    assert_equal(0, [].length)
+    assert_equal(@h.size, res.length)
 
     expected = []
     @h.each { |k, v| expected << v }

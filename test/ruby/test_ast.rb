@@ -255,7 +255,8 @@ class TestAst < Test::Unit::TestCase
       assert_invalid_parse(msg, "#{code}")
       assert_invalid_parse(msg, "def m; #{code}; end")
       assert_invalid_parse(msg, "begin; #{code}; end")
-      assert_parse("END {#{code}}")
+      assert_invalid_parse(msg, "BEGIN {#{code}}")
+      assert_invalid_parse(msg, "END {#{code}}")
 
       assert_parse("!defined?(#{code})")
       assert_parse("def m; defined?(#{code}); end")

@@ -7,8 +7,8 @@ describe "Integer#gcd" do
   end
 
   it "returns an Integer" do
-    36.gcd(6).should be_kind_of(Integer)
-    4.gcd(20981).should be_kind_of(Integer)
+    36.gcd(6).should.is_a?(Integer)
+    4.gcd(20981).should.is_a?(Integer)
   end
 
   it "returns the greatest common divisor of self and argument" do
@@ -33,13 +33,13 @@ describe "Integer#gcd" do
 
   it "accepts a Bignum argument" do
     bignum = 9999**99
-    bignum.should be_kind_of(Integer)
+    bignum.should.is_a?(Integer)
     99.gcd(bignum).should == 99
   end
 
   it "works if self is a Bignum" do
     bignum = 9999**99
-    bignum.should be_kind_of(Integer)
+    bignum.should.is_a?(Integer)
     bignum.gcd(99).should == 99
   end
 
@@ -55,15 +55,15 @@ describe "Integer#gcd" do
   end
 
   it "raises an ArgumentError if not given an argument" do
-    -> { 12.gcd }.should raise_error(ArgumentError)
+    -> { 12.gcd }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if given more than one argument" do
-    -> { 12.gcd(30, 20) }.should raise_error(ArgumentError)
+    -> { 12.gcd(30, 20) }.should.raise(ArgumentError)
   end
 
   it "raises a TypeError unless the argument is an Integer" do
-    -> { 39.gcd(3.8)   }.should raise_error(TypeError)
-    -> { 45872.gcd([]) }.should raise_error(TypeError)
+    -> { 39.gcd(3.8)   }.should.raise(TypeError)
+    -> { 45872.gcd([]) }.should.raise(TypeError)
   end
 end

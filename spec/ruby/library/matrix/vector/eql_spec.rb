@@ -7,10 +7,10 @@ describe "Vector#eql?" do
   end
 
   it "returns true for self" do
-    @vector.eql?(@vector).should be_true
+    @vector.eql?(@vector).should == true
   end
 
   it "returns false when there are a pair corresponding elements which are not equal in the sense of Kernel#eql?" do
-    @vector.eql?(Vector[1, 2, 3, 4, 5.0]).should be_false
+    @vector.eql?(Vector[1, 2, 3, 4, 5.0]).should == false
   end
 end

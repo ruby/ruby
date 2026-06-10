@@ -6,7 +6,7 @@ describe "Enumerator#size" do
   end
 
   it "returns nil if set size is nil" do
-    Enumerator.new(nil) {}.size.should be_nil
+    Enumerator.new(nil) {}.size.should == nil
   end
 
   it "returns returning value from size.call if set size is a Proc" do

@@ -10,7 +10,7 @@ describe 'Socket.gethostbyaddr' do
 
     describe 'without an explicit address family' do
       it 'returns an Array' do
-        suppress_warning { Socket.gethostbyaddr(@addr) }.should be_an_instance_of(Array)
+        suppress_warning { Socket.gethostbyaddr(@addr) }.should.instance_of?(Array)
       end
 
       describe 'the returned Array' do
@@ -23,10 +23,10 @@ describe 'Socket.gethostbyaddr' do
         end
 
         it 'includes the aliases as the 2nd value' do
-          @array[1].should be_an_instance_of(Array)
+          @array[1].should.instance_of?(Array)
 
           @array[1].each do |val|
-            val.should be_an_instance_of(String)
+            val.should.instance_of?(String)
           end
         end
 
@@ -38,7 +38,7 @@ describe 'Socket.gethostbyaddr' do
           @array[3].should == @addr
 
           @array[4..-1].each do |val|
-            val.should be_an_instance_of(String)
+            val.should.instance_of?(String)
           end
         end
       end
@@ -46,15 +46,15 @@ describe 'Socket.gethostbyaddr' do
 
     describe 'with an explicit address family' do
       it 'returns an Array when using an Integer as the address family' do
-        suppress_warning { Socket.gethostbyaddr(@addr, Socket::AF_INET) }.should be_an_instance_of(Array)
+        suppress_warning { Socket.gethostbyaddr(@addr, Socket::AF_INET) }.should.instance_of?(Array)
       end
 
       it 'returns an Array when using a Symbol as the address family' do
-        suppress_warning { Socket.gethostbyaddr(@addr, :INET) }.should be_an_instance_of(Array)
+        suppress_warning { Socket.gethostbyaddr(@addr, :INET) }.should.instance_of?(Array)
       end
 
       it 'raises SocketError when the address is not supported by the family' do
-        -> { suppress_warning { Socket.gethostbyaddr(@addr, :INET6) } }.should raise_error(SocketError)
+        -> { suppress_warning { Socket.gethostbyaddr(@addr, :INET6) } }.should.raise(SocketError)
       end
     end
   end
@@ -67,7 +67,7 @@ describe 'Socket.gethostbyaddr' do
 
       describe 'without an explicit address family' do
         it 'returns an Array' do
-          suppress_warning { Socket.gethostbyaddr(@addr) }.should be_an_instance_of(Array)
+          suppress_warning { Socket.gethostbyaddr(@addr) }.should.instance_of?(Array)
         end
 
         describe 'the returned Array' do
@@ -80,10 +80,10 @@ describe 'Socket.gethostbyaddr' do
           end
 
           it 'includes the aliases as the 2nd value' do
-            @array[1].should be_an_instance_of(Array)
+            @array[1].should.instance_of?(Array)
 
             @array[1].each do |val|
-              val.should be_an_instance_of(String)
+              val.should.instance_of?(String)
             end
           end
 
@@ -92,10 +92,10 @@ describe 'Socket.gethostbyaddr' do
           end
 
           it 'includes all address strings as the remaining values' do
-            @array[3].should be_an_instance_of(String)
+            @array[3].should.instance_of?(String)
 
             @array[4..-1].each do |val|
-              val.should be_an_instance_of(String)
+              val.should.instance_of?(String)
             end
           end
         end
@@ -103,16 +103,16 @@ describe 'Socket.gethostbyaddr' do
 
       describe 'with an explicit address family' do
         it 'returns an Array when using an Integer as the address family' do
-          suppress_warning { Socket.gethostbyaddr(@addr, Socket::AF_INET6) }.should be_an_instance_of(Array)
+          suppress_warning { Socket.gethostbyaddr(@addr, Socket::AF_INET6) }.should.instance_of?(Array)
         end
 
         it 'returns an Array when using a Symbol as the address family' do
-          suppress_warning { Socket.gethostbyaddr(@addr, :INET6) }.should be_an_instance_of(Array)
+          suppress_warning { Socket.gethostbyaddr(@addr, :INET6) }.should.instance_of?(Array)
         end
 
         platform_is_not :windows, :wsl do
           it 'raises SocketError when the address is not supported by the family' do
-            -> { suppress_warning { Socket.gethostbyaddr(@addr, :INET) } }.should raise_error(SocketError)
+            -> { suppress_warning { Socket.gethostbyaddr(@addr, :INET) } }.should.raise(SocketError)
           end
         end
       end

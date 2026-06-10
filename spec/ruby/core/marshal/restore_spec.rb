@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/load'
 
 describe "Marshal.restore" do
-  it_behaves_like :marshal_load, :restore
+  it "is an alias of Marshal.load" do
+    Marshal.method(:restore).should == Marshal.method(:load)
+  end
 end

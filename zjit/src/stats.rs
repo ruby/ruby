@@ -171,6 +171,7 @@ make_counters! {
         compile_hir_build_time_ns,
         compile_hir_strength_reduce_time_ns,
         compile_hir_optimize_load_store_time_ns,
+        compile_hir_canonicalize_time_ns,
         compile_hir_fold_constants_time_ns,
         compile_hir_clean_cfg_time_ns,
         compile_hir_remove_redundant_patch_points_time_ns,
@@ -204,7 +205,6 @@ make_counters! {
         exit_fixnum_div_by_zero,
         exit_box_fixnum_overflow,
         exit_guard_type_failure,
-        exit_guard_type_not_failure,
         exit_guard_bit_equals_failure,
         exit_guard_int_equals_failure,
         exit_guard_shape_failure,
@@ -310,10 +310,10 @@ make_counters! {
         setivar_fallback_not_monomorphic,
         setivar_fallback_immediate,
         setivar_fallback_not_t_object,
-        setivar_fallback_too_complex,
+        setivar_fallback_complex,
         setivar_fallback_frozen,
         setivar_fallback_shape_transition,
-        setivar_fallback_new_shape_too_complex,
+        setivar_fallback_new_shape_complex,
         setivar_fallback_new_shape_needs_extension,
     }
 
@@ -323,7 +323,7 @@ make_counters! {
         getivar_fallback_not_monomorphic,
         getivar_fallback_immediate,
         getivar_fallback_not_t_object,
-        getivar_fallback_too_complex,
+        getivar_fallback_complex,
     }
 
     // Ivar fallback counters that are summed as dynamic_definedivar_count
@@ -332,7 +332,7 @@ make_counters! {
         definedivar_fallback_not_monomorphic,
         definedivar_fallback_immediate,
         definedivar_fallback_not_t_object,
-        definedivar_fallback_too_complex,
+        definedivar_fallback_complex,
     }
 
     // compile_error_: Compile error reasons
@@ -440,7 +440,7 @@ make_counters! {
     complex_arg_pass_caller_forwarding,
 
     // Writes to the VM frame
-    vm_write_pc_count,
+    vm_write_jit_frame_count,
     vm_write_sp_count,
     vm_write_locals_count,
     vm_write_stack_count,
@@ -584,8 +584,6 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         UnhandledCallType(Splat)      => exit_unhandled_splat,
         UnhandledCallType(Kwarg)      => exit_unhandled_kwarg,
         UnknownSpecialVariable(_)     => exit_unknown_special_variable,
-        UnhandledHIRArrayMax          => exit_unhandled_hir_insn,
-        UnhandledHIRFixnumDiv         => exit_unhandled_hir_insn,
         UnhandledHIRThrow             => exit_unhandled_hir_insn,
         UnhandledHIRInvokeBuiltin     => exit_unhandled_hir_insn,
         UnhandledHIRUnknown(_)        => exit_unhandled_hir_insn,
@@ -599,7 +597,6 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         FixnumDivByZero               => exit_fixnum_div_by_zero,
         BoxFixnumOverflow             => exit_box_fixnum_overflow,
         GuardType(_)                  => exit_guard_type_failure,
-        GuardTypeNot(_)               => exit_guard_type_not_failure,
         GuardShape(_)                 => exit_guard_shape_failure,
         ExpandArray                   => exit_expandarray_failure,
         GuardNotFrozen                => exit_guard_not_frozen_failure,

@@ -2,13 +2,13 @@
 
 #![allow(non_upper_case_globals)]
 use crate::cruby;
-use crate::cruby::{rb_block_param_proxy, Qfalse, Qnil, Qtrue, RUBY_T_ARRAY, RUBY_T_CLASS, RUBY_T_HASH, RUBY_T_MODULE, RUBY_T_STRING, VALUE};
-use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cRange, rb_cModule, rb_zjit_singleton_class_p};
+use crate::cruby::{rb_block_param_proxy, Qfalse, Qnil, Qtrue, RUBY_T_ARRAY, RUBY_T_HASH, RUBY_T_STRING, VALUE};
+use crate::cruby::{rb_cInteger, rb_cFloat, rb_cArray, rb_cHash, rb_cString, rb_cSymbol, rb_cRange, rb_zjit_singleton_class_p};
 use crate::cruby::ClassRelationship;
 use crate::cruby::get_class_name;
+use crate::cruby::get_module_name;
 use crate::cruby::ruby_sym_to_rust_string;
 use crate::cruby::rb_mRubyVMFrozenCore;
-use crate::cruby::rb_obj_class;
 use crate::hir::{Const, PtrPrintMap};
 use crate::profile::ProfiledType;
 
@@ -80,6 +80,14 @@ fn write_spec(f: &mut std::fmt::Formatter, printer: &TypePrinter) -> std::fmt::R
         Specialization::Object(val) if ty.is_subtype(types::Symbol) => write!(f, "[:{}]", ruby_sym_to_rust_string(val)),
         Specialization::Object(val) if ty.is_subtype(types::Class) =>
             write!(f, "[{}@{:p}]", get_class_name(val), printer.ptr_map.map_ptr(val.0 as *const std::ffi::c_void)),
+        Specialization::Object(val) if ty.is_subtype(types::Module) => {
+            if let Some(name) = get_module_name(val) {
+                write!(f, "[{}@{:p}]", name, printer.ptr_map.map_ptr(val.0 as *const std::ffi::c_void))
+            } else {
+                // Same as generic Specialization::Object
+                write!(f, "[{}]", val.print(printer.ptr_map))
+            }
+        }
         Specialization::Object(val) => write!(f, "[{}]", val.print(printer.ptr_map)),
         // TODO(max): Ensure singleton classes never have Type specialization
         Specialization::Type(val) if unsafe { rb_zjit_singleton_class_p(val) } =>
@@ -169,18 +177,6 @@ fn is_range_exact(val: VALUE) -> bool {
     val.class_of() == unsafe { rb_cRange }
 }
 
-fn is_module_exact(val: VALUE) -> bool {
-    if val.builtin_type() != RUBY_T_MODULE {
-        return false;
-    }
-
-    // For Class and Module instances, `class_of` will return the singleton class of the object.
-    // Using `rb_obj_class` will give us the actual class of the module so we can check if the
-    // object is an instance of Module, or an instance of Module subclass.
-    let klass = unsafe { rb_obj_class(val) };
-    klass == unsafe { rb_cModule }
-}
-
 impl Type {
     /// Create a `Type` from the given integer.
     pub const fn fixnum(val: i64) -> Type {
@@ -212,16 +208,13 @@ impl Type {
             if is_array_exact(val) { bits::ArrayExact }
             else if is_hash_exact(val) { bits::HashExact }
             else if is_string_exact(val) { bits::StringExact }
-            // Singleton classes
-            else if is_module_exact(val) { bits::ModuleExact }
-            else if val.builtin_type() == RUBY_T_CLASS { bits::Class }
             // Classes that have an immediate/heap split
             else if val.class_of() == unsafe { rb_cInteger } { bits::Bignum }
             else if val.class_of() == unsafe { rb_cFloat } { bits::HeapFloat }
             else if val.class_of() == unsafe { rb_cSymbol } { bits::DynamicSymbol }
             else if let Some(bits) = Self::bits_from_exact_class(val.class_of()) { bits }
             else if let Some(bits) = Self::bits_from_subclass(val.class_of()) { bits }
-            else if val.typed_data_p() { bits::TypedTData }
+            else if val.data_p() { bits::TData }
             else {
                 unreachable!("Class {} is not a subclass of BasicObject! Don't know what to do.",
                              get_class_name(val.class_of()))
@@ -451,8 +444,9 @@ impl Type {
             Some(cruby::RUBY_T_STRING)
         } else if self.bit_equal(types::Hash) {
             Some(cruby::RUBY_T_HASH)
+        } else if self.bit_equal(types::TData) {
+            Some(cruby::RUBY_T_DATA)
         } else {
-            // Note that types::TypedTData is narrower than T_DATA, so not here.
             None
         }
     }

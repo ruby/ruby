@@ -19,7 +19,7 @@ describe "Thread.pending_interrupt?" do
         Thread.pending_interrupt?.should == true
         executed = true
       end
-    }.should raise_error(RuntimeError, "interrupt")
+    }.should.raise(RuntimeError, "interrupt")
     executed.should == true
     Thread.pending_interrupt?.should == false
   end

@@ -21,6 +21,7 @@ end
 
 module MSpecMatchers
   private def equal(expected)
+    MSpec.deprecate __method__, '.should.equal?'
     EqualMatcher.new(expected)
   end
 end

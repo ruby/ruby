@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/add'
 
 describe "Set#<<" do
-  it_behaves_like :set_add, :<<
+  it "is an alias of Set#add" do
+    Set.instance_method(:<<).should == Set.instance_method(:add)
+  end
 end

@@ -453,7 +453,7 @@ ossl_pkcs7_sym2typeid(VALUE sym)
         if(i == numberof(p7_type_tab))
             ossl_raise(ePKCS7Error, "unknown type \"%"PRIsVALUE"\"", sym);
         if(strlen(p7_type_tab[i].name) != l) continue;
-        if(strcmp(p7_type_tab[i].name, s) == 0){
+        if(memcmp(p7_type_tab[i].name, s, l) == 0){
             ret = p7_type_tab[i].nid;
             break;
         }

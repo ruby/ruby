@@ -3,6 +3,6 @@ require 'date'
 
 describe "Date#monday?" do
   it "should be monday" do
-    Date.new(2000, 1, 3).monday?.should be_true
+    Date.new(2000, 1, 3).monday?.should == true
   end
 end

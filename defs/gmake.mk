@@ -411,6 +411,7 @@ $(srcdir)/.bundle/gems:
 
 ifneq ($(DOT_WAIT),)
 up:: $(DOT_WAIT) after-update
+after-update:: MINIRUBY = $(BASERUBY)
 endif
 
 ifneq ($(filter update-bundled_gems refresh-gems,$(MAKECMDGOALS)),)

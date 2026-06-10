@@ -24,7 +24,7 @@ describe "UNIXServer#accept_nonblock" do
   end
 
   it "returns a UNIXSocket" do
-    @socket.should be_kind_of(UNIXSocket)
+    @socket.should.is_a?(UNIXSocket)
   end
 
   it 'returns :wait_readable in exceptionless mode' do
@@ -45,7 +45,7 @@ describe 'UNIXServer#accept_nonblock' do
 
   describe 'without a client' do
     it 'raises IO::WaitReadable' do
-      -> { @server.accept_nonblock }.should raise_error(IO::WaitReadable)
+      -> { @server.accept_nonblock }.should.raise(IO::WaitReadable)
     end
   end
 
@@ -62,7 +62,7 @@ describe 'UNIXServer#accept_nonblock' do
     describe 'without any data' do
       it 'returns a UNIXSocket' do
         @socket = @server.accept_nonblock
-        @socket.should be_an_instance_of(UNIXSocket)
+        @socket.should.instance_of?(UNIXSocket)
       end
     end
 
@@ -73,7 +73,7 @@ describe 'UNIXServer#accept_nonblock' do
 
       it 'returns a UNIXSocket' do
         @socket = @server.accept_nonblock
-        @socket.should be_an_instance_of(UNIXSocket)
+        @socket.should.instance_of?(UNIXSocket)
       end
 
       describe 'the returned UNIXSocket' do

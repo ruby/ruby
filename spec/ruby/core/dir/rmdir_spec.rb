@@ -1,15 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/common'
-require_relative 'shared/delete'
 
 describe "Dir.rmdir" do
-  before :all do
-    DirSpecs.create_mock_dirs
+  it "is an alias of Dir.delete" do
+    Dir.method(:rmdir).should == Dir.method(:delete)
   end
-
-  after :all do
-    DirSpecs.delete_mock_dirs
-  end
-
-  it_behaves_like :dir_delete, :rmdir
 end

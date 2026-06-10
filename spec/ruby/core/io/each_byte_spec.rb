@@ -12,7 +12,7 @@ describe "IO#each_byte" do
   end
 
   it "raises IOError on closed stream" do
-    -> { IOSpecs.closed_io.each_byte {} }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.each_byte {} }.should.raise(IOError)
   end
 
   it "yields each byte" do
@@ -28,7 +28,7 @@ describe "IO#each_byte" do
   describe "when no block is given" do
     it "returns an Enumerator" do
       enum = @io.each_byte
-      enum.should be_an_instance_of(Enumerator)
+      enum.should.instance_of?(Enumerator)
       enum.first(5).should == [86, 111, 105, 99, 105]
     end
 
@@ -52,6 +52,6 @@ describe "IO#each_byte" do
   end
 
   it "returns self on an empty stream" do
-    @io.each_byte { |b| }.should equal(@io)
+    @io.each_byte { |b| }.should.equal?(@io)
   end
 end

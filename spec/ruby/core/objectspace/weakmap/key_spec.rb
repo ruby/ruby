@@ -1,6 +1,8 @@
 require_relative '../../../spec_helper'
-require_relative 'shared/include'
 
 describe "ObjectSpace::WeakMap#key?" do
-  it_behaves_like :weakmap_include?, :key?
+  it "is an alias of ObjectSpace::WeakMap#include?" do
+    ObjectSpace::WeakMap.instance_method(:key?).should ==
+      ObjectSpace::WeakMap.instance_method(:include?)
+  end
 end

@@ -7,7 +7,7 @@ describe "ARGF.argv" do
   end
 
   it "returns ARGV for the initial ARGF" do
-    ARGF.argv.should equal ARGV
+    ARGF.argv.should.equal? ARGV
   end
 
   it "returns the remaining arguments to treat" do

@@ -3041,7 +3041,7 @@ rb_estimate_iv_count(VALUE klass, const rb_iseq_t * initialize_iseq)
         }
     }
 
-    attr_index_t count = (attr_index_t)iv_names.num_entries;
+    size_t count = iv_names.num_entries;
 
     VALUE superclass = rb_class_superclass(klass);
     if (!NIL_P(superclass)) { // BasicObject doesn't have a superclass
@@ -3050,7 +3050,11 @@ rb_estimate_iv_count(VALUE klass, const rb_iseq_t * initialize_iseq)
 
     set_free_embedded_table(&iv_names);
 
-    return count;
+    if (count > (attr_index_t)-1) {
+        return (attr_index_t)-1;
+    }
+
+    return (attr_index_t)count;
 }
 
 /*
@@ -3336,7 +3340,7 @@ static int
 cdhash_each(VALUE key, VALUE value, VALUE ary)
 {
     rb_ary_push(ary, obj_resurrect(key));
-    rb_ary_push(ary, value);
+    rb_ary_push(ary, INT2FIX(value));
     return ST_CONTINUE;
 }
 
@@ -3577,11 +3581,11 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
                 break;
               case TS_CDHASH:
                 {
-                    VALUE hash = *seq;
+                    VALUE cdhash = *seq;
                     VALUE val = rb_ary_new();
                     int i;
 
-                    rb_hash_foreach(hash, cdhash_each, val);
+                    st_foreach(rb_imemo_cdhash_tbl(cdhash), cdhash_each, val);
 
                     for (i=0; i<RARRAY_LEN(val); i+=2) {
                         VALUE pos = FIX2INT(rb_ary_entry(val, i+1));

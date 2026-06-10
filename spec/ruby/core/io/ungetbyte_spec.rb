@@ -13,12 +13,12 @@ describe "IO#ungetbyte" do
   end
 
   it "does nothing when passed nil" do
-    @io.ungetbyte(nil).should be_nil
+    @io.ungetbyte(nil).should == nil
     @io.getbyte.should == 97
   end
 
   it "puts back each byte in a String argument" do
-    @io.ungetbyte("cat").should be_nil
+    @io.ungetbyte("cat").should == nil
     @io.getbyte.should == 99
     @io.getbyte.should == 97
     @io.getbyte.should == 116
@@ -29,7 +29,7 @@ describe "IO#ungetbyte" do
     str = mock("io ungetbyte")
     str.should_receive(:to_str).and_return("dog")
 
-    @io.ungetbyte(str).should be_nil
+    @io.ungetbyte(str).should == nil
     @io.getbyte.should == 100
     @io.getbyte.should == 111
     @io.getbyte.should == 103
@@ -38,17 +38,17 @@ describe "IO#ungetbyte" do
 
   it "never raises RangeError" do
     for i in [4095, 0x4f7574206f6620636861722072616e67ff] do
-      @io.ungetbyte(i).should be_nil
+      @io.ungetbyte(i).should == nil
       @io.getbyte.should == 255
     end
   end
 
   it "raises IOError on stream not opened for reading" do
-    -> { STDOUT.ungetbyte(42) }.should raise_error(IOError, "not opened for reading")
+    -> { STDOUT.ungetbyte(42) }.should.raise(IOError, "not opened for reading")
   end
 
   it "raises an IOError if the IO is closed" do
     @io.close
-    -> { @io.ungetbyte(42) }.should raise_error(IOError)
+    -> { @io.ungetbyte(42) }.should.raise(IOError)
   end
 end

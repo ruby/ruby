@@ -1,6 +1,21 @@
 require_relative '../../spec_helper'
+require_relative 'shared/each'
 
 describe "Enumerator#each" do
+  describe "passing source-yielded arguments to the block" do
+    before :each do
+      @object = -> e { e }
+    end
+    it_behaves_like :enum_each, nil
+  end
+
+  describe "passing source-yielded arguments to the block (lazy)" do
+    before :each do
+      @object = -> e { e.lazy }
+    end
+    it_behaves_like :enum_each, nil
+  end
+
   before :each do
     object_each_with_arguments = Object.new
     def object_each_with_arguments.each_with_arguments(arg, *args)
@@ -51,17 +66,17 @@ describe "Enumerator#each" do
     enum = Object.new.to_enum
     -> do
       enum.each { |e| e }
-    end.should raise_error(NoMethodError)
+    end.should.raise(NoMethodError)
   end
 
   it "returns self if not given arguments and not given a block" do
-    @enum_with_arguments.each.should equal(@enum_with_arguments)
+    @enum_with_arguments.each.should.equal?(@enum_with_arguments)
 
-    @enum_with_yielder.each.should equal(@enum_with_yielder)
+    @enum_with_yielder.each.should.equal?(@enum_with_yielder)
   end
 
   it "returns the same value from receiver.each if block is given" do
-    @enum_with_arguments.each {}.should equal(:method_returned)
+    @enum_with_arguments.each {}.should.equal?(:method_returned)
   end
 
   it "passes given arguments at initialized to receiver.each" do
@@ -78,13 +93,13 @@ describe "Enumerator#each" do
   end
 
   it "returns the same value from receiver.each if block and arguments are given" do
-    @enum_with_arguments.each(:each1, :each2) {}.should equal(:method_returned)
+    @enum_with_arguments.each(:each1, :each2) {}.should.equal?(:method_returned)
   end
 
   it "returns new Enumerator if given arguments but not given a block" do
     ret = @enum_with_arguments.each 1
-    ret.should be_an_instance_of(Enumerator)
-    ret.should_not equal(@enum_with_arguments)
+    ret.should.instance_of?(Enumerator)
+    ret.should_not.equal?(@enum_with_arguments)
   end
 
   it "does not destructure yielded array values when chaining each.map" do

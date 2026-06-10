@@ -6603,7 +6603,7 @@ rb_w32_pipe(int fds[2])
 
     memcpy(name, prefix, width_of_prefix);
     snprintf(name + width_of_prefix, width_of_ids, "%.*"PRI_PIDT_PREFIX"x-%.*lx",
-             width_of_pid, rb_w32_getpid(), width_of_serial, InterlockedIncrement(&serial)-1);
+             width_of_pid, rb_w32_getpid(), width_of_serial, (unsigned long)(InterlockedIncrement(&serial)-1));
 
     sec.nLength = sizeof(sec);
     sec.lpSecurityDescriptor = NULL;

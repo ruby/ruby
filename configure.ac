@@ -288,6 +288,11 @@ AS_CASE(["/${rb_CC} "],
     RUBY_CHECK_PROG_FOR_CC([OBJDUMP], [clang], [${llvm_prefix}objdump])
     RUBY_CHECK_PROG_FOR_CC([RANLIB],  [clang], [${llvm_prefix}ranlib])
     RUBY_CHECK_PROG_FOR_CC([STRIP],   [clang], [${llvm_prefix}strip])
+
+    # These -Wno-* flags silence clang-specific diagnostics that don't exist
+    # in GCC.  GCC silently accepts unknown -Wno-* flags but later emits noisy
+    # "unrecognized command-line option" notes whenever another warning fires.
+    clang_warnflags="-Wno-constant-logical-operand -Wno-parentheses-equality -Wno-self-assign"
 ])
 AS_UNSET(rb_CC)
 AS_UNSET(rb_dummy)
@@ -787,13 +792,10 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
 		 -Wimplicit-fallthrough=0 \
 		 -Wmissing-noreturn \
 		 -Wno-cast-function-type \
-		 -Wno-constant-logical-operand \
 		 -Wno-long-long \
 		 -Wno-missing-field-initializers \
 		 -Wno-overlength-strings \
 		 -Wno-packed-bitfield-compat \
-		 -Wno-parentheses-equality \
-		 -Wno-self-assign \
 		 -Wno-tautological-compare \
 		 -Wno-unused-parameter \
 		 -Wno-unused-value \
@@ -801,6 +803,7 @@ AS_CASE(["$GCC:${warnflags+set}:${extra_warnflags:+set}:"],
 		 -Wsuggest-attribute=noreturn \
 		 -Wunused-variable \
 		 -diag-disable=175,188,1684,2259,2312 \
+		 $clang_warnflags \
 		 $extra_warnflags \
 		 ; do
 	AS_IF([test "$particular_werror_flags" != yes], [
@@ -3538,7 +3541,7 @@ AS_IF([test x"$cross_compiling" = xyes], [
     # darwin target requires miniruby for linking ext bundles
     PREP="$PREP"' miniruby$(EXEEXT)'
   ])
-  RUNRUBY_COMMAND='$(MINIRUBY) -I`cd $(srcdir)/lib; pwd`'
+  RUNRUBY_COMMAND='$(MINIRUBY) -I`$(CHDIR) $(srcdir)/lib; pwd`'
   RUNRUBY='$(RUNRUBY_COMMAND)'
   XRUBY='$(MINIRUBY)'
   TEST_RUNNABLE=no
@@ -3580,7 +3583,8 @@ AS_CASE(["$target_os"],
 
 AC_ARG_ENABLE(multiarch,
 	      AS_HELP_STRING([--enable-multiarch], [enable multiarch compatible directories]),
-	      [multiarch=], [unset multiarch])
+	      [AS_CASE([$enableval], [no], [unset multiarch], [multiarch=])],
+	      [unset multiarch])
 AS_IF([test ${multiarch+set}], [
    AC_DEFINE(ENABLE_MULTIARCH)
 ])

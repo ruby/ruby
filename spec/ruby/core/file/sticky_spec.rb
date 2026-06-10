@@ -41,7 +41,7 @@ describe "File.sticky?" do
       touch(filename)
       stat = File.stat(filename)
       mode = stat.mode
-      raise_error(Errno::EFTYPE){File.chmod(mode|01000, filename)}
+      -> { File.chmod(mode|01000, filename) }.should.raise(Errno::EFTYPE)
       File.sticky?(filename).should == false
 
       rm_r filename

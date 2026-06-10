@@ -1,10 +1,13 @@
 require_relative '../../spec_helper'
-require_relative 'shared/select'
 
 describe "Hash#filter" do
-  it_behaves_like :hash_select, :filter
+  it "is an alias of Hash#select" do
+    Hash.instance_method(:filter).should == Hash.instance_method(:select)
+  end
 end
 
 describe "Hash#filter!" do
-  it_behaves_like :hash_select!, :filter!
+  it "is an alias of Hash#select!" do
+    Hash.instance_method(:filter!).should == Hash.instance_method(:select!)
+  end
 end

@@ -19,8 +19,8 @@ describe "Array#pack with format 'H'" do
   end
 
   it "will not implicitly convert a number to a string" do
-    -> { [0].pack('H') }.should raise_error(TypeError)
-    -> { [0].pack('h') }.should raise_error(TypeError)
+    -> { [0].pack('H') }.should.raise(TypeError)
+    -> { [0].pack('h') }.should.raise(TypeError)
   end
 
   it "encodes the first character as the most significant nibble when passed no count modifier" do

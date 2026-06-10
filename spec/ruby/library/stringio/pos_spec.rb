@@ -1,9 +1,17 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
-require_relative 'shared/tell'
 
 describe "StringIO#pos" do
-  it_behaves_like :stringio_tell, :pos
+  before :each do
+    @io = StringIOSpecs.build
+  end
+
+  it "returns the current byte offset" do
+    @io.getc
+    @io.pos.should == 1
+    @io.read(7)
+    @io.pos.should == 8
+  end
 end
 
 describe "StringIO#pos=" do
@@ -17,7 +25,7 @@ describe "StringIO#pos=" do
   end
 
   it "raises an EINVAL if given a negative argument" do
-    -> { @io.pos = -10 }.should raise_error(Errno::EINVAL)
+    -> { @io.pos = -10 }.should.raise(Errno::EINVAL)
   end
 
   it "updates the current byte offset after reaching EOF" do

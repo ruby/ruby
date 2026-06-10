@@ -471,7 +471,7 @@ class TestMarshal < Test::Unit::TestCase
 
   class TooComplex
     def initialize
-      @marshal_too_complex = 1
+      @marshal_complex = 1
     end
   end
 
@@ -487,10 +487,10 @@ class TestMarshal < Test::Unit::TestCase
     obj.instance_variable_set(ivar, 1)
 
     if defined?(RubyVM::Shape)
-      assert_predicate(RubyVM::Shape.of(obj), :too_complex?)
+      assert_predicate(RubyVM::Shape.of(obj), :complex?)
     end
     obj.object_id
-    assert_equal "\x04\bo:\x1CTestMarshal::TooComplex\a:\x19@marshal_too_complexi\x06:\f#{ivar}i\x06".b, Marshal.dump(obj)
+    assert_equal "\x04\bo:\x1CTestMarshal::TooComplex\a:\x15@marshal_complexi\x06:\f#{ivar}i\x06".b, Marshal.dump(obj)
   end
 
   def test_marshal_complex
@@ -930,6 +930,41 @@ class TestMarshal < Test::Unit::TestCase
       assert_equal(e.name, e2.name)
       assert_equal(e.backtrace, e2.backtrace)
       assert_nil(e2.backtrace_locations) # temporal
+    end
+  end
+
+  def test_load_overread
+    input = Struct.new(:bytes, :used) do
+      def initialize
+        super("\x04\x08[\x07".bytes, false)
+      end
+
+      def getbyte
+        bytes.shift
+      end
+
+      def read(_len, _outbuf = nil)
+        return nil if used
+        self.used = true
+        "0" * (1024 * 128)
+      end
+    end.new
+
+    assert_equal([nil, nil], Marshal.load(input))
+  end
+
+  def test_bignum_len_overflow
+    assert_raise(ArgumentError) do
+      Marshal.load("\x04\x08l+\x04\x00\x00\x00\x40")
+    end
+    assert_raise(ArgumentError) do
+      Marshal.load("\x04\x08l+\xfc\x00\x00\x00\x80")
+    end
+  end
+
+  def test_bignum_invalid_sign
+    assert_raise(ArgumentError) do
+      Marshal.load("\x04\bl?")
     end
   end
 

@@ -13,7 +13,7 @@ describe "A block yielded a single" do
 
     it "receives the identical Array object" do
       ary = [1, 2]
-      m(ary) { |a| a }.should equal(ary)
+      m(ary) { |a| a }.should.equal?(ary)
     end
 
     it "assigns the Array to a single rest argument" do
@@ -73,7 +73,7 @@ describe "A block yielded a single" do
     it "raises error when required keyword arguments are present" do
       -> {
         m([1, 2]) { |a, b:, c:| [a, b, c] }
-      }.should raise_error(ArgumentError, "missing keywords: :b, :c")
+      }.should.raise(ArgumentError, "missing keywords: :b, :c")
     end
 
     it "assigns elements to mixed argument types" do
@@ -234,14 +234,14 @@ describe "A block yielded a single" do
       obj = mock("destructure block arguments")
       obj.should_receive(:to_ary).and_return(1)
 
-      -> { m(obj) { |a, b| } }.should raise_error(TypeError)
+      -> { m(obj) { |a, b| } }.should.raise(TypeError)
     end
 
     it "raises error transparently if #to_ary raises error on its own" do
       obj = Object.new
       def obj.to_ary; raise "Exception raised in #to_ary" end
 
-      -> { m(obj) { |a, b| } }.should raise_error(RuntimeError, "Exception raised in #to_ary")
+      -> { m(obj) { |a, b| } }.should.raise(RuntimeError, "Exception raised in #to_ary")
     end
   end
 end
@@ -311,7 +311,7 @@ describe "A block" do
 
   describe "taking |a| arguments" do
     it "assigns nil to the argument when no values are yielded" do
-      @y.z { |a| a }.should be_nil
+      @y.z { |a| a }.should == nil
     end
 
     it "assigns the value yielded to the argument" do
@@ -322,7 +322,7 @@ describe "A block" do
       obj = mock("block yield to_ary")
       obj.should_not_receive(:to_ary)
 
-      @y.s(obj) { |a| a }.should equal(obj)
+      @y.s(obj) { |a| a }.should.equal?(obj)
     end
 
     it "assigns the first value yielded to the argument" do
@@ -398,14 +398,14 @@ describe "A block" do
       obj = mock("block yield to_ary invalid")
       obj.should_receive(:to_ary).and_return(1)
 
-      -> { @y.s(obj) { |a, b| } }.should raise_error(TypeError)
+      -> { @y.s(obj) { |a, b| } }.should.raise(TypeError)
     end
 
     it "raises the original exception if #to_ary raises an exception" do
       obj = mock("block yield to_ary raising an exception")
       obj.should_receive(:to_ary).and_raise(ZeroDivisionError)
 
-      -> { @y.s(obj) { |a, b| } }.should raise_error(ZeroDivisionError)
+      -> { @y.s(obj) { |a, b| } }.should.raise(ZeroDivisionError)
     end
   end
 
@@ -461,7 +461,7 @@ describe "A block" do
       obj = mock("block yield to_ary invalid")
       obj.should_receive(:to_ary).and_return(1)
 
-      -> { @y.s(obj) { |a, *b| } }.should raise_error(TypeError)
+      -> { @y.s(obj) { |a, *b| } }.should.raise(TypeError)
     end
   end
 
@@ -539,7 +539,7 @@ describe "A block" do
 
   describe "taking |a, | arguments" do
     it "assigns nil to the argument when no values are yielded" do
-      @y.z { |a, | a }.should be_nil
+      @y.z { |a, | a }.should == nil
     end
 
     it "assigns the argument a single value yielded" do
@@ -555,7 +555,7 @@ describe "A block" do
     end
 
     it "assigns nil to the argument when passed an empty Array" do
-      @y.s([]) { |a, | a }.should be_nil
+      @y.s([]) { |a, | a }.should == nil
     end
 
     it "assigns the argument the first element of the Array when passed a single Array" do
@@ -586,7 +586,7 @@ describe "A block" do
       obj = mock("block yield to_ary invalid")
       obj.should_receive(:to_ary).and_return(1)
 
-      -> { @y.s(obj) { |a, | } }.should raise_error(TypeError)
+      -> { @y.s(obj) { |a, | } }.should.raise(TypeError)
     end
   end
 
@@ -628,7 +628,7 @@ describe "A block" do
       obj = mock("block yield to_ary invalid")
       obj.should_receive(:to_ary).and_return(1)
 
-      -> { @y.s(obj) { |(a, b)| } }.should raise_error(TypeError)
+      -> { @y.s(obj) { |(a, b)| } }.should.raise(TypeError)
     end
   end
 
@@ -669,7 +669,7 @@ describe "A block" do
       obj = mock("block yield to_ary invalid")
       obj.should_receive(:to_ary).and_return(1)
 
-      -> { @y.s(obj) { |(a, b), c| } }.should raise_error(TypeError)
+      -> { @y.s(obj) { |(a, b), c| } }.should.raise(TypeError)
     end
   end
 
@@ -728,15 +728,15 @@ describe "A block" do
 
   describe "taking identically-named arguments" do
     it "raises a SyntaxError for standard arguments" do
-      -> { eval "lambda { |x,x| }" }.should raise_error(SyntaxError)
-      -> { eval "->(x,x) {}" }.should raise_error(SyntaxError)
-      -> { eval "Proc.new { |x,x| }" }.should raise_error(SyntaxError)
+      -> { eval "lambda { |x,x| }" }.should.raise(SyntaxError)
+      -> { eval "->(x,x) {}" }.should.raise(SyntaxError)
+      -> { eval "Proc.new { |x,x| }" }.should.raise(SyntaxError)
     end
 
     it "accepts unnamed arguments" do
-      lambda { |_,_| }.should be_an_instance_of(Proc) # rubocop:disable Style/Lambda
-      -> _,_ {}.should be_an_instance_of(Proc)
-      Proc.new { |_,_| }.should be_an_instance_of(Proc)
+      lambda { |_,_| }.should.instance_of?(Proc) # rubocop:disable Style/Lambda
+      -> _,_ {}.should.instance_of?(Proc)
+      Proc.new { |_,_| }.should.instance_of?(Proc)
     end
   end
 
@@ -787,29 +787,29 @@ describe "Block-local variables" do
   end
 
   it "can not have the same name as one of the standard parameters" do
-    -> { eval "[1].each {|foo; foo| }" }.should raise_error(SyntaxError)
-    -> { eval "[1].each {|foo, bar; glark, bar| }" }.should raise_error(SyntaxError)
+    -> { eval "[1].each {|foo; foo| }" }.should.raise(SyntaxError)
+    -> { eval "[1].each {|foo, bar; glark, bar| }" }.should.raise(SyntaxError)
   end
 
   it "can not be prefixed with an asterisk" do
-    -> { eval "[1].each {|foo; *bar| }" }.should raise_error(SyntaxError)
+    -> { eval "[1].each {|foo; *bar| }" }.should.raise(SyntaxError)
     -> do
       eval "[1].each {|foo, bar; glark, *fnord| }"
-    end.should raise_error(SyntaxError)
+    end.should.raise(SyntaxError)
   end
 
   it "can not be prefixed with an ampersand" do
-    -> { eval "[1].each {|foo; &bar| }" }.should raise_error(SyntaxError)
+    -> { eval "[1].each {|foo; &bar| }" }.should.raise(SyntaxError)
     -> do
       eval "[1].each {|foo, bar; glark, &fnord| }"
-    end.should raise_error(SyntaxError)
+    end.should.raise(SyntaxError)
   end
 
   it "can not be assigned default values" do
-    -> { eval "[1].each {|foo; bar=1| }" }.should raise_error(SyntaxError)
+    -> { eval "[1].each {|foo; bar=1| }" }.should.raise(SyntaxError)
     -> do
       eval "[1].each {|foo, bar; glark, fnord=:fnord| }"
-    end.should raise_error(SyntaxError)
+    end.should.raise(SyntaxError)
   end
 
   it "need not be preceded by standard parameters" do
@@ -818,8 +818,8 @@ describe "Block-local variables" do
   end
 
   it "only allow a single semi-colon in the parameter list" do
-    -> { eval "[1].each {|foo; bar; glark| }" }.should raise_error(SyntaxError)
-    -> { eval "[1].each {|; bar; glark| }" }.should raise_error(SyntaxError)
+    -> { eval "[1].each {|foo; bar; glark| }" }.should.raise(SyntaxError)
+    -> { eval "[1].each {|; bar; glark| }" }.should.raise(SyntaxError)
   end
 
   it "override shadowed variables from the outer scope" do
@@ -844,21 +844,21 @@ describe "Block-local variables" do
   end
 
   it "are not automatically instantiated in the outer scope" do
-    defined?(glark).should be_nil
+    defined?(glark).should == nil
     [1].each {|;glark| 1}
-    defined?(glark).should be_nil
+    defined?(glark).should == nil
   end
 
   it "are automatically instantiated in the block" do
     [1].each do |;glark|
-      glark.should be_nil
+      glark.should == nil
     end
   end
 
   it "are visible in deeper scopes before initialization" do
     [1].each {|;glark|
       [1].each {
-        defined?(glark).should_not be_nil
+        defined?(glark).should_not == nil
         glark = 1
       }
       glark.should == 1
@@ -886,7 +886,7 @@ describe "Post-args" do
       -> *a, b do
         [a, b]
       end.call
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "are assigned to nil when not enough arguments are given to a proc" do
@@ -962,7 +962,7 @@ describe "Post-args" do
           a = 1
           -> {
             eval "proc { |a=a| a }"
-          }.should raise_error(SyntaxError)
+          }.should.raise(SyntaxError)
         end
       end
 
@@ -1006,7 +1006,7 @@ describe "Anonymous block forwarding" do
   end
 
   it "requires the anonymous block parameter to be declared if directly passing a block" do
-    -> { eval "def a; b(&); end; def b; end" }.should raise_error(SyntaxError)
+    -> { eval "def a; b(&); end; def b; end" }.should.raise(SyntaxError)
   end
 
   it "works when it's the only declared parameter" do
@@ -1118,7 +1118,7 @@ describe "`it` calls without arguments in a block" do
       EOF
 
       no_block.call(:a).should == :a
-      -> { no_block.call(:a) {} }.should raise_error(ArgumentError, 'no block accepted')
+      -> { no_block.call(:a) {} }.should.raise(ArgumentError, 'no block accepted')
     end
   end
 end
@@ -1134,5 +1134,15 @@ describe "if `it` is defined as a variable" do
 
   it "treats `it` as a local variable if defined inside of a block" do
     proc { it = 5; it }.call(0).should == 5
+  end
+end
+
+describe "Block-parameter destructuring" do
+  it "does not warn about unused inner names in verbose mode" do
+    -> {
+      eval <<~RUBY, binding, __FILE__, __LINE__ + 1
+        proc { |key, (val1, val2)| [key, val2] }
+      RUBY
+    }.should_not complain(verbose: true)
   end
 end

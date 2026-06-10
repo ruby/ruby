@@ -4,7 +4,7 @@ require_relative 'fixtures/classes'
 describe "Struct#initialize" do
 
   it "is private" do
-    StructClasses::Car.should have_private_instance_method(:initialize)
+    StructClasses::Car.private_instance_methods(true).should.include?(:initialize)
   end
 
   it 'allows valid Ruby method names for members' do

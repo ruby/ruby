@@ -124,7 +124,7 @@ struct rb_objspace; /* in vm_core.h */
     T *(var) = (T *)rb_ec_newobj_of((ec), (c), (f), s)
 #define NEWOBJ_OF(var, T, c, f, s) EC_NEWOBJ_OF(var, T, c, f, s, GET_EC())
 #define UNPROTECTED_NEWOBJ_OF(var, T, c, f, s) \
-    T *(var) = (T *)rb_newobj((GET_EC()), (c), (f), 0 /* ROOT_SHAPE_ID */, false, s)
+    T *(var) = (T *)rb_newobj((GET_EC()), (c), (f), ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER, false, s)
 
 #ifndef RB_GC_OBJECT_METADATA_ENTRY_DEFINED
 # define RB_GC_OBJECT_METADATA_ENTRY_DEFINED
@@ -199,6 +199,7 @@ RUBY_ATTR_MALLOC void *rb_xmalloc_mul_add_mul(size_t, size_t, size_t, size_t);
 RUBY_ATTR_MALLOC void *rb_xcalloc_mul_add_mul(size_t, size_t, size_t, size_t);
 void rb_gc_obj_id_moved(VALUE obj);
 void rb_gc_register_pinning_obj(VALUE obj);
+rb_execution_context_t *rb_gc_get_ec(void);
 
 void *rb_gc_ractor_cache_alloc(rb_ractor_t *ractor);
 void rb_gc_ractor_cache_free(void *cache);
@@ -208,9 +209,6 @@ size_t *rb_gc_heap_sizes(void);
 size_t rb_gc_heap_id_for_size(size_t size);
 
 void rb_gc_mark_and_move(VALUE *ptr);
-
-void rb_gc_declare_weak_references(VALUE obj);
-bool rb_gc_handle_weak_references_alive_p(VALUE obj);
 
 void rb_gc_ref_update_table_values_only(st_table *tbl);
 
@@ -232,6 +230,8 @@ void rb_objspace_reachable_objects_from_root(void (func)(const char *category, V
 int rb_objspace_internal_object_p(VALUE obj);
 int rb_objspace_garbage_object_p(VALUE obj);
 bool rb_gc_pointer_to_heap_p(VALUE obj);
+void rb_gc_declare_weak_references(VALUE obj);
+bool rb_gc_handle_weak_references_alive_p(VALUE obj);
 
 void rb_objspace_each_objects(
     int (*callback)(void *start, void *end, size_t stride, void *data),
@@ -253,9 +253,13 @@ struct rb_gc_object_metadata_entry *rb_gc_object_metadata(VALUE obj);
 void rb_gc_mark_values(long n, const VALUE *values);
 void rb_gc_mark_vm_stack_values(long n, const VALUE *values);
 void rb_gc_update_values(long n, VALUE *values);
+void rb_gc_mark_set_no_pin(st_table *);
+void rb_gc_update_set_refs(st_table *);
 
+#if USE_MODULAR_GC
 const char *rb_gc_active_gc_name(void);
 int rb_gc_modular_gc_loaded_p(void);
+#endif
 
 RUBY_SYMBOL_EXPORT_END
 

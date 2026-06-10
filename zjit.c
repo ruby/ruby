@@ -32,6 +32,15 @@ enum zjit_struct_offsets {
     ISEQ_BODY_OFFSET_PARAM = offsetof(struct rb_iseq_constant_body, param)
 };
 
+// Special JITFrame used by all C method calls. We don't control the native
+// stack layout for C frames, so cfp->jit_return points at this static frame
+// via the ZJIT_JIT_RETURN_C_FRAME sentinel instead of a per-call allocation.
+const zjit_jit_frame_t rb_zjit_c_frame = (zjit_jit_frame_t) {
+    .pc = 0,
+    .iseq = 0,
+    .materialize_block_code = false,
+};
+
 void rb_zjit_profile_disable(const rb_iseq_t *iseq);
 
 void

@@ -1,10 +1,10 @@
 .\" generated with Ronn-NG/v0.10.1
 .\" http://github.com/apjanke/ronn-ng/tree/0.10.1
-.TH "BUNDLE\-ADD" "1" "April 2026" ""
+.TH "BUNDLE\-ADD" "1" "May 2026" ""
 .SH "NAME"
 \fBbundle\-add\fR \- Add gem to the Gemfile and run bundle install
 .SH "SYNOPSIS"
-\fBbundle add\fR \fIGEM_NAME\fR [\-\-group=GROUP] [\-\-version=VERSION] [\-\-source=SOURCE] [\-\-path=PATH] [\-\-git=GIT|\-\-github=GITHUB] [\-\-branch=BRANCH] [\-\-ref=REF] [\-\-quiet] [\-\-skip\-install] [\-\-strict|\-\-optimistic]
+\fBbundle add\fR \fIGEM_NAME\fR [\-\-group=GROUP] [\-\-version=VERSION] [\-\-source=SOURCE] [\-\-path=PATH] [\-\-git=GIT|\-\-github=GITHUB] [\-\-branch=BRANCH] [\-\-ref=REF] [\-\-cooldown=NUMBER] [\-\-quiet] [\-\-skip\-install] [\-\-strict|\-\-optimistic]
 .SH "DESCRIPTION"
 Adds the named gem to the [\fBGemfile(5)\fR][Gemfile(5)] and run \fBbundle install\fR\. \fBbundle install\fR can be avoided by using the flag \fB\-\-skip\-install\fR\.
 .SH "OPTIONS"
@@ -46,10 +46,16 @@ Do not print progress information to the standard output\.
 Adds the gem to the Gemfile but does not install it\.
 .TP
 \fB\-\-optimistic\fR
-Adds optimistic declaration of version\.
+Ignored (now default behavior)
+.TP
+\fB\-\-pessimistic\fR
+Adds pessimistic declaration of version\.
 .TP
 \fB\-\-strict\fR
 Adds strict declaration of version\.
+.TP
+\fB\-\-cooldown=<number>\fR
+Only consider gem versions published at least \fInumber\fR days ago when resolving\. Pass \fB0\fR to disable cooldown for this run\. See \fBcooldown\fR in bundle\-config(1) for precedence rules\.
 .SH "EXAMPLES"
 .IP "1." 4
 You can add the \fBrails\fR gem to the Gemfile without any version restriction\. The source of the gem will be the global source\.
@@ -62,7 +68,7 @@ You can add the \fBrails\fR gem with version greater than 1\.1 (not including 1\
 .IP "3." 4
 You can use the \fBhttps://gems\.example\.com\fR custom source and assign the gem to a group\.
 .IP
-\fBbundle add rails \-\-version "~> 5\.0\.0" \-\-source "https://gems\.example\.com" \-\-group "development"\fR
+\fBbundle add rails \-\-version ">= 5\.0\.0" \-\-source "https://gems\.example\.com" \-\-group "development"\fR
 .IP "4." 4
 The following adds the \fBgem\fR entry to the Gemfile without installing the gem\. You can install gems later via \fBbundle install\fR\.
 .IP

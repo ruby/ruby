@@ -2803,8 +2803,10 @@ glob_opendir(ruby_glob_entries_t *ent, DIR *dirp, int flags, rb_encoding *enc)
             }
             if (count >= capacity) {
                 capacity += 256;
-                if (!(newp = GLOB_REALLOC_N(ent->sort.entries, capacity)))
+                if (!(newp = GLOB_REALLOC_N(ent->sort.entries, capacity))) {
+                    GLOB_FREE(rdp);
                     goto nomem;
+                }
                 ent->sort.entries = newp;
             }
             ent->sort.entries[count++] = rdp;

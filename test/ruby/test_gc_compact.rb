@@ -469,7 +469,7 @@ class TestGCCompact < Test::Unit::TestCase
     end;
   end
 
-  def test_moving_too_complex_generic_ivar
+  def test_moving_complex_generic_ivar
     omit "not compiled with SHAPE_DEBUG" unless defined?(RubyVM::Shape)
 
     assert_separately([], <<~RUBY)

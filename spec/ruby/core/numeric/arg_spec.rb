@@ -1,6 +1,38 @@
 require_relative '../../spec_helper'
-require_relative 'shared/arg'
 
 describe "Numeric#arg" do
-  it_behaves_like :numeric_arg, :arg
+  before :each do
+    @numbers = [
+      20,
+      Rational(3, 4),
+      bignum_value,
+      infinity_value
+    ]
+  end
+
+  it "returns 0 if positive" do
+    @numbers.each do |number|
+      number.arg.should == 0
+    end
+  end
+
+  it "returns Pi if negative" do
+    @numbers.each do |number|
+      (0-number).arg.should == Math::PI
+    end
+  end
+
+  describe "with a Numeric subclass" do
+    it "returns 0 if self#<(0) returns false" do
+      numeric = mock_numeric('positive')
+      numeric.should_receive(:<).with(0).and_return(false)
+      numeric.arg.should == 0
+    end
+
+    it "returns Pi if self#<(0) returns true" do
+      numeric = mock_numeric('positive')
+      numeric.should_receive(:<).with(0).and_return(true)
+      numeric.arg.should == Math::PI
+    end
+  end
 end

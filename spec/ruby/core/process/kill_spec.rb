@@ -9,18 +9,18 @@ describe "Process.kill" do
   end
 
   it "raises an ArgumentError for unknown signals" do
-    -> { Process.kill("FOO", @pid) }.should raise_error(ArgumentError)
+    -> { Process.kill("FOO", @pid) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if passed a lowercase signal name" do
-    -> { Process.kill("term", @pid) }.should raise_error(ArgumentError)
+    -> { Process.kill("term", @pid) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if signal is not an Integer or String" do
     signal = mock("process kill signal")
     signal.should_not_receive(:to_int)
 
-    -> { Process.kill(signal, @pid) }.should raise_error(ArgumentError)
+    -> { Process.kill(signal, @pid) }.should.raise(ArgumentError)
   end
 
   it "raises Errno::ESRCH if the process does not exist" do
@@ -29,7 +29,7 @@ describe "Process.kill" do
     Process.wait(pid)
     -> {
       Process.kill("SIGKILL", pid)
-    }.should raise_error(Errno::ESRCH)
+    }.should.raise(Errno::ESRCH)
   end
 
   it "checks for existence and permissions to signal a process, but does not actually signal it, when using signal 0" do

@@ -394,9 +394,6 @@ module Prism
 
         # @@foo = 1
         # ^^^^^^^^^
-        #
-        # @@foo, @@bar = 1
-        # ^^^^^  ^^^^^
         def visit_class_variable_write_node(node)
           s(node, class_variable_write_type, node.name, visit_write_value(node.value))
         end
@@ -651,9 +648,6 @@ module Prism
 
         # $foo = 1
         # ^^^^^^^^
-        #
-        # $foo, $bar = 1
-        # ^^^^  ^^^^
         def visit_global_variable_write_node(node)
           s(node, :gasgn, node.name, visit_write_value(node.value))
         end
@@ -799,9 +793,6 @@ module Prism
 
         # @foo = 1
         # ^^^^^^^^
-        #
-        # @foo, @bar = 1
-        # ^^^^  ^^^^
         def visit_instance_variable_write_node(node)
           s(node, :iasgn, node.name, visit_write_value(node.value))
         end
@@ -1013,9 +1004,6 @@ module Prism
 
         # foo = 1
         # ^^^^^^^
-        #
-        # foo, bar = 1
-        # ^^^  ^^^
         def visit_local_variable_write_node(node)
           s(node, :lasgn, node.name, visit_write_value(node.value))
         end

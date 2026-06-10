@@ -240,7 +240,7 @@ RB_DEBUG_COUNTER(obj_wb_unprotect)
 
 RB_DEBUG_COUNTER(obj_obj_embed)
 RB_DEBUG_COUNTER(obj_obj_ptr)
-RB_DEBUG_COUNTER(obj_obj_too_complex)
+RB_DEBUG_COUNTER(obj_obj_complex)
 
 RB_DEBUG_COUNTER(obj_str_ptr)
 RB_DEBUG_COUNTER(obj_str_embed)
@@ -315,6 +315,8 @@ RB_DEBUG_COUNTER(obj_imemo_callinfo)
 RB_DEBUG_COUNTER(obj_imemo_callcache)
 RB_DEBUG_COUNTER(obj_imemo_constcache)
 RB_DEBUG_COUNTER(obj_imemo_fields)
+RB_DEBUG_COUNTER(obj_imemo_subclasses)
+RB_DEBUG_COUNTER(obj_imemo_cdhash)
 
 RB_DEBUG_COUNTER(opt_new_hit)
 RB_DEBUG_COUNTER(opt_new_miss)

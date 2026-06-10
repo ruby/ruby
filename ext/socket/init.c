@@ -516,8 +516,7 @@ wait_connectable(VALUE self, VALUE timeout, const struct sockaddr *sockaddr, int
     if (result == Qfalse) {
         VALUE rai = rsock_addrinfo_new((struct sockaddr *)sockaddr, len, PF_UNSPEC, 0, 0, Qnil, Qnil);
         VALUE addr_str = rsock_addrinfo_inspect_sockaddr(rai);
-        VALUE message = rb_sprintf("user specified timeout for %" PRIsVALUE, addr_str);
-        rb_raise(rb_eIOTimeoutError, "%" PRIsVALUE, message);
+        rb_raise(rb_eIOTimeoutError, "user specified timeout for %" PRIsVALUE, addr_str);
     }
 
     int revents = RB_NUM2INT(result);

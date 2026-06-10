@@ -53,6 +53,7 @@ class TestGemConfigFile < Gem::TestCase
       fp.puts ":sources:"
       fp.puts "  - http://more-gems.example.com"
       fp.puts "install: --wrappers"
+      fp.puts ":gemhome: /tmp/gems"
       fp.puts ":gempath:"
       fp.puts "- /usr/ruby/1.8/lib/ruby/gems/1.8"
       fp.puts "- /var/ruby/1.8/gem_home"
@@ -61,6 +62,7 @@ class TestGemConfigFile < Gem::TestCase
       fp.puts ":cert_expiration_length_days: 28"
       fp.puts ":install_extension_in_lib: false"
       fp.puts ":ipv4_fallback_enabled: true"
+      fp.puts ":use_psych: true"
     end
 
     util_config_file
@@ -70,6 +72,7 @@ class TestGemConfigFile < Gem::TestCase
     assert_equal false, @cfg.update_sources
     assert_equal %w[http://more-gems.example.com], @cfg.sources
     assert_equal "--wrappers", @cfg[:install]
+    assert_equal "/tmp/gems", @cfg.home
     assert_equal(["/usr/ruby/1.8/lib/ruby/gems/1.8", "/var/ruby/1.8/gem_home"],
                  @cfg.path)
     assert_equal 0, @cfg.ssl_verify_mode
@@ -77,6 +80,7 @@ class TestGemConfigFile < Gem::TestCase
     assert_equal 28, @cfg.cert_expiration_length_days
     assert_equal false, @cfg.install_extension_in_lib
     assert_equal true, @cfg.ipv4_fallback_enabled
+    assert_equal true, @cfg.use_psych
   end
 
   def test_initialize_ipv4_fallback_enabled_env
@@ -105,7 +109,7 @@ class TestGemConfigFile < Gem::TestCase
 
   def test_initialize_global_gem_cache_gemrc
     File.open @temp_conf, "w" do |fp|
-      fp.puts "global_gem_cache: true"
+      fp.puts ":global_gem_cache: true"
     end
 
     util_config_file %W[--config-file #{@temp_conf}]
@@ -113,9 +117,19 @@ class TestGemConfigFile < Gem::TestCase
     assert_equal true, @cfg.global_gem_cache
   end
 
+  def test_initialize_use_psych_env
+    orig_use_psych = ENV["RUBYGEMS_USE_PSYCH"]
+    ENV["RUBYGEMS_USE_PSYCH"] = "true"
+    util_config_file %W[--config-file #{@temp_conf}]
+
+    assert_equal true, @cfg.use_psych
+  ensure
+    ENV["RUBYGEMS_USE_PSYCH"] = orig_use_psych
+  end
+
   def test_initialize_concurrent_downloads
     File.open @temp_conf, "w" do |fp|
-      fp.puts "concurrent_downloads: 2"
+      fp.puts ":concurrent_downloads: 2"
     end
 
     util_config_file %W[--config-file #{@temp_conf}]

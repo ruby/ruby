@@ -52,18 +52,8 @@ module Kernel
   #  call-seq:
   #     obj.frozen?    -> true or false
   #
-  #  Returns the freeze status of <i>obj</i>.
-  #
-  #     a = [ "a", "b", "c" ]
-  #     a.freeze    #=> ["a", "b", "c"]
-  #     a.frozen?   #=> true
-  #--
-  # Determines if the object is frozen. Equivalent to `Object#frozen?` in Ruby.
-  # @param[in] obj  the object to be determines
-  # @retval Qtrue if frozen
-  # @retval Qfalse if not frozen
-  #++
-  #
+  #  Returns whether +self+ is frozen;
+  #  see {Frozen Objects}[rdoc-ref:frozen_objects.md].
   def frozen?
     Primitive.attr! :leaf
     Primitive.cexpr! 'rb_obj_frozen_p(self)'

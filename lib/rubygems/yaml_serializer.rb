@@ -72,9 +72,7 @@ module Gem
 
       def parse_node(base_indent)
         @depth += 1
-        if @depth > MAX_NESTING_DEPTH
-          raise Psych::SyntaxError, "exceeded maximum nesting depth (#{MAX_NESTING_DEPTH})"
-        end
+        raise_max_nesting! if @depth > MAX_NESTING_DEPTH
 
         skip_blank_and_comments
         return nil if @lines.empty?
@@ -95,6 +93,25 @@ module Gem
 
         if stripped.start_with?("- ") || stripped == "-"
           parse_sequence(indent, anchor)
+        elsif stripped.start_with?("\"") && stripped.end_with?("\"")
+          # We don't need to care about the following case here:
+          #   1. "value with comment" # ...
+          #   2. "key": "value"
+          #
+          # 1. must not happen because YAMLSerializer doesn't emit any
+          # comment. YAMLSerializer parses only YAML that is generated
+          # by YAMLSerializer.
+          #
+          # 2. must not happen because #parse_node isn't used non
+          # top-level mapping. Non top-level mapping always uses
+          # #parse_mapping. Top-level mapping never use the '"key":
+          # "value"' form because all top-level keys
+          # ("!ruby/object:Gem::Specification"'s keys) are known and
+          # #emit_specification doesn't quote anything.
+          parse_plain_scalar(indent, anchor)
+        elsif stripped.start_with?("'") && stripped.end_with?("'")
+          # See also the above note for double quotation.
+          parse_plain_scalar(indent, anchor)
         elsif stripped =~ MAPPING_KEY_RE && !stripped.start_with?("!ruby/object:")
           parse_mapping(indent, anchor)
         elsif stripped.start_with?("!ruby/object:")
@@ -266,7 +283,9 @@ module Gem
         Scalar.new(value: result)
       end
 
-      def coerce(val)
+      def coerce(val, depth = 0)
+        raise_max_nesting! if depth > MAX_NESTING_DEPTH
+
         val = val.sub(/^! /, "") if val.start_with?("! ")
 
         if val =~ /^"(.*)"$/
@@ -292,7 +311,7 @@ module Gem
         elsif val =~ /^\[(.*)\]$/
           inner = $1.strip
           return Sequence.new if inner.empty?
-          items = inner.split(/\s*,\s*/).reject(&:empty?).map {|e| Scalar.new(value: coerce(e)) }
+          items = inner.split(/\s*,\s*/).reject(&:empty?).map {|e| Scalar.new(value: coerce(e, depth + 1)) }
           Sequence.new(items: items)
         elsif /\A\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2}:\d{2})?/.match?(val)
           begin
@@ -373,6 +392,15 @@ module Gem
         node
       end
 
+      def raise_max_nesting!
+        message = "exceeded maximum nesting depth (#{MAX_NESTING_DEPTH})"
+        if defined?(Psych::VERSION)
+          raise Psych::SyntaxError.new(nil, 0, 0, 0, message, nil)
+        else
+          raise Psych::SyntaxError, message
+        end
+      end
+
       def skip_blank_and_comments
         while @lines.any?
           line = @lines[0]
@@ -435,9 +463,7 @@ module Gem
 
         result = build_node(node)
 
-        if result.is_a?(Hash) &&
-           (result[:tag] == "!ruby/object:Gem::Specification" ||
-            result["tag"] == "!ruby/object:Gem::Specification")
+        if result.is_a?(Hash) && result[:tag] == "!ruby/object:Gem::Specification"
           build_specification(result)
         else
           result
@@ -463,7 +489,11 @@ module Gem
         if @alias_count > MAX_ALIAS_RESOLUTIONS
           raise Psych::BadAlias, "exceeded maximum alias resolutions (#{MAX_ALIAS_RESOLUTIONS})"
         end
-        @anchor_values.fetch(node.name, nil)
+        unless @anchor_values.key?(node.name)
+          klass = defined?(Psych::AnchorNotDefined) ? Psych::AnchorNotDefined : Psych::BadAlias
+          raise klass, "An alias referenced an unknown anchor: #{node.name}"
+        end
+        @anchor_values.fetch(node.name)
       end
 
       def store_anchor(name, value)
@@ -472,7 +502,6 @@ module Gem
       end
 
       def build_mapping(node)
-        check_anchor!(node)
         validate_tag!(node.tag) if node.tag
 
         result = case node.tag
@@ -573,9 +602,14 @@ module Gem
 
         d.instance_variable_set(:@requirement, hash["requirement"] || hash["version_requirements"])
 
-        type = hash["type"]
-        type = type ? type.to_s.sub(/^:/, "").to_sym : :runtime
-        validate_symbol!(type)
+        raw_type = hash["type"]
+        if raw_type
+          name = raw_type.to_s.sub(/^:/, "")
+          validate_symbol!(name)
+          type = name.to_sym
+        else
+          type = :runtime
+        end
         d.instance_variable_set(:@type, type)
 
         d.instance_variable_set(:@prerelease, ["true", true].include?(hash["prerelease"]))
@@ -615,19 +649,14 @@ module Gem
         end
       end
 
-      def validate_symbol!(sym)
-        if @permitted_symbols.any? && !@permitted_symbols.include?(sym.to_s)
-          if defined?(Psych::VERSION)
-            raise Psych::DisallowedClass.new("load", sym.inspect)
-          else
-            raise Psych::DisallowedClass, "Tried to load unspecified class: #{sym.inspect}"
-          end
-        end
-      end
+      def validate_symbol!(name)
+        return if @permitted_symbols.empty? || @permitted_symbols.include?(name)
 
-      def check_anchor!(node)
-        if node.anchor
-          raise Psych::AliasesNotEnabled unless @aliases
+        label = ":#{name}"
+        if defined?(Psych::VERSION)
+          raise Psych::DisallowedClass.new("load", label)
+        else
+          raise Psych::DisallowedClass, "Tried to load unspecified class: #{label}"
         end
       end
 

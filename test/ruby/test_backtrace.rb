@@ -191,6 +191,16 @@ class TestBacktrace < Test::Unit::TestCase
     assert_equal(cl.map(&:to_s), ary.map(&:to_s))
   end
 
+  def test_each_caller_location_single_cfunc_frame
+    assert_normal_exit <<~'RUBY'
+      tap { Thread.each_caller_location(1, 1) { |loc| loc.label } }
+    RUBY
+
+    cl = nil; ary = []
+    tap { cl = caller_locations(1, 1); Thread.each_caller_location(1, 1) { |x| ary << x } }
+    assert_equal(cl.map(&:to_s), ary.map(&:to_s))
+  end
+
   def test_caller_locations_first_label
     def self.label
       caller_locations.first.label

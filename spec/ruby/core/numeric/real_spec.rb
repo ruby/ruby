@@ -16,7 +16,7 @@ describe "Numeric#real" do
   it "returns self" do
     @numbers.each do |number|
       if number.to_f.nan?
-        number.real.nan?.should be_true
+        number.real.nan?.should == true
       else
         number.real.should == number
       end
@@ -25,7 +25,7 @@ describe "Numeric#real" do
 
   it "raises an ArgumentError if given any arguments" do
     @numbers.each do |number|
-      -> { number.real(number) }.should raise_error(ArgumentError)
+      -> { number.real(number) }.should.raise(ArgumentError)
     end
   end
 end

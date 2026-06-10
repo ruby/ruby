@@ -5,16 +5,16 @@ describe "Hash#dig" do
   it "returns #[] with one arg" do
     h = { 0 => false, a: 1 }
     h.dig(:a).should == 1
-    h.dig(0).should be_false
-    h.dig(1).should be_nil
+    h.dig(0).should == false
+    h.dig(1).should == nil
   end
 
   it "returns the nested value specified by the sequence of keys" do
     h = { foo: { bar: { baz: 1 } } }
     h.dig(:foo, :bar, :baz).should == 1
-    h.dig(:foo, :bar, :nope).should be_nil
-    h.dig(:foo, :baz).should be_nil
-    h.dig(:bar, :baz, :foo).should be_nil
+    h.dig(:foo, :bar, :nope).should == nil
+    h.dig(:foo, :baz).should == nil
+    h.dig(:bar, :baz, :foo).should == nil
   end
 
   it "returns the nested value specified if the sequence includes an index" do
@@ -28,7 +28,7 @@ describe "Hash#dig" do
   end
 
   it "raises an ArgumentError if no arguments provided" do
-    -> { { the: 'borg' }.dig() }.should raise_error(ArgumentError)
+    -> { { the: 'borg' }.dig() }.should.raise(ArgumentError)
   end
 
   it "handles type-mixed deep digging" do
@@ -47,8 +47,8 @@ describe "Hash#dig" do
   it "raises TypeError if an intermediate element does not respond to #dig" do
     h = {}
     h[:foo] = [ { bar: [ 1 ] }, [ nil, 'str' ] ]
-    -> { h.dig(:foo, 0, :bar, 0, 0) }.should raise_error(TypeError)
-    -> { h.dig(:foo, 1, 1, 0) }.should raise_error(TypeError)
+    -> { h.dig(:foo, 0, :bar, 0, 0) }.should.raise(TypeError)
+    -> { h.dig(:foo, 1, 1, 0) }.should.raise(TypeError)
   end
 
   it "calls #dig on the result of #[] with the remaining arguments" do
@@ -60,7 +60,7 @@ describe "Hash#dig" do
   it "respects Hash's default" do
     default = {bar: 42}
     h = Hash.new(default)
-    h.dig(:foo).should equal default
+    h.dig(:foo).should.equal? default
     h.dig(:foo, :bar).should == 42
   end
 end

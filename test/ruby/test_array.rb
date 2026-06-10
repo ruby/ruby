@@ -1846,19 +1846,21 @@ class TestArray < Test::Unit::TestCase
     assert_equal([1, 2, 3, 4], a)
   end
 
-  def test_freeze_inside_sort!
+  def test_freeze_inside_sort_bang
     array = [1, 2, 3, 4, 5]
     frozen_array = nil
     assert_raise(FrozenError) do
       count = 0
       array.sort! do |a, b|
-        array.freeze if (count += 1) == 6
+        array.freeze if (count += 1) == 3
         frozen_array ||= array.map.to_a if array.frozen?
         b <=> a
       end
     end
     assert_equal(frozen_array, array)
+  end
 
+  def test_freeze_inside_sort_bang_non_numeric_block
     object = Object.new
     array = [1, 2, 3, 4, 5]
     object.define_singleton_method(:>){|_| array.freeze; true}
@@ -1867,7 +1869,9 @@ class TestArray < Test::Unit::TestCase
         object
       end
     end
+  end
 
+  def test_freeze_inside_sort_bang_non_numeric_no_block
     object = Object.new
     array = [object, object]
     object.define_singleton_method(:>){|_| array.freeze; true}
@@ -3546,6 +3550,7 @@ class TestArray < Test::Unit::TestCase
     assert_float_equal(3.5, [3].sum(0.5))
     assert_float_equal(8.5, [3.5, 5].sum)
     assert_float_equal(10.5, [2, 8.5].sum)
+    assert_float_equal(1_000 * 0.1, Array.new(1_000, 0.1).sum(0.0))
     assert_float_equal((FIXNUM_MAX+1).to_f, [FIXNUM_MAX, 1, 0.0].sum)
     assert_float_equal((FIXNUM_MAX+1).to_f, [0.0, FIXNUM_MAX+1].sum)
 

@@ -95,9 +95,9 @@ fn profile_insn(bare_opcode: ruby_vminsn_type, ec: EcPtr) {
         YARVINSN_invokesuper   => profile_invokesuper(profiler, profile),
         YARVINSN_opt_send_without_block | YARVINSN_send => {
             let cd: *const rb_call_data = profiler.insn_opnd(0).as_ptr();
-            let argc = unsafe { vm_ci_argc((*cd).ci) };
+            let argc = num_arguments_on_stack(cd);
             // Profile all the arguments and self (+1).
-            profile_operands(profiler, profile, (argc + 1) as usize);
+            profile_operands(profiler, profile, argc + 1);
         }
         YARVINSN_splatkw => profile_operands(profiler, profile, 2),
         _ => {}
@@ -109,6 +109,15 @@ fn profile_insn(bare_opcode: ruby_vminsn_type, ec: EcPtr) {
     if entry.profiles_remaining == 0 {
         unsafe { rb_zjit_iseq_insn_set(profiler.iseq, profiler.insn_idx as u32, bare_opcode); }
     }
+}
+
+/// Return the argc as stated in the calldata plus:
+/// * 1 if there is an explicit blockarg, since that will be passed on the stack
+pub fn num_arguments_on_stack(cd: *const rb_call_data) -> usize {
+    let ci = unsafe { rb_get_call_data_ci(cd) };
+    let flags = unsafe { rb_vm_ci_flag(ci) };
+    let has_blockarg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
+    (unsafe { vm_ci_argc(ci) }) as usize + has_blockarg as usize
 }
 
 const DISTRIBUTION_SIZE: usize = 4;
@@ -184,7 +193,7 @@ fn profile_invokesuper(profiler: &mut Profiler, profile: &mut IseqProfile) {
     unsafe { rb_gc_writebarrier(profiler.iseq.into(), cme_value) };
 
     let cd: *const rb_call_data = profiler.insn_opnd(0).as_ptr();
-    let argc = unsafe { vm_ci_argc((*cd).ci) };
+    let argc = num_arguments_on_stack(cd);
 
     // Profile all the arguments and self (+1).
     profile_operands(profiler, profile, (argc + 1) as usize);
@@ -210,8 +219,8 @@ impl Flags {
     const IS_T_CLASS: u32 = 1 << 6;
     /// Object is a T_MODULE
     const IS_T_MODULE: u32 = 1 << 7;
-    /// Object is a typed T_DATA (RTYPEDDATA_P)
-    const IS_TYPED_DATA: u32 = 1 << 8;
+    /// Object is a T_DATA
+    const IS_T_DATA: u32 = 1 << 8;
 
     pub fn none() -> Self { Self(Self::NONE) }
 
@@ -224,7 +233,7 @@ impl Flags {
     pub fn is_fields_embedded(self) -> bool { (self.0 & Self::IS_FIELDS_EMBEDDED) != 0 }
     pub fn is_t_class(self) -> bool { (self.0 & Self::IS_T_CLASS) != 0 }
     pub fn is_t_module(self) -> bool { (self.0 & Self::IS_T_MODULE) != 0 }
-    pub fn is_typed_data(self) -> bool { (self.0 & Self::IS_TYPED_DATA) != 0 }
+    pub fn is_t_data(self) -> bool { (self.0 & Self::IS_T_DATA) != 0 }
 }
 
 /// opt_send_without_block/opt_plus/... should store:
@@ -313,9 +322,9 @@ impl ProfiledType {
                 flags.0 |= Flags::IS_FIELDS_EMBEDDED;
             }
         }
-        if obj.typed_data_p() {
-            flags.0 |= Flags::IS_TYPED_DATA;
-            if obj.typed_data_fields_embedded_p() {
+        if obj.data_p() {
+            flags.0 |= Flags::IS_T_DATA;
+            if obj.data_fields_embedded_p() {
                 flags.0 |= Flags::IS_FIELDS_EMBEDDED;
             }
         }
@@ -340,28 +349,6 @@ impl ProfiledType {
 
     pub fn flags(&self) -> Flags {
         self.flags
-    }
-
-    /// For ivar access, you need to know the index in the fields array (described by the shape)
-    /// and the way to get the fields array (described by the builtin type). Both pieces of
-    /// information are on the `RBasic::flags` field. This method returns expected masked flags
-    /// for guarding.
-    pub fn rbasic_flags_and_mask(&self) -> (u64, u64) {
-        let shape_flag_shift = u64::from(RB_SHAPE_FLAG_SHIFT);
-        let (shape, shape_mask) = (u64::from(self.shape().0) << shape_flag_shift, !0 << shape_flag_shift);
-        let (builtin_type, type_mask) = if self.flags().is_t_object() {
-            (RUBY_T_OBJECT, RUBY_T_MASK)
-        } else if self.flags().is_t_class() {
-            // Check class first since `Class < Module`
-            (RUBY_T_CLASS, RUBY_T_MASK)
-        } else if self.flags().is_t_module() {
-            (RUBY_T_MODULE, RUBY_T_MASK)
-        } else if self.flags().is_typed_data() {
-            (RUBY_T_DATA | RUBY_TYPED_FL_IS_TYPED_DATA, RUBY_T_MASK | RUBY_TYPED_FL_IS_TYPED_DATA)
-        } else {
-            (0, 0)
-        };
-        (shape | u64::from(builtin_type), shape_mask | u64::from(type_mask))
     }
 
     pub fn is_fixnum(&self) -> bool {
@@ -408,13 +395,19 @@ impl ProfiledType {
 
 /// Per-instruction profile entry, stored sparsely in a sorted Vec.
 #[derive(Debug)]
-struct ProfileEntry {
+pub struct ProfileEntry {
     /// YARV instruction index
     insn_idx: u32,
     /// Type information of YARV instruction operands
     opnd_types: Vec<TypeDistribution>,
     /// Number of profiles remaining before recompilation. Counts down from --zjit-num-profiles.
     profiles_remaining: NumProfiles,
+}
+
+impl ProfileEntry {
+    pub fn set_profiles_remaining(&mut self, num_profiles: NumProfiles) {
+        self.profiles_remaining = num_profiles;
+    }
 }
 
 #[derive(Debug)]
@@ -436,7 +429,7 @@ impl IseqProfile {
     }
 
     /// Get or create a mutable profile entry for the given instruction index.
-    fn entry_mut(&mut self, insn_idx: YarvInsnIdx) -> &mut ProfileEntry {
+    pub fn entry_mut(&mut self, insn_idx: YarvInsnIdx) -> &mut ProfileEntry {
         let idx = insn_idx as u32;
         match self.entries.binary_search_by_key(&idx, |e| e.insn_idx) {
             Ok(i) => &mut self.entries[i],

@@ -688,6 +688,25 @@ class TestGemDependencyInstaller < Gem::TestCase
     assert_equal %w[b-1], inst.installed_gems.map(&:full_name)
   end
 
+  def test_install_force_with_unsatisfiable_dep
+    # foo depends on bar >= 2.0, but only bar-1.0 exists.
+    # With --force, the unsatisfiable dep should be skipped.
+    _, foo_gem = util_gem "foo", "1" do |s|
+      s.add_dependency "bar", ">= 2.0"
+    end
+
+    util_setup_spec_fetcher(util_spec("bar", "1.0"))
+    FileUtils.mv foo_gem, @tempdir
+    inst = nil
+
+    Dir.chdir @tempdir do
+      inst = Gem::DependencyInstaller.new force: true
+      inst.install "foo"
+    end
+
+    assert_equal %w[foo-1], inst.installed_gems.map(&:full_name)
+  end
+
   def test_install_build_args
     util_setup_gems
 
@@ -793,13 +812,12 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = nil
 
     Dir.chdir @tempdir do
-      e = assert_raise Gem::UnsatisfiableDependencyError do
+      e = assert_raise Gem::DependencyResolutionError do
         inst = Gem::DependencyInstaller.new domain: :local
         inst.install "b"
       end
 
-      expected = "Unable to resolve dependency: 'b (>= 0)' requires 'a (>= 0)'"
-      assert_equal expected, e.message
+      assert_match(/depends on a >= 0 which could not be found in any repository/, e.message)
     end
 
     assert_equal [], inst.installed_gems.map(&:full_name)

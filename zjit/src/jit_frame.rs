@@ -1,5 +1,6 @@
 use crate::cruby::{IseqPtr, VALUE, rb_gc_mark_movable, rb_gc_location};
 use crate::cruby::zjit_jit_frame;
+use crate::codegen::iseq_may_write_block_code;
 use crate::state::ZJITState;
 
 /// JITFrame struct is defined in zjit.h (the single source of truth) and
@@ -16,13 +17,9 @@ impl JITFrame {
     }
 
     /// Create a JITFrame for an ISEQ frame.
-    pub fn new_iseq(pc: *const VALUE, iseq: IseqPtr, materialize_block_code: bool) -> *const Self {
+    pub fn new_iseq(pc: *const VALUE, iseq: IseqPtr) -> *const Self {
+        let materialize_block_code = !iseq_may_write_block_code(iseq);
         Self::alloc(JITFrame { pc, iseq, materialize_block_code })
-    }
-
-    /// Create a JITFrame for a C frame (no PC, no ISEQ).
-    pub fn new_cfunc() -> *const Self {
-        Self::alloc(JITFrame { pc: std::ptr::null(), iseq: std::ptr::null(), materialize_block_code: false })
     }
 
     /// Mark the iseq pointer for GC. Called from rb_zjit_root_mark.
@@ -126,11 +123,10 @@ mod tests {
         "#), @"100");
     }
 
-    // Side exit at the very start of a method, before any jit_return has been
-    // written by gen_save_pc_for_gc. The jit_return field should be 0 (from
-    // vm_push_frame), so materialization should be a no-op for that frame.
+    // Side exit at the very start of a method, before gen_save_pc_for_gc has
+    // updated the entry JITFrame.
     #[test]
-    fn test_side_exit_before_jit_return_write() {
+    fn test_side_exit_before_jit_frame_update() {
         assert_snapshot!(inspect("
             def entry(n) = n + 1
             entry(1)

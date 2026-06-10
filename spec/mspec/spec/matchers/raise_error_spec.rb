@@ -19,7 +19,7 @@ RSpec.describe RaiseErrorMatcher do
     ensure_mspec_method(-> {}.method(:should))
 
     run = false
-    -> { raise ExpectedException }.should PublicMSpecMatchers.raise_error { |error|
+    -> { raise ExpectedException }.should.raise { |error|
       expect(error.class).to eq(ExpectedException)
       run = true
     }
@@ -30,7 +30,7 @@ RSpec.describe RaiseErrorMatcher do
     ensure_mspec_method(-> {}.method(:should))
 
     run = false
-    -> { raise ExpectedException }.should PublicMSpecMatchers.raise_error do |error|
+    -> { raise ExpectedException }.should.raise do |error|
       expect(error.class).to eq(ExpectedException)
       run = true
     end
@@ -84,10 +84,10 @@ RSpec.describe RaiseErrorMatcher do
       matcher.matches?(Proc.new { raise exc })
     rescue UnexpectedException => e
       expect(matcher.failure_message).to eq(
-        ["Expected ExpectedException (message)", "but got: UnexpectedException (message)"]
+        ['Expected ExpectedException("message")', 'but got: UnexpectedException("message")']
       )
       expect(ExceptionState.new(nil, nil, e).message).to eq(
-        "Expected ExpectedException (message)\nbut got: UnexpectedException (message)"
+        "Expected ExpectedException(\"message\")\nbut got: UnexpectedException(\"message\")"
       )
     else
       raise "no exception"
@@ -103,10 +103,10 @@ RSpec.describe RaiseErrorMatcher do
       matcher.matches?(Proc.new { raise exc })
     rescue ExpectedException => e
       expect(matcher.failure_message).to eq(
-        ["Expected ExpectedException (expected)", "but got: ExpectedException (unexpected)"]
+        ['Expected ExpectedException("expected")', 'but got: ExpectedException("unexpected")']
       )
       expect(ExceptionState.new(nil, nil, e).message).to eq(
-        "Expected ExpectedException (expected)\nbut got: ExpectedException (unexpected)"
+        "Expected ExpectedException(\"expected\")\nbut got: ExpectedException(\"unexpected\")"
       )
     else
       raise "no exception"
@@ -122,10 +122,10 @@ RSpec.describe RaiseErrorMatcher do
       matcher.matches?(Proc.new { raise exc })
     rescue UnexpectedException => e
       expect(matcher.failure_message).to eq(
-          ["Expected ExpectedException (expected)", "but got: UnexpectedException (unexpected)"]
+          ['Expected ExpectedException("expected")', 'but got: UnexpectedException("unexpected")']
       )
       expect(ExceptionState.new(nil, nil, e).message).to eq(
-          "Expected ExpectedException (expected)\nbut got: UnexpectedException (unexpected)"
+          "Expected ExpectedException(\"expected\")\nbut got: UnexpectedException(\"unexpected\")"
       )
     else
       raise "no exception"
@@ -137,7 +137,7 @@ RSpec.describe RaiseErrorMatcher do
     matcher = RaiseErrorMatcher.new(ExpectedException, "expected")
     matcher.matches?(proc)
     expect(matcher.failure_message).to eq(
-      ["Expected ExpectedException (expected)", "but no exception was raised (120 was returned)"]
+      ['Expected ExpectedException("expected")', "but no exception was raised (120 was returned)"]
     )
   end
 
@@ -146,7 +146,7 @@ RSpec.describe RaiseErrorMatcher do
     matcher = RaiseErrorMatcher.new(ExpectedException, "expected")
     matcher.matches?(proc)
     expect(matcher.failure_message).to eq(
-      ["Expected ExpectedException (expected)", "but no exception was raised (nil was returned)"]
+      ['Expected ExpectedException("expected")', "but no exception was raised (nil was returned)"]
     )
   end
 
@@ -159,7 +159,7 @@ RSpec.describe RaiseErrorMatcher do
     matcher = RaiseErrorMatcher.new(ExpectedException, "expected")
     matcher.matches?(proc)
     expect(matcher.failure_message).to eq(
-      ["Expected ExpectedException (expected)", "but no exception was raised (#<Object>(#pretty_inspect raised #<ArgumentError: bad>) was returned)"]
+      ['Expected ExpectedException("expected")', 'but no exception was raised (#<Object>(#pretty_inspect raised #<ArgumentError: bad>) was returned)']
     )
   end
 
@@ -168,7 +168,7 @@ RSpec.describe RaiseErrorMatcher do
     matcher = RaiseErrorMatcher.new(ExpectedException, "expected")
     matcher.matches?(proc)
     expect(matcher.negative_failure_message).to eq(
-      ["Expected to not get ExpectedException (expected)", ""]
+      ['Expected to not get ExpectedException("expected")', ""]
     )
   end
 
@@ -177,7 +177,58 @@ RSpec.describe RaiseErrorMatcher do
     matcher = RaiseErrorMatcher.new(Exception, nil)
     matcher.matches?(proc)
     expect(matcher.negative_failure_message).to eq(
-      ["Expected to not get Exception", "but got: UnexpectedException (unexpected)"]
+      ['Expected to not get Exception', 'but got: UnexpectedException']
     )
+  end
+
+  it "matches cause if given" do
+    cause = RuntimeError.new("foo")
+    proc = -> do
+      raise cause
+    rescue
+      raise "bar"
+    end
+
+    matcher = RaiseErrorMatcher.new(RuntimeError, cause: cause)
+    expect(matcher.matches?(proc)).to eq(true)
+  end
+
+  it "matches message and cause if given" do
+    cause = RuntimeError.new("foo")
+    proc = -> do
+      raise cause
+    rescue
+      raise "bar"
+    end
+
+    matcher = RaiseErrorMatcher.new(RuntimeError, "bar", cause: cause)
+    expect(matcher.matches?(proc)).to eq(true)
+  end
+
+  it "provides useful negative failure message when cause does not match" do
+    cause = RuntimeError.new("bar")
+    proc = -> do
+      raise "foo"
+    end
+
+    matcher = RaiseErrorMatcher.new(RuntimeError, cause: cause)
+
+    begin
+      matcher.matches?(proc)
+    rescue RuntimeError
+      expect(matcher.failure_message).to eq(
+        ['Expected RuntimeError(cause: #<RuntimeError: bar>)', 'but got: RuntimeError(cause: nil)']
+      )
+    end
+
+    matcher = RaiseErrorMatcher.new(RuntimeError, "foo", cause: cause)
+
+    begin
+      matcher.matches?(proc)
+    rescue RuntimeError
+      expect(matcher.failure_message).to eq(
+        ['Expected RuntimeError("foo", cause: #<RuntimeError: bar>)', 'but got: RuntimeError("foo", cause: nil)']
+      )
+    end
   end
 end

@@ -23,9 +23,9 @@ describe :io_buffer_or, shared: true do
 
   it "raises TypeError if mask is not an IO::Buffer" do
     IO::Buffer.for(+"12345") do |buffer|
-      -> { buffer.send(@method, "\xF8\x8F") }.should raise_error(TypeError, "wrong argument type String (expected IO::Buffer)")
-      -> { buffer.send(@method, 0xF8) }.should raise_error(TypeError, "wrong argument type Integer (expected IO::Buffer)")
-      -> { buffer.send(@method, nil) }.should raise_error(TypeError, "wrong argument type nil (expected IO::Buffer)")
+      -> { buffer.send(@method, "\xF8\x8F") }.should.raise(TypeError, "wrong argument type String (expected IO::Buffer)")
+      -> { buffer.send(@method, 0xF8) }.should.raise(TypeError, "wrong argument type Integer (expected IO::Buffer)")
+      -> { buffer.send(@method, nil) }.should.raise(TypeError, "wrong argument type nil (expected IO::Buffer)")
     end
   end
 end

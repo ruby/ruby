@@ -19,8 +19,8 @@ describe "Array#pack with format 'A'" do
   end
 
   it "will not implicitly convert a number to a string" do
-    -> { [0].pack('A') }.should raise_error(TypeError)
-    -> { [0].pack('a') }.should raise_error(TypeError)
+    -> { [0].pack('A') }.should.raise(TypeError)
+    -> { [0].pack('a') }.should.raise(TypeError)
   end
 
   it "adds all the bytes to the output when passed the '*' modifier" do

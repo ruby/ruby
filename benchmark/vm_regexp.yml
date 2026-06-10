@@ -3,6 +3,12 @@ prelude: |
 benchmark:
   vm_regexp: |
     /hoge/ =~ str
+  vm_regexp_alternating: |
+    /hoge/ =~ str
+    /huge/ =~ str
   vm_regexp_invert: |
     str =~ /hoge/
+  vm_regexp_invert_alternating: |
+    str =~ /hoge/
+    str =~ /huge/
 loop_count: 6000000

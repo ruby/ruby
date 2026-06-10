@@ -4,7 +4,7 @@ require_relative 'shared/sprintf'
 
 describe "Kernel#printf" do
   it "is a private method" do
-    Kernel.should have_private_instance_method(:printf)
+    Kernel.private_instance_methods(false).should.include?(:printf)
   end
 end
 

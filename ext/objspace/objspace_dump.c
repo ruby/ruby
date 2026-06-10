@@ -573,7 +573,7 @@ dump_object(VALUE obj, struct dump_config *dc)
         break;
 
       case T_DATA:
-        if (RTYPEDDATA_P(obj)) {
+        {
             const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
             dump_append(dc, ", \"struct\":\"");
             dump_append(dc, type->wrap_struct_name);
@@ -598,8 +598,8 @@ dump_object(VALUE obj, struct dump_config *dc)
 
         dump_append(dc, ", \"ivars\":");
         dump_append_lu(dc, ROBJECT_FIELDS_COUNT(obj));
-        if (rb_shape_obj_too_complex_p(obj)) {
-            dump_append(dc, ", \"too_complex_shape\":true");
+        if (rb_obj_shape_complex_p(obj)) {
+            dump_append(dc, ", \"complex_shape\":true");
         }
         break;
 

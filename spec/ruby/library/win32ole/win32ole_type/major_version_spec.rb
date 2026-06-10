@@ -12,7 +12,7 @@ platform_is :windows do
     end
 
     it "returns an Integer" do
-      @ole_type.major_version.should be_kind_of Integer
+      @ole_type.major_version.should.is_a? Integer
     end
 
   end

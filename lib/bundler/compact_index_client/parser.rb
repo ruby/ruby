@@ -71,7 +71,10 @@ module Bundler
       # This method gets called at least once for every gem when parsing versions.
       def parse_version_checksum(line, checksums)
         return unless (name_end = line.index(" ")) # Artifactory bug causes blank lines in artifactor index files
-        return unless (checksum_start = line.index(" ", name_end + 1) + 1)
+        checksum_start = line.index(" ", name_end + 1)
+        return unless checksum_start
+        checksum_start += 1
+
         checksum_end = line.size - checksum_start
 
         line.freeze # allows slicing into the string to not allocate a copy of the line

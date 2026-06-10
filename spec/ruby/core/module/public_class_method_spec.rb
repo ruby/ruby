@@ -18,7 +18,7 @@ describe "Module#public_class_method" do
   end
 
   it "makes an existing class method public" do
-    -> { ModuleSpecs::Parent.public_method_1 }.should raise_error(NoMethodError)
+    -> { ModuleSpecs::Parent.public_method_1 }.should.raise(NoMethodError)
     ModuleSpecs::Parent.public_class_method :public_method_1
     ModuleSpecs::Parent.public_method_1.should == nil
 
@@ -29,7 +29,7 @@ describe "Module#public_class_method" do
 
   it "makes an existing class method public up the inheritance tree" do
     ModuleSpecs::Child.private_class_method :public_method_1
-    -> { ModuleSpecs::Child.public_method_1 }.should raise_error(NoMethodError)
+    -> { ModuleSpecs::Child.public_method_1 }.should.raise(NoMethodError)
     ModuleSpecs::Child.public_class_method :public_method_1
 
     ModuleSpecs::Child.public_method_1.should == nil
@@ -37,8 +37,8 @@ describe "Module#public_class_method" do
   end
 
   it "accepts more than one method at a time" do
-    -> { ModuleSpecs::Parent.public_method_1 }.should raise_error(NameError)
-    -> { ModuleSpecs::Parent.public_method_2 }.should raise_error(NameError)
+    -> { ModuleSpecs::Parent.public_method_1 }.should.raise(NameError)
+    -> { ModuleSpecs::Parent.public_method_2 }.should.raise(NameError)
 
     ModuleSpecs::Child.public_class_method :public_method_1, :public_method_2
 
@@ -49,7 +49,7 @@ describe "Module#public_class_method" do
   it "raises a NameError if class method doesn't exist" do
     -> do
       ModuleSpecs.public_class_method :no_method_here
-    end.should raise_error(NameError)
+    end.should.raise(NameError)
   end
 
   it "makes a class method public" do
@@ -66,7 +66,7 @@ describe "Module#public_class_method" do
       Class.new do
         public_class_method :foo
       end
-    end.should raise_error(NameError)
+    end.should.raise(NameError)
   end
 
   it "raises a NameError when the given name is an instance method" do
@@ -75,7 +75,7 @@ describe "Module#public_class_method" do
         def foo() "foo" end
         public_class_method :foo
       end
-    end.should raise_error(NameError)
+    end.should.raise(NameError)
   end
 
   context "when single argument is passed and is an array" do

@@ -11,7 +11,7 @@ describe :string_encode, shared: true do
     it "transcodes a 7-bit String despite no generic converting being available" do
       -> do
         Encoding::Converter.new Encoding::Emacs_Mule, Encoding::BINARY
-      end.should raise_error(Encoding::ConverterNotFoundError)
+      end.should.raise(Encoding::ConverterNotFoundError)
 
       Encoding.default_internal = Encoding::Emacs_Mule
       str = "\x79".force_encoding Encoding::BINARY
@@ -22,7 +22,7 @@ describe :string_encode, shared: true do
     it "raises an Encoding::ConverterNotFoundError when no conversion is possible" do
       Encoding.default_internal = Encoding::Emacs_Mule
       str = [0x80].pack('C').force_encoding Encoding::BINARY
-      -> { str.send(@method) }.should raise_error(Encoding::ConverterNotFoundError)
+      -> { str.send(@method) }.should.raise(Encoding::ConverterNotFoundError)
     end
   end
 
@@ -54,7 +54,7 @@ describe :string_encode, shared: true do
     it "transcodes a 7-bit String despite no generic converting being available" do
       -> do
         Encoding::Converter.new Encoding::Emacs_Mule, Encoding::BINARY
-      end.should raise_error(Encoding::ConverterNotFoundError)
+      end.should.raise(Encoding::ConverterNotFoundError)
 
       str = "\x79".force_encoding Encoding::BINARY
       str.send(@method, Encoding::Emacs_Mule).should == "y".force_encoding(Encoding::BINARY)
@@ -64,13 +64,13 @@ describe :string_encode, shared: true do
       str = [0x80].pack('C').force_encoding Encoding::BINARY
       -> do
         str.send(@method, Encoding::Emacs_Mule)
-      end.should raise_error(Encoding::ConverterNotFoundError)
+      end.should.raise(Encoding::ConverterNotFoundError)
     end
 
     it "raises an Encoding::ConverterNotFoundError for an invalid encoding" do
       -> do
         "abc".send(@method, "xyz")
-      end.should raise_error(Encoding::ConverterNotFoundError)
+      end.should.raise(Encoding::ConverterNotFoundError)
     end
 
     it "raises an Encoding::UndefinedConversionError when a character cannot be represented in the destination encoding" do
@@ -78,7 +78,7 @@ describe :string_encode, shared: true do
       str = "test\u0100".force_encoding('utf-8')
       -> {
         str.send(@method, Encoding::Windows_1252)
-      }.should raise_error(Encoding::UndefinedConversionError)
+      }.should.raise(Encoding::UndefinedConversionError)
     end
   end
 
@@ -107,7 +107,7 @@ describe :string_encode, shared: true do
       str = [0x80].pack('C').force_encoding Encoding::BINARY
       -> do
         str.send(@method, invalid: :replace, undef: :replace)
-      end.should raise_error(Encoding::ConverterNotFoundError)
+      end.should.raise(Encoding::ConverterNotFoundError)
     end
 
     it "replaces invalid characters when replacing Emacs-Mule encoded strings" do
@@ -155,7 +155,7 @@ describe :string_encode, shared: true do
       str = "test\u0100".force_encoding('utf-8')
       -> {
         str.send(@method, Encoding::Windows_1252, invalid: :replace, replace: "")
-      }.should raise_error(Encoding::UndefinedConversionError)
+      }.should.raise(Encoding::UndefinedConversionError)
     end
 
     it "calls #to_hash to convert the options object" do
@@ -229,19 +229,19 @@ describe :string_encode, shared: true do
         obj.should_not_receive(:to_s)
         -> {
           "B\ufffd".encode(Encoding::US_ASCII, fallback: { "\ufffd" => obj })
-        }.should raise_error(TypeError, "no implicit conversion of Object into String")
+        }.should.raise(TypeError, "no implicit conversion of Object into String")
       end
 
       it "raises an error if the key is not present in the hash" do
         -> {
           "B\ufffd".encode(Encoding::US_ASCII, fallback: { "foo" => "bar" })
-        }.should raise_error(Encoding::UndefinedConversionError, "U+FFFD from UTF-8 to US-ASCII")
+        }.should.raise(Encoding::UndefinedConversionError, "U+FFFD from UTF-8 to US-ASCII")
       end
 
       it "raises an error if the value is itself invalid" do
         -> {
           "B\ufffd".encode(Encoding::US_ASCII, fallback: { "\ufffd" => "\uffee" })
-        }.should raise_error(ArgumentError, "too big fallback string")
+        }.should.raise(ArgumentError, "too big fallback string")
       end
 
       it "uses the hash's default value if set" do
@@ -294,7 +294,7 @@ describe :string_encode, shared: true do
       it "raises an error" do
         -> {
           "B\ufffd".encode(Encoding::US_ASCII, fallback: @non_hash_like)
-        }.should raise_error(Encoding::UndefinedConversionError, "U+FFFD from UTF-8 to US-ASCII")
+        }.should.raise(Encoding::UndefinedConversionError, "U+FFFD from UTF-8 to US-ASCII")
       end
     end
 
@@ -316,13 +316,13 @@ describe :string_encode, shared: true do
         obj.should_not_receive(:to_s)
         -> {
           "B\ufffd".encode(Encoding::US_ASCII, fallback: proc { |c| obj })
-        }.should raise_error(TypeError, "no implicit conversion of Object into String")
+        }.should.raise(TypeError, "no implicit conversion of Object into String")
       end
 
       it "raises an error if the returned value is itself invalid" do
         -> {
           "B\ufffd".encode(Encoding::US_ASCII, fallback: -> c { "\uffee" })
-        }.should raise_error(ArgumentError, "too big fallback string")
+        }.should.raise(ArgumentError, "too big fallback string")
       end
     end
 
@@ -344,13 +344,13 @@ describe :string_encode, shared: true do
         obj.should_not_receive(:to_s)
         -> {
           "B\ufffd".encode(Encoding::US_ASCII, fallback: -> c { obj })
-        }.should raise_error(TypeError, "no implicit conversion of Object into String")
+        }.should.raise(TypeError, "no implicit conversion of Object into String")
       end
 
       it "raises an error if the returned value is itself invalid" do
         -> {
           "B\ufffd".encode(Encoding::US_ASCII, fallback: -> c { "\uffee" })
-        }.should raise_error(ArgumentError, "too big fallback string")
+        }.should.raise(ArgumentError, "too big fallback string")
       end
     end
 
@@ -383,13 +383,13 @@ describe :string_encode, shared: true do
       it "does not call to_s on the returned value" do
         -> {
           "B\ufffd".encode(Encoding::US_ASCII, fallback: method(:replace_to_s))
-        }.should raise_error(TypeError, "no implicit conversion of Object into String")
+        }.should.raise(TypeError, "no implicit conversion of Object into String")
       end
 
       it "raises an error if the returned value is itself invalid" do
         -> {
           "B\ufffd".encode(Encoding::US_ASCII, fallback: method(:replace_bad))
-        }.should raise_error(ArgumentError, "too big fallback string")
+        }.should.raise(ArgumentError, "too big fallback string")
       end
     end
   end
@@ -443,6 +443,6 @@ describe :string_encode, shared: true do
   end
 
   it "raises ArgumentError if the value of the :xml option is not :text or :attr" do
-    -> { ''.send(@method, "UTF-8", xml: :other) }.should raise_error(ArgumentError)
+    -> { ''.send(@method, "UTF-8", xml: :other) }.should.raise(ArgumentError)
   end
 end

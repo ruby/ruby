@@ -19,10 +19,12 @@ end
 
 module MSpecMatchers
   private def be_positive_infinity
+    MSpec.deprecate __method__, '.should.infinite? == 1'
     InfinityMatcher.new(1)
   end
 
   private def be_negative_infinity
+    MSpec.deprecate __method__, '.should.infinite? == -1'
     InfinityMatcher.new(-1)
   end
 end

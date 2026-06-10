@@ -453,6 +453,11 @@ EOM
           directories << mkdir
         end
 
+        real_mkdir = File.realpath(mkdir)
+        unless real_mkdir == destination_dir || normalize_path(real_mkdir).start_with?(normalize_path(destination_dir + "/"))
+          raise Gem::Package::PathError.new(real_mkdir, destination_dir)
+        end
+
         if entry.file?
           File.open(destination, "wb") do |out|
             copy_stream(tar.io, out, entry.size)
@@ -738,9 +743,11 @@ EOM
   if Gem.win_platform?
     # Create a symlink and fallback to copy the file or directory on Windows,
     # where symlink creation needs special privileges in form of the Developer Mode.
+    # JRuby on Windows raises TypeError from the wincode path-conversion helper
+    # when it cannot create the symlink, so fall back to copy in that case too.
     def create_symlink(old_name, new_name)
       File.symlink(old_name, new_name)
-    rescue Errno::EACCES
+    rescue Errno::EACCES, TypeError
       from = File.expand_path(old_name, File.dirname(new_name))
       FileUtils.cp_r(from, new_name)
     end
