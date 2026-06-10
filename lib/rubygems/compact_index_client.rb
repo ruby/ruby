@@ -30,6 +30,7 @@ class Gem::CompactIndexClient
 
   require_relative "compact_index_client/cache"
   require_relative "compact_index_client/cache_file"
+  require_relative "compact_index_client/http_fetcher"
   require_relative "compact_index_client/parser"
   require_relative "compact_index_client/updater"
 
