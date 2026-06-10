@@ -701,7 +701,6 @@ class Rational_Test < Test::Unit::TestCase
     assert_equal('-1/2', Rational(-1,2).to_s)
     assert_equal('1/2', Rational(-1,-2).to_s)
     assert_equal('-1/2', Rational(1,-2).to_s)
-    assert_equal('1/2', Rational(-1,-2).to_s)
   end
 
   def test_inspect
