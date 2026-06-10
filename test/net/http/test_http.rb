@@ -944,6 +944,9 @@ __EOM__
     assert_raise(ArgumentError) do
       build.call([['f', 'v', {filename: 'a', content_type: "text/plain\r\nX-Injected: 1"}]])
     end
+    assert_nothing_raised do
+      build.call([['f', 'v', {filename: 'a', content_type: :"text/plain"}]])
+    end
   end
 end
 

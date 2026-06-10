@@ -349,7 +349,7 @@ class Net::HTTPGenericRequest
       buf << "--#{boundary}\r\n"
       if filename
         filename = quote_string(filename, charset)
-        type = h[:content_type] || 'application/octet-stream'
+        type = (h[:content_type] || 'application/octet-stream').to_s
         if /[\r\n]/.match?(type)
           raise ArgumentError, "field content type cannot include CR/LF"
         end
