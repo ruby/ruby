@@ -11094,6 +11094,7 @@ parser_lex(pm_parser_t *parser) {
                         if (!parser->encoding->alnum_char(parser->current.end, parser->end - parser->current.end)) {
                             if (*parser->current.end >= 0x80) {
                                 pm_parser_err_current(parser, PM_ERR_INVALID_PERCENT);
+                                goto lex_next_token;
                             }
 
                             const uint8_t delimiter = pm_lex_percent_delimiter(parser);

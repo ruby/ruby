@@ -274,6 +274,14 @@ pub type YarvInsnIdx = usize;
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct ShapeId(pub u32);
 
+ #[derive(PartialEq, Eq)]
+pub enum ShapeLayout {
+    RObject,
+    RClass,
+    RData,
+    Other,
+}
+
 pub const INVALID_SHAPE_ID: ShapeId = ShapeId(rb_invalid_shape_id);
 
 impl ShapeId {
@@ -287,6 +295,16 @@ impl ShapeId {
 
     pub fn is_frozen(self) -> bool {
         (self.0 & SHAPE_ID_FL_FROZEN) != 0
+    }
+
+    pub fn layout(self) -> ShapeLayout {
+        match self.0 & SHAPE_ID_LAYOUT_MASK {
+            SHAPE_ID_LAYOUT_ROBJECT => ShapeLayout::RObject,
+            SHAPE_ID_LAYOUT_RCLASS => ShapeLayout::RClass,
+            SHAPE_ID_LAYOUT_RDATA => ShapeLayout::RData,
+            SHAPE_ID_LAYOUT_OTHER => ShapeLayout::Other,
+            layout => unreachable!("unknown shape layout bits: {layout:#x}"),
+        }
     }
 }
 

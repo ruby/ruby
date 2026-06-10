@@ -30,6 +30,19 @@ class HTTPHeaderTest < Test::Unit::TestCase
     assert_raise(ArgumentError){ @c.initialize_http_header("foo"=>"a\rb") }
   end
 
+  def test_invalid_field_name
+    assert_raise(ArgumentError){ @c.initialize_http_header("foo\nbar"=>"abc") }
+    assert_raise(ArgumentError){ @c.initialize_http_header("foo\rbar"=>"abc") }
+    assert_raise(ArgumentError){ @c.initialize_http_header("foo:bar"=>"abc") }
+    assert_raise(ArgumentError){ @c.initialize_http_header("foo\x00bar"=>"abc") }
+    assert_raise(ArgumentError){ @c['foo'.b << 0x0a << 'bar'] = 'abc' }
+    assert_raise(ArgumentError){ @c["foo\rbar"] = 'abc' }
+    assert_raise(ArgumentError){ @c["foo:bar"] = 'abc' }
+    assert_raise(ArgumentError){ @c["foo\x7fbar"] = 'abc' }
+    assert_raise(ArgumentError){ @c.add_field "foo\nbar", 'abc' }
+    assert_raise(ArgumentError){ @c.add_field "foo\nbar", ['abc'] }
+  end
+
   def test_initialize_with_broken_coderange
     error = RUBY_VERSION >= "3.2" ? Encoding::CompatibilityError : ArgumentError
     assert_raise(error){ @c.initialize_http_header("foo"=>"a\xff") }
@@ -74,6 +87,24 @@ class HTTPHeaderTest < Test::Unit::TestCase
 
     assert_raise(ArgumentError){ @c['foo'] = "a\nb" }
     assert_raise(ArgumentError){ @c['foo'] = ["a\nb"] }
+  end
+
+  def test_set_field_too_long_key
+    assert_raise(ArgumentError){ @c['x' * (Net::HTTPHeader::MAX_KEY_LENGTH + 1)] = 'a' }
+    assert_nothing_raised{ @c['x' * Net::HTTPHeader::MAX_KEY_LENGTH] = 'a' }
+  end
+
+  def test_set_field_too_long_value
+    long = 'a' * (Net::HTTPHeader::MAX_FIELD_LENGTH + 1)
+    assert_raise(ArgumentError){ @c['foo'] = long }
+    assert_raise(ArgumentError){ @c['foo'] = [long] }
+    assert_raise(ArgumentError){ @c.add_field 'foo', long }
+
+    # the error message names the key and the limit on every path
+    @c['foo'] = 'ok'
+    e = assert_raise(ArgumentError){ @c.add_field 'foo', long }
+    assert_match(/foo/, e.message)
+    assert_match(/#{Net::HTTPHeader::MAX_FIELD_LENGTH}/, e.message)
   end
 
   def test_AREF
@@ -438,6 +469,11 @@ class HTTPHeaderTest < Test::Unit::TestCase
   end
 
   def test_set_content_type
+    @c.set_content_type 'text/html', {'charset' => 'utf-8'}
+    assert_equal 'text/html; charset=utf-8', @c['content-type']
+    assert_raise(ArgumentError){ @c.set_content_type "text/html\r\nFoo: bar" }
+    assert_raise(ArgumentError){ @c.set_content_type 'text/html', {'charset' => "x\r\nFoo: bar"} }
+    assert_raise(ArgumentError){ @c.set_content_type 'text/html', {"x\nFoo: bar" => 'utf-8'} }
   end
 
   def test_form_data=
