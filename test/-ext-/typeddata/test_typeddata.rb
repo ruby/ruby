@@ -26,4 +26,13 @@ class Test_TypedData < Test::Unit::TestCase
       Bug::TypedData.make(n)
     end;
   end
+
+  def test_dynamic_data_type_free
+    assert_ruby_status([], "#{<<-"begin;"}\n#{<<-"end;"}")
+    require "-test-/typeddata"
+    begin;
+      100.times { Bug::TypedData.dynamic_type }
+      GC.start
+    end;
+  end
 end
