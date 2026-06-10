@@ -933,13 +933,14 @@ __EOM__
   end
 
   def test_set_form_multipart_crlf_injection
-    build = ->(data) {
+    build = ->(data, opt = {}) {
       req = Net::HTTP::Post.new('/')
       req.set_form(data, 'multipart/form-data')
       out = +''
-      req.send(:encode_multipart_form_data, out, req.instance_variable_get(:@body_data), {})
+      req.send(:encode_multipart_form_data, out, req.instance_variable_get(:@body_data), opt)
     }
     assert_raise(ArgumentError) { build.call([["foo\r\nX-Injected: 1", 'v']]) }
+    assert_raise(ArgumentError) { build.call([['f', 'v']], boundary: "abc\r\nX-Injected: 1") }
     assert_raise(ArgumentError) { build.call([['f', 'v', {filename: "a\r\nX-Injected: 1"}]]) }
     assert_raise(ArgumentError) do
       build.call([['f', 'v', {filename: 'a', content_type: "text/plain\r\nX-Injected: 1"}]])

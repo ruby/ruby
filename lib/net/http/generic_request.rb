@@ -336,6 +336,9 @@ class Net::HTTPGenericRequest
     boundary = opt[:boundary]
     require 'securerandom' unless defined?(SecureRandom)
     boundary ||= SecureRandom.urlsafe_base64(40)
+    if /[\r\n]/.match?(boundary.to_s)
+      raise ArgumentError, "multipart boundary cannot include CR/LF"
+    end
     chunked_p = chunked?
 
     buf = +''
