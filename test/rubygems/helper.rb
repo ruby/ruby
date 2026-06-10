@@ -1200,7 +1200,12 @@ Also, a list:
       @fetcher.data["#{@gem_repo}info/#{name}"] = util_compact_index_response(info_body)
     end
 
-    @fetcher.data["#{@gem_repo}versions"] = util_compact_index_response(versions_body)
+    versions_response = util_compact_index_response(versions_body)
+    # Gem::Source#dependency_resolver_set probes this URL via fetch_path and
+    # builds the info URL from the response uri
+    versions_response.uri = Gem::URI("#{@gem_repo}versions")
+
+    @fetcher.data["#{@gem_repo}versions"] = versions_response
     @fetcher.data["#{@gem_repo}names"] = util_compact_index_response(names_body)
 
     nil
