@@ -157,6 +157,16 @@ class TestGemCompactIndexClientUpdater < Gem::TestCase
     assert_equal "weak1", @etag_path.read
   end
 
+  def test_update_ignores_malformed_digest_header
+    response = FakeResponse.new("a 1.0.0\n", "Repr-Digest" => "sha-256")
+    fetcher = FakeFetcher.new(response)
+    updater = Gem::CompactIndexClient::Updater.new(fetcher)
+
+    updater.update("versions", @local_path, @etag_path)
+
+    assert_equal "a 1.0.0\n", @local_path.read
+  end
+
   def test_update_ignores_unsupported_digest_algorithms
     response = FakeResponse.new("a 1.0.0\n",
       "Repr-Digest" => "md5=:#{Digest::MD5.base64digest("bogus")}:")

@@ -86,6 +86,7 @@ class Gem::CompactIndexClient
         algorithm.strip!
         algorithm.downcase!
         next unless SUPPORTED_DIGESTS.key?(algorithm)
+        next unless value
         next unless value = byte_sequence(value)
         digests[algorithm] = value
       end
