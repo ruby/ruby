@@ -193,12 +193,9 @@ module Net::HTTPHeader
         warn "net/http: nil HTTP header: #{key}", uplevel: 3 if $VERBOSE
       else
         value = value.strip # raise error for invalid byte sequences
-        if key.to_s.bytesize > MAX_KEY_LENGTH
-          raise ArgumentError, "too long (#{key.bytesize} bytes) header: #{key[0, 30].inspect}..."
-        end
         validate_field_name(key)
         if value.to_s.bytesize > MAX_FIELD_LENGTH
-          raise ArgumentError, "header #{key} has too long field value: #{value.bytesize}"
+          raise ArgumentError, "header #{key} has too long field value: #{value.bytesize} bytes (limit #{MAX_FIELD_LENGTH})"
         end
         if value.count("\r\n") > 0
           raise ArgumentError, "header #{key} has field value #{value.inspect}, this cannot include CR/LF"
@@ -264,7 +261,7 @@ module Net::HTTPHeader
   def add_field(key, val)
     stringified_downcased_key = key.downcase.to_s
     if @header.key?(stringified_downcased_key)
-      append_field_value(@header[stringified_downcased_key], val)
+      append_field_value(@header[stringified_downcased_key], val, key)
     else
       set_field(key, val)
     end
@@ -272,6 +269,9 @@ module Net::HTTPHeader
 
   # :stopdoc:
   private def validate_field_name(key)
+    if key.to_s.bytesize > MAX_KEY_LENGTH
+      raise ArgumentError, "too long (#{key.to_s.bytesize} bytes) header: #{key.to_s[0, 30].inspect}..."
+    end
     if /[\x00-\x1f\x7f:]/n.match?(key.to_s.b)
       raise ArgumentError, "header field name cannot include control characters or colon: #{key.to_s[0, 30].inspect}"
     end
@@ -282,10 +282,13 @@ module Net::HTTPHeader
     case val
     when Enumerable
       ary = []
-      append_field_value(ary, val)
+      append_field_value(ary, val, key)
       @header[key.downcase.to_s] = ary
     else
       val = val.to_s # for compatibility use to_s instead of to_str
+      if val.bytesize > MAX_FIELD_LENGTH
+        raise ArgumentError, "header #{key} has too long field value: #{val.bytesize} bytes (limit #{MAX_FIELD_LENGTH})"
+      end
       if val.b.count("\r\n") > 0
         raise ArgumentError, 'header field value cannot include CR/LF'
       end
@@ -293,12 +296,15 @@ module Net::HTTPHeader
     end
   end
 
-  private def append_field_value(ary, val)
+  private def append_field_value(ary, val, key)
     case val
     when Enumerable
-      val.each{|x| append_field_value(ary, x)}
+      val.each{|x| append_field_value(ary, x, key)}
     else
       val = val.to_s
+      if val.bytesize > MAX_FIELD_LENGTH
+        raise ArgumentError, "header #{key} has too long field value: #{val.bytesize} bytes (limit #{MAX_FIELD_LENGTH})"
+      end
       if /[\r\n]/n.match?(val.b)
         raise ArgumentError, 'header field value cannot include CR/LF'
       end
