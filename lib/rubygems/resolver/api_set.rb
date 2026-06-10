@@ -122,43 +122,6 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
   private
 
   def client # :nodoc:
-    @client ||= begin
-      # Loaded lazily because resolver.rb requires this file at load time
-      # and the client transitively references resolver constants.
-      require_relative "../compact_index_client"
-
-      Gem::CompactIndexClient.new(cache_dir, Gem::CompactIndexClient::HTTPFetcher.new(@uri))
-    end
-  end
-
-  ##
-  # The compact index cache directory for this source. Falls back to a
-  # temporary directory when the user's cache directory cannot safely be
-  # written to.
-
-  def cache_dir
-    if update_cache?
-      # Correct for windows paths
-      escaped_path = @uri.path.sub(%r{^/([a-z]):/}i, '/\\1-/')
-
-      File.join Gem.spec_cache_dir, "compact_index",
-        "#{@uri.host}%#{@uri.port}", *escaped_path.split("/").reject(&:empty?)
-    else
-      require "tmpdir"
-      Dir.mktmpdir "gem_compact_index"
-    end
-  end
-
-  ##
-  # Returns true when it is possible and safe to update the cache directory.
-
-  def update_cache?
-    return @update_cache unless @update_cache.nil?
-    @update_cache =
-      begin
-        File.stat(Gem.user_home).uid == Process.uid
-      rescue Errno::ENOENT
-        false
-      end
+    @client ||= @source.compact_index_client
   end
 end

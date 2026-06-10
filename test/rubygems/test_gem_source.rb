@@ -132,6 +132,60 @@ class TestGemSource < Gem::TestCase
     assert File.exist?(cache_file)
   end
 
+  def test_load_specs_compact_index
+    a1 = util_spec "a", "1"
+    a2 = util_spec "a", "2"
+    a3_pre = util_spec "a", "3.a"
+    b2_java = util_spec "b", "2" do |s|
+      s.platform = "java"
+    end
+
+    util_setup_compact_index a1, a2, a3_pre, b2_java
+
+    released = @source.load_specs(:released).map(&:full_name)
+    assert_equal %w[a-1 a-2 b-2-java], released
+
+    latest = @source.load_specs(:latest).map(&:full_name)
+    assert_equal %w[a-2 b-2-java], latest
+
+    prerelease = @source.load_specs(:prerelease).map(&:full_name)
+    assert_equal %w[a-3.a], prerelease
+
+    cache_dir = File.join Gem.spec_cache_dir, "compact_index", "gems.example.com%80"
+    assert File.exist?(File.join(cache_dir, "versions")), "versions cache file does not exist"
+  end
+
+  def test_load_specs_compact_index_latest_per_platform
+    a1 = util_spec "a", "1"
+    a2_java = util_spec "a", "2" do |s|
+      s.platform = "java"
+    end
+
+    util_setup_compact_index a1, a2_java
+
+    latest = @source.load_specs(:latest).map(&:full_name)
+    assert_equal %w[a-1 a-2-java], latest
+  end
+
+  def test_load_specs_compact_index_fetched_once
+    a1 = util_spec "a", "1"
+
+    util_setup_compact_index a1
+
+    @source.load_specs :released
+    @source.load_specs :prerelease
+
+    versions_requests = @fetcher.requests.count {|req| req.path.end_with?("/versions") }
+    assert_equal 1, versions_requests
+  end
+
+  def test_load_specs_falls_back_to_marshal_index
+    # no compact index data set up, only the Marshal indexes from setup
+    released = @source.load_specs(:released).map(&:full_name)
+
+    assert_equal %W[a-2 a-1 b-2], released
+  end
+
   def test_load_specs_cached
     latest_specs = @source.load_specs :latest
 
