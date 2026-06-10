@@ -45,7 +45,7 @@ class TestGemCompactIndexClientCache < Gem::TestCase
 
   def test_reads_cached_files_without_fetcher
     cache = Gem::CompactIndexClient::Cache.new(@dir)
-    @dir.join("versions").write "a 1.0.0\n"
+    @dir.join("versions").binwrite "a 1.0.0\n"
 
     assert_equal "a 1.0.0\n", cache.versions
     assert_nil cache.names
@@ -75,7 +75,7 @@ class TestGemCompactIndexClientCache < Gem::TestCase
   def test_info_skips_fetch_when_checksum_matches
     fetcher = FakeFetcher.new("a 1.0.0\n")
     cache = Gem::CompactIndexClient::Cache.new(@dir, fetcher)
-    @dir.join("info", "a").write "a 1.0.0\n"
+    @dir.join("info", "a").binwrite "a 1.0.0\n"
 
     content = cache.info("a", Digest::MD5.hexdigest("a 1.0.0\n"))
 
@@ -86,7 +86,7 @@ class TestGemCompactIndexClientCache < Gem::TestCase
   def test_info_fetches_when_checksum_differs
     fetcher = FakeFetcher.new("a 1.0.0\na 1.1.0\n")
     cache = Gem::CompactIndexClient::Cache.new(@dir, fetcher)
-    @dir.join("info", "a").write "a 1.0.0\n"
+    @dir.join("info", "a").binwrite "a 1.0.0\n"
 
     content = cache.info("a", Digest::MD5.hexdigest("a 1.0.0\na 1.1.0\n"))
 
@@ -98,7 +98,7 @@ class TestGemCompactIndexClientCache < Gem::TestCase
   def test_info_without_checksum_reads_cached_file
     fetcher = FakeFetcher.new("a 1.0.0\n")
     cache = Gem::CompactIndexClient::Cache.new(@dir, fetcher)
-    @dir.join("info", "a").write "a 1.0.0\n"
+    @dir.join("info", "a").binwrite "a 1.0.0\n"
 
     assert_equal "a 1.0.0\n", cache.info("a")
     assert_empty fetcher.requests

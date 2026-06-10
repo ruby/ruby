@@ -24,7 +24,7 @@ class TestGemCompactIndexClientCacheFile < Gem::TestCase
   end
 
   def test_write_replaces_original_file
-    @path.write "old"
+    @path.binwrite "old"
 
     CacheFile.write(@path, "new")
 
@@ -50,7 +50,7 @@ class TestGemCompactIndexClientCacheFile < Gem::TestCase
   end
 
   def test_write_with_mismatched_digests
-    @path.write "old"
+    @path.binwrite "old"
 
     assert_raise CacheFile::DigestMismatchError do
       CacheFile.write(@path, "data", sha256("other data"))
@@ -60,7 +60,7 @@ class TestGemCompactIndexClientCacheFile < Gem::TestCase
   end
 
   def test_append_without_digests_returns_false
-    @path.write "abc"
+    @path.binwrite "abc"
 
     appended = nil
     CacheFile.new(@path) {|file| appended = file.append("def") }
@@ -70,7 +70,7 @@ class TestGemCompactIndexClientCacheFile < Gem::TestCase
   end
 
   def test_append_with_matching_digests
-    @path.write "abc"
+    @path.binwrite "abc"
 
     appended = nil
     CacheFile.copy(@path) do |file|
@@ -83,7 +83,7 @@ class TestGemCompactIndexClientCacheFile < Gem::TestCase
   end
 
   def test_append_with_mismatched_digests_keeps_original
-    @path.write "abc"
+    @path.binwrite "abc"
 
     appended = nil
     CacheFile.copy(@path) do |file|
@@ -125,7 +125,7 @@ class TestGemCompactIndexClientCacheFile < Gem::TestCase
   def test_write_preserves_permissions
     pend "chmod is unreliable on Windows" if Gem.win_platform?
 
-    @path.write "old"
+    @path.binwrite "old"
     @path.chmod 0o600
 
     CacheFile.write(@path, "new")

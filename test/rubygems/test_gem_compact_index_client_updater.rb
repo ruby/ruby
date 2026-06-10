@@ -73,8 +73,8 @@ class TestGemCompactIndexClientUpdater < Gem::TestCase
   end
 
   def test_update_sends_etag_and_keeps_file_on_not_modified
-    @local_path.write "a 1.0.0\n"
-    @etag_path.write "abc123"
+    @local_path.binwrite "a 1.0.0\n"
+    @etag_path.binwrite "abc123"
     fetcher = FakeFetcher.new(FakeNotModified.new)
     updater = Gem::CompactIndexClient::Updater.new(fetcher)
 
@@ -88,7 +88,7 @@ class TestGemCompactIndexClientUpdater < Gem::TestCase
   end
 
   def test_update_appends_ranged_response
-    @local_path.write "a 1.0.0\n"
+    @local_path.binwrite "a 1.0.0\n"
     body = "\na 1.1.0\n"
     response = FakePartialResponse.new(body,
       "ETag" => '"def456"',
@@ -106,7 +106,7 @@ class TestGemCompactIndexClientUpdater < Gem::TestCase
   end
 
   def test_update_replaces_file_when_server_ignores_range
-    @local_path.write "stale data"
+    @local_path.binwrite "stale data"
     response = FakeResponse.new("a 1.0.0\n",
       "ETag" => '"def456"',
       "Repr-Digest" => digest_header("a 1.0.0\n"))
@@ -119,7 +119,7 @@ class TestGemCompactIndexClientUpdater < Gem::TestCase
   end
 
   def test_update_retries_with_full_request_on_bad_ranged_response
-    @local_path.write "a 1.0.0\n"
+    @local_path.binwrite "a 1.0.0\n"
     bad_append = FakePartialResponse.new("\nb 1.0.0\n",
       "Repr-Digest" => digest_header("something else entirely"))
     full = FakeResponse.new("a 1.0.0\nb 1.0.0\n",
