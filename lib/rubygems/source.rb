@@ -306,15 +306,7 @@ class Gem::Source
   def new_dependency_resolver_set
     return Gem::Resolver::IndexSet.new self if uri.scheme == "file"
 
-    fetch_uri = if uri.host == "rubygems.org"
-      index_uri = uri.dup
-      index_uri.host = "index.rubygems.org"
-      index_uri
-    else
-      uri
-    end
-
-    bundler_api_uri = enforce_trailing_slash(fetch_uri) + "versions"
+    bundler_api_uri = enforce_trailing_slash(compact_index_uri) + "versions"
 
     begin
       fetcher = Gem::RemoteFetcher.fetcher
