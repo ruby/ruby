@@ -85,19 +85,25 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
   end
 
   ##
-  # Fetches a Gem::Specification for this APISpecification.
+  # A Gem::Specification stub built from the Compact Index data for this
+  # specification. The compact index carries everything needed to
+  # download and install the gem, so the Marshal gemspec is not fetched.
+  # Development dependencies are not included; see
+  # #fetch_development_dependencies.
 
   def spec # :nodoc:
-    @spec ||=
-      begin
-        tuple = Gem::NameTuple.new @name, @version, @platform
-        source.fetch_spec tuple
-      rescue Gem::RemoteFetcher::FetchError
-        raise if @original_platform == @platform
+    @spec ||= Gem::Specification.new do |s|
+      s.name     = @name
+      s.version  = @version
+      s.platform = @platform
+      s.original_platform = @original_platform
+      s.required_ruby_version = @required_ruby_version
+      s.required_rubygems_version = @required_rubygems_version
 
-        tuple = Gem::NameTuple.new @name, @version, @original_platform
-        source.fetch_spec tuple
+      @dependencies.each do |dependency|
+        s.add_runtime_dependency dependency.name, *dependency.requirement.as_list
       end
+    end
   end
 
   def source # :nodoc:
