@@ -89,6 +89,24 @@ class HTTPHeaderTest < Test::Unit::TestCase
     assert_raise(ArgumentError){ @c['foo'] = ["a\nb"] }
   end
 
+  def test_set_field_too_long_key
+    assert_raise(ArgumentError){ @c['x' * (Net::HTTPHeader::MAX_KEY_LENGTH + 1)] = 'a' }
+    assert_nothing_raised{ @c['x' * Net::HTTPHeader::MAX_KEY_LENGTH] = 'a' }
+  end
+
+  def test_set_field_too_long_value
+    long = 'a' * (Net::HTTPHeader::MAX_FIELD_LENGTH + 1)
+    assert_raise(ArgumentError){ @c['foo'] = long }
+    assert_raise(ArgumentError){ @c['foo'] = [long] }
+    assert_raise(ArgumentError){ @c.add_field 'foo', long }
+
+    # the error message names the key and the limit on every path
+    @c['foo'] = 'ok'
+    e = assert_raise(ArgumentError){ @c.add_field 'foo', long }
+    assert_match(/foo/, e.message)
+    assert_match(/#{Net::HTTPHeader::MAX_FIELD_LENGTH}/, e.message)
+  end
+
   def test_AREF
     @c['My-Header'] = 'test string'
     assert_equal 'test string', @c['my-header']
