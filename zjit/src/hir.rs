@@ -4394,31 +4394,6 @@ impl Function {
         })
     }
 
-    fn load_ivar_from_fields(&mut self, block: BlockId, recv: InsnId, is_embedded: bool, id: ID, ivar_index: attr_index_t) -> InsnId {
-        if is_embedded {
-            return self.load_ivar_embedded(block, recv, id, ivar_index);
-        } else {
-            return self.load_ivar_heap(block, recv, id, ivar_index);
-        }
-    }
-
-    /// This puts a guard that establishes the preconditon for [Self::load_ivar]
-    fn load_ivar_guard_type(&mut self, block: BlockId, recv: InsnId, recv_type: ProfiledType, state: InsnId) -> InsnId {
-        if recv_type.flags().is_t_class() {
-            // Check class first since `Class < Module`
-            self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::Class, state, recompile: None })
-        } else if recv_type.flags().is_t_module() {
-            self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::Module, state, recompile: None })
-        } else if recv_type.flags().is_t_data() {
-            self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::TData, state, recompile: None })
-        } else {
-            // HeapBasicObject is wider than T_OBJECT, but shapes for T_OBJECTs are in a pool of
-            // its own and are guaranteed to be different from shapes of any other T_* types. So
-            // the shape check that follows already covers checking for T_OBJECT.
-            self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::HeapBasicObject, state, recompile: None })
-        }
-    }
-
     fn load_ivar(&mut self, block: BlockId, self_val: InsnId, recv_type: ProfiledType, id: ID) -> InsnId {
         // Too-complex shapes use hash tables; rb_shape_get_iv_index doesn't support them.
         // Callers must filter these out before calling load_ivar.
@@ -4446,10 +4421,14 @@ impl Function {
                     offset,
                     return_type: types::RubyValue,
                 });
-                self.load_ivar_from_fields(block, fields_obj, recv_type.flags().is_fields_embedded(), id, ivar_index)
+                self.load_ivar_embedded(block, fields_obj, id, ivar_index)
             },
             ShapeLayout::RObject => {
-                self.load_ivar_from_fields(block, self_val, recv_type.flags().is_embedded(), id, ivar_index)
+                if recv_type.flags().is_embedded() {
+                    self.load_ivar_embedded(block, self_val, id, ivar_index)
+                } else {
+                    self.load_ivar_heap(block, self_val, id, ivar_index)
+                }
             },
             ShapeLayout::Other => {
                 // Non-T_OBJECT, non-class/module, non-typed-data: fall back to C call
@@ -4491,7 +4470,7 @@ impl Function {
                             // need to wrap it again here.
                             self.push_insn_id(block, insn_id); continue;
                         }
-                        let self_val = self.load_ivar_guard_type(block, self_val, recv_type, state);
+                        let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state, recompile: None });
                         let shape = self.load_shape(block, self_val);
                         self.guard_shape(block, shape, recv_type.shape(), state, Some(Recompile::ProfileSelf));
                         let replacement = self.load_ivar(block, self_val, recv_type, id);
@@ -4524,7 +4503,7 @@ impl Function {
                             // On the final version, keep the DefinedIvar fallback instead of another shape guard.
                             self.push_insn_id(block, insn_id); continue;
                         }
-                        let self_val = self.load_ivar_guard_type(block, self_val, recv_type, state);
+                        let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state, recompile: None });
                         let shape = self.load_shape(block, self_val);
                         self.guard_shape(block, shape, recv_type.shape(), state, Some(Recompile::ProfileSelf));
                         let mut ivar_index: attr_index_t = 0;
@@ -4602,7 +4581,7 @@ impl Function {
                             }
                             // Fall through to emitting the ivar write
                         }
-                        let self_val = self.load_ivar_guard_type(block, self_val, recv_type, state);
+                        let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state, recompile: None });
                         let shape = self.load_shape(block, self_val);
                         // TODO: attr_writer SetIvar has a null inline cache and may target a receiver
                         // operand other than CFP self. Support it with a reprofile strategy that

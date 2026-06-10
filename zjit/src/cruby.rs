@@ -629,17 +629,9 @@ impl VALUE {
         }
     }
 
-    pub fn class_fields_embedded_p(self) -> bool {
-        unsafe { rb_jit_class_fields_embedded_p(self) }
-    }
-
     pub fn data_p(self) -> bool {
         !self.special_const_p() &&
             self.builtin_type() == RUBY_T_DATA
-    }
-
-    pub fn data_fields_embedded_p(self) -> bool {
-        unsafe { rb_jit_data_fields_embedded_p(self) }
     }
 
     pub fn as_fixnum(self) -> i64 {
