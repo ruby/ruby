@@ -29,6 +29,9 @@ Note: We're only listing outstanding class updates.
 
     * `Array#pack` accepts new formats `R` and `r` for unsigned and signed
       LEB128 encoded integers. [[Feature #21785]]
+    * `Array#pack` accepts new formats `x!` and `@!` to align the current
+      offset to a byte boundary or to the ABI alignment of another
+      directive. [[Feature #22185]]
 
 * ENV
 
@@ -79,6 +82,9 @@ Note: We're only listing outstanding class updates.
     * `String#unpack` and `String#unpack1` accept a new format `^` that
       returns the current offset.  Useful when combined with variable
       width formats like LEB128. [[Feature #21796]]
+    * `String#unpack` and `String#unpack1` accept new formats `x!` and
+      `@!` to align the current offset to a byte boundary or to the ABI
+      alignment of another directive. [[Feature #22185]]
 
 * Symbol
 
