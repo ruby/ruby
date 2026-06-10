@@ -104,6 +104,15 @@ class TestGemCompactIndexClientCache < Gem::TestCase
     assert_empty fetcher.requests
   end
 
+  def test_fetch_info_fetches_without_checksum
+    fetcher = FakeFetcher.new("a 1.0.0\n")
+    cache = Gem::CompactIndexClient::Cache.new(@dir, fetcher)
+
+    assert_equal "a 1.0.0\n", cache.fetch_info("a")
+    assert_equal ["info/a"], fetcher.requests
+    assert_equal "a 1.0.0\n", @dir.join("info", "a").read
+  end
+
   def test_info_with_special_characters_uses_hashed_path
     fetcher = FakeFetcher.new("1.0.0\n")
     cache = Gem::CompactIndexClient::Cache.new(@dir, fetcher)

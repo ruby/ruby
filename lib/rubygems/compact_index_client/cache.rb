@@ -41,6 +41,12 @@ class Gem::CompactIndexClient
       end
     end
 
+    # Fetch a single gem's info file without consulting the versions
+    # index, refreshing the cached file with a conditional request.
+    def fetch_info(name)
+      fetch("info/#{name}", info_path(name), info_etag_path(name))
+    end
+
     def reset!
       @mutex.synchronize { @endpoints.clear }
     end

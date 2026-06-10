@@ -64,6 +64,15 @@ class Gem::CompactIndexClient
     @parser.info(name)
   end
 
+  # Fetches a single gem's info without consulting the versions index,
+  # using a conditional request to refresh the cached file. Useful when
+  # only a few gems are needed and the versions index download would
+  # dominate, as in gem install.
+  def fetch_info(name)
+    Gem::CompactIndexClient.debug { "fetch_info(#{name})" }
+    @parser.parse_info(@cache.fetch_info(name), name)
+  end
+
   def latest_version(name)
     Gem::CompactIndexClient.debug { "latest_version(#{name})" }
     @parser.info(name).map {|d| Gem::Version.new(d[INFO_VERSION]) }.max

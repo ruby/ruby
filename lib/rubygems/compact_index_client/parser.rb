@@ -40,7 +40,10 @@ class Gem::CompactIndexClient
     end
 
     def info(name)
-      data = @compact_index.info(name, info_checksums[name])
+      parse_info(@compact_index.info(name, info_checksums[name]), name)
+    end
+
+    def parse_info(data, name)
       lines(data).map {|line| gem_parser.parse(line).unshift(name) }
     end
 

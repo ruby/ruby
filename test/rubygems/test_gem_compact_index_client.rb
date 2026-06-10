@@ -86,6 +86,21 @@ class TestGemCompactIndexClient < Gem::TestCase
     refute client.available?
   end
 
+  def test_fetch_info_does_not_fetch_versions_index
+    info = @client.fetch_info("a")
+
+    assert_equal %w[info/a], @fetcher.requests
+    assert_equal "1.1.0", info.last[Gem::CompactIndexClient::INFO_VERSION]
+    assert_includes info.last[Gem::CompactIndexClient::INFO_REQS], ["created_at", ["2026-06-05T10:30:45Z"]]
+  end
+
+  def test_fetch_info_fetches_once_per_process
+    @client.fetch_info("a")
+    @client.fetch_info("a")
+
+    assert_equal %w[info/a], @fetcher.requests
+  end
+
   def test_reset_refetches_versions
     @client.versions
     @client.reset!
