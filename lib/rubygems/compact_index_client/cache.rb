@@ -2,7 +2,7 @@
 
 require "digest"
 require "fileutils"
-require "pathname"
+require "pathname" unless defined?(Pathname)
 require "set"
 
 class Gem::CompactIndexClient

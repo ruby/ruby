@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "helper"
-require "pathname"
+require "pathname" unless defined?(Pathname)
 require "rubygems/compact_index_client"
 
 class TestGemCompactIndexClientCacheFile < Gem::TestCase
