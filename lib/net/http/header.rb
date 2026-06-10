@@ -782,7 +782,7 @@ module Net::HTTPHeader
   #
   # Net::HTTPHeader#content_type= is an alias for Net::HTTPHeader#set_content_type.
   def set_content_type(type, params = {})
-    @header['content-type'] = [type + params.map{|k,v|"; #{k}=#{v}"}.join('')]
+    set_field('Content-Type', type + params.map{|k,v|"; #{k}=#{v}"}.join(''))
   end
 
   alias content_type= set_content_type

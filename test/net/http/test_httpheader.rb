@@ -451,6 +451,11 @@ class HTTPHeaderTest < Test::Unit::TestCase
   end
 
   def test_set_content_type
+    @c.set_content_type 'text/html', {'charset' => 'utf-8'}
+    assert_equal 'text/html; charset=utf-8', @c['content-type']
+    assert_raise(ArgumentError){ @c.set_content_type "text/html\r\nFoo: bar" }
+    assert_raise(ArgumentError){ @c.set_content_type 'text/html', {'charset' => "x\r\nFoo: bar"} }
+    assert_raise(ArgumentError){ @c.set_content_type 'text/html', {"x\nFoo: bar" => 'utf-8'} }
   end
 
   def test_form_data=
