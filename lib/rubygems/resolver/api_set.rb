@@ -35,6 +35,7 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
     @dep_uri = dep_uri
     @uri     = dep_uri + ".."
 
+    @client = nil
     @data   = Hash.new {|h,k| h[k] = [] }
     @source = Gem::Source.new @uri
 
@@ -99,26 +100,20 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
   # Return data for all versions of the gem +name+.
 
   def versions(name) # :nodoc:
-    if @data.key?(name)
-      return @data[name]
+    return @data[name] if @data.key?(name)
+
+    infos = begin
+      client.fetch_info(name)
+    rescue Gem::RemoteFetcher::FetchError, Gem::CompactIndexClient::Error
+      []
     end
 
-    uri = @dep_uri + name
+    infos.each do |_, number, platform, dependencies, requirements|
+      platform ||= "ruby"
+      dependencies = dependencies.map {|dep_name, reqs| [dep_name, reqs.join(", ")] }
+      requirements = requirements.map {|req_name, reqs| [req_name.to_sym, reqs] }.to_h
 
-    begin
-      str = Gem::RemoteFetcher.fetcher.fetch_path uri
-    rescue Gem::RemoteFetcher::FetchError
-      @data[name] = []
-    else
-      lines(str).each do |ver|
-        number, platform, dependencies, requirements = parse_gem(ver)
-
-        platform ||= "ruby"
-        dependencies = dependencies.map {|dep_name, reqs| [dep_name, reqs.join(", ")] }
-        requirements = requirements.map {|req_name, reqs| [req_name.to_sym, reqs] }.to_h
-
-        @data[name] << { name: name, number: number, platform: platform, dependencies: dependencies, requirements: requirements }
-      end
+      @data[name] << { name: name, number: number, platform: platform, dependencies: dependencies, requirements: requirements }
     end
 
     @data[name]
@@ -126,14 +121,44 @@ class Gem::Resolver::APISet < Gem::Resolver::Set
 
   private
 
-  def lines(str)
-    lines = str.split("\n")
-    header = lines.index("---")
-    header ? lines[header + 1..-1] : lines
+  def client # :nodoc:
+    @client ||= begin
+      # Loaded lazily because resolver.rb requires this file at load time
+      # and the client transitively references resolver constants.
+      require_relative "../compact_index_client"
+
+      Gem::CompactIndexClient.new(cache_dir, Gem::CompactIndexClient::HTTPFetcher.new(@uri))
+    end
   end
 
-  def parse_gem(string)
-    @gem_parser ||= GemParser.new
-    @gem_parser.parse(string)
+  ##
+  # The compact index cache directory for this source. Falls back to a
+  # temporary directory when the user's cache directory cannot safely be
+  # written to.
+
+  def cache_dir
+    if update_cache?
+      # Correct for windows paths
+      escaped_path = @uri.path.sub(%r{^/([a-z]):/}i, '/\\1-/')
+
+      File.join Gem.spec_cache_dir, "compact_index",
+        "#{@uri.host}%#{@uri.port}", *escaped_path.split("/").reject(&:empty?)
+    else
+      require "tmpdir"
+      Dir.mktmpdir "gem_compact_index"
+    end
+  end
+
+  ##
+  # Returns true when it is possible and safe to update the cache directory.
+
+  def update_cache?
+    return @update_cache unless @update_cache.nil?
+    @update_cache =
+      begin
+        File.stat(Gem.user_home).uid == Process.uid
+      rescue Errno::ENOENT
+        false
+      end
   end
 end
