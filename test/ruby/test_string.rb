@@ -416,6 +416,9 @@ CODE
     assert_equal(S("   hello   "), S("hello").center(11))
     assert_equal(S("ababaababa"), S("").center(10, "ab"), Bug2463)
     assert_equal(S("ababaababab"), S("").center(11, "ab"), Bug2463)
+    r = S("").force_encoding(Encoding::UTF_16BE).center(1000, "a")
+    assert_equal(Encoding::UTF_8, r.encoding)
+    assert_equal("a" * 1000, r.b)
   end
 
   def test_chomp
@@ -1475,6 +1478,9 @@ CODE
     assert_equal(S("hello      "), S("hello").ljust(11))
     assert_equal(S("ababababab"), S("").ljust(10, "ab"), Bug2463)
     assert_equal(S("abababababa"), S("").ljust(11, "ab"), Bug2463)
+    r = S("").force_encoding(Encoding::UTF_16BE).ljust(1000, "a")
+    assert_equal(Encoding::UTF_8, r.encoding)
+    assert_equal("a" * 1000, r.b)
   end
 
   def test_next
@@ -1652,6 +1658,9 @@ CODE
     assert_equal(S("      hello"), S("hello").rjust(11))
     assert_equal(S("ababababab"), S("").rjust(10, "ab"), Bug2463)
     assert_equal(S("abababababa"), S("").rjust(11, "ab"), Bug2463)
+    r = S("").force_encoding(Encoding::UTF_16BE).rjust(1000, "a")
+    assert_equal(Encoding::UTF_8, r.encoding)
+    assert_equal("a" * 1000, r.b)
   end
 
   def test_scan
