@@ -35,6 +35,7 @@ end
 
 require "test/unit"
 
+require "digest"
 require "fileutils"
 require "pathname"
 require "pp"
@@ -1171,6 +1172,76 @@ Also, a list:
     end
 
     nil # force errors
+  end
+
+  ##
+  # Sets up the compact index API endpoints (versions, names and
+  # info/NAME) for +specs+ on +@fetcher+.  +created_at+ maps spec
+  # original names to ISO8601 timestamps emitted as compact index v2
+  # metadata.
+
+  def util_setup_compact_index(*specs, created_at: {})
+    by_name = Hash.new {|hash, name| hash[name] = [] }
+    specs.each {|spec| by_name[spec.name] << spec }
+
+    names_body = +"---\n"
+    versions_body = +"created_at: 2026-01-01T00:00:00Z\n---\n"
+
+    by_name.keys.sort.each do |name|
+      info_body = +"---\n"
+      by_name[name].each do |spec|
+        info_body << util_compact_index_info_line(spec, created_at[spec.original_name]) << "\n"
+      end
+
+      versions_list = by_name[name].map {|spec| spec.original_name.delete_prefix("#{spec.name}-") }.join(",")
+      versions_body << "#{name} #{versions_list} #{Digest::MD5.hexdigest(info_body)}\n"
+      names_body << "#{name}\n"
+
+      @fetcher.data["#{@gem_repo}info/#{name}"] = util_compact_index_response(info_body)
+    end
+
+    @fetcher.data["#{@gem_repo}versions"] = util_compact_index_response(versions_body)
+    @fetcher.data["#{@gem_repo}names"] = util_compact_index_response(names_body)
+
+    nil
+  end
+
+  ##
+  # A compact index info file line for +spec+, including v2 metadata.
+
+  def util_compact_index_info_line(spec, created_at = nil)
+    version = spec.original_name.delete_prefix("#{spec.name}-")
+
+    dependencies = spec.runtime_dependencies.map do |dependency|
+      "#{dependency.name}:#{util_compact_index_requirement(dependency.requirement)}"
+    end.join(",")
+
+    metadata = +"checksum:#{Digest::SHA256.hexdigest(spec.original_name)}"
+    unless spec.required_ruby_version.nil? || spec.required_ruby_version.none?
+      metadata << ",ruby:#{util_compact_index_requirement(spec.required_ruby_version)}"
+    end
+    unless spec.required_rubygems_version.nil? || spec.required_rubygems_version.none?
+      metadata << ",rubygems:#{util_compact_index_requirement(spec.required_rubygems_version)}"
+    end
+    metadata << ",created_at:#{created_at}" if created_at
+
+    "#{version} #{dependencies}|#{metadata}"
+  end
+
+  def util_compact_index_requirement(requirement)
+    requirement.as_list.join("&")
+  end
+
+  def util_compact_index_response(body)
+    Gem::HTTPResponseFactory.create(
+      body: body,
+      code: 200,
+      msg: "OK",
+      headers: {
+        "ETag" => %("#{Digest::MD5.hexdigest(body)}"),
+        "Repr-Digest" => "sha-256=:#{Digest::SHA256.base64digest(body)}:",
+      }
+    )
   end
 
   def write_marshalled_gemspecs(*all_specs)
