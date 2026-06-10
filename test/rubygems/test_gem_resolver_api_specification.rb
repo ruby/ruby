@@ -27,6 +27,37 @@ class TestGemResolverAPISpecification < Gem::TestCase
     ]
 
     assert_equal expected, spec.dependencies
+    assert_nil spec.created_at
+  end
+
+  def test_initialize_created_at
+    set = Gem::Resolver::APISet.new
+    data = {
+      name: "rails",
+      number: "3.0.3",
+      platform: "ruby",
+      dependencies: [],
+      requirements: { created_at: ["2026-06-05T10:30:45Z"] },
+    }
+
+    spec = Gem::Resolver::APISpecification.new set, data
+
+    assert_equal Time.new("2026-06-05T10:30:45Z"), spec.created_at
+  end
+
+  def test_initialize_created_at_invalid
+    set = Gem::Resolver::APISet.new
+    data = {
+      name: "rails",
+      number: "3.0.3",
+      platform: "ruby",
+      dependencies: [],
+      requirements: { created_at: ["not a timestamp"] },
+    }
+
+    spec = Gem::Resolver::APISpecification.new set, data
+
+    assert_nil spec.created_at
   end
 
   def test_fetch_development_dependencies

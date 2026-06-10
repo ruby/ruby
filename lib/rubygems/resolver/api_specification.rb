@@ -38,6 +38,7 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
     end.freeze
     @required_ruby_version = Gem::Requirement.new(api_data.dig(:requirements, :ruby)).freeze
     @required_rubygems_version = Gem::Requirement.new(api_data.dig(:requirements, :rubygems)).freeze
+    @created_at = parse_created_at(api_data.dig(:requirements, :created_at))&.freeze
   end
 
   def ==(other) # :nodoc:
@@ -101,5 +102,18 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
 
   def source # :nodoc:
     @set.source
+  end
+
+  private
+
+  def parse_created_at(value)
+    value = value.first if value.is_a?(Array)
+    return unless value.is_a?(String)
+
+    begin
+      Time.new(value)
+    rescue ArgumentError
+      nil
+    end
   end
 end
