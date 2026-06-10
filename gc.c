@@ -1021,6 +1021,7 @@ VALUE
 rb_newobj(rb_execution_context_t *ec, VALUE klass, VALUE flags, shape_id_t shape_id, bool wb_protected, size_t size)
 {
     GC_ASSERT((flags & FL_WB_PROTECTED) == 0);
+    RUBY_ASSERT(ruby_thread_has_gvl_p());
     rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
     VALUE obj = rb_gc_impl_new_obj(rb_gc_get_objspace(), cr->newobj_cache, klass, flags, wb_protected, size);
 
