@@ -1416,6 +1416,8 @@ SRC
     end
   end
 
+  # :startdoc:
+
   # Returns whether or not the constant +const+ is defined.  You may
   # optionally pass the +type+ of +const+ as <code>[const, type]</code>,
   # such as:
