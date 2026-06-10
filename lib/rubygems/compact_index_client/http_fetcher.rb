@@ -34,7 +34,7 @@ class Gem::CompactIndexClient
       when Gem::Net::HTTPSuccess, Gem::Net::HTTPNotModified
         response
       when Gem::Net::HTTPMovedPermanently, Gem::Net::HTTPFound, Gem::Net::HTTPSeeOther,
-           Gem::Net::HTTPTemporaryRedirect
+           Gem::Net::HTTPTemporaryRedirect, Gem::Net::HTTPPermanentRedirect
         raise Gem::RemoteFetcher::FetchError.new("too many redirects", uri) if redirects_remaining.zero?
 
         location = response["Location"]

@@ -21,6 +21,13 @@ class TestGemCompactIndexClientHTTPFetcher < Gem::TestCase
     end
   end
 
+  class FakePermanentRedirect < Gem::Net::HTTPPermanentRedirect
+    def initialize(location)
+      super("1.1", "308", "Permanent Redirect")
+      self["Location"] = location
+    end
+  end
+
   class FakeNotFound < Gem::Net::HTTPNotFound
     def initialize
       super("1.1", "404", "Not Found")
@@ -77,6 +84,15 @@ class TestGemCompactIndexClientHTTPFetcher < Gem::TestCase
 
     assert_equal "data", response.body
     assert_equal 2, remote.requests.size
+  end
+
+  def test_call_follows_permanent_redirects
+    fetcher, _remote = fetcher_for(
+      "https://index.example/versions" => FakePermanentRedirect.new("https://mirror.example/versions"),
+      "https://mirror.example/versions" => FakeResponse.new("data")
+    )
+
+    assert_equal "data", fetcher.call("versions").body
   end
 
   def test_call_resolves_relative_redirect_location
