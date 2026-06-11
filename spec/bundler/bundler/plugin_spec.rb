@@ -124,7 +124,7 @@ RSpec.describe Bundler::Plugin do
     end
 
     it "doesn't calls installer without any plugins" do
-      allow(definition).to receive(:dependencies) { [] }
+      allow(builder).to receive(:dependencies) { [] }
       allow(installer).to receive(:install_definition).never
 
       subject.gemfile_install(gemfile)
@@ -140,7 +140,7 @@ RSpec.describe Bundler::Plugin do
 
       before do
         allow(index).to receive(:up_to_date?) { nil }
-        allow(definition).to receive(:dependencies) { [Bundler::Dependency.new("new-plugin", ">=0", "plugin" => true), Bundler::Dependency.new("another-plugin", ">=0", "plugin" => true)] }
+        allow(builder).to receive(:dependencies) { [Bundler::Dependency.new("new-plugin", ">=0", "plugin" => true), Bundler::Dependency.new("another-plugin", ">=0", "plugin" => true)] }
         allow(installer).to receive(:install_definition) { plugin_specs }
       end
 
