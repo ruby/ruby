@@ -11910,8 +11910,8 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint NoSingletonClass(String@0x1008)
           PatchPoint MethodRedefined(String@0x1008, ascii_only?@0x1010, cme:0x1018)
-          v24:StringExact = GuardType v10, StringExact recompile
-          v25:BoolExact = CCall v24, :String#ascii_only?@0x1040
+          v23:StringExact = GuardType v10, StringExact recompile
+          v25:BoolExact = InvokeBuiltin leaf <inline_expr>, v23
           CheckInterrupts
           Return v25
         ");

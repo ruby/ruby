@@ -222,9 +222,6 @@ pub fn init() -> Annotations {
     annotate!(rb_cString, "<<", inline_string_append);
     annotate!(rb_cString, "==", inline_string_eq);
     // Not elidable; has a side effect of setting the encoding if ENC_CODERANGE_UNKNOWN.
-    // TOOD(max): Turn this into a load/compare. Will need to side-exit or do the full call if
-    // ENC_CODERANGE_UNKNOWN.
-    annotate!(rb_cString, "ascii_only?", types::BoolExact, no_gc, leaf);
     annotate!(rb_cModule, "name", types::StringExact.union(types::NilClass), no_gc, leaf, elidable);
     annotate!(rb_cModule, "===", inline_module_eqq, types::BoolExact, no_gc, leaf);
     annotate!(rb_cArray, "length", inline_array_length, types::Fixnum, no_gc, leaf, elidable);
@@ -291,6 +288,10 @@ pub fn init() -> Annotations {
     annotate_builtin!(rb_mKernel, "frozen?", types::BoolExact);
     annotate_builtin!(rb_cSymbol, "name", types::StringExact);
     annotate_builtin!(rb_cSymbol, "to_s", types::StringExact);
+    // TOOD(max): Turn this into a load/compare. Will need to side-exit or do the full call if
+    // ENC_CODERANGE_UNKNOWN.
+    annotate_builtin!(rb_cString, "ascii_only?", types::BoolExact, no_gc, leaf);
+    annotate_builtin!(rb_cString, "valid_encoding?", types::BoolExact, no_gc, leaf);
 
     // Array iteration builtins (used in with_jit Array#each, map, select, find)
     builtin_funcs.insert(rb_jit_fixnum_inc as *mut c_void, FnProperties { inline: inline_fixnum_inc, return_type: types::Fixnum, ..Default::default() });
