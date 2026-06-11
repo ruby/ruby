@@ -2419,6 +2419,7 @@ extern void rb_resume_coverages(void);
 extern void rb_suspend_coverages(void);
 
 void rb_postponed_job_flush(rb_vm_t *vm);
+void rb_postponed_job_trigger_for_ractor(unsigned int h, VALUE running_ractor);
 
 // ractor.c
 RUBY_EXTERN VALUE rb_eRactorUnsafeError;
