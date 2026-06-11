@@ -917,29 +917,6 @@ make_addrinfo(struct rb_addrinfo *res0, int norevlookup)
     return base;
 }
 
-static VALUE
-sock_sockaddr(struct sockaddr *addr, socklen_t len)
-{
-    char *ptr;
-
-    switch (addr->sa_family) {
-      case AF_INET:
-        ptr = (char*)&((struct sockaddr_in*)addr)->sin_addr.s_addr;
-        len = (socklen_t)sizeof(((struct sockaddr_in*)addr)->sin_addr.s_addr);
-        break;
-#ifdef AF_INET6
-      case AF_INET6:
-        ptr = (char*)&((struct sockaddr_in6*)addr)->sin6_addr.s6_addr;
-        len = (socklen_t)sizeof(((struct sockaddr_in6*)addr)->sin6_addr.s6_addr);
-        break;
-#endif
-      default:
-        rb_raise(rb_eSocket, "unknown socket family:%d", addr->sa_family);
-        break;
-    }
-    return rb_str_new(ptr, len);
-}
-
 /*
  * call-seq:
  *   Socket.getservbyname(service_name)                => port_number
