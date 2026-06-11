@@ -629,11 +629,6 @@ impl VALUE {
         }
     }
 
-    pub fn data_p(self) -> bool {
-        !self.special_const_p() &&
-            self.builtin_type() == RUBY_T_DATA
-    }
-
     pub fn as_fixnum(self) -> i64 {
         assert!(self.fixnum_p());
         (self.0 as i64) >> 1

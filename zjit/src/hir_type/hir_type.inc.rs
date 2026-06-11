@@ -4,7 +4,7 @@ mod bits {
   pub const Array: u64 = ArrayExact | ArraySubclass;
   pub const ArrayExact: u64 = 1u64 << 0;
   pub const ArraySubclass: u64 = 1u64 << 1;
-  pub const BasicObject: u64 = BasicObjectExact | BasicObjectSubclass | Object | TData;
+  pub const BasicObject: u64 = BasicObjectExact | BasicObjectSubclass | Object;
   pub const BasicObjectExact: u64 = 1u64 << 2;
   pub const BasicObjectSubclass: u64 = 1u64 << 3;
   pub const Bignum: u64 = 1u64 << 4;
@@ -76,22 +76,20 @@ mod bits {
   pub const Symbol: u64 = DynamicSymbol | StaticSymbol;
   pub const TrueClass: u64 = 1u64 << 45;
   pub const Truthy: u64 = BasicObject & !Falsy;
-  pub const TData: u64 = 1u64 << 46;
-  pub const Undef: u64 = 1u64 << 47;
-  pub const AllBitPatterns: [(&str, u64); 78] = [
+  pub const Undef: u64 = 1u64 << 46;
+  pub const AllBitPatterns: [(&str, u64); 77] = [
     ("Any", Any),
     ("RubyValue", RubyValue),
     ("Immediate", Immediate),
     ("Undef", Undef),
     ("BasicObject", BasicObject),
+    ("Object", Object),
     ("NotNil", NotNil),
     ("Truthy", Truthy),
-    ("HeapBasicObject", HeapBasicObject),
-    ("TData", TData),
-    ("Object", Object),
     ("BuiltinExact", BuiltinExact),
     ("BoolExact", BoolExact),
     ("TrueClass", TrueClass),
+    ("HeapBasicObject", HeapBasicObject),
     ("HeapObject", HeapObject),
     ("String", String),
     ("Subclass", Subclass),
@@ -158,7 +156,7 @@ mod bits {
     ("ArrayExact", ArrayExact),
     ("Empty", Empty),
   ];
-  pub const NumTypeBits: u64 = 48;
+  pub const NumTypeBits: u64 = 47;
 }
 pub mod types {
   use super::*;
@@ -238,7 +236,6 @@ pub mod types {
   pub const Symbol: Type = Type::from_bits(bits::Symbol);
   pub const TrueClass: Type = Type::from_bits(bits::TrueClass);
   pub const Truthy: Type = Type::from_bits(bits::Truthy);
-  pub const TData: Type = Type::from_bits(bits::TData);
   pub const Undef: Type = Type::from_bits(bits::Undef);
   pub const ExactBitsAndClass: [(u64, *const VALUE); 17] = [
     (bits::ObjectExact, &raw const crate::cruby::rb_cObject),
