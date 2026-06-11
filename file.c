@@ -2253,13 +2253,24 @@ rb_file_rowned_p(VALUE obj, VALUE fname)
 
 /*
  * call-seq:
- *    File.grpowned?(file_name)   -> true or false
+ *   File.grpowned?(object) -> true or false
  *
- * Returns <code>true</code> if the named file exists and the
- * effective group id of the calling process is the owner of
- * the file. Returns <code>false</code> on Windows.
+ * Returns whether the filesystem entry for the given +object+ exists,
+ * and the effective group id of the calling process is the owner of the entry.
  *
- * _file_name_ can be an IO object.
+ * The given +object+ may be the string path to a file or directory entry:
+ *
+ *   File.grpowned?('lib')         # => true
+ *   File.grpowned?('README.md')   # => true
+ *   File.grpowned?('/etc/passwd') # => false
+ *   File.grpowned?('nosuch')      # => false
+ *
+ * Or an open IO stream:
+ *
+ *   File.open('README.md', 'r') {|file| File.grpowned?(file) }   # => true
+ *   File.open('/etc/passwd', 'r') {|file| File.grpowned?(file) } # => false
+ *
+ * Returns +false+ on Windows.
  */
 
 static VALUE
@@ -6374,15 +6385,19 @@ rb_stat_rowned(VALUE obj)
 }
 
 /*
- *  call-seq:
- *     stat.grpowned?   -> true or false
+ * call-seq:
+ *   stat.grpowned?(path) -> true or false
  *
- *  Returns true if the effective group id of the process is the same as
- *  the group id of <i>stat</i>. On Windows, returns <code>false</code>.
+ * Returns whether the filesystem entry for the given string +path+ exists,
+ * and the effective group id of the calling process is the owner of the entry:
  *
- *     File.stat("testfile").grpowned?      #=> true
- *     File.stat("/etc/passwd").grpowned?   #=> false
+ *   File.stat('README.md').grpowned?   # => true
+ *   File.stat('lib').grpowned?         # => true
+ *   File.stat('/etc/passwd').grpowned? # => false
  *
+ * Raises an exception if there is no entry at the given +path+.
+ *
+ * Returns +false+ on Windows.
  */
 
 static VALUE
