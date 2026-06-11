@@ -8590,7 +8590,7 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           PatchPoint SingleRactorMode
-          v17:Module = GuardType v6, Module
+          v17:HeapBasicObject = GuardType v6, HeapBasicObject
           v18:CShape = LoadField v17, :shape_id@0x1000
           v19:CShape[0x1001] = GuardBitEquals v18, CShape(0x1001) recompile
           v20:RubyValue = LoadField v17, :fields_obj@0x1002
@@ -8661,7 +8661,7 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           PatchPoint SingleRactorMode
-          v17:Class = GuardType v6, Class
+          v17:HeapBasicObject = GuardType v6, HeapBasicObject
           v18:CShape = LoadField v17, :shape_id@0x1000
           v19:CShape[0x1001] = GuardBitEquals v18, CShape(0x1001) recompile
           v20:RubyValue = LoadField v17, :fields_obj@0x1002
@@ -8760,7 +8760,7 @@ mod hir_opt_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           PatchPoint SingleRactorMode
-          v17:TData = GuardType v6, TData
+          v17:HeapBasicObject = GuardType v6, HeapBasicObject
           v18:CShape = LoadField v17, :shape_id@0x1000
           v19:CShape[0x1001] = GuardBitEquals v18, CShape(0x1001) recompile
           v20:RubyValue = LoadField v17, :fields_obj@0x1002
