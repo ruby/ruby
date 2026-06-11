@@ -4396,30 +4396,18 @@ impl Function {
         let mut pc_idx: u32 = 0;
         while pc_idx < callee_encoded_size {
             let pc = unsafe { rb_iseq_pc_at_idx(callee_iseq, pc_idx) };
-            let opcode: u32 = unsafe { rb_iseq_opcode_at_pc(callee_iseq, pc) }
+            let opcode: u32 = unsafe { rb_iseq_bare_opcode_at_pc(callee_iseq, pc) }
                 .try_into()
                 .unwrap();
-            // This scan runs before `rb_zjit_profile_disable`, so check the
-            // trace_ and zjit_ variants alongside the bare opcode.
-            if opcode == YARVINSN_invokeblock
-                || opcode == YARVINSN_trace_invokeblock
-                || opcode == YARVINSN_zjit_invokeblock
-            {
+            if opcode == YARVINSN_invokeblock {
                 incr_counter!(inline_reject_invokeblock);
                 return false;
             }
 
             // Reject callees that use block params. The codegen for getblockparam
             // and getblockparamproxy uses jit.iseq to compute the block param level,
-            // which would be wrong for inlined code. This scan runs before
-            // `rb_zjit_profile_disable`, so check the trace_ and zjit_ variants
-            // alongside the bare opcodes.
-            if opcode == YARVINSN_getblockparam
-                || opcode == YARVINSN_trace_getblockparam
-                || opcode == YARVINSN_getblockparamproxy
-                || opcode == YARVINSN_trace_getblockparamproxy
-                || opcode == YARVINSN_zjit_getblockparamproxy
-            {
+            // which would be wrong for inlined code.
+            if opcode == YARVINSN_getblockparam || opcode == YARVINSN_getblockparamproxy {
                 incr_counter!(inline_reject_blockparam);
                 return false;
             }
