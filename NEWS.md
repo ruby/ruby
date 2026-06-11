@@ -16,6 +16,12 @@ Note that each entry is kept to a minimum, see links for details.
 
 Note: We're only listing outstanding class updates.
 
+* AbstractMethodError
+
+    * `AbstractMethodError` is added as a new subclass of `ScriptError`.
+      It is intended to be raised by a superclass method that expects
+      subclasses to override it.  [[Feature #18915]]
+
 * C API
 
     * `RB_NOGVL_PENDING_INTR_FAIL` is added as a flag for `rb_nogvl`.
@@ -216,6 +222,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 
 [Feature #8948]: https://bugs.ruby-lang.org/issues/8948
 [Feature #15330]: https://bugs.ruby-lang.org/issues/15330
+[Feature #18915]: https://bugs.ruby-lang.org/issues/18915
 [Feature #21390]: https://bugs.ruby-lang.org/issues/21390
 [Feature #21768]: https://bugs.ruby-lang.org/issues/21768
 [Feature #21785]: https://bugs.ruby-lang.org/issues/21785

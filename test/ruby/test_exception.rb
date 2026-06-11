@@ -1552,4 +1552,20 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
       x(&a)
     end
   end
+
+  def test_abstract_method_error
+    assert_operator(AbstractMethodError, :<, ScriptError)
+    assert_not_operator(AbstractMethodError, :<, StandardError)
+
+    assert_equal("AbstractMethodError", AbstractMethodError.new.message)
+
+    error = assert_raise(AbstractMethodError) do
+      begin
+        raise AbstractMethodError, "subclass must implement"
+      rescue
+        flunk("AbstractMethodError must not be rescued by a bare rescue")
+      end
+    end
+    assert_equal("subclass must implement", error.message)
+  end
 end
