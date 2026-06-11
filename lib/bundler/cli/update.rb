@@ -42,7 +42,7 @@ module Bundler
           raise GemfileLockNotFound, "This Bundle hasn't been installed yet. " \
             "Run `bundle install` to update and install the bundled gems."
         end
-        explicit_gems = gems
+        explicit_gems = gems.dup
 
         if groups.any?
           deps = Bundler.definition.dependencies.select {|d| (d.groups & groups).any? }
