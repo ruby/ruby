@@ -1294,6 +1294,69 @@ fn test_invokesuper_to_cfunc_with_too_many_args_exits() {
     "#), @"[1, 2, 3, 4, 5, 6]");
 }
 
+// Repro for the production "Failed to get_opnd(vN)" panic
+// (PriceRs::PricingService#build_rust_adjustment_from_row, introduced by #17186).
+//
+// A regular send to a C method with 7 fixed args is reduced to a CCallWithFrame
+// with recv + 7 = 8 operands, which exceeds C_ARG_OPNDS.len() (6). gen_insn bails
+// with `return Err(*state)`; the caller emits a side exit and `break`s out of the
+// block. But the call's *result* is stored in a local and used in a *later* basic
+// block (the `if` arm here). Because codegen bailed before assigning a LIR operand
+// to the result, compiling that later block calls get_opnd(result) on a None entry
+// and panics. The existing `test_invokesuper_to_cfunc_with_too_many_args_exits` does
+// not catch this because there the call result is the method's tail value and is not
+// referenced past the bailed block.
+//
+// NOTE: This currently ABORTS with `Failed to get_opnd(vN)` (the bug). The snapshot
+// below is the expected behavior once the backend exits cleanly: `flag` is true so
+// `test` returns the cfunc's result, the array [1, 2, 3, 4, 5, 6, 7].
+#[test]
+fn test_ccall_with_frame_too_many_args_result_used_in_later_block() {
+    unsafe extern "C" fn test_seven_args(
+        _self: VALUE,
+        a: VALUE,
+        b: VALUE,
+        c: VALUE,
+        d: VALUE,
+        e: VALUE,
+        f: VALUE,
+        g: VALUE,
+    ) -> VALUE {
+        unsafe { rb_ary_new_from_args(7, a, b, c, d, e, f, g) }
+    }
+
+    with_rubyvm(|| {
+        let klass = define_class("ZJITSevenArgs", unsafe { rb_cObject });
+        unsafe {
+            rb_define_method(
+                klass,
+                c"seven".as_ptr(),
+                Some(std::mem::transmute::<
+                    unsafe extern "C" fn(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) -> VALUE,
+                    unsafe extern "C" fn(VALUE) -> VALUE,
+                >(test_seven_args)),
+                7,
+            );
+        }
+    });
+
+    assert_snapshot!(assert_compiles_allowing_exits(r#"
+        def test(obj, flag)
+          priceable = obj.seven(1, 2, 3, 4, 5, 6, 7)
+          if flag
+            priceable
+          else
+            nil
+          end
+        end
+
+        obj = ZJITSevenArgs.new
+        test(obj, true)  # profile receiver class
+        test(obj, true)  # compile -> currently panics: Failed to get_opnd(vN)
+        test(obj, true)
+    "#), @"[1, 2, 3, 4, 5, 6, 7]");
+}
+
 #[test]
 fn test_string_new_preserves_string_arg() {
     assert_snapshot!(inspect(r#"

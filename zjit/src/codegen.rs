@@ -525,6 +525,11 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                             };
                             gen_side_exit(&mut jit, &mut asm, &reason, None, &function.frame_state(last_snapshot));
                             // Don't bother generating code after a side-exit. We won't run it.
+                            // However, we may still attempt to generate code in another block that
+                            // references this instruction's output. In that case, we can put junk
+                            // in the output operand since we know it will never be used at
+                            // run-time (due to the dominance property of SSA).
+                            jit.opnds[insn_id.0] = Some(Opnd::UImm(0xDEADBEEF));
                             // TODO(max): Generate ud2 or equivalent.
                             break;
                         };
