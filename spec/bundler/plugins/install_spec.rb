@@ -286,7 +286,7 @@ RSpec.describe "bundler plugin install" do
 
       bundle "install"
 
-      expected = local_plugin_gem("foo-2.0.0", "lib").to_s
+      expected = system_gem_path("gems", "foo-2.0.0", "lib").to_s
       expect(Bundler::Plugin.index.load_paths("foo")).to eq([expected])
     end
 
@@ -299,7 +299,7 @@ RSpec.describe "bundler plugin install" do
 
       bundle "install", env: { "BUNDLE_WITHOUT" => "default" }
 
-      expect(out).to include("Bundle complete! 1 Gemfile dependency, 0 gems now installed.")
+      expect(out).to include("Bundle complete! 2 Gemfile dependencies, 0 gems now installed.")
     end
 
     it "accepts plugin version" do
