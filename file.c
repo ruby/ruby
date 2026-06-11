@@ -5615,12 +5615,14 @@ rb_file_join(long argc, VALUE *args)
 }
 /*
  *  call-seq:
- *     File.join(string, ...)  ->  string
+ *     File.join(*objects) -> new_string
  *
- *  Returns a new string formed by joining the strings using
- *  <code>"/"</code>.
+ *  Returns a new string formed by joining the given string-converted +objects+
+ *  with character <tt>'/'</tt>:
  *
- *     File.join("usr", "mail", "gumby")   #=> "usr/mail/gumby"
+ *    File.join                      # => ""
+ *    File.join('foo')               # => "foo"
+ *    File.join('foo', 'bar', 'baz') # => "foo/bar/baz"
  *
  */
 

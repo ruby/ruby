@@ -759,17 +759,16 @@ class Pathname
   end
   private :plus
 
+  # call-seq:
+  #   join(*objects) -> new_pathname
   #
-  # Joins the given pathnames onto +self+ to create a new Pathname object.
-  # This is effectively the same as using Pathname#+ to append +self+ and
-  # all arguments sequentially.
+  # Joins the string-converted given +objects+ to the string path in +self+;
+  # returns a new pathname containing the joined string:
   #
-  #   path0 = Pathname.new("/usr")                # Pathname:/usr
-  #   path0 = path0.join("bin/ruby")              # Pathname:/usr/bin/ruby
-  #       # is the same as
-  #   path1 = Pathname.new("/usr") + "bin/ruby"   # Pathname:/usr/bin/ruby
-  #   path0 == path1
-  #       #=> true
+  #   Pathname('foo').join                  # => #<Pathname:foo>
+  #   Pathname('foo').join('bar')           # => #<Pathname:foo/bar>
+  #   Pathname('foo').join('bar', 'baz')    # => #<Pathname:foo/bar/baz>
+  #   Pathname('foo').join(Pathname('bar')) # => #<Pathname:foo/bar>
   #
   def join(*args)
     return self if args.empty?
