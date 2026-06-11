@@ -3719,18 +3719,23 @@ gc_sweep_register_free_slot(rb_objspace_t *objspace, struct heap_page *page, str
 {
     rb_asan_unpoison_object(p, false);
     ((struct RBasic *)p)->flags = 0;
-    rb_asan_poison_object(p);
 
-    if (RB_LIKELY(ctx->free_region && p == ctx->free_region->end)) {
-        ctx->free_region->end = p + slot_size;
+    struct free_region *existing_region = ctx->free_region;
+    if (existing_region) rb_asan_unpoison_object((VALUE)existing_region, false);
+
+    if (RB_LIKELY(existing_region && p == existing_region->end)) {
+        existing_region->end = p + slot_size;
     }
     else {
         struct free_region *free_region = (struct free_region *)p;
         free_region->end = p + slot_size;
-        free_region->next = ctx->free_region;
+        free_region->next = existing_region;
 
         ctx->free_region = free_region;
     }
+
+    if (existing_region) rb_asan_poison_object((VALUE)existing_region);
+    rb_asan_poison_object(p);
 }
 
 static inline void
@@ -3867,7 +3872,9 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
         p += BITS_BITLENGTH * slot_size;
     }
 
+    asan_unlock_freelist(sweep_page);
     sweep_page->free_region = ctx->free_region;
+    asan_lock_freelist(sweep_page);
 
     if (!heap->compact_cursor) {
         gc_setup_mark_bits(sweep_page);
