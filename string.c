@@ -7252,11 +7252,11 @@ rb_str_escape(VALUE str)
     return result;
 }
 
-/* Lookup table for the inspect fast path. 1 marks bytes that need
- * no escaping. 0 marks bytes that need escape inspection: 0x00-0x1F
+/* Lookup table for string escape fast paths. 1 marks bytes that need
+ * no escaping. 0 marks bytes that need escape handling: 0x00-0x1F
  * (control), 0x22 ("), 0x23 (#), 0x5C (\), 0x7F (DEL), 0x80-0xFF
  * (non-ASCII). */
-static const bool inspect_no_escape[256] = {
+static const bool ascii_no_escape[256] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* 0x00-0x0F */
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* 0x10-0x1F */
     1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, /* 0x20-0x2F */
@@ -7304,7 +7304,7 @@ rb_str_inspect(VALUE str)
          * are eligible. */
         if (cr == ENC_CODERANGE_7BIT ||
             (encidx == ENCINDEX_UTF_8 && cr == ENC_CODERANGE_VALID)) {
-            while (p < pend && inspect_no_escape[(unsigned char)*p]) p++;
+            while (p < pend && ascii_no_escape[(unsigned char)*p]) p++;
             if (p >= pend) break;
         }
 
@@ -7412,7 +7412,7 @@ rb_str_dump(VALUE str)
 
     p = RSTRING_PTR(str); pend = p + RSTRING_LEN(str);
     while (p < pend) {
-        int clen;
+        long clen;
         unsigned char c = *p++;
 
         switch (c) {
@@ -7430,6 +7430,10 @@ rb_str_dump(VALUE str)
           default:
             if (ISPRINT(c)) {
                 clen = 1;
+                while (p < pend && ascii_no_escape[(unsigned char)*p]) {
+                    p++;
+                    clen++;
+                }
             }
             else {
                 if (u8 && c > 0x7F) {	/* \u notation */
@@ -7507,6 +7511,7 @@ rb_str_dump(VALUE str)
         }
         else if (ISPRINT(c)) {
             *q++ = c;
+            while (p < pend && ascii_no_escape[(unsigned char)*p]) *q++ = *p++;
         }
         else {
             *q++ = '\\';
