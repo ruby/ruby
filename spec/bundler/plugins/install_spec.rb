@@ -64,6 +64,21 @@ RSpec.describe "bundler plugin install" do
     plugin_should_be_installed("foo", "kung-foo")
   end
 
+  it "installs a plugin with dependencies, without registering them as plugins" do
+    update_repo2 do
+      build_gem "foo-dep"
+      build_plugin "foo-with-dep" do |s|
+        s.add_dependency "foo-dep"
+      end
+    end
+
+    bundle "plugin install foo-with-dep --source https://gem.repo2"
+
+    expect(out).to include("Installed plugin foo-with-dep")
+    plugin_should_be_installed("foo-with-dep")
+    plugin_should_not_be_installed("foo-dep")
+  end
+
   it "uses the same version for multiple plugins" do
     update_repo2 do
       build_plugin "foo", "1.1"
@@ -263,6 +278,24 @@ RSpec.describe "bundler plugin install" do
 
       expect(the_bundle).to include_gems("myrack 1.0.0")
       plugin_should_be_installed("foo")
+    end
+
+    it "installs plugins with dependencies, without registering them as plugins" do
+      update_repo2 do
+        build_gem "foo-dep"
+        build_plugin "foo-with-dep" do |s|
+          s.add_dependency "foo-dep"
+        end
+      end
+
+      install_gemfile <<-G
+        source 'https://gem.repo2'
+        plugin 'foo-with-dep'
+      G
+
+      expect(out).to include("Installed plugin foo-with-dep")
+      plugin_should_be_installed("foo-with-dep")
+      plugin_should_not_be_installed("foo-dep")
     end
 
     it "overrides the index with the new plugin version" do

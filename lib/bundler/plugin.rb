@@ -43,7 +43,7 @@ module Bundler
 
       specs = Installer.new.install(names, options)
 
-      save_plugins specs
+      save_plugins specs.slice(*names)
     rescue PluginError
       specs_to_delete = specs.select {|k, _v| names.include?(k) && !index.commands.values.include?(k) }
       specs_to_delete.each_value {|spec| Bundler.rm_rf(spec.full_gem_path) }
@@ -119,13 +119,15 @@ module Bundler
         builder.eval_gemfile(gemfile)
       end
       builder.check_primary_source_safety
-      definition = builder.to_definition(lockfile, unlock)
 
-      return if definition.dependencies.empty?
+      plugins = builder.dependencies.map(&:name)
+      return if plugins.empty?
+
+      definition = builder.to_definition(lockfile, unlock)
 
       installed_specs = Installer.new.install_definition(definition)
 
-      save_plugins installed_specs, builder.inferred_plugins
+      save_plugins installed_specs.slice(*plugins), builder.inferred_plugins
     rescue RuntimeError => e
       unless e.is_a?(GemfileError)
         Bundler.ui.error "Failed to install plugin: #{e.message}\n  #{e.backtrace[0]}"
