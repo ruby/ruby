@@ -1,16 +1,21 @@
 # Filename Matching
 
-Filename matching is a pattern-matching feature implemented in certain Ruby methods:
+Filename matching is a pattern-matching feature implemented in certain Ruby methods.
+Each `fnmatch` method matches a string _pattern_ against another string _path_,
+under the control of specified _flags_.
 
-- File.fnmatch.
-- Pathname#fnmatch.
-
-Each `fnmatch` method matches a pattern against a string _path_;
-these methods operate only on strings, and do not access the file system.
-
-These methods are quite different
-from [filename-globbing](rdoc-ref:filename_globbing.md) methods,
+These methods operate only on strings, and do not access the file system;
+they are quite different from [filename-globbing](rdoc-ref:filename_globbing.md) methods,
 which match patterns against string paths found in the actual file system.
+
+Inputs to the methods:
+
+- The string argument `pattern` is _not_ a Regexp;
+  see [Patterns](#patterns).
+- For singleton method File.fnmatch, the _path_ is the string argument `path`;
+  for instance method Pathname#fnmatch, the _path_ is the string `self`.to_s.
+- The `flags` argument is an integer value that may be defined by constants;
+  see [Flags](#flags).
 
 ## Patterns
 
