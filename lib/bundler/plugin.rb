@@ -306,10 +306,9 @@ module Bundler
     #
     # @raise [PluginInstallError] if validation or registration raises any error
     def save_plugin(name, spec, optional_plugin = false)
-      path = Pathname.new(spec.full_gem_path)
-      return if index.installed?(name) && index.plugin_path(name) == path
+      return if index.up_to_date?(spec)
 
-      validate_plugin!(path)
+      validate_plugin! Pathname.new(spec.full_gem_path)
       installed = register_plugin(name, spec, optional_plugin)
       Bundler.ui.info "Installed plugin #{name}" if installed
     rescue PluginError => e
