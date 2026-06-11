@@ -4204,8 +4204,8 @@ impl Function {
                                             cme: super_cme,
                                             name,
                                             state,
-                                            return_type: types::BasicObject,
-                                            elidable: false,
+                                            return_type,
+                                            elidable,
                                             block: None,
                                         })
                                     };
@@ -4253,8 +4253,8 @@ impl Function {
                                             cme: super_cme,
                                             name,
                                             state,
-                                            return_type: types::BasicObject,
-                                            elidable: false,
+                                            return_type,
+                                            elidable,
                                             block: None,
                                         })
                                     };
