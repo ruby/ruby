@@ -161,7 +161,7 @@ class Gem::Package
     return super unless gem.start
     return super unless gem.start.include? "MD5SUM ="
 
-    Gem::Package::Old.new gem
+    Gem::Package::Old.new gem, security_policy
   end
 
   ##
