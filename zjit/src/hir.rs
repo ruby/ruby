@@ -3289,11 +3289,11 @@ impl Function {
         }
     }
 
-    /// Return the profiled type of the HIR instruction at the given ISEQ instruction
-    /// index, if it is known to be monomorphic or skewed polymorphic. This historical type
+    /// Return the profiled type of the HIR instruction at the given Snapshot, if it is known to be
+    /// monomorphic or skewed polymorphic. This historical type
     /// record is not a guarantee and must be checked with a GuardType or similar.
-    fn profiled_type_of_at(&self, insn: InsnId, iseq: IseqPtr, iseq_insn_idx: YarvInsnIdx) -> Option<ProfiledType> {
-        match self.resolve_receiver_type_from_profile(insn, iseq, iseq_insn_idx) {
+    fn profiled_type_of_at(&self, insn: InsnId, state: InsnId) -> Option<ProfiledType> {
+        match self.resolve_receiver_type_from_profile(insn, state) {
             ReceiverTypeResolution::Monomorphic { profiled_type }
             | ReceiverTypeResolution::SkewedPolymorphic { profiled_type } => Some(profiled_type),
             _ => None,
@@ -3461,8 +3461,8 @@ impl Function {
     /// Returns:
     /// - `StaticallyKnown` if the receiver's exact class is known at compile-time
     /// - Result of [`Self::resolve_receiver_type_from_profile`] if we need to check profile data
-    fn resolve_receiver_type(&self, recv: InsnId, recv_type: Type, iseq: IseqPtr, insn_idx: YarvInsnIdx) -> ReceiverTypeResolution {
-        match self.resolve_receiver_type_from_profile(recv, iseq, insn_idx) {
+    fn resolve_receiver_type(&self, recv: InsnId, recv_type: Type, state: InsnId) -> ReceiverTypeResolution {
+        match self.resolve_receiver_type_from_profile(recv, state) {
             ReceiverTypeResolution::NoProfile => {
                 // Use known type information as a fallback because it doesn't have shape
                 // information (and we can generally eliminate duplicate guards).
@@ -3476,8 +3476,8 @@ impl Function {
         }
     }
 
-    fn polymorphic_summary(&self, profiles: &ProfileOracle, recv: InsnId, iseq: IseqPtr, insn_idx: YarvInsnIdx) -> Option<TypeDistributionSummary> {
-        let Some(entries) = profiles.get(iseq, insn_idx) else {
+    fn polymorphic_summary(&self, profiles: &ProfileOracle, recv: InsnId, state: InsnId) -> Option<TypeDistributionSummary> {
+        let Some(entries) = profiles.get(state) else {
             return None;
         };
         let recv = self.chase_insn(recv);
@@ -3500,11 +3500,11 @@ impl Function {
     /// - `Megamorphic`/`SkewedMegamorphic` if the receiver has too many types to optimize
     ///   (SkewedMegamorphic may be optimized in the future, but for now we don't)
     /// - `NoProfile` if we have no type information
-    fn resolve_receiver_type_from_profile(&self, recv: InsnId, iseq: IseqPtr, insn_idx: YarvInsnIdx) -> ReceiverTypeResolution {
+    fn resolve_receiver_type_from_profile(&self, recv: InsnId, state: InsnId) -> ReceiverTypeResolution {
         let Some(profiles) = self.profiles.as_ref() else {
             return ReceiverTypeResolution::NoProfile;
         };
-        let Some(entries) = profiles.get(iseq, insn_idx) else {
+        let Some(entries) = profiles.get(state) else {
             return ReceiverTypeResolution::NoProfile;
         };
         let recv = self.chase_insn(recv);
@@ -3550,8 +3550,7 @@ impl Function {
         if self.type_of(val).is_subtype(ty) {
             return true;
         }
-        let frame_state = self.frame_state(state);
-        let Some(profiled_type) = self.profiled_type_of_at(val, frame_state.iseq, frame_state.insn_idx) else {
+        let Some(profiled_type) = self.profiled_type_of_at(val, state) else {
             return false;
         };
         Type::from_profiled_type(profiled_type).is_subtype(ty)
@@ -3722,8 +3721,7 @@ impl Function {
                         self.try_rewrite_uminus(block, insn_id, recv, state),
                     Insn::Send { mut recv, cd, state, block: send_block, args, .. } => {
                         let has_block = send_block.is_some();
-                        let frame_state = self.frame_state(state);
-                        let (klass, profiled_type) = match self.resolve_receiver_type(recv, self.type_of(recv), frame_state.iseq, frame_state.insn_idx) {
+                        let (klass, profiled_type) = match self.resolve_receiver_type(recv, self.type_of(recv), state) {
                             ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
                             ReceiverTypeResolution::Monomorphic { profiled_type }
                             | ReceiverTypeResolution::SkewedPolymorphic { profiled_type } => (profiled_type.class(), Some(profiled_type)),
@@ -3948,7 +3946,7 @@ impl Function {
                                         }
                                     }
                                     // Get the profiled type to check if the fields is embedded or heap allocated.
-                                    let Some(is_embedded) = self.profiled_type_of_at(recv, frame_state.iseq, frame_state.insn_idx).map(|t| t.flags().is_struct_embedded()) else {
+                                    let Some(is_embedded) = self.profiled_type_of_at(recv, state).map(|t| t.flags().is_struct_embedded()) else {
                                         // No (monomorphic/skewed polymorphic) profile info
                                         let reason = if has_block { SendNoProfiles } else { SendWithoutBlockNoProfiles };
                                         self.set_dynamic_send_reason(insn_id, reason);
@@ -4026,8 +4024,7 @@ impl Function {
                             self.make_equal_to(insn_id, val); continue;
                         }
 
-                        let frame_state = self.frame_state(state);
-                        let Some(recv_type) = self.profiled_type_of_at(val, frame_state.iseq, frame_state.insn_idx) else {
+                        let Some(recv_type) = self.profiled_type_of_at(val, state) else {
                             self.push_insn_id(block, insn_id); continue
                         };
 
@@ -4757,13 +4754,10 @@ impl Function {
                     args: vec![],
                 }));
 
-                // Merge the callee's profile entries into the caller's. Entries are
-                // keyed by (callee_iseq, callee_insn_idx) and the InsnIds were
-                // assigned in caller space during translation, so the merge needs
-                // no remapping. Without this step, type_specialize couldn't find
-                // profile data for Sends inside the inlined body.
+                // Append the callee's profile entries. The callee body was emitted directly into
+                // this Function, so its Snapshot and operand InsnIds already live in caller space.
                 if let Some(caller_profiles) = self.profiles.as_mut() {
-                    caller_profiles.merge_callee(&add_result.profiles, 0);
+                    caller_profiles.append(&add_result.profiles);
                 } else {
                     self.profiles = Some(add_result.profiles);
                 }
@@ -4955,8 +4949,7 @@ impl Function {
             for insn_id in old_insns {
                 match self.find(insn_id) {
                     Insn::GetIvar { self_val, id, ic: _, state } => {
-                        let frame_state = self.frame_state(state);
-                        let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.iseq, frame_state.insn_idx) else {
+                        let Some(recv_type) = self.profiled_type_of_at(self_val, state) else {
                             // No (monomorphic/skewed polymorphic) profile info
                             self.count(block, Counter::getivar_fallback_not_monomorphic);
                             self.push_insn_id(block, insn_id); continue;
@@ -4986,8 +4979,7 @@ impl Function {
                         self.make_equal_to(insn_id, replacement);
                     }
                     Insn::DefinedIvar { self_val, id, pushval, state } => {
-                        let frame_state = self.frame_state(state);
-                        let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.iseq, frame_state.insn_idx) else {
+                        let Some(recv_type) = self.profiled_type_of_at(self_val, state) else {
                             // No (monomorphic/skewed polymorphic) profile info
                             self.count(block, Counter::definedivar_fallback_not_monomorphic);
                             self.push_insn_id(block, insn_id); continue;
@@ -5027,8 +5019,7 @@ impl Function {
                         self.make_equal_to(insn_id, replacement);
                     }
                     Insn::SetIvar { self_val, id, val, state, ic } => {
-                        let frame_state = self.frame_state(state);
-                        let Some(recv_type) = self.profiled_type_of_at(self_val, frame_state.iseq, frame_state.insn_idx) else {
+                        let Some(recv_type) = self.profiled_type_of_at(self_val, state) else {
                             // No (monomorphic/skewed polymorphic) profile info
                             self.count(block, Counter::setivar_fallback_not_monomorphic);
                             self.push_insn_id(block, insn_id); continue;
@@ -5194,8 +5185,7 @@ impl Function {
             let method_id = unsafe { rb_vm_ci_mid(call_info) };
 
             // If we have info about the class of the receiver
-            let frame_state = fun.frame_state(state);
-            let (recv_class, profiled_type) = match fun.resolve_receiver_type(recv, self_type, frame_state.iseq, frame_state.insn_idx) {
+            let (recv_class, profiled_type) = match fun.resolve_receiver_type(recv, self_type, state) {
                 ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
                 ReceiverTypeResolution::Monomorphic { profiled_type }
                 | ReceiverTypeResolution::SkewedPolymorphic { profiled_type} => (profiled_type.class(), Some(profiled_type)),
@@ -7266,42 +7256,34 @@ fn unspecializable_call_type(flags: u32) -> bool {
 }
 
 /// We have IseqPayload, which keeps track of HIR Types in the interpreter, but this is not useful
-/// or correct to query from inside the optimizer. Instead, ProfileOracle provides an API to look
-/// up profiled type information by HIR InsnId at a given ISEQ instruction.
-///
-/// Keying includes the ISEQ pointer so that profile entries from inlined callee bodies can coexist
-/// with the caller's own entries in a single oracle. During inlining, `merge_callee` copies the
-/// callee Function's profile entries into the caller, remapping their InsnIds. Consumers must
-/// pass the FrameState's `iseq` (not the outer jit.iseq) when looking entries up.
+/// or correct to query from inside the optimizer. Instead, ProfileOracle maps interpreter-recorded
+/// type information onto the caller Function's HIR values at each Snapshot that represents a
+/// profiled bytecode instruction.
 #[derive(Debug)]
 struct ProfileOracle {
-    /// The ISEQ this oracle was constructed for, used as the key for entries built by profile_stack
-    /// and profile_self during `iseq_to_hir`. Retained primarily so that merge_callee can resolve
-    /// "my own entries" when merging into a different oracle.
-    own_iseq: IseqPtr,
-    /// types maps (iseq, insn_idx) -> profiled type information at that ISEQ instruction. Entries
-    /// from inlined callees are stored under the callee's (iseq, insn_idx) after merge_callee.
-    types: HashMap<(IseqPtr, YarvInsnIdx), Vec<(InsnId, TypeDistributionSummary)>>,
+    /// types maps Snapshot InsnIds to profiled type information for the HIR operands visible at
+    /// that Snapshot. Inlined callees are translated directly into the caller, so their profile
+    /// entries are already in caller InsnId space and can be appended without remapping.
+    types: HashMap<InsnId, Vec<(InsnId, TypeDistributionSummary)>>,
 }
 
 impl ProfileOracle {
-    fn new(own_iseq: IseqPtr) -> Self {
-        Self { own_iseq, types: Default::default() }
+    fn new() -> Self {
+        Self { types: Default::default() }
     }
 
-    /// Look up profile entries for a given (iseq, insn_idx). Returns None when no profile data
-    /// was recorded for that instruction or when the ISEQ's entries have not been merged into
-    /// this oracle.
-    fn get(&self, iseq: IseqPtr, insn_idx: YarvInsnIdx) -> Option<&[(InsnId, TypeDistributionSummary)]> {
-        self.types.get(&(iseq, insn_idx)).map(|v| v.as_slice())
+    /// Look up profile entries for a Snapshot. Returns None when no profile data was recorded for
+    /// the bytecode instruction represented by that Snapshot.
+    fn get(&self, state: InsnId) -> Option<&[(InsnId, TypeDistributionSummary)]> {
+        self.types.get(&state).map(|v| v.as_slice())
     }
 
     /// Map the interpreter-recorded types of the stack onto the HIR operands on our compile-time virtual stack.
-    fn profile_stack(&mut self, state: &FrameState) {
+    fn profile_stack(&mut self, snapshot: InsnId, state: &FrameState) {
         let iseq_insn_idx = state.insn_idx;
-        let payload = get_or_create_iseq_payload(self.own_iseq);
+        let payload = get_or_create_iseq_payload(state.iseq);
         let Some(operand_types) = payload.profile.get_operand_types(iseq_insn_idx) else { return };
-        let entry = self.types.entry((self.own_iseq, iseq_insn_idx)).or_default();
+        let entry = self.types.entry(snapshot).or_default();
         // operand_types is always going to be <= stack size (otherwise it would have an underflow
         // at run-time) so use that to drive iteration.
         for (idx, insn_type_distribution) in operand_types.iter().rev().enumerate() {
@@ -7311,11 +7293,11 @@ impl ProfileOracle {
     }
 
     /// Map the interpreter-recorded types of self onto the HIR self
-    fn profile_self(&mut self, state: &FrameState, self_param: InsnId) {
+    fn profile_self(&mut self, snapshot: InsnId, state: &FrameState, self_param: InsnId) {
         let iseq_insn_idx = state.insn_idx;
-        let payload = get_or_create_iseq_payload(self.own_iseq);
+        let payload = get_or_create_iseq_payload(state.iseq);
         let Some(operand_types) = payload.profile.get_operand_types(iseq_insn_idx) else { return };
-        let entry = self.types.entry((self.own_iseq, iseq_insn_idx)).or_default();
+        let entry = self.types.entry(snapshot).or_default();
         if operand_types.is_empty() {
            return;
         }
@@ -7323,19 +7305,12 @@ impl ProfileOracle {
         entry.push((self_param, TypeDistributionSummary::new(self_type_distribution)))
     }
 
-    /// Merge profile entries from an inlined callee's oracle into this one. Callee InsnIds are
-    /// remapped by `insn_base` so that they refer to the caller's namespace after the inliner
-    /// copies the callee's instructions into the caller. Entries are inserted under the callee's
-    /// (iseq, insn_idx) key, which does not collide with the caller's own entries.
-    fn merge_callee(&mut self, callee: &ProfileOracle, insn_base: usize) {
-        for ((iseq, insn_idx), entries) in &callee.types {
-            let remapped: Vec<(InsnId, TypeDistributionSummary)> = entries.iter()
-                .map(|(insn_id, summary)| (InsnId(insn_id.0 + insn_base), summary.clone()))
-                .collect();
-            // Recursive inlining (callee A inlining callee B before A itself gets inlined) would
-            // already have merged B's entries into A's oracle. Extend rather than insert so those
-            // entries survive.
-            self.types.entry((*iseq, *insn_idx)).or_default().extend(remapped);
+    /// Append profile entries produced while translating an inlined callee. The callee was added
+    /// directly to the caller Function, so Snapshot and operand InsnIds already refer to caller
+    /// storage.
+    fn append(&mut self, callee: &ProfileOracle) {
+        for (snapshot, entries) in &callee.types {
+            self.types.entry(*snapshot).or_default().extend(entries.iter().cloned());
         }
     }
 }
@@ -7377,7 +7352,7 @@ struct AddIseqResult {
     /// use this to pick the right entry point without needing the scaffolding.
     body_entry_blocks: Vec<BlockId>,
     /// Profile oracle populated during compilation. The caller decides whether
-    /// to assign it to `fun.profiles` (top-level) or merge it into an existing
+    /// to assign it to `fun.profiles` (top-level) or append it to an existing
     /// oracle (inliner).
     profiles: ProfileOracle,
     /// Number of return paths emitted. Counts `YARVINSN_leave` translations,
@@ -7428,7 +7403,7 @@ fn add_iseq_to_hir(
     mode: AddIseqMode,
 ) -> Result<AddIseqResult, ParseError> {
     let payload = get_or_create_iseq_payload(iseq);
-    let mut profiles = ProfileOracle::new(iseq);
+    let mut profiles = ProfileOracle::new();
     let mut num_returns: usize = 0;
 
     // Compute a map of PC->Block by finding jump targets
@@ -7522,16 +7497,23 @@ fn add_iseq_to_hir(
                 .try_into()
                 .unwrap();
 
+            // We add NoTracePoint patch points before every instruction that could be affected by TracePoint.
+            // This ensures that if TracePoint is enabled, we can exit the generated code as fast as possible.
+            unsafe extern "C" {
+                fn rb_iseq_event_flags(iseq: IseqPtr, pos: usize) -> rb_event_flag_t;
+            }
+            let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
+
             // If TracePoint has been enabled after we have collected profiles, we'll see
             // trace_getinstancevariable in the ISEQ. We have to treat it like getinstancevariable
             // for profiling purposes: there is no operand on the stack to look up; we have
             // profiled cfp->self.
             if opcode == YARVINSN_getinstancevariable || opcode == YARVINSN_trace_getinstancevariable {
-                profiles.profile_self(&exit_state, self_param);
+                profiles.profile_self(exit_id, &exit_state, self_param);
             } else if opcode == YARVINSN_setinstancevariable || opcode == YARVINSN_trace_setinstancevariable {
-                profiles.profile_self(&exit_state, self_param);
+                profiles.profile_self(exit_id, &exit_state, self_param);
             } else if opcode == YARVINSN_definedivar || opcode == YARVINSN_trace_definedivar {
-                profiles.profile_self(&exit_state, self_param);
+                profiles.profile_self(exit_id, &exit_state, self_param);
             } else if opcode == YARVINSN_invokeblock || opcode == YARVINSN_trace_invokeblock {
                 if get_option!(stats) {
                     let iseq_insn_idx = exit_state.insn_idx;
@@ -7591,7 +7573,7 @@ fn add_iseq_to_hir(
                 }
             }
             else {
-                profiles.profile_stack(&exit_state);
+                profiles.profile_stack(exit_id, &exit_state);
             }
 
             // Flag a future getlocal/setlocal to add a patch point if this instruction is not leaf.
@@ -7599,12 +7581,6 @@ fn add_iseq_to_hir(
                 local_inval = true;
             }
 
-            // We add NoTracePoint patch points before every instruction that could be affected by TracePoint.
-            // This ensures that if TracePoint is enabled, we can exit the generated code as fast as possible.
-            unsafe extern "C" {
-                fn rb_iseq_event_flags(iseq: IseqPtr, pos: usize) -> rb_event_flag_t;
-            }
-            let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
             if unsafe { rb_iseq_event_flags(iseq, insn_idx as usize) } != 0 {
                 fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoTracePoint, state: exit_id });
             }
@@ -7847,7 +7823,7 @@ fn add_iseq_to_hir(
                     // (ID id, IVC ic, VALUE pushval)
                     let id = ID(get_arg(pc, 0).as_u64());
                     let pushval = get_arg(pc, 2);
-                    if let Some(summary) = fun.polymorphic_summary(&profiles, self_param, iseq, exit_state.insn_idx) {
+                    if let Some(summary) = fun.polymorphic_summary(&profiles, self_param, exit_id) {
                         self_param = fun.push_insn(block, Insn::GuardType { val: self_param, guard_type: types::HeapBasicObject, state: exit_id, recompile: None });
                         let join_block = fun.new_block(insn_idx);
                         let join_param = fun.push_insn(join_block, Insn::Param);
@@ -8720,7 +8696,7 @@ fn add_iseq_to_hir(
                         let stack_count = state.stack.len();
                         let recv = state.stack_topn(argc as usize)?;  // args are on top
                         let entry_args = state.as_args(self_param);
-                        if let Some(summary) = fun.polymorphic_summary(&profiles, recv, iseq, exit_state.insn_idx) {
+                        if let Some(summary) = fun.polymorphic_summary(&profiles, recv, exit_id) {
                             let join_block = fun.new_block(insn_idx);
                             // Dedup by expected type so immediate/heap variants
                             // under the same Ruby class can still get separate branches.
@@ -9057,7 +9033,7 @@ fn add_iseq_to_hir(
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::UnhandledYARVInsn(opcode), recompile: None });
                         break;  // End the block
                     }
-                    if let Some(summary) = fun.polymorphic_summary(&profiles, self_param, iseq, exit_state.insn_idx) {
+                    if let Some(summary) = fun.polymorphic_summary(&profiles, self_param, exit_id) {
                         self_param = fun.push_insn(block, Insn::GuardType { val: self_param, guard_type: types::HeapBasicObject, state: exit_id, recompile: None });
                         let join_block = fun.new_block(insn_idx);
                         let join_param = fun.push_insn(join_block, Insn::Param);
