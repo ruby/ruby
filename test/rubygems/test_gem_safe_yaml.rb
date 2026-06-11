@@ -709,6 +709,16 @@ class TestGemSafeYAML < Gem::TestCase
   end
 
   def test_roundtrip_specification_with_metadata
+    metadata = {
+      "changelog_uri" => "https://example.com/CHANGELOG.md",
+      "source_code_uri" => "https://github.com/example/metadata-test",
+      "bug_tracker_uri" => "https://github.com/example/metadata-test/issues",
+      "allowed_push_host" => "https://rubygems.org",
+      "\"double_quoted\"" => "\"quoted_value\"",
+      "'single_quoted'" => "'quoted_value'",
+      "have:colon" => "value:colon",
+      "have space" => "value space",
+    }
     spec = Gem::Specification.new do |s|
       s.name = "metadata-test"
       s.version = "1.0.0"
@@ -716,24 +726,74 @@ class TestGemSafeYAML < Gem::TestCase
       s.summary = "A gem with metadata"
       s.files = ["lib/foo.rb"]
       s.require_paths = ["lib"]
-      s.metadata = {
-        "changelog_uri" => "https://example.com/CHANGELOG.md",
-        "source_code_uri" => "https://github.com/example/metadata-test",
-        "bug_tracker_uri" => "https://github.com/example/metadata-test/issues",
-        "allowed_push_host" => "https://rubygems.org",
-      }
+      s.metadata = metadata
     end
 
     yaml = yaml_dump(spec)
     loaded = Gem::SafeYAML.safe_load(yaml)
 
     assert_kind_of Gem::Specification, loaded
-    assert_kind_of Hash, loaded.metadata
-    assert_equal 4, loaded.metadata.size
-    assert_equal "https://example.com/CHANGELOG.md", loaded.metadata["changelog_uri"]
-    assert_equal "https://github.com/example/metadata-test", loaded.metadata["source_code_uri"]
-    assert_equal "https://github.com/example/metadata-test/issues", loaded.metadata["bug_tracker_uri"]
-    assert_equal "https://rubygems.org", loaded.metadata["allowed_push_host"]
+    assert_equal metadata, loaded.metadata
+  end
+
+  def test_roundtrip_specification_with_quoted_first_metadata_key
+    metadata = {
+      "\"double_quoted\"" => "\"quoted_value\"",
+      "'single_quoted'" => "'quoted_value'",
+      "have:colon" => "value:colon",
+    }
+    spec = Gem::Specification.new do |s|
+      s.name = "metadata-test"
+      s.version = "1.0.0"
+      s.authors = ["Test"]
+      s.summary = "A gem with metadata"
+      s.metadata = metadata
+    end
+
+    loaded = Gem::SafeYAML.safe_load(yaml_dump(spec))
+
+    assert_kind_of Gem::Specification, loaded
+    assert_equal "metadata-test", loaded.name
+    assert_equal metadata, loaded.metadata
+  end
+
+  def test_roundtrip_specification_with_special_metadata_keys
+    metadata = {
+      "have: colon-space" => "value: colon-space",
+      "have#hash" => "value#hash",
+      "padded" => " padded value ",
+      "looks_null" => "null",
+    }
+    spec = Gem::Specification.new do |s|
+      s.name = "metadata-test"
+      s.version = "1.0.0"
+      s.authors = ["Test"]
+      s.summary = "A gem with metadata"
+      s.metadata = metadata
+    end
+
+    loaded = Gem::SafeYAML.safe_load(yaml_dump(spec))
+
+    assert_kind_of Gem::Specification, loaded
+    assert_equal metadata, loaded.metadata
+  end
+
+  def test_load_psych_style_quoted_mapping_keys
+    yaml = <<~YAML
+      ---
+      '"double_quoted"': '"quoted_value"'
+      "'single_quoted'": "'quoted_value'"
+      'have: colon-space': v
+      key#hash: value#hash
+    YAML
+
+    expected = {
+      "\"double_quoted\"" => "\"quoted_value\"",
+      "'single_quoted'" => "'quoted_value'",
+      "have: colon-space" => "v",
+      "key#hash" => "value#hash",
+    }
+    assert_equal expected, yaml_load(yaml)
   end
 
   def test_roundtrip_version
