@@ -686,9 +686,23 @@ set_i_to_set(VALUE set)
 
 /*
  *  call-seq:
- *    join(separator=nil)-> new_string
+ *    join(separator = $,) -> new_string
  *
- *  Returns a string created by converting each element of the set to a string.
+ *  Returns the new string formed by joining the string-converted elements of +self+
+ *  with the given +separator+ (defaults to <tt>$,</tt>):
+ *
+ *    $,                       # => nil
+ *    Set[].join               # => ""
+ *    Set[%w[foo]].join        # => "foo"
+ *    s = Set[%w[foo bar baz]] # => Set[["foo", "bar", "baz"]]
+ *    s.join                   # => "foobarbaz"
+ *    s.join('|')              # => "foo|bar|baz"
+ *    s.join(' :|: ')          # => "foo :|: bar :|: baz"
+ *
+ *  Flattens and joins nested arrays:
+ *
+ *    Set[[:foo, [:bar, [:baz, :bat]]]].join0 # => "foobarbazbat"
+ *
  */
 static VALUE
 set_i_join(int argc, VALUE *argv, VALUE set)
