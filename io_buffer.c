@@ -740,7 +740,11 @@ io_buffer_map(int argc, VALUE *argv, VALUE klass)
             rb_raise(rb_eArgError, "Size can't be zero!");
         }
         if (UNLIKELY(size > (size_t)file_size)) {
-            rb_raise(rb_eArgError, "Size can't be larger than file size!");
+            rb_raise(rb_eArgError,
+                     "Size (%" PRIuSIZE ") can't be larger than "
+                     "file size (%" PRIuSIZE ")",
+                     size,
+                     (size_t)file_size);
         }
     }
     else {
@@ -753,17 +757,32 @@ io_buffer_map(int argc, VALUE *argv, VALUE klass)
     if (argc >= 3) {
         offset = NUM2OFFT(argv[2]);
         if (UNLIKELY(offset < 0)) {
-            rb_raise(rb_eArgError, "Offset can't be negative!");
+            rb_raise(rb_eArgError,
+                     "Offset (%" PRIsVALUE ") can't be negative!",
+                     argv[2]);
         }
         if (UNLIKELY(offset >= file_size)) {
-            rb_raise(rb_eArgError, "Offset too large!");
+            rb_raise(rb_eArgError,
+                     "Offset (%" PRIsVALUE ") can't be larger than "
+                     "file size (%" PRIuSIZE ")",
+                     argv[2],
+                     (size_t)file_size);
         }
         if (RB_NIL_P(argv[1])) {
             // Decrease size if it's set from the actual file size:
             size = (size_t)(file_size - offset);
         }
         else if (UNLIKELY((size_t)(file_size - offset) < size)) {
-            rb_raise(rb_eArgError, "Offset too large!");
+            size_t maximum_page_count =
+                (file_size - size) / RUBY_IO_BUFFER_PAGE_SIZE;
+            size_t maximum_offset =
+                RUBY_IO_BUFFER_PAGE_SIZE * maximum_page_count;
+            rb_raise(rb_eArgError,
+                     "Offset (%" PRIsVALUE ") can't be larger than "
+                     "%" PRIuSIZE " for requested size (%" PRIuSIZE ")",
+                     argv[2],
+                     maximum_offset,
+                     size);
         }
     }
 
