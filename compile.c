@@ -3947,6 +3947,11 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 else {
                     RB_OBJ_SET_SHAREABLE(re);
                 }
+                /* The folded operand is a Regexp, so the instruction must be
+                 * putobject: dupstring/dupchilledstring would resurrect the
+                 * Regexp as a String at run time (e.g. for a /o regexp whose
+                 * interpolation folds to a constant, such as /#{"a"}/o). */
+                iobj->insn_id = BIN(putobject);
                 RB_OBJ_WRITE(iseq, &OPERAND_AT(iobj, 0), re);
                 ELEM_REMOVE(iobj->link.next);
             }
