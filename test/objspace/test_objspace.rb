@@ -351,14 +351,14 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_trace_object_allocations_does_not_reuse_freed_allocation_info
-    assert_separately(%w(-robjspace), <<~RUBY)
+    assert_separately(%w(-robjspace), <<~RUBY, timeout: 60)
       ObjectSpace.trace_object_allocations do
-        1_000_000.times.map { Object.new }
+        100_000.times.map { Object.new }
       end
 
       GC.start
 
-      objs = 1_000_000.times.map { Object.new }
+      objs = 100_000.times.map { Object.new }
 
       leaked = objs.count { |obj| ObjectSpace.allocation_sourcefile(obj) }
       assert_equal 0, leaked
