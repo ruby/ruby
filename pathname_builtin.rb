@@ -1674,7 +1674,18 @@ class Pathname    # * FileTest *
   #
   def exist?() FileTest.exist?(@path) end
 
-  # See <tt>FileTest.grpowned?</tt>.
+  # call-seq:
+  #   grpowned?(path) -> true or false
+  #
+  # Returns whether the filesystem entry for the path stored in +self+ exists,
+  # and the effective group id of the calling process is the owner of the entry:
+  #
+  #   Pathname('README.md').grpowned?   # => true
+  #   Pathname('lib').grpowned?         # => true
+  #   Pathname('/etc/passwd').grpowned? # => false
+  #   Pathname('nosuch').grpowned?      # => false
+  #
+  # Returns +false+ on Windows.
   def grpowned?() FileTest.grpowned?(@path) end
 
   # :markup: markdown
