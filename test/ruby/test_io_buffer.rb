@@ -91,11 +91,11 @@ class TestIOBuffer < Test::Unit::TestCase
   end
 
   def test_file_mapped_size_too_large
-    assert_raise ArgumentError do
-      File.open(__FILE__) {|file| IO::Buffer.map(file, 200_000, 0, IO::Buffer::READONLY)}
-    end
-    assert_raise ArgumentError do
-      File.open(__FILE__) {|file| IO::Buffer.map(file, File.size(__FILE__) + 1, 0, IO::Buffer::READONLY)}
+    size = File.size(__FILE__) + 1
+    file_size = File.size(__FILE__)
+    message = "Size (#{size}) can't be larger than file size (#{file_size})"
+    assert_raise_with_message ArgumentError, message do
+      File.open(__FILE__) {|file| IO::Buffer.map(file, size, 0, IO::Buffer::READONLY)}
     end
   end
 
@@ -105,12 +105,34 @@ class TestIOBuffer < Test::Unit::TestCase
     }
   end
 
-  def test_file_mapped_offset_too_large
-    assert_raise ArgumentError do
-      File.open(__FILE__) {|file| IO::Buffer.map(file, nil, IO::Buffer::PAGE_SIZE * 100, IO::Buffer::READONLY)}
+  def test_file_mapped_offset_negative
+    offset = -1
+    message = "Offset (#{offset}) can't be negative!"
+    assert_raise_with_message ArgumentError, message do
+      File.open(__FILE__) {|file| IO::Buffer.map(file, nil, offset, IO::Buffer::READONLY)}
     end
-    assert_raise ArgumentError do
-      File.open(__FILE__) {|file| IO::Buffer.map(file, 20, IO::Buffer::PAGE_SIZE * 100, IO::Buffer::READONLY)}
+  end
+
+  def test_file_mapped_offset_too_large
+    file_size = File.size(__FILE__)
+    page_count = file_size / IO::Buffer::PAGE_SIZE
+    offset = IO::Buffer::PAGE_SIZE * (page_count + 1)
+    message = "Offset (#{offset}) can't be larger than file size (#{file_size})"
+    assert_raise_with_message ArgumentError, message do
+      File.open(__FILE__) {|file| IO::Buffer.map(file, nil, offset, IO::Buffer::READONLY)}
+    end
+
+    if page_count > 0
+      offset = IO::Buffer::PAGE_SIZE * page_count
+      available_size = file_size - offset
+      size = available_size + 1
+      maximum_page_count = (file_size - size) / IO::Buffer::PAGE_SIZE
+      maximum_offset = IO::Buffer::PAGE_SIZE * maximum_page_count
+      message = "Offset (#{offset}) can't be larger than #{maximum_offset} " +
+                "for requested size (#{size})"
+      assert_raise_with_message ArgumentError, message do
+        File.open(__FILE__) {|file| IO::Buffer.map(file, size, offset, IO::Buffer::READONLY)}
+      end
     end
   end
 
