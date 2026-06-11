@@ -4,41 +4,36 @@
 require_relative 'tracepoint.rb'
 
 module RubyTimelineTool
-  USDT_SET = TracePointSet.new do
-    group('default') do
-      tp('gc__mark__begin',   "default",  'gc_mark',          'B')
-      tp('gc__mark__end',     "default",  'gc_mark',          'E')
-      tp('gc__sweep__begin',  "default",  'gc_sweep',         'B')
-      tp('gc__sweep__end',    "default",  'gc_sweep',         'E')
-      tp('gc__enter',         "default",  'GCEnterExit',      'B', {event: :to_i})
-      tp('gc__exit',          "default",  'GCEnterExit',      'E', {event: :to_i})
-    end
-    
-    group('obj_new') do
-      ['gc__obj_new',       "ruby",     'gc_obj_new',       'i',  2],
-    end
+  tp(1,2,3,4)
 
-    group('obj_free') do
-      ['gc__obj_free',      "ruby",     'gc_obj_free',      'i',  2],
-    end
-
-    group('xmalloc') do
-      ['gc__xmalloc',       "ruby",     'gc_xmalloc',       'i',  2],
-      ['gc__xcalloc',       "ruby",     'gc_xcalloc',       'i',  2],
-    end
-
-    group('xfree') do
-      ['gc__xfree',         "ruby",     'gc_xfree',         'i',  2],
-    end
-
-    group('gvl') do
-      ['gvl__acquire',      "ruby",     'GVL',              'B',  0],
-      ['gvl__release',      "ruby",     'GVL',              'E',  0],
-    end
-
-    group('rts') do
-      ['rts__set_running',  "ruby",     'rts_set_running',  'i',  3],
-    end
-
-  end
+  USDT_SET = {
+    'default' => [
+      tp('gc__mark__begin',   "default",  'gc_mark',          'B'),
+      tp('gc__mark__end',     "default",  'gc_mark',          'E'),
+      tp('gc__sweep__begin',  "default",  'gc_sweep',         'B'),
+      tp('gc__sweep__end',    "default",  'gc_sweep',         'E'),
+      tp('gc__enter',         "default",  'GCEnterExit',      'B', args: {event: :to_i}),
+      tp('gc__exit',          "default",  'GCEnterExit',      'E', args: {event: :to_i}),
+    ],
+    'obj_new' => [
+      tp('gc__obj_new',       "ruby",     'gc_obj_new',       'i', args: {obj: :to_i, flags: :to_i}), # TODO: flags converter
+    ],
+    'obj_free' => [
+      tp('gc__obj_free',      "ruby",     'gc_obj_free',      'i', args: {obj: :to_i, flags: :to_i}), # TODO: flags converter
+    ],
+    'xmalloc' => [
+      tp('gc__xmalloc',       "ruby",     'gc_xmalloc',       'i', args: {n: :to_i, size: :to_i}),
+      tp('gc__xcalloc',       "ruby",     'gc_xcalloc',       'i', args: {n: :to_i, size: :to_i}),
+    ],
+    'xfree' => [
+      tp('gc__xfree',         "ruby",     'gc_xfree',         'i', args: {obj: :to_i, size: :to_i}),
+    ],
+    'gvl' => [
+      tp('gvl__acquire',      "ruby",     'GVL',              'B'),
+      tp('gvl__release',      "ruby",     'GVL',              'E'),
+    ],
+    'rts' => [ # ractor.thread.sched
+      tp('rts__set_running',  "ruby",     'rts_set_running',  'i', args: {sched: :to_i, old_thread: :to_i, new_thread: :to_i}),
+    ]
+  }
 end
