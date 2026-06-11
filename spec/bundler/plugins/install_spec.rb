@@ -298,6 +298,43 @@ RSpec.describe "bundler plugin install" do
       plugin_should_not_be_installed("foo-dep")
     end
 
+    it "updates a plugin with bundle update" do
+      install_gemfile <<-G
+        source 'https://gem.repo2'
+        plugin 'foo'
+      G
+
+      plugin_should_be_installed_with_version("foo", "1.0")
+
+      update_repo2 do
+        build_plugin "foo", "1.1"
+      end
+
+      bundle "update foo"
+
+      plugin_should_be_installed_with_version("foo", "1.1")
+    end
+
+    it "updates a plugin that is not installed locally" do
+      install_gemfile <<-G
+        source 'https://gem.repo2'
+        plugin 'foo'
+      G
+
+      plugin_should_be_installed_with_version("foo", "1.0")
+
+      update_repo2 do
+        build_plugin "foo", "1.1"
+      end
+
+      # simulate a machine where the plugin has not been installed yet
+      FileUtils.rm_rf bundled_app(".bundle/plugin")
+
+      bundle "update foo"
+
+      plugin_should_be_installed_with_version("foo", "1.1")
+    end
+
     it "overrides the index with the new plugin version" do
       gemfile <<-G
         source 'https://gem.repo2'

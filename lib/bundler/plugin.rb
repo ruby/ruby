@@ -104,12 +104,6 @@ module Bundler
     # @param [Pathname] gemfile path
     # @param [Proc] block that can be evaluated for (inline) Gemfile
     def gemfile_install(gemfile = nil, lockfile = nil, unlock = {}, &inline)
-      # skip the update if unlocking specific gems, but none of them are our plugins
-      if unlock.is_a?(Hash) && unlock[:gems] && !unlock[:gems].empty? &&
-         (unlock[:gems] & index.installed_plugins).empty?
-        unlock = {}
-      end
-
       @gemfile_parse = true
       Bundler.configure
       builder = DSL.new
@@ -123,9 +117,21 @@ module Bundler
       plugins = builder.dependencies.map(&:name)
       return if plugins.empty?
 
+      # skip the update if unlocking specific gems, but none of them are plugins
+      # declared in the Gemfile
+      if unlock.is_a?(Hash) && unlock[:gems] && !unlock[:gems].empty? &&
+         (unlock[:gems] & plugins).empty?
+        unlock = {}
+      end
+
+      # resolve remotely when unlocking, so that plugins can be updated.
+      # Definition#initialize consumes the unlock hash, so this must be decided
+      # before building the definition.
+      updating = unlock == true || (unlock.is_a?(Hash) && !unlock.empty?)
+
       definition = builder.to_definition(lockfile, unlock)
 
-      installed_specs = Installer.new.install_definition(definition)
+      installed_specs = Installer.new.install_definition(definition, updating)
 
       save_plugins installed_specs.slice(*plugins), builder.inferred_plugins
     rescue RuntimeError => e
