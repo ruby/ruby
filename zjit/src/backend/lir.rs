@@ -558,7 +558,12 @@ pub struct SideExit {
 /// Arguments for the recompile callback on side exit.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct SideExitRecompile {
-    pub iseq: Opnd,
+    /// The frame's own iseq, where the runtime profile is recorded at `insn_idx`.
+    /// For an exit out of inlined code this is the inlined callee.
+    pub frame_iseq: Opnd,
+    /// The compiled unit whose version must be invalidated to force a recompile. For inlined
+    /// methods, this will be the outer function it was inlined into.
+    pub compiled_iseq: Opnd,
     pub insn_idx: u32,
     pub strategy: hir::Recompile,
 }
@@ -2408,7 +2413,8 @@ impl Assembler
                 asm_comment!(asm, "profile and maybe recompile");
                 asm_ccall!(asm, exit_recompile,
                     EC,
-                    recompile.iseq,
+                    recompile.frame_iseq,
+                    recompile.compiled_iseq,
                     Opnd::UImm(recompile.insn_idx as u64),
                     Opnd::Imm(match recompile.strategy {
                         hir::Recompile::ProfileSend { argc } => argc as i64,

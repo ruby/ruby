@@ -3136,7 +3136,8 @@ fn side_exit(jit: &JITState, state: &FrameState, reason: SideExitReason) -> Targ
 fn side_exit_with_recompile(jit: &JITState, state: &FrameState, reason: SideExitReason, recompile: Option<Recompile>) -> Target {
     let mut exit = build_side_exit(jit, state);
     exit.recompile = recompile.map(|strategy| SideExitRecompile {
-        iseq: Opnd::Value(VALUE::from(state.iseq)),
+        frame_iseq: Opnd::Value(VALUE::from(state.iseq)),
+        compiled_iseq: Opnd::Value(VALUE::from(jit.iseq())),
         insn_idx: state.insn_idx() as u32,
         strategy,
     });
@@ -3187,14 +3188,23 @@ c_callable! {
     /// Called from JIT side-exit code to profile operands and trigger recompilation.
     /// For send instructions (argc >= 0): profiles receiver + args from the stack.
     /// For shape guard exits (argc == -1): profiles self from the CFP.
-    /// Once enough profiles are gathered, invalidates the ISEQ for recompilation.
-    pub(crate) fn exit_recompile(ec: EcPtr, iseq_raw: VALUE, insn_idx: u32, argc: i32) {
-        // Fast check before taking the VM lock: skip if already invalidated or
-        // at the version limit. This avoids expensive lock acquisition on every
-        // shape guard exit after the recompile has already been triggered.
+    /// Once enough profiles are gathered, invalidates the compiled unit for recompilation.
+    ///
+    /// Two iseqs are passed because they diverge for inlined code. `frame_iseq_raw` is
+    /// the frame's own iseq, where the runtime profile is recorded; for an exit out of
+    /// an inlined callee this is the callee, which typically has no compiled version of
+    /// its own. `compiled_iseq_raw` is the function that was actually compiled (the
+    /// inliner folds the callee's body into it), so its version is the one holding the
+    /// failing guard and the one we must invalidate to force a recompile. For
+    /// non-inlined code the two are identical.
+    pub(crate) fn exit_recompile(ec: EcPtr, frame_iseq_raw: VALUE, compiled_iseq_raw: VALUE, insn_idx: u32, argc: i32) {
+        // Fast check before taking the VM lock: skip if the compiled unit is already
+        // invalidated or at the version limit. This avoids expensive lock acquisition
+        // on every shape guard exit after the recompile has already been triggered.
+        // The check is on the compiled unit because that is the version we invalidate.
         {
-            let iseq: IseqPtr = iseq_raw.as_iseq();
-            let payload = get_or_create_iseq_payload(iseq);
+            let compiled_iseq: IseqPtr = compiled_iseq_raw.as_iseq();
+            let payload = get_or_create_iseq_payload(compiled_iseq);
             let already_done = payload.versions.last()
                 .map_or(false, |v| unsafe { v.as_ref() }.is_invalidated())
                 || payload.versions.len() >= max_iseq_versions();
@@ -3204,38 +3214,44 @@ c_callable! {
         }
 
         with_vm_lock(src_loc!(), || {
-            let iseq: IseqPtr = iseq_raw.as_iseq();
-            let payload = get_or_create_iseq_payload(iseq);
+            let frame_iseq: IseqPtr = frame_iseq_raw.as_iseq();
+            let compiled_iseq: IseqPtr = compiled_iseq_raw.as_iseq();
 
             // For no-profile sends, skip if already profiled at this insn_idx.
             // For shape guard exits (argc == -1), always re-profile because the
             // original YARV profiles were monomorphic but runtime showed new shapes.
-            if argc >= 0 && payload.profile.done_profiling_at(insn_idx as usize) {
+            if argc >= 0 && get_or_create_iseq_payload(frame_iseq).profile.done_profiling_at(insn_idx as usize) {
                 return;
             }
 
-            with_time_stat(Counter::profile_time_ns, || {
+            let should_recompile = with_time_stat(Counter::profile_time_ns, || {
                 let cfp = unsafe { get_ec_cfp(ec) };
+                let payload = get_or_create_iseq_payload(frame_iseq);
 
-                let should_recompile = if argc >= 0 {
+                if argc >= 0 {
                     let sp = unsafe { get_cfp_sp(cfp) };
                     // Profile the receiver and arguments for this send instruction
-                    payload.profile.profile_send_at(iseq, insn_idx as usize, sp, argc as usize)
+                    payload.profile.profile_send_at(frame_iseq, insn_idx as usize, sp, argc as usize)
                 } else {
                     // Profile self for shape guard exits (argc == -1)
                     let self_val = unsafe { get_cfp_self(cfp) };
-                    payload.profile.profile_self_at(iseq, insn_idx as usize, self_val)
-                };
-
-                // Once we have enough profiles, invalidate and recompile the ISEQ
-                if should_recompile {
-                    if let Some(version) = payload.versions.last_mut() {
-                        let cb = ZJITState::get_code_block();
-                        invalidate_iseq_version(cb, iseq, version);
-                        cb.mark_all_executable();
-                    }
+                    payload.profile.profile_self_at(frame_iseq, insn_idx as usize, self_val)
                 }
             });
+
+            // Once we have enough profiles, invalidate the compiled unit so it
+            // recompiles and reads the freshly recorded profile. We invalidate
+            // `compiled_iseq` rather than `frame_iseq` because an inlined callee has no
+            // compiled code of its own; the outer function it was folded into is what
+            // actually got compiled.
+            if should_recompile {
+                let payload = get_or_create_iseq_payload(compiled_iseq);
+                if let Some(version) = payload.versions.last_mut() {
+                    let cb = ZJITState::get_code_block();
+                    invalidate_iseq_version(cb, compiled_iseq, version);
+                    cb.mark_all_executable();
+                }
+            }
         });
     }
 }
