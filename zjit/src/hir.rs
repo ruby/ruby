@@ -4421,6 +4421,7 @@ impl Function {
                     offset,
                     return_type: types::RubyValue,
                 });
+                // All fields objects are embedded
                 self.load_ivar_embedded(block, fields_obj, id, ivar_index)
             },
             ShapeLayout::RObject => {
