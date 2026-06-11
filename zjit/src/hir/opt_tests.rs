@@ -6104,6 +6104,68 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_optimize_definedivar_skewed_polymorphic() {
+        // Use threshold=6 so we get 5 profile samples.
+        // 4 calls with shape A, 1 with shape B = 80% skew (>= 75% threshold).
+        set_call_threshold(6);
+        eval(r#"
+            class C
+              def test = defined?(@a)
+            end
+
+            hot = C.new
+            hot.instance_variable_set(:@a, 1)
+
+            cold = C.new
+            cold.instance_variable_set(:@b, 1)
+
+            hot.test
+            hot.test
+            hot.test
+            hot.test
+            cold.test
+
+            TEST = C.instance_method(:test)
+        "#);
+        assert_snapshot!(hir_string_proc("TEST"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:HeapBasicObject = GuardType v6, HeapBasicObject
+          v12:CShape = LoadField v10, :shape_id@0x1000
+          v13:CShape[0x1001] = Const CShape(0x1001)
+          v14:CBool = IsBitEqual v12, v13
+          CondBranch v14, bb5(), bb6()
+        bb5():
+          v16:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          Jump bb4(v16)
+        bb6():
+          v18:CShape = LoadField v10, :shape_id@0x1000
+          v19:CShape[0x1010] = Const CShape(0x1010)
+          v20:CBool = IsBitEqual v18, v19
+          CondBranch v20, bb7(), bb8()
+        bb7():
+          v22:NilClass = Const Value(nil)
+          Jump bb4(v22)
+        bb8():
+          v24:CShape = LoadField v10, :shape_id@0x1000
+          v25:CShape[0x1001] = GuardBitEquals v24, CShape(0x1001) recompile
+          v26:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          Jump bb4(v26)
+        bb4(v11:StringExact|NilClass):
+          CheckInterrupts
+          Return v11
+        ");
+    }
+
+    #[test]
     fn test_dont_specialize_complex_shape_definedivar() {
         eval(r#"
             class C

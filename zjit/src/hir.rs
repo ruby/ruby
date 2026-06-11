@@ -7201,9 +7201,40 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                                 };
                                 fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
                             }
-                            // In the fallthrough case, do a generic interpreter definedivar and then join.
-                            fun.count(block, Counter::definedivar_fallback_not_monomorphic);
-                            let result = fun.push_insn(block, Insn::DefinedIvar { self_val: self_param, id, pushval, state: exit_id });
+                            let result = if summary.is_skewed_polymorphic() {
+                                let profiled_type = summary.bucket(0);
+                                if profiled_type.flags().is_immediate() {
+                                    fun.count(block, Counter::definedivar_fallback_immediate);
+                                    fun.push_insn(block, Insn::DefinedIvar { self_val: self_param, id, pushval, state: exit_id })
+                                } else {
+                                    assert!(profiled_type.shape().is_valid());
+                                    if !profiled_type.flags().is_t_object() {
+                                        fun.count(block, Counter::definedivar_fallback_not_t_object);
+                                        fun.push_insn(block, Insn::DefinedIvar { self_val: self_param, id, pushval, state: exit_id })
+                                    } else if profiled_type.shape().is_complex() {
+                                        fun.count(block, Counter::definedivar_fallback_complex);
+                                        fun.push_insn(block, Insn::DefinedIvar { self_val: self_param, id, pushval, state: exit_id })
+                                    } else if fun.policy.no_side_exits {
+                                        fun.push_insn(block, Insn::DefinedIvar { self_val: self_param, id, pushval, state: exit_id })
+                                    } else {
+                                        let shape = fun.load_shape(block, self_param);
+                                        fun.guard_shape(block, shape, profiled_type.shape(), exit_id, Some(Recompile::ProfileSelf));
+                                        let mut ivar_index: attr_index_t = 0;
+                                        if unsafe { rb_shape_get_iv_index(profiled_type.shape().0, id, &mut ivar_index) } {
+                                            fun.push_insn(block, Insn::Const { val: Const::Value(pushval) })
+                                        } else {
+                                            // If there is no IVAR index, then the ivar was undefined when we
+                                            // entered the compiler.  That means we can just return nil for this
+                                            // shape + iv name
+                                            fun.push_insn(block, Insn::Const { val: Const::Value(Qnil) })
+                                        }
+                                    }
+                                }
+                            } else {
+                                // In the fallthrough case, do a generic interpreter definedivar and then join.
+                                fun.count(block, Counter::definedivar_fallback_not_monomorphic);
+                                fun.push_insn(block, Insn::DefinedIvar { self_val: self_param, id, pushval, state: exit_id })
+                            };
                             fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
                             state.stack_push(join_param);
                             block = join_block;
