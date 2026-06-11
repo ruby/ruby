@@ -36,7 +36,6 @@ module Bundler
       no_prune
       path.system
       plugins
-      plugins_in_lockfile
       prefer_patch
       silence_deprecations
       silence_root_warning
@@ -90,7 +89,6 @@ module Bundler
       "BUNDLE_LOCKFILE_CHECKSUMS" => true,
       "BUNDLE_CACHE_ALL" => true,
       "BUNDLE_PLUGINS" => true,
-      "BUNDLE_PLUGINS_IN_LOCKFILE" => true,
       "BUNDLE_GLOBAL_GEM_CACHE" => false,
       "BUNDLE_UPDATE_REQUIRES_ALL_FLAG" => false,
     }.freeze

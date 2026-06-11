@@ -135,8 +135,6 @@ module Bundler
 
           Bundler::SharedHelpers.feature_removed! msg
         end
-
-        remove_plugin_dependencies_if_necessary
       else
         @locked_gems = nil
         @locked_platforms = []
@@ -283,10 +281,6 @@ module Bundler
 
     def requested_dependencies
       dependencies_for(requested_groups)
-    end
-
-    def plugin_dependencies
-      requested_dependencies.select(&:plugin?)
     end
 
     def current_dependencies
@@ -1330,15 +1324,6 @@ module Bundler
 
     def new_resolver(base)
       Resolver.new(base, gem_version_promoter, @most_specific_locked_platform)
-    end
-
-    def remove_plugin_dependencies_if_necessary
-      return if Bundler.settings[:plugins_in_lockfile]
-      # we already have plugin dependencies in the lockfile; continue to do so regardless
-      # of the current setting
-      return if @dependencies.any? {|d| d.plugin? && @locked_deps.key?(d.name) }
-
-      @dependencies.reject!(&:plugin?)
     end
   end
 end

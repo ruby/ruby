@@ -261,8 +261,6 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    Whether Bundler will install gems into the default system path (`Gem.dir`).
 * `plugins` (`BUNDLE_PLUGINS`):
    Enable Bundler's experimental plugin system.
-* `plugins_in_lockfile` (`BUNDLE_PLUGINS_IN_LOCKFILE`):
-   Include plugins as regular dependencies in the lockfile.
 * `prefer_patch` (`BUNDLE_PREFER_PATCH`):
    Prefer updating only to next patch version during updates. Makes `bundle update` calls equivalent to `bundler update --patch`.
 * `redirect` (`BUNDLE_REDIRECT`):

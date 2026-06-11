@@ -111,29 +111,21 @@ module Bundler
       end
 
       @gemfile_parse = true
-      # plugins_in_lockfile is the user facing setting to force plugins to be
-      # included in the lockfile as regular dependencies. But during this
-      # first pass over the Gemfile where we're installing the plugins, we
-      # need that setting to be set, so that we can find the plugins and
-      # install them. We don't persist a lockfile during this pass, so it won't
-      # have any user-facing impact.
-      Bundler.settings.temporary(plugins_in_lockfile: true) do
-        Bundler.configure
-        builder = DSL.new
-        if block_given?
-          builder.instance_eval(&inline)
-        else
-          builder.eval_gemfile(gemfile)
-        end
-        builder.check_primary_source_safety
-        definition = builder.to_definition(lockfile, unlock)
-
-        return if definition.dependencies.empty?
-
-        installed_specs = Installer.new.install_definition(definition)
-
-        save_plugins installed_specs, builder.inferred_plugins
+      Bundler.configure
+      builder = DSL.new
+      if block_given?
+        builder.instance_eval(&inline)
+      else
+        builder.eval_gemfile(gemfile)
       end
+      builder.check_primary_source_safety
+      definition = builder.to_definition(lockfile, unlock)
+
+      return if definition.dependencies.empty?
+
+      installed_specs = Installer.new.install_definition(definition)
+
+      save_plugins installed_specs, builder.inferred_plugins
     rescue RuntimeError => e
       unless e.is_a?(GemfileError)
         Bundler.ui.error "Failed to install plugin: #{e.message}\n  #{e.backtrace[0]}"

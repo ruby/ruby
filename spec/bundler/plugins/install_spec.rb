@@ -535,44 +535,13 @@ RSpec.describe "bundler plugin install" do
       end
     end
 
-    context "with plugins_in_lockfile" do
+    context "plugins in the lockfile" do
       it "includes plugins as dependencies for a new lockfile" do
         install_gemfile <<-G
           source 'https://gem.repo2'
           plugin 'foo'
           gem 'myrack', "1.0.0"
         G
-
-        expect(the_bundle).to include_gems("foo 1.0.0")
-      end
-
-      it "does not include plugins as dependencies for an existing lockfile when disabled" do
-        bundle_config "plugins_in_lockfile false"
-
-        install_gemfile <<-G
-          source 'https://gem.repo2'
-          gem 'myrack', "1.0.0"
-        G
-
-        expect(the_bundle).not_to include_gems("foo 1.0.0")
-
-        install_gemfile <<-G
-          source 'https://gem.repo2'
-          plugin 'foo'
-          gem 'myrack', "1.0.0"
-        G
-
-        expect(the_bundle).not_to include_gems("foo 1.0.0")
-
-        # it adds the plugins to the lockfile when specifically instructed
-        bundle_config "plugins_in_lockfile true"
-        bundle "install"
-
-        expect(the_bundle).to include_gems("foo 1.0.0")
-
-        # but will not remove them, once they're there, regardless of the setting
-        bundle_config "plugins_in_lockfile false"
-        bundle "install"
 
         expect(the_bundle).to include_gems("foo 1.0.0")
       end
