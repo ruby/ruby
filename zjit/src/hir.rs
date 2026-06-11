@@ -4575,19 +4575,6 @@ impl Function {
                     }
                 };
 
-                // A callee with no return paths never reaches the continuation: it
-                // diverges or always side-exits. Inlining it would leave the caller's
-                // SendDirect result aliased to a Param in an unreachable block, so
-                // reject and roll back.
-                if add_result.num_returns == 0 {
-                    self.insns.truncate(pre_insns_len);
-                    self.insn_types.truncate(pre_insn_types_len);
-                    self.blocks.truncate(pre_blocks_len);
-                    incr_counter!(inline_reject_no_returns);
-                    search_start = send_pos + 1;
-                    continue;
-                }
-
                 // Past the point of no return: commit the inlining.
                 incr_counter!(inline_method_count);
                 did_inline = true;
