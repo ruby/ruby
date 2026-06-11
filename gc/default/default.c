@@ -3719,17 +3719,29 @@ gc_sweep_register_free_slot(rb_objspace_t *objspace, struct heap_page *page, str
 {
     rb_asan_unpoison_object(p, false);
     ((struct RBasic *)p)->flags = 0;
-    rb_asan_poison_object(p);
 
-    if (RB_LIKELY(ctx->free_region && p == ctx->free_region->end)) {
-        ctx->free_region->end = p + slot_size;
+    /* The region header lives in a free slot that is kept poisoned at rest, so
+     * unpoison the current region head before inspecting or updating it. */
+    struct free_region *cur = ctx->free_region;
+    if (cur) rb_asan_unpoison_object((VALUE)cur, false);
+
+    if (RB_LIKELY(cur && p == cur->end)) {
+        /* Contiguous with the current region: extend it to cover this slot. */
+        cur->end = p + slot_size;
+        rb_asan_poison_object((VALUE)cur);
+        rb_asan_poison_object(p);
     }
     else {
+        if (cur) rb_asan_poison_object((VALUE)cur);
+
+        /* Start a new region whose header lives in this slot. The header must
+         * be written before the slot is re-poisoned. */
         struct free_region *free_region = (struct free_region *)p;
         free_region->end = p + slot_size;
-        free_region->next = ctx->free_region;
-
+        free_region->next = cur;
         ctx->free_region = free_region;
+
+        rb_asan_poison_object(p);
     }
 }
 
@@ -3867,7 +3879,9 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
         p += BITS_BITLENGTH * slot_size;
     }
 
+    asan_unlock_freelist(sweep_page);
     sweep_page->free_region = ctx->free_region;
+    asan_lock_freelist(sweep_page);
 
     if (!heap->compact_cursor) {
         gc_setup_mark_bits(sweep_page);
