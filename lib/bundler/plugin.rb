@@ -17,6 +17,13 @@ module Bundler
     class PluginInstallError < PluginError; end
 
     PLUGIN_FILE_NAME = "plugins.rb"
+
+    # Module-level flag set while .gemfile_install parses the Gemfile and
+    # consulted by .from_lock to substitute plugin sources with
+    # UnloadedSource. It relies on definitions being built one at a time in
+    # a single thread; if they are ever built concurrently or reentrantly,
+    # this needs to be replaced by explicit state passed down to the
+    # lockfile parser.
     @gemfile_parse = false
 
     module_function
