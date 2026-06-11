@@ -420,7 +420,7 @@ module Gem
 
       def strip_comment(val)
         return val unless val.include?("#")
-        return val if val.lstrip.start_with?("#")
+        return "" if val.lstrip.start_with?("#")
 
         in_single = false
         in_double = false
@@ -446,7 +446,7 @@ module Gem
             when '"' then in_double = true
             when "#"
               # A "#" starts a comment only when preceded by whitespace.
-              return val[0...i].rstrip if i.zero? || val[i - 1] == " " || val[i - 1] == "\t"
+              return val[0...i].rstrip if [" ", "\t"].include?(val[i - 1])
             end
           end
         end

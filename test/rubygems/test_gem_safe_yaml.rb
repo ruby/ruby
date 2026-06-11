@@ -808,6 +808,22 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal({ "key" => "bell\aesc\enull\0soh\x01del\x7F" }, yaml_load(yaml))
   end
 
+  def test_load_comment_only_mapping_value
+    yaml = <<~YAML
+      ---
+      commented: # comment
+      plain: value # trailing comment
+      quoted: "kept # inside quotes"
+    YAML
+
+    expected = {
+      "commented" => nil,
+      "plain" => "value",
+      "quoted" => "kept # inside quotes",
+    }
+    assert_equal expected, yaml_load(yaml)
+  end
+
   def test_load_psych_style_quoted_mapping_keys
     yaml = <<~YAML
       ---
