@@ -357,7 +357,9 @@ module Spec
     end
 
     def ruby_core_tarball?
-      !git_root.join(".git").directory?
+      # A tarball checkout has no `.git` entry at all. Note that `.git` may be
+      # a file rather than a directory in linked git worktrees.
+      !git_root.join(".git").exist?
     end
 
     def rubocop_gemfile_basename
