@@ -778,6 +778,36 @@ class TestGemSafeYAML < Gem::TestCase
     assert_equal metadata, loaded.metadata
   end
 
+  def test_roundtrip_specification_with_control_character_metadata
+    metadata = {
+      "bell" => "bell\a",
+      "escape" => "esc\e[0m",
+      "control" => "soh\x01del\x7F",
+      "tab" => "tab\tinside",
+    }
+    spec = Gem::Specification.new do |s|
+      s.name = "metadata-test"
+      s.version = "1.0.0"
+      s.authors = ["Test"]
+      s.summary = "A gem with metadata"
+      s.metadata = metadata
+    end
+
+    loaded = Gem::SafeYAML.safe_load(yaml_dump(spec))
+
+    assert_kind_of Gem::Specification, loaded
+    assert_equal metadata, loaded.metadata
+  end
+
+  def test_load_escaped_control_characters
+    yaml = <<~YAML
+      ---
+      key: "bell\\aesc\\enull\\0soh\\x01del\\x7F"
+    YAML
+
+    assert_equal({ "key" => "bell\aesc\enull\0soh\x01del\x7F" }, yaml_load(yaml))
+  end
+
   def test_load_psych_style_quoted_mapping_keys
     yaml = <<~YAML
       ---

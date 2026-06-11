@@ -37,6 +37,20 @@ module Gem
       QUOTED_KEY_RE = /^("(?:[^"\\]|\\.)*"|'(?:[^']|'')*'):(?:[ ]+(.*))?$/
       MAX_NESTING_DEPTH = 1_000
 
+      STRING_UNESCAPES = {
+        "\\\\" => "\\",
+        "\\\"" => "\"",
+        "\\0" => "\0",
+        "\\a" => "\a",
+        "\\b" => "\b",
+        "\\t" => "\t",
+        "\\n" => "\n",
+        "\\v" => "\v",
+        "\\f" => "\f",
+        "\\r" => "\r",
+        "\\e" => "\e",
+      }.freeze
+
       def initialize(source)
         @lines = source.split("\n")
         @anchors = {}
@@ -289,14 +303,8 @@ module Gem
         val = val.sub(/^! /, "") if val.start_with?("! ")
 
         if val =~ /^"(.*)"$/
-          $1.gsub(/\\["nrt\\]/) do |m|
-            case m
-            when '\\"' then '"'
-            when "\\n" then "\n"
-            when "\\r" then "\r"
-            when "\\t" then "\t"
-            when "\\\\" then "\\"
-            end
+          $1.gsub(/\\(?:["\\0abtnvfre]|x\h{2})/) do |m|
+            STRING_UNESCAPES[m] || m[2..].to_i(16).chr(Encoding::UTF_8)
           end
         elsif val =~ /^'(.*)'$/
           $1.gsub(/''/, "'")
@@ -689,9 +697,15 @@ module Gem
       STRING_ESCAPES = {
         "\\" => "\\\\",
         "\"" => "\\\"",
-        "\n" => "\\n",
-        "\r" => "\\r",
+        "\0" => "\\0",
+        "\a" => "\\a",
+        "\b" => "\\b",
         "\t" => "\\t",
+        "\n" => "\\n",
+        "\v" => "\\v",
+        "\f" => "\\f",
+        "\r" => "\\r",
+        "\e" => "\\e",
       }.freeze
 
       def emit(obj)
@@ -821,7 +835,7 @@ module Gem
       end
 
       def needs_quoting?(str, quote = false)
-        quote || str.empty? || str != str.strip || str.include?("\n") ||
+        quote || str.empty? || str != str.strip || str =~ /[[:cntrl:]]/ ||
           str =~ /^[!*&:@%$"'|`]/ || str =~ /^-?\d+(\.\d+)?$/ || str =~ /^[<>=-]/ ||
           str == "true" || str == "false" || str == "nil" || str == "null" || str == "~" ||
           str.include?(":") || str.include?("#") || str.include?("[") || str.include?("]") ||
@@ -829,7 +843,7 @@ module Gem
       end
 
       def quote_string(str)
-        %("#{str.gsub(/[\\"\n\r\t]/, STRING_ESCAPES)}")
+        %("#{str.gsub(/[\\"]|[[:cntrl:]]/) {|c| STRING_ESCAPES[c] || format("\\x%02X", c.ord) }}")
       end
 
       def pad(indent)
