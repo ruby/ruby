@@ -2821,6 +2821,18 @@ impl Function {
         }
     }
 
+    /// Return the inlining depth recorded on the `Snapshot` at the given
+    /// instruction index. This peeks the field directly so callers that only
+    /// need the depth avoid cloning the whole `FrameState`, including its stack
+    /// and locals, the way [`Function::frame_state`] does.
+    fn frame_depth(&self, insn_id: InsnId) -> InlineDepth {
+        let insn_id = self.union_find.borrow().find_const(insn_id);
+        match &self.insns[insn_id.0] {
+            Insn::Snapshot { state } => state.depth,
+            insn => panic!("Unexpected non-Snapshot {insn} when looking up frame depth"),
+        }
+    }
+
     fn new_block(&mut self, insn_idx: u32) -> BlockId {
         let id = BlockId(self.blocks.len());
         let block = Block {
@@ -4552,11 +4564,17 @@ impl Function {
                 let call_state = self.frame_state(state);
                 let continuation = self.new_block(call_state.insn_idx() as u32 + insn_len(call_state.get_opcode() as usize));
 
+                // Inlining works top-down: a method's own calls only become inlinable in a
+                // later fixed-point iteration. So, the call site's depth is known here. The
+                // callee sits one level deeper (caller_depth + 1).
+                let caller_depth = self.frame_depth(state);
+
                 // The callee's ISEQ may still have profiling instrumentation active
                 // (zjit_opt_* bytecodes). Disable it so add_iseq_to_hir sees the
                 // original opcodes.
                 unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
-                let add_result = match add_iseq_to_hir(self, iseq, AddIseqMode::Inlined { return_block: continuation }) {
+                let mode = AddIseqMode::Inlined { return_block: continuation, caller: state, depth: caller_depth + 1 };
+                let add_result = match add_iseq_to_hir(self, iseq, mode) {
                     Ok(r) => r,
                     Err(_) => {
                         self.insns.truncate(pre_insns_len);
@@ -4571,29 +4589,6 @@ impl Function {
                 // Past the point of no return: commit the inlining.
                 incr_counter!(inline_method_count);
                 did_inline = true;
-
-                // Stamp the caller's call-site Snapshot InsnId on every Snapshot that
-                // add_iseq_to_hir emitted for this callee. The bytecode translation
-                // loop emits a Snapshot before each YARV instruction (and a few extras
-                // at block entry and inside some control-flow arms), so this single
-                // linear pass is the only place the chain of caller frames is woven
-                // into the inlined HIR. Without it, side exits from inlined code would
-                // lose the outer frame and the interpreter would resume in the wrong
-                // place.
-                //
-                // Each callee Snapshot also inherits a frame depth one greater than
-                // the call-site frame's. Because a callee's own calls only become
-                // inlinable in a later fixed-point iteration (after type
-                // specialization promotes them to SendDirect), frames are always
-                // woven in outermost-first, so the call-site frame's depth is already
-                // final here.
-                let caller_depth = self.frame_state(state).depth;
-                for idx in pre_insns_len..self.insns.len() {
-                    if let Insn::Snapshot { state: inlined_state } = &mut self.insns[idx] {
-                        inlined_state.caller = Some(state);
-                        inlined_state.depth = caller_depth + 1;
-                    }
-                }
 
                 // Split the original block at the SendDirect's position. Pre-Send
                 // instructions stay in `block`; the SendDirect itself is consumed
@@ -7008,6 +7003,12 @@ impl FrameState {
         FrameState { iseq, pc: std::ptr::null::<VALUE>(), insn_idx: 0, stack: vec![], locals: vec![], caller: None, depth: 0 }
     }
 
+    /// Construct a `FrameState` for an inlined callee. `caller` is the `InsnId`
+    /// of the caller's call-site `Snapshot`; `depth` is this frame's inlining depth.
+    fn inlined(iseq: IseqPtr, caller: InsnId, depth: InlineDepth) -> FrameState {
+        FrameState { caller: Some(caller), depth, ..FrameState::new(iseq) }
+    }
+
     /// Get the number of stack operands
     pub fn stack_size(&self) -> usize {
         self.stack.len()
@@ -7320,7 +7321,13 @@ pub const SELF_PARAM_IDX: usize = 0;
 #[derive(Clone, Copy)]
 enum AddIseqMode {
     Standalone,
-    Inlined { return_block: BlockId },
+    Inlined {
+        return_block: BlockId,
+        /// The caller's call-site `Snapshot`. Allows side-exits to restore the outer frame.
+        caller: InsnId,
+        /// Inlining depth of every frame emitted for the callee.
+        depth: InlineDepth,
+    },
 }
 
 /// Result of populating a Function with HIR for an ISEQ.
@@ -7386,6 +7393,18 @@ fn add_iseq_to_hir(
     let mut profiles = ProfileOracle::new();
     let mut num_returns: usize = 0;
 
+    // Build the initial FrameState for a block being translated. In inlined
+    // mode it carries the caller's call-site Snapshot and this frame's depth;
+    // because every Snapshot emitted for the callee is cloned from one of these
+    // initial states, those values propagate to the whole inlined body without a
+    // separate rewrite pass.
+    fn new_frame_state(mode: AddIseqMode, iseq: IseqPtr) -> FrameState {
+        match mode {
+            AddIseqMode::Inlined { caller, depth, .. } => FrameState::inlined(iseq, caller, depth),
+            AddIseqMode::Standalone => FrameState::new(iseq),
+        }
+    }
+
     // Compute a map of PC->Block by finding jump targets
     let jit_entry_insns = unsafe { iseq.params() }.opt_table_slice().iter().copied().map(VALUE::as_u32).collect::<Vec<_>>();
     let BytecodeInfo { jump_targets } = compute_bytecode_info(iseq, &jit_entry_insns);
@@ -7436,7 +7455,7 @@ fn add_iseq_to_hir(
     // TODO(max): Basic block arguments at edges
     let mut queue = VecDeque::new();
     for &insn_idx in jit_entry_insns.iter() {
-        queue.push_back((FrameState::new(iseq), insn_idx_to_block[&insn_idx], /*insn_idx=*/insn_idx, /*local_inval=*/false));
+        queue.push_back((new_frame_state(mode, iseq), insn_idx_to_block[&insn_idx], /*insn_idx=*/insn_idx, /*local_inval=*/false));
     }
 
     // Keep compiling blocks until the queue becomes empty
@@ -7450,7 +7469,7 @@ fn add_iseq_to_hir(
         // Load basic block params first
         let mut self_param = fun.push_insn(block, Insn::Param);
         let mut state = {
-            let mut result = FrameState::new(iseq);
+            let mut result = new_frame_state(mode, iseq);
             let local_size = if jit_entry_insns.contains(&insn_idx) { num_locals(iseq) } else { incoming_state.locals.len() };
             for _ in 0..local_size {
                 result.locals.push(fun.push_insn(block, Insn::Param));
@@ -8560,7 +8579,7 @@ fn add_iseq_to_hir(
                     num_returns += 1;
                     match mode {
                         AddIseqMode::Standalone => fun.push_insn(block, Insn::Return { val }),
-                        AddIseqMode::Inlined { return_block } => { fun.push_insn(block, Insn::Jump(BranchEdge { target: return_block, args: vec![val] })) }
+                        AddIseqMode::Inlined { return_block, .. } => { fun.push_insn(block, Insn::Jump(BranchEdge { target: return_block, args: vec![val] })) }
                     };
                     break;  // Don't enqueue the next block as a successor
                 }
