@@ -4381,11 +4381,10 @@ impl Function {
 
     /// Check whether a callee ISEQ can be inlined.
     fn can_inline(callee_iseq: IseqPtr) -> bool {
-        // Inline callees with required, optional, post-required positional, and
-        // keyword parameters. Rest params, block params, double-splat (kwrest),
-        // and forwardable params are still rejected because their local-table
-        // layouts and argument-shaping prologues need additional work to map
-        // cleanly into HIR.
+        // Inline callees with required, optional, post-required positional, and keyword
+        // parameters. Rest params, double-splat (kwrest), and forwardable params are rejected
+        // because `can_direct_send` rejects them -- we only inline direct sends.
+        // TODO (nirvdrum 2026-06-12) Block params should be supported by the inliner.
         let params = unsafe { callee_iseq.params() };
         if params.flags.has_rest() != 0
             || params.flags.has_block() != 0
@@ -4404,6 +4403,7 @@ impl Function {
         }
 
         // Reject callees that use yield/invokeblock (block inlining is future work).
+        // TODO (nirvdrum 2026-06-12) Work through this list, adding support for each rejected instruction.
         let callee_encoded_size = unsafe { get_iseq_encoded_size(callee_iseq) };
         let mut pc_idx: u32 = 0;
         while pc_idx < callee_encoded_size {
