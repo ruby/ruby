@@ -2910,6 +2910,7 @@ heap_page_for_ptr(rb_objspace_t *objspace, uintptr_t ptr)
 }
 
 PUREFUNC(static inline bool is_pointer_to_heap(rb_objspace_t *objspace, const void *ptr);)
+// NOTE: currently not ractor-safe
 static inline bool
 is_pointer_to_heap(rb_objspace_t *objspace, const void *ptr)
 {
@@ -2941,6 +2942,7 @@ is_pointer_to_heap(rb_objspace_t *objspace, const void *ptr)
     return FALSE;
 }
 
+// NOTE: currently not ractor-safe
 bool
 rb_gc_impl_live_object_p(void *objspace_ptr, const void *ptr)
 {
@@ -5552,7 +5554,7 @@ check_children_i(const VALUE child, void *ptr)
 
 /* Whether a heap slot currently holds a live object. Returns false for empty
  * (T_NONE), moved (T_MOVED), and zombie (T_ZOMBIE) slots, and for garbage
- * objects about to be swept. */
+ * objects about to be swept. Currently not ractor-safe */
 static bool
 gc_slot_live_object_p(rb_objspace_t *objspace, VALUE obj)
 {
@@ -6644,6 +6646,11 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
 #if RGENGC_CHECK_MODE
     if (SPECIAL_CONST_P(a)) rb_bug("rb_gc_writebarrier: a is special const: %"PRIxVALUE, a);
     if (SPECIAL_CONST_P(b)) rb_bug("rb_gc_writebarrier: b is special const: %"PRIxVALUE, b);
+    if (!rb_multi_ractor_p()) {
+        // not ractor-safe yet
+        GC_ASSERT(rb_gc_impl_live_object_p(objspace, (void *)a));
+        GC_ASSERT(rb_gc_impl_live_object_p((objspace, (void *)b));
+    }
 #else
     RBIMPL_ASSERT_OR_ASSUME(!SPECIAL_CONST_P(a));
     RBIMPL_ASSERT_OR_ASSUME(!SPECIAL_CONST_P(b));
