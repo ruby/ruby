@@ -47,8 +47,10 @@
 #include "ruby/encoding.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
+#include "internal/vm.h"
 #include "ruby_assert.h"
 #include "vm_core.h"
+#include "ractor_core.h"
 #include "yjit.h"
 #include "zjit.h"
 
@@ -1760,6 +1762,42 @@ exc_message(VALUE exc)
     return rb_funcallv(exc, idTo_s, 0, 0);
 }
 
+static VALUE
+load_decoration_gem(VALUE feature)
+{
+    // The C-level require bypasses Kernel#require monkeypatches;
+    // displaying an error must not invoke or depend on them.
+    return rb_require_string(feature);
+}
+
+// Load error_highlight, did_you_mean, and syntax_suggest on the first
+// error display instead of at boot. rb_define_gem_modules registers an
+// autoload entry for each enabled gem; disabled gems have no entry and
+// are skipped. Returns whether the caller should re-dispatch to pick up
+// the detailed_message decorators the gems prepend.
+static bool
+lazy_load_decoration_gems(VALUE exc)
+{
+    static bool done = false;
+    if (done || !rb_ractor_main_p()) return false;
+    done = true;
+
+    // When entered through super from a decorator already sitting above
+    // this method, the caller decorates the result; re-dispatching would
+    // decorate it twice.
+    bool redispatch = rb_method_basic_definition_p(CLASS_OF(exc), id_detailed_message);
+
+    static const char *const gems[] = {"ErrorHighlight", "DidYouMean", "SyntaxSuggest"};
+    for (size_t i = 0; i < numberof(gems); i++) {
+        VALUE feature = rb_autoload_p(rb_cObject, rb_intern(gems[i]));
+        if (NIL_P(feature)) continue;
+        int state;
+        rb_protect(load_decoration_gem, feature, &state);
+        if (state) rb_set_errinfo(Qnil);
+    }
+    return redispatch;
+}
+
 /*
  * call-seq:
  *   detailed_message(highlight: false, **kwargs) -> string
@@ -1808,6 +1846,10 @@ exc_message(VALUE exc)
 static VALUE
 exc_detailed_message(int argc, VALUE *argv, VALUE exc)
 {
+    if (lazy_load_decoration_gems(exc)) {
+        return rb_funcallv_kw(exc, id_detailed_message, argc, argv, RB_PASS_CALLED_KEYWORDS);
+    }
+
     VALUE opt;
 
     rb_scan_args(argc, argv, "0:", &opt);

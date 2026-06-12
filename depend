@@ -5418,6 +5418,8 @@ error.$(OBJEXT): {$(VPATH)}missing.h
 error.$(OBJEXT): {$(VPATH)}node.h
 error.$(OBJEXT): {$(VPATH)}onigmo.h
 error.$(OBJEXT): {$(VPATH)}oniguruma.h
+error.$(OBJEXT): {$(VPATH)}ractor.h
+error.$(OBJEXT): {$(VPATH)}ractor_core.h
 error.$(OBJEXT): {$(VPATH)}ruby_assert.h
 error.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 error.$(OBJEXT): {$(VPATH)}rubyparser.h
