@@ -173,8 +173,8 @@ AS_CASE([$RUBY_PATCHLEVEL], [-*], [
 AS_IF([test "$program_prefix" = NONE], [
   program_prefix=
 ])
-AS_IF([test "$prefix" -ef .], [
-  AC_MSG_ERROR(--prefix cannot be the current working directory.)
+AS_IF([test "$prefix" -ef "$srcdir"], [
+  AC_MSG_ERROR(--prefix cannot be the source directory.)
 ])
 RUBY_BASE_NAME=`echo ruby | sed "$program_transform_name"`
 RUBYW_BASE_NAME=`echo rubyw | sed "$program_transform_name"`
