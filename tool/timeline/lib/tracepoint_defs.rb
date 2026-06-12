@@ -6,7 +6,8 @@ require_relative 'tracepoint.rb'
 module RubyTimelineTool
   tp(1,2,3,4)
 
-  USDT_SET = {
+  # All USDT trace points.
+  USDT_DEFS = {
     'default' => [
       tp('gc__mark__begin',   "default",  'gc_mark',          'B'),
       tp('gc__mark__end',     "default",  'gc_mark',          'E'),
@@ -36,4 +37,7 @@ module RubyTimelineTool
       tp('rts__set_running',  "ruby",     'rts_set_running',  'i', args: {sched: :to_i, old_thread: :to_i, new_thread: :to_i}),
     ]
   }
+
+  # The default groups are enabled by default
+  DEFAULT_GROUPS = ['default']
 end

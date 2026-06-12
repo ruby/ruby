@@ -3,15 +3,15 @@
 
 module RubyTimelineTool
   class TracePoint
-    def initialize(name, where, vis_id, vis_ph, args: nil)
-      @name = name
+    def initialize(probe, where, vis_id, vis_ph, args: nil)
+      @probe = probe
       @where = where
       @vis_id = vis_id
       @vis_ph = vis_ph
       @args = args || {}
     end
 
-    attr_reader :name, :where, :vis_id, :vis_ph, :args
+    attr_reader :probe, :where, :vis_id, :vis_ph, :args
   end
 
   def self.tp(*args, **kwargs)

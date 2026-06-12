@@ -13,23 +13,12 @@ BEGIN {
     printf("====RUBY_TRACING_LOG_START====\n");
 }
 
-% usdts.each do |probe, location, name, ph, niargs|
-%   file = case [gc_module_kind, location]
-%     in nil,   "ruby"                  then ruby_bin
-%     in nil,   "default"               then ruby_bin
-%     in x,     "ruby"                  then ruby_bin
-%     in x,     y           if x == y   then gc_module_so
-%     else                                   nil
-%   end
-%   if !file.nil?
-usdt:<%=file%>:ruby:<%=probe%> {
+% usdt_entries.each do |entry|
+usdt:<%=entry.file%>:ruby:<%=entry.probe%> {
     if (@enable_print) {
-        printf("<%=name%>,<%=ph%>,%d,%lu<%=",%lu"*niargs%>\n", tid, nsecs<%=(0...niargs).map{|i| ", arg#{i}"}.join%>);
+        printf("<%=entry.name%>,<%=entry.ph%>,%d,%lu<%=",%lu"*entry.nargs%>\n", tid, nsecs<%=(0...entry.nargs).map{|i| ", arg#{i}"}.join%>);
     }
 }
-%   else
-%     puts "Skipped probe '#{probe}' which is for '#{location}'.  Current GC module: '#{gc_module_kind}'."
-%   end
 % end
 
 // vim: ft=bpftrace ts=4 sw=4 sts=4 et
