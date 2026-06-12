@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
 require 'erb'
 require 'optparse'
@@ -49,11 +50,10 @@ template = ERB.new(script, trim_mode: '%<>')
 template.location = [script_path.to_s, 1]
 
 if options[:'erb-debug']
-  puts template.src
+  $stderr.puts template.src
 end
 
 extra_groups_opt = options[:'extra-groups']
-puts "Extra groups: #{extra_groups_opt}"
 
 selected_groups = RubyTimelineTool::DEFAULT_GROUPS.dup
 
@@ -68,6 +68,9 @@ if !extra_groups_opt.nil?
 end
 
 selected_groups.uniq!
+
+$stderr.puts "Selected groups: #{selected_groups.join(',')}"
+
 usdts = RubyTimelineTool::USDT_DEFS.values_at(*selected_groups).flatten
 
 ScriptUsdtEntry = Struct.new("ScriptUsdtEntry", :file, :probe, :name, :ph, :nargs)
