@@ -846,16 +846,23 @@ class TestObjSpace < Test::Unit::TestCase
       require "json"
       rs = 4.times.map do
         Ractor.new do
-          Tempfile.create do |f|
-            ObjectSpace.dump_all(output: f)
-            f.close
-            File.readlines(f.path).each do |line|
-              JSON.parse(line)
-            end
-          end
+          f = Tempfile.create("dump_all")
+          ObjectSpace.dump_all(output: f)
+          f.close
+          f.path
         end
       end
-      rs.each(&:join)
+      # Parse the dumps in the main Ractor so smaller CI instances don't time out
+      rs.each do |r|
+        path = r.value
+        begin
+          File.foreach(path) do |line|
+            JSON.parse(line)
+          end
+        ensure
+          File.unlink(path)
+        end
+      end
     end;
   end
 
