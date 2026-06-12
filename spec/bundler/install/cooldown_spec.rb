@@ -684,6 +684,34 @@ RSpec.describe "bundle install with the cooldown setting" do
       expect(lockfile).not_to include("ripe_gem (2.0.0)")
     end
 
+    it "still applies cooldown and downgrades a gem explicitly updated via bundle lock --update" do
+      gemfile <<-G
+        source "https://gem.repo3", cooldown: 7
+        gem "ripe_gem"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            ripe_gem (2.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          ripe_gem
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "lock --update ripe_gem", artifice: "compact_index_cooldown"
+
+      expect(lockfile).to include("ripe_gem (1.0.0)")
+      expect(lockfile).not_to include("ripe_gem (2.0.0)")
+    end
+
     it "ignores cooldown and installs the locked version when frozen" do
       # Frozen installs read the lockfile instead of resolving, so cooldown has
       # no say. A version already locked inside the window must still install.
