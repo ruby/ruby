@@ -3711,10 +3711,14 @@ rb_gc_ractor_cache_free(void *cache)
 void
 rb_gc_register_mark_object(VALUE obj)
 {
-    if (!rb_gc_impl_pointer_to_heap_p(rb_gc_get_objspace(), (void *)obj))
-        return;
-
-    rb_vm_register_global_object(obj);
+    /* rb_gc_impl_pointer_to_heap_p() walks objspace->heap_pages.sorted, which
+     * another ractor may mutate while allocating heap pages under the VM lock,
+     * so the lookup must be done under the VM lock as well. */
+    RB_VM_LOCKING() {
+        if (rb_gc_impl_pointer_to_heap_p(rb_gc_get_objspace(), (void *)obj)) {
+            rb_vm_register_global_object(obj);
+        }
+    }
 }
 
 void
