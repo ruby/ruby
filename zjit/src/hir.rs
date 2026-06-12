@@ -4720,6 +4720,7 @@ impl Function {
                 self.push_insn(block, Insn::PushLightweightFrame {
                     iseq, cme, recv, args: args.clone(), blockiseq, state,
                 });
+                self.count(block, Counter::inline_iseq_optimized_send_count);
                 self.push_insn(block, Insn::Jump(BranchEdge {
                     target: callee_entry_body_block,
                     args: vec![],
