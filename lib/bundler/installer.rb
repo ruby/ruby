@@ -196,7 +196,9 @@ module Bundler
       local = options[:local] || options[:"prefer-local"]
       jobs = Bundler.settings.installation_parallelization
       specs = @definition.specs
-      @definition.release_resolution_memory!
+      # Installing default gems may need the remote index again to cache
+      # their .gem files, so keep resolution memory around in that case.
+      @definition.release_resolution_memory! if specs.none?(&:default_gem?)
       spec_installations = ParallelInstaller.call(self, specs, jobs, standalone, force, local: local)
       spec_installations.each do |installation|
         post_install_messages[installation.name] = installation.post_install_message if installation.has_post_install_message?
