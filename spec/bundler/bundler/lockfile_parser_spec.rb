@@ -252,6 +252,25 @@ RSpec.describe Bundler::LockfileParser do
       end
     end
 
+    context "when a plugin source's plugin is not installed" do
+      let(:lockfile_contents) { <<~L + super().sub("DEPENDENCIES\n", "DEPENDENCIES\n  private_gem!\n") }
+        PLUGIN SOURCE
+          remote: https://example.com/private
+          type: not_installed_plugin_type
+          specs:
+            private_gem (1.2.3)
+
+      L
+
+      it "parses dependencies and specs using a placeholder source" do
+        expect(subject.valid?).to be(true)
+        expect(subject.dependencies.keys).to include("private_gem", "peiji-san", "rake")
+        private_spec = subject.specs.find {|s| s.name == "private_gem" }
+        expect(private_spec.version).to eq(v("1.2.3"))
+        expect(private_spec.source).to be_a(Bundler::Plugin::UnloadedSource)
+      end
+    end
+
     context "when lockfile_path is given" do
       it "uses the provided path in error messages instead of looking up Bundler.default_lockfile" do
         expect(Bundler::SharedHelpers).not_to receive(:relative_lockfile_path)
