@@ -81,7 +81,8 @@ module Psych
     def strip_bom yaml
       if String === yaml
         bom = BOM[yaml.encoding]
-        return yaml[1..-1] if bom && yaml.start_with?(bom)
+        # delete_prefix copies even when there is no prefix, so keep the guard.
+        return yaml.delete_prefix(bom) if bom && yaml.start_with?(bom)
       elsif yaml.respond_to?(:read) && yaml.respond_to?(:external_encoding) &&
             yaml.respond_to?(:pos) && yaml.respond_to?(:seek)
         bom = BOM[yaml.external_encoding]
