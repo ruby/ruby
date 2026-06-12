@@ -74,7 +74,7 @@ class LogProcessor
         puts "line: #{line}"
         raise
       end
-        
+
       args[arg_name] = converted_val
     end
 
