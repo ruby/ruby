@@ -198,7 +198,9 @@ module Bundler
       specs = @definition.specs
       # Installing default gems may need the remote index again to cache
       # their .gem files, so keep resolution memory around in that case.
-      @definition.release_resolution_memory! if specs.none?(&:default_gem?)
+      # The bundler spec itself is excluded because it comes from the
+      # metadata source and never goes through that path.
+      @definition.release_resolution_memory! if specs.none? {|s| s.default_gem? && s.source.is_a?(Source::Rubygems) }
       spec_installations = ParallelInstaller.call(self, specs, jobs, standalone, force, local: local)
       spec_installations.each do |installation|
         post_install_messages[installation.name] = installation.post_install_message if installation.has_post_install_message?
