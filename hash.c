@@ -4208,7 +4208,8 @@ rb_hash_update_ensure(VALUE args)
  *
  *  - If +key+ is in +self+, fetches +old_value+ from <tt>self[key]</tt>,
  *    calls the block with +key+, +old_value+, and +new_value+,
- *    and sets <tt>self[key] = new_value</tt>, whose position is unchanged  :
+ *    and sets <tt>self[key]</tt> to the return value of the block,
+ *    whose position is unchanged:
  *
  *      season = {AB: 75, H: 20, HR: 3, SO: 17, W: 11, HBP: 3}
  *      today = {AB: 3, H: 1, W: 1}
