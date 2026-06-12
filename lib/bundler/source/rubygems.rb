@@ -243,7 +243,7 @@ module Bundler
       def cached_built_in_gem(spec, local: false)
         cached_path = cached_gem(spec)
         if cached_path.nil? && !local
-          remote_spec = remote_specs.search(spec).first
+          remote_spec = remote_spec_for(spec)
           if remote_spec
             cached_path = fetch_gem(remote_spec)
             spec.remote = remote_spec.remote
@@ -429,6 +429,17 @@ module Bundler
             fetch_names(fetchers, nil, idx)
           end
         end
+      end
+
+      # Looks up a single spec in the remote sources, fetching only its own
+      # name when the full remote index is not already materialized.
+      def remote_spec_for(spec)
+        return remote_specs.search(spec).first if @remote_specs || api_fetchers.empty?
+
+        index = Index.build do |idx|
+          fetch_names(api_fetchers, [spec.name], idx)
+        end
+        index.search(spec).first
       end
 
       def fetch_names(fetchers, dependency_names, index)
