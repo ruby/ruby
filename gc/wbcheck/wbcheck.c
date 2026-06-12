@@ -243,6 +243,7 @@ typedef struct {
     struct wbcheck_final_job *finalizer_jobs; // Linked list of finalizer jobs
     rb_nativethread_lock_t finalizer_lock;   // Protects finalizer_jobs list
     rb_postponed_job_handle_t finalizer_postponed_job; // Postponed job handle for finalizers
+    struct rb_gc_vm_context vm_context;
 } rb_wbcheck_objspace_t;
 
 // Global objspace pointer for accessing from obj_slot_size function
@@ -629,6 +630,14 @@ rb_gc_impl_config_set(void *objspace_ptr, VALUE hash)
 {
 }
 
+struct rb_gc_vm_context *
+rb_gc_impl_get_vm_context(void *objspace_ptr)
+{
+    rb_wbcheck_objspace_t *objspace = objspace_ptr;
+
+    return &objspace->vm_context;
+}
+
 static wbcheck_object_list_t *
 wbcheck_collect_references_from_object(VALUE obj, rb_wbcheck_object_info_t *info)
 {
@@ -645,6 +654,7 @@ wbcheck_collect_references_from_object(VALUE obj, rb_wbcheck_object_info_t *info
     objspace->current_refs = new_list;
     objspace->current_maybe_refs = NULL;
     objspace->phase = WBCHECK_PHASE_SNAPSHOT;
+    rb_gc_initialize_vm_context(&objspace->vm_context);
 
     // Use the marking infrastructure to collect references
     rb_gc_mark_children(objspace, obj);
@@ -787,6 +797,7 @@ wbcheck_mark_phase(rb_wbcheck_objspace_t *objspace)
     WBCHECK_DEBUG("wbcheck: starting GC mark phase\n");
 
     objspace->phase = WBCHECK_PHASE_FULL_GC;
+    rb_gc_initialize_vm_context(&objspace->vm_context);
 
     // Clear mark queue and reset all objects to white
     objspace->mark_queue->count = 0;
