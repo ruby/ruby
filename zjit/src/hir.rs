@@ -531,6 +531,7 @@ pub enum SideExitReason {
     UnhandledCallType(CallType),
     UnhandledBlockArg,
     TooManyKeywordParameters,
+    TooManyArgsForLir,
     FixnumAddOverflow,
     FixnumSubOverflow,
     FixnumMultOverflow,
@@ -2578,6 +2579,7 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
     // See: https://github.com/ruby/ruby/pull/15911#discussion_r2710544982
     let block_arg = if 0 != params.flags.has_block() { 1 } else { 0 };
     let final_argc = caller_positional + kw_total_num as usize + block_arg;
+    // TODO: Support passing arguments on the stack in C calls
     if final_argc + 1 > C_ARG_OPNDS.len() { // +1 for self
         function.set_dynamic_send_reason(send_insn, TooManyArgsForLir);
         return false;
@@ -4257,6 +4259,12 @@ impl Function {
                                         self.set_dynamic_send_reason(insn_id, ArgcParamMismatch);
                                         continue;
                                     }
+                                    // TODO: Support passing arguments on the stack in C calls
+                                    if args.len()+1 > C_ARG_OPNDS.len() {
+                                        self.push_insn_id(block, insn_id);
+                                        self.set_dynamic_send_reason(insn_id, TooManyArgsForLir);
+                                        continue;
+                                    }
 
                                     emit_super_call_guards(self, block, super_cme, current_cme, mid, state, frame_state.iseq);
 
@@ -5233,6 +5241,12 @@ impl Function {
                     //
                     // Bail on argc mismatch
                     if argc != cfunc_argc as u32 {
+                        return Err(());
+                    }
+
+                    // TODO: Support passing arguments on the stack in C calls
+                    if argc as usize > C_ARG_OPNDS.len() {
+                        fun.set_dynamic_send_reason(send_insn_id, TooManyArgsForLir);
                         return Err(());
                     }
 
@@ -7626,6 +7640,7 @@ fn add_iseq_to_hir(
                 }
                 YARVINSN_concatstrings => {
                     let count = get_arg(pc, 0).as_u32();
+                    debug_assert!(count > 0, "concatstrings should have arguments");
                     let strings = state.stack_pop_n(count as usize)?;
                     let insn_id = fun.push_insn(block, Insn::StringConcat { strings, state: exit_id });
                     state.stack_push(insn_id);
@@ -9136,6 +9151,11 @@ fn add_iseq_to_hir(
                 }
                 YARVINSN_invokebuiltin => {
                     let bf: rb_builtin_function = unsafe { *get_arg(pc, 0).as_ptr() };
+                    // TODO: Support passing arguments on the stack in C calls
+                    if (bf.argc + 2) as usize > C_ARG_OPNDS.len() {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::TooManyArgsForLir, recompile: None });
+                        break; // End the block
+                    }
 
                     let mut args = vec![];
                     for _ in 0..bf.argc {
@@ -9165,6 +9185,13 @@ fn add_iseq_to_hir(
                 YARVINSN_opt_invokebuiltin_delegate |
                 YARVINSN_opt_invokebuiltin_delegate_leave => {
                     let bf: rb_builtin_function = unsafe { *get_arg(pc, 0).as_ptr() };
+                    // TODO: Support passing arguments on the stack in C calls
+                    // +2 for ec, self
+                    if (bf.argc + 2) as usize > C_ARG_OPNDS.len() {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::TooManyArgsForLir, recompile: None });
+                        break; // End the block
+                    }
+
                     let index = get_arg(pc, 1).as_usize();
                     let argc = bf.argc as usize;
 
