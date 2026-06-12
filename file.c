@@ -2899,12 +2899,42 @@ lchmod_internal(const char *path, void *mode)
 }
 
 /*
- *  call-seq:
- *     File.lchmod(mode_int, file_name, ...)  -> integer
+ *  :markup: markdown
  *
- *  Equivalent to File::chmod, but does not follow symbolic links (so
- *  it will change the permissions associated with the link, not the
- *  file referenced by the link). Often not available.
+ *  call-seq:
+ *    File.lchmod(mode, *paths) -> paths_count
+ *
+ *  Not supported on some platforms (raises Errno:: ENOTSUP).
+ *
+ *  When supported: like File::chmod, but does not follow symbolic links,
+ *  and therefore changes the mode of the entries given by `paths`;
+ *  returns the number of paths given:
+ *
+ *  ```ruby
+ *  require 'tmpdir'
+ *  Dir.mktmpdir do |tmpdirpath|
+ *    filename = 't.tmp'
+ *    linkname = 'link'
+ *    filepath = File.join(tmpdirpath, filename)
+ *    linkpath = File.join(tmpdirpath, linkname)
+ *    File.write(filepath, '')
+ *    File.symlink(filepath, linkpath)
+ *    p [filename, File.stat(filepath).mode.to_s(8)]
+ *    p [linkname, File.stat(linkpath).mode.to_s(8)]
+ *    File.lchmod(0777, linkpath)
+ *    p [filename, File.stat(filepath).mode.to_s(8)]
+ *    p [linkname, File.stat(linkpath).mode.to_s(8)]
+ *  end
+ *  ```
+ *
+ *  Output:
+ *
+ *  ```text
+ *  ["t.tmp", "100664"]
+ *  ["link", "100664"]
+ *  ["t.tmp", "100664"]
+ *  ["link", "100777"]
+ *  ```
  *
  */
 
@@ -5604,12 +5634,14 @@ rb_file_join(long argc, VALUE *args)
 }
 /*
  *  call-seq:
- *     File.join(string, ...)  ->  string
+ *     File.join(*objects) -> new_string
  *
- *  Returns a new string formed by joining the strings using
- *  <code>"/"</code>.
+ *  Returns a new string formed by joining the given string-converted +objects+
+ *  with character <tt>'/'</tt>:
  *
- *     File.join("usr", "mail", "gumby")   #=> "usr/mail/gumby"
+ *    File.join                      # => ""
+ *    File.join('foo')               # => "foo"
+ *    File.join('foo', 'bar', 'baz') # => "foo/bar/baz"
  *
  */
 

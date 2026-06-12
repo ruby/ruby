@@ -1270,7 +1270,43 @@ class Pathname    # * File *
   #
   def chmod(mode) File.chmod(mode, @path) end
 
-  # See <tt>File.lchmod</tt>.
+  #  :markup: markdown
+  #
+  #  call-seq:
+  #    Pathname.lchmod(mode) -> 1
+  #
+  #  Not supported on some platforms (raises Errno:: ENOTSUP).
+  #
+  #  When supported: like Pathname::chmod, but does not follow symbolic links,
+  #  and therefore changes the mode of the entry specified by `self`:
+  #
+  #  ```ruby
+  #  require 'tmpdir'
+  #  Dir.mktmpdir do |tmpdirpath|
+  #    filename = 't.tmp'
+  #    linkname = 'link'
+  #    filepath = File.join(tmpdirpath, filename)
+  #    linkpath = File.join(tmpdirpath, linkname)
+  #    File.write(filepath, '')
+  #    File.symlink(filepath, linkpath)
+  #    p [filename, File.stat(filepath).mode.to_s(8)]
+  #    p [linkname, File.stat(linkpath).mode.to_s(8)]
+  #    pn = Pathname(linkpath)
+  #    pn.lchmod(0777)
+  #    p [filename, File.stat(filepath).mode.to_s(8)]
+  #    p [linkname, File.stat(linkpath).mode.to_s(8)]
+  #  end
+  #  ```
+  #
+  #  Output:
+  #
+  #  ```text
+  #  ["t.tmp", "100664"]
+  #  ["link", "100664"]
+  #  ["t.tmp", "100664"]
+  #  ["link", "100777"]
+  #  ```
+  #
   def lchmod(mode) File.lchmod(mode, @path) end
 
   # :markup: markdown
