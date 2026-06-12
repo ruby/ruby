@@ -549,6 +549,7 @@ pub enum SideExitReason {
     Interrupt,
     BlockParamProxyNotIseqOrIfunc,
     BlockParamProxyNotNil,
+    BlockParamProxyNotProc,
     BlockParamProxyFallbackMiss,
     BlockParamProxyProfileNotCovered,
     BlockParamWbRequired,
@@ -2844,6 +2845,22 @@ impl Function {
         true
     }
 
+    pub fn assume_bop_not_redefined(&mut self, block: BlockId, klass: RedefinitionFlag, bop: ruby_basic_operators, state: InsnId) -> bool {
+        if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, klass) } {
+            return false;
+        }
+        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass, bop }, state });
+        true
+    }
+
+    pub fn guard_bop_not_redefined(&mut self, block: BlockId, klass: RedefinitionFlag, bop: ruby_basic_operators, state: InsnId) -> bool {
+        if self.assume_bop_not_redefined(block, klass, bop, state) {
+            return true;
+        }
+        self.push_insn(block, Insn::SideExit { state, reason: SideExitReason::PatchPoint(Invariant::BOPRedefined { klass, bop }), recompile: None });
+        false
+    }
+
     pub fn count(&mut self, block: BlockId, counter: Counter) {
         if get_option!(stats) {
             self.push_insn(block, Insn::IncrCounter(counter));
@@ -3396,7 +3413,7 @@ impl Function {
         };
         let recv = self.chase_insn(recv);
         for (entry_insn, entry_type_summary) in entries {
-            if self.union_find.borrow().find_const(*entry_insn) == recv {
+            if self.chase_insn(*entry_insn) == recv {
                 if entry_type_summary.is_polymorphic() || entry_type_summary.is_skewed_polymorphic() {
                     return Some(entry_type_summary.clone());
                 }
@@ -3551,7 +3568,11 @@ impl Function {
     }
 
     fn load_ep_flags(&mut self, block: BlockId, ep: InsnId) -> InsnId {
-        self.push_insn(block, Insn::LoadField { recv: ep, id: FieldName::VM_ENV_DATA_INDEX_FLAGS, offset: SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32), return_type: types::CUInt64 })
+        self.load_ep_env_field(block, ep, FieldName::VM_ENV_DATA_INDEX_FLAGS, VM_ENV_DATA_INDEX_FLAGS as i32, types::CUInt64)
+    }
+
+    fn load_ep_env_field(&mut self, block: BlockId, ep: InsnId, id: FieldName, index: i32, return_type: Type) -> InsnId {
+        self.push_insn(block, Insn::LoadField { recv: ep, id, offset: SIZEOF_VALUE_I32 * index, return_type })
     }
 
     pub fn guard_not_frozen(&mut self, block: BlockId, recv: InsnId, state: InsnId) {
@@ -4398,7 +4419,7 @@ impl Function {
         }
     }
 
-    fn load_ivar(&mut self, block: BlockId, self_val: InsnId, recv_type: ProfiledType, id: ID, state: InsnId) -> InsnId {
+    fn load_ivar(&mut self, block: BlockId, self_val: InsnId, recv_type: ProfiledType, id: ID) -> InsnId {
         // Too-complex shapes use hash tables; rb_shape_get_iv_index doesn't support them.
         // Callers must filter these out before calling load_ivar.
         assert!(!recv_type.shape().is_complex(), "load_ivar called with too-complex shape");
@@ -4409,37 +4430,34 @@ impl Function {
             // shape + iv name
             return self.push_insn(block, Insn::Const { val: Const::Value(Qnil) });
         }
-        if recv_type.flags().is_t_class() || recv_type.flags().is_t_module() {
-            // Class/module ivar: load from prime classext's fields_obj
-            if !self.assume_root_box(block, state) {
-                // Non-root box active: fall back to C call
+
+        let layout = recv_type.shape().layout();
+
+        match layout {
+            ShapeLayout::RClass | ShapeLayout::RData => {
+                let offset = if layout == ShapeLayout::RClass {
+                    RCLASS_OFFSET_PRIME_FIELDS_OBJ as i32
+                } else {
+                    TDATA_OFFSET_FIELDS_OBJ as i32
+                };
+
+                let fields_obj = self.push_insn(block, Insn::LoadField {
+                    recv: self_val, id: FieldName::fields_obj,
+                    offset,
+                    return_type: types::RubyValue,
+                });
+                self.load_ivar_from_fields(block, fields_obj, recv_type.flags().is_fields_embedded(), id, ivar_index)
+            },
+            ShapeLayout::RObject => {
+                self.load_ivar_from_fields(block, self_val, recv_type.flags().is_embedded(), id, ivar_index)
+            },
+            ShapeLayout::Other => {
+                // Non-T_OBJECT, non-class/module, non-typed-data: fall back to C call
                 // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
                 // getinstancevariable does assume_single_ractor_mode()
-                return self.load_ivar_c_call(block, self_val, ivar_index);
+                self.load_ivar_c_call(block, self_val, ivar_index)
             }
-            // Root box only: load directly from prime classext
-            let fields_obj = self.push_insn(block, Insn::LoadField {
-                recv: self_val, id: FieldName::fields_obj,
-                offset: RCLASS_OFFSET_PRIME_FIELDS_OBJ as i32,
-                return_type: types::RubyValue,
-            });
-            return self.load_ivar_from_fields(block, fields_obj, recv_type.flags().is_fields_embedded(), id, ivar_index);
         }
-        if recv_type.flags().is_t_data() {
-            let fields_obj = self.push_insn(block, Insn::LoadField {
-                recv: self_val, id: FieldName::fields_obj,
-                offset: TDATA_OFFSET_FIELDS_OBJ as i32,
-                return_type: types::RubyValue,
-            });
-            return self.load_ivar_from_fields(block, fields_obj, recv_type.flags().is_fields_embedded(), id, ivar_index);
-        }
-        if recv_type.flags().is_t_object() {
-            return self.load_ivar_from_fields(block, self_val, recv_type.flags().is_embedded(), id, ivar_index);
-        }
-        // Non-T_OBJECT, non-class/module, non-typed-data: fall back to C call
-        // NOTE: it's fine to use rb_ivar_get_at_no_ractor_check because
-        // getinstancevariable does assume_single_ractor_mode()
-        return self.load_ivar_c_call(block, self_val, ivar_index);
     }
 
     fn optimize_getivar(&mut self) {
@@ -4476,7 +4494,7 @@ impl Function {
                         let self_val = self.load_ivar_guard_type(block, self_val, recv_type, state);
                         let shape = self.load_shape(block, self_val);
                         self.guard_shape(block, shape, recv_type.shape(), state, Some(Recompile::ProfileSelf));
-                        let replacement = self.load_ivar(block, self_val, recv_type, id, state);
+                        let replacement = self.load_ivar(block, self_val, recv_type, id);
                         self.make_equal_to(insn_id, replacement);
                     }
                     Insn::DefinedIvar { self_val, id, pushval, state } => {
@@ -7025,12 +7043,10 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             break;  // End the block
                         }
                     };
-                    if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, ARRAY_REDEFINED_OP_FLAG) } {
+                    if !fun.guard_bop_not_redefined(block, ARRAY_REDEFINED_OP_FLAG, bop, exit_id) {
                         // If the basic operation is already redefined, we cannot optimize it.
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop }), recompile: None });
                         break;  // End the block
                     }
-                    fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop }, state: exit_id });
                     state.stack_push(fun.push_insn(block, insn));
                 }
                 YARVINSN_duparray => {
@@ -7053,11 +7069,9 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             break;
                         },
                     };
-                    if !unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, ARRAY_REDEFINED_OP_FLAG) } {
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop }), recompile: None });
-                        break;
+                    if !fun.guard_bop_not_redefined(block, ARRAY_REDEFINED_OP_FLAG, bop, exit_id) {
+                        break;  // End the block
                     }
-                    fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass: ARRAY_REDEFINED_OP_FLAG, bop }, state: exit_id });
                     let insn_id = fun.push_insn(block, Insn::DupArrayInclude { ary, target, state: exit_id });
                     state.stack_push(insn_id);
                 }
@@ -7176,12 +7190,11 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     let pushval = get_arg(pc, 2);
                     if let Some(summary) = fun.polymorphic_summary(&profiles, self_param, exit_state.insn_idx) {
                         self_param = fun.push_insn(block, Insn::GuardType { val: self_param, guard_type: types::HeapBasicObject, state: exit_id, recompile: None });
-                        let rbasic_flags = fun.load_rbasic_flags(block, self_param);
                         let join_block = insn_idx_to_block.get(&insn_idx).copied().unwrap_or_else(|| fun.new_block(insn_idx));
                         let join_param = fun.push_insn(join_block, Insn::Param);
-                        // Dedup by expected shape and type so objects with different classes
-                        // but the same shape can share code.
-                        let mut seen_shape_and_flags = Vec::with_capacity(summary.buckets().len());
+                        // Dedup by expected shape so objects with different classes but the
+                        // same shape can share code.
+                        let mut seen_shape = Vec::with_capacity(summary.buckets().len());
                         for &profiled_type in summary.buckets() {
                             // End of the buckets
                             if profiled_type.is_empty() { break; }
@@ -7191,34 +7204,31 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                             // Class/module/T_DATA ivars use different storage rules.
                             // Let the fallthrough DefinedIvar handle these.
                             if !profiled_type.flags().is_t_object() { continue; }
-                            let expected_shape = profiled_type.shape();
-                            let (expected_rbasic_flags, rbasic_flags_mask) = profiled_type.rbasic_flags_and_mask();
-                            assert!(expected_shape.is_valid());
+                            let profiled_shape = profiled_type.shape();
+                            assert!(profiled_shape.is_valid());
                             // Too-complex shapes use hash tables for ivars;
                             // rb_shape_get_iv_index doesn't work for them.
                             // Let the fallthrough DefinedIvar handle these.
-                            if expected_shape.is_complex() { continue; }
-                            if seen_shape_and_flags.contains(&expected_rbasic_flags) { continue; }
-                            seen_shape_and_flags.push(expected_rbasic_flags);
-                            let rbasic_flags_mask = fun.push_insn(block, Insn::Const { val: Const::CUInt64(rbasic_flags_mask) });
+                            if profiled_shape.is_complex() { continue; }
+                            if seen_shape.contains(&profiled_shape) { continue; }
+                            seen_shape.push(profiled_shape);
+                            let actual_shape = fun.load_shape(block, self_param);
                             // The expected shape can change over run, so we put it
                             // as a pointer to keep it stable in snapshot tests.
-                            let expected_rbasic_flags = fun.push_insn(block, Insn::Const { val: Const::CPtr(ptr::without_provenance(expected_rbasic_flags.to_usize())) });
-                            let expected_rbasic_flags = fun.push_insn(block, Insn::RefineType { val: expected_rbasic_flags, new_type: types::CUInt64 });
-                            let masked = fun.push_insn(block, Insn::IntAnd { left: rbasic_flags, right: rbasic_flags_mask});
-                            let has_shape_and_type = fun.push_insn(block, Insn::IsBitEqual { left: masked, right: expected_rbasic_flags });
+                            let expected_shape = fun.push_insn(block, Insn::Const { val: Const::CShape(profiled_shape) });
+                            let has_shape = fun.push_insn(block, Insn::IsBitEqual { left: actual_shape, right: expected_shape });
                             let iftrue_block = fun.new_block(insn_idx);
                             let target = BranchEdge { target: iftrue_block, args: vec![] };
                             let fall_through = fun.new_block(insn_idx);
 
-                            fun.push_insn(block, Insn::CondBranch { val: has_shape_and_type,
+                            fun.push_insn(block, Insn::CondBranch { val: has_shape,
                                 if_true: target,
                                 if_false: BranchEdge { target: fall_through, args: vec![] }
                             });
 
                             block = fall_through;
                             let mut ivar_index: attr_index_t = 0;
-                            let result = if unsafe { rb_shape_get_iv_index(expected_shape.0, id, &mut ivar_index) } {
+                            let result = if unsafe { rb_shape_get_iv_index(profiled_shape.0, id, &mut ivar_index) } {
                                 fun.push_insn(iftrue_block, Insn::Const { val: Const::Value(pushval) })
                             } else {
                                 fun.push_insn(iftrue_block, Insn::Const { val: Const::Value(Qnil) })
@@ -7542,6 +7552,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     enum ProfiledBlockHandlerFamily {
                         Nil,
                         IseqOrIfunc,
+                        Proc,
                     }
                     impl ProfiledBlockHandlerFamily {
                         fn from_profiled_type(profiled_type: ProfiledType) -> Option<Self> {
@@ -7553,6 +7564,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                                     || rb_IMEMO_TYPE_P(obj, imemo_ifunc) == 1
                             } {
                                 Some(Self::IseqOrIfunc)
+                            } else if unsafe { rb_obj_is_proc(obj).test() } {
+                                Some(Self::Proc)
                             } else {
                                 None
                             }
@@ -7588,9 +7601,6 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     if level == 0 { modified_args.push(modified_val); }
                     fun.push_insn(modified_block, Insn::Jump(BranchEdge { target: join_block, args: modified_args }));
 
-                    // Push unmodified block: inspect the current block handler to
-                    // decide whether this path returns `nil` or `BlockParamProxy`.
-                    let block_handler = fun.push_insn(unmodified_block, Insn::LoadField { recv: ep, id: FieldName::VM_ENV_DATA_INDEX_SPECVAL, offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, return_type: types::CInt64 });
                     let original_local = if level == 0 { Some(state.getlocal(ep_offset)) } else { None };
                     // `block_handler & 1 == 1` accepts both ISEQ (0b01) and ifunc
                     // (0b11) handlers. Keep a compile-time check that this shortcut
@@ -7622,6 +7632,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         // No supported profiled families. Keep the generic fallback iseq/ifunc fallback
                         // for sites we do not specialize, such as no-profile and megamorphic sites.
                         [] => {
+                            let block_handler = fun.load_ep_env_field(unmodified_block, ep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, VM_ENV_DATA_INDEX_SPECVAL, types::CInt64);
                             // This handles two cases which are nearly identical.
                             // Block handler is a tagged pointer. Look at the tag.
                             //   VM_BH_ISEQ_BLOCK_P(): block_handler & 0x03 == 0x01
@@ -7641,6 +7652,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                         // A single supported profiled family. Emit a monomorphic fast path
                         [profiled_handler] => match profiled_handler {
                             ProfiledBlockHandlerFamily::Nil => {
+                                let block_handler = fun.load_ep_env_field(unmodified_block, ep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, VM_ENV_DATA_INDEX_SPECVAL, types::CInt64);
                                 fun.push_insn(unmodified_block, Insn::GuardBitEquals { val: block_handler, expected: Const::CInt64(VM_BLOCK_HANDLER_NONE.into()), reason: SideExitReason::BlockParamProxyNotNil, state: exit_id, recompile: None });
                                 let nil_val = fun.push_insn(unmodified_block, Insn::Const { val: Const::Value(Qnil) });
                                 let mut args = vec![nil_val];
@@ -7650,6 +7662,7 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                                 fun.push_insn(unmodified_block, Insn::Jump(BranchEdge { target: join_block, args }));
                             }
                             ProfiledBlockHandlerFamily::IseqOrIfunc => {
+                                let block_handler = fun.load_ep_env_field(unmodified_block, ep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, VM_ENV_DATA_INDEX_SPECVAL, types::CInt64);
                                 // This handles two cases which are nearly identical.
                                 // Block handler is a tagged pointer. Look at the tag.
                                 //   VM_BH_ISEQ_BLOCK_P(): block_handler & 0x03 == 0x01
@@ -7666,9 +7679,28 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                                 }
                                 fun.push_insn(unmodified_block, Insn::Jump(BranchEdge { target: join_block, args }));
                             }
+                            ProfiledBlockHandlerFamily::Proc => {
+                                let proc_val = fun.load_ep_env_field(unmodified_block, ep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, VM_ENV_DATA_INDEX_SPECVAL, types::BasicObject);
+                                let is_proc = fun.push_insn(unmodified_block, Insn::CCall {
+                                    cfunc: rb_obj_is_proc as *const u8,
+                                    recv: proc_val,
+                                    args: vec![],
+                                    name: ID!(rb_obj_is_proc),
+                                    owner: Qnil,
+                                    return_type: types::BasicObject,
+                                    elidable: true,
+                                });
+                                fun.push_insn(unmodified_block, Insn::GuardBitEquals { val: is_proc, expected: Const::Value(Qtrue), reason: SideExitReason::BlockParamProxyNotProc, state: exit_id, recompile: None });
+                                let mut args = vec![proc_val];
+                                if let Some(local) = original_local {
+                                    args.push(local);
+                                }
+                                fun.push_insn(unmodified_block, Insn::Jump(BranchEdge { target: join_block, args }));
+                            }
                         },
                         // Multiple supported profiled families. Emit a polymorphic dispatch
                         _ => {
+                            let block_handler = fun.load_ep_env_field(unmodified_block, ep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, VM_ENV_DATA_INDEX_SPECVAL, types::CInt64);
                             let profiled_blocks = profiled_handlers.iter()
                             .map(|&kind| (kind, fun.new_block(branch_insn_idx)))
                             .collect::<Vec<_>>();
@@ -7731,6 +7763,34 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                                         if let Some(local) = original_local { args.push(local); }
                                         fun.push_insn(profiled_block, Insn::Jump(BranchEdge { target: join_block, args }));
                                     },
+                                    ProfiledBlockHandlerFamily::Proc => {
+                                        let proc_check_block = fun.new_block(branch_insn_idx);
+                                        let next_block = fun.new_block(branch_insn_idx);
+                                        fun.push_insn(current_block, Insn::Jump(BranchEdge { target: proc_check_block, args: vec![] }));
+
+                                        let proc_val = fun.load_ep_env_field(proc_check_block, ep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, VM_ENV_DATA_INDEX_SPECVAL, types::BasicObject);
+                                        let proc_result = fun.push_insn(proc_check_block, Insn::CCall {
+                                            cfunc: rb_obj_is_proc as *const u8,
+                                            recv: proc_val,
+                                            args: vec![],
+                                            name: ID!(rb_obj_is_proc),
+                                            owner: Qnil,
+                                            return_type: types::BasicObject,
+                                            elidable: true,
+                                        });
+                                        let true_val = fun.push_insn(proc_check_block, Insn::Const { val: Const::Value(Qtrue) });
+                                        let is_proc = fun.push_insn(proc_check_block, Insn::IsBitEqual { left: proc_result, right: true_val });
+                                        fun.push_insn(proc_check_block, Insn::CondBranch {
+                                            val: is_proc,
+                                            if_true: BranchEdge { target: profiled_block, args: vec![] },
+                                            if_false: BranchEdge { target: next_block, args: vec![] },
+                                        });
+                                        current_block = next_block;
+
+                                        let mut args = vec![proc_val];
+                                        if let Some(local) = original_local { args.push(local); }
+                                        fun.push_insn(profiled_block, Insn::Jump(BranchEdge { target: join_block, args }));
+                                    }
                                 }
                             }
 
@@ -7846,50 +7906,38 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                 YARVINSN_opt_hash_freeze => {
                     let klass = HASH_REDEFINED_OP_FLAG;
                     let bop = BOP_FREEZE;
-                    if unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, klass) } {
-                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass, bop }, state: exit_id });
-                        let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
-                        state.stack_push(recv);
-                    } else {
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Invariant::BOPRedefined { klass, bop }), recompile: None });
+                    if !fun.guard_bop_not_redefined(block, klass, bop, exit_id) {
                         break;  // End the block
                     }
+                    let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
+                    state.stack_push(recv);
                 }
                 YARVINSN_opt_ary_freeze => {
                     let klass = ARRAY_REDEFINED_OP_FLAG;
                     let bop = BOP_FREEZE;
-                    if unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, klass) } {
-                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass, bop }, state: exit_id });
-                        let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
-                        state.stack_push(recv);
-                    } else {
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Invariant::BOPRedefined { klass, bop }), recompile: None });
+                    if !fun.guard_bop_not_redefined(block, klass, bop, exit_id) {
                         break;  // End the block
                     }
+                    let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
+                    state.stack_push(recv);
                 }
                 YARVINSN_opt_str_freeze => {
                     let klass = STRING_REDEFINED_OP_FLAG;
                     let bop = BOP_FREEZE;
-                    if unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, klass) } {
-                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass, bop }, state: exit_id });
-                        let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
-                        state.stack_push(recv);
-                    } else {
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Invariant::BOPRedefined { klass, bop }), recompile: None });
+                    if !fun.guard_bop_not_redefined(block, klass, bop, exit_id) {
                         break;  // End the block
                     }
+                    let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
+                    state.stack_push(recv);
                 }
                 YARVINSN_opt_str_uminus => {
                     let klass = STRING_REDEFINED_OP_FLAG;
                     let bop = BOP_UMINUS;
-                    if unsafe { rb_BASIC_OP_UNREDEFINED_P(bop, klass) } {
-                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::BOPRedefined { klass, bop }, state: exit_id });
-                        let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
-                        state.stack_push(recv);
-                    } else {
-                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::PatchPoint(Invariant::BOPRedefined { klass, bop }), recompile: None });
+                    if !fun.guard_bop_not_redefined(block, klass, bop, exit_id) {
                         break;  // End the block
                     }
+                    let recv = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
+                    state.stack_push(recv);
                 }
                 YARVINSN_leave => {
                     fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
@@ -8347,45 +8395,40 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
                     }
                     if let Some(summary) = fun.polymorphic_summary(&profiles, self_param, exit_state.insn_idx) {
                         self_param = fun.push_insn(block, Insn::GuardType { val: self_param, guard_type: types::HeapBasicObject, state: exit_id, recompile: None });
-                        let rbasic_flags = fun.load_rbasic_flags(block, self_param);
                         let join_block = insn_idx_to_block.get(&insn_idx).copied().unwrap_or_else(|| fun.new_block(insn_idx));
                         let join_param = fun.push_insn(join_block, Insn::Param);
                         // Dedup by expected shape so objects with different classes but the same shape can share code
                         // TODO(max): De-duplicate further by checking ivar offsets to allow
                         // different shapes with the same ivar layout to share code
-                        let mut seen_shape_and_flags = Vec::with_capacity(summary.buckets().len());
+                        let mut seen_shape = Vec::with_capacity(summary.buckets().len());
                         for &profiled_type in summary.buckets() {
                             // End of the buckets
                             if profiled_type.is_empty() { break; }
                             // Instance variable lookups on immediate values are always nil; don't bother
                             if profiled_type.flags().is_immediate() { continue; }
-                            let expected_shape = profiled_type.shape();
-                            let (expected_rbasic_flags, rbasic_flags_mask) = profiled_type.rbasic_flags_and_mask();
-                            assert!(expected_shape.is_valid());
+                            let profiled_shape = profiled_type.shape();
+                            assert!(profiled_shape.is_valid());
                             // Too-complex shapes use hash tables for ivars;
                             // rb_shape_get_iv_index doesn't work for them.
                             // Let the fallthrough GetIvar handle these.
-                            if expected_shape.is_complex() { continue; }
-                            if seen_shape_and_flags.contains(&expected_rbasic_flags) { continue; }
-                            seen_shape_and_flags.push(expected_rbasic_flags);
-                            let rbasic_flags_mask = fun.push_insn(block, Insn::Const { val: Const::CUInt64(rbasic_flags_mask) });
-                            // The expected shape can change over run, so we put it
-                            // as a pointer to keep it stable in snapshot tests.
-                            let expected_rbasic_flags = fun.push_insn(block, Insn::Const { val: Const::CPtr(ptr::without_provenance(expected_rbasic_flags.to_usize())) });
-                            let expected_rbasic_flags = fun.push_insn(block, Insn::RefineType { val: expected_rbasic_flags, new_type: types::CUInt64 });
-                            let masked = fun.push_insn(block, Insn::IntAnd { left: rbasic_flags, right: rbasic_flags_mask});
-                            let has_shape_and_type = fun.push_insn(block, Insn::IsBitEqual { left: masked, right: expected_rbasic_flags });
+                            if profiled_shape.is_complex() { continue; }
+                            if seen_shape.contains(&profiled_shape) { continue; }
+                            seen_shape.push(profiled_shape);
+                            let actual_shape = fun.load_shape(block, self_param);
+                            // Load the expected shape to a variable
+                            let expected_shape = fun.push_insn(block, Insn::Const { val: Const::CShape(profiled_shape) });
+                            let has_shape = fun.push_insn(block, Insn::IsBitEqual { left: actual_shape, right: expected_shape });
                             let iftrue_block = fun.new_block(insn_idx);
                             let target = BranchEdge { target: iftrue_block, args: vec![] };
                             let fall_through = fun.new_block(insn_idx);
 
-                            fun.push_insn(block, Insn::CondBranch { val: has_shape_and_type,
+                            fun.push_insn(block, Insn::CondBranch { val: has_shape,
                                 if_true: target,
                                 if_false: BranchEdge { target: fall_through, args: vec![] }
                             });
 
                             block = fall_through;
-                            let result = fun.load_ivar(iftrue_block, self_param, profiled_type, id, exit_id);
+                            let result = fun.load_ivar(iftrue_block, self_param, profiled_type, id);
                             fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![result] }));
                         }
                         // In the fallthrough case, do a generic interpreter getivar and then join.

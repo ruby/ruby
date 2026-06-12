@@ -33,6 +33,25 @@ class TestGemPackage < Gem::Package::TarTestCase
     assert package.spec
   end
 
+  def test_class_new_old_format_forwards_security_policy
+    pend "jruby can't require the simple_gem file" if Gem.java_platform?
+    pend "openssl is missing" unless Gem::HAVE_OPENSSL
+    require_relative "simple_gem"
+    File.open "old_format.gem", "wb" do |io|
+      io.write SIMPLE_GEM
+    end
+
+    package = Gem::Package.new "old_format.gem", Gem::Security::HighSecurity
+
+    e = assert_raise Gem::Security::Exception do
+      package.verify
+    end
+
+    assert_equal "old format gems do not contain signatures " \
+                 "and cannot be verified",
+                 e.message
+  end
+
   def test_add_checksums
     gem_io = StringIO.new
 

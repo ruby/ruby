@@ -4,11 +4,12 @@ require_relative "plugin/api"
 
 module Bundler
   module Plugin
-    autoload :DSL,        File.expand_path("plugin/dsl", __dir__)
-    autoload :Events,     File.expand_path("plugin/events", __dir__)
-    autoload :Index,      File.expand_path("plugin/index", __dir__)
-    autoload :Installer,  File.expand_path("plugin/installer", __dir__)
-    autoload :SourceList, File.expand_path("plugin/source_list", __dir__)
+    autoload :DSL,            File.expand_path("plugin/dsl", __dir__)
+    autoload :Events,         File.expand_path("plugin/events", __dir__)
+    autoload :Index,          File.expand_path("plugin/index", __dir__)
+    autoload :Installer,      File.expand_path("plugin/installer", __dir__)
+    autoload :SourceList,     File.expand_path("plugin/source_list", __dir__)
+    autoload :UnloadedSource, File.expand_path("plugin/unloaded_source", __dir__)
 
     class MalformattedPlugin < PluginError; end
     class UndefinedCommandError < PluginError; end
@@ -16,6 +17,14 @@ module Bundler
     class PluginInstallError < PluginError; end
 
     PLUGIN_FILE_NAME = "plugins.rb"
+
+    # Module-level flag set while .gemfile_install parses the Gemfile and
+    # consulted by .from_lock to substitute plugin sources with
+    # UnloadedSource. It relies on definitions being built one at a time in
+    # a single thread; if they are ever built concurrently or reentrantly,
+    # this needs to be replaced by explicit state passed down to the
+    # lockfile parser.
+    @gemfile_parse = false
 
     module_function
 
@@ -26,6 +35,7 @@ module Bundler
       @commands = {}
       @hooks_by_event = Hash.new {|h, k| h[k] = [] }
       @loaded_plugin_names = []
+      @index = nil
     end
 
     reset!
@@ -40,7 +50,7 @@ module Bundler
 
       specs = Installer.new.install(names, options)
 
-      save_plugins names, specs
+      save_plugins specs.slice(*names)
     rescue PluginError
       specs_to_delete = specs.select {|k, _v| names.include?(k) && !index.commands.values.include?(k) }
       specs_to_delete.each_value {|spec| Bundler.rm_rf(spec.full_gem_path) }
@@ -100,29 +110,44 @@ module Bundler
     #
     # @param [Pathname] gemfile path
     # @param [Proc] block that can be evaluated for (inline) Gemfile
-    def gemfile_install(gemfile = nil, &inline)
-      Bundler.settings.temporary(frozen: false, deployment: false) do
-        builder = DSL.new
-        if block_given?
-          builder.instance_eval(&inline)
-        else
-          builder.eval_gemfile(gemfile)
-        end
-        builder.check_primary_source_safety
-        definition = builder.to_definition(nil, true)
-
-        return if definition.dependencies.empty?
-
-        plugins = definition.dependencies.map(&:name)
-        installed_specs = Installer.new.install_definition(definition)
-
-        save_plugins plugins, installed_specs, builder.inferred_plugins
+    def gemfile_install(gemfile = nil, lockfile = nil, unlock = {}, &inline)
+      @gemfile_parse = true
+      Bundler.configure
+      builder = DSL.new
+      if block_given?
+        builder.instance_eval(&inline)
+      else
+        builder.eval_gemfile(gemfile)
       end
+      builder.check_primary_source_safety
+
+      plugins = builder.dependencies.map(&:name)
+      return if plugins.empty?
+
+      # skip the update if unlocking specific gems, but none of them are plugins
+      # declared in the Gemfile
+      if unlock.is_a?(Hash) && unlock[:gems] && !unlock[:gems].empty? &&
+         (unlock[:gems] & plugins).empty?
+        unlock = {}
+      end
+
+      # resolve remotely when unlocking, so that plugins can be updated.
+      # Definition#initialize consumes the unlock hash, so this must be decided
+      # before building the definition.
+      updating = unlock == true || (unlock.is_a?(Hash) && !unlock.empty?)
+
+      definition = builder.to_definition(lockfile, unlock)
+
+      installed_specs = Installer.new.install_definition(definition, updating)
+
+      save_plugins installed_specs.slice(*plugins), builder.inferred_plugins
     rescue RuntimeError => e
       unless e.is_a?(GemfileError)
         Bundler.ui.error "Failed to install plugin: #{e.message}\n  #{e.backtrace[0]}"
       end
       raise
+    ensure
+      @gemfile_parse = false
     end
 
     # The index object used to store the details about the plugin
@@ -183,12 +208,17 @@ module Bundler
 
     # Checks if any plugin declares the source
     def source?(name)
-      !index.source_plugin(name.to_s).nil?
+      !!source_plugin(name)
+    end
+
+    # Returns the plugin that handles the source +name+ if any
+    def source_plugin(name)
+      index.source_plugin(name.to_s)
     end
 
     # @return [Class] that handles the source. The class includes API::Source
     def source(name)
-      raise UnknownSourceError, "Source #{name} not found" unless source? name
+      raise UnknownSourceError, "Source #{name} not found" unless source_plugin(name)
 
       load_plugin(index.source_plugin(name)) unless @sources.key? name
 
@@ -199,9 +229,14 @@ module Bundler
     # @return [API::Source] the instance of the class that handles the source
     #                       type passed in locked_opts
     def from_lock(locked_opts)
+      opts = locked_opts.merge("uri" => locked_opts["remote"])
+      # when reading the lockfile while doing the plugin-install-from-gemfile phase,
+      # we need to ignore any plugin sources
+      return UnloadedSource.new(opts) if @gemfile_parse
+
       src = source(locked_opts["type"])
 
-      src.new(locked_opts.merge("uri" => locked_opts["remote"]))
+      src.new(opts)
     end
 
     # To be called via the API to register a hooks and corresponding block that
@@ -237,7 +272,9 @@ module Bundler
     #
     # @return [String, nil] installed path
     def installed?(plugin)
-      Index.new.installed?(plugin)
+      (path = index.installed?(plugin)) &&
+        index.plugin_path(plugin).join(PLUGIN_FILE_NAME).file? &&
+        path
     end
 
     # @return [true, false] whether the plugin is loaded
@@ -247,19 +284,11 @@ module Bundler
 
     # Post installation processing and registering with index
     #
-    # @param [Array<String>] plugins list to be installed
     # @param [Hash] specs of plugins mapped to installation path (currently they
     #               contain all the installed specs, including plugins)
     # @param [Array<String>] names of inferred source plugins that can be ignored
-    def save_plugins(plugins, specs, optional_plugins = [])
-      plugins.each do |name|
-        spec = specs[name]
-
-        # It's possible that the `plugin` found in the Gemfile don't appear in the specs. For instance when
-        # calling `BUNDLE_WITHOUT=default bundle install`, the plugins will not get installed.
-        next if spec.nil?
-        next if index.up_to_date?(spec)
-
+    def save_plugins(specs, optional_plugins = [])
+      specs.each do |name, spec|
         save_plugin(name, spec, optional_plugins.include?(name))
       end
     end
@@ -284,6 +313,8 @@ module Bundler
     #
     # @raise [PluginInstallError] if validation or registration raises any error
     def save_plugin(name, spec, optional_plugin = false)
+      return if index.up_to_date?(spec)
+
       validate_plugin! Pathname.new(spec.full_gem_path)
       installed = register_plugin(name, spec, optional_plugin)
       Bundler.ui.info "Installed plugin #{name}" if installed
@@ -319,7 +350,7 @@ module Bundler
         raise MalformattedPlugin, "#{e.class}: #{e.message}"
       end
 
-      if optional_plugin && @sources.keys.any? {|s| source? s }
+      if optional_plugin && @sources.keys.any? {|s| source_plugin(s) }
         Bundler.rm_rf(path)
         false
       else

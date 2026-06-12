@@ -124,8 +124,14 @@ module Bundler
 
       if options.key?("type")
         options["type"] = options["type"].to_s
-        unless Plugin.source?(options["type"])
+        unless (source_plugin = Plugin.source_plugin(options["type"]))
           raise InvalidOption, "No plugin sources available for #{options["type"]}"
+        end
+        # Implicitly add a dependency on source plugins who are named bundler-source-<type>,
+        # and aren't already mentioned in the Gemfile.
+        # See also Plugin::DSL#source
+        if source_plugin.start_with?("bundler-source-") && !@dependencies.any? {|d| d.name == source_plugin }
+          plugin(source_plugin)
         end
 
         unless block_given?
@@ -256,8 +262,15 @@ module Bundler
       @env = old
     end
 
-    def plugin(*args)
-      # Pass on
+    def plugin(name, *args)
+      options = args.last.is_a?(Hash) ? args.pop.dup : {}
+      version = args || [">= 0"]
+
+      normalize_options(name, version, options)
+      options["plugin"] = true
+      options["require"] = false
+
+      add_dependency(name, version, options)
     end
 
     def method_missing(name, *args)

@@ -236,6 +236,16 @@ module Bundler
       sources.prefer_local!
     end
 
+    # Releases memory only needed during resolution, such as remote spec
+    # indexes and resolver state. Only safe to call once resolution is
+    # complete and the result has been materialized, since any further
+    # resolution will need to refetch remote specs.
+    def release_resolution_memory!
+      @resolver = nil
+      @resolution_base = nil
+      sources.release_resolution_memory!
+    end
+
     # For given dependency list returns a SpecSet with Gemspec of all the required
     # dependencies.
     #  1. The method first resolves the dependencies specified in Gemfile

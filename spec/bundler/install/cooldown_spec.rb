@@ -143,6 +143,64 @@ RSpec.describe "bundle install with the cooldown setting" do
       expect(the_bundle).to include_gems("ripe_gem 1.0.0")
     end
 
+    it "applies per-source Gemfile cooldown on bundle update when a lockfile exists" do
+      # Converging the Gemfile sources with the lockfile sources used to drop
+      # the per-source cooldown, so it only ever worked on a first resolve
+      # without a lockfile.
+      gemfile <<-G
+        source "https://gem.repo3", cooldown: 7
+        gem "ripe_gem"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            ripe_gem (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          ripe_gem
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "update ripe_gem", artifice: "compact_index_cooldown"
+
+      expect(the_bundle).to include_gems("ripe_gem 1.0.0")
+    end
+
+    it "applies per-source Gemfile cooldown to gems added after the lockfile was written" do
+      gemfile <<-G
+        source "https://gem.repo3", cooldown: 7
+        gem "ripe_gem"
+        gem "child"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            ripe_gem (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          ripe_gem
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "install", artifice: "compact_index_cooldown"
+
+      expect(the_bundle).to include_gems("ripe_gem 1.0.0", "child 1.0.0")
+    end
+
     it "is overridden by CLI --cooldown when Gemfile sets a different per-source value" do
       gemfile <<-G
         source "https://gem.repo3", cooldown: 0
@@ -428,6 +486,230 @@ RSpec.describe "bundle install with the cooldown setting" do
       bundle "update --all --cooldown 7", artifice: "compact_index_cooldown"
 
       expect(the_bundle).to include_gems("upgradable 3.0.0")
+    end
+
+    it "keeps a top-level source cooldown through a partial update with multiple sources" do
+      now = Time.now.utc
+      build_repo4 do
+        build_gem "solo_gem", "1.0.0" do |s|
+          s.date = now - (30 * 86_400)
+        end
+        build_gem "solo_gem", "2.0.0" do |s|
+          s.date = now - (1 * 86_400)
+        end
+      end
+
+      gemfile <<-G
+        source "https://gem.repo3", cooldown: 7
+        gem "ripe_gem"
+        source "https://gem.repo4" do
+          gem "solo_gem"
+        end
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            ripe_gem (1.0.0)
+
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            solo_gem (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          ripe_gem
+          solo_gem!
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "update ripe_gem", artifice: "compact_index_cooldown"
+
+      # A partial update converges the still-locked sources, the path that used
+      # to drop cooldown. repo3's cooldown must survive that even with a second
+      # source in the Gemfile, so its in-window 2.0.0 stays excluded.
+      expect(the_bundle).to include_gems("ripe_gem 1.0.0", "solo_gem 1.0.0")
+    end
+
+    it "carries cooldown declared on a gem-block source" do
+      now = Time.now.utc
+      build_repo4 do
+        build_gem "solo_gem", "1.0.0" do |s|
+          s.date = now - (30 * 86_400)
+        end
+        build_gem "solo_gem", "2.0.0" do |s|
+          s.date = now - (1 * 86_400)
+        end
+      end
+
+      gemfile <<-G
+        source "https://gem.repo3"
+        gem "ripe_gem"
+        source "https://gem.repo4", cooldown: 7 do
+          gem "solo_gem"
+        end
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            ripe_gem (1.0.0)
+
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            solo_gem (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          ripe_gem
+          solo_gem!
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "update solo_gem", artifice: "compact_index_cooldown"
+
+      # The cooldown lives on the gem-block source, which is also converged from
+      # the lockfile. A partial update of solo_gem must keep that cooldown, so
+      # its in-window 2.0.0 stays excluded.
+      expect(the_bundle).to include_gems("ripe_gem 1.0.0", "solo_gem 1.0.0")
+    end
+
+    it "applies per-source Gemfile cooldown to a gem added via bundle add" do
+      gemfile <<-G
+        source "https://gem.repo3", cooldown: 7
+        gem "ripe_gem"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            ripe_gem (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          ripe_gem
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "add child", artifice: "compact_index_cooldown"
+
+      expect(the_bundle).to include_gems("child 1.0.0")
+    end
+
+    it "applies per-source Gemfile cooldown on bundle lock --update" do
+      gemfile <<-G
+        source "https://gem.repo3", cooldown: 7
+        gem "ripe_gem"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            ripe_gem (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          ripe_gem
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "lock --update ripe_gem", artifice: "compact_index_cooldown"
+
+      expect(lockfile).to include("ripe_gem (1.0.0)")
+      expect(lockfile).not_to include("ripe_gem (2.0.0)")
+    end
+
+    it "ignores cooldown and installs the locked version when frozen" do
+      # Frozen installs read the lockfile instead of resolving, so cooldown has
+      # no say. A version already locked inside the window must still install.
+      gemfile <<-G
+        source "https://gem.repo3", cooldown: 7
+        gem "ripe_gem"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            ripe_gem (2.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          ripe_gem
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "config set frozen true"
+      bundle "install", artifice: "compact_index_cooldown"
+
+      expect(the_bundle).to include_gems("ripe_gem 2.0.0")
+    end
+
+    it "keys per-source cooldown by the declared URI even behind a mirror" do
+      # A mirror rewrites the fetch URI, but cooldown is recorded under the URI
+      # written in the Gemfile. The cooldown must still apply through the
+      # redirect to the mirror that actually serves the gems.
+      bundle "config set mirror.https://gem.repo2 https://gem.repo3"
+
+      gemfile <<-G
+        source "https://gem.repo2", cooldown: 7
+        gem "ripe_gem"
+      G
+
+      bundle "install", artifice: "compact_index_cooldown",
+                        env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo3.to_s }
+
+      expect(the_bundle).to include_gems("ripe_gem 1.0.0")
+    end
+  end
+
+  context "with a source that does not provide publish dates" do
+    before do
+      build_repo3 do
+        build_gem "ripe_gem", "1.0.0"
+        build_gem "ripe_gem", "2.0.0"
+      end
+    end
+
+    it "cannot apply cooldown and installs the latest version" do
+      # The legacy dependency API does not expose per-version publish dates, so
+      # the cooldown filter has nothing to compare against and is silently
+      # inactive. This pins that limitation; flip the expectation if publish
+      # dates ever become available over this endpoint.
+      gemfile <<-G
+        source "https://gem.repo3", cooldown: 7
+        gem "ripe_gem"
+      G
+
+      bundle "install", artifice: "endpoint"
+
+      expect(the_bundle).to include_gems("ripe_gem 2.0.0")
     end
   end
 end

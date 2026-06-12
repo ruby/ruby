@@ -2812,6 +2812,60 @@ class TestArray < Test::Unit::TestCase
     assert_equal("b", x.ary.join(""))
   end
 
+  def test_join_encoding
+    # Multibyte UTF-8 elements: result is UTF-8, valid, not ASCII-only.
+    r = @cls["caf\u00e9", "na\u00efve"].join(" ")
+    assert_equal("caf\u00e9 na\u00efve", r)
+    assert_equal(Encoding::UTF_8, r.encoding)
+    assert_equal(true, r.valid_encoding?)
+    assert_equal(false, r.ascii_only?)
+
+    # All 7-bit content stays ASCII-only.
+    r = @cls["abc", "def"].join(",")
+    assert_equal("abc,def", r)
+    assert_equal(true, r.ascii_only?)
+
+    # Multibyte separator (same encoding as the elements).
+    r = @cls["a", "b", "c"].join("\u2014")
+    assert_equal("a\u2014b\u2014c", r)
+    assert_equal(Encoding::UTF_8, r.encoding)
+    assert_equal(false, r.ascii_only?)
+    assert_equal(true, r.valid_encoding?)
+
+    # Mixed ASCII-compatible encodings, all 7-bit: result takes element 0's encoding.
+    r = @cls["abc".dup.force_encoding("US-ASCII"), "def".dup.force_encoding("UTF-8")].join(" ")
+    assert_equal("abc def", r)
+    assert_equal(Encoding::US_ASCII, r.encoding)
+    assert_equal(true, r.ascii_only?)
+
+    # 7-bit content in a non-ASCII encoding (Shift_JIS).
+    r = @cls["abc".encode("Shift_JIS"), "def".encode("Shift_JIS")].join(" ")
+    assert_equal(Encoding::Shift_JIS, r.encoding)
+    assert_equal("abc def".b, r.b)
+
+    # Same-encoding multibyte (Shift_JIS): byte-for-byte concatenation.
+    s = "\u65e5\u672c".encode("Shift_JIS")
+    sep = "/".encode("Shift_JIS")
+    r = @cls[s, s].join(sep)
+    assert_equal(Encoding::Shift_JIS, r.encoding)
+    assert_equal((s + sep + s).b, r.b)
+
+    # Broken bytes: result keeps them and reports invalid.
+    bad = "\xff\xfe".dup.force_encoding("UTF-8")
+    r = @cls[bad, bad].join(" ")
+    assert_equal((bad + " " + bad).b, r.b)
+    assert_equal(false, r.valid_encoding?)
+
+    # Incompatible element/separator encodings still raise.
+    assert_raise(Encoding::CompatibilityError) do
+      @cls["a".dup.force_encoding("UTF-8"), "b".encode("UTF-16LE")].join(" ")
+    end
+
+    # Bulk copy: large array, verified against a non-join oracle.
+    big = @cls.new(500) { "ab" }
+    assert_equal(("ab," * 500).chomp(","), big.join(","))
+  end
+
   def test_to_a2
     klass = Class.new(Array)
     a = klass.new.to_a
