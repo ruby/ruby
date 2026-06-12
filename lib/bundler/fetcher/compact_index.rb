@@ -80,6 +80,12 @@ module Bundler
       end
 
       def fetch_gem_infos(names)
+        # Create the client and update the versions file on this thread.
+        # Otherwise the workers race to lazily create the client and update
+        # the versions file concurrently, e.g. when the client was released
+        # after resolution and is being rebuilt for `bundle cache`.
+        compact_index_client.available?
+
         in_parallel(names) {|name| compact_index_client.info(name) }
       rescue TooManyRequestsError # rubygems.org is rate limiting us, slow down.
         @bundle_worker&.stop
