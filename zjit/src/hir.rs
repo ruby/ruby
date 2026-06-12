@@ -4394,6 +4394,11 @@ impl Function {
         })
     }
 
+    /// Guard that `recv` is a heap allocated object
+    fn guard_heap(&mut self, block: BlockId, recv: InsnId, state: InsnId) -> InsnId {
+        self.push_insn(block, Insn::GuardType { val: recv, guard_type: types::HeapBasicObject, state, recompile: None })
+    }
+
     fn load_ivar(&mut self, block: BlockId, self_val: InsnId, recv_type: ProfiledType, id: ID) -> InsnId {
         // Too-complex shapes use hash tables; rb_shape_get_iv_index doesn't support them.
         // Callers must filter these out before calling load_ivar.
@@ -4471,7 +4476,7 @@ impl Function {
                             // need to wrap it again here.
                             self.push_insn_id(block, insn_id); continue;
                         }
-                        let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state, recompile: None });
+                        let self_val = self.guard_heap(block, self_val, state);
                         let shape = self.load_shape(block, self_val);
                         self.guard_shape(block, shape, recv_type.shape(), state, Some(Recompile::ProfileSelf));
                         let replacement = self.load_ivar(block, self_val, recv_type, id);
@@ -4504,7 +4509,7 @@ impl Function {
                             // On the final version, keep the DefinedIvar fallback instead of another shape guard.
                             self.push_insn_id(block, insn_id); continue;
                         }
-                        let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state, recompile: None });
+                        let self_val = self.guard_heap(block, self_val, state);
                         let shape = self.load_shape(block, self_val);
                         self.guard_shape(block, shape, recv_type.shape(), state, Some(Recompile::ProfileSelf));
                         let mut ivar_index: attr_index_t = 0;
@@ -4582,7 +4587,7 @@ impl Function {
                             }
                             // Fall through to emitting the ivar write
                         }
-                        let self_val = self.push_insn(block, Insn::GuardType { val: self_val, guard_type: types::HeapBasicObject, state, recompile: None });
+                        let self_val = self.guard_heap(block, self_val, state);
                         let shape = self.load_shape(block, self_val);
                         // TODO: attr_writer SetIvar has a null inline cache and may target a receiver
                         // operand other than CFP self. Support it with a reprofile strategy that
