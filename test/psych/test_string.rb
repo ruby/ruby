@@ -65,6 +65,12 @@ module Psych
       assert_cycle str
     end
 
+    def test_datetime_string_with_whitespace_separators
+      ["\v", "\r", "\f", " \t", "\t "].each do |sep|
+        assert_cycle "2023-12-31#{sep}12:00:00"
+      end
+    end
+
     def test_plain_when_shorten_than_line_width_and_no_final_line_break
       str = "Lorem ipsum"
       yaml = Psych.dump str, line_width: 12
