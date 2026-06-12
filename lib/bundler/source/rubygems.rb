@@ -25,6 +25,7 @@ module Bundler
         @checksum_store = Checksum::Store.new
         @gem_installers = {}
         @gem_installers_mutex = Mutex.new
+        @remote_specs_mutex = Mutex.new
 
         cooldown = options["cooldown"]
         Array(options["remotes"]).reverse_each {|r| add_remote(r, cooldown: cooldown) }
@@ -339,7 +340,7 @@ module Bundler
 
       def release_resolution_memory!
         @specs = nil
-        @remote_specs = nil
+        @remote_specs_mutex.synchronize { @remote_specs = nil }
         @fetchers&.each(&:release_resolution_memory!)
       end
 
@@ -420,13 +421,15 @@ module Bundler
       end
 
       def remote_specs
-        @remote_specs ||= Index.build do |idx|
-          index_fetchers = fetchers - api_fetchers
+        @remote_specs ||= @remote_specs_mutex.synchronize do
+          @remote_specs ||= Index.build do |idx|
+            index_fetchers = fetchers - api_fetchers
 
-          if index_fetchers.empty?
-            fetch_names(api_fetchers, dependency_names, idx)
-          else
-            fetch_names(fetchers, nil, idx)
+            if index_fetchers.empty?
+              fetch_names(api_fetchers, dependency_names, idx)
+            else
+              fetch_names(fetchers, nil, idx)
+            end
           end
         end
       end
