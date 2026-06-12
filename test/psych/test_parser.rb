@@ -188,6 +188,14 @@ module Psych
       end
     end
 
+    def test_bom_multiline_utf32
+      %w[UTF-32LE UTF-32BE].each do |enc|
+        handler = EventCatcher.new
+        Psych::Parser.new(handler).parse "\uFEFFa: b\nc: d\n".encode(enc)
+        assert_equal %w[a b c d], scalars(handler), enc
+      end
+    end
+
     def test_bom_multiline_io
       @parser.parse StringIO.new("\uFEFFa: b\nc: d\n")
       assert_equal %w[a b c d], scalars(@parser.handler)

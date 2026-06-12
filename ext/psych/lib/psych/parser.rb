@@ -68,6 +68,8 @@ module Psych
       Encoding::UTF_8 => "\u{FEFF}".freeze,
       Encoding::UTF_16LE => "\u{FEFF}".encode(Encoding::UTF_16LE).freeze,
       Encoding::UTF_16BE => "\u{FEFF}".encode(Encoding::UTF_16BE).freeze,
+      Encoding::UTF_32LE => "\u{FEFF}".encode(Encoding::UTF_32LE).freeze,
+      Encoding::UTF_32BE => "\u{FEFF}".encode(Encoding::UTF_32BE).freeze,
     }.freeze
     private_constant :BOM
 
