@@ -460,12 +460,23 @@ fn main() {
         // Unwrap the Result and panic on failure.
         .expect("Unable to generate bindings");
 
+    // Write to a Vec for post-processing
+    let mut bindings_string = Vec::new();
+    bindings.write(Box::new(&mut bindings_string)).expect("Couldn't write bindings!");
+
+    // Use i32 for this type since that's what the assembler APIs expect
+    const JIT_CONSTANTS_NEEDLE: &str       =  "\npub type jit_bindgen_constants = u32;\n";
+    const JIT_CONSTANTS_REPLACEMENT: &[u8] = b"\npub type jit_bindgen_constants = i32;\n";
+    // Yes, this search and replace could be faster, but it's a small file.
+    let bindings_str = str::from_utf8(bindings_string.as_ref()).expect("bindings should be in UTF-8");
+    let type_needle_start = bindings_str.find(JIT_CONSTANTS_NEEDLE).expect("bindings should have jit_bindgen_constants");
+    (&mut bindings_string[type_needle_start..type_needle_start + JIT_CONSTANTS_NEEDLE.len()])
+        .copy_from_slice(JIT_CONSTANTS_REPLACEMENT);
+
+    // Write out to file
     let mut out_path: PathBuf = src_root;
     out_path.push(jit_name);
     out_path.push("src");
     out_path.push("cruby_bindings.inc.rs");
-
-    bindings
-        .write_to_file(out_path)
-        .expect("Couldn't write bindings!");
+    std::fs::write(out_path, bindings_string).expect("file output failed");
 }

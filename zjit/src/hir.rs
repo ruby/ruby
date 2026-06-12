@@ -4850,7 +4850,7 @@ impl Function {
         // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
         let ptr = self.push_insn(block, Insn::LoadField {
             recv, id: FieldName::as_heap,
-            offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32,
+            offset: ROBJECT_OFFSET_AS_HEAP_FIELDS,
             return_type: types::CPtr,
         });
         let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
@@ -4862,7 +4862,7 @@ impl Function {
 
     fn load_ivar_embedded(&mut self, block: BlockId, recv: InsnId, id: ID, ivar_index: attr_index_t) -> InsnId {
         // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
-        let offset = ROBJECT_OFFSET_AS_ARY as i32
+        let offset = ROBJECT_OFFSET_AS_ARY
             + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
         self.push_insn(block, Insn::LoadField {
             recv, id: id.into(), offset,
@@ -4892,9 +4892,9 @@ impl Function {
         match layout {
             ShapeLayout::RClass | ShapeLayout::RData => {
                 let offset = if layout == ShapeLayout::RClass {
-                    RCLASS_OFFSET_PRIME_FIELDS_OBJ as i32
+                    RCLASS_OFFSET_PRIME_FIELDS_OBJ
                 } else {
-                    TDATA_OFFSET_FIELDS_OBJ as i32
+                    TDATA_OFFSET_FIELDS_OBJ
                 };
 
                 let fields_obj = self.push_insn(block, Insn::LoadField {
@@ -5070,10 +5070,10 @@ impl Function {
                         // Current shape contains this ivar
                         let (ivar_storage, offset) = if recv_type.flags().is_embedded() {
                             // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
-                            let offset = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
+                            let offset = ROBJECT_OFFSET_AS_ARY + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
                             (self_val, offset)
                         } else {
-                            let as_heap = self.push_insn(block, Insn::LoadField { recv: self_val, id: FieldName::as_heap, offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32, return_type: types::CPtr });
+                            let as_heap = self.push_insn(block, Insn::LoadField { recv: self_val, id: FieldName::as_heap, offset: ROBJECT_OFFSET_AS_HEAP_FIELDS, return_type: types::CPtr });
                             let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
                             (as_heap, offset)
                         };
@@ -10091,13 +10091,13 @@ mod validation_tests {
         function.push_insn(entry, Insn::LoadField {
             recv,
             id: FieldName::as_heap,
-            offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32,
+            offset: ROBJECT_OFFSET_AS_HEAP_FIELDS,
             return_type: types::CPtr,
         });
         let ivar = function.push_insn(entry, Insn::LoadField {
             recv,
             id: FieldName::Id(ID(1)),
-            offset: ROBJECT_OFFSET_AS_ARY as i32,
+            offset: ROBJECT_OFFSET_AS_ARY,
             return_type: types::BasicObject,
         });
         function.push_insn(entry, Insn::Return { val: ivar });
@@ -10124,13 +10124,13 @@ mod validation_tests {
         function.push_insn(entry, Insn::LoadField {
             recv,
             id: FieldName::as_heap,
-            offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32,
+            offset: ROBJECT_OFFSET_AS_HEAP_FIELDS,
             return_type: types::BasicObject,
         });
         let ivar = function.push_insn(entry, Insn::LoadField {
             recv,
             id: FieldName::Id(ID(1)),
-            offset: ROBJECT_OFFSET_AS_ARY as i32,
+            offset: ROBJECT_OFFSET_AS_ARY,
             return_type: types::Array,
         });
         function.push_insn(entry, Insn::Return { val: ivar });
