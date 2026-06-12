@@ -4984,28 +4984,58 @@ impl Function {
         }
     }
 
+    /// Load Store Forwarding traverses individual blocks to simplify redundant LoadField and StoreField instructions.
+    /// This is done through abstract interpretation on an abstract domain of an `InsnId` and an `i32` offset.
+    /// For further reading, see the following Rails at Scale blog post.
+    /// <https://railsatscale.com/2026-03-18-how-zjit-removes-redundant-object-loads-and-stores/>
     fn optimize_load_store(&mut self) {
+        /// HeapKey represents the abstract domain that load store optimization is built upon
+        #[derive(PartialEq, Eq, Hash, Clone, Copy)]
+        struct HeapKey {
+            object: InsnId,
+            offset: i32,
+        }
+
+        // This helper function is used to clear the cache for matching offsets
+        // while we don't have type based alias analysis.
+        // TBAA will primarily modify any part of this optimization that
+        // currently uses this helper function.
+        fn invalidate_cached_aliases(map: &mut HashMap<HeapKey, InsnId>, offset: i32) {
+            map.retain(|HeapKey { object: _, offset: off }, _| *off != offset);
+        }
+
+        // Algorithm sketch
+        // 1. For each block, construct a heap.
+        // 2. Iterate through the block, adding the following to the heap when encountered:
+        //      - HeapKey (LoadField or StoreField instruction combined with an offset)
+        //      - Value (Another instruction because HIR is in SSA form)
+        // 3. If a known key but new value is encountered, update the value
+        // 4. If a known key and known value is entered:
+        //      - Elide LoadField instructions and fix up the SSA
+        //      - Replace StoreField instructions with the value and fix up the SSA
+        // 5. If we run into any aliasing issues or effectful instructions, clear the offending portions of our heap (invalidate our optimization assumptions)
+        // 6. Handle tricky WriteBarrier cases or LoadField issues from type checking bugs
+
         for block in self.reverse_post_order() {
-            let mut compile_time_heap: HashMap<(InsnId, i32), InsnId>  = HashMap::new();
+            // Potential TODO: Replace hashmap with a data structure with lower overhead, even if we lose the constant-time-lookup benefit.
+            // This is not high priority, but is likely the worst offender in the optimize_load_store pass
+            let mut compile_time_heap: HashMap<HeapKey, InsnId>  = HashMap::new();
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             let mut new_insns = vec![];
             for insn_id in old_insns {
-                let replacement_insn: InsnId = match self.find(insn_id) {
+                match self.find(insn_id) {
                     Insn::StoreField { recv, offset, val, .. } => {
-                        let key = (self.chase_insn(recv), offset);
+                        let key = HeapKey { object: self.chase_insn(recv), offset };
                         let heap_entry = compile_time_heap.get(&key).copied();
-                        // TODO(Jacob): Switch from actual to partial equality
                         if Some(val) == heap_entry {
                             // If the value is already stored, short circuit and don't add an instruction to the block
                             continue
                         }
-                        // TODO(Jacob): Add TBAA to avoid removing so many entries
-                        compile_time_heap.retain(|(_, off), _| *off != offset);
+                        invalidate_cached_aliases(&mut compile_time_heap, offset);
                         compile_time_heap.insert(key, val);
-                        insn_id
                     },
                     Insn::LoadField { recv, offset, return_type, .. } => {
-                        let key = (self.chase_insn(recv), offset);
+                        let key = HeapKey { object: self.chase_insn(recv), offset };
                         match compile_time_heap.entry(key) {
                             std::collections::hash_map::Entry::Occupied(entry) => {
                                 let cached_insn = *entry.get();
@@ -5032,27 +5062,23 @@ impl Function {
                                 compile_time_heap.insert(key, insn_id);
                             }
                         }
-                        insn_id
                     }
                     Insn::WriteBarrier { .. } => {
                         // Currently, WriteBarrier write effects are Allocator and Memory when we'd really like them to be flags.
                         // We don't use LoadField for mark bits so we can ignore them for now.
                         // But flags does not exist in our effects abstract heap modeling and we don't want to add special casing to effects.
                         // This special casing in this pass here should be removed once we refine our effects system to provide greater granularity for WriteBarrier.
-                        // TODO: use TBAA
                         let offset = RUBY_OFFSET_RBASIC_FLAGS;
-                        compile_time_heap.retain(|(_, off), _| *off != offset);
-                        insn_id
+                        invalidate_cached_aliases(&mut compile_time_heap, offset);
                     },
                     insn => {
-                        // If an instruction affects memory and we haven't modeled it, the compile_time_heap is invalidated
+                        // If an instruction affects memory and we haven't modeled it, the entire compile_time_heap is invalidated
                         if insn.effects_of().includes(Effect::write(abstract_heaps::Memory)) {
                             compile_time_heap.clear();
                         }
-                        insn_id
                     }
                 };
-                new_insns.push(replacement_insn);
+                new_insns.push(insn_id);
             }
             self.blocks[block.0].insns = new_insns;
         }
