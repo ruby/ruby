@@ -401,6 +401,23 @@ class TestRactor < Test::Unit::TestCase
     RUBY
   end
 
+  def test_detailed_message_in_ractor
+    # gem_prelude defers loading error_highlight, did_you_mean, and
+    # syntax_suggest until the first error display, which is not possible
+    # in non-main Ractors. Exception#detailed_message must still return
+    # the plain message there. [Feature #21951]
+    assert_ractor(<<~'RUBY', args: ["--enable=gems"], ignore_stderr: true)
+      message = Ractor.new do
+        begin
+          raise "boom"
+        rescue => e
+          e.detailed_message(highlight: false)
+        end
+      end.value
+      assert_include(message, "boom")
+    RUBY
+  end
+
   def assert_make_shareable(obj)
     refute Ractor.shareable?(obj), "object was already shareable"
     Ractor.make_shareable(obj)
