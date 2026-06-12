@@ -4260,6 +4260,7 @@ impl Function {
                                         continue;
                                     }
                                     // TODO: Support passing arguments on the stack in C calls
+                                    // +1 for self
                                     if args.len()+1 > C_ARG_OPNDS.len() {
                                         self.push_insn_id(block, insn_id);
                                         self.set_dynamic_send_reason(insn_id, TooManyArgsForLir);
@@ -5245,7 +5246,8 @@ impl Function {
                     }
 
                     // TODO: Support passing arguments on the stack in C calls
-                    if argc as usize > C_ARG_OPNDS.len() {
+                    // +1 for self
+                    if (argc as usize)+1 > C_ARG_OPNDS.len() {
                         fun.set_dynamic_send_reason(send_insn_id, TooManyArgsForLir);
                         return Err(());
                     }
@@ -9152,6 +9154,7 @@ fn add_iseq_to_hir(
                 YARVINSN_invokebuiltin => {
                     let bf: rb_builtin_function = unsafe { *get_arg(pc, 0).as_ptr() };
                     // TODO: Support passing arguments on the stack in C calls
+                    // +2 for ec, self
                     if (bf.argc + 2) as usize > C_ARG_OPNDS.len() {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::TooManyArgsForLir, recompile: None });
                         break; // End the block
