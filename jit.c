@@ -560,20 +560,6 @@ rb_jit_multi_ractor_p(void)
     return rb_multi_ractor_p();
 }
 
-bool
-rb_jit_class_fields_embedded_p(VALUE klass)
-{
-    VALUE fields_obj = RCLASS_EXT_PRIME(klass)->fields_obj;
-    return !fields_obj || !FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP);
-}
-
-bool
-rb_jit_data_fields_embedded_p(VALUE obj)
-{
-    VALUE fields_obj = RTYPEDDATA(obj)->fields_obj;
-    return !fields_obj || !FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP);
-}
-
 // Acquire the VM lock and then signal all other Ruby threads (ractors) to
 // contend for the VM lock, putting them to sleep. ZJIT and YJIT use this to
 // evict threads running inside generated code so among other things, it can

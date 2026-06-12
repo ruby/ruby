@@ -213,14 +213,6 @@ impl Flags {
     const IS_STRUCT_EMBEDDED: u32 = 1 << 3;
     /// Set if the ProfiledType is used for profiling specific objects, not just classes/shapes
     const IS_OBJECT_PROFILING: u32 = 1 << 4;
-    /// Class/module fields_obj is embedded (or absent)
-    const IS_FIELDS_EMBEDDED: u32 = 1 << 5;
-    /// Object is a T_CLASS
-    const IS_T_CLASS: u32 = 1 << 6;
-    /// Object is a T_MODULE
-    const IS_T_MODULE: u32 = 1 << 7;
-    /// Object is a T_DATA
-    const IS_T_DATA: u32 = 1 << 8;
 
     pub fn none() -> Self { Self(Self::NONE) }
 
@@ -230,10 +222,6 @@ impl Flags {
     pub fn is_t_object(self) -> bool { (self.0 & Self::IS_T_OBJECT) != 0 }
     pub fn is_struct_embedded(self) -> bool { (self.0 & Self::IS_STRUCT_EMBEDDED) != 0 }
     pub fn is_object_profiling(self) -> bool { (self.0 & Self::IS_OBJECT_PROFILING) != 0 }
-    pub fn is_fields_embedded(self) -> bool { (self.0 & Self::IS_FIELDS_EMBEDDED) != 0 }
-    pub fn is_t_class(self) -> bool { (self.0 & Self::IS_T_CLASS) != 0 }
-    pub fn is_t_module(self) -> bool { (self.0 & Self::IS_T_MODULE) != 0 }
-    pub fn is_t_data(self) -> bool { (self.0 & Self::IS_T_DATA) != 0 }
 }
 
 /// opt_send_without_block/opt_plus/... should store:
@@ -309,24 +297,6 @@ impl ProfiledType {
         }
         if unsafe { RB_TYPE_P(obj, RUBY_T_OBJECT) } {
             flags.0 |= Flags::IS_T_OBJECT;
-        }
-        if unsafe { RB_TYPE_P(obj, RUBY_T_CLASS) } {
-            flags.0 |= Flags::IS_T_CLASS;
-            if obj.class_fields_embedded_p() {
-                flags.0 |= Flags::IS_FIELDS_EMBEDDED;
-            }
-        }
-        if unsafe { RB_TYPE_P(obj, RUBY_T_MODULE) } {
-            flags.0 |= Flags::IS_T_MODULE;
-            if obj.class_fields_embedded_p() {
-                flags.0 |= Flags::IS_FIELDS_EMBEDDED;
-            }
-        }
-        if obj.data_p() {
-            flags.0 |= Flags::IS_T_DATA;
-            if obj.data_fields_embedded_p() {
-                flags.0 |= Flags::IS_FIELDS_EMBEDDED;
-            }
         }
         Self { class: obj.class_of(), shape: obj.shape_id_of(), flags }
     }
