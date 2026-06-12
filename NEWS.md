@@ -180,6 +180,8 @@ The following APIs, which have been deprecated for many years, are removed.
 
 ## Implementation improvements
 
+- The default garbage collector has been switched from a freelist allocator to a bump pointer allocator. [[PR #17201]]
+
 ### Ractor
 
 A lot of work has gone into making Ractors more stable, performant, and usable. These improvements bring Ractor implementation closer to leaving experimental status.
@@ -196,6 +198,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21861]: https://bugs.ruby-lang.org/issues/21861
 [Feature #21932]: https://bugs.ruby-lang.org/issues/21932
 [Feature #21981]: https://bugs.ruby-lang.org/issues/21981
+[PR #17201]: https://github.com/ruby/ruby/pull/17201
 [RubyGems-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/v4.0.4
 [RubyGems-v4.0.5]: https://github.com/rubygems/rubygems/releases/tag/v4.0.5
 [RubyGems-v4.0.6]: https://github.com/rubygems/rubygems/releases/tag/v4.0.6
