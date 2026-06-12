@@ -17,14 +17,4 @@ module RubyTimelineTool
   def self.tp(*args, **kwargs)
     TracePoint.new(*args, **kwargs)
   end
-
-  def self.convert_arg(value, converter)
-    if @converter.is_a?(Symbol) then
-      value.send(@converter)
-    elsif @converter.respond_to?(:call) then
-      @converter.call(value)
-    else
-      raise "Unexpected converter #{@converter.inspect}"
-    end
-  end
 end

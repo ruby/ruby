@@ -2,6 +2,7 @@
 # frozen_string_literal: true
 
 require_relative 'tracepoint.rb'
+require_relative 'converter_defs.rb'
 
 module RubyTimelineTool
   # All USDT trace points.
@@ -11,14 +12,14 @@ module RubyTimelineTool
       tp('gc__mark__end',     "default",  'gc_mark',          'E'),
       tp('gc__sweep__begin',  "default",  'gc_sweep',         'B'),
       tp('gc__sweep__end',    "default",  'gc_sweep',         'E'),
-      tp('gc__enter',         "default",  'GCEnterExit',      'B', args: {event: :to_i}),
-      tp('gc__exit',          "default",  'GCEnterExit',      'E', args: {event: :to_i}),
+      tp('gc__enter',         "default",  'GCEnterExit',      'B', args: {event: GCEnterEvent}),
+      tp('gc__exit',          "default",  'GCEnterExit',      'E', args: {event: GCEnterEvent}),
     ],
     'obj_new' => [
-      tp('gc__obj_new',       "ruby",     'gc_obj_new',       'i', args: {obj: :to_i, flags: :to_i}), # TODO: flags converter
+      tp('gc__obj_new',       "ruby",     'gc_obj_new',       'i', args: {obj: :to_i, flags: RubyFlags}), # TODO: flags converter
     ],
     'obj_free' => [
-      tp('gc__obj_free',      "ruby",     'gc_obj_free',      'i', args: {obj: :to_i, flags: :to_i}), # TODO: flags converter
+      tp('gc__obj_free',      "ruby",     'gc_obj_free',      'i', args: {obj: :to_i, flags: RubyFlags}), # TODO: flags converter
     ],
     'xmalloc' => [
       tp('gc__xmalloc',       "ruby",     'gc_xmalloc',       'i', args: {n: :to_i, size: :to_i}),
