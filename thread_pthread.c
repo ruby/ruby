@@ -866,6 +866,13 @@ thread_sched_wait_running_turn(struct rb_thread_sched *sched, rb_thread_t *th, b
             thread_sched_set_running(sched, th);
             rb_ractor_thread_switch(th->ractor, th, false);
         }
+        else if (th == sched->runnable_hot_th) {
+            // The hot thread cannot steal the control (e.g. the running thread
+            // is an MN thread). It is going to sleep, so it is no longer spinning;
+            // drop the hint so that other threads don't yield the lock to it.
+            sched->runnable_hot_th = NULL;
+            sched->runnable_hot_th_waiting = 0;
+        }
 
         // already deleted from running threads
         // VM_ASSERT(!ractor_sched_running_threads_contain_p(th->vm, th)); // need locking
