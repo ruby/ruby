@@ -5639,7 +5639,7 @@ rb_file_join(long argc, VALUE *args)
  *  Returns a new string formed by joining the strings using
  *  <code>"/"</code>.
  *
- *     File.join("usr", "mail", "gumby")   #=> "usr/mail/gumby" *
+ *     File.join("usr", "mail", "gumby")   #=> "usr/mail/gumby"
  */
 
 static VALUE
