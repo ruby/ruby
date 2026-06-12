@@ -89,11 +89,13 @@ module Psych
     end
 
     def skip_io_bom io, bom
-      pos = io.pos
+      begin
+        pos = io.pos
+      rescue SystemCallError, IOError
+        return # Not seekable; nothing has been consumed yet.
+      end
       head = io.read(bom.bytesize)
       io.seek(pos, IO::SEEK_SET) if head && head.b != bom
-    rescue SystemCallError, IOError
-      # Not seekable; pos raises before anything is consumed.
     end
   end
 end
