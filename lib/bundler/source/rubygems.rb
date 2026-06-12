@@ -337,6 +337,12 @@ module Bundler
         @cached_specs = nil
       end
 
+      def release_resolution_memory!
+        @specs = nil
+        @remote_specs = nil
+        @fetchers&.each(&:release_resolution_memory!)
+      end
+
       protected
 
       def remote_names

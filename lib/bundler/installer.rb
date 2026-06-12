@@ -195,7 +195,9 @@ module Bundler
       force = options[:force]
       local = options[:local] || options[:"prefer-local"]
       jobs = Bundler.settings.installation_parallelization
-      spec_installations = ParallelInstaller.call(self, @definition.specs, jobs, standalone, force, local: local)
+      specs = @definition.specs
+      @definition.release_resolution_memory!
+      spec_installations = ParallelInstaller.call(self, specs, jobs, standalone, force, local: local)
       spec_installations.each do |installation|
         post_install_messages[installation.name] = installation.post_install_message if installation.has_post_install_message?
       end

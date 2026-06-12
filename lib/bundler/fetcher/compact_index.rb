@@ -63,6 +63,13 @@ module Bundler
         true
       end
 
+      # The client holds the parsed checksums of all info files in the
+      # index. Dropping it is always safe because it is rebuilt from the
+      # local cache on demand.
+      def release_resolution_memory!
+        @compact_index_client = nil
+      end
+
       private
 
       def compact_index_client
