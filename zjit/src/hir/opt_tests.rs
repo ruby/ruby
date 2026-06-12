@@ -15473,6 +15473,135 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_invokesuper_to_nonleaf_cfunc_preserves_return_type() {
+        // super resolving to a non-leaf cfunc (Array#reverse: leaf but allocates,
+        // so it goes through CCallWithFrame) must keep the annotated return type
+        // (ArrayExact) instead of widening it to BasicObject.
+        eval("
+            class MyArray < Array
+              def reverse
+                super
+              end
+            end
+
+            MyArray.new.reverse; MyArray.new.reverse
+        ");
+
+        assert_snapshot!(hir_string_proc("MyArray.instance_method(:reverse)"), @"
+        fn reverse@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint MethodRedefined(Array@0x1000, reverse@0x1008, cme:0x1010)
+          v18:CPtr = GetEP 0
+          v19:RubyValue = LoadField v18, :VM_ENV_DATA_INDEX_ME_CREF@0x1038
+          v20:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v19, Value(VALUE(0x1040))
+          v21:RubyValue = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1048
+          v22:FalseClass = GuardBitEquals v21, Value(false)
+          v23:ArrayExact = CCallWithFrame v6, :Array#reverse@0x1050
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
+    fn test_invokesuper_to_nonleaf_variadic_cfunc_preserves_return_type() {
+        // super resolving to a non-leaf variadic cfunc (Array#join: StringExact)
+        // must keep the annotated return type instead of widening to BasicObject.
+        eval("
+            class MyArray < Array
+              def join(sep = nil)
+                super
+              end
+            end
+
+            MyArray.new([1, 2]).join(','); MyArray.new([1, 2]).join(',')
+        ");
+
+        assert_snapshot!(hir_string_proc("MyArray.instance_method(:join)"), @"
+        fn join@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :sep@0x1000
+          v4:CPtr = LoadPC
+          v5:CPtr[CPtr(0x1001)] = Const CPtr(0x1001)
+          v6:CBool = IsBitEqual v4, v5
+          CondBranch v6, bb3(v1, v3), bb6()
+        bb6():
+          Jump bb5(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v10:BasicObject = LoadArg :self@0
+          v11:NilClass = Const Value(nil)
+          Jump bb3(v10, v11)
+        bb3(v17:BasicObject, v18:BasicObject):
+          v21:NilClass = Const Value(nil)
+          Jump bb5(v17, v21)
+        bb4():
+          EntryPoint JIT(1)
+          v14:BasicObject = LoadArg :self@0
+          v15:BasicObject = LoadArg :sep@1
+          Jump bb5(v14, v15)
+        bb5(v24:BasicObject, v25:BasicObject):
+          PatchPoint MethodRedefined(Array@0x1008, join@0x1010, cme:0x1018)
+          v38:CPtr = GetEP 0
+          v39:RubyValue = LoadField v38, :VM_ENV_DATA_INDEX_ME_CREF@0x1040
+          v40:CallableMethodEntry[VALUE(0x1048)] = GuardBitEquals v39, Value(VALUE(0x1048))
+          v41:RubyValue = LoadField v38, :VM_ENV_DATA_INDEX_SPECVAL@0x1050
+          v42:FalseClass = GuardBitEquals v41, Value(false)
+          v43:StringExact = CCallVariadic v24, :Array#join@0x1058, v25
+          CheckInterrupts
+          Return v43
+        ");
+    }
+
+    #[test]
+    fn test_invokesuper_to_nonleaf_cfunc_preserves_elidable() {
+        // an elidable non-leaf cfunc reached via super (Array#reverse) whose
+        // result is unused must be removed by DCE. If elidable were widened to false,
+        // the dead CCallWithFrame would remain.
+        eval("
+            class MyArray < Array
+              def reverse
+                super
+                self
+              end
+            end
+
+            MyArray.new.reverse; MyArray.new.reverse
+        ");
+
+        assert_snapshot!(hir_string_proc("MyArray.instance_method(:reverse)"), @"
+        fn reverse@<compiled>:4:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint MethodRedefined(Array@0x1000, reverse@0x1008, cme:0x1010)
+          v21:CPtr = GetEP 0
+          v22:RubyValue = LoadField v21, :VM_ENV_DATA_INDEX_ME_CREF@0x1038
+          v23:CallableMethodEntry[VALUE(0x1040)] = GuardBitEquals v22, Value(VALUE(0x1040))
+          v24:RubyValue = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1048
+          v25:FalseClass = GuardBitEquals v24, Value(false)
+          CheckInterrupts
+          Return v6
+        ");
+    }
+
+    #[test]
     fn test_inline_invokesuper_to_basicobject_initialize() {
         eval("
             class C
