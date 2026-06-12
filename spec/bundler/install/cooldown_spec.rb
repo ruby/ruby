@@ -107,7 +107,50 @@ RSpec.describe "bundle install with the cooldown setting" do
         build_gem "upgradable", "3.0.0" do |s|
           s.date = now - (30 * 86_400)
         end
+
+        # every published version is inside the cooldown window
+        build_gem "fresh_gem", "0.3.1" do |s|
+          s.date = now - (1 * 86_400)
+        end
+        build_gem "fresh_gem", "0.3.2" do |s|
+          s.date = now - (1 * 86_400)
+        end
       end
+    end
+
+    it "keeps a locked all-in-cooldown gem when explicitly updating an unrelated gem" do
+      # Updating ripe_gem runs an auxiliary full-update resolution to compute its
+      # target version. That pass carries no prevent-downgrade floor, so without
+      # exempting locked versions it re-picks fresh_gem from an empty
+      # cooldown-filtered candidate set (every published 0.3.x is in the window)
+      # and fails an update that never touched fresh_gem.
+      gemfile <<-G
+        source "https://gem.repo3", cooldown: 7
+        gem "fresh_gem", "~> 0.3"
+        gem "ripe_gem"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo3/
+          specs:
+            fresh_gem (0.3.2)
+            ripe_gem (1.0.0)
+
+        PLATFORMS
+          #{lockfile_platforms}
+
+        DEPENDENCIES
+          fresh_gem (~> 0.3)
+          ripe_gem
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+
+      bundle "lock --update ripe_gem", artifice: "compact_index_cooldown"
+
+      expect(lockfile).to include("fresh_gem (0.3.2)")
     end
 
     it "excludes versions within the cooldown window" do
