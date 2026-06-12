@@ -4,8 +4,6 @@
 require_relative 'tracepoint.rb'
 
 module RubyTimelineTool
-  tp(1,2,3,4)
-
   # All USDT trace points.
   USDT_DEFS = {
     'default' => [
