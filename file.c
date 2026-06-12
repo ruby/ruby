@@ -5640,6 +5640,7 @@ rb_file_join(long argc, VALUE *args)
  *  <code>"/"</code>.
  *
  *     File.join("usr", "mail", "gumby")   #=> "usr/mail/gumby"
+ *
  */
 
 static VALUE
