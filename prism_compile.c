@@ -11462,14 +11462,17 @@ pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath, VALUE *
 
     result->node.filepath_encoding = rb_enc_get(filepath);
     pm_options_filepath_set(&result->options, RSTRING_PTR(filepath));
-    RB_GC_GUARD(filepath);
 
     pm_options_version_for_current_ruby_set(&result->options);
 
     pm_parser_init(&result->parser, pm_string_source(&result->input), pm_string_length(&result->input), &result->options);
     pm_node_t *node = pm_parse(&result->parser);
 
-    return pm_parse_process(result, node, script_lines);
+    VALUE error = pm_parse_process(result, node, script_lines);
+
+    RB_GC_GUARD(source);
+    RB_GC_GUARD(filepath);
+    return error;
 }
 
 struct rb_stdin_wrapper {
