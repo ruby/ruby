@@ -514,6 +514,8 @@ struct parser_params {
         int lpar_beg;
         /* track the nest level of only braces "{}" */
         int brace_nest;
+        /* track the nest level of hash literal braces "{}" */
+        int hash_nest;
     } lex;
     stack_type cond_stack;
     stack_type cmdarg_stack;
@@ -2874,6 +2876,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
  */
 
 %nonassoc tLOWEST
+%nonassoc ')'
 %nonassoc tLBRACE_ARG
 
 %nonassoc  modifier_if modifier_unless modifier_while modifier_until keyword_in
@@ -6649,6 +6652,11 @@ assoc		: arg_value tASSOC arg_value
                         YYLTYPE loc = code_loc_gen(&@1, &@3);
                         $$ = list_append(p, NEW_LIST(dsym_node(p, $2, &loc), &loc), $4);
                     /*% ripper: assoc_new!(dyna_symbol!($:2), $:4) %*/
+                    }
+                | tLPAREN compstmt(stmts)[body] ')' tLABEL_END arg_value
+                    {
+                        $$ = list_append(p, NEW_LIST($body, &@$), $5);
+                    /*% ripper: assoc_new!($:body, $:5) %*/
                     }
                 | tDSTAR arg_value
                     {
@@ -10975,6 +10983,7 @@ parser_yylex(struct parser_params *p)
       case '}':
         /* tSTRING_DEND does COND_POP and CMDARG_POP in the yacc's rule */
         if (!p->lex.brace_nest--) return tSTRING_DEND;
+        if (p->lex.hash_nest > 0) p->lex.hash_nest--;
         COND_POP();
         CMDARG_POP();
         SET_LEX_STATE(EXPR_END);
@@ -10991,6 +11000,11 @@ parser_yylex(struct parser_params *p)
             set_yylval_id(idCOLON2);
             SET_LEX_STATE(EXPR_DOT);
             return tCOLON2;
+        }
+        if (IS_lex_state(EXPR_ENDFN) && !space_seen && c != '#' && p->lex.hash_nest > 0) {
+            pushback(p, c);
+            SET_LEX_STATE(EXPR_ARG|EXPR_LABELED);
+            return tLABEL_END;
         }
         if (IS_END() || ISSPACE(c) || c == '#') {
             pushback(p, c);
@@ -11113,14 +11127,18 @@ parser_yylex(struct parser_params *p)
         ++p->lex.brace_nest;
         if (lambda_beginning_p())
             c = tLAMBEG;
-        else if (IS_lex_state(EXPR_LABELED))
+        else if (IS_lex_state(EXPR_LABELED)) {
             c = tLBRACE;      /* hash */
+            ++p->lex.hash_nest;
+        }
         else if (IS_lex_state(EXPR_ARG_ANY | EXPR_END | EXPR_ENDFN))
             c = '{';          /* block (primary) */
         else if (IS_lex_state(EXPR_ENDARG))
             c = tLBRACE_ARG;  /* block (expr) */
-        else
+        else {
             c = tLBRACE;      /* hash */
+            ++p->lex.hash_nest;
+        }
         if (c != tLBRACE) {
             p->command_start = TRUE;
             SET_LEX_STATE(EXPR_BEG);
