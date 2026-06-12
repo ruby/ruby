@@ -4569,10 +4569,6 @@ impl Function {
                 // callee sits one level deeper (caller_depth + 1).
                 let caller_depth = self.frame_depth(state);
 
-                // The callee's ISEQ may still have profiling instrumentation active
-                // (zjit_opt_* bytecodes). Disable it so add_iseq_to_hir sees the
-                // original opcodes.
-                unsafe { crate::cruby::rb_zjit_profile_disable(iseq) };
                 let mode = AddIseqMode::Inlined { return_block: continuation, caller: state, depth: caller_depth + 1 };
                 let add_result = match add_iseq_to_hir(self, iseq, mode) {
                     Ok(r) => r,
@@ -7137,8 +7133,15 @@ fn compute_bytecode_info(iseq: *const rb_iseq_t, opt_table: &[u32]) -> BytecodeI
         // Get the current pc and opcode
         let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
 
+        // Strip any ZJIT profiling instrumentation so we read the ISEQ's
+        // original opcodes, mirroring the main translation loop. We map rather
+        // than mutate the ISEQ because the caller must not dictate the profiling
+        // policy of a callee it inlines. Only control-flow opcodes matter here
+        // and those are never instrumented, but decoding both sites identically
+        // keeps them from diverging.
+        //
         // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.
-        let opcode: u32 = unsafe { rb_iseq_opcode_at_pc(iseq, pc) }
+        let opcode: u32 = unsafe { rb_zjit_insn_to_bare_insn(rb_iseq_opcode_at_pc(iseq, pc)) }
             .try_into()
             .unwrap();
         insn_idx += insn_len(opcode as usize);
@@ -7491,8 +7494,10 @@ fn add_iseq_to_hir(
             state.pc = pc;
             let exit_state = state.clone();
 
+            // Strip any ZJIT profiling instrumentation so we read the ISEQ's original opcodes,
+            // leaving trace variants intact for the handling below.
             // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.
-            let opcode: u32 = unsafe { rb_iseq_opcode_at_pc(iseq, pc) }
+            let opcode: u32 = unsafe { rb_zjit_insn_to_bare_insn(rb_iseq_opcode_at_pc(iseq, pc)) }
                 .try_into()
                 .unwrap();
 
