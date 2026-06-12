@@ -648,11 +648,11 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
                 cb, jit, asm, cme, iseq, opnd!(recv), opnds!(args),
                 kw_bits, &function.frame_state(state), block,
             ),
-        Insn::PushLightweightFrame { cme, iseq, recv, args, blockiseq, state, .. } => {
-            no_output!(gen_push_lightweight_frame(jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), &function.frame_state(*state), *blockiseq))
+        Insn::PushInlineFrame { cme, iseq, recv, args, blockiseq, state, .. } => {
+            no_output!(gen_push_inline_frame(jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), &function.frame_state(*state), *blockiseq))
         },
-        Insn::PopLightweightFrame { iseq, argc, state } => {
-            no_output!(gen_pop_lightweight_frame(asm, *iseq, *argc, &function.frame_state(*state)))
+        Insn::PopInlineFrame { iseq, argc, state } => {
+            no_output!(gen_pop_inline_frame(asm, *iseq, *argc, &function.frame_state(*state)))
         },
         &Insn::InvokeSuper { cd, blockiseq, state, reason, .. } => gen_invokesuper(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::InvokeSuperForward { cd, blockiseq, state, reason, .. } => gen_invokesuperforward(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
@@ -1552,7 +1552,7 @@ fn gen_send_without_block(
 /// Push an interpreter frame for an inlined callee. This is the same as the frame push
 /// portion of gen_send_iseq_direct, but without the native call to the callee. Control
 /// falls through to the next instruction (the inlined callee body).
-fn gen_push_lightweight_frame(
+fn gen_push_inline_frame(
     jit: &mut JITState,
     asm: &mut Assembler,
     cme: *const rb_callable_method_entry_t,
@@ -1664,7 +1664,7 @@ fn gen_push_lightweight_frame(
 }
 
 /// Pop the interpreter frame for an inlined callee, restoring the caller's SP and CFP.
-fn gen_pop_lightweight_frame(
+fn gen_pop_inline_frame(
     asm: &mut Assembler,
     iseq: IseqPtr,
     argc: usize,

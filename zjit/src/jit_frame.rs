@@ -82,7 +82,7 @@ mod tests {
 
     #[test]
     fn test_materialize_two_frames() { // materialize caller frames on raise
-        // At the point of `resuce`, there are two lightweight frames on stack and both need to be
+        // At the point of `rescue`, there are two inline frames on stack and both need to be
         // materialized before passing control to interpreter.
         assert_snapshot!(inspect("
             def jit_entry = raise_and_rescue

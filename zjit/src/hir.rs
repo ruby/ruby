@@ -1113,9 +1113,8 @@ pub enum Insn {
         state: InsnId,
     },
 
-    /// Push an interpreter frame for an inlined callee. Initially does a full frame push;
-    /// will be replaced with a lightweight frame push when that project lands.
-    PushLightweightFrame {
+    /// Push a lighter weight frame used for inlined methods.
+    PushInlineFrame {
         iseq: IseqPtr,
         cme: *const rb_callable_method_entry_t,
         recv: InsnId,
@@ -1123,10 +1122,9 @@ pub enum Insn {
         blockiseq: Option<IseqPtr>,
         state: InsnId,
     },
-    /// Pop the interpreter frame for an inlined callee, restoring the caller's frame.
-    /// Carries the callee's iseq and argument count so codegen can compute the SP offset
-    /// to restore.
-    PopLightweightFrame {
+
+    /// Pop a lighter weight frame used for inlined methods.
+    PopInlineFrame {
         iseq: IseqPtr,
         argc: usize,
         state: InsnId,
@@ -1451,7 +1449,7 @@ macro_rules! for_each_operand_impl {
             | Insn::CCallVariadic { recv, args, state, .. }
             | Insn::CCallWithFrame { recv, args, state, .. }
             | Insn::SendDirect { recv, args, state, .. }
-            | Insn::PushLightweightFrame { recv, args, state, .. }
+            | Insn::PushInlineFrame { recv, args, state, .. }
             | Insn::InvokeBuiltin { recv, args, state, .. }
             | Insn::InvokeSuper { recv, args, state, .. }
             | Insn::InvokeSuperForward { recv, args, state, .. }
@@ -1489,7 +1487,7 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(state);
             }
             Insn::GetClassVar { state, .. }
-            | Insn::PopLightweightFrame { state, .. } => {
+            | Insn::PopInlineFrame { state, .. } => {
                 $visit_one!(state);
             }
             Insn::SetClassVar { val, state, .. } => {
@@ -1554,7 +1552,7 @@ impl Insn {
             | Insn::CheckInterrupts { .. } | Insn::BreakPoint | Insn::Unreachable
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. }
             | Insn::ArrayAset { .. }
-            | Insn::PushLightweightFrame { .. } | Insn::PopLightweightFrame { .. } => false,
+            | Insn::PushInlineFrame { .. } | Insn::PopInlineFrame { .. } => false,
             _ => true,
         }
     }
@@ -1721,7 +1719,7 @@ impl Insn {
             Insn::InvokeBlock { .. } => effects::Any,
             Insn::InvokeBlockIfunc { .. } => effects::Any,
             Insn::SendDirect { .. } => effects::Any,
-            // TODO (nirvdrum 2026-05-28): Revisit when PushLightweightFrame is
+            // TODO (nirvdrum 2026-05-28): Revisit when PushInlineFrame is
             // actually lightweight. The frame writes here pay for the spill
             // ceremony in the current full frame-push codegen. A lightweight
             // push that keeps caller state in SSA should drop Frame (and likely
@@ -1732,7 +1730,7 @@ impl Insn {
             // new CFP. It may side-exit on stack overflow. It does not allocate,
             // invalidate PatchPoint invariants, or set the interrupt flag, so
             // optimizations tracking those heaps can flow across an inlined call.
-            Insn::PushLightweightFrame { .. } => Effect::read_write(
+            Insn::PushInlineFrame { .. } => Effect::read_write(
                 abstract_heaps::Memory,
                 abstract_heaps::Frame
                     .union(abstract_heaps::Other)
@@ -1740,7 +1738,7 @@ impl Insn {
             ),
             // Restores SP/CFP and updates ec->cfp.
             // No side exit, no allocation, no PatchPoint invalidation, no interrupt flag write.
-            Insn::PopLightweightFrame { .. } => Effect::read_write(
+            Insn::PopInlineFrame { .. } => Effect::read_write(
                 abstract_heaps::Empty,
                 abstract_heaps::Other,
             ),
@@ -2067,15 +2065,15 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             }
-            Insn::PushLightweightFrame { recv, iseq, args, .. } => {
-                write!(f, "PushLightweightFrame {recv} ({:?})", self.ptr_map.map_ptr(iseq))?;
+            Insn::PushInlineFrame { recv, iseq, args, .. } => {
+                write!(f, "PushInlineFrame {recv} ({:?})", self.ptr_map.map_ptr(iseq))?;
                 for arg in args {
                     write!(f, ", {arg}")?;
                 }
                 Ok(())
             }
-            Insn::PopLightweightFrame { .. } => {
-                write!(f, "PopLightweightFrame")
+            Insn::PopInlineFrame { .. } => {
+                write!(f, "PopInlineFrame")
             }
             Insn::Send { recv, cd, args, block, reason, .. } => {
                 // For tests, we want to check HIR snippets textually. Addresses change
@@ -3029,7 +3027,7 @@ impl Function {
             | Insn::IncrCounter(_) | Insn::IncrCounterPtr { .. }
             | Insn::CheckInterrupts { .. } | Insn::BreakPoint | Insn::Unreachable
             | Insn::StoreField { .. } | Insn::WriteBarrier { .. } | Insn::HashAset { .. } | Insn::ArrayAset { .. }
-            | Insn::PushLightweightFrame { .. } | Insn::PopLightweightFrame { .. } =>
+            | Insn::PushInlineFrame { .. } | Insn::PopInlineFrame { .. } =>
                 panic!("Cannot infer type of instruction with no output: {}. See Insn::has_output().", self.insns[insn.0]),
             Insn::Const { val: Const::Value(val) } => Type::from_value(*val),
             Insn::Const { val: Const::CBool(val) } => Type::from_cbool(*val),
@@ -4702,7 +4700,7 @@ impl Function {
                 // terminator) is grafted on after, skipping the SendDirect at
                 // tail[0] which is being consumed.
                 let return_val_param = self.push_insn(continuation, Insn::Param);
-                self.push_insn(continuation, Insn::PopLightweightFrame {
+                self.push_insn(continuation, Insn::PopInlineFrame {
                     iseq,
                     argc: args.len(),
                     state,
@@ -4717,7 +4715,7 @@ impl Function {
                 self.make_equal_to(send_insn_id, return_val_param);
 
                 // Insert PushLightweightFrame and jump to callee body entry.
-                self.push_insn(block, Insn::PushLightweightFrame {
+                self.push_insn(block, Insn::PushInlineFrame {
                     iseq, cme, recv, args: args.clone(), blockiseq, state,
                 });
                 self.count(block, Counter::inline_iseq_optimized_send_count);
@@ -6569,7 +6567,7 @@ impl Function {
             }
             // Instructions with recv and a Vec of Ruby objects
             Insn::SendDirect { recv, ref args, .. }
-            | Insn::PushLightweightFrame { recv, ref args, .. }
+            | Insn::PushInlineFrame { recv, ref args, .. }
             | Insn::Send { recv, ref args, .. }
             | Insn::SendForward { recv, ref args, .. }
             | Insn::InvokeSuper { recv, ref args, .. }
@@ -6812,7 +6810,7 @@ impl Function {
             // Frame instructions have no output to validate; their operands
             // are validated by the recv+args group (PushLightweightFrame)
             // or the state-only group (PopLightweightFrame).
-            Insn::PopLightweightFrame { .. } => Ok(()),
+            Insn::PopInlineFrame { .. } => Ok(()),
         }
     }
 

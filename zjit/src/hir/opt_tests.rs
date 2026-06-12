@@ -17714,12 +17714,12 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint MethodRedefined(Object@0x1008, double@0x1010, cme:0x1018)
           v23:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
-          PushLightweightFrame v23 (0x1040), v10
+          PushInlineFrame v23 (0x1040), v10
           PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
           v44:Fixnum = GuardType v10, Fixnum recompile
           v46:Fixnum = FixnumAdd v44, v44
           CheckInterrupts
-          PopLightweightFrame
+          PopInlineFrame
           Return v46
         ");
     }
@@ -17756,7 +17756,7 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint MethodRedefined(Object@0x1008, clamp_nonneg@0x1010, cme:0x1018)
           v23:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
-          PushLightweightFrame v23 (0x1040), v10
+          PushInlineFrame v23 (0x1040), v10
           v31:Fixnum[0] = Const Value(0)
           PatchPoint MethodRedefined(Integer@0x1048, <@0x1050, cme:0x1058)
           v62:Fixnum = GuardType v10, Fixnum recompile
@@ -17772,7 +17772,7 @@ mod hir_opt_tests {
           CheckInterrupts
           Jump bb4(v48)
         bb4(v56:Fixnum):
-          PopLightweightFrame
+          PopInlineFrame
           CheckInterrupts
           Return v56
         ");
@@ -17806,13 +17806,13 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint MethodRedefined(Object@0x1008, add_one@0x1010, cme:0x1018)
           v23:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
-          PushLightweightFrame v23 (0x1040), v10
+          PushInlineFrame v23 (0x1040), v10
           v31:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
           v45:Fixnum = GuardType v10, Fixnum recompile
           v46:Fixnum = FixnumAdd v45, v31
           CheckInterrupts
-          PopLightweightFrame
+          PopInlineFrame
           Return v46
         ");
     }
@@ -17863,8 +17863,8 @@ mod hir_opt_tests {
         // Belt-and-braces: the resulting HIR also reflects no inlining took place.
         assert!(result.contains("SendDirect"),
             "Expected SendDirect to remain in HIR when budget is exceeded:\n{result}");
-        assert!(!result.contains("PushLightweightFrame"),
-            "Expected no PushLightweightFrame in HIR when budget is exceeded:\n{result}");
+        assert!(!result.contains("PushInlineFrame"),
+            "Expected no PushInlineFrame in HIR when budget is exceeded:\n{result}");
     }
 
     #[test]
@@ -17889,8 +17889,8 @@ mod hir_opt_tests {
 
         assert!(counters.inline_method_count > inline_count_before,
             "Expected add_opts to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
-        assert!(result.contains("PushLightweightFrame"),
-            "Expected PushLightweightFrame in inlined HIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in inlined HIR:\n{result}");
         assert!(!result.contains("SendDirect"),
             "Expected SendDirect to be replaced after inlining:\n{result}");
 
@@ -17910,7 +17910,7 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint MethodRedefined(Object@0x1008, add_opts@0x1010, cme:0x1018)
           v23:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
-          PushLightweightFrame v23 (0x1040), v10
+          PushInlineFrame v23 (0x1040), v10
           v31:Fixnum[10] = Const Value(10)
           v40:Fixnum[100] = Const Value(100)
           PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
@@ -17918,7 +17918,7 @@ mod hir_opt_tests {
           v71:Fixnum = FixnumAdd v70, v31
           v75:Fixnum = FixnumAdd v71, v40
           CheckInterrupts
-          PopLightweightFrame
+          PopInlineFrame
           Return v75
         ");
     }
@@ -17945,8 +17945,8 @@ mod hir_opt_tests {
 
         assert!(counters.inline_method_count > inline_count_before,
             "Expected add_opts to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
-        assert!(result.contains("PushLightweightFrame"),
-            "Expected PushLightweightFrame in inlined HIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in inlined HIR:\n{result}");
         assert!(!result.contains("SendDirect"),
             "Expected SendDirect to be replaced after inlining:\n{result}");
 
@@ -17967,14 +17967,14 @@ mod hir_opt_tests {
           v16:Fixnum[20] = Const Value(20)
           PatchPoint MethodRedefined(Object@0x1008, add_opts@0x1010, cme:0x1018)
           v25:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
-          PushLightweightFrame v25 (0x1040), v10, v16
+          PushInlineFrame v25 (0x1040), v10, v16
           v42:Fixnum[100] = Const Value(100)
           PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
           v71:Fixnum = GuardType v10, Fixnum recompile
           v72:Fixnum = FixnumAdd v71, v16
           v76:Fixnum = FixnumAdd v72, v42
           CheckInterrupts
-          PopLightweightFrame
+          PopInlineFrame
           Return v76
         ");
     }
@@ -18002,8 +18002,8 @@ mod hir_opt_tests {
 
         assert!(counters.inline_method_count > inline_count_before,
             "Expected maybe_rescue to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
-        assert!(result.contains("PushLightweightFrame"),
-            "Expected PushLightweightFrame in inlined HIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in inlined HIR:\n{result}");
         assert!(!result.contains("SendDirect"),
             "Expected SendDirect to be replaced after inlining:\n{result}");
 
@@ -18023,13 +18023,13 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint MethodRedefined(Object@0x1008, maybe_rescue@0x1010, cme:0x1018)
           v23:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
-          PushLightweightFrame v23 (0x1040), v10
+          PushInlineFrame v23 (0x1040), v10
           v31:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
           v46:Fixnum = GuardType v10, Fixnum recompile
           v47:Fixnum = FixnumAdd v46, v31
           CheckInterrupts
-          PopLightweightFrame
+          PopInlineFrame
           Return v47
         ");
     }
@@ -18076,8 +18076,8 @@ mod hir_opt_tests {
 
         assert!(result.contains("SendDirect"),
             "Expected SendDirect to remain in HIR when callee is on the deny list:\n{result}");
-        assert!(!result.contains("PushLightweightFrame"),
-            "Expected no PushLightweightFrame in HIR when callee is on the deny list:\n{result}");
+        assert!(!result.contains("PushInlineFrame"),
+            "Expected no PushInlineFrame in HIR when callee is on the deny list:\n{result}");
     }
 
     #[test]
@@ -18101,8 +18101,8 @@ mod hir_opt_tests {
 
         assert!(counters.inline_method_count > inline_count_before,
             "Expected Child#greet to be inlined, but inline_method_count did not increment.\nHIR:\n{result}");
-        assert!(result.contains("PushLightweightFrame"),
-            "Expected PushLightweightFrame in HIR when inlining a super-containing callee:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in HIR when inlining a super-containing callee:\n{result}");
 
         assert_snapshot!(result, @"
         fn test@<compiled>:9:
@@ -18121,25 +18121,25 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Child@0x1008)
           PatchPoint MethodRedefined(Child@0x1008, greet@0x1010, cme:0x1018)
           v23:ObjectSubclass[class_exact:Child] = GuardType v10, ObjectSubclass[class_exact:Child] recompile
-          PushLightweightFrame v23 (0x1040)
+          PushInlineFrame v23 (0x1040)
           PatchPoint MethodRedefined(Parent@0x1048, greet@0x1010, cme:0x1050)
           v51:CPtr = GetEP 0
           v52:RubyValue = LoadField v51, :VM_ENV_DATA_INDEX_ME_CREF@0x1078
           v53:CallableMethodEntry[VALUE(0x1018)] = GuardBitEquals v52, Value(VALUE(0x1018))
           v54:RubyValue = LoadField v51, :VM_ENV_DATA_INDEX_SPECVAL@0x1079
           v55:FalseClass = GuardBitEquals v54, Value(false)
-          PushLightweightFrame v23 (0x1040)
+          PushInlineFrame v23 (0x1040)
           v61:StringExact[VALUE(0x1080)] = Const Value(VALUE(0x1080))
           v62:StringExact = StringCopy v61
           CheckInterrupts
-          PopLightweightFrame
+          PopInlineFrame
           v32:StringExact[VALUE(0x1088)] = Const Value(VALUE(0x1088))
           v33:StringExact = StringCopy v32
           PatchPoint NoSingletonClass(String@0x1090)
           PatchPoint MethodRedefined(String@0x1090, +@0x1098, cme:0x10a0)
           v49:BasicObject = CCallWithFrame v62, :String#+@0x10c8, v33
           CheckInterrupts
-          PopLightweightFrame
+          PopInlineFrame
           Return v49
         ");
     }
@@ -18165,8 +18165,8 @@ mod hir_opt_tests {
 
         assert!(counters.inline_method_count > inline_count_before,
             "Expected add_opts to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
-        assert!(result.contains("PushLightweightFrame"),
-            "Expected PushLightweightFrame in inlined HIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in inlined HIR:\n{result}");
         assert!(!result.contains("SendDirect"),
             "Expected SendDirect to be replaced after inlining:\n{result}");
 
@@ -18188,13 +18188,13 @@ mod hir_opt_tests {
           v18:Fixnum[200] = Const Value(200)
           PatchPoint MethodRedefined(Object@0x1008, add_opts@0x1010, cme:0x1018)
           v27:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
-          PushLightweightFrame v27 (0x1040), v10, v16, v18
+          PushInlineFrame v27 (0x1040), v10, v16, v18
           PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
           v72:Fixnum = GuardType v10, Fixnum recompile
           v73:Fixnum = FixnumAdd v72, v16
           v77:Fixnum = FixnumAdd v73, v18
           CheckInterrupts
-          PopLightweightFrame
+          PopInlineFrame
           Return v77
         ");
     }
@@ -18222,8 +18222,8 @@ mod hir_opt_tests {
 
         assert!(counters.inline_method_count > inline_count_before,
             "Expected add_opt_post to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
-        assert!(result.contains("PushLightweightFrame"),
-            "Expected PushLightweightFrame in inlined HIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in inlined HIR:\n{result}");
         assert!(!result.contains("SendDirect"),
             "Expected SendDirect to be replaced after inlining:\n{result}");
 
@@ -18243,13 +18243,13 @@ mod hir_opt_tests {
         bb3(v9:BasicObject, v10:BasicObject):
           PatchPoint MethodRedefined(Object@0x1008, add_opt_post@0x1010, cme:0x1018)
           v23:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
-          PushLightweightFrame v23 (0x1040), v10
+          PushInlineFrame v23 (0x1040), v10
           v30:Fixnum[10] = Const Value(10)
           PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
           v55:Fixnum = GuardType v10, Fixnum
           v56:Fixnum = FixnumAdd v30, v55
           CheckInterrupts
-          PopLightweightFrame
+          PopInlineFrame
           Return v56
         ");
     }
@@ -18277,8 +18277,8 @@ mod hir_opt_tests {
 
         assert!(counters.inline_method_count > inline_count_before,
             "Expected add_lead_opt_post to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
-        assert!(result.contains("PushLightweightFrame"),
-            "Expected PushLightweightFrame in inlined HIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in inlined HIR:\n{result}");
         assert!(!result.contains("SendDirect"),
             "Expected SendDirect to be replaced after inlining:\n{result}");
 
@@ -18299,14 +18299,14 @@ mod hir_opt_tests {
           v16:Fixnum[200] = Const Value(200)
           PatchPoint MethodRedefined(Object@0x1008, add_lead_opt_post@0x1010, cme:0x1018)
           v25:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
-          PushLightweightFrame v25 (0x1040), v10, v16
+          PushInlineFrame v25 (0x1040), v10, v16
           v33:Fixnum[10] = Const Value(10)
           PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
           v62:Fixnum = GuardType v10, Fixnum recompile
           v63:Fixnum = FixnumAdd v62, v33
           v67:Fixnum = FixnumAdd v63, v16
           CheckInterrupts
-          PopLightweightFrame
+          PopInlineFrame
           Return v67
         ");
     }
@@ -18330,8 +18330,8 @@ mod hir_opt_tests {
 
         assert!(counters.inline_method_count > inline_count_before,
             "Expected add_kw to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
-        assert!(result.contains("PushLightweightFrame"),
-            "Expected PushLightweightFrame in inlined HIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in inlined HIR:\n{result}");
         assert!(!result.contains("SendDirect"),
             "Expected SendDirect to be replaced after inlining:\n{result}");
 
@@ -18353,12 +18353,12 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Object@0x1008, add_kw@0x1010, cme:0x1018)
           v25:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
           v42:Fixnum[0] = Const Value(0)
-          PushLightweightFrame v25 (0x1040), v10, v16
+          PushInlineFrame v25 (0x1040), v10, v16
           PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
           v49:Fixnum = GuardType v10, Fixnum recompile
           v50:Fixnum = FixnumAdd v49, v16
           CheckInterrupts
-          PopLightweightFrame
+          PopInlineFrame
           Return v50
         ");
     }
@@ -18382,8 +18382,8 @@ mod hir_opt_tests {
 
         assert!(counters.inline_method_count > inline_count_before,
             "Expected add_optkw to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
-        assert!(result.contains("PushLightweightFrame"),
-            "Expected PushLightweightFrame in inlined HIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in inlined HIR:\n{result}");
         assert!(!result.contains("SendDirect"),
             "Expected SendDirect to be replaced after inlining:\n{result}");
 
@@ -18405,12 +18405,12 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Object@0x1008, add_optkw@0x1010, cme:0x1018)
           v25:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
           v42:Fixnum[0] = Const Value(0)
-          PushLightweightFrame v25 (0x1040), v10, v16
+          PushInlineFrame v25 (0x1040), v10, v16
           PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
           v49:Fixnum = GuardType v10, Fixnum recompile
           v50:Fixnum = FixnumAdd v49, v16
           CheckInterrupts
-          PopLightweightFrame
+          PopInlineFrame
           Return v50
         ");
     }
@@ -18434,8 +18434,8 @@ mod hir_opt_tests {
 
         assert!(counters.inline_method_count > inline_count_before,
             "Expected add_optkw to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
-        assert!(result.contains("PushLightweightFrame"),
-            "Expected PushLightweightFrame in inlined HIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in inlined HIR:\n{result}");
         assert!(!result.contains("SendDirect"),
             "Expected SendDirect to be replaced after inlining:\n{result}");
 
@@ -18457,12 +18457,12 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Object@0x1008, add_optkw@0x1010, cme:0x1018)
           v25:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
           v42:Fixnum[0] = Const Value(0)
-          PushLightweightFrame v25 (0x1040), v10, v22
+          PushInlineFrame v25 (0x1040), v10, v22
           PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
           v49:Fixnum = GuardType v10, Fixnum recompile
           v50:Fixnum = FixnumAdd v49, v22
           CheckInterrupts
-          PopLightweightFrame
+          PopInlineFrame
           Return v50
         ");
     }
@@ -18487,8 +18487,8 @@ mod hir_opt_tests {
 
         assert!(counters.inline_method_count > inline_count_before,
             "Expected add_kws to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
-        assert!(result.contains("PushLightweightFrame"),
-            "Expected PushLightweightFrame in inlined HIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in inlined HIR:\n{result}");
         assert!(!result.contains("SendDirect"),
             "Expected SendDirect to be replaced after inlining:\n{result}");
 
@@ -18511,7 +18511,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Object@0x1008, add_kws@0x1010, cme:0x1018)
           v28:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
           v60:Fixnum[0] = Const Value(0)
-          PushLightweightFrame v28 (0x1040), v10, v18, v16
+          PushInlineFrame v28 (0x1040), v10, v18, v16
           v39:Fixnum[100] = Const Value(100)
           PatchPoint MethodRedefined(Integer@0x1048, *@0x1050, cme:0x1058)
           v67:Fixnum = GuardType v10, Fixnum recompile
@@ -18521,7 +18521,7 @@ mod hir_opt_tests {
           v76:Fixnum = FixnumAdd v68, v81
           v80:Fixnum = FixnumAdd v76, v16
           CheckInterrupts
-          PopLightweightFrame
+          PopInlineFrame
           Return v80
         ");
     }
@@ -18546,8 +18546,8 @@ mod hir_opt_tests {
 
         assert!(counters.inline_method_count > inline_count_before,
             "Expected add_optkw_dyn to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
-        assert!(result.contains("PushLightweightFrame"),
-            "Expected PushLightweightFrame in inlined HIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in inlined HIR:\n{result}");
         assert!(!result.contains("SendDirect"),
             "Expected SendDirect to be replaced after inlining:\n{result}");
 
@@ -18569,7 +18569,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Object@0x1008, add_optkw_dyn@0x1010, cme:0x1018)
           v25:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
           v63:Fixnum[1] = Const Value(1)
-          PushLightweightFrame v25 (0x1040), v10, v22
+          PushInlineFrame v25 (0x1040), v10, v22
           v33:BoolExact = FixnumBitCheck v63, 0
           CheckInterrupts
           v36:CBool = Test v33
@@ -18586,7 +18586,7 @@ mod hir_opt_tests {
           v75:Fixnum = GuardType v50, Fixnum
           v76:Fixnum = FixnumAdd v74, v75
           CheckInterrupts
-          PopLightweightFrame
+          PopInlineFrame
           Return v76
         ");
     }
@@ -18613,8 +18613,8 @@ mod hir_opt_tests {
 
         assert!(counters.inline_method_count > inline_count_before,
             "Expected add_lead_opt_post to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
-        assert!(result.contains("PushLightweightFrame"),
-            "Expected PushLightweightFrame in inlined HIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in inlined HIR:\n{result}");
         assert!(!result.contains("SendDirect"),
             "Expected SendDirect to be replaced after inlining:\n{result}");
 
@@ -18636,13 +18636,13 @@ mod hir_opt_tests {
           v18:Fixnum[300] = Const Value(300)
           PatchPoint MethodRedefined(Object@0x1008, add_lead_opt_post@0x1010, cme:0x1018)
           v27:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
-          PushLightweightFrame v27 (0x1040), v10, v16, v18
+          PushInlineFrame v27 (0x1040), v10, v16, v18
           PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
           v63:Fixnum = GuardType v10, Fixnum recompile
           v64:Fixnum = FixnumAdd v63, v16
           v68:Fixnum = FixnumAdd v64, v18
           CheckInterrupts
-          PopLightweightFrame
+          PopInlineFrame
           Return v68
         ");
     }
@@ -18676,8 +18676,8 @@ mod hir_opt_tests {
 
         assert!(counters.inline_method_count > inline_count_before,
             "Expected Point#initialize / Point#== to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
-        assert!(result.contains("PushLightweightFrame"),
-            "Expected PushLightweightFrame in inlined HIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in inlined HIR:\n{result}");
         assert!(!result.contains("SendDirect"),
             "Expected SendDirect to be replaced after inlining:\n{result}");
 
@@ -18702,7 +18702,7 @@ mod hir_opt_tests {
           v90:ObjectSubclass[class_exact:Point] = ObjectAllocClass Point:VALUE(0x1008)
           PatchPoint NoSingletonClass(Point@0x1008)
           PatchPoint MethodRedefined(Point@0x1008, initialize@0x1038, cme:0x1040)
-          PushLightweightFrame v90 (0x1068), v15, v17
+          PushInlineFrame v90 (0x1068), v15, v17
           v211:CShape = LoadField v90, :shape_id@0x1070
           v212:CShape[0x1071] = GuardBitEquals v211, CShape(0x1071) recompile
           StoreField v90, :@x@0x1072, v15
@@ -18716,7 +18716,7 @@ mod hir_opt_tests {
           v222:CShape[0x1075] = Const CShape(0x1075)
           StoreField v90, :shape_id@0x1070, v222
           CheckInterrupts
-          PopLightweightFrame
+          PopInlineFrame
           PatchPoint SingleRactorMode
           PatchPoint StableConstantNames(0x1078, Point)
           v97:ClassSubclass[Point@0x1008] = Const Value(VALUE(0x1008))
@@ -18727,7 +18727,7 @@ mod hir_opt_tests {
           v100:ObjectSubclass[class_exact:Point] = ObjectAllocClass Point:VALUE(0x1008)
           PatchPoint NoSingletonClass(Point@0x1008)
           PatchPoint MethodRedefined(Point@0x1008, initialize@0x1038, cme:0x1040)
-          PushLightweightFrame v100 (0x1068), v48, v50
+          PushInlineFrame v100 (0x1068), v48, v50
           v225:CShape = LoadField v100, :shape_id@0x1070
           v226:CShape[0x1071] = GuardBitEquals v225, CShape(0x1071) recompile
           StoreField v100, :@x@0x1072, v48
@@ -18741,10 +18741,10 @@ mod hir_opt_tests {
           v236:CShape[0x1075] = Const CShape(0x1075)
           StoreField v100, :shape_id@0x1070, v236
           CheckInterrupts
-          PopLightweightFrame
+          PopInlineFrame
           PatchPoint NoSingletonClass(Point@0x1008)
           PatchPoint MethodRedefined(Point@0x1008, ==@0x1080, cme:0x1088)
-          PushLightweightFrame v90 (0x1068), v100
+          PushInlineFrame v90 (0x1068), v100
           PatchPoint SingleRactorMode
           v239:CShape = LoadField v90, :shape_id@0x1070
           v240:CShape[0x1075] = GuardBitEquals v239, CShape(0x1075) recompile
@@ -18775,7 +18775,7 @@ mod hir_opt_tests {
           Jump bb16(v90, v100, v255)
         bb16(v198:ObjectSubclass[class_exact:Point], v199:ObjectSubclass[class_exact:Point], v200:BoolExact):
           CheckInterrupts
-          PopLightweightFrame
+          PopInlineFrame
           Return v200
         ");
     }
