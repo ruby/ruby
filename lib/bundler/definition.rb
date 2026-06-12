@@ -244,11 +244,6 @@ module Bundler
       @resolver = nil
       @resolution_base = nil
       sources.release_resolution_memory!
-
-      # Most of the released objects are old generation, so they won't be
-      # reclaimed by minor GCs and would otherwise keep the heap from
-      # shrinking until a major GC happens to run.
-      GC.start
     end
 
     # For given dependency list returns a SpecSet with Gemspec of all the required
