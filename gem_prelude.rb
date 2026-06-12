@@ -21,7 +21,7 @@ rescue LoadError
 end if defined?(DidYouMean)
 
 begin
-  require 'syntax_suggest/core_ext'
+  require 'syntax_suggest'
 rescue LoadError
   warn "`syntax_suggest' was not loaded."
 end if defined?(SyntaxSuggest)
