@@ -5218,6 +5218,7 @@ impl Function {
                     Insn::GuardBitEquals { val, expected, .. } => {
                         let recv_type = self.type_of(val);
                         if recv_type.has_value(expected) {
+                            self.make_equal_to(insn_id, val);
                             continue;
                         } else {
                             insn_id
