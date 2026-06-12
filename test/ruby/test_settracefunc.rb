@@ -1904,6 +1904,14 @@ CODE
     events = []
     capture_events = Proc.new{|tp|
       next unless target_thread?
+      # Skip events from other code interrupting this thread, such as
+      # finalizers of objects left by other tests (e.g. Tempfile's),
+      # whose frames are pushed on top of the interrupted frame of this
+      # file. The event is ours iff the innermost frame, ignoring core
+      # methods written in Ruby (e.g. Kernel#tap in <internal:kernel>),
+      # belongs to this file.
+      innermost = caller_locations.drop_while{|loc| loc.path.start_with?("<internal:")}.first
+      next unless innermost&.path == __FILE__
       events << [tp.event, tp.method_id, tp.callee_id]
     }
 
