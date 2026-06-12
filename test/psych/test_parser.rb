@@ -173,6 +173,37 @@ module Psych
       assert_equal tadpole, @parser.handler.calls.find { |method, args| method == :scalar }[1].first
     end
 
+    # BOM + multi-line mapping used to lose every line after the first one
+    # https://github.com/ruby/psych/issues/331
+    def test_bom_multiline_utf8
+      @parser.parse "\uFEFFa: b\nc: d\n"
+      assert_equal %w[a b c d], scalars(@parser.handler)
+    end
+
+    def test_bom_multiline_utf16
+      %w[UTF-16LE UTF-16BE].each do |enc|
+        handler = EventCatcher.new
+        Psych::Parser.new(handler).parse "\uFEFFa: b\nc: d\n".encode(enc)
+        assert_equal %w[a b c d], scalars(handler), enc
+      end
+    end
+
+    def test_bom_multiline_io
+      @parser.parse StringIO.new("\uFEFFa: b\nc: d\n")
+      assert_equal %w[a b c d], scalars(@parser.handler)
+    end
+
+    def test_bom_only
+      @parser.parse "\uFEFF"
+      assert_equal [], scalars(@parser.handler)
+    end
+
+    def test_io_without_bom_is_not_modified
+      io = StringIO.new "a: b\nc: d\n".freeze
+      @parser.parse io
+      assert_equal %w[a b c d], scalars(@parser.handler)
+    end
+
     def test_external_encoding
       tadpole = 'おたまじゃくし'
 
@@ -443,6 +474,10 @@ module Psych
           end
         end
       end
+    end
+
+    def scalars handler
+      handler.calls.select { |method, _| method == :scalar }.map { |_, args| args.first }
     end
 
     def assert_called call, with = nil, parser = @parser
