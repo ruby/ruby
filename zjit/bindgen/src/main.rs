@@ -462,13 +462,15 @@ fn main() {
     bindings.write(Box::new(&mut bindings_string)).expect("Couldn't write bindings!");
 
     // Use i32 for this type since that's what the assembler APIs expect
-    const JIT_CONSTANTS_NEEDLE: &str       =  "\npub type jit_bindgen_constants = u32;\n";
-    const JIT_CONSTANTS_REPLACEMENT: &[u8] = b"\npub type jit_bindgen_constants = i32;\n";
-    // Yes, this search and replace could be faster, but it's a small file.
-    let bindings_str = str::from_utf8(bindings_string.as_ref()).expect("bindings should be in UTF-8");
-    let type_needle_start = bindings_str.find(JIT_CONSTANTS_NEEDLE).expect("bindings should have jit_bindgen_constants");
-    (&mut bindings_string[type_needle_start..type_needle_start + JIT_CONSTANTS_NEEDLE.len()])
-        .copy_from_slice(JIT_CONSTANTS_REPLACEMENT);
+    const JIT_CONSTANTS_NEEDLE: &[u8]      = b"pub type jit_bindgen_constants = u32;";
+    const JIT_CONSTANTS_REPLACEMENT: &[u8] = b"pub type jit_bindgen_constants = i32;";
+    // Yes, this search-and-replace could be faster, but it's a small file.
+    for line in bindings_string.as_mut_slice().split_mut(|&byte| byte == b'\n') {
+        if line == JIT_CONSTANTS_NEEDLE {
+            line.copy_from_slice(JIT_CONSTANTS_REPLACEMENT);
+            break;
+        }
+    }
 
     // Write out to file
     let mut out_path: PathBuf = src_root;
