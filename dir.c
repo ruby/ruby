@@ -1746,20 +1746,12 @@ nogvl_mkdir(void *ptr)
  * at +dirpath+ with the given +permissions+;
  * see {File Permissions}[rdoc-ref:File@File+Permissions]:
  *
- *   require 'tmpdir'
- *   Dir.mktmpdir do |tmpdirpath|
- *     dirpath0 = File.join(tmpdirpath, 'foo')
- *     Dir.mkdir(dirpath0)
- *     p File.stat(Dir.new(dirpath0)).mode.to_s(8)
- *     dirpath1 = File.join(tmpdirpath, 'bar')
- *     Dir.mkdir(dirpath1, 0644)
- *     p File.stat(Dir.new(dirpath1)).mode.to_s(8)
- *   end
- *
- * Output:
- *
- *   "40775"
- *   "40644"
+ *   Dir.mkdir('foo')
+ *   File.stat(Dir.new('foo')).mode.to_s(8) # => "40775"
+ *   Dir.mkdir('bar', 0644)
+ *   File.stat(Dir.new('bar')).mode.to_s(8) # => "40644"
+ *   Dir.rmdir('foo')
+ *   Dir.rmdir('bar')
  *
  * Argument +permissions+ is ignored on Windows.
  */
