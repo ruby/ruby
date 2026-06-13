@@ -467,6 +467,29 @@ impl IseqProfile {
         entry.profiles_remaining == 0
     }
 
+    /// Profile the block handler for a getblockparamproxy guard exit at runtime.
+    pub fn profile_getblockparamproxy_at(&mut self, iseq: IseqPtr, insn_idx: YarvInsnIdx, cfp: CfpPtr) -> bool {
+        let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx as u32) };
+        let level = unsafe { pc.add(2).read() }.as_u32();
+
+        let entry = self.entry_mut(insn_idx);
+        if entry.profiles_remaining == 0 {
+            entry.profiles_remaining = get_option!(num_profiles);
+        }
+        if entry.opnd_types.is_empty() {
+            entry.opnd_types.resize(1, TypeDistribution::new());
+        }
+        let ep = unsafe { get_cfp_ep_level(cfp, level) };
+        let block_handler = unsafe { *ep.offset(VM_ENV_DATA_INDEX_SPECVAL as isize) };
+        let untagged = unsafe { rb_vm_untag_block_handler(block_handler) };
+
+        let ty = ProfiledType::object(untagged);
+        VALUE::from(iseq).write_barrier(ty.class());
+        entry.opnd_types[0].observe(ty);
+        entry.profiles_remaining = entry.profiles_remaining.saturating_sub(1);
+        entry.profiles_remaining == 0
+    }
+
     /// Get profiled operand types for a given instruction index
     pub fn get_operand_types(&self, insn_idx: YarvInsnIdx) -> Option<&[TypeDistribution]> {
         self.entry(insn_idx).map(|e| e.opnd_types.as_slice()).filter(|s| !s.is_empty())

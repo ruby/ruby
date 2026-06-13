@@ -2554,16 +2554,15 @@ impl Assembler
                 let payload = get_or_create_iseq_payload(exit.iseq);
                 payload.reset_profiles_remaining(recompile.insn_idx as YarvInsnIdx);
                 use crate::codegen::exit_recompile;
+                let (profile_kind, profile_payload) = recompile.strategy.to_abi_args();
                 asm_comment!(asm, "profile and maybe recompile");
                 asm_ccall!(asm, exit_recompile,
                     EC,
                     recompile.frame_iseq,
                     recompile.compiled_iseq,
                     Opnd::UImm(recompile.insn_idx as u64),
-                    Opnd::Imm(match recompile.strategy {
-                        hir::Recompile::ProfileSend { argc } => argc as i64,
-                        hir::Recompile::ProfileSelf => -1,
-                    })
+                    Opnd::Imm(profile_kind.into()),
+                    Opnd::Imm(profile_payload.into())
                 );
             }
         }
