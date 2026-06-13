@@ -10021,6 +10021,23 @@ rb_gc_impl_init(void)
     rb_define_singleton_method(rb_mGC, "malloc_allocations", gc_malloc_allocations, 0);
 #endif
 
+    /*  Document-class: GC::Profiler
+     *
+     *  The GC profiler provides access to information on GC runs including time,
+     *  length and object space size.
+     *
+     *  Example:
+     *
+     *    GC::Profiler.enable
+     *
+     *    require 'rdoc/rdoc'
+     *
+     *    GC::Profiler.report
+     *
+     *    GC::Profiler.disable
+     *
+     *  See also GC.count, GC.malloc_allocated_size and GC.malloc_allocations
+     */
     VALUE rb_mProfiler = rb_define_module_under(rb_mGC, "Profiler");
     rb_define_singleton_method(rb_mProfiler, "enabled?", gc_profile_enable_get, 0);
     rb_define_singleton_method(rb_mProfiler, "enable", gc_profile_enable, 0);

@@ -5790,24 +5790,6 @@ rb_gc_checking_shareable(void)
  *     Finalizer one on 537763480
  */
 
-/*  Document-class: GC::Profiler
- *
- *  The GC profiler provides access to information on GC runs including time,
- *  length and object space size.
- *
- *  Example:
- *
- *    GC::Profiler.enable
- *
- *    require 'rdoc/rdoc'
- *
- *    GC::Profiler.report
- *
- *    GC::Profiler.disable
- *
- *  See also GC.count, GC.malloc_allocated_size and GC.malloc_allocations
- */
-
 #include "gc.rbinc"
 
 void
