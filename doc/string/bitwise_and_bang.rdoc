@@ -1,0 +1,10 @@
+Replaces each byte in +self+ with the bitwise AND of that byte and the
+corresponding byte in +other+; returns +self+:
+
+  s = "\xF0"
+  s.bitwise_and!("\xCC") # => "\xC0"
+  s                      # => "\xC0"
+
++other+ is converted to a string using +to_str+.
+Raises +ArgumentError+ if the two strings have different byte sizes.
+The encoding of +self+ is not changed.

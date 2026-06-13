@@ -1,0 +1,10 @@
+Replaces each byte in +self+ with the bitwise XOR of that byte and the
+corresponding byte in +other+; returns +self+:
+
+  s = "\xF0"
+  s.bitwise_xor!("\xCC") # => "\x3C"
+  s                      # => "\x3C"
+
++other+ is converted to a string using +to_str+.
+Raises +ArgumentError+ if the two strings have different byte sizes.
+The encoding of +self+ is not changed.

@@ -1,0 +1,20 @@
+Returns +0+ or +1+ for the bit at zero-based bit +offset+:
+
+  s = "\xAA" # 0b10101010
+  s.bit_get(0) # => 0
+  s.bit_get(1) # => 1
+
+Returns +nil+ if +offset+ is beyond the end of +self+:
+
+  s.bit_get(8) # => nil
+
+By default, bits within each byte are numbered from least-significant to
+most-significant. If +lsb_first+ is +false+, byte order is unchanged but bits
+within each byte are numbered from most-significant to least-significant:
+
+  s.bit_get(0, lsb_first: false) # => 1
+  s.bit_get(1, lsb_first: false) # => 0
+
+Raises +IndexError+ if +offset+ is negative.
+Raises +ArgumentError+ if +offset+ is too large to be represented.
+Raises +ArgumentError+ if +lsb_first+ is neither +true+ nor +false+.

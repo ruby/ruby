@@ -1,0 +1,16 @@
+Sets the bit at zero-based bit +offset+ to 0; returns +self+:
+
+  s = "\xFF"
+  s.bit_clear(1) # => "\xFD"
+  s              # => "\xFD"
+
+By default, bits within each byte are numbered from least-significant to
+most-significant. If +lsb_first+ is +false+, byte order is unchanged but bits
+within each byte are numbered from most-significant to least-significant:
+
+  s = "\xFF"
+  s.bit_clear(1, lsb_first: false) # => "\xBF"
+
+Raises +IndexError+ if +offset+ is out of range.
+Raises +ArgumentError+ if +offset+ is too large to be represented.
+Raises +ArgumentError+ if +lsb_first+ is neither +true+ nor +false+.
