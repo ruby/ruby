@@ -1281,30 +1281,15 @@ class Pathname    # * File *
   #  and therefore changes the mode of the entry specified by `self`:
   #
   #  ```ruby
-  #  require 'tmpdir'
-  #  Dir.mktmpdir do |tmpdirpath|
-  #    filename = 't.tmp'
-  #    linkname = 'link'
-  #    filepath = File.join(tmpdirpath, filename)
-  #    linkpath = File.join(tmpdirpath, linkname)
-  #    File.write(filepath, '')
-  #    File.symlink(filepath, linkpath)
-  #    p [filename, File.stat(filepath).mode.to_s(8)]
-  #    p [linkname, File.stat(linkpath).mode.to_s(8)]
-  #    pn = Pathname(linkpath)
-  #    pn.lchmod(0777)
-  #    p [filename, File.stat(filepath).mode.to_s(8)]
-  #    p [linkname, File.stat(linkpath).mode.to_s(8)]
-  #  end
-  #  ```
-  #
-  #  Output:
-  #
-  #  ```text
-  #  ["t.tmp", "100664"]
-  #  ["link", "100664"]
-  #  ["t.tmp", "100664"]
-  #  ["link", "100777"]
+  #  File.write('t.tmp', '')
+  #  File.symlink('t.tmp', 'link')
+  #  File.stat('t.tmp').mode.to_s(8) # => "100664"
+  #  File.stat('link').mode.to_s(8)  # => "100664"
+  #  Pathname('link').lchmod(0777)
+  #  File.stat('t.tmp').mode.to_s(8) # => "100664"
+  #  File.stat('link').mode.to_s(8)  # => "100777"
+  #  File.delete('t.tmp')
+  #  File.delete('link')
   #  ```
   #
   def lchmod(mode) File.lchmod(mode, @path) end

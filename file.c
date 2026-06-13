@@ -2911,29 +2911,15 @@ lchmod_internal(const char *path, void *mode)
  *  returns the number of paths given:
  *
  *  ```ruby
- *  require 'tmpdir'
- *  Dir.mktmpdir do |tmpdirpath|
- *    filename = 't.tmp'
- *    linkname = 'link'
- *    filepath = File.join(tmpdirpath, filename)
- *    linkpath = File.join(tmpdirpath, linkname)
- *    File.write(filepath, '')
- *    File.symlink(filepath, linkpath)
- *    p [filename, File.stat(filepath).mode.to_s(8)]
- *    p [linkname, File.stat(linkpath).mode.to_s(8)]
- *    File.lchmod(0777, linkpath)
- *    p [filename, File.stat(filepath).mode.to_s(8)]
- *    p [linkname, File.stat(linkpath).mode.to_s(8)]
- *  end
- *  ```
- *
- *  Output:
- *
- *  ```text
- *  ["t.tmp", "100664"]
- *  ["link", "100664"]
- *  ["t.tmp", "100664"]
- *  ["link", "100777"]
+ *  File.write('t.tmp', '')
+ *  File.symlink('t.tmp', 'link')
+ *  File.stat('t.tmp').mode.to_s(8) # => "100664"
+ *  File.stat('link').mode.to_s(8)  # => "100664"
+ *  File.lchmod(0777, 'link')
+ *  File.stat('t.tmp').mode.to_s(8) # => "100664"
+ *  File.stat('link').mode.to_s(8)  # => "100777"
+ *  File.delete('t.tmp')
+ *  File.delete('link')
  *  ```
  *
  */
