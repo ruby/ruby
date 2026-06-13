@@ -1569,11 +1569,11 @@ fn gen_push_inline_frame(
     // Save cfp->pc and cfp->sp for the caller frame.
     // Cannot use gen_prepare_non_leaf_call because we need special SP math.
     let stack_size = state.stack().len() - args.len() - 1; // -1 for receiver
-    let jit_frame = gen_save_pc_for_gc(asm, state, stack_size);
+    gen_save_pc_for_gc(asm, state, 0);
     gen_save_sp(asm, stack_size);
 
     gen_spill_locals(jit, asm, state);
-    gen_stack_map(jit, asm, state, stack_size, jit_frame);
+    gen_spill_stack(jit, asm, state);
 
     // This mirrors vm_caller_setup_arg_block() for the `blockiseq != NULL` case.
     // The HIR specialization guards ensure we will only reach here for literal blocks,
