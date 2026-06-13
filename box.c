@@ -299,7 +299,7 @@ box_entry_free(void *ptr)
     cleanup_all_local_extensions(box->ruby_dln_libmap);
 
     free_box_st_tables(ptr);
-    SIZED_FREE(box);
+    xfree((void *)box);
 }
 
 static size_t
@@ -425,9 +425,6 @@ box_initialize(VALUE box_value)
             rb_load_gem_prelude((VALUE)box);
         }
     }
-
-    // Invalidate ZJIT code that assumes only the root box is active
-    rb_zjit_invalidate_root_box();
 
     return box_value;
 }
