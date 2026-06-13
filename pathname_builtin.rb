@@ -1385,7 +1385,31 @@ class Pathname    # * File *
   # See <tt>File.stat</tt>.  Returns a <tt>File::Stat</tt> object.
   def stat() File.stat(@path) end
 
-  # See <tt>File.lstat</tt>.
+  #
+  #  :markup: markdown
+  #
+  #  call-seq:
+  #    lstat -> new_stat
+  #
+  #  Returns a File::Stat object for the path in `self`
+  #  does not follow symbolic links,
+  #  and therefore returns the stat object for that path,
+  #  regardless of whether it is a symbolic link:
+  #
+  #  ```ruby
+  #  File.write('t.tmp', '')
+  #  sleep(1)
+  #  File.symlink('t.tmp', 'link')
+  #  pn = Pathname('link')
+  #  # => #<Pathname:link>
+  #  # Method stat: follows link to 't.tmp'.
+  #  pn.stat.ctime  # => 2026-06-13 15:02:46.562620885 -0500
+  #  # Method lstat; does not follow link.
+  #  pn.lstat.ctime # => 2026-06-13 15:02:47.563619647 -0500
+  #  File.delete('t.tmp')
+  #  File.delete('link')
+  #  ```
+  #
   def lstat() File.lstat(@path) end
 
   # See <tt>File.symlink</tt>.  Creates a symbolic link.

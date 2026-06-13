@@ -1559,15 +1559,28 @@ lstat_without_gvl(const char *path, struct stat *st)
 #endif /* HAVE_LSTAT */
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *    File.lstat(filepath) -> stat
+ *    File.lstat(path) -> new_stat
  *
- *  Like File::stat, but does not follow the last symbolic link;
- *  instead, returns a File::Stat object for the link itself.
+ *  Returns a File::Stat object for the entry at `path`;
+ *  does not follow symbolic links,
+ *  and therefore returns the stat object for `path`,
+ *  regardless of whether it is a symbolic link:
  *
- *    File.symlink('t.txt', 'symlink')
- *    File.stat('symlink').size  # => 47
- *    File.lstat('symlink').size # => 5
+ *  ```ruby
+ *  File.write('t.tmp', '')
+ *  sleep(1)
+ *  File.symlink('t.tmp', 'link')
+ *  file = File.new('link', 'r')
+ *  # Method stat: follows link to 't.tmp'.
+ *  file.stat.ctime  # => 2026-06-13 15:05:16.996527996 -0500
+ *  # Method lstat; does not follow link.
+ *  file.lstat.ctime # => 2026-06-13 15:05:17.997527947 -0500
+ *  File.delete('t.tmp')
+ *  File.delete('link')
+ *  ```
  *
  */
 
