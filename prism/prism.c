@@ -11043,7 +11043,10 @@ parser_lex(pm_parser_t *parser) {
                     }
 
                     if (lex_state_spcarg_p(parser, space_seen)) {
-                        pm_parser_warn_token(parser, &parser->current, PM_WARN_AMBIGUOUS_SLASH);
+                        // https://bugs.ruby-lang.org/issues/21994
+                        if (parser->version <= PM_OPTIONS_VERSION_CRUBY_4_0) {
+                            pm_parser_warn_token(parser, &parser->current, PM_WARN_AMBIGUOUS_SLASH);
+                        }
                         lex_mode_push_regexp(parser, '\0', '/');
                         LEX(PM_TOKEN_REGEXP_BEGIN);
                     }

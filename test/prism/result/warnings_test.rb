@@ -19,7 +19,8 @@ module Prism
     end
 
     def test_ambiguous_regexp
-      assert_warning("a /b/", "wrap regexp in parentheses")
+      assert_warning("a /b/", "wrap regexp in parentheses", compare: false, version: "4.0")
+      refute_warning("a /b/", compare: false, version: "4.1")
     end
 
     def test_ambiguous_ampersand
@@ -408,8 +409,8 @@ module Prism
       assert_equal "END in method; use at_exit", warning.message
       assert_equal :default, warning.level
 
-      warning = Prism.parse("foo /regexp/").warnings.first
-      assert_equal "ambiguous `/`; wrap regexp in parentheses or add a space after `/` operator", warning.message
+      warning = Prism.parse("foo +1").warnings.first
+      assert_equal "ambiguous first argument; put parentheses or a space even after `+` operator", warning.message
       assert_equal :verbose, warning.level
     end
 
