@@ -1750,7 +1750,12 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
 void
 rb_gc_impl_before_fork(void *objspace_ptr)
 {
-    // Stub implementation
+    // Verify all objects at the fork point so a pre-fork missed barrier is caught
+    // once here, rather than in every forked child.
+    unsigned int lev = RB_GC_VM_LOCK();
+    rb_gc_vm_barrier();
+    force_gc(objspace_ptr);
+    RB_GC_VM_UNLOCK(lev);
 }
 
 void
