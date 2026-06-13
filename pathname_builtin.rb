@@ -1869,28 +1869,16 @@ class Pathname    # * Dir *
   #    mkdir(permissions = 0755) -> 0
   #
   # Creates a directory in the underlying file system
-  # at the path in `self` with the given `permissions`;
+  # at the path in `self`, with the given `permissions`;
   # see {File Permissions}[rdoc-ref:File@File+Permissions]:
   #
   # ```ruby
-  # require 'tmpdir'
-  # Dir.mktmpdir do |tmpdirpath|
-  #   dirpath0 = File.join(tmpdirpath, 'foo')
-  #   pn0 = Pathname(dirpath0)
-  #   pn0.mkdir
-  #   p File.stat(Dir.new(dirpath0)).mode.to_s(8)
-  #   dirpath1 = File.join(tmpdirpath, 'bar')
-  #   pn1 = Pathname(dirpath1)
-  #   pn1.mkdir(0644)
-  #   p File.stat(Dir.new(dirpath1)).mode.to_s(8)
-  # end
-  # ```
-  #
-  # Output:
-  #
-  # ```text
-  # "40775"
-  # "40644"
+  # Dir.mkdir('foo')
+  # File.stat(Dir.new('foo')).mode.to_s(8) # => "40775"
+  # Dir.mkdir('bar', 0644)
+  # File.stat(Dir.new('bar')).mode.to_s(8) # => "40644"
+  # Dir.rmdir('foo')
+  # Dir.rmdir('bar')
   # ```
   #
   # Argument `permissions` is ignored on Windows.
