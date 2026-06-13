@@ -42,6 +42,7 @@ const zjit_jit_frame_t rb_zjit_c_frame = (zjit_jit_frame_t) {
 };
 
 void rb_zjit_profile_disable(const rb_iseq_t *iseq);
+int rb_zjit_insn_to_bare_insn(int insn);
 
 void
 rb_zjit_compile_iseq(const rb_iseq_t *iseq, rb_execution_context_t *ec, bool jit_exception)
@@ -104,6 +105,13 @@ rb_zjit_profile_disable(const rb_iseq_t *iseq)
         }
         insn_idx += insn_len(insn);
     }
+}
+
+// Map `zjit_* instructions back to their bare form. This is an identity function for all others.
+int
+rb_zjit_insn_to_bare_insn(int insn)
+{
+    return vm_zjit_insn_to_bare_insn(insn);
 }
 
 // Update a YARV instruction to a given opcode (to disable ZJIT profiling).

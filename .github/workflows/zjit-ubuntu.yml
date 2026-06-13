@@ -59,6 +59,12 @@ jobs:
             configure: '--enable-zjit=dev'
 
           - test_task: 'check'
+            run_opts: '--zjit-call-threshold=1 --zjit-inline-threshold=30'
+            specopts: '-T --zjit-call-threshold=1 -T --zjit-inline-threshold=30'
+            configure: '--enable-zjit=dev'
+            continue-on-test_task: true
+
+          - test_task: 'check'
             run_opts: '--zjit-disable-hir-opt --zjit-call-threshold=1'
             specopts: '-T --zjit-disable-hir-opt -T --zjit-call-threshold=1'
             configure: '--enable-zjit=dev'

@@ -23,12 +23,8 @@ use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NAT
 use crate::hir::{iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
 use crate::hir::{BlockHandler, Const, FieldName, FrameState, Function, Insn, InsnId, Recompile, SendFallbackReason};
 use crate::hir_type::{types, Type};
-use crate::options::{get_option, PerfMap};
+use crate::options::{get_option, InlineDepth, PerfMap};
 use crate::cast::IntoUsize;
-
-/// The number of stack slots used for JITFrame. gen_save_pc_for_gc() writes
-/// JITFrame into this number of slots at the bottom of the native stack.
-const JIT_FRAME_SIZE: usize = 1;
 
 /// Default maximum number of compiled versions per ISEQ.
 const DEFAULT_MAX_VERSIONS: usize = 2;
@@ -64,8 +60,10 @@ struct JITState {
     /// ISEQ calls that need to be compiled later
     iseq_calls: Vec<IseqCallRef>,
 
-    /// The number of native stack slots reserved for JITFrame.
-    /// gen_save_pc_for_gc() writes JITFrame into the allocated space.
+    /// The number of native stack slots reserved for JITFrame, one per
+    /// simultaneously live frame (`inlining_depth() + 1`). gen_save_pc_for_gc()
+    /// and the inlined frame push write a JITFrame into the slot selected by the
+    /// current frame's depth.
     jit_frame_size: usize,
 }
 
@@ -396,8 +394,16 @@ fn gen_iseq_body(cb: &mut CodeBlock, iseq: IseqPtr, mut version: IseqVersionRef,
 /// Compile a function
 fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, function: &Function) -> Result<(IseqCodePtrs, Vec<CodePtr>, Vec<IseqCallRef>), CompileError> {
     let (mut jit, asm) = trace_compile_phase("codegen", || {
-        let mut jit = JITState::new(version, function.num_insns(), function.num_blocks(), JIT_FRAME_SIZE);
-        let mut asm = Assembler::new_with_stack_slots(JIT_FRAME_SIZE);
+        // Reserve one JITFrame slot per simultaneously live frame. The top-level
+        // frame is depth 0, and each level of inlining adds another frame that
+        // can be on the CFP chain at the same time, so we need
+        // `inlining_depth() + 1` slots. gen_save_pc_for_gc() and the inlined
+        // frame push select among these slots by the frame's depth, keeping each
+        // frame's `cfp->jit_return` pointed at its own slot rather than a shared
+        // one.
+        let jit_frame_size = function.inlining_depth() + 1;
+        let mut jit = JITState::new(version, function.num_insns(), function.num_blocks(), jit_frame_size);
+        let mut asm = Assembler::new_with_stack_slots(jit_frame_size);
 
         // Mapping from HIR block IDs to LIR block IDs.
         // This is is a one-to-one mapping from HIR to LIR blocks used for finding
@@ -642,6 +648,12 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
                 cb, jit, asm, cme, iseq, opnd!(recv), opnds!(args),
                 kw_bits, &function.frame_state(state), block,
             ),
+        Insn::PushInlineFrame { cme, iseq, recv, args, blockiseq, state, .. } => {
+            no_output!(gen_push_inline_frame(jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), &function.frame_state(*state), *blockiseq))
+        },
+        Insn::PopInlineFrame { iseq, argc, state } => {
+            no_output!(gen_pop_inline_frame(asm, *iseq, *argc, &function.frame_state(*state)))
+        },
         &Insn::InvokeSuper { cd, blockiseq, state, reason, .. } => gen_invokesuper(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::InvokeSuperForward { cd, blockiseq, state, reason, .. } => gen_invokesuperforward(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         &Insn::InvokeBlock { cd, state, reason, .. } => gen_invokeblock(jit, asm, cd, &function.frame_state(state), reason),
@@ -1537,6 +1549,138 @@ fn gen_send_without_block(
     )
 }
 
+/// Push an interpreter frame for an inlined callee. This is the same as the frame push
+/// portion of gen_send_iseq_direct, but without the native call to the callee. Control
+/// falls through to the next instruction (the inlined callee body).
+fn gen_push_inline_frame(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    cme: *const rb_callable_method_entry_t,
+    iseq: IseqPtr,
+    recv: Opnd,
+    args: Vec<Opnd>,
+    state: &FrameState,
+    blockiseq: Option<IseqPtr>,
+) {
+    let local_size = unsafe { get_iseq_body_local_table_size(iseq) }.to_usize();
+    let stack_growth = state.stack_size() + local_size + unsafe { get_iseq_body_stack_max(iseq) }.to_usize();
+    gen_stack_overflow_check(jit, asm, state, stack_growth);
+
+    // Save cfp->pc and cfp->sp for the caller frame.
+    // Cannot use gen_prepare_non_leaf_call because we need special SP math.
+    gen_save_pc_for_gc(asm, state);
+    gen_save_sp(asm, state.stack().len() - args.len() - 1); // -1 for receiver
+
+    gen_spill_locals(jit, asm, state);
+    gen_spill_stack(jit, asm, state);
+
+    // This mirrors vm_caller_setup_arg_block() for the `blockiseq != NULL` case.
+    // The HIR specialization guards ensure we will only reach here for literal blocks,
+    // not &block forwarding, &:foo, etc. These are rejected in `type_specialize` by
+    // `unspecializable_call_type`.
+    let block_handler = blockiseq.map(|b| gen_block_handler_specval(asm, b));
+
+    let callee_is_bmethod = VM_METHOD_TYPE_BMETHOD == unsafe { get_cme_def_type(cme) };
+
+    let (frame_type, specval) = if callee_is_bmethod {
+        // Extract EP from the Proc instance
+        let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
+        let proc = unsafe { rb_jit_get_proc_ptr(procv) };
+        let proc_block = unsafe { &(*proc).block };
+        let capture = unsafe { proc_block.as_.captured.as_ref() };
+        let bmethod_frame_type = VM_FRAME_MAGIC_BLOCK | VM_FRAME_FLAG_BMETHOD | VM_FRAME_FLAG_LAMBDA;
+        // Tag the captured EP like VM_GUARDED_PREV_EP() in vm_call_iseq_bmethod()
+        let bmethod_specval = (capture.ep.addr() | 1).into();
+        (bmethod_frame_type, bmethod_specval)
+    } else {
+        let specval = block_handler.unwrap_or_else(|| VM_BLOCK_HANDLER_NONE.into());
+        (VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL, specval)
+    };
+
+    gen_push_frame(asm, args.len(), state, ControlFrame {
+        recv,
+        iseq: Some(iseq),
+        cme,
+        frame_type,
+        specval,
+        write_block_code: iseq_may_write_block_code(iseq),
+    });
+
+    // Publish the inlined callee's entry JITFrame before the inlined body runs.
+    // Frame walking functions such as rb_profile_frames can inspect the new
+    // CFP between this frame push and the first inlined gen_save_pc_for_gc, so
+    // cfp->jit_return must already reference a valid JITFrame slot. Leaving it
+    // stale or uninitialized is unsafe because CFP_ZJIT_FRAME has no independent
+    // way to tell whether it points at a valid JITFrame slot.
+    //
+    // We install a pre-baked JITFrame for the callee's entry by writing its address into
+    // the callee's own JITFrame slot and pointing the callee's cfp->jit_return at that
+    // slot, matching the protocol established by gen_entry_point + gen_save_pc_for_gc.
+    // The callee runs one level deeper than the caller, so it uses the slot for
+    // `state.depth + 1` (state is the caller's FrameState). Giving each inlining depth a
+    // distinct slot keeps the caller's and callee's cfp->jit_return from aliasing the same
+    // native stack location, which would otherwise make rb_zjit_materialize_frames copy
+    // one frame's PC/ISEQ into every aliased CFP on the chain. CFP_ZJIT_FRAME in zjit.h
+    // reads the JITFrame via ((VALUE *)cfp->jit_return)[-1], so the field must be the
+    // slot's address, not the JITFrame pointer itself. Once the inlined body runs its
+    // first gen_save_pc_for_gc, that call overwrites the same slot with a JITFrame
+    // carrying the current PC, just as the non-inlined path does.
+    //
+    // cfp->sp is left stale at frame push, matching the non-inlined gen_push_frame, which
+    // also skips the cfp->sp write for ISEQ frames. The first gen_save_sp call inside the
+    // inlined body (reached via gen_prepare_call_with_gc or gen_prepare_leaf_call_with_gc
+    // before any GC-triggering operation) installs the correct value. Side-exits write
+    // cfp->sp themselves via compile_exit_save_state in lir.rs before returning Qundef.
+    fn cfp_opnd(offset: i32) -> Opnd {
+        Opnd::mem(64, CFP, offset - (RUBY_SIZEOF_CONTROL_FRAME as i32))
+    }
+    let callee_depth = state.depth + 1;
+    let callee_entry_pc = unsafe { rb_iseq_pc_at_idx(iseq, 0) };
+    let callee_entry_frame = JITFrame::new_iseq(callee_entry_pc, iseq);
+    asm_comment!(asm, "install entry JITFrame for inlined callee");
+    asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, jit_frame_slot_offset(callee_depth)), Opnd::const_ptr(callee_entry_frame));
+    let callee_jit_return = cfp_jit_return_for_depth(asm, callee_depth);
+    asm.mov(cfp_opnd(RUBY_OFFSET_CFP_JIT_RETURN), callee_jit_return);
+
+    // The callee's hidden `kw_bits` local does not need a runtime store here:
+    // the inliner aliases the local to a `Const::Value` carrying the
+    // compile-time bitmask, so `checkkeyword` lowers to a constant
+    // `FixnumBitCheck` rather than a memory load. On a side exit out of the
+    // inlined body, FrameState materialization writes the local back to the
+    // callee frame from that constant, and on the no-side-exit path nothing
+    // reads the slot before `gen_pop_lightweight_frame` tears down the frame.
+    // (The non-inlined `gen_send_iseq_direct` path still emits its own store
+    // because the callee's separate JIT entry reads it from memory.)
+
+    let sp_offset = (state.stack().len() + local_size - args.len() + VM_ENV_DATA_SIZE.to_usize()) * SIZEOF_VALUE;
+    asm_comment!(asm, "switch to inlined callee SP");
+    let new_sp = asm.add(SP, sp_offset.into());
+    asm.mov(SP, new_sp);
+
+    asm_comment!(asm, "switch to inlined callee CFP");
+    let new_cfp = asm.sub(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
+    asm.mov(CFP, new_cfp);
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP as i32), CFP);
+}
+
+/// Pop the interpreter frame for an inlined callee, restoring the caller's SP and CFP.
+fn gen_pop_inline_frame(
+    asm: &mut Assembler,
+    iseq: IseqPtr,
+    argc: usize,
+    state: &FrameState,
+) {
+    let local_size = unsafe { get_iseq_body_local_table_size(iseq) }.to_usize();
+    let sp_offset = (state.stack().len() + local_size - argc + VM_ENV_DATA_SIZE.to_usize()) * SIZEOF_VALUE;
+
+    asm_comment!(asm, "restore caller SP after inline");
+    asm.sub_into(SP, sp_offset.into());
+
+    asm_comment!(asm, "restore caller CFP after inline");
+    asm.add_into(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP as i32), CFP);
+}
+
 /// Compile a direct call to an ISEQ method.
 /// If `block_handler` is provided, it's used as the specval for the new frame (for forwarding blocks).
 /// Otherwise, `VM_BLOCK_HANDLER_NONE` is used.
@@ -2218,7 +2362,9 @@ fn gen_entry_point(jit: &mut JITState, asm: &mut Assembler, jit_entry_idx: Optio
     }
     asm.frame_setup(&[]);
 
-    // Publish a valid entry JITFrame before setting cfp->jit_return.
+    // Publish a valid entry JITFrame before setting cfp->jit_return. The entry point is
+    // always the top-level frame (depth 0). Inlined frames get their own deeper
+    // slots in gen_push_lightweight_frame().
     let jit_frame = JITFrame::new_iseq(entry_pc(jit.iseq(), jit_entry_idx), jit.iseq());
     asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, -SIZEOF_VALUE_I32), Opnd::const_ptr(jit_frame));
     asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), NATIVE_BASE_PTR);
@@ -2719,6 +2865,29 @@ pub(crate) fn iseq_may_write_block_code(iseq: IseqPtr) -> bool {
     false
 }
 
+/// Byte offset from NATIVE_BASE_PTR of the JITFrame storage slot for a frame at
+/// the given inlining depth. Depth 0 (the top-level frame) lives at
+/// `[NATIVE_BASE_PTR - 8]`; each deeper inlined frame gets the next slot below.
+/// gen_function() reserves `inlining_depth() + 1` slots, so every live frame's
+/// depth maps to a distinct slot inside that reserved region.
+fn jit_frame_slot_offset(depth: InlineDepth) -> i32 {
+    -(SIZEOF_VALUE_I32 * (depth as i32 + 1))
+}
+
+/// Compute the value to store in a frame's `cfp->jit_return` for the given
+/// inlining depth. CFP_ZJIT_FRAME(cfp) reads the JITFrame pointer from
+/// `((VALUE *)cfp->jit_return)[-1]`, so jit_return must point one VALUE above
+/// the frame's storage slot (see jit_frame_slot_offset()). Depth 0 lands exactly
+/// on NATIVE_BASE_PTR, matching the non-inlined protocol; deeper frames need an
+/// address computed relative to it.
+fn cfp_jit_return_for_depth(asm: &mut Assembler, depth: InlineDepth) -> Opnd {
+    if depth == 0 {
+        NATIVE_BASE_PTR
+    } else {
+        asm.lea(Opnd::mem(64, NATIVE_BASE_PTR, -(SIZEOF_VALUE_I32 * depth as i32)))
+    }
+}
+
 /// Save only the PC to CFP. Use this when you need to call gen_save_sp()
 /// immediately after with a custom stack size (e.g., gen_ccall_with_frame
 /// adjusts SP to exclude receiver and arguments).
@@ -2729,10 +2898,10 @@ fn gen_save_pc_for_gc(asm: &mut Assembler, state: &FrameState) {
     gen_incr_counter(asm, Counter::vm_write_jit_frame_count);
     asm_comment!(asm, "save JITFrame to CFP");
     let jit_frame = JITFrame::new_iseq(next_pc, state.iseq);
-    asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, -SIZEOF_VALUE_I32), Opnd::const_ptr(jit_frame));
+    asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, jit_frame_slot_offset(state.depth)), Opnd::const_ptr(jit_frame));
 
     // CFP_PC for a live JIT frame routes through the JITFrame on the native
-    // stack (cfp->jit_return points to NATIVE_BASE_PTR), so we don't need to
+    // stack (cfp->jit_return points at this frame's slot), so we don't need to
     // touch cfp->pc here. Poisoning cfp->pc with PC_POISON would actively
     // break the case where rb_zjit_materialize_frames() previously copied
     // jit_frame->pc into cfp->pc and cleared cfp->jit_return: the JIT keeps
@@ -2967,7 +3136,8 @@ fn side_exit(jit: &JITState, state: &FrameState, reason: SideExitReason) -> Targ
 fn side_exit_with_recompile(jit: &JITState, state: &FrameState, reason: SideExitReason, recompile: Option<Recompile>) -> Target {
     let mut exit = build_side_exit(jit, state);
     exit.recompile = recompile.map(|strategy| SideExitRecompile {
-        iseq: Opnd::Value(VALUE::from(state.iseq)),
+        frame_iseq: Opnd::Value(VALUE::from(state.iseq)),
+        compiled_iseq: Opnd::Value(VALUE::from(jit.iseq())),
         insn_idx: state.insn_idx() as u32,
         strategy,
     });
@@ -3018,14 +3188,23 @@ c_callable! {
     /// Called from JIT side-exit code to profile operands and trigger recompilation.
     /// For send instructions (argc >= 0): profiles receiver + args from the stack.
     /// For shape guard exits (argc == -1): profiles self from the CFP.
-    /// Once enough profiles are gathered, invalidates the ISEQ for recompilation.
-    pub(crate) fn exit_recompile(ec: EcPtr, iseq_raw: VALUE, insn_idx: u32, argc: i32) {
-        // Fast check before taking the VM lock: skip if already invalidated or
-        // at the version limit. This avoids expensive lock acquisition on every
-        // shape guard exit after the recompile has already been triggered.
+    /// Once enough profiles are gathered, invalidates the compiled unit for recompilation.
+    ///
+    /// Two iseqs are passed because they diverge for inlined code. `frame_iseq_raw` is
+    /// the frame's own iseq, where the runtime profile is recorded; for an exit out of
+    /// an inlined callee this is the callee, which typically has no compiled version of
+    /// its own. `compiled_iseq_raw` is the function that was actually compiled (the
+    /// inliner folds the callee's body into it), so its version is the one holding the
+    /// failing guard and the one we must invalidate to force a recompile. For
+    /// non-inlined code the two are identical.
+    pub(crate) fn exit_recompile(ec: EcPtr, frame_iseq_raw: VALUE, compiled_iseq_raw: VALUE, insn_idx: u32, argc: i32) {
+        // Fast check before taking the VM lock: skip if the compiled unit is already
+        // invalidated or at the version limit. This avoids expensive lock acquisition
+        // on every shape guard exit after the recompile has already been triggered.
+        // The check is on the compiled unit because that is the version we invalidate.
         {
-            let iseq: IseqPtr = iseq_raw.as_iseq();
-            let payload = get_or_create_iseq_payload(iseq);
+            let compiled_iseq: IseqPtr = compiled_iseq_raw.as_iseq();
+            let payload = get_or_create_iseq_payload(compiled_iseq);
             let already_done = payload.versions.last()
                 .map_or(false, |v| unsafe { v.as_ref() }.is_invalidated())
                 || payload.versions.len() >= max_iseq_versions();
@@ -3035,38 +3214,44 @@ c_callable! {
         }
 
         with_vm_lock(src_loc!(), || {
-            let iseq: IseqPtr = iseq_raw.as_iseq();
-            let payload = get_or_create_iseq_payload(iseq);
+            let frame_iseq: IseqPtr = frame_iseq_raw.as_iseq();
+            let compiled_iseq: IseqPtr = compiled_iseq_raw.as_iseq();
 
             // For no-profile sends, skip if already profiled at this insn_idx.
             // For shape guard exits (argc == -1), always re-profile because the
             // original YARV profiles were monomorphic but runtime showed new shapes.
-            if argc >= 0 && payload.profile.done_profiling_at(insn_idx as usize) {
+            if argc >= 0 && get_or_create_iseq_payload(frame_iseq).profile.done_profiling_at(insn_idx as usize) {
                 return;
             }
 
-            with_time_stat(Counter::profile_time_ns, || {
+            let should_recompile = with_time_stat(Counter::profile_time_ns, || {
                 let cfp = unsafe { get_ec_cfp(ec) };
+                let payload = get_or_create_iseq_payload(frame_iseq);
 
-                let should_recompile = if argc >= 0 {
+                if argc >= 0 {
                     let sp = unsafe { get_cfp_sp(cfp) };
                     // Profile the receiver and arguments for this send instruction
-                    payload.profile.profile_send_at(iseq, insn_idx as usize, sp, argc as usize)
+                    payload.profile.profile_send_at(frame_iseq, insn_idx as usize, sp, argc as usize)
                 } else {
                     // Profile self for shape guard exits (argc == -1)
                     let self_val = unsafe { get_cfp_self(cfp) };
-                    payload.profile.profile_self_at(iseq, insn_idx as usize, self_val)
-                };
-
-                // Once we have enough profiles, invalidate and recompile the ISEQ
-                if should_recompile {
-                    if let Some(version) = payload.versions.last_mut() {
-                        let cb = ZJITState::get_code_block();
-                        invalidate_iseq_version(cb, iseq, version);
-                        cb.mark_all_executable();
-                    }
+                    payload.profile.profile_self_at(frame_iseq, insn_idx as usize, self_val)
                 }
             });
+
+            // Once we have enough profiles, invalidate the compiled unit so it
+            // recompiles and reads the freshly recorded profile. We invalidate
+            // `compiled_iseq` rather than `frame_iseq` because an inlined callee has no
+            // compiled code of its own; the outer function it was folded into is what
+            // actually got compiled.
+            if should_recompile {
+                let payload = get_or_create_iseq_payload(compiled_iseq);
+                if let Some(version) = payload.versions.last_mut() {
+                    let cb = ZJITState::get_code_block();
+                    invalidate_iseq_version(cb, compiled_iseq, version);
+                    cb.mark_all_executable();
+                }
+            }
         });
     }
 }
@@ -3493,9 +3678,13 @@ impl Assembler {
         // +------------------------+
         // | return address         |
         // +------------------------+
-        // | previous frame pointer | <- NATIVE_BASE_PTR == cfp->jit_return
+        // | previous frame pointer | <- NATIVE_BASE_PTR (== depth-0 cfp->jit_return)
         // +------------------------+
-        // | JITFrame pointer       | <- jit.jit_frame_size, read by CFP_ZJIT_FRAME(cfp)
+        // | JITFrame slot depth 0  | <- [NATIVE_BASE_PTR - 8]; read by CFP_ZJIT_FRAME for the top-level frame
+        // +------------------------+
+        // |          ...           |    one slot per inlining depth (jit.jit_frame_size slots total)
+        // +------------------------+
+        // | JITFrame slot depth N  | <- innermost inlined frame's slot
         // +------------------------+
         // | opnds.last()           |
         // +------------------------+

@@ -17672,4 +17672,1111 @@ mod hir_opt_tests {
           Return v57
         ");
     }
+
+    // Helper that compiles with inlining enabled. Temporarily sets the inline
+    // threshold, compiles and optimizes, then restores the original value.
+    #[track_caller]
+    fn hir_string_with_inlining(method: &str) -> String {
+        let old_threshold = get_option!(inline_threshold);
+        unsafe { OPTIONS.as_mut().unwrap().inline_threshold = 30; }
+        let result = hir_string(method);
+        unsafe { OPTIONS.as_mut().unwrap().inline_threshold = old_threshold; }
+        result
+    }
+
+    #[test]
+    fn test_inline_method_with_send() {
+        // The callee-internal `x + x` Send gets specialized to FixnumAdd because the callee's
+        // profile entries are merged into the caller's ProfileOracle during inlining.
+        eval("
+            def double(x)
+              x + x
+            end
+            def test(n)
+              double(n)
+            end
+            test(1)
+            test(1)
+        ");
+        assert_snapshot!(hir_string_with_inlining("test"), @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1008, double@0x1010, cme:0x1018)
+          v23:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          PushInlineFrame v23 (0x1040), v10
+          PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
+          v44:Fixnum = GuardType v10, Fixnum recompile
+          v46:Fixnum = FixnumAdd v44, v44
+          CheckInterrupts
+          PopInlineFrame
+          Return v46
+        ");
+    }
+
+    #[test]
+    fn test_inline_method_with_multiple_returns() {
+        // `clamp_nonneg` has two Return instructions (one from the early `return 0 if ...`,
+        // one from the implicit trailing `x`). Inlining rewrites each Return to a Jump into
+        // the continuation block, whose single Param merges the return values.
+        eval("
+            def clamp_nonneg(x)
+              return 0 if x < 0
+              x
+            end
+            def test(n)
+              clamp_nonneg(n)
+            end
+            test(1)
+            test(1)
+        ");
+        assert_snapshot!(hir_string_with_inlining("test"), @"
+        fn test@<compiled>:7:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1008, clamp_nonneg@0x1010, cme:0x1018)
+          v23:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          PushInlineFrame v23 (0x1040), v10
+          v31:Fixnum[0] = Const Value(0)
+          PatchPoint MethodRedefined(Integer@0x1048, <@0x1050, cme:0x1058)
+          v62:Fixnum = GuardType v10, Fixnum recompile
+          v63:BoolExact = FixnumLt v62, v31
+          CheckInterrupts
+          v37:CBool = Test v63
+          CondBranch v37, bb7(), bb6(v23, v62)
+        bb7():
+          v42:Fixnum[0] = Const Value(0)
+          CheckInterrupts
+          Jump bb4(v42)
+        bb6(v47:ObjectSubclass[class_exact*:Object@VALUE(0x1008)], v48:Fixnum):
+          CheckInterrupts
+          Jump bb4(v48)
+        bb4(v56:Fixnum):
+          PopInlineFrame
+          CheckInterrupts
+          Return v56
+        ");
+    }
+
+    #[test]
+    fn test_inline_arithmetic_method() {
+        eval("
+            def add_one(x)
+              x + 1
+            end
+            def test(n)
+              add_one(n)
+            end
+            test(1)
+            test(1)
+        ");
+        assert_snapshot!(hir_string_with_inlining("test"), @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1008, add_one@0x1010, cme:0x1018)
+          v23:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          PushInlineFrame v23 (0x1040), v10
+          v31:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
+          v45:Fixnum = GuardType v10, Fixnum recompile
+          v46:Fixnum = FixnumAdd v45, v31
+          CheckInterrupts
+          PopInlineFrame
+          Return v46
+        ");
+    }
+
+    #[test]
+    fn test_inline_budget_rejects_when_exceeded() {
+        // The same workload as test_inline_arithmetic_method, which we know inlines
+        // successfully under the default settings (budget=500, threshold=30). Setting
+        // the budget to 1 forces should_inline to bail on the budget check before
+        // reaching any other rejection reason. To verify the budget specifically is
+        // what blocked the inline (not e.g. the size threshold or a parameter-shape
+        // check), we read the inline_reject_budget_exceeded counter and confirm it
+        // incremented while inline_method_count did not.
+        eval("
+            def add_one(x)
+              x + 1
+            end
+            def test(n)
+              add_one(n)
+            end
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let budget_rejects_before = counters.inline_reject_budget_exceeded;
+        let inline_count_before = counters.inline_method_count;
+
+        let old_threshold = get_option!(inline_threshold);
+        let old_budget = get_option!(inline_budget);
+        unsafe {
+            OPTIONS.as_mut().unwrap().inline_threshold = 30;
+            OPTIONS.as_mut().unwrap().inline_budget = 1;
+        }
+        let result = hir_string("test");
+        unsafe {
+            OPTIONS.as_mut().unwrap().inline_threshold = old_threshold;
+            OPTIONS.as_mut().unwrap().inline_budget = old_budget;
+        }
+
+        let budget_rejects_after = counters.inline_reject_budget_exceeded;
+        let inline_count_after = counters.inline_method_count;
+
+        assert!(budget_rejects_after > budget_rejects_before,
+            "Expected inline_reject_budget_exceeded to increment, but it stayed at {budget_rejects_before}");
+        assert_eq!(inline_count_after, inline_count_before,
+            "Expected no successful inlines under budget=1, but inline_method_count went from {inline_count_before} to {inline_count_after}");
+
+        // Belt-and-braces: the resulting HIR also reflects no inlining took place.
+        assert!(result.contains("SendDirect"),
+            "Expected SendDirect to remain in HIR when budget is exceeded:\n{result}");
+        assert!(!result.contains("PushInlineFrame"),
+            "Expected no PushInlineFrame in HIR when budget is exceeded:\n{result}");
+    }
+
+    #[test]
+    fn test_inline_method_with_all_optionals_omitted() {
+        // Caller fills 0 optionals: both `b` and `c` defaults must run inside the inlined
+        // body. We pick `jit_entry_blocks[0]` so the body's default-init chain executes
+        // and assigns `b = 10`, `c = 100` before the post-default body adds them.
+        eval("
+            def add_opts(a, b = 10, c = 100)
+              a + b + c
+            end
+            def test(n)
+              add_opts(n)
+            end
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+
+        let result = hir_string_with_inlining("test");
+
+        assert!(counters.inline_method_count > inline_count_before,
+            "Expected add_opts to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in inlined HIR:\n{result}");
+        assert!(!result.contains("SendDirect"),
+            "Expected SendDirect to be replaced after inlining:\n{result}");
+
+        assert_snapshot!(result, @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1008, add_opts@0x1010, cme:0x1018)
+          v23:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          PushInlineFrame v23 (0x1040), v10
+          v31:Fixnum[10] = Const Value(10)
+          v40:Fixnum[100] = Const Value(100)
+          PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
+          v70:Fixnum = GuardType v10, Fixnum recompile
+          v71:Fixnum = FixnumAdd v70, v31
+          v75:Fixnum = FixnumAdd v71, v40
+          CheckInterrupts
+          PopInlineFrame
+          Return v75
+        ");
+    }
+
+    #[test]
+    fn test_inline_method_with_some_optionals_supplied() {
+        // Caller fills 1 of 2 optionals: only `c`'s default should run. We pick
+        // `jit_entry_blocks[1]`, whose target enters the body just before the `c`
+        // default-init code so `b` is taken from the caller and `c` is filled in.
+        eval("
+            def add_opts(a, b = 10, c = 100)
+              a + b + c
+            end
+            def test(n)
+              add_opts(n, 20)
+            end
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+
+        let result = hir_string_with_inlining("test");
+
+        assert!(counters.inline_method_count > inline_count_before,
+            "Expected add_opts to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in inlined HIR:\n{result}");
+        assert!(!result.contains("SendDirect"),
+            "Expected SendDirect to be replaced after inlining:\n{result}");
+
+        assert_snapshot!(result, @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v16:Fixnum[20] = Const Value(20)
+          PatchPoint MethodRedefined(Object@0x1008, add_opts@0x1010, cme:0x1018)
+          v25:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          PushInlineFrame v25 (0x1040), v10, v16
+          v42:Fixnum[100] = Const Value(100)
+          PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
+          v71:Fixnum = GuardType v10, Fixnum recompile
+          v72:Fixnum = FixnumAdd v71, v16
+          v76:Fixnum = FixnumAdd v72, v42
+          CheckInterrupts
+          PopInlineFrame
+          Return v76
+        ");
+    }
+
+    #[test]
+    fn test_inline_method_with_rescue_handler() {
+        eval("
+            def maybe_rescue(x)
+              begin
+                x + 1
+              rescue StandardError
+                0
+              end
+            end
+            def test(n)
+              maybe_rescue(n)
+            end
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+
+        let result = hir_string_with_inlining("test");
+
+        assert!(counters.inline_method_count > inline_count_before,
+            "Expected maybe_rescue to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in inlined HIR:\n{result}");
+        assert!(!result.contains("SendDirect"),
+            "Expected SendDirect to be replaced after inlining:\n{result}");
+
+        assert_snapshot!(result, @"
+        fn test@<compiled>:10:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1008, maybe_rescue@0x1010, cme:0x1018)
+          v23:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          PushInlineFrame v23 (0x1040), v10
+          v31:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
+          v46:Fixnum = GuardType v10, Fixnum recompile
+          v47:Fixnum = FixnumAdd v46, v31
+          CheckInterrupts
+          PopInlineFrame
+          Return v47
+        ");
+    }
+
+    #[test]
+    fn test_inline_rejects_callees_on_deny_list() {
+        // The `--zjit-inline-deny=...` knob lists qualified method names that
+        // should_inline must refuse to inline, regardless of any other heuristic
+        // outcome. The match runs before size/parameter/budget checks so the
+        // signal is unambiguous when reading stats. The counter check pins the
+        // rejection cause to the deny list specifically; an HIR-only check could
+        // pass for any number of unrelated reasons that also leave SendDirect
+        // in place.
+        eval("
+            def add_one(x)
+              x + 1
+            end
+            def test(n)
+              add_one(n)
+            end
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let denied_rejects_before = counters.inline_reject_denied;
+        let inline_count_before = counters.inline_method_count;
+
+        let old_deny = get_option!(inline_deny).clone();
+        unsafe {
+            OPTIONS.as_mut().unwrap().inline_deny.insert("Object#add_one".to_string());
+        }
+        let result = hir_string_with_inlining("test");
+        unsafe {
+            OPTIONS.as_mut().unwrap().inline_deny = old_deny;
+        }
+
+        let denied_rejects_after = counters.inline_reject_denied;
+        let inline_count_after = counters.inline_method_count;
+
+        assert!(denied_rejects_after > denied_rejects_before,
+            "Expected inline_reject_denied to increment for Object#add_one, but it stayed at {denied_rejects_before}");
+        assert_eq!(inline_count_after, inline_count_before,
+            "Expected no inlines for Object#add_one when on the deny list, but inline_method_count went from {inline_count_before} to {inline_count_after}");
+
+        assert!(result.contains("SendDirect"),
+            "Expected SendDirect to remain in HIR when callee is on the deny list:\n{result}");
+        assert!(!result.contains("PushInlineFrame"),
+            "Expected no PushInlineFrame in HIR when callee is on the deny list:\n{result}");
+    }
+
+    #[test]
+    fn test_inline_method_with_invokesuper() {
+        eval("
+            class Parent
+              def greet = 'hi'
+            end
+            class Child < Parent
+              def greet = super + '!'
+            end
+            child = Child.new
+            def test(c) = c.greet
+            test(child)
+            test(child)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+
+        let result = hir_string_with_inlining("test");
+
+        assert!(counters.inline_method_count > inline_count_before,
+            "Expected Child#greet to be inlined, but inline_method_count did not increment.\nHIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in HIR when inlining a super-containing callee:\n{result}");
+
+        assert_snapshot!(result, @"
+        fn test@<compiled>:9:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :c@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :c@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint NoSingletonClass(Child@0x1008)
+          PatchPoint MethodRedefined(Child@0x1008, greet@0x1010, cme:0x1018)
+          v23:ObjectSubclass[class_exact:Child] = GuardType v10, ObjectSubclass[class_exact:Child] recompile
+          PushInlineFrame v23 (0x1040)
+          PatchPoint MethodRedefined(Parent@0x1048, greet@0x1010, cme:0x1050)
+          v51:CPtr = GetEP 0
+          v52:RubyValue = LoadField v51, :VM_ENV_DATA_INDEX_ME_CREF@0x1078
+          v53:CallableMethodEntry[VALUE(0x1018)] = GuardBitEquals v52, Value(VALUE(0x1018))
+          v54:RubyValue = LoadField v51, :VM_ENV_DATA_INDEX_SPECVAL@0x1079
+          v55:FalseClass = GuardBitEquals v54, Value(false)
+          PushInlineFrame v23 (0x1040)
+          v61:StringExact[VALUE(0x1080)] = Const Value(VALUE(0x1080))
+          v62:StringExact = StringCopy v61
+          CheckInterrupts
+          PopInlineFrame
+          v32:StringExact[VALUE(0x1088)] = Const Value(VALUE(0x1088))
+          v33:StringExact = StringCopy v32
+          PatchPoint NoSingletonClass(String@0x1090)
+          PatchPoint MethodRedefined(String@0x1090, +@0x1098, cme:0x10a0)
+          v49:BasicObject = CCallWithFrame v62, :String#+@0x10c8, v33
+          CheckInterrupts
+          PopInlineFrame
+          Return v49
+        ");
+    }
+
+    #[test]
+    fn test_inline_method_with_all_optionals_supplied() {
+        // Caller fills every optional: no default-init code runs. We pick the last
+        // `jit_entry_blocks` entry, which lands directly in the post-default body.
+        eval("
+            def add_opts(a, b = 10, c = 100)
+              a + b + c
+            end
+            def test(n)
+              add_opts(n, 20, 200)
+            end
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+
+        let result = hir_string_with_inlining("test");
+
+        assert!(counters.inline_method_count > inline_count_before,
+            "Expected add_opts to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in inlined HIR:\n{result}");
+        assert!(!result.contains("SendDirect"),
+            "Expected SendDirect to be replaced after inlining:\n{result}");
+
+        assert_snapshot!(result, @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v16:Fixnum[20] = Const Value(20)
+          v18:Fixnum[200] = Const Value(200)
+          PatchPoint MethodRedefined(Object@0x1008, add_opts@0x1010, cme:0x1018)
+          v27:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          PushInlineFrame v27 (0x1040), v10, v16, v18
+          PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
+          v72:Fixnum = GuardType v10, Fixnum recompile
+          v73:Fixnum = FixnumAdd v72, v16
+          v77:Fixnum = FixnumAdd v73, v18
+          CheckInterrupts
+          PopInlineFrame
+          Return v77
+        ");
+    }
+
+    #[test]
+    fn test_inline_method_with_leading_optional_post_required() {
+        // Callee shape `def m(a = 10, b)` has lead_num=0, opt_num=1, post_num=1.
+        // The caller passes one positional, so the optional `a` falls through to
+        // its default and `b` takes the lone caller arg. The inliner must shift
+        // the post-required arg index past the gap of the unfilled optional.
+        eval("
+            def add_opt_post(a = 10, b)
+              a + b
+            end
+            def test(n)
+              add_opt_post(n)
+            end
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+
+        let result = hir_string_with_inlining("test");
+
+        assert!(counters.inline_method_count > inline_count_before,
+            "Expected add_opt_post to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in inlined HIR:\n{result}");
+        assert!(!result.contains("SendDirect"),
+            "Expected SendDirect to be replaced after inlining:\n{result}");
+
+        assert_snapshot!(result, @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1008, add_opt_post@0x1010, cme:0x1018)
+          v23:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          PushInlineFrame v23 (0x1040), v10
+          v30:Fixnum[10] = Const Value(10)
+          PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
+          v55:Fixnum = GuardType v10, Fixnum
+          v56:Fixnum = FixnumAdd v30, v55
+          CheckInterrupts
+          PopInlineFrame
+          Return v56
+        ");
+    }
+
+    #[test]
+    fn test_inline_method_with_required_optional_post_all_omitted() {
+        // Callee shape `def m(a, b = 10, c)` has lead_num=1, opt_num=1, post_num=1.
+        // Calling with two positionals fills `a` and `c`; `b` falls through to its
+        // default. The inliner must enter the body via jit_entry_blocks[0] so the
+        // default-init code for `b` runs, and shift `c`'s arg index past the gap.
+        eval("
+            def add_lead_opt_post(a, b = 10, c)
+              a + b + c
+            end
+            def test(n)
+              add_lead_opt_post(n, 200)
+            end
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+
+        let result = hir_string_with_inlining("test");
+
+        assert!(counters.inline_method_count > inline_count_before,
+            "Expected add_lead_opt_post to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in inlined HIR:\n{result}");
+        assert!(!result.contains("SendDirect"),
+            "Expected SendDirect to be replaced after inlining:\n{result}");
+
+        assert_snapshot!(result, @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v16:Fixnum[200] = Const Value(200)
+          PatchPoint MethodRedefined(Object@0x1008, add_lead_opt_post@0x1010, cme:0x1018)
+          v25:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          PushInlineFrame v25 (0x1040), v10, v16
+          v33:Fixnum[10] = Const Value(10)
+          PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
+          v62:Fixnum = GuardType v10, Fixnum recompile
+          v63:Fixnum = FixnumAdd v62, v33
+          v67:Fixnum = FixnumAdd v63, v16
+          CheckInterrupts
+          PopInlineFrame
+          Return v67
+        ");
+    }
+
+    #[test]
+    fn test_inline_method_with_required_keyword() {
+        eval("
+            def add_kw(a, b:)
+              a + b
+            end
+            def test(n)
+              add_kw(n, b: 5)
+            end
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+
+        let result = hir_string_with_inlining("test");
+
+        assert!(counters.inline_method_count > inline_count_before,
+            "Expected add_kw to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in inlined HIR:\n{result}");
+        assert!(!result.contains("SendDirect"),
+            "Expected SendDirect to be replaced after inlining:\n{result}");
+
+        assert_snapshot!(result, @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v16:Fixnum[5] = Const Value(5)
+          PatchPoint MethodRedefined(Object@0x1008, add_kw@0x1010, cme:0x1018)
+          v25:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v42:Fixnum[0] = Const Value(0)
+          PushInlineFrame v25 (0x1040), v10, v16
+          PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
+          v49:Fixnum = GuardType v10, Fixnum recompile
+          v50:Fixnum = FixnumAdd v49, v16
+          CheckInterrupts
+          PopInlineFrame
+          Return v50
+        ");
+    }
+
+    #[test]
+    fn test_inline_method_with_optional_keyword_supplied() {
+        eval("
+            def add_optkw(a, b: 10)
+              a + b
+            end
+            def test(n)
+              add_optkw(n, b: 50)
+            end
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+
+        let result = hir_string_with_inlining("test");
+
+        assert!(counters.inline_method_count > inline_count_before,
+            "Expected add_optkw to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in inlined HIR:\n{result}");
+        assert!(!result.contains("SendDirect"),
+            "Expected SendDirect to be replaced after inlining:\n{result}");
+
+        assert_snapshot!(result, @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v16:Fixnum[50] = Const Value(50)
+          PatchPoint MethodRedefined(Object@0x1008, add_optkw@0x1010, cme:0x1018)
+          v25:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v42:Fixnum[0] = Const Value(0)
+          PushInlineFrame v25 (0x1040), v10, v16
+          PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
+          v49:Fixnum = GuardType v10, Fixnum recompile
+          v50:Fixnum = FixnumAdd v49, v16
+          CheckInterrupts
+          PopInlineFrame
+          Return v50
+        ");
+    }
+
+    #[test]
+    fn test_inline_method_with_optional_keyword_omitted_constant_default() {
+        eval("
+            def add_optkw(a, b: 10)
+              a + b
+            end
+            def test(n)
+              add_optkw(n)
+            end
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+
+        let result = hir_string_with_inlining("test");
+
+        assert!(counters.inline_method_count > inline_count_before,
+            "Expected add_optkw to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in inlined HIR:\n{result}");
+        assert!(!result.contains("SendDirect"),
+            "Expected SendDirect to be replaced after inlining:\n{result}");
+
+        assert_snapshot!(result, @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v22:Fixnum[10] = Const Value(10)
+          PatchPoint MethodRedefined(Object@0x1008, add_optkw@0x1010, cme:0x1018)
+          v25:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v42:Fixnum[0] = Const Value(0)
+          PushInlineFrame v25 (0x1040), v10, v22
+          PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
+          v49:Fixnum = GuardType v10, Fixnum recompile
+          v50:Fixnum = FixnumAdd v49, v22
+          CheckInterrupts
+          PopInlineFrame
+          Return v50
+        ");
+    }
+
+    #[test]
+    fn test_inline_method_with_keywords_reordered() {
+        // Caller passes keywords in an order that doesn't match the callee's declaration.
+        eval("
+            def add_kws(a, b:, c:)
+              a * 100 + b * 10 + c
+            end
+            def test(n)
+              add_kws(n, c: 3, b: 2)
+            end
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+
+        let result = hir_string_with_inlining("test");
+
+        assert!(counters.inline_method_count > inline_count_before,
+            "Expected add_kws to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in inlined HIR:\n{result}");
+        assert!(!result.contains("SendDirect"),
+            "Expected SendDirect to be replaced after inlining:\n{result}");
+
+        assert_snapshot!(result, @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v16:Fixnum[3] = Const Value(3)
+          v18:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(Object@0x1008, add_kws@0x1010, cme:0x1018)
+          v28:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v60:Fixnum[0] = Const Value(0)
+          PushInlineFrame v28 (0x1040), v10, v18, v16
+          v39:Fixnum[100] = Const Value(100)
+          PatchPoint MethodRedefined(Integer@0x1048, *@0x1050, cme:0x1058)
+          v67:Fixnum = GuardType v10, Fixnum recompile
+          v68:Fixnum = FixnumMult v67, v39
+          v81:Fixnum[20] = Const Value(20)
+          PatchPoint MethodRedefined(Integer@0x1048, +@0x1080, cme:0x1088)
+          v76:Fixnum = FixnumAdd v68, v81
+          v80:Fixnum = FixnumAdd v76, v16
+          CheckInterrupts
+          PopInlineFrame
+          Return v80
+        ");
+    }
+
+    #[test]
+    fn test_inline_method_with_optional_keyword_omitted_nonconstant_default() {
+        // Optional keyword with a non-constant default expression (`b: a * 2`) omitted by the caller.
+        eval("
+            def add_optkw_dyn(a, b: a * 2)
+              a + b
+            end
+            def test(n)
+              add_optkw_dyn(n)
+            end
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+
+        let result = hir_string_with_inlining("test");
+
+        assert!(counters.inline_method_count > inline_count_before,
+            "Expected add_optkw_dyn to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in inlined HIR:\n{result}");
+        assert!(!result.contains("SendDirect"),
+            "Expected SendDirect to be replaced after inlining:\n{result}");
+
+        assert_snapshot!(result, @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v22:NilClass = Const Value(nil)
+          PatchPoint MethodRedefined(Object@0x1008, add_optkw_dyn@0x1010, cme:0x1018)
+          v25:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v63:Fixnum[1] = Const Value(1)
+          PushInlineFrame v25 (0x1040), v10, v22
+          v33:BoolExact = FixnumBitCheck v63, 0
+          CheckInterrupts
+          v36:CBool = Test v33
+          CondBranch v36, bb6(v25, v10, v22, v63), bb7()
+        bb7():
+          v42:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(Integer@0x1048, *@0x1050, cme:0x1058)
+          v70:Fixnum = GuardType v10, Fixnum recompile
+          v71:Fixnum = FixnumMult v70, v42
+          Jump bb6(v25, v70, v71, v63)
+        bb6(v48:ObjectSubclass[class_exact*:Object@VALUE(0x1008)], v49:BasicObject, v50:NilClass|Fixnum, v51:Fixnum[1]):
+          PatchPoint MethodRedefined(Integer@0x1048, +@0x1080, cme:0x1088)
+          v74:Fixnum = GuardType v49, Fixnum recompile
+          v75:Fixnum = GuardType v50, Fixnum
+          v76:Fixnum = FixnumAdd v74, v75
+          CheckInterrupts
+          PopInlineFrame
+          Return v76
+        ");
+    }
+
+    #[test]
+    fn test_inline_method_with_required_optional_post_all_supplied() {
+        // Same callee shape as above (lead+opt+post) but the caller fills the
+        // optional explicitly. We pick jit_entry_blocks[1] so no default-init code
+        // runs and every local takes a caller arg directly.
+        eval("
+            def add_lead_opt_post(a, b = 10, c)
+              a + b + c
+            end
+            def test(n)
+              add_lead_opt_post(n, 20, 300)
+            end
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+
+        let result = hir_string_with_inlining("test");
+
+        assert!(counters.inline_method_count > inline_count_before,
+            "Expected add_lead_opt_post to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in inlined HIR:\n{result}");
+        assert!(!result.contains("SendDirect"),
+            "Expected SendDirect to be replaced after inlining:\n{result}");
+
+        assert_snapshot!(result, @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          v16:Fixnum[20] = Const Value(20)
+          v18:Fixnum[300] = Const Value(300)
+          PatchPoint MethodRedefined(Object@0x1008, add_lead_opt_post@0x1010, cme:0x1018)
+          v27:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          PushInlineFrame v27 (0x1040), v10, v16, v18
+          PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
+          v63:Fixnum = GuardType v10, Fixnum recompile
+          v64:Fixnum = FixnumAdd v63, v16
+          v68:Fixnum = FixnumAdd v64, v18
+          CheckInterrupts
+          PopInlineFrame
+          Return v68
+        ");
+    }
+
+    #[test]
+    fn test_inline_object_new_no_escape() {
+        // Mirrors the object-new-no-escape benchmark from ruby-bench.
+        eval("
+            class Point
+              attr_reader :x, :y
+              def initialize(x, y)
+                @x = x
+                @y = y
+              end
+
+              def ==(other)
+                @x == other.x && @y == other.y
+              end
+            end
+
+            def test
+              Point.new(1, 2) == Point.new(1, 2)
+            end
+            test
+            test
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+
+        let result = hir_string_with_inlining("test");
+
+        assert!(counters.inline_method_count > inline_count_before,
+            "Expected Point#initialize / Point#== to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in inlined HIR:\n{result}");
+        assert!(!result.contains("SendDirect"),
+            "Expected SendDirect to be replaced after inlining:\n{result}");
+
+        assert_snapshot!(result, @"
+        fn test@<compiled>:15:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1000, Point)
+          v87:ClassSubclass[Point@0x1008] = Const Value(VALUE(0x1008))
+          v12:NilClass = Const Value(nil)
+          v15:Fixnum[1] = Const Value(1)
+          v17:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(Point@0x1008, new@0x1009, cme:0x1010)
+          v90:ObjectSubclass[class_exact:Point] = ObjectAllocClass Point:VALUE(0x1008)
+          PatchPoint NoSingletonClass(Point@0x1008)
+          PatchPoint MethodRedefined(Point@0x1008, initialize@0x1038, cme:0x1040)
+          PushInlineFrame v90 (0x1068), v15, v17
+          v211:CShape = LoadField v90, :shape_id@0x1070
+          v212:CShape[0x1071] = GuardBitEquals v211, CShape(0x1071) recompile
+          StoreField v90, :@x@0x1072, v15
+          WriteBarrier v90, v15
+          v215:CShape[0x1073] = Const CShape(0x1073)
+          StoreField v90, :shape_id@0x1070, v215
+          PatchPoint NoEPEscape(initialize)
+          PatchPoint SingleRactorMode
+          StoreField v90, :@y@0x1074, v17
+          WriteBarrier v90, v17
+          v222:CShape[0x1075] = Const CShape(0x1075)
+          StoreField v90, :shape_id@0x1070, v222
+          CheckInterrupts
+          PopInlineFrame
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1078, Point)
+          v97:ClassSubclass[Point@0x1008] = Const Value(VALUE(0x1008))
+          v45:NilClass = Const Value(nil)
+          v48:Fixnum[1] = Const Value(1)
+          v50:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(Point@0x1008, new@0x1009, cme:0x1010)
+          v100:ObjectSubclass[class_exact:Point] = ObjectAllocClass Point:VALUE(0x1008)
+          PatchPoint NoSingletonClass(Point@0x1008)
+          PatchPoint MethodRedefined(Point@0x1008, initialize@0x1038, cme:0x1040)
+          PushInlineFrame v100 (0x1068), v48, v50
+          v225:CShape = LoadField v100, :shape_id@0x1070
+          v226:CShape[0x1071] = GuardBitEquals v225, CShape(0x1071) recompile
+          StoreField v100, :@x@0x1072, v48
+          WriteBarrier v100, v48
+          v229:CShape[0x1073] = Const CShape(0x1073)
+          StoreField v100, :shape_id@0x1070, v229
+          PatchPoint NoEPEscape(initialize)
+          PatchPoint SingleRactorMode
+          StoreField v100, :@y@0x1074, v50
+          WriteBarrier v100, v50
+          v236:CShape[0x1075] = Const CShape(0x1075)
+          StoreField v100, :shape_id@0x1070, v236
+          CheckInterrupts
+          PopInlineFrame
+          PatchPoint NoSingletonClass(Point@0x1008)
+          PatchPoint MethodRedefined(Point@0x1008, ==@0x1080, cme:0x1088)
+          PushInlineFrame v90 (0x1068), v100
+          PatchPoint SingleRactorMode
+          v239:CShape = LoadField v90, :shape_id@0x1070
+          v240:CShape[0x1075] = GuardBitEquals v239, CShape(0x1075) recompile
+          v241:BasicObject = LoadField v90, :@x@0x1072
+          PatchPoint NoEPEscape(==)
+          PatchPoint MethodRedefined(Point@0x1008, x@0x10b0, cme:0x10b8)
+          PatchPoint MethodRedefined(Integer@0x10e0, ==@0x1080, cme:0x10e8)
+          v248:Fixnum = GuardType v241, Fixnum recompile
+          v250:BoolExact = FixnumEq v248, v48
+          v181:CBool = Test v250
+          v182:FalseClass = RefineType v250, Falsy
+          CondBranch v181, bb17(), bb16(v90, v100, v182)
+        bb17():
+          PatchPoint SingleRactorMode
+          v243:CShape = LoadField v90, :shape_id@0x1070
+          v244:CShape[0x1075] = GuardBitEquals v243, CShape(0x1075) recompile
+          v245:BasicObject = LoadField v90, :@y@0x1074
+          PatchPoint NoEPEscape(==)
+          PatchPoint NoSingletonClass(Point@0x1008)
+          PatchPoint MethodRedefined(Point@0x1008, y@0x1110, cme:0x1118)
+          v271:CShape = LoadField v100, :shape_id@0x1070
+          v272:CShape[0x1075] = GuardBitEquals v271, CShape(0x1075) recompile
+          v273:BasicObject = LoadField v100, :@y@0x1074
+          PatchPoint MethodRedefined(Integer@0x10e0, ==@0x1080, cme:0x10e8)
+          v253:Fixnum = GuardType v245, Fixnum recompile
+          v254:Fixnum = GuardType v273, Fixnum
+          v255:BoolExact = FixnumEq v253, v254
+          Jump bb16(v90, v100, v255)
+        bb16(v198:ObjectSubclass[class_exact:Point], v199:ObjectSubclass[class_exact:Point], v200:BoolExact):
+          CheckInterrupts
+          PopInlineFrame
+          Return v200
+        ");
+    }
 }

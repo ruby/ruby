@@ -343,14 +343,20 @@ fn inline_kernel_itself(_fun: &mut hir::Function, _block: hir::BlockId, recv: hi
     None
 }
 
-fn inline_kernel_block_given_p(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_kernel_block_given_p(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[] = args else { return None; };
 
-    let local_iseq = unsafe { rb_get_iseq_body_local_iseq(fun.iseq()) };
+    // Use the FrameState's iseq rather than fun.iseq(). For inlined code these diverge:
+    // fun.iseq() is the outer JIT function, while state.iseq is the iseq of the frame that
+    // will be live when this block_given? actually runs. The level computed from fun.iseq()
+    // walks the wrong number of EP links at runtime (crashes when the outer is a block iseq
+    // and the callee is a method, because the walk overshoots the inlined method's frame).
+    let call_site_iseq = fun.frame_state(state).iseq;
+    let local_iseq = unsafe { rb_get_iseq_body_local_iseq(call_site_iseq) };
     if unsafe { rb_get_iseq_body_type(local_iseq) } == ISEQ_TYPE_METHOD {
         // Get the EP of the ISeq of the containing method, or "local level", skipping over block-level EPs.
         // Equivalent of GET_LEP() macro.
-        let level = crate::cruby::get_lvar_level(fun.iseq());
+        let level = crate::cruby::get_lvar_level(call_site_iseq);
         let lep = fun.push_insn(block, hir::Insn::GetEP { level });
         Some(fun.push_insn(block, hir::Insn::IsBlockGiven { lep }))
     } else {

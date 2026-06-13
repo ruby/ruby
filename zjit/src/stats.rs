@@ -170,6 +170,7 @@ make_counters! {
         compile_hir_time_ns,
         compile_hir_build_time_ns,
         compile_hir_strength_reduce_time_ns,
+        compile_hir_inline_methods_time_ns,
         compile_hir_optimize_load_store_time_ns,
         compile_hir_canonicalize_time_ns,
         compile_hir_fold_constants_time_ns,
@@ -462,6 +463,19 @@ make_counters! {
     invokeblock_handler_polymorphic,
     invokeblock_handler_megamorphic,
     invokeblock_handler_no_profiles,
+
+    // HIR-level method inliner (inline_methods) counters. These are incremented
+    // at compile time, once per SendDirect the inliner considers.
+    inline_method_count,
+    inline_reject_too_large,
+    inline_reject_complex_params,
+    inline_reject_ep_escapes,
+    inline_reject_invokeblock,
+    inline_reject_blockparam,
+    inline_reject_denied,
+    inline_reject_compile_failure,
+    inline_reject_no_returns,
+    inline_reject_budget_exceeded,
 
     getblockparamproxy_handler_iseq,
     getblockparamproxy_handler_ifunc,

@@ -64,9 +64,15 @@ CFP_ZJIT_FRAME(const rb_control_frame_t *cfp)
         return &rb_zjit_c_frame;
     }
     else {
-        // Read JITFrame from the stack slot. gen_entry_point() writes an initial
-        // frame describing the entry PC + iseq; subsequent gen_save_pc_for_gc()
-        // calls update it with a more accurate PC before any non-leaf C call.
+        // Read JITFrame from this frame's stack slot. cfp->jit_return points at
+        // the slot reserved for this frame's inlining depth, so distinct frames in
+        // the same JIT function read distinct slots. An initial frame describing
+        // the entry PC + iseq is written by gen_entry_point() for the top-level
+        // frame and by gen_push_lightweight_frame() for inlined frames. That entry
+        // PC is correct only at the frame's start; because the PC this frame reports
+        // must track where execution currently is, later gen_save_pc_for_gc() calls
+        // rewrite the slot with the live PC as execution advances through the frame,
+        // before any non-leaf C call.
         return (const zjit_jit_frame_t *)((VALUE *)cfp->jit_return)[-1];
     }
 }
