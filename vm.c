@@ -3678,12 +3678,15 @@ rb_execution_context_update(rb_execution_context_t *ec)
             const VALUE *ep = cfp->ep;
             cfp->self = rb_gc_location(cfp->self);
             if (CFP_ZJIT_FRAME_P(cfp)) {
-                rb_zjit_jit_frame_update_references((zjit_jit_frame_t *)CFP_ZJIT_FRAME(cfp));
-                // block_code must always be relocated. For ISEQ frames, the JIT caller
-                // may have written it (gen_block_handler_specval) for passing blocks.
-                // For C frames, rb_iterate0 may have written an ifunc to block_code
-                // after the JIT pushed the frame. NULL is safe to pass to rb_gc_location.
-                cfp->block_code = (void *)rb_gc_location((VALUE)cfp->block_code);
+                const zjit_jit_frame_t *jit_frame = CFP_ZJIT_FRAME(cfp);
+                rb_zjit_jit_frame_update_references((zjit_jit_frame_t *)jit_frame);
+                // materialize_block_code means cfp->block_code is lazy and may
+                // still contain stale data from a previous frame. Otherwise it
+                // was initialized by ZJIT and may have been written later by
+                // vm_caller_setup_arg_block (ISEQ frames) or rb_iterate0 (C frames).
+                if (!jit_frame->materialize_block_code) {
+                    cfp->block_code = (void *)rb_gc_location((VALUE)cfp->block_code);
+                }
             }
             else {
                 cfp->_iseq = (rb_iseq_t *)rb_gc_location((VALUE)cfp->_iseq);
@@ -3746,10 +3749,21 @@ rb_execution_context_mark(const rb_execution_context_t *ec)
             VM_ASSERT(!!VM_ENV_FLAGS(ep, VM_ENV_FLAG_ESCAPED) == vm_ep_in_heap_p_(ec, ep));
 
             rb_gc_mark_movable(cfp->self);
-            rb_gc_mark_movable((VALUE)CFP_ISEQ(cfp));
-            // Mark block_code directly (not through rb_zjit_cfp_block_code)
-            // because rb_iterate0 may write a valid ifunc after JIT frame push.
-            rb_gc_mark_movable((VALUE)cfp->block_code);
+            if (CFP_ZJIT_FRAME_P(cfp)) {
+                const zjit_jit_frame_t *jit_frame = CFP_ZJIT_FRAME(cfp);
+                rb_gc_mark_movable((VALUE)jit_frame->iseq);
+                // materialize_block_code means cfp->block_code is lazy and may
+                // still contain stale data from a previous frame. Otherwise it
+                // was initialized by ZJIT and may have been written later by
+                // vm_caller_setup_arg_block (ISEQ frames) or rb_iterate0 (C frames).
+                if (!jit_frame->materialize_block_code) {
+                    rb_gc_mark_movable((VALUE)cfp->block_code);
+                }
+            }
+            else {
+                rb_gc_mark_movable((VALUE)cfp->_iseq);
+                rb_gc_mark_movable((VALUE)cfp->block_code);
+            }
 
             if (VM_ENV_LOCAL_P(ep) && VM_ENV_BOXED_P(ep)) {
                 const rb_box_t *box = VM_ENV_BOX(ep);
