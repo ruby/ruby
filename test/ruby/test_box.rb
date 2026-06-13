@@ -938,6 +938,21 @@ class TestBox < Test::Unit::TestCase
     end
   end
 
+  def test_bundler_setup_is_not_loaded_from_root_box_prelude
+    Tempfile.create(["bundler_setup", ".rb"]) do |t|
+      t.puts 'eval("Gem::Specification", TOPLEVEL_BINDING.dup)'
+      t.puts 'puts "ok"'
+      t.close
+
+      env = ENV_ENABLE_BOX.merge("BUNDLER_SETUP" => t.path)
+      assert_in_out_err([env, "--enable=gems"], "") do |output, error|
+        assert_equal ["ok"], output
+        assert_match EXPERIMENTAL_WARNING_LINE_PATTERNS[0], error[0]
+        assert_match EXPERIMENTAL_WARNING_LINE_PATTERNS[1], error[1]
+      end
+    end
+  end
+
   def test_require_list_loaded_only_in_main_box
     Tempfile.create(["req_a", ".rb"]) do |t1|
       Tempfile.create(["req_b", ".rb"]) do |t2|

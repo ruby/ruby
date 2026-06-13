@@ -1471,4 +1471,8 @@ else
 end
 eval File.read(path), nil, file
 
-require ENV["BUNDLER_SETUP"] if ENV["BUNDLER_SETUP"] && !defined?(Bundler)
+if ENV["BUNDLER_SETUP"] && !defined?(Bundler)
+  # In Ruby::Box, the root box loads gem_prelude before the main box.
+  # Loading Bundler there can evaluate gemspecs in the main box too early.
+  require ENV["BUNDLER_SETUP"] if !defined?(Ruby::Box) || !Ruby::Box.enabled? || Ruby::Box.current.main?
+end
