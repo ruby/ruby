@@ -120,6 +120,7 @@ releases.
 * resolv-replace 0.2.0
   * 0.1.1 to [v0.2.0][resolv-replace-v0.2.0]
 * nkf 0.3.0
+  * 0.2.0 to [v0.3.0][nkf-v0.3.0]
 * syslog 0.4.0
   * 0.3.0 to [v0.4.0][syslog-v0.4.0]
 * repl_type_completor 0.1.15
@@ -268,6 +269,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [bigdecimal-v4.1.1]: https://github.com/ruby/bigdecimal/releases/tag/v4.1.1
 [bigdecimal-v4.1.2]: https://github.com/ruby/bigdecimal/releases/tag/v4.1.2
 [resolv-replace-v0.2.0]: https://github.com/ruby/resolv-replace/releases/tag/v0.2.0
+[nkf-v0.3.0]: https://github.com/ruby/nkf/releases/tag/v0.3.0
 [syslog-v0.4.0]: https://github.com/ruby/syslog/releases/tag/v0.4.0
 [repl_type_completor-v0.1.13]: https://github.com/ruby/repl_type_completor/releases/tag/v0.1.13
 [repl_type_completor-v0.1.14]: https://github.com/ruby/repl_type_completor/releases/tag/v0.1.14
