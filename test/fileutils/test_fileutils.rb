@@ -979,6 +979,32 @@ class TestFileUtils < Test::Unit::TestCase
     end
   end if have_symlink? and !no_broken_symlink?
 
+  def test_ln_s_relative_to_symlinked_directory
+    mkdir_p 'tmp/symlink_dir/.dotfiles/zsh'
+    mkdir_p 'tmp/symlink_dir/.config'
+
+    src = File.expand_path('tmp/symlink_dir/.dotfiles/zsh')
+    dest = File.expand_path('tmp/symlink_dir/.config/zsh')
+
+    assert_output_lines(["ln -s ../.dotfiles/zsh #{dest}"]) {
+      ln_s src, dest, relative: true, verbose: true, noop: true
+    }
+
+    ln_s src, dest, relative: true
+    assert_file.symlink?(dest)
+    assert_equal '../.dotfiles/zsh', File.readlink(dest)
+
+    lnfname = File.join(dest, 'zsh')
+    assert_output_lines(["ln -s ../../.dotfiles/zsh #{lnfname}"]) {
+      ln_s src, dest, relative: true, verbose: true, noop: true
+    }
+
+    ln_s src, dest, relative: true
+    assert_file.symlink?(lnfname)
+    assert_equal '../../.dotfiles/zsh', File.readlink(lnfname)
+    assert_equal File.realpath(src), File.realpath(lnfname)
+  end if have_symlink? and !no_broken_symlink?
+
   def test_ln_s_broken_symlink
     assert_nothing_raised {
       ln_s 'symlink', 'tmp/symlink'

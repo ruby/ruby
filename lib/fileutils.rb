@@ -715,7 +715,7 @@ module FileUtils
   # Keyword arguments:
   #
   # - <tt>force: true</tt> - overwrites +dest+ if it exists.
-  # - <tt>relative: false</tt> - create links relative to +dest+.
+  # - <tt>relative: true</tt> - create links relative to +dest+.
   # - <tt>noop: true</tt> - does not create links.
   # - <tt>verbose: true</tt> - prints an equivalent command:
   #
@@ -783,7 +783,7 @@ module FileUtils
         n = real_ddirs.size - i
         n -= 1 unless target_directory
         link2 = fu_clean_components(*Array.new([n, 0].max, '..'), *real_sdirs[i..-1])
-        link1 = link2 if link1.size > link2.size
+        link1 = link2 if !link2.empty? and link1.size > link2.size
       end
       s = File.join(link1)
       fu_output_message [cmd, s, d].flatten.join(' ') if verbose
