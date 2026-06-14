@@ -1501,6 +1501,14 @@ dummy
       assert_locations(node.children.last.locations, [[1, 0, 1, 2]])
     end
 
+    def test_numeric_location_with_nonsuffix
+      node = ast_parse("1if true")
+      assert_locations(node.children.last.children[1].locations, [[1, 0, 1, 1]])
+
+      node = ast_parse("1q", error_tolerant: true)
+      assert_locations(node.children.last.locations, [[1, 0, 1, 1]])
+    end
+
     private
     def ast_parse(src, **options)
       begin
