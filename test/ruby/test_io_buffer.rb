@@ -626,6 +626,24 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal IO::Buffer.for("\xce\xcd\xcc\xcb\xce\xcd\xcc\xcb\xce\xcd"), source.dup.not!
   end
 
+  def test_and_raises_on_freed_self
+    inner = IO::Buffer.new(IO::Buffer::PAGE_SIZE)
+    slice = inner.slice(0, 8)
+    inner.free
+
+    mask = IO::Buffer.for("ABCDEFGH")
+    assert_raise(IO::Buffer::InvalidatedError) { slice & mask }
+  end
+
+  def test_and_raises_on_freed_mask
+    inner = IO::Buffer.new(IO::Buffer::PAGE_SIZE)
+    mask_slice = inner.slice(0, 8)
+    inner.free
+
+    source = IO::Buffer.for("ABCDEFGH")
+    assert_raise(IO::Buffer::InvalidatedError) { source & mask_slice }
+  end
+
   def test_shared
     message = "Hello World"
     buffer = IO::Buffer.new(64, IO::Buffer::MAPPED | IO::Buffer::SHARED)
