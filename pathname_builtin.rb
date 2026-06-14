@@ -1391,7 +1391,7 @@ class Pathname    # * File *
   #  call-seq:
   #    lstat -> new_stat
   #
-  #  Returns a File::Stat object for the path in `self`
+  #  Returns a File::Stat object for the path in `self`;
   #  does not follow symbolic links,
   #  and therefore returns the stat object for that path,
   #  regardless of whether it is a symbolic link:
