@@ -111,6 +111,56 @@ rb_load_gem_prelude(VALUE box)
     load_with_builtin_functions("gem_prelude", NULL, (const rb_box_t *)box);
 }
 
+struct gem_prelude_without_bundler_setup_args {
+    VALUE box;
+    VALUE key;
+    VALUE value;
+};
+
+static VALUE
+load_gem_prelude_without_bundler_setup(VALUE data)
+{
+    struct gem_prelude_without_bundler_setup_args *args =
+        (struct gem_prelude_without_bundler_setup_args *)data;
+
+    rb_load_gem_prelude(args->box);
+
+    return Qnil;
+}
+
+static VALUE
+restore_bundler_setup(VALUE data)
+{
+    struct gem_prelude_without_bundler_setup_args *args =
+        (struct gem_prelude_without_bundler_setup_args *)data;
+    VALUE env = rb_const_get(rb_cObject, rb_intern("ENV"));
+
+    if (NIL_P(args->value)) {
+        rb_funcall(env, rb_intern("delete"), 1, args->key);
+    }
+    else {
+        rb_funcall(env, rb_intern("[]="), 2, args->key, args->value);
+    }
+
+    return Qnil;
+}
+
+static void
+rb_load_gem_prelude_without_bundler_setup(VALUE box)
+{
+    VALUE env = rb_const_get(rb_cObject, rb_intern("ENV"));
+    struct gem_prelude_without_bundler_setup_args args = {
+        .box = box,
+        .key = rb_str_new_lit("BUNDLER_SETUP"),
+    };
+
+    args.value = rb_funcall(env, rb_intern("[]"), 1, args.key);
+    rb_funcall(env, rb_intern("delete"), 1, args.key);
+
+    rb_ensure(load_gem_prelude_without_bundler_setup, (VALUE)&args,
+              restore_bundler_setup, (VALUE)&args);
+}
+
 #endif
 
 void
@@ -131,7 +181,17 @@ Init_builtin_features(void)
 
 #ifdef BUILTIN_BINARY_SIZE
 
-    rb_load_gem_prelude((VALUE)rb_root_box());
+    if (rb_box_available()) {
+        /*
+         * Do not let the root box consume Bundler setup. Bundler can evaluate
+         * gemspecs through TOPLEVEL_BINDING in the main box before the main
+         * box has loaded RubyGems.
+         */
+        rb_load_gem_prelude_without_bundler_setup((VALUE)rb_root_box());
+    }
+    else {
+        rb_load_gem_prelude((VALUE)rb_root_box());
+    }
 
     rb_load_gem_prelude((VALUE)rb_main_box());
 
