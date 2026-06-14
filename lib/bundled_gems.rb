@@ -216,6 +216,16 @@ module Gem::BUNDLED_GEMS # :nodoc:
     msg
   end
 
+  # ---------------------------------------------------------------------------
+  # On-demand activation
+  #
+  # Unlike the warning machinery above, force_activate does not detect or warn
+  # about bundled gems. It activates a bundled gem that is not in the current
+  # Gemfile by building a temporary Bundler definition, so that callers such as
+  # `binding.irb` (see prelude.rb) and `bundle console`
+  # (lib/bundler/cli/console.rb) can load irb even when it is not declared.
+  # It is only reachable when Bundler is available.
+  # ---------------------------------------------------------------------------
   def self.force_activate(gem)
     require "bundler"
     Bundler.reset!
