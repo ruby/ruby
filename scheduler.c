@@ -555,6 +555,22 @@ rb_fiber_scheduler_yield(VALUE scheduler)
     return rb_fiber_scheduler_kernel_sleep(scheduler, RB_INT2NUM(0));
 }
 
+// Preempt the current non-blocking fiber: set the re-entrancy guard flag and
+// yield to the scheduler if one is set. Called from both the back-edge counter
+// path (rb_fiber_scheduler_maybe_preempt) and the OS timer interrupt path
+// (rb_threadptr_execute_interrupts) to support preemption under YJIT.
+void
+rb_fiber_scheduler_preempt(rb_execution_context_t *ec)
+{
+    ec->preempted = 1;
+
+    rb_thread_t *th = rb_ec_thread_ptr(ec);
+    VALUE scheduler = rb_fiber_scheduler_current_for_threadptr(th);
+    if (scheduler != Qnil) {
+        rb_fiber_scheduler_yield(scheduler);
+    }
+}
+
 #if 0
 /*
  *  Document-method: Fiber::Scheduler#timeout_after

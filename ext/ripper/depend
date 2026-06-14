@@ -389,6 +389,7 @@ eventids2.o: $(hdrdir)/ruby/subst.h
 eventids2.o: $(top_srcdir)/internal.h
 eventids2.o: $(top_srcdir)/internal/static_assert.h
 eventids2.o: $(top_srcdir)/rubyparser.h
+eventids2.o: $(top_srcdir)/scheduler.h
 eventids2.o: eventids2.c
 eventids2.o: eventids2.h
 eventids2.o: {$(VPATH)}eventids2table.c
@@ -623,6 +624,7 @@ ripper.o: $(top_srcdir)/regenc.h
 ripper.o: $(top_srcdir)/ruby_assert.h
 ripper.o: $(top_srcdir)/ruby_atomic.h
 ripper.o: $(top_srcdir)/rubyparser.h
+ripper.o: $(top_srcdir)/scheduler.h
 ripper.o: $(top_srcdir)/shape.h
 ripper.o: $(top_srcdir)/symbol.h
 ripper.o: $(top_srcdir)/thread_pthread.h
@@ -833,6 +835,7 @@ ripper_init.o: $(top_srcdir)/internal/vm.h
 ripper_init.o: $(top_srcdir)/node.h
 ripper_init.o: $(top_srcdir)/ruby_assert.h
 ripper_init.o: $(top_srcdir)/rubyparser.h
+ripper_init.o: $(top_srcdir)/scheduler.h
 ripper_init.o: eventids1.h
 ripper_init.o: eventids2.h
 ripper_init.o: ripper_init.h

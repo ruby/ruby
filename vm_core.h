@@ -1057,6 +1057,23 @@ struct rb_execution_context_struct {
     uint32_t checked_clock;
 #endif
 
+    /* Back-edge counter for the current scheduling slot (resets to 0 on every
+     * resume). Incremented on every RUBY_VM_CHECK_INTS for non-blocking fibers.
+     * When it reaches ec->quantum the fiber is preempted. Exposed as Fiber#runtime.
+     * Retained at yield time so the scheduler can read how much CPU was used. */
+    uint32_t runtime;
+
+    /* Per-fiber scheduling slot size (default RUBY_FIBER_QUANTUM_DEFAULT).
+     * Preemption fires when runtime >= quantum. Exposed as Fiber#quantum. */
+    uint32_t quantum;
+
+    /* Set to 1 when the fiber exhausted its quantum (forced preemption).
+     * Cleared to 0 when the fiber is next resumed (in fiber_switch).
+     * Used by the quantum check to prevent re-entrancy: the scheduler's own
+     * Ruby code runs in the fiber's context, so without this guard it would
+     * immediately re-trigger preemption. Exposed as Fiber#preempted?. */
+    uint8_t preempted;
+
     rb_fiber_t *fiber_ptr;
     struct rb_thread_struct *thread_ptr;
     rb_serial_t serial;
@@ -2266,6 +2283,8 @@ void rb_fiber_close(rb_fiber_t *fib);
 void Init_native_thread(rb_thread_t *th);
 int rb_vm_check_ints_blocking(rb_execution_context_t *ec);
 
+#include "scheduler.h"
+
 // vm_sync.h
 void rb_vm_cond_wait(rb_vm_t *vm, rb_nativethread_cond_t *cond);
 void rb_vm_cond_timedwait(rb_vm_t *vm, rb_nativethread_cond_t *cond, unsigned long msec);
@@ -2283,6 +2302,9 @@ rb_vm_check_ints(rb_execution_context_t *ec)
     if (UNLIKELY(RUBY_VM_INTERRUPTED_ANY(ec))) {
         rb_threadptr_execute_interrupts(rb_ec_thread_ptr(ec), 0);
     }
+
+    ++ec->runtime;
+    rb_fiber_scheduler_maybe_preempt(ec);
 }
 
 /* tracer */

@@ -53,6 +53,10 @@ enum {
 #define RB_PAGE_MASK (~(RB_PAGE_SIZE - 1))
 static long pagesize;
 
+// Default scheduling quantum: back-edges per slot before forced preemption.
+// At ~7M iterations/s, 50_000 gives roughly a 7ms slice.
+#define RUBY_FIBER_QUANTUM_DEFAULT 50000u
+
 static const rb_data_type_t rb_cont_data_type;
 static const rb_data_type_t rb_fiber_data_type;
 static VALUE rb_cContinuation;
@@ -296,7 +300,7 @@ rb_free_shared_fiber_pool(void)
     }
 }
 
-static ID fiber_initialize_keywords[3] = {0};
+static ID fiber_initialize_keywords[4] = {0};
 
 /*
  * FreeBSD require a first (i.e. addr) argument of mmap(2) is not NULL
@@ -2171,6 +2175,9 @@ fiber_t_alloc(VALUE fiber_value, unsigned int blocking)
 
     fiber->cont.saved_ec.fiber_ptr = fiber;
     fiber->cont.saved_ec.serial = next_ec_serial(th->ractor);
+    fiber->cont.saved_ec.runtime = 0;
+    fiber->cont.saved_ec.preempted = 0;
+    fiber->cont.saved_ec.quantum = RUBY_FIBER_QUANTUM_DEFAULT;
     rb_ec_clear_vm_stack(&fiber->cont.saved_ec);
 
     fiber->prev = NULL;
@@ -2362,7 +2369,7 @@ rb_fiber_storage_aset(VALUE class, VALUE key, VALUE value)
 }
 
 static VALUE
-fiber_initialize(VALUE self, VALUE proc, struct fiber_pool * fiber_pool, unsigned int blocking, VALUE storage)
+fiber_initialize(VALUE self, VALUE proc, struct fiber_pool * fiber_pool, unsigned int blocking, VALUE storage, VALUE quantum)
 {
     if (storage == Qundef || storage == Qtrue) {
         // The default, inherit storage (dup) from the current fiber:
@@ -2379,6 +2386,12 @@ fiber_initialize(VALUE self, VALUE proc, struct fiber_pool * fiber_pool, unsigne
     fiber->first_proc = proc;
     fiber->stack.base = NULL;
     fiber->stack.pool = fiber_pool;
+
+    if (!UNDEF_P(quantum)) {
+        uint32_t q = NUM2UINT(quantum);
+        if (q == 0) rb_raise(rb_eArgError, "quantum must be positive");
+        fiber->cont.saved_ec.quantum = q;
+    }
 
     return self;
 }
@@ -2422,13 +2435,14 @@ rb_fiber_initialize_kw(int argc, VALUE* argv, VALUE self, int kw_splat)
     VALUE pool = Qnil;
     VALUE blocking = Qfalse;
     VALUE storage = Qundef;
+    VALUE quantum = Qundef;
 
     if (kw_splat != RB_NO_KEYWORDS) {
         VALUE options = Qnil;
-        VALUE arguments[3] = {Qundef};
+        VALUE arguments[4] = {Qundef};
 
         argc = rb_scan_args_kw(kw_splat, argc, argv, ":", &options);
-        rb_get_kwargs(options, fiber_initialize_keywords, 0, 3, arguments);
+        rb_get_kwargs(options, fiber_initialize_keywords, 0, 4, arguments);
 
         if (!UNDEF_P(arguments[0])) {
             blocking = arguments[0];
@@ -2439,9 +2453,10 @@ rb_fiber_initialize_kw(int argc, VALUE* argv, VALUE self, int kw_splat)
         }
 
         storage = arguments[2];
+        quantum = arguments[3];
     }
 
-    return fiber_initialize(self, rb_block_proc(), rb_fiber_pool_default(pool), RTEST(blocking), storage);
+    return fiber_initialize(self, rb_block_proc(), rb_fiber_pool_default(pool), RTEST(blocking), storage, quantum);
 }
 
 /*
@@ -2502,7 +2517,7 @@ rb_fiber_initialize(int argc, VALUE* argv, VALUE self)
 VALUE
 rb_fiber_new_storage(rb_block_call_func_t func, VALUE obj, VALUE storage)
 {
-    return fiber_initialize(fiber_alloc(rb_cFiber), rb_proc_new(func, obj), rb_fiber_pool_default(Qnil), 0, storage);
+    return fiber_initialize(fiber_alloc(rb_cFiber), rb_proc_new(func, obj), rb_fiber_pool_default(Qnil), 0, storage, Qundef);
 }
 
 VALUE
@@ -2698,6 +2713,7 @@ rb_threadptr_root_fiber_setup(rb_thread_t *th)
     fiber->cont.saved_ec.fiber_ptr = fiber;
     fiber->cont.saved_ec.serial = next_ec_serial(th->ractor);
     fiber->cont.saved_ec.thread_ptr = th;
+    fiber->cont.saved_ec.quantum = RUBY_FIBER_QUANTUM_DEFAULT;
     fiber->blocking = 1;
     fiber->killed = 0;
     fiber_status_set(fiber, FIBER_RESUMED); /* skip CREATED */
@@ -2887,6 +2903,16 @@ fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int kw_splat, rb_fi
     cont->kw_splat = kw_splat;
     cont->value = make_passing_arg(argc, argv);
 
+    // Give the incoming fiber a fresh scheduling slot on resume:
+    // - runtime resets to 0 so it gets a full new quantum
+    // - preempted clears so the quantum check re-engages
+    // Suspended fibers retain their runtime/preempted values between yield
+    // and resume so the scheduler can read them for ordering decisions.
+    if (!fiber->blocking) {
+        fiber->cont.saved_ec.runtime = 0;
+        fiber->cont.saved_ec.preempted = 0;
+    }
+
     fiber_store(fiber, th);
 
     // We cannot free the stack until the pthread is joined:
@@ -2944,6 +2970,62 @@ rb_fiber_blocking_p(VALUE fiber)
 {
     return RBOOL(fiber_ptr(fiber)->blocking);
 }
+
+// Advance the fiber's runtime counter by n back-edges worth of work.
+// Intended for C extensions doing CPU-bound work outside YARV's instruction
+// dispatch loop (e.g. JSON parsers, codec loops, matrix operations).
+// Triggers preemption and scheduler yield if the quantum is exhausted.
+// Safe to call with the GVL held; no-op when there is no scheduler or the
+// current fiber is blocking.
+void
+rb_fiber_runtime_advance(uint32_t runtime)
+{
+    rb_execution_context_t *ec = GET_EC();
+    ec->runtime += runtime;
+    rb_fiber_scheduler_maybe_preempt(ec);
+}
+
+/*
+ * call-seq: fiber.runtime -> integer
+ *
+ * Back-edges executed in the current (or last completed) scheduling slot.
+ * Resets to 0 on resume/transfer.
+ */
+static VALUE
+rb_fiber_runtime(VALUE self)
+{
+    rb_fiber_t *fiber = fiber_ptr(self);
+    return UINT2NUM(fiber->cont.saved_ec.runtime);
+}
+
+/*
+ * call-seq: fiber.quantum -> integer
+ *
+ * Back-edges per scheduling slot before forced preemption. Default: 50_000.
+ */
+static VALUE
+rb_fiber_quantum_get(VALUE self)
+{
+    rb_fiber_t *fiber = fiber_ptr(self);
+    uint32_t q = fiber->cont.saved_ec.quantum;
+    return UINT2NUM(q ? q : RUBY_FIBER_QUANTUM_DEFAULT);
+}
+
+/*
+ * call-seq: fiber.quantum = integer
+ *
+ * Sets the per-slot quantum. Must be a positive integer.
+ */
+static VALUE
+rb_fiber_quantum_set(VALUE self, VALUE val)
+{
+    rb_fiber_t *fiber = fiber_ptr(self);
+    uint32_t q = NUM2UINT(val);
+    if (q == 0) rb_raise(rb_eArgError, "quantum must be positive");
+    fiber->cont.saved_ec.quantum = q;
+    return val;
+}
+
 
 static VALUE
 fiber_blocking_yield(VALUE fiber_value)
@@ -3508,6 +3590,9 @@ rb_fiber_atfork(rb_thread_t *th)
         }
         th->root_fiber->prev = 0;
         th->root_fiber->blocking = 1;
+        th->root_fiber->cont.saved_ec.runtime   = 0;
+        th->root_fiber->cont.saved_ec.preempted = 0;
+        th->root_fiber->cont.saved_ec.quantum   = RUBY_FIBER_QUANTUM_DEFAULT;
         th->blocking = 1;
     }
 }
@@ -3660,6 +3745,7 @@ Init_Cont(void)
     fiber_initialize_keywords[0] = rb_intern_const("blocking");
     fiber_initialize_keywords[1] = rb_intern_const("pool");
     fiber_initialize_keywords[2] = rb_intern_const("storage");
+    fiber_initialize_keywords[3] = rb_intern_const("quantum");
 
     const char *fiber_shared_fiber_pool_free_stacks = getenv("RUBY_SHARED_FIBER_POOL_FREE_STACKS");
     if (fiber_shared_fiber_pool_free_stacks) {
@@ -3685,6 +3771,9 @@ Init_Cont(void)
 
     rb_define_method(rb_cFiber, "initialize", rb_fiber_initialize, -1);
     rb_define_method(rb_cFiber, "blocking?", rb_fiber_blocking_p, 0);
+    rb_define_method(rb_cFiber, "runtime",  rb_fiber_runtime,     0);
+    rb_define_method(rb_cFiber, "quantum",  rb_fiber_quantum_get, 0);
+    rb_define_method(rb_cFiber, "quantum=", rb_fiber_quantum_set, 1);
     rb_define_method(rb_cFiber, "storage", rb_fiber_storage_get, 0);
     rb_define_method(rb_cFiber, "storage=", rb_fiber_storage_set, 1);
     rb_define_method(rb_cFiber, "resume", rb_fiber_m_resume, -1);

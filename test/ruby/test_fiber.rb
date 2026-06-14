@@ -427,6 +427,39 @@ class TestFiber < Test::Unit::TestCase
     assert_predicate(status, :success?)
   end
 
+  def test_fork_resets_fiber_scheduling_state
+    omit 'fork not supported' unless Process.respond_to?(:fork)
+    omit "Fiber#runtime counter requires interpreter dispatch" if
+      defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
+
+    # Accumulate runtime and set preempted in the parent so that the child
+    # inherits a dirty scheduling state, then verify rb_fiber_atfork resets it.
+    r, w = IO.pipe
+
+    f = Fiber.new(blocking: false) do
+      10_000.times { }  # accumulate runtime in parent
+      pid = fork do
+        r.close
+        fiber = Fiber.current
+        w.write("#{fiber.runtime},#{fiber.quantum}")
+        w.close
+        exit!(0)
+      end
+      w.close
+      child_output = r.read
+      Process.waitpid(pid)
+      child_output
+    end
+    result = f.transfer
+    r.close
+
+    child_runtime, child_quantum = result.split(",").map(&:to_i)
+    assert_operator child_runtime, :<, 100,
+      "child runtime=#{child_runtime} was not reset by rb_fiber_atfork (expected < 100)"
+    assert_equal 50_000, child_quantum,
+      "child quantum was not reset to default (got #{child_quantum})"
+  end
+
   def test_exit_in_fiber
     bug5993 = '[ruby-dev:45218]'
     assert_nothing_raised(bug5993) do
@@ -546,5 +579,124 @@ class TestFiber < Test::Unit::TestCase
       end
       assert_operator fibers.size, :>=, 128
     RUBY
+  end
+
+  # ---------------------------------------------------------------------------
+  # Fiber scheduler: quantum, runtime, and preemption
+  # ---------------------------------------------------------------------------
+
+  def test_fiber_quantum_default
+    f = Fiber.new { Fiber.yield }
+    assert_kind_of Integer, f.quantum
+    assert_operator f.quantum, :>, 0
+  end
+
+  def test_fiber_quantum_set_via_new
+    f = Fiber.new(quantum: 10_000, blocking: false) { Fiber.yield }
+    assert_equal 10_000, f.quantum
+  end
+
+  def test_fiber_quantum_set_via_accessor
+    f = Fiber.new { Fiber.yield }
+    f.quantum = 20_000
+    assert_equal 20_000, f.quantum
+  end
+
+  def test_fiber_quantum_must_be_positive
+    f = Fiber.new { Fiber.yield }
+    assert_raise(ArgumentError) { f.quantum = 0 }
+    # Non-integer types should raise TypeError.
+    assert_raise(TypeError) { f.quantum = :large }
+  end
+
+  def test_fiber_runtime_starts_at_zero
+    f = Fiber.new(blocking: false) { Fiber.yield }
+    assert_equal 0, f.runtime
+  end
+
+  def test_fiber_runtime_advances_with_work
+    # Fiber#runtime counts YARV back-edges via rb_vm_check_ints.
+    # JIT-compiled loops bypass the interpreter dispatch so the counter
+    # does not advance there; skip this test when the JIT is active.
+    omit "Fiber#runtime counter requires interpreter dispatch" if
+      defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
+
+    runtime_after = nil
+    f = Fiber.new(blocking: false) do
+      10_000.times { }
+      runtime_after = Fiber.current.runtime
+    end
+    f.transfer
+    f.transfer if f.alive?
+    assert_operator runtime_after, :>, 0
+  end
+
+  def test_fiber_runtime_resets_on_resume
+    # Fiber#runtime counts YARV back-edges via rb_vm_check_ints.
+    # JIT-compiled loops bypass the interpreter dispatch so the counter
+    # does not advance there; skip this test when the JIT is active.
+    omit "Fiber#runtime counter requires interpreter dispatch" if
+      defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
+
+    counts = []
+    f = Fiber.new do
+      10_000.times { }
+      counts << Fiber.current.runtime  # accumulated after work
+      Fiber.yield
+      counts << Fiber.current.runtime  # reset to 0 on resume
+    end
+    f.resume
+    f.resume if f.alive?
+    assert_operator counts[0], :>, 0
+    assert_operator counts[1], :<, counts[0]
+  end
+
+  def test_fiber_preemption_interleaves_fibers
+    # Preemption under YJIT requires updated cruby_bindings.inc.rs (EC struct
+    # offsets changed); skip under YJIT until bindgen is regenerated.
+    omit "Fiber preemption requires updated YJIT bindings" if
+      defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
+
+    # With preemption enabled, 4 CPU-bound non-blocking fibers must all start
+    # before any one finishes (they interleave rather than running sequentially).
+    scheduler_code = <<~RUBY
+      require "fiber"
+
+      class S
+        def initialize; @main = Fiber.current; @ready = []; end
+        def yield; @ready << Fiber.current; @main.transfer; end
+        def fiber(&b); f = Fiber.new(blocking: false, &b); f.transfer; f; end
+        def block(bl, to=nil) = self.yield
+        def unblock(bl, f) = (@ready << f)
+        def kernel_sleep(d=nil) = (self.yield; true)
+        def io_wait(io, ev, to)
+          Fiber.blocking { r=(ev&IO::READABLE)!=0?[io]:[]; w=(ev&IO::WRITABLE)!=0?[io]:[]; IO.select(r,w,[],to) }
+          ev
+        end
+        def close
+          until @ready.empty?; f=@ready.shift; f.transfer if f&.alive?; end
+        end
+      end
+
+      start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      starts = []; finishes = []
+      Fiber.set_scheduler(S.new)
+      4.times do |i|
+        Fiber.schedule do
+          Fiber.current.quantum = 1_000  # ensure preemption fires even on slow CI
+          starts[i] = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+          deadline = starts[i] + 0.5
+          x = 0; x += 1 while Process.clock_gettime(Process::CLOCK_MONOTONIC) < deadline
+          finishes[i] = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        end
+      end
+      Fiber.set_scheduler(nil)
+
+      # All fibers must have started before the first one finished.
+      puts starts.max < finishes.min ? "PASS" : "FAIL"
+    RUBY
+
+    result = IO.popen([RbConfig.ruby, "--disable-gems", "-e", scheduler_code], &:read)
+    assert_equal "PASS\n", result, "Fibers should interleave under preemption"
   end
 end
