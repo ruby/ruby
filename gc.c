@@ -209,12 +209,21 @@ rb_gc_event_hook(VALUE obj, rb_event_flag_t event)
 {
     if (LIKELY(!rb_gc_event_hook_required_p(event))) return;
 
-    rb_execution_context_t *ec = rb_gc_get_ec();
-    if (!ec->cfp) return;
+    /* Event hooks run user code in the context of the currently running
+     * thread, so they must use the current EC.  rb_gc_get_ec() may instead
+     * return the GC's snapshot (vm_context.ec, taken at marking), which can
+     * belong to a different thread once lazy sweep is continued from another
+     * thread's allocation; running the hook on it would set trace_arg on the
+     * wrong EC and break get_trace_arg() (GET_EC()->trace_arg would be NULL). */
+    rb_execution_context_t *ec = GET_EC();
 
 #if USE_MODULAR_GC
     bool gc_thread_p = false;
-    if (!GET_EC()) {
+    if (!ec) {
+        /* A dedicated GC thread has no mutator EC: borrow the GC's snapshot and
+         * install it as the current EC so GET_EC() stays consistent inside the
+         * hook (e.g. for get_trace_arg()). */
+        ec = rb_gc_get_ec();
         gc_thread_p = true;
 
 # ifdef RB_THREAD_LOCAL_SPECIFIER
@@ -225,7 +234,9 @@ rb_gc_event_hook(VALUE obj, rb_event_flag_t event)
     }
 #endif
 
-    EXEC_EVENT_HOOK(ec, event, ec->cfp->self, 0, 0, 0, obj);
+    if (RB_LIKELY(ec->cfp != NULL)) {
+        EXEC_EVENT_HOOK(ec, event, ec->cfp->self, 0, 0, 0, obj);
+    }
 
 #if USE_MODULAR_GC
     if (gc_thread_p) {
