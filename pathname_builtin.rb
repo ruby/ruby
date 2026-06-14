@@ -1355,7 +1355,49 @@ class Pathname    # * File *
   #
   def chown(owner, group) File.chown(owner, group, @path) end
 
-  # See <tt>File.lchown</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   lchown(uid, gid) -> 1
+  #
+  #  Not supported on some platforms (raises exception).
+  #
+  #  Calling process must have superuser privileges.
+  #
+  #  When supported: like Pathname#chown, but does not follow symbolic links,
+  #  and therefore changes the ownership of the entry at the path in `self`:
+  #
+  # ```ruby
+  # # Super user; all privileges.
+  # Process.uid # => 0
+  # Process.gid # => 0
+  # # Create regular file and symbolic link to it.
+  # File.write('t.tmp', '')
+  # File.symlink('t.tmp', 'link')
+  # # Capture original statuses.
+  # fstat0 = File.stat('t.tmp')  # Method ::stat; status of file.
+  # lstat0 = File.lstat('link')  # Method ::lstat; status of link.
+  # # Original user ids and group ids.
+  # fstat0.uid # => 0
+  # fstat0.gid # => 0
+  # lstat0.uid # => 0
+  # lstat0.gid # => 0
+  # # Change ids for link.
+  # Pathname('link').lchown(1000, 1000)
+  # # Capture new statuses.
+  # fstat1 = File.stat('t.tmp')
+  # lstat1 = File.lstat('link')
+  # # User id and group id for file not changed.
+  # fstat1.uid # => 0
+  # fstat1.gid # => 0
+  # # User id and group id for link changed.
+  # p lstat1.uid # => 1000
+  # p lstat1.gid # => 1000
+  # # Clean up.
+  # File.delete('t.tmp')
+  # File.delete('link')
+  # ```
+  #
   def lchown(owner, group) File.lchown(owner, group, @path) end
 
   # :markup: markdown
