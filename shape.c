@@ -698,8 +698,13 @@ rb_shape_transition_object_id(shape_id_t original_shape_id)
 {
     RUBY_ASSERT(!rb_shape_has_object_id(original_shape_id));
 
+    rb_shape_t *original_shape = RSHAPE(original_shape_id);
+
     bool dont_care;
-    rb_shape_t *shape = get_next_shape_internal(RSHAPE(original_shape_id), id_object_id, SHAPE_OBJ_ID, &dont_care, true);
+    rb_shape_t *shape = NULL;
+    if (LIKELY(original_shape->next_field_index < rb_shape_tree.max_capacity)) {
+        shape = get_next_shape_internal(original_shape, id_object_id, SHAPE_OBJ_ID, &dont_care, true);
+    }
     if (!shape) {
         return rb_shape_layout(original_shape_id) | ROOT_COMPLEX_WITH_OBJ_ID | RSHAPE_FLAGS(original_shape_id);
     }
