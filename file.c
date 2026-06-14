@@ -2910,12 +2910,28 @@ lchmod_internal(const char *path, void *mode)
 }
 
 /*
- *  call-seq:
- *     File.lchmod(mode_int, file_name, ...)  -> integer
+ *  :markup: markdown
  *
- *  Equivalent to File::chmod, but does not follow symbolic links (so
- *  it will change the permissions associated with the link, not the
- *  file referenced by the link). Often not available.
+ *  call-seq:
+ *    File.lchmod(mode, *paths) -> paths_count
+ *
+ *  Not supported on some platforms (raises Errno:: ENOTSUP).
+ *
+ *  When supported: like File::chmod, but does not follow symbolic links,
+ *  and therefore changes the mode of the entries given by `paths`;
+ *  returns the number of paths given:
+ *
+ *  ```ruby
+ *  File.write('t.tmp', '')
+ *  File.symlink('t.tmp', 'link')
+ *  File.stat('t.tmp').mode.to_s(8) # => "100664"
+ *  File.stat('link').mode.to_s(8)  # => "100664"
+ *  File.lchmod(0777, 'link')
+ *  File.stat('t.tmp').mode.to_s(8) # => "100664"
+ *  File.stat('link').mode.to_s(8)  # => "100777"
+ *  File.delete('t.tmp')
+ *  File.delete('link')
+ *  ```
  *
  */
 
