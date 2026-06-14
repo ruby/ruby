@@ -3074,13 +3074,49 @@ lchown_internal(const char *path, void *arg)
 }
 
 /*
- *  call-seq:
- *     File.lchown(owner_int, group_int, file_name,..) -> integer
+ *  :markup: markdown
  *
- *  Equivalent to File::chown, but does not follow symbolic
- *  links (so it will change the owner associated with the link, not the
- *  file referenced by the link). Often not available. Returns number
- *  of files in the argument list.
+ *  call-seq:
+ *    File.lchown(uid, gid, *paths ) -> paths_count
+ *
+ *  Not supported on some platforms (raises exception).
+ *
+ *  Calling process must have superuser privileges.
+ *
+ *  When supported: like File::chown, but does not follow symbolic links,
+ *  and therefore changes the ownership of the entries given by `paths`;
+ *  returns the number of paths given:
+ *
+ *  ```ruby
+ *  # Super user; all privileges.
+ *  Process.uid # => 0
+ *  Process.gid # => 0
+ *  # Create regular file and symbolic link to it.
+ *  File.write('t.tmp', '')
+ *  File.symlink('t.tmp', 'link')
+ *  Capture original statuses.
+ *  fstat0 = File.stat('t.tmp')  # Method ::stat; status of file.
+ *  lstat0 = File.lstat('link')  # Method ::lstat; status of link.
+ *  # Original user ids and group ids.
+ *  fstat0.uid => 0
+ *  fstat0.gid => 0
+ *  lstat0.uid => 0
+ *  lstat0.gid => 0
+ *  # Change ids for link.
+ *  File.lchown(1000, 1000, 'link') # => 1
+ *  # Capture new statuses.
+ *  fstat1 = File.stat('t.tmp')
+ *  lstat1 = File.stat('link')
+ *  # User id and group id for file not changed..
+ *  fstat1.uid # => 0
+ *  fstat1.gid # => 0
+ *  # User is and group id for link changed.
+ *  lstat1.uid # => 1000
+ *  lstat1.gid # => 1000
+ *  Clean up.
+ *  File.delete('t.tmp')
+ *  File.delete('link')
+ *  ```
  *
  */
 
