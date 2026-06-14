@@ -13785,8 +13785,12 @@ parse_assocs(pm_parser_t *parser, pm_static_literals_t *literals, pm_node_t *nod
 
                 pm_token_t operator = { 0 };
                 if (!pm_symbol_node_label_p(parser, key)) {
-                    expect1(parser, PM_TOKEN_EQUAL_GREATER, PM_ERR_HASH_ROCKET);
-                    operator = parser->previous;
+                    if (accept1(parser, PM_TOKEN_COLON)) {
+                        operator = parser->previous;
+                    } else {
+                        expect1(parser, PM_TOKEN_EQUAL_GREATER, PM_ERR_HASH_ROCKET);
+                        operator = parser->previous;
+                    }
                 }
 
                 pm_node_t *value = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_HASH_VALUE, (uint16_t) (depth + 1));
