@@ -93,14 +93,22 @@ module Gem::BUNDLED_GEMS # :nodoc:
     require_found ? 1 : (frame_count - 1).nonzero?
   end
 
-  def self.warning?(name, specs: nil)
-    # name can be a feature name or a file path with String or Pathname
+  # Resolve a require target to the bundled gem it belongs to.
+  #
+  # +name+ is a feature name or a file path (String or Pathname). Returns
+  # +[feature, gem_name, subfeature]+ where +feature+ is the normalized feature
+  # string (extension and bootsnap-expanded LIBDIR/ARCHDIR prefix removed),
+  # +gem_name+ is the matching SINCE key, and +subfeature+ is true when the
+  # require targets a nested path (e.g. "benchmark/ips") rather than the gem's
+  # top-level feature. Returns nil when the target is not a bundled gem.
+  #
+  # This is a deliberately cheap check: the SINCE membership test here excludes
+  # the vast majority of candidates before the costly checks in warning?
+  # (see [Bug #20641]).
+  def self.find_gem(name)
     feature = File.path(name).sub(LIBEXT, "")
 
-    # The actual checks needed to properly identify the gem being required
-    # are costly (see [Bug #20641]), so we first do a much cheaper check
-    # to exclude the vast majority of candidates.
-    subfeature = if feature.include?("/")
+    if feature.include?("/")
       # bootsnap expands `require "csv"` to `require "#{LIBDIR}/csv.rb"`,
       # and `require "syslog"` to `require "#{ARCHDIR}/syslog.so"`.
       feature.delete_prefix!(ARCHDIR)
@@ -109,18 +117,24 @@ module Gem::BUNDLED_GEMS # :nodoc:
       # 2. A segment for the SINCE check for dashed names
       # 3. A segment to check if there's a subfeature
       segments = feature.split("/", 3)
-      name = segments.shift
-      name = EXACT[name] || name
-      if !SINCE[name]
-        name = "#{name}-#{segments.shift}"
-        return unless SINCE[name]
+      gem = segments.shift
+      gem = EXACT[gem] || gem
+      if !SINCE[gem]
+        gem = "#{gem}-#{segments.shift}"
+        return unless SINCE[gem]
       end
-      segments.any?
+      [feature, gem, segments.any?]
     else
-      name = EXACT[feature] || feature
-      return unless SINCE[name]
-      false
+      gem = EXACT[feature] || feature
+      return unless SINCE[gem]
+      [feature, gem, false]
     end
+  end
+
+  def self.warning?(name, specs: nil)
+    # name can be a feature name or a file path with String or Pathname
+    feature, name, subfeature = find_gem(name)
+    return unless feature
 
     if suppress_list = Thread.current[:__bundled_gems_warning_suppression]
       return if suppress_list.include?(name) || suppress_list.include?(feature)
