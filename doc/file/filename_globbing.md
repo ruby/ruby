@@ -4,7 +4,7 @@ Filename globbing is a pattern-matching feature implemented in certain Ruby meth
 
 - Dir.glob.
 - Pathname#glob.
-- [`Dir[]`](https://docs.ruby-lang.org/en/master/Dir.html#method-c-5B-5D),
+- [`Dir[]`](../Dir.html#method-c-5B-5D),
   which is like Dir.glob except that it does not accept keyword argument `flags`.
 
 Each `glob` method selects filesystem entries (file and directory names)
