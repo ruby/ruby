@@ -1879,7 +1879,25 @@ class Pathname    # * Dir *
     Dir.foreach(@path) {|f| yield self.class.new(f) }
   end
 
-  # See <tt>Dir.mkdir</tt>.  Create the referenced directory.
+  # :markup: markdown
+  #
+  # call-seq:
+  #    mkdir(permissions = 0755) -> 0
+  #
+  # Creates a directory in the underlying file system
+  # at the path in `self`, with the given `permissions`;
+  # see {File Permissions}[rdoc-ref:File@File+Permissions]:
+  #
+  # ```ruby
+  # Dir.mkdir('foo')
+  # File.stat(Dir.new('foo')).mode.to_s(8) # => "40775"
+  # Dir.mkdir('bar', 0644)
+  # File.stat(Dir.new('bar')).mode.to_s(8) # => "40644"
+  # Dir.rmdir('foo')
+  # Dir.rmdir('bar')
+  # ```
+  #
+  # Argument `permissions` is ignored on Windows.
   def mkdir(...) Dir.mkdir(@path, ...) end
 
   # See <tt>Dir.rmdir</tt>.  Remove the referenced directory.
