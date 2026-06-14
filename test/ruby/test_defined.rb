@@ -62,6 +62,34 @@ class TestDefined < Test::Unit::TestCase
     f.bar(Class.new(Foo).new) { |v| assert(v, "inherited protected method") }
   end
 
+  module ProtectedInModule
+    def m
+      :m
+    end
+    protected :m
+    def call_m(o)
+      o.m
+    end
+    def defined_m(o)
+      defined?(o.m)
+    end
+  end
+  class ProtectedIncluderA
+    include ProtectedInModule
+  end
+  class ProtectedIncluderB
+    include ProtectedInModule
+  end
+
+  def test_defined_protected_method_in_included_module
+    a = ProtectedIncluderA.new
+    b = ProtectedIncluderB.new
+    assert_equal(:m, a.call_m(a))
+    assert_equal(:m, a.call_m(b))
+    assert_equal("method", a.defined_m(a))
+    assert_equal("method", a.defined_m(b))
+  end
+
   def test_defined_undefined_method
     f = Foo.new
     assert_nil(defined?(f.quux))        # undefined method
