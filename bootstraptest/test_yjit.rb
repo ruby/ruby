@@ -5553,3 +5553,23 @@ assert_normal_exit %q{
   test
   test
 }
+
+# regression test for register mapping of methods with over 256 locals
+# [Bug #22074]
+assert_equal "ok", %q{
+  source = +"def many_locals\n"
+  source << "  total = 0\n"
+
+  128.times do |i|
+    source << "  y#{i} = 1\n"
+    source << "  x#{i} = Object.new\n"
+  end
+
+  source << "  total += 1\n"
+  source << "  raise total.inspect unless total == 1\n"
+  source << "end\n"
+
+  eval(source)
+  many_locals
+  "ok"
+}
