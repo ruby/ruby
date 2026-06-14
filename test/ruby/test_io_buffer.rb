@@ -710,4 +710,34 @@ class TestIOBuffer < Test::Unit::TestCase
     buf.set_string('a', 0, 0)
     assert_predicate buf, :empty?
   end
+
+  class Bug21882 < RuntimeError; end
+  def test_locked_exception
+    buf = IO::Buffer.new(10)
+    assert_raise(Bug21882, '#locked should propagate exception') do
+      buf.locked { raise Bug21882 }
+    end
+
+    # should be unlocked now and can be locked again
+    refute_predicate buf, :locked?
+    buf.locked { }
+  end
+
+  def test_locked_break
+    buf = IO::Buffer.new(10)
+    assert_equal :ok, (buf.locked { break :ok })
+
+    # should be unlocked now and can be locked again
+    refute_predicate buf, :locked?
+    buf.locked { }
+  end
+
+  def test_locked_throw
+    buf = IO::Buffer.new(10)
+    assert_equal :ok, (catch(:bug21882) { buf.locked { throw :bug21882, :ok } })
+
+    # should be unlocked now and can be locked again
+    refute_predicate buf, :locked?
+    buf.locked { }
+  end
 end

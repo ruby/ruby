@@ -1375,6 +1375,17 @@ rb_io_buffer_try_unlock(VALUE self)
     return 0;
 }
 
+static VALUE
+rb_io_buffer_locked_ensure(VALUE self)
+{
+    struct rb_io_buffer *buffer = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+
+    buffer->flags &= ~RB_IO_BUFFER_LOCKED;
+
+    return Qnil;
+}
+
 /*
  *  call-seq: locked { ... }
  *
@@ -1417,11 +1428,7 @@ rb_io_buffer_locked(VALUE self)
 
     buffer->flags |= RB_IO_BUFFER_LOCKED;
 
-    VALUE result = rb_yield(self);
-
-    buffer->flags &= ~RB_IO_BUFFER_LOCKED;
-
-    return result;
+    return rb_ensure(rb_yield, self, rb_io_buffer_locked_ensure, self);
 }
 
 /*
