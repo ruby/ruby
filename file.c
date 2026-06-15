@@ -3468,15 +3468,28 @@ syserr_fail2_in(const char *func, int e, VALUE s1, VALUE s2)
 
 #ifdef HAVE_LINK
 /*
+ * :markup: markdown
+
  *  call-seq:
- *     File.link(old_name, new_name)    -> 0
+ *    File.link(path, new_path) -> 0
  *
- *  Creates a new name for an existing file using a hard link. Will not
- *  overwrite <i>new_name</i> if it already exists (raising a subclass
- *  of SystemCallError). Not available on all platforms.
+ *  Not available on some systems.
  *
- *     File.link("testfile", ".testfile")   #=> 0
- *     IO.readlines(".testfile")[0]         #=> "This is line one\n"
+ *  Creates a new entry at `new_path` for the existing entry at `path`
+ *  using a [hard link](https://en.wikipedia.org/wiki/Hard_link):
+ *
+ *  ```ruby
+ *  File.write('doc/t.tmp', 'foo')
+ *  File.link('doc/t.tmp', 'lib/u.tmp')
+ *  File.read('lib/u.tmp') # => "foo"
+ *  File.write('lib/u.tmp', 'bar')
+ *  File.read('doc/t.tmp') # => "bar"
+ *  File.delete('doc/t.tmp')
+ *  File.read('lib/u.tmp') # => "bar"
+ *  File.delete('lib/u.tmp')
+ *  ```
+ *
+ *  Raises an exception if the entry at `new_path` exists.
  */
 
 static VALUE

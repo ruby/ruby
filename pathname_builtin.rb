@@ -1436,7 +1436,28 @@ class Pathname    # * File *
   #  Returns <tt>'unknown'</tt> if the type cannot be determined.
   def ftype() File.ftype(@path) end
 
-  # See <tt>File.link</tt>.  Creates a hard link.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   make_link(path) -> 0
+  #
+  #  Not available on some systems.
+  #
+  # Creates a new entry at the path in `self` for the existing entry at `path`
+  # using a [hard link](https://en.wikipedia.org/wiki/Hard_link):
+  #
+  # ```ruby
+  # File.write('doc/t.tmp', 'foo')
+  # Pathname('lib/u.tmp').make_link('doc/t.tmp')
+  # File.read('lib/u.tmp') # => "foo"
+  # File.write('lib/u.tmp', 'bar')
+  # File.read('doc/t.tmp') # => "bar"
+  # File.delete('doc/t.tmp')
+  # File.read('lib/u.tmp') # => "bar"
+  # File.delete('lib/u.tmp')
+  # ```
+  #
+  # Raises an exception if the entry at the path in `self` exists.
   def make_link(old) File.link(old, @path) end
 
   # See <tt>File.open</tt>.  Opens the file for reading or writing.
