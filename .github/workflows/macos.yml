@@ -41,6 +41,11 @@ jobs:
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
+      # The macos-15-intel runner image ships a pre-installed Ruby under
+      # /usr/local whose default-gem dir collides with the build's on the
+      # 3.3.0 ABI path. Build under an isolated prefix so Gem.default_dir does
+      # not scan that stale bundler default-gem stub during rake autoload.
+      PREFIX: ${{ matrix.os == 'macos-15-intel' && '/tmp/ruby-prefix' || '' }}
 
     runs-on: ${{ matrix.os }}
 
@@ -69,7 +74,7 @@ jobs:
           dummy-files: ${{ matrix.test_task == 'check' }}
 
       - name: Run configure
-        run: ../src/configure -C --disable-install-doc ${{ matrix.configure }}
+        run: ../src/configure -C --disable-install-doc ${PREFIX:+--prefix="$PREFIX"} ${{ matrix.configure }}
 
       - run: make prepare-gems
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
