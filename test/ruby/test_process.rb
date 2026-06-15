@@ -2786,6 +2786,18 @@ EOS
     end;
   end
 
+  def test_warmup_eager_loads_error_decoration_gems
+    assert_separately(["--enable=gems"], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      features = ["error_highlight", "did_you_mean", "syntax_suggest"]
+      assert_empty($LOADED_FEATURES.grep(/\/(#{features.join("|")})\.rb\z/))
+      Process.warmup
+      features.each do |feature|
+        assert_includes($LOADED_FEATURES.map { File.basename(it, ".rb") }, feature)
+      end
+    end;
+  end
+
   def test_concurrent_group_and_pid_wait
     # Use a pair of pipes that will make long_pid exit when this test exits, to avoid
     # leaking temp processes.
