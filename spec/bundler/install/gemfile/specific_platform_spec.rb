@@ -352,6 +352,8 @@ RSpec.describe "bundle install with specific platforms" do
         bundle "install --verbose", env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
         expect(exitstatus).not_to eq(0)
         expect(err).to include("nokogiri-1.18.10-x86_64-linux requires ruby version < #{Gem.ruby_version}")
+        expect(err).to include("The lockfile only includes the x86_64-linux variant of nokogiri")
+        expect(err).to include("run `bundle install` outside of frozen/deployment mode")
       end
     end
   end
