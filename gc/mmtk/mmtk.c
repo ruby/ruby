@@ -49,6 +49,9 @@ struct objspace {
     struct rb_gc_vm_context vm_context;
 
     unsigned int fork_hook_vm_lock_lev;
+
+    uintptr_t vo_bit_log_region_size;
+    uintptr_t vo_bit_base_addr;
 };
 
 #define OBJ_FREE_BUF_CAPACITY 128
@@ -591,6 +594,9 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
     objspace->cond_world_started = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
 
     objspace->event_hook_mutex = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+
+    objspace->vo_bit_log_region_size = mmtk_get_vo_bit_log_region_size();
+    objspace->vo_bit_base_addr = mmtk_get_vo_bit_base_addr();
 }
 
 void
@@ -883,6 +889,18 @@ mmtk_buffer_obj_free_candidate(struct MMTk_ractor_cache *cache, VALUE obj)
     }
 }
 
+static void
+mmtk_post_alloc_fast_immix(struct objspace *objspace, struct MMTk_ractor_cache *ractor_cache, uintptr_t obj)
+{
+    uintptr_t region_offset = obj >> objspace->vo_bit_log_region_size;
+    uintptr_t byte_offset = region_offset / 8;
+    uintptr_t bit_offset = region_offset % 8;
+    uintptr_t meta_byte_address = objspace->vo_bit_base_addr + byte_offset;
+    uint8_t byte = 1 << bit_offset;
+    uint8_t *meta_byte_ptr = (uint8_t*)meta_byte_address;
+    *meta_byte_ptr |= byte;
+}
+
 VALUE
 rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size)
 {
@@ -921,8 +939,13 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     alloc_obj[0] = flags;
     alloc_obj[1] = klass;
 
-    // TODO: implement fast path for mmtk_post_alloc
-    mmtk_post_alloc(ractor_cache->mutator, (void*)alloc_obj, alloc_size, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
+    if (ractor_cache->bump_pointer == NULL) {
+        mmtk_post_alloc(ractor_cache->mutator, (void*)alloc_obj, alloc_size, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
+    }
+    else {
+        // We can use the post alloc fast path if we're using Immix bump pointer allocator
+        mmtk_post_alloc_fast_immix(objspace, ractor_cache, (uintptr_t)alloc_obj);
+    }
 
     // TODO: only add when object needs obj_free to be called
     mmtk_buffer_obj_free_candidate(ractor_cache, (VALUE)alloc_obj);
