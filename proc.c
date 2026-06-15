@@ -3875,7 +3875,15 @@ curry(RB_BLOCK_CALL_FUNC_ARGLIST(_, args))
         return arity;
     }
     else {
-        return rb_proc_call_with_block(proc, check_argc(RARRAY_LEN(passed)), RARRAY_CONST_PTR(passed), blockarg);
+        // `passed` is the only reference keeping this array (and thus the
+        // buffer that RARRAY_CONST_PTR points into) alive, but it is otherwise
+        // unused after this point. Without RB_GC_GUARD the compiler may drop it
+        // before the call returns, so conservative stack marking misses it and
+        // GC can reclaim the array while it is still being read as argv,
+        // crashing with "try to mark T_NONE object".
+        VALUE result = rb_proc_call_with_block(proc, check_argc(RARRAY_LEN(passed)), RARRAY_CONST_PTR(passed), blockarg);
+        RB_GC_GUARD(passed);
+        return result;
     }
 }
 
