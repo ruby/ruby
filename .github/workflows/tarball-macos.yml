@@ -30,10 +30,15 @@ jobs:
         include:
           - os: macos-15-intel
             test_task: check
+            # The runner image ships a pre-installed Ruby under /usr/local whose
+            # gems dir collides with the default prefix on Intel. Use an isolated
+            # prefix so RDoc generation does not scan that stale default-gem stub.
+            prefix: /tmp/ruby-prefix
       fail-fast: false
     runs-on: ${{ matrix.os }}
     env:
       ARCHNAME: ${{ inputs.archname }}
+      PREFIX: ${{ matrix.prefix || '/usr/local' }}
     steps:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -52,7 +57,7 @@ jobs:
         run: |
           echo "JOBS=-j$((1 + $(sysctl -n hw.activecpu)))" >> $GITHUB_ENV
       - name: configure
-        run: cd "$ARCHNAME/" && ./configure --with-openssl-dir=$(brew --prefix openssl) --with-libyaml-dir=$(brew --prefix libyaml)
+        run: cd "$ARCHNAME/" && ./configure --prefix="$PREFIX" --with-openssl-dir=$(brew --prefix openssl) --with-libyaml-dir=$(brew --prefix libyaml)
       - name: make
         run: cd "$ARCHNAME/" && make $JOBS
       - name: Tests
@@ -72,9 +77,9 @@ jobs:
         if: matrix.test_task == 'check'
       - name: Verify installed binaries
         run: |
-          /usr/local/bin/ruby -v
-          /usr/local/bin/gem -v
-          /usr/local/bin/bundle -v
+          "$PREFIX/bin/ruby" -v
+          "$PREFIX/bin/gem" -v
+          "$PREFIX/bin/bundle" -v
         if: matrix.test_task == 'check'
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
