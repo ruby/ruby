@@ -204,7 +204,12 @@ module TestDigest
       Data1 => "352441c2",
       Data2 => "171a3f5f",
     }
-  end if defined?(Digest::CRC32)
+
+    def test_digest_byte_order
+      # CRC32("abc") = 0x352441C2; raw digest bytes must be big-endian (MSB first)
+      assert_equal [0x35, 0x24, 0x41, 0xC2], Digest::CRC32.digest("abc").bytes
+    end
+  end
 
   class TestBase < Test::Unit::TestCase
     def test_base
