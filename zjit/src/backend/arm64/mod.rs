@@ -263,6 +263,9 @@ impl Assembler {
                 Opnd::Mem(mem) => {
                     if mem_disp_fits_bits(mem.disp) {
                         opnd
+                    } else if asm.accept_scratch_reg {
+                        asm.lea_into(SCRATCH1_OPND, Opnd::Mem(Mem { num_bits: 64, ..mem }));
+                        Opnd::mem(mem.num_bits, SCRATCH1_OPND, 0)
                     } else {
                         let base = asm.lea(Opnd::Mem(Mem { num_bits: 64, ..mem }));
                         Opnd::mem(mem.num_bits, base, 0)
@@ -625,6 +628,12 @@ impl Assembler {
                     // The operand must be in a register, so
                     // if we get anything else we need to load it first.
                     *opnd = split_load_operand(asm, *opnd);
+                    asm.push_insn(insn);
+                },
+                Insn::Store { dest, .. } => {
+                    if asm.accept_scratch_reg && matches!(dest, Opnd::Mem(_)) {
+                        *dest = split_memory_address(asm, *dest);
+                    }
                     asm.push_insn(insn);
                 },
                 Insn::Mul { left, right, .. } => {
@@ -1673,7 +1682,7 @@ impl Assembler {
             });
 
             trace_compile_phase("resolve_ssa", || {
-                asm.handle_caller_saved_regs(&intervals, &assignments, &C_ARG_REGREGS);
+                asm.handle_caller_saved_regs(&intervals, &assignments, &C_ARG_REGREGS, total_stack_slots);
                 asm.resolve_ssa(&intervals, &assignments);
             });
 
@@ -2190,6 +2199,19 @@ mod tests {
         0x8: stur x16, [x15]
         ");
         assert_snapshot!(cb.hexdump(), @"502087d21001a0f2f00100f8");
+    }
+
+    #[test]
+    fn test_store_with_scratch_reg_and_large_displacement() {
+        let (mut asm, mut cb, _) = setup_asm_with_scratch_reg();
+        asm.store(Opnd::mem(64, SP, -0x140), C_RET_OPND);
+
+        asm.compile_with_num_regs(&mut cb, 0);
+        assert_disasm_snapshot!(cb.disasm(), @"
+        0x0: sub x17, x21, #0x140
+        0x4: stur x0, [x17]
+        ");
+        assert_snapshot!(cb.hexdump(), @"b10205d1200200f8");
     }
 
     #[test]

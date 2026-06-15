@@ -758,7 +758,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::LoadEC => gen_load_ec(),
         Insn::LoadSP => gen_load_sp(),
         &Insn::GetEP { level } => gen_get_ep(asm, level),
-        Insn::LoadSelf => gen_load_self(),
+        Insn::LoadSelf => gen_load_self(asm),
         &Insn::LoadField { recv, id, offset, return_type } => gen_load_field(asm, opnd!(recv), id, offset, return_type),
         &Insn::StoreField { recv, id, offset, val } => no_output!(gen_store_field(asm, opnd!(recv), id, offset, opnd!(val), function.type_of(val))),
         &Insn::WriteBarrier { recv, val } => no_output!(gen_write_barrier(jit, asm, opnd!(recv), opnd!(val), function.type_of(val))),
@@ -1048,7 +1048,7 @@ fn gen_ccall_with_frame(
 
     // Can't use gen_prepare_non_leaf_call() because we need to adjust the SP
     // to account for the receiver and arguments (and block arguments if any)
-    gen_save_pc_for_gc(asm, state);
+    gen_save_pc_for_gc(asm, state, 0);
     gen_save_sp(asm, caller_stack_size);
     gen_spill_stack(jit, asm, state);
     gen_spill_locals(jit, asm, state);
@@ -1142,7 +1142,7 @@ fn gen_ccall_variadic(
 
     // Can't use gen_prepare_non_leaf_call() because we need to adjust the SP
     // to account for the receiver and arguments (like gen_ccall_with_frame does)
-    gen_save_pc_for_gc(asm, state);
+    gen_save_pc_for_gc(asm, state, 0);
     gen_save_sp(asm, caller_stack_size);
     gen_spill_stack(jit, asm, state);
     gen_spill_locals(jit, asm, state);
@@ -1374,8 +1374,8 @@ fn gen_load_sp() -> Opnd {
     SP
 }
 
-fn gen_load_self() -> Opnd {
-    Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF)
+fn gen_load_self(asm: &mut Assembler) -> Opnd {
+    asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF))
 }
 
 fn gen_load_field(asm: &mut Assembler, recv: Opnd, id: FieldName, offset: i32, return_type: Type) -> Opnd {
@@ -1483,7 +1483,7 @@ fn gen_send(
 ) -> lir::Opnd {
     gen_incr_send_fallback_counter(asm, reason);
 
-    gen_prepare_non_leaf_call(jit, asm, state);
+    gen_prepare_fallback_call(jit, asm, state);
     asm_comment!(asm, "call #{} with dynamic dispatch", ruby_call_method_name(cd));
     unsafe extern "C" {
         fn rb_vm_send(ec: EcPtr, cfp: CfpPtr, cd: VALUE, blockiseq: IseqPtr) -> VALUE;
@@ -1506,7 +1506,7 @@ fn gen_send_forward(
 ) -> lir::Opnd {
     gen_incr_send_fallback_counter(asm, reason);
 
-    gen_prepare_non_leaf_call(jit, asm, state);
+    gen_prepare_fallback_call(jit, asm, state);
 
     asm_comment!(asm, "call #{} with dynamic dispatch", ruby_call_method_name(cd));
     unsafe extern "C" {
@@ -1529,7 +1529,7 @@ fn gen_send_without_block(
 ) -> lir::Opnd {
     gen_incr_send_fallback_counter(asm, reason);
 
-    gen_prepare_non_leaf_call(jit, asm, state);
+    gen_prepare_fallback_call(jit, asm, state);
     asm_comment!(asm, "call #{} with dynamic dispatch", ruby_call_method_name(cd));
     unsafe extern "C" {
         fn rb_vm_opt_send_without_block(ec: EcPtr, cfp: CfpPtr, cd: VALUE) -> VALUE;
@@ -1560,8 +1560,9 @@ fn gen_push_inline_frame(
 
     // Save cfp->pc and cfp->sp for the caller frame.
     // Cannot use gen_prepare_non_leaf_call because we need special SP math.
-    gen_save_pc_for_gc(asm, state);
-    gen_save_sp(asm, state.stack().len() - args.len() - 1); // -1 for receiver
+    let stack_size = state.stack().len() - args.len() - 1; // -1 for receiver
+    gen_save_pc_for_gc(asm, state, 0);
+    gen_save_sp(asm, stack_size);
 
     gen_spill_locals(jit, asm, state);
     gen_spill_stack(jit, asm, state);
@@ -1628,7 +1629,7 @@ fn gen_push_inline_frame(
     }
     let callee_depth = state.depth + 1;
     let callee_entry_pc = unsafe { rb_iseq_pc_at_idx(iseq, 0) };
-    let callee_entry_frame = JITFrame::new_iseq(callee_entry_pc, iseq);
+    let callee_entry_frame = JITFrame::new_iseq(callee_entry_pc, iseq, 0);
     asm_comment!(asm, "install entry JITFrame for inlined callee");
     asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, jit_frame_slot_offset(callee_depth)), Opnd::const_ptr(callee_entry_frame));
     let callee_jit_return = cfp_jit_return_for_depth(asm, callee_depth);
@@ -1696,11 +1697,12 @@ fn gen_send_iseq_direct(
 
     // Save cfp->pc and cfp->sp for the caller frame
     // Can't use gen_prepare_non_leaf_call because we need special SP math.
-    gen_save_pc_for_gc(asm, state);
-    gen_save_sp(asm, state.stack().len() - args.len() - 1); // -1 for receiver
+    let stack_size = state.stack().len() - args.len() - 1; // -1 for receiver
+    let jit_frame = gen_save_pc_for_gc(asm, state, stack_size);
+    gen_save_sp(asm, stack_size);
 
     gen_spill_locals(jit, asm, state);
-    gen_spill_stack(jit, asm, state);
+    gen_stack_map(jit, asm, state, stack_size, jit_frame);
 
     // This mirrors vm_caller_setup_arg_block() in for the `blockiseq != NULL` case.
     // The HIR specialization guards ensure we will only reach here for literal blocks,
@@ -1835,7 +1837,7 @@ fn gen_invokeblock(
 ) -> lir::Opnd {
     gen_incr_send_fallback_counter(asm, reason);
 
-    gen_prepare_non_leaf_call(jit, asm, state);
+    gen_prepare_fallback_call(jit, asm, state);
 
     asm_comment!(asm, "call invokeblock");
     unsafe extern "C" {
@@ -1860,7 +1862,7 @@ fn gen_invokeblock_ifunc(
 ) -> lir::Opnd {
     let _ = cd; // cd is not needed for the direct call
 
-    gen_prepare_non_leaf_call(jit, asm, state);
+    gen_prepare_fallback_call(jit, asm, state);
 
     // Push args to memory so we can pass argv pointer
     let argv_ptr = gen_push_opnds(jit, asm, &args);
@@ -1890,7 +1892,7 @@ fn gen_invokeproc(
     kw_splat: bool,
     state: &FrameState,
 ) -> lir::Opnd {
-    gen_prepare_non_leaf_call(jit, asm, state);
+    gen_prepare_fallback_call(jit, asm, state);
 
     asm_comment!(asm, "call invokeproc");
 
@@ -1919,7 +1921,7 @@ fn gen_invokesuper(
 ) -> lir::Opnd {
     gen_incr_send_fallback_counter(asm, reason);
 
-    gen_prepare_non_leaf_call(jit, asm, state);
+    gen_prepare_fallback_call(jit, asm, state);
     asm_comment!(asm, "call super with dynamic dispatch");
     unsafe extern "C" {
         fn rb_vm_invokesuper(ec: EcPtr, cfp: CfpPtr, cd: VALUE, blockiseq: IseqPtr) -> VALUE;
@@ -1942,7 +1944,7 @@ fn gen_invokesuperforward(
 ) -> lir::Opnd {
     gen_incr_send_fallback_counter(asm, reason);
 
-    gen_prepare_non_leaf_call(jit, asm, state);
+    gen_prepare_fallback_call(jit, asm, state);
     asm_comment!(asm, "call super with dynamic dispatch (forwarding)");
     unsafe extern "C" {
         fn rb_vm_invokesuperforward(ec: EcPtr, cfp: CfpPtr, cd: VALUE, blockiseq: IseqPtr) -> VALUE;
@@ -2064,7 +2066,7 @@ fn gen_opt_newarray_hash(
     state: &FrameState,
 ) -> lir::Opnd {
     // `Array#hash` will hash the elements of the array.
-    gen_prepare_non_leaf_call(jit, asm, state);
+    gen_prepare_fallback_call(jit, asm, state);
 
     let array_len: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
 
@@ -2090,7 +2092,7 @@ fn gen_array_max(
     elements: Vec<Opnd>,
     state: &FrameState,
 ) -> lir::Opnd {
-    gen_prepare_non_leaf_call(jit, asm, state);
+    gen_prepare_fallback_call(jit, asm, state);
 
     let array_len: u32 = elements.len().try_into().expect("Unable to fit length of elements into u32");
 
@@ -2116,7 +2118,7 @@ fn gen_array_min(
     elements: Vec<Opnd>,
     state: &FrameState,
 ) -> lir::Opnd {
-    gen_prepare_non_leaf_call(jit, asm, state);
+    gen_prepare_fallback_call(jit, asm, state);
 
     let array_len: u32 = elements.len().try_into().expect("Unable to fit length of elements into u32");
 
@@ -2142,7 +2144,7 @@ fn gen_array_include(
     target: Opnd,
     state: &FrameState,
 ) -> lir::Opnd {
-    gen_prepare_non_leaf_call(jit, asm, state);
+    gen_prepare_fallback_call(jit, asm, state);
 
     let array_len: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
 
@@ -2170,7 +2172,7 @@ fn gen_array_pack_buffer(
     buffer: Option<Opnd>,
     state: &FrameState,
 ) -> lir::Opnd {
-    gen_prepare_non_leaf_call(jit, asm, state);
+    gen_prepare_fallback_call(jit, asm, state);
 
     let array_len: c_long = elements.len().try_into().expect("Unable to fit length of elements into c_long");
 
@@ -2357,7 +2359,7 @@ fn gen_entry_point(jit: &mut JITState, asm: &mut Assembler, jit_entry_idx: Optio
     // Publish a valid entry JITFrame before setting cfp->jit_return. The entry point is
     // always the top-level frame (depth 0). Inlined frames get their own deeper
     // slots in gen_push_lightweight_frame().
-    let jit_frame = JITFrame::new_iseq(entry_pc(jit.iseq(), jit_entry_idx), jit.iseq());
+    let jit_frame = JITFrame::new_iseq(entry_pc(jit.iseq(), jit_entry_idx), jit.iseq(), 0);
     asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, -SIZEOF_VALUE_I32), Opnd::const_ptr(jit_frame));
     asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), NATIVE_BASE_PTR);
 }
@@ -2883,13 +2885,13 @@ fn cfp_jit_return_for_depth(asm: &mut Assembler, depth: InlineDepth) -> Opnd {
 /// Save only the PC to CFP. Use this when you need to call gen_save_sp()
 /// immediately after with a custom stack size (e.g., gen_ccall_with_frame
 /// adjusts SP to exclude receiver and arguments).
-fn gen_save_pc_for_gc(asm: &mut Assembler, state: &FrameState) {
+fn gen_save_pc_for_gc(asm: &mut Assembler, state: &FrameState, stack_map_size: usize) -> *const zjit_jit_frame {
     let opcode: usize = state.get_opcode().try_into().unwrap();
     let next_pc: *const VALUE = unsafe { state.pc.offset(insn_len(opcode) as isize) };
 
     gen_incr_counter(asm, Counter::vm_write_jit_frame_count);
     asm_comment!(asm, "save JITFrame to CFP");
-    let jit_frame = JITFrame::new_iseq(next_pc, state.iseq);
+    let jit_frame = JITFrame::new_iseq(next_pc, state.iseq, stack_map_size);
     asm.mov(Opnd::mem(64, NATIVE_BASE_PTR, jit_frame_slot_offset(state.depth)), Opnd::const_ptr(jit_frame));
 
     // CFP_PC for a live JIT frame routes through the JITFrame on the native
@@ -2899,6 +2901,7 @@ fn gen_save_pc_for_gc(asm: &mut Assembler, state: &FrameState) {
     // jit_frame->pc into cfp->pc and cleared cfp->jit_return: the JIT keeps
     // running, lands on this routine again, and the poison would replace
     // the valid materialized pc behind the GC's back.
+    jit_frame
 }
 
 /// Save the current PC on the CFP as a preparation for calling a C function
@@ -2909,12 +2912,13 @@ fn gen_save_pc_for_gc(asm: &mut Assembler, state: &FrameState) {
 /// because the backend spills all live registers onto the C stack on CCall.
 /// However, to avoid marking uninitialized stack slots, this also updates SP,
 /// which may have cfp->sp for a past frame or a past non-leaf call.
-fn gen_prepare_call_with_gc(asm: &mut Assembler, state: &FrameState, leaf: bool) {
-    gen_save_pc_for_gc(asm, state);
+fn gen_prepare_call_with_gc(asm: &mut Assembler, state: &FrameState, leaf: bool, stack_map_size: usize) -> *const zjit_jit_frame {
+    let jit_frame = gen_save_pc_for_gc(asm, state, stack_map_size);
     gen_save_sp(asm, state.stack_size());
     if leaf {
         asm.expect_leaf_ccall(state.stack_size());
     }
+    jit_frame
 }
 
 fn gen_prepare_leaf_call_with_gc(asm: &mut Assembler, state: &FrameState) {
@@ -2931,7 +2935,7 @@ fn gen_prepare_leaf_call_with_gc(asm: &mut Assembler, state: &FrameState) {
     // We use state.without_stack() to pass stack_size=0 to gen_save_sp() because we don't write
     // VM stack slots on leaf calls, which leaves those stack slots uninitialized. ZJIT keeps
     // live objects on the C stack, so they are protected from GC properly.
-    gen_prepare_call_with_gc(asm, &state.without_stack(), true);
+    gen_prepare_call_with_gc(asm, &state.without_stack(), true, 0);
 }
 
 /// Save the current SP on the CFP
@@ -2968,17 +2972,43 @@ fn gen_spill_stack(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
     }
 }
 
+/// Prepare for VM fallback helpers that read arguments from the VM stack.
+///
+/// Direct JIT-to-JIT calls keep cfp->sp lazy, so this must publish SP before
+/// writing stack slots. Otherwise spilling the stack can overwrite frame
+/// metadata below the real VM-stack base.
+fn gen_prepare_fallback_call(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
+    gen_save_pc_for_gc(asm, state, 0);
+    gen_save_sp(asm, state.stack_size());
+    gen_spill_locals(jit, asm, state);
+    gen_spill_stack(jit, asm, state);
+}
+
+/// Record the Ruby stack values needed to materialize this frame after the next
+/// non-leaf C call. The actual JITFrame entries are encoded by the register
+/// allocator, where VReg locations on the native stack are known.
+fn gen_stack_map(jit: &JITState, asm: &mut Assembler, state: &FrameState, stack_size: usize, jit_frame: *const zjit_jit_frame) {
+    let mut stack = Vec::new();
+    for &insn_id in state.stack().take(stack_size) {
+        let opnd = jit.get_opnd(insn_id);
+        // JITFrame only supports materializing Opnd::Value or Opnd::VReg out of the frame
+        assert!(matches!(opnd, Opnd::Value(_) | Opnd::VReg { .. }), "FrameState should only reference Opnd::Value or Opnd::VReg, but got: {opnd:?}");
+        stack.push(opnd);
+    }
+    asm.stack_map(stack, jit_frame);
+}
+
 /// Prepare for calling a C function that may call an arbitrary method.
 /// Use gen_prepare_leaf_call_with_gc() if the method is leaf but allocates objects.
 fn gen_prepare_non_leaf_call(jit: &JITState, asm: &mut Assembler, state: &FrameState) {
     // TODO: Lazily materialize caller frames when needed
     // Save PC for backtraces and allocation tracing
     // and SP to avoid marking uninitialized stack slots
-    gen_prepare_call_with_gc(asm, state, false);
+    let jit_frame = gen_prepare_call_with_gc(asm, state, false, state.stack_size());
 
     // Spill the virtual stack in case it raises an exception
     // and the interpreter uses the stack for handling the exception
-    gen_spill_stack(jit, asm, state);
+    gen_stack_map(jit, asm, state, state.stack_size(), jit_frame);
 
     // Spill locals in case the method looks at caller Bindings
     gen_spill_locals(jit, asm, state);
@@ -3428,6 +3458,20 @@ fn gen_function_stub(cb: &mut CodeBlock, iseq_call: IseqCallRef) -> Result<CodeP
     asm.new_block_without_id("gen_function_stub");
     asm_comment!(asm, "Stub: {}", iseq_get_location(iseq_call.iseq.get(), 0));
 
+    // If the stubbed ISEQ fails to compile, function_stub_hit exits to the
+    // interpreter with this callee frame. Direct JIT-to-JIT calls pass arguments
+    // in C argument registers, so spill the packed argument locals first. The
+    // fallback path will reshape these around any optional positional gaps.
+    let argc = iseq_call.argc.to_usize();
+    assert!(argc < C_ARG_OPNDS.len(), "SendDirect must fit receiver plus arguments in C argument registers");
+    let local_size = unsafe { get_iseq_body_local_table_size(iseq_call.iseq.get()) }.to_usize();
+    for arg_idx in 0..argc {
+        asm.store(
+            Opnd::mem(64, SP, -local_size_and_idx_to_bp_offset(local_size, arg_idx) * SIZEOF_VALUE_I32),
+            C_ARG_OPNDS[arg_idx + 1],
+        );
+    }
+
     // Call function_stub_hit using the shared trampoline. See `gen_function_stub_hit_trampoline`.
     // Use load_into instead of mov, which is split on arm64, to avoid clobbering ALLOC_REGS.
     asm.load_into(scratch_reg, Opnd::const_ptr(Rc::into_raw(iseq_call)));
@@ -3533,8 +3577,10 @@ pub fn gen_materialize_exit_trampoline(cb: &mut CodeBlock, exit_trampoline: Code
     let mut asm = Assembler::new();
     asm.new_block_without_id("materialize_exit_trampoline");
 
-    asm_comment!(asm, "materialize ZJIT frames");
+    asm_comment!(asm, "clear JITFrame materialized by exit code");
     asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), 0.into());
+
+    asm_comment!(asm, "materialize ZJIT frames");
     asm_ccall!(asm, rb_zjit_materialize_frames, EC, CFP);
     asm.jmp(Target::CodePtr(exit_trampoline));
 
