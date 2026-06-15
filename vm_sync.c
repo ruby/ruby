@@ -34,7 +34,9 @@ RUBY_ASSERT_vm_locking_with_barrier(void)
 
         if (vm->ractor.cnt > 1) {
             /* Written to only when holding both ractor.sync and ractor.sched lock */
+#ifdef RUBY_THREAD_PTHREAD_H
             VM_ASSERT(vm->ractor.sched.barrier_waiting);
+#endif
         }
     }
 }
@@ -100,7 +102,9 @@ vm_lock_enter(rb_ractor_t *cr, rb_vm_t *vm, bool locked, bool no_barrier, unsign
 
             do {
                 VM_ASSERT(vm_need_barrier_waiting(vm));
+#ifdef RUBY_THREAD_PTHREAD_H
                 RUBY_DEBUG_LOG("barrier serial:%u", vm->ractor.sched.barrier_serial);
+#endif
                 rb_ractor_sched_barrier_join(vm, cr);
             } while (vm_need_barrier_waiting(vm));
         }
@@ -272,7 +276,9 @@ rb_vm_barrier(void)
             return;
         }
         else {
+#ifdef RUBY_THREAD_PTHREAD_H
             VM_ASSERT(!vm->ractor.sched.barrier_waiting);
+#endif
             rb_ractor_sched_barrier_start(vm, cr);
         }
     }
