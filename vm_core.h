@@ -1723,10 +1723,11 @@ VM_BH_ISEQ_BLOCK_P(VALUE block_handler)
 #if VM_CHECK_MODE > 0
         struct rb_captured_block *captured = VM_TAGGED_PTR_REF(block_handler, 0x03);
         if (!imemo_type_p(captured->code.val, imemo_iseq)) {
-            rb_bug("not imemo_iseq. captured:%p IMEMO_P(captured->code.val):%d, flags:%p",
+            rb_bug("not imemo_iseq. captured:%p IMEMO_P(captured->code.val):%d, "
+                   "flags:%.*" PRIxVALUE,
                    captured,
                    RB_TYPE_P(captured->code.val, T_IMEMO),
-                   RBASIC(captured->code.val)->flags);
+                   (int)(sizeof(VALUE) * CHAR_BIT / 4), RBASIC(captured->code.val)->flags);
         }
 #endif
         return 1;
