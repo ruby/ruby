@@ -1,0 +1,271 @@
+# frozen_string_literal: true
+require_relative 'test_helper'
+
+class JSONResumageParserTest < Test::Unit::TestCase
+  include JSON
+
+  def setup
+    omit "JRuby not supported" if RUBY_ENGINE == "jruby"
+    @parser = new_parser
+  end
+
+  def test_value
+    refute_predicate @parser, :value?
+    assert_raise(ArgumentError) { @parser.value }
+
+    @parser << '[]'
+
+    refute_predicate @parser, :value?
+    assert_raise(ArgumentError) { @parser.value }
+
+    assert @parser.parse
+
+    assert_predicate @parser, :value?
+    assert_equal [], @parser.value
+
+    refute_predicate @parser, :value?
+    assert_raise(ArgumentError) { @parser.value }
+  end
+
+  def test_clear
+    @parser << '[1, 2, 3'
+    refute @parser.parse
+    assert_equal '3', @parser.rest
+
+    @parser.clear
+
+    assert_equal '', @parser.rest
+    refute_predicate @parser, :value?
+
+    @parser << '[1, 2, 3]['
+    assert @parser.parse
+    assert_predicate @parser, :value?
+    assert_equal '[', @parser.rest
+
+    @parser.clear
+
+    assert_equal '', @parser.rest
+    refute_predicate @parser, :value?
+  end
+
+  def test_parse_document_direct
+    @parser << '[true]'
+    assert_equal true, @parser.parse
+    assert_equal [true], @parser.value
+  end
+
+  def test_parse_multiple_documents_direct
+    @parser << '[true]{}[1, 2, 3]'
+
+    assert_equal true, @parser.parse
+    assert_equal [true], @parser.value
+
+    assert_equal true, @parser.parse
+    assert_equal({}, @parser.value)
+
+    assert_equal true, @parser.parse
+    assert_equal [1, 2, 3], @parser.value
+  end
+
+  def test_parse_top_level_keywords
+    assert_resumed_parsing('true')
+    assert_resumed_parsing('false')
+    assert_resumed_parsing('null')
+
+    assert_parse_stream([true, false, nil], 'truefalsenull')
+  end
+
+  def test_parse_top_level_numbers
+    assert_parse_stream([1, 2, 3], '1 2 3 ')
+    assert_parse_stream([1, 2], '1 2 3') # Parser can't know if the number is terminated
+    assert_parse_stream([3], ' ')
+    assert_parse_stream([1, 2, 3, true], '1 2 3true')
+    assert_parse_stream([-1, 2.34, 5.0e67], '-1 2.34 5e67 ')
+  end
+
+  def test_parse_byte_by_byte_array
+    assert_resumed_parsing('[]')
+    assert_resumed_parsing('[    ]')
+    assert_resumed_parsing('[true]')
+    assert_resumed_parsing('[12]')
+    assert_resumed_parsing('[ 12 ]')
+    assert_resumed_parsing('[ 12.3 ]')
+    assert_resumed_parsing('[ 12.3e12 ]')
+    assert_resumed_parsing('[ 1e12 ]')
+    assert_resumed_parsing('[-12]')
+    assert_resumed_parsing('[ -12 ]')
+    assert_resumed_parsing('[ -12.3 ]')
+    assert_resumed_parsing('[ -12.3e12 ]')
+    assert_resumed_parsing('[ -1e12 ]')
+  end
+
+  def test_parse_byte_by_byte_object
+    assert_resumed_parsing('{}')
+    assert_resumed_parsing('{    }')
+    assert_resumed_parsing('{"test" : true}')
+    assert_resumed_parsing('{  "test":12, "value" : { "key": 42}  }')
+  end
+
+  def test_parse_byte_by_byte_string
+    assert_resumed_parsing(JSON.generate('test'))
+    assert_resumed_parsing(JSON.generate('te\\st'))
+    assert_resumed_parsing('"te\\u2028st"')
+    assert_resumed_parsing(JSON.generate("te\u2028st"))
+    assert_resumed_parsing(JSON.generate("te \u2028 st"))
+  end
+
+  def test_parse_byte_by_byte_numbers
+    assert_resumed_parsing('123 ')
+  end
+
+  def test_rest
+    @parser << '[1, 2, 3, "unterminated string'
+    refute @parser.parse
+    assert_equal '"unterminated string', @parser.rest
+  end
+
+  def test_eos
+    assert_predicate @parser, :eos?
+
+    @parser << '[1, 2, 3]'
+    refute_predicate @parser, :eos?
+
+    assert @parser.parse
+    assert_predicate @parser, :eos?
+
+    @parser << '123'
+    refute_predicate @parser, :eos?
+
+    refute @parser.parse
+    refute_predicate @parser, :eos?
+
+    @parser << ' '
+    assert @parser.parse
+    assert_equal 123, @parser.value
+    refute_predicate @parser, :eos?
+
+    refute @parser.parse
+    assert_predicate @parser, :eos?
+  end
+
+  def test_partial_value
+    assert_nil @parser.partial_value
+    assert_partial_value [1, 2, 3], '[1, 2, 3, "unterminated string'
+    assert_partial_value({ "a" => 1, "b" => { "c" => nil } }, '{ "a": 1, "b": { "c": "unterminated string')
+    assert_partial_value({ "a" => 1, "b" => { "c" => nil } }, '{ "a": 1, "b": { "c"')
+    assert_partial_value([1, { "a" => 1, "b" => { "c" => nil } }], '[1, { "a": 1, "b": { "c"')
+  end
+
+  def test_partial_value_missing
+    assert_nil @parser.partial_value
+  end
+
+  def test_reentrency_prevented
+    called = false
+    parser = nil
+    callback = ->(o) do
+      unless called
+        called = true
+        parser.parse
+      end
+      o
+    end
+    parser = new_parser(on_load: callback)
+    parser << '[]'
+    error = assert_raise ArgumentError do
+      parser.parse
+    end
+    assert_equal "ResumableParser can't be used recursively", error.message
+
+    called = false
+    parser = nil
+    callback = ->(o) do
+      unless called
+        called = true
+        parser.partial_value
+      end
+      o
+    end
+    parser = new_parser(on_load: callback)
+    parser << '[]'
+    error = assert_raise ArgumentError do
+      parser.parse
+    end
+    assert_equal "ResumableParser can't be used recursively", error.message
+  end
+
+  def test_exception_unlock_parser
+    called = false
+    parser = nil
+    callback = ->(o) do
+      unless called
+        called = true
+        raise "oops"
+      end
+      o
+    end
+    parser = new_parser(on_load: callback)
+    parser << '[][1]'
+    assert_raise RuntimeError do
+      parser.parse
+    end
+
+    assert parser.parse
+    assert_equal [1], parser.value
+  end
+
+  def test_spill_rvalue_stack
+    expected = [1] * 1000
+    @parser << JSON.dump(expected)
+    assert @parser.parse
+    assert_equal expected, @parser.value
+  end
+
+  def test_spill_frames_stack
+    json = '[' * 1000 + ']' * 1000
+    expected = JSON.parse(json, max_nesting: 1000)
+    @parser = new_parser(max_nesting: 1000)
+    @parser << json
+    assert @parser.parse
+    assert_equal expected, @parser.value
+  end
+
+  private
+
+  def assert_partial_value(expected, json)
+    parser = new_parser
+    parser << json
+    refute parser.parse
+    2.times do
+      assert_equal expected, parser.partial_value
+    end
+  end
+
+  def assert_resumed_parsing(json, parser = @parser)
+    expected = JSON.parse(json)
+
+    last_parsed_byte_index = 0
+    json.each_byte do |byte|
+      parser << byte.chr
+      last_parsed_byte_index += 1
+      break if parser.parse
+    end
+    actual = parser.value
+    assert_equal expected, actual
+    remaining_bytes = (json.bytesize - last_parsed_byte_index)
+    assert_equal 0, remaining_bytes, "unconsumed bytes: #{actual.inspect}, remaining: #{json.byteslice(-1, remaining_bytes).inspect}"
+  end
+
+  def assert_parse_stream(expected, json, parser = @parser)
+    actual = []
+    parser << json
+    while parser.parse
+      actual << parser.value
+    end
+    assert_equal(expected, actual)
+  end
+
+  def new_parser(options = nil)
+    JSON::ResumableParser.new(options)
+  end
+end
