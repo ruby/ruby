@@ -2496,6 +2496,9 @@ static VALUE cResumableParser_partial_value(VALUE self)
     JSON_ResumableParser *original_parser = ResumableParser_acquire(self, false);
     JSON_ResumableParser parser = *original_parser;
 
+    parser.state.frames = &parser.frames;
+    parser.state.value_stack = &parser.value_stack;
+
     if (parser.value_stack.head == 0) {
         return Qnil;
     }

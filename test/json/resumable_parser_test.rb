@@ -156,6 +156,20 @@ class JSONResumageParserTest < Test::Unit::TestCase
     assert_partial_value([1, { "a" => 1, "b" => { "c" => nil } }], '[1, { "a": 1, "b": { "c"')
   end
 
+  def test_partial_value_issue_1005
+    data = <<~JSON
+      [
+      []
+      ]
+    JSON
+    data.each_line do |line|
+      @parser << line
+      @parser.parse
+      @parser.partial_value # This unexpected parse error doesn't happen if we comment this out
+    end
+    assert_equal [[]], @parser.value
+  end
+
   def test_partial_value_missing
     assert_nil @parser.partial_value
   end
