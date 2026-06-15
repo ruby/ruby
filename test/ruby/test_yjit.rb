@@ -1041,6 +1041,55 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_bmethod_super_block_forwarding
+    # super() in a block method forwards the block handler of environment
+    # it is in. In this test, the block is in a class, which never has
+    # a block handler, so Parent#foo gets no block.
+    assert_compiles(<<~RUBY, result: nil)
+      class Parent
+        def foo = defined?(yield)
+      end
+
+      class BmethodSuper < Parent
+        define_method(:foo) { super() }
+      end
+
+      BmethodSuper.new.foo {}
+    RUBY
+
+    # For contrast, the super() here forwards the block passed to add_then_override
+    # because block with super() is rooted in add_then_override, a "def" method.
+    assert_compiles(<<~RUBY, result: [1, 2])
+      def add_then_override(object)
+        object.define_singleton_method(:then) { super() }
+      end
+
+      add_then_override(one = Object.new) { 1 }
+      add_then_override(two = Object.new) { 2 }
+      [one.then {}, two.then {}]
+    RUBY
+  end
+
+  def test_bug_22116
+    # Regression test from report which used to crash during environment escape
+    # to pass block to Hash.new
+    assert_compiles(<<~RUBY, call_threshold: 1)
+      class C
+        def foo
+          Hash.new {|h, k| h[k] = [] }
+        end
+      end
+
+      class D < C
+        define_method(:foo) do
+          super()
+        end
+      end
+
+      D.new.foo
+    RUBY
+  end
+
   # Tests calling a variadic cfunc with many args
   def test_build_large_struct
     assert_compiles(<<~RUBY, insns: %i[opt_send_without_block], call_threshold: 2)
