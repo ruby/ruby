@@ -1362,15 +1362,22 @@ impl Allocation {
     }
 }
 
-/// StackState converts abstract stack slots into concrete stack addresses.
+/// StackState tracks the native stack layout and converts abstract stack slots
+/// into concrete stack addresses.
+#[derive(Clone)]
 pub struct StackState {
-    /// Copy of Assembler::stack_base_idx. Used for calculating stack slot offsets.
-    stack_base_idx: usize,
+    /// The number of stack slots reserved before register allocator spills.
+    pub(crate) stack_base_idx: usize,
 }
 
 impl StackState {
-    /// Initialize a stack allocator
-    pub(super) fn new(stack_base_idx: usize) -> Self {
+    /// Initialize an empty stack state.
+    fn new() -> Self {
+        StackState { stack_base_idx: 0 }
+    }
+
+    /// Initialize a stack state with a fixed number of reserved stack slots.
+    fn new_with_stack_slots(stack_base_idx: usize) -> Self {
         StackState { stack_base_idx }
     }
 
@@ -1426,9 +1433,8 @@ pub struct Assembler {
     /// On `compile`, it also disables the backend's use of them.
     pub(super) accept_scratch_reg: bool,
 
-    /// The maximum number of stack slots that have been reserved
-    /// by Assembler::alloc_stack().
-    pub stack_base_idx: usize,
+    /// Native stack layout state.
+    pub(crate) stack_state: StackState,
 
     /// If Some, the next ccall should verify its leafness
     leaf_ccall_stack_size: Option<usize>,
@@ -1449,7 +1455,7 @@ impl Assembler
         Self {
             label_names: Vec::default(),
             accept_scratch_reg: false,
-            stack_base_idx: 0,
+            stack_state: StackState::new(),
             leaf_ccall_stack_size: None,
             basic_blocks: Vec::default(),
             current_block_id: BlockId(0),
@@ -1461,7 +1467,7 @@ impl Assembler
 
     /// Create an Assembler, reserving a specified number of stack slots
     pub fn new_with_stack_slots(stack_base_idx: usize) -> Self {
-        Self { stack_base_idx, ..Self::new() }
+        Self { stack_state: StackState::new_with_stack_slots(stack_base_idx), ..Self::new() }
     }
 
     /// Create an Assembler that allows the use of scratch registers.
@@ -1473,18 +1479,25 @@ impl Assembler
     /// Create an Assembler with parameters of another Assembler and empty instructions.
     /// Compiler passes build a next Assembler with this API and insert new instructions to it.
     pub(super) fn new_with_asm(old_asm: &Assembler) -> Self {
-        let mut asm = Self {
-            label_names: old_asm.label_names.clone(),
-            accept_scratch_reg: old_asm.accept_scratch_reg,
-            stack_base_idx: old_asm.stack_base_idx,
-            ..Self::new()
-        };
+        let mut asm = Self::new_with_asm_without_blocks(old_asm);
 
         // Initialize basic blocks from the old assembler, preserving hir_block_id and entry flag
         // but with empty instruction lists
         for old_block in &old_asm.basic_blocks {
             asm.new_block_from_old_block(&old_block);
         }
+
+        asm
+    }
+
+    /// Create an Assembler with parameters of another Assembler, but without basic blocks.
+    pub(super) fn new_with_asm_without_blocks(old_asm: &Assembler) -> Self {
+        let mut asm = Self {
+            label_names: old_asm.label_names.clone(),
+            accept_scratch_reg: old_asm.accept_scratch_reg,
+            stack_state: old_asm.stack_state.clone(),
+            ..Self::new()
+        };
 
         // Initialize num_vregs to match the old assembler's size
         // This allows reusing VRegs from the old assembler
@@ -2227,7 +2240,7 @@ impl Assembler
                                             // StackState places allocator spills at:
                                             //   cfp->jit_return[-(self.stack_base_idx + stack_idx + 1)]
                                             // so encode the matching materializer index.
-                                            self.stack_base_idx
+                                            self.stack_state.stack_base_idx
                                                 .checked_add(1)
                                                 .expect("StackMap requires a JITFrame slot")
                                                 + stack_idx
@@ -3469,7 +3482,7 @@ impl Assembler {
     }
 
     pub fn frame_setup(&mut self, preserved_regs: &'static [Opnd]) {
-        let slot_count = self.stack_base_idx;
+        let slot_count = self.stack_state.stack_base_idx;
         self.push_insn(Insn::FrameSetup { preserved: preserved_regs, slot_count });
     }
 
@@ -3648,11 +3661,7 @@ impl Assembler {
     /// This is used for trampolines that don't allow scratch registers.
     /// Linearizes all blocks into a single giant block.
     pub fn resolve_parallel_mov_pass(self) -> Assembler {
-        let mut asm_local = Assembler::new();
-        asm_local.accept_scratch_reg = self.accept_scratch_reg;
-        asm_local.stack_base_idx = self.stack_base_idx;
-        asm_local.label_names = self.label_names.clone();
-        asm_local.num_vregs = self.num_vregs;
+        let mut asm_local = Assembler::new_with_asm_without_blocks(&self);
 
         // Create one giant block to linearize everything into
         asm_local.new_block_without_id("linearized");

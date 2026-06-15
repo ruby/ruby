@@ -3711,7 +3711,7 @@ impl Assembler {
     /// and return a pointer to the allocated space.
     fn alloc_stack(&mut self, jit: &JITState, stack_size: usize) -> Opnd {
         let total_stack_size = jit.jit_frame_size + stack_size;
-        self.stack_base_idx = self.stack_base_idx.max(total_stack_size);
+        self.stack_state.stack_base_idx = self.stack_state.stack_base_idx.max(total_stack_size);
         //         high addr
         // +------------------------+
         // | return address         |
