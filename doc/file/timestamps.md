@@ -51,6 +51,13 @@ Each of these methods returns the modification time for an entry as a Time objec
 - File::Stat#mtime.
 - Pathname#mtime.
 
+The modification time (along with the access time) may also be updated explicitly:
+
+- File::lutime.
+- File::utime.
+- Pathname#lutime.
+- Pathname#utime.
+
 ## Access \Time
 
 The access time for an entry is the time the entry last read.
@@ -63,6 +70,13 @@ Each of these methods returns the access time for an entry as a Time object:
 - File#atime.
 - File::Stat#atime.
 - Pathname#atime.
+
+The access time (along with the modification time) may also be updated explicitly:
+
+- File::lutime.
+- File::utime.
+- Pathname#lutime.
+- Pathname#utime.
 
 ## Metadata-Change \Time
 
