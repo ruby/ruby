@@ -1,5 +1,5 @@
 #include "../json.h"
-#include "../vendor/ryu.h"
+#include "../vendor/fast_float_parser.h"
 #include "../simd/simd.h"
 
 static VALUE mJSON, eNestingError, eParserError, Encoding_UTF_8;
@@ -1111,13 +1111,11 @@ static inline VALUE json_decode_float(JSON_ParserConfig *config, uint64_t mantis
         return rb_float_new(negative ? -0.0 : 0.0);
     }
 
-    // Fall back to rb_cstr_to_dbl for potential subnormals (rare edge case)
-    // Ryu has rounding issues with subnormals around 1e-310 (< 2.225e-308)
-    if (RB_UNLIKELY(mantissa_digits > 17 || mantissa_digits + exponent < -307)) {
+    if (RB_UNLIKELY(mantissa_digits > 18 || mantissa_digits + exponent < -307)) {
         return json_decode_large_float(start, end - start);
     }
 
-    return DBL2NUM(ryu_s2d_from_parts(mantissa, mantissa_digits, (int32_t)exponent, negative));
+    return DBL2NUM(ffp_s2d(exponent, mantissa, negative));
 }
 
 static inline VALUE json_decode_array(JSON_ParserState *state, JSON_ParserConfig *config, long count)

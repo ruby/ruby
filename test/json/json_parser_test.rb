@@ -60,7 +60,8 @@ class JSONParserTest < Test::Unit::TestCase
     assert_equal(-23,      parse('-23'))
     assert_equal(23,       parse('23'))
     assert_in_delta(0.23,  parse('0.23'), 1e-2)
-    assert_in_delta(0.0,   parse('0e0'), 1e-2)
+    assert_equal(0.0,      parse('0e0'))
+    assert_equal(-0.0,     parse('-0e0'))
     assert_equal("",       parse('""'))
     assert_equal("foobar", parse('"foobar"'))
   end
