@@ -46,6 +46,14 @@ module Gem::BUNDLED_GEMS # :nodoc:
   DLEXT = /\.#{Regexp.union(dlext)}\z/
   LIBEXT = /\.#{Regexp.union("rb", *dlext)}\z/
 
+  # Decorate Kernel#require so that requiring a gem that is no longer a default
+  # gem emits a warning. Called by Bundler during setup
+  # (lib/bundler/rubygems_integration.rb), guarded by respond_to?(:replace_require)
+  # because older Ruby versions ship without this file.
+  #
+  # The decorating method is defined via define_method, so its base_label is
+  # "replace_require" rather than "require"; this is why uplevel has to recognize
+  # both labels (build_message instead skips our own frames by file path).
   def self.replace_require(specs)
     return if [::Kernel.singleton_class, ::Kernel].any? {|klass| klass.respond_to?(:no_warning_require) }
 
@@ -67,20 +75,28 @@ module Gem::BUNDLED_GEMS # :nodoc:
     end
   end
 
+  # base_labels that belong to the require machinery: "replace_require" is the
+  # define_method block installed by replace_require, "require" covers both
+  # Kernel#require and the wrappers that Bootsnap and Zeitwerk install on top.
+  REQUIRE_LABELS = ["replace_require", "require"].freeze
+
+  # Compute the uplevel: argument for Kernel#warn so the warning points at the
+  # user's require call site rather than at our machinery. We walk down the run
+  # of require frames (there can be several when Bootsnap/Zeitwerk are present)
+  # and stop at the first frame past them.
   def self.uplevel
     frame_count = 0
-    require_labels = ["replace_require", "require"]
     uplevel = 0
     require_found = false
     Thread.each_caller_location do |cl|
       frame_count += 1
 
       if require_found
-        unless require_labels.include?(cl.base_label)
+        unless REQUIRE_LABELS.include?(cl.base_label)
           return uplevel
         end
       else
-        if require_labels.include?(cl.base_label)
+        if REQUIRE_LABELS.include?(cl.base_label)
           require_found = true
         end
       end
@@ -110,7 +126,8 @@ module Gem::BUNDLED_GEMS # :nodoc:
 
     if feature.include?("/")
       # bootsnap expands `require "csv"` to `require "#{LIBDIR}/csv.rb"`,
-      # and `require "syslog"` to `require "#{ARCHDIR}/syslog.so"`.
+      # and `require "syslog"` to `require "#{ARCHDIR}/syslog.so"`, so strip
+      # those prefixes back off before matching. [Bug #20450]
       feature.delete_prefix!(ARCHDIR)
       feature.delete_prefix!(LIBDIR)
       # 1. A segment for the EXACT mapping and SINCE check
@@ -136,6 +153,9 @@ module Gem::BUNDLED_GEMS # :nodoc:
     feature, name, subfeature = find_gem(name)
     return unless feature
 
+    # Callers can suppress warnings for specific gems/features for the duration
+    # of a block via this thread-local. prelude.rb uses it so that `binding.irb`
+    # can load irb (which pulls in reline and rdoc) without warning. [Bug #21723]
     if suppress_list = Thread.current[:__bundled_gems_warning_suppression]
       return if suppress_list.include?(name) || suppress_list.include?(feature)
     end
