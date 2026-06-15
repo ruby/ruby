@@ -1358,6 +1358,10 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("?", "\u20AC".encode("EUC-JP", :undef=>:replace), "[ruby-dev:35709]")
   end
 
+  def test_replace_converted_to_destination_encoding
+    assert_equal("\uFF21".encode("SJIS"), "\uFF21".encode("SJIS", undef: :replace, replace: "\uFF1F"))
+  end
+
   def test_undef_replace_string
     assert_equal("a<x>A", "a\u3042A".encode("us-ascii", :undef=>:replace, :replace=>"<x>"))
   end
