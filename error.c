@@ -1780,14 +1780,20 @@ load_decoration_gem(VALUE feature)
 static void
 require_decoration_gems(void)
 {
+    // Loading must not disturb the caller's $!: it is called while
+    // displaying an exception. rb_protect does not preserve errinfo, so
+    // save and restore it around the requires, leaving $! untouched
+    // whether or not a require raises.
+    VALUE saved_errinfo = rb_errinfo();
     static const char *const gems[] = {"ErrorHighlight", "DidYouMean", "SyntaxSuggest"};
     for (size_t i = 0; i < numberof(gems); i++) {
         VALUE feature = rb_autoload_p(rb_cObject, rb_intern(gems[i]));
         if (NIL_P(feature)) continue;
         int state;
         rb_protect(load_decoration_gem, feature, &state);
-        if (state) rb_set_errinfo(Qnil);
+        (void)state;
     }
+    rb_set_errinfo(saved_errinfo);
 }
 
 // Load the decoration gems on the first error display instead of at boot.
