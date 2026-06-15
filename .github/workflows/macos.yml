@@ -33,7 +33,7 @@ jobs:
       matrix:
         test_task: ['check']
         configure: ['']
-        os: ['macos-14', 'macos-15', 'macos-15-intel']
+        os: ['macos-26', 'macos-15', 'macos-15-intel', 'macos-14']
         include:
           - test_task: test-all TESTS=--repeat-count=2
             os: macos-14
