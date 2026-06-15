@@ -852,6 +852,7 @@ int main() {printf("%"PRI_CONFTEST_PREFIX"#{neg ? 'd' : 'u'}\\n", conftest_const
   # [+headers+] a String or an Array of strings which contains names of header
   #             files.
   def try_func(func, libs, headers = nil, opt = "", &b)
+    include_headers = headers
     headers = cpp_include(headers)
     prepare = String.new
     case func
@@ -890,7 +891,7 @@ extern int t(void);
 #{MAIN_DOES_NOTHING 't'}
 int t(void) { #{decltype["volatile p"]}; p = (#{decltype[]})#{func}; return !p; }
 SRC
-    call && try_link(<<"SRC", opt, &b)
+    call && !(decltype && include_headers) && try_link(<<"SRC", opt, &b)
 #{headers}
 /*top*/
 extern int t(void);
