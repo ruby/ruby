@@ -1762,6 +1762,10 @@ exc_message(VALUE exc)
     return rb_funcallv(exc, idTo_s, 0, 0);
 }
 
+// Whether error_highlight, did_you_mean, and syntax_suggest have already
+// been loaded (lazily on the first error, or eagerly via Process.warmup).
+static bool decoration_gems_loaded = false;
+
 static VALUE
 load_decoration_gem(VALUE feature)
 {
@@ -1770,23 +1774,12 @@ load_decoration_gem(VALUE feature)
     return rb_require_string(feature);
 }
 
-// Load error_highlight, did_you_mean, and syntax_suggest on the first
-// error display instead of at boot. rb_define_gem_modules registers an
-// autoload entry for each enabled gem; disabled gems have no entry and
-// are skipped. Returns whether the caller should re-dispatch to pick up
-// the detailed_message decorators the gems prepend.
-static bool
-lazy_load_decoration_gems(VALUE exc)
+// Require error_highlight, did_you_mean, and syntax_suggest.
+// rb_define_gem_modules registers an autoload entry for each enabled gem;
+// disabled gems have no entry and are skipped.
+static void
+require_decoration_gems(void)
 {
-    static bool done = false;
-    if (done || !rb_ractor_main_p()) return false;
-    done = true;
-
-    // When entered through super from a decorator already sitting above
-    // this method, the caller decorates the result; re-dispatching would
-    // decorate it twice.
-    bool redispatch = rb_method_basic_definition_p(CLASS_OF(exc), id_detailed_message);
-
     static const char *const gems[] = {"ErrorHighlight", "DidYouMean", "SyntaxSuggest"};
     for (size_t i = 0; i < numberof(gems); i++) {
         VALUE feature = rb_autoload_p(rb_cObject, rb_intern(gems[i]));
@@ -1795,7 +1788,36 @@ lazy_load_decoration_gems(VALUE exc)
         rb_protect(load_decoration_gem, feature, &state);
         if (state) rb_set_errinfo(Qnil);
     }
+}
+
+// Load the decoration gems on the first error display instead of at boot.
+// Returns whether the caller should re-dispatch to pick up the
+// detailed_message decorators the gems prepend.
+static bool
+lazy_load_decoration_gems(VALUE exc)
+{
+    if (decoration_gems_loaded || !rb_ractor_main_p()) return false;
+    decoration_gems_loaded = true;
+
+    // When entered through super from a decorator already sitting above
+    // this method, the caller decorates the result; re-dispatching would
+    // decorate it twice.
+    bool redispatch = rb_method_basic_definition_p(CLASS_OF(exc), id_detailed_message);
+
+    require_decoration_gems();
     return redispatch;
+}
+
+// Load the decoration gems eagerly, e.g. from Process.warmup before a
+// pre-forking server forks, so the prepended detailed_message decorators
+// land in shared memory and do not bust method caches at runtime.
+void
+rb_eager_load_detailed_message_extension(void)
+{
+    if (decoration_gems_loaded || !rb_ractor_main_p()) return;
+    decoration_gems_loaded = true;
+
+    require_decoration_gems();
 }
 
 /*
