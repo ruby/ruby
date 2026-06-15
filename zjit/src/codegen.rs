@@ -626,9 +626,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::ObjectAlloc { val, state } => gen_object_alloc(jit, asm, opnd!(val), &function.frame_state(*state)),
         &Insn::ObjectAllocClass { class, state } => gen_object_alloc_class(asm, class, &function.frame_state(state)),
         Insn::StringCopy { val, chilled, state } => gen_string_copy(asm, opnd!(val), *chilled, &function.frame_state(*state)),
-        // concatstrings shouldn't have 0 strings
-        // If it happens we abort the compilation for now
-        Insn::StringConcat { strings, state, .. } if strings.is_empty() => return Err(*state),
         Insn::StringConcat { strings, state } => gen_string_concat(jit, asm, opnds!(strings), &function.frame_state(*state)),
         &Insn::StringGetbyte { string, index } => gen_string_getbyte(asm, opnd!(string), opnd!(index)),
         Insn::StringSetbyteFixnum { string, index, value } => gen_string_setbyte_fixnum(asm, opnd!(string), opnd!(index), opnd!(value)),
@@ -659,9 +656,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::InvokeBlock { cd, state, reason, .. } => gen_invokeblock(jit, asm, cd, &function.frame_state(state), reason),
         Insn::InvokeBlockIfunc { cd, block_handler, args, state, .. } => gen_invokeblock_ifunc(jit, asm, *cd, opnd!(block_handler), opnds!(args), &function.frame_state(*state)),
         Insn::InvokeProc { recv, args, state, kw_splat } => gen_invokeproc(jit, asm, opnd!(recv), opnds!(args), *kw_splat, &function.frame_state(*state)),
-        // Ensure we have enough room fit ec, self, and arguments
-        // TODO remove this check when we have stack args (we can use Time.new to test it)
-        Insn::InvokeBuiltin { bf, state, .. } if bf.argc + 2 > (C_ARG_OPNDS.len() as i32) => return Err(*state),
         Insn::InvokeBuiltin { bf, leaf, args, state, .. } => gen_invokebuiltin(jit, asm, &function.frame_state(*state), bf, *leaf, opnds!(args)),
         &Insn::EntryPoint { jit_entry_idx } => no_output!(gen_entry_point(jit, asm, jit_entry_idx)),
         Insn::Return { val } => no_output!(gen_return(asm, opnd!(val))),
@@ -722,12 +716,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::GuardGreaterEq { left, right, state, .. } => gen_guard_greater_eq(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, invariant, &function.frame_state(*state))),
         Insn::CCall { cfunc, recv, args, name, owner: _, return_type: _, elidable: _ } => gen_ccall(asm, *cfunc, *name, opnd!(recv), opnds!(args)),
-        // Give up CCallWithFrame for 7+ args since asm.ccall() supports at most 6 args (recv + args).
-        // We're currently emitting a CCallWithFrame for `super` in to a cfunction.
-        // We can't lower to `gen_send_without_block` because the
-        // source opcode isn't necessarily `opt_send_without_block`
-        // and so the interpreter stack layout may be incompatible.
-        Insn::CCallWithFrame { cd, state, args, block, .. } if args.len() + 1 > C_ARG_OPNDS.len() => return Err(*state),
         Insn::CCallWithFrame { cfunc, recv, name, args, cme, state, block, .. } =>
             gen_ccall_with_frame(jit, asm, *cfunc, *name, opnd!(recv), opnds!(args), *cme, *block, &function.frame_state(*state)),
         Insn::CCallVariadic { cfunc, recv, name, args, cme, state, block, return_type: _, elidable: _ } => {
@@ -967,6 +955,7 @@ fn gen_fixnum_bit_check(asm: &mut Assembler, val: Opnd, index: u8) -> Opnd {
 }
 
 fn gen_invokebuiltin(jit: &JITState, asm: &mut Assembler, state: &FrameState, bf: &rb_builtin_function, leaf: bool, args: Vec<Opnd>) -> lir::Opnd {
+    // +2 for ec, self
     assert!(bf.argc + 2 <= C_ARG_OPNDS.len() as i32,
             "gen_invokebuiltin should not be called for builtin function {} with too many arguments: {}",
             unsafe { std::ffi::CStr::from_ptr(bf.name).to_str().unwrap() },
@@ -1052,6 +1041,9 @@ fn gen_ccall_with_frame(
     gen_stack_overflow_check(jit, asm, state, state.stack_size());
 
     let args_with_recv_len = args.len() + 1;
+    if args_with_recv_len > C_ARG_OPNDS.len() {
+        unimplemented!("Passing C call arguments on the stack");
+    }
     let caller_stack_size = state.stack().len() - args_with_recv_len;
 
     // Can't use gen_prepare_non_leaf_call() because we need to adjust the SP

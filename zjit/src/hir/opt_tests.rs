@@ -18779,4 +18779,89 @@ mod hir_opt_tests {
           Return v200
         ");
     }
+
+    #[test]
+    fn test_ccall_with_frame_too_many_args_result_used_in_later_block() {
+        unsafe extern "C" fn test_seven_args(
+            _self: VALUE,
+            a: VALUE,
+            b: VALUE,
+            c: VALUE,
+            d: VALUE,
+            e: VALUE,
+            f: VALUE,
+            g: VALUE,
+        ) -> VALUE {
+            unsafe { rb_ary_new_from_args(7, a, b, c, d, e, f, g) }
+        }
+
+        with_rubyvm(|| {
+            let klass = define_class("ZJITSevenArgs", unsafe { rb_cObject });
+            unsafe {
+                rb_define_method(
+                    klass,
+                    c"seven".as_ptr(),
+                    Some(std::mem::transmute::<
+                        unsafe extern "C" fn(VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE, VALUE) -> VALUE,
+                        unsafe extern "C" fn(VALUE) -> VALUE,
+                    >(test_seven_args)),
+                    7,
+                );
+            }
+        });
+
+        eval(r#"
+            def test(obj, flag)
+              priceable = obj.seven(1, 2, 3, 4, 5, 6, 7)
+              if flag
+                priceable
+              else
+                nil
+              end
+            end
+
+            obj = ZJITSevenArgs.new
+            test(obj, true)  # profile receiver class
+        "#);
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :obj@0x1000
+          v4:BasicObject = LoadField v2, :flag@0x1001
+          v5:NilClass = Const Value(nil)
+          Jump bb3(v1, v3, v4, v5)
+        bb2():
+          EntryPoint JIT(0)
+          v8:BasicObject = LoadArg :self@0
+          v9:BasicObject = LoadArg :obj@1
+          v10:BasicObject = LoadArg :flag@2
+          v11:NilClass = Const Value(nil)
+          Jump bb3(v8, v9, v10, v11)
+        bb3(v13:BasicObject, v14:BasicObject, v15:BasicObject, v16:NilClass):
+          v21:Fixnum[1] = Const Value(1)
+          v23:Fixnum[2] = Const Value(2)
+          v25:Fixnum[3] = Const Value(3)
+          v27:Fixnum[4] = Const Value(4)
+          v29:Fixnum[5] = Const Value(5)
+          v31:Fixnum[6] = Const Value(6)
+          v33:Fixnum[7] = Const Value(7)
+          v35:BasicObject = Send v14, :seven, v21, v23, v25, v27, v29, v31, v33 # SendFallbackReason: Too many arguments for LIR
+          PatchPoint NoEPEscape(test)
+          CheckInterrupts
+          v43:CBool = Test v15
+          v44:Falsy = RefineType v15, Falsy
+          CondBranch v43, bb5(), bb4(v13, v14, v44, v35)
+        bb5():
+          v46:Truthy = RefineType v15, Truthy
+          CheckInterrupts
+          Return v35
+        bb4(v53:BasicObject, v54:BasicObject, v55:Falsy, v56:BasicObject):
+          v60:NilClass = Const Value(nil)
+          CheckInterrupts
+          Return v60
+        ");
+    }
 }
