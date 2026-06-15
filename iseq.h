@@ -218,6 +218,7 @@ void rb_iseq_mark_and_move_insn_storage(struct iseq_compile_data_storage *arena)
 VALUE rb_iseq_load(VALUE data, VALUE parent, VALUE opt);
 VALUE rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc);
 unsigned int rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos);
+const struct iseq_insn_info_entry *rb_iseq_insn_info_entry(const rb_iseq_t *iseq, size_t pos);
 #ifdef USE_ISEQ_NODE_ID
 int rb_iseq_node_id(const rb_iseq_t *iseq, size_t pos);
 #endif

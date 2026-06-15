@@ -15,6 +15,10 @@ struct tracepoint_track {
 
 #define objects_max (sizeof(((struct tracepoint_track *)NULL)->objects)/sizeof(VALUE))
 
+struct tracepoint_raw_line {
+    VALUE events;
+};
+
 static void
 tracepoint_track_objspace_events_i(VALUE tpval, void *data)
 {
@@ -78,6 +82,47 @@ tracepoint_track_objspace_events(VALUE self)
     return result;
 }
 
+static void
+tracepoint_track_raw_line_events_i(VALUE data, const rb_trace_arg_t *trace_arg)
+{
+    struct tracepoint_raw_line *track = (struct tracepoint_raw_line *)data;
+    VALUE event = rb_ary_new_capa(2);
+
+    rb_ary_push(event, rb_tracearg_path((rb_trace_arg_t *)trace_arg));
+    rb_ary_push(event, rb_tracearg_lineno((rb_trace_arg_t *)trace_arg));
+    rb_ary_push(track->events, event);
+}
+
+static VALUE
+tracepoint_track_raw_line_events_yield(VALUE data)
+{
+    rb_yield(Qundef);
+    return Qnil;
+}
+
+static VALUE
+tracepoint_track_raw_line_events_ensure(VALUE data)
+{
+    rb_remove_event_hook((rb_event_hook_func_t)tracepoint_track_raw_line_events_i);
+    return Qnil;
+}
+
+static VALUE
+tracepoint_track_raw_line_events(VALUE self)
+{
+    struct tracepoint_raw_line track = {rb_ary_new()};
+
+    rb_add_event_hook2((rb_event_hook_func_t)tracepoint_track_raw_line_events_i,
+                       RUBY_EVENT_LINE,
+                       (VALUE)&track,
+                       RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG);
+
+    rb_ensure(tracepoint_track_raw_line_events_yield, Qnil,
+              tracepoint_track_raw_line_events_ensure, Qnil);
+
+    return track.events;
+}
+
 static VALUE
 tracepoint_specify_normal_and_internal_events(VALUE self)
 {
@@ -94,5 +139,6 @@ Init_tracepoint(void)
     tp_mBug = rb_define_module("Bug"); // GC root
     Init_gc_hook(tp_mBug);
     rb_define_module_function(tp_mBug, "tracepoint_track_objspace_events", tracepoint_track_objspace_events, 0);
+    rb_define_module_function(tp_mBug, "tracepoint_track_raw_line_events", tracepoint_track_raw_line_events, 0);
     rb_define_module_function(tp_mBug, "tracepoint_specify_normal_and_internal_events", tracepoint_specify_normal_and_internal_events, 0);
 }

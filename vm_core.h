@@ -2329,8 +2329,9 @@ void rb_exec_event_hooks(struct rb_trace_arg_struct *trace_arg, rb_hook_list_t *
 } while (0)
 
 static inline void
-rb_exec_event_hook_orig(rb_execution_context_t *ec, rb_hook_list_t *hooks, rb_event_flag_t flag,
-                        VALUE self, ID id, ID called_id, VALUE klass, VALUE data, int pop_p)
+rb_exec_event_hook_with_location(rb_execution_context_t *ec, rb_hook_list_t *hooks, rb_event_flag_t flag,
+                                 VALUE self, ID id, ID called_id, VALUE klass, VALUE data, int pop_p,
+                                 VALUE path, int lineno)
 {
     struct rb_trace_arg_struct trace_arg;
 
@@ -2344,10 +2345,18 @@ rb_exec_event_hook_orig(rb_execution_context_t *ec, rb_hook_list_t *hooks, rb_ev
     trace_arg.called_id = called_id;
     trace_arg.klass = klass;
     trace_arg.data = data;
-    trace_arg.path = Qundef;
+    trace_arg.lineno = lineno;
+    trace_arg.path = path;
     trace_arg.klass_solved = 0;
 
     rb_exec_event_hooks(&trace_arg, hooks, pop_p);
+}
+
+static inline void
+rb_exec_event_hook_orig(rb_execution_context_t *ec, rb_hook_list_t *hooks, rb_event_flag_t flag,
+                        VALUE self, ID id, ID called_id, VALUE klass, VALUE data, int pop_p)
+{
+    rb_exec_event_hook_with_location(ec, hooks, flag, self, id, called_id, klass, data, pop_p, Qundef, 0);
 }
 
 struct rb_ractor_pub {

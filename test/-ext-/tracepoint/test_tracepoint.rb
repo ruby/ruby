@@ -59,6 +59,16 @@ class TestTracepointObj < Test::Unit::TestCase
     assert_raise(TypeError){ Bug.tracepoint_specify_normal_and_internal_events }
   end
 
+  def test_raw_line_tracepoint_uses_current_path_and_lineno
+    target_line = nil
+
+    events = Bug.tracepoint_track_raw_line_events do
+      target_line = __LINE__
+    end
+
+    assert_include events, [__FILE__, target_line]
+  end
+
   def test_after_gc_start_hook_with_GC_stress
     bug8492 = '[ruby-dev:47400] [Bug #8492]: infinite after_gc_start_hook reentrance'
     assert_nothing_raised(Timeout::Error, bug8492) do

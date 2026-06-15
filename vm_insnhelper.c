@@ -7117,14 +7117,13 @@ vm_opt_regexpmatch2(VALUE recv, VALUE obj)
     }
 }
 
-rb_event_flag_t rb_iseq_event_flags(const rb_iseq_t *iseq, size_t pos);
-
 NOINLINE(static void vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp));
 
 static inline void
 vm_trace_hook(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VALUE *pc,
               rb_event_flag_t pc_events, rb_event_flag_t target_event,
-              rb_hook_list_t *global_hooks, rb_hook_list_t *local_hooks, VALUE val)
+              rb_hook_list_t *global_hooks, rb_hook_list_t *local_hooks, VALUE val,
+              VALUE path, int lineno)
 {
     rb_event_flag_t event = pc_events & target_event;
     VALUE self = GET_SELF();
@@ -7137,7 +7136,7 @@ vm_trace_hook(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VAL
         /* increment PC because source line is calculated with PC-1 */
         reg_cfp->pc++;
         vm_dtrace(event, ec);
-        rb_exec_event_hook_orig(ec, global_hooks, event, self, 0, 0, 0 , val, 0);
+        rb_exec_event_hook_with_location(ec, global_hooks, event, self, 0, 0, 0 , val, 0, path, lineno);
         reg_cfp->pc--;
     }
 
@@ -7146,7 +7145,7 @@ vm_trace_hook(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VAL
         if (event & local_hooks->events) {
             /* increment PC because source line is calculated with PC-1 */
             reg_cfp->pc++;
-            rb_exec_event_hook_orig(ec, local_hooks, event, self, 0, 0, 0 , val, 0);
+            rb_exec_event_hook_with_location(ec, local_hooks, event, self, 0, 0, 0 , val, 0, path, lineno);
             reg_cfp->pc--;
         }
     }
@@ -7154,7 +7153,9 @@ vm_trace_hook(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VAL
 
 #define VM_TRACE_HOOK(target_event, val) do { \
     if ((pc_events & (target_event)) & enabled_flags) { \
-        vm_trace_hook(ec, reg_cfp, pc, pc_events, (target_event), global_hooks, local_hooks, (val)); \
+        VALUE trace_path_ = ((target_event) & RUBY_EVENT_LINE) ? rb_iseq_path(iseq) : Qundef; \
+        int trace_lineno_ = ((target_event) & RUBY_EVENT_LINE) ? lineno : 0; \
+        vm_trace_hook(ec, reg_cfp, pc, pc_events, (target_event), global_hooks, local_hooks, (val), trace_path_, trace_lineno_); \
     } \
 } while (0)
 
@@ -7180,7 +7181,9 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
     else {
         const rb_iseq_t *iseq = CFP_ISEQ(reg_cfp);
         size_t pos = pc - ISEQ_BODY(iseq)->iseq_encoded;
-        rb_event_flag_t pc_events = rb_iseq_event_flags(iseq, pos);
+        const struct iseq_insn_info_entry *entry = rb_iseq_insn_info_entry(iseq, pos);
+        rb_event_flag_t pc_events = entry ? entry->events : 0;
+        int lineno = entry ? entry->line_no : 0;
         unsigned int local_hooks_cnt = iseq->aux.exec.local_hooks_cnt;
         rb_hook_list_t *local_hooks = NULL;
         if (RB_UNLIKELY(local_hooks_cnt > 0)) {
@@ -7249,7 +7252,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
             /* check traces */
             if ((pc_events & RUBY_EVENT_B_CALL) && bmethod_frame && (bmethod_events & RUBY_EVENT_CALL)) {
                 /* b_call instruction running as a method. Fire call event. */
-                vm_trace_hook(ec, reg_cfp, pc, RUBY_EVENT_CALL, RUBY_EVENT_CALL, global_hooks, bmethod_local_hooks, Qundef);
+                vm_trace_hook(ec, reg_cfp, pc, RUBY_EVENT_CALL, RUBY_EVENT_CALL, global_hooks, bmethod_local_hooks, Qundef, Qundef, 0);
             }
             VM_TRACE_HOOK(RUBY_EVENT_CLASS | RUBY_EVENT_CALL | RUBY_EVENT_B_CALL,   Qundef);
             VM_TRACE_HOOK(RUBY_EVENT_RESCUE,                                        rescue_errinfo(ec, reg_cfp));
@@ -7259,7 +7262,7 @@ vm_trace(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp)
             VM_TRACE_HOOK(RUBY_EVENT_END | RUBY_EVENT_RETURN | RUBY_EVENT_B_RETURN, TOPN(0));
             if ((pc_events & RUBY_EVENT_B_RETURN) && bmethod_frame && (bmethod_events & RUBY_EVENT_RETURN)) {
                 /* b_return instruction running as a method. Fire return event. */
-                vm_trace_hook(ec, reg_cfp, pc, RUBY_EVENT_RETURN, RUBY_EVENT_RETURN, global_hooks, bmethod_local_hooks, TOPN(0));
+                vm_trace_hook(ec, reg_cfp, pc, RUBY_EVENT_RETURN, RUBY_EVENT_RETURN, global_hooks, bmethod_local_hooks, TOPN(0), Qundef, 0);
             }
         }
     }

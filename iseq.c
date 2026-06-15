@@ -2469,6 +2469,12 @@ rb_iseq_line_no(const rb_iseq_t *iseq, size_t pos)
     }
 }
 
+const struct iseq_insn_info_entry *
+rb_iseq_insn_info_entry(const rb_iseq_t *iseq, size_t pos)
+{
+    return get_insn_info(iseq, pos);
+}
+
 #ifdef USE_ISEQ_NODE_ID
 int
 rb_iseq_node_id(const rb_iseq_t *iseq, size_t pos)
