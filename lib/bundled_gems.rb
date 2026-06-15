@@ -165,31 +165,22 @@ module Gem::BUNDLED_GEMS # :nodoc:
       motivation = level == :warning ? "silence this warning" : "fix this error"
       msg += "\nYou can add #{name} to your Gemfile or gemspec to #{motivation}."
 
-      # We detect the gem name from caller_locations. First we walk until we find `require`
-      # then take the first frame that's not from `require`.
+      # We detect the gem name from caller_locations. The frame that issued the
+      # require we are warning about sits just above our own machinery: the
+      # `warning?` call and the `require` wrapper installed by replace_require.
+      # Skip those by matching this file's path rather than a fixed frame count,
+      # so the detection does not break when the call depth into build_message
+      # changes.
       #
       # Additionally, we need to skip Bootsnap and Zeitwerk if present, these
       # gems decorate Kernel#require, so they are not really the ones issuing
       # the require call users should be warned about. Those are upwards.
-      frames_to_skip = 3
       location = nil
-      require_found = false
       Thread.each_caller_location do |cl|
-        if frames_to_skip >= 1
-          frames_to_skip -= 1
-          next
-        end
-
-        if require_found
-          if cl.base_label != "require"
-            location = cl.path
-            break
-          end
-        else
-          if cl.base_label == "require"
-            require_found = true
-          end
-        end
+        next if cl.path == __FILE__
+        next if cl.base_label == "require"
+        location = cl.path
+        break
       end
 
       if location && File.file?(location) && !location.start_with?(Gem::BUNDLED_GEMS::LIBDIR)
