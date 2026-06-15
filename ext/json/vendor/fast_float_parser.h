@@ -707,6 +707,36 @@ static inline double ffp_bits2double(uint64_t bits) {
     return d;
 }
 
+static inline unsigned int
+ffc_nlz_int64(uint64_t x)
+{
+#if defined(_MSC_VER) && defined(__AVX2__)
+    return (unsigned int)__lzcnt64(x);
+
+#elif defined(__x86_64__) && defined(__LZCNT__)
+    return (unsigned int)_lzcnt_u64(x);
+
+#elif defined(_WIN64) && defined(_MSC_VER) /* &&! defined(__AVX2__) */
+    unsigned long r;
+    return _BitScanReverse64(&r, x) ? (63u - (unsigned int)r) : 64;
+
+#elif __has_builtin(__builtin_clzll)
+    return (unsigned int)__builtin_clzll((unsigned long long)x);
+
+#else
+    uint64_t y;
+    unsigned int n = 64;
+    y = x >> 32; if (y) {n -= 32; x = y;}
+    y = x >> 16; if (y) {n -= 16; x = y;}
+    y = x >>  8; if (y) {n -=  8; x = y;}
+    y = x >>  4; if (y) {n -=  4; x = y;}
+    y = x >>  2; if (y) {n -=  2; x = y;}
+    y = x >>  1; if (y) {return n - 2;}
+    return (unsigned int)(n - x);
+
+#endif
+}
+
 /* q = power of ten, w = mantissa (exact, fits in uint64). neg = sign. */
 static inline double ffp_s2d(int64_t q, uint64_t w, bool neg) {
     if (w == 0) {
@@ -716,14 +746,14 @@ static inline double ffp_s2d(int64_t q, uint64_t w, bool neg) {
     const uint64_t sign = (uint64_t)(neg != 0) << 63;
     uint64_t mantissa, prod_hi, prod_lo, sp_hi, sp_lo;
     int32_t  power2;
-    int lz, upperbit, shift, index;
+    int upperbit, shift, index;
 
     if (q < FFP_SMALLEST_POW10) return ffp_bits2double(sign); /* underflow -> 0 */
     if (q > FFP_LARGEST_POW10) {
         return ffp_bits2double(sign | ((uint64_t)FFP_INFINITE_POWER << FFP_MANTISSA_BITS));
     }
 
-    lz = __builtin_clzll(w);
+    unsigned int lz = ffc_nlz_int64(w);
     w <<= lz;
 
     /* compute_product_approximation<mantissa_bits + 3 = 55>: precision_mask = 0x1FF. */
