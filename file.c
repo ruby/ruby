@@ -3415,6 +3415,13 @@ rb_file_s_utime(int argc, VALUE *argv, VALUE _)
  * File.delete(link_path)
  * ```
  *
+ * Arguments `atime` and `mtime` may be Time objects (as above).
+ *
+ * Either or both may be integers;
+ * when an integer `i` is passed, `Time.new(i)` is used.
+ *
+ * Either or both may be `nil`, in which case `Time.now` is used.
+ *
  * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  */
 
