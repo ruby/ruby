@@ -94,8 +94,8 @@ rb_define_gem_modules(VALUE flags_value, VALUE _)
     if (flags->gem) {
         rb_define_module("Gem");
         // Make the error decoration gems autoload on first constant access.
-        // gem_prelude.rb loads them for error display via an
-        // Exception#detailed_message hook.
+        // error.c loads them for error display on the first error
+        // (or eagerly via Process.warmup).
         if (flags->error_highlight) {
             rb_autoload_str(rb_cObject, rb_intern("ErrorHighlight"), rb_fstring_cstr("error_highlight"));
         }
