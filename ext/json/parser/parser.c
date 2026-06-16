@@ -2412,6 +2412,7 @@ static VALUE cResumableParser_parse(VALUE self)
         complete = false;
         if (RTEST(rb_ivar_get(rb_errinfo(), rb_intern("@eos")))) {
             complete = false; // is an EOS error
+            rb_set_errinfo(Qnil);
         } else {
             rb_jump_tag(status); // reraise
         }
