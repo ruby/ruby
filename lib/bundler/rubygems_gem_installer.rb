@@ -182,7 +182,10 @@ module Bundler
 
     def connect_to_jobserver
       return unless ENV["MAKEFLAGS"]
-      read_fd, write_fd = ENV["MAKEFLAGS"].match(/--jobserver-auth=(\d+),(\d+)/)&.captures
+      # We append our own --jobserver-auth, so read the last one. Otherwise a
+      # parent jobserver's descriptors (e.g. `bundle install` run under
+      # `make -j`) would be picked up instead of the pool we just created.
+      read_fd, write_fd = ENV["MAKEFLAGS"].scan(/--jobserver-auth=(\d+),(\d+)/).last
 
       return unless read_fd && write_fd
 
