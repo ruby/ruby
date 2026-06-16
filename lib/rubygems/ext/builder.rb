@@ -43,7 +43,7 @@ class Gem::Ext::Builder
       have_make_arguments = make_program.size > 1
       n_jobs ||= 0
 
-      if !have_make_arguments && n_jobs > 1 && !ENV["MAKEFLAGS"]&.match(/-j\d?(\s|\Z)/)
+      if !have_make_arguments && n_jobs > 1 && !ENV["MAKEFLAGS"]&.match(/-j\d*(\s|\Z)/)
         make_program << "-j#{n_jobs}"
       end
     end
