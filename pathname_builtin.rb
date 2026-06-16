@@ -1119,22 +1119,21 @@ class Pathname    # * File *
   # dir_path = 'doc/foo'
   # dir_pn = Pathname(dir_path)
   # # Create directory; directory birthtime established.
-  # Dir.mkdir(dir_path)
-  # dir_pn.birthtime  # => 2026-06-16 16:04:44.160969137 -0500
+  # dir_pn.mkdir
+  # dir_pn.birthtime # => 2026-06-16 17:06:10.779192552 -0500
   # # A file therein and its Pathname.
-  # file_path = File.join(dir_path, 't.tmp')
+  # file_path = dir_pn.join('t.tmp')
   # file_pn = Pathname(file_path)
   # # Create file; file birthtime established; directory birthtime not updated.
-  # File.write(file_path, 'foo')
-  # file_pn.birthtime # => 2026-06-16 16:06:27.571297344 -0500
-  # dir_pn.birthtime  # => 2026-06-16 16:04:44.160969137 -0500
-  # # Write file; neither birthtime updated.
-  # File.write(file_path, 'bar')
-  # file_pn.birthtime # => 2026-06-16 16:06:27.571297344 -0500
-  # dir_pn.birthtime  # => 2026-06-16 16:04:44.160969137 -0500
+  # file_pn.write('foo')
+  # file_pn.birthtime # => 2026-06-16 17:07:59.339330622 -0500
+  # dir_pn.birthtime # => 2026-06-16 17:06:10.779192552 -0500
+  # file_pn.write('bar')
+  # file_pn.birthtime # => 2026-06-16 17:07:59.339330622 -0500
+  # dir_pn.birthtime # => 2026-06-16 17:06:10.779192552 -0500
   # # Clean up.
-  # File.delete(file_path)
-  # Dir.rmdir(dir_path)
+  # file_pn.delete
+  # dir_pn.rmdir
   # ```
   #
   def birthtime() File.birthtime(@path) end
