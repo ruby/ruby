@@ -1480,7 +1480,24 @@ class Pathname    # * File *
   #
   def lstat() File.lstat(@path) end
 
-  # See <tt>File.symlink</tt>.  Creates a symbolic link.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   make_symlink(path) -> 0
+  #
+  # Creates a symbolic link at the path in `self` to the entry at `path`:
+  #
+  # ```ruby
+  # path = 'doc/t.tmp'
+  # link_path = 'lib/u.tmp'
+  # File.write(path, 'foo')
+  # Pathname(link_path).make_symlink(path)
+  # File.symlink?(link_path) # => true
+  # File.file?(link_path)    # => false
+  # File.delete(path)
+  # File.delete(link_path)
+  # ```
+  #
   def make_symlink(old) File.symlink(old, @path) end
 
   # See <tt>File.truncate</tt>.  Truncate the file to +length+ bytes.

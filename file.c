@@ -3457,14 +3457,25 @@ rb_file_s_link(VALUE klass, VALUE from, VALUE to)
 
 #ifdef HAVE_SYMLINK
 /*
+ * :markup: markdown
+ *
  *  call-seq:
- *     File.symlink(old_name, new_name)   -> 0
+ *    File.symlink(path, link_path) -> 0
  *
- *  Creates a symbolic link called <i>new_name</i> for the existing file
- *  <i>old_name</i>. Raises a NotImplemented exception on
- *  platforms that do not support symbolic links.
+ *  Not supported on some platforms.
  *
- *     File.symlink("testfile", "link2test")   #=> 0
+ *  Creates a symbolic link at `link_path` to the entry at `path`:
+ *
+ *  ```ruby
+ *  path = 'doc/t.tmp'
+ *  link_path = 'lib/u.tmp'
+ *  File.write(path, 'foo')
+ *  File.symlink(path, link_path)
+ *  File.symlink?(link_path) # => true
+ *  File.file?(link_path)    # => false
+ *  File.delete(path)
+ *  File.delete(link_path)
+ *  ```
  *
  */
 
