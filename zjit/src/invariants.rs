@@ -263,7 +263,7 @@ pub fn track_no_ep_escape_assumption(
 }
 
 /// Returns true if a given ISEQ has previously escaped environment pointer.
-pub fn iseq_has_escaped_ep(iseq: IseqPtr) -> bool {
+pub fn iseq_seen_ep_escape(iseq: IseqPtr) -> bool {
     ZJITState::get_invariants().ep_escape_iseqs.contains(&iseq)
 }
 

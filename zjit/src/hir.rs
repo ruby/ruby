@@ -7,7 +7,7 @@
 #![allow(clippy::match_like_matches_macro)]
 use crate::{
     backend::lir::C_ARG_OPNDS,
-    cast::IntoUsize, codegen::{local_idx_to_ep_offset, max_iseq_versions}, cruby::*, invariants::{self, iseq_has_escaped_ep}, payload::get_or_create_iseq_payload, options::{debug, get_option, DumpHIR, InlineDepth}, state::ZJITState, json::Json,
+    cast::IntoUsize, codegen::{local_idx_to_ep_offset, max_iseq_versions}, cruby::*, invariants::{self, iseq_seen_ep_escape}, payload::get_or_create_iseq_payload, options::{debug, get_option, DumpHIR, InlineDepth}, state::ZJITState, json::Json,
     state,
 };
 use std::{
@@ -4404,7 +4404,7 @@ impl Function {
 
         // Reject callees whose environment pointer can escape (e.g., via binding).
         // TODO (nirvdrum 2026-04-15) The interaction between inlined frames and EP escape hasn't been verified.
-        if iseq_ep_starts_escaped(callee_iseq) || iseq_has_escaped_ep(callee_iseq) {
+        if iseq_ep_starts_escaped(callee_iseq) || iseq_seen_ep_escape(callee_iseq) {
             incr_counter!(inline_reject_ep_escapes);
             return false;
         }
@@ -7466,8 +7466,8 @@ fn add_iseq_to_hir(
     let ep_starts_escaped = iseq_ep_starts_escaped(iseq);
     // Check if the EP has been escaped at some point in the ISEQ. If it has, then we assume that
     // its EP is shared with other frames.
-    let iseq_has_escaped_ep = iseq_has_escaped_ep(iseq);
-    let ep_escaped = ep_starts_escaped || iseq_has_escaped_ep;
+    let seen_ep_escape = iseq_seen_ep_escape(iseq);
+    let ep_escaped = ep_starts_escaped || seen_ep_escape;
 
     // Iteratively fill out basic blocks using a queue.
     // TODO(max): Basic block arguments at edges
@@ -9426,10 +9426,10 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
     let opt_num: usize = params.opt_num.try_into().expect("iseq param opt_num >= 0");
     let lead_num: usize = params.lead_num.try_into().expect("iseq param lead_num >= 0");
     let passed_opt_num = jit_entry_idx;
-    // We don't need to check crate::cruby::iseq_ep_starts_escaped because we
+    // We don't need to check iseq_ep_starts_escaped() because we
     // don't enter ISEQ_TYPE_MAIN/ISEQ_TYPE_EVAL using JIT-to-JIT calls.
     // TODO: Stop compiling such JIT entries (Shopify/ruby#992)
-    let iseq_has_escaped_ep = iseq_has_escaped_ep(iseq);
+    let seen_ep_escape = iseq_seen_ep_escape(iseq);
 
     // If the iseq has keyword parameters, the keyword bits local will be appended to the local table.
     let kw_bits_idx: Option<usize> = if unsafe { rb_get_iseq_flags_has_kw(iseq) } {
@@ -9485,7 +9485,7 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
         // Once an ISEQ has escaped EP, HIR getlocal may need to read from the
         // VM frame instead of FrameState. Direct JIT-to-JIT entry passes locals
         // as C arguments, so initialize the frame slots here before such reads.
-        if iseq_has_escaped_ep {
+        if seen_ep_escape {
             let ep_offset = local_idx_to_ep_offset(iseq, local_idx);
             let local_id = unsafe { rb_zjit_local_id(iseq, local_idx.try_into().unwrap()) };
             let ep = *ep.get_or_insert_with(|| fun.push_insn(jit_entry_block, Insn::GetEP { level: 0 }));
