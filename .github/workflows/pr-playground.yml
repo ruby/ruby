@@ -83,7 +83,8 @@ jobs:
               });
               const artifact = artifacts.find(artifact => artifact.name == 'github-pr-info');
               if (!artifact) {
-                throw new Error('Cannot find github-pr-info.txt artifact');
+                core.warning('Cannot find github-pr-info.txt artifact; skipping');
+                return null;
               }
 
               const { data } = await github.rest.actions.downloadArtifact({
@@ -99,6 +100,10 @@ jobs:
             }
 
             const prNumber = await derivePRNumber();
+            if (!prNumber) {
+              core.info(`No PR number could be derived; skipping.`);
+              return;
+            }
 
             const { data: pr } = await github.rest.pulls.get({
               owner: context.repo.owner,
