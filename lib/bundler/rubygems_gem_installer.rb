@@ -4,6 +4,11 @@ require "rubygems/installer"
 
 module Bundler
   class RubyGemsGemInstaller < Gem::Installer
+    # Cap how many jobserver slots a single gem's `make` may grab so that one
+    # gem with many recipes doesn't starve the others sharing the pool. Beyond
+    # a handful of jobs the extra parallelism rarely pays off in practice.
+    MAX_JOBS_PER_GEM = 3
+
     def check_executable_overwrite(filename)
       # Bundler needs to install gems regardless of binstub overwriting
     end
@@ -124,11 +129,11 @@ module Bundler
     end
 
     def build_jobs
-      @jobserver_read_io&.read_nonblock(3, @jobserver_tokens)
-      available_jobs = @jobserver_tokens.empty? ? nil : @jobserver_tokens.size
+      @jobserver_read_io&.read_nonblock(MAX_JOBS_PER_GEM, @jobserver_tokens)
+      acquired_jobs = @jobserver_tokens.empty? ? nil : @jobserver_tokens.size
 
-      available_jobs || Bundler.settings[:jobs] || super
-    rescue IO::WaitReadable
+      acquired_jobs || Bundler.settings[:jobs] || super
+    rescue IO::WaitReadable, EOFError
       1
     end
 
