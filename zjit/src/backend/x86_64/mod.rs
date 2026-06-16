@@ -1150,8 +1150,9 @@ impl Assembler {
             let preferred_registers = trace_compile_phase("preferred_registers", || asm.preferred_register_assignments(&intervals));
             let (assignments, num_stack_slots) = trace_compile_phase("linear_scan", || asm.linear_scan(intervals.clone(), regs.len(), &preferred_registers));
 
-            let total_stack_slots = asm.stack_state.stack_base_idx + num_stack_slots;
-            if total_stack_slots > Self::MAX_FRAME_STACK_SLOTS {
+            asm.stack_state.num_spill_slots = num_stack_slots;
+            let stack_slot_count = asm.stack_state.stack_slot_count();
+            if stack_slot_count > Self::MAX_FRAME_STACK_SLOTS {
                 return Err(CompileError::NativeStackTooLarge);
             }
 
@@ -1175,21 +1176,20 @@ impl Assembler {
                 }
             }
 
-            // Update FrameSetup slot_count to account for:
-            // 1) stack slots reserved for block params (stack_base_idx), and
-            // 2) register allocator spills (num_stack_slots).
+            // Update FrameSetup slot_count now that StackState knows the
+            // register allocator spill count.
             trace_compile_phase("count_stack_slots", || {
                 for block in asm.basic_blocks.iter_mut() {
                     for insn in block.insns.iter_mut() {
                         if let Insn::FrameSetup { slot_count, .. } = insn {
-                            *slot_count = total_stack_slots;
+                            *slot_count = stack_slot_count;
                         }
                     }
                 }
             });
 
             trace_compile_phase("resolve_ssa", || {
-                asm.handle_caller_saved_regs(&intervals, &assignments, &C_ARG_REGREGS, total_stack_slots);
+                asm.handle_caller_saved_regs(&intervals, &assignments, &C_ARG_REGREGS);
                 asm.resolve_ssa(&intervals, &assignments);
             });
 
