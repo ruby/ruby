@@ -184,18 +184,21 @@ RSpec.describe Bundler::ParallelInstaller do
       old_method = Bundler::RubyGemsGemInstaller.instance_method(:build_jobs)
       Bundler::RubyGemsGemInstaller.remove_method(:build_jobs)
 
-      gem_one_waiting = true
-      gem_two_waiting = true
+      # Rendezvous so that "one" grabs its slots first and keeps holding them
+      # until "two" has grabbed the rest. Blocking on a queue avoids the
+      # busy-wait and makes the ordering deterministic.
+      one_acquired = Thread::Queue.new
+      two_acquired = Thread::Queue.new
 
       Bundler::RubyGemsGemInstaller.define_method(:build_jobs) do
         if spec.name == "one"
           value = old_method.bind(self).call
-          gem_one_waiting = false
-          sleep(0.1) while gem_two_waiting
+          one_acquired << true
+          two_acquired.pop
         elsif spec.name == "two"
-          sleep(0.1) while gem_one_waiting
+          one_acquired.pop
           value = old_method.bind(self).call
-          gem_two_waiting = false
+          two_acquired << true
         end
 
         value
