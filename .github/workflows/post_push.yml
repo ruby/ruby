@@ -28,6 +28,7 @@ jobs:
         if: ${{ github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/heads/ruby_') }}
 
       - name: Fetch changesets on bugs.ruby-lang.org
+        continue-on-error: true
         run: |
           curl "https://bugs.ruby-lang.org/sys/fetch_changesets?key=${REDMINE_SYS_API_KEY}" -s --fail-with-body -w '* status: %{http_code}\n'
         env:
