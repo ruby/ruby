@@ -83,6 +83,15 @@ RSpec.describe Bundler::ParallelInstaller do
         skip "This example is runnable when RubyGems::Installer implements `build_jobs`"
       end
 
+      # When run under a parent make that already passes `-j` (e.g. ruby/ruby's
+      # `make test-bundler-parallel`), RubyGems' extension builder sees the
+      # inherited MAKEFLAGS as "jobs already requested" and skips appending its
+      # own `-jN`. That makes the per-gem slot count unobservable, so these
+      # assertions can never hold. Skip rather than fail in that environment.
+      if ENV["MAKEFLAGS"]&.match?(/-j\d*(\s|\Z)/)
+        skip "This example does not work under a parent make jobserver"
+      end
+
       require "support/artifice/compact_index"
 
       @previous_client = Gem::Request::ConnectionPools.client
