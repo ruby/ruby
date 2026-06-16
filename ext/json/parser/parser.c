@@ -1543,6 +1543,8 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
         json_eat_whitespace(state, config);
 
         VALUE value;
+        const char *value_start = state->cursor;
+
         switch (peek(state)) {
             case 'n':
                 json_match_keyword(state, "null", 0);
@@ -1578,13 +1580,12 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
                 break;
 
             case '-': {
-                const char *start = state->cursor;
                 state->cursor++;
 
-                value = json_parse_number(state, config, true, start);
+                value = json_parse_number(state, config, true, value_start);
 
                 if (RB_UNLIKELY(UNDEF_P(value) && config->allow_nan && peek(state) == 'I')) {
-                    state->cursor = start;
+                    state->cursor = value_start;
                     json_match_keyword(state, "-Infinity", 1);
                     value = CMinusInfinity;
                     break;
@@ -1593,43 +1594,41 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
                 // Top level numbers are ambiguous when parsing streams, we can't
                 // know if we parsed all the digits if we hit EOS.
                 if (RB_UNLIKELY(resumable && eos(state))) {
-                    state->cursor = start;
+                    state->cursor = value_start;
                     return false;
                 }
 
                 if (RB_UNLIKELY(UNDEF_P(value))) {
-                    raise_syntax_error_at("invalid number: %s", state, start);
+                    raise_syntax_error_at("invalid number: %s", state, value_start);
                 }
                 break;
             }
 
             case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9': {
-                const char *start = state->cursor;
-
-                value = json_parse_number(state, config, false, start);
+                value = json_parse_number(state, config, false, value_start);
 
                 // Top level numbers are ambiguous when parsing streams, we can't
                 // know if we parsed all the digits if we hit EOS.
                 if (RB_UNLIKELY(resumable && eos(state))) {
-                    state->cursor = start;
+                    state->cursor = value_start;
                     return false;
                 }
 
                 if (RB_UNLIKELY(UNDEF_P(value))) {
-                    raise_syntax_error_at("invalid number: %s", state, start);
+                    raise_syntax_error_at("invalid number: %s", state, value_start);
                 }
                 break;
             }
 
             case '"': {
                 // %r{\A"[^"\\\t\n\x00]*(?:\\[bfnrtu\\/"][^"\\]*)*"}
-                const char *start = state->cursor;
                 value = json_parse_string(state, config, false);
 
                 if (RB_UNLIKELY(UNDEF_P(value))) {
                     bool is_eos = eos(state);
-                    if (resumable) {
-                        state->cursor = start;
+                    if (resumable && is_eos) {
+                        state->cursor = value_start;
+                        return false;
                     }
                     raise_parse_error("unexpected end of input, expected closing \"", state, is_eos);
                 }
@@ -1637,7 +1636,7 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
             }
 
             case '[': {
-                const char *start = state->cursor++;
+                state->cursor++;
                 json_eat_whitespace(state, config);
 
                 const char next = peek(state);
@@ -1646,7 +1645,7 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
                     value = json_decode_array(state, config, 0);
                     break;
                 } else if (resumable && next == 0) {
-                    state->cursor = start;
+                    state->cursor = value_start;
                     return false;
                 }
 
@@ -1666,8 +1665,6 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
             }
 
             case '{': {
-                const char *object_start_cursor = state->cursor;
-
                 state->cursor++;
                 json_eat_whitespace(state, config);
 
@@ -1676,7 +1673,7 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
                     value = json_decode_object(state, config, 0);
                     break;
                 } else if (resumable && eos(state)) {
-                    state->cursor = object_start_cursor;
+                    state->cursor = value_start;
                     return false;
                 }
 
@@ -1690,7 +1687,7 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
                     .type = JSON_FRAME_OBJECT,
                     .phase = JSON_PHASE_OBJECT_KEY,
                     .value_stack_head = state->value_stack->head,
-                    .start_offset = object_start_cursor - state->start,
+                    .start_offset = value_start - state->start,
                 });
                 goto JSON_PHASE_OBJECT_KEY;
             }
