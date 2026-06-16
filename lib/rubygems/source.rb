@@ -299,7 +299,10 @@ class Gem::Source
         "#{index_uri.host}%#{index_uri.port}", *escaped_path.split("/").reject(&:empty?)
     else
       require "tmpdir"
-      Dir.mktmpdir "gem_compact_index"
+      require "fileutils"
+      dir = Dir.mktmpdir "gem_compact_index"
+      at_exit { FileUtils.rm_rf dir }
+      dir
     end
   end
 

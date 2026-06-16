@@ -195,6 +195,24 @@ class TestGemSource < Gem::TestCase
     assert_equal %w[a-1], released
   end
 
+  def test_compact_index_cache_dir_removes_tmpdir_at_exit
+    source = Gem::Source.new @gem_repo
+    def source.update_cache?
+      false
+    end
+
+    cleanup = nil
+    source.define_singleton_method(:at_exit) {|&block| cleanup = block }
+
+    dir = source.send(:compact_index_cache_dir, Gem::URI(@gem_repo))
+
+    assert_path_exist dir
+    refute_nil cleanup, "expected a cleanup hook to be registered"
+
+    cleanup.call
+    assert_path_not_exist dir
+  end
+
   def test_load_specs_falls_back_to_marshal_index
     # no compact index data set up, only the Marshal indexes from setup
     released = @source.load_specs(:released).map(&:full_name)
