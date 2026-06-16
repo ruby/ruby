@@ -4983,12 +4983,13 @@ gc_mark_stacked_objects(rb_objspace_t *objspace, int incremental, size_t count)
         }
         gc_mark_children(objspace, obj);
 
+        popped_count++;
+
         if (incremental) {
             if (RGENGC_CHECK_MODE && !RVALUE_MARKING(objspace, obj)) {
                 rb_bug("gc_mark_stacked_objects: incremental, but marking bit is 0");
             }
             CLEAR_IN_BITMAP(GET_HEAP_MARKING_BITS(obj), obj);
-            popped_count++;
 
             if (popped_count + (objspace->marked_slots - marked_slots_at_the_beginning) > count) {
                 break;
@@ -4998,6 +4999,8 @@ gc_mark_stacked_objects(rb_objspace_t *objspace, int incremental, size_t count)
             /* just ignore marking bits */
         }
     }
+
+    RUBY_DTRACE_GC_HOOK(MARK_STACKED_OBJECTS, popped_count);
 
     if (RGENGC_CHECK_MODE >= 3) gc_verify_internal_consistency(objspace);
 

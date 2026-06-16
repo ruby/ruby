@@ -15,6 +15,9 @@ module RubyTimelineTool
       tp('gc__enter',         "default",  'GCEnterExit',      'B', args: {event: GCEnterEvent}),
       tp('gc__exit',          "default",  'GCEnterExit',      'E', args: {event: GCEnterEvent}),
     ],
+    'mark_details' => [
+      tp('gc__mark_stacked_objects', 'default', 'gc_mark_stacked_objects', 'meta', args: {popped_count: :to_i}),
+    ],
     'obj_new' => [
       tp('gc__obj_new',       "ruby",     'gc_obj_new',       'i', args: {obj: :to_i, flags: RubyFlags}), # TODO: flags converter
     ],

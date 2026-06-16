@@ -233,6 +233,8 @@ provider ruby {
   */
   probe gc__exit(int event);
 
+  probe gc__mark_stacked_objects(int popped_count);
+
   /*
      ruby:::gc-obj_new();
 

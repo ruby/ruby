@@ -12,12 +12,27 @@ require_relative 'lib/converter.rb'
 
 VIS_ID_TO_USDT = RubyTimelineTool::USDT_DEFS.values.flatten.to_h {|t| [t.vis_id, t]}
 
+module FetchStore
+  refine Hash do
+    def fetch_store(key)
+      if include?(key)
+        self[key]
+      else
+        self[key] = yield
+      end
+    end
+  end
+end
+
+using FetchStore
+
 class LogProcessor
   def initialize(verbose: false)
     @verbose = verbose
     @type_id_name = {}
     @start_time = nil
     @results = []
+    @current = Hash.new {|hash, key| hash[key] = {}}
     @started = false
   end
 
@@ -80,8 +95,19 @@ class LogProcessor
 
     result = { name:, ph:, tid:, ts:, args: }
 
+    if ph == 'B' || ph == 'E'
+      # Register the current block so that other events can "enrich" it.
+      set_current_block(tid, result)
+    end
+
     # Some results need special treatment.
     case name
+    when 'gc_mark_stacked_objects'
+      enrich([:global, 'GCEnterExit'], [tid, 'gc_mark']) do |old_result|
+        old_result[:args].fetch_store(:gc_mark_stacked_objects){
+          {popped_count: 0}
+        }[:popped_count] += args[:popped_count]
+      end
     when 'rts_set_running'
       sched = args[0].to_i
       old_thread = args[1].to_i
@@ -108,7 +134,9 @@ class LogProcessor
       end
     end
 
-    @results << result
+    if result[:ph] != 'meta'
+      @results << result
+    end
   end
 
   def resolve_time(ts)
@@ -116,6 +144,43 @@ class LogProcessor
       @start_time = ts
     end
     (ts - @start_time) / 1000.0
+  end
+
+  def set_current(tid, key, value)
+    @current[tid][key] = value
+  end
+
+  def get_current(tid, key)
+    @current[tid][key]
+  end
+
+  def clear_current(tid, key)
+    @current[tid].delete(key)
+  end
+
+  def set_current_block(tid, result)
+    case result[:ph]
+    when 'B'
+      set_current(tid, result[:name], result)
+    when 'E'
+      clear_current(tid, result[:name])
+    else
+      raise "unexpected ph: #{result}"
+    end
+  end
+
+  # Look up an entry in the `@current` hash so that
+  # you can add more arguments or make adjustments to it.
+  def enrich(*targets)
+    targets.each do |target|
+      case target
+      in [tid, key]
+        result = @current[tid][key]
+        if !result.nil?
+          yield result
+        end        
+      end
+    end
   end
 end
 
