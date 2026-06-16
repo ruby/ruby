@@ -533,7 +533,19 @@ class Pathname
     self + '..'
   end
 
-  # Returns +true+ if +self+ points to a mountpoint.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   mountpoint? -> true or false
+  #
+  # Returns whether the path in `self` points to a mountpoint:
+  #
+  # ```ruby
+  # Pathname('/').mountpoint?      # => true
+  # Pathname('/etc').mountpoint?   # => false
+  # Pathname('nosuch').mountpoint? # => false
+  # ```
+  #
   def mountpoint?
     begin
       stat1 = self.lstat
