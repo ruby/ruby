@@ -42,7 +42,7 @@ class TestGemResolverAPISpecification < Gem::TestCase
 
     spec = Gem::Resolver::APISpecification.new set, data
 
-    assert_equal Time.new("2026-06-05T10:30:45Z"), spec.created_at
+    assert_equal Time.utc(2026, 6, 5, 10, 30, 45), spec.created_at
   end
 
   def test_initialize_created_at_invalid
@@ -53,6 +53,21 @@ class TestGemResolverAPISpecification < Gem::TestCase
       platform: "ruby",
       dependencies: [],
       requirements: { created_at: ["not a timestamp"] },
+    }
+
+    spec = Gem::Resolver::APISpecification.new set, data
+
+    assert_nil spec.created_at
+  end
+
+  def test_initialize_created_at_non_iso8601
+    set = Gem::Resolver::APISet.new
+    data = {
+      name: "rails",
+      number: "3.0.3",
+      platform: "ruby",
+      dependencies: [],
+      requirements: { created_at: ["2026"] },
     }
 
     spec = Gem::Resolver::APISpecification.new set, data

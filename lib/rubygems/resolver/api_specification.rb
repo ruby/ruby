@@ -116,8 +116,9 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
     value = value.first if value.is_a?(Array)
     return unless value.is_a?(String)
 
+    require "time"
     begin
-      Time.new(value)
+      Time.iso8601(value)
     rescue ArgumentError
       nil
     end
