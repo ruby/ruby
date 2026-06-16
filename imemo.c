@@ -57,6 +57,7 @@ rb_imemo_tmpbuf_new(void)
 
     rb_gc_register_pinning_obj((VALUE)obj);
 
+    obj->marked = false;
     obj->ptr = NULL;
     obj->size = 0;
 
@@ -64,7 +65,7 @@ rb_imemo_tmpbuf_new(void)
 }
 
 void *
-rb_alloc_tmp_buffer(volatile VALUE *store, long len)
+rb_alloc_tmp_buffer(volatile VALUE *store, long len, bool marked)
 {
     if (len < 0) {
         rb_raise(rb_eArgError, "negative buffer size (or size too big)");
@@ -75,16 +76,11 @@ rb_alloc_tmp_buffer(volatile VALUE *store, long len)
     rb_imemo_tmpbuf_t *tmpbuf = (rb_imemo_tmpbuf_t *)rb_imemo_tmpbuf_new();
     *store = (VALUE)tmpbuf;
     void *ptr = ruby_xmalloc(len);
+    tmpbuf->marked = marked;
     tmpbuf->ptr = ptr;
     tmpbuf->size = len;
 
     return ptr;
-}
-
-void *
-rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t size, size_t cnt)
-{
-    return rb_alloc_tmp_buffer(store, (long)size);
 }
 
 void
@@ -556,7 +552,7 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
       case imemo_tmpbuf: {
         const rb_imemo_tmpbuf_t *m = (const rb_imemo_tmpbuf_t *)obj;
 
-        if (!reference_updating) {
+        if (m->marked && !reference_updating) {
             rb_gc_mark_locations(m->ptr, m->ptr + (m->size / sizeof(VALUE)));
         }
 
