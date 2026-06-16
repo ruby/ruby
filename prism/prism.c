@@ -19727,6 +19727,16 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, u
                     if (!(flags & PM_PARSE_ACCEPTS_COMMAND_CALL) && arguments.arguments != NULL) {
                         PM_PARSER_ERR_TOKEN_FORMAT(parser, &next, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(next.type));
                     }
+
+                    // Reject a trailing comma, e.g. `return a,`. The arguments
+                    // parser silently accepts a trailing comma only when it is
+                    // immediately followed by the EOF terminator; in every other
+                    // case (e.g. `return a,;`) it reports the dangling comma
+                    // itself. We reject the accepted case here to stay in line
+                    // with the command call argument parsing above.
+                    if (parser->previous.type == PM_TOKEN_COMMA && match1(parser, PM_TOKEN_EOF)) {
+                        PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->previous, PM_ERR_EXPECT_ARGUMENT, pm_token_str(parser->current.type));
+                    }
                 }
 
                 // It's possible that we've parsed a block argument through our
