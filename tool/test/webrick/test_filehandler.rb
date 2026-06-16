@@ -216,6 +216,7 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
 
   def test_directory_traversal
     return if File.executable?(__FILE__) # skip on strange file system
+    omit "`..%5c..' (backslash) is resolved as a path separator on Windows" if windows?
 
     config = { :DocumentRoot => File.dirname(__FILE__), }
     log_tester = lambda {|log, access_log|
