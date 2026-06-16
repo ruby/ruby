@@ -713,21 +713,37 @@ static inline double ffp_bits2double(uint64_t bits) {
 # include <intrin.h>
 #endif
 
+#if defined(_MSC_VER) && defined(__AVX2__)
+# pragma intrinsic(__lzcnt64)
+#endif
+
 static inline unsigned int
 ffc_nlz_int64(uint64_t x)
 {
-#if defined(_MSC_VER) && defined(__AVX2__)
+#if defined(_MSC_VER) && defined(__AVX2__) && defined(HAVE___LZCNT64)
     return (unsigned int)__lzcnt64(x);
 
-#elif defined(__x86_64__) && defined(__LZCNT__)
+#elif defined(__x86_64__) && defined(__LZCNT__) && defined(HAVE__LZCNT_U64)
     return (unsigned int)_lzcnt_u64(x);
 
-#elif defined(_WIN64) && defined(_MSC_VER) /* &&! defined(__AVX2__) */
+#elif defined(_WIN64) && defined(_MSC_VER) && defined(HAVE__BITSCANREVERSE64)
     unsigned long r;
     return _BitScanReverse64(&r, x) ? (63u - (unsigned int)r) : 64;
 
-#elif defined(__has_builtin) && __has_builtin(__builtin_clzll)
-    return (unsigned int)__builtin_clzll((unsigned long long)x);
+#elif __has_builtin(__builtin_clzl) && __has_builtin(__builtin_clzll) && !(defined(__sun) && defined(__sparc))
+    if (x == 0) {
+        return 64;
+    }
+    else if (sizeof(long) * CHAR_BIT == 64) {
+        return (unsigned int)__builtin_clzl((unsigned long)x);
+    }
+    else if (sizeof(long long) * CHAR_BIT == 64) {
+        return (unsigned int)__builtin_clzll((unsigned long long)x);
+    }
+    else {
+        /* :FIXME: Is there a way to make this branch a compile-time error? */
+        __builtin_unreachable();
+    }
 
 #else
     uint64_t y;
