@@ -293,10 +293,26 @@ class Pathname
     "#<#{self.class}:#{@path}>"
   end
 
-  # Creates a full path, including any intermediate directories that don't yet
-  # exist.
+  # :markup: markdown
   #
-  # See FileUtils.mkpath and FileUtils.mkdir_p
+  # call-seq:
+  #   mkpath(permissions = 0775) -> self
+  #
+  # Creates a directory at the path in `self`;
+  # creates intermediate directories as needed:
+  #
+  # ```ruby
+  # dir_path = 'foo/bar/baz'
+  # File.directory?('foo')    # => false
+  # Pathname(dir_path).mkpath # Creates directories 'foo', 'foo/bar', and 'foo/bar/baz'.
+  # File.directory?(dir_path) # => true
+  # require 'fileutils'
+  # FileUtils.rm_rf(dir_path)
+  # ```
+  #
+  # Directories are created with the given permissions;
+  # see {File Permissions}[rdoc-ref:File@File+Permissions].
+  # The permissions for already-existing directories are not changed.
   def mkpath(mode: nil)
     path = @path == '/' ? @path : @path.chomp('/')
 
