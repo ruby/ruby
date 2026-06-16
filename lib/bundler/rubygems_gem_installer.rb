@@ -186,7 +186,10 @@ module Bundler
 
       return unless read_fd && write_fd
 
-      [IO.new(read_fd.to_i, autoclose: false), IO.new(write_fd.to_i, autoclose: false)]
+      # Pass explicit modes. On POSIX, IO.new detects the descriptor's access
+      # mode, but on Windows it can't, so the write end would default to read
+      # mode and raise "IOError: not opened for writing" when releasing slots.
+      [IO.new(read_fd.to_i, "r", autoclose: false), IO.new(write_fd.to_i, "w", autoclose: false)]
     end
 
     def prepare_extension_build(extension_dir)
