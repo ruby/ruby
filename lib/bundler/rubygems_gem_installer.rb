@@ -189,7 +189,7 @@ module Bundler
       return unless ENV["MAKEFLAGS"]
       # We append our own --jobserver-auth, so read the last one. Otherwise a
       # parent jobserver's descriptors (e.g. `bundle install` run under
-      # `make -j`) would be picked up instead of the pool we just created.
+      # `make -j`) would be picked up instead of the pool ParallelInstaller created.
       read_fd, write_fd = ENV["MAKEFLAGS"].scan(/--jobserver-auth=(\d+),(\d+)/).last
 
       return unless read_fd && write_fd
