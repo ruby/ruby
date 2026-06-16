@@ -720,7 +720,7 @@ ffc_nlz_int64(uint64_t x)
     unsigned long r;
     return _BitScanReverse64(&r, x) ? (63u - (unsigned int)r) : 64;
 
-#elif __has_builtin(__builtin_clzll)
+#elif defined(__has_builtin) && __has_builtin(__builtin_clzll)
     return (unsigned int)__builtin_clzll((unsigned long long)x);
 
 #else
