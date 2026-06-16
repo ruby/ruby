@@ -5822,6 +5822,103 @@ path_drive(const WCHAR *path)
 static int
 winnt_stat(const WCHAR *path, struct stati128 *st, BOOL lstat)
 {
+    /* ---- Fast path: avoid opening a file handle for the common case ----
+     *
+     * The original code below opens every existing file
+     * (open_special + GetFileInformationByHandle + GetFileType +
+     * get_handle_pathname + CloseHandle) just to stat it. `require` does
+     * this thousands of times per startup. For a regular file or directory
+     * a single metadata syscall is enough:
+     *
+     *   - GetFileInformationByName (Windows 11 24H2+): one syscall returning
+     *     size, all timestamps, attributes, real FileId and link count.
+     *     Resolved at runtime via GetProcAddress, so Windows 10 / older
+     *     simply falls through to GetFileAttributesExW below.
+     *   - GetFileAttributesExW (every supported Windows): one syscall for
+     *     size + timestamps + attributes. st_ino/st_nlink are left 0/1,
+     *     matching the existing stat_by_find fallback's compromise.
+     *
+     * Reparse points (symlinks, AF_UNIX sockets) fall through to the
+     * original handle-based path, which inspects the reparse tag. */
+    {
+        typedef struct {
+            LARGE_INTEGER FileId, CreationTime, LastAccessTime, LastWriteTime,
+                          ChangeTime, AllocationSize, EndOfFile;
+            ULONG FileAttributes, ReparseTag, NumberOfLinks;
+            ACCESS_MASK EffectiveAccess;
+        } RB_FILE_STAT_INFO;
+        typedef BOOL (WINAPI *gfibn_t)(PCWSTR, int, PVOID, ULONG);
+        static gfibn_t pGFIBN = (gfibn_t)-1;
+        if (pGFIBN == (gfibn_t)-1) {
+            HMODULE k = GetModuleHandleW(L"kernel32.dll");
+            pGFIBN = k ? (gfibn_t)GetProcAddress(k, "GetFileInformationByName") : NULL;
+        }
+        DWORD fp_attr = (DWORD)-1;
+        int fp_filled = 0;
+        if (pGFIBN) {
+            RB_FILE_STAT_INFO info;
+            if (pGFIBN(path, 0 /*FileStatByNameInfo*/, &info, sizeof(info))) {
+                fp_attr = info.FileAttributes;
+                if (!(fp_attr & FILE_ATTRIBUTE_REPARSE_POINT)) {
+                    memset(st, 0, sizeof(*st));
+                    st->st_size = info.EndOfFile.QuadPart;
+                    st->st_atime = filetime_to_unixtime((FILETIME *)&info.LastAccessTime);
+                    st->st_atimensec = filetime_to_nsec((FILETIME *)&info.LastAccessTime);
+                    st->st_mtime = filetime_to_unixtime((FILETIME *)&info.LastWriteTime);
+                    st->st_mtimensec = filetime_to_nsec((FILETIME *)&info.LastWriteTime);
+                    st->st_ctime = filetime_to_unixtime((FILETIME *)&info.CreationTime);
+                    st->st_ctimensec = filetime_to_nsec((FILETIME *)&info.CreationTime);
+                    st->st_nlink = info.NumberOfLinks;
+                    st->st_ino = info.FileId.QuadPart;
+                    fp_filled = 1;
+                }
+            }
+            else {
+                DWORD e = GetLastError();
+                if (e == ERROR_FILE_NOT_FOUND || e == ERROR_INVALID_NAME ||
+                    e == ERROR_PATH_NOT_FOUND || e == ERROR_BAD_NETPATH) {
+                    errno = map_errno(e);
+                    return -1;
+                }
+            }
+        }
+        else {
+            WIN32_FILE_ATTRIBUTE_DATA fad;
+            if (GetFileAttributesExW(path, GetFileExInfoStandard, &fad)) {
+                fp_attr = fad.dwFileAttributes;
+                if (!(fp_attr & FILE_ATTRIBUTE_REPARSE_POINT)) {
+                    memset(st, 0, sizeof(*st));
+                    st->st_size = ((__int64)fad.nFileSizeHigh << 32) | fad.nFileSizeLow;
+                    st->st_atime = filetime_to_unixtime(&fad.ftLastAccessTime);
+                    st->st_atimensec = filetime_to_nsec(&fad.ftLastAccessTime);
+                    st->st_mtime = filetime_to_unixtime(&fad.ftLastWriteTime);
+                    st->st_mtimensec = filetime_to_nsec(&fad.ftLastWriteTime);
+                    st->st_ctime = filetime_to_unixtime(&fad.ftCreationTime);
+                    st->st_ctimensec = filetime_to_nsec(&fad.ftCreationTime);
+                    st->st_nlink = 1;
+                    fp_filled = 1;
+                }
+            }
+            else {
+                DWORD e = GetLastError();
+                if (e == ERROR_FILE_NOT_FOUND || e == ERROR_INVALID_NAME ||
+                    e == ERROR_PATH_NOT_FOUND || e == ERROR_BAD_NETPATH) {
+                    errno = map_errno(e);
+                    return -1;
+                }
+            }
+        }
+        if (fp_filled) {
+            if (fp_attr & FILE_ATTRIBUTE_DIRECTORY) {
+                if (check_valid_dir(path)) return -1;
+            }
+            st->st_mode = fileattr_to_unixmode(fp_attr, path, 0);
+            st->st_dev = st->st_rdev = path_drive(path);
+            return 0;
+        }
+    }
+    /* ---- end fast path; original handle-based path follows ---- */
+
     DWORD flags = lstat ? FILE_FLAG_OPEN_REPARSE_POINT : 0;
     HANDLE f;
     WCHAR *finalname = 0;
