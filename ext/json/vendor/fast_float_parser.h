@@ -707,6 +707,12 @@ static inline double ffp_bits2double(uint64_t bits) {
     return d;
 }
 
+#if defined(__x86_64__) && defined(HAVE_X86INTRIN_H)
+# include <x86intrin.h>
+#elif defined(_MSC_VER) && defined(HAVE_INTRIN_H)
+# include <intrin.h>
+#endif
+
 static inline unsigned int
 ffc_nlz_int64(uint64_t x)
 {
