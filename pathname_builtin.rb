@@ -1086,22 +1086,22 @@ class Pathname    # * File *
   # dir_path = 'doc/foo'
   # dir_pn = Pathname(dir_path)
   # # Create directory; establishes atime for directory.
-  # Dir.mkdir(dir_path)
-  # dir_pn.atime  # => 2026-06-16 15:22:40.574883491 -0500
+  # dir_pn.mkdir
+  # dir_pn.atime  # => 2026-06-16 17:15:25.563195838 -0500
   # # A file in the directory and its Pathname.
+  # file_path = dir_pn.join('t.tmp')
   # file_pn = Pathname(file_path)
-  # file_path = File.join(dir_path, 't.tmp')
   # # Create file; establishes atime for file, updates atime for directory.
-  # File.write(file_path, 'foo')
-  # dir_pn.atime  # => 2026-06-16 15:23:59.821888516 -0500
-  # file_pn.atime # => 2026-06-16 15:23:59.831888398 -0500
+  # file_pn.write('foo')
+  # file_pn.atime # => 2026-06-16 17:17:34.743173123 -0500
+  # dir_pn.atime  # => 2026-06-16 17:17:34.733173396 -0500
   # # Write file; updates atime for file, but not for directory.
   # File.write(file_path, 'bar')
-  # dir_pn.atime  # => 2026-06-16 15:23:59.821888516 -0500
-  # file_pn.atime # => 2026-06-16 15:24:59.861220572 -0500
+  # file_pn.atime # => 2026-06-16 17:18:42.859463164 -0500
+  # dir_pn.atime  # => 2026-06-16 17:17:34.733173396 -0500
   # # Clean up.
-  # File.delete(file_path)
-  # Dir.rmdir(dir_path)
+  # file_pn.delete
+  # dir_pn.rmdir
   # ```
   #
   def atime() File.atime(@path) end
