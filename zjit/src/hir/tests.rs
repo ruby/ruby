@@ -320,6 +320,17 @@ pub(crate) mod hir_build_tests {
     }
 
     #[test]
+    fn test_no_jit_entry_blocks_for_eval_iseqs() {
+        let wrapped_iseq = eval("eval('RubyVM::InstructionSequence.of(caller_locations(0, 1).first)')");
+        let eval_iseq = unsafe { rb_iseqw_to_iseq(wrapped_iseq) };
+        assert_eq!(unsafe { get_iseq_body_type(eval_iseq) }, ISEQ_TYPE_EVAL);
+        assert!(!iseq_supports_jit_entry(eval_iseq));
+        unsafe { crate::cruby::rb_zjit_profile_disable(eval_iseq) };
+        let eval_hir = hir_string_function(&iseq_to_hir(eval_iseq).unwrap());
+        assert!(!eval_hir.contains("EntryPoint JIT("), "{eval_hir}");
+    }
+
+    #[test]
     fn test_putobject() {
         eval("def test = 123");
         assert_contains_opcode("test", YARVINSN_putobject);
