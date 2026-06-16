@@ -1839,11 +1839,27 @@ class Pathname    # * FileTest *
 
   # See <tt>FileTest.size?</tt>.
   def size?() FileTest.size?(@path) end
-
   # See <tt>FileTest.sticky?</tt>.
   def sticky?() FileTest.sticky?(@path) end
 
-  # See <tt>FileTest.symlink?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   symlink? -> true or false
+  #
+  # Returns whether the entry at the path in `self` is a symbolic link:
+  #
+  # ```ruby
+  # path = 'doc/t.tmp'
+  # link_path = 'lib/u.tmp'
+  # File.write(path, 'foo')
+  # File.symlink?(path)      # => false
+  # Pathname(link_path).make_symlink(path)
+  # File.symlink?(link_path) # => true
+  # File.delete(path)
+  # File.delete(link_path)
+  # ```
+  #
   def symlink?() FileTest.symlink?(@path) end
 
   # See <tt>FileTest.writable?</tt>.

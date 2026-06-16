@@ -1837,14 +1837,23 @@ rb_file_pipe_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *   File.symlink?(filepath) -> true or false
+ *   File.symlink?(path) -> true or false
  *
- * Returns +true+ if +filepath+ points to a symbolic link, +false+ otherwise:
+ * Returns whether the entry at `path` is a symbolic link:
  *
- *   symlink = File.symlink('t.txt', 'symlink')
- *   File.symlink?('symlink') # => true
- *   File.symlink?('t.txt')   # => false
+ * ```ruby
+ * path = 'doc/t.tmp'
+ * link_path = 'lib/u.tmp'
+ * File.write(path, 'foo')
+ * File.symlink?(path)      # => false
+ * File.symlink(path, link_path)
+ * File.symlink?(link_path) # => true
+ * File.delete(path)
+ * File.delete(link_path)
+ * ```
  *
  */
 
@@ -6347,18 +6356,24 @@ rb_stat_p(VALUE obj)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.symlink?    -> true or false
+ *    symlink? -> true or false
  *
- *  Returns <code>true</code> if <i>stat</i> is a symbolic link,
- *  <code>false</code> if it isn't or if the operating system doesn't
- *  support this feature. As File::stat automatically follows symbolic
- *  links, #symlink? will always be <code>false</code> for an object
- *  returned by File::stat.
+ *  Returns whether the entry in `self` is a symbolic link:
  *
- *     File.symlink("testfile", "alink")   #=> 0
- *     File.stat("alink").symlink?         #=> false
- *     File.lstat("alink").symlink?        #=> true
+ *  ```ruby
+ *  path = 'doc/t.tmp'
+ *  link_path = 'lib/u.tmp'
+ *  File.write(path, 'foo')
+ *  File.symlink(path, link_path)
+ *  File.stat(path).symlink?       # => false
+ *  File.stat(link_path).symlink?  # Raises Errno::NOENT; entry is not a file.
+ *  File.lstat(link_path).symlink? # => true
+ *  File.delete(path)
+ *  File.delete(link_path)
+ *  ```
  *
  */
 
