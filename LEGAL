@@ -714,10 +714,9 @@ mentioned below.
 
     {MIT License}[rdoc-ref:@MIT+License]
 
-[ext/json/vendor/ryu.h]
-  This file is adapted from the Ryu algorithm by Ulf Adams https://github.com/ulfjack/ryu.
-  It is dual-licensed under {Apache License 2.0}[rdoc-ref:@Apache+License+2.0] OR
-  {Boost Software License 1.0}[rdoc-ref:@Boost+Software+License+1.0].
+[ext/json/vendor/fast_float_parser.h]
+  This file is adapted from the Fast Float C++ library by The fast_float authors https://github.com/fastfloat/fast_float
+  It is licensed under the MIT License
 
 [ext/psych]
 [test/psych]
