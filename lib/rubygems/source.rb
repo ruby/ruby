@@ -253,6 +253,8 @@ class Gem::Source
 
     versions.each_value do |rows|
       gem_tuples = rows.filter_map do |name, version_string, platform|
+        next unless Gem::Version.correct?(version_string)
+
         version = Gem::Version.new(version_string)
         next if version.prerelease? != (type == :prerelease)
 
@@ -265,8 +267,6 @@ class Gem::Source
     end
 
     tuples
-  rescue ArgumentError
-    nil
   end
 
   def compact_index_versions

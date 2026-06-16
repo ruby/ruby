@@ -179,6 +179,22 @@ class TestGemSource < Gem::TestCase
     assert_equal 1, versions_requests
   end
 
+  def test_load_specs_compact_index_skips_invalid_version
+    a1 = util_spec "a", "1"
+
+    util_setup_compact_index a1
+
+    # A single malformed version must not discard the whole compact index
+    # and fall back to the Marshal indexes; only the bad row is skipped.
+    versions_body = +"created_at: 2026-01-01T00:00:00Z\n---\na 1,not-a-version 0000\n"
+    versions_response = util_compact_index_response(versions_body)
+    versions_response.uri = Gem::URI("#{@gem_repo}versions")
+    @fetcher.data["#{@gem_repo}versions"] = versions_response
+
+    released = @source.load_specs(:released).map(&:full_name)
+    assert_equal %w[a-1], released
+  end
+
   def test_load_specs_falls_back_to_marshal_index
     # no compact index data set up, only the Marshal indexes from setup
     released = @source.load_specs(:released).map(&:full_name)
