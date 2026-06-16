@@ -2103,6 +2103,38 @@ fn test_opt_mult_overflow() {
 }
 
 #[test]
+fn test_opt_plus_overflow() {
+    assert_snapshot!(inspect("
+        def test(a, b)
+          a + b
+        end
+        test(1, 2) # profile opt_plus
+
+        r1 = test(2, 3)
+        r2 = test(4611686018427387903, 1)    # FIXNUM_MAX + 1 overflows
+        r3 = test(-4611686018427387904, -1)  # FIXNUM_MIN - 1 overflows
+
+        [r1, r2, r3]
+    "), @"[5, 4611686018427387904, -4611686018427387905]");
+}
+
+#[test]
+fn test_opt_minus_overflow() {
+    assert_snapshot!(inspect("
+        def test(a, b)
+          a - b
+        end
+        test(6, 4) # profile opt_minus
+
+        r1 = test(6, 4)
+        r2 = test(4611686018427387903, -1)   # FIXNUM_MAX - (-1) overflows
+        r3 = test(-4611686018427387904, 1)   # FIXNUM_MIN - 1 overflows
+
+        [r1, r2, r3]
+    "), @"[2, 4611686018427387904, -4611686018427387905]");
+}
+
+#[test]
 fn test_opt_eq() {
     eval("
         def test(a, b) = a == b
