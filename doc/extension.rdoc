@@ -926,7 +926,8 @@ directory in the Ruby's source tree.
 
   % mkdir ext/dbm
 
-Make a directory for the extension library under ext directory.
+Make a directory for the extension library under ext directory if you
+want to link it to statically Ruby.  You can use an arbitrary name.
 
 === Design the Library
 
