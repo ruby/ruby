@@ -1077,30 +1077,30 @@ class Pathname    # * File *
   # call-seq:
   #   atime -> new_time
   #
-  # Returns a new Time object containing the time of the most recent
-  # access (read or write) to the entry represented by `self`;
-  # see {File System Timestamps}[rdoc-ref:file/timestamps.md]:
+  # Returns a Time object containing the access time
+  # of the entry represented by `self`, as reported by the filesystem;
+  # see {File System Access Time}[rdoc-ref:file/timestamps.md@Access+Time]:
   #
   # ```ruby
   # # Pathname for a (non-existent) directory.
-  # dir_pn = Pathname('doc/foo') # => #<Pathname:doc/foo>
+  # dir_pn = Pathname('doc/foo')   # => #<Pathname:doc/foo>
   # # Create directory; establishes atime for directory.
   # dir_pn.mkdir
-  # dir_pn.atime  # => 2026-06-16 17:53:03.922118417 -0500
-  # # A file in the directory and its Pathname.
-  # file_pn = dir_pn.join('t.tmp')
+  # dir_pn.atime                   # => 2026-06-17 10:10:20.801115774 -0500
+  # # Pathname for a (non-existent) file in the directory.
+  # file_pn = dir_pn.join('t.tmp') # => #<Pathname:doc/foo/t.tmp>
   # # Create file; establishes atime for file, updates atime for directory.
   # file_pn.write('foo')
-  # file_pn.atime # => 2026-06-16 17:55:11.323650876 -0500
-  # dir_pn.atime  # => 2026-06-16 17:55:11.312651371 -0500
+  # file_pn.atime                  # => 2026-06-17 10:11:40.987171568 -0500
+  # dir_pn.atime                   # => 2026-06-17 10:11:40.96617277 -0500
   # # Write file; updates atime for file,but not directory.
   # file_pn.write('bar')
-  # file_pn.atime # => 2026-06-16 17:57:39.790792636 -0500
-  # dir_pn.atime  # => 2026-06-16 17:55:11.312651371 -0500
-  # # Read file; updates atime for file, but not directory.
+  # file_pn.atime                  # => 2026-06-17 10:13:22.062904563 -0500
+  # dir_pn.atime                   # => 2026-06-17 10:11:40.96617277 -0500
+  # # Read file; may update atime for file, but not directory.
   # file_pn.read
-  # file_pn.atime # => 2026-06-16 17:57:39.790792636 -0500
-  # dir_pn.atime  # => 2026-06-16 17:55:11.312651371 -0500
+  # file_pn.atime                  # => 2026-06-17 10:13:22.062904563 -0500
+  # dir_pn.atime                   # => 2026-06-17 10:11:40.96617277 -0500
   # # Clean up.
   # file_pn.delete
   # dir_pn.rmdir
