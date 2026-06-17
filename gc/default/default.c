@@ -1047,27 +1047,15 @@ gc_malloc_counters_increase_unsigned(rb_objspace_t *objspace, const struct gc_ma
     return (size_t)inc;
 }
 
-static inline int64_t
+static inline void
 gc_malloc_counters_snapshot(rb_objspace_t *objspace, struct gc_malloc_bytes *c)
 {
     MALLOC_COUNTERS_LOCK(objspace);
     gc_counter_t malloc_now = gc_counter_load_relaxed(&c->malloc);
     gc_counter_t free_now   = gc_counter_load_relaxed(&c->free);
-    gc_counter_t malloc_at  = gc_counter_load_relaxed(&c->malloc_at_last_gc);
-    gc_counter_t free_at    = gc_counter_load_relaxed(&c->free_at_last_gc);
     gc_counter_store_release(&c->malloc_at_last_gc, malloc_now);
     gc_counter_store_release(&c->free_at_last_gc,   free_now);
     MALLOC_COUNTERS_UNLOCK(objspace);
-
-    gc_counter_t malloc_delta = malloc_now - malloc_at;
-    gc_counter_t free_delta   = free_now   - free_at;
-
-    if (malloc_delta >= free_delta) {
-        return (int64_t)(malloc_delta - free_delta);
-    }
-    else {
-        return -(int64_t)(free_delta - malloc_delta);
-    }
 }
 
 #define heap_pages_lomem	objspace->heap_pages.range[0]
@@ -4224,10 +4212,10 @@ gc_sweep_finish(rb_objspace_t *objspace)
         }
     }
 
-    (void)gc_malloc_counters_snapshot(objspace, &objspace->malloc_counters.counters);
+    gc_malloc_counters_snapshot(objspace, &objspace->malloc_counters.counters);
 #if RGENGC_ESTIMATE_OLDMALLOC
     if (objspace->profile.latest_gc_info & GPR_FLAG_MAJOR_MASK) {
-        (void)gc_malloc_counters_snapshot(objspace, &objspace->malloc_counters.oldcounters);
+        gc_malloc_counters_snapshot(objspace, &objspace->malloc_counters.oldcounters);
     }
 #endif
 
