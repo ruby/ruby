@@ -1072,48 +1072,39 @@ class Pathname    # * File *
   # with ASCII-8BIT encoding.
   def binwrite(...) File.binwrite(@path, ...) end
 
+  # :markup: markdown
+  #
   # call-seq:
   #   atime -> new_time
   #
-  # Returns a new Time object containing the time of the most recent
-  # access (read or write) to the entry represented by `self`;
-  # see {File System Timestamps}[rdoc-ref:file/timestamps.md]:
+  # Returns a Time object containing the access time
+  # of the entry represented by `self`, as reported by the filesystem;
+  # see {File System Access Time}[rdoc-ref:file/timestamps.md@Access+Time]:
   #
-  #   # Work in a temporary directory.
-  #   require 'tmpdir'
-  #   Dir.mktmpdir do |tmpdirpath|
-  #     # A subdirectory therein, and its Pathname.
-  #     dirpath = File.join(tmpdirpath, 'subdir')
-  #     Dir.mkdir(dirpath)
-  #     dir_pn = Pathname(dirpath)
-  #     puts "Create directory; establishes atime for directory."
-  #     puts "  Directory atime: #{dir_pn.atime}"
-  #     sleep(1)
-  #
-  #     # A file in the subdirectory, and its Pathname.
-  #     filepath = File.join(dirpath, 't.txt')
-  #     puts "Create file; establishes atime for file, updates atime for directory."
-  #     File.write(filepath, 'foo')
-  #     file_pn = Pathname(filepath)
-  #     puts "  File atime:      #{file_pn.atime}"
-  #     puts "  Directory atime: #{dir_pn.atime}"
-  #     sleep(1)
-  #     puts "Write file; updates atimes for file and directory."
-  #     File.write(filepath, 'bar')
-  #     puts "  File atime:      #{file_pn.atime}"
-  #     puts "  Directory atime: #{dir_pn.atime}"
-  #   end
-  #
-  # Output:
-  #
-  #   Create directory; establishes atime for directory.
-  #     Directory atime: 2026-05-14 14:36:43 +0100
-  #   Create file; establishes atime for file, updates atime for directory.
-  #     File atime:      2026-05-14 14:36:44 +0100
-  #     Directory atime: 2026-05-14 14:36:44 +0100
-  #   Write file; updates atimes for file and directory.
-  #     File atime:      2026-05-14 14:36:45 +0100
-  #     Directory atime: 2026-05-14 14:36:45 +0100
+  # ```ruby
+  # # Pathname for a (non-existent) directory.
+  # dir_pn = Pathname('doc/foo')   # => #<Pathname:doc/foo>
+  # # Create directory; establishes atime for directory.
+  # dir_pn.mkdir
+  # dir_pn.atime                   # => 2026-06-17 10:10:20.801115774 -0500
+  # # Pathname for a (non-existent) file in the directory.
+  # file_pn = dir_pn.join('t.tmp') # => #<Pathname:doc/foo/t.tmp>
+  # # Create file; establishes atime for file, updates atime for directory.
+  # file_pn.write('foo')
+  # file_pn.atime                  # => 2026-06-17 10:11:40.987171568 -0500
+  # dir_pn.atime                   # => 2026-06-17 10:11:40.96617277 -0500
+  # # Write file; updates atime for file,but not directory.
+  # file_pn.write('bar')
+  # file_pn.atime                  # => 2026-06-17 10:13:22.062904563 -0500
+  # dir_pn.atime                   # => 2026-06-17 10:11:40.96617277 -0500
+  # # Read file; may update atime for file, but not directory.
+  # file_pn.read
+  # file_pn.atime                  # => 2026-06-17 10:13:22.062904563 -0500
+  # dir_pn.atime                   # => 2026-06-17 10:11:40.96617277 -0500
+  # # Clean up.
+  # file_pn.delete
+  # dir_pn.rmdir
+  # ```
   #
   def atime() File.atime(@path) end
 
