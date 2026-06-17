@@ -334,7 +334,7 @@ pub fn iseq_escapes_ep(iseq: IseqPtr) -> bool {
     }
 }
 
-/// Return true if ZJIT may enter this ISEQ from another JIT-compiled ISEQ.
+/// Return true if ZJIT may directly call this ISEQ from another JIT-compiled ISEQ.
 pub fn iseq_supports_jit_entry(iseq: IseqPtr) -> bool {
     match unsafe { get_iseq_body_type(iseq) } {
         // These ISEQs are only entered by the interpreter.
