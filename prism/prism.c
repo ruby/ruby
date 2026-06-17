@@ -13995,7 +13995,18 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
 
         // If we hit the terminator, then that means we have a trailing comma so
         // we can accept that output as well.
-        if (match1(parser, terminator)) break;
+        if (match1(parser, terminator)) {
+            // A forwarding `...` argument must be the last argument and cannot
+            // be followed by a trailing comma, e.g. `foo(...,)`. A comma
+            // followed by another argument is already rejected at the top of
+            // this loop, so the only case left to reject here is the trailing
+            // one.
+            if (parsed_forwarding_arguments) {
+                pm_parser_err_previous(parser, PM_ERR_INVALID_COMMA);
+            }
+
+            break;
+        }
     }
 }
 
