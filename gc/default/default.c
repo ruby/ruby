@@ -4212,13 +4212,6 @@ gc_sweep_finish(rb_objspace_t *objspace)
         }
     }
 
-    gc_malloc_counters_snapshot(objspace, &objspace->malloc_counters.counters);
-#if RGENGC_ESTIMATE_OLDMALLOC
-    if (objspace->profile.latest_gc_info & GPR_FLAG_MAJOR_MASK) {
-        gc_malloc_counters_snapshot(objspace, &objspace->malloc_counters.oldcounters);
-    }
-#endif
-
     rb_gc_event_hook(0, RUBY_INTERNAL_EVENT_GC_END_SWEEP);
     gc_mode_transition(objspace, gc_mode_none);
 
@@ -6669,6 +6662,7 @@ gc_reset_malloc_info(rb_objspace_t *objspace, bool full_mark)
     gc_prof_set_malloc_info(objspace);
     {
         int64_t inc = gc_malloc_counters_increase(objspace, &objspace->malloc_counters.counters);
+        gc_malloc_counters_snapshot(objspace, &objspace->malloc_counters.counters);
         size_t old_limit = malloc_limit;
 
         /* A net-negative `inc` (more freed than malloc'd since last GC) is
@@ -6724,6 +6718,8 @@ gc_reset_malloc_info(rb_objspace_t *objspace, bool full_mark)
                        gc_params.oldmalloc_limit_max);
     }
     else {
+        gc_malloc_counters_snapshot(objspace, &objspace->malloc_counters.oldcounters);
+
         if ((objspace->profile.latest_gc_info & GPR_FLAG_MAJOR_BY_OLDMALLOC) == 0) {
             objspace->rgengc.oldmalloc_increase_limit =
               (size_t)(objspace->rgengc.oldmalloc_increase_limit / ((gc_params.oldmalloc_limit_growth_factor - 1)/10 + 1));
