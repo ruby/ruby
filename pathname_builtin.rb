@@ -1082,23 +1082,25 @@ class Pathname    # * File *
   # see {File System Timestamps}[rdoc-ref:file/timestamps.md]:
   #
   # ```ruby
-  # # A directory and its Pathname.
-  # dir_path = 'doc/foo'
-  # dir_pn = Pathname(dir_path)
+  # # Pathname for a (non-existent) directory.
+  # dir_pn = Pathname('doc/foo') # => #<Pathname:doc/foo>
   # # Create directory; establishes atime for directory.
   # dir_pn.mkdir
-  # dir_pn.atime  # => 2026-06-16 17:15:25.563195838 -0500
+  # dir_pn.atime  # => 2026-06-16 17:53:03.922118417 -0500
   # # A file in the directory and its Pathname.
-  # file_path = dir_pn.join('t.tmp')
-  # file_pn = Pathname(file_path)
+  # file_pn = dir_pn.join('t.tmp')
   # # Create file; establishes atime for file, updates atime for directory.
   # file_pn.write('foo')
-  # file_pn.atime # => 2026-06-16 17:17:34.743173123 -0500
-  # dir_pn.atime  # => 2026-06-16 17:17:34.733173396 -0500
-  # # Write file; updates atime for file, but not for directory.
-  # File.write(file_path, 'bar')
-  # file_pn.atime # => 2026-06-16 17:18:42.859463164 -0500
-  # dir_pn.atime  # => 2026-06-16 17:17:34.733173396 -0500
+  # file_pn.atime # => 2026-06-16 17:55:11.323650876 -0500
+  # dir_pn.atime  # => 2026-06-16 17:55:11.312651371 -0500
+  # # Write file; updates atime for file,but not directory.
+  # file_pn.write('bar')
+  # file_pn.atime # => 2026-06-16 17:57:39.790792636 -0500
+  # dir_pn.atime  # => 2026-06-16 17:55:11.312651371 -0500
+  # # Read file; updates atime for file, but not directory.
+  # file_pn.read
+  # file_pn.atime # => 2026-06-16 17:57:39.790792636 -0500
+  # dir_pn.atime  # => 2026-06-16 17:55:11.312651371 -0500
   # # Clean up.
   # file_pn.delete
   # dir_pn.rmdir
