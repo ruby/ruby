@@ -6117,6 +6117,21 @@ fn test_inlined_method_that_forwards_block_arg() {
 }
 
 #[test]
+fn test_inlined_stack_map_materializes_before_rescue() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines_allowing_exits(r#"
+            def callee(left, receiver, other)
+              left + (receiver << other rescue "b")
+            end
+            def test = callee("a", "x".freeze, "y")
+
+            test
+            test
+        "#), @r#""ab""#);
+    });
+}
+
+#[test]
 fn test_inlined_method_with_rescue_caught_in_callee() {
     // The callee's begin/rescue catches an exception raised inside the same
     // callee. The runtime exception walker must find the rescue clause via the

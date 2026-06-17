@@ -1362,8 +1362,57 @@ impl Allocation {
     }
 }
 
+/// We save NATIVE_BASE_PTR as cfp->jit_return for depth-0 JITFrame (the most
+/// common case: inlining root or non-inlined ISEQ) because it's faster to read
+/// the NATIVE_BASE_PTR register as is than calculating `NATIVE_BASE_PTR - 1`.
+///
+/// For that reason, every CFP needs to read JITFrame from cfp->jit_return[-1].
+/// This constant is used when we subtract the offset.
+///
+/// See also: cfp_jit_return_for_depth(), CFP_ZJIT_FRAME()
+const JIT_FRAME_OFFSET_FROM_JIT_RETURN: usize = 1;
+
 /// StackState tracks the native stack layout and converts abstract stack slots
 /// into concrete stack addresses.
+///
+/// Native stack layout:
+///                                          high addr
+///                                  +-------------------------+
+///                                  | return address          |
+///                                  +-------------------------+
+///              NATIVE_BASE_PTR --> | previous frame pointer  |   <-- depth-0 cfp->jit_return ^
+///                                  +-------------------------+                               | JIT_FRAME_OFFSET_FROM_JIT_RETURN
+///                              ^ ^ | JITFrame slot depth 0   | ^ <-- depth-0 cfp's JITFrame  v
+///                              | | +-------------------------+ |
+///                              | | |          ...            | |
+/// frame_depth for "depth N" in | | +-------------------------+ |
+///  stack_map_index_for_spill() | | | JITFrame slot depth N-1 | | <-- depth-N cfp->jit_return ^
+///                              | | +-------------------------+ |                             | JIT_FRAME_OFFSET_FROM_JIT_RETURN
+///                              v | | JITFrame slot depth N   | | <-- depth-N cfp's JITFrame  v
+///                                | +-------------------------+ |
+///                                | |          ...            | | JITState::jit_frame_size
+///                 stack_base_idx | +-------------------------+ |
+///                                | | JITFrame slot depth X   | v
+///                                | +-------------------------+
+///                                | | opnds.last()            | ^
+///                                | +-------------------------+ |
+///                                | |          ...            | | stack_size in StackState::reserve_stack_slots
+///                                | +-------------------------+ |
+///                                v | opnds.first()           | v
+///                                  +-------------------------+
+///                                ^ | register spill slot 0   | ^
+///                                | +-------------------------+ |
+///                                | |          ...            | | stack_idx for "slot N" in StackState::stack_map_index_for_spill
+///                                | +-------------------------+ |
+///                num_spill_slots | | register spill slot N   | v
+///                                | +-------------------------+
+///                                | |          ...            |
+///                                | +-------------------------+
+///                                v | register spill slot X   |
+///                                  +-------------------------+
+///                                  | FrameSetup align slot   | if needed
+///                                  +-------------------------+
+///                                           low addr
 #[derive(Clone)]
 pub struct StackState {
     /// The number of stack slots reserved before register allocator spills.
@@ -1386,32 +1435,6 @@ impl StackState {
 
     /// Reserve native stack slots for JITFrame storage and stack-allocated operands.
     /// Returns the total number of reserved slots for the current allocation.
-    ///
-    /// Native stack layout:
-    ///
-    ///         high addr
-    /// +------------------------+
-    /// | return address         |
-    /// +------------------------+
-    /// | previous frame pointer | <- NATIVE_BASE_PTR (== depth-0 cfp->jit_return)
-    /// +------------------------+
-    /// | JITFrame slot depth 0  | <- [NATIVE_BASE_PTR - 8]; read by CFP_ZJIT_FRAME for the top-level frame
-    /// +------------------------+
-    /// |          ...           |    one slot per inlining depth (jit_frame_size slots total)
-    /// +------------------------+
-    /// | JITFrame slot depth N  | <- innermost inlined frame's slot
-    /// +------------------------+
-    /// | opnds.last()           |
-    /// +------------------------+
-    /// |          ...           |
-    /// +------------------------+
-    /// | opnds.first()          | <- pointer returned by Assembler::alloc_stack()
-    /// +------------------------+
-    /// | register spill slots   | if any
-    /// +------------------------+
-    /// | FrameSetup align slot  | if needed
-    /// +------------------------+
-    ///         low addr
     pub(crate) fn reserve_stack_slots(&mut self, jit_frame_size: usize, stack_size: usize) -> usize {
         let total_stack_size = jit_frame_size + stack_size;
         self.stack_base_idx = self.stack_base_idx.max(total_stack_size);
@@ -1424,29 +1447,33 @@ impl StackState {
         self.stack_base_idx + self.num_spill_slots
     }
 
-    /// Return the stack-map index for a VReg stored in an allocator spill slot.
+    /// Return the stack-map index for a VReg stored below StackState-managed
+    /// slots. `stack_idx` is relative to the first allocator spill slot.
     /// rb_zjit_materialize_frames() reads this as cfp->jit_return[-index].
-    fn stack_map_index_for_spill(&self, stack_idx: usize) -> usize {
-        self.stack_base_idx
-            .checked_add(1)
-            .expect("StackMap requires a JITFrame slot")
-            + stack_idx
+    fn stack_map_index_for_spill(&self, stack_idx: usize, frame_depth: usize) -> usize {
+        // Calculate the offset from NATIVE_BASE_PTR to the stack slot first
+        let index_from_native_base_ptr = self.stack_base_idx
+            .checked_add(stack_idx) // "register spill slot" index
+            .and_then(|index| index.checked_add(JIT_FRAME_OFFSET_FROM_JIT_RETURN))
+            .expect("StackMap index overflow");
+
+        // Then convert it to the offset from cfp->jit_return to the stack slot
+        index_from_native_base_ptr
+            .checked_sub(frame_depth)
+            .expect("StackMap slot must be below this frame's cfp->jit_return")
     }
 
-    /// Return the stack-map index for a VReg saved by handle_caller_saved_regs().
-    /// rb_zjit_materialize_frames() reads this as cfp->jit_return[-index].
-    fn stack_map_index_for_caller_saved_reg(&self, position: usize) -> usize {
+    /// Return a stack index for a register saved by handle_caller_saved_regs().
+    fn stack_idx_for_caller_saved_reg(&self, caller_saved_reg_idx: usize) -> usize {
         let frame_alignment_slots = self.stack_slot_count() % 2;
-        (self.stack_slot_count() + frame_alignment_slots)
-            .checked_add(1)
-            .expect("StackMap requires a JITFrame slot")
-            + position
+        self.num_spill_slots + frame_alignment_slots + caller_saved_reg_idx
     }
 
     /// Convert a stack index to the `disp` of the stack slot
     fn stack_idx_to_disp(&self, stack_idx: usize) -> i32 {
         (self.stack_base_idx + stack_idx + 1) as i32 * -SIZEOF_VALUE_I32
     }
+
     /// Convert MemBase::Stack to Mem
     pub(super) fn stack_membase_to_mem(&self, membase: MemBase) -> Mem {
         match membase {
@@ -1469,6 +1496,9 @@ pub struct StackMap {
     /// Heap-allocated JITFrame whose trailing stack map storage receives the
     /// encoded entries once this CCall's register allocation is known.
     jit_frame: *const zjit_jit_frame,
+    /// Inlining depth of the frame whose stack is described by this map.
+    /// Stack-map indexes are decoded from that frame's cfp->jit_return.
+    frame_depth: usize,
 }
 
 /// Initial capacity for asm.insns vector
@@ -2267,7 +2297,7 @@ impl Assembler
                         new_ids.push(None);
                     }
 
-                    if let Some(StackMap { stack, jit_frame }) = stack_map {
+                    if let Some(StackMap { stack, jit_frame, frame_depth }) = stack_map {
                         assert_eq!(unsafe { (*jit_frame).stack_size } as usize, stack.len());
                         for (idx, stack_opnd) in stack.iter().enumerate() {
                             let entry = match stack_opnd {
@@ -2280,11 +2310,12 @@ impl Assembler
                                 Opnd::VReg { idx: VRegId(vreg_id), .. } => {
                                     let vreg_stack_index = match assignments[*vreg_id].expect("StackMap VReg should have an allocation") {
                                         Allocation::Reg(_) | Allocation::Fixed(_) => {
-                                            let position = survivors.iter().position(|&survivor_id| survivor_id == *vreg_id).unwrap();
-                                            self.stack_state.stack_map_index_for_caller_saved_reg(position)
+                                            let caller_saved_reg_idx = survivors.iter().position(|&survivor_id| survivor_id == *vreg_id).unwrap();
+                                            let stack_idx = self.stack_state.stack_idx_for_caller_saved_reg(caller_saved_reg_idx);
+                                            self.stack_state.stack_map_index_for_spill(stack_idx, frame_depth)
                                         }
                                         Allocation::Stack(stack_idx) => {
-                                            self.stack_state.stack_map_index_for_spill(stack_idx)
+                                            self.stack_state.stack_map_index_for_spill(stack_idx, frame_depth)
                                         }
                                     };
 
@@ -3645,9 +3676,14 @@ impl Assembler {
     /// The map is queued here because gen_stack_map() runs before the CCall is
     /// emitted, but the map is filled only after register allocation assigns
     /// locations to the VRegs it references.
-    pub fn stack_map(&mut self, stack: Vec<Opnd>, jit_frame: *const zjit_jit_frame) {
+    ///
+    /// `frame_depth` is temporary plumbing for inlined HIR functions. Since one
+    /// HIR function currently reserves multiple native JITFrame slots, one per
+    /// inlining depth, stack-map indexes must be encoded relative to the target
+    /// frame's own cfp->jit_return.
+    pub fn stack_map(&mut self, stack: Vec<Opnd>, jit_frame: *const zjit_jit_frame, frame_depth: usize) {
         assert!(self.stack_map.is_none());
-        self.stack_map = Some(StackMap { stack, jit_frame });
+        self.stack_map = Some(StackMap { stack, jit_frame, frame_depth });
     }
 
     pub fn store(&mut self, dest: Opnd, src: Opnd) {
