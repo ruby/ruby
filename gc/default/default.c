@@ -4360,6 +4360,26 @@ gc_sweep_continue(rb_objspace_t *objspace, rb_heap_t *sweep_heap)
     gc_sweeping_exit(objspace);
 }
 
+static void
+gc_sweep_step_for_malloc(rb_objspace_t *objspace)
+{
+    GC_ASSERT(is_lazy_sweeping(objspace));
+
+    unsigned int lock_lev;
+    gc_enter(objspace, gc_enter_event_continue, &lock_lev);
+
+    gc_sweeping_enter(objspace);
+
+    for (int i = 0; i < HEAP_COUNT; i++) {
+        rb_heap_t *heap = &heaps[i];
+        gc_sweep_step(objspace, heap);
+    }
+
+    gc_sweeping_exit(objspace);
+
+    gc_exit(objspace, gc_enter_event_continue, &lock_lev);
+}
+
 VALUE
 rb_gc_impl_location(void *objspace_ptr, VALUE value)
 {
@@ -8503,7 +8523,7 @@ objspace_malloc_increase_body(rb_objspace_t *objspace, void *mem, size_t new_siz
       retry:
         if (malloc_increase > malloc_limit && ruby_native_thread_p() && !dont_gc_val()) {
             if (ruby_thread_has_gvl_p() && is_lazy_sweeping(objspace)) {
-                gc_rest(objspace); /* gc_rest can reduce malloc_increase */
+                gc_sweep_step_for_malloc(objspace); /* sweeping frees may reduce malloc_increase */
                 goto retry;
             }
             garbage_collect_with_gvl(objspace, GPR_FLAG_MALLOC);
