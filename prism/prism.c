@@ -22218,9 +22218,14 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
         // If the operator is nonassoc and we should not be able to parse the
         // upcoming infix operator, break.
         if (current_binding_powers.nonassoc) {
-            // If this is a non-assoc operator and we are about to parse the
-            // exact same operator, then we need to add an error.
-            if (match1(parser, current_token_type)) {
+            // If we are about to parse another non-associative operator at the
+            // same precedence as the one we just parsed, then we need to add an
+            // error. This covers chaining the same operator (`1 == 2 == 3`) as
+            // well as different operators that share a precedence, since they
+            // are equally non-associative with one another (`1 == 2 != 3`,
+            // `1...2..3`).
+            pm_binding_powers_t next_binding_powers = pm_binding_powers[parser->current.type];
+            if (next_binding_powers.nonassoc && next_binding_powers.left == current_binding_powers.left) {
                 PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_NON_ASSOCIATIVE_OPERATOR, pm_token_str(parser->current.type), pm_token_str(current_token_type));
                 break;
             }
@@ -22238,10 +22243,10 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t 
                     break;
                 }
 
-                if (PM_BINDING_POWER_TERM <= pm_binding_powers[parser->current.type].left) {
+                if (PM_BINDING_POWER_TERM <= next_binding_powers.left) {
                     break;
                 }
-            } else if (current_binding_powers.left <= pm_binding_powers[parser->current.type].left) {
+            } else if (current_binding_powers.left <= next_binding_powers.left) {
                 break;
             }
         }
