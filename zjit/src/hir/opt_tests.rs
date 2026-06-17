@@ -11911,9 +11911,16 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(String@0x1008)
           PatchPoint MethodRedefined(String@0x1008, ascii_only?@0x1010, cme:0x1018)
           v23:StringExact = GuardType v10, StringExact recompile
-          v25:BoolExact = InvokeBuiltin leaf <inline_expr>, v23
+          v26:CUInt64 = LoadField v23, :RBASIC_FLAGS@0x1040
+          v27:CUInt64[3145728] = Const CUInt64(3145728)
+          v28:CInt64 = IntAnd v26, v27
+          v29:CInt64[1048576] = Const CInt64(1048576)
+          v30:CInt64 = GuardGreaterEq v28, v29
+          v31:CInt64[1048576] = Const CInt64(1048576)
+          v32:CBool = IsBitEqual v30, v31
+          v33:BoolExact = BoxBool v32
           CheckInterrupts
-          Return v25
+          Return v33
         ");
     }
 

@@ -11736,6 +11736,7 @@ rb_str_b(VALUE str)
     return str2;
 }
 
+/* Defined as a leaf builtin in string.rb, so this must never raise or call into Ruby. */
 static VALUE
 rb_str_valid_encoding_p(VALUE str)
 {
@@ -11744,6 +11745,7 @@ rb_str_valid_encoding_p(VALUE str)
     return RBOOL(cr != ENC_CODERANGE_BROKEN);
 }
 
+/* Defined as a leaf builtin in string.rb, so this must never raise or call into Ruby. */
 static VALUE
 rb_str_is_ascii_only_p(VALUE str)
 {
@@ -13086,4 +13088,3 @@ Init_String(void)
 }
 
 #include "string.rbinc"
-

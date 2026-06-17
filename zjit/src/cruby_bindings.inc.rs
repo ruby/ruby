@@ -355,6 +355,12 @@ pub type rb_block_call_func = ::std::option::Option<
     ) -> VALUE,
 >;
 pub type rb_block_call_func_t = rb_block_call_func;
+pub const RUBY_ENC_CODERANGE_UNKNOWN: ruby_coderange_type = 0;
+pub const RUBY_ENC_CODERANGE_7BIT: ruby_coderange_type = 1048576;
+pub const RUBY_ENC_CODERANGE_VALID: ruby_coderange_type = 2097152;
+pub const RUBY_ENC_CODERANGE_BROKEN: ruby_coderange_type = 3145728;
+pub const RUBY_ENC_CODERANGE_MASK: ruby_coderange_type = 3145728;
+pub type ruby_coderange_type = u32;
 pub const RUBY_ENCODING_INLINE_MAX: ruby_encoding_consts = 127;
 pub const RUBY_ENCODING_SHIFT: ruby_encoding_consts = 22;
 pub const RUBY_ENCODING_MASK: ruby_encoding_consts = 532676608;
