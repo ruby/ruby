@@ -4388,13 +4388,12 @@ impl Function {
 
     /// Check whether a callee ISEQ can be inlined.
     fn can_inline(callee_iseq: IseqPtr) -> bool {
-        // Inline callees with required, optional, post-required positional, and keyword
-        // parameters. Rest params, double-splat (kwrest), and forwardable params are rejected
-        // because `can_direct_send` rejects them -- we only inline direct sends.
-        // TODO (nirvdrum 2026-06-12) Block params should be supported by the inliner.
+        // Inline callees with required, optional, post-required positional, keyword, and
+        // block parameters, including callees that dispatch to a passed block with `yield`.
+        // Rest params, double-splat (kwrest), and forwardable params are rejected because
+        // `can_direct_send` rejects them -- we only inline direct sends.
         let params = unsafe { callee_iseq.params() };
         if params.flags.has_rest() != 0
-            || params.flags.has_block() != 0
             || params.flags.forwardable() != 0
             || params.flags.has_kwrest() != 0
         {
@@ -4407,32 +4406,6 @@ impl Function {
         if iseq_ep_starts_escaped(callee_iseq) || iseq_seen_ep_escape(callee_iseq) {
             incr_counter!(inline_reject_ep_escapes);
             return false;
-        }
-
-        // Reject callees that use yield/invokeblock (block inlining is future work).
-        // TODO (nirvdrum 2026-06-12) Work through this list, adding support for each rejected instruction.
-        let callee_encoded_size = unsafe { get_iseq_encoded_size(callee_iseq) };
-        let mut pc_idx: u32 = 0;
-        while pc_idx < callee_encoded_size {
-            let pc = unsafe { rb_iseq_pc_at_idx(callee_iseq, pc_idx) };
-            let opcode: u32 = unsafe { rb_iseq_bare_opcode_at_pc(callee_iseq, pc) }
-                .try_into()
-                .unwrap();
-            if opcode == YARVINSN_invokeblock {
-                incr_counter!(inline_reject_invokeblock);
-                return false;
-            }
-
-            // Reject callees that use block params. The codegen for getblockparam
-            // and getblockparamproxy uses jit.iseq to compute the block param level,
-            // which would be wrong for inlined code.
-            if opcode == YARVINSN_getblockparam || opcode == YARVINSN_getblockparamproxy {
-                incr_counter!(inline_reject_blockparam);
-                return false;
-            }
-
-            let insn_len = insn_len(opcode as usize);
-            pc_idx += insn_len;
         }
 
         true
@@ -8985,8 +8958,10 @@ fn add_iseq_to_hir(
                         });
 
                     let result = if is_ifunc {
-                        // Load the block handler from LEP
-                        let level = get_lvar_level(fun.iseq);
+                        // Load the block handler from the current frame's LEP. In inlined
+                        // code, the function ISEQ is the caller while `exit_state.iseq` is the
+                        // callee containing this `invokeblock`.
+                        let level = get_lvar_level(exit_state.iseq);
                         let lep = fun.push_insn(block, Insn::GetEP { level });
                         let block_handler = fun.push_insn(block, Insn::LoadField {
                             recv: lep,
