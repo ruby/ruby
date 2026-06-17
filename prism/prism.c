@@ -15133,9 +15133,15 @@ parse_block(pm_parser_t *parser, uint16_t depth) {
  * Parse a list of arguments and their surrounding parentheses if they are
  * present. It returns true if it found any pieces of arguments (parentheses,
  * arguments, or blocks).
+ *
+ * When `full_arguments` is true the caller is a method or `super` call, which
+ * use the full `opt_call_args` grammar: a block argument, argument forwarding,
+ * a trailing block, and a trailing comma are all permitted. When it is false
+ * the caller is `yield`, whose restricted `call_args` grammar permits none of
+ * these.
  */
 static bool
-parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_block, uint8_t flags, uint16_t depth) {
+parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool full_arguments, uint8_t flags, uint16_t depth) {
     /* Fast path: if the current token can't begin an expression and isn't
      * a parenthesis, block opener, or splat/block-pass operator, there are
      * no arguments to parse. */
@@ -15157,7 +15163,17 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool accept
             arguments->closing_loc = TOK2LOC(parser, &parser->previous);
         } else {
             pm_accepts_block_stack_push(parser, true);
-            parse_arguments(parser, arguments, accepts_block, PM_TOKEN_PARENTHESIS_RIGHT, (uint8_t) (flags & ~PM_PARSE_ACCEPTS_DO_BLOCK), (uint16_t) (depth + 1));
+            parse_arguments(parser, arguments, full_arguments, PM_TOKEN_PARENTHESIS_RIGHT, (uint8_t) (flags & ~PM_PARSE_ACCEPTS_DO_BLOCK), (uint16_t) (depth + 1));
+
+            // `yield` parses its arguments through the restricted `call_args`
+            // grammar, which (unlike the `opt_call_args` that method calls and
+            // `super` use) permits neither a block argument nor a trailing
+            // comma. `full_arguments` is false only for `yield`, so we use it
+            // to reject the trailing comma in `yield(a,)` that the arguments
+            // parser otherwise accepts before the closing parenthesis.
+            if (!full_arguments && parser->previous.type == PM_TOKEN_COMMA) {
+                PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->previous, PM_ERR_EXPECT_ARGUMENT, pm_token_str(parser->current.type));
+            }
 
             if (!accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
                 PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_ARGUMENT_TERM_PAREN, pm_token_str(parser->current.type));
@@ -15176,7 +15192,7 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool accept
         // If we get here, then the subsequent token cannot be used as an infix
         // operator. In this case we assume the subsequent token is part of an
         // argument to this method call.
-        parse_arguments(parser, arguments, accepts_block, PM_TOKEN_EOF, flags, (uint16_t) (depth + 1));
+        parse_arguments(parser, arguments, full_arguments, PM_TOKEN_EOF, flags, (uint16_t) (depth + 1));
 
         // If we have done with the arguments and still not consumed the comma,
         // then we have a trailing comma where we need to check whether it is
@@ -15191,7 +15207,7 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool accept
     // If we're at the end of the arguments, we can now check if there is a block
     // node that starts with a {. If there is, then we can parse it and add it to
     // the arguments.
-    if (accepts_block) {
+    if (full_arguments) {
         pm_block_node_t *block = NULL;
 
         if (accept1(parser, PM_TOKEN_BRACE_LEFT)) {
