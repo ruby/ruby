@@ -1304,47 +1304,38 @@ class Pathname    # * File *
   # Changes the owner and group of an entry (directory or file):
   #
   # ```ruby
-  # # Work in a temporary directory.
-  # Pathname.mktmpdir do |tmpdirpath|
-  #   # A subdirectory therein, and its Pathname.
-  #   dirpath = File.join(tmpdirpath, 'subdir')
-  #   dir_pn = Pathname(dirpath)
-  #   dir_pn.mkdir
-  #   dir_stat = File.stat(dirpath)
-  #   puts "Original directory owner: #{dir_stat.uid}"
-  #   puts "Original directory group: #{dir_stat.gid}"
-  #   dir_pn.chown(1000, 1000)
-  #   dir_stat = File.stat(dirpath)
-  #   puts "New directory owner:      #{dir_stat.uid}"
-  #   puts "New directory group:      #{dir_stat.gid}"
+  # # Super user; all privileges.
+  # Process.uid                    # => 0
+  # Process.gid                    # => 0
   #
-  #   # A file in the subdirectory, and its Pathname.
-  #   filepath = File.join(dirpath, 't.txt')
-  #   file_pn = Pathname(filepath)
-  #   # Create the file.
-  #   file_pn.write('foo')
-  #   file_stat = File.stat(filepath)
-  #   puts "Original file owner:      #{file_stat.uid}"
-  #   puts "Original file group:      #{file_stat.gid}"
-  #   file_pn = Pathname(dirpath)
-  #   file_pn.chown(1000, 1000)
-  #   file_stat = File.stat(dirpath)
-  #   puts "New file owner:           #{file_stat.uid}"
-  #   puts "New file group:           #{file_stat.gid}"
-  # end
-  # ```
+  # # Pathname for a (non-existent) directory.
+  # dir_pn = Pathname('doc/foo')   # => #<Pathname:doc/foo>
+  # # Create the directory; fetch original owner and group.
+  # dir_pn.mkdir
+  # dir_stat = dir_pn.stat
+  # dir_stat.uid                   # => 0
+  # dir_stat.gid                   # => 0
+  # # Change owner; fetch current owner and group.
+  # dir_pn.chown(1000, 1000)
+  # dir_stat = dir_pn.stat
+  # dir_stat.uid                   # => 1000
+  # dir_stat.gid                   # => 1000
   #
-  # Output:
-  #
-  # ```text
-  # Original directory owner: 0
-  # Original directory group: 0
-  # New directory owner:      1000
-  # New directory group:      1000
-  # Original file owner:      0
-  # Original file group:      0
-  # New file owner:           1000
-  # New file group:           1000
+  # Pathname for a (non-existent) file in the directory.
+  # file_pn = dir_pn.join('t.tmp') # => #<Pathname:doc/foo/t.tmp>
+  # # Create the directory; fetch original owner and group.
+  # file_pn.write('foo')
+  # file_stat = file_pn.stat
+  # file_stat.uid                  # => 0
+  # file_stat.gid                  # => 0
+  # # Change owner; fetch current owner and group.
+  # file_pn.chown(1000, 1000)
+  # file_stat = file_pn.stat
+  # file_stat.uid                  # => 1000
+  # file_stat.gid                  # => 1000
+  # # Clean up.
+  # file_pn.delete
+  # dir_pn.rmdir
   # ```
   #
   # Notes:
