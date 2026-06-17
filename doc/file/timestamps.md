@@ -1,15 +1,13 @@
-# \File System Timestamps
+# \Filesystem Timestamps
 
-A file system entry (the name of a file or directory)
+A filesystem entry (the name of a file or directory)
 has several times (called timestamps) associated with it.
 
-The Ruby methods that return these timestamps (each as a Time object)
-are actually returning "whatever the OS says,"
-and so their behaviors may vary among OS platforms.
-If a platform does not support a particular timestamp,
-the corresponding Ruby methods raise NotImplementedError.
+A Ruby method that returns a filesystem timestamp (as a Time object)
+is actually returning "whatever the filesystem says";
+the returned times may vary among filesystems, even on the same machine.
 
-These timestamps are:
+These timestamps methods are:
 
 |               Name               | Meaning                                | Changes               |
 |:--------------------------------:|----------------------------------------|-----------------------|
@@ -17,6 +15,9 @@ These timestamps are:
 |  [`mtime`](#modification-time)   | Modification time.                     | When written.         |
 |     [`atime`](#access-time)      | Access time.                           | When read or written. |
 | [`ctime`](#metadata-change-time) | Metadata-change time (or create time). | See below.            |
+
+A method raises an exception if the filesystem does not support
+the corresponding timestamp.
 
 ## Birth \Time
 
@@ -42,7 +43,7 @@ On Windows, each of these methods also returns the birth time:
 
 The modification time for an entry is the time the entry was last modified.
 The modification time is updated when the entry is written,
-though some file systems may delay the update.
+though some filesystems may delay the update.
 
 Each of these methods returns the modification time for an entry as a Time object:
 
@@ -60,9 +61,11 @@ The modification time (along with the access time) may also be updated explicitl
 
 ## Access \Time
 
-The access time for an entry is the time the entry last read.
-The access time is updated when the entry is read,
-though some file systems may delay the update.
+The access time for an entry is the time of the most recent read of or write to
+the content of the entry, as reported by the underlying filesystem.
+
+Depending on a filesystem's settings, reading an entry may cause the access time
+to be updated immediately, later, or never.
 
 Each of these methods returns the access time for an entry as a Time object:
 
@@ -83,7 +86,7 @@ The access time (along with the modification time) may also be updated explicitl
 The metadata-change time for an entry is the time the entry last read.
 The metadata-change time is updated when the entry's metadata is changed;
 changing access mode or permissions may update the metadata-change time,
-though some file systems may delay the update.
+though some filesystems may delay the update.
 
 On non-Windows systems,
 each of these methods returns the metadata-change time for an entry:
