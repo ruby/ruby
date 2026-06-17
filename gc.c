@@ -3762,7 +3762,7 @@ rb_gc_unregister_address(VALUE *addr)
         for (index = 0; index < vm->global_object_list_size; index++) {
             if (addr == vm->global_object_list[index]) {
                 MEMMOVE(
-                    vm->global_object_list[index],
+                    &vm->global_object_list[index],
                     &vm->global_object_list[index + 1],
                     VALUE *,
                     vm->global_object_list_size - index - 1
