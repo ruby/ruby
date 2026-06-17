@@ -332,10 +332,6 @@ AC_CHECK_TOOLS([STRIP],   [gstrip strip], [:])
 
 FIRSTMAKEFILE=""
 
-# nm errors with Rust's LLVM bitcode when Rust uses a newer LLVM version than nm.
-# In case we're working with llvm-nm, tell it to not worry about the bitcode.
-AS_IF([${NM} --help 2>&1 | grep -q 'llvm-bc'], [NM="$NM --no-llvm-bc"])
-
 AS_IF([test ! $rb_test_CFLAGS], [AS_UNSET(CFLAGS)]); AS_UNSET(rb_test_CFLAGS)
 AS_IF([test ! $rb_test_CXXFLAGS], [AS_UNSET(CXXFLAGS)]); AS_UNSET(rb_save_CXXFLAGS)
 
@@ -4163,7 +4159,7 @@ AC_SUBST(JIT_CARGO_SUPPORT)dnl "no" or the cargo profile of the rust code
 [begin]_group "build section" && {
 AC_CACHE_CHECK([for prefix of external symbols], rb_cv_symbol_prefix, [
     AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[extern void conftest_external(void) {}]], [[]])],[
-	rb_cv_symbol_prefix=`$NM conftest.$ac_objext 2>/dev/null |
+	rb_cv_symbol_prefix=`$NM conftest.$ac_objext |
 			     sed -n ['/.*T[ 	]\([^ 	]*\)conftest_external.*/!d;s//\1/p;q']`
 	],
 	[rb_cv_symbol_prefix=''])
