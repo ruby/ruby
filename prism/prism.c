@@ -17411,13 +17411,19 @@ parse_pattern(pm_parser_t *parser, pm_constant_id_list_t *captures, uint8_t flag
             // EOF terminators cover a one-line match (`x => a,`) or a `case`/`in`
             // clause (`in a,\n ...`); a newline is only lexed as a token here
             // when `pattern_matching_newlines` is set, so this does not affect
-            // patterns nested in brackets or parentheses. They are only treated
-            // as a trailing comma when no rest has been parsed yet, so
-            // `x => a, *b,` still reports the dangling comma.
+            // patterns nested in brackets or parentheses.
             if (
                 match7(parser, PM_TOKEN_KEYWORD_THEN, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_SEMICOLON, PM_TOKEN_KEYWORD_AND, PM_TOKEN_KEYWORD_OR) ||
-                (!trailing_rest && match2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_EOF))
+                match2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_EOF)
             ) {
+                // A trailing comma forms an implicit rest pattern (`[a,]` is
+                // `[a, *]`). If a rest pattern has already been parsed, then
+                // this is a second rest, which is not allowed (e.g. `[a, *b,]`
+                // or `x => a, *b,`).
+                if (trailing_rest) {
+                    pm_parser_err_previous(parser, PM_ERR_PATTERN_REST);
+                }
+
                 node = UP(pm_implicit_rest_node_create(parser, &parser->previous));
                 pm_node_list_append(parser->arena, &nodes, node);
                 trailing_rest = true;
