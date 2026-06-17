@@ -869,8 +869,8 @@ Some macros have been provided to make edge referencing easier:
   Define _ref_list_name_ as a list of references
 <tt>RUBY_REF_END</tt> :: The end mark of the references list.
 <tt>RUBY_REF_EDGE(struct, member)</tt> ::
-  Declare _member_ as a VALUE edge from _struct_. Use this after
-  +RUBY_REFERENCES_START+
+  Declare _member_ as a VALUE edge from _struct_. Use this inside
+  the block of +RUBY_REFERENCES+.
 +RUBY_REFS_LIST_PTR+ ::
   Coerce the reference list into a format that can be accepted by the
   existing +dmark+ interface.
