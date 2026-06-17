@@ -2300,16 +2300,19 @@ static VALUE cResumableParser_feed(VALUE self, VALUE str)
 
         const size_t size = parser->state.end - parser->state.start;
         const size_t consumed = size - remaining;
-        char *old_ptr = RSTRING_PTR(parser->buffer);
 
         if (RB_OBJ_FROZEN_RAW(parser->buffer)) {
             VALUE new_buffer = rb_obj_hide(rb_str_buf_new(remaining + RSTRING_LEN(str)));
-            MEMCPY(RSTRING_PTR(new_buffer), old_ptr + consumed, char, remaining);
+
+            char *old_ptr = RSTRING_PTR(parser->buffer);
+            memcpy(RSTRING_PTR(new_buffer), old_ptr + consumed, remaining);
             rb_str_set_len(new_buffer, remaining);
             offset = 0;
             parser->buffer = new_buffer;
         } else if (consumed > (size / 2) && size >= 512) {
-            MEMMOVE(old_ptr, old_ptr + consumed, char, remaining);
+            rb_str_modify(parser->buffer);
+            char *old_ptr = RSTRING_PTR(parser->buffer);
+            memmove(old_ptr, old_ptr + consumed, remaining);
             rb_str_set_len(parser->buffer, remaining);
             offset = 0;
         }

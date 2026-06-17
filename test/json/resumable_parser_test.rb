@@ -244,6 +244,21 @@ class JSONResumageParserTest < Test::Unit::TestCase
     assert_equal expected, @parser.value
   end
 
+  def test_buffer_shrink
+    doc1 = '{"a":"' + ("x" * 800) + '"} {'   # >= 512 bytes
+    doc2 = '"b":1} '
+
+    parser = JSON::ResumableParser.new({})
+
+    parser << doc1 # internal buffer becomes a *shared* string here
+    parser.parse # consume doc1 -> >50% of a >=512B buffer is now consumed
+    parser.value
+
+    parser << doc2 # buffer is shrinked
+    parser.parse
+    parser.value
+  end
+
   private
 
   def assert_partial_value(expected, json)
