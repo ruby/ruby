@@ -7391,7 +7391,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 /// (the method inliner).
 ///
 /// When `mode` is `AddIseqMode::Standalone`, generate the interpreter entry
-/// block and a JIT entry block for each opt-table entry, push the JIT entry
+/// block and, for ISEQs that can be entered by JIT-to-JIT calls, a JIT entry
+/// block for each opt-table entry, push the JIT entry
 /// blocks onto `fun.jit_entry_blocks`, and run the post-translation passes
 /// (`seal_entries`, `set_param_types`, `infer_types`) before returning. When
 /// `mode` is `AddIseqMode::Inlined`, only the body blocks are produced and the
@@ -7427,13 +7428,15 @@ fn add_iseq_to_hir(
     let jit_entry_insns = unsafe { iseq.params() }.opt_table_slice().iter().copied().map(VALUE::as_u32).collect::<Vec<_>>();
     let BytecodeInfo { jump_targets } = compute_bytecode_info(iseq, &jit_entry_insns);
 
+    let compile_jit_entries = matches!(mode, AddIseqMode::Standalone) && iseq_supports_jit_entry(iseq);
+
     // Make all empty basic blocks. The ordering of the BBs matters for getting fallthrough jumps
     // in good places, but it's not necessary for correctness. TODO: Higher quality scheduling during lowering.
     let mut insn_idx_to_block = HashMap::new();
     let mut body_entry_blocks = Vec::with_capacity(jit_entry_insns.len());
     // Make blocks for optionals first, and put them right next to their JIT entrypoint
     for insn_idx in jit_entry_insns.iter().copied() {
-        if matches!(mode, AddIseqMode::Standalone) {
+        if compile_jit_entries {
             let jit_entry_block = fun.new_block(insn_idx);
             fun.jit_entry_blocks.push(jit_entry_block);
         }
@@ -7451,13 +7454,15 @@ fn add_iseq_to_hir(
         // Compile an entry_block for the interpreter
         compile_entry_block(fun, jit_entry_insns.as_slice(), &insn_idx_to_block);
 
-        // Compile all JIT-to-JIT entry blocks
-        for (jit_entry_idx, insn_idx) in jit_entry_insns.iter().enumerate() {
-            let target_block = insn_idx_to_block.get(insn_idx)
-                .copied()
-                .expect("we make a block for each jump target and \
-                         each entry in the ISEQ opt_table is a jump target");
-            compile_jit_entry_block(fun, jit_entry_idx, target_block);
+        if compile_jit_entries {
+            // Compile all JIT-to-JIT entry blocks
+            for (jit_entry_idx, insn_idx) in jit_entry_insns.iter().enumerate() {
+                let target_block = insn_idx_to_block.get(insn_idx)
+                    .copied()
+                    .expect("we make a block for each jump target and \
+                             each entry in the ISEQ opt_table is a jump target");
+                compile_jit_entry_block(fun, jit_entry_idx, target_block);
+            }
         }
     }
 
@@ -9427,8 +9432,7 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
     let lead_num: usize = params.lead_num.try_into().expect("iseq param lead_num >= 0");
     let passed_opt_num = jit_entry_idx;
     // We don't need to check iseq_ep_starts_escaped() because we
-    // don't enter ISEQ_TYPE_MAIN/ISEQ_TYPE_EVAL using JIT-to-JIT calls.
-    // TODO: Stop compiling such JIT entries (Shopify/ruby#992)
+    // don't compile JIT entries for ISEQ_TYPE_MAIN/ISEQ_TYPE_EVAL.
     let seen_ep_escape = iseq_seen_ep_escape(iseq);
 
     // If the iseq has keyword parameters, the keyword bits local will be appended to the local table.

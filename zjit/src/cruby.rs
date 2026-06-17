@@ -334,6 +334,15 @@ pub fn iseq_ep_starts_escaped(iseq: IseqPtr) -> bool {
     }
 }
 
+/// Return true if ZJIT may directly call this ISEQ from another JIT-compiled ISEQ.
+pub fn iseq_supports_jit_entry(iseq: IseqPtr) -> bool {
+    match unsafe { get_iseq_body_type(iseq) } {
+        // These ISEQs are only entered by the interpreter.
+        ISEQ_TYPE_MAIN | ISEQ_TYPE_EVAL => false,
+        _ => true,
+    }
+}
+
 /// Index of the local variable that has a rest parameter if any
 pub fn iseq_rest_param_idx(params: &IseqParameters) -> Option<i32> {
     // TODO(alan): replace with `params.rest_start`
