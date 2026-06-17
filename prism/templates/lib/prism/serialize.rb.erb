@@ -135,8 +135,10 @@ module Prism
                    loader.load_header
                    loader.load_encoding
       start_line = loader.load_varsint
+      offsets    = loader.load_line_offsets(freeze)
 
       source.replace_start_line(start_line)
+      source.replace_offsets(offsets)
 
       result =     loader.load_comments(freeze)
       raise unless loader.eof?

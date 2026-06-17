@@ -23079,6 +23079,7 @@ pm_serialize_parse_comments(pm_buffer_t *buffer, const uint8_t *source, size_t s
     pm_serialize_header(buffer);
     pm_serialize_encoding(parser.encoding, buffer);
     pm_buffer_append_varsint(buffer, parser.start_line);
+    pm_serialize_line_offset_list(&parser.line_offsets, buffer);
     pm_serialize_comment_list(&parser.comment_list, buffer);
 
     pm_parser_cleanup(&parser);
