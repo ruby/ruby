@@ -41,8 +41,9 @@ class Gem::Ext::Builder
     # nmake doesn't support parallel build
     unless is_nmake
       have_make_arguments = make_program.size > 1
+      n_jobs ||= 0
 
-      if !have_make_arguments && !ENV["MAKEFLAGS"] && n_jobs
+      if !have_make_arguments && n_jobs > 1 && !ENV["MAKEFLAGS"]&.match(/-j\d*(\s|\Z)/)
         make_program << "-j#{n_jobs}"
       end
     end

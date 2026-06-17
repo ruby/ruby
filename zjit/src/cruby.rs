@@ -320,11 +320,11 @@ pub fn iseq_opcode_at_idx(iseq: IseqPtr, insn_idx: u32) -> u32 {
     unsafe { rb_iseq_opcode_at_pc(iseq, pc) as u32 }
 }
 
-/// Return true if a given ISEQ is known to escape EP to the heap on entry.
+/// Return true if a given ISEQ starts with EP escaped to the heap on entry.
 ///
 /// As of vm_push_frame(), EP is always equal to BP. However, after pushing
 /// a frame, some ISEQ setups call vm_bind_update_env(), which redirects EP.
-pub fn iseq_escapes_ep(iseq: IseqPtr) -> bool {
+pub fn iseq_ep_starts_escaped(iseq: IseqPtr) -> bool {
     match unsafe { get_iseq_body_type(iseq) } {
         // The EP of the <main> frame points to TOPLEVEL_BINDING
         ISEQ_TYPE_MAIN |

@@ -15,6 +15,11 @@
 #ifndef PRISM_EXCLUDE_SERIALIZATION
 
 /*
+ * Serialize the given list of offsets to the given buffer.
+ */
+void pm_serialize_line_offset_list(pm_line_offset_list_t *list, pm_buffer_t *buffer);
+
+/*
  * Serialize the given list of comments to the given buffer.
  */
 void pm_serialize_comment_list(pm_list_t *list, pm_buffer_t *buffer);

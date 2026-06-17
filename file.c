@@ -3374,14 +3374,55 @@ rb_file_s_utime(int argc, VALUE *argv, VALUE _)
 #if defined(HAVE_UTIMES) && (defined(HAVE_LUTIMES) || (defined(HAVE_UTIMENSAT) && defined(AT_SYMLINK_NOFOLLOW)))
 
 /*
- * call-seq:
- *  File.lutime(atime, mtime, file_name, ...)   ->  integer
+ * :markup: markdown
  *
- * Sets the access and modification times of each named file to the
- * first two arguments. If a file is a symlink, this method acts upon
- * the link itself as opposed to its referent; for the inverse
- * behavior, see File.utime. Returns the number of file
- * names in the argument list.
+ * call-seq:
+ *   File.lutime(atime, mtime, *paths) -> path_count
+ *
+ * Like File#utime, but does not follow symbolic links,
+ * and therefore changes the times of the entries given by `paths`,
+ * regardless of whether they are symbolic links;
+ * returns the number of `paths` given:
+ *
+ * ```ruby
+ * # Create a file and a link to it.
+ * file_path = 't.tmp'
+ * File.write(file_path, '')
+ * link_path = 'link'
+ * File.symlink(file_path, link_path)
+ * # Take snapshots of both.
+ * file_stat = File.stat(file_path)
+ * link_stat = File.lstat(link_path)
+ * # Fetch access times and modification times of both.
+ * file_stat.atime # => 2026-06-15 10:45:11.376753268 -0500
+ * file_stat.mtime # => 2026-06-15 10:44:47.335854904 -0500
+ * link_stat.atime # => 2026-06-15 10:44:59.788801128 -0500
+ * link_stat.mtime # => 2026-06-15 10:44:49.367845961 -0500
+ * # Update access time and modification time of the link.
+ * time = Time.now # => 2026-06-15 10:48:57.847422496 -0500
+ * File.lutime(time, time, link_path)
+ * # Take fresh snapshots of both.
+ * file_stat = File.stat(file_path)
+ * link_stat = File.lstat(link_path)
+ * # Fetch access time and modification time of file (not changed).
+ * file_stat.atime # => 2026-06-15 10:45:11.376753268 -0500
+ * file_stat.mtime # => 2026-06-15 10:44:47.335854904 -0500
+ * # Fetch access time and modification time of link (changed).
+ * link_stat.atime # => 2026-06-15 10:49:27.119146136 -0500
+ * link_stat.mtime # => 2026-06-15 10:48:57.847422496 -0500
+ * # Clean up.
+ * File.delete(file_path)
+ * File.delete(link_path)
+ * ```
+ *
+ * Arguments `atime` and `mtime` may be Time objects (as above).
+ *
+ * Either or both may be integers;
+ * when an integer `i` is passed, `Time.new(i)` is used.
+ *
+ * Either or both may be `nil`, in which case `Time.now` is used.
+ *
+ * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  */
 
 static VALUE
@@ -3427,15 +3468,28 @@ syserr_fail2_in(const char *func, int e, VALUE s1, VALUE s2)
 
 #ifdef HAVE_LINK
 /*
+ * :markup: markdown
+
  *  call-seq:
- *     File.link(old_name, new_name)    -> 0
+ *    File.link(path, new_path) -> 0
  *
- *  Creates a new name for an existing file using a hard link. Will not
- *  overwrite <i>new_name</i> if it already exists (raising a subclass
- *  of SystemCallError). Not available on all platforms.
+ *  Not available on some systems.
  *
- *     File.link("testfile", ".testfile")   #=> 0
- *     IO.readlines(".testfile")[0]         #=> "This is line one\n"
+ *  Creates a new entry at `new_path` for the existing entry at `path`
+ *  using a [hard link](https://en.wikipedia.org/wiki/Hard_link):
+ *
+ *  ```ruby
+ *  File.write('doc/t.tmp', 'foo')
+ *  File.link('doc/t.tmp', 'lib/u.tmp')
+ *  File.read('lib/u.tmp') # => "foo"
+ *  File.write('lib/u.tmp', 'bar')
+ *  File.read('doc/t.tmp') # => "bar"
+ *  File.delete('doc/t.tmp')
+ *  File.read('lib/u.tmp') # => "bar"
+ *  File.delete('lib/u.tmp')
+ *  ```
+ *
+ *  Raises an exception if the entry at `new_path` exists.
  */
 
 static VALUE

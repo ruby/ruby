@@ -6,21 +6,63 @@ use crate::backend::lir::Assembler;
 use crate::codegen::max_iseq_versions;
 use crate::cruby::*;
 use crate::hir::{Insn, iseq_to_hir};
-use crate::options::{OPTIONS, get_option, rb_zjit_prepare_options, set_call_threshold};
+use crate::options::{get_option, rb_zjit_prepare_options, set_call_threshold, set_inline_threshold};
 use crate::payload::IseqVersion;
 use crate::hir::tests::hir_build_tests::assert_contains_opcode;
 use crate::payload::*;
 use insta::assert_snapshot;
 
+/// Run the Ruby fragment with the inliner enabled with the default inline
+/// threshold for tests. Most inliner tests should use this. `with_inlining_threshold`
+/// exists if you need to customize the inline threshold for a given test.
 #[track_caller]
-fn with_inlining<T>(mut f: impl FnMut() -> T) -> T {
+fn with_inlining<T>(ruby_fragment: impl FnMut() -> T) -> T {
+    // 30 will compile common, smaller methods while not compiling the whole world.
+    with_inlining_threshold(30, ruby_fragment)
+}
+
+/// Run the Ruby fragment with the inliner enabled with the given inline `threshold`.
+#[track_caller]
+fn with_inlining_threshold<T>(threshold: usize, mut ruby_fragment: impl FnMut() -> T) -> T {
     with_rubyvm(|| {
-        let old_threshold = get_option!(inline_threshold);
-        unsafe { OPTIONS.as_mut().unwrap().inline_threshold = 30; }
-        let result = f();
-        unsafe { OPTIONS.as_mut().unwrap().inline_threshold = old_threshold; }
+        let old_inline_threshold = get_option!(inline_threshold);
+        let old_call_threshold = unsafe { crate::options::rb_zjit_call_threshold };
+
+        set_inline_threshold(threshold);
+        set_call_threshold(2);
+        let result = ruby_fragment();
+        set_call_threshold(old_call_threshold);
+        set_inline_threshold(old_inline_threshold);
+
         result
     })
+}
+
+/// Like `assert_compiles`, but also asserts that the program inlined at least one method
+/// while running. Inliner tests must call the entry method enough times to cross the call
+/// threshold, otherwise the method is never compiled and the test code ends up running in
+/// interpreter. Asserting on `inline_method_count` fails the test in that case.
+#[track_caller]
+fn assert_inlines(program: &str) -> String {
+    let counters = crate::state::ZJITState::get_counters();
+    let inline_count_before = counters.inline_method_count;
+    let result = assert_compiles(program);
+    assert!(counters.inline_method_count > inline_count_before,
+        "expected the program to inline at least one method, but inline_method_count did not increase");
+    result
+}
+
+/// Like `assert_inlines`, but tolerates side exits. Use for inliner tests whose
+/// inlined body legitimately exits at runtime, such as a `break` that unwinds out
+/// of a literal block.
+#[track_caller]
+fn assert_inlines_allowing_exits(program: &str) -> String {
+    let counters = crate::state::ZJITState::get_counters();
+    let inline_count_before = counters.inline_method_count;
+    let result = assert_compiles_allowing_exits(program);
+    assert!(counters.inline_method_count > inline_count_before,
+        "expected the program to inline at least one method, but inline_method_count did not increase");
+    result
 }
 
 #[test]
@@ -2100,6 +2142,38 @@ fn test_opt_mult_overflow() {
 
         [r1, r2, r3, r4, r5]
     "), @"[6, -6, 9671406556917033397649408, -9671406556917033397649408, 21267647932558653966460912964485513216]");
+}
+
+#[test]
+fn test_opt_plus_overflow() {
+    assert_snapshot!(inspect("
+        def test(a, b)
+          a + b
+        end
+        test(1, 2) # profile opt_plus
+
+        r1 = test(2, 3)
+        r2 = test(4611686018427387903, 1)    # FIXNUM_MAX + 1 overflows
+        r3 = test(-4611686018427387904, -1)  # FIXNUM_MIN - 1 overflows
+
+        [r1, r2, r3]
+    "), @"[5, 4611686018427387904, -4611686018427387905]");
+}
+
+#[test]
+fn test_opt_minus_overflow() {
+    assert_snapshot!(inspect("
+        def test(a, b)
+          a - b
+        end
+        test(6, 4) # profile opt_minus
+
+        r1 = test(6, 4)
+        r2 = test(4611686018427387903, -1)   # FIXNUM_MAX - (-1) overflows
+        r3 = test(-4611686018427387904, 1)   # FIXNUM_MIN - 1 overflows
+
+        [r1, r2, r3]
+    "), @"[2, 4611686018427387904, -4611686018427387905]");
 }
 
 #[test]
@@ -5857,10 +5931,11 @@ fn test_send_block_unused_warning_emitted_from_jit() {
 #[test]
 fn test_inlined_method_returns_correct_value() {
     with_inlining(|| {
-        assert_snapshot!(assert_compiles("
+        assert_snapshot!(assert_inlines("
             def add_one(x) = x + 1
             def test(n) = add_one(n)
 
+            test(2)
             test(2)
         "), @"3");
     });
@@ -5869,7 +5944,7 @@ fn test_inlined_method_returns_correct_value() {
 #[test]
 fn test_inlined_method_deoptimizes_on_redefinition() {
     with_inlining(|| {
-        assert_snapshot!(assert_compiles("
+        assert_snapshot!(assert_inlines("
             def callee(x) = x + 1
             def test(n) = callee(n)
 
@@ -5886,7 +5961,7 @@ fn test_inlined_method_deoptimizes_on_redefinition() {
 #[test]
 fn test_inlined_method_survives_compact_between_calls() {
     with_inlining(|| {
-        assert_snapshot!(assert_compiles("
+        assert_snapshot!(assert_inlines("
             def callee(x) = x + 1
             def test(n) = callee(n)
 
@@ -5903,7 +5978,7 @@ fn test_inlined_method_survives_compact_between_calls() {
 #[test]
 fn test_inlined_method_survives_compact_during_call() {
     with_inlining(|| {
-        assert_snapshot!(assert_compiles("
+        assert_snapshot!(assert_inlines("
             def trigger_compact = GC.compact
             def callee(x)
               trigger_compact
@@ -5913,8 +5988,6 @@ fn test_inlined_method_survives_compact_during_call() {
 
             test(1)
             test(1)
-
-            test(1)
         "), @"2");
     });
 }
@@ -5922,10 +5995,11 @@ fn test_inlined_method_survives_compact_during_call() {
 #[test]
 fn test_inlined_method_with_required_keyword() {
     with_inlining(|| {
-        assert_snapshot!(assert_compiles("
+        assert_snapshot!(assert_inlines("
             def callee(x, y:) = x + y
             def test(n) = callee(n, y: 10)
 
+            test(2)
             test(2)
         "), @"12");
     });
@@ -5934,10 +6008,11 @@ fn test_inlined_method_with_required_keyword() {
 #[test]
 fn test_inlined_method_with_optional_keyword_supplied() {
     with_inlining(|| {
-        assert_snapshot!(assert_compiles("
+        assert_snapshot!(assert_inlines("
             def callee(x, y: 100) = x + y
             def test(n) = callee(n, y: 5)
 
+            test(2)
             test(2)
         "), @"7");
     });
@@ -5946,10 +6021,11 @@ fn test_inlined_method_with_optional_keyword_supplied() {
 #[test]
 fn test_inlined_method_with_optional_keyword_omitted() {
     with_inlining(|| {
-        assert_snapshot!(assert_compiles("
+        assert_snapshot!(assert_inlines("
             def callee(x, y: 100) = x + y
             def test(n) = callee(n)
 
+            test(2)
             test(2)
         "), @"102");
     });
@@ -5958,10 +6034,11 @@ fn test_inlined_method_with_optional_keyword_omitted() {
 #[test]
 fn test_inlined_method_with_reordered_keywords() {
     with_inlining(|| {
-        assert_snapshot!(assert_compiles("
+        assert_snapshot!(assert_inlines("
             def callee(a:, b:) = a - b
             def test = callee(b: 1, a: 10)
 
+            test
             test
         "), @"9");
     });
@@ -5970,10 +6047,11 @@ fn test_inlined_method_with_reordered_keywords() {
 #[test]
 fn test_inlined_method_with_keyword_default_using_prior_param() {
     with_inlining(|| {
-        assert_snapshot!(assert_compiles("
+        assert_snapshot!(assert_inlines("
             def callee(x, y: x * 100) = x + y
             def test(n) = callee(n)
 
+            test(2)
             test(2)
         "), @"202");
     });
@@ -5985,7 +6063,7 @@ fn test_inlined_method_with_rescue_caught_in_callee() {
     // callee. The runtime exception walker must find the rescue clause via the
     // inlined callee's CFP.
     with_inlining(|| {
-        assert_snapshot!(assert_compiles(r#"
+        assert_snapshot!(assert_inlines(r#"
             def callee(x)
               begin
                 raise "boom" if x.negative?
@@ -5997,6 +6075,7 @@ fn test_inlined_method_with_rescue_caught_in_callee() {
             def test(n) = callee(n)
 
             test(-1)
+            test(-1)
         "#), @"42");
     });
 }
@@ -6006,7 +6085,7 @@ fn test_inlined_method_with_rescue_caught_in_caller() {
     // The callee re-raises and the caller catches the exception after unwinding
     // the inlined callee frame.
     with_inlining(|| {
-        assert_snapshot!(assert_compiles(r#"
+        assert_snapshot!(assert_inlines(r#"
             def callee(x)
               raise "boom" if x.negative?
               0
@@ -6020,6 +6099,7 @@ fn test_inlined_method_with_rescue_caught_in_caller() {
             end
 
             test(-1)
+            test(-1)
         "#), @"99");
     });
 }
@@ -6027,7 +6107,7 @@ fn test_inlined_method_with_rescue_caught_in_caller() {
 #[test]
 fn test_inlined_method_with_ensure_runs_on_propagation() {
     with_inlining(|| {
-        assert_snapshot!(assert_compiles(r##"
+        assert_snapshot!(assert_inlines(r##"
             $log = []
             def callee(x)
               begin
@@ -6046,6 +6126,7 @@ fn test_inlined_method_with_ensure_runs_on_propagation() {
               end
             end
 
+            test(-1)
             result = test(-1)
             "#{$log.first}: #{result}"
         "##), @r#""ensured: caught""#);
@@ -6054,8 +6135,10 @@ fn test_inlined_method_with_ensure_runs_on_propagation() {
 
 #[test]
 fn test_inlined_method_with_retry_resumes_begin_block() {
-    with_inlining(|| {
-        assert_snapshot!(assert_compiles(r#"
+    // The begin/rescue/retry callee is larger than the default test inline budget,
+    // so raise the threshold enough for it to be inlined.
+    with_inlining_threshold(100, || {
+        assert_snapshot!(assert_inlines(r#"
             def callee(counter)
               begin
                 counter[0] += 1
@@ -6068,6 +6151,7 @@ fn test_inlined_method_with_retry_resumes_begin_block() {
             def test(c) = callee(c)
 
             test([0])
+            test([0])
         "#), @"2");
     });
 }
@@ -6075,7 +6159,7 @@ fn test_inlined_method_with_retry_resumes_begin_block() {
 #[test]
 fn test_inlined_method_with_super_call() {
     with_inlining(|| {
-        assert_snapshot!(assert_compiles("
+        assert_snapshot!(assert_inlines("
             class Parent
               def greet = 'hi'
             end
@@ -6098,7 +6182,7 @@ fn test_inlined_method_with_block_break_across_inlined_boundary() {
     // A `break` from the literal block unwinds to the inlined callee's CFP,
     // where the callee's CATCH_TYPE_BREAK entry must match.
     with_inlining(|| {
-        assert_snapshot!(assert_compiles_allowing_exits("
+        assert_snapshot!(assert_inlines_allowing_exits("
             def callee(arr)
               arr.each do |x|
                 break 7 if x > 5
@@ -6106,6 +6190,7 @@ fn test_inlined_method_with_block_break_across_inlined_boundary() {
             end
             def test(a) = callee(a)
 
+            test([1, 6, 99])
             test([1, 6, 99])
         "), @"7");
     });

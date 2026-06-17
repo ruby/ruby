@@ -1034,7 +1034,7 @@ rb_gc_impl_mark_and_pin(void *objspace_ptr, VALUE obj)
 void
 rb_gc_impl_mark_maybe(void *objspace_ptr, VALUE obj)
 {
-    if (rb_gc_impl_pointer_to_heap_p(objspace_ptr, (const void *)obj)) {
+    if (rb_gc_impl_live_object_p(objspace_ptr, (const void *)obj)) {
         rb_gc_impl_mark_and_pin(objspace_ptr, obj);
     }
 }
@@ -1080,12 +1080,12 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
     if (SPECIAL_CONST_P(b)) return;
 
 #ifdef MMTK_DEBUG
-    if (!rb_gc_impl_pointer_to_heap_p(objspace_ptr, (void *)a)) {
+    if (!rb_gc_impl_live_object_p(objspace_ptr, (void *)a)) {
         char buff[256];
         rb_bug("a: %s is not an object", rb_raw_obj_info(buff, 256, a));
     }
 
-    if (!rb_gc_impl_pointer_to_heap_p(objspace_ptr, (void *)b)) {
+    if (!rb_gc_impl_live_object_p(objspace_ptr, (void *)b)) {
         char buff[256];
         rb_bug("b: %s is not an object", rb_raw_obj_info(buff, 256, b));
     }
@@ -1624,7 +1624,7 @@ rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
 }
 
 bool
-rb_gc_impl_pointer_to_heap_p(void *objspace_ptr, const void *ptr)
+rb_gc_impl_live_object_p(void *objspace_ptr, const void *ptr)
 {
     if (ptr == NULL) return false;
     if ((uintptr_t)ptr % sizeof(void*) != 0) return false;

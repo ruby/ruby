@@ -1,5 +1,5 @@
 #include "../json.h"
-#include "../vendor/ryu.h"
+#include "../vendor/fast_float_parser.h"
 #include "../simd/simd.h"
 
 static VALUE mJSON, eNestingError, eParserError, Encoding_UTF_8;
@@ -1111,13 +1111,11 @@ static inline VALUE json_decode_float(JSON_ParserConfig *config, uint64_t mantis
         return rb_float_new(negative ? -0.0 : 0.0);
     }
 
-    // Fall back to rb_cstr_to_dbl for potential subnormals (rare edge case)
-    // Ryu has rounding issues with subnormals around 1e-310 (< 2.225e-308)
-    if (RB_UNLIKELY(mantissa_digits > 17 || mantissa_digits + exponent < -307)) {
+    if (RB_UNLIKELY(mantissa_digits > 18 || mantissa_digits + exponent < -307)) {
         return json_decode_large_float(start, end - start);
     }
 
-    return DBL2NUM(ryu_s2d_from_parts(mantissa, mantissa_digits, (int32_t)exponent, negative));
+    return DBL2NUM(ffp_s2d(exponent, mantissa, negative));
 }
 
 static inline VALUE json_decode_array(JSON_ParserState *state, JSON_ParserConfig *config, long count)
@@ -1543,6 +1541,8 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
         json_eat_whitespace(state, config);
 
         VALUE value;
+        const char *value_start = state->cursor;
+
         switch (peek(state)) {
             case 'n':
                 json_match_keyword(state, "null", 0);
@@ -1578,13 +1578,12 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
                 break;
 
             case '-': {
-                const char *start = state->cursor;
                 state->cursor++;
 
-                value = json_parse_number(state, config, true, start);
+                value = json_parse_number(state, config, true, value_start);
 
                 if (RB_UNLIKELY(UNDEF_P(value) && config->allow_nan && peek(state) == 'I')) {
-                    state->cursor = start;
+                    state->cursor = value_start;
                     json_match_keyword(state, "-Infinity", 1);
                     value = CMinusInfinity;
                     break;
@@ -1593,43 +1592,41 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
                 // Top level numbers are ambiguous when parsing streams, we can't
                 // know if we parsed all the digits if we hit EOS.
                 if (RB_UNLIKELY(resumable && eos(state))) {
-                    state->cursor = start;
+                    state->cursor = value_start;
                     return false;
                 }
 
                 if (RB_UNLIKELY(UNDEF_P(value))) {
-                    raise_syntax_error_at("invalid number: %s", state, start);
+                    raise_syntax_error_at("invalid number: %s", state, value_start);
                 }
                 break;
             }
 
             case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9': {
-                const char *start = state->cursor;
-
-                value = json_parse_number(state, config, false, start);
+                value = json_parse_number(state, config, false, value_start);
 
                 // Top level numbers are ambiguous when parsing streams, we can't
                 // know if we parsed all the digits if we hit EOS.
                 if (RB_UNLIKELY(resumable && eos(state))) {
-                    state->cursor = start;
+                    state->cursor = value_start;
                     return false;
                 }
 
                 if (RB_UNLIKELY(UNDEF_P(value))) {
-                    raise_syntax_error_at("invalid number: %s", state, start);
+                    raise_syntax_error_at("invalid number: %s", state, value_start);
                 }
                 break;
             }
 
             case '"': {
                 // %r{\A"[^"\\\t\n\x00]*(?:\\[bfnrtu\\/"][^"\\]*)*"}
-                const char *start = state->cursor;
                 value = json_parse_string(state, config, false);
 
                 if (RB_UNLIKELY(UNDEF_P(value))) {
                     bool is_eos = eos(state);
-                    if (resumable) {
-                        state->cursor = start;
+                    if (resumable && is_eos) {
+                        state->cursor = value_start;
+                        return false;
                     }
                     raise_parse_error("unexpected end of input, expected closing \"", state, is_eos);
                 }
@@ -1637,7 +1634,7 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
             }
 
             case '[': {
-                const char *start = state->cursor++;
+                state->cursor++;
                 json_eat_whitespace(state, config);
 
                 const char next = peek(state);
@@ -1646,7 +1643,7 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
                     value = json_decode_array(state, config, 0);
                     break;
                 } else if (resumable && next == 0) {
-                    state->cursor = start;
+                    state->cursor = value_start;
                     return false;
                 }
 
@@ -1666,8 +1663,6 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
             }
 
             case '{': {
-                const char *object_start_cursor = state->cursor;
-
                 state->cursor++;
                 json_eat_whitespace(state, config);
 
@@ -1676,7 +1671,7 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
                     value = json_decode_object(state, config, 0);
                     break;
                 } else if (resumable && eos(state)) {
-                    state->cursor = object_start_cursor;
+                    state->cursor = value_start;
                     return false;
                 }
 
@@ -1690,7 +1685,7 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
                     .type = JSON_FRAME_OBJECT,
                     .phase = JSON_PHASE_OBJECT_KEY,
                     .value_stack_head = state->value_stack->head,
-                    .start_offset = object_start_cursor - state->start,
+                    .start_offset = value_start - state->start,
                 });
                 goto JSON_PHASE_OBJECT_KEY;
             }
@@ -2305,16 +2300,19 @@ static VALUE cResumableParser_feed(VALUE self, VALUE str)
 
         const size_t size = parser->state.end - parser->state.start;
         const size_t consumed = size - remaining;
-        char *old_ptr = RSTRING_PTR(parser->buffer);
 
         if (RB_OBJ_FROZEN_RAW(parser->buffer)) {
             VALUE new_buffer = rb_obj_hide(rb_str_buf_new(remaining + RSTRING_LEN(str)));
-            MEMCPY(RSTRING_PTR(new_buffer), old_ptr + consumed, char, remaining);
+
+            char *old_ptr = RSTRING_PTR(parser->buffer);
+            memcpy(RSTRING_PTR(new_buffer), old_ptr + consumed, remaining);
             rb_str_set_len(new_buffer, remaining);
             offset = 0;
             parser->buffer = new_buffer;
         } else if (consumed > (size / 2) && size >= 512) {
-            MEMMOVE(old_ptr, old_ptr + consumed, char, remaining);
+            rb_str_modify(parser->buffer);
+            char *old_ptr = RSTRING_PTR(parser->buffer);
+            memmove(old_ptr, old_ptr + consumed, remaining);
             rb_str_set_len(parser->buffer, remaining);
             offset = 0;
         }
@@ -2412,6 +2410,7 @@ static VALUE cResumableParser_parse(VALUE self)
         complete = false;
         if (RTEST(rb_ivar_get(rb_errinfo(), rb_intern("@eos")))) {
             complete = false; // is an EOS error
+            rb_set_errinfo(Qnil);
         } else {
             rb_jump_tag(status); // reraise
         }

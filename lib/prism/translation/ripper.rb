@@ -648,6 +648,16 @@ module Prism
         end
       end
 
+      # Return encoding of the source.
+      def encoding
+        result.source.encoding
+      end
+
+      # Return true if parsed source ended by `__END__`.
+      def end_seen?
+        !!result.data_loc
+      end
+
       ##########################################################################
       # Visitor methods
       ##########################################################################

@@ -533,7 +533,19 @@ class Pathname
     self + '..'
   end
 
-  # Returns +true+ if +self+ points to a mountpoint.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   mountpoint? -> true or false
+  #
+  # Returns whether the path in `self` points to a mountpoint:
+  #
+  # ```ruby
+  # Pathname('/').mountpoint?      # => true
+  # Pathname('/etc').mountpoint?   # => false
+  # Pathname('nosuch').mountpoint? # => false
+  # ```
+  #
   def mountpoint?
     begin
       stat1 = self.lstat
@@ -1436,7 +1448,28 @@ class Pathname    # * File *
   #  Returns <tt>'unknown'</tt> if the type cannot be determined.
   def ftype() File.ftype(@path) end
 
-  # See <tt>File.link</tt>.  Creates a hard link.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   make_link(path) -> 0
+  #
+  #  Not available on some systems.
+  #
+  # Creates a new entry at the path in `self` for the existing entry at `path`
+  # using a [hard link](https://en.wikipedia.org/wiki/Hard_link):
+  #
+  # ```ruby
+  # File.write('doc/t.tmp', 'foo')
+  # Pathname('lib/u.tmp').make_link('doc/t.tmp')
+  # File.read('lib/u.tmp') # => "foo"
+  # File.write('lib/u.tmp', 'bar')
+  # File.read('doc/t.tmp') # => "bar"
+  # File.delete('doc/t.tmp')
+  # File.read('lib/u.tmp') # => "bar"
+  # File.delete('lib/u.tmp')
+  # ```
+  #
+  # Raises an exception if the entry at the path in `self` exists.
   def make_link(old) File.link(old, @path) end
 
   # See <tt>File.open</tt>.  Opens the file for reading or writing.
@@ -1489,11 +1522,56 @@ class Pathname    # * File *
   # See <tt>File.utime</tt>.  Update the access and modification times.
   def utime(atime, mtime) File.utime(atime, mtime, @path) end
 
-  # Update the access and modification times of the file.
+  # :markup: markdown
   #
-  # Same as Pathname#utime, but does not follow symbolic links.
+  # call-seq:
+  #   lutime(atime, mtime) -> 1
   #
-  # See File.lutime.
+  # Like Pathname#utime, but does not follow symbolic links,
+  # and therefore changes the times of the entry in `self`,
+  # regardless of whether it is a symbolic link:
+  #
+  # ```ruby
+  # # Create a file and a link to it.
+  # file_path = 't.tmp'
+  # link_path = 'link'
+  # File.write(file_path, '')
+  # File.symlink(file_path, link_path)
+  # # Take snapshots of both.
+  # file_stat = File.stat(file_path)
+  # link_stat = File.lstat(link_path)
+  # # Fetch access times and modification times of both.
+  # file_stat.atime # => 2026-06-15 11:03:29.600373255 -0500
+  # file_stat.mtime # => 2026-06-15 11:03:22.247352211 -0500
+  # link_stat.atime # => 2026-06-15 11:03:29.251372254 -0500
+  # link_stat.mtime # => 2026-06-15 11:03:26.66436484 -0500
+  # # Update access time and modification time of the link.
+  # pn = Pathname(link_path)
+  # time = Time.now # => 2026-06-15 11:08:07.384287523 -0500
+  # pn.lutime(time, time)
+  # # Take fresh snapshots of both.
+  # file_stat = File.stat(file_path)
+  # link_stat = File.lstat(link_path)
+  # # Fetch access time and modification time of file (not changed).
+  # file_stat.atime # => 2026-06-15 11:03:29.600373255 -0500
+  # file_stat.mtime # => 2026-06-15 11:03:22.247352211 -0500
+  # # Fetch access time and modification time of link (changed).
+  # link_stat.atime # => 2026-06-15 11:08:29.847301399 -0500
+  # link_stat.mtime # => 2026-06-15 11:08:07.384287523 -0500
+  # # Clean up.
+  # File.delete(file_path)
+  # File.delete(link_path)
+  # ```
+  #
+  # Arguments `atime` and `mtime` may be Time objects (as above).
+  #
+  # Either or both may be integers;
+  # when an integer `i` is passed, `Time.new(i)` is used.
+  #
+  # Either or both may be `nil`, in which case `Time.now` is used.
+  #
+  # See {File System Timestamps}[rdoc-ref:file/timestamps.md].
+  #
   def lutime(atime, mtime) File.lutime(atime, mtime, @path) end
 
   # call-seq:

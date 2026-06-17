@@ -110,10 +110,31 @@ module Bundler
     end
 
     def install_with_worker
-      installed_specs = {}
-      enqueue_specs(installed_specs)
+      with_jobserver do
+        installed_specs = {}
+        enqueue_specs(installed_specs)
 
-      process_specs(installed_specs) until finished_installing?
+        process_specs(installed_specs) until finished_installing?
+      end
+    end
+
+    def with_jobserver
+      r, w = IO.pipe
+      r.close_on_exec = false
+      w.close_on_exec = false
+      w.write("*" * @size)
+
+      old_makeflags = ENV["MAKEFLAGS"]
+      ENV["MAKEFLAGS"] = [old_makeflags, "--jobserver-auth=#{r.fileno},#{w.fileno}"].compact.join(" ")
+
+      yield
+    ensure
+      # Restore MAKEFLAGS before closing the pipe so a close failure can't
+      # leave the process with descriptors that point at a closed pipe.
+      old_makeflags ? ENV["MAKEFLAGS"] = old_makeflags : ENV.delete("MAKEFLAGS")
+
+      r&.close
+      w&.close
     end
 
     def install_serially
