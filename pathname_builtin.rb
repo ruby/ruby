@@ -1229,45 +1229,30 @@ class Pathname    # * File *
   #   chmod(mode) -> 1
   #
   # Changes the mode (i.e., permissions) of the entry represented by `self`;
-  # see {File Permissions}[rdoc-ref:File@File+Permissions];
-  # returns `1`:
+  # see {File Permissions}[rdoc-ref:File@File+Permissions]:
   #
   # ```ruby
-  # # A helper method to make an integer mode display as octal.
-  # def pretty(mode); '0' + (mode & 0777).to_s(8); end
+  # # Pathname for a (non-existent) directory.
+  # dir_pn = Pathname('doc/foo') # => #<Pathname:doc/foo>
+  # # Create the directory and fetch its mode.
+  # dir_pn.mkdir
+  # dir_pn.stat.mode.to_s(8) # => "40775"
+  # # Change the directory mode and fetch the new mode.
+  # dir_pn.chmod(0777)
+  # dir_pn.stat.mode.to_s(8) # => "40777"
   #
-  # # Work in a temporary directory.
-  # Pathname.mktmpdir do |tmpdirpath|
-  #   # A subdirectory therein, and its Pathname.
-  #   dirpath = File.join(tmpdirpath, 'subdir')
-  #   dir_pn = Pathname(dirpath)
-  #   dir_pn.mkdir
-  #   # The directory mode.
-  #   puts "Original directory mode: #{pretty(dir_pn.stat.mode)}"
-  #   # Change the directory mode.
-  #   dir_pn.chmod(0777)
-  #   puts "New directory mode:      #{pretty(dir_pn.stat.mode)}"
+  # # Pathname for a (non-existent) file in the directory.
+  # file_pn = dir_pn.join('t.tmp') # => #<Pathname:doc/foo/t.tmp>
+  # # Create the file and fetch its mode.
+  # file_pn.write('foo')
+  # file_pn.stat.mode.to_s(8) # => "100664"
+  # # Change the file mode and fetch its new mode.
+  # file_pn.chmod(0777)
+  # file_pn.stat.mode.to_s(8) # => "100777"
   #
-  #   # A file in the subdirectory, and its Pathname.
-  #   filepath = File.join(dirpath, 't.txt')
-  #   file_pn = Pathname(filepath)
-  #   # Create the file.
-  #   file_pn.write('foo')
-  #   # The file mode.
-  #   puts "Original file mode:      #{pretty(file_pn.stat.mode)}"
-  #   # Change the file modes.
-  #   file_pn.chmod(0777)
-  #   puts "New file mode:           #{pretty(file_pn.stat.mode)}"
-  # end
-  # ```
-  #
-  # Output:
-  #
-  # ```text
-  # Original directory mode: 0775
-  # New directory mode:      0777
-  # Original file mode:      0664
-  # New file mode:           0777
+  # # Clean up.
+  # file_pn.delete
+  # dir_pn.rmdir
   # ```
   #
   def chmod(mode) File.chmod(mode, @path) end
