@@ -1384,6 +1384,40 @@ impl StackState {
         StackState { stack_base_idx, num_spill_slots: 0 }
     }
 
+    /// Reserve native stack slots for JITFrame storage and stack-allocated operands.
+    /// Returns the total number of reserved slots for the current allocation.
+    ///
+    /// Native stack layout:
+    ///
+    ///         high addr
+    /// +------------------------+
+    /// | return address         |
+    /// +------------------------+
+    /// | previous frame pointer | <- NATIVE_BASE_PTR (== depth-0 cfp->jit_return)
+    /// +------------------------+
+    /// | JITFrame slot depth 0  | <- [NATIVE_BASE_PTR - 8]; read by CFP_ZJIT_FRAME for the top-level frame
+    /// +------------------------+
+    /// |          ...           |    one slot per inlining depth (jit_frame_size slots total)
+    /// +------------------------+
+    /// | JITFrame slot depth N  | <- innermost inlined frame's slot
+    /// +------------------------+
+    /// | opnds.last()           |
+    /// +------------------------+
+    /// |          ...           |
+    /// +------------------------+
+    /// | opnds.first()          | <- pointer returned by Assembler::alloc_stack()
+    /// +------------------------+
+    /// | register spill slots   | if any
+    /// +------------------------+
+    /// | FrameSetup align slot  | if needed
+    /// +------------------------+
+    ///         low addr
+    pub(crate) fn reserve_stack_slots(&mut self, jit_frame_size: usize, stack_size: usize) -> usize {
+        let total_stack_size = jit_frame_size + stack_size;
+        self.stack_base_idx = self.stack_base_idx.max(total_stack_size);
+        total_stack_size
+    }
+
     /// Return the total number of native stack slots used for the frame's
     /// reserved data and register allocator spills.
     pub(crate) fn stack_slot_count(&self) -> usize {

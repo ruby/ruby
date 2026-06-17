@@ -3710,31 +3710,7 @@ impl Assembler {
     /// Allocate stack space on top of the stack slots reserved for JITFrame,
     /// and return a pointer to the allocated space.
     fn alloc_stack(&mut self, jit: &JITState, stack_size: usize) -> Opnd {
-        let total_stack_size = jit.jit_frame_size + stack_size;
-        self.stack_state.stack_base_idx = self.stack_state.stack_base_idx.max(total_stack_size);
-        //         high addr
-        // +------------------------+
-        // | return address         |
-        // +------------------------+
-        // | previous frame pointer | <- NATIVE_BASE_PTR (== depth-0 cfp->jit_return)
-        // +------------------------+
-        // | JITFrame slot depth 0  | <- [NATIVE_BASE_PTR - 8]; read by CFP_ZJIT_FRAME for the top-level frame
-        // +------------------------+
-        // |          ...           |    one slot per inlining depth (jit.jit_frame_size slots total)
-        // +------------------------+
-        // | JITFrame slot depth N  | <- innermost inlined frame's slot
-        // +------------------------+
-        // | opnds.last()           |
-        // +------------------------+
-        // |          ...           |
-        // +------------------------+
-        // | opnds.first()          | <- pointer returned by alloc_stack()
-        // +------------------------+
-        // | register spill slots   | if any
-        // +------------------------+
-        // | FrameSetup align slot  | if needed
-        // +------------------------+
-        //         low addr
+        let total_stack_size = self.stack_state.reserve_stack_slots(jit.jit_frame_size, stack_size);
         self.sub(NATIVE_BASE_PTR, (SIZEOF_VALUE * total_stack_size).into())
     }
 
