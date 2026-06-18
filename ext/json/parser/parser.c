@@ -2377,6 +2377,7 @@ static VALUE cResumableParser_parse(VALUE self)
 {
     JSON_ResumableParser *parser = ResumableParser_acquire(self, true);
     if (!parser->buffer) {
+        parser->in_use = false;
         return Qfalse;
     }
 

@@ -48,6 +48,21 @@ class JSONResumageParserTest < Test::Unit::TestCase
     refute_predicate @parser, :value?
   end
 
+  def test_parse_with_empty_buffer_keeps_parser_usable
+    # parse before any feed must not leak the in_use lock
+    refute @parser.parse
+    @parser << '[1, 2, 3]'
+    assert @parser.parse
+    assert_equal [1, 2, 3], @parser.value
+
+    # same after a clear with no following feed
+    @parser.clear
+    refute @parser.parse
+    @parser << '[4]'
+    assert @parser.parse
+    assert_equal [4], @parser.value
+  end
+
   def test_parse_document_direct
     @parser << '[true]'
     assert_equal true, @parser.parse
