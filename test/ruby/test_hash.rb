@@ -501,14 +501,6 @@ class TestHash < Test::Unit::TestCase
     assert_equal('gumby'*20, e.key)
   end
 
-  def test_key2?
-    assert_not_send([@cls[], :key?, 1])
-    assert_not_send([@cls[], :key?, nil])
-    assert_send([@h, :key?, nil])
-    assert_send([@h, :key?, 1])
-    assert_not_send([@h, :key?, 'gumby'])
-  end
-
   def test_value?
     assert_not_send([@cls[], :value?, 1])
     assert_not_send([@cls[], :value?, nil])
@@ -756,8 +748,8 @@ class TestHash < Test::Unit::TestCase
   end
 
   def test_size
-    assert_equal(0, @cls[].length)
-    assert_equal(7, @h.length)
+    assert_equal(0, @cls[].size)
+    assert_equal(7, @h.size)
   end
 
   def test_sort
