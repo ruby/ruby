@@ -2560,9 +2560,9 @@ impl Assembler
                     EC,
                     recompile.frame_iseq,
                     recompile.compiled_iseq,
-                    Opnd::UImm(recompile.insn_idx as u64),
-                    Opnd::Imm(profile_kind.into()),
-                    Opnd::Imm(profile_payload.into())
+                    recompile.insn_idx.into(),
+                    profile_kind.into(),
+                    profile_payload.into()
                 );
             }
         }
