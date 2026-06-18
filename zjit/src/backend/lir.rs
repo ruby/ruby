@@ -2554,7 +2554,7 @@ impl Assembler
                 let payload = get_or_create_iseq_payload(exit.iseq);
                 payload.reset_profiles_remaining(recompile.insn_idx as YarvInsnIdx);
                 use crate::codegen::exit_recompile;
-                let (profile_kind, profile_payload) = recompile.strategy.to_abi_args();
+                let (profile_kind, profile_payload) = recompile.strategy.to_c_args();
                 asm_comment!(asm, "profile and maybe recompile");
                 asm_ccall!(asm, exit_recompile,
                     EC,

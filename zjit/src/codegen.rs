@@ -3219,7 +3219,7 @@ c_callable! {
     /// failing guard and the one we must invalidate to force a recompile. For
     /// non-inlined code the two are identical.
     pub(crate) fn exit_recompile(ec: EcPtr, frame_iseq_raw: VALUE, compiled_iseq_raw: VALUE, insn_idx: u32, profile_kind: i32, profile_payload: i32) {
-        let recompile = Recompile::from_abi_args(profile_kind, profile_payload);
+        let recompile = Recompile::from_c_args(profile_kind, profile_payload);
 
         // Fast check before taking the VM lock: skip if the compiled unit is already
         // invalidated or at the version limit. This avoids expensive lock acquisition

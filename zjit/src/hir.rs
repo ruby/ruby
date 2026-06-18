@@ -584,7 +584,7 @@ pub enum Recompile {
 
 impl Recompile {
     /// Convert to primitive arguments for passing across the C ABI.
-    pub fn to_abi_args(self) -> (i32, i32) {
+    pub fn to_c_args(self) -> (i32, i32) {
         match self {
             Recompile::ProfileSend { argc } => (RECOMPILE_PROFILE_SEND, argc),
             Recompile::ProfileSelf => (RECOMPILE_PROFILE_SELF, 0),
@@ -593,7 +593,7 @@ impl Recompile {
     }
 
     /// Reconstruct from primitive arguments received across the C ABI.
-    pub fn from_abi_args(kind: i32, payload: i32) -> Self {
+    pub fn from_c_args(kind: i32, payload: i32) -> Self {
         match kind {
             RECOMPILE_PROFILE_SEND => Recompile::ProfileSend { argc: payload },
             RECOMPILE_PROFILE_SELF => Recompile::ProfileSelf,
