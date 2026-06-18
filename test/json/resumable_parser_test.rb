@@ -77,6 +77,18 @@ class JSONResumageParserTest < Test::Unit::TestCase
     assert_equal [1], parser.value
   end
 
+  def test_nested_parse_error
+    parser = new_parser(on_load: ->(o) do
+      JSON.parse("") #=> raises JSON::ParserError
+      o
+    end)
+    parser << "[1]"
+
+    assert_raise(JSON::ParserError) do
+      parser.parse
+    end
+  end
+
   def test_parse_document_direct
     @parser << '[true]'
     assert_equal true, @parser.parse

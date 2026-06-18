@@ -660,13 +660,13 @@ static VALUE build_parse_error_message(const char *format, JSON_ParserState *sta
     return message;
 }
 
-static VALUE parse_error_new(VALUE message, long line, long column, bool eos)
+static VALUE parse_error_new(JSON_ParserState *state, VALUE message, long line, long column, bool eos)
 {
     VALUE exc = rb_exc_new_str(eParserError, message);
     rb_ivar_set(exc, i_at_line, LONG2NUM(line));
     rb_ivar_set(exc, i_at_column, LONG2NUM(column));
-    if (eos) {
-        rb_ivar_set(exc, i_at_eos, Qtrue);
+    if (eos && state->value_stack_handle) {
+        rb_ivar_set(exc, i_at_eos, *state->value_stack_handle);
     }
     return exc;
 }
@@ -676,7 +676,7 @@ NORETURN(static) void raise_parse_error(const char *format, JSON_ParserState *st
     long line, column;
     cursor_position(state, &line, &column);
     VALUE message = build_parse_error_message(format, state, line, column);
-    rb_exc_raise(parse_error_new(message, line, column, eos));
+    rb_exc_raise(parse_error_new(state, message, line, column, eos));
 }
 
 NORETURN(static) void raise_eos_error(const char *format, JSON_ParserState *state)
@@ -1169,7 +1169,7 @@ NORETURN(static) void raise_duplicate_key_error(JSON_ParserState *state, VALUE d
     long line, column;
     cursor_position(state, &line, &column);
     rb_str_concat(message, build_parse_error_message("", state, line, column)) ;
-    rb_exc_raise(parse_error_new(message, line, column, false));
+    rb_exc_raise(parse_error_new(state, message, line, column, false));
 }
 
 NOINLINE(static) void json_on_duplicate_key(JSON_ParserState *state, JSON_ParserConfig *config, size_t count, const VALUE *pairs)
@@ -2281,7 +2281,7 @@ static VALUE cResumableParser_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
-static JSON_ResumableParser *ResumableParser_acquire(VALUE self, bool lock);
+static JSON_ResumableParser *ResumableParser_acquire(VALUE *self, bool lock);
 
 /*
  * call-seq: self << string -> self
@@ -2292,7 +2292,7 @@ static VALUE cResumableParser_feed(VALUE self, VALUE str)
 {
     rb_check_frozen(self);
 
-    JSON_ResumableParser *parser = ResumableParser_acquire(self, false);
+    JSON_ResumableParser *parser = ResumableParser_acquire(&self, false);
 
     str = convert_encoding(str);
     if (!RSTRING_LEN(str)) {
@@ -2350,9 +2350,9 @@ static VALUE json_parse_any_resumable_safe(VALUE _args)
     return (VALUE)json_parse_any(args->state, args->config, true);
 }
 
-static JSON_ResumableParser *ResumableParser_acquire(VALUE self, bool lock)
+static JSON_ResumableParser *ResumableParser_acquire(VALUE *self, bool lock)
 {
-    JSON_ResumableParser *parser = cResumableParser_get(self);
+    JSON_ResumableParser *parser = cResumableParser_get(*self);
 
     if (parser->in_use) {
         rb_raise(rb_eArgError, "ResumableParser can't be used recursively");
@@ -2365,8 +2365,8 @@ static JSON_ResumableParser *ResumableParser_acquire(VALUE self, bool lock)
     // self may have moved, so we need to update all pointers
     // Investigate: We might be better off keeping JSON_ParserState on the stack
     // and only persist what we need.
-    parser->state.value_stack_handle = &self;
-    parser->state.frame_stack_handle = &self;
+    parser->state.value_stack_handle = self;
+    parser->state.frame_stack_handle = self;
     parser->state.value_stack = &parser->value_stack;
     parser->state.frames = &parser->frames;
 
@@ -2385,7 +2385,7 @@ static JSON_ResumableParser *ResumableParser_acquire(VALUE self, bool lock)
  */
 static VALUE cResumableParser_parse(VALUE self)
 {
-    JSON_ResumableParser *parser = ResumableParser_acquire(self, true);
+    JSON_ResumableParser *parser = ResumableParser_acquire(&self, true);
     if (!parser->buffer) {
         parser->in_use = false;
         return Qfalse;
@@ -2419,8 +2419,9 @@ static VALUE cResumableParser_parse(VALUE self)
     parser->in_use = false;
     if (status) {
         complete = false;
-        if (RTEST(rb_ivar_get(rb_errinfo(), rb_intern("@eos")))) {
-            complete = false; // is an EOS error
+        VALUE error_source = rb_ivar_get(rb_errinfo(), i_at_eos);
+        if (error_source == self) {
+            complete = false; // is an EOS error raised by ourself
             rb_set_errinfo(Qnil);
         } else {
             rb_jump_tag(status); // reraise
@@ -2437,7 +2438,7 @@ static VALUE cResumableParser_parse(VALUE self)
  */
 static VALUE cResumableParser_value_p(VALUE self)
 {
-    JSON_ResumableParser *parser = ResumableParser_acquire(self, false);
+    JSON_ResumableParser *parser = ResumableParser_acquire(&self, false);
 
     if (parser->value_stack.head > 0) {
         json_frame *frame = json_frame_stack_peek(&parser->frames);
@@ -2461,7 +2462,7 @@ static VALUE cResumableParser_value_p(VALUE self)
  */
 static VALUE cResumableParser_value(VALUE self)
 {
-    JSON_ResumableParser *parser = ResumableParser_acquire(self, false);
+    JSON_ResumableParser *parser = ResumableParser_acquire(&self, false);
 
     if (parser->frames.head > 0) {
         json_frame *frame = json_frame_stack_peek(&parser->frames);
@@ -2483,7 +2484,7 @@ static VALUE cResumableParser_value(VALUE self)
  */
 static VALUE cResumableParser_clear(VALUE self)
 {
-    JSON_ResumableParser *parser = ResumableParser_acquire(self, false);
+    JSON_ResumableParser *parser = ResumableParser_acquire(&self, false);
     parser->buffer = 0;
     parser->frames.head = 0;
     parser->value_stack.head = 0;
@@ -2575,7 +2576,7 @@ static VALUE cResumableParser_partial_value_body(VALUE self)
  */
 static VALUE cResumableParser_partial_value(VALUE self)
 {
-    JSON_ResumableParser *parser = ResumableParser_acquire(self, true);
+    JSON_ResumableParser *parser = ResumableParser_acquire(&self, true);
 
     int status;
     VALUE result = rb_protect(cResumableParser_partial_value_body, self, &status);
