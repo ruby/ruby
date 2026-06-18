@@ -63,6 +63,20 @@ class JSONResumageParserTest < Test::Unit::TestCase
     assert_equal [4], @parser.value
   end
 
+  def test_clear_resets_nesting_depth
+    # An unfinished document leaks a nesting level; #clear must reset it so a later shallow
+    # document is not rejected with a spurious NestingError.
+    parser = new_parser(max_nesting: 10)
+    10.times do
+      parser << '[1' # opens an array that is never closed before clear
+      parser.parse
+      parser.clear
+    end
+    parser << '[1]'
+    assert parser.parse
+    assert_equal [1], parser.value
+  end
+
   def test_parse_document_direct
     @parser << '[true]'
     assert_equal true, @parser.parse

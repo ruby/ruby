@@ -2487,6 +2487,9 @@ static VALUE cResumableParser_clear(VALUE self)
     parser->frames.head = 0;
     parser->value_stack.head = 0;
     parser->state.name_cache.length = 0;
+    parser->state.current_nesting = 0;
+    parser->state.in_array = 1;
+    parser->state.emitted_deprecations = 0;
     parser->state.start = parser->state.cursor = parser->state.end = NULL;
     return self;
 }
