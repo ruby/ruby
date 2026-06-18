@@ -842,7 +842,7 @@ wkmap_clear(VALUE self)
  *  call-seq:
  *    map.inspect -> new_string
  *
- *  Returns a new String containing informations about the map:
+ *  Returns a new String containing information about the map:
  *
  *    m = ObjectSpace::WeakKeyMap.new
  *    m[key] = value
