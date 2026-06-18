@@ -2481,18 +2481,9 @@ static VALUE cResumableParser_clear(VALUE self)
     return self;
 }
 
-/*
- * call-seq: partial_value -> object
- *
- * Returns the Ruby objects parsed up to this point:
- *   parser << '[1, [2, 3,'
- *   parser.parse # => false
- *   parser.value # ArgumentError no ready value
- *   parser.partial_value # => [1, [2, 3]]
- */
-static VALUE cResumableParser_partial_value(VALUE self)
+static VALUE cResumableParser_partial_value_body(VALUE self)
 {
-    JSON_ResumableParser *original_parser = ResumableParser_acquire(self, false);
+    JSON_ResumableParser *original_parser = cResumableParser_get(self);
     JSON_ResumableParser parser = *original_parser;
 
     parser.state.frames = &parser.frames;
@@ -2557,6 +2548,28 @@ static VALUE cResumableParser_partial_value(VALUE self)
 
     ALLOCV_END(tmpbuf);
     return partial_result;
+}
+
+/*
+ * call-seq: partial_value -> object
+ *
+ * Returns the Ruby objects parsed up to this point:
+ *   parser << '[1, [2, 3,'
+ *   parser.parse # => false
+ *   parser.value # ArgumentError no ready value
+ *   parser.partial_value # => [1, [2, 3]]
+ */
+static VALUE cResumableParser_partial_value(VALUE self)
+{
+    JSON_ResumableParser *parser = ResumableParser_acquire(self, true);
+
+    int status;
+    VALUE result = rb_protect(cResumableParser_partial_value_body, self, &status);
+    parser->in_use = false;
+    if (status) {
+        rb_jump_tag(status);
+    }
+    return result;
 }
 
 /*

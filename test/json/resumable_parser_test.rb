@@ -208,6 +208,26 @@ class JSONResumageParserTest < Test::Unit::TestCase
     assert_equal "ResumableParser can't be used recursively", error.message
   end
 
+  def test_reentrency_prevented_in_partial_value
+    parser = nil
+    callback = ->(o) do
+      # Arrays are only built while partial_value runs (the scalars were pushed by the
+      # earlier parse); re-entering here used to corrupt/free the shared frame stack.
+      parser.parse if o.is_a?(Array)
+      o
+    end
+    parser = new_parser(on_load: callback)
+    parser << '[1, [2, 3,'
+    parser.parse
+    error = assert_raise ArgumentError do
+      parser.partial_value
+    end
+    assert_equal "ResumableParser can't be used recursively", error.message
+
+    # The in_use lock must be released even though partial_value raised.
+    refute_predicate parser, :value?
+  end
+
   def test_exception_unlock_parser
     called = false
     parser = nil
