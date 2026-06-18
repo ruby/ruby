@@ -1642,7 +1642,7 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
                     state->cursor++;
                     value = json_decode_array(state, config, 0);
                     break;
-                } else if (resumable && next == 0) {
+                } else if (resumable && eos(state)) {
                     state->cursor = value_start;
                     return false;
                 }
@@ -1691,8 +1691,14 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
             }
 
             case 0:
-                return false;
-
+                // peek() returns 0 both at end-of-stream and for a literal NUL byte in the
+                // buffer. Only a genuine EOS means "feed me more"; a NUL byte that is not at
+                // EOS is just an invalid character.
+                if (eos(state)) {
+                    return false;
+                } else {
+                    raise_syntax_error("unexpected NULL byte: %s", state);
+                }
             default:
                 raise_syntax_error("unexpected character: %s", state);
         }
@@ -1807,7 +1813,7 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
                 case JSON_PHASE_OBJECT_KEY:     JSON_UNREACHABLE_RETURN(false);
                 case JSON_PHASE_OBJECT_COLON:   goto JSON_PHASE_OBJECT_COLON;
             }
-        } else if (resumable && next_char == 0) {
+        } else if (resumable && eos(state)) {
             return false;
         } else {
             raise_syntax_error("expected ',' or ']' after array value", state);
@@ -1858,7 +1864,7 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
                 case JSON_PHASE_OBJECT_KEY:     JSON_UNREACHABLE_RETURN(false);
                 case JSON_PHASE_OBJECT_COLON:   goto JSON_PHASE_OBJECT_COLON;
             }
-        } else if (resumable && next_char == 0) {
+        } else if (resumable && eos(state)) {
             return false;
         } else {
             raise_syntax_error("expected ',' or '}' after object value, got: %s", state);

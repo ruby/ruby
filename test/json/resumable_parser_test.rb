@@ -133,6 +133,30 @@ class JSONResumageParserTest < Test::Unit::TestCase
     assert_resumed_parsing('123 ')
   end
 
+  def test_nul_byte_is_a_syntax_error
+    # A NUL byte in a structural position must raise, not stall forever waiting for more input
+    # (peek() returns 0 both at EOS and for a literal NUL byte).
+    assert_parse_error "\x00"           # document value
+    assert_parse_error "[\x00]"         # first array element
+    assert_parse_error "[1\x00]"        # after an array element (',' or ']' expected)
+    assert_parse_error "[1,\x00]"       # array element after ','
+    assert_parse_error "{\x00}"         # object key
+    assert_parse_error "{\"a\":1\x00}"  # after an object value (',' or '}' expected)
+    assert_parse_error "{\"a\":1,\x00}" # object key after ','
+  end
+
+  def test_incomplete_input_at_structural_positions_resumes
+    # Counterpart of test_nul_byte_is_a_syntax_error: a genuine EOS at the same positions must
+    # stay incomplete (return false), not raise -- this is what distinguishes EOS from a NUL.
+    assert_incomplete "["
+    assert_incomplete "[1"
+    assert_incomplete "[1,"
+    assert_incomplete "{"
+    assert_incomplete "{\"a\""
+    assert_incomplete "{\"a\":1"
+    assert_incomplete "{\"a\":1,"
+  end
+
   def test_rest
     @parser << '[1, 2, 3, "unterminated string'
     refute @parser.parse
@@ -315,6 +339,20 @@ class JSONResumageParserTest < Test::Unit::TestCase
   end
 
   private
+
+  def assert_parse_error(json)
+    parser = new_parser
+    parser << json
+    assert_raise(JSON::ParserError, "expected a parse error for #{json.inspect}") do
+      parser.parse
+    end
+  end
+
+  def assert_incomplete(json)
+    parser = new_parser
+    parser << json
+    refute(parser.parse, "expected #{json.inspect} not to produce a value")
+  end
 
   def assert_partial_value(expected, json)
     parser = new_parser
