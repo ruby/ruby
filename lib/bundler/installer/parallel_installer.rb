@@ -119,22 +119,31 @@ module Bundler
     end
 
     def with_jobserver
-      r, w = IO.pipe
-      r.close_on_exec = false
-      w.close_on_exec = false
-      w.write("*" * @size)
+      # The POSIX make jobserver hands tokens to child `make` processes through
+      # an inherited pipe identified by its file descriptor numbers, which
+      # Windows cannot inherit. nmake also rejects a GNU make `--jobserver-auth`
+      # left in MAKEFLAGS and aborts every native extension build with
+      # `fatal error U1065: invalid option '-'`. Skip the jobserver on Windows.
+      return yield if Gem.win_platform?
 
-      old_makeflags = ENV["MAKEFLAGS"]
-      ENV["MAKEFLAGS"] = [old_makeflags, "--jobserver-auth=#{r.fileno},#{w.fileno}"].compact.join(" ")
+      begin
+        r, w = IO.pipe
+        r.close_on_exec = false
+        w.close_on_exec = false
+        w.write("*" * @size)
 
-      yield
-    ensure
-      # Restore MAKEFLAGS before closing the pipe so a close failure can't
-      # leave the process with descriptors that point at a closed pipe.
-      old_makeflags ? ENV["MAKEFLAGS"] = old_makeflags : ENV.delete("MAKEFLAGS")
+        old_makeflags = ENV["MAKEFLAGS"]
+        ENV["MAKEFLAGS"] = [old_makeflags, "--jobserver-auth=#{r.fileno},#{w.fileno}"].compact.join(" ")
 
-      r&.close
-      w&.close
+        yield
+      ensure
+        # Restore MAKEFLAGS before closing the pipe so a close failure can't
+        # leave the process with descriptors that point at a closed pipe.
+        old_makeflags ? ENV["MAKEFLAGS"] = old_makeflags : ENV.delete("MAKEFLAGS")
+
+        r&.close
+        w&.close
+      end
     end
 
     def install_serially

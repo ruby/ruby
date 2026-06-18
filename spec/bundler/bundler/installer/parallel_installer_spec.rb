@@ -219,4 +219,24 @@ RSpec.describe Bundler::ParallelInstaller do
       Bundler::RubyGemsGemInstaller.define_method(:build_jobs, old_method)
     end
   end
+
+  describe "make jobserver on Windows" do
+    # nmake reads MAKEFLAGS from the environment and treats its contents as
+    # bare option letters, so a GNU make `--jobserver-auth` aborts the build
+    # with `fatal error U1065: invalid option '-'`. The fd-based jobserver also
+    # cannot work on Windows, so it must be skipped there entirely.
+    it "leaves MAKEFLAGS untouched" do
+      allow(Gem).to receive(:win_platform?).and_return(true)
+
+      parallel_installer = Bundler::ParallelInstaller.new(nil, [], 5, false, false)
+
+      makeflags_before = ENV["MAKEFLAGS"]
+      makeflags_during = :not_yielded
+      parallel_installer.send(:with_jobserver) do
+        makeflags_during = ENV["MAKEFLAGS"]
+      end
+
+      expect(makeflags_during).to eq(makeflags_before)
+    end
+  end
 end
