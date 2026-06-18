@@ -233,6 +233,8 @@ static rvalue_stack *rvalue_stack_grow(rvalue_stack *stack, VALUE *handle, rvalu
 
 static VALUE rvalue_stack_push(rvalue_stack *stack, VALUE value, VALUE *handle, rvalue_stack **stack_ref)
 {
+    JSON_ASSERT(stack->type != RVALUE_STACK_STACK_ALLOCATED || handle);
+
     if (RB_UNLIKELY(stack->head >= stack->capa)) {
         stack = rvalue_stack_grow(stack, handle, stack_ref);
     }
@@ -431,6 +433,7 @@ typedef struct JSON_ParserStateStruct {
     int in_array;
     int current_nesting;
     unsigned int emitted_deprecations;
+    VALUE parser;
 } JSON_ParserState;
 
 static json_frame_stack *json_frame_stack_spill(json_frame_stack *old_stack, VALUE *handle, json_frame_stack **stack_ref);
@@ -451,6 +454,9 @@ static json_frame_stack *json_frame_stack_grow(json_frame_stack *stack, VALUE *h
 static json_frame *json_frame_stack_push(JSON_ParserState *state, json_frame frame)
 {
     json_frame_stack *stack = state->frames;
+
+    JSON_ASSERT(stack->type != RVALUE_STACK_STACK_ALLOCATED || state->frame_stack_handle);
+
     if (RB_UNLIKELY(stack->head >= stack->capa)) {
         stack = json_frame_stack_grow(stack, state->frame_stack_handle, &state->frames);
     }
@@ -665,8 +671,8 @@ static VALUE parse_error_new(JSON_ParserState *state, VALUE message, long line, 
     VALUE exc = rb_exc_new_str(eParserError, message);
     rb_ivar_set(exc, i_at_line, LONG2NUM(line));
     rb_ivar_set(exc, i_at_column, LONG2NUM(column));
-    if (eos && state->value_stack_handle) {
-        rb_ivar_set(exc, i_at_eos, *state->value_stack_handle);
+    if (eos && state->parser) {
+        rb_ivar_set(exc, i_at_eos, state->parser);
     }
     return exc;
 }
@@ -2166,6 +2172,7 @@ static void JSON_ResumableParser_mark(void *ptr)
     rvalue_stack_mark(&parser->value_stack);
     rvalue_cache_mark(&parser->state.name_cache);
     rb_gc_mark(parser->buffer); // pin the buffer
+    rb_gc_mark_movable(parser->state.parser);
 }
 
 static void JSON_ResumableParser_free(void *ptr)
@@ -2200,6 +2207,7 @@ static void JSON_ResumableParser_compact(void *ptr)
     rvalue_stack_compact(&parser->value_stack);
     rvalue_cache_compact(&parser->state.name_cache);
     parser->buffer = rb_gc_location(parser->buffer);
+    parser->state.parser = rb_gc_location(parser->state.parser);
 }
 
 static const rb_data_type_t JSON_ResumableParser_type = {
@@ -2221,6 +2229,7 @@ static VALUE cResumableParser_allocate(VALUE klass)
     JSON_ResumableParser *parser;
     VALUE obj = TypedData_Make_Struct(klass, JSON_ResumableParser, &JSON_ResumableParser_type, parser);
     parser->state.in_array++;
+    parser->state.parser = obj;
     return obj;
 }
 
@@ -2286,7 +2295,7 @@ static VALUE cResumableParser_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
-static JSON_ResumableParser *ResumableParser_acquire(VALUE *self, bool lock);
+static JSON_ResumableParser *ResumableParser_acquire(VALUE self, bool lock);
 
 /*
  * call-seq: self << string -> self
@@ -2297,7 +2306,7 @@ static VALUE cResumableParser_feed(VALUE self, VALUE str)
 {
     rb_check_frozen(self);
 
-    JSON_ResumableParser *parser = ResumableParser_acquire(&self, false);
+    JSON_ResumableParser *parser = ResumableParser_acquire(self, false);
 
     str = convert_encoding(str);
     if (!RSTRING_LEN(str)) {
@@ -2355,9 +2364,9 @@ static VALUE json_parse_any_resumable_safe(VALUE _args)
     return (VALUE)json_parse_any(args->state, args->config, true);
 }
 
-static JSON_ResumableParser *ResumableParser_acquire(VALUE *self, bool lock)
+static JSON_ResumableParser *ResumableParser_acquire(VALUE self, bool lock)
 {
-    JSON_ResumableParser *parser = cResumableParser_get(*self);
+    JSON_ResumableParser *parser = cResumableParser_get(self);
 
     if (parser->in_use) {
         rb_raise(rb_eArgError, "ResumableParser can't be used recursively");
@@ -2370,8 +2379,6 @@ static JSON_ResumableParser *ResumableParser_acquire(VALUE *self, bool lock)
     // self may have moved, so we need to update all pointers
     // Investigate: We might be better off keeping JSON_ParserState on the stack
     // and only persist what we need.
-    parser->state.value_stack_handle = self;
-    parser->state.frame_stack_handle = self;
     parser->state.value_stack = &parser->value_stack;
     parser->state.frames = &parser->frames;
 
@@ -2390,7 +2397,7 @@ static JSON_ResumableParser *ResumableParser_acquire(VALUE *self, bool lock)
  */
 static VALUE cResumableParser_parse(VALUE self)
 {
-    JSON_ResumableParser *parser = ResumableParser_acquire(&self, true);
+    JSON_ResumableParser *parser = ResumableParser_acquire(self, true);
     if (!parser->buffer) {
         parser->in_use = false;
         return Qfalse;
@@ -2443,7 +2450,7 @@ static VALUE cResumableParser_parse(VALUE self)
  */
 static VALUE cResumableParser_value_p(VALUE self)
 {
-    JSON_ResumableParser *parser = ResumableParser_acquire(&self, false);
+    JSON_ResumableParser *parser = ResumableParser_acquire(self, false);
 
     if (parser->value_stack.head > 0) {
         json_frame *frame = json_frame_stack_peek(&parser->frames);
@@ -2467,7 +2474,7 @@ static VALUE cResumableParser_value_p(VALUE self)
  */
 static VALUE cResumableParser_value(VALUE self)
 {
-    JSON_ResumableParser *parser = ResumableParser_acquire(&self, false);
+    JSON_ResumableParser *parser = ResumableParser_acquire(self, false);
 
     if (parser->frames.head > 0) {
         json_frame *frame = json_frame_stack_peek(&parser->frames);
@@ -2489,7 +2496,7 @@ static VALUE cResumableParser_value(VALUE self)
  */
 static VALUE cResumableParser_clear(VALUE self)
 {
-    JSON_ResumableParser *parser = ResumableParser_acquire(&self, false);
+    JSON_ResumableParser *parser = ResumableParser_acquire(self, false);
     parser->buffer = 0;
     parser->frames.head = 0;
     parser->value_stack.head = 0;
@@ -2581,7 +2588,7 @@ static VALUE cResumableParser_partial_value_body(VALUE self)
  */
 static VALUE cResumableParser_partial_value(VALUE self)
 {
-    JSON_ResumableParser *parser = ResumableParser_acquire(&self, true);
+    JSON_ResumableParser *parser = ResumableParser_acquire(self, true);
 
     int status;
     VALUE result = rb_protect(cResumableParser_partial_value_body, self, &status);
