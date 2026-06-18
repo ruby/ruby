@@ -543,6 +543,15 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
+  def test_each_free_in_block
+    buffer = IO::Buffer.new(128)
+    assert_raise(IO::Buffer::InvalidatedError) do
+      buffer.each(:U64) do
+        buffer.free
+      end
+    end
+  end
+
   def test_zero_length_each
     buffer = IO::Buffer.new(0)
 
@@ -563,6 +572,15 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_raise(ArgumentError) { buffer.each_byte(0, 2).to_a }
     assert_raise(ArgumentError) { buffer.each_byte(1, 1).to_a }
     assert_raise(ArgumentError) { buffer.each_byte(SIZE_MAX, 0).to_a }
+  end
+
+  def test_each_byte_free_in_block
+    buffer = IO::Buffer.new(128)
+    assert_raise(IO::Buffer::InvalidatedError) do
+      buffer.each_byte do
+        buffer.free
+      end
+    end
   end
 
   def test_zero_length_each_byte

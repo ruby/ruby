@@ -2285,10 +2285,10 @@ io_buffer_each(int argc, VALUE *argv, VALUE self)
 {
     RETURN_ENUMERATOR_KW(self, argc, argv, RB_NO_KEYWORDS);
 
+    struct rb_io_buffer *buffer = get_io_buffer(self);
     const void *base;
     size_t size;
-
-    rb_io_buffer_get_bytes_for_reading(self, &base, &size);
+    io_buffer_get_bytes_for_reading(buffer, &base, &size);
 
     ID buffer_type;
     if (argc >= 1) {
@@ -2303,7 +2303,13 @@ io_buffer_each(int argc, VALUE *argv, VALUE self)
 
     for (size_t i = 0; i < count; i++) {
         size_t current_offset = offset;
-        VALUE value = rb_io_buffer_get_value(base, size, buffer_type, &offset);
+        VALUE value;
+
+        io_buffer_get_bytes_for_reading(buffer, &base, &size);
+        if (!base) {
+            rb_raise(rb_eIOBufferInvalidatedError, "Buffer has been freed!");
+        }
+        value = rb_io_buffer_get_value(base, size, buffer_type, &offset);
         rb_yield_values(2, SIZET2NUM(current_offset), value);
     }
 
@@ -2369,10 +2375,11 @@ io_buffer_each_byte(int argc, VALUE *argv, VALUE self)
 {
     RETURN_ENUMERATOR_KW(self, argc, argv, RB_NO_KEYWORDS);
 
+    struct rb_io_buffer *buffer = get_io_buffer(self);
     const void *base;
     size_t size;
 
-    rb_io_buffer_get_bytes_for_reading(self, &base, &size);
+    io_buffer_get_bytes_for_reading(buffer, &base, &size);
 
     size_t offset, count;
     io_buffer_extract_offset_count(RB_IO_BUFFER_DATA_TYPE_U8, size, argc, argv, &offset, &count);
@@ -2382,7 +2389,12 @@ io_buffer_each_byte(int argc, VALUE *argv, VALUE self)
     }
 
     for (size_t i = 0; i < count; i++) {
-        unsigned char *value = (unsigned char *)base + i + offset;
+        unsigned char *value;
+        io_buffer_get_bytes_for_reading(buffer, &base, &size);
+        if (!base) {
+            rb_raise(rb_eIOBufferInvalidatedError, "Buffer has been freed!");
+        }
+        value = (unsigned char *)base + i + offset;
         rb_yield(RB_INT2FIX(*value));
     }
 
@@ -3946,7 +3958,9 @@ Init_IO_Buffer(void)
     /* Raised when you try to write to a read-only buffer, or resize an external buffer. */
     rb_eIOBufferAccessError = rb_define_class_under(rb_cIOBuffer, "AccessError", rb_eRuntimeError);
 
-    /* Raised if you try to access a buffer slice which no longer references a valid memory range of the underlying source. */
+    /* Raised if you try to access a buffer slice which no longer
+       references a valid memory range of the underlying source or a
+       buffer which is already freed. */
     rb_eIOBufferInvalidatedError = rb_define_class_under(rb_cIOBuffer, "InvalidatedError", rb_eRuntimeError);
 
     /* Raised if the mask given to a binary operation is invalid, e.g. zero length or overlaps the target buffer. */
