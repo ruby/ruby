@@ -202,6 +202,87 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_no_fold_fixnum_add_overflow() {
+        eval(&format!("
+            def test
+              {RUBY_FIXNUM_MAX} + 1
+            end
+        "));
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[4611686018427387903] = Const Value(4611686018427387903)
+          v12:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1000, +@0x1008, cme:0x1010)
+          v23:Fixnum = FixnumAdd v10, v12
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
+    fn test_no_fold_fixnum_sub_underflow() {
+        eval(&format!("
+            def test
+              {RUBY_FIXNUM_MIN} - 1
+            end
+        "));
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[-4611686018427387904] = Const Value(-4611686018427387904)
+          v12:Fixnum[1] = Const Value(1)
+          PatchPoint MethodRedefined(Integer@0x1000, -@0x1008, cme:0x1010)
+          v23:Fixnum = FixnumSub v10, v12
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
+    fn test_no_fold_fixnum_mult_overflow() {
+        eval(&format!("
+            def test
+              {RUBY_FIXNUM_MAX} * 2
+            end
+        "));
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          Jump bb3(v1)
+        bb2():
+          EntryPoint JIT(0)
+          v4:BasicObject = LoadArg :self@0
+          Jump bb3(v4)
+        bb3(v6:BasicObject):
+          v10:Fixnum[4611686018427387903] = Const Value(4611686018427387903)
+          v12:Fixnum[2] = Const Value(2)
+          PatchPoint MethodRedefined(Integer@0x1000, *@0x1008, cme:0x1010)
+          v23:Fixnum = FixnumMult v10, v12
+          CheckInterrupts
+          Return v23
+        ");
+    }
+
+    #[test]
     fn test_fold_fixnum_sub_zero() {
         eval("
             def test(n)
