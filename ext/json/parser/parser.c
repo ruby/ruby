@@ -2274,6 +2274,8 @@ static VALUE cResumableParser_initialize(int argc, VALUE *argv, VALUE self)
     return self;
 }
 
+static JSON_ResumableParser *ResumableParser_acquire(VALUE self, bool lock);
+
 /*
  * call-seq: self << string -> self
  *
@@ -2282,12 +2284,13 @@ static VALUE cResumableParser_initialize(int argc, VALUE *argv, VALUE self)
 static VALUE cResumableParser_feed(VALUE self, VALUE str)
 {
     rb_check_frozen(self);
+
+    JSON_ResumableParser *parser = ResumableParser_acquire(self, false);
+
     str = convert_encoding(str);
     if (!RSTRING_LEN(str)) {
         return self;
     }
-
-    JSON_ResumableParser *parser = cResumableParser_get(self);
 
     size_t offset = parser->state.cursor - parser->state.start;
     const size_t remaining = parser->state.end - parser->state.cursor;

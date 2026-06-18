@@ -243,6 +243,26 @@ class JSONResumageParserTest < Test::Unit::TestCase
     refute_predicate parser, :value?
   end
 
+  def test_feed_during_callback_prevented
+    parser = nil
+    callback = ->(o) do
+      parser << '99' if o == 1 # feeding while a parse is running must be rejected
+      o
+    end
+    parser = new_parser(on_load: callback)
+    parser << '[1, 2, 3]'
+    error = assert_raise ArgumentError do
+      parser.parse
+    end
+    assert_equal "ResumableParser can't be used recursively", error.message
+
+    # the lock is released, so the parser stays usable
+    parser = new_parser
+    parser << '[1, 2, 3]'
+    assert parser.parse
+    assert_equal [1, 2, 3], parser.value
+  end
+
   def test_exception_unlock_parser
     called = false
     parser = nil
