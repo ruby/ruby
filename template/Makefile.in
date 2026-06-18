@@ -351,9 +351,6 @@ $(LIBRUBY_SO):
 				  aliases.each { |link| File.delete link rescue nil; File.symlink so, link }' \
 				$(LIBRUBY_SO) $(LIBRUBY_ALIASES) || true
 
-LIBRUBY_WITH_EXT = @LIBRUBY_WITH_EXT@
-$(LIBRUBY_$(LIBRUBY_WITH_EXT)): $(LIBRUBY_SO_UPDATE)
-
 PKG_CONFIG = @PKG_CONFIG@
 ruby_pc = @ruby_pc@
 $(ruby_pc): config.status Makefile
