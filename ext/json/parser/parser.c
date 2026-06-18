@@ -593,6 +593,7 @@ static void cursor_position(JSON_ParserState *state, long *line_out, long *colum
 
     while (cursor >= state->start) {
         if (*cursor-- == '\n') {
+            line++;
             break;
         }
         column++;

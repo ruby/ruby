@@ -862,7 +862,7 @@ class JSONParserTest < Test::Unit::TestCase
   end
 
   def test_parse_error_snippet
-    omit "C ext only test" unless RUBY_ENGINE == "ruby"
+    omit "JRuby errors don't contain positions" unless RUBY_ENGINE == "ruby"
 
     error = assert_raise(JSON::ParserError) { JSON.parse("あああああああああああああああああああああああ") }
     assert_equal "unexpected character: 'ああああああああああ' at line 1 column 1", error.message
@@ -875,6 +875,15 @@ class JSONParserTest < Test::Unit::TestCase
 
     error = assert_raise(JSON::ParserError) { JSON.parse("abcあああああああああああああああああああああああ") }
     assert_equal "unexpected character: 'abcあああああああああ' at line 1 column 1", error.message
+
+    error = assert_raise(JSON::ParserError) { JSON.parse("[1,\n@") }
+    assert_equal "unexpected character: '@' at line 2 column 1", error.message
+
+    error = assert_raise(JSON::ParserError) { JSON.parse("[\n  1,\n  @\n]") }
+    assert_equal "unexpected character: '@' at line 3 column 3", error.message
+
+    error = assert_raise(JSON::ParserError) { JSON.parse("@") }
+    assert_equal "unexpected character: '@' at line 1 column 1", error.message
   end
 
   def test_parse_leading_slash
