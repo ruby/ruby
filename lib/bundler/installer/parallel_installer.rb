@@ -119,12 +119,13 @@ module Bundler
     end
 
     def with_jobserver
-      # The POSIX make jobserver hands tokens to child `make` processes through
-      # an inherited pipe identified by its file descriptor numbers, which
-      # Windows cannot inherit. nmake also rejects a GNU make `--jobserver-auth`
-      # left in MAKEFLAGS and aborts every native extension build with
-      # `fatal error U1065: invalid option '-'`. Skip the jobserver on Windows.
-      return yield if Gem.win_platform?
+      # The jobserver hands tokens to child `make` processes through MAKEFLAGS
+      # using the GNU make `--jobserver-auth` protocol. nmake, the default make
+      # on mswin, instead reads MAKEFLAGS as bare option letters and aborts
+      # every native extension build with `fatal error U1065: invalid option
+      # '-'`. Skip the jobserver when nmake is in use. Other Windows toolchains
+      # such as mingw use GNU make and keep working through the inherited pipe.
+      return yield if nmake?
 
       begin
         r, w = IO.pipe
@@ -144,6 +145,14 @@ module Bundler
         r&.close
         w&.close
       end
+    end
+
+    # Mirror how RubyGems' extension builder picks the make program so the
+    # jobserver is only set up when a GNU-compatible make will consume it.
+    def nmake?
+      make = ENV["MAKE"] || ENV["make"]
+      make ||= "nmake" if RUBY_PLATFORM.include?("mswin")
+      /\bnmake/i.match?(make.to_s)
     end
 
     def install_serially
