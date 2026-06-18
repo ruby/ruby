@@ -4044,10 +4044,12 @@ ntfs_tail(const char *path, const char *end, rb_encoding *enc)
     }\
 } while (0)
 
-#define BUFINIT() (\
-    p = buf = RSTRING_PTR(result),\
-    buflen = RSTRING_LEN(result),\
-    pend = p + buflen)
+#define BUFINIT(result, buf, p, pend) do {\
+    if (!result) { result = rb_usascii_str_new(0, 1); } \
+    p = buf = RSTRING_PTR(result); \
+    buflen = RSTRING_LEN(result); \
+    pend = p + buflen; \
+} while (0)
 
 #ifdef __APPLE__
 # define SKIPPATHSEP(p) ((*(p)) ? 1 : 0)
@@ -4244,9 +4246,9 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
         mb_enc = enc_mbclen_needed(rb_str_enc_get(dname));
     }
 
-    BUFINIT();
-
     if (s < fend && s[0] == '~' && abs_mode == 0) {      /* execute only if NOT absolute_path() */
+        BUFINIT(result, buf, p, pend); // TOOD: right size the buffer
+
         long userlen = 0;
         if (s + 1 == fend || isdirsep(s[1])) {
             buf = 0;
@@ -4277,12 +4279,14 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
                 rb_raise(rb_eArgError, "non-absolute home");
             }
         }
-        BUFINIT();
+        BUFINIT(result, buf, p, pend);
         p = pend;
     }
 #ifdef DOSISH_DRIVE_LETTER
     /* skip drive letter */
     else if (s + 1 < fend && has_drive_letter(s)) {
+        BUFINIT(result, buf, p, pend); // TOOD: right size the buffer
+
         if (s + 2 < fend && isdirsep(s[2])) {
             /* specified drive letter, and full path */
             /* skip drive letter */
@@ -4297,7 +4301,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
             int same = 0;
             if (!NIL_P(dname) && !not_same_drive(dname, s[0])) {
                 rb_file_expand_path_internal(dname, Qnil, abs_mode, long_name, result);
-                BUFINIT();
+                BUFINIT(result, buf, p, pend);
                 if (has_drive_letter(p) && TOLOWER(p[0]) == TOLOWER(s[0])) {
                     /* ok, same drive */
                     same = 1;
@@ -4305,7 +4309,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
             }
             if (!same) {
                 char *e = append_fspath(result, fname, getcwdofdrv(*s), &enc, fsenc);
-                BUFINIT();
+                BUFINIT(result, buf, p, pend);
                 p = e;
             }
             else {
@@ -4318,15 +4322,35 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     }
 #endif /* DOSISH_DRIVE_LETTER */
     else if (s == fend || !rb_is_absolute_path(s)) {
+
         if (!NIL_P(dname)) {
-            rb_file_expand_path_internal(dname, Qnil, abs_mode, long_name, result);
+            if (result) {
+                rb_file_expand_path_internal(dname, Qnil, abs_mode, long_name, result);
+            }
+            else {
+                result = rb_usascii_str_new(0, RSTRING_LEN(dname) + RSTRING_LEN(fname) + 1);
+                rb_file_expand_path_internal(dname, Qnil, abs_mode, long_name, result);
+
+                if (RB_UNLIKELY(RSTRING_LEN(result) > RSTRING_LEN(dname))) {
+                    VALUE resized_result = rb_usascii_str_new(0, RSTRING_LEN(result) + RSTRING_LEN(fname) + 1);
+                    rb_str_set_len(resized_result, 0);
+                    rb_str_buf_append(resized_result, result);
+                    rb_str_set_len(result, 0);
+                    result = resized_result;
+                }
+            }
+
             rb_enc_associate(result, fs_enc_check(result, fname));
-            BUFINIT();
+            BUFINIT(result, buf, p, pend);
             p = pend;
         }
         else {
+            VALUE cwd = rb_dir_getwd_ospath();
+            if (!result) {
+                result = rb_usascii_str_new(0, RSTRING_LEN(cwd) + RSTRING_LEN(fname) + 1);
+            }
             char *e = append_fspath(result, fname, rb_dir_getwd_ospath(), &enc, fsenc);
-            BUFINIT();
+            BUFINIT(result, buf, p, pend);
             p = e;
         }
 #if defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC
@@ -4340,6 +4364,8 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
             p = chompdirsep(skiproot(buf, p), p, mb_enc, enc);
     }
     else {
+        BUFINIT(result, buf, p, pend);
+
         size_t len;
         b = s;
         do s++; while (s < fend && isdirsep(*s));
@@ -4564,7 +4590,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
                 WideCharToMultiByte(CP_UTF8, 0, wfd.cFileName, wlen, RSTRING_PTR(tmp), len + 1, NULL, NULL);
                 rb_str_cat_conv_enc_opts(result, bdiff, RSTRING_PTR(tmp), len,
                                          rb_utf8_encoding(), 0, Qnil);
-                BUFINIT();
+                BUFINIT(result, buf, p, pend);
                 rb_str_resize(tmp, 0);
             }
             p += len;
@@ -4584,8 +4610,6 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 }
 #endif /* !_WIN32 (this ifdef started above rb_default_home_dir) */
 
-#define EXPAND_PATH_BUFFER() rb_usascii_str_new(0, 1)
-
 static VALUE
 str_shrink(VALUE str)
 {
@@ -4603,20 +4627,20 @@ str_shrink(VALUE str)
 static VALUE
 file_expand_path_1(VALUE fname)
 {
-    return rb_file_expand_path_internal(fname, Qnil, 0, 0, EXPAND_PATH_BUFFER());
+    return rb_file_expand_path_internal(fname, Qnil, 0, 0, Qfalse);
 }
 
 VALUE
 rb_file_expand_path(VALUE fname, VALUE dname)
 {
     check_expand_path_args(fname, dname);
-    return expand_path(fname, dname, 0, 1, EXPAND_PATH_BUFFER());
+    return expand_path(fname, dname, 0, 1, Qfalse);
 }
 
 VALUE
 rb_file_expand_path_fast(VALUE fname, VALUE dname)
 {
-    return expand_path(fname, dname, 0, 0, EXPAND_PATH_BUFFER());
+    return expand_path(fname, dname, 0, 0, Qfalse);
 }
 
 VALUE
@@ -4676,7 +4700,7 @@ VALUE
 rb_file_absolute_path(VALUE fname, VALUE dname)
 {
     check_expand_path_args(fname, dname);
-    return expand_path(fname, dname, 1, 1, EXPAND_PATH_BUFFER());
+    return expand_path(fname, dname, 1, 1, Qfalse);
 }
 
 VALUE
