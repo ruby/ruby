@@ -18673,6 +18673,189 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_inline_method_with_invokeblock() {
+        // The callee dispatches to the caller-supplied literal block via `yield`.
+        // The block handler is established by the SPECVAL written into the inlined
+        // frame by PushInlineFrame, and the `yield` lowers to an InvokeBlock that
+        // reads it off the live CFP at runtime.
+        eval("
+            def with_yield(x)
+              yield x
+            end
+            def test(n)
+              with_yield(n) { |x| x + 2 }
+            end
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+
+        let result = hir_string_with_inlining("test");
+
+        assert!(counters.inline_method_count > inline_count_before,
+            "Expected with_yield to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in inlined HIR:\n{result}");
+        assert!(!result.contains("SendDirect"),
+            "Expected SendDirect to be replaced after inlining:\n{result}");
+
+        assert_snapshot!(result, @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1008, with_yield@0x1010, cme:0x1018)
+          v27:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          PushInlineFrame v27 (0x1040), v10
+          v35:BasicObject = InvokeBlock, v10 # SendFallbackReason: InvokeBlock: not yet specialized
+          CheckInterrupts
+          PopInlineFrame
+          PatchPoint NoEPEscape(test)
+          Return v35
+        ");
+    }
+
+    #[test]
+    fn test_inline_method_with_block_param() {
+        // The callee captures the caller-supplied literal block in a `&block`
+        // parameter and invokes it with `block.call`. Inlining must preserve the
+        // block handler so the reified Proc dispatches to the right block.
+        eval("
+            def with_block_param(x, &block)
+              block.call(x)
+            end
+            def test(n)
+              with_block_param(n) { |x| x + 2 }
+            end
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+
+        let result = hir_string_with_inlining("test");
+
+        assert!(counters.inline_method_count > inline_count_before,
+            "Expected with_block_param to be inlined, inline_method_count did not increment.\nHIR:\n{result}");
+        assert!(result.contains("PushInlineFrame"),
+            "Expected PushInlineFrame in inlined HIR:\n{result}");
+        assert!(!result.contains("SendDirect"),
+            "Expected SendDirect to be replaced after inlining:\n{result}");
+
+        assert_snapshot!(result, @"
+        fn test@<compiled>:6:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1008, with_block_param@0x1010, cme:0x1018)
+          v27:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v54:NilClass = Const Value(nil)
+          PushInlineFrame v27 (0x1040), v10
+          v37:CPtr = GetEP 0
+          v38:CUInt64 = LoadField v37, :VM_ENV_DATA_INDEX_FLAGS@0x1048
+          v39:CBool = IsBlockParamModified v38
+          CondBranch v39, bb6(), bb7()
+        bb6():
+          v41:BasicObject = LoadField v37, :block@0x1049
+          Jump bb8(v41, v41)
+        bb7():
+          v43:CInt64 = LoadField v37, :VM_ENV_DATA_INDEX_SPECVAL@0x104a
+          v44:CInt64 = GuardAnyBitSet v43, CUInt64(1)
+          v45:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1050))
+          Jump bb8(v45, v54)
+        bb8(v35:BasicObject, v36:BasicObject):
+          v49:BasicObject = Send v35, :call, v10 # SendFallbackReason: SendWithoutBlock: unsupported optimized method type BlockCall
+          CheckInterrupts
+          PopInlineFrame
+          PatchPoint NoEPEscape(test)
+          Return v49
+        ");
+    }
+
+    #[test]
+    fn test_inline_method_that_forwards_block_arg() {
+        eval("
+            def inner(x)
+              yield x
+            end
+            def callee(x, &block)
+              inner(x, &block)
+            end
+            def test(n)
+              callee(n) { |x| x + 2 }
+            end
+            test(1)
+            test(1)
+        ");
+        let counters = crate::state::ZJITState::get_counters();
+        let inline_count_before = counters.inline_method_count;
+
+        let result = hir_string_with_inlining("test");
+
+        assert!(counters.inline_method_count > inline_count_before,
+            "Expected callee to be inlined despite forwarding its block.\nHIR:\n{result}");
+        assert_eq!(result.matches("PushInlineFrame").count(), 1,
+            "Expected only `callee` to be inlined, not `inner`:\n{result}");
+
+        assert_snapshot!(result, @"
+        fn test@<compiled>:9:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1008, callee@0x1010, cme:0x1018)
+          v27:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          v55:NilClass = Const Value(nil)
+          PushInlineFrame v27 (0x1040), v10
+          v39:CPtr = GetEP 0
+          v40:CUInt64 = LoadField v39, :VM_ENV_DATA_INDEX_FLAGS@0x1048
+          v41:CBool = IsBlockParamModified v40
+          CondBranch v41, bb6(), bb7()
+        bb6():
+          v43:BasicObject = LoadField v39, :block@0x1049
+          Jump bb8(v43, v43)
+        bb7():
+          v45:CInt64 = LoadField v39, :VM_ENV_DATA_INDEX_SPECVAL@0x104a
+          v46:CInt64 = GuardAnyBitSet v45, CUInt64(1)
+          v47:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1050))
+          Jump bb8(v47, v55)
+        bb8(v37:BasicObject, v38:BasicObject):
+          v50:BasicObject = Send v27, &block, :inner, v10, v37 # SendFallbackReason: Complex argument passing
+          CheckInterrupts
+          PopInlineFrame
+          PatchPoint NoEPEscape(test)
+          Return v50
+        ");
+    }
+
+    #[test]
     fn test_inline_object_new_no_escape() {
         // Mirrors the object-new-no-escape benchmark from ruby-bench.
         eval("

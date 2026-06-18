@@ -6058,6 +6058,65 @@ fn test_inlined_method_with_keyword_default_using_prior_param() {
 }
 
 #[test]
+fn test_inlined_method_with_invokeblock() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def callee(x)
+              yield x
+            end
+            def test(n)
+              callee(n) { |x| x + 2 }
+            end
+
+            test(10)
+            test(10)
+            test(10)
+        "), @"12");
+    });
+}
+
+#[test]
+fn test_inlined_method_with_block_param() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def callee(x, &block)
+              block.call(x)
+            end
+            def test(n)
+              callee(n) { |x| x + 2 }
+            end
+
+            test(10)
+            test(10)
+            test(10)
+        "), @"12");
+    });
+}
+
+#[test]
+fn test_inlined_method_that_forwards_block_arg() {
+    // The callee captures a literal block in `&block` and forwards it on to
+    // `inner`. While `callee` is inlined, the forwarded call stays a dynamic send.
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines("
+            def inner(x)
+              yield x
+            end
+            def callee(x, &block)
+              inner(x, &block)
+            end
+            def test(n)
+              callee(n) { |x| x + 2 }
+            end
+
+            test(10)
+            test(10)
+            test(10)
+        "), @"12");
+    });
+}
+
+#[test]
 fn test_inlined_method_with_rescue_caught_in_callee() {
     // The callee's begin/rescue catches an exception raised inside the same
     // callee. The runtime exception walker must find the rescue clause via the
