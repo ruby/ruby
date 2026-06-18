@@ -16,7 +16,7 @@ net-imap            0.6.4.1 https://github.com/ruby/net-imap
 net-smtp            0.5.1   https://github.com/ruby/net-smtp
 matrix              0.4.3   https://github.com/ruby/matrix
 prime               0.1.4   https://github.com/ruby/prime
-rbs                 4.0.2   https://github.com/ruby/rbs 1582ce76429810b057a2816e5000cf5de4b1363d
+rbs                 4.0.3   https://github.com/ruby/rbs
 typeprof            0.32.0  https://github.com/ruby/typeprof
 debug               1.11.1  https://github.com/ruby/debug 6510cfbc7496c55ebbefa437a25c17ca58f7c5eb
 racc                1.8.1   https://github.com/ruby/racc
