@@ -98,6 +98,34 @@ RSpec.describe Bundler::Source::Git::GitProxy do
     end
   end
 
+  describe "#copy_to" do
+    let(:revision) { "abc123" }
+    let(:destination) { tmp("git-proxy-copy") }
+
+    before do
+      # The bare cache (`path`) is the clone source, so stub it away and only
+      # exercise the post-clone wiring of the working copy at `destination`.
+      allow(File).to receive(:stat).and_call_original
+      allow(File).to receive(:stat).with(destination).and_return(double("File::Stat", mode: 0o755))
+      allow(File).to receive(:chmod)
+      allow(git_proxy).to receive(:capture).and_return(["", "", clone_result])
+    end
+
+    it "points the working copy's origin back at the real remote" do
+      expect(git_proxy).to receive(:capture).with(["remote", "set-url", "origin", uri], destination).and_return(["", "", clone_result])
+      git_proxy.copy_to(destination)
+    end
+
+    it "does not persist credentials in the working copy's origin" do
+      Bundler.settings.temporary(uri => "u:p") do
+        credentialed_uri = "https://u:p@github.com/ruby/rubygems.git"
+        expect(git_proxy).not_to receive(:capture).with(["remote", "set-url", "origin", credentialed_uri], destination)
+        expect(git_proxy).to receive(:capture).with(["remote", "set-url", "origin", uri], destination).and_return(["", "", clone_result])
+        git_proxy.copy_to(destination)
+      end
+    end
+  end
+
   describe "#version" do
     context "with a normal version number" do
       before do
