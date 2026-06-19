@@ -1415,6 +1415,7 @@ const JIT_FRAME_OFFSET_FROM_JIT_RETURN: usize = 1;
 ///                                  | FrameSetup align slot   | if needed
 ///                                  +-------------------------+
 ///                                           low addr
+/// ```
 #[derive(Clone)]
 pub struct StackState {
     /// The number of stack slots reserved before register allocator spills.
