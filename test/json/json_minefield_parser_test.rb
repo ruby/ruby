@@ -11,21 +11,9 @@ class JSONMinefieldParserTest < Test::Unit::TestCase
     private
 
     def define_test(name, &block)
-      if RUBY_ENGINE == 'jruby' && JRUBY_PENDING.include?(name)
-        define_method("test_#{name}") do
-          pend("#{name} doesn't pass on JRuby", &block)
-        end
-      else
-        define_method("test_#{name}", &block)
-      end
+      define_method("test_#{name}", &block)
     end
   end
-
-  JRUBY_PENDING = %w(
-    n_structure_open_array_object
-    n_structure_100000_opening_arrays
-    n_object_trailing_comment_slash_open
-  ).freeze
 
   INVALID_ENCODING_TESTS = %w(
     i_string_truncated-utf-8
