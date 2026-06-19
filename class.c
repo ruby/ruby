@@ -1509,24 +1509,7 @@ rb_define_module_id(ID id)
 VALUE
 rb_define_module(const char *name)
 {
-    VALUE module;
-    ID id = rb_intern(name);
-
-    if (rb_const_defined(rb_cObject, id)) {
-        module = rb_const_get(rb_cObject, id);
-        if (!RB_TYPE_P(module, T_MODULE)) {
-            rb_raise(rb_eTypeError, "%s is not a module (%"PRIsVALUE")",
-                     name, rb_obj_class(module));
-        }
-        /* Module may have been defined in Ruby and not pin-rooted */
-        rb_vm_register_global_object(module);
-        return module;
-    }
-    module = rb_module_new();
-    rb_vm_register_global_object(module);
-    rb_const_set(rb_cObject, id, module);
-
-    return module;
+    return rb_define_module_id_under(rb_cObject, rb_intern(name));
 }
 
 VALUE
@@ -1543,9 +1526,15 @@ rb_define_module_id_under(VALUE outer, ID id)
     if (rb_const_defined_at(outer, id)) {
         module = rb_const_get_at(outer, id);
         if (!RB_TYPE_P(module, T_MODULE)) {
-            rb_raise(rb_eTypeError, "%"PRIsVALUE"::%"PRIsVALUE" is not a module"
-                     " (%"PRIsVALUE")",
-                     outer, rb_id2str(id), rb_obj_class(module));
+            if (outer == rb_cObject) {
+                rb_raise(rb_eTypeError, "%s is not a module (%"PRIsVALUE")",
+                         rb_id2name(id), rb_obj_class(module));
+            }
+            else {
+                rb_raise(rb_eTypeError, "%"PRIsVALUE"::%"PRIsVALUE" is not a module"
+                         " (%"PRIsVALUE")",
+                         outer, rb_id2str(id), rb_obj_class(module));
+            }
         }
         /* Module may have been defined in Ruby and not pin-rooted */
         rb_vm_register_global_object(module);
