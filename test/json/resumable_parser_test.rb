@@ -9,6 +9,22 @@ class JSONResumageParserTest < Test::Unit::TestCase
     @parser = new_parser
   end
 
+  def test_keyword_arguments
+    new_parser
+    new_parser({})
+    new_parser(allow_nan: true)
+
+    error = assert_raise(ArgumentError) do
+      new_parser(doesnt_exist: true, allow_nan: true)
+    end
+    assert_equal "unknown keyword: doesnt_exist", error.message
+
+    error = assert_raise(ArgumentError) do
+      new_parser(doesnt_exist: true, allow_nan: true, a: 1, b: 2)
+    end
+    assert_equal "unknown keywords: doesnt_exist, a, b", error.message
+  end
+
   def test_value
     refute_predicate @parser, :value?
     assert_raise(ArgumentError) { @parser.value }
@@ -444,7 +460,7 @@ class JSONResumageParserTest < Test::Unit::TestCase
     assert_equal(expected, actual)
   end
 
-  def new_parser(options = nil)
-    JSON::ResumableParser.new(options)
+  def new_parser(...)
+    JSON::ResumableParser.new(...)
   end
 end

@@ -1966,6 +1966,8 @@ static VALUE convert_encoding(VALUE source)
 struct parser_config_init_args {
     JSON_ParserConfig *config;
     VALUE self;
+    VALUE unknown_keywords;
+    bool strict;
 };
 
 static void parser_config_wb_write(VALUE self, VALUE *dest, VALUE val)
@@ -2019,27 +2021,43 @@ static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
             }
         }
     }
+    else if (args->strict) {
+        if (!args->unknown_keywords) {
+            args->unknown_keywords = rb_obj_hide(rb_ary_new());
+        }
+        rb_ary_push(args->unknown_keywords, key);
+    }
 
     return ST_CONTINUE;
 }
 
-static void parser_config_init(JSON_ParserConfig *config, VALUE opts, VALUE self)
+static void parser_config_init(JSON_ParserConfig *config, VALUE opts, VALUE self, bool strict)
 {
     config->max_nesting = 100;
 
     struct parser_config_init_args args = {
         .config = config,
         .self = self,
+        .strict = strict,
     };
 
-    if (!NIL_P(opts)) {
-        Check_Type(opts, T_HASH);
-        if (RHASH_SIZE(opts) > 0) {
-            // We assume in most cases few keys are set so it's faster to go over
-            // the provided keys than to check all possible keys.
-            rb_hash_foreach(opts, parser_config_init_i, (VALUE)&args);
-        }
+    if (NIL_P(opts)) return;
+    Check_Type(opts, T_HASH);
+    if (RHASH_SIZE(opts) == 0) return;
 
+    // We assume in most cases few keys are set so it's faster to go over
+    // the provided keys than to check all possible keys.
+    rb_hash_foreach(opts, parser_config_init_i, (VALUE)&args);
+
+    if (RB_UNLIKELY(args.unknown_keywords)) {
+        if (RARRAY_LEN(args.unknown_keywords) == 1) {
+            rb_raise(rb_eArgError, "unknown keyword: %" PRIsVALUE, RARRAY_AREF(args.unknown_keywords, 0));
+        }
+        else {
+            VALUE keywords = rb_ary_join(args.unknown_keywords, rb_utf8_str_new_cstr(", "));
+            rb_raise(rb_eArgError, "unknown keywords: %s", RSTRING_PTR(keywords));
+            RB_GC_GUARD(keywords);
+        }
     }
 }
 
@@ -2057,7 +2075,7 @@ static VALUE cParserConfig_initialize(VALUE self, VALUE opts)
     rb_check_frozen(self);
     GET_PARSER_CONFIG;
 
-    parser_config_init(config, opts, self);
+    parser_config_init(config, opts, self, false);
 
     return self;
 }
@@ -2153,7 +2171,7 @@ static VALUE cParser_m_parse(VALUE klass, VALUE Vsource, VALUE opts)
 {
     JSON_ParserConfig _config = {0};
     JSON_ParserConfig *config = &_config;
-    parser_config_init(config, opts, false);
+    parser_config_init(config, opts, Qfalse, false);
 
     return cParser_parse(config, Vsource);
 }
@@ -2342,12 +2360,14 @@ static inline JSON_ResumableParser *cResumableParser_get(VALUE self)
  */
 static VALUE cResumableParser_initialize(int argc, VALUE *argv, VALUE self)
 {
-    rb_check_arity(argc, 0, 1);
     rb_check_frozen(self);
+
+    VALUE opts = Qfalse;
+    rb_scan_args_kw(RB_SCAN_ARGS_LAST_HASH_KEYWORDS, argc, argv, "0:", &opts);
     JSON_ResumableParser *parser = cResumableParser_get(self);
 
-    VALUE opts = argc > 0 ? argv[0] : Qnil;
-    parser_config_init(&parser->config, opts, self);
+    opts = argc > 0 ? argv[0] : Qnil;
+    parser_config_init(&parser->config, opts, self, true);
 
     return self;
 }
