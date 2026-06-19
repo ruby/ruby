@@ -3,7 +3,7 @@
 #include "../simd/simd.h"
 
 static VALUE mJSON, eNestingError, eParserError, Encoding_UTF_8;
-static VALUE CNaN, CInfinity, CMinusInfinity;
+static VALUE CNaN, CInfinity, CMinusInfinity, JSON_empty_string;
 
 static ID i_new, i_try_convert, i_uminus, i_encode, i_at_line, i_at_column;
 
@@ -843,7 +843,7 @@ json_eat_comments(JSON_ParserState *state, JSON_ParserConfig *config)
 }
 
 ALWAYS_INLINE(static) void
-json_eat_whitespace(JSON_ParserState *state, JSON_ParserConfig *config)
+json_eat_whitespace(JSON_ParserState *state, JSON_ParserConfig *config, bool include_comments)
 {
     while (true) {
         switch (peek(state)) {
@@ -874,6 +874,10 @@ json_eat_whitespace(JSON_ParserState *state, JSON_ParserConfig *config)
                 state->cursor++;
                 break;
             case '/':
+                if (!include_comments) {
+                    return;
+                }
+
                 json_eat_comments(state, config);
                 break;
 
@@ -1587,7 +1591,7 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
     JSON_UNREACHABLE_RETURN(false);
 
     JSON_PHASE_VALUE: {
-        json_eat_whitespace(state, config);
+        json_eat_whitespace(state, config, true);
 
         VALUE value;
         const char *value_start = state->cursor;
@@ -1684,7 +1688,7 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
 
             case '[': {
                 state->cursor++;
-                json_eat_whitespace(state, config);
+                json_eat_whitespace(state, config, true);
 
                 const char next = peek(state);
                 if (next == ']') {
@@ -1713,7 +1717,7 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
 
             case '{': {
                 state->cursor++;
-                json_eat_whitespace(state, config);
+                json_eat_whitespace(state, config, true);
 
                 if (peek(state) == '}') {
                     state->cursor++;
@@ -1769,7 +1773,7 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
     JSON_PHASE_OBJECT_KEY: {
         JSON_ASSERT(frame->type == JSON_FRAME_OBJECT);
 
-        json_eat_whitespace(state, config);
+        json_eat_whitespace(state, config, true);
 
         const char *start = state->cursor;
 
@@ -1804,7 +1808,7 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
     JSON_PHASE_OBJECT_COLON: {
         JSON_ASSERT(frame->type == JSON_FRAME_OBJECT);
 
-        json_eat_whitespace(state, config);
+        json_eat_whitespace(state, config, true);
 
         if (RB_LIKELY(peek(state) == ':')) {
             state->cursor++;
@@ -1827,14 +1831,14 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
     JSON_PHASE_ARRAY_COMMA: {
         JSON_ASSERT(frame->type == JSON_FRAME_ARRAY);
 
-        json_eat_whitespace(state, config);
+        json_eat_whitespace(state, config, true);
 
         const char next_char = peek(state);
 
         if (RB_LIKELY(next_char == ',')) {
             state->cursor++;
             if (config->allow_trailing_comma) {
-                json_eat_whitespace(state, config);
+                json_eat_whitespace(state, config, true);
                 if (peek(state) == ']') {
                     // Trailing comma: stay in COMMA to close on the next iteration.
                     goto JSON_PHASE_ARRAY_COMMA;
@@ -1873,12 +1877,12 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
     JSON_PHASE_OBJECT_COMMA: {
         JSON_ASSERT(frame->type == JSON_FRAME_OBJECT);
 
-        json_eat_whitespace(state, config);
+        json_eat_whitespace(state, config, true);
         const char next_char = peek(state);
 
         if (RB_LIKELY(next_char == ',')) {
             state->cursor++;
-            json_eat_whitespace(state, config);
+            json_eat_whitespace(state, config, true);
 
             if (config->allow_trailing_comma) {
                 if (peek(state) == '}') {
@@ -1926,7 +1930,7 @@ ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserCo
 
 static void json_ensure_eof(JSON_ParserState *state, JSON_ParserConfig *config)
 {
-    json_eat_whitespace(state, config);
+    json_eat_whitespace(state, config, true);
     if (!eos(state)) {
         raise_syntax_error("unexpected token at end of stream %s", state);
     }
@@ -2216,6 +2220,14 @@ static VALUE cJSON_parser_s_allocate(VALUE klass)
     return TypedData_Make_Struct(klass, JSON_ParserConfig, &JSON_ParserConfig_type, config);
 }
 
+static void json_str_clear(VALUE str)
+{
+    if (RB_OBJ_FROZEN_RAW(str)) {
+        return;
+    }
+    rb_str_replace(str, JSON_empty_string);
+}
+
 typedef struct JSON_ResumableParserStruct {
     JSON_ParserConfig config;
     JSON_ParserState state;
@@ -2394,6 +2406,9 @@ static VALUE cResumableParser_feed(VALUE self, VALUE str)
     const size_t remaining = parser->state.end - parser->state.cursor;
 
     if (!remaining) {
+        if (parser->buffer) {
+            json_str_clear(parser->buffer);
+        }
         parser->buffer = RB_OBJ_FROZEN_RAW(str) ? str : rb_obj_hide(rb_str_new_shared(str));
         offset = 0;
     } else {
@@ -2529,6 +2544,12 @@ static VALUE cResumableParser_parse(VALUE self)
 
     parser->parsed_bytes += parser->state.cursor - initial_cursor;
     parser->incomplete_bytes = parser->complete ? 0 : parser->state.end - parser->state.cursor;
+
+    json_eat_whitespace(&parser->state, &parser->config, false);
+    if (eos(&parser->state)) {
+        json_str_clear(parser->buffer);
+        parser->buffer = Qfalse;
+    }
     parser->in_use = false;
 
     if (status) {
@@ -2803,6 +2824,9 @@ void Init_parser(void)
 
     rb_global_variable(&Encoding_UTF_8);
     Encoding_UTF_8 = rb_const_get(rb_path2class("Encoding"), rb_intern("UTF_8"));
+
+    rb_global_variable(&JSON_empty_string);
+    JSON_empty_string = rb_obj_hide(rb_utf8_str_new("", 0));
 
     sym_max_nesting = ID2SYM(rb_intern("max_nesting"));
     sym_allow_nan = ID2SYM(rb_intern("allow_nan"));

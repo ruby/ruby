@@ -223,7 +223,7 @@ class JSONResumageParserTest < Test::Unit::TestCase
     @parser << ' '
     assert @parser.parse
     assert_equal 123, @parser.value
-    refute_predicate @parser, :eos?
+    assert_predicate @parser, :eos?
 
     refute @parser.parse
     assert_predicate @parser, :eos?
