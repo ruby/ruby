@@ -7108,13 +7108,14 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
         return 0;
     }
 
-    RB_GC_GUARD(load_path) = rb_get_expanded_load_path();
+    long expanded_load_path_maxlen;
+    RB_GC_GUARD(load_path) = rb_get_expanded_load_path(&expanded_load_path_maxlen);
     if (!load_path) return 0;
 
     fname = rb_str_dup(*filep);
     RBASIC_CLEAR_CLASS(fname);
     fnlen = RSTRING_LEN(fname);
-    tmp = rb_str_tmp_new(MAXPATHLEN + 2);
+    tmp = rb_str_tmp_new(expanded_load_path_maxlen + fnlen + 2);
     rb_enc_associate_index(tmp, rb_usascii_encindex());
     for (j=0; ext[j]; j++) {
         rb_str_cat2(fname, ext[j]);
@@ -7157,11 +7158,12 @@ rb_find_file(VALUE path)
         return path;
     }
 
-    RB_GC_GUARD(load_path) = rb_get_expanded_load_path();
+    long expanded_load_path_maxlen;
+    RB_GC_GUARD(load_path) = rb_get_expanded_load_path(&expanded_load_path_maxlen);
     if (load_path) {
         long i;
 
-        tmp = rb_str_tmp_new(MAXPATHLEN + 2);
+        tmp = rb_str_tmp_new(expanded_load_path_maxlen + RSTRING_LEN(path) + 2);
         rb_enc_associate_index(tmp, rb_usascii_encindex());
         for (i = 0; i < RARRAY_LEN(load_path); i++) {
             VALUE str = RARRAY_AREF(load_path, i);
