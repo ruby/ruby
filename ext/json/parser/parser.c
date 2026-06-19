@@ -2162,6 +2162,9 @@ typedef struct JSON_ResumableParserStruct {
     rvalue_stack value_stack;
     json_frame_stack frames;
     VALUE buffer;
+    size_t parsed_bytes;
+    size_t incomplete_bytes;
+    bool complete;
     bool in_use;
 } JSON_ResumableParser;
 
@@ -2282,6 +2285,18 @@ static inline JSON_ResumableParser *cResumableParser_get(VALUE self)
  *
  * An incomplete document is buffered in full and there is no size limit, so when reading
  * from an untrusted source the caller is responsible for bounding how much data is fed.
+ * For example:
+ *
+ *  loop do
+ *    if parser.parsed_bytes > DOCUMENT_MAX_SIZE
+ *      raise "document too large"
+ *    end
+ *
+ *    parser << read_chunk
+ *    while parser.parse
+ *      process(parser.value)
+ *    end
+ *  end
  */
 static VALUE cResumableParser_initialize(int argc, VALUE *argv, VALUE self)
 {
@@ -2398,6 +2413,13 @@ static JSON_ResumableParser *ResumableParser_acquire(VALUE self, bool lock)
 static VALUE cResumableParser_parse(VALUE self)
 {
     JSON_ResumableParser *parser = ResumableParser_acquire(self, true);
+
+    if (parser->complete) {
+        parser->parsed_bytes = 0;
+        parser->incomplete_bytes = 0;
+        parser->complete = false;
+    }
+
     if (!parser->buffer) {
         parser->in_use = false;
         return Qfalse;
@@ -2427,20 +2449,28 @@ static VALUE cResumableParser_parse(VALUE self)
         .config = &parser->config,
     };
     int status;
-    bool complete = rb_protect(json_parse_any_resumable_safe, (VALUE)&args, &status);
-    parser->in_use = false;
+    const char *initial_cursor = parser->state.cursor;
+    parser->complete = rb_protect(json_parse_any_resumable_safe, (VALUE)&args, &status);
     if (status) {
-        complete = false;
         VALUE error_source = rb_ivar_get(rb_errinfo(), i_at_eos);
         if (error_source == self) {
-            complete = false; // is an EOS error raised by ourself
+            parser->complete = false; // is an EOS error raised by ourself
             rb_set_errinfo(Qnil);
+            status = 0;
         } else {
-            rb_jump_tag(status); // reraise
+            parser->complete = true; // a parse error is considered complete
         }
     }
+
+    parser->parsed_bytes += parser->state.cursor - initial_cursor;
+    parser->incomplete_bytes = parser->complete ? 0 : parser->state.end - parser->state.cursor;
+
+    parser->in_use = false;
+    if (status) {
+        rb_jump_tag(status); // reraise
+    }
     RB_GC_GUARD(Vsource);
-    return complete ? Qtrue : Qfalse;
+    return parser->complete ? Qtrue : Qfalse;
 }
 
 /*
@@ -2498,6 +2528,9 @@ static VALUE cResumableParser_clear(VALUE self)
 {
     JSON_ResumableParser *parser = ResumableParser_acquire(self, false);
     parser->buffer = 0;
+    parser->complete = true;
+    parser->parsed_bytes = 0;
+    parser->incomplete_bytes = 0;
     parser->frames.head = 0;
     parser->value_stack.head = 0;
     parser->state.name_cache.length = 0;
@@ -2633,6 +2666,29 @@ static VALUE cResumableParser_eos_p(VALUE self)
     return eos(&parser->state) ? Qtrue : Qfalse;
 }
 
+/*
+ * call-seq: parsed_bytes -> integer
+ *
+ * Returns the number of bytes parsed since the start of the current partial value.
+ * This is intended to be used for securing against untrusted input:
+ *
+ *  loop do
+ *    if parser.parsed_bytes > DOCUMENT_MAX_SIZE
+ *      raise "document too large"
+ *    end
+ *
+ *    parser << read_chunk
+ *    while parser.parse
+ *      process(parser.value)
+ *    end
+ *  end
+ */
+static VALUE cResumableParser_parsed_bytes(VALUE self)
+{
+    JSON_ResumableParser *parser = cResumableParser_get(self);
+    return ULL2NUM(parser->parsed_bytes + parser->incomplete_bytes);
+}
+
 void Init_parser(void)
 {
 #ifdef HAVE_RB_EXT_RACTOR_SAFE
@@ -2669,6 +2725,7 @@ void Init_parser(void)
     rb_define_method(cResumableParser, "clear", cResumableParser_clear, 0);
     rb_define_method(cResumableParser, "rest", cResumableParser_rest, 0);
     rb_define_method(cResumableParser, "eos?", cResumableParser_eos_p, 0);
+    rb_define_method(cResumableParser, "parsed_bytes", cResumableParser_parsed_bytes, 0);
 
     rb_global_variable(&CNaN);
     CNaN = rb_const_get(mJSON, rb_intern("NaN"));

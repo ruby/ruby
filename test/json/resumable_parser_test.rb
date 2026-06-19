@@ -156,7 +156,7 @@ class JSONResumageParserTest < Test::Unit::TestCase
   end
 
   def test_parse_byte_by_byte_numbers
-    assert_resumed_parsing('123 ')
+    assert_resumed_parsing('123 ', trailing_bytes: 1)
   end
 
   def test_nul_byte_is_a_syntax_error
@@ -364,6 +364,26 @@ class JSONResumageParserTest < Test::Unit::TestCase
     parser.value
   end
 
+  def test_parsed_bytes
+    chunk = '[1, 2, 3, 4, tru'
+    @parser << chunk
+    refute @parser.parse
+    assert_equal chunk.bytesize, @parser.parsed_bytes
+
+    @parser << 'e][]'
+    assert @parser.parse
+    assert_equal chunk.bytesize + 2, @parser.parsed_bytes
+
+    assert @parser.parse
+    assert_equal 2, @parser.parsed_bytes
+
+    @parser << chunk
+    refute @parser.parse
+    assert_equal chunk.bytesize, @parser.parsed_bytes
+    @parser.clear
+    assert_equal 0, @parser.parsed_bytes
+  end
+
   private
 
   def assert_parse_error(json)
@@ -389,7 +409,7 @@ class JSONResumageParserTest < Test::Unit::TestCase
     end
   end
 
-  def assert_resumed_parsing(json, parser = @parser)
+  def assert_resumed_parsing(json, parser = @parser, trailing_bytes: 0)
     expected = JSON.parse(json)
 
     last_parsed_byte_index = 0
@@ -402,6 +422,7 @@ class JSONResumageParserTest < Test::Unit::TestCase
     assert_equal expected, actual
     remaining_bytes = (json.bytesize - last_parsed_byte_index)
     assert_equal 0, remaining_bytes, "unconsumed bytes: #{actual.inspect}, remaining: #{json.byteslice(-1, remaining_bytes).inspect}"
+    assert_equal json.bytesize - trailing_bytes, parser.parsed_bytes
   end
 
   def assert_parse_stream(expected, json, parser = @parser)
