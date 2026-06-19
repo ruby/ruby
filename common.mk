@@ -1585,10 +1585,10 @@ no-test-bundled-gems-precheck:
 yes-update-default-gemspecs no-update-default-gemspecs: update-default-gemspecs
 update-default-gemspecs: $(PREP) $(RBCONFIG)
 	@$(MAKEDIRS) $(srcdir)/.bundle/specifications
-	$(Q)$(MINIRUBY) -W0 -C "$(srcdir)" -I tool/lib -roptparse -routput -rbundled_gem \
+	$(Q)$(MINIRUBY) -W0 -I "$(srcdir)/tool/lib" -roptparse -routput -rbundled_gem \
 	    -e "(out = Output.new).def_options(ARGV.options)" \
 	    -e "BundledGem.update_default_gemspecs(ARGV.parse!, out, quiet: $(V).zero?)" \
-	    -- -c -o .bundle/specifications lib ext
+	    -- -c -o "$(srcdir)/.bundle/specifications" "$(srcdir)/lib" "$(srcdir)/ext"
 
 install-for-test-bundled-gems: $(TEST_RUNNABLE)-install-for-test-bundled-gems
 no-install-for-test-bundled-gems: no-update-default-gemspecs
