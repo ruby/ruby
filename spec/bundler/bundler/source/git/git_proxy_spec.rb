@@ -124,6 +124,17 @@ RSpec.describe Bundler::Source::Git::GitProxy do
         git_proxy.copy_to(destination)
       end
     end
+
+    context "when the remote URI embeds credentials" do
+      let(:uri) { "https://user:secret@github.com/ruby/rubygems.git" }
+
+      it "strips the password before writing origin" do
+        filtered_uri = "https://user@github.com/ruby/rubygems.git"
+        expect(git_proxy).not_to receive(:capture).with(["remote", "set-url", "origin", uri], destination)
+        expect(git_proxy).to receive(:capture).with(["remote", "set-url", "origin", filtered_uri], destination).and_return(["", "", clone_result])
+        git_proxy.copy_to(destination)
+      end
+    end
   end
 
   describe "#version" do
