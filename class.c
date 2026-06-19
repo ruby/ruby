@@ -1402,12 +1402,18 @@ rb_class_inherited(VALUE super, VALUE klass)
     return rb_funcall(super, inherited, 1, klass);
 }
 
+#ifdef rb_define_class
+#undef rb_define_class
+#endif
 VALUE
 rb_define_class(const char *name, VALUE super)
 {
     return rb_define_class_under(rb_cObject, name, super);
 }
 
+#ifdef rb_define_class_under
+#undef rb_define_class_under
+#endif
 VALUE
 rb_define_class_under(VALUE outer, const char *name, VALUE super)
 {
@@ -1506,12 +1512,18 @@ rb_define_module_id(ID id)
     return rb_module_new();
 }
 
+#ifdef rb_define_module
+#undef rb_define_module
+#endif
 VALUE
 rb_define_module(const char *name)
 {
     return rb_define_module_id_under(rb_cObject, rb_intern(name));
 }
 
+#ifdef rb_define_module_under
+#undef rb_define_module_under
+#endif
 VALUE
 rb_define_module_under(VALUE outer, const char *name)
 {
