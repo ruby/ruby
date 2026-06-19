@@ -78,7 +78,7 @@ class JSONMinefieldParserTest < Test::Unit::TestCase
   end
 
   fixtures.each do |path|
-    payload = File.read(path)
+    payload = File.binread(path)
     name = File.basename(path, '.json')
 
     if COMMENT_TESTS.include?(name)
