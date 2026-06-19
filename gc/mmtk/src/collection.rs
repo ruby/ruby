@@ -9,6 +9,7 @@ use crate::upcalls;
 use crate::Ruby;
 use mmtk::memory_manager;
 use mmtk::scheduler::*;
+use mmtk::util::alloc::AllocationError;
 use mmtk::util::heap::GCTriggerPolicy;
 use mmtk::util::VMMutatorThread;
 use mmtk::util::VMThread;
@@ -61,6 +62,19 @@ impl Collection<Ruby> for VMCollection {
 
     fn block_for_gc(tls: VMMutatorThread) {
         (upcalls().block_for_gc)(tls);
+    }
+
+    fn out_of_memory(_tls: VMThread, err_kind: AllocationError) {
+        match err_kind {
+            // The heap is exhausted and could not be grown. Return normally
+            // without aborting.
+            AllocationError::HeapOutOfMemory => {}
+            // The OS refused an mmap. This is unrecoverable, so abort the
+            // process via the same panic handler used for GC-thread panics.
+            AllocationError::MmapOutOfMemory => {
+                (upcalls().mutator_thread_panic_handler)();
+            }
+        }
     }
 
     fn spawn_gc_thread(_tls: VMThread, ctx: GCThreadContext<Ruby>) {

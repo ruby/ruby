@@ -909,6 +909,11 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     VALUE *alloc_obj = (VALUE *)rb_mmtk_alloc_fast_path(objspace, ractor_cache, alloc_size, MMTk_MIN_OBJ_ALIGN);
     if (!alloc_obj) {
         alloc_obj = mmtk_alloc(ractor_cache->mutator, alloc_size, MMTk_MIN_OBJ_ALIGN, 0, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
+
+        // On heap exhaustion raise NoMemoryError.
+        if (RB_UNLIKELY(alloc_obj == NULL)) {
+            rb_memerror();
+        }
     }
 
     alloc_obj++;
