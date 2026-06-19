@@ -1376,8 +1376,8 @@ const JIT_FRAME_OFFSET_FROM_JIT_RETURN: usize = 1;
 /// into concrete stack addresses.
 ///
 /// Native stack layout:
-/// 
-/// ```
+///
+/// ```text
 ///                                          high addr
 ///                                  +-------------------------+
 ///                                  | return address          |
