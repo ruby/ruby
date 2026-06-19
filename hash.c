@@ -519,13 +519,44 @@ RHASH_TABLE_EMPTY_P(VALUE hash)
     return RHASH_SIZE(hash) == 0;
 }
 
-#define RHASH_SET_ST_FLAG(h)          FL_SET_RAW(h, RHASH_ST_TABLE_FLAG)
+#define RHASH_SET_ST_FLAG(h) do { \
+    FL_UNSET_RAW((h), RHASH_SHARED_TABLE_FLAG); \
+    FL_SET_RAW((h), RHASH_ST_TABLE_FLAG); \
+} while (0)
 #define RHASH_UNSET_ST_FLAG(h)        FL_UNSET_RAW(h, RHASH_ST_TABLE_FLAG)
+
+static void
+hash_set_shared_table(VALUE hash, VALUE root)
+{
+    HASH_ASSERT(RB_TYPE_P(root, T_HASH));
+    HASH_ASSERT(RHASH_ST_TABLE_P(root));
+    HASH_ASSERT(!RHASH_SHARED_TABLE_P(root));
+
+    RBASIC(hash)->flags &= ~(RHASH_ST_TABLE_FLAG | RHASH_AR_TABLE_SIZE_MASK | RHASH_AR_TABLE_BOUND_MASK);
+    FL_SET_RAW(hash, RHASH_SHARED_TABLE_FLAG);
+    RB_OBJ_WRITE(hash, RHASH_SHARED_ROOT_REF(hash), root);
+}
+
+static void
+hash_materialize_shared_table(VALUE hash)
+{
+    if (!RHASH_SHARED_TABLE_P(hash)) return;
+
+    VALUE root = RHASH_SHARED_ROOT(hash);
+    st_table tab;
+
+    st_replace(&tab, RHASH_ST_TABLE(root));
+    RBASIC(hash)->flags &= ~(RHASH_SHARED_TABLE_FLAG | RHASH_AR_TABLE_SIZE_MASK | RHASH_AR_TABLE_BOUND_MASK);
+    RHASH_SET_ST_FLAG(hash);
+    *RHASH_ST_TABLE_RAW(hash) = tab;
+    rb_gc_writebarrier_remember(hash);
+    hash_verify(hash);
+}
 
 static void
 hash_st_table_init(VALUE hash, const struct st_hash_type *type, st_index_t size)
 {
-    st_init_existing_table_with_size(RHASH_ST_TABLE(hash), type, size);
+    st_init_existing_table_with_size(RHASH_ST_TABLE_RAW(hash), type, size);
     RHASH_SET_ST_FLAG(hash);
 }
 
@@ -535,7 +566,7 @@ rb_hash_st_table_set(VALUE hash, st_table *st)
     HASH_ASSERT(st != NULL);
     RHASH_SET_ST_FLAG(hash);
 
-    *RHASH_ST_TABLE(hash) = *st;
+    *RHASH_ST_TABLE_RAW(hash) = *st;
 }
 
 static inline void
@@ -701,6 +732,10 @@ ar_each_key(ar_table *ar, int max, enum ar_each_key_type type, st_data_t *dst_ke
 static st_table *
 ar_force_convert_table(VALUE hash, const char *file, int line)
 {
+    if (RHASH_SHARED_TABLE_P(hash)) {
+        hash_materialize_shared_table(hash);
+        return RHASH_ST_TABLE_RAW(hash);
+    }
     if (RHASH_ST_TABLE_P(hash)) {
         return RHASH_ST_TABLE(hash);
     }
@@ -1182,8 +1217,9 @@ static void
 hash_st_free(VALUE hash)
 {
     HASH_ASSERT(RHASH_ST_TABLE_P(hash));
+    HASH_ASSERT(!RHASH_SHARED_TABLE_P(hash));
 
-    rb_st_free_embedded_table(RHASH_ST_TABLE(hash));
+    rb_st_free_embedded_table(RHASH_ST_TABLE_RAW(hash));
 }
 
 static void
@@ -1196,6 +1232,9 @@ hash_st_free_and_clear_table(VALUE hash)
 void
 rb_hash_free(VALUE hash)
 {
+    if (RHASH_SHARED_TABLE_P(hash)) {
+        return;
+    }
     if (RHASH_ST_TABLE_P(hash)) {
         hash_st_free(hash);
     }
@@ -1381,6 +1420,8 @@ rb_hash_stlike_foreach(VALUE hash, st_foreach_callback_func *func, st_data_t arg
 int
 rb_hash_stlike_foreach_with_replace(VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg)
 {
+    hash_materialize_shared_table(hash);
+
     if (RHASH_AR_TABLE_P(hash)) {
         return ar_foreach_with_replace(hash, func, replace, arg);
     }
@@ -1513,10 +1554,46 @@ rb_hash_alloc_fixed_size(VALUE klass, st_index_t size)
 }
 
 static VALUE
-hash_copy(VALUE ret, VALUE hash)
+hash_make_shared_root(VALUE hash)
+{
+    HASH_ASSERT(RHASH_ST_TABLE_P(hash));
+
+    if (RHASH_SHARED_TABLE_P(hash)) {
+        return RHASH_SHARED_ROOT(hash);
+    }
+
+    if (RB_OBJ_FROZEN_RAW(hash)) {
+        return hash;
+    }
+
+    VALUE root = hash_alloc_flags(0, 0, Qnil, true);
+    rb_obj_hide(root);
+    RHASH_SET_ST_FLAG(root);
+
+    if (hash_iterating_p(hash)) {
+        st_replace(RHASH_ST_TABLE_RAW(root), RHASH_ST_TABLE_RAW(hash));
+    }
+    else {
+        *RHASH_ST_TABLE_RAW(root) = *RHASH_ST_TABLE_RAW(hash);
+        RHASH_ST_CLEAR(hash);
+        hash_set_shared_table(hash, root);
+    }
+
+    rb_gc_writebarrier_remember(root);
+    return root;
+}
+
+static VALUE
+hash_copy(VALUE ret, VALUE hash, bool shared)
 {
     if (rb_hash_compare_by_id_p(hash)) {
         rb_gc_register_pinning_obj(ret);
+    }
+
+    if (shared && RHASH_ST_TABLE_P(hash) && !RHASH_EMPTY_P(hash)) {
+        VALUE root = hash_make_shared_root(hash);
+        hash_set_shared_table(ret, root);
+        return ret;
     }
 
     if (RHASH_AR_TABLE_P(hash)) {
@@ -1542,7 +1619,7 @@ hash_copy(VALUE ret, VALUE hash)
         HASH_ASSERT(sizeof(st_table) <= sizeof(ar_table));
 
         RHASH_SET_ST_FLAG(ret);
-        st_replace(RHASH_ST_TABLE(ret), RHASH_ST_TABLE(hash));
+        st_replace(RHASH_ST_TABLE_RAW(ret), RHASH_ST_TABLE(hash));
 
         rb_gc_writebarrier_remember(ret);
     }
@@ -1560,14 +1637,14 @@ hash_dup_with_compare_by_id(VALUE hash)
         RHASH_UNSET_ST_FLAG(dup);
     }
 
-    return hash_copy(dup, hash);
+    return hash_copy(dup, hash, false);
 }
 
 static VALUE
 hash_dup(VALUE hash, VALUE klass, VALUE flags)
 {
     return hash_copy(hash_alloc_flags(klass, flags, RHASH_IFNONE(hash), !RHASH_EMPTY_P(hash) && RHASH_ST_TABLE_P(hash)),
-                     hash);
+                     hash, true);
 }
 
 VALUE
@@ -1578,6 +1655,17 @@ rb_hash_dup(VALUE hash)
 
     rb_copy_generic_ivar(ret, hash);
 
+    return ret;
+}
+
+static VALUE
+rb_hash_dup_modify(VALUE hash)
+{
+    const VALUE flags = RBASIC(hash)->flags;
+    VALUE ret = hash_copy(hash_alloc_flags(rb_obj_class(hash), flags & RHASH_PROC_DEFAULT, RHASH_IFNONE(hash), RHASH_ST_TABLE_P(hash)),
+                          hash, false);
+
+    rb_copy_generic_ivar(ret, hash);
     return ret;
 }
 
@@ -1611,6 +1699,7 @@ static void
 rb_hash_modify(VALUE hash)
 {
     rb_hash_modify_check(hash);
+    hash_materialize_shared_table(hash);
 }
 
 NORETURN(static void no_new_key(void));
@@ -1652,6 +1741,8 @@ typedef int (*tbl_update_func)(st_data_t *, st_data_t *, st_data_t, int);
 int
 rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func *func, st_data_t arg)
 {
+    hash_materialize_shared_table(hash);
+
     if (RHASH_AR_TABLE_P(hash)) {
         int result = ar_update(hash, key, func, arg);
         if (result == -1) {
@@ -1821,7 +1912,7 @@ rb_hash_s_create(int argc, VALUE *argv, VALUE klass)
             else {
                 hash = hash_alloc(klass);
                 if (!RHASH_EMPTY_P(tmp))
-                    hash_copy(hash, tmp);
+                    hash_copy(hash, tmp, false);
                 return hash;
             }
         }
@@ -1988,7 +2079,7 @@ rb_hash_rehash(VALUE hash)
     if (hash_iterating_p(hash)) {
         rb_raise(rb_eRuntimeError, "rehash during iteration");
     }
-    rb_hash_modify_check(hash);
+    rb_hash_modify(hash);
     if (RHASH_AR_TABLE_P(hash)) {
         tmp = hash_alloc(0);
         rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)tmp);
@@ -2343,6 +2434,8 @@ rb_hash_key(VALUE hash, VALUE value)
 int
 rb_hash_stlike_delete(VALUE hash, st_data_t *pkey, st_data_t *pval)
 {
+    hash_materialize_shared_table(hash);
+
     if (RHASH_AR_TABLE_P(hash)) {
         return ar_delete(hash, pkey, pval);
     }
@@ -2426,7 +2519,7 @@ rb_hash_delete_m(VALUE hash, VALUE key)
 {
     VALUE val;
 
-    rb_hash_modify_check(hash);
+    rb_hash_modify(hash);
     val = rb_hash_delete_entry(hash, key);
 
     if (!UNDEF_P(val)) {
@@ -2479,7 +2572,7 @@ rb_hash_shift(VALUE hash)
 {
     struct shift_var var;
 
-    rb_hash_modify_check(hash);
+    rb_hash_modify(hash);
     if (RHASH_AR_TABLE_P(hash)) {
         var.key = Qundef;
         if (!hash_iterating_p(hash)) {
@@ -2550,7 +2643,7 @@ VALUE
 rb_hash_delete_if(VALUE hash)
 {
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
-    rb_hash_modify_check(hash);
+    rb_hash_modify(hash);
     if (!RHASH_TABLE_EMPTY_P(hash)) {
         rb_hash_foreach(hash, delete_if_i, hash);
         compact_after_delete(hash);
@@ -2820,7 +2913,7 @@ rb_hash_select_bang(VALUE hash)
     st_index_t n;
 
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
-    rb_hash_modify_check(hash);
+    rb_hash_modify(hash);
     n = RHASH_SIZE(hash);
     if (!n) return Qnil;
     rb_hash_foreach(hash, keep_if_i, hash);
@@ -2849,7 +2942,7 @@ static VALUE
 rb_hash_keep_if(VALUE hash)
 {
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
-    rb_hash_modify_check(hash);
+    rb_hash_modify(hash);
     if (!RHASH_TABLE_EMPTY_P(hash)) {
         rb_hash_foreach(hash, keep_if_i, hash);
     }
@@ -2874,7 +2967,7 @@ clear_i(VALUE key, VALUE value, VALUE dummy)
 VALUE
 rb_hash_clear(VALUE hash)
 {
-    rb_hash_modify_check(hash);
+    rb_hash_modify(hash);
 
     if (hash_iterating_p(hash)) {
         rb_hash_foreach(hash, clear_i, 0);
@@ -2989,7 +3082,7 @@ rb_hash_aset(VALUE hash, VALUE key, VALUE val)
 static VALUE
 rb_hash_replace(VALUE hash, VALUE hash2)
 {
-    rb_hash_modify_check(hash);
+    rb_hash_modify(hash);
     if (hash == hash2) return hash;
     if (hash_iterating_p(hash)) {
         rb_raise(rb_eRuntimeError, "can't replace hash during iteration");
@@ -3005,7 +3098,7 @@ rb_hash_replace(VALUE hash, VALUE hash2)
         hash_st_free_and_clear_table(hash);
     }
 
-    hash_copy(hash, hash2);
+    hash_copy(hash, hash2, true);
 
     return hash;
 }
@@ -3058,6 +3151,17 @@ each_value_i(VALUE key, VALUE value, VALUE _)
     return ST_CONTINUE;
 }
 
+static void
+hash_prepare_for_user_iteration(VALUE hash)
+{
+    if (RHASH_SHARED_TABLE_P(hash) && !RB_OBJ_FROZEN(hash)) {
+        /* If mutating during Hash#each was an error, shared hashes could keep
+         * iterating the root table. Since Ruby permits deletes and clears, the
+         * iterator and mutator need to operate on the same table. */
+        hash_materialize_shared_table(hash);
+    }
+}
+
 /*
  *  call-seq:
  *    each_value {|value| ... } -> self
@@ -3082,6 +3186,7 @@ static VALUE
 rb_hash_each_value(VALUE hash)
 {
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
+    hash_prepare_for_user_iteration(hash);
     rb_hash_foreach(hash, each_value_i, 0);
     return hash;
 }
@@ -3116,6 +3221,7 @@ static VALUE
 rb_hash_each_key(VALUE hash)
 {
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
+    hash_prepare_for_user_iteration(hash);
     rb_hash_foreach(hash, each_key_i, 0);
     return hash;
 }
@@ -3162,6 +3268,7 @@ static VALUE
 rb_hash_each_pair(VALUE hash)
 {
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
+    hash_prepare_for_user_iteration(hash);
     if (rb_block_pair_yield_optimizable())
         rb_hash_foreach(hash, each_pair_i_fast, 0);
     else
@@ -3425,7 +3532,7 @@ rb_hash_transform_keys_bang(int argc, VALUE *argv, VALUE hash)
     else {
         RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
     }
-    rb_hash_modify_check(hash);
+    rb_hash_modify(hash);
     if (!RHASH_TABLE_EMPTY_P(hash)) {
         long i;
         VALUE new_keys = hash_alloc(0);
@@ -3550,7 +3657,7 @@ static VALUE
 rb_hash_transform_values_bang(VALUE hash)
 {
     RETURN_SIZED_ENUMERATOR(hash, 0, 0, hash_enum_size);
-    rb_hash_modify_check(hash);
+    rb_hash_modify(hash);
 
     if (!RHASH_TABLE_EMPTY_P(hash)) {
         transform_values(hash);
@@ -4590,7 +4697,7 @@ delete_if_nil(VALUE key, VALUE value, VALUE hash)
 static VALUE
 rb_hash_compact(VALUE hash)
 {
-    VALUE result = rb_hash_dup(hash);
+    VALUE result = rb_hash_dup_modify(hash);
     if (!RHASH_EMPTY_P(hash)) {
         rb_hash_foreach(result, delete_if_nil, result);
         compact_after_delete(result);
@@ -4621,7 +4728,7 @@ static VALUE
 rb_hash_compact_bang(VALUE hash)
 {
     st_index_t n;
-    rb_hash_modify_check(hash);
+    rb_hash_modify(hash);
     n = RHASH_SIZE(hash);
     if (n) {
         rb_hash_foreach(hash, delete_if_nil, hash);
@@ -4665,7 +4772,7 @@ rb_hash_compare_by_id(VALUE hash)
 
     if (rb_hash_compare_by_id_p(hash)) return hash;
 
-    rb_hash_modify_check(hash);
+    rb_hash_modify(hash);
     if (hash_iterating_p(hash)) {
         rb_raise(rb_eRuntimeError, "compare_by_identity during iteration");
     }
