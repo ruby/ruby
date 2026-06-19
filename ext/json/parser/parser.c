@@ -627,7 +627,7 @@ static void emit_parse_warning(const char *message, JSON_ParserState *state)
 
 #define PARSE_ERROR_FRAGMENT_LEN 32
 
-static VALUE build_parse_error_message(const char *format, JSON_ParserState *state, long line, long column)
+static VALUE build_parse_error_message(const char *format, JSON_ParserState *state)
 {
     unsigned char buffer[PARSE_ERROR_FRAGMENT_LEN + 3];
 
@@ -661,9 +661,7 @@ static VALUE build_parse_error_message(const char *format, JSON_ParserState *sta
         }
     }
 
-    VALUE message = rb_enc_sprintf(enc_utf8, format, ptr);
-    rb_str_catf(message, " at line %ld column %ld", line, column);
-    return message;
+    return rb_enc_sprintf(enc_utf8, format, ptr);
 }
 
 static VALUE parse_error_new(JSON_ParserState *state, VALUE message, long line, long column, bool eos)
@@ -679,10 +677,15 @@ static VALUE parse_error_new(JSON_ParserState *state, VALUE message, long line, 
 
 NORETURN(static) void raise_parse_error(const char *format, JSON_ParserState *state, bool eos)
 {
-    long line, column;
-    cursor_position(state, &line, &column);
-    VALUE message = build_parse_error_message(format, state, line, column);
-    rb_exc_raise(parse_error_new(state, message, line, column, eos));
+    VALUE message = build_parse_error_message(format, state);
+    if (state->parser) { // line and columns can't be accurate in resumable
+        rb_exc_raise(parse_error_new(state, message, 0, 0, eos));
+    } else {
+        long line, column;
+        cursor_position(state, &line, &column);
+        rb_str_catf(message, " at line %ld column %ld", line, column);
+        rb_exc_raise(parse_error_new(state, message, line, column, eos));
+    }
 }
 
 NORETURN(static) void raise_eos_error(const char *format, JSON_ParserState *state)
@@ -1172,10 +1175,15 @@ NORETURN(static) void raise_duplicate_key_error(JSON_ParserState *state, VALUE d
         rb_inspect(duplicate_key)
     );
 
-    long line, column;
-    cursor_position(state, &line, &column);
-    rb_str_concat(message, build_parse_error_message("", state, line, column)) ;
-    rb_exc_raise(parse_error_new(state, message, line, column, false));
+    rb_str_concat(message, build_parse_error_message("", state));
+    if (state->parser) { // line and columns can't be accurate in resumable
+        rb_exc_raise(parse_error_new(state, message, 0, 0, false));
+    } else {
+        long line, column;
+        cursor_position(state, &line, &column);
+        rb_str_catf(message, " at line %ld column %ld", line, column);
+        rb_exc_raise(parse_error_new(state, message, line, column, false));
+    }
 }
 
 NOINLINE(static) void json_on_duplicate_key(JSON_ParserState *state, JSON_ParserConfig *config, size_t count, const VALUE *pairs)

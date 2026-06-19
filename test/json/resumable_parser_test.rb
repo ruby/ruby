@@ -384,14 +384,24 @@ class JSONResumageParserTest < Test::Unit::TestCase
     assert_equal 0, @parser.parsed_bytes
   end
 
+  def test_parse_error_message
+    error = assert_parse_error("\n\n[plop\nfoo", "unexpected character: 'plop'")
+    assert_equal 0, error.line
+    assert_equal 0, error.column
+  end
+
   private
 
-  def assert_parse_error(json)
+  def assert_parse_error(json, expected_error_message = nil)
     parser = new_parser
     parser << json
-    assert_raise(JSON::ParserError, "expected a parse error for #{json.inspect}") do
+    error = assert_raise(JSON::ParserError, "expected a parse error for #{json.inspect}") do
       parser.parse
     end
+    if expected_error_message
+      assert_equal expected_error_message, error.message
+    end
+    error
   end
 
   def assert_incomplete(json)
