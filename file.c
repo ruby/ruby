@@ -4625,9 +4625,10 @@ str_shrink(VALUE str)
      (void)(NIL_P(dname) ? (dname) : ((dname) = rb_get_path(dname))))
 
 static VALUE
-file_expand_path_1(VALUE fname)
+file_expand_path_1(VALUE fname, long extra_capa)
 {
-    return rb_file_expand_path_internal(fname, Qnil, 0, 0, Qfalse);
+    VALUE buffer = rb_usascii_str_new(0, RSTRING_LEN(fname) + extra_capa);
+    return rb_file_expand_path_internal(fname, Qnil, 0, 0, buffer);
 }
 
 VALUE
@@ -7087,14 +7088,14 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
     if (!ext[0]) return 0;
 
     if (f[0] == '~') {
-        fname = file_expand_path_1(fname);
+        fname = file_expand_path_1(fname, DLEXT_MAXLEN);
         f = RSTRING_PTR(fname);
         *filep = fname;
         expanded = 1;
     }
 
     if (expanded || rb_is_absolute_path(f) || is_explicit_relative(f)) {
-        if (!expanded) fname = file_expand_path_1(fname);
+        if (!expanded) fname = file_expand_path_1(fname, DLEXT_MAXLEN);
         fnlen = RSTRING_LEN(fname);
         for (i=0; ext[i]; i++) {
             rb_str_cat2(fname, ext[i]);
@@ -7143,7 +7144,7 @@ rb_find_file(VALUE path)
     int expanded = 0;
 
     if (f[0] == '~') {
-        tmp = file_expand_path_1(path);
+        tmp = file_expand_path_1(path, 0);
         path = copy_path_class(tmp, path);
         f = RSTRING_PTR(path);
         expanded = 1;
@@ -7152,7 +7153,7 @@ rb_find_file(VALUE path)
     if (expanded || rb_is_absolute_path(f) || is_explicit_relative(f)) {
         if (!rb_file_load_ok(f)) return 0;
         if (!expanded)
-            path = copy_path_class(file_expand_path_1(path), path);
+            path = copy_path_class(file_expand_path_1(path, 0), path);
         return path;
     }
 
