@@ -677,10 +677,17 @@ static VALUE parse_error_new(JSON_ParserState *state, VALUE message, long line, 
 
 NORETURN(static) void raise_parse_error(const char *format, JSON_ParserState *state, bool eos)
 {
-    VALUE message = build_parse_error_message(format, state);
-    if (state->parser) { // line and columns can't be accurate in resumable
-        rb_exc_raise(parse_error_new(state, message, 0, 0, eos));
+    if (state->parser) { 
+        if (eos) {
+            // the error will be swallowed by ResumableParser#parse, so no
+            // point building a message or backtrace.
+            rb_throw_obj(state->parser, state->parser);
+        } else {
+            // line and columns can't be accurate in resumable
+            rb_exc_raise(parse_error_new(state, build_parse_error_message(format, state), 0, 0, eos));
+        }
     } else {
+        VALUE message = build_parse_error_message(format, state);
         long line, column;
         cursor_position(state, &line, &column);
         rb_str_catf(message, " at line %ld column %ld", line, column);
@@ -2379,12 +2386,23 @@ static VALUE cResumableParser_feed(VALUE self, VALUE str)
 struct json_parse_any_args {
     JSON_ParserState *state;
     JSON_ParserConfig *config;
+    VALUE parser;
 };
+
+static VALUE json_parse_any_resumable_safe0(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, _args))
+{
+    struct json_parse_any_args *args = (struct json_parse_any_args *)_args;
+    return (VALUE)json_parse_any(args->state, args->config, true);
+}
 
 static VALUE json_parse_any_resumable_safe(VALUE _args)
 {
     struct json_parse_any_args *args = (struct json_parse_any_args *)_args;
-    return (VALUE)json_parse_any(args->state, args->config, true);
+    VALUE result = rb_catch_obj(args->parser, json_parse_any_resumable_safe0, _args);
+    if (result == args->parser) {
+        return (VALUE)false;
+    }
+    return result;
 }
 
 static JSON_ResumableParser *ResumableParser_acquire(VALUE self, bool lock)
@@ -2455,25 +2473,20 @@ static VALUE cResumableParser_parse(VALUE self)
     struct json_parse_any_args args = {
         .state = &parser->state,
         .config = &parser->config,
+        .parser = self,
     };
     int status;
     const char *initial_cursor = parser->state.cursor;
     parser->complete = rb_protect(json_parse_any_resumable_safe, (VALUE)&args, &status);
+
     if (status) {
-        VALUE error_source = rb_ivar_get(rb_errinfo(), i_at_eos);
-        if (error_source == self) {
-            parser->complete = false; // is an EOS error raised by ourself
-            rb_set_errinfo(Qnil);
-            status = 0;
-        } else {
-            parser->complete = true; // a parse error is considered complete
-        }
+        parser->complete = true; // a parse error is considered complete
     }
 
     parser->parsed_bytes += parser->state.cursor - initial_cursor;
     parser->incomplete_bytes = parser->complete ? 0 : parser->state.end - parser->state.cursor;
-
     parser->in_use = false;
+
     if (status) {
         rb_jump_tag(status); // reraise
     }
