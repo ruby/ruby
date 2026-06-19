@@ -8164,7 +8164,7 @@ capitalize_single(VALUE str)
     bool modified = false;
 
     if (s < send) {
-        unsigned int c = *(unsigned char*)s;
+        unsigned int c = (unsigned char)*s;
 
         if ('a' <= c && c <= 'z') {
             *s = 'A' + (c - 'a');
@@ -8173,7 +8173,7 @@ capitalize_single(VALUE str)
         s++;
     }
     while (s < send) {
-        unsigned int c = *(unsigned char*)s;
+        unsigned int c = (unsigned char)*s;
 
         if ('A' <= c && c <= 'Z') {
             *s = 'a' + (c - 'A');
