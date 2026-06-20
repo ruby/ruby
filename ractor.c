@@ -1170,6 +1170,13 @@ rb_obj_set_shareable_no_assert(VALUE obj)
 {
     FL_SET_RAW(obj, FL_SHAREABLE);
 
+    if (RB_TYPE_P(obj, T_HASH) && RHASH_SHARED_TABLE_P(obj)) {
+        VALUE root = RHASH_SHARED_ROOT(obj);
+        if (!RB_OBJ_SHAREABLE_P(root)) {
+            rb_obj_set_shareable_no_assert(root);
+        }
+    }
+
     if (rb_obj_gen_fields_p(obj)) {
         VALUE fields = rb_obj_fields_no_ractor_check(obj);
         if (imemo_type_p(fields, imemo_fields)) {
