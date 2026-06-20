@@ -2,6 +2,11 @@
 #
 # This set of tests can be run with:
 # make test-all TESTS=test/ruby/test_zjit.rb
+#
+# Instead of adding new tests here, you should probably
+# be adding tests that run under the Rust test harness,
+# say, in `codegen_tests.rs`. It parallelizes better and
+# allows for easy inspection of VM internal states.
 
 require 'test/unit'
 require 'envutil'
