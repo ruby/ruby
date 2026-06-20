@@ -137,6 +137,13 @@ jobs:
         run: echo "DFLTCC=0" >> $GITHUB_ENV
         if: ${{ endsWith(matrix.os, 's390x') }}
 
+      # Emulated ppc64le/s390x runners are slow enough that subprocess
+      # assertion timeouts (e.g. assert_separately) flake. Scale them up, as
+      # macos.yml does for slower/contended runners.
+      - name: Set timeout scale for emulated runners
+        run: echo "RUBY_TEST_TIMEOUT_SCALE=10" >> $GITHUB_ENV
+        if: ${{ endsWith(matrix.os, 'ppc64le') || endsWith(matrix.os, 's390x') }}
+
       - name: make ${{ matrix.test_task }}
         run: |
           test -n "${LAUNCHABLE_STDOUT}" && exec 1> >(tee "${LAUNCHABLE_STDOUT}")

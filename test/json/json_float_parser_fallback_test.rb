@@ -5,31 +5,25 @@ begin
 rescue LoadError
 end
 
-class JSONRyuFallbackTest < Test::Unit::TestCase
+class JSONFloatParserFallbackTest < Test::Unit::TestCase
   include JSON
 
-  # Test that numbers with more than 17 significant digits fall back to rb_cstr_to_dbl
-  def test_more_than_17_significant_digits
-    # These numbers have > 17 significant digits and should use fallback path
-    # They should still parse correctly, just not via the Ryu optimization
+  # Test that numbers with more than 18 significant digits fall back to rb_cstr_to_dbl
+  def test_more_than_18_significant_digits
+    # These numbers have > 18 significant digits and should use fallback path.
+    # They should still parse correctly, just not via the Fast Float optimization
 
-    test_cases = [
-      # input, expected (rounded to double precision)
-      ["1.23456789012345678901234567890", 1.2345678901234567],
-      ["123456789012345678.901234567890", 1.2345678901234568e+17],
-      ["0.123456789012345678901234567890", 0.12345678901234568],
-      ["9999999999999999999999999999.9", 1.0e+28],
-      # Edge case: exactly 18 digits
-      ["123456789012345678", 123456789012345680.0],
-      # Many fractional digits
-      ["0.12345678901234567890123456789", 0.12345678901234568],
-    ]
+    # input, expected (rounded to double precision)
+    assert_float_parsing "1.23456789012345678901234567890"
+    assert_float_parsing "123456789012345678.901234567890"
+    assert_float_parsing "0.123456789012345678901234567890"
+    assert_float_parsing "9999999999999999999999999999.9"
 
-    test_cases.each do |input, expected|
-      result = JSON.parse(input)
-      assert_in_delta(expected, result, 1e-10,
-        "Failed to parse #{input} correctly (>17 digits, fallback path)")
-    end
+    # Edge case: exactly 18 digits
+    assert_float_parsing "123456789012345678.0"
+
+    # Many fractional digits
+    assert_float_parsing "0.12345678901234567890123456789"
   end
 
   # Test decimal_class option forces fallback
@@ -187,5 +181,11 @@ class JSONRyuFallbackTest < Test::Unit::TestCase
     assert_equal(Float::INFINITY, JSON.parse("1e184467440737095516160"))
     assert_equal 0.0, JSON.parse("1e-18446744073709551615")
     assert_equal 0.0, JSON.parse("1e-9223372036854775809")
+  end
+
+  private
+
+  def assert_float_parsing(number)
+    assert_equal(Float(number), JSON.parse(number), "Failed to parse #{number} correctly")
   end
 end

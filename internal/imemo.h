@@ -97,6 +97,7 @@ struct rb_imemo_tmpbuf_struct {
     VALUE flags;
     VALUE *ptr; /* malloc'ed buffer */
     size_t size; /* buffer size in bytes */
+    bool marked; /* whether the buffer may contain object references */
 };
 
 struct rb_imemo_cdhash {
@@ -142,7 +143,6 @@ struct MEMO {
 typedef struct rb_imemo_tmpbuf_struct rb_imemo_tmpbuf_t;
 #endif
 VALUE rb_imemo_new(enum imemo_type type, VALUE v0, size_t size, bool is_shareable);
-VALUE rb_imemo_tmpbuf_new(void);
 struct MEMO *rb_imemo_memo_new(VALUE a, VALUE b, long c);
 struct MEMO *rb_imemo_memo_new_value(VALUE a, VALUE b, VALUE c);
 struct vm_ifunc *rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int max_argc);
@@ -212,7 +212,7 @@ rb_imemo_tmpbuf_new_from_an_RString(VALUE str)
 
     StringValue(str);
     len = RSTRING_LEN(str);
-    rb_alloc_tmp_buffer(&imemo, len);
+    rb_alloc_tmp_buffer(&imemo, len, false);
     memcpy(RB_IMEMO_TMPBUF_PTR(imemo), RSTRING_PTR(str), len);
     return imemo;
 }

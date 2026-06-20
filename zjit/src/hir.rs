@@ -7,7 +7,7 @@
 #![allow(clippy::match_like_matches_macro)]
 use crate::{
     backend::lir::C_ARG_OPNDS,
-    cast::IntoUsize, codegen::{local_idx_to_ep_offset, max_iseq_versions}, cruby::*, invariants::{self}, payload::get_or_create_iseq_payload, options::{debug, get_option, DumpHIR, InlineDepth}, state::ZJITState, json::Json,
+    cast::IntoUsize, codegen::{local_idx_to_ep_offset, max_iseq_versions}, cruby::*, invariants::{self, iseq_seen_ep_escape}, payload::get_or_create_iseq_payload, options::{debug, get_option, DumpHIR, InlineDepth}, state::ZJITState, json::Json,
     state,
 };
 use std::{
@@ -531,6 +531,7 @@ pub enum SideExitReason {
     UnhandledCallType(CallType),
     UnhandledBlockArg,
     TooManyKeywordParameters,
+    TooManyArgsForLir,
     FixnumAddOverflow,
     FixnumSubOverflow,
     FixnumMultOverflow,
@@ -2578,6 +2579,7 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
     // See: https://github.com/ruby/ruby/pull/15911#discussion_r2710544982
     let block_arg = if 0 != params.flags.has_block() { 1 } else { 0 };
     let final_argc = caller_positional + kw_total_num as usize + block_arg;
+    // TODO: Support passing arguments on the stack in C calls
     if final_argc + 1 > C_ARG_OPNDS.len() { // +1 for self
         function.set_dynamic_send_reason(send_insn, TooManyArgsForLir);
         return false;
@@ -4257,6 +4259,13 @@ impl Function {
                                         self.set_dynamic_send_reason(insn_id, ArgcParamMismatch);
                                         continue;
                                     }
+                                    // TODO: Support passing arguments on the stack in C calls
+                                    // +1 for self
+                                    if args.len()+1 > C_ARG_OPNDS.len() {
+                                        self.push_insn_id(block, insn_id);
+                                        self.set_dynamic_send_reason(insn_id, TooManyArgsForLir);
+                                        continue;
+                                    }
 
                                     emit_super_call_guards(self, block, super_cme, current_cme, mid, state, frame_state.iseq);
 
@@ -4379,13 +4388,12 @@ impl Function {
 
     /// Check whether a callee ISEQ can be inlined.
     fn can_inline(callee_iseq: IseqPtr) -> bool {
-        // Inline callees with required, optional, post-required positional, and keyword
-        // parameters. Rest params, double-splat (kwrest), and forwardable params are rejected
-        // because `can_direct_send` rejects them -- we only inline direct sends.
-        // TODO (nirvdrum 2026-06-12) Block params should be supported by the inliner.
+        // Inline callees with required, optional, post-required positional, keyword, and
+        // block parameters, including callees that dispatch to a passed block with `yield`.
+        // Rest params, double-splat (kwrest), and forwardable params are rejected because
+        // `can_direct_send` rejects them -- we only inline direct sends.
         let params = unsafe { callee_iseq.params() };
         if params.flags.has_rest() != 0
-            || params.flags.has_block() != 0
             || params.flags.forwardable() != 0
             || params.flags.has_kwrest() != 0
         {
@@ -4395,35 +4403,9 @@ impl Function {
 
         // Reject callees whose environment pointer can escape (e.g., via binding).
         // TODO (nirvdrum 2026-04-15) The interaction between inlined frames and EP escape hasn't been verified.
-        if iseq_escapes_ep(callee_iseq) || crate::invariants::iseq_escapes_ep(callee_iseq) {
+        if iseq_ep_starts_escaped(callee_iseq) || iseq_seen_ep_escape(callee_iseq) {
             incr_counter!(inline_reject_ep_escapes);
             return false;
-        }
-
-        // Reject callees that use yield/invokeblock (block inlining is future work).
-        // TODO (nirvdrum 2026-06-12) Work through this list, adding support for each rejected instruction.
-        let callee_encoded_size = unsafe { get_iseq_encoded_size(callee_iseq) };
-        let mut pc_idx: u32 = 0;
-        while pc_idx < callee_encoded_size {
-            let pc = unsafe { rb_iseq_pc_at_idx(callee_iseq, pc_idx) };
-            let opcode: u32 = unsafe { rb_iseq_bare_opcode_at_pc(callee_iseq, pc) }
-                .try_into()
-                .unwrap();
-            if opcode == YARVINSN_invokeblock {
-                incr_counter!(inline_reject_invokeblock);
-                return false;
-            }
-
-            // Reject callees that use block params. The codegen for getblockparam
-            // and getblockparamproxy uses jit.iseq to compute the block param level,
-            // which would be wrong for inlined code.
-            if opcode == YARVINSN_getblockparam || opcode == YARVINSN_getblockparamproxy {
-                incr_counter!(inline_reject_blockparam);
-                return false;
-            }
-
-            let insn_len = insn_len(opcode as usize);
-            pc_idx += insn_len;
         }
 
         true
@@ -4841,7 +4823,7 @@ impl Function {
         // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
         let ptr = self.push_insn(block, Insn::LoadField {
             recv, id: FieldName::as_heap,
-            offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32,
+            offset: ROBJECT_OFFSET_AS_HEAP_FIELDS,
             return_type: types::CPtr,
         });
         let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
@@ -4853,7 +4835,7 @@ impl Function {
 
     fn load_ivar_embedded(&mut self, block: BlockId, recv: InsnId, id: ID, ivar_index: attr_index_t) -> InsnId {
         // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
-        let offset = ROBJECT_OFFSET_AS_ARY as i32
+        let offset = ROBJECT_OFFSET_AS_ARY
             + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
         self.push_insn(block, Insn::LoadField {
             recv, id: id.into(), offset,
@@ -4883,9 +4865,9 @@ impl Function {
         match layout {
             ShapeLayout::RClass | ShapeLayout::RData => {
                 let offset = if layout == ShapeLayout::RClass {
-                    RCLASS_OFFSET_PRIME_FIELDS_OBJ as i32
+                    RCLASS_OFFSET_PRIME_FIELDS_OBJ
                 } else {
-                    TDATA_OFFSET_FIELDS_OBJ as i32
+                    TDATA_OFFSET_FIELDS_OBJ
                 };
 
                 let fields_obj = self.push_insn(block, Insn::LoadField {
@@ -5061,10 +5043,10 @@ impl Function {
                         // Current shape contains this ivar
                         let (ivar_storage, offset) = if recv_type.flags().is_embedded() {
                             // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
-                            let offset = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
+                            let offset = ROBJECT_OFFSET_AS_ARY + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
                             (self_val, offset)
                         } else {
-                            let as_heap = self.push_insn(block, Insn::LoadField { recv: self_val, id: FieldName::as_heap, offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32, return_type: types::CPtr });
+                            let as_heap = self.push_insn(block, Insn::LoadField { recv: self_val, id: FieldName::as_heap, offset: ROBJECT_OFFSET_AS_HEAP_FIELDS, return_type: types::CPtr });
                             let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
                             (as_heap, offset)
                         };
@@ -5233,6 +5215,13 @@ impl Function {
                     //
                     // Bail on argc mismatch
                     if argc != cfunc_argc as u32 {
+                        return Err(());
+                    }
+
+                    // TODO: Support passing arguments on the stack in C calls
+                    // +1 for self
+                    if (argc as usize)+1 > C_ARG_OPNDS.len() {
+                        fun.set_dynamic_send_reason(send_insn_id, TooManyArgsForLir);
                         return Err(());
                     }
 
@@ -7375,7 +7364,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 /// (the method inliner).
 ///
 /// When `mode` is `AddIseqMode::Standalone`, generate the interpreter entry
-/// block and a JIT entry block for each opt-table entry, push the JIT entry
+/// block and, for ISEQs that can be entered by JIT-to-JIT calls, a JIT entry
+/// block for each opt-table entry, push the JIT entry
 /// blocks onto `fun.jit_entry_blocks`, and run the post-translation passes
 /// (`seal_entries`, `set_param_types`, `infer_types`) before returning. When
 /// `mode` is `AddIseqMode::Inlined`, only the body blocks are produced and the
@@ -7411,13 +7401,15 @@ fn add_iseq_to_hir(
     let jit_entry_insns = unsafe { iseq.params() }.opt_table_slice().iter().copied().map(VALUE::as_u32).collect::<Vec<_>>();
     let BytecodeInfo { jump_targets } = compute_bytecode_info(iseq, &jit_entry_insns);
 
+    let compile_jit_entries = matches!(mode, AddIseqMode::Standalone) && iseq_supports_jit_entry(iseq);
+
     // Make all empty basic blocks. The ordering of the BBs matters for getting fallthrough jumps
     // in good places, but it's not necessary for correctness. TODO: Higher quality scheduling during lowering.
     let mut insn_idx_to_block = HashMap::new();
     let mut body_entry_blocks = Vec::with_capacity(jit_entry_insns.len());
     // Make blocks for optionals first, and put them right next to their JIT entrypoint
     for insn_idx in jit_entry_insns.iter().copied() {
-        if matches!(mode, AddIseqMode::Standalone) {
+        if compile_jit_entries {
             let jit_entry_block = fun.new_block(insn_idx);
             fun.jit_entry_blocks.push(jit_entry_block);
         }
@@ -7435,23 +7427,25 @@ fn add_iseq_to_hir(
         // Compile an entry_block for the interpreter
         compile_entry_block(fun, jit_entry_insns.as_slice(), &insn_idx_to_block);
 
-        // Compile all JIT-to-JIT entry blocks
-        for (jit_entry_idx, insn_idx) in jit_entry_insns.iter().enumerate() {
-            let target_block = insn_idx_to_block.get(insn_idx)
-                .copied()
-                .expect("we make a block for each jump target and \
-                         each entry in the ISEQ opt_table is a jump target");
-            compile_jit_entry_block(fun, jit_entry_idx, target_block);
+        if compile_jit_entries {
+            // Compile all JIT-to-JIT entry blocks
+            for (jit_entry_idx, insn_idx) in jit_entry_insns.iter().enumerate() {
+                let target_block = insn_idx_to_block.get(insn_idx)
+                    .copied()
+                    .expect("we make a block for each jump target and \
+                             each entry in the ISEQ opt_table is a jump target");
+                compile_jit_entry_block(fun, jit_entry_idx, target_block);
+            }
         }
     }
 
     // Check if the EP is escaped for the ISEQ from the beginning. We give up
     // optimizing locals in that case because they're shared with other frames.
-    let ep_starts_escaped = iseq_escapes_ep(iseq);
+    let ep_starts_escaped = iseq_ep_starts_escaped(iseq);
     // Check if the EP has been escaped at some point in the ISEQ. If it has, then we assume that
     // its EP is shared with other frames.
-    let ep_has_been_escaped = crate::invariants::iseq_escapes_ep(iseq);
-    let ep_escaped = ep_starts_escaped || ep_has_been_escaped;
+    let seen_ep_escape = iseq_seen_ep_escape(iseq);
+    let ep_escaped = ep_starts_escaped || seen_ep_escape;
 
     // Iteratively fill out basic blocks using a queue.
     // TODO(max): Basic block arguments at edges
@@ -7626,6 +7620,7 @@ fn add_iseq_to_hir(
                 }
                 YARVINSN_concatstrings => {
                     let count = get_arg(pc, 0).as_u32();
+                    debug_assert!(count > 0, "concatstrings should have arguments");
                     let strings = state.stack_pop_n(count as usize)?;
                     let insn_id = fun.push_insn(block, Insn::StringConcat { strings, state: exit_id });
                     state.stack_push(insn_id);
@@ -8963,8 +8958,10 @@ fn add_iseq_to_hir(
                         });
 
                     let result = if is_ifunc {
-                        // Load the block handler from LEP
-                        let level = get_lvar_level(fun.iseq);
+                        // Load the block handler from the current frame's LEP. In inlined
+                        // code, the function ISEQ is the caller while `exit_state.iseq` is the
+                        // callee containing this `invokeblock`.
+                        let level = get_lvar_level(exit_state.iseq);
                         let lep = fun.push_insn(block, Insn::GetEP { level });
                         let block_handler = fun.push_insn(block, Insn::LoadField {
                             recv: lep,
@@ -9136,6 +9133,12 @@ fn add_iseq_to_hir(
                 }
                 YARVINSN_invokebuiltin => {
                     let bf: rb_builtin_function = unsafe { *get_arg(pc, 0).as_ptr() };
+                    // TODO: Support passing arguments on the stack in C calls
+                    // +2 for ec, self
+                    if (bf.argc + 2) as usize > C_ARG_OPNDS.len() {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::TooManyArgsForLir, recompile: None });
+                        break; // End the block
+                    }
 
                     let mut args = vec![];
                     for _ in 0..bf.argc {
@@ -9165,6 +9168,13 @@ fn add_iseq_to_hir(
                 YARVINSN_opt_invokebuiltin_delegate |
                 YARVINSN_opt_invokebuiltin_delegate_leave => {
                     let bf: rb_builtin_function = unsafe { *get_arg(pc, 0).as_ptr() };
+                    // TODO: Support passing arguments on the stack in C calls
+                    // +2 for ec, self
+                    if (bf.argc + 2) as usize > C_ARG_OPNDS.len() {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::TooManyArgsForLir, recompile: None });
+                        break; // End the block
+                    }
+
                     let index = get_arg(pc, 1).as_usize();
                     let argc = bf.argc as usize;
 
@@ -9344,7 +9354,7 @@ fn compile_entry_state(fun: &mut Function) -> (InsnId, FrameState) {
     // If the ISEQ does not escape EP, we can assume EP + 1 == SP
     // TODO: This should maybe also consider if the EP has historically been escaped in this iseq.
     // (see: https://github.com/Shopify/ruby/issues/774)
-    let use_sp = !iseq_escapes_ep(iseq);
+    let use_sp = !iseq_ep_starts_escaped(iseq);
     let mut base: Option<InsnId> = None;
     for local_idx in 0..num_locals(iseq) {
         if local_idx < param_size {
@@ -9396,6 +9406,9 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
     let opt_num: usize = params.opt_num.try_into().expect("iseq param opt_num >= 0");
     let lead_num: usize = params.lead_num.try_into().expect("iseq param lead_num >= 0");
     let passed_opt_num = jit_entry_idx;
+    // We don't need to check iseq_ep_starts_escaped() because we
+    // don't compile JIT entries for ISEQ_TYPE_MAIN/ISEQ_TYPE_EVAL.
+    let seen_ep_escape = iseq_seen_ep_escape(iseq);
 
     // If the iseq has keyword parameters, the keyword bits local will be appended to the local table.
     let kw_bits_idx: Option<usize> = if unsafe { rb_get_iseq_flags_has_kw(iseq) } {
@@ -9418,9 +9431,9 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
     let mut entry_state = FrameState::new(iseq);
     let mut ep: Option<InsnId> = None;
     for local_idx in 0..num_locals(iseq) {
-        if (lead_num + passed_opt_num..lead_num + opt_num).contains(&local_idx) {
+        let local = if (lead_num + passed_opt_num..lead_num + opt_num).contains(&local_idx) {
             // Omitted optionals are locals, so they start as nils before their code run
-            entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Const { val: Const::Value(Qnil) }));
+            fun.push_insn(jit_entry_block, Insn::Const { val: Const::Value(Qnil) })
         } else if Some(local_idx) == kw_bits_idx {
             // Read the kw_bits value written by the caller to the callee frame.
             // This tells us which optional keywords were NOT provided and need their defaults evaluated.
@@ -9430,20 +9443,37 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
             let ep_offset_u32 = u32::try_from(ep_offset)
                 .unwrap_or_else(|_| panic!("Could not convert ep_offset {ep_offset} to u32"));
             let ep = *ep.get_or_insert_with(|| fun.push_insn(jit_entry_block, Insn::GetEP { level: 0 }));
-            entry_state.locals.push(fun.get_local_from_ep(
+            fun.get_local_from_ep(
                 jit_entry_block,
                 iseq,
                 ep,
                 ep_offset_u32,
                 0,
                 types::BasicObject,
-            ));
+            )
         } else if local_idx < param_size {
             let id = unsafe { rb_zjit_local_id(iseq, local_idx.try_into().unwrap()) };
-            entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::LoadArg { idx: arg_idx, id: id.into(), val_type: types::BasicObject }));
+            let local = fun.push_insn(jit_entry_block, Insn::LoadArg { idx: arg_idx, id: id.into(), val_type: types::BasicObject });
             arg_idx += 1;
+            local
         } else {
-            entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Const { val: Const::Value(Qnil) }));
+            fun.push_insn(jit_entry_block, Insn::Const { val: Const::Value(Qnil) })
+        };
+        entry_state.locals.push(local);
+
+        // Once an ISEQ has escaped EP, HIR getlocal may need to read from the
+        // VM frame instead of FrameState. Direct JIT-to-JIT entry passes locals
+        // as C arguments, so initialize the frame slots here before such reads.
+        if seen_ep_escape {
+            let ep_offset = local_idx_to_ep_offset(iseq, local_idx);
+            let local_id = unsafe { rb_zjit_local_id(iseq, local_idx.try_into().unwrap()) };
+            let ep = *ep.get_or_insert_with(|| fun.push_insn(jit_entry_block, Insn::GetEP { level: 0 }));
+            fun.push_insn(jit_entry_block, Insn::StoreField {
+                recv: ep,
+                id: local_id.into(),
+                offset: -(SIZEOF_VALUE_I32 * ep_offset),
+                val: local,
+            });
         }
     }
     (self_param, entry_state)
@@ -10040,13 +10070,13 @@ mod validation_tests {
         function.push_insn(entry, Insn::LoadField {
             recv,
             id: FieldName::as_heap,
-            offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32,
+            offset: ROBJECT_OFFSET_AS_HEAP_FIELDS,
             return_type: types::CPtr,
         });
         let ivar = function.push_insn(entry, Insn::LoadField {
             recv,
             id: FieldName::Id(ID(1)),
-            offset: ROBJECT_OFFSET_AS_ARY as i32,
+            offset: ROBJECT_OFFSET_AS_ARY,
             return_type: types::BasicObject,
         });
         function.push_insn(entry, Insn::Return { val: ivar });
@@ -10073,13 +10103,13 @@ mod validation_tests {
         function.push_insn(entry, Insn::LoadField {
             recv,
             id: FieldName::as_heap,
-            offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32,
+            offset: ROBJECT_OFFSET_AS_HEAP_FIELDS,
             return_type: types::BasicObject,
         });
         let ivar = function.push_insn(entry, Insn::LoadField {
             recv,
             id: FieldName::Id(ID(1)),
-            offset: ROBJECT_OFFSET_AS_ARY as i32,
+            offset: ROBJECT_OFFSET_AS_ARY,
             return_type: types::Array,
         });
         function.push_insn(entry, Insn::Return { val: ivar });

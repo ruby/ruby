@@ -204,7 +204,7 @@ module TestDigest
       Data1 => "352441c2",
       Data2 => "171a3f5f",
     }
-  end
+  end if defined?(Digest::CRC32)
 
   class TestBase < Test::Unit::TestCase
     def test_base

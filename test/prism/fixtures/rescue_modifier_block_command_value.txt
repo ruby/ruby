@@ -1,0 +1,5 @@
+x = foo a do end rescue b
+x = foo a do end rescue b, c = 1
+x = a.foo b do end rescue c, d = 1
+x, y = foo a do end rescue b
+x += foo a do end rescue b, c = 1

@@ -131,6 +131,10 @@ jobs:
           echo "TESTS=${TESTS}" >> $GITHUB_ENV
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
 
+      - name: Set timeout scale
+        run: echo "RUBY_TEST_TIMEOUT_SCALE=10" >> $GITHUB_ENV # subprocess assertion timeouts flake on slower/contended macOS runners, especially with the slower MMTk GC
+        if: ${{ contains(matrix.os, 'macos') }}
+
       - name: Set up Launchable
         id: launchable
         uses: ./.github/actions/launchable/setup

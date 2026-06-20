@@ -1,5 +1,5 @@
 .\"Ruby is copyrighted by Yukihiro Matsumoto <matz@netlab.jp>.
-.Dd March 27, 2026
+.Dd June 07, 2026
 .Dt RUBY 1 "Ruby Programmer's Reference Guide"
 .Os UNIX
 .Sh NAME
@@ -536,7 +536,9 @@ The custom default buffer size of
 .Pp
 .It Ev RUBY_MAX_CPU
 The maximum number of native threads used by M:N Threads scheduler
-Introduced in Ruby 3.3, default: 8.
+Introduced in Ruby 3.3, default: number of online CPUs.
+As non-main ractors use M:N Threads scheduler, this also sets the
+maximum number of native threads that non-main ractors will use.
 .Pp
 .It Ev RUBY_MN_THREADS
 If set to

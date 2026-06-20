@@ -1,0 +1,3 @@
+x = 1 rescue alias a b
+             ^~~~~ unexpected an `alias` at a non-statement position
+

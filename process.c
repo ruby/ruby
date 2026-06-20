@@ -2726,7 +2726,7 @@ open_func(void *ptr)
 static void
 rb_execarg_allocate_dup2_tmpbuf(struct rb_execarg *eargp, long len)
 {
-    rb_alloc_tmp_buffer(&eargp->dup2_tmpbuf, run_exec_dup2_tmpbuf_size(len));
+    rb_alloc_tmp_buffer(&eargp->dup2_tmpbuf, run_exec_dup2_tmpbuf_size(len), false);
 }
 
 static VALUE

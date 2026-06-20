@@ -28,7 +28,12 @@
 #else
 # define JSON_UNREACHABLE_RETURN UNREACHABLE_RETURN
 #endif
+
 /* shims */
+
+#ifndef UNDEF_P
+#define UNDEF_P(val) (val == Qundef)
+#endif
 
 #if SIZEOF_UINT64_T == SIZEOF_LONG_LONG
 # define INT64T2NUM(x) LL2NUM(x)

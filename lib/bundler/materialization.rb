@@ -12,6 +12,7 @@ module Bundler
       @dep = dep
       @platform = platform
       @candidates = candidates
+      set_locked_platforms
     end
 
     def complete?
@@ -55,5 +56,14 @@ module Bundler
     private
 
     attr_reader :dep, :platform
+
+    def set_locked_platforms
+      return unless @candidates
+
+      platforms = @candidates.map(&:platform)
+      @candidates.each do |candidate|
+        candidate.locked_platforms = platforms if candidate.respond_to?(:locked_platforms=)
+      end
+    end
   end
 end

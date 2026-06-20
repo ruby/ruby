@@ -850,7 +850,6 @@ rb_clear_all_refinement_method_cache(void)
 
             // All objects should be live as weak references are pruned in
             // cc_refinement_set_handle_weak_references
-            VM_ASSERT(rb_gc_pointer_to_heap_p(v));
             VM_ASSERT(!rb_objspace_garbage_object_p(v));
 
             const struct rb_callcache *cc = (const struct rb_callcache *)v;

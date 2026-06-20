@@ -182,9 +182,9 @@ fn test_jcc_ptr()
     let (mut asm, mut cb) = setup_asm();
 
     let side_exit = Target::CodePtr(cb.get_write_ptr().add_bytes(4));
-    let not_mask = asm.not(Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_MASK as i32));
+    let not_mask = asm.not(Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_MASK));
     asm.test(
-        Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_FLAG as i32),
+        Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_FLAG),
         not_mask,
     );
     asm.push_insn(Insn::Jnz(side_exit));

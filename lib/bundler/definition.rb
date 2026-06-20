@@ -711,9 +711,10 @@ module Bundler
             "available locally before rerunning Bundler."
           else
             "Your bundle is locked to #{locked_gem} from #{locked_gem.source}, but that version can " \
-            "no longer be found in that source. That means the author of #{locked_gem} has removed it. " \
-            "You'll need to update your bundle to a version other than #{locked_gem} that hasn't been " \
-            "removed in order to install."
+            "no longer be found in that source. That means either the author of #{locked_gem} has removed it, " \
+            "or you no longer have access to that source. You'll need to update your bundle to a version other " \
+            "than #{locked_gem} that hasn't been removed, or check your credentials and access rights for " \
+            "#{locked_gem.source}, in order to install."
           end
 
           raise GemNotFound, message
@@ -1329,7 +1330,7 @@ module Bundler
 
     def new_resolution_base(last_resolve:, unlock:)
       new_resolution_platforms = @current_platform_missing ? @new_platforms + [Bundler.local_platform] : @new_platforms
-      Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, locked_specs: @originally_locked_specs, unlock: unlock, prerelease: gem_version_promoter.pre?, prefer_local: @prefer_local, new_platforms: new_resolution_platforms, overrides: @overrides)
+      Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, locked_specs: @originally_locked_specs, unlock: unlock, prerelease: gem_version_promoter.pre?, prefer_local: @prefer_local, new_platforms: new_resolution_platforms, overrides: @overrides, explicit_unlocks: @explicit_unlocks)
     end
 
     def new_resolver(base)

@@ -1215,7 +1215,7 @@ rb_gc_impl_mark_maybe(void *objspace_ptr, VALUE obj)
 {
     rb_wbcheck_objspace_t *objspace = objspace_ptr;
 
-    if (!rb_gc_impl_pointer_to_heap_p(objspace_ptr, (void *)obj)) return;
+    if (!rb_gc_impl_live_object_p(objspace_ptr, (void *)obj)) return;
 
     switch (objspace->phase) {
         case WBCHECK_PHASE_SNAPSHOT:
@@ -1901,7 +1901,7 @@ rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
 }
 
 bool
-rb_gc_impl_pointer_to_heap_p(void *objspace_ptr, const void *ptr)
+rb_gc_impl_live_object_p(void *objspace_ptr, const void *ptr)
 {
     GC_ASSERT(wbcheck_global_objspace);
 

@@ -533,7 +533,19 @@ class Pathname
     self + '..'
   end
 
-  # Returns +true+ if +self+ points to a mountpoint.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   mountpoint? -> true or false
+  #
+  # Returns whether the path in `self` points to a mountpoint:
+  #
+  # ```ruby
+  # Pathname('/').mountpoint?      # => true
+  # Pathname('/etc').mountpoint?   # => false
+  # Pathname('nosuch').mountpoint? # => false
+  # ```
+  #
   def mountpoint?
     begin
       stat1 = self.lstat
@@ -1060,48 +1072,39 @@ class Pathname    # * File *
   # with ASCII-8BIT encoding.
   def binwrite(...) File.binwrite(@path, ...) end
 
+  # :markup: markdown
+  #
   # call-seq:
   #   atime -> new_time
   #
-  # Returns a new Time object containing the time of the most recent
-  # access (read or write) to the entry represented by `self`;
-  # see {File System Timestamps}[rdoc-ref:file/timestamps.md]:
+  # Returns a Time object containing the access time
+  # of the entry represented by `self`, as reported by the filesystem;
+  # see {File System Access Time}[rdoc-ref:file/timestamps.md@Access+Time]:
   #
-  #   # Work in a temporary directory.
-  #   require 'tmpdir'
-  #   Dir.mktmpdir do |tmpdirpath|
-  #     # A subdirectory therein, and its Pathname.
-  #     dirpath = File.join(tmpdirpath, 'subdir')
-  #     Dir.mkdir(dirpath)
-  #     dir_pn = Pathname(dirpath)
-  #     puts "Create directory; establishes atime for directory."
-  #     puts "  Directory atime: #{dir_pn.atime}"
-  #     sleep(1)
-  #
-  #     # A file in the subdirectory, and its Pathname.
-  #     filepath = File.join(dirpath, 't.txt')
-  #     puts "Create file; establishes atime for file, updates atime for directory."
-  #     File.write(filepath, 'foo')
-  #     file_pn = Pathname(filepath)
-  #     puts "  File atime:      #{file_pn.atime}"
-  #     puts "  Directory atime: #{dir_pn.atime}"
-  #     sleep(1)
-  #     puts "Write file; updates atimes for file and directory."
-  #     File.write(filepath, 'bar')
-  #     puts "  File atime:      #{file_pn.atime}"
-  #     puts "  Directory atime: #{dir_pn.atime}"
-  #   end
-  #
-  # Output:
-  #
-  #   Create directory; establishes atime for directory.
-  #     Directory atime: 2026-05-14 14:36:43 +0100
-  #   Create file; establishes atime for file, updates atime for directory.
-  #     File atime:      2026-05-14 14:36:44 +0100
-  #     Directory atime: 2026-05-14 14:36:44 +0100
-  #   Write file; updates atimes for file and directory.
-  #     File atime:      2026-05-14 14:36:45 +0100
-  #     Directory atime: 2026-05-14 14:36:45 +0100
+  # ```ruby
+  # # Pathname for a (non-existent) directory.
+  # dir_pn = Pathname('doc/foo')   # => #<Pathname:doc/foo>
+  # # Create directory; establishes atime for directory.
+  # dir_pn.mkdir
+  # dir_pn.atime                   # => 2026-06-17 10:10:20.801115774 -0500
+  # # Pathname for a (non-existent) file in the directory.
+  # file_pn = dir_pn.join('t.tmp') # => #<Pathname:doc/foo/t.tmp>
+  # # Create file; establishes atime for file, updates atime for directory.
+  # file_pn.write('foo')
+  # file_pn.atime                  # => 2026-06-17 10:11:40.987171568 -0500
+  # dir_pn.atime                   # => 2026-06-17 10:11:40.96617277 -0500
+  # # Write file; updates atime for file,but not directory.
+  # file_pn.write('bar')
+  # file_pn.atime                  # => 2026-06-17 10:13:22.062904563 -0500
+  # dir_pn.atime                   # => 2026-06-17 10:11:40.96617277 -0500
+  # # Read file; may update atime for file, but not directory.
+  # file_pn.read
+  # file_pn.atime                  # => 2026-06-17 10:13:22.062904563 -0500
+  # dir_pn.atime                   # => 2026-06-17 10:11:40.96617277 -0500
+  # # Clean up.
+  # file_pn.delete
+  # dir_pn.rmdir
+  # ```
   #
   def atime() File.atime(@path) end
 
@@ -1226,50 +1229,56 @@ class Pathname    # * File *
   #   chmod(mode) -> 1
   #
   # Changes the mode (i.e., permissions) of the entry represented by `self`;
-  # see {File Permissions}[rdoc-ref:File@File+Permissions];
-  # returns `1`:
+  # see {File Permissions}[rdoc-ref:File@File+Permissions]:
   #
   # ```ruby
-  # # A helper method to make an integer mode display as octal.
-  # def pretty(mode); '0' + (mode & 0777).to_s(8); end
+  # # Pathname for a (non-existent) directory.
+  # dir_pn = Pathname('doc/foo') # => #<Pathname:doc/foo>
+  # # Create the directory and fetch its mode.
+  # dir_pn.mkdir
+  # dir_pn.stat.mode.to_s(8) # => "40775"
+  # # Change the directory mode and fetch the new mode.
+  # dir_pn.chmod(0777)
+  # dir_pn.stat.mode.to_s(8) # => "40777"
   #
-  # # Work in a temporary directory.
-  # Pathname.mktmpdir do |tmpdirpath|
-  #   # A subdirectory therein, and its Pathname.
-  #   dirpath = File.join(tmpdirpath, 'subdir')
-  #   dir_pn = Pathname(dirpath)
-  #   dir_pn.mkdir
-  #   # The directory mode.
-  #   puts "Original directory mode: #{pretty(dir_pn.stat.mode)}"
-  #   # Change the directory mode.
-  #   dir_pn.chmod(0777)
-  #   puts "New directory mode:      #{pretty(dir_pn.stat.mode)}"
+  # # Pathname for a (non-existent) file in the directory.
+  # file_pn = dir_pn.join('t.tmp') # => #<Pathname:doc/foo/t.tmp>
+  # # Create the file and fetch its mode.
+  # file_pn.write('foo')
+  # file_pn.stat.mode.to_s(8) # => "100664"
+  # # Change the file mode and fetch its new mode.
+  # file_pn.chmod(0777)
+  # file_pn.stat.mode.to_s(8) # => "100777"
   #
-  #   # A file in the subdirectory, and its Pathname.
-  #   filepath = File.join(dirpath, 't.txt')
-  #   file_pn = Pathname(filepath)
-  #   # Create the file.
-  #   file_pn.write('foo')
-  #   # The file mode.
-  #   puts "Original file mode:      #{pretty(file_pn.stat.mode)}"
-  #   # Change the file modes.
-  #   file_pn.chmod(0777)
-  #   puts "New file mode:           #{pretty(file_pn.stat.mode)}"
-  # end
-  # ```
-  #
-  # Output:
-  #
-  # ```text
-  # Original directory mode: 0775
-  # New directory mode:      0777
-  # Original file mode:      0664
-  # New file mode:           0777
+  # # Clean up.
+  # file_pn.delete
+  # dir_pn.rmdir
   # ```
   #
   def chmod(mode) File.chmod(mode, @path) end
 
-  # See <tt>File.lchmod</tt>.
+  #  :markup: markdown
+  #
+  #  call-seq:
+  #    Pathname.lchmod(mode) -> 1
+  #
+  #  Not supported on some platforms (raises Errno:: ENOTSUP).
+  #
+  #  When supported: like Pathname::chmod, but does not follow symbolic links,
+  #  and therefore changes the mode of the entry specified by `self`:
+  #
+  #  ```ruby
+  #  File.write('t.tmp', '')
+  #  File.symlink('t.tmp', 'link')
+  #  File.stat('t.tmp').mode.to_s(8) # => "100664"
+  #  File.stat('link').mode.to_s(8)  # => "100664"
+  #  Pathname('link').lchmod(0777)
+  #  File.stat('t.tmp').mode.to_s(8) # => "100664"
+  #  File.stat('link').mode.to_s(8)  # => "100777"
+  #  File.delete('t.tmp')
+  #  File.delete('link')
+  #  ```
+  #
   def lchmod(mode) File.lchmod(mode, @path) end
 
   # :markup: markdown
@@ -1280,47 +1289,38 @@ class Pathname    # * File *
   # Changes the owner and group of an entry (directory or file):
   #
   # ```ruby
-  # # Work in a temporary directory.
-  # Pathname.mktmpdir do |tmpdirpath|
-  #   # A subdirectory therein, and its Pathname.
-  #   dirpath = File.join(tmpdirpath, 'subdir')
-  #   dir_pn = Pathname(dirpath)
-  #   dir_pn.mkdir
-  #   dir_stat = File.stat(dirpath)
-  #   puts "Original directory owner: #{dir_stat.uid}"
-  #   puts "Original directory group: #{dir_stat.gid}"
-  #   dir_pn.chown(1000, 1000)
-  #   dir_stat = File.stat(dirpath)
-  #   puts "New directory owner:      #{dir_stat.uid}"
-  #   puts "New directory group:      #{dir_stat.gid}"
+  # # Super user; all privileges.
+  # Process.uid                    # => 0
+  # Process.gid                    # => 0
   #
-  #   # A file in the subdirectory, and its Pathname.
-  #   filepath = File.join(dirpath, 't.txt')
-  #   file_pn = Pathname(filepath)
-  #   # Create the file.
-  #   file_pn.write('foo')
-  #   file_stat = File.stat(filepath)
-  #   puts "Original file owner:      #{file_stat.uid}"
-  #   puts "Original file group:      #{file_stat.gid}"
-  #   file_pn = Pathname(dirpath)
-  #   file_pn.chown(1000, 1000)
-  #   file_stat = File.stat(dirpath)
-  #   puts "New file owner:           #{file_stat.uid}"
-  #   puts "New file group:           #{file_stat.gid}"
-  # end
-  # ```
+  # # Pathname for a (non-existent) directory.
+  # dir_pn = Pathname('doc/foo')   # => #<Pathname:doc/foo>
+  # # Create the directory; fetch original owner and group.
+  # dir_pn.mkdir
+  # dir_stat = dir_pn.stat
+  # dir_stat.uid                   # => 0
+  # dir_stat.gid                   # => 0
+  # # Change owner; fetch current owner and group.
+  # dir_pn.chown(1000, 1000)
+  # dir_stat = dir_pn.stat
+  # dir_stat.uid                   # => 1000
+  # dir_stat.gid                   # => 1000
   #
-  # Output:
-  #
-  # ```text
-  # Original directory owner: 0
-  # Original directory group: 0
-  # New directory owner:      1000
-  # New directory group:      1000
-  # Original file owner:      0
-  # Original file group:      0
-  # New file owner:           1000
-  # New file group:           1000
+  # Pathname for a (non-existent) file in the directory.
+  # file_pn = dir_pn.join('t.tmp') # => #<Pathname:doc/foo/t.tmp>
+  # # Create the directory; fetch original owner and group.
+  # file_pn.write('foo')
+  # file_stat = file_pn.stat
+  # file_stat.uid                  # => 0
+  # file_stat.gid                  # => 0
+  # # Change owner; fetch current owner and group.
+  # file_pn.chown(1000, 1000)
+  # file_stat = file_pn.stat
+  # file_stat.uid                  # => 1000
+  # file_stat.gid                  # => 1000
+  # # Clean up.
+  # file_pn.delete
+  # dir_pn.rmdir
   # ```
   #
   # Notes:
@@ -1334,7 +1334,49 @@ class Pathname    # * File *
   #
   def chown(owner, group) File.chown(owner, group, @path) end
 
-  # See <tt>File.lchown</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   lchown(uid, gid) -> 1
+  #
+  #  Not supported on some platforms (raises exception).
+  #
+  #  Calling process must have superuser privileges.
+  #
+  #  When supported: like Pathname#chown, but does not follow symbolic links,
+  #  and therefore changes the ownership of the entry at the path in `self`:
+  #
+  # ```ruby
+  # # Super user; all privileges.
+  # Process.uid # => 0
+  # Process.gid # => 0
+  # # Create regular file and symbolic link to it.
+  # File.write('t.tmp', '')
+  # File.symlink('t.tmp', 'link')
+  # # Capture original statuses.
+  # fstat0 = File.stat('t.tmp')  # Method ::stat; status of file.
+  # lstat0 = File.lstat('link')  # Method ::lstat; status of link.
+  # # Original user ids and group ids.
+  # fstat0.uid # => 0
+  # fstat0.gid # => 0
+  # lstat0.uid # => 0
+  # lstat0.gid # => 0
+  # # Change ids for link.
+  # Pathname('link').lchown(1000, 1000)
+  # # Capture new statuses.
+  # fstat1 = File.stat('t.tmp')
+  # lstat1 = File.lstat('link')
+  # # User id and group id for file not changed.
+  # fstat1.uid # => 0
+  # fstat1.gid # => 0
+  # # User id and group id for link changed.
+  # p lstat1.uid # => 1000
+  # p lstat1.gid # => 1000
+  # # Clean up.
+  # File.delete('t.tmp')
+  # File.delete('link')
+  # ```
+  #
   def lchown(owner, group) File.lchown(owner, group, @path) end
 
   # :markup: markdown
@@ -1373,7 +1415,28 @@ class Pathname    # * File *
   #  Returns <tt>'unknown'</tt> if the type cannot be determined.
   def ftype() File.ftype(@path) end
 
-  # See <tt>File.link</tt>.  Creates a hard link.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   make_link(path) -> 0
+  #
+  #  Not available on some systems.
+  #
+  # Creates a new entry at the path in `self` for the existing entry at `path`
+  # using a [hard link](https://en.wikipedia.org/wiki/Hard_link):
+  #
+  # ```ruby
+  # File.write('doc/t.tmp', 'foo')
+  # Pathname('lib/u.tmp').make_link('doc/t.tmp')
+  # File.read('lib/u.tmp') # => "foo"
+  # File.write('lib/u.tmp', 'bar')
+  # File.read('doc/t.tmp') # => "bar"
+  # File.delete('doc/t.tmp')
+  # File.read('lib/u.tmp') # => "bar"
+  # File.delete('lib/u.tmp')
+  # ```
+  #
+  # Raises an exception if the entry at the path in `self` exists.
   def make_link(old) File.link(old, @path) end
 
   # See <tt>File.open</tt>.  Opens the file for reading or writing.
@@ -1390,7 +1453,31 @@ class Pathname    # * File *
   # See <tt>File.stat</tt>.  Returns a <tt>File::Stat</tt> object.
   def stat() File.stat(@path) end
 
-  # See <tt>File.lstat</tt>.
+  #
+  #  :markup: markdown
+  #
+  #  call-seq:
+  #    lstat -> new_stat
+  #
+  #  Returns a File::Stat object for the path in `self`;
+  #  does not follow symbolic links,
+  #  and therefore returns the stat object for that path,
+  #  regardless of whether it is a symbolic link:
+  #
+  #  ```ruby
+  #  File.write('t.tmp', '')
+  #  sleep(1)
+  #  File.symlink('t.tmp', 'link')
+  #  pn = Pathname('link')
+  #  # => #<Pathname:link>
+  #  # Method stat: follows link to 't.tmp'.
+  #  pn.stat.ctime  # => 2026-06-13 15:02:46.562620885 -0500
+  #  # Method lstat; does not follow link.
+  #  pn.lstat.ctime # => 2026-06-13 15:02:47.563619647 -0500
+  #  File.delete('t.tmp')
+  #  File.delete('link')
+  #  ```
+  #
   def lstat() File.lstat(@path) end
 
   # See <tt>File.symlink</tt>.  Creates a symbolic link.
@@ -1402,11 +1489,56 @@ class Pathname    # * File *
   # See <tt>File.utime</tt>.  Update the access and modification times.
   def utime(atime, mtime) File.utime(atime, mtime, @path) end
 
-  # Update the access and modification times of the file.
+  # :markup: markdown
   #
-  # Same as Pathname#utime, but does not follow symbolic links.
+  # call-seq:
+  #   lutime(atime, mtime) -> 1
   #
-  # See File.lutime.
+  # Like Pathname#utime, but does not follow symbolic links,
+  # and therefore changes the times of the entry in `self`,
+  # regardless of whether it is a symbolic link:
+  #
+  # ```ruby
+  # # Create a file and a link to it.
+  # file_path = 't.tmp'
+  # link_path = 'link'
+  # File.write(file_path, '')
+  # File.symlink(file_path, link_path)
+  # # Take snapshots of both.
+  # file_stat = File.stat(file_path)
+  # link_stat = File.lstat(link_path)
+  # # Fetch access times and modification times of both.
+  # file_stat.atime # => 2026-06-15 11:03:29.600373255 -0500
+  # file_stat.mtime # => 2026-06-15 11:03:22.247352211 -0500
+  # link_stat.atime # => 2026-06-15 11:03:29.251372254 -0500
+  # link_stat.mtime # => 2026-06-15 11:03:26.66436484 -0500
+  # # Update access time and modification time of the link.
+  # pn = Pathname(link_path)
+  # time = Time.now # => 2026-06-15 11:08:07.384287523 -0500
+  # pn.lutime(time, time)
+  # # Take fresh snapshots of both.
+  # file_stat = File.stat(file_path)
+  # link_stat = File.lstat(link_path)
+  # # Fetch access time and modification time of file (not changed).
+  # file_stat.atime # => 2026-06-15 11:03:29.600373255 -0500
+  # file_stat.mtime # => 2026-06-15 11:03:22.247352211 -0500
+  # # Fetch access time and modification time of link (changed).
+  # link_stat.atime # => 2026-06-15 11:08:29.847301399 -0500
+  # link_stat.mtime # => 2026-06-15 11:08:07.384287523 -0500
+  # # Clean up.
+  # File.delete(file_path)
+  # File.delete(link_path)
+  # ```
+  #
+  # Arguments `atime` and `mtime` may be Time objects (as above).
+  #
+  # Either or both may be integers;
+  # when an integer `i` is passed, `Time.new(i)` is used.
+  #
+  # Either or both may be `nil`, in which case `Time.now` is used.
+  #
+  # See {File System Timestamps}[rdoc-ref:file/timestamps.md].
+  #
   def lutime(atime, mtime) File.lutime(atime, mtime, @path) end
 
   # call-seq:
@@ -1756,47 +1888,21 @@ class Pathname    # * FileTest *
 end
 
 
-class Pathname    # * Dir *
+class Pathname
   # call-seq:
-  #   glob(patterns, **kwargs) → array_of_pathnames
-  #   glob(patterns, **kwargs) {|pathname| ... } → nil
+  #   glob(patterns, base: '.', flags: 0, sort: true) → array_of_pathnames
+  #   glob(patterns, base: '.', flags: 0, sort: true) {|pathname| ... } → nil
   #
-  # Calls <tt>Dir.glob(patterns, **kwargs)</tt>, which yields or returns entry names;
-  # see Dir.glob.
+  # Selects filesystem entries
+  # based on the given keyword arguments +base+, +flags+, and +sort+;
+  # see {Filename Globbing}[rdoc-ref:file/filename_globbing.md].
   #
-  # Required argument +patterns+ is a string pattern or an array of string patterns;
-  # note that these patterns are not regexps.
+  # With no block given, returns an array of pathnames,
+  # each based on a selected filesystem entry.
   #
-  # Keyword arguments <tt>**kwargs</tt> are passed through to Dir.glob;
-  # see the documentation there.
+  # With a block given, calls the block with pathnames,
+  # each based on a selected filesytem entry.
   #
-  # With no block given, returns an array of \Pathname objects;
-  # each is <tt>Pathname.new(entry_name)</tt> for an entry name returned by Dir.glob.
-  #
-  #   Pathname.glob('*').take(3)
-  #   # => [#<Pathname:BSDL>, #<Pathname:CONTRIBUTING.md>, #<Pathname:COPYING>]
-  #   Pathname.glob(['o*', 'a*']).take(3)
-  #   # => [#<Pathname:object.c>, #<Pathname:aclocal.m4>, #<Pathname:addr2line.c>]
-  #
-  # With a block given, calls the block with each pathname
-  # <tt>Pathname.new(entry_name)</tt>,
-  # where each +entry_name+ is a \Pathname object created by the value yielded by Dir.glob.
-  #
-  #   a = []
-  #   Pathname.glob(['o*', 'a*']) {|pathname| a << pathname }
-  #   a.take(3)
-  #   # => [#<Pathname:object.c>, #<Pathname:aclocal.m4>, #<Pathname:addr2line.c>]
-  #
-  # Optional keyword argument +base+ is of particular interest.
-  # When it is given, its value specifies the base directory for the pathnames;
-  # each pattern string specifies entries relative to the base directory:
-  #
-  #   Pathname.glob('*', base: 'lib').take(2)
-  #   # => [#<Pathname:English.gemspec>, #<Pathname:English.rb>]
-  #   Pathname.glob('*', base: 'lib/bundler').take(2)
-  #   # => [#<Pathname:build_metadata.rb>, #<Pathname:bundler.gemspec>]
-  #
-  # Note that the base directory is not prepended to the entry names in the result.
   def Pathname.glob(*args, **kwargs) # :yield: pathname
     if block_given?
       Dir.glob(*args, **kwargs) {|f| yield self.new(f) }
@@ -1879,7 +1985,25 @@ class Pathname    # * Dir *
     Dir.foreach(@path) {|f| yield self.class.new(f) }
   end
 
-  # See <tt>Dir.mkdir</tt>.  Create the referenced directory.
+  # :markup: markdown
+  #
+  # call-seq:
+  #    mkdir(permissions = 0755) -> 0
+  #
+  # Creates a directory in the underlying file system
+  # at the path in `self`, with the given `permissions`;
+  # see {File Permissions}[rdoc-ref:File@File+Permissions]:
+  #
+  # ```ruby
+  # Dir.mkdir('foo')
+  # File.stat(Dir.new('foo')).mode.to_s(8) # => "40775"
+  # Dir.mkdir('bar', 0644)
+  # File.stat(Dir.new('bar')).mode.to_s(8) # => "40644"
+  # Dir.rmdir('foo')
+  # Dir.rmdir('bar')
+  # ```
+  #
+  # Argument `permissions` is ignored on Windows.
   def mkdir(...) Dir.mkdir(@path, ...) end
 
   # See <tt>Dir.rmdir</tt>.  Remove the referenced directory.

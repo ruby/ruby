@@ -66,6 +66,8 @@ RBIMPL_ATTR_NONNULL(())
  */
 VALUE rb_define_class(const char *name, VALUE super);
 
+#define rb_define_class(name, super) rb_define_class_id_under(rb_cObject, rb_intern_const((name)), (super))
+
 RBIMPL_ATTR_NONNULL(())
 /**
  * Defines a top-level module.
@@ -84,6 +86,8 @@ RBIMPL_ATTR_NONNULL(())
  * use other ways to create one.
  */
 VALUE rb_define_module(const char *name);
+
+#define rb_define_module(name) rb_define_module_id_under(rb_cObject, rb_intern_const((name)))
 
 RBIMPL_ATTR_NONNULL(())
 /**
@@ -108,6 +112,8 @@ RBIMPL_ATTR_NONNULL(())
  */
 VALUE rb_define_class_under(VALUE outer, const char *name, VALUE super);
 
+#define rb_define_class_under(outer, name, super) rb_define_class_id_under((outer), rb_intern_const((name)), (super))
+
 RBIMPL_ATTR_NONNULL(())
 /**
  * Defines a module under the namespace of `outer`.
@@ -122,6 +128,8 @@ RBIMPL_ATTR_NONNULL(())
  *              function. They are immortal.
  */
 VALUE rb_define_module_under(VALUE outer, const char *name);
+
+#define rb_define_module_under(outer, name) rb_define_module_id_under((outer), rb_intern_const((name)))
 
 /**
  * Includes a module to a class.

@@ -909,6 +909,11 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     VALUE *alloc_obj = (VALUE *)rb_mmtk_alloc_fast_path(objspace, ractor_cache, alloc_size, MMTk_MIN_OBJ_ALIGN);
     if (!alloc_obj) {
         alloc_obj = mmtk_alloc(ractor_cache->mutator, alloc_size, MMTk_MIN_OBJ_ALIGN, 0, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
+
+        // On heap exhaustion raise NoMemoryError.
+        if (RB_UNLIKELY(alloc_obj == NULL)) {
+            rb_memerror();
+        }
     }
 
     alloc_obj++;
@@ -1034,7 +1039,7 @@ rb_gc_impl_mark_and_pin(void *objspace_ptr, VALUE obj)
 void
 rb_gc_impl_mark_maybe(void *objspace_ptr, VALUE obj)
 {
-    if (rb_gc_impl_pointer_to_heap_p(objspace_ptr, (const void *)obj)) {
+    if (rb_gc_impl_live_object_p(objspace_ptr, (const void *)obj)) {
         rb_gc_impl_mark_and_pin(objspace_ptr, obj);
     }
 }
@@ -1080,12 +1085,12 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
     if (SPECIAL_CONST_P(b)) return;
 
 #ifdef MMTK_DEBUG
-    if (!rb_gc_impl_pointer_to_heap_p(objspace_ptr, (void *)a)) {
+    if (!rb_gc_impl_live_object_p(objspace_ptr, (void *)a)) {
         char buff[256];
         rb_bug("a: %s is not an object", rb_raw_obj_info(buff, 256, a));
     }
 
-    if (!rb_gc_impl_pointer_to_heap_p(objspace_ptr, (void *)b)) {
+    if (!rb_gc_impl_live_object_p(objspace_ptr, (void *)b)) {
         char buff[256];
         rb_bug("b: %s is not an object", rb_raw_obj_info(buff, 256, b));
     }
@@ -1624,7 +1629,7 @@ rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
 }
 
 bool
-rb_gc_impl_pointer_to_heap_p(void *objspace_ptr, const void *ptr)
+rb_gc_impl_live_object_p(void *objspace_ptr, const void *ptr)
 {
     if (ptr == NULL) return false;
     if ((uintptr_t)ptr % sizeof(void*) != 0) return false;

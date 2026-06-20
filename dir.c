@@ -1744,15 +1744,16 @@ nogvl_mkdir(void *ptr)
  *
  * Creates a directory in the underlying file system
  * at +dirpath+ with the given +permissions+;
- * returns zero:
+ * see {File Permissions}[rdoc-ref:File@File+Permissions]:
  *
  *   Dir.mkdir('foo')
- *   File.stat(Dir.new('foo')).mode.to_s(8)[1..4] # => "0755"
+ *   File.stat(Dir.new('foo')).mode.to_s(8) # => "40775"
  *   Dir.mkdir('bar', 0644)
- *   File.stat(Dir.new('bar')).mode.to_s(8)[1..4] # => "0644"
+ *   File.stat(Dir.new('bar')).mode.to_s(8) # => "40644"
+ *   Dir.rmdir('foo')
+ *   Dir.rmdir('bar')
  *
- * See {File Permissions}[rdoc-ref:File@File+Permissions].
- * Note that argument +permissions+ is ignored on Windows.
+ * Argument +permissions+ is ignored on Windows.
  */
 static VALUE
 dir_s_mkdir(int argc, VALUE *argv, VALUE obj)

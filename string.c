@@ -6505,7 +6505,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
  *  Like String#gsub, except that:
  *
  *  - Performs substitutions in +self+ (not in a copy of +self+).
- *  - Returns +self+ if any characters are removed, +nil+ otherwise.
+ *  - Returns +self+ if any substitutions were performed, +nil+ otherwise.
  *
  *  Related: see {Modifying}[rdoc-ref:String@Modifying].
  */
@@ -7836,7 +7836,8 @@ case_option_single_p(OnigCaseFoldType flags, rb_encoding *enc, VALUE str)
 {
     if ((flags & ONIGENC_CASE_ASCII_ONLY) && (enc==rb_utf8_encoding() || rb_enc_mbmaxlen(enc) == 1))
         return true;
-    return !(flags & ONIGENC_CASE_FOLD_TURKISH_AZERI) && ENC_CODERANGE(str) == ENC_CODERANGE_7BIT;
+    return !(flags & ONIGENC_CASE_FOLD_TURKISH_AZERI) &&
+           (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT || rb_is_ascii8bit_enc(enc));
 }
 
 /* 16 should be long enough to absorb any kind of single character length increase */

@@ -237,6 +237,15 @@ RSpec.describe Bundler::Plugin do
         with(hash_including("type" => "l_source", "uri" => "xyz", "other" => "random")) { s_instance }
       expect(subject.from_lock(opts)).to be(s_instance)
     end
+
+    it "returns an UnloadedSource when the plugin handling the source is not installed" do
+      opts = { "type" => "missing_source", "remote" => "https://example.com/private" }
+      allow(index).to receive(:source_plugin).with("missing_source") { nil }
+
+      source = subject.from_lock(opts)
+      expect(source).to be_a(Plugin::UnloadedSource)
+      expect(source.uri).to eq("https://example.com/private")
+    end
   end
 
   describe "#root" do
