@@ -8,3 +8,6 @@ benchmark:
   capitalize-10: str10.capitalize
   capitalize-100: str100.capitalize
   capitalize-1000: str1000.capitalize
+  capitalize!-1: str1.dup.capitalize!
+  capitalize!-100: str100.dup.capitalize!
+  capitalize!-1000: str1000.dup.capitalize!
