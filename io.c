@@ -3411,7 +3411,16 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
     enc = io_read_encoding(fptr);
     cr = 0;
 
-    if (siz == 0) siz = BUFSIZ;
+    if (siz == 0) {
+        siz = BUFSIZ;
+    }
+    else {
+        // If `siz` is set, we got it from `stat(2)`.
+        // We attempt to read one extra byte because:
+        //  - If the file was appended to since then, we'll continue reading.
+        //  - If the file is still the same length, we won't issue a second `io_fread`.
+        siz++;
+    }
     shrinkable = io_setstrbuf(&str, siz);
     for (;;) {
         READ_CHECK(fptr);
