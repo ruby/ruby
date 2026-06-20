@@ -923,6 +923,8 @@ class TestBox < Test::Unit::TestCase
   end
 
   def test_boxes_have_different_rubygems
+    pend if /mswin|mingw/ =~ RUBY_PLATFORM # timeout on windows environments, only on the 4.0 branch
+
     # assert_separately w/ ENV_ENABLE_BOX and --enable=gems causes timeouts on CI @ Windows
     assert_in_out_err([ENV_ENABLE_BOX, "--enable=gems"], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
       begin;
