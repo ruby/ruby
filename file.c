@@ -7111,11 +7111,33 @@ fname_need_expansion_p(VALUE fname)
     return false;
 }
 
+static bool
+expand_feature(VALUE fname, VALUE dname, VALUE buffer, bool need_expansion)
+{
+    long dname_len = RSTRING_LEN(dname);
+    const char *dname_ptr = RSTRING_PTR(dname);
+
+    RUBY_ASSERT(dname_len > 0);
+
+    if (need_expansion || dname_ptr[0] == '~') {
+        rb_file_expand_path_internal(fname, dname, 0, 0, buffer);
+    }
+    else {
+        rb_str_set_len(buffer, 0);
+        rb_str_append(buffer, dname);
+        if (!isdirsep(dname_ptr[dname_len])) {
+            rb_str_cat(buffer, "/", 1);
+        }
+        rb_str_append(buffer, fname);
+    }
+    return true;
+}
+
 int
 rb_find_file_ext(VALUE *filep, const char *const *ext)
 {
     const char *f = StringValueCStr(*filep);
-    VALUE fname = *filep, load_path, tmp;
+    VALUE fname = *filep;
     long i, j, fnlen;
     int expanded = 0;
 
@@ -7143,7 +7165,7 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
     }
 
     long expanded_load_path_maxlen;
-    RB_GC_GUARD(load_path) = rb_get_expanded_load_path(&expanded_load_path_maxlen);
+    VALUE load_path = rb_get_expanded_load_path(&expanded_load_path_maxlen);
     if (!load_path) return 0;
 
     fname = rb_str_dup(*filep);
@@ -7151,30 +7173,15 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
     fnlen = RSTRING_LEN(fname);
     bool need_expansion = fname_need_expansion_p(fname);
 
-    tmp = rb_str_tmp_new(expanded_load_path_maxlen + fnlen + 2);
+    VALUE tmp = rb_str_tmp_new(expanded_load_path_maxlen + fnlen + 2);
     rb_enc_associate_index(tmp, rb_usascii_encindex());
 
     for (j=0; ext[j]; j++) {
         rb_str_cat2(fname, ext[j]);
         for (i = 0; i < RARRAY_LEN(load_path); i++) {
-            VALUE str = RARRAY_AREF(load_path, i);
-            RB_GC_GUARD(str) = rb_get_path(str);
-            long strsize = RSTRING_LEN(str);
-            const char *strptr = RSTRING_PTR(str);
-
-            if (strsize == 0) continue;
-
-            if (need_expansion || strptr[0] == '~') {
-                rb_file_expand_path_internal(fname, str, 0, 0, tmp);
-            }
-            else {
-                rb_str_set_len(tmp, 0);
-                rb_str_append(tmp, str);
-                if (!isdirsep(RSTRING_PTR(str)[strsize])) {
-                    rb_str_cat(tmp, "/", 1);
-                }
-                rb_str_append(tmp, fname);
-            }
+            VALUE dname = rb_get_path(RARRAY_AREF(load_path, i));
+            if (!RSTRING_LEN(dname)) continue;
+            expand_feature(fname, dname, tmp, need_expansion);
 
             if (rb_file_load_ok(RSTRING_PTR(tmp))) {
                 *filep = copy_path_class(tmp, *filep);
@@ -7192,13 +7199,11 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
 VALUE
 rb_find_file(VALUE path)
 {
-    VALUE tmp, load_path;
     const char *f = StringValueCStr(path);
     int expanded = 0;
 
     if (f[0] == '~') {
-        tmp = file_expand_path_1(path, 0);
-        path = copy_path_class(tmp, path);
+        path = copy_path_class(file_expand_path_1(path, 0), path);
         f = RSTRING_PTR(path);
         expanded = 1;
     }
@@ -7211,46 +7216,27 @@ rb_find_file(VALUE path)
     }
 
     long expanded_load_path_maxlen;
-    RB_GC_GUARD(load_path) = rb_get_expanded_load_path(&expanded_load_path_maxlen);
+    VALUE load_path = rb_get_expanded_load_path(&expanded_load_path_maxlen);
+
     if (load_path) {
-        long i;
-
         bool need_expansion = fname_need_expansion_p(path);
-        tmp = rb_str_tmp_new(expanded_load_path_maxlen + RSTRING_LEN(path) + 2);
+        VALUE tmp = rb_str_tmp_new(expanded_load_path_maxlen + RSTRING_LEN(path) + 2);
         rb_enc_associate_index(tmp, rb_usascii_encindex());
-        for (i = 0; i < RARRAY_LEN(load_path); i++) {
-            VALUE str = RARRAY_AREF(load_path, i);
-            RB_GC_GUARD(str) = rb_get_path(str);
-            long strsize = RSTRING_LEN(str);
-            const char *strptr = RSTRING_PTR(str);
-
-            if (strsize == 0) continue;
-
-            if (need_expansion || strptr[0] == '~') {
-                rb_file_expand_path_internal(path, str, 0, 0, tmp);
-            }
-            else {
-                rb_str_set_len(tmp, 0);
-                rb_str_append(tmp, str);
-                if (!isdirsep(RSTRING_PTR(str)[strsize])) {
-                    rb_str_cat(tmp, "/", 1);
-                }
-                rb_str_append(tmp, path);
-            }
+        for (long i = 0; i < RARRAY_LEN(load_path); i++) {
+            VALUE dname = rb_get_path(RARRAY_AREF(load_path, i));
+            if (!RSTRING_LEN(dname)) continue;
+            expand_feature(path, dname, tmp, need_expansion);
 
             if (rb_file_load_ok(RSTRING_PTR(tmp))) {
-                goto found;
+                return copy_path_class(tmp, path);
             }
         }
         rb_str_resize(tmp, 0);
-        return 0;
-    }
-    else {
-        return 0;		/* no path, no load */
     }
 
-  found:
-    return copy_path_class(tmp, path);
+    RB_GC_GUARD(load_path);
+
+    return Qfalse; /* no path, no load */
 }
 
 #define define_filetest_function(name, func, argc) do {        \
