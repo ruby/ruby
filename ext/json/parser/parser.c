@@ -2059,8 +2059,7 @@ static void parser_config_init(JSON_ParserConfig *config, VALUE opts, VALUE self
         }
         else {
             VALUE keywords = rb_ary_join(args.unknown_keywords, rb_utf8_str_new_cstr(", "));
-            rb_raise(rb_eArgError, "unknown keywords: %s", RSTRING_PTR(keywords));
-            RB_GC_GUARD(keywords);
+            rb_raise(rb_eArgError, "unknown keywords: %" PRIsVALUE, keywords);
         }
     }
 }
