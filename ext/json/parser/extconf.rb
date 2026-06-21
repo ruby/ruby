@@ -3,7 +3,7 @@ require 'mkmf'
 
 $defs << "-DJSON_DEBUG" if ENV.fetch("JSON_DEBUG", "0") != "0"
 
-if RUBY_ENGINE == 'truffleruby' && RUBY_VERSION < '4.0'
+if RUBY_ENGINE == 'truffleruby' && RUBY_ENGINE_VERSION < '40.0'
   # Ref: https://github.com/truffleruby/truffleruby/issues/4329
   # Ref: https://github.com/truffleruby/truffleruby/pull/4333
   $defs << "-DJSON_TRUFFLERUBY_RB_CATCH_BUG"
