@@ -224,7 +224,7 @@ rb_str_eql_internal(const VALUE str1, const VALUE str2)
 
     if (len != RSTRING_LEN(str2)) return Qfalse;
     if (!rb_str_comparable(str1, str2)) return Qfalse;
-    if ((ptr1 = RSTRING_PTR(str1)) == (ptr2 = RSTRING_PTR(str2)))
+    if ((ptr1 = RSTRING_RAW_PTR(str1)) == (ptr2 = RSTRING_RAW_PTR(str2)))
         return Qtrue;
     if (memcmp(ptr1, ptr2, len) == 0)
         return Qtrue;
