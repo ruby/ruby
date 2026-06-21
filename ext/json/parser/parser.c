@@ -672,43 +672,13 @@ static VALUE parse_error_new(JSON_ParserState *state, VALUE message, long line, 
     return exc;
 }
 
-#ifdef JSON_WORKAROUND_RB_CATCH_BUG
-#define JSON_CATCH_FUNC_ARGLIST(yielded_arg, func_args) VALUE func_args
-
-NORETURN(static) void parser_throw_eos(VALUE parser)
-{
-    VALUE exc = rb_exc_new_str(eParserError, rb_utf8_str_new_cstr("EOS"));
-    rb_ivar_set(exc, rb_intern("@resumable_parser_eos"), parser);
-    rb_exc_raise(exc);
-}
-
-static VALUE parser_catch_eos(VALUE parser, VALUE (*func)(VALUE args), VALUE func_args)
-{
-    int status;
-    VALUE result = rb_protect(func, func_args, &status);
-    if (status) {
-        VALUE error_source = rb_ivar_get(rb_errinfo(), rb_intern("@resumable_parser_eos"));
-        if (error_source == parser) {
-            rb_set_errinfo(Qnil);
-            return parser;
-        }
-        rb_jump_tag(status);
-    }
-    return result;
-}
-#else
-#define JSON_CATCH_FUNC_ARGLIST RB_BLOCK_CALL_FUNC_ARGLIST
-#define parser_throw_eos(parser) rb_throw_obj(parser, parser)
-#define parser_catch_eos(parser, func, func_args) rb_catch_obj(parser, func, func_args)
-#endif
-
 NORETURN(static) void raise_parse_error(const char *format, JSON_ParserState *state, bool eos)
 {
     if (state->parser) { 
         if (eos) {
             // the error will be swallowed by ResumableParser#parse, so no
             // point building a message or backtrace.
-            parser_throw_eos(state->parser);
+            rb_throw_obj(state->parser, state->parser);
         } else {
             // line and columns can't be accurate in resumable
             rb_exc_raise(parse_error_new(state, build_parse_error_message(format, state), 0, 0, eos));
@@ -2450,7 +2420,7 @@ struct json_parse_any_args {
     VALUE parser;
 };
 
-static VALUE json_parse_any_resumable_safe0(JSON_CATCH_FUNC_ARGLIST(yielded_arg, _args))
+static VALUE json_parse_any_resumable_safe0(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, _args))
 {
     struct json_parse_any_args *args = (struct json_parse_any_args *)_args;
     return (VALUE)json_parse_any(args->state, args->config, true);
@@ -2459,7 +2429,7 @@ static VALUE json_parse_any_resumable_safe0(JSON_CATCH_FUNC_ARGLIST(yielded_arg,
 static VALUE json_parse_any_resumable_safe(VALUE _args)
 {
     struct json_parse_any_args *args = (struct json_parse_any_args *)_args;
-    VALUE result = parser_catch_eos(args->parser, json_parse_any_resumable_safe0, _args);
+    VALUE result = rb_catch_obj(args->parser, json_parse_any_resumable_safe0, _args);
     return result == args->parser ? Qfalse : result;
 }
 
