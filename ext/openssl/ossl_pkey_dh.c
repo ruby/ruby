@@ -141,7 +141,8 @@ static VALUE
 ossl_dh_initialize_copy(VALUE self, VALUE other)
 {
     EVP_PKEY *pkey;
-    DH *dh, *dh_other;
+    DH *dh;
+    OSSL_3_const DH *dh_other;
     const BIGNUM *pub, *priv;
 
     TypedData_Get_Struct(self, EVP_PKEY, &ossl_evp_pkey_type, pkey);
@@ -318,7 +319,7 @@ ossl_dh_check_params(VALUE self)
     ret = EVP_PKEY_param_check(pctx);
     EVP_PKEY_CTX_free(pctx);
 #else
-    DH *dh;
+    OSSL_3_const DH *dh;
     int codes;
 
     GetDH(self, dh);

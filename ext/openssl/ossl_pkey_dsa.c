@@ -152,7 +152,8 @@ static VALUE
 ossl_dsa_initialize_copy(VALUE self, VALUE other)
 {
     EVP_PKEY *pkey;
-    DSA *dsa, *dsa_new;
+    OSSL_3_const DSA *dsa;
+    DSA *dsa_new;
 
     TypedData_Get_Struct(self, EVP_PKEY, &ossl_evp_pkey_type, pkey);
     if (pkey)
