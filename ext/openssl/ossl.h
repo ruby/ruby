@@ -192,6 +192,7 @@ extern VALUE dOSSL;
 #include "ossl_digest.h"
 #include "ossl_engine.h"
 #include "ossl_hmac.h"
+#include "ossl_hpke.h"
 #include "ossl_kdf.h"
 #include "ossl_ns_spki.h"
 #include "ossl_ocsp.h"

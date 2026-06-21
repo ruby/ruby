@@ -166,6 +166,7 @@ have_func("EVP_PKEY_dup(NULL)", evp_h)
 
 # added in 3.2.0
 have_func("SSL_get0_group_name(NULL)", ssl_h)
+have_func("OSSL_HPKE_CTX_new(0, (OSSL_HPKE_SUITE){0}, 0, NULL, NULL)", "openssl/hpke.h")
 
 # added in 3.4.0
 have_func("TS_VERIFY_CTX_set0_certs(NULL, NULL)", ts_h)
