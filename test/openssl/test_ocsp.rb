@@ -13,7 +13,7 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
     # @cert2   @ocsp_cert
 
     ca_subj = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=TestCA")
-    @ca_key = Fixtures.pkey("rsa1024")
+    @ca_key = Fixtures.pkey("rsa-1")
     ca_exts = [
       ["basicConstraints", "CA:TRUE", true],
       ["keyUsage", "cRLSign,keyCertSign", true],
@@ -22,7 +22,7 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
       ca_subj, @ca_key, 1, ca_exts, nil, nil)
 
     cert_subj = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=TestCA2")
-    @cert_key = Fixtures.pkey("rsa1024")
+    @cert_key = Fixtures.pkey("rsa-2")
     cert_exts = [
       ["basicConstraints", "CA:TRUE", true],
       ["keyUsage", "cRLSign,keyCertSign", true],
@@ -31,14 +31,14 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
       cert_subj, @cert_key, 5, cert_exts, @ca_cert, @ca_key)
 
     cert2_subj = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=TestCert")
-    @cert2_key = Fixtures.pkey("rsa1024")
+    @cert2_key = Fixtures.pkey("rsa-3")
     cert2_exts = [
     ]
     @cert2 = OpenSSL::TestUtils.issue_cert(
       cert2_subj, @cert2_key, 10, cert2_exts, @cert, @cert_key)
 
     ocsp_subj = OpenSSL::X509::Name.parse("/DC=org/DC=ruby-lang/CN=TestCAOCSP")
-    @ocsp_key = Fixtures.pkey("rsa2048")
+    @ocsp_key = Fixtures.pkey("p256")
     ocsp_exts = [
       ["extendedKeyUsage", "OCSPSigning", true],
     ]
@@ -63,8 +63,10 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
 
   def test_certificate_id_issuer_key_hash
     cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert)
-    assert_equal OpenSSL::Digest.hexdigest('SHA1', OpenSSL::ASN1.decode(@ca_cert.to_der).value[0].value[6].value[1].value), cid.issuer_key_hash
-    assert_equal "d1fef9fbf8ae1bc160cbfa03e2596dd873089213", cid.issuer_key_hash
+    # content of subjectPublicKey (bit string) in SubjectPublicKeyInfo
+    spki = OpenSSL::ASN1.decode(@ca_key.public_to_der)
+    assert_equal OpenSSL::Digest.hexdigest("SHA1", spki.value[1].value),
+      cid.issuer_key_hash
   end
 
   def test_certificate_id_hash_algorithm
@@ -211,6 +213,35 @@ class OpenSSL::TestOCSP < OpenSSL::TestCase
     bres.add_status(cid, OpenSSL::OCSP::V_CERTSTATUS_GOOD, 0, nil, -300, 500, [])
     bres.sign(@ocsp_cert, @ocsp_key, [@ca_cert], 0)
     assert_equal bres.to_der, bres.dup.to_der
+  end
+
+  def test_basic_response_status_good
+    bres = OpenSSL::OCSP::BasicResponse.new
+    cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest.new('SHA1'))
+    bres.add_status(cid, OpenSSL::OCSP::V_CERTSTATUS_GOOD, 0, nil, -300, 500, nil)
+    bres.sign(@ocsp_cert, @ocsp_key, [@ca_cert])
+
+    statuses = bres.status
+    assert_equal 1, statuses.size
+    status = statuses[0]
+    assert_equal cid.to_der, status[0].to_der
+    assert_equal OpenSSL::OCSP::V_CERTSTATUS_GOOD, status[1]
+    assert_nil status[3] # revtime should be nil for GOOD status
+  end
+
+  def test_basic_response_status_revoked
+    bres = OpenSSL::OCSP::BasicResponse.new
+    now = Time.at(Time.now.to_i)
+    cid = OpenSSL::OCSP::CertificateId.new(@cert, @ca_cert, OpenSSL::Digest.new('SHA1'))
+    bres.add_status(cid, OpenSSL::OCSP::V_CERTSTATUS_REVOKED,
+                    OpenSSL::OCSP::REVOKED_STATUS_UNSPECIFIED, now - 400, -300, nil, nil)
+    bres.sign(@ocsp_cert, @ocsp_key, [@ca_cert])
+
+    statuses = bres.status
+    assert_equal 1, statuses.size
+    status = statuses[0]
+    assert_equal OpenSSL::OCSP::V_CERTSTATUS_REVOKED, status[1]
+    assert_equal now - 400, status[3] # revtime should be the revocation time
   end
 
   def test_basic_response_response_operations

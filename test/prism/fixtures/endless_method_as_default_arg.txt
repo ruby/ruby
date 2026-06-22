@@ -1,0 +1,11 @@
+def foo(a = def f = 1); end
+
+def foo(a = def f = 1, b); end
+
+def foo(b, a = def f = 1); end
+
+def foo(a: def f = 1); end
+
+def foo(a = def f = 1+2); end
+
+->(a = def f = 1) {}

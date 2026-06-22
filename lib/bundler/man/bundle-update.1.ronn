@@ -9,13 +9,14 @@ bundle-update(1) -- Update your gems to the latest available versions
                         [--local]
                         [--ruby]
                         [--bundler[=VERSION]]
+                        [--cooldown=NUMBER]
+                        [--force]
                         [--full-index]
                         [--gemfile=GEMFILE]
                         [--jobs=NUMBER]
                         [--quiet]
                         [--patch|--minor|--major]
                         [--pre]
-                        [--redownload]
                         [--strict]
                         [--conservative]
 
@@ -54,6 +55,9 @@ gem.
 * `--bundler[=BUNDLER]`:
   Update the locked version of bundler to the invoked bundler version.
 
+* `--force`, `--redownload`:
+  Force reinstalling every gem, even if already installed.
+
 * `--full-index`:
   Fall back to using the single-file index of all gems.
 
@@ -69,9 +73,6 @@ gem.
 
 * `--quiet`:
   Only output warnings and errors.
-
-* `--redownload`, `--force`:
-  Force downloading every gem.
 
 * `--patch`:
   Prefer updating only to next patch version.
@@ -90,6 +91,13 @@ gem.
 
 * `--conservative`:
   Use bundle install conservative update behavior and do not allow indirect dependencies to be updated.
+
+* `--cooldown=<number>`:
+  Only consider gem versions published at least <number> days ago when
+  resolving. Pass `0` to disable cooldown for this run, overriding any
+  per-source or global configuration. Combine with `--conservative` to
+  minimize transitive churn when bypassing cooldown for an urgent
+  update. See `cooldown` in bundle-config(1).
 
 ## UPDATING ALL GEMS
 

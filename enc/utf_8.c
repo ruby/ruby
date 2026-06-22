@@ -431,7 +431,11 @@ OnigEncodingDefine(utf_8, UTF_8) = {
   get_ctype_code_range,
   left_adjust_char_head,
   onigenc_always_true_is_allowed_reverse_match,
+#ifdef USE_CASE_MAP_API
   onigenc_unicode_case_map,
+#else
+  NULL,
+#endif
   ENCINDEX_UTF_8,
   ONIGENC_FLAG_UNICODE,
 };

@@ -114,6 +114,7 @@ int initgroups(const char *, rb_gid_t);
 #include "ruby/st.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
+#include "ractor_core.h"
 #include "vm_core.h"
 #include "vm_sync.h"
 #include "ruby/ractor.h"
@@ -1574,8 +1575,8 @@ after_exec(void)
 static void
 before_fork_ruby(void)
 {
-    rb_gc_before_fork();
     before_exec();
+    rb_gc_before_fork();
 }
 
 static void
@@ -2203,7 +2204,7 @@ check_exec_options_i(st_data_t st_key, st_data_t st_val, st_data_t arg)
         if (SYMBOL_P(key))
             rb_raise(rb_eArgError, "wrong exec option symbol: % "PRIsVALUE,
                      key);
-        rb_raise(rb_eArgError, "wrong exec option");
+        rb_raise(rb_eArgError, "wrong exec option: %"PRIsVALUE, rb_obj_class(key));
     }
     return ST_CONTINUE;
 }
@@ -2634,7 +2635,7 @@ rb_exec_fillarg(VALUE prog, int argc, VALUE *argv, VALUE env, VALUE opthash, VAL
         }
         rb_str_buf_cat(argv_str, (char *)&null, sizeof(null)); /* terminator for execve.  */
         eargp->invoke.cmd.argv_str =
-            rb_imemo_tmpbuf_auto_free_pointer_new_from_an_RString(argv_str);
+            rb_imemo_tmpbuf_new_from_an_RString(argv_str);
     }
     RB_GC_GUARD(execarg_obj);
 }
@@ -2725,9 +2726,7 @@ open_func(void *ptr)
 static void
 rb_execarg_allocate_dup2_tmpbuf(struct rb_execarg *eargp, long len)
 {
-    VALUE tmpbuf = rb_imemo_tmpbuf_auto_free_pointer();
-    rb_imemo_tmpbuf_set_ptr(tmpbuf, ruby_xmalloc(run_exec_dup2_tmpbuf_size(len)));
-    eargp->dup2_tmpbuf = tmpbuf;
+    rb_alloc_tmp_buffer(&eargp->dup2_tmpbuf, run_exec_dup2_tmpbuf_size(len), false);
 }
 
 static VALUE
@@ -2829,7 +2828,7 @@ rb_execarg_parent_start1(VALUE execarg_obj)
         p = NULL;
         rb_str_buf_cat(envp_str, (char *)&p, sizeof(p));
         eargp->envp_str =
-            rb_imemo_tmpbuf_auto_free_pointer_new_from_an_RString(envp_str);
+            rb_imemo_tmpbuf_new_from_an_RString(envp_str);
         eargp->envp_buf = envp_buf;
 
         /*
@@ -2889,7 +2888,6 @@ void
 rb_execarg_parent_end(VALUE execarg_obj)
 {
     execarg_parent_end(execarg_obj);
-    RB_GC_GUARD(execarg_obj);
 }
 
 static void
@@ -2956,7 +2954,7 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *  - Invoking the executable at +exe_path+.
  *
  *  This method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  *  The new process is created using the
  *  {exec system call}[https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/functions/execve.html];
@@ -3182,8 +3180,7 @@ run_exec_dup2(VALUE ary, VALUE tmpbuf, struct rb_execarg *sargp, char *errmsg, s
     long n, i;
     int ret;
     int extra_fd = -1;
-    struct rb_imemo_tmpbuf_struct *buf = (void *)tmpbuf;
-    struct run_exec_dup2_fd_pair *pairs = (void *)buf->ptr;
+    struct run_exec_dup2_fd_pair *pairs = RB_IMEMO_TMPBUF_PTR(tmpbuf);
 
     n = RARRAY_LEN(ary);
 
@@ -4010,7 +4007,10 @@ retry_fork_async_signal_safe(struct rb_process_status *status, int *ep,
     while (1) {
         prefork();
         disable_child_handler_before_fork(&old);
-#ifdef HAVE_WORKING_VFORK
+
+        // Older versions of ASAN does not work with vfork
+        // See https://github.com/google/sanitizers/issues/925
+#if defined(HAVE_WORKING_VFORK) && !defined(RUBY_ASAN_ENABLED)
         if (!has_privilege())
             pid = vfork();
         else
@@ -4120,9 +4120,13 @@ rb_fork_async_signal_safe(int *status,
 rb_pid_t
 rb_fork_ruby(int *status)
 {
+    if (UNLIKELY(!rb_ractor_main_p())) {
+        rb_raise(rb_eRactorIsolationError, "can not fork from non-main Ractors");
+    }
+
     struct rb_process_status child = {.status = 0};
     rb_pid_t pid;
-    int try_gc = 1, err;
+    int try_gc = 1, err = 0;
     struct child_handler_disabler_state old;
 
     do {
@@ -4132,8 +4136,10 @@ rb_fork_ruby(int *status)
         rb_thread_acquire_fork_lock();
         disable_child_handler_before_fork(&old);
 
-        child.pid = pid = rb_fork();
-        child.error = err = errno;
+        RB_VM_LOCKING() {
+            child.pid = pid = rb_fork();
+            child.error = err = errno;
+        }
 
         disable_child_handler_fork_parent(&old); /* yes, bad name */
         if (
@@ -4223,7 +4229,7 @@ rb_proc__fork(VALUE _obj)
  *    puts "Before the fork: #{Process.pid}"
  *    fork do
  *      puts "In the child process: #{Process.pid}"
- *    end                   # => 382141
+ *    end                   # => 420520
  *    puts "After the fork: #{Process.pid}"
  *
  *  Output:
@@ -4632,7 +4638,7 @@ rb_spawn(int argc, const VALUE *argv)
  *  - Invoking the executable at +exe_path+.
  *
  *  This method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  *  Returns:
  *
@@ -4812,7 +4818,7 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
  *  - Invoking the executable at +exe_path+.
  *
  *  This method has potential security vulnerabilities if called with untrusted input;
- *  see {Command Injection}[rdoc-ref:command_injection.rdoc].
+ *  see {Command Injection}[rdoc-ref:security/command_injection.rdoc].
  *
  *  Returns the process ID (pid) of the new process,
  *  without waiting for it to complete.
@@ -8220,7 +8226,7 @@ ruby_real_ms_time(void)
  *  - +:microsecond+: Number of microseconds as an integer.
  *  - +:millisecond+: Number of milliseconds as an integer.
  *  - +:nanosecond+: Number of nanoseconds as an integer.
- *  - +::second+: Number of seconds as an integer.
+ *  - +:second+: Number of seconds as an integer.
  *
  *  Examples:
  *
@@ -8752,9 +8758,9 @@ static VALUE rb_mProcID_Syscall;
 static VALUE
 proc_warmup(VALUE _)
 {
-    RB_VM_LOCK_ENTER();
-    rb_gc_prepare_heap();
-    RB_VM_LOCK_LEAVE();
+    RB_VM_LOCKING() {
+        rb_gc_prepare_heap();
+    }
     return Qtrue;
 }
 

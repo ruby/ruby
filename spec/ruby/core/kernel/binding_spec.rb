@@ -9,7 +9,7 @@ end
 
 describe "Kernel#binding" do
   it "is a private method" do
-    Kernel.should have_private_instance_method(:binding)
+    Kernel.private_instance_methods(false).should.include?(:binding)
   end
 
   before :each do
@@ -35,7 +35,7 @@ describe "Kernel#binding" do
   end
 
   it "raises a NameError on undefined variable" do
-    -> { eval("a_fake_variable", @b1) }.should raise_error(NameError)
+    -> { eval("a_fake_variable", @b1) }.should.raise(NameError)
   end
 
   it "uses the closure's self as self in the binding" do

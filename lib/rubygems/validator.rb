@@ -59,7 +59,7 @@ class Gem::Validator
   #--
   # TODO needs further cleanup
 
-  def alien(gems=[])
+  def alien(gems = [])
     errors = Hash.new {|h,k| h[k] = {} }
 
     Gem::Specification.each do |spec|

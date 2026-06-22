@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 require "open-uri"
 require "yaml"
+require_relative "../ruby-version"
 
 class Tarball
   attr_reader :version, :size, :sha1, :sha256, :sha512
@@ -41,22 +42,7 @@ eom
     unless /\A(\d+)\.(\d+)\.(\d+)(?:-(?:preview|rc)\d+)?\z/ =~ version
       raise "unexpected version string '#{version}'"
     end
-    x = $1.to_i
-    y = $2.to_i
-    z = $3.to_i
-    # previous tag for git diff --shortstat
-    # It's only for x.y.0 release
-    if z != 0
-      prev_tag = nil
-    elsif y != 0
-      prev_tag = "v#{x}_#{y-1}_0"
-      prev_ver = "#{x}.#{y-1}.0"
-    elsif x == 3 && y == 0 && z == 0
-      prev_tag = "v2_7_0"
-      prev_ver = "2.7.0"
-    else
-      raise "unexpected version for prev_ver '#{version}'"
-    end
+    teeny = Integer($3)
 
     uri = "https://cache.ruby-lang.org/pub/tmp/ruby-info-#{version}-draft.yml"
     info = YAML.load(URI(uri).read)
@@ -74,9 +60,10 @@ eom
       tarballs << tarball
     end
 
-    if prev_tag
+    if teeny == 0
       # show diff shortstat
-      tag = "v#{version.gsub(/[.\-]/, '_')}"
+      tag = RubyVersion.tag(version)
+      prev_tag = RubyVersion.tag(RubyVersion.previous(version))
       rubydir = File.expand_path(File.join(__FILE__, '../../../'))
       puts %`git -C #{rubydir} diff --shortstat #{prev_tag}..#{tag}`
       stat = `git -C #{rubydir} diff --shortstat #{prev_tag}..#{tag}`
@@ -155,7 +142,7 @@ eom
     date = Time.now.utc # use utc to use previous day in midnight
     entry = <<eom
 - version: #{ver}
-  tag: v#{ver.tr('-.', '_')}
+  tag: #{RubyVersion.tag(ver)}
   date: #{date.strftime("%Y-%m-%d")}
   post: /en/news/#{date.strftime("%Y/%m/%d")}/ruby-#{ver.tr('.', '-')}-released/
   stats:

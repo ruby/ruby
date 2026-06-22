@@ -12,28 +12,16 @@
 
 #include "shape.h"
 
-struct gen_ivtbl {
-#if !SHAPE_IN_BASIC_FLAGS
-    uint16_t shape_id;
-#endif
-    union {
-        struct {
-            uint32_t numiv;
-            VALUE ivptr[1];
-        } shape;
-        struct {
-            st_table *table;
-        } complex;
-    } as;
-};
+void rb_copy_complex_ivars(VALUE dest, VALUE obj, shape_id_t src_shape_id, st_table *fields_table);
+VALUE rb_obj_fields(VALUE obj, ID field_name);
 
-int rb_ivar_generic_ivtbl_lookup(VALUE obj, struct gen_ivtbl **);
-
-#if !SHAPE_IN_BASIC_FLAGS
-shape_id_t rb_generic_shape_id(VALUE obj);
-#endif
+static inline VALUE
+rb_obj_fields_no_ractor_check(VALUE obj)
+{
+    return rb_obj_fields(obj, 0);
+}
 
 void rb_free_rb_global_tbl(void);
-void rb_free_generic_iv_tbl_(void);
+void rb_free_generic_fields_tbl_(void);
 
 #endif /* RUBY_TOPLEVEL_VARIABLE_H */

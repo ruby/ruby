@@ -16,7 +16,7 @@ describe "Socket::BasicSocket#recv_nonblock" do
     platform_is_not :windows do
       describe 'using an unbound socket' do
         it 'raises an exception extending IO::WaitReadable' do
-          -> { @s1.recv_nonblock(1) }.should raise_error(IO::WaitReadable)
+          -> { @s1.recv_nonblock(1) }.should.raise(IO::WaitReadable)
         end
       end
     end
@@ -25,12 +25,12 @@ describe "Socket::BasicSocket#recv_nonblock" do
       @s1.bind(Socket.pack_sockaddr_in(0, ip_address))
       -> {
         @s1.recv_nonblock(5)
-      }.should raise_error(IO::WaitReadable) { |e|
+      }.should.raise(IO::WaitReadable) { |e|
         platform_is_not :windows do
-          e.should be_kind_of(Errno::EAGAIN)
+          e.should.is_a?(Errno::EAGAIN)
         end
         platform_is :windows do
-          e.should be_kind_of(Errno::EWOULDBLOCK)
+          e.should.is_a?(Errno::EWOULDBLOCK)
         end
       }
     end
@@ -74,7 +74,7 @@ describe "Socket::BasicSocket#recv_nonblock" do
       @s1.recv_nonblock(1).should == "a"
       -> {
         @s1.recv_nonblock(5)
-      }.should raise_error(IO::WaitReadable)
+      }.should.raise(IO::WaitReadable)
     end
   end
 
@@ -89,10 +89,10 @@ describe "Socket::BasicSocket#recv_nonblock" do
       end
 
       it "raises Errno::ENOTCONN" do
-        -> { @server.recv_nonblock(1) }.should raise_error { |e|
+        -> { @server.recv_nonblock(1) }.should.raise { |e|
           [Errno::ENOTCONN, Errno::EINVAL].should.include?(e.class)
         }
-        -> { @server.recv_nonblock(1, exception: false) }.should raise_error { |e|
+        -> { @server.recv_nonblock(1, exception: false) }.should.raise { |e|
           [Errno::ENOTCONN, Errno::EINVAL].should.include?(e.class)
         }
       end
@@ -112,60 +112,30 @@ describe "Socket::BasicSocket#recv_nonblock" do
         @server.close unless @server.closed?
       end
 
-      ruby_version_is ""..."3.3" do
-        it "returns an empty String on a closed stream socket" do
-          ready = false
+      it "returns nil on a closed stream socket" do
+        ready = false
 
-          t = Thread.new do
-            client = @server.accept
+        t = Thread.new do
+          client = @server.accept
 
-            Thread.pass while !ready
-            begin
-              client.recv_nonblock(10)
-            rescue IO::EAGAINWaitReadable
-              retry
-            end
-          ensure
-            client.close if client
+          Thread.pass while !ready
+          begin
+            client.recv_nonblock(10)
+          rescue IO::EAGAINWaitReadable
+            retry
           end
-
-          Thread.pass while t.status and t.status != "sleep"
-          t.status.should_not be_nil
-
-          socket = TCPSocket.new('127.0.0.1', @port)
-          socket.close
-          ready = true
-
-          t.value.should == ""
+        ensure
+          client.close if client
         end
-      end
 
-      ruby_version_is "3.3" do
-        it "returns nil on a closed stream socket" do
-          ready = false
+        Thread.pass while t.status and t.status != "sleep"
+        t.status.should_not == nil
 
-          t = Thread.new do
-            client = @server.accept
+        socket = TCPSocket.new('127.0.0.1', @port)
+        socket.close
+        ready = true
 
-            Thread.pass while !ready
-            begin
-              client.recv_nonblock(10)
-            rescue IO::EAGAINWaitReadable
-              retry
-            end
-          ensure
-            client.close if client
-          end
-
-          Thread.pass while t.status and t.status != "sleep"
-          t.status.should_not be_nil
-
-          socket = TCPSocket.new('127.0.0.1', @port)
-          socket.close
-          ready = true
-
-          t.value.should be_nil
-        end
+        t.value.should == nil
       end
     end
   end

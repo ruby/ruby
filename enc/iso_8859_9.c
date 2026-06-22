@@ -213,6 +213,7 @@ get_case_fold_codes_by_str(OnigCaseFoldType flag,
 	     flag, p, end, items);
 }
 
+#ifdef USE_CASE_MAP_API
 #define DOTLESS_i        (0xFD)
 #define I_WITH_DOT_ABOVE (0xDD)
 static int
@@ -265,6 +266,7 @@ case_map(OnigCaseFoldType* flagP, const OnigUChar** pp,
   *flagP = flags;
   return (int )(to - to_start);
 }
+#endif
 
 OnigEncodingDefine(iso_8859_9, ISO_8859_9) = {
   onigenc_single_byte_mbc_enc_len,
@@ -283,7 +285,11 @@ OnigEncodingDefine(iso_8859_9, ISO_8859_9) = {
   onigenc_not_support_get_ctype_code_range,
   onigenc_single_byte_left_adjust_char_head,
   onigenc_always_true_is_allowed_reverse_match,
+#ifdef USE_CASE_MAP_API
   case_map,
+#else
+  NULL,
+#endif
   0,
   ONIGENC_FLAG_NONE,
 };

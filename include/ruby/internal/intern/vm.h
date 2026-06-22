@@ -89,7 +89,8 @@ VALUE rb_check_funcall(VALUE recv, ID mid, int argc, const VALUE *argv);
  * @param[in]      kw_splat     Handling of keyword parameters:
  *   - RB_NO_KEYWORDS           `argv`'s last is not a keyword argument.
  *   - RB_PASS_KEYWORDS         `argv`'s last is a keyword argument.
- *   - RB_PASS_CALLED_KEYWORDS  it depends if there is a passed block.
+ *   - RB_PASS_CALLED_KEYWORDS  Pass keyword arguments if the current method
+ *                              was called with keyword arguments.
  * @retval         RUBY_Qundef  `recv` doesn't respond to `mid`.
  * @retval         otherwise    What the method evaluates to.
  */
@@ -106,9 +107,11 @@ VALUE rb_check_funcall_kw(VALUE recv, ID mid, int argc, const VALUE *argv, int k
  * @param[in]  kw_splat  Handling of keyword parameters:
  *   - RB_NO_KEYWORDS           `arg`'s last is not a keyword argument.
  *   - RB_PASS_KEYWORDS         `arg`'s last is a keyword argument.
- *   - RB_PASS_CALLED_KEYWORDS  it depends if there is a passed block.
+ *   - RB_PASS_CALLED_KEYWORDS  Pass keyword arguments if the current method
+ *                              was called with keyword arguments.
  * @return     What the command evaluates to.
  */
+RBIMPL_ATTR_DEPRECATED_INTERNAL(4.0)
 VALUE rb_eval_cmd_kw(VALUE cmd, VALUE arg, int kw_splat);
 
 /**

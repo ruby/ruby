@@ -75,27 +75,11 @@ module Bundler
         end
       end
 
-      rule %w[path], "relative paths are expanded relative to the current working directory" do |key, value, settings|
-        next if value.nil?
-
-        path = Pathname.new(value)
-        next if !path.relative? || !Bundler.feature_flag.path_relative_to_cwd?
-
-        path = path.expand_path
-
-        root = begin
-                 Bundler.root
-               rescue GemfileNotFound
-                 Pathname.pwd.expand_path
-               end
-
-        path = begin
-                 path.relative_path_from(root)
-               rescue ArgumentError
-                 path
-               end
-
-        set(settings, key, path.to_s)
+      rule %w[default_cli_command], "default_cli_command must be either 'install' or 'cli_help'" do |key, value, _settings|
+        valid_values = %w[install cli_help]
+        if !value.nil? && !valid_values.include?(value.to_s)
+          fail!(key, value, "must be one of: #{valid_values.join(", ")}")
+        end
       end
     end
   end

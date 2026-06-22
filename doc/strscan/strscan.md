@@ -37,7 +37,7 @@ Some examples here assume that certain helper methods are defined:
 - `match_values_cleared?(scanner)`:
   Returns whether the scanner's [match values][9] are cleared.
 
-See examples [here][ext/strscan/helper_methods_md.html].
+See examples at [helper methods](doc/strscan/helper_methods.md).
 
 ## The `StringScanner` \Object
 
@@ -204,7 +204,7 @@ put_situation(scanner)
 
 ## Target Substring
 
-The target substring is the the part of the [stored string][1]
+The target substring is the part of the [stored string][1]
 that extends from the current [byte position][2] to the end of the stored string;
 it is always either:
 
@@ -417,7 +417,7 @@ Each of these methods returns a captured match value:
 | Method          | Return After Match                      | Return After No Match |
 |-----------------|-----------------------------------------|-----------------------|
 | #size           | Count of captured substrings.           | +nil+.                |
-| #[](n)          | <tt>n</tt>th captured substring.        | +nil+.                |
+| #\[\](n)        | <tt>n</tt>th captured substring.        | +nil+.                |
 | #captures       | Array of all captured substrings.       | +nil+.                |
 | #values_at(*n)  | Array of specified captured substrings. | +nil+.                |
 | #named_captures | Hash of named captures.                 | <tt>{}</tt>.          |

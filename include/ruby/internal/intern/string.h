@@ -412,8 +412,8 @@ VALUE rb_utf8_str_new_static(const char *ptr, long len);
 
 /**
  * Identical to rb_interned_str(),  except it takes a Ruby's  string instead of
- * C's.  It can also be seen  as a routine identical to rb_str_new_shared(),
- * except it returns an infamous "f"string.
+ * C's and preserves its encoding.  It can also be seen  as a routine identical
+ * to rb_str_new_shared(), except it returns an infamous "f"string.
  *
  * @param[in]  str  An object of ::RString.
  * @return     An instance  of ::rb_cString, either cached  or allocated, which
@@ -444,8 +444,9 @@ VALUE rb_str_to_interned_str(VALUE str);
  *                           terminating NUL character.
  * @exception  rb_eArgError  `len` is negative.
  * @return     A  found or  created instance  of ::rb_cString,  of `len`  bytes
- *             length, of  "binary" encoding,  whose contents are  identical to
- *             that of `ptr`.
+ *             length,  whose  contents  are  identical  to that of `ptr`.  Its
+ *             encoding  will  be US-ASCII if all bytes are lower ASCII, BINARY
+ *             otherwise.
  * @pre        At  least  `len` bytes  of  continuous  memory region  shall  be
  *             accessible via `ptr`.
  */
@@ -461,8 +462,9 @@ RBIMPL_ATTR_NONNULL(())
  *
  * @param[in]  ptr             A C string.
  * @exception  rb_eNoMemError  Failed to allocate memory.
- * @return     An  instance  of  ::rb_cString,   of  "binary"  encoding,  whose
- *             contents are verbatim copy of `ptr`.
+ * @return     An  instance  of  ::rb_cString, whose contents are verbatim copy
+ *             of `ptr`. Its encoding  will  be US-ASCII if all bytes are lower
+ *             ASCII, BINARY otherwise.
  * @pre        `ptr` must not be a null pointer.
  */
 VALUE rb_interned_str_cstr(const char *ptr);
@@ -591,10 +593,9 @@ void rb_must_asciicompat(VALUE obj);
 VALUE rb_str_dup(VALUE str);
 
 /**
- * I guess there  is no use case  of this function in  extension libraries, but
- * this is  a routine identical  to rb_str_dup(),  except it always  creates an
- * instance of ::rb_cString regardless of the given object's class.  This makes
- * the most sense when the passed string is formerly hidden by rb_obj_hide().
+ * Like rb_str_dup(), but always create an instance of  ::rb_cString
+ * regardless of the given object's class. This makes the most sense
+ * when the passed string is formerly hidden by rb_obj_hide().
  *
  * @param[in]  str  A string, possibly hidden.
  * @return     A duplicated new instance of ::rb_cString.
@@ -970,8 +971,8 @@ st_index_t rb_str_hash(VALUE str);
  *
  * @param[in]  str1  A string.
  * @param[in]  str2  Another string.
- * @retval     1     They have identical contents, length, and encodings.
- * @retval     0     Otherwise.
+ * @retval     0     They have identical contents, length, and encodings.
+ * @retval     1     Otherwise.
  * @pre        Both   objects   must  not  be  any   arbitrary  objects  except
  *             ::RString.
  *

@@ -17,7 +17,7 @@ describe "Addrinfo#initialize" do
         @addrinfo.ip_port.should == 25
       end
 
-      it "returns the Socket::UNSPEC pfamily" do
+      it "returns the UNSPEC pfamily" do
         @addrinfo.pfamily.should == Socket::PF_UNSPEC
       end
 
@@ -53,11 +53,11 @@ describe "Addrinfo#initialize" do
         @addrinfo.ip_port.should == 25
       end
 
-      it "returns the Socket::UNSPEC pfamily" do
+      it "returns the specified pfamily" do
         @addrinfo.pfamily.should == Socket::PF_INET6
       end
 
-      it "returns the INET6 afamily" do
+      it "returns the specified afamily" do
         @addrinfo.afamily.should == Socket::AF_INET6
       end
 
@@ -83,11 +83,11 @@ describe "Addrinfo#initialize" do
         @addrinfo.ip_port.should == 25
       end
 
-      it "returns the Socket::UNSPEC pfamily" do
+      it "returns the specified pfamily" do
         @addrinfo.pfamily.should == Socket::PF_INET6
       end
 
-      it "returns the INET6 afamily" do
+      it "returns the specified afamily" do
         @addrinfo.afamily.should == Socket::AF_INET6
       end
 
@@ -113,11 +113,11 @@ describe "Addrinfo#initialize" do
         @addrinfo.ip_port.should == 25
       end
 
-      it "returns the Socket::UNSPEC pfamily" do
+      it "returns the specified pfamily" do
         @addrinfo.pfamily.should == Socket::PF_INET6
       end
 
-      it "returns the INET6 afamily" do
+      it "returns the specified afamily" do
         @addrinfo.afamily.should == Socket::AF_INET6
       end
 
@@ -147,11 +147,11 @@ describe "Addrinfo#initialize" do
         @addrinfo.ip_port.should == 46102
       end
 
-      it "returns the Socket::PF_INET pfamily" do
+      it "returns the specified pfamily" do
         @addrinfo.pfamily.should == Socket::PF_INET
       end
 
-      it "returns the INET6 afamily" do
+      it "returns the specified afamily" do
         @addrinfo.afamily.should == Socket::AF_INET
       end
 
@@ -200,7 +200,7 @@ describe "Addrinfo#initialize" do
       it 'raises SocketError' do
         block = -> { Addrinfo.new(['AF_INET6', 80, 'hostname', '127.0.0.1']) }
 
-        block.should raise_error(SocketError)
+        block.should.raise(SocketError)
       end
     end
 
@@ -217,11 +217,11 @@ describe "Addrinfo#initialize" do
         @addrinfo.ip_port.should == 46102
       end
 
-      it "returns the Socket::UNSPEC pfamily" do
+      it "returns the specified pfamily" do
         @addrinfo.pfamily.should == Socket::PF_INET
       end
 
-      it "returns the INET6 afamily" do
+      it "returns the specified afamily" do
         @addrinfo.afamily.should == Socket::AF_INET
       end
 
@@ -247,11 +247,11 @@ describe "Addrinfo#initialize" do
         @addrinfo.ip_port.should == 46102
       end
 
-      it "returns the Socket::UNSPEC pfamily" do
+      it "returns the specified pfamily" do
         @addrinfo.pfamily.should == Socket::PF_INET
       end
 
-      it "returns the INET6 afamily" do
+      it "returns the specified afamily" do
         @addrinfo.afamily.should == Socket::AF_INET
       end
 
@@ -294,7 +294,7 @@ describe "Addrinfo#initialize" do
         value = Socket::SOCK_RDM
         block = -> { Addrinfo.new(sockaddr, nil, value) }
 
-        block.should raise_error(SocketError)
+        block.should.raise(SocketError)
       end
     end
 
@@ -311,11 +311,11 @@ describe "Addrinfo#initialize" do
         @addrinfo.ip_port.should == 46102
       end
 
-      it "returns the Socket::UNSPEC pfamily" do
+      it "returns the specified pfamily" do
         @addrinfo.pfamily.should == Socket::PF_INET
       end
 
-      it "returns the INET6 afamily" do
+      it "returns the specified afamily" do
         @addrinfo.afamily.should == Socket::AF_INET
       end
 
@@ -340,7 +340,7 @@ describe "Addrinfo#initialize" do
           value = Socket.const_get(constant)
           -> {
             Addrinfo.new(@sockaddr, value)
-          }.should raise_error(SocketError)
+          }.should.raise(SocketError)
         end
       end
     end
@@ -368,7 +368,7 @@ describe "Addrinfo#initialize" do
               value = Socket.const_get(type)
               block = -> { Addrinfo.new(@sockaddr, nil, nil, value) }
 
-              block.should raise_error(SocketError)
+              block.should.raise(SocketError)
             end
           end
         end
@@ -396,7 +396,7 @@ describe "Addrinfo#initialize" do
               value = Socket.const_get(type)
               block = -> { Addrinfo.new(@sockaddr, nil, @socktype, value) }
 
-              block.should raise_error(SocketError)
+              block.should.raise(SocketError)
             end
           end
         end
@@ -413,7 +413,7 @@ describe "Addrinfo#initialize" do
               value = Socket.const_get(type)
               block = -> { Addrinfo.new(@sockaddr, nil, @socktype, value) }
 
-              block.should raise_error(SocketError)
+              block.should.raise(SocketError)
             end
           end
         end
@@ -444,7 +444,7 @@ describe "Addrinfo#initialize" do
             value = Socket.const_get(type)
             block = -> { Addrinfo.new(@sockaddr, nil, @socktype, value) }
 
-            block.should raise_error(SocketError)
+            block.should.raise(SocketError)
           end
         end
       end
@@ -472,7 +472,7 @@ describe "Addrinfo#initialize" do
                 value = Socket.const_get(type)
                 block = -> { Addrinfo.new(@sockaddr, nil, @socktype, value) }
 
-                block.should raise_error(SocketError)
+                block.should.raise(SocketError)
               end
             end
           end
@@ -501,7 +501,7 @@ describe "Addrinfo#initialize" do
               value = Socket.const_get(type)
               block = -> { Addrinfo.new(@sockaddr, nil, @socktype, value) }
 
-              block.should raise_error(SocketError)
+              block.should.raise(SocketError)
             end
           end
         end
@@ -514,13 +514,13 @@ describe "Addrinfo#initialize" do
       @sockaddr = Socket.sockaddr_in(80, '127.0.0.1')
     end
 
-    it 'returns an Addrinfo with :PF_INET  family' do
+    it 'returns an Addrinfo with the specified pfamily for :PF_INET' do
       addr = Addrinfo.new(@sockaddr, :PF_INET)
 
       addr.pfamily.should == Socket::PF_INET
     end
 
-    it 'returns an Addrinfo with :INET  family' do
+    it 'returns an Addrinfo with the specified pfamily for :INET' do
       addr = Addrinfo.new(@sockaddr, :INET)
 
       addr.pfamily.should == Socket::PF_INET
@@ -544,13 +544,13 @@ describe "Addrinfo#initialize" do
       @sockaddr = Socket.sockaddr_in(80, '127.0.0.1')
     end
 
-    it 'returns an Addrinfo with "PF_INET"  family' do
+    it 'returns an Addrinfo with the specified pfamily for PF_INET' do
       addr = Addrinfo.new(@sockaddr, 'PF_INET')
 
       addr.pfamily.should == Socket::PF_INET
     end
 
-    it 'returns an Addrinfo with "INET"  family' do
+    it 'returns an Addrinfo with the specified pfamily for INET' do
       addr = Addrinfo.new(@sockaddr, 'INET')
 
       addr.pfamily.should == Socket::PF_INET
@@ -569,23 +569,21 @@ describe "Addrinfo#initialize" do
     end
   end
 
-  with_feature :unix_socket do
-    describe 'using separate arguments for a Unix socket' do
-      before do
-        @sockaddr = Socket.pack_sockaddr_un('socket')
-      end
+  describe 'using separate arguments for a Unix socket' do
+    before do
+      @sockaddr = Socket.pack_sockaddr_un('socket')
+    end
 
-      it 'returns an Addrinfo with the correct unix path' do
-        Addrinfo.new(@sockaddr).unix_path.should == 'socket'
-      end
+    it 'returns an Addrinfo with the correct unix path' do
+      Addrinfo.new(@sockaddr).unix_path.should == 'socket'
+    end
 
-      it 'returns an Addrinfo with the correct protocol family' do
-        Addrinfo.new(@sockaddr).pfamily.should == Socket::PF_UNSPEC
-      end
+    it 'returns an Addrinfo with the correct protocol family' do
+      Addrinfo.new(@sockaddr).pfamily.should == Socket::PF_UNSPEC
+    end
 
-      it 'returns an Addrinfo with the correct address family' do
-        Addrinfo.new(@sockaddr).afamily.should == Socket::AF_UNIX
-      end
+    it 'returns an Addrinfo with the correct address family' do
+      Addrinfo.new(@sockaddr).afamily.should == Socket::AF_UNIX
     end
   end
 end

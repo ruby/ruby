@@ -48,7 +48,7 @@ class TestAst < Test::Unit::TestCase
       @path = path
       @errors = []
       @debug = false
-      @ast = RubyVM::AbstractSyntaxTree.parse(src) if src
+      @ast = EnvUtil.suppress_warning { RubyVM::AbstractSyntaxTree.parse(src) } if src
     end
 
     def validate_range
@@ -67,7 +67,7 @@ class TestAst < Test::Unit::TestCase
 
     def ast
       return @ast if defined?(@ast)
-      @ast = RubyVM::AbstractSyntaxTree.parse_file(@path)
+      @ast = EnvUtil.suppress_warning { RubyVM::AbstractSyntaxTree.parse_file(@path) }
     end
 
     private
@@ -135,7 +135,7 @@ class TestAst < Test::Unit::TestCase
 
   Dir.glob("test/**/*.rb", base: SRCDIR).each do |path|
     define_method("test_all_tokens:#{path}") do
-      node = RubyVM::AbstractSyntaxTree.parse_file("#{SRCDIR}/#{path}", keep_tokens: true)
+      node = EnvUtil.suppress_warning { RubyVM::AbstractSyntaxTree.parse_file("#{SRCDIR}/#{path}", keep_tokens: true) }
       tokens = node.all_tokens.sort_by { [_1.last[0], _1.last[1]] }
       tokens_bytes = tokens.map { _1[2]}.join.bytes
       source_bytes = File.read("#{SRCDIR}/#{path}").bytes
@@ -215,6 +215,17 @@ class TestAst < Test::Unit::TestCase
     end
   end
 
+  def test_cdecl_children_with_toplevel_constant_path
+    # [Bug #21974]
+    children = parse("::Foo = 1").children[2].children
+
+    assert_equal(:COLON3, children[0].type)
+    assert_equal([:Foo], children[0].children)
+    assert_equal(:Foo, children[1])
+    assert_equal(:INTEGER, children[2].type)
+    assert_equal([1], children[2].children)
+  end
+
   def assert_parse(code, warning: '')
     node = assert_warning(warning) {RubyVM::AbstractSyntaxTree.parse(code)}
     assert_kind_of(RubyVM::AbstractSyntaxTree::Node, node, code)
@@ -244,7 +255,8 @@ class TestAst < Test::Unit::TestCase
       assert_invalid_parse(msg, "#{code}")
       assert_invalid_parse(msg, "def m; #{code}; end")
       assert_invalid_parse(msg, "begin; #{code}; end")
-      assert_parse("END {#{code}}")
+      assert_invalid_parse(msg, "BEGIN {#{code}}")
+      assert_invalid_parse(msg, "END {#{code}}")
 
       assert_parse("!defined?(#{code})")
       assert_parse("def m; defined?(#{code}); end")
@@ -337,6 +349,19 @@ class TestAst < Test::Unit::TestCase
     assert_parse("END {defined? yield}")
   end
 
+  def test_invalid_yield_no_memory_leak
+    # [Bug #21383]
+    assert_no_memory_leak([], "#{<<-"begin;"}", "#{<<-'end;'}", rss: true)
+      code = proc do
+        eval("class C; yield; end")
+      rescue SyntaxError
+      end
+      1_000.times(&code)
+    begin;
+      100_000.times(&code)
+    end;
+  end
+
   def test_node_id_for_location
     omit if ParserSupport.prism_enabled?
 
@@ -350,6 +375,50 @@ class TestAst < Test::Unit::TestCase
     node = RubyVM::AbstractSyntaxTree.of(loc, keep_script_lines: true)
 
     assert_equal node.node_id, node_id
+  end
+
+  def add(x, y)
+  end
+
+  def test_node_id_for_backtrace_location_of_method_definition
+    omit if ParserSupport.prism_enabled?
+
+    begin
+      add(1)
+    rescue ArgumentError => exc
+      loc = exc.backtrace_locations.first
+      node_id = RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(loc)
+      node = RubyVM::AbstractSyntaxTree.of(method(:add))
+      assert_equal node.node_id, node_id
+    end
+  end
+
+  def test_node_id_for_backtrace_location_of_lambda
+    omit if ParserSupport.prism_enabled?
+
+    v = -> {}
+    begin
+      v.call(1)
+    rescue ArgumentError => exc
+      loc = exc.backtrace_locations.first
+      node_id = RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(loc)
+      node = RubyVM::AbstractSyntaxTree.of(v)
+      assert_equal node.node_id, node_id
+    end
+  end
+
+  def test_node_id_for_backtrace_location_of_lambda_method
+    omit if ParserSupport.prism_enabled?
+
+    v = lambda {}
+    begin
+      v.call(1)
+    rescue ArgumentError => exc
+      loc = exc.backtrace_locations.first
+      node_id = RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(loc)
+      node = RubyVM::AbstractSyntaxTree.of(v)
+      assert_equal node.node_id, node_id
+    end
   end
 
   def test_node_id_for_backtrace_location_raises_argument_error
@@ -652,6 +721,7 @@ class TestAst < Test::Unit::TestCase
     assert_equal(nil, block_arg.call(''))
     assert_equal(:block, block_arg.call('&block'))
     assert_equal(:&, block_arg.call('&'))
+    assert_equal(false, block_arg.call('&nil'))
   end
 
   def test_keyword_rest
@@ -788,7 +858,7 @@ dummy
     node_proc = RubyVM::AbstractSyntaxTree.of(proc, keep_script_lines: true)
     node_method = RubyVM::AbstractSyntaxTree.of(method, keep_script_lines: true)
 
-    assert_equal("{ 1 + 2 }", node_proc.source)
+    assert_equal("Proc.new { 1 + 2 }", node_proc.source)
     assert_equal("def test_keep_script_lines_for_of\n", node_method.source.lines.first)
   end
 
@@ -865,7 +935,7 @@ dummy
     omit if ParserSupport.prism_enabled? || ParserSupport.prism_enabled_in_subprocess?
 
     assert_in_out_err(["-e", "def foo; end; pp RubyVM::AbstractSyntaxTree.of(method(:foo)).type"],
-                      "", [":SCOPE"], [])
+                      "", [":DEFN"], [])
   end
 
   def test_error_tolerant
@@ -1173,7 +1243,7 @@ dummy
        args: nil
        body:
          (LAMBDA@1:0-2:3
-            (SCOPE@1:2-2:3
+            (SCOPE@1:0-2:3
              tbl: []
              args:
                (ARGS@1:2-1:2
@@ -1384,6 +1454,32 @@ dummy
       assert_locations(node.children[-1].locations, [[1, 0, 1, 16], [1, 0, 1, 5], [1, 8, 1, 9], [1, 13, 1, 16]])
     end
 
+    def test_colon2_locations
+      node = ast_parse("A::B")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 4], [1, 1, 1, 3], [1, 3, 1, 4]])
+
+      node = ast_parse("A::B::C")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 7], [1, 4, 1, 6], [1, 6, 1, 7]])
+      assert_locations(node.children[-1].children[0].locations, [[1, 0, 1, 4], [1, 1, 1, 3], [1, 3, 1, 4]])
+    end
+
+    def test_colon3_locations
+      node = ast_parse("::A")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 3], [1, 0, 1, 2], [1, 2, 1, 3]])
+
+      node = ast_parse("::A::B")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 6], [1, 3, 1, 5], [1, 5, 1, 6]])
+      assert_locations(node.children[-1].children[0].locations, [[1, 0, 1, 3], [1, 0, 1, 2], [1, 2, 1, 3]])
+    end
+
+    def test_defined_locations
+      node = ast_parse("defined? x")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 10], [1, 0, 1, 8]])
+
+      node = ast_parse("defined?(x)")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 11], [1, 0, 1, 8]])
+    end
+
     def test_dot2_locations
       node = ast_parse("1..2")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 4], [1, 1, 1, 3]])
@@ -1452,6 +1548,11 @@ dummy
       assert_locations(node.children[-1].locations, [[1, 0, 1, 20], [1, 0, 1, 2], [1, 10, 1, 12], [1, 17, 1, 20]])
     end
 
+    def test_module_locations
+      node = ast_parse('module A end')
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 12], [1, 0, 1, 6], [1, 9, 1, 12]])
+    end
+
     def test_if_locations
       node = ast_parse("if cond then 1 else 2 end")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 25], [1, 0, 1, 2], [1, 8, 1, 12], [1, 22, 1, 25]])
@@ -1468,6 +1569,20 @@ dummy
 
       node = ast_parse("case a; in b if c; end")
       assert_locations(node.children[-1].children[1].children[0].locations, [[1, 11, 1, 17], [1, 13, 1, 15], nil, nil])
+    end
+
+    def test_in_locations
+      node = ast_parse("case 1; in 2 then 3; end")
+      assert_locations(node.children[-1].children[1].locations, [[1, 8, 1, 20], [1, 8, 1, 10], [1, 13, 1, 17], nil])
+
+      node = ast_parse("1 => a")
+      assert_locations(node.children[-1].children[1].locations, [[1, 5, 1, 6], nil, nil, [1, 2, 1, 4]])
+
+      node = ast_parse("1 in a")
+      assert_locations(node.children[-1].children[1].locations, [[1, 5, 1, 6], [1, 2, 1, 4], nil, nil])
+
+      node = ast_parse("case 1; in 2; 3; end")
+      assert_locations(node.children[-1].children[1].locations, [[1, 8, 1, 16], [1, 8, 1, 10], [1, 12, 1, 13], nil])
     end
 
     def test_next_locations
@@ -1532,6 +1647,14 @@ dummy
 
       node = ast_parse("return")
       assert_locations(node.children[-1].locations, [[1, 0, 1, 6], [1, 0, 1, 6]])
+    end
+
+    def test_sclass_locations
+      node = ast_parse("class << self; end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 18], [1, 0, 1, 5], [1, 6, 1, 8], [1, 15, 1, 18]])
+
+      node = ast_parse("class << obj; foo; end")
+      assert_locations(node.children[-1].locations, [[1, 0, 1, 22], [1, 0, 1, 5], [1, 6, 1, 8], [1, 19, 1, 22]])
     end
 
     def test_splat_locations
@@ -1624,6 +1747,19 @@ dummy
       assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 9, 1, 20], [1, 9, 1, 14], [1, 14, 1, 15], [1, 19, 1, 20]])
     end
 
+    def test_negative_numeric_locations
+      node = ast_parse("-1")
+      assert_locations(node.children.last.locations, [[1, 0, 1, 2]])
+    end
+
+    def test_numeric_location_with_nonsuffix
+      node = ast_parse("1if true")
+      assert_locations(node.children.last.children[1].locations, [[1, 0, 1, 1]])
+
+      node = ast_parse("1q", error_tolerant: true)
+      assert_locations(node.children.last.locations, [[1, 0, 1, 1]])
+    end
+
     private
     def ast_parse(src, **options)
       begin
@@ -1637,7 +1773,7 @@ dummy
     def assert_locations(locations, expected)
       ary = locations.map {|loc| loc && [loc.first_lineno, loc.first_column, loc.last_lineno, loc.last_column] }
 
-      assert_equal(ary, expected)
+      assert_equal(expected, ary)
     end
   end
 end

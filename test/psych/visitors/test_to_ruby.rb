@@ -328,6 +328,12 @@ description:
         mapping.children << Nodes::Scalar.new('bar')
         assert_equal({'foo' => 'bar'}, mapping.to_ruby)
       end
+
+      def test_parse_symbols
+        node = Nodes::Scalar.new(':foo')
+        assert_equal :foo, node.to_ruby
+        assert_equal ':foo', node.to_ruby(parse_symbols: false)
+      end
     end
   end
 end

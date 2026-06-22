@@ -133,6 +133,9 @@
 # there is a protocol error.
 #
 class Net::HTTPResponse
+  # The maximum total size in bytes of the response header.
+  MAX_RESPONSE_HEADER_LENGTH = 1024 * 1024 # 1 MiB
+
   class << self
     # true if the response has a body.
     def body_permitted?
@@ -153,6 +156,7 @@ class Net::HTTPResponse
     end
 
     private
+    # :stopdoc:
 
     def read_status_line(sock)
       str = sock.readline
@@ -169,8 +173,12 @@ class Net::HTTPResponse
 
     def each_response_header(sock)
       key = value = nil
+      remaining = MAX_RESPONSE_HEADER_LENGTH
       while true
-        line = sock.readuntil("\n", true).sub(/\s+\z/, '')
+        line = sock.readuntil("\n", true)
+        remaining -= line.bytesize
+        raise Net::HTTPBadResponse, 'response header too large' if remaining < 0
+        line = line.sub(/\s+\z/, '')
         break if line.empty?
         if line[0] == ?\s or line[0] == ?\t and value
           value << ' ' unless value.empty?
@@ -259,7 +267,7 @@ class Net::HTTPResponse
   # header.
   attr_accessor :ignore_eof
 
-  def inspect
+  def inspect   # :nodoc:
     "#<#{self.class} #{@code} #{@message} readbody=#{@read}>"
   end
 

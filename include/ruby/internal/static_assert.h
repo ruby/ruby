@@ -30,7 +30,7 @@
 # /* https://isocpp.org/std/standing-documents/sd-6-sg10-feature-test-recommendations */
 # define RBIMPL_STATIC_ASSERT0 static_assert
 
-#elif defined(__cplusplus) && RBIMPL_COMPILER_SINCE(MSVC, 16, 0, 0)
+#elif defined(__cplusplus) && RBIMPL_COMPILER_IS(MSVC)
 # define RBIMPL_STATIC_ASSERT0 static_assert
 
 #elif defined(__INTEL_CXX11_MODE__)

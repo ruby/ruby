@@ -1,5 +1,6 @@
-Changes the encoding of +self+ to +encoding+,
+Changes the encoding of +self+ to the given +encoding+,
 which may be a string encoding name or an Encoding object;
+does not change the underlying bytes;
 returns self:
 
   s = 'łał'
@@ -7,14 +8,14 @@ returns self:
   s.encoding                # => #<Encoding:UTF-8>
   s.force_encoding('ascii') # => "\xC5\x82a\xC5\x82"
   s.encoding                # => #<Encoding:US-ASCII>
-
-Does not change the underlying bytes:
-
+  s.valid_encoding?         # => true
   s.bytes                   # => [197, 130, 97, 197, 130]
 
 Makes the change even if the given +encoding+ is invalid
 for +self+ (as is the change above):
 
-  s.valid_encoding?                 # => false
-  s.force_encoding(Encoding::UTF_8) # => "łał"
-  s.valid_encoding?                 # => true
+  s.valid_encoding?         # => false
+
+See {Encodings}[rdoc-ref:encodings.rdoc].
+
+Related: see {Modifying}[rdoc-ref:String@Modifying].

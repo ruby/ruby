@@ -127,6 +127,7 @@ bad_version.o: $(hdrdir)/ruby/internal/intern/re.h
 bad_version.o: $(hdrdir)/ruby/internal/intern/ruby.h
 bad_version.o: $(hdrdir)/ruby/internal/intern/select.h
 bad_version.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+bad_version.o: $(hdrdir)/ruby/internal/intern/set.h
 bad_version.o: $(hdrdir)/ruby/internal/intern/signal.h
 bad_version.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 bad_version.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -288,6 +289,7 @@ init.o: $(hdrdir)/ruby/internal/intern/re.h
 init.o: $(hdrdir)/ruby/internal/intern/ruby.h
 init.o: $(hdrdir)/ruby/internal/intern/select.h
 init.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+init.o: $(hdrdir)/ruby/internal/intern/set.h
 init.o: $(hdrdir)/ruby/internal/intern/signal.h
 init.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 init.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -447,6 +449,7 @@ loop.o: $(hdrdir)/ruby/internal/intern/re.h
 loop.o: $(hdrdir)/ruby/internal/intern/ruby.h
 loop.o: $(hdrdir)/ruby/internal/intern/select.h
 loop.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+loop.o: $(hdrdir)/ruby/internal/intern/set.h
 loop.o: $(hdrdir)/ruby/internal/intern/signal.h
 loop.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 loop.o: $(hdrdir)/ruby/internal/intern/string.h

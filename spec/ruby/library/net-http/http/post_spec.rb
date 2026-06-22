@@ -22,12 +22,14 @@ describe "Net::HTTP.post" do
 
   it "returns a Net::HTTPResponse" do
     response = Net::HTTP.post(URI("http://localhost:#{NetHTTPSpecs.port}/request"), "test=test")
-    response.should be_kind_of(Net::HTTPResponse)
+    response.should.is_a?(Net::HTTPResponse)
   end
 
-  it "sends Content-Type: application/x-www-form-urlencoded by default" do
-    response = Net::HTTP.post(URI("http://localhost:#{NetHTTPSpecs.port}/request/header"), "test=test")
-    response.body.should include({ "Content-Type" => "application/x-www-form-urlencoded" }.inspect.delete("{}"))
+  ruby_version_is ""..."4.0" do
+    it "sends Content-Type: application/x-www-form-urlencoded by default" do
+      response = Net::HTTP.post(URI("http://localhost:#{NetHTTPSpecs.port}/request/header"), "test=test")
+      response.body.should.include?({ "Content-Type" => "application/x-www-form-urlencoded" }.inspect.delete("{}"))
+    end
   end
 
   it "does not support HTTP Basic Auth" do
@@ -55,7 +57,7 @@ describe "Net::HTTP#post" do
   end
 
   it "returns a Net::HTTPResponse" do
-    @http.post("/request", "test=test").should be_kind_of(Net::HTTPResponse)
+    @http.post("/request", "test=test").should.is_a?(Net::HTTPResponse)
   end
 
   describe "when passed a block" do
@@ -68,7 +70,7 @@ describe "Net::HTTP#post" do
     end
 
     it "returns a Net::HTTPResponse" do
-      @http.post("/request", "test=test") {}.should be_kind_of(Net::HTTPResponse)
+      @http.post("/request", "test=test") {}.should.is_a?(Net::HTTPResponse)
     end
   end
 end

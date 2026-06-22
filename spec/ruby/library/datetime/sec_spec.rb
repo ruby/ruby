@@ -1,6 +1,8 @@
 require_relative '../../spec_helper'
-require_relative 'shared/sec'
+require 'date'
 
-describe "DateTime.sec" do
-  it_behaves_like :datetime_sec, :sec
+describe "DateTime#sec" do
+  it "is an alias of DateTime#second" do
+    DateTime.instance_method(:sec).should == DateTime.instance_method(:second)
+  end
 end

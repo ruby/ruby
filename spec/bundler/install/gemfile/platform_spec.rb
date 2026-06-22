@@ -65,7 +65,7 @@ RSpec.describe "bundle install across platforms" do
         platform_specific
     G
 
-    bundle "config set --local frozen true"
+    bundle_config "frozen true"
 
     install_gemfile <<-G
       source "https://gem.repo1"
@@ -161,8 +161,8 @@ RSpec.describe "bundle install across platforms" do
 
       expect(the_bundle).to include_gems "nokogiri 1.4.2 java", "weakling 0.0.3"
 
-      pristine_system_gems :bundler
-      bundle "config set --local force_ruby_platform true"
+      pristine_system_gems
+      bundle_config "force_ruby_platform true"
       bundle "install"
 
       expect(the_bundle).to include_gems "nokogiri 1.4.2"
@@ -208,6 +208,7 @@ RSpec.describe "bundle install across platforms" do
         c.checksum gem_repo4, "empyrean", "0.1.0"
         c.checksum gem_repo4, "ffi", "1.9.23", "java"
         c.checksum gem_repo4, "method_source", "0.9.0"
+        c.checksum gem_repo4, "pry", "0.11.3"
         c.checksum gem_repo4, "pry", "0.11.3", "java"
         c.checksum gem_repo4, "spoon", "0.0.6"
       end
@@ -220,6 +221,9 @@ RSpec.describe "bundle install across platforms" do
             empyrean (0.1.0)
             ffi (1.9.23-java)
             method_source (0.9.0)
+            pry (0.11.3)
+              coderay (~> 1.1.0)
+              method_source (~> 0.9.0)
             pry (0.11.3-java)
               coderay (~> 1.1.0)
               method_source (~> 0.9.0)
@@ -235,7 +239,7 @@ RSpec.describe "bundle install across platforms" do
           pry
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       bundle "lock --add-platform ruby"
@@ -269,7 +273,7 @@ RSpec.describe "bundle install across platforms" do
           pry
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       expect(lockfile).to eq good_lockfile
@@ -365,7 +369,7 @@ RSpec.describe "bundle install across platforms" do
       gem "myrack", "1.0.0"
     G
 
-    bundle "config set --local path vendor/bundle"
+    bundle_config "path vendor/bundle"
     bundle :install
 
     FileUtils.mv(vendored_gems, bundled_app("vendor/bundle", Gem.ruby_engine, "1.8"))
@@ -394,7 +398,7 @@ RSpec.describe "bundle install across platforms" do
       #{checksums}
     G
 
-    bundle "config set --local force_ruby_platform true"
+    bundle_config "force_ruby_platform true"
 
     install_gemfile <<-G
       source "https://gem.repo1"
@@ -420,7 +424,7 @@ RSpec.describe "bundle install across platforms" do
         platform_specific
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 end
@@ -486,7 +490,7 @@ RSpec.describe "bundle install with platform conditionals" do
         tzinfo (~> 1.2)
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "install --verbose"
@@ -542,7 +546,7 @@ RSpec.describe "bundle install with platform conditionals" do
   end
 
   it "does not attempt to install gems from :rbx when using --local" do
-    bundle "config set --local force_ruby_platform true"
+    bundle_config "force_ruby_platform true"
 
     gemfile <<-G
       source "https://gem.repo1"
@@ -554,7 +558,7 @@ RSpec.describe "bundle install with platform conditionals" do
   end
 
   it "does not attempt to install gems from other rubies when using --local" do
-    bundle "config set --local force_ruby_platform true"
+    bundle_config "force_ruby_platform true"
     gemfile <<-G
       source "https://gem.repo1"
       gem "some_gem", platform: :ruby_22
@@ -565,7 +569,7 @@ RSpec.describe "bundle install with platform conditionals" do
   end
 
   it "does not print a warning when a dependency is unused on a platform different from the current one" do
-    bundle "config set --local force_ruby_platform true"
+    bundle_config "force_ruby_platform true"
 
     gemfile <<-G
       source "https://gem.repo1"
@@ -589,12 +593,12 @@ RSpec.describe "bundle install with platform conditionals" do
         myrack
       #{checksums_section_when_enabled}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 
   it "resolves fine when a dependency is unused on a platform different from the current one, but reintroduced transitively" do
-    bundle "config set --local force_ruby_platform true"
+    bundle_config "force_ruby_platform true"
 
     build_repo4 do
       build_gem "listen", "3.7.1" do |s|

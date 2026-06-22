@@ -12,9 +12,13 @@ module Psych
     ###
     # This class walks a YAML AST, converting each node to Ruby
     class ToRuby < Psych::Visitors::Visitor
-      def self.create(symbolize_names: false, freeze: false, strict_integer: false)
+      unless RUBY_VERSION < "3.2"
+        DATA_INITIALIZE = Data.instance_method(:initialize)
+      end
+
+      def self.create(symbolize_names: false, freeze: false, strict_integer: false, parse_symbols: true)
         class_loader = ClassLoader.new
-        scanner      = ScalarScanner.new class_loader, strict_integer: strict_integer
+        scanner      = ScalarScanner.new class_loader, strict_integer: strict_integer, parse_symbols: parse_symbols
         new(scanner, class_loader, symbolize_names: symbolize_names, freeze: freeze)
       end
 
@@ -68,7 +72,7 @@ module Psych
         when '!binary', 'tag:yaml.org,2002:binary'
           o.value.unpack('m').first
         when /^!(?:str|ruby\/string)(?::(.*))?$/, 'tag:yaml.org,2002:str'
-          klass = resolve_class($1)
+          klass = resolve_subclass($1, String)
           if klass
             klass.allocate.replace o.value
           else
@@ -83,6 +87,7 @@ module Psych
           DateTime.civil(*t.to_a[0, 6].reverse, Rational(t.utc_offset, 86400)) +
             (t.subsec/86400)
         when '!ruby/encoding'
+          class_loader.encoding
           ::Encoding.find o.value
         when "!ruby/object:Complex"
           class_loader.complex
@@ -96,11 +101,11 @@ module Psych
           Float(@ss.tokenize(o.value))
         when "!ruby/regexp"
           klass = class_loader.regexp
-          o.value =~ /^\/(.*)\/([mixn]*)$/m
-          source  = $1
+          matches = /^\/(?<string>.*)\/(?<options>[mixn]*)$/m.match(o.value)
+          source  = matches[:string].gsub('\/', '/')
           options = 0
           lang    = nil
-          $2&.each_char do |option|
+          matches[:options].each_char do |option|
             case option
             when 'x' then options |= Regexp::EXTENDED
             when 'i' then options |= Regexp::IGNORECASE
@@ -152,7 +157,7 @@ module Psych
           }
           map
         when /^!(?:seq|ruby\/array):(.*)$/
-          klass = resolve_class($1)
+          klass = resolve_subclass($1, Array)
           list  = register(o, klass.allocate)
           o.children.each { |c| list.push accept c }
           list
@@ -197,6 +202,32 @@ module Psych
             s
           end
 
+        when /^!ruby\/data(-with-ivars)?(?::(.*))?$/
+          data = register(o, resolve_class($2).allocate) if $2
+          members = {}
+
+          if $1 # data-with-ivars
+            ivars   = {}
+            o.children.each_slice(2) do |type, vars|
+              case accept(type)
+              when 'members'
+                revive_data_members(members, vars)
+                data ||= allocate_anon_data(o, members)
+              when 'ivars'
+                revive_hash(ivars, vars)
+              end
+            end
+            ivars.each do |ivar, v|
+              data.instance_variable_set ivar, v
+            end
+          else
+            revive_data_members(members, o)
+          end
+          data ||= allocate_anon_data(o, members)
+          DATA_INITIALIZE.bind_call(data, **members)
+          data.freeze
+          data
+
         when /^!ruby\/object:?(.*)?$/
           name = $1 || 'Object'
 
@@ -216,7 +247,7 @@ module Psych
           end
 
         when /^!(?:str|ruby\/string)(?::(.*))?$/, 'tag:yaml.org,2002:str'
-          klass   = resolve_class($1)
+          klass   = resolve_subclass($1, String)
           members = {}
           string  = nil
 
@@ -237,7 +268,7 @@ module Psych
           end
           init_with(string, members.map { |k,v| [k.to_s.sub(/^@/, ''),v] }, o)
         when /^!ruby\/array:(.*)$/
-          klass = resolve_class($1)
+          klass = resolve_subclass($1, Array)
           list  = register(o, klass.allocate)
 
           members = Hash[o.children.map { |c| accept c }.each_slice(2).to_a]
@@ -271,7 +302,7 @@ module Psych
           set
 
         when /^!ruby\/hash-with-ivars(?::(.*))?$/
-          hash = $1 ? resolve_class($1).allocate : {}
+          hash = $1 ? resolve_subclass($1, Hash).allocate : {}
           register o, hash
           o.children.each_slice(2) do |key, value|
             case key.value
@@ -286,7 +317,7 @@ module Psych
           hash
 
         when /^!map:(.*)$/, /^!ruby\/hash:(.*)$/
-          revive_hash register(o, resolve_class($1).allocate), o
+          revive_hash register(o, resolve_subclass($1, Hash).allocate), o
 
         when '!omap', 'tag:yaml.org,2002:omap'
           map = register(o, class_loader.psych_omap.new)
@@ -338,6 +369,20 @@ module Psych
         list = register(object, [])
         object.children.each { |c| list.push accept c }
         list
+      end
+
+      def allocate_anon_data node, members
+        klass = class_loader.data.define(*members.keys)
+        register(node, klass.allocate)
+      end
+
+      def revive_data_members hash, o
+        o.children.each_slice(2) do |k,v|
+          name  = accept(k)
+          value = accept(v)
+          hash[class_loader.symbolize(name)] = value
+        end
+        hash
       end
 
       def revive_hash hash, o, tagged= false
@@ -423,6 +468,19 @@ module Psych
       # Convert +klassname+ to a Class
       def resolve_class klassname
         class_loader.load klassname
+      end
+
+      # Resolve +klassname+ and ensure it is +parent+ or one of its
+      # subclasses. Tags such as !ruby/hash-with-ivars are only ever emitted
+      # for subclasses of a specific core class; without this check a crafted
+      # document could name an unrelated (but permitted) class and have its
+      # state populated directly, bypassing the class's own init_with.
+      def resolve_subclass klassname, parent
+        klass = resolve_class(klassname)
+        if klass && !(klass <= parent)
+          raise ArgumentError, "Invalid tag: expected a subclass of #{parent}, got #{klass}"
+        end
+        klass
       end
     end
 

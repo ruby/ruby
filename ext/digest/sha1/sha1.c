@@ -220,20 +220,28 @@ int SHA1_Init(SHA1_CTX *context)
  */
 void SHA1_Update(SHA1_CTX *context, const uint8_t *data, size_t len)
 {
-    uint32_t i, j;
+    size_t i;
+    uint32_t j;
 
     _DIAGASSERT(context != 0);
     _DIAGASSERT(data != 0);
 
     j = context->count[0];
     if ((context->count[0] += len << 3) < j)
-	context->count[1] += (len>>29)+1;
+	context->count[1]++;
+    context->count[1] += (uint32_t)(len >> 29);
     j = (j >> 3) & 63;
     if ((j + len) > 63) {
 	(void)memcpy(&context->buffer[j], data, (i = 64-j));
 	SHA1_Transform(context->state, context->buffer);
-	for ( ; i + 63 < len; i += 64)
+	for ( ; i + 63 < len; i += 64) {
+	    RB_DIGEST_WARNING_PUSH();
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 11
+	    RB_DIGEST_WARNING_IGNORED(-Wstringop-overread);
+#endif
 	    SHA1_Transform(context->state, &data[i]);
+	    RB_DIGEST_WARNING_POP();
+	}
 	j = 0;
     } else {
 	i = 0;

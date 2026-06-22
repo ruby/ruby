@@ -517,7 +517,20 @@ class TestDateStrptime < Test::Unit::TestCase
     d = DateTime.strptime('9000 +0200', '%Q %z')
     assert_equal([1970, 1, 1, 2, 0, 9], [d.year, d.mon, d.mday, d.hour, d.min, d.sec])
     assert_equal(Rational(2, 24), d.offset)
-
   end
 
+  def test_format_modified
+    str = " " * 100
+    fmt = Struct.new(:str) {
+      def to_str
+        str << "2026-06-01" << " "*100
+        " %F "
+      end
+    }.new(str)
+    d = Date._strptime(str, fmt)
+    assert_not_nil(d)
+    assert_equal(2026, d[:year])
+    assert_equal(6, d[:mon])
+    assert_equal(1, d[:mday])
+  end
 end

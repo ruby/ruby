@@ -11,7 +11,7 @@ describe "Method#unbind" do
   end
 
   it "returns an UnboundMethod" do
-    @normal_um.should be_kind_of(UnboundMethod)
+    @normal_um.should.is_a?(UnboundMethod)
   end
 
   describe "#inspect" do
@@ -27,16 +27,8 @@ describe "Method#unbind" do
       @string.should =~ /MethodSpecs::MyMod/
     end
 
-    ruby_version_is ""..."3.2" do
-      it "returns a String containing the Module the method is referenced from" do
-        @string.should =~ /MethodSpecs::MySub/
-      end
-    end
-
-    ruby_version_is "3.2" do
-      it "returns a String containing the Module the method is referenced from" do
-        @string.should =~ /MethodSpecs::MyMod/
-      end
+    it "returns a String containing the Module the method is referenced from" do
+      @string.should =~ /MethodSpecs::MyMod/
     end
   end
 

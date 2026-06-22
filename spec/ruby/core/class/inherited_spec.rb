@@ -92,10 +92,27 @@ describe "Class.inherited" do
     end
 
     class << top; private :inherited; end
-    -> { Class.new(top) }.should_not raise_error
+    -> { Class.new(top) }.should_not.raise
 
     class << top; protected :inherited; end
-    -> { Class.new(top) }.should_not raise_error
+    -> { Class.new(top) }.should_not.raise
   end
 
+  it "if the subclass is assigned to a constant, it is all set" do
+    ScratchPad.record []
+
+    parent = Class.new do
+      def self.inherited(subclass)
+        ScratchPad << defined?(self::C)
+        ScratchPad << const_defined?(:C)
+        ScratchPad << constants
+        ScratchPad << const_get(:C)
+        ScratchPad << subclass.name.match?(/\A#<Class:0x\w+>::C\z/)
+      end
+    end
+
+    class parent::C < parent; end
+
+    ScratchPad.recorded.should == ["constant", true, [:C], parent::C, true]
+  end
 end

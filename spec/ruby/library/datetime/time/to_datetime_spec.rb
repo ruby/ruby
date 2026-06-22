@@ -15,17 +15,15 @@ describe "Time#to_datetime" do
     datetime.sec.should == 59
   end
 
-  version_is date_version, '3.2.3' do #ruby_version_is '3.2' do
-    it "returns a DateTime representing the same instant before Gregorian" do
-      time = Time.utc(1582, 10, 14, 23, 58, 59)
-      datetime = time.to_datetime
-      datetime.year.should == 1582
-      datetime.month.should == 10
-      datetime.day.should == 4
-      datetime.hour.should == 23
-      datetime.min.should == 58
-      datetime.sec.should == 59
-    end
+  it "returns a DateTime representing the same instant before Gregorian" do
+    time = Time.utc(1582, 10, 14, 23, 58, 59)
+    datetime = time.to_datetime
+    datetime.year.should == 1582
+    datetime.month.should == 10
+    datetime.day.should == 4
+    datetime.hour.should == 23
+    datetime.min.should == 58
+    datetime.sec.should == 59
   end
 
   it "roundtrips" do

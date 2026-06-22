@@ -401,7 +401,7 @@ class TestRubyYieldGen < Test::Unit::TestCase
 
   def test_block_cached_argc
     # [Bug #11451]
-    assert_separately([], <<-"end;")
+    assert_ruby_status([], <<-"end;")
       class Yielder
         def each
           yield :x, :y, :z

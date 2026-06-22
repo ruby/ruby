@@ -217,26 +217,18 @@ describe "BigDecimal#round" do
   end
 
   it 'raise exception, if self is special value' do
-    -> { BigDecimal('NaN').round }.should raise_error(FloatDomainError)
-    -> { BigDecimal('Infinity').round }.should raise_error(FloatDomainError)
-    -> { BigDecimal('-Infinity').round }.should raise_error(FloatDomainError)
+    -> { BigDecimal('NaN').round }.should.raise(FloatDomainError)
+    -> { BigDecimal('Infinity').round }.should.raise(FloatDomainError)
+    -> { BigDecimal('-Infinity').round }.should.raise(FloatDomainError)
   end
 
   it 'do not raise exception, if self is special value and precision is given' do
-    -> { BigDecimal('NaN').round(2) }.should_not raise_error(FloatDomainError)
-    -> { BigDecimal('Infinity').round(2) }.should_not raise_error(FloatDomainError)
-    -> { BigDecimal('-Infinity').round(2) }.should_not raise_error(FloatDomainError)
+    -> { BigDecimal('NaN').round(2) }.should_not.raise(FloatDomainError)
+    -> { BigDecimal('Infinity').round(2) }.should_not.raise(FloatDomainError)
+    -> { BigDecimal('-Infinity').round(2) }.should_not.raise(FloatDomainError)
   end
 
-  version_is BigDecimal::VERSION, ''...'3.1.3' do #ruby_version_is ''...'3.2' do
-    it 'raise for a non-existent round mode' do
-      -> { @p1_50.round(0, :nonsense) }.should raise_error(ArgumentError, "invalid rounding mode")
-    end
-  end
-
-  version_is BigDecimal::VERSION, '3.1.3' do #ruby_version_is '3.2' do
-    it 'raise for a non-existent round mode' do
-      -> { @p1_50.round(0, :nonsense) }.should raise_error(ArgumentError, "invalid rounding mode (nonsense)")
-    end
+  it 'raise for a non-existent round mode' do
+    -> { @p1_50.round(0, :nonsense) }.should.raise(ArgumentError, "invalid rounding mode (nonsense)")
   end
 end

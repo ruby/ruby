@@ -31,6 +31,15 @@ module Gem::InstallUpdateOptions
       options[:bin_dir] = File.expand_path(value)
     end
 
+    add_option(:"Install/Update", "-j", "--build-jobs VALUE", Integer,
+               "Specify the number of jobs to pass to `make` when installing",
+               "gems with native extensions.",
+               "Defaults to the number of processors.",
+               "This option is ignored on the mswin platform or",
+               "if the MAKEFLAGS environment variable is set.") do |value, options|
+      options[:build_jobs] = value
+    end
+
     add_option(:"Install/Update", "--document [TYPES]", Array,
                "Generate documentation for installed gems",
                "List the documentation types you wish to",
@@ -158,10 +167,9 @@ module Gem::InstallUpdateOptions
       options[:without_groups].concat v.map(&:intern)
     end
 
-    add_option(:"Install/Update", "--default",
+    add_option(:Deprecated, "--default",
                "Add the gem's full specification to",
                "specifications/default and extract only its bin") do |v,_o|
-      options[:install_as_default] = v
     end
 
     add_option(:"Install/Update", "--explain",
@@ -183,6 +191,18 @@ module Gem::InstallUpdateOptions
     add_option(:"Install/Update", "--target-rbconfig [FILE]",
                 "rbconfig.rb for the deployment target platform") do |v, _o|
       Gem.set_target_rbconfig(v)
+    end
+
+    add_option(:"Install/Update", "--[no-]build-extension",
+                "Build native extensions during installation.",
+                "Defaults to true") do |v, _o|
+      options[:build_extension] = v
+    end
+
+    add_option(:"Install/Update", "--[no-]install-plugin",
+                "Install plugins during installation.",
+                "Defaults to true") do |v, _o|
+      options[:install_plugin] = v
     end
   end
 

@@ -179,7 +179,9 @@
 # - #each_value: Passes each string field value to the block.
 #
 module Net::HTTPHeader
+  # The maximum length of HTTP header keys.
   MAX_KEY_LENGTH = 1024
+  # The maximum length of HTTP header values.
   MAX_FIELD_LENGTH = 65536
 
   def initialize_http_header(initheader) #:nodoc:
@@ -191,11 +193,9 @@ module Net::HTTPHeader
         warn "net/http: nil HTTP header: #{key}", uplevel: 3 if $VERBOSE
       else
         value = value.strip # raise error for invalid byte sequences
-        if key.to_s.bytesize > MAX_KEY_LENGTH
-          raise ArgumentError, "too long (#{key.bytesize} bytes) header: #{key[0, 30].inspect}..."
-        end
+        validate_field_name(key)
         if value.to_s.bytesize > MAX_FIELD_LENGTH
-          raise ArgumentError, "header #{key} has too long field value: #{value.bytesize}"
+          raise ArgumentError, "header #{key} has too long field value: #{value.bytesize} bytes (limit #{MAX_FIELD_LENGTH})"
         end
         if value.count("\r\n") > 0
           raise ArgumentError, "header #{key} has field value #{value.inspect}, this cannot include CR/LF"
@@ -261,20 +261,34 @@ module Net::HTTPHeader
   def add_field(key, val)
     stringified_downcased_key = key.downcase.to_s
     if @header.key?(stringified_downcased_key)
-      append_field_value(@header[stringified_downcased_key], val)
+      append_field_value(@header[stringified_downcased_key], val, key)
     else
       set_field(key, val)
     end
   end
 
+  # :stopdoc:
+  private def validate_field_name(key)
+    if key.to_s.bytesize > MAX_KEY_LENGTH
+      raise ArgumentError, "too long (#{key.to_s.bytesize} bytes) header: #{key.to_s[0, 30].inspect}..."
+    end
+    if /[\x00-\x1f\x7f:]/n.match?(key.to_s.b)
+      raise ArgumentError, "header field name cannot include control characters or colon: #{key.to_s[0, 30].inspect}"
+    end
+  end
+
   private def set_field(key, val)
+    validate_field_name(key)
     case val
     when Enumerable
       ary = []
-      append_field_value(ary, val)
+      append_field_value(ary, val, key)
       @header[key.downcase.to_s] = ary
     else
       val = val.to_s # for compatibility use to_s instead of to_str
+      if val.bytesize > MAX_FIELD_LENGTH
+        raise ArgumentError, "header #{key} has too long field value: #{val.bytesize} bytes (limit #{MAX_FIELD_LENGTH})"
+      end
       if val.b.count("\r\n") > 0
         raise ArgumentError, 'header field value cannot include CR/LF'
       end
@@ -282,18 +296,22 @@ module Net::HTTPHeader
     end
   end
 
-  private def append_field_value(ary, val)
+  private def append_field_value(ary, val, key)
     case val
     when Enumerable
-      val.each{|x| append_field_value(ary, x)}
+      val.each{|x| append_field_value(ary, x, key)}
     else
       val = val.to_s
+      if val.bytesize > MAX_FIELD_LENGTH
+        raise ArgumentError, "header #{key} has too long field value: #{val.bytesize} bytes (limit #{MAX_FIELD_LENGTH})"
+      end
       if /[\r\n]/n.match?(val.b)
         raise ArgumentError, 'header field value cannot include CR/LF'
       end
       ary.push val
     end
   end
+  # :startdoc:
 
   # Returns the array field value for the given +key+,
   # or +nil+ if there is no such field;
@@ -490,7 +508,7 @@ module Net::HTTPHeader
 
   alias canonical_each each_capitalized
 
-  def capitalize(name)
+  def capitalize(name)  # :nodoc:
     name.to_s.split('-'.freeze).map {|s| s.capitalize }.join('-'.freeze)
   end
   private :capitalize
@@ -770,7 +788,7 @@ module Net::HTTPHeader
   #
   # Net::HTTPHeader#content_type= is an alias for Net::HTTPHeader#set_content_type.
   def set_content_type(type, params = {})
-    @header['content-type'] = [type + params.map{|k,v|"; #{k}=#{v}"}.join('')]
+    set_field('Content-Type', type + params.map{|k,v|"; #{k}=#{v}"}.join(''))
   end
 
   alias content_type= set_content_type
@@ -957,12 +975,12 @@ module Net::HTTPHeader
     @header['proxy-authorization'] = [basic_encode(account, password)]
   end
 
-  def basic_encode(account, password)
+  def basic_encode(account, password)   # :nodoc:
     'Basic ' + ["#{account}:#{password}"].pack('m0')
   end
   private :basic_encode
 
-# Returns whether the HTTP session is to be closed.
+  # Returns whether the HTTP session is to be closed.
   def connection_close?
     token = /(?:\A|,)\s*close\s*(?:\z|,)/i
     @header['connection']&.grep(token) {return true}
@@ -970,7 +988,7 @@ module Net::HTTPHeader
     false
   end
 
-# Returns whether the HTTP session is to be kept alive.
+  # Returns whether the HTTP session is to be kept alive.
   def connection_keep_alive?
     token = /(?:\A|,)\s*keep-alive\s*(?:\z|,)/i
     @header['connection']&.grep(token) {return true}

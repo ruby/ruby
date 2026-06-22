@@ -1,6 +1,7 @@
 # frozen_string_literal: false
 
 require 'tempfile'
+require 'rbconfig/sizeof'
 
 class TestIOBuffer < Test::Unit::TestCase
   experimental = Warning[:experimental]
@@ -45,22 +46,22 @@ class TestIOBuffer < Test::Unit::TestCase
   def test_new_internal
     buffer = IO::Buffer.new(1024, IO::Buffer::INTERNAL)
     assert_equal 1024, buffer.size
-    refute buffer.external?
-    assert buffer.internal?
-    refute buffer.mapped?
+    refute_predicate buffer, :external?
+    assert_predicate buffer, :internal?
+    refute_predicate buffer, :mapped?
   end
 
   def test_new_mapped
     buffer = IO::Buffer.new(1024, IO::Buffer::MAPPED)
     assert_equal 1024, buffer.size
-    refute buffer.external?
-    refute buffer.internal?
-    assert buffer.mapped?
+    refute_predicate buffer, :external?
+    refute_predicate buffer, :internal?
+    assert_predicate buffer, :mapped?
   end
 
   def test_new_readonly
     buffer = IO::Buffer.new(128, IO::Buffer::INTERNAL|IO::Buffer::READONLY)
-    assert buffer.readonly?
+    assert_predicate buffer, :readonly?
 
     assert_raise IO::Buffer::AccessError do
       buffer.set_string("")
@@ -73,10 +74,84 @@ class TestIOBuffer < Test::Unit::TestCase
 
   def test_file_mapped
     buffer = File.open(__FILE__) {|file| IO::Buffer.map(file, nil, 0, IO::Buffer::READONLY)}
-    contents = buffer.get_string
+    assert_equal File.size(__FILE__), buffer.size
 
+    contents = buffer.get_string
     assert_include contents, "Hello World"
     assert_equal Encoding::BINARY, contents.encoding
+  end
+
+  def test_file_mapped_with_size
+    buffer = File.open(__FILE__) {|file| IO::Buffer.map(file, 30, 0, IO::Buffer::READONLY)}
+    assert_equal 30, buffer.size
+
+    contents = buffer.get_string
+    assert_equal "# frozen_string_literal: false", contents
+    assert_equal Encoding::BINARY, contents.encoding
+  end
+
+  def test_file_mapped_size_too_large
+    size = File.size(__FILE__) + 1
+    file_size = File.size(__FILE__)
+    message = "Size (#{size}) can't be larger than file size (#{file_size})"
+    assert_raise_with_message ArgumentError, message do
+      File.open(__FILE__) {|file| IO::Buffer.map(file, size, 0, IO::Buffer::READONLY)}
+    end
+  end
+
+  def test_file_mapped_size_just_enough
+    File.open(__FILE__) {|file|
+      assert_equal File.size(__FILE__), IO::Buffer.map(file, File.size(__FILE__), 0, IO::Buffer::READONLY).size
+    }
+  end
+
+  def test_file_mapped_offset_negative
+    offset = -1
+    message = "Offset (#{offset}) can't be negative!"
+    assert_raise_with_message ArgumentError, message do
+      File.open(__FILE__) {|file| IO::Buffer.map(file, nil, offset, IO::Buffer::READONLY)}
+    end
+  end
+
+  def test_file_mapped_offset_too_large
+    file_size = File.size(__FILE__)
+    page_count = file_size / IO::Buffer::PAGE_SIZE
+    offset = IO::Buffer::PAGE_SIZE * (page_count + 1)
+    message = "Offset (#{offset}) can't be larger than file size (#{file_size})"
+    assert_raise_with_message ArgumentError, message do
+      File.open(__FILE__) {|file| IO::Buffer.map(file, nil, offset, IO::Buffer::READONLY)}
+    end
+
+    if page_count > 0
+      offset = IO::Buffer::PAGE_SIZE * page_count
+      available_size = file_size - offset
+      size = available_size + 1
+      maximum_page_count = (file_size - size) / IO::Buffer::PAGE_SIZE
+      maximum_offset = IO::Buffer::PAGE_SIZE * maximum_page_count
+      message = "Offset (#{offset}) can't be larger than #{maximum_offset} " +
+                "for requested size (#{size})"
+      assert_raise_with_message ArgumentError, message do
+        File.open(__FILE__) {|file| IO::Buffer.map(file, size, offset, IO::Buffer::READONLY)}
+      end
+    end
+  end
+
+  def test_file_mapped_zero_size
+    assert_raise ArgumentError do
+      File.open(__FILE__) {|file| IO::Buffer.map(file, 0, 0, IO::Buffer::READONLY)}
+    end
+  end
+
+  def test_file_mapped_negative_size
+    assert_raise ArgumentError do
+      File.open(__FILE__) {|file| IO::Buffer.map(file, -10, 0, IO::Buffer::READONLY)}
+    end
+  end
+
+  def test_file_mapped_negative_offset
+    assert_raise ArgumentError do
+      File.open(__FILE__) {|file| IO::Buffer.map(file, 20, -1, IO::Buffer::READONLY)}
+    end
   end
 
   def test_file_mapped_invalid
@@ -88,19 +163,19 @@ class TestIOBuffer < Test::Unit::TestCase
   def test_string_mapped
     string = "Hello World"
     buffer = IO::Buffer.for(string)
-    assert buffer.readonly?
+    assert_predicate buffer, :readonly?
   end
 
   def test_string_mapped_frozen
     string = "Hello World".freeze
     buffer = IO::Buffer.for(string)
-    assert buffer.readonly?
+    assert_predicate buffer, :readonly?
   end
 
   def test_string_mapped_mutable
     string = "Hello World"
     IO::Buffer.for(string) do |buffer|
-      refute buffer.readonly?
+      refute_predicate buffer, :readonly?
 
       buffer.set_value(:U8, 0, "h".ord)
 
@@ -118,6 +193,16 @@ class TestIOBuffer < Test::Unit::TestCase
       assert_raise RuntimeError do
         string[0] = "h"
       end
+    end
+  end
+
+  def test_string_mapped_buffer_frozen
+    string = "Hello World".freeze
+    IO::Buffer.for(string) do |buffer|
+      assert_raise IO::Buffer::AccessError, "Buffer is not writable!" do
+        buffer.set_string("abc")
+      end
+      assert_equal "H".ord, buffer.get_value(:U8, 0)
     end
   end
 
@@ -176,6 +261,16 @@ class TestIOBuffer < Test::Unit::TestCase
 
     assert_raise IO::Buffer::AccessError do
       buffer.resize(0)
+    end
+  end
+
+  def test_resize_invalidated_slice
+    inner = IO::Buffer.new(IO::Buffer::PAGE_SIZE)
+    slice = inner.slice(0, 8)
+    inner.free
+
+    assert_raise(IO::Buffer::InvalidatedError) do
+      slice.resize(16)
     end
   end
 
@@ -313,6 +408,17 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_raise_with_message(ArgumentError, /Offset can't be negative/) do
       buffer.get_string(-1)
     end
+
+    encoding = Struct.new(:buffer) do
+      def to_str
+        buffer.free
+        "BINARY"
+      end
+    end.new(buffer.dup)
+    slice = encoding.buffer.slice(0, 8)
+    assert_raise(IO::Buffer::InvalidatedError) do
+      slice.get_string(0, 8, encoding)
+    end
   end
 
   def test_zero_length_get_string
@@ -343,9 +449,16 @@ class TestIOBuffer < Test::Unit::TestCase
     :u64 => [0, 2**64-1],
     :s64 => [-2**63, 0, 2**63-1],
 
+    :U128 => [0, 2**64, 2**127-1, 2**128-1],
+    :S128 => [-2**127, -2**63-1, -1, 0, 2**63, 2**127-1],
+    :u128 => [0, 2**64, 2**127-1, 2**128-1],
+    :s128 => [-2**127, -2**63-1, -1, 0, 2**63, 2**127-1],
+
     :F32 => [-1.0, 0.0, 0.5, 1.0, 128.0],
     :F64 => [-1.0, 0.0, 0.5, 1.0, 128.0],
   }
+
+  SIZE_MAX = RbConfig::LIMITS["SIZE_MAX"]
 
   def test_get_set_value
     buffer = IO::Buffer.new(128)
@@ -354,6 +467,16 @@ class TestIOBuffer < Test::Unit::TestCase
       values.each do |value|
         buffer.set_value(data_type, 0, value)
         assert_equal value, buffer.get_value(data_type, 0), "Converting #{value} as #{data_type}."
+      end
+      assert_raise(ArgumentError) {buffer.get_value(data_type, 128)}
+      assert_raise(ArgumentError) {buffer.set_value(data_type, 128, 0)}
+      case data_type
+      when :U8, :S8
+      else
+        assert_raise(ArgumentError) {buffer.get_value(data_type, 127)}
+        assert_raise(ArgumentError) {buffer.set_value(data_type, 127, 0)}
+        assert_raise(ArgumentError) {buffer.get_value(data_type, SIZE_MAX)}
+        assert_raise(ArgumentError) {buffer.set_value(data_type, SIZE_MAX, 0)}
       end
     end
   end
@@ -367,6 +490,26 @@ class TestIOBuffer < Test::Unit::TestCase
       buffer.set_values(format, 0, values)
       assert_equal values, buffer.get_values(format, 0), "Converting #{values} as #{format}."
     end
+  end
+
+  def test_set_values_invalidated_slice
+    to_int = Struct.new(:buffer) do
+      def to_int
+        buffer.free
+        0x41
+      end
+    end
+    buffer = IO::Buffer.new(128)
+    slice = buffer.slice(0, 8)
+    value = to_int.new(buffer)
+    assert_raise(IO::Buffer::InvalidatedError) {slice.set_value(:U8, 0, value)}
+
+    buffer = IO::Buffer.new(128)
+    slice = buffer.slice(0, 8)
+    value = to_int.new(buffer)
+    assert_raise(IO::Buffer::InvalidatedError) {
+      slice.set_values([:U8, :U8], 0, [0, value])
+    }
   end
 
   def test_zero_length_get_set_values
@@ -411,6 +554,15 @@ class TestIOBuffer < Test::Unit::TestCase
     buffer = IO::Buffer.for(string)
 
     assert_equal string.bytes, buffer.each_byte.to_a
+    assert_equal string.bytes[3, 5], buffer.each_byte(3, 5).to_a
+  end
+
+  def test_each_byte_bounds_error
+    buffer = IO::Buffer.for("A")
+
+    assert_raise(ArgumentError) { buffer.each_byte(0, 2).to_a }
+    assert_raise(ArgumentError) { buffer.each_byte(1, 1).to_a }
+    assert_raise(ArgumentError) { buffer.each_byte(SIZE_MAX, 0).to_a }
   end
 
   def test_zero_length_each_byte
@@ -421,7 +573,21 @@ class TestIOBuffer < Test::Unit::TestCase
 
   def test_clear
     buffer = IO::Buffer.new(16)
-    buffer.set_string("Hello World!")
+    assert_equal "\0" * 16, buffer.get_string
+    buffer.clear(1)
+    assert_equal "\1" * 16, buffer.get_string
+    buffer.clear(2, 1, 2)
+    assert_equal "\1" + "\2"*2 + "\1"*13, buffer.get_string
+    buffer.clear(2, 1)
+    assert_equal "\1" + "\2"*15, buffer.get_string
+    buffer.clear(260)
+    assert_equal "\4" * 16, buffer.get_string
+    assert_raise(TypeError) {buffer.clear("x")}
+
+    assert_raise(ArgumentError) {buffer.clear(0, 20)}
+    assert_raise(ArgumentError) {buffer.clear(0, 0, 20)}
+    assert_raise(ArgumentError) {buffer.clear(0, 10, 10)}
+    assert_raise(ArgumentError) {buffer.clear(0, SIZE_MAX-7, 10)}
   end
 
   def test_invalidation
@@ -599,6 +765,68 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_equal IO::Buffer.for("\xce\xcd\xcc\xcb\xce\xcd\xcc\xcb\xce\xcd"), source.dup.not!
   end
 
+  def test_operators_raise_on_freed_self
+    inner = IO::Buffer.new(IO::Buffer::PAGE_SIZE)
+    slice = inner.slice(0, 8)
+    inner.free
+
+    mask = IO::Buffer.for("ABCDEFGH")
+    assert_raise(IO::Buffer::InvalidatedError) { slice & mask }
+    assert_raise(IO::Buffer::InvalidatedError) { slice | mask }
+    assert_raise(IO::Buffer::InvalidatedError) { slice ^ mask }
+    assert_raise(IO::Buffer::InvalidatedError) { ~slice }
+
+    assert_raise(IO::Buffer::InvalidatedError) { slice.and!(mask) }
+    assert_raise(IO::Buffer::InvalidatedError) { slice.or!(mask) }
+    assert_raise(IO::Buffer::InvalidatedError) { slice.xor!(mask) }
+  end
+
+  def test_operators_raise_on_freed_mask
+    inner = IO::Buffer.new(IO::Buffer::PAGE_SIZE)
+    mask_slice = inner.slice(0, 8)
+    inner.free
+
+    source = IO::Buffer.for("ABCDEFGH")
+    assert_raise(IO::Buffer::InvalidatedError) { source & mask_slice }
+    assert_raise(IO::Buffer::InvalidatedError) { source | mask_slice }
+    assert_raise(IO::Buffer::InvalidatedError) { source ^ mask_slice }
+
+    source = source.dup
+    assert_raise(IO::Buffer::InvalidatedError) { source.and!(mask_slice) }
+    assert_raise(IO::Buffer::InvalidatedError) { source.or!(mask_slice) }
+    assert_raise(IO::Buffer::InvalidatedError) { source.xor!(mask_slice) }
+  end
+
+  def test_bit_count
+    # All ones: 8 bits set per byte
+    assert_equal 8,  IO::Buffer.for("\xFF").bit_count
+    # All zeros: no bits set
+    assert_equal 0,  IO::Buffer.for("\x00").bit_count
+    # Mixed: 0xFF (8) + 0x00 (0) + 0x0F (4) = 12
+    assert_equal 12, IO::Buffer.for("\xFF\x00\x0F").bit_count
+    # Subrange: offset=0, length=1 => 0xFF => 8
+    assert_equal 8,  IO::Buffer.for("\xFF\x00\x0F").bit_count(0, 1)
+    # Subrange: offset=1, length=1 => 0x00 => 0
+    assert_equal 0,  IO::Buffer.for("\xFF\x00\x0F").bit_count(1, 1)
+    # Subrange: offset=2, length=1 => 0x0F => 4
+    assert_equal 4,  IO::Buffer.for("\xFF\x00\x0F").bit_count(2, 1)
+    # Subrange: offset=1, length=2 => 0x00 + 0x0F = 4
+    assert_equal 4,  IO::Buffer.for("\xFF\x00\x0F").bit_count(1, 2)
+    # Empty buffer: 0
+    assert_equal 0,  IO::Buffer.new(0).bit_count
+    # 8-byte aligned: 8 bytes of 0xFF => 64 bits
+    assert_equal 64, IO::Buffer.for("\xFF" * 8).bit_count
+    # Cross 8-byte boundary: 9 bytes of 0xFF => 72 bits
+    assert_equal 72, IO::Buffer.for("\xFF" * 9).bit_count
+    # offset=0 with no length => defaults to full buffer:
+    assert_equal 12, IO::Buffer.for("\xFF\x00\x0F").bit_count(0)
+    # offset=1 with no length => 0x00 + 0x0F = 4:
+    assert_equal 4,  IO::Buffer.for("\xFF\x00\x0F").bit_count(1)
+    # Out-of-range raises
+    assert_raise(ArgumentError) { IO::Buffer.for("\xFF").bit_count(0, 2) }
+    assert_raise(ArgumentError) { IO::Buffer.for("\xFF").bit_count(1, 1) }
+  end
+
   def test_shared
     message = "Hello World"
     buffer = IO::Buffer.new(64, IO::Buffer::MAPPED | IO::Buffer::SHARED)
@@ -620,8 +848,8 @@ class TestIOBuffer < Test::Unit::TestCase
 
       buffer = IO::Buffer.map(file, nil, 0, IO::Buffer::PRIVATE)
       begin
-        assert buffer.private?
-        refute buffer.readonly?
+        assert_predicate buffer, :private?
+        refute_predicate buffer, :readonly?
 
         buffer.set_string("J")
 
@@ -682,5 +910,231 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_predicate buf, :null?
     buf.set_string('a', 0, 0)
     assert_predicate buf, :empty?
+  end
+
+  # https://bugs.ruby-lang.org/issues/21210
+  def test_bug_21210
+    omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
+
+    str = +"hello"
+    buf = IO::Buffer.for(str)
+    assert_predicate buf, :valid?
+
+    GC.verify_compaction_references(expand_heap: true, toward: :empty)
+
+    assert_predicate buf, :valid?
+  end
+
+  def test_128_bit_integers
+    buffer = IO::Buffer.new(32)
+
+    # Test unsigned 128-bit integers
+    test_values_u128 = [
+      0,
+      1,
+      2**64 - 1,
+      2**64,
+      2**127 - 1,
+      2**128 - 1,
+    ]
+
+    test_values_u128.each do |value|
+      buffer.set_value(:u128, 0, value)
+      assert_equal value, buffer.get_value(:u128, 0), "u128: #{value}"
+
+      buffer.set_value(:U128, 0, value)
+      assert_equal value, buffer.get_value(:U128, 0), "U128: #{value}"
+    end
+
+    # Test signed 128-bit integers
+    test_values_s128 = [
+      -2**127,
+      -2**63 - 1,
+      -1,
+      0,
+      1,
+      2**63,
+      2**127 - 1,
+    ]
+
+    test_values_s128.each do |value|
+      buffer.set_value(:s128, 0, value)
+      assert_equal value, buffer.get_value(:s128, 0), "s128: #{value}"
+
+      buffer.set_value(:S128, 0, value)
+      assert_equal value, buffer.get_value(:S128, 0), "S128: #{value}"
+    end
+
+    # Test size_of
+    assert_equal 16, IO::Buffer.size_of(:u128)
+    assert_equal 16, IO::Buffer.size_of(:U128)
+    assert_equal 16, IO::Buffer.size_of(:s128)
+    assert_equal 16, IO::Buffer.size_of(:S128)
+    assert_equal 32, IO::Buffer.size_of([:u128, :u128])
+  end
+
+  def test_integer_endianness_swapping
+    # Test that byte order is swapped correctly for all signed and unsigned integers > 1 byte
+    host_is_le = IO::Buffer::HOST_ENDIAN == IO::Buffer::LITTLE_ENDIAN
+    host_is_be = IO::Buffer::HOST_ENDIAN == IO::Buffer::BIG_ENDIAN
+
+    # Test values that will produce different byte patterns when swapped
+    # Format: [little_endian_type, big_endian_type, test_value, expected_swapped_value]
+    # expected_swapped_value is the result when writing as le_type and reading as be_type
+    # (or vice versa) on a little-endian host
+    test_cases = [
+      [:u16, :U16, 0x1234, 0x3412],
+      [:s16, :S16, 0x1234, 0x3412],
+      [:u32, :U32, 0x12345678, 0x78563412],
+      [:s32, :S32, 0x12345678, 0x78563412],
+      [:u64, :U64, 0x0123456789ABCDEF, 0xEFCDAB8967452301],
+      [:s64, :S64, 0x0123456789ABCDEF, -1167088121787636991],
+      [:u128, :U128, 0x0123456789ABCDEF0123456789ABCDEF, 0xEFCDAB8967452301EFCDAB8967452301],
+      [:u128, :U128, 0x0123456789ABCDEFFEDCBA9876543210, 0x1032547698BADCFEEFCDAB8967452301],
+      [:u128, :U128, 0xFEDCBA98765432100123456789ABCDEF, 0xEFCDAB89674523011032547698BADCFE],
+      [:u128, :U128, 0x123456789ABCDEF0FEDCBA9876543210, 0x1032547698BADCFEF0DEBC9A78563412],
+      [:s128, :S128, 0x0123456789ABCDEF0123456789ABCDEF, -21528975894082904073953971026863512831],
+      [:s128, :S128, 0x0123456789ABCDEFFEDCBA9876543210, 0x1032547698BADCFEEFCDAB8967452301],
+    ]
+
+    test_cases.each do |le_type, be_type, value, expected_swapped|
+      buffer_size = IO::Buffer.size_of(le_type)
+      buffer = IO::Buffer.new(buffer_size * 2)
+
+      # Test little-endian round-trip
+      buffer.set_value(le_type, 0, value)
+      result_le = buffer.get_value(le_type, 0)
+      assert_equal value, result_le, "#{le_type}: round-trip failed"
+
+      # Test big-endian round-trip
+      buffer.set_value(be_type, buffer_size, value)
+      result_be = buffer.get_value(be_type, buffer_size)
+      assert_equal value, result_be, "#{be_type}: round-trip failed"
+
+      # Verify byte patterns are different when endianness differs from host
+      if host_is_le
+        # On little-endian host: le_type should match host, be_type should be swapped
+        # So the byte patterns should be different (unless value is symmetric)
+        # Read back with opposite endianness to verify swapping
+        result_le_read_as_be = buffer.get_value(be_type, 0)
+        result_be_read_as_le = buffer.get_value(le_type, buffer_size)
+
+        # The swapped reads should NOT equal the original value (unless it's symmetric)
+        # For most values, this will be different
+        if value != 0 && value != -1 && value.abs != 1
+          refute_equal value, result_le_read_as_be, "#{le_type} written, read as #{be_type} should be swapped on LE host"
+          refute_equal value, result_be_read_as_le, "#{be_type} written, read as #{le_type} should be swapped on LE host"
+        end
+
+        # Verify that reading back with correct endianness works
+        assert_equal value, buffer.get_value(le_type, 0), "#{le_type} should read correctly on LE host"
+        assert_equal value, buffer.get_value(be_type, buffer_size), "#{be_type} should read correctly on LE host (with swapping)"
+      elsif host_is_be
+        # On big-endian host: be_type should match host, le_type should be swapped
+        result_le_read_as_be = buffer.get_value(be_type, 0)
+        result_be_read_as_le = buffer.get_value(le_type, buffer_size)
+
+        # The swapped reads should NOT equal the original value (unless it's symmetric)
+        if value != 0 && value != -1 && value.abs != 1
+          refute_equal value, result_le_read_as_be, "#{le_type} written, read as #{be_type} should be swapped on BE host"
+          refute_equal value, result_be_read_as_le, "#{be_type} written, read as #{le_type} should be swapped on BE host"
+        end
+
+        # Verify that reading back with correct endianness works
+        assert_equal value, buffer.get_value(be_type, buffer_size), "#{be_type} should read correctly on BE host"
+        assert_equal value, buffer.get_value(le_type, 0), "#{le_type} should read correctly on BE host (with swapping)"
+      end
+
+      # Verify that when we write with one endianness and read with the opposite,
+      # we get the expected swapped value
+      buffer.set_value(le_type, 0, value)
+      swapped_value_le_to_be = buffer.get_value(be_type, 0)
+      assert_equal expected_swapped, swapped_value_le_to_be, "#{le_type} written, read as #{be_type} should produce expected swapped value"
+
+      # Also verify the reverse direction
+      buffer.set_value(be_type, buffer_size, value)
+      swapped_value_be_to_le = buffer.get_value(le_type, buffer_size)
+      assert_equal expected_swapped, swapped_value_be_to_le, "#{be_type} written, read as #{le_type} should produce expected swapped value"
+
+      # Verify that writing the swapped value back and reading with original endianness
+      # gives us the original value (double-swap should restore original)
+      buffer.set_value(be_type, 0, swapped_value_le_to_be)
+      round_trip_value = buffer.get_value(le_type, 0)
+      assert_equal value, round_trip_value, "#{le_type}/#{be_type}: double-swap should restore original value"
+    end
+  end
+
+  class Bug21882 < RuntimeError; end
+  def test_locked_exception
+    buf = IO::Buffer.new(10)
+    assert_raise(Bug21882, '#locked should propagate exception') do
+      buf.locked { raise Bug21882 }
+    end
+
+    # should be unlocked now and can be locked again
+    refute_predicate buf, :locked?
+    buf.locked { }
+  end
+
+  def test_locked_break
+    buf = IO::Buffer.new(10)
+    assert_equal :ok, (buf.locked { break :ok })
+
+    # should be unlocked now and can be locked again
+    refute_predicate buf, :locked?
+    buf.locked { }
+  end
+
+  def test_locked_throw
+    buf = IO::Buffer.new(10)
+    assert_equal :ok, (catch(:bug21882) { buf.locked { throw :bug21882, :ok } })
+
+    # should be unlocked now and can be locked again
+    refute_predicate buf, :locked?
+    buf.locked { }
+  end
+
+  def test_hexdump_default_width
+    buffer = IO::Buffer.for("Hello World")
+    hexdump = buffer.hexdump
+    assert_include hexdump, "Hello World"
+    assert_include hexdump, "0x00000000"
+  end
+
+  def test_hexdump_custom_width
+    buffer = IO::Buffer.for("A" * 64)
+    hexdump = buffer.hexdump(0, 64, 32)
+    assert_include hexdump, "0x00000000"
+    assert_include hexdump, "0x00000020"
+  end
+
+  def test_hexdump_maximum_width
+    buffer = IO::Buffer.for("A" * 2048)
+    # Maximum width is 1024
+    hexdump = buffer.hexdump(0, 1024, 1024)
+    assert_include hexdump, "0x00000000"
+  end
+
+  def test_hexdump_width_too_large
+    buffer = IO::Buffer.for("A")
+    # Width exceeding maximum (1024) should raise ArgumentError
+    assert_raise(ArgumentError) do
+      buffer.hexdump(0, 1, 1025)
+    end
+  end
+
+  def test_hexdump_width_negative
+    buffer = IO::Buffer.for("A")
+    assert_raise(ArgumentError) do
+      buffer.hexdump(0, 1, -1)
+    end
+  end
+
+  def test_hexdump_width_zero
+    buffer = IO::Buffer.for("A")
+    # Width must be at least 1
+    assert_raise(ArgumentError) do
+      buffer.hexdump(0, 1, 0)
+    end
   end
 end

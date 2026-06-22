@@ -5,13 +5,13 @@ describe "OpenSSL.fixed_length_secure_compare" do
   it "returns true for two strings with the same content" do
     input1 = "the quick brown fox jumps over the lazy dog"
     input2 = "the quick brown fox jumps over the lazy dog"
-    OpenSSL.fixed_length_secure_compare(input1, input2).should be_true
+    OpenSSL.fixed_length_secure_compare(input1, input2).should == true
   end
 
   it "returns false for two strings of equal size with different content" do
     input1 = "the quick brown fox jumps over the lazy dog"
     input2 = "the lazy dog jumps over the quick brown fox"
-    OpenSSL.fixed_length_secure_compare(input1, input2).should be_false
+    OpenSSL.fixed_length_secure_compare(input1, input2).should == false
   end
 
   it "converts both arguments to strings using #to_str" do
@@ -19,17 +19,17 @@ describe "OpenSSL.fixed_length_secure_compare" do
     input1.should_receive(:to_str).and_return("the quick brown fox jumps over the lazy dog")
     input2 = mock("input2")
     input2.should_receive(:to_str).and_return("the quick brown fox jumps over the lazy dog")
-    OpenSSL.fixed_length_secure_compare(input1, input2).should be_true
+    OpenSSL.fixed_length_secure_compare(input1, input2).should == true
   end
 
   it "does not accept arguments that are not string and cannot be coerced into strings" do
     -> {
       OpenSSL.fixed_length_secure_compare("input1", :input2)
-    }.should raise_error(TypeError, 'no implicit conversion of Symbol into String')
+    }.should.raise(TypeError, 'no implicit conversion of Symbol into String')
 
     -> {
       OpenSSL.fixed_length_secure_compare(Object.new, "input2")
-    }.should raise_error(TypeError, 'no implicit conversion of Object into String')
+    }.should.raise(TypeError, 'no implicit conversion of Object into String')
   end
 
   it "raises an ArgumentError for two strings of different size" do
@@ -37,6 +37,6 @@ describe "OpenSSL.fixed_length_secure_compare" do
     input2 = "the quick brown fox"
     -> {
       OpenSSL.fixed_length_secure_compare(input1, input2)
-    }.should raise_error(ArgumentError, 'inputs must be of equal length')
+    }.should.raise(ArgumentError, 'inputs must be of equal length')
   end
 end

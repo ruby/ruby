@@ -1,3 +1,6 @@
+#--
+# rbs_inline: enabled
+
 module Prism
   # The Reflection module provides the ability to reflect on the structure of
   # the syntax tree itself, as opposed to looking at a single syntax tree. This
@@ -7,9 +10,11 @@ module Prism
     # for all other field types.
     class Field
       # The name of the field.
-      attr_reader :name
+      attr_reader :name #: Symbol
 
       # Initializes the field with the given name.
+      #--
+      #: (Symbol name) -> void
       def initialize(name)
         @name = name
       end
@@ -83,9 +88,11 @@ module Prism
     # the bitset should be accessed through their query methods.
     class FlagsField < Field
       # The names of the flags in the bitset.
-      attr_reader :flags
+      attr_reader :flags #: Array[Symbol]
 
       # Initializes the flags field with the given name and flags.
+      #--
+      #: (Symbol name, Array[Symbol] flags) -> void
       def initialize(name, flags)
         super(name)
         @flags = flags
@@ -93,6 +100,8 @@ module Prism
     end
 
     # Returns the fields for the given node.
+    #--
+    #: (singleton(Node) node) -> Array[Field]
     def self.fields_for(node)
       case node.type
       <%- nodes.each do |node| -%>

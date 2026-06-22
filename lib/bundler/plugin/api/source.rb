@@ -74,6 +74,14 @@ module Bundler
           {}
         end
 
+        # Download the gem specified by the spec at appropriate path.
+        #
+        # A source plugin can implement this method to split the download and the
+        # installation of a gem.
+        #
+        # @return [Boolean] Whether the download of the gem succeeded.
+        def download(spec, opts); end
+
         # Install the gem specified by the spec at appropriate path.
         # `install_path` provides a sufficient default, if the source can only
         # satisfy one gem,  but is not binding.

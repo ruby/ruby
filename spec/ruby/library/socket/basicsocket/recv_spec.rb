@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
@@ -22,7 +22,7 @@ describe "BasicSocket#recv" do
       client.close
     end
     Thread.pass while t.status and t.status != "sleep"
-    t.status.should_not be_nil
+    t.status.should_not == nil
 
     socket = TCPSocket.new('127.0.0.1', @port)
     socket.send('hello', 0)
@@ -44,7 +44,7 @@ describe "BasicSocket#recv" do
       client.close
     end
     Thread.pass while t.status and t.status != "sleep"
-    t.status.should_not be_nil
+    t.status.should_not == nil
 
     socket = TCPSocket.new('127.0.0.1', @port)
     socket.send('helloU', Socket::MSG_OOB)
@@ -64,7 +64,7 @@ describe "BasicSocket#recv" do
       client.close
     end
     Thread.pass while t.status and t.status != "sleep"
-    t.status.should_not be_nil
+    t.status.should_not == nil
 
     socket = TCPSocket.new('127.0.0.1', @port)
     socket.write("firstline\377secondline\377")
@@ -184,42 +184,21 @@ describe "BasicSocket#recv" do
         @server.close unless @server.closed?
       end
 
-      ruby_version_is ""..."3.3" do
-        it "returns an empty String on a closed stream socket" do
-          t = Thread.new do
-            client = @server.accept
-            client.recv(10)
-          ensure
-            client.close if client
-          end
-
-          Thread.pass while t.status and t.status != "sleep"
-          t.status.should_not be_nil
-
-          socket = TCPSocket.new('127.0.0.1', @port)
-          socket.close
-
-          t.value.should == ""
+      it "returns nil on a closed stream socket" do
+        t = Thread.new do
+          client = @server.accept
+          client.recv(10)
+        ensure
+          client.close if client
         end
-      end
 
-      ruby_version_is "3.3" do
-        it "returns nil on a closed stream socket" do
-          t = Thread.new do
-            client = @server.accept
-            client.recv(10)
-          ensure
-            client.close if client
-          end
+        Thread.pass while t.status and t.status != "sleep"
+        t.status.should_not == nil
 
-          Thread.pass while t.status and t.status != "sleep"
-          t.status.should_not be_nil
+        socket = TCPSocket.new('127.0.0.1', @port)
+        socket.close
 
-          socket = TCPSocket.new('127.0.0.1', @port)
-          socket.close
-
-          t.value.should be_nil
-        end
+        t.value.should == nil
       end
     end
 

@@ -1,0 +1,5 @@
+if true
+       ^ expected `then` or `;` or '\n'
+       ^ unexpected end-of-input, assuming it is closing the parent top level context
+^~ expected an `end` to close the conditional clause
+

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 RSpec.describe "global gem caching" do
+  # Uses subprocess because this setting must apply across multiple app directories (bundled_app and bundled_app2)
   before { bundle "config set global_gem_cache true" }
 
   describe "using the cross-application user cache" do
@@ -8,7 +9,13 @@ RSpec.describe "global gem caching" do
     let(:source2) { "http://gemserver.example.org" }
 
     def cache_base
-      home(".bundle", "cache", "gems")
+      # Use the unified global gem cache path if available (from RubyGems),
+      # otherwise fall back to the Bundler-specific cache location
+      if Gem.respond_to?(:global_gem_cache_path)
+        Pathname.new(Gem.global_gem_cache_path)
+      else
+        home(".bundle", "cache", "gems")
+      end
     end
 
     def source_global_cache(*segments)
@@ -42,6 +49,8 @@ RSpec.describe "global gem caching" do
     end
 
     it "shows a proper error message if a cached gem is corrupted" do
+      skip "This example is not working on ruby/ruby repo" if ruby_core?
+
       source_global_cache.mkpath
       FileUtils.touch(source_global_cache("myrack-1.0.0.gem"))
 
@@ -88,14 +97,14 @@ RSpec.describe "global gem caching" do
 
     describe "when the same gem from different sources is installed" do
       it "should use the appropriate one from the global cache" do
-        bundle "config path.system true"
+        bundle_config "path.system true"
 
         install_gemfile <<-G, artifice: "compact_index"
           source "#{source}"
           gem "myrack"
         G
 
-        pristine_system_gems :bundler
+        pristine_system_gems
         expect(the_bundle).not_to include_gems "myrack 1.0.0"
         expect(source_global_cache("myrack-1.0.0.gem")).to exist
         # myrack 1.0.0 is not installed and it is in the global cache
@@ -105,7 +114,7 @@ RSpec.describe "global gem caching" do
           gem "myrack", "0.9.1"
         G
 
-        pristine_system_gems :bundler
+        pristine_system_gems
         expect(the_bundle).not_to include_gems "myrack 0.9.1"
         expect(source2_global_cache("myrack-0.9.1.gem")).to exist
         # myrack 0.9.1 is not installed and it is in the global cache
@@ -119,7 +128,7 @@ RSpec.describe "global gem caching" do
         # myrack 1.0.0 is installed and myrack 0.9.1 is not
         expect(the_bundle).to include_gems "myrack 1.0.0"
         expect(the_bundle).not_to include_gems "myrack 0.9.1"
-        pristine_system_gems :bundler
+        pristine_system_gems
 
         gemfile <<-G
           source "#{source2}"
@@ -133,7 +142,7 @@ RSpec.describe "global gem caching" do
       end
 
       it "should not install if the wrong source is provided" do
-        bundle "config path.system true"
+        bundle_config "path.system true"
 
         gemfile <<-G
           source "#{source}"
@@ -141,7 +150,7 @@ RSpec.describe "global gem caching" do
         G
 
         bundle :install, artifice: "compact_index"
-        pristine_system_gems :bundler
+        pristine_system_gems
         expect(the_bundle).not_to include_gems "myrack 1.0.0"
         expect(source_global_cache("myrack-1.0.0.gem")).to exist
         # myrack 1.0.0 is not installed and it is in the global cache
@@ -152,7 +161,7 @@ RSpec.describe "global gem caching" do
         G
 
         bundle :install, artifice: "compact_index"
-        pristine_system_gems :bundler
+        pristine_system_gems
         expect(the_bundle).not_to include_gems "myrack 0.9.1"
         expect(source2_global_cache("myrack-0.9.1.gem")).to exist
         # myrack 0.9.1 is not installed and it is in the global cache
@@ -191,7 +200,7 @@ RSpec.describe "global gem caching" do
 
     describe "when installing gems from a different directory" do
       it "uses the global cache as a source" do
-        bundle "config path.system true"
+        bundle_config "path.system true"
 
         install_gemfile <<-G, artifice: "compact_index"
           source "#{source}"
@@ -204,7 +213,7 @@ RSpec.describe "global gem caching" do
         expect(the_bundle).to include_gems "activesupport 2.3.5"
         expect(source_global_cache("myrack-1.0.0.gem")).to exist
         expect(source_global_cache("activesupport-2.3.5.gem")).to exist
-        pristine_system_gems :bundler
+        pristine_system_gems
         # Both gems are now only in the global cache
         expect(the_bundle).not_to include_gems "myrack 1.0.0"
         expect(the_bundle).not_to include_gems "activesupport 2.3.5"
@@ -281,7 +290,7 @@ RSpec.describe "global gem caching" do
       gem_binary_cache.join("very_simple_binary_c.rb").open("w") {|f| f << "puts File.basename(__FILE__)" }
       git_binary_cache.join("very_simple_git_binary_c.rb").open("w") {|f| f << "puts File.basename(__FILE__)" }
 
-      bundle "config set --local path different_path"
+      bundle_config "path different_path"
       bundle :install
 
       expect(Dir[home(".bundle", "cache", "extensions", "**", "*binary_c*")]).to all(end_with(".rb"))

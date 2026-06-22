@@ -13,7 +13,7 @@ module Gem
   # An Array of the default sources that come with RubyGems
 
   def self.default_sources
-    %w[https://rubygems.org/]
+    @default_sources ||= %w[https://rubygems.org/]
   end
 
   ##
@@ -146,6 +146,15 @@ module Gem
 
   def self.cache_home
     @cache_home ||= ENV["XDG_CACHE_HOME"] || File.join(Gem.user_home, ".cache")
+  end
+
+  ##
+  # The path to the global gem cache directory.
+  # This is used when global_gem_cache is enabled to share .gem files
+  # across all Ruby installations.
+
+  def self.global_gem_cache_path
+    File.join(cache_home, "gem", "gems")
   end
 
   ##

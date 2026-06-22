@@ -220,7 +220,7 @@ assert_equal 'Sub', %q{
   call(Sub.new('o')).class
 }
 
-# String#dup with FL_EXIVAR
+# String#dup with generic ivars
 assert_equal '["str", "ivar"]', %q{
   def str_dup(str) = str.dup
   str = "str"
@@ -465,91 +465,6 @@ assert_normal_exit %q{
     if r != 777
       raise "error"
     end
-  end
-}
-
-assert_equal '0', %q{
-  # This is a regression test for incomplete invalidation from
-  # opt_setinlinecache. This test might be brittle, so
-  # feel free to remove it in the future if it's too annoying.
-  # This test assumes --yjit-call-threshold=2.
-  module M
-    Foo = 1
-    def foo
-      Foo
-    end
-
-    def pin_self_type_then_foo
-      _ = @foo
-      foo
-    end
-
-    def only_ints
-      1 + self
-      foo
-    end
-  end
-
-  class Integer
-    include M
-  end
-
-  class Sub
-    include M
-  end
-
-  foo_method = M.instance_method(:foo)
-
-  dbg = ->(message) do
-    return # comment this out to get printouts
-
-    $stderr.puts RubyVM::YJIT.disasm(foo_method)
-    $stderr.puts message
-  end
-
-  2.times { 42.only_ints }
-
-  dbg["There should be two versions of getinlineache"]
-
-  module M
-    remove_const(:Foo)
-  end
-
-  dbg["There should be no getinlinecaches"]
-
-  2.times do
-    42.only_ints
-  rescue NameError => err
-    _ = "caught name error #{err}"
-  end
-
-  dbg["There should be one version of getinlineache"]
-
-  2.times do
-    Sub.new.pin_self_type_then_foo
-  rescue NameError
-    _ = 'second specialization'
-  end
-
-  dbg["There should be two versions of getinlineache"]
-
-  module M
-    Foo = 1
-  end
-
-  dbg["There should still be two versions of getinlineache"]
-
-  42.only_ints
-
-  dbg["There should be no getinlinecaches"]
-
-  # Find name of the first VM instruction in M#foo.
-  insns = RubyVM::InstructionSequence.of(foo_method).to_a
-  if defined?(RubyVM::YJIT.blocks_for) && (insns.last.find { Array === _1 }&.first == :opt_getinlinecache)
-    RubyVM::YJIT.blocks_for(RubyVM::InstructionSequence.of(foo_method))
-      .filter { _1.iseq_start_index == 0 }.count
-  else
-    0 # skip the test
   end
 }
 
@@ -1415,7 +1330,7 @@ assert_equal '[42, :default]', %q{
   ]
 }
 
-# Test default value block for Hash with opt_aref_with
+# Test default value block for Hash
 assert_equal "false", <<~RUBY, frozen_string_literal: false
   def index_with_string(h)
     h["foo"]
@@ -2568,6 +2483,32 @@ assert_equal '[0, 2]', %q{
   B.new.foo
 }
 
+# invokesuper in a weird block
+assert_equal '["block->A#itself", "block->singleton#itself"]', %q{
+  # This test runs the same block as first as a block and then as a method,
+  # testing the routine that finds the currently running method, which is
+  # relevant for `super`.
+  class BlockIseqDuality
+    prepend(Module.new do
+      def itself
+        nested = -> { "block->" + super() }
+        @singleton_itself.define_singleton_method(:itself, &nested)
+        nested
+      end
+    end)
+
+    attr_reader :singleton_itself
+    def initialize = (@singleton_itself = "singleton#itself")
+
+    def itself = "A#itself"
+  end
+
+  tester = BlockIseqDuality.new
+  super_lambda = tester.itself
+  super_lambda.call # warmup
+  [super_lambda.call, tester.singleton_itself.itself]
+}
+
 # invokesuper zsuper in a bmethod
 assert_equal 'ok', %q{
   class Foo
@@ -2763,6 +2704,22 @@ assert_equal '[1, 2]', %q{
 
   expandarray_redefined_nilclass
   expandarray_redefined_nilclass
+}
+
+assert_equal 'not_array', %q{
+  def expandarray_not_array(obj)
+    a, = obj
+    a
+  end
+
+  obj = Object.new
+  def obj.method_missing(m, *args, &block)
+    return [:not_array] if m == :to_ary
+    super
+  end
+
+  expandarray_not_array(obj)
+  expandarray_not_array(obj)
 }
 
 assert_equal '[1, 2, nil]', %q{
@@ -3018,15 +2975,16 @@ assert_equal '[:itself]', %q{
     itself
   end
 
-  tracing_ractor = Ractor.new do
+  port = Ractor::Port.new
+  tracing_ractor = Ractor.new port do |port|
     # 1: start tracing
     events = []
     tp = TracePoint.new(:c_call) { events << _1.method_id }
     tp.enable
-    Ractor.yield(nil)
+    port << nil
 
     # 3: run compiled method on tracing ractor
-    Ractor.yield(nil)
+    port << nil
     traced_method
 
     events
@@ -3034,13 +2992,13 @@ assert_equal '[:itself]', %q{
     tp&.disable
   end
 
-  tracing_ractor.take
+  port.receive
 
   # 2: compile on non tracing ractor
   traced_method
 
-  tracing_ractor.take
-  tracing_ractor.take
+  port.receive
+  tracing_ractor.value
 }
 
 # Try to hit a lazy branch stub while another ractor enables tracing
@@ -3054,17 +3012,18 @@ assert_equal '42', %q{
     end
   end
 
-  ractor = Ractor.new do
+  port = Ractor::Port.new
+  ractor = Ractor.new port do |port|
     compiled(false)
-    Ractor.yield(nil)
+    port << nil
     compiled(41)
   end
 
   tp = TracePoint.new(:line) { itself }
-  ractor.take
+  port.receive
   tp.enable
 
-  ractor.take
+  ractor.value
 }
 
 # Test equality with changing types
@@ -3140,7 +3099,7 @@ assert_equal '42',  %q{
   A.foo
   A.foo
 
-  Ractor.new { A.foo }.take
+  Ractor.new { A.foo }.value
 }
 
 assert_equal '["plain", "special", "sub", "plain"]', %q{
@@ -3667,6 +3626,74 @@ assert_equal 'new', %q{
   test
 }
 
+# Bug #21257 (infinite jmp)
+assert_equal 'ok', %q{
+  Good = :ok
+
+  def first
+    second
+  end
+
+  def second
+    ::Good
+  end
+
+  # Make `second` side exit on its first instruction
+  trace = TracePoint.new(:line) { }
+  trace.enable(target: method(:second))
+
+  first
+  # Recompile now that the constant cache is populated, so we get a fallthrough from `first` to `second`
+  # (this is need to reproduce with --yjit-call-threshold=1)
+  RubyVM::YJIT.code_gc if defined?(RubyVM::YJIT)
+  first
+
+  # Trigger a constant cache miss in rb_vm_opt_getconstant_path (in `second`) next time it's called
+  module InvalidateConstantCache
+    Good = nil
+  end
+
+  RubyVM::YJIT.simulate_oom! if defined?(RubyVM::YJIT)
+
+  first
+  first
+}
+
+assert_equal 'ok', %q{
+  # Multiple incoming branches into second
+  Good = :ok
+
+  def incoming_one
+    second
+  end
+
+  def incoming_two
+    second
+  end
+
+  def second
+    ::Good
+  end
+
+  # Make `second` side exit on its first instruction
+  trace = TracePoint.new(:line) { }
+  trace.enable(target: method(:second))
+
+  incoming_one
+  # Recompile now that the constant cache is populated, so we get a fallthrough from `incoming_one` to `second`
+  # (this is need to reproduce with --yjit-call-threshold=1)
+  RubyVM::YJIT.code_gc if defined?(RubyVM::YJIT)
+  incoming_one
+  incoming_two
+
+  # Trigger a constant cache miss in rb_vm_opt_getconstant_path (in `second`) next time it's called
+  module InvalidateConstantCache
+    Good = nil
+  end
+
+  incoming_one
+}
+
 assert_equal 'ok', %q{
   # Try to compile new method while OOM
   def foo
@@ -3789,36 +3816,6 @@ assert_equal '3,12', %q{
 
   # Make sure it's returning '3,12' instead of e.g. '3,false'
   pt_inspect(p)
-}
-
-# Regression test for deadlock between branch_stub_hit and ractor_receive_if
-assert_equal '10', %q{
-  r = Ractor.new Ractor.current do |main|
-    main << 1
-    main << 2
-    main << 3
-    main << 4
-    main << 5
-    main << 6
-    main << 7
-    main << 8
-    main << 9
-    main << 10
-  end
-
-  a = []
-  a << Ractor.receive_if{|msg| msg == 10}
-  a << Ractor.receive_if{|msg| msg == 9}
-  a << Ractor.receive_if{|msg| msg == 8}
-  a << Ractor.receive_if{|msg| msg == 7}
-  a << Ractor.receive_if{|msg| msg == 6}
-  a << Ractor.receive_if{|msg| msg == 5}
-  a << Ractor.receive_if{|msg| msg == 4}
-  a << Ractor.receive_if{|msg| msg == 3}
-  a << Ractor.receive_if{|msg| msg == 2}
-  a << Ractor.receive_if{|msg| msg == 1}
-
-  a.length
 }
 
 # checktype
@@ -4124,6 +4121,26 @@ assert_equal '1', %q{
 
   bar { }
   bar { }
+}
+
+# unshareable bmethod call through Method#to_proc#call
+assert_equal '1000', %q{
+  define_method(:bmethod) do
+    self
+  end
+
+  Ractor.new do
+    errors = 0
+    1000.times do
+      p = method(:bmethod).to_proc
+      begin
+        p.call
+      rescue RuntimeError
+        errors += 1
+      end
+    end
+    errors
+  end.value
 }
 
 # test for return stub lifetime issue
@@ -4898,6 +4915,16 @@ assert_equal '[:ok, :ok, :ok, :ok, :ok]', %q{
   tests
 }
 
+# regression test for splat with &proc{} when the target has rest (Bug #21266)
+assert_equal '[]', %q{
+  def foo(args) = bar(*args, &proc { _1 })
+  def bar(_, _, _, _, *rest) = yield rest
+
+  GC.stress = true
+  foo([1,2,3,4])
+  foo([1,2,3,4])
+}
+
 # regression test for invalidating an empty block
 assert_equal '0', %q{
   def foo = (* = 1).pred
@@ -5386,4 +5413,145 @@ assert_equal 'nil', %{
   end
 
   test_local_fill_in_forwardable.inspect
+}
+
+# Test defined?(yield) and block_given? in non-method context.
+# It's good that the body of this runs at true top level and isn't wrapped in a block.
+assert_equal 'false', %{
+  RESULT = []
+  RESULT << defined?(yield)
+  RESULT << block_given?
+
+  1.times do
+    RESULT << defined?(yield)
+    RESULT << block_given?
+  end
+
+  module ModuleContext
+    1.times do
+      RESULT << defined?(yield)
+      RESULT << block_given?
+    end
+  end
+
+  class << self
+    RESULT << defined?(yield)
+    RESULT << block_given?
+  end
+
+  RESULT.any?
+}
+
+# throw and String#dup with GC stress
+assert_equal 'foo', %{
+  GC.stress = true
+
+  def foo
+    1.times { return "foo".dup }
+  end
+
+  10.times.map { foo.dup }.last
+}
+
+# regression test for [Bug #21772]
+# local variable type tracking desync
+assert_normal_exit %q{
+  def some_method = 0
+
+  def test_body(key)
+    some_method
+    key = key.to_s # setting of local relevant
+
+    key == "symbol"
+  end
+
+  def jit_caller = test_body("session_id")
+
+  jit_caller # first iteration, non-escaped environment
+  alias some_method binding # induce environment escape
+  test_body(:symbol)
+}
+
+# regression test for missing check in identity method inlining
+assert_normal_exit %q{
+  # Use dead code (if false) to create a local
+  # without initialization instructions.
+  def foo(a)
+    if false
+      x = nil
+    end
+    x
+  end
+  def test = foo(1)
+  test
+  test
+}
+
+# regression test for tracing invalidation with on-stack compiled methods
+# Exercises the on_stack_iseqs path in rb_yjit_tracing_invalidate_all
+# where delayed deallocation must not create aliasing &mut references
+# to IseqPayload (use-after-free of version_map backing storage).
+assert_normal_exit %q{
+  def deep = 42
+  def mid = deep
+  def outer = mid
+
+  # Compile all three methods with YJIT
+  10.times { outer }
+
+  # Enable tracing from within a call chain so that outer/mid/deep
+  # are on the stack when rb_yjit_tracing_invalidate_all runs.
+  # This triggers the on_stack_iseqs (delayed deallocation) path.
+  def deep
+    TracePoint.new(:line) {}.enable
+    42
+  end
+
+  outer
+
+  # After invalidation, verify YJIT can recompile and run correctly
+  def deep = 42
+  10.times { outer }
+}
+
+# regression test for tracing invalidation with on-stack fibers
+# Suspended fibers have iseqs on their stack that must survive invalidation.
+assert_equal '42', %q{
+  def compiled_method
+    Fiber.yield
+    42
+  end
+
+  # Compile the method
+  10.times { compiled_method rescue nil }
+
+  fiber = Fiber.new { compiled_method }
+  fiber.resume # suspends inside compiled_method — it's now on the fiber's stack
+
+  # Enable tracing while compiled_method is on the fiber's stack.
+  # This triggers rb_yjit_tracing_invalidate_all with on-stack iseqs.
+  TracePoint.new(:call) {}.enable
+
+  # Resume the fiber — compiled_method's iseq must still be valid
+  fiber.resume.to_s
+}
+
+# regression test for register mapping of methods with over 256 locals
+# [Bug #22074]
+assert_equal "ok", %q{
+  source = +"def many_locals\n"
+  source << "  total = 0\n"
+
+  128.times do |i|
+    source << "  y#{i} = 1\n"
+    source << "  x#{i} = Object.new\n"
+  end
+
+  source << "  total += 1\n"
+  source << "  raise total.inspect unless total == 1\n"
+  source << "end\n"
+
+  eval(source)
+  many_locals
+  "ok"
 }

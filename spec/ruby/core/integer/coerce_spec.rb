@@ -11,7 +11,7 @@ describe "Integer#coerce" do
 
     describe "when given a String" do
       it "raises an ArgumentError when trying to coerce with a non-number String" do
-        -> { 1.coerce(":)") }.should raise_error(ArgumentError)
+        -> { 1.coerce(":)") }.should.raise(ArgumentError)
       end
 
       it "returns  an array containing two Floats" do
@@ -21,7 +21,7 @@ describe "Integer#coerce" do
     end
 
     it "raises a TypeError when trying to coerce with nil" do
-      -> { 1.coerce(nil) }.should raise_error(TypeError)
+      -> { 1.coerce(nil) }.should.raise(TypeError)
     end
 
     it "tries to convert the given Object into a Float by using #to_f" do
@@ -29,13 +29,13 @@ describe "Integer#coerce" do
       2.coerce(obj).should == [1.0, 2.0]
 
       (obj = mock('0')).should_receive(:to_f).and_return('0')
-      -> { 2.coerce(obj).should == [1.0, 2.0] }.should raise_error(TypeError)
+      -> { 2.coerce(obj).should == [1.0, 2.0] }.should.raise(TypeError)
     end
 
     it "raises a TypeError when given an Object that does not respond to #to_f" do
-      -> { 1.coerce(mock('x'))  }.should raise_error(TypeError)
-      -> { 1.coerce(1..4)       }.should raise_error(TypeError)
-      -> { 1.coerce(:test)      }.should raise_error(TypeError)
+      -> { 1.coerce(mock('x'))  }.should.raise(TypeError)
+      -> { 1.coerce(1..4)       }.should.raise(TypeError)
+      -> { 1.coerce(:test)      }.should.raise(TypeError)
     end
   end
 
@@ -44,8 +44,8 @@ describe "Integer#coerce" do
       a = bignum_value
       ary = a.coerce(2)
 
-      ary[0].should be_kind_of(Integer)
-      ary[1].should be_kind_of(Integer)
+      ary[0].should.is_a?(Integer)
+      ary[1].should.is_a?(Integer)
       ary.should == [2, a]
     end
 
@@ -54,18 +54,18 @@ describe "Integer#coerce" do
       b = bignum_value
       ary = a.coerce(b)
 
-      ary[0].should be_kind_of(Integer)
-      ary[1].should be_kind_of(Integer)
+      ary[0].should.is_a?(Integer)
+      ary[1].should.is_a?(Integer)
       ary.should == [b, a]
     end
 
     it "raises a TypeError when not passed a Fixnum or Bignum" do
       a = bignum_value
 
-      -> { a.coerce(nil)         }.should raise_error(TypeError)
-      -> { a.coerce(mock('str')) }.should raise_error(TypeError)
-      -> { a.coerce(1..4)        }.should raise_error(TypeError)
-      -> { a.coerce(:test)       }.should raise_error(TypeError)
+      -> { a.coerce(nil)         }.should.raise(TypeError)
+      -> { a.coerce(mock('str')) }.should.raise(TypeError)
+      -> { a.coerce(1..4)        }.should.raise(TypeError)
+      -> { a.coerce(:test)       }.should.raise(TypeError)
     end
 
     it "coerces both values to Floats and returns [other, self] when passed a Float" do

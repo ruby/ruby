@@ -130,8 +130,8 @@ ruby_value_type {
     RUBY_T_RATIONAL = 0x0f, /**< @see struct ::RRational */
 
     RUBY_T_NIL      = 0x11, /**< @see ::RUBY_Qnil */
-    RUBY_T_TRUE     = 0x12, /**< @see ::RUBY_Qfalse */
-    RUBY_T_FALSE    = 0x13, /**< @see ::RUBY_Qtrue */
+    RUBY_T_TRUE     = 0x12, /**< @see ::RUBY_Qtrue */
+    RUBY_T_FALSE    = 0x13, /**< @see ::RUBY_Qfalse */
     RUBY_T_SYMBOL   = 0x14, /**< @see struct ::RSymbol */
     RUBY_T_FIXNUM   = 0x15, /**< Integers formerly known as Fixnums. */
     RUBY_T_UNDEF    = 0x16, /**< @see ::RUBY_Qundef */
@@ -410,14 +410,6 @@ RB_TYPE_P(VALUE obj, enum ruby_value_type t)
 #endif
 /** @endcond */
 
-RBIMPL_ATTR_PURE()
-RBIMPL_ATTR_ARTIFICIAL()
-/**
- * @private
- * Defined in ruby/internal/core/rtypeddata.h
- */
-static inline bool rbimpl_rtypeddata_p(VALUE obj);
-
 RBIMPL_ATTR_ARTIFICIAL()
 /**
  * Identical  to  RB_TYPE_P(),  except  it  raises  exceptions  on  predication
@@ -432,19 +424,11 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline void
 Check_Type(VALUE v, enum ruby_value_type t)
 {
+    /* Typed data is not simple `T_DATA`, see `rb_check_type` */
+    RUBY_ASSERT_ALWAYS(t != RUBY_T_DATA);
     if (RB_UNLIKELY(! RB_TYPE_P(v, t))) {
-        goto unexpected_type;
+        rb_unexpected_type(v, RBIMPL_CAST((int)t));
     }
-    else if (t == RUBY_T_DATA && rbimpl_rtypeddata_p(v)) {
-        /* Typed data is not simple `T_DATA`, see `rb_check_type` */
-        goto unexpected_type;
-    }
-    else {
-        return;
-    }
-
-  unexpected_type:
-    rb_unexpected_type(v, RBIMPL_CAST((int)t));
 }
 
 #endif /* RBIMPL_VALUE_TYPE_H */

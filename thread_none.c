@@ -26,11 +26,11 @@ thread_sched_to_running(struct rb_thread_sched *sched, rb_thread_t *th)
 }
 
 static void
-thread_sched_to_waiting(struct rb_thread_sched *sched, rb_thread_t *th)
+thread_sched_to_waiting(struct rb_thread_sched *sched, rb_thread_t *th, bool yield_immediately)
 {
 }
 
-#define thread_sched_to_dead thread_sched_to_waiting
+#define thread_sched_to_dead(a,b) thread_sched_to_waiting(a,b,true)
 
 static void
 thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)
@@ -135,6 +135,12 @@ Init_native_thread(rb_thread_t *main_th)
 void
 ruby_mn_threads_params(void)
 {
+}
+
+static void
+native_thread_destroy_atfork(struct rb_native_thread *nt)
+{
+    /* no-op */
 }
 
 static int
@@ -276,7 +282,8 @@ th_has_dedicated_nt(const rb_thread_t *th)
 }
 
 void
-rb_add_running_thread(rb_thread_t *th){
+rb_add_running_thread(rb_thread_t *th)
+{
     // do nothing
 }
 
@@ -326,6 +333,12 @@ void *
 rb_thread_prevent_fork(void *(*func)(void *), void *data)
 {
     return func(data);
+}
+
+void
+rb_thread_malloc_stack_set(rb_thread_t *th, void *stack, size_t stack_size)
+{
+    // no-op
 }
 
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

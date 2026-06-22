@@ -222,7 +222,7 @@ __EOS__
 
   # Skipping tests that use session_remove_cb by default because it may cause
   # deadlock.
-  TEST_SESSION_REMOVE_CB = ENV["OSSL_TEST_ALL"] == "1"
+  TEST_SESSION_REMOVE_CB = ENV["OSSL_TEST_UNSAFE"] == "1"
 
   def test_ctx_client_session_cb_tls12
     start_server do |port|

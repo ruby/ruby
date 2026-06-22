@@ -1,0 +1,33 @@
+# Ignore existing findings (baseline)
+# Composite action findings are suppressed inline with # zizmor: ignore
+rules:
+  artipacked:
+    # These jobs push back to the repo and need persisted credentials.
+    ignore:
+      - bundled_gems.yml
+      - default_gems_list.yml
+      - post_push.yml
+      - sync_default_gems.yml
+  dangerous-triggers:
+    ignore:
+      - auto_request_review.yml
+      - auto_review_pr.yml
+      - labeler.yml
+      - pr-playground.yml
+  dependabot-cooldown:
+    ignore:
+      - dependabot.yml
+  misfeature:
+    ignore:
+      - mingw.yml
+      - tarball-windows.yml
+      - windows.yml
+  unpinned-images:
+    ignore:
+      - compilers.yml
+  secrets-outside-env:
+    # All committers with write access are trusted; no need for environment-scoped secrets.
+    disable: true
+  unpinned-uses:
+    ignore:
+      - wsl.yml

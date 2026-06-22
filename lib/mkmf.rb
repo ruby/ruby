@@ -40,7 +40,7 @@ class Array # :nodoc:
 end
 
 ##
-# mkmf.rb is used by Ruby C extensions to generate a Makefile which will
+# \Module \MakeMakefile is used by Ruby C extensions to generate a Makefile which will
 # correctly compile and link the C extension to Ruby and a third-party
 # library.
 module MakeMakefile
@@ -419,7 +419,7 @@ MESSAGE
 
     # disable ASAN leak reporting - conftest programs almost always don't bother
     # to free their memory.
-    envs['ASAN_OPTIONS'] = "detect_leaks=0" unless ENV.key?('ASAN_OPTIONS')
+    envs['LSAN_OPTIONS'] = "detect_leaks=0" unless ENV.key?('LSAN_OPTIONS')
 
     return envs, expand[commands]
   end
@@ -573,11 +573,16 @@ MSG
                      conf)
   end
 
-  def cpp_command(outfile, opt="")
+  def cpp_config(opt)
     conf = cc_config(opt)
     if $universal and (arch_flag = conf['ARCH_FLAG']) and !arch_flag.empty?
       conf['ARCH_FLAG'] = arch_flag.gsub(/(?:\G|\s)-arch\s+\S+/, '')
     end
+    conf
+  end
+
+  def cpp_command(outfile, opt="")
+    conf = cpp_config(opt)
     RbConfig::expand("$(CPP) #$INCFLAGS #$CPPFLAGS #$CFLAGS #{opt} #{CONFTEST_C} #{outfile}",
                      conf)
   end
@@ -860,7 +865,7 @@ int main() {printf("%"PRI_CONFTEST_PREFIX"#{neg ? 'd' : 'u'}\\n", conftest_const
         v
       }
       unless strvars.empty?
-        prepare << "char " << strvars.map {|v| "#{v}[1024]"}.join(", ") << "; "
+        prepare << "char " << strvars.map {|v| %[#{v}[1024] = ""]}.join(", ") << "; "
       end
     when nil
       call = ""
@@ -926,20 +931,12 @@ SRC
     xpopen(cpp_command('', opt)) do |f|
       if Regexp === pat
         puts("    ruby -ne 'print if #{pat.inspect}'")
-        f.grep(pat) {|l|
+        !f.grep(pat) {|l|
           puts "#{f.lineno}: #{l}"
-          return true
-        }
-        false
+        }.empty?
       else
         puts("    egrep '#{pat}'")
-        begin
-          stdin = $stdin.dup
-          $stdin.reopen(f)
-          system("egrep", pat)
-        ensure
-          $stdin.reopen(stdin)
-        end
+        system("egrep", pat, in: f)
       end
     end
   ensure
@@ -1418,6 +1415,8 @@ SRC
       false
     end
   end
+
+  # :startdoc:
 
   # Returns whether or not the constant +const+ is defined.  You may
   # optionally pass the +type+ of +const+ as <code>[const, type]</code>,
@@ -2510,16 +2509,19 @@ TIMESTAMP_DIR = #{$extout && $extmk ? '$(extout)/.timestamp' : '.'}
     sodir = $extout ? '$(TARGET_SO_DIR)' : '$(RUBYARCHDIR)'
     n = '$(TARGET_SO_DIR)$(TARGET)'
     cleanobjs = ["$(OBJS)"]
+    cleanlibs = []
     if $extmk
       %w[bc i s].each {|ex| cleanobjs << "$(OBJS:.#{$OBJEXT}=.#{ex})"}
     end
     if target
       config_string('cleanobjs') {|t| cleanobjs << t.gsub(/\$\*/, "$(TARGET)#{deffile ? '-$(arch)': ''}")}
+      cleanlibs << '$(TARGET_SO)'
     end
+    config_string('cleanlibs') {|t| cleanlibs << t.gsub(/\$\*/) {n}}
     conf << "\
 TARGET_SO_DIR =#{$extout ? " $(RUBYARCHDIR)/" : ''}
 TARGET_SO     = $(TARGET_SO_DIR)$(DLLIB)
-CLEANLIBS     = #{'$(TARGET_SO) ' if target}#{config_string('cleanlibs') {|t| t.gsub(/\$\*/) {n}}}
+CLEANLIBS     = #{cleanlibs.join(' ')}
 CLEANOBJS     = #{cleanobjs.join(' ')} *.bak
 TARGET_SO_DIR_TIMESTAMP = #{timestamp_file(sodir, target_prefix)}
 " #"
@@ -2591,7 +2593,7 @@ static: #{$extmk && !$static ? "all" : %[$(STATIC_LIB)#{$extout ? " install-rb" 
           dest = "#{dir}/#{File.basename(f)}"
           mfile.print("do-install-rb#{sfx}: #{dest}\n")
           mfile.print("#{dest}: #{f} #{timestamp_file(dir, target_prefix)}\n")
-          mfile.print("\t$(Q) $(#{$extout ? 'COPY' : 'INSTALL_DATA'}) #{f} $(@D)\n")
+          mfile.print("\t$(Q) $(#{$extout ? 'COPY' : 'INSTALL_DATA'}) #{f} $@\n")
           if defined?($installed_list) and !$extout
             mfile.print("\t@echo #{dest}>>$(INSTALLED_LIST)\n")
           end
@@ -3030,13 +3032,30 @@ realclean: distclean
 
     def cc_command(opt="")
       conf = cc_config(opt)
+      cxx_command(opt, conf)
       RbConfig::expand("$(CXX) #$INCFLAGS #$CPPFLAGS #$CXXFLAGS #$ARCH_FLAG #{opt} -c #{CONFTEST_CXX}",
+                       conf)
+    end
+
+    def cpp_command(outfile, opt="")
+      conf = cpp_config(opt)
+      cxx = cxx_command(opt, conf)
+      cpp = conf['CPP'].sub(/(\A|\s)#{Regexp.quote(conf['CC'])}(?=\z|\s)/) {
+        "#$1#{cxx}"
+      }
+      RbConfig::expand("#{cpp} #$INCFLAGS #$CPPFLAGS #$CXXFLAGS #{opt} #{CONFTEST_CXX} #{outfile}",
                        conf)
     end
 
     def link_command(ldflags, *opts)
       conf = link_config(ldflags, *opts)
       RbConfig::expand(TRY_LINK_CXX.dup, conf)
+    end
+
+    def cxx_command(opt="", conf = cc_config(opt))
+      cxx = conf['CXX']
+      raise Errno::ENOENT, "C++ compiler not found" if !cxx or cxx == 'false'
+      cxx
     end
 
     # :startdoc:

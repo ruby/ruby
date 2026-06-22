@@ -202,4 +202,16 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
 
     assert_equal true, @cmd.options[:minimal_deps]
   end
+
+  def test_build_jobs_short_version
+    @cmd.handle_options %w[-j 4]
+
+    assert_equal 4, @cmd.options[:build_jobs]
+  end
+
+  def test_build_jobs_long_version
+    @cmd.handle_options %w[--build-jobs 4]
+
+    assert_equal 4, @cmd.options[:build_jobs]
+  end
 end

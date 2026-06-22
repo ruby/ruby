@@ -1,10 +1,16 @@
 # frozen_string_literal: true
+# :markup: markdown
 
 begin
-  require "ruby_parser"
+  require "sexp"
 rescue LoadError
-  warn(%q{Error: Unable to load ruby_parser. Add `gem "ruby_parser"` to your Gemfile.})
+  warn(%q{Error: Unable to load sexp. Add `gem "sexp_processor"` to your Gemfile.})
   exit(1)
+end
+
+class RubyParser # :nodoc:
+  class SyntaxError < RuntimeError # :nodoc:
+  end
 end
 
 module Prism
@@ -13,9 +19,9 @@ module Prism
     # seattlerb/ruby_parser gem's syntax tree.
     class RubyParser
       # A prism visitor that builds Sexp objects.
-      class Compiler < ::Prism::Compiler
+      class Compiler < ::Prism::Compiler # :nodoc:
         # This is the name of the file that we are compiling. We set it on every
-        # Sexp object that is generated, and also use it to compile __FILE__
+        # Sexp object that is generated, and also use it to compile `__FILE__`
         # nodes.
         attr_reader :file
 
@@ -131,7 +137,7 @@ module Prism
         # $+
         # ^^
         def visit_back_reference_read_node(node)
-          s(node, :back_ref, node.name.name.delete_prefix("$").to_sym)
+          s(node, :back_ref, node.name.to_s.delete_prefix("$").to_sym)
         end
 
         # begin end
@@ -366,14 +372,18 @@ module Prism
               visit(node.constant_path)
             end
 
-          if node.body.nil?
-            s(node, :class, name, visit(node.superclass))
-          elsif node.body.is_a?(StatementsNode)
-            compiler = copy_compiler(in_def: false)
-            s(node, :class, name, visit(node.superclass)).concat(node.body.body.map { |child| child.accept(compiler) })
-          else
-            s(node, :class, name, visit(node.superclass), node.body.accept(copy_compiler(in_def: false)))
-          end
+          result =
+            if node.body.nil?
+              s(node, :class, name, visit(node.superclass))
+            elsif node.body.is_a?(StatementsNode)
+              compiler = copy_compiler(in_def: false)
+              s(node, :class, name, visit(node.superclass)).concat(node.body.body.map { |child| child.accept(compiler) })
+            else
+              s(node, :class, name, visit(node.superclass), node.body.accept(copy_compiler(in_def: false)))
+            end
+
+          attach_comments(result, node)
+          result
         end
 
         # @@foo
@@ -384,9 +394,6 @@ module Prism
 
         # @@foo = 1
         # ^^^^^^^^^
-        #
-        # @@foo, @@bar = 1
-        # ^^^^^  ^^^^^
         def visit_class_variable_write_node(node)
           s(node, class_variable_write_type, node.name, visit_write_value(node.value))
         end
@@ -524,7 +531,9 @@ module Prism
               s(node, :defs, visit(node.receiver), name)
             end
 
+          attach_comments(result, node)
           result.line(node.name_loc.start_line)
+
           if node.parameters.nil?
             result << s(node, :args).line(node.name_loc.start_line)
           else
@@ -639,9 +648,6 @@ module Prism
 
         # $foo = 1
         # ^^^^^^^^
-        #
-        # $foo, $bar = 1
-        # ^^^^  ^^^^
         def visit_global_variable_write_node(node)
           s(node, :gasgn, node.name, visit_write_value(node.value))
         end
@@ -787,9 +793,6 @@ module Prism
 
         # @foo = 1
         # ^^^^^^^^
-        #
-        # @foo, @bar = 1
-        # ^^^^  ^^^^
         def visit_instance_variable_write_node(node)
           s(node, :iasgn, node.name, visit_write_value(node.value))
         end
@@ -976,8 +979,8 @@ module Prism
         def visit_lambda_node(node)
           parameters =
             case node.parameters
-            when nil, NumberedParametersNode
-              s(node, :args)
+            when nil, ItParametersNode, NumberedParametersNode
+              0
             else
               visit(node.parameters)
             end
@@ -1001,9 +1004,6 @@ module Prism
 
         # foo = 1
         # ^^^^^^^
-        #
-        # foo, bar = 1
-        # ^^^  ^^^
         def visit_local_variable_write_node(node)
           s(node, :lasgn, node.name, visit_write_value(node.value))
         end
@@ -1059,8 +1059,8 @@ module Prism
         # A node that is missing from the syntax tree. This is only used in the
         # case of a syntax error. The parser gem doesn't have such a concept, so
         # we invent our own here.
-        def visit_missing_node(node)
-          raise "Cannot visit missing node directly"
+        def visit_error_recovery_node(node)
+          raise "Cannot visit error recovery node directly"
         end
 
         # module Foo; end
@@ -1073,14 +1073,18 @@ module Prism
               visit(node.constant_path)
             end
 
-          if node.body.nil?
-            s(node, :module, name)
-          elsif node.body.is_a?(StatementsNode)
-            compiler = copy_compiler(in_def: false)
-            s(node, :module, name).concat(node.body.body.map { |child| child.accept(compiler) })
-          else
-            s(node, :module, name, node.body.accept(copy_compiler(in_def: false)))
-          end
+          result =
+            if node.body.nil?
+              s(node, :module, name)
+            elsif node.body.is_a?(StatementsNode)
+              compiler = copy_compiler(in_def: false)
+              s(node, :module, name).concat(node.body.body.map { |child| child.accept(compiler) })
+            else
+              s(node, :module, name, node.body.accept(copy_compiler(in_def: false)))
+            end
+
+          attach_comments(result, node)
+          result
         end
 
         # foo, bar = baz
@@ -1136,6 +1140,12 @@ module Prism
           s(node, :nil)
         end
 
+        # def foo(&nil); end
+        #         ^^^^
+        def visit_no_block_parameter_node(node)
+          :"&nil"
+        end
+
         # def foo(**nil); end
         #         ^^^^^
         def visit_no_keywords_parameter_node(node)
@@ -1188,7 +1198,7 @@ module Prism
         #         ^^^^^^^^^
         def visit_parameters_node(node)
           children =
-            node.compact_child_nodes.map do |element|
+            node.each_child_node.map do |element|
               if element.is_a?(MultiTargetNode)
                 visit_destructured_parameter(element)
               else
@@ -1537,6 +1547,17 @@ module Prism
 
         private
 
+        # Attach prism comments to the given sexp.
+        def attach_comments(sexp, node)
+          return unless node.comments
+          return if node.comments.empty?
+
+          extra = node.location.start_line - node.comments.last.location.start_line
+          comments = node.comments.map(&:slice)
+          comments.concat([nil] * [0, extra].max)
+          sexp.comments = comments.join("\n")
+        end
+
         # Create a new compiler with the given options.
         def copy_compiler(in_def: self.in_def, in_pattern: self.in_pattern)
           Compiler.new(file, in_def: in_def, in_pattern: in_pattern)
@@ -1615,6 +1636,14 @@ module Prism
         translate(Prism.parse_file(filepath, partial_script: true), filepath)
       end
 
+      # Parse the give file and translate it into the
+      # seattlerb/ruby_parser gem's Sexp format. This method is
+      # provided for API compatibility to RubyParser and takes an
+      # optional +timeout+ argument.
+      def process(ruby, file = "(string)", timeout = nil)
+        Timeout.timeout(timeout) { parse(ruby, file) }
+      end
+
       class << self
         # Parse the given source and translate it into the seattlerb/ruby_parser
         # gem's Sexp format.
@@ -1639,6 +1668,7 @@ module Prism
           raise ::RubyParser::SyntaxError, "#{filepath}:#{error.location.start_line} :: #{error.message}"
         end
 
+        result.attach_comments!
         result.value.accept(Compiler.new(filepath))
       end
     end

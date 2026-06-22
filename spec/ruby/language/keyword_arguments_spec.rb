@@ -55,9 +55,9 @@ describe "Keyword arguments" do
     end
 
     m(kw: 1).should == []
-    -> { m(kw: 1, kw2: 2) }.should raise_error(ArgumentError, 'unknown keyword: :kw2')
-    -> { m(kw: 1, true => false) }.should raise_error(ArgumentError, 'unknown keyword: true')
-    -> { m(kw: 1, a: 1, b: 2, c: 3) }.should raise_error(ArgumentError, 'unknown keywords: :a, :b, :c')
+    -> { m(kw: 1, kw2: 2) }.should.raise(ArgumentError, 'unknown keyword: :kw2')
+    -> { m(kw: 1, true => false) }.should.raise(ArgumentError, 'unknown keyword: true')
+    -> { m(kw: 1, a: 1, b: 2, c: 3) }.should.raise(ArgumentError, 'unknown keywords: :a, :b, :c')
   end
 
   it "raises ArgumentError exception when required keyword argument is not passed" do
@@ -65,8 +65,8 @@ describe "Keyword arguments" do
       [a, b, c]
     end
 
-    -> { m(a: 1, b: 2) }.should raise_error(ArgumentError, /missing keyword: :c/)
-    -> { m() }.should raise_error(ArgumentError, /missing keywords: :a, :b, :c/)
+    -> { m(a: 1, b: 2) }.should.raise(ArgumentError, /missing keyword: :c/)
+    -> { m() }.should.raise(ArgumentError, /missing keywords: :a, :b, :c/)
   end
 
   it "raises ArgumentError for missing keyword arguments even if there are extra ones" do
@@ -74,7 +74,7 @@ describe "Keyword arguments" do
       a
     end
 
-    -> { m(b: 1) }.should raise_error(ArgumentError, /missing keyword: :a/)
+    -> { m(b: 1) }.should.raise(ArgumentError, /missing keyword: :a/)
   end
 
   it "handle * and ** at the same call site" do
@@ -86,17 +86,29 @@ describe "Keyword arguments" do
     m(*[], 42, **{}).should == [42]
   end
 
-  context "**" do
-    ruby_version_is "3.3" do
-      it "copies a non-empty Hash for a method taking (*args)" do
-        def m(*args)
-          args[0]
-        end
+  context "marked as ruby2_keywords_hash" do
+    it "is not copied when passed as a positional argument" do
+      h = Hash.ruby2_keywords_hash(a:1)
 
-        h = {a: 1}
-        m(**h).should_not.equal?(h)
-        h.should == {a: 1}
+      def bar(a)
+        a
       end
+
+      h2 = bar(h)
+      h2.should.equal?(h)
+      Hash.ruby2_keywords_hash?(h).should == true
+    end
+  end
+
+  context "**" do
+    it "copies a non-empty Hash for a method taking (*args)" do
+      def m(*args)
+        args[0]
+      end
+
+      h = {a: 1}
+      m(**h).should_not.equal?(h)
+      h.should == {a: 1}
     end
 
     it "copies the given Hash for a method taking (**kwargs)" do
@@ -336,61 +348,23 @@ describe "Keyword arguments" do
       end
     end
 
-    ruby_version_is "3.2" do
-      it "does not work with call(*ruby2_keyword_args) with missing ruby2_keywords in between" do
-        class << self
-          def n(*args) # Note the missing ruby2_keywords here
-            target(*args)
-          end
-
-          ruby2_keywords def m(*args)
-            n(*args)
-          end
+    it "does not work with call(*ruby2_keyword_args) with missing ruby2_keywords in between" do
+      class << self
+        def n(*args) # Note the missing ruby2_keywords here
+          target(*args)
         end
 
-        empty = {}
-        m(**empty).should == [[], {}]
-        m(empty).should == [[{}], {}]
-
-        m(a: 1).should == [[{a: 1}], {}]
-        m({a: 1}).should == [[{a: 1}], {}]
-      end
-    end
-
-    ruby_version_is ""..."3.2" do
-      # https://bugs.ruby-lang.org/issues/18625
-      it "works with call(*ruby2_keyword_args) with missing ruby2_keywords in between due to CRuby bug #18625" do
-        class << self
-          def n(*args) # Note the missing ruby2_keywords here
-            target(*args)
-          end
-
-          ruby2_keywords def m(*args)
-            n(*args)
-          end
+        ruby2_keywords def m(*args)
+          n(*args)
         end
-
-        empty = {}
-        m(**empty).should == [[], {}]
-        Hash.ruby2_keywords_hash?(empty).should == false
-        m(empty).should == [[{}], {}]
-        Hash.ruby2_keywords_hash?(empty).should == false
-
-        m(a: 1).should == [[], {a: 1}]
-        m({a: 1}).should == [[{a: 1}], {}]
-
-        kw = {a: 1}
-
-        m(**kw).should == [[], {a: 1}]
-        m(**kw)[1].should == kw
-        m(**kw)[1].should_not.equal?(kw)
-        Hash.ruby2_keywords_hash?(kw).should == false
-        Hash.ruby2_keywords_hash?(m(**kw)[1]).should == false
-
-        m(kw).should == [[{a: 1}], {}]
-        m(kw)[0][0].should.equal?(kw)
-        Hash.ruby2_keywords_hash?(kw).should == false
       end
+
+      empty = {}
+      m(**empty).should == [[], {}]
+      m(empty).should == [[{}], {}]
+
+      m(a: 1).should == [[{a: 1}], {}]
+      m({a: 1}).should == [[{a: 1}], {}]
     end
   end
 

@@ -127,7 +127,7 @@ static VALUE
 enum_grep0(VALUE obj, VALUE pat, VALUE test)
 {
     VALUE ary = rb_ary_new();
-    struct MEMO *memo = MEMO_NEW(pat, ary, test);
+    struct MEMO *memo = rb_imemo_memo_new_value(pat, ary, test);
     rb_block_call_func_t fn;
     if (rb_block_given_p()) {
         fn = grep_iter_i;
@@ -207,27 +207,32 @@ enum_grep_v(VALUE obj, VALUE pat)
     return enum_grep0(obj, pat, Qfalse);
 }
 
-#define COUNT_BIGNUM IMEMO_FL_USER0
-#define MEMO_V3_SET(m, v) RB_OBJ_WRITE((m), &(m)->u3.value, (v))
+static inline void
+MEMO_V3_SET(struct MEMO *m, VALUE v)
+{
+    RB_OBJ_WRITE(m, &m->u3.value, v);
+    m->flags |= MEMO_U3_IS_VALUE;
+}
 
 static void
 imemo_count_up(struct MEMO *memo)
 {
-    if (memo->flags & COUNT_BIGNUM) {
+    if (memo->flags & MEMO_U3_IS_VALUE) {
+        RUBY_ASSERT(RB_TYPE_P(memo->u3.value, T_BIGNUM));
         MEMO_V3_SET(memo, rb_int_succ(memo->u3.value));
     }
     else if (++memo->u3.cnt == 0) {
         /* overflow */
         unsigned long buf[2] = {0, 1};
         MEMO_V3_SET(memo, rb_big_unpack(buf, 2));
-        memo->flags |= COUNT_BIGNUM;
     }
 }
 
 static VALUE
 imemo_count_value(struct MEMO *memo)
 {
-    if (memo->flags & COUNT_BIGNUM) {
+    if (memo->flags & MEMO_U3_IS_VALUE) {
+        RUBY_ASSERT(RB_TYPE_P(memo->u3.value, T_BIGNUM));
         return memo->u3.value;
     }
     else {
@@ -317,14 +322,15 @@ enum_count(int argc, VALUE *argv, VALUE obj)
         func = count_i;
     }
 
-    memo = MEMO_NEW(item, 0, 0);
+    memo = rb_imemo_memo_new(item, 0, 0);
     rb_block_call(obj, id_each, 0, 0, func, (VALUE)memo);
     return imemo_count_value(memo);
 }
 
 NORETURN(static void found(VALUE i, VALUE memop));
 static void
-found(VALUE i, VALUE memop) {
+found(VALUE i, VALUE memop)
+{
     struct MEMO *memo = MEMO_CAST(memop);
     MEMO_V1_SET(memo, i);
     memo->u3.cnt = 1;
@@ -381,7 +387,7 @@ enum_find(int argc, VALUE *argv, VALUE obj)
 
     if_none = rb_check_arity(argc, 0, 1) ? argv[0] : Qnil;
     RETURN_ENUMERATOR(obj, argc, argv);
-    memo = MEMO_NEW(Qundef, 0, 0);
+    memo = rb_imemo_memo_new(Qundef, 0, 0);
     if (rb_block_pair_yield_optimizable())
         rb_block_call2(obj, id_each, 0, 0, find_i_fast, (VALUE)memo, RB_BLOCK_NO_USE_PACKED_ARGS);
     else
@@ -466,7 +472,7 @@ enum_find_index(int argc, VALUE *argv, VALUE obj)
         func = find_index_i;
     }
 
-    memo = MEMO_NEW(Qnil, condition_value, 0);
+    memo = rb_imemo_memo_new(Qnil, condition_value, 0);
     rb_block_call(obj, id_each, 0, 0, func, (VALUE)memo);
     return memo->v1;
 }
@@ -1083,7 +1089,7 @@ enum_inject(int argc, VALUE *argv, VALUE obj)
         return ary_inject_op(obj, init, op);
     }
 
-    memo = MEMO_NEW(init, Qnil, op);
+    memo = rb_imemo_memo_new_value(init, Qnil, op);
     rb_block_call(obj, id_each, 0, 0, iter, (VALUE)memo);
     if (UNDEF_P(memo->v1)) return Qnil;
     return memo->v1;
@@ -1141,7 +1147,7 @@ enum_partition(VALUE obj)
 
     RETURN_SIZED_ENUMERATOR(obj, 0, 0, enum_size);
 
-    memo = MEMO_NEW(rb_ary_new(), rb_ary_new(), 0);
+    memo = rb_imemo_memo_new(rb_ary_new(), rb_ary_new(), 0);
     rb_block_call(obj, id_each, 0, 0, partition_i, (VALUE)memo);
 
     return rb_assoc_new(memo->v1, memo->v2);
@@ -1214,14 +1220,15 @@ tally_up(st_data_t *group, st_data_t *value, st_data_t arg, int existing)
         RB_OBJ_WRITTEN(hash, Qundef, tally);
     }
     *value = (st_data_t)tally;
-    if (!SPECIAL_CONST_P(*group)) RB_OBJ_WRITTEN(hash, Qundef, *group);
     return ST_CONTINUE;
 }
 
 static VALUE
 rb_enum_tally_up(VALUE hash, VALUE group)
 {
-    rb_hash_stlike_update(hash, group, tally_up, (st_data_t)hash);
+    if (!rb_hash_stlike_update(hash, group, tally_up, (st_data_t)hash)) {
+        RB_OBJ_WRITTEN(hash, Qundef, group);
+    }
     return hash;
 }
 
@@ -1343,7 +1350,7 @@ enum_first(int argc, VALUE *argv, VALUE obj)
         return enum_take(obj, argv[0]);
     }
     else {
-        memo = MEMO_NEW(Qnil, 0, 0);
+        memo = rb_imemo_memo_new(Qnil, 0, 0);
         rb_block_call(obj, id_each, 0, 0, first_i, (VALUE)memo);
         return memo->v1;
     }
@@ -1720,7 +1727,7 @@ enum_sort_by(VALUE obj)
     RBASIC_CLEAR_CLASS(ary);
     buf = rb_ary_hidden_new(SORT_BY_BUFSIZE*2);
     rb_ary_store(buf, SORT_BY_BUFSIZE*2-1, Qnil);
-    memo = MEMO_NEW(0, 0, 0);
+    memo = rb_imemo_memo_new(0, 0, 0);
     data = (struct sort_by_data *)&memo->v1;
     RB_OBJ_WRITE(memo, &data->ary, ary);
     RB_OBJ_WRITE(memo, &data->buf, buf);
@@ -1764,7 +1771,7 @@ enum_sort_by(VALUE obj)
 #define ENUM_BLOCK_CALL(name) \
     rb_block_call2(obj, id_each, 0, 0, ENUMFUNC(name), (VALUE)memo, rb_block_given_p() && rb_block_pair_yield_optimizable() ? RB_BLOCK_NO_USE_PACKED_ARGS : 0);
 
-#define MEMO_ENUM_NEW(v1) (rb_check_arity(argc, 0, 1), MEMO_NEW((v1), (argc ? *argv : 0), 0))
+#define MEMO_ENUM_NEW(v1) (rb_check_arity(argc, 0, 1), rb_imemo_memo_new((v1), (argc ? *argv : 0), 0))
 
 #define DEFINE_ENUMFUNCS(name) \
 static VALUE enum_##name##_func(VALUE result, struct MEMO *memo); \
@@ -2752,7 +2759,7 @@ enum_min_by(int argc, VALUE *argv, VALUE obj)
     if (argc && !NIL_P(num = argv[0]))
         return rb_nmin_run(obj, num, 1, 0, 0);
 
-    memo = MEMO_NEW(Qundef, Qnil, 0);
+    memo = rb_imemo_memo_new(Qundef, Qnil, 0);
     rb_block_call(obj, id_each, 0, 0, min_by_i, (VALUE)memo);
     return memo->v2;
 }
@@ -2826,7 +2833,7 @@ enum_max_by(int argc, VALUE *argv, VALUE obj)
     if (argc && !NIL_P(num = argv[0]))
         return rb_nmin_run(obj, num, 1, 1, 0);
 
-    memo = MEMO_NEW(Qundef, Qnil, 0);
+    memo = rb_imemo_memo_new(Qundef, Qnil, 0);
     rb_block_call(obj, id_each, 0, 0, max_by_i, (VALUE)memo);
     return memo->v2;
 }
@@ -2977,7 +2984,7 @@ member_i(RB_BLOCK_CALL_FUNC_ARGLIST(iter, args))
 static VALUE
 enum_member(VALUE obj, VALUE val)
 {
-    struct MEMO *memo = MEMO_NEW(val, Qfalse, 0);
+    struct MEMO *memo = rb_imemo_memo_new(val, Qfalse, 0);
 
     rb_block_call(obj, id_each, 0, 0, member_i, (VALUE)memo);
     return memo->v2;
@@ -3229,7 +3236,7 @@ enum_each_slice(VALUE obj, VALUE n)
     size = limit_by_enum_size(obj, size);
     ary = rb_ary_new2(size);
     arity = rb_block_arity();
-    memo = MEMO_NEW(ary, dont_recycle_block_arg(arity), size);
+    memo = rb_imemo_memo_new(ary, dont_recycle_block_arg(arity), size);
     rb_block_call(obj, id_each, 0, 0, each_slice_i, (VALUE)memo);
     ary = memo->v1;
     if (RARRAY_LEN(ary) > 0) rb_yield(ary);
@@ -3305,7 +3312,7 @@ enum_each_cons(VALUE obj, VALUE n)
     RETURN_SIZED_ENUMERATOR(obj, 1, &n, enum_each_cons_size);
     arity = rb_block_arity();
     if (enum_size_over_p(obj, size)) return obj;
-    memo = MEMO_NEW(rb_ary_new2(size), dont_recycle_block_arg(arity), size);
+    memo = rb_imemo_memo_new(rb_ary_new2(size), dont_recycle_block_arg(arity), size);
     rb_block_call(obj, id_each, 0, 0, each_cons_i, (VALUE)memo);
 
     return obj;
@@ -3534,7 +3541,7 @@ enum_zip(int argc, VALUE *argv, VALUE obj)
     }
 
     /* TODO: use NODE_DOT2 as memo(v, v, -) */
-    memo = MEMO_NEW(result, args, 0);
+    memo = rb_imemo_memo_new(result, args, 0);
     rb_block_call(obj, id_each, 0, 0, allary ? zip_ary : zip_i, (VALUE)memo);
 
     return result;
@@ -3577,7 +3584,7 @@ enum_take(VALUE obj, VALUE n)
 
     if (len == 0) return rb_ary_new2(0);
     result = rb_ary_new2(len);
-    memo = MEMO_NEW(result, 0, len);
+    memo = rb_imemo_memo_new(result, 0, len);
     rb_block_call(obj, id_each, 0, 0, take_i, (VALUE)memo);
     return result;
 }
@@ -3665,7 +3672,7 @@ enum_drop(VALUE obj, VALUE n)
     }
 
     result = rb_ary_new();
-    memo = MEMO_NEW(result, 0, len);
+    memo = rb_imemo_memo_new(result, 0, len);
     rb_block_call(obj, id_each, 0, 0, drop_i, (VALUE)memo);
     return result;
 }
@@ -3703,6 +3710,17 @@ drop_while_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, args))
  *
  *  With no block given, returns an Enumerator.
  *
+ *    e = (1..4).drop_while
+ *    p e #=> #<Enumerator: 1..4:drop_while>
+ *    i = e.next; p i; e.feed(i < 3) #=> 1
+ *    i = e.next; p i; e.feed(i < 3) #=> 2
+ *    i = e.next; p i; e.feed(i < 3) #=> 3
+ *    begin
+ *      e.next
+ *    rescue StopIteration
+ *      p $!.result #=> [3, 4]
+ *    end
+ *
  */
 
 static VALUE
@@ -3713,7 +3731,7 @@ enum_drop_while(VALUE obj)
 
     RETURN_ENUMERATOR(obj, 0, 0);
     result = rb_ary_new();
-    memo = MEMO_NEW(result, 0, FALSE);
+    memo = rb_imemo_memo_new(result, 0, FALSE);
     rb_block_call(obj, id_each, 0, 0, drop_while_i, (VALUE)memo);
     return result;
 }
@@ -3933,7 +3951,7 @@ chunk_i(RB_BLOCK_CALL_FUNC_ARGLIST(yielder, enumerator))
  *    ["F", 6860]
  *
  *  You can use the special symbol <tt>:_alone</tt> to force an element
- *  into its own separate chuck:
+ *  into its own separate chunk:
  *
  *    a = [0, 0, 1, 1]
  *    e = a.chunk{|i| i.even? ? :_alone : true }
@@ -5106,6 +5124,82 @@ enum_compact(VALUE obj)
  * - Sometimes show the use of a Hash-like class.
  *   For some methods, though, the usage would not make sense,
  *   and so it is not shown.  Example: #tally would find exactly one of each Hash entry.
+ *
+ * == Extended Methods
+ *
+ * A Enumerable class may define extended methods. This section describes the standard
+ * behavior of extension methods for reference purposes.
+ *
+ * === #size
+ *
+ * \Enumerator has a #size method.
+ * It uses the size function argument passed to +Enumerator.new+.
+ *
+ *   e = Enumerator.new(-> { 3 }) {|y| p y; y.yield :a; y.yield :b; y.yield :c; :z }
+ *   p e.size #=> 3
+ *   p e.next #=> :a
+ *   p e.next #=> :b
+ *   p e.next #=> :c
+ *   begin
+ *     e.next
+ *   rescue StopIteration
+ *     p $!.result #=> :z
+ *   end
+ *
+ * The result of the size function should represent the number of iterations
+ * (i.e., the number of times you yield to the block argument).
+ * In the above example, the block calls #yield three times, and
+ * the size function, +-> { 3 }+, returns 3 accordingly.
+ * The result of the size function can be an integer, +Float::INFINITY+,
+ * or +nil+.
+ * An integer means the exact number of times #yield will be called,
+ * as shown above.
+ * +Float::INFINITY+ indicates an infinite number of #yield calls.
+ * +nil+ means the number of #yield calls is difficult or impossible to
+ * determine.
+ *
+ * Many iteration methods return an \Enumerator object with an
+ * appropriate size function if no block is given.
+ *
+ * Examples:
+ *
+ *   ["a", "b", "c"].each.size #=> 3
+ *   {a: "x", b: "y", c: "z"}.each.size #=> 3
+ *   (0..20).to_a.permutation.size #=> 51090942171709440000
+ *   loop.size #=> Float::INFINITY
+ *   (1..100).drop_while.size #=> nil  # size depends on the block's behavior
+ *   STDIN.each.size #=> nil # cannot be computed without consuming input
+ *   File.open("/etc/resolv.conf").each.size #=> nil # cannot be computed without reading the file
+ *
+ * The behavior of #size for Range-based enumerators depends on the #begin element:
+ *
+ * - If the #begin element is an Integer, the #size method returns an Integer or +Float::INFINITY+.
+ * - If the #begin element is an object with a #succ method (other than Integer), #size returns +nil+.
+ *   (Computing the size would require repeatedly calling #succ, which may be too slow.)
+ * - If the #begin element does not have a #succ method, #size raises a TypeError.
+ *
+ * Examples:
+ *
+ *   (10..42).each.size #=> 33
+ *   (10..42.9).each.size #=> 33 (the #end element may be a non-integer numeric)
+ *   (10..).each.size #=> Float::INFINITY
+ *   ("a".."z").each.size #=> nil
+ *   ("a"..).each.size #=> nil
+ *   (1.0..9.0).each.size # raises TypeError (Float does not have #succ)
+ *   (..10).each.size # raises TypeError (beginless range has nil as its #begin)
+ *
+ * The \Enumerable module itself does not define a #size method.
+ * A class that includes \Enumerable may define its own #size method.
+ * It is recommended that such a #size method be consistent with
+ * Enumerator#size.
+ *
+ * Array and Hash implement #size and return values consistent with
+ * Enumerator#size.
+ * IO and Dir do not define #size, which is also consistent because the
+ * corresponding enumerator's size function returns +nil+.
+ *
+ * However, it is not strictly required for a class's #size method to match Enumerator#size.
+ * For example, File#size returns the number of bytes in the file, not the number of lines.
  *
  */
 

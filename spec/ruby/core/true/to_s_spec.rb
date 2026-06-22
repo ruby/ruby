@@ -10,6 +10,6 @@ describe "TrueClass#to_s" do
   end
 
   it "always returns the same string" do
-    true.to_s.should equal(true.to_s)
+    true.to_s.should.equal?(true.to_s)
   end
 end

@@ -25,7 +25,7 @@ describe "File.dirname" do
     it "raises ArgumentError if the level is negative" do
       -> {
         File.dirname('/home/jason', -1)
-      }.should raise_error(ArgumentError, "negative level: -1")
+      }.should.raise(ArgumentError, "negative level: -1")
     end
 
     it "returns '/' when level exceeds the number of segments in the path" do
@@ -41,7 +41,7 @@ describe "File.dirname" do
   end
 
   it "returns a String" do
-    File.dirname("foo").should be_kind_of(String)
+    File.dirname("foo").should.is_a?(String)
   end
 
   it "does not modify its argument" do
@@ -78,7 +78,33 @@ describe "File.dirname" do
     File.dirname("foo/../").should == "foo"
   end
 
+  it "rejects strings encoded with non ASCII-compatible encodings" do
+    Encoding.list.reject(&:ascii_compatible?).reject(&:dummy?).each do |enc|
+      path = "/foo/bar".encode(enc)
+      -> {
+        File.dirname(path)
+      }.should.raise(Encoding::CompatibilityError)
+    end
+  end
+
+  it "works with all ASCII-compatible encodings" do
+    Encoding.list.select(&:ascii_compatible?).each do |enc|
+      File.dirname("/foo/bar".encode(enc)).should == "/foo".encode(enc)
+    end
+  end
+
+  it "handles Shift JIS 0x5C (\\) as second byte of a multi-byte sequence" do
+    # dir/fileソname.txt
+    path = "dir/file\x83\x5cname.txt".b.force_encoding(Encoding::SHIFT_JIS)
+    path.valid_encoding?.should == true
+    File.dirname(path).should == "dir"
+  end
+
   platform_is_not :windows do
+    it "ignores repeated leading / (edge cases on non-windows)" do
+      File.dirname("/////foo/bar/").should == "/foo"
+    end
+
     it "returns all the components of filename except the last one (edge cases on non-windows)" do
       File.dirname('/////').should == '/'
       File.dirname("//foo//").should == "/"
@@ -94,6 +120,13 @@ describe "File.dirname" do
       File.dirname("//foo//").should == "//foo"
       File.dirname('/////').should == '//'
     end
+
+    it "handles Shift JIS 0x5C (\\) as second byte of a multi-byte sequence (windows)" do
+      # dir\fileソname.txt
+      path = "dir\\file\x83\x5cname.txt".b.force_encoding(Encoding::SHIFT_JIS)
+      path.valid_encoding?.should == true
+      File.dirname(path).should == "dir"
+    end
   end
 
   it "accepts an object that has a #to_path method" do
@@ -101,10 +134,10 @@ describe "File.dirname" do
   end
 
   it "raises a TypeError if not passed a String type" do
-    -> { File.dirname(nil)   }.should raise_error(TypeError)
-    -> { File.dirname(0)     }.should raise_error(TypeError)
-    -> { File.dirname(true)  }.should raise_error(TypeError)
-    -> { File.dirname(false) }.should raise_error(TypeError)
+    -> { File.dirname(nil)   }.should.raise(TypeError)
+    -> { File.dirname(0)     }.should.raise(TypeError)
+    -> { File.dirname(true)  }.should.raise(TypeError)
+    -> { File.dirname(false) }.should.raise(TypeError)
   end
 
   # Windows specific tests

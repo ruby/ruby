@@ -3,7 +3,7 @@ module Gem::Net
   # Gem::Net::HTTP exception class.
   # You cannot use Gem::Net::HTTPExceptions directly; instead, you must use
   # its subclasses.
-  module HTTPExceptions
+  module HTTPExceptions # :nodoc:
     def initialize(msg, res)   #:nodoc:
       super msg
       @response = res
@@ -12,6 +12,7 @@ module Gem::Net
     alias data response    #:nodoc: obsolete
   end
 
+  # :stopdoc:
   class HTTPError < ProtocolError
     include HTTPExceptions
   end

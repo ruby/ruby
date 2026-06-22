@@ -10,23 +10,23 @@ end
 describe "The class keyword" do
   it "creates a new class with semicolon" do
     class ClassSpecsKeywordWithSemicolon; end
-    ClassSpecsKeywordWithSemicolon.should be_an_instance_of(Class)
+    ClassSpecsKeywordWithSemicolon.should.instance_of?(Class)
   end
 
   it "does not raise a SyntaxError when opening a class without a semicolon" do
     eval "class ClassSpecsKeywordWithoutSemicolon end"
-    ClassSpecsKeywordWithoutSemicolon.should be_an_instance_of(Class)
+    ClassSpecsKeywordWithoutSemicolon.should.instance_of?(Class)
   end
 
   it "can redefine a class when called from a block" do
     ClassSpecs::DEFINE_CLASS.call
-    A.should be_an_instance_of(Class)
+    A.should.instance_of?(Class)
 
     Object.send(:remove_const, :A)
-    defined?(A).should be_nil
+    defined?(A).should == nil
 
     ClassSpecs::DEFINE_CLASS.call
-    A.should be_an_instance_of(Class)
+    A.should.instance_of?(Class)
   ensure
     Object.send(:remove_const, :A) if defined?(::A)
   end
@@ -34,8 +34,8 @@ end
 
 describe "A class definition" do
   it "creates a new class" do
-    ClassSpecs::A.should be_kind_of(Class)
-    ClassSpecs::A.new.should be_kind_of(ClassSpecs::A)
+    ClassSpecs::A.should.is_a?(Class)
+    ClassSpecs::A.new.should.is_a?(ClassSpecs::A)
   end
 
   it "has no class variables" do
@@ -46,7 +46,14 @@ describe "A class definition" do
     -> {
       class ClassSpecsNumber
       end
-    }.should raise_error(TypeError)
+    }.should.raise(TypeError, /\AClassSpecsNumber is not a class/)
+  end
+
+  it "raises TypeError if constant given as class name exists and is a Module but not a Class" do
+    -> {
+      class ClassSpecs
+      end
+    }.should.raise(TypeError, /\AClassSpecs is not a class/)
   end
 
   # test case known to be detecting bugs (JRuby, MRI)
@@ -54,19 +61,19 @@ describe "A class definition" do
     -> {
       class nil::Foo
       end
-    }.should raise_error(TypeError)
+    }.should.raise(TypeError)
   end
 
   it "raises TypeError if any constant qualifying the class is not a Module" do
     -> {
       class ClassSpecs::Number::MyClass
       end
-    }.should raise_error(TypeError)
+    }.should.raise(TypeError)
 
     -> {
       class ClassSpecsNumber::MyClass
       end
-    }.should raise_error(TypeError)
+    }.should.raise(TypeError)
   end
 
   it "inherits from Object by default" do
@@ -80,7 +87,7 @@ describe "A class definition" do
       -> {
         class SuperclassResetToSubclass < M
         end
-      }.should raise_error(TypeError, /superclass mismatch/)
+      }.should.raise(TypeError, /superclass mismatch/)
     end
   end
 
@@ -93,7 +100,7 @@ describe "A class definition" do
       -> {
         class SuperclassReopenedBasicObject < BasicObject
         end
-      }.should raise_error(TypeError, /superclass mismatch/)
+      }.should.raise(TypeError, /superclass mismatch/)
       SuperclassReopenedBasicObject.superclass.should == A
     end
   end
@@ -108,7 +115,7 @@ describe "A class definition" do
       -> {
         class SuperclassReopenedObject < Object
         end
-      }.should raise_error(TypeError, /superclass mismatch/)
+      }.should.raise(TypeError, /superclass mismatch/)
       SuperclassReopenedObject.superclass.should == A
     end
   end
@@ -133,7 +140,7 @@ describe "A class definition" do
       -> {
         class NoSuperclassSet < String
         end
-      }.should raise_error(TypeError, /superclass mismatch/)
+      }.should.raise(TypeError, /superclass mismatch/)
     end
   end
 
@@ -142,7 +149,7 @@ describe "A class definition" do
 
     -> {
       class ShouldNotWork < self; end
-    }.should raise_error(TypeError)
+    }.should.raise(TypeError)
   end
 
   it "first evaluates the superclass before checking if the class already exists" do
@@ -161,7 +168,7 @@ describe "A class definition" do
   it "raises a TypeError if inheriting from a metaclass" do
     obj = mock("metaclass super")
     meta = obj.singleton_class
-    -> { class ClassSpecs::MetaclassSuper < meta; end }.should raise_error(TypeError)
+    -> { class ClassSpecs::MetaclassSuper < meta; end }.should.raise(TypeError)
   end
 
   it "allows the declaration of class variables in the body" do
@@ -170,7 +177,7 @@ describe "A class definition" do
   end
 
   it "stores instance variables defined in the class body in the class object" do
-    ClassSpecs.string_instance_variables(ClassSpecs::B).should include("@ivar")
+    ClassSpecs.string_instance_variables(ClassSpecs::B).should.include?("@ivar")
     ClassSpecs::B.instance_variable_get(:@ivar).should == :ivar
   end
 
@@ -182,9 +189,9 @@ describe "A class definition" do
   end
 
   it "allows the definition of class-level instance variables in a class method" do
-    ClassSpecs.string_instance_variables(ClassSpecs::C).should_not include("@civ")
+    ClassSpecs.string_instance_variables(ClassSpecs::C).should_not.include?("@civ")
     ClassSpecs::C.make_class_instance_variable
-    ClassSpecs.string_instance_variables(ClassSpecs::C).should include("@civ")
+    ClassSpecs.string_instance_variables(ClassSpecs::C).should.include?("@civ")
     ClassSpecs::C.remove_instance_variable :@civ
   end
 
@@ -279,7 +286,8 @@ end
 
 describe "An outer class definition" do
   it "contains the inner classes" do
-    ClassSpecs::Container.constants.should include(:A, :B)
+    ClassSpecs::Container.constants.should.include?(:A)
+    ClassSpecs::Container.constants.should.include?(:B)
   end
 end
 
@@ -297,23 +305,23 @@ describe "A class definition extending an object (sclass)" do
           end
         end
       CODE
-    }.should raise_error(TypeError)
+    }.should.raise(TypeError)
   end
 
   it "raises a TypeError when trying to extend non-Class" do
     error_msg = /superclass must be a.* Class/
-    -> { class TestClass < "";              end }.should raise_error(TypeError, error_msg)
-    -> { class TestClass < 1;               end }.should raise_error(TypeError, error_msg)
-    -> { class TestClass < :symbol;         end }.should raise_error(TypeError, error_msg)
-    -> { class TestClass < mock('o');       end }.should raise_error(TypeError, error_msg)
-    -> { class TestClass < Module.new;      end }.should raise_error(TypeError, error_msg)
-    -> { class TestClass < BasicObject.new; end }.should raise_error(TypeError, error_msg)
+    -> { class TestClass < "";              end }.should.raise(TypeError, error_msg)
+    -> { class TestClass < 1;               end }.should.raise(TypeError, error_msg)
+    -> { class TestClass < :symbol;         end }.should.raise(TypeError, error_msg)
+    -> { class TestClass < mock('o');       end }.should.raise(TypeError, error_msg)
+    -> { class TestClass < Module.new;      end }.should.raise(TypeError, error_msg)
+    -> { class TestClass < BasicObject.new; end }.should.raise(TypeError, error_msg)
   end
 
   it "does not allow accessing the block of the original scope" do
     -> {
       ClassSpecs.sclass_with_block { 123 }
-    }.should raise_error(SyntaxError)
+    }.should.raise(SyntaxError)
   end
 
   it "can use return to cause the enclosing method to return" do
@@ -333,11 +341,11 @@ describe "Reopening a class" do
   end
 
   it "raises a TypeError when superclasses mismatch" do
-    -> { class ClassSpecs::A < Array; end }.should raise_error(TypeError)
+    -> { class ClassSpecs::A < Array; end }.should.raise(TypeError)
   end
 
   it "adds new methods to subclasses" do
-    -> { ClassSpecs::M.m }.should raise_error(NoMethodError)
+    -> { ClassSpecs::M.m }.should.raise(NoMethodError)
     class ClassSpecs::L
       def self.m
         1
@@ -345,6 +353,39 @@ describe "Reopening a class" do
     end
     ClassSpecs::M.m.should == 1
     ClassSpecs::L.singleton_class.send(:remove_method, :m)
+  end
+
+  it "does not reopen a class included in Object" do
+    ruby_exe(<<~RUBY).should == "false"
+      module IncludedInObject
+        class IncludedClass
+        end
+      end
+      class Object
+        include IncludedInObject
+      end
+      class IncludedClass
+      end
+      print IncludedInObject::IncludedClass == Object::IncludedClass
+    RUBY
+  end
+
+  it "does not reopen a class included in non-Object modules" do
+    ruby_exe(<<~RUBY).should == "false/false"
+      module Included
+        module IncludedClass; end
+      end
+      module M
+        include Included
+        module IncludedClass; end
+      end
+      class C
+        include Included
+        module IncludedClass; end
+      end
+      print Included::IncludedClass == M::IncludedClass, "/",
+            Included::IncludedClass == C::IncludedClass
+    RUBY
   end
 end
 

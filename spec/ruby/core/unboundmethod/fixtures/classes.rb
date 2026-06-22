@@ -36,6 +36,7 @@ module UnboundMethodSpecs
 
     alias bar foo
     alias baz bar
+    alias qux baz
     alias alias_1 foo
     alias alias_2 foo
 
@@ -79,6 +80,22 @@ module UnboundMethodSpecs
       alias_method :another_class_method, :class_method
     end
   end
+
+  module Mixin
+    def mixin_method; end
+  end
+
+  class IncluderBase
+    include Mixin
+  end
+
+  class IncluderChild < IncluderBase; end
+
+  class ExtenderBase
+    extend Mixin
+  end
+
+  class ExtenderChild < ExtenderBase; end
 
   class A
     def baz(a, b)

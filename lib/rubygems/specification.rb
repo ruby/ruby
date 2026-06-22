@@ -7,12 +7,10 @@
 # See LICENSE.txt for permissions.
 #++
 
-require_relative "deprecate"
 require_relative "basic_specification"
 require_relative "stub_specification"
 require_relative "platform"
 require_relative "specification_record"
-require_relative "util/list"
 
 require "rbconfig"
 
@@ -36,10 +34,17 @@ require "rbconfig"
 # Starting in RubyGems 2.0, a Specification can hold arbitrary
 # metadata.  See #metadata for restrictions on the format and size of metadata
 # items you may add to a specification.
+#
+# Specifications must be deterministic, as in the example above. For instance,
+# you cannot define attributes conditionally:
+#
+#   # INVALID: do not do this.
+#   unless RUBY_ENGINE == "jruby"
+#     s.extensions << "ext/example/extconf.rb"
+#   end
+#
 
 class Gem::Specification < Gem::BasicSpecification
-  extend Gem::Deprecate
-
   # REFACTOR: Consider breaking out this version stuff into a separate
   # module. There's enough special stuff around it that it may justify
   # a separate class.
@@ -488,8 +493,6 @@ class Gem::Specification < Gem::BasicSpecification
     end
 
     @platform = @new_platform.to_s
-
-    invalidate_memoized_attributes
   end
 
   ##
@@ -529,7 +532,7 @@ class Gem::Specification < Gem::BasicSpecification
   #
   # Usage:
   #
-  #   spec.add_development_dependency 'example', '~> 1.1', '>= 1.1.4'
+  #   spec.add_development_dependency 'example', '>= 1.1.4', '< 2'
   #
   # Development dependencies aren't installed by default and aren't
   # activated when a gem is required.
@@ -543,7 +546,7 @@ class Gem::Specification < Gem::BasicSpecification
   #
   # Usage:
   #
-  #   spec.add_dependency 'example', '~> 1.1', '>= 1.1.4'
+  #   spec.add_dependency 'example', '>= 1.1.4', '< 2'
 
   def add_dependency(gem, *requirements)
     if requirements.uniq.size != requirements.size
@@ -736,14 +739,6 @@ class Gem::Specification < Gem::BasicSpecification
   # Deprecated: It is neither supported nor functional.
 
   attr_accessor :autorequire # :nodoc:
-
-  ##
-  # Sets the default executable for this gem.
-  #
-  # Deprecated: You must now specify the executable name to  Gem.bin_path.
-
-  attr_writer :default_executable
-  rubygems_deprecate :default_executable=
 
   ##
   # Allows deinstallation of gems with legacy platforms.
@@ -974,6 +969,15 @@ class Gem::Specification < Gem::BasicSpecification
 
   ##
   # Return the best specification that contains the file matching +path+
+  # amongst the specs that are not loaded. This method is different than
+  # +find_inactive_by_path+ as it will filter out loaded specs by their name.
+
+  def self.find_unloaded_by_path(path)
+    specification_record.find_unloaded_by_path(path)
+  end
+
+  ##
+  # Return the best specification that contains the file matching +path+
   # amongst the specs that are not activated.
 
   def self.find_inactive_by_path(path)
@@ -1002,7 +1006,7 @@ class Gem::Specification < Gem::BasicSpecification
   def self.find_in_unresolved_tree(path)
     unresolved_specs.each do |spec|
       spec.traverse do |_from_spec, _dep, to_spec, trail|
-        if to_spec.has_conflicts? || to_spec.conficts_when_loaded_with?(trail)
+        if to_spec.has_conflicts? || to_spec.conflicts_when_loaded_with?(trail)
           :next
         else
           return trail.reverse if to_spec.contains_requirable_file? path
@@ -1271,7 +1275,7 @@ class Gem::Specification < Gem::BasicSpecification
       raise unless message.include?("YAML::")
 
       unless Object.const_defined?(:YAML)
-        Object.const_set "YAML", Psych
+        Object.const_set "YAML", Module.new
         yaml_set = true
       end
 
@@ -1280,7 +1284,7 @@ class Gem::Specification < Gem::BasicSpecification
 
         YAML::Syck.const_set "DefaultKey", Class.new if message.include?("YAML::Syck::DefaultKey") && !YAML::Syck.const_defined?(:DefaultKey)
       elsif message.include?("YAML::PrivateType") && !YAML.const_defined?(:PrivateType)
-        YAML.const_set "PrivateType", Class.new
+        YAML.const_set "PrivateType", Class.new { attr_accessor :type_id, :value }
       end
 
       retry_count += 1
@@ -1321,7 +1325,7 @@ class Gem::Specification < Gem::BasicSpecification
     spec.instance_variable_set :@authors,                   array[12]
     spec.instance_variable_set :@description,               array[13]
     spec.instance_variable_set :@homepage,                  array[14]
-    spec.instance_variable_set :@has_rdoc,                  array[15]
+    # offset due to has_rdoc removal
     spec.instance_variable_set :@licenses,                  array[17]
     spec.instance_variable_set :@metadata,                  array[18]
     spec.instance_variable_set :@loaded,                    false
@@ -1620,14 +1624,14 @@ class Gem::Specification < Gem::BasicSpecification
   # spec's cached gem.
 
   def cache_dir
-    @cache_dir ||= File.join base_dir, "cache"
+    File.join base_dir, "cache"
   end
 
   ##
   # Returns the full path to the cached gem for this spec.
 
   def cache_file
-    @cache_file ||= File.join cache_dir, "#{full_name}.gem"
+    File.join cache_dir, "#{full_name}.gem"
   end
 
   ##
@@ -1649,7 +1653,7 @@ class Gem::Specification < Gem::BasicSpecification
   ##
   # return true if there will be conflict when spec if loaded together with the list of specs.
 
-  def conficts_when_loaded_with?(list_of_specs) # :nodoc:
+  def conflicts_when_loaded_with?(list_of_specs) # :nodoc:
     result = list_of_specs.any? do |spec|
       spec.runtime_dependencies.any? {|dep| (dep.name == name) && !satisfies_requirement?(dep) }
     end
@@ -1717,24 +1721,6 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # The default executable for this gem.
-  #
-  # Deprecated: The name of the gem is assumed to be the name of the
-  # executable now.  See Gem.bin_path.
-
-  def default_executable # :nodoc:
-    if defined?(@default_executable) && @default_executable
-      result = @default_executable
-    elsif @executables && @executables.size == 1
-      result = Array(@executables).first
-    else
-      result = nil
-    end
-    result
-  end
-  rubygems_deprecate :default_executable
-
-  ##
   # The default value for specification attribute +name+
 
   def default_value(name)
@@ -1757,7 +1743,7 @@ class Gem::Specification < Gem::BasicSpecification
   #
   #   [depending_gem, dependency, [list_of_gems_that_satisfy_dependency]]
 
-  def dependent_gems(check_dev=true)
+  def dependent_gems(check_dev = true)
     out = []
     Gem::Specification.each do |spec|
       deps = check_dev ? spec.dependencies : spec.runtime_dependencies
@@ -1903,10 +1889,6 @@ class Gem::Specification < Gem::BasicSpecification
     spec
   end
 
-  def full_name
-    @full_name ||= super
-  end
-
   ##
   # Work around old bundler versions removing my methods
   # Can be removed once RubyGems can no longer install Bundler 2.5
@@ -1918,29 +1900,6 @@ class Gem::Specification < Gem::BasicSpecification
   def gems_dir
     @gems_dir ||= File.join(base_dir, "gems")
   end
-
-  ##
-  # Deprecated and ignored, defaults to true.
-  #
-  # Formerly used to indicate this gem was RDoc-capable.
-
-  def has_rdoc # :nodoc:
-    true
-  end
-  rubygems_deprecate :has_rdoc
-
-  ##
-  # Deprecated and ignored.
-  #
-  # Formerly used to indicate this gem was RDoc-capable.
-
-  def has_rdoc=(ignored) # :nodoc:
-    @has_rdoc = true
-  end
-  rubygems_deprecate :has_rdoc=
-
-  alias_method :has_rdoc?, :has_rdoc # :nodoc:
-  rubygems_deprecate :has_rdoc?
 
   ##
   # True if this gem has files in test_files
@@ -2044,17 +2003,6 @@ class Gem::Specification < Gem::BasicSpecification
     end
   end
 
-  ##
-  # Expire memoized instance variables that can incorrectly generate, replace
-  # or miss files due changes in certain attributes used to compute them.
-
-  def invalidate_memoized_attributes
-    @full_name = nil
-    @cache_file = nil
-  end
-
-  private :invalidate_memoized_attributes
-
   def inspect # :nodoc:
     if $DEBUG
       super
@@ -2093,8 +2041,6 @@ class Gem::Specification < Gem::BasicSpecification
   def internal_init # :nodoc:
     super
     @bin_dir       = nil
-    @cache_dir     = nil
-    @cache_file    = nil
     @doc_dir       = nil
     @ri_dir        = nil
     @spec_dir      = nil
@@ -2124,6 +2070,7 @@ class Gem::Specification < Gem::BasicSpecification
   # probably want to build_extensions
 
   def missing_extensions?
+    return false if RUBY_ENGINE == "jruby"
     return false if extensions.empty?
     return false if default_gem?
     return false if File.exist? gem_build_complete_path
@@ -2244,10 +2191,13 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ##
-  # Sets rdoc_options to +value+, ensuring it is an array.
+  # Sets rdoc_options to +value+, ensuring it is a flat array of strings.
+  # Handles malformed gemspecs where rdoc_options may be a Hash or contain Hashes.
 
   def rdoc_options=(options)
-    @rdoc_options = Array options
+    @rdoc_options = Array(options).flat_map do |opt|
+      opt.is_a?(Hash) ? opt.to_a.flatten.map(&:to_s) : opt
+    end
   end
 
   ##
@@ -2447,8 +2397,6 @@ class Gem::Specification < Gem::BasicSpecification
       :required_rubygems_version,
       :specification_version,
       :version,
-      :has_rdoc,
-      :default_executable,
       :metadata,
       :signing_key,
     ]
@@ -2511,24 +2459,28 @@ class Gem::Specification < Gem::BasicSpecification
   def to_yaml(opts = {}) # :nodoc:
     Gem.load_yaml
 
-    # Because the user can switch the YAML engine behind our
-    # back, we have to check again here to make sure that our
-    # psych code was properly loaded, and load it if not.
-    unless Gem.const_defined?(:NoAliasYAMLTree)
-      require_relative "psych_tree"
+    if Gem.use_psych?
+      # Because the user can switch the YAML engine behind our
+      # back, we have to check again here to make sure that our
+      # psych code was properly loaded, and load it if not.
+      unless Gem.const_defined?(:NoAliasYAMLTree)
+        require_relative "psych_tree"
+      end
+
+      builder = Gem::NoAliasYAMLTree.create
+      builder << self
+      ast = builder.tree
+
+      require "stringio"
+      io = StringIO.new
+      io.set_encoding Encoding::UTF_8
+
+      Psych::Visitors::Emitter.new(io).accept(ast)
+
+      io.string.gsub(/ !!null \n/, " \n")
+    else
+      Gem::YAMLSerializer.dump(self)
     end
-
-    builder = Gem::NoAliasYAMLTree.create
-    builder << self
-    ast = builder.tree
-
-    require "stringio"
-    io = StringIO.new
-    io.set_encoding Encoding::UTF_8
-
-    Psych::Visitors::Emitter.new(io).accept(ast)
-
-    io.string.gsub(/ !!null \n/, " \n")
   end
 
   ##
@@ -2586,29 +2538,11 @@ class Gem::Specification < Gem::BasicSpecification
     Gem::SpecificationPolicy.new(self).validate_for_resolution
   end
 
-  def validate_metadata
-    Gem::SpecificationPolicy.new(self).validate_metadata
-  end
-  rubygems_deprecate :validate_metadata
-
-  def validate_dependencies
-    Gem::SpecificationPolicy.new(self).validate_dependencies
-  end
-  rubygems_deprecate :validate_dependencies
-
-  def validate_permissions
-    Gem::SpecificationPolicy.new(self).validate_permissions
-  end
-  rubygems_deprecate :validate_permissions
-
   ##
   # Set the version to +version+.
 
   def version=(version)
-    @version = Gem::Version.create(version)
-    return if @version.nil?
-
-    invalidate_memoized_attributes
+    @version = version.nil? ? version : Gem::Version.create(version)
   end
 
   def stubbed?
@@ -2623,6 +2557,10 @@ class Gem::Specification < Gem::BasicSpecification
         self.date = val
       when "platform"
         self.platform = val
+      when "rdoc_options"
+        self.rdoc_options = val
+      when "requirements"
+        self.requirements = val
       else
         instance_variable_set "@#{ivar}", val
       end

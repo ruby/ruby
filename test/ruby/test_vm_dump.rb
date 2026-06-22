@@ -5,8 +5,7 @@ return unless /darwin/ =~ RUBY_PLATFORM
 
 class TestVMDump < Test::Unit::TestCase
   def assert_darwin_vm_dump_works(args, timeout=nil)
-    pend "macOS 15 is not working with this assertion" if macos?(15)
-
+    args.unshift({"RUBY_ON_BUG" => nil, "RUBY_CRASH_REPORT" => nil})
     assert_in_out_err(args, "", [], /^\[IMPORTANT\]/, timeout: timeout || 300)
   end
 
@@ -15,7 +14,7 @@ class TestVMDump < Test::Unit::TestCase
   end
 
   def test_darwin_segv_in_syscall
-    assert_darwin_vm_dump_works('-e1.times{Process.kill :SEGV,$$}')
+    assert_darwin_vm_dump_works(['-e1.times{Process.kill :SEGV,$$}'])
   end
 
   def test_darwin_invalid_access

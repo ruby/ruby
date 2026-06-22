@@ -6,42 +6,42 @@
 # - revision: revision in repository-url to test
 #   if `revision` is not given, "v"+`version` or `version` will be used.
 
-minitest            5.25.5  https://github.com/minitest/minitest
-power_assert        2.0.5   https://github.com/ruby/power_assert
-rake                13.2.1  https://github.com/ruby/rake
-test-unit           3.6.8   https://github.com/test-unit/test-unit
-rexml               3.4.1   https://github.com/ruby/rexml
-rss                 0.3.1   https://github.com/ruby/rss
-net-ftp             0.3.8   https://github.com/ruby/net-ftp
-net-imap            0.5.6   https://github.com/ruby/net-imap
-net-pop             0.1.2   https://github.com/ruby/net-pop
+minitest            6.0.6  https://github.com/minitest/minitest
+power_assert        3.0.1   https://github.com/ruby/power_assert
+rake                13.4.2  https://github.com/ruby/rake
+test-unit           3.7.8   https://github.com/test-unit/test-unit
+rexml               3.4.4   https://github.com/ruby/rexml
+rss                 0.3.3   https://github.com/ruby/rss
+net-imap            0.6.4.1 https://github.com/ruby/net-imap
 net-smtp            0.5.1   https://github.com/ruby/net-smtp
-matrix              0.4.2   https://github.com/ruby/matrix
-prime               0.1.3   https://github.com/ruby/prime
-rbs                 3.9.2   https://github.com/ruby/rbs
-typeprof            0.30.1  https://github.com/ruby/typeprof
-debug               1.10.0   https://github.com/ruby/debug
+matrix              0.4.3   https://github.com/ruby/matrix
+prime               0.1.4   https://github.com/ruby/prime
+rbs                 4.0.3   https://github.com/ruby/rbs
+typeprof            0.32.0  https://github.com/ruby/typeprof
+debug               1.11.1  https://github.com/ruby/debug 6510cfbc7496c55ebbefa437a25c17ca58f7c5eb
 racc                1.8.1   https://github.com/ruby/racc
 mutex_m             0.3.0   https://github.com/ruby/mutex_m
 getoptlong          0.2.1   https://github.com/ruby/getoptlong
-base64              0.2.0   https://github.com/ruby/base64
-bigdecimal          3.1.9   https://github.com/ruby/bigdecimal
+base64              0.3.0   https://github.com/ruby/base64
+bigdecimal          4.1.2   https://github.com/ruby/bigdecimal
 observer            0.1.2   https://github.com/ruby/observer
 abbrev              0.1.2   https://github.com/ruby/abbrev
-resolv-replace      0.1.1   https://github.com/ruby/resolv-replace
+resolv-replace      0.2.0   https://github.com/ruby/resolv-replace
 rinda               0.2.0   https://github.com/ruby/rinda
-drb                 2.2.1   https://github.com/ruby/drb
-nkf                 0.2.0   https://github.com/ruby/nkf
-syslog              0.3.0   https://github.com/ruby/syslog
-csv                 3.3.3   https://github.com/ruby/csv e0874e47e2730dacccdb0c534a2cdc073d3bdaea
-repl_type_completor 0.1.11  https://github.com/ruby/repl_type_completor
-ostruct             0.6.1   https://github.com/ruby/ostruct
-pstore              0.2.0   https://github.com/ruby/pstore
-benchmark           0.4.0   https://github.com/ruby/benchmark
+drb                 2.2.3   https://github.com/ruby/drb
+nkf                 0.3.0   https://github.com/ruby/nkf
+syslog              0.4.0   https://github.com/ruby/syslog
+csv                 3.3.5   https://github.com/ruby/csv
+repl_type_completor 0.1.15  https://github.com/ruby/repl_type_completor
+ostruct             0.6.3   https://github.com/ruby/ostruct
+pstore              0.2.1   https://github.com/ruby/pstore
+benchmark           0.5.0   https://github.com/ruby/benchmark
 logger              1.7.0   https://github.com/ruby/logger
-rdoc                6.13.1  https://github.com/ruby/rdoc
-win32ole            1.9.1   https://github.com/ruby/win32ole 654b712442b76d2c7729623982168b2f250e3a77
-irb                 1.15.2  https://github.com/ruby/irb
-reline              0.6.1   https://github.com/ruby/reline
+rdoc                7.2.0   https://github.com/ruby/rdoc 1f93543615928b6d45357432f16ec6006e2d8b1e
+win32ole            1.9.3   https://github.com/ruby/win32ole
+irb                 1.18.0  https://github.com/ruby/irb
+reline              0.6.3   https://github.com/ruby/reline
 readline            0.0.4   https://github.com/ruby/readline
-fiddle              1.1.6   https://github.com/ruby/fiddle
+fiddle              1.1.8   https://github.com/ruby/fiddle
+tsort               0.2.0   https://github.com/ruby/tsort
+win32-registry      0.1.2   https://github.com/ruby/win32-registry

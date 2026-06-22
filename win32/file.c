@@ -275,6 +275,10 @@ rb_default_home_dir(VALUE result)
 VALUE
 rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_name, VALUE result)
 {
+    if (!result) {
+        result = rb_usascii_str_new(0, 1);
+    }
+
     size_t size = 0, whome_len = 0;
     size_t buffer_len = 0;
     long wpath_len = 0, wdir_len = 0;
@@ -629,14 +633,10 @@ rb_freopen(VALUE fname, const char *mode, FILE *file)
     len = MultiByteToWideChar(CP_UTF8, 0, name, n, wname, len);
     wname[len] = L'\0';
     RB_GC_GUARD(fname);
-#if RUBY_MSVCRT_VERSION < 80 && !defined(HAVE__WFREOPEN_S)
-    e = _wfreopen(wname, wmode, file) ? 0 : errno;
-#else
     {
         FILE *newfp = 0;
         e = _wfreopen_s(&newfp, wname, wmode, file);
     }
-#endif
     ALLOCV_END(wtmp);
     return e;
 }

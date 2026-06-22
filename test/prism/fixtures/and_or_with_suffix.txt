@@ -1,0 +1,17 @@
+foo
+and?
+
+foo
+or?
+
+foo
+and!
+
+foo
+or!
+
+foo
+andbar
+
+foo
+orbar

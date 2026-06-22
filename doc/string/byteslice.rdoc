@@ -1,0 +1,54 @@
+Returns a substring of +self+, or +nil+ if the substring cannot be constructed.
+
+With integer arguments +offset+ and +length+ given,
+returns the substring beginning at the given +offset+
+and of the given +length+ (as available):
+
+  s = '0123456789'   # => "0123456789"
+  s.byteslice(2)     # => "2"
+  s.byteslice(200)   # => nil
+  s.byteslice(4, 3)  # => "456"
+  s.byteslice(4, 30) # => "456789"
+
+Returns +nil+ if +length+ is negative or +offset+ falls outside of +self+:
+
+  s.byteslice(4, -1) # => nil
+  s.byteslice(40, 2) # => nil
+
+Counts backwards from the end of +self+
+if +offset+ is negative:
+
+  s = '0123456789'   # => "0123456789"
+  s.byteslice(-4)    # => "6"
+  s.byteslice(-4, 3) # => "678"
+
+With Range argument +range+ given, returns
+<tt>byteslice(range.begin, range.size)</tt>:
+
+  s = '0123456789'    # => "0123456789"
+  s.byteslice(4..6)   # => "456"
+  s.byteslice(-6..-4) # => "456"
+  s.byteslice(5..2)   # => "" # range.size is zero.
+  s.byteslice(40..42) # => nil
+
+The starting and ending offsets need not be on character boundaries:
+
+  s = 'こんにちは'
+  s.byteslice(0, 3) # => "こ"
+  s.byteslice(1, 3) # => "\x81\x93\xE3"
+
+The encodings of +self+ and the returned substring
+are always the same:
+
+  s.encoding                 # => #<Encoding:UTF-8>
+  s.byteslice(0, 3).encoding # => #<Encoding:UTF-8>
+  s.byteslice(1, 3).encoding # => #<Encoding:UTF-8>
+
+But, depending on the character boundaries,
+the encoding of the returned substring may not be valid:
+
+  s.valid_encoding?                 # => true
+  s.byteslice(0, 3).valid_encoding? # => true
+  s.byteslice(1, 3).valid_encoding? # => false
+
+Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].

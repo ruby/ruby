@@ -6,8 +6,10 @@ module Psych
   class ClassLoader # :nodoc:
     BIG_DECIMAL = 'BigDecimal'
     COMPLEX     = 'Complex'
+    DATA        = 'Data' unless RUBY_VERSION < "3.2"
     DATE        = 'Date'
     DATE_TIME   = 'DateTime'
+    ENCODING    = 'Encoding'
     EXCEPTION   = 'Exception'
     OBJECT      = 'Object'
     PSYCH_OMAP  = 'Psych::Omap'

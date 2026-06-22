@@ -4,43 +4,11 @@ if defined?(OpenSSL) && defined?(OpenSSL::Timestamp)
 
 class OpenSSL::TestTimestamp < OpenSSL::TestCase
   def intermediate_key
-    @intermediate_key ||= OpenSSL::PKey::RSA.new <<-_end_of_pem_
------BEGIN RSA PRIVATE KEY-----
-MIICWwIBAAKBgQCcyODxH+oTrr7l7MITWcGaYnnBma6vidCCJjuSzZpaRmXZHAyH
-0YcY4ttC0BdJ4uV+cE05IySVC7tyvVfFb8gFQ6XJV+AEktP+XkLbcxZgj9d2NVu1
-ziXdI+ldXkPnMhyWpMS5E7SD6gflv9NhUYEsmAGsUgdK6LDmm2W2/4TlewIDAQAB
-AoGAYgx6KDFWONLqjW3f/Sv/mGYHUNykUyDzpcD1Npyf797gqMMSzwlo3FZa2tC6
-D7n23XirwpTItvEsW9gvgMikJDPlThAeGLZ+L0UbVNNBHVxGP998Nda1kxqKvhRE
-pfZCKc7PLM9ZXc6jBTmgxdcAYfVCCVUoa2mEf9Ktr3BlI4kCQQDQAM09+wHDXGKP
-o2UnCwCazGtyGU2r0QCzHlh9BVY+KD2KjjhuWh86rEbdWN7hEW23Je1vXIhuM6Pa
-/Ccd+XYnAkEAwPZ91PK6idEONeGQ4I3dyMKV2SbaUjfq3MDL4iIQPQPuj7QsBO/5
-3Nf9ReSUUTRFCUVwoC8k4Z1KAJhR/K/ejQJANE7PTnPuGJQGETs09+GTcFpR9uqY
-FspDk8fg1ufdrVnvSAXF+TJewiGK3KU5v33jinhWQngRsyz3Wt2odKhEZwJACbjh
-oicQqvzzgFd7GzVKpWDYd/ZzLY1PsgusuhoJQ2m9TVRAm4cTycLAKhNYPbcqe0sa
-X5fAffWU0u7ZwqeByQJAOUAbYET4RU3iymAvAIDFj8LiQnizG9t5Ty3HXlijKQYv
-y8gsvWd4CdxwOPatWpBUX9L7IXcMJmD44xXTUvpbfQ==
------END RSA PRIVATE KEY-----
-_end_of_pem_
+    @intermediate_key ||= Fixtures.pkey("rsa-1")
   end
 
   def ee_key
-    @ee_key ||= OpenSSL::PKey::RSA.new <<-_end_of_pem_
------BEGIN RSA PRIVATE KEY-----
-MIICWwIBAAKBgQDA6eB5r2O5KOKNbKMBhzadl43lgpwqq28m+G0gH38kKCL1f3o9
-P8xUZm7sZqcWEervZMSSXMGBV9DgeoSR+U6FMJywgQGx/JNRx7wZTMNym3PvgLkl
-xCXh6ZA0/xbtJtcNI+UUv0ENBkTIuUWBhkAf3jQclAr9aQ0ktYBuHAcRcQIDAQAB
-AoGAKNhcAuezwZx6e18pFEXAtpVEIfgJgK9TlXi8AjUpAkrNPBWFmDpN1QDrM3p4
-nh+lEpLPW/3vqqchPqYyM4YJraMLpS3KUG+s7+m9QIia0ri2WV5Cig7WL+Tl9p7K
-b3oi2Aj/wti8GfOLFQXOQQ4Ea4GoCv2Sxe0GZR39UBxzTsECQQD1zuVIwBvqU2YR
-8innsoa+j4u2hulRmQO6Zgpzj5vyRYfA9uZxQ9nKbfJvzuWwUv+UzyS9RqxarqrP
-5nQw5EmVAkEAyOmJg6+AfGrgvSWfSpXEds/WA/sHziCO3rE4/sd6cnDc6XcTgeMs
-mT8Z3kAYGpqFDew5orUylPfJJa+PUueJbQJAY+gkvw3+Cp69FLw1lgu0wo07fwOU
-n2qu3jsNMm0DOFRUWfTAMvcd9S385L7WEnWZldUfnKK1+OGXYYrMXPbchQJAChU2
-UoaHQzc16iguM1cK0g+iJPb/MEgQA3sPajHmokGpxIm2T+lvvo0dJjs/Om6QyN8X
-EWRYkoNQ8/Q4lCeMjQJAfvDIGtyqF4PieFHYgluQAv5pGgYpakdc8SYyeRH9NKey
-GaL27FRs4fRWf9OmxPhUVgIyGzLGXrueemvQUDHObA==
------END RSA PRIVATE KEY-----
-_end_of_pem_
+    @ee_key ||= Fixtures.pkey("rsa-2")
   end
 
   def ca_cert
@@ -70,15 +38,14 @@ _end_of_pem_
   def test_request_mandatory_fields
     req = OpenSSL::Timestamp::Request.new
     assert_raise(OpenSSL::Timestamp::TimestampError) do
-      tmp = req.to_der
-      pp OpenSSL::ASN1.decode(tmp)
+      req.to_der
     end
     req.algorithm = "sha1"
     assert_raise(OpenSSL::Timestamp::TimestampError) do
       req.to_der
     end
     req.message_imprint = OpenSSL::Digest.digest('SHA1', "data")
-    req.to_der
+    assert_nothing_raised { req.to_der }
   end
 
   def test_request_assignment
@@ -89,8 +56,9 @@ _end_of_pem_
     assert_raise(TypeError) { req.version = nil }
     assert_raise(TypeError) { req.version = "foo" }
 
-    req.algorithm = "SHA1"
+    req.algorithm = "sha1"
     assert_equal("SHA1", req.algorithm)
+    assert_equal("SHA1", OpenSSL::ASN1.ObjectId("SHA1").sn)
     assert_raise(TypeError) { req.algorithm = nil }
     assert_raise(OpenSSL::ASN1::ASN1Error) { req.algorithm = "xxx" }
 
@@ -371,60 +339,60 @@ _end_of_pem_
   end
 
   def test_response_no_policy_defined
+    req = OpenSSL::Timestamp::Request.new
+    req.algorithm = "SHA1"
+    digest = OpenSSL::Digest.digest('SHA1', "test")
+    req.message_imprint = digest
+
+    fac = OpenSSL::Timestamp::Factory.new
+    fac.gen_time = Time.now
+    fac.serial_number = 1
+    fac.allowed_digests = ["sha1"]
+
     assert_raise(OpenSSL::Timestamp::TimestampError) do
-      req = OpenSSL::Timestamp::Request.new
-      req.algorithm = "SHA1"
-      digest = OpenSSL::Digest.digest('SHA1', "test")
-      req.message_imprint = digest
-
-      fac = OpenSSL::Timestamp::Factory.new
-      fac.gen_time = Time.now
-      fac.serial_number = 1
-      fac.allowed_digests = ["sha1"]
-
       fac.create_timestamp(ee_key, ts_cert_ee, req)
     end
   end
 
   def test_verify_ee_no_req
+    ts, _ = timestamp_ee
     assert_raise(TypeError) do
-      ts, _ = timestamp_ee
       ts.verify(nil, ca_cert)
     end
   end
 
   def test_verify_ee_no_store
+    ts, req = timestamp_ee
     assert_raise(TypeError) do
-      ts, req = timestamp_ee
       ts.verify(req, nil)
     end
   end
 
   def test_verify_ee_wrong_root_no_intermediate
+    ts, req = timestamp_ee
     assert_raise(OpenSSL::Timestamp::TimestampError) do
-      ts, req = timestamp_ee
       ts.verify(req, intermediate_store)
     end
   end
 
   def test_verify_ee_wrong_root_wrong_intermediate
+    ts, req = timestamp_ee
     assert_raise(OpenSSL::Timestamp::TimestampError) do
-      ts, req = timestamp_ee
       ts.verify(req, intermediate_store, [ca_cert])
     end
   end
 
   def test_verify_ee_nonce_mismatch
+    ts, req = timestamp_ee
+    req.nonce = 1
     assert_raise(OpenSSL::Timestamp::TimestampError) do
-      ts, req = timestamp_ee
-      req.nonce = 1
       ts.verify(req, ca_store, [intermediate_cert])
     end
   end
 
   def test_verify_ee_intermediate_missing
+    ts, req = timestamp_ee
     assert_raise(OpenSSL::Timestamp::TimestampError) do
-      ts, req = timestamp_ee
       ts.verify(req, ca_store)
     end
   end
@@ -472,27 +440,27 @@ _end_of_pem_
   end
 
   def test_verify_direct_wrong_root
+    ts, req = timestamp_direct
     assert_raise(OpenSSL::Timestamp::TimestampError) do
-      ts, req = timestamp_direct
       ts.verify(req, intermediate_store)
     end
   end
 
   def test_verify_direct_no_cert_no_intermediate
+    ts, req = timestamp_direct_no_cert
     assert_raise(OpenSSL::Timestamp::TimestampError) do
-      ts, req = timestamp_direct_no_cert
       ts.verify(req, ca_store)
     end
   end
 
   def test_verify_ee_no_cert
     ts, req = timestamp_ee_no_cert
-    ts.verify(req, ca_store, [ts_cert_ee, intermediate_cert])
+    assert_same(ts, ts.verify(req, ca_store, [ts_cert_ee, intermediate_cert]))
   end
 
   def test_verify_ee_no_cert_no_intermediate
+    ts, req = timestamp_ee_no_cert
     assert_raise(OpenSSL::Timestamp::TimestampError) do
-      ts, req = timestamp_ee_no_cert
       ts.verify(req, ca_store, [ts_cert_ee])
     end
   end

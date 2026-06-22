@@ -6,6 +6,16 @@
 %# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
 %# details.
 %#
+%
+% stack_increase = proc do |i|
+%   if i.has_attribute?('sp_inc')
+%     '-127'
+%   else
+%     sprintf("%4d", i.rets.size - i.pops.size)
+%   end
+% end
+% zjit_insns, insns = RubyVM::Instructions.partition { |i| i.name.start_with?('zjit_') }
+%
 PUREFUNC(MAYBE_UNUSED(static int comptime_insn_stack_increase(int depth, int insn, const VALUE *opes)));
 PUREFUNC(static rb_snum_t comptime_insn_stack_increase_dispatch(enum ruby_vminsn_type insn, const VALUE *opes));
 
@@ -13,15 +23,14 @@ rb_snum_t
 comptime_insn_stack_increase_dispatch(enum ruby_vminsn_type insn, const VALUE *opes)
 {
     static const signed char t[] = {
-% RubyVM::Instructions.each_slice 8 do |a|
-        <%= a.map { |i|
-          if i.has_attribute?('sp_inc')
-            '-127'
-          else
-            sprintf("%4d", i.rets.size - i.pops.size)
-          end
-        }.join(', ') -%>,
+% insns.each_slice(8) do |row|
+        <%= row.map(&stack_increase).join(', ') -%>,
 % end
+#if USE_ZJIT
+% zjit_insns.each_slice(8) do |row|
+        <%= row.map(&stack_increase).join(', ') -%>,
+% end
+#endif
     };
     signed char c = t[insn];
 

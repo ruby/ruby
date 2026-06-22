@@ -1,0 +1,5 @@
+for x in y
+          ^ unexpected end-of-input; expected a 'do', newline, or ';' after the 'for' loop collection
+          ^ unexpected end-of-input, assuming it is closing the parent top level context
+^~~ expected an `end` to close the `for` loop
+

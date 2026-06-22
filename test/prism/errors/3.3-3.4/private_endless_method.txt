@@ -1,0 +1,3 @@
+private def foo = puts "Hello"
+                       ^ unexpected string literal, expecting end-of-input
+

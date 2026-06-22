@@ -46,21 +46,26 @@ class TestMkmfPkgConfig < TestMkmf
   def test_pkgconfig_with_libs_option_returns_output
     pend("skipping because pkg-config is not installed") unless PKG_CONFIG
     expected = ["-L#{@fixtures_lib_dir}", "-ltest1-public"].sort
-    actual = pkg_config("test1", "libs").shellsplit.sort
-    assert_equal(expected, actual, MKMFLOG)
+    actual = pkg_config("test1", "libs")
+    assert_equal_sorted(expected, actual, MKMFLOG)
   end
 
   def test_pkgconfig_with_cflags_option_returns_output
     pend("skipping because pkg-config is not installed") unless PKG_CONFIG
     expected = ["--cflags-other", "-I#{@fixtures_inc_dir}/cflags-I"].sort
-    actual = pkg_config("test1", "cflags").shellsplit.sort
-    assert_equal(expected, actual, MKMFLOG)
+    actual = pkg_config("test1", "cflags")
+    assert_equal_sorted(expected, actual, MKMFLOG)
   end
 
   def test_pkgconfig_with_multiple_options
     pend("skipping because pkg-config is not installed") unless PKG_CONFIG
     expected = ["-L#{@fixtures_lib_dir}", "-ltest1-public", "-ltest1-private"].sort
-    actual = pkg_config("test1", "libs", "static").shellsplit.sort
-    assert_equal(expected, actual, MKMFLOG)
+    actual = pkg_config("test1", "libs", "static")
+    assert_equal_sorted(expected, actual, MKMFLOG)
+  end
+
+  private def assert_equal_sorted(expected, actual, msg = nil)
+    actual = actual.shellsplit.sort if actual
+    assert_equal(expected, actual, msg)
   end
 end

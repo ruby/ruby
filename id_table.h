@@ -4,7 +4,14 @@
 #include <stddef.h>
 #include "ruby/ruby.h"
 
-struct rb_id_table;
+struct rb_id_item;
+
+struct rb_id_table {
+    int capa;
+    int num;
+    int used;
+    struct rb_id_item *items;
+};
 
 /* compatible with ST_* */
 enum rb_id_table_iterator_result {
@@ -16,7 +23,10 @@ enum rb_id_table_iterator_result {
 };
 
 struct rb_id_table *rb_id_table_create(size_t size);
+struct rb_id_table *rb_id_table_init(struct rb_id_table *tbl, size_t capa);
+
 void rb_id_table_free(struct rb_id_table *tbl);
+void rb_id_table_free_items(struct rb_id_table *tbl);
 void rb_id_table_clear(struct rb_id_table *tbl);
 
 size_t rb_id_table_memsize(const struct rb_id_table *tbl);
@@ -31,6 +41,28 @@ typedef enum rb_id_table_iterator_result rb_id_table_foreach_values_func_t(VALUE
 void rb_id_table_foreach(struct rb_id_table *tbl, rb_id_table_foreach_func_t *func, void *data);
 void rb_id_table_foreach_values(struct rb_id_table *tbl, rb_id_table_foreach_values_func_t *func, void *data);
 void rb_id_table_foreach_values_with_replace(struct rb_id_table *tbl, rb_id_table_foreach_values_func_t *func, rb_id_table_update_value_callback_func_t *replace, void *data);
+
+VALUE rb_managed_id_table_create(const rb_data_type_t *type, size_t capa);
+VALUE rb_managed_id_table_new(size_t capa);
+VALUE rb_managed_id_table_dup(VALUE table);
+int rb_managed_id_table_insert(VALUE table, ID id, VALUE val);
+int rb_managed_id_table_lookup(VALUE table, ID id, VALUE *valp);
+size_t rb_managed_id_table_size(VALUE table);
+void rb_managed_id_table_foreach(VALUE table, rb_id_table_foreach_func_t *func, void *data);
+void rb_managed_id_table_foreach_values(VALUE table, rb_id_table_foreach_values_func_t *func, void *data);
+int rb_managed_id_table_delete(VALUE table, ID id);
+
+extern const rb_data_type_t rb_managed_id_table_type;
+
+VALUE rb_marked_id_table_new(size_t capa);
+int rb_marked_id_table_insert(VALUE table, ID id, VALUE val);
+VALUE rb_marked_id_table_dup(VALUE table);
+
+// alisases
+#define rb_marked_id_table_size             rb_managed_id_table_size
+#define rb_marked_id_table_lookup           rb_managed_id_table_lookup
+#define rb_marked_id_table_foreach          rb_managed_id_table_foreach
+#define rb_marked_id_table_foreach_values   rb_managed_id_table_foreach_values
 
 RUBY_SYMBOL_EXPORT_BEGIN
 size_t rb_id_table_size(const struct rb_id_table *tbl);

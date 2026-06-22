@@ -11,6 +11,7 @@ of each.
 - `MakeMakefile`: A module used to generate a Makefile for C extensions
 - `RbConfig`: Information about your Ruby configuration and build
 - `Gem`: A package management framework for Ruby
+- `Pathname`: Representation of the name of a file or directory on the filesystem. Pathname is a core class, but only methods that depend on other libraries are provided as a library.
 
 ## Extensions
 
@@ -34,7 +35,6 @@ of each.
 ## Libraries
 
 - Bundler ([GitHub][bundler]): Manage your Ruby application's gem dependencies
-- CGI ([GitHub][cgi]): Support for the Common Gateway Interface protocol
 - Delegator ([GitHub][delegate]): Provides three abilities to delegate method calls to an object
 - DidYouMean ([GitHub][did_you_mean]): "Did you mean?" experience in Ruby
 - English ([GitHub][English]): Provides references to special global variables with less cryptic names
@@ -53,13 +53,12 @@ of each.
 - Prism ([GitHub][prism]): A portable, error-tolerant Ruby parser
 - Resolv ([GitHub][resolv]): Thread-aware DNS resolver library in Ruby
 - SecureRandom ([GitHub][securerandom]): Interface for a secure random number generator
-- [Set](rdoc-ref:Set) ([GitHub][set]): Provides a class to deal with collections of unordered, unique values
 - Shellwords ([GitHub][shellwords]): Manipulates strings with the word parsing rules of the UNIX Bourne shell
 - Singleton ([GitHub][singleton]): Implementation of the Singleton pattern for Ruby
 - Tempfile ([GitHub][tempfile]): A utility class for managing temporary files
 - Time ([GitHub][time]): Extends the Time class with methods for parsing and conversion
 - Timeout ([GitHub][timeout]): Auto-terminate potentially long-running operations in Ruby
-- TSort ([GitHub][tsort]): Topological sorting using Tarjan's algorithm
+- TmpDir ([GitHub][tmpdir]): Extends the Dir class to manage the OS temporary file path
 - UN ([GitHub][un]): Utilities to replace common UNIX commands
 - URI ([GitHub][uri]): A Ruby module providing support for Uniform Resource Identifiers
 - YAML ([GitHub][yaml]): The Ruby client library for the Psych YAML implementation
@@ -72,13 +71,13 @@ of each.
 - Etc ([GitHub][etc]): Provides access to information typically stored in the UNIX /etc directory
 - Fcntl ([GitHub][fcntl]): Loads constants defined in the OS fcntl.h C header file
 - IO.console ([GitHub][io-console]): Extensions for the IO class, including `IO.console`, `IO.winsize`, etc.
+- IO#nonblock ([GitHub][io-nonblock]): Enable non-blocking mode with IO class.
+- IO#wait ([GitHub][io-wait]): Provides the feature for waiting until IO is readable or writable without blocking.
 - JSON ([GitHub][json]): Implements JavaScript Object Notation for Ruby
 - OpenSSL ([GitHub][openssl]): Provides SSL, TLS, and general-purpose cryptography for Ruby
-- Pathname ([GitHub][pathname]): Representation of the name of a file or directory on the filesystem
 - Psych ([GitHub][psych]): A YAML parser and emitter for Ruby
 - StringIO ([GitHub][stringio]): Pseudo-I/O on String objects
 - StringScanner ([GitHub][strscan]): Provides lexical scanning operations on a String
-- TmpDir ([GitHub][tmpdir]): Extends the Dir class to manage the OS temporary file path
 - Zlib ([GitHub][zlib]): Ruby interface for the zlib compression/decompression library
 
 # Bundled gems
@@ -92,20 +91,18 @@ of each.
 
 - [minitest]: A test library supporting TDD, BDD, mocking, and benchmarking
 - [power_assert]: Power Assert for Ruby
-- [rake]: Ruby build program with capabilities similar to make
+- [rake][rake-doc] ([GitHub][rake]): Ruby build program with capabilities similar to make
 - [test-unit]: A compatibility layer for MiniTest
-- [rexml]: An XML toolkit for Ruby
+- [rexml][rexml-doc] ([GitHub][rexml]): An XML toolkit for Ruby
 - [rss]: A family of libraries supporting various XML-based "feeds"
-- [net-ftp]: Support for the File Transfer Protocol
 - [net-imap]: Ruby client API for the Internet Message Access Protocol
-- [net-pop]: Ruby client library for POP3
 - [net-smtp]: Simple Mail Transfer Protocol client library for Ruby
 - [matrix]: Represents a mathematical matrix
 - [prime]: Prime numbers and factorization library
 - [rbs]: RBS is a language to describe the structure of Ruby programs
 - [typeprof]: A type analysis tool for Ruby code based on abstract interpretation
 - [debug]: Debugging functionality for Ruby
-- [racc]: A LALR(1) parser generator written in Ruby
+- [racc][racc-doc] ([GitHub][racc]): A LALR(1) parser generator written in Ruby
 - [mutex_m]: Mixin to extend objects to be handled like a Mutex
 - [getoptlong]: Parse command line options similar to the GNU C getopt_long()
 - [base64]: Support for encoding and decoding binary data using a Base64 representation
@@ -117,15 +114,17 @@ of each.
 - [drb]: Distributed object system for Ruby
 - [nkf]: Ruby extension for the Network Kanji Filter
 - [syslog]: Ruby interface for the POSIX system logging facility
-- [csv]: Provides an interface to read and write CSV files and data
+- [csv][csv-doc] ([GitHub][csv]): Provides an interface to read and write CSV files and data
 - [ostruct]: A class to build custom data structures, similar to a Hash
 - [benchmark]: Provides methods to measure and report the time used to execute code
-- [logger]: Provides a simple logging utility for outputting messages
+- [logger][logger-doc] ([GitHub][logger]): Provides a simple logging utility for outputting messages
 - [pstore]: Implements a file-based persistence mechanism based on a Hash
 - [win32ole]: Provides an interface for OLE Automation in Ruby
-- [reline]: GNU Readline and Editline in a pure Ruby implementation
+- [reline][reline-doc] ([GitHub][reline]): GNU Readline and Editline in a pure Ruby implementation
 - [readline]: Wrapper for the Readline extension and Reline
 - [fiddle]: A libffi wrapper for Ruby
+- [tsort]: Topological sorting using Tarjan's algorithm
+- [win32-registry]: Registry accessor library for the Windows platform.
 
 ## Tools
 
@@ -137,7 +136,6 @@ of each.
 [benchmark]: https://github.com/ruby/benchmark
 [bigdecimal]: https://github.com/ruby/bigdecimal
 [bundler]: https://github.com/rubygems/rubygems
-[cgi]: https://github.com/ruby/cgi
 [csv]: https://github.com/ruby/csv
 [date]: https://github.com/ruby/date
 [debug]: https://github.com/ruby/debug
@@ -156,6 +154,8 @@ of each.
 [forwardable]: https://github.com/ruby/forwardable
 [getoptlong]: https://github.com/ruby/getoptlong
 [io-console]: https://github.com/ruby/io-console
+[io-nonblock]: https://github.com/ruby/io-nonblock
+[io-wait]: https://github.com/ruby/io-wait
 [ipaddr]: https://github.com/ruby/ipaddr
 [irb]: https://github.com/ruby/irb
 [json]: https://github.com/ruby/json
@@ -163,10 +163,8 @@ of each.
 [matrix]: https://github.com/ruby/matrix
 [minitest]: https://github.com/seattlerb/minitest
 [mutex_m]: https://github.com/ruby/mutex_m
-[net-ftp]: https://github.com/ruby/net-ftp
 [net-http]: https://github.com/ruby/net-http
 [net-imap]: https://github.com/ruby/net-imap
-[net-pop]: https://github.com/ruby/net-pop
 [net-smtp]: https://github.com/ruby/net-smtp
 [nkf]: https://github.com/ruby/nkf
 [observer]: https://github.com/ruby/observer
@@ -195,7 +193,6 @@ of each.
 [rinda]: https://github.com/ruby/rinda
 [rss]: https://github.com/ruby/rss
 [securerandom]: https://github.com/ruby/securerandom
-[set]: https://github.com/ruby/set
 [shellwords]: https://github.com/ruby/shellwords
 [singleton]: https://github.com/ruby/singleton
 [stringio]: https://github.com/ruby/stringio
@@ -212,8 +209,15 @@ of each.
 [uri]: https://github.com/ruby/uri
 [weakref]: https://github.com/ruby/weakref
 [win32ole]: https://github.com/ruby/win32ole
+[win32-registry]: https://github.com/ruby/win32-registry
 [yaml]: https://github.com/ruby/yaml
 [zlib]: https://github.com/ruby/zlib
 
+[reline-doc]: https://ruby.github.io/reline/
+[rake-doc]: https://ruby.github.io/rake/
 [irb-doc]: https://ruby.github.io/irb/
 [rdoc-doc]: https://ruby.github.io/rdoc/
+[logger-doc]: https://ruby.github.io/logger/
+[racc-doc]: https://ruby.github.io/racc/
+[csv-doc]: https://ruby.github.io/csv/
+[rexml-doc]: https://ruby.github.io/rexml/

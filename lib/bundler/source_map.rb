@@ -14,24 +14,25 @@ module Bundler
       direct_requirements.reject {|_, source| source == skip }.keys
     end
 
-    def all_requirements
+    def all_requirements(excluded_sources = [])
       requirements = direct_requirements.dup
 
-      unmet_deps = sources.non_default_explicit_sources.map do |source|
+      explicit_sources = sources.non_default_explicit_sources.reject do |source|
+        excluded_sources.include?(source)
+      end
+
+      unmet_deps = explicit_sources.map do |source|
         (source.spec_names - pinned_spec_names).each do |indirect_dependency_name|
           previous_source = requirements[indirect_dependency_name]
           if previous_source.nil?
             requirements[indirect_dependency_name] = source
           else
-            no_ambiguous_sources = Bundler.feature_flag.bundler_3_mode?
-
             msg = ["The gem '#{indirect_dependency_name}' was found in multiple relevant sources."]
             msg.concat [previous_source, source].map {|s| "  * #{s}" }.sort
-            msg << "You #{no_ambiguous_sources ? :must : :should} add this gem to the source block for the source you wish it to be installed from."
+            msg << "You must add this gem to the source block for the source you wish it to be installed from."
             msg = msg.join("\n")
 
-            raise SecurityError, msg if no_ambiguous_sources
-            Bundler.ui.warn "Warning: #{msg}"
+            raise SecurityError, msg
           end
         end
 

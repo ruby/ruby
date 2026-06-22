@@ -24,13 +24,14 @@ OBJEXT = @OBJEXT@
 LIBEXT = @LIBEXT@
 EXEEXT = @EXEEXT@
 TIMESTAMPDIR  = $(EXTOUT)/.timestamp
-ENC_TRANS_D   = $(TIMESTAMPDIR)/.enc-trans.time
-ENC_TRANS_SO_D = $(TIMESTAMPDIR)/.enc-trans.so.time
+ENC_TRANS_D   = $(TIMESTAMPDIR)/enc-trans.time
+ENC_TRANS_SO_D = $(TIMESTAMPDIR)/enc-trans-$(arch).time
 
 BUILTIN_ENCS	= enc/ascii.c enc/us_ascii.c\
 		  enc/unicode.c enc/utf_8.c
 
 BUILTIN_TRANSES	= enc/trans/newline.trans
+BUILTIN_TRANS_CSRCS = $(BUILTIN_TRANSES:.trans=.c)
 
 RUBY_SO_NAME = @RUBY_SO_NAME@
 LIBRUBY = @LIBRUBY@

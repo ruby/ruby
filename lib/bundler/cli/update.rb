@@ -15,46 +15,54 @@ module Bundler
 
       Bundler.self_manager.update_bundler_and_restart_with_it_if_needed(update_bundler) if update_bundler
 
-      Plugin.gemfile_install(Bundler.default_gemfile) if Bundler.feature_flag.plugins?
-
       sources = Array(options[:source])
       groups  = Array(options[:group]).map(&:to_sym)
 
       full_update = gems.empty? && sources.empty? && groups.empty? && !options[:ruby] && !update_bundler
 
       if full_update && !options[:all]
-        if Bundler.feature_flag.update_requires_all_flag?
+        if Bundler.settings[:update_requires_all_flag]
           raise InvalidOption, "To update everything, pass the `--all` flag."
         end
-        SharedHelpers.major_deprecation 3, "Pass --all to `bundle update` to update everything"
+        SharedHelpers.feature_deprecated! "Pass --all to `bundle update` to update everything"
       elsif !full_update && options[:all]
         raise InvalidOption, "Cannot specify --all along with specific options."
       end
 
       conservative = options[:conservative]
 
-      if full_update
+      unlock = if full_update
         if conservative
-          Bundler.definition(conservative: conservative)
+          { conservative: conservative }
         else
-          Bundler.definition(true)
+          true
         end
       else
         unless Bundler.default_lockfile.exist?
           raise GemfileLockNotFound, "This Bundle hasn't been installed yet. " \
             "Run `bundle install` to update and install the bundled gems."
         end
-        Bundler::CLI::Common.ensure_all_gems_in_lockfile!(gems)
+        explicit_gems = gems.dup
 
         if groups.any?
           deps = Bundler.definition.dependencies.select {|d| (d.groups & groups).any? }
           gems.concat(deps.map(&:name))
         end
 
-        Bundler.definition(gems: gems, sources: sources, ruby: options[:ruby],
-                           conservative: conservative,
-                           bundler: update_bundler)
+        {
+          gems: gems,
+          sources: sources,
+          ruby: options[:ruby],
+          conservative: conservative,
+          bundler: update_bundler,
+        }
       end
+
+      Plugin.gemfile_install(Bundler.default_gemfile, Bundler.default_lockfile, unlock.dup) if Bundler.settings[:plugins]
+
+      Bundler::CLI::Common.ensure_all_gems_in_lockfile!(explicit_gems) if explicit_gems
+
+      Bundler.definition(unlock)
 
       Bundler::CLI::Common.configure_gem_version_promoter(Bundler.definition, options)
 
@@ -63,9 +71,11 @@ module Bundler
       opts = options.dup
       opts["update"] = true
       opts["local"] = options[:local]
-      opts["force"] = options[:redownload]
+      opts["force"] = options[:redownload] if options[:redownload]
 
       Bundler.settings.set_command_option_if_given :jobs, opts["jobs"]
+      Bundler::CLI::Common.validate_cooldown!(options[:cooldown])
+      Bundler.settings.set_command_option_if_given :cooldown, options[:cooldown]
 
       Bundler.definition.validate_runtime!
 
@@ -92,7 +102,7 @@ module Bundler
           locked_spec = locked_info[:spec]
           new_spec = Bundler.definition.specs[name].first
           unless new_spec
-            unless locked_spec.match_platform(Bundler.local_platform)
+            unless locked_spec.installable_on_platform?(Bundler.local_platform)
               Bundler.ui.warn "Bundler attempted to update #{name} but it was not considered because it is for a different platform from the current one"
             end
 

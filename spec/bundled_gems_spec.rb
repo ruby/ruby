@@ -22,17 +22,12 @@ RSpec.configure do |config|
     Gem.ruby = ENV["RUBY"] if ENV["RUBY"]
 
     require_relative "bundler/support/rubygems_ext"
-    Spec::Rubygems.test_setup
     Spec::Helpers.install_dev_bundler
+    FileUtils.mkdir_p Spec::Path.gem_path
   end
 
   config.around(:each) do |example|
     FileUtils.cp_r Spec::Path.pristine_system_gem_path, Spec::Path.system_gem_path
-    FileUtils.mkdir_p Spec::Path.base_system_gem_path.join("gems")
-    %w[sinatra rack tilt rack-protection rack-session rack-test mustermann base64 logger compact_index].each do |gem|
-      path = Dir[File.expand_path("../.bundle/gems/#{gem}-*", __dir__)].map(&:to_s).first
-      FileUtils.cp_r path, Spec::Path.base_system_gem_path.join("gems")
-    end
 
     with_gem_path_as(system_gem_path) do
       Bundler.ui.silence { example.run }
@@ -56,11 +51,12 @@ end
 
 RSpec.describe "bundled_gems.rb" do
   let(:stub_code) {
+    source_lib_dir = File.realpath(Spec::Path.source_lib_dir.to_s)
     <<~STUB
       Gem::BUNDLED_GEMS.send(:remove_const, :LIBDIR)
       Gem::BUNDLED_GEMS.send(:remove_const, :ARCHDIR)
       Gem::BUNDLED_GEMS.send(:remove_const, :SINCE)
-      Gem::BUNDLED_GEMS.const_set(:LIBDIR, File.expand_path(File.join(__dir__, "../../..", "lib")) + "/")
+      Gem::BUNDLED_GEMS.const_set(:LIBDIR, "#{source_lib_dir}/")
       Gem::BUNDLED_GEMS.const_set(:ARCHDIR, File.expand_path($LOAD_PATH.find{|path| path.include?(".ext/common") }) + "/")
       Gem::BUNDLED_GEMS.const_set(:SINCE, { "openssl" => RUBY_VERSION, "fileutils" => RUBY_VERSION, "csv" => "3.4.0", "net-smtp" => "3.1.0" })
     STUB
@@ -96,6 +92,30 @@ RSpec.describe "bundled_gems.rb" do
     expect(err).to include(/-e:18/)
   end
 
+  it "Show warning to contact the author when the require is issued from a gem" do
+    # Install the gem under the system gem path so its require shows up as
+    # coming from `<gem_path>/gems/tinygem-1.0.0`, the same shape as the
+    # childprocess-5.0.0 case the attribution logic targets.
+    gem_dir = system_gem_path("gems/tinygem-1.0.0")
+    build_lib "tinygem", "1.0.0", path: gem_dir do |s|
+      s.write "lib/tinygem.rb", "require 'openssl'"
+    end
+
+    script <<-RUBY
+      gemfile do
+        source "https://rubygems.org"
+        path "#{gem_dir}" do
+          gem "tinygem", "1.0.0"
+        end
+      end
+
+      require "tinygem"
+    RUBY
+
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
+    expect(err).to include("Also please contact the author of tinygem-1.0.0 to request adding openssl into its gemspec.")
+  end
+
   it "Show warning when bundled gems called as dependency" do
     build_lib "activesupport", "7.0.7.2" do |s|
       s.write "lib/active_support/all.rb", "require 'openssl'"
@@ -112,7 +132,7 @@ RSpec.describe "bundled_gems.rb" do
       require "active_support/all"
     RUBY
 
-    expect(err).to include(/openssl used to be loaded from (.*) since Ruby 3.5.0/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
     expect(err).to include(/lib\/active_support\/all\.rb:1/)
   end
 
@@ -158,7 +178,7 @@ RSpec.describe "bundled_gems.rb" do
 
     bundle "exec ruby script.rb"
 
-    expect(err).to include(/openssl used to be loaded from (.*) since Ruby 3.5.0/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
     expect(err).to include(/script\.rb:8/)
   end
 
@@ -176,7 +196,7 @@ RSpec.describe "bundled_gems.rb" do
 
     bundle "exec ./script.rb"
 
-    expect(err).to include(/openssl used to be loaded from (.*) since Ruby 3.5.0/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
     expect(err).to include(/script\.rb:9/)
   end
 
@@ -185,7 +205,7 @@ RSpec.describe "bundled_gems.rb" do
     create_file("Gemfile", "source 'https://rubygems.org'")
     bundle "exec ruby -r./stub -ropenssl -e ''"
 
-    expect(err).to include(/openssl used to be loaded from (.*) since Ruby 3.5.0/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
   end
 
   it "Show warning when warn is not the standard one in the current scope" do
@@ -208,7 +228,7 @@ RSpec.describe "bundled_gems.rb" do
       My.my
     RUBY
 
-    expect(err).to include(/openssl used to be loaded from (.*) since Ruby 3.5.0/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
     expect(err).to include(/-e:19/)
   end
 
@@ -250,7 +270,7 @@ RSpec.describe "bundled_gems.rb" do
       require Gem::BUNDLED_GEMS::ARCHDIR + 'openssl'
     RUBY
 
-    expect(err).to include(/openssl used to be loaded from (.*) since Ruby 3.5.0/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
     # TODO: We should assert caller location like below:
     # test_warn_bootsnap.rb:14: warning: ...
   end
@@ -279,7 +299,7 @@ RSpec.describe "bundled_gems.rb" do
     # Original issue is childprocess 5.0.0 and logger.
     build_lib "fileutils2", "5.0.0" do |s|
       # bootsnap expand required feature to full path
-      rubylibpath = File.expand_path(File.join(__dir__, "..", "lib"))
+      rubylibpath = File.realpath(File.join(__dir__, "..", "lib"))
       s.write "lib/fileutils2.rb", "require '#{rubylibpath}/fileutils'"
     end
 
@@ -319,7 +339,7 @@ RSpec.describe "bundled_gems.rb" do
     create_file("Gemfile", "source 'https://rubygems.org'")
     bundle "exec ruby script.rb"
 
-    expect(err).to include(/openssl used to be loaded from (.*) since Ruby 3.5.0/)
+    expect(err).to include(/openssl used to be loaded from (.*) since Ruby #{RUBY_VERSION}/)
     expect(err).to include(/script\.rb:13/)
   end
 
@@ -389,6 +409,30 @@ RSpec.describe "bundled_gems.rb" do
         bundle "exec ./script.rb"
 
         expect(err).to include("gem install csv")
+      end
+    end
+
+    context "with bundler/inline" do
+      it "foo is available on LOAD_PATH" do
+        build_lib "foo", "1.0.0" do |s|
+          s.write "lib/foo.rb", "puts :foo"
+        end
+
+        script <<-RUBY, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo1.to_s }
+          #!/usr/bin/env ruby
+          gemfile do
+            source "https://gem.repo1"
+            path "#{lib_path}" do
+              gem "foo", "1.0.0"
+            end
+          end
+
+          Gem::BUNDLED_GEMS.force_activate("csv")
+          puts $LOAD_PATH
+        RUBY
+
+        expect(err).to include("gem install csv")
+        expect(out).to include("foo-1.0.0/lib")
       end
     end
 

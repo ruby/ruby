@@ -1,0 +1,26 @@
+name: tarball-test-schedule
+on:
+  schedule:
+    - cron: '30 18 * * *' # Daily at 18:30 UTC
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  dispatch:
+    if: ${{ github.event_name != 'schedule' || github.repository == 'ruby/ruby' }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        branch:
+          - master
+          - ruby_4_0
+          - ruby_3_4
+          - ruby_3_3
+    steps:
+      - name: Trigger tarball-test on ${{ matrix.branch }}
+        run: gh workflow run tarball-test.yml --ref "$BRANCH" --repo "$GITHUB_REPOSITORY" -f notify-release-channel=true
+        env:
+          BRANCH: ${{ matrix.branch }}
+          GH_TOKEN: ${{ secrets.MATZBOT_GITHUB_ACTION_TOKEN }}

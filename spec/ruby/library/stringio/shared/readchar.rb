@@ -13,17 +13,17 @@ describe :stringio_readchar, shared: true do
 
   it "raises an EOFError when self is at the end" do
     @io.pos = 7
-    -> { @io.send(@method) }.should raise_error(EOFError)
+    -> { @io.send(@method) }.should.raise(EOFError)
   end
 end
 
 describe :stringio_readchar_not_readable, shared: true do
   it "raises an IOError" do
     io = StringIO.new(+"a b c d e", "w")
-    -> { io.send(@method) }.should raise_error(IOError)
+    -> { io.send(@method) }.should.raise(IOError)
 
     io = StringIO.new("a b c d e")
     io.close_read
-    -> { io.send(@method) }.should raise_error(IOError)
+    -> { io.send(@method) }.should.raise(IOError)
   end
 end

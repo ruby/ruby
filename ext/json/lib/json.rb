@@ -6,6 +6,15 @@ require 'json/common'
 #
 # \JSON is a lightweight data-interchange format.
 #
+# \JSON is easy for us humans to read and write,
+# and equally simple for machines to read (parse) and write (generate).
+#
+# \JSON is language-independent, making it an ideal interchange format
+# for applications in differing programming languages
+# and on differing operating systems.
+#
+# == \JSON Values
+#
 # A \JSON value is one of the following:
 # - Double-quoted text:  <tt>"foo"</tt>.
 # - Number:  +1+, +1.0+, +2.0e2+.
@@ -127,6 +136,24 @@ require 'json/common'
 #
 # ---
 #
+# Option +allow_duplicate_key+ specifies whether duplicate keys in objects
+# should be ignored or cause an error to be raised:
+#
+# When not specified:
+#   # The last value is used and a deprecation warning emitted.
+#   JSON.parse('{"a": 1, "a":2}') => {"a" => 2}
+#   # warning: detected duplicate keys in JSON object.
+#   # This will raise an error in json 3.0 unless enabled via `allow_duplicate_key: true`
+#
+# When set to +true+:
+#   # The last value is used.
+#   JSON.parse('{"a": 1, "a":2}') => {"a" => 2}
+#
+# When set to +false+, the future default:
+#   JSON.parse('{"a": 1, "a":2}') => duplicate key at line 1 column 1 (JSON::ParserError)
+#
+# ---
+#
 # Option +allow_nan+ (boolean) specifies whether to allow
 # NaN, Infinity, and MinusInfinity in +source+;
 # defaults to +false+.
@@ -143,7 +170,60 @@ require 'json/common'
 #   ruby = JSON.parse(source, {allow_nan: true})
 #   ruby # => [NaN, Infinity, -Infinity]
 #
+# ---
+#
+# Option +allow_trailing_comma+ (boolean) specifies whether to allow
+# trailing commas in objects and arrays;
+# defaults to +false+.
+#
+# With the default, +false+:
+#   JSON.parse('[1,]') # unexpected character: ']' at line 1 column 4 (JSON::ParserError)
+#
+# When enabled:
+#   JSON.parse('[1,]', allow_trailing_comma: true) # => [1]
+#
+# ---
+#
+# Option +allow_comments+ (boolean) specifies whether to allow
+# JavaScript style comments (either <tt>// comment</tt> or <tt>/* comment */</tt>);
+# defaults to +false+.
+#
+# When not specified, a deprecation warning is emitted if a comment is encountered.
+#
+# When set to +true+, comments are ignored:
+#   JSON.parse('/* comment */ {"a": 1, "a":2}') # => {"a" => 2}
+#
+# When set to +false+, the future default:
+#   JSON.parse('/* comment */ {"a": 1, "a":2}') # unexpected character: '/' at line 1 column 1 (JSON::ParserError)
+#
+# ---
+#
+# Option +allow_control_characters+ (boolean) specifies whether to allow
+# unescaped ASCII control characters, such as newlines, in strings;
+# defaults to +false+.
+#
+# With the default, +false+:
+#   JSON.parse(%{"Hello\nWorld"}) # invalid ASCII control character in string (JSON::ParserError)
+#
+# When enabled:
+#   JSON.parse(%{"Hello\nWorld"}, allow_control_characters: true) # => "Hello\nWorld"
+#
+# ---
+#
+# Option +allow_invalid_escape+ (boolean) specifies whether to ignore backslahes that are followed
+# by an invalid escape character in strings;
+# defaults to +false+.
+#
+# With the default, +false+:
+#   JSON.parse('"Hell\o"') # invalid escape character in string (JSON::ParserError)
+#
+# When enabled:
+#   JSON.parse('"Hell\o"', allow_invalid_escape: true) # => "Hello"
+#
 # ====== Output Options
+#
+# Option +freeze+ (boolean) specifies whether the returned objects will be frozen;
+# defaults to +false+.
 #
 # Option +symbolize_names+ (boolean) specifies whether returned \Hash keys
 # should be Symbols;
@@ -269,8 +349,27 @@ require 'json/common'
 #   JSON.generate(JSON::MinusInfinity)
 #
 # Allow:
-#   ruby = [Float::NaN, Float::Infinity, Float::MinusInfinity]
-#   JSON.generate(ruby, allow_nan: true) # => '[NaN,Infinity,-Infinity]'
+#   ruby = [Float::NAN, Float::INFINITY, JSON::NaN, JSON::Infinity, JSON::MinusInfinity]
+#   JSON.generate(ruby, allow_nan: true) # => '[NaN,Infinity,NaN,Infinity,-Infinity]'
+#
+# ---
+#
+# Option +allow_duplicate_key+ (boolean) specifies whether
+# hashes with duplicate keys should be allowed or produce an error.
+# defaults to emit a deprecation warning.
+#
+# With the default, (not set):
+#   Warning[:deprecated] = true
+#   JSON.generate({ foo: 1, "foo" => 2 })
+#   # warning: detected duplicate key "foo" in {foo: 1, "foo" => 2}.
+#   # This will raise an error in json 3.0 unless enabled via `allow_duplicate_key: true`
+#   # => '{"foo":1,"foo":2}'
+#
+# With <tt>false</tt>
+#   JSON.generate({ foo: 1, "foo" => 2 }, allow_duplicate_key: false)
+#   # detected duplicate key "foo" in {foo: 1, "foo" => 2} (JSON::GeneratorError)
+#
+# In version 3.0, <tt>false</tt> will become the default.
 #
 # ---
 #
@@ -350,6 +449,9 @@ require 'json/common'
 #   }
 #
 # == \JSON Additions
+#
+# Note that JSON Additions must only be used with trusted data, and is
+# deprecated.
 #
 # When you "round trip" a non-\String object from Ruby to \JSON and back,
 # you have a new \String, instead of the object you began with:

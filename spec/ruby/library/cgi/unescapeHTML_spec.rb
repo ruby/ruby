@@ -1,5 +1,9 @@
 require_relative '../../spec_helper'
-require 'cgi'
+begin
+  require 'cgi/escape'
+rescue LoadError
+  require 'cgi'
+end
 
 describe "CGI.unescapeHTML" do
   it "unescapes '&amp; &lt; &gt; &quot;' to '& < > \"'" do

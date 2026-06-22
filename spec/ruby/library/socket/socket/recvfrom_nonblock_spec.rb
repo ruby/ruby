@@ -16,7 +16,7 @@ describe 'Socket#recvfrom_nonblock' do
     platform_is_not :windows do
       describe 'using an unbound socket' do
         it 'raises IO::WaitReadable' do
-          -> { @server.recvfrom_nonblock(1) }.should raise_error(IO::WaitReadable)
+          -> { @server.recvfrom_nonblock(1) }.should.raise(IO::WaitReadable)
         end
       end
     end
@@ -29,7 +29,7 @@ describe 'Socket#recvfrom_nonblock' do
 
       describe 'without any data available' do
         it 'raises IO::WaitReadable' do
-          -> { @server.recvfrom_nonblock(1) }.should raise_error(IO::WaitReadable)
+          -> { @server.recvfrom_nonblock(1) }.should.raise(IO::WaitReadable)
         end
 
         it 'returns :wait_readable with exception: false' do
@@ -47,7 +47,7 @@ describe 'Socket#recvfrom_nonblock' do
             IO.select([@server])
             ret = @server.recvfrom_nonblock(1)
 
-            ret.should be_an_instance_of(Array)
+            ret.should.instance_of?(Array)
             ret.length.should == 2
           end
         end
@@ -98,7 +98,7 @@ describe 'Socket#recvfrom_nonblock' do
             end
 
             it 'contains an Addrinfo at index 1' do
-              @array[1].should be_an_instance_of(Addrinfo)
+              @array[1].should.instance_of?(Addrinfo)
             end
           end
 
@@ -158,61 +158,30 @@ describe 'Socket#recvfrom_nonblock' do
         @client.close unless @client.closed?
       end
 
-      ruby_version_is ""..."3.3" do
-        it "returns an empty String as received data on a closed stream socket" do
-          ready = false
+      it "returns nil on a closed stream socket" do
+        ready = false
 
-          t = Thread.new do
-            client, _ = @server.accept
+        t = Thread.new do
+          client, _ = @server.accept
 
-            Thread.pass while !ready
-            begin
-              client.recvfrom_nonblock(10)
-            rescue IO::EAGAINWaitReadable
-              retry
-            end
-          ensure
-            client.close if client
+          Thread.pass while !ready
+          begin
+            client.recvfrom_nonblock(10)
+          rescue IO::EAGAINWaitReadable
+            retry
           end
-
-          Thread.pass while t.status and t.status != "sleep"
-          t.status.should_not be_nil
-
-          @client.connect(@server_addr)
-          @client.close
-          ready = true
-
-          t.value.should.is_a? Array
-          t.value[0].should == ""
+        ensure
+          client.close if client
         end
-      end
 
-      ruby_version_is "3.3" do
-        it "returns nil on a closed stream socket" do
-          ready = false
+        Thread.pass while t.status and t.status != "sleep"
+        t.status.should_not == nil
 
-          t = Thread.new do
-            client, _ = @server.accept
+        @client.connect(@server_addr)
+        @client.close
+        ready = true
 
-            Thread.pass while !ready
-            begin
-              client.recvfrom_nonblock(10)
-            rescue IO::EAGAINWaitReadable
-              retry
-            end
-          ensure
-            client.close if client
-          end
-
-          Thread.pass while t.status and t.status != "sleep"
-          t.status.should_not be_nil
-
-          @client.connect(@server_addr)
-          @client.close
-          ready = true
-
-          t.value.should be_nil
-        end
+        t.value.should == nil
       end
     end
   end

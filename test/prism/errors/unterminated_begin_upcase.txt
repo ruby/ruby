@@ -1,0 +1,4 @@
+BEGIN {
+       ^ unexpected end-of-input, assuming it is closing the parent top level context
+      ^ expected a `}` to close the `BEGIN` statement
+

@@ -494,12 +494,10 @@ module TestNetHTTP_version_1_1_methods
 
   def test_s_post
     url = "http://#{config('host')}:#{config('port')}/?q=a"
-    res = assert_warning(/Content-Type did not set/) do
-      Net::HTTP.post(
-              URI.parse(url),
-              "a=x")
-    end
-    assert_equal "application/x-www-form-urlencoded", res["Content-Type"]
+    res = Net::HTTP.post(
+            URI.parse(url),
+            "a=x")
+    assert_equal "application/octet-stream", res["Content-Type"]
     assert_equal "a=x", res.body
     assert_equal url, res["X-request-uri"]
 
@@ -570,9 +568,7 @@ module TestNetHTTP_version_1_1_methods
       th = Thread.new do
         err = !windows? ? Net::WriteTimeout : Net::ReadTimeout
         assert_raise(err) do
-          assert_warning(/Content-Type did not set/) do
-            conn.post('/', "a"*50_000_000)
-          end
+          conn.post('/', "a"*50_000_000)
         end
       end
       assert th.join(EnvUtil.apply_timeout_scale(10))
@@ -934,6 +930,24 @@ __EOM__
         # assert_equal(expected, res.body)
       }
     }
+  end
+
+  def test_set_form_multipart_crlf_injection
+    build = ->(data, opt = {}) {
+      req = Net::HTTP::Post.new('/')
+      req.set_form(data, 'multipart/form-data')
+      out = +''
+      req.send(:encode_multipart_form_data, out, req.instance_variable_get(:@body_data), opt)
+    }
+    assert_raise(ArgumentError) { build.call([["foo\r\nX-Injected: 1", 'v']]) }
+    assert_raise(ArgumentError) { build.call([['f', 'v']], boundary: "abc\r\nX-Injected: 1") }
+    assert_raise(ArgumentError) { build.call([['f', 'v', {filename: "a\r\nX-Injected: 1"}]]) }
+    assert_raise(ArgumentError) do
+      build.call([['f', 'v', {filename: 'a', content_type: "text/plain\r\nX-Injected: 1"}]])
+    end
+    assert_nothing_raised do
+      build.call([['f', 'v', {filename: 'a', content_type: :"text/plain"}]])
+    end
   end
 end
 
@@ -1404,3 +1418,28 @@ class TestNetHTTPPartialResponse < Test::Unit::TestCase
     assert_raise(EOFError) {http.get('/')}
   end
 end
+
+class TestNetHTTPInRactor < Test::Unit::TestCase
+  CONFIG = {
+    'host' => '127.0.0.1',
+    'proxy_host' => nil,
+    'proxy_port' => nil,
+  }
+
+  include TestNetHTTPUtils
+
+  def test_get
+    assert_ractor(<<~RUBY, require: 'net/http')
+      expected = #{$test_net_http_data.dump}.b
+      ret = Ractor.new {
+        host = #{config('host').dump}
+        port = #{config('port')}
+        Net::HTTP.start(host, port) { |http|
+          res = http.get('/')
+          res.body
+        }
+      }.value
+      assert_equal expected, ret
+    RUBY
+  end
+end if defined?(Ractor) && Ractor.method_defined?(:value)

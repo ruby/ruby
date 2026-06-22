@@ -32,7 +32,7 @@ describe "Integer#/" do
     end
 
     it "raises a ZeroDivisionError if the given argument is zero and not a Float" do
-      -> { 1 / 0 }.should raise_error(ZeroDivisionError)
+      -> { 1 / 0 }.should.raise(ZeroDivisionError)
     end
 
     it "does NOT raise ZeroDivisionError if the given argument is zero and is a Float" do
@@ -46,9 +46,9 @@ describe "Integer#/" do
     end
 
     it "raises a TypeError when given a non-Integer" do
-      -> { 13 / mock('10') }.should raise_error(TypeError)
-      -> { 13 / "10"       }.should raise_error(TypeError)
-      -> { 13 / :symbol    }.should raise_error(TypeError)
+      -> { 13 / mock('10') }.should.raise(TypeError)
+      -> { 13 / "10"       }.should.raise(TypeError)
+      -> { 13 / :symbol    }.should.raise(TypeError)
     end
   end
 
@@ -97,13 +97,30 @@ describe "Integer#/" do
     end
 
     it "raises a ZeroDivisionError if other is zero and not a Float" do
-      -> { @bignum / 0 }.should raise_error(ZeroDivisionError)
+      -> { @bignum / 0 }.should.raise(ZeroDivisionError)
     end
 
     it "raises a TypeError when given a non-numeric" do
-      -> { @bignum / mock('10') }.should raise_error(TypeError)
-      -> { @bignum / "2" }.should raise_error(TypeError)
-      -> { @bignum / :symbol }.should raise_error(TypeError)
+      -> { @bignum / mock('10') }.should.raise(TypeError)
+      -> { @bignum / "2" }.should.raise(TypeError)
+      -> { @bignum / :symbol }.should.raise(TypeError)
     end
+  end
+
+  it "coerces the RHS and calls #coerce" do
+    obj = mock("integer plus")
+    obj.should_receive(:coerce).with(6).and_return([6, 3])
+    (6 / obj).should == 2
+  end
+
+  it "coerces the RHS and calls #coerce even if it's private" do
+    obj = Object.new
+    class << obj
+      private def coerce(n)
+        [n, 3]
+      end
+    end
+
+    (6 / obj).should == 2
   end
 end

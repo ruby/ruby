@@ -42,7 +42,7 @@ describe "File.basename" do
   end
 
   it "returns an string" do
-    File.basename("foo").should be_kind_of(String)
+    File.basename("foo").should.is_a?(String)
   end
 
   it "returns the basename for unix format" do
@@ -105,10 +105,10 @@ describe "File.basename" do
   end
 
   it "raises a TypeError if the arguments are not String types" do
-    -> { File.basename(nil)          }.should raise_error(TypeError)
-    -> { File.basename(1)            }.should raise_error(TypeError)
-    -> { File.basename("bar.txt", 1) }.should raise_error(TypeError)
-    -> { File.basename(true)         }.should raise_error(TypeError)
+    -> { File.basename(nil)          }.should.raise(TypeError)
+    -> { File.basename(1)            }.should.raise(TypeError)
+    -> { File.basename("bar.txt", 1) }.should.raise(TypeError)
+    -> { File.basename(true)         }.should.raise(TypeError)
   end
 
   it "accepts an object that has a #to_path method" do
@@ -116,7 +116,7 @@ describe "File.basename" do
   end
 
   it "raises an ArgumentError if passed more than two arguments" do
-    -> { File.basename('bar.txt', '.txt', '.txt') }.should raise_error(ArgumentError)
+    -> { File.basename('bar.txt', '.txt', '.txt') }.should.raise(ArgumentError)
   end
 
   # specific to MS Windows
@@ -151,8 +151,30 @@ describe "File.basename" do
       File.basename("c:\\bar.txt", ".*").should == "bar"
       File.basename("c:\\bar.txt.exe", ".*").should == "bar.txt"
     end
+
+    it "handles Shift JIS 0x5C (\\) as second byte of a multi-byte sequence" do
+      # dir\fileソname.txt
+      path = "dir\\file\x83\x5cname.txt".b.force_encoding(Encoding::SHIFT_JIS)
+      path.valid_encoding?.should == true
+      File.basename(path).should == "file\x83\x5cname.txt".b.force_encoding(Encoding::SHIFT_JIS)
+    end
   end
 
+  it "rejects strings encoded with non ASCII-compatible encodings" do
+    Encoding.list.reject(&:ascii_compatible?).reject(&:dummy?).each do |enc|
+      path = "/foo/bar".encode(enc)
+
+      -> {
+        File.basename(path)
+      }.should.raise(Encoding::CompatibilityError)
+    end
+  end
+
+  it "works with all ASCII-compatible encodings" do
+    Encoding.list.select(&:ascii_compatible?).each do |enc|
+      File.basename("/foo/bar".encode(enc)).should == "bar".encode(enc)
+    end
+  end
 
   it "returns the extension for a multibyte filename" do
     File.basename('/path/Офис.m4a').should == "Офис.m4a"
@@ -174,7 +196,7 @@ describe "File.basename" do
                  else
                    File.basename(original)
                  end
-        result.should_not equal(original)
+        result.should_not.equal?(original)
         result.frozen?.should == false
       end
     end

@@ -8,7 +8,7 @@ describe "Enumerable#take_while" do
   end
 
   it "returns an Enumerator if no block given" do
-    @enum.take_while.should be_an_instance_of(Enumerator)
+    @enum.take_while.should.instance_of?(Enumerator)
   end
 
   it "returns no/all elements for {true/false} block" do
@@ -38,7 +38,7 @@ describe "Enumerable#take_while" do
 
   it "doesn't return self when it could" do
     a = [1,2,3]
-    a.take_while{true}.should_not equal(a)
+    a.take_while{true}.should_not.equal?(a)
   end
 
   it "calls the block with initial args when yielded with multiple arguments" do

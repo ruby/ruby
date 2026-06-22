@@ -3,49 +3,10 @@
 return if !(RUBY_ENGINE == "ruby" && RUBY_VERSION >= "3.2.0")
 
 require_relative "test_helper"
+require "ripper"
 
 module Prism
   class LexTest < TestCase
-    except = [
-      # It seems like there are some oddities with nested heredocs and ripper.
-      # Waiting for feedback on https://bugs.ruby-lang.org/issues/19838.
-      "seattlerb/heredoc_nested.txt",
-      "whitequark/dedenting_heredoc.txt",
-      # Ripper seems to have a bug that the regex portions before and after
-      # the heredoc are combined into a single token. See
-      # https://bugs.ruby-lang.org/issues/19838.
-      "spanning_heredoc.txt",
-      "spanning_heredoc_newlines.txt",
-      # Prism emits a single :on_tstring_content in <<- style heredocs when there
-      # is a line continuation preceeded by escaped backslashes. It should emit two, same
-      # as if the backslashes are not present.
-      "heredocs_with_fake_newlines.txt",
-    ]
-
-    if RUBY_VERSION < "3.3.0"
-      # This file has changed behavior in Ripper in Ruby 3.3, so we skip it if
-      # we're on an earlier version.
-      except << "seattlerb/pct_w_heredoc_interp_nested.txt"
-
-      # Ruby < 3.3.0 cannot parse heredocs where there are leading whitespace
-      # characters in the heredoc start.
-      # Example: <<~'   EOF' or <<-'  EOF'
-      # https://bugs.ruby-lang.org/issues/19539
-      except << "heredocs_leading_whitespace.txt"
-      except << "whitequark/ruby_bug_19539.txt"
-
-      # https://bugs.ruby-lang.org/issues/19025
-      except << "whitequark/numparam_ruby_bug_19025.txt"
-      # https://bugs.ruby-lang.org/issues/18878
-      except << "whitequark/ruby_bug_18878.txt"
-      # https://bugs.ruby-lang.org/issues/19281
-      except << "whitequark/ruby_bug_19281.txt"
-    end
-
-    Fixture.each(except: except) do |fixture|
-      define_method(fixture.test_name) { assert_lex(fixture) }
-    end
-
     def test_lex_file
       assert_nothing_raised do
         Prism.lex_file(__FILE__)
@@ -86,17 +47,77 @@ module Prism
       end
     end
 
-    private
-
-    def assert_lex(fixture)
-      source = fixture.read
-
-      result = Prism.lex_compat(source)
-      assert_equal [], result.errors
-
-      Prism.lex_ripper(source).zip(result.value).each do |(ripper, prism)|
-        assert_equal ripper, prism
+    def test_lex_encoding
+      tokens = Prism.lex('"わたし"', encoding: Encoding::Windows_31J).value
+      tokens.each do |t|
+        assert_equal(Encoding::Windows_31J, t[0].value.encoding)
       end
+
+      # Shebangs must appear on the first line. For these cases, the encoding
+      # comment may appear second, but it should still change encoding.
+      tokens = Prism.lex(<<~RUBY, encoding: Encoding::Windows_31J).value
+        #! /usr/bin/env ruby
+        # encoding: utf-8
+        "わたし"
+      RUBY
+      tokens.each do |t|
+        assert_equal(Encoding::UTF_8, t[0].value.encoding)
+      end
+    end
+
+    if RUBY_VERSION >= "3.3"
+      def test_lex_compat
+        source = "foo bar"
+        prism = Prism.lex_compat(source, version: "current").value
+        ripper = Ripper.lex(source)
+        assert_equal(ripper, prism)
+      end
+    end
+
+    def test_lex_interpolation_unterminated
+      assert_equal(
+        %i[STRING_BEGIN EMBEXPR_BEGIN EOF],
+        token_types('"#{')
+      )
+
+      assert_equal(
+        %i[STRING_BEGIN EMBEXPR_BEGIN IGNORED_NEWLINE EOF],
+        token_types('"#{' + "\n")
+      )
+    end
+
+    def test_lex_interpolation_unterminated_with_content
+      # FIXME: Emits EOL twice.
+      assert_equal(
+        %i[STRING_BEGIN EMBEXPR_BEGIN CONSTANT EOF EOF],
+        token_types('"#{C')
+      )
+
+      assert_equal(
+        %i[STRING_BEGIN EMBEXPR_BEGIN CONSTANT NEWLINE EOF],
+        token_types('"#{C' + "\n")
+      )
+    end
+
+    def test_lex_heredoc_unterminated
+      code = <<~'RUBY'.strip
+        <<A+B
+        #{C
+      RUBY
+
+      assert_equal(
+        %i[HEREDOC_START EMBEXPR_BEGIN CONSTANT HEREDOC_END PLUS CONSTANT NEWLINE EOF],
+        token_types(code)
+      )
+
+      assert_equal(
+        %i[HEREDOC_START EMBEXPR_BEGIN CONSTANT NEWLINE HEREDOC_END PLUS CONSTANT NEWLINE EOF],
+        token_types(code + "\n")
+      )
+    end
+
+    def token_types(code)
+      Prism.lex(code).value.map { |token, _state| token.type }
     end
   end
 end

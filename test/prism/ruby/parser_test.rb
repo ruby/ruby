@@ -5,8 +5,6 @@ require_relative "../test_helper"
 begin
   verbose, $VERBOSE = $VERBOSE, nil
   require "parser/ruby33"
-  require "prism/translation/parser33"
-  require "prism/translation/parser34"
 rescue LoadError
   # In CRuby's CI, we're not going to test against the parser gem because we
   # don't want to have to install it. So in this case we'll just skip this test.
@@ -62,8 +60,14 @@ module Prism
       "alias.txt",
       "seattlerb/bug_215.txt",
 
+      # %Q with newline delimiter and heredoc interpolation
+      "heredoc_percent_q_newline_delimiter.txt",
+
       # 1.. && 2
       "ranges.txt",
+
+      # https://bugs.ruby-lang.org/issues/21168#note-5
+      "command_method_call_2.txt",
     ]
 
     # These files contain code that is being parsed incorrectly by the parser
@@ -97,17 +101,10 @@ module Prism
       # Regex with \c escape
       "unescaping.txt",
       "seattlerb/regexp_esc_C_slash.txt",
-    ]
 
-    # These files are either failing to parse or failing to translate, so we'll
-    # skip them for now.
-    skip_all = skip_incorrect | [
+      # https://github.com/whitequark/parser/issues/1084
+      "unary_method_calls.txt",
     ]
-
-    # Not sure why these files are failing on JRuby, but skipping them for now.
-    if RUBY_ENGINE == "jruby"
-      skip_all.push("emoji_method_calls.txt", "symbols.txt")
-    end
 
     # These files are failing to translate their lexer output into the lexer
     # output expected by the parser gem, so we'll skip them for now.
@@ -135,7 +132,6 @@ module Prism
       "whitequark/lbrace_arg_after_command_args.txt",
       "whitequark/multiple_pattern_matches.txt",
       "whitequark/newline_in_hash_argument.txt",
-      "whitequark/pattern_matching_expr_in_paren.txt",
       "whitequark/pattern_matching_hash.txt",
       "whitequark/ruby_bug_14690.txt",
       "whitequark/ruby_bug_9669.txt",
@@ -143,11 +139,11 @@ module Prism
       "whitequark/space_args_block.txt"
     ]
 
-    Fixture.each(except: skip_syntax_error) do |fixture|
+    Fixture.each_for_version(except: skip_syntax_error, version: "3.3") do |fixture|
       define_method(fixture.test_name) do
         assert_equal_parses(
           fixture,
-          compare_asts: !skip_all.include?(fixture.path),
+          compare_asts: !skip_incorrect.include?(fixture.path),
           compare_tokens: !skip_tokens.include?(fixture.path),
           compare_comments: fixture.path != "embdoc_no_newline_at_end.txt"
         )
@@ -166,27 +162,52 @@ module Prism
 
     if RUBY_VERSION >= "3.3"
       def test_current_parser_for_current_ruby
-        major, minor, _patch = Gem::Version.new(RUBY_VERSION).segments
+        major, minor = CURRENT_MAJOR_MINOR.split(".")
         # Let's just hope there never is a Ruby 3.10 or similar
-        expected = major * 10 + minor
+        expected = major.to_i * 10 + minor.to_i
         assert_equal(expected, Translation::ParserCurrent.new.version)
       end
     end
 
+    def test_invalid_syntax
+      code = <<~RUBY
+        foo do
+          case bar
+          when
+          end
+        end
+      RUBY
+      buffer = Parser::Source::Buffer.new("(string)")
+      buffer.source = code
+
+      parser = Prism::Translation::Parser33.new
+      parser.diagnostics.all_errors_are_fatal = true
+      assert_raise(Parser::SyntaxError) { parser.tokenize(buffer) }
+    end
+
     def test_it_block_parameter_syntax
-      it_fixture_path = Pathname(__dir__).join("../../../test/prism/fixtures/it.txt")
-
-      buffer = Parser::Source::Buffer.new(it_fixture_path)
-      buffer.source = it_fixture_path.read
-      actual_ast = Prism::Translation::Parser34.new.tokenize(buffer)[0]
-
-      it_block_parameter_sexp = parse_sexp {
+      assert_new_syntax("3.4/it.txt", Prism::Translation::Parser34) do
+        s(:begin,
         s(:itblock,
           s(:send, nil, :x), :it,
-          s(:lvar, :it))
-      }
+          s(:lvar, :it)),
+        s(:itblock,
+          s(:lambda), :it,
+          s(:lvar, :it)))
+      end
+    end
 
-      assert_equal(it_block_parameter_sexp, actual_ast.to_sexp)
+    def test_nil_block_parameter_syntax
+      assert_new_syntax("4.1/noblock.txt", Prism::Translation::Parser41) do
+        s(:begin,
+        s(:def, :foo,
+          s(:args,
+            s(:blocknilarg)), nil),
+        s(:block,
+          s(:lambda),
+            s(:args,
+              s(:blocknilarg)), nil))
+      end
     end
 
     private
@@ -282,6 +303,16 @@ module Prism
         "expected: #{expected_comments.inspect}\n" \
         "actual: #{actual_comments.inspect}"
       }
+    end
+
+    def assert_new_syntax(path, parser, &sexp)
+      fixture_path = Pathname(__dir__).join("../../../test/prism/fixtures", path)
+
+      buffer = Parser::Source::Buffer.new(fixture_path)
+      buffer.source = fixture_path.read
+      actual_ast = parser.new.tokenize(buffer)[0]
+
+      assert_equal(parse_sexp(&sexp), actual_ast.to_sexp)
     end
 
     def parse_sexp(&block)

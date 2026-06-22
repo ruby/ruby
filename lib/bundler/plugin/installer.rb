@@ -32,27 +32,23 @@ module Bundler
       #
       # @param [Definition] definition object
       # @return [Hash] map of names to their specs they are installed with
-      def install_definition(definition)
+      def install_definition(definition, latest = false)
         def definition.lock(*); end
-        definition.remotely!
+
+        if latest || definition.missing_specs?
+          definition.remotely!
+        else
+          definition.with_cache!
+        end
+
         specs = definition.specs
 
-        install_from_specs specs
+        install_from_specs(specs)
       end
 
       private
 
       def check_sources_consistency!(options)
-        if options.key?(:git) && options.key?(:local_git)
-          raise InvalidOption, "Remote and local plugin git sources can't be both specified"
-        end
-
-        # back-compat; local_git is an alias for git
-        if options.key?(:local_git)
-          Bundler::SharedHelpers.major_deprecation(2, "--local_git is deprecated, use --git")
-          options[:git] = options.delete(:local_git)
-        end
-
         if (options.keys & [:source, :git, :path]).length > 1
           raise InvalidOption, "Only one of --source, --git, or --path may be specified"
         end
@@ -99,14 +95,14 @@ module Bundler
       end
 
       def install_all_sources(names, version, source_list, source = nil)
-        deps = names.map {|name| Dependency.new(name, version, { "source" => source }) }
+        deps = names.map {|name| Dependency.new(name, version, { "source" => source, "plugin" => true }) }
 
         Bundler.configure_gem_home_and_path(Plugin.root)
 
         Bundler.settings.temporary(deployment: false, frozen: false) do
           definition = Definition.new(nil, deps, source_list, true)
 
-          install_definition(definition)
+          install_definition(definition, true)
         end
       end
 
@@ -120,7 +116,10 @@ module Bundler
         paths = {}
 
         specs.each do |spec|
-          spec.source.install spec
+          next if spec.name == "bundler"
+
+          spec.source.download(spec)
+          spec.source.install(spec)
 
           paths[spec.name] = spec
         end

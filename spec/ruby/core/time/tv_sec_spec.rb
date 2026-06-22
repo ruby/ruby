@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/to_i'
 
 describe "Time#tv_sec" do
-  it_behaves_like :time_to_i, :tv_sec
+  it "is an alias of Time#to_i" do
+    Time.instance_method(:tv_sec).should == Time.instance_method(:to_i)
+  end
 end

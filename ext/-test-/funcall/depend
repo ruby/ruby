@@ -128,6 +128,7 @@ funcall.o: $(hdrdir)/ruby/internal/intern/re.h
 funcall.o: $(hdrdir)/ruby/internal/intern/ruby.h
 funcall.o: $(hdrdir)/ruby/internal/intern/select.h
 funcall.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+funcall.o: $(hdrdir)/ruby/internal/intern/set.h
 funcall.o: $(hdrdir)/ruby/internal/intern/signal.h
 funcall.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 funcall.o: $(hdrdir)/ruby/internal/intern/string.h

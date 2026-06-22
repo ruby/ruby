@@ -62,7 +62,10 @@ static VALUE struct_spec_rb_struct_size(VALUE self, VALUE st) {
   return rb_struct_size(st);
 }
 
-#if defined(RUBY_VERSION_IS_3_3)
+static VALUE struct_spec_rb_struct_initialize(VALUE self, VALUE st, VALUE values) {
+  return rb_struct_initialize(st, values);
+}
+
 /* Only allow setting three attributes, should be sufficient for testing. */
 static VALUE struct_spec_rb_data_define(VALUE self, VALUE superclass,
   VALUE attr1, VALUE attr2, VALUE attr3) {
@@ -77,7 +80,6 @@ static VALUE struct_spec_rb_data_define(VALUE self, VALUE superclass,
 
   return rb_data_define(superclass, a1, a2, a3, NULL);
 }
-#endif
 
 void Init_struct_spec(void) {
   VALUE cls = rb_define_class("CApiStructSpecs", rb_cObject);
@@ -90,9 +92,8 @@ void Init_struct_spec(void) {
   rb_define_method(cls, "rb_struct_define_under", struct_spec_rb_struct_define_under, 5);
   rb_define_method(cls, "rb_struct_new", struct_spec_rb_struct_new, 4);
   rb_define_method(cls, "rb_struct_size", struct_spec_rb_struct_size, 1);
-#if defined(RUBY_VERSION_IS_3_3)
+  rb_define_method(cls, "rb_struct_initialize", struct_spec_rb_struct_initialize, 2);
   rb_define_method(cls, "rb_data_define", struct_spec_rb_data_define, 4);
-#endif
 }
 
 #ifdef __cplusplus

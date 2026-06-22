@@ -5,6 +5,7 @@
 return if RUBY_ENGINE != "ruby"
 
 require_relative "test_helper"
+require "ripper"
 
 module Prism
   class BOMTest < TestCase
@@ -53,7 +54,7 @@ module Prism
 
     def assert_bom(source)
       bommed = "\xEF\xBB\xBF#{source}"
-      assert_equal Prism.lex_ripper(bommed), Prism.lex_compat(bommed).value
+      assert_equal Ripper.lex(bommed), Prism.lex_compat(bommed).value
     end
   end
 end

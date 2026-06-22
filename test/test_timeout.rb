@@ -4,6 +4,23 @@ require 'timeout'
 
 class TestTimeout < Test::Unit::TestCase
 
+  private def kill_timeout_thread
+    thread = Timeout.const_get(:State).instance.instance_variable_get(:@timeout_thread)
+    if thread
+      thread.kill
+      thread.join
+    end
+  end
+
+  def test_public_methods
+    assert_equal [:timeout], Timeout.private_instance_methods(false)
+    assert_equal [], Timeout.public_instance_methods(false)
+
+    assert_equal [:timeout], Timeout.singleton_class.public_instance_methods(false)
+
+    assert_equal [:Error, :ExitException, :VERSION], Timeout.constants.sort
+  end
+
   def test_work_is_done_in_same_thread_as_caller
     assert_equal Thread.current, Timeout.timeout(10){ Thread.current }
   end
@@ -34,6 +51,12 @@ class TestTimeout < Test::Unit::TestCase
   def test_raise_for_neg_second
     assert_raise(ArgumentError) do
       Timeout.timeout(-1) { sleep(0.01) }
+    end
+  end
+
+  def test_raise_for_string_argument
+    assert_raise(NoMethodError) do
+      Timeout.timeout("1") { sleep(0.01) }
     end
   end
 
@@ -105,8 +128,8 @@ class TestTimeout < Test::Unit::TestCase
   def test_nested_timeout_which_error_bubbles_up
     raised_exception = nil
     begin
-      Timeout.timeout(0.1) {
-        Timeout.timeout(1) {
+      Timeout.timeout(1) {
+        Timeout.timeout(10) {
           raise Timeout::ExitException.new("inner message")
         }
       }
@@ -212,6 +235,24 @@ class TestTimeout < Test::Unit::TestCase
     end
   end
 
+  def test_handle_interrupt_with_exception_class
+    bug11344 = '[ruby-dev:49179] [Bug #11344]'
+    ok = false
+    assert_raise(Timeout::Error) {
+      Thread.handle_interrupt(Timeout::Error => :never) {
+        Timeout.timeout(0.01, Timeout::Error) {
+          sleep 0.2
+          ok = true
+          Thread.handle_interrupt(Timeout::Error => :on_blocking) {
+            sleep 0.2
+            raise "unreachable"
+          }
+        }
+      }
+    }
+    assert(ok, bug11344)
+  end
+
   def test_handle_interrupt
     bug11344 = '[ruby-dev:49179] [Bug #11344]'
     ok = false
@@ -222,11 +263,100 @@ class TestTimeout < Test::Unit::TestCase
           ok = true
           Thread.handle_interrupt(Timeout::ExitException => :on_blocking) {
             sleep 0.2
+            raise "unreachable"
           }
         }
       }
     }
     assert(ok, bug11344)
+  end
+
+  def test_handle_interrupt_with_interrupt_mask_inheritance
+    issue = 'https://github.com/ruby/timeout/issues/41'
+
+    [
+      -> {}, # not blocking so no opportunity to interrupt
+      -> { sleep 5 }
+    ].each_with_index do |body, idx|
+      # We need to create a new Timeout thread
+      kill_timeout_thread
+
+      # Create the timeout thread under a handle_interrupt(:never)
+      # due to the interrupt mask being inherited
+      Thread.handle_interrupt(Object => :never) {
+        assert_equal :ok, Timeout.timeout(1) { :ok }
+      }
+
+      # Ensure a simple timeout works and the interrupt mask was not inherited
+      assert_raise(Timeout::Error) {
+        Timeout.timeout(0.001) { sleep 1 }
+      }
+
+      r = []
+      # This raises Timeout::ExitException and not Timeout::Error for the non-blocking body
+      # because of the handle_interrupt(:never) which delays raising Timeout::ExitException
+      # on the main thread until getting outside of that handle_interrupt(:never) call.
+      # For this reason we document handle_interrupt(Timeout::ExitException) should not be used.
+      exc = idx == 0 ? Timeout::ExitException : Timeout::Error
+      assert_raise(exc) {
+        Thread.handle_interrupt(Timeout::ExitException => :never) {
+          Timeout.timeout(0.1) do
+            sleep 0.2
+            r << :sleep_before_done
+            Thread.handle_interrupt(Timeout::ExitException => :on_blocking) {
+              r << :body
+              body.call
+            }
+          ensure
+            sleep 0.2
+            r << :ensure_sleep_done
+          end
+        }
+      }
+      assert_equal([:sleep_before_done, :body, :ensure_sleep_done], r, issue)
+    end
+  end
+
+  # Same as above but with an exception class
+  def test_handle_interrupt_with_interrupt_mask_inheritance_with_exception_class
+    issue = 'https://github.com/ruby/timeout/issues/41'
+
+    [
+      -> {}, # not blocking so no opportunity to interrupt
+      -> { sleep 5 }
+    ].each do |body|
+      # We need to create a new Timeout thread
+      kill_timeout_thread
+
+      # Create the timeout thread under a handle_interrupt(:never)
+      # due to the interrupt mask being inherited
+      Thread.handle_interrupt(Object => :never) {
+        assert_equal :ok, Timeout.timeout(1) { :ok }
+      }
+
+      # Ensure a simple timeout works and the interrupt mask was not inherited
+      assert_raise(Timeout::Error) {
+        Timeout.timeout(0.001) { sleep 1 }
+      }
+
+      r = []
+      assert_raise(Timeout::Error) {
+        Thread.handle_interrupt(Timeout::Error => :never) {
+          Timeout.timeout(0.1, Timeout::Error) do
+            sleep 0.2
+            r << :sleep_before_done
+            Thread.handle_interrupt(Timeout::Error => :on_blocking) {
+              r << :body
+              body.call
+            }
+          ensure
+            sleep 0.2
+            r << :ensure_sleep_done
+          end
+        }
+      }
+      assert_equal([:sleep_before_done, :body, :ensure_sleep_done], r, issue)
+    end
   end
 
   def test_fork
@@ -273,5 +403,135 @@ class TestTimeout < Test::Unit::TestCase
         assert_equal 42, Timeout.timeout(1) { 42 }
       }.join
     end;
+  end
+
+  def test_ractor
+    assert_separately(%w[-rtimeout -W0], <<-'end;')
+      r = Ractor.new do
+        Timeout.timeout(1) { 42 }
+      end.value
+
+      assert_equal 42, r
+
+      r = Ractor.new do
+        begin
+          Timeout.timeout(0.1) { sleep }
+        rescue Timeout::Error
+          :ok
+        end
+      end.value
+
+      assert_equal :ok, r
+    end;
+  end if defined?(::Ractor) && RUBY_VERSION >= '4.0'
+
+  def test_timeout_in_trap_handler
+    # https://github.com/ruby/timeout/issues/17
+
+    # Test as if this was the first timeout usage
+    kill_timeout_thread
+
+    rd, wr = IO.pipe
+
+    signal = :TERM
+
+    original_handler = trap(signal) do
+      begin
+        Timeout.timeout(0.1) do
+          sleep 1
+        end
+      rescue Timeout::Error
+        wr.write "OK"
+        wr.close
+      else
+        wr.write "did not raise"
+      ensure
+        wr.close
+      end
+    end
+
+    begin
+      Process.kill signal, Process.pid
+
+      assert_equal "OK", rd.read
+      rd.close
+    ensure
+      trap(signal, original_handler)
+    end
+  end
+
+  if Fiber.respond_to?(:current_scheduler)
+    # Stubs Fiber.current_scheduler for the duration of the block, then restores it.
+    def with_mock_scheduler(mock)
+      original = Fiber.method(:current_scheduler)
+      Fiber.singleton_class.remove_method(:current_scheduler)
+      Fiber.define_singleton_method(:current_scheduler) { mock }
+      begin
+        yield
+      ensure
+        Fiber.singleton_class.remove_method(:current_scheduler)
+        Fiber.define_singleton_method(:current_scheduler, original)
+      end
+    end
+
+    def test_fiber_scheduler_delegates_to_timeout_after
+      received = nil
+      mock = Object.new
+      mock.define_singleton_method(:timeout_after) do |sec, exc, msg, &blk|
+        received = [sec, exc, msg]
+        blk.call(sec)
+      end
+
+      with_mock_scheduler(mock) do
+        assert_equal :ok, Timeout.timeout(5) { :ok }
+      end
+
+      assert_equal 5, received[0]
+      assert_instance_of Timeout::ExitException, received[1], "scheduler should receive an ExitException instance when no klass given"
+      assert_equal "execution expired", received[2]
+    end
+
+    def test_fiber_scheduler_delegates_to_timeout_after_with_custom_exception
+      custom_error = Class.new(StandardError)
+      received = nil
+      mock = Object.new
+      mock.define_singleton_method(:timeout_after) do |sec, exc, msg, &blk|
+        received = [sec, exc, msg]
+        blk.call(sec)
+      end
+
+      with_mock_scheduler(mock) do
+        assert_equal :ok, Timeout.timeout(5, custom_error, "custom message") { :ok }
+      end
+
+      assert_equal [5, custom_error, "custom message"], received
+    end
+
+    def test_fiber_scheduler_timeout_raises_timeout_error
+      mock = Object.new
+      mock.define_singleton_method(:timeout_after) do |sec, exc, msg, &blk|
+        raise exc  # simulate timeout firing
+      end
+
+      with_mock_scheduler(mock) do
+        assert_raise(Timeout::Error) do
+          Timeout.timeout(5) { :should_not_reach }
+        end
+      end
+    end
+
+    def test_fiber_scheduler_timeout_raises_custom_error
+      custom_error = Class.new(StandardError)
+      mock = Object.new
+      mock.define_singleton_method(:timeout_after) do |sec, exc, msg, &blk|
+        raise exc, msg
+      end
+
+      with_mock_scheduler(mock) do
+        assert_raise_with_message(custom_error, "custom message") do
+          Timeout.timeout(5, custom_error, "custom message") { :should_not_reach }
+        end
+      end
+    end
   end
 end

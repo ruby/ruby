@@ -1,0 +1,14 @@
+case    in el""Q
+^~~~ expected a predicate for a case matching statement
+             ^ expected a delimiter after the patterns of an `in` clause
+               ^ unexpected constant, expecting end-of-input
+^~~~ expected an `end` to close the `case` statement
+ !"""#{in el"":Q
+       ^~ unexpected 'in', assuming it is closing the parent 'in' clause
+       ^ expected a `}` to close the embedded expression
+       ^~ cannot parse the string part
+          ^~ cannot parse the string part
+            ^ cannot parse the string part
+    ^~~~~~~~~~~ unexpected label
+    ^~~~~~~~~~~ expected a string for concatenation
+

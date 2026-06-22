@@ -21,7 +21,7 @@ class TestEtc < Test::Unit::TestCase
       assert_instance_of(String, s.shell)
       assert_kind_of(Integer, s.change) if s.respond_to?(:change)
       assert_kind_of(Integer, s.quota) if s.respond_to?(:quota)
-      assert(s.age.is_a?(Integer) || s.age.is_a?(String)) if s.respond_to?(:age)
+      assert(s.age.is_a?(Integer) || s.age.is_a?(String), s.age) if s.respond_to?(:age)
       assert_instance_of(String, s.uclass) if s.respond_to?(:uclass)
       assert_instance_of(String, s.comment) if s.respond_to?(:comment)
       assert_kind_of(Integer, s.expire) if s.respond_to?(:expire)
@@ -160,7 +160,7 @@ class TestEtc < Test::Unit::TestCase
     end
     IO.pipe {|r, w|
       val = w.pathconf(Etc::PC_PIPE_BUF)
-      assert(val.nil? || val.kind_of?(Integer))
+      assert_kind_of(Integer, val) if val
     }
   end if defined?(Etc::PC_PIPE_BUF)
 
@@ -198,7 +198,7 @@ class TestEtc < Test::Unit::TestCase
             raise unless Integer === Etc.nprocessors
           end
         end
-      end.each(&:take)
+      end.each(&:join)
     RUBY
   end
 
@@ -210,7 +210,7 @@ class TestEtc < Test::Unit::TestCase
         rescue => e
           e.class
         end
-      end.take
+      end.value
       assert_equal Ractor::UnsafeError, r
     RUBY
   end
@@ -221,19 +221,19 @@ class TestEtc < Test::Unit::TestCase
     Etc.endpwent
 
     assert_ractor(<<~RUBY, require: 'etc')
-      ractor = Ractor.new do
+      ractor = Ractor.new port = Ractor::Port.new do |port|
         Etc.passwd do |s|
-          Ractor.yield :sync
-          Ractor.yield s.name
+          port << :sync
+          port << s.name
           break :done
         end
       end
-      ractor.take # => :sync
+      port.receive # => :sync
       assert_raise RuntimeError, /parallel/ do
         Etc.passwd {}
       end
-      name = ractor.take # => first name
-      ractor.take # => :done
+      name = port.receive # => first name
+      ractor.join # => :done
       name2 = Etc.passwd do |s|
         break s.name
       end
@@ -251,7 +251,7 @@ class TestEtc < Test::Unit::TestCase
             raise unless Etc.getgrgid(Process.gid).gid == Process.gid
           end
         end
-      end.each(&:take)
+      end.each(&:join)
     RUBY
   end
 end

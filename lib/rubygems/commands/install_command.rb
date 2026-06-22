@@ -140,7 +140,7 @@ You can use `i` command instead of `install`.
     if options[:version] != Gem::Requirement.default &&
        get_all_gem_names.size > 1
       alert_error "Can't use --version with multiple gems. You can specify multiple gems with" \
-                  " version requirements using `gem install 'my_gem:1.0.0' 'my_other_gem:~>2.0.0'`"
+                  " version requirements using `gem install 'my_gem:1.0.0' 'my_other_gem:>=2'`"
       terminate_interaction 1
     end
   end
@@ -224,6 +224,9 @@ You can use `i` command instead of `install`.
       rescue Gem::InstallError => e
         alert_error "Error installing #{gem_name}:\n\t#{e.message}"
         exit_code |= 1
+      rescue Gem::DependencyResolutionError => e
+        alert_error "Error installing #{gem_name}:\n\t#{e.message}"
+        exit_code |= 2
       rescue Gem::UnsatisfiableDependencyError => e
         show_lookup_failure e.name, e.version, e.errors, suppress_suggestions,
                             "'#{gem_name}' (#{gem_version})"
@@ -239,11 +242,7 @@ You can use `i` command instead of `install`.
   # Loads post-install hooks
 
   def load_hooks # :nodoc:
-    if options[:install_as_default]
-      require_relative "../install_default_message"
-    else
-      require_relative "../install_message"
-    end
+    require_relative "../install_message"
     require_relative "../rdoc"
   end
 

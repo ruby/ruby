@@ -3,7 +3,7 @@ require_relative '../../shared/basicobject/method_missing'
 
 describe "BasicObject#method_missing" do
   it "is a private method" do
-    BasicObject.should have_private_instance_method(:method_missing)
+    BasicObject.private_instance_methods(false).should.include?(:method_missing)
   end
 end
 

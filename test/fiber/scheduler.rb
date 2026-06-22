@@ -65,63 +65,79 @@ class Scheduler
     end
   end
 
-  def run
-    # $stderr.puts [__method__, Fiber.current].inspect
+  def run_once
+    readable = writable = nil
 
-    while @readable.any? or @writable.any? or @waiting.any? or @blocking.any?
-      # May only handle file descriptors up to 1024...
+    begin
       readable, writable = IO.select(@readable.keys + [@urgent.first], @writable.keys, [], next_timeout)
+    rescue IOError
+      # Ignore - this can happen if the IO is closed while we are waiting.
+    end
 
-      # puts "readable: #{readable}" if readable&.any?
-      # puts "writable: #{writable}" if writable&.any?
+    # puts "readable: #{readable}" if readable&.any?
+    # puts "writable: #{writable}" if writable&.any?
 
-      selected = {}
+    selected = {}
 
-      readable&.each do |io|
-        if fiber = @readable.delete(io)
-          @writable.delete(io) if @writable[io] == fiber
-          selected[fiber] = IO::READABLE
-        elsif io == @urgent.first
-          @urgent.first.read_nonblock(1024)
-        end
+    readable&.each do |io|
+      if fiber = @readable.delete(io)
+        @writable.delete(io) if @writable[io] == fiber
+        selected[fiber] = IO::READABLE
+      elsif io == @urgent.first
+        @urgent.first.read_nonblock(1024)
       end
+    end
 
-      writable&.each do |io|
-        if fiber = @writable.delete(io)
-          @readable.delete(io) if @readable[io] == fiber
-          selected[fiber] = selected.fetch(fiber, 0) | IO::WRITABLE
-        end
+    writable&.each do |io|
+      if fiber = @writable.delete(io)
+        @readable.delete(io) if @readable[io] == fiber
+        selected[fiber] = selected.fetch(fiber, 0) | IO::WRITABLE
       end
+    end
 
-      selected.each do |fiber, events|
-        fiber.transfer(events)
-      end
+    selected.each do |fiber, events|
+      fiber.transfer(events)
+    end
 
-      if @waiting.any?
-        time = current_time
-        waiting, @waiting = @waiting, {}
+    if @waiting.any?
+      time = current_time
+      waiting, @waiting = @waiting, {}
 
-        waiting.each do |fiber, timeout|
-          if fiber.alive?
-            if timeout <= time
-              fiber.transfer
-            else
-              @waiting[fiber] = timeout
-            end
+      waiting.each do |fiber, timeout|
+        if fiber.alive?
+          if timeout <= time
+            fiber.transfer
+          else
+            @waiting[fiber] = timeout
           end
         end
       end
+    end
 
-      if @ready.any?
-        ready = nil
+    if @ready.any?
+      ready = nil
 
-        @lock.synchronize do
-          ready, @ready = @ready, []
-        end
+      @lock.synchronize do
+        ready, @ready = @ready, []
+      end
 
-        ready.each do |fiber|
-          fiber.transfer
-        end
+      ready.each do |fiber|
+        fiber.transfer if fiber.alive?
+      end
+    end
+  end
+
+  def run
+    # $stderr.puts [__method__, Fiber.current].inspect
+
+    # Use Thread.handle_interrupt like Async::Scheduler does
+    # This defers signal processing, which is the root cause of the gRPC bug
+    # See: https://github.com/socketry/async/blob/main/lib/async/scheduler.rb
+    Thread.handle_interrupt(::SignalException => :never) do
+      while @readable.any? or @writable.any? or @waiting.any? or @blocking.any?
+        run_once
+
+        break if Thread.pending_interrupt?
       end
     end
   end
@@ -239,6 +255,13 @@ class Scheduler
     end.value
   end
 
+  # This hook is invoked by `IO#close`. Using a separate IO object
+  # demonstrates that the close operation is asynchronous.
+  def io_close(descriptor)
+    Fiber.blocking{IO.for_fd(descriptor.to_i).close}
+    return true
+  end
+
   # This hook is invoked by `Kernel#sleep` and `Thread::Mutex#sleep`.
   def kernel_sleep(duration = nil)
     # $stderr.puts [__method__, duration, Fiber.current].inspect
@@ -290,6 +313,30 @@ class Scheduler
     io.write_nonblock('.')
   end
 
+  class FiberInterrupt
+    def initialize(fiber, exception)
+      @fiber = fiber
+      @exception = exception
+    end
+
+    def alive?
+      @fiber.alive?
+    end
+
+    def transfer
+      @fiber.raise(@exception)
+    end
+  end
+
+  def fiber_interrupt(fiber, exception)
+    @lock.synchronize do
+      @ready << FiberInterrupt.new(fiber, exception)
+    end
+
+    io = @urgent.last
+    io.write_nonblock('.')
+  end
+
   # This hook is invoked by `Fiber.schedule`. Strictly speaking, you should use
   # it to create scheduled fibers, but it is not required in practice;
   # `Fiber.new` is usually sufficient.
@@ -311,7 +358,7 @@ class Scheduler
   end
 
   def blocking_operation_wait(work)
-    thread = Thread.new(&work)
+    thread = Thread.new{work.call}
 
     thread.join
 
@@ -438,6 +485,33 @@ class IOBufferScheduler < Scheduler
 
   def blocking(&block)
     Fiber.blocking(&block)
+  end
+end
+
+class IOScheduler < Scheduler
+  def operations
+    @operations ||= []
+  end
+
+  def io_write(io, buffer, length, offset)
+    descriptor = io.fileno
+    string = buffer.get_string
+
+    self.operations << [:io_write, descriptor, string]
+
+    Fiber.blocking do
+      buffer.write(io, 0, offset)
+    end
+  end
+end
+
+class IOErrorScheduler < Scheduler
+  def io_read(io, buffer, length, offset)
+    return -Errno::EBADF::Errno
+  end
+
+  def io_write(io, buffer, length, offset)
+    return -Errno::EINVAL::Errno
   end
 end
 

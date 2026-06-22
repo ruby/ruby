@@ -1,0 +1,34 @@
+1
+&& 2
+^~ unexpected '&&', ignoring it
+&& 3
+^~ unexpected '&&', ignoring it
+
+1
+|| 2
+^ unexpected '|', ignoring it
+ ^ unexpected '|', ignoring it
+|| 3
+^ unexpected '|', ignoring it
+ ^ unexpected '|', ignoring it
+
+1
+and 2
+^~~ unexpected 'and', ignoring it
+and 3
+^~~ unexpected 'and', ignoring it
+
+1
+or 2
+^~ unexpected 'or', ignoring it
+or 3
+^~ unexpected 'or', ignoring it
+
+1
+and foo
+^~~ unexpected 'and', ignoring it
+
+2
+or foo
+^~ unexpected 'or', ignoring it
+

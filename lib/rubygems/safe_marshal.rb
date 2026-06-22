@@ -54,6 +54,7 @@ module Gem
       "Gem::NameTuple" => %w[@name @version @platform],
       "Gem::Platform" => %w[@os @cpu @version],
       "Psych::PrivateType" => %w[@value @type_id],
+      "YAML::PrivateType" => %w[@value @type_id],
     }.freeze
     private_constant :PERMITTED_IVARS
 

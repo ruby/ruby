@@ -135,6 +135,10 @@ class TestDate < Test::Unit::TestCase
     assert_equal(9, h[DateTime.new(1999,5,25)])
 
     h = {}
+    h[Date.new(3171505571716611468830131104691,2,19)] = 0
+    assert_equal(true, h.key?(Date.new(3171505571716611468830131104691,2,19)))
+
+    h = {}
     h[DateTime.new(1999,5,23)] = 0
     h[DateTime.new(1999,5,24)] = 1
     h[DateTime.new(1999,5,25)] = 2

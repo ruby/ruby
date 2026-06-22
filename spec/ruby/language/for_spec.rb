@@ -129,37 +129,34 @@ describe "The for expression" do
     n.should == 3
   end
 
-  # Segfault in MRI 3.3 and lower: https://bugs.ruby-lang.org/issues/20468
-  ruby_bug "#20468", ""..."3.4" do
-    it "allows an attribute with safe navigation as an iterator name" do
-      class OFor
-        attr_accessor :target
+  it "allows an attribute with safe navigation as an iterator name" do
+    class OFor
+      attr_accessor :target
+    end
+
+    ofor = OFor.new
+    m = [1,2,3]
+    n = 0
+    eval <<~RUBY
+      for ofor&.target in m
+        n += 1
       end
+    RUBY
+    ofor.target.should == 3
+    n.should == 3
+  end
 
-      ofor = OFor.new
-      m = [1,2,3]
-      n = 0
-      eval <<~RUBY
-        for ofor&.target in m
-          n += 1
-        end
-      RUBY
-      ofor.target.should == 3
-      n.should == 3
-    end
-
-    it "allows an attribute with safe navigation on a nil base as an iterator name" do
-      ofor = nil
-      m = [1,2,3]
-      n = 0
-      eval <<~RUBY
-        for ofor&.target in m
-          n += 1
-        end
-      RUBY
-      ofor.should be_nil
-      n.should == 3
-    end
+  it "allows an attribute with safe navigation on a nil base as an iterator name" do
+    ofor = nil
+    m = [1,2,3]
+    n = 0
+    eval <<~RUBY
+      for ofor&.target in m
+        n += 1
+      end
+    RUBY
+    ofor.should == nil
+    n.should == 3
   end
 
   it "allows an array index writer as an iterator name" do
@@ -218,7 +215,15 @@ describe "The for expression" do
     j.should == 6
   end
 
-  it "executes code in containing variable scope" do
+  it "declares iteration variables in the surrounding variable scope" do
+    for a, b in [[1,2]]
+    end
+
+    a.should == 1
+    b.should == 2
+  end
+
+  it "declares variables in the body in the surrounding variable scope" do
     for i in 1..2
       a = 123
     end
@@ -226,12 +231,102 @@ describe "The for expression" do
     a.should == 123
   end
 
-  it "executes code in containing variable scope with 'do'" do
+  it "declares variables in the body in the surrounding variable scope with 'do'" do
     for i in 1..2 do
       a = 123
     end
 
     a.should == 123
+  end
+
+  it "declares variables inside a block as normal" do
+    for i in 1..2 do
+      proc {
+        inside_proc = 42
+      }.call
+    end
+    local_variables.should == [:i]
+  end
+
+  it "declares variables inside a lambda as normal" do
+    for i in 1..2 do
+      -> {
+        inside_proc = 42
+      }.call
+    end
+    local_variables.should == [:i]
+  end
+
+  it "can be nested" do
+    for a in [6]
+      for b in [7]
+        c = a * b
+      end
+    end
+    local_variables.sort.should == [:a, :b, :c]
+    c.should == 42
+  end
+
+  it "can be nested with blocks in between" do
+    # This is an edge case spec for Ruby implementations which have
+    # their own runtime scope per for loop body (like YARV and TruffleRuby)
+    for a in [1]
+      a1 = a
+      a1.should == a
+      for b in [2]
+        b1 = b
+        a1.should == a
+        b1.should == b
+        proc {
+          inside_proc = 42
+
+          a1.should == a
+          b1.should == b
+          inside_proc.should == 42
+
+          for c in [3].map { |enum_var|
+            a1.should == a
+            b1.should == b
+            inside_proc.should == 42
+            enum_var
+          }
+            c1 = c
+
+            a1.should == a
+            b1.should == b
+            c1.should == c
+            inside_proc.should == 42
+
+            for d in [4]
+              d1 = d
+
+              a1.should == a
+              b1.should == b
+              c1.should == c
+              d1.should == d
+              inside_proc.should == 42
+            end
+          end
+          local_variables.sort.should == [:a, :a1, :b, :b1, :c, :c1, :d, :d1, :inside_proc]
+        }.call
+      end
+    end
+    local_variables.sort.should == [:a, :a1, :b, :b1]
+  end
+
+  it "can be nested with forward arguments" do
+    def bar(*args)
+      args
+    end
+
+    def foo(...)
+      for a in [1]
+        r = bar(...)
+      end
+      r
+    end
+
+    foo(2, 3).should == [2, 3]
   end
 
   it "does not try to access variables outside the method" do

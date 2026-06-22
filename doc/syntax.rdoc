@@ -2,6 +2,9 @@
 
 The Ruby syntax is large and is split up into the following sections:
 
+{Code Layout}[rdoc-ref:syntax/layout.rdoc] ::
+  Breaking code in lines
+
 Literals[rdoc-ref:syntax/literals.rdoc] ::
   Numbers, Strings, Arrays, Hashes, etc.
 

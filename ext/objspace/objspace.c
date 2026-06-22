@@ -30,18 +30,33 @@
 
 /*
  *  call-seq:
- *    ObjectSpace.memsize_of(obj) -> Integer
+ *    ObjectSpace.memsize_of(obj) -> integer
  *
- *  Return consuming memory size of obj in bytes.
+ *  Returns the amount of memory in bytes consumed by +obj+.
  *
- *  Note that the return size is incomplete.  You need to deal with this
- *  information as only a *HINT*. Especially, the size of +T_DATA+ may not be
- *  correct.
+ *  The returned size includes the slot that +obj+ occupies plus any memory
+ *  that +obj+ allocates outside of that slot, such as the storage backing a
+ *  large String, Array, or Hash:
  *
- *  This method is only expected to work with C Ruby.
+ *    require 'objspace'
  *
- *  From Ruby 2.2, memsize_of(obj) returns a memory size includes
- *  sizeof(RVALUE).
+ *    ObjectSpace.memsize_of("small")        # => 40
+ *    ObjectSpace.memsize_of("a" * 1000)     # => 1041
+ *    ObjectSpace.memsize_of([1, 2, 3])      # => 40
+ *    ObjectSpace.memsize_of(Array.new(100)) # => 840
+ *
+ *  Special constants such as +true+, +false+, +nil+, small integers, and some
+ *  symbols do not occupy a slot, so their size is reported as +0+:
+ *
+ *    ObjectSpace.memsize_of(true)   # => 0
+ *    ObjectSpace.memsize_of(42)     # => 0
+ *
+ *  The returned size is only a hint and may be an underestimate, since it does
+ *  not account for all of the memory that +obj+ references. In particular, the
+ *  size of a +T_DATA+ object (an object implemented in C, such as one defined
+ *  by a C extension) may not be reported correctly.
+ *
+ *  This method is only expected to work with CRuby.
  */
 
 static VALUE
@@ -107,28 +122,24 @@ each_object_with_flags(each_obj_with_flags cb, void *ctx)
 
 /*
  *  call-seq:
- *    ObjectSpace.memsize_of_all([klass]) -> Integer
+ *    ObjectSpace.memsize_of_all(klass = nil) -> integer
  *
- *  Return consuming memory size of all living objects in bytes.
+ *  Returns the total memory size of all living objects in bytes.
  *
- *  If +klass+ (should be Class object) is given, return the total memory size
- *  of instances of the given class.
+ *    ObjectSpace.memsize_of_all # => 12502001
  *
- *  Note that the returned size is incomplete. You need to deal with this
- *  information as only a *HINT*. Especially, the size of +T_DATA+ may not be
- *  correct.
+ *  If +klass+ is given (which must be a Class or Module), returns the total
+ *  memory size of objects whose class is, or is a subclass, of +klass+.
  *
- *  Note that this method does *NOT* return total malloc'ed memory size.
+ *    class MyClass; end
+ *    ObjectSpace.memsize_of_all(MyClass) # => 0
+ *    o = MyClass.new
+ *    ObjectSpace.memsize_of_all(MyClass) # => 40
  *
- *  This method can be defined by the following Ruby code:
- *
- *	def memsize_of_all klass = false
- *  	  total = 0
- *  	  ObjectSpace.each_object{|e|
- *  	    total += ObjectSpace.memsize_of(e) if klass == false || e.kind_of?(klass)
- *  	  }
- *  	  total
- *  	end
+ *  Note that the value returned may be an underestimate of the actual amount
+ *  of memory used. Therefore, the value returned should only be used as a hint,
+ *  rather than a source of truth. In particular, the size of +T_DATA+ objects may
+ *  not be correct.
  *
  *  This method is only expected to work with C Ruby.
  */
@@ -140,6 +151,7 @@ memsize_of_all_m(int argc, VALUE *argv, VALUE self)
 
     if (argc > 0) {
         rb_scan_args(argc, argv, "01", &data.klass);
+        if (!NIL_P(data.klass)) rb_obj_is_kind_of(Qnil, data.klass);
     }
 
     each_object_with_flags(total_i, &data);
@@ -223,23 +235,26 @@ type2sym(enum ruby_value_type i)
 
 /*
  *  call-seq:
- *    ObjectSpace.count_objects_size([result_hash]) -> hash
+ *    ObjectSpace.count_objects_size(result_hash = {}) -> result_hash
  *
  *  Counts objects size (in bytes) for each type.
  *
- *  Note that this information is incomplete.  You need to deal with
- *  this information as only a *HINT*.  Especially, total size of
- *  T_DATA may be wrong.
+ *  Note that the returned size may not be accurate, so it should only
+ *  be used as a hint. Specifically, the size for +T_DATA+ may be
+ *  inaccurate because these are custom objects defined in Ruby and
+ *  native extensions and so they may not accurately report their
+ *  memory size.
  *
- *  It returns a hash as:
- *    {:TOTAL=>1461154, :T_CLASS=>158280, :T_MODULE=>20672, :T_STRING=>527249, ...}
+ *  It returns a hash that looks like:
  *
- *  If the optional argument, result_hash, is given,
+ *    {TOTAL: 1461154, T_CLASS: 158280, T_MODULE: 20672, T_STRING: 527249, ...}
+ *
+ *  The contents of the returned hash are implementation specific and
+ *  may be changed in future versions without notice.
+ *
+ *  If the optional argument, +result_hash+, is given,
  *  it is overwritten and returned.
- *  This is intended to avoid probe effect.
- *
- *  The contents of the returned hash is implementation defined.
- *  It may be changed in future.
+ *  This is intended to avoid the probe effect.
  *
  *  This method is only expected to work with C Ruby.
  */
@@ -294,28 +309,27 @@ size_t rb_sym_immortal_count(void);
 
 /*
  *  call-seq:
- *     ObjectSpace.count_symbols([result_hash]) -> hash
+ *     ObjectSpace.count_symbols(result_hash = nil) -> hash
  *
- *  Counts symbols for each Symbol type.
+ *  Returns a hash containing the number of objects for each Symbol type.
  *
- *  This method is only for MRI developers interested in performance and memory
- *  usage of Ruby programs.
+ *  The types of Symbols are the following:
  *
- *  If the optional argument, result_hash, is given, it is overwritten and
- *  returned. This is intended to avoid probe effect.
+ *  - +mortal_dynamic_symbol+: Symbols that are garbage collectable.
+ *  - +immortal_dynamic_symbol+: Symbols that are objects allocated from the
+ *    garbage collector, but are not garbage collectable.
+ *  - +immortal_static_symbol+: Symbols that are not allocated from the
+ *    garbage collector, and are thus not garbage collectable.
+ *  - +immortal_symbol+: the sum of +immortal_dynamic_symbol+ and +immortal_static_symbol+.
  *
- *  Note:
- *  The contents of the returned hash is implementation defined.
- *  It may be changed in future.
+ *  If the optional argument +result_hash+ is given, it is overwritten and
+ *  returned. This is intended to avoid the probe effect.
+ *
+ *  This method is intended for developers interested in performance and memory
+ *  usage of Ruby programs. The contents of the returned hash is implementation
+ *  specific and may change in the future.
  *
  *  This method is only expected to work with C Ruby.
- *
- *  On this version of MRI, they have 3 types of Symbols (and 1 total counts).
- *
- *   * mortal_dynamic_symbol: GC target symbols (collected by GC)
- *   * immortal_dynamic_symbol: Immortal symbols promoted from dynamic symbols (do not collected by GC)
- *   * immortal_static_symbol: Immortal symbols (do not collected by GC)
- *   * immortal_symbol: total immortal symbols (immortal_dynamic_symbol+immortal_static_symbol)
  */
 
 static VALUE
@@ -333,35 +347,6 @@ count_symbols(int argc, VALUE *argv, VALUE os)
     rb_hash_aset(hash, ID2SYM(rb_intern("immortal_symbol")),         SIZET2NUM(immortal_symbols));
 
     return hash;
-}
-
-/*
- *  call-seq:
- *     ObjectSpace.count_nodes([result_hash]) -> hash
- *
- *  Counts nodes for each node type.
- *
- *  This method is only for MRI developers interested in performance and memory
- *  usage of Ruby programs.
- *
- *  It returns a hash as:
- *
- *	{:NODE_METHOD=>2027, :NODE_FBODY=>1927, :NODE_CFUNC=>1798, ...}
- *
- *  If the optional argument, result_hash, is given, it is overwritten and
- *  returned. This is intended to avoid probe effect.
- *
- *  Note:
- *  The contents of the returned hash is implementation defined.
- *  It may be changed in future.
- *
- *  This method is only expected to work with C Ruby.
- */
-
-static VALUE
-count_nodes(int argc, VALUE *argv, VALUE os)
-{
-    return setup_hash(argc, argv);
 }
 
 static void
@@ -393,32 +378,22 @@ cto_i(VALUE v, void *data)
 
 /*
  *  call-seq:
- *     ObjectSpace.count_tdata_objects([result_hash]) -> hash
+ *     ObjectSpace.count_tdata_objects(result_hash = nil) -> hash
  *
- *  Counts objects for each +T_DATA+ type.
+ *  Returns a hash containing the number of objects for each +T_DATA+ type.
+ *  The keys are Class objects when the +T_DATA+ object has an associated class,
+ *  or Symbol objects of the name defined in the +rb_data_type_struct+ for internal
+ *  +T_DATA+ objects.
  *
- *  This method is only for MRI developers interested in performance and memory
- *  usage of Ruby programs.
+ *    ObjectSpace.count_tdata_objects
+ *    # => {RBS::Location => 39255, marshal_compat_table: 1, Encoding => 103, mutex: 1, ... }
  *
- *  It returns a hash as:
+ *  If the optional argument +result_hash+ is given, it is overwritten and
+ *  returned. This is intended to avoid the probe effect.
  *
- *	{RubyVM::InstructionSequence=>504, :parser=>5, :barrier=>6,
- *  	 :mutex=>6, Proc=>60, RubyVM::Env=>57, Mutex=>1, Encoding=>99,
- *  	 ThreadGroup=>1, Binding=>1, Thread=>1, RubyVM=>1, :iseq=>1,
- *  	 Random=>1, ARGF.class=>1, Data=>1, :autoload=>3, Time=>2}
- *  	# T_DATA objects existing at startup on r32276.
- *
- *  If the optional argument, result_hash, is given, it is overwritten and
- *  returned. This is intended to avoid probe effect.
- *
- *  The contents of the returned hash is implementation specific and may change
- *  in the future.
- *
- *  In this version, keys are Class object or Symbol object.
- *
- *  If object is kind of normal (accessible) object, the key is Class object.
- *  If object is not a kind of normal (internal) object, the key is symbol
- *  name, registered by rb_data_type_struct.
+ *  This method is intended for developers interested in performance and memory
+ *  usage of Ruby programs. The contents of the returned hash is implementation
+ *  specific and may change in the future.
  *
  *  This method is only expected to work with C Ruby.
  */
@@ -457,28 +432,22 @@ count_imemo_objects_i(VALUE v, void *data)
 
 /*
  *  call-seq:
- *     ObjectSpace.count_imemo_objects([result_hash]) -> hash
+ *     ObjectSpace.count_imemo_objects(result_hash = nil) -> hash
  *
- *  Counts objects for each +T_IMEMO+ type.
+ *  Returns a hash containing the number of objects for each +T_IMEMO+ type.
+ *  The keys are Symbol objects of the +T_IMEMO+ type name.
+ *  +T_IMEMO+ objects are Ruby internal objects that are not visible to Ruby
+ *  programs.
  *
- *  This method is only for MRI developers interested in performance and memory
- *  usage of Ruby programs.
+ *    ObjectSpace.count_imemo_objects
+ *    # => {imemo_callcache: 5482, imemo_constcache: 1258, imemo_ment: 13906, ... }
  *
- *  It returns a hash as:
+ *  If the optional argument +result_hash+ is given, it is overwritten and
+ *  returned. This is intended to avoid the probe effect.
  *
- *       {:imemo_ifunc=>8,
- *        :imemo_svar=>7,
- *        :imemo_cref=>509,
- *        :imemo_memo=>1,
- *        :imemo_throw_data=>1}
- *
- *  If the optional argument, result_hash, is given, it is overwritten and
- *  returned. This is intended to avoid probe effect.
- *
- *  The contents of the returned hash is implementation specific and may change
- *  in the future.
- *
- *  In this version, keys are symbol objects.
+ *  This method is intended for developers interested in performance and memory
+ *  usage of Ruby programs. The contents of the returned hash is implementation
+ *  specific and may change in the future.
  *
  *  This method is only expected to work with C Ruby.
  */
@@ -499,11 +468,13 @@ count_imemo_objects(int argc, VALUE *argv, VALUE self)
         INIT_IMEMO_TYPE_ID(imemo_ment);
         INIT_IMEMO_TYPE_ID(imemo_iseq);
         INIT_IMEMO_TYPE_ID(imemo_tmpbuf);
-        INIT_IMEMO_TYPE_ID(imemo_ast);
-        INIT_IMEMO_TYPE_ID(imemo_parser_strterm);
+        INIT_IMEMO_TYPE_ID(imemo_cvar_entry);
         INIT_IMEMO_TYPE_ID(imemo_callinfo);
         INIT_IMEMO_TYPE_ID(imemo_callcache);
         INIT_IMEMO_TYPE_ID(imemo_constcache);
+        INIT_IMEMO_TYPE_ID(imemo_fields);
+        INIT_IMEMO_TYPE_ID(imemo_subclasses);
+        INIT_IMEMO_TYPE_ID(imemo_cdhash);
 #undef INIT_IMEMO_TYPE_ID
     }
 
@@ -539,7 +510,25 @@ iow_newobj(VALUE obj)
     return TypedData_Wrap_Struct(rb_cInternalObjectWrapper, &iow_data_type, (void *)obj);
 }
 
-/* Returns the type of the internal object. */
+/*
+ *  call-seq:
+ *     type -> symbol
+ *
+ *  Returns the type of the wrapped internal object as a symbol.
+ *
+ *  For example, an included module is represented internally as a +T_ICLASS+
+ *  object:
+ *
+ *    require 'objspace'
+ *
+ *    module M; end
+ *    class A; include M; end
+ *
+ *    iclass = ObjectSpace.internal_super_of(A)
+ *    iclass.type # => :T_ICLASS
+ *
+ *  The exact set of returned symbols is implementation specific.
+ */
 static VALUE
 iow_type(VALUE self)
 {
@@ -557,7 +546,16 @@ iow_inspect(VALUE self)
     return rb_sprintf("#<InternalObject:%p %"PRIsVALUE">", (void *)obj, rb_sym2str(type));
 }
 
-/* Returns the Object#object_id of the internal object. */
+/*
+ *  call-seq:
+ *     internal_object_id -> integer
+ *
+ *  Returns the Object#object_id of the wrapped internal object.
+ *
+ *  This value identifies the wrapped internal object, not the
+ *  ObjectSpace::InternalObjectWrapper instance. Use it only for debugging and
+ *  introspection; object ids of internal objects are implementation specific.
+ */
 static VALUE
 iow_internal_object_id(VALUE self)
 {
@@ -602,42 +600,37 @@ collect_values(st_data_t key, st_data_t value, st_data_t data)
  *  call-seq:
  *     ObjectSpace.reachable_objects_from(obj) -> array or nil
  *
- *  [MRI specific feature] Return all reachable objects from `obj'.
+ *  Returns all reachable objects from +obj+ as an array:
  *
- *  This method returns all reachable objects from `obj'.
+ *      ObjectSpace.reachable_objects_from(['a', 'b', 'c'])
+ *      #=> [Array, 'a', 'b', 'c']
  *
- *  If `obj' has two or more references to the same object `x', then returned
- *  array only includes one `x' object.
+ *  The returned array is deduplicated, meaning that if +obj+ refers
+ *  to another object more than once, it will only be added to the array
+ *  once:
  *
- *  If `obj' is a non-markable (non-heap management) object such as true,
- *  false, nil, symbols and Fixnums (and Flonum) then it simply returns nil.
+ *      ObjectSpace.reachable_objects_from([v = 'a', v, v])
+ *      #=> [Array, 'a']
  *
- *  If `obj' has references to an internal object, then it returns instances of
- *  ObjectSpace::InternalObjectWrapper class. This object contains a reference
- *  to an internal object and you can check the type of internal object with
- *  `type' method.
+ *  Returns +nil+ if +obj+ is not a markable object (i.e. non-heap
+ *  managed) object. Non-markable objects include +true+, +false+,
+ *  +nil+, certain symbols, small integers, and floats:
  *
- *  If `obj' is instance of ObjectSpace::InternalObjectWrapper class, then this
- *  method returns all reachable object from an internal object, which is
- *  pointed by `obj'.
+ *      ObjectSpace.reachable_objects_from(1)
+ *      #=> nil
  *
- *  With this method, you can find memory leaks.
+ *  All references to internal objects in the returned array are wrapped
+ *  using ObjectSpace::InternalObjectWrapper objects. This object contains
+ *  a reference to the internal object and the type of the object can
+ *  be accessed using the ObjectSpace::InternalObjectWrapper#type method.
+ *
+ *  If +obj+ is instance of ObjectSpace::InternalObjectWrapper, then this
+ *  method returns all reachable object from the internal object.
+ *
+ *  This method is useful for debugging purposes, such as finding
+ *  memory leaks.
  *
  *  This method is only expected to work with C Ruby.
- *
- *  Example:
- *    ObjectSpace.reachable_objects_from(['a', 'b', 'c'])
- *    #=> [Array, 'a', 'b', 'c']
- *
- *    ObjectSpace.reachable_objects_from(['a', 'a', 'a'])
- *    #=> [Array, 'a', 'a', 'a'] # all 'a' strings have different object id
- *
- *    ObjectSpace.reachable_objects_from([v = 'a', v, v])
- *    #=> [Array, 'a']
- *
- *    ObjectSpace.reachable_objects_from(1)
- *    #=> nil # 1 is not markable (heap managed) object
- *
  */
 
 static VALUE
@@ -713,7 +706,30 @@ collect_values_of_values(VALUE category, VALUE category_objects, VALUE categorie
  *  call-seq:
  *     ObjectSpace.reachable_objects_from_root -> hash
  *
- *  [MRI specific feature] Return all reachable objects from root.
+ *  Returns a hash of objects directly reachable from the VM roots,
+ *  grouped by the root that reaches them.
+ *
+ *  The roots are the entry points the garbage collector starts from when it
+ *  marks live objects, such as the virtual machine and the global variable
+ *  table. The keys of the returned hash are strings naming each root, and each
+ *  value is an array of the objects reachable from that root:
+ *
+ *    require 'objspace'
+ *
+ *    reachable = ObjectSpace.reachable_objects_from_root
+ *    reachable.keys           # => ["vm", "global_tbl", "machine_context", "global_symbols"]
+ *    reachable.values.first   # => [#<Ractor:#1 running>, ...]
+ *
+ *  The returned hash compares its keys by identity, so it cannot be indexed
+ *  with a string literal; iterate over it (or over its #values) instead.
+ *
+ *  Any reference to an internal object is wrapped in an
+ *  ObjectSpace::InternalObjectWrapper object.
+ *
+ *  This method is useful for debugging the object graph, for example when
+ *  tracking down the cause of a memory leak.
+ *
+ *  This method is only expected to work with C Ruby.
  */
 static VALUE
 reachable_objects_from_root(VALUE self)
@@ -745,12 +761,28 @@ wrap_klass_iow(VALUE klass)
 
 /*
  *  call-seq:
- *     ObjectSpace.internal_class_of(obj) -> Class or Module
+ *     ObjectSpace.internal_class_of(obj) -> class or module
  *
- *  [MRI specific feature] Return internal class of obj.
- *  obj can be an instance of InternalObjectWrapper.
+ *  Returns the real class of +obj+, which may differ from the class returned
+ *  by Object#class.
+ *
+ *  Ruby inserts hidden classes into an object's ancestry, such as a singleton
+ *  class or an included module's iclass. Object#class skips over these, but
+ *  this method returns the first one, including any hidden class:
+ *
+ *    require 'objspace'
+ *
+ *    s = "x"
+ *    def s.foo; end                     # gives +s+ a singleton class
+ *    s.class                            # => String
+ *    ObjectSpace.internal_class_of(s)   # => #<Class:#<String:0x000000012574c1f8>>
+ *
+ *  +obj+ may be an ObjectSpace::InternalObjectWrapper, in which case the class
+ *  of the wrapped internal object is returned.
  *
  *  Note that you should not use this method in your application.
+ *
+ *  This method is only expected to work with C Ruby.
  */
 static VALUE
 objspace_internal_class_of(VALUE self, VALUE obj)
@@ -772,12 +804,27 @@ objspace_internal_class_of(VALUE self, VALUE obj)
 
 /*
  *  call-seq:
- *     ObjectSpace.internal_super_of(cls) -> Class or Module
+ *     ObjectSpace.internal_super_of(cls) -> class or module
  *
- *  [MRI specific feature] Return internal super class of cls (Class or Module).
- *  obj can be an instance of InternalObjectWrapper.
+ *  Returns the immediate superclass of +cls+, including any hidden class such
+ *  as an included module's iclass.
+ *
+ *  Unlike Class#superclass, this does not skip over the iclasses that Ruby
+ *  inserts for included modules:
+ *
+ *    require 'objspace'
+ *
+ *    module M; end
+ *    class A; include M; end
+ *    A.superclass                       # => Object
+ *    ObjectSpace.internal_super_of(A)   # => #<InternalObject:0x... T_ICLASS>
+ *
+ *  +cls+ must be a Class or Module, or an ObjectSpace::InternalObjectWrapper
+ *  that wraps one.
  *
  *  Note that you should not use this method in your application.
+ *
+ *  This method is only expected to work with C Ruby.
  */
 static VALUE
 objspace_internal_super_of(VALUE self, VALUE obj)
@@ -792,7 +839,7 @@ objspace_internal_super_of(VALUE self, VALUE obj)
       case T_MODULE:
       case T_CLASS:
       case T_ICLASS:
-        super = RCLASS_SUPER(obj);
+        super = rb_class_super_of(obj);
         break;
       default:
         rb_raise(rb_eArgError, "class or module is expected");
@@ -834,7 +881,6 @@ Init_objspace(void)
 
     rb_define_module_function(rb_mObjSpace, "count_objects_size", count_objects_size, -1);
     rb_define_module_function(rb_mObjSpace, "count_symbols", count_symbols, -1);
-    rb_define_module_function(rb_mObjSpace, "count_nodes", count_nodes, -1);
     rb_define_module_function(rb_mObjSpace, "count_tdata_objects", count_tdata_objects, -1);
     rb_define_module_function(rb_mObjSpace, "count_imemo_objects", count_imemo_objects, -1);
 
@@ -845,13 +891,18 @@ Init_objspace(void)
     rb_define_module_function(rb_mObjSpace, "internal_super_of", objspace_internal_super_of, 1);
 
     /*
-     * This class is used as a return value from
-     * ObjectSpace::reachable_objects_from.
+     *  ObjectSpace::InternalObjectWrapper wraps objects that are internal to
+     *  the CRuby implementation and usually not directly visible in Ruby code.
      *
-     * When ObjectSpace::reachable_objects_from returns an object with
-     * references to an internal object, an instance of this class is returned.
+     *  ObjectSpace.reachable_objects_from and
+     *  ObjectSpace.reachable_objects_from_root return instances of this class
+     *  when a reachable object is an internal object. Some other ObjectSpace
+     *  methods, such as ObjectSpace.internal_super_of, may also return wrapped
+     *  internal objects.
      *
-     * You can use the #type method to check the type of the internal object.
+     *  An InternalObjectWrapper is a debugging and introspection object. Do not
+     *  use it in application code. The wrapped object and the exact details of
+     *  this class are implementation specific and may change in future versions.
      */
     rb_cInternalObjectWrapper = rb_define_class_under(rb_mObjSpace, "InternalObjectWrapper", rb_cObject);
     rb_undef_alloc_func(rb_cInternalObjectWrapper);

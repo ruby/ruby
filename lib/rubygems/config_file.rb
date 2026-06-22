@@ -26,9 +26,22 @@ require "rbconfig"
 # RubyGems options use symbol keys.  Valid options are:
 #
 # +:backtrace+:: See #backtrace
-# +:sources+:: Sets Gem::sources
+# +:bulk_threshold+:: See #bulk_threshold
 # +:verbose+:: See #verbose
+# +:update_sources+:: See #update_sources
 # +:concurrent_downloads+:: See #concurrent_downloads
+# +:cert_expiration_length_days+:: See #cert_expiration_length_days
+# +:install_extension_in_lib+:: See #install_extension_in_lib
+# +:ipv4_fallback_enabled+:: See #ipv4_fallback_enabled
+# +:global_gem_cache+:: See #global_gem_cache
+# +:use_psych+:: See #use_psych
+# +:gemhome+:: See #home
+# +:gempath+:: See #path
+# +:sources+:: Sets Gem::sources
+# +:disable_default_gem_server+:: See #disable_default_gem_server
+# +:ssl_verify_mode+:: See #ssl_verify_mode
+# +:ssl_ca_cert+:: See #ssl_ca_cert
+# +:ssl_client_cert+:: See #ssl_client_cert
 #
 # gemrc files may exist in various locations and are read and merged in
 # the following order:
@@ -47,8 +60,9 @@ class Gem::ConfigFile
   DEFAULT_CONCURRENT_DOWNLOADS = 8
   DEFAULT_CERT_EXPIRATION_LENGTH_DAYS = 365
   DEFAULT_IPV4_FALLBACK_ENABLED = false
-  # TODO: Use false as default value for this option in RubyGems 4.0
   DEFAULT_INSTALL_EXTENSION_IN_LIB = true
+  DEFAULT_GLOBAL_GEM_CACHE = false
+  DEFAULT_USE_PSYCH = false
 
   ##
   # For Ruby packagers to set configuration defaults.  Set in
@@ -156,6 +170,17 @@ class Gem::ConfigFile
   attr_accessor :ipv4_fallback_enabled
 
   ##
+  # Use a global cache for .gem files shared across all Ruby installations.
+  # When enabled, gems are cached to ~/.cache/gem/gems (or XDG_CACHE_HOME/gem/gems).
+
+  attr_accessor :global_gem_cache
+
+  ##
+  # Use Psych (C extension YAML parser) instead of the pure Ruby YAMLSerializer.
+
+  attr_accessor :use_psych
+
+  ##
   # Path name of directory or file of openssl client certificate, used for remote https connection with client authentication
 
   attr_reader :ssl_client_cert
@@ -192,6 +217,8 @@ class Gem::ConfigFile
     @cert_expiration_length_days = DEFAULT_CERT_EXPIRATION_LENGTH_DAYS
     @install_extension_in_lib = DEFAULT_INSTALL_EXTENSION_IN_LIB
     @ipv4_fallback_enabled = ENV["IPV4_FALLBACK_ENABLED"] == "true" || DEFAULT_IPV4_FALLBACK_ENABLED
+    @global_gem_cache = ENV["RUBYGEMS_GLOBAL_GEM_CACHE"] == "true" || DEFAULT_GLOBAL_GEM_CACHE
+    @use_psych = ENV["RUBYGEMS_USE_PSYCH"] == "true" || DEFAULT_USE_PSYCH
 
     operating_system_config = Marshal.load Marshal.dump(OPERATING_SYSTEM_DEFAULTS)
     platform_config = Marshal.load Marshal.dump(PLATFORM_DEFAULTS)
@@ -213,8 +240,9 @@ class Gem::ConfigFile
     @hash.transform_keys! do |k|
       # gemhome and gempath are not working with symbol keys
       if %w[backtrace bulk_threshold verbose update_sources cert_expiration_length_days
-            install_extension_in_lib ipv4_fallback_enabled sources disable_default_gem_server
-            ssl_verify_mode ssl_ca_cert ssl_client_cert].include?(k)
+            concurrent_downloads install_extension_in_lib ipv4_fallback_enabled
+            global_gem_cache use_psych sources
+            disable_default_gem_server ssl_verify_mode ssl_ca_cert ssl_client_cert].include?(k)
         k.to_sym
       else
         k
@@ -226,10 +254,12 @@ class Gem::ConfigFile
     @bulk_threshold              = @hash[:bulk_threshold]              if @hash.key? :bulk_threshold
     @verbose                     = @hash[:verbose]                     if @hash.key? :verbose
     @update_sources              = @hash[:update_sources]              if @hash.key? :update_sources
-    # TODO: We should handle concurrent_downloads same as other options
+    @concurrent_downloads        = @hash[:concurrent_downloads]        if @hash.key? :concurrent_downloads
     @cert_expiration_length_days = @hash[:cert_expiration_length_days] if @hash.key? :cert_expiration_length_days
     @install_extension_in_lib    = @hash[:install_extension_in_lib]    if @hash.key? :install_extension_in_lib
     @ipv4_fallback_enabled       = @hash[:ipv4_fallback_enabled]       if @hash.key? :ipv4_fallback_enabled
+    @global_gem_cache            = @hash[:global_gem_cache]            if @hash.key? :global_gem_cache
+    @use_psych                   = @hash[:use_psych]                   if @hash.key? :use_psych
 
     @home                        = @hash[:gemhome]                     if @hash.key? :gemhome
     @path                        = @hash[:gempath]                     if @hash.key? :gempath
@@ -345,7 +375,7 @@ if you believe they were disclosed to a third party.
     require "fileutils"
     FileUtils.mkdir_p(dirname)
 
-    permissions = 0o600 & (~File.umask)
+    permissions = 0o600 & ~File.umask
     File.open(credentials_path, "w", permissions) do |f|
       f.write self.class.dump_with_rubygems_yaml(config)
     end
@@ -369,7 +399,9 @@ if you believe they were disclosed to a third party.
 
     begin
       config = self.class.load_with_rubygems_config_hash(File.read(filename))
-      if config.keys.any? {|k| k.to_s.gsub(%r{https?:\/\/}, "").include?(": ") }
+      has_invalid_keys = config.keys.any? {|k| k.to_s.gsub(%r{https?:\/\/}, "").include?(": ") }
+      has_invalid_values = config.values.any? {|v| v.is_a?(String) && v.gsub(%r{https?:\/\/}, "").match?(/\A\S+: /) }
+      if has_invalid_keys || has_invalid_values
         warn "Failed to load #{filename} because it doesn't contain valid YAML hash"
         return {}
       else
@@ -554,7 +586,9 @@ if you believe they were disclosed to a third party.
   def self.load_with_rubygems_config_hash(yaml)
     require_relative "yaml_serializer"
 
-    content = Gem::YAMLSerializer.load(yaml)
+    content = Gem::YAMLSerializer.load(yaml, permitted_classes: [])
+    return {} unless content.is_a?(Hash)
+
     deep_transform_config_keys!(content)
   end
 
@@ -588,7 +622,7 @@ if you believe they were disclosed to a third party.
         else
           v
         end
-      elsif v.empty?
+      elsif v.respond_to?(:empty?) && v.empty?
         nil
       elsif v.is_a?(Hash)
         deep_transform_config_keys!(v)

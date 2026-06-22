@@ -123,7 +123,6 @@ extern "C" {
     pub fn rb_float_new(d: f64) -> VALUE;
 
     pub fn rb_hash_empty_p(hash: VALUE) -> VALUE;
-    pub fn rb_yjit_str_concat_codepoint(str: VALUE, codepoint: VALUE);
     pub fn rb_str_setbyte(str: VALUE, index: VALUE, value: VALUE) -> VALUE;
     pub fn rb_vm_splat_array(flag: VALUE, ary: VALUE) -> VALUE;
     pub fn rb_vm_concat_array(ary1: VALUE, ary2st: VALUE) -> VALUE;
@@ -198,8 +197,8 @@ pub use rb_get_cikw_keywords_idx as get_cikw_keywords_idx;
 pub use rb_get_call_data_ci as get_call_data_ci;
 pub use rb_yarv_str_eql_internal as rb_str_eql_internal;
 pub use rb_yarv_ary_entry_internal as rb_ary_entry_internal;
-pub use rb_yjit_fix_div_fix as rb_fix_div_fix;
-pub use rb_yjit_fix_mod_fix as rb_fix_mod_fix;
+pub use rb_jit_fix_div_fix as rb_fix_div_fix;
+pub use rb_jit_fix_mod_fix as rb_fix_mod_fix;
 pub use rb_FL_TEST as FL_TEST;
 pub use rb_FL_TEST_RAW as FL_TEST_RAW;
 pub use rb_RB_TYPE_P as RB_TYPE_P;
@@ -362,6 +361,11 @@ impl VALUE {
         !self.special_const_p()
     }
 
+    /// Shareability between ractors. `RB_OBJ_SHAREABLE_P()`.
+    pub fn shareable_p(self) -> bool {
+        (self.builtin_flags() & RUBY_FL_SHAREABLE as usize) != 0
+    }
+
     /// Return true if the value is a Ruby Fixnum (immediate-size integer)
     pub fn fixnum_p(self) -> bool {
         let VALUE(cval) = self;
@@ -440,29 +444,17 @@ impl VALUE {
         unsafe { rb_obj_frozen_p(self) != VALUE(0) }
     }
 
-    pub fn shape_too_complex(self) -> bool {
-        unsafe { rb_shape_obj_too_complex(self) }
+    pub fn shape_complex(self) -> bool {
+        unsafe { rb_yjit_shape_obj_complex_p(self) }
     }
 
     pub fn shape_id_of(self) -> u32 {
-        unsafe { rb_shape_get_shape_id(self) }
-    }
-
-    pub fn shape_of(self) -> *mut rb_shape {
-        unsafe {
-            let shape = rb_shape_get_shape_by_id(self.shape_id_of());
-
-            if shape.is_null() {
-                panic!("Shape should not be null");
-            } else {
-                shape
-            }
-        }
+        unsafe { rb_obj_shape_id(self) }
     }
 
     pub fn embedded_p(self) -> bool {
         unsafe {
-            FL_TEST_RAW(self, VALUE(ROBJECT_EMBED as usize)) != VALUE(0)
+            FL_TEST_RAW(self, VALUE(ROBJECT_HEAP as usize)) == VALUE(0)
         }
     }
 
@@ -606,6 +598,13 @@ impl From<VALUE> for u16 {
     }
 }
 
+/// Check whether a control frame has an escaped environment
+pub unsafe fn cfp_env_has_escaped(cfp: *mut rb_control_frame_struct) -> bool {
+    use crate::utils::IntoUsize;
+    let ep = get_cfp_ep(cfp);
+    0 != ep.offset(VM_ENV_DATA_INDEX_FLAGS as isize).read().0 & VM_ENV_FLAG_ESCAPED.as_usize()
+}
+
 /// Produce a Ruby string from a Rust string slice
 pub fn rust_str_to_ruby(str: &str) -> VALUE {
     unsafe { rb_utf8_str_new(str.as_ptr() as *const _, str.len() as i64) }
@@ -613,9 +612,15 @@ pub fn rust_str_to_ruby(str: &str) -> VALUE {
 
 /// Produce a Ruby symbol from a Rust string slice
 pub fn rust_str_to_sym(str: &str) -> VALUE {
+    let id = rust_str_to_id(str);
+    unsafe { rb_id2sym(id) }
+}
+
+/// Produce an ID from a Rust string slice
+pub fn rust_str_to_id(str: &str) -> ID {
     let c_str = CString::new(str).unwrap();
     let c_ptr: *const c_char = c_str.as_ptr();
-    unsafe { rb_id2sym(rb_intern(c_ptr)) }
+    unsafe { rb_intern(c_ptr) }
 }
 
 /// Produce an owned Rust String from a C char pointer
@@ -683,7 +688,7 @@ where
     let line = loc.line;
     let mut recursive_lock_level: c_uint = 0;
 
-    unsafe { rb_yjit_vm_lock_then_barrier(&mut recursive_lock_level, file, line) };
+    unsafe { rb_jit_vm_lock_then_barrier(&mut recursive_lock_level, file, line) };
 
     let ret = match catch_unwind(func) {
         Ok(result) => result,
@@ -703,7 +708,7 @@ where
         }
     };
 
-    unsafe { rb_yjit_vm_unlock(&mut recursive_lock_level, file, line) };
+    unsafe { rb_jit_vm_unlock(&mut recursive_lock_level, file, line) };
 
     ret
 }
@@ -774,12 +779,6 @@ mod manual_defs {
     pub const RUBY_OFFSET_CFP_JIT_RETURN: i32 = 48;
     pub const RUBY_SIZEOF_CONTROL_FRAME: usize = 56;
 
-    // Constants from rb_execution_context_t vm_core.h
-    pub const RUBY_OFFSET_EC_CFP: i32 = 16;
-    pub const RUBY_OFFSET_EC_INTERRUPT_FLAG: i32 = 32; // rb_atomic_t (u32)
-    pub const RUBY_OFFSET_EC_INTERRUPT_MASK: i32 = 36; // rb_atomic_t (u32)
-    pub const RUBY_OFFSET_EC_THREAD_PTR: i32 = 48;
-
     // Constants from rb_thread_t in vm_core.h
     pub const RUBY_OFFSET_THREAD_SELF: i32 = 16;
 
@@ -822,6 +821,7 @@ pub(crate) mod ids {
     def_ids! {
         name: NULL               content: b""
         name: respond_to_missing content: b"respond_to_missing?"
+        name: method_missing     content: b"method_missing"
         name: to_ary             content: b"to_ary"
         name: to_s               content: b"to_s"
         name: eq                 content: b"=="

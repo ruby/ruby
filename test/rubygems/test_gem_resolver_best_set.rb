@@ -16,7 +16,7 @@ class TestGemResolverBestSet < Gem::TestCase
 
     api_uri = Gem::URI "#{@gem_repo}info/"
 
-    @fetcher.data["#{api_uri}a"] = "---\n1  "
+    @fetcher.data["#{api_uri}a"] = util_compact_index_response("---\n1  ")
 
     set = Gem::Resolver::BestSet.new
 
@@ -29,6 +29,20 @@ class TestGemResolverBestSet < Gem::TestCase
     found = set.find_all req
 
     assert_equal %w[a-1], found.map(&:full_name)
+  end
+
+  def test_pick_sets_prerelease
+    set = Gem::Resolver::BestSet.new
+    set.prerelease = true
+
+    set.pick_sets
+
+    sets = set.sets
+
+    assert_equal 1, sets.count
+
+    source_set = sets.first
+    assert_equal true, source_set.prerelease
   end
 
   def test_find_all_local

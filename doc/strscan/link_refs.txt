@@ -1,5 +1,5 @@
 [1]: rdoc-ref:StringScanner@Stored+String
-[2]: rdoc-ref:StringScanner@Byte+Position+-28Position-29
+[2]: rdoc-ref:StringScanner@Byte+Position+Position
 [3]: rdoc-ref:StringScanner@Target+Substring
 [4]: rdoc-ref:StringScanner@Setting+the+Target+Substring
 [5]: rdoc-ref:StringScanner@Traversing+the+Target+Substring

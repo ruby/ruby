@@ -992,7 +992,7 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
       assert_equal 1, outs.size
       assert_equal 0, errs.size
       err = outs.first.force_encoding('utf-8')
-      assert err.valid_encoding?, 'must be valid encoding'
+      assert_predicate err, :valid_encoding?
       assert_match %r/\u3042/, err
     end
   end
@@ -1523,6 +1523,33 @@ $stderr = $stdout; raise "\x82\xa0"') do |outs, errs, status|
       main = File.join(dir, "syntax_error.rb")
       File.write(main, "1+\n")
       assert_in_out_err(%W[-r#{lib} #{main}], "", [], [:*, "\n""path=#{main}\n", :*])
+    end
+  end
+
+  class Ex; end
+
+  def test_exception_message_for_unexpected_implicit_conversion_type
+    a = Ex.new
+    def self.x(a) = nil
+
+    assert_raise_with_message(TypeError, "no implicit conversion of TestException::Ex into Hash") do
+      x(**a)
+    end
+    assert_raise_with_message(TypeError, "no implicit conversion of TestException::Ex into Proc") do
+      x(&a)
+    end
+
+    def a.to_a = 1
+    def a.to_hash = 1
+    def a.to_proc = 1
+    assert_raise_with_message(TypeError, "can't convert TestException::Ex into Array (TestException::Ex#to_a gives Integer)") do
+      x(*a)
+    end
+    assert_raise_with_message(TypeError, "can't convert TestException::Ex into Hash (TestException::Ex#to_hash gives Integer)") do
+      x(**a)
+    end
+    assert_raise_with_message(TypeError, "can't convert TestException::Ex into Proc (TestException::Ex#to_proc gives Integer)") do
+      x(&a)
     end
   end
 end

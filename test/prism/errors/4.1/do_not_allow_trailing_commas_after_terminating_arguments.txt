@@ -1,0 +1,6 @@
+def foo(a,b,...,);end
+               ^ unexpected `,` in parameters
+
+def foo(a,b,&block,);end
+                  ^ unexpected `,` in parameters
+

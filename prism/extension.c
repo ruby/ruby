@@ -4,6 +4,8 @@
 #include <ruby/win32.h>
 #endif
 
+#include <errno.h>
+
 // NOTE: this file should contain only bindings. All non-trivial logic should be
 // in libprism so it can be shared its the various callers.
 
@@ -25,6 +27,7 @@ VALUE rb_cPrismLexResult;
 VALUE rb_cPrismParseLexResult;
 VALUE rb_cPrismStringQuery;
 VALUE rb_cPrismScope;
+VALUE rb_cPrismCurrentVersionError;
 
 VALUE rb_cPrismDebugEncoding;
 
@@ -63,18 +66,6 @@ check_string(VALUE value) {
     return RSTRING_PTR(value);
 }
 
-/**
- * Load the contents and size of the given string into the given pm_string_t.
- */
-static void
-input_load_string(pm_string_t *input, VALUE string) {
-    // Check if the string is a string. If it's not, then raise a type error.
-    if (!RB_TYPE_P(string, T_STRING)) {
-        rb_raise(rb_eTypeError, "wrong argument type %" PRIsVALUE " (expected String)", rb_obj_class(string));
-    }
-
-    pm_string_constant_init(input, RSTRING_PTR(string), RSTRING_LEN(string));
-}
 
 /******************************************************************************/
 /* Building C options from Ruby options                                       */
@@ -147,10 +138,8 @@ build_options_scopes(pm_options_t *options, VALUE scopes) {
 
         // Initialize the scope array.
         size_t locals_count = RARRAY_LEN(locals);
-        pm_options_scope_t *options_scope = &options->scopes[scope_index];
-        if (!pm_options_scope_init(options_scope, locals_count)) {
-            rb_raise(rb_eNoMemError, "failed to allocate memory");
-        }
+        pm_options_scope_t *options_scope = pm_options_scope_mut(options, scope_index);
+        pm_options_scope_init(options_scope, locals_count);
 
         // Iterate over the locals and add them to the scope.
         for (size_t local_index = 0; local_index < locals_count; local_index++) {
@@ -163,7 +152,7 @@ build_options_scopes(pm_options_t *options, VALUE scopes) {
             }
 
             // Add the local to the scope.
-            pm_string_t *scope_local = &options_scope->locals[local_index];
+            pm_string_t *scope_local = pm_options_scope_local_mut(options_scope, local_index);
             const char *name = rb_id2name(SYM2ID(local));
             pm_string_constant_init(scope_local, name, strlen(name));
         }
@@ -199,7 +188,21 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
         if (!NIL_P(value)) {
             const char *version = check_string(value);
 
-            if (!pm_options_version_set(options, version, RSTRING_LEN(value))) {
+            if (RSTRING_LEN(value) == 7 && strncmp(version, "current", 7) == 0) {
+                if (!pm_options_version_set(options, ruby_version, 3)) {
+                    rb_exc_raise(rb_exc_new_cstr(rb_cPrismCurrentVersionError, ruby_version));
+                }
+            } else if (RSTRING_LEN(value) == 7 && strncmp(version, "nearest", 7) == 0) {
+                if (!pm_options_version_set(options, ruby_version, 3)) {
+                    // Prism doesn't know this specific version. Is it lower?
+                    if (ruby_version[0] < '3' || (ruby_version[0] == '3' && ruby_version[2] < '3')) {
+                        pm_options_version_set_lowest(options);
+                    } else {
+                        // Must be higher.
+                        pm_options_version_set_highest(options);
+                    }
+                }
+            } else if (!pm_options_version_set(options, version, RSTRING_LEN(value))) {
                 rb_raise(rb_eArgError, "invalid version: %" PRIsVALUE, value);
             }
         }
@@ -263,7 +266,7 @@ build_options(VALUE argument) {
  */
 static void
 extract_options(pm_options_t *options, VALUE filepath, VALUE keywords) {
-    options->line = 1; // default
+    pm_options_line_set(options, 1); /* default */
 
     if (!NIL_P(keywords)) {
         struct build_options_data data = { .options = options, .keywords = keywords };
@@ -291,36 +294,46 @@ extract_options(pm_options_t *options, VALUE filepath, VALUE keywords) {
 /**
  * Read options for methods that look like (source, **options).
  */
-static void
-string_options(int argc, VALUE *argv, pm_string_t *input, pm_options_t *options) {
+static VALUE
+string_options(int argc, VALUE *argv, pm_options_t *options) {
     VALUE string;
     VALUE keywords;
     rb_scan_args(argc, argv, "1:", &string, &keywords);
 
+    if (!RB_TYPE_P(string, T_STRING)) {
+        pm_options_free(options);
+        rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected String)", rb_obj_class(string));
+    }
+
     extract_options(options, Qnil, keywords);
-    input_load_string(input, string);
+    return string;
 }
 
 /**
  * Read options for methods that look like (filepath, **options).
  */
-static void
-file_options(int argc, VALUE *argv, pm_string_t *input, pm_options_t *options, VALUE *encoded_filepath) {
+static pm_source_t *
+file_options(int argc, VALUE *argv, pm_options_t *options, VALUE *encoded_filepath) {
     VALUE filepath;
     VALUE keywords;
     rb_scan_args(argc, argv, "1:", &filepath, &keywords);
 
-    Check_Type(filepath, T_STRING);
+    if (!RB_TYPE_P(filepath, T_STRING)) {
+        pm_options_free(options);
+        rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected String)", rb_obj_class(filepath));
+    }
+
     *encoded_filepath = rb_str_encode_ospath(filepath);
     extract_options(options, *encoded_filepath, keywords);
 
-    const char *source = (const char *) pm_string_source(&options->filepath);
-    pm_string_init_result_t result;
+    const char *source = (const char *) pm_string_source(pm_options_filepath(options));
+    pm_source_init_result_t result;
+    pm_source_t *pm_src = pm_source_file_new(source, &result);
 
-    switch (result = pm_string_file_init(input, source)) {
-        case PM_STRING_INIT_SUCCESS:
+    switch (result) {
+        case PM_SOURCE_INIT_SUCCESS:
             break;
-        case PM_STRING_INIT_ERROR_GENERIC: {
+        case PM_SOURCE_INIT_ERROR_GENERIC: {
             pm_options_free(options);
 
 #ifdef _WIN32
@@ -332,7 +345,7 @@ file_options(int argc, VALUE *argv, pm_string_t *input, pm_options_t *options, V
             rb_syserr_fail(e, source);
             break;
         }
-        case PM_STRING_INIT_ERROR_DIRECTORY:
+        case PM_SOURCE_INIT_ERROR_DIRECTORY:
             pm_options_free(options);
             rb_syserr_fail(EISDIR, source);
             break;
@@ -341,6 +354,8 @@ file_options(int argc, VALUE *argv, pm_string_t *input, pm_options_t *options, V
             rb_raise(rb_eRuntimeError, "Unknown error (%d) initializing file: %s", result, source);
             break;
     }
+
+    return pm_src;
 }
 
 #ifndef PRISM_EXCLUDE_SERIALIZATION
@@ -353,77 +368,82 @@ file_options(int argc, VALUE *argv, pm_string_t *input, pm_options_t *options, V
  * Dump the AST corresponding to the given input to a string.
  */
 static VALUE
-dump_input(pm_string_t *input, const pm_options_t *options) {
-    pm_buffer_t buffer;
-    if (!pm_buffer_init(&buffer)) {
+dump_input(const uint8_t *input, size_t input_length, const pm_options_t *options) {
+    pm_buffer_t *buffer = pm_buffer_new();
+    if (!buffer) {
         rb_raise(rb_eNoMemError, "failed to allocate memory");
     }
 
-    pm_parser_t parser;
-    pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), options);
+    pm_arena_t *arena = pm_arena_new();
+    pm_parser_t *parser = pm_parser_new(arena, input, input_length, options);
 
-    pm_node_t *node = pm_parse(&parser);
-    pm_serialize(&parser, node, &buffer);
+    pm_node_t *node = pm_parse(parser);
+    pm_serialize(parser, node, buffer);
 
-    VALUE result = rb_str_new(pm_buffer_value(&buffer), pm_buffer_length(&buffer));
-    pm_node_destroy(&parser, node);
-    pm_buffer_free(&buffer);
-    pm_parser_free(&parser);
+    VALUE result = rb_str_new(pm_buffer_value(buffer), pm_buffer_length(buffer));
+    pm_buffer_free(buffer);
+    pm_parser_free(parser);
+    pm_arena_free(arena);
 
     return result;
 }
 
 /**
+ * :markup: markdown
  * call-seq:
- *   Prism::dump(source, **options) -> String
+ *   dump(source, **options) -> String
  *
  * Dump the AST corresponding to the given string to a string. For supported
- * options, see Prism::parse.
+ * options, see Prism.parse.
  */
 static VALUE
 dump(int argc, VALUE *argv, VALUE self) {
-    pm_string_t input;
-    pm_options_t options = { 0 };
-    string_options(argc, argv, &input, &options);
+    pm_options_t *options = pm_options_new();
+    VALUE string = string_options(argc, argv, options);
+
+    const uint8_t *source = (const uint8_t *) RSTRING_PTR(string);
+    size_t length = RSTRING_LEN(string);
 
 #ifdef PRISM_BUILD_DEBUG
-    size_t length = pm_string_length(&input);
     char* dup = xmalloc(length);
-    memcpy(dup, pm_string_source(&input), length);
-    pm_string_constant_init(&input, dup, length);
+    memcpy(dup, source, length);
+    source = (const uint8_t *) dup;
 #endif
 
-    VALUE value = dump_input(&input, &options);
-    if (options.freeze) rb_obj_freeze(value);
+    VALUE value = dump_input(source, length, options);
+    if (pm_options_freeze(options)) rb_obj_freeze(value);
 
 #ifdef PRISM_BUILD_DEBUG
+#ifdef xfree_sized
+    xfree_sized(dup, length);
+#else
     xfree(dup);
 #endif
+#endif
 
-    pm_string_free(&input);
-    pm_options_free(&options);
+    pm_options_free(options);
 
     return value;
 }
 
 /**
+ * :markup: markdown
  * call-seq:
- *   Prism::dump_file(filepath, **options) -> String
+ *   dump_file(filepath, **options) -> String
  *
  * Dump the AST corresponding to the given file to a string. For supported
- * options, see Prism::parse.
+ * options, see Prism.parse.
  */
 static VALUE
 dump_file(int argc, VALUE *argv, VALUE self) {
-    pm_string_t input;
-    pm_options_t options = { 0 };
+    pm_options_t *options = pm_options_new();
 
     VALUE encoded_filepath;
-    file_options(argc, argv, &input, &options, &encoded_filepath);
+    pm_source_t *src = file_options(argc, argv, options, &encoded_filepath);
 
-    VALUE value = dump_input(&input, &options);
-    pm_string_free(&input);
-    pm_options_free(&options);
+    VALUE value = dump_input(pm_source_source(src), pm_source_length(src), options);
+    pm_source_free(src);
+    pm_options_free(options);
 
     return value;
 }
@@ -449,25 +469,38 @@ rb_class_new_instance_freeze(int argc, const VALUE *argv, VALUE klass, bool free
  * Create a new Location instance from the given parser and bounds.
  */
 static inline VALUE
-parser_location(const pm_parser_t *parser, VALUE source, bool freeze, const uint8_t *start, size_t length) {
-    VALUE argv[] = { source, LONG2FIX(start - parser->start), LONG2FIX(length) };
+parser_location(VALUE source, bool freeze, uint32_t start, uint32_t length) {
+    VALUE argv[] = { source, LONG2FIX(start), LONG2FIX(length) };
     return rb_class_new_instance_freeze(3, argv, rb_cPrismLocation, freeze);
 }
 
 /**
  * Create a new Location instance from the given parser and location.
  */
-#define PARSER_LOCATION_LOC(parser, source, freeze, loc) \
-    parser_location(parser, source, freeze, loc.start, (size_t) (loc.end - loc.start))
+#define PARSER_LOCATION(source, freeze, location) \
+    parser_location(source, freeze, location.start, location.length)
 
 /**
  * Build a new Comment instance from the given parser and comment.
  */
 static inline VALUE
-parser_comment(const pm_parser_t *parser, VALUE source, bool freeze, const pm_comment_t *comment) {
-    VALUE argv[] = { PARSER_LOCATION_LOC(parser, source, freeze, comment->location) };
-    VALUE type = (comment->type == PM_COMMENT_EMBDOC) ? rb_cPrismEmbDocComment : rb_cPrismInlineComment;
+parser_comment(VALUE source, bool freeze, const pm_comment_t *comment) {
+    VALUE argv[] = { PARSER_LOCATION(source, freeze, pm_comment_location(comment)) };
+    VALUE type = (pm_comment_type(comment) == PM_COMMENT_EMBDOC) ? rb_cPrismEmbDocComment : rb_cPrismInlineComment;
     return rb_class_new_instance_freeze(1, argv, type, freeze);
+}
+
+typedef struct {
+    VALUE comments;
+    VALUE source;
+    bool freeze;
+} parser_comments_each_data_t;
+
+static void
+parser_comments_each(const pm_comment_t *comment, void *data) {
+    parser_comments_each_data_t *each_data = (parser_comments_each_data_t *) data;
+    VALUE value = parser_comment(each_data->source, each_data->freeze, comment);
+    rb_ary_push(each_data->comments, value);
 }
 
 /**
@@ -475,16 +508,10 @@ parser_comment(const pm_parser_t *parser, VALUE source, bool freeze, const pm_co
  */
 static VALUE
 parser_comments(const pm_parser_t *parser, VALUE source, bool freeze) {
-    VALUE comments = rb_ary_new_capa(parser->comment_list.size);
+    VALUE comments = rb_ary_new_capa(pm_parser_comments_size(parser));
 
-    for (
-        const pm_comment_t *comment = (const pm_comment_t *) parser->comment_list.head;
-        comment != NULL;
-        comment = (const pm_comment_t *) comment->node.next
-    ) {
-        VALUE value = parser_comment(parser, source, freeze, comment);
-        rb_ary_push(comments, value);
-    }
+    parser_comments_each_data_t each_data = { comments, source, freeze };
+    pm_parser_comments_each(parser, parser_comments_each, &each_data);
 
     if (freeze) rb_obj_freeze(comments);
     return comments;
@@ -494,11 +521,28 @@ parser_comments(const pm_parser_t *parser, VALUE source, bool freeze) {
  * Build a new MagicComment instance from the given parser and magic comment.
  */
 static inline VALUE
-parser_magic_comment(const pm_parser_t *parser, VALUE source, bool freeze, const pm_magic_comment_t *magic_comment) {
-    VALUE key_loc = parser_location(parser, source, freeze, magic_comment->key_start, magic_comment->key_length);
-    VALUE value_loc = parser_location(parser, source, freeze, magic_comment->value_start, magic_comment->value_length);
+parser_magic_comment(VALUE source, bool freeze, const pm_magic_comment_t *magic_comment) {
+    pm_location_t key = pm_magic_comment_key(magic_comment);
+    pm_location_t value = pm_magic_comment_value(magic_comment);
+
+    VALUE key_loc = parser_location(source, freeze, key.start, key.length);
+    VALUE value_loc = parser_location(source, freeze, value.start, value.length);
+
     VALUE argv[] = { key_loc, value_loc };
     return rb_class_new_instance_freeze(2, argv, rb_cPrismMagicComment, freeze);
+}
+
+typedef struct {
+    VALUE magic_comments;
+    VALUE source;
+    bool freeze;
+} parser_magic_comments_each_data_t;
+
+static void
+parser_magic_comments_each(const pm_magic_comment_t *magic_comment, void *data) {
+    parser_magic_comments_each_data_t *each_data = (parser_magic_comments_each_data_t *) data;
+    VALUE value = parser_magic_comment(each_data->source, each_data->freeze, magic_comment);
+    rb_ary_push(each_data->magic_comments, value);
 }
 
 /**
@@ -506,16 +550,10 @@ parser_magic_comment(const pm_parser_t *parser, VALUE source, bool freeze, const
  */
 static VALUE
 parser_magic_comments(const pm_parser_t *parser, VALUE source, bool freeze) {
-    VALUE magic_comments = rb_ary_new_capa(parser->magic_comment_list.size);
+    VALUE magic_comments = rb_ary_new_capa(pm_parser_magic_comments_size(parser));
 
-    for (
-        const pm_magic_comment_t *magic_comment = (const pm_magic_comment_t *) parser->magic_comment_list.head;
-        magic_comment != NULL;
-        magic_comment = (const pm_magic_comment_t *) magic_comment->node.next
-    ) {
-        VALUE value = parser_magic_comment(parser, source, freeze, magic_comment);
-        rb_ary_push(magic_comments, value);
-    }
+    parser_magic_comments_each_data_t each_data = { magic_comments, source, freeze };
+    pm_parser_magic_comments_each(parser, parser_magic_comments_each, &each_data);
 
     if (freeze) rb_obj_freeze(magic_comments);
     return magic_comments;
@@ -527,11 +565,50 @@ parser_magic_comments(const pm_parser_t *parser, VALUE source, bool freeze) {
  */
 static VALUE
 parser_data_loc(const pm_parser_t *parser, VALUE source, bool freeze) {
-    if (parser->data_loc.end == NULL) {
+    const pm_location_t *data_loc = pm_parser_data_loc(parser);
+
+    if (data_loc->length == 0) {
         return Qnil;
     } else {
-        return PARSER_LOCATION_LOC(parser, source, freeze, parser->data_loc);
+        return parser_location(source, freeze, data_loc->start, data_loc->length);
     }
+}
+
+typedef struct {
+    VALUE errors;
+    rb_encoding *encoding;
+    VALUE source;
+    bool freeze;
+} parser_errors_each_data_t;
+
+static void
+parser_errors_each(const pm_diagnostic_t *diagnostic, void *data) {
+    parser_errors_each_data_t *each_data = (parser_errors_each_data_t *) data;
+
+    VALUE type = ID2SYM(rb_intern(pm_diagnostic_type(diagnostic)));
+    VALUE message = rb_obj_freeze(rb_enc_str_new_cstr(pm_diagnostic_message(diagnostic), each_data->encoding));
+    VALUE location = PARSER_LOCATION(each_data->source, each_data->freeze, pm_diagnostic_location(diagnostic));
+
+    pm_error_level_t error_level = pm_diagnostic_error_level(diagnostic);
+    VALUE level = Qnil;
+
+    switch (error_level) {
+        case PM_ERROR_LEVEL_SYNTAX:
+            level = ID2SYM(rb_intern("syntax"));
+            break;
+        case PM_ERROR_LEVEL_ARGUMENT:
+            level = ID2SYM(rb_intern("argument"));
+            break;
+        case PM_ERROR_LEVEL_LOAD:
+            level = ID2SYM(rb_intern("load"));
+            break;
+        default:
+            rb_raise(rb_eRuntimeError, "Unknown level: %" PRIu8, error_level);
+    }
+
+    VALUE argv[] = { type, message, location, level };
+    VALUE value = rb_class_new_instance_freeze(4, argv, rb_cPrismParseError, each_data->freeze);
+    rb_ary_push(each_data->errors, value);
 }
 
 /**
@@ -539,39 +616,47 @@ parser_data_loc(const pm_parser_t *parser, VALUE source, bool freeze) {
  */
 static VALUE
 parser_errors(const pm_parser_t *parser, rb_encoding *encoding, VALUE source, bool freeze) {
-    VALUE errors = rb_ary_new_capa(parser->error_list.size);
+    VALUE errors = rb_ary_new_capa(pm_parser_errors_size(parser));
 
-    for (
-        const pm_diagnostic_t *error = (const pm_diagnostic_t *) parser->error_list.head;
-        error != NULL;
-        error = (const pm_diagnostic_t *) error->node.next
-    ) {
-        VALUE type = ID2SYM(rb_intern(pm_diagnostic_id_human(error->diag_id)));
-        VALUE message = rb_obj_freeze(rb_enc_str_new_cstr(error->message, encoding));
-        VALUE location = PARSER_LOCATION_LOC(parser, source, freeze, error->location);
-
-        VALUE level = Qnil;
-        switch (error->level) {
-            case PM_ERROR_LEVEL_SYNTAX:
-                level = ID2SYM(rb_intern("syntax"));
-                break;
-            case PM_ERROR_LEVEL_ARGUMENT:
-                level = ID2SYM(rb_intern("argument"));
-                break;
-            case PM_ERROR_LEVEL_LOAD:
-                level = ID2SYM(rb_intern("load"));
-                break;
-            default:
-                rb_raise(rb_eRuntimeError, "Unknown level: %" PRIu8, error->level);
-        }
-
-        VALUE argv[] = { type, message, location, level };
-        VALUE value = rb_class_new_instance_freeze(4, argv, rb_cPrismParseError, freeze);
-        rb_ary_push(errors, value);
-    }
+    parser_errors_each_data_t each_data = { errors, encoding, source, freeze };
+    pm_parser_errors_each(parser, parser_errors_each, &each_data);
 
     if (freeze) rb_obj_freeze(errors);
     return errors;
+}
+
+typedef struct {
+    VALUE warnings;
+    rb_encoding *encoding;
+    VALUE source;
+    bool freeze;
+} parser_warnings_each_data_t;
+
+static void
+parser_warnings_each(const pm_diagnostic_t *diagnostic, void *data) {
+    parser_warnings_each_data_t *each_data = (parser_warnings_each_data_t *) data;
+
+    VALUE type = ID2SYM(rb_intern(pm_diagnostic_type(diagnostic)));
+    VALUE message = rb_obj_freeze(rb_enc_str_new_cstr(pm_diagnostic_message(diagnostic), each_data->encoding));
+    VALUE location = PARSER_LOCATION(each_data->source, each_data->freeze, pm_diagnostic_location(diagnostic));
+
+    pm_warning_level_t warning_level = pm_diagnostic_warning_level(diagnostic);
+    VALUE level = Qnil;
+
+    switch (warning_level) {
+        case PM_WARNING_LEVEL_DEFAULT:
+            level = ID2SYM(rb_intern("default"));
+            break;
+        case PM_WARNING_LEVEL_VERBOSE:
+            level = ID2SYM(rb_intern("verbose"));
+            break;
+        default:
+            rb_raise(rb_eRuntimeError, "Unknown level: %" PRIu8, warning_level);
+    }
+
+    VALUE argv[] = { type, message, location, level };
+    VALUE value = rb_class_new_instance_freeze(4, argv, rb_cPrismParseWarning, each_data->freeze);
+    rb_ary_push(each_data->warnings, value);
 }
 
 /**
@@ -579,33 +664,10 @@ parser_errors(const pm_parser_t *parser, rb_encoding *encoding, VALUE source, bo
  */
 static VALUE
 parser_warnings(const pm_parser_t *parser, rb_encoding *encoding, VALUE source, bool freeze) {
-    VALUE warnings = rb_ary_new_capa(parser->warning_list.size);
+    VALUE warnings = rb_ary_new_capa(pm_parser_warnings_size(parser));
 
-    for (
-        const pm_diagnostic_t *warning = (const pm_diagnostic_t *) parser->warning_list.head;
-        warning != NULL;
-        warning = (const pm_diagnostic_t *) warning->node.next
-    ) {
-        VALUE type = ID2SYM(rb_intern(pm_diagnostic_id_human(warning->diag_id)));
-        VALUE message = rb_obj_freeze(rb_enc_str_new_cstr(warning->message, encoding));
-        VALUE location = PARSER_LOCATION_LOC(parser, source, freeze, warning->location);
-
-        VALUE level = Qnil;
-        switch (warning->level) {
-            case PM_WARNING_LEVEL_DEFAULT:
-                level = ID2SYM(rb_intern("default"));
-                break;
-            case PM_WARNING_LEVEL_VERBOSE:
-                level = ID2SYM(rb_intern("verbose"));
-                break;
-            default:
-                rb_raise(rb_eRuntimeError, "Unknown level: %" PRIu8, warning->level);
-        }
-
-        VALUE argv[] = { type, message, location, level };
-        VALUE value = rb_class_new_instance_freeze(4, argv, rb_cPrismParseWarning, freeze);
-        rb_ary_push(warnings, value);
-    }
+    parser_warnings_each_data_t each_data = { warnings, encoding, source, freeze };
+    pm_parser_warnings_each(parser, parser_warnings_each, &each_data);
 
     if (freeze) rb_obj_freeze(warnings);
     return warnings;
@@ -623,10 +685,11 @@ parse_result_create(VALUE class, const pm_parser_t *parser, VALUE value, rb_enco
         parser_data_loc(parser, source, freeze),
         parser_errors(parser, encoding, source, freeze),
         parser_warnings(parser, encoding, source, freeze),
+        pm_parser_continuable(parser) ? Qtrue : Qfalse,
         source
     };
 
-    return rb_class_new_instance_freeze(7, result_argv, class, freeze);
+    return rb_class_new_instance_freeze(8, result_argv, class, freeze);
 }
 
 /******************************************************************************/
@@ -651,11 +714,11 @@ typedef struct {
  * onto the tokens array.
  */
 static void
-parse_lex_token(void *data, pm_parser_t *parser, pm_token_t *token) {
-    parse_lex_data_t *parse_lex_data = (parse_lex_data_t *) parser->lex_callback->data;
+parse_lex_token(pm_parser_t *parser, pm_token_t *token, void *data) {
+    parse_lex_data_t *parse_lex_data = (parse_lex_data_t *) data;
 
     VALUE value = pm_token_new(parser, token, parse_lex_data->encoding, parse_lex_data->source, parse_lex_data->freeze);
-    VALUE yields = rb_assoc_new(value, INT2FIX(parser->lex_state));
+    VALUE yields = rb_assoc_new(value, INT2FIX(pm_parser_lex_state(parser)));
 
     if (parse_lex_data->freeze) {
         rb_obj_freeze(value);
@@ -672,8 +735,8 @@ parse_lex_token(void *data, pm_parser_t *parser, pm_token_t *token) {
  */
 static void
 parse_lex_encoding_changed_callback(pm_parser_t *parser) {
-    parse_lex_data_t *parse_lex_data = (parse_lex_data_t *) parser->lex_callback->data;
-    parse_lex_data->encoding = rb_enc_find(parser->encoding->name);
+    parse_lex_data_t *parse_lex_data = (parse_lex_data_t *) pm_parser_lex_callback_data(parser);
+    parse_lex_data->encoding = rb_enc_find(pm_parser_encoding_name(parser));
 
     // Since the encoding changed, we need to go back and change the encoding of
     // the tokens that were already lexed. This is only going to end up being
@@ -718,43 +781,38 @@ parse_lex_encoding_changed_callback(pm_parser_t *parser) {
  * the nodes and tokens.
  */
 static VALUE
-parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nodes) {
-    pm_parser_t parser;
-    pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), options);
-    pm_parser_register_encoding_changed_callback(&parser, parse_lex_encoding_changed_callback);
+parse_lex_input(const uint8_t *input, size_t input_length, const pm_options_t *options, bool return_nodes) {
+    pm_arena_t *arena = pm_arena_new();
+    pm_parser_t *parser = pm_parser_new(arena, input, input_length, options);
+    pm_parser_encoding_changed_callback_set(parser, parse_lex_encoding_changed_callback);
 
-    VALUE source_string = rb_str_new((const char *) pm_string_source(input), pm_string_length(input));
-    VALUE offsets = rb_ary_new_capa(parser.newline_list.size);
-    VALUE source = rb_funcall(rb_cPrismSource, rb_id_source_for, 3, source_string, LONG2NUM(parser.start_line), offsets);
+    VALUE source_string = rb_str_new((const char *) input, input_length);
+    VALUE offsets = rb_ary_new_capa(pm_parser_line_offsets(parser)->size);
+    VALUE source = rb_funcall(rb_cPrismSource, rb_id_source_for, 3, source_string, LONG2NUM(pm_parser_start_line(parser)), offsets);
 
     parse_lex_data_t parse_lex_data = {
         .source = source,
         .tokens = rb_ary_new(),
-        .encoding = rb_utf8_encoding(),
-        .freeze = options->freeze,
+        .encoding = rb_enc_find(pm_parser_encoding_name(parser)),
+        .freeze = pm_options_freeze(options),
     };
 
     parse_lex_data_t *data = &parse_lex_data;
-    pm_lex_callback_t lex_callback = (pm_lex_callback_t) {
-        .data = (void *) data,
-        .callback = parse_lex_token,
-    };
+    pm_parser_lex_callback_set(parser, parse_lex_token, data);
 
-    parser.lex_callback = &lex_callback;
-    pm_node_t *node = pm_parse(&parser);
+    pm_node_t *node = pm_parse(parser);
 
-    // Here we need to update the Source object to have the correct
-    // encoding for the source string and the correct newline offsets.
-    // We do it here because we've already created the Source object and given
-    // it over to all of the tokens, and both of these are only set after pm_parse().
-    rb_encoding *encoding = rb_enc_find(parser.encoding->name);
+    /* Update the Source object with the correct encoding and line offsets,
+     * which are only available after pm_parse() completes. */
+    rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
     rb_enc_associate(source_string, encoding);
 
-    for (size_t index = 0; index < parser.newline_list.size; index++) {
-        rb_ary_push(offsets, ULONG2NUM(parser.newline_list.offsets[index]));
+    const pm_line_offset_list_t *line_offsets = pm_parser_line_offsets(parser);
+    for (size_t index = 0; index < line_offsets->size; index++) {
+        rb_ary_store(offsets, (long) index, ULONG2NUM(line_offsets->offsets[index]));
     }
 
-    if (options->freeze) {
+    if (pm_options_freeze(options)) {
         rb_obj_freeze(source_string);
         rb_obj_freeze(offsets);
         rb_obj_freeze(source);
@@ -764,58 +822,57 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
     VALUE result;
     if (return_nodes) {
         VALUE value = rb_ary_new_capa(2);
-        rb_ary_push(value, pm_ast_new(&parser, node, parse_lex_data.encoding, source, options->freeze));
+        rb_ary_push(value, pm_ast_new(parser, node, parse_lex_data.encoding, source, pm_options_freeze(options)));
         rb_ary_push(value, parse_lex_data.tokens);
-        if (options->freeze) rb_obj_freeze(value);
-        result = parse_result_create(rb_cPrismParseLexResult, &parser, value, parse_lex_data.encoding, source, options->freeze);
+        if (pm_options_freeze(options)) rb_obj_freeze(value);
+        result = parse_result_create(rb_cPrismParseLexResult, parser, value, parse_lex_data.encoding, source, pm_options_freeze(options));
     } else {
-        result = parse_result_create(rb_cPrismLexResult, &parser, parse_lex_data.tokens, parse_lex_data.encoding, source, options->freeze);
+        result = parse_result_create(rb_cPrismLexResult, parser, parse_lex_data.tokens, parse_lex_data.encoding, source, pm_options_freeze(options));
     }
 
-    pm_node_destroy(&parser, node);
-    pm_parser_free(&parser);
+    pm_parser_free(parser);
+    pm_arena_free(arena);
 
     return result;
 }
 
 /**
+ * :markup: markdown
  * call-seq:
- *   Prism::lex(source, **options) -> LexResult
+ *   lex(source, **options) -> LexResult
  *
  * Return a LexResult instance that contains an array of Token instances
- * corresponding to the given string. For supported options, see Prism::parse.
+ * corresponding to the given string. For supported options, see Prism.parse.
  */
 static VALUE
 lex(int argc, VALUE *argv, VALUE self) {
-    pm_string_t input;
-    pm_options_t options = { 0 };
-    string_options(argc, argv, &input, &options);
+    pm_options_t *options = pm_options_new();
+    VALUE string = string_options(argc, argv, options);
 
-    VALUE result = parse_lex_input(&input, &options, false);
-    pm_string_free(&input);
-    pm_options_free(&options);
+    VALUE result = parse_lex_input((const uint8_t *) RSTRING_PTR(string), RSTRING_LEN(string), options, false);
+    pm_options_free(options);
 
     return result;
 }
 
 /**
+ * :markup: markdown
  * call-seq:
- *   Prism::lex_file(filepath, **options) -> LexResult
+ *   lex_file(filepath, **options) -> LexResult
  *
  * Return a LexResult instance that contains an array of Token instances
- * corresponding to the given file. For supported options, see Prism::parse.
+ * corresponding to the given file. For supported options, see Prism.parse.
  */
 static VALUE
 lex_file(int argc, VALUE *argv, VALUE self) {
-    pm_string_t input;
-    pm_options_t options = { 0 };
+    pm_options_t *options = pm_options_new();
 
     VALUE encoded_filepath;
-    file_options(argc, argv, &input, &options, &encoded_filepath);
+    pm_source_t *src = file_options(argc, argv, options, &encoded_filepath);
 
-    VALUE value = parse_lex_input(&input, &options, false);
-    pm_string_free(&input);
-    pm_options_free(&options);
+    VALUE value = parse_lex_input(pm_source_source(src), pm_source_length(src), options, false);
+    pm_source_free(src);
+    pm_options_free(options);
 
     return value;
 }
@@ -828,30 +885,32 @@ lex_file(int argc, VALUE *argv, VALUE self) {
  * Parse the given input and return a ParseResult instance.
  */
 static VALUE
-parse_input(pm_string_t *input, const pm_options_t *options) {
-    pm_parser_t parser;
-    pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), options);
+parse_input(const uint8_t *input, size_t input_length, const pm_options_t *options) {
+    pm_arena_t *arena = pm_arena_new();
+    pm_parser_t *parser = pm_parser_new(arena, input, input_length, options);
 
-    pm_node_t *node = pm_parse(&parser);
-    rb_encoding *encoding = rb_enc_find(parser.encoding->name);
+    pm_node_t *node = pm_parse(parser);
+    rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
 
-    VALUE source = pm_source_new(&parser, encoding, options->freeze);
-    VALUE value = pm_ast_new(&parser, node, encoding, source, options->freeze);
-    VALUE result = parse_result_create(rb_cPrismParseResult, &parser, value, encoding, source, options->freeze);
+    bool freeze = pm_options_freeze(options);
+    VALUE source = pm_source_new(parser, encoding, freeze);
+    VALUE value = pm_ast_new(parser, node, encoding, source, freeze);
+    VALUE result = parse_result_create(rb_cPrismParseResult, parser, value, encoding, source, freeze);
 
-    if (options->freeze) {
+    if (freeze) {
         rb_obj_freeze(source);
     }
 
-    pm_node_destroy(&parser, node);
-    pm_parser_free(&parser);
+    pm_parser_free(parser);
+    pm_arena_free(arena);
 
     return result;
 }
 
 /**
+ * :markup: markdown
  * call-seq:
- *   Prism::parse(source, **options) -> ParseResult
+ *   parse(source, **options) -> ParseResult
  *
  * Parse the given string and return a ParseResult instance. The options that
  * are supported are:
@@ -888,51 +947,57 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
  *       version of Ruby syntax (which you can trigger with `nil` or
  *       `"latest"`). You may also restrict the syntax to a specific version of
  *       Ruby, e.g., with `"3.3.0"`. To parse with the same syntax version that
- *       the current Ruby is running use `version: RUBY_VERSION`. Raises
- *       ArgumentError if the version is not currently supported by Prism.
+ *       the current Ruby is running use `version: "current"`. To parse with the
+ *       nearest version to the current Ruby that is running, use
+ *       `version: "nearest"`. Raises ArgumentError if the version is not
+ *       currently supported by Prism.
  */
 static VALUE
 parse(int argc, VALUE *argv, VALUE self) {
-    pm_string_t input;
-    pm_options_t options = { 0 };
-    string_options(argc, argv, &input, &options);
+    pm_options_t *options = pm_options_new();
+    VALUE string = string_options(argc, argv, options);
+
+    const uint8_t *source = (const uint8_t *) RSTRING_PTR(string);
+    size_t length = RSTRING_LEN(string);
 
 #ifdef PRISM_BUILD_DEBUG
-    size_t length = pm_string_length(&input);
     char* dup = xmalloc(length);
-    memcpy(dup, pm_string_source(&input), length);
-    pm_string_constant_init(&input, dup, length);
+    memcpy(dup, source, length);
+    source = (const uint8_t *) dup;
 #endif
 
-    VALUE value = parse_input(&input, &options);
+    VALUE value = parse_input(source, length, options);
 
 #ifdef PRISM_BUILD_DEBUG
+#ifdef xfree_sized
+    xfree_sized(dup, length);
+#else
     xfree(dup);
 #endif
+#endif
 
-    pm_string_free(&input);
-    pm_options_free(&options);
+    pm_options_free(options);
     return value;
 }
 
 /**
+ * :markup: markdown
  * call-seq:
- *   Prism::parse_file(filepath, **options) -> ParseResult
+ *   parse_file(filepath, **options) -> ParseResult
  *
  * Parse the given file and return a ParseResult instance. For supported
- * options, see Prism::parse.
+ * options, see Prism.parse.
  */
 static VALUE
 parse_file(int argc, VALUE *argv, VALUE self) {
-    pm_string_t input;
-    pm_options_t options = { 0 };
+    pm_options_t *options = pm_options_new();
 
     VALUE encoded_filepath;
-    file_options(argc, argv, &input, &options, &encoded_filepath);
+    pm_source_t *src = file_options(argc, argv, options, &encoded_filepath);
 
-    VALUE value = parse_input(&input, &options);
-    pm_string_free(&input);
-    pm_options_free(&options);
+    VALUE value = parse_input(pm_source_source(src), pm_source_length(src), options);
+    pm_source_free(src);
+    pm_options_free(options);
 
     return value;
 }
@@ -941,57 +1006,64 @@ parse_file(int argc, VALUE *argv, VALUE self) {
  * Parse the given input and return nothing.
  */
 static void
-profile_input(pm_string_t *input, const pm_options_t *options) {
-    pm_parser_t parser;
-    pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), options);
+profile_input(const uint8_t *input, size_t input_length, const pm_options_t *options) {
+    pm_arena_t *arena = pm_arena_new();
+    pm_parser_t *parser = pm_parser_new(arena, input, input_length, options);
 
-    pm_node_t *node = pm_parse(&parser);
-    pm_node_destroy(&parser, node);
-    pm_parser_free(&parser);
+    pm_parse(parser);
+    pm_parser_free(parser);
+    pm_arena_free(arena);
 }
 
 /**
+ * :markup: markdown
  * call-seq:
- *   Prism::profile(source, **options) -> nil
+ *   profile(source, **options) -> nil
  *
  * Parse the given string and return nothing. This method is meant to allow
  * profilers to avoid the overhead of reifying the AST to Ruby. For supported
- * options, see Prism::parse.
+ * options, see Prism.parse.
  */
 static VALUE
 profile(int argc, VALUE *argv, VALUE self) {
-    pm_string_t input;
-    pm_options_t options = { 0 };
+    pm_options_t *options = pm_options_new();
+    VALUE string = string_options(argc, argv, options);
 
-    string_options(argc, argv, &input, &options);
-    profile_input(&input, &options);
-    pm_string_free(&input);
-    pm_options_free(&options);
+    profile_input((const uint8_t *) RSTRING_PTR(string), RSTRING_LEN(string), options);
+    pm_options_free(options);
 
     return Qnil;
 }
 
 /**
+ * :markup: markdown
  * call-seq:
- *   Prism::profile_file(filepath, **options) -> nil
+ *   profile_file(filepath, **options) -> nil
  *
  * Parse the given file and return nothing. This method is meant to allow
  * profilers to avoid the overhead of reifying the AST to Ruby. For supported
- * options, see Prism::parse.
+ * options, see Prism.parse.
  */
 static VALUE
 profile_file(int argc, VALUE *argv, VALUE self) {
-    pm_string_t input;
-    pm_options_t options = { 0 };
+    pm_options_t *options = pm_options_new();
 
     VALUE encoded_filepath;
-    file_options(argc, argv, &input, &options, &encoded_filepath);
+    pm_source_t *src = file_options(argc, argv, options, &encoded_filepath);
 
-    profile_input(&input, &options);
-    pm_string_free(&input);
-    pm_options_free(&options);
+    profile_input(pm_source_source(src), pm_source_length(src), options);
+    pm_source_free(src);
+    pm_options_free(options);
 
     return Qnil;
+}
+
+static int
+parse_stream_eof(void *stream) {
+    if (rb_funcall((VALUE) stream, rb_intern("eof?"), 0)) {
+        return 1;
+    }
+    return 0;
 }
 
 /**
@@ -1016,11 +1088,12 @@ parse_stream_fgets(char *string, int size, void *stream) {
 }
 
 /**
+ * :markup: markdown
  * call-seq:
- *   Prism::parse_stream(stream, **options) -> ParseResult
+ *   parse_stream(stream, **options) -> ParseResult
  *
  * Parse the given object that responds to `gets` and return a ParseResult
- * instance. The options that are supported are the same as Prism::parse.
+ * instance. The options that are supported are the same as Prism.parse.
  */
 static VALUE
 parse_stream(int argc, VALUE *argv, VALUE self) {
@@ -1028,22 +1101,24 @@ parse_stream(int argc, VALUE *argv, VALUE self) {
     VALUE keywords;
     rb_scan_args(argc, argv, "1:", &stream, &keywords);
 
-    pm_options_t options = { 0 };
-    extract_options(&options, Qnil, keywords);
+    pm_options_t *options = pm_options_new();
+    extract_options(options, Qnil, keywords);
 
-    pm_parser_t parser;
-    pm_buffer_t buffer;
+    pm_source_t *src = pm_source_stream_new((void *) stream, parse_stream_fgets, parse_stream_eof);
+    pm_arena_t *arena = pm_arena_new();
+    pm_parser_t *parser;
 
-    pm_node_t *node = pm_parse_stream(&parser, &buffer, (void *) stream, parse_stream_fgets, &options);
-    rb_encoding *encoding = rb_enc_find(parser.encoding->name);
+    pm_node_t *node = pm_parse_stream(&parser, arena, src, options);
+    rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
 
-    VALUE source = pm_source_new(&parser, encoding, options.freeze);
-    VALUE value = pm_ast_new(&parser, node, encoding, source, options.freeze);
-    VALUE result = parse_result_create(rb_cPrismParseResult, &parser, value, encoding, source, options.freeze);
+    VALUE source = pm_source_new(parser, encoding, pm_options_freeze(options));
+    VALUE value = pm_ast_new(parser, node, encoding, source, pm_options_freeze(options));
+    VALUE result = parse_result_create(rb_cPrismParseResult, parser, value, encoding, source, pm_options_freeze(options));
 
-    pm_node_destroy(&parser, node);
-    pm_buffer_free(&buffer);
-    pm_parser_free(&parser);
+    pm_source_free(src);
+    pm_parser_free(parser);
+    pm_arena_free(arena);
+    pm_options_free(options);
 
     return result;
 }
@@ -1052,116 +1127,114 @@ parse_stream(int argc, VALUE *argv, VALUE self) {
  * Parse the given input and return an array of Comment objects.
  */
 static VALUE
-parse_input_comments(pm_string_t *input, const pm_options_t *options) {
-    pm_parser_t parser;
-    pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), options);
+parse_input_comments(const uint8_t *input, size_t input_length, const pm_options_t *options) {
+    pm_arena_t *arena = pm_arena_new();
+    pm_parser_t *parser = pm_parser_new(arena, input, input_length, options);
 
-    pm_node_t *node = pm_parse(&parser);
-    rb_encoding *encoding = rb_enc_find(parser.encoding->name);
+    pm_parse(parser);
+    rb_encoding *encoding = rb_enc_find(pm_parser_encoding_name(parser));
 
-    VALUE source = pm_source_new(&parser, encoding, options->freeze);
-    VALUE comments = parser_comments(&parser, source, options->freeze);
+    VALUE source = pm_source_new(parser, encoding, pm_options_freeze(options));
+    VALUE comments = parser_comments(parser, source, pm_options_freeze(options));
 
-    pm_node_destroy(&parser, node);
-    pm_parser_free(&parser);
+    pm_parser_free(parser);
+    pm_arena_free(arena);
 
     return comments;
 }
 
 /**
+ * :markup: markdown
  * call-seq:
- *   Prism::parse_comments(source, **options) -> Array
+ *   parse_comments(source, **options) -> Array
  *
  * Parse the given string and return an array of Comment objects. For supported
- * options, see Prism::parse.
+ * options, see Prism.parse.
  */
 static VALUE
 parse_comments(int argc, VALUE *argv, VALUE self) {
-    pm_string_t input;
-    pm_options_t options = { 0 };
-    string_options(argc, argv, &input, &options);
+    pm_options_t *options = pm_options_new();
+    VALUE string = string_options(argc, argv, options);
 
-    VALUE result = parse_input_comments(&input, &options);
-    pm_string_free(&input);
-    pm_options_free(&options);
+    VALUE result = parse_input_comments((const uint8_t *) RSTRING_PTR(string), RSTRING_LEN(string), options);
+    pm_options_free(options);
 
     return result;
 }
 
 /**
+ * :markup: markdown
  * call-seq:
- *   Prism::parse_file_comments(filepath, **options) -> Array
+ *   parse_file_comments(filepath, **options) -> Array
  *
  * Parse the given file and return an array of Comment objects. For supported
- * options, see Prism::parse.
+ * options, see Prism.parse.
  */
 static VALUE
 parse_file_comments(int argc, VALUE *argv, VALUE self) {
-    pm_string_t input;
-    pm_options_t options = { 0 };
+    pm_options_t *options = pm_options_new();
 
     VALUE encoded_filepath;
-    file_options(argc, argv, &input, &options, &encoded_filepath);
+    pm_source_t *src = file_options(argc, argv, options, &encoded_filepath);
 
-    VALUE value = parse_input_comments(&input, &options);
-    pm_string_free(&input);
-    pm_options_free(&options);
+    VALUE value = parse_input_comments(pm_source_source(src), pm_source_length(src), options);
+    pm_source_free(src);
+    pm_options_free(options);
 
     return value;
 }
 
 /**
+ * :markup: markdown
  * call-seq:
- *   Prism::parse_lex(source, **options) -> ParseLexResult
+ *   parse_lex(source, **options) -> ParseLexResult
  *
  * Parse the given string and return a ParseLexResult instance that contains a
  * 2-element array, where the first element is the AST and the second element is
  * an array of Token instances.
  *
  * This API is only meant to be used in the case where you need both the AST and
- * the tokens. If you only need one or the other, use either Prism::parse or
- * Prism::lex.
+ * the tokens. If you only need one or the other, use either Prism.parse or
+ * Prism.lex.
  *
- * For supported options, see Prism::parse.
+ * For supported options, see Prism.parse.
  */
 static VALUE
 parse_lex(int argc, VALUE *argv, VALUE self) {
-    pm_string_t input;
-    pm_options_t options = { 0 };
-    string_options(argc, argv, &input, &options);
+    pm_options_t *options = pm_options_new();
+    VALUE string = string_options(argc, argv, options);
 
-    VALUE value = parse_lex_input(&input, &options, true);
-    pm_string_free(&input);
-    pm_options_free(&options);
+    VALUE value = parse_lex_input((const uint8_t *) RSTRING_PTR(string), RSTRING_LEN(string), options, true);
+    pm_options_free(options);
 
     return value;
 }
 
 /**
+ * :markup: markdown
  * call-seq:
- *   Prism::parse_lex_file(filepath, **options) -> ParseLexResult
+ *   parse_lex_file(filepath, **options) -> ParseLexResult
  *
  * Parse the given file and return a ParseLexResult instance that contains a
  * 2-element array, where the first element is the AST and the second element is
  * an array of Token instances.
  *
  * This API is only meant to be used in the case where you need both the AST and
- * the tokens. If you only need one or the other, use either Prism::parse_file
- * or Prism::lex_file.
+ * the tokens. If you only need one or the other, use either Prism.parse_file
+ * or Prism.lex_file.
  *
- * For supported options, see Prism::parse.
+ * For supported options, see Prism.parse.
  */
 static VALUE
 parse_lex_file(int argc, VALUE *argv, VALUE self) {
-    pm_string_t input;
-    pm_options_t options = { 0 };
+    pm_options_t *options = pm_options_new();
 
     VALUE encoded_filepath;
-    file_options(argc, argv, &input, &options, &encoded_filepath);
+    pm_source_t *src = file_options(argc, argv, options, &encoded_filepath);
 
-    VALUE value = parse_lex_input(&input, &options, true);
-    pm_string_free(&input);
-    pm_options_free(&options);
+    VALUE value = parse_lex_input(pm_source_source(src), pm_source_length(src), options, true);
+    pm_source_free(src);
+    pm_options_free(options);
 
     return value;
 }
@@ -1170,45 +1243,45 @@ parse_lex_file(int argc, VALUE *argv, VALUE self) {
  * Parse the given input and return true if it parses without errors.
  */
 static VALUE
-parse_input_success_p(pm_string_t *input, const pm_options_t *options) {
-    pm_parser_t parser;
-    pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), options);
+parse_input_success_p(const uint8_t *input, size_t input_length, const pm_options_t *options) {
+    pm_arena_t *arena = pm_arena_new();
+    pm_parser_t *parser = pm_parser_new(arena, input, input_length, options);
 
-    pm_node_t *node = pm_parse(&parser);
-    pm_node_destroy(&parser, node);
+    pm_parse(parser);
 
-    VALUE result = parser.error_list.size == 0 ? Qtrue : Qfalse;
-    pm_parser_free(&parser);
+    VALUE result = pm_parser_errors_size(parser) == 0 ? Qtrue : Qfalse;
+    pm_parser_free(parser);
+    pm_arena_free(arena);
 
     return result;
 }
 
 /**
+ * :markup: markdown
  * call-seq:
- *   Prism::parse_success?(source, **options) -> bool
+ *   parse_success?(source, **options) -> bool
  *
  * Parse the given string and return true if it parses without errors. For
- * supported options, see Prism::parse.
+ * supported options, see Prism.parse.
  */
 static VALUE
 parse_success_p(int argc, VALUE *argv, VALUE self) {
-    pm_string_t input;
-    pm_options_t options = { 0 };
-    string_options(argc, argv, &input, &options);
+    pm_options_t *options = pm_options_new();
+    VALUE string = string_options(argc, argv, options);
 
-    VALUE result = parse_input_success_p(&input, &options);
-    pm_string_free(&input);
-    pm_options_free(&options);
+    VALUE result = parse_input_success_p((const uint8_t *) RSTRING_PTR(string), RSTRING_LEN(string), options);
+    pm_options_free(options);
 
     return result;
 }
 
 /**
+ * :markup: markdown
  * call-seq:
- *   Prism::parse_failure?(source, **options) -> bool
+ *   parse_failure?(source, **options) -> bool
  *
  * Parse the given string and return true if it parses with errors. For
- * supported options, see Prism::parse.
+ * supported options, see Prism.parse.
  */
 static VALUE
 parse_failure_p(int argc, VALUE *argv, VALUE self) {
@@ -1216,33 +1289,34 @@ parse_failure_p(int argc, VALUE *argv, VALUE self) {
 }
 
 /**
+ * :markup: markdown
  * call-seq:
- *   Prism::parse_file_success?(filepath, **options) -> bool
+ *   parse_file_success?(filepath, **options) -> bool
  *
  * Parse the given file and return true if it parses without errors. For
- * supported options, see Prism::parse.
+ * supported options, see Prism.parse.
  */
 static VALUE
 parse_file_success_p(int argc, VALUE *argv, VALUE self) {
-    pm_string_t input;
-    pm_options_t options = { 0 };
+    pm_options_t *options = pm_options_new();
 
     VALUE encoded_filepath;
-    file_options(argc, argv, &input, &options, &encoded_filepath);
+    pm_source_t *src = file_options(argc, argv, options, &encoded_filepath);
 
-    VALUE result = parse_input_success_p(&input, &options);
-    pm_string_free(&input);
-    pm_options_free(&options);
+    VALUE result = parse_input_success_p(pm_source_source(src), pm_source_length(src), options);
+    pm_source_free(src);
+    pm_options_free(options);
 
     return result;
 }
 
 /**
+ * :markup: markdown
  * call-seq:
- *   Prism::parse_file_failure?(filepath, **options) -> bool
+ *   parse_file_failure?(filepath, **options) -> bool
  *
  * Parse the given file and return true if it parses with errors. For
- * supported options, see Prism::parse.
+ * supported options, see Prism.parse.
  */
 static VALUE
 parse_file_failure_p(int argc, VALUE *argv, VALUE self) {
@@ -1272,8 +1346,9 @@ string_query(pm_string_query_t result) {
 }
 
 /**
+ * :markup: markdown
  * call-seq:
- *   Prism::StringQuery::local?(string) -> bool
+ *   local?(string) -> bool
  *
  * Returns true if the string constitutes a valid local variable name. Note that
  * this means the names that can be set through Binding#local_variable_set, not
@@ -1286,8 +1361,9 @@ string_query_local_p(VALUE self, VALUE string) {
 }
 
 /**
+ * :markup: markdown
  * call-seq:
- *   Prism::StringQuery::constant?(string) -> bool
+ *   constant?(string) -> bool
  *
  * Returns true if the string constitutes a valid constant name. Note that this
  * means the names that can be set through Module#const_set, not necessarily the
@@ -1300,8 +1376,9 @@ string_query_constant_p(VALUE self, VALUE string) {
 }
 
 /**
+ * :markup: markdown
  * call-seq:
- *   Prism::StringQuery::method_name?(string) -> bool
+ *   method_name?(string) -> bool
  *
  * Returns true if the string constitutes a valid method name.
  */
@@ -1356,6 +1433,8 @@ Init_prism(void) {
     rb_cPrismStringQuery = rb_define_class_under(rb_cPrism, "StringQuery", rb_cObject);
     rb_cPrismScope = rb_define_class_under(rb_cPrism, "Scope", rb_cObject);
 
+    rb_cPrismCurrentVersionError = rb_const_get(rb_cPrism, rb_intern("CurrentVersionError"));
+
     // Intern all of the IDs eagerly that we support so that we don't have to do
     // it every time we parse.
     rb_id_option_command_line = rb_intern_const("command_line");
@@ -1407,5 +1486,4 @@ Init_prism(void) {
 
     // Next, initialize the other APIs.
     Init_prism_api_node();
-    Init_prism_pack();
 }

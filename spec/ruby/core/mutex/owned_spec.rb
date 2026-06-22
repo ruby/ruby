@@ -4,7 +4,7 @@ describe "Mutex#owned?" do
   describe "when unlocked" do
     it "returns false" do
       m = Mutex.new
-      m.owned?.should be_false
+      m.owned?.should == false
     end
   end
 
@@ -12,7 +12,7 @@ describe "Mutex#owned?" do
     it "returns true" do
       m = Mutex.new
       m.lock
-      m.owned?.should be_true
+      m.owned?.should == true
     end
   end
 
@@ -37,7 +37,7 @@ describe "Mutex#owned?" do
       end
 
       Thread.pass until locked
-      m.owned?.should be_false
+      m.owned?.should == false
     end
   end
 

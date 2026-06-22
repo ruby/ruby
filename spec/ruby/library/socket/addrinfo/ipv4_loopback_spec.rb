@@ -10,7 +10,7 @@ describe "Addrinfo#ipv4_loopback?" do
     end
 
     it "returns false for another address" do
-      Addrinfo.ip('255.255.255.0').ipv4_loopback?.should be_false
+      Addrinfo.ip('255.255.255.0').ipv4_loopback?.should == false
     end
   end
 
@@ -21,23 +21,21 @@ describe "Addrinfo#ipv4_loopback?" do
     end
 
     it "returns false for the loopback address" do
-      @loopback.ipv4_loopback?.should be_false
+      @loopback.ipv4_loopback?.should == false
     end
 
     it "returns false for another address" do
-      @other.ipv4_loopback?.should be_false
+      @other.ipv4_loopback?.should == false
     end
   end
 
-  with_feature :unix_socket do
-    describe "for a unix socket" do
-      before :each do
-        @addrinfo = Addrinfo.unix("/tmp/sock")
-      end
+  describe "for a unix socket" do
+    before :each do
+      @addrinfo = Addrinfo.unix("/tmp/sock")
+    end
 
-      it "returns false" do
-        @addrinfo.ipv4_loopback?.should be_false
-      end
+    it "returns false" do
+      @addrinfo.ipv4_loopback?.should == false
     end
   end
 end

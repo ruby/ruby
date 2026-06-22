@@ -1,0 +1,23 @@
+tap { it += 1 }
+
+tap { it ||= 1 }
+
+tap { it &&= 1 }
+
+tap { it; it += 1 }
+
+tap { it; it ||= 1 }
+
+tap { it; it &&= 1 }
+
+tap { it += 1; it }
+
+tap { it ||= 1; it }
+
+tap { it &&= 1; it }
+
+tap { it; it += 1; it }
+
+tap { it; it ||= 1; it }
+
+tap { it; it &&= 1; it }

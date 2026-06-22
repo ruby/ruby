@@ -29,7 +29,7 @@ RSpec.describe "the lockfile format" do
         myrack
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -80,7 +80,7 @@ RSpec.describe "the lockfile format" do
         myrack
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -109,7 +109,7 @@ RSpec.describe "the lockfile format" do
          #{version}
     L
 
-    install_gemfile <<-G, verbose: true, preserve_ruby_flags: true
+    install_gemfile <<-G, verbose: true
       source "https://gem.repo4"
 
       gem "myrack"
@@ -168,7 +168,7 @@ RSpec.describe "the lockfile format" do
         myrack (> 0)
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -215,7 +215,7 @@ RSpec.describe "the lockfile format" do
         myrack
 
       BUNDLED WITH
-         #{current_version}
+        #{current_version}
     G
   end
 
@@ -246,7 +246,7 @@ RSpec.describe "the lockfile format" do
         myrack-obama
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -277,7 +277,7 @@ RSpec.describe "the lockfile format" do
         myrack-obama (>= 1.0)
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -324,7 +324,7 @@ RSpec.describe "the lockfile format" do
         myrack-obama (>= 1.0)!
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -371,7 +371,7 @@ RSpec.describe "the lockfile format" do
         myrack-obama (>= 1.0)!
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     lockfile lockfile_without_credentials
@@ -432,7 +432,7 @@ RSpec.describe "the lockfile format" do
         myrack-obama (>= 1.0)!
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     lockfile lockfile_with_credentials
@@ -468,7 +468,7 @@ RSpec.describe "the lockfile format" do
         net-sftp
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
 
     expect(the_bundle).to include_gems "net-sftp 1.1.1", "net-ssh 1.0.0"
@@ -504,7 +504,7 @@ RSpec.describe "the lockfile format" do
         foo!
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -540,7 +540,7 @@ RSpec.describe "the lockfile format" do
         myrack
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "install"
@@ -579,7 +579,7 @@ RSpec.describe "the lockfile format" do
         foo!
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -615,7 +615,7 @@ RSpec.describe "the lockfile format" do
         foo!
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -651,7 +651,7 @@ RSpec.describe "the lockfile format" do
         foo!
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -710,7 +710,7 @@ RSpec.describe "the lockfile format" do
         ckeditor!
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "lock"
@@ -737,7 +737,7 @@ RSpec.describe "the lockfile format" do
         ckeditor!
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 
@@ -770,7 +770,7 @@ RSpec.describe "the lockfile format" do
         foo!
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -786,7 +786,6 @@ RSpec.describe "the lockfile format" do
       c.no_checksum "foo", "1.0"
     end
 
-    bundle "config set cache_all true"
     bundle :cache
     bundle :install, local: true
 
@@ -807,7 +806,7 @@ RSpec.describe "the lockfile format" do
         foo!
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -855,7 +854,7 @@ RSpec.describe "the lockfile format" do
         myrack
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -883,7 +882,7 @@ RSpec.describe "the lockfile format" do
         myrack!
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -926,7 +925,7 @@ RSpec.describe "the lockfile format" do
         thin
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -975,7 +974,7 @@ RSpec.describe "the lockfile format" do
         rails
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -983,7 +982,7 @@ RSpec.describe "the lockfile format" do
     update_repo2 do
       # Capistrano did this (at least until version 2.5.10)
       # RubyGems 2.2 doesn't allow the specifying of a dependency twice
-      # See https://github.com/rubygems/rubygems/commit/03dbac93a3396a80db258d9bc63500333c25bd2f
+      # See https://github.com/ruby/rubygems/commit/03dbac93a3396a80db258d9bc63500333c25bd2f
       build_gem "double_deps", "1.0", skip_validation: true do |s|
         s.add_dependency "net-ssh", ">= 1.0.0"
         s.add_dependency "net-ssh"
@@ -1016,7 +1015,7 @@ RSpec.describe "the lockfile format" do
         double_deps
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -1047,7 +1046,7 @@ RSpec.describe "the lockfile format" do
         myrack-obama (>= 1.0)
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -1078,7 +1077,7 @@ RSpec.describe "the lockfile format" do
         myrack-obama (>= 1.0)
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -1113,7 +1112,7 @@ RSpec.describe "the lockfile format" do
         foo!
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -1148,7 +1147,7 @@ RSpec.describe "the lockfile format" do
         foo!
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -1183,7 +1182,7 @@ RSpec.describe "the lockfile format" do
         foo!
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -1216,7 +1215,7 @@ RSpec.describe "the lockfile format" do
         foo!
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -1238,7 +1237,7 @@ RSpec.describe "the lockfile format" do
         myrack
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
 
     install_gemfile <<-G
@@ -1262,7 +1261,7 @@ RSpec.describe "the lockfile format" do
         myrack
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -1306,7 +1305,7 @@ RSpec.describe "the lockfile format" do
           google-protobuf
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end
@@ -1325,6 +1324,7 @@ RSpec.describe "the lockfile format" do
       G
 
       checksums = checksums_section_when_enabled do |c|
+        c.checksum gem_repo2, "platform_specific", "1.0"
         c.checksum gem_repo2, "platform_specific", "1.0", "universal-java-16"
       end
 
@@ -1332,6 +1332,7 @@ RSpec.describe "the lockfile format" do
         GEM
           remote: https://gem.repo2/
           specs:
+            platform_specific (1.0)
             platform_specific (1.0-universal-java-16)
 
         PLATFORMS
@@ -1341,7 +1342,7 @@ RSpec.describe "the lockfile format" do
           platform_specific
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       G
     end
   end
@@ -1378,7 +1379,7 @@ RSpec.describe "the lockfile format" do
         myrack
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -1406,7 +1407,7 @@ RSpec.describe "the lockfile format" do
         myrack
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -1434,7 +1435,7 @@ RSpec.describe "the lockfile format" do
         myrack (= 1.0)
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -1462,7 +1463,7 @@ RSpec.describe "the lockfile format" do
         myrack (= 1.0)
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -1511,7 +1512,7 @@ RSpec.describe "the lockfile format" do
         myrack (> 0.9, < 1.0)
       #{checksums}
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -1539,10 +1540,10 @@ RSpec.describe "the lockfile format" do
         myrack (> 0.9, < 1.0)
       #{checksums}
       RUBY VERSION
-         #{Bundler::RubyVersion.system}
+        #{Bundler::RubyVersion.system}
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -1560,7 +1561,7 @@ RSpec.describe "the lockfile format" do
         myrack_middleware
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     install_gemfile <<-G
@@ -1583,7 +1584,7 @@ RSpec.describe "the lockfile format" do
         myrack_middleware
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 
@@ -1601,7 +1602,7 @@ RSpec.describe "the lockfile format" do
         myrack_middleware
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     install_gemfile <<-G, env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
@@ -1609,7 +1610,8 @@ RSpec.describe "the lockfile format" do
       gem "myrack_middleware"
     G
 
-    expect(err).to eq("Bundler found incorrect dependencies in the lockfile for myrack_middleware-1.0")
+    expect(err).to include("Bundler found incorrect dependencies in the lockfile for myrack_middleware-1.0")
+    expect(err).to include("myrack: gemspec specifies = 0.9.1, not in lockfile")
     expect(the_bundle).not_to include_gems "myrack_middleware 1.0"
   end
 
@@ -1629,7 +1631,7 @@ RSpec.describe "the lockfile format" do
       CHECKSUMS
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     install_gemfile <<-G, env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
@@ -1638,12 +1640,46 @@ RSpec.describe "the lockfile format" do
     G
 
     expect(err).to eq <<~L.strip
-      Your lockfile is missing a checksums entry for \"myrack_middleware\", but can't be updated because frozen mode is set
+      Your lockfile is missing a CHECKSUMS entry for \"myrack_middleware\", but can't be updated because frozen mode is set
 
       Run `bundle install` elsewhere and add the updated Gemfile.lock to version control.
     L
 
     expect(the_bundle).not_to include_gems "myrack_middleware 1.0"
+  end
+
+  it "raises a clear error when frozen mode is set and lockfile has empty checksums in CHECKSUMS section, and does not install any gems" do
+    lockfile <<-L
+      GEM
+        remote: https://gem.repo2/
+        specs:
+          myrack (0.9.1)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        myrack
+
+      CHECKSUMS
+        myrack (0.9.1)
+
+      BUNDLED WITH
+        #{Bundler::VERSION}
+    L
+
+    install_gemfile <<-G, env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
+      source "https://gem.repo2"
+      gem "myrack"
+    G
+
+    expect(err).to eq <<~L.strip
+      Your lockfile has an empty CHECKSUMS entry for \"myrack\", but can't be updated because frozen mode is set
+
+      Run `bundle install` elsewhere and add the updated Gemfile.lock to version control.
+    L
+
+    expect(the_bundle).not_to include_gems "myrack 0.9.1"
   end
 
   it "automatically fixes the lockfile when it's missing deps, they conflict with other locked deps, but conflicts are fixable" do
@@ -1674,7 +1710,7 @@ RSpec.describe "the lockfile format" do
         other_dep
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     install_gemfile <<-G
@@ -1701,7 +1737,7 @@ RSpec.describe "the lockfile format" do
         other_dep
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 
@@ -1736,7 +1772,7 @@ RSpec.describe "the lockfile format" do
         another_dep_middleware
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     install_gemfile <<-G
@@ -1764,7 +1800,7 @@ RSpec.describe "the lockfile format" do
         myrack_middleware
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 
@@ -1796,7 +1832,7 @@ RSpec.describe "the lockfile format" do
         other_dep
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     install_gemfile <<-G, raise_on_error: false
@@ -1839,7 +1875,7 @@ RSpec.describe "the lockfile format" do
         direct_dependency
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
 
     install_gemfile <<-G
@@ -1863,7 +1899,7 @@ RSpec.describe "the lockfile format" do
         direct_dependency
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     G
   end
 
@@ -1881,7 +1917,7 @@ RSpec.describe "the lockfile format" do
         myrack_middleware
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     install_gemfile <<-G
@@ -1904,7 +1940,7 @@ RSpec.describe "the lockfile format" do
         myrack_middleware
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 
@@ -1938,7 +1974,7 @@ RSpec.describe "the lockfile format" do
         foo!
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "install"
@@ -1961,7 +1997,7 @@ RSpec.describe "the lockfile format" do
         foo!
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 
@@ -1995,7 +2031,7 @@ RSpec.describe "the lockfile format" do
         foo (= 1.0)!
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "install"
@@ -2018,7 +2054,7 @@ RSpec.describe "the lockfile format" do
         foo (= 1.0)!
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 
@@ -2054,7 +2090,7 @@ RSpec.describe "the lockfile format" do
         net-smtp
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "install"
@@ -2074,7 +2110,75 @@ RSpec.describe "the lockfile format" do
         net-smtp
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
+    L
+  end
+
+  it "successfully updates the lockfile when a new gem is added in the Gemfile includes a gem that shouldn't be included" do
+    build_repo4 do
+      build_gem "logger", "1.7.0"
+      build_gem "rack", "3.2.0"
+      build_gem "net-smtp", "0.5.0"
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+      gem "logger"
+      gem "net-smtp"
+
+      install_if -> { false } do
+        gem 'rack', github: 'rack/rack'
+      end
+    G
+
+    lockfile <<~L
+      GIT
+        remote: https://github.com/rack/rack.git
+        revision: 2fface9ac09fc582a81386becd939c987ad33f99
+        specs:
+          rack (3.2.0)
+
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          logger (1.7.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        logger
+        rack!
+
+      BUNDLED WITH
+        #{Bundler::VERSION}
+    L
+
+    bundle "install"
+
+    expect(lockfile).to eq <<~L
+      GIT
+        remote: https://github.com/rack/rack.git
+        revision: 2fface9ac09fc582a81386becd939c987ad33f99
+        specs:
+          rack (3.2.0)
+
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          logger (1.7.0)
+          net-smtp (0.5.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        logger
+        net-smtp
+        rack!
+
+      BUNDLED WITH
+        #{Bundler::VERSION}
     L
   end
 
@@ -2107,7 +2211,7 @@ RSpec.describe "the lockfile format" do
           minitest-bisect
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       cache_gems "minitest-bisect-1.6.0", "path_expander-1.1.1", gem_repo: gem_repo4
@@ -2128,7 +2232,7 @@ RSpec.describe "the lockfile format" do
           minitest-bisect
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
   end
@@ -2173,7 +2277,7 @@ RSpec.describe "the lockfile format" do
         minitest-bisect
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     bundle "install --verbose"
@@ -2194,7 +2298,7 @@ RSpec.describe "the lockfile format" do
         minitest-bisect
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 
@@ -2294,7 +2398,7 @@ RSpec.describe "the lockfile format" do
         myrack
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     install_gemfile <<-G, raise_on_error: false
@@ -2308,19 +2412,7 @@ RSpec.describe "the lockfile format" do
 
   private
 
-  def prerelease?(version)
-    Gem::Version.new(version).prerelease?
-  end
-
   def previous_major(version)
     version.split(".").map.with_index {|v, i| i == 0 ? v.to_i - 1 : v }.join(".")
-  end
-
-  def bump_minor(version)
-    bump(version, 1)
-  end
-
-  def bump(version, segment)
-    version.split(".").map.with_index {|v, i| i == segment ? v.to_i + 1 : v }.join(".")
   end
 end

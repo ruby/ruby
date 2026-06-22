@@ -5,7 +5,7 @@ require_relative "text"
 # A Source knows how to list and fetch gems from a RubyGems marshal index.
 #
 # There are other Source subclasses for installed gems, local gems, the
-# bundler dependency API and so-forth.
+# Compact Index API and so-forth.
 
 class Gem::Source
   include Comparable
@@ -67,28 +67,11 @@ class Gem::Source
 
   ##
   # Returns a Set that can fetch specifications from this source.
-
-  def dependency_resolver_set # :nodoc:
-    return Gem::Resolver::IndexSet.new self if uri.scheme == "file"
-
-    fetch_uri = if uri.host == "rubygems.org"
-      index_uri = uri.dup
-      index_uri.host = "index.rubygems.org"
-      index_uri
-    else
-      uri
-    end
-
-    bundler_api_uri = enforce_trailing_slash(fetch_uri) + "versions"
-
-    begin
-      fetcher = Gem::RemoteFetcher.fetcher
-      response = fetcher.fetch_path bundler_api_uri, nil, true
-    rescue Gem::RemoteFetcher::FetchError
-      Gem::Resolver::IndexSet.new self
-    else
-      Gem::Resolver::APISet.new response.uri + "./info/"
-    end
+  #
+  # The set will optionally fetch prereleases if requested.
+  #
+  def dependency_resolver_set(prerelease = false)
+    new_dependency_resolver_set.tap {|set| set.prerelease = prerelease }
   end
 
   def hash # :nodoc:
@@ -119,7 +102,7 @@ class Gem::Source
   end
 
   ##
-  # Fetches a specification for the given +name_tuple+.
+  # Fetches a specification for the given Gem::NameTuple.
 
   def fetch_spec(name_tuple)
     fetcher = Gem::RemoteFetcher.fetcher
@@ -172,8 +155,60 @@ class Gem::Source
   # :latest     => Return the list of only the highest version of each gem
   # :prerelease => Return the list of all prerelease only specs
   #
+  # The compact index is used when the source provides it, falling back
+  # to the Marshal spec indexes.
 
   def load_specs(type)
+    load_compact_index_specs(type) || load_marshal_specs(type)
+  end
+
+  ##
+  # The compact index client for this source, caching under
+  # Gem.spec_cache_dir. Also used by Gem::Resolver::APISet.
+
+  def compact_index_client # :nodoc:
+    @compact_index_client ||= begin
+      require_relative "compact_index_client"
+
+      index_uri = compact_index_uri
+
+      Gem::CompactIndexClient.new(compact_index_cache_dir(index_uri),
+        Gem::CompactIndexClient::HTTPFetcher.new(index_uri))
+    end
+  end
+
+  ##
+  # Downloads +spec+ and writes it to +dir+.  See also
+  # Gem::RemoteFetcher#download.
+
+  def download(spec, dir = Dir.pwd)
+    fetcher = Gem::RemoteFetcher.fetcher
+    fetcher.download spec, uri.to_s, dir
+  end
+
+  def pretty_print(q) # :nodoc:
+    q.object_group(self) do
+      q.group 2, "[Remote:", "]" do
+        q.breakable
+        q.text @uri.to_s
+
+        if api = uri
+          q.breakable
+          q.text "API URI: "
+          q.text api.to_s
+        end
+      end
+    end
+  end
+
+  def typo_squatting?(host, distance_threshold = 4)
+    return if @uri.host.nil?
+    levenshtein_distance(@uri.host, host).between? 1, distance_threshold
+  end
+
+  private
+
+  def load_marshal_specs(type)
     file       = FILES[type]
     fetcher    = Gem::RemoteFetcher.fetcher
     file_name  = "#{file}.#{Gem.marshal_version}"
@@ -204,35 +239,87 @@ class Gem::Source
   end
 
   ##
-  # Downloads +spec+ and writes it to +dir+.  See also
-  # Gem::RemoteFetcher#download.
+  # Builds the name tuple list for +type+ from the compact index versions
+  # file. Returns nil when the source does not provide a usable compact
+  # index, so the caller can fall back to the Marshal spec indexes.
 
-  def download(spec, dir=Dir.pwd)
-    fetcher = Gem::RemoteFetcher.fetcher
-    fetcher.download spec, uri.to_s, dir
+  def load_compact_index_specs(type)
+    return unless %w[http https].include?(uri.scheme)
+
+    versions = compact_index_versions
+    return if versions.nil? || versions.empty?
+
+    tuples = []
+
+    versions.each_value do |rows|
+      gem_tuples = rows.filter_map do |name, version_string, platform|
+        next unless Gem::Version.correct?(version_string)
+
+        version = Gem::Version.new(version_string)
+        next if version.prerelease? != (type == :prerelease)
+
+        Gem::NameTuple.new(name, version, platform || "ruby")
+      end
+
+      gem_tuples = max_versions_by_platform(gem_tuples) if type == :latest
+
+      tuples.concat(gem_tuples)
+    end
+
+    tuples
   end
 
-  def pretty_print(q) # :nodoc:
-    q.object_group(self) do
-      q.group 2, "[Remote:", "]" do
-        q.breakable
-        q.text @uri.to_s
+  def compact_index_versions
+    @compact_index_versions ||= compact_index_client.versions
+  rescue Gem::RemoteFetcher::FetchError, Gem::CompactIndexClient::Error
+    @compact_index_versions = {}
+    nil
+  end
 
-        if api = uri
-          q.breakable
-          q.text "API URI: "
-          q.text api.to_s
-        end
-      end
+  def max_versions_by_platform(tuples)
+    tuples.group_by(&:platform).map {|_, platform_tuples| platform_tuples.max_by(&:version) }
+  end
+
+  def compact_index_uri
+    if uri.host == "rubygems.org"
+      index_uri = uri.dup
+      index_uri.host = "index.rubygems.org"
+      index_uri
+    else
+      uri
     end
   end
 
-  def typo_squatting?(host, distance_threshold=4)
-    return if @uri.host.nil?
-    levenshtein_distance(@uri.host, host).between? 1, distance_threshold
+  def compact_index_cache_dir(index_uri)
+    if update_cache?
+      # Correct for windows paths
+      escaped_path = index_uri.path.sub(%r{^/([a-z]):/}i, '/\\1-/')
+
+      File.join Gem.spec_cache_dir, "compact_index",
+        "#{index_uri.host}%#{index_uri.port}", *escaped_path.split("/").reject(&:empty?)
+    else
+      require "tmpdir"
+      require "fileutils"
+      dir = Dir.mktmpdir "gem_compact_index"
+      at_exit { FileUtils.rm_rf dir }
+      dir
+    end
   end
 
-  private
+  def new_dependency_resolver_set
+    return Gem::Resolver::IndexSet.new self if uri.scheme == "file"
+
+    bundler_api_uri = enforce_trailing_slash(compact_index_uri) + "versions"
+
+    begin
+      fetcher = Gem::RemoteFetcher.fetcher
+      response = fetcher.fetch_path bundler_api_uri, nil, true
+    rescue Gem::RemoteFetcher::FetchError
+      Gem::Resolver::IndexSet.new self
+    else
+      Gem::Resolver::APISet.new response.uri + "./info/"
+    end
+  end
 
   def enforce_trailing_slash(uri)
     uri.merge(uri.path.gsub(%r{/+$}, "") + "/")

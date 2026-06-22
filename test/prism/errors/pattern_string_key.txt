@@ -1,0 +1,7 @@
+case:a
+^~~~ expected an `end` to close the `case` statement
+in b:"","#{}"
+        ^~~~~ expected a label after the `,` in the hash pattern
+             ^ expected a delimiter after the patterns of an `in` clause
+             ^ unexpected end-of-input, assuming it is closing the parent top level context
+

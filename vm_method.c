@@ -23,6 +23,199 @@ static inline rb_method_entry_t *lookup_method_table(VALUE klass, ID id);
 /* int ruby_running = 0; */
 
 static enum rb_id_table_iterator_result
+mark_cc_entry_i(VALUE ccs_ptr, void *data)
+{
+    struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
+
+    VM_ASSERT(vm_ccs_p(ccs));
+
+    if (METHOD_ENTRY_INVALIDATED(ccs->cme)) {
+        /* Before detaching the CCs from this class, we need to invalidate the cc
+         * since we will no longer be marking the cme on their behalf.
+         */
+        for (int i = 0; i < ccs->len; i++) {
+            const struct rb_callcache *cc = ccs->entries[i].cc;
+            if (cc->klass == Qundef) continue; // already invalidated
+            VM_ASSERT(cc->klass == Qundef || vm_cc_check_cme(cc, ccs->cme));
+            VM_ASSERT(!vm_cc_super_p(cc) && !vm_cc_refinement_p(cc));
+            vm_cc_invalidate(cc);
+        }
+        ruby_xfree_sized(ccs, vm_ccs_alloc_size(ccs->capa));
+        return ID_TABLE_DELETE;
+    }
+    else {
+        rb_gc_mark_movable((VALUE)ccs->cme);
+
+        for (int i = 0; i < ccs->len; i++) {
+            const struct rb_callcache *cc = ccs->entries[i].cc;
+            VM_ASSERT(cc->klass == Qundef || vm_cc_check_cme(cc, ccs->cme));
+
+            rb_gc_mark_movable((VALUE)cc);
+        }
+        return ID_TABLE_CONTINUE;
+    }
+}
+
+static void
+vm_cc_table_mark(void *data)
+{
+    struct rb_id_table *tbl = (struct rb_id_table *)data;
+    if (tbl) {
+        rb_id_table_foreach_values(tbl, mark_cc_entry_i, NULL);
+    }
+}
+
+static enum rb_id_table_iterator_result
+cc_table_free_i(VALUE ccs_ptr, void *data)
+{
+    struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
+    VM_ASSERT(vm_ccs_p(ccs));
+
+    ruby_xfree_sized(ccs, vm_ccs_alloc_size(ccs->capa));
+
+    return ID_TABLE_CONTINUE;
+}
+
+static void
+vm_cc_table_free(void *data)
+{
+    struct rb_id_table *tbl = (struct rb_id_table *)data;
+
+    rb_id_table_foreach_values(tbl, cc_table_free_i, NULL);
+    rb_managed_id_table_type.function.dfree(data);
+}
+
+static enum rb_id_table_iterator_result
+cc_table_memsize_i(VALUE ccs_ptr, void *data_ptr)
+{
+    size_t *total_size = data_ptr;
+    struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
+    *total_size += sizeof(*ccs);
+    *total_size += sizeof(ccs->entries[0]) * ccs->capa;
+    return ID_TABLE_CONTINUE;
+}
+
+static size_t
+vm_cc_table_memsize(const void *data)
+{
+    size_t memsize = rb_managed_id_table_type.function.dsize(data);
+    struct rb_id_table *tbl = (struct rb_id_table *)data;
+    rb_id_table_foreach_values(tbl, cc_table_memsize_i, &memsize);
+    return memsize;
+}
+
+static enum rb_id_table_iterator_result
+compact_cc_entry_i(VALUE ccs_ptr, void *data)
+{
+    struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
+
+    ccs->cme = (const struct rb_callable_method_entry_struct *)rb_gc_location((VALUE)ccs->cme);
+    VM_ASSERT(vm_ccs_p(ccs));
+
+    for (int i=0; i<ccs->len; i++) {
+        ccs->entries[i].cc = (const struct rb_callcache *)rb_gc_location((VALUE)ccs->entries[i].cc);
+    }
+
+    return ID_TABLE_CONTINUE;
+}
+
+static void
+vm_cc_table_compact(void *data)
+{
+    struct rb_id_table *tbl = (struct rb_id_table *)data;
+    rb_id_table_foreach_values(tbl, compact_cc_entry_i, NULL);
+}
+
+static const rb_data_type_t cc_table_type = {
+    .wrap_struct_name = "VM/cc_table",
+    .function = {
+        .dmark = vm_cc_table_mark,
+        .dfree = vm_cc_table_free,
+        .dsize = vm_cc_table_memsize,
+        .dcompact = vm_cc_table_compact,
+    },
+    .parent = &rb_managed_id_table_type,
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+};
+
+VALUE
+rb_vm_cc_table_create(size_t capa)
+{
+    return rb_managed_id_table_create(&cc_table_type, capa);
+}
+
+static enum rb_id_table_iterator_result
+vm_cc_table_dup_i(ID key, VALUE old_ccs_ptr, void *data)
+{
+    VALUE new_table = (VALUE)data;
+    struct rb_class_cc_entries *old_ccs = (struct rb_class_cc_entries *)old_ccs_ptr;
+
+    if (METHOD_ENTRY_INVALIDATED(old_ccs->cme)) {
+        // Invalidated CME. This entry will be removed from the old table on
+        // the next GC mark, so it's unsafe (and undesirable) to copy
+        return ID_TABLE_CONTINUE;
+    }
+
+    size_t memsize = vm_ccs_alloc_size(old_ccs->capa);
+    struct rb_class_cc_entries *new_ccs = ruby_xcalloc(1, memsize);
+    rb_managed_id_table_insert(new_table, key, (VALUE)new_ccs);
+
+    // We hold the VM lock, so invalidation should not have happened between
+    // our earlier invalidation check and now.
+    VM_ASSERT(!METHOD_ENTRY_INVALIDATED(old_ccs->cme));
+
+    memcpy(new_ccs, old_ccs, memsize);
+
+#if VM_CHECK_MODE > 0
+    new_ccs->debug_sig = ~(VALUE)new_ccs;
+#endif
+
+    RB_OBJ_WRITTEN(new_table, Qundef, (VALUE)new_ccs->cme);
+    for (int index = 0; index < new_ccs->len; index++) {
+        RB_OBJ_WRITTEN(new_table, Qundef, new_ccs->entries[index].cc);
+    }
+    return ID_TABLE_CONTINUE;
+}
+
+VALUE
+rb_vm_cc_table_dup(VALUE old_table)
+{
+    ASSERT_vm_locking();
+    VALUE new_table = rb_vm_cc_table_create(rb_managed_id_table_size(old_table));
+    rb_managed_id_table_foreach(old_table, vm_cc_table_dup_i, (void *)new_table);
+    return new_table;
+}
+
+static void
+vm_ccs_invalidate(struct rb_class_cc_entries *ccs)
+{
+    for (int i=0; i<ccs->len; i++) {
+        const struct rb_callcache *cc = ccs->entries[i].cc;
+        VM_ASSERT(!vm_cc_super_p(cc) && !vm_cc_refinement_p(cc));
+        vm_cc_invalidate(cc);
+    }
+}
+
+static void
+rb_vm_ccs_invalidate_and_free(struct rb_class_cc_entries *ccs)
+{
+    RB_DEBUG_COUNTER_INC(ccs_free);
+    vm_ccs_invalidate(ccs);
+    ruby_xfree_sized(ccs, vm_ccs_alloc_size(ccs->capa));
+}
+
+void
+rb_vm_cc_table_delete(VALUE table, ID mid)
+{
+    VALUE ccs_obj;
+    if (rb_managed_id_table_lookup(table, mid, &ccs_obj)) {
+        struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_obj;
+        rb_managed_id_table_delete(table, mid);
+        rb_vm_ccs_invalidate_and_free(ccs);
+    }
+}
+
+static enum rb_id_table_iterator_result
 vm_ccs_dump_i(ID mid, VALUE val, void *data)
 {
     const struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)val;
@@ -39,18 +232,18 @@ vm_ccs_dump_i(ID mid, VALUE val, void *data)
 static void
 vm_ccs_dump(VALUE klass, ID target_mid)
 {
-    struct rb_id_table *cc_tbl = RCLASS_CC_TBL(klass);
+    VALUE cc_tbl = RCLASS_WRITABLE_CC_TBL(klass);
     if (cc_tbl) {
         VALUE ccs;
         if (target_mid) {
-            if (rb_id_table_lookup(cc_tbl, target_mid, &ccs)) {
+            if (rb_managed_id_table_lookup(cc_tbl, target_mid, &ccs)) {
                 fprintf(stderr, "  [CCTB] %p\n", (void *)cc_tbl);
                 vm_ccs_dump_i(target_mid, ccs, NULL);
             }
         }
         else {
             fprintf(stderr, "  [CCTB] %p\n", (void *)cc_tbl);
-            rb_id_table_foreach(cc_tbl, vm_ccs_dump_i, (void *)target_mid);
+            rb_managed_id_table_foreach(cc_tbl, vm_ccs_dump_i, (void *)target_mid);
         }
     }
 }
@@ -87,18 +280,18 @@ vm_mtbl_dump(VALUE klass, ID target_mid)
         else {
             fprintf(stderr, "    MTBL: NULL\n");
         }
-        if (RCLASS_CALLABLE_M_TBL(klass)) {
+        if (RCLASS_WRITABLE_CALLABLE_M_TBL(klass)) {
             if (target_mid != 0) {
-                if (rb_id_table_lookup(RCLASS_CALLABLE_M_TBL(klass), target_mid, &me)) {
+                if (rb_id_table_lookup(RCLASS_WRITABLE_CALLABLE_M_TBL(klass), target_mid, &me)) {
                     rp_m("  [CM**] ", me);
                 }
             }
             else {
                 fprintf(stderr, "  ## RCLASS_CALLABLE_M_TBL\n");
-                rb_id_table_foreach(RCLASS_CALLABLE_M_TBL(klass), vm_cme_dump_i, NULL);
+                rb_id_table_foreach(RCLASS_WRITABLE_CALLABLE_M_TBL(klass), vm_cme_dump_i, NULL);
             }
         }
-        if (RCLASS_CC_TBL(klass)) {
+        if (RCLASS_WRITABLE_CC_TBL(klass)) {
             vm_ccs_dump(klass, target_mid);
         }
         klass = RCLASS_SUPER(klass);
@@ -122,17 +315,15 @@ vm_cme_invalidate(rb_callable_method_entry_t *cme)
     RB_DEBUG_COUNTER_INC(cc_cme_invalidate);
 
     rb_yjit_cme_invalidate(cme);
+    rb_zjit_cme_invalidate(cme);
 }
 
 static int
-rb_clear_constant_cache_for_id_i(st_data_t ic, st_data_t idx, st_data_t arg)
+rb_clear_constant_cache_for_id_i(st_data_t ic, st_data_t arg)
 {
     ((IC) ic)->entry = NULL;
     return ST_CONTINUE;
 }
-
-// Here for backward compat.
-void rb_clear_constant_cache(void) {}
 
 void
 rb_clear_constant_cache_for_id(ID id)
@@ -140,13 +331,14 @@ rb_clear_constant_cache_for_id(ID id)
     VALUE lookup_result;
     rb_vm_t *vm = GET_VM();
 
-    if (rb_id_table_lookup(vm->constant_cache, id, &lookup_result)) {
-        st_table *ics = (st_table *)lookup_result;
-        st_foreach(ics, rb_clear_constant_cache_for_id_i, (st_data_t) NULL);
+    if (rb_id_table_lookup(&vm->constant_cache, id, &lookup_result)) {
+        set_table *ics = (set_table *)lookup_result;
+        set_table_foreach(ics, rb_clear_constant_cache_for_id_i, (st_data_t) NULL);
         ruby_vm_constant_cache_invalidations += ics->num_entries;
     }
 
     rb_yjit_constant_state_changed(id);
+    rb_zjit_constant_state_changed(id);
 }
 
 static void
@@ -155,8 +347,8 @@ invalidate_negative_cache(ID mid)
     VALUE cme;
     rb_vm_t *vm = GET_VM();
 
-    if (rb_id_table_lookup(vm->negative_cme_table, mid, &cme)) {
-        rb_id_table_delete(vm->negative_cme_table, mid);
+    if (rb_id_table_lookup(&vm->negative_cme_table, mid, &cme)) {
+        rb_id_table_delete(&vm->negative_cme_table, mid);
         vm_cme_invalidate((rb_callable_method_entry_t *)cme);
         RB_DEBUG_COUNTER_INC(cc_invalidate_negative);
     }
@@ -166,6 +358,101 @@ const rb_method_entry_t * rb_method_entry_clone(const rb_method_entry_t *src_me)
 static const rb_callable_method_entry_t *complemented_callable_method_entry(VALUE klass, ID id);
 static const rb_callable_method_entry_t *lookup_overloaded_cme(const rb_callable_method_entry_t *cme);
 
+static void
+invalidate_method_cache_in_cc_table(VALUE tbl, ID mid)
+{
+    VALUE ccs_data;
+    if (tbl && rb_managed_id_table_lookup(tbl, mid, &ccs_data)) {
+        struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_data;
+        rb_yjit_cme_invalidate((rb_callable_method_entry_t *)ccs->cme);
+        rb_zjit_cme_invalidate((rb_callable_method_entry_t *)ccs->cme);
+        if (NIL_P(ccs->cme->owner)) invalidate_negative_cache(mid);
+        rb_vm_ccs_invalidate_and_free(ccs);
+        rb_managed_id_table_delete(tbl, mid);
+        RB_DEBUG_COUNTER_INC(cc_invalidate_leaf_ccs);
+    }
+}
+
+static void
+invalidate_callable_method_entry_in_callable_m_table(struct rb_id_table *tbl, ID mid)
+{
+    VALUE cme;
+    if (tbl && rb_id_table_lookup(tbl, mid, &cme)) {
+        rb_yjit_cme_invalidate((rb_callable_method_entry_t *)cme);
+        rb_zjit_cme_invalidate((rb_callable_method_entry_t *)cme);
+        rb_id_table_delete(tbl, mid);
+        RB_DEBUG_COUNTER_INC(cc_invalidate_leaf_callable);
+    }
+}
+
+struct invalidate_callable_method_entry_foreach_arg {
+    VALUE klass;
+    ID mid;
+    const rb_method_entry_t *cme;
+    const rb_method_entry_t *newer;
+};
+
+static void
+invalidate_callable_method_entry_in_every_m_table_i(rb_classext_t *ext, bool is_prime, VALUE box_value, void *data)
+{
+    st_data_t me;
+    struct invalidate_callable_method_entry_foreach_arg *arg = (struct invalidate_callable_method_entry_foreach_arg *)data;
+    struct rb_id_table *tbl = RCLASSEXT_M_TBL(ext);
+
+    if (rb_id_table_lookup(tbl, arg->mid, &me) && arg->cme == (const rb_method_entry_t *)me) {
+        rb_method_table_insert(arg->klass, tbl, arg->mid, arg->newer);
+    }
+}
+
+struct collect_per_box_origins_arg {
+    VALUE owner;
+    VALUE klass_housing_cme;
+    VALUE origins; // Array of origins
+};
+
+static void
+collect_per_box_origins_i(rb_classext_t *ext, bool is_prime, VALUE box_value, void *data)
+{
+    struct collect_per_box_origins_arg *arg = (struct collect_per_box_origins_arg *)data;
+    VALUE origin = RCLASSEXT_ORIGIN(ext);
+
+    if (origin == arg->owner || origin == arg->klass_housing_cme) {
+        return;
+    }
+    long len = RARRAY_LEN(arg->origins);
+    for (long i = 0; i < len; i++) {
+        if (RARRAY_AREF(arg->origins, i) == origin) {
+            return;
+        }
+    }
+    rb_ary_push(arg->origins, origin);
+}
+
+static void
+invalidate_callable_method_entry_in_every_m_table(VALUE klass, ID mid, const rb_callable_method_entry_t *cme)
+{
+    // The argument cme must be invalidated later in the caller side
+    const rb_method_entry_t *newer = rb_method_entry_clone((const rb_method_entry_t *)cme);
+    struct invalidate_callable_method_entry_foreach_arg arg = {
+        .klass = klass,
+        .mid = mid,
+        .cme = (const rb_method_entry_t *) cme,
+        .newer = newer,
+    };
+    rb_class_classext_foreach(klass, invalidate_callable_method_entry_in_every_m_table_i, (void *)&arg);
+}
+
+static void
+invalidate_complemented_method_entry_in_callable_m_table(struct rb_id_table *tbl, ID mid)
+{
+    VALUE cme;
+    if (tbl && rb_id_table_lookup(tbl, mid, &cme)) {
+        rb_yjit_cme_invalidate((rb_callable_method_entry_t *)cme);
+        rb_zjit_cme_invalidate((rb_callable_method_entry_t *)cme);
+        rb_id_table_delete(tbl, mid);
+        RB_DEBUG_COUNTER_INC(cc_invalidate_tree_callable);
+    }
+}
 
 static void
 clear_method_cache_by_id_in_class(VALUE klass, ID mid)
@@ -173,97 +460,120 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
     VM_ASSERT_TYPE2(klass, T_CLASS, T_ICLASS);
     if (rb_objspace_garbage_object_p(klass)) return;
 
-    RB_VM_LOCK_ENTER();
-    if (LIKELY(RCLASS_SUBCLASSES(klass) == NULL)) {
-        // no subclasses
-        // check only current class
+    RB_VM_LOCKING() {
+        rb_vm_barrier();
 
-        struct rb_id_table *cc_tbl = RCLASS_CC_TBL(klass);
-        VALUE ccs_data;
+        if (LIKELY(!RCLASS_SUBCLASSES(klass)) &&
+            !FL_TEST_RAW(klass, RCLASS_HAS_SUBCLASSES) &&
+            // Non-refinement ICLASSes (from module inclusion) previously had
+            // subclasses reparented onto them, so they need the tree path for
+            // broader cme-based invalidation even though they now have no subclasses.
+            !(RB_TYPE_P(klass, T_ICLASS) && NIL_P(RCLASS_REFINED_CLASS(klass)))) {
+            // no subclasses
+            // check only current class
 
-        // invalidate CCs
-        if (cc_tbl && rb_id_table_lookup(cc_tbl, mid, &ccs_data)) {
-            struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_data;
-            rb_yjit_cme_invalidate((rb_callable_method_entry_t *)ccs->cme);
-            if (NIL_P(ccs->cme->owner)) invalidate_negative_cache(mid);
-            rb_vm_ccs_free(ccs);
-            rb_id_table_delete(cc_tbl, mid);
-            RB_DEBUG_COUNTER_INC(cc_invalidate_leaf_ccs);
-        }
-
-        // remove from callable_m_tbl, if exists
-        struct rb_id_table *cm_tbl;
-        if ((cm_tbl = RCLASS_CALLABLE_M_TBL(klass)) != NULL) {
-            VALUE cme;
-            if (rb_yjit_enabled_p && rb_id_table_lookup(cm_tbl, mid, &cme)) {
-                rb_yjit_cme_invalidate((rb_callable_method_entry_t *)cme);
-            }
-            rb_id_table_delete(cm_tbl, mid);
-            RB_DEBUG_COUNTER_INC(cc_invalidate_leaf_callable);
-        }
-        RB_DEBUG_COUNTER_INC(cc_invalidate_leaf);
-    }
-    else {
-        const rb_callable_method_entry_t *cme = complemented_callable_method_entry(klass, mid);
-
-        if (cme) {
-            // invalidate cme if found to invalidate the inline method cache.
-            if (METHOD_ENTRY_CACHED(cme)) {
-                if (METHOD_ENTRY_COMPLEMENTED(cme)) {
-                    // do nothing
-                }
-                else {
-                    // invalidate cc by invalidating cc->cme
-                    VALUE owner = cme->owner;
-                    VM_ASSERT_TYPE(owner, T_CLASS);
-                    VALUE klass_housing_cme;
-                    if (cme->def->type == VM_METHOD_TYPE_REFINED && !cme->def->body.refined.orig_me) {
-                        klass_housing_cme = owner;
-                    }
-                    else {
-                        klass_housing_cme = RCLASS_ORIGIN(owner);
-                    }
-                    // replace the cme that will be invalid
-                    VM_ASSERT(lookup_method_table(klass_housing_cme, mid) == (const rb_method_entry_t *)cme);
-                    const rb_method_entry_t *new_cme = rb_method_entry_clone((const rb_method_entry_t *)cme);
-                    rb_method_table_insert(klass_housing_cme, RCLASS_M_TBL(klass_housing_cme), mid, new_cme);
-                }
-
-                vm_cme_invalidate((rb_callable_method_entry_t *)cme);
-                RB_DEBUG_COUNTER_INC(cc_invalidate_tree_cme);
-
-                // In case of refinement ME, also invalidate the wrapped ME that
-                // could be cached at some callsite and is unreachable from any
-                // RCLASS_CC_TBL.
-                if (cme->def->type == VM_METHOD_TYPE_REFINED && cme->def->body.refined.orig_me) {
-                    vm_cme_invalidate((rb_callable_method_entry_t *)cme->def->body.refined.orig_me);
-                }
-
-                if (cme->def->iseq_overload) {
-                    rb_callable_method_entry_t *monly_cme = (rb_callable_method_entry_t *)lookup_overloaded_cme(cme);
-                    if (monly_cme) {
-                        vm_cme_invalidate(monly_cme);
-                    }
-                }
+            // invalidate CCs
+            VALUE cc_tbl = RCLASS_WRITABLE_CC_TBL(klass);
+            invalidate_method_cache_in_cc_table(cc_tbl, mid);
+            if (RCLASS_CC_TBL_NOT_PRIME_P(klass, cc_tbl)) {
+                invalidate_method_cache_in_cc_table(RCLASS_PRIME_CC_TBL(klass), mid);
             }
 
-            // invalidate complement tbl
-            if (METHOD_ENTRY_COMPLEMENTED(cme)) {
-                VALUE defined_class = cme->defined_class;
-                struct rb_id_table *cm_tbl = RCLASS_CALLABLE_M_TBL(defined_class);
-                VM_ASSERT(cm_tbl != NULL);
-                int r = rb_id_table_delete(cm_tbl, mid);
-                VM_ASSERT(r == TRUE); (void)r;
-                RB_DEBUG_COUNTER_INC(cc_invalidate_tree_callable);
+            // remove from callable_m_tbl, if exists
+            struct rb_id_table *cm_tbl = RCLASS_WRITABLE_CALLABLE_M_TBL(klass);
+            invalidate_callable_method_entry_in_callable_m_table(cm_tbl, mid);
+            if (RCLASS_CALLABLE_M_TBL_NOT_PRIME_P(klass, cm_tbl)) {
+                invalidate_callable_method_entry_in_callable_m_table(RCLASS_PRIME_CALLABLE_M_TBL(klass), mid);
             }
 
-            RB_DEBUG_COUNTER_INC(cc_invalidate_tree);
+            RB_DEBUG_COUNTER_INC(cc_invalidate_leaf);
         }
         else {
-            invalidate_negative_cache(mid);
+            const rb_callable_method_entry_t *cme = complemented_callable_method_entry(klass, mid);
+
+            if (cme) {
+                // invalidate cme if found to invalidate the inline method cache.
+                if (METHOD_ENTRY_CACHED(cme)) {
+                    if (METHOD_ENTRY_COMPLEMENTED(cme)) {
+                        // do nothing
+                    }
+                    else {
+                        // invalidate cc by invalidating cc->cme
+                        VALUE owner = cme->owner;
+                        VM_ASSERT_TYPE(owner, T_CLASS);
+                        VALUE klass_housing_cme;
+                        if (cme->def->type == VM_METHOD_TYPE_REFINED && !cme->def->body.refined.orig_me) {
+                            klass_housing_cme = owner;
+                        }
+                        else {
+                            klass_housing_cme = RCLASS_ORIGIN(owner);
+                        }
+
+                        // replace the cme that will be invalid in the all classexts
+                        invalidate_callable_method_entry_in_every_m_table(klass_housing_cme, mid, cme);
+                        // owner may be a boxable class with per-box classext copies of its m_tbl
+                        // (klass_housing_cme may be a non-boxable origin ICLASS that doesn't cover them)
+                        if (klass_housing_cme != owner) {
+                            invalidate_callable_method_entry_in_every_m_table(owner, mid, cme);
+                        }
+                        // Also update per-box origin ICLASSes. When ensure_origin is called in
+                        // one box's context, it creates a per-box origin ICLASS whose m_tbl is
+                        // a copy of owner's m_tbl at that time. The current execution box may
+                        // not see these origins via RCLASS_ORIGIN(owner), so we find them by
+                        // iterating all of owner's classexts and checking their origin_ fields.
+                        {
+                            VALUE origins = rb_ary_hidden_new(1);
+                            struct collect_per_box_origins_arg origins_arg = {
+                                .owner = owner,
+                                .klass_housing_cme = klass_housing_cme,
+                                .origins = origins,
+                            };
+                            rb_class_classext_foreach(owner, collect_per_box_origins_i, &origins_arg);
+                            for (long i = 0; i < RARRAY_LEN(origins); i++) {
+                                invalidate_callable_method_entry_in_every_m_table(RARRAY_AREF(origins, i), mid, cme);
+                            }
+                            RB_GC_GUARD(origins);
+                        }
+                    }
+
+                    vm_cme_invalidate((rb_callable_method_entry_t *)cme);
+                    RB_DEBUG_COUNTER_INC(cc_invalidate_tree_cme);
+
+                    // In case of refinement ME, also invalidate the wrapped ME that
+                    // could be cached at some callsite and is unreachable from any
+                    // RCLASS_WRITABLE_CC_TBL.
+                    if (cme->def->type == VM_METHOD_TYPE_REFINED && cme->def->body.refined.orig_me) {
+                        vm_cme_invalidate((rb_callable_method_entry_t *)cme->def->body.refined.orig_me);
+                    }
+
+                    if (cme->def->iseq_overload) {
+                        rb_callable_method_entry_t *monly_cme = (rb_callable_method_entry_t *)lookup_overloaded_cme(cme);
+                        if (monly_cme) {
+                            vm_cme_invalidate(monly_cme);
+                        }
+                    }
+                }
+
+                // invalidate complement tbl
+                if (METHOD_ENTRY_COMPLEMENTED(cme)) {
+                    VALUE defined_class = cme->defined_class;
+                    struct rb_id_table *cm_tbl = RCLASS_WRITABLE_CALLABLE_M_TBL(defined_class);
+                    invalidate_complemented_method_entry_in_callable_m_table(cm_tbl, mid);
+                    if (RCLASS_CALLABLE_M_TBL_NOT_PRIME_P(defined_class, cm_tbl)) {
+                        struct rb_id_table *prime_cm_table = RCLASS_PRIME_CALLABLE_M_TBL(defined_class);
+                        invalidate_complemented_method_entry_in_callable_m_table(prime_cm_table, mid);
+                    }
+                }
+
+                RB_DEBUG_COUNTER_INC(cc_invalidate_tree);
+            }
+            else {
+                invalidate_negative_cache(mid);
+            }
         }
+
+        rb_gccct_clear_table();
     }
-    RB_VM_LOCK_LEAVE();
 }
 
 static void
@@ -302,28 +612,31 @@ rb_clear_method_cache(VALUE klass_or_module, ID mid)
     }
 }
 
-static int
-invalidate_all_refinement_cc(void *vstart, void *vend, size_t stride, void *data)
+static enum rb_id_table_iterator_result
+invalidate_method_entry_in_iclass_callable_m_tbl(VALUE cme, void *data)
 {
-    VALUE v = (VALUE)vstart;
-    for (; v != (VALUE)vend; v += stride) {
-        void *ptr = rb_asan_poisoned_object_p(v);
-        rb_asan_unpoison_object(v, false);
+    vm_cme_invalidate((rb_callable_method_entry_t *)cme);
+    return ID_TABLE_DELETE;
+}
 
-        if (RBASIC(v)->flags) { // liveness check
-            if (imemo_type_p(v, imemo_callcache)) {
-                const struct rb_callcache *cc = (const struct rb_callcache *)v;
-                if (vm_cc_refinement_p(cc) && cc->klass) {
-                    vm_cc_invalidate(cc);
-                }
-            }
-        }
+static enum rb_id_table_iterator_result
+invalidate_ccs_in_iclass_cc_tbl(VALUE value, void *data)
+{
+    struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)value;
+    vm_cme_invalidate((rb_callable_method_entry_t *)ccs->cme);
+    ruby_xfree_sized(ccs, vm_ccs_alloc_size(ccs->capa));
+    return ID_TABLE_DELETE;
+}
 
-        if (ptr) {
-            rb_asan_poison_object(v);
-        }
+void
+rb_invalidate_method_caches(struct rb_id_table *cm_tbl, VALUE cc_tbl)
+{
+    if (cm_tbl) {
+        rb_id_table_foreach_values(cm_tbl, invalidate_method_entry_in_iclass_callable_m_tbl, NULL);
     }
-    return 0; // continue to iteration
+    if (cc_tbl) {
+        rb_managed_id_table_foreach_values(cc_tbl, invalidate_ccs_in_iclass_cc_tbl, NULL);
+    }
 }
 
 static st_index_t
@@ -361,7 +674,8 @@ vm_ci_hash_cmp(VALUE v1, VALUE v2)
                 return 1;
             }
         }
-    } else {
+    }
+    else {
         VM_ASSERT(ci2->kwarg == NULL); // implied by matching flags
     }
     return 0;
@@ -382,7 +696,8 @@ ci_lookup_i(st_data_t *key, st_data_t *value, st_data_t data, int existing)
         if (rb_objspace_garbage_object_p((VALUE)ci)) {
             *ret = (st_data_t)NULL;
             return ST_DELETE;
-        } else {
+        }
+        else {
             *ret = *key;
             return ST_STOP;
         }
@@ -400,24 +715,21 @@ rb_vm_ci_lookup(ID mid, unsigned int flag, unsigned int argc, const struct rb_ca
     const struct rb_callinfo *ci = NULL;
 
     if (kwarg) {
-        ((struct rb_callinfo_kwarg *)kwarg)->references++;
+        RUBY_ATOMIC_FETCH_ADD(((struct rb_callinfo_kwarg *)kwarg)->references, 1);
     }
 
-    struct rb_callinfo *new_ci = IMEMO_NEW(struct rb_callinfo, imemo_callinfo, (VALUE)kwarg);
+    struct rb_callinfo *new_ci = SHAREABLE_IMEMO_NEW(struct rb_callinfo, imemo_callinfo, (VALUE)kwarg);
     new_ci->mid = mid;
     new_ci->flag = flag;
     new_ci->argc = argc;
 
-    RB_VM_LOCK_ENTER();
-    {
-        st_table *ci_table = vm->ci_table;
-        VM_ASSERT(ci_table);
+    RB_VM_LOCKING() {
+        st_table *ci_table = &vm->ci_table;
 
         do {
             st_update(ci_table, (st_data_t)new_ci, ci_lookup_i, (st_data_t)&ci);
         } while (ci == NULL);
     }
-    RB_VM_LOCK_LEAVE();
 
     VM_ASSERT(ci);
 
@@ -432,25 +744,144 @@ rb_vm_ci_free(const struct rb_callinfo *ci)
     rb_vm_t *vm = GET_VM();
 
     st_data_t key = (st_data_t)ci;
-    st_delete(vm->ci_table, &key, NULL);
+    st_delete(&vm->ci_table, &key, NULL);
+}
+
+struct cc_refinement_entries {
+    VALUE *entries;
+    size_t len;
+    size_t capa;
+};
+
+static void
+cc_refinement_set_free(void *ptr)
+{
+    struct cc_refinement_entries *e = ptr;
+    xfree(e->entries);
+}
+
+static size_t
+cc_refinement_set_memsize(const void *ptr)
+{
+    const struct cc_refinement_entries *e = ptr;
+    return e->capa * sizeof(VALUE);
+}
+
+static void
+cc_refinement_set_compact(void *ptr)
+{
+    struct cc_refinement_entries *e = ptr;
+    for (size_t i = 0; i < e->len; i++) {
+        e->entries[i] = rb_gc_location(e->entries[i]);
+    }
+}
+
+static void
+cc_refinement_set_handle_weak_references(void *ptr)
+{
+    struct cc_refinement_entries *e = ptr;
+    size_t write = 0;
+    for (size_t read = 0; read < e->len; read++) {
+        if (rb_gc_handle_weak_references_alive_p(e->entries[read])) {
+            e->entries[write++] = e->entries[read];
+        }
+    }
+    e->len = write;
+}
+
+static const rb_data_type_t cc_refinement_set_type = {
+    "VM/cc_refinement_set",
+    {
+        NULL,
+        cc_refinement_set_free,
+        cc_refinement_set_memsize,
+        cc_refinement_set_compact,
+        cc_refinement_set_handle_weak_references,
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+};
+
+VALUE
+rb_cc_refinement_set_create(void)
+{
+    struct cc_refinement_entries *e;
+    VALUE obj = TypedData_Make_Struct(0, struct cc_refinement_entries, &cc_refinement_set_type, e);
+
+    e->entries = NULL;
+    e->len = 0;
+    e->capa = 0;
+
+    rb_gc_declare_weak_references(obj);
+
+    return obj;
+}
+
+void
+rb_vm_insert_cc_refinement(const struct rb_callcache *cc)
+{
+    rb_vm_t *vm = GET_VM();
+    RB_VM_LOCK_ENTER();
+    {
+        struct cc_refinement_entries *e = RTYPEDDATA_GET_DATA(vm->cc_refinement_set);
+        if (e->len == e->capa) {
+            size_t new_capa = e->capa == 0 ? 16 : e->capa * 2;
+            SIZED_REALLOC_N(e->entries, VALUE, new_capa, e->capa);
+            e->capa = new_capa;
+        }
+        e->entries[e->len++] = (VALUE)cc;
+
+        // We never mark the cc, but we need to issue a writebarrier so that
+        // the refinement set can be added to the remembered set
+        RB_OBJ_WRITTEN(vm->cc_refinement_set, Qundef, (VALUE)cc);
+    }
+    RB_VM_LOCK_LEAVE();
 }
 
 void
 rb_clear_all_refinement_method_cache(void)
 {
-    rb_objspace_each_objects(invalidate_all_refinement_cc, NULL);
+    rb_vm_t *vm = GET_VM();
+
+    RB_VM_LOCK_ENTER();
+    {
+        struct cc_refinement_entries *e = RTYPEDDATA_GET_DATA(vm->cc_refinement_set);
+        for (size_t i = 0; i < e->len; i++) {
+            VALUE v = e->entries[i];
+
+            // All objects should be live as weak references are pruned in
+            // cc_refinement_set_handle_weak_references
+            VM_ASSERT(!rb_objspace_garbage_object_p(v));
+
+            const struct rb_callcache *cc = (const struct rb_callcache *)v;
+            VM_ASSERT(vm_cc_refinement_p(cc));
+
+            if (vm_cc_valid(cc)) {
+                vm_cc_invalidate(cc);
+            }
+        }
+        e->len = 0;
+    }
+    RB_VM_LOCK_LEAVE();
+
     rb_yjit_invalidate_all_method_lookup_assumptions();
 }
 
 void
 rb_method_table_insert(VALUE klass, struct rb_id_table *table, ID method_id, const rb_method_entry_t *me)
 {
+    RB_VM_LOCKING() {
+        rb_method_table_insert0(klass, table, method_id, me, RB_TYPE_P(klass, T_ICLASS) && !RICLASS_OWNS_M_TBL_P(klass));
+    }
+}
+
+void
+rb_method_table_insert0(VALUE klass, struct rb_id_table *table, ID method_id, const rb_method_entry_t *me, bool iclass_shared_mtbl)
+{
     VALUE table_owner = klass;
-    if (RB_TYPE_P(klass, T_ICLASS) && !RICLASS_OWNS_M_TBL_P(klass)) {
+    if (iclass_shared_mtbl) {
         table_owner = RBASIC(table_owner)->klass;
     }
     VM_ASSERT_TYPE3(table_owner, T_CLASS, T_ICLASS, T_MODULE);
-    VM_ASSERT(table == RCLASS_M_TBL(table_owner));
     rb_id_table_insert(table, method_id, (VALUE)me);
     RB_OBJ_WRITTEN(table_owner, Qundef, (VALUE)me);
 }
@@ -508,7 +939,7 @@ rb_add_method_optimized(VALUE klass, ID mid, enum method_optimized_type opt_type
 }
 
 static void
-rb_method_definition_release(rb_method_definition_t *def)
+method_definition_release(rb_method_definition_t *def)
 {
     if (def != NULL) {
         const unsigned int reference_count_was = RUBY_ATOMIC_FETCH_SUB(def->reference_count, 1);
@@ -518,16 +949,19 @@ rb_method_definition_release(rb_method_definition_t *def)
         if (reference_count_was == 1) {
             if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:1->0 (remove)\n", (void *)def,
                                       rb_id2name(def->original_id));
-            if (def->type == VM_METHOD_TYPE_BMETHOD && def->body.bmethod.hooks) {
-                xfree(def->body.bmethod.hooks);
-            }
-            xfree(def);
+            SIZED_FREE(def);
         }
         else {
             if (METHOD_DEBUG) fprintf(stderr, "-%p-%s:%d->%d (dec)\n", (void *)def, rb_id2name(def->original_id),
                                       reference_count_was, reference_count_was - 1);
         }
     }
+}
+
+void
+rb_method_definition_release(rb_method_definition_t *def)
+{
+    method_definition_release(def);
 }
 
 static void delete_overloaded_cme(const rb_callable_method_entry_t *cme);
@@ -543,7 +977,18 @@ rb_free_method_entry_vm_weak_references(const rb_method_entry_t *me)
 void
 rb_free_method_entry(const rb_method_entry_t *me)
 {
-    rb_method_definition_release(me->def);
+#if USE_ZJIT
+    if (METHOD_ENTRY_CACHED(me)) {
+        rb_zjit_cme_free((const rb_callable_method_entry_t *)me);
+    }
+#endif
+
+#if USE_YJIT
+    // YJIT rb_yjit_root_mark() roots CMEs in `Invariants`,
+    // to remove from `Invariants` here.
+#endif
+
+    method_definition_release(me->def);
 }
 
 static inline rb_method_entry_t *search_method(VALUE klass, ID id, VALUE *defined_class_ptr);
@@ -610,6 +1055,7 @@ setup_method_cfunc_struct(rb_method_cfunc_t *cfunc, VALUE (*func)(ANYARGS), int 
     cfunc->invoker = call_cfunc_invoker_func(argc);
 }
 
+
 static rb_method_definition_t *
 method_definition_addref(rb_method_definition_t *def, bool complemented)
 {
@@ -624,9 +1070,15 @@ method_definition_addref(rb_method_definition_t *def, bool complemented)
 }
 
 void
+rb_method_definition_addref(rb_method_definition_t *def)
+{
+    method_definition_addref(def, false);
+}
+
+void
 rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *def, void *opts)
 {
-    rb_method_definition_release(me->def);
+    method_definition_release(me->def);
     *(rb_method_definition_t **)&me->def = method_definition_addref(def, METHOD_ENTRY_COMPLEMENTED(me));
 
     if (!ruby_running) add_opt_method_entry(me);
@@ -642,7 +1094,7 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
                 /* setup iseq first (before invoking GC) */
                 RB_OBJ_WRITE(me, &def->body.iseq.iseqptr, iseq);
 
-                // Methods defined in `with_yjit` should be considered METHOD_ENTRY_BASIC
+                // Methods defined in `with_jit` should be considered METHOD_ENTRY_BASIC
                 if (rb_iseq_attr_p(iseq, BUILTIN_ATTR_C_TRACE)) {
                     METHOD_ENTRY_BASIC_SET((rb_method_entry_t *)me, TRUE);
                 }
@@ -679,8 +1131,10 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
                 cfp = rb_vm_get_ruby_level_next_cfp(ec, ec->cfp);
 
                 if (cfp && (line = rb_vm_get_sourceline(cfp))) {
-                    VALUE location = rb_ary_new3(2, rb_iseq_path(cfp->iseq), INT2FIX(line));
-                    RB_OBJ_WRITE(me, &def->body.attr.location, rb_ary_freeze(location));
+                    VALUE location = rb_ary_new3(2, rb_iseq_path(CFP_ISEQ(cfp)), INT2FIX(line));
+                    rb_ary_freeze(location);
+                    RB_OBJ_SET_SHAREABLE(location);
+                    RB_OBJ_WRITE(me, &def->body.attr.location, location);
                 }
                 else {
                     VM_ASSERT(def->body.attr.location == 0);
@@ -689,7 +1143,7 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
             }
           case VM_METHOD_TYPE_BMETHOD:
             RB_OBJ_WRITE(me, &def->body.bmethod.proc, (VALUE)opts);
-            RB_OBJ_WRITE(me, &def->body.bmethod.defined_ractor, rb_ractor_self(GET_RACTOR()));
+            def->body.bmethod.defined_ractor_id = rb_ec_ractor_id(GET_EC());
             return;
           case VM_METHOD_TYPE_NOTIMPLEMENTED:
             setup_method_cfunc_struct(UNALIGNED_MEMBER_PTR(def, body.cfunc), (VALUE(*)(ANYARGS))rb_f_notimplement_internal, -1);
@@ -729,9 +1183,6 @@ method_definition_reset(const rb_method_entry_t *me)
         break;
       case VM_METHOD_TYPE_BMETHOD:
         RB_OBJ_WRITTEN(me, Qundef, def->body.bmethod.proc);
-        RB_OBJ_WRITTEN(me, Qundef, def->body.bmethod.defined_ractor);
-        /* give up to check all in a list */
-        if (def->body.bmethod.hooks) rb_gc_writebarrier_remember((VALUE)me);
         break;
       case VM_METHOD_TYPE_REFINED:
         RB_OBJ_WRITTEN(me, Qundef, def->body.refined.orig_me);
@@ -749,6 +1200,8 @@ method_definition_reset(const rb_method_entry_t *me)
     }
 }
 
+static rb_atomic_t method_serial = 1;
+
 rb_method_definition_t *
 rb_method_definition_create(rb_method_type_t type, ID mid)
 {
@@ -756,8 +1209,8 @@ rb_method_definition_create(rb_method_type_t type, ID mid)
     def = ZALLOC(rb_method_definition_t);
     def->type = type;
     def->original_id = mid;
-    static uintptr_t method_serial = 1;
-    def->method_serial = method_serial++;
+    def->method_serial = (uintptr_t)RUBY_ATOMIC_FETCH_ADD(method_serial, 1);
+    def->box = rb_current_box();
     return def;
 }
 
@@ -769,7 +1222,11 @@ rb_method_entry_alloc(ID called_id, VALUE owner, VALUE defined_class, rb_method_
         // not negative cache
         VM_ASSERT_TYPE2(defined_class, T_CLASS, T_ICLASS);
     }
-    rb_method_entry_t *me = IMEMO_NEW(rb_method_entry_t, imemo_ment, defined_class);
+    rb_method_entry_t *me = SHAREABLE_IMEMO_NEW(rb_method_entry_t, imemo_ment, defined_class);
+
+    // mark_and_move_method_entry pins itself when it is in the overloaded_cme table
+    rb_gc_register_pinning_obj((VALUE)me);
+
     *((rb_method_definition_t **)&me->def) = def;
     me->called_id = called_id;
     me->owner = owner;
@@ -863,7 +1320,7 @@ rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, ID cal
 void
 rb_method_entry_copy(rb_method_entry_t *dst, const rb_method_entry_t *src)
 {
-    rb_method_definition_release(dst->def);
+    method_definition_release(dst->def);
     *(rb_method_definition_t **)&dst->def = method_definition_addref(src->def, METHOD_ENTRY_COMPLEMENTED(src));
     method_definition_reset(dst);
     dst->called_id = src->called_id;
@@ -928,6 +1385,16 @@ rb_add_refined_method_entry(VALUE refined_class, ID mid)
 static void
 check_override_opt_method_i(VALUE klass, VALUE arg)
 {
+    if (RB_TYPE_P(klass, T_ICLASS)) {
+        // ICLASS from a module's subclass list: check the includer and
+        // recurse into the includer's T_CLASS subclasses.
+        VALUE includer = RCLASS_INCLUDER(klass);
+        if (!UNDEF_P(includer) && includer) {
+            check_override_opt_method_i(includer, arg);
+        }
+        return;
+    }
+
     ID mid = (ID)arg;
     const rb_method_entry_t *me, *newme;
 
@@ -949,6 +1416,13 @@ check_override_opt_method(VALUE klass, VALUE mid)
     }
 }
 
+VALUE
+rb_zsuper_to_super(int argc, VALUE *argv, VALUE self)
+{
+    return rb_call_super_kw(argc, argv, RB_PASS_CALLED_KEYWORDS);
+}
+
+static inline rb_method_entry_t* search_method0(VALUE klass, ID id, VALUE *defined_class_ptr, bool skip_refined);
 /*
  * klass->method_table[mid] = method_entry(defined_class, visi, def)
  *
@@ -964,6 +1438,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     st_data_t data;
     int make_refined = 0;
     VALUE orig_klass;
+    bool turn_zsuper_to_super = false;
 
     if (NIL_P(klass)) {
         klass = rb_cObject;
@@ -989,6 +1464,9 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 
     if (RB_TYPE_P(klass, T_MODULE) && FL_TEST(klass, RMODULE_IS_REFINEMENT)) {
         VALUE refined_class = rb_refinement_module_get_refined_class(klass);
+        if (type == VM_METHOD_TYPE_ZSUPER) {
+            turn_zsuper_to_super = true;
+        }
         rb_add_refined_method_entry(refined_class, mid);
     }
     if (type == VM_METHOD_TYPE_REFINED) {
@@ -1001,7 +1479,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
             rb_clear_method_cache(orig_klass, mid);
         }
     }
-    mtbl = RCLASS_M_TBL(klass);
+    mtbl = RCLASS_WRITABLE_M_TBL(klass);
 
     /* check re-definition */
     if (rb_id_table_lookup(mtbl, mid, &data)) {
@@ -1052,6 +1530,12 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
     me = rb_method_entry_create(mid, defined_class, visi, NULL);
     if (def == NULL) {
         def = rb_method_definition_create(type, original_id);
+        if (turn_zsuper_to_super) {
+          def->type = VM_METHOD_TYPE_CFUNC;
+          def->body.cfunc.func = (rb_cfunc_t)rb_zsuper_to_super;
+          def->body.cfunc.invoker = ractor_safe_call_cfunc_m1;
+          def->body.cfunc.argc = -1;
+        }
     }
     rb_method_definition_set(me, def, opts);
 
@@ -1093,8 +1577,7 @@ rb_method_entry_make(VALUE klass, ID mid, VALUE defined_class, rb_method_visibil
 static st_table *
 overloaded_cme_table(void)
 {
-    VM_ASSERT(GET_VM()->overloaded_cme_table != NULL);
-    return GET_VM()->overloaded_cme_table;
+    return &GET_VM()->overloaded_cme_table;
 }
 
 #if VM_CHECK_MODE > 0
@@ -1229,7 +1712,9 @@ method_added(VALUE klass, ID mid)
 void
 rb_add_method(VALUE klass, ID mid, rb_method_type_t type, void *opts, rb_method_visibility_t visi)
 {
-    rb_method_entry_make(klass, mid, klass, visi, type, NULL, mid, opts);
+    RB_VM_LOCKING() {
+        rb_method_entry_make(klass, mid, klass, visi, type, NULL, mid, opts);
+    }
 
     if (type != VM_METHOD_TYPE_UNDEF && type != VM_METHOD_TYPE_REFINED) {
         method_added(klass, mid);
@@ -1254,11 +1739,14 @@ static rb_method_entry_t *
 method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me,
                  rb_method_visibility_t visi, VALUE defined_class)
 {
-    rb_method_entry_t *newme = rb_method_entry_make(klass, mid, defined_class, visi,
-                                                    me->def->type, me->def, 0, NULL);
-    if (newme == me) {
-        me->def->no_redef_warning = TRUE;
-        METHOD_ENTRY_FLAGS_SET(newme, visi, FALSE);
+    rb_method_entry_t *newme;
+    RB_VM_LOCKING() {
+        newme = rb_method_entry_make(klass, mid, defined_class, visi,
+                me->def->type, me->def, 0, NULL);
+        if (newme == me) {
+            me->def->no_redef_warning = TRUE;
+            METHOD_ENTRY_FLAGS_SET(newme, visi, FALSE);
+        }
     }
 
     method_added(klass, mid);
@@ -1273,6 +1761,17 @@ rb_method_entry_set(VALUE klass, ID mid, const rb_method_entry_t *me, rb_method_
 
 #define UNDEF_ALLOC_FUNC ((rb_alloc_func_t)-1)
 
+static void
+propagate_alloc_func(VALUE subclass, VALUE arg)
+{
+    if (RB_TYPE_P(subclass, T_CLASS) &&
+        !RCLASS_SINGLETON_P(subclass) &&
+        !FL_TEST_RAW(subclass, RCLASS_ALLOCATOR_DEFINED)) {
+        RCLASS_SET_ALLOCATOR(subclass, (rb_alloc_func_t)arg);
+        rb_class_foreach_subclass(subclass, propagate_alloc_func, arg);
+    }
+}
+
 void
 rb_define_alloc_func(VALUE klass, VALUE (*func)(VALUE))
 {
@@ -1281,25 +1780,28 @@ rb_define_alloc_func(VALUE klass, VALUE (*func)(VALUE))
         rb_raise(rb_eTypeError, "can't define an allocator for a singleton class");
     }
     RCLASS_SET_ALLOCATOR(klass, func);
+    FL_SET_RAW(klass, RCLASS_ALLOCATOR_DEFINED);
+    rb_class_foreach_subclass(klass, propagate_alloc_func, (VALUE)func);
 }
 
 void
 rb_undef_alloc_func(VALUE klass)
 {
-    rb_define_alloc_func(klass, UNDEF_ALLOC_FUNC);
+    Check_Type(klass, T_CLASS);
+    RCLASS_SET_ALLOCATOR(klass, UNDEF_ALLOC_FUNC);
+    FL_SET_RAW(klass, RCLASS_ALLOCATOR_DEFINED);
+    rb_class_foreach_subclass(klass, propagate_alloc_func, (VALUE)UNDEF_ALLOC_FUNC);
 }
 
 rb_alloc_func_t
 rb_get_alloc_func(VALUE klass)
 {
-    Check_Type(klass, T_CLASS);
+    RBIMPL_ASSERT_TYPE(klass, T_CLASS);
 
-    for (; klass; klass = RCLASS_SUPER(klass)) {
-        rb_alloc_func_t allocator = RCLASS_ALLOCATOR(klass);
-        if (allocator == UNDEF_ALLOC_FUNC) break;
-        if (allocator) return allocator;
-    }
-    return 0;
+    rb_alloc_func_t allocator = RCLASS_ALLOCATOR(klass);
+    if (allocator == UNDEF_ALLOC_FUNC) return 0;
+    RUBY_ASSERT(allocator);
+    return allocator;
 }
 
 const rb_method_entry_t *
@@ -1329,7 +1831,11 @@ search_method0(VALUE klass, ID id, VALUE *defined_class_ptr, bool skip_refined)
 
     if (me == NULL) RB_DEBUG_COUNTER_INC(mc_search_notfound);
 
-    VM_ASSERT(me == NULL || !METHOD_ENTRY_INVALIDATED(me));
+    VM_ASSERT(me == NULL || !METHOD_ENTRY_INVALIDATED(me),
+              "invalid me, mid:%s, klass:%s(%s)",
+              rb_id2name(id),
+              RTEST(rb_mod_name(klass)) ? RSTRING_PTR(rb_mod_name(klass)) : "anonymous",
+              rb_obj_info(klass));
     return me;
 }
 
@@ -1364,24 +1870,27 @@ prepare_callable_method_entry(VALUE defined_class, ID id, const rb_method_entry_
     struct rb_id_table *mtbl;
     const rb_callable_method_entry_t *cme;
     VALUE cme_data;
+    int cme_found = 0;
 
     if (me) {
         if (me->defined_class == 0) {
             RB_DEBUG_COUNTER_INC(mc_cme_complement);
             VM_ASSERT_TYPE2(defined_class, T_ICLASS, T_MODULE);
-            VM_ASSERT(me->defined_class == 0, "me->defined_class: %s", rb_obj_info(me->defined_class));
 
-            mtbl = RCLASS_CALLABLE_M_TBL(defined_class);
-
+            mtbl = RCLASS_WRITABLE_CALLABLE_M_TBL(defined_class);
             if (mtbl && rb_id_table_lookup(mtbl, id, &cme_data)) {
                 cme = (rb_callable_method_entry_t *)cme_data;
+                cme_found = 1;
+            }
+            if (cme_found) {
                 RB_DEBUG_COUNTER_INC(mc_cme_complement_hit);
                 VM_ASSERT(callable_method_entry_p(cme));
                 VM_ASSERT(!METHOD_ENTRY_INVALIDATED(cme));
             }
             else if (create) {
                 if (!mtbl) {
-                    mtbl = RCLASS_EXT(defined_class)->callable_m_tbl = rb_id_table_create(0);
+                    mtbl = rb_id_table_create(0);
+                    RCLASS_WRITE_CALLABLE_M_TBL(defined_class, mtbl);
                 }
                 cme = rb_method_entry_complement_defined_class(me, me->called_id, defined_class);
                 rb_id_table_insert(mtbl, id, (VALUE)cme);
@@ -1417,10 +1926,10 @@ cached_callable_method_entry(VALUE klass, ID mid)
 {
     ASSERT_vm_locking();
 
-    struct rb_id_table *cc_tbl = RCLASS_CC_TBL(klass);
+    VALUE cc_tbl = RCLASS_WRITABLE_CC_TBL(klass);
     VALUE ccs_data;
 
-    if (cc_tbl && rb_id_table_lookup(cc_tbl, mid, &ccs_data)) {
+    if (cc_tbl && rb_managed_id_table_lookup(cc_tbl, mid, &ccs_data)) {
         struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_data;
         VM_ASSERT(vm_ccs_p(ccs));
 
@@ -1430,8 +1939,10 @@ cached_callable_method_entry(VALUE klass, ID mid)
             return ccs->cme;
         }
         else {
-            rb_vm_ccs_free(ccs);
-            rb_id_table_delete(cc_tbl, mid);
+            rb_vm_barrier();
+
+            rb_managed_id_table_delete(cc_tbl, mid);
+            rb_vm_ccs_invalidate_and_free(ccs);
         }
     }
 
@@ -1445,21 +1956,29 @@ cache_callable_method_entry(VALUE klass, ID mid, const rb_callable_method_entry_
     ASSERT_vm_locking();
     VM_ASSERT(cme != NULL);
 
-    struct rb_id_table *cc_tbl = RCLASS_CC_TBL(klass);
+    VALUE cc_tbl = RCLASS_WRITABLE_CC_TBL(klass);
     VALUE ccs_data;
 
     if (!cc_tbl) {
-        cc_tbl = RCLASS_CC_TBL(klass) = rb_id_table_create(2);
+        cc_tbl = rb_vm_cc_table_create(2);
+        RCLASS_WRITE_CC_TBL(klass, cc_tbl);
     }
 
-    if (rb_id_table_lookup(cc_tbl, mid, &ccs_data)) {
+    if (rb_managed_id_table_lookup(cc_tbl, mid, &ccs_data)) {
 #if VM_CHECK_MODE > 0
         struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_data;
         VM_ASSERT(ccs->cme == cme);
 #endif
     }
     else {
-        vm_ccs_create(klass, cc_tbl, mid, cme);
+        if (rb_multi_ractor_p()) {
+            VALUE new_cc_tbl = rb_vm_cc_table_dup(cc_tbl);
+            vm_ccs_create(klass, new_cc_tbl, mid, cme);
+            RB_OBJ_ATOMIC_WRITE(klass, &RCLASSEXT_CC_TBL(RCLASS_EXT_WRITABLE(klass)), new_cc_tbl);
+        }
+        else {
+            vm_ccs_create(klass, cc_tbl, mid, cme);
+        }
     }
 }
 
@@ -1470,12 +1989,12 @@ negative_cme(ID mid)
     const rb_callable_method_entry_t *cme;
     VALUE cme_data;
 
-    if (rb_id_table_lookup(vm->negative_cme_table, mid, &cme_data)) {
+    if (rb_id_table_lookup(&vm->negative_cme_table, mid, &cme_data)) {
         cme = (rb_callable_method_entry_t *)cme_data;
     }
     else {
         cme = (rb_callable_method_entry_t *)rb_method_entry_alloc(mid, Qnil, Qnil, NULL, false);
-        rb_id_table_insert(vm->negative_cme_table, mid, (VALUE)cme);
+        rb_id_table_insert(&vm->negative_cme_table, mid, (VALUE)cme);
     }
 
     VM_ASSERT(cme != NULL);
@@ -1487,9 +2006,39 @@ callable_method_entry_or_negative(VALUE klass, ID mid, VALUE *defined_class_ptr)
 {
     const rb_callable_method_entry_t *cme;
 
+    VM_ASSERT(!SPECIAL_CONST_P(klass));
+
+    if (RB_BUILTIN_TYPE(klass) == T_NONE) {
+      // If we find a T_NONE here, it's most likely we called CLASS_OF(obj) on a
+      // garbage collected object (the freelist is stored in the class pointer),
+      // but it's possible that just the class was GC'd.
+      // This message intentionally tries to imply the former, but make an
+      // accurate statement for either case.
+      rb_bug("attempted to search method '%s' on a garbage collected object",
+             rb_id2name(mid));
+    }
+
     VM_ASSERT_TYPE2(klass, T_CLASS, T_ICLASS);
-    RB_VM_LOCK_ENTER();
-    {
+
+    /* Fast path: lock-free read from cache */
+    VALUE cc_tbl = RUBY_ATOMIC_VALUE_LOAD(RCLASS_WRITABLE_CC_TBL(klass));
+    if (cc_tbl) {
+        VALUE ccs_data;
+        if (rb_managed_id_table_lookup(cc_tbl, mid, &ccs_data)) {
+            struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_data;
+            VM_ASSERT(vm_ccs_p(ccs));
+
+            if (LIKELY(!METHOD_ENTRY_INVALIDATED(ccs->cme))) {
+                VM_ASSERT(ccs->cme->called_id == mid);
+                if (defined_class_ptr != NULL) *defined_class_ptr = ccs->cme->defined_class;
+                RB_DEBUG_COUNTER_INC(ccs_found);
+                return ccs->cme;
+            }
+        }
+    }
+
+    /* Slow path: need to lock and potentially populate cache */
+    RB_VM_LOCKING() {
         cme = cached_callable_method_entry(klass, mid);
 
         if (cme) {
@@ -1510,7 +2059,6 @@ callable_method_entry_or_negative(VALUE klass, ID mid, VALUE *defined_class_ptr)
             cache_callable_method_entry(klass, mid, cme);
         }
     }
-    RB_VM_LOCK_LEAVE();
 
     return cme;
 }
@@ -1634,7 +2182,12 @@ resolve_refined_method(VALUE refinements, const rb_method_entry_t *me, VALUE *de
 
         tmp_me = me->def->body.refined.orig_me;
         if (tmp_me) {
-            if (defined_class_ptr) *defined_class_ptr = tmp_me->defined_class;
+            if (!tmp_me->defined_class) {
+                VM_ASSERT_TYPE(tmp_me->owner, T_MODULE);
+            }
+            else if (defined_class_ptr) {
+                *defined_class_ptr = tmp_me->defined_class;
+            }
             return tmp_me;
         }
 
@@ -1693,7 +2246,7 @@ remove_method(VALUE klass, ID mid)
         rb_clear_method_cache(self, mid);
     }
     rb_clear_method_cache(klass, mid);
-    rb_id_table_delete(RCLASS_M_TBL(klass), mid);
+    rb_id_table_delete(RCLASS_WRITABLE_M_TBL(klass), mid);
 
     rb_vm_check_redefinition_opt_method(me, klass);
 
@@ -1847,7 +2400,7 @@ scope_visibility_check(void)
 {
     /* Check for public/protected/private/module_function called inside a method */
     rb_control_frame_t *cfp = GET_EC()->cfp+1;
-    if (cfp && cfp->iseq && ISEQ_BODY(cfp->iseq)->type == ISEQ_TYPE_METHOD) {
+    if (cfp && CFP_ISEQ(cfp) && ISEQ_BODY(CFP_ISEQ(cfp))->type == ISEQ_TYPE_METHOD) {
         rb_warn("calling %s without arguments inside a method may not have the intended effect",
             rb_id2name(rb_frame_this_func()));
     }
@@ -2467,21 +3020,53 @@ rb_mod_public(int argc, VALUE *argv, VALUE module)
  *     protected(method_name, method_name, ...) -> array
  *     protected(array)                         -> array
  *
- *  With no arguments, sets the default visibility for subsequently
- *  defined methods to protected. With arguments, sets the named methods
- *  to have protected visibility.
- *  String arguments are converted to symbols.
- *  An Array of Symbols and/or Strings is also accepted.
- *  If a single argument is passed, it is returned.
- *  If no argument is passed, nil is returned.
- *  If multiple arguments are passed, the arguments are returned as an array.
+ *  Sets the visibility of a section or of a list of method names as protected.
+ *  Accepts no arguments, a splat of method names (symbols or strings) or an
+ *  array of method names. Returns the arguments that it received.
  *
- *  If a method has protected visibility, it is callable only where
- *  <code>self</code> of the context is the same as the method.
- *  (method definition or instance_eval). This behavior is different from
- *  Java's protected method. Usually <code>private</code> should be used.
+ *  == Important difference between protected in other languages
  *
- *  Note that a protected method is slow because it can't use inline cache.
+ *  Protected methods in Ruby are different from other languages such as Java,
+ *  where methods are marked as protected to give access to subclasses. In Ruby,
+ *  subclasses <b>already have access to all methods defined in the parent
+ *  class</b>, even private ones.
+ *
+ *  Marking a method as protected allows <b>different objects of the same
+ *  class</b> to call it.
+ *
+ *  One use case is for comparison methods, such as <code>==</code>, if we want
+ *  to expose a method for comparison between objects of the same class without
+ *  making the method public to objects of other classes.
+ *
+ *  == Performance considerations
+ *
+ *  Protected methods are slower than others because they can't use inline
+ *  cache.
+ *
+ *  == Example
+ *
+ *    class Account
+ *      # Mark balance as protected, so that we can compare between accounts
+ *      # without making it public.
+ *      attr_reader :balance
+ *      protected :balance
+ *
+ *      def initialize(balance)
+ *        @balance = balance
+ *      end
+ *
+ *      def >(other)
+ *        # The invocation to `other.balance` is allowed because `other` is a
+ *        # different object of the same class (Account).
+ *        balance > other.balance
+ *      end
+ *    end
+ *
+ *    account1 = Account.new(100)
+ *    account2 = Account.new(50)
+ *
+ *    account1 > account2  # => true (works)
+ *    account1.balance     # => NoMethodError (fails because balance is not public)
  *
  *  To show a private method on RDoc, use <code>:doc:</code> instead of this.
  */
@@ -2595,13 +3180,14 @@ rb_mod_ruby2_keywords(int argc, VALUE *argv, VALUE module)
             switch (me->def->type) {
               case VM_METHOD_TYPE_ISEQ:
                 if (ISEQ_BODY(me->def->body.iseq.iseqptr)->param.flags.has_rest &&
+                        !ISEQ_BODY(me->def->body.iseq.iseqptr)->param.flags.has_post &&
                         !ISEQ_BODY(me->def->body.iseq.iseqptr)->param.flags.has_kw &&
                         !ISEQ_BODY(me->def->body.iseq.iseqptr)->param.flags.has_kwrest) {
                     ISEQ_BODY(me->def->body.iseq.iseqptr)->param.flags.ruby2_keywords = 1;
                     rb_clear_method_cache(module, name);
                 }
                 else {
-                    rb_warn("Skipping set of ruby2_keywords flag for %"PRIsVALUE" (method accepts keywords or method does not accept argument splat)", QUOTE_ID(name));
+                    rb_warn("Skipping set of ruby2_keywords flag for %"PRIsVALUE" (method accepts keywords or post arguments or method does not accept argument splat)", QUOTE_ID(name));
                 }
                 break;
               case VM_METHOD_TYPE_BMETHOD: {
@@ -2614,13 +3200,14 @@ rb_mod_ruby2_keywords(int argc, VALUE *argv, VALUE module)
                     const struct rb_captured_block *captured = VM_BH_TO_ISEQ_BLOCK(procval);
                     const rb_iseq_t *iseq = rb_iseq_check(captured->code.iseq);
                     if (ISEQ_BODY(iseq)->param.flags.has_rest &&
+                            !ISEQ_BODY(iseq)->param.flags.has_post &&
                             !ISEQ_BODY(iseq)->param.flags.has_kw &&
                             !ISEQ_BODY(iseq)->param.flags.has_kwrest) {
                         ISEQ_BODY(iseq)->param.flags.ruby2_keywords = 1;
                         rb_clear_method_cache(module, name);
                     }
                     else {
-                        rb_warn("Skipping set of ruby2_keywords flag for %"PRIsVALUE" (method accepts keywords or method does not accept argument splat)", QUOTE_ID(name));
+                        rb_warn("Skipping set of ruby2_keywords flag for %"PRIsVALUE" (method accepts keywords or post arguments or method does not accept argument splat)", QUOTE_ID(name));
                     }
                     break;
                 }

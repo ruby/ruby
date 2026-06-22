@@ -65,7 +65,7 @@ pack up your own arguments to pass as args for locking functions, etc.
  *
  */
 
-#define FCNTL_VERSION "1.2.0"
+#define FCNTL_VERSION "1.3.0"
 
 void
 Init_fcntl(void)
@@ -250,5 +250,51 @@ Init_fcntl(void)
      * flag in addition.
      */
     rb_define_const(mFcntl, "F_DUP2FD_CLOEXEC", INT2NUM(F_DUP2FD_CLOEXEC));
+#endif
+
+#ifdef F_PREALLOCATE
+    /*
+     * macOS specific flag used for preallocating file space.
+     */
+    rb_define_const(mFcntl, "F_PREALLOCATE", INT2NUM(F_PREALLOCATE));
+#endif
+
+#ifdef F_ALLOCATECONTIG
+    /*
+     * macOS specific flag used with F_PREALLOCATE for allocating contiguous
+     * space.
+     */
+    rb_define_const(mFcntl, "F_ALLOCATECONTIG", INT2NUM(F_ALLOCATECONTIG));
+#endif
+
+#ifdef F_ALLOCATEALL
+    /*
+     * macOS specific flag used with F_PREALLOCATE for allocating all contiguous
+     * space or no space.
+     */
+    rb_define_const(mFcntl, "F_ALLOCATEALL", INT2NUM(F_ALLOCATEALL));
+#endif
+
+#ifdef F_ALLOCATEPERSIST
+    /*
+     * macOS specific flag used with F_PREALLOCATE. Allocate space that is not
+     * freed when close is called.
+     */
+    rb_define_const(mFcntl, "F_ALLOCATEPERSIST", INT2NUM(F_ALLOCATEPERSIST));
+#endif
+
+#ifdef F_PEOFPOSMODE
+    /*
+     * macOS specific flag used with F_PREALLOCATE. Allocate from the physical
+     * end of file
+     */
+    rb_define_const(mFcntl, "F_PEOFPOSMODE", INT2NUM(F_PEOFPOSMODE));
+#endif
+
+#ifdef F_VOLPOSMODE
+    /*
+     * macOS specific flag used with F_PREALLOCATE. Allocate from the volume offset.
+     */
+    rb_define_const(mFcntl, "F_VOLPOSMODE", INT2NUM(F_VOLPOSMODE));
 #endif
 }

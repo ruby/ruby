@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 require 'test/unit'
+require 'securerandom'
+require 'fileutils'
 require_relative 'scheduler'
 
 class TestFiberScheduler < Test::Unit::TestCase
@@ -92,6 +94,9 @@ class TestFiberScheduler < Test::Unit::TestCase
     end
 
     def scheduler.kernel_sleep
+    end
+
+    def scheduler.fiber_interrupt(_fiber, _exception)
     end
 
     thread = Thread.new do
@@ -222,5 +227,160 @@ class TestFiberScheduler < Test::Unit::TestCase
 
     thread.join
     assert_kind_of RuntimeError, error
+  end
+
+  def test_post_fork_scheduler_reset
+    omit 'fork not supported' unless Process.respond_to?(:fork)
+
+    forked_scheduler_state = nil
+    thread = Thread.new do
+      r, w = IO.pipe
+      scheduler = Scheduler.new
+      Fiber.set_scheduler scheduler
+
+      forked_pid = fork do
+        r.close
+        w << (Fiber.scheduler ? 'set' : 'reset')
+        w.close
+      end
+      w.close
+      forked_scheduler_state = r.read
+      Process.wait(forked_pid)
+    ensure
+      r.close rescue nil
+      w.close rescue nil
+    end
+    thread.join
+    assert_equal 'reset', forked_scheduler_state
+  ensure
+    thread.kill rescue nil
+  end
+
+  def test_post_fork_fiber_blocking
+    omit 'fork not supported' unless Process.respond_to?(:fork)
+
+    fiber_blocking_state = nil
+    thread = Thread.new do
+      r, w = IO.pipe
+      scheduler = Scheduler.new
+      Fiber.set_scheduler scheduler
+
+      forked_pid = nil
+      Fiber.schedule do
+        forked_pid = fork do
+          r.close
+          w << (Fiber.current.blocking? ? 'blocking' : 'nonblocking')
+          w.close
+        end
+      end
+      w.close
+      fiber_blocking_state = r.read
+      Process.wait(forked_pid)
+    ensure
+      r.close rescue nil
+      w.close rescue nil
+    end
+    thread.join
+    assert_equal 'blocking', fiber_blocking_state
+  ensure
+    thread.kill rescue nil
+  end
+
+  def test_io_write_on_flush
+    begin
+      path = File.join(Dir.tmpdir, "ruby_test_io_write_on_flush_#{SecureRandom.hex}")
+      descriptor = nil
+      operations = nil
+
+      thread = Thread.new do
+        scheduler = IOScheduler.new
+        Fiber.set_scheduler scheduler
+
+        Fiber.schedule do
+          File.open(path, 'w+') do |file|
+            descriptor = file.fileno
+            file << 'foo'
+            file.flush
+            file << 'bar'
+          end
+        end
+
+        operations = scheduler.operations
+      end
+
+      thread.join
+      assert_equal [
+        [:io_write, descriptor, 'foo'],
+        [:io_write, descriptor, 'bar']
+      ], operations
+
+      assert_equal 'foobar', IO.read(path)
+    ensure
+      thread.kill rescue nil
+      FileUtils.rm_f(path)
+    end
+  end
+
+  def test_io_read_error
+    path = File.join(Dir.tmpdir, "ruby_test_io_read_error_#{SecureRandom.hex}")
+    error = nil
+
+    thread = Thread.new do
+      scheduler = IOErrorScheduler.new
+      Fiber.set_scheduler scheduler
+      Fiber.schedule do
+        File.open(path, 'w+') { it.read }
+      rescue => error
+        # Ignore.
+      end
+    end
+
+    thread.join
+    assert_kind_of Errno::EBADF, error
+  ensure
+    thread.kill rescue nil
+    FileUtils.rm_f(path)
+  end
+
+  def test_io_write_error
+    path = File.join(Dir.tmpdir, "ruby_test_io_write_error_#{SecureRandom.hex}")
+    error = nil
+
+    thread = Thread.new do
+      scheduler = IOErrorScheduler.new
+      Fiber.set_scheduler scheduler
+      Fiber.schedule do
+        File.open(path, 'w+') { it.sync = true; it << 'foo' }
+      rescue => error
+        # Ignore.
+      end
+    end
+
+    thread.join
+    assert_kind_of Errno::EINVAL, error
+  ensure
+    thread.kill rescue nil
+    FileUtils.rm_f(path)
+  end
+
+  def test_io_write_flush_error
+    path = File.join(Dir.tmpdir, "ruby_test_io_write_flush_error_#{SecureRandom.hex}")
+    error = nil
+
+    thread = Thread.new do
+      scheduler = IOErrorScheduler.new
+      Fiber.set_scheduler scheduler
+      Fiber.schedule do
+        File.open(path, 'w+') { it << 'foo' }
+      rescue => error
+        # Ignore.
+      end
+    end
+
+    thread.join
+    assert_kind_of Errno::EINVAL, error
+  ensure
+    thread.kill rescue nil
+    FileUtils.rm_f(path)
   end
 end

@@ -7,7 +7,9 @@ require_relative 'fixtures/classes'
 
 autoload :KSAutoloadA, "autoload_a.rb"
 autoload :KSAutoloadB, fixture(__FILE__, "autoload_b.rb")
-autoload :KSAutoloadCallsRequire, "main_autoload_not_exist.rb"
+define_autoload_KSAutoloadCallsRequire = -> {
+  autoload :KSAutoloadCallsRequire, "main_autoload_not_exist.rb"
+}
 
 def check_autoload(const)
   autoload? const
@@ -23,7 +25,7 @@ describe "Kernel#autoload" do
   end
 
   it "is a private method" do
-    Kernel.should have_private_instance_method(:autoload)
+    Kernel.private_instance_methods(false).should.include?(:autoload)
   end
 
   it "registers a file to load the first time the named constant is accessed" do
@@ -35,7 +37,7 @@ describe "Kernel#autoload" do
   end
 
   it "sets the autoload constant in Object's constant table" do
-    Object.should have_constant(:KSAutoloadA)
+    Object.should.const_defined?(:KSAutoloadA, false)
   end
 
   it "loads the file when the constant is accessed" do
@@ -43,10 +45,11 @@ describe "Kernel#autoload" do
   end
 
   it "calls main.require(path) to load the file" do
+    define_autoload_KSAutoloadCallsRequire.call
     main = TOPLEVEL_BINDING.eval("self")
     main.should_receive(:require).with("main_autoload_not_exist.rb")
     # The constant won't be defined since require is mocked to do nothing
-    -> { KSAutoloadCallsRequire }.should raise_error(NameError)
+    -> { KSAutoloadCallsRequire }.should.raise(NameError)
   end
 
   it "can autoload in instance_eval" do
@@ -99,7 +102,7 @@ end
 
 describe "Kernel#autoload?" do
   it "is a private method" do
-    Kernel.should have_private_instance_method(:autoload?)
+    Kernel.private_instance_methods(false).should.include?(:autoload?)
   end
 
   it "returns the name of the file that will be autoloaded" do
@@ -107,7 +110,7 @@ describe "Kernel#autoload?" do
   end
 
   it "returns nil if no file has been registered for a constant" do
-    check_autoload(:Manualload).should be_nil
+    check_autoload(:Manualload).should == nil
   end
 end
 
@@ -134,7 +137,7 @@ describe "Kernel.autoload" do
   end
 
   it "sets the autoload constant in Object's constant table" do
-    Object.should have_constant(:KSAutoloadBB)
+    Object.should.const_defined?(:KSAutoloadBB, false)
   end
 
   it "calls #to_path on non-String filenames" do
@@ -170,6 +173,6 @@ describe "Kernel.autoload?" do
   end
 
   it "returns nil if no file has been registered for a constant" do
-    Kernel.autoload?(:Manualload).should be_nil
+    Kernel.autoload?(:Manualload).should == nil
   end
 end

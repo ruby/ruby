@@ -2,7 +2,7 @@
 
 require_relative "endpoint"
 
-$LOAD_PATH.unshift Dir[Spec::Path.base_system_gem_path.join("gems/compact_index*/lib")].first.to_s
+$LOAD_PATH.unshift Spec::Path.tmp_root.join("compact_index/lib").to_s
 require "compact_index"
 require "digest"
 
@@ -90,12 +90,16 @@ class CompactIndexAPI < Endpoint
             rescue StandardError
               checksum = nil
             end
-            CompactIndex::GemVersion.new(spec.version.version, spec.platform.to_s, checksum, nil,
-              deps, spec.required_ruby_version.to_s, spec.required_rubygems_version.to_s)
+            build_gem_version(spec, deps, checksum)
           end
           CompactIndex::Gem.new(name, gem_versions)
         end
       end
+    end
+
+    def build_gem_version(spec, deps, checksum)
+      CompactIndex::GemVersion.new(spec.version.version, spec.platform.to_s, checksum, nil,
+        deps, spec.required_ruby_version.to_s, spec.required_rubygems_version.to_s)
     end
   end
 

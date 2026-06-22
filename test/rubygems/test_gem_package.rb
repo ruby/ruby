@@ -33,6 +33,25 @@ class TestGemPackage < Gem::Package::TarTestCase
     assert package.spec
   end
 
+  def test_class_new_old_format_forwards_security_policy
+    pend "jruby can't require the simple_gem file" if Gem.java_platform?
+    pend "openssl is missing" unless Gem::HAVE_OPENSSL
+    require_relative "simple_gem"
+    File.open "old_format.gem", "wb" do |io|
+      io.write SIMPLE_GEM
+    end
+
+    package = Gem::Package.new "old_format.gem", Gem::Security::HighSecurity
+
+    e = assert_raise Gem::Security::Exception do
+      package.verify
+    end
+
+    assert_equal "old format gems do not contain signatures " \
+                 "and cannot be verified",
+                 e.message
+  end
+
   def test_add_checksums
     gem_io = StringIO.new
 
@@ -175,6 +194,9 @@ class TestGemPackage < Gem::Package::TarTestCase
   end
 
   def test_add_files_symlink
+    unless symlink_supported?
+      omit("symlink - developer mode must be enabled on Windows")
+    end
     spec = Gem::Specification.new
     spec.files = %w[lib/code.rb lib/code_sym.rb lib/code_sym2.rb]
 
@@ -185,16 +207,8 @@ class TestGemPackage < Gem::Package::TarTestCase
     end
 
     # NOTE: 'code.rb' is correct, because it's relative to lib/code_sym.rb
-    begin
-      File.symlink("code.rb", "lib/code_sym.rb")
-      File.symlink("../lib/code.rb", "lib/code_sym2.rb")
-    rescue Errno::EACCES => e
-      if Gem.win_platform?
-        pend "symlink - must be admin with no UAC on Windows"
-      else
-        raise e
-      end
-    end
+    File.symlink("code.rb", "lib/code_sym.rb")
+    File.symlink("../lib/code.rb", "lib/code_sym2.rb")
 
     package = Gem::Package.new "bogus.gem"
     package.spec = spec
@@ -506,7 +520,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     extracted = File.join @destination, "lib/code.rb"
     assert_path_exist extracted
 
-    mask = 0o100666 & (~File.umask)
+    mask = 0o100666 & ~File.umask
 
     assert_equal mask.to_s(8), File.stat(extracted).mode.to_s(8) unless
       Gem.win_platform?
@@ -583,25 +597,71 @@ class TestGemPackage < Gem::Package::TarTestCase
       tar.add_symlink "lib/foo.rb", "../relative.rb", 0o644
     end
 
-    begin
-      package.extract_tar_gz tgz_io, @destination
-    rescue Errno::EACCES => e
-      if Gem.win_platform?
-        pend "symlink - must be admin with no UAC on Windows"
-      else
-        raise e
-      end
-    end
+    package.extract_tar_gz tgz_io, @destination
 
     extracted = File.join @destination, "lib/foo.rb"
     assert_path_exist extracted
-    assert_equal "../relative.rb",
-                 File.readlink(extracted)
+    if symlink_supported?
+      assert_equal "../relative.rb",
+                   File.readlink(extracted)
+    end
     assert_equal "hi",
+                 File.read(extracted),
+                 "should read file content either by following symlink or on Windows by reading copy"
+  end
+
+  def test_extract_tar_gz_symlink_directory
+    package = Gem::Package.new @gem
+    package.verify
+
+    tgz_io = util_tar_gz do |tar|
+      tar.add_symlink "link", "lib/orig", 0o644
+      tar.mkdir       "lib", 0o755
+      tar.mkdir       "lib/orig", 0o755
+      tar.add_file    "lib/orig/file.rb", 0o644 do |io|
+        io.write "ok"
+      end
+    end
+
+    package.extract_tar_gz tgz_io, @destination
+    extracted = File.join @destination, "link/file.rb"
+    assert_path_exist extracted
+    if symlink_supported?
+      assert_equal "lib/orig",
+                   File.readlink(File.dirname(extracted))
+    end
+    assert_equal "ok",
                  File.read(extracted)
   end
 
+  def test_extract_tar_gz_rejects_preexisting_symlink_escape
+    omit "Symlinks not supported or not enabled" unless symlink_supported?
+
+    package = Gem::Package.new @gem
+
+    tgz_io = util_tar_gz do |tar|
+      tar.add_file "lib/owned.txt", 0o644 do |io|
+        io.write "poc-content"
+      end
+    end
+
+    escape_dir = File.join(@tempdir, "escape")
+    FileUtils.mkdir_p escape_dir
+
+    FileUtils.rm_rf File.join(@destination, "lib")
+    File.symlink escape_dir, File.join(@destination, "lib")
+
+    escaped = File.join(escape_dir, "owned.txt")
+
+    assert_raise Gem::Package::PathError do
+      package.extract_tar_gz tgz_io, @destination
+    end
+
+    refute File.exist?(escaped), "must not write outside extraction root via symlink"
+  end
+
   def test_extract_symlink_into_symlink_dir
+    omit "Symlinks not supported or not enabled" unless symlink_supported?
     package = Gem::Package.new @gem
     tgz_io = util_tar_gz do |tar|
       tar.mkdir       "lib", 0o755
@@ -665,13 +725,9 @@ class TestGemPackage < Gem::Package::TarTestCase
     destination_subdir = File.join @destination, "subdir"
     FileUtils.mkdir_p destination_subdir
 
-    expected_exceptions = Gem.win_platform? ? [Gem::Package::SymlinkError, Errno::EACCES] : [Gem::Package::SymlinkError]
-
-    e = assert_raise(*expected_exceptions) do
+    e = assert_raise(Gem::Package::SymlinkError) do
       package.extract_tar_gz tgz_io, destination_subdir
     end
-
-    pend "symlink - must be admin with no UAC on Windows" if Errno::EACCES === e
 
     assert_equal("installing symlink 'lib/link' pointing to parent path #{@destination} of " \
                 "#{destination_subdir} is not allowed", e.message)
@@ -700,13 +756,9 @@ class TestGemPackage < Gem::Package::TarTestCase
       tar.add_symlink "link/dir", ".", 16_877
     end
 
-    expected_exceptions = Gem.win_platform? ? [Gem::Package::SymlinkError, Errno::EACCES] : [Gem::Package::SymlinkError]
-
-    e = assert_raise(*expected_exceptions) do
+    e = assert_raise(Gem::Package::SymlinkError) do
       package.extract_tar_gz tgz_io, destination_subdir
     end
-
-    pend "symlink - must be admin with no UAC on Windows" if Errno::EACCES === e
 
     assert_equal("installing symlink 'link' pointing to parent path #{destination_user_dir} of " \
                 "#{destination_subdir} is not allowed", e.message)
@@ -858,7 +910,7 @@ class TestGemPackage < Gem::Package::TarTestCase
                  "#{@destination} is not allowed", e.message)
   end
 
-  def test_load_spec
+  def test_load_spec_from_metadata
     entry = StringIO.new Gem::Util.gzip @spec.to_yaml
     def entry.full_name
       "metadata.gz"
@@ -866,7 +918,7 @@ class TestGemPackage < Gem::Package::TarTestCase
 
     package = Gem::Package.new "nonexistent.gem"
 
-    spec = package.load_spec entry
+    spec = package.load_spec_from_metadata entry
 
     assert_equal @spec, spec
   end
@@ -909,7 +961,11 @@ class TestGemPackage < Gem::Package::TarTestCase
       }
       tar.add_file "checksums.yaml.gz", 0o444 do |io|
         Zlib::GzipWriter.wrap io do |gz_io|
-          gz_io.write Psych.dump bogus_checksums
+          if Gem.use_psych?
+            gz_io.write Psych.dump(bogus_checksums)
+          else
+            gz_io.write Gem::YAMLSerializer.dump(bogus_checksums)
+          end
         end
       end
     end
@@ -955,7 +1011,11 @@ class TestGemPackage < Gem::Package::TarTestCase
 
       tar.add_file "checksums.yaml.gz", 0o444 do |io|
         Zlib::GzipWriter.wrap io do |gz_io|
-          gz_io.write Psych.dump checksums
+          if Gem.use_psych?
+            gz_io.write Psych.dump(checksums)
+          else
+            gz_io.write Gem::YAMLSerializer.dump(checksums)
+          end
         end
       end
 
@@ -1247,71 +1307,25 @@ class TestGemPackage < Gem::Package::TarTestCase
 
   # end #verify tests
 
-  def test_verify_entry
-    entry = Object.new
-    def entry.full_name
-      raise ArgumentError, "whatever"
-    end
+  def test_missing_metadata
+    invalid_metadata = ["metadataxgz", "foobar\nmetadata", "metadata\nfoobar"]
+    invalid_metadata.each do |fname|
+      tar = StringIO.new
 
-    package = Gem::Package.new @gem
-
-    _, err = use_ui @ui do
-      e = nil
-
-      out_err = capture_output do
-        e = assert_raise ArgumentError do
-          package.verify_entry entry
+      Gem::Package::TarWriter.new(tar) do |gem_tar|
+        gem_tar.add_file fname, 0o444 do |io|
+          gz_io = Zlib::GzipWriter.new io, Zlib::BEST_COMPRESSION
+          gz_io.write "bad metadata"
+          gz_io.close
         end
       end
 
-      assert_equal "whatever", e.message
-      assert_equal "full_name", e.backtrace_locations.first.label
+      tar.rewind
 
-      out_err
-    end
-
-    assert_equal "Exception while verifying #{@gem}\n", err
-
-    valid_metadata = ["metadata", "metadata.gz"]
-    valid_metadata.each do |vm|
-      $spec_loaded = false
-      $good_name = vm
-
-      entry = Object.new
-      def entry.full_name
-        $good_name
+      package = Gem::Package.new(Gem::Package::IOSource.new(tar))
+      assert_raise Gem::Package::FormatError do
+        package.verify
       end
-
-      package = Gem::Package.new(@gem)
-      package.instance_variable_set(:@files, [])
-      def package.load_spec(entry)
-        $spec_loaded = true
-      end
-
-      package.verify_entry(entry)
-
-      assert $spec_loaded
-    end
-
-    invalid_metadata = ["metadataxgz", "foobar\nmetadata", "metadata\nfoobar"]
-    invalid_metadata.each do |vm|
-      $spec_loaded = false
-      $bad_name = vm
-
-      entry = Object.new
-      def entry.full_name
-        $bad_name
-      end
-
-      package = Gem::Package.new(@gem)
-      package.instance_variable_set(:@files, [])
-      def package.load_spec(entry)
-        $spec_loaded = true
-      end
-
-      package.verify_entry(entry)
-
-      refute $spec_loaded
     end
   end
 

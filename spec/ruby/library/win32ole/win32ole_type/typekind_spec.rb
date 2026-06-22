@@ -2,9 +2,9 @@ require_relative "../../../spec_helper"
 platform_is :windows do
   require 'win32ole'
 
-  describe "WIN32OLE_TYPE#typekind for Shell Controls" do
+  describe "WIN32OLE::Type#typekind for Shell Controls" do
     before :each do
-      @ole_type = WIN32OLE_TYPE.new("Microsoft Shell Controls And Automation", "Shell")
+      @ole_type = WIN32OLE::Type.new("Microsoft Shell Controls And Automation", "Shell")
     end
 
     after :each do
@@ -12,7 +12,7 @@ platform_is :windows do
     end
 
     it "returns an Integer" do
-      @ole_type.typekind.should be_kind_of Integer
+      @ole_type.typekind.should.is_a? Integer
     end
 
   end

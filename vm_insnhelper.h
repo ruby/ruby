@@ -16,11 +16,11 @@ RUBY_EXTERN rb_serial_t ruby_vm_constant_cache_invalidations;
 RUBY_EXTERN rb_serial_t ruby_vm_constant_cache_misses;
 RUBY_EXTERN rb_serial_t ruby_vm_global_cvar_state;
 
-#if USE_YJIT && YJIT_STATS // We want vm_insns_count only on stats builds.
-// Increment vm_insns_count for --yjit-stats. We increment this even when
+#if YJIT_STATS || ZJIT_STATS // We want vm_insn_count only on stats builds.
+// Increment vm_insn_count for --yjit-stats. We increment this even when
 // --yjit or --yjit-stats is not used because branching to skip it is slower.
 // We also don't use ATOMIC_INC for performance, allowing inaccuracy on Ractors.
-#define JIT_COLLECT_USAGE_INSN(insn) rb_vm_insns_count++
+#define JIT_COLLECT_USAGE_INSN(insn) rb_vm_insn_count++
 #else
 #define JIT_COLLECT_USAGE_INSN(insn) // none
 #endif
@@ -113,8 +113,11 @@ enum vm_regan_acttype {
 #define SET_SV(x)  (*GET_SP() = rb_ractor_confirm_belonging(x))
   /* set current stack value as x */
 
-/* instruction sequence C struct */
-#define GET_ISEQ() (GET_CFP()->iseq)
+// instruction sequence C struct
+// Uses cfp->_iseq directly because the interpreter always has a valid _iseq
+// field (it's written on exit from JIT code). Code in vm_insnhelper.c that
+// may be called as a ZJIT fallback should use CFP_ISEQ() instead.
+#define GET_ISEQ() (GET_CFP()->_iseq)
 
 /**********************************************************/
 /* deal with variables                                    */
@@ -144,7 +147,7 @@ CC_SET_FASTPATH(const struct rb_callcache *cc, vm_call_handler func, bool enable
     }
 }
 
-#define GET_BLOCK_HANDLER() (GET_LEP()[VM_ENV_DATA_INDEX_SPECVAL])
+#define GET_BLOCK_HANDLER() VM_CF_BLOCK_HANDLER(GET_CFP())
 
 /**********************************************************/
 /* deal with control flow 3: exception                    */

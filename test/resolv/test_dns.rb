@@ -525,6 +525,8 @@ class TestResolvDNS < Test::Unit::TestCase
       if RUBY_PLATFORM.match?(/mingw/)
         # cannot repo locally
         omit 'Timeout Error on MinGW CI'
+      elsif macos?([26,1]..[])
+        omit 'Timeout Error on macOS 26.1+'
       else
         raise Timeout::Error
       end
@@ -627,6 +629,13 @@ class TestResolvDNS < Test::Unit::TestCase
     assert_operator(2**14, :<, m.to_s.length)
   end
 
+  def test_too_long_address
+    too_long_address_message = [0, 0, 1, 0, 0, 0].pack("n*") + "\x01x" * 129 + [0, 0, 0].pack("cnn")
+    assert_raise_with_message(Resolv::DNS::DecodeError, /name label data exceed 255 octets/) do
+      Resolv::DNS::Message.decode too_long_address_message
+    end
+  end
+
   def assert_no_fd_leak
     socket = assert_throw(self) do |tag|
       Resolv::DNS.stub(:bind_random_port, ->(s, *) {throw(tag, s)}) do
@@ -712,13 +721,14 @@ class TestResolvDNS < Test::Unit::TestCase
 
         client_thread = Thread.new do
           Resolv::DNS.open(nameserver_port: [[server1_address, server1_port], [server2_address, server2_port]]) do |dns|
-            dns.timeouts = [0.1, 0.2]
+            dns.timeouts = [EnvUtil.apply_timeout_scale(0.5),
+                            EnvUtil.apply_timeout_scale(1)]
             dns.getresources('foo.example.org', Resolv::DNS::Resource::IN::A)
           end
         end
 
         udp_server1_thread = Thread.new do
-          msg, (_, client_port, _, client_address) = Timeout.timeout(5) { u1.recvfrom(4096) }
+          msg, (_, client_port, _, client_address) = Timeout.timeout(EnvUtil.apply_timeout_scale(5)) { u1.recvfrom(4096) }
           id, word2, _qdcount, _ancount, _nscount, _arcount = msg.unpack('nnnnnn')
           opcode = (word2 & 0x7800) >> 11
           rd = (word2 & 0x0100) >> 8
@@ -811,6 +821,126 @@ class TestResolvDNS < Test::Unit::TestCase
       ensure
         tcp_server1_socket&.close
       end
+    end
+  end
+
+  def test_tcp_connection_closed_before_length
+    with_tcp('127.0.0.1', 0) do |t|
+      _, server_port, _, server_address = t.addr
+
+      server_thread = Thread.new do
+        ct = t.accept
+        ct.recv(512)
+        ct.close
+      end
+
+      client_thread = Thread.new do
+        requester = Resolv::DNS::Requester::TCP.new(server_address, server_port)
+        begin
+          msg = Resolv::DNS::Message.new
+          msg.add_question('example.org', Resolv::DNS::Resource::IN::A)
+          sender = requester.sender(msg, msg)
+          assert_raise(Resolv::ResolvTimeout) do
+            requester.request(sender, 2)
+          end
+        ensure
+          requester.close
+        end
+      end
+
+      server_thread.join
+      client_thread.join
+    end
+  end
+
+  def test_tcp_connection_closed_after_length
+    with_tcp('127.0.0.1', 0) do |t|
+      _, server_port, _, server_address = t.addr
+
+      server_thread = Thread.new do
+        ct = t.accept
+        ct.recv(512)
+        ct.send([100].pack('n'), 0)
+        ct.close
+      end
+
+      client_thread = Thread.new do
+        requester = Resolv::DNS::Requester::TCP.new(server_address, server_port)
+        begin
+          msg = Resolv::DNS::Message.new
+          msg.add_question('example.org', Resolv::DNS::Resource::IN::A)
+          sender = requester.sender(msg, msg)
+          assert_raise(Resolv::ResolvTimeout) do
+            requester.request(sender, 2)
+          end
+        ensure
+          requester.close
+        end
+      end
+
+      server_thread.join
+      client_thread.join
+    end
+  end
+
+  def test_tcp_connection_closed_with_partial_length_prefix
+    with_tcp('127.0.0.1', 0) do |t|
+      _, server_port, _, server_address = t.addr
+
+      server_thread = Thread.new do
+        ct = t.accept
+        ct.recv(512)
+        ct.write "A" # 1 byte
+        ct.close
+      end
+
+      client_thread = Thread.new do
+        requester = Resolv::DNS::Requester::TCP.new(server_address, server_port)
+        begin
+          msg = Resolv::DNS::Message.new
+          msg.add_question('example.org', Resolv::DNS::Resource::IN::A)
+          sender = requester.sender(msg, msg)
+          assert_raise(Resolv::ResolvTimeout) do
+            requester.request(sender, 2)
+          end
+        ensure
+          requester.close
+        end
+      end
+
+      server_thread.join
+      client_thread.join
+    end
+  end
+
+  def test_tcp_connection_closed_with_partial_message_body
+    with_tcp('127.0.0.1', 0) do |t|
+      _, server_port, _, server_address = t.addr
+
+      server_thread = Thread.new do
+        ct = t.accept
+        ct.recv(512)
+        ct.write([10].pack('n')) # length 10
+        ct.write "12345" # 5 bytes (partial)
+        ct.close
+      end
+
+      client_thread = Thread.new do
+        requester = Resolv::DNS::Requester::TCP.new(server_address, server_port)
+        begin
+          msg = Resolv::DNS::Message.new
+          msg.add_question('example.org', Resolv::DNS::Resource::IN::A)
+          sender = requester.sender(msg, msg)
+          assert_raise(Resolv::ResolvTimeout) do
+            requester.request(sender, 2)
+          end
+        ensure
+          requester.close
+        end
+      end
+
+      server_thread.join
+      client_thread.join
     end
   end
 end

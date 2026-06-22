@@ -17,9 +17,9 @@ describe "Integer#-" do
       -> {
         (obj = mock('10')).should_receive(:to_int).any_number_of_times.and_return(10)
         13 - obj
-      }.should raise_error(TypeError)
-      -> { 13 - "10"    }.should raise_error(TypeError)
-      -> { 13 - :symbol }.should raise_error(TypeError)
+      }.should.raise(TypeError)
+      -> { 13 - "10"    }.should.raise(TypeError)
+      -> { 13 - :symbol }.should.raise(TypeError)
     end
   end
 
@@ -35,9 +35,26 @@ describe "Integer#-" do
     end
 
     it "raises a TypeError when given a non-Integer" do
-      -> { @bignum - mock('10') }.should raise_error(TypeError)
-      -> { @bignum - "10" }.should raise_error(TypeError)
-      -> { @bignum - :symbol }.should raise_error(TypeError)
+      -> { @bignum - mock('10') }.should.raise(TypeError)
+      -> { @bignum - "10" }.should.raise(TypeError)
+      -> { @bignum - :symbol }.should.raise(TypeError)
     end
+  end
+
+  it "coerces the RHS and calls #coerce" do
+    obj = mock("integer plus")
+    obj.should_receive(:coerce).with(5).and_return([5, 10])
+    (5 - obj).should == -5
+  end
+
+  it "coerces the RHS and calls #coerce even if it's private" do
+    obj = Object.new
+    class << obj
+      private def coerce(n)
+        [n, 10]
+      end
+    end
+
+    (5 - obj).should == -5
   end
 end

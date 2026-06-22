@@ -76,3 +76,57 @@ class TestDebug < Test::Unit::TestCase
     assert_equal true, x, '[Bug #15105]'
   end
 end
+
+# This is a YJIT test, but we can't test this without a C extension that calls
+# rb_debug_inspector_open(), so we're testing it using "-test-/debug" here.
+class TestDebugWithYJIT < Test::Unit::TestCase
+  class LocalSetArray
+    def to_a
+      Bug::Debug.inspector.each do |_, binding,|
+        binding.local_variable_set(:local, :ok) if binding
+      end
+      [:ok]
+    end
+  end
+
+  class DebugArray
+    def to_a
+      Bug::Debug.inspector
+      [:ok]
+    end
+  end
+
+  def test_yjit_invalidates_getlocal_after_splatarray
+    val = getlocal_after_splatarray(LocalSetArray.new)
+    assert_equal [:ok, :ok], val
+  end
+
+  def test_yjit_invalidates_setlocal_after_splatarray
+    val = setlocal_after_splatarray(DebugArray.new)
+    assert_equal [:ok], val
+  end
+
+  def test_yjit_invalidates_setlocal_after_proc_call
+    val = setlocal_after_proc_call(proc { Bug::Debug.inspector; :ok })
+    assert_equal :ok, val
+  end
+
+  private
+
+  def getlocal_after_splatarray(array)
+    local = 1
+    [*array, local]
+  end
+
+  def setlocal_after_splatarray(array)
+    local = *array # setlocal followed by splatarray
+    itself # split a block using a C call
+    local # getlocal
+  end
+
+  def setlocal_after_proc_call(block)
+    local = block.call # setlocal followed by OPTIMIZED_METHOD_TYPE_CALL
+    itself # split a block using a C call
+    local # getlocal
+  end
+end if defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?

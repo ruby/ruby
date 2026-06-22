@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 describe "Time#hash" do
   it "returns an Integer" do
-    Time.at(100).hash.should be_an_instance_of(Integer)
+    Time.at(100).hash.should.instance_of?(Integer)
   end
 
   it "is stable" do

@@ -1,0 +1,3 @@
+def ((return; 1)).bar; end
+              ^ cannot define singleton method for literals
+

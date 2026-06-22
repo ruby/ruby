@@ -25,9 +25,7 @@ describe "UnboundMethod#owner" do
     child_singleton_class.instance_method(:another_class_method).owner.should == child_singleton_class
   end
 
-  ruby_version_is "3.2" do
-    it "returns the class on which public was called for a private method in ancestor" do
-      MethodSpecs::InheritedMethods::C.instance_method(:derp).owner.should == MethodSpecs::InheritedMethods::C
-    end
+  it "returns the class on which public was called for a private method in ancestor" do
+    MethodSpecs::InheritedMethods::C.instance_method(:derp).owner.should == MethodSpecs::InheritedMethods::C
   end
 end

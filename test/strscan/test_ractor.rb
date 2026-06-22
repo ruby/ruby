@@ -8,6 +8,10 @@ class TestStringScannerRactor < Test::Unit::TestCase
 
   def test_ractor
     assert_in_out_err([], <<-"end;", ["stra", " ", "strb", " ", "strc"], [])
+      class Ractor
+        alias value take unless method_defined? :value # compat with Ruby 3.4 and olders
+      end
+
       require "strscan"
       $VERBOSE = nil
       r = Ractor.new do
@@ -22,7 +26,7 @@ class TestStringScannerRactor < Test::Unit::TestCase
           s.scan(/\\w+/)
         ]
       end
-      puts r.take.compact
+      puts r.value.compact
     end;
   end
 end

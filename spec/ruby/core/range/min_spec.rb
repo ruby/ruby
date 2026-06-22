@@ -11,32 +11,32 @@ describe "Range#min" do
   end
 
   it "returns nil when the start point is greater than the endpoint" do
-    (100..10).min.should be_nil
-    ('z'..'l').min.should be_nil
+    (100..10).min.should == nil
+    ('z'..'l').min.should == nil
   end
 
   it "returns nil when the endpoint equals the start point and the range is exclusive" do
-    (7...7).min.should be_nil
+    (7...7).min.should == nil
   end
 
   it "returns the start point when the endpoint equals the start point and the range is inclusive" do
-    (7..7).min.should equal(7)
+    (7..7).min.should.equal?(7)
   end
 
   it "returns nil when the start point is greater than the endpoint in a Float range" do
-    (3003.20..908.1111).min.should be_nil
+    (3003.20..908.1111).min.should == nil
   end
 
   it "returns start point when the range is Time..Time(included end point)" do
     time_start = Time.now
     time_end = Time.now + 1.0
-    (time_start..time_end).min.should equal(time_start)
+    (time_start..time_end).min.should.equal?(time_start)
   end
 
   it "returns start point when the range is Time...Time(excluded end point)" do
     time_start = Time.now
     time_end = Time.now + 1.0
-    (time_start...time_end).min.should equal(time_start)
+    (time_start...time_end).min.should.equal?(time_start)
   end
 
   it "returns the start point for endless ranges" do
@@ -45,7 +45,7 @@ describe "Range#min" do
   end
 
   it "raises RangeError when called on an beginless range" do
-    -> { (..1).min }.should raise_error(RangeError)
+    -> { (..1).min }.should.raise(RangeError)
   end
 end
 
@@ -55,7 +55,7 @@ describe "Range#min given a block" do
     (1..10).min {|a,b| acc << [a,b]; a }
     acc.flatten!
     (1..10).each do |value|
-      acc.include?(value).should be_true
+      acc.include?(value).should == true
     end
   end
 
@@ -77,12 +77,12 @@ describe "Range#min given a block" do
   end
 
   it "returns nil when the start point is greater than the endpoint" do
-    (100..10).min {|x,y| x <=> y}.should be_nil
-    ('z'..'l').min {|x,y| x <=> y}.should be_nil
-    (7...7).min {|x,y| x <=> y}.should be_nil
+    (100..10).min {|x,y| x <=> y}.should == nil
+    ('z'..'l').min {|x,y| x <=> y}.should == nil
+    (7...7).min {|x,y| x <=> y}.should == nil
   end
 
   it "raises RangeError when called with custom comparison method on an endless range" do
-    -> { eval("(1..)").min {|a, b| a} }.should raise_error(RangeError)
+    -> { eval("(1..)").min {|a, b| a} }.should.raise(RangeError)
   end
 end

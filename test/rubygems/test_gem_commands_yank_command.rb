@@ -131,15 +131,17 @@ class TestGemCommandsYankCommand < Gem::TestCase
     end
 
     assert_match %r{Yanking gem from http://example}, @ui.output
-    assert_match "You have enabled multi-factor authentication. Please visit #{@fetcher.webauthn_url_with_port(server.port)} " \
+    assert_match "You have enabled multi-factor authentication. Please visit the following URL " \
       "to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, " \
       "you can re-run the gem signin command with the `--otp [your_code]` option.", @ui.output
+    assert_match @fetcher.webauthn_url_with_port(server.port), @ui.output
     assert_match "You are verified with a security device. You may close the browser window.", @ui.output
     assert_equal "Uvh6T57tkWuUnWYo", @fetcher.last_request["OTP"]
     assert_match "Successfully yanked", @ui.output
   end
 
   def test_with_webauthn_enabled_failure
+    pend "Flaky on TruffleRuby" if RUBY_ENGINE == "truffleruby"
     server = Gem::MockTCPServer.new
     error = Gem::WebauthnVerificationError.new("Something went wrong")
 
@@ -163,9 +165,10 @@ class TestGemCommandsYankCommand < Gem::TestCase
 
     assert_match @fetcher.last_request["Authorization"], Gem.configuration.rubygems_api_key
     assert_match %r{Yanking gem from http://example}, @ui.output
-    assert_match "You have enabled multi-factor authentication. Please visit #{@fetcher.webauthn_url_with_port(server.port)} " \
+    assert_match "You have enabled multi-factor authentication. Please visit the following URL " \
       "to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, " \
       "you can re-run the gem signin command with the `--otp [your_code]` option.", @ui.output
+    assert_match @fetcher.webauthn_url_with_port(server.port), @ui.output
     assert_match "ERROR:  Security device verification failed: Something went wrong", @ui.error
     refute_match "You are verified with a security device. You may close the browser window.", @ui.output
     refute_match "Successfully yanked", @ui.output
@@ -189,9 +192,10 @@ class TestGemCommandsYankCommand < Gem::TestCase
     end
 
     assert_match %r{Yanking gem from http://example}, @ui.output
-    assert_match "You have enabled multi-factor authentication. Please visit #{@fetcher.webauthn_url_with_port(server.port)} " \
+    assert_match "You have enabled multi-factor authentication. Please visit the following URL " \
       "to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, " \
       "you can re-run the gem signin command with the `--otp [your_code]` option.", @ui.output
+    assert_match @fetcher.webauthn_url_with_port(server.port), @ui.output
     assert_match "You are verified with a security device. You may close the browser window.", @ui.output
     assert_equal "Uvh6T57tkWuUnWYo", @fetcher.last_request["OTP"]
     assert_match "Successfully yanked", @ui.output
@@ -219,9 +223,10 @@ class TestGemCommandsYankCommand < Gem::TestCase
 
     assert_match @fetcher.last_request["Authorization"], Gem.configuration.rubygems_api_key
     assert_match %r{Yanking gem from http://example}, @ui.output
-    assert_match "You have enabled multi-factor authentication. Please visit #{@fetcher.webauthn_url_with_port(server.port)} " \
+    assert_match "You have enabled multi-factor authentication. Please visit the following URL " \
       "to authenticate via security device. If you can't verify using WebAuthn but have OTP enabled, " \
       "you can re-run the gem signin command with the `--otp [your_code]` option.", @ui.output
+    assert_match @fetcher.webauthn_url_with_port(server.port), @ui.output
     assert_match "ERROR:  Security device verification failed: The token in the link you used has either expired " \
       "or been used already.", @ui.error
     refute_match "You are verified with a security device. You may close the browser window.", @ui.output
@@ -267,7 +272,7 @@ class TestGemCommandsYankCommand < Gem::TestCase
     assert_equal [yank_uri], @fetcher.paths
   end
 
-  def test_yank_gem_unathorized_api_key
+  def test_yank_gem_unauthorized_api_key
     response_forbidden = "The API key doesn't have access"
     response_success   = "Successfully yanked"
     host               = "http://example"

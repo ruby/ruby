@@ -14,8 +14,6 @@ x = begin return ensure return end
           ^~~~~~ unexpected void value expression
 x = begin return; rescue; return end
           ^~~~~~ unexpected void value expression
-x = begin return; rescue; return; else return end
-          ^~~~~~ unexpected void value expression
 x = begin; return; rescue; retry; end
            ^~~~~~ unexpected void value expression
 

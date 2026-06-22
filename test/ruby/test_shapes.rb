@@ -2,10 +2,11 @@
 require 'test/unit'
 require 'objspace'
 require 'json'
+require 'securerandom'
 
 # These test the functionality of object shapes
 class TestShapes < Test::Unit::TestCase
-  MANY_IVS = 80
+  MANY_IVS = RubyVM::Shape::SHAPE_MAX_FIELDS + 1
 
   class IVOrder
     def expected_ivs
@@ -92,15 +93,18 @@ class TestShapes < Test::Unit::TestCase
   # RubyVM::Shape.of returns new instances of shape objects for
   # each call. This helper method allows us to define equality for
   # shapes
-  def assert_shape_equal(shape1, shape2)
-    assert_equal(shape1.id, shape2.id)
-    assert_equal(shape1.parent_id, shape2.parent_id)
-    assert_equal(shape1.depth, shape2.depth)
-    assert_equal(shape1.type, shape2.type)
+  def assert_shape_equal(e, a)
+    assert_equal(
+      {id: e.offset, parent_offset: e.parent_offset, depth: e.depth, type: e.type, name: e.edge_name},
+      {id: a.offset, parent_offset: a.parent_offset, depth: a.depth, type: a.type, name: e.edge_name},
+    )
   end
 
-  def refute_shape_equal(shape1, shape2)
-    refute_equal(shape1.id, shape2.id)
+  def refute_shape_equal(e, a)
+    refute_equal(
+      {id: e.offset, parent_offset: e.parent_offset, depth: e.depth, type: e.type, name: e.edge_name},
+      {id: a.offset, parent_offset: a.parent_offset, depth: a.depth, type: a.type, name: e.edge_name},
+    )
   end
 
   def test_iv_order_correct_on_complex_objects
@@ -113,18 +117,60 @@ class TestShapes < Test::Unit::TestCase
     assert_equal obj.expected_ivs, iv_list.map(&:to_s)
   end
 
-  def test_too_complex
+  def test_complex
     ensure_complex
 
     tc = TooComplex.new
     tc.send("a#{RubyVM::Shape::SHAPE_MAX_VARIATIONS}_m")
-    assert_predicate RubyVM::Shape.of(tc), :too_complex?
+    assert_predicate RubyVM::Shape.of(tc), :complex?
   end
 
   def test_ordered_alloc_is_not_complex
     5.times { OrderedAlloc.new.add_ivars }
     obj = JSON.parse(ObjectSpace.dump(OrderedAlloc))
     assert_operator obj["variation_count"], :<, RubyVM::Shape::SHAPE_MAX_VARIATIONS
+  end
+
+  def test_max_iv_count
+    klass = Class.new
+    object = klass.new
+
+    assert_equal 0, RubyVM::Shape.class_max_iv_count(klass)
+    8.times do |i|
+      object.instance_variable_set("@ivar_#{i}", i)
+    end
+    assert_equal 8, RubyVM::Shape.class_max_iv_count(klass)
+
+    subklass = Class.new(klass)
+    assert_equal 8, RubyVM::Shape.class_max_iv_count(subklass)
+  end
+
+  def test_max_iv_count_on_Object
+    object = Object.new
+
+    assert_equal 0, RubyVM::Shape.class_max_iv_count(Object)
+    8.times do |i|
+      object.instance_variable_set("@ivar_#{i}", i)
+    end
+    assert_equal 0, RubyVM::Shape.class_max_iv_count(Object)
+  end
+
+  def test_max_iv_count_on_BasicObject
+    object = BasicObject.new
+
+    assert_equal 0, RubyVM::Shape.class_max_iv_count(BasicObject)
+    8.times do |i|
+      Object.instance_method(:instance_variable_set).bind_call(object, "@ivar_#{i}", i)
+    end
+    assert_equal 0, RubyVM::Shape.class_max_iv_count(BasicObject)
+
+    subklass = Class.new(BasicObject)
+    object = subklass.new
+    assert_equal 0, RubyVM::Shape.class_max_iv_count(subklass)
+    8.times do |i|
+      Object.instance_method(:instance_variable_set).bind_call(object, "@ivar_#{i}", i)
+    end
+    assert_equal 8, RubyVM::Shape.class_max_iv_count(subklass)
   end
 
   def test_too_many_ivs_on_obj
@@ -139,18 +185,21 @@ class TestShapes < Test::Unit::TestCase
       obj.instance_variable_set(:@c, 1)
       obj.instance_variable_set(:@d, 1)
 
-      assert_predicate RubyVM::Shape.of(obj), :too_complex?
+      assert_predicate RubyVM::Shape.of(obj), :complex?
     end;
   end
 
   def test_too_many_ivs_on_class
     obj = Class.new
 
-    (MANY_IVS + 1).times do
+    obj.instance_variable_set(:@test_too_many_ivs_on_class, 1)
+    refute_predicate RubyVM::Shape.of(obj), :complex?
+
+    MANY_IVS.times do
       obj.instance_variable_set(:"@a#{_1}", 1)
     end
 
-    assert_false RubyVM::Shape.of(obj).too_complex?
+    assert_predicate RubyVM::Shape.of(obj), :complex?
   end
 
   def test_removing_when_too_many_ivs_on_class
@@ -179,7 +228,7 @@ class TestShapes < Test::Unit::TestCase
     assert_empty obj.instance_variables
   end
 
-  def test_too_complex_geniv
+  def test_complex_geniv
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       class TooComplex < Hash
@@ -221,7 +270,7 @@ class TestShapes < Test::Unit::TestCase
   end
 
   def test_run_out_of_shape_for_object
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       class A
         def initialize
@@ -332,7 +381,7 @@ class TestShapes < Test::Unit::TestCase
   end
 
   def test_gc_stress_during_evacuate_generic_ivar
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       [].instance_variable_set(:@a, 1)
 
@@ -500,7 +549,7 @@ class TestShapes < Test::Unit::TestCase
   end
 
   def test_run_out_of_shape_rb_obj_copy_ivar
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       class A
         def initialize
@@ -579,7 +628,7 @@ class TestShapes < Test::Unit::TestCase
     end;
   end
 
-  def test_too_complex_ractor
+  def test_complex_ractor
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       $VERBOSE = nil
@@ -594,14 +643,14 @@ class TestShapes < Test::Unit::TestCase
       tc = TooComplex.new
       tc.instance_variable_set(:"@very_unique", 3)
 
-      assert_predicate RubyVM::Shape.of(tc), :too_complex?
+      assert_predicate RubyVM::Shape.of(tc), :complex?
       assert_equal 3, tc.very_unique
-      assert_equal 3, Ractor.new(tc) { |x| Ractor.yield(x.very_unique) }.take
-      assert_equal tc.instance_variables.sort, Ractor.new(tc) { |x| Ractor.yield(x.instance_variables) }.take.sort
+      assert_equal 3, Ractor.new(tc) { |x| x.very_unique }.value
+      assert_equal tc.instance_variables.sort, Ractor.new(tc) { |x| x.instance_variables }.value.sort
     end;
   end
 
-  def test_too_complex_ractor_shareable
+  def test_complex_ractor_shareable
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       $VERBOSE = nil
@@ -616,13 +665,124 @@ class TestShapes < Test::Unit::TestCase
       tc = TooComplex.new
       tc.instance_variable_set(:"@very_unique", 3)
 
-      assert_predicate RubyVM::Shape.of(tc), :too_complex?
+      assert_predicate RubyVM::Shape.of(tc), :complex?
       assert_equal 3, tc.very_unique
       assert_equal 3, Ractor.make_shareable(tc).very_unique
     end;
   end
 
-  def test_too_complex_obj_ivar_ractor_share
+  def test_complex_and_frozen
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $VERBOSE = nil
+      class TooComplex
+        attr_reader :very_unique
+      end
+
+      RubyVM::Shape::SHAPE_MAX_VARIATIONS.times do
+        TooComplex.new.instance_variable_set(:"@unique_#{_1}", Object.new)
+      end
+
+      tc = TooComplex.new
+      tc.instance_variable_set(:"@very_unique", 3)
+
+      shape = RubyVM::Shape.of(tc)
+      assert_predicate shape, :complex?
+      refute_predicate shape, :shape_frozen?
+      tc.freeze
+      frozen_shape = RubyVM::Shape.of(tc)
+      refute_equal shape.id, frozen_shape.id
+      assert_predicate frozen_shape, :complex?
+      assert_predicate frozen_shape, :shape_frozen?
+
+      assert_equal 3, tc.very_unique
+      assert_equal 3, Ractor.make_shareable(tc).very_unique
+    end;
+  end
+
+  def test_object_id_transition_complex
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      obj = Object.new
+      obj.instance_variable_set(:@a, 1)
+      RubyVM::Shape.exhaust_shapes
+      assert_equal obj.object_id, obj.object_id
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      class Hi; end
+      obj = Hi.new
+      obj.instance_variable_set(:@a, 1)
+      obj.instance_variable_set(:@b, 2)
+      old_id = obj.object_id
+
+      RubyVM::Shape.exhaust_shapes
+      obj.remove_instance_variable(:@a)
+
+      assert_equal old_id, obj.object_id
+    end;
+  end
+
+  def test_object_id_when_fields_are_full
+    # Adding object_id to an object with exactly SHAPE_MAX_FIELDS fields must
+    # transition to COMPLEX instead of asserting.
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      obj = Object.new
+      max = RubyVM::Shape::SHAPE_MAX_FIELDS
+      max.times { |i| obj.instance_variable_set(:"@v#{i}", i) }
+      refute_predicate RubyVM::Shape.of(obj), :complex?
+
+      id = obj.object_id
+      assert_kind_of Integer, id
+      assert_equal id, obj.object_id
+      assert_predicate RubyVM::Shape.of(obj), :complex?
+
+      max.times { |i| assert_equal i, obj.instance_variable_get(:"@v#{i}") }
+      assert_equal max, obj.instance_variables.size
+    end;
+  end
+
+  def test_complex_and_frozen_and_object_id
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $VERBOSE = nil
+      class TooComplex
+        attr_reader :very_unique
+      end
+
+      RubyVM::Shape::SHAPE_MAX_VARIATIONS.times do
+        TooComplex.new.instance_variable_set(:"@unique_#{_1}", Object.new)
+      end
+
+      tc = TooComplex.new
+      tc.instance_variable_set(:"@very_unique", 3)
+
+      shape = RubyVM::Shape.of(tc)
+      assert_predicate shape, :complex?
+      refute_predicate shape, :shape_frozen?
+      tc.freeze
+      frozen_shape = RubyVM::Shape.of(tc)
+      refute_equal shape.id, frozen_shape.id
+      assert_predicate frozen_shape, :complex?
+      assert_predicate frozen_shape, :shape_frozen?
+      refute_predicate frozen_shape, :has_object_id?
+
+      assert_equal tc.object_id, tc.object_id
+
+      id_shape = RubyVM::Shape.of(tc)
+      refute_equal frozen_shape.id, id_shape.id
+      assert_predicate id_shape, :complex?
+      assert_predicate id_shape, :has_object_id?
+      assert_predicate id_shape, :shape_frozen?
+
+      assert_equal 3, tc.very_unique
+      assert_equal 3, Ractor.make_shareable(tc).very_unique
+    end;
+  end
+
+  def test_complex_obj_ivar_ractor_share
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       $VERBOSE = nil
@@ -632,15 +792,15 @@ class TestShapes < Test::Unit::TestCase
       r = Ractor.new do
         o = Object.new
         o.instance_variable_set(:@a, "hello")
-        Ractor.yield(o)
+        o
       end
 
-      o = r.take
+      o = r.value
       assert_equal "hello", o.instance_variable_get(:@a)
     end;
   end
 
-  def test_too_complex_generic_ivar_ractor_share
+  def test_complex_generic_ivar_ractor_share
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       $VERBOSE = nil
@@ -650,10 +810,10 @@ class TestShapes < Test::Unit::TestCase
       r = Ractor.new do
         o = []
         o.instance_variable_set(:@a, "hello")
-        Ractor.yield(o)
+        o
       end
 
-      o = r.take
+      o = r.value
       assert_equal "hello", o.instance_variable_get(:@a)
     end;
   end
@@ -663,7 +823,7 @@ class TestShapes < Test::Unit::TestCase
 
     tc = TooComplex.new
     tc.send("a#{RubyVM::Shape::SHAPE_MAX_VARIATIONS}_m")
-    assert_predicate RubyVM::Shape.of(tc), :too_complex?
+    assert_predicate RubyVM::Shape.of(tc), :complex?
     assert_equal 3, tc.a3_m
   end
 
@@ -672,7 +832,7 @@ class TestShapes < Test::Unit::TestCase
 
     tc = TooComplex.new
     tc.send("a#{RubyVM::Shape::SHAPE_MAX_VARIATIONS}_m")
-    assert_predicate RubyVM::Shape.of(tc), :too_complex?
+    assert_predicate RubyVM::Shape.of(tc), :complex?
     assert_equal 3, tc.a3_m
     assert_equal 3, tc.a3
   end
@@ -682,7 +842,7 @@ class TestShapes < Test::Unit::TestCase
 
     tc = TooComplex.new
     tc.send("a#{RubyVM::Shape::SHAPE_MAX_VARIATIONS}_m")
-    assert_predicate RubyVM::Shape.of(tc), :too_complex?
+    assert_predicate RubyVM::Shape.of(tc), :complex?
     tc.write_iv_method
     tc.write_iv_method
     assert_equal 12345, tc.a3_m
@@ -694,7 +854,7 @@ class TestShapes < Test::Unit::TestCase
 
     tc = TooComplex.new
     tc.send("a#{RubyVM::Shape::SHAPE_MAX_VARIATIONS}_m")
-    assert_predicate RubyVM::Shape.of(tc), :too_complex?
+    assert_predicate RubyVM::Shape.of(tc), :complex?
     tc.write_iv
     tc.write_iv
     assert_equal 12345, tc.a3_m
@@ -706,7 +866,7 @@ class TestShapes < Test::Unit::TestCase
 
     tc = TooComplex.new
     tc.send("a#{RubyVM::Shape::SHAPE_MAX_VARIATIONS}_m")
-    assert_predicate RubyVM::Shape.of(tc), :too_complex?
+    assert_predicate RubyVM::Shape.of(tc), :complex?
     assert_equal 3, tc.a3_m
     assert_equal 3, tc.instance_variable_get(:@a3)
   end
@@ -716,12 +876,45 @@ class TestShapes < Test::Unit::TestCase
 
     tc = TooComplex.new
     tc.send("a#{RubyVM::Shape::SHAPE_MAX_VARIATIONS}_m")
-    assert_predicate RubyVM::Shape.of(tc), :too_complex?
+    assert_predicate RubyVM::Shape.of(tc), :complex?
 
     assert_equal 3, tc.a3_m # make sure IV is initialized
     assert tc.instance_variable_defined?(:@a3)
     tc.remove_instance_variable(:@a3)
+    refute tc.instance_variable_defined?(:@a3)
     assert_nil tc.a3
+  end
+
+  def test_delete_iv_after_complex_and_object_id
+    ensure_complex
+
+    tc = TooComplex.new
+    tc.send("a#{RubyVM::Shape::SHAPE_MAX_VARIATIONS}_m")
+    assert_predicate RubyVM::Shape.of(tc), :complex?
+
+    assert_equal 3, tc.a3_m # make sure IV is initialized
+    assert tc.instance_variable_defined?(:@a3)
+    tc.object_id
+    tc.remove_instance_variable(:@a3)
+    refute tc.instance_variable_defined?(:@a3)
+    assert_nil tc.a3
+  end
+
+  def test_delete_iv_after_complex_and_freeze
+    ensure_complex
+
+    tc = TooComplex.new
+    tc.send("a#{RubyVM::Shape::SHAPE_MAX_VARIATIONS}_m")
+    assert_predicate RubyVM::Shape.of(tc), :complex?
+
+    assert_equal 3, tc.a3_m # make sure IV is initialized
+    assert tc.instance_variable_defined?(:@a3)
+    tc.freeze
+    assert_raise FrozenError do
+      tc.remove_instance_variable(:@a3)
+    end
+    assert tc.instance_variable_defined?(:@a3)
+    assert_equal 3, tc.a3
   end
 
   def test_delete_undefined_after_complex
@@ -729,7 +922,7 @@ class TestShapes < Test::Unit::TestCase
 
     tc = TooComplex.new
     tc.send("a#{RubyVM::Shape::SHAPE_MAX_VARIATIONS}_m")
-    assert_predicate RubyVM::Shape.of(tc), :too_complex?
+    assert_predicate RubyVM::Shape.of(tc), :complex?
 
     refute tc.instance_variable_defined?(:@a3)
     assert_raise(NameError) do
@@ -786,13 +979,15 @@ class TestShapes < Test::Unit::TestCase
   def test_remove_instance_variable_capacity_transition
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
-      t_object_shape = RubyVM::Shape.find_by_id(RubyVM::Shape::FIRST_T_OBJECT_SHAPE_ID)
-      assert_equal(RubyVM::Shape::SHAPE_T_OBJECT, t_object_shape.type)
-
-      initial_capacity = t_object_shape.capacity
 
       # a does not transition in capacity
       a = Class.new.new
+      root_shape = RubyVM::Shape.of(a)
+
+      assert_equal(RubyVM::Shape::SHAPE_ROOT, root_shape.type)
+      initial_capacity = root_shape.capacity
+      refute_equal(0, initial_capacity)
+
       initial_capacity.times do |i|
         a.instance_variable_set(:"@ivar#{i + 1}", i)
       end
@@ -821,11 +1016,11 @@ class TestShapes < Test::Unit::TestCase
 
     tc = TooComplex.new
     tc.send("a#{RubyVM::Shape::SHAPE_MAX_VARIATIONS}_m")
-    assert_predicate RubyVM::Shape.of(tc), :too_complex?
+    assert_predicate RubyVM::Shape.of(tc), :complex?
     tc.freeze
     assert_raise(FrozenError) { tc.a3_m }
     # doesn't transition to frozen shape in this case
-    assert_predicate RubyVM::Shape.of(tc), :too_complex?
+    assert_predicate RubyVM::Shape.of(tc), :complex?
   end
 
   def test_read_undefined_iv_after_complex
@@ -833,9 +1028,9 @@ class TestShapes < Test::Unit::TestCase
 
     tc = TooComplex.new
     tc.send("a#{RubyVM::Shape::SHAPE_MAX_VARIATIONS}_m")
-    assert_predicate RubyVM::Shape.of(tc), :too_complex?
+    assert_predicate RubyVM::Shape.of(tc), :complex?
     assert_equal nil, tc.iv_not_defined
-    assert_predicate RubyVM::Shape.of(tc), :too_complex?
+    assert_predicate RubyVM::Shape.of(tc), :complex?
   end
 
   def test_shape_order
@@ -852,13 +1047,13 @@ class TestShapes < Test::Unit::TestCase
   def test_iv_index
     example = RemoveAndAdd.new
     initial_shape = RubyVM::Shape.of(example)
-    assert_equal 0, initial_shape.next_iv_index
+    assert_equal 0, initial_shape.next_field_index
 
     example.add_foo # makes a transition
     add_foo_shape = RubyVM::Shape.of(example)
     assert_equal([:@foo], example.instance_variables)
-    assert_equal(initial_shape.id, add_foo_shape.parent.id)
-    assert_equal(1, add_foo_shape.next_iv_index)
+    assert_equal(initial_shape.offset, add_foo_shape.parent.offset)
+    assert_equal(1, add_foo_shape.next_field_index)
 
     example.remove_foo # makes a transition
     remove_foo_shape = RubyVM::Shape.of(example)
@@ -868,8 +1063,8 @@ class TestShapes < Test::Unit::TestCase
     example.add_bar # makes a transition
     bar_shape = RubyVM::Shape.of(example)
     assert_equal([:@bar], example.instance_variables)
-    assert_equal(initial_shape.id, bar_shape.parent_id)
-    assert_equal(1, bar_shape.next_iv_index)
+    assert_equal(initial_shape.offset, bar_shape.parent_offset)
+    assert_equal(1, bar_shape.next_field_index)
   end
 
   def test_remove_then_add_again
@@ -888,8 +1083,39 @@ class TestShapes < Test::Unit::TestCase
   def test_new_obj_has_t_object_shape
     obj = TestObject.new
     shape = RubyVM::Shape.of(obj)
-    assert_equal RubyVM::Shape::SHAPE_T_OBJECT, shape.type
+    assert_equal RubyVM::Shape::SHAPE_ROOT, shape.type
     assert_nil shape.parent
+  end
+
+  def test_shape_layout
+    assert_equal :robject, RubyVM::Shape.of(TestObject.new).layout
+
+    if ENV["RUBY_BOX"]
+      assert_equal :other, RubyVM::Shape.of(Kernel).layout
+      assert_equal :other, RubyVM::Shape.of(String).layout
+    else
+      assert_equal :rclass, RubyVM::Shape.of(Kernel).layout
+      assert_equal :rclass, RubyVM::Shape.of(String).layout
+    end
+
+    assert_equal :rclass, RubyVM::Shape.of(Class.new).layout
+    assert_equal :rclass, RubyVM::Shape.of(Module.new).layout
+
+    klass = Class.new
+    assert_equal :rclass, RubyVM::Shape.of(klass).layout
+    klass.instance_variable_set(:@a, 123)
+    assert_equal :rclass, RubyVM::Shape.of(klass).layout
+
+    assert_equal :rdata, RubyVM::Shape.of(Thread.current).layout
+    assert_equal :rdata, RubyVM::Shape.of(lambda {}).layout
+
+    assert_equal :other, RubyVM::Shape.of(Struct.new(:x).new(1)).layout
+    assert_equal :other, RubyVM::Shape.of([]).layout
+    assert_equal :other, RubyVM::Shape.of("hello").layout
+    assert_equal :other, RubyVM::Shape.of(/foo/).layout
+    assert_equal :other, RubyVM::Shape.of(2..3).layout
+    assert_equal :other, RubyVM::Shape.of(2**67).layout
+    assert_equal :other, RubyVM::Shape.of(:"aaroniscool#{123}").layout
   end
 
   def test_str_has_root_shape
@@ -900,16 +1126,29 @@ class TestShapes < Test::Unit::TestCase
     assert_shape_equal(RubyVM::Shape.root_shape, RubyVM::Shape.of([]))
   end
 
-  def test_true_has_special_const_shape_id
-    assert_equal(RubyVM::Shape::SPECIAL_CONST_SHAPE_ID, RubyVM::Shape.of(true).id)
+  def test_raise_on_special_consts
+    assert_raise ArgumentError do
+      RubyVM::Shape.of(true)
+    end
+    assert_raise ArgumentError do
+      RubyVM::Shape.of(false)
+    end
+    assert_raise ArgumentError do
+      RubyVM::Shape.of(nil)
+    end
+    assert_raise ArgumentError do
+      RubyVM::Shape.of(0)
+    end
+    # 32-bit platforms don't have flonums or static symbols as special
+    # constants
+    # TODO(max): Add ArgumentError tests for symbol and flonum, skipping if
+    # RUBY_PLATFORM =~ /i686/
   end
 
-  def test_nil_has_special_const_shape_id
-    assert_equal(RubyVM::Shape::SPECIAL_CONST_SHAPE_ID, RubyVM::Shape.of(nil).id)
-  end
-
-  def test_root_shape_transition_to_special_const_on_frozen
-    assert_equal(RubyVM::Shape::SPECIAL_CONST_SHAPE_ID, RubyVM::Shape.of([].freeze).id)
+  def test_root_shape_frozen
+    frozen_root_shape = RubyVM::Shape.of([].freeze)
+    assert_predicate(frozen_root_shape, :frozen?)
+    assert_equal(RubyVM::Shape.root_shape.id, frozen_root_shape.offset)
   end
 
   def test_basic_shape_transition
@@ -920,7 +1159,7 @@ class TestShapes < Test::Unit::TestCase
     assert_equal RubyVM::Shape::SHAPE_IVAR, shape.type
 
     shape = shape.parent
-    assert_equal RubyVM::Shape::SHAPE_T_OBJECT, shape.type
+    assert_equal RubyVM::Shape::SHAPE_ROOT, shape.type
     assert_nil shape.parent
 
     assert_equal(1, obj.instance_variable_get(:@a))
@@ -940,7 +1179,7 @@ class TestShapes < Test::Unit::TestCase
     assert_shape_equal(RubyVM::Shape.of(obj), RubyVM::Shape.of(obj2))
   end
 
-  def test_duplicating_too_complex_objects_memory_leak
+  def test_duplicating_complex_objects_memory_leak
     assert_no_memory_leak([], "#{<<~'begin;'}", "#{<<~'end;'}", "[Bug #20162]", rss: true)
       RubyVM::Shape.exhaust_shapes
 
@@ -955,18 +1194,19 @@ class TestShapes < Test::Unit::TestCase
 
   def test_freezing_and_duplicating_object
     obj = Object.new.freeze
+    assert_predicate(RubyVM::Shape.of(obj), :shape_frozen?)
+
+    # dup'd objects shouldn't be frozen
     obj2 = obj.dup
     refute_predicate(obj2, :frozen?)
-    # dup'd objects shouldn't be frozen, and the shape should be the
-    # parent shape of the copied object
-    assert_equal(RubyVM::Shape.of(obj).parent.id, RubyVM::Shape.of(obj2).id)
+    refute_predicate(RubyVM::Shape.of(obj2), :shape_frozen?)
   end
 
   def test_freezing_and_duplicating_object_with_ivars
     obj = Example.new.freeze
     obj2 = obj.dup
     refute_predicate(obj2, :frozen?)
-    refute_shape_equal(RubyVM::Shape.of(obj), RubyVM::Shape.of(obj2))
+    refute_equal(RubyVM::Shape.of(obj), RubyVM::Shape.of(obj2))
     assert_equal(obj2.instance_variable_get(:@a), 1)
   end
 
@@ -976,6 +1216,7 @@ class TestShapes < Test::Unit::TestCase
     str.freeze
     str2 = str.dup
     refute_predicate(str2, :frozen?)
+
     refute_equal(RubyVM::Shape.of(str).id, RubyVM::Shape.of(str2).id)
     assert_equal(str2.instance_variable_get(:@a), 1)
   end
@@ -991,9 +1232,8 @@ class TestShapes < Test::Unit::TestCase
     obj = Object.new
     obj2 = obj.clone(freeze: true)
     assert_predicate(obj2, :frozen?)
-    refute_shape_equal(RubyVM::Shape.of(obj), RubyVM::Shape.of(obj2))
-    assert_equal(RubyVM::Shape::SHAPE_FROZEN, RubyVM::Shape.of(obj2).type)
-    assert_shape_equal(RubyVM::Shape.of(obj), RubyVM::Shape.of(obj2).parent)
+    refute_equal(RubyVM::Shape.of(obj), RubyVM::Shape.of(obj2))
+    assert_predicate(RubyVM::Shape.of(obj2), :shape_frozen?)
   end
 
   def test_freezing_and_cloning_object_with_ivars
@@ -1035,5 +1275,69 @@ class TestShapes < Test::Unit::TestCase
       tc = TooComplex.new
       tc.send("a#{_1}_m")
     end
+  end
+
+  def assert_complex_during_delete(obj)
+    obj.instance_variable_set("@___#{SecureRandom.hex}", 1)
+
+    (RubyVM::Shape::SHAPE_MAX_VARIATIONS * 2).times do |i|
+      obj.instance_variable_set("@ivar#{i}", i)
+    end
+
+    refute_predicate RubyVM::Shape.of(obj), :complex?
+    (RubyVM::Shape::SHAPE_MAX_VARIATIONS * 2).times do |i|
+      obj.remove_instance_variable("@ivar#{i}")
+    end
+    assert_predicate RubyVM::Shape.of(obj), :complex?
+  end
+
+  def test_object_complex_during_delete
+    assert_complex_during_delete(Class.new.new)
+  end
+
+  def test_class_complex_during_delete
+    assert_complex_during_delete(Module.new)
+  end
+
+  def test_generic_complex_during_delete
+    assert_complex_during_delete(Class.new(Array).new)
+  end
+
+  def assert_complex_max_fields(obj)
+    extra_fields = RubyVM::Shape::SHAPE_MAX_FIELDS - obj.instance_variables.size
+    extra_fields.times do |i|
+      obj.instance_variable_set("@camel_ivar#{i}", i)
+    end
+    refute_predicate RubyVM::Shape.of(obj), :complex?
+    obj.instance_variable_set("@camel_straw", true)
+    assert_predicate RubyVM::Shape.of(obj), :complex?
+  end
+
+  def test_max_fields_complex
+    assert_complex_max_fields(Class.new(Object).new)
+  end
+
+  def test_generic_max_fields_complex
+    assert_complex_max_fields(Class.new(Array).new)
+  end
+
+  def test_class_max_fields_complex
+    assert_complex_max_fields(Class.new(Module).new)
+  end
+
+  def test_max_initial_fields
+    klass = Class.new
+    init_ivars = (RubyVM::Shape::SHAPE_MAX_FIELDS + 1).times.map { |i| "@ivar_#{i} = #{i}" }
+    klass.class_eval(<<~RUBY)
+      def initialize(init = false)
+        if init
+          #{init_ivars.join(";")}
+        end
+      end
+    RUBY
+    assert_predicate RubyVM::Shape.of(klass.new), :complex?
+    assert_predicate RubyVM::Shape.of(klass.new.dup), :complex?
+    assert_predicate RubyVM::Shape.of(klass.new(true)), :complex?
+    assert_predicate RubyVM::Shape.of(klass.new(true).dup), :complex?
   end
 end if defined?(RubyVM::Shape)

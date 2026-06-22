@@ -63,6 +63,13 @@ module Bundler
         true
       end
 
+      # The client holds the parsed checksums of all info files in the
+      # index. Dropping it is always safe because it is rebuilt from the
+      # local cache on demand.
+      def release_resolution_memory!
+        @compact_index_client = nil
+      end
+
       private
 
       def compact_index_client
@@ -73,6 +80,12 @@ module Bundler
       end
 
       def fetch_gem_infos(names)
+        # Create the client and update the versions file on this thread.
+        # Otherwise the workers race to lazily create the client and update
+        # the versions file concurrently, e.g. when the client was released
+        # after resolution and is being rebuilt for `bundle cache`.
+        compact_index_client.available?
+
         in_parallel(names) {|name| compact_index_client.info(name) }
       rescue TooManyRequestsError # rubygems.org is rate limiting us, slow down.
         @bundle_worker&.stop
@@ -110,7 +123,7 @@ module Bundler
         def call(path, headers)
           fetcher.downloader.fetch(fetcher.fetch_uri + path, headers)
         rescue NetworkDownError => e
-          raise unless Bundler.feature_flag.allow_offline_install? && headers["If-None-Match"]
+          raise unless headers["If-None-Match"]
           ui.warn "Using the cached data for the new index because of a network error: #{e}"
           Gem::Net::HTTPNotModified.new(nil, nil, nil)
         end

@@ -64,7 +64,7 @@ require 'prettyprint'
 class PP < PrettyPrint
 
   # The version string
-  VERSION = "0.6.2"
+  VERSION = "0.6.4"
 
   # Returns the usable width for +out+.
   # As the width of +out+:
@@ -145,21 +145,13 @@ class PP < PrettyPrint
     # Yields to a block
     # and preserves the previous set of objects being printed.
     def guard_inspect_key
-      if Thread.current[:__recursive_key__] == nil
-        Thread.current[:__recursive_key__] = {}.compare_by_identity
-      end
-
-      if Thread.current[:__recursive_key__][:inspect] == nil
-        Thread.current[:__recursive_key__][:inspect] = {}.compare_by_identity
-      end
-
-      save = Thread.current[:__recursive_key__][:inspect]
-
+      recursive_state = Thread.current[:__recursive_key__] ||= {}.compare_by_identity
+      save = recursive_state[:inspect] ||= {}.compare_by_identity
       begin
-        Thread.current[:__recursive_key__][:inspect] = {}.compare_by_identity
+        recursive_state[:inspect] = {}.compare_by_identity
         yield
       ensure
-        Thread.current[:__recursive_key__][:inspect] = save
+        recursive_state[:inspect] = save
       end
     end
 
@@ -167,9 +159,8 @@ class PP < PrettyPrint
     # to be pretty printed. Used to break cycles in chains of objects to be
     # pretty printed.
     def check_inspect_key(id)
-      Thread.current[:__recursive_key__] &&
-      Thread.current[:__recursive_key__][:inspect] &&
-      Thread.current[:__recursive_key__][:inspect].include?(id)
+      recursive_state = Thread.current[:__recursive_key__] or return false
+      recursive_state[:inspect]&.include?(id)
     end
 
     # Adds the object_id +id+ to the set of objects being pretty printed, so
@@ -183,10 +174,10 @@ class PP < PrettyPrint
       Thread.current[:__recursive_key__][:inspect].delete id
     end
 
-    private def guard_inspect(object)
+    private def guard_inspect(object) # :nodoc:
       recursive_state = Thread.current[:__recursive_key__]
 
-      if recursive_state && recursive_state.key?(:inspect)
+      if recursive_state&.key?(:inspect)
         begin
           push_inspect_key(object)
           yield
@@ -276,15 +267,20 @@ class PP < PrettyPrint
     def seplist(list, sep=nil, iter_method=:each) # :yield: element
       sep ||= lambda { comma_breakable }
       first = true
+      kwsplat = EMPTY_KWHASH
       list.__send__(iter_method) {|*v|
         if first
           first = false
         else
           sep.call
         end
-        RUBY_VERSION >= "3.0" ? yield(*v, **{}) : yield(*v)
+        kwsplat ? yield(*v, **kwsplat) : yield(*v)
       }
     end
+    EMPTY_KWHASH = if RUBY_VERSION >= "3.0" # :nodoc:
+      {}.freeze
+    end
+    private_constant :EMPTY_KWHASH
 
     # A present standard failsafe for pretty printing any given Object
     def pp_object(obj)
@@ -317,12 +313,10 @@ class PP < PrettyPrint
       # A pretty print for a pair of Hash
       def pp_hash_pair(k, v)
         if Symbol === k
-          sym_s = k.inspect
-          if sym_s[1].match?(/["$@!]/) || sym_s[-1].match?(/[%&*+\-\/<=>@\]^`|~]/)
-            text "#{k.to_s.inspect}:"
-          else
-            text "#{k}:"
+          if k.inspect.match?(%r[\A:["$@!]|[%&*+\-\/<=>@\]^`|~]\z])
+            k = k.to_s.inspect
           end
+          text "#{k}:"
         else
           pp k
           text ' '
@@ -394,7 +388,8 @@ class PP < PrettyPrint
     # This method should return an array of names of instance variables as symbols or strings as:
     # +[:@a, :@b]+.
     def pretty_print_instance_variables
-      instance_variables.sort
+      ivars = respond_to?(:instance_variables_to_inspect, true) ? instance_variables_to_inspect || instance_variables : instance_variables
+      ivars.sort
     end
 
     # Is #inspect implementation using #pretty_print.
@@ -437,6 +432,28 @@ class Hash # :nodoc:
   end
 end
 
+if defined?(Set)
+  if set_pp = Set.instance_method(:initialize).source_location
+    set_pp = !set_pp.first.end_with?("/set.rb") # not defined in set.rb
+  else
+    set_pp = true               # defined in C
+  end
+end
+class Set # :nodoc:
+  def pretty_print(pp)  # :nodoc:
+    pp.group(1, "#{self.class.name}[", ']') {
+      pp.seplist(self) { |o|
+        pp.pp o
+      }
+    }
+  end
+
+  def pretty_print_cycle(pp)    # :nodoc:
+    name = self.class.name
+    pp.text(empty? ? "#{name}[]" : "#{name}[...]")
+  end
+end if set_pp
+
 class << ENV # :nodoc:
   def pretty_print(q) # :nodoc:
     h = {}
@@ -465,6 +482,13 @@ class Struct # :nodoc:
   def pretty_print_cycle(q) # :nodoc:
     q.text sprintf("#<struct %s:...>", PP.mcall(self, Kernel, :class).name)
   end
+end
+
+verbose, $VERBOSE = $VERBOSE, nil
+begin
+  has_data_define = defined?(Data.define)
+ensure
+  $VERBOSE = verbose
 end
 
 class Data # :nodoc:
@@ -499,7 +523,7 @@ class Data # :nodoc:
   def pretty_print_cycle(q) # :nodoc:
     q.text sprintf("#<data %s:...>", PP.mcall(self, Kernel, :class).name)
   end
-end if defined?(Data.define)
+end if has_data_define
 
 class Range # :nodoc:
   def pretty_print(q) # :nodoc:

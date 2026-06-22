@@ -6,10 +6,10 @@ describe "Exception#full_message" do
     e.set_backtrace(["a.rb:1", "b.rb:2"])
 
     full_message = e.full_message
-    full_message.should include "RuntimeError"
-    full_message.should include "Some runtime error"
-    full_message.should include "a.rb:1"
-    full_message.should include "b.rb:2"
+    full_message.should.include? "RuntimeError"
+    full_message.should.include? "Some runtime error"
+    full_message.should.include? "a.rb:1"
+    full_message.should.include? "b.rb:2"
   end
 
   it "supports :highlight option and adds escape sequences to highlight some strings" do
@@ -141,8 +141,8 @@ describe "Exception#full_message" do
       exception = e
     end
 
-    exception.full_message.should include "main exception"
-    exception.full_message.should include "the cause"
+    exception.full_message.should.include? "main exception"
+    exception.full_message.should.include? "the cause"
   end
 
   it 'contains all the chain of exceptions' do
@@ -160,57 +160,67 @@ describe "Exception#full_message" do
       exception = e
     end
 
-    exception.full_message.should include "last exception"
-    exception.full_message.should include "intermediate exception"
-    exception.full_message.should include "origin exception"
+    exception.full_message.should.include? "last exception"
+    exception.full_message.should.include? "intermediate exception"
+    exception.full_message.should.include? "origin exception"
   end
 
-  ruby_version_is "3.2" do
-    it "relies on #detailed_message" do
-      e = RuntimeError.new("new error")
-      e.define_singleton_method(:detailed_message) { |**| "DETAILED MESSAGE" }
+  it "relies on #detailed_message" do
+    e = RuntimeError.new("new error")
+    e.define_singleton_method(:detailed_message) { |**| "DETAILED MESSAGE" }
 
-      e.full_message.lines.first.should =~ /DETAILED MESSAGE/
+    e.full_message.lines.first.should =~ /DETAILED MESSAGE/
+  end
+
+  it "passes all its own keyword arguments (with :highlight default value and without :order default value) to #detailed_message" do
+    e = RuntimeError.new("new error")
+    options_passed = nil
+    e.define_singleton_method(:detailed_message) do |**options|
+      options_passed = options
+      "DETAILED MESSAGE"
     end
 
-    it "passes all its own keyword arguments (with :highlight default value and without :order default value) to #detailed_message" do
-      e = RuntimeError.new("new error")
-      options_passed = nil
-      e.define_singleton_method(:detailed_message) do |**options|
-        options_passed = options
-        "DETAILED MESSAGE"
-      end
+    e.full_message(foo: "bar")
+    options_passed.should == { foo: "bar", highlight: Exception.to_tty? }
+  end
 
-      e.full_message(foo: "bar")
-      options_passed.should == { foo: "bar", highlight: Exception.to_tty? }
+  it "converts #detailed_message returned value to String if it isn't a String" do
+    message = Object.new
+    def message.to_str; "DETAILED MESSAGE"; end
+
+    e = RuntimeError.new("new error")
+    e.define_singleton_method(:detailed_message) { |**| message }
+
+    e.full_message.lines.first.should =~ /DETAILED MESSAGE/
+  end
+
+  it "uses class name if #detailed_message returns nil" do
+    e = RuntimeError.new("new error")
+    e.define_singleton_method(:detailed_message) { |**| nil }
+
+    e.full_message(highlight: false).lines.first.should =~ /RuntimeError/
+    e.full_message(highlight: true).lines.first.should =~ /#{Regexp.escape("\e[1;4mRuntimeError\e[m")}/
+  end
+
+  it "uses class name if exception object doesn't respond to #detailed_message" do
+    e = RuntimeError.new("new error")
+    class << e
+      undef :detailed_message
     end
 
-    it "converts #detailed_message returned value to String if it isn't a String" do
-      message = Object.new
-      def message.to_str; "DETAILED MESSAGE"; end
+    e.full_message(highlight: false).lines.first.should =~ /RuntimeError/
+    e.full_message(highlight: true).lines.first.should =~ /#{Regexp.escape("\e[1;4mRuntimeError\e[m")}/
+  end
 
-      e = RuntimeError.new("new error")
-      e.define_singleton_method(:detailed_message) { |**| message }
-
-      e.full_message.lines.first.should =~ /DETAILED MESSAGE/
+  it "allows cause with empty backtrace" do
+    begin
+      raise RuntimeError.new("Some runtime error"), cause: RuntimeError.new("Some other runtime error")
+    rescue => e
     end
 
-    it "uses class name if #detailed_message returns nil" do
-      e = RuntimeError.new("new error")
-      e.define_singleton_method(:detailed_message) { |**| nil }
-
-      e.full_message(highlight: false).lines.first.should =~ /RuntimeError/
-      e.full_message(highlight: true).lines.first.should =~ /#{Regexp.escape("\e[1;4mRuntimeError\e[m")}/
-    end
-
-    it "uses class name if exception object doesn't respond to #detailed_message" do
-      e = RuntimeError.new("new error")
-      class << e
-        undef :detailed_message
-      end
-
-      e.full_message(highlight: false).lines.first.should =~ /RuntimeError/
-      e.full_message(highlight: true).lines.first.should =~ /#{Regexp.escape("\e[1;4mRuntimeError\e[m")}/
-    end
+    full_message = e.full_message
+    full_message.should.include? "RuntimeError"
+    full_message.should.include? "Some runtime error"
+    full_message.should.include? "Some other runtime error"
   end
 end

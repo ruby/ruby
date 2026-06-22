@@ -190,7 +190,7 @@ def backport_command_string
       next false if c.match(/\A\d{1,6}\z/) # skip SVN revision
 
       # check if the Git revision is included in master
-      has_commit(c, "master")
+      has_commit(c, "origin/master")
     end.sort_by do |changeset|
       Integer(IO.popen(%W[git show -s --format=%ct #{changeset}], &:read))
     end

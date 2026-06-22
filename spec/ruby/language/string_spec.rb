@@ -1,6 +1,7 @@
-# -*- encoding: binary -*-
+# encoding: binary
 
 require_relative '../spec_helper'
+require_relative 'fixtures/class_with_class_variable'
 
 # TODO: rewrite these horrid specs. it "are..." seriously?!
 
@@ -25,6 +26,11 @@ describe "Ruby character strings" do
 
   it "interpolate global variables just with the # character" do
     "#$ip".should == 'xxx'
+  end
+
+  it "interpolate class variables just with the # character" do
+    object = StringSpecs::ClassWithClassVariable.new
+    object.foo.should == 'xxx'
   end
 
   it "allows underscore as part of a variable name in a simple interpolation" do
@@ -127,6 +133,12 @@ describe "Ruby character strings" do
     "#{obj}".should == '42'
   end
 
+  it "raise NoMethodError when #to_s is not defined for the object" do
+    obj = BasicObject.new
+
+    -> { "#{obj}" }.should.raise(NoMethodError)
+  end
+
   it "uses an internal representation when #to_s doesn't return a String" do
     obj = mock('to_s')
     obj.stub!(:to_s).and_return(42)
@@ -137,7 +149,7 @@ describe "Ruby character strings" do
     # is that if you interpolate an object that fails to return
     # a String, you will still get a String and not raise an
     # exception.
-    "#{obj}".should be_an_instance_of(String)
+    "#{obj}".should.instance_of?(String)
   end
 
   it "allows a dynamic string to parse a nested do...end block as an argument to a call without parens, interpolated" do
@@ -275,20 +287,20 @@ describe "Ruby String interpolation" do
     a = "\u3042"
     b = "\xff".dup.force_encoding "binary"
 
-    -> { "#{a} #{b}" }.should raise_error(Encoding::CompatibilityError)
+    -> { "#{a} #{b}" }.should.raise(Encoding::CompatibilityError)
   end
 
   it "creates a non-frozen String" do
     code = <<~'RUBY'
-    "a#{6*7}c"
+      "a#{6*7}c"
     RUBY
     eval(code).should_not.frozen?
   end
 
   it "creates a non-frozen String when # frozen-string-literal: true is used" do
     code = <<~'RUBY'
-    # frozen-string-literal: true
-    "a#{6*7}c"
+      # frozen-string-literal: true
+      "a#{6*7}c"
     RUBY
     eval(code).should_not.frozen?
   end

@@ -7,6 +7,7 @@
 
 # rubocop:enable Style/AsciiComments
 
+require_relative "win_platform"
 require_relative "security"
 require_relative "user_interaction"
 
@@ -160,7 +161,7 @@ class Gem::Package
     return super unless gem.start
     return super unless gem.start.include? "MD5SUM ="
 
-    Gem::Package::Old.new gem
+    Gem::Package::Old.new gem, security_policy
   end
 
   ##
@@ -231,7 +232,11 @@ class Gem::Package
 
     tar.add_file_signed "checksums.yaml.gz", 0o444, @signer do |io|
       gzip_to io do |gz_io|
-        Psych.dump checksums_by_algorithm, gz_io
+        if Gem.use_psych?
+          Psych.dump checksums_by_algorithm, gz_io
+        else
+          gz_io.write Gem::YAMLSerializer.dump(checksums_by_algorithm)
+        end
       end
     end
   end
@@ -267,7 +272,7 @@ class Gem::Package
 
       tar.add_file_simple file, stat.mode, stat.size do |dst_io|
         File.open file, "rb" do |src_io|
-          copy_stream(src_io, dst_io)
+          copy_stream(src_io, dst_io, stat.size)
         end
       end
     end
@@ -436,8 +441,6 @@ EOM
           symlinks << [full_name, link_target, destination, real_destination]
         end
 
-        FileUtils.rm_rf destination
-
         mkdir =
           if entry.directory?
             destination
@@ -450,9 +453,20 @@ EOM
           directories << mkdir
         end
 
+        real_mkdir = File.realpath(mkdir)
+        unless real_mkdir == destination_dir || normalize_path(real_mkdir).start_with?(normalize_path(destination_dir + "/"))
+          raise Gem::Package::PathError.new(real_mkdir, destination_dir)
+        end
+
         if entry.file?
-          File.open(destination, "wb") {|out| copy_stream(entry, out) }
-          FileUtils.chmod file_mode(entry.header.mode) & ~File.umask, destination
+          File.open(destination, "wb") do |out|
+            copy_stream(tar.io, out, entry.size)
+            # Flush needs to happen before chmod because there could be data
+            # in the IO buffer that needs to be written, and that could be
+            # written after the chmod (on close) which would mess up the perms
+            out.flush
+            out.chmod file_mode(entry.header.mode) & ~File.umask
+          end
         end
 
         verbose destination
@@ -461,7 +475,7 @@ EOM
 
     symlinks.each do |name, target, destination, real_destination|
       if File.exist?(real_destination)
-        File.symlink(target, destination)
+        create_symlink(target, destination)
       else
         alert_warning "#{@spec.full_name} ships with a dangling symlink named #{name} pointing to missing #{target} file. Ignoring"
       end
@@ -514,10 +528,12 @@ EOM
     destination
   end
 
-  def normalize_path(pathname)
-    if Gem.win_platform?
+  if Gem.win_platform?
+    def normalize_path(pathname) # :nodoc:
       pathname.downcase
-    else
+    end
+  else
+    def normalize_path(pathname) # :nodoc:
       pathname
     end
   end
@@ -525,7 +541,7 @@ EOM
   ##
   # Loads a Gem::Specification from the TarEntry +entry+
 
-  def load_spec(entry) # :nodoc:
+  def load_spec_from_metadata(entry) # :nodoc:
     limit = 10 * 1024 * 1024
     case entry.full_name
     when "metadata" then
@@ -545,6 +561,15 @@ EOM
       tar = Gem::Package::TarReader.new gzio
 
       yield tar
+    ensure
+      # Consume remaining gzip data to prevent the
+      # "attempt to close unfinished zstream; reset forced" warning
+      # when the GzipReader is closed with unconsumed compressed data.
+      begin
+        IO.copy_stream(gzio, IO::NULL)
+      rescue Zlib::GzipFile::Error, IOError
+        nil
+      end
     end
   end
 
@@ -635,6 +660,8 @@ EOM
     raise Gem::Package::FormatError.new e.message, @gem
   end
 
+  private
+
   ##
   # Verifies the +checksums+ against the +digests+.  This check is not
   # cryptographically secure.  Missing checksums are ignored.
@@ -669,12 +696,7 @@ EOM
       digest entry
     end
 
-    case file_name
-    when "metadata", "metadata.gz" then
-      load_spec entry
-    when "data.tar.gz" then
-      verify_gz entry
-    end
+    load_spec_from_metadata entry
   rescue StandardError
     warn "Exception while verifying #{@gem.path}"
     raise
@@ -702,25 +724,13 @@ EOM
     end
   end
 
-  ##
-  # Verifies that +entry+ is a valid gzipped file.
-
-  def verify_gz(entry) # :nodoc:
-    Zlib::GzipReader.wrap entry do |gzio|
-      # TODO: read into a buffer once zlib supports it
-      gzio.read 16_384 until gzio.eof? # gzip checksum verification
-    end
-  rescue Zlib::GzipFile::Error => e
-    raise Gem::Package::FormatError.new(e.message, entry.full_name)
-  end
-
   if RUBY_ENGINE == "truffleruby"
-    def copy_stream(src, dst) # :nodoc:
-      dst.write src.read
+    def copy_stream(src, dst, size) # :nodoc:
+      dst.write src.read(size)
     end
   else
-    def copy_stream(src, dst) # :nodoc:
-      IO.copy_stream(src, dst)
+    def copy_stream(src, dst, size) # :nodoc:
+      IO.copy_stream(src, dst, size)
     end
   end
 
@@ -728,6 +738,23 @@ EOM
     bytes = io.read(limit + 1)
     raise Gem::Package::FormatError, "#{name} is too big (over #{limit} bytes)" if bytes.size > limit
     bytes
+  end
+
+  if Gem.win_platform?
+    # Create a symlink and fallback to copy the file or directory on Windows,
+    # where symlink creation needs special privileges in form of the Developer Mode.
+    # JRuby on Windows raises TypeError from the wincode path-conversion helper
+    # when it cannot create the symlink, so fall back to copy in that case too.
+    def create_symlink(old_name, new_name)
+      File.symlink(old_name, new_name)
+    rescue Errno::EACCES, TypeError
+      from = File.expand_path(old_name, File.dirname(new_name))
+      FileUtils.cp_r(from, new_name)
+    end
+  else
+    def create_symlink(old_name, new_name)
+      File.symlink(old_name, new_name)
+    end
   end
 end
 

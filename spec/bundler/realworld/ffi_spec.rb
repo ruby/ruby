@@ -42,12 +42,12 @@ RSpec.describe "loading dynamically linked library on a bundle exec context", re
       }
     C
 
-    sys_exec "gcc -g -o libfoo.so -shared -fpic libfoo.c"
+    in_bundled_app "gcc -g -o libfoo.so -shared -fpic libfoo.c"
 
     install_gemfile <<-G
       source "https://rubygems.org"
 
-      gem 'ffi'
+      gem 'ffi', force_ruby_platform: true
     G
 
     bundle "exec ruby foo.rb"

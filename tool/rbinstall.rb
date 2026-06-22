@@ -527,6 +527,8 @@ module RbInstall
         const_set(:FileUtils, fu::NoWrite)
         fu
       end
+      # RubyGems 3.0.0 or later supports `dir_mode`, but it uses
+      # `File` method to apply it, not `FileUtils`.
       dir_mode = options.delete(:dir_mode) if options
     end
     yield
@@ -659,6 +661,17 @@ module RbInstall
           "#{srcdir}/lib"
         end
       end
+
+      class UnpackedGem < self
+        def collect
+          base = @srcdir or return []
+          Dir.glob("**/*", File::FNM_DOTMATCH, base: base).select do |n|
+            next if n == "."
+            next if File.fnmatch?("*.gemspec", n, File::FNM_DOTMATCH|File::FNM_PATHNAME)
+            !File.directory?(File.join(base, n))
+          end
+        end
+      end
     end
   end
 
@@ -696,6 +709,77 @@ module RbInstall
   end
 
   class UnpackedInstaller < Gem::Installer
+    # This method is mostly copied from old version of Gem::Installer#install
+    def install_with_default_gem
+      verify_gem_home
+
+      # The name and require_paths must be verified first, since it could contain
+      # ruby code that would be eval'ed in #ensure_loadable_spec
+      verify_spec
+
+      ensure_loadable_spec
+
+      if options[:install_as_default]
+        Gem.ensure_default_gem_subdirectories gem_home
+      else
+        Gem.ensure_gem_subdirectories gem_home
+      end
+
+      return true if @force
+
+      ensure_dependencies_met unless @ignore_dependencies
+
+      run_pre_install_hooks
+
+      # Set loaded_from to ensure extension_dir is correct
+      if @options[:install_as_default]
+        spec.loaded_from = default_spec_file
+      else
+        spec.loaded_from = spec_file
+      end
+
+      # Completely remove any previous gem files
+      FileUtils.rm_rf gem_dir
+      FileUtils.rm_rf spec.extension_dir
+
+      dir_mode = options[:dir_mode]
+      FileUtils.mkdir_p gem_dir, mode: dir_mode && 0o755
+
+      if @options[:install_as_default]
+        extract_bin
+        write_default_spec
+      else
+        extract_files
+
+        build_extensions
+        write_build_info_file
+        run_post_build_hooks
+      end
+
+      generate_bin
+      generate_plugins
+
+      unless @options[:install_as_default]
+        write_spec
+        write_cache_file
+      end
+
+      File.chmod(dir_mode, gem_dir) if dir_mode
+
+      say spec.post_install_message if options[:post_install_message] && !spec.post_install_message.nil?
+
+      Gem::Specification.add_spec(spec) unless @install_dir
+
+      load_plugin
+
+      run_post_install_hooks
+
+      spec
+    rescue Errno::EACCES => e
+      # Permission denied - /path/to/foo
+      raise Gem::FilePermissionError, e.message.split(" - ").last
+    end
+
     def write_cache_file
     end
 
@@ -741,7 +825,7 @@ module RbInstall
     def install
       spec.post_install_message = nil
       dir_creating(without_destdir(gem_dir))
-      RbInstall.no_write(options) {super}
+      RbInstall.no_write(options) { install_with_default_gem }
     end
 
     # Now build-ext builds all extensions including bundled gems.
@@ -770,32 +854,57 @@ module RbInstall
         $installed_list.puts(d+"/") if $installed_list
       end
     end
+
+    def load_plugin
+      # Suppress warnings for constant re-assignment
+      verbose, $VERBOSE = $VERBOSE, nil
+      super
+    ensure
+      $VERBOSE = verbose
+    end
+
+    def regenerate_plugins_for(spec, plugins_dir)
+      plugins = spec.plugins
+      return if plugins.empty?
+      dir = without_destdir(plugins_dir)
+      plugins.each do |plugin|
+        $installed_list.puts(File.join(dir, "#{spec.name}_plugin#{File.extname(plugin)}"))
+      end
+      unless $dryrun
+        super
+      end
+    end
   end
 end
 
-def load_gemspec(file, base = nil)
+def load_gemspec(file, base = nil, files: nil)
   file = File.realpath(file)
   code = File.read(file, encoding: "utf-8:-")
 
-  files = []
-  Dir.glob("**/*", File::FNM_DOTMATCH, base: base) do |n|
-    case File.basename(n); when ".", ".."; next; end
-    next if File.directory?(File.join(base, n))
-    files << n.dump
-  end if base
+  code.gsub!(/^ *#.*/, "")
+  spec_files = files ? files.map(&:dump).join(", ") : ""
   code.gsub!(/(?:`git[^\`]*`|%x\[git[^\]]*\])\.split(\([^\)]*\))?/m) do
-    "[" + files.join(", ") + "]"
-  end
+    "[" + spec_files + "]"
+  end \
+  or
   code.gsub!(/IO\.popen\(.*git.*?\)/) do
-    "[" + files.join(", ") + "] || itself"
+    "[" + spec_files + "] || itself"
   end
 
   spec = eval(code, binding, file)
+  # for out-of-place build
+  collected_files = files ? spec.files.concat(files).uniq : spec.files
+  spec.files = collected_files.map do |f|
+    if !File.exist?(File.join(base || ".", f)) && f.end_with?(".rb")
+      "lib/#{f}"
+    else
+      f
+    end
+  end
   unless Gem::Specification === spec
     raise TypeError, "[#{file}] isn't a Gem::Specification (#{spec.class} instead)."
   end
   spec.loaded_from = base ? File.join(base, File.basename(file)) : file
-  spec.files.reject! {|n| n.end_with?(".gemspec") or n.start_with?(".git")}
   spec.date = RUBY_RELEASE_DATE
 
   spec
@@ -806,6 +915,7 @@ def install_default_gem(dir, srcdir, bindir)
   install_dir = with_destdir(gem_dir)
   prepare "default gems from #{dir}", gem_dir
   RbInstall.no_write do
+    # Record making directories
     makedirs(Gem.ensure_default_gem_subdirectories(install_dir, $dir_mode).map {|d| File.join(gem_dir, d)})
   end
 
@@ -824,14 +934,11 @@ def install_default_gem(dir, srcdir, bindir)
 
   base = "#{srcdir}/#{dir}"
   gems = Dir.glob("**/*.gemspec", base: base).map {|src|
-    spec = load_gemspec("#{base}/#{src}")
-    file_collector = RbInstall::Specs::FileCollector.for(srcdir, dir, src)
-    files = file_collector.collect
+    files = RbInstall::Specs::FileCollector.for(srcdir, dir, src).collect
     if files.empty?
       next
     end
-    spec.files = files
-    spec
+    load_gemspec("#{base}/#{src}", files: files)
   }
   gems.compact.sort_by(&:name).each do |gemspec|
     old_gemspecs = Dir[File.join(with_destdir(default_spec_dir), "#{gemspec.name}-*.gemspec")]
@@ -1006,7 +1113,6 @@ install?(:local, :comm, :man) do
   prepare "manpages", mandir, ([] | mdocs.collect {|mdoc| mdoc[/\d+$/]}).sort.collect {|sec| "man#{sec}"}
 
   mantype, suffix, compress = Compressors.for($mantype)
-  mandir = File.join(mandir, "man")
   has_goruby = File.exist?(goruby_install_name+exeext)
   require File.join(srcdir, "tool/mdoc2man.rb") if /\Adoc\b/ !~ mantype
   mdocs.each do |mdoc|
@@ -1016,8 +1122,8 @@ install?(:local, :comm, :man) do
       next unless has_goruby
     end
 
-    destdir = mandir + (section = mdoc[/\d+$/])
-    destname = ruby_install_name.sub(/ruby/, base.chomp(".#{section}"))
+    destdir = File.join(mandir, "man" + (section = mdoc[/\d+$/]))
+    destname = $script_installer.transform(base.chomp(".#{section}"))
     destfile = File.join(destdir, "#{destname}.#{section}")
 
     if /\Adoc\b/ =~ mantype or !mdoc_file?(mdoc)
@@ -1103,6 +1209,7 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
   install_dir = with_destdir(gem_dir)
   prepare "bundled gems", gem_dir
   RbInstall.no_write do
+    # Record making directories
     makedirs(Gem.ensure_gem_subdirectories(install_dir, $dir_mode).map {|d| File.join(gem_dir, d)})
   end
 
@@ -1131,6 +1238,7 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
   # the newly installed ruby.
   ENV.delete('RUBYOPT')
 
+  collector = RbInstall::Specs::FileCollector::UnpackedGem
   File.foreach("#{srcdir}/gems/bundled_gems") do |name|
     next if /^\s*(?:#|$)/ =~ name
     next unless /^(\S+)\s+(\S+).*/ =~ name
@@ -1149,7 +1257,11 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
       skipped[gem_name] = "gemspec not found"
       next
     end
-    spec = load_gemspec(path, "#{srcdir}/.bundle/gems/#{gem_name}")
+    base = "#{srcdir}/.bundle/gems/#{gem_name}"
+    files = collector.new(path, base, nil).collect
+    files.delete("#{gem}.gemspec")
+    files.delete("#{gem_name}.gemspec")
+    spec = load_gemspec(path, base, files: files)
     unless spec.platform == Gem::Platform::RUBY
       skipped[gem_name] = "not ruby platform (#{spec.platform})"
       next
@@ -1164,6 +1276,7 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
       next
     end
     spec.extension_dir = "#{extensions_dir}/#{spec.full_name}"
+
     package = RbInstall::DirPackage.new spec
     ins = RbInstall::UnpackedInstaller.new(package, options)
     puts "#{INDENT}#{spec.name} #{spec.version}"
@@ -1183,7 +1296,8 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
     skipped.default = "not found in bundled_gems"
     puts "skipped bundled gems:"
     gems.each do |gem|
-      printf "    %-32s%s\n", File.basename(gem), skipped[gem]
+      gem = File.basename(gem)
+      printf "    %-31s %s\n", gem, skipped[gem.chomp(".gem")]
     end
   end
 end

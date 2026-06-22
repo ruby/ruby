@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/imag'
 
 describe "Numeric#imag" do
-  it_behaves_like :numeric_imag, :imag
+  it "is an alias of Numeric#imaginary" do
+    Numeric.instance_method(:imag).should == Numeric.instance_method(:imaginary)
+  end
 end

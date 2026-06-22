@@ -22,16 +22,7 @@ describe "Range#size" do
     eval("('z'..)").size.should == nil
   end
 
-  ruby_version_is ""..."3.2" do
-    it 'returns Float::INFINITY for all beginless ranges' do
-      (..1).size.should == Float::INFINITY
-      (...0.5).size.should == Float::INFINITY
-      (..nil).size.should == Float::INFINITY
-      (...'o').size.should == Float::INFINITY
-    end
-  end
-
-  ruby_version_is "3.2"..."3.4" do
+  ruby_version_is ""..."3.4" do
     it 'returns Float::INFINITY for all beginless ranges if the end is numeric' do
       (..1).size.should == Float::INFINITY
       (...0.5).size.should == Float::INFINITY
@@ -76,26 +67,26 @@ describe "Range#size" do
 
   ruby_version_is "3.4" do
     it 'raises TypeError if a range is not iterable' do
-      -> { (1.0..16.0).size }.should raise_error(TypeError, /can't iterate from/)
-      -> { (1.0...16.0).size }.should raise_error(TypeError, /can't iterate from/)
-      -> { (1.0..15.9).size }.should raise_error(TypeError, /can't iterate from/)
-      -> { (1.1..16.0).size }.should raise_error(TypeError, /can't iterate from/)
-      -> { (1.1..15.9).size }.should raise_error(TypeError, /can't iterate from/)
-      -> { (16.0..0.0).size }.should raise_error(TypeError, /can't iterate from/)
-      -> { (Float::INFINITY..0).size }.should raise_error(TypeError, /can't iterate from/)
-      -> { (-Float::INFINITY..0).size }.should raise_error(TypeError, /can't iterate from/)
-      -> { (-Float::INFINITY..Float::INFINITY).size }.should raise_error(TypeError, /can't iterate from/)
-      -> { (..1).size }.should raise_error(TypeError, /can't iterate from/)
-      -> { (...0.5).size }.should raise_error(TypeError, /can't iterate from/)
-      -> { (..nil).size }.should raise_error(TypeError, /can't iterate from/)
-      -> { (...'o').size }.should raise_error(TypeError, /can't iterate from/)
-      -> { eval("(0.5...)").size }.should raise_error(TypeError, /can't iterate from/)
-      -> { eval("([]...)").size }.should raise_error(TypeError, /can't iterate from/)
+      -> { (1.0..16.0).size }.should.raise(TypeError, /can't iterate from/)
+      -> { (1.0...16.0).size }.should.raise(TypeError, /can't iterate from/)
+      -> { (1.0..15.9).size }.should.raise(TypeError, /can't iterate from/)
+      -> { (1.1..16.0).size }.should.raise(TypeError, /can't iterate from/)
+      -> { (1.1..15.9).size }.should.raise(TypeError, /can't iterate from/)
+      -> { (16.0..0.0).size }.should.raise(TypeError, /can't iterate from/)
+      -> { (Float::INFINITY..0).size }.should.raise(TypeError, /can't iterate from/)
+      -> { (-Float::INFINITY..0).size }.should.raise(TypeError, /can't iterate from/)
+      -> { (-Float::INFINITY..Float::INFINITY).size }.should.raise(TypeError, /can't iterate from/)
+      -> { (..1).size }.should.raise(TypeError, /can't iterate from/)
+      -> { (...0.5).size }.should.raise(TypeError, /can't iterate from/)
+      -> { (..nil).size }.should.raise(TypeError, /can't iterate from/)
+      -> { (...'o').size }.should.raise(TypeError, /can't iterate from/)
+      -> { eval("(0.5...)").size }.should.raise(TypeError, /can't iterate from/)
+      -> { eval("([]...)").size }.should.raise(TypeError, /can't iterate from/)
     end
   end
 
   it "returns nil if first and last are not Numeric" do
-    (:a..:z).size.should be_nil
-    ('a'..'z').size.should be_nil
+    (:a..:z).size.should == nil
+    ('a'..'z').size.should == nil
   end
 end

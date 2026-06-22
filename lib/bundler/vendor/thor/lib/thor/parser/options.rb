@@ -144,7 +144,7 @@ class Bundler::Thor
     def check_exclusive!
       opts = @assigns.keys
       # When option A and B are exclusive, if A and B are given at the same time,
-      # the diffrence of argument array size will decrease.
+      # the difference of argument array size will decrease.
       found = @exclusives.find{ |ex| (ex - opts).size < ex.size - 1 }
       if found
         names = names_to_switch_names(found & opts).map{|n| "'#{n}'"}

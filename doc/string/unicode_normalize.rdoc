@@ -1,0 +1,28 @@
+Returns a copy of +self+ with
+{Unicode normalization}[https://unicode.org/reports/tr15] applied.
+
+Argument +form+ must be one of the following symbols
+(see {Unicode normalization forms}[https://unicode.org/reports/tr15/#Norm_Forms]):
+
+- +:nfc+: Canonical decomposition, followed by canonical composition.
+- +:nfd+: Canonical decomposition.
+- +:nfkc+: Compatibility decomposition, followed by canonical composition.
+- +:nfkd+: Compatibility decomposition.
+
+The encoding of +self+ must be one of:
+
+- <tt>Encoding::UTF_8</tt>.
+- <tt>Encoding::UTF_16BE</tt>.
+- <tt>Encoding::UTF_16LE</tt>.
+- <tt>Encoding::UTF_32BE</tt>.
+- <tt>Encoding::UTF_32LE</tt>.
+- <tt>Encoding::GB18030</tt>.
+- <tt>Encoding::UCS_2BE</tt>.
+- <tt>Encoding::UCS_4BE</tt>.
+
+Examples:
+
+  "a\u0300".unicode_normalize       # => "à"  # Lowercase 'a' with grave accens.
+  "a\u0300".unicode_normalize(:nfd) # => "à"  # Same.
+
+Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].

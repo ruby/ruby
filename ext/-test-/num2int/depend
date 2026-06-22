@@ -128,6 +128,7 @@ num2int.o: $(hdrdir)/ruby/internal/intern/re.h
 num2int.o: $(hdrdir)/ruby/internal/intern/ruby.h
 num2int.o: $(hdrdir)/ruby/internal/intern/select.h
 num2int.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+num2int.o: $(hdrdir)/ruby/internal/intern/set.h
 num2int.o: $(hdrdir)/ruby/internal/intern/signal.h
 num2int.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 num2int.o: $(hdrdir)/ruby/internal/intern/string.h

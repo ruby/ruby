@@ -197,12 +197,32 @@ class TestFileExhaustive < Test::Unit::TestCase
     [regular_file, utf8_file].each do |file|
       assert_equal(file, File.open(file) {|f| f.path})
       assert_equal(file, File.path(file))
-      o = Object.new
-      class << o; self; end.class_eval do
-        define_method(:to_path) { file }
-      end
+      o = Struct.new(:to_path).new(file)
+      assert_equal(file, File.path(o))
+      o = Struct.new(:to_str).new(file)
       assert_equal(file, File.path(o))
     end
+
+    conv_error = ->(method, msg = "converting with #{method}") {
+      test = ->(&new) do
+        o = new.(42)
+        assert_raise(TypeError, msg) {File.path(o)}
+
+        o = new.("abc".encode(Encoding::UTF_32BE))
+        assert_raise(Encoding::CompatibilityError, msg) {File.path(o)}
+
+        ["\0", "a\0", "a\0c"].each do |path|
+          o = new.(path)
+          assert_raise(ArgumentError, msg) {File.path(o)}
+        end
+      end
+
+      test.call(&:itself)
+      test.call(&Struct.new(method).method(:new))
+    }
+
+    conv_error[:to_path]
+    conv_error[:to_str]
   end
 
   def assert_integer(n)
@@ -877,10 +897,12 @@ class TestFileExhaustive < Test::Unit::TestCase
     bug9934 = '[ruby-core:63114] [Bug #9934]'
     require "objspace"
     path = File.expand_path("/foo")
-    assert_operator(ObjectSpace.memsize_of(path), :<=, path.bytesize + GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE], bug9934)
+    slot_size = Integer(ObjectSpace.dump(path)[/"slot_size":(\d+)/, 1])
+    assert_operator(ObjectSpace.memsize_of(path), :<=, path.bytesize + slot_size, bug9934)
     path = File.expand_path("/a"*25)
+    slot_size = Integer(ObjectSpace.dump(path)[/"slot_size":(\d+)/, 1])
     assert_operator(ObjectSpace.memsize_of(path), :<=,
-                    (path.bytesize + 1) * 2 + GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE], bug9934)
+                    (path.bytesize + 1) * 2 + slot_size, bug9934)
   end
 
   def test_expand_path_encoding
@@ -1215,6 +1237,7 @@ class TestFileExhaustive < Test::Unit::TestCase
     assert_equal("foo", File.basename("foo", ".ext"))
     assert_equal("foo", File.basename("foo.ext", ".ext"))
     assert_equal("foo", File.basename("foo.ext", ".*"))
+    assert_raise(ArgumentError) {File.basename("", "\0")}
   end
 
   if NTFS
@@ -1337,14 +1360,19 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_join
-    s = "foo" + File::SEPARATOR + "bar" + File::SEPARATOR + "baz"
+    sep = File::SEPARATOR
+    s = "foo" + sep + "bar" + sep + "baz"
     assert_equal(s, File.join("foo", "bar", "baz"))
     assert_equal(s, File.join(["foo", "bar", "baz"]))
+    assert_equal(s, File.join("foo" + sep, "bar", sep + "baz"))
+    assert_equal(s, File.join("foo" + sep, sep + "bar" + sep, sep + "baz"))
 
     o = Object.new
     def o.to_path; "foo"; end
     assert_equal(s, File.join(o, "bar", "baz"))
-    assert_equal(s, File.join("foo" + File::SEPARATOR, "bar", File::SEPARATOR + "baz"))
+
+    s = sep + "foo"
+    assert_equal(s, File.join(sep, s))
   end
 
   def test_join_alt_separator
@@ -1477,6 +1505,7 @@ class TestFileExhaustive < Test::Unit::TestCase
   end
 
   def test_test
+    omit 'timestamp check is unstable on macOS' if RUBY_PLATFORM =~ /darwin/
     fn1 = regular_file
     hardlinkfile
     sleep(1.1)

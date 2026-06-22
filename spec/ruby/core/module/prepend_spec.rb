@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "Module#prepend" do
   it "is a public method" do
-    Module.should have_public_instance_method(:prepend, false)
+    Module.public_instance_methods(false).should.include?(:prepend)
   end
 
   it "does not affect the superclass" do
@@ -444,58 +444,42 @@ describe "Module#prepend" do
   end
 
   it "raises a TypeError when the argument is not a Module" do
-    -> { ModuleSpecs::Basic.prepend(Class.new) }.should raise_error(TypeError)
+    -> { ModuleSpecs::Basic.prepend(Class.new) }.should.raise(TypeError)
   end
 
   it "does not raise a TypeError when the argument is an instance of a subclass of Module" do
     class ModuleSpecs::SubclassSpec::AClass
     end
-    -> { ModuleSpecs::SubclassSpec::AClass.prepend(ModuleSpecs::Subclass.new) }.should_not raise_error(TypeError)
+    -> { ModuleSpecs::SubclassSpec::AClass.prepend(ModuleSpecs::Subclass.new) }.should_not.raise(TypeError)
   ensure
     ModuleSpecs::SubclassSpec.send(:remove_const, :AClass)
   end
 
-  ruby_version_is ""..."3.2" do
-    it "raises ArgumentError when the argument is a refinement" do
-      refinement = nil
+  it "raises a TypeError when the argument is a refinement" do
+    refinement = nil
 
-      Module.new do
-        refine String do
-          refinement = self
-        end
+    Module.new do
+      refine String do
+        refinement = self
       end
-
-      -> { ModuleSpecs::Basic.prepend(refinement) }.should raise_error(ArgumentError, "refinement module is not allowed")
     end
-  end
 
-  ruby_version_is "3.2" do
-    it "raises a TypeError when the argument is a refinement" do
-      refinement = nil
-
-      Module.new do
-        refine String do
-          refinement = self
-        end
-      end
-
-      -> { ModuleSpecs::Basic.prepend(refinement) }.should raise_error(TypeError, "Cannot prepend refinement")
-    end
+    -> { ModuleSpecs::Basic.prepend(refinement) }.should.raise(TypeError, "Cannot prepend refinement")
   end
 
   it "imports constants" do
     m1 = Module.new
     m1::MY_CONSTANT = 1
     m2 = Module.new { prepend(m1) }
-    m2.constants.should include(:MY_CONSTANT)
+    m2.constants.should.include?(:MY_CONSTANT)
   end
 
   it "imports instance methods" do
-    Module.new { prepend ModuleSpecs::A }.instance_methods.should include(:ma)
+    Module.new { prepend ModuleSpecs::A }.instance_methods.should.include?(:ma)
   end
 
   it "does not import methods to modules and classes" do
-    Module.new { prepend ModuleSpecs::A }.methods.should_not include(:ma)
+    Module.new { prepend ModuleSpecs::A }.methods.should_not.include?(:ma)
   end
 
   it "allows wrapping methods" do
@@ -521,7 +505,7 @@ describe "Module#prepend" do
 
   it "includes prepended modules in ancestors" do
     m = Module.new
-    Class.new { prepend(m) }.ancestors.should include(m)
+    Class.new { prepend(m) }.ancestors.should.include?(m)
   end
 
   it "reports the prepended module as the method owner" do
@@ -558,13 +542,13 @@ describe "Module#prepend" do
   it "sees an instance of a prepended class as kind of the prepended module" do
     m = Module.new
     c = Class.new { prepend(m) }
-    c.new.should be_kind_of(m)
+    c.new.should.is_a?(m)
   end
 
   it "keeps the module in the chain when dupping the class" do
     m = Module.new
     c = Class.new { prepend(m) }
-    c.dup.new.should be_kind_of(m)
+    c.dup.new.should.is_a?(m)
   end
 
   it "uses only new module when dupping the module" do
@@ -575,14 +559,14 @@ describe "Module#prepend" do
     m2dup.ancestors.should == [m1,m2dup]
     c2 = Class.new { prepend(m2dup) }
     c1.ancestors[0,3].should == [m1,m2,c1]
-    c1.new.should be_kind_of(m1)
+    c1.new.should.is_a?(m1)
     c2.ancestors[0,3].should == [m1,m2dup,c2]
-    c2.new.should be_kind_of(m1)
+    c2.new.should.is_a?(m1)
   end
 
   it "depends on prepend_features to add the module" do
     m = Module.new { def self.prepend_features(mod) end }
-    Class.new { prepend(m) }.ancestors.should_not include(m)
+    Class.new { prepend(m) }.ancestors.should_not.include?(m)
   end
 
   it "adds the module in the subclass chains" do
@@ -643,7 +627,7 @@ describe "Module#prepend" do
         super << :class
       end
     end
-    -> { c.new.chain }.should raise_error(NoMethodError)
+    -> { c.new.chain }.should.raise(NoMethodError)
   end
 
   it "calls prepended after prepend_features" do
@@ -679,7 +663,7 @@ describe "Module#prepend" do
       module ModuleSpecs::P
         prepend ModuleSpecs::P
       end
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "doesn't accept no-arguments" do
@@ -687,7 +671,7 @@ describe "Module#prepend" do
       Module.new do
         prepend
       end
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "returns the class it's included into" do
@@ -833,7 +817,7 @@ describe "Module#prepend" do
       pre = Module.new
       mod.prepend pre
 
-      cls.instance_methods.should include(:foo)
+      cls.instance_methods.should.include?(:foo)
     end
   end
 end

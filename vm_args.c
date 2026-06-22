@@ -1,6 +1,6 @@
 /**********************************************************************
 
-  vm_args.c - process method call arguments.
+  vm_args.c - process method call arguments. Included into vm.c.
 
   $Author$
 
@@ -8,10 +8,12 @@
 
 **********************************************************************/
 
-NORETURN(static void raise_argument_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const VALUE exc));
-NORETURN(static void argument_arity_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const int miss_argc, const int min_argc, const int max_argc));
-NORETURN(static void argument_kw_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const char *error, const VALUE keys));
+NORETURN(static void raise_argument_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_callable_method_entry_t *cme, const VALUE exc));
+NORETURN(static void argument_arity_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_callable_method_entry_t *cme, const int miss_argc, const int min_argc, const int max_argc));
+NORETURN(static void argument_kw_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_callable_method_entry_t *cme, const char *error, const VALUE keys));
 VALUE rb_keyword_error_new(const char *error, VALUE keys); /* class.c */
+static VALUE set_error_backtrace(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_callable_method_entry_t *cme, const VALUE exc);
+
 static VALUE method_missing(rb_execution_context_t *ec, VALUE obj, ID id, int argc, const VALUE *argv,
                             enum method_missing_reason call_status, int kw_splat);
 const rb_callable_method_entry_t *rb_resolve_refined_method_callable(VALUE refinements, const rb_callable_method_entry_t *me);
@@ -318,10 +320,8 @@ args_setup_kw_parameters_lookup(const ID key, VALUE *ptr, const VALUE *const pas
     return FALSE;
 }
 
-#define KW_SPECIFIED_BITS_MAX (32-1) /* TODO: 32 -> Fixnum's max bits */
-
 static void
-args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *const iseq,
+args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *const iseq, const rb_callable_method_entry_t *cme,
                          VALUE *const passed_values, const int passed_keyword_len, const VALUE *const passed_keywords,
                          VALUE *const locals)
 {
@@ -345,7 +345,7 @@ args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *cons
         }
     }
 
-    if (missing) argument_kw_error(ec, iseq, "missing", missing);
+    if (missing) argument_kw_error(ec, iseq, cme, "missing", missing);
 
     for (di=0; i<key_num; i++, di++) {
         if (args_setup_kw_parameters_lookup(acceptable_keywords[i], &locals[i], passed_keywords, passed_values, passed_keyword_len)) {
@@ -355,7 +355,7 @@ args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *cons
             if (UNDEF_P(default_values[di])) {
                 locals[i] = Qnil;
 
-                if (LIKELY(i < KW_SPECIFIED_BITS_MAX)) {
+                if (LIKELY(i < VM_KW_SPECIFIED_BITS_MAX)) {
                     unspecified_bits |= 0x01 << di;
                 }
                 else {
@@ -364,7 +364,7 @@ args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *cons
                         int j;
                         unspecified_bits_value = rb_hash_new();
 
-                        for (j=0; j<KW_SPECIFIED_BITS_MAX; j++) {
+                        for (j=0; j<VM_KW_SPECIFIED_BITS_MAX; j++) {
                             if (unspecified_bits & (0x01 << j)) {
                                 rb_hash_aset(unspecified_bits_value, INT2FIX(j), Qtrue);
                             }
@@ -386,7 +386,7 @@ args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *cons
     else {
         if (found != passed_keyword_len) {
             VALUE keys = make_unknown_kw_hash(passed_keywords, passed_keyword_len, passed_values);
-            argument_kw_error(ec, iseq, "unknown", keys);
+            argument_kw_error(ec, iseq, cme, "unknown", keys);
         }
     }
 
@@ -397,7 +397,7 @@ args_setup_kw_parameters(rb_execution_context_t *const ec, const rb_iseq_t *cons
 }
 
 static void
-args_setup_kw_parameters_from_kwsplat(rb_execution_context_t *const ec, const rb_iseq_t *const iseq,
+args_setup_kw_parameters_from_kwsplat(rb_execution_context_t *const ec, const rb_iseq_t *const iseq, const rb_callable_method_entry_t *cme,
                          VALUE keyword_hash, VALUE *const locals, bool remove_hash_value)
 {
     const ID *acceptable_keywords = ISEQ_BODY(iseq)->param.keyword->table;
@@ -430,7 +430,7 @@ args_setup_kw_parameters_from_kwsplat(rb_execution_context_t *const ec, const rb
         }
     }
 
-    if (missing) argument_kw_error(ec, iseq, "missing", missing);
+    if (missing) argument_kw_error(ec, iseq, cme, "missing", missing);
 
     for (di=0; i<key_num; i++, di++) {
         VALUE key = ID2SYM(acceptable_keywords[i]);
@@ -450,7 +450,7 @@ args_setup_kw_parameters_from_kwsplat(rb_execution_context_t *const ec, const rb
             if (UNDEF_P(default_values[di])) {
                 locals[i] = Qnil;
 
-                if (LIKELY(i < KW_SPECIFIED_BITS_MAX)) {
+                if (LIKELY(i < VM_KW_SPECIFIED_BITS_MAX)) {
                     unspecified_bits |= 0x01 << di;
                 }
                 else {
@@ -459,7 +459,7 @@ args_setup_kw_parameters_from_kwsplat(rb_execution_context_t *const ec, const rb
                         int j;
                         unspecified_bits_value = rb_hash_new();
 
-                        for (j=0; j<KW_SPECIFIED_BITS_MAX; j++) {
+                        for (j=0; j<VM_KW_SPECIFIED_BITS_MAX; j++) {
                             if (unspecified_bits & (0x01 << j)) {
                                 rb_hash_aset(unspecified_bits_value, INT2FIX(j), Qtrue);
                             }
@@ -485,11 +485,11 @@ args_setup_kw_parameters_from_kwsplat(rb_execution_context_t *const ec, const rb
                  * This is simpler than writing code to check which entries in the hash do not match.
                  * This will raise an exception, so the additional performance impact shouldn't be material.
                  */
-                args_setup_kw_parameters_from_kwsplat(ec, iseq, rb_hash_dup(keyword_hash), locals, true);
+                args_setup_kw_parameters_from_kwsplat(ec, iseq, cme, rb_hash_dup(keyword_hash), locals, true);
             }
         }
         else if (!RHASH_EMPTY_P(keyword_hash)) {
-            argument_kw_error(ec, iseq, "unknown", rb_hash_keys(keyword_hash));
+            argument_kw_error(ec, iseq, cme, "unknown", rb_hash_keys(keyword_hash));
         }
     }
 
@@ -607,6 +607,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     VALUE splat_flagged_keyword_hash = 0;
     VALUE converted_keyword_hash = 0;
     VALUE rest_last = 0;
+    const rb_callable_method_entry_t *cme = calling->cc ? vm_cc_cme(calling->cc) : NULL;
 
     vm_check_canary(ec, orig_sp);
     /*
@@ -639,12 +640,26 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
                 given_argc == ISEQ_BODY(iseq)->param.lead_num + (kw_flag ? 2 : 1) &&
                 !ISEQ_BODY(iseq)->param.flags.has_opt &&
                 !ISEQ_BODY(iseq)->param.flags.has_post &&
-                !ISEQ_BODY(iseq)->param.flags.ruby2_keywords &&
-                (!kw_flag ||
-                !ISEQ_BODY(iseq)->param.flags.has_kw ||
-                !ISEQ_BODY(iseq)->param.flags.has_kwrest ||
-                !ISEQ_BODY(iseq)->param.flags.accepts_no_kwarg)) {
-            args->rest_dupped = true;
+                !ISEQ_BODY(iseq)->param.flags.ruby2_keywords) {
+            if (kw_flag) {
+                if (ISEQ_BODY(iseq)->param.flags.has_kw ||
+                    ISEQ_BODY(iseq)->param.flags.has_kwrest) {
+                    args->rest_dupped = true;
+                }
+                else if (kw_flag & VM_CALL_KW_SPLAT) {
+                    VALUE kw_hash = locals[args->argc - 1];
+                    if (kw_hash == Qnil ||
+                            (RB_TYPE_P(kw_hash, T_HASH) && RHASH_EMPTY_P(kw_hash))) {
+                        args->rest_dupped = true;
+                    }
+                }
+
+            }
+            else if (!ISEQ_BODY(iseq)->param.flags.has_kw &&
+                    !ISEQ_BODY(iseq)->param.flags.has_kwrest &&
+                    !ISEQ_BODY(iseq)->param.flags.accepts_no_kwarg) {
+                args->rest_dupped = true;
+            }
         }
     }
 
@@ -861,7 +876,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
             args_extend(args, min_argc);
         }
         else {
-            argument_arity_error(ec, iseq, given_argc, min_argc, max_argc);
+            argument_arity_error(ec, iseq, cme, given_argc, min_argc, max_argc);
         }
     }
 
@@ -872,7 +887,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
             given_argc = max_argc;
         }
         else {
-            argument_arity_error(ec, iseq, given_argc, min_argc, max_argc);
+            argument_arity_error(ec, iseq, cme, given_argc, min_argc, max_argc);
         }
     }
 
@@ -918,7 +933,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
 
         if (args->kw_argv != NULL) {
             const struct rb_callinfo_kwarg *kw_arg = args->kw_arg;
-            args_setup_kw_parameters(ec, iseq, args->kw_argv, kw_arg->keyword_len, kw_arg->keywords, klocals);
+            args_setup_kw_parameters(ec, iseq, cme, args->kw_argv, kw_arg->keyword_len, kw_arg->keywords, klocals);
         }
         else if (!NIL_P(keyword_hash)) {
             bool remove_hash_value = false;
@@ -926,7 +941,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
                 keyword_hash = check_kwrestarg(keyword_hash, &kw_flag);
                 remove_hash_value = true;
             }
-            args_setup_kw_parameters_from_kwsplat(ec, iseq, keyword_hash, klocals, remove_hash_value);
+            args_setup_kw_parameters_from_kwsplat(ec, iseq, cme, keyword_hash, klocals, remove_hash_value);
         }
         else {
 #if VM_CHECK_MODE > 0
@@ -941,7 +956,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
                 VM_ASSERT(args_argc(args) == 1);
             }
 #endif
-            args_setup_kw_parameters(ec, iseq, NULL, 0, NULL, klocals);
+            args_setup_kw_parameters(ec, iseq, cme, NULL, 0, NULL, klocals);
         }
     }
     else if (ISEQ_BODY(iseq)->param.flags.has_kwrest) {
@@ -949,10 +964,18 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
             kw_flag, ISEQ_BODY(iseq)->param.flags.anon_kwrest);
     }
     else if (!NIL_P(keyword_hash) && RHASH_SIZE(keyword_hash) > 0 && arg_setup_type == arg_setup_method) {
-        argument_kw_error(ec, iseq, "unknown", rb_hash_keys(keyword_hash));
+        argument_kw_error(ec, iseq, cme, "unknown", rb_hash_keys(keyword_hash));
     }
 
-    if (ISEQ_BODY(iseq)->param.flags.has_block) {
+    if (ISEQ_BODY(iseq)->param.flags.accepts_no_block) {
+        VALUE given_block;
+        args_setup_block_parameter(ec, calling, &given_block);
+        if (!NIL_P(given_block)) {
+            VALUE exc = rb_exc_new_cstr(rb_eArgError, "no block accepted");
+            rb_exc_raise(set_error_backtrace(ec, iseq, cme, exc));
+        }
+    }
+    else if (ISEQ_BODY(iseq)->param.flags.has_block) {
         if (ISEQ_BODY(iseq)->local_iseq == iseq) {
             /* Do nothing */
         }
@@ -974,18 +997,17 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     return opt_pc;
 }
 
-static void
-raise_argument_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const VALUE exc)
+static VALUE
+set_error_backtrace(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_callable_method_entry_t *cme, const VALUE exc)
 {
     VALUE at;
 
     if (iseq) {
         vm_push_frame(ec, iseq, VM_FRAME_MAGIC_DUMMY | VM_ENV_FLAG_LOCAL, Qnil /* self */,
-                      VM_BLOCK_HANDLER_NONE /* specval*/, Qfalse /* me or cref */,
+                      VM_BLOCK_HANDLER_NONE /* specval*/, (VALUE) cme /* me or cref */,
                       ISEQ_BODY(iseq)->iseq_encoded,
                       ec->cfp->sp, 0, 0 /* stack_max */);
         at = rb_ec_backtrace_object(ec);
-        rb_backtrace_use_iseq_first_lineno_for_last_location(at);
         rb_vm_pop_frame(ec);
     }
     else {
@@ -994,11 +1016,18 @@ raise_argument_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const VA
 
     rb_ivar_set(exc, idBt_locations, at);
     rb_exc_set_backtrace(exc, at);
+    return exc;
+}
+
+static void
+raise_argument_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_callable_method_entry_t *cme, const VALUE exc)
+{
+    set_error_backtrace(ec, iseq, cme, exc);
     rb_exc_raise(exc);
 }
 
 static void
-argument_arity_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const int miss_argc, const int min_argc, const int max_argc)
+argument_arity_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_callable_method_entry_t *cme, const int miss_argc, const int min_argc, const int max_argc)
 {
     VALUE exc = rb_arity_error_new(miss_argc, min_argc, max_argc);
     if (ISEQ_BODY(iseq)->param.flags.has_kw) {
@@ -1019,13 +1048,13 @@ argument_arity_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const in
             RSTRING_PTR(mesg)[RSTRING_LEN(mesg)-1] = ')';
         }
     }
-    raise_argument_error(ec, iseq, exc);
+    raise_argument_error(ec, iseq, cme, exc);
 }
 
 static void
-argument_kw_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const char *error, const VALUE keys)
+argument_kw_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_callable_method_entry_t *cme, const char *error, const VALUE keys)
 {
-    raise_argument_error(ec, iseq, rb_keyword_error_new(error, keys));
+    raise_argument_error(ec, iseq, cme, rb_keyword_error_new(error, keys));
 }
 
 static VALUE
@@ -1045,9 +1074,12 @@ vm_to_proc(VALUE proc)
         }
 
         if (NIL_P(b) || !rb_obj_is_proc(b)) {
-            rb_raise(rb_eTypeError,
-                     "wrong argument type %s (expected Proc)",
-                     rb_obj_classname(proc));
+            if (me) {
+                rb_cant_convert_invalid_return(proc, "Proc", "to_proc", b);
+            }
+            else {
+                rb_no_implicit_conversion(proc, "Proc");
+            }
         }
         return b;
     }

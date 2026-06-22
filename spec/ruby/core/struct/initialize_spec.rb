@@ -4,7 +4,7 @@ require_relative 'fixtures/classes'
 describe "Struct#initialize" do
 
   it "is private" do
-    StructClasses::Car.should have_private_instance_method(:initialize)
+    StructClasses::Car.private_instance_methods(true).should.include?(:initialize)
   end
 
   it 'allows valid Ruby method names for members' do
@@ -41,21 +41,34 @@ describe "Struct#initialize" do
     StructClasses::SubclassX.new(:y).new.key.should == :value
   end
 
-  ruby_version_is ""..."3.2" do
-    it "warns about passing only keyword arguments" do
-      -> {
-        StructClasses::Ruby.new(version: "3.1", platform: "OS")
-      }.should complain(/warning: Passing only keyword arguments/)
-    end
+  it "can be initialized with keyword arguments" do
+    positional_args = StructClasses::Ruby.new("3.2", "OS")
+    keyword_args = StructClasses::Ruby.new(version: "3.2", platform: "OS")
+
+    positional_args.version.should == keyword_args.version
+    positional_args.platform.should == keyword_args.platform
   end
 
-  ruby_version_is "3.2" do
-    it "can be initialized with keyword arguments" do
-      positional_args = StructClasses::Ruby.new("3.2", "OS")
-      keyword_args = StructClasses::Ruby.new(version: "3.2", platform: "OS")
+  it "accepts positional arguments with empty keyword arguments" do
+    data = StructClasses::Single.new(42, **{})
 
-      positional_args.version.should == keyword_args.version
-      positional_args.platform.should == keyword_args.platform
+    data.value.should == 42
+
+    data = StructClasses::Ruby.new("3.2", "OS", **{})
+
+    data.version.should == "3.2"
+    data.platform.should == "OS"
+  end
+
+  it "can be called via delegated ... from a prepended module" do
+    wrapper = Module.new do
+      def initialize(...)
+        super(...)
+      end
     end
+
+    klass = Class.new(Struct.new(:a)) { prepend wrapper }
+    s = klass.new("x")
+    s.a.should == "x"
   end
 end

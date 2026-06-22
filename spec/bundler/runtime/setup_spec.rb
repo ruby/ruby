@@ -135,7 +135,7 @@ RSpec.describe "Bundler.setup" do
     end
 
     it "orders the load path correctly when there are dependencies" do
-      bundle "config set path.system true"
+      bundle_config "path.system true"
 
       install_gemfile <<-G
         source "https://gem.repo1"
@@ -163,7 +163,7 @@ RSpec.describe "Bundler.setup" do
     end
 
     it "falls back to order the load path alphabetically for backwards compatibility" do
-      bundle "config set path.system true"
+      bundle_config "path.system true"
 
       install_gemfile <<-G
         source "https://gem.repo1"
@@ -286,7 +286,7 @@ RSpec.describe "Bundler.setup" do
         G
 
         bundle "install"
-        bundle "config set --local deployment true"
+        bundle_config "deployment true"
 
         ENV["BUNDLE_GEMFILE"] = "Gemfile"
         ruby <<-R
@@ -301,6 +301,32 @@ RSpec.describe "Bundler.setup" do
         R
 
         expect(out).to eq("WIN")
+      end
+    end
+
+    context "user sets it via `config set --local gemfile`" do
+      it "uses the value in the config" do
+        gemfile <<-G
+          source "https://gem.repo1"
+          gem "myrack"
+        G
+
+        gemfile bundled_app("CustomGemfile"), <<-G
+          source "https://gem.repo1"
+          gem "activesupport", "2.3.5"
+        G
+
+        bundle_config "gemfile #{bundled_app("CustomGemfile")}"
+        bundle "install"
+
+        ruby <<-R
+          require 'bundler'
+          Bundler.setup
+          require 'activesupport'
+          puts ACTIVESUPPORT
+        R
+
+        expect(out).to eq("2.3.5")
       end
     end
   end
@@ -464,7 +490,7 @@ RSpec.describe "Bundler.setup" do
     end
 
     it "does not randomly change the path when specifying --path and the bundle directory becomes read only" do
-      bundle "config set --local path vendor/bundle"
+      bundle_config "path vendor/bundle"
       bundle :install
 
       with_read_only("#{bundled_app}/**/*") do
@@ -473,7 +499,7 @@ RSpec.describe "Bundler.setup" do
     end
 
     it "finds git gem when default bundle path becomes read only" do
-      bundle "config set --local path .bundle"
+      bundle_config "path .bundle"
       bundle "install"
 
       with_read_only("#{bundled_app(".bundle")}/**/*") do
@@ -568,7 +594,7 @@ RSpec.describe "Bundler.setup" do
 
   describe "when excluding groups" do
     it "doesn't change the resolve if --without is used" do
-      bundle "config set --local without rails"
+      bundle_config "without rails"
       install_gemfile <<-G
         source "https://gem.repo1"
         gem "activesupport"
@@ -584,7 +610,7 @@ RSpec.describe "Bundler.setup" do
     end
 
     it "remembers --without and does not bail on bare Bundler.setup" do
-      bundle "config set --local without rails"
+      bundle_config "without rails"
       install_gemfile <<-G
         source "https://gem.repo1"
         gem "activesupport"
@@ -600,7 +626,7 @@ RSpec.describe "Bundler.setup" do
     end
 
     it "remembers --without and does not bail on bare Bundler.setup, even in the case of path gems no longer available" do
-      bundle "config set --local without development"
+      bundle_config "without development"
 
       path = bundled_app(File.join("vendor", "foo"))
       build_lib "foo", path: path
@@ -666,7 +692,7 @@ RSpec.describe "Bundler.setup" do
     end
 
     it "remembers --without and does not include groups passed to Bundler.setup" do
-      bundle "config set --local without rails"
+      bundle_config "without rails"
       install_gemfile <<-G
         source "https://gem.repo1"
         gem "activesupport"
@@ -728,46 +754,52 @@ RSpec.describe "Bundler.setup" do
     G
 
     run <<-R
-      File.open(File.join(Gem.dir, "specifications", "broken.gemspec"), "w") do |f|
+      File.open(File.join(Gem.dir, "specifications", "invalid.gemspec"), "w") do |f|
         f.write <<-RUBY
 # -*- encoding: utf-8 -*-
-# stub: broken 1.0.0 ruby lib
+# stub: invalid 1.0.0 ruby lib
 
 Gem::Specification.new do |s|
-  s.name = "broken"
+  s.name = "invalid"
   s.version = "1.0.0"
-  raise "BROKEN GEMSPEC"
+  s.authors = ["Invalid Author"]
+  s.files = ["lib/invalid.rb"]
+  s.add_dependency "nonexistent-gem", "~> 999.999.999"
+  s.validate!
 end
         RUBY
       end
     R
 
     run <<-R
-      File.open(File.join(Gem.dir, "specifications", "broken-ext.gemspec"), "w") do |f|
+      File.open(File.join(Gem.dir, "specifications", "invalid-ext.gemspec"), "w") do |f|
         f.write <<-RUBY
 # -*- encoding: utf-8 -*-
-# stub: broken-ext 1.0.0 ruby lib
+# stub: invalid-ext 1.0.0 ruby lib
 # stub: a.ext\\0b.ext
 
 Gem::Specification.new do |s|
-  s.name = "broken-ext"
+  s.name = "invalid-ext"
   s.version = "1.0.0"
-  raise "BROKEN GEMSPEC EXT"
+  s.authors = ["Invalid Author"]
+  s.files = ["lib/invalid.rb"]
+  s.required_ruby_version = "~> 0.8.0"
+  s.validate!
 end
         RUBY
       end
       # Need to write the gem.build_complete file,
       # otherwise the full spec is loaded to check the installed_by_version
       extensions_dir = Gem.default_ext_dir_for(Gem.dir) || File.join(Gem.dir, "extensions", Gem::Platform.local.to_s, Gem.extension_api_version)
-      Bundler::FileUtils.mkdir_p(File.join(extensions_dir, "broken-ext-1.0.0"))
-      File.open(File.join(extensions_dir, "broken-ext-1.0.0", "gem.build_complete"), "w") {}
+      Bundler::FileUtils.mkdir_p(File.join(extensions_dir, "invalid-ext-1.0.0"))
+      File.open(File.join(extensions_dir, "invalid-ext-1.0.0", "gem.build_complete"), "w") {}
     R
 
     run <<-R
-      puts "WIN"
+      puts "Success"
     R
 
-    expect(out).to eq("WIN")
+    expect(out).to eq("Success")
   end
 
   it "ignores empty gem paths" do
@@ -1082,7 +1114,7 @@ end
 
   describe "with system gems in the bundle" do
     before :each do
-      bundle "config set path.system true"
+      bundle_config "path.system true"
       system_gems "myrack-1.0.0"
 
       install_gemfile <<-G
@@ -1151,7 +1183,7 @@ end
         bundler_module = class << Bundler; self; end
         bundler_module.send(:remove_method, :require)
         def Bundler.require(path)
-          raise "LOSE"
+          raise StandardError, "didn't use binding from top level"
         end
         Bundler.load
       RUBY
@@ -1196,7 +1228,7 @@ end
     end
 
     before do
-      bundle "config set --local path.system true"
+      bundle_config "path.system true"
 
       install_gemfile <<-G
         source "https://gem.repo1"
@@ -1261,7 +1293,7 @@ end
       lock += <<~L
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
 
       lock
@@ -1277,7 +1309,12 @@ end
     end
 
     context "is not present" do
-      it "does not change the lock" do
+      # Skipped on ruby-core because `ruby "require 'bundler/setup'"` does not
+      # activate bundler as a gem there, so Source::Metadata falls back to a
+      # synthetic spec whose cache_file does not exist on disk and
+      # LockfileGenerator#bundler_checksum drops the bundler checksum, while
+      # the on-disk lockfile still has it.
+      it "does not change the lock", :ruby_repo do
         expect { ruby "require 'bundler/setup'" }.not_to change { lockfile }
       end
     end
@@ -1323,7 +1360,7 @@ end
         gem "bar", :git => "#{lib_path("bar-1.0")}"
       G
 
-      bundle :install
+      bundle :install, env: { "BUNDLE_LOCKFILE_CHECKSUMS" => "false" }
 
       ruby <<-RUBY, artifice: nil
         require 'bundler/setup'
@@ -1406,7 +1443,6 @@ end
     describe "default gem activation" do
       let(:exemptions) do
         exempts = %w[did_you_mean bundler uri pathname]
-        exempts << "etc" if (Gem.ruby_version < Gem::Version.new("3.2") || Gem.ruby_version >= Gem::Version.new("3.3.2")) && Gem.win_platform?
         exempts << "error_highlight" # added in Ruby 3.1 as a default gem
         exempts << "ruby2_keywords" # added in Ruby 3.1 as a default gem
         exempts << "syntax_suggest" # added in Ruby 3.2 as a default gem
@@ -1465,7 +1501,7 @@ end
         install_gemfile "source 'https://gem.repo1'"
         create_file("script.rb", "#!/usr/bin/env ruby\n\n#{code}")
         FileUtils.chmod(0o777, bundled_app("script.rb"))
-        bundle "exec ./script.rb", artifice: nil, env: { "RUBYOPT" => activation_warning_hack_rubyopt }
+        bundle "exec ./script.rb", env: { "RUBYOPT" => activation_warning_hack_rubyopt }
         expect(out).to eq("{}")
       end
 
@@ -1481,7 +1517,7 @@ end
           gem "net-http-pipeline", "1.0.1"
         G
 
-        bundle "config set --local path vendor/bundle"
+        bundle_config "path vendor/bundle"
 
         bundle :install
 
@@ -1525,22 +1561,7 @@ end
   end
 
   describe "after setup" do
-    it "allows calling #gem on random objects", bundler: "< 3" do
-      install_gemfile <<-G
-        source "https://gem.repo1"
-        gem "myrack"
-      G
-
-      ruby <<-RUBY
-        require "bundler/setup"
-        Object.new.gem "myrack"
-        puts Gem.loaded_specs["myrack"].full_name
-      RUBY
-
-      expect(out).to eq("myrack-1.0.0")
-    end
-
-    it "keeps Kernel#gem private", bundler: "3" do
+    it "keeps Kernel#gem private" do
       install_gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"
@@ -1552,7 +1573,7 @@ end
         puts "FAIL"
       RUBY
 
-      expect(last_command.stdboth).not_to include "FAIL"
+      expect(stdboth).not_to include "FAIL"
       expect(err).to match(/private method [`']gem'/)
     end
 
@@ -1568,7 +1589,7 @@ end
         puts "FAIL"
       RUBY
 
-      expect(last_command.stdboth).not_to include "FAIL"
+      expect(stdboth).not_to include "FAIL"
       expect(err).to match(/private method [`']require'/)
     end
 
@@ -1647,7 +1668,7 @@ end
       gem "myrack", :group => :test
     G
 
-    bundle "config set auto_install 1"
+    bundle_config "auto_install 1"
 
     ruby <<-RUBY, artifice: "compact_index"
       require 'bundler/setup'
@@ -1672,7 +1693,7 @@ end
         DEPENDENCIES
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 

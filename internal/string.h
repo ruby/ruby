@@ -14,6 +14,7 @@
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/encoding.h"      /* for rb_encoding */
 #include "ruby/ruby.h"          /* for VALUE */
+#include "encindex.h"
 
 #define STR_SHARED                  FL_USER0 /* = ELTS_SHARED */
 #define STR_NOEMBED                 FL_USER1
@@ -29,7 +30,41 @@ enum ruby_rstring_private_flags {
 # undef rb_fstring_cstr
 #endif
 
+static inline bool
+rb_str_encindex_fastpath(int encindex)
+{
+    // The overwhelming majority of strings are in one of these 3 encodings,
+    // which are all either ASCII or perfect ASCII supersets.
+    // Hence you can use fast, single byte algorithms on them, such as `memchr` etc,
+    // without all the overhead of fetching the rb_encoding and using functions such as
+    // rb_enc_mbminlen etc.
+    // Many other encodings could qualify, but they are expected to be rare occurrences,
+    // so it's better to keep that list small.
+    switch (encindex) {
+      case ENCINDEX_ASCII_8BIT:
+      case ENCINDEX_UTF_8:
+      case ENCINDEX_US_ASCII:
+        return true;
+      default:
+        return false;
+    }
+}
+
+static inline bool
+rb_str_enc_fastpath(VALUE str)
+{
+    return rb_str_encindex_fastpath(ENCODING_GET_INLINED(str));
+}
+
+static inline rb_encoding *
+rb_str_enc_get(VALUE str)
+{
+    RUBY_ASSERT(RB_TYPE_P(str, T_STRING));
+    return rb_enc_from_index(ENCODING_GET(str));
+}
+
 /* string.c */
+VALUE rb_str_dup_m(VALUE str);
 VALUE rb_fstring(VALUE);
 VALUE rb_fstring_cstr(const char *str);
 VALUE rb_fstring_enc_new(const char *ptr, long len, rb_encoding *enc);
@@ -62,6 +97,8 @@ bool rb_str_reembeddable_p(VALUE);
 VALUE rb_str_upto_endless_each(VALUE, int (*each)(VALUE, VALUE), VALUE);
 VALUE rb_str_with_debug_created_info(VALUE, VALUE, int);
 VALUE rb_str_frozen_bare_string(VALUE);
+const char *rb_str_null_check(VALUE);
+VALUE rb_str_casecmp(VALUE str1, VALUE str2);
 
 /* error.c */
 void rb_warn_unchilled_literal(VALUE str);
@@ -83,6 +120,9 @@ VALUE rb_setup_fake_str(struct RString *fake_str, const char *name, long len, rb
 RUBY_SYMBOL_EXPORT_END
 
 VALUE rb_fstring_new(const char *ptr, long len);
+void rb_gc_free_fstring(VALUE obj);
+bool rb_obj_is_fstring_table(VALUE obj);
+void Init_fstring_table();
 VALUE rb_obj_as_string_result(VALUE str, VALUE obj);
 VALUE rb_str_opt_plus(VALUE x, VALUE y);
 VALUE rb_str_concat_literals(size_t num, const VALUE *strary);

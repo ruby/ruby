@@ -1,9 +1,9 @@
-# -*- encoding: binary -*-
+# encoding: binary
 require_relative '../../spec_helper'
 
 describe "Time._load" do
   it "is a private method" do
-    Time.should have_private_method(:_load, false)
+    Time.private_methods(false).should.include?(:_load)
   end
 
   # http://redmine.ruby-lang.org/issues/show/627

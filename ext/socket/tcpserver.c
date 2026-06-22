@@ -36,7 +36,7 @@ tcp_svr_init(int argc, VALUE *argv, VALUE sock)
     VALUE hostname, port;
 
     rb_scan_args(argc, argv, "011", &hostname, &port);
-    return rsock_init_inetsock(sock, hostname, port, Qnil, Qnil, INET_SERVER, Qnil, Qnil, Qfalse, Qnil);
+    return rsock_init_inetsock(sock, hostname, port, Qnil, Qnil, INET_SERVER, Qnil, Qnil, Qnil, Qfalse, Qnil);
 }
 
 /*

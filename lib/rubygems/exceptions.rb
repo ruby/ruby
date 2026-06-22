@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "deprecate"
 require_relative "unknown_command_spell_checker"
 
 ##
@@ -21,20 +20,11 @@ class Gem::UnknownCommandError < Gem::Exception
   end
 
   def self.attach_correctable
-    return if defined?(@attached)
+    return if method_defined?(:corrections)
 
-    if defined?(DidYouMean::SPELL_CHECKERS) && defined?(DidYouMean::Correctable)
-      if DidYouMean.respond_to?(:correct_error)
-        DidYouMean.correct_error(Gem::UnknownCommandError, Gem::UnknownCommandSpellChecker)
-      else
-        DidYouMean::SPELL_CHECKERS["Gem::UnknownCommandError"] =
-          Gem::UnknownCommandSpellChecker
-
-        prepend DidYouMean::Correctable
-      end
+    if defined?(DidYouMean) && DidYouMean.respond_to?(:correct_error)
+      DidYouMean.correct_error(Gem::UnknownCommandError, Gem::UnknownCommandSpellChecker)
     end
-
-    @attached = true
   end
 end
 
@@ -43,22 +33,24 @@ class Gem::DependencyError < Gem::Exception; end
 class Gem::DependencyRemovalException < Gem::Exception; end
 
 ##
-# Raised by Gem::Resolver when a Gem::Dependency::Conflict reaches the
-# toplevel.  Indicates which dependencies were incompatible through #conflict
-# and #conflicting_dependencies
+# Raised by Gem::Resolver when dependency resolution fails.
 
 class Gem::DependencyResolutionError < Gem::DependencyError
-  attr_reader :conflict
-
   def initialize(conflict)
-    @conflict = conflict
-    a, b = conflicting_dependencies
+    @explanation = conflict.explanation
+    super @explanation
+  end
 
-    super "conflicting dependencies #{a} and #{b}\n#{@conflict.explanation}"
+  def explanation
+    @explanation
+  end
+
+  def conflict
+    nil
   end
 
   def conflicting_dependencies
-    @conflict.conflicting_dependencies
+    []
   end
 end
 
@@ -110,7 +102,7 @@ class Gem::SpecificGemNotFoundException < Gem::GemNotFoundException
   # and +version+.  Any +errors+ encountered when attempting to find the gem
   # are also stored.
 
-  def initialize(name, version, errors=nil)
+  def initialize(name, version, errors = nil)
     super "Could not find a valid gem '#{name}' (#{version}) locally or in a repository"
 
     @name = name
@@ -135,40 +127,6 @@ class Gem::SpecificGemNotFoundException < Gem::GemNotFoundException
 end
 
 Gem.deprecate_constant :SpecificGemNotFoundException
-
-##
-# Raised by Gem::Resolver when dependencies conflict and create the
-# inability to find a valid possible spec for a request.
-
-class Gem::ImpossibleDependenciesError < Gem::Exception
-  attr_reader :conflicts
-  attr_reader :request
-
-  def initialize(request, conflicts)
-    @request   = request
-    @conflicts = conflicts
-
-    super build_message
-  end
-
-  def build_message # :nodoc:
-    requester  = @request.requester
-    requester  = requester ? requester.spec.full_name : "The user"
-    dependency = @request.dependency
-
-    message = "#{requester} requires #{dependency} but it conflicted:\n".dup
-
-    @conflicts.each do |_, conflict|
-      message << conflict.explanation
-    end
-
-    message
-  end
-
-  def dependency
-    @request.dependency
-  end
-end
 
 class Gem::InstallError < Gem::Exception; end
 
@@ -261,7 +219,7 @@ class Gem::UnsatisfiableDependencyError < Gem::DependencyError
   # Creates a new UnsatisfiableDependencyError for the unsatisfiable
   # Gem::Resolver::DependencyRequest +dep+
 
-  def initialize(dep, platform_mismatch=nil)
+  def initialize(dep, platform_mismatch = nil)
     if platform_mismatch && !platform_mismatch.empty?
       plats = platform_mismatch.map {|x| x.platform.to_s }.sort.uniq
       super "Unable to resolve dependency: No match for '#{dep}' on this platform. Found: #{plats.join(", ")}"

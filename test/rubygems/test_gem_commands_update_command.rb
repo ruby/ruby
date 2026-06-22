@@ -42,6 +42,34 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     assert_empty out
   end
 
+  def test_execute_compact_index
+    spec_fetcher do |fetcher|
+      fetcher.gem "b", 1
+    end
+
+    b2, b2_gem = util_gem "b", 2
+    util_setup_compact_index b2
+    add_to_fetcher b2, b2_gem
+
+    # drop the in-memory tuples spec_fetcher pre-populated so the lookup
+    # goes through Gem::Source#load_specs
+    Gem::SpecFetcher.fetcher = nil
+
+    @cmd.options[:args] = []
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    out = @ui.output.split "\n"
+    assert_equal "Updating installed gems", out.shift
+    assert_equal "Updating b", out.shift
+    assert_equal "Gems updated: b", out.shift
+    assert_empty out
+
+    assert_path_exist File.join(@gemhome, "specifications", "b-2.gemspec")
+  end
+
   def test_execute_multiple
     spec_fetcher do |fetcher|
       fetcher.download "a",  2
@@ -694,6 +722,38 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     ]
 
     assert_equal expected, @cmd.fetch_remote_gems(specs["a-1"])
+  end
+
+  def test_pass_down_the_job_option_to_make
+    gemspec = nil
+
+    spec_fetcher do |fetcher|
+      fetcher.download "a", 3 do |spec|
+        gemspec = spec
+
+        extconf_path = "#{spec.gem_dir}/extconf.rb"
+
+        write_file(extconf_path) do |io|
+          io.puts "require 'mkmf'"
+          io.puts "create_makefile '#{spec.name}'"
+        end
+
+        spec.extensions = "extconf.rb"
+      end
+
+      fetcher.gem "a", 2
+    end
+
+    use_ui @ui do
+      @cmd.invoke("a", "-j2")
+    end
+
+    gem_make_out = File.read(File.join(gemspec.extension_dir, "gem_make.out"))
+    if vc_windows? && nmake_found?
+      refute_includes(gem_make_out, " -j2")
+    else
+      assert_includes(gem_make_out, "make -j2")
+    end
   end
 
   def test_handle_options_system

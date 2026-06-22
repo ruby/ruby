@@ -11,7 +11,7 @@ describe "Array#permutation" do
 
   it "returns an Enumerator of all permutations when called without a block or arguments" do
     enum = @numbers.permutation
-    enum.should be_an_instance_of(Enumerator)
+    enum.should.instance_of?(Enumerator)
     enum.to_a.sort.should == [
       [1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]
     ].sort
@@ -19,13 +19,13 @@ describe "Array#permutation" do
 
   it "returns an Enumerator of permutations of given length when called with an argument but no block" do
     enum = @numbers.permutation(1)
-    enum.should be_an_instance_of(Enumerator)
+    enum.should.instance_of?(Enumerator)
     enum.to_a.sort.should == [[1],[2],[3]]
   end
 
   it "yields all permutations to the block then returns self when called with block but no arguments" do
     array = @numbers.permutation {|n| @yielded << n}
-    array.should be_an_instance_of(Array)
+    array.should.instance_of?(Array)
     array.sort.should == @numbers.sort
     @yielded.sort.should == [
       [1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]
@@ -34,7 +34,7 @@ describe "Array#permutation" do
 
   it "yields all permutations of given length to the block then returns self when called with block and argument" do
     array = @numbers.permutation(2) {|n| @yielded << n}
-    array.should be_an_instance_of(Array)
+    array.should.instance_of?(Array)
     array.sort.should == @numbers.sort
     @yielded.sort.should == [[1,2],[1,3],[2,1],[2,3],[3,1],[3,2]].sort
   end
@@ -78,7 +78,7 @@ describe "Array#permutation" do
        [3, 1],      [3, 2],      [3, [4, 5]],
       [[4, 5], 1], [[4, 5], 2], [[4, 5], 3]
     ]
-    expected.each {|e| got.include?(e).should be_true}
+    expected.each {|e| got.include?(e).should == true}
     got.size.should == expected.size
   end
 

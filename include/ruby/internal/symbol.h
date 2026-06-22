@@ -101,12 +101,11 @@ ID rb_intern(const char *name);
 ID rb_intern2(const char *name, long len);
 
 /**
- * Identical to  rb_intern(), except  it takes an instance of ::rb_cString.
+ * Identical to rb_intern(), except it takes a `T_STRING` object.
  *
  * @param[in]  str               The name of the id.
- * @pre        `str` must either be an instance of ::rb_cSymbol, or an instance
- *             of ::rb_cString, or responds to `#to_str` method.
- * @exception  rb_eTypeError     Can't convert `str` into ::rb_cString.
+ * @pre        `rb_type(str)` must be `T_STRING`.
+ * @exception  rb_eEncodingError `str` contains invalid character(s).
  * @exception  rb_eRuntimeError  Too many symbols.
  * @return     A (possibly new) id whose value is the given str.
  * @note       These   days  Ruby   internally   has  two   kinds  of   symbols
@@ -166,29 +165,34 @@ RBIMPL_ATTR_NONNULL(())
  *                 of ::rb_cSymbol, or an instance of ::rb_cString, or responds
  *                 to `#to_str` method.
  * @exception      rb_eTypeError      Can't convert `*namep` into ::rb_cString.
- * @exception      rb_eEncodingError  Given string is non-ASCII.
+ * @exception      rb_eEncodingError  Given string contains invalid character(s).
  * @retval         0                  No such id ever existed in the history.
  * @retval         otherwise          The id that represents the given name.
  * @post           The object  that `*namep`  points to  is a  converted result
  *                 object, which  is always an instance  of either ::rb_cSymbol
  *                 or ::rb_cString.
+ * @see            rb_str_to_str
  * @see            https://bugs.ruby-lang.org/issues/5072
- *
- * @internal
- *
- * @shyouhei doesn't know why this has to raise rb_eEncodingError.
  */
 ID rb_check_id(volatile VALUE *namep);
 
 /**
- * @copydoc rb_intern_str()
+ * Identical to rb_intern_str(), except it tries to convert the parameter object
+ * to an instance of ::rb_cString or its subclasses.
  *
- * @internal
- *
- * :FIXME:  Can anyone  tell us  what is  the difference  between this  one and
- * rb_intern_str()?  As far as @shyouhei reads the implementation it seems what
- * rb_to_id() does is  is just waste some CPU time,  then call rb_intern_str().
- * He hopes he is wrong.
+ * @param[in]  str               The name of the id.
+ * @pre        `str` must either be an  instance of ::rb_cSymbol, or an instance
+ *             of ::rb_cString, or responds to `#to_str` method.
+ * @exception  rb_eTypeError     Can't convert `str` into ::rb_cString.
+ * @exception  rb_eEncodingError Given string contains invalid character(s).
+ * @exception  rb_eRuntimeError  Too many symbols.
+ * @return     A (possibly new) id whose value is the given str.
+ * @note       These   days  Ruby   internally   has  two   kinds  of   symbols
+ *             (static/dynamic).   Symbols created  using  this function  would
+ *             become static ones;  i.e. would never be  garbage collected.  It
+ *             is up  to you to avoid  memory leaks.  Think twice  before using
+ *             it.
+ * @see        rb_str_to_str
  */
 ID rb_to_id(VALUE str);
 
@@ -245,17 +249,14 @@ RBIMPL_ATTR_NONNULL(())
  *                 of ::rb_cSymbol, or an instance of ::rb_cString, or responds
  *                 to `#to_str` method.
  * @exception      rb_eTypeError      Can't convert `*namep` into ::rb_cString.
- * @exception      rb_eEncodingError  Given string is non-ASCII.
+ * @exception      rb_eEncodingError  Given string contains invalid character(s).
  * @retval         RUBY_Qnil          No such id ever existed in the history.
  * @retval         otherwise          The id that represents the given name.
  * @post           The object  that `*namep`  points to  is a  converted result
  *                 object, which  is always an instance  of either ::rb_cSymbol
  *                 or ::rb_cString.
  * @see            https://bugs.ruby-lang.org/issues/5072
- *
- * @internal
- *
- * @shyouhei doesn't know why this has to raise rb_eEncodingError.
+ * @see            rb_str_to_str
  */
 VALUE rb_check_symbol(volatile VALUE *namep);
 RBIMPL_SYMBOL_EXPORT_END()

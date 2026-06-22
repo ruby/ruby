@@ -2,10 +2,10 @@ require_relative '../../spec_helper'
 
 describe "BasicObject#!" do
   it "is a public instance method" do
-    BasicObject.should have_public_instance_method(:'!')
+    BasicObject.public_instance_methods(false).should.include?(:'!')
   end
 
   it "returns false" do
-    (!BasicObject.new).should be_false
+    (!BasicObject.new).should == false
   end
 end

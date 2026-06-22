@@ -975,7 +975,7 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_dup
     assert_equal(//, //.dup)
-    assert_raise(TypeError) { //.dup.instance_eval { initialize_copy(nil) } }
+    assert_raise(FrozenError) { //.dup.instance_eval { initialize_copy(/a/) } }
   end
 
   def test_regsub
@@ -1011,6 +1011,18 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_regsub_no_memory_leak_many_captures
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~"end;"}", rss: true)
+      code = proc do
+        "aaaaaaaaaaa".gsub(/(a)(b)?(c)?(d)?(e)?(f)?(g)?(h)?/, "")
+      end
+
+      1_000.times(&code)
+    begin;
+      100_000.times(&code)
+    end;
+  end
+
   def test_ignorecase
     v = assert_deprecated_warning(/variable \$= is no longer effective/) { $= }
     assert_equal(false, v)
@@ -1036,10 +1048,12 @@ class TestRegexp < Test::Unit::TestCase
     [Encoding::UTF_8, Encoding::Shift_JIS, Encoding::EUC_JP].each do |enc|
       idx = key.encode(enc)
       pat = /#{idx}/
-      test.call {|m| assert_raise_with_message(IndexError, pat, bug10877) {m[idx]} }
-      test.call {|m| assert_raise_with_message(IndexError, pat, bug18160) {m.offset(idx)} }
-      test.call {|m| assert_raise_with_message(IndexError, pat, bug18160) {m.begin(idx)} }
-      test.call {|m| assert_raise_with_message(IndexError, pat, bug18160) {m.end(idx)} }
+      EnvUtil.with_default_internal(enc) do
+        test.call {|m| assert_raise_with_message(IndexError, pat, bug10877) {m[idx]} }
+        test.call {|m| assert_raise_with_message(IndexError, pat, bug18160) {m.offset(idx)} }
+        test.call {|m| assert_raise_with_message(IndexError, pat, bug18160) {m.begin(idx)} }
+        test.call {|m| assert_raise_with_message(IndexError, pat, bug18160) {m.end(idx)} }
+      end
     end
     test.call {|m| assert_equal(/a/, m.regexp) }
     test.call {|m| assert_equal("abc", m.string) }
@@ -1308,6 +1322,9 @@ class TestRegexp < Test::Unit::TestCase
     assert_match(/\A[[:space:]]+\z/, "\r\n\v\f\r\s\u0085")
     assert_match(/\A[[:ascii:]]+\z/, "\x00\x7F")
     assert_no_match(/[[:ascii:]]/, "\x80\xFF")
+
+    assert_match(/[[:word:]]/, "\u{200C}")
+    assert_match(/[[:word:]]/, "\u{200D}")
   end
 
   def test_cclass_R
@@ -1524,6 +1541,107 @@ class TestRegexp < Test::Unit::TestCase
                        "CJK UNIFIED IDEOGRAPH-2EBF0..CJK UNIFIED IDEOGRAPH-2EE5D")
   end
 
+  def test_unicode_age_16_0
+    @matches   = %w"16.0"
+    @unmatches = %w"15.1"
+
+    # https://www.unicode.org/Public/16.0.0/ucd/DerivedAge.txt
+    assert_unicode_age("\u{0897}",
+                       "ARABIC PEPET")
+    assert_unicode_age("\u{1B4E}".."\u{1B4F}",
+                       "BALINESE INVERTED CARIK SIKI..BALINESE INVERTED CARIK PAREREN")
+    assert_unicode_age("\u{1B7F}",
+                       "BALINESE PANTI BAWAK")
+    assert_unicode_age("\u{1C89}".."\u{1C8A}",
+                       "CYRILLIC CAPITAL LETTER TJE..CYRILLIC SMALL LETTER TJE")
+    assert_unicode_age("\u{2427}".."\u{2429}",
+                       "SYMBOL FOR DELETE SQUARE CHECKER BOARD FORM..SYMBOL FOR DELETE MEDIUM SHADE FORM")
+    assert_unicode_age("\u{31E4}".."\u{31E5}",
+                       "CJK STROKE HXG..CJK STROKE SZP")
+    assert_unicode_age("\u{A7CB}".."\u{A7CD}",
+                       "LATIN CAPITAL LETTER RAMS HORN..LATIN SMALL LETTER S WITH DIAGONAL STROKE")
+    assert_unicode_age("\u{A7DA}".."\u{A7DC}",
+                       "LATIN CAPITAL LETTER LAMBDA..LATIN CAPITAL LETTER LAMBDA WITH STROKE")
+    assert_unicode_age("\u{105C0}".."\u{105F3}",
+                       "TODHRI LETTER A..TODHRI LETTER OO")
+    assert_unicode_age("\u{10D40}".."\u{10D65}",
+                       "GARAY DIGIT ZERO..GARAY CAPITAL LETTER OLD NA")
+    assert_unicode_age("\u{10D69}".."\u{10D85}",
+                       "GARAY VOWEL SIGN E..GARAY SMALL LETTER OLD NA")
+    assert_unicode_age("\u{10D8E}".."\u{10D8F}",
+                       "GARAY PLUS SIGN..GARAY MINUS SIGN")
+    assert_unicode_age("\u{10EC2}".."\u{10EC4}",
+                       "ARABIC LETTER DAL WITH TWO DOTS VERTICALLY BELOW..ARABIC LETTER KAF WITH TWO DOTS VERTICALLY BELOW")
+    assert_unicode_age("\u{10EFC}",
+                       "ARABIC COMBINING ALEF OVERLAY")
+    assert_unicode_age("\u{11380}".."\u{11389}",
+                       "TULU-TIGALARI LETTER A..TULU-TIGALARI LETTER VOCALIC LL")
+    assert_unicode_age("\u{1138B}",
+                       "TULU-TIGALARI LETTER EE")
+    assert_unicode_age("\u{1138E}",
+                       "TULU-TIGALARI LETTER AI")
+    assert_unicode_age("\u{11390}".."\u{113B5}",
+                       "TULU-TIGALARI LETTER OO..TULU-TIGALARI LETTER LLLA")
+    assert_unicode_age("\u{113B7}".."\u{113C0}",
+                       "TULU-TIGALARI SIGN AVAGRAHA..TULU-TIGALARI VOWEL SIGN VOCALIC LL")
+    assert_unicode_age("\u{113C2}",
+                       "TULU-TIGALARI VOWEL SIGN EE")
+    assert_unicode_age("\u{113C5}",
+                       "TULU-TIGALARI VOWEL SIGN AI")
+    assert_unicode_age("\u{113C7}".."\u{113CA}",
+                       "TULU-TIGALARI VOWEL SIGN OO..TULU-TIGALARI SIGN CANDRA ANUNASIKA")
+    assert_unicode_age("\u{113CC}".."\u{113D5}",
+                       "TULU-TIGALARI SIGN ANUSVARA..TULU-TIGALARI DOUBLE DANDA")
+    assert_unicode_age("\u{113D7}".."\u{113D8}",
+                       "TULU-TIGALARI SIGN OM PUSHPIKA..TULU-TIGALARI SIGN SHRII PUSHPIKA")
+    assert_unicode_age("\u{113E1}".."\u{113E2}",
+                       "TULU-TIGALARI VEDIC TONE SVARITA..TULU-TIGALARI VEDIC TONE ANUDATTA")
+    assert_unicode_age("\u{116D0}".."\u{116E3}",
+                       "MYANMAR PAO DIGIT ZERO..MYANMAR EASTERN PWO KAREN DIGIT NINE")
+    assert_unicode_age("\u{11BC0}".."\u{11BE1}",
+                       "SUNUWAR LETTER DEVI..SUNUWAR SIGN PVO")
+    assert_unicode_age("\u{11BF0}".."\u{11BF9}",
+                       "SUNUWAR DIGIT ZERO..SUNUWAR DIGIT NINE")
+    assert_unicode_age("\u{11F5A}",
+                       "KAWI SIGN NUKTA")
+    assert_unicode_age("\u{13460}".."\u{143FA}",
+                       "EGYPTIAN HIEROGLYPH-13460..EGYPTIAN HIEROGLYPH-143FA")
+    assert_unicode_age("\u{16100}".."\u{16139}",
+                       "GURUNG KHEMA LETTER A..GURUNG KHEMA DIGIT NINE")
+    assert_unicode_age("\u{16D40}".."\u{16D79}",
+                       "KIRAT RAI SIGN ANUSVARA..KIRAT RAI DIGIT NINE")
+    assert_unicode_age("\u{18CFF}",
+                       "KHITAN SMALL SCRIPT CHARACTER-18CFF")
+    assert_unicode_age("\u{1CC00}".."\u{1CCF9}",
+                       "UP-POINTING GO-KART..OUTLINED DIGIT NINE")
+    assert_unicode_age("\u{1CD00}".."\u{1CEB3}",
+                       "BLOCK OCTANT-3..BLACK RIGHT TRIANGLE CARET")
+    assert_unicode_age("\u{1E5D0}".."\u{1E5FA}",
+                       "OL ONAL LETTER O..OL ONAL DIGIT NINE")
+    assert_unicode_age("\u{1E5FF}",
+                       "OL ONAL ABBREVIATION SIGN")
+    assert_unicode_age("\u{1F8B2}".."\u{1F8BB}",
+                       "RIGHTWARDS ARROW WITH LOWER HOOK..SOUTH WEST ARROW FROM BAR")
+    assert_unicode_age("\u{1F8C0}".."\u{1F8C1}",
+                       "LEFTWARDS ARROW FROM DOWNWARDS ARROW..RIGHTWARDS ARROW FROM DOWNWARDS ARROW")
+    assert_unicode_age("\u{1FA89}",
+                       "HARP")
+    assert_unicode_age("\u{1FA8F}",
+                       "SHOVEL")
+    assert_unicode_age("\u{1FABE}",
+                       "LEAFLESS TREE")
+    assert_unicode_age("\u{1FAC6}",
+                       "FINGERPRINT")
+    assert_unicode_age("\u{1FADC}",
+                       "ROOT VEGETABLE")
+    assert_unicode_age("\u{1FADF}",
+                       "SPLATTER")
+    assert_unicode_age("\u{1FAE9}",
+                       "FACE WITH BAGS UNDER EYES")
+    assert_unicode_age("\u{1FBCB}".."\u{1FBEF}",
+                       "WHITE CROSS MARK..TOP LEFT JUSTIFIED LOWER RIGHT QUARTER BLACK CIRCLE")
+  end
+
   UnicodeAgeRegexps = Hash.new do |h, age|
     h[age] = [/\A\p{age=#{age}}+\z/u, /\A\P{age=#{age}}+\z/u].freeze
   end
@@ -1561,6 +1679,65 @@ class TestRegexp < Test::Unit::TestCase
     h = /^(?<@time>\d+): (?<body>.*)/.match("123456: hoge fuga")
     assert_equal("123456", h["@time"])
     assert_equal("hoge fuga", h["body"])
+  end
+
+  def test_matchdata_large_capture_groups_stack
+    env = {"RUBY_THREAD_MACHINE_STACK_SIZE" => (256 * 1024).to_s}
+    assert_separately([env], <<~'RUBY')
+      n = 20000
+      require "rbconfig/sizeof"
+      stack = RubyVM::DEFAULT_PARAMS[:thread_machine_stack_size]
+      size = RbConfig::SIZEOF["long"]
+      required = (n + 1) * 4 * size
+      if !stack || stack == 0 || stack >= required
+        omit "thread machine stack size not reduced (#{stack}:#{required})"
+      end
+
+      inspect = Thread.new do
+        str = "\u{3042}" * n
+        m = Regexp.new("(.)" * n).match(str)
+        assert_not_nil(m)
+        assert_equal([n - 1, n], m.offset(n))
+        m.inspect
+      end.value
+
+      assert_include(inspect, "MatchData")
+    RUBY
+  end
+
+  def test_match_integer_at
+    m = /(\d{4})(\d{2})(\d{2})/.match("20260308")
+    assert_equal(20260308, m.integer_at(0))
+    assert_equal(2026,     m.integer_at(1))
+    assert_equal(3,        m.integer_at(2))
+    assert_equal(8,        m.integer_at(3))
+    assert_equal(nil,      m.integer_at(4))
+    assert_equal(8,        m.integer_at(-1))
+    assert_equal(3,        m.integer_at(-2))
+    assert_equal(2026,     m.integer_at(-3))
+    assert_equal(nil,      m.integer_at(-4))
+
+    re = /[a-z]+|(\d+)/
+    assert_equal(123, re.match("123").integer_at(1))
+    assert_equal(nil, re.match("abc").integer_at(1))
+  end
+
+  def test_match_integer_at_name
+    m = /(?<y>\d{4})(?<m>\d{2})(?<d>\d{2})/.match("20260308")
+    assert_equal(2026,     m.integer_at("y"))
+    assert_equal(3,        m.integer_at("m"))
+    assert_equal(8,        m.integer_at("d"))
+  end
+
+  def test_match_integer_at_base
+    assert_equal(91, /\w+/.match("111").integer_at(0, 9))
+    assert_equal(10_0000, /\w+/.match("10_0000").integer_at(0))
+    assert_equal(0d1_0000, /\w+/.match("01_0000").integer_at(0))
+    assert_equal(0o1_0000, /\w+/.match("01_0000").integer_at(0, 0))
+    assert_equal(0b1_0000, /\w+/.match("0b1_0000").integer_at(0, 0))
+    assert_equal(0o1_0000, /\w+/.match("0o1_0000").integer_at(0, 0))
+    assert_equal(0d1_0000, /\w+/.match("0d1_0000").integer_at(0, 0))
+    assert_equal(0x1_0000, /\w+/.match("0x1_0000").integer_at(0, 0))
   end
 
   def test_regexp_popped
@@ -1637,6 +1814,33 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(RegexpError, bug12418){ Regexp.new('(0?0|(?(5)||)|(?(5)||))?') }
   end
 
+  def test_quick_search
+    assert_match_at('(?i) *TOOKY', 'Mozilla/5.0 (Linux; Android 4.0.3; TOOKY', [[34, 40]])   # Issue #120
+  end
+
+  def test_ss_in_look_behind
+    assert_match_at("(?i:ss)", "ss", [[0, 2]])
+    assert_match_at("(?i:ss)", "Ss", [[0, 2]])
+    assert_match_at("(?i:ss)", "SS", [[0, 2]])
+    assert_match_at("(?i:ss)", "\u017fS", [[0, 2]])  # LATIN SMALL LETTER LONG S
+    assert_match_at("(?i:ss)", "s\u017f", [[0, 2]])
+    assert_match_at("(?i:ss)", "\u00df", [[0, 1]])   # LATIN SMALL LETTER SHARP S
+    assert_match_at("(?i:ss)", "\u1e9e", [[0, 1]])   # LATIN CAPITAL LETTER SHARP S
+    assert_match_at("(?i:xssy)", "xssy", [[0, 4]])
+    assert_match_at("(?i:xssy)", "xSsy", [[0, 4]])
+    assert_match_at("(?i:xssy)", "xSSy", [[0, 4]])
+    assert_match_at("(?i:xssy)", "x\u017fSy", [[0, 4]])
+    assert_match_at("(?i:xssy)", "xs\u017fy", [[0, 4]])
+    assert_match_at("(?i:xssy)", "x\u00dfy", [[0, 3]])
+    assert_match_at("(?i:xssy)", "x\u1e9ey", [[0, 3]])
+    assert_match_at("(?i:\u00df)", "ss", [[0, 2]])
+    assert_match_at("(?i:\u00df)", "SS", [[0, 2]])
+    assert_match_at("(?i:[\u00df])", "ss", [[0, 2]])
+    assert_match_at("(?i:[\u00df])", "SS", [[0, 2]])
+    assert_match_at("(?i)(?<!ss)\u2728", "qq\u2728", [[2, 3]])     # Issue #92
+    assert_match_at("(?i)(?<!xss)\u2728", "qq\u2728", [[2, 3]])
+  end
+
   def test_options_in_look_behind
     assert_nothing_raised {
       assert_match_at("(?<=(?i)ab)cd", "ABcd", [[2,4]])
@@ -1670,6 +1874,21 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal(/0/, pr1.call(0))
     assert_equal(/0/, pr1.call(1))
     assert_equal(/0/, pr1.call(2))
+  end
+
+  def test_once_constant_interpolation
+    # A /o regexp whose interpolation folds to a constant must build a Regexp,
+    # not resurrect it as a String.  The peephole optimizer rewrites
+    # "dupstring str; toregexp" into a single literal-push instruction; that
+    # instruction must become putobject (not keep dupstring).
+    assert_separately([], <<~'RUBY')
+      def m; /#{"a"}#{"b"}/o; end
+      assert_equal(/ab/, m)
+      assert_equal(/ab/, m)
+      assert_predicate(m, :frozen?)
+      assert_equal(/a/i, eval('/#{"a"}/io'))
+      assert_equal(0, ("ab" =~ /#{"a"}/o))
+    RUBY
   end
 
   def test_once_recursive
@@ -1774,6 +1993,12 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_too_big_number_for_repeat_range
+    assert_raise_with_message(SyntaxError, /too big number for repeat range/) do
+      eval(%[/|{1000000}/])
+    end
+  end
+
   # This assertion is for porting x2() tests in testpy.py of Onigmo.
   def assert_match_at(re, str, positions, msg = nil)
     re = Regexp.new(re) unless re.is_a?(Regexp)
@@ -1837,6 +2062,7 @@ class TestRegexp < Test::Unit::TestCase
       Regexp.timeout = 1e300
       assert_equal(((1<<64)-1) / 1000000000.0, Regexp.timeout)
 
+      assert_raise(ArgumentError) { Regexp.timeout = Float::NAN }
       assert_raise(ArgumentError) { Regexp.timeout = 0 }
       assert_raise(ArgumentError) { Regexp.timeout = -1 }
 
@@ -1878,7 +2104,7 @@ class TestRegexp < Test::Unit::TestCase
   end
 
   def per_instance_redos_test(global_timeout, per_instance_timeout, expected_timeout)
-    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}", timeout: 60)
       global_timeout = #{ EnvUtil.apply_timeout_scale(global_timeout).inspect }
       per_instance_timeout = #{ (per_instance_timeout ? EnvUtil.apply_timeout_scale(per_instance_timeout) : nil).inspect }
       expected_timeout = #{ EnvUtil.apply_timeout_scale(expected_timeout).inspect }
@@ -1929,6 +2155,7 @@ class TestRegexp < Test::Unit::TestCase
 
       assert_equal(((1<<64)-1) / 1000000000.0, Regexp.new("foo", timeout: 1e300).timeout)
 
+      assert_raise(ArgumentError) { Regexp.new("foo", timeout: Float::NAN) }
       assert_raise(ArgumentError) { Regexp.new("foo", timeout: 0) }
       assert_raise(ArgumentError) { Regexp.new("foo", timeout: -1) }
     end;
@@ -2151,5 +2378,17 @@ class TestRegexp < Test::Unit::TestCase
       e_acute_upper = "\u00C9".encode(enc)
       assert_match(/[x#{e_acute_lower}]/i, "CAF#{e_acute_upper}", "should match e acute case insensitive")
     end
+  end
+
+  def test_too_many_range_repeat
+    source = '(?:foobar){0,100}' * 100000
+    assert_raise(RegexpError) { Regexp.new(source) }
+    assert_raise(SyntaxError) { eval("/#{source}/") }
+  end
+
+  def test_too_many_null_check
+    source = '(?:(?:foo)?|(?:bar)?)*' * 100000
+    assert_raise(RegexpError) { Regexp.new(source) }
+    assert_raise(SyntaxError) { eval("/#{source}/") }
   end
 end

@@ -59,7 +59,11 @@ def compile_extension(name)
   tmpdir = tmp("cext_#{name}")
   Dir.mkdir(tmpdir)
   begin
-    ["#{core_ext_dir}/rubyspec.h", "#{spec_ext_dir}/#{ext}.c"].each do |file|
+    files = ["#{core_ext_dir}/rubyspec.h", "#{spec_ext_dir}/#{ext}.c"]
+    if spec_ext_dir != core_ext_dir
+      files += Dir.glob("#{spec_ext_dir}/*.h")
+    end
+    files.each do |file|
       if cxx and file.end_with?('.c')
         cp file, "#{tmpdir}/#{File.basename(file, '.c')}.cpp"
       else
@@ -74,12 +78,25 @@ def compile_extension(name)
         init_mkmf unless required
         create_makefile(ext, tmpdir)
       else
+        # Workaround for digest C-API specs to find the ruby/digest.h header
+        # when run in the CRuby repository via make test-spec
+        if MSpecScript.instance_variable_defined?(:@testing_ruby)
+          ruby_repository_extra_include_dir = "-I#{RbConfig::CONFIG.fetch("prefix")}/#{RbConfig::CONFIG.fetch("EXTOUT")}/include"
+        end
+
         File.write("extconf.rb", <<-RUBY)
           require 'mkmf'
           $ruby = ENV.values_at('RUBY_EXE', 'RUBY_FLAGS').join(' ')
           # MRI magic to consider building non-bundled extensions
           $extout = nil
+          if RbConfig::CONFIG.key?("buildlibdir") # The top directory where the libruby is built.
+            # Prepend the dummy macro to bypass the conversion in `with_destdir` on DOSISH
+            # platforms, where the drive letter is replaced with `$(DESTDIR)`.  `DESTDIR` is
+            # overridden by the command line argument bellow.
+            RbConfig::MAKEFILE_CONFIG["buildlibdir"] = "$(empty)" + RbConfig::CONFIG["buildlibdir"]
+          end
           append_cflags '-Wno-declaration-after-statement'
+          #{"append_cflags #{ruby_repository_extra_include_dir.inspect}" if ruby_repository_extra_include_dir}
           create_makefile(#{ext.inspect})
         RUBY
         output = ruby_exe("extconf.rb")
@@ -89,7 +106,7 @@ def compile_extension(name)
 
       # Do not capture stderr as we want to show compiler warnings
       make, opts = setup_make
-      output = IO.popen([make, "V=1", "DESTDIR=", opts], &:read)
+      output = IO.popen([*make, "V=1", "DESTDIR=", opts], &:read)
       raise "#{make} failed:\n#{output}" unless $?.success?
       $stderr.puts output if debug
 
@@ -106,26 +123,34 @@ end
 def setup_make
   make = ENV['MAKE']
   make ||= (RbConfig::CONFIG['host_os'].include?("mswin") ? "nmake" : "make")
-  make_flags = ENV["MAKEFLAGS"] || ''
+  env = %w[MFLAGS MAKEFLAGS GNUMAKEFLAGS].to_h {|var| [var, ENV[var]]}
+  make_flags = env["MAKEFLAGS"] || ''
 
   # suppress logo of nmake.exe to stderr
   if File.basename(make, ".*").downcase == "nmake" and !make_flags.include?("l")
-    ENV["MAKEFLAGS"] = "l#{make_flags}"
+    env["MAKEFLAGS"] = "l#{make_flags}"
   end
 
   opts = {}
   if /(?:\A|\s)--jobserver-(?:auth|fds)=(\d+),(\d+)/ =~ make_flags
-    begin
-      r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
-      w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
-    rescue Errno::EBADF
-    else
-      opts[r] = r
-      opts[w] = w
+    [$1, $2].each do |fd|
+      fd = IO.for_fd(fd.to_i(10), autoclose: false)
+      opts[fd] = fd
+    rescue
+      # Jobserver is not usable, maybe no `+` flag or on Windows.
+      job_options = /\A\s*(?:-j\d+\s*|-\S+\Kj\d+)|(?:\G|\s)\K--jobserver-(?:auth|fds)=\S+\s*/
+      env["MAKEFLAGS"] = make_flags.gsub(job_options, '')
+      %w[GNUMAKEFLAGS MFLAGS].each do |var|
+        if flags = env[var]
+          env[var] = flags.gsub(job_options, '')
+        end
+      end
+      opts.clear
+      break
     end
   end
 
-  [make, opts]
+  [[env, make], opts]
 end
 
 def load_extension(name)

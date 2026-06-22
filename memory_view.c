@@ -51,11 +51,11 @@ exported_object_registry_mark(void *ptr)
 static void
 exported_object_registry_free(void *ptr)
 {
-    RB_VM_LOCK_ENTER();
-    st_clear(exported_object_table);
-    st_free_table(exported_object_table);
-    exported_object_table = NULL;
-    RB_VM_LOCK_LEAVE();
+    RB_VM_LOCKING() {
+        st_clear(exported_object_table);
+        st_free_table(exported_object_table);
+        exported_object_table = NULL;
+    }
 }
 
 const rb_data_type_t rb_memory_view_exported_object_registry_data_type = {
@@ -65,7 +65,7 @@ const rb_data_type_t rb_memory_view_exported_object_registry_data_type = {
         exported_object_registry_free,
         0,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 static int
@@ -99,18 +99,19 @@ exported_object_dec_ref(st_data_t *key, st_data_t *val, st_data_t arg, int exist
 static void
 register_exported_object(VALUE obj)
 {
-    RB_VM_LOCK_ENTER();
-    st_update(exported_object_table, (st_data_t)obj, exported_object_add_ref, 0);
-    RB_VM_LOCK_LEAVE();
+    RB_VM_LOCKING() {
+        st_update(exported_object_table, (st_data_t)obj, exported_object_add_ref, 0);
+        RB_OBJ_WRITTEN(rb_memory_view_exported_object_registry, Qundef, obj);
+    }
 }
 
 static void
 unregister_exported_object(VALUE obj)
 {
-    RB_VM_LOCK_ENTER();
-    if (exported_object_table)
-        st_update(exported_object_table, (st_data_t)obj, exported_object_dec_ref, 0);
-    RB_VM_LOCK_LEAVE();
+    RB_VM_LOCKING() {
+        if (exported_object_table)
+            st_update(exported_object_table, (st_data_t)obj, exported_object_dec_ref, 0);
+    }
 }
 
 // MemoryView
@@ -845,7 +846,7 @@ rb_memory_view_release(rb_memory_view_t* view)
         if (rv) {
             unregister_exported_object(view->obj);
             view->obj = Qnil;
-            xfree((void *)view->item_desc.components);
+            SIZED_FREE_N((rb_memory_view_item_component_t *)view->item_desc.components, view->item_desc.length);
         }
         return rv;
     }

@@ -175,19 +175,19 @@ class TestPathname < Test::Unit::TestCase
 
   if DOSISH_UNC
     defassert(:del_trailing_separator, "//", "//")
-    defassert(:del_trailing_separator, "//a", "//a")
-    defassert(:del_trailing_separator, "//a", "//a/")
-    defassert(:del_trailing_separator, "//a", "//a//")
-    defassert(:del_trailing_separator, "//a/b", "//a/b")
-    defassert(:del_trailing_separator, "//a/b", "//a/b/")
-    defassert(:del_trailing_separator, "//a/b", "//a/b//")
-    defassert(:del_trailing_separator, "//a/b/c", "//a/b/c")
-    defassert(:del_trailing_separator, "//a/b/c", "//a/b/c/")
-    defassert(:del_trailing_separator, "//a/b/c", "//a/b/c//")
   else
     defassert(:del_trailing_separator, "/", "///")
-    defassert(:del_trailing_separator, "///a", "///a/")
   end
+  defassert(:del_trailing_separator, "//a", "//a")
+  defassert(:del_trailing_separator, "//a", "//a/")
+  defassert(:del_trailing_separator, "//a", "//a//")
+  defassert(:del_trailing_separator, "//a/b", "//a/b")
+  defassert(:del_trailing_separator, "//a/b", "//a/b/")
+  defassert(:del_trailing_separator, "//a/b", "//a/b//")
+  defassert(:del_trailing_separator, "//a/b/c", "//a/b/c")
+  defassert(:del_trailing_separator, "//a/b/c", "//a/b/c/")
+  defassert(:del_trailing_separator, "//a/b/c", "//a/b/c//")
+  defassert(:del_trailing_separator, "///a", "///a/")
 
   if DOSISH
     defassert(:del_trailing_separator, "a", "a\\")
@@ -260,13 +260,12 @@ class TestPathname < Test::Unit::TestCase
     assert_equal(Pathname("/foo/var"), r)
   end
 
-  def test_absolute
-    assert_equal(true, Pathname("/").absolute?)
-    assert_equal(false, Pathname("a").absolute?)
-  end
-
   def relative?(path)
-    Pathname.new(path).relative?
+    path = Pathname.new(path)
+    relative = path.relative?
+    absolute = path.absolute?
+    assert_equal(!relative, absolute)
+    relative
   end
 
   defassert(:relative?, true, '')
@@ -281,7 +280,7 @@ class TestPathname < Test::Unit::TestCase
   defassert(:relative?, !DOSISH_DRIVE_LETTER, 'A:/')
   defassert(:relative?, !DOSISH_DRIVE_LETTER, 'A:/a')
 
-  if File.dirname('//') == '//'
+  if DOSISH_UNC
     defassert(:relative?, false, '//')
     defassert(:relative?, false, '//a')
     defassert(:relative?, false, '//a/')
@@ -348,7 +347,7 @@ class TestPathname < Test::Unit::TestCase
     rescue NotImplementedError
       return false
     rescue Errno::ENOENT
-      return false
+      return true
     rescue Errno::EACCES
       return false
     end
@@ -370,10 +369,11 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def realpath(path, basedir=nil)
-    Pathname.new(path).realpath(basedir).to_s
+    Pathname.new(path).realpath(*basedir).to_s
   end
 
   def test_realpath
+    omit "not working yet" if RUBY_ENGINE == "jruby"
     return if !has_symlink?
     with_tmpchdir('rubytest-pathname') {|dir|
       assert_raise(Errno::ENOENT) { realpath("#{dir}/not-exist") }
@@ -434,6 +434,7 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_realdirpath
+    omit "not working yet" if RUBY_ENGINE == "jruby"
     return if !has_symlink?
     Dir.mktmpdir('rubytest-pathname') {|dir|
       rdir = realpath(dir)
@@ -482,10 +483,26 @@ class TestPathname < Test::Unit::TestCase
     assert_equal('a', p1.to_s)
     p2 = Pathname.new(p1)
     assert_equal(p1, p2)
+
+    obj = Object.new
+    assert_raise_with_message(TypeError, /#to_path or #to_str/) { Pathname.new(obj) }
+
+    obj = Object.new
+    def obj.to_path; "a/path"; end
+    assert_equal("a/path", Pathname.new(obj).to_s)
+
+    obj = Object.new
+    def obj.to_str; "a/b"; end
+    assert_equal("a/b", Pathname.new(obj).to_s)
   end
 
   def test_initialize_nul
     assert_raise(ArgumentError) { Pathname.new("a\0") }
+  end
+
+  def test_initialize_encoding
+    omit "https://github.com/jruby/jruby/issues/9120" if RUBY_ENGINE == "jruby"
+    assert_raise(Encoding::CompatibilityError) { Pathname.new("a".encode(Encoding::UTF_32BE)) }
   end
 
   def test_global_constructor
@@ -606,6 +623,7 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_null_character
+    omit "https://github.com/truffleruby/truffleruby/issues/4047" if RUBY_ENGINE == "truffleruby"
     assert_raise(ArgumentError) { Pathname.new("\0") }
   end
 
@@ -682,6 +700,7 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_each_line
+    omit "not working yet" if RUBY_ENGINE == "jruby"
     with_tmpchdir('rubytest-pathname') {|dir|
       open("a", "w") {|f| f.puts 1, 2 }
       a = []
@@ -708,6 +727,7 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_each_line_opts
+    omit "not working yet" if RUBY_ENGINE == "jruby"
     with_tmpchdir('rubytest-pathname') {|dir|
       open("a", "w") {|f| f.puts 1, 2 }
       a = []
@@ -815,7 +835,7 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_birthtime
-    omit if RUBY_PLATFORM =~ /android/
+    omit "no File.birthtime" if RUBY_PLATFORM =~ /android/ or !File.respond_to?(:birthtime)
     # Check under a (probably) local filesystem.
     # Remote filesystems often may not support birthtime.
     with_tmpchdir('rubytest-pathname') do |dir|
@@ -1052,7 +1072,11 @@ class TestPathname < Test::Unit::TestCase
       latime = Time.utc(2000)
       lmtime = Time.utc(1999)
       File.symlink("a", "l")
-      Pathname("l").utime(latime, lmtime)
+      begin
+        Pathname("l").lutime(latime, lmtime)
+      rescue NotImplementedError
+        next
+      end
       s = File.lstat("a")
       ls = File.lstat("l")
       assert_equal(atime, s.atime)
@@ -1322,7 +1346,8 @@ class TestPathname < Test::Unit::TestCase
   end
 
   def test_s_glob_3args
-    expect = RUBY_VERSION >= "3.1" ? [Pathname("."), Pathname("f")] : [Pathname("."), Pathname(".."), Pathname("f")]
+    # Note: truffleruby should behave like CRuby 3.1+, but it's not the case currently
+    expect = (RUBY_VERSION >= "3.1" && RUBY_ENGINE != "truffleruby") ? [Pathname("."), Pathname("f")] : [Pathname("."), Pathname(".."), Pathname("f")]
     with_tmpchdir('rubytest-pathname') {|dir|
       open("f", "w") {|f| f.write "abc" }
       Dir.chdir("/") {

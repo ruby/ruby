@@ -6,7 +6,7 @@ require_relative "gem_installer"
 module Bundler
   class ParallelInstaller
     class SpecInstallation
-      attr_accessor :spec, :name, :full_name, :post_install_message, :state, :error
+      attr_accessor :spec, :name, :full_name, :post_install_message, :state, :error, :dependencies
       def initialize(spec)
         @spec = spec
         @name = spec.name
@@ -24,6 +24,10 @@ module Bundler
         state == :enqueued
       end
 
+      def enqueue_with_priority?
+        state == :installable && spec.extensions.any?
+      end
+
       def failed?
         state == :failed
       end
@@ -32,29 +36,21 @@ module Bundler
         state == :none
       end
 
+      def ready_to_install?(installed_specs)
+        return false unless state == :downloaded
+
+        spec.extensions.none? || dependencies_installed?(installed_specs)
+      end
+
       def has_post_install_message?
         !post_install_message.empty?
       end
 
-      def ignorable_dependency?(dep)
-        dep.type == :development || dep.name == @name
-      end
-
-      # Checks installed dependencies against spec's dependencies to make
-      # sure needed dependencies have been installed.
+      # Recursively checks that all dependencies (direct and transitive) have been installed.
       def dependencies_installed?(installed_specs)
-        dependencies.all? {|d| installed_specs.include? d.name }
-      end
-
-      # Represents only the non-development dependencies, the ones that are
-      # itself and are in the total list.
-      def dependencies
-        @dependencies ||= all_dependencies.reject {|dep| ignorable_dependency? dep }
-      end
-
-      # Represents all dependencies
-      def all_dependencies
-        @spec.dependencies
+        dependencies.all? do |dep|
+          installed_specs.include?(dep.name) && dep.dependencies_installed?(installed_specs)
+        end
       end
 
       def to_s
@@ -75,6 +71,12 @@ module Bundler
       @force = force
       @local = local
       @specs = all_specs.map {|s| SpecInstallation.new(s) }
+      specs_by_name = @specs.to_h {|s| [s.name, s] }
+      @specs.each do |spec_install|
+        spec_install.dependencies = spec_install.spec.dependencies.filter_map do |dep|
+          specs_by_name[dep.name] unless dep.type == :development || dep.name == spec_install.name
+        end
+      end
       @specs.each do |spec_install|
         spec_install.state = :installed if skip.include?(spec_install.name)
       end if skip
@@ -84,6 +86,7 @@ module Bundler
 
     def call
       if @rake
+        do_download(@rake, 0)
         do_install(@rake, 0)
         Gem::Specification.reset
       end
@@ -107,26 +110,93 @@ module Bundler
     end
 
     def install_with_worker
-      enqueue_specs
-      process_specs until finished_installing?
+      with_jobserver do
+        installed_specs = {}
+        enqueue_specs(installed_specs)
+
+        process_specs(installed_specs) until finished_installing?
+      end
+    end
+
+    def with_jobserver
+      # The jobserver hands tokens to child `make` processes through MAKEFLAGS
+      # using the GNU make `--jobserver-auth` protocol. nmake, the default make
+      # on mswin, instead reads MAKEFLAGS as bare option letters and aborts
+      # every native extension build with `fatal error U1065: invalid option
+      # '-'`. Skip the jobserver when nmake is in use. Other Windows toolchains
+      # such as mingw use GNU make and keep working through the inherited pipe.
+      return yield if nmake?
+
+      begin
+        r, w = IO.pipe
+        r.close_on_exec = false
+        w.close_on_exec = false
+        w.write("*" * @size)
+
+        old_makeflags = ENV["MAKEFLAGS"]
+        ENV["MAKEFLAGS"] = [old_makeflags, "--jobserver-auth=#{r.fileno},#{w.fileno}"].compact.join(" ")
+
+        yield
+      ensure
+        # Restore MAKEFLAGS before closing the pipe so a close failure can't
+        # leave the process with descriptors that point at a closed pipe.
+        old_makeflags ? ENV["MAKEFLAGS"] = old_makeflags : ENV.delete("MAKEFLAGS")
+
+        r&.close
+        w&.close
+      end
+    end
+
+    # Mirror how RubyGems' extension builder picks the make program so the
+    # jobserver is only set up when a GNU-compatible make will consume it.
+    def nmake?
+      make = ENV["MAKE"] || ENV["make"]
+      make ||= "nmake" if RUBY_PLATFORM.include?("mswin")
+      /\bnmake/i.match?(make.to_s)
     end
 
     def install_serially
       until finished_installing?
         raise "failed to find a spec to enqueue while installing serially" unless spec_install = @specs.find(&:ready_to_enqueue?)
         spec_install.state = :enqueued
+        do_download(spec_install, 0)
         do_install(spec_install, 0)
       end
     end
 
     def worker_pool
       @worker_pool ||= Bundler::Worker.new @size, "Parallel Installer", lambda {|spec_install, worker_num|
-        do_install(spec_install, worker_num)
+        case spec_install.state
+        when :enqueued
+          do_download(spec_install, worker_num)
+        when :installable
+          do_install(spec_install, worker_num)
+        else
+          spec_install
+        end
       }
     end
 
-    def do_install(spec_install, worker_num)
+    def do_download(spec_install, worker_num)
       Plugin.hook(Plugin::Events::GEM_BEFORE_INSTALL, spec_install)
+
+      gem_installer = Bundler::GemInstaller.new(
+        spec_install.spec, @installer, @standalone, worker_num, @force, @local
+      )
+
+      success, message = gem_installer.download
+
+      if success
+        spec_install.state = :downloaded
+      else
+        spec_install.error = "#{message}\n\n#{require_tree_for_spec(spec_install.spec)}"
+        spec_install.state = :failed
+      end
+
+      spec_install
+    end
+
+    def do_install(spec_install, worker_num)
       gem_installer = Bundler::GemInstaller.new(
         spec_install.spec, @installer, @standalone, worker_num, @force, @local
       )
@@ -147,9 +217,19 @@ module Bundler
     # Some specs might've had to wait til this spec was installed to be
     # processed so the call to `enqueue_specs` is important after every
     # dequeue.
-    def process_specs
-      worker_pool.deq
-      enqueue_specs
+    def process_specs(installed_specs)
+      spec = worker_pool.deq
+
+      if spec.installed?
+        installed_specs[spec.name] = true
+        return
+      elsif spec.failed?
+        return
+      elsif spec.ready_to_install?(installed_specs)
+        spec.state = :installable
+      end
+
+      worker_pool.enq(spec, priority: spec.enqueue_with_priority?)
     end
 
     def finished_installing?
@@ -185,18 +265,15 @@ module Bundler
     # Later we call this lambda again to install specs that depended on
     # previously installed specifications. We continue until all specs
     # are installed.
-    def enqueue_specs
-      installed_specs = {}
+    def enqueue_specs(installed_specs)
       @specs.each do |spec|
-        next unless spec.installed?
-        installed_specs[spec.name] = true
-      end
-
-      @specs.each do |spec|
-        if spec.ready_to_enqueue? && spec.dependencies_installed?(installed_specs)
-          spec.state = :enqueued
-          worker_pool.enq spec
+        if spec.installed?
+          installed_specs[spec.name] = true
+          next
         end
+
+        spec.state = :enqueued
+        worker_pool.enq spec
       end
     end
   end

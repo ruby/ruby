@@ -27,10 +27,11 @@ module Psych
     attr_reader :class_loader
 
     # Create a new scanner
-    def initialize class_loader, strict_integer: false
+    def initialize class_loader, strict_integer: false, parse_symbols: true
       @symbol_cache = {}
       @class_loader = class_loader
       @strict_integer = strict_integer
+      @parse_symbols = parse_symbols
     end
 
     # Tokenize +string+ returning the Ruby object
@@ -72,7 +73,7 @@ module Psych
         -Float::INFINITY
       elsif string.match?(/^\.nan$/i)
         Float::NAN
-      elsif string.match?(/^:./)
+      elsif @parse_symbols && string.match?(/^:./)
         if string =~ /^:(["'])(.*)\1/
           @symbol_cache[string] = class_loader.symbolize($2.sub(/^:/, ''))
         else
@@ -114,7 +115,7 @@ module Psych
     def parse_time string
       klass = class_loader.load 'Time'
 
-      date, time = *(string.split(/[ tT]/, 2))
+      date, time = *(string.split(/[Tt]|\s+/, 2))
       (yy, m, dd) = date.match(/^(-?\d{4})-(\d{1,2})-(\d{1,2})/).captures.map { |x| x.to_i }
       md = time.match(/(\d+:\d+:\d+)(?:\.(\d*))?\s*(Z|[-+]\d+(:\d\d)?)?/)
 

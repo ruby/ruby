@@ -20,7 +20,7 @@ describe "String#encode" do
       Encoding.default_internal = nil
       str = "あ"
       encoded = str.encode
-      encoded.should_not equal(str)
+      encoded.should_not.equal?(str)
       encoded.should == str
     end
 
@@ -28,7 +28,7 @@ describe "String#encode" do
       Encoding.default_internal = nil
       str = "abc"
       encoded = str.encode
-      encoded.should_not equal(str)
+      encoded.should_not.equal?(str)
       encoded.should == str
     end
 
@@ -36,7 +36,7 @@ describe "String#encode" do
       x82 = [0x82].pack('C')
       str =  "#{x82}foo".dup.force_encoding("binary")[1..-1].encode("utf-8")
       str.should == "foo".dup.force_encoding("utf-8")
-      str.encoding.should equal(Encoding::UTF_8)
+      str.encoding.should.equal?(Encoding::UTF_8)
     end
   end
 
@@ -44,7 +44,7 @@ describe "String#encode" do
     it "returns a copy when passed the same encoding as the String" do
       str = "あ"
       encoded = str.encode(Encoding::UTF_8)
-      encoded.should_not equal(str)
+      encoded.should_not.equal?(str)
       encoded.should == str
     end
 
@@ -58,7 +58,7 @@ describe "String#encode" do
     it "returns a copy when Encoding.default_internal is nil" do
       Encoding.default_internal = nil
       str = "あ"
-      str.encode(invalid: :replace).should_not equal(str)
+      str.encode(invalid: :replace).should_not.equal?(str)
     end
 
     it "normalizes newlines with cr_newline option" do
@@ -137,7 +137,7 @@ describe "String#encode" do
       str = "あ".dup.force_encoding("binary")
       encoded = str.encode("utf-8", "utf-8")
 
-      encoded.should_not equal(str)
+      encoded.should_not.equal?(str)
       encoded.should == str.force_encoding("utf-8")
       encoded.encoding.should == Encoding::UTF_8
     end
@@ -152,7 +152,7 @@ describe "String#encode" do
     it "returns a copy when the destination encoding is the same as the String encoding" do
       str = "あ"
       encoded = str.encode(Encoding::UTF_8, undef: :replace)
-      encoded.should_not equal(str)
+      encoded.should_not.equal?(str)
       encoded.should == str
     end
   end
@@ -161,7 +161,7 @@ describe "String#encode" do
     it "returns a copy when both encodings are the same" do
       str = "あ"
       encoded = str.encode("utf-8", "utf-8", invalid: :replace)
-      encoded.should_not equal(str)
+      encoded.should_not.equal?(str)
       encoded.should == str
     end
 
@@ -169,7 +169,7 @@ describe "String#encode" do
       str = "あ".dup.force_encoding("binary")
       encoded = str.encode("utf-8", "utf-8", invalid: :replace)
 
-      encoded.should_not equal(str)
+      encoded.should_not.equal?(str)
       encoded.should == str.force_encoding("utf-8")
       encoded.encoding.should == Encoding::UTF_8
     end
@@ -190,25 +190,25 @@ describe "String#encode!" do
   it_behaves_like :string_encode, :encode!
 
   it "raises a FrozenError when called on a frozen String" do
-    -> { "foo".freeze.encode!("euc-jp") }.should raise_error(FrozenError)
+    -> { "foo".freeze.encode!("euc-jp") }.should.raise(FrozenError)
   end
 
   # http://redmine.ruby-lang.org/issues/show/1836
   it "raises a FrozenError when called on a frozen String when it's a no-op" do
-    -> { "foo".freeze.encode!("utf-8") }.should raise_error(FrozenError)
+    -> { "foo".freeze.encode!("utf-8") }.should.raise(FrozenError)
   end
 
   describe "when passed no options" do
     it "returns self when Encoding.default_internal is nil" do
       Encoding.default_internal = nil
       str = +"あ"
-      str.encode!.should equal(str)
+      str.encode!.should.equal?(str)
     end
 
     it "returns self for a ASCII-only String when Encoding.default_internal is nil" do
       Encoding.default_internal = nil
       str = +"abc"
-      str.encode!.should equal(str)
+      str.encode!.should.equal?(str)
     end
   end
 
@@ -216,7 +216,7 @@ describe "String#encode!" do
     it "returns self for ASCII-only String when Encoding.default_internal is nil" do
       Encoding.default_internal = nil
       str = +"abc"
-      str.encode!(invalid: :replace).should equal(str)
+      str.encode!(invalid: :replace).should.equal?(str)
     end
   end
 
@@ -224,8 +224,8 @@ describe "String#encode!" do
     it "returns self" do
       str = +"abc"
       result = str.encode!(Encoding::BINARY)
-      result.encoding.should equal(Encoding::BINARY)
-      result.should equal(str)
+      result.encoding.should.equal?(Encoding::BINARY)
+      result.should.equal?(str)
     end
   end
 
@@ -233,8 +233,8 @@ describe "String#encode!" do
     it "returns self" do
       str = +"ああ"
       result = str.encode!("euc-jp", "utf-8")
-      result.encoding.should equal(Encoding::EUC_JP)
-      result.should equal(str)
+      result.encoding.should.equal?(Encoding::EUC_JP)
+      result.should.equal?(str)
     end
   end
 end

@@ -13,11 +13,6 @@ return if !defined?(RubyVM::InstructionSequence) || RUBY_VERSION < "3.4.0"
 # in comparing the locals because they will be the same.
 return if RubyVM::InstructionSequence.compile("").to_a[4][:parser] == :prism
 
-# In Ruby 3.4.0, the local table for method forwarding changed. But 3.4.0 can
-# refer to the dev version, so while 3.4.0 still isn't released, we need to
-# check if we have a high enough revision.
-return if RubyVM::InstructionSequence.compile("def foo(...); end").to_a[13][2][2][10].length != 1
-
 # Omit tests if running on a 32-bit machine because there is a bug with how
 # Ruby is handling large ISeqs on 32-bit machines
 return if RUBY_PLATFORM =~ /i686/
@@ -29,10 +24,19 @@ module Prism
     except = [
       # Skip this fixture because it has a different number of locals because
       # CRuby is eliminating dead code.
-      "whitequark/ruby_bug_10653.txt"
+      "whitequark/ruby_bug_10653.txt",
+
+      # https://bugs.ruby-lang.org/issues/21168#note-5
+      "command_method_call_2.txt",
+
+      # https://bugs.ruby-lang.org/issues/21669
+      "4.1/void_value.txt",
+
+      # https://bugs.ruby-lang.org/issues/19107
+      "4.1/trailing_comma_after_method_arguments.txt",
     ]
 
-    Fixture.each(except: except) do |fixture|
+    Fixture.each_for_current_ruby(except: except) do |fixture|
       define_method(fixture.test_name) { assert_locals(fixture) }
     end
 
@@ -73,6 +77,10 @@ module Prism
         parts[10]
       end
 
+      def catch_table
+        parts[12]
+      end
+
       def instructions
         parts[13]
       end
@@ -92,6 +100,20 @@ module Prism
 
             yield ISeq.new(opnd)
           end
+        end
+
+        # The handler for a rescue clause is compiled into its own iseq that is
+        # reachable only through the catch table. Its local table only ever
+        # holds the implicit `$!` error variable (rescue clauses do not
+        # introduce user locals of their own -- `rescue => e` puts `e` in the
+        # enclosing scope), and prism does not model it as a scope, so we treat
+        # it as transparent and descend straight into any iseqs nested within
+        # it (e.g. a block or an `END {}` inside a rescue clause). Only
+        # `:rescue` entries are followed: `:break`/`:next`/`:redo`/`:retry`
+        # entries either have no iseq or reference one already reachable through
+        # the instructions, and `:ensure` bodies are compiled inline.
+        catch_table.each do |entry|
+          ISeq.new(entry[1]).each_child { |child| yield child } if entry[0] == :rescue && entry[1].is_a?(Array)
         end
       end
     end
@@ -206,7 +228,7 @@ module Prism
               end
             end
 
-            if params.block
+            if params.block.is_a?(BlockParameterNode)
               sorted << (params.block.name || :&)
             end
 

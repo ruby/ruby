@@ -31,6 +31,8 @@ module Bundler
       message
     end
 
+    def download(*); end
+
     def can_lock?(spec)
       spec.source == self
     end
@@ -79,7 +81,7 @@ module Bundler
     end
 
     def extension_cache_path(spec)
-      return unless Bundler.feature_flag.global_gem_cache?
+      return unless Bundler.settings[:global_gem_cache]
       return unless source_slug = extension_cache_slug(spec)
       Bundler.user_cache.join(
         "extensions", Gem::Platform.local.to_s, Bundler.ruby_scope,

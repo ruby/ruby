@@ -105,6 +105,11 @@ RSpec.describe MSpecRun, "#options" do
     @script.options @argv
   end
 
+  it "enables the repeat option" do
+    expect(@options).to receive(:repeat)
+    @script.options @argv
+  end
+
   it "exits if there are no files to process and './spec' is not a directory" do
     expect(File).to receive(:directory?).with("./spec").and_return(false)
     expect(@options).to receive(:parse).and_return([])

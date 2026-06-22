@@ -15,7 +15,7 @@ describe "C-API IO function" do
   end
 
   after :each do
-    @io.close unless @io.closed?
+    @io.close
     rm_r @name
   end
 
@@ -34,7 +34,7 @@ describe "C-API IO function" do
     end
 
     it "returns the io" do
-      @o.rb_io_addstr(@io, "rb_io_addstr data").should eql(@io)
+      @o.rb_io_addstr(@io, "rb_io_addstr data").should.eql?(@io)
     end
   end
 
@@ -118,15 +118,15 @@ describe "C-API IO function" do
   end
 
   after :each do
-    @io.close unless @io.closed?
+    @io.close
     rm_r @name
   end
 
   describe "rb_io_close" do
     it "closes an IO object" do
-      @io.closed?.should be_false
+      @io.closed?.should == false
       @o.rb_io_close(@io)
-      @io.closed?.should be_true
+      @io.closed?.should == true
     end
   end
 
@@ -136,19 +136,19 @@ describe "C-API IO function" do
     end
 
     it "returns nil for non IO objects" do
-      @o.rb_io_check_io({}).should be_nil
+      @o.rb_io_check_io({}).should == nil
     end
   end
 
   describe "rb_io_check_closed" do
     it "does not raise an exception if the IO is not closed" do
-      # The MRI function is void, so we use should_not raise_error
-      -> { @o.rb_io_check_closed(@io) }.should_not raise_error
+      # The MRI function is void, so we use should_not.raise
+      -> { @o.rb_io_check_closed(@io) }.should_not.raise
     end
 
     it "raises an error if the IO is closed" do
       @io.close
-      -> { @o.rb_io_check_closed(@io) }.should raise_error(IOError)
+      -> { @o.rb_io_check_closed(@io) }.should.raise(IOError)
     end
   end
 
@@ -157,7 +157,7 @@ describe "C-API IO function" do
       it "returns true when nonblock flag is set" do
         require 'io/nonblock'
         @o.rb_io_set_nonblock(@io)
-        @io.nonblock?.should be_true
+        @io.nonblock?.should == true
       end
     end
   end
@@ -166,13 +166,13 @@ describe "C-API IO function" do
   # object is frozen, *not* if it's tainted.
   describe "rb_io_taint_check" do
     it "does not raise an exception if the IO is not frozen" do
-      -> { @o.rb_io_taint_check(@io) }.should_not raise_error
+      -> { @o.rb_io_taint_check(@io) }.should_not.raise
     end
 
     it "raises an exception if the IO is frozen" do
       @io.freeze
 
-      -> { @o.rb_io_taint_check(@io) }.should raise_error(RuntimeError)
+      -> { @o.rb_io_taint_check(@io) }.should.raise(RuntimeError)
     end
   end
 
@@ -186,7 +186,7 @@ describe "C-API IO function" do
 
     it "raises IOError if the IO is closed" do
       @io.close
-      -> { @o.GetOpenFile_fd(@io) }.should raise_error(IOError, "closed stream")
+      -> { @o.GetOpenFile_fd(@io) }.should.raise(IOError, "closed stream")
     end
   end
 
@@ -197,7 +197,7 @@ describe "C-API IO function" do
 
     it "sets binmode" do
       @o.rb_io_binmode(@io)
-      @io.binmode?.should be_true
+      @io.binmode?.should == true
     end
   end
 end
@@ -213,52 +213,52 @@ describe "C-API IO function" do
   end
 
   after :each do
-    @r_io.close unless @r_io.closed?
-    @w_io.close unless @w_io.closed?
-    @rw_io.close unless @rw_io.closed?
+    @r_io.close
+    @w_io.close
+    @rw_io.close
     rm_r @name
   end
 
   describe "rb_io_check_readable" do
     it "does not raise an exception if the IO is opened for reading" do
-      # The MRI function is void, so we use should_not raise_error
-      -> { @o.rb_io_check_readable(@r_io) }.should_not raise_error
+      # The MRI function is void, so we use should_not.raise
+      -> { @o.rb_io_check_readable(@r_io) }.should_not.raise
     end
 
     it "does not raise an exception if the IO is opened for read and write" do
-      -> { @o.rb_io_check_readable(@rw_io) }.should_not raise_error
+      -> { @o.rb_io_check_readable(@rw_io) }.should_not.raise
     end
 
     it "raises an IOError if the IO is not opened for reading" do
-      -> { @o.rb_io_check_readable(@w_io) }.should raise_error(IOError)
+      -> { @o.rb_io_check_readable(@w_io) }.should.raise(IOError)
     end
 
   end
 
   describe "rb_io_check_writable" do
     it "does not raise an exception if the IO is opened for writing" do
-      # The MRI function is void, so we use should_not raise_error
-      -> { @o.rb_io_check_writable(@w_io) }.should_not raise_error
+      # The MRI function is void, so we use should_not.raise
+      -> { @o.rb_io_check_writable(@w_io) }.should_not.raise
     end
 
     it "does not raise an exception if the IO is opened for read and write" do
-      -> { @o.rb_io_check_writable(@rw_io) }.should_not raise_error
+      -> { @o.rb_io_check_writable(@rw_io) }.should_not.raise
     end
 
     it "raises an IOError if the IO is not opened for reading" do
-      -> { @o.rb_io_check_writable(@r_io) }.should raise_error(IOError)
+      -> { @o.rb_io_check_writable(@r_io) }.should.raise(IOError)
     end
   end
 
   describe "rb_io_wait_writable" do
     it "returns false if there is no error condition" do
       @o.errno = 0
-      @o.rb_io_wait_writable(@w_io).should be_false
+      @o.rb_io_wait_writable(@w_io).should == false
     end
 
     it "raises an IOError if the IO is closed" do
       @w_io.close
-      -> { @o.rb_io_wait_writable(@w_io) }.should raise_error(IOError)
+      -> { @o.rb_io_wait_writable(@w_io) }.should.raise(IOError)
     end
   end
 
@@ -273,11 +273,11 @@ describe "C-API IO function" do
 
     it "raises an IOError if the IO is closed" do
       @w_io.close
-      -> { @o.rb_io_maybe_wait_writable(0, @w_io, nil) }.should raise_error(IOError, "closed stream")
+      -> { @o.rb_io_maybe_wait_writable(0, @w_io, nil) }.should.raise(IOError, "closed stream")
     end
 
     it "raises an IOError if the IO is not initialized" do
-      -> { @o.rb_io_maybe_wait_writable(0, IO.allocate, nil) }.should raise_error(IOError, "uninitialized stream")
+      -> { @o.rb_io_maybe_wait_writable(0, IO.allocate, nil) }.should.raise(IOError, "uninitialized stream")
     end
 
     it "can be interrupted" do
@@ -299,7 +299,7 @@ describe "C-API IO function" do
 
   describe "rb_thread_fd_writable" do
     it "waits til an fd is ready for writing" do
-      @o.rb_thread_fd_writable(@w_io).should be_nil
+      @o.rb_thread_fd_writable(@w_io).should == nil
     end
   end
 
@@ -322,14 +322,14 @@ describe "C-API IO function" do
     describe "rb_io_wait_readable" do
       it "returns false if there is no error condition" do
         @o.errno = 0
-        @o.rb_io_wait_readable(@r_io, false).should be_false
+        @o.rb_io_wait_readable(@r_io, false).should == false
       end
 
       it "raises and IOError if passed a closed stream" do
         @r_io.close
         -> {
           @o.rb_io_wait_readable(@r_io, false)
-        }.should raise_error(IOError)
+        }.should.raise(IOError)
       end
 
       it "blocks until the io is readable and returns true" do
@@ -340,7 +340,7 @@ describe "C-API IO function" do
         end
 
         @o.errno = Errno::EAGAIN.new.errno
-        @o.rb_io_wait_readable(@r_io, true).should be_true
+        @o.rb_io_wait_readable(@r_io, true).should == true
         @o.instance_variable_get(:@read_data).should == "rb_io_wait_re"
 
         thr.join
@@ -386,11 +386,11 @@ describe "C-API IO function" do
 
       it "raises an IOError if the IO is closed" do
         @r_io.close
-        -> { @o.rb_io_maybe_wait_readable(0, @r_io, nil, false) }.should raise_error(IOError, "closed stream")
+        -> { @o.rb_io_maybe_wait_readable(0, @r_io, nil, false) }.should.raise(IOError, "closed stream")
       end
 
       it "raises an IOError if the IO is not initialized" do
-        -> { @o.rb_io_maybe_wait_readable(0, IO.allocate, nil, false) }.should raise_error(IOError, "uninitialized stream")
+        -> { @o.rb_io_maybe_wait_readable(0, IO.allocate, nil, false) }.should.raise(IOError, "uninitialized stream")
       end
     end
   end
@@ -406,7 +406,7 @@ describe "C-API IO function" do
 
       Thread.pass until start
 
-      @o.rb_thread_wait_fd(@r_io).should be_nil
+      @o.rb_thread_wait_fd(@r_io).should == nil
 
       thr.join
     end
@@ -455,11 +455,11 @@ describe "C-API IO function" do
 
     it "raises an IOError if the IO is closed" do
       @w_io.close
-      -> { @o.rb_io_maybe_wait(0, @w_io, IO::WRITABLE, nil) }.should raise_error(IOError, "closed stream")
+      -> { @o.rb_io_maybe_wait(0, @w_io, IO::WRITABLE, nil) }.should.raise(IOError, "closed stream")
     end
 
     it "raises an IOError if the IO is not initialized" do
-      -> { @o.rb_io_maybe_wait(0, IO.allocate, IO::WRITABLE, nil) }.should raise_error(IOError, "uninitialized stream")
+      -> { @o.rb_io_maybe_wait(0, IO.allocate, IO::WRITABLE, nil) }.should.raise(IOError, "uninitialized stream")
     end
 
     it "can be interrupted when waiting for READABLE event" do
@@ -494,166 +494,164 @@ describe "C-API IO function" do
     end
   end
 
-  ruby_version_is "3.3" do
-    describe "rb_io_mode" do
-      it "returns the mode" do
-        (@o.rb_io_mode(@r_io) & 0b11).should == 0b01
-        (@o.rb_io_mode(@w_io) & 0b11).should == 0b10
-        (@o.rb_io_mode(@rw_io) & 0b11).should == 0b11
-      end
+  describe "rb_io_mode" do
+    it "returns the mode" do
+      (@o.rb_io_mode(@r_io) & 0b11).should == 0b01
+      (@o.rb_io_mode(@w_io) & 0b11).should == 0b10
+      (@o.rb_io_mode(@rw_io) & 0b11).should == 0b11
+    end
+  end
+
+  describe "rb_io_path" do
+    it "returns the IO#path" do
+      @o.rb_io_path(@r_io).should == @r_io.path
+      @o.rb_io_path(@rw_io).should == @rw_io.path
+      @o.rb_io_path(@rw_io).should == @name
+    end
+  end
+
+  describe "rb_io_closed_p" do
+    it "returns false when io is not closed" do
+      @o.rb_io_closed_p(@r_io).should == false
+      @r_io.closed?.should == false
     end
 
-    describe "rb_io_path" do
-      it "returns the IO#path" do
-        @o.rb_io_path(@r_io).should == @r_io.path
-        @o.rb_io_path(@rw_io).should == @rw_io.path
-        @o.rb_io_path(@rw_io).should == @name
-      end
+    it "returns true when io is closed" do
+      @r_io.close
+
+      @o.rb_io_closed_p(@r_io).should == true
+      @r_io.closed?.should == true
     end
+  end
 
-    describe "rb_io_closed_p" do
-      it "returns false when io is not closed" do
-        @o.rb_io_closed_p(@r_io).should == false
-        @r_io.closed?.should == false
+  quarantine! do # "Errno::EBADF: Bad file descriptor" at closing @r_io, @rw_io etc in the after :each hook
+    describe "rb_io_open_descriptor" do
+      it "creates a new IO instance" do
+        io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {})
+        io.should.is_a?(IO)
       end
 
-      it "returns true when io is closed" do
-        @r_io.close
+      it "return an instance of the specified class" do
+        io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {})
+        io.class.should == File
 
-        @o.rb_io_closed_p(@r_io).should == true
-        @r_io.closed?.should == true
+        io = @o.rb_io_open_descriptor(IO, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {})
+        io.class.should == IO
       end
-    end
 
-    quarantine! do # "Errno::EBADF: Bad file descriptor" at closing @r_io, @rw_io etc in the after :each hook
-      describe "rb_io_open_descriptor" do
-        it "creates a new IO instance" do
-          io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {})
-          io.should.is_a?(IO)
+      it "sets the specified file descriptor" do
+        io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {})
+        io.fileno.should == @r_io.fileno
+      end
+
+      it "sets the specified path" do
+        io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {})
+        io.path.should == "a.txt"
+      end
+
+      it "sets the specified mode" do
+        io = @o.rb_io_open_descriptor(File, @r_io.fileno, CApiIOSpecs::FMODE_BINMODE, "a.txt", 60, "US-ASCII", "UTF-8", 0, {})
+        io.should.binmode?
+
+        io = @o.rb_io_open_descriptor(File, @r_io.fileno, CApiIOSpecs::FMODE_TEXTMODE, "a.txt", 60, "US-ASCII", "UTF-8", 0, {})
+        io.should_not.binmode?
+      end
+
+      it "sets the specified timeout" do
+        io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {})
+        io.timeout.should == 60
+      end
+
+      it "sets the specified internal encoding" do
+        io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {})
+        io.internal_encoding.should == Encoding::US_ASCII
+      end
+
+      it "sets the specified external encoding" do
+        io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {})
+        io.external_encoding.should == Encoding::UTF_8
+      end
+
+      it "does not apply the specified encoding flags" do
+        name = tmp("rb_io_open_descriptor_specs")
+        File.write(name, "123\r\n456\n89")
+        file = File.open(name, "r")
+
+        io = @o.rb_io_open_descriptor(File, file.fileno, CApiIOSpecs::FMODE_READABLE, "a.txt", 60, "US-ASCII", "UTF-8", CApiIOSpecs::ECONV_UNIVERSAL_NEWLINE_DECORATOR, {})
+        io.read_nonblock(20).should == "123\r\n456\n89"
+      ensure
+        file.close
+        rm_r name
+      end
+
+      it "ignores the IO open options" do
+        io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {external_encoding: "windows-1251"})
+        io.external_encoding.should == Encoding::UTF_8
+
+        io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {internal_encoding: "windows-1251"})
+        io.internal_encoding.should == Encoding::US_ASCII
+
+        io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {encoding: "windows-1251:binary"})
+        io.external_encoding.should == Encoding::UTF_8
+        io.internal_encoding.should == Encoding::US_ASCII
+
+        io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {textmode: false})
+        io.should_not.binmode?
+
+        io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {binmode: true})
+        io.should_not.binmode?
+
+        io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {autoclose: false})
+        io.should.autoclose?
+
+        io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {path: "a.txt"})
+        io.path.should == "a.txt"
+      end
+
+      it "ignores the IO encoding options" do
+        io = @o.rb_io_open_descriptor(File, @w_io.fileno, CApiIOSpecs::FMODE_WRITABLE, "a.txt", 60, "US-ASCII", "UTF-8", 0, {crlf_newline: true})
+
+        io.write("123\r\n456\n89")
+        io.flush
+
+        @r_io.read_nonblock(20).should == "123\r\n456\n89"
+      end
+
+      it "allows wrong mode" do
+        io = @o.rb_io_open_descriptor(File, @w_io.fileno, CApiIOSpecs::FMODE_READABLE, "a.txt", 60, "US-ASCII", "UTF-8", 0, {})
+        io.should.is_a?(File)
+
+        platform_is_not :windows do
+          -> { io.read_nonblock(1) }.should.raise(Errno::EBADF)
         end
 
-        it "return an instance of the specified class" do
-          io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {})
-          io.class.should == File
-
-          io = @o.rb_io_open_descriptor(IO, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {})
-          io.class.should == IO
+        platform_is :windows do
+          -> { io.read_nonblock(1) }.should.raise(IO::EWOULDBLOCKWaitReadable)
         end
+      end
 
-        it "sets the specified file descriptor" do
-          io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {})
-          io.fileno.should == @r_io.fileno
-        end
+      it "tolerates NULL as rb_io_encoding *encoding parameter" do
+        io = @o.rb_io_open_descriptor_without_encoding(File, @r_io.fileno, 0, "a.txt", 60)
+        io.should.is_a?(File)
+      end
 
-        it "sets the specified path" do
-          io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {})
-          io.path.should == "a.txt"
-        end
+      it "deduplicates path String" do
+        path = "a.txt".dup
+        io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, path, 60, "US-ASCII", "UTF-8", 0, {})
+        io.path.should_not.equal?(path)
 
-        it "sets the specified mode" do
-          io = @o.rb_io_open_descriptor(File, @r_io.fileno, CApiIOSpecs::FMODE_BINMODE, "a.txt", 60, "US-ASCII", "UTF-8", 0, {})
-          io.should.binmode?
+        path = "a.txt".freeze
+        io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, path, 60, "US-ASCII", "UTF-8", 0, {})
+        io.path.should_not.equal?(path)
+      end
 
-          io = @o.rb_io_open_descriptor(File, @r_io.fileno, CApiIOSpecs::FMODE_TEXTMODE, "a.txt", 60, "US-ASCII", "UTF-8", 0, {})
-          io.should_not.binmode?
-        end
+      it "calls #to_str to convert a path to a String" do
+        path = Object.new
+        def path.to_str; "a.txt"; end
 
-        it "sets the specified timeout" do
-          io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {})
-          io.timeout.should == 60
-        end
+        io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, path, 60, "US-ASCII", "UTF-8", 0, {})
 
-        it "sets the specified internal encoding" do
-          io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {})
-          io.internal_encoding.should == Encoding::US_ASCII
-        end
-
-        it "sets the specified external encoding" do
-          io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {})
-          io.external_encoding.should == Encoding::UTF_8
-        end
-
-        it "does not apply the specified encoding flags" do
-          name = tmp("rb_io_open_descriptor_specs")
-          File.write(name, "123\r\n456\n89")
-          file = File.open(name, "r")
-
-          io = @o.rb_io_open_descriptor(File, file.fileno, CApiIOSpecs::FMODE_READABLE, "a.txt", 60, "US-ASCII", "UTF-8", CApiIOSpecs::ECONV_UNIVERSAL_NEWLINE_DECORATOR, {})
-          io.read_nonblock(20).should == "123\r\n456\n89"
-        ensure
-          file.close
-          rm_r name
-        end
-
-        it "ignores the IO open options" do
-          io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {external_encoding: "windows-1251"})
-          io.external_encoding.should == Encoding::UTF_8
-
-          io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {internal_encoding: "windows-1251"})
-          io.internal_encoding.should == Encoding::US_ASCII
-
-          io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {encoding: "windows-1251:binary"})
-          io.external_encoding.should == Encoding::UTF_8
-          io.internal_encoding.should == Encoding::US_ASCII
-
-          io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {textmode: false})
-          io.should_not.binmode?
-
-          io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {binmode: true})
-          io.should_not.binmode?
-
-          io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {autoclose: false})
-          io.should.autoclose?
-
-          io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, "a.txt", 60, "US-ASCII", "UTF-8", 0, {path: "a.txt"})
-          io.path.should == "a.txt"
-        end
-
-        it "ignores the IO encoding options" do
-          io = @o.rb_io_open_descriptor(File, @w_io.fileno, CApiIOSpecs::FMODE_WRITABLE, "a.txt", 60, "US-ASCII", "UTF-8", 0, {crlf_newline: true})
-
-          io.write("123\r\n456\n89")
-          io.flush
-
-          @r_io.read_nonblock(20).should == "123\r\n456\n89"
-        end
-
-        it "allows wrong mode" do
-          io = @o.rb_io_open_descriptor(File, @w_io.fileno, CApiIOSpecs::FMODE_READABLE, "a.txt", 60, "US-ASCII", "UTF-8", 0, {})
-          io.should.is_a?(File)
-
-          platform_is_not :windows do
-            -> { io.read_nonblock(1) }.should raise_error(Errno::EBADF)
-          end
-
-          platform_is :windows do
-            -> { io.read_nonblock(1) }.should raise_error(IO::EWOULDBLOCKWaitReadable)
-          end
-        end
-
-        it "tolerates NULL as rb_io_encoding *encoding parameter" do
-          io = @o.rb_io_open_descriptor_without_encoding(File, @r_io.fileno, 0, "a.txt", 60)
-          io.should.is_a?(File)
-        end
-
-        it "deduplicates path String" do
-          path = "a.txt".dup
-          io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, path, 60, "US-ASCII", "UTF-8", 0, {})
-          io.path.should_not equal(path)
-
-          path = "a.txt".freeze
-          io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, path, 60, "US-ASCII", "UTF-8", 0, {})
-          io.path.should_not equal(path)
-        end
-
-        it "calls #to_str to convert a path to a String" do
-          path = Object.new
-          def path.to_str; "a.txt"; end
-
-          io = @o.rb_io_open_descriptor(File, @r_io.fileno, 0, path, 60, "US-ASCII", "UTF-8", 0, {})
-
-          io.path.should == "a.txt"
-        end
+        io.path.should == "a.txt"
       end
     end
   end
@@ -680,13 +678,13 @@ describe "rb_fd_fix_cloexec" do
   end
 
   after :each do
-    @io.close unless @io.closed?
+    @io.close
     rm_r @name
   end
 
   it "sets close_on_exec on the IO" do
     @o.rb_fd_fix_cloexec(@io)
-    @io.close_on_exec?.should be_true
+    @io.close_on_exec?.should == true
   end
 
 end
@@ -701,13 +699,65 @@ describe "rb_cloexec_open" do
   end
 
   after :each do
-    @io.close unless @io.nil? || @io.closed?
+    @io.close if @io
     rm_r @name
   end
 
   it "sets close_on_exec on the newly-opened IO" do
     @io = @o.rb_cloexec_open(@name, 0, 0)
-    @io.close_on_exec?.should be_true
+    @io.close_on_exec?.should == true
+  end
+end
+
+describe "rb_cloexec_dup" do
+  before :each do
+    @o = CApiIOSpecs.new
+    @name = tmp("c_api_rb_io_specs")
+    touch @name
+
+    @io = new_io @name, "r"
+    @dup = nil
+  end
+
+  after :each do
+    @dup.close if @dup
+    @io.close
+    rm_r @name
+  end
+
+  it "duplicates a file descriptor and sets close_on_exec" do
+    @dup = @o.rb_cloexec_dup(@io)
+    @dup.should.close_on_exec?
+    @dup.fileno.should_not == @io.fileno
+  end
+end
+
+describe "rb_cloexec_fcntl_dupfd" do
+  before :each do
+    @o = CApiIOSpecs.new
+    @name = tmp("c_api_rb_io_specs")
+    touch @name
+
+    @io = new_io @name, "r"
+    @dup = nil
+  end
+
+  after :each do
+    @dup.close if @dup
+    @io.close
+    rm_r @name
+  end
+
+  it "duplicates a file descriptor and sets close_on_exec" do
+    @dup = @o.rb_cloexec_fcntl_dupfd(@io, 3)
+    @dup.close_on_exec?.should == true
+    @dup.fileno.should_not == @io.fileno
+  end
+
+  it "returns a file descriptor greater than or equal to minfd" do
+    @dup = @o.rb_cloexec_fcntl_dupfd(@io, 100)
+    @dup.fileno.should >= 100
+    @dup.close_on_exec?.should == true
   end
 end
 

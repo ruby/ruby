@@ -74,6 +74,19 @@ module Psych
       assert_equal :foo, Psych.safe_load('--- !ruby/symbol foo', permitted_classes: [Symbol])
     end
 
+    def test_encoding
+      yaml = "--- !ruby/encoding UTF-8\n"
+      assert_raise(Psych::DisallowedClass) do
+        Psych.safe_load yaml
+      end
+      assert_raise(Psych::DisallowedClass) do
+        Psych.safe_load yaml, permitted_classes: []
+      end
+
+      assert_equal Encoding::UTF_8, Psych.safe_load(yaml, permitted_classes: [Encoding])
+      assert_equal Encoding::UTF_8, Psych.safe_load(yaml, permitted_classes: %w{ Encoding })
+    end
+
     def test_foo
       assert_raise(Psych::DisallowedClass) do
         Psych.safe_load '--- !ruby/object:Foo {}', permitted_classes: [Foo]
@@ -111,6 +124,38 @@ module Psych
 --- !ruby/struct
   foo: bar
                       eoyml
+      end
+    end
+
+    D = Data.define(:d) unless RUBY_VERSION < "3.2"
+
+    def test_data_depends_on_sym
+      omit "Data requires ruby >= 3.2" if RUBY_VERSION < "3.2"
+      assert_safe_cycle(D.new(nil), permitted_classes: [D, Symbol])
+      assert_raise(Psych::DisallowedClass) do
+        cycle D.new(nil), permitted_classes: [D]
+      end
+    end
+
+    def test_anon_data
+      omit "Data requires ruby >= 3.2" if RUBY_VERSION < "3.2"
+      assert Psych.safe_load(<<-eoyml, permitted_classes: [Data, Symbol])
+--- !ruby/data
+  foo: bar
+      eoyml
+
+      assert_raise(Psych::DisallowedClass) do
+        Psych.safe_load(<<-eoyml, permitted_classes: [Data])
+--- !ruby/data
+  foo: bar
+        eoyml
+      end
+
+      assert_raise(Psych::DisallowedClass) do
+        Psych.safe_load(<<-eoyml, permitted_classes: [Symbol])
+--- !ruby/data
+  foo: bar
+        eoyml
       end
     end
 

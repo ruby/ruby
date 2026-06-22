@@ -12,6 +12,7 @@ module Bundler
       @dep = dep
       @platform = platform
       @candidates = candidates
+      set_locked_platforms
     end
 
     def complete?
@@ -22,14 +23,14 @@ module Bundler
       @specs ||= if @candidates.nil?
         []
       elsif platform
-        GemHelpers.select_best_platform_match(@candidates, platform, force_ruby: dep.force_ruby_platform)
+        MatchPlatform.select_best_platform_match(@candidates, platform, force_ruby: dep.force_ruby_platform)
       else
-        GemHelpers.select_best_local_platform_match(@candidates, force_ruby: dep.force_ruby_platform || dep.default_force_ruby_platform)
+        MatchPlatform.select_best_local_platform_match(@candidates, force_ruby: dep.force_ruby_platform || dep.default_force_ruby_platform)
       end
     end
 
     def dependencies
-      specs.first.runtime_dependencies.map {|d| [d, platform] }
+      (materialized_spec || specs.first).runtime_dependencies.map {|d| [d, platform] }
     end
 
     def materialized_spec
@@ -55,5 +56,14 @@ module Bundler
     private
 
     attr_reader :dep, :platform
+
+    def set_locked_platforms
+      return unless @candidates
+
+      platforms = @candidates.map(&:platform)
+      @candidates.each do |candidate|
+        candidate.locked_platforms = platforms if candidate.respond_to?(:locked_platforms=)
+      end
+    end
   end
 end

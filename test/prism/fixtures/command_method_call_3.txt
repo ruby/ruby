@@ -1,0 +1,19 @@
+foo(bar 1, key => '2')
+
+foo(bar 1, KEY => '2')
+
+foo(bar 1, :key => '2')
+
+foo(bar 1, { baz: :bat } => '2')
+
+foo bar - %i[baz] => '2'
+
+foo(bar {} => '2')
+
+foo(bar baz {} => '2')
+
+foo(bar do end => '2')
+
+foo(1, bar {} => '2')
+
+foo(1, bar do end => '2')

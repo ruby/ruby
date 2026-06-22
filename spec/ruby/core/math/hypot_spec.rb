@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "Math.hypot" do
   it "returns a float" do
-    Math.hypot(3, 4).should be_kind_of(Float)
+    Math.hypot(3, 4).should.is_a?(Float)
   end
 
   it "returns the length of the hypotenuse of a right triangle with legs given by the arguments" do
@@ -16,17 +16,17 @@ describe "Math.hypot" do
   end
 
   it "raises a TypeError if the argument cannot be coerced with Float()" do
-    -> { Math.hypot("test", "this") }.should raise_error(TypeError)
+    -> { Math.hypot("test", "this") }.should.raise(TypeError)
   end
 
   it "returns NaN given NaN" do
-    Math.hypot(nan_value, 0).nan?.should be_true
-    Math.hypot(0, nan_value).nan?.should be_true
-    Math.hypot(nan_value, nan_value).nan?.should be_true
+    Math.hypot(nan_value, 0).nan?.should == true
+    Math.hypot(0, nan_value).nan?.should == true
+    Math.hypot(nan_value, nan_value).nan?.should == true
   end
 
   it "raises a TypeError if the argument is nil" do
-    -> { Math.hypot(nil, nil) }.should raise_error(TypeError)
+    -> { Math.hypot(nil, nil) }.should.raise(TypeError)
   end
 
   it "accepts any argument that can be coerced with Float()" do

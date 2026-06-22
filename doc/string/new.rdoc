@@ -1,34 +1,38 @@
-Returns a new \String that is a copy of +string+.
+Returns a new \String object containing the given +string+.
 
-With no arguments, returns the empty string with the Encoding <tt>ASCII-8BIT</tt>:
+The +options+ are optional keyword options (see below).
 
-  s = String.new
-  s # => ""
-  s.encoding # => #<Encoding:ASCII-8BIT>
+With no argument given and keyword +encoding+ also not given,
+returns an empty string with the Encoding <tt>ASCII-8BIT</tt>:
 
-With optional argument +string+ and no keyword arguments,
-returns a copy of +string+ with the same encoding:
+  s = String.new # => ""
+  s.encoding     # => #<Encoding:ASCII-8BIT>
 
-  String.new('foo')               # => "foo"
-  String.new('тест')              # => "тест"
-  String.new('こんにちは')          # => "こんにちは"
+With argument +string+ given and keyword option +encoding+ not given,
+returns a new string with the same encoding as +string+:
+
+  s0 = 'foo'.encode(Encoding::UTF_16)
+  s1 = String.new(s0)
+  s1.encoding # => #<Encoding:UTF-16 (dummy)>
 
 (Unlike \String.new,
 a {string literal}[rdoc-ref:syntax/literals.rdoc@String+Literals] like <tt>''</tt> or a
 {here document literal}[rdoc-ref:syntax/literals.rdoc@Here+Document+Literals]
 always has {script encoding}[rdoc-ref:encodings.rdoc@Script+Encoding].)
 
-With optional keyword argument +encoding+, returns a copy of +string+
-with the specified encoding;
+With keyword option +encoding+ given,
+returns a string with the specified encoding;
 the +encoding+ may be an Encoding object, an encoding name,
 or an encoding name alias:
 
+  String.new(encoding: Encoding::US_ASCII).encoding        # => #<Encoding:US-ASCII>
+  String.new('', encoding: Encoding::US_ASCII).encoding    # => #<Encoding:US-ASCII>
   String.new('foo', encoding: Encoding::US_ASCII).encoding # => #<Encoding:US-ASCII>
   String.new('foo', encoding: 'US-ASCII').encoding         # => #<Encoding:US-ASCII>
   String.new('foo', encoding: 'ASCII').encoding            # => #<Encoding:US-ASCII>
 
 The given encoding need not be valid for the string's content,
-and that validity is not checked:
+and its validity is not checked:
 
   s = String.new('こんにちは', encoding: 'ascii')
   s.valid_encoding? # => false
@@ -37,19 +41,11 @@ But the given +encoding+ itself is checked:
 
   String.new('foo', encoding: 'bar') # Raises ArgumentError.
 
-With optional keyword argument +capacity+, returns a copy of +string+
-(or an empty string, if +string+ is not given);
-the given +capacity+ is advisory only,
+With keyword option +capacity+ given,
+the given value is advisory only,
 and may or may not set the size of the internal buffer,
 which may in turn affect performance:
 
-  String.new(capacity: 1)
-  String.new('foo', capacity: 4096)
-
-Note that Ruby strings are null-terminated internally, so the internal
-buffer size will be one or more bytes larger than the requested capacity
-depending on the encoding.
-
-The +string+, +encoding+, and +capacity+ arguments may all be used together:
-
-  String.new('hello', encoding: 'UTF-8', capacity: 25)
+  String.new('foo', capacity: 1)    # Buffer size is at least 4 (includes terminal null byte).
+  String.new('foo', capacity: 4096) # Buffer size is at least 4;
+                                    # may be equal to, greater than, or less than 4096.

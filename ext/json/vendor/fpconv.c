@@ -29,6 +29,10 @@
 #include <string.h>
 #include <stdint.h>
 
+#if JSON_DEBUG
+#include <assert.h>
+#endif
+
 #define npowers     87
 #define steppowers  8
 #define firstpower -348 /* 10 ^ -348 */
@@ -41,7 +45,7 @@ typedef struct Fp {
     int exp;
 } Fp;
 
-static Fp powers_ten[] = {
+static const Fp powers_ten[] = {
     { 18054884314459144840U, -1220 }, { 13451937075301367670U, -1193 },
     { 10022474136428063862U, -1166 }, { 14934650266808366570U, -1140 },
     { 11127181549972568877U, -1113 }, { 16580792590934885855U, -1087 },
@@ -92,7 +96,7 @@ static Fp find_cachedpow10(int exp, int* k)
 {
     const double one_log_ten = 0.30102999566398114;
 
-    int approx = -(exp + npowers) * one_log_ten;
+    int approx = (int)(-(exp + npowers) * one_log_ten);
     int idx = (approx - firstpower) / steppowers;
 
     while(1) {
@@ -123,7 +127,7 @@ static Fp find_cachedpow10(int exp, int* k)
 #define absv(n) ((n) < 0 ? -(n) : (n))
 #define minv(a, b) ((a) < (b) ? (a) : (b))
 
-static uint64_t tens[] = {
+static const uint64_t tens[] = {
     10000000000000000000U, 1000000000000000000U, 100000000000000000U,
     10000000000000000U, 1000000000000000U, 100000000000000U,
     10000000000000U, 1000000000000U, 100000000000U,
@@ -244,7 +248,7 @@ static int generate_digits(Fp* fp, Fp* upper, Fp* lower, char* digits, int* K)
     uint64_t part2 = upper->frac & (one.frac - 1);
 
     int idx = 0, kappa = 10;
-    uint64_t* divp;
+    const uint64_t* divp;
     /* 1000000000 */
     for(divp = tens + 10; kappa > 0; divp++) {
 
@@ -268,7 +272,7 @@ static int generate_digits(Fp* fp, Fp* upper, Fp* lower, char* digits, int* K)
     }
 
     /* 10 */
-    uint64_t* unit = tens + 18;
+    const uint64_t* unit = tens + 18;
 
     while(true) {
         part2 *= 10;
@@ -320,15 +324,7 @@ static int emit_digits(char* digits, int ndigits, char* dest, int K, bool neg)
 {
     int exp = absv(K + ndigits - 1);
 
-    int max_trailing_zeros = 7;
-
-    if(neg) {
-        max_trailing_zeros -= 1;
-    }
-
-    /* write plain integer */
-    if(K >= 0 && (exp < (ndigits + max_trailing_zeros))) {
-
+    if(K >= 0 && exp < 15) {
         memcpy(dest, digits, ndigits);
         memset(dest + ndigits, '0', K);
 
@@ -340,7 +336,7 @@ static int emit_digits(char* digits, int ndigits, char* dest, int K, bool neg)
     }
 
     /* write decimal w/o scientific notation */
-    if(K < 0 && (K > -7 || exp < 4)) {
+    if(K < 0 && (K > -7 || exp < 10)) {
         int offset = ndigits - absv(K);
         /* fp < 1.0 -> write leading zero */
         if(offset <= 0) {
@@ -432,9 +428,11 @@ static int filter_special(double fp, char* dest)
  *
  * Input:
  * fp -> the double to convert, dest -> destination buffer.
- * The generated string will never be longer than 24 characters.
- * Make sure to pass a pointer to at least 24 bytes of memory.
+ * The generated string will never be longer than 32 characters.
+ * Make sure to pass a pointer to at least 32 bytes of memory.
  * The emitted string will not be null terminated.
+ *
+ *
  *
  * Output:
  * The number of written characters.
@@ -443,7 +441,7 @@ static int filter_special(double fp, char* dest)
  *
  * void print(double d)
  * {
- *      char buf[24 + 1] // plus null terminator
+ *      char buf[28 + 1] // plus null terminator
  *      int str_len = fpconv_dtoa(d, buf);
  *
  *      buf[str_len] = '\0';
@@ -451,7 +449,7 @@ static int filter_special(double fp, char* dest)
  * }
  *
  */
-static int fpconv_dtoa(double d, char dest[24])
+static int fpconv_dtoa(double d, char dest[32])
 {
     char digits[18];
 
@@ -474,6 +472,9 @@ static int fpconv_dtoa(double d, char dest[24])
     int ndigits = grisu2(d, digits, &K);
 
     str_len += emit_digits(digits, ndigits, dest + str_len, K, neg);
+#if JSON_DEBUG
+    assert(str_len <= 32);
+#endif
 
     return str_len;
 }

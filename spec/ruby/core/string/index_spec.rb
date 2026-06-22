@@ -4,15 +4,15 @@ require_relative 'fixtures/classes'
 
 describe "String#index" do
   it "raises a TypeError if passed nil" do
-    -> { "abc".index nil }.should raise_error(TypeError)
+    -> { "abc".index nil }.should.raise(TypeError)
   end
 
   it "raises a TypeError if passed a boolean" do
-    -> { "abc".index true }.should raise_error(TypeError)
+    -> { "abc".index true }.should.raise(TypeError)
   end
 
   it "raises a TypeError if passed a Symbol" do
-    -> { "abc".index :a }.should raise_error(TypeError)
+    -> { "abc".index :a }.should.raise(TypeError)
   end
 
   it "calls #to_str to convert the first argument" do
@@ -28,7 +28,7 @@ describe "String#index" do
   end
 
   it "raises a TypeError if passed an Integer" do
-    -> { "abc".index 97 }.should raise_error(TypeError)
+    -> { "abc".index 97 }.should.raise(TypeError)
   end
 end
 
@@ -157,7 +157,7 @@ describe "String#index with String" do
     char = "れ".encode Encoding::EUC_JP
     -> do
       "あれ".index char
-    end.should raise_error(Encoding::CompatibilityError)
+    end.should.raise(Encoding::CompatibilityError)
   end
 
   it "handles a substring in a superset encoding" do
@@ -172,7 +172,7 @@ describe "String#index with String" do
     str = 'abc'.dup.force_encoding("ISO-2022-JP")
     pattern = 'b'.dup.force_encoding("EUC-JP")
 
-    -> { str.index(pattern) }.should raise_error(Encoding::CompatibilityError, "incompatible character encodings: ISO-2022-JP and EUC-JP")
+    -> { str.index(pattern) }.should.raise(Encoding::CompatibilityError, "incompatible character encodings: ISO-2022-JP and EUC-JP")
   end
 end
 
@@ -231,15 +231,13 @@ describe "String#index with Regexp" do
     $~.should == nil
   end
 
-  ruby_bug "#20421", ""..."3.3" do
-    it "always clear $~" do
-      "a".index(/a/)
-      $~.should_not == nil
+  it "always clear $~" do
+    "a".index(/a/)
+    $~.should_not == nil
 
-      string = "blablabla"
-      string.index(/bla/, string.length + 1)
-      $~.should == nil
-    end
+    string = "blablabla"
+    string.index(/bla/, string.length + 1)
+    $~.should == nil
   end
 
   it "starts the search at the given offset" do
@@ -289,7 +287,7 @@ describe "String#index with Regexp" do
   end
 
   it "returns nil if the Regexp matches the empty string and the offset is out of range" do
-    "ruby".index(//,12).should be_nil
+    "ruby".index(//,12).should == nil
   end
 
   it "supports \\G which matches at the given start offset" do
@@ -330,21 +328,10 @@ describe "String#index with Regexp" do
     "われわわれ".index(/わ/, 3).should == 3
   end
 
-  ruby_bug "#19763", ""..."3.3.0" do
-    it "raises an Encoding::CompatibilityError if the encodings are incompatible" do
-      re = Regexp.new "れ".encode(Encoding::EUC_JP)
-      -> do
-        "あれ".index re
-      end.should raise_error(Encoding::CompatibilityError, "incompatible encoding regexp match (EUC-JP regexp with UTF-8 string)")
-    end
-  end
-
-  # The exception message was incorrectly "incompatible character encodings: UTF-8 and EUC-JP" before 3.3.0
-  # Still test that the right exception class is used before that.
   it "raises an Encoding::CompatibilityError if the encodings are incompatible" do
     re = Regexp.new "れ".encode(Encoding::EUC_JP)
     -> do
       "あれ".index re
-    end.should raise_error(Encoding::CompatibilityError)
+    end.should.raise(Encoding::CompatibilityError, "incompatible encoding regexp match (EUC-JP regexp with UTF-8 string)")
   end
 end

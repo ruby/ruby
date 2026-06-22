@@ -66,6 +66,21 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 struct stat;
 struct timeval;
 
+#if defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC)
+# define RUBY_USE_STATX 0
+#elif defined(HAVE_STRUCT_STATX_STX_BTIME)
+# define RUBY_USE_STATX 1
+struct statx;
+#else
+# define RUBY_USE_STATX 0
+#endif
+
+#if RUBY_USE_STATX
+typedef struct statx rb_io_stat_data;
+#else
+typedef struct stat rb_io_stat_data;
+#endif
+
 /**
  * Indicates that a timeout has occurred while performing an IO operation.
  */
@@ -136,129 +151,6 @@ struct rb_io_encoding {
      */
     VALUE ecopts;
 };
-
-#ifndef HAVE_RB_IO_T
-#define HAVE_RB_IO_T 1
-/** Ruby's IO, metadata and buffers. */
-struct rb_io {
-    /** The IO's Ruby level counterpart. */
-    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
-    VALUE self;
-
-    /** stdio ptr for read/write, if available. */
-    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
-    FILE *stdio_file;
-
-    /** file descriptor. */
-    RBIMPL_ATTR_DEPRECATED(("rb_io_descriptor"))
-    int fd;
-
-    /** mode flags: FMODE_XXXs */
-    RBIMPL_ATTR_DEPRECATED(("rb_io_mode"))
-    int mode;
-
-    /** child's pid (for pipes) */
-    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
-    rb_pid_t pid;
-
-    /** number of lines read */
-    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
-    int lineno;
-
-    /** pathname for file */
-    RBIMPL_ATTR_DEPRECATED(("rb_io_path"))
-    VALUE pathv;
-
-    /** finalize proc */
-    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
-    void (*finalize)(struct rb_io*,int);
-
-    /** Write buffer. */
-    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
-    rb_io_buffer_t wbuf;
-
-    /**
-     * (Byte)  read   buffer.   Note  also   that  there  is  a   field  called
-     * ::rb_io_t::cbuf, which also concerns read IO.
-     */
-    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
-    rb_io_buffer_t rbuf;
-
-    /**
-     * Duplex IO object, if set.
-     *
-     * @see rb_io_set_write_io()
-     */
-    RBIMPL_ATTR_DEPRECATED(("rb_io_get_write_io"))
-    VALUE tied_io_for_writing;
-
-    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
-    struct rb_io_encoding encs; /**< Decomposed encoding flags. */
-
-    /** Encoding converter used when reading from this IO. */
-    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
-    rb_econv_t *readconv;
-
-    /**
-     * rb_io_ungetc()  destination.   This  buffer   is  read  before  checking
-     * ::rb_io_t::rbuf
-     */
-    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
-    rb_io_buffer_t cbuf;
-
-    /** Encoding converter used when writing to this IO. */
-    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
-    rb_econv_t *writeconv;
-
-    /**
-     * This is, when set, an instance  of ::rb_cString which holds the "common"
-     * encoding.   Write  conversion  can  convert strings  twice...   In  case
-     * conversion from encoding  X to encoding Y does not  exist, Ruby finds an
-     * encoding Z that bridges the two, so that X to Z to Y conversion happens.
-     */
-    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
-    VALUE writeconv_asciicompat;
-
-    /** Whether ::rb_io_t::writeconv is already set up. */
-    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
-    int writeconv_initialized;
-
-    /**
-     * Value   of    ::rb_io_t::rb_io_enc_t::ecflags   stored    right   before
-     * initialising ::rb_io_t::writeconv.
-     */
-    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
-    int writeconv_pre_ecflags;
-
-    /**
-     * Value of ::rb_io_t::rb_io_enc_t::ecopts stored right before initialising
-     * ::rb_io_t::writeconv.
-     */
-    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
-    VALUE writeconv_pre_ecopts;
-
-    /**
-     * This is a Ruby  level mutex.  It avoids multiple threads  to write to an
-     * IO at  once; helps  for instance rb_io_puts()  to ensure  newlines right
-     * next to its arguments.
-     *
-     * This of course doesn't help inter-process IO interleaves, though.
-     */
-    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
-    VALUE write_lock;
-
-    /**
-     * The timeout associated with this IO when performing blocking operations.
-     */
-    RBIMPL_ATTR_DEPRECATED(("rb_io_timeout/rb_io_set_timeout"))
-    VALUE timeout;
-};
-#endif
-
-typedef struct rb_io rb_io_t;
-
-/** @alias{rb_io_enc_t} */
-typedef struct rb_io_encoding rb_io_enc_t;
 
 /**
  * @name Possible flags for ::rb_io_t::mode
@@ -371,6 +263,154 @@ typedef struct rb_io_encoding rb_io_enc_t;
 /* #define FMODE_INET6                 0x00800000 */
 
 /** @} */
+
+enum rb_io_mode {
+    RUBY_IO_MODE_EXTERNAL = FMODE_EXTERNAL,
+
+    RUBY_IO_MODE_READABLE = FMODE_READABLE,
+    RUBY_IO_MODE_WRITABLE = FMODE_WRITABLE,
+    RUBY_IO_MODE_READABLE_WRITABLE = (RUBY_IO_MODE_READABLE|RUBY_IO_MODE_WRITABLE),
+
+    RUBY_IO_MODE_BINARY = FMODE_BINMODE,
+    RUBY_IO_MODE_TEXT = FMODE_TEXTMODE,
+    RUBY_IO_MODE_TEXT_SET_ENCODING_FROM_BOM = FMODE_SETENC_BY_BOM,
+
+    RUBY_IO_MODE_SYNCHRONISED = FMODE_SYNC,
+
+    RUBY_IO_MODE_TTY = FMODE_TTY,
+
+    RUBY_IO_MODE_DUPLEX = FMODE_DUPLEX,
+
+    RUBY_IO_MODE_APPEND = FMODE_APPEND,
+    RUBY_IO_MODE_CREATE = FMODE_CREATE,
+    RUBY_IO_MODE_EXCLUSIVE = FMODE_EXCL,
+    RUBY_IO_MODE_TRUNCATE = FMODE_TRUNC,
+};
+
+typedef enum rb_io_mode rb_io_mode_t;
+
+#ifndef HAVE_RB_IO_T
+#define HAVE_RB_IO_T 1
+/** Ruby's IO, metadata and buffers. */
+struct rb_io {
+    /** The IO's Ruby level counterpart. */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    VALUE self;
+
+    /** stdio ptr for read/write, if available. */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    FILE *stdio_file;
+
+    /** file descriptor. */
+    RBIMPL_ATTR_DEPRECATED(("rb_io_descriptor"))
+    int fd;
+
+    /** mode flags: FMODE_XXXs */
+    RBIMPL_ATTR_DEPRECATED(("rb_io_mode"))
+    enum rb_io_mode mode;
+
+    /** child's pid (for pipes) */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    rb_pid_t pid;
+
+    /** number of lines read */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    int lineno;
+
+    /** pathname for file */
+    RBIMPL_ATTR_DEPRECATED(("rb_io_path"))
+    VALUE pathv;
+
+    /** finalize proc */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    void (*finalize)(struct rb_io*,int);
+
+    /** Write buffer. */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    rb_io_buffer_t wbuf;
+
+    /**
+     * (Byte)  read   buffer.   Note  also   that  there  is  a   field  called
+     * ::rb_io_t::cbuf, which also concerns read IO.
+     */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    rb_io_buffer_t rbuf;
+
+    /**
+     * Duplex IO object, if set.
+     *
+     * @see rb_io_set_write_io()
+     */
+    RBIMPL_ATTR_DEPRECATED(("rb_io_get_write_io"))
+    VALUE tied_io_for_writing;
+
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    struct rb_io_encoding encs; /**< Decomposed encoding flags. */
+
+    /** Encoding converter used when reading from this IO. */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    rb_econv_t *readconv;
+
+    /**
+     * rb_io_ungetc()  destination.   This  buffer   is  read  before  checking
+     * ::rb_io_t::rbuf
+     */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    rb_io_buffer_t cbuf;
+
+    /** Encoding converter used when writing to this IO. */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    rb_econv_t *writeconv;
+
+    /**
+     * This is, when set, an instance  of ::rb_cString which holds the "common"
+     * encoding.   Write  conversion  can  convert strings  twice...   In  case
+     * conversion from encoding  X to encoding Y does not  exist, Ruby finds an
+     * encoding Z that bridges the two, so that X to Z to Y conversion happens.
+     */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    VALUE writeconv_asciicompat;
+
+    /** Whether ::rb_io_t::writeconv is already set up. */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    int writeconv_initialized;
+
+    /**
+     * Value   of    ::rb_io_t::rb_io_enc_t::ecflags   stored    right   before
+     * initialising ::rb_io_t::writeconv.
+     */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    int writeconv_pre_ecflags;
+
+    /**
+     * Value of ::rb_io_t::rb_io_enc_t::ecopts stored right before initialising
+     * ::rb_io_t::writeconv.
+     */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    VALUE writeconv_pre_ecopts;
+
+    /**
+     * This is a Ruby  level mutex.  It avoids multiple threads  to write to an
+     * IO at  once; helps  for instance rb_io_puts()  to ensure  newlines right
+     * next to its arguments.
+     *
+     * This of course doesn't help inter-process IO interleaves, though.
+     */
+    RBIMPL_ATTR_DEPRECATED(("with no replacement"))
+    VALUE write_lock;
+
+    /**
+     * The timeout associated with this IO when performing blocking operations.
+     */
+    RBIMPL_ATTR_DEPRECATED(("rb_io_timeout/rb_io_set_timeout"))
+    VALUE timeout;
+};
+#endif
+
+typedef struct rb_io rb_io_t;
+
+/** @alias{rb_io_enc_t} */
+typedef struct rb_io_encoding rb_io_enc_t;
 
 /**
  * Allocate a new IO object, with the given file descriptor.
@@ -525,7 +565,7 @@ FILE *rb_fdopen(int fd, const char *modestr);
  *
  * rb_io_modestr_fmode() is not a pure function because it raises.
  */
-int rb_io_modestr_fmode(const char *modestr);
+enum rb_io_mode rb_io_modestr_fmode(const char *modestr);
 
 /**
  * Identical  to rb_io_modestr_fmode(),  except it  returns a  mixture of  `O_`
@@ -780,7 +820,7 @@ int rb_io_mode(VALUE io);
  * @post        `enc2_p` is the specified external encoding.
  * @post        `fmode_p` is the specified set of `FMODE_` modes.
  */
-int rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p, int *fmode_p);
+int rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **enc2_p, enum rb_io_mode *fmode_p);
 
 /**
  * This    function    can   be    seen    as    an   extended    version    of
@@ -849,7 +889,7 @@ int rb_io_extract_encoding_option(VALUE opt, rb_encoding **enc_p, rb_encoding **
  *   ) -> void
  * ```
  */
-void rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash, int *oflags_p, int *fmode_p, rb_io_enc_t *convconfig_p);
+void rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash, int *oflags_p, enum rb_io_mode *fmode_p, rb_io_enc_t *convconfig_p);
 
 /* :TODO: can this function be __attribute__((warn_unused_result)) or not? */
 /**
@@ -1072,6 +1112,18 @@ int rb_io_read_pending(rb_io_t *fptr);
  * @return     Allocated new instance of ::rb_cStat.
  */
 VALUE rb_stat_new(const struct stat *st);
+
+#if RUBY_USE_STATX
+/**
+ * Constructs an instance of ::rb_cStat from the passed information.
+ *
+ * @param[in]  st  A stat.
+ * @return     Allocated new instance of ::rb_cStat.
+ */
+VALUE rb_statx_new(const rb_io_stat_data *st);
+#else
+# define rb_statx_new rb_stat_new
+#endif
 
 /* gc.c */
 

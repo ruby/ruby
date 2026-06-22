@@ -61,10 +61,10 @@ int rb_thread_wait_fd(int fd);
 int rb_thread_fd_writable(int fd);
 
 /**
- * Notifies a closing of a file  descriptor to other threads.  Multiple threads
- * can wait for the given file descriptor  at once.  If such file descriptor is
- * closed, threads need to start propagating their exceptions.  This is the API
- * to kick that process.
+ * This funciton is now a no-op. It was previously used to interrupt threads
+ * that were using the given file descriptor and wait for them to finish.
+ *
+ * @deprecated Use IO with RUBY_IO_MODE_EXTERNAL and `rb_io_close` instead.
  *
  * @param[in]  fd  A file descriptor.
  * @note       This function blocks  until all the threads waiting  for such fd

@@ -27,6 +27,7 @@ class Gem::Licenses
     AGPL-1.0-or-later
     AGPL-3.0-only
     AGPL-3.0-or-later
+    ALGLIB-Documentation
     AMD-newlib
     AMDPLPA
     AML
@@ -48,6 +49,7 @@ class Gem::Licenses
     Adobe-Display-PostScript
     Adobe-Glyph
     Adobe-Utopia
+    Advanced-Cryptics-Dictionary
     Afmparse
     Aladdin
     Apache-1.0
@@ -59,12 +61,16 @@ class Gem::Licenses
     Artistic-1.0-Perl
     Artistic-1.0-cl8
     Artistic-2.0
+    Artistic-dist
+    Aspell-RU
+    BOLA-1.1
     BSD-1-Clause
     BSD-2-Clause
     BSD-2-Clause-Darwin
     BSD-2-Clause-Patent
     BSD-2-Clause-Views
     BSD-2-Clause-first-lines
+    BSD-2-Clause-pkgconf-disclaimer
     BSD-3-Clause
     BSD-3-Clause-Attribution
     BSD-3-Clause-Clear
@@ -77,6 +83,7 @@ class Gem::Licenses
     BSD-3-Clause-No-Nuclear-Warranty
     BSD-3-Clause-Open-MPI
     BSD-3-Clause-Sun
+    BSD-3-Clause-Tso
     BSD-3-Clause-acpica
     BSD-3-Clause-flex
     BSD-4-Clause
@@ -87,6 +94,7 @@ class Gem::Licenses
     BSD-Advertising-Acknowledgement
     BSD-Attribution-HPND-disclaimer
     BSD-Inferno-Nettverk
+    BSD-Mark-Modifications
     BSD-Protection
     BSD-Source-Code
     BSD-Source-beginning-file
@@ -108,9 +116,11 @@ class Gem::Licenses
     Borceux
     Brian-Gladman-2-Clause
     Brian-Gladman-3-Clause
+    Buddy
     C-UDA-1.0
     CAL-1.0
     CAL-1.0-Combined-Work-Exception
+    CAPEC-tou
     CATOSL-1.1
     CC-BY-1.0
     CC-BY-2.0
@@ -205,6 +215,7 @@ class Gem::Licenses
     Cornell-Lossless-JPEG
     Cronyx
     Crossword
+    CryptoSwift
     CrystalStacker
     Cube
     D-FSL-1.0
@@ -215,6 +226,7 @@ class Gem::Licenses
     DRL-1.0
     DRL-1.1
     DSDP
+    DocBook-DTD
     DocBook-Schema
     DocBook-Stylesheet
     DocBook-XML
@@ -226,6 +238,9 @@ class Gem::Licenses
     EPICS
     EPL-1.0
     EPL-2.0
+    ESA-PL-permissive-2.4
+    ESA-PL-strong-copyleft-2.4
+    ESA-PL-weak-copyleft-2.4
     EUDatagrid
     EUPL-1.0
     EUPL-1.1
@@ -240,7 +255,10 @@ class Gem::Licenses
     FSFAP-no-warranty-disclaimer
     FSFUL
     FSFULLR
+    FSFULLRSD
     FSFULLRWD
+    FSL-1.1-ALv2
+    FSL-1.1-MIT
     FTL
     Fair
     Ferguson-Twofish
@@ -276,11 +294,13 @@ class Gem::Licenses
     GPL-2.0-or-later
     GPL-3.0-only
     GPL-3.0-or-later
+    Game-Programming-Gems
     Giftware
     Glide
     Glulxe
     Graphics-Gems
     Gutmann
+    HDF5
     HIDAPI
     HP-1986
     HP-1989
@@ -294,6 +314,7 @@ class Gem::Licenses
     HPND-Markus-Kuhn
     HPND-Netrek
     HPND-Pbmplus
+    HPND-SMC
     HPND-UC
     HPND-UC-export-US
     HPND-doc
@@ -308,6 +329,7 @@ class Gem::Licenses
     HPND-sell-variant
     HPND-sell-variant-MIT-disclaimer
     HPND-sell-variant-MIT-disclaimer-rev
+    HPND-sell-variant-critical-systems
     HTMLTIDY
     HaskellReport
     Hippocratic-2.1
@@ -320,6 +342,7 @@ class Gem::Licenses
     IPL-1.0
     ISC
     ISC-Veillard
+    ISO-permission
     ImageMagick
     Imlib2
     Info-ZIP
@@ -377,6 +400,7 @@ class Gem::Licenses
     MIT-Festival
     MIT-Khronos-old
     MIT-Modern-Variant
+    MIT-STK
     MIT-Wu
     MIT-advertising
     MIT-enna
@@ -385,6 +409,7 @@ class Gem::Licenses
     MIT-testregex
     MITNFA
     MMIXware
+    MMPL-1.0.1
     MPEG-SSG
     MPL-1.0
     MPL-1.1
@@ -416,6 +441,7 @@ class Gem::Licenses
     NGPL
     NICTA-1.0
     NIST-PD
+    NIST-PD-TNT
     NIST-PD-fallback
     NIST-Software
     NLOD-1.0
@@ -426,6 +452,7 @@ class Gem::Licenses
     NPL-1.1
     NPOSL-3.0
     NRL
+    NTIA-PD
     NTP
     NTP-0
     Naumen
@@ -474,12 +501,15 @@ class Gem::Licenses
     OPL-1.0
     OPL-UK-3.0
     OPUBL-1.0
+    OSC-1.0
     OSET-PL-2.1
     OSL-1.0
     OSL-1.1
     OSL-2.0
     OSL-2.1
     OSL-3.0
+    OSSP
+    OpenMDW-1.0
     OpenPBS-2.3
     OpenSSL
     OpenSSL-standalone
@@ -490,6 +520,7 @@ class Gem::Licenses
     PHP-3.01
     PPL
     PSF-2.0
+    ParaType-Free-Font-1.3
     Parity-6.0.0
     Parity-7.0.0
     Pixar
@@ -518,6 +549,7 @@ class Gem::Licenses
     SGI-B-1.1
     SGI-B-2.0
     SGI-OpenGL
+    SGMLUG-PM
     SGP4
     SHL-0.5
     SHL-0.51
@@ -528,11 +560,13 @@ class Gem::Licenses
     SMLNJ
     SMPPL
     SNIA
+    SOFA
     SPL-1.0
     SSH-OpenSSH
     SSH-short
     SSLeay-standalone
     SSPL-1.0
+    SUL-1.0
     SWL
     Saxpath
     SchemeReport
@@ -563,6 +597,7 @@ class Gem::Licenses
     TTYP0
     TU-Berlin-1.0
     TU-Berlin-2.0
+    TekHVC
     TermReadKey
     ThirdEye
     TrustedQSL
@@ -572,24 +607,31 @@ class Gem::Licenses
     UPL-1.0
     URT-RLE
     Ubuntu-font-1.0
+    UnRAR
     Unicode-3.0
     Unicode-DFS-2015
     Unicode-DFS-2016
     Unicode-TOU
     UnixCrypt
     Unlicense
+    Unlicense-libtelnet
+    Unlicense-libwhirlpool
     VOSTROM
     VSL-1.0
     Vim
+    Vixie-Cron
     W3C
     W3C-19980720
     W3C-20150513
+    WTFNMFPL
     WTFPL
     Watcom-1.0
     Widget-Workshop
+    WordNet
     Wsuipa
     X11
     X11-distribute-modifications-variant
+    X11-no-permit-persons
     X11-swapped
     XFree86-1.1
     XSkat
@@ -630,7 +672,10 @@ class Gem::Licenses
     gnuplot
     gtkbook
     hdparm
+    hyphen-bulgarian
     iMatix
+    jove
+    libpng-1.6.35
     libpng-2.0
     libselinux-1.0
     libtiff
@@ -638,10 +683,12 @@ class Gem::Licenses
     lsof
     magaz
     mailprio
+    man2html
     metamail
     mpi-permissive
     mpich2
     mplus
+    ngrep
     pkgconf
     pnmstitch
     psfrag
@@ -715,7 +762,9 @@ class Gem::Licenses
     CGAL-linking-exception
     CLISP-exception-2.0
     Classpath-exception-2.0
+    Classpath-exception-2.0-short
     DigiRule-FOSS-exception
+    Digia-Qt-LGPL-exception-1.1
     FLTK-exception
     Fawkes-Runtime-exception
     Font-exception-2.0
@@ -755,6 +804,7 @@ class Gem::Licenses
     SHL-2.0
     SHL-2.1
     SWI-exception
+    Simple-Library-Usage-exception
     Swift-exception
     Texinfo-exception
     UBDL-exception
@@ -768,11 +818,15 @@ class Gem::Licenses
     gnu-javamail-exception
     harbour-exception
     i2p-gpl-java-exception
+    kvirc-openssl-exception
     libpri-OpenH323-exception
     mif-exception
     mxml-exception
     openvpn-openssl-exception
+    polyparse-exception
     romic-exception
+    rsync-linking-exception
+    sqlitestudio-OpenSSL-exception
     stunnel-exception
     u-boot-exception-2.0
     vsftpd-openssl-exception

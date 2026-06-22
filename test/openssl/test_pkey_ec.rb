@@ -4,18 +4,8 @@ require_relative 'utils'
 if defined?(OpenSSL)
 
 class OpenSSL::TestEC < OpenSSL::PKeyTestCase
-  def test_ec_key
+  def test_ec_key_new
     key1 = OpenSSL::PKey::EC.generate("prime256v1")
-
-    # PKey is immutable in OpenSSL >= 3.0; constructing an empty EC object is
-    # deprecated
-    if !openssl?(3, 0, 0)
-      key2 = OpenSSL::PKey::EC.new
-      key2.group = key1.group
-      key2.private_key = key1.private_key
-      key2.public_key = key1.public_key
-      assert_equal key1.to_der, key2.to_der
-    end
 
     key3 = OpenSSL::PKey::EC.new(key1)
     assert_equal key1.to_der, key3.to_der
@@ -35,6 +25,23 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     end
   end
 
+  def test_ec_key_new_empty
+    # pkeys are immutable with OpenSSL >= 3.0; constructing an empty EC object is
+    # disallowed
+    if openssl?(3, 0, 0)
+      assert_raise(ArgumentError) { OpenSSL::PKey::EC.new }
+    else
+      key = OpenSSL::PKey::EC.new
+      assert_nil(key.group)
+
+      p256 = Fixtures.pkey("p256")
+      key.group = p256.group
+      key.private_key = p256.private_key
+      key.public_key = p256.public_key
+      assert_equal(p256.to_der, key.to_der)
+    end
+  end
+
   def test_builtin_curves
     builtin_curves = OpenSSL::PKey::EC.builtin_curves
     assert_not_empty builtin_curves
@@ -47,7 +54,9 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
   end
 
   def test_generate
-    assert_raise(OpenSSL::PKey::ECError) { OpenSSL::PKey::EC.generate("non-existent") }
+    assert_raise(OpenSSL::PKey::PKeyError) {
+      OpenSSL::PKey::EC.generate("non-existent")
+    }
     g = OpenSSL::PKey::EC::Group.new("prime256v1")
     ec = OpenSSL::PKey::EC.generate(g)
     assert_equal(true, ec.private?)
@@ -58,7 +67,7 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
   def test_generate_key
     ec = OpenSSL::PKey::EC.new("prime256v1")
     assert_equal false, ec.private?
-    assert_raise(OpenSSL::PKey::ECError) { ec.to_der }
+    assert_raise(OpenSSL::PKey::PKeyError) { ec.to_der }
     ec.generate_key!
     assert_equal true, ec.private?
     assert_nothing_raised { ec.to_der }
@@ -72,6 +81,8 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
   end
 
   def test_check_key
+    omit_on_fips
+
     key0 = Fixtures.pkey("p256")
     assert_equal(true, key0.check_key)
     assert_equal(true, key0.private?)
@@ -100,13 +111,13 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
       assert_raise(OpenSSL::PKey::PKeyError) { OpenSSL::PKey.read(ec_key_data) }
     else
       key4 = OpenSSL::PKey.read(ec_key_data)
-      assert_raise(OpenSSL::PKey::ECError) { key4.check_key }
+      assert_raise(OpenSSL::PKey::PKeyError) { key4.check_key }
     end
 
     # EC#private_key= is deprecated in 3.0 and won't work on OpenSSL 3.0
     if !openssl?(3, 0, 0)
       key2.private_key += 1
-      assert_raise(OpenSSL::PKey::ECError) { key2.check_key }
+      assert_raise(OpenSSL::PKey::PKeyError) { key2.check_key }
     end
   end
 
@@ -260,7 +271,7 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     cipher = OpenSSL::Cipher.new("aes-128-cbc")
     exported = p256.to_pem(cipher, "abcdef\0\1")
     assert_same_ec p256, OpenSSL::PKey::EC.new(exported, "abcdef\0\1")
-    assert_raise(OpenSSL::PKey::ECError) {
+    assert_raise(OpenSSL::PKey::PKeyError) {
       OpenSSL::PKey::EC.new(exported, "abcdef")
     }
   end
@@ -334,6 +345,15 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
     assert_equal group1.degree, group4.degree
   end
 
+  def test_ec_group_initialize_error_message
+    # Test that passing 2 arguments raises the helpful error
+    e = assert_raise(ArgumentError) do
+      OpenSSL::PKey::EC::Group.new(:GFp, 123)
+    end
+
+    assert_equal("wrong number of arguments (given 2, expected 1 or 4)", e.message)
+  end
+
   def test_ec_point
     group = OpenSSL::PKey::EC::Group.new("prime256v1")
     key = OpenSSL::PKey::EC.generate(group)
@@ -358,18 +378,26 @@ class OpenSSL::TestEC < OpenSSL::PKeyTestCase
       point2.to_octet_string(:uncompressed)
     assert_equal point2.to_octet_string(:uncompressed),
       point3.to_octet_string(:uncompressed)
+  end
 
+  def test_small_curve
     begin
       group = OpenSSL::PKey::EC::Group.new(:GFp, 17, 2, 2)
       group.point_conversion_form = :uncompressed
       generator = OpenSSL::PKey::EC::Point.new(group, B(%w{ 04 05 01 }))
       group.set_generator(generator, 19, 1)
-      point = OpenSSL::PKey::EC::Point.new(group, B(%w{ 04 06 03 }))
     rescue OpenSSL::PKey::EC::Group::Error
       pend "Patched OpenSSL rejected curve" if /unsupported field/ =~ $!.message
       raise
     end
+    assert_equal 17.to_bn.num_bits, group.degree
+    assert_equal B(%w{ 04 05 01 }),
+      group.generator.to_octet_string(:uncompressed)
+    assert_equal 19.to_bn, group.order
+    assert_equal 1.to_bn, group.cofactor
+    assert_nil group.curve_name
 
+    point = OpenSSL::PKey::EC::Point.new(group, B(%w{ 04 06 03 }))
     assert_equal 0x040603.to_bn, point.to_bn
     assert_equal 0x040603.to_bn, point.to_bn(:uncompressed)
     assert_equal 0x0306.to_bn, point.to_bn(:compressed)

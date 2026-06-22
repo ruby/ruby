@@ -1,0 +1,4 @@
+prelude: |
+  # frozen_string_literal: true
+benchmark:
+  expand_path: File.expand_path("../../foo.txt", __FILE__)

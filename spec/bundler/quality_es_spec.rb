@@ -17,7 +17,7 @@ RSpec.describe "La biblioteca si misma" do
     ]
     pattern = /\b#{Regexp.union(useless_words)}\b/i
 
-    File.readlines(filename).each_with_index do |line, number|
+    File.readlines(File.expand_path(filename, source_root)).each_with_index do |line, number|
       next unless word_found = pattern.match(line)
       failing_line_message << "#{filename}:#{number.succ} contiene '#{word_found}'. Esta palabra tiene un significado subjetivo y es mejor obviarla en textos técnicos."
     end
@@ -29,7 +29,7 @@ RSpec.describe "La biblioteca si misma" do
     failing_line_message = []
     specific_pronouns = /\b(él|ella|ellos|ellas)\b/i
 
-    File.readlines(filename).each_with_index do |line, number|
+    File.readlines(File.expand_path(filename, source_root)).each_with_index do |line, number|
       next unless word_found = specific_pronouns.match(line)
       failing_line_message << "#{filename}:#{number.succ} contiene '#{word_found}'. Use pronombres más genéricos en la documentación."
     end

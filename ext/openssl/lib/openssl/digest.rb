@@ -27,17 +27,21 @@ module OpenSSL
     end
 
     %w(MD4 MD5 RIPEMD160 SHA1 SHA224 SHA256 SHA384 SHA512).each do |name|
-      klass = Class.new(self) {
-        define_method(:initialize, ->(data = nil) {super(name, data)})
-      }
+      klass = Class.new(self)
+      klass.class_eval <<-RUBY, __FILE__, __LINE__ + 1
+        def initialize(data = nil)
+          super("#{name}", data)
+        end
+      RUBY
 
-      singleton = (class << klass; self; end)
-
-      singleton.class_eval{
-        define_method(:digest) {|data| new.digest(data)}
-        define_method(:hexdigest) {|data| new.hexdigest(data)}
-      }
-
+      klass.singleton_class.class_eval <<-RUBY, __FILE__, __LINE__ + 1
+        def digest(data)
+          new.digest(data)
+        end
+        def hexdigest(data)
+          new.hexdigest(data)
+        end
+      RUBY
       const_set(name.tr('-', '_'), klass)
     end
 
@@ -57,7 +61,7 @@ module OpenSSL
   #   OpenSSL::Digest("MD5")
   #   # => OpenSSL::Digest::MD5
   #
-  #   Digest("Foo")
+  #   OpenSSL::Digest("Foo")
   #   # => NameError: wrong constant name Foo
 
   def Digest(name)

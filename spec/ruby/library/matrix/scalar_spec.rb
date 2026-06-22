@@ -10,7 +10,7 @@ describe "Matrix.scalar" do
   end
 
   it "returns a Matrix" do
-    @a.should be_kind_of(Matrix)
+    @a.should.is_a?(Matrix)
   end
 
   it "returns a n x n matrix" do
@@ -41,7 +41,7 @@ describe "Matrix.scalar" do
   end
 
   it "returns a Matrix" do
-    @a.should be_kind_of(Matrix)
+    @a.should.is_a?(Matrix)
   end
 
   it "returns a square matrix, where the first argument specifies the side of the square" do

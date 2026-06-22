@@ -85,10 +85,17 @@ module Gem::GemcutterUtilities
     end
 
     def parse_otp_from_uri(uri)
-      require "cgi"
+      query = uri.query
+      return unless query && !query.empty?
 
-      return if uri.query.nil?
-      CGI.parse(uri.query).dig("code", 0)
+      query.split("&") do |param|
+        key, value = param.split("=", 2)
+        if value && Gem::URI.decode_www_form_component(key) == "code"
+          return Gem::URI.decode_www_form_component(value)
+        end
+      end
+
+      nil
     end
 
     class SocketResponder

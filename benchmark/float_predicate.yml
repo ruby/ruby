@@ -1,0 +1,12 @@
+prelude: |
+  floats = [1.0, -1.0, 0.0, Float::NAN, Float::INFINITY, -Float::INFINITY]
+
+benchmark:
+  float_nan?: floats.each { |f| f.nan? }
+  float_finite?: floats.each { |f| f.finite? }
+  float_infinite?: floats.each { |f| f.infinite? }
+  float_zero?: floats.each { |f| f.zero? }
+  float_positive?: floats.each { |f| f.positive? }
+  float_negative?: floats.each { |f| f.negative? }
+
+loop_count: 1000000

@@ -1,8 +1,12 @@
 use crate::api::RubyMutator;
+use crate::extra_assert;
 use crate::Ruby;
 use libc::c_int;
 use mmtk::scheduler::GCWorker;
-use mmtk::util::{Address, ObjectReference, VMMutatorThread, VMWorkerThread};
+use mmtk::util::Address;
+use mmtk::util::ObjectReference;
+use mmtk::util::VMMutatorThread;
+use mmtk::util::VMWorkerThread;
 
 // For the C binding
 pub const OBJREF_OFFSET: usize = 8;
@@ -10,15 +14,37 @@ pub const MIN_OBJ_ALIGN: usize = 8; // Even on 32-bit machine.  A Ruby object is
 
 pub const GC_THREAD_KIND_WORKER: libc::c_int = 1;
 
-const HAS_MOVED_GIVTBL: usize = 1 << 63;
 const HIDDEN_SIZE_MASK: usize = 0x0000FFFFFFFFFFFF;
-
-// Should keep in sync with C code.
-const RUBY_FL_EXIVAR: usize = 1 << 10;
 
 // An opaque type for the C counterpart.
 #[allow(non_camel_case_types)]
 pub struct st_table;
+
+#[repr(C)]
+pub struct HiddenHeader {
+    pub prefix: usize,
+}
+
+impl HiddenHeader {
+    #[inline(always)]
+    pub fn is_sane(&self) -> bool {
+        self.prefix & !HIDDEN_SIZE_MASK == 0
+    }
+
+    #[inline(always)]
+    fn assert_sane(&self) {
+        extra_assert!(
+            self.is_sane(),
+            "Hidden header is corrupted: {:x}",
+            self.prefix
+        );
+    }
+
+    pub fn payload_size(&self) -> usize {
+        self.assert_sane();
+        self.prefix & HIDDEN_SIZE_MASK
+    }
+}
 
 /// Provide convenient methods for accessing Ruby objects.
 /// TODO: Wrap C functions in `RubyUpcalls` as Rust-friendly methods.
@@ -47,32 +73,17 @@ impl RubyObjectAccess {
         self.suffix_addr() + Self::suffix_size()
     }
 
-    fn hidden_field(&self) -> Address {
-        self.obj_start()
+    fn hidden_header(&self) -> &'static HiddenHeader {
+        unsafe { self.obj_start().as_ref() }
     }
 
-    fn load_hidden_field(&self) -> usize {
-        unsafe { self.hidden_field().load::<usize>() }
-    }
-
-    fn update_hidden_field<F>(&self, f: F)
-    where
-        F: FnOnce(usize) -> usize,
-    {
-        let old_value = self.load_hidden_field();
-        let new_value = f(old_value);
-        unsafe {
-            self.hidden_field().store(new_value);
-        }
+    #[allow(unused)] // Maybe we need to mutate the hidden header in the future.
+    fn hidden_header_mut(&self) -> &'static mut HiddenHeader {
+        unsafe { self.obj_start().as_mut_ref() }
     }
 
     pub fn payload_size(&self) -> usize {
-        self.load_hidden_field() & HIDDEN_SIZE_MASK
-    }
-
-    pub fn set_payload_size(&self, size: usize) {
-        debug_assert!((size & HIDDEN_SIZE_MASK) == size);
-        self.update_hidden_field(|old| old & !HIDDEN_SIZE_MASK | size & HIDDEN_SIZE_MASK);
+        self.hidden_header().payload_size()
     }
 
     fn flags_field(&self) -> Address {
@@ -81,22 +92,6 @@ impl RubyObjectAccess {
 
     pub fn load_flags(&self) -> usize {
         unsafe { self.flags_field().load::<usize>() }
-    }
-
-    pub fn has_exivar_flag(&self) -> bool {
-        (self.load_flags() & RUBY_FL_EXIVAR) != 0
-    }
-
-    pub fn has_moved_givtbl(&self) -> bool {
-        (self.load_hidden_field() & HAS_MOVED_GIVTBL) != 0
-    }
-
-    pub fn set_has_moved_givtbl(&self) {
-        self.update_hidden_field(|old| old | HAS_MOVED_GIVTBL)
-    }
-
-    pub fn clear_has_moved_givtbl(&self) {
-        self.update_hidden_field(|old| old & !HAS_MOVED_GIVTBL)
     }
 
     pub fn prefix_size() -> usize {
@@ -232,7 +227,7 @@ impl GCThreadTLS {
     /// Has undefined behavior if `ptr` is invalid.
     pub unsafe fn check_cast(ptr: *mut GCThreadTLS) -> &'static mut GCThreadTLS {
         assert!(!ptr.is_null());
-        let result = &mut *ptr;
+        let result = unsafe { &mut *ptr };
         debug_assert!({
             let kind = result.kind;
             kind == GC_THREAD_KIND_WORKER
@@ -247,7 +242,7 @@ impl GCThreadTLS {
     /// Has undefined behavior if `ptr` is invalid.
     pub unsafe fn from_vwt_check(vwt: VMWorkerThread) -> &'static mut GCThreadTLS {
         let ptr = Self::from_vwt(vwt);
-        Self::check_cast(ptr)
+        unsafe { Self::check_cast(ptr) }
     }
 
     #[allow(clippy::not_unsafe_ptr_arg_deref)] // `transmute` does not dereference pointer
@@ -283,7 +278,7 @@ impl RawVecOfObjRef {
     ///
     /// This function turns raw pointer into a Vec without check.
     pub unsafe fn into_vec(self) -> Vec<ObjectReference> {
-        Vec::from_raw_parts(self.ptr, self.len, self.capa)
+        unsafe { Vec::from_raw_parts(self.ptr, self.len, self.capa) }
     }
 }
 
@@ -296,7 +291,6 @@ impl From<Vec<ObjectReference>> for RawVecOfObjRef {
 #[repr(C)]
 #[derive(Clone)]
 pub struct RubyBindingOptions {
-    pub ractor_check_mode: bool,
     pub suffix_size: usize,
 }
 
@@ -306,8 +300,10 @@ pub struct RubyUpcalls {
     pub init_gc_worker_thread: extern "C" fn(gc_worker_tls: *mut GCThreadTLS),
     pub is_mutator: extern "C" fn() -> bool,
     pub stop_the_world: extern "C" fn(),
-    pub resume_mutators: extern "C" fn(),
+    pub resume_mutators: extern "C" fn(gc_may_move: bool),
     pub block_for_gc: extern "C" fn(tls: VMMutatorThread),
+    pub before_updating_jit_code: extern "C" fn(),
+    pub after_updating_jit_code: extern "C" fn(),
     pub number_of_mutators: extern "C" fn() -> usize,
     pub get_mutators: extern "C" fn(
         visit_mutator: extern "C" fn(*mut RubyMutator, *mut libc::c_void),
@@ -315,14 +311,18 @@ pub struct RubyUpcalls {
     ),
     pub scan_gc_roots: extern "C" fn(),
     pub scan_objspace: extern "C" fn(),
-    pub scan_object_ruby_style: extern "C" fn(object: ObjectReference),
+    pub move_obj_during_marking: extern "C" fn(from: ObjectReference, to: ObjectReference),
+    pub update_object_references: extern "C" fn(object: ObjectReference),
     pub call_gc_mark_children: extern "C" fn(object: ObjectReference),
+    pub handle_weak_references: extern "C" fn(object: ObjectReference, moving: bool),
     pub call_obj_free: extern "C" fn(object: ObjectReference),
     pub vm_live_bytes: extern "C" fn() -> usize,
-    pub update_global_tables: extern "C" fn(tbl_idx: c_int),
+    pub update_global_tables: extern "C" fn(tbl_idx: c_int, moving: bool),
     pub global_tables_count: extern "C" fn() -> c_int,
     pub update_finalizer_table: extern "C" fn(),
-    pub update_obj_id_tables: extern "C" fn(),
+    pub special_const_p: extern "C" fn(object: ObjectReference) -> bool,
+    pub mutator_thread_panic_handler: extern "C" fn(),
+    pub gc_thread_panic_handler: extern "C" fn(),
 }
 
 unsafe impl Sync for RubyUpcalls {}

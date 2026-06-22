@@ -26,20 +26,20 @@ A regexp may be used:
     re.match('good')        # => nil
 
   See sections {Method match}[rdoc-ref:Regexp@Method+match]
-  and {Operator =~}[rdoc-ref:Regexp@Operator+-3D~].
+  and {Operator =~}[rdoc-ref:Regexp@Operator-].
 
 - To determine whether a string matches a given pattern:
 
     re.match?('food') # => true
     re.match?('good') # => false
 
-  See section {Method match?}[rdoc-ref:Regexp@Method+match-3F].
+  See section {Method match?}[rdoc-ref:Regexp@Method+match].
 
 - As an argument for calls to certain methods in other classes and modules;
   most such methods accept an argument that may be either a string
   or the (much more powerful) regexp.
 
-  See {Regexp Methods}[rdoc-ref:regexp/methods.rdoc].
+  See {Regexp Methods}[rdoc-ref:language/regexp/methods.rdoc].
 
 == \Regexp Objects
 
@@ -64,7 +64,7 @@ A regular expression may be created with:
     /foo/ # => /foo/
 
 - A <tt>%r</tt> regexp literal
-  (see {%r: Regexp Literals}[rdoc-ref:syntax/literals.rdoc@25r-3A+Regexp+Literals]):
+  (see {%r: Regexp Literals}[rdoc-ref:syntax/literals.rdoc@r-regexp+literals]):
 
     # Same delimiter character at beginning and end;
     # useful for avoiding escaping characters
@@ -113,7 +113,7 @@ none sets {global variables}[rdoc-ref:Regexp@Global+Variables]:
 Certain regexp-oriented methods assign values to global variables:
 
 - <tt>#match</tt>: see {Method match}[rdoc-ref:Regexp@Method+match].
-- <tt>#=~</tt>: see {Operator =~}[rdoc-ref:Regexp@Operator+-3D~].
+- <tt>#=~</tt>: see {Operator =~}[rdoc-ref:Regexp@Operator-].
 
 The affected global variables are:
 
@@ -414,21 +414,21 @@ Each of these anchors matches a boundary:
 
 Lookahead anchors:
 
-- <tt>(?=_pat_)</tt>: Positive lookahead assertion:
+- <tt>(?=pat)</tt>: Positive lookahead assertion:
   ensures that the following characters match _pat_,
   but doesn't include those characters in the matched substring.
 
-- <tt>(?!_pat_)</tt>: Negative lookahead assertion:
+- <tt>(?!pat)</tt>: Negative lookahead assertion:
   ensures that the following characters <i>do not</i> match _pat_,
   but doesn't include those characters in the matched substring.
 
 Lookbehind anchors:
 
-- <tt>(?<=_pat_)</tt>: Positive lookbehind assertion:
+- <tt>(?<=pat)</tt>: Positive lookbehind assertion:
   ensures that the preceding characters match _pat_, but
   doesn't include those characters in the matched substring.
 
-- <tt>(?<!_pat_)</tt>: Negative lookbehind assertion:
+- <tt>(?<!pat)</tt>: Negative lookbehind assertion:
   ensures that the preceding characters do not match
   _pat_, but doesn't include those characters in the matched substring.
 
@@ -438,6 +438,10 @@ without including the tags in the match:
 
   /(?<=<b>)\w+(?=<\/b>)/.match("Fortune favors the <b>bold</b>.")
   # => #<MatchData "bold">
+
+The pattern in lookbehind must be fixed-width.
+But top-level alternatives can be of various lengths.
+ex. (?<=a|bc) is OK. (?<=aaa(?:b|cd)) is not allowed.
 
 ==== Match-Reset Anchor
 
@@ -498,7 +502,7 @@ An added _quantifier_ specifies how many matches are required or allowed:
     /\w*/.match('x')
     # => #<MatchData "x">
     /\w*/.match('xyz')
-    # => #<MatchData "yz">
+    # => #<MatchData "xyz">
 
 - <tt>+</tt> - Matches one or more times:
 
@@ -557,9 +561,9 @@ Quantifier matching may be greedy, lazy, or possessive:
 More:
 
 - About greedy and lazy matching, see
-  {Choosing Minimal or Maximal Repetition}[https://doc.lagout.org/programmation/Regular%20Expressions/Regular%20Expressions%20Cookbook_%20Detailed%20Solutions%20in%20Eight%20Programming%20Languages%20%282nd%20ed.%29%20%5BGoyvaerts%20%26%20Levithan%202012-09-06%5D.pdf#tutorial-backtrack].
+  {Choosing Minimal or Maximal Repetition}[https://www.oreilly.com/library/view/regular-expressions-cookbook/9780596802837/ch02s13.html].
 - About possessive matching, see
-  {Eliminate Needless Backtracking}[https://doc.lagout.org/programmation/Regular%20Expressions/Regular%20Expressions%20Cookbook_%20Detailed%20Solutions%20in%20Eight%20Programming%20Languages%20%282nd%20ed.%29%20%5BGoyvaerts%20%26%20Levithan%202012-09-06%5D.pdf#tutorial-backtrack].
+  {Eliminate Needless Backtracking}[https://www.oreilly.com/library/view/regular-expressions-cookbook/9780596802837/ch02s14.html].
 
 === Groups and Captures
 
@@ -570,7 +574,7 @@ A simple regexp has (at most) one match:
   re.match('1943-02-04').size # => 1
   re.match('foo')             # => nil
 
-Adding one or more pairs of parentheses, <tt>(_subexpression_)</tt>,
+Adding one or more pairs of parentheses, <tt>(subexpression)</tt>,
 defines _groups_, which may result in multiple matched substrings,
 called _captures_:
 
@@ -643,8 +647,8 @@ A regexp may contain any number of groups:
 
 - For a large number of groups:
 
-  - The ordinary <tt>\\_n_</tt> notation applies only for _n_ in range (1..9).
-  - The <tt>MatchData[_n_]</tt> notation applies for any non-negative _n_.
+  - The ordinary <tt>\\n</tt> notation applies only for _n_ in range (1..9).
+  - The <tt>MatchData[n]</tt> notation applies for any non-negative _n_.
 
 - <tt>\0</tt> is a special backreference, referring to the entire matched string;
   it may not be used within the regexp itself,
@@ -657,7 +661,7 @@ A regexp may contain any number of groups:
 
 As seen above, a capture can be referred to by its number.
 A capture can also have a name,
-prefixed as <tt>?<_name_></tt> or <tt>?'_name_'</tt>,
+prefixed as <tt>?<name></tt> or <tt>?'name'</tt>,
 and the name (symbolized) may be used as an index in <tt>MatchData[]</tt>:
 
   md = /\$(?<dollars>\d+)\.(?'cents'\d+)/.match("$3.67")
@@ -672,7 +676,7 @@ When a regexp contains a named capture, there are no unnamed captures:
   /\$(?<dollars>\d+)\.(\d+)/.match("$3.67")
   # => #<MatchData "$3.67" dollars:"3">
 
-A named group may be backreferenced as <tt>\k<_name_></tt>:
+A named group may be backreferenced as <tt>\k<name></tt>:
 
   /(?<vowel>[aeiou]).\k<vowel>.\k<vowel>/.match('ototomy')
   # => #<MatchData "ototo" vowel:"o">
@@ -709,7 +713,7 @@ Analysis:
 
 1. The leading subexpression <tt>"</tt> in the pattern matches the first character
    <tt>"</tt> in the target string.
-2. The next subexpression <tt>.*</tt> matches the next substring <tt>Quote“</tt>
+2. The next subexpression <tt>.*</tt> matches the next substring <tt>Quote"</tt>
    (including the trailing double-quote).
 3. Now there is nothing left in the target string to match
    the trailing subexpression <tt>"</tt> in the pattern;
@@ -728,10 +732,10 @@ see {Atomic Group}[https://www.regular-expressions.info/atomic.html].
 
 ==== Subexpression Calls
 
-As seen above, a backreference number (<tt>\\_n_</tt>) or name (<tt>\k<_name_></tt>)
+As seen above, a backreference number (<tt>\\n</tt>) or name (<tt>\k<name></tt>)
 gives access to a captured _substring_;
 the corresponding regexp _subexpression_ may also be accessed,
-via the number (<tt>\\g<i>n</i></tt>) or name (<tt>\g<_name_></tt>):
+via the number n (<tt>\\gn</tt>) or name (<tt>\g<name></tt>):
 
   /\A(?<paren>\(\g<paren>*\))*\z/.match('(())')
   # ^1
@@ -760,16 +764,16 @@ The pattern:
 9.  Matches the fourth character in the string, <tt>')'</tt>.
 10. Matches the end of the string.
 
-See {Subexpression calls}[https://learnbyexample.github.io/Ruby_Regexp/groupings-and-backreferences.html?highlight=subexpression#subexpression-calls].
+See {Subexpression calls}[https://learnbyexample.github.io/Ruby_Regexp/groupings-and-backreferences.html#subexpression-calls].
 
 ==== Conditionals
 
-The conditional construct takes the form <tt>(?(_cond_)_yes_|_no_)</tt>, where:
+The conditional construct takes the form <tt>(?(cond)yes|no)</tt>, where:
 
 - _cond_ may be a capture number or name.
 - The match to be applied is _yes_ if _cond_ is captured;
   otherwise the match to be applied is _no_.
-- If not needed, <tt>|_no_</tt> may be omitted.
+- If not needed, <tt>|no</tt> may be omitted.
 
 Examples:
 
@@ -798,7 +802,7 @@ The absence operator is a special group that matches anything which does _not_ m
 
 ==== Unicode Properties
 
-The <tt>/\p{_property_name_}/</tt> construct (with lowercase +p+)
+The <tt>/\p{property_name}/</tt> construct (with lowercase +p+)
 matches characters using a Unicode property name,
 much like a character class;
 property +Alpha+ specifies alphabetic characters:
@@ -817,7 +821,7 @@ Or by using <tt>\P</tt> (uppercase +P+):
   /\P{Alpha}/.match('1') # => #<MatchData "1">
   /\P{Alpha}/.match('a') # => nil
 
-See {Unicode Properties}[rdoc-ref:regexp/unicode_properties.rdoc]
+See {Unicode Properties}[rdoc-ref:language/regexp/unicode_properties.rdoc]
 for regexps based on the numerous properties.
 
 Some commonly-used properties correspond to POSIX bracket expressions:
@@ -926,7 +930,7 @@ Punctuation:
 - +C+, +Other+: +Cc+, +Cf+, +Cn+, +Co+, or +Cs+.
 - {Cc, Control}[https://www.compart.com/en/unicode/category/Cc].
 - {Cf, Format}[https://www.compart.com/en/unicode/category/Cf].
-- {Cn, Unassigned}[https://www.compart.com/en/unicode/category/Cn].
+- {Cn, Unassigned}[http://zuga.net/articles/unicode/category/unassigned/].
 - {Co, Private_Use}[https://www.compart.com/en/unicode/category/Co].
 - {Cs, Surrogate}[https://www.compart.com/en/unicode/category/Cs].
 
@@ -1029,23 +1033,23 @@ See also {Extended Mode}[rdoc-ref:Regexp@Extended+Mode].
 
 Each of these modifiers sets a mode for the regexp:
 
-- +i+: <tt>/_pattern_/i</tt> sets
+- +i+: <tt>/pattern/i</tt> sets
   {Case-Insensitive Mode}[rdoc-ref:Regexp@Case-Insensitive+Mode].
-- +m+: <tt>/_pattern_/m</tt> sets
+- +m+: <tt>/pattern/m</tt> sets
   {Multiline Mode}[rdoc-ref:Regexp@Multiline+Mode].
-- +x+: <tt>/_pattern_/x</tt> sets
+- +x+: <tt>/pattern/x</tt> sets
   {Extended Mode}[rdoc-ref:Regexp@Extended+Mode].
-- +o+: <tt>/_pattern_/o</tt> sets
+- +o+: <tt>/pattern/o</tt> sets
   {Interpolation Mode}[rdoc-ref:Regexp@Interpolation+Mode].
 
 Any, all, or none of these may be applied.
 
 Modifiers +i+, +m+, and +x+ may be applied to subexpressions:
 
-- <tt>(?_modifier_)</tt> turns the mode "on" for ensuing subexpressions
-- <tt>(?-_modifier_)</tt> turns the mode "off" for ensuing subexpressions
-- <tt>(?_modifier_:_subexp_)</tt> turns the mode "on" for _subexp_ within the group
-- <tt>(?-_modifier_:_subexp_)</tt> turns the mode "off" for _subexp_ within the group
+- <tt>(?modifier)</tt> turns the mode "on" for ensuing subexpressions
+- <tt>(?-modifier)</tt> turns the mode "off" for ensuing subexpressions
+- <tt>(?modifier:subexp)</tt> turns the mode "on" for _subexp_ within the group
+- <tt>(?-modifier:subexp)</tt> turns the mode "off" for _subexp_ within the group
 
 Example:
 
@@ -1124,6 +1128,13 @@ Regexp in extended mode:
   re = /#{pattern}/x
   re.match('MCMXLIII') # => #<MatchData "MCMXLIII" 1:"CM" 2:"XL" 3:"III">
 
+Comments in regexp literals cannot include unescaped terminator
+characters:
+
+  /
+    foo # the following slash \/ must be escaped
+  /x
+
 === Interpolation Mode
 
 Modifier +o+ means that the first time a literal regexp with interpolations
@@ -1162,22 +1173,22 @@ A regular expression containing non-US-ASCII characters
 is assumed to use the source encoding.
 This can be overridden with one of the following modifiers.
 
-- <tt>/_pat_/n</tt>: US-ASCII if only containing US-ASCII characters,
+- <tt>/pat/n</tt>: US-ASCII if only containing US-ASCII characters,
   otherwise ASCII-8BIT:
 
     /foo/n.encoding     # => #<Encoding:US-ASCII>
     /foo\xff/n.encoding # => #<Encoding:ASCII-8BIT>
     /foo\x7f/n.encoding # => #<Encoding:US-ASCII>
 
-- <tt>/_pat_/u</tt>: UTF-8
+- <tt>/pat/u</tt>: UTF-8
 
     /foo/u.encoding # => #<Encoding:UTF-8>
 
-- <tt>/_pat_/e</tt>: EUC-JP
+- <tt>/pat/e</tt>: EUC-JP
 
     /foo/e.encoding # => #<Encoding:EUC-JP>
 
-- <tt>/_pat_/s</tt>: Windows-31J
+- <tt>/pat/s</tt>: Windows-31J
 
     /foo/s.encoding # => #<Encoding:Windows-31J>
 
@@ -1247,7 +1258,7 @@ the potential vulnerability arising from this is the {regular expression denial-
 
 \Regexp matching can apply an optimization to prevent ReDoS attacks.
 When the optimization is applied, matching time increases linearly (not polynomially or exponentially)
-in relation to the input size, and a ReDoS attach is not possible.
+in relation to the input size, and a ReDoS attack is not possible.
 
 This optimization is applied if the pattern meets these criteria:
 
@@ -1268,13 +1279,13 @@ because the optimization uses memoization (which may invoke large memory consump
 
 == References
 
-Read (online PDF books):
+Read:
 
-- {Mastering Regular Expressions}[https://ia902508.us.archive.org/10/items/allitebooks-02/Mastering%20Regular%20Expressions%2C%203rd%20Edition.pdf]
+- <i>Mastering Regular Expressions</i>
   by Jeffrey E.F. Friedl.
-- {Regular Expressions Cookbook}[https://doc.lagout.org/programmation/Regular%20Expressions/Regular%20Expressions%20Cookbook_%20Detailed%20Solutions%20in%20Eight%20Programming%20Languages%20%282nd%20ed.%29%20%5BGoyvaerts%20%26%20Levithan%202012-09-06%5D.pdf]
+- <i>Regular Expressions Cookbook</i>
   by Jan Goyvaerts & Steven Levithan.
 
-Explore, test (interactive online editor):
+Explore, test:
 
-- {Rubular}[https://rubular.com/].
+- {Rubular}[https://rubular.com/]: interactive online editor.

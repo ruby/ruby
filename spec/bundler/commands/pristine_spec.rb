@@ -49,13 +49,7 @@ RSpec.describe "bundle pristine" do
       bundle "pristine"
       bundle "-v"
 
-      expected = if Bundler::VERSION < "3.0"
-        "Bundler version"
-      else
-        Bundler::VERSION
-      end
-
-      expect(out).to start_with(expected)
+      expect(out).to end_with(Bundler::VERSION)
     end
   end
 
@@ -85,7 +79,7 @@ RSpec.describe "bundle pristine" do
 
     it "displays warning and ignores changes when a local config exists" do
       spec = find_spec("foo")
-      bundle "config set local.#{spec.name} #{lib_path(spec.name)}"
+      bundle_config "local.#{spec.name} #{lib_path(spec.name)}"
 
       changes_txt = Pathname.new(spec.full_gem_path).join("lib/changes.txt")
       FileUtils.touch(changes_txt)
@@ -94,6 +88,66 @@ RSpec.describe "bundle pristine" do
       bundle "pristine"
       expect(changes_txt).to be_file
       expect(err).to include("Cannot pristine #{spec.name} (#{spec.version}#{spec.git_version}). Gem is locally overridden.")
+    end
+
+    it "doesn't run multiple git processes for the same repository" do
+      nested_gems = [
+        "actioncable",
+        "actionmailer",
+        "actionpack",
+        "actionview",
+        "activejob",
+        "activemodel",
+        "activerecord",
+        "activestorage",
+        "activesupport",
+        "railties",
+      ]
+
+      build_repo2 do
+        nested_gems.each do |gem|
+          build_lib gem, path: lib_path("rails/#{gem}")
+        end
+
+        build_git "rails", path: lib_path("rails") do |s|
+          nested_gems.each do |gem|
+            s.add_dependency gem
+          end
+        end
+      end
+
+      install_gemfile <<-G
+        source 'https://rubygems.org'
+
+        git "#{lib_path("rails")}" do
+          gem "rails"
+          gem "actioncable"
+          gem "actionmailer"
+          gem "actionpack"
+          gem "actionview"
+          gem "activejob"
+          gem "activemodel"
+          gem "activerecord"
+          gem "activestorage"
+          gem "activesupport"
+          gem "railties"
+        end
+      G
+
+      changed_files = []
+      diff = "#Pristine spec changes"
+
+      nested_gems.each do |gem|
+        spec = find_spec(gem)
+        changed_files << Pathname.new(spec.full_gem_path).join("lib/#{gem}.rb")
+        File.open(changed_files.last, "a") {|f| f.puts diff }
+      end
+
+      bundle "pristine"
+
+      changed_files.each do |changed_file|
+        expect(File.read(changed_file)).to_not include(diff)
+      end
     end
   end
 
@@ -173,7 +227,7 @@ RSpec.describe "bundle pristine" do
     let(:very_simple_binary) { find_spec("very_simple_binary") }
     let(:c_ext_dir)          { Pathname.new(very_simple_binary.full_gem_path).join("ext") }
     let(:build_opt)          { "--with-ext-lib=#{c_ext_dir}" }
-    before { bundle "config set build.very_simple_binary -- #{build_opt}" }
+    before { bundle_config "build.very_simple_binary -- #{build_opt}" }
 
     # This just verifies that the generated Makefile from the c_ext gem makes
     # use of the build_args from the bundle config
@@ -190,7 +244,7 @@ RSpec.describe "bundle pristine" do
     let(:git_with_ext) { find_spec("git_with_ext") }
     let(:c_ext_dir)          { Pathname.new(git_with_ext.full_gem_path).join("ext") }
     let(:build_opt)          { "--with-ext-lib=#{c_ext_dir}" }
-    before { bundle "config set build.git_with_ext -- #{build_opt}" }
+    before { bundle_config "build.git_with_ext -- #{build_opt}" }
 
     # This just verifies that the generated Makefile from the c_ext gem makes
     # use of the build_args from the bundle config

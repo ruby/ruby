@@ -14,11 +14,11 @@ describe :enumerable_minmax, shared: true do
   end
 
   it "raises a NoMethodError for elements without #<=>" do
-    -> { @incomparable_enum.minmax }.should raise_error(NoMethodError)
+    -> { @incomparable_enum.minmax }.should.raise(NoMethodError)
   end
 
   it "raises an ArgumentError when elements are incompatible" do
-    -> { @incompatible_enum.minmax }.should raise_error(ArgumentError)
-    -> { @enum.minmax{ |a, b| nil } }.should raise_error(ArgumentError)
+    -> { @incompatible_enum.minmax }.should.raise(ArgumentError)
+    -> { @enum.minmax{ |a, b| nil } }.should.raise(ArgumentError)
   end
 end

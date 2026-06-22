@@ -4,47 +4,47 @@ require_relative 'fixtures/classes'
 describe "Hash.try_convert" do
   it "returns the argument if it's a Hash" do
     x = Hash.new
-    Hash.try_convert(x).should equal(x)
+    Hash.try_convert(x).should.equal?(x)
   end
 
   it "returns the argument if it's a kind of Hash" do
     x = HashSpecs::MyHash.new
-    Hash.try_convert(x).should equal(x)
+    Hash.try_convert(x).should.equal?(x)
   end
 
   it "returns nil when the argument does not respond to #to_hash" do
-    Hash.try_convert(Object.new).should be_nil
+    Hash.try_convert(Object.new).should == nil
   end
 
   it "sends #to_hash to the argument and returns the result if it's nil" do
     obj = mock("to_hash")
     obj.should_receive(:to_hash).and_return(nil)
-    Hash.try_convert(obj).should be_nil
+    Hash.try_convert(obj).should == nil
   end
 
   it "sends #to_hash to the argument and returns the result if it's a Hash" do
     x = Hash.new
     obj = mock("to_hash")
     obj.should_receive(:to_hash).and_return(x)
-    Hash.try_convert(obj).should equal(x)
+    Hash.try_convert(obj).should.equal?(x)
   end
 
   it "sends #to_hash to the argument and returns the result if it's a kind of Hash" do
     x = HashSpecs::MyHash.new
     obj = mock("to_hash")
     obj.should_receive(:to_hash).and_return(x)
-    Hash.try_convert(obj).should equal(x)
+    Hash.try_convert(obj).should.equal?(x)
   end
 
   it "sends #to_hash to the argument and raises TypeError if it's not a kind of Hash" do
     obj = mock("to_hash")
     obj.should_receive(:to_hash).and_return(Object.new)
-    -> { Hash.try_convert obj }.should raise_error(TypeError, "can't convert MockObject to Hash (MockObject#to_hash gives Object)")
+    -> { Hash.try_convert obj }.should raise_consistent_error(TypeError, "can't convert MockObject into Hash (MockObject#to_hash gives Object)")
   end
 
   it "does not rescue exceptions raised by #to_hash" do
     obj = mock("to_hash")
     obj.should_receive(:to_hash).and_raise(RuntimeError)
-    -> { Hash.try_convert obj }.should raise_error(RuntimeError)
+    -> { Hash.try_convert obj }.should.raise(RuntimeError)
   end
 end

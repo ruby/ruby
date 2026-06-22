@@ -5,7 +5,7 @@ describe :kernel_lambda, shared: true do
 
   it "raises an ArgumentError when no block is given" do
     suppress_warning do
-      -> { send(@method) }.should raise_error(ArgumentError)
+      -> { send(@method) }.should.raise(ArgumentError)
     end
   end
 end

@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/asctime'
 
 describe "Time#ctime" do
-  it_behaves_like :time_asctime, :ctime
+  it "is an alias of Time#asctime" do
+    Time.instance_method(:ctime).should == Time.instance_method(:asctime)
+  end
 end

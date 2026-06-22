@@ -48,11 +48,11 @@ RSpec.describe "Resolving platform craziness" do
   it "takes the latest ruby gem, even if an older platform specific version is available" do
     @index = build_index do
       gem "foo", "1.0.0"
-      gem "foo", "1.0.0", "x64-mingw32"
+      gem "foo", "1.0.0", "x64-mingw-ucrt"
       gem "foo", "1.1.0"
     end
     dep "foo"
-    platforms "x64-mingw32"
+    platforms "x64-mingw-ucrt"
 
     should_resolve_as %w[foo-1.1.0]
   end
@@ -61,25 +61,25 @@ RSpec.describe "Resolving platform craziness" do
     @index = build_index do
       gem "bar", "1.0.0"
       gem "foo", "1.0.0"
-      gem "foo", "1.0.0", "x64-mingw32" do
+      gem "foo", "1.0.0", "x64-mingw-ucrt" do
         dep "bar", "< 1"
       end
     end
     dep "foo"
-    platforms "x64-mingw32"
+    platforms "x64-mingw-ucrt"
 
     should_resolve_as %w[foo-1.0.0]
   end
 
-  it "prefers the platform specific gem to the ruby version" do
+  it "prefers the platform specific gem to the ruby version, but keeps the ruby fallback" do
     @index = build_index do
       gem "foo", "1.0.0"
-      gem "foo", "1.0.0", "x64-mingw32"
+      gem "foo", "1.0.0", "x64-mingw-ucrt"
     end
     dep "foo"
-    platforms "x64-mingw32"
+    platforms "x64-mingw-ucrt"
 
-    should_resolve_as %w[foo-1.0.0-x64-mingw32]
+    should_resolve_as %w[foo-1.0.0 foo-1.0.0-x64-mingw-ucrt]
   end
 
   describe "on a linux platform" do
@@ -88,7 +88,7 @@ RSpec.describe "Resolving platform craziness" do
     # Gem's platform is *-linux => gem is glibc + maybe musl compatible
     # Gem's platform is *-linux-musl => gem is musl compatible but not glibc
 
-    it "favors the platform version-specific gem on a version-specifying linux platform" do
+    it "favors the platform version-specific gem on a version-specifying linux platform, but keeps the ruby fallback" do
       @index = build_index do
         gem "foo", "1.0.0"
         gem "foo", "1.0.0", "x86_64-linux"
@@ -97,10 +97,10 @@ RSpec.describe "Resolving platform craziness" do
       dep "foo"
       platforms "x86_64-linux-musl"
 
-      should_resolve_as %w[foo-1.0.0-x86_64-linux-musl]
+      should_resolve_as %w[foo-1.0.0 foo-1.0.0-x86_64-linux-musl]
     end
 
-    it "favors the version-less gem over the version-specific gem on a gnu linux platform" do
+    it "favors the version-less gem over the version-specific gem on a gnu linux platform, but keeps the ruby fallback" do
       @index = build_index do
         gem "foo", "1.0.0"
         gem "foo", "1.0.0", "x86_64-linux"
@@ -109,7 +109,7 @@ RSpec.describe "Resolving platform craziness" do
       dep "foo"
       platforms "x86_64-linux"
 
-      should_resolve_as %w[foo-1.0.0-x86_64-linux]
+      should_resolve_as %w[foo-1.0.0 foo-1.0.0-x86_64-linux]
     end
 
     it "ignores the platform version-specific gem on a gnu linux platform" do
@@ -122,7 +122,7 @@ RSpec.describe "Resolving platform craziness" do
       should_not_resolve
     end
 
-    it "falls back to the platform version-less gem on a linux platform with a version" do
+    it "falls back to the platform version-less gem on a linux platform with a version, but keeps the ruby fallback" do
       @index = build_index do
         gem "foo", "1.0.0"
         gem "foo", "1.0.0", "x86_64-linux"
@@ -130,7 +130,7 @@ RSpec.describe "Resolving platform craziness" do
       dep "foo"
       platforms "x86_64-linux-musl"
 
-      should_resolve_as %w[foo-1.0.0-x86_64-linux]
+      should_resolve_as %w[foo-1.0.0 foo-1.0.0-x86_64-linux]
     end
 
     it "falls back to the ruby platform gem on a gnu linux platform when only a version-specifying gem is available" do
@@ -159,15 +159,15 @@ RSpec.describe "Resolving platform craziness" do
     before do
       @index = build_index do
         gem "foo", "1.0.0"
-        gem "foo", "1.0.0", "x64-mingw32"
+        gem "foo", "1.0.0", "x64-mingw-ucrt"
         gem "foo", "1.1.0"
-        gem "foo", "1.1.0", "x64-mingw32" do |s|
+        gem "foo", "1.1.0", "x64-mingw-ucrt" do |s|
           s.required_ruby_version = [">= 2.0", "< 2.4"]
         end
         gem "Ruby\0", "2.5.1"
       end
       dep "Ruby\0", "2.5.1"
-      platforms "x64-mingw32"
+      platforms "x64-mingw-ucrt"
     end
 
     it "takes the latest ruby gem" do
@@ -186,18 +186,18 @@ RSpec.describe "Resolving platform craziness" do
   it "takes the latest ruby gem with required_ruby_version if the platform specific gem doesn't match the required_ruby_version" do
     @index = build_index do
       gem "foo", "1.0.0"
-      gem "foo", "1.0.0", "x64-mingw32"
+      gem "foo", "1.0.0", "x64-mingw-ucrt"
       gem "foo", "1.1.0" do |s|
         s.required_ruby_version = [">= 2.0"]
       end
-      gem "foo", "1.1.0", "x64-mingw32" do |s|
+      gem "foo", "1.1.0", "x64-mingw-ucrt" do |s|
         s.required_ruby_version = [">= 2.0", "< 2.4"]
       end
       gem "Ruby\0", "2.5.1"
     end
     dep "foo"
     dep "Ruby\0", "2.5.1"
-    platforms "x64-mingw32"
+    platforms "x64-mingw-ucrt"
 
     should_resolve_as %w[foo-1.1.0]
   end
@@ -205,18 +205,18 @@ RSpec.describe "Resolving platform craziness" do
   it "takes the latest ruby gem if the platform specific gem doesn't match the required_ruby_version with multiple platforms" do
     @index = build_index do
       gem "foo", "1.0.0"
-      gem "foo", "1.0.0", "x64-mingw32"
+      gem "foo", "1.0.0", "x64-mingw-ucrt"
       gem "foo", "1.1.0" do |s|
         s.required_ruby_version = [">= 2.0"]
       end
-      gem "foo", "1.1.0", "x64-mingw32" do |s|
+      gem "foo", "1.1.0", "x64-mingw-ucrt" do |s|
         s.required_ruby_version = [">= 2.0", "< 2.4"]
       end
       gem "Ruby\0", "2.5.1"
     end
     dep "foo"
     dep "Ruby\0", "2.5.1"
-    platforms "x86_64-linux", "x64-mingw32"
+    platforms "x86_64-linux", "x64-mingw-ucrt"
 
     should_resolve_as %w[foo-1.1.0]
   end
@@ -342,7 +342,7 @@ RSpec.describe "Resolving platform craziness" do
   describe "with mingw32" do
     before :each do
       @index = build_index do
-        platforms "mingw32 mswin32 x64-mingw32 x64-mingw-ucrt" do |platform|
+        platforms "mingw32 mswin32 x64-mingw-ucrt" do |platform|
           gem "thin", "1.2.7", platform
         end
         gem "win32-api", "1.5.1", "universal-mingw32"
@@ -363,10 +363,10 @@ RSpec.describe "Resolving platform craziness" do
       should_resolve_as %w[thin-1.2.7-mingw32]
     end
 
-    it "finds x64-mingw32 gems" do
-      platforms "x64-mingw32"
+    it "finds x64-mingw-ucrt gems" do
+      platforms "x64-mingw-ucrt"
       dep "thin"
-      should_resolve_as %w[thin-1.2.7-x64-mingw32]
+      should_resolve_as %w[thin-1.2.7-x64-mingw-ucrt]
     end
 
     it "finds universal-mingw gems on x86-mingw" do
@@ -376,7 +376,7 @@ RSpec.describe "Resolving platform craziness" do
     end
 
     it "finds universal-mingw gems on x64-mingw" do
-      platform "x64-mingw32"
+      platform "x64-mingw-ucrt"
       dep "win32-api"
       should_resolve_as %w[win32-api-1.5.1-universal-mingw32]
     end
@@ -387,7 +387,7 @@ RSpec.describe "Resolving platform craziness" do
       should_resolve_as %w[thin-1.2.7-x64-mingw-ucrt]
     end
 
-    it "finds universal-mingw gems on x64-mingw-ucrt", rubygems: ">= 3.3.18" do
+    it "finds universal-mingw gems on x64-mingw-ucrt" do
       platform "x64-mingw-ucrt"
       dep "win32-api"
       should_resolve_as %w[win32-api-1.5.1-universal-mingw32]

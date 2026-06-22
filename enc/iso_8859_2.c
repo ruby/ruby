@@ -220,6 +220,7 @@ is_code_ctype(OnigCodePoint code, unsigned int ctype, OnigEncoding enc ARG_UNUSE
     return FALSE;
 }
 
+#ifdef USE_CASE_MAP_API
 static int
 case_map(OnigCaseFoldType* flagP, const OnigUChar** pp,
 	 const OnigUChar* end, OnigUChar* to, OnigUChar* to_end,
@@ -266,6 +267,7 @@ case_map(OnigCaseFoldType* flagP, const OnigUChar** pp,
   *flagP = flags;
   return (int )(to - to_start);
 }
+#endif
 
 OnigEncodingDefine(iso_8859_2, ISO_8859_2) = {
   onigenc_single_byte_mbc_enc_len,
@@ -284,7 +286,11 @@ OnigEncodingDefine(iso_8859_2, ISO_8859_2) = {
   onigenc_not_support_get_ctype_code_range,
   onigenc_single_byte_left_adjust_char_head,
   onigenc_always_true_is_allowed_reverse_match,
+#ifdef USE_CASE_MAP_API
   case_map,
+#else
+  NULL,
+#endif
   0,
   ONIGENC_FLAG_NONE,
 };

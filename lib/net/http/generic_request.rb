@@ -19,16 +19,13 @@ class Net::HTTPGenericRequest
 
     if URI === uri_or_path then
       raise ArgumentError, "not an HTTP URI" unless URI::HTTP === uri_or_path
-      hostname = uri_or_path.hostname
+      hostname = uri_or_path.host
       raise ArgumentError, "no host component for URI" unless (hostname && hostname.length > 0)
       @uri = uri_or_path.dup
-      host = @uri.hostname.dup
-      host << ":" << @uri.port.to_s if @uri.port != @uri.default_port
       @path = uri_or_path.request_uri
       raise ArgumentError, "no HTTP request path given" unless @path
     else
       @uri = nil
-      host = nil
       raise ArgumentError, "no HTTP request path given" unless uri_or_path
       raise ArgumentError, "HTTP request path is empty" if uri_or_path.empty?
       @path = uri_or_path.dup
@@ -51,7 +48,7 @@ class Net::HTTPGenericRequest
     initialize_http_header initheader
     self['Accept'] ||= '*/*'
     self['User-Agent'] ||= 'Ruby'
-    self['Host'] ||= host if host
+    self['Host'] ||= @uri.authority if @uri
     @body = nil
     @body_stream = nil
     @body_data = nil
@@ -100,6 +97,31 @@ class Net::HTTPGenericRequest
   #
   def inspect
     "\#<#{self.class} #{@method}>"
+  end
+
+  # Returns a string representation of the request with the details for pp:
+  #
+  #   require 'pp'
+  #   post = Net::HTTP::Post.new(uri)
+  #   post.inspect # => "#<Net::HTTP::Post POST>"
+  #   post.pretty_inspect
+  #   # => #<Net::HTTP::Post
+  #         POST
+  #         path="/"
+  #         headers={"accept-encoding" => ["gzip;q=1.0,deflate;q=0.6,identity;q=0.3"],
+  #          "accept" => ["*/*"],
+  #          "user-agent" => ["Ruby"],
+  #          "host" => ["www.ruby-lang.org"]}>
+  #
+  def pretty_print(q)
+    q.object_group(self) {
+      q.breakable
+      q.text @method
+      q.breakable
+      q.text "path="; q.pp @path
+      q.breakable
+      q.text "headers="; q.pp to_hash
+    }
   end
 
   ##
@@ -220,7 +242,7 @@ class Net::HTTPGenericRequest
     end
 
     if host = self['host']
-      host.sub!(/:.*/m, '')
+      host = URI.parse("//#{host}").host # Remove a port component from the existing Host header
     elsif host = @uri.host
     else
      host = addr
@@ -238,6 +260,8 @@ class Net::HTTPGenericRequest
   end
 
   private
+
+  # :stopdoc:
 
   class Chunker #:nodoc:
     def initialize(sock)
@@ -260,7 +284,6 @@ class Net::HTTPGenericRequest
   def send_request_with_body(sock, ver, path, body)
     self.content_length = body.bytesize
     delete 'Transfer-Encoding'
-    supply_default_content_type
     write_header sock, ver, path
     wait_for_continue sock, ver if sock.continue_timeout
     sock.write body
@@ -271,7 +294,6 @@ class Net::HTTPGenericRequest
       raise ArgumentError,
           "Content-Length not given and Transfer-Encoding is not `chunked'"
     end
-    supply_default_content_type
     write_header sock, ver, path
     wait_for_continue sock, ver if sock.continue_timeout
     if chunked?
@@ -314,6 +336,9 @@ class Net::HTTPGenericRequest
     boundary = opt[:boundary]
     require 'securerandom' unless defined?(SecureRandom)
     boundary ||= SecureRandom.urlsafe_base64(40)
+    if /[\r\n]/.match?(boundary.to_s)
+      raise ArgumentError, "multipart boundary cannot include CR/LF"
+    end
     chunked_p = chunked?
 
     buf = +''
@@ -327,7 +352,10 @@ class Net::HTTPGenericRequest
       buf << "--#{boundary}\r\n"
       if filename
         filename = quote_string(filename, charset)
-        type = h[:content_type] || 'application/octet-stream'
+        type = (h[:content_type] || 'application/octet-stream').to_s
+        if /[\r\n]/.match?(type)
+          raise ArgumentError, "field content type cannot include CR/LF"
+        end
         buf << "Content-Disposition: form-data; " \
           "name=\"#{key}\"; filename=\"#{filename}\"\r\n" \
           "Content-Type: #{type}\r\n\r\n"
@@ -362,6 +390,9 @@ class Net::HTTPGenericRequest
 
   def quote_string(str, charset)
     str = str.encode(charset, fallback:->(c){'&#%d;'%c.encode("UTF-8").ord}) if charset
+    if /[\r\n]/.match?(str)
+      raise ArgumentError, "multipart field name or filename cannot include CR/LF"
+    end
     str.gsub(/[\\"]/, '\\\\\&')
   end
 
@@ -371,12 +402,6 @@ class Net::HTTPGenericRequest
     out << buf
     out << "\r\n" if chunked_p
     buf.clear
-  end
-
-  def supply_default_content_type
-    return if content_type()
-    warn 'net/http: Content-Type did not set; using application/x-www-form-urlencoded', uplevel: 1 if $VERBOSE
-    set_content_type 'application/x-www-form-urlencoded'
   end
 
   ##
@@ -411,4 +436,3 @@ class Net::HTTPGenericRequest
   end
 
 end
-

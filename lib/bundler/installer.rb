@@ -7,12 +7,6 @@ require_relative "installer/gem_installer"
 
 module Bundler
   class Installer
-    class << self
-      attr_accessor :ambiguous_gems
-
-      Installer.ambiguous_gems = []
-    end
-
     attr_reader :post_install_messages, :definition
 
     # Begins the installation process for Bundler.
@@ -69,6 +63,11 @@ module Bundler
       Bundler.create_bundle_path
 
       ProcessLock.lock do
+        # Invalidate any stale gem specification cache from before we acquired the lock.
+        # Another process may have installed gems while we were waiting.
+        Gem::Specification.reset
+        @definition.sources.clear_cache
+
         @definition.ensure_equivalent_gemfile_and_lockfile(options[:deployment])
 
         if @definition.dependencies.empty?
@@ -195,25 +194,23 @@ module Bundler
       standalone = options[:standalone]
       force = options[:force]
       local = options[:local] || options[:"prefer-local"]
-      jobs = installation_parallelization
-      spec_installations = ParallelInstaller.call(self, @definition.specs, jobs, standalone, force, local: local)
+      jobs = Bundler.settings.installation_parallelization
+      specs = @definition.specs
+      # Installing default gems may need the remote index again to cache
+      # their .gem files, so keep resolution memory around in that case.
+      # The bundler spec itself is excluded because it comes from the
+      # metadata source and never goes through that path.
+      @definition.release_resolution_memory! if specs.none? {|s| s.default_gem? && s.source.is_a?(Source::Rubygems) }
+      spec_installations = ParallelInstaller.call(self, specs, jobs, standalone, force, local: local)
       spec_installations.each do |installation|
         post_install_messages[installation.name] = installation.post_install_message if installation.has_post_install_message?
       end
     end
 
-    def installation_parallelization
-      if jobs = Bundler.settings[:jobs]
-        return jobs
-      end
-
-      Bundler.settings.processor_count
-    end
-
     def load_plugins
       Gem.load_plugins
 
-      requested_path_gems = @definition.requested_specs.select {|s| s.source.is_a?(Source::Path) }
+      requested_path_gems = @definition.specs.select {|s| s.source.is_a?(Source::Path) }
       path_plugin_files = requested_path_gems.flat_map do |spec|
         spec.matches_for_glob("rubygems_plugin#{Bundler.rubygems.suffix_pattern}")
       rescue TypeError
@@ -225,12 +222,13 @@ module Bundler
     end
 
     def ensure_specs_are_compatible!
+      overrides = @definition.overrides
       @definition.specs.each do |spec|
-        unless spec.matches_current_ruby?
+        unless spec.matches_current_ruby_with_overrides?(overrides)
           raise InstallError, "#{spec.full_name} requires ruby version #{spec.required_ruby_version}, " \
             "which is incompatible with the current version, #{Gem.ruby_version}"
         end
-        unless spec.matches_current_rubygems?
+        unless spec.matches_current_rubygems_with_overrides?(overrides)
           raise InstallError, "#{spec.full_name} requires rubygems version #{spec.required_rubygems_version}, " \
             "which is incompatible with the current version, #{Gem.rubygems_version}"
         end

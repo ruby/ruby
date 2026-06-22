@@ -1,13 +1,26 @@
 use crate::abi::GCThreadTLS;
 
 use crate::api::RubyMutator;
-use crate::{mmtk, upcalls, Ruby};
+use crate::heap::CpuHeapTrigger;
+use crate::heap::RubyHeapTrigger;
+use crate::heap::CPU_HEAP_TRIGGER_CONFIG;
+use crate::mmtk;
+use crate::upcalls;
+use crate::Ruby;
 use mmtk::memory_manager;
 use mmtk::scheduler::*;
-use mmtk::util::{VMMutatorThread, VMThread, VMWorkerThread};
-use mmtk::vm::{Collection, GCThreadContext};
+use mmtk::util::alloc::AllocationError;
+use mmtk::util::heap::GCTriggerPolicy;
+use mmtk::util::VMMutatorThread;
+use mmtk::util::VMThread;
+use mmtk::util::VMWorkerThread;
+use mmtk::vm::Collection;
+use mmtk::vm::GCThreadContext;
+use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering;
 use std::thread;
+
+static CURRENT_GC_MAY_MOVE: AtomicBool = AtomicBool::new(false);
 
 pub struct VMCollection {}
 
@@ -16,11 +29,21 @@ impl Collection<Ruby> for VMCollection {
         crate::CONFIGURATION.gc_enabled.load(Ordering::Relaxed)
     }
 
-    fn stop_all_mutators<F>(_tls: VMWorkerThread, mut mutator_visitor: F)
+    fn stop_all_mutators<F>(tls: VMWorkerThread, mut mutator_visitor: F)
     where
         F: FnMut(&'static mut mmtk::Mutator<Ruby>),
     {
         (upcalls().stop_the_world)();
+
+        if crate::mmtk().get_plan().current_gc_may_move_object() {
+            CURRENT_GC_MAY_MOVE.store(true, Ordering::Relaxed);
+            (upcalls().before_updating_jit_code)();
+        } else {
+            CURRENT_GC_MAY_MOVE.store(false, Ordering::Relaxed);
+        }
+
+        crate::binding().pinning_registry.pin_children(tls);
+
         (upcalls().get_mutators)(
             Self::notify_mutator_ready::<F>,
             &mut mutator_visitor as *mut F as *mut _,
@@ -28,11 +51,30 @@ impl Collection<Ruby> for VMCollection {
     }
 
     fn resume_mutators(_tls: VMWorkerThread) {
-        (upcalls().resume_mutators)();
+        let current_gc_may_move = CURRENT_GC_MAY_MOVE.load(Ordering::Relaxed);
+
+        if current_gc_may_move {
+            (upcalls().after_updating_jit_code)();
+        }
+
+        (upcalls().resume_mutators)(current_gc_may_move);
     }
 
     fn block_for_gc(tls: VMMutatorThread) {
         (upcalls().block_for_gc)(tls);
+    }
+
+    fn out_of_memory(_tls: VMThread, err_kind: AllocationError) {
+        match err_kind {
+            // The heap is exhausted and could not be grown. Return normally
+            // without aborting.
+            AllocationError::HeapOutOfMemory => {}
+            // The OS refused an mmap. This is unrecoverable, so abort the
+            // process via the same panic handler used for GC-thread panics.
+            AllocationError::MmapOutOfMemory => {
+                (upcalls().mutator_thread_panic_handler)();
+            }
+        }
     }
 
     fn spawn_gc_thread(_tls: VMThread, ctx: GCThreadContext<Ruby>) {
@@ -41,10 +83,7 @@ impl Collection<Ruby> for VMCollection {
                 .name("MMTk Worker Thread".to_string())
                 .spawn(move || {
                     let ordinal = worker.ordinal;
-                    debug!(
-                        "Hello! This is MMTk Worker Thread running! ordinal: {}",
-                        ordinal
-                    );
+                    debug!("Hello! This is MMTk Worker Thread running! ordinal: {ordinal}");
                     crate::register_gc_thread(thread::current().id());
                     let ptr_worker = &mut *worker as *mut GCWorker<Ruby>;
                     let gc_thread_tls =
@@ -55,10 +94,7 @@ impl Collection<Ruby> for VMCollection {
                         GCThreadTLS::to_vwt(gc_thread_tls),
                         worker,
                     );
-                    debug!(
-                        "An MMTk Worker Thread is quitting. Good bye! ordinal: {}",
-                        ordinal
-                    );
+                    debug!("An MMTk Worker Thread is quitting. Good bye! ordinal: {ordinal}");
                     crate::unregister_gc_thread(thread::current().id());
                 })
                 .unwrap(),
@@ -72,6 +108,19 @@ impl Collection<Ruby> for VMCollection {
 
     fn vm_live_bytes() -> usize {
         (upcalls().vm_live_bytes)()
+    }
+
+    fn create_gc_trigger() -> Box<dyn GCTriggerPolicy<Ruby>> {
+        // `GCTriggerSelector::Delegated` is currently used by two different
+        // heap modes: `ruby` (the Ruby-like free-slot ratio trigger) and `cpu`
+        // (the CPU-overhead trigger from Tavakolisomeh et al., MPLR '23).
+        // Which one is active is determined by which `OnceCell` config the
+        // `MMTK_HEAP_MODE` parser populated.
+        if CPU_HEAP_TRIGGER_CONFIG.get().is_some() {
+            Box::new(CpuHeapTrigger::default())
+        } else {
+            Box::new(RubyHeapTrigger::default())
+        }
     }
 }
 

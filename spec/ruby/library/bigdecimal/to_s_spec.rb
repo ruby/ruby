@@ -31,7 +31,7 @@ describe "BigDecimal#to_s" do
   end
 
   it "takes an optional argument" do
-    -> {@bigdec.to_s("F")}.should_not raise_error()
+    -> {@bigdec.to_s("F")}.should_not.raise()
   end
 
   it "starts with + if + is supplied and value is positive" do
@@ -52,10 +52,8 @@ describe "BigDecimal#to_s" do
     BigDecimal("1.2345").to_s('0F').should == "1.2345"
   end
 
-  version_is BigDecimal::VERSION, "3.1.5" do #ruby_version_is '3.3' do
-    it "inserts a space every n chars to integer part, if integer n is supplied" do
-      BigDecimal('1000010').to_s('5F').should == "10 00010.0"
-    end
+  it "inserts a space every n chars to integer part, if integer n is supplied" do
+    BigDecimal('1000010').to_s('5F').should == "10 00010.0"
   end
 
   it "can return a leading space for values > 0" do
@@ -90,11 +88,11 @@ describe "BigDecimal#to_s" do
 
   it "returns a String in US-ASCII encoding when Encoding.default_internal is nil" do
     Encoding.default_internal = nil
-    BigDecimal('1.23').to_s.encoding.should equal(Encoding::US_ASCII)
+    BigDecimal('1.23').to_s.encoding.should.equal?(Encoding::US_ASCII)
   end
 
   it "returns a String in US-ASCII encoding when Encoding.default_internal is not nil" do
     Encoding.default_internal = Encoding::IBM437
-    BigDecimal('1.23').to_s.encoding.should equal(Encoding::US_ASCII)
+    BigDecimal('1.23').to_s.encoding.should.equal?(Encoding::US_ASCII)
   end
 end

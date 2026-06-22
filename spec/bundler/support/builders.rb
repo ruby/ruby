@@ -2,6 +2,8 @@
 
 require "bundler/shared_helpers"
 require "shellwords"
+require "fileutils"
+require "rubygems/package"
 
 require_relative "build_metadata"
 
@@ -22,10 +24,6 @@ module Spec
 
     def pl(platform)
       Gem::Platform.new(platform)
-    end
-
-    def rake_version
-      "13.2.1"
     end
 
     def build_repo1
@@ -111,10 +109,6 @@ module Spec
         end
 
         build_gem "platform_specific" do |s|
-          s.platform = "x64-mingw32"
-        end
-
-        build_gem "platform_specific" do |s|
           s.platform = "x64-mingw-ucrt"
         end
 
@@ -193,17 +187,25 @@ module Spec
 
     # A repo that has no pre-installed gems included. (The caller completely
     # determines the contents with the block.)
+    #
+    # If the repo already exists, `#update_repo` will be called.
     def build_repo3(**kwargs, &blk)
-      raise "gem_repo3 already exists -- use update_repo3 instead" if File.exist?(gem_repo3)
-      build_repo gem_repo3, **kwargs, &blk
+      if File.exist?(gem_repo3)
+        update_repo(gem_repo3, &blk)
+      else
+        build_repo gem_repo3, **kwargs, &blk
+      end
     end
 
     # Like build_repo3, this is a repo that has no pre-installed gems included.
-    # We have two different methods for situations where two different empty
-    # sources are needed.
+    #
+    # If the repo already exists, `#udpate_repo` will be called
     def build_repo4(**kwargs, &blk)
-      raise "gem_repo4 already exists -- use update_repo4 instead" if File.exist?(gem_repo4)
-      build_repo gem_repo4, **kwargs, &blk
+      if File.exist?(gem_repo4)
+        update_repo gem_repo4, &blk
+      else
+        build_repo gem_repo4, **kwargs, &blk
+      end
     end
 
     def update_repo2(**kwargs, &blk)
@@ -212,10 +214,6 @@ module Spec
 
     def update_repo3(&blk)
       update_repo(gem_repo3, &blk)
-    end
-
-    def update_repo4(&blk)
-      update_repo(gem_repo4, &blk)
     end
 
     def build_security_repo
@@ -277,7 +275,7 @@ module Spec
     end
 
     def update_repo(path, build_compact_index: true)
-      exempted_caller = Gem.ruby_version >= Gem::Version.new("3.4.0.dev") ? "#{Module.nesting.first}#build_repo" : "build_repo"
+      exempted_caller = Gem.ruby_version >= Gem::Version.new("3.4.0.dev") && RUBY_ENGINE != "jruby" ? "#{Module.nesting.first}#build_repo" : "build_repo"
       if path == gem_repo1 && caller_locations(1, 1).first.label != exempted_caller
         raise "Updating gem_repo1 is unsupported -- use gem_repo2 instead"
       end
@@ -285,14 +283,8 @@ module Spec
       @_build_path = "#{path}/gems"
       @_build_repo = File.basename(path)
       yield
-      with_gem_path_as base_system_gem_path do
-        Dir[base_system_gem_path.join("gems/rubygems-generate_index*/lib")].first ||
-          raise("Could not find rubygems-generate_index lib directory in #{base_system_gem_path}")
-
-        command = "generate_index"
-        command += " --no-compact" if !build_compact_index && gem_command(command + " --help").include?("--[no-]compact")
-        gem_command command, dir: path
-      end
+      options = { build_compact: build_compact_index }
+      Gem::Indexer.new(path, options).generate_index
     ensure
       @_build_path = nil
       @_build_repo = nil
@@ -431,21 +423,25 @@ module Spec
     end
 
     class BundlerBuilder
-      attr_writer :required_ruby_version
-
       def initialize(context, name, version)
-        raise "can only build bundler" unless name == "bundler"
-
         @context = context
-        @version = version || Bundler::VERSION
+        @spec = Spec::Path.loaded_gemspec.dup
+        @spec.version = version || Bundler::VERSION
+      end
+
+      def required_ruby_version
+        @spec.required_ruby_version
+      end
+
+      def required_ruby_version=(x)
+        @spec.required_ruby_version = x
       end
 
       def _build(options = {})
-        full_name = "bundler-#{@version}"
-        build_path = @context.tmp + full_name
+        full_name = "bundler-#{@spec.version}"
+        build_path = (options[:build_path] || @context.tmp) + full_name
         bundler_path = build_path + "#{full_name}.gem"
 
-        require "fileutils"
         FileUtils.mkdir_p build_path
 
         @context.shipped_files.each do |shipped_file|
@@ -457,12 +453,16 @@ module Spec
           FileUtils.cp File.expand_path(shipped_file, @context.source_root), target_shipped_file, preserve: true
         end
 
-        @context.replace_version_file(@version, dir: build_path)
-        @context.replace_required_ruby_version(@required_ruby_version, dir: build_path) if @required_ruby_version
+        @context.replace_version_file(@spec.version, dir: build_path)
+        @context.replace_changelog(@spec.version, dir: build_path) if options[:released]
 
-        Spec::BuildMetadata.write_build_metadata(dir: build_path)
+        Spec::BuildMetadata.write_build_metadata(dir: build_path, version: @spec.version.to_s)
 
-        @context.gem_command "build #{@context.relative_gemspec}", dir: build_path
+        Dir.chdir build_path do
+          Gem::DefaultUserInteraction.use_ui(Gem::SilentUI.new) do
+            Gem::Package.build(@spec)
+          end
+        end
 
         if block_given?
           yield(bundler_path)
@@ -470,7 +470,7 @@ module Spec
           FileUtils.mv bundler_path, options[:path]
         end
       ensure
-        build_path.rmtree
+        FileUtils.rm_rf build_path
       end
     end
 
@@ -664,9 +664,9 @@ module Spec
             Bundler.rubygems.build(@spec, opts[:skip_validation])
           end
         elsif opts[:skip_validation]
-          @context.gem_command "build --force #{@spec.name}", dir: lib_path
+          Dir.chdir(lib_path) { Gem::Package.build(@spec, true) }
         else
-          @context.gem_command "build #{@spec.name}", dir: lib_path, allowed_warning: opts[:allowed_warning]
+          Dir.chdir(lib_path) { Gem::Package.build(@spec) }
         end
 
         gem_path = File.expand_path("#{@spec.full_name}.gem", lib_path)
@@ -695,54 +695,54 @@ module Spec
 
     TEST_CERT = <<~CERT
       -----BEGIN CERTIFICATE-----
-      MIIDMjCCAhqgAwIBAgIBATANBgkqhkiG9w0BAQUFADAnMQwwCgYDVQQDDAN5b3Ux
+      MIIDNTCCAh2gAwIBAgIBATANBgkqhkiG9w0BAQsFADAnMQwwCgYDVQQDDAN5b3Ux
       FzAVBgoJkiaJk/IsZAEZFgdleGFtcGxlMB4XDTE1MDIwODAwMTIyM1oXDTQyMDYy
       NTAwMTIyM1owJzEMMAoGA1UEAwwDeW91MRcwFQYKCZImiZPyLGQBGRYHZXhhbXBs
-      ZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBANlvFdpN43c4DMS9Jo06
-      m0a7k3bQ3HWQ1yrYhZMi77F1F73NpBknYHIzDktQpGn6hs/4QFJT4m4zNEBF47UL
-      jHU5nTK5rjkS3niGYUjvh3ZEzVeo9zHUlD/UwflDo4ALl3TSo2KY/KdPS/UTdLXL
-      ajkQvaVJtEDgBPE3DPhlj5whp+Ik3mDHej7qpV6F502leAwYaFyOtlEG/ZGNG+nZ
-      L0clH0j77HpP42AylHDi+vakEM3xcjo9BeWQ6Vkboic93c9RTt6CWBWxMQP7Nol1
-      MOebz9XOSQclxpxWteXNfPRtMdAhmRl76SMI8ywzThNPpa4EH/yz34ftebVOgKyM
-      nd0CAwEAAaNpMGcwCQYDVR0TBAIwADALBgNVHQ8EBAMCBLAwHQYDVR0OBBYEFA7D
-      n9qo0np23qi3aOYuAAPn/5IdMBYGA1UdEQQPMA2BC3lvdUBleGFtcGxlMBYGA1Ud
-      EgQPMA2BC3lvdUBleGFtcGxlMA0GCSqGSIb3DQEBBQUAA4IBAQA7Gyk62sWOUX/N
-      vk4tJrgKESph6Ns8+E36A7n3jt8zCep8ldzMvwTWquf9iqhsC68FilEoaDnUlWw7
-      d6oNuaFkv7zfrWGLlvqQJC+cu2X5EpcCksg5oRp8VNbwJysJ6JgwosxzROII8eXc
-      R+j1j6mDvQYqig2QOnzf480pjaqbP+tspfDFZbhKPrgM3Blrb3ZYuFpv4zkqI7aB
-      6fuk2DUhNO1CuwrJA84TqC+jGo73bDKaT5hrIDiaJRrN5+zcWja2uEWrj5jSbep4
-      oXdEdyH73hOHMBP40uds3PqnUsxEJhzjB2sCCe1geV24kw9J4m7EQXPVkUKDgKrt
-      LlpDmOoo
+      ZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAMkupYkg3Nd1oXM3fo0d
+      mVJBWNrni88lKDuIIQXwcKe6XCgiloZG708ecLTOws9+o9MkTl9Wtpf/WGXT98NK
+      EPUYakd2Fv1SuD1jWYlP7iDR6hB3RkWBm5ziujYftVJ4ZrPD42PLjDASvlh75Tvr
+      MeM7yq/qkcgNsd9dQyUvMNPks3tla9je7Dt7Auli2IN3CNXys7gIOfwJH0Bb/M6t
+      y7oUfpoUKAfLzwe61abztgDu1lSNgdFBM1kcxYflyh/FkX5TlAcWeAXzLrnxAXGR
+      UxXrxW4oPC+kZi/pDRBd7X4zQDx7bCmr1+FsS3M05i3w5E08Tt9iKRk4V8nCmE4i
+      k6UCAwEAAaNsMGowCQYDVR0TBAIwADAOBgNVHQ8BAf8EBAMCB4AwHQYDVR0OBBYE
+      FOOOFw5TNAqt/TcRRZEU3Dg/58XuMBYGA1UdEQQPMA2BC3lvdUBleGFtcGxlMBYG
+      A1UdEgQPMA2BC3lvdUBleGFtcGxlMA0GCSqGSIb3DQEBCwUAA4IBAQAy3xnmobxU
+      1SyhHvoIXTJmG0wt1DQ/Dqwjy362LpEf1UHt29wtg1Mph58eVtl93z5Vd2t4/O77
+      E2BHpSu9ujc6/Br4+2uA/Qk/xRyLBtZAwty6J4uFvOOg985HonN+RCUZbKSUTmtA
+      TZvNtIDAZFQ8Tu75K4gIBxDcz7biGi4i1VJ3F3GNCNeossr9IQwKvb+UWFq14U5R
+      IzUnGgMIzcjUG2kKQvddRD1CjS+egtcLvShbOfm5bs4w4rfQ2FPF+Aaf9v7fxa/c
+      Jrf3K+cB19eAy7O4nlPG1xurvnZd0QpqRk++werrBuKe1Pgga7YBLePfJhzwqcZv
+      wVOSsB870yeO
       -----END CERTIFICATE-----
     CERT
 
     TEST_PKEY = <<~PKEY
       -----BEGIN RSA PRIVATE KEY-----
-      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
+      MIIEowIBAAKCAQEAyS6liSDc13Whczd+jR2ZUkFY2ueLzyUoO4ghBfBwp7pcKCKW
+      hkbvTx5wtM7Cz36j0yROX1a2l/9YZdP3w0oQ9RhqR3YW/VK4PWNZiU/uINHqEHdG
+      RYGbnOK6Nh+1Unhms8PjY8uMMBK+WHvlO+sx4zvKr+qRyA2x311DJS8w0+Sze2Vr
+      2N7sO3sC6WLYg3cI1fKzuAg5/AkfQFv8zq3LuhR+mhQoB8vPB7rVpvO2AO7WVI2B
+      0UEzWRzFh+XKH8WRflOUBxZ4BfMuufEBcZFTFevFbig8L6RmL+kNEF3tfjNAPHts
+      KavX4WxLczTmLfDkTTxO32IpGThXycKYTiKTpQIDAQABAoIBABpyrHEWRed5X7aN
+      kXCBzKSN/LLChT8VNnB6bppLnV501yVbmV2hDlg2EJZkfCMvwIptwnPcKs2uqZ4G
+      u2gMC6X9Bgkg/YK4u4nZJBiIzoMNYEUL48wYGYS1dcokaapO3nQ8M1+XjyAexrFL
+      5btL1IIisScRTQWiGe6FtzcN43sSNkBISyDF5zG4Kodynqi0ekITmMl2q5XLWcsM
+      KBnmZcRFEmFae2YYczVy8SXNApkZEvN69znvAX1iDNnZ3sJFchXo1nRPt4stOOKw
+      mydgIYqaNQ22aF3OkblvoA4Y4m+X2Qt1sfkryKa5xTT7DSE81GmmazNI64EWqtES
+      6Xde6P0CgYEA+V1vuSnE5fWX188abWMbVwNMC71WfHbntFmI+qwWYPEpickm+RGX
+      DDfXs5unlVX4KUmjfplgavO29op1GZTuD9TlRnUAV0+0aJnNq4DY6XsHfD84qsBr
+      gQGEHeJ1cMGNDnZR/EV3eudMalj9Qjpx9NoXNzMykb0/SUYZQemiqwcCgYEAzokC
+      s0GoHVJqan4dfU0h0G5QPncrajW9DGG1ySxK/A2eqbVB8W2ZQx39OS26/Gydb31p
+      cR7zm8PZpNbzLqlIMEbD4F6q22xxvYVtDx/HHPjxHMi87yxwQ9uLDUHoMa/LciTO
+      djv3D1xTDDGxbpjmsdmINetunAs3htxku7JY5PMCgYBs3/TVvXzwgmhHm28Ib4sS
+      VKgxP/uw4CGORsFd4SDsNp9SP3c6rAltFjyheMaUlzKApFwz/DdyuvIZdp5mCvZe
+      BzALsS3y8SPtv6lixiDu3/6GqvvM4bKOYuESQzvPfVJfDB4DrTjben2MuUnqTqZO
+      p6IXQc1EgIJPNcH1W1LgpQKBgAKZlPAevngIBpDqn4JpSyititMOevxuSr/yJvCu
+      Xw9HOJ0YTAk3APvoT7y9h6IP1/eEU6R56EUotP+vOQZ4WRFKgsK7TllOxyvElzfe
+      hYom1BoxqLc2Dv+7rsdu8fZWKTB5qCOy44xM9DquEXa79AN/IojTOuQ5++v1sErw
+      ls/jAoGBANneGe9ogN51mYkrLyg1fhU1i24gFRq+sPGEvsCUoE6Vjw/lawQQ80T8
+      v45TFqvhoGpgznqy3qxDJyguquZg6HN2yW6HE2Dvk7uk3XogcjdXgNDmWqb2j0eE
+      z9pKzHCqfwNVPuYf44Znyo2YeyZ2kHn42MU73oXuFshUs3QHcH+P
       -----END RSA PRIVATE KEY-----
     PKEY
   end

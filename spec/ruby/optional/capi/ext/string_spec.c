@@ -12,6 +12,13 @@
 extern "C" {
 #endif
 
+#ifdef PTR2NUM
+#elif SIZEOF_VOIDP <= SIZEOF_LONG
+# define PTR2NUM(x) (LONG2NUM((long)(x)))
+#elif SIZEOF_VOIDP <= SIZEOF_LONG_LONG
+# define PTR2NUM(x) (LL2NUM((LONG_LONG)(x)))
+#endif
+
 /* Make sure the RSTRING_PTR and the bytes are in native memory.
  * On TruffleRuby RSTRING_PTR and the bytes remain in managed memory
  * until they must be written to native memory.
@@ -252,16 +259,6 @@ VALUE string_spec_rb_str_new5(VALUE self, VALUE str, VALUE ptr, VALUE len) {
   return rb_str_new5(str, RSTRING_PTR(ptr), FIX2INT(len));
 }
 
-#ifndef RUBY_VERSION_IS_3_2
-VALUE string_spec_rb_tainted_str_new(VALUE self, VALUE str, VALUE len) {
-  return rb_tainted_str_new(RSTRING_PTR(str), FIX2INT(len));
-}
-
-VALUE string_spec_rb_tainted_str_new2(VALUE self, VALUE str) {
-  return rb_tainted_str_new2(RSTRING_PTR(str));
-}
-#endif
-
 VALUE string_spec_rb_str_plus(VALUE self, VALUE str1, VALUE str2) {
   return rb_str_plus(str1, str2);
 }
@@ -306,6 +303,26 @@ VALUE string_spec_rb_str_substr(VALUE self, VALUE str, VALUE beg, VALUE len) {
   return rb_str_substr(str, FIX2INT(beg), FIX2INT(len));
 }
 
+VALUE string_spec_rb_str_subpos(VALUE self, VALUE str, VALUE beg) {
+  char* original = RSTRING_PTR(str);
+  char* end = RSTRING_END(str);
+  long len = rb_str_strlen(str);
+  char *p = rb_str_subpos(str, FIX2LONG(beg), &len);
+  if (p == NULL) {
+    return Qnil;
+  }
+
+  if (p >= original && p <= end) {
+    return rb_ary_new_from_args(2, LONG2FIX(p - RSTRING_PTR(str)), LONG2FIX(len));
+  } else {
+    rb_raise(rb_eRuntimeError, "the returned pointer is not inside the original string buffer");
+  }
+}
+
+VALUE string_spec_rb_str_sublen(VALUE self, VALUE str, VALUE pos) {
+  return LONG2FIX(rb_str_sublen(str, FIX2LONG(pos)));
+}
+
 VALUE string_spec_rb_str_to_str(VALUE self, VALUE arg) {
   return rb_str_to_str(arg);
 }
@@ -316,6 +333,11 @@ VALUE string_spec_RSTRING_LEN(VALUE self, VALUE str) {
 
 VALUE string_spec_RSTRING_LENINT(VALUE self, VALUE str) {
   return INT2FIX(RSTRING_LENINT(str));
+}
+
+VALUE string_spec_RSTRING_PTR(VALUE self, VALUE str) {
+  char* ptr = RSTRING_PTR(str);
+  return PTR2NUM(ptr);
 }
 
 VALUE string_spec_RSTRING_PTR_iterate(VALUE self, VALUE str) {
@@ -403,6 +425,7 @@ VALUE string_spec_RSTRING_PTR_read(VALUE self, VALUE str, VALUE path) {
   if (read(fd, buffer, 30) < 0) {
     rb_syserr_fail(errno, "read");
   }
+  rb_str_set_len(str, 30);
 
   rb_str_modify_expand(str, 53);
   rb_ary_push(capacities, SIZET2NUM(rb_str_capacity(str)));
@@ -450,6 +473,7 @@ static VALUE string_spec_rb_str_free(VALUE self, VALUE str) {
 static VALUE string_spec_rb_sprintf1(VALUE self, VALUE str, VALUE repl) {
   return rb_sprintf(RSTRING_PTR(str), RSTRING_PTR(repl));
 }
+
 static VALUE string_spec_rb_sprintf2(VALUE self, VALUE str, VALUE repl1, VALUE repl2) {
   return rb_sprintf(RSTRING_PTR(str), RSTRING_PTR(repl1), RSTRING_PTR(repl2));
 }
@@ -540,7 +564,10 @@ static VALUE string_spec_rb_str_modify(VALUE self, VALUE str) {
 }
 
 static VALUE string_spec_rb_utf8_str_new_static(VALUE self) {
-  return rb_utf8_str_new_static("nokogiri", 8);
+  const char* literal = "nokogiri";
+  return rb_ary_new_from_args(2,
+    rb_utf8_str_new_static("nokogiri", 8),
+    PTR2NUM(literal));
 }
 
 static VALUE string_spec_rb_utf8_str_new(VALUE self) {
@@ -590,6 +617,14 @@ static VALUE string_spec_rb_str_to_interned_str(VALUE self, VALUE str) {
   return rb_str_to_interned_str(str);
 }
 
+static VALUE string_spec_rb_interned_str(VALUE self, VALUE str, VALUE len) {
+  return rb_interned_str(RSTRING_PTR(str), FIX2LONG(len));
+}
+
+static VALUE string_spec_rb_interned_str_cstr(VALUE self, VALUE str) {
+  return rb_interned_str_cstr(RSTRING_PTR(str));
+}
+
 void Init_string_spec(void) {
   VALUE cls = rb_define_class("CApiStringSpecs", rb_cObject);
   rb_define_method(cls, "rb_cstr2inum", string_spec_rb_cstr2inum, 2);
@@ -635,10 +670,6 @@ void Init_string_spec(void) {
   rb_define_method(cls, "rb_str_new3", string_spec_rb_str_new3, 1);
   rb_define_method(cls, "rb_str_new4", string_spec_rb_str_new4, 1);
   rb_define_method(cls, "rb_str_new5", string_spec_rb_str_new5, 3);
-#ifndef RUBY_VERSION_IS_3_2
-  rb_define_method(cls, "rb_tainted_str_new", string_spec_rb_tainted_str_new, 2);
-  rb_define_method(cls, "rb_tainted_str_new2", string_spec_rb_tainted_str_new2, 1);
-#endif
   rb_define_method(cls, "rb_str_plus", string_spec_rb_str_plus, 2);
   rb_define_method(cls, "rb_str_times", string_spec_rb_str_times, 2);
   rb_define_method(cls, "rb_str_modify_expand", string_spec_rb_str_modify_expand, 2);
@@ -650,9 +681,12 @@ void Init_string_spec(void) {
   rb_define_method(cls, "rb_str_split", string_spec_rb_str_split, 1);
   rb_define_method(cls, "rb_str_subseq", string_spec_rb_str_subseq, 3);
   rb_define_method(cls, "rb_str_substr", string_spec_rb_str_substr, 3);
+  rb_define_method(cls, "rb_str_subpos", string_spec_rb_str_subpos, 2);
+  rb_define_method(cls, "rb_str_sublen", string_spec_rb_str_sublen, 2);
   rb_define_method(cls, "rb_str_to_str", string_spec_rb_str_to_str, 1);
   rb_define_method(cls, "RSTRING_LEN", string_spec_RSTRING_LEN, 1);
   rb_define_method(cls, "RSTRING_LENINT", string_spec_RSTRING_LENINT, 1);
+  rb_define_method(cls, "RSTRING_PTR", string_spec_RSTRING_PTR, 1);
   rb_define_method(cls, "RSTRING_PTR_iterate", string_spec_RSTRING_PTR_iterate, 1);
   rb_define_method(cls, "RSTRING_PTR_iterate_uint32", string_spec_RSTRING_PTR_iterate_uint32, 1);
   rb_define_method(cls, "RSTRING_PTR_short_memcpy", string_spec_RSTRING_PTR_short_memcpy, 1);
@@ -694,6 +728,8 @@ void Init_string_spec(void) {
   rb_define_method(cls, "rb_enc_interned_str_cstr", string_spec_rb_enc_interned_str_cstr, 2);
   rb_define_method(cls, "rb_enc_interned_str", string_spec_rb_enc_interned_str, 3);
   rb_define_method(cls, "rb_str_to_interned_str", string_spec_rb_str_to_interned_str, 1);
+  rb_define_method(cls, "rb_interned_str", string_spec_rb_interned_str, 2);
+  rb_define_method(cls, "rb_interned_str_cstr", string_spec_rb_interned_str_cstr, 1);
 }
 
 #ifdef __cplusplus

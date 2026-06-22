@@ -2,13 +2,34 @@
 # frozen_string_literal: true
 
 module Lrama
-  # Algorithm Digraph of https://dl.acm.org/doi/pdf/10.1145/69622.357187 (P. 625)
+  # Digraph Algorithm of https://dl.acm.org/doi/pdf/10.1145/69622.357187 (P. 625)
   #
-  # @rbs generic X < Object -- Type of a member of `sets`
-  # @rbs generic Y < _Or    -- Type of sets assigned to a member of `sets`
+  # Digraph is an algorithm for graph data structure.
+  # The algorithm efficiently traverses SCC (Strongly Connected Component) of graph
+  # and merges nodes attributes within the same SCC.
+  #
+  # `compute_read_sets` and `compute_follow_sets` have the same structure.
+  # Graph of gotos and attributes of gotos are given then compute propagated attributes for each node.
+  #
+  # In the case of `compute_read_sets`:
+  #
+  # * Set of gotos is nodes of graph
+  # * `reads_relation` is edges of graph
+  # * `direct_read_sets` is nodes attributes
+  #
+  # In the case of `compute_follow_sets`:
+  #
+  # * Set of gotos is nodes of graph
+  # * `includes_relation` is edges of graph
+  # * `read_sets` is nodes attributes
+  #
+  #
+  # @rbs generic X < Object -- Type of a node
+  # @rbs generic Y < _Or    -- Type of attribute sets assigned to a node which should support merge operation (#| method)
   class Digraph
-    # TODO: rbs-inline 0.10.0 doesn't support instance variables.
+    # TODO: rbs-inline 0.11.0 doesn't support instance variables.
     #       Move these type declarations above instance variable definitions, once it's supported.
+    #       see: https://github.com/soutaro/rbs-inline/pull/149
     #
     # @rbs!
     #   interface _Or
@@ -21,9 +42,9 @@ module Lrama
     #   @h: Hash[X, (Integer|Float)?]
     #   @result: Hash[X, Y]
 
-    # @rbs sets: Array[X]
-    # @rbs relation: Hash[X, Array[X]]
-    # @rbs base_function: Hash[X, Y]
+    # @rbs sets: Array[X] -- Nodes of graph
+    # @rbs relation: Hash[X, Array[X]] -- Edges of graph
+    # @rbs base_function: Hash[X, Y] -- Attributes of nodes
     # @rbs return: void
     def initialize(sets, relation, base_function)
 

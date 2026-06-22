@@ -1,35 +1,64 @@
+# rbs_inline: enabled
 # frozen_string_literal: true
 
 require "set"
+require "timeout"
 
 require_relative "counterexamples/derivation"
 require_relative "counterexamples/example"
+require_relative "counterexamples/node"
 require_relative "counterexamples/path"
-require_relative "counterexamples/production_path"
-require_relative "counterexamples/start_path"
 require_relative "counterexamples/state_item"
-require_relative "counterexamples/transition_path"
 require_relative "counterexamples/triple"
 
 module Lrama
   # See: https://www.cs.cornell.edu/andru/papers/cupex/cupex.pdf
   #      4. Constructing Nonunifying Counterexamples
   class Counterexamples
-    attr_reader :transitions, :productions
+    PathSearchTimeLimit = 10 # 10 sec
+    CumulativeTimeLimit = 120 # 120 sec
 
+    # @rbs!
+    #   @states: States
+    #   @iterate_count: Integer
+    #   @total_duration: Float
+    #   @exceed_cumulative_time_limit: bool
+    #   @state_items: Hash[[State, State::Item], StateItem]
+    #   @triples: Hash[Integer, Triple]
+    #   @transitions: Hash[[StateItem, Grammar::Symbol], StateItem]
+    #   @reverse_transitions: Hash[[StateItem, Grammar::Symbol], Set[StateItem]]
+    #   @productions: Hash[StateItem, Set[StateItem]]
+    #   @reverse_productions: Hash[[State, Grammar::Symbol], Set[StateItem]] # Grammar::Symbol is nterm
+    #   @state_item_shift: Integer
+
+    attr_reader :transitions #: Hash[[StateItem, Grammar::Symbol], StateItem]
+    attr_reader :productions #: Hash[StateItem, Set[StateItem]]
+
+    # @rbs (States states) -> void
     def initialize(states)
       @states = states
+      @iterate_count = 0
+      @total_duration = 0
+      @exceed_cumulative_time_limit = false
+      @triples = {}
+      setup_state_items
       setup_transitions
       setup_productions
     end
 
+    # @rbs () -> "#<Counterexamples>"
     def to_s
       "#<Counterexamples>"
     end
     alias :inspect :to_s
 
+    # @rbs (State conflict_state) -> Array[Example]
     def compute(conflict_state)
       conflict_state.conflicts.flat_map do |conflict|
+        # Check cumulative time limit for not each path search method call but each conflict
+        # to avoid one of example's path to be nil.
+        next if @exceed_cumulative_time_limit
+
         case conflict.type
         when :shift_reduce
           # @type var conflict: State::ShiftReduceConflict
@@ -38,22 +67,50 @@ module Lrama
           # @type var conflict: State::ReduceReduceConflict
           reduce_reduce_examples(conflict_state, conflict)
         end
+      rescue Timeout::Error => e
+        STDERR.puts "Counterexamples calculation for state #{conflict_state.id} #{e.message} with #{@iterate_count} iteration"
+        increment_total_duration(PathSearchTimeLimit)
+        nil
       end.compact
     end
 
     private
 
+    # @rbs (State state, State::Item item) -> StateItem
+    def get_state_item(state, item)
+      @state_items[[state, item]]
+    end
+
+    # For optimization, create all StateItem in advance
+    # and use them by fetching an instance from `@state_items`.
+    # Do not create new StateItem instance in the shortest path search process
+    # to avoid miss hash lookup.
+    #
+    # @rbs () -> void
+    def setup_state_items
+      @state_items = {}
+      count = 0
+
+      @states.states.each do |state|
+        state.items.each do |item|
+          @state_items[[state, item]] = StateItem.new(count, state, item)
+          count += 1
+        end
+      end
+
+      @state_item_shift = Math.log(count, 2).ceil
+    end
+
+    # @rbs () -> void
     def setup_transitions
-      # Hash [StateItem, Symbol] => StateItem
       @transitions = {}
-      # Hash [StateItem, Symbol] => Set(StateItem)
       @reverse_transitions = {}
 
       @states.states.each do |src_state|
         trans = {} #: Hash[Grammar::Symbol, State]
 
-        src_state.transitions.each do |shift, next_state|
-          trans[shift.next_sym] = next_state
+        src_state.transitions.each do |transition|
+          trans[transition.next_sym] = transition.to_state
         end
 
         src_state.items.each do |src_item|
@@ -63,8 +120,8 @@ module Lrama
 
           dest_state.kernels.each do |dest_item|
             next unless (src_item.rule == dest_item.rule) && (src_item.position + 1 == dest_item.position)
-            src_state_item = StateItem.new(src_state, src_item)
-            dest_state_item = StateItem.new(dest_state, dest_item)
+            src_state_item = get_state_item(src_state, src_item)
+            dest_state_item = get_state_item(dest_state, dest_item)
 
             @transitions[[src_state_item, sym]] = dest_state_item
 
@@ -77,21 +134,20 @@ module Lrama
       end
     end
 
+    # @rbs () -> void
     def setup_productions
-      # Hash [StateItem] => Set(Item)
       @productions = {}
-      # Hash [State, Symbol] => Set(Item). Symbol is nterm
       @reverse_productions = {}
 
       @states.states.each do |state|
-        # LHS => Set(Item)
-        h = {} #: Hash[Grammar::Symbol, Set[States::Item]]
+        # Grammar::Symbol is LHS
+        h = {} #: Hash[Grammar::Symbol, Set[StateItem]]
 
         state.closure.each do |item|
           sym = item.lhs
 
           h[sym] ||= Set.new
-          h[sym] << item
+          h[sym] << get_state_item(state, item)
         end
 
         state.items.each do |item|
@@ -99,101 +155,118 @@ module Lrama
           next if item.next_sym.term?
 
           sym = item.next_sym
-          state_item = StateItem.new(state, item)
-          # @type var key: [State, Grammar::Symbol]
-          key = [state, sym]
-
+          state_item = get_state_item(state, item)
           @productions[state_item] = h[sym]
 
+          # @type var key: [State, Grammar::Symbol]
+          key = [state, sym]
           @reverse_productions[key] ||= Set.new
-          @reverse_productions[key] << item
+          @reverse_productions[key] << state_item
         end
       end
     end
 
+    # For optimization, use same Triple if it's already created.
+    # Do not create new Triple instance anywhere else
+    # to avoid miss hash lookup.
+    #
+    # @rbs (StateItem state_item, Bitmap::bitmap precise_lookahead_set) -> Triple
+    def get_triple(state_item, precise_lookahead_set)
+      key = (precise_lookahead_set << @state_item_shift) | state_item.id
+      @triples[key] ||= Triple.new(state_item, precise_lookahead_set)
+    end
+
+    # @rbs (State conflict_state, State::ShiftReduceConflict conflict) -> Example
     def shift_reduce_example(conflict_state, conflict)
       conflict_symbol = conflict.symbols.first
-      # @type var shift_conflict_item: ::Lrama::States::Item
+      # @type var shift_conflict_item: ::Lrama::State::Item
       shift_conflict_item = conflict_state.items.find { |item| item.next_sym == conflict_symbol }
-      path2 = shortest_path(conflict_state, conflict.reduce.item, conflict_symbol)
-      path1 = find_shift_conflict_shortest_path(path2, conflict_state, shift_conflict_item)
+      path2 = with_timeout("#shortest_path:") do
+        shortest_path(conflict_state, conflict.reduce.item, conflict_symbol)
+      end
+      path1 = with_timeout("#find_shift_conflict_shortest_path:") do
+        find_shift_conflict_shortest_path(path2, conflict_state, shift_conflict_item)
+      end
 
       Example.new(path1, path2, conflict, conflict_symbol, self)
     end
 
+    # @rbs (State conflict_state, State::ReduceReduceConflict conflict) -> Example
     def reduce_reduce_examples(conflict_state, conflict)
       conflict_symbol = conflict.symbols.first
-      path1 = shortest_path(conflict_state, conflict.reduce1.item, conflict_symbol)
-      path2 = shortest_path(conflict_state, conflict.reduce2.item, conflict_symbol)
+      path1 = with_timeout("#shortest_path:") do
+        shortest_path(conflict_state, conflict.reduce1.item, conflict_symbol)
+      end
+      path2 = with_timeout("#shortest_path:") do
+        shortest_path(conflict_state, conflict.reduce2.item, conflict_symbol)
+      end
 
       Example.new(path1, path2, conflict, conflict_symbol, self)
     end
 
-    def find_shift_conflict_shortest_path(reduce_path, conflict_state, conflict_item)
-      state_items = find_shift_conflict_shortest_state_items(reduce_path, conflict_state, conflict_item)
-      build_paths_from_state_items(state_items)
-    end
+    # @rbs (Array[StateItem]? reduce_state_items, State conflict_state, State::Item conflict_item) -> Array[StateItem]
+    def find_shift_conflict_shortest_path(reduce_state_items, conflict_state, conflict_item)
+      time1 = Time.now.to_f
+      @iterate_count = 0
 
-    def find_shift_conflict_shortest_state_items(reduce_path, conflict_state, conflict_item)
-      target_state_item = StateItem.new(conflict_state, conflict_item)
+      target_state_item = get_state_item(conflict_state, conflict_item)
       result = [target_state_item]
-      reversed_reduce_path = reduce_path.to_a.reverse
+      reversed_state_items = reduce_state_items.to_a.reverse
       # Index for state_item
       i = 0
 
-      while (path = reversed_reduce_path[i])
+      while (state_item = reversed_state_items[i])
         # Index for prev_state_item
         j = i + 1
         _j = j
 
-        while (prev_path = reversed_reduce_path[j])
-          if prev_path.production?
+        while (prev_state_item = reversed_state_items[j])
+          if prev_state_item.type == :production
             j += 1
           else
             break
           end
         end
 
-        state_item = path.to
-        prev_state_item = prev_path&.to
-
         if target_state_item == state_item || target_state_item.item.start_item?
           result.concat(
-            reversed_reduce_path[_j..-1] #: Array[StartPath|TransitionPath|ProductionPath]
-              .map(&:to))
+            reversed_state_items[_j..-1] #: Array[StateItem]
+          )
           break
         end
 
-        if target_state_item.item.beginning_of_rule?
-          queue = [] #: Array[Array[StateItem]]
-          queue << [target_state_item]
+        if target_state_item.type == :production
+          queue = [] #: Array[Node[StateItem]]
+          queue << Node.new(target_state_item, nil)
 
           # Find reverse production
           while (sis = queue.shift)
-            si = sis.last
+            @iterate_count += 1
+            si = sis.elem
 
             # Reach to start state
             if si.item.start_item?
-              sis.shift
-              result.concat(sis)
+              a = Node.to_a(sis).reverse
+              a.shift
+              result.concat(a)
               target_state_item = si
               break
             end
 
-            if si.item.beginning_of_rule?
+            if si.type == :production
               # @type var key: [State, Grammar::Symbol]
               key = [si.state, si.item.lhs]
-              @reverse_productions[key].each do |item|
-                state_item = StateItem.new(si.state, item)
-                queue << (sis + [state_item])
+              @reverse_productions[key].each do |state_item|
+                queue << Node.new(state_item, sis)
               end
             else
               # @type var key: [StateItem, Grammar::Symbol]
               key = [si, si.item.previous_sym]
               @reverse_transitions[key].each do |prev_target_state_item|
                 next if prev_target_state_item.state != prev_state_item&.state
-                sis.shift
-                result.concat(sis)
+                a = Node.to_a(sis).reverse
+                a.shift
+                result.concat(a)
                 result << prev_target_state_item
                 target_state_item = prev_target_state_item
                 i = j
@@ -216,68 +289,106 @@ module Lrama
         end
       end
 
+      time2 = Time.now.to_f
+      duration = time2 - time1
+      increment_total_duration(duration)
+
+      if Tracer::Duration.enabled?
+        STDERR.puts sprintf("  %s %10.5f s", "find_shift_conflict_shortest_path #{@iterate_count} iteration", duration)
+      end
+
       result.reverse
     end
 
-    def build_paths_from_state_items(state_items)
-      state_items.zip([nil] + state_items).map do |si, prev_si|
-        case
-        when prev_si.nil?
-          StartPath.new(si)
-        when si.item.beginning_of_rule?
-          ProductionPath.new(prev_si, si)
-        else
-          TransitionPath.new(prev_si, si)
+    # @rbs (StateItem target) -> Set[StateItem]
+    def reachable_state_items(target)
+      result = Set.new
+      queue = [target]
+
+      while (state_item = queue.shift)
+        next if result.include?(state_item)
+        result << state_item
+
+        @reverse_transitions[[state_item, state_item.item.previous_sym]]&.each do |prev_state_item|
+          queue << prev_state_item
+        end
+
+        if state_item.item.beginning_of_rule?
+          @reverse_productions[[state_item.state, state_item.item.lhs]]&.each do |si|
+            queue << si
+          end
         end
       end
+
+      result
     end
 
+    # @rbs (State conflict_state, State::Item conflict_reduce_item, Grammar::Symbol conflict_term) -> ::Array[StateItem]?
     def shortest_path(conflict_state, conflict_reduce_item, conflict_term)
-      # queue: is an array of [Triple, [Path]]
-      queue = [] #: Array[[Triple, Array[StartPath|TransitionPath|ProductionPath]]]
+      time1 = Time.now.to_f
+      @iterate_count = 0
+
+      queue = [] #: Array[[Triple, Path]]
       visited = {} #: Hash[Triple, true]
       start_state = @states.states.first #: Lrama::State
+      conflict_term_bit = Bitmap::from_integer(conflict_term.number)
       raise "BUG: Start state should be just one kernel." if start_state.kernels.count != 1
+      reachable = reachable_state_items(get_state_item(conflict_state, conflict_reduce_item))
+      start = get_triple(get_state_item(start_state, start_state.kernels.first), Bitmap::from_integer(@states.eof_symbol.number))
 
-      start = Triple.new(start_state, start_state.kernels.first, Set.new([@states.eof_symbol]))
+      queue << [start, Path.new(start.state_item, nil)]
 
-      queue << [start, [StartPath.new(start.state_item)]]
-
-      while true
-        triple, paths = queue.shift
-
-        next if visited[triple]
-        visited[triple] = true
+      while (triple, path = queue.shift)
+        @iterate_count += 1
 
         # Found
-        if triple.state == conflict_state && triple.item == conflict_reduce_item && triple.l.include?(conflict_term)
-          return paths
+        if (triple.state == conflict_state) && (triple.item == conflict_reduce_item) && (triple.l & conflict_term_bit != 0)
+          state_items = [path.state_item]
+
+          while (path = path.parent)
+            state_items << path.state_item
+          end
+
+          time2 = Time.now.to_f
+          duration = time2 - time1
+          increment_total_duration(duration)
+
+          if Tracer::Duration.enabled?
+            STDERR.puts sprintf("  %s %10.5f s", "shortest_path #{@iterate_count} iteration", duration)
+          end
+
+          return state_items.reverse
         end
 
         # transition
-        triple.state.transitions.each do |shift, next_state|
-          next unless triple.item.next_sym && triple.item.next_sym == shift.next_sym
-          next_state.kernels.each do |kernel|
-            next if kernel.rule != triple.item.rule
-            t = Triple.new(next_state, kernel, triple.l)
-            queue << [t, paths + [TransitionPath.new(triple.state_item, t.state_item)]]
+        next_state_item = @transitions[[triple.state_item, triple.item.next_sym]]
+        if next_state_item && reachable.include?(next_state_item)
+          # @type var t: Triple
+          t = get_triple(next_state_item, triple.l)
+          unless visited[t]
+            visited[t] = true
+            queue << [t, Path.new(t.state_item, path)]
           end
         end
 
         # production step
-        triple.state.closure.each do |item|
-          next unless triple.item.next_sym && triple.item.next_sym == item.lhs
-          l = follow_l(triple.item, triple.l)
-          t = Triple.new(triple.state, item, l)
-          queue << [t, paths + [ProductionPath.new(triple.state_item, t.state_item)]]
-        end
+        @productions[triple.state_item]&.each do |si|
+          next unless reachable.include?(si)
 
-        break if queue.empty?
+          l = follow_l(triple.item, triple.l)
+          # @type var t: Triple
+          t = get_triple(si, l)
+          unless visited[t]
+            visited[t] = true
+            queue << [t, Path.new(t.state_item, path)]
+          end
+        end
       end
 
       return nil
     end
 
+    # @rbs (State::Item item, Bitmap::bitmap current_l) -> Bitmap::bitmap
     def follow_l(item, current_l)
       # 1. follow_L (A -> X1 ... Xn-1 • Xn) = L
       # 2. follow_L (A -> X1 ... Xk • Xk+1 Xk+2 ... Xn) = {Xk+2} if Xk+2 is a terminal
@@ -287,11 +398,28 @@ module Lrama
       when item.number_of_rest_symbols == 1
         current_l
       when item.next_next_sym.term?
-        Set.new([item.next_next_sym])
+        item.next_next_sym.number_bitmap
       when !item.next_next_sym.nullable
-        item.next_next_sym.first_set
+        item.next_next_sym.first_set_bitmap
       else
-        item.next_next_sym.first_set + follow_l(item.new_by_next_position, current_l)
+        item.next_next_sym.first_set_bitmap | follow_l(item.new_by_next_position, current_l)
+      end
+    end
+
+    # @rbs [T] (String message) { -> T } -> T
+    def with_timeout(message)
+      Timeout.timeout(PathSearchTimeLimit, Timeout::Error, message + " timeout of #{PathSearchTimeLimit} sec exceeded") do
+        yield
+      end
+    end
+
+    # @rbs (Float|Integer duration) -> void
+    def increment_total_duration(duration)
+      @total_duration += duration
+
+      if !@exceed_cumulative_time_limit && @total_duration > CumulativeTimeLimit
+        @exceed_cumulative_time_limit = true
+        STDERR.puts "CumulativeTimeLimit #{CumulativeTimeLimit} sec exceeded then skip following Counterexamples calculation"
       end
     end
   end

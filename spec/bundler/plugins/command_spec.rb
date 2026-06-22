@@ -53,6 +53,40 @@ RSpec.describe "command plugins" do
     expect(out).to eq("You gave me tacos, tofu, lasange")
   end
 
+  it "passes help flag to plugin" do
+    update_repo2 do
+      build_plugin "helpful" do |s|
+        s.write "plugins.rb", <<-RUBY
+          module Helpful
+            class Command
+              Bundler::Plugin::API.command "greet", self
+
+              def exec(command, args)
+                if args.include?("--help") || args.include?("-h")
+                  puts "Usage: bundle greet [NAME]"
+                else
+                  puts "Hello"
+                end
+              end
+            end
+          end
+        RUBY
+      end
+    end
+
+    bundle "plugin install helpful --source https://gem.repo2"
+    expect(out).to include("Installed plugin helpful")
+
+    bundle "greet --help"
+    expect(out).to eq("Usage: bundle greet [NAME]")
+
+    bundle "greet -h"
+    expect(out).to eq("Usage: bundle greet [NAME]")
+
+    bundle "help greet"
+    expect(out).to eq("Usage: bundle greet [NAME]")
+  end
+
   it "raises error on redeclaration of command" do
     update_repo2 do
       build_plugin "copycat" do |s|

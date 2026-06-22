@@ -1,4 +1,4 @@
-#!ruby -an
+#!ruby -alnF\s+|#.*
 BEGIN {
   require 'fileutils'
   require_relative 'lib/colorize'
@@ -21,27 +21,29 @@ BEGIN {
 n, v, u, r = $F
 
 next unless n
-next if n =~ /^#/
 next if bundled_gems&.all? {|pat| !File.fnmatch?(pat, n)}
 
-if File.directory?(n)
-  puts "updating #{color.notice(n)} ..."
-  system("git", "fetch", "--all", chdir: n) or abort
-else
+unless File.exist?("#{n}/.git")
   puts "retrieving #{color.notice(n)} ..."
-  system(*%W"git clone #{u} #{n}") or abort
+  system(*%W"git clone --depth=1 --no-tags #{u} #{n}") or abort
 end
 
-if r
-  puts "fetching #{color.notice(r)} ..."
-  system("git", "fetch", "origin", r, chdir: n) or abort
+candidates = r ? [r] : ["v#{v}", v]
+
+# Skip fetching from the remote when the target ref already exists locally
+# (e.g. restored from cache), so a transient network failure does not abort.
+c = candidates.find do |c|
+  system("git", "rev-parse", "-q", "--verify", "#{c}^{commit}", out: File::NULL, err: File::NULL, chdir: n)
 end
 
-c = r || "v#{v}"
+c ||= candidates.find do |c|
+  puts "fetching #{n} #{color.notice(c)} ..."
+  system("git", "fetch", "origin", r || "refs/tags/#{c}:refs/tags/#{c}", chdir: n)
+end or abort
+
 checkout = %w"git -c advice.detachedHead=false checkout"
-print %[checking out #{color.notice(c)} (v=#{color.info(v)}]
-print %[, r=#{color.info(r)}] if r
-puts ") ..."
+info = %[, r=#{color.info(r)}] if r
+puts "checking out #{color.notice(c)} (v=#{color.info(v)}#{info}) ..."
 unless system(*checkout, c, "--", chdir: n)
   abort if r or !system(*checkout, v, "--", chdir: n)
 end

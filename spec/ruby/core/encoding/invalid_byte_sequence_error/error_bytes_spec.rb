@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 require_relative "../../../spec_helper"
 require_relative '../fixtures/classes'
 
@@ -9,8 +9,8 @@ describe "Encoding::InvalidByteSequenceError#error_bytes" do
   end
 
   it "returns a String" do
-    @exception.error_bytes.should be_an_instance_of(String)
-    @exception2.error_bytes.should be_an_instance_of(String)
+    @exception.error_bytes.should.instance_of?(String)
+    @exception2.error_bytes.should.instance_of?(String)
   end
 
   it "returns the bytes that caused the exception" do

@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
+require_relative "bundler/rubygems_ext"
 require_relative "bundler/vendored_fileutils"
-require "pathname"
+autoload :Pathname, "pathname" unless defined?(Pathname)
 require "rbconfig"
 
 require_relative "bundler/errors"
 require_relative "bundler/environment_preserver"
 require_relative "bundler/plugin"
-require_relative "bundler/rubygems_ext"
 require_relative "bundler/rubygems_integration"
 require_relative "bundler/version"
 require_relative "bundler/current_ruby"
@@ -53,9 +53,7 @@ module Bundler
   autoload :FeatureFlag,            File.expand_path("bundler/feature_flag", __dir__)
   autoload :FREEBSD,                File.expand_path("bundler/constants", __dir__)
   autoload :GemHelper,              File.expand_path("bundler/gem_helper", __dir__)
-  autoload :GemHelpers,             File.expand_path("bundler/gem_helpers", __dir__)
   autoload :GemVersionPromoter,     File.expand_path("bundler/gem_version_promoter", __dir__)
-  autoload :Graph,                  File.expand_path("bundler/graph", __dir__)
   autoload :Index,                  File.expand_path("bundler/index", __dir__)
   autoload :Injector,               File.expand_path("bundler/injector", __dir__)
   autoload :Installer,              File.expand_path("bundler/installer", __dir__)
@@ -64,6 +62,7 @@ module Bundler
   autoload :MatchRemoteMetadata,    File.expand_path("bundler/match_remote_metadata", __dir__)
   autoload :Materialization,        File.expand_path("bundler/materialization", __dir__)
   autoload :NULL,                   File.expand_path("bundler/constants", __dir__)
+  autoload :Override,               File.expand_path("bundler/override", __dir__)
   autoload :ProcessLock,            File.expand_path("bundler/process_lock", __dir__)
   autoload :RemoteSpecification,    File.expand_path("bundler/remote_specification", __dir__)
   autoload :Resolver,               File.expand_path("bundler/resolver", __dir__)
@@ -114,13 +113,13 @@ module Bundler
     end
 
     def configured_bundle_path
-      @configured_bundle_path ||= settings.path.tap(&:validate!)
+      @configured_bundle_path ||= Bundler.settings.path.tap(&:validate!)
     end
 
     # Returns absolute location of where binstubs are installed to.
     def bin_path
       @bin_path ||= begin
-        path = settings[:bin] || "bin"
+        path = Bundler.settings[:bin] || "bin"
         path = Pathname.new(path).expand_path(root).expand_path
         mkdir_p(path)
         path
@@ -158,6 +157,7 @@ module Bundler
       # Return if all groups are already loaded
       return @setup if defined?(@setup) && @setup
 
+      configure_custom_gemfile
       definition.validate_runtime!
 
       SharedHelpers.print_major_deprecations!
@@ -174,14 +174,14 @@ module Bundler
       self_manager.restart_with_locked_bundler_if_needed
     end
 
-    # Automatically install dependencies if Bundler.settings[:auto_install] exists.
+    # Automatically install dependencies if <tt>settings[:auto_install]</tt> exists.
     # This is set through config cmd `bundle config set --global auto_install 1`.
     #
     # Note that this method `nil`s out the global Definition object, so it
     # should be called first, before you instantiate anything like an
     # `Installer` that'll keep a reference to the old one instead.
     def auto_install
-      return unless settings[:auto_install]
+      return unless Bundler.settings[:auto_install]
 
       begin
         definition.specs
@@ -220,8 +220,7 @@ module Bundler
     end
 
     def environment
-      SharedHelpers.major_deprecation 2, "Bundler.environment has been removed in favor of Bundler.load", print_caller_location: true
-      load
+      SharedHelpers.feature_removed! "Bundler.environment has been removed in favor of Bundler.load"
     end
 
     # Returns an instance of Bundler::Definition for given Gemfile and lockfile
@@ -239,10 +238,10 @@ module Bundler
     end
 
     def frozen_bundle?
-      frozen = settings[:frozen]
+      frozen = Bundler.settings[:frozen]
       return frozen unless frozen.nil?
 
-      settings[:deployment]
+      Bundler.settings[:deployment]
     end
 
     def locked_gems
@@ -343,7 +342,7 @@ module Bundler
 
     def app_cache(custom_path = nil)
       path = custom_path || root
-      Pathname.new(path).join(settings.app_cache_path)
+      Pathname.new(path).join(Bundler.settings.app_cache_path)
     end
 
     def tmp(name = Process.pid.to_s)
@@ -366,16 +365,11 @@ module Bundler
       ORIGINAL_ENV.clone
     end
 
-    # @deprecated Use `unbundled_env` instead
     def clean_env
-      message =
-        "`Bundler.clean_env` has been deprecated in favor of `Bundler.unbundled_env`. " \
-        "If you instead want the environment before bundler was originally loaded, use `Bundler.original_env`"
       removed_message =
         "`Bundler.clean_env` has been removed in favor of `Bundler.unbundled_env`. " \
         "If you instead want the environment before bundler was originally loaded, use `Bundler.original_env`"
-      Bundler::SharedHelpers.major_deprecation(2, message, removed_message: removed_message, print_caller_location: true)
-      unbundled_env
+      Bundler::SharedHelpers.feature_removed!(removed_message)
     end
 
     # @return [Hash] Environment with all bundler-related variables removed
@@ -393,16 +387,11 @@ module Bundler
       with_env(original_env) { yield }
     end
 
-    # @deprecated Use `with_unbundled_env` instead
     def with_clean_env
-      message =
-        "`Bundler.with_clean_env` has been deprecated in favor of `Bundler.with_unbundled_env`. " \
-        "If you instead want the environment before bundler was originally loaded, use `Bundler.with_original_env`"
       removed_message =
         "`Bundler.with_clean_env` has been removed in favor of `Bundler.with_unbundled_env`. " \
         "If you instead want the environment before bundler was originally loaded, use `Bundler.with_original_env`"
-      Bundler::SharedHelpers.major_deprecation(2, message, removed_message: removed_message, print_caller_location: true)
-      with_env(unbundled_env) { yield }
+      Bundler::SharedHelpers.feature_removed!(removed_message)
     end
 
     # Run block with all bundler-related variables removed
@@ -415,16 +404,11 @@ module Bundler
       with_original_env { Kernel.system(*args) }
     end
 
-    # @deprecated Use `unbundled_system` instead
     def clean_system(*args)
-      message =
-        "`Bundler.clean_system` has been deprecated in favor of `Bundler.unbundled_system`. " \
-        "If you instead want to run the command in the environment before bundler was originally loaded, use `Bundler.original_system`"
       removed_message =
         "`Bundler.clean_system` has been removed in favor of `Bundler.unbundled_system`. " \
         "If you instead want to run the command in the environment before bundler was originally loaded, use `Bundler.original_system`"
-      Bundler::SharedHelpers.major_deprecation(2, message, removed_message: removed_message, print_caller_location: true)
-      with_env(unbundled_env) { Kernel.system(*args) }
+      Bundler::SharedHelpers.feature_removed!(removed_message)
     end
 
     # Run subcommand in an environment with all bundler related variables removed
@@ -437,16 +421,11 @@ module Bundler
       with_original_env { Kernel.exec(*args) }
     end
 
-    # @deprecated Use `unbundled_exec` instead
     def clean_exec(*args)
-      message =
-        "`Bundler.clean_exec` has been deprecated in favor of `Bundler.unbundled_exec`. " \
-        "If you instead want to exec to a command in the environment before bundler was originally loaded, use `Bundler.original_exec`"
       removed_message =
         "`Bundler.clean_exec` has been removed in favor of `Bundler.unbundled_exec`. " \
         "If you instead want to exec to a command in the environment before bundler was originally loaded, use `Bundler.original_exec`"
-      Bundler::SharedHelpers.major_deprecation(2, message, removed_message: removed_message, print_caller_location: true)
-      with_env(unbundled_env) { Kernel.exec(*args) }
+      Bundler::SharedHelpers.feature_removed!(removed_message)
     end
 
     # Run a `Kernel.exec` to a subcommand in an environment with all bundler related variables removed
@@ -455,8 +434,12 @@ module Bundler
     end
 
     def local_platform
-      return Gem::Platform::RUBY if settings[:force_ruby_platform]
+      return Gem::Platform::RUBY if Bundler.settings[:force_ruby_platform]
       Gem::Platform.local
+    end
+
+    def generic_local_platform
+      Gem::Platform.generic(local_platform)
     end
 
     def default_gemfile
@@ -564,7 +547,7 @@ module Bundler
     end
 
     def feature_flag
-      @feature_flag ||= FeatureFlag.new(VERSION)
+      @feature_flag ||= FeatureFlag.new(Bundler.settings[:simulate_version] || VERSION)
     end
 
     def reset!
@@ -580,7 +563,6 @@ module Bundler
 
     def reset_paths!
       @bin_path = nil
-      @bundler_major_version = nil
       @bundle_path = nil
       @configure = nil
       @configured_bundle_path = nil
@@ -604,6 +586,15 @@ module Bundler
       configure_gem_path
       configure_gem_home(path)
       Bundler.rubygems.clear_paths
+    end
+
+    def configure_custom_gemfile(custom_gemfile = nil)
+      custom_gemfile ||= Bundler.settings[:gemfile]
+
+      if custom_gemfile && !custom_gemfile.empty?
+        Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", File.expand_path(custom_gemfile)
+        reset_settings_and_root!
+      end
     end
 
     def self_manager

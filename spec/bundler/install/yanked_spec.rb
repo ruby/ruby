@@ -26,6 +26,8 @@ RSpec.context "when installing a bundle that includes yanked gems" do
     G
 
     expect(err).to include("Your bundle is locked to foo (10.0.0)")
+    expect(err).to include("either the author of foo (10.0.0) has removed it, or you no longer have access to that source")
+    expect(err).to include("check your credentials and access rights")
   end
 
   context "when a platform specific yanked version is included in the lockfile, and a generic variant is available remotely" do
@@ -47,7 +49,7 @@ RSpec.context "when installing a bundle that includes yanked gems" do
           foo (= 1.0.0)
 
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       L
     end
 
@@ -118,7 +120,7 @@ RSpec.context "when installing a bundle that includes yanked gems" do
       build_gem "foo", "9.0.0"
     end
 
-    bundle "config set force_ruby_platform true"
+    bundle_config "force_ruby_platform true"
 
     install_gemfile <<-G, raise_on_error: false
       source "https://gem.repo4"
@@ -154,7 +156,7 @@ RSpec.context "when resolving a bundle that includes yanked gems, but unlocking 
         bar
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
 
     gemfile <<-G
@@ -182,7 +184,7 @@ RSpec.context "when resolving a bundle that includes yanked gems, but unlocking 
         foo
 
       BUNDLED WITH
-         #{Bundler::VERSION}
+        #{Bundler::VERSION}
     L
   end
 end

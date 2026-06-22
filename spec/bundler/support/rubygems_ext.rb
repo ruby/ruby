@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-abort "RubyGems only supports Ruby 3.1 or higher" if RUBY_VERSION < "3.1.0"
+abort "RubyGems only supports Ruby 3.2 or higher" if RUBY_VERSION < "3.2.0"
 
 require_relative "path"
 
@@ -28,6 +28,9 @@ module Spec
     end
 
     def test_setup
+      # Install test dependencies unless parallel-rspec is being used, since in that case they should be setup already
+      install_test_deps unless ENV["RSPEC_FORMATTER_OUTPUT_ID"]
+
       setup_test_paths
 
       require "fileutils"
@@ -40,7 +43,18 @@ module Spec
       # sign extension bundles on macOS, to avoid trying to find the specified key
       # from the fake $HOME/Library/Keychains directory.
       ENV.delete "RUBY_CODESIGN"
-      ENV["TMPDIR"] = Path.tmpdir.to_s
+      if Path.ruby_core?
+        if (tmpdir = ENV["TMPDIR"])
+          tmpdir_real = begin
+            File.realpath(tmpdir)
+          rescue Errno::ENOENT, Errno::EACCES
+            tmpdir
+          end
+          ENV["TMPDIR"] = tmpdir_real if tmpdir_real != tmpdir
+        end
+      else
+        ENV["TMPDIR"] = Path.tmpdir.to_s
+      end
 
       require "rubygems/user_interaction"
       Gem::DefaultUserInteraction.ui = Gem::SilentUI.new
@@ -49,16 +63,58 @@ module Spec
     def setup_test_paths
       ENV["BUNDLE_PATH"] = nil
       ENV["PATH"] = [Path.system_gem_path("bin"), ENV["PATH"]].join(File::PATH_SEPARATOR)
-      ENV["PATH"] = [Path.bindir, ENV["PATH"]].join(File::PATH_SEPARATOR) if Path.ruby_core?
+      ENV["PATH"] = [Path.exedir, ENV["PATH"]].join(File::PATH_SEPARATOR) if Path.ruby_core?
     end
 
     def install_test_deps
-      dev_bundle("install", gemfile: test_gemfile, path: Path.base_system_gems.to_s)
-      dev_bundle("install", gemfile: rubocop_gemfile, path: Path.rubocop_gems.to_s)
-      dev_bundle("install", gemfile: standard_gemfile, path: Path.standard_gems.to_s)
+      dev_bundle("install", gemfile: test_gemfile, path: Path.base_system_gem_path.to_s)
+      dev_bundle("install", gemfile: rubocop_gemfile, path: Path.rubocop_gem_path.to_s)
+      dev_bundle("install", gemfile: standard_gemfile, path: Path.standard_gem_path.to_s)
 
       require_relative "helpers"
       Helpers.install_dev_bundler
+
+      install_vendored_compact_index
+    end
+
+    # Vendor `rubygems/rubygems.org#lib/compact_index/` under `tmp/compact_index/`
+    # so the artifice can serve compact-index responses without a runtime gem
+    # dependency. Pinned to a reviewed commit; override with COMPACT_INDEX_REF
+    # to refresh against another ref (the existing vendor copy is discarded).
+    def install_vendored_compact_index
+      target_root = Path.tmp_root.join("compact_index")
+      require "fileutils"
+      FileUtils.mkdir_p(Path.tmp_root)
+
+      files = %w[
+        lib/compact_index.rb
+        lib/compact_index/dependency.rb
+        lib/compact_index/gem.rb
+        lib/compact_index/gem_version.rb
+        lib/compact_index/versions_file.rb
+      ]
+
+      # Serialize installs so parallel test setups don't race on the same
+      # vendor tree, and only skip the download when every file is present so
+      # an interrupted run can't leave a partial copy behind.
+      File.open(Path.tmp_root.join("compact_index.lock"), File::CREAT | File::RDWR) do |lock|
+        lock.flock(File::LOCK_EX)
+
+        FileUtils.rm_rf(target_root) if ENV["COMPACT_INDEX_REF"]
+
+        next if files.all? {|path| File.exist?(target_root.join(path)) }
+
+        require "open-uri"
+        ref = ENV["COMPACT_INDEX_REF"] || "7c68a7b39761c61a66f9299f85b889ec39afc02c"
+        files.each do |path|
+          url = "https://raw.githubusercontent.com/rubygems/rubygems.org/#{ref}/#{path}"
+          target = target_root.join(path)
+          FileUtils.mkdir_p(File.dirname(target))
+          tmp = "#{target}.tmp"
+          File.write(tmp, URI.parse(url).open(&:read))
+          File.rename(tmp, target)
+        end
+      end
     end
 
     def check_source_control_changes(success_message:, error_message:)
@@ -97,7 +153,7 @@ module Spec
 
       require "shellwords"
       # We don't use `Open3` here because it does not work on JRuby + Windows
-      output = `ruby #{File.expand_path("support/bundle.rb", Path.spec_dir)} #{args.shelljoin}`
+      output = `ruby #{Path.dev_binstub} #{args.shelljoin}`
       raise output unless $?.success?
       output
     ensure

@@ -21,7 +21,7 @@ class TestUri < Gem::TestCase
   end
 
   def test_redacted_with_user_x_oauth_basic
-    assert_equal "https://REDACTED:x-oauth-basic@example.com", Gem::Uri.new("https://token:x-oauth-basic@example.com").redacted.to_s
+    assert_equal "https://REDACTED@example.com", Gem::Uri.new("https://token:x-oauth-basic@example.com").redacted.to_s
   end
 
   def test_redacted_without_credential

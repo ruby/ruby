@@ -10,9 +10,9 @@
  */
 #include "internal/bignum.h"    /* for BIGNUM_POSITIVE_P */
 #include "internal/bits.h"      /* for RUBY_BIT_ROTL */
+#include "internal/compar.h"    /* for rb_cmperr_reason */
 #include "internal/fixnum.h"    /* for FIXNUM_POSITIVE_P */
 #include "internal/vm.h"        /* for rb_method_basic_definition_p */
-#include "ruby/intern.h"        /* for rb_cmperr */
 #include "ruby/ruby.h"          /* for USE_FLONUM */
 
 #define ROUND_TO(mode, even, up, down) \
@@ -70,6 +70,7 @@ VALUE rb_float_minus(VALUE x, VALUE y);
 VALUE rb_int_mul(VALUE x, VALUE y);
 VALUE rb_float_mul(VALUE x, VALUE y);
 VALUE rb_float_div(VALUE x, VALUE y);
+VALUE rb_flo_to_i(VALUE num);
 VALUE rb_int_idiv(VALUE x, VALUE y);
 VALUE rb_int_modulo(VALUE x, VALUE y);
 VALUE rb_int2str(VALUE num, int base);
@@ -78,6 +79,7 @@ VALUE rb_int_gt(VALUE x, VALUE y);
 VALUE rb_float_gt(VALUE x, VALUE y);
 VALUE rb_int_ge(VALUE x, VALUE y);
 enum ruby_num_rounding_mode rb_num_get_rounding_option(VALUE opts);
+VALUE rb_int_fdiv(VALUE x, VALUE y);
 double rb_int_fdiv_double(VALUE x, VALUE y);
 VALUE rb_int_pow(VALUE x, VALUE y);
 VALUE rb_float_pow(VALUE x, VALUE y);
@@ -85,6 +87,7 @@ VALUE rb_int_cmp(VALUE x, VALUE y);
 VALUE rb_int_equal(VALUE x, VALUE y);
 VALUE rb_int_divmod(VALUE x, VALUE y);
 VALUE rb_int_and(VALUE x, VALUE y);
+VALUE rb_int_xor(VALUE x, VALUE y);
 VALUE rb_int_lshift(VALUE x, VALUE y);
 VALUE rb_int_rshift(VALUE x, VALUE y);
 VALUE rb_int_div(VALUE x, VALUE y);
@@ -126,6 +129,54 @@ VALUE rb_int_bit_length(VALUE num);
 VALUE rb_int_uminus(VALUE num);
 VALUE rb_int_comp(VALUE num);
 
+// Unified 128-bit integer structures that work with or without native support:
+union rb_uint128 {
+#ifdef WORDS_BIGENDIAN
+    struct {
+        uint64_t high;
+        uint64_t low;
+    } parts;
+#else
+    struct {
+        uint64_t low;
+        uint64_t high;
+    } parts;
+#endif
+#ifdef HAVE_UINT128_T
+    uint128_t value;
+#endif
+};
+typedef union rb_uint128 rb_uint128_t;
+
+union rb_int128 {
+#ifdef WORDS_BIGENDIAN
+    struct {
+        uint64_t high;
+        uint64_t low;
+    } parts;
+#else
+    struct {
+        uint64_t low;
+        uint64_t high;
+    } parts;
+#endif
+#ifdef HAVE_UINT128_T
+    int128_t value;
+#endif
+};
+typedef union rb_int128 rb_int128_t;
+
+union uint128_int128_conversion {
+    rb_uint128_t uint128;
+    rb_int128_t int128;
+};
+
+// Conversion functions for 128-bit integers:
+rb_uint128_t rb_numeric_to_uint128(VALUE x);
+rb_int128_t rb_numeric_to_int128(VALUE x);
+VALUE rb_uint128_to_numeric(rb_uint128_t n);
+VALUE rb_int128_to_numeric(rb_int128_t n);
+
 static inline bool
 INT_POSITIVE_P(VALUE num)
 {
@@ -160,7 +211,7 @@ rb_num_compare_with_zero(VALUE num, ID mid)
     VALUE zero = INT2FIX(0);
     VALUE r = rb_check_funcall(num, mid, 1, &zero);
     if (RB_UNDEF_P(r)) {
-        rb_cmperr(num, zero);
+        rb_cmperr_reason(num, zero, "unable to compare with zero");
     }
     return r;
 }

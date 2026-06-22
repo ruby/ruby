@@ -12,7 +12,7 @@ describe "Enumerator#+" do
 
     chain = one + two + three
 
-    chain.should be_an_instance_of(Enumerator::Chain)
+    chain.should.instance_of?(Enumerator::Chain)
     chain.each { |item| ScratchPad << item }
     ScratchPad.recorded.should == [1, 2, 3]
   end

@@ -57,7 +57,7 @@
 # Other calendars, such as Julian calendar, are not supported.
 #
 # The implementation uses a signed 63 bit integer, Integer (Bignum) object or
-# Ratoinal object to represent a rational value.
+# Rational object to represent a rational value.
 # (The signed 63 bit integer is used regardless of 32 and 64 bit environments.)
 # The value represents the number of nanoseconds from _Epoch_.
 # The signed 63 bit integer can represent 1823-11-12 to 2116-02-20.
@@ -68,23 +68,23 @@
 # and 6-tuple (year,month,day,hour,minute,second).
 # +localtime+ is used for local time and +gmtime+ is used for UTC.
 #
-# Integer and Rational has no range limit, but the localtime and
-# gmtime has range limits due to the C types +time_t+ and <tt>struct tm</tt>.
+# Integer and Rational have no range limit, but localtime and
+# gmtime have range limits due to the C types +time_t+ and <tt>struct tm</tt>.
 # If that limit is exceeded, Ruby extrapolates the localtime function.
 #
 # +time_t+ can represent 1901-12-14 to 2038-01-19 if it is 32 bit signed integer,
 # -292277022657-01-27 to 292277026596-12-05 if it is 64 bit signed integer.
-# However +localtime+ on some platforms doesn't supports negative +time_t+ (before 1970).
+# However +localtime+ on some platforms doesn't support negative +time_t+ (before 1970).
 #
 # <tt>struct tm</tt> has _tm_year_ member to represent years.
 # (<tt>tm_year = 0</tt> means the year 1900.)
 # It is defined as +int+ in the C standard.
 # _tm_year_ can represent years between -2147481748 to 2147485547 if +int+ is 32 bit.
 #
-# Ruby supports leap seconds as far as if the C function +localtime+ and
-# +gmtime+ supports it.
+# Ruby supports leap seconds as far as the C functions +localtime+ and
+# +gmtime+ support them.
 # They use the tz database in most Unix systems.
-# The tz database has timezones which supports leap seconds.
+# The tz database has timezones which support leap seconds.
 # For example, "Asia/Tokyo" doesn't support leap seconds but
 # "right/Asia/Tokyo" supports leap seconds.
 # So, Ruby supports leap seconds if the TZ environment variable is
@@ -170,8 +170,8 @@
 #
 # First, what's elsewhere. Class +Time+:
 #
-# - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
-# - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
+# - Inherits from {class Object}[rdoc-ref:Object@Whats+Here].
+# - Includes {module Comparable}[rdoc-ref:Comparable@Whats+Here].
 #
 # Here, class +Time+ provides methods that are useful for:
 #

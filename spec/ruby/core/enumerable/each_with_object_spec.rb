@@ -12,10 +12,10 @@ describe "Enumerable#each_with_object" do
   it "passes each element and its argument to the block" do
     acc = []
     @enum.each_with_object(@initial) do |elem, obj|
-      obj.should equal(@initial)
+      obj.should.equal?(@initial)
       obj = 42
       acc << elem
-    end.should equal(@initial)
+    end.should.equal?(@initial)
     acc.should == @values
   end
 
@@ -23,10 +23,10 @@ describe "Enumerable#each_with_object" do
     acc = []
     e = @enum.each_with_object(@initial)
     e.each do |elem, obj|
-      obj.should equal(@initial)
+      obj.should.equal?(@initial)
       obj = 42
       acc << elem
-    end.should equal(@initial)
+    end.should.equal?(@initial)
     acc.should == @values
   end
 

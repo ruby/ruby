@@ -243,6 +243,10 @@ class TestThread < Test::Unit::TestCase
 
   def test_join_argument_conversion
     t = Thread.new {}
+
+    # Make sure that the thread terminates
+    Thread.pass while t.status
+
     assert_raise(TypeError) {t.join(:foo)}
 
     limit = Struct.new(:to_f, :count).new(0.05)
@@ -794,7 +798,7 @@ class TestThread < Test::Unit::TestCase
 
   def for_test_handle_interrupt_with_return
     Thread.handle_interrupt(Object => :never){
-      Thread.current.raise RuntimeError.new("have to be rescured")
+      Thread.current.raise RuntimeError.new("have to be rescued")
       return
     }
   rescue
@@ -811,7 +815,7 @@ class TestThread < Test::Unit::TestCase
     assert_nothing_raised do
       begin
         Thread.handle_interrupt(Object => :never){
-          Thread.current.raise RuntimeError.new("have to be rescured")
+          Thread.current.raise RuntimeError.new("have to be rescued")
           break
         }
       rescue
@@ -1476,6 +1480,8 @@ q.pop
   end
 
   def test_thread_interrupt_for_killed_thread
+    pend "hang-up" if /mswin|mingw/ =~ RUBY_PLATFORM
+
     opts = { timeout: 5, timeout_error: nil }
 
     assert_normal_exit(<<-_end, '[Bug #8996]', **opts)
@@ -1584,5 +1590,108 @@ q.pop
 
       frame_for_deadlock_test_2 { t.join }
     INPUT
+  end
+
+  def test_unlock_locked_mutex_with_collected_fiber
+    bug21342 = '[ruby-core:122121] [Bug #21342]'
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}", bug21342)
+    begin;
+      5.times do
+        m = Mutex.new
+        Thread.new do
+          m.synchronize do
+          end
+        end.join
+        Fiber.new do
+          GC.start
+          m.lock
+        end.resume
+      end
+    end;
+  end
+
+  def test_unlock_locked_mutex_with_collected_fiber2
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      MUTEXES = []
+      5.times do
+        m = Mutex.new
+        Fiber.new do
+          GC.start
+          m.lock
+        end.resume
+        MUTEXES << m
+      end
+      10.times do
+        MUTEXES.clear
+        GC.start
+      end
+    end;
+  end
+
+  def test_mutexes_locked_in_fiber_dont_have_aba_issue_with_new_fibers
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      mutexes = 1000.times.map do
+        Mutex.new
+      end
+
+      mutexes.map do |m|
+        Fiber.new do
+          m.lock
+        end.resume
+      end
+
+      GC.start
+
+      1000.times.map do
+        Fiber.new do
+          raise "FAILED!" if mutexes.any?(&:owned?)
+        end.resume
+      end
+    end;
+  end
+
+  # [Bug #21836]
+  def test_mn_threads_sub_millisecond_sleep
+    assert_separately([{'RUBY_MN_THREADS' => '1'}], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 30)
+    begin;
+      t0 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      1000.times { sleep 0.0001 }
+      t1 = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      elapsed = t1 - t0
+      assert_operator elapsed, :>=, 0.1, "sub-millisecond sleeps should not return immediately"
+    end;
+  end
+
+  # [Bug #21926]
+  def test_thread_join_during_finalizers
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}", timeout: 60)
+    begin;
+      require 'open3'
+
+      class ProcessWrapper
+        def initialize
+          @stdin, @stdout, @stderr, @wait_thread = Open3.popen3("cat") # hangs until we close our stdin side
+          ObjectSpace.define_finalizer(self, self.class.make_finalizer(@stdin, @stdout, @stderr, @wait_thread))
+        end
+
+        def self.make_finalizer(stdin, stdout, stderr, wait_thread)
+          proc do
+            stdin.close rescue nil
+            stdout.close rescue nil
+            stderr.close rescue nil
+            # On some GC implementations (e.g. mmtk), finalizers run as postponed
+            # jobs which can execute on any thread, including the wait_thread itself.
+            # Guard against joining the current thread.
+            wait_thread.value unless Thread.current == wait_thread
+          end
+        end
+      end
+
+      20.times { ProcessWrapper.new }
+      GC.stress = true
+      1000.times { Object.new }
+    end;
   end
 end

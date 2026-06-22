@@ -133,7 +133,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_yjit_enable_with_monkey_patch
-    assert_separately(%w[--yjit-disable], <<~RUBY)
+    assert_ruby_status(%w[--yjit-disable], <<~RUBY)
       # This lets rb_method_entry_at(rb_mKernel, ...) return NULL
       Kernel.prepend(Module.new)
 
@@ -151,7 +151,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_yjit_enable_with_invalid_runtime_call_threshold_option
-    assert_in_out_err(['--yjit-disable', '-e', 'RubyVM::YJIT.enable(mem_size: 0)']) do |stdout, stderr, status|
+    assert_in_out_err(['--yjit-disable', '-e', 'RubyVM::YJIT.enable(call_threshold: 0)']) do |stdout, stderr, status|
       assert_not_empty stderr
       assert_match(/ArgumentError/, stderr.join)
       assert_equal 1, status.exitstatus
@@ -166,6 +166,11 @@ class TestYJIT < Test::Unit::TestCase
     end
   end
 
+  if JITSupport.zjit_supported?
+    def test_yjit_enable_with_zjit_enabled
+      assert_in_out_err(['--zjit'], 'puts RubyVM::YJIT.enable', ['false'], ['Only one JIT can be enabled at the same time.'])
+    end
+  end
 
   def test_yjit_stats_and_v_no_error
     _stdout, stderr, _status = invoke_ruby(%w(-v --yjit-stats), '', true, true)
@@ -542,7 +547,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_opt_getconstant_path_slowpath
-    assert_compiles(<<~RUBY, exits: { opt_getconstant_path: 1 }, result: [42, 42, 1, 1], call_threshold: 2)
+    assert_compiles(<<~RUBY, result: [42, 42, 1, 1], call_threshold: 2)
       class A
         FOO = 42
         class << self
@@ -639,6 +644,40 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  STRUCT_MAX_EMBEDDED_MEMBERS = (
+    GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE] -
+    GC::INTERNAL_CONSTANTS[:RBASIC_SIZE] -
+    GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]
+  ) / RbConfig::SIZEOF["void*"]
+
+  def test_spilled_struct_aref
+    omit("FIXME: https://github.com/Shopify/ruby/issues/977")
+    assert_compiles(<<~RUBY)
+      LargeStruct = Struct.new(:foo, :bar, *(#{STRUCT_MAX_EMBEDDED_MEMBERS} - 2).times.map { :"m_\#{it}" })
+
+      def foo(obj)
+        foo = obj.foo
+        raise "Expected 1, got: \#{foo}" unless foo == 1
+        bar = obj.bar
+        raise "Expected 2, got: \#{bar}" unless bar == 2
+      end
+
+      embedded_struct = LargeStruct.new(1, 2)
+      # Bump RCLASS_MAX_IV_COUNT for LargeStruct
+      embedded_struct.instance_variable_set(:@test, 1)
+
+      # Next allocation reserves space for the imemo/fields reference.
+      heap_struct = LargeStruct.new(1, 2)
+
+      RubyVM::YJIT.reset_stats!
+
+      foo(embedded_struct)
+      foo(embedded_struct)
+      foo(heap_struct)
+      foo(heap_struct)
+    RUBY
+  end
+
   def test_struct_aset
     assert_compiles(<<~RUBY)
       def foo(obj)
@@ -649,6 +688,26 @@ class TestYJIT < Test::Unit::TestCase
       Foo = Struct.new(:foo, :bar)
       foo(Foo.new(123))
       foo(Foo.new(123))
+    RUBY
+  end
+
+  def test_struct_aset_guards_recv_is_not_frozen
+    assert_compiles(<<~RUBY, result: :ok, exits: { opt_send_without_block: 1 })
+      def foo(obj)
+        obj.foo = 123
+      end
+
+      Foo = Struct.new(:foo)
+      obj = Foo.new(123)
+      100.times do
+        foo(obj)
+      end
+      obj.freeze
+      begin
+        foo(obj)
+      rescue FrozenError
+        :ok
+      end
     RUBY
   end
 
@@ -945,6 +1004,89 @@ class TestYJIT < Test::Unit::TestCase
       end
 
       Gnirts.new.to_s
+    RUBY
+  end
+
+  def test_super_bmethod
+    # Bmethod defined at class scope
+    assert_compiles(<<~'RUBY', insns: %i[invokesuper], result: true, exits: {})
+      class SuperItself
+        define_method(:itself) { super() }
+      end
+
+      obj = SuperItself.new
+      obj.itself
+      obj.itself == obj
+    RUBY
+
+    # Bmethod defined inside a method (the block's local_iseq is ISEQ_TYPE_METHOD
+    # but the CME is at the bmethod frame, not the enclosing method's frame)
+    assert_compiles(<<~'RUBY', insns: %i[invokesuper], result: "Base#foo via bmethod", exits: {})
+      class Base
+        def foo = "Base#foo"
+      end
+
+      class SetupHelper
+        def add_bmethod_to(klass)
+          klass.define_method(:foo) { super() + " via bmethod" }
+        end
+      end
+
+      class Target < Base; end
+
+      SetupHelper.new.add_bmethod_to(Target)
+      obj = Target.new
+      obj.foo
+      obj.foo
+    RUBY
+  end
+
+  def test_bmethod_super_block_forwarding
+    # super() in a block method forwards the block handler of environment
+    # it is in. In this test, the block is in a class, which never has
+    # a block handler, so Parent#foo gets no block.
+    assert_compiles(<<~RUBY, result: nil)
+      class Parent
+        def foo = defined?(yield)
+      end
+
+      class BmethodSuper < Parent
+        define_method(:foo) { super() }
+      end
+
+      BmethodSuper.new.foo {}
+    RUBY
+
+    # For contrast, the super() here forwards the block passed to add_then_override
+    # because block with super() is rooted in add_then_override, a "def" method.
+    assert_compiles(<<~RUBY, result: [1, 2])
+      def add_then_override(object)
+        object.define_singleton_method(:then) { super() }
+      end
+
+      add_then_override(one = Object.new) { 1 }
+      add_then_override(two = Object.new) { 2 }
+      [one.then {}, two.then {}]
+    RUBY
+  end
+
+  def test_bug_22116
+    # Regression test from report which used to crash during environment escape
+    # to pass block to Hash.new
+    assert_compiles(<<~RUBY, call_threshold: 1)
+      class C
+        def foo
+          Hash.new {|h, k| h[k] = [] }
+        end
+      end
+
+      class D < C
+        define_method(:foo) do
+          super()
+        end
+      end
+
+      D.new.foo
     RUBY
   end
 
@@ -1529,14 +1671,6 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
-  def test_opt_aref_with
-    assert_compiles(<<~RUBY, insns: %i[opt_aref_with], result: "bar", frozen_string_literal: false)
-      h = {"foo" => "bar"}
-
-      h["foo"]
-    RUBY
-  end
-
   def test_proc_block_arg
     assert_compiles(<<~RUBY, result: [:proc, :no_block])
       def yield_if_given = block_given? ? yield : :no_block
@@ -1772,6 +1906,62 @@ class TestYJIT < Test::Unit::TestCase
       def req2kws = yield a: 1, b: 2
 
       req2kws { |a:, b:| a + b }
+    RUBY
+  end
+
+  def test_proc_block_with_kwrest
+    # When the bug was present this required --yjit-stats to trigger.
+    assert_compiles(<<~RUBY, result: {extra: 5})
+      def foo = bar(w: 1, x: 2, y: 3, z: 4, extra: 5, &proc { _1 })
+      def bar(w:, x:, y:, z:, **kwrest) = yield kwrest
+
+      GC.stress = true
+      foo
+      foo
+    RUBY
+  end
+
+  def test_yjit_dump_insns
+    # Testing that this undocumented debugging feature doesn't crash
+    args = [
+      '--yjit-call-threshold=1',
+      '--yjit-dump-insns',
+      '-e def foo(case:) = {case:}[:case]',
+      '-e foo(case:0)',
+    ]
+    _out, _err, status = invoke_ruby(args, '', true, true)
+    assert_not_predicate(status, :signaled?)
+  end
+
+  def test_yjit_prelude_kernel_prepend
+    # Simulate what bundler/setup can do: prepend a module to Kernel during
+    # the prelude via the BUNDLER_SETUP mechanism in rubygems.rb:
+    #   require ENV["BUNDLER_SETUP"] if ENV["BUNDLER_SETUP"] && !defined?(Bundler)
+    Tempfile.create(["kernel_prepend", ".rb"]) do |f|
+      f.write("Kernel.prepend(Module.new)\n")
+      f.flush
+      assert_separately([{ "BUNDLER_SETUP" => f.path }, "--enable=gems", "--yjit"], "", ignore_stderr: true)
+    end
+  end
+
+  def test_exceptional_entry_into_env_escaped_before_yjit_enablement
+    threshold = 2
+    assert_separately(["--disable-all", "--yjit-disable", "--yjit-call-threshold=#{threshold}"], <<~RUBY)
+      def run
+        @captured_env = ->{}
+        RubyVM::YJIT.enable
+
+        i = 0
+        while i < #{threshold}
+          next_i = i + 1
+          from_break = tap { break i + 1 } # break from the block generates an exceptional entry
+          assert_equal(from_break, next_i, '[Bug #21941]')
+          i = next_i
+        end
+      end
+
+      run
+      assert_equal(#{threshold}, @captured_env.binding.local_variable_get(:i))
     RUBY
   end
 

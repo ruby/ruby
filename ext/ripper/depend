@@ -181,6 +181,7 @@ eventids1.o: $(hdrdir)/ruby/internal/intern/re.h
 eventids1.o: $(hdrdir)/ruby/internal/intern/ruby.h
 eventids1.o: $(hdrdir)/ruby/internal/intern/select.h
 eventids1.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+eventids1.o: $(hdrdir)/ruby/internal/intern/set.h
 eventids1.o: $(hdrdir)/ruby/internal/intern/signal.h
 eventids1.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 eventids1.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -352,6 +353,7 @@ eventids2.o: $(hdrdir)/ruby/internal/intern/re.h
 eventids2.o: $(hdrdir)/ruby/internal/intern/ruby.h
 eventids2.o: $(hdrdir)/ruby/internal/intern/select.h
 eventids2.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+eventids2.o: $(hdrdir)/ruby/internal/intern/set.h
 eventids2.o: $(hdrdir)/ruby/internal/intern/signal.h
 eventids2.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 eventids2.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -472,6 +474,7 @@ ripper.o: $(hdrdir)/ruby/internal/core/rclass.h
 ripper.o: $(hdrdir)/ruby/internal/core/rdata.h
 ripper.o: $(hdrdir)/ruby/internal/core/rfile.h
 ripper.o: $(hdrdir)/ruby/internal/core/rhash.h
+ripper.o: $(hdrdir)/ruby/internal/core/rmatch.h
 ripper.o: $(hdrdir)/ruby/internal/core/robject.h
 ripper.o: $(hdrdir)/ruby/internal/core/rregexp.h
 ripper.o: $(hdrdir)/ruby/internal/core/rstring.h
@@ -532,6 +535,7 @@ ripper.o: $(hdrdir)/ruby/internal/intern/re.h
 ripper.o: $(hdrdir)/ruby/internal/intern/ruby.h
 ripper.o: $(hdrdir)/ruby/internal/intern/select.h
 ripper.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+ripper.o: $(hdrdir)/ruby/internal/intern/set.h
 ripper.o: $(hdrdir)/ruby/internal/intern/signal.h
 ripper.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 ripper.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -563,6 +567,7 @@ ripper.o: $(hdrdir)/ruby/missing.h
 ripper.o: $(hdrdir)/ruby/onigmo.h
 ripper.o: $(hdrdir)/ruby/oniguruma.h
 ripper.o: $(hdrdir)/ruby/ractor.h
+ripper.o: $(hdrdir)/ruby/re.h
 ripper.o: $(hdrdir)/ruby/regex.h
 ripper.o: $(hdrdir)/ruby/ruby.h
 ripper.o: $(hdrdir)/ruby/st.h
@@ -575,12 +580,15 @@ ripper.o: $(top_srcdir)/ccan/container_of/container_of.h
 ripper.o: $(top_srcdir)/ccan/list/list.h
 ripper.o: $(top_srcdir)/ccan/str/str.h
 ripper.o: $(top_srcdir)/constant.h
+ripper.o: $(top_srcdir)/encindex.h
 ripper.o: $(top_srcdir)/id_table.h
 ripper.o: $(top_srcdir)/internal.h
 ripper.o: $(top_srcdir)/internal/array.h
 ripper.o: $(top_srcdir)/internal/basic_operators.h
 ripper.o: $(top_srcdir)/internal/bignum.h
 ripper.o: $(top_srcdir)/internal/bits.h
+ripper.o: $(top_srcdir)/internal/box.h
+ripper.o: $(top_srcdir)/internal/compar.h
 ripper.o: $(top_srcdir)/internal/compile.h
 ripper.o: $(top_srcdir)/internal/compilers.h
 ripper.o: $(top_srcdir)/internal/complex.h
@@ -598,8 +606,10 @@ ripper.o: $(top_srcdir)/internal/re.h
 ripper.o: $(top_srcdir)/internal/ruby_parser.h
 ripper.o: $(top_srcdir)/internal/sanitizers.h
 ripper.o: $(top_srcdir)/internal/serial.h
+ripper.o: $(top_srcdir)/internal/set_table.h
 ripper.o: $(top_srcdir)/internal/static_assert.h
 ripper.o: $(top_srcdir)/internal/string.h
+ripper.o: $(top_srcdir)/internal/struct.h
 ripper.o: $(top_srcdir)/internal/symbol.h
 ripper.o: $(top_srcdir)/internal/thread.h
 ripper.o: $(top_srcdir)/internal/variable.h
@@ -770,6 +780,7 @@ ripper_init.o: $(hdrdir)/ruby/internal/intern/re.h
 ripper_init.o: $(hdrdir)/ruby/internal/intern/ruby.h
 ripper_init.o: $(hdrdir)/ruby/internal/intern/select.h
 ripper_init.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+ripper_init.o: $(hdrdir)/ruby/internal/intern/set.h
 ripper_init.o: $(hdrdir)/ruby/internal/intern/signal.h
 ripper_init.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 ripper_init.o: $(hdrdir)/ruby/internal/intern/string.h
@@ -804,8 +815,10 @@ ripper_init.o: $(hdrdir)/ruby/st.h
 ripper_init.o: $(hdrdir)/ruby/subst.h
 ripper_init.o: $(top_srcdir)/internal.h
 ripper_init.o: $(top_srcdir)/internal/array.h
+ripper_init.o: $(top_srcdir)/internal/basic_operators.h
 ripper_init.o: $(top_srcdir)/internal/bignum.h
 ripper_init.o: $(top_srcdir)/internal/bits.h
+ripper_init.o: $(top_srcdir)/internal/compar.h
 ripper_init.o: $(top_srcdir)/internal/compilers.h
 ripper_init.o: $(top_srcdir)/internal/complex.h
 ripper_init.o: $(top_srcdir)/internal/fixnum.h

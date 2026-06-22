@@ -7,8 +7,8 @@ describe "Hash#slice" do
 
   it "returns a new empty hash without arguments" do
     ret = @hash.slice
-    ret.should_not equal(@hash)
-    ret.should be_an_instance_of(Hash)
+    ret.should_not.equal?(@hash)
+    ret.should.instance_of?(Hash)
     ret.should == {}
   end
 
@@ -49,5 +49,26 @@ describe "Hash#slice" do
     h.slice(:foo)
 
     ScratchPad.recorded.should == []
+  end
+
+  it "does not retain the default value" do
+    h = Hash.new(1)
+    h.slice(:a).default.should == nil
+    h[:a] = 1
+    h.slice(:a).default.should == nil
+  end
+
+  it "does not retain the default_proc" do
+    pr = proc { |h, k| h[k] = [] }
+    h = Hash.new(&pr)
+    h.slice(:a).default_proc.should == nil
+    h[:a] = 1
+    h.slice(:a).default_proc.should == nil
+  end
+
+  it "retains compare_by_identity flag" do
+    h = { a: 9, c: 4 }.compare_by_identity
+    h2 = h.slice(:a)
+    h2.compare_by_identity?.should == true
   end
 end

@@ -26,8 +26,7 @@ module Bundler
         end
 
       message = "Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle #{new_args.join(" ")}` instead."
-      removed_message = "Using the `config` command without a subcommand [list, get, set, unset] is has been removed. Use `bundle #{new_args.join(" ")}` instead."
-      SharedHelpers.major_deprecation 3, message, removed_message: removed_message
+      SharedHelpers.feature_deprecated! message
 
       Base.new(options, name, value, self).run
     end
@@ -88,16 +87,21 @@ module Bundler
 
         if value.nil?
           warn_unused_scope "Ignoring --#{scope} since no value to set was given"
+          current_value = Bundler.settings[name]
 
           if options[:parseable]
             if value = Bundler.settings[name]
               Bundler.ui.info("#{name}=#{value}")
             end
-            return
+          else
+            confirm(name)
           end
 
-          confirm(name)
-          return
+          if current_value.nil?
+            exit 1
+          else
+            return
+          end
         end
 
         Bundler.ui.info(message) if message

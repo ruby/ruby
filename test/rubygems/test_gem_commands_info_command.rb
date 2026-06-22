@@ -13,7 +13,7 @@ class TestGemCommandsInfoCommand < Gem::TestCase
   def gem(name, version = "1.0")
     spec = quick_gem name do |gem|
       gem.summary = "test gem"
-      gem.homepage = "https://github.com/rubygems/rubygems"
+      gem.homepage = "https://github.com/ruby/rubygems"
       gem.files = %W[lib/#{name}.rb Rakefile]
       gem.authors = ["Colby", "Jack"]
       gem.license = "MIT"

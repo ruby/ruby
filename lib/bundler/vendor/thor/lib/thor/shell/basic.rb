@@ -314,7 +314,7 @@ class Bundler::Thor
         diff_cmd = ENV["THOR_DIFF"] || ENV["RAILS_DIFF"] || "diff -u"
 
         require "tempfile"
-        Tempfile.open(File.basename(destination), File.dirname(destination)) do |temp|
+        Tempfile.open(File.basename(destination), File.dirname(destination), binmode: true) do |temp|
           temp.write content
           temp.rewind
           system %(#{diff_cmd} "#{destination}" "#{temp.path}")
@@ -372,16 +372,12 @@ class Bundler::Thor
         Tempfile.open([File.basename(destination), File.extname(destination)], File.dirname(destination)) do |temp|
           temp.write content
           temp.rewind
-          system %(#{merge_tool} "#{temp.path}" "#{destination}")
+          system(merge_tool, temp.path, destination)
         end
       end
 
       def merge_tool #:nodoc:
-        @merge_tool ||= ENV["THOR_MERGE"] || git_merge_tool
-      end
-
-      def git_merge_tool #:nodoc:
-        `git config merge.tool`.rstrip rescue ""
+        @merge_tool ||= ENV["THOR_MERGE"] || "git difftool --no-index"
       end
     end
   end

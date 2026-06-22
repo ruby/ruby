@@ -120,11 +120,21 @@ describe "String#to_f" do
     "\3771.2".b.to_f.should == 0
   end
 
-  ruby_version_is "3.2" do
-    it "raises Encoding::CompatibilityError if String is in not ASCII-compatible encoding" do
-      -> {
-        '1.2'.encode("UTF-16").to_f
-      }.should raise_error(Encoding::CompatibilityError, "ASCII incompatible encoding: UTF-16")
+  it "raises Encoding::CompatibilityError if String is in not ASCII-compatible encoding" do
+    -> {
+      '1.2'.encode("UTF-16").to_f
+    }.should.raise(Encoding::CompatibilityError, "ASCII incompatible encoding: UTF-16")
+  end
+
+  it "allows String representation without a fractional part" do
+    "1.".to_f.should == 1.0
+    "+1.".to_f.should == 1.0
+    "-1.".to_f.should == -1.0
+    "1.e+0".to_f.should == 1.0
+    "1.e+0".to_f.should == 1.0
+
+    ruby_bug "#20705", ""..."3.4" do
+      "1.e-2".to_f.should be_close(0.01, TOLERANCE)
     end
   end
 end

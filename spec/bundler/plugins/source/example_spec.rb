@@ -72,6 +72,7 @@ RSpec.describe "real source plugins" do
 
       checksums = checksums_section_when_enabled do |c|
         c.no_checksum "a-path-gem", "1.0"
+        c.checksum gem_repo2, "bundler-source-mpath", "1.0"
       end
 
       expect(lockfile).to eq <<~G
@@ -84,15 +85,17 @@ RSpec.describe "real source plugins" do
         GEM
           remote: https://gem.repo2/
           specs:
+            bundler-source-mpath (1.0)
 
         PLATFORMS
           #{lockfile_platforms}
 
         DEPENDENCIES
           a-path-gem!
+          bundler-source-mpath
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       G
     end
 
@@ -124,7 +127,6 @@ RSpec.describe "real source plugins" do
       let(:uri_hash) { Digest(:SHA1).hexdigest(lib_path("a-path-gem-1.0").to_s) }
       it "copies repository to vendor cache and uses it" do
         bundle "install"
-        bundle "config set cache_all true"
         bundle :cache
 
         expect(bundled_app("vendor/cache/a-path-gem-1.0-#{uri_hash}")).to exist
@@ -136,9 +138,8 @@ RSpec.describe "real source plugins" do
       end
 
       it "copies repository to vendor cache and uses it even when installed with `path` configured" do
-        bundle "config set --local path vendor/bundle"
+        bundle_config "path vendor/bundle"
         bundle :install
-        bundle "config set cache_all true"
         bundle :cache
 
         expect(bundled_app("vendor/cache/a-path-gem-1.0-#{uri_hash}")).to exist
@@ -148,9 +149,8 @@ RSpec.describe "real source plugins" do
       end
 
       it "bundler package copies repository to vendor cache" do
-        bundle "config set --local path vendor/bundle"
+        bundle_config "path vendor/bundle"
         bundle :install
-        bundle "config set cache_all true"
         bundle :cache
 
         expect(bundled_app("vendor/cache/a-path-gem-1.0-#{uri_hash}")).to exist
@@ -180,7 +180,7 @@ RSpec.describe "real source plugins" do
             a-path-gem!
 
           BUNDLED WITH
-             #{Bundler::VERSION}
+            #{Bundler::VERSION}
         G
       end
 
@@ -341,6 +341,7 @@ RSpec.describe "real source plugins" do
       bundle "install"
 
       checksums = checksums_section_when_enabled do |c|
+        c.checksum gem_repo2, "bundler-source-gitp", "1.0"
         c.no_checksum "ma-gitp-gem", "1.0"
       end
 
@@ -355,15 +356,17 @@ RSpec.describe "real source plugins" do
         GEM
           remote: https://gem.repo2/
           specs:
+            bundler-source-gitp (1.0)
 
         PLATFORMS
           #{lockfile_platforms}
 
         DEPENDENCIES
+          bundler-source-gitp
           ma-gitp-gem!
         #{checksums}
         BUNDLED WITH
-           #{Bundler::VERSION}
+          #{Bundler::VERSION}
       G
     end
 
@@ -389,7 +392,7 @@ RSpec.describe "real source plugins" do
             ma-gitp-gem!
 
           BUNDLED WITH
-             #{Bundler::VERSION}
+            #{Bundler::VERSION}
         G
       end
 
@@ -446,7 +449,6 @@ RSpec.describe "real source plugins" do
           end
         G
 
-        bundle "config set cache_all true"
         bundle :cache
         expect(bundled_app("vendor/cache/foo-1.0-#{ref}")).to exist
         expect(bundled_app("vendor/cache/foo-1.0-#{ref}/.git")).not_to exist

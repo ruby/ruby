@@ -10,11 +10,11 @@ have_func("rb_syserr_new_str(0, Qnil)") or
   abort
 
 have_func("rb_interned_str_cstr")
-have_func("rb_io_path")
-have_func("rb_io_descriptor")
-have_func("rb_io_get_write_io")
-have_func("rb_io_closed_p")
-have_func("rb_io_open_descriptor")
+have_func("rb_io_path", "ruby/io.h")
+have_func("rb_io_descriptor", "ruby/io.h")
+have_func("rb_io_get_write_io", "ruby/io.h")
+have_func("rb_io_closed_p", "ruby/io.h")
+have_func("rb_io_open_descriptor", "ruby/io.h")
 have_func("rb_ractor_local_storage_value_newkey")
 
 is_wasi = /wasi/ =~ MakeMakefile::RbConfig::CONFIG["platform"]

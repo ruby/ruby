@@ -4,8 +4,8 @@
   onigmo.h - Onigmo (Oniguruma-mod) (regular expression library)
 **********************************************************************/
 /*-
- * Copyright (c) 2002-2009  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
- * Copyright (c) 2011-2017  K.Takata  <kentkt AT csc DOT jp>
+ * Copyright (c) 2002-2016  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
+ * Copyright (c) 2011-2019  K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -38,8 +38,8 @@ extern "C" {
 #endif
 
 #define ONIGMO_VERSION_MAJOR   6
-#define ONIGMO_VERSION_MINOR   1
-#define ONIGMO_VERSION_TEENY   3
+#define ONIGMO_VERSION_MINOR   2
+#define ONIGMO_VERSION_TEENY   0
 
 #ifndef ONIG_EXTERN
 # ifdef RUBY_EXTERN
@@ -687,6 +687,8 @@ ONIG_EXTERN const OnigSyntaxType*   OnigDefaultSyntax;
 #define ONIGERR_NEVER_ENDING_RECURSION                       -221
 #define ONIGERR_GROUP_NUMBER_OVER_FOR_CAPTURE_HISTORY        -222
 #define ONIGERR_INVALID_CHAR_PROPERTY_NAME                   -223
+#define ONIGERR_TOO_MANY_RANGE_REPEAT                        -224
+#define ONIGERR_TOO_MANY_NULL_CHECK                          -225
 #define ONIGERR_INVALID_CODE_POINT_VALUE                     -400
 #define ONIGERR_INVALID_WIDE_CHAR_VALUE                      -400
 #define ONIGERR_TOO_BIG_WIDE_CHAR_VALUE                      -401
@@ -789,8 +791,8 @@ typedef struct re_pattern_buffer {
   unsigned char *exact;
   unsigned char *exact_end;
   unsigned char  map[ONIG_CHAR_TABLE_SIZE]; /* used as BM skip or char-map */
-  int           *int_map;                   /* BM skip for exact_len > 255 */
-  int           *int_map_backward;          /* BM skip for backward search */
+  int           *reserved1;
+  int           *reserved2;
   OnigDistance   dmin;                      /* min-distance of exact or map */
   OnigDistance   dmax;                      /* max-distance of exact or map */
 

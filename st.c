@@ -107,8 +107,10 @@
 #elif defined RUBY_EXPORT
 #include "internal.h"
 #include "internal/bits.h"
+#include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/sanitizers.h"
+#include "internal/set_table.h"
 #include "internal/st.h"
 #include "ruby_assert.h"
 #endif
@@ -172,21 +174,43 @@ static const struct st_hash_type type_strcasehash = {
 #define malloc ruby_xmalloc
 #define calloc ruby_xcalloc
 #define realloc ruby_xrealloc
+#define sized_realloc ruby_xrealloc_sized
 #define free ruby_xfree
+#define sized_free ruby_xfree_sized
+#define free_fixed_ptr(v) ruby_xfree_sized((v), sizeof(*(v)))
+#else
+#define sized_realloc(ptr, new_size, old_size) realloc(ptr, new_size)
+#define sized_free(v, s) free(v)
+#define free_fixed_ptr(v) free(v)
 #endif
 
-#define EQUAL(tab,x,y) ((x) == (y) || (*(tab)->type->compare)((x),(y)) == 0)
-#define PTR_EQUAL(tab, ptr, hash_val, key_) \
-    ((ptr)->hash == (hash_val) && EQUAL((tab), (key_), (ptr)->key))
+/* Compare an entry's hash and key against given hash_val and key.
+   Entry fields must be read into locals by the caller before passing
+   them here, to avoid re-reading from potentially-freed memory after
+   #eql? triggers a table rebuild. */
+static inline int
+entry_equal(const struct st_hash_type *type,
+            st_hash_t entry_hash, st_data_t entry_key,
+            st_hash_t hash_val, st_data_t key)
+{
+    return (entry_hash == hash_val) &&
+            ((entry_key == key) || (*type->compare)(key, entry_key) == 0);
+}
 
-/* As PTR_EQUAL only its result is returned in RES.  REBUILT_P is set
-   up to TRUE if the table is rebuilt during the comparison.  */
+/* As entry_equal, but also checks whether the table was rebuilt
+   during the comparison (i.e. #eql? mutated it). */
+static inline void
+ptr_equal_check(const st_table *tab, const st_table_entry *entry,
+                st_hash_t hash_val, st_data_t key,
+                int *res, int *rebuilt_p)
+{
+    unsigned int old_rebuilds_num = tab->rebuilds_num;
+    *res = entry_equal(tab->type, entry->hash, entry->key, hash_val, key);
+    *rebuilt_p = old_rebuilds_num != tab->rebuilds_num;
+}
+
 #define DO_PTR_EQUAL_CHECK(tab, ptr, hash_val, key, res, rebuilt_p) \
-    do {							    \
-        unsigned int _old_rebuilds_num = (tab)->rebuilds_num;       \
-        res = PTR_EQUAL(tab, ptr, hash_val, key);		    \
-        rebuilt_p = _old_rebuilds_num != (tab)->rebuilds_num;	    \
-    } while (FALSE)
+    ptr_equal_check((tab), (ptr), (hash_val), (key), &(res), &(rebuilt_p))
 
 /* Features of a table.  */
 struct st_features {
@@ -389,7 +413,7 @@ set_bin(st_index_t *bins, int s, st_index_t n, st_index_t v)
 
 /* Mark I-th bin of table TAB as empty, in other words not
    corresponding to any entry.  */
-#define MARK_BIN_EMPTY(tab, i) (set_bin((tab)->bins, get_size_ind(tab), i, EMPTY_BIN))
+#define MARK_BIN_EMPTY(tab, i) (set_bin(st_bins_ptr(tab), get_size_ind(tab), i, EMPTY_BIN))
 
 /* Values used for not found entry and bin with given
    characteristics.  */
@@ -406,7 +430,7 @@ set_bin(st_index_t *bins, int s, st_index_t n, st_index_t v)
    corresponding to deleted entries. */
 #define MARK_BIN_DELETED(tab, i)				\
     do {                                                        \
-        set_bin((tab)->bins, get_size_ind(tab), i, DELETED_BIN); \
+        set_bin(st_bins_ptr(tab), get_size_ind(tab), i, DELETED_BIN); \
     } while (0)
 
 /* Macros to check that value B is used empty bins and bins
@@ -417,14 +441,21 @@ set_bin(st_index_t *bins, int s, st_index_t n, st_index_t v)
 
 /* Macros to check empty bins and bins corresponding to deleted
    entries.  Bins are given by their index I in table TAB.  */
-#define IND_EMPTY_BIN_P(tab, i) (EMPTY_BIN_P(get_bin((tab)->bins, get_size_ind(tab), i)))
-#define IND_DELETED_BIN_P(tab, i) (DELETED_BIN_P(get_bin((tab)->bins, get_size_ind(tab), i)))
-#define IND_EMPTY_OR_DELETED_BIN_P(tab, i) (EMPTY_OR_DELETED_BIN_P(get_bin((tab)->bins, get_size_ind(tab), i)))
+#define IND_EMPTY_BIN_P(tab, i) (EMPTY_BIN_P(get_bin(st_bins_ptr(tab), get_size_ind(tab), i)))
+#define IND_DELETED_BIN_P(tab, i) (DELETED_BIN_P(get_bin(st_bins_ptr(tab), get_size_ind(tab), i)))
+#define IND_EMPTY_OR_DELETED_BIN_P(tab, i) (EMPTY_OR_DELETED_BIN_P(get_bin(st_bins_ptr(tab), get_size_ind(tab), i)))
 
 /* Macros for marking and checking deleted entries given by their
    pointer E_PTR.  */
 #define MARK_ENTRY_DELETED(e_ptr) ((e_ptr)->hash = RESERVED_HASH_VAL)
 #define DELETED_ENTRY_P(e_ptr) ((e_ptr)->hash == RESERVED_HASH_VAL)
+
+/* Return the number of allocated entries of table TAB.  */
+static inline st_index_t
+get_allocated_entries(const st_table *tab)
+{
+    return ((st_index_t) 1)<<tab->entry_power;
+}
 
 /* Return bin size index of table TAB.  */
 static inline unsigned int
@@ -447,6 +478,28 @@ bins_mask(const st_table *tab)
     return get_bins_num(tab) - 1;
 }
 
+static inline bool
+st_has_bins(const st_table *tab)
+{
+    return tab->entry_power > MAX_POWER2_FOR_TABLES_WITHOUT_BINS;
+}
+
+static inline size_t
+st_allocated_entries_size(const st_table *tab)
+{
+    return get_allocated_entries(tab) * sizeof(st_table_entry);
+}
+
+static inline st_index_t *
+st_bins_ptr(const st_table *tab)
+{
+    if (st_has_bins(tab)) {
+        return (st_index_t *)(((char *)tab->entries) + st_allocated_entries_size(tab));
+    }
+
+    return NULL;
+}
+
 /* Return the index of table TAB bin corresponding to
    HASH_VALUE.  */
 static inline st_index_t
@@ -455,25 +508,21 @@ hash_bin(st_hash_t hash_value, st_table *tab)
     return hash_value & bins_mask(tab);
 }
 
-/* Return the number of allocated entries of table TAB.  */
-static inline st_index_t
-get_allocated_entries(const st_table *tab)
-{
-    return ((st_index_t) 1)<<tab->entry_power;
-}
-
 /* Return size of the allocated bins of table TAB.  */
 static inline st_index_t
 bins_size(const st_table *tab)
 {
-    return features[tab->entry_power].bins_words * sizeof (st_index_t);
+    if (st_has_bins(tab)) {
+        return features[tab->entry_power].bins_words * sizeof (st_index_t);
+    }
+    return 0;
 }
 
 /* Mark all bins of table TAB as empty.  */
 static void
 initialize_bins(st_table *tab)
 {
-    memset(tab->bins, 0, bins_size(tab));
+    memset(st_bins_ptr(tab), 0, bins_size(tab));
 }
 
 /* Make table TAB empty.  */
@@ -482,7 +531,7 @@ make_tab_empty(st_table *tab)
 {
     tab->num_entries = 0;
     tab->entries_start = tab->entries_bound = 0;
-    if (tab->bins != NULL)
+    if (st_bins_ptr(tab) != NULL)
         initialize_bins(tab);
 }
 
@@ -544,19 +593,12 @@ st_init_existing_table_with_size(st_table *tab, const struct st_hash_type *type,
     tab->entry_power = n;
     tab->bin_power = features[n].bin_power;
     tab->size_ind = features[n].size_ind;
-    if (n <= MAX_POWER2_FOR_TABLES_WITHOUT_BINS)
-        tab->bins = NULL;
-    else {
-        tab->bins = (st_index_t *) malloc(bins_size(tab));
-#ifndef RUBY
-        if (tab->bins == NULL) {
-            free(tab);
-            return NULL;
-        }
-#endif
+
+    size_t memsize = get_allocated_entries(tab) * sizeof(st_table_entry);
+    if (tab->entry_power > MAX_POWER2_FOR_TABLES_WITHOUT_BINS) {
+        memsize += bins_size(tab);
     }
-    tab->entries = (st_table_entry *) malloc(get_allocated_entries(tab)
-                                             * sizeof(st_table_entry));
+    tab->entries = (st_table_entry *)malloc(memsize);
 #ifndef RUBY
     if (tab->entries == NULL) {
         st_free_table(tab);
@@ -566,6 +608,12 @@ st_init_existing_table_with_size(st_table *tab, const struct st_hash_type *type,
     make_tab_empty(tab);
     tab->rebuilds_num = 0;
     return tab;
+}
+
+st_table *
+st_init_existing_numtable_with_size(st_table *tab, st_index_t size)
+{
+    return st_init_existing_table_with_size(tab, &type_numhash, size);
 }
 
 /* Create and return table with TYPE which can hold at least SIZE
@@ -584,7 +632,7 @@ st_init_table_with_size(const struct st_hash_type *type, st_index_t size)
     st_init_existing_table_with_size(tab, type, size);
 #else
     if (st_init_existing_table_with_size(tab, type, size) == NULL) {
-        free(tab);
+        free_fixed_ptr(tab);
         return NULL;
     }
 #endif
@@ -636,6 +684,13 @@ st_init_strtable_with_size(st_index_t size)
     return st_init_table_with_size(&type_strhash, size);
 }
 
+st_table *
+st_init_existing_strtable_with_size(st_table *tab, st_index_t size)
+{
+    return st_init_existing_table_with_size(tab, &type_strhash, size);
+}
+
+
 /* Create and return table which can hold a minimal number of strings
    whose character case is ignored.  */
 st_table *
@@ -660,22 +715,40 @@ st_clear(st_table *tab)
     tab->rebuilds_num++;
 }
 
+static inline size_t
+st_entries_memsize(const st_table *tab)
+{
+    return get_allocated_entries(tab) * sizeof(st_table_entry);
+}
+
+static inline void
+st_free_entries(const st_table *tab)
+{
+    sized_free(tab->entries, st_entries_memsize(tab) + bins_size(tab));
+}
+
+void
+st_free_embedded_table(st_table *tab)
+{
+    st_free_entries(tab);
+}
+
 /* Free table TAB space.  */
 void
 st_free_table(st_table *tab)
 {
-    free(tab->bins);
-    free(tab->entries);
-    free(tab);
+    st_free_embedded_table(tab);
+    free_fixed_ptr(tab);
 }
 
 /* Return byte size of memory allocated for table TAB.  */
 size_t
 st_memsize(const st_table *tab)
 {
+    RUBY_ASSERT(tab != NULL);
     return(sizeof(st_table)
-           + (tab->bins == NULL ? 0 : bins_size(tab))
-           + get_allocated_entries(tab) * sizeof(st_table_entry));
+           + bins_size(tab)
+           + st_entries_memsize(tab));
 }
 
 static st_index_t
@@ -740,14 +813,14 @@ rebuild_table(st_table *tab)
         || tab->num_entries < (1 << MINIMAL_POWER2)) {
         /* Compaction: */
         tab->num_entries = 0;
-        if (tab->bins != NULL)
+        if (st_has_bins(tab))
             initialize_bins(tab);
         rebuild_table_with(tab, tab);
     }
     else {
         st_table *new_tab;
         /* This allocation could trigger GC and compaction. If tab is the
-         * gen_iv_tbl, then tab could have changed in size due to objects being
+         * gen_fields_tbl, then tab could have changed in size due to objects being
          * freed and/or moved. Do not store attributes of tab before this line. */
         new_tab = st_init_table_with_size(tab->type,
                                           2 * tab->num_entries - 1);
@@ -770,7 +843,7 @@ rebuild_table_with(st_table *const new_tab, st_table *const tab)
     new_entries = new_tab->entries;
 
     ni = 0;
-    bins = new_tab->bins;
+    bins = st_bins_ptr(new_tab);
     size_ind = get_size_ind(new_tab);
     st_index_t bound = tab->entries_bound;
     st_table_entry *entries = tab->entries;
@@ -797,14 +870,12 @@ rebuild_table_with(st_table *const new_tab, st_table *const tab)
 static void
 rebuild_move_table(st_table *const new_tab, st_table *const tab)
 {
+    st_free_entries(tab);
     tab->entry_power = new_tab->entry_power;
     tab->bin_power = new_tab->bin_power;
     tab->size_ind = new_tab->size_ind;
-    free(tab->bins);
-    tab->bins = new_tab->bins;
-    free(tab->entries);
     tab->entries = new_tab->entries;
-    free(new_tab);
+    free_fixed_ptr(new_tab);
 }
 
 static void
@@ -887,7 +958,7 @@ find_table_entry_ind(st_table *tab, st_hash_t hash_value, st_data_t key)
 #endif
     FOUND_BIN;
     for (;;) {
-        bin = get_bin(tab->bins, get_size_ind(tab), ind);
+        bin = get_bin(st_bins_ptr(tab), get_size_ind(tab), ind);
         if (! EMPTY_OR_DELETED_BIN_P(bin)) {
             DO_PTR_EQUAL_CHECK(tab, &entries[bin - ENTRY_BASE], hash_value, key, eq_p, rebuilt_p);
             if (EXPECT(rebuilt_p, 0))
@@ -933,7 +1004,7 @@ find_table_bin_ind(st_table *tab, st_hash_t hash_value, st_data_t key)
 #endif
     FOUND_BIN;
     for (;;) {
-        bin = get_bin(tab->bins, get_size_ind(tab), ind);
+        bin = get_bin(st_bins_ptr(tab), get_size_ind(tab), ind);
         if (! EMPTY_OR_DELETED_BIN_P(bin)) {
             DO_PTR_EQUAL_CHECK(tab, &entries[bin - ENTRY_BASE], hash_value, key, eq_p, rebuilt_p);
             if (EXPECT(rebuilt_p, 0))
@@ -976,7 +1047,7 @@ find_table_bin_ind_direct(st_table *tab, st_hash_t hash_value, st_data_t key)
 #endif
     FOUND_BIN;
     for (;;) {
-        bin = get_bin(tab->bins, get_size_ind(tab), ind);
+        bin = get_bin(st_bins_ptr(tab), get_size_ind(tab), ind);
         if (EMPTY_OR_DELETED_BIN_P(bin))
             return ind;
 #ifdef QUADRATIC_PROBE
@@ -1024,7 +1095,7 @@ find_table_bin_ptr_and_reserve(st_table *tab, st_hash_t *hash_value,
     first_deleted_bin_ind = UNDEFINED_BIN_IND;
     entries = tab->entries;
     for (;;) {
-        entry_index = get_bin(tab->bins, get_size_ind(tab), ind);
+        entry_index = get_bin(st_bins_ptr(tab), get_size_ind(tab), ind);
         if (EMPTY_BIN_P(entry_index)) {
             tab->num_entries++;
             entry_index = UNDEFINED_ENTRY_IND;
@@ -1065,7 +1136,7 @@ st_lookup(st_table *tab, st_data_t key, st_data_t *value)
     st_hash_t hash = do_hash(key, tab);
 
  retry:
-    if (tab->bins == NULL) {
+    if (!st_has_bins(tab)) {
         bin = find_entry(tab, hash, key);
         if (EXPECT(bin == REBUILT_TABLE_ENTRY_IND, 0))
             goto retry;
@@ -1094,7 +1165,7 @@ st_get_key(st_table *tab, st_data_t key, st_data_t *result)
     st_hash_t hash = do_hash(key, tab);
 
  retry:
-    if (tab->bins == NULL) {
+    if (!st_has_bins(tab)) {
         bin = find_entry(tab, hash, key);
         if (EXPECT(bin == REBUILT_TABLE_ENTRY_IND, 0))
             goto retry;
@@ -1140,7 +1211,7 @@ st_insert(st_table *tab, st_data_t key, st_data_t value)
     hash_value = do_hash(key, tab);
  retry:
     rebuild_table_if_necessary(tab);
-    if (tab->bins == NULL) {
+    if (!st_has_bins(tab)) {
         bin = find_entry(tab, hash_value, key);
         if (EXPECT(bin == REBUILT_TABLE_ENTRY_IND, 0))
             goto retry;
@@ -1164,7 +1235,7 @@ st_insert(st_table *tab, st_data_t key, st_data_t value)
         entry->key = key;
         entry->record = value;
         if (bin_ind != UNDEFINED_BIN_IND)
-            set_bin(tab->bins, get_size_ind(tab), bin_ind, ind + ENTRY_BASE);
+            set_bin(st_bins_ptr(tab), get_size_ind(tab), bin_ind, ind + ENTRY_BASE);
         return 0;
     }
     tab->entries[bin].record = value;
@@ -1190,9 +1261,9 @@ st_add_direct_with_hash(st_table *tab,
     entry->key = key;
     entry->record = value;
     tab->num_entries++;
-    if (tab->bins != NULL) {
+    if (st_has_bins(tab)) {
         bin_ind = find_table_bin_ind_direct(tab, hash, key);
-        set_bin(tab->bins, get_size_ind(tab), bin_ind, ind + ENTRY_BASE);
+        set_bin(st_bins_ptr(tab), get_size_ind(tab), bin_ind, ind + ENTRY_BASE);
     }
 }
 
@@ -1231,7 +1302,7 @@ st_insert2(st_table *tab, st_data_t key, st_data_t value,
     hash_value = do_hash(key, tab);
  retry:
     rebuild_table_if_necessary (tab);
-    if (tab->bins == NULL) {
+    if (!st_has_bins(tab)) {
         bin = find_entry(tab, hash_value, key);
         if (EXPECT(bin == REBUILT_TABLE_ENTRY_IND, 0))
             goto retry;
@@ -1256,7 +1327,7 @@ st_insert2(st_table *tab, st_data_t key, st_data_t value,
         entry->key = key;
         entry->record = value;
         if (bin_ind != UNDEFINED_BIN_IND)
-            set_bin(tab->bins, get_size_ind(tab), bin_ind, ind + ENTRY_BASE);
+            set_bin(st_bins_ptr(tab), get_size_ind(tab), bin_ind, ind + ENTRY_BASE);
         return 0;
     }
     tab->entries[bin].record = value;
@@ -1268,27 +1339,15 @@ st_table *
 st_replace(st_table *new_tab, st_table *old_tab)
 {
     *new_tab = *old_tab;
-    if (old_tab->bins == NULL)
-        new_tab->bins = NULL;
-    else {
-        new_tab->bins = (st_index_t *) malloc(bins_size(old_tab));
-#ifndef RUBY
-        if (new_tab->bins == NULL) {
-            return NULL;
-        }
-#endif
-    }
-    new_tab->entries = (st_table_entry *) malloc(get_allocated_entries(old_tab)
-                                                 * sizeof(st_table_entry));
+    size_t memsize = get_allocated_entries(old_tab) * sizeof(st_table_entry);
+    memsize += bins_size(old_tab);
+    new_tab->entries = (st_table_entry *) malloc(memsize);
 #ifndef RUBY
     if (new_tab->entries == NULL) {
         return NULL;
     }
 #endif
-    MEMCPY(new_tab->entries, old_tab->entries, st_table_entry,
-           get_allocated_entries(old_tab));
-    if (old_tab->bins != NULL)
-        MEMCPY(new_tab->bins, old_tab->bins, char, bins_size(old_tab));
+    MEMCPY(new_tab->entries, old_tab->entries, char, memsize);
 
     return new_tab;
 }
@@ -1343,7 +1402,7 @@ st_general_delete(st_table *tab, st_data_t *key, st_data_t *value)
 
     hash = do_hash(*key, tab);
  retry:
-    if (tab->bins == NULL) {
+    if (!st_has_bins(tab)) {
         bin = find_entry(tab, hash, *key);
         if (EXPECT(bin == REBUILT_TABLE_ENTRY_IND, 0))
             goto retry;
@@ -1360,7 +1419,7 @@ st_general_delete(st_table *tab, st_data_t *key, st_data_t *value)
             if (value != 0) *value = 0;
             return 0;
         }
-        bin = get_bin(tab->bins, get_size_ind(tab), bin_ind) - ENTRY_BASE;
+        bin = get_bin(st_bins_ptr(tab), get_size_ind(tab), bin_ind) - ENTRY_BASE;
         MARK_BIN_DELETED(tab, bin_ind);
     }
     entry = &tab->entries[bin];
@@ -1413,7 +1472,7 @@ st_shift(st_table *tab, st_data_t *key, st_data_t *value)
             if (value != 0) *value = curr_entry_ptr->record;
             *key = entry_key;
         retry:
-            if (tab->bins == NULL) {
+            if (!st_has_bins(tab)) {
                 bin = find_entry(tab, entry_hash, entry_key);
                 if (EXPECT(bin == REBUILT_TABLE_ENTRY_IND, 0)) {
                     entries = tab->entries;
@@ -1427,7 +1486,7 @@ st_shift(st_table *tab, st_data_t *key, st_data_t *value)
                     entries = tab->entries;
                     goto retry;
                 }
-                curr_entry_ptr = &entries[get_bin(tab->bins, get_size_ind(tab), bin_ind)
+                curr_entry_ptr = &entries[get_bin(st_bins_ptr(tab), get_size_ind(tab), bin_ind)
                                           - ENTRY_BASE];
                 MARK_BIN_DELETED(tab, bin_ind);
             }
@@ -1471,7 +1530,7 @@ st_update(st_table *tab, st_data_t key,
 
  retry:
     entries = tab->entries;
-    if (tab->bins == NULL) {
+    if (!st_has_bins(tab)) {
         bin = find_entry(tab, hash, key);
         if (EXPECT(bin == REBUILT_TABLE_ENTRY_IND, 0))
             goto retry;
@@ -1485,7 +1544,7 @@ st_update(st_table *tab, st_data_t key,
             goto retry;
         existing = bin_ind != UNDEFINED_BIN_IND;
         if (existing) {
-            bin = get_bin(tab->bins, get_size_ind(tab), bin_ind) - ENTRY_BASE;
+            bin = get_bin(st_bins_ptr(tab), get_size_ind(tab), bin_ind) - ENTRY_BASE;
             entry = &entries[bin];
         }
     }
@@ -1494,7 +1553,16 @@ st_update(st_table *tab, st_data_t key,
         value = entry->record;
     }
     old_key = key;
+
+    unsigned int rebuilds_num = tab->rebuilds_num;
+
     retval = (*func)(&key, &value, arg, existing);
+
+    // We need to make sure that the callback didn't cause a table rebuild
+    // Ideally we would make sure no operations happened
+    assert(rebuilds_num == tab->rebuilds_num);
+    (void)rebuilds_num;
+
     switch (retval) {
       case ST_CONTINUE:
         if (! existing) {
@@ -1538,7 +1606,7 @@ st_general_foreach(st_table *tab, st_foreach_check_callback_func *func, st_updat
     st_index_t i, rebuilds_num;
     st_hash_t hash;
     st_data_t key;
-    int error_p, packed_p = tab->bins == NULL;
+    int error_p, packed_p = !st_has_bins(tab);
 
     entries = tab->entries;
     /* The bound can change inside the loop even without rebuilding
@@ -1563,7 +1631,7 @@ st_general_foreach(st_table *tab, st_foreach_check_callback_func *func, st_updat
         if (rebuilds_num != tab->rebuilds_num) {
         retry:
             entries = tab->entries;
-            packed_p = tab->bins == NULL;
+            packed_p = !st_has_bins(tab);
             if (packed_p) {
                 i = find_entry(tab, hash, key);
                 if (EXPECT(i == REBUILT_TABLE_ENTRY_IND, 0))
@@ -1611,7 +1679,7 @@ st_general_foreach(st_table *tab, st_foreach_check_callback_func *func, st_updat
                     goto again;
                 if (bin_ind == UNDEFINED_BIN_IND)
                     break;
-                bin = get_bin(tab->bins, get_size_ind(tab), bin_ind) - ENTRY_BASE;
+                bin = get_bin(st_bins_ptr(tab), get_size_ind(tab), bin_ind) - ENTRY_BASE;
                 MARK_BIN_DELETED(tab, bin_ind);
             }
             curr_entry_ptr = &entries[bin];
@@ -2124,16 +2192,14 @@ st_expand_table(st_table *tab, st_index_t siz)
     tmp = st_init_table_with_size(tab->type, siz);
     n = get_allocated_entries(tab);
     MEMCPY(tmp->entries, tab->entries, st_table_entry, n);
-    free(tab->entries);
-    free(tab->bins);
-    free(tmp->bins);
+    st_free_entries(tab);
+
     tab->entry_power = tmp->entry_power;
     tab->bin_power = tmp->bin_power;
     tab->size_ind = tmp->size_ind;
     tab->entries = tmp->entries;
-    tab->bins = NULL;
     tab->rebuilds_num++;
-    free(tmp);
+    free_fixed_ptr(tmp);
 }
 
 /* Rehash using linear search.  Return TRUE if we found that the table
@@ -2144,9 +2210,6 @@ st_rehash_linear(st_table *tab)
     int eq_p, rebuilt_p;
     st_index_t i, j;
     st_table_entry *p, *q;
-
-    free(tab->bins);
-    tab->bins = NULL;
 
     for (i = tab->entries_start; i < tab->entries_bound; i++) {
         p = &tab->entries[i];
@@ -2177,10 +2240,8 @@ st_rehash_indexed(st_table *tab)
 {
     int eq_p, rebuilt_p;
     st_index_t i;
-    st_index_t const n = bins_size(tab);
+
     unsigned int const size_ind = get_size_ind(tab);
-    st_index_t *bins = realloc(tab->bins, n);
-    tab->bins = bins;
     initialize_bins(tab);
     for (i = tab->entries_start; i < tab->entries_bound; i++) {
         st_table_entry *p = &tab->entries[i];
@@ -2196,10 +2257,10 @@ st_rehash_indexed(st_table *tab)
 
         ind = hash_bin(p->hash, tab);
         for (;;) {
-            st_index_t bin = get_bin(bins, size_ind, ind);
+            st_index_t bin = get_bin(st_bins_ptr(tab), size_ind, ind);
             if (EMPTY_OR_DELETED_BIN_P(bin)) {
                 /* ok, new room */
-                set_bin(bins, size_ind, ind, i + ENTRY_BASE);
+                set_bin(st_bins_ptr(tab), size_ind, ind, i + ENTRY_BASE);
                 break;
             }
             else {
@@ -2239,7 +2300,7 @@ st_rehash(st_table *tab)
     int rebuilt_p;
 
     do {
-        if (tab->bin_power <= MAX_POWER2_FOR_TABLES_WITHOUT_BINS)
+        if (tab->entry_power <= MAX_POWER2_FOR_TABLES_WITHOUT_BINS)
             rebuilt_p = st_rehash_linear(tab);
         else
             rebuilt_p = st_rehash_indexed(tab);
@@ -2313,7 +2374,7 @@ rb_hash_bulk_insert_into_st_table(long argc, const VALUE *argv, VALUE hash)
         st_insert_generic(tab, argc, argv, hash);
     else if (argc <= 2)
         st_insert_single(tab, hash, argv[0], argv[1]);
-    else if (tab->bin_power <= MAX_POWER2_FOR_TABLES_WITHOUT_BINS)
+    else if (tab->entry_power <= MAX_POWER2_FOR_TABLES_WITHOUT_BINS)
         st_insert_linear(tab, argc, argv, hash);
     else
         st_insert_generic(tab, argc, argv, hash);
@@ -2329,6 +2390,916 @@ rb_st_compact_table(st_table *tab)
         rebuild_table_with(new_tab, tab);
         rebuild_move_table(new_tab, tab);
         rebuild_cleanup(tab);
+    }
+}
+
+/*
+ * set_table related code
+ */
+
+struct set_table_entry {
+    st_hash_t hash;
+    st_data_t key;
+};
+
+static inline void
+set_ptr_equal_check(const set_table *tab, const set_table_entry *entry,
+                    st_hash_t hash_val, st_data_t key,
+                    int *res, int *rebuilt_p)
+{
+    unsigned int old_rebuilds_num = tab->rebuilds_num;
+    *res = entry_equal(tab->type, entry->hash, entry->key, hash_val, key);
+    *rebuilt_p = old_rebuilds_num != tab->rebuilds_num;
+}
+
+#define SET_DO_PTR_EQUAL_CHECK(tab, ptr, hash_val, key, res, rebuilt_p) \
+    set_ptr_equal_check((tab), (ptr), (hash_val), (key), &(res), &(rebuilt_p))
+
+/* Return hash value of KEY for table TAB.  */
+static inline st_hash_t
+set_do_hash(st_data_t key, set_table *tab)
+{
+    st_hash_t hash = (st_hash_t)(tab->type->hash)(key);
+    return normalize_hash_value(hash);
+}
+
+/* Return bin size index of table TAB.  */
+static inline unsigned int
+set_get_size_ind(const set_table *tab)
+{
+    return tab->size_ind;
+}
+
+/* Return the number of allocated bins of table TAB.  */
+static inline st_index_t
+set_get_bins_num(const set_table *tab)
+{
+    return ((st_index_t) 1)<<tab->bin_power;
+}
+
+/* Return mask for a bin index in table TAB.  */
+static inline st_index_t
+set_bins_mask(const set_table *tab)
+{
+    return set_get_bins_num(tab) - 1;
+}
+
+/* Return the index of table TAB bin corresponding to
+   HASH_VALUE.  */
+static inline st_index_t
+set_hash_bin(st_hash_t hash_value, set_table *tab)
+{
+    return hash_value & set_bins_mask(tab);
+}
+
+/* Return the number of allocated entries of table TAB.  */
+static inline st_index_t
+set_get_allocated_entries(const set_table *tab)
+{
+    return ((st_index_t) 1)<<tab->entry_power;
+}
+
+static inline size_t
+set_allocated_entries_size(const set_table *tab)
+{
+    return set_get_allocated_entries(tab) * sizeof(set_table_entry);
+}
+
+static inline bool
+set_has_bins(const set_table *tab)
+{
+    return tab->entry_power > MAX_POWER2_FOR_TABLES_WITHOUT_BINS;
+}
+
+/* Return size of the allocated bins of table TAB.  */
+static inline st_index_t
+set_bins_size(const set_table *tab)
+{
+    if (set_has_bins(tab)) {
+        return features[tab->entry_power].bins_words * sizeof (st_index_t);
+    }
+
+    return 0;
+}
+
+static inline st_index_t *
+set_bins_ptr(const set_table *tab)
+{
+    if (set_has_bins(tab)) {
+        return (st_index_t *)(((char *)tab->entries) + set_allocated_entries_size(tab));
+    }
+
+    return NULL;
+}
+
+/* Mark all bins of table TAB as empty.  */
+static void
+set_initialize_bins(set_table *tab)
+{
+    memset(set_bins_ptr(tab), 0, set_bins_size(tab));
+}
+
+/* Make table TAB empty.  */
+static void
+set_make_tab_empty(set_table *tab)
+{
+    tab->num_entries = 0;
+    tab->entries_start = tab->entries_bound = 0;
+    if (set_bins_ptr(tab) != NULL)
+        set_initialize_bins(tab);
+}
+
+static inline size_t
+set_entries_memsize(set_table *tab)
+{
+    size_t memsize = set_get_allocated_entries(tab) * sizeof(set_table_entry);
+    if (set_has_bins(tab)) {
+        memsize += set_bins_size(tab);
+    }
+    return memsize;
+}
+
+static set_table *
+set_init_existing_table_with_size(set_table *tab, const struct st_hash_type *type, st_index_t size)
+{
+    int n;
+
+#ifdef HASH_LOG
+#if HASH_LOG+0 < 0
+    {
+        const char *e = getenv("ST_HASH_LOG");
+        if (!e || !*e) init_st = 1;
+    }
+#endif
+    if (init_st == 0) {
+        init_st = 1;
+        atexit(stat_col);
+    }
+#endif
+
+    n = get_power2(size);
+
+    tab->type = type;
+    tab->entry_power = n;
+    tab->bin_power = features[n].bin_power;
+    tab->size_ind = features[n].size_ind;
+
+    tab->entries = (set_table_entry *)malloc(set_entries_memsize(tab));
+    set_make_tab_empty(tab);
+    tab->rebuilds_num = 0;
+    return tab;
+}
+
+/* Create and return table with TYPE which can hold at least SIZE
+   entries.  The real number of entries which the table can hold is
+   the nearest power of two for SIZE.  */
+set_table *
+set_init_table_with_size(set_table *tab, const struct st_hash_type *type, st_index_t size)
+{
+    if (tab == NULL) tab = malloc(sizeof(set_table));
+
+    set_init_existing_table_with_size(tab, type, size);
+
+    return tab;
+}
+
+set_table *
+set_init_numtable(void)
+{
+    return set_init_table_with_size(NULL, &type_numhash, 0);
+}
+
+set_table *
+set_init_numtable_with_size(st_index_t size)
+{
+    return set_init_table_with_size(NULL, &type_numhash, size);
+}
+
+set_table *
+set_init_embedded_numtable_with_size(set_table *tab, st_index_t size)
+{
+    return set_init_existing_table_with_size(tab, &type_numhash, size);
+}
+
+size_t
+set_table_size(const struct set_table *tbl)
+{
+    return tbl->num_entries;
+}
+
+/* Make table TAB empty.  */
+void
+set_table_clear(set_table *tab)
+{
+    set_make_tab_empty(tab);
+    tab->rebuilds_num++;
+}
+
+void
+set_free_embedded_table(set_table *tab)
+{
+    sized_free(tab->entries, set_entries_memsize(tab));
+}
+
+/* Free table TAB space. This should only be used if you passed NULL to
+   set_init_table_with_size/set_copy when creating the table. */
+void
+set_free_table(set_table *tab)
+{
+    set_free_embedded_table(tab);
+    free_fixed_ptr(tab);
+}
+
+/* Return byte size of memory allocated for table TAB.  */
+size_t
+set_memsize(const set_table *tab)
+{
+    return(sizeof(set_table)
+           + (tab->entry_power <= MAX_POWER2_FOR_TABLES_WITHOUT_BINS ? 0 : set_bins_size(tab))
+           + set_get_allocated_entries(tab) * sizeof(set_table_entry));
+}
+
+static st_index_t
+set_find_table_entry_ind(set_table *tab, st_hash_t hash_value, st_data_t key);
+
+static st_index_t
+set_find_table_bin_ind(set_table *tab, st_hash_t hash_value, st_data_t key);
+
+static st_index_t
+set_find_table_bin_ind_direct(set_table *table, st_hash_t hash_value, st_data_t key);
+
+static st_index_t
+set_find_table_bin_ptr_and_reserve(set_table *tab, st_hash_t *hash_value,
+                               st_data_t key, st_index_t *bin_ind);
+
+static void set_rebuild_table_with(set_table *const new_tab, set_table *const tab);
+static void set_rebuild_move_table(set_table *const new_tab, set_table *const tab);
+static void set_rebuild_cleanup(set_table *const tab);
+
+/* Rebuild table TAB.  Rebuilding removes all deleted bins and entries
+   and can change size of the table entries and bins arrays.
+   Rebuilding is implemented by creation of a new table or by
+   compaction of the existing one.  */
+static void
+set_rebuild_table(set_table *tab)
+{
+    if ((2 * tab->num_entries <= set_get_allocated_entries(tab)
+         && REBUILD_THRESHOLD * tab->num_entries > set_get_allocated_entries(tab))
+        || tab->num_entries < (1 << MINIMAL_POWER2)) {
+        /* Compaction: */
+        tab->num_entries = 0;
+        if (set_has_bins(tab))
+            set_initialize_bins(tab);
+        set_rebuild_table_with(tab, tab);
+    }
+    else {
+        set_table *new_tab;
+        /* This allocation could trigger GC and compaction. If tab is the
+         * gen_fields_tbl, then tab could have changed in size due to objects being
+         * freed and/or moved. Do not store attributes of tab before this line. */
+        new_tab = set_init_table_with_size(NULL, tab->type,
+                                          2 * tab->num_entries - 1);
+        set_rebuild_table_with(new_tab, tab);
+        set_rebuild_move_table(new_tab, tab);
+    }
+    set_rebuild_cleanup(tab);
+}
+
+static void
+set_rebuild_table_with(set_table *const new_tab, set_table *const tab)
+{
+    st_index_t i, ni;
+    unsigned int size_ind;
+    set_table_entry *new_entries;
+    set_table_entry *curr_entry_ptr;
+    st_index_t *bins;
+    st_index_t bin_ind;
+
+    new_entries = new_tab->entries;
+
+    ni = 0;
+    bins = set_bins_ptr(new_tab);
+    size_ind = set_get_size_ind(new_tab);
+    st_index_t bound = tab->entries_bound;
+    set_table_entry *entries = tab->entries;
+
+    for (i = tab->entries_start; i < bound; i++) {
+        curr_entry_ptr = &entries[i];
+        PREFETCH(entries + i + 1, 0);
+        if (EXPECT(DELETED_ENTRY_P(curr_entry_ptr), 0))
+            continue;
+        if (&new_entries[ni] != curr_entry_ptr)
+            new_entries[ni] = *curr_entry_ptr;
+        if (EXPECT(bins != NULL, 1)) {
+            bin_ind = set_find_table_bin_ind_direct(new_tab, curr_entry_ptr->hash,
+                                                curr_entry_ptr->key);
+            set_bin(bins, size_ind, bin_ind, ni + ENTRY_BASE);
+        }
+        new_tab->num_entries++;
+        ni++;
+    }
+
+    assert(new_tab->num_entries == tab->num_entries);
+}
+
+static void
+set_rebuild_move_table(set_table *const new_tab, set_table *const tab)
+{
+    sized_free(tab->entries, set_entries_memsize(tab));
+    tab->entries = new_tab->entries;
+
+    tab->entry_power = new_tab->entry_power;
+    tab->bin_power = new_tab->bin_power;
+    tab->size_ind = new_tab->size_ind;
+
+    free_fixed_ptr(new_tab);
+}
+
+static void
+set_rebuild_cleanup(set_table *const tab)
+{
+    tab->entries_start = 0;
+    tab->entries_bound = tab->num_entries;
+    tab->rebuilds_num++;
+}
+
+/* Return the next secondary hash index for table TAB using previous
+   index IND and PERTURB.  Finally modulo of the function becomes a
+   full *cycle linear congruential generator*, in other words it
+   guarantees traversing all table bins in extreme case.
+
+   According the Hull-Dobell theorem a generator
+   "Xnext = (a*Xprev + c) mod m" is a full cycle generator if and only if
+     o m and c are relatively prime
+     o a-1 is divisible by all prime factors of m
+     o a-1 is divisible by 4 if m is divisible by 4.
+
+   For our case a is 5, c is 1, and m is a power of two.  */
+static inline st_index_t
+set_secondary_hash(st_index_t ind, set_table *tab, st_index_t *perturb)
+{
+    *perturb >>= 11;
+    ind = (ind << 2) + ind + *perturb + 1;
+    return set_hash_bin(ind, tab);
+}
+
+/* Find an entry with HASH_VALUE and KEY in TABLE using a linear
+   search.  Return the index of the found entry in array `entries`.
+   If it is not found, return UNDEFINED_ENTRY_IND.  If the table was
+   rebuilt during the search, return REBUILT_TABLE_ENTRY_IND.  */
+static inline st_index_t
+set_find_entry(set_table *tab, st_hash_t hash_value, st_data_t key)
+{
+    int eq_p, rebuilt_p;
+    st_index_t i, bound;
+    set_table_entry *entries;
+
+    bound = tab->entries_bound;
+    entries = tab->entries;
+    for (i = tab->entries_start; i < bound; i++) {
+        SET_DO_PTR_EQUAL_CHECK(tab, &entries[i], hash_value, key, eq_p, rebuilt_p);
+        if (EXPECT(rebuilt_p, 0))
+            return REBUILT_TABLE_ENTRY_IND;
+        if (eq_p)
+            return i;
+    }
+    return UNDEFINED_ENTRY_IND;
+}
+
+/* Use the quadratic probing.  The method has a better data locality
+   but more collisions than the current approach.  In average it
+   results in a bit slower search.  */
+/*#define QUADRATIC_PROBE*/
+
+/* Return index of entry with HASH_VALUE and KEY in table TAB.  If
+   there is no such entry, return UNDEFINED_ENTRY_IND.  If the table
+   was rebuilt during the search, return REBUILT_TABLE_ENTRY_IND.  */
+static st_index_t
+set_find_table_entry_ind(set_table *tab, st_hash_t hash_value, st_data_t key)
+{
+    int eq_p, rebuilt_p;
+    st_index_t ind;
+#ifdef QUADRATIC_PROBE
+    st_index_t d;
+#else
+    st_index_t perturb;
+#endif
+    st_index_t bin;
+    set_table_entry *entries = tab->entries;
+
+    ind = set_hash_bin(hash_value, tab);
+#ifdef QUADRATIC_PROBE
+    d = 1;
+#else
+    perturb = hash_value;
+#endif
+    for (;;) {
+        bin = get_bin(set_bins_ptr(tab), set_get_size_ind(tab), ind);
+        if (! EMPTY_OR_DELETED_BIN_P(bin)) {
+            SET_DO_PTR_EQUAL_CHECK(tab, &entries[bin - ENTRY_BASE], hash_value, key, eq_p, rebuilt_p);
+            if (EXPECT(rebuilt_p, 0))
+                return REBUILT_TABLE_ENTRY_IND;
+            if (eq_p)
+                break;
+        }
+        else if (EMPTY_BIN_P(bin))
+            return UNDEFINED_ENTRY_IND;
+#ifdef QUADRATIC_PROBE
+        ind = set_hash_bin(ind + d, tab);
+        d++;
+#else
+        ind = set_secondary_hash(ind, tab, &perturb);
+#endif
+    }
+    return bin;
+}
+
+/* Find and return index of table TAB bin corresponding to an entry
+   with HASH_VALUE and KEY.  If there is no such bin, return
+   UNDEFINED_BIN_IND.  If the table was rebuilt during the search,
+   return REBUILT_TABLE_BIN_IND.  */
+static st_index_t
+set_find_table_bin_ind(set_table *tab, st_hash_t hash_value, st_data_t key)
+{
+    int eq_p, rebuilt_p;
+    st_index_t ind;
+#ifdef QUADRATIC_PROBE
+    st_index_t d;
+#else
+    st_index_t perturb;
+#endif
+    st_index_t bin;
+    set_table_entry *entries = tab->entries;
+
+    ind = set_hash_bin(hash_value, tab);
+#ifdef QUADRATIC_PROBE
+    d = 1;
+#else
+    perturb = hash_value;
+#endif
+    for (;;) {
+        bin = get_bin(set_bins_ptr(tab), set_get_size_ind(tab), ind);
+        if (! EMPTY_OR_DELETED_BIN_P(bin)) {
+            SET_DO_PTR_EQUAL_CHECK(tab, &entries[bin - ENTRY_BASE], hash_value, key, eq_p, rebuilt_p);
+            if (EXPECT(rebuilt_p, 0))
+                return REBUILT_TABLE_BIN_IND;
+            if (eq_p)
+                break;
+        }
+        else if (EMPTY_BIN_P(bin))
+            return UNDEFINED_BIN_IND;
+#ifdef QUADRATIC_PROBE
+        ind = set_hash_bin(ind + d, tab);
+        d++;
+#else
+        ind = set_secondary_hash(ind, tab, &perturb);
+#endif
+    }
+    return ind;
+}
+
+/* Find and return index of table TAB bin corresponding to an entry
+   with HASH_VALUE and KEY.  The entry should be in the table
+   already.  */
+static st_index_t
+set_find_table_bin_ind_direct(set_table *tab, st_hash_t hash_value, st_data_t key)
+{
+    st_index_t ind;
+#ifdef QUADRATIC_PROBE
+    st_index_t d;
+#else
+    st_index_t perturb;
+#endif
+    st_index_t bin;
+
+    ind = set_hash_bin(hash_value, tab);
+#ifdef QUADRATIC_PROBE
+    d = 1;
+#else
+    perturb = hash_value;
+#endif
+    for (;;) {
+        bin = get_bin(set_bins_ptr(tab), set_get_size_ind(tab), ind);
+        if (EMPTY_OR_DELETED_BIN_P(bin))
+            return ind;
+#ifdef QUADRATIC_PROBE
+        ind = set_hash_bin(ind + d, tab);
+        d++;
+#else
+        ind = set_secondary_hash(ind, tab, &perturb);
+#endif
+    }
+}
+
+/* Mark I-th bin of table TAB as empty, in other words not
+   corresponding to any entry.  */
+#define MARK_SET_BIN_EMPTY(tab, i) (set_bin(set_bins_ptr(tab), set_get_size_ind(tab), i, EMPTY_BIN))
+
+/* Return index of table TAB bin for HASH_VALUE and KEY through
+   BIN_IND and the pointed value as the function result.  Reserve the
+   bin for inclusion of the corresponding entry into the table if it
+   is not there yet.  We always find such bin as bins array length is
+   bigger entries array.  Although we can reuse a deleted bin, the
+   result bin value is always empty if the table has no entry with
+   KEY.  Return the entries array index of the found entry or
+   UNDEFINED_ENTRY_IND if it is not found.  If the table was rebuilt
+   during the search, return REBUILT_TABLE_ENTRY_IND.  */
+static st_index_t
+set_find_table_bin_ptr_and_reserve(set_table *tab, st_hash_t *hash_value,
+                               st_data_t key, st_index_t *bin_ind)
+{
+    int eq_p, rebuilt_p;
+    st_index_t ind;
+    st_hash_t curr_hash_value = *hash_value;
+#ifdef QUADRATIC_PROBE
+    st_index_t d;
+#else
+    st_index_t perturb;
+#endif
+    st_index_t entry_index;
+    st_index_t firset_deleted_bin_ind;
+    set_table_entry *entries;
+
+    ind = set_hash_bin(curr_hash_value, tab);
+#ifdef QUADRATIC_PROBE
+    d = 1;
+#else
+    perturb = curr_hash_value;
+#endif
+    firset_deleted_bin_ind = UNDEFINED_BIN_IND;
+    entries = tab->entries;
+    for (;;) {
+        entry_index = get_bin(set_bins_ptr(tab), set_get_size_ind(tab), ind);
+        if (EMPTY_BIN_P(entry_index)) {
+            tab->num_entries++;
+            entry_index = UNDEFINED_ENTRY_IND;
+            if (firset_deleted_bin_ind != UNDEFINED_BIN_IND) {
+                /* We can reuse bin of a deleted entry.  */
+                ind = firset_deleted_bin_ind;
+                MARK_SET_BIN_EMPTY(tab, ind);
+            }
+            break;
+        }
+        else if (! DELETED_BIN_P(entry_index)) {
+            SET_DO_PTR_EQUAL_CHECK(tab, &entries[entry_index - ENTRY_BASE], curr_hash_value, key, eq_p, rebuilt_p);
+            if (EXPECT(rebuilt_p, 0))
+                return REBUILT_TABLE_ENTRY_IND;
+            if (eq_p)
+                break;
+        }
+        else if (firset_deleted_bin_ind == UNDEFINED_BIN_IND)
+            firset_deleted_bin_ind = ind;
+#ifdef QUADRATIC_PROBE
+        ind = set_hash_bin(ind + d, tab);
+        d++;
+#else
+        ind = set_secondary_hash(ind, tab, &perturb);
+#endif
+    }
+    *bin_ind = ind;
+    return entry_index;
+}
+
+/* Find an entry with KEY in table TAB.  Return non-zero if we found
+   it.  */
+int
+set_table_lookup(set_table *tab, st_data_t key)
+{
+    st_index_t bin;
+    st_hash_t hash = set_do_hash(key, tab);
+
+ retry:
+    if (!set_has_bins(tab)) {
+        bin = set_find_entry(tab, hash, key);
+        if (EXPECT(bin == REBUILT_TABLE_ENTRY_IND, 0))
+            goto retry;
+        if (bin == UNDEFINED_ENTRY_IND)
+            return 0;
+    }
+    else {
+        bin = set_find_table_entry_ind(tab, hash, key);
+        if (EXPECT(bin == REBUILT_TABLE_ENTRY_IND, 0))
+            goto retry;
+        if (bin == UNDEFINED_ENTRY_IND)
+            return 0;
+        bin -= ENTRY_BASE;
+    }
+    return 1;
+}
+
+/* Check the table and rebuild it if it is necessary.  */
+static inline void
+set_rebuild_table_if_necessary (set_table *tab)
+{
+    st_index_t bound = tab->entries_bound;
+
+    if (bound == set_get_allocated_entries(tab))
+        set_rebuild_table(tab);
+}
+
+/* Insert KEY into table TAB and return zero.  If there is
+   already entry with KEY in the table, return nonzero and update
+   the value of the found entry.  */
+int
+set_insert(set_table *tab, st_data_t key)
+{
+    set_table_entry *entry;
+    st_index_t bin;
+    st_index_t ind;
+    st_hash_t hash_value;
+    st_index_t bin_ind;
+    int new_p;
+
+    hash_value = set_do_hash(key, tab);
+ retry:
+    set_rebuild_table_if_necessary(tab);
+    if (!set_has_bins(tab)) {
+        bin = set_find_entry(tab, hash_value, key);
+        if (EXPECT(bin == REBUILT_TABLE_ENTRY_IND, 0))
+            goto retry;
+        new_p = bin == UNDEFINED_ENTRY_IND;
+        if (new_p)
+            tab->num_entries++;
+        bin_ind = UNDEFINED_BIN_IND;
+    }
+    else {
+        bin = set_find_table_bin_ptr_and_reserve(tab, &hash_value,
+                                             key, &bin_ind);
+        if (EXPECT(bin == REBUILT_TABLE_ENTRY_IND, 0))
+            goto retry;
+        new_p = bin == UNDEFINED_ENTRY_IND;
+        bin -= ENTRY_BASE;
+    }
+    if (new_p) {
+        ind = tab->entries_bound++;
+        entry = &tab->entries[ind];
+        entry->hash = hash_value;
+        entry->key = key;
+        if (bin_ind != UNDEFINED_BIN_IND)
+            set_bin(set_bins_ptr(tab), set_get_size_ind(tab), bin_ind, ind + ENTRY_BASE);
+        return 0;
+    }
+    return 1;
+}
+
+/* Create a copy of old_tab into new_tab. */
+static set_table *
+set_replace(set_table *new_tab, set_table *old_tab)
+{
+    *new_tab = *old_tab;
+    size_t memsize = set_allocated_entries_size(old_tab) + set_bins_size(old_tab);
+    new_tab->entries = (set_table_entry *)malloc(memsize);
+    MEMCPY(new_tab->entries, old_tab->entries, char, memsize);
+    return new_tab;
+}
+
+/* Create and return a copy of table OLD_TAB.  */
+set_table *
+set_copy(set_table *new_tab, set_table *old_tab)
+{
+    if (new_tab == NULL) new_tab = (set_table *) malloc(sizeof(set_table));
+
+    if (set_replace(new_tab, old_tab) == NULL) {
+        set_free_table(new_tab);
+        return NULL;
+    }
+
+    return new_tab;
+}
+
+/* Update the entries start of table TAB after removing an entry
+   with index N in the array entries.  */
+static inline void
+set_update_range_for_deleted(set_table *tab, st_index_t n)
+{
+    /* Do not update entries_bound here.  Otherwise, we can fill all
+       bins by deleted entry value before rebuilding the table.  */
+    if (tab->entries_start == n) {
+        st_index_t start = n + 1;
+        st_index_t bound = tab->entries_bound;
+        set_table_entry *entries = tab->entries;
+        while (start < bound && DELETED_ENTRY_P(&entries[start])) start++;
+        tab->entries_start = start;
+    }
+}
+
+/* Mark I-th bin of table TAB as corresponding to a deleted table
+   entry.  Update number of entries in the table and number of bins
+   corresponding to deleted entries. */
+#define MARK_SET_BIN_DELETED(tab, i)				\
+    do {                                                        \
+        set_bin(set_bins_ptr(tab), set_get_size_ind(tab), i, DELETED_BIN); \
+    } while (0)
+
+/* Delete entry with KEY from table TAB, and return non-zero.  If
+   there is no entry with KEY in the table, return zero.  */
+int
+set_table_delete(set_table *tab, st_data_t *key)
+{
+    set_table_entry *entry;
+    st_index_t bin;
+    st_index_t bin_ind;
+    st_hash_t hash;
+
+    hash = set_do_hash(*key, tab);
+ retry:
+    if (!set_has_bins(tab)) {
+        bin = set_find_entry(tab, hash, *key);
+        if (EXPECT(bin == REBUILT_TABLE_ENTRY_IND, 0))
+            goto retry;
+        if (bin == UNDEFINED_ENTRY_IND) {
+            return 0;
+        }
+    }
+    else {
+        bin_ind = set_find_table_bin_ind(tab, hash, *key);
+        if (EXPECT(bin_ind == REBUILT_TABLE_BIN_IND, 0))
+            goto retry;
+        if (bin_ind == UNDEFINED_BIN_IND) {
+            return 0;
+        }
+        bin = get_bin(set_bins_ptr(tab), set_get_size_ind(tab), bin_ind) - ENTRY_BASE;
+        MARK_SET_BIN_DELETED(tab, bin_ind);
+    }
+    entry = &tab->entries[bin];
+    *key = entry->key;
+    MARK_ENTRY_DELETED(entry);
+    tab->num_entries--;
+    set_update_range_for_deleted(tab, bin);
+    return 1;
+}
+
+/* Traverse all entries in table TAB calling FUNC with current entry
+   key and zero.  If the call returns ST_STOP, stop
+   traversing.  If the call returns ST_DELETE, delete the current
+   entry from the table.  In case of ST_CHECK or ST_CONTINUE, continue
+   traversing.  The function returns zero unless an error is found.
+   CHECK_P is flag of set_foreach_check call.  The behavior is a bit
+   different for ST_CHECK and when the current element is removed
+   during traversing.  */
+static inline int
+set_general_foreach(set_table *tab, set_foreach_check_callback_func *func,
+                    set_update_callback_func *replace, st_data_t arg,
+                    int check_p)
+{
+    st_index_t bin;
+    st_index_t bin_ind;
+    set_table_entry *entries, *curr_entry_ptr;
+    enum st_retval retval;
+    st_index_t i, rebuilds_num;
+    st_hash_t hash;
+    st_data_t key;
+    int error_p, packed_p = !set_has_bins(tab);
+
+    entries = tab->entries;
+    /* The bound can change inside the loop even without rebuilding
+       the table, e.g. by an entry insertion.  */
+    for (i = tab->entries_start; i < tab->entries_bound; i++) {
+        curr_entry_ptr = &entries[i];
+        if (EXPECT(DELETED_ENTRY_P(curr_entry_ptr), 0))
+            continue;
+        key = curr_entry_ptr->key;
+        rebuilds_num = tab->rebuilds_num;
+        hash = curr_entry_ptr->hash;
+        retval = (*func)(key, arg, 0);
+
+         if (retval == ST_REPLACE && replace) {
+            retval = (*replace)(&key, arg, TRUE);
+            curr_entry_ptr->key = key;
+        }
+
+        if (rebuilds_num != tab->rebuilds_num) {
+        retry:
+            entries = tab->entries;
+            packed_p = !set_has_bins(tab);
+            if (packed_p) {
+                i = set_find_entry(tab, hash, key);
+                if (EXPECT(i == REBUILT_TABLE_ENTRY_IND, 0))
+                    goto retry;
+                error_p = i == UNDEFINED_ENTRY_IND;
+            }
+            else {
+                i = set_find_table_entry_ind(tab, hash, key);
+                if (EXPECT(i == REBUILT_TABLE_ENTRY_IND, 0))
+                    goto retry;
+                error_p = i == UNDEFINED_ENTRY_IND;
+                i -= ENTRY_BASE;
+            }
+            if (error_p && check_p) {
+                /* call func with error notice */
+                retval = (*func)(0, arg, 1);
+                return 1;
+            }
+            curr_entry_ptr = &entries[i];
+        }
+        switch (retval) {
+          case ST_REPLACE:
+            break;
+          case ST_CONTINUE:
+            break;
+          case ST_CHECK:
+            if (check_p)
+                break;
+          case ST_STOP:
+            return 0;
+          case ST_DELETE: {
+            st_data_t key = curr_entry_ptr->key;
+
+              again:
+            if (packed_p) {
+                bin = set_find_entry(tab, hash, key);
+                if (EXPECT(bin == REBUILT_TABLE_ENTRY_IND, 0))
+                    goto again;
+                if (bin == UNDEFINED_ENTRY_IND)
+                    break;
+            }
+            else {
+                bin_ind = set_find_table_bin_ind(tab, hash, key);
+                if (EXPECT(bin_ind == REBUILT_TABLE_BIN_IND, 0))
+                    goto again;
+                if (bin_ind == UNDEFINED_BIN_IND)
+                    break;
+                bin = get_bin(set_bins_ptr(tab), set_get_size_ind(tab), bin_ind) - ENTRY_BASE;
+                MARK_SET_BIN_DELETED(tab, bin_ind);
+            }
+            curr_entry_ptr = &entries[bin];
+            MARK_ENTRY_DELETED(curr_entry_ptr);
+            tab->num_entries--;
+            set_update_range_for_deleted(tab, bin);
+            break;
+          }
+        }
+    }
+    return 0;
+}
+
+int
+set_foreach_with_replace(set_table *tab, set_foreach_check_callback_func *func, set_update_callback_func *replace, st_data_t arg)
+{
+    return set_general_foreach(tab, func, replace, arg, TRUE);
+}
+
+struct set_functor {
+    set_foreach_callback_func *func;
+    st_data_t arg;
+};
+
+static int
+set_apply_functor(st_data_t k, st_data_t d, int _)
+{
+    const struct set_functor *f = (void *)d;
+    return f->func(k, f->arg);
+}
+
+int
+set_table_foreach(set_table *tab, set_foreach_callback_func *func, st_data_t arg)
+{
+    const struct set_functor f = { func, arg };
+    return set_general_foreach(tab, set_apply_functor, NULL, (st_data_t)&f, FALSE);
+}
+
+/* See comments for function set_delete_safe.  */
+int
+set_foreach_check(set_table *tab, set_foreach_check_callback_func *func, st_data_t arg,
+                 st_data_t never ATTRIBUTE_UNUSED)
+{
+    return set_general_foreach(tab, func, NULL, arg, TRUE);
+}
+
+/* Set up array KEYS by at most SIZE keys of head table TAB entries.
+   Return the number of keys set up in array KEYS.  */
+inline st_index_t
+set_keys(set_table *tab, st_data_t *keys, st_index_t size)
+{
+    st_index_t i, bound;
+    st_data_t key, *keys_start, *keys_end;
+    set_table_entry *curr_entry_ptr, *entries = tab->entries;
+
+    bound = tab->entries_bound;
+    keys_start = keys;
+    keys_end = keys + size;
+    for (i = tab->entries_start; i < bound; i++) {
+        if (keys == keys_end)
+            break;
+        curr_entry_ptr = &entries[i];
+        key = curr_entry_ptr->key;
+        if (! DELETED_ENTRY_P(curr_entry_ptr))
+            *keys++ = key;
+    }
+
+    return keys - keys_start;
+}
+
+void
+set_compact_table(set_table *tab)
+{
+    st_index_t num = tab->num_entries;
+    if (REBUILD_THRESHOLD * num <= set_get_allocated_entries(tab)) {
+        /* Compaction: */
+        set_table *new_tab = set_init_table_with_size(NULL, tab->type, 2 * num);
+        set_rebuild_table_with(new_tab, tab);
+        set_rebuild_move_table(new_tab, tab);
+        set_rebuild_cleanup(tab);
     }
 }
 

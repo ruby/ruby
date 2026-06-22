@@ -11,13 +11,13 @@ describe "Enumerable#each_entry" do
 
   it "yields multiple arguments as an array" do
     acc = []
-    @enum.each_entry {|g| acc << g}.should equal(@enum)
+    @enum.each_entry {|g| acc << g}.should.equal?(@enum)
     acc.should == @entries
   end
 
   it "returns an enumerator if no block" do
     e = @enum.each_entry
-    e.should be_an_instance_of(Enumerator)
+    e.should.instance_of?(Enumerator)
     e.to_a.should == @entries
   end
 
@@ -27,8 +27,8 @@ describe "Enumerable#each_entry" do
   end
 
   it "raises an ArgumentError when extra arguments" do
-    -> { @enum.each_entry("one").to_a   }.should raise_error(ArgumentError)
-    -> { @enum.each_entry("one"){}.to_a }.should raise_error(ArgumentError)
+    -> { @enum.each_entry("one").to_a   }.should.raise(ArgumentError)
+    -> { @enum.each_entry("one"){}.to_a }.should.raise(ArgumentError)
   end
 
   it "passes extra arguments to #each" do

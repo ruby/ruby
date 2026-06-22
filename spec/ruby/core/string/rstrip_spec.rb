@@ -30,7 +30,7 @@ end
 describe "String#rstrip!" do
   it "modifies self in place and returns self" do
     a = "  hello  "
-    a.rstrip!.should equal(a)
+    a.rstrip!.should.equal?(a)
     a.should == "  hello"
   end
 
@@ -59,36 +59,22 @@ describe "String#rstrip!" do
   end
 
   it "raises a FrozenError on a frozen instance that is modified" do
-    -> { "  hello  ".freeze.rstrip! }.should raise_error(FrozenError)
+    -> { "  hello  ".freeze.rstrip! }.should.raise(FrozenError)
   end
 
   # see [ruby-core:23666]
   it "raises a FrozenError on a frozen instance that would not be modified" do
-    -> { "hello".freeze.rstrip! }.should raise_error(FrozenError)
-    -> { "".freeze.rstrip!      }.should raise_error(FrozenError)
+    -> { "hello".freeze.rstrip! }.should.raise(FrozenError)
+    -> { "".freeze.rstrip!      }.should.raise(FrozenError)
   end
 
-  ruby_version_is "3.2" do
-    it "raises an Encoding::CompatibilityError if the last non-space codepoint is invalid" do
-      s = "abc\xDF".force_encoding(Encoding::UTF_8)
-      s.valid_encoding?.should be_false
-      -> { s.rstrip! }.should raise_error(Encoding::CompatibilityError)
+  it "raises an Encoding::CompatibilityError if the last non-space codepoint is invalid" do
+    s = "abc\xDF".force_encoding(Encoding::UTF_8)
+    s.valid_encoding?.should == false
+    -> { s.rstrip! }.should.raise(Encoding::CompatibilityError)
 
-      s = "abc\xDF   ".force_encoding(Encoding::UTF_8)
-      s.valid_encoding?.should be_false
-      -> { s.rstrip! }.should raise_error(Encoding::CompatibilityError)
-    end
-  end
-
-  ruby_version_is ""..."3.2" do
-    it "raises an ArgumentError if the last non-space codepoint is invalid" do
-      s = "abc\xDF".force_encoding(Encoding::UTF_8)
-      s.valid_encoding?.should be_false
-      -> { s.rstrip! }.should raise_error(ArgumentError)
-
-      s = "abc\xDF   ".force_encoding(Encoding::UTF_8)
-      s.valid_encoding?.should be_false
-      -> { s.rstrip! }.should raise_error(ArgumentError)
-    end
+    s = "abc\xDF   ".force_encoding(Encoding::UTF_8)
+    s.valid_encoding?.should == false
+    -> { s.rstrip! }.should.raise(Encoding::CompatibilityError)
   end
 end

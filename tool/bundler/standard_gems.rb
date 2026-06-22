@@ -4,10 +4,10 @@ source "https://rubygems.org"
 
 gem "standard", "~> 1.0"
 
-gem "minitest"
+gem "minitest", "~> 5.1"
 gem "irb"
 gem "rake"
 gem "rake-compiler"
 gem "rspec"
 gem "test-unit"
-gem "rb_sys"
+gem "rb_sys", ">= 0.9.128"

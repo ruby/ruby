@@ -5,7 +5,7 @@
 **********************************************************************/
 /*-
  * Copyright (c) 2002-2008  K.Kosako  <sndgk393 AT ybb DOT ne DOT jp>
- * Copyright (c) 2011-2016  K.Takata  <kentkt AT csc DOT jp>
+ * Copyright (c) 2011-2019  K.Takata  <kentkt AT csc DOT jp>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -118,6 +118,11 @@ typedef struct {
 
 typedef struct {
   short int len;
+#if defined(__has_attribute)
+# if __has_attribute(nonstring)
+  __attribute__((nonstring))
+# endif
+#endif
   const UChar name[6];
   int       ctype;
 } PosixBracketEntryType;
@@ -129,11 +134,13 @@ typedef struct {
 #define roomof(x, y) (((x) + (y) - 1) / (y))
 #define type_roomof(x, y) roomof(sizeof(x), sizeof(y))
 
+/* config */
 #define USE_CRNL_AS_LINE_TERMINATOR
 #define USE_UNICODE_PROPERTIES
 #define USE_UNICODE_AGE_PROPERTIES
 /* #define USE_UNICODE_CASE_FOLD_TURKISH_AZERI */
 /* #define USE_UNICODE_ALL_LINE_TERMINATORS */  /* see Unicode.org UTS #18 */
+#define USE_CASE_MAP_API
 
 
 #define ONIG_ENCODING_INIT_DEFAULT           ONIG_ENCODING_ASCII
@@ -187,8 +194,8 @@ ONIG_EXTERN int onigenc_unicode_apply_all_case_fold(OnigCaseFoldType flag, OnigA
 #define UTF16_IS_SURROGATE_SECOND(c)   (((c) & 0xfc) == 0xdc)
 #define UTF16_IS_SURROGATE(c)          (((c) & 0xf8) == 0xd8)
 #define UNICODE_VALID_CODEPOINT_P(c) ( \
-	((c) <= 0x10ffff) && \
-	!((c) < 0x10000 && UTF16_IS_SURROGATE((c) >> 8)))
+        ((c) <= 0x10ffff) && \
+        !((c) < 0x10000 && UTF16_IS_SURROGATE((c) >> 8)))
 
 #define ONIGENC_ISO_8859_1_TO_LOWER_CASE(c) \
   OnigEncISO_8859_1_ToLowerCaseTable[c]
@@ -234,8 +241,8 @@ extern int ONIG_ENC_REGISTER(const char *, OnigEncoding);
 # define OnigEncodingDefine(f,n)			     \
     OnigEncodingDeclare(n);			     \
     void Init_##f(void) {			     \
-	ONIG_ENC_REGISTER(OnigEncodingName(n).name,  \
-			  &OnigEncodingName(n));     \
+        ONIG_ENC_REGISTER(OnigEncodingName(n).name,  \
+                          &OnigEncodingName(n));     \
     }						     \
     OnigEncodingDeclare(n)
 #else

@@ -14,7 +14,7 @@ describe "Struct#deconstruct_keys" do
 
     -> {
       obj.deconstruct_keys
-    }.should raise_error(ArgumentError, /wrong number of arguments \(given 0, expected 1\)/)
+    }.should.raise(ArgumentError, /wrong number of arguments \(given 0, expected 1\)/)
   end
 
   it "returns only specified keys" do
@@ -41,6 +41,13 @@ describe "Struct#deconstruct_keys" do
     s.deconstruct_keys([0, 1]   ).should == {0 => 10, 1 => 20}
     s.deconstruct_keys([0]      ).should == {0 => 10}
     s.deconstruct_keys([-1]     ).should == {-1 => 30}
+  end
+
+  it "ignores incorrect position numbers" do
+    struct = Struct.new(:x, :y, :z)
+    s = struct.new(10, 20, 30)
+
+    s.deconstruct_keys([0, 3]).should == {0 => 10}
   end
 
   it "support mixing attribute names and argument position numbers" do
@@ -80,22 +87,44 @@ describe "Struct#deconstruct_keys" do
     obj.deconstruct_keys(nil).should == {x: 1, y: 2}
   end
 
-  it "raises TypeError if index is not a String, a Symbol and not convertible to Integer " do
+  it "tries to convert a key with #to_int if index is not a String nor a Symbol, but responds to #to_int" do
+    struct = Struct.new(:x, :y)
+    s = struct.new(1, 2)
+
+    key = mock("to_int")
+    key.should_receive(:to_int).and_return(1)
+
+    s.deconstruct_keys([key]).should == { key => 2 }
+  end
+
+  it "raises a TypeError if the conversion with #to_int does not return an Integer" do
+    struct = Struct.new(:x, :y)
+    s = struct.new(1, 2)
+
+    key = mock("to_int")
+    key.should_receive(:to_int).and_return("not an Integer")
+
+    -> {
+      s.deconstruct_keys([key])
+    }.should raise_consistent_error(TypeError, /can't convert MockObject into Integer/)
+  end
+
+  it "raises TypeError if index is not a String, a Symbol and not convertible to Integer" do
     struct = Struct.new(:x, :y)
     s = struct.new(1, 2)
 
     -> {
       s.deconstruct_keys([0, []])
-    }.should raise_error(TypeError, "no implicit conversion of Array into Integer")
+    }.should.raise(TypeError, "no implicit conversion of Array into Integer")
   end
 
   it "raise TypeError if passed anything except nil or array" do
     struct = Struct.new(:x, :y)
     s = struct.new(1, 2)
 
-    -> { s.deconstruct_keys('x') }.should raise_error(TypeError, /expected Array or nil/)
-    -> { s.deconstruct_keys(1)   }.should raise_error(TypeError, /expected Array or nil/)
-    -> { s.deconstruct_keys(:x)  }.should raise_error(TypeError, /expected Array or nil/)
-    -> { s.deconstruct_keys({})  }.should raise_error(TypeError, /expected Array or nil/)
+    -> { s.deconstruct_keys('x') }.should.raise(TypeError, /expected Array or nil/)
+    -> { s.deconstruct_keys(1)   }.should.raise(TypeError, /expected Array or nil/)
+    -> { s.deconstruct_keys(:x)  }.should.raise(TypeError, /expected Array or nil/)
+    -> { s.deconstruct_keys({})  }.should.raise(TypeError, /expected Array or nil/)
   end
 end

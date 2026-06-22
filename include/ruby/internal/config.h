@@ -50,7 +50,7 @@
 #  define HAVE_VA_ARGS_MACRO
 # elif defined(__INTEL_CXX11_MODE__)
 #  define HAVE_VA_ARGS_MACRO
-# elif RBIMPL_COMPILER_SINCE(MSVC, 16, 0, 0)
+# elif RBIMPL_COMPILER_IS(MSVC)
 #  define HAVE_VA_ARGS_MACRO
 # else
 #  /* NG, not known. */

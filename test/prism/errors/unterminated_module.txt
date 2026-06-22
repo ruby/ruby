@@ -1,0 +1,4 @@
+module Foo
+          ^ unexpected end-of-input, assuming it is closing the parent top level context
+^~~~~~ expected an `end` to close the `module` statement
+

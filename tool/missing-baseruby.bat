@@ -18,6 +18,13 @@
 : ; abort () { exit 1; }
 
 call :warn "executable host ruby is required.  use --with-baseruby option."
-call :warn "Note that BASERUBY must be Ruby 3.0.0 or later."
+call :warn "Note that BASERUBY must be Ruby 3.1.0 or later."
 call :abort
-: || (:^; abort if RUBY_VERSION < s[%r"warn .*Ruby ([\d.]+)(?:\.0)?",1])
+(goto :eof ^;)
+verbose = true if ARGV[0] == "--verbose"
+case
+when !defined?(RubyVM::InstructionSequence)
+  abort(*(["BASERUBY must be CRuby"] if verbose))
+when RUBY_VERSION < s[%r[warn .*\KBASERUBY .*Ruby ([\d.]+)(?:\.0)?.*(?=\")],1]
+  abort(*(["#{$&}. Found: #{RUBY_VERSION}"] if verbose))
+end

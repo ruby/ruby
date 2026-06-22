@@ -7,11 +7,12 @@ class Gem::Request::ConnectionPools # :nodoc:
     attr_accessor :client
   end
 
-  def initialize(proxy_uri, cert_files)
+  def initialize(proxy_uri, cert_files, pool_size = 1)
     @proxy_uri  = proxy_uri
     @cert_files = cert_files
     @pools      = {}
     @pool_mutex = Thread::Mutex.new
+    @pool_size  = pool_size
   end
 
   def pool_for(uri)
@@ -20,9 +21,9 @@ class Gem::Request::ConnectionPools # :nodoc:
     @pool_mutex.synchronize do
       @pools[key] ||=
         if https? uri
-          Gem::Request::HTTPSPool.new(http_args, @cert_files, @proxy_uri)
+          Gem::Request::HTTPSPool.new(http_args, @cert_files, @proxy_uri, @pool_size)
         else
-          Gem::Request::HTTPPool.new(http_args, @cert_files, @proxy_uri)
+          Gem::Request::HTTPPool.new(http_args, @cert_files, @proxy_uri, @pool_size)
         end
     end
   end

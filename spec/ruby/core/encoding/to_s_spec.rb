@@ -1,6 +1,7 @@
 require_relative "../../spec_helper"
-require_relative 'shared/name'
 
 describe "Encoding#to_s" do
-  it_behaves_like :encoding_name, :to_s
+  it "is an alias of Encoding#name" do
+    Encoding.instance_method(:to_s).should == Encoding.instance_method(:name)
+  end
 end

@@ -25,6 +25,7 @@ static void dln_loaderror(const char *format, ...);
 #endif
 #include "dln.h"
 #include "internal.h"
+#include "internal/box.h"
 #include "internal/compilers.h"
 
 #ifdef HAVE_STDLIB_H
@@ -74,6 +75,10 @@ void *xrealloc();
 
 #ifdef HAVE_UNISTD_H
 # include <unistd.h>
+#endif
+
+#ifndef UNREACHABLE_RETURN
+# define UNREACHABLE_RETURN(x) return (x)
 #endif
 
 #ifndef dln_loaderror
@@ -347,6 +352,7 @@ dln_open(const char *file)
     void *handle;
 
 #if defined(_WIN32)
+# define DLN_DEFINED
     char message[1024];
 
     /* Convert the file path to wide char */
@@ -373,6 +379,7 @@ dln_open(const char *file)
 # endif
 
 #elif defined(USE_DLN_DLOPEN)
+# define DLN_DEFINED
 
 # ifndef RTLD_LAZY
 #  define RTLD_LAZY 1
@@ -383,9 +390,13 @@ dln_open(const char *file)
 # ifndef RTLD_GLOBAL
 #  define RTLD_GLOBAL 0
 # endif
+# ifndef RTLD_LOCAL
+#  define RTLD_LOCAL 0 /* TODO: 0??? some systems (including libc) use 0x00100 for RTLD_GLOBAL, 0x00000 for RTLD_LOCAL */
+# endif
 
     /* Load file */
-    handle = dlopen(file, RTLD_LAZY|RTLD_GLOBAL);
+    int mode = rb_box_available() ? RTLD_LAZY|RTLD_LOCAL : RTLD_LAZY|RTLD_GLOBAL;
+    handle = dlopen(file, mode);
     if (handle == NULL) {
         error = dln_strerror();
         goto failed;
@@ -497,10 +508,10 @@ abi_check_enabled_p(void)
 }
 #endif
 
-void *
-dln_load(const char *file)
+static void *
+dln_load_and_init(const char *file, const char *init_fct_name)
 {
-#if defined(_WIN32) || defined(USE_DLN_DLOPEN)
+#if defined(DLN_DEFINED)
     void *handle = dln_open(file);
 
 #ifdef RUBY_DLN_CHECK_ABI
@@ -512,18 +523,17 @@ dln_load(const char *file)
     }
 #endif
 
-    char *init_fct_name;
-    init_funcname(&init_fct_name, file);
-
     /* Call the init code */
     dln_sym_callable(void, (void), handle, init_fct_name)();
 
     return handle;
 
 #elif defined(_AIX)
+# define DLN_DEFINED
     {
         void (*init_fct)(void);
 
+        /* TODO: check - AIX's load system call will return the first/last symbol/function? */
         init_fct = (void(*)(void))load((char*)file, 1, 0);
         if (init_fct == NULL) {
             aix_loaderror(file);
@@ -536,7 +546,25 @@ dln_load(const char *file)
     }
 #else
     dln_notimplement();
+    UNREACHABLE_RETURN(0);
 #endif
+}
 
-    return 0;			/* dummy return */
+void *
+dln_load(const char *file)
+{
+    return dln_load_feature(file, file);
+}
+
+void *
+dln_load_feature(const char *file, const char *fname)
+{
+#if defined(DLN_DEFINED)
+    char *init_fct_name;
+    init_funcname(&init_fct_name, fname);
+    return dln_load_and_init(file, init_fct_name);
+#else
+    dln_notimplement();
+    UNREACHABLE_RETURN(0);
+#endif
 }

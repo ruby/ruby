@@ -1,0 +1,3 @@
+a = b c and 1
+        ^~~ unexpected 'and', expecting end-of-input
+

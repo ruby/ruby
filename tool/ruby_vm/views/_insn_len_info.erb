@@ -5,6 +5,9 @@
 %# granted, to either  redistribute and/or modify this file,  provided that the
 %# conditions mentioned  in the  file COPYING  are met.   Consult the  file for
 %# details.
+%
+% zjit_insns, insns = RubyVM::Instructions.partition { |i| i.name.start_with?('zjit_') }
+%
 CONSTFUNC(MAYBE_UNUSED(static int insn_len(VALUE insn)));
 
 RUBY_SYMBOL_EXPORT_BEGIN /* for debuggers */
@@ -13,9 +16,14 @@ RUBY_SYMBOL_EXPORT_END
 
 #ifdef RUBY_VM_INSNS_INFO
 const uint8_t rb_vm_insn_len_info[] = {
-% RubyVM::Instructions.each_slice 23 do |a|
-    <%= a.map(&:width).join(', ') -%>,
+% insns.each_slice(23) do |row|
+    <%= row.map(&:width).join(', ') -%>,
 % end
+#if USE_ZJIT
+% zjit_insns.each_slice(23) do |row|
+    <%= row.map(&:width).join(', ') -%>,
+% end
+#endif
 };
 
 ASSERT_VM_INSTRUCTION_SIZE(rb_vm_insn_len_info);

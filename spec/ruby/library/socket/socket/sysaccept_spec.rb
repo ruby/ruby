@@ -15,7 +15,7 @@ describe 'Socket#sysaccept' do
     platform_is :linux do # hangs on other platforms
       describe 'using an unbound socket'  do
         it 'raises Errno::EINVAL' do
-          -> { @server.sysaccept }.should raise_error(Errno::EINVAL)
+          -> { @server.sysaccept }.should.raise(Errno::EINVAL)
         end
       end
 
@@ -25,7 +25,7 @@ describe 'Socket#sysaccept' do
         end
 
         it 'raises Errno::EINVAL' do
-          -> { @server.sysaccept }.should raise_error(Errno::EINVAL)
+          -> { @server.sysaccept }.should.raise(Errno::EINVAL)
         end
       end
     end
@@ -59,7 +59,7 @@ describe 'Socket#sysaccept' do
 
           @client.connect(@server_addr)
 
-          thread.value.should be_an_instance_of(Array)
+          thread.value.should.instance_of?(Array)
         end
       end
 
@@ -76,8 +76,8 @@ describe 'Socket#sysaccept' do
         it 'returns an Array containing an Integer and an Addrinfo' do
           @fd, addrinfo = @server.sysaccept
 
-          @fd.should be_kind_of(Integer)
-          addrinfo.should be_an_instance_of(Addrinfo)
+          @fd.should.is_a?(Integer)
+          addrinfo.should.instance_of?(Addrinfo)
         end
 
         it 'returns a new file descriptor' do

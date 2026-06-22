@@ -83,7 +83,7 @@ class Gem::SpecFetcher
   #
   # If +matching_platform+ is false, gems for all platforms are returned.
 
-  def search_for_dependency(dependency, matching_platform=true)
+  def search_for_dependency(dependency, matching_platform = true)
     found = {}
 
     rejected_specs = {}
@@ -130,7 +130,7 @@ class Gem::SpecFetcher
   ##
   # Return all gem name tuples who's names match +obj+
 
-  def detect(type=:complete)
+  def detect(type = :complete)
     tuples = []
 
     list, _ = available_specs(type)
@@ -150,7 +150,7 @@ class Gem::SpecFetcher
   #
   # If +matching_platform+ is false, gems for all platforms are returned.
 
-  def spec_for_dependency(dependency, matching_platform=true)
+  def spec_for_dependency(dependency, matching_platform = true)
     tuples, errors = search_for_dependency(dependency, matching_platform)
 
     specs = []
@@ -280,7 +280,7 @@ class Gem::SpecFetcher
   # Retrieves NameTuples from +source+ of the given +type+ (:prerelease,
   # etc.).  If +gracefully_ignore+ is true, errors are ignored.
 
-  def tuples_for(source, type, gracefully_ignore=false) # :nodoc:
+  def tuples_for(source, type, gracefully_ignore = false) # :nodoc:
     @caches[type][source.uri] ||=
       source.load_specs(type).sort_by(&:name)
   rescue Gem::RemoteFetcher::FetchError

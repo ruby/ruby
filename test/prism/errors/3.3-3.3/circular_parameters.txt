@@ -1,0 +1,12 @@
+def foo(bar = bar) = 42
+        ^~~ circular argument reference - bar
+
+def foo(bar: bar) = 42
+        ^~~ circular argument reference - bar
+
+proc { |foo = foo| }
+        ^~~ circular argument reference - foo
+
+proc { |foo: foo| }
+        ^~~ circular argument reference - foo
+

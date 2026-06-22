@@ -606,11 +606,11 @@ class TestRubyOptimization < Test::Unit::TestCase
   end
 
   class Bug10557
-    def [](_)
+    def [](_, &)
       block_given?
     end
 
-    def []=(_, _)
+    def []=(_, _, &)
       block_given?
     end
   end
@@ -728,7 +728,7 @@ class TestRubyOptimization < Test::Unit::TestCase
       insn = iseq.disasm
       assert_match %r{putobject\s+#{Regexp.quote('"1.8.0"..."1.8.8"')}}, insn
       assert_match %r{putobject\s+#{Regexp.quote('"2.0.0".."2.3.2"')}}, insn
-      assert_no_match(/putstring/, insn)
+      assert_no_match(/dupstring/, insn)
       assert_no_match(/newrange/, insn)
     end
   end
@@ -946,14 +946,14 @@ class TestRubyOptimization < Test::Unit::TestCase
   end
 
   def test_peephole_optimization_without_trace
-    assert_separately [], <<-END
+    assert_ruby_status [], <<-END
       RubyVM::InstructionSequence.compile_option = {trace_instruction: false}
       eval "def foo; 1.times{|(a), &b| nil && a}; end"
     END
   end
 
   def test_clear_unreachable_keyword_args
-    assert_separately [], <<-END, timeout: 60
+    assert_ruby_status [], <<-END, timeout: 60
       script =  <<-EOS
         if true
         else
@@ -1080,7 +1080,7 @@ class TestRubyOptimization < Test::Unit::TestCase
   class Objtostring
   end
 
-  def test_objtostring
+  def test_objtostring_immediate
     assert_raise(NoMethodError){"#{BasicObject.new}"}
     assert_redefine_method('Symbol', 'to_s', <<-'end')
       assert_match %r{\A#<Symbol:0x[0-9a-f]+>\z}, "#{:foo}"
@@ -1094,11 +1094,17 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_redefine_method('FalseClass', 'to_s', <<-'end')
       assert_match %r{\A#<FalseClass:0x[0-9a-f]+>\z}, "#{false}"
     end
+  end
+
+  def test_objtostring_fixnum
     assert_redefine_method('Integer', 'to_s', <<-'end')
       (-1..10).each { |i|
         assert_match %r{\A#<Integer:0x[0-9a-f]+>\z}, "#{i}"
       }
     end
+  end
+
+  def test_objtostring
     assert_equal "TestRubyOptimization::Objtostring", "#{Objtostring}"
     assert_match %r{\A#<Class:0x[0-9a-f]+>\z}, "#{Class.new}"
     assert_match %r{\A#<Module:0x[0-9a-f]+>\z}, "#{Module.new}"
@@ -1214,5 +1220,59 @@ class TestRubyOptimization < Test::Unit::TestCase
         puts $!
       end
     RUBY
+  end
+
+  def test_opt_new_with_safe_navigation
+    payload = nil
+    assert_nil payload&.new
+  end
+
+  def test_opt_new
+    pos_initialize = "
+      def initialize a, b
+        @a = a
+        @b = b
+      end
+    "
+    kw_initialize = "
+      def initialize a:, b:
+        @a = a
+        @b = b
+      end
+    "
+    kw_hash_initialize = "
+      def initialize a, **kw
+        @a = a
+        @b = kw[:b]
+      end
+    "
+    pos_prelude = "class OptNewFoo; #{pos_initialize}; end;"
+    kw_prelude = "class OptNewFoo; #{kw_initialize}; end;"
+    kw_hash_prelude = "class OptNewFoo; #{kw_hash_initialize}; end;"
+    [
+      "#{pos_prelude} OptNewFoo.new 1, 2",
+      "#{pos_prelude} a = 1; b = 2; OptNewFoo.new a, b",
+      "#{pos_prelude} def optnew_foo(a, b) = OptNewFoo.new(a, b); optnew_foo 1, 2",
+      "#{pos_prelude} def optnew_foo(*a) = OptNewFoo.new(*a); optnew_foo 1, 2",
+      "#{pos_prelude} def optnew_foo(...) = OptNewFoo.new(...); optnew_foo 1, 2",
+      "#{kw_prelude} def optnew_foo(**a) = OptNewFoo.new(**a); optnew_foo a: 1, b: 2",
+      "#{kw_hash_prelude} def optnew_foo(*a, **b) = OptNewFoo.new(*a, **b); optnew_foo 1, b: 2",
+    ].each do |code|
+      iseq = RubyVM::InstructionSequence.compile(code)
+      insn = iseq.disasm
+      assert_match(/opt_new/, insn)
+      assert_match(/OptNewFoo:.+@a=1, @b=2/, iseq.eval.inspect)
+      # clean up to avoid warnings
+      Object.send :remove_const, :OptNewFoo
+      Object.remove_method :optnew_foo if defined?(optnew_foo)
+    end
+    [
+      'def optnew_foo(&) = OptNewFoo.new(&)',
+      'def optnew_foo(a, ...) = OptNewFoo.new(a, ...)',
+    ].each do |code|
+      iseq = RubyVM::InstructionSequence.compile(code)
+      insn = iseq.disasm
+      assert_no_match(/opt_new/, insn)
+    end
   end
 end

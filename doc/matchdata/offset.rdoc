@@ -11,12 +11,12 @@ returns the starting and ending offsets of the <tt>n</tt>th match:
   m[3]        # => "113"
   m.offset(3) # => [3, 6]
 
-  m = /(т)(е)(с)/.match('тест')
-  # => #<MatchData "тес" 1:"т" 2:"е" 3:"с">
-  m[0]        # => "тес"
-  m.offset(0) # => [0, 3]
-  m[3]        # => "с"
-  m.offset(3) # => [2, 3]
+  m = /(ん)(に)(ち)/.match('こんにちは')
+  # => #<MatchData "んにち" 1:"ん" 2:"に" 3:"ち">
+  m[0]        # => "んにち"
+  m.offset(0) # => [1, 4]
+  m[3]        # => "ち"
+  m.offset(3) # => [3, 4]
 
 When string or symbol argument +name+ is given,
 returns the starting and ending offsets for the named match:

@@ -4,3 +4,4 @@ Documentation:
 
 Backport:
 - base-branch: 'ruby_3_\d'
+- base-branch: 'ruby_4_\d'

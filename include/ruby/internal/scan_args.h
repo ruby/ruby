@@ -49,11 +49,11 @@
 /** Same behaviour as rb_scan_args(). */
 #define RB_SCAN_ARGS_PASS_CALLED_KEYWORDS 0
 
-/** The final argument should be a hash treated as keywords.*/
+/** The final argument must be a hash, which will be treated as keywords. */
 #define RB_SCAN_ARGS_KEYWORDS 1
 
 /**
- * Treat a  final argument as  keywords if  it is a  hash, and not  as keywords
+ * Treat a final argument as keywords if it is a hash, and not as keywords
  * otherwise.
  */
 #define RB_SCAN_ARGS_LAST_HASH_KEYWORDS 3
@@ -68,7 +68,7 @@
 /** Do not pass keywords. */
 #define RB_NO_KEYWORDS 0
 
-/** Pass keywords, final argument should be a hash of keywords. */
+/** Pass keywords, final argument must be a hash of keywords. */
 #define RB_PASS_KEYWORDS 1
 
 /**

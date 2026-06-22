@@ -1,0 +1,5 @@
+p do |a = def f = 1; b| end
+          ^~~~~~~ unexpected endless method definition; expected a default value for a parameter
+p do |a = def f = 1| 2; b|c end
+          ^~~~~~~ unexpected endless method definition; expected a default value for a parameter
+

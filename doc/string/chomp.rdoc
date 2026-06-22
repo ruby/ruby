@@ -9,7 +9,6 @@ if they are <tt>"\r"</tt>, <tt>"\n"</tt>, or <tt>"\r\n"</tt>
   "abc\n".chomp         # => "abc"
   "abc\r\n".chomp       # => "abc"
   "abc\n\r".chomp       # => "abc\n"
-  "тест\r\n".chomp      # => "тест"
   "こんにちは\r\n".chomp  # => "こんにちは"
 
 When +line_sep+ is <tt>''</tt> (an empty string),
@@ -25,5 +24,8 @@ removes multiple trailing occurrences of <tt>"\n"</tt> or <tt>"\r\n"</tt>
 When +line_sep+ is neither <tt>"\n"</tt> nor <tt>''</tt>,
 removes a single trailing line separator if there is one:
 
-  'abcd'.chomp('d')  # => "abc"
-  'abcdd'.chomp('d') # => "abcd"
+  'abcd'.chomp('cd')   # => "ab"
+  'abcdcd'.chomp('cd') # => "abcd"
+  'abcd'.chomp('xx')   # => "abcd"
+
+Related: see {Converting to New String}[rdoc-ref:String@Converting+to+New+String].

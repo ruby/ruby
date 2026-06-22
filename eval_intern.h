@@ -3,6 +3,7 @@
 
 #include "ruby/ruby.h"
 #include "vm_core.h"
+#include "zjit.h"
 
 static inline void
 vm_passed_block_handler_set(rb_execution_context_t *ec, VALUE block_handler)
@@ -102,7 +103,17 @@ extern int select_large_fdset(int, fd_set *, fd_set *, fd_set *, struct timeval 
   _tag.tag = Qundef; \
   _tag.prev = _ec->tag; \
   _tag.lock_rec = rb_ec_vm_lock_rec(_ec); \
+  EC_SAVE_TAG_CFP(_tag, _ec); \
   rb_vm_tag_jmpbuf_init(&_tag.buf); \
+
+// Remember the CFP as of EC_PUSH_TAG so that ZJIT can materialize frames
+// only up to longjmp's target CFP. When a C method does longjmp inside it,
+// the target CFP may not be equal to the VM_FRAME_FLAG_FINISH frame.
+#if USE_ZJIT
+# define EC_SAVE_TAG_CFP(_tag, _ec) _tag.cfp = _ec->cfp
+#else
+# define EC_SAVE_TAG_CFP(_tag, _ec)
+#endif
 
 #define EC_POP_TAG() \
   _ec->tag = _tag.prev; \
@@ -155,6 +166,9 @@ static inline void
 rb_ec_tag_jump(const rb_execution_context_t *ec, enum ruby_tag_type st)
 {
     RUBY_ASSERT(st > TAG_NONE && st <= TAG_FATAL, ": Invalid tag jump: %d", (int)st);
+#if USE_ZJIT
+    rb_zjit_materialize_frames(ec, ec->cfp);
+#endif
     ec->tag->state = st;
     ruby_longjmp(RB_VM_TAG_JMPBUF_GET(ec->tag->buf), 1);
 }
@@ -172,9 +186,10 @@ rb_ec_tag_jump(const rb_execution_context_t *ec, enum ruby_tag_type st)
 
 /* CREF operators */
 
-#define CREF_FL_PUSHED_BY_EVAL IMEMO_FL_USER1
-#define CREF_FL_OMOD_SHARED    IMEMO_FL_USER2
-#define CREF_FL_SINGLETON      IMEMO_FL_USER3
+#define CREF_FL_PUSHED_BY_EVAL    IMEMO_FL_USER1
+#define CREF_FL_OMOD_SHARED      IMEMO_FL_USER2
+#define CREF_FL_SINGLETON        IMEMO_FL_USER3
+#define CREF_FL_DYNAMIC_CREF IMEMO_FL_USER4
 
 static inline int CREF_SINGLETON(const rb_cref_t *cref);
 
@@ -260,6 +275,18 @@ CREF_OMOD_SHARED_SET(rb_cref_t *cref)
     cref->flags |= CREF_FL_OMOD_SHARED;
 }
 
+static inline int
+CREF_DYNAMIC(const rb_cref_t *cref)
+{
+    return cref->flags & CREF_FL_DYNAMIC_CREF;
+}
+
+static inline void
+CREF_DYNAMIC_SET(rb_cref_t *cref)
+{
+    cref->flags |= CREF_FL_DYNAMIC_CREF;
+}
+
 static inline void
 CREF_OMOD_SHARED_UNSET(rb_cref_t *cref)
 {
@@ -296,6 +323,11 @@ VALUE rb_vm_make_jump_tag_but_local_jump(enum ruby_tag_type state, VALUE val);
 rb_cref_t *rb_vm_cref(void);
 rb_cref_t *rb_vm_cref_replace_with_duplicated_cref(void);
 VALUE rb_vm_call_cfunc(VALUE recv, VALUE (*func)(VALUE), VALUE arg, VALUE block_handler, VALUE filename);
+VALUE rb_vm_call_cfunc_in_box(VALUE recv, VALUE (*func)(VALUE, VALUE), VALUE arg1, VALUE arg2, VALUE filename, const rb_box_t *box);
+void rb_vm_frame_flag_set_box_require(const rb_execution_context_t *ec);
+const rb_box_t *rb_vm_current_box(const rb_execution_context_t *ec);
+const rb_box_t *rb_vm_caller_box(const rb_execution_context_t *ec);
+const rb_box_t *rb_vm_loading_box(const rb_execution_context_t *ec);
 void rb_vm_set_progname(VALUE filename);
 VALUE rb_vm_cbase(void);
 

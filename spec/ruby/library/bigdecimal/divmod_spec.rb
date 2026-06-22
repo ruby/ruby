@@ -33,14 +33,16 @@ describe "BigDecimal#mod_part_of_divmod" do
     end
   end
 
-  it_behaves_like :bigdecimal_modulo, :mod_part_of_divmod
+  version_is BigDecimal::VERSION, ""..."4.0.0" do
+    it_behaves_like :bigdecimal_modulo, :mod_part_of_divmod
+  end
 
   it "raises ZeroDivisionError if other is zero" do
     bd5667 = BigDecimal("5667.19")
-
-    -> { bd5667.mod_part_of_divmod(0) }.should raise_error(ZeroDivisionError)
-    -> { bd5667.mod_part_of_divmod(BigDecimal("0")) }.should raise_error(ZeroDivisionError)
-    -> { @zero.mod_part_of_divmod(@zero) }.should raise_error(ZeroDivisionError)
+    zero = BigDecimal("0")
+    -> { bd5667.mod_part_of_divmod(0) }.should.raise(ZeroDivisionError)
+    -> { bd5667.mod_part_of_divmod(BigDecimal("0")) }.should.raise(ZeroDivisionError)
+    -> { zero.mod_part_of_divmod(zero) }.should.raise(ZeroDivisionError)
   end
 end
 
@@ -73,14 +75,25 @@ describe "BigDecimal#divmod" do
     @zeroes = [@zero, @zero_pos, @zero_neg]
   end
 
-  it "divides value, returns an array" do
-    res = @a.divmod(5)
-    res.kind_of?(Array).should == true
+  version_is BigDecimal::VERSION, ""..."4.0.0" do
+    it "divides value, returns [BigDecimal, BigDecimal]" do
+      res = @a.divmod(5)
+      res.kind_of?(Array).should == true
+      DivmodSpecs.check_both_bigdecimal(res)
+    end
+  end
+
+  version_is BigDecimal::VERSION, "4.0.0" do
+    it "divides value, returns [Integer, BigDecimal]" do
+      res = @a.divmod(5)
+      res.kind_of?(Array).should == true
+      res[0].kind_of?(Integer).should == true
+      res[1].kind_of?(BigDecimal).should == true
+    end
   end
 
   it "array contains quotient and modulus as BigDecimal" do
     res = @a.divmod(5)
-    DivmodSpecs.check_both_bigdecimal(res)
     res[0].should == BigDecimal('0.8E1')
     res[1].should == BigDecimal('2.00000000000000000001')
 
@@ -123,43 +136,62 @@ describe "BigDecimal#divmod" do
     values_and_zeroes.each do |val1|
       values.each do |val2|
         res = val1.divmod(val2)
-        DivmodSpecs.check_both_bigdecimal(res)
         res[0].should == ((val1/val2).floor)
         res[1].should == (val1 - res[0] * val2)
       end
     end
   end
 
-  it "returns an array of two NaNs if NaN is involved" do
-    (@special_vals + @regular_vals + @zeroes).each do |val|
-      DivmodSpecs.check_both_nan(val.divmod(@nan))
-      DivmodSpecs.check_both_nan(@nan.divmod(val))
+  version_is BigDecimal::VERSION, "4.0.0" do
+    it "raise FloatDomainError error if NaN is involved" do
+      (@special_vals + @regular_vals + @zeroes).each do |val|
+        -> { val.divmod(@nan) }.should.raise(FloatDomainError)
+        -> { @nan.divmod(val) }.should.raise(FloatDomainError)
+      end
+    end
+  end
+
+  version_is BigDecimal::VERSION, ""..."4.0.0" do
+    it "returns an array of two NaNs if NaN is involved" do
+      (@special_vals + @regular_vals + @zeroes).each do |val|
+        DivmodSpecs.check_both_nan(val.divmod(@nan))
+        DivmodSpecs.check_both_nan(@nan.divmod(val))
+      end
     end
   end
 
   it "raises ZeroDivisionError if the divisor is zero" do
     (@special_vals + @regular_vals + @zeroes - [@nan]).each do |val|
       @zeroes.each do |zero|
-        -> { val.divmod(zero) }.should raise_error(ZeroDivisionError)
+        -> { val.divmod(zero) }.should.raise(ZeroDivisionError)
       end
     end
   end
 
-  it "returns an array of Infinity and NaN if the dividend is Infinity" do
-    @regular_vals.each do |val|
-      array = @infinity.divmod(val)
-      array.length.should == 2
-      array[0].infinite?.should == (val > 0 ? 1 : -1)
-      array[1].should.nan?
+  version_is BigDecimal::VERSION, ""..."4.0.0" do
+    it "returns an array of Infinity and NaN if the dividend is Infinity" do
+      @regular_vals.each do |val|
+        array = @infinity.divmod(val)
+        array.length.should == 2
+        array[0].infinite?.should == (val > 0 ? 1 : -1)
+        array[1].should.nan?
+      end
     end
   end
 
-  it "returns an array of zero and the dividend if the divisor is Infinity" do
-    @regular_vals.each do |val|
-      array = val.divmod(@infinity)
-      array.length.should == 2
-      array[0].should == @zero
-      array[1].should == val
+  version_is BigDecimal::VERSION, "3.3.0" do
+    it "returns an array of zero and the dividend or minus one and Infinity if the divisor is Infinity" do
+      @regular_vals.each do |val|
+        array = val.divmod(@infinity)
+        array.length.should == 2
+        if val >= 0
+          array[0].should == @zero
+          array[1].should == val
+        else
+          array[0].should == @one_minus
+          array[1].should == @infinity
+        end
+      end
     end
   end
 
@@ -174,7 +206,7 @@ describe "BigDecimal#divmod" do
   it "raises TypeError if the argument cannot be coerced to BigDecimal" do
     -> {
       @one.divmod('1')
-    }.should raise_error(TypeError)
+    }.should.raise(TypeError)
   end
 
 end

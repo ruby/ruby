@@ -62,7 +62,7 @@ class Addrinfo
           break
         when :wait_writable
           sock.wait_writable(timeout) or
-            raise Errno::ETIMEDOUT, 'user specified timeout'
+            raise Errno::ETIMEDOUT, "user specified timeout for #{self.ip_address}:#{self.ip_port}"
         end while true
       else
         sock.connect(self)
@@ -599,6 +599,7 @@ class Socket < BasicSocket
     __accept_nonblock(exception)
   end
 
+  # :stopdoc:
   RESOLUTION_DELAY = 0.05
   private_constant :RESOLUTION_DELAY
 
@@ -616,6 +617,7 @@ class Socket < BasicSocket
 
   IPV6_ADDRESS_FORMAT = /\A(?i:(?:(?:[0-9A-F]{1,4}:){7}(?:[0-9A-F]{1,4}|:)|(?:[0-9A-F]{1,4}:){6}(?:[0-9A-F]{1,4}|:(?:[0-9A-F]{1,4}:){1,5}[0-9A-F]{1,4}|:)|(?:[0-9A-F]{1,4}:){5}(?:(?::[0-9A-F]{1,4}){1,2}|:(?:[0-9A-F]{1,4}:){1,4}[0-9A-F]{1,4}|:)|(?:[0-9A-F]{1,4}:){4}(?:(?::[0-9A-F]{1,4}){1,3}|:(?:[0-9A-F]{1,4}:){1,3}[0-9A-F]{1,4}|:)|(?:[0-9A-F]{1,4}:){3}(?:(?::[0-9A-F]{1,4}){1,4}|:(?:[0-9A-F]{1,4}:){1,2}[0-9A-F]{1,4}|:)|(?:[0-9A-F]{1,4}:){2}(?:(?::[0-9A-F]{1,4}){1,5}|:(?:[0-9A-F]{1,4}:)[0-9A-F]{1,4}|:)|(?:[0-9A-F]{1,4}:){1}(?:(?::[0-9A-F]{1,4}){1,6}|:(?:[0-9A-F]{1,4}:){0,5}[0-9A-F]{1,4}|:)|(?:::(?:[0-9A-F]{1,4}:){0,7}[0-9A-F]{1,4}|::)))(?:%.+)?\z/
   private_constant :IPV6_ADDRESS_FORMAT
+  # :startdoc:
 
   # :call-seq:
   #   Socket.tcp(host, port, local_host=nil, local_port=nil, [opts]) {|socket| ... }
@@ -643,6 +645,7 @@ class Socket < BasicSocket
   #
   # [:resolv_timeout] Specifies the timeout in seconds from when the hostname resolution starts.
   # [:connect_timeout] This method sequentially attempts connecting to all candidate destination addresses.<br>The +connect_timeout+ specifies the timeout in seconds from the start of the connection attempt to the last candidate.<br>By default, all connection attempts continue until the timeout occurs.<br>When +fast_fallback:false+ is explicitly specified,<br>a timeout is set for each connection attempt and any connection attempt that exceeds its timeout will be canceled.
+  # [:open_timeout] Specifies the timeout in seconds from the start of the method execution.<br>If this timeout is reached while there are still addresses that have not yet been attempted for connection, no further attempts will be made.<br>If this option is specified together with other timeout options, an +ArgumentError+ will be raised.
   # [:fast_fallback] Enables the Happy Eyeballs Version 2 algorithm (enabled by default).
   #
   # If a block is given, the block is called with the socket.
@@ -656,11 +659,15 @@ class Socket < BasicSocket
   #     sock.close_write
   #     puts sock.read
   #   }
-  def self.tcp(host, port, local_host = nil, local_port = nil, connect_timeout: nil, resolv_timeout: nil, fast_fallback: tcp_fast_fallback, &) # :yield: socket
-    sock = if fast_fallback && !(host && ip_address?(host))
-      tcp_with_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:)
+  def self.tcp(host, port, local_host = nil, local_port = nil, connect_timeout: nil, resolv_timeout: nil, open_timeout: nil, fast_fallback: tcp_fast_fallback, &) # :yield: socket
+    if open_timeout && (connect_timeout || resolv_timeout)
+      raise ArgumentError, "Cannot specify open_timeout along with connect_timeout or resolv_timeout"
+    end
+
+    sock = if fast_fallback && !(host && ip_address?(host)) && !(local_port && local_port.to_i != 0)
+      tcp_with_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:, open_timeout:)
     else
-      tcp_without_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:)
+      tcp_without_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:, open_timeout:)
     end
 
     if block_given?
@@ -674,9 +681,10 @@ class Socket < BasicSocket
     end
   end
 
-  def self.tcp_with_fast_fallback(host, port, local_host = nil, local_port = nil, connect_timeout: nil, resolv_timeout: nil)
+  # :stopdoc:
+  def self.tcp_with_fast_fallback(host, port, local_host = nil, local_port = nil, connect_timeout: nil, resolv_timeout: nil, open_timeout: nil)
     if local_host || local_port
-      local_addrinfos = Addrinfo.getaddrinfo(local_host, local_port, nil, :STREAM, timeout: resolv_timeout)
+      local_addrinfos = Addrinfo.getaddrinfo(local_host, local_port, nil, :STREAM, timeout: open_timeout || resolv_timeout)
       resolving_family_names = local_addrinfos.map { |lai| ADDRESS_FAMILIES.key(lai.afamily) }.uniq
     else
       local_addrinfos = []
@@ -689,15 +697,17 @@ class Socket < BasicSocket
     is_windows_environment ||= (RUBY_PLATFORM =~ /mswin|mingw|cygwin/)
 
     now = current_clock_time
+    starts_at = now
     resolution_delay_expires_at = nil
     connection_attempt_delay_expires_at = nil
     user_specified_connect_timeout_at = nil
+    user_specified_open_timeout_at = open_timeout ? now + open_timeout : nil
     last_error = nil
     last_error_from_thread = false
 
     if resolving_family_names.size == 1
       family_name = resolving_family_names.first
-      addrinfos = Addrinfo.getaddrinfo(host, port, family_name, :STREAM, timeout: resolv_timeout)
+      addrinfos = Addrinfo.getaddrinfo(host, port, ADDRESS_FAMILIES[:family_name], :STREAM, timeout: open_timeout || resolv_timeout)
       resolution_store.add_resolved(family_name, addrinfos)
       hostname_resolution_result = nil
       hostname_resolution_notifier = nil
@@ -714,7 +724,6 @@ class Socket < BasicSocket
           thread
         }
       )
-
       user_specified_resolv_timeout_at = resolv_timeout ? now + resolv_timeout : Float::INFINITY
     end
 
@@ -726,7 +735,7 @@ class Socket < BasicSocket
           if local_addrinfos.any?
             local_addrinfo = local_addrinfos.find { |lai| lai.afamily == addrinfo.afamily }
 
-            if local_addrinfo.nil? # Connecting addrinfoと同じアドレスファミリのLocal addrinfoがない
+            if local_addrinfo.nil?
               if resolution_store.any_addrinfos?
                 # Try other Addrinfo in next "while"
                 next
@@ -748,9 +757,16 @@ class Socket < BasicSocket
               socket.bind(local_addrinfo) if local_addrinfo
               result = socket.connect_nonblock(addrinfo, exception: false)
             else
+              timeout =
+                if open_timeout
+                  t = open_timeout - (current_clock_time - starts_at)
+                  t.negative? ? 0 : t
+                else
+                  connect_timeout
+                end
               result = socket = local_addrinfo ?
-                addrinfo.connect_from(local_addrinfo, timeout: connect_timeout) :
-                addrinfo.connect(timeout: connect_timeout)
+                addrinfo.connect_from(local_addrinfo, timeout:) :
+                addrinfo.connect(timeout:)
             end
 
             if result == :wait_writable
@@ -784,7 +800,10 @@ class Socket < BasicSocket
 
       ends_at =
         if resolution_store.any_addrinfos?
-          resolution_delay_expires_at || connection_attempt_delay_expires_at
+          [(resolution_delay_expires_at || connection_attempt_delay_expires_at),
+           user_specified_open_timeout_at].compact.min
+        elsif user_specified_open_timeout_at
+          user_specified_open_timeout_at
         else
           [user_specified_resolv_timeout_at, user_specified_connect_timeout_at].compact.max
         end
@@ -885,6 +904,10 @@ class Socket < BasicSocket
         end
       end
 
+      if expired?(now, user_specified_open_timeout_at)
+        raise(IO::TimeoutError, "user specified timeout for #{host}:#{port}")
+      end
+
       if resolution_store.empty_addrinfos?
         if connecting_sockets.empty? && resolution_store.resolved_all_families?
           if last_error_from_thread
@@ -896,32 +919,32 @@ class Socket < BasicSocket
 
         if (expired?(now, user_specified_resolv_timeout_at) || resolution_store.resolved_all_families?) &&
            (expired?(now, user_specified_connect_timeout_at) || connecting_sockets.empty?)
-          raise Errno::ETIMEDOUT, 'user specified timeout'
+          raise(IO::TimeoutError, "user specified timeout for #{host}:#{port}")
         end
       end
     end
   ensure
-    hostname_resolution_threads.each do |thread|
-      thread.exit
-    end
+    hostname_resolution_threads.each(&:exit).each(&:join)
 
     hostname_resolution_result&.close
 
-    connecting_sockets.each_key do |connecting_socket|
-      connecting_socket.close
-    end
+    connecting_sockets.each_key(&:close)
   end
+  private_class_method :tcp_with_fast_fallback
 
-  def self.tcp_without_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:)
+  def self.tcp_without_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:, open_timeout:)
     last_error = nil
     ret = nil
 
     local_addr_list = nil
     if local_host != nil || local_port != nil
-      local_addr_list = Addrinfo.getaddrinfo(local_host, local_port, nil, :STREAM, nil)
+      local_addr_list = Addrinfo.getaddrinfo(local_host, local_port, nil, :STREAM, nil, timeout: open_timeout || resolv_timeout)
     end
 
-    Addrinfo.foreach(host, port, nil, :STREAM, timeout: resolv_timeout) {|ai|
+    timeout = open_timeout ? open_timeout : resolv_timeout
+    starts_at = current_clock_time
+
+    Addrinfo.foreach(host, port, nil, :STREAM, timeout:) {|ai|
       if local_addr_list
         local_addr = local_addr_list.find {|local_ai| local_ai.afamily == ai.afamily }
         next unless local_addr
@@ -929,9 +952,17 @@ class Socket < BasicSocket
         local_addr = nil
       end
       begin
+        timeout =
+          if open_timeout
+            t = open_timeout - (current_clock_time - starts_at)
+            t.negative? ? 0 : t
+          else
+            connect_timeout
+          end
+
         sock = local_addr ?
-          ai.connect_from(local_addr, timeout: connect_timeout) :
-          ai.connect(timeout: connect_timeout)
+          ai.connect_from(local_addr, timeout:) :
+          ai.connect(timeout:)
       rescue SystemCallError
         last_error = $!
         next
@@ -1090,7 +1121,6 @@ class Socket < BasicSocket
   end
   private_constant :HostnameResolutionStore
 
-  # :stopdoc:
   def self.ip_sockets_port0(ai_list, reuseaddr)
     sockets = []
     begin
@@ -1123,9 +1153,7 @@ class Socket < BasicSocket
     end
     sockets
   end
-  class << self
-    private :ip_sockets_port0
-  end
+  private_class_method :ip_sockets_port0
 
   def self.tcp_server_sockets_port0(host)
     ai_list = Addrinfo.getaddrinfo(host, 0, nil, :STREAM, nil, Socket::AI_PASSIVE)
@@ -1553,13 +1581,18 @@ class Socket < BasicSocket
     end
   end
 
-  class << self
-    private
-
-    def unix_socket_abstract_name?(path)
-      /linux/ =~ RUBY_PLATFORM && /\A(\0|\z)/ =~ path
+  # :stopdoc:
+  if RUBY_PLATFORM.include?("linux")
+    def self.unix_socket_abstract_name?(path)
+      path.empty? or path.start_with?("\0")
+    end
+  else
+    def self.unix_socket_abstract_name?(path)
+      false
     end
   end
+  private_class_method :unix_socket_abstract_name?
+  # :startdoc:
 
   # creates a UNIX socket server on _path_.
   # It calls the block for each socket accepted.

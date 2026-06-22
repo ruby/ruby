@@ -1,0 +1,4 @@
+foo not y
+        ^ expected a `(` after `not`
+        ^ unexpected local variable or method, expecting end-of-input
+

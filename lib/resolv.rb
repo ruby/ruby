@@ -4,6 +4,7 @@ require 'socket'
 require 'timeout'
 require 'io/wait'
 require 'securerandom'
+require 'rbconfig'
 
 # Resolv is a thread-aware DNS resolver library written in Ruby.  Resolv can
 # handle multiple DNS requests concurrently without blocking the entire Ruby
@@ -33,7 +34,8 @@ require 'securerandom'
 
 class Resolv
 
-  VERSION = "0.6.0"
+  # The version string
+  VERSION = "0.7.1"
 
   ##
   # Looks up the first IP address for +name+.
@@ -173,21 +175,19 @@ class Resolv
 
   class ResolvTimeout < Timeout::Error; end
 
-  WINDOWS = /mswin|cygwin|mingw|bccwin/ =~ RUBY_PLATFORM || ::RbConfig::CONFIG['host_os'] =~ /mswin/
-  private_constant :WINDOWS
-
   ##
   # Resolv::Hosts is a hostname resolver that uses the system hosts file.
 
   class Hosts
-    if WINDOWS
+    if /mswin|cygwin|mingw|bccwin/ =~ RUBY_PLATFORM || ::RbConfig::CONFIG['host_os'] =~ /mswin/
       begin
         require 'win32/resolv' unless defined?(Win32::Resolv)
-        DefaultFileName = Win32::Resolv.get_hosts_path || IO::NULL
+        hosts = Win32::Resolv.get_hosts_path || IO::NULL
       rescue LoadError
       end
     end
-    DefaultFileName ||= '/etc/hosts'
+    # The default file name for host names
+    DefaultFileName = hosts || '/etc/hosts'
 
     ##
     # Creates a new Resolv::Hosts, using +filename+ for its data source.
@@ -487,13 +487,18 @@ class Resolv
     # * Resolv::DNS::Resource::IN::A
     # * Resolv::DNS::Resource::IN::AAAA
     # * Resolv::DNS::Resource::IN::ANY
+    # * Resolv::DNS::Resource::IN::CAA
     # * Resolv::DNS::Resource::IN::CNAME
     # * Resolv::DNS::Resource::IN::HINFO
+    # * Resolv::DNS::Resource::IN::HTTPS
+    # * Resolv::DNS::Resource::IN::LOC
     # * Resolv::DNS::Resource::IN::MINFO
     # * Resolv::DNS::Resource::IN::MX
     # * Resolv::DNS::Resource::IN::NS
     # * Resolv::DNS::Resource::IN::PTR
     # * Resolv::DNS::Resource::IN::SOA
+    # * Resolv::DNS::Resource::IN::SRV
+    # * Resolv::DNS::Resource::IN::SVCB
     # * Resolv::DNS::Resource::IN::TXT
     # * Resolv::DNS::Resource::IN::WKS
     #
@@ -524,6 +529,8 @@ class Resolv
         extract_resources(reply, reply_name, typeclass, &proc)
       }
     end
+
+    # :stopdoc:
 
     def fetch_resource(name, typeclass)
       lazy_initialize
@@ -719,7 +726,8 @@ class Resolv
           begin
             reply, from = recv_reply(select_result[0])
           rescue Errno::ECONNREFUSED, # GNU/Linux, FreeBSD
-                 Errno::ECONNRESET # Windows
+                 Errno::ECONNRESET, # Windows
+                 EOFError
             # No name server running on the server?
             # Don't wait anymore.
             raise ResolvTimeout
@@ -928,8 +936,11 @@ class Resolv
         end
 
         def recv_reply(readable_socks)
-          len = readable_socks[0].read(2).unpack('n')[0]
+          len_data = readable_socks[0].read(2)
+          raise EOFError if len_data.nil? || len_data.bytesize != 2
+          len = len_data.unpack('n')[0]
           reply = @socks[0].read(len)
+          raise EOFError if reply.nil? || reply.bytesize != len
           return reply, nil
         end
 
@@ -1021,8 +1032,7 @@ class Resolv
       def Config.default_config_hash(filename="/etc/resolv.conf")
         if File.exist? filename
           Config.parse_resolv_conf(filename)
-        elsif WINDOWS
-          require 'win32/resolv' unless defined?(Win32::Resolv)
+        elsif defined?(Win32::Resolv)
           search, nameserver = Win32::Resolv.get_resolv_info
           config_hash = {}
           config_hash[:nameserver] = nameserver if nameserver
@@ -1679,6 +1689,7 @@ class Resolv
           prev_index = @index
           save_index = nil
           d = []
+          size = -1
           while true
             raise DecodeError.new("limit exceeded") if @limit <= @index
             case @data.getbyte(@index)
@@ -1699,7 +1710,10 @@ class Resolv
               end
               @index = idx
             else
-              d << self.get_label
+              l = self.get_label
+              d << l
+              size += 1 + l.string.bytesize
+              raise DecodeError.new("name label data exceed 255 octets") if size > 255
             end
           end
         end
@@ -2601,7 +2615,7 @@ class Resolv
         end
 
         ##
-        # Flags for this proprty:
+        # Flags for this property:
         # - Bit 0 : 0 = not critical, 1 = critical
 
         attr_reader :flags
@@ -2922,14 +2936,20 @@ class Resolv
 
   class IPv4
 
-    ##
-    # Regular expression IPv4 addresses must match.
-
     Regex256 = /0
                |1(?:[0-9][0-9]?)?
                |2(?:[0-4][0-9]?|5[0-5]?|[6-9])?
-               |[3-9][0-9]?/x
+               |[3-9][0-9]?/x # :nodoc:
+
+    ##
+    # Regular expression IPv4 addresses must match.
     Regex = /\A(#{Regex256})\.(#{Regex256})\.(#{Regex256})\.(#{Regex256})\z/
+
+    ##
+    # Creates a new IPv4 address from +arg+ which may be:
+    #
+    # IPv4:: returns +arg+.
+    # String:: +arg+ must match the IPv4::Regex constant
 
     def self.create(arg)
       case arg
@@ -3239,14 +3259,16 @@ class Resolv
 
   end
 
-  module LOC
+  module LOC # :nodoc:
 
     ##
     # A Resolv::LOC::Size
 
     class Size
 
-      Regex = /^(\d+\.*\d*)[m]$/
+      # Regular expression LOC size must match.
+
+      Regex = /\A0*(\d{1,8}(?:\.\d+)?)m\z/
 
       ##
       # Creates a new LOC::Size from +arg+ which may be:
@@ -3259,18 +3281,20 @@ class Resolv
         when Size
           return arg
         when String
-          scalar = ''
-          if Regex =~ arg
-            scalar = [(($1.to_f*(1e2)).to_i.to_s[0].to_i*(2**4)+(($1.to_f*(1e2)).to_i.to_s.length-1))].pack("C")
-          else
+          unless Regex =~ arg
             raise ArgumentError.new("not a properly formed Size string: " + arg)
           end
-          return Size.new(scalar)
+          unless (0.0...1e8) === (scalar = $1.to_f)
+            raise ArgumentError.new("out of range as Size: #{arg}")
+          end
+          str = (scalar * 100).to_i.to_s
+          return new([(str[0].to_i << 4) + (str.bytesize-1)].pack("C"))
         else
           raise ArgumentError.new("cannot interpret as Size: #{arg.inspect}")
         end
       end
 
+      # Internal use; use self.create.
       def initialize(scalar)
         @scalar = scalar
       end
@@ -3281,8 +3305,8 @@ class Resolv
       attr_reader :scalar
 
       def to_s # :nodoc:
-        s = @scalar.unpack("H2").join.to_s
-        return ((s[0].to_i)*(10**(s[1].to_i-2))).to_s << "m"
+        s, = @scalar.unpack("C")
+        return "#{(s >> 4) * (10.0 ** ((s & 0xf) - 2))}m"
       end
 
       def inspect # :nodoc:
@@ -3308,7 +3332,12 @@ class Resolv
 
     class Coord
 
-      Regex = /^(\d+)\s(\d+)\s(\d+\.\d+)\s([NESW])$/
+      # Regular expression LOC Coord must match.
+
+      Regex = /\A0*(\d{1,3})\s([0-5]?\d)\s([0-5]?\d(?:\.\d+)?)\s([NESW])\z/
+
+      # Bias for the equator/prime meridian, in thousandths of a second of arc.
+      Bias = 1 << 31
 
       ##
       # Creates a new LOC::Coord from +arg+ which may be:
@@ -3321,27 +3350,30 @@ class Resolv
         when Coord
           return arg
         when String
-          coordinates = ''
-          if Regex =~ arg && $1.to_f < 180
-            m = $~
-            hemi = (m[4][/[NE]/]) || (m[4][/[SW]/]) ? 1 : -1
-            coordinates = [ ((m[1].to_i*(36e5)) + (m[2].to_i*(6e4)) +
-                             (m[3].to_f*(1e3))) * hemi+(2**31) ].pack("N")
-            orientation = m[4][/[NS]/] ? 'lat' : 'lon'
-          else
+          unless m = Regex.match(arg)
             raise ArgumentError.new("not a properly formed Coord string: " + arg)
           end
-          return Coord.new(coordinates,orientation)
+
+          arc = (m[1].to_i * 3_600_000) + (m[2].to_i * 60_000) + (m[3].to_f * 1_000).to_i
+          dir = m[4]
+          lat = dir[/[NS]/]
+          unless arc <= (lat ? 324_000_000 : 648_000_000) # (lat ? 90 : 180) * 3_600_000
+            raise ArgumentError.new("out of range as Coord: #{arg}")
+          end
+
+          hemi = dir[/[NE]/] ? 1 : -1
+          return new([arc * hemi + Bias].pack("N"), lat ? "lat" : "lon")
         else
           raise ArgumentError.new("cannot interpret as Coord: #{arg.inspect}")
         end
       end
 
+      # Internal use; use self.create.
       def initialize(coordinates,orientation)
-        unless coordinates.kind_of?(String)
+        unless coordinates.kind_of?(String) and coordinates.bytesize == 4
           raise ArgumentError.new("Coord must be a 32bit unsigned integer in hex format: #{coordinates.inspect}")
         end
-        unless orientation.kind_of?(String) && orientation[/^lon$|^lat$/]
+        unless orientation == "lon" || orientation == "lat"
           raise ArgumentError.new('Coord expects orientation to be a String argument of "lat" or "lon"')
         end
         @coordinates = coordinates
@@ -3358,22 +3390,17 @@ class Resolv
       attr_reader :orientation
 
       def to_s # :nodoc:
-          c = @coordinates.unpack("N").join.to_i
-          val      = (c - (2**31)).abs
-          fracsecs = (val % 1e3).to_i.to_s
-          val      = val / 1e3
-          secs     = (val % 60).to_i.to_s
-          val      = val / 60
-          mins     = (val % 60).to_i.to_s
-          degs     = (val / 60).to_i.to_s
-          posi = (c >= 2**31)
-          case posi
-          when true
-            hemi = @orientation[/^lat$/] ? "N" : "E"
+          c, = @coordinates.unpack("N")
+          val = (c -= Bias).abs
+          val, fracsecs = val.divmod(1000)
+          val, secs     = val.divmod(60)
+          degs, mins    = val.divmod(60)
+          hemi = if c.negative?
+            @orientation == "lon" ? "W" : "S"
           else
-            hemi = @orientation[/^lon$/] ? "W" : "S"
+            @orientation == "lat" ? "N" : "E"
           end
-          return degs << " " << mins << " " << secs << "." << fracsecs << " " << hemi
+          format("%d %02d %02d.%03d %s", degs, mins, secs, fracsecs, hemi)
       end
 
       def inspect # :nodoc:
@@ -3399,7 +3426,12 @@ class Resolv
 
     class Alt
 
-      Regex = /^([+-]*\d+\.*\d*)[m]$/
+      # Regular expression LOC Alt must match.
+
+      Regex = /\A([+-]?0*\d{1,8}(?:\.\d+)?)m\z/
+
+      # Bias to a base of 100,000m below the WGS 84 reference spheroid.
+      Bias = 100_000_00
 
       ##
       # Creates a new LOC::Alt from +arg+ which may be:
@@ -3412,18 +3444,20 @@ class Resolv
         when Alt
           return arg
         when String
-          altitude = ''
-          if Regex =~ arg
-            altitude = [($1.to_f*(1e2))+(1e7)].pack("N")
-          else
+          unless Regex =~ arg
             raise ArgumentError.new("not a properly formed Alt string: " + arg)
           end
-          return Alt.new(altitude)
+          altitude = ($1.to_f * 100).to_i + Bias
+          unless (0...0x1_0000_0000) === altitude
+            raise ArgumentError.new("out of raise as Alt: #{arg}")
+          end
+          return new([altitude].pack("N"))
         else
           raise ArgumentError.new("cannot interpret as Alt: #{arg.inspect}")
         end
       end
 
+      # Internal use; use self.create.
       def initialize(altitude)
         @altitude = altitude
       end
@@ -3434,8 +3468,8 @@ class Resolv
       attr_reader :altitude
 
       def to_s # :nodoc:
-        a = @altitude.unpack("N").join.to_i
-        return ((a.to_f/1e2)-1e5).to_s + "m"
+        a, = @altitude.unpack("N")
+        return "#{(a - Bias).fdiv(100)}m"
       end
 
       def inspect # :nodoc:

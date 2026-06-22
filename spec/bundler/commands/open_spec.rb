@@ -49,7 +49,7 @@ RSpec.describe "bundle open" do
 
     it "suggests alternatives for similar-sounding gems" do
       bundle "open Rails", env: { "EDITOR" => "echo editor", "VISUAL" => "", "BUNDLER_EDITOR" => "" }, raise_on_error: false
-      expect(err).to match(/did you mean rails\?/i)
+      expect(err).to match(/did you mean 'rails'\?/i)
     end
 
     it "opens the gem with short words" do
@@ -80,12 +80,12 @@ RSpec.describe "bundle open" do
 
     it "suggests alternatives for similar-sounding gems when using subpath" do
       bundle "open Rails --path README.md", env: { "EDITOR" => "echo editor", "VISUAL" => "", "BUNDLER_EDITOR" => "" }, raise_on_error: false
-      expect(err).to match(/did you mean rails\?/i)
+      expect(err).to match(/did you mean 'rails'\?/i)
     end
 
     it "suggests alternatives for similar-sounding gems when using deep subpath" do
       bundle "open Rails --path some/path/here", env: { "EDITOR" => "echo editor", "VISUAL" => "", "BUNDLER_EDITOR" => "" }, raise_on_error: false
-      expect(err).to match(/did you mean rails\?/i)
+      expect(err).to match(/did you mean 'rails'\?/i)
     end
 
     it "opens subpath of the short worded gem" do
@@ -139,7 +139,7 @@ RSpec.describe "bundle open" do
         gem "foo"
       G
 
-      bundle "config set auto_install 1"
+      bundle_config "auto_install 1"
       bundle "open rails", env: { "EDITOR" => "echo editor", "VISUAL" => "", "BUNDLER_EDITOR" => "" }
       expect(out).to include("Installing foo 1.0")
     end

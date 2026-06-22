@@ -625,7 +625,7 @@ class Bundler::Thor
     # alias name.
     def find_command_possibilities(meth)
       len = meth.to_s.length
-      possibilities = all_commands.merge(map).keys.select { |n| meth == n[0, len] }.sort
+      possibilities = all_commands.reject { |_k, c| c.hidden? }.merge(map).keys.select { |n| meth == n[0, len] }.sort
       unique_possibilities = possibilities.map { |k| map[k] || k }.uniq
 
       if possibilities.include?(meth)

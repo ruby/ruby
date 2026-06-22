@@ -10,6 +10,8 @@ class JSONFixturesTest < Test::Unit::TestCase
     source = File.read(f)
     define_method("test_#{name}") do
       assert JSON.parse(source), "Did not pass for fixture '#{File.basename(f)}': #{source.inspect}"
+    rescue JSON::ParserError
+      raise "#{File.basename(f)} parsing failure"
     end
   end
 

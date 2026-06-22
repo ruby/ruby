@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 ##
-# Represents a specification retrieved via the rubygems.org API.
+# Represents a specification retrieved via the Compact Index API.
 #
 # This is used to avoid loading the full Specification object when all we need
 # is the name, version, and dependencies.
@@ -19,10 +19,10 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
   end
 
   ##
-  # Creates an APISpecification for the given +set+ from the rubygems.org
+  # Creates an APISpecification for the given +set+ from the Compact Index API
   # +api_data+.
   #
-  # See https://guides.rubygems.org/rubygems-org-api/#misc-methods for the
+  # See https://guides.rubygems.org/rubygems-org-compact-index-api for the
   # format of the +api_data+.
 
   def initialize(set, api_data)
@@ -38,6 +38,7 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
     end.freeze
     @required_ruby_version = Gem::Requirement.new(api_data.dig(:requirements, :ruby)).freeze
     @required_rubygems_version = Gem::Requirement.new(api_data.dig(:requirements, :rubygems)).freeze
+    @created_at = parse_created_at(api_data.dig(:requirements, :created_at))&.freeze
   end
 
   def ==(other) # :nodoc:
@@ -84,22 +85,42 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
   end
 
   ##
-  # Fetches a Gem::Specification for this APISpecification.
+  # A Gem::Specification stub built from the Compact Index data for this
+  # specification. The compact index carries everything needed to
+  # download and install the gem, so the Marshal gemspec is not fetched.
+  # Development dependencies are not included; see
+  # #fetch_development_dependencies.
 
   def spec # :nodoc:
-    @spec ||=
-      begin
-        tuple = Gem::NameTuple.new @name, @version, @platform
-        source.fetch_spec tuple
-      rescue Gem::RemoteFetcher::FetchError
-        raise if @original_platform == @platform
+    @spec ||= Gem::Specification.new do |s|
+      s.name     = @name
+      s.version  = @version
+      s.platform = @platform
+      s.original_platform = @original_platform
+      s.required_ruby_version = @required_ruby_version
+      s.required_rubygems_version = @required_rubygems_version
 
-        tuple = Gem::NameTuple.new @name, @version, @original_platform
-        source.fetch_spec tuple
+      @dependencies.each do |dependency|
+        s.add_runtime_dependency dependency.name, *dependency.requirement.as_list
       end
+    end
   end
 
   def source # :nodoc:
     @set.source
+  end
+
+  private
+
+  def parse_created_at(value)
+    value = value.first if value.is_a?(Array)
+    return unless value.is_a?(String)
+
+    require "time"
+    begin
+      Time.iso8601(value)
+    rescue ArgumentError
+      nil
+    end
   end
 end

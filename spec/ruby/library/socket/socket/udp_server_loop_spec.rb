@@ -50,10 +50,10 @@ describe 'Socket.udp_server_loop' do
         end
       end
 
-      msg.should == 'hello'
-      src.should be_an_instance_of(Socket::UDPSource)
-
       thread.join
+
+      msg.should == 'hello'
+      src.should.instance_of?(Socket::UDPSource)
     end
   end
 end

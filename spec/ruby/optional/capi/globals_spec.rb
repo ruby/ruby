@@ -41,14 +41,19 @@ describe "CApiGlobalSpecs" do
     @f.sb_get_global_value.should == "XYZ"
   end
 
+  run = 0
+
   it "rb_define_readonly_variable should define a new readonly global variable" do
+    name = "ro_gvar#{run += 1}"
+    eval <<~RUBY
     # Check the gvar doesn't exist and ensure rb_gv_get doesn't implicitly declare the gvar,
     # otherwise the rb_define_readonly_variable call will conflict.
-    suppress_warning { @f.sb_gv_get("ro_gvar") } .should == nil
+    suppress_warning { @f.sb_gv_get("#{name}") }.should == nil
 
-    @f.rb_define_readonly_variable("ro_gvar", 15)
-    $ro_gvar.should == 15
-    -> { $ro_gvar = 10 }.should raise_error(NameError)
+    @f.rb_define_readonly_variable("#{name}", 15)
+    $#{name}.should == 15
+    -> { $#{name} = 10 }.should.raise(NameError)
+    RUBY
   end
 
   it "rb_define_hooked_variable should define a C hooked global variable" do
@@ -75,7 +80,7 @@ describe "CApiGlobalSpecs" do
       end
 
       it "is read-only" do
-        -> { $virtual_variable_default_accessors = 10 }.should raise_error(NameError, /read-only/)
+        -> { $virtual_variable_default_accessors = 10 }.should.raise(NameError, /read-only/)
       end
 
       it "returns false with the default getter" do
@@ -159,7 +164,7 @@ describe "CApiGlobalSpecs" do
 
       it "returns $stdin" do
         $stdin = @stream
-        @f.rb_stdin.should equal($stdin)
+        @f.rb_stdin.should.equal?($stdin)
       end
     end
 
@@ -170,7 +175,7 @@ describe "CApiGlobalSpecs" do
 
       it "returns $stdout" do
         $stdout = @stream
-        @f.rb_stdout.should equal($stdout)
+        @f.rb_stdout.should.equal?($stdout)
       end
     end
 
@@ -181,7 +186,7 @@ describe "CApiGlobalSpecs" do
 
       it "returns $stderr" do
         $stderr = @stream
-        @f.rb_stderr.should equal($stderr)
+        @f.rb_stderr.should.equal?($stderr)
       end
     end
 
@@ -192,7 +197,7 @@ describe "CApiGlobalSpecs" do
 
       it "is an alias of rb_stdout" do
         $stdout = @stream
-        @f.rb_defout.should equal($stdout)
+        @f.rb_defout.should.equal?($stdout)
       end
     end
   end
@@ -213,7 +218,7 @@ describe "CApiGlobalSpecs" do
     end
 
     it "returns nil by default" do
-      @f.rb_output_rs.should be_nil
+      @f.rb_output_rs.should == nil
     end
 
     it "returns the value of $\\" do
@@ -232,7 +237,7 @@ describe "CApiGlobalSpecs" do
     end
 
     it "returns nil by default" do
-      @f.rb_output_fs.should be_nil
+      @f.rb_output_fs.should == nil
     end
 
     it "returns the value of $\\" do
@@ -258,7 +263,7 @@ describe "CApiGlobalSpecs" do
       end
 
       Thread.pass while thr.status and !running
-      $_.should be_nil
+      $_.should == nil
 
       thr.join
     end
@@ -285,7 +290,7 @@ describe "CApiGlobalSpecs" do
       end
 
       Thread.pass while thr.status and !running
-      $_.should be_nil
+      $_.should == nil
 
       thr.join
     end

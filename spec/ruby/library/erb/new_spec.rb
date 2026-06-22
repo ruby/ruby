@@ -83,7 +83,7 @@ END
 
     -> {
       ERBSpecs.new_erb(input, trim_mode: '-').result
-    }.should raise_error(SyntaxError)
+    }.should.raise(SyntaxError)
   end
 
   it "regards lines starting with '%' as '<% ... %>' when trim_mode is '%'" do
@@ -136,20 +136,22 @@ END
 
   it "forget local variables defined previous one" do
     ERB.new(@eruby_str).result
-    ->{ ERB.new("<%= list %>").result }.should raise_error(NameError)
+    ->{ ERB.new("<%= list %>").result }.should.raise(NameError)
   end
 
-  describe "warning about arguments" do
-    it "warns when passed safe_level and later arguments" do
-      -> {
-        ERB.new(@eruby_str, nil, '%')
-      }.should complain(/warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments./)
-    end
+  version_is ERB.const_get(:VERSION, false), ""..."6.0.0" do
+    describe "warning about arguments" do
+      it "warns when passed safe_level and later arguments" do
+        -> {
+          ERB.new(@eruby_str, nil, '%')
+        }.should complain(/warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments./)
+      end
 
-    it "does not warn when passed arguments as keyword argument" do
-      -> {
-        ERB.new(@eruby_str, trim_mode: '%')
-      }.should_not complain(/warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments./)
+      it "does not warn when passed arguments as keyword argument" do
+        -> {
+          ERB.new(@eruby_str, trim_mode: '%')
+        }.should_not complain(/warning: Passing safe_level with the 2nd argument of ERB.new is deprecated. Do not use it, and specify other arguments as keyword arguments./)
+      end
     end
   end
 end

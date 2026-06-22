@@ -22,12 +22,13 @@ describe :kernel_sprintf, shared: true do
       @method.call("%d", "112").should == "112"
       @method.call("%d", "0127").should == "87"
       @method.call("%d", "0xc4").should == "196"
+      @method.call("%d", "0").should == "0"
     end
 
     it "raises TypeError exception if cannot convert to Integer" do
       -> {
         @method.call("%b", Object.new)
-      }.should raise_error(TypeError)
+      }.should.raise(TypeError)
     end
 
     ["b", "B"].each do |f|
@@ -104,6 +105,20 @@ describe :kernel_sprintf, shared: true do
         @method.call("%X", -1).should == "..F"
       end
     end
+
+    %w[b B d i u o x X].each do |f|
+      describe f do
+        it "converts to the empty string if precision is 0 and value is 0" do
+          @method.call("%.#{f}", 0).should == ""
+          @method.call("%.0#{f}", 0).should == ""
+        end
+
+        it "pads the empty string if precision is 0 and value is 0" do
+          @method.call("%2.#{f}", 0).should == "  "
+          @method.call("%2.0#{f}", 0).should == "  "
+        end
+      end
+    end
   end
 
   describe "float formats" do
@@ -116,7 +131,7 @@ describe :kernel_sprintf, shared: true do
     it "raises TypeError exception if cannot convert to Float" do
       -> {
         @method.call("%f", Object.new)
-      }.should raise_error(TypeError)
+      }.should.raise(TypeError)
     end
 
     {"e" => "e", "E" => "E"}.each_pair do |f, exp|
@@ -289,40 +304,28 @@ describe :kernel_sprintf, shared: true do
         @method.call("%c", "a").should == "a"
       end
 
-      ruby_version_is ""..."3.2" do
-        it "raises ArgumentError if argument is a string of several characters" do
-          -> {
-            @method.call("%c", "abc")
-          }.should raise_error(ArgumentError, /%c requires a character/)
-        end
-
-        it "raises ArgumentError if argument is an empty string" do
-          -> {
-            @method.call("%c", "")
-          }.should raise_error(ArgumentError, /%c requires a character/)
-        end
+      it "displays only the first character if argument is a string of several characters" do
+        @method.call("%c", "abc").should == "a"
       end
 
-      ruby_version_is "3.2" do
-        it "displays only the first character if argument is a string of several characters" do
-          @method.call("%c", "abc").should == "a"
-        end
+      it "displays only the first character if argument is a string of several multibyte characters" do
+        @method.call("%c", "あいうえお").should == "あ"
+      end
 
-        it "displays no characters if argument is an empty string" do
-          @method.call("%c", "").should == ""
-        end
+      it "displays no characters if argument is an empty string" do
+        @method.call("%c", "").should == ""
       end
 
       it "raises TypeError if argument is not String or Integer and cannot be converted to them" do
         -> {
           @method.call("%c", [])
-        }.should raise_error(TypeError, /no implicit conversion of Array into Integer/)
+        }.should raise_consistent_error(TypeError, /no implicit conversion of Array into Integer/)
       end
 
       it "raises TypeError if argument is nil" do
         -> {
           @method.call("%c", nil)
-        }.should raise_error(TypeError, /no implicit conversion from nil to integer/)
+        }.should raise_consistent_error(TypeError, /no implicit conversion of nil into Integer/)
       end
 
       it "tries to convert argument to String with to_str" do
@@ -351,7 +354,7 @@ describe :kernel_sprintf, shared: true do
 
         -> {
           @method.call("%c", obj)
-        }.should raise_error(TypeError, /can't convert BasicObject to String/)
+        }.should raise_consistent_error(TypeError, /can't convert BasicObject into String/)
       end
 
       it "raises TypeError if converting to Integer with to_int returns non-Integer" do
@@ -362,7 +365,7 @@ describe :kernel_sprintf, shared: true do
 
         -> {
           @method.call("%c", obj)
-        }.should raise_error(TypeError, /can't convert BasicObject to Integer/)
+        }.should raise_consistent_error(TypeError, /can't convert BasicObject into Integer/)
       end
     end
 
@@ -371,6 +374,10 @@ describe :kernel_sprintf, shared: true do
         obj = mock("object")
         obj.should_receive(:inspect).and_return("<inspect-result>")
         @method.call("%p", obj).should == "<inspect-result>"
+      end
+
+      it "substitutes 'nil' for nil" do
+        @method.call("%p", nil).should == "nil"
       end
     end
 
@@ -397,7 +404,7 @@ describe :kernel_sprintf, shared: true do
 
         -> {
           @method.call("%s", obj)
-        }.should raise_error(NoMethodError)
+        }.should.raise(NoMethodError)
       end
 
       it "formats a partial substring without including omitted characters" do
@@ -450,12 +457,12 @@ describe :kernel_sprintf, shared: true do
       it "alone raises an ArgumentError" do
         -> {
           @method.call("%")
-        }.should raise_error(ArgumentError)
+        }.should.raise(ArgumentError)
       end
 
       it "is escaped by %" do
         @method.call("%%").should == "%"
-        @method.call("%%d", 10).should == "%d"
+        @method.call("%%d").should == "%d"
       end
     end
   end
@@ -557,7 +564,7 @@ describe :kernel_sprintf, shared: true do
       it "raises exception if argument number is bigger than actual arguments list" do
         -> {
           @method.call("%4$d", 1, 2, 3)
-        }.should raise_error(ArgumentError)
+        }.should.raise(ArgumentError)
       end
 
       it "ignores '-' sign" do
@@ -568,7 +575,7 @@ describe :kernel_sprintf, shared: true do
       it "raises ArgumentError exception when absolute and relative argument numbers are mixed" do
         -> {
           @method.call("%1$d %d", 1, 2)
-        }.should raise_error(ArgumentError)
+        }.should.raise(ArgumentError)
       end
     end
 
@@ -600,10 +607,27 @@ describe :kernel_sprintf, shared: true do
           @method.call("%#b", 0).should == "0"
           @method.call("%#B", 0).should == "0"
 
-          @method.call("%#o", 0).should == "0"
-
           @method.call("%#x", 0).should == "0"
           @method.call("%#X", 0).should == "0"
+        end
+
+        it "does nothing for zero argument when combined with zero precision" do
+          @method.call("%#.0b", 0).should == ""
+          @method.call("%#.0B", 0).should == ""
+
+          @method.call("%#.0x", 0).should == ""
+          @method.call("%#.0X", 0).should == ""
+        end
+      end
+
+      context "applies to format o" do
+        it "does nothing for zero argument" do
+          @method.call("%#o", 0).should == "0"
+          @method.call("%#.1o", 0).should == "0"
+        end
+
+        it "increases the precision if precision zero is requested with zero argument" do
+          @method.call("%#.0o", 0).should == "0"
         end
       end
 
@@ -818,7 +842,7 @@ describe :kernel_sprintf, shared: true do
       it "raises ArgumentError when is mixed with width" do
         -> {
           @method.call("%*10d", 10, 112)
-        }.should raise_error(ArgumentError)
+        }.should.raise(ArgumentError)
       end
     end
   end
@@ -917,7 +941,7 @@ describe :kernel_sprintf, shared: true do
       it "cannot be mixed with unnamed style" do
         -> {
           @method.call("%d %<foo>d", 1, foo: "123")
-        }.should raise_error(ArgumentError)
+        }.should.raise(ArgumentError)
       end
     end
 
@@ -937,13 +961,30 @@ describe :kernel_sprintf, shared: true do
       it "cannot be mixed with unnamed style" do
         -> {
           @method.call("%d %{foo}", 1, foo: "123")
-        }.should raise_error(ArgumentError)
+        }.should.raise(ArgumentError)
       end
 
-      it "raises KeyError when there is no matching key" do
+      it "respects Hash#default when there is no set key" do
+        @method.call("%{foo}", Hash.new(123)).should == "123"
+        @method.call("%{foo}", Hash.new { 123 }).should == "123"
+      end
+
+      it "raises KeyError when Hash#default returns nil" do
         -> {
           @method.call("%{foo}", {})
-        }.should raise_error(KeyError)
+        }.should.raise(KeyError, 'key{foo} not found')
+
+        -> {
+          @method.call("%{foo}", Hash.new(nil))
+        }.should.raise(KeyError, 'key{foo} not found')
+
+        -> {
+          @method.call("%{foo}", Hash.new { nil })
+        }.should.raise(KeyError, 'key{foo} not found')
+      end
+
+      it "accepts a nil value for an existing key" do
+        @method.call("%{foo}", { foo: nil }).should == ""
       end
 
       it "converts value to String with to_s" do
@@ -967,21 +1008,21 @@ describe :kernel_sprintf, shared: true do
     it "raises a KeyError" do
       -> {
         @method.call("%<foo>s", @object)
-      }.should raise_error(KeyError)
+      }.should.raise(KeyError)
     end
 
     it "sets the Hash as the receiver of KeyError" do
       -> {
         @method.call("%<foo>s", @object)
-      }.should raise_error(KeyError) { |err|
-        err.receiver.should equal(@object)
+      }.should.raise(KeyError) { |err|
+        err.receiver.should.equal?(@object)
       }
     end
 
     it "sets the unmatched key as the key of KeyError" do
       -> {
         @method.call("%<foo>s", @object)
-      }.should raise_error(KeyError) { |err|
+      }.should.raise(KeyError) { |err|
         err.key.to_s.should == 'foo'
       }
     end
@@ -989,5 +1030,28 @@ describe :kernel_sprintf, shared: true do
 
   it "does not raise error when passed more arguments than needed" do
     sprintf("%s %d %c", "string", 2, "c", []).should == "string 2 c"
+  end
+
+  describe "when $VERBOSE is true" do
+    it "warns if too many arguments are passed" do
+      -> {
+        format("test", 1)
+      }.should complain(/too many arguments for format string/, verbose: true)
+    end
+
+    it "does not warns if too many keyword arguments are passed" do
+      -> {
+        format("test %{test}", test: 1, unused: 2)
+      }.should_not complain(verbose: true)
+    end
+
+    ruby_bug "#20593", ""..."3.4" do
+      it "doesn't warns if keyword arguments are passed and none are used" do
+        -> {
+          format("test", test: 1)
+          format("test", {})
+        }.should_not complain(verbose: true)
+      end
+    end
   end
 end

@@ -25,7 +25,7 @@ version_is StringScanner::Version, "3.1.1" do # ruby_version_is "3.4"
     end
 
     # https://github.com/ruby/strscan/issues/130
-    ruby_bug "", "3.4"..."3.5" do # introduced in strscan v3.1.1
+    ruby_bug "", "3.4"..."4.0" do # introduced in strscan v3.1.1
       it "sets the last match result" do
         s = StringScanner.new("42abc")
         s.scan_integer
@@ -44,7 +44,7 @@ version_is StringScanner::Version, "3.1.1" do # ruby_version_is "3.4"
 
       -> {
         s.scan_integer
-      }.should raise_error(Encoding::CompatibilityError, 'ASCII incompatible encoding: UTF-16BE')
+      }.should.raise(Encoding::CompatibilityError, /ASCII incompatible encoding: UTF-16BE|incompatible encoding regexp match/)
     end
 
     context "given base" do
@@ -65,17 +65,15 @@ version_is StringScanner::Version, "3.1.1" do # ruby_version_is "3.4"
       it "raises ArgumentError when passed not supported base" do
         -> {
           StringScanner.new("42").scan_integer(base: 5)
-        }.should raise_error(ArgumentError, "Unsupported integer base: 5, expected 10 or 16")
+        }.should.raise(ArgumentError, "Unsupported integer base: 5, expected 10 or 16")
       end
 
-      ruby_version_is ""..."3.5" do # Don't run on 3.5.0dev that already contains not released fixes
       version_is StringScanner::Version, "3.1.1"..."3.1.3" do # ruby_version_is "3.4.0"..."3.4.3"
         it "does not match '0x' prefix on its own" do
           StringScanner.new("0x").scan_integer(base: 16).should == nil
           StringScanner.new("-0x").scan_integer(base: 16).should == nil
           StringScanner.new("+0x").scan_integer(base: 16).should == nil
         end
-      end
       end
 
       version_is StringScanner::Version, "3.1.3" do # ruby_version_is "3.4.3"
@@ -96,7 +94,6 @@ version_is StringScanner::Version, "3.1.1" do # ruby_version_is "3.4"
 
   describe "#[] successive call with a capture group name" do
     # https://github.com/ruby/strscan/issues/139
-    ruby_version_is ""..."3.5" do # Don't run on 3.5.0dev that already contains not released fixes
     version_is StringScanner::Version, "3.1.1"..."3.1.3" do # ruby_version_is "3.4.0"..."3.4.3"
       it "returns nil substring when matching succeeded" do
         s = StringScanner.new("42")
@@ -105,13 +102,12 @@ version_is StringScanner::Version, "3.1.1" do # ruby_version_is "3.4"
         s[:a].should == nil
       end
     end
-    end
     version_is StringScanner::Version, "3.1.3" do # ruby_version_is "3.4.3"
       it "raises IndexError when matching succeeded" do
         s = StringScanner.new("42")
         s.scan_integer
         s.should.matched?
-        -> { s[:a] }.should raise_error(IndexError)
+        -> { s[:a] }.should.raise(IndexError)
       end
     end
 
@@ -119,7 +115,7 @@ version_is StringScanner::Version, "3.1.1" do # ruby_version_is "3.4"
       s = StringScanner.new("a42")
       s.scan_integer
       s.should_not.matched?
-      s[:a].should be_nil
+      s[:a].should == nil
     end
 
     version_is StringScanner::Version, "3.1.3" do # ruby_version_is "3.4"
@@ -131,7 +127,6 @@ version_is StringScanner::Version, "3.1.1" do # ruby_version_is "3.4"
     end
 
     # https://github.com/ruby/strscan/issues/135
-    ruby_version_is ""..."3.5" do # Don't run on 3.5.0dev that already contains not released fixes
     version_is StringScanner::Version, "3.1.1"..."3.1.3" do # ruby_version_is "3.4.0"..."3.4.3"
       it "does not ignore the previous matching with Regexp" do
         s = StringScanner.new("42")
@@ -145,7 +140,6 @@ version_is StringScanner::Version, "3.1.1" do # ruby_version_is "3.4"
         s[:a].should == "42"
       end
     end
-    end
     version_is StringScanner::Version, "3.1.3" do # ruby_version_is "3.4"
       it "ignores the previous matching with Regexp" do
         s = StringScanner.new("42")
@@ -156,7 +150,7 @@ version_is StringScanner::Version, "3.1.1" do # ruby_version_is "3.4"
 
         s.scan_integer
         s.should.matched?
-        -> { s[:a] }.should raise_error(IndexError)
+        -> { s[:a] }.should.raise(IndexError)
       end
     end
   end

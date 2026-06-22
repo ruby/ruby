@@ -21,12 +21,9 @@ struct objspace {
     bool gc_stress;
 
     size_t gc_count;
+    size_t moving_gc_count;
     size_t total_gc_time;
     size_t total_allocated_objects;
-
-    st_table *id_to_obj_tbl;
-    st_table *obj_to_id_tbl;
-    unsigned long long next_object_id;
 
     st_table *finalizer_table;
     struct MMTk_final_job *finalizer_jobs;
@@ -36,19 +33,41 @@ struct objspace {
     unsigned long live_ractor_cache_count;
 
     pthread_mutex_t mutex;
+    rb_atomic_t mutator_blocking_count;
     bool world_stopped;
     pthread_cond_t cond_world_stopped;
     pthread_cond_t cond_world_started;
     size_t start_the_world_count;
 
+    pthread_mutex_t event_hook_mutex;
+
+    struct {
+        bool gc_thread_crashed;
+        char crash_msg[256];
+    } crash_context;
+
     struct rb_gc_vm_context vm_context;
+
+    unsigned int fork_hook_vm_lock_lev;
+
+    uintptr_t vo_bit_log_region_size;
+    uintptr_t vo_bit_base_addr;
 };
+
+#define OBJ_FREE_BUF_CAPACITY 128
 
 struct MMTk_ractor_cache {
     struct ccan_list_node list_node;
 
     MMTk_Mutator *mutator;
     bool gc_mutator_p;
+
+    MMTk_BumpPointer *bump_pointer;
+
+    MMTk_ObjectReference obj_free_parallel_buf[OBJ_FREE_BUF_CAPACITY];
+    size_t obj_free_parallel_count;
+    MMTk_ObjectReference obj_free_non_parallel_buf[OBJ_FREE_BUF_CAPACITY];
+    size_t obj_free_non_parallel_count;
 };
 
 struct MMTk_final_job {
@@ -63,7 +82,7 @@ struct MMTk_final_job {
             void *data;
         } dfree;
         struct {
-            VALUE object_id;
+            /* HACK: we store the object ID on the 0th element of this array. */
             VALUE finalizer_array;
         } finalize;
     } as;
@@ -71,11 +90,21 @@ struct MMTk_final_job {
 
 #ifdef RB_THREAD_LOCAL_SPECIFIER
 RB_THREAD_LOCAL_SPECIFIER struct MMTk_GCThreadTLS *rb_mmtk_gc_thread_tls;
+
+RB_THREAD_LOCAL_SPECIFIER VALUE marking_parent_object;
 #else
 # error We currently need language-supported TLS
 #endif
 
+#ifdef MMTK_DEBUG
+# define MMTK_ASSERT(expr, ...) RUBY_ASSERT_ALWAYS(expr, #expr RBIMPL_VA_OPT_ARGS(__VA_ARGS__))
+#else
+# define MMTK_ASSERT(expr, ...) ((void)0)
+#endif
+
 #include <pthread.h>
+
+static inline VALUE rb_mmtk_call_object_closure(VALUE obj, bool pin);
 
 static void
 rb_mmtk_init_gc_worker_thread(MMTk_VMWorkerThread gc_thread_tls)
@@ -109,7 +138,7 @@ rb_mmtk_stop_the_world(void)
 }
 
 static void
-rb_mmtk_resume_mutators(void)
+rb_mmtk_resume_mutators(bool current_gc_may_move)
 {
     struct objspace *objspace = rb_gc_get_objspace();
 
@@ -120,6 +149,7 @@ rb_mmtk_resume_mutators(void)
 
     objspace->world_stopped = false;
     objspace->gc_count++;
+    if (current_gc_may_move) objspace->moving_gc_count++;
     pthread_cond_broadcast(&objspace->cond_world_started);
 
     if ((err = pthread_mutex_unlock(&objspace->mutex)) != 0) {
@@ -127,13 +157,17 @@ rb_mmtk_resume_mutators(void)
     }
 }
 
+static void mmtk_flush_obj_free_buffer(struct MMTk_ractor_cache *cache);
+
 static void
 rb_mmtk_block_for_gc(MMTk_VMMutatorThread mutator)
 {
     struct objspace *objspace = rb_gc_get_objspace();
 
     size_t starting_gc_count = objspace->gc_count;
-    int lock_lev = rb_gc_vm_lock();
+    RUBY_ATOMIC_INC(objspace->mutator_blocking_count);
+    int lock_lev = RB_GC_VM_LOCK();
+    RUBY_ATOMIC_DEC(objspace->mutator_blocking_count);
     int err;
     if ((err = pthread_mutex_lock(&objspace->mutex)) != 0) {
         rb_bug("ERROR: cannot lock objspace->mutex: %s", strerror(err));
@@ -155,6 +189,11 @@ rb_mmtk_block_for_gc(MMTk_VMMutatorThread mutator)
 
         rb_gc_vm_barrier();
 
+        struct MMTk_ractor_cache *rc;
+        ccan_list_for_each(&objspace->ractor_caches, rc, list_node) {
+            mmtk_flush_obj_free_buffer(rc);
+        }
+
         objspace->world_stopped = true;
 
         pthread_cond_broadcast(&objspace->cond_world_stopped);
@@ -162,6 +201,10 @@ rb_mmtk_block_for_gc(MMTk_VMMutatorThread mutator)
         // Wait for GC end
         while (objspace->world_stopped) {
             pthread_cond_wait(&objspace->cond_world_started, &objspace->mutex);
+        }
+
+        if (RB_UNLIKELY(objspace->crash_context.gc_thread_crashed)) {
+            rb_bug("%s", objspace->crash_context.crash_msg);
         }
 
         if (objspace->measure_gc_time) {
@@ -177,7 +220,19 @@ rb_mmtk_block_for_gc(MMTk_VMMutatorThread mutator)
     if ((err = pthread_mutex_unlock(&objspace->mutex)) != 0) {
         rb_bug("ERROR: cannot release objspace->mutex: %s", strerror(err));
     }
-    rb_gc_vm_unlock(lock_lev);
+    RB_GC_VM_UNLOCK(lock_lev);
+}
+
+static void
+rb_mmtk_before_updating_jit_code(void)
+{
+    rb_gc_before_updating_jit_code();
+}
+
+static void
+rb_mmtk_after_updating_jit_code(void)
+{
+    rb_gc_after_updating_jit_code();
 }
 
 static size_t
@@ -203,11 +258,7 @@ rb_mmtk_scan_gc_roots(void)
 {
     struct objspace *objspace = rb_gc_get_objspace();
 
-    // FIXME: Make `rb_gc_mark_roots` aware that the current thread may not have EC.
-    // See: https://github.com/ruby/mmtk/issues/22
-    rb_gc_worker_thread_set_vm_context(&objspace->vm_context);
     rb_gc_mark_roots(objspace, NULL);
-    rb_gc_worker_thread_unset_vm_context(&objspace->vm_context);
 }
 
 static int
@@ -227,15 +278,12 @@ rb_mmtk_scan_objspace(void)
         st_foreach(objspace->finalizer_table, pin_value, (st_data_t)objspace);
     }
 
-    st_foreach(objspace->obj_to_id_tbl, gc_mark_tbl_no_pin_i, (st_data_t)objspace);
-
     struct MMTk_final_job *job = objspace->finalizer_jobs;
     while (job != NULL) {
         switch (job->kind) {
           case MMTK_FINAL_JOB_DFREE:
             break;
           case MMTK_FINAL_JOB_FINALIZE:
-            rb_gc_impl_mark(objspace, job->as.finalize.object_id);
             rb_gc_impl_mark(objspace, job->as.finalize.finalizer_array);
             break;
           default:
@@ -247,15 +295,45 @@ rb_mmtk_scan_objspace(void)
 }
 
 static void
-rb_mmtk_scan_object_ruby_style(MMTk_ObjectReference object)
+rb_mmtk_move_obj_during_marking(MMTk_ObjectReference from, MMTk_ObjectReference to)
 {
-    rb_gc_mark_children(rb_gc_get_objspace(), (VALUE)object);
+    rb_gc_move_obj_during_marking((VALUE)from, (VALUE)to);
+}
+
+static void
+rb_mmtk_update_object_references(MMTk_ObjectReference mmtk_object)
+{
+    VALUE object = (VALUE)mmtk_object;
+
+    if (!RB_FL_TEST(object, RUBY_FL_WEAK_REFERENCE)) {
+        marking_parent_object = object;
+        rb_gc_update_object_references(rb_gc_get_objspace(), object);
+        marking_parent_object = 0;
+    }
 }
 
 static void
 rb_mmtk_call_gc_mark_children(MMTk_ObjectReference object)
 {
+    marking_parent_object = (VALUE)object;
     rb_gc_mark_children(rb_gc_get_objspace(), (VALUE)object);
+    marking_parent_object = 0;
+}
+
+static void
+rb_mmtk_handle_weak_references(MMTk_ObjectReference mmtk_object, bool moving)
+{
+    VALUE object = (VALUE)mmtk_object;
+
+    marking_parent_object = object;
+
+    rb_gc_handle_weak_references(object);
+
+    if (moving) {
+        rb_gc_update_object_references(rb_gc_get_objspace(), object);
+    }
+
+    marking_parent_object = 0;
 }
 
 static void
@@ -265,12 +343,18 @@ rb_mmtk_call_obj_free(MMTk_ObjectReference object)
     struct objspace *objspace = rb_gc_get_objspace();
 
     if (RB_UNLIKELY(rb_gc_event_hook_required_p(RUBY_INTERNAL_EVENT_FREEOBJ))) {
-        rb_gc_worker_thread_set_vm_context(&objspace->vm_context);
+        pthread_mutex_lock(&objspace->event_hook_mutex);
         rb_gc_event_hook(obj, RUBY_INTERNAL_EVENT_FREEOBJ);
-        rb_gc_worker_thread_unset_vm_context(&objspace->vm_context);
+        pthread_mutex_unlock(&objspace->event_hook_mutex);
     }
 
-    rb_gc_obj_free(objspace, obj);
+    if (RB_UNLIKELY(rb_gc_obj_needs_cleanup_p(obj))) {
+        rb_gc_obj_free(objspace, obj);
+    }
+
+#ifdef MMTK_DEBUG
+    memset((void *)obj, 0, rb_gc_impl_obj_slot_size(obj));
+#endif
 }
 
 static size_t
@@ -282,31 +366,34 @@ rb_mmtk_vm_live_bytes(void)
 static void
 make_final_job(struct objspace *objspace, VALUE obj, VALUE table)
 {
-    RUBY_ASSERT(RB_FL_TEST(obj, RUBY_FL_FINALIZE));
-    RUBY_ASSERT(mmtk_is_reachable((MMTk_ObjectReference)table));
-    RUBY_ASSERT(RB_BUILTIN_TYPE(table) == T_ARRAY);
-
-    RB_FL_UNSET(obj, RUBY_FL_FINALIZE);
+    MMTK_ASSERT(RB_BUILTIN_TYPE(table) == T_ARRAY);
 
     struct MMTk_final_job *job = xmalloc(sizeof(struct MMTk_final_job));
     job->next = objspace->finalizer_jobs;
     job->kind = MMTK_FINAL_JOB_FINALIZE;
-    job->as.finalize.object_id = rb_obj_id((VALUE)obj);
     job->as.finalize.finalizer_array = table;
 
     objspace->finalizer_jobs = job;
 }
 
 static int
-rb_mmtk_update_finalizer_table_i(st_data_t key, st_data_t value, st_data_t data)
+rb_mmtk_update_finalizer_table_i(st_data_t key, st_data_t value, st_data_t data, int error)
 {
-    RUBY_ASSERT(RB_FL_TEST(key, RUBY_FL_FINALIZE));
-    RUBY_ASSERT(mmtk_is_reachable((MMTk_ObjectReference)value));
-    RUBY_ASSERT(RB_BUILTIN_TYPE(value) == T_ARRAY);
+    MMTK_ASSERT(mmtk_is_reachable((MMTk_ObjectReference)value));
+    MMTK_ASSERT(RB_BUILTIN_TYPE(value) == T_ARRAY);
 
     struct objspace *objspace = (struct objspace *)data;
 
-    if (!mmtk_is_reachable((MMTk_ObjectReference)key)) {
+    if (mmtk_is_reachable((MMTk_ObjectReference)key)) {
+        VALUE new_key_location = rb_mmtk_call_object_closure((VALUE)key, false);
+
+        MMTK_ASSERT(RB_FL_TEST(new_key_location, RUBY_FL_FINALIZE));
+
+        if (new_key_location != key) {
+            return ST_REPLACE;
+        }
+    }
+    else {
         make_final_job(objspace, (VALUE)key, (VALUE)value);
 
         rb_postponed_job_trigger(objspace->finalizer_postponed_job);
@@ -317,56 +404,25 @@ rb_mmtk_update_finalizer_table_i(st_data_t key, st_data_t value, st_data_t data)
     return ST_CONTINUE;
 }
 
+static int
+rb_mmtk_update_finalizer_table_replace_i(st_data_t *key, st_data_t *value, st_data_t data, int existing)
+{
+    *key = rb_mmtk_call_object_closure((VALUE)*key, false);
+
+    return ST_CONTINUE;
+}
+
 static void
 rb_mmtk_update_finalizer_table(void)
 {
     struct objspace *objspace = rb_gc_get_objspace();
 
-    // TODO: replace with st_foreach_with_replace when GC is moving
-    st_foreach(objspace->finalizer_table, rb_mmtk_update_finalizer_table_i, (st_data_t)objspace);
-}
-
-static int
-rb_mmtk_update_table_i(VALUE val, void *data)
-{
-    if (!mmtk_is_reachable((MMTk_ObjectReference)val)) {
-        return ST_DELETE;
-    }
-
-    return ST_CONTINUE;
-}
-
-static int
-rb_mmtk_update_obj_id_tables_obj_to_id_i(st_data_t key, st_data_t val, st_data_t data)
-{
-    RUBY_ASSERT(RB_FL_TEST(key, FL_SEEN_OBJ_ID));
-
-    if (!mmtk_is_reachable((MMTk_ObjectReference)key)) {
-        return ST_DELETE;
-    }
-
-    return ST_CONTINUE;
-}
-
-static int
-rb_mmtk_update_obj_id_tables_id_to_obj_i(st_data_t key, st_data_t val, st_data_t data)
-{
-    RUBY_ASSERT(RB_FL_TEST(val, FL_SEEN_OBJ_ID));
-
-    if (!mmtk_is_reachable((MMTk_ObjectReference)val)) {
-        return ST_DELETE;
-    }
-
-    return ST_CONTINUE;
-}
-
-static void
-rb_mmtk_update_obj_id_tables(void)
-{
-    struct objspace *objspace = rb_gc_get_objspace();
-
-    st_foreach(objspace->obj_to_id_tbl, rb_mmtk_update_obj_id_tables_obj_to_id_i, 0);
-    st_foreach(objspace->id_to_obj_tbl, rb_mmtk_update_obj_id_tables_id_to_obj_i, 0);
+    st_foreach_with_replace(
+        objspace->finalizer_table,
+        rb_mmtk_update_finalizer_table_i,
+        rb_mmtk_update_finalizer_table_replace_i,
+        (st_data_t)objspace
+    );
 }
 
 static int
@@ -375,12 +431,92 @@ rb_mmtk_global_tables_count(void)
     return RB_GC_VM_WEAK_TABLE_COUNT;
 }
 
-static void
-rb_mmtk_update_global_tables(int table)
-{
-    RUBY_ASSERT(table < RB_GC_VM_WEAK_TABLE_COUNT);
+static inline VALUE rb_mmtk_call_object_closure(VALUE obj, bool pin);
 
-    rb_gc_vm_weak_table_foreach(rb_mmtk_update_table_i, NULL, NULL, true, (enum rb_gc_vm_weak_tables)table);
+static int
+rb_mmtk_update_global_tables_i(VALUE val, void *data)
+{
+    if (!mmtk_is_reachable((MMTk_ObjectReference)val)) {
+        return ST_DELETE;
+    }
+
+    // TODO: check only if in moving GC
+    if (rb_mmtk_call_object_closure(val, false) != val) {
+        return ST_REPLACE;
+    }
+
+    return ST_CONTINUE;
+}
+
+static int
+rb_mmtk_update_global_tables_replace_i(VALUE *ptr, void *data)
+{
+    // TODO: cache the new location so we don't call rb_mmtk_call_object_closure twice
+    *ptr = rb_mmtk_call_object_closure(*ptr, false);
+
+    return ST_CONTINUE;
+}
+
+static void
+rb_mmtk_update_global_tables(int table, bool moving)
+{
+    MMTK_ASSERT(table < RB_GC_VM_WEAK_TABLE_COUNT);
+
+    rb_gc_vm_weak_table_foreach(
+        rb_mmtk_update_global_tables_i,
+        rb_mmtk_update_global_tables_replace_i,
+        NULL,
+        !moving,
+        (enum rb_gc_vm_weak_tables)table
+    );
+}
+
+static bool
+rb_mmtk_special_const_p(MMTk_ObjectReference object)
+{
+    VALUE obj = (VALUE)object;
+
+    return RB_SPECIAL_CONST_P(obj);
+}
+
+RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 1, 2)
+RBIMPL_ATTR_NORETURN()
+static void
+rb_mmtk_gc_thread_bug(const char *msg, ...)
+{
+    struct objspace *objspace = rb_gc_get_objspace();
+
+    objspace->crash_context.gc_thread_crashed = true;
+
+    va_list args;
+    va_start(args, msg);
+    vsnprintf(objspace->crash_context.crash_msg, sizeof(objspace->crash_context.crash_msg), msg, args);
+    va_end(args);
+
+    fprintf(stderr, "-- GC thread backtrace "
+                    "-------------------------------------------\n");
+    rb_gc_print_backtrace();
+    fprintf(stderr, "\n");
+
+    rb_mmtk_resume_mutators(false);
+
+    sleep(5);
+
+    rb_bug("rb_mmtk_gc_thread_bug");
+}
+
+RBIMPL_ATTR_NORETURN()
+static void
+rb_mmtk_gc_thread_panic_handler(void)
+{
+    rb_mmtk_gc_thread_bug("MMTk GC thread panicked");
+}
+
+RBIMPL_ATTR_NORETURN()
+static void
+rb_mmtk_mutator_thread_panic_handler(void)
+{
+    rb_bug("Ruby mutator thread panicked");
 }
 
 // Bootup
@@ -390,18 +526,24 @@ MMTk_RubyUpcalls ruby_upcalls = {
     rb_mmtk_stop_the_world,
     rb_mmtk_resume_mutators,
     rb_mmtk_block_for_gc,
+    rb_mmtk_before_updating_jit_code,
+    rb_mmtk_after_updating_jit_code,
     rb_mmtk_number_of_mutators,
     rb_mmtk_get_mutators,
     rb_mmtk_scan_gc_roots,
     rb_mmtk_scan_objspace,
-    rb_mmtk_scan_object_ruby_style,
+    rb_mmtk_move_obj_during_marking,
+    rb_mmtk_update_object_references,
     rb_mmtk_call_gc_mark_children,
+    rb_mmtk_handle_weak_references,
     rb_mmtk_call_obj_free,
     rb_mmtk_vm_live_bytes,
     rb_mmtk_update_global_tables,
     rb_mmtk_global_tables_count,
     rb_mmtk_update_finalizer_table,
-    rb_mmtk_update_obj_id_tables,
+    rb_mmtk_special_const_p,
+    rb_mmtk_mutator_thread_panic_handler,
+    rb_mmtk_gc_thread_panic_handler,
 };
 
 // Use max 80% of the available memory by default for MMTk
@@ -425,12 +567,14 @@ void *
 rb_gc_impl_objspace_alloc(void)
 {
     MMTk_Builder *builder = rb_mmtk_builder_init();
-    mmtk_init_binding(builder, NULL, &ruby_upcalls, (MMTk_ObjectReference)Qundef);
+    MMTk_RubyBindingOptions binding_options = {
+        .suffix_size = RB_GC_OBJ_SUFFIX_SIZE,
+    };
+    mmtk_init_binding(builder, &binding_options, &ruby_upcalls);
 
     return calloc(1, sizeof(struct objspace));
 }
 
-static void objspace_obj_id_init(struct objspace *objspace);
 static void gc_run_finalizers(void *data);
 
 void
@@ -440,8 +584,6 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
 
     objspace->measure_gc_time = true;
 
-    objspace_obj_id_init(objspace);
-
     objspace->finalizer_table = st_init_numtable();
     objspace->finalizer_postponed_job = rb_postponed_job_preregister(0, gc_run_finalizers, objspace);
 
@@ -450,6 +592,11 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
     objspace->mutex = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
     objspace->cond_world_stopped = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
     objspace->cond_world_started = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
+
+    objspace->event_hook_mutex = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+
+    objspace->vo_bit_log_region_size = mmtk_get_vo_bit_log_region_size();
+    objspace->vo_bit_base_addr = mmtk_get_vo_bit_base_addr();
 }
 
 void
@@ -467,10 +614,11 @@ rb_gc_impl_ractor_cache_alloc(void *objspace_ptr, void *ractor)
     }
     objspace->live_ractor_cache_count++;
 
-    struct MMTk_ractor_cache *cache = malloc(sizeof(struct MMTk_ractor_cache));
+    struct MMTk_ractor_cache *cache = calloc(1, sizeof(struct MMTk_ractor_cache));
     ccan_list_add(&objspace->ractor_caches, &cache->list_node);
 
     cache->mutator = mmtk_bind_mutator(cache);
+    cache->bump_pointer = mmtk_get_bump_pointer_allocator(cache->mutator);
 
     return cache;
 }
@@ -483,7 +631,15 @@ rb_gc_impl_ractor_cache_free(void *objspace_ptr, void *cache_ptr)
 
     ccan_list_del(&cache->list_node);
 
-    RUBY_ASSERT(objspace->live_ractor_cache_count > 1);
+    mmtk_flush_obj_free_buffer(cache);
+
+    if (ruby_free_at_exit_p()) {
+        MMTK_ASSERT(objspace->live_ractor_cache_count > 0);
+    }
+    else {
+        MMTK_ASSERT(objspace->live_ractor_cache_count > 1);
+    }
+
     objspace->live_ractor_cache_count--;
 
     mmtk_destroy_mutator(cache->mutator);
@@ -493,15 +649,31 @@ void rb_gc_impl_set_params(void *objspace_ptr) { }
 
 static VALUE gc_verify_internal_consistency(VALUE self) { return Qnil; }
 
+#if SIZEOF_VALUE >= 8
+#define MMTK_HEAP_COUNT 12
+#define MMTK_MAX_OBJ_SIZE 1024
+static size_t heap_sizes[MMTK_HEAP_COUNT + 1] = {
+    32, 40, 64, 80, 96, 128, 160, 256, 512, 640, 768, MMTK_MAX_OBJ_SIZE, 0
+};
+#else
+#define MMTK_HEAP_COUNT 5
+#define MMTK_MAX_OBJ_SIZE 512
+static size_t heap_sizes[MMTK_HEAP_COUNT + 1] = {
+    32, 64, 128, 256, MMTK_MAX_OBJ_SIZE, 0
+};
+#endif
+
 void
 rb_gc_impl_init(void)
 {
     VALUE gc_constants = rb_hash_new();
-    rb_hash_aset(gc_constants, ID2SYM(rb_intern("BASE_SLOT_SIZE")), SIZET2NUM(sizeof(VALUE) * 5));
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_SIZE")), SIZET2NUM(SIZEOF_VALUE >= 8 ? 64 : 32));
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RBASIC_SIZE")), SIZET2NUM(sizeof(struct RBasic)));
     rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OVERHEAD")), INT2NUM(0));
-    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVARGC_MAX_ALLOCATE_SIZE")), LONG2FIX(640));
-    // Pretend we have 5 size pools
-    rb_hash_aset(gc_constants, ID2SYM(rb_intern("SIZE_POOL_COUNT")), LONG2FIX(5));
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVARGC_MAX_ALLOCATE_SIZE")), LONG2FIX(MMTK_MAX_OBJ_SIZE));
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("HEAP_COUNT")), LONG2FIX(MMTK_HEAP_COUNT));
+    // TODO: correctly set RVALUE_OLD_AGE when we have generational GC support
+    rb_hash_aset(gc_constants, ID2SYM(rb_intern("RVALUE_OLD_AGE")), INT2FIX(0));
     OBJ_FREEZE(gc_constants);
     rb_define_const(rb_mGC, "INTERNAL_CONSTANTS", gc_constants);
 
@@ -514,10 +686,6 @@ rb_gc_impl_init(void)
     rb_define_singleton_method(rb_mGC, "latest_compact_info", rb_f_notimplement, 0);
     rb_define_singleton_method(rb_mGC, "verify_compaction_references", rb_f_notimplement, -1);
 }
-
-static size_t heap_sizes[6] = {
-    40, 80, 160, 320, 640, 0
-};
 
 size_t *
 rb_gc_impl_heap_sizes(void *objspace_ptr)
@@ -559,8 +727,8 @@ rb_gc_impl_start(void *objspace_ptr, bool full_mark, bool immediate_mark, bool i
 bool
 rb_gc_impl_during_gc_p(void *objspace_ptr)
 {
-    // TODO
-    return false;
+    struct objspace *objspace = objspace_ptr;
+    return objspace->world_stopped;
 }
 
 static void
@@ -630,17 +798,118 @@ rb_gc_impl_config_set(void *objspace_ptr, VALUE hash)
     // TODO
 }
 
+struct rb_gc_vm_context *
+rb_gc_impl_get_vm_context(void *objspace_ptr)
+{
+    struct objspace *objspace = objspace_ptr;
+
+    return &objspace->vm_context;
+}
+
 // Object allocation
 
+static VALUE
+rb_mmtk_alloc_fast_path(struct objspace *objspace, struct MMTk_ractor_cache *ractor_cache, size_t size, size_t align)
+{
+    MMTk_BumpPointer *bump_pointer = ractor_cache->bump_pointer;
+    if (bump_pointer == NULL) return 0;
+
+    uintptr_t cursor = bump_pointer->cursor;
+
+    // Ensure cursor is aligned
+    size_t mask = align - 1;
+    cursor = (cursor + mask) & ~mask;
+
+    cursor += size;
+
+    if (cursor > bump_pointer->limit) {
+        return 0;
+    }
+    else {
+        VALUE obj = cursor - size;
+        bump_pointer->cursor = cursor;
+        return obj;
+    }
+}
+
+static bool
+obj_can_parallel_free_p(VALUE obj)
+{
+    switch (RB_BUILTIN_TYPE(obj)) {
+      case T_ARRAY:
+      case T_BIGNUM:
+      case T_COMPLEX:
+      case T_FLOAT:
+      case T_HASH:
+      case T_OBJECT:
+      case T_RATIONAL:
+      case T_REGEXP:
+      case T_STRING:
+      case T_STRUCT:
+      case T_SYMBOL:
+        return true;
+      default:
+        return false;
+    }
+}
+
+static void
+mmtk_flush_obj_free_buffer(struct MMTk_ractor_cache *cache)
+{
+    if (cache->obj_free_parallel_count > 0) {
+        mmtk_add_obj_free_candidates(cache->obj_free_parallel_buf,
+                                     cache->obj_free_parallel_count, true);
+        cache->obj_free_parallel_count = 0;
+    }
+    if (cache->obj_free_non_parallel_count > 0) {
+        mmtk_add_obj_free_candidates(cache->obj_free_non_parallel_buf,
+                                     cache->obj_free_non_parallel_count, false);
+        cache->obj_free_non_parallel_count = 0;
+    }
+}
+
+static inline void
+mmtk_buffer_obj_free_candidate(struct MMTk_ractor_cache *cache, VALUE obj)
+{
+    if (obj_can_parallel_free_p(obj)) {
+        cache->obj_free_parallel_buf[cache->obj_free_parallel_count++] = (MMTk_ObjectReference)obj;
+        if (cache->obj_free_parallel_count >= OBJ_FREE_BUF_CAPACITY) {
+            mmtk_add_obj_free_candidates(cache->obj_free_parallel_buf,
+                                         cache->obj_free_parallel_count, true);
+            cache->obj_free_parallel_count = 0;
+        }
+    }
+    else {
+        cache->obj_free_non_parallel_buf[cache->obj_free_non_parallel_count++] = (MMTk_ObjectReference)obj;
+        if (cache->obj_free_non_parallel_count >= OBJ_FREE_BUF_CAPACITY) {
+            mmtk_add_obj_free_candidates(cache->obj_free_non_parallel_buf,
+                                         cache->obj_free_non_parallel_count, false);
+            cache->obj_free_non_parallel_count = 0;
+        }
+    }
+}
+
+static void
+mmtk_post_alloc_fast_immix(struct objspace *objspace, struct MMTk_ractor_cache *ractor_cache, uintptr_t obj)
+{
+    uintptr_t region_offset = obj >> objspace->vo_bit_log_region_size;
+    uintptr_t byte_offset = region_offset / 8;
+    uintptr_t bit_offset = region_offset % 8;
+    uintptr_t meta_byte_address = objspace->vo_bit_base_addr + byte_offset;
+    uint8_t byte = 1 << bit_offset;
+    uint8_t *meta_byte_ptr = (uint8_t*)meta_byte_address;
+    *meta_byte_ptr |= byte;
+}
+
 VALUE
-rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, bool wb_protected, size_t alloc_size)
+rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size)
 {
 #define MMTK_ALLOCATION_SEMANTICS_DEFAULT 0
     struct objspace *objspace = objspace_ptr;
     struct MMTk_ractor_cache *ractor_cache = cache_ptr;
 
-    if (alloc_size > 640) rb_bug("too big");
-    for (int i = 0; i < 5; i++) {
+    if (alloc_size > MMTK_MAX_OBJ_SIZE) rb_bug("too big");
+    for (int i = 0; i < MMTK_HEAP_COUNT; i++) {
         if (alloc_size == heap_sizes[i]) break;
         if (alloc_size < heap_sizes[i]) {
             alloc_size = heap_sizes[i];
@@ -652,19 +921,34 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
         mmtk_handle_user_collection_request(ractor_cache, false, false);
     }
 
-    VALUE *alloc_obj = mmtk_alloc(ractor_cache->mutator, alloc_size + 8, MMTk_MIN_OBJ_ALIGN, 0, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
+    // Layout: [hidden size header (sizeof(VALUE))][payload (alloc_size)][suffix (RB_GC_OBJ_SUFFIX_SIZE)]
+    alloc_size += sizeof(VALUE) + RB_GC_OBJ_SUFFIX_SIZE;
+
+    VALUE *alloc_obj = (VALUE *)rb_mmtk_alloc_fast_path(objspace, ractor_cache, alloc_size, MMTk_MIN_OBJ_ALIGN);
+    if (!alloc_obj) {
+        alloc_obj = mmtk_alloc(ractor_cache->mutator, alloc_size, MMTk_MIN_OBJ_ALIGN, 0, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
+
+        // On heap exhaustion raise NoMemoryError.
+        if (RB_UNLIKELY(alloc_obj == NULL)) {
+            rb_memerror();
+        }
+    }
+
     alloc_obj++;
-    alloc_obj[-1] = alloc_size;
+    alloc_obj[-1] = alloc_size - sizeof(VALUE) - RB_GC_OBJ_SUFFIX_SIZE;
     alloc_obj[0] = flags;
     alloc_obj[1] = klass;
-    if (alloc_size > 16) alloc_obj[2] = v1;
-    if (alloc_size > 24) alloc_obj[3] = v2;
-    if (alloc_size > 32) alloc_obj[4] = v3;
 
-    mmtk_post_alloc(ractor_cache->mutator, (void*)alloc_obj, alloc_size + 8, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
+    if (ractor_cache->bump_pointer == NULL) {
+        mmtk_post_alloc(ractor_cache->mutator, (void*)alloc_obj, alloc_size, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
+    }
+    else {
+        // We can use the post alloc fast path if we're using Immix bump pointer allocator
+        mmtk_post_alloc_fast_immix(objspace, ractor_cache, (uintptr_t)alloc_obj);
+    }
 
     // TODO: only add when object needs obj_free to be called
-    mmtk_add_obj_free_candidate(alloc_obj);
+    mmtk_buffer_obj_free_candidate(ractor_cache, (VALUE)alloc_obj);
 
     objspace->total_allocated_objects++;
 
@@ -680,7 +964,7 @@ rb_gc_impl_obj_slot_size(VALUE obj)
 size_t
 rb_gc_impl_heap_id_for_size(void *objspace_ptr, size_t size)
 {
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < MMTK_HEAP_COUNT; i++) {
         if (size == heap_sizes[i]) return i;
         if (size < heap_sizes[i])  return i;
     }
@@ -691,26 +975,26 @@ rb_gc_impl_heap_id_for_size(void *objspace_ptr, size_t size)
 bool
 rb_gc_impl_size_allocatable_p(size_t size)
 {
-    return size <= 640;
+    return size <= MMTK_MAX_OBJ_SIZE;
 }
 
 // Malloc
 void *
-rb_gc_impl_malloc(void *objspace_ptr, size_t size)
+rb_gc_impl_malloc(void *objspace_ptr, size_t size, bool gc_allowed)
 {
     // TODO: don't use system malloc
     return malloc(size);
 }
 
 void *
-rb_gc_impl_calloc(void *objspace_ptr, size_t size)
+rb_gc_impl_calloc(void *objspace_ptr, size_t size, bool gc_allowed)
 {
     // TODO: don't use system calloc
     return calloc(1, size);
 }
 
 void *
-rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_size)
+rb_gc_impl_realloc(void *objspace_ptr, void *ptr, size_t new_size, size_t old_size, bool gc_allowed)
 {
     // TODO: don't use system realloc
     return realloc(ptr, new_size);
@@ -726,15 +1010,34 @@ rb_gc_impl_free(void *objspace_ptr, void *ptr, size_t old_size)
 void rb_gc_impl_adjust_memory_usage(void *objspace_ptr, ssize_t diff) { }
 
 // Marking
+static inline VALUE
+rb_mmtk_call_object_closure(VALUE obj, bool pin)
+{
+    if (RB_UNLIKELY(RB_BUILTIN_TYPE(obj) == T_NONE)) {
+        enum { info_size = 256 };
+        char obj_info_buf[info_size];
+        rb_raw_obj_info(obj_info_buf, info_size, obj);
+
+        char parent_obj_info_buf[info_size];
+        rb_raw_obj_info(parent_obj_info_buf, info_size, marking_parent_object);
+
+        rb_mmtk_gc_thread_bug("try to mark T_NONE object (obj: %s, parent: %s)", obj_info_buf, parent_obj_info_buf);
+    }
+
+    return (VALUE)rb_mmtk_gc_thread_tls->object_closure.c_function(
+        rb_mmtk_gc_thread_tls->object_closure.rust_closure,
+        rb_mmtk_gc_thread_tls->gc_context,
+        (MMTk_ObjectReference)obj,
+        pin
+    );
+}
+
 void
 rb_gc_impl_mark(void *objspace_ptr, VALUE obj)
 {
     if (RB_SPECIAL_CONST_P(obj)) return;
 
-    rb_mmtk_gc_thread_tls->object_closure.c_function(rb_mmtk_gc_thread_tls->object_closure.rust_closure,
-                                                     rb_mmtk_gc_thread_tls->gc_context,
-                                                     (MMTk_ObjectReference)obj,
-                                                     false);
+    rb_mmtk_call_object_closure(obj, false);
 }
 
 void
@@ -742,8 +1045,10 @@ rb_gc_impl_mark_and_move(void *objspace_ptr, VALUE *ptr)
 {
     if (RB_SPECIAL_CONST_P(*ptr)) return;
 
-    // TODO: make it movable
-    rb_gc_impl_mark(objspace_ptr, *ptr);
+    VALUE new_obj = rb_mmtk_call_object_closure(*ptr, false);
+    if (new_obj != *ptr) {
+        *ptr = new_obj;
+    }
 }
 
 void
@@ -751,41 +1056,47 @@ rb_gc_impl_mark_and_pin(void *objspace_ptr, VALUE obj)
 {
     if (RB_SPECIAL_CONST_P(obj)) return;
 
-    // TODO: also pin
-    rb_gc_impl_mark(objspace_ptr, obj);
+    rb_mmtk_call_object_closure(obj, true);
 }
 
 void
 rb_gc_impl_mark_maybe(void *objspace_ptr, VALUE obj)
 {
-    if (rb_gc_impl_pointer_to_heap_p(objspace_ptr, (const void *)obj)) {
+    if (rb_gc_impl_live_object_p(objspace_ptr, (const void *)obj)) {
         rb_gc_impl_mark_and_pin(objspace_ptr, obj);
     }
 }
 
 void
-rb_gc_impl_mark_weak(void *objspace_ptr, VALUE *ptr)
+rb_gc_impl_declare_weak_references(void *objspace_ptr, VALUE obj)
 {
-    mmtk_mark_weak((MMTk_ObjectReference *)ptr);
+    RB_FL_SET(obj, RUBY_FL_WEAK_REFERENCE);
+    mmtk_declare_weak_references((MMTk_ObjectReference)obj);
 }
 
-void
-rb_gc_impl_remove_weak(void *objspace_ptr, VALUE parent_obj, VALUE *ptr)
+bool
+rb_gc_impl_handle_weak_references_alive_p(void *objspace_ptr, VALUE obj)
 {
-    mmtk_remove_weak((MMTk_ObjectReference *)ptr);
+    return mmtk_weak_references_alive_p((MMTk_ObjectReference)obj);
 }
 
 // Compaction
+void
+rb_gc_impl_register_pinning_obj(void *objspace_ptr, VALUE obj)
+{
+    mmtk_register_pinning_obj((MMTk_ObjectReference)obj);
+}
+
 bool
 rb_gc_impl_object_moved_p(void *objspace_ptr, VALUE obj)
 {
-    rb_bug("unimplemented");
+    return rb_mmtk_call_object_closure(obj, false) != obj;
 }
 
 VALUE
-rb_gc_impl_location(void *objspace_ptr, VALUE value)
+rb_gc_impl_location(void *objspace_ptr, VALUE obj)
 {
-    rb_bug("unimplemented");
+    return rb_mmtk_call_object_closure(obj, false);
 }
 
 // Write barriers
@@ -793,6 +1104,23 @@ void
 rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
 {
     struct MMTk_ractor_cache *cache = rb_gc_get_ractor_newobj_cache();
+
+    if (SPECIAL_CONST_P(b)) return;
+
+#ifdef MMTK_DEBUG
+    if (!rb_gc_impl_live_object_p(objspace_ptr, (void *)a)) {
+        char buff[256];
+        rb_bug("a: %s is not an object", rb_raw_obj_info(buff, 256, a));
+    }
+
+    if (!rb_gc_impl_live_object_p(objspace_ptr, (void *)b)) {
+        char buff[256];
+        rb_bug("b: %s is not an object", rb_raw_obj_info(buff, 256, b));
+    }
+#endif
+
+    MMTK_ASSERT(BUILTIN_TYPE(a) != T_NONE);
+    MMTK_ASSERT(BUILTIN_TYPE(b) != T_NONE);
 
     mmtk_object_reference_write_post(cache->mutator, (MMTk_ObjectReference)a);
 }
@@ -898,7 +1226,7 @@ gc_run_finalizers_get_final(long i, void *data)
 {
     VALUE table = (VALUE)data;
 
-    return RARRAY_AREF(table, i);
+    return RARRAY_AREF(table, i + 1);
 }
 
 static void
@@ -917,17 +1245,15 @@ gc_run_finalizers(void *data)
             job->as.dfree.func(job->as.dfree.data);
             break;
           case MMTK_FINAL_JOB_FINALIZE: {
-            VALUE object_id = job->as.finalize.object_id;
             VALUE finalizer_array = job->as.finalize.finalizer_array;
 
             rb_gc_run_obj_finalizer(
-                job->as.finalize.object_id,
-                RARRAY_LEN(finalizer_array),
+                RARRAY_AREF(finalizer_array, 0),
+                RARRAY_LEN(finalizer_array) - 1,
                 gc_run_finalizers_get_final,
                 (void *)finalizer_array
             );
 
-            RB_GC_GUARD(object_id);
             RB_GC_GUARD(finalizer_array);
             break;
           }
@@ -971,6 +1297,8 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
 
     RBASIC(obj)->flags |= FL_FINALIZE;
 
+    int lev = RB_GC_VM_LOCK();
+
     if (st_lookup(objspace->finalizer_table, obj, &data)) {
         table = (VALUE)data;
 
@@ -982,6 +1310,7 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
             for (i = 0; i < len; i++) {
                 VALUE recv = RARRAY_AREF(table, i);
                 if (rb_equal(recv, block)) {
+                    RB_GC_VM_UNLOCK(lev);
                     return recv;
                 }
             }
@@ -990,10 +1319,12 @@ rb_gc_impl_define_finalizer(void *objspace_ptr, VALUE obj, VALUE block)
         rb_ary_push(table, block);
     }
     else {
-        table = rb_ary_new3(1, block);
+        table = rb_ary_new3(2, rb_obj_id(obj), block);
         rb_obj_hide(table);
         st_add_direct(objspace->finalizer_table, obj, table);
     }
+
+    RB_GC_VM_UNLOCK(lev);
 
     return block;
 }
@@ -1004,7 +1335,11 @@ rb_gc_impl_undefine_finalizer(void *objspace_ptr, VALUE obj)
     struct objspace *objspace = objspace_ptr;
 
     st_data_t data = obj;
+
+    int lev = RB_GC_VM_LOCK();
     st_delete(objspace->finalizer_table, &data, 0);
+    RB_GC_VM_UNLOCK(lev);
+
     FL_UNSET(obj, FL_FINALIZE);
 }
 
@@ -1017,14 +1352,17 @@ rb_gc_impl_copy_finalizer(void *objspace_ptr, VALUE dest, VALUE obj)
 
     if (!FL_TEST(obj, FL_FINALIZE)) return;
 
+    int lev = RB_GC_VM_LOCK();
     if (RB_LIKELY(st_lookup(objspace->finalizer_table, obj, &data))) {
-        table = (VALUE)data;
+        table = rb_ary_dup((VALUE)data);
+        RARRAY_ASET(table, 0, rb_obj_id(dest));
         st_insert(objspace->finalizer_table, dest, table);
         FL_SET(dest, FL_FINALIZE);
     }
     else {
         rb_bug("rb_gc_copy_finalizer: FL_FINALIZE set but not found in finalizer_table: %s", rb_obj_info(obj));
     }
+    RB_GC_VM_UNLOCK(lev);
 }
 
 static int
@@ -1048,102 +1386,27 @@ rb_gc_impl_shutdown_call_finalizer(void *objspace_ptr)
         gc_run_finalizers(objspace);
     }
 
-    struct MMTk_RawVecOfObjRef registered_candidates = mmtk_get_all_obj_free_candidates();
-    for (size_t i = 0; i < registered_candidates.len; i++) {
-        VALUE obj = (VALUE)registered_candidates.ptr[i];
-
-        if (rb_gc_shutdown_call_finalizer_p(obj)) {
-            rb_gc_obj_free(objspace_ptr, obj);
-            RBASIC(obj)->flags = 0;
+    unsigned int lev = RB_GC_VM_LOCK();
+    {
+        struct MMTk_ractor_cache *rc;
+        ccan_list_for_each(&objspace->ractor_caches, rc, list_node) {
+            mmtk_flush_obj_free_buffer(rc);
         }
+
+        struct MMTk_RawVecOfObjRef registered_candidates = mmtk_get_all_obj_free_candidates();
+        for (size_t i = 0; i < registered_candidates.len; i++) {
+            VALUE obj = (VALUE)registered_candidates.ptr[i];
+
+            if (rb_gc_shutdown_call_finalizer_p(obj)) {
+                rb_gc_obj_free(objspace_ptr, obj);
+                RBASIC(obj)->flags = 0;
+            }
+        }
+        mmtk_free_raw_vec_of_obj_ref(registered_candidates);
     }
-    mmtk_free_raw_vec_of_obj_ref(registered_candidates);
+    RB_GC_VM_UNLOCK(lev);
 
     gc_run_finalizers(objspace);
-}
-
-// Object ID
-static int
-object_id_cmp(st_data_t x, st_data_t y)
-{
-    if (RB_TYPE_P(x, T_BIGNUM)) {
-        return !rb_big_eql(x, y);
-    }
-    else {
-        return x != y;
-    }
-}
-
-static st_index_t
-object_id_hash(st_data_t n)
-{
-    return FIX2LONG(rb_hash((VALUE)n));
-}
-
-#define OBJ_ID_INCREMENT (RUBY_IMMEDIATE_MASK + 1)
-#define OBJ_ID_INITIAL (OBJ_ID_INCREMENT)
-
-static const struct st_hash_type object_id_hash_type = {
-    object_id_cmp,
-    object_id_hash,
-};
-
-static void
-objspace_obj_id_init(struct objspace *objspace)
-{
-    objspace->id_to_obj_tbl = st_init_table(&object_id_hash_type);
-    objspace->obj_to_id_tbl = st_init_numtable();
-    objspace->next_object_id = OBJ_ID_INITIAL;
-}
-
-VALUE
-rb_gc_impl_object_id(void *objspace_ptr, VALUE obj)
-{
-    VALUE id;
-    struct objspace *objspace = objspace_ptr;
-
-    unsigned int lev = rb_gc_vm_lock();
-    if (FL_TEST(obj, FL_SEEN_OBJ_ID)) {
-        st_data_t val;
-        if (st_lookup(objspace->obj_to_id_tbl, (st_data_t)obj, &val)) {
-            id = (VALUE)val;
-        }
-        else {
-            rb_bug("rb_gc_impl_object_id: FL_SEEN_OBJ_ID flag set but not found in table");
-        }
-    }
-    else {
-        RUBY_ASSERT(!st_lookup(objspace->obj_to_id_tbl, (st_data_t)obj, NULL));
-
-        id = ULL2NUM(objspace->next_object_id);
-        objspace->next_object_id += OBJ_ID_INCREMENT;
-
-        st_insert(objspace->obj_to_id_tbl, (st_data_t)obj, (st_data_t)id);
-        st_insert(objspace->id_to_obj_tbl, (st_data_t)id, (st_data_t)obj);
-        FL_SET(obj, FL_SEEN_OBJ_ID);
-    }
-    rb_gc_vm_unlock(lev);
-
-    return id;
-}
-
-VALUE
-rb_gc_impl_object_id_to_ref(void *objspace_ptr, VALUE object_id)
-{
-    struct objspace *objspace = objspace_ptr;
-
-    VALUE obj;
-    if (st_lookup(objspace->id_to_obj_tbl, object_id, &obj) &&
-            !rb_gc_impl_garbage_object_p(objspace, obj)) {
-        return obj;
-    }
-
-    if (rb_funcall(object_id, rb_intern(">="), 1, ULL2NUM(objspace->next_object_id))) {
-        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is not id value", rb_funcall(object_id, rb_intern("to_s"), 1, INT2FIX(10)));
-    }
-    else {
-        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is recycled object", rb_funcall(object_id, rb_intern("to_s"), 1, INT2FIX(10)));
-    }
 }
 
 // Forking
@@ -1151,13 +1414,39 @@ rb_gc_impl_object_id_to_ref(void *objspace_ptr, VALUE object_id)
 void
 rb_gc_impl_before_fork(void *objspace_ptr)
 {
+    struct objspace *objspace = objspace_ptr;
+
+  retry:
+    objspace->fork_hook_vm_lock_lev = RB_GC_VM_LOCK();
+    rb_gc_vm_barrier();
+
+    /* At this point, we know that all the Ractors are paused because of the
+     * rb_gc_vm_barrier above. Since rb_mmtk_block_for_gc is a barrier point,
+     * one or more Ractors could be paused there. However, mmtk_before_fork is
+     * not compatible with that because it assumes that the MMTk workers are idle,
+     * but the workers are not idle because they are busy working on a GC.
+     *
+     * This essentially implements a trylock. It will optimistically lock but will
+     * release the lock if it detects that any other Ractors are waiting in
+     * rb_mmtk_block_for_gc.
+     */
+    rb_atomic_t mutator_blocking_count = RUBY_ATOMIC_LOAD(objspace->mutator_blocking_count);
+    if (mutator_blocking_count != 0) {
+        RB_GC_VM_UNLOCK(objspace->fork_hook_vm_lock_lev);
+        goto retry;
+    }
+
     mmtk_before_fork();
 }
 
 void
 rb_gc_impl_after_fork(void *objspace_ptr, rb_pid_t pid)
 {
+    struct objspace *objspace = objspace_ptr;
+
     mmtk_after_fork(rb_gc_get_ractor_newobj_cache());
+
+    RB_GC_VM_UNLOCK(objspace->fork_hook_vm_lock_lev);
 }
 
 // Statistics
@@ -1230,6 +1519,7 @@ rb_gc_impl_latest_gc_info(void *objspace_ptr, VALUE hash_or_key)
 
 enum gc_stat_sym {
     gc_stat_sym_count,
+    gc_stat_sym_moving_gc_count,
     gc_stat_sym_time,
     gc_stat_sym_total_allocated_objects,
     gc_stat_sym_total_bytes,
@@ -1237,6 +1527,7 @@ enum gc_stat_sym {
     gc_stat_sym_free_bytes,
     gc_stat_sym_starting_heap_address,
     gc_stat_sym_last_heap_address,
+    gc_stat_sym_weak_references_count,
     gc_stat_sym_last
 };
 
@@ -1248,6 +1539,7 @@ setup_gc_stat_symbols(void)
     if (gc_stat_symbols[0] == 0) {
 #define S(s) gc_stat_symbols[gc_stat_sym_##s] = ID2SYM(rb_intern_const(#s))
         S(count);
+        S(moving_gc_count);
         S(time);
         S(total_allocated_objects);
         S(total_bytes);
@@ -1255,6 +1547,7 @@ setup_gc_stat_symbols(void)
         S(free_bytes);
         S(starting_heap_address);
         S(last_heap_address);
+        S(weak_references_count);
     }
 }
 
@@ -1283,6 +1576,7 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
         rb_hash_aset(hash, gc_stat_symbols[gc_stat_sym_##name], SIZET2NUM(attr));
 
         SET(count, objspace->gc_count);
+        SET(moving_gc_count, objspace->moving_gc_count);
         SET(time, objspace->total_gc_time / (1000 * 1000));
         SET(total_allocated_objects, objspace->total_allocated_objects);
         SET(total_bytes, mmtk_total_bytes());
@@ -1290,6 +1584,7 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
         SET(free_bytes, mmtk_free_bytes());
         SET(starting_heap_address, (size_t)mmtk_starting_heap_address());
         SET(last_heap_address, (size_t)mmtk_last_heap_address());
+        SET(weak_references_count, mmtk_weak_references_count());
 #undef SET
 
     if (!NIL_P(key)) {
@@ -1303,12 +1598,24 @@ rb_gc_impl_stat(void *objspace_ptr, VALUE hash_or_sym)
 VALUE
 rb_gc_impl_stat_heap(void *objspace_ptr, VALUE heap_name, VALUE hash_or_sym)
 {
+    if (FIXNUM_P(heap_name) && SYMBOL_P(hash_or_sym)) {
+        int heap_idx = FIX2INT(heap_name);
+        if (heap_idx < 0 || heap_idx >= MMTK_HEAP_COUNT) {
+            rb_raise(rb_eArgError, "size pool index out of range");
+        }
+
+        if (hash_or_sym == ID2SYM(rb_intern("slot_size"))) {
+            return SIZET2NUM(heap_sizes[heap_idx]);
+        }
+
+        return Qundef;
+    }
+
     if (RB_TYPE_P(hash_or_sym, T_HASH)) {
         return hash_or_sym;
     }
-    else {
-        return Qundef;
-    }
+
+    return Qundef;
 }
 
 // Miscellaneous
@@ -1330,13 +1637,13 @@ rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
     size_t n = 0;
 
 #define SET_ENTRY(na, v) do { \
-    RUBY_ASSERT(n <= RB_GC_OBJECT_METADATA_ENTRY_COUNT); \
+    MMTK_ASSERT(n <= RB_GC_OBJECT_METADATA_ENTRY_COUNT); \
     object_metadata_entries[n].name = ID_##na; \
     object_metadata_entries[n].val = v; \
     n++; \
 } while (0)
 
-    if (FL_TEST(obj, FL_SEEN_OBJ_ID)) SET_ENTRY(object_id, rb_obj_id(obj));
+    if (rb_obj_id_p(obj)) SET_ENTRY(object_id, rb_obj_id(obj));
 
     object_metadata_entries[n].name = 0;
     object_metadata_entries[n].val = 0;
@@ -1345,7 +1652,7 @@ rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
 }
 
 bool
-rb_gc_impl_pointer_to_heap_p(void *objspace_ptr, const void *ptr)
+rb_gc_impl_live_object_p(void *objspace_ptr, const void *ptr)
 {
     if (ptr == NULL) return false;
     if ((uintptr_t)ptr % sizeof(void*) != 0) return false;

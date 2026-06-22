@@ -1046,13 +1046,19 @@ module Prism
     end
 
     def test_ForNode
-      assert_prism_eval("for i in [1,2] do; i; end")
-      assert_prism_eval("for @i in [1,2] do; @i; end")
-      assert_prism_eval("for $i in [1,2] do; $i; end")
+      assert_prism_eval("r = []; for i in [1,2] do; r << i; end; r")
+      assert_prism_eval("r = []; for @i in [1,2] do; r << @i; end; r")
+      assert_prism_eval("r = []; for $i in [1,2] do; r << $i; end; r")
 
-      assert_prism_eval("for foo, in  [1,2,3] do end")
+      assert_prism_eval("r = []; for foo, in  [1,2,3] do r << foo end; r")
 
-      assert_prism_eval("for i, j in {a: 'b'} do; i; j; end")
+      assert_prism_eval("r = []; for i, j in {a: 'b'} do; r << [i, j]; end; r")
+
+      # Test splat node as index in for loop
+      assert_prism_eval("r = []; for *x in [[1,2], [3,4]] do; r << x; end; r")
+      assert_prism_eval("r = []; for * in [[1,2], [3,4]] do; r << 'ok'; end; r")
+      assert_prism_eval("r = []; for x, * in [[1,2], [3,4]] do; r << x; end; r")
+      assert_prism_eval("r = []; for x, *y in [[1,2], [3,4]] do; r << [x, y]; end; r")
     end
 
     ############################################################################
@@ -2180,6 +2186,56 @@ end
       RUBY
     end
 
+    def test_ForwardingArgumentsNode_instruction_sequence_consistency
+      # Test that both parsers generate identical instruction sequences for forwarding arguments
+      # This prevents regressions like the one fixed in prism_compile.c for PM_FORWARDING_ARGUMENTS_NODE
+
+      # Test case from the bug report: def bar(buz, ...) = foo(buz, ...)
+      source = <<~RUBY
+        def foo(*, &block) = block
+        def bar(buz, ...) = foo(buz, ...)
+      RUBY
+
+      compare_instruction_sequences(source)
+
+      # Test simple forwarding
+      source = <<~RUBY
+        def target(...) = nil
+        def forwarder(...) = target(...)
+      RUBY
+
+      compare_instruction_sequences(source)
+
+      # Test mixed forwarding with regular arguments
+      source = <<~RUBY
+        def target(a, b, c) = [a, b, c]
+        def forwarder(x, ...) = target(x, ...)
+      RUBY
+
+      compare_instruction_sequences(source)
+
+      # Test forwarding with splat
+      source = <<~RUBY
+        def target(a, b, c) = [a, b, c]
+        def forwarder(x, ...); target(*x, ...); end
+      RUBY
+
+      compare_instruction_sequences(source)
+    end
+
+    private
+
+    def compare_instruction_sequences(source)
+      # Get instruction sequences from both parsers
+      parsey_iseq = RubyVM::InstructionSequence.compile_parsey(source)
+      prism_iseq = RubyVM::InstructionSequence.compile_prism(source)
+
+      # Compare instruction sequences
+      assert_equal parsey_iseq.disasm, prism_iseq.disasm
+    end
+
+    public
+
     def test_ForwardingSuperNode
       assert_prism_eval("class Forwarding; def to_s; super; end; end")
       assert_prism_eval("class Forwarding; def eval(code); super { code }; end; end")
@@ -2638,7 +2694,7 @@ end
     # Errors                                                                   #
     ############################################################################
 
-    def test_MissingNode
+    def test_ErrorRecoveryNode
       # TODO
     end
 
@@ -2664,6 +2720,12 @@ end
 
       assert_raise TypeError do
         RubyVM::InstructionSequence.compile_file_prism(nil)
+      end
+
+      assert_nothing_raised(Errno::EMFILE, Errno::ENFILE) do
+        10000.times do
+          RubyVM::InstructionSequence.compile_file_prism(File::NULL)
+        end
       end
     end
 

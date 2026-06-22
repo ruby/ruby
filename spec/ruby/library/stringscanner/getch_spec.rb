@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 require_relative '../../spec_helper'
 require_relative 'shared/extract_range'
 require 'strscan'
@@ -8,6 +8,13 @@ describe "StringScanner#getch" do
     s = StringScanner.new('abc')
     s.getch.should == "a"
     s.getch.should == "b"
+    s.getch.should == "c"
+  end
+
+  it "scans newlines too" do
+    s = StringScanner.new("a\nc")
+    s.getch.should == "a"
+    s.getch.should == "\n"
     s.getch.should == "c"
   end
 
@@ -33,22 +40,20 @@ describe "StringScanner#getch" do
 
   describe "#[] successive call with a capture group name" do
     # https://github.com/ruby/strscan/issues/139
-    ruby_version_is ""..."3.5" do # Don't run on 3.5.0dev that already contains not released fixes
     version_is StringScanner::Version, "3.1.1"..."3.1.3" do # ruby_version_is "3.4.0"..."3.4.3"
       it "returns nil" do
         s = StringScanner.new("This is a test")
         s.getch
         s.should.matched?
-        s[:a].should be_nil
+        s[:a].should == nil
       end
-    end
     end
     version_is StringScanner::Version, "3.1.3" do # ruby_version_is "3.4.3"
       it "raises IndexError" do
         s = StringScanner.new("This is a test")
         s.getch
         s.should.matched?
-        -> { s[:a] }.should raise_error(IndexError)
+        -> { s[:a] }.should.raise(IndexError)
       end
     end
 
@@ -59,7 +64,6 @@ describe "StringScanner#getch" do
     end
 
     # https://github.com/ruby/strscan/issues/135
-    ruby_version_is ""..."3.5" do # Don't run on 3.5.0dev that already contains not released fixes
     version_is StringScanner::Version, "3.1.1"..."3.1.3" do # ruby_version_is "3.4.0"..."3.4.3"
       it "ignores the previous matching with Regexp" do
         s = StringScanner.new("This is a test")
@@ -70,9 +74,8 @@ describe "StringScanner#getch" do
 
         s.getch
         s.should.matched?
-        s[:a].should be_nil
+        s[:a].should == nil
       end
-    end
     end
     version_is StringScanner::Version, "3.1.3" do # ruby_version_is "3.4.0"..."3.4.3"
       it "ignores the previous matching with Regexp" do
@@ -84,7 +87,7 @@ describe "StringScanner#getch" do
 
         s.getch
         s.should.matched?
-        -> { s[:a] }.should raise_error(IndexError)
+        -> { s[:a] }.should.raise(IndexError)
       end
     end
   end

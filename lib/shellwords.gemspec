@@ -25,7 +25,5 @@ Gem::Specification.new do |spec|
   spec.files         = Dir.chdir(srcdir) do
     `git ls-files -z`.split("\x0").reject { |f| f.match(%r{\A(?:(?:test|spec|features)/|\.git|Rake)}) || f ==  gemspec_file}
   end
-  spec.bindir        = "exe"
-  spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
 end

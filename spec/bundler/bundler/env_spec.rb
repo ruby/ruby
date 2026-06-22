@@ -217,20 +217,21 @@ RSpec.describe Bundler::Env do
 
     context "when the git version is OS specific" do
       it "includes OS specific information with the version number" do
-        expect(git_proxy_stub).to receive(:git_local).with("--version").
-          and_return("git version 1.2.3 (Apple Git-BS)")
+        status = double("success?" => true)
+        expect(Open3).to receive(:capture3).with("git", "--version").
+          and_return(["git version 1.2.3 (Apple Git-BS)", "", status])
         expect(Bundler::Source::Git::GitProxy).to receive(:new).and_return(git_proxy_stub)
 
-        expect(described_class.report).to include("Git         1.2.3 (Apple Git-BS)")
+        expect(described_class.report).to include("Git           1.2.3 (Apple Git-BS)")
       end
     end
-  end
 
-  describe ".version_of" do
-    let(:parsed_version) { described_class.send(:version_of, "ruby") }
-
-    it "strips version of new line characters" do
-      expect(parsed_version).to_not end_with("\n")
+    it "no longer reports the Tools section or external tool versions" do
+      report = described_class.report
+      expect(report).not_to include("Tools")
+      ["rbenv", "RVM", "chruby"].each do |tool|
+        expect(report).not_to include(tool)
+      end
     end
   end
 end

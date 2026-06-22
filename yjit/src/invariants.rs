@@ -168,8 +168,8 @@ pub fn track_no_ep_escape_assumption(uninit_block: BlockRef, iseq: IseqPtr) {
         .insert(uninit_block);
 }
 
-/// Returns true if a given ISEQ has previously escaped an environment.
-pub fn iseq_escapes_ep(iseq: IseqPtr) -> bool {
+/// Returns true if a given ISEQ has escaped an environment since YJIT boot.
+pub fn seen_escaped_env(iseq: IseqPtr) -> bool {
     Invariants::get_instance()
         .no_ep_escape_iseqs
         .get(&iseq)
@@ -206,7 +206,7 @@ pub fn assume_method_basic_definition(
 /// Tracks that a block is assuming it is operating in single-ractor mode.
 #[must_use]
 pub fn assume_single_ractor_mode(jit: &mut JITState, asm: &mut Assembler) -> bool {
-    if unsafe { rb_yjit_multi_ractor_p() } {
+    if unsafe { rb_jit_multi_ractor_p() } {
         false
     } else {
         if jit_ensure_block_entry_exit(jit, asm).is_none() {
@@ -303,7 +303,7 @@ pub extern "C" fn rb_yjit_cme_invalidate(callee_cme: *const rb_callable_method_e
     });
 }
 
-/// Callback for then Ruby is about to spawn a ractor. In that case we need to
+/// Callback for when Ruby is about to spawn a ractor. In that case we need to
 /// invalidate every block that is assuming single ractor mode.
 #[no_mangle]
 pub extern "C" fn rb_yjit_before_ractor_spawn() {
@@ -495,7 +495,7 @@ pub extern "C" fn rb_yjit_constant_ic_update(iseq: *const rb_iseq_t, ic: IC, ins
         return;
     };
 
-    if !unsafe { (*(*ic).entry).ic_cref }.is_null() || unsafe { rb_yjit_multi_ractor_p() } {
+    if !unsafe { (*(*ic).entry).ic_cref }.is_null() || unsafe { rb_jit_multi_ractor_p() } {
         // We can't generate code in these situations, so no need to invalidate.
         // See gen_opt_getinlinecache.
         return;
@@ -642,7 +642,7 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
                 if on_stack_iseqs.contains(&iseq) {
                     // This ISEQ is running, so we can't free blocks immediately
                     for block in blocks {
-                        delayed_deallocation(block);
+                        payload.delayed_deallocation(block);
                     }
                     payload.dead_blocks.shrink_to_fit();
                 } else {

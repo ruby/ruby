@@ -313,9 +313,10 @@ RSpec.describe ".bundle/config" do
 
   describe "parseable option" do
     it "prints an empty string" do
-      bundle "config get foo --parseable"
+      bundle "config get foo --parseable", raise_on_error: false
 
       expect(out).to eq ""
+      expect(last_command).to be_failure
     end
 
     it "only prints the value of the config" do
@@ -501,8 +502,9 @@ E
     it "get" do
       ENV["BUNDLE_BAR"] = "bar_val"
 
-      bundle "config get foo"
+      bundle "config get foo", raise_on_error: false
       expect(out).to eq "Settings for `foo` in order of priority. The top value will be used\nYou have not configured a value for `foo`"
+      expect(last_command).to be_failure
 
       ENV["BUNDLE_FOO"] = "foo_val"
 
@@ -547,7 +549,8 @@ E
 
       bundle "config unset foo"
       expect(out).to eq ""
-      expect(bundle("config get foo")).to eq "Settings for `foo` in order of priority. The top value will be used\nYou have not configured a value for `foo`"
+      expect(bundle("config get foo", raise_on_error: false)).to eq "Settings for `foo` in order of priority. The top value will be used\nYou have not configured a value for `foo`"
+      expect(last_command).to be_failure
 
       bundle "config set --local foo 1"
       bundle "config set --global foo 2"
@@ -557,7 +560,8 @@ E
       expect(bundle("config get foo")).to eq "Settings for `foo` in order of priority. The top value will be used\nSet for the current user (#{home(".bundle/config")}): \"2\""
       bundle "config unset foo --global"
       expect(out).to eq ""
-      expect(bundle("config get foo")).to eq "Settings for `foo` in order of priority. The top value will be used\nYou have not configured a value for `foo`"
+      expect(bundle("config get foo", raise_on_error: false)).to eq "Settings for `foo` in order of priority. The top value will be used\nYou have not configured a value for `foo`"
+      expect(last_command).to be_failure
 
       bundle "config set --local foo 1"
       bundle "config set --global foo 2"
@@ -567,7 +571,8 @@ E
       expect(bundle("config get foo")).to eq "Settings for `foo` in order of priority. The top value will be used\nSet for your local app (#{bundled_app(".bundle/config")}): \"1\""
       bundle "config unset foo --local"
       expect(out).to eq ""
-      expect(bundle("config get foo")).to eq "Settings for `foo` in order of priority. The top value will be used\nYou have not configured a value for `foo`"
+      expect(bundle("config get foo", raise_on_error: false)).to eq "Settings for `foo` in order of priority. The top value will be used\nYou have not configured a value for `foo`"
+      expect(last_command).to be_failure
 
       bundle "config unset foo --local --global", raise_on_error: false
       expect(last_command).to be_failure
@@ -577,6 +582,36 @@ E
 end
 
 RSpec.describe "setting gemfile via config" do
+  context "when a default Gemfile exists" do
+    before do
+      gemfile <<-G
+        source "https://gem.repo1"
+      G
+
+      gemfile bundled_app("foo/bar_gemfile"), <<-G
+        source "https://gem.repo1"
+      G
+    end
+
+    it "reports the local gemfile setting without promoting it to the environment" do
+      bundle "config set gemfile foo/bar_gemfile"
+
+      bundle "config list"
+      expect(out).to include("Set for your local app (#{bundled_app(".bundle/config")}): \"foo/bar_gemfile\"")
+      expect(out).not_to include("Set via BUNDLE_GEMFILE")
+    end
+
+    it "unsets the local gemfile setting from the app config" do
+      bundle "config set gemfile foo/bar_gemfile"
+
+      bundle "config unset gemfile"
+      bundle "config get gemfile", raise_on_error: false
+
+      expect(out).to include("You have not configured a value for `gemfile`")
+      expect(File.read(bundled_app(".bundle/config"))).not_to include("BUNDLE_GEMFILE")
+    end
+  end
+
   context "when only the non-default Gemfile exists" do
     it "persists the gemfile location to .bundle/config" do
       gemfile bundled_app("NotGemfile"), <<-G
@@ -590,5 +625,22 @@ RSpec.describe "setting gemfile via config" do
       bundle "config list"
       expect(out).to include("NotGemfile")
     end
+  end
+end
+
+RSpec.describe "setting lockfile via config" do
+  it "persists the lockfile location to .bundle/config" do
+    gemfile bundled_app("NotGemfile"), <<-G
+      source "https://gem.repo1"
+      gem 'myrack'
+    G
+
+    bundle "config set --local gemfile #{bundled_app("NotGemfile")}"
+    bundle "config set --local lockfile #{bundled_app("ReallyNotGemfile.lock")}"
+    expect(File.exist?(bundled_app(".bundle/config"))).to eq(true)
+
+    bundle "config list"
+    expect(out).to include("NotGemfile")
+    expect(out).to include("ReallyNotGemfile.lock")
   end
 end

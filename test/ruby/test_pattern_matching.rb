@@ -197,11 +197,49 @@ class TestPatternMatching < Test::Unit::TestCase
       end
     end
 
-    assert_syntax_error(%q{
+    assert_valid_syntax(%{
+      case 0
+      in [ :a | :b, x]
+        true
+      end
+    })
+
+    assert_in_out_err(['-c'], %q{
       case 0
       in a | 0
       end
-    }, /illegal variable in alternative pattern/)
+    }, [], /alternative pattern/,
+    success: false)
+
+    assert_in_out_err(['-c'], %q{
+      case 0
+      in 0 | a
+      end
+    }, [], /alternative pattern/,
+    success: false)
+  end
+
+  def test_alternative_pattern_nested
+    assert_in_out_err(['-c'], %q{
+      case 0
+      in [a] | 1
+      end
+    }, [], /alternative pattern/,
+    success: false)
+
+    assert_in_out_err(['-c'], %q{
+      case 0
+      in { a: b } | 1
+      end
+    }, [], /alternative pattern/,
+    success: false)
+
+    assert_in_out_err(['-c'], %q{
+      case 0
+      in [{ a: [{ b: [{ c: }] }] }] | 1
+      end
+    }, [], /alternative pattern/,
+    success: false)
   end
 
   def test_var_pattern

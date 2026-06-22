@@ -8,21 +8,27 @@ module Bundler
       autoload :Remote, File.expand_path("rubygems/remote", __dir__)
 
       # Ask for X gems per API request
-      API_REQUEST_SIZE = 50
+      API_REQUEST_SIZE = 100
+      REQUIRE_MUTEX = Mutex.new
 
-      attr_accessor :remotes
+      attr_accessor :remotes, :remote_cooldowns
 
       def initialize(options = {})
         @options = options
         @remotes = []
+        @remote_cooldowns = {}
         @dependency_names = []
         @allow_remote = false
         @allow_cached = false
         @allow_local = options["allow_local"] || false
         @prefer_local = false
         @checksum_store = Checksum::Store.new
+        @gem_installers = {}
+        @gem_installers_mutex = Mutex.new
+        @remote_specs_mutex = Mutex.new
 
-        Array(options["remotes"]).reverse_each {|r| add_remote(r) }
+        cooldown = options["cooldown"]
+        Array(options["remotes"]).reverse_each {|r| add_remote(r, cooldown: cooldown) }
 
         @lockfile_remotes = @remotes if options["from_lockfile"]
       end
@@ -145,6 +151,13 @@ module Bundler
           # sources, and large_idx.merge! small_idx is way faster than
           # small_idx.merge! large_idx.
           index = @allow_remote ? remote_specs.dup : Index.new
+
+          # Snapshot per-version `created_at` from the remote info before installed
+          # / cached specs overwrite the EndpointSpecification objects that carry
+          # it. The cooldown filter consults `created_at` on every candidate, so
+          # local stubs need the published date back-filled to participate.
+          remote_created_at = collect_remote_created_at(index)
+
           index.merge!(cached_specs) if @allow_cached
           index.merge!(installed_specs) if @allow_local
 
@@ -158,8 +171,35 @@ module Bundler
             end
           end
 
+          backfill_created_at(index, remote_created_at) unless remote_created_at.empty?
+
           index
         end
+      end
+
+      def download(spec, options = {})
+        if (spec.default_gem? && !cached_built_in_gem(spec, local: options[:local])) || (installed?(spec) && !options[:force])
+          return true
+        end
+
+        installer = rubygems_gem_installer(spec, options)
+
+        if spec.remote
+          s = begin
+            installer.spec
+          rescue Gem::Package::FormatError
+            Bundler.rm_rf(installer.gem)
+            raise
+          rescue Gem::Security::Exception => e
+            raise SecurityError,
+             "The gem #{installer.gem} can't be installed because " \
+             "the security policy didn't allow it, with the message: #{e.message}"
+          end
+
+          spec.__swap__(s)
+        end
+
+        spec
       end
 
       def install(spec, options = {})
@@ -168,56 +208,20 @@ module Bundler
           return nil # no post-install message
         end
 
-        if spec.remote
-          # Check for this spec from other sources
-          uris = [spec.remote, *remotes_for_spec(spec)].map(&:anonymized_uri).uniq
-          Installer.ambiguous_gems << [spec.name, *uris] if uris.length > 1
-        end
-
-        path = fetch_gem_if_possible(spec, options[:previous_spec])
-        raise GemNotFound, "Could not find #{spec.file_name} for installation" unless path
-
         return if Bundler.settings[:no_install]
 
-        install_path = rubygems_dir
-        bin_path     = Bundler.system_bindir
-
-        require_relative "../rubygems_gem_installer"
-
-        installer = Bundler::RubyGemsGemInstaller.at(
-          path,
-          security_policy: Bundler.rubygems.security_policies[Bundler.settings["trust-policy"]],
-          install_dir: install_path.to_s,
-          bin_dir: bin_path.to_s,
-          ignore_dependencies: true,
-          wrappers: true,
-          env_shebang: true,
-          build_args: options[:build_args],
-          bundler_extension_cache_path: extension_cache_path(spec)
-        )
-
-        if spec.remote
-          s = begin
-            installer.spec
-          rescue Gem::Package::FormatError
-            Bundler.rm_rf(path)
-            raise
-          rescue Gem::Security::Exception => e
-            raise SecurityError,
-             "The gem #{File.basename(path, ".gem")} can't be installed because " \
-             "the security policy didn't allow it, with the message: #{e.message}"
-          end
-
-          spec.__swap__(s)
-        end
-
+        installer = rubygems_gem_installer(spec, options)
         spec.source.checksum_store.register(spec, installer.gem_checksum)
 
         message = "Installing #{version_message(spec, options[:previous_spec])}"
         message += " with native extensions" if spec.extensions.any?
         Bundler.ui.confirm message
 
-        installed_spec = installer.install
+        installed_spec = nil
+
+        Gem.time("Installed #{spec.name} in", 0, true) do
+          installed_spec = installer.install
+        end
 
         spec.full_gem_path = installed_spec.full_gem_path
         spec.loaded_from = installed_spec.loaded_from
@@ -240,7 +244,7 @@ module Bundler
       def cached_built_in_gem(spec, local: false)
         cached_path = cached_gem(spec)
         if cached_path.nil? && !local
-          remote_spec = remote_specs.search(spec).first
+          remote_spec = remote_spec_for(spec)
           if remote_spec
             cached_path = fetch_gem(remote_spec)
             spec.remote = remote_spec.remote
@@ -251,9 +255,14 @@ module Bundler
         cached_path
       end
 
-      def add_remote(source)
+      def add_remote(source, cooldown: nil)
         uri = normalize_uri(source)
         @remotes.unshift(uri) unless @remotes.include?(uri)
+        @remote_cooldowns[uri] = cooldown if cooldown
+      end
+
+      def cooldown_for(uri)
+        @remote_cooldowns[uri]
       end
 
       def spec_names
@@ -274,7 +283,7 @@ module Bundler
 
       def remote_fetchers
         @remote_fetchers ||= remotes.to_h do |uri|
-          remote = Source::Rubygems::Remote.new(uri)
+          remote = Source::Rubygems::Remote.new(uri, cooldown: cooldown_for(uri))
           [remote, Bundler::Fetcher.new(remote)]
         end.freeze
       end
@@ -322,6 +331,19 @@ module Bundler
         @allow_remote && api_fetchers.any?
       end
 
+      def clear_cache
+        @specs = nil
+        @installed_specs = nil
+        @default_specs = nil
+        @cached_specs = nil
+      end
+
+      def release_resolution_memory!
+        @specs = nil
+        @remote_specs_mutex.synchronize { @remote_specs = nil }
+        @fetchers&.each(&:release_resolution_memory!)
+      end
+
       protected
 
       def remote_names
@@ -330,13 +352,6 @@ module Bundler
 
       def credless_remotes
         remotes.map(&method(:remove_auth))
-      end
-
-      def remotes_for_spec(spec)
-        specs.search_all(spec.name).inject([]) do |uris, s|
-          uris << s.remote if s.remote
-          uris
-        end
       end
 
       def cached_gem(spec)
@@ -406,15 +421,28 @@ module Bundler
       end
 
       def remote_specs
-        @remote_specs ||= Index.build do |idx|
-          index_fetchers = fetchers - api_fetchers
+        @remote_specs ||= @remote_specs_mutex.synchronize do
+          @remote_specs ||= Index.build do |idx|
+            index_fetchers = fetchers - api_fetchers
 
-          if index_fetchers.empty?
-            fetch_names(api_fetchers, dependency_names, idx)
-          else
-            fetch_names(fetchers, nil, idx)
+            if index_fetchers.empty?
+              fetch_names(api_fetchers, dependency_names, idx)
+            else
+              fetch_names(fetchers, nil, idx)
+            end
           end
         end
+      end
+
+      # Looks up a single spec in the remote sources, fetching only its own
+      # name when the full remote index is not already materialized.
+      def remote_spec_for(spec)
+        return remote_specs.search(spec).first if @remote_specs || api_fetchers.empty?
+
+        index = Index.build do |idx|
+          fetch_names(api_fetchers, [spec.name], idx)
+        end
+        index.search(spec).first
       end
 
       def fetch_names(fetchers, dependency_names, index)
@@ -471,6 +499,31 @@ module Bundler
 
       private
 
+      def collect_remote_created_at(index)
+        return {} unless @allow_remote
+
+        snapshot = {}
+        index.each do |spec|
+          next unless spec.respond_to?(:created_at) && spec.created_at
+          # Remember the remote that supplied the date too: when a source has
+          # several remotes with different per-URI cooldown settings we must
+          # restore the same one during backfill so `effective_cooldown` agrees.
+          snapshot[[spec.name, spec.version]] = [spec.created_at, spec.remote]
+        end
+        snapshot
+      end
+
+      def backfill_created_at(index, snapshot)
+        index.each do |spec|
+          next unless spec.respond_to?(:created_at=)
+          next if spec.created_at
+          remote_created_at, remote = snapshot[[spec.name, spec.version]]
+          next unless remote_created_at
+          spec.created_at = remote_created_at
+          spec.remote ||= remote if remote && spec.respond_to?(:remote=)
+        end
+      end
+
       def lockfile_remotes
         @lockfile_remotes || credless_remotes
       end
@@ -491,7 +544,15 @@ module Bundler
         uri = spec.remote.uri
         Bundler.ui.confirm("Fetching #{version_message(spec, previous_spec)}")
         gem_remote_fetcher = remote_fetchers.fetch(spec.remote).gem_remote_fetcher
-        Bundler.rubygems.download_gem(spec, uri, download_cache_path, gem_remote_fetcher)
+
+        Plugin.hook(Plugin::Events::GEM_BEFORE_FETCH, spec)
+        begin
+          Gem.time("Downloaded #{spec.name} in", 0, true) do
+            Bundler.rubygems.download_gem(spec, uri, download_cache_path, gem_remote_fetcher)
+          end
+        ensure
+          Plugin.hook(Plugin::Events::GEM_AFTER_FETCH, spec)
+        end
       end
 
       # Returns the global cache path of the calling Rubygems::Source object.
@@ -506,16 +567,51 @@ module Bundler
       # @return [Pathname] The global cache path.
       #
       def download_cache_path(spec)
-        return unless Bundler.feature_flag.global_gem_cache?
+        return unless Bundler.settings[:global_gem_cache]
         return unless remote = spec.remote
         return unless cache_slug = remote.cache_slug
 
-        Bundler.user_cache.join("gems", cache_slug)
+        if Gem.respond_to?(:global_gem_cache_path)
+          Pathname.new(Gem.global_gem_cache_path).join(cache_slug)
+        else
+          # Fall back to old location for older RubyGems versions
+          Bundler.user_cache.join("gems", cache_slug)
+        end
       end
 
       def extension_cache_slug(spec)
         return unless remote = spec.remote
         remote.cache_slug
+      end
+
+      # We are using a mutex to read and write from/to the hash.
+      # The reason this double synchronization was added is for performance
+      # and to lock the mutex for the shortest possible amount of time. Otherwise,
+      # all threads are fighting over this mutex and when it gets acquired it gets locked
+      # until a thread finishes downloading a gem, leaving the other threads waiting
+      # doing nothing.
+      def rubygems_gem_installer(spec, options)
+        @gem_installers_mutex.synchronize { @gem_installers[spec.name] } || begin
+          path = fetch_gem_if_possible(spec, options[:previous_spec])
+          raise GemNotFound, "Could not find #{spec.file_name} for installation" unless path
+
+          REQUIRE_MUTEX.synchronize { require_relative "../rubygems_gem_installer" }
+
+          installer = Bundler::RubyGemsGemInstaller.at(
+            path,
+            security_policy: Bundler.rubygems.security_policies[Bundler.settings["trust-policy"]],
+            install_dir: rubygems_dir.to_s,
+            bin_dir: Bundler.system_bindir.to_s,
+            ignore_dependencies: true,
+            wrappers: true,
+            env_shebang: true,
+            build_args: options[:build_args],
+            bundler_extension_cache_path: extension_cache_path(spec),
+            build_extension: Bundler.settings[:no_build_extension] ? false : nil,
+            install_plugin: Bundler.settings[:no_install_plugin] ? false : nil
+          )
+          @gem_installers_mutex.synchronize { @gem_installers[spec.name] ||= installer }
+        end
       end
     end
   end

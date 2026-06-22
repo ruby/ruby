@@ -11,9 +11,8 @@ describe :string_chars, shared: true do
 
   it "returns self" do
     s = StringSpecs::MyString.new "hello"
-    s.send(@method){}.should equal(s)
+    s.send(@method){}.should.equal?(s)
   end
-
 
   it "is unicode aware" do
     "\303\207\342\210\202\303\251\306\222g".send(@method).to_a.should ==
@@ -34,7 +33,7 @@ describe :string_chars, shared: true do
   it "works if the String's contents is invalid for its encoding" do
     xA4 = [0xA4].pack('C')
     xA4.force_encoding('UTF-8')
-    xA4.valid_encoding?.should be_false
+    xA4.valid_encoding?.should == false
     xA4.send(@method).to_a.should == [xA4.force_encoding("UTF-8")]
   end
 
@@ -61,6 +60,27 @@ describe :string_chars, shared: true do
       [0xF0,0xA4].pack('CC').force_encoding('SJIS'),
       [0xAD].pack('C').force_encoding('SJIS'),
       [0xA2].pack('C').force_encoding('SJIS')
+    ]
+  end
+
+  it "returns individual chars for dummy encodings" do
+    "ab".dup.force_encoding(Encoding::UTF_7).send(@method).to_a.should == [
+      "\x61".dup.force_encoding(Encoding::UTF_7),
+      "\x62".dup.force_encoding(Encoding::UTF_7)
+    ]
+
+    "abcd".dup.force_encoding(Encoding::UTF_16).send(@method).to_a.should == [
+      "\x61".dup.force_encoding(Encoding::UTF_16),
+      "\x62".dup.force_encoding(Encoding::UTF_16),
+      "\x63".dup.force_encoding(Encoding::UTF_16),
+      "\x64".dup.force_encoding(Encoding::UTF_16)
+    ]
+
+    "abcd".dup.force_encoding(Encoding::UTF_32).send(@method).to_a.should == [
+      "\x61".dup.force_encoding(Encoding::UTF_32),
+      "\x62".dup.force_encoding(Encoding::UTF_32),
+      "\x63".dup.force_encoding(Encoding::UTF_32),
+      "\x64".dup.force_encoding(Encoding::UTF_32)
     ]
   end
 end

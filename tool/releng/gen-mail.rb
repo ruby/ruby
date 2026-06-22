@@ -10,7 +10,7 @@ end
 # Confirm current directory is www.ruby-lang.org's working directory
 def confirm_w_r_l_o_wd
   File.foreach('.git/config') do |line|
-    return true if line.include?('git@github.com:ruby/www.ruby-lang.org.git')
+    return true if line.include?('ruby/www.ruby-lang.org.git')
   end
   abort "Run this script in www.ruby-lang.org's working directory"
 end

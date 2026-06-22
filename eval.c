@@ -37,6 +37,7 @@
 #include "ruby/vm.h"
 #include "vm_core.h"
 #include "ractor_core.h"
+#include "zjit.h"
 
 NORETURN(static void rb_raise_jump(VALUE, VALUE));
 void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
@@ -78,7 +79,10 @@ ruby_setup(void)
 #endif
     Init_BareVM();
     rb_vm_encoded_insn_data_table_init();
+    Init_enable_box();
     Init_vm_objects();
+    Init_master_box();
+    Init_fstring_table();
 
     EC_PUSH_TAG(GET_EC());
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
@@ -326,17 +330,24 @@ ruby_exec_node(void *n)
 
 /*
  *  call-seq:
- *     Module.nesting    -> array
+ *     Module.nesting -> array
  *
- *  Returns the list of +Modules+ nested at the point of call.
+ *  Returns nested module as an array of Module objects:
  *
- *     module M1
- *       module M2
- *         $a = Module.nesting
- *       end
- *     end
- *     $a           #=> [M1::M2, M1]
- *     $a[0].name   #=> "M1::M2"
+ *    module M0
+ *      def self.speak = Module.nesting
+ *      module M1
+ *        def self.speak = Module.nesting
+ *        module M2
+ *          def self.speak = Module.nesting
+ *        end
+ *      end
+ *    end
+ *    M0.speak             # => [M0]
+ *    M0.speak.first.class # => Module
+ *    M0::M1.speak         # => [M0::M1, M0]
+ *    M0::M1::M2.speak     # => [M0::M1::M2, M0::M1, M0]
+ *
  */
 
 static VALUE
@@ -421,43 +432,14 @@ rb_class_modify_check(VALUE klass)
         Check_Type(klass, T_CLASS);
     }
     if (RB_TYPE_P(klass, T_MODULE)) {
-        rb_module_set_initialized(klass);
+        // TODO: shouldn't this only happen in a few places?
+        rb_class_set_initialized(klass);
     }
     if (OBJ_FROZEN(klass)) {
-        const char *desc;
-
         if (RCLASS_SINGLETON_P(klass)) {
-            desc = "object";
             klass = RCLASS_ATTACHED_OBJECT(klass);
-            if (!SPECIAL_CONST_P(klass)) {
-                switch (BUILTIN_TYPE(klass)) {
-                  case T_MODULE:
-                  case T_ICLASS:
-                    desc = "Module";
-                    break;
-                  case T_CLASS:
-                    desc = "Class";
-                    break;
-                  default:
-                    break;
-                }
-            }
         }
-        else {
-            switch (BUILTIN_TYPE(klass)) {
-              case T_MODULE:
-              case T_ICLASS:
-                desc = "module";
-                break;
-              case T_CLASS:
-                desc = "class";
-                break;
-              default:
-                Check_Type(klass, T_CLASS);
-                UNREACHABLE;
-            }
-        }
-        rb_frozen_error_raise(klass, "can't modify frozen %s: %"PRIsVALUE, desc, klass);
+        rb_error_frozen_object(klass);
     }
 }
 
@@ -528,10 +510,14 @@ exc_setup_message(const rb_execution_context_t *ec, VALUE mesg, VALUE *cause)
         rb_exc_check_circular_cause(*cause);
 #else
         VALUE c = *cause;
-        while (!NIL_P(c = rb_attr_get(c, id_cause))) {
+        while (!NIL_P(c)) {
             if (c == mesg) {
                 rb_raise(rb_eArgError, "circular causes");
             }
+            if (THROW_DATA_P(c)) {
+                break;
+            }
+            c = rb_attr_get(c, id_cause);
         }
 #endif
     }
@@ -696,49 +682,142 @@ rb_interrupt(void)
     rb_exc_raise(rb_exc_new(rb_eInterrupt, 0, 0));
 }
 
-enum {raise_opt_cause, raise_max_opt}; /*< \private */
-
 static int
-extract_raise_opts(int argc, VALUE *argv, VALUE *opts)
+extract_raise_options(int argc, VALUE *argv, VALUE *cause)
 {
-    int i;
+    // Keyword arguments:
+    static ID keywords[1] = {0};
+    if (!keywords[0]) {
+        CONST_ID(keywords[0], "cause");
+    }
+
     if (argc > 0) {
-        VALUE opt;
-        argc = rb_scan_args(argc, argv, "*:", NULL, &opt);
-        if (!NIL_P(opt)) {
-            if (!RHASH_EMPTY_P(opt)) {
-                ID keywords[1];
-                CONST_ID(keywords[0], "cause");
-                rb_get_kwargs(opt, keywords, 0, -1-raise_max_opt, opts);
-                if (!RHASH_EMPTY_P(opt)) argv[argc++] = opt;
-                return argc;
+        VALUE options;
+        argc = rb_scan_args(argc, argv, "*:", NULL, &options);
+
+        if (!NIL_P(options)) {
+            if (!RHASH_EMPTY_P(options)) {
+                // Extract optional cause keyword argument, leaving any other options alone:
+                rb_get_kwargs(options, keywords, 0, -2, cause);
+
+                // If there were any other options, add them back to the arguments:
+                if (!RHASH_EMPTY_P(options)) argv[argc++] = options;
             }
         }
     }
-    for (i = 0; i < raise_max_opt; ++i) {
-        opts[i] = Qundef;
-    }
+
     return argc;
+}
+
+/**
+ * Complete exception setup for cross-context raises (Thread#raise, Fiber#raise).
+ * Handles keyword extraction, validation, exception creation, and cause assignment.
+ *
+ * @param[in]     argc        Number of arguments
+ * @param[in]     argv        Argument array (will be modified for keyword extraction)
+ * @return                    Prepared exception object with cause applied
+ */
+VALUE
+rb_exception_setup(int argc, VALUE *argv)
+{
+    rb_execution_context_t *ec = GET_EC();
+
+    // Extract cause keyword argument:
+    VALUE cause = Qundef;
+    argc = extract_raise_options(argc, argv, &cause);
+
+    // Validate cause-only case:
+    if (argc == 0 && !UNDEF_P(cause)) {
+        rb_raise(rb_eArgError, "only cause is given with no arguments");
+    }
+
+    // Create exception:
+    VALUE exception;
+    if (argc == 0) {
+        exception = rb_exc_new(rb_eRuntimeError, 0, 0);
+    }
+    else {
+        exception = rb_make_exception(argc, argv);
+    }
+
+    VALUE resolved_cause = Qnil;
+
+    // Resolve cause with validation:
+    if (UNDEF_P(cause)) {
+        // No explicit cause - use automatic cause chaining from calling context:
+        resolved_cause = rb_ec_get_errinfo(ec);
+
+        // Prevent self-referential cause (e.g. `raise $!`):
+        if (resolved_cause == exception) {
+            resolved_cause = Qnil;
+        }
+    }
+    else if (NIL_P(cause)) {
+        // Explicit nil cause - prevent chaining:
+        resolved_cause = Qnil;
+    }
+    else {
+        // Explicit cause - validate and assign:
+        if (!rb_obj_is_kind_of(cause, rb_eException)) {
+            rb_raise(rb_eTypeError, "exception object expected");
+        }
+
+        if (cause == exception) {
+            // Prevent self-referential cause (e.g. `raise error, cause: error`) - although I'm not sure this is good behaviour, it's inherited from `Kernel#raise`.
+            resolved_cause = Qnil;
+        }
+        else {
+            // Check for circular causes:
+            VALUE current_cause = cause;
+            while (!NIL_P(current_cause)) {
+                // We guarantee that the cause chain is always terminated. Then, creating an exception with an existing cause is not circular as long as exception is not an existing cause of any other exception.
+                if (current_cause == exception) {
+                    rb_raise(rb_eArgError, "circular causes");
+                }
+                if (THROW_DATA_P(current_cause)) {
+                    break;
+                }
+                current_cause = rb_attr_get(current_cause, id_cause);
+            }
+            resolved_cause = cause;
+        }
+    }
+
+    // Apply cause to exception object (duplicate if frozen):
+    if (!UNDEF_P(resolved_cause)) {
+        if (OBJ_FROZEN(exception)) {
+            exception = rb_obj_dup(exception);
+        }
+        rb_ivar_set(exception, id_cause, resolved_cause);
+    }
+
+    return exception;
 }
 
 VALUE
 rb_f_raise(int argc, VALUE *argv)
 {
-    VALUE err;
-    VALUE opts[raise_max_opt], *const cause = &opts[raise_opt_cause];
+    VALUE cause = Qundef;
+    argc = extract_raise_options(argc, argv, &cause);
 
-    argc = extract_raise_opts(argc, argv, opts);
+    VALUE exception;
+
+    // Bare re-raise case:
     if (argc == 0) {
-        if (!UNDEF_P(*cause)) {
+        // Cause was extracted, but no arguments were provided:
+        if (!UNDEF_P(cause)) {
             rb_raise(rb_eArgError, "only cause is given with no arguments");
         }
-        err = get_errinfo();
-        if (!NIL_P(err)) {
+
+        // Otherwise, re-raise the current exception:
+        exception = get_errinfo();
+        if (!NIL_P(exception)) {
             argc = 1;
-            argv = &err;
+            argv = &exception;
         }
     }
-    rb_raise_jump(rb_make_exception(argc, argv), *cause);
+
+    rb_raise_jump(rb_make_exception(argc, argv), cause);
 
     UNREACHABLE_RETURN(Qnil);
 }
@@ -851,6 +930,9 @@ rb_f_raise(int argc, VALUE *argv)
  *  With argument +exception+ not given,
  *  argument +message+ and keyword argument +cause+ may be given,
  *  but argument +backtrace+ may not be given.
+ *
+ *  +cause+ can not be given as an only argument.
+ *
  */
 
 static VALUE
@@ -1062,12 +1144,11 @@ rb_protect(VALUE (* proc) (VALUE), VALUE data, int *pstate)
 }
 
 VALUE
-rb_ensure(VALUE (*b_proc)(VALUE), VALUE data1, VALUE (*e_proc)(VALUE), VALUE data2)
+rb_ec_ensure(rb_execution_context_t *ec, VALUE (*b_proc)(VALUE), VALUE data1, VALUE (*e_proc)(VALUE), VALUE data2)
 {
     enum ruby_tag_type state;
     volatile VALUE result = Qnil;
     VALUE errinfo;
-    rb_execution_context_t * volatile ec = GET_EC();
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         result = (*b_proc) (data1);
@@ -1082,6 +1163,12 @@ rb_ensure(VALUE (*b_proc)(VALUE), VALUE data1, VALUE (*e_proc)(VALUE), VALUE dat
     if (state)
         EC_JUMP_TAG(ec, state);
     return result;
+}
+
+VALUE
+rb_ensure(VALUE (*b_proc)(VALUE), VALUE data1, VALUE (*e_proc)(VALUE), VALUE data2)
+{
+    return rb_ec_ensure(GET_EC(), b_proc, data1, e_proc, data2);
 }
 
 static ID
@@ -1190,6 +1277,8 @@ rb_mod_append_features(VALUE module, VALUE include)
 
     return module;
 }
+
+static VALUE refinement_import_methods(int argc, VALUE *argv, VALUE refinement);
 
 /*
  *  call-seq:
@@ -1344,9 +1433,11 @@ rb_using_refinement(rb_cref_t *cref, VALUE klass, VALUE module)
     }
     superclass = refinement_superclass(superclass);
     c = iclass = rb_include_class_new(module, superclass);
-    RB_OBJ_WRITE(c, &RCLASS_REFINED_CLASS(c), klass);
+    RCLASS_SET_REFINED_CLASS(c, klass);
 
-    RCLASS_M_TBL(c) = RCLASS_M_TBL(module);
+    RCLASS_WRITE_M_TBL(c, RCLASS_M_TBL(module));
+
+    rb_class_subclass_add(klass, iclass);
 
     rb_hash_aset(CREF_REFINEMENTS(cref), klass, iclass);
 }
@@ -1401,6 +1492,12 @@ rb_using_module(const rb_cref_t *cref, VALUE module)
     rb_clear_all_refinement_method_cache();
 }
 
+void
+rb_vm_using_module(VALUE module)
+{
+    rb_using_module(rb_vm_cref_replace_with_duplicated_cref(), module);
+}
+
 /*
  *  call-seq:
  *     target    -> class_or_module
@@ -1441,43 +1538,26 @@ add_activated_refinement(VALUE activated_refinements,
     }
     superclass = refinement_superclass(superclass);
     c = iclass = rb_include_class_new(refinement, superclass);
-    RB_OBJ_WRITE(c, &RCLASS_REFINED_CLASS(c), klass);
+    RCLASS_SET_REFINED_CLASS(c, klass);
+    rb_class_subclass_add(klass, iclass);
     refinement = RCLASS_SUPER(refinement);
     while (refinement && refinement != klass) {
-        c = RCLASS_SET_SUPER(c, rb_include_class_new(refinement, RCLASS_SUPER(c)));
-        RB_OBJ_WRITE(c, &RCLASS_REFINED_CLASS(c), klass);
+        c = rb_class_set_super(c, rb_include_class_new(refinement, RCLASS_SUPER(c)));
+        RCLASS_SET_REFINED_CLASS(c, klass);
+        rb_class_subclass_add(klass, c);
         refinement = RCLASS_SUPER(refinement);
     }
     rb_hash_aset(activated_refinements, klass, iclass);
 }
 
-/*
- *  call-seq:
- *     refine(mod) { block }   -> module
- *
- *  Refine <i>mod</i> in the receiver.
- *
- *  Returns a module, where refined methods are defined.
- */
-
-static VALUE
-rb_mod_refine(VALUE module, VALUE klass)
+void
+rb_refinement_setup(struct rb_refinements_data *data, VALUE module, VALUE klass)
 {
     VALUE refinement;
     ID id_refinements, id_activated_refinements,
        id_refined_class, id_defined_at;
     VALUE refinements, activated_refinements;
-    rb_thread_t *th = GET_THREAD();
-    VALUE block_handler = rb_vm_frame_block_handler(th->ec->cfp);
 
-    if (block_handler == VM_BLOCK_HANDLER_NONE) {
-        rb_raise(rb_eArgError, "no block given");
-    }
-    if (vm_block_handler_type(block_handler) != block_handler_type_iseq) {
-        rb_raise(rb_eArgError, "can't pass a Proc as a block to Module#refine");
-    }
-
-    ensure_class_or_module(klass);
     CONST_ID(id_refinements, "__refinements__");
     refinements = rb_attr_get(module, id_refinements);
     if (NIL_P(refinements)) {
@@ -1495,7 +1575,7 @@ rb_mod_refine(VALUE module, VALUE klass)
     if (NIL_P(refinement)) {
         VALUE superclass = refinement_superclass(klass);
         refinement = rb_refinement_new();
-        RCLASS_SET_SUPER(refinement, superclass);
+        rb_class_set_super(refinement, superclass);
         RUBY_ASSERT(BUILTIN_TYPE(refinement) == T_MODULE);
         FL_SET(refinement, RMODULE_IS_REFINEMENT);
         CONST_ID(id_refined_class, "__refined_class__");
@@ -1505,8 +1585,41 @@ rb_mod_refine(VALUE module, VALUE klass)
         rb_hash_aset(refinements, klass, refinement);
         add_activated_refinement(activated_refinements, klass, refinement);
     }
-    rb_yield_refine_block(refinement, activated_refinements);
-    return refinement;
+
+    data->refinement = refinement;
+    data->refinements = activated_refinements;
+}
+
+/*
+ *  call-seq:
+ *     refine(mod) { block }   -> module
+ *
+ *  Refine <i>mod</i> in the receiver.
+ *
+ *  Returns a module, where refined methods are defined.
+ */
+
+static VALUE
+rb_mod_refine(VALUE module, VALUE klass)
+{
+    /* module is the receiver of #refine, klass is a module to be refined (`mod` in the doc) */
+    rb_thread_t *th = GET_THREAD();
+    VALUE block_handler = rb_vm_frame_block_handler(th->ec->cfp);
+    struct rb_refinements_data data;
+
+    if (block_handler == VM_BLOCK_HANDLER_NONE) {
+        rb_raise(rb_eArgError, "no block given");
+    }
+    if (vm_block_handler_type(block_handler) != block_handler_type_iseq) {
+        rb_raise(rb_eArgError, "can't pass a Proc as a block to Module#refine");
+    }
+
+    ensure_class_or_module(klass);
+
+    rb_refinement_setup(&data, module, klass);
+
+    rb_yield_refine_block(data.refinement, data.refinements);
+    return data.refinement;
 }
 
 static void
@@ -1898,10 +2011,10 @@ errinfo_place(const rb_execution_context_t *ec)
 
     while (RUBY_VM_VALID_CONTROL_FRAME_P(cfp, end_cfp)) {
         if (VM_FRAME_RUBYFRAME_P(cfp)) {
-            if (ISEQ_BODY(cfp->iseq)->type == ISEQ_TYPE_RESCUE) {
+            if (ISEQ_BODY(CFP_ISEQ(cfp))->type == ISEQ_TYPE_RESCUE) {
                 return &cfp->ep[VM_ENV_INDEX_LAST_LVAR];
             }
-            else if (ISEQ_BODY(cfp->iseq)->type == ISEQ_TYPE_ENSURE &&
+            else if (ISEQ_BODY(CFP_ISEQ(cfp))->type == ISEQ_TYPE_ENSURE &&
                      !THROW_DATA_P(cfp->ep[VM_ENV_INDEX_LAST_LVAR]) &&
                      !FIXNUM_P(cfp->ep[VM_ENV_INDEX_LAST_LVAR])) {
                 return &cfp->ep[VM_ENV_INDEX_LAST_LVAR];
@@ -2110,6 +2223,9 @@ Init_eval(void)
 
     rb_gvar_ractor_local("$@");
     rb_gvar_ractor_local("$!");
+
+    rb_gvar_box_dynamic("$@");
+    rb_gvar_box_dynamic("$!");
 
     rb_define_global_function("raise", f_raise, -1);
     rb_define_global_function("fail", f_raise, -1);

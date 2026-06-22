@@ -18,7 +18,7 @@ class TestGemExtBuilder < Gem::TestCase
 
     @spec = util_spec "a"
 
-    @builder = Gem::Ext::Builder.new @spec, ""
+    @builder = Gem::Ext::Builder.new @spec
   end
 
   def teardown
@@ -104,6 +104,22 @@ install:
     assert_match(/clean: OK/, results)
     assert_match(/all: OK/, results)
     assert_match(/install: OK/, results)
+  end
+
+  def test_class_run_closes_stdin
+    results = []
+    check_stdin_script = <<~'RUBY'
+      if IO.select([STDIN], nil, nil, 1)
+        puts "STDIN: #{STDIN.read.inspect}"
+      else
+        puts "NOT_READY"
+      end
+    RUBY
+
+    Gem::Ext::Builder.run([Gem.ruby, "-e", check_stdin_script], results)
+
+    command_output = results.last
+    assert_equal "STDIN: \"\"\n", command_output
   end
 
   def test_build_extensions
@@ -199,6 +215,57 @@ install:
     end
   ensure
     Gem.configuration.install_extension_in_lib = @orig_install_extension_in_lib
+  end
+
+  def test_build_multiple_extensions
+    pend if RUBY_ENGINE == "truffleruby"
+    pend "terminates on ruby/ruby" if ruby_repo?
+
+    extension_in_lib do
+      @spec.extensions << "ext/Rakefile"
+      @spec.extensions << "ext/extconf.rb"
+
+      ext_dir = File.join @spec.gem_dir, "ext"
+
+      FileUtils.mkdir_p ext_dir
+
+      extconf_rb = File.join ext_dir, "extconf.rb"
+      rakefile = File.join ext_dir, "Rakefile"
+
+      File.open extconf_rb, "w" do |f|
+        f.write <<-'RUBY'
+          require 'mkmf'
+
+          create_makefile 'a'
+        RUBY
+      end
+
+      File.open rakefile, "w" do |f|
+        f.write <<-RUBY
+          task :default do
+            FileUtils.touch File.join "#{ext_dir}", 'foo'
+          end
+        RUBY
+      end
+
+      ext_lib_dir = File.join ext_dir, "lib"
+      FileUtils.mkdir ext_lib_dir
+      FileUtils.touch File.join ext_lib_dir, "a.rb"
+      FileUtils.mkdir File.join ext_lib_dir, "a"
+      FileUtils.touch File.join ext_lib_dir, "a", "b.rb"
+
+      use_ui @ui do
+        @builder.build_extensions
+      end
+
+      assert_path_exist @spec.extension_dir
+      assert_path_exist @spec.gem_build_complete_path
+      assert_path_exist File.join @spec.gem_dir, "ext", "foo"
+      assert_path_exist File.join @spec.extension_dir, "gem_make.out"
+      assert_path_exist File.join @spec.extension_dir, "a.rb"
+      assert_path_exist File.join @spec.gem_dir, "lib", "a.rb"
+      assert_path_exist File.join @spec.gem_dir, "lib", "a", "b.rb"
+    end
   end
 
   def test_build_extensions_none

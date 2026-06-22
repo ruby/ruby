@@ -1309,32 +1309,7 @@ class TestArray < Test::Unit::TestCase
     assert_equal(ary.join(':'), ary2.join(':'))
     assert_not_nil(x =~ /def/)
 
-=begin
-    skipping "Not tested:
-        D,d & double-precision float, native format\\
-        E & double-precision float, little-endian byte order\\
-        e & single-precision float, little-endian byte order\\
-        F,f & single-precision float, native format\\
-        G & double-precision float, network (big-endian) byte order\\
-        g & single-precision float, network (big-endian) byte order\\
-        I & unsigned integer\\
-        i & integer\\
-        L & unsigned long\\
-        l & long\\
-
-        N & long, network (big-endian) byte order\\
-        n & short, network (big-endian) byte-order\\
-        P & pointer to a structure (fixed-length string)\\
-        p & pointer to a null-terminated string\\
-        S & unsigned short\\
-        s & short\\
-        V & long, little-endian byte order\\
-        v & short, little-endian byte order\\
-        X & back up a byte\\
-        x & null byte\\
-        Z & ASCII string (null padded, count is width)\\
-"
-=end
+    # more comprehensive tests are in test_pack.rb
   end
 
   def test_pack_with_buffer
@@ -1359,6 +1334,28 @@ class TestArray < Test::Unit::TestCase
     assert_equal(@cls['dog', 'cat'], a.prepend('dog'))
     assert_equal(@cls[nil, 'dog', 'cat'], a.prepend(nil))
     assert_equal(@cls[@cls[1,2], nil, 'dog', 'cat'], a.prepend(@cls[1, 2]))
+  end
+
+  def test_tolerant_to_redefinition
+    *code = __FILE__, __LINE__+1, "#{<<-"{#"}\n#{<<-'};'}"
+    {#
+      module M
+        def <<(a)
+          super(a * 2)
+        end
+      end
+      class Array; prepend M; end
+      ary = [*1..10]
+      mapped = ary.map {|i| i}
+      selected = ary.select {true}
+      module M
+        remove_method :<<
+      end
+      assert_equal(ary, mapped)
+      assert_equal(ary, selected)
+    };
+    assert_separately(%w[--disable-yjit], *code)
+    assert_separately(%w[--enable-yjit], *code)
   end
 
   def test_push
@@ -1849,19 +1846,21 @@ class TestArray < Test::Unit::TestCase
     assert_equal([1, 2, 3, 4], a)
   end
 
-  def test_freeze_inside_sort!
+  def test_freeze_inside_sort_bang
     array = [1, 2, 3, 4, 5]
     frozen_array = nil
     assert_raise(FrozenError) do
       count = 0
       array.sort! do |a, b|
-        array.freeze if (count += 1) == 6
+        array.freeze if (count += 1) == 3
         frozen_array ||= array.map.to_a if array.frozen?
         b <=> a
       end
     end
     assert_equal(frozen_array, array)
+  end
 
+  def test_freeze_inside_sort_bang_non_numeric_block
     object = Object.new
     array = [1, 2, 3, 4, 5]
     object.define_singleton_method(:>){|_| array.freeze; true}
@@ -1870,7 +1869,9 @@ class TestArray < Test::Unit::TestCase
         object
       end
     end
+  end
 
+  def test_freeze_inside_sort_bang_non_numeric_no_block
     object = Object.new
     array = [object, object]
     object.define_singleton_method(:>){|_| array.freeze; true}
@@ -2811,6 +2812,60 @@ class TestArray < Test::Unit::TestCase
     assert_equal("b", x.ary.join(""))
   end
 
+  def test_join_encoding
+    # Multibyte UTF-8 elements: result is UTF-8, valid, not ASCII-only.
+    r = @cls["caf\u00e9", "na\u00efve"].join(" ")
+    assert_equal("caf\u00e9 na\u00efve", r)
+    assert_equal(Encoding::UTF_8, r.encoding)
+    assert_equal(true, r.valid_encoding?)
+    assert_equal(false, r.ascii_only?)
+
+    # All 7-bit content stays ASCII-only.
+    r = @cls["abc", "def"].join(",")
+    assert_equal("abc,def", r)
+    assert_equal(true, r.ascii_only?)
+
+    # Multibyte separator (same encoding as the elements).
+    r = @cls["a", "b", "c"].join("\u2014")
+    assert_equal("a\u2014b\u2014c", r)
+    assert_equal(Encoding::UTF_8, r.encoding)
+    assert_equal(false, r.ascii_only?)
+    assert_equal(true, r.valid_encoding?)
+
+    # Mixed ASCII-compatible encodings, all 7-bit: result takes element 0's encoding.
+    r = @cls["abc".dup.force_encoding("US-ASCII"), "def".dup.force_encoding("UTF-8")].join(" ")
+    assert_equal("abc def", r)
+    assert_equal(Encoding::US_ASCII, r.encoding)
+    assert_equal(true, r.ascii_only?)
+
+    # 7-bit content in a non-ASCII encoding (Shift_JIS).
+    r = @cls["abc".encode("Shift_JIS"), "def".encode("Shift_JIS")].join(" ")
+    assert_equal(Encoding::Shift_JIS, r.encoding)
+    assert_equal("abc def".b, r.b)
+
+    # Same-encoding multibyte (Shift_JIS): byte-for-byte concatenation.
+    s = "\u65e5\u672c".encode("Shift_JIS")
+    sep = "/".encode("Shift_JIS")
+    r = @cls[s, s].join(sep)
+    assert_equal(Encoding::Shift_JIS, r.encoding)
+    assert_equal((s + sep + s).b, r.b)
+
+    # Broken bytes: result keeps them and reports invalid.
+    bad = "\xff\xfe".dup.force_encoding("UTF-8")
+    r = @cls[bad, bad].join(" ")
+    assert_equal((bad + " " + bad).b, r.b)
+    assert_equal(false, r.valid_encoding?)
+
+    # Incompatible element/separator encodings still raise.
+    assert_raise(Encoding::CompatibilityError) do
+      @cls["a".dup.force_encoding("UTF-8"), "b".encode("UTF-16LE")].join(" ")
+    end
+
+    # Bulk copy: large array, verified against a non-join oracle.
+    big = @cls.new(500) { "ab" }
+    assert_equal(("ab," * 500).chomp(","), big.join(","))
+  end
+
   def test_to_a2
     klass = Class.new(Array)
     a = klass.new.to_a
@@ -3549,6 +3604,7 @@ class TestArray < Test::Unit::TestCase
     assert_float_equal(3.5, [3].sum(0.5))
     assert_float_equal(8.5, [3.5, 5].sum)
     assert_float_equal(10.5, [2, 8.5].sum)
+    assert_float_equal(1_000 * 0.1, Array.new(1_000, 0.1).sum(0.0))
     assert_float_equal((FIXNUM_MAX+1).to_f, [FIXNUM_MAX, 1, 0.0].sum)
     assert_float_equal((FIXNUM_MAX+1).to_f, [0.0, FIXNUM_MAX+1].sum)
 
@@ -3607,6 +3663,23 @@ class TestArray < Test::Unit::TestCase
       var_1_block_129 <=> var_0_block_129
     end.shift(3)
     assert_equal((1..67).to_a.reverse, var_0)
+  end
+
+  def test_find
+    ary = [1, 2, 3, 4, 5]
+    assert_equal(2, ary.find {|x| x % 2 == 0 })
+    assert_equal(nil, ary.find {|x| false })
+    assert_equal(:foo, ary.find(proc { :foo }) {|x| false })
+  end
+
+  def test_rfind
+    ary = [1, 2, 3, 4, 5]
+    assert_equal(4, ary.rfind {|x| x % 2 == 0 })
+    assert_equal(1, ary.rfind {|x| x < 2 })
+    assert_equal(5, ary.rfind {|x| x > 4 })
+    assert_equal(nil, ary.rfind {|x| false })
+    assert_equal(:foo, ary.rfind(proc { :foo }) {|x| false })
+    assert_equal(nil, ary.rfind {|x| ary.clear; false })
   end
 
   private

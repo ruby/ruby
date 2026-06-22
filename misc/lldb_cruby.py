@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 #coding: utf-8
 #
 # Usage: run `command script import -r misc/lldb_cruby.py` on LLDB
@@ -68,7 +67,7 @@ class BackTrace:
         return self.VM_FRAME_MAGIC_NAME.get(frame_type, "(none)")
 
     def rb_iseq_path_str(self, iseq):
-        tRBasic = self.target.FindFirstType("struct RBasic").GetPointerType()
+        tRBasic = self.target.FindFirstType("::RBasic").GetPointerType()
 
         pathobj = iseq.GetValueForExpressionPath("->body->location.pathobj")
         pathobj = pathobj.Cast(tRBasic)
@@ -270,7 +269,7 @@ def lldb_inspect(debugger, target, result, val):
     elif num & RUBY_IMMEDIATE_MASK:
         print('immediate(%x)' % num, file=result)
     else:
-        tRBasic = target.FindFirstType("struct RBasic").GetPointerType()
+        tRBasic = target.FindFirstType("::RBasic").GetPointerType()
 
         val = val.Cast(tRBasic)
         flags = val.GetValueForExpressionPath("->flags").GetValueAsUnsigned()
@@ -550,7 +549,7 @@ class HeapPageIter:
         self.num_slots = page.GetChildMemberWithName('total_slots').unsigned
         self.slot_size = page.GetChildMemberWithName('heap').GetChildMemberWithName('slot_size').unsigned
         self.counter = 0
-        self.tRBasic = target.FindFirstType("struct RBasic")
+        self.tRBasic = target.FindFirstType("::RBasic")
 
     def is_valid(self):
         heap_page_header_size = self.target.FindFirstType("struct heap_page_header").GetByteSize()

@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "pathname"
-
 module Bundler
   class CLI
     Bundler.require_thor_actions
@@ -9,11 +7,7 @@ module Bundler
   end
 
   class CLI::Gem
-    TEST_FRAMEWORK_VERSIONS = {
-      "rspec" => "3.0",
-      "minitest" => "5.16",
-      "test-unit" => "3.0",
-    }.freeze
+    DEFAULT_GITHUB_USERNAME = "[USERNAME]"
 
     attr_reader :options, :gem_name, :thor, :name, :target, :extension
 
@@ -26,12 +20,11 @@ module Bundler
       thor.destination_root = nil
 
       @name = @gem_name
-      @target = SharedHelpers.pwd.join(gem_name)
+      @target = Pathname.new(SharedHelpers.pwd).join(gem_name)
 
       @extension = options[:ext]
 
       validate_ext_name if @extension
-      validate_rust_builder_rubygems_version if @extension == "rust"
     end
 
     def run
@@ -48,13 +41,16 @@ module Bundler
       git_author_name = use_git ? `git config user.name`.chomp : ""
       git_username = use_git ? `git config github.user`.chomp : ""
       git_user_email = use_git ? `git config user.email`.chomp : ""
+      github_username = github_username(git_username)
 
-      github_username = if options[:github_username].nil?
-        git_username
-      elsif options[:github_username] == false
-        ""
+      if github_username.empty?
+        homepage_uri = "TODO: Put your gem's website or public repo URL here."
+        source_code_uri = "TODO: Put your gem's public repo URL here."
+        changelog_uri = "TODO: Put your gem's CHANGELOG.md URL here."
       else
-        options[:github_username]
+        homepage_uri = "https://github.com/#{github_username}/#{name}"
+        source_code_uri = "https://github.com/#{github_username}/#{name}"
+        changelog_uri = "https://github.com/#{github_username}/#{name}/blob/main/CHANGELOG.md"
       end
 
       config = {
@@ -69,12 +65,17 @@ module Bundler
         test: options[:test],
         ext: extension,
         exe: options[:exe],
+        bundle: options[:bundle],
         bundler_version: bundler_dependency_version,
         git: use_git,
-        github_username: github_username.empty? ? "[USERNAME]" : github_username,
+        github_username: github_username.empty? ? DEFAULT_GITHUB_USERNAME : github_username,
         required_ruby_version: required_ruby_version,
         rust_builder_required_rubygems_version: rust_builder_required_rubygems_version,
         minitest_constant_name: minitest_constant_name,
+        ignore_paths: %w[bin/],
+        homepage_uri: homepage_uri,
+        source_code_uri: source_code_uri,
+        changelog_uri: changelog_uri,
       }
       ensure_safe_gem_name(name, constant_array)
 
@@ -95,11 +96,21 @@ module Bundler
         bin/setup
       ]
 
-      templates.merge!("gitignore.tt" => ".gitignore") if use_git
+      case Bundler.preferred_gemfile_name
+      when "Gemfile"
+        config[:ignore_paths] << "Gemfile"
+      when "gems.rb"
+        config[:ignore_paths] << "gems.rb"
+        config[:ignore_paths] << "gems.locked"
+      end
+
+      if use_git
+        templates.merge!("gitignore.tt" => ".gitignore")
+        config[:ignore_paths] << ".gitignore"
+      end
 
       if test_framework = ask_and_set_test_framework
         config[:test] = test_framework
-        config[:test_framework_version] = TEST_FRAMEWORK_VERSIONS[test_framework]
 
         case test_framework
         when "rspec"
@@ -109,6 +120,8 @@ module Bundler
             "spec/newgem_spec.rb.tt" => "spec/#{namespaced_path}_spec.rb"
           )
           config[:test_task] = :spec
+          config[:ignore_paths] << ".rspec"
+          config[:ignore_paths] << "spec/"
         when "minitest"
           # Generate path for minitest target file (FileList["test/**/test_*.rb"])
           #   foo     => test/test_foo.rb
@@ -123,12 +136,14 @@ module Bundler
             "test/minitest/test_newgem.rb.tt" => "test/#{minitest_namespaced_path}.rb"
           )
           config[:test_task] = :test
+          config[:ignore_paths] << "test/"
         when "test-unit"
           templates.merge!(
             "test/test-unit/test_helper.rb.tt" => "test/test_helper.rb",
             "test/test-unit/newgem_test.rb.tt" => "test/#{namespaced_path}_test.rb"
           )
           config[:test_task] = :test
+          config[:ignore_paths] << "test/"
         end
       end
 
@@ -136,19 +151,22 @@ module Bundler
       case config[:ci]
       when "github"
         templates.merge!("github/workflows/main.yml.tt" => ".github/workflows/main.yml")
-        config[:ci_config_path] = ".github "
+        if extension == "rust"
+          templates.merge!("github/workflows/build-gems.yml.tt" => ".github/workflows/build-gems.yml")
+        end
+        config[:ignore_paths] << ".github/"
       when "gitlab"
         templates.merge!("gitlab-ci.yml.tt" => ".gitlab-ci.yml")
-        config[:ci_config_path] = ".gitlab-ci.yml "
+        config[:ignore_paths] << ".gitlab-ci.yml"
       when "circle"
         templates.merge!("circleci/config.yml.tt" => ".circleci/config.yml")
-        config[:ci_config_path] = ".circleci "
+        config[:ignore_paths] << ".circleci/"
       end
 
       if ask_and_set(:mit, "Do you want to license your code permissively under the MIT license?",
-        "This means that any other developer or company will be legally allowed to use your code " \
-        "for free as long as they admit you created it. You can read more about the MIT license " \
-        "at https://choosealicense.com/licenses/mit.")
+        "Using a MIT license means that any other developer or company will be legally allowed " \
+        "to use your code for free as long as they admit you created it. You can read more about " \
+        "the MIT license at https://choosealicense.com/licenses/mit.")
         config[:mit] = true
         Bundler.ui.info "MIT License enabled in config"
         templates.merge!("LICENSE.txt.tt" => "LICENSE.txt")
@@ -156,12 +174,8 @@ module Bundler
 
       if ask_and_set(:coc, "Do you want to include a code of conduct in gems you generate?",
         "Codes of conduct can increase contributions to your project by contributors who " \
-        "prefer collaborative, safe spaces. You can read more about the code of conduct at " \
-        "contributor-covenant.org. Having a code of conduct means agreeing to the responsibility " \
-        "of enforcing it, so be sure that you are prepared to do that. Be sure that your email " \
-        "address is specified as a contact in the generated code of conduct so that people know " \
-        "who to contact in case of a violation. For suggestions about " \
-        "how to enforce codes of conduct, see https://bit.ly/coc-enforcement.")
+        "prefer safe, respectful, productive, and collaborative spaces. \n" \
+        "See https://github.com/ruby/rubygems/blob/master/CODE_OF_CONDUCT.md")
         config[:coc] = true
         Bundler.ui.info "Code of conduct enabled in config"
         templates.merge!("CODE_OF_CONDUCT.md.tt" => "CODE_OF_CONDUCT.md")
@@ -182,13 +196,13 @@ module Bundler
       config[:linter] = ask_and_set_linter
       case config[:linter]
       when "rubocop"
-        config[:linter_version] = rubocop_version
         Bundler.ui.info "RuboCop enabled in config"
         templates.merge!("rubocop.yml.tt" => ".rubocop.yml")
+        config[:ignore_paths] << ".rubocop.yml"
       when "standard"
-        config[:linter_version] = standard_version
         Bundler.ui.info "Standard enabled in config"
         templates.merge!("standard.yml.tt" => ".standard.yml")
+        config[:ignore_paths] << ".standard.yml"
       end
 
       if config[:exe]
@@ -208,9 +222,22 @@ module Bundler
         templates.merge!(
           "Cargo.toml.tt" => "Cargo.toml",
           "ext/newgem/Cargo.toml.tt" => "ext/#{name}/Cargo.toml",
+          "ext/newgem/build.rs.tt" => "ext/#{name}/build.rs",
           "ext/newgem/extconf-rust.rb.tt" => "ext/#{name}/extconf.rb",
           "ext/newgem/src/lib.rs.tt" => "ext/#{name}/src/lib.rs",
         )
+      end
+
+      if extension == "go"
+        templates.merge!(
+          "ext/newgem/go.mod.tt" => "ext/#{name}/go.mod",
+          "ext/newgem/extconf-go.rb.tt" => "ext/#{name}/extconf.rb",
+          "ext/newgem/newgem.h.tt" => "ext/#{name}/#{underscored_name}.h",
+          "ext/newgem/newgem.go.tt" => "ext/#{name}/#{underscored_name}.go",
+          "ext/newgem/newgem-go.c.tt" => "ext/#{name}/#{underscored_name}.c",
+        )
+
+        config[:go_module_username] = config[:github_username] == DEFAULT_GITHUB_USERNAME ? "username" : config[:github_username]
       end
 
       if target.exist? && !target.directory?
@@ -219,7 +246,7 @@ module Bundler
       end
 
       if use_git
-        Bundler.ui.info "Initializing git repo in #{target}"
+        Bundler.ui.info "\nInitializing git repo in #{target}"
         require "shellwords"
         `git init #{target.to_s.shellescape}`
 
@@ -241,26 +268,33 @@ module Bundler
         IO.popen(%w[git add .], { chdir: target }, &:read)
       end
 
+      if config[:bundle]
+        Bundler.ui.info "Running bundle install in the new gem directory."
+        Dir.chdir(target) do
+          system("bundle install")
+        end
+      end
+
       # Open gemspec in editor
       open_editor(options["edit"], target.join("#{name}.gemspec")) if options[:edit]
 
-      Bundler.ui.info "Gem '#{name}' was successfully created. " \
-        "For more information on making a RubyGem visit https://bundler.io/guides/creating_gem.html"
+      Bundler.ui.info "\nGem '#{name}' was successfully created. " \
+        "For more information on making a RubyGem visit https://guides.rubygems.org/make-your-own-gem/"
     end
 
     private
 
     def resolve_name(name)
-      SharedHelpers.pwd.join(name).basename.to_s
+      Pathname.new(SharedHelpers.pwd).join(name).basename.to_s
     end
 
-    def ask_and_set(key, header, message)
+    def ask_and_set(key, prompt, explanation)
       choice = options[key]
       choice = Bundler.settings["gem.#{key}"] if choice.nil?
 
       if choice.nil?
-        Bundler.ui.confirm header
-        choice = Bundler.ui.yes? "#{message} y/(n):"
+        Bundler.ui.info "\n#{explanation}"
+        choice = Bundler.ui.yes? "#{prompt} y/(n):"
         Bundler.settings.set_global("gem.#{key}", choice)
       end
 
@@ -282,7 +316,7 @@ module Bundler
       test_framework = options[:test] || Bundler.settings["gem.test"]
 
       if test_framework.to_s.empty?
-        Bundler.ui.confirm "Do you want to generate tests with your gem?"
+        Bundler.ui.info "\nDo you want to generate tests with your gem?"
         Bundler.ui.info hint_text("test")
 
         result = Bundler.ui.ask "Enter a test framework. rspec/minitest/test-unit/(none):"
@@ -322,12 +356,11 @@ module Bundler
       ci_template = options[:ci] || Bundler.settings["gem.ci"]
 
       if ci_template.to_s.empty?
-        Bundler.ui.confirm "Do you want to set up continuous integration for your gem? " \
+        Bundler.ui.info "\nDo you want to set up continuous integration for your gem? " \
           "Supported services:\n" \
           "* CircleCI:       https://circleci.com/\n" \
           "* GitHub Actions: https://github.com/features/actions\n" \
-          "* GitLab CI:      https://docs.gitlab.com/ee/ci/\n" \
-          "\n"
+          "* GitLab CI:      https://docs.gitlab.com/ee/ci/\n"
         Bundler.ui.info hint_text("ci")
 
         result = Bundler.ui.ask "Enter a CI service. github/gitlab/circle/(none):"
@@ -352,14 +385,12 @@ module Bundler
     def ask_and_set_linter
       return if skip?(:linter)
       linter_template = options[:linter] || Bundler.settings["gem.linter"]
-      linter_template = deprecated_rubocop_option if linter_template.nil?
 
       if linter_template.to_s.empty?
-        Bundler.ui.confirm "Do you want to add a code linter and formatter to your gem? " \
+        Bundler.ui.info "\nDo you want to add a code linter and formatter to your gem? " \
           "Supported Linters:\n" \
           "* RuboCop:       https://rubocop.org\n" \
-          "* Standard:      https://github.com/standardrb/standard\n" \
-          "\n"
+          "* Standard:      https://github.com/standardrb/standard\n"
         Bundler.ui.info hint_text("linter")
 
         result = Bundler.ui.ask "Enter a linter. rubocop/standard/(none):"
@@ -386,27 +417,6 @@ module Bundler
       linter_template
     end
 
-    def deprecated_rubocop_option
-      if !options[:rubocop].nil?
-        if options[:rubocop]
-          Bundler::SharedHelpers.major_deprecation 2,
-            "--rubocop is deprecated, use --linter=rubocop",
-            removed_message: "--rubocop has been removed, use --linter=rubocop"
-          "rubocop"
-        else
-          Bundler::SharedHelpers.major_deprecation 2,
-            "--no-rubocop is deprecated, use --linter",
-            removed_message: "--no-rubocop has been removed, use --linter"
-          false
-        end
-      elsif !Bundler.settings["gem.rubocop"].nil?
-        Bundler::SharedHelpers.major_deprecation 2,
-          "config gem.rubocop is deprecated; we've updated your config to use gem.linter instead",
-          removed_message: "config gem.rubocop has been removed; we've updated your config to use gem.linter instead"
-        Bundler.settings["gem.rubocop"] ? "rubocop" : false
-      end
-    end
-
     def bundler_dependency_version
       v = Gem::Version.new(Bundler::VERSION)
       req = v.segments[0..1]
@@ -418,6 +428,10 @@ module Bundler
       if /^\d/.match?(name)
         Bundler.ui.error "Invalid gem name #{name} Please give a name which does not start with numbers."
         exit 1
+      end
+
+      if /[A-Z]/.match?(name)
+        Bundler.ui.warn "Gem names with capital letters are not recommended. Please use only lowercase letters, numbers, and hyphens."
       end
 
       constant_name = constant_array.join("::")
@@ -446,21 +460,16 @@ module Bundler
     end
 
     def required_ruby_version
-      "3.1.0"
+      "3.2.0"
     end
 
-    def rubocop_version
-      "1.21"
-    end
-
-    def standard_version
-      "1.3"
-    end
-
-    def validate_rust_builder_rubygems_version
-      if Gem::Version.new(rust_builder_required_rubygems_version) > Gem.rubygems_version
-        Bundler.ui.error "Your RubyGems version (#{Gem.rubygems_version}) is too old to build Rust extension. Please update your RubyGems using `gem update --system` or any other way and try again."
-        exit 1
+    def github_username(git_username)
+      if options[:github_username].nil?
+        git_username
+      elsif options[:github_username] == false
+        ""
+      else
+        options[:github_username]
       end
     end
   end

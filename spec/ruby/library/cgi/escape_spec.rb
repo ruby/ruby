@@ -1,5 +1,9 @@
 require_relative '../../spec_helper'
-require 'cgi'
+begin
+  require 'cgi/escape'
+rescue LoadError
+  require 'cgi'
+end
 
 describe "CGI.escape" do
   it "url-encodes the passed argument" do

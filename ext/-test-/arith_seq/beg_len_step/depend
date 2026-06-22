@@ -127,6 +127,7 @@ beg_len_step.o: $(hdrdir)/ruby/internal/intern/re.h
 beg_len_step.o: $(hdrdir)/ruby/internal/intern/ruby.h
 beg_len_step.o: $(hdrdir)/ruby/internal/intern/select.h
 beg_len_step.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+beg_len_step.o: $(hdrdir)/ruby/internal/intern/set.h
 beg_len_step.o: $(hdrdir)/ruby/internal/intern/signal.h
 beg_len_step.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 beg_len_step.o: $(hdrdir)/ruby/internal/intern/string.h

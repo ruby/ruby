@@ -128,6 +128,7 @@ foreach.o: $(hdrdir)/ruby/internal/intern/re.h
 foreach.o: $(hdrdir)/ruby/internal/intern/ruby.h
 foreach.o: $(hdrdir)/ruby/internal/intern/select.h
 foreach.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+foreach.o: $(hdrdir)/ruby/internal/intern/set.h
 foreach.o: $(hdrdir)/ruby/internal/intern/signal.h
 foreach.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 foreach.o: $(hdrdir)/ruby/internal/intern/string.h

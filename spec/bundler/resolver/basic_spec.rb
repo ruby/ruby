@@ -238,7 +238,7 @@ RSpec.describe "Resolving" do
     it "resolves foo only to latest patch - changing dependency declared case" do
       # bar is locked AND a declared dependency in the Gemfile, so it will not move, and therefore
       # foo can only move up to 1.4.4.
-      @base << Bundler::LazySpecification.new("bar", Gem::Version.new("2.0.3"), nil)
+      @base = Bundler::SpecSet.new([Bundler::LazySpecification.new("bar", Gem::Version.new("2.0.3"), nil)])
       should_conservative_resolve_and_include :patch, ["foo"], %w[foo-1.4.4 bar-2.0.3]
     end
 

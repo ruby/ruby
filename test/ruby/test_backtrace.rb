@@ -191,6 +191,16 @@ class TestBacktrace < Test::Unit::TestCase
     assert_equal(cl.map(&:to_s), ary.map(&:to_s))
   end
 
+  def test_each_caller_location_single_cfunc_frame
+    assert_normal_exit <<~'RUBY'
+      tap { Thread.each_caller_location(1, 1) { |loc| loc.label } }
+    RUBY
+
+    cl = nil; ary = []
+    tap { cl = caller_locations(1, 1); Thread.each_caller_location(1, 1) { |x| ary << x } }
+    assert_equal(cl.map(&:to_s), ary.map(&:to_s))
+  end
+
   def test_caller_locations_first_label
     def self.label
       caller_locations.first.label
@@ -453,5 +463,17 @@ class TestBacktrace < Test::Unit::TestCase
     def (foo::Bar).baz = raise
     foo::Bar.baz
     end;
+  end
+
+  def test_backtrace_internal_frame
+    backtrace = tap { break caller_locations(0) }
+    assert_equal(__FILE__, backtrace[1].path) # not "<internal:kernel>"
+    assert_equal("Kernel#tap", backtrace[1].label)
+  end
+
+  def test_backtrace_on_argument_error
+    lineno = __LINE__; [1, 2].inject(:tap)
+  rescue ArgumentError
+    assert_equal("#{ __FILE__ }:#{ lineno }:in 'Kernel#tap'", $!.backtrace[0].to_s)
   end
 end

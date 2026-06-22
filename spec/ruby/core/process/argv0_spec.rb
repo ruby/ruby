@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 describe "Process.argv0" do
   it "returns a String" do
-    Process.argv0.should be_kind_of(String)
+    Process.argv0.should.is_a?(String)
   end
 
   it "is the path given as the main script and the same as __FILE__" do
@@ -13,10 +13,8 @@ describe "Process.argv0" do
     end
   end
 
-  ruby_bug "#19597", ""..."3.3" do
-    it "returns a frozen object" do
-      Process.argv0.should.frozen?
-    end
+  it "returns a frozen object" do
+    Process.argv0.should.frozen?
   end
 
   it "returns every time the same object" do

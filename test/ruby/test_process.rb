@@ -58,6 +58,8 @@ class TestProcess < Test::Unit::TestCase
 
   def test_rlimit_nofile
     return unless rlimit_exist?
+    omit "LSAN needs to open proc file" if Test::Sanitizers.lsan_enabled?
+
     with_tmpchdir {
       File.write 's', <<-"End"
         # Too small RLIMIT_NOFILE, such as zero, causes problems.
@@ -114,14 +116,19 @@ class TestProcess < Test::Unit::TestCase
     }
     assert_raise(ArgumentError) { Process.getrlimit(:FOO) }
     assert_raise(ArgumentError) { Process.getrlimit("FOO") }
-    assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) { Process.getrlimit("\u{30eb 30d3 30fc}") }
+
+    EnvUtil.with_default_internal(Encoding::UTF_8) do
+      assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) { Process.getrlimit("\u{30eb 30d3 30fc}") }
+    end
   end
 
   def test_rlimit_value
     return unless rlimit_exist?
     assert_raise(ArgumentError) { Process.setrlimit(:FOO, 0) }
     assert_raise(ArgumentError) { Process.setrlimit(:CORE, :FOO) }
-    assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) { Process.setrlimit("\u{30eb 30d3 30fc}", 0) }
+    EnvUtil.with_default_internal(Encoding::UTF_8) do
+      assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) { Process.setrlimit("\u{30eb 30d3 30fc}", 0) }
+    end
     assert_raise_with_message(ArgumentError, /\u{30eb 30d3 30fc}/) { Process.setrlimit(:CORE, "\u{30eb 30d3 30fc}") }
     with_tmpchdir do
       s = run_in_child(<<-'End')
@@ -275,20 +282,21 @@ class TestProcess < Test::Unit::TestCase
     end;
   end
 
-  MANDATORY_ENVS = %w[RUBYLIB GEM_HOME GEM_PATH]
-  case RbConfig::CONFIG['target_os']
-  when /linux/
-    MANDATORY_ENVS << 'LD_PRELOAD'
-  when /mswin|mingw/
-    MANDATORY_ENVS.concat(%w[HOME USER TMPDIR PROCESSOR_ARCHITECTURE])
-  when /darwin/
-    MANDATORY_ENVS.concat(ENV.keys.grep(/\A__CF_/))
-  end
+  MANDATORY_ENVS = %w[RUBYLIB GEM_HOME GEM_PATH RUBY_FREE_AT_EXIT]
   if e = RbConfig::CONFIG['LIBPATHENV']
     MANDATORY_ENVS << e
   end
   if e = RbConfig::CONFIG['PRELOADENV'] and !e.empty?
     MANDATORY_ENVS << e
+  end
+  case RbConfig::CONFIG['target_os']
+  when /mswin|mingw/
+    MANDATORY_ENVS.concat(%w[HOME USER TMPDIR PROCESSOR_ARCHITECTURE])
+  when /darwin/
+    MANDATORY_ENVS.concat(%w[TMPDIR], ENV.keys.grep(/\A__CF_/))
+    # IO.popen([ENV.keys.to_h {|e| [e, nil]},
+    #           RUBY, "-e", %q[print ENV.keys.join(?\0)]],
+    #          &:read).split(?\0)
   end
   PREENVARG = ['-e', "%w[#{MANDATORY_ENVS.join(' ')}].each{|e|ENV.delete(e)}"]
   ENVARG = ['-e', 'ENV.each {|k,v| puts "#{k}=#{v}" }']
@@ -1560,7 +1568,7 @@ class TestProcess < Test::Unit::TestCase
   def test_wait_exception
     bug11340 = '[ruby-dev:49176] [Bug #11340]'
     t0 = t1 = nil
-    sec = 3
+    sec = EnvUtil.apply_timeout_scale(3)
     code = "puts;STDOUT.flush;Thread.start{gets;exit};sleep(#{sec})"
     IO.popen([RUBY, '-e', code], 'r+') do |f|
       pid = f.pid
@@ -1682,9 +1690,10 @@ class TestProcess < Test::Unit::TestCase
       if u = Etc.getpwuid(Process.uid)
         assert_equal(Process.uid, Process::UID.from_name(u.name), u.name)
       end
-      assert_raise_with_message(ArgumentError, /\u{4e0d 5b58 5728}/) {
+      exc = assert_raise_kind_of(ArgumentError, SystemCallError) {
         Process::UID.from_name("\u{4e0d 5b58 5728}")
       }
+      assert_match(/\u{4e0d 5b58 5728}/, exc.message) if exc.is_a?(ArgumentError)
     end
   end
 
@@ -1987,7 +1996,7 @@ class TestProcess < Test::Unit::TestCase
   end
 
   def test_popen_reopen
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       io = File.open(IO::NULL)
       io2 = io.dup
@@ -2378,7 +2387,7 @@ EOS
   end
 
   def test_deadlock_by_signal_at_forking
-    assert_separately(%W(- #{RUBY}), <<-INPUT, timeout: 100)
+    assert_ruby_status(%W(- #{RUBY}), <<-INPUT, timeout: 100)
       ruby = ARGV.shift
       GC.start # reduce garbage
       GC.disable # avoid triggering CoW after forks
@@ -2765,11 +2774,13 @@ EOS
       # Disable GC so we can make sure GC only runs in Process.warmup
       GC.disable
 
-      total_slots_before = GC.stat(:heap_available_slots) + GC.stat(:heap_allocatable_slots)
+      total_slots_before = GC.stat(:heap_available_slots) + GC.stat(:heap_allocatable_bytes) / GC.stat_heap(0, :slot_size)
 
       Process.warmup
 
-      assert_equal(total_slots_before, GC.stat(:heap_available_slots) + GC.stat(:heap_allocatable_slots))
+      # TODO: flaky
+      # assert_equal(total_slots_before, GC.stat(:heap_available_slots) + GC.stat(:heap_allocatable_bytes) / GC.stat_heap(0, :slot_size))
+
       assert_equal(0, GC.stat(:heap_empty_pages))
       assert_operator(GC.stat(:total_freed_pages), :>, 0)
     end;

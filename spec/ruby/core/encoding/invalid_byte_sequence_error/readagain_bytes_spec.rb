@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 require_relative "../../../spec_helper"
 require_relative '../fixtures/classes'
 
@@ -9,8 +9,8 @@ describe "Encoding::InvalidByteSequenceError#readagain_bytes" do
   end
 
   it "returns a String" do
-    @exception.readagain_bytes.should be_an_instance_of(String)
-    @exception2.readagain_bytes.should be_an_instance_of(String)
+    @exception.readagain_bytes.should.instance_of?(String)
+    @exception2.readagain_bytes.should.instance_of?(String)
   end
 
   it "returns the bytes to be read again" do

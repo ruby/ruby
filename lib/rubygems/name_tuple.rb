@@ -6,7 +6,7 @@
 # wrap the data returned from the indexes.
 
 class Gem::NameTuple
-  def initialize(name, version, platform=Gem::Platform::RUBY)
+  def initialize(name, version, platform = Gem::Platform::RUBY)
     @name = name
     @version = version
 
@@ -79,6 +79,12 @@ class Gem::NameTuple
 
   def to_a
     [@name, @version, @platform]
+  end
+
+  alias_method :deconstruct, :to_a
+
+  def deconstruct_keys(keys)
+    { name: @name, version: @version, platform: @platform }
   end
 
   def inspect # :nodoc:

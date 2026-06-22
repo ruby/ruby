@@ -19,16 +19,13 @@ class Gem::Net::HTTPGenericRequest
 
     if Gem::URI === uri_or_path then
       raise ArgumentError, "not an HTTP Gem::URI" unless Gem::URI::HTTP === uri_or_path
-      hostname = uri_or_path.hostname
+      hostname = uri_or_path.host
       raise ArgumentError, "no host component for Gem::URI" unless (hostname && hostname.length > 0)
       @uri = uri_or_path.dup
-      host = @uri.hostname.dup
-      host << ":" << @uri.port.to_s if @uri.port != @uri.default_port
       @path = uri_or_path.request_uri
       raise ArgumentError, "no HTTP request path given" unless @path
     else
       @uri = nil
-      host = nil
       raise ArgumentError, "no HTTP request path given" unless uri_or_path
       raise ArgumentError, "HTTP request path is empty" if uri_or_path.empty?
       @path = uri_or_path.dup
@@ -51,7 +48,7 @@ class Gem::Net::HTTPGenericRequest
     initialize_http_header initheader
     self['Accept'] ||= '*/*'
     self['User-Agent'] ||= 'Ruby'
-    self['Host'] ||= host if host
+    self['Host'] ||= @uri.authority if @uri
     @body = nil
     @body_stream = nil
     @body_data = nil
@@ -100,6 +97,31 @@ class Gem::Net::HTTPGenericRequest
   #
   def inspect
     "\#<#{self.class} #{@method}>"
+  end
+
+  # Returns a string representation of the request with the details for pp:
+  #
+  #   require 'pp'
+  #   post = Gem::Net::HTTP::Post.new(uri)
+  #   post.inspect # => "#<Gem::Net::HTTP::Post POST>"
+  #   post.pretty_inspect
+  #   # => #<Gem::Net::HTTP::Post
+  #         POST
+  #         path="/"
+  #         headers={"accept-encoding" => ["gzip;q=1.0,deflate;q=0.6,identity;q=0.3"],
+  #          "accept" => ["*/*"],
+  #          "user-agent" => ["Ruby"],
+  #          "host" => ["www.ruby-lang.org"]}>
+  #
+  def pretty_print(q)
+    q.object_group(self) {
+      q.breakable
+      q.text @method
+      q.breakable
+      q.text "path="; q.pp @path
+      q.breakable
+      q.text "headers="; q.pp to_hash
+    }
   end
 
   ##
@@ -220,7 +242,7 @@ class Gem::Net::HTTPGenericRequest
     end
 
     if host = self['host']
-      host.sub!(/:.*/m, '')
+      host = Gem::URI.parse("//#{host}").host # Remove a port component from the existing Host header
     elsif host = @uri.host
     else
      host = addr
@@ -238,6 +260,8 @@ class Gem::Net::HTTPGenericRequest
   end
 
   private
+
+  # :stopdoc:
 
   class Chunker #:nodoc:
     def initialize(sock)
@@ -260,7 +284,6 @@ class Gem::Net::HTTPGenericRequest
   def send_request_with_body(sock, ver, path, body)
     self.content_length = body.bytesize
     delete 'Transfer-Encoding'
-    supply_default_content_type
     write_header sock, ver, path
     wait_for_continue sock, ver if sock.continue_timeout
     sock.write body
@@ -271,7 +294,6 @@ class Gem::Net::HTTPGenericRequest
       raise ArgumentError,
           "Content-Length not given and Transfer-Encoding is not `chunked'"
     end
-    supply_default_content_type
     write_header sock, ver, path
     wait_for_continue sock, ver if sock.continue_timeout
     if chunked?
@@ -373,12 +395,6 @@ class Gem::Net::HTTPGenericRequest
     buf.clear
   end
 
-  def supply_default_content_type
-    return if content_type()
-    warn 'net/http: Content-Type did not set; using application/x-www-form-urlencoded', uplevel: 1 if $VERBOSE
-    set_content_type 'application/x-www-form-urlencoded'
-  end
-
   ##
   # Waits up to the continue timeout for a response from the server provided
   # we're speaking HTTP 1.1 and are expecting a 100-continue response.
@@ -411,4 +427,3 @@ class Gem::Net::HTTPGenericRequest
   end
 
 end
-

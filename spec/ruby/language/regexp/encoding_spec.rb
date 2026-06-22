@@ -1,4 +1,4 @@
-# -*- encoding: binary -*-
+# encoding: binary
 require_relative '../../spec_helper'
 require_relative '../fixtures/classes'
 
@@ -39,7 +39,11 @@ describe "Regexps with encoding modifiers" do
   end
 
   it "warns when using /n with a match string with non-ASCII characters and an encoding other than ASCII-8BIT" do
-    -> { /./n.match("\303\251".dup.force_encoding('utf-8')) }.should complain(%r{historical binary regexp match /.../n against UTF-8 string})
+    -> {
+      eval <<~RUBY
+      /./n.match("\303\251".dup.force_encoding('utf-8'))
+      RUBY
+    }.should complain(%r{historical binary regexp match /.../n against UTF-8 string})
   end
 
   it 'uses US-ASCII as /n encoding if all chars are 7-bit' do
@@ -110,28 +114,28 @@ describe "Regexps with encoding modifiers" do
   end
 
   it "raises Encoding::CompatibilityError when trying match against different encodings" do
-    -> { /\A[[:space:]]*\z/.match(" ".encode("UTF-16LE")) }.should raise_error(Encoding::CompatibilityError)
+    -> { /\A[[:space:]]*\z/.match(" ".encode("UTF-16LE")) }.should.raise(Encoding::CompatibilityError)
   end
 
   it "raises Encoding::CompatibilityError when trying match? against different encodings" do
-    -> { /\A[[:space:]]*\z/.match?(" ".encode("UTF-16LE")) }.should raise_error(Encoding::CompatibilityError)
+    -> { /\A[[:space:]]*\z/.match?(" ".encode("UTF-16LE")) }.should.raise(Encoding::CompatibilityError)
   end
 
   it "raises Encoding::CompatibilityError when trying =~ against different encodings" do
-    -> { /\A[[:space:]]*\z/ =~ " ".encode("UTF-16LE") }.should raise_error(Encoding::CompatibilityError)
+    -> { /\A[[:space:]]*\z/ =~ " ".encode("UTF-16LE") }.should.raise(Encoding::CompatibilityError)
   end
 
   it "raises Encoding::CompatibilityError when the regexp has a fixed, non-ASCII-compatible encoding" do
-    -> { Regexp.new("".dup.force_encoding("UTF-16LE"), Regexp::FIXEDENCODING) =~ " ".encode("UTF-8") }.should raise_error(Encoding::CompatibilityError)
+    -> { Regexp.new("".dup.force_encoding("UTF-16LE"), Regexp::FIXEDENCODING) =~ " ".encode("UTF-8") }.should.raise(Encoding::CompatibilityError)
   end
 
   it "raises Encoding::CompatibilityError when the regexp has a fixed encoding and the match string has non-ASCII characters" do
-    -> { Regexp.new("".dup.force_encoding("US-ASCII"), Regexp::FIXEDENCODING) =~ "\303\251".dup.force_encoding('UTF-8') }.should raise_error(Encoding::CompatibilityError)
+    -> { Regexp.new("".dup.force_encoding("US-ASCII"), Regexp::FIXEDENCODING) =~ "\303\251".dup.force_encoding('UTF-8') }.should.raise(Encoding::CompatibilityError)
   end
 
   it "raises ArgumentError when trying to match a broken String" do
     s = "\x80".dup.force_encoding('UTF-8')
-    -> { s =~ /./ }.should raise_error(ArgumentError, "invalid byte sequence in UTF-8")
+    -> { s =~ /./ }.should.raise(ArgumentError, "invalid byte sequence in UTF-8")
   end
 
   it "computes the Regexp Encoding for each interpolated Regexp instance" do

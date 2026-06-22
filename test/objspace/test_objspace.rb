@@ -33,7 +33,7 @@ class TestObjSpace < Test::Unit::TestCase
     b = a.dup
     c = nil
     ObjectSpace.each_object(String) {|x| break c = x if a == x and x.frozen?}
-    rv_size = GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]
+    rv_size = Integer(ObjectSpace.dump(a)[/"slot_size":(\d+)/, 1])
     assert_equal([rv_size, rv_size, a.length + 1 + rv_size], [a, b, c].map {|x| ObjectSpace.memsize_of(x)})
   end
 
@@ -54,7 +54,11 @@ class TestObjSpace < Test::Unit::TestCase
     assert_operator(a, :>, b)
     assert_operator(a, :>, 0)
     assert_operator(b, :>, 0)
-    assert_raise(TypeError) {ObjectSpace.memsize_of_all('error')}
+    assert_kind_of(Integer, ObjectSpace.memsize_of_all(Enumerable))
+  end
+
+  def test_memsize_of_all_with_wrong_type
+    assert_raise(TypeError) { ObjectSpace.memsize_of_all(Object.new) }
   end
 
   def test_count_objects_size
@@ -75,16 +79,6 @@ class TestObjSpace < Test::Unit::TestCase
   def test_count_objects_size_with_wrong_type
     assert_raise(TypeError) { ObjectSpace.count_objects_size(0) }
   end
-
-  def test_count_nodes
-    res = ObjectSpace.count_nodes
-    assert_not_empty(res)
-    arg = {}
-    ObjectSpace.count_nodes(arg)
-    assert_not_empty(arg)
-    bug8014 = '[ruby-core:53130] [Bug #8014]'
-    assert_empty(arg.select {|k, v| !(Symbol === k && Integer === v)}, bug8014)
-  end if false
 
   def test_count_tdata_objects
     res = ObjectSpace.count_tdata_objects
@@ -143,7 +137,7 @@ class TestObjSpace < Test::Unit::TestCase
   def test_reachable_objects_during_iteration
     omit 'flaky on Visual Studio with: [BUG] Unnormalized Fixnum value' if /mswin/ =~ RUBY_PLATFORM
     opts = %w[--disable-gem --disable=frozen-string-literal -robjspace]
-    assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
+    assert_ruby_status opts, "#{<<-"begin;"}\n#{<<-'end;'}"
     begin;
       ObjectSpace.each_object{|o|
         o.inspect
@@ -179,7 +173,7 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_trace_object_allocations_stop_first
-    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    assert_ruby_status([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       require "objspace"
       # Make sure stopping before the tracepoints are initialized doesn't raise. See [Bug #17020]
@@ -203,8 +197,9 @@ class TestObjSpace < Test::Unit::TestCase
       assert_equal(line1,    ObjectSpace.allocation_sourceline(o1))
       assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(o1))
       assert_equal(c1,       ObjectSpace.allocation_generation(o1))
-      assert_equal(Class.name, ObjectSpace.allocation_class_path(o1))
-      assert_equal(:new,       ObjectSpace.allocation_method_id(o1))
+      # These assertions fail under coverage measurement: https://bugs.ruby-lang.org/issues/21298
+      #assert_equal(self.class.name, ObjectSpace.allocation_class_path(o1))
+      #assert_equal(__method__,       ObjectSpace.allocation_method_id(o1))
 
       assert_equal(__FILE__, ObjectSpace.allocation_sourcefile(o2))
       assert_equal(line2,    ObjectSpace.allocation_sourceline(o2))
@@ -287,6 +282,33 @@ class TestObjSpace < Test::Unit::TestCase
     assert true # success
   end
 
+  def test_trace_object_allocations_with_other_tracepoint
+    # Test that ObjectSpace.trace_object_allocations isn't changed by changes
+    # to another tracepoint
+    line_tp = TracePoint.new(:line) { }
+
+    ObjectSpace.trace_object_allocations_start
+
+    obj1 = Object.new; line1 = __LINE__
+    assert_equal __FILE__, ObjectSpace.allocation_sourcefile(obj1)
+    assert_equal line1, ObjectSpace.allocation_sourceline(obj1)
+
+    line_tp.enable
+
+    obj2 = Object.new; line2 = __LINE__
+    assert_equal __FILE__, ObjectSpace.allocation_sourcefile(obj2)
+    assert_equal line2, ObjectSpace.allocation_sourceline(obj2)
+
+    line_tp.disable
+
+    obj3 = Object.new; line3 = __LINE__
+    assert_equal __FILE__, ObjectSpace.allocation_sourcefile(obj3)
+    assert_equal line3, ObjectSpace.allocation_sourceline(obj3)
+  ensure
+    ObjectSpace.trace_object_allocations_stop
+    ObjectSpace.trace_object_allocations_clear
+  end
+
   def test_trace_object_allocations_compaction
     omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
 
@@ -308,7 +330,7 @@ class TestObjSpace < Test::Unit::TestCase
   def test_trace_object_allocations_compaction_freed_pages
     omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
 
-    assert_normal_exit(<<~RUBY)
+    assert_normal_exit(<<~RUBY, timeout: 60)
       require "objspace"
 
       objs = []
@@ -325,6 +347,21 @@ class TestObjSpace < Test::Unit::TestCase
 
       # Run compaction and check that it doesn't crash
       GC.compact
+    RUBY
+  end
+
+  def test_trace_object_allocations_does_not_reuse_freed_allocation_info
+    assert_separately(%w(-robjspace), <<~RUBY, timeout: 60)
+      ObjectSpace.trace_object_allocations do
+        100_000.times.map { Object.new }
+      end
+
+      GC.start
+
+      objs = 100_000.times.map { Object.new }
+
+      leaked = objs.count { |obj| ObjectSpace.allocation_sourcefile(obj) }
+      assert_equal 0, leaked
     RUBY
   end
 
@@ -354,7 +391,7 @@ class TestObjSpace < Test::Unit::TestCase
   if defined?(RubyVM::Shape)
     class TooComplex; end
 
-    def test_dump_too_complex_shape
+    def test_dump_complex_shape
       omit "flaky test"
 
       RubyVM::Shape::SHAPE_MAX_VARIATIONS.times do
@@ -363,26 +400,26 @@ class TestObjSpace < Test::Unit::TestCase
 
       tc = TooComplex.new
       info = ObjectSpace.dump(tc)
-      assert_not_match(/"too_complex_shape"/, info)
+      assert_not_match(/"complex_shape"/, info)
       tc.instance_variable_set(:@new_ivar, 1)
       info = ObjectSpace.dump(tc)
-      assert_match(/"too_complex_shape":true/, info)
+      assert_match(/"complex_shape":true/, info)
       if defined?(JSON)
-        assert_true(JSON.parse(info)["too_complex_shape"])
+        assert_true(JSON.parse(info)["complex_shape"])
       end
     end
   end
 
   class NotTooComplex ; end
 
-  def test_dump_not_too_complex_shape
+  def test_dump_not_complex_shape
     tc = NotTooComplex.new
     tc.instance_variable_set(:@new_ivar, 1)
     info = ObjectSpace.dump(tc)
 
-    assert_not_match(/"too_complex_shape"/, info)
+    assert_not_match(/"complex_shape"/, info)
     if defined?(JSON)
-      assert_nil(JSON.parse(info)["too_complex_shape"])
+      assert_nil(JSON.parse(info)["complex_shape"])
     end
   end
 
@@ -451,12 +488,12 @@ class TestObjSpace < Test::Unit::TestCase
     assert_include(info, '"embedded":true')
     assert_include(info, '"ivars":0')
 
-    # Non-embed object
+    # Non-embed object (needs > 6 ivars to exceed pool 0 embed capacity)
     obj = klass.new
-    5.times { |i| obj.instance_variable_set("@ivar#{i}", 0) }
+    7.times { |i| obj.instance_variable_set("@ivar#{i}", 0) }
     info = ObjectSpace.dump(obj)
     assert_not_include(info, '"embedded":true')
-    assert_include(info, '"ivars":5')
+    assert_include(info, '"ivars":7')
   end
 
   def test_dump_control_char
@@ -626,7 +663,8 @@ class TestObjSpace < Test::Unit::TestCase
         next if obj["type"] == "SHAPE"
 
         assert_not_nil obj["slot_size"]
-        assert_equal 0, obj["slot_size"] % (GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] + GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD])
+        slot_sizes = GC::INTERNAL_CONSTANTS[:HEAP_COUNT].times.map { |i| GC.stat_heap(i, :slot_size) }
+        assert_include slot_sizes, obj["slot_size"]
       }
     end
   end
@@ -681,10 +719,11 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_dump_includes_slot_size
-    str = "TEST"
-    dump = ObjectSpace.dump(str)
+    klass = Class.new
+    obj = klass.new
+    dump = ObjectSpace.dump(obj)
 
-    assert_includes dump, "\"slot_size\":#{GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]}"
+    assert_includes dump, "\"slot_size\":#{GC.stat_heap(0, :slot_size) - GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]}"
   end
 
   def test_dump_reference_addresses_match_dump_all_addresses
@@ -797,6 +836,27 @@ class TestObjSpace < Test::Unit::TestCase
         end
       end;
     end
+  end
+
+  def test_dump_all_with_ractors
+    assert_ractor("#{<<-"begin;"}#{<<-'end;'}")
+    begin;
+      require "objspace"
+      require "tempfile"
+      require "json"
+      rs = 4.times.map do
+        Ractor.new do
+          Tempfile.create do |f|
+            ObjectSpace.dump_all(output: f)
+            f.close
+            File.foreach(f.path) do |line|
+              JSON.parse(line)
+            end
+          end
+        end
+      end
+      rs.each(&:join)
+    end;
   end
 
   def test_dump_uninitialized_file
@@ -975,6 +1035,27 @@ class TestObjSpace < Test::Unit::TestCase
     class_name = '" little boby table [Bug #20892]'
     json = ObjectSpace.dump(Class.new.tap { |c| c.set_temporary_name(class_name) })
     assert_equal class_name, JSON.parse(json)["name"]
+  end
+
+  def test_dump_free_immediately
+    require '-test-/typeddata'
+
+    # Bug::TypedData has flags=0 (no FREE_IMMEDIATELY)
+    info = ObjectSpace.dump(Bug::TypedData.new)
+    assert_include(info, '"struct":"typed_data"')
+    assert_include(info, '"free_immediately":false')
+
+    # Most typed data objects have FREE_IMMEDIATELY, so the field should be absent
+    info = ObjectSpace.dump(Thread.current.group)
+    assert_include(info, '"struct":"thgroup"')
+    assert_not_include(info, '"free_immediately"')
+  end
+
+  def test_dump_include_shareable
+    omit 'Not provided by mmtk' if RUBY_DESCRIPTION.include?("+GC[mmtk]")
+
+    assert_include(ObjectSpace.dump(ENV), '"shareable":true')
+    assert_not_include(ObjectSpace.dump([]), '"shareable":true')
   end
 
   def test_utf8_method_names

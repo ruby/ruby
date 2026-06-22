@@ -19,6 +19,7 @@ require_relative '../envutil'
 require_relative '../colorize'
 require_relative '../leakchecker'
 require_relative '../test/unit/testcase'
+require_relative '../test/jobserver'
 require 'optparse'
 
 # See Test::Unit
@@ -262,27 +263,8 @@ module Test
 
       def non_options(files, options)
         @jobserver = nil
-        makeflags = ENV.delete("MAKEFLAGS")
-        if !options[:parallel] and
-          /(?:\A|\s)--jobserver-(?:auth|fds)=(?:(\d+),(\d+)|fifo:((?:\\.|\S)+))/ =~ makeflags
-          begin
-            if fifo = $3
-              fifo.gsub!(/\\(?=.)/, '')
-              r = File.open(fifo, IO::RDONLY|IO::NONBLOCK|IO::BINARY)
-              w = File.open(fifo, IO::WRONLY|IO::NONBLOCK|IO::BINARY)
-            else
-              r = IO.for_fd($1.to_i(10), "rb", autoclose: false)
-              w = IO.for_fd($2.to_i(10), "wb", autoclose: false)
-            end
-          rescue
-            r.close if r
-            nil
-          else
-            r.close_on_exec = true
-            w.close_on_exec = true
-            @jobserver = [r, w]
-            options[:parallel] ||= 256 # number of tokens to acquire first
-          end
+        if !options[:parallel] and @jobserver = Test::JobServer.connect(ENV.delete("MAKEFLAGS"))
+          options[:parallel] ||= 256 # number of tokens to acquire first
         end
         @worker_timeout = EnvUtil.apply_timeout_scale(options[:worker_timeout] || 1200)
         super
@@ -421,6 +403,7 @@ module Test
         end
 
         def kill
+          EnvUtil::Debugger.search&.dump(@pid)
           signal = RUBY_PLATFORM =~ /mswin|mingw/ ? :KILL : :SEGV
           Process.kill(signal, @pid)
           warn "worker #{to_s} does not respond; #{signal} is sent"
@@ -477,10 +460,15 @@ module Test
         real_file = worker.real_file and warn "running file: #{real_file}"
         @need_quit = true
         warn ""
-        warn "A test worker crashed. It might be an interpreter bug or"
-        warn "a bug in test/unit/parallel.rb. Try again without the -j"
-        warn "option."
+        warn "A test worker crashed. It might be a bug in the"
+        warn "Ruby runtime or a bug in  test/unit/parallel.rb."
+        warn "You may want to try again without the -j option."
         warn ""
+        if ENV["RUBY_CRASH_REPORT"]
+          warn "hint: RUBY_CRASH_REPORT is set and may have produced additional information."
+          warn "      Crash logs might be collapsed under a different fold on CI." if "true" == ENV["GITHUB_ACTIONS"]
+          warn ""
+        end
         if File.exist?('core')
           require 'fileutils'
           require 'time'
@@ -1298,10 +1286,15 @@ module Test
         parser.on '--repeat-count=NUM', "Number of times to repeat", Integer do |n|
           options[:repeat_count] = n
         end
+        options[:keep_repeating] = false
+        parser.on '--[no-]keep-repeating', "Keep repeating even failed" do |n|
+          options[:keep_repeating] = true
+        end
       end
 
       def _run_anything(type)
         @repeat_count = @options[:repeat_count]
+        @keep_repeating = @options[:keep_repeating]
         super
       end
     end
@@ -1623,7 +1616,7 @@ module Test
               [(@repeat_count ? "(#{@@current_repeat_count}/#{@repeat_count}) " : ""), type,
                 t, @test_count.fdiv(t), @assertion_count.fdiv(t)]
         end while @repeat_count && @@current_repeat_count < @repeat_count &&
-                  report.empty? && failures.zero? && errors.zero?
+                  (@keep_repeating || report.empty? && failures.zero? && errors.zero?)
 
         output.sync = old_sync if sync
 

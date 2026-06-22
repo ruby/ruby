@@ -1,0 +1,7 @@
+prelude: |
+  # frozen_string_literal: true
+benchmark:
+  two_strings: File.join(__FILE__, "path")
+  many_strings: File.join(__FILE__, "path", "a", "b", "c", "d")
+  array: File.join([__FILE__, "path", "a", "b", "c", "d"])
+  mixed: File.join(__FILE__, "path", "a", "b", ["c", "d"])

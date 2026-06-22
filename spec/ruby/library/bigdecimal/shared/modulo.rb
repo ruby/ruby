@@ -101,25 +101,21 @@ describe :bigdecimal_modulo, shared: true do
     @infinity_minus.send(@method, @infinity).should.nan?
   end
 
-  it "returns the dividend if the divisor is Infinity" do
-    @one.send(@method, @infinity).should == @one
-    @one.send(@method, @infinity_minus).should == @one
-    @frac_2.send(@method, @infinity_minus).should == @frac_2
+  version_is BigDecimal::VERSION, "3.3.0" do
+    it "returns the dividend if the divisor is Infinity and signs are same" do
+      @one.send(@method, @infinity).should == @one
+      (-@frac_2).send(@method, @infinity_minus).should == -@frac_2
+    end
+
+    it "returns the divisor if the divisor is Infinity and signs are different" do
+      (-@one).send(@method, @infinity).should == @infinity
+      @frac_2.send(@method, @infinity_minus).should == @infinity_minus
+    end
   end
 
   it "raises TypeError if the argument cannot be coerced to BigDecimal" do
     -> {
       @one.send(@method, '2')
-    }.should raise_error(TypeError)
-  end
-end
-
-describe :bigdecimal_modulo_zerodivisionerror, shared: true do
-  it "raises ZeroDivisionError if other is zero" do
-    bd5667 = BigDecimal("5667.19")
-
-    -> { bd5667.send(@method, 0) }.should raise_error(ZeroDivisionError)
-    -> { bd5667.send(@method, BigDecimal("0")) }.should raise_error(ZeroDivisionError)
-    -> { @zero.send(@method, @zero) }.should raise_error(ZeroDivisionError)
+    }.should.raise(TypeError)
   end
 end

@@ -1,6 +1,6 @@
 require_relative '../../../spec_helper'
 
-ruby_version_is ""..."3.5" do
+ruby_version_is ""..."4.0" do
 
   describe "Process::Status#&" do
     it "returns a bitwise and of the integer status of an exited child" do
@@ -17,13 +17,13 @@ ruby_version_is ""..."3.5" do
       end
     end
 
-    ruby_version_is "3.3"..."3.5" do
+    ruby_version_is ""..."4.0" do
       it "raises an ArgumentError if mask is negative" do
         suppress_warning do
           ruby_exe("exit(0)")
           -> {
             $? & -1
-          }.should raise_error(ArgumentError, 'negative mask value: -1')
+          }.should.raise(ArgumentError, 'negative mask value: -1')
         end
       end
 

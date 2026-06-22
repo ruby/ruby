@@ -32,6 +32,7 @@ class TestMethod < Test::Unit::TestCase
   def mk7(a, b = nil, *c, d, **o) nil && o end
   def mk8(a, b = nil, *c, d, e:, f: nil, **o) nil && o end
   def mnk(**nil) end
+  def mnb(&nil) end
   def mf(...) end
 
   class Base
@@ -109,6 +110,20 @@ class TestMethod < Test::Unit::TestCase
       remove_method :foo
       def foo() :derived; end
     end
+  end
+
+  def test_unbound_method_equality_with_extended_module
+    m = Module.new { def hello; "hello"; end }
+    base = Class.new { extend m }
+    sub = Class.new(base)
+
+    from_module = m.instance_method(:hello)
+    from_base   = base.method(:hello).unbind
+    from_sub    = sub.method(:hello).unbind
+
+    assert_equal(from_module, from_base)
+    assert_equal(from_module, from_sub)
+    assert_equal(from_base, from_sub)
   end
 
   def test_callee
@@ -284,8 +299,10 @@ class TestMethod < Test::Unit::TestCase
     assert_raise(TypeError) { m.bind(Object.new) }
 
     cx = EnvUtil.labeled_class("X\u{1f431}")
-    assert_raise_with_message(TypeError, /X\u{1f431}/) do
-      o.method(cx)
+    EnvUtil.with_default_internal(Encoding::UTF_8) do
+      assert_raise_with_message(TypeError, /X\u{1f431}/) do
+        o.method(cx)
+      end
     end
   end
 
@@ -315,9 +332,12 @@ class TestMethod < Test::Unit::TestCase
     assert_raise(TypeError) do
       Class.new.class_eval { define_method(:bar, o.method(:bar)) }
     end
+
     cx = EnvUtil.labeled_class("X\u{1f431}")
-    assert_raise_with_message(TypeError, /X\u{1F431}/) do
-      Class.new {define_method(cx) {}}
+    EnvUtil.with_default_internal(Encoding::UTF_8) do
+      assert_raise_with_message(TypeError, /X\u{1F431}/) do
+        Class.new {define_method(cx) {}}
+      end
     end
   end
 
@@ -483,6 +503,20 @@ class TestMethod < Test::Unit::TestCase
     end
   end
 
+  def test_clone_preserves_singleton_methods
+    m = method(:itself)
+    m.define_singleton_method(:foo) { :bar }
+    assert_equal(:bar, m.foo)
+    assert_equal(:bar, m.clone.foo)
+  end
+
+  def test_dup_does_not_preserve_singleton_methods
+    m = method(:itself)
+    m.define_singleton_method(:foo) { :bar }
+    assert_equal(:bar, m.foo)
+    assert_raise(NoMethodError) { m.dup.foo }
+  end
+
   def test_inspect
     o = Object.new
     def o.foo; end; line_no = __LINE__
@@ -598,6 +632,7 @@ class TestMethod < Test::Unit::TestCase
   define_method(:pmk7) {|a, b = nil, *c, d, **o|}
   define_method(:pmk8) {|a, b = nil, *c, d, e:, f: nil, **o|}
   define_method(:pmnk) {|**nil|}
+  define_method(:pmnb) {|&nil|}
 
   def test_bound_parameters
     assert_equal([], method(:m0).parameters)
@@ -621,6 +656,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], method(:mk7).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyreq, :e], [:key, :f], [:keyrest, :o]], method(:mk8).parameters)
     assert_equal([[:nokey]], method(:mnk).parameters)
+    assert_equal([[:noblock]], method(:mnb).parameters)
     # pending
     assert_equal([[:rest, :*], [:keyrest, :**], [:block, :&]], method(:mf).parameters)
   end
@@ -647,6 +683,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], self.class.instance_method(:mk7).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyreq, :e], [:key, :f], [:keyrest, :o]], self.class.instance_method(:mk8).parameters)
     assert_equal([[:nokey]], self.class.instance_method(:mnk).parameters)
+    assert_equal([[:noblock]], self.class.instance_method(:mnb).parameters)
     # pending
     assert_equal([[:rest, :*], [:keyrest, :**], [:block, :&]], self.class.instance_method(:mf).parameters)
   end
@@ -672,6 +709,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], method(:pmk7).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyreq, :e], [:key, :f], [:keyrest, :o]], method(:pmk8).parameters)
     assert_equal([[:nokey]], method(:pmnk).parameters)
+    assert_equal([[:noblock]], method(:pmnb).parameters)
   end
 
   def test_bmethod_unbound_parameters
@@ -696,6 +734,7 @@ class TestMethod < Test::Unit::TestCase
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyrest, :o]], self.class.instance_method(:pmk7).parameters)
     assert_equal([[:req, :a], [:opt, :b], [:rest, :c], [:req, :d], [:keyreq, :e], [:key, :f], [:keyrest, :o]], self.class.instance_method(:pmk8).parameters)
     assert_equal([[:nokey]], self.class.instance_method(:pmnk).parameters)
+    assert_equal([[:noblock]], self.class.instance_method(:pmnb).parameters)
   end
 
   def test_hidden_parameters
@@ -1612,7 +1651,7 @@ class TestMethod < Test::Unit::TestCase
         begin
           foo(1)
         rescue ArgumentError => e
-          assert_equal "main.rb:#{$line_method}:in 'foo'", e.backtrace.first
+          assert_equal "main.rb:#{$line_method}:in 'Object#foo'", e.backtrace.first
         end
       EOS
     END_OF_BODY

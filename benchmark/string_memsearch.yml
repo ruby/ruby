@@ -1,0 +1,75 @@
+prelude: |
+  # Haystacks of various sizes
+  small_hay  = "a" * 256
+  medium_hay = "a" * 4096
+  large_hay  = "a" * 65536
+
+  # Short needles (2-8 bytes) that exercise rb_memsearch_ss
+  needle_2 = "xy"
+  needle_4 = "xyzw"
+  needle_8 = "xyzwabcd"
+
+  # Needle whose first byte is absent from the haystack (memchr fast-path)
+  # vs needle whose first byte is common (rolling hash comparison)
+  first_byte_absent  = "x" + "a" * 3
+  first_byte_common  = "a" + "x" * 3
+
+  # Haystack with match at the end
+  hay_match_end = "a" * 4095 + "xy"
+
+  # Haystack with match at the start
+  hay_match_start = "xy" + "a" * 4094
+
+  # Mixed content haystack (more realistic)
+  mixed_hay = (("abcdefghij" * 100) + "z") * 10
+
+benchmark:
+  # === First byte absent from haystack (biggest win for rolling hash) ===
+  index_first_byte_absent_small: |
+    small_hay.index(first_byte_absent)
+  index_first_byte_absent_medium: |
+    medium_hay.index(first_byte_absent)
+  index_first_byte_absent_large: |
+    large_hay.index(first_byte_absent)
+
+  # === First byte common in haystack (stresses comparison loop) ===
+  index_first_byte_common_small: |
+    small_hay.index(first_byte_common)
+  index_first_byte_common_medium: |
+    medium_hay.index(first_byte_common)
+  index_first_byte_common_large: |
+    large_hay.index(first_byte_common)
+
+  # === Needle length variations (all absent) ===
+  index_needle_2_absent: |
+    medium_hay.index(needle_2)
+  index_needle_4_absent: |
+    medium_hay.index(needle_4)
+  index_needle_8_absent: |
+    medium_hay.index(needle_8)
+
+  # === Match at end of haystack ===
+  index_match_at_end: |
+    hay_match_end.index(needle_2)
+
+  # === Match at start of haystack ===
+  index_match_at_start: |
+    hay_match_start.index(needle_2)
+
+  # === include? (same code path) ===
+  include_first_byte_absent: |
+    medium_hay.include?(first_byte_absent)
+  include_first_byte_common: |
+    medium_hay.include?(first_byte_common)
+
+  # === byteindex ===
+  byteindex_first_byte_absent: |
+    medium_hay.byteindex(first_byte_absent)
+  byteindex_first_byte_common: |
+    medium_hay.byteindex(first_byte_common)
+
+  # === Mixed/realistic haystack ===
+  index_mixed_absent: |
+    mixed_hay.index(needle_4)
+  index_mixed_present: |
+    mixed_hay.index("ijab")

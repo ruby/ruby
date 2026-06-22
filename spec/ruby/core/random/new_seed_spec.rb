@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 describe "Random.new_seed" do
   it "returns an Integer" do
-    Random.new_seed.should be_an_instance_of(Integer)
+    Random.new_seed.should.instance_of?(Integer)
   end
 
   it "returns an arbitrary seed value each time" do

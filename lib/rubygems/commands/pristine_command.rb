@@ -88,6 +88,10 @@ If you have made modifications to an installed gem, the pristine command
 will revert them.  All extensions are rebuilt and all bin stubs for the gem
 are regenerated after checking for modifications.
 
+Rebuilding extensions also refreshes C-extension gems against updated system
+libraries (for example after OS or package upgrades) to avoid mismatches like
+outdated library version warnings.
+
 If the cached gem cannot be found it will be downloaded.
 
 If --no-extensions is provided pristine will not attempt to restore a gem
@@ -128,6 +132,11 @@ extensions will be restored.
     specs = specs.select {|spec| spec.platform == RUBY_ENGINE || Gem::Platform.local === spec.platform || spec.platform == Gem::Platform::RUBY }
 
     if specs.to_a.empty?
+      if options[:only_missing_extensions]
+        say "No gems with missing extensions to restore"
+        return
+      end
+
       raise Gem::Exception,
             "Failed to find gems #{options[:args]} #{options[:version]}"
     end
@@ -137,11 +146,14 @@ extensions will be restored.
     specs.group_by(&:full_name_with_location).values.each do |grouped_specs|
       spec = grouped_specs.find {|s| !s.default_gem? } || grouped_specs.first
 
-      unless only_executables_or_plugins?
+      only_executables = options[:only_executables]
+      only_plugins = options[:only_plugins]
+
+      unless only_executables || only_plugins
         # Default gemspecs include changes provided by ruby-core installer that
         # can't currently be pristined (inclusion of compiled extension targets in
         # the file list). So stick to resetting executables if it's a default gem.
-        options[:only_executables] = true if spec.default_gem?
+        only_executables = true if spec.default_gem?
       end
 
       if options.key? :skip
@@ -151,14 +163,14 @@ extensions will be restored.
         end
       end
 
-      unless spec.extensions.empty? || options[:extensions] || only_executables_or_plugins?
+      unless spec.extensions.empty? || options[:extensions] || only_executables || only_plugins
         say "Skipped #{spec.full_name_with_location}, it needs to compile an extension"
         next
       end
 
       gem = spec.cache_file
 
-      unless File.exist?(gem) || only_executables_or_plugins?
+      unless File.exist?(gem) || only_executables || only_plugins
         require_relative "../remote_fetcher"
 
         say "Cached gem for #{spec.full_name_with_location} not found, attempting to fetch..."
@@ -194,10 +206,10 @@ extensions will be restored.
         bin_dir: bin_dir,
       }
 
-      if options[:only_executables]
+      if only_executables
         installer = Gem::Installer.for_spec(spec, installer_options)
         installer.generate_bin
-      elsif options[:only_plugins]
+      elsif only_plugins
         installer = Gem::Installer.for_spec(spec, installer_options)
         installer.generate_plugins
       else
@@ -207,11 +219,5 @@ extensions will be restored.
 
       say "Restored #{spec.full_name_with_location}"
     end
-  end
-
-  private
-
-  def only_executables_or_plugins?
-    options[:only_executables] || options[:only_plugins]
   end
 end

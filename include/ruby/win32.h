@@ -30,15 +30,10 @@ extern "C++" {			/* template without extern "C++" */
 #if !defined(_WIN64) && !defined(WIN32)
 #define WIN32
 #endif
-#if defined(_MSC_VER) && _MSC_VER <= 1200
-#include <windows.h>
-#endif
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <mswsock.h>
-#if !defined(_MSC_VER) || _MSC_VER >= 1400
 #include <iphlpapi.h>
-#endif
 #if defined(__cplusplus) && defined(_MSC_VER)
 }
 #endif
@@ -59,13 +54,7 @@ extern "C++" {			/* template without extern "C++" */
 #include <direct.h>
 #include <process.h>
 #include <time.h>
-#if defined(__cplusplus) && defined(_MSC_VER) && _MSC_VER == 1200
-extern "C++" {			/* template without extern "C++" */
-#endif
 #include <math.h>
-#if defined(__cplusplus) && defined(_MSC_VER) && _MSC_VER == 1200
-}
-#endif
 #include <signal.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -126,8 +115,30 @@ typedef unsigned int uintptr_t;
 #define O_SHARE_DELETE 0x20000000 /* for rb_w32_open(), rb_w32_wopen() */
 
 typedef int clockid_t;
-#define CLOCK_REALTIME  0
-#define CLOCK_MONOTONIC 1
+
+/*
+ * Since we use our versions in win32/win32.c, not to depend on yet
+ * another DLL, prefix our versions not to conflict with inline
+ * versions provided in time.h.
+ */
+#define clock_gettime rb_w32_clock_gettime
+#define clock_getres rb_w32_clock_getres
+
+#ifndef CLOCK_REALTIME
+#  define CLOCK_REALTIME  0
+#endif
+#ifndef CLOCK_MONOTONIC
+#  define CLOCK_MONOTONIC 1
+#endif
+#ifndef CLOCK_PROCESS_CPUTIME_ID
+#  define CLOCK_PROCESS_CPUTIME_ID 2
+#endif
+#ifndef CLOCK_THREAD_CPUTIME_ID
+#  define CLOCK_THREAD_CPUTIME_ID 3
+#endif
+#ifndef CLOCK_REALTIME_COARSE
+#  define CLOCK_REALTIME_COARSE 4
+#endif
 
 #undef utime
 #undef lseek
@@ -251,7 +262,6 @@ struct ifaddrs {
 #endif
 
 extern void   rb_w32_sysinit(int *, char ***);
-extern DWORD  rb_w32_osid(void);
 extern int    flock(int fd, int oper);
 extern int    rb_w32_io_cancelable_p(int);
 extern int    rb_w32_is_socket(int);
@@ -295,7 +305,11 @@ extern void   rb_w32_free_environ(char **);
 extern int    rb_w32_map_errno(DWORD);
 extern const char *WSAAPI rb_w32_inet_ntop(int,const void *,char *,size_t);
 extern int WSAAPI rb_w32_inet_pton(int,const char *,void *);
-extern DWORD  rb_w32_osver(void);
+
+RBIMPL_ATTR_DEPRECATED(("as Windows 9x is not supported already"))
+static inline DWORD rb_w32_osid(void) {return VER_PLATFORM_WIN32_NT;}
+RBIMPL_ATTR_DEPRECATED(("by Windows Version Helper APIs"))
+extern DWORD rb_w32_osver(void);
 
 extern int rb_w32_uchown(const char *, int, int);
 extern int rb_w32_ulink(const char *, const char *);
@@ -331,7 +345,7 @@ extern int rb_w32_dup2(int, int);
 
 #include <float.h>
 
-#if defined _MSC_VER && _MSC_VER >= 1800 && defined INFINITY
+#if defined _MSC_VER && defined INFINITY
 #pragma warning(push)
 #pragma warning(disable:4756)
 static inline float
@@ -413,11 +427,6 @@ extern int rb_w32_utruncate(const char *path, rb_off_t length);
 #undef HAVE_TRUNCATE
 #define HAVE_TRUNCATE 1
 #define truncate rb_w32_utruncate
-
-#if defined(_MSC_VER) && _MSC_VER >= 1400 && _MSC_VER < 1800
-#define strtoll  _strtoi64
-#define strtoull _strtoui64
-#endif
 
 /*
  * stubs

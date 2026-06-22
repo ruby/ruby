@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
 module OpenSSL
-  VERSION = "3.3.0"
+  # The version string of Ruby/OpenSSL.
+  VERSION = "4.0.2"
 end

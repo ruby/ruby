@@ -1,7 +1,15 @@
-# This file includes the settings for "make test-all".
+# This file includes the settings for "make test-all" and "make test-tool".
 # Note that this file is loaded not only by test/runner.rb but also by tool/lib/test/unit/parallel.rb.
 
-ENV["GEM_SKIP"] = ENV["GEM_HOME"] = ENV["GEM_PATH"] = "".freeze
+# Prevent test-all from using bundled gems
+["GEM_HOME", "GEM_PATH"].each do |gem_env|
+  # Preserve the gem environment prepared by tool/runruby.rb for test-tool, which uses bundled gems.
+  ENV["BUNDLED_#{gem_env}"] = ENV[gem_env]
+
+  ENV[gem_env] = "".freeze
+end
+ENV["GEM_SKIP"] = "".freeze
+
 ENV.delete("RUBY_CODESIGN")
 
 Warning[:experimental] = false

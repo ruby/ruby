@@ -47,6 +47,14 @@ describe "chilled String" do
           input.should == "chilled-mutated"
         end
 
+        it "emits a warning for concatenated strings" do
+          input = "still" "+chilled"
+          -> {
+            input << "-mutated"
+          }.should complain(/literal string will be frozen in the future/)
+          input.should == "still+chilled-mutated"
+        end
+
         it "emits a warning on singleton_class creation" do
           -> {
             "chilled".singleton_class
@@ -65,7 +73,7 @@ describe "chilled String" do
           -> {
             -> {
               input << "mutated"
-            }.should raise_error(FrozenError)
+            }.should.raise(FrozenError)
           }.should_not complain(/literal string will be frozen in the future/)
         end
       end
@@ -134,7 +142,7 @@ describe "chilled String" do
           -> {
             -> {
               input << "mutated"
-            }.should raise_error(FrozenError)
+            }.should.raise(FrozenError)
           }.should_not complain(/string returned by :chilled\.to_s will be frozen in the future/)
         end
       end

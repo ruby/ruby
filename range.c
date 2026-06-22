@@ -47,6 +47,7 @@ static VALUE r_cover_p(VALUE, VALUE, VALUE, VALUE);
 static void
 range_init(VALUE range, VALUE beg, VALUE end, VALUE exclude_end)
 {
+    // Changing this condition has implications for JITs. If you do, please let maintainers know.
     if ((!FIXNUM_P(beg) || !FIXNUM_P(end)) && !NIL_P(beg) && !NIL_P(end)) {
         VALUE v;
 
@@ -153,14 +154,14 @@ recursive_equal(VALUE range, VALUE obj, int recur)
  *  call-seq:
  *    self == other -> true or false
  *
- *  Returns +true+ if and only if:
+ *  Returns whether all of the following are true:
  *
  *  - +other+ is a range.
  *  - <tt>other.begin == self.begin</tt>.
  *  - <tt>other.end == self.end</tt>.
  *  - <tt>other.exclude_end? == self.exclude_end?</tt>.
  *
- *  Otherwise returns +false+.
+ *  Examples:
  *
  *    r = (1..5)
  *    r == (1..5)                # => true
@@ -199,11 +200,10 @@ range_eq(VALUE range, VALUE obj)
 static int
 r_less(VALUE a, VALUE b)
 {
-    VALUE r = rb_funcall(a, id_cmp, 1, b);
-
-    if (NIL_P(r))
-        return INT_MAX;
-    return rb_cmpint(r, a, b);
+    VALUE r;
+#define rb_cmpint(cmp, a, b) (NIL_P(r = (cmp)) ? INT_MAX : rb_cmpint(r, (a), (b)))
+    return OPTIMIZED_CMP(a, b);
+#undef rb_cmpint
 }
 
 static VALUE
@@ -783,7 +783,7 @@ bsearch_integer_range(VALUE beg, VALUE end, int excl)
  *
  *  Returns an element from +self+ selected by a binary search.
  *
- *  See {Binary Searching}[rdoc-ref:bsearch.rdoc].
+ *  See {Binary Searching}[rdoc-ref:language/bsearch.rdoc].
  *
  */
 
@@ -1015,6 +1015,29 @@ range_to_a(VALUE range)
         rb_raise(rb_eRangeError, "cannot convert endless range to an array");
     }
     return rb_call_super(0, 0);
+}
+
+/*
+ *  call-seq:
+ *    to_set -> set
+ *
+ *  Returns a set containing the elements in +self+, if a finite collection;
+ *  raises an exception otherwise.
+ *
+ *    (1..4).to_set   # => Set[1, 2, 3, 4]
+ *    (1...4).to_set   # => Set[1, 2, 3]
+ *
+ *    (1..).to_set
+ *    # in 'Range#to_set': cannot convert endless range to a set (RangeError)
+ *
+ */
+static VALUE
+range_to_set(VALUE range)
+{
+    if (NIL_P(RANGE_END(range))) {
+        rb_raise(rb_eRangeError, "cannot convert endless range to a set");
+    }
+    return rb_call_super(0, NULL);
 }
 
 static VALUE
@@ -2030,10 +2053,9 @@ VALUE rb_str_include_range_p(VALUE beg, VALUE end, VALUE val, VALUE exclusive);
 
 /*
  *  call-seq:
- *     self === object ->  true or false
+ *     self === other ->  true or false
  *
- *  Returns +true+ if +object+ is between <tt>self.begin</tt> and <tt>self.end</tt>.
- *  +false+ otherwise:
+ *  Returns whether +other+ is between <tt>self.begin</tt> and <tt>self.end</tt>:
  *
  *    (1..4) === 2       # => true
  *    (1..4) === 5       # => false
@@ -2588,12 +2610,12 @@ range_overlap(VALUE range, VALUE other)
  *
  * - Method Range.new:
  *
- *   # Ranges that by default include the given end value.
- *   Range.new(1, 4).to_a     # => [1, 2, 3, 4]
- *   Range.new('a', 'd').to_a # => ["a", "b", "c", "d"]
- *   # Ranges that use third argument +exclude_end+ to exclude the given end value.
- *   Range.new(1, 4, true).to_a     # => [1, 2, 3]
- *   Range.new('a', 'd', true).to_a # => ["a", "b", "c"]
+ *     # Ranges that by default include the given end value.
+ *     Range.new(1, 4).to_a     # => [1, 2, 3, 4]
+ *     Range.new('a', 'd').to_a # => ["a", "b", "c", "d"]
+ *     # Ranges that use third argument +exclude_end+ to exclude the given end value.
+ *     Range.new(1, 4, true).to_a     # => [1, 2, 3]
+ *     Range.new('a', 'd', true).to_a # => ["a", "b", "c"]
  *
  * == Beginless Ranges
  *
@@ -2745,8 +2767,8 @@ range_overlap(VALUE range, VALUE other)
  *
  * First, what's elsewhere. Class \Range:
  *
- * - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
- * - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here],
+ * - Inherits from {class Object}[rdoc-ref:Object@Whats+Here].
+ * - Includes {module Enumerable}[rdoc-ref:Enumerable@Whats+Here],
  *   which provides dozens of additional methods.
  *
  * Here, class \Range provides methods that are useful for:
@@ -2844,6 +2866,7 @@ Init_Range(void)
     rb_define_method(rb_cRange, "minmax", range_minmax, 0);
     rb_define_method(rb_cRange, "size", range_size, 0);
     rb_define_method(rb_cRange, "to_a", range_to_a, 0);
+    rb_define_method(rb_cRange, "to_set", range_to_set, 0);
     rb_define_method(rb_cRange, "entries", range_to_a, 0);
     rb_define_method(rb_cRange, "to_s", range_to_s, 0);
     rb_define_method(rb_cRange, "inspect", range_inspect, 0);

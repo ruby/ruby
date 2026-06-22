@@ -6,23 +6,31 @@ if defined?(OpenSSL)
 class OpenSSL::TestDigest < OpenSSL::TestCase
   def setup
     super
-    @d1 = OpenSSL::Digest.new("MD5")
-    @d2 = OpenSSL::Digest::MD5.new
+    @d1 = OpenSSL::Digest.new("SHA256")
+    @d2 = OpenSSL::Digest::SHA256.new
+  end
+
+  def test_initialize
+    assert_raise(OpenSSL::Digest::DigestError) {
+      OpenSSL::Digest.new("no such algorithm")
+    }
   end
 
   def test_digest
-    null_hex = "d41d8cd98f00b204e9800998ecf8427e"
+    # SHA256 null value calculated by `echo -n "" | sha256sum`
+    null_hex = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     null_bin = [null_hex].pack("H*")
     data = "DATA"
-    hex = "e44f9e348e41cb272efa87387728571b"
+    # SHA256 DATA value calculated by `echo -n "DATA" | sha256sum`
+    hex = "c97c29c7a71b392b437ee03fd17f09bb10b75e879466fc0eb757b2c4a78ac938"
     bin = [hex].pack("H*")
     assert_equal(null_bin, @d1.digest)
     assert_equal(null_hex, @d1.hexdigest)
     @d1 << data
     assert_equal(bin, @d1.digest)
     assert_equal(hex, @d1.hexdigest)
-    assert_equal(bin, OpenSSL::Digest.digest('MD5', data))
-    assert_equal(hex, OpenSSL::Digest.hexdigest('MD5', data))
+    assert_equal(bin, OpenSSL::Digest.digest('SHA256', data))
+    assert_equal(hex, OpenSSL::Digest.hexdigest('SHA256', data))
   end
 
   def test_eql
@@ -32,9 +40,9 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
   end
 
   def test_info
-    assert_equal("MD5", @d1.name, "name")
-    assert_equal("MD5", @d2.name, "name")
-    assert_equal(16, @d1.size, "size")
+    assert_equal("SHA256", @d1.name, "name")
+    assert_equal("SHA256", @d2.name, "name")
+    assert_equal(32, @d1.size, "size")
   end
 
   def test_dup
@@ -54,7 +62,10 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
   end
 
   def test_digest_constants
-    %w{MD5 SHA1 SHA224 SHA256 SHA384 SHA512}.each do |name|
+    non_fips_names = %w{MD5}
+    names = %w{SHA1 SHA224 SHA256 SHA384 SHA512}
+    names = non_fips_names + names unless OpenSSL.fips_mode
+    names.each do |name|
       assert_not_nil(OpenSSL::Digest.new(name))
       klass = OpenSSL::Digest.const_get(name.tr('-', '_'))
       assert_not_nil(klass.new)
@@ -62,8 +73,17 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
   end
 
   def test_digest_by_oid_and_name
-    check_digest(OpenSSL::ASN1::ObjectId.new("MD5"))
-    check_digest(OpenSSL::ASN1::ObjectId.new("SHA1"))
+    # SHA256
+    o1 = OpenSSL::Digest.digest("SHA256", "")
+    o2 = OpenSSL::Digest.digest("sha256", "")
+    assert_equal(o1, o2)
+    o3 = OpenSSL::Digest.digest("2.16.840.1.101.3.4.2.1", "")
+    assert_equal(o1, o3)
+
+    # An alias for SHA256 recognized by EVP_get_digestbyname(), but not by
+    # EVP_MD_fetch()
+    o4 = OpenSSL::Digest.digest("RSA-SHA256", "")
+    assert_equal(o1, o4)
   end
 
   def encode16(str)
@@ -109,12 +129,15 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
     assert_equal(s512, OpenSSL::Digest.hexdigest('SHA3-512', ""))
   end
 
-  def test_digest_by_oid_and_name_sha2
-    check_digest(OpenSSL::ASN1::ObjectId.new("SHA224"))
-    check_digest(OpenSSL::ASN1::ObjectId.new("SHA256"))
-    check_digest(OpenSSL::ASN1::ObjectId.new("SHA384"))
-    check_digest(OpenSSL::ASN1::ObjectId.new("SHA512"))
-  end
+  def test_fetched_evp_md
+    # KECCAK-256 is not FIPS-approved.
+    omit_on_fips
+
+    # Pre-NIST Keccak is an example of a digest algorithm that doesn't have an
+    # NID and requires dynamic allocation of EVP_MD
+    hex = "c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+    assert_equal(hex, OpenSSL::Digest.hexdigest("KECCAK-256", ""))
+  end if openssl?(3, 2, 0)
 
   def test_openssl_digest
     assert_equal OpenSSL::Digest::MD5, OpenSSL::Digest("MD5")
@@ -133,15 +156,20 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
     assert_include digests, "sha512"
   end
 
-  private
+  if respond_to?(:ractor) && defined?(Ractor.shareable_proc)
+    ractor
 
-  def check_digest(oid)
-    d = OpenSSL::Digest.new(oid.sn)
-    assert_not_nil(d)
-    d = OpenSSL::Digest.new(oid.ln)
-    assert_not_nil(d)
-    d = OpenSSL::Digest.new(oid.oid)
-    assert_not_nil(d)
+    def test_ractor
+      assert_nothing_raised do
+        Ractor.new {
+          [
+            OpenSSL::Digest::SHA256.new(""),
+            OpenSSL::Digest::SHA256.hexdigest(""),
+            OpenSSL::Digest::SHA256.digest(""),
+          ]
+        }.value
+      end
+    end
   end
 end
 

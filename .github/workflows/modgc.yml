@@ -28,7 +28,7 @@ jobs:
           - name: default
           - name: mmtk
             mmtk_build: release
-        os: [macos-latest, ubuntu-latest]
+        os: [macos-26, ubuntu-latest]
         include:
           - test_task: check
       fail-fast: false
@@ -42,18 +42,17 @@ jobs:
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
-      || contains(github.event.head_commit.message, 'Document')
       || contains(github.event.pull_request.title, '[DOC]')
-      || contains(github.event.pull_request.title, 'Document')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
-      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
+      || (github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
     steps:
-      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
+          persist-credentials: false
 
       - name: Install libraries (macOS)
         uses: ./.github/actions/setup/macos
@@ -63,9 +62,9 @@ jobs:
         uses: ./.github/actions/setup/ubuntu
         if: ${{ contains(matrix.os, 'ubuntu') }}
 
-      - uses: ruby/setup-ruby@a6e6f86333f0a2523ece813039b8b4be04560854 # v1.190.0
+      - uses: ruby/setup-ruby@9eb537ca036ebaed86729dcb9309076e4c5c3b74 # v1.314.0
         with:
-          ruby-version: '3.0'
+          ruby-version: '3.1'
           bundler: none
         if: ${{ contains(matrix.os, 'ubuntu') }}
 
@@ -102,18 +101,20 @@ jobs:
       - name: Run configure
         env:
           arch: ${{ matrix.arch }}
-        run: >-
-          $SETARCH ../src/configure -C --disable-install-doc --with-modular-gc=${{ env.MODULAR_GC_DIR }}
+        run: |
+          ${SETARCH} ../src/configure -C --disable-install-doc --with-modular-gc="${MODULAR_GC_DIR}" \
           ${arch:+--target=$arch-$OSTYPE --host=$arch-$OSTYPE}
 
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@46268bd060767258de96ed93c1251119784f2ab6 # v1.16.1
+        with:
+          cache-bin: false
       - name: Set MMTk environment variables
         run: |
           echo 'EXCLUDES=../src/test/.excludes-mmtk' >> $GITHUB_ENV
           echo 'MSPECOPT=-B../src/spec/mmtk.mspec' >> $GITHUB_ENV
         if: ${{ matrix.gc.name == 'mmtk' }}
 
-      - run: $SETARCH make
+      - run: ${SETARCH} make
 
       - name: Build Modular  GC
         run: |
@@ -121,7 +122,7 @@ jobs:
           make install-modular-gc MODULAR_GC=${{ matrix.gc.name }} MMTK_BUILD=${{ matrix.gc.mmtk_build }}
           make distclean-modular-gc MODULAR_GC=${{ matrix.gc.name }}
 
-      - run: $SETARCH make hello
+      - run: ${SETARCH} make hello
 
       - name: Set test options for skipped tests
         run: |
@@ -130,7 +131,12 @@ jobs:
           echo "TESTS=${TESTS}" >> $GITHUB_ENV
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
 
+      - name: Set timeout scale
+        run: echo "RUBY_TEST_TIMEOUT_SCALE=10" >> $GITHUB_ENV # subprocess assertion timeouts flake on slower/contended macOS runners, especially with the slower MMTk GC
+        if: ${{ contains(matrix.os, 'macos') }}
+
       - name: Set up Launchable
+        id: launchable
         uses: ./.github/actions/launchable/setup
         with:
           os: ${{ matrix.os || 'ubuntu-22.04' }}
@@ -139,27 +145,27 @@ jobs:
           builddir: build
           srcdir: src
         continue-on-error: true
+        timeout-minutes: 3
 
       - name: make ${{ matrix.test_task }}
         run: |
-          if [ -n "${LAUNCHABLE_ORGANIZATION}" ]; then
-            exec \
-            > >(tee launchable_stdout.log) \
-            2> >(tee launchable_stderr.log)
-          fi
+          test -n "${LAUNCHABLE_STDOUT}" && exec 1> >(tee "${LAUNCHABLE_STDOUT}")
+          test -n "${LAUNCHABLE_STDERR}" && exec 2> >(tee "${LAUNCHABLE_STDERR}")
 
-          $SETARCH make -s ${{ matrix.test_task }} \
+          ${SETARCH} make -s ${{ matrix.test_task }} \
             ${TESTS:+TESTS="$TESTS"} \
             ${{ !contains(matrix.test_task, 'bundle') && 'RUBYOPT=-w' || '' }}
         timeout-minutes: ${{ matrix.gc.timeout || 40 }}
         env:
           RUBY_TESTOPTS: '-q --tty=no'
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof'
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
           PRECHECK_BUNDLED_GEMS: 'no'
+          LAUNCHABLE_STDOUT: ${{ steps.launchable.outputs.stdout_report_path }}
+          LAUNCHABLE_STDERR: ${{ steps.launchable.outputs.stderr_report_path }}
 
       - name: make skipped tests
         run: |
-          $SETARCH make -s test-all TESTS="${TESTS//-n!\//-n/}"
+          ${SETARCH} make -s test-all TESTS="${TESTS//-n!\//-n/}"
         env:
           GNUMAKEFLAGS: ''
           RUBY_TESTOPTS: '-v --tty=no'

@@ -27,7 +27,7 @@ describe "IO#gets" do
   it "sets $_ to nil after the last line has been read" do
     while @io.gets
     end
-    $_.should be_nil
+    $_.should == nil
   end
 
   it "returns nil if called at the end of the stream" do
@@ -36,7 +36,7 @@ describe "IO#gets" do
   end
 
   it "raises IOError on closed stream" do
-    -> { IOSpecs.closed_io.gets }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.gets }.should.raise(IOError)
   end
 
   describe "with no separator" do
@@ -156,11 +156,11 @@ describe "IO#gets" do
     end
 
     it "raises exception when options passed as Hash" do
-      -> { @io.gets({ chomp: true }) }.should raise_error(TypeError)
+      -> { @io.gets({ chomp: true }) }.should.raise(TypeError)
 
       -> {
         @io.gets("\n", 1, { chomp: true })
-      }.should raise_error(ArgumentError, "wrong number of arguments (given 3, expected 0..2)")
+      }.should.raise(ArgumentError, "wrong number of arguments (given 3, expected 0..2)")
     end
   end
 end
@@ -175,11 +175,11 @@ describe "IO#gets" do
   end
 
   it "raises an IOError if the stream is opened for append only" do
-    -> { File.open(@name, "a:utf-8") { |f| f.gets } }.should raise_error(IOError)
+    -> { File.open(@name, "a:utf-8") { |f| f.gets } }.should.raise(IOError)
   end
 
   it "raises an IOError if the stream is opened for writing only" do
-    -> { File.open(@name, "w:utf-8") { |f| f.gets } }.should raise_error(IOError)
+    -> { File.open(@name, "w:utf-8") { |f| f.gets } }.should.raise(IOError)
   end
 end
 
@@ -251,7 +251,7 @@ describe "IO#gets" do
   end
 
   it "does not accept limit that doesn't fit in a C off_t" do
-    -> { @io.gets(2**128) }.should raise_error(RangeError)
+    -> { @io.gets(2**128) }.should.raise(RangeError)
   end
 end
 
@@ -338,23 +338,11 @@ describe "IO#gets" do
     @io.gets.encoding.should == Encoding::BINARY
   end
 
-  ruby_version_is ''...'3.3' do
-    it "transcodes to internal encoding if the IO object's external encoding is BINARY" do
-      Encoding.default_external = Encoding::BINARY
-      Encoding.default_internal = Encoding::UTF_8
-      @io = new_io @name, 'r'
-      @io.set_encoding Encoding::BINARY, Encoding::UTF_8
-      @io.gets.encoding.should == Encoding::UTF_8
-    end
-  end
-
-  ruby_version_is '3.3' do
-    it "ignores the internal encoding if the IO object's external encoding is BINARY" do
-      Encoding.default_external = Encoding::BINARY
-      Encoding.default_internal = Encoding::UTF_8
-      @io = new_io @name, 'r'
-      @io.set_encoding Encoding::BINARY, Encoding::UTF_8
-      @io.gets.encoding.should == Encoding::BINARY
-    end
+  it "ignores the internal encoding if the IO object's external encoding is BINARY" do
+    Encoding.default_external = Encoding::BINARY
+    Encoding.default_internal = Encoding::UTF_8
+    @io = new_io @name, 'r'
+    @io.set_encoding Encoding::BINARY, Encoding::UTF_8
+    @io.gets.encoding.should == Encoding::BINARY
   end
 end

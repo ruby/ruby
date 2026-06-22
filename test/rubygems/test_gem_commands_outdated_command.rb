@@ -30,6 +30,26 @@ class TestGemCommandsOutdatedCommand < Gem::TestCase
     assert_equal "", @ui.error
   end
 
+  def test_execute_compact_index
+    spec_fetcher do |fetcher|
+      fetcher.gem "foo", "0.2"
+    end
+
+    foo2 = util_spec "foo", "2.0"
+    util_setup_compact_index foo2
+
+    # drop the in-memory tuples spec_fetcher pre-populated so the lookup
+    # goes through Gem::Source#load_specs
+    Gem::SpecFetcher.fetcher = nil
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_equal "foo (0.2 < 2.0)\n", @ui.output
+    assert_equal "", @ui.error
+  end
+
   def test_execute_with_up_to_date_platform_specific_gem
     spec_fetcher do |fetcher|
       fetcher.download "foo", "2.0"

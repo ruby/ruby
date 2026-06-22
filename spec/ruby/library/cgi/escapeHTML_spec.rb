@@ -1,5 +1,9 @@
 require_relative '../../spec_helper'
-require 'cgi'
+begin
+  require 'cgi/escape'
+rescue LoadError
+  require 'cgi'
+end
 
 describe "CGI.escapeHTML" do
   it "escapes special HTML characters (&\"<>') in the passed argument" do

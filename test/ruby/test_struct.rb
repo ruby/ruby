@@ -41,8 +41,14 @@ module TestStruct
     end
   end
 
+  MAX_EMBEDDED_MEMBERS = (
+    GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE] -
+    GC::INTERNAL_CONSTANTS[:RBASIC_SIZE] -
+    GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]
+  ) / RbConfig::SIZEOF["void*"]
+
   def test_larger_than_largest_pool
-    count = (GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE] / RbConfig::SIZEOF["void*"]) + 1
+    count = MAX_EMBEDDED_MEMBERS + 1
     list = Array(0..count)
     klass = @Struct.new(*list.map { |i| :"a_#{i}"})
     struct = klass.new(*list)
@@ -535,17 +541,25 @@ module TestStruct
   end
 
   def test_named_structs_are_not_rooted
+    omit 'skip on riscv64-linux CI machine. See https://github.com/ruby/ruby/pull/13422' if ENV['RUBY_DEBUG'] == 'ci' && /riscv64-linux/ =~ RUBY_DESCRIPTION
+
     # [Bug #20311]
-    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true)
+    assert_no_memory_leak([], <<~PREP, <<~CODE, rss: true, limit: 2.2)
       code = proc do
         Struct.new("A")
         Struct.send(:remove_const, :A)
       end
 
-      1_000.times(&code)
+      10_000.times(&code)
     PREP
       50_000.times(&code)
     CODE
+  end
+
+  def test_frozen_subclass
+    test = Class.new(@Struct.new(:a)).freeze.new(a: 0)
+    assert_kind_of(@Struct, test)
+    assert_equal([:a], test.members)
   end
 
   class TopStruct < Test::Unit::TestCase

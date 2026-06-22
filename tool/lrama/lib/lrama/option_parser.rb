@@ -1,3 +1,4 @@
+# rbs_inline: enabled
 # frozen_string_literal: true
 
 require 'optparse'
@@ -5,17 +6,32 @@ require 'optparse'
 module Lrama
   # Handle option parsing for the command line interface.
   class OptionParser
+    # @rbs!
+    #   @options: Lrama::Options
+    #   @trace: Array[String]
+    #   @report: Array[String]
+    #   @profile: Array[String]
+
+    # @rbs (Array[String]) -> Lrama::Options
+    def self.parse(argv)
+      new.parse(argv)
+    end
+
+    # @rbs () -> void
     def initialize
       @options = Options.new
       @trace = []
       @report = []
+      @profile = []
     end
 
+    # @rbs (Array[String]) -> Lrama::Options
     def parse(argv)
       parse_by_option_parser(argv)
 
       @options.trace_opts = validate_trace(@trace)
       @options.report_opts = validate_report(@report)
+      @options.profile_opts = validate_profile(@profile)
       @options.grammar_file = argv.shift
 
       unless @options.grammar_file
@@ -46,6 +62,7 @@ module Lrama
 
     private
 
+    # @rbs (Array[String]) -> void
     def parse_by_option_parser(argv)
       ::OptionParser.new do |o|
         o.banner = <<~BANNER
@@ -60,7 +77,14 @@ module Lrama
         o.separator 'Tuning the Parser:'
         o.on('-S', '--skeleton=FILE', 'specify the skeleton to use') {|v| @options.skeleton = v }
         o.on('-t', '--debug', 'display debugging outputs of internal parser') {|v| @options.debug = true }
-        o.on('-D', '--define=NAME[=VALUE]', Array, "similar to '%define NAME VALUE'") {|v| @options.define = v }
+        o.separator "                                     same as '-Dparse.trace'"
+        o.on('--locations', 'enable location support') {|v| @options.locations = true }
+        o.on('-D', '--define=NAME[=VALUE]', Array, "similar to '%define NAME VALUE'") do |v|
+          @options.define = v.each_with_object({}) do |item, hash| # steep:ignore UnannotatedEmptyCollection
+            key, value = item.split('=', 2)
+            hash[key] = value
+          end
+        end
         o.separator ''
         o.separator 'Output:'
         o.on('-H', '--header=[FILE]', 'also produce a header file named FILE') {|v| @options.header = true; @options.header_file = v }
@@ -91,10 +115,19 @@ module Lrama
         o.on_tail '    time                             display generation time'
         o.on_tail '    all                              include all the above traces'
         o.on_tail '    none                             disable all traces'
+        o.on('--diagram=[FILE]', 'generate a diagram of the rules') do |v|
+          @options.diagram = true
+          @options.diagram_file = v if v
+        end
+        o.on('--profile=PROFILES', Array, 'profiles parser generation parts') {|v| @profile = v }
+        o.on_tail ''
+        o.on_tail 'PROFILES is a list of comma-separated words that can include:'
+        o.on_tail '    call-stack                       use sampling call-stack profiler (stackprof gem)'
+        o.on_tail '    memory                           use memory profiler (memory_profiler gem)'
         o.on('-v', '--verbose', "same as '--report=state'") {|_v| @report << 'states' }
         o.separator ''
         o.separator 'Diagnostics:'
-        o.on('-W', '--warnings', 'report the warnings') {|v| @options.diagnostic = true }
+        o.on('-W', '--warnings', 'report the warnings') {|v| @options.warnings = true }
         o.separator ''
         o.separator 'Error Recovery:'
         o.on('-e', 'enable error recovery') {|v| @options.error_recovery = true }
@@ -107,9 +140,10 @@ module Lrama
       end
     end
 
-    ALIASED_REPORTS = { cex: :counterexamples }.freeze
-    VALID_REPORTS = %i[states itemsets lookaheads solved counterexamples rules terms verbose].freeze
+    ALIASED_REPORTS = { cex: :counterexamples }.freeze #: Hash[Symbol, Symbol]
+    VALID_REPORTS = %i[states itemsets lookaheads solved counterexamples rules terms verbose].freeze #: Array[Symbol]
 
+    # @rbs (Array[String]) -> Hash[Symbol, bool]
     def validate_report(report)
       h = { grammar: true }
       return h if report.empty?
@@ -131,6 +165,7 @@ module Lrama
       return h
     end
 
+    # @rbs (String) -> Symbol
     def aliased_report_option(opt)
       (ALIASED_REPORTS[opt.to_sym] || opt).to_sym
     end
@@ -139,15 +174,16 @@ module Lrama
       locations scan parse automaton bitsets closure
       grammar rules only-explicit-rules actions resource
       sets muscles tools m4-early m4 skeleton time ielr cex
-    ].freeze
+    ].freeze #: Array[String]
     NOT_SUPPORTED_TRACES = %w[
       locations scan parse bitsets grammar resource
       sets muscles tools m4-early m4 skeleton ielr cex
-    ].freeze
-    SUPPORTED_TRACES = VALID_TRACES - NOT_SUPPORTED_TRACES
+    ].freeze #: Array[String]
+    SUPPORTED_TRACES = VALID_TRACES - NOT_SUPPORTED_TRACES #: Array[String]
 
+    # @rbs (Array[String]) -> Hash[Symbol, bool]
     def validate_trace(trace)
-      h = {}
+      h = {} #: Hash[Symbol, bool]
       return h if trace.empty? || trace == ['none']
       all_traces = SUPPORTED_TRACES - %w[only-explicit-rules]
       if trace == ['all']
@@ -159,7 +195,25 @@ module Lrama
         if SUPPORTED_TRACES.include?(t)
           h[t.gsub(/-/, '_').to_sym] = true
         else
-          raise "Invalid trace option \"#{t}\"."
+          raise "Invalid trace option \"#{t}\".\nValid options are [#{SUPPORTED_TRACES.join(", ")}]."
+        end
+      end
+
+      return h
+    end
+
+    VALID_PROFILES = %w[call-stack memory].freeze #: Array[String]
+
+    # @rbs (Array[String]) -> Hash[Symbol, bool]
+    def validate_profile(profile)
+      h = {} #: Hash[Symbol, bool]
+      return h if profile.empty?
+
+      profile.each do |t|
+        if VALID_PROFILES.include?(t)
+          h[t.gsub(/-/, '_').to_sym] = true
+        else
+          raise "Invalid profile option \"#{t}\".\nValid options are [#{VALID_PROFILES.join(", ")}]."
         end
       end
 

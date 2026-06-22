@@ -1,0 +1,4 @@
+a.b *x => pattern
+       ^~ unexpected '=>', expecting end-of-input
+       ^~ unexpected '=>', ignoring it
+

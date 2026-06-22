@@ -19,6 +19,10 @@ class URI::TestHTTP < Test::Unit::TestCase
     assert_kind_of(URI::HTTP, u)
   end
 
+  def test_build_empty_host
+    assert_raise(URI::InvalidComponentError) { URI::HTTP.build(host: '') }
+  end
+
   def test_parse
     u = URI.parse('http://a')
     assert_kind_of(URI::HTTP, u)
@@ -33,19 +37,19 @@ class URI::TestHTTP < Test::Unit::TestCase
     host = 'aBcD'
     u1 = URI.parse('http://' + host + '/eFg?HiJ')
     u2 = URI.parse('http://' + host.downcase + '/eFg?HiJ')
-    assert(u1.normalize.host == 'abcd')
-    assert(u1.normalize.path == u1.path)
-    assert(u1.normalize == u2.normalize)
-    assert(!u1.normalize.host.equal?(u1.host))
-    assert( u2.normalize.host.equal?(u2.host))
+    assert_equal('abcd', u1.normalize.host)
+    assert_equal(u1.path, u1.normalize.path)
+    assert_equal(u2.normalize, u1.normalize)
+    refute_same(u1.host, u1.normalize.host)
+    assert_same(u2.host, u2.normalize.host)
 
     assert_equal('http://abc/', URI.parse('http://abc').normalize.to_s)
   end
 
   def test_equal
-    assert(URI.parse('http://abc') == URI.parse('http://ABC'))
-    assert(URI.parse('http://abc/def') == URI.parse('http://ABC/def'))
-    assert(URI.parse('http://abc/def') != URI.parse('http://ABC/DEF'))
+    assert_equal(URI.parse('http://ABC'), URI.parse('http://abc'))
+    assert_equal(URI.parse('http://ABC/def'), URI.parse('http://abc/def'))
+    refute_equal(URI.parse('http://ABC/DEF'), URI.parse('http://abc/def'))
   end
 
   def test_request_uri

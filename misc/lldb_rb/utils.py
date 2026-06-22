@@ -8,17 +8,6 @@ class RbInspector(LLDBInterface):
         self.result = result
         self.ruby_globals = ruby_globals
 
-    def _append_command_output(self, command):
-        output1 = self.result.GetOutput()
-        self.debugger.GetCommandInterpreter().HandleCommand(command, self.result)
-        output2 = self.result.GetOutput()
-        self.result.Clear()
-        self.result.write(output1)
-        self.result.write(output2)
-
-    def _append_expression(self, expression):
-        self._append_command_output("expression " + expression)
-
     def string2cstr(self, rstring):
         """Returns the pointer to the C-string in the given String object"""
         if rstring.TypeIsPointerType():
@@ -247,16 +236,20 @@ class RbInspector(LLDBInterface):
             elif rval.is_type("RUBY_T_DATA"):
                 tRTypedData = self.target.FindFirstType("struct RTypedData").GetPointerType()
                 val = val.Cast(tRTypedData)
-                flag = val.GetValueForExpressionPath("->typed_flag")
 
-                if flag.GetValueAsUnsigned() == 1:
-                    print("T_DATA: %s" %
-                          val.GetValueForExpressionPath("->type->wrap_struct_name"),
-                          file=self.result)
-                    self._append_expression("*(struct RTypedData *) %0#x" % val.GetValueAsUnsigned())
-                else:
-                    print("T_DATA:", file=self.result)
-                    self._append_expression("*(struct RData *) %0#x" % val.GetValueAsUnsigned())
+                type = val.GetValueForExpressionPath("->type").GetValueAsUnsigned()
+                embed = (type & 1)
+                if embed:
+                    flaginfo += "[EMBED] "
+                type = self.frame.EvaluateExpression("(rb_data_type_t *)%0#x" % (type & ~1))
+                print("T_DATA: %s%s" %
+                      (flaginfo, type.GetValueForExpressionPath("->wrap_struct_name")),
+                      file=self.result)
+                print("%s", type.Dereference(), file=self.result)
+                ptr = val.GetValueForExpressionPath("->data")
+                if embed:
+                    ptr = ptr.AddressOf()
+                self._append_expression("(void *)%0#x" % ptr.GetValueAsUnsigned())
 
             elif rval.is_type("RUBY_T_IMEMO"):
                 imemo_type = ((rval.flags >> self.ruby_globals["RUBY_FL_USHIFT"])
@@ -290,7 +283,7 @@ class RbInspector(LLDBInterface):
 
         # if val.GetType() != tRNode: does not work for unknown reason
 
-        if val.GetType().GetPointeeType().name != "NODE":
+        if val.GetType().GetPointeeType().GetCanonicalType().name != "RNode":
             return False
 
         rbNodeTypeMask = self.ruby_globals["RUBY_NODE_TYPEMASK"]

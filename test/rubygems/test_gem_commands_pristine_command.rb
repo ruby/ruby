@@ -125,8 +125,8 @@ class TestGemCommandsPristineCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert File.exist?(gem_bin)
-    assert File.exist?(gem_stub)
+    assert_path_exist gem_bin
+    assert_path_exist gem_stub
 
     out = @ui.output.split "\n"
 
@@ -248,7 +248,13 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     end
 
     refute_includes @ui.output, "Restored #{a.full_name}"
-    assert_includes @ui.output, "Restored #{b.full_name}"
+
+    if Gem.java_platform?
+      refute_includes @ui.output, "Restored #{b.full_name}"
+      assert_includes @ui.output, "No gems with missing extensions to restore"
+    else
+      assert_includes @ui.output, "Restored #{b.full_name}"
+    end
   end
 
   def test_execute_no_extension
@@ -537,8 +543,8 @@ class TestGemCommandsPristineCommand < Gem::TestCase
       @cmd.execute
     end
 
-    assert File.exist? gem_exec
-    refute File.exist? gem_lib
+    assert_path_exist gem_exec
+    assert_path_not_exist gem_lib
   end
 
   def test_execute_only_plugins
@@ -572,9 +578,9 @@ class TestGemCommandsPristineCommand < Gem::TestCase
       @cmd.execute
     end
 
-    refute File.exist? gem_exec
-    assert File.exist? gem_plugin
-    refute File.exist? gem_lib
+    assert_path_not_exist gem_exec
+    assert_path_exist gem_plugin
+    assert_path_not_exist gem_lib
   end
 
   def test_execute_bindir
@@ -606,8 +612,8 @@ class TestGemCommandsPristineCommand < Gem::TestCase
       @cmd.execute
     end
 
-    refute File.exist? gem_exec
-    assert File.exist? gem_bindir
+    assert_path_not_exist gem_exec
+    assert_path_exist gem_bindir
   end
 
   def test_execute_unknown_gem_at_remote_source
@@ -657,6 +663,42 @@ class TestGemCommandsPristineCommand < Gem::TestCase
     assert_empty(@ui.error)
 
     refute_includes "ruby_executable_hooks", File.read(exe)
+  end
+
+  def test_execute_default_gem_and_regular_gem
+    a_default = new_default_spec("a", "1.2.0")
+
+    a = util_spec "a" do |s|
+      s.extensions << "ext/a/extconf.rb"
+    end
+
+    ext_path = File.join @tempdir, "ext", "a", "extconf.rb"
+    write_file ext_path do |io|
+      io.write <<-'RUBY'
+      File.open "Makefile", "w" do |f|
+        f.puts "clean:\n\techo cleaned\n"
+        f.puts "all:\n\techo built\n"
+        f.puts "install:\n\techo installed\n"
+      end
+      RUBY
+    end
+
+    install_default_gems a_default
+    install_gem a
+
+    # Remove the extension files for a
+    FileUtils.rm_rf a.gem_build_complete_path
+
+    @cmd.options[:args] = %w[a]
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    assert_includes @ui.output, "Restored #{a.full_name}"
+
+    # Check extension files for a were restored
+    assert_path_exist a.gem_build_complete_path
   end
 
   def test_execute_multi_platform

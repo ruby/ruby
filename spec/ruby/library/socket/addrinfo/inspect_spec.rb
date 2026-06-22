@@ -41,25 +41,23 @@ describe 'Addrinfo#inspect' do
     end
   end
 
-  with_feature :unix_socket do
-    describe 'using a UNIX Addrinfo' do
-      it 'returns a String' do
-        addr = Addrinfo.unix('/foo')
+  describe 'using a UNIX Addrinfo' do
+    it 'returns a String' do
+      addr = Addrinfo.unix('/foo')
 
-        addr.inspect.should == '#<Addrinfo: /foo SOCK_STREAM>'
-      end
+      addr.inspect.should == '#<Addrinfo: /foo SOCK_STREAM>'
+    end
 
-      it 'returns a String when using a relative UNIX path' do
-        addr = Addrinfo.unix('foo')
+    it 'returns a String when using a relative UNIX path' do
+      addr = Addrinfo.unix('foo')
 
-        addr.inspect.should == '#<Addrinfo: UNIX foo SOCK_STREAM>'
-      end
+      addr.inspect.should == '#<Addrinfo: UNIX foo SOCK_STREAM>'
+    end
 
-      it 'returns a String when using a DGRAM socket' do
-        addr = Addrinfo.unix('/foo', Socket::SOCK_DGRAM)
+    it 'returns a String when using a DGRAM socket' do
+      addr = Addrinfo.unix('/foo', Socket::SOCK_DGRAM)
 
-        addr.inspect.should == '#<Addrinfo: /foo SOCK_DGRAM>'
-      end
+      addr.inspect.should == '#<Addrinfo: /foo SOCK_DGRAM>'
     end
   end
 end

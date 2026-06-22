@@ -97,6 +97,11 @@ class TestSH < Test::Unit::TestCase
 		 [d.year, d.mon, d.mday, d.hour, d.min, d.sec, d.offset])
   end
 
+  def test_ajd
+    assert_equal(Date.civil(2008, 1, 16).ajd, 4908963r/2)
+    assert_equal(Date.civil(-11082381539297990, 2, 19).ajd, -8095679714453739481r/2)
+  end
+
   def test_ordinal
     d = Date.ordinal
     assert_equal([-4712, 1], [d.year, d.yday])

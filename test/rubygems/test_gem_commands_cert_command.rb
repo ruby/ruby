@@ -31,14 +31,6 @@ class TestGemCommandsCertCommand < Gem::TestCase
     @cmd = Gem::Commands::CertCommand.new
 
     @trust_dir = Gem::Security.trust_dir
-
-    @cleanup = []
-  end
-
-  def teardown
-    FileUtils.rm_f(@cleanup)
-
-    super
   end
 
   def test_certificates_matching
@@ -498,7 +490,7 @@ Removed '/CN=alternate/DC=example'
 
     assert_equal "/CN=nobody/DC=example", cert.issuer.to_s
 
-    mask = 0o100600 & (~File.umask)
+    mask = 0o100600 & ~File.umask
 
     assert_equal mask, File.stat(path).mode unless Gem.win_platform?
   end
@@ -527,7 +519,7 @@ Removed '/CN=alternate/DC=example'
 
     assert_equal "/CN=nobody/DC=example", cert.issuer.to_s
 
-    mask = 0o100600 & (~File.umask)
+    mask = 0o100600 & ~File.umask
 
     assert_equal mask, File.stat(path).mode unless Gem.win_platform?
   end
@@ -559,7 +551,7 @@ Removed '/CN=alternate/DC=example'
 
     assert_equal "/CN=nobody/DC=example", cert.issuer.to_s
 
-    mask = 0o100600 & (~File.umask)
+    mask = 0o100600 & ~File.umask
 
     assert_equal mask, File.stat(path).mode unless Gem.win_platform?
   end
@@ -591,7 +583,7 @@ Removed '/CN=alternate/DC=example'
 
     assert_equal "/CN=nobody/DC=example", cert.issuer.to_s
 
-    mask = 0o100600 & (~File.umask)
+    mask = 0o100600 & ~File.umask
 
     assert_equal mask, File.stat(path).mode unless Gem.win_platform?
   end
@@ -661,8 +653,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
 
     assert_equal "/CN=nobody/DC=example", EXPIRED_PUBLIC_CERT.issuer.to_s
 
-    tmp_expired_cert_file = File.join(Dir.tmpdir, File.basename(EXPIRED_PUBLIC_CERT_FILE))
-    @cleanup << tmp_expired_cert_file
+    tmp_expired_cert_file = File.join(@tempdir, File.basename(EXPIRED_PUBLIC_CERT_FILE))
     File.write(tmp_expired_cert_file, File.read(EXPIRED_PUBLIC_CERT_FILE))
 
     @cmd.handle_options %W[
@@ -694,8 +685,7 @@ ERROR:  --private-key not specified and ~/.gem/gem-private_key.pem does not exis
 
     assert_equal "/CN=nobody/DC=example", EXPIRED_PUBLIC_CERT.issuer.to_s
 
-    tmp_expired_cert_file = File.join(Dir.tmpdir, File.basename(EXPIRED_PUBLIC_CERT_FILE))
-    @cleanup << tmp_expired_cert_file
+    tmp_expired_cert_file = File.join(@tempdir, File.basename(EXPIRED_PUBLIC_CERT_FILE))
     File.write(tmp_expired_cert_file, File.read(EXPIRED_PUBLIC_CERT_FILE))
 
     @cmd.handle_options %W[

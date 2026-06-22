@@ -10,7 +10,7 @@ describe "Hash#to_a" do
       pairs << [key, value]
     end
 
-    h.to_a.should be_kind_of(Array)
+    h.to_a.should.is_a?(Array)
     h.to_a.should == pairs
   end
 
@@ -23,7 +23,7 @@ describe "Hash#to_a" do
     end
 
     ent = h.entries
-    ent.should be_kind_of(Array)
+    ent.should.is_a?(Array)
     ent.should == pairs
   end
 end

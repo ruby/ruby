@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/equal_value'
 
 describe "Regexp#eql?" do
-  it_behaves_like :regexp_eql, :eql?
+  it "is an alias of Regexp#==" do
+    Regexp.instance_method(:eql?).should == Regexp.instance_method(:==)
+  end
 end

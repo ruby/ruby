@@ -19,6 +19,13 @@ inputs:
       Where binaries and other generated contents go.  This will be
       created if absent.
 
+  make-command:
+    required: false
+    type: string
+    default: 'make'
+    description: >-
+      The command of `make`.
+
   makeup:
     required: false
     type: boolean
@@ -56,6 +63,16 @@ inputs:
     description: >-
       If set to true, clean build directory.
 
+  bundled-gems-src-cache:
+    required: false
+    type: boolean
+    default: ''
+    description: >-
+      If set to true, cache the cloned bundled gem sources (gems/src).
+      Enable only on jobs that clone every bundled gem (test-bundled-gems),
+      so the cache shared by the os/arch is always saved with the complete
+      set of gems instead of the partial set that `make up` leaves behind.
+
 outputs: {} # nothing?
 
 runs:
@@ -67,8 +84,11 @@ runs:
     # their bash manually installed.
     - shell: bash
       run: |
-        mkdir -p ${{ inputs.srcdir }}
-        mkdir -p ${{ inputs.builddir }}
+        mkdir -p "${INPUT_SRCDIR}"
+        mkdir -p "${INPUT_BUILDDIR}"
+      env:
+        INPUT_SRCDIR: ${{ inputs.srcdir }}
+        INPUT_BUILDDIR: ${{ inputs.builddir }}
 
     # Did you know that actions/checkout works without git(1)?  We are
     # checking that here.
@@ -76,7 +96,7 @@ runs:
       shell: bash
       run: |
         echo "git=`command -v git`" >> "$GITHUB_OUTPUT"
-        echo "sudo=`command -v sudo`" >> "$GITHUB_OUTPUT"
+        echo "sudo=`sudo true && command -v sudo`" >> "$GITHUB_OUTPUT"
         echo "autoreconf=`command -v autoreconf`" >> "$GITHUB_OUTPUT"
 
     - if: steps.which.outputs.git
@@ -88,15 +108,31 @@ runs:
         git config --global init.defaultBranch garbage
 
     - if: inputs.checkout
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
         path: ${{ inputs.srcdir }}
         fetch-depth: ${{ inputs.fetch-depth }}
+        persist-credentials: false
 
-    - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+    - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
       with:
         path: ${{ inputs.srcdir }}/.downloaded-cache
-        key: downloaded-cache
+        key: ${{ runner.os }}-${{ runner.arch }}-downloaded-cache
+
+    # Cache cloned bundled gem sources so a transient DNS/network failure
+    # while cloning from github.com (e.g. "Could not resolve host") does not
+    # abort the build. The key is invalidated when gems/bundled_gems changes,
+    # and restore-keys falls back to the latest cache so only bumped gems are
+    # re-fetched. Only test-bundled-gems jobs opt in (bundled-gems-src-cache),
+    # because they are the ones that clone the complete set into gems/src; other
+    # jobs would otherwise save a partial gems/src and poison the shared key.
+    - if: inputs.bundled-gems-src-cache == 'true'
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      with:
+        path: ${{ inputs.srcdir }}/gems/src
+        key: ${{ runner.os }}-${{ runner.arch }}-bundled-gems-src-${{ hashFiles(format('{0}/gems/bundled_gems', inputs.srcdir)) }}
+        restore-keys: |
+          ${{ runner.os }}-${{ runner.arch }}-bundled-gems-src-
 
     - if: steps.which.outputs.autoreconf
       shell: bash
@@ -106,16 +142,16 @@ runs:
     # This is for MinGW.
     - if: runner.os == 'Windows'
       shell: bash
-      run: echo "GNUMAKEFLAGS=-j$((2 * NUMBER_OF_PROCESSORS))" >> $GITHUB_ENV
+      run: echo "GNUMAKEFLAGS=-j$((2 * NUMBER_OF_PROCESSORS))" >> $GITHUB_ENV # zizmor: ignore[github-env]
 
     - if: runner.os == 'Linux'
       shell: bash
-      run: echo "GNUMAKEFLAGS=-sj$((1 + $(nproc --all)))" >> "$GITHUB_ENV"
+      run: echo "GNUMAKEFLAGS=-sj$((1 + $(nproc)))" >> "$GITHUB_ENV" # zizmor: ignore[github-env]
 
     # macOS' GNU make is so old that they doesn't understand `GNUMAKEFLAGS`.
     - if: runner.os == 'macOS'
       shell: bash
-      run: echo "MAKEFLAGS=-j$((1 + $(sysctl -n hw.activecpu)))" >> "$GITHUB_ENV"
+      run: echo "MAKEFLAGS=-j$((1 + $(sysctl -n hw.activecpu)))" >> "$GITHUB_ENV" # zizmor: ignore[github-env]
 
     - if: inputs.makeup
       shell: bash
@@ -134,6 +170,7 @@ runs:
       run: |
         rm -f config.status .rbconfig.time \
           Makefile GNUmakefile uncommon.mk enc.mk noarch-fake.rb
+        rm -f prism/.time prism/util/.time
 
     - if: steps.which.outputs.sudo
       shell: bash
@@ -163,19 +200,25 @@ runs:
         done
         # drop {a..z}.rb if case-insensitive filesystem
         grep -F A.rb a.rb > /dev/null && set "${@:27}"
-        echo clean="cd ${{ inputs.builddir }} && rm $*" >> $GITHUB_OUTPUT
+        echo clean="cd ${INPUT_BUILDDIR} && rm $*" >> $GITHUB_OUTPUT
+      env:
+        INPUT_BUILDDIR: ${{ inputs.builddir }}
 
     - if: inputs.clean == 'true'
       shell: bash
       id: clean
       run: |
-        echo distclean='make -C ${{ inputs.builddir }} distclean' >> $GITHUB_OUTPUT
-        echo remained-files='find ${{ inputs.builddir }} -ls' >> $GITHUB_OUTPUT
-        [ "${{ inputs.builddir }}" = "${{ inputs.srcdir }}" ] ||
-        echo final='rmdir ${{ inputs.builddir }}' >> $GITHUB_OUTPUT
+        echo distclean="cd ${INPUT_BUILDDIR} && ${INPUT_MAKE_COMMAND} distclean" >> $GITHUB_OUTPUT
+        echo remained-files="find ${INPUT_BUILDDIR} -ls" >> $GITHUB_OUTPUT
+        [ "${INPUT_BUILDDIR}" = "${INPUT_SRCDIR}" ] ||
+        echo final="rmdir ${INPUT_BUILDDIR}" >> $GITHUB_OUTPUT
+      env:
+        INPUT_BUILDDIR: ${{ inputs.builddir }}
+        INPUT_SRCDIR: ${{ inputs.srcdir }}
+        INPUT_MAKE_COMMAND: ${{ inputs.make-command }}
 
     - name: clean
-      uses: gacts/run-and-post-run@d803f6920adc9a47eeac4cb6c93dbc2e2890c684 # v1.4.2
+      uses: gacts/run-and-post-run@598d7a875d5620e0457490555b5e18e46082aa47 # v1.4.4
       with:
         working-directory:
         post: |
@@ -183,3 +226,5 @@ runs:
           ${{ steps.clean.outputs.distclean }}
           ${{ steps.clean.outputs.remained-files }}
           ${{ steps.clean.outputs.final }}
+      # rmdir randomly fails due to launchable files
+      continue-on-error: true

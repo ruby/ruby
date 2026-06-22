@@ -101,7 +101,8 @@ VALUE rb_proc_call(VALUE recv, VALUE args);
  * @param[in]  kw_splat         Handling of keyword parameters:
  *   - RB_NO_KEYWORDS           `args`' last is not a keyword argument.
  *   - RB_PASS_KEYWORDS         `args`' last is a keyword argument.
- *   - RB_PASS_CALLED_KEYWORDS  it depends if there is a passed block.
+ *   - RB_PASS_CALLED_KEYWORDS  Pass keyword arguments if the current method
+ *                              was called with keyword arguments.
  * @exception  rb_eException    Any exceptions happen inside.
  * @return     What the proc evaluates to.
  */
@@ -141,7 +142,8 @@ VALUE rb_proc_call_with_block(VALUE recv, int argc, const VALUE *argv, VALUE pro
  * @param[in]  kw_splat         Handling of keyword parameters:
  *   - RB_NO_KEYWORDS           `args`' last is not a keyword argument.
  *   - RB_PASS_KEYWORDS         `args`' last is a keyword argument.
- *   - RB_PASS_CALLED_KEYWORDS  it depends if there is a passed block.
+ *   - RB_PASS_CALLED_KEYWORDS  Pass keyword arguments if the current method
+ *                              was called with keyword arguments.
  * @exception  rb_eException    Any exceptions happen inside.
  * @return     What the proc evaluates to.
  */
@@ -245,7 +247,8 @@ VALUE rb_method_call(int argc, const VALUE *argv, VALUE recv);
  * @param[in]  kw_splat         Handling of keyword parameters:
  *   - RB_NO_KEYWORDS           `args`' last is not a keyword argument.
  *   - RB_PASS_KEYWORDS         `args`' last is a keyword argument.
- *   - RB_PASS_CALLED_KEYWORDS  it depends if there is a passed block.
+ *   - RB_PASS_CALLED_KEYWORDS  Pass keyword arguments if the current method
+ *                              was called with keyword arguments.
  * @exception  rb_eTypeError    `recv` is not a method.
  * @exception  rb_eException    Any exceptions happen inside.
  * @return     What the method returns.
@@ -279,7 +282,8 @@ VALUE rb_method_call_with_block(int argc, const VALUE *argv, VALUE recv, VALUE p
  * @param[in]  kw_splat         Handling of keyword parameters:
  *   - RB_NO_KEYWORDS           `args`' last is not a keyword argument.
  *   - RB_PASS_KEYWORDS         `args`' last is a keyword argument.
- *   - RB_PASS_CALLED_KEYWORDS  it depends if there is a passed block.
+ *   - RB_PASS_CALLED_KEYWORDS  Pass keyword arguments if the current method
+ *                              was called with keyword arguments.
  * @exception  rb_eTypeError    `recv` is not a method.
  * @exception  rb_eException    Any exceptions happen inside.
  * @return     What the method returns.

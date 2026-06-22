@@ -30,7 +30,9 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
 
       - uses: ./.github/actions/setup/ubuntu
         if: ${{ contains(matrix.os, 'ubuntu') }}
@@ -40,21 +42,17 @@ jobs:
 
       - uses: ./.github/actions/setup/directories
 
-      - uses: ruby/setup-ruby@a6e6f86333f0a2523ece813039b8b4be04560854 # v1.190.0
+      - uses: ruby/setup-ruby@9eb537ca036ebaed86729dcb9309076e4c5c3b74 # v1.314.0
         with:
-          ruby-version: '3.0'
+          ruby-version: '3.1'
           bundler: none
 
       - name: Run configure
         run: ./configure -C --disable-install-doc --disable-rubygems --with-gcc 'optflags=-O0' 'debugflags=-save-temps=obj -g'
 
-      - run: make all golf
+      - run: make fix-depends
 
-      - run: ./goruby -veh
-
-      - run: ruby tool/update-deps --fix
-
-      - run: git diff --no-ext-diff --ignore-submodules --exit-code
+      - run: git diff --color --no-ext-diff --ignore-submodules --exit-code
 
       - uses: ./.github/actions/slack
         with:

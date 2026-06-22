@@ -6,25 +6,30 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    jruby-jars (9.4.10.0)
-    jruby-rack (1.1.21)
-    rake (13.0.1)
-    rubyzip (1.3.0)
-    warbler (2.0.5)
-      jruby-jars (>= 9.0.0.0)
-      jruby-rack (>= 1.1.1, < 1.3)
-      rake (>= 10.1.0)
-      rubyzip (~> 1.0, < 1.4)
+    jruby-jars (10.0.0.1)
+    jruby-rack (1.2.7)
+    ostruct (0.6.3)
+    rake (13.3.0)
+    rexml (3.4.2)
+    rubyzip (3.3.0)
+    warbler (2.1.0)
+      jruby-jars (>= 9.4, < 10.1)
+      jruby-rack (>= 1.2.3, < 1.3)
+      ostruct (~> 0.6.2)
+      rake (~> 13.0, >= 13.0.3)
+      rexml (~> 3.0)
+      rubyzip (>= 3.0.0)
 
 PLATFORMS
+  arm64-darwin
   java
   ruby
-  universal-java-11
+  universal-java
 
 DEPENDENCIES
   demo!
-  jruby-jars (~> 9.4)
-  warbler (~> 2.0)
+  jruby-jars (~> 10.0)
+  warbler (~> 2.1)
 
 BUNDLED WITH
-   2.7.0.dev
+  4.1.0.dev

@@ -1,7 +1,7 @@
 require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
-with_feature :unix_socket do
+platform_is_not :windows do
   describe "UNIXSocket#send_io" do
     before :each do
       @path = SocketSpecs.socket_path
@@ -49,7 +49,7 @@ with_feature :unix_socket do
       @client.send_io(@file)
 
       @io = @server.recv_io
-      @io.should be_an_instance_of(IO)
+      @io.should.instance_of?(IO)
     end
   end
 end

@@ -1,6 +1,8 @@
 require_relative '../../spec_helper'
-require_relative 'shared/rectangular'
+require 'matrix'
 
 describe "Matrix#rect" do
-  it_behaves_like :matrix_rectangular, :rect
+  it "is an alias of Matrix#rectangular" do
+    Matrix.instance_method(:rect).should == Matrix.instance_method(:rectangular)
+  end
 end

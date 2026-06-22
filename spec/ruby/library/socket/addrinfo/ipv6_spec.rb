@@ -7,7 +7,7 @@ describe "Addrinfo#ipv6?" do
     end
 
     it "returns true" do
-      @addrinfo.ipv6?.should be_false
+      @addrinfo.ipv6?.should == false
     end
   end
 
@@ -17,19 +17,17 @@ describe "Addrinfo#ipv6?" do
     end
 
     it "returns false" do
-      @addrinfo.ipv6?.should be_true
+      @addrinfo.ipv6?.should == true
     end
   end
 
-  with_feature :unix_socket do
-    describe "for a unix socket" do
-      before :each do
-        @addrinfo = Addrinfo.unix("/tmp/sock")
-      end
+  describe "for a unix socket" do
+    before :each do
+      @addrinfo = Addrinfo.unix("/tmp/sock")
+    end
 
-      it "returns false" do
-        @addrinfo.ipv6?.should be_false
-      end
+    it "returns false" do
+      @addrinfo.ipv6?.should == false
     end
   end
 end

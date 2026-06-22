@@ -24,6 +24,7 @@ jobs:
   make:
     strategy:
       matrix:
+        # We enumerate every job in matrix.include to save build time
         include:
           - test_task: check
             configure: 'cppflags=-DVM_CHECK_MODE'
@@ -38,11 +39,17 @@ jobs:
           - test_task: test-bundled-gems
           - test_task: check
             os: ubuntu-24.04
+            extra_checks: [capi]
           - test_task: check
-            os: ubuntu-24.04-arm
+            os: ubuntu-24.04
+            configure: 'CC=clang-18 cflags=-fsanitize=address cppflags=-DUSE_MN_THREADS=0'
+            timeout: 60
+          # ubuntu-24.04-arm jobs don't start on ruby/ruby as of 2025-10-29
+          #- test_task: check
+          #  os: ubuntu-24.04-arm
       fail-fast: false
 
-    env:
+    env: &make-env
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUBY_DEBUG: ci
 
@@ -51,28 +58,29 @@ jobs:
     if: >-
       ${{!(false
       || contains(github.event.head_commit.message, '[DOC]')
-      || contains(github.event.head_commit.message, 'Document')
       || contains(github.event.pull_request.title, '[DOC]')
-      || contains(github.event.pull_request.title, 'Document')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
-      || (github.event_name == 'push' && github.event.pull_request.user.login == 'dependabot[bot]')
+      || (github.event.pull_request.user.login == 'dependabot[bot]')
       )}}
 
-    steps:
-      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
+    steps: &make-steps
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
+          persist-credentials: false
 
       - uses: ./.github/actions/setup/ubuntu
         with:
           arch: ${{ matrix.arch }}
 
-      - uses: ruby/setup-ruby@a6e6f86333f0a2523ece813039b8b4be04560854 # v1.190.0
+      - uses: ruby/setup-ruby@9eb537ca036ebaed86729dcb9309076e4c5c3b74 # v1.314.0
         with:
-          ruby-version: '3.0'
+          ruby-version: '3.1'
           bundler: none
-        if: ${{ !endsWith(matrix.os, 'arm') }}
+        if: >-
+          ${{ !endsWith(matrix.os, 'arm')
+          && !endsWith(matrix.os, 'ppc64le') && !endsWith(matrix.os, 's390x') }}
 
       - uses: ./.github/actions/setup/directories
         with:
@@ -81,6 +89,7 @@ jobs:
           makeup: true
           clean: true
           dummy-files: ${{ matrix.test_task == 'check' }}
+          bundled-gems-src-cache: ${{ matrix.test_task == 'test-bundled-gems' }}
           # Set fetch-depth: 10 so that Launchable can receive commits information.
           fetch-depth: 10
 
@@ -89,7 +98,7 @@ jobs:
           arch: ${{ matrix.arch }}
           configure: ${{ matrix.configure }}
         run: >-
-          $SETARCH ../src/configure -C --disable-install-doc ${configure:-cppflags=-DRUBY_DEBUG}
+          $SETARCH ../src/configure -C --disable-install-doc ${configure:- --enable-debug-env cppflags=-DRUBY_DEBUG}
           ${arch:+--target=$arch-$OSTYPE --host=$arch-$OSTYPE}
 
       - run: $SETARCH make prepare-gems
@@ -99,6 +108,10 @@ jobs:
 
       - run: $SETARCH make hello
 
+      - name: runirb
+        run: |
+          echo IRB::VERSION | $SETARCH make runirb RUNOPT="-- -f"
+
       - name: Set test options for skipped tests
         run: |
           set -x
@@ -107,6 +120,7 @@ jobs:
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
 
       - name: Set up Launchable
+        id: launchable
         uses: ./.github/actions/launchable/setup
         with:
           os: ${{ matrix.os || 'ubuntu-22.04' }}
@@ -115,14 +129,30 @@ jobs:
           builddir: build
           srcdir: src
         continue-on-error: true
+        timeout-minutes: 3
+
+      # Avoid possible test failures with the zlib applying the following patch
+      # on s390x CPU architecture.
+      # https://github.com/madler/zlib/pull/410
+      - name: Disable DFLTCC
+        run: echo "DFLTCC=0" >> $GITHUB_ENV
+        if: ${{ endsWith(matrix.os, 's390x') }}
+
+      # Emulated ppc64le/s390x runners are slow enough that subprocess
+      # assertion timeouts (e.g. assert_separately) flake. Scale them up, as
+      # macos.yml does for slower/contended runners. SYNTAX_SUGGEST_TIMEOUT
+      # covers syntax_suggest's own internal search timeout, which
+      # RUBY_TEST_TIMEOUT_SCALE does not affect.
+      - name: Set timeout scale for emulated runners
+        run: |
+          echo "RUBY_TEST_TIMEOUT_SCALE=10" >> $GITHUB_ENV
+          echo "SYNTAX_SUGGEST_TIMEOUT=10" >> $GITHUB_ENV
+        if: ${{ endsWith(matrix.os, 'ppc64le') || endsWith(matrix.os, 's390x') }}
 
       - name: make ${{ matrix.test_task }}
         run: |
-          if [ -n "${LAUNCHABLE_ORGANIZATION}" ]; then
-            exec \
-            > >(tee launchable_stdout.log) \
-            2> >(tee launchable_stderr.log)
-          fi
+          test -n "${LAUNCHABLE_STDOUT}" && exec 1> >(tee "${LAUNCHABLE_STDOUT}")
+          test -n "${LAUNCHABLE_STDERR}" && exec 2> >(tee "${LAUNCHABLE_STDERR}")
 
           $SETARCH make -s ${{ matrix.test_task }} \
           ${TESTS:+TESTS="$TESTS"} \
@@ -130,8 +160,10 @@ jobs:
         timeout-minutes: ${{ matrix.timeout || 40 }}
         env:
           RUBY_TESTOPTS: '-q --tty=no'
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof'
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
           PRECHECK_BUNDLED_GEMS: 'no'
+          LAUNCHABLE_STDOUT: ${{ steps.launchable.outputs.stdout_report_path }}
+          LAUNCHABLE_STDERR: ${{ steps.launchable.outputs.stderr_report_path }}
 
       - name: make skipped tests
         run: |
@@ -142,9 +174,105 @@ jobs:
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
 
+      - name: test-pc
+        run: |
+          DESTDIR=${RUNNER_TEMP-${TMPDIR-/tmp}}/installed
+          $SETARCH make test-pc "DESTDIR=$DESTDIR"
+
+      - name: CAPI extensions
+        uses: ./.github/actions/capiext
+        with:
+          builddir: build
+          make: '$SETARCH make'
+        env:
+          RUBY_TESTOPTS: '-v --tty=no'
+        if: ${{ contains(matrix.extra_checks, 'capi') }}
+
       - uses: ./.github/actions/slack
         with:
-          label: ${{ matrix.test_task }} ${{ matrix.configure }}${{ matrix.arch }}
+          label: ${{ matrix.test_task }} ${{ matrix.configure }}${{ matrix.arch }}${{ matrix.os }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
+        if: ${{ failure() }}
+
+  make-ibm:
+    strategy:
+      matrix:
+        include:
+          - test_task: check
+            os: ubuntu-24.04-ppc64le
+          - test_task: check
+            os: ubuntu-24.04-s390x
+      fail-fast: false
+
+    env: *make-env
+
+    runs-on: ${{ matrix.os }}
+
+    if: >-
+      ${{github.repository == 'ruby/ruby'
+      && !(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event.pull_request.user.login == 'dependabot[bot]')
+      )}}
+
+    steps: *make-steps
+
+  # Separated from `make` job to avoid making it a required status check
+  ruby-bench:
+    strategy:
+      matrix:
+        include:
+          # Using the same setup as ZJIT jobs
+          - bench_opts: '--warmup=1 --bench=1 --excludes=shipit'
+
+    runs-on: ubuntu-24.04
+
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event.pull_request.user.login == 'dependabot[bot]')
+      )}}
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup/ubuntu
+
+      - uses: ./.github/actions/setup/directories
+        with:
+          srcdir: src
+          builddir: build
+          makeup: true
+
+      - name: Run configure
+        run: ../src/configure -C --disable-install-doc --prefix="$(pwd)/install"
+
+      - run: make install
+
+      - name: Checkout ruby-bench
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: ruby/ruby-bench
+          persist-credentials: false
+          path: ruby-bench
+
+      # If you want to skip failing benchmark, consider using `--excludes`.
+      # e.g. `bench_opts: '--warmup=1 --bench=1 --excludes=railsbench,lobsters'`
+      - name: Run ruby-bench
+        run: ruby run_benchmarks.rb -e "ruby::../build/install/bin/ruby" ${{ matrix.bench_opts }}
+        working-directory: ruby-bench
+        env:
+          BUNDLER_VERSION: 0
+
+      - uses: ./.github/actions/slack
+        with:
+          label: ruby-bench ${{ matrix.bench_opts }} ${{ matrix.ruby_opts }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
 

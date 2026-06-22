@@ -128,6 +128,7 @@ iseq_load.o: $(hdrdir)/ruby/internal/intern/re.h
 iseq_load.o: $(hdrdir)/ruby/internal/intern/ruby.h
 iseq_load.o: $(hdrdir)/ruby/internal/intern/select.h
 iseq_load.o: $(hdrdir)/ruby/internal/intern/select/largesize.h
+iseq_load.o: $(hdrdir)/ruby/internal/intern/set.h
 iseq_load.o: $(hdrdir)/ruby/internal/intern/signal.h
 iseq_load.o: $(hdrdir)/ruby/internal/intern/sprintf.h
 iseq_load.o: $(hdrdir)/ruby/internal/intern/string.h

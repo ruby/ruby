@@ -191,8 +191,13 @@ module Bundler
         set_cache_path!(app_cache_path) if use_app_cache?
 
         if requires_checkout? && !@copied
-          fetch unless use_app_cache?
-          checkout
+          Plugin.hook(Plugin::Events::GIT_BEFORE_FETCH, self)
+          begin
+            fetch unless use_app_cache?
+            checkout
+          ensure
+            Plugin.hook(Plugin::Events::GIT_AFTER_FETCH, self)
+          end
         end
 
         local_specs
@@ -238,7 +243,7 @@ module Bundler
       # across different projects, this cache will be shared.
       # When using local git repos, this is set to the local repo.
       def cache_path
-        @cache_path ||= if Bundler.feature_flag.global_gem_cache?
+        @cache_path ||= if Bundler.settings[:global_gem_cache]
           Bundler.user_cache
         else
           Bundler.bundle_path.join("cache", "bundler")
@@ -268,7 +273,7 @@ module Bundler
       private
 
       def cache_to(custom_path, try_migrate: false)
-        return unless Bundler.feature_flag.cache_all?
+        return unless Bundler.settings[:cache_all]
 
         app_cache_path = app_cache_path(custom_path)
 
@@ -416,7 +421,6 @@ module Bundler
       def fetch
         git_proxy.checkout
       rescue GitError => e
-        raise unless Bundler.feature_flag.allow_offline_install?
         Bundler.ui.warn "Using cached git data because of network errors:\n#{e}"
       end
 

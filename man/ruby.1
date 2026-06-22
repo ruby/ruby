@@ -1,6 +1,6 @@
 .\"Ruby is copyrighted by Yukihiro Matsumoto <matz@netlab.jp>.
-.Dd April 14, 2018
-.Dt RUBY \&1 "Ruby Programmer's Reference Guide"
+.Dd June 07, 2026
+.Dt RUBY 1 "Ruby Programmer's Reference Guide"
 .Os UNIX
 .Sh NAME
 .Nm ruby
@@ -287,6 +287,8 @@ to the standard output.
 .It Fl -debug
 Turns on debug mode.
 .Li "$DEBUG"
+and
+.Li "$VERBOSE"
 will be set to true.
 .Pp
 .It Fl e Ar command
@@ -521,13 +523,22 @@ variable is not defined, Ruby refers to
 If set, Ruby tries to free all dynamically allocated memories.
 Introduced in Ruby 3.3, default: unset.
 .Pp
+.It Ev RUBY_BOX
+If set to
+.Li 1 ,
+Ruby Box is enabled and users will be able to execute
+.Li Ruby::Box.new .
+Ruby Box is an experimental feature introduced in Ruby 4.0.
+.Pp
 .It Ev RUBY_IO_BUFFER_DEFAULT_SIZE
 The custom default buffer size of
 .Li IO::Buffer .
 .Pp
 .It Ev RUBY_MAX_CPU
 The maximum number of native threads used by M:N Threads scheduler
-Introduced in Ruby 3.3, default: 8.
+Introduced in Ruby 3.3, default: number of online CPUs.
+As non-main ractors use M:N Threads scheduler, this also sets the
+maximum number of native threads that non-main ractors will use.
 .Pp
 .It Ev RUBY_MN_THREADS
 If set to
@@ -690,6 +701,16 @@ Introduced in Ruby 2.1, default: 1.2, minimum: 1.0 (no growth)
 Frees stacks of pooled fibers, if set to 1.
 Do not free the stacks if set to 0.
 Introduced in Ruby 2.7, default: 1 (no growth)
+.Pp
+.It Ev RUBY_SHARED_FIBER_POOL_MAXIMUM_COUNT
+If set to a non-negative integer, the shared fiber pool cannot allocate more
+than that many stacks; further fiber creation may fail with
+.Va FiberError .
+Unset or 0 means no explicit cap (subject to process limits).
+.Pp
+.It Ev RUBY_SHARED_FIBER_POOL_MINIMUM_COUNT
+Initial and minimum growth chunk size for the shared fiber pool (stacks).
+Unset uses the implementation default.
 .Pp
 .El
 .Sh STACK SIZE ENVIRONMENT

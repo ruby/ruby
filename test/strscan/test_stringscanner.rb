@@ -45,19 +45,6 @@ module StringScannerTests
     assert_same(str, s.string)
   end
 
-  UNINIT_ERROR = ArgumentError
-
-  def test_s_allocate
-    s = StringScanner.allocate
-    assert_equal('#<StringScanner (uninitialized)>', s.inspect.sub(/StringScanner_C/, 'StringScanner'))
-    assert_raise(UNINIT_ERROR) { s.eos? }
-    assert_raise(UNINIT_ERROR) { s.scan(/a/) }
-    s.string = 'test'
-    assert_equal('#<StringScanner 0/4 @ "test">', s.inspect.sub(/StringScanner_C/, 'StringScanner'))
-    assert_nothing_raised(UNINIT_ERROR) { s.eos? }
-    assert_equal(false, s.eos?)
-  end
-
   def test_s_mustc
     assert_nothing_raised(NotImplementedError) {
         StringScanner.must_C_version
@@ -105,11 +92,6 @@ module StringScannerTests
   def test_const_Version
     assert_instance_of(String, StringScanner::Version)
     assert_equal(true, StringScanner::Version.frozen?)
-  end
-
-  def test_const_Id
-    assert_instance_of(String, StringScanner::Id)
-    assert_equal(true, StringScanner::Id.frozen?)
   end
 
   def test_inspect
@@ -543,6 +525,59 @@ module StringScannerTests
     end
   end
 
+  def assert_integer_at(s, specifier, *to_i_args)
+    assert_equal(s[specifier]&.to_i(*to_i_args),
+                 s.integer_at(specifier, *to_i_args))
+  end
+
+  def test_integer_at
+    s = create_string_scanner("before 20260514 after")
+    s.skip_until(" ")
+    assert_equal("20260514", s.scan(/(\d{4})(\d{2})(\d{2})/))
+    assert_integer_at(s, 0)  # 20260514
+    assert_integer_at(s, 1)  # 2026
+    assert_integer_at(s, 2)  # 5
+    assert_integer_at(s, 3)  # 14
+    assert_integer_at(s, 4)  # nil
+    assert_integer_at(s, -1) # 14
+    assert_integer_at(s, -2) # 5
+    assert_integer_at(s, -3) # 2026
+    assert_integer_at(s, -4) # 20260514
+    assert_integer_at(s, -5) # nil
+  end
+
+  def test_integer_at_name_string
+    s = create_string_scanner("before 20260514 after")
+    s.skip_until(" ")
+    assert_equal("20260514", s.scan(/(?<y>\d{4})(?<m>\d{2})(?<d>\d{2})/))
+    assert_integer_at(s, "y")
+    assert_integer_at(s, "m")
+    assert_integer_at(s, "d")
+  end
+
+  def test_integer_at_name_symbol
+    s = create_string_scanner("before 20260514 after")
+    s.skip_until(" ")
+    assert_equal("20260514", s.scan(/(?<y>\d{4})(?<m>\d{2})(?<d>\d{2})/))
+    assert_integer_at(s, :y)
+    assert_integer_at(s, :m)
+    assert_integer_at(s, :d)
+  end
+
+  def test_integer_at_base
+    s = create_string_scanner("before 111 after")
+    s.skip_until(" ")
+    assert_equal("111", s.scan(/\d+/))
+    assert_integer_at(s, 0, 2)
+  end
+
+  def test_integer_at_base_auto
+    s = create_string_scanner("before 0xa_f after")
+    s.skip_until(" ")
+    assert_equal("0xa_f", s.scan(/0x[\h_]+/))
+    assert_integer_at(s, 0, 0) # 0xaf
+  end
+
   def test_pre_match
     s = create_string_scanner('a b c d e')
     s.scan(/\w/)
@@ -875,7 +910,7 @@ module StringScannerTests
     assert_equal({}, s.named_captures)
     assert_equal("te", s.scan(/../))
     assert_equal(nil, s.scan(/\d/))
-    assert_raise(ScanError) { s.unscan }
+    assert_raise(StringScanner::Error) { s.unscan }
   end
 
   def test_rest
@@ -967,6 +1002,12 @@ module StringScannerTests
     assert_equal({}, scan.named_captures)
   end
 
+  def test_named_captures_same_name_union
+    scan = StringScanner.new("123")
+    assert_equal(1, scan.match?(/(?<number>0)|(?<number>1)|(?<number>2)/))
+    assert_equal({"number" => "1"}, scan.named_captures)
+  end
+
   def test_scan_integer
     s = create_string_scanner('abc')
     assert_equal(3, s.match?(/(?<a>abc)/)) # set named_captures
@@ -995,10 +1036,26 @@ module StringScannerTests
     assert_equal(0, s.pos)
     refute_predicate(s, :matched?)
 
+    s = create_string_scanner('-')
+    assert_nil(s.scan_integer)
+    assert_equal(0, s.pos)
+    refute_predicate(s, :matched?)
+
+    s = create_string_scanner('+')
+    assert_nil(s.scan_integer)
+    assert_equal(0, s.pos)
+    refute_predicate(s, :matched?)
+
     huge_integer = '1' * 2_000
     s = create_string_scanner(huge_integer)
     assert_equal(huge_integer.to_i, s.scan_integer)
     assert_equal(2_000, s.pos)
+    assert_predicate(s, :matched?)
+
+    s = create_string_scanner('abc1')
+    s.pos = 3
+    assert_equal(1, s.scan_integer)
+    assert_equal(4, s.pos)
     assert_predicate(s, :matched?)
   end
 

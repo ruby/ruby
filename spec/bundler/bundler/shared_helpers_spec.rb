@@ -159,7 +159,7 @@ RSpec.describe Bundler::SharedHelpers do
     let(:pwd_stub) { nil }
 
     it "returns the current absolute path" do
-      expect(subject.pwd).to eq(source_root)
+      expect(subject.pwd).to eq(git_root.to_s)
     end
   end
 
@@ -423,7 +423,7 @@ RSpec.describe Bundler::SharedHelpers do
       it "sets BUNDLE_BIN_PATH to the bundle executable file" do
         subject.set_bundle_environment
         bin_path = ENV["BUNDLE_BIN_PATH"]
-        expect(bin_path).to eq(bindir.join("bundle").to_s)
+        expect(bin_path).to eq(exedir.join("bundle").to_s)
         expect(File.exist?(bin_path)).to be true
       end
     end
@@ -513,36 +513,6 @@ RSpec.describe Bundler::SharedHelpers do
           Bundler::GenericSystemCallError, /error creating.+underlying.+Shields down/m
         )
       end
-    end
-  end
-
-  describe "#major_deprecation" do
-    before { allow(Bundler).to receive(:bundler_major_version).and_return(37) }
-    before { allow(Bundler.ui).to receive(:warn) }
-
-    it "prints and raises nothing below the deprecated major version" do
-      subject.major_deprecation(38, "Message")
-      subject.major_deprecation(39, "Message", removed_message: "Removal", print_caller_location: true)
-      expect(Bundler.ui).not_to have_received(:warn)
-    end
-
-    it "prints but does not raise _at_ the deprecated major version" do
-      subject.major_deprecation(37, "Message")
-      subject.major_deprecation(37, "Message", removed_message: "Removal")
-      expect(Bundler.ui).to have_received(:warn).with("[DEPRECATED] Message").twice
-
-      subject.major_deprecation(37, "Message", print_caller_location: true)
-      expect(Bundler.ui).to have_received(:warn).
-        with(a_string_matching(/^\[DEPRECATED\] Message \(called at .*:\d+\)$/))
-    end
-
-    it "raises the appropriate errors when _past_ the deprecated major version" do
-      expect { subject.major_deprecation(36, "Message") }.
-        to raise_error(Bundler::DeprecatedError, "[REMOVED] Message")
-      expect { subject.major_deprecation(36, "Message", removed_message: "Removal") }.
-        to raise_error(Bundler::DeprecatedError, "[REMOVED] Removal")
-      expect { subject.major_deprecation(35, "Message", removed_message: "Removal", print_caller_location: true) }.
-        to raise_error(Bundler::DeprecatedError, /^\[REMOVED\] Removal \(called at .*:\d+\)$/)
     end
   end
 end

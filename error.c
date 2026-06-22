@@ -50,6 +50,7 @@
 #include "ruby_assert.h"
 #include "vm_core.h"
 #include "yjit.h"
+#include "zjit.h"
 
 #include "builtin.h"
 
@@ -908,6 +909,10 @@ bug_report_file(const char *file, int line, rb_pid_t *pid)
     int len = err_position_0(buf, sizeof(buf), file, line);
 
     if (out) {
+        /* Disable buffering so crash report output is not lost if
+         * rb_vm_bugreport() triggers a secondary crash (e.g. SIGSEGV
+         * while walking JIT frames). */
+        setvbuf(out, NULL, _IONBF, 0);
         if ((ssize_t)fwrite(buf, 1, len, out) == (ssize_t)len) return out;
         fclose(out);
     }
@@ -1077,9 +1082,14 @@ static void
 die(void)
 {
 #if defined(_WIN32) && defined(RUBY_MSVCRT_VERSION) && RUBY_MSVCRT_VERSION >= 80
+    /* mingw32 declares in stdlib.h but does not provide. */
     _set_abort_behavior( 0, _CALL_REPORTFAULT);
 #endif
 
+    /* Reset SIGABRT to default so that abort() does not trigger our custom
+     * handler (sigabrt), which would re-open the crash report file with "w"
+     * and truncate the report already written by rb_bug(). */
+    signal(SIGABRT, SIG_DFL);
     abort();
 }
 
@@ -1090,7 +1100,7 @@ rb_bug_without_die_internal(const char *fmt, va_list args)
     const char *file = NULL;
     int line = 0;
 
-    if (GET_EC()) {
+    if (rb_current_execution_context(false)) {
         file = rb_source_location_cstr(&line);
     }
 
@@ -1123,7 +1133,7 @@ rb_bug_for_fatal_signal(ruby_sighandler_t default_sighandler, int sig, const voi
     const char *file = NULL;
     int line = 0;
 
-    if (GET_EC()) {
+    if (rb_current_execution_context(false)) {
         file = rb_source_location_cstr(&line);
     }
 
@@ -1312,6 +1322,20 @@ rb_builtin_class_name(VALUE x)
 COLDFUNC NORETURN(static void unexpected_type(VALUE, int, int));
 #define UNDEF_LEAKED "undef leaked to the Ruby space"
 
+void
+rb_unexpected_typeddata(const rb_data_type_t *actual, const rb_data_type_t *expected)
+{
+    rb_raise(rb_eTypeError, "wrong argument type %s (expected %s)",
+             actual->wrap_struct_name, expected->wrap_struct_name);
+}
+
+void
+rb_unexpected_object_type(VALUE obj, const char *expected)
+{
+    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected %s)",
+             displaying_class_of(obj), expected);
+}
+
 static void
 unexpected_type(VALUE x, int xt, int t)
 {
@@ -1319,9 +1343,7 @@ unexpected_type(VALUE x, int xt, int t)
     VALUE mesg, exc = rb_eFatal;
 
     if (tname) {
-        mesg = rb_sprintf("wrong argument type %"PRIsVALUE" (expected %s)",
-                          displaying_class_of(x), tname);
-        exc = rb_eTypeError;
+        rb_unexpected_object_type(x, tname);
     }
     else if (xt > T_MASK && xt <= 0x3f) {
         mesg = rb_sprintf("unknown type 0x%x (0x%x given, probably comes"
@@ -1342,8 +1364,7 @@ rb_check_type(VALUE x, int t)
         rb_bug(UNDEF_LEAKED);
     }
 
-    xt = TYPE(x);
-    if (xt != t || (xt == T_DATA && rbimpl_rtypeddata_p(x))) {
+    if (t == T_DATA) {
         /*
          * Typed data is not simple `T_DATA`, but in a sense an
          * extension of `struct RVALUE`, which are incompatible with
@@ -1352,6 +1373,10 @@ rb_check_type(VALUE x, int t)
          * So it is not enough to just check `T_DATA`, it must be
          * identified by its `type` using `Check_TypedStruct` instead.
          */
+        rb_unexpected_object_type(x, builtin_types[t]);
+    }
+    xt = TYPE(x);
+    if (xt != t) {
         unexpected_type(x, xt, t);
     }
 }
@@ -1366,24 +1391,18 @@ rb_unexpected_type(VALUE x, int t)
     unexpected_type(x, TYPE(x), t);
 }
 
+#undef rb_typeddata_inherited_p
 int
 rb_typeddata_inherited_p(const rb_data_type_t *child, const rb_data_type_t *parent)
 {
-    while (child) {
-        if (child == parent) return 1;
-        child = child->parent;
-    }
-    return 0;
+    return rbimpl_typeddata_inherited_p_inline(child, parent);
 }
 
+#undef rb_typeddata_is_kind_of
 int
 rb_typeddata_is_kind_of(VALUE obj, const rb_data_type_t *data_type)
 {
-    if (!RB_TYPE_P(obj, T_DATA) ||
-        !RTYPEDDATA_P(obj) || !rb_typeddata_inherited_p(RTYPEDDATA_TYPE(obj), data_type)) {
-        return 0;
-    }
-    return 1;
+    return rbimpl_typeddata_is_kind_of_inline(obj, data_type);
 }
 
 #undef rb_typeddata_is_instance_of
@@ -1396,26 +1415,7 @@ rb_typeddata_is_instance_of(VALUE obj, const rb_data_type_t *data_type)
 void *
 rb_check_typeddata(VALUE obj, const rb_data_type_t *data_type)
 {
-    VALUE actual;
-
-    if (!RB_TYPE_P(obj, T_DATA)) {
-        actual = displaying_class_of(obj);
-    }
-    else if (!RTYPEDDATA_P(obj)) {
-        actual = displaying_class_of(obj);
-    }
-    else if (!rb_typeddata_inherited_p(RTYPEDDATA_TYPE(obj), data_type)) {
-        const char *name = RTYPEDDATA_TYPE(obj)->wrap_struct_name;
-        actual = rb_str_new_cstr(name); /* or rb_fstring_cstr? not sure... */
-    }
-    else {
-        return RTYPEDDATA_GET_DATA(obj);
-    }
-
-    const char *expected = data_type->wrap_struct_name;
-    rb_raise(rb_eTypeError, "wrong argument type %"PRIsVALUE" (expected %s)",
-             actual, expected);
-    UNREACHABLE_RETURN(NULL);
+    return rbimpl_check_typeddata(obj, data_type);
 }
 
 /* exception classes */
@@ -1536,7 +1536,7 @@ exc_initialize(int argc, VALUE *argv, VALUE exc)
  *
  *    x0 = StandardError.new('Boom') # => #<StandardError: Boom>
  *    x1 = x0.exception              # => #<StandardError: Boom>
- *    x0.__id__ == x1.__id__         # => true
+ *    x0.equal?(x1)                  # => true
  *
  *  With {string-convertible object}[rdoc-ref:implicit_conversion.rdoc@String-Convertible+Objects]
  *  +message+ (even the same as the original message),
@@ -1544,7 +1544,7 @@ exc_initialize(int argc, VALUE *argv, VALUE exc)
  *  and whose message is the given +message+:
  *
  *    x1 = x0.exception('Boom') # => #<StandardError: Boom>
- *    x0..equal?(x1)            # => false
+ *    x0.equal?(x1)             # => false
  *
  */
 
@@ -1686,7 +1686,7 @@ check_order_keyword(VALUE opt)
  *   - If the value of keyword +order+ is +:top+ (the default),
  *     lists the error message and the innermost backtrace entry first.
  *   - If the value of keyword +order+ is +:bottom+,
- *     lists the error message the the innermost entry last.
+ *     lists the error message the innermost entry last.
  *
  * Example:
  *
@@ -1883,7 +1883,7 @@ exc_inspect(VALUE exc)
  *      # String
  *    end
  *
- *  The value returned by this method migth be adjusted when raising (see Kernel#raise),
+ *  The value returned by this method might be adjusted when raising (see Kernel#raise),
  *  or during intermediate handling by #set_backtrace.
  *
  *  See also #backtrace_locations that provide the same value, as structured objects.
@@ -2171,9 +2171,9 @@ try_convert_to_exception(VALUE obj)
 
 /*
  *  call-seq:
- *    self == object -> true or false
+ *    self == other -> true or false
  *
- *  Returns whether +object+ is the same class as +self+
+ *  Returns whether +other+ is the same class as +self+
  *  and its #message and #backtrace are equal to those of +self+.
  *
  */
@@ -2379,7 +2379,7 @@ name_err_init_attr(VALUE exc, VALUE recv, VALUE method)
     rb_ivar_set(exc, id_name, method);
     err_init_recv(exc, recv);
     if (cfp && VM_FRAME_TYPE(cfp) != VM_FRAME_MAGIC_DUMMY) {
-        rb_ivar_set(exc, id_iseq, rb_iseqw_new(cfp->iseq));
+        rb_ivar_set(exc, id_iseq, rb_iseqw_new(CFP_ISEQ(cfp)));
     }
     return exc;
 }
@@ -2517,30 +2517,21 @@ typedef struct name_error_message_struct {
 } name_error_message_t;
 
 static void
-name_err_mesg_mark(void *p)
+name_err_mesg_mark_and_move(void *p)
 {
     name_error_message_t *ptr = (name_error_message_t *)p;
-    rb_gc_mark_movable(ptr->mesg);
-    rb_gc_mark_movable(ptr->recv);
-    rb_gc_mark_movable(ptr->name);
-}
-
-static void
-name_err_mesg_update(void *p)
-{
-    name_error_message_t *ptr = (name_error_message_t *)p;
-    ptr->mesg = rb_gc_location(ptr->mesg);
-    ptr->recv = rb_gc_location(ptr->recv);
-    ptr->name = rb_gc_location(ptr->name);
+    rb_gc_mark_and_move(&ptr->mesg);
+    rb_gc_mark_and_move(&ptr->recv);
+    rb_gc_mark_and_move(&ptr->name);
 }
 
 static const rb_data_type_t name_err_mesg_data_type = {
     "name_err_mesg",
     {
-        name_err_mesg_mark,
+        name_err_mesg_mark_and_move,
         RUBY_TYPED_DEFAULT_FREE,
         NULL, // No external memory to report,
-        name_err_mesg_update,
+        name_err_mesg_mark_and_move,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
@@ -2628,7 +2619,7 @@ name_err_mesg_to_str(VALUE obj)
     VALUE mesg = ptr->mesg;
     if (NIL_P(mesg)) return Qnil;
     else {
-        struct RString s_str, c_str, d_str;
+        struct RString s_str = {RBASIC_INIT}, c_str = {RBASIC_INIT}, d_str = {RBASIC_INIT};
         VALUE c, s, d = 0, args[4], c2;
         int state = 0;
         rb_encoding *usascii = rb_usascii_encoding();
@@ -2777,6 +2768,68 @@ static VALUE
 nometh_err_private_call_p(VALUE self)
 {
     return rb_attr_get(self, id_private_call_p);
+}
+
+static const char *
+type_err_cname(VALUE val)
+{
+    if (NIL_P(val)) {
+        return "nil";
+    }
+    else if (val == Qtrue) {
+        return "true";
+    }
+    else if (val == Qfalse) {
+        return "false";
+    }
+    return NULL;
+}
+
+NORETURN(static void type_err_raise(VALUE val, const char *tname, const char *msg));
+static void
+type_err_raise(VALUE val, const char *tname, const char *msg)
+{
+    const char *cname = type_err_cname(val);
+    rb_encoding *enc = rb_utf8_encoding();
+    if (cname) {
+        rb_enc_raise(enc, rb_eTypeError, "%s %s into %s", msg, cname, tname);
+    }
+    rb_enc_raise(enc, rb_eTypeError, "%s %"PRIsVALUE" into %s", msg, rb_obj_class(val), tname);
+}
+
+NORETURN(void rb_no_implicit_conversion(VALUE val, const char *tname));
+void
+rb_no_implicit_conversion(VALUE val, const char *tname)
+{
+    type_err_raise(val, tname, "no implicit conversion of");
+}
+
+NORETURN(void rb_cant_convert(VALUE val, const char *tname));
+void
+rb_cant_convert(VALUE val, const char *tname)
+{
+    type_err_raise(val, tname, "can't convert");
+}
+
+NORETURN(void rb_cant_convert_invalid_return(VALUE val, const char *tname, const char *method_name, VALUE ret));
+void
+rb_cant_convert_invalid_return(VALUE val, const char *tname, const char *method_name, VALUE ret)
+{
+    const char *cname = type_err_cname(val);
+    rb_encoding *enc = rb_utf8_encoding();
+    if (cname) {
+        rb_enc_raise(
+            enc, rb_eTypeError, "can't convert %s into %s (%s#%s gives %s)",
+            cname, tname, cname, method_name, type_err_cname(ret));
+    }
+    VALUE klass = rb_obj_class(val);
+    const char *retname = type_err_cname(ret);
+    if (!retname) {
+        retname = rb_obj_classname(ret);
+    }
+    rb_enc_raise(
+        enc, rb_eTypeError, "can't convert %"PRIsVALUE" into %s (%"PRIsVALUE"#%s gives %s)",
+        klass, tname, klass, method_name, retname);
 }
 
 void
@@ -3500,6 +3553,18 @@ syserr_eqq(VALUE self, VALUE exc)
  */
 
 /*
+ *  Document-class: NoMatchingPatternError
+ *
+ *  Raised when matching pattern not found.
+ */
+
+/*
+ *  Document-class: NoMatchingPatternKeyError
+ *
+ *  Raised when matching key not found.
+ */
+
+/*
  * Document-class: fatal
  *
  * +fatal+ is an Exception that is raised when Ruby has encountered a fatal
@@ -4159,7 +4224,7 @@ rb_error_frozen_object(VALUE frozen_obj)
     rb_yjit_lazy_push_frame(GET_EC()->cfp->pc);
 
     VALUE mesg = rb_sprintf("can't modify frozen %"PRIsVALUE": ",
-                            CLASS_OF(frozen_obj));
+                            rb_obj_class(frozen_obj));
     VALUE exc = rb_exc_new_str(rb_eFrozenError, mesg);
 
     rb_ivar_set(exc, id_recv, frozen_obj);
@@ -4195,7 +4260,8 @@ rb_warn_unchilled_literal(VALUE obj)
         VALUE created = get_created_info(str, &line);
         if (NIL_P(created)) {
             rb_str_cat2(mesg, " (run with --debug-frozen-string-literal for more information)\n");
-        } else {
+        }
+        else {
             rb_str_cat2(mesg, "\n");
             rb_str_append(mesg, created);
             if (line) rb_str_catf(mesg, ":%d", line);

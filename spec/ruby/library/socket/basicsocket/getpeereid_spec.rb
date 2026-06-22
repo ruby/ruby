@@ -2,7 +2,7 @@ require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
 describe 'BasicSocket#getpeereid' do
-  with_feature :unix_socket do
+  platform_is_not :windows do
     describe 'using a UNIXSocket' do
       before do
         @path = SocketSpecs.socket_path
@@ -30,7 +30,7 @@ describe 'BasicSocket#getpeereid' do
 
     it 'raises NoMethodError' do
       @sock = TCPServer.new('127.0.0.1', 0)
-      -> { @sock.getpeereid }.should raise_error(NoMethodError)
+      -> { @sock.getpeereid }.should.raise(NoMethodError)
     end
   end
 end

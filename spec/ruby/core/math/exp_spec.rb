@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "Math.exp" do
   it "returns a float" do
-    Math.exp(1.0).should be_kind_of(Float)
+    Math.exp(1.0).should.is_a?(Float)
   end
 
   it "returns the base-e exponential of the argument" do
@@ -14,15 +14,15 @@ describe "Math.exp" do
   end
 
   it "raises a TypeError if the argument cannot be coerced with Float()" do
-    -> { Math.exp("test") }.should raise_error(TypeError)
+    -> { Math.exp("test") }.should.raise(TypeError)
   end
 
   it "returns NaN given NaN" do
-    Math.exp(nan_value).nan?.should be_true
+    Math.exp(nan_value).nan?.should == true
   end
 
   it "raises a TypeError if the argument is nil" do
-    -> { Math.exp(nil) }.should raise_error(TypeError)
+    -> { Math.exp(nil) }.should.raise(TypeError)
   end
 
   it "accepts any argument that can be coerced with Float()" do

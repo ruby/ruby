@@ -1,0 +1,11 @@
+%q
+#{<<B}
+B
+^ unexpected constant, expecting end-of-input
+
+<<A; %q
+A
+#{<<B}
+B
+^ unexpected constant, expecting end-of-input
+

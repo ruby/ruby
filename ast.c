@@ -32,9 +32,13 @@ static size_t
 node_memsize(const void *ptr)
 {
     struct ASTNodeData *data = (struct ASTNodeData *)ptr;
-    rb_ast_t *ast = rb_ruby_ast_data_get(data->ast_value);
+    size_t size = sizeof(struct ASTNodeData);
+    if (data->ast_value) {
+        rb_ast_t *ast = rb_ruby_ast_data_get(data->ast_value);
+        size += rb_ast_memsize(ast);
+    }
 
-    return sizeof(struct ASTNodeData) + rb_ast_memsize(ast);
+    return size;
 }
 
 static const rb_data_type_t rb_node_type = {
@@ -400,6 +404,19 @@ rest_arg(VALUE ast_value, const NODE *rest_arg)
     return NODE_NAMED_REST_P(rest_arg) ? NEW_CHILD(ast_value, rest_arg) : no_name_rest();
 }
 
+static ID
+node_colon_name(const NODE *node)
+{
+    switch (nd_type(node)) {
+      case NODE_COLON2:
+        return RNODE_COLON2(node)->nd_mid;
+      case NODE_COLON3:
+        return RNODE_COLON3(node)->nd_mid;
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+    }
+}
+
 static VALUE
 node_children(VALUE ast_value, const NODE *node)
 {
@@ -493,7 +510,7 @@ node_children(VALUE ast_value, const NODE *node)
         if (RNODE_CDECL(node)->nd_vid) {
             return rb_ary_new_from_args(2, ID2SYM(RNODE_CDECL(node)->nd_vid), NEW_CHILD(ast_value, RNODE_CDECL(node)->nd_value));
         }
-        return rb_ary_new_from_args(3, NEW_CHILD(ast_value, RNODE_CDECL(node)->nd_else), ID2SYM(RNODE_COLON2(RNODE_CDECL(node)->nd_else)->nd_mid), NEW_CHILD(ast_value, RNODE_CDECL(node)->nd_value));
+        return rb_ary_new_from_args(3, NEW_CHILD(ast_value, RNODE_CDECL(node)->nd_else), ID2SYM(node_colon_name(RNODE_CDECL(node)->nd_else)), NEW_CHILD(ast_value, RNODE_CDECL(node)->nd_value));
       case NODE_OP_ASGN1:
         return rb_ary_new_from_args(4, NEW_CHILD(ast_value, RNODE_OP_ASGN1(node)->nd_recv),
                                     ID2SYM(RNODE_OP_ASGN1(node)->nd_mid),
@@ -681,7 +698,7 @@ node_children(VALUE ast_value, const NODE *node)
                                             : var_name(ainfo->rest_arg)),
                                         (ainfo->no_kwarg ? Qfalse : NEW_CHILD(ast_value, (NODE *)ainfo->kw_args)),
                                         (ainfo->no_kwarg ? Qfalse : NEW_CHILD(ast_value, ainfo->kw_rest_arg)),
-                                        var_name(ainfo->block_arg));
+                                        (ainfo->no_blockarg ? Qfalse : var_name(ainfo->block_arg)));
         }
       case NODE_SCOPE:
         {
@@ -812,6 +829,20 @@ node_locations(VALUE ast_value, const NODE *node)
                                     location_new(&RNODE_CLASS(node)->class_keyword_loc),
                                     location_new(&RNODE_CLASS(node)->inheritance_operator_loc),
                                     location_new(&RNODE_CLASS(node)->end_keyword_loc));
+      case NODE_COLON2:
+        return rb_ary_new_from_args(3,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_COLON2(node)->delimiter_loc),
+                                    location_new(&RNODE_COLON2(node)->name_loc));
+      case NODE_COLON3:
+        return rb_ary_new_from_args(3,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_COLON3(node)->delimiter_loc),
+                                    location_new(&RNODE_COLON3(node)->name_loc));
+      case NODE_DEFINED:
+        return rb_ary_new_from_args(2,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_DEFINED(node)->keyword_loc));
       case NODE_DOT2:
         return rb_ary_new_from_args(2,
                                     location_new(nd_code_loc(node)),
@@ -852,6 +883,17 @@ node_locations(VALUE ast_value, const NODE *node)
                                     location_new(&RNODE_IF(node)->if_keyword_loc),
                                     location_new(&RNODE_IF(node)->then_keyword_loc),
                                     location_new(&RNODE_IF(node)->end_keyword_loc));
+      case NODE_IN:
+        return rb_ary_new_from_args(4,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_IN(node)->in_keyword_loc),
+                                    location_new(&RNODE_IN(node)->then_keyword_loc),
+                                    location_new(&RNODE_IN(node)->operator_loc));
+      case NODE_MODULE:
+        return rb_ary_new_from_args(3,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_MODULE(node)->module_keyword_loc),
+                                    location_new(&RNODE_MODULE(node)->end_keyword_loc));
       case NODE_NEXT:
         return rb_ary_new_from_args(2,
                                     location_new(nd_code_loc(node)),
@@ -893,6 +935,14 @@ node_locations(VALUE ast_value, const NODE *node)
         return rb_ary_new_from_args(2,
                                     location_new(nd_code_loc(node)),
                                     location_new(&RNODE_RETURN(node)->keyword_loc));
+
+      case NODE_SCLASS:
+        return rb_ary_new_from_args(4,
+                                    location_new(nd_code_loc(node)),
+                                    location_new(&RNODE_SCLASS(node)->class_keyword_loc),
+                                    location_new(&RNODE_SCLASS(node)->operator_loc),
+                                    location_new(&RNODE_SCLASS(node)->end_keyword_loc));
+
       case NODE_SPLAT:
         return rb_ary_new_from_args(2,
                                     location_new(nd_code_loc(node)),

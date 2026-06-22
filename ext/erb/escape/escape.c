@@ -39,35 +39,50 @@ static VALUE
 optimized_escape_html(VALUE str)
 {
     VALUE vbuf;
-    char *buf = ALLOCV_N(char, vbuf, escaped_length(str));
+    char *buf = NULL;
     const char *cstr = RSTRING_PTR(str);
     const char *end = cstr + RSTRING_LEN(str);
 
-    char *dest = buf;
+    const char *segment_start = cstr;
+    char *dest = NULL;
     while (cstr < end) {
         const unsigned char c = *cstr++;
         uint8_t len = html_escape_table[c].len;
         if (len) {
+            size_t segment_len = cstr - segment_start - 1;
+            if (!buf) {
+                buf = ALLOCV_N(char, vbuf, escaped_length(str));
+                dest = buf;
+            }
+            if (segment_len) {
+                memcpy(dest, segment_start, segment_len);
+                dest += segment_len;
+            }
+            segment_start = cstr;
             memcpy(dest, html_escape_table[c].str, len);
             dest += len;
         }
-        else {
-            *dest++ = c;
-        }
     }
-
     VALUE escaped = str;
-    if (RSTRING_LEN(str) < (dest - buf)) {
+    if (buf) {
+        size_t segment_len = cstr - segment_start;
+        if (segment_len) {
+            memcpy(dest, segment_start, segment_len);
+            dest += segment_len;
+        }
         escaped = rb_str_new(buf, dest - buf);
         preserve_original_state(str, escaped);
+        ALLOCV_END(vbuf);
     }
-    ALLOCV_END(vbuf);
     return escaped;
 }
 
-// ERB::Util.html_escape is different from CGI.escapeHTML in the following two parts:
-//   * ERB::Util.html_escape converts an argument with #to_s first (only if it's not T_STRING)
-//   * ERB::Util.html_escape does not allocate a new string when nothing needs to be escaped
+/*
+ * ERB::Util.html_escape is similar to CGI.escapeHTML but different in the following two parts:
+ *
+ * * ERB::Util.html_escape converts an argument with #to_s first (only if it's not T_STRING)
+ * * ERB::Util.html_escape does not allocate a new string when nothing needs to be escaped
+ */
 static VALUE
 erb_escape_html(VALUE self, VALUE str)
 {
@@ -86,6 +101,10 @@ erb_escape_html(VALUE self, VALUE str)
 void
 Init_escape(void)
 {
+#ifdef HAVE_RB_EXT_RACTOR_SAFE
+    rb_ext_ractor_safe(true);
+#endif
+
     rb_cERB = rb_define_class("ERB", rb_cObject);
     rb_mEscape = rb_define_module_under(rb_cERB, "Escape");
     rb_define_module_function(rb_mEscape, "html_escape", erb_escape_html, 1);

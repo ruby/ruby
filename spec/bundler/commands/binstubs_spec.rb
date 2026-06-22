@@ -156,29 +156,20 @@ RSpec.describe "bundle binstubs <gem>" do
     end
   end
 
-  context "--path" do
-    it "sets the binstubs dir" do
-      install_gemfile <<-G
-        source "https://gem.repo1"
-        gem "myrack"
-      G
-
-      bundle "binstubs myrack --path exec"
-
-      expect(bundled_app("exec/myrackup")).to exist
+  context "with the binstubs dir configured" do
+    before do
+      bundle_config "bin exec"
     end
 
-    it "setting is saved for bundle install", bundler: "< 3" do
+    it "creates the binstubs in the configured dir" do
       install_gemfile <<-G
         source "https://gem.repo1"
         gem "myrack"
-        gem "rails"
       G
 
-      bundle "binstubs myrack", path: "exec"
-      bundle :install
+      bundle "binstubs myrack"
 
-      expect(bundled_app("exec/rails")).to exist
+      expect(bundled_app("exec/myrackup")).to exist
     end
   end
 
@@ -201,11 +192,10 @@ RSpec.describe "bundle binstubs <gem>" do
       expect(File.read(bundled_app("bin/myrackup"))).to_not include("Gem.bin_path")
     end
 
-    context "when specified --path option" do
-      it "generates a standalone binstub at the given path" do
-        bundle "binstubs myrack --standalone --path foo"
-        expect(bundled_app("foo/myrackup")).to exist
-      end
+    it "generates a standalone binstub at the given path when configured" do
+      bundle_config "bin foo"
+      bundle "binstubs myrack --standalone"
+      expect(bundled_app("foo/myrackup")).to exist
     end
 
     context "when specified --all-platforms option" do
@@ -323,7 +313,7 @@ RSpec.describe "bundle binstubs <gem>" do
         gem "myrack"
       G
 
-      bundle "config set auto_install 1"
+      bundle_config "auto_install 1"
       bundle "binstubs myrack"
       expect(out).to include("Installing myrack 1.0.0")
       expect(the_bundle).to include_gems "myrack 1.0.0"
@@ -335,7 +325,7 @@ RSpec.describe "bundle binstubs <gem>" do
         gem "myrack"
       G
 
-      bundle "config set auto_install 1"
+      bundle_config "auto_install 1"
       bundle "binstubs myrack", env: { "BUNDLE_INSTALL" => "1" }
       expect(out).not_to include("Installing myrack 1.0.0")
     end

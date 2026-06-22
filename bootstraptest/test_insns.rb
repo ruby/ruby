@@ -86,7 +86,7 @@ tests = [
   [ 'putobject',            %q{ /(?<x>x)/ =~ "x"; x == "x" }, ],
 
   [ 'putspecialobject',         %q{ {//=>true}[//] }, ],
-  [ 'putstring',                %q{ "true" }, ],
+  [ 'dupstring',                %q{ "true" }, ],
   [ 'tostring / concatstrings', %q{ "#{true}" }, ],
   [ 'toregexp',                 %q{ /#{true}/ =~ "true" && $~ }, ],
   [ 'intern',                   %q{ :"#{true}" }, ],
@@ -425,11 +425,6 @@ tests = [
     x = X.new
     x&.x[true] ||= true         # here
   },
-
-  [ 'opt_aref_with', %q{ { 'true' => true }['true'] }, ],
-  [ 'opt_aref_with', %q{ Struct.new(:nil).new['nil'].nil? }, ],
-  [ 'opt_aset_with', %q{ {}['true'] = true }, ],
-  [ 'opt_aset_with', %q{ Struct.new(:true).new['true'] = true }, ],
 
   [ 'opt_length',  %q{   'true'       .length == 4 }, ],
   [ 'opt_length',  %q{   :true        .length == 4 }, ],

@@ -12,6 +12,9 @@
 # You can get source file for gperf.  After this, simply make ruby.
 # Or directly run:
 # tool/enc-unicode.rb --header data_dir emoji_data_dir > enc/unicode/<VERSION>/name2ctype.h
+#
+# There are Makefile rules that automate steps above: `make update-unicode` and
+# `make enc/unicode/<VERSION>/name2ctype.h`.
 
 while arg = ARGV.shift
   case arg
@@ -143,7 +146,8 @@ def define_posix_props(data)
   data['Space'] = data['White_Space']
   data['Blank'] = data['Space_Separator'] + [0x0009]
   data['Cntrl'] = data['Cc']
-  data['Word'] = data['Alpha'] + data['Mark'] + data['Digit'] + data['Connector_Punctuation']
+  data['Word'] = data['Alpha'] + data['Mark'] + data['Digit'] +
+    data['Connector_Punctuation'] + data['Join_Control']
   data['Graph'] = data['Any'] - data['Space'] - data['Cntrl'] -
     data['Surrogate'] - data['Unassigned']
   data['Print'] = data['Graph'] + data['Space_Separator']

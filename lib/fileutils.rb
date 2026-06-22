@@ -181,7 +181,7 @@ end
 #
 module FileUtils
   # The version number.
-  VERSION = "1.7.3"
+  VERSION = "1.8.0"
 
   def self.private_module_function(name)   #:nodoc:
     module_function name
@@ -279,38 +279,67 @@ module FileUtils
   end
   private_module_function :remove_trailing_slash
 
+  # :markup: markdown
   #
-  # Creates directories at the paths in the given +list+
-  # (a single path or an array of paths);
-  # returns +list+ if it is an array, <tt>[list]</tt> otherwise.
+  # call-seq:
+  #   FileUtils.mkdir(*paths, mode: 0775, noop: nil, verbose: nil) -> array_of_paths or nil
   #
-  # Argument +list+ or its elements
-  # should be {interpretable as paths}[rdoc-ref:FileUtils@Path+Arguments].
+  # Argument `paths` may be one path or an array of paths;
+  # each must be {interpretable as a path}[rdoc-ref:FileUtils@Path+Arguments].
   #
-  # With no keyword arguments, creates a directory at each +path+ in +list+
-  # by calling: <tt>Dir.mkdir(path, mode)</tt>;
-  # see {Dir.mkdir}[rdoc-ref:Dir.mkdir]:
+  # By default, creates a directory entry at each of the given `paths`;
+  # each directory has permissions `0775`;
+  # returns an array of the paths:
   #
-  #   FileUtils.mkdir(%w[tmp0 tmp1]) # => ["tmp0", "tmp1"]
-  #   FileUtils.mkdir('tmp4')        # => ["tmp4"]
+  # ```ruby
+  # FileUtils.mkdir('foo')                 # => ["foo"]
+  # FileUtils.mkdir(%w[bar baz])           # => ["bar", "baz"]
+  # File.stat(Dir.new('foo')).mode.to_s(8) # => "40775"
+  # File.stat(Dir.new('bar')).mode.to_s(8) # => "40775"
+  # File.stat(Dir.new('baz')).mode.to_s(8) # => "40775"
+  # FileUtils.rmdir(%w[foo bar baz])       # => ["foo", "bar", "baz"]
+  # ```
   #
-  # Keyword arguments:
+  # Raises an exception if for any reason a directory cannot be created;
+  # a common reason is that the directory already exists.
   #
-  # - <tt>mode: <i>mode</i></tt> - also calls <tt>File.chmod(mode, path)</tt>;
-  #   see {File.chmod}[rdoc-ref:File.chmod].
-  # - <tt>noop: true</tt> - does not create directories.
-  # - <tt>verbose: true</tt> - prints an equivalent command:
+  # With keyword argument `mode` given,
+  # creates directories with the given permissions:
   #
-  #     FileUtils.mkdir(%w[tmp0 tmp1], verbose: true)
-  #     FileUtils.mkdir(%w[tmp2 tmp3], mode: 0700, verbose: true)
+  # ```ruby
+  # FileUtils.mkdir('bar', mode: 0664)
+  # File.stat(Dir.new('bar')).mode.to_s(8) # => "40664"
+  # FileUtils.rmdir('bar')
+  # ```
   #
-  #   Output:
+  # With keyword argument `noop` given as `true`,
+  # does not create directories;
+  # returns `nil`
   #
-  #     mkdir tmp0 tmp1
-  #     mkdir -m 700 tmp2 tmp3
+  # ```ruby
+  # FileUtils.mkdir('foo', noop: true) # => nil
+  # Dir.exist?('foo')                  # => false
+  # ```
   #
-  # Raises an exception if any path points to an existing
-  # file or directory, or if for any reason a directory cannot be created.
+  # With keyword argument `verbose` given as `true`,
+  # prints a shell command:
+  #
+  # ```ruby
+  # FileUtils.mkdir('foo', verbose: true)
+  # FileUtils.mkdir(%w[bar baz], mode: 0644, verbose: true)
+  # FileUtils.mkdir(%w[bar baz], mode: 0644, verbose: true, noop: true)
+  # ```
+  #
+  # Output:
+  #
+  # ```text
+  # mkdir foo
+  # mkdir -m 644 bar baz
+  # mkdir -m 644 bar baz
+  # ```
+  #
+  # Note that in the last call above (containing `noop: true`)
+  # the existence of the directory is not checked.
   #
   # Related: FileUtils.mkdir_p.
   #
@@ -706,11 +735,12 @@ module FileUtils
   #
   def ln_s(src, dest, force: nil, relative: false, target_directory: true, noop: nil, verbose: nil)
     if relative
-      return ln_sr(src, dest, force: force, noop: noop, verbose: verbose)
+      return ln_sr(src, dest, force: force, target_directory: target_directory, noop: noop, verbose: verbose)
     end
-    fu_output_message "ln -s#{force ? 'f' : ''} #{[src,dest].flatten.join ' '}" if verbose
+    fu_output_message "ln -s#{force ? 'f' : ''}#{
+      target_directory ? '' : 'T'} #{[src,dest].flatten.join ' '}" if verbose
     return if noop
-    fu_each_src_dest0(src, dest) do |s,d|
+    fu_each_src_dest0(src, dest, target_directory) do |s,d|
       remove_file d, true if force
       File.symlink s, d
     end
@@ -730,41 +760,36 @@ module FileUtils
   # Like FileUtils.ln_s, but create links relative to +dest+.
   #
   def ln_sr(src, dest, target_directory: true, force: nil, noop: nil, verbose: nil)
-    options = "#{force ? 'f' : ''}#{target_directory ? '' : 'T'}"
-    dest = File.path(dest)
-    srcs = Array(src)
-    link = proc do |s, target_dir_p = true|
-      s = File.path(s)
-      if target_dir_p
-        d = File.join(destdirs = dest, File.basename(s))
+    cmd = "ln -s#{force ? 'f' : ''}#{target_directory ? '' : 'T'}" if verbose
+    fu_each_src_dest0(src, dest, target_directory) do |s,d|
+      if target_directory
+        parent = File.dirname(d)
+        destdirs = fu_split_path(parent)
+        real_ddirs = fu_split_path(File.realpath(parent))
       else
-        destdirs = File.dirname(d = dest)
+        destdirs ||= fu_split_path(dest)
+        real_ddirs ||= fu_split_path(File.realdirpath(dest))
       end
-      destdirs = fu_split_path(File.realpath(destdirs))
-      if fu_starting_path?(s)
-        srcdirs = fu_split_path((File.realdirpath(s) rescue File.expand_path(s)))
-        base = fu_relative_components_from(srcdirs, destdirs)
-        s = File.join(*base)
+      srcdirs = fu_split_path(s)
+      i = fu_common_components(srcdirs, destdirs)
+      n = destdirs.size - i
+      n -= 1 unless target_directory
+      link1 = fu_clean_components(*Array.new([n, 0].max, '..'), *srcdirs[i..-1])
+      begin
+        real_sdirs = fu_split_path(File.realdirpath(s)) rescue nil
+      rescue
       else
-        srcdirs = fu_clean_components(*fu_split_path(s))
-        base = fu_relative_components_from(fu_split_path(Dir.pwd), destdirs)
-        while srcdirs.first&. == ".." and base.last&.!=("..") and !fu_starting_path?(base.last)
-          srcdirs.shift
-          base.pop
-        end
-        s = File.join(*base, *srcdirs)
+        i = fu_common_components(real_sdirs, real_ddirs)
+        n = real_ddirs.size - i
+        n -= 1 unless target_directory
+        link2 = fu_clean_components(*Array.new([n, 0].max, '..'), *real_sdirs[i..-1])
+        link1 = link2 if link1.size > link2.size
       end
-      fu_output_message "ln -s#{options} #{s} #{d}" if verbose
+      s = File.join(link1)
+      fu_output_message [cmd, s, d].flatten.join(' ') if verbose
       next if noop
       remove_file d, true if force
       File.symlink s, d
-    end
-    case srcs.size
-    when 0
-    when 1
-      link[srcs[0], target_directory && File.directory?(dest)]
-    else
-      srcs.each(&link)
     end
   end
   module_function :ln_sr
@@ -800,13 +825,13 @@ module FileUtils
   #   File.file?('dest1/dir1/t2.txt') # => true
   #   File.file?('dest1/dir1/t3.txt') # => true
   #
-  # Keyword arguments:
+  # Optional arguments:
   #
-  # - <tt>dereference_root: true</tt> - dereferences +src+ if it is a symbolic link.
-  # - <tt>remove_destination: true</tt> - removes +dest+ before creating links.
+  # - +dereference_root+ - dereferences +src+ if it is a symbolic link (+false+ by default).
+  # - +remove_destination+ - removes +dest+ before creating links (+false+ by default).
   #
   # Raises an exception if +dest+ is the path to an existing file or directory
-  # and keyword argument <tt>remove_destination: true</tt> is not given.
+  # and optional argument +remove_destination+ is not given.
   #
   # Related: FileUtils.ln (has different options).
   #
@@ -1029,12 +1054,12 @@ module FileUtils
   # directories, and symbolic links;
   # other file types (FIFO streams, device files, etc.) are not supported.
   #
-  # Keyword arguments:
+  # Optional arguments:
   #
-  # - <tt>dereference_root: true</tt> - if +src+ is a symbolic link,
-  #   follows the link.
-  # - <tt>preserve: true</tt> - preserves file times.
-  # - <tt>remove_destination: true</tt> - removes +dest+ before copying files.
+  # - +dereference_root+ - if +src+ is a symbolic link,
+  #   follows the link (+false+ by default).
+  # - +preserve+ - preserves file times (+false+ by default).
+  # - +remove_destination+ - removes +dest+ before copying files (+false+ by default).
   #
   # Related: {methods for copying}[rdoc-ref:FileUtils@Copying].
   #
@@ -1065,12 +1090,12 @@ module FileUtils
   #   FileUtils.copy_file('src0.txt', 'dest0.txt')
   #   File.file?('dest0.txt') # => true
   #
-  # Keyword arguments:
+  # Optional arguments:
   #
-  # - <tt>dereference: false</tt> - if +src+ is a symbolic link,
-  #   does not follow the link.
-  # - <tt>preserve: true</tt> - preserves file times.
-  # - <tt>remove_destination: true</tt> - removes +dest+ before copying files.
+  # - +dereference+ - if +src+ is a symbolic link,
+  #   follows the link (+true+ by default).
+  # - +preserve+ - preserves file times (+false+ by default).
+  # - +remove_destination+ - removes +dest+ before copying files (+false+ by default).
   #
   # Related: {methods for copying}[rdoc-ref:FileUtils@Copying].
   #
@@ -1491,7 +1516,8 @@ module FileUtils
   # Related: {methods for deleting}[rdoc-ref:FileUtils@Deleting].
   #
   def remove_dir(path, force = false)
-    remove_entry path, force   # FIXME?? check if it is a directory
+    raise Errno::ENOTDIR, path unless force or File.directory?(path)
+    remove_entry path, force
   end
   module_function :remove_dir
 
@@ -2475,6 +2501,10 @@ module FileUtils
 
   def fu_each_src_dest0(src, dest, target_directory = true)   #:nodoc:
     if tmp = Array.try_convert(src)
+      unless target_directory or tmp.size <= 1
+        tmp = tmp.map {|f| File.path(f)} # A workaround for RBS
+        raise ArgumentError, "extra target #{tmp}"
+      end
       tmp.each do |s|
         s = File.path(s)
         yield s, (target_directory ? File.join(dest, File.basename(s)) : dest)
@@ -2509,7 +2539,11 @@ module FileUtils
     path = File.path(path)
     list = []
     until (parent, base = File.split(path); parent == path or parent == ".")
-      list << base
+      if base != '..' and list.last == '..' and !(fu_have_symlink? && File.symlink?(path))
+        list.pop
+      else
+        list << base
+      end
       path = parent
     end
     list << path
@@ -2517,14 +2551,14 @@ module FileUtils
   end
   private_module_function :fu_split_path
 
-  def fu_relative_components_from(target, base) #:nodoc:
+  def fu_common_components(target, base) #:nodoc:
     i = 0
     while target[i]&.== base[i]
       i += 1
     end
-    Array.new(base.size-i, '..').concat(target[i..-1])
+    i
   end
-  private_module_function :fu_relative_components_from
+  private_module_function :fu_common_components
 
   def fu_clean_components(*comp) #:nodoc:
     comp.shift while comp.first == "."
@@ -2534,7 +2568,7 @@ module FileUtils
     while c = comp.shift
       if c == ".." and clean.last != ".." and !(fu_have_symlink? && File.symlink?(path))
         clean.pop
-        path.chomp!(%r((?<=\A|/)[^/]+/\z), "")
+        path.sub!(%r((?<=\A|/)[^/]+/\z), "")
       else
         clean << c
         path << c << "/"

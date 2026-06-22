@@ -1,4 +1,18 @@
-#include "prism/static_literals.h"
+#include "prism/internal/static_literals.h"
+
+#include "prism/compiler/inline.h"
+#include "prism/compiler/unused.h"
+
+#include "prism/internal/allocator.h"
+#include "prism/internal/buffer.h"
+#include "prism/internal/integer.h"
+#include "prism/internal/isinf.h"
+#include "prism/internal/stringy.h"
+
+#include <assert.h>
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
 
 /**
  * A small struct used for passing around a subset of the information that is
@@ -7,7 +21,10 @@
  */
 typedef struct {
     /** The list of newline offsets to use to calculate line numbers. */
-    const pm_newline_list_t *newline_list;
+    const pm_line_offset_list_t *line_offsets;
+
+    /** The start of the source being parsed. */
+    const uint8_t *start;
 
     /** The line number that the parser starts on. */
     int32_t start_line;
@@ -16,7 +33,7 @@ typedef struct {
     const char *encoding_name;
 } pm_static_literals_metadata_t;
 
-static inline uint32_t
+static PRISM_INLINE uint32_t
 murmur_scramble(uint32_t value) {
     value *= 0xcc9e2d51;
     value = (value << 15) | (value >> 17);
@@ -92,7 +109,7 @@ node_hash(const pm_static_literals_metadata_t *metadata, const pm_node_t *node) 
         }
         case PM_SOURCE_LINE_NODE: {
             // Source lines hash their line number.
-            const pm_line_column_t line_column = pm_newline_list_line_column(metadata->newline_list, node->location.start, metadata->start_line);
+            const pm_line_column_t line_column = pm_line_offset_list_line_column(metadata->line_offsets, node->location.start, metadata->start_line);
             const int32_t *value = &line_column.line;
             return murmur_hash((const uint8_t *) value, sizeof(int32_t));
         }
@@ -180,7 +197,7 @@ pm_node_hash_insert(pm_node_hash_t *hash, const pm_static_literals_metadata_t *m
         }
 
         // Finally, free the old node list and update the hash.
-        xfree(hash->nodes);
+        xfree_sized(hash->nodes, hash->capacity * sizeof(pm_node_t *));
         hash->nodes = new_nodes;
         hash->capacity = new_capacity;
     }
@@ -218,7 +235,7 @@ pm_node_hash_insert(pm_node_hash_t *hash, const pm_static_literals_metadata_t *m
  */
 static void
 pm_node_hash_free(pm_node_hash_t *hash) {
-    if (hash->capacity > 0) xfree(hash->nodes);
+    if (hash->capacity > 0) xfree_sized(hash->nodes, hash->capacity * sizeof(pm_node_t *));
 }
 
 /**
@@ -240,7 +257,7 @@ pm_int64_value(const pm_static_literals_metadata_t *metadata, const pm_node_t *n
             return integer->negative ? -value : value;
         }
         case PM_SOURCE_LINE_NODE:
-            return (int64_t) pm_newline_list_line_column(metadata->newline_list, node->location.start, metadata->start_line).line;
+            return (int64_t) pm_line_offset_list_line_column(metadata->line_offsets, node->location.start, metadata->start_line).line;
         default:
             assert(false && "unreachable");
             return 0;
@@ -268,7 +285,7 @@ pm_compare_integer_nodes(const pm_static_literals_metadata_t *metadata, const pm
  * A comparison function for comparing two FloatNode instances.
  */
 static int
-pm_compare_float_nodes(PRISM_ATTRIBUTE_UNUSED const pm_static_literals_metadata_t *metadata, const pm_node_t *left, const pm_node_t *right) {
+pm_compare_float_nodes(PRISM_UNUSED const pm_static_literals_metadata_t *metadata, const pm_node_t *left, const pm_node_t *right) {
     const double left_value = ((const pm_float_node_t *) left)->value;
     const double right_value = ((const pm_float_node_t *) right)->value;
     return PM_NUMERIC_COMPARISON(left_value, right_value);
@@ -327,7 +344,7 @@ pm_string_value(const pm_node_t *node) {
  * A comparison function for comparing two nodes that have attached strings.
  */
 static int
-pm_compare_string_nodes(PRISM_ATTRIBUTE_UNUSED const pm_static_literals_metadata_t *metadata, const pm_node_t *left, const pm_node_t *right) {
+pm_compare_string_nodes(PRISM_UNUSED const pm_static_literals_metadata_t *metadata, const pm_node_t *left, const pm_node_t *right) {
     const pm_string_t *left_string = pm_string_value(left);
     const pm_string_t *right_string = pm_string_value(right);
     return pm_string_compare(left_string, right_string);
@@ -337,7 +354,7 @@ pm_compare_string_nodes(PRISM_ATTRIBUTE_UNUSED const pm_static_literals_metadata
  * A comparison function for comparing two RegularExpressionNode instances.
  */
 static int
-pm_compare_regular_expression_nodes(PRISM_ATTRIBUTE_UNUSED const pm_static_literals_metadata_t *metadata, const pm_node_t *left, const pm_node_t *right) {
+pm_compare_regular_expression_nodes(PRISM_UNUSED const pm_static_literals_metadata_t *metadata, const pm_node_t *left, const pm_node_t *right) {
     const pm_regular_expression_node_t *left_regexp = (const pm_regular_expression_node_t *) left;
     const pm_regular_expression_node_t *right_regexp = (const pm_regular_expression_node_t *) right;
 
@@ -353,14 +370,15 @@ pm_compare_regular_expression_nodes(PRISM_ATTRIBUTE_UNUSED const pm_static_liter
  * Add a node to the set of static literals.
  */
 pm_node_t *
-pm_static_literals_add(const pm_newline_list_t *newline_list, int32_t start_line, pm_static_literals_t *literals, pm_node_t *node, bool replace) {
+pm_static_literals_add(const pm_line_offset_list_t *line_offsets, const uint8_t *start, int32_t start_line, pm_static_literals_t *literals, pm_node_t *node, bool replace) {
     switch (PM_NODE_TYPE(node)) {
         case PM_INTEGER_NODE:
         case PM_SOURCE_LINE_NODE:
             return pm_node_hash_insert(
                 &literals->integer_nodes,
                 &(pm_static_literals_metadata_t) {
-                    .newline_list = newline_list,
+                    .line_offsets = line_offsets,
+                    .start = start,
                     .start_line = start_line,
                     .encoding_name = NULL
                 },
@@ -372,7 +390,8 @@ pm_static_literals_add(const pm_newline_list_t *newline_list, int32_t start_line
             return pm_node_hash_insert(
                 &literals->float_nodes,
                 &(pm_static_literals_metadata_t) {
-                    .newline_list = newline_list,
+                    .line_offsets = line_offsets,
+                    .start = start,
                     .start_line = start_line,
                     .encoding_name = NULL
                 },
@@ -385,7 +404,8 @@ pm_static_literals_add(const pm_newline_list_t *newline_list, int32_t start_line
             return pm_node_hash_insert(
                 &literals->number_nodes,
                 &(pm_static_literals_metadata_t) {
-                    .newline_list = newline_list,
+                    .line_offsets = line_offsets,
+                    .start = start,
                     .start_line = start_line,
                     .encoding_name = NULL
                 },
@@ -398,7 +418,8 @@ pm_static_literals_add(const pm_newline_list_t *newline_list, int32_t start_line
             return pm_node_hash_insert(
                 &literals->string_nodes,
                 &(pm_static_literals_metadata_t) {
-                    .newline_list = newline_list,
+                    .line_offsets = line_offsets,
+                    .start = start,
                     .start_line = start_line,
                     .encoding_name = NULL
                 },
@@ -410,7 +431,8 @@ pm_static_literals_add(const pm_newline_list_t *newline_list, int32_t start_line
             return pm_node_hash_insert(
                 &literals->regexp_nodes,
                 &(pm_static_literals_metadata_t) {
-                    .newline_list = newline_list,
+                    .line_offsets = line_offsets,
+                    .start = start,
                     .start_line = start_line,
                     .encoding_name = NULL
                 },
@@ -422,7 +444,8 @@ pm_static_literals_add(const pm_newline_list_t *newline_list, int32_t start_line
             return pm_node_hash_insert(
                 &literals->symbol_nodes,
                 &(pm_static_literals_metadata_t) {
-                    .newline_list = newline_list,
+                    .line_offsets = line_offsets,
+                    .start = start,
                     .start_line = start_line,
                     .encoding_name = NULL
                 },
@@ -492,7 +515,7 @@ pm_static_literal_positive_p(const pm_node_t *node) {
 /**
  * Create a string-based representation of the given static literal.
  */
-static inline void
+static PRISM_INLINE void
 pm_static_literal_inspect_node(pm_buffer_t *buffer, const pm_static_literals_metadata_t *metadata, const pm_node_t *node) {
     switch (PM_NODE_TYPE(node)) {
         case PM_FALSE_NODE:
@@ -502,12 +525,12 @@ pm_static_literal_inspect_node(pm_buffer_t *buffer, const pm_static_literals_met
             const double value = ((const pm_float_node_t *) node)->value;
 
             if (PRISM_ISINF(value)) {
-                if (*node->location.start == '-') {
+                if (metadata->start[node->location.start] == '-') {
                     pm_buffer_append_byte(buffer, '-');
                 }
                 pm_buffer_append_string(buffer, "Infinity", 8);
             } else if (value == 0.0) {
-                if (*node->location.start == '-') {
+                if (metadata->start[node->location.start] == '-') {
                     pm_buffer_append_byte(buffer, '-');
                 }
                 pm_buffer_append_string(buffer, "0.0", 3);
@@ -576,7 +599,7 @@ pm_static_literal_inspect_node(pm_buffer_t *buffer, const pm_static_literals_met
             break;
         }
         case PM_SOURCE_LINE_NODE:
-            pm_buffer_append_format(buffer, "%d", pm_newline_list_line_column(metadata->newline_list, node->location.start, metadata->start_line).line);
+            pm_buffer_append_format(buffer, "%d", pm_line_offset_list_line_column(metadata->line_offsets, node->location.start, metadata->start_line).line);
             break;
         case PM_STRING_NODE: {
             const pm_string_t *unescaped = &((const pm_string_node_t *) node)->unescaped;
@@ -604,11 +627,12 @@ pm_static_literal_inspect_node(pm_buffer_t *buffer, const pm_static_literals_met
  * Create a string-based representation of the given static literal.
  */
 void
-pm_static_literal_inspect(pm_buffer_t *buffer, const pm_newline_list_t *newline_list, int32_t start_line, const char *encoding_name, const pm_node_t *node) {
+pm_static_literal_inspect(pm_buffer_t *buffer, const pm_line_offset_list_t *line_offsets, const uint8_t *start, int32_t start_line, const char *encoding_name, const pm_node_t *node) {
     pm_static_literal_inspect_node(
         buffer,
         &(pm_static_literals_metadata_t) {
-            .newline_list = newline_list,
+            .line_offsets = line_offsets,
+            .start = start,
             .start_line = start_line,
             .encoding_name = encoding_name
         },

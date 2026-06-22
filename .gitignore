@@ -21,6 +21,7 @@
 *.pch
 *.pdb
 *.rbinc
+*.rbbin
 *.rej
 *.s
 *.sav
@@ -96,6 +97,7 @@ lcov*.info
 /enc.mk
 /encdb.h
 /exts.mk
+/gc/*/exts.mk
 /goruby
 /id.[ch]
 /largefile.h
@@ -246,6 +248,9 @@ lcov*.info
 /yjit-bench
 /yjit_exit_locations.dump
 
+# Rust
+/target
+
 # /wasm/
 /wasm/tests/*.wasm
 
@@ -260,16 +265,27 @@ lcov*.info
 /lib/prism/reflection.rb
 /lib/prism/serialize.rb
 /lib/prism/visitor.rb
+/prism/internal/diagnostic.h
 /prism/api_node.c
 /prism/ast.h
 /prism/diagnostic.c
-/prism/diagnostic.h
+/prism/json.c
 /prism/node.c
 /prism/prettyprint.c
 /prism/serialize.c
+/prism/tokens.c
+/prism/srcs.mk
+/dump_ast
+
+# prism (old file)
 /prism/token_type.c
 
 # tool/update-NEWS-gemlist.rb
 /bundled_gems.json
 /default_gems.json
 /gems/default_gems
+
+# AI agents
+/.claude
+/AGENTS.md
+/CLAUDE.md

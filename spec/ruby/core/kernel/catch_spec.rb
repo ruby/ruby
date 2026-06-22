@@ -31,11 +31,11 @@ describe "Kernel.catch" do
   end
 
   it "raises an ArgumentError if a Symbol is thrown for a String catch value" do
-    -> { catch("exit") { throw :exit } }.should raise_error(ArgumentError)
+    -> { catch("exit") { throw :exit } }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if a String with different identity is thrown" do
-    -> { catch("exit".dup) { throw "exit".dup } }.should raise_error(ArgumentError)
+    -> { catch("exit".dup) { throw "exit".dup } }.should.raise(ArgumentError)
   end
 
   it "catches a Symbol when thrown a matching Symbol" do
@@ -60,7 +60,7 @@ describe "Kernel.catch" do
   end
 
   it "yields an object when called without arguments" do
-    catch { |tag| tag }.should be_an_instance_of(Object)
+    catch { |tag| tag }.should.instance_of?(Object)
   end
 
   it "can be used even in a method different from where throw is called" do
@@ -116,12 +116,12 @@ describe "Kernel.catch" do
   end
 
   it "raises LocalJumpError if no block is given" do
-    -> { catch :blah }.should raise_error(LocalJumpError)
+    -> { catch :blah }.should.raise(LocalJumpError)
   end
 end
 
 describe "Kernel#catch" do
   it "is a private method" do
-    Kernel.should have_private_instance_method(:catch)
+    Kernel.private_instance_methods(false).should.include?(:catch)
   end
 end

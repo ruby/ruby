@@ -19,11 +19,13 @@ module Bundler
       validate_cmd!
       SharedHelpers.set_bundle_environment
       if bin_path = Bundler.which(cmd)
-        if !Bundler.settings[:disable_exec_load] && ruby_shebang?(bin_path)
-          return kernel_load(bin_path, *args)
+        if !Bundler.settings[:disable_exec_load] && directly_loadable?(bin_path)
+          bin_path.delete_suffix!(".bat") if Gem.win_platform?
+          kernel_load(bin_path, *args)
+        else
+          bin_path = "./" + bin_path unless File.absolute_path?(bin_path)
+          kernel_exec(bin_path, *args)
         end
-        bin_path = "./" + bin_path unless File.absolute_path?(bin_path)
-        kernel_exec(bin_path, *args)
       else
         # exec using the given command
         kernel_exec(cmd, *args)
@@ -67,6 +69,29 @@ module Bundler
 
     def process_title(file, args)
       "#{file} #{args.join(" ")}".strip
+    end
+
+    def directly_loadable?(file)
+      if Gem.win_platform?
+        script_wrapper?(file)
+      else
+        ruby_shebang?(file)
+      end
+    end
+
+    def script_wrapper?(file)
+      script_file = file.delete_suffix(".bat")
+      return false unless File.exist?(script_file)
+
+      if File.zero?(script_file)
+        Bundler.ui.warn "#{script_file} is empty"
+        return false
+      end
+
+      header = File.open(file, "r") {|f| f.read(32) }
+      ruby_exe = "#{RbConfig::CONFIG["RUBY_INSTALL_NAME"]}#{RbConfig::CONFIG["EXEEXT"]}"
+      ruby_exe = "ruby.exe" if ruby_exe.empty?
+      header.include?(ruby_exe)
     end
 
     def ruby_shebang?(file)

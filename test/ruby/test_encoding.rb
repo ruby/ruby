@@ -33,7 +33,7 @@ class TestEncoding < Test::Unit::TestCase
     encodings.each do |e|
       assert_raise(TypeError) { e.dup }
       assert_raise(TypeError) { e.clone }
-      assert_equal(e.object_id, Marshal.load(Marshal.dump(e)).object_id)
+      assert_same(e, Marshal.load(Marshal.dump(e)))
     end
   end
 
@@ -130,10 +130,50 @@ class TestEncoding < Test::Unit::TestCase
   def test_ractor_load_encoding
     assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
-      Ractor.new{}.take
+      Ractor.new{}.join
       $-w = nil
       Encoding.default_external = Encoding::ISO8859_2
       assert "[Bug #19562]"
+    end;
+  end
+
+  def test_ractor_lazy_load_encoding_concurrently
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      rs = []
+      autoload_encodings = Encoding.list.select { |e| e.inspect.include?("(autoload)") }.freeze
+      7.times do
+        rs << Ractor.new(autoload_encodings) do |encodings|
+          str = "abc".dup
+          encodings.each do |enc|
+            str.force_encoding(enc)
+          end
+        end
+      end
+      while rs.any?
+        r, _obj = Ractor.select(*rs)
+        rs.delete(r)
+      end
+      assert_empty rs
+    end;
+  end
+
+  def test_ractor_set_default_external_string
+    assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+    $-w = nil
+    rs = []
+    7.times do |i|
+      rs << Ractor.new(i) do |i|
+        Encoding.default_external = "us-ascii"
+      end
+    end
+
+    while rs.any?
+      r, _obj = Ractor.select(*rs)
+      rs.delete(r)
+    end
+    assert_empty rs
     end;
   end
 end

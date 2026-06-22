@@ -11,23 +11,29 @@ describe "A lambda literal -> () { }" do
       end
     end
 
-    klass.new.create_lambda.should be_an_instance_of(Proc)
+    klass.new.create_lambda.should.instance_of?(Proc)
+  end
+
+  it "is not just syntactic sugar for Kernel#lambda" do
+    should_not_receive(:lambda)
+
+    -> {}
   end
 
   it "does not execute the block" do
-    -> { fail }.should be_an_instance_of(Proc)
+    -> { fail }.should.instance_of?(Proc)
   end
 
   it "returns a lambda" do
-    -> { }.lambda?.should be_true
+    -> { }.lambda?.should == true
   end
 
   it "may include a rescue clause" do
-    eval('-> do raise ArgumentError; rescue ArgumentError; 7; end').should be_an_instance_of(Proc)
+    eval('-> do raise ArgumentError; rescue ArgumentError; 7; end').should.instance_of?(Proc)
   end
 
   it "may include a ensure clause" do
-    eval('-> do 1; ensure; 2; end').should be_an_instance_of(Proc)
+    eval('-> do 1; ensure; 2; end').should.instance_of?(Proc)
   end
 
   it "has its own scope for local variables" do
@@ -48,10 +54,10 @@ describe "A lambda literal -> () { }" do
         @d = -> do end
       ruby
 
-      @a.().should be_nil
-      @b.().should be_nil
-      @c.().should be_nil
-      @d.().should be_nil
+      @a.().should == nil
+      @b.().should == nil
+      @c.().should == nil
+      @d.().should == nil
     end
   end
 
@@ -91,9 +97,9 @@ describe "A lambda literal -> () { }" do
         @a = -> (*) { }
       ruby
 
-      @a.().should be_nil
-      @a.(1).should be_nil
-      @a.(1, 2, 3).should be_nil
+      @a.().should == nil
+      @a.(1).should == nil
+      @a.(1, 2, 3).should == nil
     end
 
     evaluate <<-ruby do
@@ -109,7 +115,7 @@ describe "A lambda literal -> () { }" do
         @a = -> (a:) { a }
       ruby
 
-      -> { @a.() }.should raise_error(ArgumentError)
+      -> { @a.() }.should.raise(ArgumentError)
       @a.(a: 1).should == 1
     end
 
@@ -125,9 +131,9 @@ describe "A lambda literal -> () { }" do
         @a = -> (**) {  }
       ruby
 
-      @a.().should be_nil
-      @a.(a: 1, b: 2).should be_nil
-      -> { @a.(1) }.should raise_error(ArgumentError)
+      @a.().should == nil
+      @a.(a: 1, b: 2).should == nil
+      -> { @a.(1) }.should.raise(ArgumentError)
     end
 
     evaluate <<-ruby do
@@ -142,8 +148,8 @@ describe "A lambda literal -> () { }" do
         @a = -> (&b) { b  }
       ruby
 
-      @a.().should be_nil
-      @a.() { }.should be_an_instance_of(Proc)
+      @a.().should == nil
+      @a.() { }.should.instance_of?(Proc)
     end
 
     evaluate <<-ruby do
@@ -151,8 +157,8 @@ describe "A lambda literal -> () { }" do
       ruby
 
       @a.(1, 2).should == [1, 2]
-      -> { @a.() }.should raise_error(ArgumentError)
-      -> { @a.(1) }.should raise_error(ArgumentError)
+      -> { @a.() }.should.raise(ArgumentError)
+      -> { @a.(1) }.should.raise(ArgumentError)
     end
 
     evaluate <<-ruby do
@@ -193,9 +199,9 @@ describe "A lambda literal -> () { }" do
         @a = -> (*, &b) { b }
       ruby
 
-      @a.().should be_nil
-      @a.(1, 2, 3, 4).should be_nil
-      @a.(&(l = ->{})).should equal(l)
+      @a.().should == nil
+      @a.(1, 2, 3, 4).should == nil
+      @a.(&(l = ->{})).should.equal?(l)
     end
 
     evaluate <<-ruby do
@@ -268,7 +274,7 @@ describe "A lambda literal -> () { }" do
           a = 1
           -> {
             eval "-> (a=a) { a }"
-          }.should raise_error(SyntaxError)
+          }.should.raise(SyntaxError)
         end
       end
 
@@ -286,6 +292,24 @@ describe "A lambda literal -> () { }" do
       end
     end
   end
+
+  evaluate <<-ruby do
+    @a = -> (**nil) { :ok }
+    ruby
+
+    @a.call().should == :ok
+    -> { @a.call(a: 1) }.should.raise(ArgumentError, 'no keywords accepted')
+    -> { @a.call(**{a: 1}) }.should.raise(ArgumentError, 'no keywords accepted')
+    -> { @a.call("a" => 1) }.should.raise(ArgumentError, 'no keywords accepted')
+  end
+
+  evaluate <<-ruby do
+    @a = -> (a, **nil) { a }
+    ruby
+
+    @a.call({a: 1}).should == {a: 1}
+    -> { @a.call(a: 1) }.should.raise(ArgumentError, 'no keywords accepted')
+  end
 end
 
 describe "A lambda expression 'lambda { ... }'" do
@@ -299,25 +323,25 @@ describe "A lambda expression 'lambda { ... }'" do
       lambda { }
     end
 
-    obj.define.should equal(obj)
+    obj.define.should.equal?(obj)
   end
 
   it "does not execute the block" do
-    lambda { fail }.should be_an_instance_of(Proc)
+    lambda { fail }.should.instance_of?(Proc)
   end
 
   it "returns a lambda" do
-    lambda { }.lambda?.should be_true
+    lambda { }.lambda?.should == true
   end
 
   it "requires a block" do
     suppress_warning do
-      lambda { lambda }.should raise_error(ArgumentError)
+      lambda { lambda }.should.raise(ArgumentError)
     end
   end
 
   it "may include a rescue clause" do
-    eval('lambda do raise ArgumentError; rescue ArgumentError; 7; end').should be_an_instance_of(Proc)
+    eval('lambda do raise ArgumentError; rescue ArgumentError; 7; end').should.instance_of?(Proc)
   end
 
   context "with an implicit block" do
@@ -330,7 +354,7 @@ describe "A lambda expression 'lambda { ... }'" do
       suppress_warning do
         -> {
           meth { 1 }
-        }.should raise_error(ArgumentError, /tried to create Proc object without a block/)
+        }.should.raise(ArgumentError, /tried to create Proc object without a block/)
       end
     end
   end
@@ -341,8 +365,8 @@ describe "A lambda expression 'lambda { ... }'" do
         @b = lambda { || }
       ruby
 
-      @a.().should be_nil
-      @b.().should be_nil
+      @a.().should == nil
+      @b.().should == nil
     end
   end
 
@@ -359,8 +383,8 @@ describe "A lambda expression 'lambda { ... }'" do
         @a = lambda { |a| a }
       ruby
 
-      lambda { m(&@a) }.should raise_error(ArgumentError)
-      lambda { m(1, 2, &@a) }.should raise_error(ArgumentError)
+      lambda { m(&@a) }.should.raise(ArgumentError)
+      lambda { m(1, 2, &@a) }.should.raise(ArgumentError)
     end
 
     evaluate <<-ruby do
@@ -370,8 +394,8 @@ describe "A lambda expression 'lambda { ... }'" do
       @a.(1).should == 1
       @a.([1, 2]).should == [1, 2]
 
-      lambda { @a.() }.should raise_error(ArgumentError)
-      lambda { @a.(1, 2) }.should raise_error(ArgumentError)
+      lambda { @a.() }.should.raise(ArgumentError)
+      lambda { @a.(1, 2) }.should.raise(ArgumentError)
     end
 
     evaluate <<-ruby do
@@ -384,7 +408,7 @@ describe "A lambda expression 'lambda { ... }'" do
       m(1, &@a).should == 1
       m([1, 2], &@a).should == [1, 2]
 
-      lambda { m2(&@a) }.should raise_error(ArgumentError)
+      lambda { m2(&@a) }.should.raise(ArgumentError)
     end
 
     evaluate <<-ruby do
@@ -415,9 +439,9 @@ describe "A lambda expression 'lambda { ... }'" do
         @a = lambda { |*| }
       ruby
 
-      @a.().should be_nil
-      @a.(1).should be_nil
-      @a.(1, 2, 3).should be_nil
+      @a.().should == nil
+      @a.(1).should == nil
+      @a.(1, 2, 3).should == nil
     end
 
     evaluate <<-ruby do
@@ -433,7 +457,7 @@ describe "A lambda expression 'lambda { ... }'" do
         @a = lambda { |a:| a }
       ruby
 
-      lambda { @a.() }.should raise_error(ArgumentError)
+      lambda { @a.() }.should.raise(ArgumentError)
       @a.(a: 1).should == 1
     end
 
@@ -449,9 +473,9 @@ describe "A lambda expression 'lambda { ... }'" do
         @a = lambda { |**|  }
       ruby
 
-      @a.().should be_nil
-      @a.(a: 1, b: 2).should be_nil
-      lambda { @a.(1) }.should raise_error(ArgumentError)
+      @a.().should == nil
+      @a.(a: 1, b: 2).should == nil
+      lambda { @a.(1) }.should.raise(ArgumentError)
     end
 
     evaluate <<-ruby do
@@ -466,8 +490,8 @@ describe "A lambda expression 'lambda { ... }'" do
         @a = lambda { |&b| b  }
       ruby
 
-      @a.().should be_nil
-      @a.() { }.should be_an_instance_of(Proc)
+      @a.().should == nil
+      @a.() { }.should.instance_of?(Proc)
     end
 
     evaluate <<-ruby do
@@ -515,9 +539,9 @@ describe "A lambda expression 'lambda { ... }'" do
         @a = lambda { |*, &b| b }
       ruby
 
-      @a.().should be_nil
-      @a.(1, 2, 3, 4).should be_nil
-      @a.(&(l = ->{})).should equal(l)
+      @a.().should == nil
+      @a.(1, 2, 3, 4).should == nil
+      @a.(&(l = ->{})).should.equal?(l)
     end
 
     evaluate <<-ruby do
@@ -582,6 +606,24 @@ describe "A lambda expression 'lambda { ... }'" do
 
       result = @a.(1, 2, e: 3, g: 4, h: 5, i: 6, &(l = ->{}))
       result.should == [1, 1, [], 2, 3, 2, 4, { h: 5, i: 6 }, l]
+    end
+
+    evaluate <<-ruby do
+      @a = lambda { |**nil| :ok }
+      ruby
+
+      @a.call().should == :ok
+      -> { @a.call(a: 1) }.should.raise(ArgumentError, 'no keywords accepted')
+      -> { @a.call(**{a: 1}) }.should.raise(ArgumentError, 'no keywords accepted')
+      -> { @a.call("a" => 1) }.should.raise(ArgumentError, 'no keywords accepted')
+    end
+
+    evaluate <<-ruby do
+      @a = lambda { |a, **nil| a }
+      ruby
+
+      @a.call({a: 1}).should == {a: 1}
+      -> { @a.call(a: 1) }.should.raise(ArgumentError, 'no keywords accepted')
     end
   end
 end

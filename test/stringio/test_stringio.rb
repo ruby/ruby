@@ -70,6 +70,31 @@ class TestStringIO < Test::Unit::TestCase
     assert_nil io.getc
   end
 
+  def test_eof_null
+    io = StringIO.new(nil)
+    assert_predicate io, :eof?
+  end
+
+  def test_pread_null
+    io = StringIO.new(nil)
+    assert_raise(EOFError) { io.pread(1, 0) }
+  end
+
+  def test_read_null
+    io = StringIO.new(nil)
+    assert_equal "", io.read(0)
+  end
+
+  def test_seek_null
+    io = StringIO.new(nil)
+    assert_equal(0, io.seek(0, IO::SEEK_SET))
+    assert_equal(0, io.pos)
+    assert_equal(0, io.seek(0, IO::SEEK_CUR))
+    assert_equal(0, io.pos)
+    assert_equal(0, io.seek(0, IO::SEEK_END))  # This should not segfault
+    assert_equal(0, io.pos)
+  end
+
   def test_truncate
     io = StringIO.new("")
     io.puts "abc"
@@ -334,6 +359,9 @@ class TestStringIO < Test::Unit::TestCase
 
   def test_isatty
     assert_equal(false, StringIO.new("").isatty)
+    assert_equal(false, StringIO.new("").tty?)
+    assert_nothing_raised { StringIO.new("").freeze.isatty}
+    assert_nothing_raised { StringIO.new("").freeze.tty?}
   end
 
   def test_fsync
@@ -343,6 +371,7 @@ class TestStringIO < Test::Unit::TestCase
   def test_sync
     assert_equal(true, StringIO.new("").sync)
     assert_equal(false, StringIO.new("").sync = false)
+    assert_nothing_raised { StringIO.new("").freeze.sync}
   end
 
   def test_set_fcntl
@@ -395,8 +424,8 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal(false, f.closed?)
     f.close
     assert_equal(true, f.closed?)
-  ensure
-    f.close unless f.closed?
+    f.freeze
+    assert_nothing_raised { f.closed? }
   end
 
   def test_closed_read
@@ -406,8 +435,8 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal(false, f.closed_read?)
     f.close_read
     assert_equal(true, f.closed_read?)
-  ensure
-    f.close unless f.closed?
+    f.freeze
+    assert_nothing_raised { f.closed_read? }
   end
 
   def test_closed_write
@@ -417,8 +446,8 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal(false, f.closed_write?)
     f.close_write
     assert_equal(true, f.closed_write?)
-  ensure
-    f.close unless f.closed?
+    f.freeze
+    assert_nothing_raised { f.closed_write? }
   end
 
   def test_dup
@@ -444,8 +473,8 @@ class TestStringIO < Test::Unit::TestCase
     f.lineno = 1000
     assert_equal([1000, "baz\n"], [f.lineno, f.gets])
     assert_equal([1001, nil], [f.lineno, f.gets])
-  ensure
-    f.close unless f.closed?
+    f.freeze
+    assert_nothing_raised { f.lineno }
   end
 
   def test_pos
@@ -458,8 +487,8 @@ class TestStringIO < Test::Unit::TestCase
     assert_equal([4, "bar\n"], [f.pos, f.gets])
     assert_equal([8, "baz\n"], [f.pos, f.gets])
     assert_equal([12, nil], [f.pos, f.gets])
-  ensure
-    f.close unless f.closed?
+    f.freeze
+    assert_nothing_raised { f.pos }
   end
 
   def test_reopen
@@ -483,13 +512,10 @@ class TestStringIO < Test::Unit::TestCase
     assert_raise(Errno::EINVAL) { f.seek(1, 3) }
     f.close
     assert_raise(IOError) { f.seek(0) }
-  ensure
-    f.close unless f.closed?
-  end
-
-  def test_seek_frozen_string
     f = StringIO.new(-"1234")
     assert_equal(0, f.seek(1))
+  ensure
+    f.close unless f.closed?
   end
 
   def test_each_byte
@@ -739,6 +765,8 @@ class TestStringIO < Test::Unit::TestCase
     s = ""
     f.read(nil, s)
     assert_equal(Encoding::ASCII_8BIT, s.encoding, bug20418)
+
+    assert_raise(ArgumentError) {f.read(1, f.string)}
   end
 
   def test_readpartial
@@ -804,19 +832,28 @@ class TestStringIO < Test::Unit::TestCase
 
     assert_raise(EOFError) { f.pread(1, 5) }
     assert_raise(ArgumentError) { f.pread(-1, 0) }
+    assert_raise(ArgumentError) { f.pread(0, 0, f.string) }
     assert_raise(Errno::EINVAL) { f.pread(3, -1) }
+    assert_raise(Errno::EINVAL) { f.pread(0, -1) }
+    assert_raise(IOError) { StringIO.new(nil, "w").pread(3, 0) }
+    assert_raise(TypeError) { f.pread(3, 0, []) }
 
     assert_equal "".b, StringIO.new("").pread(0, 0)
-    assert_equal "".b, StringIO.new("").pread(0, -10)
 
     buf = "stale".b
     assert_equal "stale".b, StringIO.new("").pread(0, 0, buf)
     assert_equal "stale".b, buf
+
+    assert_nothing_raised { StringIO.new("pread").freeze.pread(3, 0)}
   end
 
   def test_size
     f = StringIO.new("1234")
     assert_equal(4, f.size)
+    assert_equal(4, f.length)
+    f.freeze
+    assert_nothing_raised { f.size }
+    assert_nothing_raised { f.length }
   end
 
   # This test is should in ruby/test_method.rb
@@ -971,7 +1008,7 @@ class TestStringIO < Test::Unit::TestCase
     intptr_max = RbConfig::LIMITS["INTPTR_MAX"]
     return if intptr_max > StringIO::MAX_LENGTH
     limit = intptr_max - 0x10
-    assert_separately(%w[-rstringio], "#{<<-"begin;"}\n#{<<-"end;"}")
+    assert_separately(%w[-W0 -rstringio], "#{<<-"begin;"}\n#{<<-"end;"}")
     begin;
       limit = #{limit}
       ary = []
@@ -1039,6 +1076,20 @@ class TestStringIO < Test::Unit::TestCase
     assert_predicate(s.string, :ascii_only?)
   end
 
+  def test_coderange_after_read_into_buffer
+    s = StringIO.new("01234567890".b)
+
+    buf = "¿Cómo estás? Ça va bien?"
+    assert_not_predicate(buf, :ascii_only?)
+
+    assert_predicate(s.string, :ascii_only?)
+
+    s.read(10, buf)
+
+    assert_predicate(buf, :ascii_only?)
+    assert_equal '0123456789', buf
+  end
+
   require "objspace"
   if ObjectSpace.respond_to?(:dump) && ObjectSpace.dump(eval(%{"test"})).include?('"chilled":true') # Ruby 3.4+ chilled strings
     def test_chilled_string
@@ -1057,6 +1108,72 @@ class TestStringIO < Test::Unit::TestCase
       assert_equal("test", io.string)
       assert_same(chilled_string, io.string)
     end
+
+    def test_chilled_string_set_enocoding
+      chilled_string = eval(%{""})
+      io = StringIO.new(chilled_string)
+      assert_warning("") { io.set_encoding(Encoding::BINARY) }
+      assert_same(chilled_string, io.string)
+    end
+  end
+
+  def test_eof
+    f = StringIO.new
+    assert_equal(true, f.eof)
+    assert_equal(true, f.eof?)
+    f.ungetc("1234")
+    assert_equal(false, f.eof)
+    assert_equal(false, f.eof?)
+    f.freeze
+    assert_nothing_raised { f.eof }
+    assert_nothing_raised { f.eof? }
+  end
+
+  def test_pid
+    f = StringIO.new
+    assert_equal(nil, f.pid)
+    f.freeze
+    assert_nothing_raised { f.pid }
+  end
+
+  def test_fileno
+    f = StringIO.new
+    assert_equal(nil, f.fileno)
+    f.freeze
+    assert_nothing_raised { f.fileno }
+  end
+
+  def test_external_encoding
+    f = StringIO.new
+    assert_equal(Encoding.find("external"), f.external_encoding)
+    f = StringIO.new("1234".encode("UTF-16BE"))
+    assert_equal(Encoding::UTF_16BE, f.external_encoding)
+    f.freeze
+    assert_nothing_raised { f.external_encoding }
+  end
+
+  def test_string
+    f = StringIO.new
+    assert_equal("", f.string)
+    f = StringIO.new("1234")
+    assert_equal("1234", f.string)
+    f.freeze
+    assert_nothing_raised { f.string }
+  end
+
+  def test_initialize_copy
+    f = StringIO.new("1234")
+    f.read(1)
+    f2 = f.dup
+    assert_equal(1, f2.pos)
+    f.read(1)
+    assert_equal(2, f2.pos)
+    f.ungetc("56")
+    assert_equal(0, f2.pos)
+    assert_equal("5634", f2.string)
+    f.freeze
+    f2 = f.dup
+    assert_not_predicate(f2, :frozen?)
   end
 
   private
