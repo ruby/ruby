@@ -1,24 +1,9 @@
 BEGIN {
-    @every = 1;
-    @harness = 0;
-
-    @gc_count = 0;
-    @enable_print = 1;
-
-    if (!@harness) {
-        //always collect data
-        @stats_enabled = 1;
-    }
-
     printf("====RUBY_TRACING_LOG_START====\n");
 }
 
 % usdt_entries.each do |entry|
 usdt:<%=entry.file%>:ruby:<%=entry.probe%> {
-    if (@enable_print) {
-        printf("<%=entry.name%>,<%=entry.ph%>,%d,%lu<%=",%lu"*entry.nargs%>\n", tid, nsecs<%=(0...entry.nargs).map{|i| ", arg#{i}"}.join%>);
-    }
+    printf("<%=entry.name%>,<%=entry.ph%>,%d,%lu<%=",%lu"*entry.nargs%>\n", tid, nsecs<%=(0...entry.nargs).map{|i| ", arg#{i}"}.join%>);
 }
 % end
-
-// vim: ft=bpftrace ts=4 sw=4 sts=4 et
