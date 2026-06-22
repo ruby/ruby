@@ -87,6 +87,7 @@ releases.
 * openssl 4.0.2
   * 4.0.0 to [v4.0.1][openssl-v4.0.1], [v4.0.2][openssl-v4.0.2]
 * pp 0.6.4
+  * 0.6.3 to [v0.6.4][pp-v0.6.4]
 * prism 1.9.0
   * 1.7.0 to [v1.8.0][prism-v1.8.0], [v1.8.1][prism-v1.8.1], [v1.9.0][prism-v1.9.0]
 * psych 5.4.0
@@ -241,6 +242,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [json-v2.19.9]: https://github.com/ruby/json/releases/tag/v2.19.9
 [openssl-v4.0.1]: https://github.com/ruby/openssl/releases/tag/v4.0.1
 [openssl-v4.0.2]: https://github.com/ruby/openssl/releases/tag/v4.0.2
+[pp-v0.6.4]: https://github.com/ruby/pp/releases/tag/v0.6.4
 [prism-v1.8.0]: https://github.com/ruby/prism/releases/tag/v1.8.0
 [prism-v1.8.1]: https://github.com/ruby/prism/releases/tag/v1.8.1
 [prism-v1.9.0]: https://github.com/ruby/prism/releases/tag/v1.9.0
