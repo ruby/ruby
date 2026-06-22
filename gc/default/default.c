@@ -385,6 +385,7 @@ typedef struct gc_profile_record {
     rb_hrtime_t gc_stw_time;
     rb_hrtime_t gc_mark_wall_time;
     rb_hrtime_t gc_sweep_wall_time;
+    rb_hrtime_t gc_compact_wall_time;
 
     size_t heap_total_objects;
     size_t heap_use_size;
@@ -1269,6 +1270,7 @@ NO_SANITIZE("memory", static inline bool is_pointer_to_heap(rb_objspace_t *objsp
 static void gc_verify_internal_consistency(void *objspace_ptr);
 
 static double getrusage_time(void);
+static inline rb_hrtime_t elapsed_hrtime_from(rb_hrtime_t start);
 static inline void gc_prof_setup_new_record(rb_objspace_t *objspace, unsigned int reason);
 static inline void gc_prof_timer_start(rb_objspace_t *);
 static inline void gc_prof_timer_stop(rb_objspace_t *);
@@ -4521,7 +4523,13 @@ gc_sweep(rb_objspace_t *objspace)
 
     gc_sweep_start(objspace);
     if (objspace->flags.during_compacting) {
+        rb_hrtime_t compact_start_time = gc_prof_enabled(objspace) ? rb_hrtime_now() : 0;
         gc_sweep_compact(objspace);
+        if (gc_prof_enabled(objspace)) {
+            gc_profile_record *record = gc_prof_record(objspace);
+            record->gc_compact_wall_time = rb_hrtime_add(record->gc_compact_wall_time,
+                    elapsed_hrtime_from(compact_start_time));
+        }
     }
 
     if (immediate_sweep) {
@@ -7044,7 +7052,6 @@ gc_enter_count(enum gc_enter_event event)
 }
 
 static bool current_process_time(struct timespec *ts);
-static inline rb_hrtime_t elapsed_hrtime_from(rb_hrtime_t start);
 
 static void
 gc_clock_start(struct timespec *ts)
@@ -9222,6 +9229,7 @@ gc_profile_clear(VALUE _)
  *	   :GC_STW_TIME=>1.4000000000000001e-05,
  *	   :GC_MARK_WALL_TIME=>9.0000000000000002e-06,
  *	   :GC_SWEEP_WALL_TIME=>5.0000000000000004e-06,
+ *	   :GC_COMPACT_WALL_TIME=>0.0000000000000000e+00,
  *	   :HEAP_USE_SIZE=>289640,
  *	   :HEAP_TOTAL_SIZE=>588960,
  *	   :HEAP_TOTAL_OBJECTS=>14724,
@@ -9259,7 +9267,14 @@ gc_profile_clear(VALUE _)
  *	record, accumulated across incremental marking continuations.
  *  +:GC_SWEEP_WALL_TIME+::
  *	Monotonic wall-clock time elapsed in seconds spent sweeping for this GC
- *	record, accumulated across lazy sweeping continuations.
+ *	record, accumulated across lazy sweeping continuations.  This includes any
+ *	compaction time, which is also reported separately as
+ *	+:GC_COMPACT_WALL_TIME+.
+ *  +:GC_COMPACT_WALL_TIME+::
+ *	Monotonic wall-clock time elapsed in seconds spent compacting for this GC
+ *	record, or +0.0+ if this GC did not compact.  Compaction runs within the
+ *	sweep phase, so this time is nested inside +:GC_SWEEP_WALL_TIME+ and must
+ *	not be added to it.
  *  +:HEAP_USE_SIZE+::
  *	Total bytes of heap used
  *  +:HEAP_TOTAL_SIZE+::
@@ -9325,6 +9340,8 @@ gc_profile_record_get(VALUE _)
                 DBL2NUM(hrtime_to_sec(record->gc_mark_wall_time)));
         rb_hash_aset(prof, ID2SYM(rb_intern("GC_SWEEP_WALL_TIME")),
                 DBL2NUM(hrtime_to_sec(record->gc_sweep_wall_time)));
+        rb_hash_aset(prof, ID2SYM(rb_intern("GC_COMPACT_WALL_TIME")),
+                DBL2NUM(hrtime_to_sec(record->gc_compact_wall_time)));
         rb_hash_aset(prof, ID2SYM(rb_intern("HEAP_USE_SIZE")), SIZET2NUM(record->heap_use_size));
         rb_hash_aset(prof, ID2SYM(rb_intern("HEAP_TOTAL_SIZE")), SIZET2NUM(record->heap_total_size));
         rb_hash_aset(prof, ID2SYM(rb_intern("HEAP_TOTAL_OBJECTS")), SIZET2NUM(record->heap_total_objects));

@@ -594,6 +594,7 @@ class TestGc < Test::Unit::TestCase
     assert_kind_of Float, record[:GC_STW_TIME]
     assert_kind_of Float, record[:GC_MARK_WALL_TIME]
     assert_kind_of Float, record[:GC_SWEEP_WALL_TIME]
+    assert_kind_of Float, record[:GC_COMPACT_WALL_TIME]
 
     assert_operator record[:GC_WALL_TIME], :>=, 0.0
     assert_operator record[:GC_INVOKE_WALL_TIME], :>=, 0.0
@@ -602,8 +603,31 @@ class TestGc < Test::Unit::TestCase
     assert_operator record[:GC_STW_TIME], :>=, 0.0
     assert_operator record[:GC_MARK_WALL_TIME], :>=, 0.0
     assert_operator record[:GC_SWEEP_WALL_TIME], :>=, 0.0
+    assert_operator record[:GC_COMPACT_WALL_TIME], :>=, 0.0
     assert_in_delta record[:GC_PAUSE_TIME], record[:GC_STOP_TIME] + record[:GC_STW_TIME], 0.001
     assert_operator record[:GC_MARK_WALL_TIME] + record[:GC_SWEEP_WALL_TIME], :<=, record[:GC_PAUSE_TIME] + 0.001
+    # No compaction was requested, so compaction time is folded into nothing.
+    assert_equal 0.0, record[:GC_COMPACT_WALL_TIME]
+  ensure
+    GC::Profiler.disable
+    GC::Profiler.clear
+  end
+
+  def test_profiler_raw_data_includes_compaction_wall_time
+    omit "compaction not supported" unless GC.respond_to?(:compact)
+
+    GC::Profiler.enable
+    GC::Profiler.clear
+
+    GC.compact
+    record = GC::Profiler.raw_data.last
+
+    assert_kind_of Float, record[:GC_COMPACT_WALL_TIME]
+    assert_operator record[:GC_COMPACT_WALL_TIME], :>=, 0.0
+    # Compaction runs within the sweep phase, so it is bounded by sweep wall time.
+    assert_operator record[:GC_COMPACT_WALL_TIME], :<=, record[:GC_SWEEP_WALL_TIME] + 0.001
+  rescue NotImplementedError
+    omit "compaction not supported"
   ensure
     GC::Profiler.disable
     GC::Profiler.clear
