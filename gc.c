@@ -1425,7 +1425,7 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
         return rb_shape_has_fields(shape_id);
 
       case T_HASH:
-        if (flags & (RHASH_ST_TABLE_FLAG | RHASH_SHARED_TABLE_FLAG)) return true;
+        if (flags & RHASH_ST_TABLE_FLAG) return true;
         return rb_shape_has_fields(shape_id);
 
       case T_MATCH:
