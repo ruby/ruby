@@ -63,6 +63,16 @@ inputs:
     description: >-
       If set to true, clean build directory.
 
+  bundled-gems-src-cache:
+    required: false
+    type: boolean
+    default: ''
+    description: >-
+      If set to true, cache the cloned bundled gem sources (gems/src).
+      Enable only on jobs that clone every bundled gem (test-bundled-gems),
+      so the cache shared by the os/arch is always saved with the complete
+      set of gems instead of the partial set that `make up` leaves behind.
+
 outputs: {} # nothing?
 
 runs:
@@ -113,8 +123,11 @@ runs:
     # while cloning from github.com (e.g. "Could not resolve host") does not
     # abort the build. The key is invalidated when gems/bundled_gems changes,
     # and restore-keys falls back to the latest cache so only bumped gems are
-    # re-fetched.
-    - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+    # re-fetched. Only test-bundled-gems jobs opt in (bundled-gems-src-cache),
+    # because they are the ones that clone the complete set into gems/src; other
+    # jobs would otherwise save a partial gems/src and poison the shared key.
+    - if: inputs.bundled-gems-src-cache == 'true'
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
       with:
         path: ${{ inputs.srcdir }}/gems/src
         key: ${{ runner.os }}-${{ runner.arch }}-bundled-gems-src-${{ hashFiles(format('{0}/gems/bundled_gems', inputs.srcdir)) }}

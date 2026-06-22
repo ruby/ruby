@@ -71,6 +71,7 @@ jobs:
           makeup: true
           clean: true
           dummy-files: ${{ matrix.test_task == 'check' }}
+          bundled-gems-src-cache: ${{ matrix.test_task == 'test-bundled-gems' }}
 
       - name: Run configure
         run: ../src/configure -C --disable-install-doc cppflags=-DRUBY_DEBUG --with-parser=parse.y
