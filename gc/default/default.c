@@ -383,6 +383,8 @@ typedef struct gc_profile_record {
     rb_hrtime_t gc_pause_time;
     rb_hrtime_t gc_stop_time;
     rb_hrtime_t gc_stw_time;
+    rb_hrtime_t gc_mark_wall_time;
+    rb_hrtime_t gc_sweep_wall_time;
 
     size_t heap_total_objects;
     size_t heap_use_size;
@@ -627,6 +629,8 @@ typedef struct rb_objspace {
         rb_hrtime_t gc_pause_start_time;
         rb_hrtime_t gc_stw_start_time;
         rb_hrtime_t gc_stop_time;
+        rb_hrtime_t gc_mark_phase_wall_start_time;
+        rb_hrtime_t gc_sweep_phase_wall_start_time;
         size_t total_allocated_objects_at_gc_start;
         size_t heap_used_at_gc_start;
         size_t heap_total_slots_at_gc_start;
@@ -7155,6 +7159,10 @@ gc_marking_enter(rb_objspace_t *objspace)
 
     gc_prof_mark_timer_start(objspace);
 
+    if (gc_prof_enabled(objspace)) {
+        objspace->profile.gc_mark_phase_wall_start_time = rb_hrtime_now();
+    }
+
     if (MEASURE_GC) {
         gc_clock_start(&objspace->profile.marking_start_time);
     }
@@ -7171,6 +7179,12 @@ gc_marking_exit(rb_objspace_t *objspace)
         objspace->profile.marking_time_ns += gc_clock_end(&objspace->profile.marking_start_time);
     }
 
+    if (gc_prof_enabled(objspace)) {
+        gc_profile_record *record = gc_prof_record(objspace);
+        record->gc_mark_wall_time = rb_hrtime_add(record->gc_mark_wall_time,
+                elapsed_hrtime_from(objspace->profile.gc_mark_phase_wall_start_time));
+    }
+
     gc_prof_mark_timer_stop(objspace);
 }
 
@@ -7178,6 +7192,10 @@ static void
 gc_sweeping_enter(rb_objspace_t *objspace)
 {
     GC_ASSERT(during_gc != 0);
+
+    if (gc_prof_enabled(objspace)) {
+        objspace->profile.gc_sweep_phase_wall_start_time = rb_hrtime_now();
+    }
 
     if (MEASURE_GC) {
         gc_clock_start(&objspace->profile.sweeping_start_time);
@@ -7191,6 +7209,12 @@ gc_sweeping_exit(rb_objspace_t *objspace)
 
     if (MEASURE_GC) {
         objspace->profile.sweeping_time_ns += gc_clock_end(&objspace->profile.sweeping_start_time);
+    }
+
+    if (gc_prof_enabled(objspace)) {
+        gc_profile_record *record = gc_prof_record(objspace);
+        record->gc_sweep_wall_time = rb_hrtime_add(record->gc_sweep_wall_time,
+                elapsed_hrtime_from(objspace->profile.gc_sweep_phase_wall_start_time));
     }
 }
 
@@ -9196,6 +9220,8 @@ gc_profile_clear(VALUE _)
  *	   :GC_PAUSE_TIME=>1.5000000000000000e-05,
  *	   :GC_STOP_TIME=>1.0000000000000000e-06,
  *	   :GC_STW_TIME=>1.4000000000000001e-05,
+ *	   :GC_MARK_WALL_TIME=>9.0000000000000002e-06,
+ *	   :GC_SWEEP_WALL_TIME=>5.0000000000000004e-06,
  *	   :HEAP_USE_SIZE=>289640,
  *	   :HEAP_TOTAL_SIZE=>588960,
  *	   :HEAP_TOTAL_OBJECTS=>14724,
@@ -9228,6 +9254,12 @@ gc_profile_clear(VALUE _)
  *  +:GC_STW_TIME+::
  *	Monotonic wall-clock time elapsed in seconds after other ractors have
  *	stopped and before the VM exits GC.
+ *  +:GC_MARK_WALL_TIME+::
+ *	Monotonic wall-clock time elapsed in seconds spent marking for this GC
+ *	record, accumulated across incremental marking continuations.
+ *  +:GC_SWEEP_WALL_TIME+::
+ *	Monotonic wall-clock time elapsed in seconds spent sweeping for this GC
+ *	record, accumulated across lazy sweeping continuations.
  *  +:HEAP_USE_SIZE+::
  *	Total bytes of heap used
  *  +:HEAP_TOTAL_SIZE+::
@@ -9289,6 +9321,10 @@ gc_profile_record_get(VALUE _)
                 DBL2NUM(hrtime_to_sec(record->gc_stop_time)));
         rb_hash_aset(prof, ID2SYM(rb_intern("GC_STW_TIME")),
                 DBL2NUM(hrtime_to_sec(record->gc_stw_time)));
+        rb_hash_aset(prof, ID2SYM(rb_intern("GC_MARK_WALL_TIME")),
+                DBL2NUM(hrtime_to_sec(record->gc_mark_wall_time)));
+        rb_hash_aset(prof, ID2SYM(rb_intern("GC_SWEEP_WALL_TIME")),
+                DBL2NUM(hrtime_to_sec(record->gc_sweep_wall_time)));
         rb_hash_aset(prof, ID2SYM(rb_intern("HEAP_USE_SIZE")), SIZET2NUM(record->heap_use_size));
         rb_hash_aset(prof, ID2SYM(rb_intern("HEAP_TOTAL_SIZE")), SIZET2NUM(record->heap_total_size));
         rb_hash_aset(prof, ID2SYM(rb_intern("HEAP_TOTAL_OBJECTS")), SIZET2NUM(record->heap_total_objects));
