@@ -4465,6 +4465,19 @@ impl Function {
     /// Inline method calls by replacing eligible SendDirect instructions with the
     /// callee's HIR body. Returns true if any inlining occurred.
     fn inline_methods(&mut self) -> bool {
+        // Bail early if inlining is disabled.
+        if get_option!(inline_threshold) == 0 {
+            return false;
+        }
+
+        // Fail fast if inlining is enabled but we've exhausted our inlining budget.
+        // Otherwise, `can_inline` and `should_inline` will make local inlining decisions.
+        let budget = get_option!(inline_budget);
+        if budget != INLINE_BUDGET_UNLIMITED && self.insns.len() > budget {
+            incr_counter!(inline_reject_budget_exceeded);
+            return false;
+        }
+
         let mut did_inline = false;
 
         // Worklist of blocks left to scan for inlinable SendDirects. Seeded with
