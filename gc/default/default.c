@@ -381,6 +381,8 @@ typedef struct gc_profile_record {
     rb_hrtime_t gc_wall_time;
     rb_hrtime_t gc_invoke_wall_time;
     rb_hrtime_t gc_pause_time;
+    rb_hrtime_t gc_stop_time;
+    rb_hrtime_t gc_stw_time;
 
     size_t heap_total_objects;
     size_t heap_use_size;
@@ -623,6 +625,8 @@ typedef struct rb_objspace {
         rb_hrtime_t gc_wall_start_time;
         rb_hrtime_t gc_sweep_wall_start_time;
         rb_hrtime_t gc_pause_start_time;
+        rb_hrtime_t gc_stw_start_time;
+        rb_hrtime_t gc_stop_time;
         size_t total_allocated_objects_at_gc_start;
         size_t heap_used_at_gc_start;
         size_t heap_total_slots_at_gc_start;
@@ -7090,6 +7094,13 @@ gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_
         break;
     }
 
+    if (objspace->profile.gc_pause_start_time) {
+        objspace->profile.gc_stw_start_time = rb_hrtime_now();
+        objspace->profile.gc_stop_time = rb_hrtime_sub(
+                objspace->profile.gc_stw_start_time,
+                objspace->profile.gc_pause_start_time);
+    }
+
     gc_enter_count(event);
     if (RB_UNLIKELY(during_gc != 0)) rb_bug("during_gc != 0");
     if (RGENGC_CHECK_MODE >= 3) gc_verify_internal_consistency(objspace);
@@ -7111,11 +7122,18 @@ gc_exit(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_l
 
     if (objspace->profile.gc_pause_start_time) {
         if (gc_prof_enabled(objspace)) {
+            rb_hrtime_t now = rb_hrtime_now();
             gc_profile_record *record = gc_prof_record(objspace);
             record->gc_pause_time = rb_hrtime_add(record->gc_pause_time,
-                    elapsed_hrtime_from(objspace->profile.gc_pause_start_time));
+                    rb_hrtime_sub(now, objspace->profile.gc_pause_start_time));
+            record->gc_stop_time = rb_hrtime_add(record->gc_stop_time,
+                    objspace->profile.gc_stop_time);
+            record->gc_stw_time = rb_hrtime_add(record->gc_stw_time,
+                    rb_hrtime_sub(now, objspace->profile.gc_stw_start_time));
         }
         objspace->profile.gc_pause_start_time = 0;
+        objspace->profile.gc_stw_start_time = 0;
+        objspace->profile.gc_stop_time = 0;
     }
 
     gc_record(objspace, 1, gc_enter_event_cstr(event));
@@ -9176,6 +9194,8 @@ gc_profile_clear(VALUE _)
  *	   :GC_WALL_TIME=>1.4000000000000001e-05,
  *	   :GC_INVOKE_WALL_TIME=>0.010640000000000000,
  *	   :GC_PAUSE_TIME=>1.5000000000000000e-05,
+ *	   :GC_STOP_TIME=>1.0000000000000000e-06,
+ *	   :GC_STW_TIME=>1.4000000000000001e-05,
  *	   :HEAP_USE_SIZE=>289640,
  *	   :HEAP_TOTAL_SIZE=>588960,
  *	   :HEAP_TOTAL_OBJECTS=>14724,
@@ -9192,14 +9212,22 @@ gc_profile_clear(VALUE _)
  *  +:GC_INVOKE_TIME+::
  *	CPU time elapsed in seconds from startup to when the GC was invoked.
  *  +:GC_WALL_TIME+::
- *	Monotonic wall-clock time elapsed in seconds for this GC run.
+ *	Monotonic wall-clock time elapsed in seconds spent doing collector work
+ *	for this GC record.  This does not include time spent stopping other
+ *	ractors before the VM enters GC.
  *  +:GC_INVOKE_WALL_TIME+::
  *	Monotonic wall-clock time elapsed in seconds from startup to when the GC
  *	was invoked.
  *  +:GC_PAUSE_TIME+::
- *	Monotonic wall-clock time elapsed in seconds while the VM was in GC,
- *	including time to stop other ractors.  This may include time from
- *	incremental marking or lazy sweeping continuation charged to this record.
+ *	Monotonic wall-clock time elapsed in seconds while user execution was
+ *	blocked by this GC entry, including time to stop other ractors.  This
+ *	may include time from incremental marking or lazy sweeping continuation
+ *	charged to this record.
+ *  +:GC_STOP_TIME+::
+ *	Monotonic wall-clock time elapsed in seconds stopping other ractors.
+ *  +:GC_STW_TIME+::
+ *	Monotonic wall-clock time elapsed in seconds after other ractors have
+ *	stopped and before the VM exits GC.
  *  +:HEAP_USE_SIZE+::
  *	Total bytes of heap used
  *  +:HEAP_TOTAL_SIZE+::
@@ -9208,6 +9236,15 @@ gc_profile_clear(VALUE _)
  *	Total number of objects
  *  +:GC_IS_MARKED+::
  *	Returns +true+ if the GC is in mark phase
+ *
+ *  The wall-clock timing fields relate to each other as follows:
+ *
+ *    GC_PAUSE_TIME == GC_STOP_TIME + GC_STW_TIME
+ *
+ *  +:GC_WALL_TIME+ measures collector work and is nested inside
+ *  +:GC_STW_TIME+, so it must not be added to +:GC_STW_TIME+.  The difference
+ *  +GC_STW_TIME - GC_WALL_TIME+ is VM overhead inside the stopped interval
+ *  (GC event hooks, bookkeeping, consistency checks, and continuation work).
  *
  *  If ruby was built with +GC_PROFILE_MORE_DETAIL+, you will also have access
  *  to the following hash keys:
@@ -9248,6 +9285,10 @@ gc_profile_record_get(VALUE _)
                 DBL2NUM(hrtime_to_sec(record->gc_invoke_wall_time)));
         rb_hash_aset(prof, ID2SYM(rb_intern("GC_PAUSE_TIME")),
                 DBL2NUM(hrtime_to_sec(record->gc_pause_time)));
+        rb_hash_aset(prof, ID2SYM(rb_intern("GC_STOP_TIME")),
+                DBL2NUM(hrtime_to_sec(record->gc_stop_time)));
+        rb_hash_aset(prof, ID2SYM(rb_intern("GC_STW_TIME")),
+                DBL2NUM(hrtime_to_sec(record->gc_stw_time)));
         rb_hash_aset(prof, ID2SYM(rb_intern("HEAP_USE_SIZE")), SIZET2NUM(record->heap_use_size));
         rb_hash_aset(prof, ID2SYM(rb_intern("HEAP_TOTAL_SIZE")), SIZET2NUM(record->heap_total_size));
         rb_hash_aset(prof, ID2SYM(rb_intern("HEAP_TOTAL_OBJECTS")), SIZET2NUM(record->heap_total_objects));
@@ -10108,8 +10149,10 @@ rb_gc_impl_init(void)
      *    GC::Profiler.disable
      *
      *  GC::Profiler.raw_data returns one Hash per GC run, including CPU time
-     *  fields such as +:GC_TIME+ and wall-clock fields such as +:GC_WALL_TIME+
-     *  and +:GC_PAUSE_TIME+.
+     *  fields such as +:GC_TIME+ and wall-clock fields such as +:GC_WALL_TIME+,
+     *  +:GC_PAUSE_TIME+, +:GC_STOP_TIME+, and +:GC_STW_TIME+.  +:GC_WALL_TIME+
+     *  measures collector work for the record, while +:GC_PAUSE_TIME+ measures
+     *  how long user execution was blocked by the GC entry.
      *
      *  See also GC.count, GC.malloc_allocated_size and GC.malloc_allocations
      */
