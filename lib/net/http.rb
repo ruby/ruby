@@ -1304,7 +1304,7 @@ module Net   #:nodoc:
 
     # Sets whether to determine the proxy from environment variable
     # '<tt>ENV['http_proxy']</tt>';
-    # see {Proxy Using ENV['http_proxy']}[rdoc-ref:Net::HTTP@Proxy+Using+ENVHTTPProxy].
+    # see {Proxy Using ENV}[rdoc-ref:Net::HTTP@Proxy+Using+ENVHTTPProxy].
     attr_writer :proxy_from_env
 
     # Sets the proxy address;
