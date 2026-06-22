@@ -10,7 +10,7 @@ module Spec
     include Spec::Env
 
     def source_root
-      @source_root ||= Pathname.new(ruby_core? ? "../../.." : "../../bundler").expand_path(__dir__)
+      @source_root ||= Pathname.new(ruby_core? ? "../../.." : "../..").expand_path(__dir__)
     end
 
     def root
@@ -50,7 +50,7 @@ module Spec
     end
 
     def bindir
-      @bindir ||= source_root.join(ruby_core? ? "spec/bin" : "../bin")
+      @bindir ||= source_root.join(ruby_core? ? "spec/bin" : "bin")
     end
 
     def exedir
@@ -76,7 +76,7 @@ module Spec
     end
 
     def spec_dir
-      @spec_dir ||= source_root.join(ruby_core? ? "spec/bundler" : "../spec")
+      @spec_dir ||= source_root.join(ruby_core? ? "spec/bundler" : "spec")
     end
 
     def man_dir
@@ -123,7 +123,7 @@ module Spec
         end
         Pathname(real)
       else
-        (ruby_core? ? source_root : source_root.parent).join("tmp")
+        source_root.join("tmp")
       end
     end
 
@@ -298,7 +298,7 @@ module Spec
     end
 
     def git_root
-      ruby_core? ? source_root : source_root.parent
+      source_root
     end
 
     def rake_path
@@ -345,11 +345,11 @@ module Spec
     end
 
     def tracked_files_glob
-      ruby_core? ? "libexec/bundle* lib/bundler lib/bundler.rb spec/bundler man/bundle*" : "lib exe CHANGELOG.md LICENSE.md README.md bundler.gemspec"
+      ruby_core? ? "libexec/bundle* lib/bundler lib/bundler.rb spec/bundler man/bundle*" : "exe/bundle exe/bundler lib/bundler lib/bundler.rb bundler.gemspec bundler/CHANGELOG.md bundler/LICENSE.md bundler/README.md"
     end
 
     def lib_tracked_files_glob
-      ruby_core? ? "lib/bundler lib/bundler.rb" : "lib"
+      "lib/bundler lib/bundler.rb"
     end
 
     def man_tracked_files_glob
@@ -371,7 +371,7 @@ module Spec
     end
 
     def tool_dir
-      ruby_core? ? source_root.join("tool/bundler") : source_root.join("../tool/bundler")
+      source_root.join("tool/bundler")
     end
 
     def templates_dir
