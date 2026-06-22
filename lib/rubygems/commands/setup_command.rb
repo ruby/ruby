@@ -292,7 +292,6 @@ By default, this RubyGems will install gem as:
 
   def install_lib(lib_dir)
     libs = { "RubyGems" => "lib" }
-    libs["Bundler"] = "bundler/lib"
     libs.each do |tool, path|
       say "Installing #{tool}" if @verbose
 
@@ -366,7 +365,7 @@ By default, this RubyGems will install gem as:
       target_specs_dir
     end
 
-    new_bundler_spec = Dir.chdir("bundler") { Gem::Specification.load("bundler.gemspec") }
+    new_bundler_spec = Gem::Specification.load("bundler.gemspec")
     full_name = new_bundler_spec.full_name
     gemspec_path = "#{full_name}.gemspec"
 
@@ -390,26 +389,24 @@ By default, this RubyGems will install gem as:
 
     require_relative "../installer"
 
-    Dir.chdir("bundler") do
-      built_gem = Gem::Package.build(new_bundler_spec)
-      begin
-        installer = Gem::Installer.at(
-          built_gem,
-          env_shebang: options[:env_shebang],
-          format_executable: options[:format_executable],
-          force: options[:force],
-          bin_dir: bin_dir,
-          install_dir: default_dir,
-          wrappers: true
-        )
-        # We need to install only executable and default spec files.
-        # lib/bundler.rb and lib/bundler/* are available under the site_ruby directory.
-        installer.extract_bin
-        installer.generate_bin
-        installer.write_default_spec
-      ensure
-        FileUtils.rm_f built_gem
-      end
+    built_gem = Gem::Package.build(new_bundler_spec)
+    begin
+      installer = Gem::Installer.at(
+        built_gem,
+        env_shebang: options[:env_shebang],
+        format_executable: options[:format_executable],
+        force: options[:force],
+        bin_dir: bin_dir,
+        install_dir: default_dir,
+        wrappers: true
+      )
+      # We need to install only executable and default spec files.
+      # lib/bundler.rb and lib/bundler/* are available under the site_ruby directory.
+      installer.extract_bin
+      installer.generate_bin
+      installer.write_default_spec
+    ensure
+      FileUtils.rm_f built_gem
     end
 
     new_bundler_spec.executables.each {|executable| bin_file_names << target_bin_path(bin_dir, executable) }
@@ -499,7 +496,7 @@ abort "#{deprecation_message}"
 
   def remove_old_lib_files(lib_dir)
     lib_dirs = { File.join(lib_dir, "rubygems") => "lib/rubygems" }
-    lib_dirs[File.join(lib_dir, "bundler")] = "bundler/lib/bundler"
+    lib_dirs[File.join(lib_dir, "bundler")] = "lib/bundler"
     lib_dirs.each do |old_lib_dir, new_lib_dir|
       lib_files = files_in(new_lib_dir)
 
