@@ -1299,6 +1299,24 @@ hash_iter_status_check(int status)
 }
 
 static int
+hash_iter_readonly_status_check(int status)
+{
+    switch (status) {
+      case ST_CONTINUE:
+        return ST_CHECK;
+      case ST_STOP:
+        return ST_STOP;
+      case ST_DELETE:
+      case ST_REPLACE:
+        rb_raise(rb_eRuntimeError, "can't modify hash during read-only iteration");
+      default:
+        rb_raise(rb_eRuntimeError, "unexpected hash iteration status: %d", status);
+    }
+
+    UNREACHABLE_RETURN(ST_STOP);
+}
+
+static int
 hash_ar_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
 {
     struct hash_foreach_arg *arg = (struct hash_foreach_arg *)argp;
@@ -1311,6 +1329,18 @@ hash_ar_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
 }
 
 static int
+hash_ar_foreach_readonly_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
+{
+    struct hash_foreach_arg *arg = (struct hash_foreach_arg *)argp;
+
+    if (error) return ST_STOP;
+
+    int status = (*arg->func)((VALUE)key, (VALUE)value, arg->arg);
+
+    return hash_iter_readonly_status_check(status);
+}
+
+static int
 hash_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
 {
     struct hash_foreach_arg *arg = (struct hash_foreach_arg *)argp;
@@ -1320,6 +1350,18 @@ hash_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
     int status = (*arg->func)((VALUE)key, (VALUE)value, arg->arg);
 
     return hash_iter_status_check(status);
+}
+
+static int
+hash_foreach_readonly_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
+{
+    struct hash_foreach_arg *arg = (struct hash_foreach_arg *)argp;
+
+    if (error) return ST_STOP;
+
+    int status = (*arg->func)((VALUE)key, (VALUE)value, arg->arg);
+
+    return hash_iter_readonly_status_check(status);
 }
 
 static unsigned long
@@ -1449,6 +1491,25 @@ hash_foreach_call(VALUE arg)
     return Qnil;
 }
 
+static VALUE
+hash_foreach_readonly_call(VALUE arg)
+{
+    VALUE hash = ((struct hash_foreach_arg *)arg)->hash;
+    int ret = 0;
+    if (RHASH_AR_TABLE_P(hash)) {
+        ret = ar_foreach_check(hash, hash_ar_foreach_readonly_iter,
+                               (st_data_t)arg, (st_data_t)Qundef);
+    }
+    else if (RHASH_ST_TABLE_P(hash)) {
+        ret = st_foreach_check(RHASH_ST_TABLE(hash), hash_foreach_readonly_iter,
+                               (st_data_t)arg, (st_data_t)Qundef);
+    }
+    if (ret) {
+        rb_raise(rb_eRuntimeError, "ret: %d, hash modified during read-only iteration", ret);
+    }
+    return Qnil;
+}
+
 void
 rb_hash_foreach(VALUE hash, rb_foreach_func *func, VALUE farg)
 {
@@ -1456,6 +1517,7 @@ rb_hash_foreach(VALUE hash, rb_foreach_func *func, VALUE farg)
 
     if (RHASH_TABLE_EMPTY_P(hash))
         return;
+    hash_materialize_shared_table(hash);
     arg.hash = hash;
     arg.func = (rb_foreach_func *)func;
     arg.arg  = farg;
@@ -1465,6 +1527,26 @@ rb_hash_foreach(VALUE hash, rb_foreach_func *func, VALUE farg)
     else {
         hash_iter_lev_inc(hash);
         rb_ensure(hash_foreach_call, (VALUE)&arg, hash_foreach_ensure, hash);
+    }
+    hash_verify(hash);
+}
+
+static void
+rb_hash_foreach_readonly(VALUE hash, rb_foreach_func *func, VALUE farg)
+{
+    struct hash_foreach_arg arg;
+
+    if (RHASH_TABLE_EMPTY_P(hash))
+        return;
+    arg.hash = hash;
+    arg.func = (rb_foreach_func *)func;
+    arg.arg  = farg;
+    if (RB_OBJ_FROZEN(hash)) {
+        hash_foreach_readonly_call((VALUE)&arg);
+    }
+    else {
+        hash_iter_lev_inc(hash);
+        rb_ensure(hash_foreach_readonly_call, (VALUE)&arg, hash_foreach_ensure, hash);
     }
     hash_verify(hash);
 }
@@ -3692,7 +3774,7 @@ rb_hash_to_a(VALUE hash)
     VALUE ary;
 
     ary = rb_ary_new_capa(RHASH_SIZE(hash));
-    rb_hash_foreach(hash, to_a_i, ary);
+    rb_hash_foreach_readonly(hash, to_a_i, ary);
 
     return ary;
 }
@@ -3916,7 +3998,7 @@ rb_hash_keys(VALUE hash)
         rb_ary_set_len(keys, size);
     }
     else {
-        rb_hash_foreach(hash, keys_i, keys);
+        rb_hash_foreach_readonly(hash, keys_i, keys);
     }
 
     return keys;
@@ -3967,7 +4049,7 @@ rb_hash_values(VALUE hash)
         rb_ary_set_len(values, size);
     }
     else {
-        rb_hash_foreach(hash, values_i, values);
+        rb_hash_foreach_readonly(hash, values_i, values);
     }
 
     return values;
@@ -4653,7 +4735,7 @@ rb_hash_flatten(int argc, VALUE *argv, VALUE hash)
         if (level == 0) return rb_hash_to_a(hash);
 
         ary = rb_ary_new_capa(RHASH_SIZE(hash) * 2);
-        rb_hash_foreach(hash, flatten_i, ary);
+        rb_hash_foreach_readonly(hash, flatten_i, ary);
         level--;
 
         if (level > 0) {
@@ -4667,7 +4749,7 @@ rb_hash_flatten(int argc, VALUE *argv, VALUE hash)
     }
     else {
         ary = rb_ary_new_capa(RHASH_SIZE(hash) * 2);
-        rb_hash_foreach(hash, flatten_i, ary);
+        rb_hash_foreach_readonly(hash, flatten_i, ary);
     }
 
     return ary;

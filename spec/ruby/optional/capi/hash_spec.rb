@@ -190,6 +190,17 @@ describe "C-API Hash function" do
       out.should == {name: "Evan", sign: :libra}
       hsh.should == {}
     end
+
+    it "deletes via the callback without mutating the source of a shared dup" do
+      hsh = {}
+      20.times { |i| hsh[i] = i }
+      dup = hsh.dup
+
+      out = @s.rb_hash_foreach_delete(dup)
+      out.should == hsh
+      dup.should == {}
+      hsh.should == 20.times.to_h { |i| [i, i] }
+    end
   end
 
   describe "rb_hash_bulk_insert" do
