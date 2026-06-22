@@ -580,6 +580,25 @@ class TestGc < Test::Unit::TestCase
     GC::Profiler.disable
   end
 
+  def test_profiler_raw_data_includes_wall_time
+    GC::Profiler.enable
+    GC::Profiler.clear
+
+    GC.start
+    record = GC::Profiler.raw_data.last
+
+    assert_kind_of Float, record[:GC_WALL_TIME]
+    assert_kind_of Float, record[:GC_INVOKE_WALL_TIME]
+    assert_kind_of Float, record[:GC_PAUSE_TIME]
+
+    assert_operator record[:GC_WALL_TIME], :>=, 0.0
+    assert_operator record[:GC_INVOKE_WALL_TIME], :>=, 0.0
+    assert_operator record[:GC_PAUSE_TIME], :>=, 0.0
+  ensure
+    GC::Profiler.disable
+    GC::Profiler.clear
+  end
+
   def test_profiler_total_time
     GC::Profiler.enable
     GC::Profiler.clear
