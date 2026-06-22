@@ -592,13 +592,18 @@ class TestGc < Test::Unit::TestCase
     assert_kind_of Float, record[:GC_PAUSE_TIME]
     assert_kind_of Float, record[:GC_STOP_TIME]
     assert_kind_of Float, record[:GC_STW_TIME]
+    assert_kind_of Float, record[:GC_MARK_WALL_TIME]
+    assert_kind_of Float, record[:GC_SWEEP_WALL_TIME]
 
     assert_operator record[:GC_WALL_TIME], :>=, 0.0
     assert_operator record[:GC_INVOKE_WALL_TIME], :>=, 0.0
     assert_operator record[:GC_PAUSE_TIME], :>=, 0.0
     assert_operator record[:GC_STOP_TIME], :>=, 0.0
     assert_operator record[:GC_STW_TIME], :>=, 0.0
+    assert_operator record[:GC_MARK_WALL_TIME], :>=, 0.0
+    assert_operator record[:GC_SWEEP_WALL_TIME], :>=, 0.0
     assert_in_delta record[:GC_PAUSE_TIME], record[:GC_STOP_TIME] + record[:GC_STW_TIME], 0.001
+    assert_operator record[:GC_MARK_WALL_TIME] + record[:GC_SWEEP_WALL_TIME], :<=, record[:GC_PAUSE_TIME] + 0.001
   ensure
     GC::Profiler.disable
     GC::Profiler.clear
