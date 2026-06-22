@@ -380,21 +380,23 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v6, v7)
         bb3(v9:BasicObject, v10:BasicObject):
           v14:NilClass = Const Value(nil)
-          v18:BasicObject = GetConstantPath 0x1008
-          v20:BasicObject = CheckMatch v10, v18, CASE
+          PatchPoint SingleRactorMode
+          PatchPoint StableConstantNames(0x1008, Integer)
+          v20:ClassSubclass[Integer@0x1010] = Const Value(VALUE(0x1010))
+          v22:BasicObject = CheckMatch v10, v20, CASE
           CheckInterrupts
-          v23:CBool = Test v20
-          v24:Truthy = RefineType v20, Truthy
-          CondBranch v23, bb4(v9, v10, v14, v10), bb5()
-        bb4(v36:BasicObject, v37:BasicObject, v38:NilClass, v39:BasicObject):
-          v44:Fixnum[1] = Const Value(1)
+          v25:CBool = Test v22
+          v26:Truthy = RefineType v22, Truthy
+          CondBranch v25, bb4(v9, v10, v14, v10), bb5()
+        bb4(v38:BasicObject, v39:BasicObject, v40:NilClass, v41:BasicObject):
+          v46:Fixnum[1] = Const Value(1)
           CheckInterrupts
-          Return v44
+          Return v46
         bb5():
-          v26:Falsy = RefineType v20, Falsy
-          v31:Fixnum[2] = Const Value(2)
+          v28:Falsy = RefineType v22, Falsy
+          v33:Fixnum[2] = Const Value(2)
           CheckInterrupts
-          Return v31
+          Return v33
         ");
     }
 

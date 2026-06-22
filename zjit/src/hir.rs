@@ -4013,23 +4013,6 @@ impl Function {
                             self.push_insn_id(block, insn_id); continue;
                         }
                     }
-                    Insn::GetConstantPath { ic, state, .. } => {
-                        let idlist: *const ID = unsafe { (*ic).segments };
-                        let ice = unsafe { (*ic).entry };
-                        if ice.is_null() {
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        let cref_sensitive = !unsafe { (*ice).ic_cref }.is_null();
-                        if cref_sensitive || !self.assume_single_ractor_mode(block, state) {
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        // Invalidate output code on any constant writes associated with constants
-                        // referenced after the PatchPoint.
-                        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::StableConstantNames { idlist }, state });
-                        let replacement = self.push_insn(block, Insn::Const { val: Const::Value(unsafe { (*ice).value }) });
-                        self.insn_types[replacement.0] = self.infer_type(replacement);
-                        self.make_equal_to(insn_id, replacement);
-                    }
                     Insn::ObjToString { val, cd, state, .. } => {
                         if self.is_a(val, types::String) {
                             // behaves differently from `Send` with `mid:to_s` because ObjToString should not have a patch point for String to_s being redefined
@@ -7920,9 +7903,18 @@ fn add_iseq_to_hir(
                     state.stack_push(result);
                 }
                 YARVINSN_opt_getconstant_path => {
-                    let ic = get_arg(pc, 0).as_ptr();
-                    let get_const_path = fun.push_insn(block, Insn::GetConstantPath { ic, state: exit_id });
-                    state.stack_push(get_const_path);
+                    let ic: *const iseq_inline_constant_cache = get_arg(pc, 0).as_ptr();
+                    let idlist: *const ID = unsafe { (*ic).segments };
+                    let ice = unsafe { (*ic).entry };
+                    let result = if !ice.is_null() && (unsafe { (*ice).ic_cref }.is_null() && fun.assume_single_ractor_mode(block, exit_id)) {
+                        // Invalidate output code on any constant writes associated with constants
+                        // referenced after the PatchPoint.
+                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::StableConstantNames { idlist }, state: exit_id });
+                        fun.push_insn(block, Insn::Const { val: Const::Value(unsafe { (*ice).value }) })
+                    } else {
+                        fun.push_insn(block, Insn::GetConstantPath { ic, state: exit_id })
+                    };
+                    state.stack_push(result);
 
                     // Check for `::RubyVM::ZJIT` for directives
                     unsafe {
@@ -7942,7 +7934,7 @@ fn add_iseq_to_hir(
                                 let zjit_module = VALUE(state::ZJIT_MODULE.load(Ordering::Relaxed));
                                 let lookedup_module = rb_const_lookup(rb_cRubyVM, ID!(ZJIT));
                                 if !lookedup_module.is_null() && (*lookedup_module).value == zjit_module {
-                                    fun.insn_types[get_const_path.0] = Type::from_value(zjit_module);
+                                    fun.insn_types[result.0] = Type::from_value(zjit_module);
                                 }
                             }
                         }
