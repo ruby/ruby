@@ -30,6 +30,7 @@ pub type InlineThreshold = usize;
 
 /// Default --zjit-inline-budget
 pub const DEFAULT_INLINE_BUDGET: InlineBudget = 500;
+pub const INLINE_BUDGET_UNLIMITED: InlineBudget = 0;
 pub type InlineBudget = usize;
 
 /// Default --zjit-inline-max-iterations
@@ -145,8 +146,8 @@ pub struct Options {
     /// `inline_methods` inside the `optimize()` fixed-point loop). Once a caller has
     /// grown past this many HIR instructions, `should_inline` rejects further callees,
     /// bounding runaway code-size growth from depth-N inlining (and providing the
-    /// optimization fixed-point loop's effective terminating condition). 0 disables
-    /// the budget.
+    /// optimization fixed-point loop's effective terminating condition).
+    /// `INLINE_BUDGET_UNLIMITED` disables the budget.
     ///
     /// Caveat on the unit: `self.insns` is append-only across the whole pipeline —
     /// `InsnId`s are stable indices into it, so passes never shrink it. `len()` is
