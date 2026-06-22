@@ -205,6 +205,16 @@ class JSONResumageParserTest < Test::Unit::TestCase
     assert_equal '"unterminated string', @parser.rest
   end
 
+  def test_feed_frozen_multibyte_chunks
+    @parser << '{"message":"日本'.freeze
+    refute @parser.parse
+    @parser << '語のつづき"}'.freeze
+    assert @parser.parse
+    value = @parser.value
+    assert_equal({ "message" => "日本語のつづき" }, value)
+    assert_equal Encoding::UTF_8, value["message"].encoding
+  end
+
   def test_eos
     assert_predicate @parser, :eos?
 

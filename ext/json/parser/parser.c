@@ -2388,6 +2388,7 @@ static VALUE cResumableParser_feed(VALUE self, VALUE str)
 
         if (RB_OBJ_FROZEN_RAW(parser->buffer)) {
             VALUE new_buffer = rb_obj_hide(rb_str_buf_new(remaining + RSTRING_LEN(str)));
+            rb_enc_associate_index(new_buffer, utf8_encindex);
 
             char *old_ptr = RSTRING_PTR(parser->buffer);
             memcpy(RSTRING_PTR(new_buffer), old_ptr + consumed, remaining);
