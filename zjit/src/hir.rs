@@ -3505,6 +3505,22 @@ impl Function {
         None
     }
 
+    fn monomorphic_summary(&self, profiles: &ProfileOracle, recv: InsnId, state: InsnId) -> Option<ProfiledType> {
+        let Some(entries) = profiles.get(state) else {
+            return None;
+        };
+        let recv = self.chase_insn(recv);
+        for (entry_insn, entry_type_summary) in entries {
+            if self.chase_insn(*entry_insn) == recv {
+                if entry_type_summary.is_monomorphic() {
+                    return Some(entry_type_summary.bucket(0));
+                }
+                return None;
+            }
+        }
+        None
+    }
+
     /// Resolve the receiver type for method dispatch optimization from profile data.
     ///
     /// Returns:
@@ -4925,46 +4941,6 @@ impl Function {
                         let shape = self.load_shape(block, self_val);
                         self.guard_shape(block, shape, recv_type.shape(), state, Some(Recompile::ProfileSelf));
                         let replacement = self.load_ivar(block, self_val, recv_type, id);
-                        self.make_equal_to(insn_id, replacement);
-                    }
-                    Insn::DefinedIvar { self_val, id, pushval, state } => {
-                        let Some(recv_type) = self.profiled_type_of_at(self_val, state) else {
-                            // No (monomorphic/skewed polymorphic) profile info
-                            self.count(block, Counter::definedivar_fallback_not_monomorphic);
-                            self.push_insn_id(block, insn_id); continue;
-                        };
-                        if recv_type.flags().is_immediate() {
-                            // Instance variable lookups on immediate values are always nil
-                            self.count(block, Counter::definedivar_fallback_immediate);
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        assert!(recv_type.shape().is_valid());
-                        if !recv_type.flags().is_t_object() {
-                            // Check if the receiver is a T_OBJECT
-                            self.count(block, Counter::definedivar_fallback_not_t_object);
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        if recv_type.shape().is_complex() {
-                            // too-complex shapes can't use index access
-                            self.count(block, Counter::definedivar_fallback_complex);
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        if self.policy.no_side_exits {
-                            // On the final version, keep the DefinedIvar fallback instead of another shape guard.
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        let self_val = self.guard_heap(block, self_val, state);
-                        let shape = self.load_shape(block, self_val);
-                        self.guard_shape(block, shape, recv_type.shape(), state, Some(Recompile::ProfileSelf));
-                        let mut ivar_index: attr_index_t = 0;
-                        let replacement = if unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
-                            self.push_insn(block, Insn::Const { val: Const::Value(pushval) })
-                        } else {
-                            // If there is no IVAR index, then the ivar was undefined when we
-                            // entered the compiler.  That means we can just return nil for this
-                            // shape + iv name
-                            self.push_insn(block, Insn::Const { val: Const::Value(Qnil) })
-                        };
                         self.make_equal_to(insn_id, replacement);
                     }
                     Insn::SetIvar { self_val, id, val, state, ic } => {
@@ -7818,6 +7794,21 @@ fn add_iseq_to_hir(
                     // (ID id, IVC ic, VALUE pushval)
                     let id = ID(get_arg(pc, 0).as_u64());
                     let pushval = get_arg(pc, 2);
+                    fn can_optimize(profiled_type: ProfiledType) -> Option<ShapeId> {
+                        // Runtime immediates cannot pass the HeapBasicObject guard, so don't
+                        // generate unreachable shape branches for profiled immediate buckets.
+                        if profiled_type.flags().is_immediate() { return None; }
+                        // Class/module/T_DATA ivars use different storage rules.
+                        // Let the fallthrough DefinedIvar handle these.
+                        if !profiled_type.flags().is_t_object() { return None; }
+                        let profiled_shape = profiled_type.shape();
+                        assert!(profiled_shape.is_valid());
+                        // Too-complex shapes use hash tables for ivars;
+                        // rb_shape_get_iv_index doesn't work for them.
+                        // Let the fallthrough DefinedIvar handle these.
+                        if profiled_shape.is_complex() { return None; }
+                        Some(profiled_shape)
+                    }
                     if let Some(summary) = fun.polymorphic_summary(&profiles, self_param, exit_id) {
                         self_param = fun.push_insn(block, Insn::GuardType { val: self_param, guard_type: types::HeapBasicObject, state: exit_id, recompile: None });
                         let join_block = fun.new_block(insn_idx);
@@ -7828,18 +7819,7 @@ fn add_iseq_to_hir(
                         for &profiled_type in summary.buckets() {
                             // End of the buckets
                             if profiled_type.is_empty() { break; }
-                            // Runtime immediates cannot pass the HeapBasicObject guard, so don't
-                            // generate unreachable shape branches for profiled immediate buckets.
-                            if profiled_type.flags().is_immediate() { continue; }
-                            // Class/module/T_DATA ivars use different storage rules.
-                            // Let the fallthrough DefinedIvar handle these.
-                            if !profiled_type.flags().is_t_object() { continue; }
-                            let profiled_shape = profiled_type.shape();
-                            assert!(profiled_shape.is_valid());
-                            // Too-complex shapes use hash tables for ivars;
-                            // rb_shape_get_iv_index doesn't work for them.
-                            // Let the fallthrough DefinedIvar handle these.
-                            if profiled_shape.is_complex() { continue; }
+                            let Some(profiled_shape) = can_optimize(profiled_type) else { continue };
                             if seen_shape.contains(&profiled_shape) { continue; }
                             seen_shape.push(profiled_shape);
                             let actual_shape = fun.load_shape(block, self_param);
@@ -7871,10 +7851,25 @@ fn add_iseq_to_hir(
                         state.stack_push(join_param);
                         block = join_block;
                     } else {
-                        // TODO: Handle monomorphic definedivar specialization here too, including the
-                        // no_side_exits policy, so optimize_getivar doesn't need a separate DefinedIvar
-                        // path. Unlike GetIvar, DefinedIvar isn't emitted by later lowering passes.
-                        state.stack_push(fun.push_insn(block, Insn::DefinedIvar { self_val: self_param, id, pushval, state: exit_id }));
+                        if let Some(profiled_shape) = (if fun.policy.no_side_exits { None } else { Some(true) })
+                            .and_then(|_| fun.monomorphic_summary(&profiles, self_param, exit_id))
+                            .and_then(can_optimize) {
+                            self_param = fun.guard_heap(block, self_param, exit_id);
+                            let shape = fun.load_shape(block, self_param);
+                            fun.guard_shape(block, shape, profiled_shape, exit_id, Some(Recompile::ProfileSelf));
+                            let mut ivar_index: attr_index_t = 0;
+                            let result = if unsafe { rb_shape_get_iv_index(profiled_shape.0, id, &mut ivar_index) } {
+                                fun.push_insn(block, Insn::Const { val: Const::Value(pushval) })
+                            } else {
+                                // If there is no IVAR index, then the ivar was undefined when we
+                                // entered the compiler.  That means we can just return nil for this
+                                // shape + iv name
+                                fun.push_insn(block, Insn::Const { val: Const::Value(Qnil) })
+                            };
+                            state.stack_push(result);
+                        } else {
+                            state.stack_push(fun.push_insn(block, Insn::DefinedIvar { self_val: self_param, id, pushval, state: exit_id }));
+                        }
                     }
                 }
                 YARVINSN_checkkeyword => {
