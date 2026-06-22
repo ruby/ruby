@@ -33,6 +33,7 @@
 #include "darray.h"
 #include "gc/gc.h"
 #include "gc/gc_impl.h"
+#include "hrtime.h"
 
 #include "probes.h"
 
@@ -377,6 +378,9 @@ typedef struct gc_profile_record {
 
     double gc_time;
     double gc_invoke_time;
+    rb_hrtime_t gc_wall_time;
+    rb_hrtime_t gc_invoke_wall_time;
+    rb_hrtime_t gc_pause_time;
 
     size_t heap_total_objects;
     size_t heap_use_size;
@@ -590,6 +594,7 @@ typedef struct rb_objspace {
         double prepare_time;
 #endif
         double invoke_time;
+        rb_hrtime_t invoke_wall_time;
 
         size_t minor_gc_count;
         size_t major_gc_count;
@@ -615,6 +620,9 @@ typedef struct rb_objspace {
 
         /* temporary profiling space */
         double gc_sweep_start_time;
+        rb_hrtime_t gc_wall_start_time;
+        rb_hrtime_t gc_sweep_wall_start_time;
+        rb_hrtime_t gc_pause_start_time;
         size_t total_allocated_objects_at_gc_start;
         size_t heap_used_at_gc_start;
         size_t heap_total_slots_at_gc_start;
@@ -7028,6 +7036,7 @@ gc_enter_count(enum gc_enter_event event)
 }
 
 static bool current_process_time(struct timespec *ts);
+static inline rb_hrtime_t elapsed_hrtime_from(rb_hrtime_t start);
 
 static void
 gc_clock_start(struct timespec *ts)
@@ -7058,6 +7067,18 @@ gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_
 {
     *lock_lev = RB_GC_VM_LOCK();
 
+    if (objspace->profile.run) {
+        switch (event) {
+          case gc_enter_event_start:
+          case gc_enter_event_continue:
+          case gc_enter_event_rest:
+            objspace->profile.gc_pause_start_time = rb_hrtime_now();
+            break;
+          case gc_enter_event_finalizer:
+            break;
+        }
+    }
+
     switch (event) {
       case gc_enter_event_rest:
       case gc_enter_event_start:
@@ -7087,6 +7108,15 @@ gc_exit(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_l
     GC_ASSERT(during_gc != 0);
 
     rb_gc_event_hook(0, RUBY_INTERNAL_EVENT_GC_EXIT);
+
+    if (objspace->profile.gc_pause_start_time) {
+        if (gc_prof_enabled(objspace)) {
+            gc_profile_record *record = gc_prof_record(objspace);
+            record->gc_pause_time = rb_hrtime_add(record->gc_pause_time,
+                    elapsed_hrtime_from(objspace->profile.gc_pause_start_time));
+        }
+        objspace->profile.gc_pause_start_time = 0;
+    }
 
     gc_record(objspace, 1, gc_enter_event_cstr(event));
     RUBY_DEBUG_LOG("%s (%s)", gc_enter_event_cstr(event), gc_current_status(objspace));
@@ -8899,6 +8929,18 @@ getrusage_time(void)
     }
 }
 
+static inline double
+hrtime_to_sec(rb_hrtime_t time)
+{
+    return (double)time / (double)RB_HRTIME_PER_SEC;
+}
+
+static inline rb_hrtime_t
+elapsed_hrtime_from(rb_hrtime_t start)
+{
+    return rb_hrtime_sub(rb_hrtime_now(), start);
+}
+
 
 static inline void
 gc_prof_setup_new_record(rb_objspace_t *objspace, unsigned int reason)
@@ -8929,6 +8971,8 @@ gc_prof_setup_new_record(rb_objspace_t *objspace, unsigned int reason)
 
         /* setup before-GC parameter */
         record->flags = reason | (ruby_gc_stressful ? GPR_FLAG_STRESS : 0);
+        record->gc_invoke_wall_time = rb_hrtime_sub(rb_hrtime_now(),
+                objspace->profile.invoke_wall_time);
 #if MALLOC_ALLOCATED_SIZE
         record->allocated_size = malloc_allocated_size;
 #endif
@@ -8957,6 +9001,7 @@ gc_prof_timer_start(rb_objspace_t *objspace)
 #endif
         record->gc_time = 0;
         record->gc_invoke_time = getrusage_time();
+        objspace->profile.gc_wall_start_time = rb_hrtime_now();
     }
 }
 
@@ -8979,6 +9024,7 @@ gc_prof_timer_stop(rb_objspace_t *objspace)
         gc_profile_record *record = gc_prof_record(objspace);
         record->gc_time = elapsed_time_from(record->gc_invoke_time);
         record->gc_invoke_time -= objspace->profile.invoke_time;
+        record->gc_wall_time = elapsed_hrtime_from(objspace->profile.gc_wall_start_time);
     }
 }
 
@@ -9017,6 +9063,7 @@ gc_prof_sweep_timer_start(rb_objspace_t *objspace)
 
         if (record->gc_time > 0 || GC_PROFILE_MORE_DETAIL) {
             objspace->profile.gc_sweep_start_time = getrusage_time();
+            objspace->profile.gc_sweep_wall_start_time = rb_hrtime_now();
         }
     }
 }
@@ -9034,6 +9081,8 @@ gc_prof_sweep_timer_stop(rb_objspace_t *objspace)
             sweep_time = elapsed_time_from(objspace->profile.gc_sweep_start_time);
             /* need to accumulate GC time for lazy sweep after gc() */
             record->gc_time += sweep_time;
+            record->gc_wall_time = rb_hrtime_add(record->gc_wall_time,
+                    elapsed_hrtime_from(objspace->profile.gc_sweep_wall_start_time));
         }
         else if (GC_PROFILE_MORE_DETAIL) {
             sweep_time = elapsed_time_from(objspace->profile.gc_sweep_start_time);
@@ -9124,6 +9173,9 @@ gc_profile_clear(VALUE _)
  *	{
  *	   :GC_TIME=>1.3000000000000858e-05,
  *	   :GC_INVOKE_TIME=>0.010634999999999999,
+ *	   :GC_WALL_TIME=>1.4000000000000001e-05,
+ *	   :GC_INVOKE_WALL_TIME=>0.010640000000000000,
+ *	   :GC_PAUSE_TIME=>1.5000000000000000e-05,
  *	   :HEAP_USE_SIZE=>289640,
  *	   :HEAP_TOTAL_SIZE=>588960,
  *	   :HEAP_TOTAL_OBJECTS=>14724,
@@ -9135,9 +9187,19 @@ gc_profile_clear(VALUE _)
  *  The keys mean:
  *
  *  +:GC_TIME+::
- *	Time elapsed in seconds for this GC run
+ *	CPU time elapsed in seconds for this GC run.  This is process CPU time,
+ *	not elapsed wall-clock time.
  *  +:GC_INVOKE_TIME+::
- *	Time elapsed in seconds from startup to when the GC was invoked
+ *	CPU time elapsed in seconds from startup to when the GC was invoked.
+ *  +:GC_WALL_TIME+::
+ *	Monotonic wall-clock time elapsed in seconds for this GC run.
+ *  +:GC_INVOKE_WALL_TIME+::
+ *	Monotonic wall-clock time elapsed in seconds from startup to when the GC
+ *	was invoked.
+ *  +:GC_PAUSE_TIME+::
+ *	Monotonic wall-clock time elapsed in seconds while the VM was in GC,
+ *	including time to stop other ractors.  This may include time from
+ *	incremental marking or lazy sweeping continuation charged to this record.
  *  +:HEAP_USE_SIZE+::
  *	Total bytes of heap used
  *  +:HEAP_TOTAL_SIZE+::
@@ -9180,6 +9242,12 @@ gc_profile_record_get(VALUE _)
         rb_hash_aset(prof, ID2SYM(rb_intern("GC_FLAGS")), gc_info_decode(objspace, rb_hash_new(), record->flags));
         rb_hash_aset(prof, ID2SYM(rb_intern("GC_TIME")), DBL2NUM(record->gc_time));
         rb_hash_aset(prof, ID2SYM(rb_intern("GC_INVOKE_TIME")), DBL2NUM(record->gc_invoke_time));
+        rb_hash_aset(prof, ID2SYM(rb_intern("GC_WALL_TIME")),
+                DBL2NUM(hrtime_to_sec(record->gc_wall_time)));
+        rb_hash_aset(prof, ID2SYM(rb_intern("GC_INVOKE_WALL_TIME")),
+                DBL2NUM(hrtime_to_sec(record->gc_invoke_wall_time)));
+        rb_hash_aset(prof, ID2SYM(rb_intern("GC_PAUSE_TIME")),
+                DBL2NUM(hrtime_to_sec(record->gc_pause_time)));
         rb_hash_aset(prof, ID2SYM(rb_intern("HEAP_USE_SIZE")), SIZET2NUM(record->heap_use_size));
         rb_hash_aset(prof, ID2SYM(rb_intern("HEAP_TOTAL_SIZE")), SIZET2NUM(record->heap_total_size));
         rb_hash_aset(prof, ID2SYM(rb_intern("HEAP_TOTAL_OBJECTS")), SIZET2NUM(record->heap_total_objects));
@@ -9965,6 +10033,7 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
     init_mark_stack(&objspace->mark_stack);
 
     objspace->profile.invoke_time = getrusage_time();
+    objspace->profile.invoke_wall_time = rb_hrtime_now();
     finalizer_table = st_init_numtable();
 }
 
