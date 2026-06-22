@@ -13762,6 +13762,149 @@ parse_arguments_append(pm_parser_t *parser, pm_arguments_t *arguments, pm_node_t
 }
 
 /**
+ * Determine if a given call node looks like a "command", which means it has
+ * arguments but does not have parentheses.
+ */
+static PRISM_INLINE bool
+pm_call_node_command_p(const pm_call_node_t *node) {
+    return (
+        (node->opening_loc.length == 0) &&
+        (node->block == NULL || PM_NODE_TYPE_P(node->block, PM_BLOCK_ARGUMENT_NODE)) &&
+        (node->arguments != NULL || node->block != NULL)
+    );
+}
+
+/**
+ * Returns true if the given call node is a constant-path command with a brace
+ * block and no parentheses, e.g. `Foo::Bar { }`. In parse.y this is the
+ * dedicated command production `primary_value tCOLON2 tCONSTANT '{' brace_body
+ * '}'`, which is a command call (not a primary) -- so it cannot be used as an
+ * argument operand and cannot be chained. Note that the call operator must be
+ * `::` and the message must be a constant: `Foo::bar { }` (lowercase) and
+ * `Foo.Bar { }` (`.` operator) are method calls and remain primaries.
+ */
+static bool
+pm_constant_path_command_call_p(const pm_parser_t *parser, const pm_call_node_t *call) {
+    return (
+        call->receiver != NULL &&
+        call->opening_loc.length == 0 &&
+        call->block != NULL && PM_NODE_TYPE_P(call->block, PM_BLOCK_NODE) &&
+        call->call_operator_loc.length > 0 &&
+        parser->start[call->call_operator_loc.start] == ':' &&
+        call->message_loc.length > 0 &&
+        parser->encoding->isupper_char(parser->start + call->message_loc.start, (ptrdiff_t) call->message_loc.length)
+    );
+}
+
+/**
+ * Returns true if the given node is a command-style call (a method call without
+ * parentheses that has arguments), excluding operator calls (e.g., a + b) which
+ * satisfy the same structural criteria but are not commands.
+ */
+static bool
+pm_command_call_value_p(const pm_parser_t *parser, const pm_node_t *node) {
+    switch (PM_NODE_TYPE(node)) {
+        case PM_CALL_NODE: {
+            const pm_call_node_t *call = (const pm_call_node_t *) node;
+
+            /* Command-style calls (e.g., foo bar, obj.foo bar). Attribute
+             * writes (e.g., a.b = 1) are not commands. */
+            if (pm_call_node_command_p(call) && !PM_NODE_FLAG_P(node, PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE) && (call->receiver == NULL || call->call_operator_loc.length > 0)) {
+                return true;
+            }
+
+            /* A constant-path command with a brace block, e.g. `Foo::Bar { }`. */
+            if (pm_constant_path_command_call_p(parser, call)) {
+                return true;
+            }
+
+            /* A `!` or `not` prefix wrapping a command call (e.g., `!foo bar`,
+             * `not foo bar`) is also a command-call value. */
+            if (call->receiver != NULL && call->arguments == NULL && call->opening_loc.length == 0 && call->call_operator_loc.length == 0) {
+                return pm_command_call_value_p(parser, call->receiver);
+            }
+
+            return false;
+        }
+        case PM_SUPER_NODE: {
+            /* A command-style super (no parens). A super carrying a do-block is
+             * a block call (it permits chaining), so it is excluded here and
+             * handled by pm_block_call_p instead. */
+            const pm_super_node_t *cast = (const pm_super_node_t *) node;
+            return cast->lparen_loc.length == 0 &&
+                   (cast->arguments != NULL || cast->block != NULL) &&
+                   !(cast->block != NULL && PM_NODE_TYPE_P(cast->block, PM_BLOCK_NODE));
+        }
+        case PM_YIELD_NODE: {
+            const pm_yield_node_t *cast = (const pm_yield_node_t *) node;
+            return cast->lparen_loc.length == 0 && cast->arguments != NULL;
+        }
+        case PM_RESCUE_MODIFIER_NODE:
+            return pm_command_call_value_p(parser, ((const pm_rescue_modifier_node_t *) node)->expression);
+        case PM_DEF_NODE: {
+            const pm_def_node_t *cast = (const pm_def_node_t *) node;
+            if (cast->equal_loc.length > 0 && cast->body != NULL) {
+                const pm_node_t *body = cast->body;
+                if (PM_NODE_TYPE_P(body, PM_STATEMENTS_NODE)) {
+                    body = ((const pm_statements_node_t *) body)->body.nodes[((const pm_statements_node_t *) body)->body.size - 1];
+                }
+                return pm_command_call_value_p(parser, body);
+            }
+            return false;
+        }
+        default:
+            return false;
+    }
+}
+
+/**
+ * Returns true if the given node is a block call: a command
+ * with a do-block, or any call chained (via `.`, `::`, `&.`) from such a node.
+ * Block calls can only be followed by call chaining, composition (and/or), and
+ * modifier operators.
+ */
+static bool
+pm_block_call_p(const pm_node_t *node) {
+    while (PM_NODE_TYPE_P(node, PM_CALL_NODE)) {
+        const pm_call_node_t *call = (const pm_call_node_t *) node;
+
+        /* Root: a command (no parentheses) carrying command arguments and a
+         * block (brace or do), e.g. `foo bar do end`, `foo bar { }`. The
+         * no-parentheses requirement is what distinguishes a command root from
+         * a method call root like `foo.bar(1) { }`, which is a primary value
+         * and may be used as an argument.
+         */
+        if (call->opening_loc.length == 0 && call->arguments != NULL && call->block != NULL && PM_NODE_TYPE_P(call->block, PM_BLOCK_NODE)) {
+            return true;
+        }
+
+        /* Walk up the receiver chain of a `.`/`::`/`&.` call (e.g.,
+         * `foo bar do end.baz(1)`). Parentheses on the chained call are allowed
+         * here -- in parse.y a `block_call` can be extended by
+         * `call_op2 operation2 opt_paren_args` and remains a block call.
+         */
+        if (call->call_operator_loc.length > 0 && call->receiver != NULL) {
+            node = call->receiver;
+            continue;
+        }
+
+        return false;
+    }
+
+    /* A `super` with command arguments and a do-block is also a block-call root
+     * (parse.y: `command do_block`, where the command is `keyword_super
+     * command_args`). `super do end` with no arguments is a forwarding super
+     * (a primary value) and is handled elsewhere.
+     */
+    if (PM_NODE_TYPE_P(node, PM_SUPER_NODE)) {
+        const pm_super_node_t *super = (const pm_super_node_t *) node;
+        return super->lparen_loc.length == 0 && super->block != NULL && PM_NODE_TYPE_P(super->block, PM_BLOCK_NODE);
+    }
+
+    return false;
+}
+
+/**
  * Parse a list of arguments.
  */
 static void
@@ -13909,6 +14052,16 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                 if (argument_allowed_for_bare_hash(parser, argument)) {
                     if (parsed_bare_hash) {
                         pm_parser_err_previous(parser, PM_ERR_ARGUMENT_BARE_HASH);
+                    }
+
+                    /* A hash key must be an argument (`arg`). A command call or
+                     * block call (e.g. `Foo::Bar { } => v`, `foo bar do end =>
+                     * v`) is not an argument, so reject it as a key. Plain
+                     * command calls never reach here as a key because they
+                     * absorb the `=>` into their own arguments first.
+                     */
+                    if (pm_command_call_value_p(parser, argument) || pm_block_call_p(argument)) {
+                        PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->previous, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(parser->previous.type));
                     }
 
                     pm_token_t operator = { 0 };
@@ -17738,99 +17891,6 @@ parse_yield(pm_parser_t *parser, const pm_node_t *node) {
 }
 
 /**
- * Determine if a given call node looks like a "command", which means it has
- * arguments but does not have parentheses.
- */
-static PRISM_INLINE bool
-pm_call_node_command_p(const pm_call_node_t *node) {
-    return (
-        (node->opening_loc.length == 0) &&
-        (node->block == NULL || PM_NODE_TYPE_P(node->block, PM_BLOCK_ARGUMENT_NODE)) &&
-        (node->arguments != NULL || node->block != NULL)
-    );
-}
-
-/**
- * Returns true if the given node is a command-style call (a method call without
- * parentheses that has arguments), excluding operator calls (e.g., a + b) which
- * satisfy the same structural criteria but are not commands.
- */
-static bool
-pm_command_call_value_p(const pm_node_t *node) {
-    switch (PM_NODE_TYPE(node)) {
-        case PM_CALL_NODE: {
-            const pm_call_node_t *call = (const pm_call_node_t *) node;
-
-            // Command-style calls (e.g., foo bar, obj.foo bar).
-            // Attribute writes (e.g., a.b = 1) are not commands.
-            if (pm_call_node_command_p(call) && !PM_NODE_FLAG_P(node, PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE) && (call->receiver == NULL || call->call_operator_loc.length > 0)) {
-                return true;
-            }
-
-            // A `!` or `not` prefix wrapping a command call (e.g.,
-            // `!foo bar`, `not foo bar`) is also a command-call value.
-            if (call->receiver != NULL && call->arguments == NULL && call->opening_loc.length == 0 && call->call_operator_loc.length == 0) {
-                return pm_command_call_value_p(call->receiver);
-            }
-
-            return false;
-        }
-        case PM_SUPER_NODE: {
-            const pm_super_node_t *cast = (const pm_super_node_t *) node;
-            return cast->lparen_loc.length == 0 && (cast->arguments != NULL || cast->block != NULL);
-        }
-        case PM_YIELD_NODE: {
-            const pm_yield_node_t *cast = (const pm_yield_node_t *) node;
-            return cast->lparen_loc.length == 0 && cast->arguments != NULL;
-        }
-        case PM_RESCUE_MODIFIER_NODE:
-            return pm_command_call_value_p(((const pm_rescue_modifier_node_t *) node)->expression);
-        case PM_DEF_NODE: {
-            const pm_def_node_t *cast = (const pm_def_node_t *) node;
-            if (cast->equal_loc.length > 0 && cast->body != NULL) {
-                const pm_node_t *body = cast->body;
-                if (PM_NODE_TYPE_P(body, PM_STATEMENTS_NODE)) {
-                    body = ((const pm_statements_node_t *) body)->body.nodes[((const pm_statements_node_t *) body)->body.size - 1];
-                }
-                return pm_command_call_value_p(body);
-            }
-            return false;
-        }
-        default:
-            return false;
-    }
-}
-
-/**
- * Returns true if the given node is a block call: a command
- * with a do-block, or any call chained (via `.`, `::`, `&.`) from such a node.
- * Block calls can only be followed by call chaining, composition (and/or), and
- * modifier operators.
- */
-static bool
-pm_block_call_p(const pm_node_t *node) {
-    while (PM_NODE_TYPE_P(node, PM_CALL_NODE)) {
-        const pm_call_node_t *call = (const pm_call_node_t *) node;
-        if (call->opening_loc.length > 0) return false;
-
-        // Root: command with do-block (e.g., `foo bar do end`).
-        if (call->arguments != NULL && call->block != NULL && PM_NODE_TYPE_P(call->block, PM_BLOCK_NODE)) {
-            return true;
-        }
-
-        // Walk up the receiver chain (e.g., `foo bar do end.baz`).
-        if (call->call_operator_loc.length > 0 && call->receiver != NULL) {
-            node = call->receiver;
-            continue;
-        }
-
-        return false;
-    }
-
-    return false;
-}
-
-/**
  * Parse a case expression (the `case` keyword). This handles both case-when and
  * case-in (pattern matching) forms.
  */
@@ -18463,7 +18523,7 @@ parse_def(pm_parser_t *parser, pm_binding_power_t binding_power, uint8_t flags, 
         /* A nested endless def whose body is a command call (e.g.,
          * `def f = def g = foo bar`) is a command assignment and cannot appear
          * as a def body. */
-        if (PM_NODE_TYPE_P(statement, PM_DEF_NODE) && pm_command_call_value_p(statement)) {
+        if (PM_NODE_TYPE_P(statement, PM_DEF_NODE) && pm_command_call_value_p(parser, statement)) {
             PM_PARSER_ERR_NODE_FORMAT(parser, statement, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(parser->current.type));
         }
 
@@ -20683,7 +20743,7 @@ parse_assignment_value(pm_parser_t *parser, pm_binding_power_t previous_binding_
     // be followed by modifiers (if/unless/while/until/rescue) and not by
     // operators with higher binding power. If we find one, emit an error
     // and skip the operator and its right-hand side.
-    if (pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER && (pm_command_call_value_p(value) || pm_block_call_p(value))) {
+    if (pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER && (pm_command_call_value_p(parser, value) || pm_block_call_p(value))) {
         PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(parser->current.type));
         parser_lex(parser);
         parse_expression(parser, pm_binding_powers[parser->previous.type].right, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1));
@@ -20700,7 +20760,7 @@ parse_assignment_value(pm_parser_t *parser, pm_binding_power_t previous_binding_
         // As in parse_assignment_values, the resbody is a `stmt` (permitting a
         // multiple assignment / command call) when the rescued value is itself a
         // command call, and a plain `arg` otherwise.
-        bool statement_value = pm_command_call_value_p(value) || pm_block_call_p(value);
+        bool statement_value = pm_command_call_value_p(parser, value) || pm_block_call_p(value);
         uint8_t rescue_flags = (uint8_t) ((flags & PM_PARSE_ACCEPTS_DO_BLOCK) | (statement_value ? PM_PARSE_ACCEPTS_COMMAND_CALL : 0));
 
         pm_node_t *right = parse_rescue_modifier_value(parser, rescue_flags, statement_value, (uint16_t) (depth + 1));
@@ -20811,7 +20871,7 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
     // be followed by modifiers (if/unless/while/until/rescue) and not by
     // operators with higher binding power. If we find one, emit an error
     // and skip the operator and its right-hand side.
-    if (single_value && pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER && (pm_command_call_value_p(value) || pm_block_call_p(value))) {
+    if (single_value && pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER && (pm_command_call_value_p(parser, value) || pm_block_call_p(value))) {
         PM_PARSER_ERR_TOKEN_FORMAT(parser, &parser->current, PM_ERR_EXPECT_EOL_AFTER_STATEMENT, pm_token_str(parser->current.type));
         parser_lex(parser);
         parse_expression(parser, pm_binding_powers[parser->previous.type].right, flags & PM_PARSE_ACCEPTS_DO_BLOCK, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1));
@@ -20821,7 +20881,7 @@ parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding
     // allows the `rescue` modifier.
     bool multiple_assignment = (binding_power == (PM_BINDING_POWER_MULTI_ASSIGNMENT + 1));
     if ((single_value || multiple_assignment) && match1(parser, PM_TOKEN_KEYWORD_RESCUE_MODIFIER)) {
-        bool command_value = pm_command_call_value_p(value) || pm_block_call_p(value);
+        bool command_value = pm_command_call_value_p(parser, value) || pm_block_call_p(value);
 
         // A multiple assignment whose value is a command call (`x, y = foo
         // bar`) is a complete statement (parse.y: `mlhs '='
@@ -22136,7 +22196,7 @@ parse_expression_terminator(pm_parser_t *parser, pm_node_t *node) {
             // Command-style calls (including block commands like
             // `foo bar do end`) can only be followed by composition
             // (and/or) and modifier (if/unless/etc.) operators.
-            if (pm_command_call_value_p(node)) {
+            if (pm_command_call_value_p(parser, node)) {
                 return left > PM_BINDING_POWER_COMPOSITION;
             }
 
@@ -22153,15 +22213,21 @@ parse_expression_terminator(pm_parser_t *parser, pm_node_t *node) {
         case PM_YIELD_NODE:
             // Command-style super/yield (without parens) can only be followed
             // by composition and modifier operators.
-            if (pm_command_call_value_p(node)) {
+            if (pm_command_call_value_p(parser, node)) {
                 return left > PM_BINDING_POWER_COMPOSITION;
+            }
+            /* A super carrying a do-block is a block call, so it may also be
+             * followed by call chaining (`.`, `::`, `&.`).
+             */
+            if (pm_block_call_p(node)) {
+                return left > PM_BINDING_POWER_COMPOSITION && left < PM_BINDING_POWER_CALL;
             }
             return false;
         case PM_DEF_NODE:
             // An endless method whose body is a command-style call (e.g.,
             // `def f = foo bar`) is a command assignment and can only be
             // followed by modifiers.
-            return left > PM_BINDING_POWER_MODIFIER && pm_command_call_value_p(node);
+            return left > PM_BINDING_POWER_MODIFIER && pm_command_call_value_p(parser, node);
         case PM_RESCUE_MODIFIER_NODE:
             // A rescue modifier whose handler is a pattern match (=> or in)
             // produces a statement and cannot be followed by operators above
