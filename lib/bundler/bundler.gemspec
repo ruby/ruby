@@ -24,9 +24,9 @@ Gem::Specification.new do |s|
 
   s.metadata = {
     "bug_tracker_uri" => "https://github.com/ruby/rubygems/issues?q=is%3Aopen+is%3Aissue+label%3ABundler",
-    "changelog_uri" => "https://github.com/ruby/rubygems/blob/master/bundler/CHANGELOG.md",
+    "changelog_uri" => "https://github.com/ruby/rubygems/blob/master/CHANGELOG-bundler.md",
     "homepage_uri" => "https://bundler.io/",
-    "source_code_uri" => "https://github.com/ruby/rubygems/tree/master/bundler",
+    "source_code_uri" => "https://github.com/ruby/rubygems",
   }
 
   s.required_ruby_version     = ">= 3.2.0"
@@ -39,6 +39,9 @@ Gem::Specification.new do |s|
   # include the gemspec itself because warbler breaks w/o it
   s.files += %w[lib/bundler/bundler.gemspec]
 
+  # These live next to the gemspec when Bundler ships as a gem, but not when
+  # it is synced into Ruby core, where the gemspec moves under lib/bundler.
+  s.files += %w[CHANGELOG-bundler.md LICENSE-bundler.md README-bundler.md].select {|f| File.file?(f) }
   s.bindir        = "exe"
   s.executables   = %w[bundle bundler]
   s.require_paths = ["lib"]
