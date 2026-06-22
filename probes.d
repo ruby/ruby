@@ -233,6 +233,13 @@ provider ruby {
   */
   probe gc__exit(int event);
 
+  /*
+     ruby:::gc-mark-stacked-objects(popped_count);
+
+     Fired for every invocation of `gc_mark_stacked_objects` in default.c.
+
+     * `popped_count` the number of objects popped from the mark stack in that invocation
+  */
   probe gc__mark_stacked_objects(int popped_count);
 
   /*
