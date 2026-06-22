@@ -2037,10 +2037,6 @@ static struct {
 extern void *STACK_END_ADDRESS;
 #endif
 
-enum {
-    RUBY_STACK_SPACE_RATIO = 5
-};
-
 static void
 native_thread_init_main_thread_stack(void *addr)
 {
@@ -2074,9 +2070,6 @@ native_thread_init_main_thread_stack(void *addr)
     {
 #if defined(HAVE_GETRLIMIT)
 #if defined(PTHREAD_STACK_DEFAULT)
-# if PTHREAD_STACK_DEFAULT < RUBY_STACK_SPACE*5
-#  error "PTHREAD_STACK_DEFAULT is too small"
-# endif
         size_t size = PTHREAD_STACK_DEFAULT;
 #else
         size_t size = RUBY_VM_THREAD_VM_STACK_SIZE;
@@ -3277,7 +3270,6 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
         return 0;
     }
 
-    size /= RUBY_STACK_SPACE_RATIO;
     if (size > water_mark) size = water_mark;
     if (IS_STACK_DIR_UPPER()) {
         if (size > ~(size_t)base+1) size = ~(size_t)base+1;
