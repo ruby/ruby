@@ -896,8 +896,6 @@ fn gen_getblockparam(jit: &mut JITState, asm: &mut Assembler, ep_offset: u32, le
     let block_handler = asm.load(Opnd::mem(VALUE_BITS, ep, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL));
     let proc = asm_ccall!(asm, rb_vm_bh_to_procval, EC, block_handler);
 
-    // Write Proc to EP and mark modified.
-    let ep = gen_get_ep(asm, level);
     let local_ep_offset = c_int::try_from(ep_offset).unwrap_or_else(|_| {
         panic!("Could not convert local_ep_offset {ep_offset} to i32")
     });
@@ -909,8 +907,6 @@ fn gen_getblockparam(jit: &mut JITState, asm: &mut Assembler, ep_offset: u32, le
     let modified = asm.or(flags_val, VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into());
     asm.store(flags, modified);
 
-    // Read the Proc from EP.
-    let ep = gen_get_ep(asm, level);
     asm.load(Opnd::mem(VALUE_BITS, ep, offset))
 }
 
