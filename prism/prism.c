@@ -21343,6 +21343,10 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     pm_node_t *value = parse_assignment_value(parser, previous_binding_power, binding_power, flags, PM_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ, (uint16_t) (depth + 1));
                     pm_node_t *write = UP(pm_constant_and_write_node_create(parser, (pm_constant_read_node_t *) node, &token, value));
 
+                    if (context_def_p(parser)) {
+                        pm_parser_err_node(parser, write, PM_ERR_WRITE_TARGET_IN_METHOD);
+                    }
+
                     return parse_shareable_constant_write(parser, write);
                 }
                 case PM_INSTANCE_VARIABLE_READ_NODE: {
@@ -21467,6 +21471,10 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
 
                     pm_node_t *value = parse_assignment_value(parser, previous_binding_power, binding_power, flags, PM_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ, (uint16_t) (depth + 1));
                     pm_node_t *write = UP(pm_constant_or_write_node_create(parser, (pm_constant_read_node_t *) node, &token, value));
+
+                    if (context_def_p(parser)) {
+                        pm_parser_err_node(parser, write, PM_ERR_WRITE_TARGET_IN_METHOD);
+                    }
 
                     return parse_shareable_constant_write(parser, write);
                 }
@@ -21602,6 +21610,10 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
 
                     pm_node_t *value = parse_assignment_value(parser, previous_binding_power, binding_power, flags, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR, (uint16_t) (depth + 1));
                     pm_node_t *write = UP(pm_constant_operator_write_node_create(parser, (pm_constant_read_node_t *) node, &token, value));
+
+                    if (context_def_p(parser)) {
+                        pm_parser_err_node(parser, write, PM_ERR_WRITE_TARGET_IN_METHOD);
+                    }
 
                     return parse_shareable_constant_write(parser, write);
                 }
