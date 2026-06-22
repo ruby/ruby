@@ -3038,6 +3038,8 @@ mark_hash(VALUE hash)
 {
     if (RHASH_SHARED_TABLE_P(hash)) {
         gc_mark_internal(RHASH_SHARED_ROOT(hash));
+        gc_mark_internal(RHASH(hash)->ifnone);
+        return;
     }
 
     if (rb_hash_compare_by_id_p(hash)) {
