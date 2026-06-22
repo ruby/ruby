@@ -10103,7 +10103,13 @@ rb_gc_impl_init(void)
      *
      *    GC::Profiler.report
      *
+     *    pp GC::Profiler.raw_data
+     *
      *    GC::Profiler.disable
+     *
+     *  GC::Profiler.raw_data returns one Hash per GC run, including CPU time
+     *  fields such as +:GC_TIME+ and wall-clock fields such as +:GC_WALL_TIME+
+     *  and +:GC_PAUSE_TIME+.
      *
      *  See also GC.count, GC.malloc_allocated_size and GC.malloc_allocations
      */
