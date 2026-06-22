@@ -14,20 +14,6 @@ require "rubygems/package"
 class TestGemRemoteFetcherLocalSSLServer < Gem::TestCase
   include Gem::DefaultUserInteraction
 
-  # Generated via:
-  #   x = OpenSSL::PKey::DH.new(2048) # wait a while...
-  #   x.to_s => pem
-  TEST_KEY_DH2048 = OpenSSL::PKey::DH.new <<-_END_OF_PEM_
------BEGIN DH PARAMETERS-----
-MIIBCAKCAQEA3Ze2EHSfYkZLUn557torAmjBgPsqzbodaRaGZtgK1gEU+9nNJaFV
-G1JKhmGUiEDyIW7idsBpe4sX/Wqjnp48Lr8IeI/SlEzLdoGpf05iRYXC8Cm9o8aM
-cfmVgoSEAo9YLBpzoji2jHkO7Q5IPt4zxbTdlmmGFLc/GO9q7LGHhC+rcMcNTGsM
-49AnILNn49pq4Y72jSwdmvq4psHZwwFBbPwLdw6bLUDDCN90jfqvYt18muwUxDiN
-NP0fuvVAIB158VnQ0liHSwcl6+9vE1mL0Jo/qEXQxl0+UdKDjaGfTsn6HIrwTnmJ
-PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
------END DH PARAMETERS-----
-    _END_OF_PEM_
-
   def setup
     super
     @ssl_server_thread = nil
@@ -155,7 +141,6 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     ctx.cert = cert("ssl_cert.pem")
     ctx.key = key("ssl_key.pem")
     ctx.ca_file = File.join(__dir__, "ca_cert.pem")
-    ctx.tmp_dh_callback = proc { TEST_KEY_DH2048 }
     ctx.verify_mode = config[:verify_mode] if config[:verify_mode]
     @ssl_server = OpenSSL::SSL::SSLServer.new(server, ctx)
     @ssl_server_thread = Thread.new do
