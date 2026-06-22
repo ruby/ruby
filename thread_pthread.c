@@ -3246,7 +3246,7 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
 {
     void *base;
     size_t size;
-    const size_t water_mark = 1024 * 1024;
+    const size_t water_mark = (size_t)getpagesize();
     STACK_GROW_DIR_DETECTION;
 
     if (th) {
