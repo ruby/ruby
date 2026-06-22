@@ -139,9 +139,13 @@ jobs:
 
       # Emulated ppc64le/s390x runners are slow enough that subprocess
       # assertion timeouts (e.g. assert_separately) flake. Scale them up, as
-      # macos.yml does for slower/contended runners.
+      # macos.yml does for slower/contended runners. SYNTAX_SUGGEST_TIMEOUT
+      # covers syntax_suggest's own internal search timeout, which
+      # RUBY_TEST_TIMEOUT_SCALE does not affect.
       - name: Set timeout scale for emulated runners
-        run: echo "RUBY_TEST_TIMEOUT_SCALE=10" >> $GITHUB_ENV
+        run: |
+          echo "RUBY_TEST_TIMEOUT_SCALE=10" >> $GITHUB_ENV
+          echo "SYNTAX_SUGGEST_TIMEOUT=10" >> $GITHUB_ENV
         if: ${{ endsWith(matrix.os, 'ppc64le') || endsWith(matrix.os, 's390x') }}
 
       - name: make ${{ matrix.test_task }}
