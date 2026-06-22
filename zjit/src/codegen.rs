@@ -2995,7 +2995,7 @@ fn gen_stack_map(jit: &JITState, asm: &mut Assembler, state: &FrameState, stack_
         assert!(matches!(opnd, Opnd::Value(_) | Opnd::VReg { .. }), "FrameState should only reference Opnd::Value or Opnd::VReg, but got: {opnd:?}");
         stack.push(opnd);
     }
-    asm.stack_map(stack, jit_frame);
+    asm.stack_map(stack, jit_frame, state.depth);
 }
 
 /// Prepare for calling a C function that may call an arbitrary method.
