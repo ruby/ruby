@@ -8537,8 +8537,8 @@ objspace_malloc_increase_body(rb_objspace_t *objspace, void *mem, size_t new_siz
          !malloc_increase_done; \
          malloc_increase_done = objspace_malloc_increase_body(__VA_ARGS__))
 
-#if defined(_WIN64)
-/* Wjndows x64 ABI requires jmp_buf to be 16-byte aligned */
+#if defined(_WIN64) && (defined(_M_X64) || defined(__x86_64__))
+/* Windows x64 ABI requires jmp_buf to be 16-byte aligned */
 #define ADDITIONAL_ALIGNMENT 1
 #endif
 
