@@ -3819,6 +3819,13 @@ thread_compact(void *ptr)
     rb_thread_t *th = ptr;
 
     th->self = rb_gc_location(th->self);
+
+    /* Update fibers blocked in Thread#join (see thread_mark). */
+    for (struct rb_waiting_list *join_list = th->join_list; join_list; join_list = join_list->next) {
+        if (join_list->fiber) {
+            rb_gc_mark_and_move(&join_list->fiber);
+        }
+    }
 }
 
 static void
@@ -3858,6 +3865,16 @@ thread_mark(void *ptr)
     RUBY_ASSERT(th->ec == NULL || th->ec == rb_fiberptr_get_ec(th->ec->fiber_ptr));
     rb_gc_mark(th->last_status);
     rb_gc_mark(th->locking_mutex);
+
+    /* A fiber blocked in Thread#join (under a Fiber::Scheduler) links an
+     * on-stack waiter into the joined thread's join_list. That waiter is not
+     * otherwise a GC root, so keep the blocked fiber reachable here. */
+    for (struct rb_waiting_list *join_list = th->join_list; join_list; join_list = join_list->next) {
+        if (join_list->fiber) {
+            rb_gc_mark_and_move(&join_list->fiber);
+        }
+    }
+
     rb_gc_mark(th->name);
 
     rb_gc_mark(th->scheduler);

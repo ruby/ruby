@@ -16,18 +16,34 @@ typedef struct rb_mutex_struct {
 struct sync_waiter {
     VALUE self;
     rb_thread_t *th;
-    rb_fiber_t *fiber;
+    VALUE fiber;
     struct ccan_list_node node;
 };
 
-static inline rb_fiber_t*
+static inline VALUE
 nonblocking_fiber(rb_fiber_t *fiber)
 {
     if (rb_fiberptr_blocking(fiber)) {
-        return NULL;
+        return 0;
     }
 
-    return fiber;
+    return rb_fiberptr_self(fiber);
+}
+
+/* Keep fibers parked in this wait queue reachable across GC. A waiter lives on
+ * the blocked fiber's machine stack, so while it is parked nothing else
+ * necessarily roots the fiber. Threads in the waitq are rooted elsewhere (the
+ * VM living-threads list) */
+static void
+sync_waitq_mark_and_move(struct ccan_list_head *waitq)
+{
+    struct sync_waiter *cur = 0;
+
+    ccan_list_for_each(waitq, cur, node) {
+        if (cur->fiber) {
+            rb_gc_mark_and_move(&cur->fiber);
+        }
+    }
 }
 
 struct queue_sleep_arg {
@@ -50,7 +66,7 @@ sync_wakeup(struct ccan_list_head *head, long max)
 
         if (cur->th->status != THREAD_KILLED) {
             if (cur->th->scheduler != Qnil && cur->fiber) {
-                rb_fiber_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
+                rb_fiber_scheduler_unblock(cur->th->scheduler, cur->self, cur->fiber);
             }
             else {
                 RUBY_DEBUG_LOG("target_th:%u", rb_th_serial(cur->th));
@@ -106,6 +122,13 @@ mutex_locked_p(rb_mutex_t *mutex)
 static void thread_mutex_remove(rb_thread_t *thread, rb_mutex_t *mutex);
 
 static void
+mutex_mark_and_move(void *ptr)
+{
+    rb_mutex_t *mutex = ptr;
+    sync_waitq_mark_and_move(&mutex->waitq);
+}
+
+static void
 mutex_free(void *ptr)
 {
     rb_mutex_t *mutex = ptr;
@@ -123,7 +146,7 @@ mutex_memsize(const void *ptr)
 
 static const rb_data_type_t mutex_data_type = {
     "mutex",
-    {NULL, mutex_free, mutex_memsize,},
+    {mutex_mark_and_move, mutex_free, mutex_memsize, mutex_mark_and_move,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
@@ -461,8 +484,15 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
     ccan_list_for_each_safe(&mutex->waitq, cur, next, node) {
         ccan_list_del_init(&cur->node);
 
-        if (cur->th->scheduler != Qnil && cur->fiber) {
-            rb_fiber_scheduler_unblock(cur->th->scheduler, cur->self, rb_fiberptr_self(cur->fiber));
+        if (cur->th->status == THREAD_KILLED) {
+            /* The waiter's thread was killed while it was parked here (e.g. a
+             * fiber blocked under a Fiber::Scheduler that did not interrupt it
+             * during thread teardown). The waiter is dead; skip it and try to
+             * hand the mutex to the next waiter instead. */
+            continue;
+        }
+        else if (cur->th->scheduler != Qnil && cur->fiber) {
+            rb_fiber_scheduler_unblock(cur->th->scheduler, cur->self, cur->fiber);
             return NULL;
         }
         else {
@@ -475,8 +505,7 @@ rb_mutex_unlock_th(rb_mutex_t *mutex, rb_thread_t *th, rb_serial_t ec_serial)
               case THREAD_STOPPED: /* probably impossible */
                 rb_bug("unexpected THREAD_STOPPED");
               case THREAD_KILLED:
-                /* not sure about this, possible in exit GC? */
-                rb_bug("unexpected THREAD_KILLED");
+                /* handled above */
                 continue;
             }
         }
@@ -691,7 +720,9 @@ static void
 queue_mark_and_move(void *ptr)
 {
     struct rb_queue *q = ptr;
-    /* no need to mark threads in waitq, they are on stack */
+    /* A fiber parked here under a Fiber::Scheduler links an on-stack waiter
+     * into the waitq; it is not otherwise a GC root, so keep it reachable. */
+    sync_waitq_mark_and_move(&q->waitq);
     for (long index = 0; index < q->len; index++) {
         rb_gc_mark_and_move(&q->buffer[((q->offset + index) % q->capa)]);
     }
@@ -808,6 +839,8 @@ szqueue_mark_and_move(void *ptr)
     struct rb_szqueue *sq = ptr;
 
     queue_mark_and_move(&sq->q);
+    /* q.waitq is covered by queue_mark_and_move above; pushq is separate. */
+    sync_waitq_mark_and_move(szqueue_pushq(sq));
 }
 
 static void
@@ -1055,6 +1088,10 @@ queue_do_pop(rb_execution_context_t *ec, VALUE self, struct rb_queue *q, VALUE n
             ccan_list_add_tail(waitq, &queue_waiter.w.node);
             queue_waiter.as.q->num_waiting++;
 
+            if (queue_waiter.w.fiber) {
+                RB_OBJ_WRITTEN(self, Qundef, queue_waiter.w.fiber);
+            }
+
             struct queue_sleep_arg queue_sleep_arg = {
                 .self = self,
                 .timeout = timeout,
@@ -1131,6 +1168,10 @@ rb_szqueue_push(rb_execution_context_t *ec, VALUE self, VALUE object, VALUE non_
             ccan_list_add_tail(pushq, &queue_waiter.w.node);
             sq->num_waiting_push++;
 
+            if (queue_waiter.w.fiber) {
+                RB_OBJ_WRITTEN(self, Qundef, queue_waiter.w.fiber);
+            }
+
             struct queue_sleep_arg queue_sleep_arg = {
                 .self = self,
                 .timeout = timeout,
@@ -1171,9 +1212,16 @@ condvar_memsize(const void *ptr)
     return sizeof(struct rb_condvar);
 }
 
+static void
+condvar_mark_and_move(void *ptr)
+{
+    struct rb_condvar *cv = ptr;
+    sync_waitq_mark_and_move(&cv->waitq);
+}
+
 static const rb_data_type_t cv_data_type = {
     "condvar",
-    {0, RUBY_TYPED_DEFAULT_FREE, condvar_memsize,},
+    {condvar_mark_and_move, RUBY_TYPED_DEFAULT_FREE, condvar_memsize, condvar_mark_and_move,},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY|RUBY_TYPED_WB_PROTECTED
 };
 
@@ -1243,6 +1291,11 @@ rb_condvar_wait(rb_execution_context_t *ec, VALUE self, VALUE mutex, VALUE timeo
     };
 
     ccan_list_add_tail(&cv->waitq, &sync_waiter.node);
+
+    if (sync_waiter.fiber) {
+        RB_OBJ_WRITTEN(self, Qundef, sync_waiter.fiber);
+    }
+
     return rb_ec_ensure(ec, do_sleep, (VALUE)&args, delete_from_waitq, (VALUE)&sync_waiter);
 }
 

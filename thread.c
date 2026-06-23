@@ -429,7 +429,7 @@ rb_threadptr_join_list_wakeup(rb_thread_t *thread)
         rb_thread_t *target_thread = join_list->thread;
 
         if (target_thread->scheduler != Qnil && join_list->fiber) {
-            rb_fiber_scheduler_unblock(target_thread->scheduler, target_thread->self, rb_fiberptr_self(join_list->fiber));
+            rb_fiber_scheduler_unblock(target_thread->scheduler, target_thread->self, join_list->fiber);
         }
         else {
             rb_threadptr_interrupt(target_thread);
@@ -1132,7 +1132,7 @@ thread_join(rb_thread_t *target_th, VALUE timeout, rb_hrtime_t *limit)
         struct rb_waiting_list waiter;
         waiter.next = target_th->join_list;
         waiter.thread = th;
-        waiter.fiber = rb_fiberptr_blocking(fiber) ? NULL : fiber;
+        waiter.fiber = nonblocking_fiber(fiber);
         target_th->join_list = &waiter;
 
         struct join_arg arg;
