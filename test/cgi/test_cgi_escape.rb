@@ -293,6 +293,39 @@ class CGIEscapeTest < Test::Unit::TestCase
   end
 end
 
+class CGIEscapeNativeExtTest < Test::Unit::TestCase
+  def test_escape_html_uses_native_implementation
+    omit "C extension not available" unless defined?(CGI::EscapeExt) && CGI::EscapeExt.method_defined?(:escapeHTML)
+    assert_equal CGI::EscapeExt, CGI.method(:escape_html).owner
+    assert_equal CGI::EscapeExt, CGI.method(:h).owner
+    assert_equal CGI::EscapeExt, CGI.method(:unescape_html).owner
+  end
+
+  def test_escape_html_allocates_same_as_escapeHTML
+    omit "C extension not available" unless defined?(CGI::EscapeExt) && CGI::EscapeExt.method_defined?(:escapeHTML)
+
+    input = "'&\"<>hello world"
+    n = 100
+
+    # Warm up
+    2.times { n.times { CGI.escapeHTML(input) } }
+    2.times { n.times { CGI.escape_html(input) } }
+
+    GC.disable
+    before = GC.stat(:total_allocated_objects)
+    n.times { CGI.escapeHTML(input) }
+    camel_allocs = GC.stat(:total_allocated_objects) - before
+
+    before = GC.stat(:total_allocated_objects)
+    n.times { CGI.escape_html(input) }
+    snake_allocs = GC.stat(:total_allocated_objects) - before
+    GC.enable
+
+    assert_equal camel_allocs, snake_allocs,
+      "escape_html allocated #{snake_allocs} objects vs escapeHTML #{camel_allocs} — alias may not be using the C extension"
+  end
+end
+
 class CGIEscapePureRubyTest < Test::Unit::TestCase
   def setup
     CGI::EscapeExt.module_eval do

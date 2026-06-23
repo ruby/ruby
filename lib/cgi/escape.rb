@@ -168,17 +168,20 @@ module CGI::Escape
     string.force_encoding enc
   end
 
-  alias escape_html escapeHTML
-  alias h escapeHTML
-
-  alias unescape_html unescapeHTML
-
   # TruffleRuby runs the pure-Ruby variant faster, do not use the C extension there
   unless RUBY_ENGINE == 'truffleruby'
     begin
       require 'cgi/escape.so'
     rescue LoadError
     end
+  end
+
+  # Aliases must be defined on EscapeExt so they resolve to the C methods.
+  target = defined?(CGI::EscapeExt) && CGI::EscapeExt.method_defined?(:escapeHTML) ? CGI::EscapeExt : self
+  target.module_eval do
+    alias escape_html escapeHTML
+    alias h escapeHTML
+    alias unescape_html unescapeHTML
   end
 
   # \Escape only the tags of certain HTML elements in +string+.
