@@ -7237,10 +7237,6 @@ struct AddIseqResult {
     /// to assign it to `fun.profiles` (top-level) or append it to an existing
     /// oracle (inliner).
     profiles: ProfileOracle,
-    /// Number of return paths emitted. Counts `YARVINSN_leave` translations,
-    /// whether they became `Insn::Return` or `Insn::Jump(return_block, ...)`.
-    /// Lets callers tell whether the ISEQ has any reachable return paths.
-    num_returns: usize,
 }
 
 /// Compile ISEQ into High-level IR
@@ -7287,7 +7283,6 @@ fn add_iseq_to_hir(
 ) -> Result<AddIseqResult, ParseError> {
     let payload = get_or_create_iseq_payload(iseq);
     let mut profiles = ProfileOracle::new();
-    let mut num_returns: usize = 0;
 
     // Build the initial FrameState for a block being translated. In inlined
     // mode it carries the caller's call-site Snapshot and this frame's depth;
@@ -8502,7 +8497,6 @@ fn add_iseq_to_hir(
                 YARVINSN_leave => {
                     fun.push_insn(block, Insn::CheckInterrupts { state: exit_id });
                     let val = state.stack_pop()?;
-                    num_returns += 1;
                     match mode {
                         AddIseqMode::Standalone => fun.push_insn(block, Insn::Return { val }),
                         AddIseqMode::Inlined { return_block, .. } => { fun.push_insn(block, Insn::Jump(BranchEdge { target: return_block, args: vec![val] })) }
@@ -9162,7 +9156,7 @@ fn add_iseq_to_hir(
         }
     }
 
-    Ok(AddIseqResult { body_entry_blocks, profiles, num_returns })
+    Ok(AddIseqResult { body_entry_blocks, profiles })
 }
 
 /// Compile an entry_block for the interpreter
