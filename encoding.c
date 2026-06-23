@@ -123,7 +123,7 @@ static rb_atomic_t locale_alias_registered;
 static const rb_data_type_t encoding_data_type = {
     "encoding",
     {0, 0, 0,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED
 };
 
 #define is_encoding_type(obj) (RTYPEDDATA_TYPE(obj) == &encoding_data_type)

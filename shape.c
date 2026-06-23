@@ -365,7 +365,7 @@ static const rb_data_type_t shape_tree_type = {
         .dsize = shape_tree_memsize,
         .dcompact = shape_tree_mark_and_move,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 

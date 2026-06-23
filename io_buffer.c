@@ -332,7 +332,7 @@ static const rb_data_type_t rb_io_buffer_type = {
         .dcompact = rb_io_buffer_type_compact,
     },
     .data = NULL,
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
 };
 
 static struct rb_io_buffer *
