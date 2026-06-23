@@ -1737,7 +1737,8 @@ void
 Init_native_thread(rb_thread_t *main_th)
 {
     // Get the system page size for later use in stack allocation and stack overflow checks:
-    RUBY_THREAD_PAGE_SIZE = sysconf(_SC_PAGESIZE);
+    long page_size = sysconf(_SC_PAGESIZE);
+    RUBY_THREAD_PAGE_SIZE = (page_size > 0) ? (size_t)page_size : (size_t)getpagesize();
 
 #if defined(HAVE_PTHREAD_CONDATTR_SETCLOCK)
     if (condattr_monotonic) {
