@@ -1800,12 +1800,12 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
           v20:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
           PushInlineFrame v20 (0x1038), v11
-          v35:Fixnum[2] = Const Value(2)
+          v27:Fixnum[2] = Const Value(2)
           PatchPoint MethodRedefined(Integer@0x1040, +@0x1048, cme:0x1050)
-          v61:Fixnum[5] = Const Value(5)
+          v53:Fixnum[5] = Const Value(5)
           CheckInterrupts
           PopInlineFrame
-          Return v61
+          Return v53
         ");
     }
 
@@ -1833,10 +1833,10 @@ mod hir_opt_tests {
           v22:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
           PushInlineFrame v22 (0x1038), v11, v13
           PatchPoint MethodRedefined(Integer@0x1040, +@0x1048, cme:0x1050)
-          v62:Fixnum[7] = Const Value(7)
+          v46:Fixnum[7] = Const Value(7)
           CheckInterrupts
           PopInlineFrame
-          Return v62
+          Return v46
         ");
     }
 
@@ -1873,8 +1873,8 @@ mod hir_opt_tests {
           v16:Fixnum[20] = Const Value(20)
           v18:Fixnum[30] = Const Value(30)
           PushInlineFrame v44 (0x1038), v14, v16, v18
-          v151:Fixnum[4] = Const Value(4)
-          v166:ArrayExact = NewArray v14, v16, v18, v151
+          v121:Fixnum[4] = Const Value(4)
+          v136:ArrayExact = NewArray v14, v16, v18, v121
           PopInlineFrame
           v24:Fixnum[10] = Const Value(10)
           v26:Fixnum[20] = Const Value(20)
@@ -1882,7 +1882,7 @@ mod hir_opt_tests {
           v30:Fixnum[40] = Const Value(40)
           v32:Fixnum[50] = Const Value(50)
           v34:BasicObject = Send v44, :target, v24, v26, v28, v30, v32 # SendFallbackReason: Argument count does not match parameter count
-          v37:ArrayExact = NewArray v101, v166, v34
+          v37:ArrayExact = NewArray v101, v136, v34
           CheckInterrupts
           Return v37
         ");
@@ -4191,11 +4191,11 @@ mod hir_opt_tests {
           v22:Fixnum[2] = Const Value(2)
           v24:Fixnum[4] = Const Value(4)
           v26:Fixnum[3] = Const Value(3)
-          v103:Fixnum[0] = Const Value(0)
+          v92:Fixnum[0] = Const Value(0)
           PushInlineFrame v37 (0x1038), v20, v22, v26, v24
-          v98:ArrayExact = NewArray v22, v26
+          v87:ArrayExact = NewArray v22, v26
           PopInlineFrame
-          v30:ArrayExact = NewArray v65, v98
+          v30:ArrayExact = NewArray v65, v87
           Return v30
         ");
     }
@@ -4234,11 +4234,11 @@ mod hir_opt_tests {
           v20:Fixnum[2] = Const Value(2)
           v22:Fixnum[40] = Const Value(40)
           v24:Fixnum[30] = Const Value(30)
-          v107:Fixnum[0] = Const Value(0)
+          v96:Fixnum[0] = Const Value(0)
           PushInlineFrame v37 (0x1038), v18, v20, v24, v22
-          v102:ArrayExact = NewArray v18, v20, v24, v22
+          v91:ArrayExact = NewArray v18, v20, v24, v22
           PopInlineFrame
-          v28:ArrayExact = NewArray v67, v102
+          v28:ArrayExact = NewArray v67, v91
           Return v28
         ");
     }
@@ -18363,14 +18363,14 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Object@0x1008, add_opts@0x1010, cme:0x1018)
           v25:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
           PushInlineFrame v25 (0x1040), v10, v16
-          v42:Fixnum[100] = Const Value(100)
+          v33:Fixnum[100] = Const Value(100)
           PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
-          v71:Fixnum = GuardType v10, Fixnum recompile
-          v72:Fixnum = FixnumAdd v71, v16
-          v76:Fixnum = FixnumAdd v72, v42
+          v62:Fixnum = GuardType v10, Fixnum recompile
+          v63:Fixnum = FixnumAdd v62, v16
+          v67:Fixnum = FixnumAdd v63, v33
           CheckInterrupts
           PopInlineFrame
-          Return v76
+          Return v67
         ");
     }
 
@@ -18585,12 +18585,12 @@ mod hir_opt_tests {
           v27:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
           PushInlineFrame v27 (0x1040), v10, v16, v18
           PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
-          v72:Fixnum = GuardType v10, Fixnum recompile
-          v73:Fixnum = FixnumAdd v72, v16
-          v77:Fixnum = FixnumAdd v73, v18
+          v54:Fixnum = GuardType v10, Fixnum recompile
+          v55:Fixnum = FixnumAdd v54, v16
+          v59:Fixnum = FixnumAdd v55, v18
           CheckInterrupts
           PopInlineFrame
-          Return v77
+          Return v59
         ");
     }
 
@@ -19033,12 +19033,12 @@ mod hir_opt_tests {
           v27:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
           PushInlineFrame v27 (0x1040), v10, v16, v18
           PatchPoint MethodRedefined(Integer@0x1048, +@0x1050, cme:0x1058)
-          v63:Fixnum = GuardType v10, Fixnum recompile
-          v64:Fixnum = FixnumAdd v63, v16
-          v68:Fixnum = FixnumAdd v64, v18
+          v54:Fixnum = GuardType v10, Fixnum recompile
+          v55:Fixnum = FixnumAdd v54, v16
+          v59:Fixnum = FixnumAdd v55, v18
           CheckInterrupts
           PopInlineFrame
-          Return v68
+          Return v59
         ");
     }
 
