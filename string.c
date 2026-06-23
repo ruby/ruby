@@ -4510,6 +4510,20 @@ str_casecmp_p(VALUE str1, VALUE str2)
         return Qnil;
     }
 
+    if (is_ascii_string(str1) && is_ascii_string(str2)) {
+        if (RSTRING_LEN(str1) != RSTRING_LEN(str2)) return Qfalse;
+        const char *p1 = RSTRING_PTR(str1), *p1end = RSTRING_END(str1);
+        const char *p2 = RSTRING_PTR(str2);
+        while (p1 < p1end) {
+            if (*p1 != *p2 && TOLOWER((unsigned char)*p1) != TOLOWER((unsigned char)*p2)) {
+                return Qfalse;
+            }
+            p1++;
+            p2++;
+        }
+        return Qtrue;
+    }
+
     folded_str1 = rb_str_downcase(1, &fold_opt, str1);
     folded_str2 = rb_str_downcase(1, &fold_opt, str2);
 
