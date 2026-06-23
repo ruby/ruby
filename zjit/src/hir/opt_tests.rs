@@ -6299,11 +6299,11 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[5] = Const Value(5)
           PatchPoint SingleRactorMode
-          v21:HeapBasicObject = GuardType v6, HeapBasicObject
-          v22:CShape = LoadField v21, :shape_id@0x1000
-          v23:CShape[0x1001] = GuardBitEquals v22, CShape(0x1001) recompile
-          StoreField v21, :@foo@0x1002, v10
-          WriteBarrier v21, v10
+          v14:HeapBasicObject = GuardType v6, HeapBasicObject
+          v15:CShape = LoadField v14, :shape_id@0x1000
+          v16:CShape[0x1001] = GuardBitEquals v15, CShape(0x1001) recompile
+          StoreField v14, :@foo@0x1002, v10
+          WriteBarrier v14, v10
           CheckInterrupts
           Return v10
         ");
@@ -6328,13 +6328,13 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[5] = Const Value(5)
           PatchPoint SingleRactorMode
-          v21:HeapBasicObject = GuardType v6, HeapBasicObject
-          v22:CShape = LoadField v21, :shape_id@0x1000
-          v23:CShape[0x1001] = GuardBitEquals v22, CShape(0x1001) recompile
-          StoreField v21, :@foo@0x1002, v10
-          WriteBarrier v21, v10
-          v26:CShape[0x1003] = Const CShape(0x1003)
-          StoreField v21, :shape_id@0x1000, v26
+          v14:HeapBasicObject = GuardType v6, HeapBasicObject
+          v15:CShape = LoadField v14, :shape_id@0x1000
+          v16:CShape[0x1001] = GuardBitEquals v15, CShape(0x1001) recompile
+          StoreField v14, :@foo@0x1002, v10
+          WriteBarrier v14, v10
+          v19:CShape[0x1003] = Const CShape(0x1003)
+          StoreField v14, :shape_id@0x1000, v19
           CheckInterrupts
           Return v10
         ");
@@ -6373,21 +6373,21 @@ mod hir_opt_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
           PatchPoint SingleRactorMode
-          v28:HeapBasicObject = GuardType v6, HeapBasicObject
-          v29:CShape = LoadField v28, :shape_id@0x1000
-          v30:CShape[0x1001] = GuardBitEquals v29, CShape(0x1001) recompile
-          StoreField v28, :@foo@0x1002, v10
-          WriteBarrier v28, v10
-          v33:CShape[0x1003] = Const CShape(0x1003)
-          StoreField v28, :shape_id@0x1000, v33
-          v17:Fixnum[2] = Const Value(2)
+          v13:HeapBasicObject = GuardType v6, HeapBasicObject
+          v14:CShape = LoadField v13, :shape_id@0x1000
+          v15:CShape[0x1001] = GuardBitEquals v14, CShape(0x1001) recompile
+          StoreField v13, :@foo@0x1002, v10
+          WriteBarrier v13, v10
+          v18:CShape[0x1003] = Const CShape(0x1003)
+          StoreField v13, :shape_id@0x1000, v18
+          v23:Fixnum[2] = Const Value(2)
           PatchPoint SingleRactorMode
-          StoreField v28, :@bar@0x1004, v17
-          WriteBarrier v28, v17
-          v40:CShape[0x1005] = Const CShape(0x1005)
-          StoreField v28, :shape_id@0x1000, v40
+          StoreField v13, :@bar@0x1004, v23
+          WriteBarrier v13, v23
+          v32:CShape[0x1005] = Const CShape(0x1005)
+          StoreField v13, :shape_id@0x1000, v32
           CheckInterrupts
-          Return v17
+          Return v23
         ");
     }
 
@@ -8703,8 +8703,8 @@ mod hir_opt_tests {
           v17:Fixnum[5] = Const Value(5)
           PatchPoint MethodRedefined(C@0x1008, foo=@0x1010, cme:0x1018)
           v28:ObjectSubclass[class_exact:C] = GuardType v10, ObjectSubclass[class_exact:C] recompile
-          v31:CShape = LoadField v28, :shape_id@0x1040
-          v32:CShape[0x1041] = GuardBitEquals v31, CShape(0x1041)
+          v30:CShape = LoadField v28, :shape_id@0x1040
+          v31:CShape[0x1041] = GuardBitEquals v30, CShape(0x1041)
           StoreField v28, :@foo@0x1042, v17
           WriteBarrier v28, v17
           CheckInterrupts
@@ -9820,12 +9820,12 @@ mod hir_opt_tests {
           v17:Fixnum[5] = Const Value(5)
           PatchPoint MethodRedefined(C@0x1008, foo=@0x1010, cme:0x1018)
           v28:ObjectSubclass[class_exact:C] = GuardType v10, ObjectSubclass[class_exact:C] recompile
-          v31:CShape = LoadField v28, :shape_id@0x1040
-          v32:CShape[0x1041] = GuardBitEquals v31, CShape(0x1041)
+          v30:CShape = LoadField v28, :shape_id@0x1040
+          v31:CShape[0x1041] = GuardBitEquals v30, CShape(0x1041)
           StoreField v28, :@foo@0x1042, v17
           WriteBarrier v28, v17
-          v35:CShape[0x1043] = Const CShape(0x1043)
-          StoreField v28, :shape_id@0x1040, v35
+          v34:CShape[0x1043] = Const CShape(0x1043)
+          StoreField v28, :shape_id@0x1040, v34
           CheckInterrupts
           Return v17
         ");
@@ -9859,12 +9859,12 @@ mod hir_opt_tests {
           v17:Fixnum[5] = Const Value(5)
           PatchPoint MethodRedefined(C@0x1008, foo=@0x1010, cme:0x1018)
           v28:ObjectSubclass[class_exact:C] = GuardType v10, ObjectSubclass[class_exact:C] recompile
-          v31:CShape = LoadField v28, :shape_id@0x1040
-          v32:CShape[0x1041] = GuardBitEquals v31, CShape(0x1041)
+          v30:CShape = LoadField v28, :shape_id@0x1040
+          v31:CShape[0x1041] = GuardBitEquals v30, CShape(0x1041)
           StoreField v28, :@foo@0x1042, v17
           WriteBarrier v28, v17
-          v35:CShape[0x1043] = Const CShape(0x1043)
-          StoreField v28, :shape_id@0x1040, v35
+          v34:CShape[0x1043] = Const CShape(0x1043)
+          StoreField v28, :shape_id@0x1040, v34
           CheckInterrupts
           Return v17
         ");
@@ -16632,16 +16632,16 @@ mod hir_opt_tests {
         bb3(v8:BasicObject, v9:NilClass):
           v13:Fixnum[1] = Const Value(1)
           PatchPoint SingleRactorMode
-          v35:HeapBasicObject = GuardType v8, HeapBasicObject
-          v36:CShape = LoadField v35, :shape_id@0x1000
-          v37:CShape[0x1001] = GuardBitEquals v36, CShape(0x1001) recompile
-          StoreField v35, :@a@0x1002, v13
-          WriteBarrier v35, v13
-          v40:CShape[0x1003] = Const CShape(0x1003)
-          StoreField v35, :shape_id@0x1000, v40
+          v19:HeapBasicObject = GuardType v8, HeapBasicObject
+          v20:CShape = LoadField v19, :shape_id@0x1000
+          v21:CShape[0x1001] = GuardBitEquals v20, CShape(0x1001) recompile
+          StoreField v19, :@a@0x1002, v13
+          WriteBarrier v19, v13
+          v24:CShape[0x1003] = Const CShape(0x1003)
+          StoreField v19, :shape_id@0x1000, v24
           PatchPoint NoEPEscape(initialize)
           PatchPoint SingleRactorMode
-          WriteBarrier v35, v13
+          WriteBarrier v19, v13
           CheckInterrupts
           Return v13
         ");
@@ -16679,19 +16679,19 @@ mod hir_opt_tests {
         bb3(v10:BasicObject, v11:NilClass, v12:NilClass):
           v16:Fixnum[1] = Const Value(1)
           PatchPoint SingleRactorMode
-          v49:HeapBasicObject = GuardType v10, HeapBasicObject
-          v50:CShape = LoadField v49, :shape_id@0x1000
-          v51:CShape[0x1001] = GuardBitEquals v50, CShape(0x1001) recompile
-          StoreField v49, :@a@0x1002, v16
-          WriteBarrier v49, v16
-          v54:CShape[0x1003] = Const CShape(0x1003)
-          StoreField v49, :shape_id@0x1000, v54
-          v26:Fixnum[5] = Const Value(5)
+          v22:HeapBasicObject = GuardType v10, HeapBasicObject
+          v23:CShape = LoadField v22, :shape_id@0x1000
+          v24:CShape[0x1001] = GuardBitEquals v23, CShape(0x1001) recompile
+          StoreField v22, :@a@0x1002, v16
+          WriteBarrier v22, v16
+          v27:CShape[0x1003] = Const CShape(0x1003)
+          StoreField v22, :shape_id@0x1000, v27
+          v32:Fixnum[5] = Const Value(5)
           PatchPoint NoEPEscape(initialize)
           PatchPoint MethodRedefined(Integer@0x1008, +@0x1010, cme:0x1018)
-          v65:Fixnum[6] = Const Value(6)
+          v63:Fixnum[6] = Const Value(6)
           PatchPoint SingleRactorMode
-          WriteBarrier v49, v16
+          WriteBarrier v22, v16
           CheckInterrupts
           Return v16
         ");
@@ -16726,17 +16726,17 @@ mod hir_opt_tests {
         bb3(v8:BasicObject, v9:NilClass):
           v13:Fixnum[1] = Const Value(1)
           PatchPoint SingleRactorMode
-          v43:HeapBasicObject = GuardType v8, HeapBasicObject
-          v44:CShape = LoadField v43, :shape_id@0x1000
-          v45:CShape[0x1001] = GuardBitEquals v44, CShape(0x1001) recompile
-          StoreField v43, :@a@0x1002, v13
-          WriteBarrier v43, v13
-          v48:CShape[0x1003] = Const CShape(0x1003)
-          StoreField v43, :shape_id@0x1000, v48
+          v19:HeapBasicObject = GuardType v8, HeapBasicObject
+          v20:CShape = LoadField v19, :shape_id@0x1000
+          v21:CShape[0x1001] = GuardBitEquals v20, CShape(0x1001) recompile
+          StoreField v19, :@a@0x1002, v13
+          WriteBarrier v19, v13
+          v24:CShape[0x1003] = Const CShape(0x1003)
+          StoreField v19, :shape_id@0x1000, v24
           PatchPoint NoEPEscape(initialize)
           PatchPoint SingleRactorMode
-          WriteBarrier v43, v13
-          WriteBarrier v43, v13
+          WriteBarrier v19, v13
+          WriteBarrier v19, v13
           CheckInterrupts
           Return v13
         ");
@@ -17101,9 +17101,9 @@ mod hir_opt_tests {
         bb6(v19:HeapBasicObject, v20:Fixnum):
           v24:Fixnum[10] = Const Value(10)
           PatchPoint MethodRedefined(Integer@0x1000, <@0x1008, cme:0x1010)
-          v101:BoolExact = FixnumLt v20, v24
+          v100:BoolExact = FixnumLt v20, v24
           CheckInterrupts
-          v30:CBool = Test v101
+          v30:CBool = Test v100
           CondBranch v30, bb4(v19, v20), bb7()
         bb4(v40:HeapBasicObject, v41:Fixnum):
           PatchPoint SingleRactorMode
@@ -17132,19 +17132,19 @@ mod hir_opt_tests {
         bb13():
           PatchPoint NoEPEscape(set_value_loop)
           PatchPoint SingleRactorMode
-          v92:CShape = LoadField v40, :shape_id@0x1038
-          v93:CShape[0x103b] = GuardBitEquals v92, CShape(0x103b) recompile
+          v74:CShape = LoadField v40, :shape_id@0x1038
+          v75:CShape[0x103b] = GuardBitEquals v74, CShape(0x103b) recompile
           StoreField v40, :@levar@0x103a, v41
           WriteBarrier v40, v41
-          v96:CShape[0x1039] = Const CShape(0x1039)
-          StoreField v40, :shape_id@0x1038, v96
+          v78:CShape[0x1039] = Const CShape(0x1039)
+          StoreField v40, :shape_id@0x1038, v78
           Jump bb5(v40, v41)
-        bb5(v76:HeapBasicObject, v77:Fixnum):
+        bb5(v82:HeapBasicObject, v83:Fixnum):
           PatchPoint NoEPEscape(set_value_loop)
-          v84:Fixnum[1] = Const Value(1)
+          v90:Fixnum[1] = Const Value(1)
           PatchPoint MethodRedefined(Integer@0x1000, +@0x103c, cme:0x1040)
-          v105:Fixnum = FixnumAdd v77, v84
-          Jump bb6(v76, v105)
+          v104:Fixnum = FixnumAdd v83, v90
+          Jump bb6(v82, v104)
         bb7():
           v35:NilClass = Const Value(nil)
           CheckInterrupts
@@ -19047,18 +19047,18 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Point@0x1008)
           PatchPoint MethodRedefined(Point@0x1008, initialize@0x1038, cme:0x1040)
           PushInlineFrame v91 (0x1068), v17, v19
-          v215:CShape = LoadField v91, :shape_id@0x1070
-          v216:CShape[0x1071] = GuardBitEquals v215, CShape(0x1071) recompile
+          v116:CShape = LoadField v91, :shape_id@0x1070
+          v117:CShape[0x1071] = GuardBitEquals v116, CShape(0x1071) recompile
           StoreField v91, :@x@0x1072, v17
           WriteBarrier v91, v17
-          v219:CShape[0x1073] = Const CShape(0x1073)
-          StoreField v91, :shape_id@0x1070, v219
+          v120:CShape[0x1073] = Const CShape(0x1073)
+          StoreField v91, :shape_id@0x1070, v120
           PatchPoint NoEPEscape(initialize)
           PatchPoint SingleRactorMode
           StoreField v91, :@y@0x1074, v19
           WriteBarrier v91, v19
-          v226:CShape[0x1075] = Const CShape(0x1075)
-          StoreField v91, :shape_id@0x1070, v226
+          v135:CShape[0x1075] = Const CShape(0x1075)
+          StoreField v91, :shape_id@0x1070, v135
           CheckInterrupts
           PopInlineFrame
           PatchPoint SingleRactorMode
@@ -19072,55 +19072,55 @@ mod hir_opt_tests {
           PatchPoint NoSingletonClass(Point@0x1008)
           PatchPoint MethodRedefined(Point@0x1008, initialize@0x1038, cme:0x1040)
           PushInlineFrame v98 (0x1068), v52, v54
-          v229:CShape = LoadField v98, :shape_id@0x1070
-          v230:CShape[0x1071] = GuardBitEquals v229, CShape(0x1071) recompile
+          v155:CShape = LoadField v98, :shape_id@0x1070
+          v156:CShape[0x1071] = GuardBitEquals v155, CShape(0x1071) recompile
           StoreField v98, :@x@0x1072, v52
           WriteBarrier v98, v52
-          v233:CShape[0x1073] = Const CShape(0x1073)
-          StoreField v98, :shape_id@0x1070, v233
+          v159:CShape[0x1073] = Const CShape(0x1073)
+          StoreField v98, :shape_id@0x1070, v159
           PatchPoint NoEPEscape(initialize)
           PatchPoint SingleRactorMode
           StoreField v98, :@y@0x1074, v54
           WriteBarrier v98, v54
-          v240:CShape[0x1075] = Const CShape(0x1075)
-          StoreField v98, :shape_id@0x1070, v240
+          v174:CShape[0x1075] = Const CShape(0x1075)
+          StoreField v98, :shape_id@0x1070, v174
           CheckInterrupts
           PopInlineFrame
           PatchPoint NoSingletonClass(Point@0x1008)
           PatchPoint MethodRedefined(Point@0x1008, ==@0x1080, cme:0x1088)
           PushInlineFrame v91 (0x1068), v98
           PatchPoint SingleRactorMode
-          v168:CShape = LoadField v91, :shape_id@0x1070
-          v169:CShape[0x1075] = GuardBitEquals v168, CShape(0x1075) recompile
-          v170:BasicObject = LoadField v91, :@x@0x1072
+          v192:CShape = LoadField v91, :shape_id@0x1070
+          v193:CShape[0x1075] = GuardBitEquals v192, CShape(0x1075) recompile
+          v194:BasicObject = LoadField v91, :@x@0x1072
           PatchPoint NoEPEscape(==)
           PatchPoint MethodRedefined(Point@0x1008, x@0x10b0, cme:0x10b8)
           PatchPoint MethodRedefined(Integer@0x10e0, ==@0x1080, cme:0x10e8)
-          v244:Fixnum = GuardType v170, Fixnum recompile
-          v246:BoolExact = FixnumEq v244, v52
-          v182:CBool = Test v246
-          v183:FalseClass = RefineType v246, Falsy
-          CondBranch v182, bb17(), bb16(v91, v98, v183)
+          v240:Fixnum = GuardType v194, Fixnum recompile
+          v242:BoolExact = FixnumEq v240, v52
+          v206:CBool = Test v242
+          v207:FalseClass = RefineType v242, Falsy
+          CondBranch v206, bb17(), bb16(v91, v98, v207)
         bb17():
           PatchPoint SingleRactorMode
-          v190:CShape = LoadField v91, :shape_id@0x1070
-          v191:CShape[0x1075] = GuardBitEquals v190, CShape(0x1075) recompile
-          v192:BasicObject = LoadField v91, :@y@0x1074
+          v214:CShape = LoadField v91, :shape_id@0x1070
+          v215:CShape[0x1075] = GuardBitEquals v214, CShape(0x1075) recompile
+          v216:BasicObject = LoadField v91, :@y@0x1074
           PatchPoint NoEPEscape(==)
           PatchPoint NoSingletonClass(Point@0x1008)
           PatchPoint MethodRedefined(Point@0x1008, y@0x1110, cme:0x1118)
-          v265:CShape = LoadField v98, :shape_id@0x1070
-          v266:CShape[0x1075] = GuardBitEquals v265, CShape(0x1075) recompile
-          v267:BasicObject = LoadField v98, :@y@0x1074
+          v261:CShape = LoadField v98, :shape_id@0x1070
+          v262:CShape[0x1075] = GuardBitEquals v261, CShape(0x1075) recompile
+          v263:BasicObject = LoadField v98, :@y@0x1074
           PatchPoint MethodRedefined(Integer@0x10e0, ==@0x1080, cme:0x10e8)
-          v249:Fixnum = GuardType v192, Fixnum recompile
-          v250:Fixnum = GuardType v267, Fixnum
-          v251:BoolExact = FixnumEq v249, v250
-          Jump bb16(v91, v98, v251)
-        bb16(v202:ObjectSubclass[class_exact:Point], v203:ObjectSubclass[class_exact:Point], v204:BoolExact):
+          v245:Fixnum = GuardType v216, Fixnum recompile
+          v246:Fixnum = GuardType v263, Fixnum
+          v247:BoolExact = FixnumEq v245, v246
+          Jump bb16(v91, v98, v247)
+        bb16(v226:ObjectSubclass[class_exact:Point], v227:ObjectSubclass[class_exact:Point], v228:BoolExact):
           CheckInterrupts
           PopInlineFrame
-          Return v204
+          Return v228
         ");
     }
 

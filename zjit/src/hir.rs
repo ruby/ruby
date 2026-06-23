@@ -3970,13 +3970,22 @@ impl Function {
                             }
 
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+                            let id = unsafe { get_cme_def_body_attr_id(cme) };
                             if let Some(profiled_type) = profiled_type {
                                 let argc = unsafe { vm_ci_argc(ci) } as i32;
+                                // TODO: attr_writer SetIvar has a null inline cache and may target a receiver
+                                // operand other than CFP self. Support it with a reprofile strategy that
+                                // profiles the receiver operand even after the send insn has finished profiling.
+                                let recompile = None;
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile::ProfileSend{ argc }) });
+                                self.try_emit_optimized_setivar(block, recv, id, val, profiled_type, state, recompile).unwrap_or_else(|counter| {
+                                    self.count(block, counter);
+                                    self.push_insn(block, Insn::SetIvar { self_val: recv, id, ic: std::ptr::null(), val, state });
+                                });
+                            } else {
+                                // No shape information, just static class information
+                                self.push_insn(block, Insn::SetIvar { self_val: recv, id, ic: std::ptr::null(), val, state });
                             }
-                            let id = unsafe { get_cme_def_body_attr_id(cme) };
-
-                            self.push_insn(block, Insn::SetIvar { self_val: recv, id, ic: std::ptr::null(), val, state });
                             self.make_equal_to(insn_id, val);
                         } else if !has_block && def_type == VM_METHOD_TYPE_OPTIMIZED {
                             let opt_type: OptimizedMethodType = unsafe { get_cme_def_body_optimized_type(cme) }.into();
@@ -4986,106 +4995,97 @@ impl Function {
         Ok(self.load_ivar(block, self_val, profiled_type, id))
     }
 
-    fn optimize_getivar(&mut self) {
-        for block in self.reverse_post_order() {
-            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
-            assert!(self.blocks[block.0].insns.is_empty());
-            for insn_id in old_insns {
-                match self.find(insn_id) {
-                    Insn::SetIvar { self_val, id, val, state, ic } => {
-                        let Some(recv_type) = self.profiled_type_of_at(self_val, state) else {
-                            // No (monomorphic/skewed polymorphic) profile info
-                            self.count(block, Counter::setivar_fallback_not_monomorphic);
-                            self.push_insn_id(block, insn_id); continue;
-                        };
-                        if recv_type.flags().is_immediate() {
-                            // Instance variable lookups on immediate values are always nil
-                            self.count(block, Counter::setivar_fallback_immediate);
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        assert!(recv_type.shape().is_valid());
-                        if !recv_type.flags().is_t_object() {
-                            // Check if the receiver is a T_OBJECT
-                            self.count(block, Counter::setivar_fallback_not_t_object);
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        if recv_type.shape().is_complex() {
-                            // too-complex shapes can't use index access
-                            self.count(block, Counter::setivar_fallback_complex);
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        if recv_type.shape().is_frozen() {
-                            // Can't set ivars on frozen objects
-                            self.count(block, Counter::setivar_fallback_frozen);
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        if self.policy.no_side_exits {
-                            // TODO: Support polymorphic SetIvar shape-specialized paths.
-                            // https://github.com/Shopify/ruby/issues/927
-                            // On the final version, keep the SetIvar fallback instead of another shape guard.
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        let mut ivar_index: attr_index_t = 0;
-                        let mut next_shape_id = recv_type.shape();
-                        if !unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
-                            // Current shape does not contain this ivar; do a shape transition.
-                            let current_shape_id = recv_type.shape();
-                            let class = recv_type.class();
-                            // We're only looking at T_OBJECT so ignore all of the imemo stuff.
-                            assert!(recv_type.flags().is_t_object());
-                            next_shape_id = ShapeId(unsafe { rb_shape_transition_add_ivar_no_warnings(current_shape_id.0, id, class) });
-                            // If the VM ran out of shapes, or this class generated too many leaf,
-                            // it may be de-optimized into OBJ_COMPLEX_SHAPE (hash-table).
-                            let new_shape_complex = unsafe { rb_jit_shape_complex_p(next_shape_id.0) };
-                            // TODO(max): Is it OK to bail out here after making a shape transition?
-                            if new_shape_complex {
-                                self.count(block, Counter::setivar_fallback_new_shape_complex);
-                                self.push_insn_id(block, insn_id); continue;
-                            }
-                            let ivar_result = unsafe { rb_shape_get_iv_index(next_shape_id.0, id, &mut ivar_index) };
-                            assert!(ivar_result, "New shape must have the ivar index");
-                            let current_capacity = unsafe { rb_jit_shape_capacity(current_shape_id.0) };
-                            let next_capacity = unsafe { rb_jit_shape_capacity(next_shape_id.0) };
-                            // If the new shape has a different capacity, or is COMPLEX, we'll have to
-                            // reallocate it.
-                            let needs_extension = next_capacity != current_capacity;
-                            if needs_extension {
-                                self.count(block, Counter::setivar_fallback_new_shape_needs_extension);
-                                self.push_insn_id(block, insn_id); continue;
-                            }
-                            // Fall through to emitting the ivar write
-                        }
-                        let self_val = self.guard_heap(block, self_val, state);
-                        let shape = self.load_shape(block, self_val);
-                        // TODO: attr_writer SetIvar has a null inline cache and may target a receiver
-                        // operand other than CFP self. Support it with a reprofile strategy that
-                        // profiles the receiver operand even after the send insn has finished profiling.
-                        let recompile = if ic.is_null() { None } else { Some(Recompile::ProfileSelf) };
-                        self.guard_shape(block, shape, recv_type.shape(), state, recompile);
-                        // Current shape contains this ivar
-                        let (ivar_storage, offset) = if recv_type.flags().is_embedded() {
-                            // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
-                            let offset = ROBJECT_OFFSET_AS_ARY + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
-                            (self_val, offset)
-                        } else {
-                            let as_heap = self.push_insn(block, Insn::LoadField { recv: self_val, id: FieldName::as_heap, offset: ROBJECT_OFFSET_AS_HEAP_FIELDS, return_type: types::CPtr });
-                            let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
-                            (as_heap, offset)
-                        };
-                        self.push_insn(block, Insn::StoreField { recv: ivar_storage, id: id.into(), offset, val });
-                        self.push_insn(block, Insn::WriteBarrier { recv: self_val, val });
-                        if next_shape_id != recv_type.shape() {
-                            // Write the new shape ID
-                            let shape_id = self.push_insn(block, Insn::Const { val: Const::CShape(next_shape_id) });
-                            let shape_id_offset = unsafe { rb_shape_id_offset() };
-                            self.push_insn(block, Insn::StoreField { recv: self_val, id: FieldName::shape_id, offset: shape_id_offset, val: shape_id });
-                        }
-                    }
-                    _ => { self.push_insn_id(block, insn_id); }
-                }
-            }
+    fn try_emit_optimized_setivar(&mut self, block: BlockId, self_val: InsnId, id: ID, val: InsnId, profiled_type: ProfiledType, state: InsnId, recompile: Option<Recompile>) -> Result<(), Counter> {
+        if profiled_type.flags().is_immediate() {
+            // Instance variable lookups on immediate values are always nil
+            return Err(Counter::setivar_fallback_immediate);
         }
-        crate::stats::trace_compile_phase("infer_types", || self.infer_types());
+        if !profiled_type.flags().is_t_object() {
+            // Check if the receiver is a T_OBJECT
+            return Err(Counter::setivar_fallback_not_t_object);
+        }
+        assert!(profiled_type.shape().is_valid());
+        if profiled_type.shape().is_frozen() {
+            // Can't set ivars on frozen objects
+            return Err(Counter::setivar_fallback_frozen);
+        }
+        if profiled_type.shape().is_complex() {
+            // too-complex shapes can't use index access
+            return Err(Counter::setivar_fallback_complex);
+        }
+        if self.policy.no_side_exits {
+            // On the final version, skip GetIvar shape specialization.
+            // iseq_to_hir already generates polymorphic branches with a
+            // GetIvar C call fallback for getinstancevariable, so we don't
+            // need to wrap it again here.
+            return Err(Counter::setivar_fallback_no_side_exits);
+        }
+
+        let mut ivar_index: attr_index_t = 0;
+        let mut next_shape_id = profiled_type.shape();
+        if !unsafe { rb_shape_get_iv_index(profiled_type.shape().0, id, &mut ivar_index) } {
+            // Current shape does not contain this ivar; do a shape transition.
+            let current_shape_id = profiled_type.shape();
+            let class = profiled_type.class();
+            // We're only looking at T_OBJECT so ignore all of the imemo stuff.
+            assert!(profiled_type.flags().is_t_object());
+            next_shape_id = ShapeId(unsafe { rb_shape_transition_add_ivar_no_warnings(current_shape_id.0, id, class) });
+            // If the VM ran out of shapes, or this class generated too many leaf,
+            // it may be de-optimized into OBJ_COMPLEX_SHAPE (hash-table).
+            let new_shape_complex = unsafe { rb_jit_shape_complex_p(next_shape_id.0) };
+            // TODO(max): Is it OK to bail out here after making a shape transition?
+            if new_shape_complex {
+                return Err(Counter::setivar_fallback_new_shape_complex);
+            }
+            let ivar_result = unsafe { rb_shape_get_iv_index(next_shape_id.0, id, &mut ivar_index) };
+            assert!(ivar_result, "New shape must have the ivar index");
+            let current_capacity = unsafe { rb_jit_shape_capacity(current_shape_id.0) };
+            let next_capacity = unsafe { rb_jit_shape_capacity(next_shape_id.0) };
+            // If the new shape has a different capacity, or is COMPLEX, we'll have to
+            // reallocate it.
+            let needs_extension = next_capacity != current_capacity;
+            if needs_extension {
+                return Err(Counter::setivar_fallback_new_shape_needs_extension);
+            }
+            // Fall through to emitting the ivar write
+        }
+        let self_val = self.guard_heap(block, self_val, state);
+        let shape = self.load_shape(block, self_val);
+        self.guard_shape(block, shape, profiled_type.shape(), state, recompile);
+        // Current shape contains this ivar
+        let (ivar_storage, offset) = if profiled_type.flags().is_embedded() {
+            // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
+            let offset = ROBJECT_OFFSET_AS_ARY + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
+            (self_val, offset)
+        } else {
+            let as_heap = self.push_insn(block, Insn::LoadField { recv: self_val, id: FieldName::as_heap, offset: ROBJECT_OFFSET_AS_HEAP_FIELDS, return_type: types::CPtr });
+            let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
+            (as_heap, offset)
+        };
+        self.push_insn(block, Insn::StoreField { recv: ivar_storage, id: id.into(), offset, val });
+        self.push_insn(block, Insn::WriteBarrier { recv: self_val, val });
+        if next_shape_id != profiled_type.shape() {
+            // Write the new shape ID
+            let shape_id = self.push_insn(block, Insn::Const { val: Const::CShape(next_shape_id) });
+            let shape_id_offset = unsafe { rb_shape_id_offset() };
+            self.push_insn(block, Insn::StoreField { recv: self_val, id: FieldName::shape_id, offset: shape_id_offset, val: shape_id });
+        }
+        Ok(())
+    }
+
+    fn optimize_getivar(&mut self) {
+        // for block in self.reverse_post_order() {
+        //     let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
+        //     assert!(self.blocks[block.0].insns.is_empty());
+        //     for insn_id in old_insns {
+        //         match self.find(insn_id) {
+        //             Insn::SetIvar { self_val, id, val, state, ic } => {
+        //             }
+        //             _ => { self.push_insn_id(block, insn_id); }
+        //         }
+        //     }
+        // }
+        // crate::stats::trace_compile_phase("infer_types", || self.infer_types());
     }
 
     fn gen_patch_points_for_optimized_ccall(&mut self, block: BlockId, recv_class: VALUE, method_id: ID, cme: *const rb_callable_method_entry_struct, state: InsnId) {
@@ -9113,7 +9113,7 @@ fn add_iseq_to_hir(
                 }
                 YARVINSN_setinstancevariable => {
                     let id = ID(get_arg(pc, 0).as_u64());
-                    let ic = get_arg(pc, 1).as_ptr();
+                    let ic: *const iseq_inline_iv_cache_entry = get_arg(pc, 1).as_ptr();
                     // Assume single-Ractor mode to omit gen_prepare_non_leaf_call on gen_setivar
                     // TODO: We only really need this if self_val is a class/module
                     if !fun.assume_single_ractor_mode(block, exit_id) {
@@ -9122,7 +9122,16 @@ fn add_iseq_to_hir(
                         break;  // End the block
                     }
                     let val = state.stack_pop()?;
-                    fun.push_insn(block, Insn::SetIvar { self_val: self_param, id, ic, val, state: exit_id });
+                    if let Some(profiled_type) = fun.monomorphic_summary(&profiles, self_param, exit_id) {
+                        // TODO(max): Assert ic is never null
+                        let recompile = if ic.is_null() { None } else { Some(Recompile::ProfileSelf) };
+                        fun.try_emit_optimized_setivar(block, self_param, id, val, profiled_type, exit_id, recompile).unwrap_or_else(|counter| {
+                            fun.count(block, counter);
+                            fun.push_insn(block, Insn::SetIvar { self_val: self_param, id, ic, val, state: exit_id });
+                        });
+                    } else {
+                        fun.push_insn(block, Insn::SetIvar { self_val: self_param, id, ic, val, state: exit_id });
+                    }
                     // SetIvar will raise if self is an immediate. If it raises, we will have
                     // exited JIT code. So upgrade the type within JIT code to a heap object.
                     self_param = fun.push_insn(block, Insn::RefineType { val: self_param, new_type: types::HeapBasicObject });
