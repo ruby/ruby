@@ -3,7 +3,7 @@ BEGIN {
 }
 
 % usdt_entries.each do |entry|
-usdt:<%=entry.file%>:ruby:<%=entry.probe%> {
-    printf("<%=entry.name%>,<%=entry.ph%>,%d,%lu<%=",%lu"*entry.nargs%>\n", tid, nsecs<%=(0...entry.nargs).map{|i| ", arg#{i}"}.join%>);
+usdt:<%=entry.file%>:ruby:<%=entry.probe_name%> {
+    printf("<%=entry.vis_name%>,<%=entry.vis_ph%>,%d,%lu<%=",%lu"*entry.nargs%>\n", tid, nsecs<%=(0...entry.nargs).map{|i| ", arg#{i}"}.join%>);
 }
 % end

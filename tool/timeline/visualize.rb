@@ -10,7 +10,7 @@ require_relative 'lib/tracepoint_defs.rb'
 require_relative 'lib/converter_defs.rb'
 require_relative 'lib/converter.rb'
 
-VIS_ID_TO_USDT = RubyTimelineTool::USDT_DEFS.values.flatten.to_h {|t| [t.vis_id, t]}
+VIS_NAME_TO_USDT = RubyTimelineTool::USDT_DEFS.values.flatten.to_h {|t| [t.vis_name, t]}
 
 module FetchStore
   refine Hash do
@@ -77,7 +77,7 @@ class LogProcessor
       @start_time = ts
     end
 
-    usdt_def = VIS_ID_TO_USDT[name]
+    usdt_def = VIS_NAME_TO_USDT[name]
 
     args = {}
     usdt_def.args.each_pair.zip(raw_args) do |arg_def, arg_val|

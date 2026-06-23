@@ -73,7 +73,7 @@ $stderr.puts "Selected groups: #{selected_groups.join(',')}"
 
 usdts = RubyTimelineTool::USDT_DEFS.values_at(*selected_groups).flatten
 
-ScriptUsdtEntry = Struct.new("ScriptUsdtEntry", :file, :probe, :name, :ph, :nargs)
+ScriptUsdtEntry = Struct.new("ScriptUsdtEntry", :file, :probe_name, :vis_name, :vis_ph, :nargs)
 
 usdt_entries = []
 
@@ -87,13 +87,13 @@ usdts.each do |t|
   end
 
   if file.nil?
-    @stderr.puts "Skipped probe '#{probe}' which is for '#{location}'.  Current GC module: '#{gc_module_kind}'."
+    @stderr.puts "Skipped probe '#{probe_name}' which is for '#{location}'.  Current GC module: '#{gc_module_kind}'."
     next
   end
 
   nargs = t.args.length
 
-  usdt_entries << ScriptUsdtEntry.new(file, t.probe, t.vis_id, t.vis_ph, nargs)
+  usdt_entries << ScriptUsdtEntry.new(file, t.probe_name, t.vis_name, t.vis_ph, nargs)
 end
 
 content = template.result_with_hash({
