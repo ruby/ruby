@@ -8684,9 +8684,7 @@ fn add_iseq_to_hir(
                                 if_false: BranchEdge { target: fall_through, args: vec![] }
                             });
                             block = fall_through;
-                            // We have global regalloc, so there's no need to thread locals/stack
-                            // through block params: refine the receiver, send, and pass only the
-                            // result along to the join block. Take a fresh Snapshot rather than
+                            // Take a fresh Snapshot rather than
                             // reusing exit_id so type specialization resolves the receiver from
                             // its refined, exact type instead of the polymorphic profile that is
                             // keyed at exit_id.
