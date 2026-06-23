@@ -645,11 +645,7 @@ rb_imemo_free(VALUE obj)
       case imemo_callinfo:{
         const struct rb_callinfo *ci = ((const struct rb_callinfo *)obj);
 
-        if (ci->kwarg) {
-            if (RUBY_ATOMIC_FETCH_SUB(((struct rb_callinfo_kwarg *)ci->kwarg)->references, 1) == 1) {
-                ruby_xfree_sized((void *)ci->kwarg, rb_callinfo_kwarg_bytes(ci->kwarg->keyword_len));
-            }
-        }
+        rb_callinfo_kwarg_release((struct rb_callinfo_kwarg *)ci->kwarg);
         RB_DEBUG_COUNTER_INC(obj_imemo_callinfo);
 
         break;
