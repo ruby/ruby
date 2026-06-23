@@ -663,6 +663,7 @@ typedef struct rb_objspace {
         double gc_sweep_start_time;
         rb_hrtime_t gc_wall_start_time;
         rb_hrtime_t gc_sweep_wall_start_time;
+        rb_hrtime_t gc_sweep_excluded_wall_time;
         rb_hrtime_t gc_pause_start_time;
         rb_hrtime_t gc_stw_start_time;
         rb_hrtime_t gc_stop_time;
@@ -4562,9 +4563,13 @@ gc_sweep(rb_objspace_t *objspace)
         rb_hrtime_t compact_start_time = gc_prof_enabled(objspace) ? rb_hrtime_now() : 0;
         gc_sweep_compact(objspace);
         if (gc_prof_enabled(objspace)) {
+            rb_hrtime_t compact_wall_time = elapsed_hrtime_from(compact_start_time);
             gc_profile_record *record = gc_prof_record(objspace);
             record->gc_compact_wall_time = rb_hrtime_add(record->gc_compact_wall_time,
-                    elapsed_hrtime_from(compact_start_time));
+                    compact_wall_time);
+            objspace->profile.gc_sweep_excluded_wall_time = rb_hrtime_add(
+                    objspace->profile.gc_sweep_excluded_wall_time,
+                    compact_wall_time);
         }
     }
 
@@ -7238,6 +7243,7 @@ gc_sweeping_enter(rb_objspace_t *objspace)
 
     if (gc_prof_enabled(objspace)) {
         objspace->profile.gc_sweep_phase_wall_start_time = rb_hrtime_now();
+        objspace->profile.gc_sweep_excluded_wall_time = 0;
     }
 
     if (MEASURE_GC) {
@@ -7255,9 +7261,13 @@ gc_sweeping_exit(rb_objspace_t *objspace)
     }
 
     if (gc_prof_enabled(objspace)) {
+        rb_hrtime_t sweep_wall_time = elapsed_hrtime_from(objspace->profile.gc_sweep_phase_wall_start_time);
         gc_profile_record *record = gc_prof_record(objspace);
+        sweep_wall_time = rb_hrtime_sub(sweep_wall_time,
+                objspace->profile.gc_sweep_excluded_wall_time);
         record->gc_sweep_wall_time = rb_hrtime_add(record->gc_sweep_wall_time,
-                elapsed_hrtime_from(objspace->profile.gc_sweep_phase_wall_start_time));
+                sweep_wall_time);
+        objspace->profile.gc_sweep_excluded_wall_time = 0;
     }
 }
 
@@ -9282,9 +9292,10 @@ gc_profile_clear(VALUE _)
  *  +:GC_INVOKE_TIME+::
  *	CPU time elapsed in seconds from startup to when the GC was invoked.
  *  +:GC_WALL_TIME+::
- *	Monotonic wall-clock time elapsed in seconds spent doing collector work
- *	for this GC record.  This does not include time spent stopping other
- *	ractors before the VM enters GC.
+ *	Monotonic wall-clock counterpart to +:GC_TIME+ for this GC record.
+ *	This does not include time spent stopping other ractors before the VM
+ *	enters GC.  Use the phase wall-clock fields below for mark, sweep, and
+ *	compaction attribution.
  *  +:GC_INVOKE_WALL_TIME+::
  *	Monotonic wall-clock time elapsed in seconds from startup to when the GC
  *	was invoked.
@@ -9303,14 +9314,12 @@ gc_profile_clear(VALUE _)
  *	record, accumulated across incremental marking continuations.
  *  +:GC_SWEEP_WALL_TIME+::
  *	Monotonic wall-clock time elapsed in seconds spent sweeping for this GC
- *	record, accumulated across lazy sweeping continuations.  This includes any
- *	compaction time, which is also reported separately as
+ *	record, accumulated across lazy sweeping continuations.  This does not
+ *	include compaction time, which is reported separately as
  *	+:GC_COMPACT_WALL_TIME+.
  *  +:GC_COMPACT_WALL_TIME+::
  *	Monotonic wall-clock time elapsed in seconds spent compacting for this GC
- *	record, or +0.0+ if this GC did not compact.  Compaction runs within the
- *	sweep phase, so this time is nested inside +:GC_SWEEP_WALL_TIME+ and must
- *	not be added to it.
+ *	record, or +0.0+ if this GC did not compact.
  *  +:HEAP_USE_SIZE+::
  *	Total bytes of heap used
  *  +:HEAP_TOTAL_SIZE+::
@@ -9324,8 +9333,11 @@ gc_profile_clear(VALUE _)
  *
  *    GC_PAUSE_TIME == GC_STOP_TIME + GC_STW_TIME
  *
- *  +:GC_WALL_TIME+ measures collector work and is nested inside
- *  +:GC_STW_TIME+, so it must not be added to +:GC_STW_TIME+.  The difference
+ *  +:GC_MARK_WALL_TIME+, +:GC_SWEEP_WALL_TIME+, and +:GC_COMPACT_WALL_TIME+
+ *  report separate phase timings and must not be added to +:GC_WALL_TIME+.
+ *
+ *  +:GC_WALL_TIME+ is the wall-clock counterpart to +:GC_TIME+ and is nested
+ *  inside +:GC_STW_TIME+, so it must not be added to +:GC_STW_TIME+.  The difference
  *  +GC_STW_TIME - GC_WALL_TIME+ is VM overhead inside the stopped interval
  *  (GC event hooks, bookkeeping, consistency checks, and continuation work).
  *
@@ -10240,8 +10252,8 @@ rb_gc_impl_init(void)
      *  GC::Profiler.raw_data returns one Hash per GC run, including CPU time
      *  fields such as +:GC_TIME+ and wall-clock fields such as +:GC_WALL_TIME+,
      *  +:GC_PAUSE_TIME+, +:GC_STOP_TIME+, and +:GC_STW_TIME+.  +:GC_WALL_TIME+
-     *  measures collector work for the record, while +:GC_PAUSE_TIME+ measures
-     *  how long user execution was blocked by the GC entry.
+     *  is the wall-clock counterpart to +:GC_TIME+, while +:GC_PAUSE_TIME+
+     *  measures how long user execution was blocked by the GC entry.
      *
      *  See also GC.count, GC.malloc_allocated_size and GC.malloc_allocations
      */
