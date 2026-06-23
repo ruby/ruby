@@ -324,6 +324,11 @@ make_counters! {
     dynamic_getivar {
         // getivar_fallback_: Fallback reasons for dynamic getivar instructions
         getivar_fallback_not_monomorphic,
+        getivar_fallback_megamorphic,
+        getivar_fallback_skewed_megamorphic,
+        getivar_fallback_polymorphic,
+        getivar_fallback_no_profile_missing_ic,
+        getivar_fallback_no_profile,
         getivar_fallback_immediate,
         getivar_fallback_not_t_object,
         getivar_fallback_complex,

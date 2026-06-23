@@ -4907,16 +4907,28 @@ impl Function {
         }
     }
 
+    fn getivar_fallback_reason(resolution: ReceiverTypeResolution, ic: *const iseq_inline_iv_cache_entry) -> Counter {
+        match resolution {
+            ReceiverTypeResolution::Megamorphic => Counter::getivar_fallback_megamorphic,
+            ReceiverTypeResolution::SkewedMegamorphic { .. } => Counter::getivar_fallback_skewed_megamorphic,
+            ReceiverTypeResolution::Polymorphic => Counter::getivar_fallback_polymorphic,
+            ReceiverTypeResolution::NoProfile if ic.is_null() => Counter::getivar_fallback_no_profile_missing_ic,
+            ReceiverTypeResolution::NoProfile => Counter::getivar_fallback_no_profile,
+            _ => Counter::getivar_fallback_not_monomorphic,
+        }
+    }
+
     fn optimize_getivar(&mut self) {
         for block in self.reverse_post_order() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
                 match self.find(insn_id) {
-                    Insn::GetIvar { self_val, id, ic: _, state } => {
+                    Insn::GetIvar { self_val, id, ic, state } => {
                         let Some(recv_type) = self.profiled_type_of_at(self_val, state) else {
-                            // No (monomorphic/skewed polymorphic) profile info
-                            self.count(block, Counter::getivar_fallback_not_monomorphic);
+                            let resolution = self.resolve_receiver_type_from_profile(self_val, state);
+                            let counter = Self::getivar_fallback_reason(resolution, ic);
+                            self.count(block, counter);
                             self.push_insn_id(block, insn_id); continue;
                         };
                         if recv_type.flags().is_immediate() {
