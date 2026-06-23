@@ -3776,6 +3776,8 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
             ELEM_INSERT_NEXT(opt_new_prelude, &new_insn_body(iseq, location.line, location.node_id, BIN(putnil), 0)->link);
         }
 
+        rb_callinfo_kwarg_retain(kw_arg);
+
         // Jump unless the receiver uses the "basic" implementation of "new"
         VALUE ci;
         if (flags & VM_CALL_FORWARDING) {
@@ -3798,6 +3800,8 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
 
         PUSH_LABEL(ret, not_basic_new_finish);
         PUSH_INSN(ret, location, pop);
+
+        rb_callinfo_kwarg_release(kw_arg);
     }
     else {
         PUSH_SEND_R(ret, location, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
