@@ -1731,9 +1731,14 @@ ruby_thread_set_native(rb_thread_t *th)
 static void native_thread_setup(struct rb_native_thread *nt);
 static void native_thread_setup_on_thread(struct rb_native_thread *nt);
 
+static size_t RUBY_THREAD_PAGE_SIZE;
+
 void
 Init_native_thread(rb_thread_t *main_th)
 {
+    // Get the system page size for later use in stack allocation and stack overflow checks:
+    RUBY_THREAD_PAGE_SIZE = sysconf(_SC_PAGESIZE);
+
 #if defined(HAVE_PTHREAD_CONDATTR_SETCLOCK)
     if (condattr_monotonic) {
         int r = pthread_condattr_init(condattr_monotonic);
@@ -1969,7 +1974,7 @@ get_stack(void **addr, size_t *size)
 # ifdef HAVE_PTHREAD_ATTR_GETGUARDSIZE
     CHECK_ERR(pthread_attr_getguardsize(&attr, &guard));
 # else
-    guard = getpagesize();
+    guard = RUBY_THREAD_PAGE_SIZE;
 # endif
     *size -= guard;
     pthread_attr_destroy(&attr);
@@ -2037,9 +2042,6 @@ static struct {
 extern void *STACK_END_ADDRESS;
 #endif
 
-enum {
-    RUBY_STACK_SPACE_RATIO = 5
-};
 
 static void
 native_thread_init_main_thread_stack(void *addr)
@@ -2074,15 +2076,11 @@ native_thread_init_main_thread_stack(void *addr)
     {
 #if defined(HAVE_GETRLIMIT)
 #if defined(PTHREAD_STACK_DEFAULT)
-# if PTHREAD_STACK_DEFAULT < RUBY_STACK_SPACE*5
-#  error "PTHREAD_STACK_DEFAULT is too small"
-# endif
         size_t size = PTHREAD_STACK_DEFAULT;
 #else
         size_t size = RUBY_VM_THREAD_VM_STACK_SIZE;
 #endif
         size_t space;
-        int pagesize = getpagesize();
         struct rlimit rlim;
         STACK_GROW_DIR_DETECTION;
         if (getrlimit(RLIMIT_STACK, &rlim) == 0) {
@@ -2090,10 +2088,10 @@ native_thread_init_main_thread_stack(void *addr)
         }
         addr = native_main_thread.stack_start;
         if (IS_STACK_DIR_UPPER()) {
-            space = ((size_t)((char *)addr + size) / pagesize) * pagesize - (size_t)addr;
+            space = ((size_t)((char *)addr + size) / RUBY_THREAD_PAGE_SIZE) * RUBY_THREAD_PAGE_SIZE - (size_t)addr;
         }
         else {
-            space = (size_t)addr - ((size_t)((char *)addr - size) / pagesize + 1) * pagesize;
+            space = (size_t)addr - ((size_t)((char *)addr - size) / RUBY_THREAD_PAGE_SIZE + 1) * RUBY_THREAD_PAGE_SIZE;
         }
         native_main_thread.stack_maxsize = space;
 #endif
@@ -3253,7 +3251,7 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
 {
     void *base;
     size_t size;
-    const size_t water_mark = 1024 * 1024;
+    const size_t water_mark = RUBY_THREAD_PAGE_SIZE;
     STACK_GROW_DIR_DETECTION;
 
     if (th) {
@@ -3277,7 +3275,6 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
         return 0;
     }
 
-    size /= RUBY_STACK_SPACE_RATIO;
     if (size > water_mark) size = water_mark;
     if (IS_STACK_DIR_UPPER()) {
         if (size > ~(size_t)base+1) size = ~(size_t)base+1;
