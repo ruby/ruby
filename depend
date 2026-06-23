@@ -5965,6 +5965,7 @@ gc.$(OBJEXT): $(top_srcdir)/internal/string.h
 gc.$(OBJEXT): $(top_srcdir)/internal/struct.h
 gc.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 gc.$(OBJEXT): $(top_srcdir)/internal/thread.h
+gc.$(OBJEXT): $(top_srcdir)/internal/time.h
 gc.$(OBJEXT): $(top_srcdir)/internal/variable.h
 gc.$(OBJEXT): $(top_srcdir)/internal/vm.h
 gc.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -6026,6 +6027,7 @@ gc.$(OBJEXT): {$(VPATH)}encoding.h
 gc.$(OBJEXT): {$(VPATH)}eval_intern.h
 gc.$(OBJEXT): {$(VPATH)}gc.c
 gc.$(OBJEXT): {$(VPATH)}gc.rbinc
+gc.$(OBJEXT): {$(VPATH)}hrtime.h
 gc.$(OBJEXT): {$(VPATH)}id.h
 gc.$(OBJEXT): {$(VPATH)}id_table.h
 gc.$(OBJEXT): {$(VPATH)}intern.h
