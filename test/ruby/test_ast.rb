@@ -377,6 +377,46 @@ class TestAst < Test::Unit::TestCase
     assert_equal node.node_id, node_id
   end
 
+  def test_node_id_for_backtrace_location_of_block_fcall
+    omit if ParserSupport.prism_enabled?
+
+    begin
+      foo(1, 2, kw: :arg) { 42 }
+    rescue NameError => exc
+      loc = exc.backtrace_locations.first
+      node_id = RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(loc)
+      node = RubyVM::AbstractSyntaxTree.of(loc, keep_script_lines: true)
+      assert_equal node.node_id, node_id
+
+      assert_equal :ITER, node.type
+      assert_equal :FCALL, node.children[0].type
+      assert_equal "foo(1, 2, kw: :arg) { 42 }", node.source
+      assert_equal "foo(1, 2, kw: :arg)", node.children[0].source # The FCALL does not cover the block
+    else
+      flunk "expected block call to raise NameError"
+    end
+  end
+
+  def test_node_id_for_backtrace_location_of_block_call
+    omit if ParserSupport.prism_enabled?
+
+    begin
+      self.foo(1, 2, kw: :arg) { 42 }
+    rescue NameError => exc
+      loc = exc.backtrace_locations.first
+      node_id = RubyVM::AbstractSyntaxTree.node_id_for_backtrace_location(loc)
+      node = RubyVM::AbstractSyntaxTree.of(loc, keep_script_lines: true)
+      assert_equal node.node_id, node_id
+
+      assert_equal :ITER, node.type
+      assert_equal :CALL, node.children[0].type
+      assert_equal "self.foo(1, 2, kw: :arg) { 42 }", node.source
+      assert_equal "self.foo(1, 2, kw: :arg)", node.children[0].source # The CALL does not cover the block
+    else
+      flunk "expected block call to raise NameError"
+    end
+  end
+
   def add(x, y)
   end
 

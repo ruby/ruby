@@ -1123,7 +1123,7 @@ eom
   end
 
   def test_lineno_operation_brace_block
-    expected = __LINE__ + 1
+    expected = __LINE__ + 2
     actual = caller_lineno\
     {}
     assert_equal(expected, actual)

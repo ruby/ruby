@@ -8488,6 +8488,8 @@ compile_iter(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 {
     const int line = nd_line(node);
     const NODE *line_node = node;
+    const NODE *iter;
+    enum node_type iter_type;
     const rb_iseq_t *prevblock = ISEQ_COMPILE_DATA(iseq)->current_block;
     LABEL *retry_label = NEW_LABEL(line);
     LABEL *retry_end_l = NEW_LABEL(line);
@@ -8506,7 +8508,20 @@ compile_iter(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
         ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq =
             NEW_CHILD_ISEQ(RNODE_ITER(node)->nd_body, make_name_for_block(iseq),
                            ISEQ_TYPE_BLOCK, line);
-        CHECK(COMPILE(ret, "iter caller", RNODE_ITER(node)->nd_iter));
+
+        iter = RNODE_ITER(node)->nd_iter;
+        iter_type = nd_type(iter);
+        switch (iter_type) {
+          case NODE_CALL:
+          case NODE_OPCALL:
+          case NODE_QCALL:
+          case NODE_FCALL:
+          case NODE_VCALL:
+            CHECK(compile_call(iseq, ret, iter, iter_type, line_node, 0, false));
+            break;
+          default:
+            CHECK(COMPILE(ret, "iter caller", iter));
+        }
     }
 
     {
