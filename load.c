@@ -1313,6 +1313,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
     saved_path = path;
 
     EC_PUSH_TAG(ec);
+    rb_control_frame_t *volatile saved_cfp = ec->cfp;
     ec->errinfo = Qnil; /* ensure */
     th->top_wrapper = 0;
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
@@ -1354,6 +1355,9 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
                 result = TAG_RETURN;
             }
         }
+    }
+    else {
+        rb_vm_rewind_cfp(ec, saved_cfp);
     }
     EC_POP_TAG();
 
