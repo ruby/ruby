@@ -5116,7 +5116,7 @@ mod hir_opt_tests {
           Jump bb6(v21, v21)
         bb5():
           v23:CInt64 = LoadField v17, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
-          v24:CInt64 = GuardAnyBitSet v23, CUInt64(1)
+          v24:CInt64 = GuardAnyBitSet v23, CUInt64(1) recompile
           v25:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           Jump bb6(v25, v10)
         bb6(v15:BasicObject, v16:BasicObject):
@@ -5159,12 +5159,72 @@ mod hir_opt_tests {
         bb5():
           v24:BasicObject = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
           v25:BasicObject = CCall v24, :rb_obj_is_proc@0x1008
-          v26:TrueClass = GuardBitEquals v25, Value(true)
+          v26:TrueClass = GuardBitEquals v25, Value(true) recompile
           Jump bb6(v24, v10)
         bb6(v16:BasicObject, v17:BasicObject):
           v29:BasicObject = Send v14, &block, :then, v16 # SendFallbackReason: Complex argument passing
           CheckInterrupts
           Return v29
+        ");
+    }
+
+    #[test]
+    fn test_recompile_no_profile_getblockparamproxy() {
+        eval("
+            def test(flag, &block)
+              if flag
+                0.then(&block)
+              else
+                :skip
+              end
+            end
+            test(false)
+            test(false)
+            test(true)
+        ");
+        assert_snapshot!(hir_string("test"), @"
+        fn test@<compiled>:3:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :flag@0x1000
+          v4:BasicObject = LoadField v2, :block@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :flag@1
+          v9:BasicObject = LoadArg :block@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          CheckInterrupts
+          v19:CBool = Test v12
+          v20:Falsy = RefineType v12, Falsy
+          CondBranch v19, bb5(), bb4(v11, v20, v13)
+        bb5():
+          v22:Truthy = RefineType v12, Truthy
+          v25:Fixnum[0] = Const Value(0)
+          v29:CPtr = GetEP 0
+          v30:CUInt64 = LoadField v29, :VM_ENV_DATA_INDEX_FLAGS@0x1002
+          v31:CBool = IsBlockParamModified v30
+          CondBranch v31, bb6(), bb7()
+        bb6():
+          v33:BasicObject = LoadField v29, :block@0x1003
+          Jump bb8(v33, v33)
+        bb7():
+          v35:CInt64 = LoadField v29, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
+          v36:CInt64[0] = GuardBitEquals v35, CInt64(0) recompile
+          v37:NilClass = Const Value(nil)
+          Jump bb8(v37, v13)
+        bb8(v27:BasicObject, v28:BasicObject):
+          v40:BasicObject = Send v25, &block, :then, v27 # SendFallbackReason: Complex argument passing
+          CheckInterrupts
+          Return v40
+        bb4(v45:BasicObject, v46:Falsy, v47:BasicObject):
+          v51:StaticSymbol[:skip] = Const Value(VALUE(0x1008))
+          CheckInterrupts
+          Return v51
         ");
     }
 
@@ -5213,7 +5273,7 @@ mod hir_opt_tests {
           Jump bb9(v36, v36)
         bb8():
           v38:CInt64 = LoadField v32, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
-          v39:CInt64 = GuardAnyBitSet v38, CUInt64(1)
+          v39:CInt64 = GuardAnyBitSet v38, CUInt64(1) recompile
           v40:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           Jump bb9(v40, v17)
         bb9(v30:BasicObject, v31:BasicObject):
@@ -5264,7 +5324,7 @@ mod hir_opt_tests {
           Jump bb9(v31)
         bb8():
           v33:CInt64 = LoadField v27, :VM_ENV_DATA_INDEX_SPECVAL@0x1002
-          v34:CInt64 = GuardAnyBitSet v33, CUInt64(1)
+          v34:CInt64 = GuardAnyBitSet v33, CUInt64(1) recompile
           v35:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           Jump bb9(v35)
         bb9(v26:BasicObject):
@@ -9409,7 +9469,7 @@ mod hir_opt_tests {
           Jump bb6(v22, v22)
         bb5():
           v24:CInt64 = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
-          v25:CInt64 = GuardAnyBitSet v24, CUInt64(1)
+          v25:CInt64 = GuardAnyBitSet v24, CUInt64(1) recompile
           v26:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           Jump bb6(v26, v10)
         bb6(v16:BasicObject, v17:BasicObject):
@@ -9449,7 +9509,7 @@ mod hir_opt_tests {
           Jump bb6(v22, v22)
         bb5():
           v24:CInt64 = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
-          v25:CInt64[0] = GuardBitEquals v24, CInt64(0)
+          v25:CInt64[0] = GuardBitEquals v24, CInt64(0) recompile
           v26:NilClass = Const Value(nil)
           Jump bb6(v26, v10)
         bb6(v16:BasicObject, v17:BasicObject):
@@ -9490,7 +9550,7 @@ mod hir_opt_tests {
           Jump bb6(v17)
         bb5():
           v19:CInt64 = LoadField v13, :VM_ENV_DATA_INDEX_SPECVAL@0x1002
-          v20:CInt64 = GuardAnyBitSet v19, CUInt64(1)
+          v20:CInt64 = GuardAnyBitSet v19, CUInt64(1) recompile
           v21:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           Jump bb6(v21)
         bb6(v12:BasicObject):
@@ -12982,7 +13042,7 @@ mod hir_opt_tests {
           Jump bb6(v22, v22)
         bb5():
           v24:CInt64 = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
-          v25:CInt64 = GuardAnyBitSet v24, CUInt64(1)
+          v25:CInt64 = GuardAnyBitSet v24, CUInt64(1) recompile
           v26:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           Jump bb6(v26, v10)
         bb6(v16:BasicObject, v17:BasicObject):
@@ -18860,7 +18920,7 @@ mod hir_opt_tests {
           Jump bb8(v41, v41)
         bb7():
           v43:CInt64 = LoadField v37, :VM_ENV_DATA_INDEX_SPECVAL@0x104a
-          v44:CInt64 = GuardAnyBitSet v43, CUInt64(1)
+          v44:CInt64 = GuardAnyBitSet v43, CUInt64(1) recompile
           v45:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1050))
           Jump bb8(v45, v54)
         bb8(v35:BasicObject, v36:BasicObject):
@@ -18924,7 +18984,7 @@ mod hir_opt_tests {
           Jump bb8(v43, v43)
         bb7():
           v45:CInt64 = LoadField v39, :VM_ENV_DATA_INDEX_SPECVAL@0x104a
-          v46:CInt64 = GuardAnyBitSet v45, CUInt64(1)
+          v46:CInt64 = GuardAnyBitSet v45, CUInt64(1) recompile
           v47:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1050))
           Jump bb8(v47, v55)
         bb8(v37:BasicObject, v38:BasicObject):
