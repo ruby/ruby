@@ -12695,7 +12695,7 @@ pinned_list_fetch(VALUE list, long offset)
 
     TypedData_Get_Struct(list, struct pinned_list, &pinned_list_type, ptr);
 
-    if (offset >= ptr->size) {
+    if (offset < 0 || offset >= ptr->size) {
         rb_raise(rb_eIndexError, "object index out of range: %ld", offset);
     }
 
@@ -12709,7 +12709,7 @@ pinned_list_store(VALUE list, long offset, VALUE object)
 
     TypedData_Get_Struct(list, struct pinned_list, &pinned_list_type, ptr);
 
-    if (offset >= ptr->size) {
+    if (offset < 0 || offset >= ptr->size) {
         rb_raise(rb_eIndexError, "object index out of range: %ld", offset);
     }
 
