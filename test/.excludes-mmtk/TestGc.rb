@@ -15,6 +15,8 @@ exclude(:test_latest_gc_info_weak_references_count, "testing behaviour specific 
 exclude(:test_old_to_young_reference, "testing behaviour specific to default GC")
 exclude(:test_profiler_enabled, "MMTk does not have GC::Profiler")
 exclude(:test_profiler_raw_data, "MMTk does not have GC::Profiler")
+exclude(:test_profiler_raw_data_includes_compaction_wall_time, "MMTk does not have GC::Profiler")
+exclude(:test_profiler_raw_data_includes_wall_time, "MMTk does not have GC::Profiler")
 exclude(:test_profiler_total_time, "MMTk does not have GC::Profiler")
 exclude(:test_start_full_mark, "testing behaviour specific to default GC")
 exclude(:test_start_immediate_sweep, "testing behaviour specific to default GC")
