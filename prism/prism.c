@@ -2249,7 +2249,15 @@ pm_regular_expression_flags_create(pm_parser_t *parser, const pm_token_t *closin
     if (closing->type == PM_TOKEN_REGEXP_END) {
         pm_buffer_t unknown_flags = { 0 };
 
-        for (const uint8_t *flag = closing->start + 1; flag < closing->end; flag++) {
+        // The closing delimiter is normally a single byte, so the options
+        // follow it. A `\r\n` newline delimiter is two bytes, however, so we
+        // skip past it to avoid misreading the trailing `\n` as an option.
+        const uint8_t *flag = closing->start + 1;
+        if ((closing->end - closing->start) >= 2 && closing->start[0] == '\r' && closing->start[1] == '\n') {
+            flag++;
+        }
+
+        for (; flag < closing->end; flag++) {
             switch (*flag) {
                 case 'i': flags |= PM_REGULAR_EXPRESSION_FLAGS_IGNORE_CASE; break;
                 case 'm': flags |= PM_REGULAR_EXPRESSION_FLAGS_MULTI_LINE; break;
