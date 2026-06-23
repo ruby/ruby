@@ -15,6 +15,7 @@
 #include "internal/box.h"
 #include "internal/class.h"
 #include "internal/compile.h"
+#include "internal/concurrent_set.h"
 #include "internal/cont.h"
 #include "internal/error.h"
 #include "internal/encoding.h"
@@ -3643,6 +3644,7 @@ vm_default_params_setup(rb_vm_t *vm)
 static void
 vm_init2(rb_vm_t *vm)
 {
+    rb_concurrent_set_initialize();
     rb_vm_living_threads_init(vm);
     vm->thread_report_on_exception = 1;
     vm->src_encoding_index = -1;
