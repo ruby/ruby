@@ -26,6 +26,11 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  # Work around transient crates.io download failures (curl HTTP/2 framing / partial transfer)
+  CARGO_NET_RETRY: 10
+  CARGO_HTTP_MULTIPLEXING: false
+
 jobs:
   lint:
     name: cargo clippy
@@ -100,9 +105,6 @@ jobs:
       BUNDLE_JOBS: 8 # for yjit-bench
       RUST_BACKTRACE: 1
       ZJIT_RB_BUG: 1
-      # Work around transient crates.io download failures (curl [16] HTTP/2 framing layer)
-      CARGO_NET_RETRY: 10
-      CARGO_HTTP_MULTIPLEXING: false
 
     runs-on: ${{ matrix.runs-on || 'ubuntu-22.04' }}
 
