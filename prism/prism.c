@@ -11373,6 +11373,8 @@ parser_lex(pm_parser_t *parser) {
             // First we'll set the beginning of the token.
             parser->current.start = parser->current.end;
 
+            pm_lex_mode_t *lex_mode = parser->lex_modes.current;
+
             // If there's any whitespace at the start of the list, then we're
             // going to trim it off the beginning and create a new token.
             size_t whitespace;
@@ -11382,6 +11384,12 @@ parser_lex(pm_parser_t *parser) {
                 if (peek_offset(parser, (ptrdiff_t)whitespace) == '\n') {
                     whitespace += 1;
                 }
+            } else if (lex_mode->as.list.terminator == '\n') {
+                // When the list delimiter is a newline (e.g. `%w` followed by a
+                // newline), the newline is the terminator rather than a word
+                // separator. We only trim inline whitespace here so that the
+                // terminating newline is left for the terminator handling below.
+                whitespace = pm_strspn_inline_whitespace(parser->current.end, parser->end - parser->current.end);
             } else {
                 whitespace = pm_strspn_whitespace_newlines(parser->current.end, parser->end - parser->current.end, &parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current));
             }
@@ -11403,7 +11411,6 @@ parser_lex(pm_parser_t *parser) {
 
             // Here we'll get a list of the places where strpbrk should break,
             // and then find the first one.
-            pm_lex_mode_t *lex_mode = parser->lex_modes.current;
             const uint8_t *breakpoints = lex_mode->as.list.breakpoints;
             const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
 
@@ -11413,8 +11420,10 @@ parser_lex(pm_parser_t *parser) {
 
             while (breakpoint != NULL) {
                 // If we hit whitespace, then we must have received content by
-                // now, so we can return an element of the list.
-                if (pm_char_is_whitespace(*breakpoint)) {
+                // now, so we can return an element of the list. A whitespace
+                // character that is also the terminator (e.g. a newline
+                // delimiter) is handled by the terminator check below, not here.
+                if (pm_char_is_whitespace(*breakpoint) && *breakpoint != lex_mode->as.list.terminator) {
                     parser->current.end = breakpoint;
                     pm_token_buffer_flush(parser, &token_buffer);
                     LEX(PM_TOKEN_STRING_CONTENT);
@@ -11443,6 +11452,14 @@ parser_lex(pm_parser_t *parser) {
                     // Otherwise, switch back to the default state and return
                     // the end of the list.
                     parser->current.end = breakpoint + 1;
+
+                    // If the terminator is a newline (i.e. the list delimiter
+                    // was a newline), then we need to record it so that line
+                    // numbers after the list remain accurate.
+                    if (*breakpoint == '\n') {
+                        pm_line_offset_list_append(&parser->metadata_arena, &parser->line_offsets, PM_TOKEN_END(parser, &parser->current));
+                    }
+
                     lex_mode_pop(parser);
                     lex_state_set(parser, PM_LEX_STATE_END);
                     LEX(PM_TOKEN_STRING_END);

@@ -46,6 +46,7 @@ module Prism
       "multi_write.txt",
       "not.txt",
       "patterns.txt",
+      "percent_array_newline_delimiter.txt",
       "regex.txt",
       "seattlerb/and_multi.txt",
       "seattlerb/heredoc__backslash_dos_format.txt",
