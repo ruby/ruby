@@ -339,7 +339,7 @@ static const rb_data_type_t rb_master_box_data_type = {
         box_entry_memsize,
         rb_box_gc_update_references,
     },
-    &rb_box_data_type, 0, RUBY_TYPED_FREE_IMMEDIATELY // TODO: enable RUBY_TYPED_WB_PROTECTED when inserting write barriers
+    &rb_box_data_type, 0, RUBY_TYPED_THREAD_SAFE_FREE // TODO: enable RUBY_TYPED_WB_PROTECTED when inserting write barriers
 };
 
 VALUE

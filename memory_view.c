@@ -125,7 +125,7 @@ static const rb_data_type_t memory_view_entry_data_type = {
         0,
         0,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE
 };
 
 /* Register memory view functions for the given class */

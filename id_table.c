@@ -349,7 +349,7 @@ const rb_data_type_t rb_managed_id_table_type = {
         .dfree = managed_id_table_free,
         .dsize = managed_id_table_memsize,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
 };
 
 static inline struct rb_id_table *
@@ -478,7 +478,7 @@ const rb_data_type_t rb_marked_id_table_type = {
         .dcompact = marked_id_table_compact,
     },
     .parent = &rb_managed_id_table_type,
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
 };
 
 VALUE

@@ -545,7 +545,7 @@ static const rb_data_type_t dir_data_type = {
         dir_free,
         NULL, // Nothing allocated externally, so don't need a memsize function
     },
-    0, NULL, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_DECL_MARKING | RUBY_TYPED_EMBEDDABLE
+    0, NULL, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_DECL_MARKING | RUBY_TYPED_EMBEDDABLE
 };
 
 static VALUE dir_close(VALUE);
