@@ -922,6 +922,10 @@ class TestISeq < Test::Unit::TestCase
     end
   end
 
+  def test_unreachable_find_pattern_in_else_branch
+    assert_in_out_err([], "if []; else; a => [*, 42, *]; end")
+  end
+
   def test_serialize_anonymous_outer_variables
     iseq = RubyVM::InstructionSequence.compile(<<~'RUBY')
       obj = Object.new
