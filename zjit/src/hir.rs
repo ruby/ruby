@@ -569,12 +569,39 @@ pub enum SideExitReason {
 }
 
 /// Controls how a side exit triggers recompilation.
+pub const RECOMPILE_PROFILE_SEND: i32 = 0;
+pub const RECOMPILE_PROFILE_SELF: i32 = 1;
+pub const RECOMPILE_PROFILE_BLOCK_HANDLER: i32 = 2;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Recompile {
     /// Profile receiver + arguments from the stack (for sends without profile data).
     ProfileSend { argc: i32 },
     /// Profile self from the CFP (for shape guard failures).
     ProfileSelf,
+    /// Profile the block handler from the CFP (for getblockparamproxy guard failures).
+    ProfileBlockHandler,
+}
+
+impl Recompile {
+    /// Convert to primitive arguments for passing across the C ABI.
+    pub fn to_c_args(self) -> (i32, i32) {
+        match self {
+            Recompile::ProfileSend { argc } => (RECOMPILE_PROFILE_SEND, argc),
+            Recompile::ProfileSelf => (RECOMPILE_PROFILE_SELF, 0),
+            Recompile::ProfileBlockHandler => (RECOMPILE_PROFILE_BLOCK_HANDLER, 0),
+        }
+    }
+
+    /// Reconstruct from primitive arguments received across the C ABI.
+    pub fn from_c_args(kind: i32, payload: i32) -> Self {
+        match kind {
+            RECOMPILE_PROFILE_SEND => Recompile::ProfileSend { argc: payload },
+            RECOMPILE_PROFILE_SELF => Recompile::ProfileSelf,
+            RECOMPILE_PROFILE_BLOCK_HANDLER => Recompile::ProfileBlockHandler,
+            _ => unreachable!("unknown recompile profile kind: {kind}"),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -1192,7 +1219,7 @@ pub enum Insn {
     /// Side-exit if val is not the expected Const.
     GuardBitEquals { val: InsnId, expected: Const, reason: SideExitReason, state: InsnId, recompile: Option<Recompile> },
     /// Side-exit if (val & mask) == 0
-    GuardAnyBitSet { val: InsnId, mask: Const, mask_name: Option<ID>, reason: SideExitReason, state: InsnId },
+    GuardAnyBitSet { val: InsnId, mask: Const, mask_name: Option<ID>, reason: SideExitReason, state: InsnId, recompile: Option<Recompile> },
     /// Side-exit if (val & mask) != 0
     GuardNoBitsSet { val: InsnId, mask: Const, mask_name: Option<ID>, reason: SideExitReason, state: InsnId },
     /// Side-exit if left is not greater than or equal to right (both operands are C long).
@@ -2197,8 +2224,15 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 return Ok(())
             },
-            Insn::GuardAnyBitSet { val, mask, mask_name: Some(name), .. } => { write!(f, "GuardAnyBitSet {val}, {name}={}", mask.print(self.ptr_map)) },
-            Insn::GuardAnyBitSet { val, mask, .. } => { write!(f, "GuardAnyBitSet {val}, {}", mask.print(self.ptr_map)) },
+            Insn::GuardAnyBitSet { val, mask, mask_name, recompile, .. } => {
+                let mask = mask.print(self.ptr_map);
+                let recompile = if recompile.is_some() { " recompile" } else { "" };
+                if let Some(name) = mask_name {
+                    write!(f, "GuardAnyBitSet {val}, {name}={mask}{recompile}")
+                } else {
+                    write!(f, "GuardAnyBitSet {val}, {mask}{recompile}")
+                }
+            },
             Insn::GuardNoBitsSet { val, mask, mask_name: Some(name), .. } => { write!(f, "GuardNoBitsSet {val}, {name}={}", mask.print(self.ptr_map)) },
             Insn::GuardNoBitsSet { val, mask, .. } => { write!(f, "GuardNoBitsSet {val}, {}", mask.print(self.ptr_map)) },
             Insn::GuardLess { left, right, .. } => write!(f, "GuardLess {left}, {right}"),
@@ -8286,7 +8320,7 @@ fn add_iseq_to_hir(
                             // So to check for either of those cases we can use: val & 0x1 == 0x1
 
                             // Bail out if the block handler is neither ISEQ nor ifunc
-                            fun.push_insn(unmodified_block, Insn::GuardAnyBitSet { val: block_handler, mask: Const::CUInt64(0x1), mask_name: None, reason: SideExitReason::BlockParamProxyFallbackMiss, state: exit_id });
+                            fun.push_insn(unmodified_block, Insn::GuardAnyBitSet { val: block_handler, mask: Const::CUInt64(0x1), mask_name: None, reason: SideExitReason::BlockParamProxyFallbackMiss, state: exit_id, recompile: Some(Recompile::ProfileBlockHandler) });
                             // TODO(Shopify/ruby#753): GC root, so we should be able to avoid unnecessary GC tracing
                             let proxy_val = fun.push_insn(unmodified_block, Insn::Const { val: Const::Value(unsafe { rb_block_param_proxy }) });
                             let mut args = vec![proxy_val];
@@ -8299,7 +8333,7 @@ fn add_iseq_to_hir(
                         [profiled_handler] => match profiled_handler {
                             ProfiledBlockHandlerFamily::Nil => {
                                 let block_handler = fun.load_ep_env_field(unmodified_block, ep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, VM_ENV_DATA_INDEX_SPECVAL, types::CInt64);
-                                fun.push_insn(unmodified_block, Insn::GuardBitEquals { val: block_handler, expected: Const::CInt64(VM_BLOCK_HANDLER_NONE.into()), reason: SideExitReason::BlockParamProxyNotNil, state: exit_id, recompile: None });
+                                fun.push_insn(unmodified_block, Insn::GuardBitEquals { val: block_handler, expected: Const::CInt64(VM_BLOCK_HANDLER_NONE.into()), reason: SideExitReason::BlockParamProxyNotNil, state: exit_id, recompile: Some(Recompile::ProfileBlockHandler) });
                                 let nil_val = fun.push_insn(unmodified_block, Insn::Const { val: Const::Value(Qnil) });
                                 let mut args = vec![nil_val];
                                 if let Some(local) = original_local {
@@ -8316,7 +8350,7 @@ fn add_iseq_to_hir(
                                 // So to check for either of those cases we can use: val & 0x1 == 0x1
 
                                 // Bail out if the block handler is neither ISEQ nor ifunc
-                                fun.push_insn(unmodified_block, Insn::GuardAnyBitSet { val: block_handler, mask: Const::CUInt64(0x1), mask_name: None, reason: SideExitReason::BlockParamProxyNotIseqOrIfunc, state: exit_id });
+                                fun.push_insn(unmodified_block, Insn::GuardAnyBitSet { val: block_handler, mask: Const::CUInt64(0x1), mask_name: None, reason: SideExitReason::BlockParamProxyNotIseqOrIfunc, state: exit_id, recompile: Some(Recompile::ProfileBlockHandler) });
                                 // TODO(Shopify/ruby#753): GC root, so we should be able to avoid unnecessary GC tracing
                                 let proxy_val = fun.push_insn(unmodified_block, Insn::Const { val: Const::Value(unsafe { rb_block_param_proxy }) });
                                 let mut args = vec![proxy_val];
@@ -8336,7 +8370,7 @@ fn add_iseq_to_hir(
                                     return_type: types::BasicObject,
                                     elidable: true,
                                 });
-                                fun.push_insn(unmodified_block, Insn::GuardBitEquals { val: is_proc, expected: Const::Value(Qtrue), reason: SideExitReason::BlockParamProxyNotProc, state: exit_id, recompile: None });
+                                fun.push_insn(unmodified_block, Insn::GuardBitEquals { val: is_proc, expected: Const::Value(Qtrue), reason: SideExitReason::BlockParamProxyNotProc, state: exit_id, recompile: Some(Recompile::ProfileBlockHandler) });
                                 let mut args = vec![proc_val];
                                 if let Some(local) = original_local {
                                     args.push(local);

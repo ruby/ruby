@@ -2504,7 +2504,7 @@ pub(crate) mod hir_build_tests {
           Jump bb6(v40, v40)
         bb5():
           v42:CInt64 = LoadField v36, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
-          v43:CInt64 = GuardAnyBitSet v42, CUInt64(1)
+          v43:CInt64 = GuardAnyBitSet v42, CUInt64(1) recompile
           v44:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           Jump bb6(v44, v21)
         bb6(v34:BasicObject, v35:BasicObject):
@@ -3460,7 +3460,7 @@ pub(crate) mod hir_build_tests {
           Jump bb6(v21, v21)
         bb5():
           v23:CInt64 = LoadField v17, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
-          v24:CInt64 = GuardAnyBitSet v23, CUInt64(1)
+          v24:CInt64 = GuardAnyBitSet v23, CUInt64(1) recompile
           v25:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           Jump bb6(v25, v10)
         bb6(v15:BasicObject, v16:BasicObject):
@@ -3505,7 +3505,7 @@ pub(crate) mod hir_build_tests {
         bb5():
           v24:BasicObject = LoadField v18, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
           v25:BasicObject = CCall v24, :rb_obj_is_proc@0x1008
-          v26:TrueClass = GuardBitEquals v25, Value(true)
+          v26:TrueClass = GuardBitEquals v25, Value(true) recompile
           Jump bb6(v24, v10)
         bb6(v16:BasicObject, v17:BasicObject):
           v29:BasicObject = Send v14, &block, :then, v16 # SendFallbackReason: Uncategorized(send)
@@ -3559,7 +3559,7 @@ pub(crate) mod hir_build_tests {
           Jump bb9(v36, v36)
         bb8():
           v38:CInt64 = LoadField v32, :VM_ENV_DATA_INDEX_SPECVAL@0x1003
-          v39:CInt64 = GuardAnyBitSet v38, CUInt64(1)
+          v39:CInt64 = GuardAnyBitSet v38, CUInt64(1) recompile
           v40:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           Jump bb9(v40, v17)
         bb9(v30:BasicObject, v31:BasicObject):
@@ -3612,7 +3612,7 @@ pub(crate) mod hir_build_tests {
           Jump bb9(v31)
         bb8():
           v33:CInt64 = LoadField v27, :VM_ENV_DATA_INDEX_SPECVAL@0x1002
-          v34:CInt64 = GuardAnyBitSet v33, CUInt64(1)
+          v34:CInt64 = GuardAnyBitSet v33, CUInt64(1) recompile
           v35:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           Jump bb9(v35)
         bb9(v26:BasicObject):
@@ -3885,7 +3885,7 @@ pub(crate) mod hir_build_tests {
           Jump bb6(v25, v25)
         bb5():
           v27:CInt64 = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
-          v28:CInt64 = GuardAnyBitSet v27, CUInt64(1)
+          v28:CInt64 = GuardAnyBitSet v27, CUInt64(1) recompile
           v29:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           Jump bb6(v29, v13)
         bb6(v19:BasicObject, v20:BasicObject):
@@ -3934,7 +3934,7 @@ pub(crate) mod hir_build_tests {
           Jump bb6(v40, v40)
         bb5():
           v42:CInt64 = LoadField v36, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
-          v43:CInt64[0] = GuardBitEquals v42, CInt64(0)
+          v43:CInt64[0] = GuardBitEquals v42, CInt64(0) recompile
           v44:NilClass = Const Value(nil)
           Jump bb6(v44, v21)
         bb6(v34:BasicObject, v35:BasicObject):
@@ -3979,7 +3979,7 @@ pub(crate) mod hir_build_tests {
         bb5():
           v27:BasicObject = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
           v28:BasicObject = CCall v27, :rb_obj_is_proc@0x1008
-          v29:TrueClass = GuardBitEquals v28, Value(true)
+          v29:TrueClass = GuardBitEquals v28, Value(true) recompile
           Jump bb6(v27, v13)
         bb6(v19:BasicObject, v20:BasicObject):
           v32:HashExact = GuardType v12, HashExact
@@ -4023,7 +4023,7 @@ pub(crate) mod hir_build_tests {
         bb5():
           v27:BasicObject = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
           v28:BasicObject = CCall v27, :rb_obj_is_proc@0x1008
-          v29:TrueClass = GuardBitEquals v28, Value(true)
+          v29:TrueClass = GuardBitEquals v28, Value(true) recompile
           Jump bb6(v27, v13)
         bb6(v19:BasicObject, v20:BasicObject):
           v32:HashExact = GuardType v12, HashExact
@@ -4076,7 +4076,7 @@ pub(crate) mod hir_build_tests {
           Jump bb6(v40, v40)
         bb5():
           v42:CInt64 = LoadField v36, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
-          v43:CInt64[0] = GuardBitEquals v42, CInt64(0)
+          v43:CInt64[0] = GuardBitEquals v42, CInt64(0) recompile
           v44:NilClass = Const Value(nil)
           Jump bb6(v44, v21)
         bb6(v34:BasicObject, v35:BasicObject):
@@ -4119,7 +4119,7 @@ pub(crate) mod hir_build_tests {
           Jump bb6(v25, v25)
         bb5():
           v27:CInt64 = LoadField v21, :VM_ENV_DATA_INDEX_SPECVAL@0x1004
-          v28:CInt64 = GuardAnyBitSet v27, CUInt64(1)
+          v28:CInt64 = GuardAnyBitSet v27, CUInt64(1) recompile
           v29:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           Jump bb6(v29, v13)
         bb6(v19:BasicObject, v20:BasicObject):
@@ -4819,7 +4819,7 @@ pub(crate) mod hir_build_tests {
           Jump bb7(v39, v39)
         bb6():
           v41:CInt64 = LoadField v35, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
-          v42:CInt64 = GuardAnyBitSet v41, CUInt64(1)
+          v42:CInt64 = GuardAnyBitSet v41, CUInt64(1) recompile
           v43:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
           Jump bb7(v43, v22)
         bb7(v33:BasicObject, v34:BasicObject):
