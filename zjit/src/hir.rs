@@ -3942,14 +3942,25 @@ impl Function {
                             }
 
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
+
+                            let id = unsafe { get_cme_def_body_attr_id(cme) };
                             if let Some(profiled_type) = profiled_type {
                                 let argc = unsafe { vm_ci_argc(ci) } as i32;
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile::ProfileSend{ argc }) });
-                            }
-                            let id = unsafe { get_cme_def_body_attr_id(cme) };
 
-                            let getivar = self.push_insn(block, Insn::GetIvar { self_val: recv, id, ic: std::ptr::null(), state });
-                            self.make_equal_to(insn_id, getivar);
+                                let replacement = self.try_emit_optimized_getivar(block, recv, id, profiled_type, state).unwrap_or_else(|counter| {
+                                    self.count(block, counter);
+                                    self.push_insn(block, Insn::GetIvar { self_val: recv, id, ic: std::ptr::null(), state })
+                                });
+                                self.make_equal_to(insn_id, replacement);
+                            } else {
+                                // No shape information, just static class information
+                                let resolution = self.resolve_receiver_type_from_profile(recv, state);
+                                let counter = Self::getivar_fallback_reason(resolution, std::ptr::null());
+                                self.count(block, counter);
+                                let getivar = self.push_insn(block, Insn::GetIvar { self_val: recv, id, ic: std::ptr::null(), state });
+                                self.make_equal_to(insn_id, getivar);
+                            }
                         } else if let (false, VM_METHOD_TYPE_ATTRSET, &[val]) = (has_block, def_type, args.as_slice()) {
                             // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
                             // We omit gen_prepare_non_leaf_call on gen_getivar, so it's unsafe to raise for multi-ractor mode.
@@ -4952,43 +4963,35 @@ impl Function {
         }
     }
 
+    fn try_emit_optimized_getivar(&mut self, block: BlockId, self_val: InsnId, id: ID, profiled_type: ProfiledType, state: InsnId) -> Result<InsnId, Counter> {
+        if profiled_type.flags().is_immediate() {
+            // Instance variable lookups on immediate values are always nil
+            return Err(Counter::getivar_fallback_immediate);
+        }
+        assert!(profiled_type.shape().is_valid());
+        if profiled_type.shape().is_complex() {
+            // too-complex shapes can't use index access
+            return Err(Counter::getivar_fallback_complex);
+        }
+        if self.policy.no_side_exits {
+            // On the final version, skip GetIvar shape specialization.
+            // iseq_to_hir already generates polymorphic branches with a
+            // GetIvar C call fallback for getinstancevariable, so we don't
+            // need to wrap it again here.
+            return Err(Counter::getivar_fallback_no_side_exits);
+        }
+        let self_val = self.guard_heap(block, self_val, state);
+        let shape = self.load_shape(block, self_val);
+        self.guard_shape(block, shape, profiled_type.shape(), state, Some(Recompile::ProfileSelf));
+        Ok(self.load_ivar(block, self_val, profiled_type, id))
+    }
+
     fn optimize_getivar(&mut self) {
         for block in self.reverse_post_order() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
                 match self.find(insn_id) {
-                    Insn::GetIvar { self_val, id, ic, state } => {
-                        let Some(recv_type) = self.profiled_type_of_at(self_val, state) else {
-                            let resolution = self.resolve_receiver_type_from_profile(self_val, state);
-                            let counter = Self::getivar_fallback_reason(resolution, ic);
-                            self.count(block, counter);
-                            self.push_insn_id(block, insn_id); continue;
-                        };
-                        if recv_type.flags().is_immediate() {
-                            // Instance variable lookups on immediate values are always nil
-                            self.count(block, Counter::getivar_fallback_immediate);
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        assert!(recv_type.shape().is_valid());
-                        if recv_type.shape().is_complex() {
-                            // too-complex shapes can't use index access
-                            self.count(block, Counter::getivar_fallback_complex);
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        if self.policy.no_side_exits {
-                            // On the final version, skip GetIvar shape specialization.
-                            // iseq_to_hir already generates polymorphic branches with a
-                            // GetIvar C call fallback for getinstancevariable, so we don't
-                            // need to wrap it again here.
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        let self_val = self.guard_heap(block, self_val, state);
-                        let shape = self.load_shape(block, self_val);
-                        self.guard_shape(block, shape, recv_type.shape(), state, Some(Recompile::ProfileSelf));
-                        let replacement = self.load_ivar(block, self_val, recv_type, id);
-                        self.make_equal_to(insn_id, replacement);
-                    }
                     Insn::SetIvar { self_val, id, val, state, ic } => {
                         let Some(recv_type) = self.profiled_type_of_at(self_val, state) else {
                             // No (monomorphic/skewed polymorphic) profile info
@@ -9093,9 +9096,19 @@ fn add_iseq_to_hir(
                         // make the right number of Params
                         block = join_block;
                     } else {
-                        // Possibly monomorphic case; handled in optimize_getivar
-                        let result = fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id });
-                        state.stack_push(result);
+                        if let Some(profiled_type) = fun.monomorphic_summary(&profiles, self_param, exit_id) {
+                            let result = fun.try_emit_optimized_getivar(block, self_param, id, profiled_type, exit_id).unwrap_or_else(|counter| {
+                                fun.count(block, counter);
+                                fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic: std::ptr::null(), state: exit_id })
+                            });
+                            state.stack_push(result);
+                        } else {
+                            let resolution = fun.resolve_receiver_type_from_profile(self_param, exit_id);
+                            let counter = Function::getivar_fallback_reason(resolution, ic);
+                            fun.count(block, counter);
+                            let result = fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id });
+                            state.stack_push(result);
+                        }
                     }
                 }
                 YARVINSN_setinstancevariable => {
