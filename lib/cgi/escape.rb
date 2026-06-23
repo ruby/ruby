@@ -140,29 +140,27 @@ module CGI::Escape
                 end
     string = string.b
     string.gsub!(/&(apos|amp|quot|gt|lt|\#[0-9]+|\#[xX][0-9A-Fa-f]+);/) do
-      match = $1.dup
+      match = $1
       case match
       when 'apos'                then "'"
       when 'amp'                 then '&'
       when 'quot'                then '"'
       when 'gt'                  then '>'
       when 'lt'                  then '<'
-      when /\A#0*(\d+)\z/
-        n = $1.to_i
-        if n < charlimit
-          n.chr(enc)
-        else
-          "&##{$1};"
-        end
-      when /\A#x([0-9a-f]+)\z/i
-        n = $1.hex
-        if n < charlimit
-          n.chr(enc)
-        else
-          "&#x#{$1};"
-        end
       else
-        "&#{match};"
+        # Numeric character reference. Decode into the binary buffer so that a
+        # non-ASCII byte already present in it never triggers an encoding
+        # compatibility error on concatenation; the trailing force_encoding
+        # re-tags the whole buffer. This mirrors the C extension's
+        # optimized_unescape_html.
+        n = match.start_with?('#x', '#X') ? match[2..-1].hex : match[1..-1].to_i
+        if n >= charlimit
+          "&#{match};"            # out of range: keep the reference verbatim
+        elsif charlimit > 256
+          [n].pack('U').b         # UTF-8: code point bytes, surrogates included (like rb_enc_mbcput)
+        else
+          n.chr.b                 # ISO-8859-1 / ASCII: single byte
+        end
       end
     end
     string.force_encoding enc
