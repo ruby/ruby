@@ -2038,21 +2038,8 @@ extern void *STACK_END_ADDRESS;
 #endif
 
 enum {
-    RUBY_STACK_SPACE_LIMIT = 1024 * 1024, /* 1024KB */
     RUBY_STACK_SPACE_RATIO = 5
 };
-
-static size_t
-space_size(size_t stack_size)
-{
-    size_t space_size = stack_size / RUBY_STACK_SPACE_RATIO;
-    if (space_size > RUBY_STACK_SPACE_LIMIT) {
-        return RUBY_STACK_SPACE_LIMIT;
-    }
-    else {
-        return space_size;
-    }
-}
 
 static void
 native_thread_init_main_thread_stack(void *addr)
@@ -2195,9 +2182,6 @@ native_thread_create0(struct rb_native_thread *nt)
     pthread_attr_t attr;
 
     const size_t stack_size = nt->vm->default_params.thread_machine_stack_size;
-    const size_t space = space_size(stack_size);
-
-    nt->machine_stack_maxsize = stack_size - space;
 
 #ifdef USE_SIGALTSTACK
     nt->altstack = rb_allocate_sigaltstack();
