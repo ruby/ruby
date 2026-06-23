@@ -4,6 +4,7 @@
 require_relative 'converter.rb'
 
 module RubyTimelineTool
+  # Keep in sync with `enum gc_enter_event` in `gc/default/default.c`.
   GCEnterEvent = EnumConverter.new({
     :start        => 0,
     :continue     => 1,
@@ -11,6 +12,7 @@ module RubyTimelineTool
     :finalizer    => 3,
   })
 
+  # Keep in sync with `enum ruby_value_type` in `include/ruby/internal/value_type.h`.
   RubyBuiltinType = EnumConverter.new({
     :RUBY_T_NONE     => 0x00, # /**< Non-object (swept etc.) */:
     :RUBY_T_OBJECT   => 0x01, # /**< @see struct ::RObject */
@@ -41,6 +43,7 @@ module RubyTimelineTool
     :RUBY_T_MOVED    => 0x1e, # /**< @see struct ::RMoved */
   })
 
+  # Keep in sync with `enum ruby_fl_type` in `include/ruby/internal/fl_type.h`.
   RubyFlType = FlagsConverter.new({
     :RUBY_FL_WB_PROTECTED   => (1 << 5),
     :RUBY_FL_UNUSED6        => (1 << 6),

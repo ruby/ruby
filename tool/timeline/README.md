@@ -159,5 +159,5 @@ paths of hot functions.
 However, when hooked by `bpftrace` (and therefore our capturing tool), it will introduce an overhead
 whenever a trace point is fired.  Different trace points are also fired at different frequencies.
 For example, `gc_enter` and `gc_exit` events are much less frequent than `obj_new` and `obj_free`.
-So you may want to group the trace points by freqneucy so that you can selectively enable the trace
-points you are interested in.
+So you may want to group the trace points by freqneucy in `lib/tracepoint_defs.rb` so that you can
+selectively enable the trace points you are interested in with the `-g` option of `capture.rb`.

@@ -6,6 +6,52 @@ require_relative 'converter_defs.rb'
 
 module RubyTimelineTool
   # All USDT trace points.
+  #
+  # It maps each group to an array of trace points.  The `default` group is always enabled, and
+  # other groups can be enabled using the `-g` command line option of `capture.rb`.
+  #
+  # `tp(...)` defines a trace point.  It has four compulsory arguments.
+  #
+  # 1.  The USDT probe name.  It is the `xxx` in `probe xxx()` in `probes.d`, and it is also the
+  #     `Name:` field of the output of `readelf -n`.  The `capture.rb` tool assumes the "provider
+  #     (the `Provider:` field of `readelf -n`) of the USDT is `ruby`, and we don't need to specify
+  #     it here.
+  # 2.  The place the probe is defined.  Possible values are:
+  #     -   `ruby`: It is part of the Ruby runtime, and will always be compiled into the `ruby`
+  #         executable.
+  #     -   `default`: It is part of the default GC (`default.c`).  It will be compiled into the
+  #         `ruby` executable and the default GC module if modular GC is enabled.
+  # 3.  The event name in the output timeline.
+  # 4.  The event type, as specified by the Trace Event Format.  Common types include
+  #     -   'B' and 'E': The beginning and the end of a duration event.
+  #     -   'i': An instant event.
+  #     -   'c': A counter event.
+  #
+  #     It can also have a special value 'meta' (not specified in the Trace Event Format) which
+  #     means it will not be added to the output JSON file, but will still be available for
+  #     `visualize.rb` for post-processing.
+  #
+  #     For more information about the Trace Event Format, see:
+  #     https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/edit?usp=sharing
+  #
+  # `tp(...)` also has an optional keyword argument `args`.  It is used by the `capture.rb` script
+  # to set up the arguments of the USDT probes, and used by `visualize.rb` to convert the argument
+  # values from string (read from the log) to JSON values.  It has the form:
+  #
+  # ```ruby
+  # args: {arg1: converter1, arg2: converter2, ...}
+  # ```
+  #
+  # The order of the key-value pairs must match the order of the arguments of the USDT trace points
+  # (as defined in `probes.d`).
+  #
+  # Each converter can be one of the following
+  #
+  # -   An instance of `Converter`.
+  # -   A symbol, such as `:to_i`, to be sent to the argument string.
+  # -   An object that responds to `call`.
+  #
+  # There are some converters defined in `converter_defs.rb`.
   USDT_DEFS = {
     'default' => [
       tp('gc__mark__begin',   "default",  'gc_mark',          'B'),

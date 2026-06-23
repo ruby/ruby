@@ -178,7 +178,7 @@ class LogProcessor
         result = @current[tid][key]
         if !result.nil?
           yield result
-        end        
+        end
       end
     end
   end
