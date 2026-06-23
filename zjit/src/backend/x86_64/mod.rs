@@ -1124,6 +1124,28 @@ impl Assembler {
         }
     }
 
+    /// Lightweight compile path for assemblers with no virtual registers.
+    /// Skips regalloc, liveness analysis, and SSA resolution.
+    pub fn compile_lightweight_impl(self, cb: &mut CodeBlock) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
+        let mut asm = self.x86_split();
+        assert_eq!(asm.basic_blocks.len(), 1, "lightweight compile expects a single block");
+        if !asm.accept_scratch_reg {
+            asm = asm.x86_scratch_split();
+        }
+
+        for (idx, name) in asm.label_names.iter().enumerate() {
+            let label = cb.new_label(name.to_string());
+            assert_eq!(label, Label(idx));
+        }
+
+        let start_ptr = cb.get_write_ptr();
+        let gc_offsets = asm.x86_emit(cb).inspect_err(|_| cb.clear_labels())?;
+        assert!(!cb.has_dropped_bytes(), "emit should not drop bytes without error");
+
+        cb.link_labels().or(Err(CompileError::LabelLinkingFailure))?;
+        Ok((start_ptr, gc_offsets))
+    }
+
     /// Optimize and compile the stored instructions
     pub fn compile_with_regs(self, cb: &mut CodeBlock, regs: Vec<Reg>) -> Result<(CodePtr, Vec<CodePtr>), CompileError> {
         // The backend is allowed to use scratch registers only if it has not accepted them so far.
