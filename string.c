@@ -6360,6 +6360,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     char *sp, *cp;
     int need_backref_str = -1;
     rb_encoding *str_enc;
+    int str_cr, copy_str_cr, use_cached_str_cr, matched_has_nonascii = 0;
 
     switch (argc) {
       case 1:
@@ -6401,6 +6402,11 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     slen = RSTRING_LEN(str);
     cp = sp;
     str_enc = STR_ENC_GET(str);
+    str_cr = RSTRING_LEN(str) ? ENC_CODERANGE(str) : ENC_CODERANGE_7BIT;
+    use_cached_str_cr = mode == STR &&
+        (str_cr == ENC_CODERANGE_7BIT || ENCODING_GET(str) == ENCODING_GET(repl) ||
+         RSTRING_LEN(repl) == 0 || rb_enc_str_coderange(repl) == ENC_CODERANGE_7BIT);
+    copy_str_cr = use_cached_str_cr ? str_cr : ENC_CODERANGE_UNKNOWN;
     rb_enc_associate(dest, str_enc);
     ENC_CODERANGE_SET(dest, rb_enc_asciicompat(str_enc) ? ENC_CODERANGE_7BIT : ENC_CODERANGE_VALID);
 
@@ -6452,7 +6458,12 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 
         len = beg0 - offset;	/* copy pre-match substr */
         if (len) {
-            rb_enc_str_buf_cat(dest, cp, len, str_enc);
+            rb_enc_cr_str_buf_cat(dest, cp, len, rb_enc_to_index(str_enc), copy_str_cr, NULL);
+        }
+
+        if (use_cached_str_cr && str_cr != ENC_CODERANGE_7BIT && !matched_has_nonascii && end0 > beg0 &&
+            search_nonascii(sp + beg0, sp + end0)) {
+            matched_has_nonascii = 1;
         }
 
         rb_str_buf_append(dest, val);
@@ -6466,7 +6477,7 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
              */
             if (RSTRING_LEN(str) <= end0) break;
             len = rb_enc_fast_mbclen(RSTRING_PTR(str)+end0, RSTRING_END(str), str_enc);
-            rb_enc_str_buf_cat(dest, RSTRING_PTR(str)+end0, len, str_enc);
+            rb_enc_cr_str_buf_cat(dest, RSTRING_PTR(str)+end0, len, rb_enc_to_index(str_enc), copy_str_cr, NULL);
             offset = end0 + len;
         }
         cp = RSTRING_PTR(str) + offset;
@@ -6482,7 +6493,11 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     } while (beg >= 0);
 
     if (RSTRING_LEN(str) > offset) {
-        rb_enc_str_buf_cat(dest, cp, RSTRING_LEN(str) - offset, str_enc);
+        rb_enc_cr_str_buf_cat(dest, cp, RSTRING_LEN(str) - offset, rb_enc_to_index(str_enc), copy_str_cr, NULL);
+    }
+    if (use_cached_str_cr && str_cr != ENC_CODERANGE_7BIT && str_cr != ENC_CODERANGE_UNKNOWN && matched_has_nonascii) {
+        ENC_CODERANGE_CLEAR(dest);
+        rb_enc_str_coderange(dest);
     }
     rb_pat_search0(pat, str, last, 1, &match);
     if (bang) {
@@ -13092,4 +13107,3 @@ Init_String(void)
 
     rb_define_method(rb_cSymbol, "encoding", sym_encoding, 0);
 }
-

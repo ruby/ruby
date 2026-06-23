@@ -1344,6 +1344,29 @@ CODE
     assert_equal S("\u{3042 3042 3042}!foo!"), S("\u{3042 3042 3042}/foo/").gsub("/", "!"), bug9849
   end
 
+  def test_gsub_preserves_coderange_cache
+    repl = "Русский".force_encoding(Encoding::ISO_8859_5)
+    expected = ("hll".b + repl.b + "llo".b).force_encoding(Encoding::ISO_8859_5)
+    apply = ->(s, method, *args, &block) { result = s.public_send(method, *args, &block); method == :gsub! ? s : result }
+
+    [:gsub, :gsub!].each do |method|
+      s = "ab".b
+      result = apply.call(s, method, /b/n) { s.setbyte(0, 0xe9); "" }
+      assert_equal([[0xe9], Encoding::ASCII_8BIT, true, false],
+                   [result.bytes, result.encoding, result.valid_encoding?, result.ascii_only?])
+
+      s = "éb"
+      result = apply.call(s, method, /b/) { s.setbyte(0, "a".ord); s.setbyte(1, "a".ord); "" }
+      assert_equal(["aa", true], [result, result.ascii_only?])
+
+      s = S("hllëllo")
+      assert_predicate(s, :valid_encoding?) # cache the receiver coderange
+      result = apply.call(s, method, /ë/, repl)
+      assert_equal([expected, Encoding::ISO_8859_5, true],
+                   [result, result.encoding, result.valid_encoding?])
+    end
+  end
+
   def test_gsub!
     a = S("hello")
     b = a.dup

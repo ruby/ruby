@@ -1,5 +1,6 @@
 prelude: |
   # frozen_string_literal: true
+  def cached(str); str.valid_encoding?; str.freeze; end
   STR = ((("a" * 31) + "<") * 1000).freeze
   STR_UNICODE = ((("a" * 30) + "\u2028") * 1000).freeze
   ESCAPED_CHARS_BINARY = {
@@ -21,6 +22,34 @@ prelude: |
   ESCAPE_PATTERN = Regexp.union(ESCAPED_CHARS.keys)
 
   NO_MATCH_SHARED_STRING = ("a" * 100_000).freeze
+
+  UTF8_FRAGMENT = cached("<section class=\"entry\"><h3>\u898b\u672c - Exemple - Beispiel</h3>" \
+                         "<p>\u30c6\u30ad\u30b9\u30c8: caf\u00e9, na\u00efve, gr\u00fc\u00dfe \u{2605}</p></section>\n")
+
+  def build_utf8_html(script_match)
+    body = +"<!doctype html><html><head><title>Example Page</title></head><body>\n"
+    body << UTF8_FRAGMENT while body.bytesize < 128 * 1024
+    body << "<script src=\"//assets.example.test/generated/example-loader.js\"></script>\n" if script_match
+    body << UTF8_FRAGMENT * 8
+    body << "</body></html>\n"
+    cached(body)
+  end
+
+  SPARSE_UTF8_HTML = build_utf8_html(true)
+  SPARSE_UTF8_NO_MATCH_HTML = build_utf8_html(false)
+  SCRIPT_TAG_PATTERN = %r{<script[^>]+?assets\.example\.test[^<]+?example-loader[^<]+?</script>}
+  MANY_ASCII_TAGS_IN_UTF8 = cached(((UTF8_FRAGMENT * 4) + "<span></span>\n") * 128)
+  MANY_ASCII_TAGS_PATTERN = /<\/?span>/
+  ZERO_WIDTH_UTF8 = cached(((UTF8_FRAGMENT * 2) + "plain ascii\n") * 128)
+  BACKREF_UTF8 = cached(((UTF8_FRAGMENT * 2) + "id=12345\n") * 128)
+  PATHOLOGICAL_ASCII_NEEDLE = "a" * 4096
+  PATHOLOGICAL_ASCII_MATCHES = cached((("\u00e9" + PATHOLOGICAL_ASCII_NEEDLE) * 1024) + "\u00e9")
+  binary_chunk = cached(("a" * 63).b + "\xff".b)
+  BINARY_NEEDLE = "NEEDLE".b.freeze
+  BINARY_SPARSE_STRING_MATCH = cached(binary_chunk * 2048 + BINARY_NEEDLE + binary_chunk * 64)
+  HASH_REPLACEMENTS = {"<span>" => "<b>", "</span>" => "</b>"}.freeze
+  REPL_ISO_8859_5 = "\u0420\u0443\u0441\u0441\u043a\u0438\u0439".encode("ISO-8859-5").freeze
+  ENCODING_SWITCH_SOURCE = cached("hll\u00ebllo" * 1000)
 
 benchmark:
   gsub_no_match_shared: |
@@ -52,3 +81,15 @@ benchmark:
     str = STR_UNICODE.b
     str.gsub!(BINARY_PATTERN, ESCAPED_CHARS_BINARY)
     str.force_encoding(Encoding::UTF_8)
+
+  sparse_utf8_script_delete: 'str = SPARSE_UTF8_HTML.dup; str.gsub!(SCRIPT_TAG_PATTERN, ""); str'
+  sparse_utf8_script_no_match: 'str = SPARSE_UTF8_NO_MATCH_HTML.dup; str.gsub!(SCRIPT_TAG_PATTERN, ""); str'
+  many_ascii_matches_in_utf8_delete: 'str = MANY_ASCII_TAGS_IN_UTF8.dup; str.gsub!(MANY_ASCII_TAGS_PATTERN, ""); str'
+  nonascii_matches_removed: 'str = STR_UNICODE.dup; str.gsub!(/\u2028/, ""); str'
+  zero_width_utf8_insert: 'str = ZERO_WIDTH_UTF8.dup; str.gsub!(/(?=<p>)/, "!"); str'
+  hash_replacement_utf8: 'str = MANY_ASCII_TAGS_IN_UTF8.dup; str.gsub!(MANY_ASCII_TAGS_PATTERN, HASH_REPLACEMENTS); str'
+  block_replacement_utf8: 'str = MANY_ASCII_TAGS_IN_UTF8.dup; str.gsub!(MANY_ASCII_TAGS_PATTERN) { "" }; str'
+  backref_replacement_utf8: 'str = BACKREF_UTF8.dup; str.gsub!(/(id=)(\d+)/, "\\1[\\2]"); str'
+  encoding_switch_replacement: 'str = ENCODING_SWITCH_SOURCE.dup; str.valid_encoding?; str.gsub!(/\u00eb/, REPL_ISO_8859_5); str'
+  binary_string_pattern_delete: 'str = BINARY_SPARSE_STRING_MATCH.dup; str.gsub!(BINARY_NEEDLE, "".b); str'
+  pathological_ascii_string_matches: 'str = PATHOLOGICAL_ASCII_MATCHES.dup; str.gsub!(PATHOLOGICAL_ASCII_NEEDLE, ""); str'
