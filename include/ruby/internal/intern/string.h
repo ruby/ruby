@@ -411,6 +411,53 @@ VALUE rb_utf8_str_new_static(const char *ptr, long len);
 /** @} */
 
 /**
+ * @name External parent (zero-copy) string constructors
+ * @{
+ */
+
+/**
+ * Identical to rb_str_new(), except it does not copy `ptr`.
+ *
+ * @param[in]  ptr           Pointer into memory managed by `parent`.
+ * @param[in]  len           Length  of  `ptr`,  in bytes,  not  including  the
+ *                           terminating NUL character.
+ * @param[in]  parent        Ruby object that owns the memory at `ptr`.
+ * @return     An instance of ::rb_cString, of "binary" encoding, whose backend
+ *             storage is the memory region of `parent`.
+ */
+VALUE rb_str_new_external(const char *ptr, long len, VALUE parent);
+
+/**
+ * Identical  to  rb_str_new_external(),   except  it  generates  a  string  of
+ * "US ASCII" encoding  instead of "binary".  It can also be seen as  a routine
+ * identical to rb_usascii_str_new(), except it does not copy `ptr`.
+ *
+ * @param[in]  ptr           Pointer into memory managed by `parent`.
+ * @param[in]  len           Length  of  `ptr`,  in bytes,  not  including  the
+ *                           terminating NUL character.
+ * @param[in]  parent        Ruby object that owns the memory at `ptr`.
+ * @return     An  instance  of ::rb_cString,  of  "US  ASCII" encoding,  whose
+ *             backend storage is the memory region of `parent`.
+ */
+VALUE rb_usascii_str_new_external(const char *ptr, long len, VALUE parent);
+
+/**
+ * Identical to rb_str_new_external(),  except it generates a string of "UTF-8"
+ * encoding instead of "binary".  It can also be seen as a routine identical to
+ * rb_utf8_str_new(), except it does not copy `ptr`.
+ *
+ * @param[in]  ptr           Pointer into memory managed by `parent`.
+ * @param[in]  len           Length  of  `ptr`,  in bytes,  not  including  the
+ *                           terminating NUL character.
+ * @param[in]  parent        Ruby object that owns the memory at `ptr`.
+ * @return     An instance of ::rb_cString,  of "UTF-8" encoding, whose backend
+ *             storage is the memory region of `parent`.
+ */
+VALUE rb_utf8_str_new_external(const char *ptr, long len, VALUE parent);
+
+/** @} */
+
+/**
  * Identical to rb_interned_str(),  except it takes a Ruby's  string instead of
  * C's and preserves its encoding.  It can also be seen  as a routine identical
  * to rb_str_new_shared(), except it returns an infamous "f"string.

@@ -3488,6 +3488,16 @@ rb_gc_mark_children(void *objspace, VALUE obj)
                 gc_mark_internal(RSTRING(obj)->as.heap.aux.shared);
             }
         }
+        else if (STR_EXTERNAL_PARENT_P(obj)) {
+            if (RB_TYPE_P(RSTRING(obj)->as.heap.aux.parent, T_STRING) && STR_EMBED_P(RSTRING(obj)->as.heap.aux.parent)) {
+                /* Embedded strings cannot be moved because this string points
+                 * into the embedded slot of the parent string. */
+                gc_mark_and_pin_internal(RSTRING(obj)->as.heap.aux.parent);
+            }
+            else {
+                gc_mark_internal(RSTRING(obj)->as.heap.aux.parent);
+            }
+        }
         break;
 
       case T_DATA: {
@@ -4427,6 +4437,9 @@ rb_gc_update_object_references(void *objspace, VALUE obj)
         {
             if (STR_SHARED_P(obj)) {
                 UPDATE_IF_MOVED(objspace, RSTRING(obj)->as.heap.aux.shared);
+            }
+            else if (STR_EXTERNAL_PARENT_P(obj)) {
+                UPDATE_IF_MOVED(objspace, RSTRING(obj)->as.heap.aux.parent);
             }
 
             /* If, after move the string is not embedded, and can fit in the

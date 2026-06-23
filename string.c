@@ -96,9 +96,12 @@ VALUE rb_cSymbol;
  * 3:     STR_CHILLED_SYMBOL_TO_S (will be frozen in a future version)
  *            The string was allocated by the `Symbol#to_s` method.
  *            It emits a deprecation warning when mutated for the first time.
- * 4:     STR_PRECOMPUTED_HASH
+ * 4:     STR_PRECOMPUTED_HASH (only used by an embedded string)
  *            The string is embedded and has its precomputed hashcode stored
  *            after the terminator.
+ * 4:     STR_EXTERNAL_PARENT (only used by a non-embedded string)
+ *            The string is not embedded and its data pointer references memory
+ *            managed by a non-string Ruby object such as IO::Buffer.
  * 5:     STR_SHARED_ROOT
  *            Other strings may point to the contents of this string. When this
  *            flag is set, STR_SHARED must not be set.
@@ -1213,6 +1216,54 @@ VALUE
 rb_enc_str_new_static(const char *ptr, long len, rb_encoding *enc)
 {
     return str_new_static(rb_cString, ptr, len, rb_enc_to_index(enc));
+}
+
+static VALUE
+str_new_external(VALUE klass, const char *ptr, long len, int encindex, VALUE parent)
+{
+    VALUE str;
+
+    if (len < 0) {
+        rb_raise(rb_eArgError, "negative string size (or size too big)");
+    }
+
+    if (!ptr) {
+        str = str_enc_new(klass, ptr, len, rb_enc_from_index(encindex));
+    }
+    else {
+        RUBY_DTRACE_CREATE_HOOK(STRING, len);
+        str = str_alloc_heap(klass);
+        RSTRING(str)->len = len;
+        RSTRING(str)->as.heap.ptr = (char *)ptr;
+        RSTRING(str)->as.heap.aux.parent = parent;
+        RBASIC(str)->flags |= STR_NOFREE | STR_EXTERNAL_PARENT;
+        rb_enc_associate_index(str, encindex);
+    }
+    return str;
+}
+
+VALUE
+rb_str_new_external(const char *ptr, long len, VALUE parent)
+{
+    return str_new_external(rb_cString, ptr, len, 0, parent);
+}
+
+VALUE
+rb_usascii_str_new_external(const char *ptr, long len, VALUE parent)
+{
+    return str_new_external(rb_cString, ptr, len, ENCINDEX_US_ASCII, parent);
+}
+
+VALUE
+rb_utf8_str_new_external(const char *ptr, long len, VALUE parent)
+{
+    return str_new_external(rb_cString, ptr, len, ENCINDEX_UTF_8, parent);
+}
+
+VALUE
+rb_enc_str_new_external(const char *ptr, long len, rb_encoding *enc, VALUE parent)
+{
+    return str_new_external(rb_cString, ptr, len, rb_enc_to_index(enc), parent);
 }
 
 static VALUE str_cat_conv_enc_opts(VALUE newstr, long ofs, const char *ptr, long len,
@@ -2726,7 +2777,7 @@ str_make_independent_expand(VALUE str, long len, long expand, const int termlen)
         SIZED_FREE_N(oldptr, STR_HEAP_SIZE(str));
     }
     STR_SET_NOEMBED(str);
-    FL_UNSET(str, STR_SHARED|STR_NOFREE);
+    FL_UNSET(str, STR_SHARED|STR_NOFREE|STR_EXTERNAL_PARENT);
     TERM_FILL(ptr + len, termlen);
     RSTRING(str)->as.heap.ptr = ptr;
     STR_SET_LEN(str, len);

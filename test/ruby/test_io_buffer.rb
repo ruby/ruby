@@ -2,6 +2,7 @@
 
 require 'tempfile'
 require 'rbconfig/sizeof'
+require 'weakref'
 
 class TestIOBuffer < Test::Unit::TestCase
   experimental = Warning[:experimental]
@@ -1136,5 +1137,189 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_raise(ArgumentError) do
       buffer.hexdump(0, 1, 0)
     end
+  end
+
+  def test_get_string_zero_copy_readonly
+    source = "Hello World"
+    buffer = IO::Buffer.for(source)
+    assert_predicate buffer, :readonly?
+
+    str = buffer.get_string
+    assert_equal source, str
+    assert_equal Encoding::BINARY, str.encoding
+
+    str2 = buffer.get_string(6, 5)
+    assert_equal "World", str2
+  end
+
+  def test_get_string_zero_copy_readonly_encoding
+    source = "Hello"
+    buffer = IO::Buffer.for(source)
+
+    str = buffer.get_string(0, source.bytesize, Encoding::UTF_8)
+    assert_equal source, str
+    assert_equal Encoding::UTF_8, str.encoding
+
+    str2 = buffer.get_string(0, source.bytesize, Encoding::US_ASCII)
+    assert_equal source, str2
+    assert_equal Encoding::US_ASCII, str2.encoding
+  end
+
+  def test_get_string_zero_copy_gc_safe
+    str = IO::Buffer.for(+"keep me alive").get_string
+
+    GC.compact if GC.respond_to?(:compact)
+    GC.start(full_mark: true, immediate_sweep: true)
+
+    assert_equal "keep me alive", str
+  end
+
+  def test_get_string_zero_copy_cow
+    source = "Hello"
+    buffer = IO::Buffer.for(source)
+
+    str = buffer.get_string
+    str2 = str.dup
+    str2.upcase!
+
+    assert_equal "Hello", str
+    assert_equal "HELLO", str2
+    assert_equal "Hello", buffer.get_string
+  end
+
+  def test_get_string_zero_copy_direct_mutation
+    source = "Hello"
+    buffer = IO::Buffer.for(source)
+
+    str = buffer.get_string
+    refute_predicate str, :frozen?
+    str.upcase!
+
+    assert_equal "HELLO", str
+    assert_equal "Hello", buffer.get_string
+  end
+
+  def test_get_string_writable_copies
+    buffer = IO::Buffer.new(5)
+    buffer.set_string("hello")
+    refute_predicate buffer, :readonly?
+
+    str = buffer.get_string
+    assert_equal "hello", str
+
+    buffer.set_string("world")
+    assert_equal "hello", str
+  end
+
+  def test_get_string_zero_copy_locked
+    # Use a frozen string so rb_str_tmp_frozen_acquire returns the same object,
+    # guaranteeing buffer->source == source.
+    source = "hello".dup.freeze
+    buffer = IO::Buffer.for(source)
+    assert_predicate buffer, :readonly?
+
+    str = nil
+    buffer.locked { str = buffer.get_string }
+    buffer.free
+
+    # After buffer.free clears buffer->source, str's parent must keep source alive.
+    source_ref = WeakRef.new(source)
+    source = nil
+
+    GC.compact if GC.respond_to?(:compact)
+    GC.start(full_mark: true, immediate_sweep: true)
+
+    assert source_ref.weakref_alive?, "source String must be kept alive by str"
+    assert_equal "hello", str.dup
+  end
+
+  def test_get_string_zero_copy_slice
+    # Use a frozen string so rb_str_tmp_frozen_acquire returns the same object,
+    # guaranteeing buffer->source == source.
+    source = "hello world".dup.freeze
+    slice = IO::Buffer.for(source).slice(6, 5)
+    assert_predicate slice, :readonly?
+
+    str = slice.get_string
+    assert_equal "world", str
+    slice.free
+
+    # After slice.free clears slice->source, str's parent must keep source alive.
+    source_ref = WeakRef.new(source)
+    source = nil
+
+    GC.compact if GC.respond_to?(:compact)
+    GC.start(full_mark: true, immediate_sweep: true)
+
+    assert source_ref.weakref_alive?, "source String must be kept alive by str via slice"
+    assert_equal "world", str.dup
+  end
+
+  def test_get_string_zero_copy_compaction
+    omit "compaction is not supported on this platform" unless GC.respond_to?(:compact)
+
+    str = IO::Buffer.for(+"compact me").get_string
+
+    GC.verify_compaction_references(expand_heap: true, toward: :empty)
+    GC.start(full_mark: true, immediate_sweep: true)
+
+    assert_equal "compact me", str
+  end
+
+  def freed(id)
+    @freed = true
+  end
+
+  def test_get_string_zero_copy_mapped
+    buffer = File.open(__FILE__) {|file| IO::Buffer.map(file, 100, 0, IO::Buffer::READONLY)}
+    str = buffer.get_string(0, 30)
+    assert_equal "# frozen_string_literal: false", str
+
+    # Zero-copy string keeps the IO::Buffer alive via STR_EXTERNAL_PARENT.
+    @freed = false
+    ObjectSpace.define_finalizer(buffer, &method(:freed))
+    buffer = nil
+
+    GC.compact if GC.respond_to?(:compact)
+    GC.start(full_mark: true, immediate_sweep: true)
+
+    assert !@freed, "IO::Buffer (MAPPED) must be kept alive by the zero-copy string"
+    assert_equal "# frozen_string_literal: false", str.dup
+  end
+
+  def test_get_string_zero_copy_deferred_free
+    source = "hello world".dup.freeze
+    buffer = IO::Buffer.for(source)
+    str = buffer.get_string
+    assert_equal "hello world", str
+
+    buffer.free
+    assert_predicate buffer, :null?
+
+    assert_equal "hello world", str
+  end
+
+  def test_get_string_zero_copy_deferred_free_gc
+    source = "hello world".dup.freeze
+    @freed = false
+    buffer = IO::Buffer.for(source)
+    ObjectSpace.define_finalizer(buffer, &method(:freed))
+    str = buffer.get_string
+    buffer.free
+
+    buffer = nil
+
+    GC.compact if GC.respond_to?(:compact)
+    GC.start(full_mark: true, immediate_sweep: true)
+
+    assert !@freed, "IO::Buffer must be kept alive after free while zero-copy string is alive"
+    assert_equal "hello world", str.dup
+
+    str = nil
+
+    GC.compact if GC.respond_to?(:compact)
+    GC.start(full_mark: true, immediate_sweep: true)
+
+    assert @freed, "IO::Buffer must be collected (deferred free executed) after zero-copy string is released"
   end
 end

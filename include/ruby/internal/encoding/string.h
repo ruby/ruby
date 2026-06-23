@@ -87,6 +87,21 @@ VALUE rb_enc_str_new_cstr(const char *ptr, rb_encoding *enc);
 VALUE rb_enc_str_new_static(const char *ptr, long len, rb_encoding *enc);
 
 /**
+ * Identical to  rb_enc_str_new(),  except  it  does not  copy `ptr`.  Instead,
+ * `parent`  is kept alive  by  the GC for  as long as  the returned string  is
+ * reachable.
+ *
+ * @param[in]  ptr           Pointer into memory managed by `parent`.
+ * @param[in]  len           Length  of  `ptr`,  in bytes,  not  including  the
+ *                           terminating NUL character.
+ * @param[in]  enc           Encoding of `ptr`.
+ * @param[in]  parent        Ruby object that owns the memory at `ptr`.
+ * @return     An instance  of ::rb_cString,  of `enc` encoding,  whose backend
+ *             storage is the memory region of `parent`.
+ */
+VALUE rb_enc_str_new_external(const char *ptr, long len, rb_encoding *enc, VALUE parent);
+
+/**
  * Identical to rb_enc_str_new(),  except it returns a "f"string.   It can also
  * be seen as a routine  identical to rb_interned_str(), except it additionally
  * takes an encoding.

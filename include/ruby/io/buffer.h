@@ -61,6 +61,12 @@ enum rb_io_buffer_flags {
 
     // The buffer is backed by a file.
     RB_IO_BUFFER_FILE = 256,
+
+    // get_string has issued at least one zero-copy string from this buffer.
+    RB_IO_BUFFER_HAS_ZERO_COPY_STRINGS = 512,
+
+    // The user has called buffer.free but the OS-level release has been deferred.
+    RB_IO_BUFFER_FREED = 1024,
 };
 
 // Represents the endian of the data types.
