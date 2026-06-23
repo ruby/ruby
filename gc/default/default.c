@@ -33,7 +33,43 @@
 #include "darray.h"
 #include "gc/gc.h"
 #include "gc/gc_impl.h"
-#include "hrtime.h"
+
+#ifdef BUILDING_MODULAR_GC
+/* hrtime.h transitively includes internal/time.h -> internal/bits.h, which are
+ * not available to out-of-tree modular GC builds.  We only use a monotonic
+ * clock plus saturating add/sub, so provide that subset locally with the same
+ * semantics as hrtime.h. */
+# include <time.h>
+typedef uint64_t rb_hrtime_t;
+# define RB_HRTIME_PER_SEC ((rb_hrtime_t)1000000000)
+
+static inline rb_hrtime_t
+rb_hrtime_now(void)
+{
+# if defined(HAVE_CLOCK_GETTIME) && defined(CLOCK_MONOTONIC)
+    struct timespec ts;
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
+        return (rb_hrtime_t)ts.tv_sec * RB_HRTIME_PER_SEC + (rb_hrtime_t)ts.tv_nsec;
+    }
+# endif
+    return 0;
+}
+
+static inline rb_hrtime_t
+rb_hrtime_add(rb_hrtime_t a, rb_hrtime_t b)
+{
+    rb_hrtime_t c = a + b;
+    return c < a ? UINT64_MAX : c; /* saturate on overflow */
+}
+
+static inline rb_hrtime_t
+rb_hrtime_sub(rb_hrtime_t a, rb_hrtime_t b)
+{
+    return a < b ? 0 : a - b;
+}
+#else
+# include "hrtime.h"
+#endif
 
 #include "probes.h"
 
