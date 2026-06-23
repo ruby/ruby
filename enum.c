@@ -4955,6 +4955,50 @@ enum_compact(VALUE obj)
 
 
 /*
+ * \Module \Enumerable provides dozens of methods that help in processing collections;
+ * see {What's Here}[rdoc-ref:Enumerable@Whats+Here].
+ *
+ * A class or module that has <tt>include Enumerable</tt>
+ * adopts all of those methods as its own.
+ *
+ * Nearly a hundred classes and modules in the Ruby core and Standard Library do so,
+ * including these much-used classes:
+ *
+ * - ARGF
+ * - Array
+ * - Dir
+ * - Enumerator
+ * - ENV (extends)
+ * - File
+ * - Hash
+ * - IO
+ * - Range
+ * - Set
+ * - StringIO
+ * - Struct
+ *
+ * You can get a list all such modules and classes via this method:
+ *
+ *   ObjectSpace.each_object(Module).select do |m|
+ *     m.ancestors.include?(Enumerable)
+ *   end
+ *
+ * These Ruby standard library classes include \Enumerable:
+ *
+ * - {CSV}[https://ruby-doc.org/3.4.1/gems/csv/CSV.html]
+ * - {CSV::Table}[https://ruby-doc.org/3.4.1/gems/csv/CSV/Table.html]
+ * - {CSV::Row}[https://ruby-doc.org/3.4.1/gems/csv/CSV/Row.html]
+ *
+ * You can test whether a particular module or class includes module \Enumerable;
+ * for example:
+ *
+ *   Array.ancestors.include?(Enumerable)      # => true
+ *   Integer.ancestors.include?(Enumerable)    # => false
+ *   require 'csv'
+ *   CSV.ancestors.include?(Enumerable)        # => true
+ *   CSV::Table.ancestors.include?(Enumerable) # => true
+ *   CSV::Row.ancestors.include?(Enumerable)   # => true
+ *
  * == What's Here
  *
  * Module \Enumerable provides methods that are useful to a collection class for:
@@ -5088,33 +5132,6 @@ enum_compact(VALUE obj)
  *   1
  *   [1, 2]
  *   nil
- *
- * == \Enumerable in Ruby Classes
- *
- * These Ruby core classes include (or extend) \Enumerable:
- *
- * - ARGF
- * - Array
- * - Dir
- * - Enumerator
- * - ENV (extends)
- * - Hash
- * - IO
- * - Range
- * - Struct
- *
- * These Ruby standard library classes include \Enumerable:
- *
- * - CSV
- * - CSV::Table
- * - CSV::Row
- * - Set
- *
- * Virtually all methods in \Enumerable call method +#each+ in the including class:
- *
- * - <tt>Hash#each</tt> yields the next key-value pair as a 2-element Array.
- * - <tt>Struct#each</tt> yields the next name-value pair as a 2-element Array.
- * - For the other classes above, +#each+ yields the next object from the collection.
  *
  * == About the Examples
  *
