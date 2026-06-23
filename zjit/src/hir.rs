@@ -4810,6 +4810,27 @@ impl Function {
                 let pre_insn_types_len = self.insn_types.len();
                 let pre_blocks_len = self.blocks.len();
 
+                // Pick the callee body entry matching how many optional parameters
+                // the caller actually filled. Entry index `k` is where execution
+                // begins when `lead_num + k + post_num + kw_num` arguments are
+                // passed: it runs the default-init code for the remaining
+                // `opt_num - k` optionals (if any) before falling through into the
+                // post-default body. SendDirect emission already guarantees
+                // args.len() lies in `lead_num + post_num + kw_num..=lead_num +
+                // opt_num + post_num + kw_num`, with `kw_num` being the callee's
+                // full keyword count (zero when the callee has no keywords). After
+                // `prepare_direct_send_args` runs, the caller's arg list has a slot
+                // for every callee keyword (filled in callee table order, padded
+                // with defaults for omitted optional keywords), so the keyword tail
+                // is a fixed-size addition we subtract off before recovering the
+                // optional-positional count.
+                let callee_params = unsafe { iseq.params() };
+                let lead_num = callee_params.lead_num as usize;
+                let opt_num = callee_params.opt_num as usize;
+                let post_num = callee_params.post_num as usize;
+                let kw_num = callee_kw_num(iseq);
+                let passed_opt_num = args.len() - lead_num - post_num - kw_num;
+
                 // Create the continuation block before translating the callee so it
                 // can serve as the return_block argument; the callee's leaves become
                 // Jumps to this block directly during translation. The continuation
@@ -4825,7 +4846,12 @@ impl Function {
                 // callee sits one level deeper (caller_depth + 1).
                 let caller_depth = self.frame_depth(state);
 
-                let mode = AddIseqMode::Inlined { return_block: continuation, caller: state, depth: caller_depth + 1 };
+                let mode = AddIseqMode::Inlined {
+                    return_block: continuation,
+                    caller: state,
+                    depth: caller_depth + 1,
+                    jit_entry_idx: passed_opt_num,
+                };
                 let add_result = match add_iseq_to_hir(self, iseq, mode) {
                     Ok(r) => r,
                     Err(_) => {
@@ -4854,31 +4880,11 @@ impl Function {
                 let tail = self.blocks[block.0].insns.split_off(send_pos);
                 debug_assert!(matches!(self.find(tail[0]), Insn::SendDirect { .. }));
 
-                // Pick the callee body entry block matching how many optional
-                // parameters the caller actually filled. add_iseq_to_hir returns one
-                // body entry block per `jit_entry_idx`; entry index `k` is where
-                // execution begins when `lead_num + k + post_num + kw_num` arguments
-                // are passed: it runs the default-init code for the remaining
-                // `opt_num - k` optionals (if any) before falling through into the
-                // post-default body. SendDirect emission already guarantees
-                // args.len() lies in `lead_num + post_num + kw_num..=lead_num +
-                // opt_num + post_num + kw_num`, with `kw_num` being the callee's
-                // full keyword count (zero when the callee has no keywords). After
-                // `prepare_direct_send_args` runs, the caller's arg list has a slot
-                // for every callee keyword (filled in callee table order, padded
-                // with defaults for omitted optional keywords), so the keyword tail
-                // is a fixed-size addition we subtract off before recovering the
-                // optional-positional count.
-                let callee_params = unsafe { iseq.params() };
-                let lead_num = callee_params.lead_num as usize;
-                let opt_num = callee_params.opt_num as usize;
-                let post_num = callee_params.post_num as usize;
-                let kw_num = callee_kw_num(iseq);
-                let passed_opt_num = args.len() - lead_num - post_num - kw_num;
                 let omitted_opt_num = opt_num - passed_opt_num;
                 let positional_kw_end = lead_num + opt_num + post_num + kw_num;
                 let kw_bits_local_idx = callee_kw_bits_local_idx(iseq);
-                let callee_entry_body_block = add_result.body_entry_blocks[passed_opt_num];
+                let callee_entry_body_block = add_result.body_entry_block
+                    .expect("inlined compilation always produces a body entry block");
 
                 // Map callee body entry params to caller values:
                 //
@@ -4891,9 +4897,7 @@ impl Function {
                 //   * lead locals (indices 0..lead_num) and filled optional locals
                 //     (lead_num..lead_num + passed_opt_num) take args in order.
                 //   * unfilled optional locals (lead_num + passed_opt_num..lead_num + opt_num)
-                //     are nil-initialized; the body's default-init code (entered via
-                //     the chosen body_entry_blocks[passed_opt_num] target) overwrites
-                //     them.
+                //     are nil-initialized; the body's default-init code overwrites them.
                 //   * post-required and keyword locals
                 //     (lead_num + opt_num..lead_num + opt_num + post_num + kw_num) take the
                 //     trailing args, but their position in the local table leaves a gap
@@ -7222,17 +7226,21 @@ enum AddIseqMode {
         caller: InsnId,
         /// Inlining depth of every frame emitted for the callee.
         depth: InlineDepth,
+        /// The JIT entry index selected by the call site's argument count.
+        jit_entry_idx: usize,
     },
 }
 
 /// Result of populating a Function with HIR for an ISEQ.
 struct AddIseqResult {
-    /// Body entry block per `jit_entry_idx`. Indexed by the same `passed_opt_num`
-    /// the JIT entry scaffolding uses, this is the body block the scaffolding
-    /// (when generated) targets after running default-init code for missing
-    /// optionals. Callers that pass `make_entry_blocks=false` (e.g. the inliner)
-    /// use this to pick the right entry point without needing the scaffolding.
-    body_entry_blocks: Vec<BlockId>,
+    /// The callee body entry block where the inlined callee body begins
+    /// executing, populated only in inlined mode.
+    ///
+    /// `add_iseq_to_hir` slices the opt table to begin at the entry the call
+    /// site's argument count selects. This is that entry's block.
+    /// The value is `None` in standalone mode, as standalone has no single body entry
+    /// block and wires its JIT entry blocks through `fun.jit_entry_blocks` instead.
+    body_entry_block: Option<BlockId>,
     /// Profile oracle populated during compilation. The caller decides whether
     /// to assign it to `fun.profiles` (top-level) or append it to an existing
     /// oracle (inliner).
@@ -7296,8 +7304,23 @@ fn add_iseq_to_hir(
         }
     }
 
-    // Compute a map of PC->Block by finding jump targets
-    let jit_entry_insns = unsafe { iseq.params() }.opt_table_slice().iter().copied().map(VALUE::as_u32).collect::<Vec<_>>();
+    // Compute a map of PC->Block by finding jump targets.
+    //
+    // Standalone compilation translates every opt-table entry because each is a
+    // reachable JIT-to-JIT entrypoint. The inliner, by contrast, enters at a
+    // single entry fixed by the call site's argument count. So, the entries before
+    // it would run default-init code for optionals the caller already supplied.
+    // Those entries are known to be unreachable so slicing them off here avoids
+    // translating prologue blocks that would only be discarded later, rather
+    // than emitting them and relying on a downstream pass to prune the dead CFG.
+    let jit_entry_start = match mode {
+        AddIseqMode::Standalone => 0,
+        AddIseqMode::Inlined { jit_entry_idx, .. } => jit_entry_idx,
+    };
+    let jit_entry_insns = unsafe { iseq.params() }.opt_table_slice()
+        .get(jit_entry_start..)
+        .expect("JIT entry index must be within the callee opt table")
+        .iter().copied().map(VALUE::as_u32).collect::<Vec<_>>();
     let BytecodeInfo { jump_targets } = compute_bytecode_info(iseq, &jit_entry_insns);
 
     let compile_jit_entries = matches!(mode, AddIseqMode::Standalone) && iseq_supports_jit_entry(iseq);
@@ -7305,15 +7328,18 @@ fn add_iseq_to_hir(
     // Make all empty basic blocks. The ordering of the BBs matters for getting fallthrough jumps
     // in good places, but it's not necessary for correctness. TODO: Higher quality scheduling during lowering.
     let mut insn_idx_to_block = HashMap::new();
-    let mut body_entry_blocks = Vec::with_capacity(jit_entry_insns.len());
-    // Make blocks for optionals first, and put them right next to their JIT entrypoint
+    // Materialize a block at each opt-table entry PC, placing each right after
+    // its JIT-to-JIT entry block so fallthrough jumps land in good places.
+    // Standalone mode emits a real JIT entry block per entry. Inlined mode emits
+    // none here; only `body_entry_block` (the first sliced entry) is the inlined
+    // body's entry, and the rest are default-init body blocks reached by
+    // fallthrough.
     for insn_idx in jit_entry_insns.iter().copied() {
         if compile_jit_entries {
             let jit_entry_block = fun.new_block(insn_idx);
             fun.jit_entry_blocks.push(jit_entry_block);
         }
-        let body_entry = *insn_idx_to_block.entry(insn_idx).or_insert_with(|| fun.new_block(insn_idx));
-        body_entry_blocks.push(body_entry);
+        insn_idx_to_block.entry(insn_idx).or_insert_with(|| fun.new_block(insn_idx));
     }
     // Make blocks for the rest of the jump targets
     for insn_idx in jump_targets {
@@ -7321,6 +7347,17 @@ fn add_iseq_to_hir(
     }
     // Done, drop `mut`.
     let insn_idx_to_block = insn_idx_to_block;
+
+    // The callee body entry block where the inlined callee body begins
+    // executing. `jit_entry_insns` starts at the entry the call site selected
+    // (since `opt_table_slice` was sliced above), so its first element is that entry.
+    // Any later entries are the default-init blocks for the remaining unfilled
+    // optionals, reached from this one by fallthrough rather than targeted directly.
+    // Standalone compilation has no single body entry block, so it produces none.
+    let body_entry_block = match mode {
+        AddIseqMode::Standalone => None,
+        AddIseqMode::Inlined { .. } => Some(insn_idx_to_block[&jit_entry_insns[0]]),
+    };
 
     if matches!(mode, AddIseqMode::Standalone) {
         // Compile an entry_block for the interpreter
@@ -9156,7 +9193,7 @@ fn add_iseq_to_hir(
         }
     }
 
-    Ok(AddIseqResult { body_entry_blocks, profiles })
+    Ok(AddIseqResult { body_entry_block, profiles })
 }
 
 /// Compile an entry_block for the interpreter
