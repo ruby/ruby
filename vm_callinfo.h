@@ -61,6 +61,20 @@ rb_callinfo_kwarg_bytes(int keyword_len)
         rb_eRuntimeError);
 }
 
+static inline void
+rb_callinfo_kwarg_retain(struct rb_callinfo_kwarg *kwarg)
+{
+    if (kwarg) RUBY_ATOMIC_INC(kwarg->references);
+}
+
+static inline void
+rb_callinfo_kwarg_release(struct rb_callinfo_kwarg *kwarg)
+{
+    if (kwarg && RUBY_ATOMIC_FETCH_SUB(kwarg->references, 1) == 1) {
+        ruby_sized_xfree(kwarg, rb_callinfo_kwarg_bytes(kwarg->keyword_len));
+    }
+}
+
 // imemo_callinfo
 struct rb_callinfo {
     VALUE flags;
