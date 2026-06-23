@@ -235,9 +235,16 @@ module EnvUtil
 
     args = [args] if args.kind_of?(String)
     # use the same parser as current ruby
+    rubybin_help = nil
     if (args.none? { |arg| arg.start_with?("--parser=") } and
-        /^ +--parser=/ =~ IO.popen([rubybin, "--help"], &:read))
+        /^ +--parser=/ =~ (rubybin_help ||= IO.popen([rubybin, "--help"], &:read)))
       args = ["--parser=#{current_parser}"] + args
+    end
+    # enable parallel sweep if current ruby has it enabled
+    if (current_parallel_sweep? and
+        args.none? { |arg| arg =~ /--disable[-=]parallel[-_]sweep/ } and
+        /^ +parallel-sweep/i =~ (rubybin_help ||= IO.popen([rubybin, "--help"], &:read)))
+      args = ["--enable-parallel-sweep"] + args
     end
     pid = spawn(child_env, *precommand, rubybin, *args, opt)
     in_c.close
@@ -286,11 +293,19 @@ module EnvUtil
   end
   module_function :invoke_ruby
 
+  RUBY_DESC_FEATURES_PAT = %r{\)\K [-+*/%._0-9a-zA-Z\[\] ]*(?=\[[-+*/%._0-9a-zA-Z]+\]\z)}
+
   def current_parser
-    features = RUBY_DESCRIPTION[%r{\)\K [-+*/%._0-9a-zA-Z\[\] ]*(?=\[[-+*/%._0-9a-zA-Z]+\]\z)}]
+    features = RUBY_DESCRIPTION[RUBY_DESC_FEATURES_PAT]
     features&.split&.include?("+PRISM") ? "prism" : "parse.y"
   end
   module_function :current_parser
+
+  def current_parallel_sweep?
+    features = RUBY_DESCRIPTION[RUBY_DESC_FEATURES_PAT]
+    features&.split&.include?("+Parallel-Sweep")
+  end
+  module_function :current_parallel_sweep?
 
   def verbose_warning
     class << (stderr = "".dup)

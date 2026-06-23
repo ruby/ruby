@@ -872,6 +872,15 @@ rbimpl_atomic_size_exchange(volatile size_t *ptr, size_t val, int memory_order)
 RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
+static inline size_t
+rbimpl_atomic_size_load(volatile size_t *ptr, int memory_order)
+{
+    return rbimpl_atomic_size_fetch_add(ptr, 0, memory_order);
+}
+
+RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_NOALIAS()
+RBIMPL_ATTR_NONNULL((1))
 static inline void
 rbimpl_atomic_size_store(volatile size_t *ptr, size_t val, int memory_order)
 {

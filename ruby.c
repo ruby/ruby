@@ -47,6 +47,7 @@
 #include "internal/cont.h"
 #include "internal/error.h"
 #include "internal/file.h"
+#include "internal/gc.h"
 #include "internal/inits.h"
 #include "internal/io.h"
 #include "internal/load.h"
@@ -108,6 +109,8 @@ void rb_warning_category_update(unsigned int mask, unsigned int bits);
     X(yjit) \
     SEP \
     X(zjit) \
+    SEP \
+    X(parallel_sweep) \
     /* END OF FEATURES */
 #define EACH_DEBUG_FEATURES(X, SEP) \
     X(frozen_string_literal) \
@@ -201,6 +204,7 @@ enum {
         & ~FEATURE_BIT(frozen_string_literal)
         & ~FEATURE_BIT(frozen_string_literal_set)
         & ~feature_jit_mask
+        & ~FEATURE_BIT(parallel_sweep)
         )
 };
 
@@ -395,6 +399,7 @@ usage(const char *name, int help, int highlight, int columns)
 #if USE_ZJIT
         M("zjit",                  "", "Method-based JIT compiler (default: disabled)."),
 #endif
+        M("parallel-sweep",        "", "Adds worker thread that performs GC (default: disabled)."),
     };
     static const struct ruby_opt_message warn_categories[] = {
         M("deprecated",   "", "Deprecated features."),
@@ -2444,6 +2449,15 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 #endif
 
     ruby_mn_threads_params();
+
+    extern int ruby_parallel_sweep_enabled;
+#if USE_PARALLEL_SWEEP
+    if (FEATURE_SET_P(opt->features, parallel_sweep)) {
+        ruby_parallel_sweep_enabled = 1;
+        rb_gc_parallel_sweep_start();
+    }
+#endif
+
     Init_ruby_description(opt);
 
     if (opt->dump & (DUMP_BIT(version) | DUMP_BIT(version_v))) {

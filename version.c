@@ -189,6 +189,7 @@ Init_version(void)
 #endif
 
 int ruby_mn_threads_enabled;
+int ruby_parallel_sweep_enabled;
 
 #ifndef RB_DEFAULT_PARSER
 #define RB_DEFAULT_PARSER RB_DEFAULT_PARSER_PRISM
@@ -217,6 +218,7 @@ define_ruby_description(const char *const jit_opt)
         + rb_strlen_lit(JIT_DESCRIPTION)
         + rb_strlen_lit(" +MN")
         + rb_strlen_lit(" +PRISM")
+        + rb_strlen_lit(" +Parallel-Sweep")
 #if USE_MODULAR_GC
         + rb_strlen_lit(GC_DESCRIPTION)
         // Assume the active GC name can not be longer than 20 chars
@@ -234,6 +236,7 @@ define_ruby_description(const char *const jit_opt)
     RUBY_ASSERT(n <= ruby_description_opt_point + (int)rb_strlen_lit(JIT_DESCRIPTION));
     if (ruby_mn_threads_enabled) append(" +MN");
     if (rb_ruby_prism_p()) append(" +PRISM");
+    if (ruby_parallel_sweep_enabled) append(" +Parallel-Sweep");
 #if USE_MODULAR_GC
     append(GC_DESCRIPTION);
     if (rb_gc_modular_gc_loaded_p()) {

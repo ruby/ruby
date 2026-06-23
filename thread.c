@@ -446,18 +446,26 @@ rb_threadptr_join_list_wakeup(rb_thread_t *thread)
     }
 }
 
+static void mutexes_lock_lock(void);
+static void mutexes_lock_unlock(void);
+
 void
 rb_threadptr_unlock_all_locking_mutexes(rb_thread_t *th)
 {
+    mutexes_lock_lock();
     while (th->keeping_mutexes) {
         rb_mutex_t *mutex = th->keeping_mutexes;
-        th->keeping_mutexes = mutex->next_mutex;
-
+        rb_mutex_t *next = mutex->next_mutex;
+        th->keeping_mutexes = next;
+        mutex->next_mutex = NULL;
+        mutexes_lock_unlock();
         // rb_warn("mutex #<%p> was not unlocked by thread #<%p>", (void *)mutex, (void*)th);
         VM_ASSERT(mutex->ec_serial);
-        const char *error_message = rb_mutex_unlock_th(mutex, th, 0);
+        const char *error_message = rb_mutex_unlock_th(mutex, th, 0, false);
         if (error_message) rb_bug("invalid keeping_mutexes: %s", error_message);
+        mutexes_lock_lock();
     }
+    mutexes_lock_unlock();
 }
 
 void
@@ -5010,6 +5018,11 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
     // restart timer thread (timer threads access to `vm->waitpid_lock` and so on.
     rb_thread_reset_timer_thread();
     rb_thread_start_timer_thread();
+
+#if USE_PARALLEL_SWEEP
+    void mutexes_lock_reset(void);
+    mutexes_lock_reset();
+#endif
 
     VM_ASSERT(vm->ractor.blocking_cnt == 0);
     VM_ASSERT(vm->ractor.cnt == 1);
