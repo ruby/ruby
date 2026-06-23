@@ -5025,21 +5025,6 @@ impl Function {
         Ok(())
     }
 
-    fn optimize_getivar(&mut self) {
-        // for block in self.reverse_post_order() {
-        //     let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
-        //     assert!(self.blocks[block.0].insns.is_empty());
-        //     for insn_id in old_insns {
-        //         match self.find(insn_id) {
-        //             Insn::SetIvar { self_val, id, val, state, ic } => {
-        //             }
-        //             _ => { self.push_insn_id(block, insn_id); }
-        //         }
-        //     }
-        // }
-        // crate::stats::trace_compile_phase("infer_types", || self.infer_types());
-    }
-
     fn gen_patch_points_for_optimized_ccall(&mut self, block: BlockId, recv_class: VALUE, method_id: ID, cme: *const rb_callable_method_entry_struct, state: InsnId) {
         self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoTracePoint, state });
         self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: recv_class, method: method_id, cme }, state });
@@ -6200,7 +6185,6 @@ impl Function {
             // Bucket all strength reduction together
             (type_specialize) => { Counter::compile_hir_strength_reduce_time_ns };
             (inline_trivial) => { Counter::compile_hir_strength_reduce_time_ns };
-            (optimize_getivar) => { Counter::compile_hir_strength_reduce_time_ns };
             (optimize_c_calls) => { Counter::compile_hir_strength_reduce_time_ns };
             (convert_no_profile_sends) => { Counter::compile_hir_strength_reduce_time_ns };
             // End strength reduction bucket
@@ -6250,7 +6234,6 @@ impl Function {
             // inliner then handles more complex methods that require full inlining.
             run_pass!(inline_trivial);
             let did_inline = run_pass!(inline_methods);
-            run_pass!(optimize_getivar);
             run_pass!(optimize_c_calls);
             run_pass!(convert_no_profile_sends);
             run_pass!(optimize_load_store);
