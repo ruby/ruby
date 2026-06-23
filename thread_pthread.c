@@ -1731,9 +1731,15 @@ ruby_thread_set_native(rb_thread_t *th)
 static void native_thread_setup(struct rb_native_thread *nt);
 static void native_thread_setup_on_thread(struct rb_native_thread *nt);
 
+// Internal cache of page size:
+static size_t RB_THREAD_PAGE_SIZE;
+
 void
 Init_native_thread(rb_thread_t *main_th)
 {
+    // Get the system page size for later use in stack allocation and stack overflow checks:
+    RB_THREAD_PAGE_SIZE = sysconf(_SC_PAGESIZE);
+
 #if defined(HAVE_PTHREAD_CONDATTR_SETCLOCK)
     if (condattr_monotonic) {
         int r = pthread_condattr_init(condattr_monotonic);
@@ -1969,7 +1975,7 @@ get_stack(void **addr, size_t *size)
 # ifdef HAVE_PTHREAD_ATTR_GETGUARDSIZE
     CHECK_ERR(pthread_attr_getguardsize(&attr, &guard));
 # else
-    guard = getpagesize();
+    guard = RB_THREAD_PAGE_SIZE;
 # endif
     *size -= guard;
     pthread_attr_destroy(&attr);
@@ -2075,7 +2081,6 @@ native_thread_init_main_thread_stack(void *addr)
         size_t size = RUBY_VM_THREAD_VM_STACK_SIZE;
 #endif
         size_t space;
-        int pagesize = getpagesize();
         struct rlimit rlim;
         STACK_GROW_DIR_DETECTION;
         if (getrlimit(RLIMIT_STACK, &rlim) == 0) {
@@ -2083,10 +2088,10 @@ native_thread_init_main_thread_stack(void *addr)
         }
         addr = native_main_thread.stack_start;
         if (IS_STACK_DIR_UPPER()) {
-            space = ((size_t)((char *)addr + size) / pagesize) * pagesize - (size_t)addr;
+            space = ((size_t)((char *)addr + size) / RB_THREAD_PAGE_SIZE) * RB_THREAD_PAGE_SIZE - (size_t)addr;
         }
         else {
-            space = (size_t)addr - ((size_t)((char *)addr - size) / pagesize + 1) * pagesize;
+            space = (size_t)addr - ((size_t)((char *)addr - size) / RB_THREAD_PAGE_SIZE + 1) * RB_THREAD_PAGE_SIZE;
         }
         native_main_thread.stack_maxsize = space;
 #endif
@@ -3246,7 +3251,7 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
 {
     void *base;
     size_t size;
-    const size_t water_mark = (size_t)getpagesize();
+    const size_t water_mark = RB_THREAD_PAGE_SIZE;
     STACK_GROW_DIR_DETECTION;
 
     if (th) {
