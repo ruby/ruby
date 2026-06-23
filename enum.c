@@ -4961,8 +4961,10 @@ enum_compact(VALUE obj)
  * A class or module that has <tt>include Enumerable</tt>
  * adopts all of those methods as its own.
  *
- * Nearly a hundred classes and modules in the Ruby core and Standard Library do so,
- * including these much-used classes:
+ * == \Enumerable in Ruby
+ *
+ * Nearly a hundred classes and modules in the Ruby core include \Enumerable,
+ * including these:
  *
  * - ARGF
  * - Array
@@ -4983,11 +4985,11 @@ enum_compact(VALUE obj)
  *     m.ancestors.include?(Enumerable)
  *   end
  *
- * These Ruby standard library classes include \Enumerable:
+ * These classes in the Standard Library also include \Enumerable:
  *
- * - {CSV}[https://ruby-doc.org/3.4.1/gems/csv/CSV.html]
- * - {CSV::Table}[https://ruby-doc.org/3.4.1/gems/csv/CSV/Table.html]
- * - {CSV::Row}[https://ruby-doc.org/3.4.1/gems/csv/CSV/Row.html]
+ * - {CSV}[https://ruby-doc.org/3.4.1/gems/csv/CSV.html].
+ * - {CSV::Table}[https://ruby-doc.org/3.4.1/gems/csv/CSV/Table.html].
+ * - {CSV::Row}[https://ruby-doc.org/3.4.1/gems/csv/CSV/Row.html].
  *
  * You can test whether a particular module or class includes module \Enumerable;
  * for example:
