@@ -99,7 +99,7 @@ shortlen(size_t len, BDIGIT *ds)
 #define TYPE_LINK	'@'
 
 static ID s_dump, s_load, s_mdump, s_mload;
-static ID s_dump_data, s_load_data, s_alloc, s_call;
+static ID s_dump_data, s_load_data, s_call;
 static ID s_getbyte, s_read, s_write, s_binmode;
 static ID s_encoding_short, s_ruby2_keywords_flag;
 #define s_encoding_long rb_id_encoding()
@@ -110,7 +110,6 @@ static ID s_encoding_short, s_ruby2_keywords_flag;
 #define name_s_mload	"marshal_load"
 #define name_s_dump_data "_dump_data"
 #define name_s_load_data "_load_data"
-#define name_s_alloc	"_alloc"
 #define name_s_call	"call"
 #define name_s_getbyte	"getbyte"
 #define name_s_read	"read"
@@ -2577,7 +2576,6 @@ Init_marshal(void)
     set_id(s_mload);
     set_id(s_dump_data);
     set_id(s_load_data);
-    set_id(s_alloc);
     set_id(s_call);
     set_id(s_getbyte);
     set_id(s_read);

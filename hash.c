@@ -5138,7 +5138,11 @@ rb_hash_new_with_bulk_insert(long argc, const VALUE *argv)
     return val;
 }
 
+#undef USE_ORIGENVIRON
+#if !defined(_WIN32) && !(defined(HAVE_SETENV) && defined(HAVE_UNSETENV))
+# define USE_ORIGENVIRON 1
 static char **origenviron;
+#endif
 #ifdef _WIN32
 #define GET_ENVIRON(e) ((e) = rb_w32_get_environ())
 #define FREE_ENVIRON(e) rb_w32_free_environ(e)
@@ -7678,7 +7682,9 @@ Init_Hash(void)
      * Hack to get RDoc to regard ENV as a class:
      * envtbl = rb_define_class("ENV", rb_cObject);
      */
+#ifdef USE_ORIGENVIRON
     origenviron = environ;
+#endif
     envtbl = TypedData_Wrap_Struct(rb_cObject, &env_data_type, NULL);
     rb_extend_object(envtbl, rb_mEnumerable);
     RB_OBJ_SET_SHAREABLE(envtbl);
