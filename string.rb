@@ -23,40 +23,9 @@ class String
     Primitive.cexpr! 'rb_str_is_ascii_only_p(self)'
   end
 
-  # :nodoc:
-  def self._new(orig = (no_str = true; nil),
-                encoding: (no_encoding = true; nil),
-                capacity: (no_capacity = true; nil))
-
-    Primitive.rb_str_s_new(orig, no_str, encoding, no_encoding, capacity, no_capacity)
-  end
-  private_class_method :_new
-
   def initialize(orig = (no_str = true; nil),
                 encoding: (no_encoding = true; nil),
                 capacity: (no_capacity = true; nil))
     Primitive.rb_str_init(orig, no_str, encoding, no_encoding, capacity, no_capacity)
-  end
-
-  #  call-seq:
-  #    String.new(string = ''.encode(Encoding::ASCII_8BIT), **options) -> new_string
-  #
-  #  :include: doc/string/new.rdoc
-  #
-  def self.new(...)
-    # If the receiver isn't a String, jbb
-    if Primitive.mandatory_only?
-      if String.equal?(self)
-        Primitive.rb_str_s_new_empty
-      else
-        super
-      end
-    else
-      if String.equal?(self)
-        _new(...)
-      else
-        super
-      end
-    end
   end
 end
