@@ -141,8 +141,7 @@ static VALUE
 ossl_dh_initialize_copy(VALUE self, VALUE other)
 {
     EVP_PKEY *pkey;
-    DH *dh;
-    OSSL_3_const DH *dh_other;
+    DH *dh, *dh_other;
     const BIGNUM *pub, *priv;
 
     TypedData_Get_Struct(self, EVP_PKEY, &ossl_evp_pkey_type, pkey);
@@ -188,7 +187,7 @@ ossl_dh_initialize_copy(VALUE self, VALUE other)
 static VALUE
 ossl_dh_is_public(VALUE self)
 {
-    OSSL_3_const DH *dh;
+    const DH *dh;
     const BIGNUM *bn;
 
     GetDH(self, dh);
@@ -207,7 +206,7 @@ ossl_dh_is_public(VALUE self)
 static VALUE
 ossl_dh_is_private(VALUE self)
 {
-    OSSL_3_const DH *dh;
+    const DH *dh;
     const BIGNUM *bn;
 
     GetDH(self, dh);
@@ -244,7 +243,7 @@ ossl_dh_is_private(VALUE self)
 static VALUE
 ossl_dh_export(VALUE self)
 {
-    OSSL_3_const DH *dh;
+    const DH *dh;
     BIO *out;
     VALUE str;
 
@@ -277,7 +276,7 @@ ossl_dh_export(VALUE self)
 static VALUE
 ossl_dh_to_der(VALUE self)
 {
-    OSSL_3_const DH *dh;
+    const DH *dh;
     unsigned char *p;
     long len;
     VALUE str;
@@ -319,7 +318,7 @@ ossl_dh_check_params(VALUE self)
     ret = EVP_PKEY_param_check(pctx);
     EVP_PKEY_CTX_free(pctx);
 #else
-    OSSL_3_const DH *dh;
+    const DH *dh;
     int codes;
 
     GetDH(self, dh);
