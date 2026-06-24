@@ -1913,6 +1913,17 @@ static REGEXP_FLAGS: &[(u32, &str)] = &[
 
 impl<'a> std::fmt::Display for InsnPrinter<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        macro_rules! write_separated {
+            ($f:expr, $start:expr, $sep: expr, $vec:expr) => {
+                {
+                    let mut sep = $start;
+                    for item in $vec {
+                        write!($f, "{sep}{item}")?;
+                        sep = $sep;
+                    }
+                }
+            };
+        }
         match &self.inner {
             Insn::Comment { message } => write!(f, "# {message}"),
             Insn::Const { val } => { write!(f, "Const {}", val.print(self.ptr_map)) }
@@ -1920,20 +1931,12 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::LoadArg { idx, id, .. } => { write!(f, "LoadArg :{id}@{idx}") }
             Insn::Entries { targets } => {
                 write!(f, "Entries")?;
-                let mut prefix = " ";
-                for target in targets {
-                    write!(f, "{prefix}{target}")?;
-                    prefix = ", ";
-                }
+                write_separated!(f, " ", ", ", targets);
                 Ok(())
             }
             Insn::NewArray { elements, .. } => {
                 write!(f, "NewArray")?;
-                let mut prefix = " ";
-                for element in elements {
-                    write!(f, "{prefix}{element}")?;
-                    prefix = ", ";
-                }
+                write_separated!(f, " ", ", ", elements);
                 Ok(())
             }
             Insn::ArrayAref { array, index, .. } => {
@@ -1970,38 +1973,22 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::ArrayMax { elements, .. } => {
                 write!(f, "ArrayMax")?;
-                let mut prefix = " ";
-                for element in elements {
-                    write!(f, "{prefix}{element}")?;
-                    prefix = ", ";
-                }
+                write_separated!(f, " ", ", ", elements);
                 Ok(())
             }
             Insn::ArrayMin { elements, .. } => {
                 write!(f, "ArrayMin")?;
-                let mut prefix = " ";
-                for element in elements {
-                    write!(f, "{prefix}{element}")?;
-                    prefix = ", ";
-                }
+                write_separated!(f, " ", ", ", elements);
                 Ok(())
             }
             Insn::ArrayHash { elements, .. } => {
                 write!(f, "ArrayHash")?;
-                let mut prefix = " ";
-                for element in elements {
-                    write!(f, "{prefix}{element}")?;
-                    prefix = ", ";
-                }
+                write_separated!(f, " ", ", ", elements);
                 Ok(())
             }
             Insn::ArrayInclude { elements, target, .. } => {
                 write!(f, "ArrayInclude")?;
-                let mut prefix = " ";
-                for element in elements {
-                    write!(f, "{prefix}{element}")?;
-                    prefix = ", ";
-                }
+                write_separated!(f, " ", ", ", elements);
                 write!(f, " | {target}")
             }
             Insn::ArrayPackBuffer { elements, fmt, buffer, .. } => {
@@ -2030,12 +2017,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::StringCopy { val, .. } => { write!(f, "StringCopy {val}") }
             Insn::StringConcat { strings, .. } => {
                 write!(f, "StringConcat")?;
-                let mut prefix = " ";
-                for string in strings {
-                    write!(f, "{prefix}{string}")?;
-                    prefix = ", ";
-                }
-
+                write_separated!(f, " ", ", ", strings);
                 Ok(())
             }
             Insn::StringGetbyte { string, index, .. } => {
@@ -2055,11 +2037,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::ToRegexp { values, opt, .. } => {
                 write!(f, "ToRegexp")?;
-                let mut prefix = " ";
-                for value in values {
-                    write!(f, "{prefix}{value}")?;
-                    prefix = ", ";
-                }
+                write_separated!(f, " ", ", ", values);
 
                 let opt = *opt as u32;
                 if opt != 0 {
@@ -2089,16 +2067,12 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 let blockiseq = block.map(|bh| match bh { BlockHandler::BlockIseq(iseq) => iseq, BlockHandler::BlockArg => unreachable!() });
                 let method_name = unsafe { (**cme).called_id };
                 write!(f, "SendDirect {recv}, {:p}, :{} ({:?})", self.ptr_map.map_ptr(&blockiseq), method_name, self.ptr_map.map_ptr(iseq))?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
+                write_separated!(f, ", ", ", ", args);
                 Ok(())
             }
             Insn::PushInlineFrame { recv, iseq, args, .. } => {
                 write!(f, "PushInlineFrame {recv} ({:?})", self.ptr_map.map_ptr(iseq))?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
+                write_separated!(f, ", ", ", ", args);
                 Ok(())
             }
             Insn::PopInlineFrame { .. } => {
@@ -2116,56 +2090,42 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                     None =>
                         write!(f, "Send {recv}, :{}", ruby_call_method_name(*cd))?,
                 }
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
+                write_separated!(f, ", ", ", ", args);
                 write!(f, " # SendFallbackReason: {reason}")?;
                 Ok(())
             }
             Insn::SendForward { recv, cd, args, blockiseq, reason, .. } => {
                 write!(f, "SendForward {recv}, {:p}, :{}", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd))?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
+                write_separated!(f, ", ", ", ", args);
                 write!(f, " # SendFallbackReason: {reason}")?;
                 Ok(())
             }
             Insn::InvokeSuper { recv, blockiseq, args, reason, .. } => {
                 write!(f, "InvokeSuper {recv}, {:p}", self.ptr_map.map_ptr(blockiseq))?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
+                write_separated!(f, ", ", ", ", args);
                 write!(f, " # SendFallbackReason: {reason}")?;
                 Ok(())
             }
             Insn::InvokeSuperForward { recv, blockiseq, args, reason, .. } => {
                 write!(f, "InvokeSuperForward {recv}, {:p}", self.ptr_map.map_ptr(blockiseq))?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
+                write_separated!(f, ", ", ", ", args);
                 write!(f, " # SendFallbackReason: {reason}")?;
                 Ok(())
             }
             Insn::InvokeBlock { args, reason, .. } => {
                 write!(f, "InvokeBlock")?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
+                write_separated!(f, " ", ", ", args);
                 write!(f, " # SendFallbackReason: {reason}")?;
                 Ok(())
             }
             Insn::InvokeBlockIfunc { block_handler, args, .. } => {
                 write!(f, "InvokeBlockIfunc {block_handler}")?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
+                write_separated!(f, ", ", ", ", args);
                 Ok(())
             }
             Insn::InvokeProc { recv, args, kw_splat, .. } => {
                 write!(f, "InvokeProc {recv}")?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
+                write_separated!(f, ", ", ", ", args);
                 if *kw_splat {
                     write!(f, ", kw_splat")?;
                 }
@@ -2177,9 +2137,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                            if *leaf { " leaf" } else { "" },
                            // e.g. Code that use `Primitive.cexpr!`. From BUILTIN_INLINE_PREFIX.
                            if bf_name.starts_with("_bi") { "<inline_expr>" } else { bf_name })?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
+                write_separated!(f, ", ", ", ", args);
                 Ok(())
             }
             &Insn::EntryPoint { jit_entry_idx: Some(idx) } => write!(f, "EntryPoint JIT({idx})"),
@@ -2252,16 +2210,12 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::CCall { cfunc, recv, args, name, owner, return_type: _, elidable: _ } => {
                 let display_name = if *owner == Qnil { name.contents_lossy().to_string() } else { qualified_method_name(*owner, *name) };
                 write!(f, "CCall {recv}, :{}@{:p}", display_name, self.ptr_map.map_ptr(cfunc))?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
+                write_separated!(f, ", ", ", ", args);
                 Ok(())
             },
             Insn::CCallWithFrame { cfunc, recv, args, name, cme, block, .. } => {
                 write!(f, "CCallWithFrame {recv}, :{}@{:p}", qualified_method_name(unsafe { (**cme).owner }, *name), self.ptr_map.map_ptr(cfunc))?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
+                write_separated!(f, ", ", ", ", args);
                 match block {
                     Some(BlockHandler::BlockIseq(blockiseq)) =>
                         write!(f, ", block={:p}", self.ptr_map.map_ptr(blockiseq))?,
@@ -2273,9 +2227,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             },
             Insn::CCallVariadic { cfunc, recv, args, name, cme, .. } => {
                 write!(f, "CCallVariadic {recv}, :{}@{:p}", qualified_method_name(unsafe { (**cme).owner }, *name), self.ptr_map.map_ptr(cfunc))?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
+                write_separated!(f, ", ", ", ", args);
                 Ok(())
             },
             Insn::IncrCounterPtr { .. } => write!(f, "IncrCounterPtr"),
