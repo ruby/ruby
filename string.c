@@ -50,6 +50,7 @@
 #include "shape.h"
 #include "vm_sync.h"
 #include "ruby/internal/attr/nonstring.h"
+#include "builtin.h"
 
 #if defined HAVE_CRYPT_R
 # if defined HAVE_CRYPT_H
@@ -2142,29 +2143,26 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
     return str;
 }
 
+/* String.new fast path: no positional argument and no keywords.
+ * Returns the same empty, embedded, ASCII-8BIT string that String's alloc
+ * func produces (klass is always rb_cString here; the Ruby-side dispatch
+ * routes subclasses through Class#new). */
+static VALUE
+rb_str_s_new_empty(rb_execution_context_t *ec, VALUE klass)
+{
+    return empty_str_alloc(klass);
+}
+
 /* :nodoc: */
 static VALUE
-rb_str_s_new(int argc, VALUE *argv, VALUE klass)
+rb_str_s_new(struct rb_execution_context_struct *ec, VALUE klass, VALUE orig, VALUE no_str, VALUE encoding, VALUE no_encoding, VALUE capacity, VALUE no_capacity)
 {
-    if (klass != rb_cString) {
-        return rb_class_new_instance_pass_kw(argc, argv, klass);
-    }
-
-    static ID keyword_ids[2];
-    VALUE orig, opt, encoding = Qnil, capacity = Qnil;
-    VALUE kwargs[2];
     rb_encoding *enc = NULL;
+    int n = 0;
 
-    int n = rb_scan_args(argc, argv, "01:", &orig, &opt);
-    if (NIL_P(opt)) {
-        return rb_class_new_instance_pass_kw(argc, argv, klass);
-    }
-
-    keyword_ids[0] = rb_id_encoding();
-    CONST_ID(keyword_ids[1], "capacity");
-    rb_get_kwargs(opt, keyword_ids, 0, 2, kwargs);
-    encoding = kwargs[0];
-    capacity = kwargs[1];
+    if (RTEST(no_encoding)) encoding = Qundef;
+    if (RTEST(no_capacity)) capacity = Qundef;
+    if (!RTEST(no_str)) n = 1;
 
     if (n == 1) {
         orig = StringValue(orig);
@@ -12887,7 +12885,6 @@ Init_String(void)
 
     rb_include_module(rb_cString, rb_mComparable);
     rb_define_alloc_func(rb_cString, empty_str_alloc);
-    rb_define_singleton_method(rb_cString, "new", rb_str_s_new, -1);
     rb_define_singleton_method(rb_cString, "try_convert", rb_str_s_try_convert, 1);
     rb_define_method(rb_cString, "initialize", rb_str_init, -1);
     rb_define_method(rb_cString, "replace", rb_str_replace, 1);
