@@ -235,17 +235,21 @@ module ErrorHighlight
         spot_op_cdecl
 
       when :DEFN
-        raise NotImplementedError if @point_type != :name
+        # There is nothing to highlight for the arguments of a method
+        # definition, so just return nil instead of raising.
+        return nil if @point_type != :name
         spot_defn
 
       when :DEFS
-        raise NotImplementedError if @point_type != :name
+        return nil if @point_type != :name
         spot_defs
 
       when :LAMBDA
+        return nil if @point_type != :name
         spot_lambda
 
       when :ITER
+        return nil if @point_type != :name
         spot_iter
 
       when :call_node
@@ -294,7 +298,12 @@ module ErrorHighlight
         when :name
           prism_spot_def_for_name
         when :args
-          raise NotImplementedError
+          # There is nothing to highlight for the arguments of a method
+          # definition (e.g. an ArgumentError for a missing required keyword
+          # is spotted with point_type: :args). Return nil instead of raising
+          # NotImplementedError, which would otherwise escape
+          # Exception#detailed_message / #full_message.
+          return nil
         end
 
       when :lambda_node
@@ -302,7 +311,8 @@ module ErrorHighlight
         when :name
           prism_spot_lambda_for_name
         when :args
-          raise NotImplementedError
+          # See the comment for :def_node above.
+          return nil
         end
 
       when :block_node
@@ -310,7 +320,8 @@ module ErrorHighlight
         when :name
           prism_spot_block_for_name
         when :args
-          raise NotImplementedError
+          # See the comment for :def_node above.
+          return nil
         end
 
       end
