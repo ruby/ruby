@@ -708,6 +708,17 @@ SRC
 
   have_header('ruby/fiber/scheduler.h')
   have_func('rb_fiber_scheduler_current', 'ruby/fiber/scheduler.h')
+  have_func('rb_fiber_scheduler_address_resolve', 'ruby/fiber/scheduler.h')
+  have_func('rb_fiber_scheduler_socket_send', 'ruby/fiber/scheduler.h')
+  have_func('rb_fiber_scheduler_socket_recv', 'ruby/fiber/scheduler.h')
+  have_func('rb_fiber_scheduler_socket_connect', 'ruby/fiber/scheduler.h')
+  have_func('rb_fiber_scheduler_socket_accept', 'ruby/fiber/scheduler.h')
+  have_func('rb_fiber_scheduler_socket_shutdown', 'ruby/fiber/scheduler.h')
+  have_func('rb_fiber_scheduler_socket_address_unpack', 'ruby/fiber/scheduler.h')
+
+  have_header('internal/io_buffer.h')
+  have_func('rb_io_buffer_for_reading', 'internal/io_buffer.h')
+  have_func('rb_io_buffer_for_writing', 'internal/io_buffer.h')
 
   $VPATH << '$(topdir)' << '$(top_srcdir)'
   create_makefile("socket")

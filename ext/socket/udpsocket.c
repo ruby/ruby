@@ -146,22 +146,6 @@ struct udp_send_arg {
     struct rsock_send_arg sarg;
 };
 
-struct rsock_send_scheduler_arguments {
-    VALUE scheduler;
-    VALUE socket;
-    size_t length;
-    int flags;
-    VALUE destination;
-};
-
-static VALUE
-rsock_send_with_scheduler(VALUE buffer, VALUE _argument)
-{
-    struct rsock_send_scheduler_arguments *arguments = (struct rsock_send_scheduler_arguments *)_argument;
-    return rb_fiber_scheduler_socket_send(arguments->scheduler, arguments->socket, buffer,
-                                          arguments->length, arguments->flags, arguments->destination);
-}
-
 static VALUE
 udp_send_internal(VALUE v)
 {
@@ -171,24 +155,26 @@ udp_send_internal(VALUE v)
 
     rb_io_check_closed(fptr = arg->fptr);
 
+#ifdef RSOCK_HAVE_FIBER_SCHEDULER_SOCKET_SEND
     VALUE scheduler = rb_fiber_scheduler_current();
 #ifdef MSG_DONTWAIT
     int use_scheduler = (scheduler != Qnil) && !(arg->sarg.flags & MSG_DONTWAIT);
 #else
     int use_scheduler = (scheduler != Qnil);
 #endif
+#endif
 
     for (res = arg->res->ai; res; res = res->ai_next) {
+#ifdef RSOCK_HAVE_FIBER_SCHEDULER_SOCKET_SEND
         if (use_scheduler) {
             VALUE destination = rb_str_new((char*)res->ai_addr, res->ai_addrlen);
-            struct rsock_send_scheduler_arguments arguments = {
+            struct rsock_scheduler_socket_send_arguments arguments = {
                 .scheduler = scheduler,
                 .socket = fptr->self,
-                .length = 0,
                 .flags = arg->sarg.flags,
                 .destination = destination,
             };
-            VALUE result = rb_io_buffer_for_reading(arg->sarg.mesg, rsock_send_with_scheduler, (VALUE)&arguments);
+            VALUE result = rb_io_buffer_for_reading(arg->sarg.mesg, rsock_scheduler_socket_send, (VALUE)&arguments);
             if (UNDEF_P(result)) {
                 /* Scheduler doesn't implement socket_send; fall back to blocking for all addrs. */
                 use_scheduler = 0;
@@ -200,6 +186,7 @@ udp_send_internal(VALUE v)
                 continue;
             }
         }
+#endif
 
       retry:
         arg->sarg.fd = fptr->fd;
