@@ -3736,6 +3736,17 @@ fn test_method_call() {
 }
 
 #[test]
+fn test_polymorphic_iseq_dispatch_same_site() {
+    assert_snapshot!(inspect("
+        class A; def foo = 1; end
+        class B; def foo = 2; end
+        def test(obj) = obj.foo
+        test(A.new); test(A.new)   # warm up and specialize the call site for A
+        [test(A.new), test(B.new)]
+    "), @"[1, 2]");
+}
+
+#[test]
 fn test_recursive_fact() {
     assert_snapshot!(inspect("
         def fact(n)
