@@ -403,8 +403,8 @@ class TestFiberScheduler < Test::Unit::TestCase
 
     thread.join
     assert_equal [
-      [:socket_send, s1.fileno, 'foo', 0, 0, nil],
-      [:socket_send, s1.fileno, 'bar', 0, 0, nil]
+      [:socket_send, s1.fileno, 'foo', 0, nil],
+      [:socket_send, s1.fileno, 'bar', 0, nil]
     ], operations
 
     assert_equal 'foobar', s2.recv(6)
@@ -436,8 +436,8 @@ class TestFiberScheduler < Test::Unit::TestCase
 
     thread.join
     assert_equal [
-      [:socket_send, s1.fileno, 'foo', 0, 0, destination.to_s],
-      [:socket_send, s1.fileno, 'bar', 0, 0, destination.to_s]
+      [:socket_send, s1.fileno, 'foo', 0, destination.to_s],
+      [:socket_send, s1.fileno, 'bar', 0, destination.to_s]
     ], operations
 
     assert_equal 'foo', s2.recv(6)

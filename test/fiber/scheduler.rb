@@ -168,7 +168,7 @@ class Scheduler
     self.run
   ensure
     if @urgent
-      @urgent.each { it.close rescue nil }
+      @urgent.each{it.close rescue nil}
       @urgent = nil
     end
 
@@ -514,11 +514,11 @@ class IOErrorScheduler < Scheduler
     return -Errno::EINVAL::Errno
   end
 
-  def socket_send(socket, buffer, length, flags, destination = nil)
+  def socket_send(socket, buffer, flags, destination = nil)
     return -Errno::ENOTCONN::Errno
   end
 
-  def socket_recv(socket, buffer, length, flags, from = nil)
+  def socket_recv(socket, buffer, flags, from = nil)
     return -Errno::ENOTSOCK::Errno
   end
 
@@ -540,11 +540,11 @@ class SocketIOScheduler < Scheduler
     @operations ||= []
   end
 
-  def socket_send(socket, buffer, length, flags, destination = nil)
+  def socket_send(socket, buffer, flags, destination = nil)
     descriptor = socket.fileno
     string = buffer.get_string
 
-    self.operations << [:socket_send, descriptor, string, length, flags, destination]
+    self.operations << [:socket_send, descriptor, string, flags, destination]
 
     Fiber.blocking do
       if destination
@@ -555,22 +555,21 @@ class SocketIOScheduler < Scheduler
     end
   end
 
-  def socket_recv(socket, buffer, length, flags, from = nil)
+  def socket_recv(socket, buffer, flags, from = nil)
     descriptor = socket.fileno
-    length = buffer.size if length == 0
 
-    self.operations << [:socket_recv, descriptor, length, flags, !from.nil?]
+    self.operations << [:socket_recv, descriptor, buffer.size, flags, !from.nil?]
 
     Fiber.blocking do
       if from
         temp = Socket.for_fd(socket.fileno)
         temp.autoclose = false
-        str, addrinfo = temp.recvfrom(length, flags)
+        str, addrinfo = temp.recvfrom(buffer.size, flags)
         buffer.set_string(str)
         from.replace(addrinfo.to_s)
         str.bytesize
       else
-        str = socket.recv(length, flags)
+        str = socket.recv(buffer.size, flags)
         buffer.set_string(str)
         str.bytesize
       end

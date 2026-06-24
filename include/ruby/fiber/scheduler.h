@@ -28,7 +28,8 @@ struct sockaddr;
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 // Version 3: Adds support for `fiber_interrupt`.
-#define RUBY_FIBER_SCHEDULER_VERSION 3
+// Version 4: Adds support for socket_* hooks.
+#define RUBY_FIBER_SCHEDULER_VERSION 4
 
 struct timeval;
 struct rb_thread_struct;
@@ -505,26 +506,26 @@ VALUE rb_fiber_scheduler_fiber_interrupt(VALUE scheduler, VALUE fiber, VALUE exc
 VALUE rb_fiber_scheduler_fiber(VALUE scheduler, int argc, VALUE *argv, int kw_splat);
 
 /**
- * Non-blocking send to the passed Socket.
+ * Non-blocking single send operation to the passed Socket.
  *
  * @param[in]   scheduler    Target scheduler.
  * @param[in]   socket       A socket object to send to.
- * @param[in]   buffer       The buffer to send from.
- * @param[in]   length       The minimum number of bytes to send.
+ * @param[in]   buffer       The buffer to send from. The scheduler should send
+ *                           at most `buffer.size` bytes.
  * @param[in]   flags        The flags to use for sending.
  * @param[in]   destination  Optional send destination.
  * @retval      RUBY_Qundef  `scheduler` doesn't have `#socket_send`.
  * @return      otherwise    What `scheduler.socket_send` returns `[-errno, size]`.
  */
-VALUE rb_fiber_scheduler_socket_send(VALUE scheduler, VALUE socket, VALUE buffer, size_t length, int flags, VALUE destination);
+VALUE rb_fiber_scheduler_socket_send(VALUE scheduler, VALUE socket, VALUE buffer, int flags, VALUE destination);
 
 /**
- * Non-blocking recv from the passed Socket.
+ * Non-blocking single recv operation from the passed Socket.
  *
  * @param[in]   scheduler    Target scheduler.
  * @param[in]   socket       A socket object to receive from.
- * @param[in]   buffer       The buffer to receive into.
- * @param[in]   length       The minimum number of bytes to receive.
+ * @param[in]   buffer       The buffer to receive into. The scheduler should
+ *                           receive at most `buffer.size` bytes.
  * @param[in]   flags        The flags to use for receiving.
  * @param[in]   from         A mutable String to receive the source address into,
  *                           or Qnil if the source address is not needed.
@@ -532,7 +533,7 @@ VALUE rb_fiber_scheduler_socket_send(VALUE scheduler, VALUE socket, VALUE buffer
  * @retval      RUBY_Qundef  `scheduler` doesn't have `#socket_recv`.
  * @return      otherwise    What `scheduler.socket_recv` returns (received byte count or -errno).
  */
-VALUE rb_fiber_scheduler_socket_recv(VALUE scheduler, VALUE socket, VALUE buffer, size_t length, int flags, VALUE from);
+VALUE rb_fiber_scheduler_socket_recv(VALUE scheduler, VALUE socket, VALUE buffer, int flags, VALUE from);
 
 /**
  * Non-blocking connect with the passed Socket to the given address.

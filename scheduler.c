@@ -386,8 +386,8 @@ Init_Fiber_Scheduler(void)
     rb_define_method(rb_cFiberScheduler, "yield", rb_fiber_scheduler_yield, 0);
     rb_define_method(rb_cFiberScheduler, "fiber_interrupt", rb_fiber_scheduler_fiber_interrupt, 2);
     rb_define_method(rb_cFiberScheduler, "io_close", rb_fiber_scheduler_io_close, 1);
-    rb_define_method(rb_cFiberScheduler, "socket_recv", rb_fiber_scheduler_socket_recv, 5);
-    rb_define_method(rb_cFiberScheduler, "socket_send", rb_fiber_scheduler_socket_send, 5);
+    rb_define_method(rb_cFiberScheduler, "socket_recv", rb_fiber_scheduler_socket_recv, 4);
+    rb_define_method(rb_cFiberScheduler, "socket_send", rb_fiber_scheduler_socket_send, 4);
     rb_define_method(rb_cFiberScheduler, "socket_connect", rb_fiber_scheduler_socket_connect, 2);
     rb_define_method(rb_cFiberScheduler, "socket_accept", rb_fiber_scheduler_socket_accept, 2);
     rb_define_method(rb_cFiberScheduler, "socket_shutdown", rb_fiber_scheduler_socket_shutdown, 2);
@@ -999,18 +999,15 @@ rb_fiber_scheduler_io_pwrite(VALUE scheduler, VALUE io, rb_off_t from, VALUE buf
 
 /*
  *  Document-method: Fiber::Scheduler#socket_recv
- *  call-seq: socket_recv(socket, buffer, length, flags, from = nil) -> received length or -errno
+ *  call-seq: socket_recv(socket, buffer, flags, from = nil) -> received length or -errno
  *
- *  Invoked by Socket#recv or Socket#recvfrom to receive +length+ bytes from
- *  +socket+ into a specified +buffer+ (see IO::Buffer).
+ *  Invoked by Socket#recv or Socket#recvfrom to receive bytes from +socket+
+ *  into a specified +buffer+ (see IO::Buffer).
  *
- *  The +length+ argument is the "minimum length to be received". If the IO buffer
- *  size is 8KiB, but the +length+ is +1024+ (1KiB), up to 8KiB might be received,
- *  but at least 1KiB will be. Generally, the only case where less data than
- *  +length+ will be received is if there is an error reading the data.
- *
- *  Specifying a +length+ of 0 is valid and means try receiving at least once and
- *  return any available data.
+ *  The scheduler should perform a single recv(2) or recvfrom(2)-style
+ *  operation, receiving at most +buffer.size+ bytes. For datagram sockets, this
+ *  preserves packet boundaries and allows zero-length datagrams to be reported
+ *  as a successful receive of 0 bytes.
  *
  *  The +flags+ argument is the flag bit mask provided to the OS for the recv(2)
  *  operation.
@@ -1035,18 +1032,18 @@ static VALUE
 fiber_scheduler_socket_recv(VALUE _argument) {
     VALUE *arguments = (VALUE*)_argument;
 
-    return rb_funcallv(arguments[0], id_socket_recv, 5, arguments + 1);
+    return rb_funcallv(arguments[0], id_socket_recv, 4, arguments + 1);
 }
 
 VALUE
-rb_fiber_scheduler_socket_recv(VALUE scheduler, VALUE socket, VALUE buffer, size_t length, int flags, VALUE from)
+rb_fiber_scheduler_socket_recv(VALUE scheduler, VALUE socket, VALUE buffer, int flags, VALUE from)
 {
     if (!rb_respond_to(scheduler, id_socket_recv)) {
         return RUBY_Qundef;
     }
 
     VALUE arguments[] = {
-        scheduler, socket, buffer, SIZET2NUM(length), INT2NUM(flags), from
+        scheduler, socket, buffer, INT2NUM(flags), from
     };
 
     if (rb_respond_to(scheduler, id_fiber_interrupt)) {
@@ -1058,23 +1055,19 @@ rb_fiber_scheduler_socket_recv(VALUE scheduler, VALUE socket, VALUE buffer, size
 
 /*
  *  Document-method: Fiber::Scheduler#socket_send
- *  call-seq: socket_send(socket, buffer, length, flags, destination = nil) -> written length or -errno
+ *  call-seq: socket_send(socket, buffer, flags, destination = nil) -> written length or -errno
  *
- *  Invoked by Socket#send to send +length+ bytes to +socket+ from a
- *  specified +buffer+ (see IO::Buffer) with the given +flags+.
+ *  Invoked by Socket#send to send bytes to +socket+ from a specified +buffer+
+ *  (see IO::Buffer) with the given +flags+.
  *
- *  The +destination+ argument is either nil, a packed sockaddr string or an Addrinfo
- *  instance denoting the destination address for connection-less sockets. If
- *  +destination+ is not nil, the method implementation should use the +sendto+ system
- *  call or equivalent to specify the destination address to the OS.
+ *  The +destination+ argument is either nil or a packed sockaddr string denoting
+ *  the destination address for connection-less sockets. If +destination+ is not
+ *  nil, the method implementation should use the +sendto+ system call or
+ *  equivalent to specify the destination address to the OS.
  *
- *  The +length+ argument is the "minimum length to be sent". If the IO buffer
- *  size is 8KiB, but the +length+ specified is 1024 (1KiB), at most 8KiB will
- *  be sent, but at least 1KiB will be. Generally, the only case where less data
- *  than +length+ will be sent is if there is an error sending the data.
- *
- *  Specifying a +length+ of 0 is valid and means try sending at least once, as
- *  much data as possible.
+ *  The scheduler should perform a single send(2) or sendto(2)-style operation,
+ *  sending at most +buffer.size+ bytes. Partial sends are valid and should be
+ *  returned as the number of bytes sent.
  *
  *  The +flags+ argument is the flag bit mask passed to the OS for the +send+
  *  operation.
@@ -1095,18 +1088,18 @@ static VALUE
 fiber_scheduler_socket_send(VALUE _argument) {
     VALUE *arguments = (VALUE*)_argument;
 
-    return rb_funcallv(arguments[0], id_socket_send, 5, arguments + 1);
+    return rb_funcallv(arguments[0], id_socket_send, 4, arguments + 1);
 }
 
 VALUE
-rb_fiber_scheduler_socket_send(VALUE scheduler, VALUE socket, VALUE buffer, size_t length, int flags, VALUE destination)
+rb_fiber_scheduler_socket_send(VALUE scheduler, VALUE socket, VALUE buffer, int flags, VALUE destination)
 {
     if (!rb_respond_to(scheduler, id_socket_send)) {
         return RUBY_Qundef;
     }
 
     VALUE arguments[] = {
-        scheduler, socket, buffer, SIZET2NUM(length), INT2NUM(flags), destination
+        scheduler, socket, buffer, INT2NUM(flags), destination
     };
 
     if (rb_respond_to(scheduler, id_fiber_interrupt)) {
