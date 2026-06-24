@@ -231,5 +231,54 @@ class TestGemRemoteFetcherLocalSSLServer < Gem::TestCase
     # mode :pqc requires Ruby OpenSSL >= 4.0.
     omit "PQC test requires Ruby OpenSSL >= 4.0" unless
       Gem::Version.new(OpenSSL::VERSION) >= Gem::Version.new("4.0")
+    # Even with a new enough OpenSSL, the runtime may keep PQC groups and
+    # signature algorithms out of its default negotiation lists (for example
+    # RHEL's system-wide crypto policies). The PQC server forces both, while
+    # the gem fetcher connects with the default client configuration, so a
+    # real loopback handshake is the only reliable way to tell whether this
+    # environment can negotiate PQC at all.
+    omit "PQC handshake is not available in this OpenSSL configuration" unless
+      self.class.support_pqc_handshake?
+  end
+
+  # Probe an actual PQC handshake between a forced-PQC server and a
+  # default-configured client, mirroring what the integration tests exercise.
+  # Memoized so the probe runs at most once per process.
+  def self.support_pqc_handshake?
+    return @support_pqc_handshake unless @support_pqc_handshake.nil?
+
+    @support_pqc_handshake = probe_pqc_handshake
+  end
+
+  def self.probe_pqc_handshake
+    server = TCPServer.new("127.0.0.1", 0)
+    ctx = OpenSSL::SSL::SSLContext.new
+    ctx.cert = OpenSSL::X509::Certificate.new(File.read(File.join(__dir__, "mldsa65_ssl_cert.pem")))
+    ctx.key = OpenSSL::PKey.read(File.read(File.join(__dir__, "mldsa65_ssl_key.pem")))
+    ctx.groups = "X25519MLKEM768"
+    ssl_server = OpenSSL::SSL::SSLServer.new(server, ctx)
+
+    port = server.addr[1]
+    server_thread = Thread.new do
+      client = ssl_server.accept
+      client.close
+    rescue OpenSSL::OpenSSLError
+      nil
+    end
+
+    client_ctx = OpenSSL::SSL::SSLContext.new
+    client_ctx.verify_mode = OpenSSL::SSL::VERIFY_NONE
+    socket = TCPSocket.new("127.0.0.1", port)
+    ssl = OpenSSL::SSL::SSLSocket.new(socket, client_ctx)
+    ssl.connect
+    ssl.close
+    true
+  rescue OpenSSL::OpenSSLError, SystemCallError
+    false
+  ensure
+    server_thread&.join(5)
+    server_thread&.kill if server_thread&.alive?
+    ssl_server&.close
+    server&.close
   end
 end if Gem::HAVE_OPENSSL
