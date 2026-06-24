@@ -18634,6 +18634,8 @@ thread.$(OBJEXT): {$(VPATH)}onigmo.h
 thread.$(OBJEXT): {$(VPATH)}oniguruma.h
 thread.$(OBJEXT): {$(VPATH)}prism_compile.h
 thread.$(OBJEXT): {$(VPATH)}prism_xallocator.h
+thread.$(OBJEXT): {$(VPATH)}probes.dmyh
+thread.$(OBJEXT): {$(VPATH)}probes.h
 thread.$(OBJEXT): {$(VPATH)}ractor.h
 thread.$(OBJEXT): {$(VPATH)}ractor_core.h
 thread.$(OBJEXT): {$(VPATH)}ruby_assert.h
@@ -20702,6 +20704,8 @@ vm_sync.$(OBJEXT): {$(VPATH)}missing.h
 vm_sync.$(OBJEXT): {$(VPATH)}node.h
 vm_sync.$(OBJEXT): {$(VPATH)}onigmo.h
 vm_sync.$(OBJEXT): {$(VPATH)}oniguruma.h
+vm_sync.$(OBJEXT): {$(VPATH)}probes.dmyh
+vm_sync.$(OBJEXT): {$(VPATH)}probes.h
 vm_sync.$(OBJEXT): {$(VPATH)}ractor.h
 vm_sync.$(OBJEXT): {$(VPATH)}ractor_core.h
 vm_sync.$(OBJEXT): {$(VPATH)}ruby_assert.h
