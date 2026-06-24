@@ -50,6 +50,8 @@ int rb_set_table_delete(set_table *, st_data_t *); /* returns 0:notfound 1:delet
 int rb_set_insert(set_table *, st_data_t);
 #define set_table_lookup rb_set_table_lookup
 int rb_set_table_lookup(set_table *, st_data_t);
+#define set_table_get rb_set_table_get
+int rb_set_table_get(set_table *tab, st_data_t key, st_data_t *result);
 #define set_foreach_with_replace rb_set_foreach_with_replace
 int rb_set_foreach_with_replace(set_table *tab, set_foreach_check_callback_func *func, set_update_callback_func *replace, st_data_t arg);
 #define set_table_foreach rb_set_table_foreach

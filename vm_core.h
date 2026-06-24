@@ -816,6 +816,8 @@ typedef struct rb_vm_struct {
     set_table unused_block_warning_table;
     VALUE cc_refinement_set;
 
+    set_table re_cache_table;
+
     // This id table contains a mapping from ID to ICs. It does this with ID
     // keys and nested st_tables as values. The nested tables have ICs as keys
     // and Qtrue as values. It is used when inline constant caches need to be

@@ -3436,6 +3436,7 @@ ruby_vm_destruct(rb_vm_t *vm)
 
             rb_id_table_free_items(&vm->negative_cme_table);
             st_free_embedded_table(&vm->overloaded_cme_table);
+            set_free_embedded_table(&vm->re_cache_table);
 
             // TODO: Is this ignorable for classext->m_tbl ?
             // rb_id_table_free(RCLASS(rb_mRubyVMFrozenCore)->m_tbl);
@@ -3548,6 +3549,7 @@ vm_memsize(const void *ptr)
         vm_memsize_builtin_function_table(vm->builtin_function_table) +
         (rb_id_table_memsize(&vm->negative_cme_table) - sizeof(struct rb_id_table)) +
         (rb_st_memsize(&vm->overloaded_cme_table) - sizeof(struct st_table)) +
+        (set_memsize(&vm->re_cache_table) - sizeof(set_table)) +
         (vm->global_object_list_capa * sizeof(*vm->global_object_list)) +
         vm_memsize_constant_cache()
     );
@@ -4665,6 +4667,8 @@ Init_BareVM(void)
     st_init_existing_numtable_with_size(&vm->overloaded_cme_table, 0);
     st_init_existing_strtable_with_size(&vm->static_ext_inits, 0);
     set_init_embedded_numtable_with_size(&vm->unused_block_warning_table, 0);
+    set_init_table_with_size(&vm->re_cache_table, &rb_re_cache_hash_type, 128);
+
     vm->global_hooks.type = hook_list_type_global;
 
     // setup main thread

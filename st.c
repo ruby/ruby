@@ -2987,6 +2987,36 @@ set_table_lookup(set_table *tab, st_data_t key)
     return 1;
 }
 
+/* Find an entry with KEY in table TAB.  Return non-zero if we found
+   it.  Set up *RESULT to the found table entry key.  */
+int
+set_table_get(set_table *tab, st_data_t key, st_data_t *result)
+{
+    st_index_t bin;
+    st_hash_t hash = set_do_hash(key, tab);
+
+ retry:
+    if (!set_has_bins(tab)) {
+        bin = set_find_entry(tab, hash, key);
+        if (EXPECT(bin == REBUILT_TABLE_ENTRY_IND, 0))
+            goto retry;
+        if (bin == UNDEFINED_ENTRY_IND)
+            return 0;
+    }
+    else {
+        bin = set_find_table_entry_ind(tab, hash, key);
+        if (EXPECT(bin == REBUILT_TABLE_ENTRY_IND, 0))
+            goto retry;
+        if (bin == UNDEFINED_ENTRY_IND)
+            return 0;
+        bin -= ENTRY_BASE;
+    }
+    if (result != 0)
+        *result = tab->entries[bin].key;
+    return 1;
+}
+
+
 /* Check the table and rebuild it if it is necessary.  */
 static inline void
 set_rebuild_table_if_necessary (set_table *tab)
