@@ -541,6 +541,19 @@ class TestIOBuffer < Test::Unit::TestCase
       buffer.set_values(format, 0, values)
       assert_equal values_with_offsets, buffer.each(data_type, 0, values.size).to_a, "Reading #{values} as #{data_type}."
     end
+
+    buffer = IO::Buffer.new(128)
+    assert_raise(IO::Buffer::InvalidatedError) {
+      buffer.each {buffer.free}
+    }
+    buffer = IO::Buffer.new(128)
+    assert_raise(ArgumentError) {
+      buffer.each {buffer.resize(20)}
+    }
+    buffer = IO::Buffer.new(128)
+    assert_raise(IO::Buffer::InvalidatedError) {
+      buffer.slice.each {buffer.free}
+    }
   end
 
   def test_zero_length_each
