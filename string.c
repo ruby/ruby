@@ -2067,24 +2067,17 @@ rb_str_with_debug_created_info(VALUE str, VALUE path, int line)
  */
 
 static VALUE
-rb_str_init(int argc, VALUE *argv, VALUE str)
+rb_str_init(rb_execution_context_t *ec, VALUE str, VALUE orig, VALUE no_str, VALUE encoding, VALUE no_encoding, VALUE capacity, VALUE no_capacity)
 {
-    static ID keyword_ids[2];
-    VALUE orig, opt, venc, vcapa;
-    VALUE kwargs[2];
     rb_encoding *enc = 0;
-    int n;
+    int n = RTEST(no_str) ? 0 : 1;
 
-    if (!keyword_ids[0]) {
-        keyword_ids[0] = rb_id_encoding();
-        CONST_ID(keyword_ids[1], "capacity");
-    }
-
-    n = rb_scan_args(argc, argv, "01:", &orig, &opt);
-    if (!NIL_P(opt)) {
-        rb_get_kwargs(opt, keyword_ids, 0, 2, kwargs);
-        venc = kwargs[0];
-        vcapa = kwargs[1];
+    /* A keyword was supplied iff its sentinel is false. Mirror the old
+     * rb_scan_args/rb_get_kwargs behavior: only touch encoding/capacity
+     * when the corresponding keyword was actually passed. */
+    if (!RTEST(no_encoding) || !RTEST(no_capacity)) {
+        VALUE venc = RTEST(no_encoding) ? Qundef : encoding;
+        VALUE vcapa = RTEST(no_capacity) ? Qundef : capacity;
         if (!UNDEF_P(venc) && !NIL_P(venc)) {
             enc = rb_to_encoding(venc);
         }
@@ -12886,7 +12879,6 @@ Init_String(void)
     rb_include_module(rb_cString, rb_mComparable);
     rb_define_alloc_func(rb_cString, empty_str_alloc);
     rb_define_singleton_method(rb_cString, "try_convert", rb_str_s_try_convert, 1);
-    rb_define_method(rb_cString, "initialize", rb_str_init, -1);
     rb_define_method(rb_cString, "replace", rb_str_replace, 1);
     rb_define_method(rb_cString, "initialize_copy", rb_str_replace, 1);
     rb_define_method(rb_cString, "<=>", rb_str_cmp_m, 1);

@@ -32,6 +32,12 @@ class String
   end
   private_class_method :_new
 
+  def initialize(orig = (no_str = true; nil),
+                encoding: (no_encoding = true; nil),
+                capacity: (no_capacity = true; nil))
+    Primitive.rb_str_init(orig, no_str, encoding, no_encoding, capacity, no_capacity)
+  end
+
   #  call-seq:
   #    String.new(string = ''.encode(Encoding::ASCII_8BIT), **options) -> new_string
   #
