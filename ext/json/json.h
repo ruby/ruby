@@ -31,6 +31,10 @@
 
 /* shims */
 
+#ifndef RUBY_TYPED_THREAD_SAFE_FREE
+#define RUBY_TYPED_THREAD_SAFE_FREE RUBY_TYPED_FREE_IMMEDIATELY
+#endif
+
 #ifndef UNDEF_P
 #define UNDEF_P(val) (val == Qundef)
 #endif

@@ -314,7 +314,7 @@ static const rb_data_type_t JSON_Parser_rvalue_stack_type = {
     },
     // We deliberately don't declare rvalue_stack as RUBY_TYPED_WB_PROTECTED
     // because it churns a lot of values so trigering write barriers every time is very costly.
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_EMBEDDABLE,
 };
 
 static rvalue_stack *rvalue_stack_spill(rvalue_stack *old_stack, VALUE *handle, rvalue_stack **stack_ref)
@@ -511,7 +511,7 @@ static const rb_data_type_t JSON_Parser_frame_stack_type = {
         .dfree = json_frame_stack_free,
         .dsize = json_frame_stack_memsize,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
 };
 
 static json_frame_stack *json_frame_stack_spill(json_frame_stack *old_stack, VALUE *handle, json_frame_stack **stack_ref)
@@ -2180,7 +2180,7 @@ static const rb_data_type_t JSON_ParserConfig_type = {
         .dsize = JSON_ParserConfig_memsize,
         .dcompact = JSON_ParserConfig_compact,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_EMBEDDABLE,
 };
 
 static VALUE cJSON_parser_s_allocate(VALUE klass)
@@ -2265,7 +2265,7 @@ static const rb_data_type_t JSON_ResumableParser_type = {
     // RUBY_TYPED_WB_PROTECTED is deliberately not declared because
     // this is a superset of JSON_Parser_rvalue_stack_type, so we'd need
     // to trigger a lot of write barriers.
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_EMBEDDABLE,
 };
 
 static VALUE cResumableParser_allocate(VALUE klass)
