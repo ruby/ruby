@@ -1405,6 +1405,10 @@ x = __ENCODING__
     assert_not_match(/unexpected tSTRING_END/, e.message)
   end
 
+  def test_invalid_character_regexp_error
+    assert_syntax_error('/#{"\xcd"}/', /invalid multibyte character/)
+  end
+
   def test_lparenarg
     o = Struct.new(:x).new
     def o.i(x)

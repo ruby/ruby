@@ -3354,6 +3354,22 @@ ci_argc_set(const rb_iseq_t *iseq, const struct rb_callinfo *ci, int argc)
 
 #define vm_ci_simple(ci) (vm_ci_flag(ci) & VM_CALL_ARGS_SIMPLE)
 
+static VALUE
+iseq_reg_compile(rb_iseq_t *iseq, VALUE str, int options, const char *sourcefile, int sourceline)
+{
+    VALUE errinfo = rb_errinfo();
+    VALUE re = rb_reg_compile(str, options, sourcefile, sourceline);
+    if (NIL_P(re)) {
+        VALUE message = rb_attr_get(rb_errinfo(), idMesg);
+        rb_set_errinfo(errinfo);
+        COMPILE_ERROR(iseq, sourceline, "%" PRIsVALUE, message);
+    }
+    else {
+        RB_OBJ_SET_SHAREABLE(re);
+    }
+    return re;
+}
+
 static int
 iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcallopt)
 {
@@ -3925,16 +3941,7 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 int opt = (int)FIX2LONG(OPERAND_AT(next, 0));
                 VALUE path = rb_iseq_path(iseq);
                 int line = iobj->insn_info.line_no;
-                VALUE errinfo = rb_errinfo();
-                VALUE re = rb_reg_compile(src, opt, RSTRING_PTR(path), line);
-                if (NIL_P(re)) {
-                    VALUE message = rb_attr_get(rb_errinfo(), idMesg);
-                    rb_set_errinfo(errinfo);
-                    COMPILE_ERROR(iseq, line, "%" PRIsVALUE, message);
-                }
-                else {
-                    RB_OBJ_SET_SHAREABLE(re);
-                }
+                VALUE re = iseq_reg_compile(iseq, src, opt, RSTRING_PTR(path), line);
                 /* The folded operand is a Regexp, so the instruction must be
                  * putobject: dupstring/dupchilledstring would resurrect the
                  * Regexp as a String at run time (e.g. for a /o regexp whose
@@ -4755,8 +4762,7 @@ compile_dregx(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     if (!RNODE_DREGX(node)->nd_next) {
         if (!popped) {
             VALUE src = rb_node_dregx_string_val(node);
-            VALUE match = rb_reg_compile(src, cflag, NULL, 0);
-            RB_OBJ_SET_SHAREABLE(match);
+            VALUE match = iseq_reg_compile(iseq, src, cflag, NULL, 0);
             ADD_INSN1(ret, node, putobject, match);
             RB_OBJ_WRITTEN(iseq, Qundef, match);
         }
