@@ -549,22 +549,18 @@ pub struct SideExit {
     pub stack: Vec<Opnd>,
     pub locals: Vec<Opnd>,
     pub iseq: IseqPtr,
-    /// If set, the side exit will call the recompile function with these arguments
-    /// to profile the send and invalidate the ISEQ for recompilation.
+    /// If set, the side exit will profile the current instruction and invalidate
+    /// the compiled ISEQ for recompilation.
     pub recompile: Option<SideExitRecompile>,
 }
 
-/// Arguments for the recompile callback on side exit.
+/// Metadata for the recompile callback on side exit.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct SideExitRecompile {
-    /// The frame's own iseq, where the runtime profile is recorded at `insn_idx`.
-    /// For an exit out of inlined code this is the inlined callee.
-    pub frame_iseq: Opnd,
     /// The compiled unit whose version must be invalidated to force a recompile. For inlined
     /// methods, this will be the outer function it was inlined into.
     pub compiled_iseq: Opnd,
     pub insn_idx: u32,
-    pub strategy: hir::Recompile,
 }
 
 /// Branch target (something that we can jump to)
@@ -2588,15 +2584,10 @@ impl Assembler
                 let payload = get_or_create_iseq_payload(exit.iseq);
                 payload.reset_profiles_remaining(recompile.insn_idx as YarvInsnIdx);
                 use crate::codegen::exit_recompile;
-                let (profile_kind, profile_payload) = recompile.strategy.to_c_args();
                 asm_comment!(asm, "profile and maybe recompile");
                 asm_ccall!(asm, exit_recompile,
                     EC,
-                    recompile.frame_iseq,
-                    recompile.compiled_iseq,
-                    recompile.insn_idx.into(),
-                    profile_kind.into(),
-                    profile_payload.into()
+                    recompile.compiled_iseq
                 );
             }
         }

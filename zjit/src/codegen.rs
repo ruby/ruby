@@ -21,7 +21,7 @@ use crate::stats::{counter_ptr, with_time_stat, trace_compile_phase, Counter, Co
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_BASE_PTR, Opnd, SP, SideExit, SideExitRecompile, Target, asm_ccall, asm_comment};
 use crate::hir::{iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
-use crate::hir::{BlockHandler, Const, FieldName, FrameState, Function, Insn, InsnId, Recompile, SendFallbackReason};
+use crate::hir::{BlockHandler, Const, FieldName, FrameState, Function, Insn, InsnId, SendFallbackReason};
 use crate::hir_type::{types, Type};
 use crate::options::{get_option, InlineDepth, PerfMap};
 use crate::cast::IntoUsize;
@@ -523,7 +523,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                                 Insn::InvokeBuiltin { .. } => SideExitReason::UnhandledHIRInvokeBuiltin,
                                 _                          => SideExitReason::UnhandledHIRUnknown(insn_id),
                             };
-                            gen_side_exit(&mut jit, &mut asm, &reason, None, &function.frame_state(last_snapshot));
+                            gen_side_exit(&mut jit, &mut asm, &reason, false, &function.frame_state(last_snapshot));
                             // Don't bother generating code after a side-exit. We won't run it.
                             // TODO(max): Generate ud2 or equivalent.
                             break;
@@ -1240,7 +1240,7 @@ fn gen_setglobal(jit: &mut JITState, asm: &mut Assembler, id: ID, val: Opnd, sta
 }
 
 /// Side-exit into the interpreter
-fn gen_side_exit(jit: &mut JITState, asm: &mut Assembler, reason: &SideExitReason, recompile: Option<Recompile>, state: &FrameState) {
+fn gen_side_exit(jit: &mut JITState, asm: &mut Assembler, reason: &SideExitReason, recompile: bool, state: &FrameState) {
     asm.jmp(side_exit_with_recompile(jit, state, *reason, recompile));
 }
 
@@ -2661,7 +2661,7 @@ fn gen_has_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, val_typ
 }
 
 /// Compile a type check with a side exit
-fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, val_type: Type, guard_type: Type, recompile: Option<Recompile>, state: &FrameState) -> lir::Opnd {
+fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, val_type: Type, guard_type: Type, recompile: bool, state: &FrameState) -> lir::Opnd {
     let is_known_heap_basic_object = val_type.is_subtype(types::HeapBasicObject);
     gen_incr_counter(asm, Counter::guard_type_count);
     if guard_type.is_subtype(types::Fixnum) {
@@ -2746,7 +2746,7 @@ fn gen_guard_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, val_t
 }
 
 /// Compile an identity check with a side exit
-fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, expected: crate::hir::Const, reason: SideExitReason, recompile: Option<Recompile>, state: &FrameState) -> lir::Opnd {
+fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, expected: crate::hir::Const, reason: SideExitReason, recompile: bool, state: &FrameState) -> lir::Opnd {
     if matches!(reason, SideExitReason::GuardShape(_) ) {
         gen_incr_counter(asm, Counter::guard_shape_count);
     }
@@ -2772,7 +2772,7 @@ fn mask_to_opnd(mask: crate::hir::Const) -> Option<Opnd> {
 }
 
 /// Compile a bitmask check with a side exit if none of the masked bits are not set
-fn gen_guard_any_bit_set(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, mask: crate::hir::Const, reason: SideExitReason, recompile: Option<Recompile>, state: &FrameState) -> lir::Opnd {
+fn gen_guard_any_bit_set(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, mask: crate::hir::Const, reason: SideExitReason, recompile: bool, state: &FrameState) -> lir::Opnd {
     let mask_opnd = mask_to_opnd(mask).unwrap_or_else(|| panic!("gen_guard_any_bit_set: unexpected hir::Const {mask:?}"));
     asm.test(val, mask_opnd);
     asm.jz(jit, side_exit_with_recompile(jit, state, reason, recompile));
@@ -3151,14 +3151,14 @@ fn side_exit(jit: &JITState, state: &FrameState, reason: SideExitReason) -> Targ
 }
 
 /// Build a Target::SideExit that optionally triggers exit_recompile on the exit path.
-fn side_exit_with_recompile(jit: &JITState, state: &FrameState, reason: SideExitReason, recompile: Option<Recompile>) -> Target {
+fn side_exit_with_recompile(jit: &JITState, state: &FrameState, reason: SideExitReason, recompile: bool) -> Target {
     let mut exit = build_side_exit(jit, state);
-    exit.recompile = recompile.map(|strategy| SideExitRecompile {
-        frame_iseq: Opnd::Value(VALUE::from(state.iseq)),
-        compiled_iseq: Opnd::Value(VALUE::from(jit.iseq())),
-        insn_idx: state.insn_idx() as u32,
-        strategy,
-    });
+    if recompile {
+        exit.recompile = Some(SideExitRecompile {
+            compiled_iseq: Opnd::Value(VALUE::from(jit.iseq())),
+            insn_idx: state.insn_idx() as u32,
+        });
+    }
     Target::SideExit { exit, reason }
 }
 
@@ -3204,19 +3204,13 @@ pub(crate) use c_callable;
 
 c_callable! {
     /// Called from JIT side-exit code to profile operands and trigger recompilation.
-    /// `profile_kind` selects what to profile; `profile_payload` carries kind-specific data.
     /// Once enough profiles are gathered, invalidates the compiled unit for recompilation.
     ///
-    /// Two iseqs are passed because they diverge for inlined code. `frame_iseq_raw` is
-    /// the frame's own iseq, where the runtime profile is recorded; for an exit out of
-    /// an inlined callee this is the callee, which typically has no compiled version of
-    /// its own. `compiled_iseq_raw` is the function that was actually compiled (the
-    /// inliner folds the callee's body into it), so its version is the one holding the
-    /// failing guard and the one we must invalidate to force a recompile. For
-    /// non-inlined code the two are identical.
-    pub(crate) fn exit_recompile(ec: EcPtr, frame_iseq_raw: VALUE, compiled_iseq_raw: VALUE, insn_idx: u32, profile_kind: i32, profile_payload: i32) {
-        let recompile = Recompile::from_c_args(profile_kind, profile_payload);
-
+    /// `compiled_iseq_raw` is the ISEQ that was actually compiled. For an exit out
+    /// of inlined code, the inliner folds the callee's body into the outer ISEQ, so
+    /// the outer ISEQ's version holds the failing guard and must be invalidated to
+    /// force a recompile. For non-inlined code, it is the same as the frame ISEQ.
+    pub(crate) fn exit_recompile(ec: EcPtr, compiled_iseq_raw: VALUE) {
         // Fast check before taking the VM lock: skip if the compiled unit is already
         // invalidated or at the version limit. This avoids expensive lock acquisition
         // on every shape guard exit after the recompile has already been triggered.
@@ -3233,37 +3227,10 @@ c_callable! {
         }
 
         with_vm_lock(src_loc!(), || {
-            let frame_iseq: IseqPtr = frame_iseq_raw.as_iseq();
             let compiled_iseq: IseqPtr = compiled_iseq_raw.as_iseq();
 
-            // For no-profile sends, skip if already profiled at this insn_idx.
-            // For shape guard exits, always re-profile because the
-            // original YARV profiles were monomorphic but runtime showed new shapes.
-            if matches!(recompile, Recompile::ProfileSend { .. }) &&
-                get_or_create_iseq_payload(frame_iseq).profile.done_profiling_at(insn_idx as usize) {
-                return;
-            }
-
             let should_recompile = with_time_stat(Counter::profile_time_ns, || {
-                let cfp = unsafe { get_ec_cfp(ec) };
-                let payload = get_or_create_iseq_payload(frame_iseq);
-
-                match recompile {
-                    Recompile::ProfileSend { argc } => {
-                        let sp = unsafe { get_cfp_sp(cfp) };
-                        // Profile the receiver and arguments for this send instruction
-                        payload.profile.profile_send_at(frame_iseq, insn_idx as usize, sp, argc as usize)
-                    }
-                    Recompile::ProfileSelf => {
-                        // Profile self for shape guard exits
-                        let self_val = unsafe { get_cfp_self(cfp) };
-                        payload.profile.profile_self_at(frame_iseq, insn_idx as usize, self_val)
-                    }
-                    Recompile::ProfileBlockHandler => {
-                        // Profile the block handler for this getblockparamproxy instruction
-                        payload.profile.profile_getblockparamproxy_at(frame_iseq, insn_idx as usize, cfp)
-                    }
-                }
+                crate::profile::profile_recompile_insn(ec)
             });
 
             // Once we have enough profiles, invalidate the compiled unit so it
