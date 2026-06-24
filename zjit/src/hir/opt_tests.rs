@@ -16595,7 +16595,7 @@ mod hir_opt_tests {
           v88:Array = RefineType v67, Array
           v89:CInt64 = UnboxFixnum v68
           v90:BasicObject = ArrayAref v88, v89
-          v74:BasicObject = InvokeBlock, v90 # SendFallbackReason: InvokeBlock: not yet specialized
+          v74:BasicObject = InvokeBlock v90 # SendFallbackReason: InvokeBlock: not yet specialized
           v91:Fixnum[1] = Const Value(1)
           v92:Fixnum = FixnumAdd v68, v91
           PatchPoint NoEPEscape(each)
@@ -16943,7 +16943,7 @@ mod hir_opt_tests {
           v20:BasicObject = InvokeBlockIfunc v13, v10
           Jump bb4(v20)
         bb6():
-          v22:BasicObject = InvokeBlock, v10 # SendFallbackReason: InvokeBlock: not yet specialized
+          v22:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: not yet specialized
           Jump bb4(v22)
         bb4(v18:BasicObject):
           v27:Fixnum[2] = Const Value(2)
@@ -16958,7 +16958,7 @@ mod hir_opt_tests {
           v37:BasicObject = InvokeBlockIfunc v30, v27
           Jump bb7(v37)
         bb9():
-          v39:BasicObject = InvokeBlock, v27 # SendFallbackReason: InvokeBlock: not yet specialized
+          v39:BasicObject = InvokeBlock v27 # SendFallbackReason: InvokeBlock: not yet specialized
           Jump bb7(v39)
         bb7(v35:BasicObject):
           CheckInterrupts
@@ -18858,7 +18858,7 @@ mod hir_opt_tests {
           PatchPoint MethodRedefined(Object@0x1008, with_yield@0x1010, cme:0x1018)
           v27:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
           PushInlineFrame v27 (0x1040), v10
-          v35:BasicObject = InvokeBlock, v10 # SendFallbackReason: InvokeBlock: not yet specialized
+          v35:BasicObject = InvokeBlock v10 # SendFallbackReason: InvokeBlock: not yet specialized
           CheckInterrupts
           PopInlineFrame
           PatchPoint NoEPEscape(test)
