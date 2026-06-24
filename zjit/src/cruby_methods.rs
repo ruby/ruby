@@ -321,13 +321,13 @@ fn inline_thread_current(fun: &mut hir::Function, block: hir::BlockId, _recv: hi
     let thread_ptr = fun.push_insn(block, hir::Insn::LoadField {
         recv: ec,
         id: FieldName::thread_ptr,
-        offset: RUBY_OFFSET_EC_THREAD_PTR as i32,
+        offset: RUBY_OFFSET_EC_THREAD_PTR,
         return_type: types::CPtr,
     });
     let thread_self = fun.push_insn(block, hir::Insn::LoadField {
         recv: thread_ptr,
         id: FieldName::SelfParam,
-        offset: RUBY_OFFSET_THREAD_SELF as i32,
+        offset: RUBY_OFFSET_THREAD_SELF,
         // TODO(max): Add Thread type. But Thread.current is not guaranteed to be an exact Thread.
         // You can make subclasses...
         return_type: types::BasicObject,
@@ -343,14 +343,20 @@ fn inline_kernel_itself(_fun: &mut hir::Function, _block: hir::BlockId, recv: hi
     None
 }
 
-fn inline_kernel_block_given_p(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], _state: hir::InsnId) -> Option<hir::InsnId> {
+fn inline_kernel_block_given_p(fun: &mut hir::Function, block: hir::BlockId, _recv: hir::InsnId, args: &[hir::InsnId], state: hir::InsnId) -> Option<hir::InsnId> {
     let &[] = args else { return None; };
 
-    let local_iseq = unsafe { rb_get_iseq_body_local_iseq(fun.iseq()) };
+    // Use the FrameState's iseq rather than fun.iseq(). For inlined code these diverge:
+    // fun.iseq() is the outer JIT function, while state.iseq is the iseq of the frame that
+    // will be live when this block_given? actually runs. The level computed from fun.iseq()
+    // walks the wrong number of EP links at runtime (crashes when the outer is a block iseq
+    // and the callee is a method, because the walk overshoots the inlined method's frame).
+    let call_site_iseq = fun.frame_state(state).iseq;
+    let local_iseq = unsafe { rb_get_iseq_body_local_iseq(call_site_iseq) };
     if unsafe { rb_get_iseq_body_type(local_iseq) } == ISEQ_TYPE_METHOD {
         // Get the EP of the ISeq of the containing method, or "local level", skipping over block-level EPs.
         // Equivalent of GET_LEP() macro.
-        let level = crate::cruby::get_lvar_level(fun.iseq());
+        let level = crate::cruby::get_lvar_level(call_site_iseq);
         let lep = fun.push_insn(block, hir::Insn::GetEP { level });
         Some(fun.push_insn(block, hir::Insn::IsBlockGiven { lep }))
     } else {
@@ -461,7 +467,7 @@ fn inline_string_bytesize(fun: &mut hir::Function, block: hir::BlockId, recv: hi
         let len = fun.push_insn(block, hir::Insn::LoadField {
             recv,
             id: FieldName::len,
-            offset: RUBY_OFFSET_RSTRING_LEN as i32,
+            offset: RUBY_OFFSET_RSTRING_LEN,
             return_type: types::CInt64,
         });
 
@@ -485,7 +491,7 @@ fn inline_string_getbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
         let len = fun.push_insn(block, hir::Insn::LoadField {
             recv,
             id: FieldName::len,
-            offset: RUBY_OFFSET_RSTRING_LEN as i32,
+            offset: RUBY_OFFSET_RSTRING_LEN,
             return_type: types::CInt64,
         });
         // TODO(max): Find a way to mark these guards as not needed for correctness... as in, once
@@ -513,7 +519,7 @@ fn inline_string_setbyte(fun: &mut hir::Function, block: hir::BlockId, recv: hir
         let len = fun.push_insn(block, hir::Insn::LoadField {
             recv,
             id: FieldName::len,
-            offset: RUBY_OFFSET_RSTRING_LEN as i32,
+            offset: RUBY_OFFSET_RSTRING_LEN,
             return_type: types::CInt64,
         });
         let unboxed_index = fun.push_insn(block, hir::Insn::GuardLess { left: unboxed_index, right: len, reason: SideExitReason::GuardLess, state });
@@ -536,7 +542,7 @@ fn inline_string_empty_p(fun: &mut hir::Function, block: hir::BlockId, recv: hir
     let len = fun.push_insn(block, hir::Insn::LoadField {
         recv,
         id: FieldName::len,
-        offset: RUBY_OFFSET_RSTRING_LEN as i32,
+        offset: RUBY_OFFSET_RSTRING_LEN,
         return_type: types::CInt64,
     });
     let zero = fun.push_insn(block, hir::Insn::Const { val: hir::Const::CInt64(0) });

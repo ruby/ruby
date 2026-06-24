@@ -5,8 +5,8 @@ require_relative "vendored_tsort"
 ##
 # A RequestSet groups a request to activate a set of dependencies.
 #
-#   nokogiri = Gem::Dependency.new 'nokogiri', '~> 1.6'
-#   pg = Gem::Dependency.new 'pg', '~> 0.14'
+#   nokogiri = Gem::Dependency.new 'nokogiri', '>= 1.6'
+#   pg = Gem::Dependency.new 'pg', '>= 0.14'
 #
 #   set = Gem::RequestSet.new nokogiri, pg
 #
@@ -86,8 +86,8 @@ class Gem::RequestSet
   # Creates a RequestSet for a list of Gem::Dependency objects, +deps+.  You
   # can then #resolve and #install the resolved list of dependencies.
   #
-  #   nokogiri = Gem::Dependency.new 'nokogiri', '~> 1.6'
-  #   pg = Gem::Dependency.new 'pg', '~> 0.14'
+  #   nokogiri = Gem::Dependency.new 'nokogiri', '>= 1.6'
+  #   pg = Gem::Dependency.new 'pg', '>= 0.14'
   #
   #   set = Gem::RequestSet.new nokogiri, pg
 

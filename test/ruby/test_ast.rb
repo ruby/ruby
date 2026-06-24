@@ -7,23 +7,18 @@ require_relative '../lib/parser_support'
 class RubyVM
   module AbstractSyntaxTree
     class Node
-      class CodePosition
+      CodePosition = Data.define(:lineno, :column) do
         include Comparable
-        attr_reader :lineno, :column
-        def initialize(lineno, column)
-          @lineno = lineno
-          @column = column
-        end
 
         def <=>(other)
-          case
-          when lineno < other.lineno
-            -1
-          when lineno == other.lineno
-            column <=> other.column
-          when lineno > other.lineno
-            1
-          end
+          (lineno <=> other.lineno).nonzero? || column <=> other.column
+        end
+        def to_s
+          "@#{lineno}:#{column}"
+        end
+        alias inspect to_s
+        def pretty_print(q)
+          q.text to_s
         end
       end
 

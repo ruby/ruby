@@ -193,6 +193,59 @@ class CGIEscapeTest < Test::Unit::TestCase
     def test_cgi_unescapeHTML_following_invalid_numeric
       assert_equal('&#1114112>&#x110000>', CGI.unescapeHTML('&#1114112&gt;&#x110000&gt;'))
     end
+
+    # https://github.com/ruby/cgi/issues/103
+    # A numeric character reference must decode without raising even when the
+    # surrounding text already contains non-ASCII bytes.
+    def test_cgi_unescapeHTML_nonascii_with_numeric_charref
+      assert_equal("☆ α", CGI.unescapeHTML("☆ &#945;"))
+      assert_equal("☆ α", CGI.unescapeHTML("☆ &#x3B1;"))
+      assert_equal("☆ α", CGI.unescapeHTML("☆ &#X3B1;"))
+      assert_equal("\u{1F984} α", CGI.unescapeHTML("\u{1F984} &#945;"))
+      result = CGI.unescapeHTML("☆ &#945;")
+      assert_equal(Encoding::UTF_8, result.encoding)
+      assert_predicate(result, :valid_encoding?)
+    end
+
+    def test_cgi_unescapeHTML_nonascii_with_named_charref
+      assert_equal("☆ & < > \" '", CGI.unescapeHTML("☆ &amp; &lt; &gt; &quot; &apos;"))
+    end
+
+    def test_cgi_unescapeHTML_nonascii_charref_iso_8859_1
+      input    = "\xE9 &#233; &#xE9;".dup.force_encoding("ISO-8859-1")
+      expected = "\xE9 \xE9 \xE9".dup.force_encoding("ISO-8859-1")
+      assert_equal(expected, CGI.unescapeHTML(input))
+      assert_equal(Encoding::ISO_8859_1, CGI.unescapeHTML(input).encoding)
+      # A code point outside Latin-1 exceeds the charlimit and is kept verbatim.
+      verbatim = "\xE9 &#945;".dup.force_encoding("ISO-8859-1")
+      assert_equal(verbatim, CGI.unescapeHTML(verbatim))
+    end
+
+    def test_cgi_unescapeHTML_charref_out_of_range
+      assert_equal("&#1114112;", CGI.unescapeHTML("&#1114112;"))
+      assert_equal("&#x110000;", CGI.unescapeHTML("&#x110000;"))
+      # Leading zeros are preserved when kept verbatim, matching the C extension.
+      assert_equal("&#0011141112;", CGI.unescapeHTML("&#0011141112;"))
+      assert_equal("☆ &#1114112;", CGI.unescapeHTML("☆ &#1114112;"))
+    end
+
+    def test_cgi_unescapeHTML_surrogate_charref
+      # Surrogate code points are below the UTF-8 limit, so they are emitted as
+      # raw (intentionally invalid) UTF-8 bytes rather than raising, matching the
+      # C extension's rb_enc_mbcput. The result is not validated.
+      assert_equal([0xED, 0xA0, 0x80], CGI.unescapeHTML("&#xD800;").bytes)
+      assert_equal([0xED, 0xA0, 0x80], CGI.unescapeHTML("&#55296;").bytes)
+      assert_equal([0xED, 0xBF, 0xBF], CGI.unescapeHTML("&#xDFFF;").bytes)
+    end
+
+    def test_cgi_unescapeHTML_charref_preserve_encoding
+      ["UTF-8", "EUC-JP", "Windows-31J", "ISO-8859-1", "US-ASCII"].each do |name|
+        enc = Encoding.find(name)
+        result = CGI.unescapeHTML("a&#65;b".encode(enc))
+        assert_equal("aAb".encode(enc), result, name)
+        assert_equal(enc, result.encoding, name)
+      end
+    end
   end
 
   include UnescapeHTMLTests
@@ -290,6 +343,39 @@ class CGIEscapeTest < Test::Unit::TestCase
     assert_equal('<A <A ', unescapeElement(escapeHTML('<A <A '), ["A", "IMG"]))
     assert_equal('<A <A ', unescape_element(escapeHTML('<A <A '), "A", "IMG"))
     assert_equal('<A <A ', unescape_element(escapeHTML('<A <A '), ["A", "IMG"]))
+  end
+end
+
+class CGIEscapeNativeExtTest < Test::Unit::TestCase
+  def test_escape_html_uses_native_implementation
+    omit "C extension not available" unless defined?(CGI::EscapeExt) && CGI::EscapeExt.method_defined?(:escapeHTML)
+    assert_equal CGI::EscapeExt, CGI.method(:escape_html).owner
+    assert_equal CGI::EscapeExt, CGI.method(:h).owner
+    assert_equal CGI::EscapeExt, CGI.method(:unescape_html).owner
+  end
+
+  def test_escape_html_allocates_same_as_escapeHTML
+    omit "C extension not available" unless defined?(CGI::EscapeExt) && CGI::EscapeExt.method_defined?(:escapeHTML)
+
+    input = "'&\"<>hello world"
+    n = 100
+
+    # Warm up
+    2.times { n.times { CGI.escapeHTML(input) } }
+    2.times { n.times { CGI.escape_html(input) } }
+
+    GC.disable
+    before = GC.stat(:total_allocated_objects)
+    n.times { CGI.escapeHTML(input) }
+    camel_allocs = GC.stat(:total_allocated_objects) - before
+
+    before = GC.stat(:total_allocated_objects)
+    n.times { CGI.escape_html(input) }
+    snake_allocs = GC.stat(:total_allocated_objects) - before
+    GC.enable
+
+    assert_equal camel_allocs, snake_allocs,
+      "escape_html allocated #{snake_allocs} objects vs escapeHTML #{camel_allocs} — alias may not be using the C extension"
   end
 end
 

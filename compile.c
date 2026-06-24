@@ -3149,41 +3149,56 @@ find_destination(INSN *i)
 static int
 remove_unreachable_chunk(rb_iseq_t *iseq, LINK_ELEMENT *i)
 {
-    LINK_ELEMENT *first = i, *end;
+    LINK_ELEMENT *first = i, *end, *scan;
     int *unref_counts = 0, nlabels = ISEQ_COMPILE_DATA(iseq)->label_no;
 
     if (!i) return 0;
     unref_counts = ALLOCA_N(int, nlabels);
     MEMZERO(unref_counts, int, nlabels);
-    end = i;
+
+    scan = i;
     do {
         LABEL *lab;
-        if (IS_INSN(i)) {
-            if (IS_INSN_ID(i, leave)) {
-                end = i;
+        if (IS_INSN(scan)) {
+            if (IS_INSN_ID(scan, leave)) {
                 break;
             }
-            else if ((lab = find_destination((INSN *)i)) != 0) {
+            else if ((lab = find_destination((INSN *)scan)) != 0) {
                 unref_counts[lab->label_no]++;
             }
         }
-        else if (IS_LABEL(i)) {
-            lab = (LABEL *)i;
+        else if (IS_LABEL(scan)) {
+            lab = (LABEL *)scan;
             if (lab->unremovable) return 0;
+        }
+        else if (IS_ADJUST(scan)) {
+            return 0;
+        }
+    } while ((scan = scan->next) != 0);
+
+    end = i;
+    scan = i;
+    do {
+        LABEL *lab;
+        if (IS_INSN(scan)) {
+            if (IS_INSN_ID(scan, leave)) {
+                end = scan;
+                break;
+            }
+        }
+        else if (IS_LABEL(scan)) {
+            lab = (LABEL *)scan;
             if (lab->refcnt > unref_counts[lab->label_no]) {
-                if (i == first) return 0;
+                if (scan == first) return 0;
                 break;
             }
             continue;
         }
-        else if (IS_TRACE(i)) {
-            /* do nothing */
-        }
-        else if (IS_ADJUST(i)) {
+        else if (IS_ADJUST(scan)) {
             return 0;
         }
-        end = i;
-    } while ((i = i->next) != 0);
+        end = scan;
+    } while ((scan = scan->next) != 0);
     i = first;
     do {
         if (IS_INSN(i)) {
@@ -3947,6 +3962,11 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 else {
                     RB_OBJ_SET_SHAREABLE(re);
                 }
+                /* The folded operand is a Regexp, so the instruction must be
+                 * putobject: dupstring/dupchilledstring would resurrect the
+                 * Regexp as a String at run time (e.g. for a /o regexp whose
+                 * interpolation folds to a constant, such as /#{"a"}/o). */
+                iobj->insn_id = BIN(putobject);
                 RB_OBJ_WRITE(iseq, &OPERAND_AT(iobj, 0), re);
                 ELEM_REMOVE(iobj->link.next);
             }
@@ -12371,7 +12391,7 @@ static const rb_data_type_t labels_wrapper_type = {
         .dmark = (RUBY_DATA_FUNC)rb_mark_set,
         .dfree = (RUBY_DATA_FUNC)st_free_table,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 void
@@ -12632,7 +12652,7 @@ static const rb_data_type_t pinned_list_type = {
         RUBY_DEFAULT_FREE,
         NULL, // No external memory to report,
     },
-    0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_EMBEDDABLE
 };
 
 static VALUE
@@ -14816,7 +14836,7 @@ ibf_dump_memsize(const void *ptr)
 static const rb_data_type_t ibf_dump_type = {
     "ibf_dump",
     {ibf_dump_mark, ibf_dump_free, ibf_dump_memsize,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_EMBEDDABLE
 };
 
 static void
@@ -15053,7 +15073,7 @@ ibf_loader_memsize(const void *ptr)
 static const rb_data_type_t ibf_load_type = {
     "ibf_loader",
     {ibf_loader_mark, ibf_loader_free, ibf_loader_memsize,},
-    0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_THREAD_SAFE_FREE
 };
 
 const rb_iseq_t *

@@ -111,6 +111,7 @@ class << RubyVM::ZJIT
     print_counters_with_prefix(prefix: 'definedivar_fallback_', prompt: 'definedivar fallback reasons', buf:, stats:, limit: 5)
     print_counters_with_prefix(prefix: 'invokeblock_handler_', prompt: 'invokeblock handler', buf:, stats:, limit: 10)
     print_counters_with_prefix(prefix: 'getblockparamproxy_handler_', prompt: 'getblockparamproxy handler', buf:, stats:, limit: 10)
+    print_counters_with_prefix(prefix: 'inline_reject_', prompt: 'HIR-level inlining rejection reasons', buf:, stats:, limit: 10)
 
     # Show most popular unsupported call features. Because each call can
     # use multiple complex features, a decrease in this number does not
@@ -128,16 +129,18 @@ class << RubyVM::ZJIT
       :send_count,
       :dynamic_send_count,
       :optimized_send_count,
-      :dynamic_setivar_count,
-      :dynamic_getivar_count,
-      :dynamic_definedivar_count,
       :iseq_optimized_send_count,
       :inline_cfunc_optimized_send_count,
       :inline_iseq_optimized_send_count,
+      :inline_method_count,
       :non_variadic_cfunc_optimized_send_count,
       :variadic_cfunc_optimized_send_count,
     ], buf:, stats:, right_align: true, base: :send_count)
     print_counters([
+      :dynamic_setivar_count,
+      :dynamic_getivar_count,
+      :dynamic_definedivar_count,
+
       :compiled_iseq_count,
       :compiled_side_exit_count,
       :failed_iseq_count,
@@ -148,6 +151,7 @@ class << RubyVM::ZJIT
       :compile_hir_time_ns,
       :compile_hir_build_time_ns,
       :compile_hir_strength_reduce_time_ns,
+      :compile_hir_inline_methods_time_ns,
       :compile_hir_canonicalize_time_ns,
       :compile_hir_fold_constants_time_ns,
       :compile_hir_clean_cfg_time_ns,

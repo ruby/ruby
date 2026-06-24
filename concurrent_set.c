@@ -91,7 +91,7 @@ static const rb_data_type_t concurrent_set_type = {
         .dsize = concurrent_set_size,
     },
     /* Hack: NOT WB_PROTECTED on purpose (see above) */
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_EMBEDDABLE
 };
 
 VALUE

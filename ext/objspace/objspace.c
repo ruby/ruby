@@ -546,7 +546,16 @@ iow_inspect(VALUE self)
     return rb_sprintf("#<InternalObject:%p %"PRIsVALUE">", (void *)obj, rb_sym2str(type));
 }
 
-/* Returns the Object#object_id of the internal object. */
+/*
+ *  call-seq:
+ *     internal_object_id -> integer
+ *
+ *  Returns the Object#object_id of the wrapped internal object.
+ *
+ *  This value identifies the wrapped internal object, not the
+ *  ObjectSpace::InternalObjectWrapper instance. Use it only for debugging and
+ *  introspection; object ids of internal objects are implementation specific.
+ */
 static VALUE
 iow_internal_object_id(VALUE self)
 {

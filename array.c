@@ -3107,28 +3107,20 @@ rb_ary_join(VALUE ary, VALUE sep)
  *  call-seq:
  *    join(separator = $,) -> new_string
  *
- *  Returns the new string formed by joining the converted elements of +self+;
- *  for each element +element+:
+ *  Returns the new string formed by joining the string-converted elements of +self+
+ *  with the given +separator+ (defaults to <tt>$,</tt>):
  *
- *  - Converts recursively using <tt>element.join(separator)</tt>
- *    if +element+ is a <tt>kind_of?(Array)</tt>.
- *  - Otherwise, converts using <tt>element.to_s</tt>.
+ *    $,                  # => nil
+ *    %w[].join           # => ""
+ *    %w[foo].join        # => "foo"
+ *    a = %w[foo bar baz] # => ["foo", "bar", "baz"]
+ *    a.join              # => "foobarbaz"
+ *    a.join('|')         # => "foo|bar|baz"
+ *    a.join(' :|: ')     # => "foo :|: bar :|: baz"
  *
- *  With no argument given, joins using the output field separator, <tt>$,</tt>:
+ *  Flattens and joins nested arrays:
  *
- *    a = [:foo, 'bar', 2]
- *    $, # => nil
- *    a.join # => "foobar2"
- *
- *  With string argument +separator+ given, joins using that separator:
- *
- *    a = [:foo, 'bar', 2]
- *    a.join("\n") # => "foo\nbar\n2"
- *
- *  Joins recursively for nested arrays:
- *
- *   a = [:foo, [:bar, [:baz, :bat]]]
- *   a.join # => "foobarbazbat"
+ *    [:foo, [:bar, [:baz, :bat]]].join # => "foobarbazbat"
  *
  *  Related: see {Methods for Converting}[rdoc-ref:Array@Methods+for+Converting].
  */
@@ -6928,7 +6920,7 @@ static const rb_data_type_t ary_sample_memo_type = {
     .function = {
         .dfree = (RUBY_DATA_FUNC)st_free_table,
     },
-    .flags = RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
+    .flags = RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_THREAD_SAFE_FREE
 };
 
 static VALUE

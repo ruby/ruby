@@ -170,6 +170,7 @@ make_counters! {
         compile_hir_time_ns,
         compile_hir_build_time_ns,
         compile_hir_strength_reduce_time_ns,
+        compile_hir_inline_methods_time_ns,
         compile_hir_optimize_load_store_time_ns,
         compile_hir_canonicalize_time_ns,
         compile_hir_fold_constants_time_ns,
@@ -233,6 +234,7 @@ make_counters! {
         exit_block_param_proxy_profile_not_covered,
         exit_block_param_wb_required,
         exit_too_many_keyword_parameters,
+        exit_too_many_args_for_lir,
         exit_no_profile_send,
         exit_splatkw_not_nil_or_hash,
         exit_splatkw_polymorphic,
@@ -322,6 +324,11 @@ make_counters! {
     dynamic_getivar {
         // getivar_fallback_: Fallback reasons for dynamic getivar instructions
         getivar_fallback_not_monomorphic,
+        getivar_fallback_megamorphic,
+        getivar_fallback_skewed_megamorphic,
+        getivar_fallback_polymorphic,
+        getivar_fallback_no_profile_missing_ic,
+        getivar_fallback_no_profile,
         getivar_fallback_immediate,
         getivar_fallback_not_t_object,
         getivar_fallback_complex,
@@ -462,6 +469,19 @@ make_counters! {
     invokeblock_handler_polymorphic,
     invokeblock_handler_megamorphic,
     invokeblock_handler_no_profiles,
+
+    // HIR-level method inliner counters. Most rejection counters are incremented
+    // once per SendDirect the inliner considers. inline_reject_budget_exceeded may
+    // be incremented only once, rather than once per SendDirect, if the caller
+    // already exceeds the budget before scanning for its SendDirects.
+    inline_method_count,
+    inline_reject_too_large,
+    inline_reject_complex_params,
+    inline_reject_ep_escapes,
+    inline_reject_denied,
+    inline_reject_compile_failure,
+    inline_reject_no_returns,
+    inline_reject_budget_exceeded,
 
     getblockparamproxy_handler_iseq,
     getblockparamproxy_handler_ifunc,
@@ -616,6 +636,7 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         BlockParamProxyProfileNotCovered => exit_block_param_proxy_profile_not_covered,
         BlockParamWbRequired          => exit_block_param_wb_required,
         TooManyKeywordParameters      => exit_too_many_keyword_parameters,
+        TooManyArgsForLir             => exit_too_many_args_for_lir,
         SplatKwNotNilOrHash           => exit_splatkw_not_nil_or_hash,
         SplatKwPolymorphic            => exit_splatkw_polymorphic,
         SplatKwNotProfiled            => exit_splatkw_not_profiled,

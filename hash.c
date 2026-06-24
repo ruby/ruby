@@ -402,6 +402,7 @@ typedef st_index_t st_hash_t;
  */
 
 #define RHASH_AR_TABLE_MAX_BOUND     RHASH_AR_TABLE_MAX_SIZE
+#define RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE (RHASH_AR_TABLE_MAX_BOUND + 1)
 
 #define RHASH_AR_TABLE_REF(hash, n) (&RHASH_AR_TABLE(hash)->pairs[n])
 #define RHASH_AR_CLEARED_HINT 0xff
@@ -603,18 +604,22 @@ ar_equal(VALUE x, VALUE y)
     return rb_any_cmp(x, y) == 0;
 }
 
+// Returns the bin index if found, RHASH_AR_TABLE_MAX_BOUND if not found,
+// or RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE if #eql? or a Thread converted the hash to st_table.
 static unsigned
 ar_find_entry_hint(VALUE hash, ar_hint_t hint, st_data_t key)
 {
-    unsigned i, bound = RHASH_AR_TABLE_BOUND(hash);
-    const ar_hint_t *hints = RHASH_AR_TABLE(hash)->ar_hint.ary;
-
     /* if table is NULL, then bound also should be 0 */
 
-    for (i = 0; i < bound; i++) {
+    for (unsigned i = 0; i < RHASH_AR_TABLE_BOUND(hash); i++) {
+        const ar_hint_t *hints = RHASH_AR_TABLE(hash)->ar_hint.ary;
         if (hints[i] == hint) {
             ar_table_pair *pair = RHASH_AR_TABLE_REF(hash, i);
-            if (ar_equal(key, pair->key)) {
+            int eq = ar_equal(key, pair->key);
+            if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) {
+                return RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE;
+            }
+            if (eq) {
                 RB_DEBUG_COUNTER_INC(artable_hint_hit);
                 return i;
             }
@@ -898,6 +903,9 @@ ar_foreach_check(VALUE hash, st_foreach_check_callback_func *func, st_data_t arg
                 pair = RHASH_AR_TABLE_REF(hash, i);
                 if (pair->key == never) break;
                 ret = ar_find_entry_hint(hash, hint, key);
+                if (UNLIKELY(ret == RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE)) {
+                    ensure_ar_table(hash);
+                }
                 if (ret == RHASH_AR_TABLE_MAX_BOUND) {
                     (*func)(0, 0, arg, 1);
                     return 2;
@@ -937,6 +945,9 @@ ar_update(VALUE hash, st_data_t key,
 
     if (RHASH_AR_TABLE_SIZE(hash) > 0) {
         bin = ar_find_entry(hash, hash_value, key);
+        if (UNLIKELY(bin == RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE)) {
+            return -1;
+        }
         existing = (bin != RHASH_AR_TABLE_MAX_BOUND) ? TRUE : FALSE;
     }
     else {
@@ -990,6 +1001,9 @@ ar_insert(VALUE hash, st_data_t key, st_data_t value)
     }
 
     bin = ar_find_entry(hash, hash_value, key);
+    if (UNLIKELY(bin == RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE)) {
+        return -1;
+    }
     if (bin == RHASH_AR_TABLE_MAX_BOUND) {
         if (RHASH_AR_TABLE_SIZE(hash) >= RHASH_AR_TABLE_MAX_SIZE) {
             return -1;
@@ -1023,6 +1037,9 @@ ar_lookup(VALUE hash, st_data_t key, st_data_t *value)
             return st_lookup(RHASH_ST_TABLE(hash), key, value);
         }
         unsigned bin = ar_find_entry(hash, hash_value, key);
+        if (UNLIKELY(bin == RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE)) {
+            return st_lookup(RHASH_ST_TABLE(hash), key, value);
+        }
 
         if (bin == RHASH_AR_TABLE_MAX_BOUND) {
             return 0;
@@ -1049,6 +1066,9 @@ ar_delete(VALUE hash, st_data_t *key, st_data_t *value)
     }
 
     bin = ar_find_entry(hash, hash_value, *key);
+    if (UNLIKELY(bin == RHASH_AR_TABLE_CONVERTED_TO_ST_TABLE)) {
+        return st_delete(RHASH_ST_TABLE(hash), key, value);
+    }
 
     if (bin == RHASH_AR_TABLE_MAX_BOUND) {
         if (value != 0) *value = 0;
@@ -4208,7 +4228,8 @@ rb_hash_update_ensure(VALUE args)
  *
  *  - If +key+ is in +self+, fetches +old_value+ from <tt>self[key]</tt>,
  *    calls the block with +key+, +old_value+, and +new_value+,
- *    and sets <tt>self[key] = new_value</tt>, whose position is unchanged  :
+ *    and sets <tt>self[key]</tt> to the return value of the block,
+ *    whose position is unchanged:
  *
  *      season = {AB: 75, H: 20, HR: 3, SO: 17, W: 11, HBP: 3}
  *      today = {AB: 3, H: 1, W: 1}
@@ -6920,7 +6941,7 @@ static const rb_data_type_t env_data_type = {
         NULL,
         NULL,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED,
 };
 
 /*

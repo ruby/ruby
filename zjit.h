@@ -9,6 +9,25 @@
 # define ZJIT_STATS (USE_ZJIT && RUBY_DEBUG)
 #endif
 
+// Stack map entries are either immediate Ruby VALUEs or tagged native-stack
+// locations. Stack maps never contain heap VALUEs, so 0x08 is available: it is
+// not Qfalse (0), and its low 3 bits are zero, so RB_SPECIAL_CONST_P is false.
+#define ZJIT_STACK_MAP_VREG_TAG 0x08
+#define ZJIT_STACK_MAP_TAG_MASK 0xff
+#define ZJIT_STACK_MAP_SHIFT 8
+
+static inline bool
+ZJIT_STACK_MAP_VREG_P(VALUE entry)
+{
+    return (entry & ZJIT_STACK_MAP_TAG_MASK) == ZJIT_STACK_MAP_VREG_TAG;
+}
+
+static inline size_t
+ZJIT_STACK_MAP_VREG_INDEX(VALUE entry)
+{
+    return entry >> ZJIT_STACK_MAP_SHIFT;
+}
+
 // JITFrame is defined here as the single source of truth and imported into
 // Rust via bindgen. C code reads fields directly; Rust uses an impl block.
 typedef struct zjit_jit_frame {
@@ -23,6 +42,14 @@ typedef struct zjit_jit_frame {
     // (which write block_code themselves), so we must restore it.
     // Always false for C frames.
     bool materialize_block_code;
+
+    // Number of Ruby stack slots described by stack[].
+    // rb_zjit_materialize_frames() copies them to cfp->sp - stack_size.
+    uint32_t stack_size;
+    // Flexible array of stack map entries. Each entry is either an immediate
+    // VALUE or a tagged native-stack index from cfp->jit_return for a value
+    // kept by the JIT.
+    VALUE stack[];
 } zjit_jit_frame_t;
 
 #if USE_ZJIT
@@ -64,9 +91,15 @@ CFP_ZJIT_FRAME(const rb_control_frame_t *cfp)
         return &rb_zjit_c_frame;
     }
     else {
-        // Read JITFrame from the stack slot. gen_entry_point() writes an initial
-        // frame describing the entry PC + iseq; subsequent gen_save_pc_for_gc()
-        // calls update it with a more accurate PC before any non-leaf C call.
+        // Read JITFrame from this frame's stack slot. cfp->jit_return points at
+        // the slot reserved for this frame's inlining depth, so distinct frames in
+        // the same JIT function read distinct slots. An initial frame describing
+        // the entry PC + iseq is written by gen_entry_point() for the top-level
+        // frame and by gen_push_lightweight_frame() for inlined frames. That entry
+        // PC is correct only at the frame's start; because the PC this frame reports
+        // must track where execution currently is, later gen_save_pc_for_gc() calls
+        // rewrite the slot with the live PC as execution advances through the frame,
+        // before any non-leaf C call.
         return (const zjit_jit_frame_t *)((VALUE *)cfp->jit_return)[-1];
     }
 }

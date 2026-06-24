@@ -849,7 +849,7 @@ class TestObjSpace < Test::Unit::TestCase
           Tempfile.create do |f|
             ObjectSpace.dump_all(output: f)
             f.close
-            File.readlines(f.path).each do |line|
+            File.foreach(f.path) do |line|
               JSON.parse(line)
             end
           end

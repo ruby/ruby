@@ -3411,7 +3411,16 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
     enc = io_read_encoding(fptr);
     cr = 0;
 
-    if (siz == 0) siz = BUFSIZ;
+    if (siz == 0) {
+        siz = BUFSIZ;
+    }
+    else {
+        // If `siz` is set, we got it from `stat(2)`.
+        // We attempt to read one extra byte because:
+        //  - If the file was appended to since then, we'll continue reading.
+        //  - If the file is still the same length, we won't issue a second `io_fread`.
+        siz++;
+    }
     shrinkable = io_setstrbuf(&str, siz);
     for (;;) {
         READ_CHECK(fptr);
@@ -10027,7 +10036,7 @@ argf_memsize(const void *ptr)
 static const rb_data_type_t argf_type = {
     "ARGF",
     {argf_mark_and_move, RUBY_TYPED_DEFAULT_FREE, argf_memsize, argf_mark_and_move},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED
 };
 
 static inline void

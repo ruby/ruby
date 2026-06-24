@@ -199,7 +199,8 @@ static VALUE
 ossl_ec_key_initialize_copy(VALUE self, VALUE other)
 {
     EVP_PKEY *pkey;
-    EC_KEY *ec, *ec_new;
+    OSSL_3_const EC_KEY *ec;
+    EC_KEY *ec_new;
 
     TypedData_Get_Struct(self, EVP_PKEY, &ossl_evp_pkey_type, pkey);
     if (pkey)
@@ -566,7 +567,7 @@ static VALUE ossl_ec_key_check_key(VALUE self)
 
     EVP_PKEY_CTX_free(pctx);
 #else
-    EC_KEY *ec;
+    OSSL_3_const EC_KEY *ec;
 
     GetEC(self, ec);
     if (EC_KEY_check_key(ec) != 1)

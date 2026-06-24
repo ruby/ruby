@@ -6805,8 +6805,8 @@ enum SpecVal {
 pub enum BlockHandler {
     // send, invokesuper: blockiseq operand
     BlockISeq(IseqPtr),
-    // invokesuper: GET_BLOCK_HANDLER() (GET_LEP()[VM_ENV_DATA_INDEX_SPECVAL])
-    LEPSpecVal,
+    // For invokesuper; equivalent to GET_BLOCK_HANDLER()
+    FindFromCurrentFrame,
     // part of the allocate-free block forwarding scheme
     BlockParamProxy,
     // To avoid holding the block arg (e.g. proc and symbol) across C calls,
@@ -6870,9 +6870,20 @@ fn gen_push_frame(
                     let cfp_self = asm.lea(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF));
                     asm.or(cfp_self, Opnd::Imm(1))
                 }
-                BlockHandler::LEPSpecVal => {
-                    let lep_opnd = gen_get_lep(jit, asm);
-                    asm.load(Opnd::mem(64, lep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL))
+                BlockHandler::FindFromCurrentFrame => {
+                    // Find the calling frame's block handler. Similar shape to implementation for
+                    // defined?(yield). See also: vm_caller_setup_arg_block() with is_super, which
+                    // ends up in VM_CF_BLOCK_HANDLER().
+                    //
+                    // When the calling ISEQ is rooted in a ISEQ_TYPE_METHOD, the block handler is
+                    // at local_ep[VM_ENV_DATA_INDEX_SPECVAL]. Otherwise, the frame has no block
+                    // handler.
+                    if ISEQ_TYPE_METHOD == unsafe { rb_get_iseq_body_type(rb_get_iseq_body_local_iseq(jit.iseq)) } {
+                        let lep_opnd = gen_get_lep(jit, asm);
+                        asm.load(Opnd::mem(64, lep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL))
+                    } else {
+                        VM_BLOCK_HANDLER_NONE.into()
+                    }
                 }
                 BlockHandler::BlockParamProxy => {
                     let ep_opnd = gen_get_lep(jit, asm);
@@ -9880,7 +9891,7 @@ fn gen_invokesuper_specialized(
     let block = if let Some(iseq) = jit.get_arg(1).as_optional_ptr() {
         BlockHandler::BlockISeq(iseq)
     } else {
-        BlockHandler::LEPSpecVal
+        BlockHandler::FindFromCurrentFrame
     };
 
     // Fallback to dynamic dispatch if this callsite is megamorphic

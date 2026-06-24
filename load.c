@@ -55,13 +55,13 @@ enum expand_type {
    string objects in $LOAD_PATH are frozen.
  */
 static void
-rb_construct_expanded_load_path(rb_box_t *box, enum expand_type type, int *has_relative, int *has_non_cache)
+rb_construct_expanded_load_path(rb_box_t *box, enum expand_type type, int *has_relative, int *has_non_cache, long *maxlen_out)
 {
     VALUE load_path = box->load_path;
     VALUE expanded_load_path = box->expanded_load_path;
     VALUE snapshot;
     VALUE ary;
-    long i;
+    long i, maxlen = 0;
 
     ary = rb_ary_hidden_new(RARRAY_LEN(load_path));
     for (i = 0; i < RARRAY_LEN(load_path); ++i) {
@@ -81,7 +81,10 @@ rb_construct_expanded_load_path(rb_box_t *box, enum expand_type type, int *has_r
                     (!as_cstr[0] || as_cstr[0] != '~')) ||
                 (type == EXPAND_NON_CACHE)) {
                     /* Use cached expanded path. */
-                    rb_ary_push(ary, RARRAY_AREF(expanded_load_path, i));
+                    expanded_path = RARRAY_AREF(expanded_load_path, i);
+                    long len = RSTRING_LEN(expanded_path);
+                    if (len > maxlen) maxlen = len;
+                    rb_ary_push(ary, expanded_path);
                     continue;
             }
         }
@@ -95,12 +98,15 @@ rb_construct_expanded_load_path(rb_box_t *box, enum expand_type type, int *has_r
         as_str = rb_get_path_check_convert(as_str);
         expanded_path = rb_check_realpath(Qnil, as_str, NULL);
         if (NIL_P(expanded_path)) expanded_path = as_str;
+        long len = RSTRING_LEN(expanded_path);
+        if (len > maxlen) maxlen = len;
         rb_ary_push(ary, rb_fstring(expanded_path));
     }
     rb_ary_freeze(ary);
     box->expanded_load_path = ary;
     snapshot = box->load_path_snapshot;
     load_path = box->load_path;
+    *maxlen_out = maxlen;
     rb_ary_replace(snapshot, load_path);
 }
 
@@ -111,11 +117,12 @@ get_expanded_load_path(rb_box_t *box)
     const VALUE non_cache = Qtrue;
     const VALUE load_path_snapshot = box->load_path_snapshot;
     const VALUE load_path = box->load_path;
+    long maxlen = 0;
 
     if (!rb_ary_shared_with_p(load_path_snapshot, load_path)) {
         /* The load path was modified. Rebuild the expanded load path. */
         int has_relative = 0, has_non_cache = 0;
-        rb_construct_expanded_load_path(box, EXPAND_ALL, &has_relative, &has_non_cache);
+        rb_construct_expanded_load_path(box, EXPAND_ALL, &has_relative, &has_non_cache, &maxlen);
         if (has_relative) {
             box->load_path_check_cache = rb_dir_getwd_ospath();
         }
@@ -131,7 +138,7 @@ get_expanded_load_path(rb_box_t *box)
         int has_relative = 1, has_non_cache = 1;
         /* Expand only non-cacheable objects. */
         rb_construct_expanded_load_path(box, EXPAND_NON_CACHE,
-                                        &has_relative, &has_non_cache);
+                                        &has_relative, &has_non_cache, &maxlen);
     }
     else if (check_cache) {
         int has_relative = 1, has_non_cache = 1;
@@ -141,21 +148,29 @@ get_expanded_load_path(rb_box_t *box)
                Expand relative load path and non-cacheable objects again. */
             box->load_path_check_cache = cwd;
             rb_construct_expanded_load_path(box, EXPAND_RELATIVE,
-                                            &has_relative, &has_non_cache);
+                                            &has_relative, &has_non_cache, &maxlen);
         }
         else {
             /* Expand only tilde (User HOME) and non-cacheable objects. */
             rb_construct_expanded_load_path(box, EXPAND_HOME,
-                                            &has_relative, &has_non_cache);
+                                            &has_relative, &has_non_cache, &maxlen);
         }
+    }
+    if (maxlen) {
+        box->expanded_load_path_maxlen = maxlen;
     }
     return box->expanded_load_path;
 }
 
 VALUE
-rb_get_expanded_load_path(void)
+rb_get_expanded_load_path(long *maxlen)
 {
-    return get_expanded_load_path((rb_box_t *)rb_loading_box());
+    rb_box_t *box = (rb_box_t *)rb_loading_box();
+    VALUE load_path = get_expanded_load_path((rb_box_t *)box);
+    if (maxlen) {
+        *maxlen = box->expanded_load_path_maxlen;
+    }
+    return load_path;
 }
 
 static VALUE

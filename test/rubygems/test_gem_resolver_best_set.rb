@@ -16,7 +16,7 @@ class TestGemResolverBestSet < Gem::TestCase
 
     api_uri = Gem::URI "#{@gem_repo}info/"
 
-    @fetcher.data["#{api_uri}a"] = "---\n1  "
+    @fetcher.data["#{api_uri}a"] = util_compact_index_response("---\n1  ")
 
     set = Gem::Resolver::BestSet.new
 

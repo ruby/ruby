@@ -192,17 +192,25 @@ module Prism
         EXPR_BEG = 0x1
         EXPR_LABEL = 0x400
 
-        # It is used to determine whether `do` is of the token type `kDO` or `kDO_LAMBDA`.
+        # It is used to determine whether `do` is of the token type `kDO` or
+        # `kDO_LAMBDA`.
         #
-        # NOTE: In edge cases like `-> (foo = -> (bar) {}) do end`, please note that `kDO` is still returned
-        # instead of `kDO_LAMBDA`, which is expected: https://github.com/ruby/prism/pull/3046
+        # NOTE: In edge cases like `-> (foo = -> (bar) {}) do end`, please note
+        # that `kDO` is still returned instead of `kDO_LAMBDA`, which is
+        # expected: https://github.com/ruby/prism/pull/3046
         LAMBDA_TOKEN_TYPES = Set.new([:kDO_LAMBDA, :tLAMBDA, :tLAMBEG])
 
-        # The `PARENTHESIS_LEFT` token in Prism is classified as either `tLPAREN` or `tLPAREN2` in the Parser gem.
-        # The following token types are listed as those classified as `tLPAREN`.
+        # The `PARENTHESIS_LEFT` token in Prism is classified as either
+        # `tLPAREN` or `tLPAREN2` in the Parser gem. The following token types
+        # are listed as those classified as `tLPAREN`.
         LPAREN_CONVERSION_TOKEN_TYPES = Set.new([
-          :kBREAK, :tCARET, :kCASE, :tDIVIDE, :kFOR, :kIF, :kNEXT, :kRETURN, :kUNTIL, :kWHILE, :tAMPER, :tANDOP, :tBANG, :tCOMMA, :tDOT2, :tDOT3,
-          :tEQL, :tLPAREN, :tLPAREN2, :tLPAREN_ARG, :tLSHFT, :tNL, :tOP_ASGN, :tOROP, :tPIPE, :tSEMI, :tSTRING_DBEG, :tUMINUS, :tUPLUS, :tLCURLY
+          :kAND, :kBEGIN, :kBREAK, :kCASE, :kDO_COND, :kDO_LAMBDA, :kDO, :kELSE,
+          :kELSIF, :kENSURE, :kFOR, :kIF_MOD, :kIF, :kIN, :kNEXT, :kOR,
+          :kRESCUE_MOD, :kRESCUE, :kRETURN, :kTHEN, :kUNLESS_MOD, :kUNLESS,
+          :kUNTIL_MOD, :kUNTIL, :kWHEN, :kWHILE_MOD, :kWHILE,
+          :tAMPER, :tANDOP, :tBANG, :tCARET, :tCOMMA, :tDIVIDE, :tDOT2, :tDOT3,
+          :tEQL, :tLCURLY, :tLPAREN_ARG, :tLPAREN, :tLPAREN2, :tLSHFT, :tNL,
+          :tOP_ASGN, :tOROP, :tPIPE, :tSEMI, :tSTRING_DBEG, :tUMINUS, :tUPLUS
         ])
 
         # Types of tokens that are allowed to continue a method call with comments in-between.

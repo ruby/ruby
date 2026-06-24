@@ -1,0 +1,8 @@
+case x
+in a,
+  1
+in b, c,
+  2
+end
+
+foo => bar,

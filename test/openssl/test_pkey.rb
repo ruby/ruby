@@ -285,6 +285,28 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     assert_equal(true, pub3.verify(nil, sig, "data"))
   end
 
+  def test_ml_kem
+    # EVP_PKEY KEM APIs were added in OpenSSL 3.0.
+    omit "ML-KEM is not supported" unless openssl?(3, 5, 0)
+
+    pkey = OpenSSL::PKey.generate_key("ML-KEM-768")
+    raw_public_key = pkey.raw_public_key
+    raw_private_key = pkey.raw_private_key
+
+    assert_match(/type_name=ML-KEM-768/, pkey.inspect)
+    assert_equal(1184, raw_public_key.bytesize)
+    assert_equal(2400, raw_private_key.bytesize)
+
+    pubkey = OpenSSL::PKey.new_raw_public_key("ML-KEM-768", raw_public_key)
+    ciphertext, shared_secret = pubkey.encapsulate
+    assert_equal(1088, ciphertext.bytesize)
+    assert_equal(32, shared_secret.bytesize)
+    assert_equal(shared_secret, pkey.decapsulate(ciphertext))
+
+    privkey = OpenSSL::PKey.new_raw_private_key("ML-KEM-768", raw_private_key)
+    assert_equal(shared_secret, privkey.decapsulate(ciphertext))
+  end
+
   def test_raw_initialize_errors
     assert_raise(OpenSSL::PKey::PKeyError) { OpenSSL::PKey.new_raw_private_key("foo123", "xxx") }
     assert_raise(OpenSSL::PKey::PKeyError) { OpenSSL::PKey.new_raw_private_key("ED25519", "xxx") }

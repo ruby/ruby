@@ -214,7 +214,6 @@ impl Type {
             else if val.class_of() == unsafe { rb_cSymbol } { bits::DynamicSymbol }
             else if let Some(bits) = Self::bits_from_exact_class(val.class_of()) { bits }
             else if let Some(bits) = Self::bits_from_subclass(val.class_of()) { bits }
-            else if val.data_p() { bits::TData }
             else {
                 unreachable!("Class {} is not a subclass of BasicObject! Don't know what to do.",
                              get_class_name(val.class_of()))
@@ -444,8 +443,6 @@ impl Type {
             Some(cruby::RUBY_T_STRING)
         } else if self.bit_equal(types::Hash) {
             Some(cruby::RUBY_T_HASH)
-        } else if self.bit_equal(types::TData) {
-            Some(cruby::RUBY_T_DATA)
         } else {
             None
         }

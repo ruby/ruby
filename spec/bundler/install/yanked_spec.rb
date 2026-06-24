@@ -26,6 +26,8 @@ RSpec.context "when installing a bundle that includes yanked gems" do
     G
 
     expect(err).to include("Your bundle is locked to foo (10.0.0)")
+    expect(err).to include("either the author of foo (10.0.0) has removed it, or you no longer have access to that source")
+    expect(err).to include("check your credentials and access rights")
   end
 
   context "when a platform specific yanked version is included in the lockfile, and a generic variant is available remotely" do

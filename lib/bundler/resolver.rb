@@ -305,10 +305,14 @@ module Bundler
           next groups if package.force_ruby_platform?
         end
 
-        platform_group = Resolver::SpecGroup.new(platform_specs.flatten.uniq)
+        platform_specs = platform_specs.flatten.uniq
+        platform_group = Resolver::SpecGroup.new((platform_specs + ruby_specs).uniq)
         next groups if platform_group == ruby_group
 
         groups << Resolver::Candidate.new(version, group: platform_group, priority: 1)
+
+        platform_only_group = Resolver::SpecGroup.new(platform_specs)
+        groups << Resolver::Candidate.new(version, group: platform_only_group, priority: 0) unless platform_only_group == platform_group
 
         groups
       end
@@ -456,25 +460,29 @@ module Bundler
     def cooldown_excluded?(spec)
       return false unless spec.respond_to?(:created_at) && spec.created_at
       return false unless spec.respond_to?(:remote) && spec.remote
-      return false if pinned_by_lockfile_floor?(spec)
+      return false if locked_by_lockfile?(spec)
       days = spec.remote.effective_cooldown
       return false if days.nil? || days <= 0
       (cooldown_now - spec.created_at) < (days * 86_400)
     end
 
-    # A spec sitting exactly at a `>= locked_version` prevent-downgrade floor is
-    # the version the lockfile currently pins. `bundle update` and `bundle
-    # outdated` install that floor so resolution never moves a gem backwards.
-    # Filtering it out for cooldown would then make resolution impossible
-    # whenever the locked version is itself inside the cooldown window, which is
-    # exactly what happens to a lockfile written before cooldown was enabled.
-    # Keep it eligible; gems being explicitly updated carry an exact `=`
-    # requirement instead and stay subject to the cooldown filter.
-    def pinned_by_lockfile_floor?(spec)
+    # A version already written to the lockfile has been adopted, and cooldown
+    # only governs the adoption of *new* versions, so it must never retract one
+    # the lockfile already pins. Keying this off the locked specs rather than the
+    # prevent-downgrade floor matters because that floor is absent on resolutions
+    # that re-pick a gem from scratch: the auxiliary full update run to compute
+    # `--update` targets, and the from-scratch retries after a conflict unlocks a
+    # gem. In those passes the locked version is the only candidate, so filtering
+    # it out makes an unrelated operation impossible whenever every published
+    # version matching the requirement sits inside the cooldown window.
+    #
+    # Gems named on a `bundle update GEM` command are the exception: the user
+    # asked to move them, so they stay subject to cooldown and a locked-but-fresh
+    # release is pushed back to an older one (or fails loudly when none exists).
+    def locked_by_lockfile?(spec)
       return false unless defined?(@base) && @base
-      requirement = base_requirements[spec.name]
-      return false unless requirement && !requirement.exact?
-      requirement.requirements.any? {|op, version| op == ">=" && version == spec.version }
+      return false if @base.explicitly_unlocked?(spec.name)
+      @base.locked_specs[spec.name].any? {|locked| locked.version == spec.version }
     end
 
     def cooldown_now

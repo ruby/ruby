@@ -233,6 +233,9 @@ module Bundler
       # when reading the lockfile while doing the plugin-install-from-gemfile phase,
       # we need to ignore any plugin sources
       return UnloadedSource.new(opts) if @gemfile_parse
+      # use an inert placeholder when the plugin handling this source is not
+      # installed, so that the lockfile can still be parsed
+      return UnloadedSource.new(opts) unless source?(locked_opts["type"])
 
       src = source(locked_opts["type"])
 
