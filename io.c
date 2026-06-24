@@ -11776,15 +11776,27 @@ io_encoding_set(rb_io_t *fptr, VALUE v1, VALUE v2, VALUE opt)
 
     if (!NIL_P(v2)) {
         enc2 = find_encoding(v1);
+        if (!enc2) {
+            /* v1 is an invalid encoding name */
+            enc2 = rb_default_external_encoding();
+        }
         tmp = rb_check_string_type(v2);
         if (!NIL_P(tmp)) {
             if (RSTRING_LEN(tmp) == 1 && RSTRING_PTR(tmp)[0] == '-') {
                 /* Special case - "-" => no transcoding */
+                enc = NULL;
+            }
+            else {
+                enc = find_encoding(v2);
+                if (!enc) {
+                    /* v2 is an invalid encoding name */
+                    enc = rb_default_internal_encoding();
+                }
+            }
+            if (!enc) {
                 enc = enc2;
                 enc2 = NULL;
             }
-            else
-                enc = find_encoding(v2);
             if (enc == enc2) {
                 /* Special case - "-" => no transcoding */
                 enc2 = NULL;
