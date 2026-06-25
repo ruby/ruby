@@ -9047,6 +9047,15 @@ fn gen_struct_aset(
     assert!(unsafe { RB_TYPE_P(comptime_recv, RUBY_T_STRUCT) });
     assert!((off as i64) < unsafe { RSTRUCT_LEN(comptime_recv) });
 
+    // We are going to use an encoding that takes a 4-byte immediate which
+    // limits the offset to INT32_MAX (mirrors struct aref).
+    {
+        let native_off = (off as i64) * (SIZEOF_VALUE as i64);
+        if native_off > (i32::MAX as i64) {
+            return None;
+        }
+    }
+
     // Even if the comptime recv was not frozen, future recv may be. So we need to emit a guard
     // that the recv is not frozen.
     // We know all structs are heap objects, so we can check the flag directly.
@@ -9058,15 +9067,50 @@ fn gen_struct_aset(
 
     // Not frozen, so we can proceed.
 
+    // All structs from the same Struct class and shape_id have the same length, so
+    // embedded-ness is fixed per class.
+    let embedded = unsafe { FL_TEST_RAW(comptime_recv, VALUE(RSTRUCT_EMBED_LEN_MASK)) };
+
+    // Whether the written value is a known immediate, so we can skip the write barrier.
+    let val_is_imm = asm.ctx.get_opnd_type(StackOpnd(0)).is_imm();
+
     asm_comment!(asm, "struct aset");
 
-    let val = asm.stack_pop(1);
-    let recv = asm.stack_pop(1);
+    // Keep the value on the VM stack across the (possible) write barrier ccall so the GC
+    // can see it.
+    let val = asm.stack_opnd(0);
 
-    let val = asm.ccall(RSTRUCT_SET as *const u8, vec![recv, (off as i64).into(), val]);
+    let slot = if embedded != VALUE(0) {
+        Opnd::mem(64, recv, RUBY_OFFSET_RSTRUCT_AS_ARY + (SIZEOF_VALUE_I32 * off))
+    } else {
+        let rstruct_ptr = asm.load(Opnd::mem(64, recv, RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR));
+        Opnd::mem(64, rstruct_ptr, SIZEOF_VALUE_I32 * off)
+    };
+    let store_val = asm.load(val);
+    asm.mov(slot, store_val);
 
+    // Conditional write barrier: skipped entirely when the value is a known immediate,
+    // otherwise skipped at runtime for immediate/nil/false.
+    if !val_is_imm {
+        asm.spill_regs(); // unconditional for RegMappings consistency across the ccall
+        let skip_wb = asm.new_label("skip_wb");
+        asm.test(val, (RUBY_IMMEDIATE_MASK as u64).into());
+        asm.jnz(skip_wb);
+        asm.cmp(val, Qnil.into());
+        asm.jbe(skip_wb);
+
+        asm_comment!(asm, "write barrier");
+        asm.ccall(rb_gc_writebarrier as *const u8, vec![recv, val]);
+
+        asm.write_label(skip_wb);
+    }
+
+    let write_val = asm.stack_pop(1); // pop the value (kept on stack for GC until now)
+    asm.stack_pop(1); // pop the receiver
+
+    // Struct member assignment returns the assigned value.
     let ret = asm.stack_push(Type::Unknown);
-    asm.mov(ret, val);
+    asm.mov(ret, write_val);
 
     jump_to_next_insn(jit, asm)
 }
