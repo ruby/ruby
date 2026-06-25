@@ -941,6 +941,37 @@ opt_new
     }
 }
 
+/* Specialized String.new: if "new" is still the builtin and the capacity
+ * argument is a fixnum, allocate a right-sized String and use it as the
+ * receiver for the following initialize. Otherwise jump to the generic new.
+ * capa_loc is the TOPN index of the capacity argument on the stack. */
+DEFINE_INSN
+opt_string_new
+(CALL_DATA cd, OFFSET dst, rb_num_t capa_loc)
+()
+()
+// attr bool leaf = false;
+{
+    VALUE argc = vm_ci_argc(cd->ci);
+    VALUE recv = TOPN(argc);
+
+    // The bookkeeping slot should be empty.
+    RUBY_ASSERT(TOPN(argc + 1) == Qnil);
+
+    VALUE capa = TOPN(capa_loc);
+
+    if (recv == rb_cString &&
+            FIXNUM_P(capa) &&
+            vm_method_cfunc_is(GET_CFP(), cd, recv, rb_str_s_new)) {
+        VALUE str = rb_str_new_capa_for_init(FIX2LONG(capa));
+        TOPN(argc) = str;
+        TOPN(argc + 1) = str;
+    }
+    else {
+        JUMP(dst);
+    }
+}
+
 /* Convert object to string using to_s or equivalent. */
 DEFINE_INSN
 objtostring

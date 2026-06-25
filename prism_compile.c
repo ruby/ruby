@@ -3877,6 +3877,28 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         call_node->block == NULL &&
         (flags & VM_CALL_ARGS_BLOCKARG) == 0;
 
+    // Detect String.new(..., capacity: <n>): emit opt_string_new so the
+    // allocation can be pre-sized before initialize runs. The instruction
+    // guards at runtime that the receiver is String and "new" is unredefined,
+    // so a compile-time name match is sufficient here. string_new_capa_loc is
+    // the TOPN index of the capacity argument, or -1 when not applicable.
+    int string_new_capa_loc = -1;
+    if (inline_new && kw_arg != NULL &&
+            !(flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_FORWARDING)) &&
+            call_node->receiver != NULL &&
+            PM_NODE_TYPE_P(call_node->receiver, PM_CONSTANT_READ_NODE)) {
+        const pm_constant_read_node_t *recv = (const pm_constant_read_node_t *) call_node->receiver;
+        if (pm_constant_id_lookup(scope_node, recv->name) == rb_intern("String")) {
+            VALUE capacity_sym = ID2SYM(rb_intern("capacity"));
+            for (int i = 0; i < kw_arg->keyword_len; i++) {
+                if (kw_arg->keywords[i] == capacity_sym) {
+                    string_new_capa_loc = kw_arg->keyword_len - 1 - i;
+                    break;
+                }
+            }
+        }
+    }
+
     if (inline_new) {
         if (LAST_ELEMENT(ret) == opt_new_prelude) {
             PUSH_INSN(ret, location, putnil);
@@ -3896,7 +3918,12 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
             ci = (VALUE)new_callinfo(iseq, method_id, orig_argc, flags, kw_arg, 0);
         }
 
-        PUSH_INSN2(ret, location, opt_new, ci, not_basic_new);
+        if (string_new_capa_loc >= 0) {
+            PUSH_INSN3(ret, location, opt_string_new, ci, not_basic_new, INT2FIX(string_new_capa_loc));
+        }
+        else {
+            PUSH_INSN2(ret, location, opt_new, ci, not_basic_new);
+        }
         LABEL_REF(not_basic_new);
         // optimized path
         PUSH_SEND_R(ret, location, rb_intern("initialize"), INT2FIX(orig_argc), block_iseq, INT2FIX(flags | VM_CALL_FCALL), kw_arg);

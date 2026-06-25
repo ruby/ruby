@@ -9656,6 +9656,27 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
     LABEL *not_basic_new = NEW_LABEL(nd_line(node));
     LABEL *not_basic_new_finish = NEW_LABEL(nd_line(node));
 
+    // Detect String.new(..., capacity: <n>): emit opt_string_new so the
+    // allocation can be pre-sized before initialize runs. The instruction
+    // guards at runtime that the receiver is String and "new" is unredefined,
+    // so a compile-time name match is sufficient here. string_new_capa_loc is
+    // the TOPN index of the capacity argument, or -1 when not applicable.
+    int string_new_capa_loc = -1;
+    if (inline_new && keywords != NULL &&
+            !(flag & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_FORWARDING))) {
+        const NODE *recv_node = get_nd_recv(node);
+        if (recv_node && nd_type_p(recv_node, NODE_CONST) &&
+                RNODE_CONST(recv_node)->nd_vid == rb_intern("String")) {
+            VALUE capacity_sym = ID2SYM(rb_intern("capacity"));
+            for (int i = 0; i < keywords->keyword_len; i++) {
+                if (keywords->keywords[i] == capacity_sym) {
+                    string_new_capa_loc = keywords->keyword_len - 1 - i;
+                    break;
+                }
+            }
+        }
+    }
+
     if (inline_new) {
         // Jump unless the receiver uses the "basic" implementation of "new"
         VALUE ci;
@@ -9665,7 +9686,12 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
         else {
             ci = (VALUE)new_callinfo(iseq, mid, NUM2INT(argc), flag, keywords, 0);
         }
-        ADD_INSN2(ret, node, opt_new, ci, not_basic_new);
+        if (string_new_capa_loc >= 0) {
+            ADD_INSN3(ret, node, opt_string_new, ci, not_basic_new, INT2FIX(string_new_capa_loc));
+        }
+        else {
+            ADD_INSN2(ret, node, opt_new, ci, not_basic_new);
+        }
         LABEL_REF(not_basic_new);
 
         // optimized path

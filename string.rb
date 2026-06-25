@@ -23,6 +23,11 @@ class String
     Primitive.cexpr! 'rb_str_is_ascii_only_p(self)'
   end
 
+  #  call-seq:
+  #    String.new(string = ''.encode(Encoding::ASCII_8BIT), **options) -> new_string
+  #
+  #  :include: doc/string/new.rdoc
+  #
   def initialize(orig = (no_str = true; nil),
                 encoding: (no_encoding = true; nil),
                 capacity: (no_capacity = true; nil))

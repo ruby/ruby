@@ -1736,6 +1736,19 @@ rb_str_buf_new(long capa)
     return str;
 }
 
+/* Allocate a String suitable for becoming the receiver of String#initialize
+ * with a `capacity:` of +capa+. Floors to STR_BUF_MIN_SIZE so that the buffer
+ * rb_str_init computes for the same capacity matches and is reused as-is
+ * (see the "reuse it as-is" branch in rb_str_init). Used by opt_string_new. */
+VALUE
+rb_str_new_capa_for_init(long capa)
+{
+    if (capa < STR_BUF_MIN_SIZE) {
+        capa = STR_BUF_MIN_SIZE;
+    }
+    return rb_str_buf_new(capa);
+}
+
 VALUE
 rb_str_buf_new_cstr(const char *ptr)
 {
@@ -2097,8 +2110,13 @@ rb_str_init(rb_execution_context_t *ec, VALUE str, VALUE orig, VALUE no_str, VAL
                 if (orig == str) n = 0;
             }
             str_modifiable(str);
-            if (STR_EMBED_P(str) || FL_TEST(str, STR_SHARED|STR_NOFREE)) {
-                /* make noembed always */
+            if (!FL_TEST(str, STR_SHARED|STR_NOFREE) && str_capacity(str, termlen) >= (size_t)capa) {
+                /* The receiver already owns a big-enough buffer (e.g. opt_string_new
+                 * pre-sized this object for us). Reuse it as-is, whether it is an
+                 * embedded slot or an owned heap buffer -- do not reallocate. */
+            }
+            else if (STR_EMBED_P(str) || FL_TEST(str, STR_SHARED|STR_NOFREE)) {
+                /* Move to an owned heap buffer of the requested size. */
                 const size_t size = (size_t)capa + termlen;
                 const char *const old_ptr = RSTRING_PTR(str);
                 const size_t osize = RSTRING_LEN(str) + TERM_LEN(str);
@@ -2107,19 +2125,21 @@ rb_str_init(rb_execution_context_t *ec, VALUE str, VALUE orig, VALUE no_str, VAL
                 memcpy(new_ptr, old_ptr, osize < size ? osize : size);
                 FL_UNSET_RAW(str, STR_SHARED|STR_NOFREE);
                 RSTRING(str)->as.heap.ptr = new_ptr;
+                FL_SET(str, STR_NOEMBED);
+                RSTRING(str)->as.heap.aux.capa = capa;
             }
-            else if (STR_HEAP_SIZE(str) != (size_t)capa + termlen) {
+            else {
+                /* Owned heap buffer that is too small: grow it. */
                 SIZED_REALLOC_N(RSTRING(str)->as.heap.ptr, char,
                         (size_t)capa + termlen, STR_HEAP_SIZE(str));
+                RSTRING(str)->as.heap.aux.capa = capa;
             }
             STR_SET_LEN(str, len);
-            TERM_FILL(&RSTRING(str)->as.heap.ptr[len], termlen);
+            TERM_FILL(RSTRING_PTR(str) + len, termlen);
             if (n == 1) {
-                memcpy(RSTRING(str)->as.heap.ptr, RSTRING_PTR(orig), len);
+                memcpy(RSTRING_PTR(str), RSTRING_PTR(orig), len);
                 rb_enc_cr_str_exact_copy(str, orig);
             }
-            FL_SET(str, STR_NOEMBED);
-            RSTRING(str)->as.heap.aux.capa = capa;
         }
         else if (n == 1) {
             rb_str_replace(str, orig);
@@ -2136,7 +2156,7 @@ rb_str_init(rb_execution_context_t *ec, VALUE str, VALUE orig, VALUE no_str, VAL
 }
 
 /* :nodoc: */
-static VALUE
+VALUE
 rb_str_s_new(int argc, VALUE *argv, VALUE klass)
 {
     if (klass != rb_cString) {
