@@ -25,11 +25,15 @@ pub const DEFAULT_CALL_THRESHOLD: CallThreshold = 30;
 pub type CallThreshold = u64;
 
 /// Default --zjit-inline-threshold
-pub const DEFAULT_INLINE_THRESHOLD: InlineThreshold = 0;
+/// TODO (nirvdrum 2026-06-25): 30 has proven to work well with ruby-bench, but we should finely
+/// tune across more workloads.
+pub const DEFAULT_INLINE_THRESHOLD: InlineThreshold = 30;
 pub type InlineThreshold = usize;
 
 /// Default --zjit-inline-budget
-pub const DEFAULT_INLINE_BUDGET: InlineBudget = 500;
+/// TODO (nirvdrum 2026-06-25): 200 has proven to strike a good balance between memory usage and
+/// run time performance on ruby-bench, but we should finely tune across more workloads.
+pub const DEFAULT_INLINE_BUDGET: InlineBudget = 200;
 pub const INLINE_BUDGET_UNLIMITED: InlineBudget = 0;
 pub type InlineBudget = usize;
 
@@ -634,7 +638,6 @@ pub fn set_call_threshold(call_threshold: CallThreshold) {
     update_profile_threshold();
 }
 
-/// Update --zjit-inline-threshold for testing
 #[cfg(test)]
 pub fn set_inline_threshold(inline_threshold: InlineThreshold) {
     rb_zjit_prepare_options();
