@@ -1,21 +1,21 @@
 # frozen_string_literal: true
 
-module Bundler; end
+# Reuse RubyGems' vendored URI (Gem::URI). The Bundler gem ships a copy under
+# lib/rubygems/vendor, so this resolves even on RubyGems versions that predate
+# it. Fall back to the stdlib only when no vendored copy is available at all.
 
-# Use RubyGems vendored copy when available. Otherwise fallback to Bundler
-# vendored copy. The vendored copy in Bundler can be removed once support for
-# RubyGems 3.5 is dropped.
+unless defined?(Gem::URI)
+  begin
+    require "rubygems/vendor/uri/lib/uri"
+  rescue LoadError
+    require "uri"
+    Gem::URI = URI
 
-begin
-  require "rubygems/vendor/uri/lib/uri"
-rescue LoadError
-  require_relative "vendor/uri/lib/uri"
-  Gem::URI = Bundler::URI
-
-  module Gem
-    def URI(uri) # rubocop:disable Naming/MethodName
-      Bundler::URI(uri)
+    module Gem
+      def URI(uri) # rubocop:disable Naming/MethodName
+        Kernel.URI(uri)
+      end
+      module_function :URI
     end
-    module_function :URI
   end
 end
