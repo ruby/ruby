@@ -941,10 +941,13 @@ opt_new
     }
 }
 
-/* Specialized String.new: if "new" is still the builtin and the capacity
- * argument is a fixnum, allocate a right-sized String and use it as the
- * receiver for the following initialize. Otherwise jump to the generic new.
- * capa_loc is the TOPN index of the capacity argument on the stack. */
+/* Specialized String.new for the cases where initialize is a no-op: a bare
+ * String.new (argc == 0) or String.new(capacity: <fixnum>). Allocates the
+ * String directly and skips the initialize call (there is none in the
+ * bytecode). Jumps to the generic new path unless the receiver is String,
+ * "new" is the builtin, and String#initialize is unredefined -- and, for the
+ * capacity form, the capacity is a fixnum. capa_loc is the TOPN index of the
+ * capacity argument (unused when argc == 0). */
 DEFINE_INSN
 opt_string_new
 (CALL_DATA cd, OFFSET dst, rb_num_t capa_loc)
@@ -958,14 +961,26 @@ opt_string_new
     // The bookkeeping slot should be empty.
     RUBY_ASSERT(TOPN(argc + 1) == Qnil);
 
-    VALUE capa = TOPN(capa_loc);
-
     if (recv == rb_cString &&
-            FIXNUM_P(capa) &&
-            vm_method_cfunc_is(GET_CFP(), cd, recv, rb_class_new_instance_pass_kw)) {
-        VALUE str = rb_str_new_capa_for_init(FIX2LONG(capa));
-        TOPN(argc) = str;
-        TOPN(argc + 1) = str;
+            vm_method_cfunc_is(GET_CFP(), cd, recv, rb_class_new_instance_pass_kw) &&
+            vm_cstr_initialize_basic_p(recv)) {
+        if (argc == 0) {
+            // bare String.new: empty ASCII-8BIT string, same as the alloc func.
+            VALUE str = rb_str_new(0, 0);
+            TOPN(argc) = str;
+            TOPN(argc + 1) = str;
+        }
+        else {
+            VALUE capa = TOPN(capa_loc);
+            if (FIXNUM_P(capa)) {
+                VALUE str = rb_str_new_capa_for_init(FIX2LONG(capa));
+                TOPN(argc) = str;
+                TOPN(argc + 1) = str;
+            }
+            else {
+                JUMP(dst);
+            }
+        }
     }
     else {
         JUMP(dst);

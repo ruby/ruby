@@ -131,9 +131,8 @@ VALUE rb_id_quote_unprintable(ID);
 VALUE rb_sym_proc_call(ID mid, int argc, const VALUE *argv, int kw_splat, VALUE passed_proc);
 VALUE rb_enc_literal_str(const char *ptr, long len, rb_encoding *enc);
 
-/* opt_string_new support: builtin String.new and the right-sized allocation
- * the instruction hands to String#initialize. */
-VALUE rb_str_s_new(int argc, VALUE *argv, VALUE klass);
+/* opt_string_new support: the right-sized String allocation for
+ * String.new(capacity: n). */
 VALUE rb_str_new_capa_for_init(long capa);
 
 struct rb_execution_context_struct;

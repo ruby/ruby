@@ -2368,6 +2368,15 @@ rb_zjit_cme_is_cfunc(const rb_callable_method_entry_t *me, const cfunc_type func
     return check_cfunc(me, func);
 }
 
+// True while String#initialize is still the builtin definition. opt_string_new
+// skips the initialize call entirely, so it must bail to the generic path once
+// a user redefines it.
+static inline bool
+vm_cstr_initialize_basic_p(VALUE recv)
+{
+    return rb_method_basic_definition_p(recv, idInitialize);
+}
+
 int
 rb_vm_method_cfunc_is(const rb_iseq_t *iseq, CALL_DATA cd, VALUE recv, cfunc_type func)
 {

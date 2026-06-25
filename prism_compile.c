@@ -3877,24 +3877,37 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         call_node->block == NULL &&
         (flags & VM_CALL_ARGS_BLOCKARG) == 0;
 
-    // Detect String.new(..., capacity: <n>): emit opt_string_new so the
-    // allocation can be pre-sized before initialize runs. The instruction
-    // guards at runtime that the receiver is String and "new" is unredefined,
-    // so a compile-time name match is sufficient here. string_new_capa_loc is
-    // the TOPN index of the capacity argument, or -1 when not applicable.
+    // Detect String.new and String.new(..., capacity: <n>): emit opt_string_new
+    // so the allocation can be pre-sized. The instruction guards at runtime that
+    // the receiver is String and "new" is unredefined, so a compile-time name
+    // match is sufficient here. string_new_capa_loc is the TOPN index of the
+    // capacity argument, or -1 when not applicable. When the only arguments are
+    // ones the allocation already satisfies (nothing, or just capacity),
+    // initialize is a no-op and string_new_skip_init lets us omit the call.
     int string_new_capa_loc = -1;
-    if (inline_new && kw_arg != NULL &&
+    bool string_new_skip_init = false;
+    if (inline_new &&
             !(flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KW_SPLAT | VM_CALL_FORWARDING)) &&
             call_node->receiver != NULL &&
             PM_NODE_TYPE_P(call_node->receiver, PM_CONSTANT_READ_NODE)) {
         const pm_constant_read_node_t *recv = (const pm_constant_read_node_t *) call_node->receiver;
         if (pm_constant_id_lookup(scope_node, recv->name) == rb_intern("String")) {
-            VALUE capacity_sym = ID2SYM(rb_intern("capacity"));
-            for (int i = 0; i < kw_arg->keyword_len; i++) {
-                if (kw_arg->keywords[i] == capacity_sym) {
-                    string_new_capa_loc = kw_arg->keyword_len - 1 - i;
-                    break;
+            int keyword_len = kw_arg ? kw_arg->keyword_len : 0;
+            if (kw_arg) {
+                VALUE capacity_sym = ID2SYM(rb_intern("capacity"));
+                for (int i = 0; i < keyword_len; i++) {
+                    if (kw_arg->keywords[i] == capacity_sym) {
+                        string_new_capa_loc = keyword_len - 1 - i;
+                        break;
+                    }
                 }
+            }
+            // orig_argc is the positional count (new_callinfo adds the keywords
+            // separately). Skip initialize when there are no positional args and
+            // either no keywords or only capacity.
+            if (orig_argc == 0 &&
+                    (keyword_len == 0 || (keyword_len == 1 && string_new_capa_loc >= 0))) {
+                string_new_skip_init = true;
             }
         }
     }
@@ -3918,15 +3931,28 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
             ci = (VALUE)new_callinfo(iseq, method_id, orig_argc, flags, kw_arg, 0);
         }
 
-        if (string_new_capa_loc >= 0) {
-            PUSH_INSN3(ret, location, opt_string_new, ci, not_basic_new, INT2FIX(string_new_capa_loc));
+        if (string_new_skip_init) {
+            // opt_string_new allocates the String and skips initialize entirely.
+            // capa_loc is unused for the bare form (orig_argc == 0).
+            PUSH_INSN3(ret, location, opt_string_new, ci, not_basic_new, INT2FIX(string_new_capa_loc >= 0 ? string_new_capa_loc : 0));
         }
         else {
             PUSH_INSN2(ret, location, opt_new, ci, not_basic_new);
         }
         LABEL_REF(not_basic_new);
         // optimized path
-        PUSH_SEND_R(ret, location, rb_intern("initialize"), INT2FIX(orig_argc), block_iseq, INT2FIX(flags | VM_CALL_FCALL), kw_arg);
+        if (string_new_skip_init) {
+            // The allocated String already satisfies these arguments, so
+            // initialize would be a no-op. It now sits in the bookkeeping slot;
+            // discard the receiver copy and any capacity argument (the shared
+            // pop below drops the receiver copy) and use the allocation as-is.
+            for (int i = 0; i < orig_argc + (kw_arg ? kw_arg->keyword_len : 0); i++) {
+                PUSH_INSN(ret, location, pop);
+            }
+        }
+        else {
+            PUSH_SEND_R(ret, location, rb_intern("initialize"), INT2FIX(orig_argc), block_iseq, INT2FIX(flags | VM_CALL_FCALL), kw_arg);
+        }
         PUSH_INSNL(ret, location, jump, not_basic_new_finish);
 
         PUSH_LABEL(ret, not_basic_new);
