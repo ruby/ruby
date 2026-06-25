@@ -408,7 +408,6 @@ require 'json/common'
 #   to be inserted after each \JSON object; defaults to the empty \String, <tt>''</tt>.
 # - Option +indent+ (\String) specifies the string (usually spaces) to be
 #   used for indentation; defaults to the empty \String, <tt>''</tt>;
-#   defaults to the empty \String, <tt>''</tt>;
 #   has no effect unless options +array_nl+ or +object_nl+ specify newlines.
 # - Option +space+ (\String) specifies a string (usually a space) to be
 #   inserted after the colon in each \JSON object's pair;
@@ -416,6 +415,11 @@ require 'json/common'
 # - Option +space_before+ (\String) specifies a string (usually a space) to be
 #   inserted before the colon in each \JSON object's pair;
 #   defaults to the empty \String, <tt>''</tt>.
+# - Option +sort_keys+ (boolean or \Proc) controls whether and how the keys of a
+#   hash are sorted when generating the output; defaults to <tt>false</tt>.
+#   When +true+, keys are sorted lexicographically. When a \Proc, it receives
+#   the entire \Hash and must return a \Hash with its pairs in the desired
+#   order, allowing for arbitrary sort orders.
 #
 # In this example, +obj+ is used first to generate the shortest
 # \JSON data (no whitespace), then again with all formatting options
