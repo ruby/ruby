@@ -38,6 +38,10 @@ require 'random/formatter'
 # If a secure random number generator is not available,
 # +NotImplementedError+ is raised.
 
+# Skip reloading when an identical copy (e.g. the one shipped inside the Bundler
+# gem) was already required from a different path, to avoid redefinition warnings.
+return if defined?(Gem::SecureRandom::VERSION)
+
 module Gem::SecureRandom
 
   # The version
