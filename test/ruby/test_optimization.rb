@@ -1117,7 +1117,12 @@ class TestRubyOptimization < Test::Unit::TestCase
     [
       'x = :b; [:a, :b].include?(x)',
       '@c = :b; [:a, :b].include?(@c)',
-      '@c = "b"; %i[a b].include?(@c.to_sym)',
+      '@c = "B"; %i[a b].include?(@c.downcase.to_sym)',
+      'hash = {B: :b}; %i[a b].include?(hash[:B])',
+      'arr = Array("b"); %i[a b].include?(arr[0].to_sym)',
+      'response = {"status_code" => 200}; [100, 200].include? response["status_code"].to_i',
+      # Test passing ENV var but don't leak ENV modifications.
+      'begin; old = ENV["VAR"]; ENV["VAR"] = "1"; [1, 10].include? ENV["VAR"].to_i; ensure ENV["VAR"] = old; end',
       '[:a, :b].include?(self) == false',
     ].each do |code|
       iseq = RubyVM::InstructionSequence.compile(code)
@@ -1172,7 +1177,11 @@ class TestRubyOptimization < Test::Unit::TestCase
       'b = :b; [:a, b].include?(:b)',
       # Use Object.new to ensure that we get newarray rather than duparray.
       'value = 1; [Object.new, true, "true", 1].include?(value)',
-      'value = 1; [Object.new, "1"].include?(value.to_s)',
+      'value = 1.1; [Object.new, "1"].include?(value.to_i.to_s)',
+      'hash = {a: 1}; [Object.new, "1"].include?(hash[:a].to_s)',
+      'arr = [1]; [Object.new, 1].include?(arr[0])',
+      'response = {"status_code" => "200"}; [Object.new, "200"].include? response["status_code"].to_s',
+      '[Object.new, "1", "true", ENV["VAR"]].include? ENV["VAR"]', # Test passing ENV var but don't modify ENV.
       '[Object.new, "1"].include?(self) == false',
     ].each do |code|
       iseq = RubyVM::InstructionSequence.compile(code)
