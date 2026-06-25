@@ -17986,6 +17986,66 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_final_inline_iteration_specializes_inlined_iseq_send() {
+        eval("
+            def inner(x)
+              x + 1
+            end
+            def outer(x)
+              inner(x)
+            end
+            def test(n)
+              outer(n)
+            end
+            test(1)
+            test(1)
+        ");
+
+        let old_threshold = get_option!(inline_threshold);
+        let old_max_iterations = get_option!(inline_max_iterations);
+        unsafe {
+            OPTIONS.as_mut().unwrap().inline_threshold = 30;
+            OPTIONS.as_mut().unwrap().inline_max_iterations = 1;
+        }
+        let result = hir_string("test");
+        unsafe {
+            OPTIONS.as_mut().unwrap().inline_threshold = old_threshold;
+            OPTIONS.as_mut().unwrap().inline_max_iterations = old_max_iterations;
+        }
+
+        assert!(result.contains("PushInlineFrame"),
+            "Expected outer to be inlined with inline_max_iterations=1:\n{result}");
+        assert!(result.contains(" = SendDirect "),
+            "Expected the Send inside the final inlined body to be specialized to SendDirect:\n{result}");
+        assert!(!result.contains(" = Send "),
+            "Expected no unspecialized Send after the final specialization round:\n{result}");
+
+        assert_snapshot!(result, @"
+        fn test@<compiled>:9:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :n@0x1000
+          Jump bb3(v1, v3)
+        bb2():
+          EntryPoint JIT(0)
+          v6:BasicObject = LoadArg :self@0
+          v7:BasicObject = LoadArg :n@1
+          Jump bb3(v6, v7)
+        bb3(v9:BasicObject, v10:BasicObject):
+          PatchPoint MethodRedefined(Object@0x1008, outer@0x1010, cme:0x1018)
+          v23:ObjectSubclass[class_exact*:Object@VALUE(0x1008)] = GuardType v9, ObjectSubclass[class_exact*:Object@VALUE(0x1008)] recompile
+          PushInlineFrame v23 (0x1040), v10
+          PatchPoint MethodRedefined(Object@0x1008, inner@0x1048, cme:0x1050)
+          v43:BasicObject = SendDirect v23, 0x1078, :inner (0x1088), v10
+          CheckInterrupts
+          PopInlineFrame
+          Return v43
+        ");
+    }
+
+    #[test]
     fn test_inline_budget_rejects_when_exceeded() {
         // The same workload as test_inline_arithmetic_method, which we know inlines
         // successfully under the default settings (budget=500, threshold=30). Setting

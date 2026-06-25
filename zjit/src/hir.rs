@@ -6221,19 +6221,27 @@ impl Function {
         }
 
         // The optimization pipeline runs in a fixed-point loop so that inlining and
-        // type specialization can feed each other: the first iteration inlines direct
-        // calls and specializes the inlined code, and subsequent iterations can inline
-        // calls that only became monomorphic after the previous round of specialization.
-        // Termination is guaranteed because each iteration either inlines at least one
-        // call (growing the function toward the inlining budget) or reaches a fixed point.
-        for _ in 0..get_option!(inline_max_iterations) {
+        // type specialization can feed each other: an iteration inlines direct calls and
+        // the next one specializes the freshly inlined code, which in turn can expose
+        // calls that only became monomorphic after that specialization. Inlining naturally
+        // stops when it reaches a fixed point, while inline_max_iterations sets an upper bound
+        // on inlining passes. If we reach the max, we run the loop one more time with inlining
+        // disabled in order to optimize the results of the last inlining operation.
+        let inline_max_iterations = get_option!(inline_max_iterations);
+        for iteration in 0..=inline_max_iterations {
             // Function is assumed to have types inferred already
             run_pass!(type_specialize);
             // The trivial inliner runs first to handle simple cases (constant returns,
             // parameter returns, etc.) without frame push/pop overhead. The general
             // inliner then handles more complex methods that require full inlining.
             run_pass!(inline_trivial);
-            let did_inline = run_pass!(inline_methods);
+            // Cap inlining at inline_max_iterations passes; the trailing iteration (see above)
+            // runs the rest of the pipeline with inlining off.
+            let did_inline = if iteration < inline_max_iterations {
+                run_pass!(inline_methods)
+            } else {
+                false
+            };
             run_pass!(optimize_c_calls);
             run_pass!(convert_no_profile_sends);
             run_pass!(optimize_load_store);
