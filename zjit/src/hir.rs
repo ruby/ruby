@@ -5445,6 +5445,36 @@ impl Function {
                         }
                         insn_id
                     }
+                    Insn::GetEP { level } => {
+                        let key = (InsnId(999999+level as usize), RUBY_OFFSET_CFP_EP);
+                        match compile_time_heap.entry(key) {
+                            std::collections::hash_map::Entry::Occupied(entry) => {
+                                let cached_insn = *entry.get();
+
+                                // TODO (nirvdrum 2026-06-04): Remove the return type guard and supporting code when the type checker becomes more accurate.
+                                // If there's an an embedded<=>heap shape storage transition, it's possible for this `LoadField` to have a different return
+                                // type than the cached entry (`CPtr` vs `BasicObject`). While the loaded value would be the same in either case, the
+                                // difference in associated type causes type checking to fail. Consequently, we conservatively retain the duplicate `LoadField`.
+                                // The `optimize_load_store_does_not_alias_loads_with_incompatible_return_types` test checks the problematic case.
+                                let can_forward_cached_insn = match self.find(cached_insn) {
+                                    Insn::LoadField { return_type : cached_return_type,.. } => cached_return_type.is_subtype(types::CPtr),
+                                    _ => true
+                                };
+
+                                if can_forward_cached_insn {
+                                    // If the value is stored already, we should short circuit.
+                                    // However, we need to replace insn_id with its representative in the SSA union.
+                                    self.make_equal_to(insn_id, cached_insn);
+                                    continue
+                                }
+                            }
+                            std::collections::hash_map::Entry::Vacant(_) => {
+                                // If the value has not been accessed, cache a copy to optimize future loads or stores.
+                                compile_time_heap.insert(key, insn_id);
+                            }
+                        }
+                        insn_id
+                    }
                     Insn::WriteBarrier { .. } => {
                         // Currently, WriteBarrier write effects are Allocator and Memory when we'd really like them to be flags.
                         // We don't use LoadField for mark bits so we can ignore them for now.
