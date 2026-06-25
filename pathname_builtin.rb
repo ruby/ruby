@@ -1488,21 +1488,26 @@ class Pathname    # * File *
   # Creates a symbolic link at the path in `self` to the entry at `path`:
   #
   # ```ruby
-  # # Create target file.
-  # File.write('doc/t.tmp', 'foo')
   # # Create Pathnames.
-  # target_pn = Pathname('../doc/t.tmp')
-  # link_pn = Pathname('lib/u.tmp')
+  # file_pn = Pathname('doc/t.tmp')          # => #<Pathname:doc/t.tmp>
+  # target_pn = Pathname('..').join(file_pn) # => #<Pathname:../doc/t.tmp>
+  # link_pn = Pathname('lib/u.tmp')          # => #<Pathname:lib/u.tmp>
+  # # Create target file.
+  # file_pn.write('foo')
+  # # Check state.
+  # link_pn.exist?   # => false
   # link_pn.symlink? # => false
+  # link_pn.read     # Raises Errno::ENOENT, No such file or directory.
+  # link_pn.readlink # Raises Errno::ENOENT, No such file or directory.
   # # Make symlink and check state.
   # link_pn.make_symlink(target_pn)
-  # link_pn.symlink? # => true
-  # link_pn.readlink # => #<Pathname:../doc/t.tmp>
   # link_pn.exist?   # => true
+  # link_pn.symlink? # => true
   # link_pn.read     # => "foo"
+  # link_pn.readlink # => #<Pathname:../doc/t.tmp>
   # # Clean up.
+  # file_pn.delete
   # link_pn.delete
-  # File.delete('doc/t.tmp')
   # ```
   #
   # See also: #read, #readlink, #symlink?.
