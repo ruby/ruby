@@ -59,19 +59,14 @@ jobs:
       matrix:
         include:
           - test_task: 'check'
-            run_opts: '--zjit-call-threshold=1'
-            specopts: '-T --zjit-call-threshold=1'
-            configure: '--enable-zjit=dev'
-
-          - test_task: 'check'
-            run_opts: '--zjit-call-threshold=1 --zjit-inline-threshold=30'
-            specopts: '-T --zjit-call-threshold=1 -T --zjit-inline-threshold=30'
-            configure: '--enable-zjit=dev'
-            continue-on-test_task: true
-
-          - test_task: 'check'
             run_opts: '--zjit-disable-hir-opt --zjit-call-threshold=1'
             specopts: '-T --zjit-disable-hir-opt -T --zjit-call-threshold=1'
+            configure: '--enable-zjit=dev'
+
+          ## Run with default options (inliner enabled) ##
+          - test_task: 'check'
+            run_opts: '--zjit-call-threshold=1'
+            specopts: '-T --zjit-call-threshold=1'
             configure: '--enable-zjit=dev'
 
             # The optimizer benefits from at least 1 iteration of profiling. Also, many
@@ -79,6 +74,26 @@ jobs:
           - test_task: 'btest'
             run_opts: '--zjit-call-threshold=2'
             configure: '--enable-zjit=dev'
+
+          - test_task: 'test-bundled-gems'
+            configure: '--enable-zjit=dev'
+            run_opts: '--zjit-call-threshold=1'
+
+          ## Run with inliner disabled ##
+          - test_task: 'check'
+            run_opts: '--zjit-inline-threshold=0 --zjit-call-threshold=1'
+            specopts: '-T --zjit-inline-threshold=0 -T --zjit-call-threshold=1'
+            configure: '--enable-zjit=dev'
+
+            # The optimizer benefits from at least 1 iteration of profiling. Also, many
+            # regression tests in bootstraptest/test_yjit.rb assume call-threshold=2.
+          - test_task: 'btest'
+            run_opts: '--zjit-inline-threshold=0 --zjit-call-threshold=2'
+            configure: '--enable-zjit=dev'
+
+          - test_task: 'test-bundled-gems'
+            configure: '--enable-zjit=dev'
+            run_opts: '--zjit-inline-threshold=0 --zjit-call-threshold=1'
 
           - test_task: 'zjit-check' # zjit-test + quick feedback of test_zjit.rb
             configure: '--enable-yjit --enable-zjit=dev'
@@ -90,10 +105,6 @@ jobs:
             configure: '--enable-zjit=dev --enable-yjit --with-gcc=clang-16'
             clang_path: '/usr/bin/clang-16'
             runs-on: 'ubuntu-24.04' # for clang-16
-
-          - test_task: 'test-bundled-gems'
-            configure: '--enable-zjit=dev'
-            run_opts: '--zjit-call-threshold=1'
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
@@ -246,11 +257,14 @@ jobs:
     strategy:
       matrix:
         include:
-          # Test --call-threshold=2 with 2 iterations in total
+          # Test --call-threshold=2 with 2 iterations in total (inlining enabled)
           - ruby_opts: '--zjit-call-threshold=2'
             bench_opts: '--warmup=1 --bench=1 --excludes=shipit'
             configure: '--enable-zjit=dev_nodebug' # --enable-zjit=dev is too slow
-
+          # Test --call-threshold=2 with 2 iterations in total (inlining disabled)
+          - ruby_opts: '--zjit-inline-threshold=0 --zjit-call-threshold=2'
+            bench_opts: '--warmup=1 --bench=1 --excludes=shipit'
+            configure: '--enable-zjit=dev_nodebug' # --enable-zjit=dev is too slow
     runs-on: ubuntu-24.04
 
     if: >-
