@@ -181,8 +181,15 @@ jobs:
     strategy:
       matrix:
         include:
+          # Run with the inliner enabled (on by default)
           # Test --call-threshold=2 with 2 iterations in total
           - ruby_opts: '--zjit-call-threshold=2'
+            bench_opts: '--warmup=1 --bench=1 --excludes=shipit'
+            configure: '--enable-zjit=dev_nodebug' # --enable-zjit=dev is too slow
+
+          # Run with inliner disabled #
+          # Test --call-threshold=2 with 2 iterations in total
+          - ruby_opts: '--zjit-inline-threshold=0 --zjit-call-threshold=2'
             bench_opts: '--warmup=1 --bench=1 --excludes=shipit'
             configure: '--enable-zjit=dev_nodebug' # --enable-zjit=dev is too slow
 
