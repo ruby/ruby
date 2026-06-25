@@ -1842,18 +1842,8 @@ rb_file_pipe_p(VALUE obj, VALUE fname)
  * call-seq:
  *   File.symlink?(path) -> true or false
  *
- * Returns whether the entry at `path` is a symbolic link:
- *
- * ```ruby
- * path = 'doc/t.tmp'
- * link_path = 'lib/u.tmp'
- * File.write(path, 'foo')
- * File.symlink?(path)      # => false
- * File.symlink(path, link_path)
- * File.symlink?(link_path) # => true
- * File.delete(path)
- * File.delete(link_path)
- * ```
+ * Returns whether the entry at `path` is a symbolic link;
+ * see ::symlink.
  *
  */
 
@@ -3476,16 +3466,29 @@ rb_file_s_link(VALUE klass, VALUE from, VALUE to)
  *  Creates a symbolic link at `link_path` to the entry at `path`:
  *
  *  ```ruby
- *  path = 'doc/t.tmp'
- *  link_path = 'lib/u.tmp'
- *  File.write(path, 'foo')
- *  File.symlink(path, link_path)
+ *  # Create paths.
+ *  file_path = 'doc/t.tmp'                  # => "doc/t.tmp"
+ *  target_path = File.join('..', file_path) # => "../doc/t.tmp"
+ *  link_path = 'lib/u.tmp'                  # => "lib/u.tmp"
+ *  # Create target file.
+ *  File.write(file_path, 'foo')
+ *  # Check state.
+ *  File.exist?(link_path)   # => false
+ *  File.symlink?(link_path) # => false
+ *  File.read(link_path)     # Raises Errno::ENOENT, No such file or directory.
+ *  File.readlink(link_path) # Raises Errno::ENOENT, No such file or directory.
+ *  # Make symlink and check state.
+ *  File.symlink(target_path, link_path)
+ *  File.exist?(link_path)   # => true
  *  File.symlink?(link_path) # => true
- *  File.file?(link_path)    # => false
- *  File.delete(path)
+ *  File.read(link_path)     # => "foo"
+ *  File.readlink(link_path) # => "../doc/t.tmp"
+ *  # Clean up.
+ *  File.delete(file_path)
  *  File.delete(link_path)
  *  ```
  *
+ *  See also: ::read, ::readlink, ::symlink?.
  */
 
 static VALUE
