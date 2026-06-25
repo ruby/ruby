@@ -2079,17 +2079,26 @@ rb_str_with_debug_created_info(VALUE str, VALUE path, int line)
  */
 
 static VALUE
-rb_str_init(rb_execution_context_t *ec, VALUE str, VALUE orig, VALUE no_str, VALUE encoding, VALUE no_encoding, VALUE capacity, VALUE no_capacity)
+rb_str_init(rb_execution_context_t *ec, VALUE str, VALUE orig, VALUE encoding, VALUE capacity, VALUE omitted)
 {
     rb_encoding *enc = 0;
-    int n = RTEST(no_str) ? 0 : 1;
 
-    /* A keyword was supplied iff its sentinel is false. Mirror the old
+    /* omitted packs the "argument was not supplied" sentinels: bit 0 = orig,
+     * bit 1 = encoding, bit 2 = capacity. They arrive in one integer so the
+     * builtin call stays within YJIT's invokebuiltin argument limit. */
+    const long om = FIX2LONG(omitted);
+    const int no_str = om & 1;
+    const int no_encoding = om & 2;
+    const int no_capacity = om & 4;
+
+    int n = no_str ? 0 : 1;
+
+    /* A keyword was supplied iff its sentinel is clear. Mirror the old
      * rb_scan_args/rb_get_kwargs behavior: only touch encoding/capacity
      * when the corresponding keyword was actually passed. */
-    if (!RTEST(no_encoding) || !RTEST(no_capacity)) {
-        VALUE venc = RTEST(no_encoding) ? Qundef : encoding;
-        VALUE vcapa = RTEST(no_capacity) ? Qundef : capacity;
+    if (!no_encoding || !no_capacity) {
+        VALUE venc = no_encoding ? Qundef : encoding;
+        VALUE vcapa = no_capacity ? Qundef : capacity;
         if (!UNDEF_P(venc) && !NIL_P(venc)) {
             enc = rb_to_encoding(venc);
         }

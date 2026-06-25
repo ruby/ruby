@@ -33,6 +33,10 @@ class String
                 capacity: (no_capacity = true; nil))
     return self if no_str && no_encoding && no_capacity
 
-    Primitive.rb_str_init(orig, no_str, encoding, no_encoding, capacity, no_capacity)
+    # Pack the "argument was omitted" sentinels into one integer. This keeps the
+    # builtin call at four arguments, within YJIT's limit for invokebuiltin.
+    omitted = (no_str ? 1 : 0) | (no_encoding ? 2 : 0) | (no_capacity ? 4 : 0)
+
+    Primitive.rb_str_init(orig, encoding, capacity, omitted)
   end
 end

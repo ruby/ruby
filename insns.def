@@ -968,7 +968,7 @@ opt_string_new
             vm_cstr_initialize_basic_p(recv)) {
 
         if (argc == 0) {
-            str = rb_str_new(0, 0);
+            str = rb_str_buf_new(0);
         }
         else {
             VALUE rbcapa = TOPN(capa_loc);
