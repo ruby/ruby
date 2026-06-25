@@ -1063,6 +1063,7 @@ extern "C" {
     pub fn rb_reg_match_pre(md: VALUE) -> VALUE;
     pub fn rb_reg_match_post(md: VALUE) -> VALUE;
     pub fn rb_reg_match_last(md: VALUE) -> VALUE;
+    pub fn rb_str_buf_new(capa: ::std::os::raw::c_long) -> VALUE;
     pub fn rb_utf8_str_new(
         ptr: *const ::std::os::raw::c_char,
         len: ::std::os::raw::c_long,
@@ -1136,6 +1137,7 @@ extern "C" {
     ) -> VALUE;
     pub fn rb_obj_as_string_result(str_: VALUE, obj: VALUE) -> VALUE;
     pub fn rb_str_concat_literals(num: usize, strary: *const VALUE) -> VALUE;
+    pub fn rb_str_new_capa_for_init(capa: ::std::os::raw::c_long) -> VALUE;
     pub fn rb_ec_str_resurrect(
         ec: *mut rb_execution_context_struct,
         str_: VALUE,

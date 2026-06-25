@@ -187,6 +187,44 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:opt_new], call_threshold: 2
   end
 
+  def test_opt_string_new
+    assert_compiles '["", String, false]', %q{
+      def test = String.new
+      s = test; test
+      [s, s.class, s.frozen?]
+    }, insns: [:opt_string_new], call_threshold: 2
+  end
+
+  def test_opt_string_new_with_capacity
+    assert_compiles '["", "", ""]', %q{
+      def test(cap) = String.new(capacity: cap)
+      [test(100), test(-5), test(0)].tap { test(100) }
+    }, insns: [:opt_string_new], call_threshold: 2
+  end
+
+  def test_opt_string_new_allocates_mutable_string
+    assert_compiles '"hello world"', %q{
+      def test = String.new
+      test; test
+      s = test
+      s << "hello" << " " << "world"
+      s
+    }, insns: [:opt_string_new], call_threshold: 2
+  end
+
+  def test_opt_string_new_falls_back_when_initialize_redefined
+    assert_compiles '[true, true]', %q{
+      def test = String.new
+      test; test
+      class String
+        def initialize(*) = (super; @marked = true)
+      end
+      a = test
+      b = String.new
+      [a.instance_variable_get(:@marked), b.instance_variable_get(:@marked)]
+    }, insns: [:opt_string_new], call_threshold: 2
+  end
+
   def test_uncached_getconstant_path
     assert_compiles RUBY_COPYRIGHT.dump, %q{
       def test = RUBY_COPYRIGHT

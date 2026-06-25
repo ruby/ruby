@@ -948,6 +948,11 @@ pub enum Insn {
     /// * raise an exception if `val` is not a class
     /// * run arbitrary code if `val` is a class with a custom allocator
     ObjectAlloc { val: InsnId, state: InsnId },
+    /// Allocate a String for a `String.new` that skips `#initialize`. `cfunc` is the
+    /// leaf allocator (`rb_str_buf_new` for a bare `String.new`, or
+    /// `rb_str_new_capa_for_init` for `String.new(capacity:)`) and `capa` is the C
+    /// long capacity passed to it.
+    StringNew { capa: InsnId, cfunc: *const u8, state: InsnId },
     /// Allocate an instance of the `val` class without calling `#initialize` on it.
     /// This requires that `class` has the default allocator (for example via `IsMethodCfunc`).
     /// This won't raise or run arbitrary code because `class` has the default allocator.
@@ -1367,6 +1372,7 @@ macro_rules! for_each_operand_impl {
             | Insn::StringIntern { val, state }
             | Insn::StringCopy { val, state, .. }
             | Insn::ObjectAlloc { val, state }
+            | Insn::StringNew { capa: val, state, .. }
             | Insn::GuardType { val, state, .. }
             | Insn::GuardBitEquals { val, state, .. }
             | Insn::GuardAnyBitSet { val, state, .. }
@@ -1681,6 +1687,7 @@ impl Insn {
             Insn::HashDup { .. } => allocates,
             Insn::ObjectAlloc { .. } => effects::Any,
             Insn::ObjectAllocClass { .. } => allocates,
+            Insn::StringNew { .. } => allocates,
             Insn::Test { .. } => effects::Empty,
             Insn::IsMethodCfunc { .. } => effects::Any,
             Insn::IsBitEqual { .. } => effects::Empty,
@@ -2010,6 +2017,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::HashAref { hash, key, .. } => { write!(f, "HashAref {hash}, {key}")}
             Insn::HashAset { hash, key, val, .. } => { write!(f, "HashAset {hash}, {key}, {val}")}
             Insn::ObjectAlloc { val, .. } => { write!(f, "ObjectAlloc {val}") }
+            Insn::StringNew { capa, .. } => { write!(f, "StringNew {capa}") }
             &Insn::ObjectAllocClass { class, .. } => {
                 let class_name = get_class_name(class);
                 write!(f, "ObjectAllocClass {class_name}:{}", class.print(self.ptr_map))
@@ -3066,6 +3074,7 @@ impl Function {
             Insn::NewRange { .. } => types::RangeExact,
             Insn::NewRangeFixnum { .. } => types::RangeExact,
             Insn::ObjectAlloc { .. } => types::HeapBasicObject,
+            Insn::StringNew { .. } => types::StringExact,
             Insn::ObjectAllocClass { class, .. } => Type::from_class(*class),
             &Insn::CCallWithFrame { return_type, .. } => return_type,
             Insn::CCall { return_type, .. } => *return_type,
@@ -4064,6 +4073,12 @@ impl Function {
                         } else {
                             self.push_insn_id(block, insn_id);
                         }
+                    }
+                    Insn::IsBitEqual { left, right } if self.type_of(left).ruby_object_known() && self.type_of(right).ruby_object_known() => {
+                        let eq = self.type_of(left).ruby_object().unwrap() == self.type_of(right).ruby_object().unwrap();
+                        let replacement = self.push_insn(block, Insn::Const { val: Const::CBool(eq) });
+                        self.insn_types[replacement.0] = self.infer_type(replacement);
+                        self.make_equal_to(insn_id, replacement);
                     }
                     Insn::IsMethodCfunc { val, cd, cfunc, state } if self.type_of(val).ruby_object_known() => {
                         let class = self.type_of(val).ruby_object().unwrap();
@@ -6625,6 +6640,7 @@ impl Function {
                 }
                 Ok(())
             }
+            Insn::StringNew { capa, .. } => self.assert_subtype(insn_id, capa, types::CInt64),
             Insn::IsBitEqual { left, right }
             | Insn::IsBitNotEqual { left, right } => {
                 if self.is_a(left, types::CInt) && self.is_a(right, types::CInt) {
@@ -7105,6 +7121,10 @@ fn compute_bytecode_info(iseq: *const rb_iseq_t, opt_table: &[u32]) -> BytecodeI
                 jump_targets.insert(insn_idx_at_offset(insn_idx, offset));
             }
             YARVINSN_opt_new => {
+                let offset = get_arg(pc, 1).as_i64();
+                jump_targets.insert(insn_idx_at_offset(insn_idx, offset));
+            }
+            YARVINSN_opt_string_new => {
                 let offset = get_arg(pc, 1).as_i64();
                 jump_targets.insert(insn_idx_at_offset(insn_idx, offset));
             }
@@ -8061,6 +8081,81 @@ fn add_iseq_to_hir(
                     let insn_id = fun.push_insn(block, Insn::ObjectAlloc { val, state: exit_id });
                     state.stack_setn(argc, insn_id);
                     state.stack_setn(argc + 1, insn_id);
+                }
+                YARVINSN_opt_string_new => {
+                    // `String.new` / `String.new(capacity:)` that skips #initialize. We allocate
+                    // the String directly and let the trailing bytecode (pop/jump) settle the stack,
+                    // mirroring the interpreter's opt_string_new fast path.
+                    let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
+                    let dst = get_arg(pc, 1).as_i64();
+                    let capa_loc = get_arg(pc, 2).as_u64() as usize;
+
+                    let argc = crate::profile::num_arguments_on_stack(cd);
+                    let ci = unsafe { get_call_data_ci(cd) };
+                    let flags = unsafe { rb_vm_ci_flag(ci) };
+                    assert_eq!(flags & VM_CALL_ARGS_BLOCKARG, 0);
+                    let recv = state.stack_topn(argc)?;
+
+                    let target_idx = insn_idx_at_offset(insn_idx, dst);
+                    let target = insn_idx_to_block[&target_idx];
+
+                    // If String#initialize has already been redefined we can't skip it: take the
+                    // generic Class#new path. Future redefinitions are caught by the MethodRedefined
+                    // patch point emitted on the fast path below.
+                    let initialize = ID!(initialize);
+                    if unsafe { rb_method_basic_definition_p(rb_cString, initialize) } == 0 {
+                        fun.push_insn(block, Insn::Jump(BranchEdge { target, args: state.as_args(self_param) }));
+                        queue.push_back((state.clone(), target, target_idx, local_inval));
+                        break;
+                    }
+
+                    // Guard the receiver is exactly String; the `String` constant may have been
+                    // shadowed at the call site, in which case we must not allocate a String.
+                    let string_class = fun.push_insn(block, Insn::Const { val: Const::Value(unsafe { rb_cString }) });
+                    let recv_is_string = fun.push_insn(block, Insn::IsBitEqual { left: recv, right: string_class });
+                    let recv_ok = fun.new_block(insn_idx);
+                    fun.push_insn(block, Insn::CondBranch {
+                        val: recv_is_string,
+                        if_true: BranchEdge { target: recv_ok, args: vec![] },
+                        if_false: BranchEdge { target, args: state.as_args(self_param) },
+                    });
+                    block = recv_ok;
+
+                    // Guard #new still resolves to rb_class_new_instance_pass_kw. When the receiver
+                    // class is known (the common case), the optimizer folds this to a patch point.
+                    let new_is_cfunc = fun.push_insn(block, Insn::IsMethodCfunc { val: recv, cd, cfunc: rb_class_new_instance_pass_kw as *const u8, state: exit_id });
+                    let new_ok = fun.new_block(insn_idx);
+                    fun.push_insn(block, Insn::CondBranch {
+                        val: new_is_cfunc,
+                        if_true: BranchEdge { target: new_ok, args: vec![] },
+                        if_false: BranchEdge { target, args: state.as_args(self_param) },
+                    });
+                    block = new_ok;
+                    queue.push_back((state.clone(), target, target_idx, local_inval));
+
+                    // Skipping #initialize is only sound while it remains the basic definition.
+                    let cme = unsafe { rb_callable_method_entry(rb_cString, initialize) };
+                    fun.push_insn(block, Insn::PatchPoint {
+                        invariant: Invariant::MethodRedefined { klass: unsafe { rb_cString }, method: initialize, cme },
+                        state: exit_id,
+                    });
+
+                    let str = if argc == 0 {
+                        // Bare String.new: rb_str_buf_new(0) yields an embedded empty string,
+                        // skipping the encoding/coderange setup rb_str_new would do.
+                        let capa = fun.push_insn(block, Insn::Const { val: Const::CInt64(0) });
+                        fun.push_insn(block, Insn::StringNew { capa, cfunc: rb_str_buf_new as *const u8, state: exit_id })
+                    } else {
+                        // String.new(capacity: n): only the Fixnum case is handled here; anything
+                        // else side-exits and the interpreter re-runs opt_string_new (which jumps
+                        // to the generic path for a non-Fixnum capacity).
+                        let capa_val = state.stack_topn(capa_loc)?;
+                        let capa_fix = fun.push_insn(block, Insn::GuardType { val: capa_val, guard_type: types::Fixnum, state: exit_id, recompile: None });
+                        let capa = fun.push_insn(block, Insn::UnboxFixnum { val: capa_fix });
+                        fun.push_insn(block, Insn::StringNew { capa, cfunc: rb_str_new_capa_for_init as *const u8, state: exit_id })
+                    };
+                    state.stack_setn(argc, str);
+                    state.stack_setn(argc + 1, str);
                 }
                 YARVINSN_jump | YARVINSN_jump_without_ints => {
                     let offset = get_arg(pc, 0).as_i64();

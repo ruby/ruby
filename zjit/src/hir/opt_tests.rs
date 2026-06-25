@@ -4898,10 +4898,11 @@ mod hir_opt_tests {
           v12:ClassSubclass[String@0x1008] = Const Value(VALUE(0x1008))
           v14:NilClass = Const Value(nil)
           PatchPoint MethodRedefined(String@0x1008, new@0x1009, cme:0x1010)
-          PatchPoint MethodRedefined(Class@0x1038, new@0x1009, cme:0x1010)
-          v53:BasicObject = CCallVariadic v12, :String.new@0x1040
+          PatchPoint MethodRedefined(String@0x1008, initialize@0x1038, cme:0x1040)
+          v23:CInt64[0] = Const CInt64(0)
+          v24:StringExact = StringNew v23
           CheckInterrupts
-          Return v53
+          Return v24
         ");
     }
 

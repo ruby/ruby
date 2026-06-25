@@ -5004,11 +5004,6 @@ fn gen_opt_string_new(
     if jit.assume_expected_cfunc(asm, comptime_recv_klass, mid, rb_class_new_instance_pass_kw as _)
         && assume_method_basic_definition(jit, asm, comptime_recv_klass, ID!(initialize)) {
 
-        extern "C" {
-            fn rb_str_buf_new(capa: std::os::raw::c_long) -> VALUE;
-            fn rb_str_new_capa_for_init(capa: std::os::raw::c_long) -> VALUE;
-        }
-
         let str = if argc == 0 {
             // bare String.new: an empty (embedded) string. rb_str_buf_new skips
             // the encoding/coderange setup that rb_str_new would do.
