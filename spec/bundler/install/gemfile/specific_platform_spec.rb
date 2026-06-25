@@ -356,6 +356,43 @@ RSpec.describe "bundle install with specific platforms" do
         expect(err).to include("run `bundle install` outside of frozen/deployment mode")
       end
     end
+
+    it "does not suggest a ruby fallback variant when the locked incompatible variant is already the ruby variant" do
+      build_repo4 do
+        build_gem "nokogiri", "1.18.10" do |s|
+          s.required_ruby_version = "< #{Gem.ruby_version}"
+        end
+      end
+
+      gemfile <<~G
+        source "https://gem.repo4"
+
+        gem "nokogiri"
+      G
+
+      lockfile <<-L
+        GEM
+          remote: https://gem.repo4/
+          specs:
+            nokogiri (1.18.10)
+
+        PLATFORMS
+          x86_64-linux
+
+        DEPENDENCIES
+          nokogiri
+
+        BUNDLED WITH
+          #{Bundler::VERSION}
+      L
+
+      simulate_platform "x86_64-linux" do
+        bundle "install --verbose", env: { "BUNDLE_FROZEN" => "true" }, raise_on_error: false
+        expect(exitstatus).not_to eq(0)
+        expect(err).to include("nokogiri-1.18.10 requires ruby version < #{Gem.ruby_version}")
+        expect(err).not_to include("The lockfile only includes")
+      end
+    end
   end
 
   it "doesn't discard previously installed platform specific gem and fall back to ruby on subsequent bundles" do
