@@ -345,7 +345,7 @@ module Spec
     end
 
     def tracked_files_glob
-      ruby_core? ? "libexec/bundle* lib/bundler lib/bundler.rb spec/bundler man/bundle*" : "exe/bundle exe/bundler lib/bundler lib/bundler.rb bundler.gemspec CHANGELOG-bundler.md LICENSE-bundler.md README-bundler.md"
+      ruby_core? ? "libexec/bundle* lib/bundler lib/bundler.rb lib/rubygems/vendor/uri spec/bundler man/bundle*" : "exe/bundle exe/bundler lib/bundler lib/bundler.rb lib/rubygems/vendor/uri bundler.gemspec CHANGELOG-bundler.md LICENSE-bundler.md README-bundler.md"
     end
 
     def lib_tracked_files_glob
