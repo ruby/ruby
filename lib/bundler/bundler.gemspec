@@ -36,6 +36,10 @@ Gem::Specification.new do |s|
 
   s.files = Dir.glob("lib/bundler{.rb,/**/*}", File::FNM_DOTMATCH).reject {|f| File.directory?(f) }
 
+  # Bundler reuses RubyGems' vendored URI. Ship a copy under lib/rubygems so
+  # Bundler stays self-contained on RubyGems versions that predate it.
+  s.files += Dir.glob("lib/rubygems/vendor/uri/**/*", File::FNM_DOTMATCH).reject {|f| File.directory?(f) }
+
   # include the gemspec itself because warbler breaks w/o it
   s.files += %w[lib/bundler/bundler.gemspec]
 
