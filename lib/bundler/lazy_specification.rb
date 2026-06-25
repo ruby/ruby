@@ -192,7 +192,7 @@ module Bundler
     end
 
     def find_compatible_platform_spec(specs, locked_platforms: nil)
-      candidate_platforms(locked_platforms).each do |plat|
+      candidate_platforms(locked_platforms: locked_platforms).each do |plat|
         candidates = MatchPlatform.select_best_platform_match(specs, plat)
         spec = choose_compatible(candidates, fallback_to_non_installable: false)
         return spec if spec
@@ -204,7 +204,7 @@ module Bundler
     # requires compilation, but works when precompiled gems are incompatible.
     # When a set of locked platforms is given (frozen mode), restrict the
     # candidates to those, so we never materialize a platform that wasn't locked.
-    def candidate_platforms(locked_platforms = nil)
+    def candidate_platforms(locked_platforms: nil)
       target = source.is_a?(Source::Path) ? platform : Bundler.local_platform
       platforms = [target, platform, Gem::Platform::RUBY].uniq
       return platforms unless locked_platforms
