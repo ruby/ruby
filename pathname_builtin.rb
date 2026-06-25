@@ -1185,13 +1185,12 @@ class Pathname    # * File *
   # file_pn.write('bar')
   # file_pn.ctime # => 2026-06-16 16:49:11.421204188 -0500
   # dir_pn.ctime  # => 2026-06-16 16:46:00.734974872 -0500
-  # # Read file; neither ctime not updated.
+  # # Read file; neither ctime updated.
   # file_pn.read
   # file_pn.ctime # => 2026-06-16 16:49:11.421204188 -0500
   # dir_pn.ctime  # => 2026-06-16 16:46:00.734974872 -0500
   # # Clean up.
-  # File.delete(file_path)
-  # Dir.rmdir(dir_path)
+  # dir_pn.rmtree
   # ```
   #
   def ctime() File.ctime(@path) end
