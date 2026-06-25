@@ -656,6 +656,29 @@ assert_equal '[0, 1]', %q{
   end
 }
 
+# move preserves aliasing inside the moved object graph
+assert_equal 'true', %q{
+  r = Ractor.new do
+    Ractor.receive
+  end
+
+  leaf = +"leaf"
+  moved = r.send([leaf, leaf], move: true).value
+  moved[0].equal?(moved[1])
+}
+
+# move handles cyclic references safely and preserves aliasing
+assert_equal 'true', %q{
+  r = Ractor.new do
+    Ractor.receive
+  end
+
+  a = []
+  a << a
+  moved = r.send(a, move: true).value
+  moved.equal?(moved[0])
+}
+
 # unshareable frozen objects should still be frozen in new ractor after move
 assert_equal 'true', %q{
   r = Ractor.new do

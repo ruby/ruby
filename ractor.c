@@ -1778,6 +1778,11 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
         return 0;
     }
 
+    if (UNLIKELY(data->rec && st_lookup(data->rec, (st_data_t)obj, &replacement))) {
+        data->replacement = (VALUE)replacement;
+        return 0;
+    }
+
     switch (data->enter_func(obj, data)) {
       case traverse_cont: break;
       case traverse_skip: return 0; // skip children
@@ -1785,16 +1790,9 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
     }
 
     replacement = (st_data_t)data->replacement;
-
-    if (UNLIKELY(st_lookup(obj_traverse_replace_rec(data), (st_data_t)obj, &replacement))) {
-        data->replacement = (VALUE)replacement;
-        return 0;
-    }
-    else {
-        st_insert(obj_traverse_replace_rec(data), (st_data_t)obj, replacement);
-        RB_OBJ_WRITTEN(data->rec_hash, Qundef, obj);
-        RB_OBJ_WRITTEN(data->rec_hash, Qundef, replacement);
-    }
+    st_insert(obj_traverse_replace_rec(data), (st_data_t)obj, replacement);
+    RB_OBJ_WRITTEN(data->rec_hash, Qundef, obj);
+    RB_OBJ_WRITTEN(data->rec_hash, Qundef, replacement);
 
     if (!data->move) {
         obj = replacement;
