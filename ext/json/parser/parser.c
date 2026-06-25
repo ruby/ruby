@@ -2712,7 +2712,7 @@ static VALUE cResumableParser_rest(VALUE self)
 }
 
 /*
- * call-seq: value? -> true or false
+ * call-seq: eos? -> true or false
  *
  * Returns whether the internal buffer has been entirely consumed.
  */
