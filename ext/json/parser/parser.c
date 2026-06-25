@@ -5,7 +5,10 @@
 static VALUE mJSON, eNestingError, eParserError, Encoding_UTF_8;
 static VALUE CNaN, CInfinity, CMinusInfinity, JSON_empty_string;
 
-static ID i_new, i_try_convert, i_uminus, i_encode, i_at_line, i_at_column;
+static ID i_new, i_try_convert, i_encode, i_at_line, i_at_column;
+#ifndef HAVE_RB_STR_TO_INTERNED_STR
+static ID i_uminus;
+#endif
 
 static VALUE sym_max_nesting, sym_allow_nan, sym_allow_trailing_comma, sym_allow_comments,
              sym_allow_control_characters, sym_allow_invalid_escape, sym_symbolize_names,
@@ -2812,7 +2815,9 @@ void Init_parser(void)
 
     i_new = rb_intern("new");
     i_try_convert = rb_intern("try_convert");
+#ifndef HAVE_RB_STR_TO_INTERNED_STR
     i_uminus = rb_intern("-@");
+#endif
     i_encode = rb_intern("encode");
     i_at_line = rb_intern("@line");
     i_at_column = rb_intern("@column");
