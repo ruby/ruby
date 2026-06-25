@@ -8152,10 +8152,10 @@ fn add_iseq_to_hir(
                         recv: ep,
                         id: FieldName::VM_ENV_DATA_INDEX_FLAGS,
                         offset: SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32),
-                        return_type: types::CInt64,
+                        return_type: types::CUInt64,
                     });
                     let modified_flag = fun.push_insn(block, Insn::Const {
-                        val: Const::CInt64(VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into()),
+                        val: Const::CUInt64(VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into()),
                     });
                     let modified = fun.push_insn(block, Insn::IntOr { left: flags, right: modified_flag });
                     fun.push_insn(block, Insn::StoreField {
