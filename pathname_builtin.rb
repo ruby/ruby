@@ -1488,16 +1488,24 @@ class Pathname    # * File *
   # Creates a symbolic link at the path in `self` to the entry at `path`:
   #
   # ```ruby
-  # path = 'doc/t.tmp'
-  # link_path = 'lib/u.tmp'
-  # File.write(path, 'foo')
-  # Pathname(link_path).make_symlink(path)
-  # File.symlink?(link_path) # => true
-  # File.file?(link_path)    # => false
-  # File.delete(path)
-  # File.delete(link_path)
+  # # Create target file.
+  # File.write('doc/t.tmp', 'foo')
+  # # Create Pathnames.
+  # target_pn = Pathname('../doc/t.tmp')
+  # link_pn = Pathname('lib/u.tmp')
+  # link_pn.symlink? # => false
+  # # Make symlink and check state.
+  # link_pn.make_symlink(target_pn)
+  # link_pn.symlink? # => true
+  # link_pn.readlink # => #<Pathname:../doc/t.tmp>
+  # link_pn.exist?   # => true
+  # link_pn.read     # => "foo"
+  # # Clean up.
+  # link_pn.delete
+  # File.delete('doc/t.tmp')
   # ```
   #
+  # See also: #read, #readlink, #symlink?.
   def make_symlink(old) File.symlink(old, @path) end
 
   # See <tt>File.truncate</tt>.  Truncate the file to +length+ bytes.
@@ -1847,19 +1855,8 @@ class Pathname    # * FileTest *
   # call-seq:
   #   symlink? -> true or false
   #
-  # Returns whether the entry at the path in `self` is a symbolic link:
-  #
-  # ```ruby
-  # path = 'doc/t.tmp'
-  # link_path = 'lib/u.tmp'
-  # File.write(path, 'foo')
-  # File.symlink?(path)      # => false
-  # Pathname(link_path).make_symlink(path)
-  # File.symlink?(link_path) # => true
-  # File.delete(path)
-  # File.delete(link_path)
-  # ```
-  #
+  # Returns whether the entry at the path in `self` is a symbolic link;
+  # see #make_symlink.
   def symlink?() FileTest.symlink?(@path) end
 
   # See <tt>FileTest.writable?</tt>.
