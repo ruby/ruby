@@ -3510,14 +3510,13 @@ rb_file_s_symlink(VALUE klass, VALUE from, VALUE to)
 
 #ifdef HAVE_READLINK
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     File.readlink(link_name)  ->  file_name
+ *     File.readlink(link_path) -> path
  *
- *  Returns the name of the file referenced by the given link.
- *  Not available on all platforms.
- *
- *     File.symlink("testfile", "link2test")   #=> 0
- *     File.readlink("link2test")              #=> "testfile"
+ *  Returns the string path to the entry referenced by the given `link_path`;
+ *  see ::symlink.
  */
 
 static VALUE
