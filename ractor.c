@@ -1543,6 +1543,26 @@ make_shareable_check_shareable_freeze(VALUE obj, enum obj_traverse_iterator_resu
 }
 
 static int obj_refer_only_shareables_p(VALUE obj);
+static enum obj_traverse_iterator_result mark_shareable(VALUE obj);
+
+// A leaf object has no ivars and no other VALUE references to traverse.
+static bool
+make_shareable_leaf_p(VALUE obj)
+{
+    if (rb_obj_shape_has_ivars(obj)) return false;
+
+    switch (BUILTIN_TYPE(obj)) {
+      case T_STRING:
+      case T_FLOAT:
+      case T_BIGNUM:
+      case T_REGEXP:
+      case T_SYMBOL:
+      case T_OBJECT:
+        return true;
+      default:
+        return false;
+    }
+}
 
 static enum obj_traverse_iterator_result
 make_shareable_check_shareable(VALUE obj)
@@ -1597,7 +1617,16 @@ make_shareable_check_shareable(VALUE obj)
         break;
     }
 
-    return make_shareable_check_shareable_freeze(obj, traverse_cont);
+    enum obj_traverse_iterator_result result =
+        make_shareable_check_shareable_freeze(obj, traverse_cont);
+
+    // A frozen leaf can be marked shareable here, skipping the rec table.
+    if (result == traverse_cont && make_shareable_leaf_p(obj)) {
+        mark_shareable(obj);
+        return traverse_skip;
+    }
+
+    return result;
 }
 
 static enum obj_traverse_iterator_result
