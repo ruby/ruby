@@ -965,7 +965,7 @@ opt_string_new
 
     if (recv == rb_cString &&
             vm_method_cfunc_is(GET_CFP(), cd, recv, rb_class_new_instance_pass_kw) &&
-            vm_cstr_initialize_basic_p(recv)) {
+            vm_method_basic_definition_p(recv, idInitialize)) {
 
         if (argc == 0) {
             str = rb_str_buf_new(0);
