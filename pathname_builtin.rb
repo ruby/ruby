@@ -302,12 +302,11 @@ class Pathname
   # creates intermediate directories as needed:
   #
   # ```ruby
-  # dir_path = 'foo/bar/baz'
-  # File.directory?('foo')    # => false
-  # Pathname(dir_path).mkpath # Creates directories 'foo', 'foo/bar', and 'foo/bar/baz'.
-  # File.directory?(dir_path) # => true
-  # require 'fileutils'
-  # FileUtils.rm_rf(dir_path)
+  # pn = Pathname('foo/bar/baz')
+  # pn.directory? # => false
+  # pn.mkpath     # Creates directories 'foo', 'foo/bar', 'foo/bar/baz'.
+  # pn.directory? # => true
+  # pn.rmtree     # Clean up.
   # ```
   #
   # Directories are created with the given permissions;
