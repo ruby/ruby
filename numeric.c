@@ -223,7 +223,7 @@ rb_num_get_rounding_option(VALUE opts)
         if (!round_kwds[0]) {
             round_kwds[0] = rb_intern_const("half");
         }
-        if (!rb_get_kwargs(opts, round_kwds, 0, 1, &rounding)) goto noopt;
+        if (!rb_get_kwargs_const(opts, round_kwds, 0, 1, &rounding)) goto noopt;
         if (SYMBOL_P(rounding)) {
             str = rb_sym2str(rounding);
         }
@@ -2478,7 +2478,7 @@ flo_round(int argc, VALUE *argv, VALUE num)
     int ndigits = 0;
     enum ruby_num_rounding_mode mode;
 
-    if (rb_scan_args(argc, argv, "01:", &nd, &opt)) {
+    if (rb_scan_args(argc, argv, "01:^", &nd, &opt)) {
         ndigits = NUM2INT(nd);
     }
     mode = rb_num_get_rounding_option(opt);
@@ -2848,13 +2848,13 @@ num_step_extract_args(int argc, const VALUE *argv, VALUE *to, VALUE *step, VALUE
 {
     VALUE hash;
 
-    argc = rb_scan_args(argc, argv, "02:", to, step, &hash);
+    argc = rb_scan_args(argc, argv, "02:^", to, step, &hash);
     if (!NIL_P(hash)) {
         ID keys[2];
         VALUE values[2];
         keys[0] = id_to;
         keys[1] = id_by;
-        rb_get_kwargs(hash, keys, 0, 2, values);
+        rb_get_kwargs_const(hash, keys, 0, 2, values);
         if (!UNDEF_P(values[0])) {
             if (argc > 0) rb_raise(rb_eArgError, "to is given twice");
             *to = values[0];
@@ -6021,7 +6021,7 @@ int_round(int argc, VALUE* argv, VALUE num)
     int mode;
     VALUE nd, opt;
 
-    if (!rb_scan_args(argc, argv, "01:", &nd, &opt)) return num;
+    if (!rb_scan_args(argc, argv, "01:^", &nd, &opt)) return num;
     ndigits = NUM2INT(nd);
     mode = rb_num_get_rounding_option(opt);
     if (ndigits >= 0) {

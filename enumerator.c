@@ -3565,7 +3565,7 @@ enum_product_initialize(int argc, VALUE *argv, VALUE obj)
     struct enum_product *ptr;
     VALUE enums = Qnil, options = Qnil;
 
-    rb_scan_args(argc, argv, "*:", &enums, &options);
+    rb_scan_args(argc, argv, "*:^", &enums, &options);
 
     if (!NIL_P(options) && !RHASH_EMPTY_P(options)) {
         rb_exc_raise(rb_keyword_error_new("unknown", rb_hash_keys(options)));
@@ -3808,7 +3808,7 @@ enumerator_s_product(int argc, VALUE *argv, VALUE klass)
 {
     VALUE enums = Qnil, options = Qnil, block = Qnil;
 
-    rb_scan_args(argc, argv, "*:&", &enums, &options, &block);
+    rb_scan_args(argc, argv, "*:^&", &enums, &options, &block);
 
     if (!NIL_P(options) && !RHASH_EMPTY_P(options)) {
         rb_exc_raise(rb_keyword_error_new("unknown", rb_hash_keys(options)));

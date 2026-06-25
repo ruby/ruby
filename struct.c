@@ -647,7 +647,7 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
     VALUE st;
     VALUE opt;
 
-    argc = rb_scan_args(argc, argv, "0*:", NULL, &opt);
+    argc = rb_scan_args(argc, argv, "0*:^", NULL, &opt);
     if (argc >= 1 && !SYMBOL_P(argv[0])) {
         name = argv[0];
         --argc;
@@ -660,7 +660,7 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
         if (!keyword_ids[0]) {
             keyword_ids[0] = rb_intern("keyword_init");
         }
-        rb_get_kwargs(opt, keyword_ids, 0, 1, &keyword_init);
+        rb_get_kwargs_const(opt, keyword_ids, 0, 1, &keyword_init);
         if (UNDEF_P(keyword_init)) {
             keyword_init = Qnil;
         }
@@ -1921,7 +1921,7 @@ static VALUE
 rb_data_with(int argc, const VALUE *argv, VALUE self)
 {
     VALUE kwargs;
-    rb_scan_args(argc, argv, "0:", &kwargs);
+    rb_scan_args(argc, argv, "0:^", &kwargs);
     if (NIL_P(kwargs)) {
         return self;
     }

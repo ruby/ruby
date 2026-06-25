@@ -384,6 +384,28 @@ RBIMPL_ATTR_NONNULL((2))
  */
 int rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, VALUE *values);
 
+RBIMPL_ATTR_NONNULL((2))
+/**
+ * Identical to ::rb_get_kwargs, except it never modifies `keyword_hash`.
+ *
+ * ::rb_get_kwargs deletes each retrieved entry from `keyword_hash` (and so the
+ * standard `rb_scan_args(..., ":", ...)` idiom must duplicate the keyword hash
+ * before handing it over).  This variant reads the values in place instead, so
+ * `keyword_hash` may be a hash the caller does not own -- for instance the
+ * keyword hash sitting in `argv` -- with no intermediate copy.  Unknown
+ * keywords are still detected.
+ *
+ * @param[in]   keyword_hash  Target hash to read (left unmodified).
+ * @param[in]   table         List of keywords that you are interested in.
+ * @param[in]   required      Number of mandatory keywords.
+ * @param[in]   optional      Number of optional keywords (can be negative).
+ * @param[out]  values        Buffer to be filled.
+ * @exception   rb_eArgError  Absence of a mandatory keyword.
+ * @exception   rb_eArgError  Found an unknown keyword.
+ * @return      Number of found values that are stored into `values`.
+ */
+int rb_get_kwargs_const(VALUE keyword_hash, const ID *table, int required, int optional, VALUE *values);
+
 RBIMPL_ATTR_NONNULL(())
 /**
  * Splits a hash into two.

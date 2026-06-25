@@ -1650,7 +1650,7 @@ iseqw_s_compile_parser(int argc, VALUE *argv, VALUE self, bool prism)
     VALUE src, file = Qnil, path = Qnil, line = Qnil, opt = Qnil;
     int i;
 
-    i = rb_scan_args(argc, argv, "1*:", &src, NULL, &opt);
+    i = rb_scan_args(argc, argv, "1*:^", &src, NULL, &opt);
     if (i > 4+NIL_P(opt)) rb_error_arity(argc, 1, 5);
     switch (i) {
       case 5: opt = argv[--i];
@@ -1840,7 +1840,7 @@ iseqw_s_compile_file(int argc, VALUE *argv, VALUE self)
     rb_compile_option_t option;
     int i;
 
-    i = rb_scan_args(argc, argv, "1*:", &file, NULL, &opt);
+    i = rb_scan_args(argc, argv, "1*:^", &file, NULL, &opt);
     if (i > 1+NIL_P(opt)) rb_error_arity(argc, 1, 2);
     switch (i) {
       case 2: opt = argv[--i];
@@ -1909,7 +1909,7 @@ iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self)
     rb_compile_option_t option;
     int i;
 
-    i = rb_scan_args(argc, argv, "1*:", &file, NULL, &opt);
+    i = rb_scan_args(argc, argv, "1*:^", &file, NULL, &opt);
     if (i > 1+NIL_P(opt)) rb_error_arity(argc, 1, 2);
     switch (i) {
       case 2: opt = argv[--i];

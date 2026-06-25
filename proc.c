@@ -1614,9 +1614,9 @@ rb_proc_parameters(int argc, VALUE *argv, VALUE self)
         CONST_ID(keyword_ids[0], "lambda");
     }
 
-    rb_scan_args(argc, argv, "0:", &opt);
+    rb_scan_args(argc, argv, "0:^", &opt);
     if (!NIL_P(opt)) {
-        rb_get_kwargs(opt, keyword_ids, 0, 1, kwargs);
+        rb_get_kwargs_const(opt, keyword_ids, 0, 1, kwargs);
         lambda = kwargs[0];
         if (!NIL_P(lambda)) {
             is_proc = !RTEST(lambda);

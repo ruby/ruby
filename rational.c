@@ -546,7 +546,7 @@ nurat_f_rational(int argc, VALUE *argv, VALUE klass)
     VALUE a1, a2, opts = Qnil;
     int raise = TRUE;
 
-    if (rb_scan_args(argc, argv, "11:", &a1, &a2, &opts) == 1) {
+    if (rb_scan_args(argc, argv, "11:^", &a1, &a2, &opts) == 1) {
         a2 = Qundef;
     }
     if (!NIL_P(opts)) {
@@ -1563,7 +1563,7 @@ nurat_round_n(int argc, VALUE *argv, VALUE self)
 {
     VALUE opt;
     enum ruby_num_rounding_mode mode = (
-        argc = rb_scan_args(argc, argv, "*:", NULL, &opt),
+        argc = rb_scan_args(argc, argv, "*:^", NULL, &opt),
         rb_num_get_rounding_option(opt));
     VALUE (*round_func)(VALUE) = ROUND_FUNC(mode, nurat_round);
     return f_round_common(argc, argv, self, round_func);

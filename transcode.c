@@ -2899,7 +2899,7 @@ str_transcode(int argc, VALUE *argv, VALUE *self)
     int ecflags = 0;
     VALUE ecopts = Qnil;
 
-    argc = rb_scan_args(argc, argv, "02:", NULL, NULL, &opt);
+    argc = rb_scan_args(argc, argv, "02:^", NULL, NULL, &opt);
     if (!NIL_P(opt)) {
         ecflags = rb_econv_prepare_opts(opt, &ecopts);
     }
@@ -3110,7 +3110,7 @@ econv_args(int argc, VALUE *argv,
     rb_encoding *senc, *denc;
     int ecflags;
 
-    argc = rb_scan_args(argc, argv, "21:", snamev_p, dnamev_p, &flags_v, &opt);
+    argc = rb_scan_args(argc, argv, "21:^", snamev_p, dnamev_p, &flags_v, &opt);
 
     if (!NIL_P(flags_v)) {
         if (!NIL_P(opt)) {
@@ -3822,7 +3822,7 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
     unsigned long output_byteend;
     int flags;
 
-    argc = rb_scan_args(argc, argv, "23:", &input, &output, &output_byteoffset_v, &output_bytesize_v, &flags_v, &opt);
+    argc = rb_scan_args(argc, argv, "23:^", &input, &output, &output_byteoffset_v, &output_bytesize_v, &flags_v, &opt);
 
     if (NIL_P(output_byteoffset_v))
         output_byteoffset = 0; /* dummy */

@@ -555,7 +555,7 @@ nucomp_f_complex(int argc, VALUE *argv, VALUE klass)
     VALUE a1, a2, opts = Qnil;
     int raise = TRUE;
 
-    if (rb_scan_args(argc, argv, "11:", &a1, &a2, &opts) == 1) {
+    if (rb_scan_args(argc, argv, "11:^", &a1, &a2, &opts) == 1) {
         a2 = Qundef;
     }
     if (!NIL_P(opts)) {
