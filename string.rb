@@ -31,6 +31,8 @@ class String
   def initialize(orig = (no_str = true; nil),
                 encoding: (no_encoding = true; nil),
                 capacity: (no_capacity = true; nil))
+    return if no_str && no_encoding && no_capacity
+
     Primitive.rb_str_init(orig, no_str, encoding, no_encoding, capacity, no_capacity)
   end
 end
