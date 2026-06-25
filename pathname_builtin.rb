@@ -1120,20 +1120,20 @@ class Pathname    # * File *
   # dir_pn = Pathname(dir_path)
   # # Create directory; directory birthtime established.
   # dir_pn.mkdir
-  # dir_pn.birthtime # => 2026-06-16 17:06:10.779192552 -0500
+  # dir_pn.birthtime  # => 2026-06-16 17:06:10.779192552 -0500
   # # A file therein and its Pathname.
   # file_path = dir_pn.join('t.tmp')
   # file_pn = Pathname(file_path)
   # # Create file; file birthtime established; directory birthtime not updated.
   # file_pn.write('foo')
+  # dir_pn.birthtime  # => 2026-06-16 17:06:10.779192552 -0500
   # file_pn.birthtime # => 2026-06-16 17:07:59.339330622 -0500
-  # dir_pn.birthtime # => 2026-06-16 17:06:10.779192552 -0500
+  # # Modify file; neither birthtime updated.
   # file_pn.write('bar')
+  # dir_pn.birthtime  # => 2026-06-16 17:06:10.779192552 -0500
   # file_pn.birthtime # => 2026-06-16 17:07:59.339330622 -0500
-  # dir_pn.birthtime # => 2026-06-16 17:06:10.779192552 -0500
   # # Clean up.
-  # file_pn.delete
-  # dir_pn.rmdir
+  # dir_pn.rmtree
   # ```
   #
   def birthtime() File.birthtime(@path) end
