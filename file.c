@@ -6372,7 +6372,7 @@ rb_stat_p(VALUE obj)
  *  File.write(path, 'foo')
  *  File.symlink(path, link_path)
  *  File.stat(path).symlink?       # => false
- *  File.stat(link_path).symlink?  # Raises Errno::NOENT; entry is not a file.
+ *  File.stat(link_path).symlink?  # Raises Errno::ENOENT; entry is not a file.
  *  File.lstat(link_path).symlink? # => true
  *  File.delete(path)
  *  File.delete(link_path)
