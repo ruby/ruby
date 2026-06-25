@@ -327,6 +327,44 @@ ossl_x509crl_set_revoked(VALUE self, VALUE ary)
     return ary;
 }
 
+/*
+ * call-seq:
+ *    crl.by_serial(serial) -> OpenSSL::X509::Revoked or nil
+ *
+ * Looks up the certificate _serial_ (an Integer or OpenSSL::BN) in the CRL and
+ * returns the matching OpenSSL::X509::Revoked entry, or +nil+ if that serial is
+ * not listed.
+ *
+ * Unlike iterating over #revoked, this does not instantiate the entire
+ * revocation list: it performs a sorted lookup (wrapping the OpenSSL function
+ * +X509_CRL_get0_by_serial+), which is significantly faster and uses far less
+ * memory for large CRLs.
+ *
+ *    crl.by_serial(cert.serial)        #=> #<OpenSSL::X509::Revoked> or nil
+ *    crl.by_serial(cert.serial)&.time  #=> revocation time, if revoked
+ */
+static VALUE
+ossl_x509crl_by_serial(VALUE self, VALUE serial)
+{
+    X509_CRL *crl;
+    X509_REVOKED *rev = NULL;
+    ASN1_INTEGER *asn1_serial;
+    int found;
+
+    GetX509CRL(self, crl);
+    asn1_serial = num_to_asn1integer(serial, NULL);
+
+    /* 0 = not found, 1 = found, 2 = found with reason removeFromCRL */
+    found = X509_CRL_get0_by_serial(crl, &rev, asn1_serial);
+    ASN1_INTEGER_free(asn1_serial);
+
+    if (found == 0)
+        return Qnil;
+
+    /* ossl_x509revoked_new dups, so the result outlives the CRL safely */
+    return ossl_x509revoked_new(rev);
+}
+
 static VALUE
 ossl_x509crl_add_revoked(VALUE self, VALUE revoked)
 {
@@ -525,6 +563,7 @@ Init_ossl_x509crl(void)
     rb_define_method(cX509CRL, "next_update=", ossl_x509crl_set_next_update, 1);
     rb_define_method(cX509CRL, "revoked", ossl_x509crl_get_revoked, 0);
     rb_define_method(cX509CRL, "revoked=", ossl_x509crl_set_revoked, 1);
+    rb_define_method(cX509CRL, "by_serial", ossl_x509crl_by_serial, 1);
     rb_define_method(cX509CRL, "add_revoked", ossl_x509crl_add_revoked, 1);
     rb_define_method(cX509CRL, "sign", ossl_x509crl_sign, 2);
     rb_define_method(cX509CRL, "verify", ossl_x509crl_verify, 1);

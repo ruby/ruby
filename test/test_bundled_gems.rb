@@ -16,6 +16,39 @@ class TestBundlerGem < Gem::TestCase
     assert_nil Gem::BUNDLED_GEMS.warning?("csv", specs: {})
   end
 
+  def test_find_gem_plain_name
+    assert_equal ["csv", "csv", false], Gem::BUNDLED_GEMS.find_gem("csv")
+  end
+
+  def test_find_gem_returns_nil_for_non_bundled_gem
+    assert_nil Gem::BUNDLED_GEMS.find_gem("some_gem")
+    assert_nil Gem::BUNDLED_GEMS.find_gem("some/nested/gem")
+  end
+
+  def test_find_gem_exact_mapping
+    # kconv is provided by the nkf gem; the feature keeps its original name
+    assert_equal ["kconv", "nkf", false], Gem::BUNDLED_GEMS.find_gem("kconv")
+  end
+
+  def test_find_gem_dashed_name
+    # resolv/replace is provided by the resolv-replace gem
+    assert_equal ["resolv/replace", "resolv-replace", false], Gem::BUNDLED_GEMS.find_gem("resolv/replace")
+  end
+
+  def test_find_gem_subfeature
+    assert_equal ["benchmark/ips", "benchmark", true], Gem::BUNDLED_GEMS.find_gem("benchmark/ips")
+  end
+
+  def test_find_gem_strips_libdir_prefix
+    path = File.join(::RbConfig::CONFIG.fetch("rubylibdir"), "csv.rb")
+    assert_equal ["csv", "csv", false], Gem::BUNDLED_GEMS.find_gem(path)
+  end
+
+  def test_find_gem_strips_archdir_prefix
+    path = File.join(::RbConfig::CONFIG.fetch("rubyarchdir"), "syslog.so")
+    assert_equal ["syslog", "syslog", false], Gem::BUNDLED_GEMS.find_gem(path)
+  end
+
   def test_no_warning_warning
     assert_nil Gem::BUNDLED_GEMS.warning?("some_gem", specs: {})
     assert_nil Gem::BUNDLED_GEMS.warning?("/path/to/some_gem.rb", specs: {})

@@ -724,6 +724,26 @@ class TestShapes < Test::Unit::TestCase
     end;
   end
 
+  def test_object_id_when_fields_are_full
+    # Adding object_id to an object with exactly SHAPE_MAX_FIELDS fields must
+    # transition to COMPLEX instead of asserting.
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      obj = Object.new
+      max = RubyVM::Shape::SHAPE_MAX_FIELDS
+      max.times { |i| obj.instance_variable_set(:"@v#{i}", i) }
+      refute_predicate RubyVM::Shape.of(obj), :complex?
+
+      id = obj.object_id
+      assert_kind_of Integer, id
+      assert_equal id, obj.object_id
+      assert_predicate RubyVM::Shape.of(obj), :complex?
+
+      max.times { |i| assert_equal i, obj.instance_variable_get(:"@v#{i}") }
+      assert_equal max, obj.instance_variables.size
+    end;
+  end
+
   def test_complex_and_frozen_and_object_id
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;

@@ -506,6 +506,29 @@ class TestGemDependencyInstaller < Gem::TestCase
     assert_equal %w[a-1 b-1], inst.installed_gems.map(&:full_name)
   end
 
+  def test_install_compact_index_api
+    a1, a1_gem = util_gem "a", 1, "b" => ">= 1"
+    b1, b1_gem = util_gem "b", 1
+
+    util_setup_compact_index a1, b1
+
+    add_to_fetcher a1, a1_gem
+    add_to_fetcher b1, b1_gem
+
+    # the compact index probe succeeds, so resolution goes through APISet
+    response = Gem::HTTPResponseFactory.create(body: "", code: 200, msg: "OK")
+    response.uri = Gem::URI("#{@gem_repo}versions")
+    @fetcher.data["#{@gem_repo}versions"] = response
+
+    inst = Gem::DependencyInstaller.new
+    inst.install "a"
+
+    assert_equal %w[a-1 b-1], inst.installed_gems.map(&:full_name)
+
+    quick_gemspec_fetches = @fetcher.paths.grep(/gemspec\.rz/)
+    assert_empty quick_gemspec_fetches
+  end
+
   def test_install_local_subdir
     util_setup_gems
 

@@ -68,7 +68,7 @@ and trailing empty strings are included:
 
 When +limit+ is negative,
 there is no limit on the size of the array,
-and trailing empty strings are omitted:
+and trailing empty strings are included:
 
   'abracadabra'.split('', -1)  # => ["a", "b", "r", "a", "c", "a", "d", "a", "b", "r", "a", ""]
   'abracadabra'.split('a', -1) # => ["", "br", "c", "d", "br", ""]

@@ -97,6 +97,10 @@ void mmtk_init_binding(MMTk_Builder *builder,
                        const struct MMTk_RubyBindingOptions *binding_options,
                        const struct MMTk_RubyUpcalls *upcalls);
 
+size_t mmtk_get_vo_bit_log_region_size(void);
+
+size_t mmtk_get_vo_bit_base_addr(void);
+
 void mmtk_initialize_collection(MMTk_VMThread tls);
 
 MMTk_Mutator *mmtk_bind_mutator(MMTk_VMMutatorThread tls);

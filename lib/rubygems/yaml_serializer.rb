@@ -29,8 +29,27 @@ module Gem
     AliasRef = Struct.new(:name, keyword_init: true)
 
     class Parser
-      MAPPING_KEY_RE = /^((?:[^#:]|:[^ ])+):(?:[ ]+(.*))?$/
+      # A plain (unquoted) mapping key followed by ":". "#" inside a key is
+      # literal unless preceded by a space (which would start a comment).
+      MAPPING_KEY_RE = /^((?:[^#:\s]|:[^ ])(?:[^#:]|:[^ ]|(?<=[^ ])#)*):(?:[ ]+(.*))?$/
+      # A quoted mapping key followed by ":". A whole-line quoted scalar
+      # cannot match because its closing quote is at the end of the line.
+      QUOTED_KEY_RE = /^("(?:[^"\\]|\\.)*"|'(?:[^']|'')*'):(?:[ ]+(.*))?$/
       MAX_NESTING_DEPTH = 1_000
+
+      STRING_UNESCAPES = {
+        "\\\\" => "\\",
+        "\\\"" => "\"",
+        "\\0" => "\0",
+        "\\a" => "\a",
+        "\\b" => "\b",
+        "\\t" => "\t",
+        "\\n" => "\n",
+        "\\v" => "\v",
+        "\\f" => "\f",
+        "\\r" => "\r",
+        "\\e" => "\e",
+      }.freeze
 
       def initialize(source)
         @lines = source.split("\n")
@@ -93,24 +112,13 @@ module Gem
 
         if stripped.start_with?("- ") || stripped == "-"
           parse_sequence(indent, anchor)
-        elsif stripped.start_with?("\"") && stripped.end_with?("\"")
-          # We don't need to care about the following case here:
-          #   1. "value with comment" # ...
-          #   2. "key": "value"
-          #
-          # 1. must not happen because YAMLSerializer doesn't emit any
-          # comment. YAMLSerializer parses only YAML that is generated
-          # by YAMLSerializer.
-          #
-          # 2. must not happen because #parse_node isn't used non
-          # top-level mapping. Non top-level mapping always uses
-          # #parse_mapping. Top-level mapping never use the '"key":
-          # "value"' form because all top-level keys
-          # ("!ruby/object:Gem::Specification"'s keys) are known and
-          # #emit_specification doesn't quote anything.
-          parse_plain_scalar(indent, anchor)
-        elsif stripped.start_with?("'") && stripped.end_with?("'")
-          # See also the above note for double quotation.
+        elsif QUOTED_KEY_RE.match?(stripped)
+          # A mapping whose key is quoted, e.g. '"have: colon": value'.
+          parse_mapping(indent, anchor)
+        elsif (stripped.start_with?("\"") && stripped.end_with?("\"")) ||
+              (stripped.start_with?("'") && stripped.end_with?("'"))
+          # A whole-line quoted scalar, e.g. '"system: foo: bar"'. It may
+          # contain ": ", so it must be checked before MAPPING_KEY_RE.
           parse_plain_scalar(indent, anchor)
         elsif stripped =~ MAPPING_KEY_RE && !stripped.start_with?("!ruby/object:")
           parse_mapping(indent, anchor)
@@ -154,7 +162,8 @@ module Gem
         elsif content.start_with?("-")
           @lines.unshift("#{" " * (indent + 2)}#{content}")
           parse_node(indent)
-        elsif content =~ MAPPING_KEY_RE && !content.start_with?("!ruby/object:")
+        elsif QUOTED_KEY_RE.match?(content) ||
+              (content =~ MAPPING_KEY_RE && !content.start_with?("!ruby/object:"))
           @lines.unshift("#{" " * (indent + 2)}#{content}")
           parse_node(indent)
         elsif content.start_with?("|")
@@ -169,13 +178,18 @@ module Gem
         while @lines.any?
           line = @lines[0]
           stripped = line.lstrip
-          break unless line.size - stripped.size == indent &&
-                       stripped =~ MAPPING_KEY_RE && !stripped.start_with?("!ruby/object:")
-          key = $1.strip
-          @lines.shift
-          val = strip_comment($2.to_s.strip)
+          break unless line.size - stripped.size == indent
 
-          key = decode_binary_tag(key) if key.start_with?("!binary ")
+          if (match = QUOTED_KEY_RE.match(stripped))
+            key = coerce(match[1])
+          elsif (match = MAPPING_KEY_RE.match(stripped)) && !stripped.start_with?("!ruby/object:")
+            key = match[1].strip
+            key = decode_binary_tag(key) if key.start_with?("!binary ")
+          else
+            break
+          end
+          @lines.shift
+          val = strip_comment(match[2].to_s.strip)
 
           val_anchor, val = consume_value_anchor(val)
           value = parse_mapping_value(val, indent)
@@ -289,14 +303,8 @@ module Gem
         val = val.sub(/^! /, "") if val.start_with?("! ")
 
         if val =~ /^"(.*)"$/
-          $1.gsub(/\\["nrt\\]/) do |m|
-            case m
-            when '\\"' then '"'
-            when "\\n" then "\n"
-            when "\\r" then "\r"
-            when "\\t" then "\t"
-            when "\\\\" then "\\"
-            end
+          $1.gsub(/\\(?:["\\0abtnvfre]|x\h{2})/) do |m|
+            STRING_UNESCAPES[m] || m[2..].to_i(16).chr(Encoding::UTF_8)
           end
         elsif val =~ /^'(.*)'$/
           $1.gsub(/''/, "'")
@@ -412,7 +420,7 @@ module Gem
 
       def strip_comment(val)
         return val unless val.include?("#")
-        return val if val.lstrip.start_with?("#")
+        return "" if val.lstrip.start_with?("#")
 
         in_single = false
         in_double = false
@@ -436,7 +444,9 @@ module Gem
             case ch
             when "'" then in_single = true
             when '"' then in_double = true
-            when "#" then return val[0...i].rstrip
+            when "#"
+              # A "#" starts a comment only when preceded by whitespace.
+              return val[0...i].rstrip if [" ", "\t"].include?(val[i - 1])
             end
           end
         end
@@ -684,6 +694,20 @@ module Gem
     end
 
     class Emitter
+      STRING_ESCAPES = {
+        "\\" => "\\\\",
+        "\"" => "\\\"",
+        "\0" => "\\0",
+        "\a" => "\\a",
+        "\b" => "\\b",
+        "\t" => "\\t",
+        "\n" => "\\n",
+        "\v" => "\\v",
+        "\f" => "\\f",
+        "\r" => "\\r",
+        "\e" => "\\e",
+      }.freeze
+
       def emit(obj)
         "---#{emit_node(obj, 0)}"
       end
@@ -706,7 +730,7 @@ module Gem
         when Numeric, Symbol, TrueClass, FalseClass
           " #{obj.inspect}\n"
         else
-          " #{obj.to_s.inspect}\n"
+          " #{quote_string(obj.to_s)}\n"
         end
       end
 
@@ -767,6 +791,7 @@ module Gem
           hash.each do |k, v|
             is_symbol = k.is_a?(Symbol) || (k.is_a?(String) && k.start_with?(":"))
             key_str = k.is_a?(Symbol) ? k.inspect : k.to_s
+            key_str = quote_string(key_str) if !is_symbol && needs_quoting?(key_str)
             parts << "#{pad(indent)}#{key_str}:#{emit_node(v, indent + 2, quote: is_symbol)}"
           end
           parts.join
@@ -793,7 +818,7 @@ module Gem
         if str.include?("\n")
           emit_block_scalar(str, indent)
         elsif needs_quoting?(str, quote)
-          " #{str.to_s.inspect}\n"
+          " #{quote_string(str)}\n"
         else
           " #{str}\n"
         end
@@ -809,12 +834,16 @@ module Gem
         res
       end
 
-      def needs_quoting?(str, quote)
-        quote || str.empty? ||
-          str =~ /^[!*&:@%$]/ || str =~ /^-?\d+(\.\d+)?$/ || str =~ /^[<>=-]/ ||
-          str == "true" || str == "false" || str == "nil" ||
+      def needs_quoting?(str, quote = false)
+        quote || str.empty? || str != str.strip || str =~ /[[:cntrl:]]/ ||
+          str =~ /^[!*&:@%$"'|`]/ || str =~ /^-?\d+(\.\d+)?$/ || str =~ /^[<>=-]/ ||
+          str == "true" || str == "false" || str == "nil" || str == "null" || str == "~" ||
           str.include?(":") || str.include?("#") || str.include?("[") || str.include?("]") ||
           str.include?("{") || str.include?("}") || str.include?(",")
+      end
+
+      def quote_string(str)
+        %("#{str.gsub(/[\\"]|[[:cntrl:]]/) {|c| STRING_ESCAPES[c] || format("\\x%02X", c.ord) }}")
       end
 
       def pad(indent)

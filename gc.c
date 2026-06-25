@@ -209,12 +209,21 @@ rb_gc_event_hook(VALUE obj, rb_event_flag_t event)
 {
     if (LIKELY(!rb_gc_event_hook_required_p(event))) return;
 
-    rb_execution_context_t *ec = rb_gc_get_ec();
-    if (!ec->cfp) return;
+    /* Event hooks run user code in the context of the currently running
+     * thread, so they must use the current EC.  rb_gc_get_ec() may instead
+     * return the GC's snapshot (vm_context.ec, taken at marking), which can
+     * belong to a different thread once lazy sweep is continued from another
+     * thread's allocation; running the hook on it would set trace_arg on the
+     * wrong EC and break get_trace_arg() (GET_EC()->trace_arg would be NULL). */
+    rb_execution_context_t *ec = GET_EC();
 
 #if USE_MODULAR_GC
     bool gc_thread_p = false;
-    if (!GET_EC()) {
+    if (!ec) {
+        /* A dedicated GC thread has no mutator EC: borrow the GC's snapshot and
+         * install it as the current EC so GET_EC() stays consistent inside the
+         * hook (e.g. for get_trace_arg()). */
+        ec = rb_gc_get_ec();
         gc_thread_p = true;
 
 # ifdef RB_THREAD_LOCAL_SPECIFIER
@@ -225,7 +234,9 @@ rb_gc_event_hook(VALUE obj, rb_event_flag_t event)
     }
 #endif
 
-    EXEC_EVENT_HOOK(ec, event, ec->cfp->self, 0, 0, 0, obj);
+    if (RB_LIKELY(ec->cfp != NULL)) {
+        EXEC_EVENT_HOOK(ec, event, ec->cfp->self, 0, 0, 0, obj);
+    }
 
 #if USE_MODULAR_GC
     if (gc_thread_p) {
@@ -660,7 +671,7 @@ typedef struct gc_function_map {
     const char *(*active_gc_name)(void);
     // Miscellaneous
     struct rb_gc_object_metadata_entry *(*object_metadata)(void *objspace_ptr, VALUE obj);
-    bool (*pointer_to_heap_p)(void *objspace_ptr, const void *ptr);
+    bool (*live_object_p)(void *objspace_ptr, const void *ptr);
     bool (*garbage_object_p)(void *objspace_ptr, VALUE obj);
     void (*set_event_hook)(void *objspace_ptr, const rb_event_flag_t event);
     void (*copy_attributes)(void *objspace_ptr, VALUE dest, VALUE obj);
@@ -839,7 +850,7 @@ ruby_modular_gc_init(void)
     load_modular_gc_func(active_gc_name);
     // Miscellaneous
     load_modular_gc_func(object_metadata);
-    load_modular_gc_func(pointer_to_heap_p);
+    load_modular_gc_func(live_object_p);
     load_modular_gc_func(garbage_object_p);
     load_modular_gc_func(set_event_hook);
     load_modular_gc_func(copy_attributes);
@@ -927,7 +938,7 @@ ruby_modular_gc_init(void)
 # define rb_gc_impl_active_gc_name rb_gc_functions.active_gc_name
 // Miscellaneous
 # define rb_gc_impl_object_metadata rb_gc_functions.object_metadata
-# define rb_gc_impl_pointer_to_heap_p rb_gc_functions.pointer_to_heap_p
+# define rb_gc_impl_live_object_p rb_gc_functions.live_object_p
 # define rb_gc_impl_garbage_object_p rb_gc_functions.garbage_object_p
 # define rb_gc_impl_set_event_hook rb_gc_functions.set_event_hook
 # define rb_gc_impl_copy_attributes rb_gc_functions.copy_attributes
@@ -1183,7 +1194,7 @@ VALUE
 rb_data_typed_object_zalloc(VALUE klass, size_t size, const rb_data_type_t *type)
 {
     if (RB_DATA_TYPE_EMBEDDABLE_P(type)) {
-        if (!(type->flags & RUBY_TYPED_FREE_IMMEDIATELY)) {
+        if (!(type->flags & (RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_THREAD_SAFE_FREE))) {
             rb_raise(rb_eTypeError, "Embeddable TypedData must be freed immediately");
         }
 
@@ -1464,7 +1475,7 @@ rb_data_free(void *objspace, VALUE obj)
 
         if (dfree) {
             bool embedded = RTYPEDDATA_EMBEDDED_P(obj);
-            int free_immediately = (type->flags & RUBY_TYPED_FREE_IMMEDIATELY) != 0;
+            int free_immediately = (type->flags & (RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_THREAD_SAFE_FREE)) != 0;
             bool free_embeddable_data = RB_DATA_TYPE_EMBEDDABLE_P(type) && !embedded;
 
             if (dfree == RUBY_DEFAULT_FREE) {
@@ -2026,12 +2037,6 @@ int
 rb_objspace_garbage_object_p(VALUE obj)
 {
     return !SPECIAL_CONST_P(obj) && rb_gc_impl_garbage_object_p(rb_gc_get_objspace(), obj);
-}
-
-bool
-rb_gc_pointer_to_heap_p(VALUE obj)
-{
-    return rb_gc_impl_pointer_to_heap_p(rb_gc_get_objspace(), (void *)obj);
 }
 
 #define OBJ_ID_INCREMENT (RUBY_IMMEDIATE_MASK + 1)
@@ -2882,7 +2887,7 @@ ruby_stack_check(void)
             (func)(objspace, (obj_or_ptr)); \
         } \
         else if (check_obj ? \
-                rb_gc_impl_pointer_to_heap_p(objspace, (const void *)obj) && \
+                rb_gc_impl_live_object_p(objspace, (const void *)obj) && \
                     !rb_gc_impl_garbage_object_p(objspace, obj) : \
                 true) { \
             GC_ASSERT(!rb_gc_impl_during_gc_p(objspace)); \
@@ -3128,8 +3133,6 @@ gc_location_internal(void *objspace, VALUE value)
     if (SPECIAL_CONST_P(value)) {
         return value;
     }
-
-    GC_ASSERT(rb_gc_impl_pointer_to_heap_p(objspace, (void *)value));
 
     return rb_gc_impl_location(objspace, value);
 }
@@ -3583,7 +3586,7 @@ rb_gc_mark_children(void *objspace, VALUE obj)
         if (BUILTIN_TYPE(obj) == T_ZOMBIE) rb_bug("rb_gc_mark(): %p is T_ZOMBIE", (void *)obj);
         rb_bug("rb_gc_mark(): unknown data type 0x%x(%p) %s",
                BUILTIN_TYPE(obj), (void *)obj,
-               rb_gc_impl_pointer_to_heap_p(objspace, (void *)obj) ? "corrupted object" : "non object");
+               rb_gc_impl_live_object_p(objspace, (void *)obj) ? "corrupted object" : "non object");
     }
 }
 
@@ -3712,10 +3715,14 @@ rb_gc_ractor_cache_free(void *cache)
 void
 rb_gc_register_mark_object(VALUE obj)
 {
-    if (!rb_gc_impl_pointer_to_heap_p(rb_gc_get_objspace(), (void *)obj))
-        return;
-
-    rb_vm_register_global_object(obj);
+    /* rb_gc_impl_live_object_p() walks objspace->heap_pages.sorted, which
+     * another ractor may mutate while allocating heap pages under the VM lock,
+     * so the lookup must be done under the VM lock as well. */
+    RB_VM_LOCKING() {
+        if (rb_gc_impl_live_object_p(rb_gc_get_objspace(), (void *)obj)) {
+            rb_vm_register_global_object(obj);
+        }
+    }
 }
 
 void
@@ -3756,7 +3763,7 @@ rb_gc_unregister_address(VALUE *addr)
         for (index = 0; index < vm->global_object_list_size; index++) {
             if (addr == vm->global_object_list[index]) {
                 MEMMOVE(
-                    vm->global_object_list[index],
+                    &vm->global_object_list[index],
                     &vm->global_object_list[index + 1],
                     VALUE *,
                     vm->global_object_list_size - index - 1
@@ -4944,7 +4951,7 @@ rb_raw_obj_info_common(char *const buff, const size_t buff_size, const VALUE obj
     else {
         // const int age = RVALUE_AGE_GET(obj);
 
-        if (rb_gc_impl_pointer_to_heap_p(rb_gc_get_objspace(), (void *)obj)) {
+        if (rb_gc_impl_live_object_p(rb_gc_get_objspace(), (void *)obj)) {
             APPEND_F("%p %s/", (void *)obj, obj_type_name(obj));
             // TODO: fixme
             // APPEND_F("%p [%d%s%s%s%s%s%s] %s ",
@@ -5224,7 +5231,7 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
     if (SPECIAL_CONST_P(obj)) {
         raw_obj_info(buff, buff_size, obj);
     }
-    else if (!rb_gc_impl_pointer_to_heap_p(objspace, (const void *)obj)) {
+    else if (!rb_gc_impl_live_object_p(objspace, (const void *)obj)) {
         snprintf(buff, buff_size, "out-of-heap:%p", (void *)obj);
     }
 #if 0 // maybe no need to check it?
@@ -5782,24 +5789,6 @@ rb_gc_checking_shareable(void)
  *
  *     Finalizer two on 537763470
  *     Finalizer one on 537763480
- */
-
-/*  Document-class: GC::Profiler
- *
- *  The GC profiler provides access to information on GC runs including time,
- *  length and object space size.
- *
- *  Example:
- *
- *    GC::Profiler.enable
- *
- *    require 'rdoc/rdoc'
- *
- *    GC::Profiler.report
- *
- *    GC::Profiler.disable
- *
- *  See also GC.count, GC.malloc_allocated_size and GC.malloc_allocations
  */
 
 #include "gc.rbinc"

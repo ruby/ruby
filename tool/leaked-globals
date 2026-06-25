@@ -60,6 +60,23 @@ end
 # extern, so we allow the Rust one.
 REPLACE.push("rust_eh_personality") if RUBY_PLATFORM.include?("darwin")
 
+# Under LTO the compiler emits raw LLVM bitcode objects (magic "BC\xC0\xDE", or
+# the bitcode wrapper magic).  nm carries --no-llvm-bc (added in configure so it
+# ignores Rust's newer-version bitcode) and so cannot read them, only emitting
+# "not recognized" noise.  Drop them; leaked symbols are still checked on the
+# linked library and any non-bitcode objects.
+if defined?(NM) and NM.include?("--no-llvm-bc")
+  bitcode = 0
+  ARGV.reject! do |n|
+    next false unless File.file?(n)
+    case File.binread(n, 4)&.bytes
+    when [0x42, 0x43, 0xC0, 0xDE], [0xDE, 0xC0, 0x17, 0x0B]
+      bitcode += 1
+    end
+  end
+  puts "Skip #{col.skip("#{bitcode} LLVM bitcode object(s)")}" if bitcode > 0
+end
+
 print "Checking leaked global symbols..."
 STDOUT.flush
 if soext
@@ -105,7 +122,7 @@ Pipe.new(NM + ARGV).each do |line|
   puts col.fail("leaked") if count.zero?
   count += 1
   puts "  #{n}"
-end
+end unless ARGV.empty?
 case count
 when 0
   puts col.pass("none")

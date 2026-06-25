@@ -460,10 +460,15 @@ module Test
         real_file = worker.real_file and warn "running file: #{real_file}"
         @need_quit = true
         warn ""
-        warn "A test worker crashed. It might be an interpreter bug or"
-        warn "a bug in test/unit/parallel.rb. Try again without the -j"
-        warn "option."
+        warn "A test worker crashed. It might be a bug in the"
+        warn "Ruby runtime or a bug in  test/unit/parallel.rb."
+        warn "You may want to try again without the -j option."
         warn ""
+        if ENV["RUBY_CRASH_REPORT"]
+          warn "hint: RUBY_CRASH_REPORT is set and may have produced additional information."
+          warn "      Crash logs might be collapsed under a different fold on CI." if "true" == ENV["GITHUB_ACTIONS"]
+          warn ""
+        end
         if File.exist?('core')
           require 'fileutils'
           require 'time'

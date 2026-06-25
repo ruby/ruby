@@ -208,6 +208,7 @@ RSpec.describe "bundle install across platforms" do
         c.checksum gem_repo4, "empyrean", "0.1.0"
         c.checksum gem_repo4, "ffi", "1.9.23", "java"
         c.checksum gem_repo4, "method_source", "0.9.0"
+        c.checksum gem_repo4, "pry", "0.11.3"
         c.checksum gem_repo4, "pry", "0.11.3", "java"
         c.checksum gem_repo4, "spoon", "0.0.6"
       end
@@ -220,6 +221,9 @@ RSpec.describe "bundle install across platforms" do
             empyrean (0.1.0)
             ffi (1.9.23-java)
             method_source (0.9.0)
+            pry (0.11.3)
+              coderay (~> 1.1.0)
+              method_source (~> 0.9.0)
             pry (0.11.3-java)
               coderay (~> 1.1.0)
               method_source (~> 0.9.0)

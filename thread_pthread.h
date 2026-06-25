@@ -115,8 +115,6 @@ struct rb_native_thread {
 
     struct coroutine_context *nt_context;
     int dedicated;
-
-    size_t machine_stack_maxsize;
 };
 
 #undef except

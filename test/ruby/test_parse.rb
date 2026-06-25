@@ -1405,6 +1405,10 @@ x = __ENCODING__
     assert_not_match(/unexpected tSTRING_END/, e.message)
   end
 
+  def test_invalid_character_regexp_error
+    assert_syntax_error('/#{"\xcd"}/', /invalid multibyte character/)
+  end
+
   def test_lparenarg
     o = Struct.new(:x).new
     def o.i(x)
@@ -1516,6 +1520,10 @@ x = __ENCODING__
       "x = begin return ensure return end",
       "x = begin return; rescue; return end",
       "x = begin return; rescue; return; else return end",
+      "x = return",
+      "x = return a",
+      "x = return a do end",
+      "x = return a b do end",
     ].each do |code|
       ex = assert_syntax_error(code, w)
       assert_equal(1, ex.message.scan(w).size, ->{"same #{w.inspect} warning should be just once\n#{w.message}"})

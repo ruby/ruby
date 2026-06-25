@@ -42,6 +42,9 @@ lib
 # and some of the ext/ directory (which has its own .document file)
 ext
 
+# GC is split between gc.rb and gc/default/default.c
+gc/default
+
 # For `prism`, ruby code is in lib and c in the prism folder
 prism
 

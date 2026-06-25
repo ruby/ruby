@@ -382,6 +382,23 @@ class TestZJIT < Test::Unit::TestCase
     }, call_threshold: 14, num_profiles: 5
   end
 
+  def test_regression_gc_stress_with_lazy_block_code
+    assert_compiles ':ok', %q{
+      def allocate_array
+        [1, 2, 3]
+      end
+
+      begin
+        GC.stress = true
+        allocate_array
+        allocate_array
+        :ok
+      ensure
+        GC.stress = false
+      end
+    }
+  end
+
   def test_exit_tracing
     # Smoke test: --zjit-trace-exits writes a Fuchsia trace (.fxt) file to /tmp
     assert_compiles('true', <<~RUBY, extra_args: ['--zjit-trace-exits'])

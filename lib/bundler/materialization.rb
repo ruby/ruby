@@ -12,6 +12,7 @@ module Bundler
       @dep = dep
       @platform = platform
       @candidates = candidates
+      @locked_platforms = candidates&.map(&:platform)
     end
 
     def complete?
@@ -24,7 +25,7 @@ module Bundler
       elsif platform
         MatchPlatform.select_best_platform_match(@candidates, platform, force_ruby: dep.force_ruby_platform)
       else
-        MatchPlatform.select_best_local_platform_match(@candidates, force_ruby: dep.force_ruby_platform || dep.default_force_ruby_platform)
+        MatchPlatform.select_best_local_platform_match(@candidates, force_ruby: dep.force_ruby_platform || dep.default_force_ruby_platform, locked_platforms: @locked_platforms)
       end
     end
 

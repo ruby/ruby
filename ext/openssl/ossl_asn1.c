@@ -697,11 +697,12 @@ to_der_internal(VALUE self, int constructed, int indef_len, VALUE body)
     int tag_number = ossl_asn1_tag(self);
     int default_tag_number = ossl_asn1_default_tag(self);
     int body_length, total_length;
+    VALUE tagging = ossl_asn1_get_tagging(self);
     VALUE str;
     unsigned char *p;
 
     body_length = RSTRING_LENINT(body);
-    if (ossl_asn1_get_tagging(self) == sym_EXPLICIT) {
+    if (tagging == sym_EXPLICIT) {
         int inner_length, e_encoding = indef_len ? 2 : 1;
 
         if (default_tag_number == -1)
@@ -722,7 +723,7 @@ to_der_internal(VALUE self, int constructed, int indef_len, VALUE body)
             ASN1_put_eoc(&p); /* For wrapper object */
         }
     }
-    else {
+    else if (NIL_P(tagging) || tagging == sym_IMPLICIT) {
         total_length = ASN1_object_size(encoding, body_length, tag_number);
         str = rb_str_new(NULL, total_length);
         p = (unsigned char *)RSTRING_PTR(str);
@@ -731,6 +732,9 @@ to_der_internal(VALUE self, int constructed, int indef_len, VALUE body)
         p += body_length;
         if (indef_len)
             ASN1_put_eoc(&p);
+    }
+    else {
+        ossl_raise(eASN1Error, "invalid tagging method");
     }
     assert(p - (unsigned char *)RSTRING_PTR(str) == total_length);
     return str;

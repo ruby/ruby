@@ -158,7 +158,7 @@ static const rb_data_type_t location_data_type = {
         NULL, // No external memory to report,
         location_ref_update,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 int
@@ -568,7 +568,7 @@ static const rb_data_type_t backtrace_data_type = {
     /* Cannot set the RUBY_TYPED_EMBEDDABLE flag because the loc of frame_info
      * points elements in the backtrace array. This can cause the loc to become
      * incorrect if this backtrace object is moved by compaction. */
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED
 };
 
 int

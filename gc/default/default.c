@@ -1047,27 +1047,15 @@ gc_malloc_counters_increase_unsigned(rb_objspace_t *objspace, const struct gc_ma
     return (size_t)inc;
 }
 
-static inline int64_t
+static inline void
 gc_malloc_counters_snapshot(rb_objspace_t *objspace, struct gc_malloc_bytes *c)
 {
     MALLOC_COUNTERS_LOCK(objspace);
     gc_counter_t malloc_now = gc_counter_load_relaxed(&c->malloc);
     gc_counter_t free_now   = gc_counter_load_relaxed(&c->free);
-    gc_counter_t malloc_at  = gc_counter_load_relaxed(&c->malloc_at_last_gc);
-    gc_counter_t free_at    = gc_counter_load_relaxed(&c->free_at_last_gc);
     gc_counter_store_release(&c->malloc_at_last_gc, malloc_now);
     gc_counter_store_release(&c->free_at_last_gc,   free_now);
     MALLOC_COUNTERS_UNLOCK(objspace);
-
-    gc_counter_t malloc_delta = malloc_now - malloc_at;
-    gc_counter_t free_delta   = free_now   - free_at;
-
-    if (malloc_delta >= free_delta) {
-        return (int64_t)(malloc_delta - free_delta);
-    }
-    else {
-        return -(int64_t)(free_delta - malloc_delta);
-    }
 }
 
 #define heap_pages_lomem	objspace->heap_pages.range[0]
@@ -1750,21 +1738,16 @@ rb_gc_impl_garbage_object_p(void *objspace_ptr, VALUE ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
-    bool dead = false;
-
+    /* Asking whether a freed (T_NONE), moved (T_MOVED), or finalized (T_ZOMBIE)
+     * object is garbage gives an unreliable answer: the slot may since have been
+     * reused for an unrelated object. A reference to one of these is stale and a
+     * bug in the caller. */
     asan_unpoisoning_object(ptr) {
-        switch (BUILTIN_TYPE(ptr)) {
-          case T_NONE:
-          case T_MOVED:
-          case T_ZOMBIE:
-            dead = true;
-            break;
-          default:
-            break;
-        }
+        GC_ASSERT(BUILTIN_TYPE(ptr) != T_NONE);
+        GC_ASSERT(BUILTIN_TYPE(ptr) != T_MOVED);
+        GC_ASSERT(BUILTIN_TYPE(ptr) != T_ZOMBIE);
     }
 
-    if (dead) return true;
     return is_lazy_sweeping(objspace) && GET_HEAP_PAGE(ptr)->flags.before_sweep &&
         !RVALUE_MARKED(objspace, ptr);
 }
@@ -2802,9 +2785,29 @@ is_pointer_to_heap(rb_objspace_t *objspace, const void *ptr)
 }
 
 bool
-rb_gc_impl_pointer_to_heap_p(void *objspace_ptr, const void *ptr)
+rb_gc_impl_live_object_p(void *objspace_ptr, const void *ptr)
 {
-    return is_pointer_to_heap(objspace_ptr, ptr);
+    rb_objspace_t *objspace = objspace_ptr;
+
+    /* Whether ptr refers to a live object. is_pointer_to_heap is the
+     * address-only check; T_NONE, T_MOVED, and T_ZOMBIE slots are valid heap
+     * addresses but not live objects. */
+    if (!is_pointer_to_heap(objspace, ptr)) return false;
+
+    VALUE obj = (VALUE)ptr;
+    bool live = false;
+    asan_unpoisoning_object(obj) {
+        switch (BUILTIN_TYPE(obj)) {
+          case T_NONE:
+          case T_MOVED:
+          case T_ZOMBIE:
+            break;
+          default:
+            live = true;
+            break;
+        }
+    }
+    return live;
 }
 
 #define ZOMBIE_OBJ_KEPT_FLAGS (FL_FINALIZE)
@@ -3719,18 +3722,23 @@ gc_sweep_register_free_slot(rb_objspace_t *objspace, struct heap_page *page, str
 {
     rb_asan_unpoison_object(p, false);
     ((struct RBasic *)p)->flags = 0;
-    rb_asan_poison_object(p);
 
-    if (RB_LIKELY(ctx->free_region && p == ctx->free_region->end)) {
-        ctx->free_region->end = p + slot_size;
+    struct free_region *existing_region = ctx->free_region;
+    if (existing_region) rb_asan_unpoison_object((VALUE)existing_region, false);
+
+    if (RB_LIKELY(existing_region && p == existing_region->end)) {
+        existing_region->end = p + slot_size;
     }
     else {
         struct free_region *free_region = (struct free_region *)p;
         free_region->end = p + slot_size;
-        free_region->next = ctx->free_region;
+        free_region->next = existing_region;
 
         ctx->free_region = free_region;
     }
+
+    if (existing_region) rb_asan_poison_object((VALUE)existing_region);
+    rb_asan_poison_object(p);
 }
 
 static inline void
@@ -3867,7 +3875,9 @@ gc_sweep_page(rb_objspace_t *objspace, rb_heap_t *heap, struct gc_sweep_context 
         p += BITS_BITLENGTH * slot_size;
     }
 
+    asan_unlock_freelist(sweep_page);
     sweep_page->free_region = ctx->free_region;
+    asan_lock_freelist(sweep_page);
 
     if (!heap->compact_cursor) {
         gc_setup_mark_bits(sweep_page);
@@ -4202,13 +4212,6 @@ gc_sweep_finish(rb_objspace_t *objspace)
         }
     }
 
-    (void)gc_malloc_counters_snapshot(objspace, &objspace->malloc_counters.counters);
-#if RGENGC_ESTIMATE_OLDMALLOC
-    if (objspace->profile.latest_gc_info & GPR_FLAG_MAJOR_MASK) {
-        (void)gc_malloc_counters_snapshot(objspace, &objspace->malloc_counters.oldcounters);
-    }
-#endif
-
     rb_gc_event_hook(0, RUBY_INTERNAL_EVENT_GC_END_SWEEP);
     gc_mode_transition(objspace, gc_mode_none);
 
@@ -4357,10 +4360,32 @@ gc_sweep_continue(rb_objspace_t *objspace, rb_heap_t *sweep_heap)
     gc_sweeping_exit(objspace);
 }
 
+static void
+gc_sweep_step_for_malloc(rb_objspace_t *objspace)
+{
+    GC_ASSERT(is_lazy_sweeping(objspace));
+
+    unsigned int lock_lev;
+    gc_enter(objspace, gc_enter_event_continue, &lock_lev);
+
+    gc_sweeping_enter(objspace);
+
+    for (int i = 0; i < HEAP_COUNT; i++) {
+        rb_heap_t *heap = &heaps[i];
+        gc_sweep_step(objspace, heap);
+    }
+
+    gc_sweeping_exit(objspace);
+
+    gc_exit(objspace, gc_enter_event_continue, &lock_lev);
+}
+
 VALUE
 rb_gc_impl_location(void *objspace_ptr, VALUE value)
 {
     VALUE destination;
+
+    GC_ASSERT(is_pointer_to_heap(objspace_ptr, (void *)value));
 
     asan_unpoisoning_object(value) {
         if (BUILTIN_TYPE(value) == T_MOVED) {
@@ -5340,6 +5365,22 @@ check_children_i(const VALUE child, void *ptr)
     }
 }
 
+/* Whether a heap slot currently holds a live object. Returns false for empty
+ * (T_NONE), moved (T_MOVED), and zombie (T_ZOMBIE) slots, and for garbage
+ * objects about to be swept. */
+static bool
+gc_slot_live_object_p(rb_objspace_t *objspace, VALUE obj)
+{
+    switch (BUILTIN_TYPE(obj)) {
+      case T_NONE:
+      case T_MOVED:
+      case T_ZOMBIE:
+        return false;
+      default:
+        return !rb_gc_impl_garbage_object_p(objspace, obj);
+    }
+}
+
 static int
 verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
                               struct verify_internal_consistency_struct *data)
@@ -5349,7 +5390,7 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
 
     for (obj = (VALUE)page_start; obj != (VALUE)page_end; obj += stride) {
         asan_unpoisoning_object(obj) {
-            if (!rb_gc_impl_garbage_object_p(objspace, obj)) {
+            if (gc_slot_live_object_p(objspace, obj)) {
                 /* count objects */
                 data->live_object_count++;
                 data->parent = obj;
@@ -6641,6 +6682,7 @@ gc_reset_malloc_info(rb_objspace_t *objspace, bool full_mark)
     gc_prof_set_malloc_info(objspace);
     {
         int64_t inc = gc_malloc_counters_increase(objspace, &objspace->malloc_counters.counters);
+        gc_malloc_counters_snapshot(objspace, &objspace->malloc_counters.counters);
         size_t old_limit = malloc_limit;
 
         /* A net-negative `inc` (more freed than malloc'd since last GC) is
@@ -6696,6 +6738,8 @@ gc_reset_malloc_info(rb_objspace_t *objspace, bool full_mark)
                        gc_params.oldmalloc_limit_max);
     }
     else {
+        gc_malloc_counters_snapshot(objspace, &objspace->malloc_counters.oldcounters);
+
         if ((objspace->profile.latest_gc_info & GPR_FLAG_MAJOR_BY_OLDMALLOC) == 0) {
             objspace->rgengc.oldmalloc_increase_limit =
               (size_t)(objspace->rgengc.oldmalloc_increase_limit / ((gc_params.oldmalloc_limit_growth_factor - 1)/10 + 1));
@@ -8479,7 +8523,7 @@ objspace_malloc_increase_body(rb_objspace_t *objspace, void *mem, size_t new_siz
       retry:
         if (malloc_increase > malloc_limit && ruby_native_thread_p() && !dont_gc_val()) {
             if (ruby_thread_has_gvl_p() && is_lazy_sweeping(objspace)) {
-                gc_rest(objspace); /* gc_rest can reduce malloc_increase */
+                gc_sweep_step_for_malloc(objspace); /* sweeping frees may reduce malloc_increase */
                 goto retry;
             }
             garbage_collect_with_gvl(objspace, GPR_FLAG_MALLOC);
@@ -9977,6 +10021,23 @@ rb_gc_impl_init(void)
     rb_define_singleton_method(rb_mGC, "malloc_allocations", gc_malloc_allocations, 0);
 #endif
 
+    /*  Document-class: GC::Profiler
+     *
+     *  The GC profiler provides access to information on GC runs including time,
+     *  length and object space size.
+     *
+     *  Example:
+     *
+     *    GC::Profiler.enable
+     *
+     *    require 'rdoc/rdoc'
+     *
+     *    GC::Profiler.report
+     *
+     *    GC::Profiler.disable
+     *
+     *  See also GC.count, GC.malloc_allocated_size and GC.malloc_allocations
+     */
     VALUE rb_mProfiler = rb_define_module_under(rb_mGC, "Profiler");
     rb_define_singleton_method(rb_mProfiler, "enabled?", gc_profile_enable_get, 0);
     rb_define_singleton_method(rb_mProfiler, "enable", gc_profile_enable, 0);

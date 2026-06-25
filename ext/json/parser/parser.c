@@ -1,11 +1,14 @@
 #include "../json.h"
-#include "../vendor/ryu.h"
+#include "../vendor/fast_float_parser.h"
 #include "../simd/simd.h"
 
 static VALUE mJSON, eNestingError, eParserError, Encoding_UTF_8;
-static VALUE CNaN, CInfinity, CMinusInfinity;
+static VALUE CNaN, CInfinity, CMinusInfinity, JSON_empty_string;
 
-static ID i_new, i_try_convert, i_uminus, i_encode, i_at_line, i_at_column;
+static ID i_new, i_try_convert, i_encode, i_at_line, i_at_column;
+#ifndef HAVE_RB_STR_TO_INTERNED_STR
+static ID i_uminus;
+#endif
 
 static VALUE sym_max_nesting, sym_allow_nan, sym_allow_trailing_comma, sym_allow_comments,
              sym_allow_control_characters, sym_allow_invalid_escape, sym_symbolize_names,
@@ -57,6 +60,20 @@ typedef struct rvalue_cache_struct {
     int length;
     VALUE entries[JSON_RVALUE_CACHE_CAPA];
 } rvalue_cache;
+
+static void rvalue_cache_mark(rvalue_cache *cache)
+{
+    for (int index = 0; index < cache->length; index++) {
+        rb_gc_mark_movable(cache->entries[index]);
+    }
+}
+
+static void rvalue_cache_compact(rvalue_cache *cache)
+{
+    for (int index = 0; index < cache->length; index++) {
+        cache->entries[index] = rb_gc_location(cache->entries[index]);
+    }
+}
 
 static rb_encoding *enc_utf8;
 
@@ -206,7 +223,7 @@ static rvalue_stack *rvalue_stack_spill(rvalue_stack *old_stack, VALUE *handle, 
 
 static rvalue_stack *rvalue_stack_grow(rvalue_stack *stack, VALUE *handle, rvalue_stack **stack_ref)
 {
-    long required = stack->capa * 2;
+    long required = stack->capa ? stack->capa * 2 : RVALUE_STACK_INITIAL_CAPA;
 
     if (stack->type == RVALUE_STACK_STACK_ALLOCATED) {
         stack = rvalue_stack_spill(stack, handle, stack_ref);
@@ -219,11 +236,15 @@ static rvalue_stack *rvalue_stack_grow(rvalue_stack *stack, VALUE *handle, rvalu
 
 static VALUE rvalue_stack_push(rvalue_stack *stack, VALUE value, VALUE *handle, rvalue_stack **stack_ref)
 {
+    JSON_ASSERT(stack->type != RVALUE_STACK_STACK_ALLOCATED || handle);
+
     if (RB_UNLIKELY(stack->head >= stack->capa)) {
         stack = rvalue_stack_grow(stack, handle, stack_ref);
     }
+
     stack->ptr[stack->head] = value;
     stack->head++;
+
     return value;
 }
 
@@ -296,7 +317,7 @@ static const rb_data_type_t JSON_Parser_rvalue_stack_type = {
     },
     // We deliberately don't declare rvalue_stack as RUBY_TYPED_WB_PROTECTED
     // because it churns a lot of values so trigering write barriers every time is very costly.
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_EMBEDDABLE,
 };
 
 static rvalue_stack *rvalue_stack_spill(rvalue_stack *old_stack, VALUE *handle, rvalue_stack **stack_ref)
@@ -372,7 +393,7 @@ typedef struct json_frame_struct {
     enum json_frame_type type;
     enum json_frame_phase phase;
     long value_stack_head;    // rvalue_stack->head when this container opened
-    const char *start_cursor; // object frames only (the '{'); NULL otherwise
+    size_t start_offset; // object frames only (the '{'); NULL otherwise
 } json_frame;
 
 typedef struct json_frame_stack_struct {
@@ -415,13 +436,14 @@ typedef struct JSON_ParserStateStruct {
     int in_array;
     int current_nesting;
     unsigned int emitted_deprecations;
+    VALUE parser;
 } JSON_ParserState;
 
 static json_frame_stack *json_frame_stack_spill(json_frame_stack *old_stack, VALUE *handle, json_frame_stack **stack_ref);
 
 static json_frame_stack *json_frame_stack_grow(json_frame_stack *stack, VALUE *handle, json_frame_stack **stack_ref)
 {
-    long required = stack->capa * 2;
+    long required = stack->capa ? stack->capa * 2 : JSON_FRAME_STACK_INITIAL_CAPA;
 
     if (stack->type == RVALUE_STACK_STACK_ALLOCATED) {
         stack = json_frame_stack_spill(stack, handle, stack_ref);
@@ -435,6 +457,9 @@ static json_frame_stack *json_frame_stack_grow(json_frame_stack *stack, VALUE *h
 static json_frame *json_frame_stack_push(JSON_ParserState *state, json_frame frame)
 {
     json_frame_stack *stack = state->frames;
+
+    JSON_ASSERT(stack->type != RVALUE_STACK_STACK_ALLOCATED || state->frame_stack_handle);
+
     if (RB_UNLIKELY(stack->head >= stack->capa)) {
         stack = json_frame_stack_grow(stack, state->frame_stack_handle, &state->frames);
     }
@@ -489,7 +514,7 @@ static const rb_data_type_t JSON_Parser_frame_stack_type = {
         .dfree = json_frame_stack_free,
         .dsize = json_frame_stack_memsize,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
 };
 
 static json_frame_stack *json_frame_stack_spill(json_frame_stack *old_stack, VALUE *handle, json_frame_stack **stack_ref)
@@ -577,6 +602,7 @@ static void cursor_position(JSON_ParserState *state, long *line_out, long *colum
 
     while (cursor >= state->start) {
         if (*cursor-- == '\n') {
+            line++;
             break;
         }
         column++;
@@ -604,7 +630,7 @@ static void emit_parse_warning(const char *message, JSON_ParserState *state)
 
 #define PARSE_ERROR_FRAGMENT_LEN 32
 
-static VALUE build_parse_error_message(const char *format, JSON_ParserState *state, long line, long column)
+static VALUE build_parse_error_message(const char *format, JSON_ParserState *state)
 {
     unsigned char buffer[PARSE_ERROR_FRAGMENT_LEN + 3];
 
@@ -638,12 +664,10 @@ static VALUE build_parse_error_message(const char *format, JSON_ParserState *sta
         }
     }
 
-    VALUE message = rb_enc_sprintf(enc_utf8, format, ptr);
-    rb_str_catf(message, " at line %ld column %ld", line, column);
-    return message;
+    return rb_enc_sprintf(enc_utf8, format, ptr);
 }
 
-static VALUE parse_error_new(VALUE message, long line, long column)
+static VALUE parse_error_new(JSON_ParserState *state, VALUE message, long line, long column, bool eos)
 {
     VALUE exc = rb_exc_new_str(eParserError, message);
     rb_ivar_set(exc, i_at_line, LONG2NUM(line));
@@ -651,18 +675,50 @@ static VALUE parse_error_new(VALUE message, long line, long column)
     return exc;
 }
 
-NORETURN(static) void raise_parse_error(const char *format, JSON_ParserState *state)
+NORETURN(static) void raise_parse_error(const char *format, JSON_ParserState *state, bool eos)
 {
-    long line, column;
-    cursor_position(state, &line, &column);
-    VALUE message = build_parse_error_message(format, state, line, column);
-    rb_exc_raise(parse_error_new(message, line, column));
+    if (state->parser) { 
+        if (eos) {
+            // the error will be swallowed by ResumableParser#parse, so no
+            // point building a message or backtrace.
+            rb_throw_obj(state->parser, state->parser);
+        } else {
+            // line and columns can't be accurate in resumable
+            rb_exc_raise(parse_error_new(state, build_parse_error_message(format, state), 0, 0, eos));
+        }
+    } else {
+        VALUE message = build_parse_error_message(format, state);
+        long line, column;
+        cursor_position(state, &line, &column);
+        rb_str_catf(message, " at line %ld column %ld", line, column);
+        rb_exc_raise(parse_error_new(state, message, line, column, eos));
+    }
 }
 
-NORETURN(static) void raise_parse_error_at(const char *format, JSON_ParserState *state, const char *at)
+NORETURN(static) void raise_eos_error(const char *format, JSON_ParserState *state)
+{
+    raise_parse_error(format, state, true);
+}
+
+NORETURN(static) void raise_syntax_error(const char *format, JSON_ParserState *state)
+{
+    raise_parse_error(format, state, false);
+}
+
+NORETURN(static) void raise_parse_error_at(const char *format, JSON_ParserState *state, const char *at, bool eos)
 {
     state->cursor = at;
-    raise_parse_error(format, state);
+    raise_parse_error(format, state, eos);
+}
+
+NORETURN(static) void raise_eos_error_at(const char *format, JSON_ParserState *state, const char *at)
+{
+    raise_parse_error_at(format, state, at, true);
+}
+
+NORETURN(static) void raise_syntax_error_at(const char *format, JSON_ParserState *state, const char *at)
+{
+    raise_parse_error_at(format, state, at, false);
 }
 
 /* unicode */
@@ -687,7 +743,7 @@ static const signed char digit_values[256] = {
 static uint32_t unescape_unicode(JSON_ParserState *state, const char *sp, const char *spe)
 {
     if (RB_UNLIKELY(sp > spe - 4)) {
-        raise_parse_error_at("incomplete unicode character escape sequence at %s", state, sp - 2);
+        raise_eos_error_at("incomplete unicode character escape sequence at %s", state, sp - 2);
     }
 
     const unsigned char *p = (const unsigned char *)sp;
@@ -698,7 +754,7 @@ static uint32_t unescape_unicode(JSON_ParserState *state, const char *sp, const 
     const signed char b3 = digit_values[p[3]];
 
     if (RB_UNLIKELY((signed char)(b0 | b1 | b2 | b3) < 0)) {
-        raise_parse_error_at("incomplete unicode character escape sequence at %s", state, sp - 2);
+        raise_syntax_error_at("incomplete unicode character escape sequence at %s", state, sp - 2);
     }
 
     return ((uint32_t)b0 << 12) | ((uint32_t)b1 << 8) | ((uint32_t)b2 << 4) | (uint32_t)b3;
@@ -715,7 +771,7 @@ NOINLINE(static) void
 json_eat_comments(JSON_ParserState *state, JSON_ParserConfig *config)
 {
     if (config->on_comment == JSON_RAISE) {
-        raise_parse_error("unexpected token %s", state);
+        raise_syntax_error("unexpected token %s", state);
     }
 
     const char *start = state->cursor;
@@ -737,7 +793,7 @@ json_eat_comments(JSON_ParserState *state, JSON_ParserConfig *config)
             while (true) {
                 const char *next_match = memchr(state->cursor, '*', state->end - state->cursor);
                 if (!next_match) {
-                    raise_parse_error_at("unterminated comment, expected closing '*/'", state, start);
+                    raise_eos_error_at("unterminated comment, expected closing '*/'", state, start);
                 }
 
                 state->cursor = next_match + 1;
@@ -749,7 +805,7 @@ json_eat_comments(JSON_ParserState *state, JSON_ParserConfig *config)
             break;
         }
         default:
-            raise_parse_error_at("unexpected token %s", state, start);
+            raise_parse_error_at("unexpected token %s", state, start, eos(state));
             break;
     }
 
@@ -760,7 +816,7 @@ json_eat_comments(JSON_ParserState *state, JSON_ParserConfig *config)
 }
 
 ALWAYS_INLINE(static) void
-json_eat_whitespace(JSON_ParserState *state, JSON_ParserConfig *config)
+json_eat_whitespace(JSON_ParserState *state, JSON_ParserConfig *config, bool include_comments)
 {
     while (true) {
         switch (peek(state)) {
@@ -791,6 +847,10 @@ json_eat_whitespace(JSON_ParserState *state, JSON_ParserConfig *config)
                 state->cursor++;
                 break;
             case '/':
+                if (!include_comments) {
+                    return;
+                }
+
                 json_eat_comments(state, config);
                 break;
 
@@ -945,13 +1005,13 @@ NOINLINE(static) VALUE json_string_unescape(JSON_ParserState *state, JSON_Parser
                         uint32_t sur = unescape_unicode(state, pe + 2, stringEnd);
 
                         if (RB_UNLIKELY((sur & 0xFC00) != 0xDC00)) {
-                            raise_parse_error_at("invalid surrogate pair at %s", state, p);
+                            raise_syntax_error_at("invalid surrogate pair at %s", state, p);
                         }
 
                         ch = (((ch & 0x3F) << 10) | ((((ch >> 6) & 0xF) + 1) << 16) | (sur & 0x3FF));
                         pe += 5;
                     } else {
-                        raise_parse_error_at("incomplete surrogate pair at %s", state, p);
+                        raise_syntax_error_at("incomplete surrogate pair at %s", state, p);
                         break;
                     }
                 }
@@ -961,20 +1021,22 @@ NOINLINE(static) VALUE json_string_unescape(JSON_ParserState *state, JSON_Parser
                 p = ++pe;
                 break;
             }
+            case 0:
+              return Qundef;
             default:
                 if ((unsigned char)*pe < 0x20) {
                     if (!config->allow_control_characters) {
                         if (*pe == '\n') {
-                            raise_parse_error_at("Invalid unescaped newline character (\\n) in string: %s", state, pe - 1);
+                            raise_syntax_error_at("Invalid unescaped newline character (\\n) in string: %s", state, pe - 1);
                         }
-                        raise_parse_error_at("invalid ASCII control character in string: %s", state, pe - 1);
+                        raise_syntax_error_at("invalid ASCII control character in string: %s", state, pe - 1);
                     }
                 }
 
                 if (config->allow_invalid_escape) {
                     APPEND_CHAR(*pe);
                 } else {
-                    raise_parse_error_at("invalid escape character in string: %s", state, pe - 1);
+                    raise_syntax_error_at("invalid escape character in string: %s", state, pe - 1);
                 }
                 break;
         }
@@ -1070,13 +1132,11 @@ static inline VALUE json_decode_float(JSON_ParserConfig *config, uint64_t mantis
         return rb_float_new(negative ? -0.0 : 0.0);
     }
 
-    // Fall back to rb_cstr_to_dbl for potential subnormals (rare edge case)
-    // Ryu has rounding issues with subnormals around 1e-310 (< 2.225e-308)
-    if (RB_UNLIKELY(mantissa_digits > 17 || mantissa_digits + exponent < -307)) {
+    if (RB_UNLIKELY(mantissa_digits > 18 || mantissa_digits + exponent < -307)) {
         return json_decode_large_float(start, end - start);
     }
 
-    return DBL2NUM(ryu_s2d_from_parts(mantissa, mantissa_digits, (int32_t)exponent, negative));
+    return DBL2NUM(ffp_s2d(exponent, mantissa, negative));
 }
 
 static inline VALUE json_decode_array(JSON_ParserState *state, JSON_ParserConfig *config, long count)
@@ -1126,10 +1186,15 @@ NORETURN(static) void raise_duplicate_key_error(JSON_ParserState *state, VALUE d
         rb_inspect(duplicate_key)
     );
 
-    long line, column;
-    cursor_position(state, &line, &column);
-    rb_str_concat(message, build_parse_error_message("", state, line, column)) ;
-    rb_exc_raise(parse_error_new(message, line, column));
+    rb_str_concat(message, build_parse_error_message("", state));
+    if (state->parser) { // line and columns can't be accurate in resumable
+        rb_exc_raise(parse_error_new(state, message, 0, 0, false));
+    } else {
+        long line, column;
+        cursor_position(state, &line, &column);
+        rb_str_catf(message, " at line %ld column %ld", line, column);
+        rb_exc_raise(parse_error_new(state, message, line, column, false));
+    }
 }
 
 NOINLINE(static) void json_on_duplicate_key(JSON_ParserState *state, JSON_ParserConfig *config, size_t count, const VALUE *pairs)
@@ -1265,7 +1330,7 @@ static VALUE json_parse_escaped_string(JSON_ParserState *state, JSON_ParserConfi
             }
             default:
                 if (!config->allow_control_characters) {
-                    raise_parse_error("invalid ASCII control character in string: %s", state);
+                    raise_syntax_error("invalid ASCII control character in string: %s", state);
                 }
                 break;
         }
@@ -1273,8 +1338,7 @@ static VALUE json_parse_escaped_string(JSON_ParserState *state, JSON_ParserConfi
         state->cursor++;
     } while (string_scan(state));
 
-    raise_parse_error("unexpected end of input, expected closing \"", state);
-    return Qfalse;
+    return Qundef;
 }
 
 ALWAYS_INLINE(static) VALUE json_parse_string(JSON_ParserState *state, JSON_ParserConfig *config, bool is_name)
@@ -1283,7 +1347,7 @@ ALWAYS_INLINE(static) VALUE json_parse_string(JSON_ParserState *state, JSON_Pars
     const char *start = state->cursor;
 
     if (RB_UNLIKELY(!string_scan(state))) {
-        raise_parse_error("unexpected end of input, expected closing \"", state);
+        return Qundef;
     }
 
     VALUE string;
@@ -1382,7 +1446,7 @@ static inline VALUE json_parse_number(JSON_ParserState *state, JSON_ParserConfig
     int mantissa_digits = json_parse_digits(state, &mantissa);
 
     if (RB_UNLIKELY((first_digit == '0' && mantissa_digits > 1) || (negative && mantissa_digits == 0))) {
-        raise_parse_error_at("invalid number: %s", state, start);
+        return Qundef;
     }
 
     // Parse fractional part
@@ -1395,7 +1459,7 @@ static inline VALUE json_parse_number(JSON_ParserState *state, JSON_ParserConfig
         mantissa_digits += fractional_digits;
 
         if (RB_UNLIKELY(!fractional_digits)) {
-            raise_parse_error_at("invalid number: %s", state, start);
+            return Qundef;
         }
     }
 
@@ -1415,7 +1479,7 @@ static inline VALUE json_parse_number(JSON_ParserState *state, JSON_ParserConfig
         int exponent_digits = json_parse_digits(state, &abs_exponent);
 
         if (RB_UNLIKELY(!exponent_digits)) {
-            raise_parse_error_at("invalid number: %s", state, start);
+            return Qundef;
         }
 
         if (RB_UNLIKELY(exponent_digits >= 20 || abs_exponent > (uint64_t)INT64_MAX)) {
@@ -1437,16 +1501,6 @@ static inline VALUE json_parse_number(JSON_ParserState *state, JSON_ParserConfig
     return json_decode_float(config, mantissa, mantissa_digits, exponent, negative, start, state->cursor);
 }
 
-static inline VALUE json_parse_positive_number(JSON_ParserState *state, JSON_ParserConfig *config)
-{
-    return json_parse_number(state, config, false, state->cursor);
-}
-
-static inline VALUE json_parse_negative_number(JSON_ParserState *state, JSON_ParserConfig *config)
-{
-    return json_parse_number(state, config, true, state->cursor - 1);
-}
-
 // How many values (array elements, or interleaved object keys+values) have been
 // pushed onto the rvalue stack since this container opened. Used to size the
 // bulk decode on close, and to tell the first key/colon from later ones.
@@ -1460,19 +1514,19 @@ static inline long json_frame_entry_count(const json_frame *frame, const rvalue_
 // moves on to expecting a ',' or its closing bracket. The caller passes the
 // frame it already has in hand -- the one that was expecting the value -- which
 // after a container close is the freshly re-exposed parent.
-static inline void json_value_completed(json_frame *frame)
+static inline enum json_frame_phase json_value_completed(json_frame *frame)
 {
     JSON_ASSERT((int)JSON_PHASE_DONE         == (int)JSON_FRAME_ROOT);
     JSON_ASSERT((int)JSON_PHASE_ARRAY_COMMA  == (int)JSON_FRAME_ARRAY);
     JSON_ASSERT((int)JSON_PHASE_OBJECT_COMMA == (int)JSON_FRAME_OBJECT);
 
-    frame->phase = (enum json_frame_phase) frame->type;
+    return frame->phase = (enum json_frame_phase) frame->type;
 }
 
-ALWAYS_INLINE(static) bool json_match_keyword(JSON_ParserState *state, const char *keyword, size_t offset)
+ALWAYS_INLINE(static) void json_match_keyword(JSON_ParserState *state, const char *keyword, size_t offset)
 {
     // It is assumed that since `keyword` is always a literal, the compiler is able to constantize this
-    // `strlen` and several other computations in that routine, such as eliminating the `if (resumable)` branch.
+    // `strlen` and several other computations in that routine.
 
     size_t len = strlen(keyword);
 
@@ -1480,9 +1534,11 @@ ALWAYS_INLINE(static) bool json_match_keyword(JSON_ParserState *state, const cha
     // That's why we sometime compare starting from the first byte and sometimes from the second.
     if (rest(state) >= len && (memcmp(state->cursor + offset, keyword + offset, len - offset) == 0)) {
         state->cursor += len;
-        return true;
+        return;
     }
-    return false;
+
+    bool eos = rest(state) < len && memcmp(state->cursor, keyword, rest(state)) == 0;
+    raise_parse_error("unexpected token %s", state, eos);
 }
 
 // Parse an arbitrary JSON value iteratively. This is a state machine driven
@@ -1490,94 +1546,131 @@ ALWAYS_INLINE(static) bool json_match_keyword(JSON_ParserState *state, const cha
 // resume purely from the frame stack. A JSON_FRAME_ROOT frame sits at the
 // bottom of the stack, so the stack is never empty mid-parse and the document
 // itself is just another frame whose value, once parsed, leaves its phase DONE.
-static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
+// When invoked in resumable mode, it returns true after parsing a complete document.
+// If reaching EOS without having parsed a complete document, either returns false
+// of raise a JSON::ParserError tagged with `@eos=true`.
+ALWAYS_INLINE(static) bool json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config, bool resumable)
 {
     json_frame *frame = json_frame_stack_peek(state->frames);
 
     switch (frame->phase) {
-        case JSON_PHASE_DONE:           goto JSON_PHASE_DONE;
+        case JSON_PHASE_DONE:           JSON_UNREACHABLE_RETURN(false);
         case JSON_PHASE_ARRAY_COMMA:    goto JSON_PHASE_ARRAY_COMMA;
         case JSON_PHASE_OBJECT_COMMA:   goto JSON_PHASE_OBJECT_COMMA;
         case JSON_PHASE_VALUE:          goto JSON_PHASE_VALUE;
         case JSON_PHASE_OBJECT_KEY:     goto JSON_PHASE_OBJECT_KEY;
         case JSON_PHASE_OBJECT_COLON:   goto JSON_PHASE_OBJECT_COLON;
     }
-    JSON_UNREACHABLE_RETURN(Qundef);
-
-    JSON_PHASE_DONE: {
-        // The root document value is parsed; it is the lone survivor on
-        // the rvalue stack.
-        return *rvalue_stack_peek(state->value_stack, 1);
-    }
+    JSON_UNREACHABLE_RETURN(false);
 
     JSON_PHASE_VALUE: {
-        json_eat_whitespace(state, config);
+        json_eat_whitespace(state, config, true);
 
         VALUE value;
+        const char *value_start = state->cursor;
+
         switch (peek(state)) {
             case 'n':
-                if (json_match_keyword(state, "null", 0)) {
-                    value = Qnil;
-                    break;
-                }
-                raise_parse_error("unexpected token %s", state);
+                json_match_keyword(state, "null", 0);
+                value = Qnil;
+                break;
 
             case 't':
-                if (json_match_keyword(state, "true", 0)) {
-                    value = Qtrue;
-                    break;
-                }
-                raise_parse_error("unexpected token %s", state);
+                json_match_keyword(state, "true", 0);
+                value = Qtrue;
+                break;
 
             case 'f':
-                if (json_match_keyword(state, "false", 1)) {
-                    value = Qfalse;
-                    break;
-                }
-                raise_parse_error("unexpected token %s", state);
+                json_match_keyword(state, "false", 1);
+                value = Qfalse;
+                break;
 
             case 'N':
-                // Note: memcmp with a small power of two compile to an integer comparison
-                if (config->allow_nan && json_match_keyword(state, "NaN", 1)) {
-                    value = CNaN;
-                    break;
+                if (!config->allow_nan) {
+                    raise_syntax_error("unexpected token %s", state);
                 }
-                raise_parse_error("unexpected token %s", state);
+
+                json_match_keyword(state, "NaN", 1);
+                value = CNaN;
+                break;
 
             case 'I':
-                if (config->allow_nan && json_match_keyword(state, "Infinity", 0)) {
-                    value = CInfinity;
-                    break;
+                if (!config->allow_nan) {
+                    raise_syntax_error("unexpected token %s", state);
                 }
-                raise_parse_error("unexpected token %s", state);
+
+                json_match_keyword(state, "Infinity", 0);
+                value = CInfinity;
+                break;
 
             case '-': {
                 state->cursor++;
-                if (config->allow_nan && json_match_keyword(state, "Infinity", 0)) {
+
+                value = json_parse_number(state, config, true, value_start);
+
+                if (RB_UNLIKELY(UNDEF_P(value) && config->allow_nan && peek(state) == 'I')) {
+                    state->cursor = value_start;
+                    json_match_keyword(state, "-Infinity", 1);
                     value = CMinusInfinity;
-                } else {
-                    value = json_parse_negative_number(state, config);
+                    break;
+                }
+
+                // Top level numbers are ambiguous when parsing streams, we can't
+                // know if we parsed all the digits if we hit EOS.
+                if (RB_UNLIKELY(resumable && eos(state))) {
+                    state->cursor = value_start;
+                    return false;
+                }
+
+                if (RB_UNLIKELY(UNDEF_P(value))) {
+                    raise_syntax_error_at("invalid number: %s", state, value_start);
                 }
                 break;
             }
 
-            case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
-                value = json_parse_positive_number(state, config);
-                break;
+            case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9': {
+                value = json_parse_number(state, config, false, value_start);
 
-            case '"':
+                // Top level numbers are ambiguous when parsing streams, we can't
+                // know if we parsed all the digits if we hit EOS.
+                if (RB_UNLIKELY(resumable && eos(state))) {
+                    state->cursor = value_start;
+                    return false;
+                }
+
+                if (RB_UNLIKELY(UNDEF_P(value))) {
+                    raise_syntax_error_at("invalid number: %s", state, value_start);
+                }
+                break;
+            }
+
+            case '"': {
                 // %r{\A"[^"\\\t\n\x00]*(?:\\[bfnrtu\\/"][^"\\]*)*"}
                 value = json_parse_string(state, config, false);
+
+                if (RB_UNLIKELY(UNDEF_P(value))) {
+                    bool is_eos = eos(state);
+                    if (resumable && is_eos) {
+                        state->cursor = value_start;
+                        return false;
+                    }
+                    raise_parse_error("unexpected end of input, expected closing \"", state, is_eos);
+                }
                 break;
+            }
 
             case '[': {
                 state->cursor++;
-                json_eat_whitespace(state, config);
+                json_eat_whitespace(state, config, true);
 
-                if (peek(state) == ']') {
+                const char next = peek(state);
+                if (next == ']') {
                     state->cursor++;
                     value = json_decode_array(state, config, 0);
                     break;
+                } else if (resumable && eos(state)) {
+                    state->cursor = value_start;
+                    return false;
                 }
 
                 state->current_nesting++;
@@ -1594,16 +1687,18 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                 });
                 goto JSON_PHASE_VALUE;
             }
-            case '{': {
-                const char *object_start_cursor = state->cursor;
 
+            case '{': {
                 state->cursor++;
-                json_eat_whitespace(state, config);
+                json_eat_whitespace(state, config, true);
 
                 if (peek(state) == '}') {
                     state->cursor++;
                     value = json_decode_object(state, config, 0);
                     break;
+                } else if (resumable && eos(state)) {
+                    state->cursor = value_start;
+                    return false;
                 }
 
                 state->current_nesting++;
@@ -1616,86 +1711,107 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
                     .type = JSON_FRAME_OBJECT,
                     .phase = JSON_PHASE_OBJECT_KEY,
                     .value_stack_head = state->value_stack->head,
-                    .start_cursor = object_start_cursor,
+                    .start_offset = value_start - state->start,
                 });
                 goto JSON_PHASE_OBJECT_KEY;
             }
 
             case 0:
-                raise_parse_error("unexpected end of input", state);
-
+                // peek() returns 0 both at end-of-stream and for a literal NUL byte in the
+                // buffer. Only a genuine EOS means "feed me more"; a NUL byte that is not at
+                // EOS is just an invalid character.
+                if (eos(state)) {
+                    return false;
+                } else {
+                    raise_syntax_error("unexpected NULL byte: %s", state);
+                }
             default:
-                raise_parse_error("unexpected character: %s", state);
+                raise_syntax_error("unexpected character: %s", state);
         }
 
         json_push_value(state, config, value);
         json_value_completed(frame);
 
         switch (frame->phase) {
-            case JSON_PHASE_DONE:           goto JSON_PHASE_DONE;
+            case JSON_PHASE_DONE:           return true;
             case JSON_PHASE_ARRAY_COMMA:    goto JSON_PHASE_ARRAY_COMMA;
             case JSON_PHASE_OBJECT_COMMA:   goto JSON_PHASE_OBJECT_COMMA;
             case JSON_PHASE_VALUE:          goto JSON_PHASE_VALUE;
-            case JSON_PHASE_OBJECT_KEY:     JSON_UNREACHABLE_RETURN(Qundef);
+            case JSON_PHASE_OBJECT_KEY:     JSON_UNREACHABLE_RETURN(false);
             case JSON_PHASE_OBJECT_COLON:   goto JSON_PHASE_OBJECT_COLON;
         }
-        JSON_UNREACHABLE_RETURN(Qundef);
+        JSON_UNREACHABLE_RETURN(false);
     }
 
     JSON_PHASE_OBJECT_KEY: {
         JSON_ASSERT(frame->type == JSON_FRAME_OBJECT);
 
-        json_eat_whitespace(state, config);
+        json_eat_whitespace(state, config, true);
+
+        const char *start = state->cursor;
 
         if (RB_LIKELY(peek(state) == '"')) {
-            json_push_value(state, config, json_parse_string(state, config, true));
+            VALUE string = json_parse_string(state, config, true);
+            if (UNDEF_P(string)) {
+                if (resumable) {
+                    state->cursor = start;
+                    return false;
+                } else {
+                    raise_syntax_error("unexpected end of input, expected closing \"", state);
+                }
+            }
+            json_push_value(state, config, string);
             frame->phase = JSON_PHASE_OBJECT_COLON;
             goto JSON_PHASE_OBJECT_COLON;
+        } else if (resumable && eos(state)) {
+            return false;
         } else {
             // The message differs for the first key vs. a key after a
             // ',': the first is the only one reached with nothing pushed
             // for this object yet.
             if (json_frame_entry_count(frame, state->value_stack) == 0) {
-                raise_parse_error("expected object key, got %s", state);
+                raise_syntax_error("expected object key, got %s", state);
             } else {
-                raise_parse_error("expected object key, got: %s", state);
+                raise_syntax_error("expected object key, got: %s", state);
             }
         }
-        JSON_UNREACHABLE_RETURN(Qundef);
+        JSON_UNREACHABLE_RETURN(false);
     }
 
     JSON_PHASE_OBJECT_COLON: {
         JSON_ASSERT(frame->type == JSON_FRAME_OBJECT);
 
-        json_eat_whitespace(state, config);
+        json_eat_whitespace(state, config, true);
 
         if (RB_LIKELY(peek(state) == ':')) {
             state->cursor++;
             frame->phase = JSON_PHASE_VALUE;
             goto JSON_PHASE_VALUE;
+        } else if (resumable && eos(state)) {
+            return false;
         } else {
             // First colon (only the first pair's key is pushed, nothing
             // else) vs. a later one.
             if (json_frame_entry_count(frame, state->value_stack) == 1) {
-                raise_parse_error("expected ':' after object key", state);
+                raise_syntax_error("expected ':' after object key", state);
             } else {
-                raise_parse_error("expected ':' after object key, got: %s", state);
+                raise_syntax_error("expected ':' after object key, got: %s", state);
             }
         }
-        JSON_UNREACHABLE_RETURN(Qundef);
+        JSON_UNREACHABLE_RETURN(false);
     }
 
     JSON_PHASE_ARRAY_COMMA: {
         JSON_ASSERT(frame->type == JSON_FRAME_ARRAY);
 
-        json_eat_whitespace(state, config);
+        json_eat_whitespace(state, config, true);
 
         const char next_char = peek(state);
 
         if (RB_LIKELY(next_char == ',')) {
             state->cursor++;
             if (config->allow_trailing_comma) {
-                json_eat_whitespace(state, config);
+                json_eat_whitespace(state, config, true);
                 if (peek(state) == ']') {
                     // Trailing comma: stay in COMMA to close on the next iteration.
                     goto JSON_PHASE_ARRAY_COMMA;
@@ -1708,36 +1824,40 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             long count = json_frame_entry_count(frame, state->value_stack);
             state->current_nesting--;
             state->in_array--;
-            json_frame_stack_pop(state->frames);
+
             json_push_value(state, config, json_decode_array(state, config, count));
+            json_frame_stack_pop(state->frames);
             frame = json_frame_stack_peek(state->frames);
+
             json_value_completed(frame);
 
             switch (frame->phase) {
-                case JSON_PHASE_DONE:           goto JSON_PHASE_DONE;
+                case JSON_PHASE_DONE:           return true;
                 case JSON_PHASE_ARRAY_COMMA:    goto JSON_PHASE_ARRAY_COMMA;
                 case JSON_PHASE_OBJECT_COMMA:   goto JSON_PHASE_OBJECT_COMMA;
                 case JSON_PHASE_VALUE:          goto JSON_PHASE_VALUE;
-                case JSON_PHASE_OBJECT_KEY:     JSON_UNREACHABLE_RETURN(Qundef);
+                case JSON_PHASE_OBJECT_KEY:     JSON_UNREACHABLE_RETURN(false);
                 case JSON_PHASE_OBJECT_COLON:   goto JSON_PHASE_OBJECT_COLON;
             }
+        } else if (resumable && eos(state)) {
+            return false;
         } else {
-            raise_parse_error("expected ',' or ']' after array value", state);
+            raise_syntax_error("expected ',' or ']' after array value", state);
         }
-        JSON_UNREACHABLE_RETURN(Qundef);
+        JSON_UNREACHABLE_RETURN(false);
     }
 
     JSON_PHASE_OBJECT_COMMA: {
         JSON_ASSERT(frame->type == JSON_FRAME_OBJECT);
 
-        json_eat_whitespace(state, config);
+        json_eat_whitespace(state, config, true);
         const char next_char = peek(state);
 
         if (RB_LIKELY(next_char == ',')) {
             state->cursor++;
+            json_eat_whitespace(state, config, true);
 
             if (config->allow_trailing_comma) {
-                json_eat_whitespace(state, config);
                 if (peek(state) == '}') {
                     // Trailing comma: stay in COMMA to close on the next iteration.
                     goto JSON_PHASE_OBJECT_COMMA;
@@ -1753,7 +1873,7 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
 
             // Temporary rewind cursor in case an error is raised
             const char *final_cursor = state->cursor;
-            state->cursor = frame->start_cursor;
+            state->cursor = state->start + frame->start_offset;
             VALUE object = json_decode_object(state, config, count);
             state->cursor = final_cursor;
 
@@ -1763,27 +1883,29 @@ static VALUE json_parse_any(JSON_ParserState *state, JSON_ParserConfig *config)
             json_value_completed(frame);
 
             switch (frame->phase) {
-                case JSON_PHASE_DONE:           goto JSON_PHASE_DONE;
+                case JSON_PHASE_DONE:           return true;
                 case JSON_PHASE_ARRAY_COMMA:    goto JSON_PHASE_ARRAY_COMMA;
                 case JSON_PHASE_OBJECT_COMMA:   goto JSON_PHASE_OBJECT_COMMA;
                 case JSON_PHASE_VALUE:          goto JSON_PHASE_VALUE;
-                case JSON_PHASE_OBJECT_KEY:     JSON_UNREACHABLE_RETURN(Qundef);
+                case JSON_PHASE_OBJECT_KEY:     JSON_UNREACHABLE_RETURN(false);
                 case JSON_PHASE_OBJECT_COLON:   goto JSON_PHASE_OBJECT_COLON;
             }
+        } else if (resumable && eos(state)) {
+            return false;
         } else {
-            raise_parse_error("expected ',' or '}' after object value, got: %s", state);
+            raise_syntax_error("expected ',' or '}' after object value, got: %s", state);
         }
-        JSON_UNREACHABLE_RETURN(Qundef);
+        JSON_UNREACHABLE_RETURN(false);
     }
 
-    JSON_UNREACHABLE_RETURN(Qundef);
+    JSON_UNREACHABLE_RETURN(false);
 }
 
 static void json_ensure_eof(JSON_ParserState *state, JSON_ParserConfig *config)
 {
-    json_eat_whitespace(state, config);
+    json_eat_whitespace(state, config, true);
     if (!eos(state)) {
-        raise_parse_error("unexpected token at end of stream %s", state);
+        raise_syntax_error("unexpected token at end of stream %s", state);
     }
 }
 
@@ -1821,6 +1943,8 @@ static VALUE convert_encoding(VALUE source)
 struct parser_config_init_args {
     JSON_ParserConfig *config;
     VALUE self;
+    VALUE unknown_keywords;
+    bool strict;
 };
 
 static void parser_config_wb_write(VALUE self, VALUE *dest, VALUE val)
@@ -1874,27 +1998,42 @@ static int parser_config_init_i(VALUE key, VALUE val, VALUE data)
             }
         }
     }
+    else if (args->strict) {
+        if (!args->unknown_keywords) {
+            args->unknown_keywords = rb_obj_hide(rb_ary_new());
+        }
+        rb_ary_push(args->unknown_keywords, key);
+    }
 
     return ST_CONTINUE;
 }
 
-static void parser_config_init(JSON_ParserConfig *config, VALUE opts, VALUE self)
+static void parser_config_init(JSON_ParserConfig *config, VALUE opts, VALUE self, bool strict)
 {
     config->max_nesting = 100;
 
     struct parser_config_init_args args = {
         .config = config,
         .self = self,
+        .strict = strict,
     };
 
-    if (!NIL_P(opts)) {
-        Check_Type(opts, T_HASH);
-        if (RHASH_SIZE(opts) > 0) {
-            // We assume in most cases few keys are set so it's faster to go over
-            // the provided keys than to check all possible keys.
-            rb_hash_foreach(opts, parser_config_init_i, (VALUE)&args);
-        }
+    if (NIL_P(opts)) return;
+    Check_Type(opts, T_HASH);
+    if (RHASH_SIZE(opts) == 0) return;
 
+    // We assume in most cases few keys are set so it's faster to go over
+    // the provided keys than to check all possible keys.
+    rb_hash_foreach(opts, parser_config_init_i, (VALUE)&args);
+
+    if (RB_UNLIKELY(args.unknown_keywords)) {
+        if (RARRAY_LEN(args.unknown_keywords) == 1) {
+            rb_raise(rb_eArgError, "unknown keyword: %" PRIsVALUE, RARRAY_AREF(args.unknown_keywords, 0));
+        }
+        else {
+            VALUE keywords = rb_ary_join(args.unknown_keywords, rb_utf8_str_new_cstr(", "));
+            rb_raise(rb_eArgError, "unknown keywords: %" PRIsVALUE, keywords);
+        }
     }
 }
 
@@ -1903,30 +2042,16 @@ static void parser_config_init(JSON_ParserConfig *config, VALUE opts, VALUE self
  *
  * Creates a new JSON::Ext::ParserConfig instance.
  *
- * It will be configured by the _opts_ hash. _opts_ can have the following
- * keys:
+ * Argument +opts+, if given, contains a \Hash of options for the parsing.
+ * See {Parsing Options}[#module-JSON-label-Parsing+Options].
  *
- * _opts_ can have the following keys:
- * * *max_nesting*: The maximum depth of nesting allowed in the parsed data
- *   structures. Disable depth checking with :max_nesting => false|nil|0, it
- *   defaults to 100.
- * * *allow_nan*: If set to true, allow NaN, Infinity and -Infinity in
- *   defiance of RFC 4627 to be parsed by the Parser. This option defaults to
- *   false.
- * * *symbolize_names*: If set to true, returns symbols for the names
- *   (keys) in a JSON object. Otherwise strings are returned, which is
- *   also the default. It's not possible to use this option in
- *   conjunction with the *create_additions* option.
- * * *decimal_class*: Specifies which class to use instead of the default
- *    (Float) when parsing decimal numbers. This class must accept a single
- *    string argument in its constructor.
  */
 static VALUE cParserConfig_initialize(VALUE self, VALUE opts)
 {
     rb_check_frozen(self);
     GET_PARSER_CONFIG;
 
-    parser_config_init(config, opts, self);
+    parser_config_init(config, opts, self, false);
 
     return self;
 }
@@ -1982,7 +2107,11 @@ static VALUE cParser_parse(JSON_ParserConfig *config, VALUE src)
     };
     JSON_ParserState *state = &_state;
 
-    VALUE result = json_parse_any(state, config);
+    bool complete = json_parse_any(state, config, false);
+
+    // The root document value is parsed; it is the lone survivor on
+    // the rvalue stack.
+    VALUE result = complete ? *rvalue_stack_peek(state->value_stack, 1) : Qundef;
 
     // This may be skipped in case of exception, but
     // it won't cause a leak.
@@ -1991,7 +2120,12 @@ static VALUE cParser_parse(JSON_ParserConfig *config, VALUE src)
     RB_GC_GUARD(value_stack_handle);
     RB_GC_GUARD(frame_stack_handle);
     RB_GC_GUARD(Vsource);
-    json_ensure_eof(state, config);
+
+    if (complete) {
+        json_ensure_eof(state, config);
+    } else {
+        raise_eos_error("unexpected end of input", state);
+    }
 
     return result;
 }
@@ -2013,7 +2147,7 @@ static VALUE cParser_m_parse(VALUE klass, VALUE Vsource, VALUE opts)
 {
     JSON_ParserConfig _config = {0};
     JSON_ParserConfig *config = &_config;
-    parser_config_init(config, opts, false);
+    parser_config_init(config, opts, Qfalse, false);
 
     return cParser_parse(config, Vsource);
 }
@@ -2049,13 +2183,569 @@ static const rb_data_type_t JSON_ParserConfig_type = {
         .dsize = JSON_ParserConfig_memsize,
         .dcompact = JSON_ParserConfig_compact,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_EMBEDDABLE,
 };
 
 static VALUE cJSON_parser_s_allocate(VALUE klass)
 {
     JSON_ParserConfig *config;
     return TypedData_Make_Struct(klass, JSON_ParserConfig, &JSON_ParserConfig_type, config);
+}
+
+static void json_str_clear(VALUE str)
+{
+    if (RB_OBJ_FROZEN_RAW(str)) {
+        return;
+    }
+    rb_str_replace(str, JSON_empty_string);
+}
+
+typedef struct JSON_ResumableParserStruct {
+    JSON_ParserConfig config;
+    JSON_ParserState state;
+    rvalue_stack value_stack;
+    json_frame_stack frames;
+    VALUE buffer;
+    size_t parsed_bytes;
+    size_t incomplete_bytes;
+    bool complete;
+    bool in_use;
+} JSON_ResumableParser;
+
+static void JSON_ResumableParser_mark(void *ptr)
+{
+    JSON_ResumableParser *parser = (JSON_ResumableParser *)ptr;
+    JSON_ParserConfig_mark(&parser->config);
+    rvalue_stack_mark(&parser->value_stack);
+    rvalue_cache_mark(&parser->state.name_cache);
+    rb_gc_mark(parser->buffer); // pin the buffer
+    rb_gc_mark_movable(parser->state.parser);
+}
+
+static void JSON_ResumableParser_free(void *ptr)
+{
+    JSON_ResumableParser *parser = (JSON_ResumableParser *)ptr;
+    rvalue_stack_free_buffer(&parser->value_stack);
+    json_frame_stack_free_buffer(&parser->frames);
+}
+
+static size_t JSON_ResumableParser_memsize(const void *ptr)
+{
+    const JSON_ResumableParser *parser = (const JSON_ResumableParser *)ptr;
+    size_t memsize = JSON_ParserConfig_memsize(&parser->config);
+    memsize += rvalue_stack_memsize(&parser->value_stack);
+    memsize += json_frame_stack_memsize(&parser->frames);
+#ifndef HAVE_RUBY_TYPED_EMBEDDABLE
+    memsize += (
+        sizeof(JSON_ResumableParser)
+        - sizeof(JSON_ParserState)
+        - sizeof(JSON_ParserConfig)
+        - sizeof(rvalue_stack)
+        - sizeof(json_frame_stack)
+    );
+#endif
+    return memsize;
+}
+
+static void JSON_ResumableParser_compact(void *ptr)
+{
+    JSON_ResumableParser *parser = (JSON_ResumableParser *)ptr;
+    JSON_ParserConfig_compact(&parser->config);
+    rvalue_stack_compact(&parser->value_stack);
+    rvalue_cache_compact(&parser->state.name_cache);
+    parser->buffer = rb_gc_location(parser->buffer);
+    parser->state.parser = rb_gc_location(parser->state.parser);
+}
+
+static const rb_data_type_t JSON_ResumableParser_type = {
+    .wrap_struct_name = "JSON::Ext::ResumableParser",
+    .function = {
+        JSON_ResumableParser_mark,
+        JSON_ResumableParser_free,
+        JSON_ResumableParser_memsize,
+        JSON_ResumableParser_compact,
+    },
+    // RUBY_TYPED_WB_PROTECTED is deliberately not declared because
+    // this is a superset of JSON_Parser_rvalue_stack_type, so we'd need
+    // to trigger a lot of write barriers.
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_EMBEDDABLE,
+};
+
+static VALUE cResumableParser_allocate(VALUE klass)
+{
+    JSON_ResumableParser *parser;
+    VALUE obj = TypedData_Make_Struct(klass, JSON_ResumableParser, &JSON_ResumableParser_type, parser);
+    parser->state.in_array++;
+    parser->state.parser = obj;
+    return obj;
+}
+
+static inline JSON_ResumableParser *cResumableParser_get(VALUE self)
+{
+    JSON_ResumableParser *parser;
+    TypedData_Get_Struct(self, JSON_ResumableParser, &JSON_ResumableParser_type, parser);
+    return parser;
+}
+
+/*
+ * call-seq: new(opts => {})
+ *
+ * Creates a new JSON::ResumableParser instance.
+ *
+ * Argument +opts+, if given, contains a \Hash of options for the parsing.
+ * See {Parsing Options}[#module-JSON-label-Parsing+Options].
+ *
+ * A ResumableParser is able to parse partial documents and resume parsing later
+ * when more of the document is provided:
+ *
+ *   parser = JSON::ResumableParser.new
+ *   parser << '{"user": "george", "role": "ad'
+ *   parser.parse # => false
+ *   parser.eos? # => true
+ *   parser.partial_value # => { "user" => "george", "role" => nil }
+ *   parser.rest # => '"ad'
+ *
+ *   parser << 'min" }[1, 2, 3]'
+ *   parser.parse # => true
+ *   parser.value # => { "user" => "george", "role" => "admin" }
+ *
+ *   parser.parse # => true
+ *   parser.value # => [1, 2, 3]
+ *
+ * === Limitations
+ *
+ * While ResumableParser is able to parse streams of documents without any
+ * explicit separators between them, it is highly recommended to separate documents
+ * by either spaces or newlines, as otherwise the \JSON syntax for numbers may be ambiguous.
+ * When parsing a number, ResumableParser will not consider the number complete until something follows:
+ *
+ *   parser << '123'
+ *   parser.parse # => false
+ *   parser << ' '
+ *   parser.parse # => true
+ *   parser.value # => 123
+ *
+ * === Security
+ *
+ * An incomplete document is buffered in full and there is no size limit, so when reading
+ * from an untrusted source the caller is responsible for bounding how much data is fed.
+ * For example:
+ *
+ *  loop do
+ *    if parser.parsed_bytes > DOCUMENT_MAX_SIZE
+ *      raise "document too large"
+ *    end
+ *
+ *    parser << read_chunk
+ *    while parser.parse
+ *      process(parser.value)
+ *    end
+ *  end
+ */
+static VALUE cResumableParser_initialize(int argc, VALUE *argv, VALUE self)
+{
+    rb_check_frozen(self);
+
+    VALUE opts = Qfalse;
+    rb_scan_args_kw(RB_SCAN_ARGS_LAST_HASH_KEYWORDS, argc, argv, "0:", &opts);
+    JSON_ResumableParser *parser = cResumableParser_get(self);
+
+    opts = argc > 0 ? argv[0] : Qnil;
+    parser_config_init(&parser->config, opts, self, true);
+
+    return self;
+}
+
+static JSON_ResumableParser *ResumableParser_acquire(VALUE self, bool lock);
+
+/*
+ * call-seq: self << string -> self
+ *
+ * Appends the given string to the parser's buffer.
+ */
+static VALUE cResumableParser_feed(VALUE self, VALUE str)
+{
+    rb_check_frozen(self);
+
+    JSON_ResumableParser *parser = ResumableParser_acquire(self, false);
+
+    str = convert_encoding(str);
+    if (!RSTRING_LEN(str)) {
+        return self;
+    }
+
+    size_t offset = parser->state.cursor - parser->state.start;
+    const size_t remaining = parser->state.end - parser->state.cursor;
+
+    if (!remaining) {
+        if (parser->buffer) {
+            json_str_clear(parser->buffer);
+        }
+        parser->buffer = RB_OBJ_FROZEN_RAW(str) ? str : rb_obj_hide(rb_str_new_shared(str));
+        offset = 0;
+    } else {
+        JSON_ASSERT(parser->buffer);
+
+        const size_t size = parser->state.end - parser->state.start;
+        const size_t consumed = size - remaining;
+
+        if (RB_OBJ_FROZEN_RAW(parser->buffer)) {
+            VALUE new_buffer = rb_obj_hide(rb_str_buf_new(remaining + RSTRING_LEN(str)));
+            rb_enc_associate_index(new_buffer, utf8_encindex);
+
+            char *old_ptr = RSTRING_PTR(parser->buffer);
+            memcpy(RSTRING_PTR(new_buffer), old_ptr + consumed, remaining);
+            rb_str_set_len(new_buffer, remaining);
+            offset = 0;
+            parser->buffer = new_buffer;
+        } else if (consumed > (size / 2) && size >= 512) {
+            rb_str_modify(parser->buffer);
+            char *old_ptr = RSTRING_PTR(parser->buffer);
+            memmove(old_ptr, old_ptr + consumed, remaining);
+            rb_str_set_len(parser->buffer, remaining);
+            offset = 0;
+        }
+        rb_str_append(parser->buffer, str);
+    }
+
+    long len;
+    const char *start;
+    RSTRING_GETMEM(parser->buffer, start, len);
+    parser->state.start = start;
+    parser->state.end = start + len;
+    parser->state.cursor = parser->state.start + offset;
+
+    return self;
+}
+
+struct json_parse_any_args {
+    JSON_ParserState *state;
+    JSON_ParserConfig *config;
+    VALUE parser;
+};
+
+static VALUE json_parse_any_resumable_safe0(RB_BLOCK_CALL_FUNC_ARGLIST(yielded_arg, _args))
+{
+    struct json_parse_any_args *args = (struct json_parse_any_args *)_args;
+    return (VALUE)json_parse_any(args->state, args->config, true);
+}
+
+static VALUE json_parse_any_resumable_safe(VALUE _args)
+{
+    struct json_parse_any_args *args = (struct json_parse_any_args *)_args;
+    VALUE result = rb_catch_obj(args->parser, json_parse_any_resumable_safe0, _args);
+    return result == args->parser ? Qfalse : result;
+}
+
+static JSON_ResumableParser *ResumableParser_acquire(VALUE self, bool lock)
+{
+    JSON_ResumableParser *parser = cResumableParser_get(self);
+
+    if (parser->in_use) {
+        rb_raise(rb_eArgError, "ResumableParser can't be used recursively");
+    }
+
+    if (lock) {
+        parser->in_use = true;
+    }
+
+    // self may have moved, so we need to update all pointers
+    // Investigate: We might be better off keeping JSON_ParserState on the stack
+    // and only persist what we need.
+    parser->state.value_stack = &parser->value_stack;
+    parser->state.frames = &parser->frames;
+
+    return parser;
+}
+
+/*
+ * call-seq: parse -> true or false
+ *
+ * Attemps to parse a JSON document from the internal buffer.
+ * Returns whether a complete document could be parsed.
+ *
+ * It does raise +JSON::ParserError+ when encountering invalid \JSON syntax.
+ *
+ * The parsed object can be retrieved by calling #value
+ */
+static VALUE cResumableParser_parse(VALUE self)
+{
+    JSON_ResumableParser *parser = ResumableParser_acquire(self, true);
+
+    if (parser->complete) {
+        parser->parsed_bytes = 0;
+        parser->incomplete_bytes = 0;
+        parser->complete = false;
+    }
+
+    if (!parser->buffer) {
+        parser->in_use = false;
+        return Qfalse;
+    }
+
+    if (parser->frames.head == 0) {
+        json_frame_stack_push(&parser->state, (json_frame){
+            .type = JSON_FRAME_ROOT,
+            .phase = JSON_PHASE_VALUE,
+        });
+    }
+
+    VALUE Vsource = parser->buffer; // Prevent compaction
+
+    json_frame *frame = json_frame_stack_peek(&parser->frames);
+
+    if (frame->phase == JSON_PHASE_DONE) {
+        JSON_ASSERT(parser->value_stack.head == 1);
+        JSON_ASSERT(parser->frames.head == 1);
+
+        frame->phase = JSON_PHASE_VALUE;
+        rvalue_stack_pop(parser->state.value_stack, 1);
+    }
+
+    struct json_parse_any_args args = {
+        .state = &parser->state,
+        .config = &parser->config,
+        .parser = self,
+    };
+    int status;
+    const char *initial_cursor = parser->state.cursor;
+    parser->complete = rb_protect(json_parse_any_resumable_safe, (VALUE)&args, &status);
+
+    if (status) {
+        parser->complete = true; // a parse error is considered complete
+    }
+
+    parser->parsed_bytes += parser->state.cursor - initial_cursor;
+    parser->incomplete_bytes = parser->complete ? 0 : parser->state.end - parser->state.cursor;
+
+    json_eat_whitespace(&parser->state, &parser->config, false);
+    if (eos(&parser->state)) {
+        json_str_clear(parser->buffer);
+        parser->buffer = Qfalse;
+    }
+    parser->in_use = false;
+
+    if (status) {
+        rb_jump_tag(status); // reraise
+    }
+    RB_GC_GUARD(Vsource);
+    return parser->complete ? Qtrue : Qfalse;
+}
+
+/*
+ * call-seq: value? -> true or false
+ *
+ * Returns whether a parsed value is available.
+ */
+static VALUE cResumableParser_value_p(VALUE self)
+{
+    JSON_ResumableParser *parser = ResumableParser_acquire(self, false);
+
+    if (parser->value_stack.head > 0) {
+        json_frame *frame = json_frame_stack_peek(&parser->frames);
+        if (frame->phase == JSON_PHASE_DONE) {
+            return Qtrue;
+        }
+    }
+    return Qfalse;
+}
+
+/*
+ * call-seq: value -> object
+ *
+ * Returns and consume the last parsed value.
+ * Raises ArgumentError if there is no parsed value or if it was already retrieved:
+ *   parser << '[1][2]'
+ *   parser.value # ArgumentError no ready value
+ *   parser.parse # => true
+ *   parser.value # => [1]
+ *   parser.value # ArgumentError no ready value
+ */
+static VALUE cResumableParser_value(VALUE self)
+{
+    JSON_ResumableParser *parser = ResumableParser_acquire(self, false);
+
+    if (parser->frames.head > 0) {
+        json_frame *frame = json_frame_stack_peek(&parser->frames);
+
+        if (frame->phase == JSON_PHASE_DONE) {
+            VALUE result = *rvalue_stack_peek(parser->state.value_stack, 1);
+            rvalue_stack_pop(parser->state.value_stack, 1);
+            json_frame_stack_pop(parser->state.frames);
+            return result;
+        }
+    }
+    rb_raise(rb_eArgError, "no ready value");
+}
+
+/*
+ * call-seq: clear -> self
+ *
+ * Entirely reset the parser state and buffer.
+ */
+static VALUE cResumableParser_clear(VALUE self)
+{
+    JSON_ResumableParser *parser = ResumableParser_acquire(self, false);
+    parser->buffer = 0;
+    parser->complete = true;
+    parser->parsed_bytes = 0;
+    parser->incomplete_bytes = 0;
+    parser->frames.head = 0;
+    parser->value_stack.head = 0;
+    parser->state.name_cache.length = 0;
+    parser->state.current_nesting = 0;
+    parser->state.in_array = 1;
+    parser->state.emitted_deprecations = 0;
+    parser->state.start = parser->state.cursor = parser->state.end = NULL;
+    return self;
+}
+
+static VALUE cResumableParser_partial_value_body(VALUE self)
+{
+    JSON_ResumableParser *original_parser = cResumableParser_get(self);
+    JSON_ResumableParser parser = *original_parser;
+
+    parser.state.frames = &parser.frames;
+    parser.state.value_stack = &parser.value_stack;
+
+    if (parser.value_stack.head == 0) {
+        return Qnil;
+    }
+
+    json_frame *frame = json_frame_stack_peek(parser.state.frames);
+    long missing_object_value = 0;
+    if (frame->type == JSON_FRAME_OBJECT && (frame->phase == JSON_PHASE_VALUE || frame->phase == JSON_PHASE_OBJECT_COLON)) {
+        missing_object_value = 1;
+    }
+
+    // Copy the value stack as we need to mutate it.
+    long capa = parser.value_stack.head;
+    parser.value_stack.capa = (capa + missing_object_value);
+    VALUE tmpbuf, *value_stack_buffer = ALLOCV_N(VALUE, tmpbuf, capa + missing_object_value);
+    MEMCPY(value_stack_buffer, parser.value_stack.ptr, VALUE, parser.value_stack.capa);
+    parser.value_stack.ptr = value_stack_buffer;
+
+    JSON_ParserState *state = &parser.state;
+    JSON_ParserConfig *config = &parser.config;
+
+    if (missing_object_value) {
+        rvalue_stack_push(state->value_stack, Qnil, NULL, &state->value_stack);
+    }
+
+    VALUE partial_result = Qundef;
+
+    while (UNDEF_P(partial_result)) {
+        frame = json_frame_stack_peek(state->frames);
+
+        switch (frame->type) {
+            case JSON_FRAME_ROOT: {
+                partial_result = *rvalue_stack_peek(state->value_stack, 1);
+                break;
+            }
+
+            case JSON_FRAME_ARRAY: {
+                long count = json_frame_entry_count(frame, state->value_stack);
+                json_push_value(state, config, json_decode_array(state, config, count));
+                json_frame_stack_pop(state->frames);
+
+                break;
+            }
+
+            case JSON_FRAME_OBJECT: {
+                long count = json_frame_entry_count(frame, state->value_stack);
+                json_push_value(state, config, json_decode_object(state, config, count));
+                json_frame_stack_pop(state->frames);
+                break;
+            }
+
+            default: {
+                JSON_UNREACHABLE_RETURN(Qundef);
+                break;
+            }
+        }
+    }
+
+    ALLOCV_END(tmpbuf);
+    return partial_result;
+}
+
+/*
+ * call-seq: partial_value -> object
+ *
+ * Returns the Ruby objects parsed up to this point:
+ *   parser << '[1, [2, 3,'
+ *   parser.parse # => false
+ *   parser.value # ArgumentError no ready value
+ *   parser.partial_value # => [1, [2, 3]]
+ */
+static VALUE cResumableParser_partial_value(VALUE self)
+{
+    JSON_ResumableParser *parser = ResumableParser_acquire(self, true);
+
+    int status;
+    VALUE result = rb_protect(cResumableParser_partial_value_body, self, &status);
+    parser->in_use = false;
+    if (status) {
+        rb_jump_tag(status);
+    }
+    return result;
+}
+
+/*
+ * call-seq: rest -> string
+ *
+ * Returns a string containing what remains to be parsed in the buffer
+ *   parser << '{ "message": "unterminated message'
+ *   parser.parse # => false
+ *   parser.rest # => '"unterminated message"'
+ */
+static VALUE cResumableParser_rest(VALUE self)
+{
+    JSON_ResumableParser *parser = cResumableParser_get(self);
+
+    if (!parser->buffer) {
+        return rb_utf8_str_new("", 0);
+    }
+
+    size_t offset = parser->state.cursor - parser->state.start;
+    const char *ptr;
+    long len;
+    RSTRING_GETMEM(parser->buffer, ptr, len);
+    return rb_utf8_str_new(ptr + offset, len - offset);
+}
+
+/*
+ * call-seq: eos? -> true or false
+ *
+ * Returns whether the internal buffer has been entirely consumed.
+ */
+static VALUE cResumableParser_eos_p(VALUE self)
+{
+    JSON_ResumableParser *parser = cResumableParser_get(self);
+    return eos(&parser->state) ? Qtrue : Qfalse;
+}
+
+/*
+ * call-seq: parsed_bytes -> integer
+ *
+ * Returns the number of bytes parsed since the start of the current partial value.
+ * This is intended to be used for securing against untrusted input:
+ *
+ *  loop do
+ *    if parser.parsed_bytes > DOCUMENT_MAX_SIZE
+ *      raise "document too large"
+ *    end
+ *
+ *    parser << read_chunk
+ *    while parser.parse
+ *      process(parser.value)
+ *    end
+ *  end
+ */
+static VALUE cResumableParser_parsed_bytes(VALUE self)
+{
+    JSON_ResumableParser *parser = cResumableParser_get(self);
+    return ULL2NUM(parser->parsed_bytes + parser->incomplete_bytes);
 }
 
 void Init_parser(void)
@@ -2077,11 +2767,24 @@ void Init_parser(void)
     eNestingError = rb_path2class("JSON::NestingError");
 
     rb_define_alloc_func(cParserConfig, cJSON_parser_s_allocate);
-    rb_define_method(cParserConfig, "initialize", cParserConfig_initialize, 1);
+    rb_define_private_method(cParserConfig, "initialize", cParserConfig_initialize, 1);
     rb_define_method(cParserConfig, "parse", cParserConfig_parse, 1);
 
     VALUE cParser = rb_define_class_under(mExt, "Parser", rb_cObject);
     rb_define_singleton_method(cParser, "parse", cParser_m_parse, 2);
+
+    VALUE cResumableParser = rb_define_class_under(mJSON, "ResumableParser", rb_cObject);
+    rb_define_alloc_func(cResumableParser, cResumableParser_allocate);
+    rb_define_private_method(cResumableParser, "initialize", cResumableParser_initialize, -1);
+    rb_define_method(cResumableParser, "<<", cResumableParser_feed, 1);
+    rb_define_method(cResumableParser, "parse", cResumableParser_parse, 0);
+    rb_define_method(cResumableParser, "value", cResumableParser_value, 0);
+    rb_define_method(cResumableParser, "value?", cResumableParser_value_p, 0);
+    rb_define_method(cResumableParser, "partial_value", cResumableParser_partial_value, 0);
+    rb_define_method(cResumableParser, "clear", cResumableParser_clear, 0);
+    rb_define_method(cResumableParser, "rest", cResumableParser_rest, 0);
+    rb_define_method(cResumableParser, "eos?", cResumableParser_eos_p, 0);
+    rb_define_method(cResumableParser, "parsed_bytes", cResumableParser_parsed_bytes, 0);
 
     rb_global_variable(&CNaN);
     CNaN = rb_const_get(mJSON, rb_intern("NaN"));
@@ -2094,6 +2797,9 @@ void Init_parser(void)
 
     rb_global_variable(&Encoding_UTF_8);
     Encoding_UTF_8 = rb_const_get(rb_path2class("Encoding"), rb_intern("UTF_8"));
+
+    rb_global_variable(&JSON_empty_string);
+    JSON_empty_string = rb_obj_hide(rb_utf8_str_new("", 0));
 
     sym_max_nesting = ID2SYM(rb_intern("max_nesting"));
     sym_allow_nan = ID2SYM(rb_intern("allow_nan"));
@@ -2109,7 +2815,9 @@ void Init_parser(void)
 
     i_new = rb_intern("new");
     i_try_convert = rb_intern("try_convert");
+#ifndef HAVE_RB_STR_TO_INTERNED_STR
     i_uminus = rb_intern("-@");
+#endif
     i_encode = rb_intern("encode");
     i_at_line = rb_intern("@line");
     i_at_column = rb_intern("@column");

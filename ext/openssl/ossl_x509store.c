@@ -226,10 +226,49 @@ ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
+ *    store.flags -> Integer
+ *
+ * Gets the verification flags for the Store.
+ *
+ * See also the man page X509_VERIFY_PARAM_get_flags(3).
+ */
+static VALUE
+ossl_x509store_get_flags(VALUE self)
+{
+    X509_STORE *store;
+    X509_VERIFY_PARAM *vpm;
+
+    GetX509Store(self, store);
+    vpm = X509_STORE_get0_param(store);
+    return ULONG2NUM(X509_VERIFY_PARAM_get_flags(vpm));
+}
+
+static void
+x509vpm_set_flags_i(X509_VERIFY_PARAM *vpm, VALUE flags)
+{
+    unsigned long curr = X509_VERIFY_PARAM_get_flags(vpm);
+    unsigned long f = NUM2ULONG(flags);
+
+    if ((curr | f) != f) {
+        rb_warn("`obj.flags = new_flags` does not clear existing flags; " \
+                "use `obj.clear_flags` first if you want to replace them, " \
+                "or `obj.flags |= new_flags` to indicate that " \
+                "appending flags is intentional");
+    }
+    if (!X509_VERIFY_PARAM_set_flags(vpm, f))
+        ossl_raise(eX509StoreError, "X509_VERIFY_PARAM_set_flags");
+}
+
+/*
+ * call-seq:
  *   store.flags = flags
  *
  * Sets the default flags used by certificate chain verification performed with
  * the Store.
+ *
+ * *NOTE*: Despite the name, this method appends the specified flags to the
+ * existing flag set rather than replacing it. To clear existing flags, use
+ * #clear_flags before calling this method.
  *
  * _flags_ consists of zero or more of the constants defined in OpenSSL::X509
  * with name V_FLAG_* or'ed together.
@@ -243,12 +282,40 @@ static VALUE
 ossl_x509store_set_flags(VALUE self, VALUE flags)
 {
     X509_STORE *store;
-    long f = NUM2LONG(flags);
 
     GetX509Store(self, store);
-    X509_STORE_set_flags(store, f);
-
+    x509vpm_set_flags_i(X509_STORE_get0_param(store), flags);
     return flags;
+}
+
+static void
+x509vpm_clear_flags_i(X509_VERIFY_PARAM *vpm, VALUE flags)
+{
+    unsigned long f = NIL_P(flags) ? ~0UL : NUM2ULONG(flags);
+
+    if (!X509_VERIFY_PARAM_clear_flags(vpm, f))
+        ossl_raise(eX509StoreError, "X509_VERIFY_PARAM_clear_flags");
+}
+
+/*
+ * call-seq:
+ *    store.clear_flags(flags = nil)
+ *
+ * Clears verification flags _flags_ for the Store. If _flags_ is omitted,
+ * clears all existing flags.
+ *
+ * See also the man page X509_VERIFY_PARAM_clear_flags(3).
+ */
+static VALUE
+ossl_x509store_clear_flags(int argc, VALUE *argv, VALUE self)
+{
+    X509_STORE *store;
+    VALUE flags;
+
+    rb_scan_args(argc, argv, "01", &flags);
+    GetX509Store(self, store);
+    x509vpm_clear_flags_i(X509_STORE_get0_param(store), flags);
+    return Qnil;
 }
 
 /*
@@ -770,23 +837,65 @@ ossl_x509stctx_get_curr_crl(VALUE self)
 
 /*
  * call-seq:
+ *    stctx.flags -> Integer
+ *
+ * Gets the verification flags for the context.
+ *
+ * See also the man page X509_VERIFY_PARAM_get_flags(3).
+ */
+static VALUE
+ossl_x509stctx_get_flags(VALUE self)
+{
+    X509_STORE_CTX *ctx;
+    X509_VERIFY_PARAM *vpm;
+
+    GetX509StCtx(self, ctx);
+    vpm = X509_STORE_CTX_get0_param(ctx);
+    return ULONG2NUM(X509_VERIFY_PARAM_get_flags(vpm));
+}
+
+/*
+ * call-seq:
  *   stctx.flags = flags
  *
  * Sets the verification flags to the context. This overrides the default value
  * set by Store#flags=.
+ *
+ * *NOTE*: Despite the name, this method appends the specified flags to the
+ * existing flag set rather than replacing it. To clear existing flags, use
+ * #clear_flags before calling this method.
  *
  * See also the man page X509_VERIFY_PARAM_set_flags(3).
  */
 static VALUE
 ossl_x509stctx_set_flags(VALUE self, VALUE flags)
 {
-    X509_STORE_CTX *store;
-    long f = NUM2LONG(flags);
+    X509_STORE_CTX *ctx;
 
-    GetX509StCtx(self, store);
-    X509_STORE_CTX_set_flags(store, f);
-
+    GetX509StCtx(self, ctx);
+    x509vpm_set_flags_i(X509_STORE_CTX_get0_param(ctx), flags);
     return flags;
+}
+
+/*
+ * call-seq:
+ *    stctx.clear_flags(flags = nil)
+ *
+ * Clears verification flags _flags_ for the Store. If _flags_ is omitted,
+ * clears all existing flags.
+ *
+ * See also the man page X509_VERIFY_PARAM_clear_flags(3).
+ */
+static VALUE
+ossl_x509stctx_clear_flags(int argc, VALUE *argv, VALUE self)
+{
+    X509_STORE_CTX *ctx;
+    VALUE flags;
+
+    rb_scan_args(argc, argv, "01", &flags);
+    GetX509StCtx(self, ctx);
+    x509vpm_clear_flags_i(X509_STORE_CTX_get0_param(ctx), flags);
+    return Qnil;
 }
 
 /*
@@ -944,7 +1053,9 @@ Init_ossl_x509store(void)
     rb_define_method(cX509Store, "initialize",   ossl_x509store_initialize, -1);
     rb_undef_method(cX509Store, "initialize_copy");
     rb_define_method(cX509Store, "verify_callback=", ossl_x509store_set_vfy_cb, 1);
+    rb_define_method(cX509Store, "flags",        ossl_x509store_get_flags, 0);
     rb_define_method(cX509Store, "flags=",       ossl_x509store_set_flags, 1);
+    rb_define_method(cX509Store, "clear_flags",  ossl_x509store_clear_flags, -1);
     rb_define_method(cX509Store, "purpose=",     ossl_x509store_set_purpose, 1);
     rb_define_method(cX509Store, "trust=",       ossl_x509store_set_trust, 1);
     rb_define_method(cX509Store, "time=",        ossl_x509store_set_time, 1);
@@ -973,7 +1084,9 @@ Init_ossl_x509store(void)
     rb_define_method(cX509StoreContext, "error_depth", ossl_x509stctx_get_err_depth, 0);
     rb_define_method(cX509StoreContext, "current_cert", ossl_x509stctx_get_curr_cert, 0);
     rb_define_method(cX509StoreContext, "current_crl", ossl_x509stctx_get_curr_crl, 0);
+    rb_define_method(cX509StoreContext, "flags", ossl_x509stctx_get_flags, 0);
     rb_define_method(cX509StoreContext, "flags=", ossl_x509stctx_set_flags, 1);
+    rb_define_method(cX509StoreContext, "clear_flags", ossl_x509stctx_clear_flags, -1);
     rb_define_method(cX509StoreContext, "purpose=", ossl_x509stctx_set_purpose, 1);
     rb_define_method(cX509StoreContext, "trust=", ossl_x509stctx_set_trust, 1);
     rb_define_method(cX509StoreContext, "time=", ossl_x509stctx_set_time, 1);

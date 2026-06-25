@@ -140,6 +140,10 @@ module Bundler
       rubygems_sources.each(&:clear_cache)
     end
 
+    def release_resolution_memory!
+      rubygems_sources.each(&:release_resolution_memory!)
+    end
+
     private
 
     def map_sources(replacement_sources)

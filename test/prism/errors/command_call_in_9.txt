@@ -1,0 +1,4 @@
+Foo::Bar { } in b
+             ^~ unexpected 'in', expecting end-of-input
+             ^~ unexpected 'in', ignoring it
+

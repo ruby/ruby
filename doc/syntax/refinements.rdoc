@@ -246,7 +246,10 @@ invokes that method since +foo+ does not exist on Integer.
 
 When +super+ is invoked, method lookup starts:
 
-* If the method is in a refinement, at the refined class or module
+* If the method is in a refinement:
+  * At the next active refinement in scope at the +super+ call site,
+    excluding the current refinement, if such a refinement exists
+  * Otherwise, at the refined class or module
 * Otherwise, at the next ancestor
 
 Method lookup then proceeds as described in the Method Lookup section

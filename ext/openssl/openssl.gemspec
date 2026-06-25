@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
   if Gem::Platform === spec.platform and spec.platform =~ 'java' or RUBY_ENGINE == 'jruby'
     spec.platform    = "java"
     spec.files       = []
-    spec.add_runtime_dependency('jruby-openssl', '~> 0.14')
+    spec.add_runtime_dependency('jruby-openssl')
   else
     spec.files         = Dir.glob(["lib/**/*.rb", "ext/**/*.{c,h,rb}", "*.md"], base: File.expand_path("..", __FILE__)) +
                          ["BSDL", "COPYING"]

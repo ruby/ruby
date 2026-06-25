@@ -234,6 +234,8 @@ pub const VM_ENV_DATA_INDEX_SPECVAL: i32 = -1;
 pub const VM_ENV_DATA_INDEX_FLAGS: u32 = 0;
 pub const VM_BLOCK_HANDLER_NONE: u32 = 0;
 pub const SHAPE_ID_NUM_BITS: u32 = 32;
+pub const ZJIT_STACK_MAP_VREG_TAG: u32 = 8;
+pub const ZJIT_STACK_MAP_SHIFT: u32 = 8;
 pub const ZJIT_JIT_RETURN_C_FRAME: u32 = 1;
 pub type rb_alloc_func_t = ::std::option::Option<unsafe extern "C" fn(klass: VALUE) -> VALUE>;
 pub const RUBY_Qfalse: ruby_special_consts = 0;
@@ -342,12 +344,6 @@ pub const RMODULE_IS_REFINEMENT: ruby_rmodule_flags = 8192;
 pub type ruby_rmodule_flags = u32;
 pub const ROBJECT_HEAP: ruby_robject_flags = 65536;
 pub type ruby_robject_flags = u32;
-pub const RUBY_TYPED_FREE_IMMEDIATELY: rbimpl_typeddata_flags = 1;
-pub const RUBY_TYPED_EMBEDDABLE: rbimpl_typeddata_flags = 2;
-pub const RUBY_TYPED_FROZEN_SHAREABLE: rbimpl_typeddata_flags = 256;
-pub const RUBY_TYPED_WB_PROTECTED: rbimpl_typeddata_flags = 32;
-pub const RUBY_TYPED_DECL_MARKING: rbimpl_typeddata_flags = 16384;
-pub type rbimpl_typeddata_flags = u32;
 pub type rb_event_flag_t = u32;
 pub type rb_block_call_func = ::std::option::Option<
     unsafe extern "C" fn(
@@ -359,6 +355,12 @@ pub type rb_block_call_func = ::std::option::Option<
     ) -> VALUE,
 >;
 pub type rb_block_call_func_t = rb_block_call_func;
+pub const RUBY_ENC_CODERANGE_UNKNOWN: ruby_coderange_type = 0;
+pub const RUBY_ENC_CODERANGE_7BIT: ruby_coderange_type = 1048576;
+pub const RUBY_ENC_CODERANGE_VALID: ruby_coderange_type = 2097152;
+pub const RUBY_ENC_CODERANGE_BROKEN: ruby_coderange_type = 3145728;
+pub const RUBY_ENC_CODERANGE_MASK: ruby_coderange_type = 3145728;
+pub type ruby_coderange_type = u32;
 pub const RUBY_ENCODING_INLINE_MAX: ruby_encoding_consts = 127;
 pub const RUBY_ENCODING_SHIFT: ruby_encoding_consts = 22;
 pub const RUBY_ENCODING_MASK: ruby_encoding_consts = 532676608;
@@ -1921,11 +1923,12 @@ pub const DEFINED_FUNC: defined_type = 16;
 pub const DEFINED_CONST_FROM: defined_type = 17;
 pub type defined_type = u32;
 #[repr(C)]
-#[derive(Debug, Copy, Clone)]
 pub struct zjit_jit_frame {
     pub pc: *const VALUE,
     pub iseq: *const rb_iseq_t,
     pub materialize_block_code: bool,
+    pub stack_size: u32,
+    pub stack: __IncompleteArrayField<VALUE>,
 }
 pub const ISEQ_BODY_OFFSET_PARAM: zjit_struct_offsets = 16;
 pub type zjit_struct_offsets = u32;
@@ -1940,7 +1943,7 @@ pub const RUBY_OFFSET_EC_INTERRUPT_FLAG: jit_bindgen_constants = 32;
 pub const RUBY_OFFSET_EC_INTERRUPT_MASK: jit_bindgen_constants = 36;
 pub const RUBY_OFFSET_EC_THREAD_PTR: jit_bindgen_constants = 48;
 pub const RUBY_OFFSET_EC_RACTOR_ID: jit_bindgen_constants = 64;
-pub type jit_bindgen_constants = u32;
+pub type jit_bindgen_constants = i32;
 pub const rb_invalid_shape_id: shape_id_t = 524287;
 pub type rb_iseq_param_keyword_struct =
     rb_iseq_constant_body_rb_iseq_parameters_rb_iseq_param_keyword;
@@ -2170,6 +2173,7 @@ unsafe extern "C" {
     pub fn rb_profile_frame_full_label(frame: VALUE) -> VALUE;
     pub fn rb_jit_cont_each_iseq(callback: rb_iseq_callback, data: *mut ::std::os::raw::c_void);
     pub fn rb_zjit_profile_disable(iseq: *const rb_iseq_t);
+    pub fn rb_zjit_insn_to_bare_insn(insn: ::std::os::raw::c_int) -> ::std::os::raw::c_int;
     pub fn rb_vm_base_ptr(cfp: *mut rb_control_frame_struct) -> *mut VALUE;
     pub fn rb_zjit_constcache_shareable(ice: *const iseq_inline_constant_cache_entry) -> bool;
     pub fn rb_zjit_iseq_insn_set(
@@ -2296,8 +2300,6 @@ unsafe extern "C" {
     pub fn rb_set_cfp_sp(cfp: *mut rb_control_frame_struct, sp: *mut VALUE);
     pub fn rb_jit_shape_complex_p(shape_id: shape_id_t) -> bool;
     pub fn rb_jit_multi_ractor_p() -> bool;
-    pub fn rb_jit_class_fields_embedded_p(klass: VALUE) -> bool;
-    pub fn rb_jit_data_fields_embedded_p(obj: VALUE) -> bool;
     pub fn rb_jit_vm_lock_then_barrier(
         recursive_lock_level: *mut ::std::os::raw::c_uint,
         file: *const ::std::os::raw::c_char,

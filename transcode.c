@@ -1744,7 +1744,7 @@ rb_econv_close(rb_econv_t *ec)
     int i;
 
     if (ec->replacement_allocated) {
-        SIZED_FREE_N((char *)ec->replacement_str, ec->replacement_len);
+        SIZED_FREE_N((char *)ec->replacement_str, ec->replacement_bufsize);
     }
     for (i = 0; i < ec->num_trans; i++) {
         rb_transcoding_close(ec->elems[i].tc);
@@ -3019,7 +3019,7 @@ econv_memsize(const void *ptr)
 static const rb_data_type_t econv_data_type = {
     "econv",
     {0, econv_free, econv_memsize,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE
 };
 
 static VALUE
