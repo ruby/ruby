@@ -962,7 +962,7 @@ opt_string_new
 
     if (recv == rb_cString &&
             FIXNUM_P(capa) &&
-            vm_method_cfunc_is(GET_CFP(), cd, recv, rb_str_s_new)) {
+            vm_method_cfunc_is(GET_CFP(), cd, recv, rb_class_new_instance_pass_kw)) {
         VALUE str = rb_str_new_capa_for_init(FIX2LONG(capa));
         TOPN(argc) = str;
         TOPN(argc + 1) = str;
