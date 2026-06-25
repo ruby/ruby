@@ -961,25 +961,32 @@ opt_string_new
     // The bookkeeping slot should be empty.
     RUBY_ASSERT(TOPN(argc + 1) == Qnil);
 
+    VALUE str = Qundef;
+
     if (recv == rb_cString &&
             vm_method_cfunc_is(GET_CFP(), cd, recv, rb_class_new_instance_pass_kw) &&
             vm_cstr_initialize_basic_p(recv)) {
+
         if (argc == 0) {
-            // bare String.new: empty ASCII-8BIT string, same as the alloc func.
-            VALUE str = rb_str_new(0, 0);
+            str = rb_str_new(0, 0);
+        }
+        else {
+            VALUE rbcapa = TOPN(capa_loc);
+            if (FIXNUM_P(rbcapa)) {
+                long capa = FIX2LONG(rbcapa);
+                if (capa < 0) {
+                  capa = 0;
+                }
+                str = rb_str_new_capa_for_init(capa);
+            }
+        }
+
+        if (str != Qundef) {
             TOPN(argc) = str;
             TOPN(argc + 1) = str;
         }
         else {
-            VALUE capa = TOPN(capa_loc);
-            if (FIXNUM_P(capa)) {
-                VALUE str = rb_str_new_capa_for_init(FIX2LONG(capa));
-                TOPN(argc) = str;
-                TOPN(argc + 1) = str;
-            }
-            else {
-                JUMP(dst);
-            }
+            JUMP(dst);
         }
     }
     else {
