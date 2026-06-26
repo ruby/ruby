@@ -1297,14 +1297,17 @@ set_xor_i(st_data_t key, st_data_t data)
 
 /*
  *  call-seq:
- *    set ^ enum -> new_set
+ *    self ^ enumerable -> new_set
  *
- *  Returns a new set containing elements exclusive between the set and the
- *  given enumerable object.  <tt>(set ^ enum)</tt> is equivalent to
- *  <tt>((set | enum) - (set & enum))</tt>.
+ *  Returns a new \Set object containing elements
+ *  that are _not_ in both +self+ and the given +enumerable+:
  *
- *    Set[1, 2] ^ Set[2, 3]                   #=> Set[3, 1]
- *    Set[1, 'b', 'c'] ^ ['b', 'd']           #=> Set["d", 1, "c"]
+ *    set = Set[0, 1, 2]
+ *    set ^ Set[1, 2, 3] # => Set[0, 3]
+ *    set ^ Set[2, 1]    # => Set[0]
+ *    set ^ Set[2, 1, 0] # => Set[]
+ *
+ *  Related: see {Methods for Set Operations}[rdoc-ref:Set@Methods+for+Set+Operations].
  */
 static VALUE
 set_i_xor(VALUE set, VALUE other)
