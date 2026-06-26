@@ -9663,7 +9663,7 @@ gc_profile_disable(VALUE _)
     return Qnil;
 }
 
-void
+static void
 rb_gc_verify_internal_consistency(void)
 {
     gc_verify_internal_consistency(rb_gc_get_objspace());
