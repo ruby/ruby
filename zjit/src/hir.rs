@@ -3760,7 +3760,7 @@ impl Function {
                         self.try_rewrite_freeze(block, insn_id, recv, state),
                     Insn::Send { recv, block: None, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(minusat) && args.is_empty() =>
                         self.try_rewrite_uminus(block, insn_id, recv, state),
-                    Insn::Send { mut recv, cd, state, block: send_block, args, .. } => {
+                    ref send@Insn::Send { mut recv, cd, state, block: send_block, ref args, .. } => {
                         let has_block = send_block.is_some();
                         let (klass, profiled_type) = match self.resolve_receiver_type(recv, self.type_of(recv), state) {
                             ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
@@ -3823,8 +3823,8 @@ impl Function {
                         }
 
                         // If the call site info indicates that the `Function` has overly complex arguments, then do not optimize into a `SendDirect`.
-                        // Optimized methods(`VM_METHOD_TYPE_OPTIMIZED`) handle their own argument constraints (e.g., kw_splat for Proc call).
-                        if def_type != VM_METHOD_TYPE_OPTIMIZED && unspecializable_call_type(flags) {
+                        // Optimized methods(`VM_METHOD_TYPE_OPTIMIZED`) and C methods handle their own argument constraints (e.g., kw_splat for Proc call).
+                        if def_type != VM_METHOD_TYPE_OPTIMIZED && def_type != VM_METHOD_TYPE_CFUNC && unspecializable_call_type(flags) {
                             self.count_complex_call_features(block, flags);
                             self.set_dynamic_send_reason(insn_id, ComplexArgPass);
                             self.push_insn_id(block, insn_id); continue;
@@ -4050,6 +4050,221 @@ impl Function {
                                     self.push_insn_id(block, insn_id); continue;
                                 },
                             };
+                        } else if def_type == VM_METHOD_TYPE_CFUNC && !unsafe { rb_zjit_method_tracing_currently_enabled() } {
+                            // Try to reduce a Send insn to a CCallWithFrame
+                            fn reduce_send_to_ccall(
+                                fun: &mut Function,
+                                block: BlockId,
+                                send: Insn,
+                                send_insn_id: InsnId,
+                                recv_class: VALUE,
+                                profiled_type: Option<ProfiledType>,
+                                cme: *const rb_callable_method_entry_struct,
+                            ) -> Result<(), ()> {
+                                let Insn::Send { mut recv, cd, block: send_block, args, state, .. } = send else {
+                                    return Err(());
+                                };
+
+                                let call_info = unsafe { (*cd).ci };
+                                let argc = unsafe { vm_ci_argc(call_info) };
+                                let method_id = unsafe { rb_vm_ci_mid(call_info) };
+
+                                let ci_flags = unsafe { vm_ci_flag(call_info) };
+                                // When seeing &block argument, fall back to dynamic dispatch for now
+                                // TODO: Support block forwarding
+                                if unspecializable_c_call_type(ci_flags) {
+                                    // Only count features NOT already counted in type_specialize.
+                                    if !unspecializable_call_type(ci_flags) {
+                                        fun.count_complex_call_features(block, ci_flags);
+                                    }
+                                    fun.set_dynamic_send_reason(send_insn_id, ComplexArgPass);
+                                    return Err(());
+                                }
+
+                                let blockiseq = match send_block {
+                                    Some(BlockHandler::BlockArg) => unreachable!("unsupported &block should have been filtered out"),
+                                    Some(BlockHandler::BlockIseq(blockiseq)) => Some(blockiseq),
+                                    None => None,
+                                };
+
+                                let cfunc = unsafe { get_cme_def_body_cfunc(cme) };
+                                // Find the `argc` (arity) of the C method, which describes the parameters it expects
+                                let cfunc_argc = unsafe { get_mct_argc(cfunc) };
+                                let cfunc_ptr = unsafe { get_mct_func(cfunc) }.cast();
+                                let name = unsafe { (*cme).called_id };
+
+                                // Look up annotations
+                                let props = ZJITState::get_method_annotations().get_cfunc_properties(cme);
+                                if props.is_none() && get_option!(stats) {
+                                    fun.count_not_annotated_cfunc(block, cme);
+                                }
+                                let props = props.unwrap_or_default();
+                                let return_type = props.return_type;
+                                let elidable = match blockiseq {
+                                    Some(_) => false, // Don't consider cfuncs with block arguments as elidable for now
+                                    None => props.elidable,
+                                };
+
+                                match cfunc_argc {
+                                    0.. => {
+                                        // (self, arg0, arg1, ..., argc) form
+                                        //
+                                        // Bail on argc mismatch
+                                        if argc != cfunc_argc as u32 {
+                                            fun.set_dynamic_send_reason(send_insn_id, ArgcParamMismatch);
+                                            return Err(());
+                                        }
+
+                                        // TODO: Support passing arguments on the stack in C calls
+                                        // +1 for self
+                                        if (argc as usize)+1 > C_ARG_OPNDS.len() {
+                                            fun.set_dynamic_send_reason(send_insn_id, TooManyArgsForLir);
+                                            return Err(());
+                                        }
+
+                                        // Check singleton class assumption first, before emitting other patchpoints
+                                        if !fun.assume_no_singleton_classes(block, recv_class, state) {
+                                            fun.set_dynamic_send_reason(send_insn_id, SingletonClassSeen);
+                                            return Err(());
+                                        }
+
+                                        // Commit to the replacement. Put PatchPoint.
+                                        fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, cme, state);
+
+                                        if let Some(profiled_type) = profiled_type {
+                                            // Guard receiver class
+                                            recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
+                                            fun.insn_types[recv.0] = fun.infer_type(recv);
+                                        }
+
+                                        // Try inlining the cfunc into HIR. Only inline if we don't have a block argument
+                                        if blockiseq.is_none() {
+                                            let tmp_block = fun.new_block(u32::MAX);
+                                            if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args, state) {
+                                                // Copy contents of tmp_block to block
+                                                assert_ne!(block, tmp_block);
+                                                let insns = std::mem::take(&mut fun.blocks[tmp_block.0].insns);
+                                                fun.blocks[block.0].insns.extend(insns);
+                                                fun.count(block, Counter::inline_cfunc_optimized_send_count);
+                                                fun.make_equal_to(send_insn_id, replacement);
+                                                if fun.type_of(replacement).bit_equal(types::Any) {
+                                                    // Not set yet; infer type
+                                                    fun.insn_types[replacement.0] = fun.infer_type(replacement);
+                                                }
+                                                fun.remove_block(tmp_block);
+                                                return Ok(());
+                                            }
+
+                                            // Only allow leaf calls if we don't have a block argument
+                                            if props.leaf && props.no_gc {
+                                                fun.count(block, Counter::inline_cfunc_optimized_send_count);
+                                                let owner = unsafe { (*cme).owner };
+                                                let ccall = fun.push_insn(block, Insn::CCall { cfunc: cfunc_ptr, recv, args, name, owner, return_type, elidable });
+                                                fun.make_equal_to(send_insn_id, ccall);
+                                                return Ok(());
+                                            }
+                                        }
+
+                                        // Emit a call
+                                        if get_option!(stats) {
+                                            fun.count_not_inlined_cfunc(block, cme);
+                                        }
+                                        let ccall = fun.push_insn(block, Insn::CCallWithFrame(Box::new(CCallWithFrameData {
+                                            cd,
+                                            cfunc: cfunc_ptr,
+                                            recv,
+                                            args,
+                                            cme,
+                                            name,
+                                            state,
+                                            return_type,
+                                            elidable,
+                                            block: blockiseq.map(BlockHandler::BlockIseq),
+                                        })));
+                                        fun.make_equal_to(send_insn_id, ccall);
+                                        Ok(())
+                                    }
+                                    // Variadic method
+                                    -1 => {
+                                        // The method gets a pointer to the first argument
+                                        // func(int argc, VALUE *argv, VALUE recv)
+
+                                        // Check singleton class assumption first, before emitting other patchpoints
+                                        if !fun.assume_no_singleton_classes(block, recv_class, state) {
+                                            fun.set_dynamic_send_reason(send_insn_id, SingletonClassSeen);
+                                            return Err(());
+                                        }
+
+                                        fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, cme, state);
+
+                                        if let Some(profiled_type) = profiled_type {
+                                            // Guard receiver class
+                                            recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
+                                            fun.insn_types[recv.0] = fun.infer_type(recv);
+                                        }
+
+                                        // Try inlining the cfunc into HIR. Only inline if we don't have a block argument
+                                        if blockiseq.is_none() {
+                                            let tmp_block = fun.new_block(u32::MAX);
+                                            if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args, state) {
+                                                // Copy contents of tmp_block to block
+                                                assert_ne!(block, tmp_block);
+                                                let insns = std::mem::take(&mut fun.blocks[tmp_block.0].insns);
+                                                fun.blocks[block.0].insns.extend(insns);
+                                                fun.count(block, Counter::inline_cfunc_optimized_send_count);
+                                                fun.make_equal_to(send_insn_id, replacement);
+                                                if fun.type_of(replacement).bit_equal(types::Any) {
+                                                    // Not set yet; infer type
+                                                    fun.insn_types[replacement.0] = fun.infer_type(replacement);
+                                                }
+                                                fun.remove_block(tmp_block);
+                                                return Ok(());
+                                            }
+
+                                            // Only allow leaf calls if we don't have a block argument
+                                            if props.leaf && props.no_gc {
+                                                fun.count(block, Counter::inline_cfunc_optimized_send_count);
+                                                let owner = unsafe { (*cme).owner };
+                                                let ccall = fun.push_insn(block, Insn::CCall { cfunc: cfunc_ptr, recv, args, name, owner, return_type, elidable });
+                                                fun.make_equal_to(send_insn_id, ccall);
+                                                return Ok(());
+                                            }
+                                        }
+
+                                        // No inlining; emit a call
+                                        if get_option!(stats) {
+                                            fun.count_not_inlined_cfunc(block, cme);
+                                        }
+
+                                        let ccall = fun.push_insn(block, Insn::CCallVariadic(Box::new(CCallVariadicData {
+                                            cfunc: cfunc_ptr,
+                                            recv,
+                                            args,
+                                            cme,
+                                            name: method_id,
+                                            state,
+                                            return_type,
+                                            elidable,
+                                            block: blockiseq.map(BlockHandler::BlockIseq),
+                                        })));
+
+                                        fun.make_equal_to(send_insn_id, ccall);
+                                        Ok(())
+                                    }
+                                    -2 => {
+                                        // (self, args_ruby_array)
+                                        fun.set_dynamic_send_reason(send_insn_id, SendCfuncArrayVariadic);
+                                        Err(())
+                                    }
+                                    _ => unreachable!("unknown cfunc kind: argc={argc}")
+                                }
+                            }
+
+                            if reduce_send_to_ccall(self, block, send.clone(), insn_id, klass, profiled_type, cme).is_ok() {
+                                continue;
+                            }
+
+                            self.push_insn_id(block, insn_id);
                         } else {
                             let reason = if has_block { SendNotOptimizedMethodType(MethodType::from(def_type)) } else { SendWithoutBlockNotOptimizedMethodType(MethodType::from(def_type)) };
                             self.set_dynamic_send_reason(insn_id, reason);
@@ -5019,265 +5234,12 @@ impl Function {
     /// Optimize Send that land in a C method to a direct CCall without
     /// runtime lookup.
     fn optimize_c_calls(&mut self) {
-        if unsafe { rb_zjit_method_tracing_currently_enabled() } {
-            return;
-        }
-
-        // Try to reduce a Send insn to a CCallWithFrame
-        fn reduce_send_to_ccall(
-            fun: &mut Function,
-            block: BlockId,
-            self_type: Type,
-            send: Insn,
-            send_insn_id: InsnId,
-        ) -> Result<(), ()> {
-            let Insn::Send { mut recv, cd, block: send_block, args, state, .. } = send else {
-                return Err(());
-            };
-
-            let call_info = unsafe { (*cd).ci };
-            let argc = unsafe { vm_ci_argc(call_info) };
-            let method_id = unsafe { rb_vm_ci_mid(call_info) };
-
-            // If we have info about the class of the receiver
-            let (recv_class, profiled_type) = match fun.resolve_receiver_type(recv, self_type, state) {
-                ReceiverTypeResolution::StaticallyKnown { class } => (class, None),
-                ReceiverTypeResolution::Monomorphic { profiled_type }
-                | ReceiverTypeResolution::SkewedPolymorphic { profiled_type} => (profiled_type.class(), Some(profiled_type)),
-                ReceiverTypeResolution::SkewedMegamorphic { .. } | ReceiverTypeResolution::Polymorphic | ReceiverTypeResolution::Megamorphic | ReceiverTypeResolution::NoProfile => return Err(()),
-            };
-
-            // Do method lookup
-            let mut cme: *const rb_callable_method_entry_struct = unsafe { rb_callable_method_entry(recv_class, method_id) };
-            if cme.is_null() {
-                fun.set_dynamic_send_reason(send_insn_id, SendNotOptimizedMethodType(MethodType::Null));
-                return Err(());
-            }
-
-            // Filter for C methods
-            let mut def_type = unsafe { get_cme_def_type(cme) };
-            while def_type == VM_METHOD_TYPE_ALIAS {
-                cme = unsafe { rb_aliased_callable_method_entry(cme) };
-                def_type = unsafe { get_cme_def_type(cme) };
-            }
-            if def_type != VM_METHOD_TYPE_CFUNC {
-                return Err(());
-            }
-
-
-            let ci_flags = unsafe { vm_ci_flag(call_info) };
-            let visibility = unsafe { METHOD_ENTRY_VISI(cme) };
-            match (visibility, ci_flags & VM_CALL_FCALL != 0) {
-                (METHOD_VISI_PUBLIC, _) => {}
-                (METHOD_VISI_PRIVATE, true) => {}
-                (METHOD_VISI_PROTECTED, true) => {}
-                _ => {
-                    fun.set_dynamic_send_reason(send_insn_id, SendNotOptimizedNeedPermission);
-                    return Err(());
-                }
-            }
-
-            // When seeing &block argument, fall back to dynamic dispatch for now
-            // TODO: Support block forwarding
-            if unspecializable_c_call_type(ci_flags) {
-                // Only count features NOT already counted in type_specialize.
-                if !unspecializable_call_type(ci_flags) {
-                    fun.count_complex_call_features(block, ci_flags);
-                }
-                fun.set_dynamic_send_reason(send_insn_id, ComplexArgPass);
-                return Err(());
-            }
-
-            let blockiseq = match send_block {
-                Some(BlockHandler::BlockArg) => unreachable!("unsupported &block should have been filtered out"),
-                Some(BlockHandler::BlockIseq(blockiseq)) => Some(blockiseq),
-                None => None,
-            };
-
-            let cfunc = unsafe { get_cme_def_body_cfunc(cme) };
-            // Find the `argc` (arity) of the C method, which describes the parameters it expects
-            let cfunc_argc = unsafe { get_mct_argc(cfunc) };
-            let cfunc_ptr = unsafe { get_mct_func(cfunc) }.cast();
-            let name = unsafe { (*cme).called_id };
-
-            // Look up annotations
-            let props = ZJITState::get_method_annotations().get_cfunc_properties(cme);
-            if props.is_none() && get_option!(stats) {
-                fun.count_not_annotated_cfunc(block, cme);
-            }
-            let props = props.unwrap_or_default();
-            let return_type = props.return_type;
-            let elidable = match blockiseq {
-                Some(_) => false, // Don't consider cfuncs with block arguments as elidable for now
-                None => props.elidable,
-            };
-
-            match cfunc_argc {
-                0.. => {
-                    // (self, arg0, arg1, ..., argc) form
-                    //
-                    // Bail on argc mismatch
-                    if argc != cfunc_argc as u32 {
-                        return Err(());
-                    }
-
-                    // TODO: Support passing arguments on the stack in C calls
-                    // +1 for self
-                    if (argc as usize)+1 > C_ARG_OPNDS.len() {
-                        fun.set_dynamic_send_reason(send_insn_id, TooManyArgsForLir);
-                        return Err(());
-                    }
-
-                    // Check singleton class assumption first, before emitting other patchpoints
-                    if !fun.assume_no_singleton_classes(block, recv_class, state) {
-                        fun.set_dynamic_send_reason(send_insn_id, SingletonClassSeen);
-                        return Err(());
-                    }
-
-                    // Commit to the replacement. Put PatchPoint.
-                    fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, cme, state);
-
-                    if let Some(profiled_type) = profiled_type {
-                        // Guard receiver class
-                        recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
-                        fun.insn_types[recv.0] = fun.infer_type(recv);
-                    }
-
-                    // Try inlining the cfunc into HIR. Only inline if we don't have a block argument
-                    if blockiseq.is_none() {
-                        let tmp_block = fun.new_block(u32::MAX);
-                        if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args, state) {
-                            // Copy contents of tmp_block to block
-                            assert_ne!(block, tmp_block);
-                            let insns = std::mem::take(&mut fun.blocks[tmp_block.0].insns);
-                            fun.blocks[block.0].insns.extend(insns);
-                            fun.count(block, Counter::inline_cfunc_optimized_send_count);
-                            fun.make_equal_to(send_insn_id, replacement);
-                            if fun.type_of(replacement).bit_equal(types::Any) {
-                                // Not set yet; infer type
-                                fun.insn_types[replacement.0] = fun.infer_type(replacement);
-                            }
-                            fun.remove_block(tmp_block);
-                            return Ok(());
-                        }
-
-                        // Only allow leaf calls if we don't have a block argument
-                        if props.leaf && props.no_gc {
-                            fun.count(block, Counter::inline_cfunc_optimized_send_count);
-                            let owner = unsafe { (*cme).owner };
-                            let ccall = fun.push_insn(block, Insn::CCall { cfunc: cfunc_ptr, recv, args, name, owner, return_type, elidable });
-                            fun.make_equal_to(send_insn_id, ccall);
-                            return Ok(());
-                        }
-                    }
-
-                    // Emit a call
-                    if get_option!(stats) {
-                        fun.count_not_inlined_cfunc(block, cme);
-                    }
-                    let ccall = fun.push_insn(block, Insn::CCallWithFrame(Box::new(CCallWithFrameData {
-                        cd,
-                        cfunc: cfunc_ptr,
-                        recv,
-                        args,
-                        cme,
-                        name,
-                        state,
-                        return_type,
-                        elidable,
-                        block: blockiseq.map(BlockHandler::BlockIseq),
-                    })));
-                    fun.make_equal_to(send_insn_id, ccall);
-                    Ok(())
-                }
-                // Variadic method
-                -1 => {
-                    // The method gets a pointer to the first argument
-                    // func(int argc, VALUE *argv, VALUE recv)
-
-                    // Check singleton class assumption first, before emitting other patchpoints
-                    if !fun.assume_no_singleton_classes(block, recv_class, state) {
-                        fun.set_dynamic_send_reason(send_insn_id, SingletonClassSeen);
-                        return Err(());
-                    }
-
-                    fun.gen_patch_points_for_optimized_ccall(block, recv_class, method_id, cme, state);
-
-                    if let Some(profiled_type) = profiled_type {
-                        // Guard receiver class
-                        recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
-                        fun.insn_types[recv.0] = fun.infer_type(recv);
-                    }
-
-                    // Try inlining the cfunc into HIR. Only inline if we don't have a block argument
-                    if blockiseq.is_none() {
-                        let tmp_block = fun.new_block(u32::MAX);
-                        if let Some(replacement) = (props.inline)(fun, tmp_block, recv, &args, state) {
-                            // Copy contents of tmp_block to block
-                            assert_ne!(block, tmp_block);
-                            let insns = std::mem::take(&mut fun.blocks[tmp_block.0].insns);
-                            fun.blocks[block.0].insns.extend(insns);
-                            fun.count(block, Counter::inline_cfunc_optimized_send_count);
-                            fun.make_equal_to(send_insn_id, replacement);
-                            if fun.type_of(replacement).bit_equal(types::Any) {
-                                // Not set yet; infer type
-                                fun.insn_types[replacement.0] = fun.infer_type(replacement);
-                            }
-                            fun.remove_block(tmp_block);
-                            return Ok(());
-                        }
-
-                        // Only allow leaf calls if we don't have a block argument
-                        if props.leaf && props.no_gc {
-                            fun.count(block, Counter::inline_cfunc_optimized_send_count);
-                            let owner = unsafe { (*cme).owner };
-                            let ccall = fun.push_insn(block, Insn::CCall { cfunc: cfunc_ptr, recv, args, name, owner, return_type, elidable });
-                            fun.make_equal_to(send_insn_id, ccall);
-                            return Ok(());
-                        }
-                    }
-
-                    // No inlining; emit a call
-                    if get_option!(stats) {
-                        fun.count_not_inlined_cfunc(block, cme);
-                    }
-
-                    let ccall = fun.push_insn(block, Insn::CCallVariadic(Box::new(CCallVariadicData {
-                        cfunc: cfunc_ptr,
-                        recv,
-                        args,
-                        cme,
-                        name: method_id,
-                        state,
-                        return_type,
-                        elidable,
-                        block: blockiseq.map(BlockHandler::BlockIseq),
-                    })));
-
-                    fun.make_equal_to(send_insn_id, ccall);
-                    Ok(())
-                }
-                -2 => {
-                    // (self, args_ruby_array)
-                    fun.set_dynamic_send_reason(send_insn_id, SendCfuncArrayVariadic);
-                    Err(())
-                }
-                _ => unreachable!("unknown cfunc kind: argc={argc}")
-            }
-        }
-
         for block in self.reverse_post_order() {
             let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
                 let send = self.find(insn_id);
                 match send {
-                    send @ Insn::Send { recv, .. } => {
-                        let recv_type = self.type_of(recv);
-                        if reduce_send_to_ccall(self, block, recv_type, send, insn_id).is_ok() {
-                            continue;
-                        }
-                    }
                     Insn::InvokeBuiltin { bf, recv, args, state, .. } => {
                         let props = ZJITState::get_method_annotations().get_builtin_properties(bf).unwrap_or_default();
                         // Try inlining the cfunc into HIR
