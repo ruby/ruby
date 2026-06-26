@@ -741,18 +741,12 @@ set_i_add(VALUE set, VALUE item)
  *  call-seq:
  *    add?(object) -> self or nil
  *
- *  When +object+ is not an elements of +self+, adds it to +self+;
- *  returns +self+:
+ *  Like #add, but returns +nil+ if +object+ is already in +self+:
  *
  *    set = Set[0, 1, 2]
  *    set.add?(:foo)   # => Set[0, 1, 2, :foo]
  *    set.add?((0..9)) # => Set[0, 1, 2, :foo, 0..9]
- *
- *  When +object+ is an element of +self+, makes no change;
- *  returns +nil+:
- *
  *    set.add?(2) # => nil
- *    set         # => Set[0, 1, 2, :foo, 0..9]
  *
  *  Related: see {Methods for Assigning}[rdoc-ref:Set@Methods+for+Assigning].
  */
