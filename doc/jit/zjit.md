@@ -178,7 +178,7 @@ echo 0 | sudo tee /proc/sys/kernel/kptr_restrict
 echo -1 | sudo tee /proc/sys/kernel/perf_event_paranoid
 
 # Profile Ruby with --zjit-perf
-cd ../yjit-bench
+cd ../ruby-bench
 PERF="record --call-graph fp" ruby --zjit-perf -Iharness-perf benchmarks/liquid-render/benchmark.rb
 
 # View results on Firefox Profiler https://profiler.firefox.com.
@@ -199,7 +199,7 @@ echo 0 | sudo tee /proc/sys/kernel/kptr_restrict
 echo -1 | sudo tee /proc/sys/kernel/perf_event_paranoid
 
 # Profile Ruby with --zjit-perf=hir
-cd ../yjit-bench
+cd ../ruby-bench
 PERF=record ruby --zjit-perf=hir -Iharness-perf benchmarks/lobsters/benchmark.rb
 
 # Aggregate results
