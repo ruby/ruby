@@ -1299,13 +1299,17 @@ set_xor_i(st_data_t key, st_data_t data)
  *  call-seq:
  *    self ^ enumerable -> new_set
  *
- *  Returns a new \Set object containing elements
- *  that are _not_ in both +self+ and the given +enumerable+:
+ *  Returns a new \Set object containing
+ *  the {exclusive OR}[https://en.wikipedia.org/wiki/Exclusive_or]
+ *  of +self+ and the given +enumerable+;
+ *  that is, containing each element that is in either +self+ or +enumerable+,
+ *  but not in both:
  *
  *    set = Set[0, 1, 2]
- *    set ^ Set[1, 2, 3] # => Set[0, 3]
- *    set ^ Set[2, 1]    # => Set[0]
- *    set ^ Set[2, 1, 0] # => Set[]
+ *    set ^ Set[1, 2, 3]        # => Set[0, 3]
+ *    set ^ Set[2, 1]           # => Set[0]
+ *    set ^ Set[2, *('a'..'c')] # => Set[0, 1, "a", "b", "c"]
+ *    set ^ Set[2, 1, 0]        # => Set[]
  *
  *  Related: see {Methods for Set Operations}[rdoc-ref:Set@Methods+for+Set+Operations].
  */
