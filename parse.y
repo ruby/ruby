@@ -1458,7 +1458,7 @@ static NODE *attrset(struct parser_params*,NODE*,ID,ID,const YYLTYPE*);
 static VALUE rb_backref_error(struct parser_params*,NODE*);
 static NODE *node_assign(struct parser_params*,NODE*,NODE*,struct lex_context,const YYLTYPE*);
 
-static NODE *new_for_comprehension(struct parser_params *p, NODE *first_var, NODE *first_expr, NODE *gens, NODE *result, const YYLTYPE *loc);
+static NODE *new_for_comprehension(struct parser_params *p, NODE *first_var, NODE *first_expr, NODE *first_guard, NODE *gens, NODE *result, const YYLTYPE *loc);
 
 static NODE *new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, struct lex_context, const YYLTYPE *loc);
 static NODE *new_ary_op_assign(struct parser_params *p, NODE *ary, NODE *args, ID op, NODE *rhs, const YYLTYPE *args_loc, const YYLTYPE *loc, const YYLTYPE *call_operator_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc, const YYLTYPE *binary_operator_loc);
@@ -2786,7 +2786,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node_args_aux> f_arg f_arg_item
 %type <node> f_marg f_rest_marg
 %type <node_masgn> f_margs
-%type <node> assoc_list assocs assoc undef_list backref string_dvar for_var for_gens
+%type <node> assoc_list assocs assoc undef_list backref string_dvar for_var for_gens for_guard
 %type <node_args> block_param opt_block_param_def block_param_def opt_block_param
 %type <id> do bv_decls opt_bv_decl bvar
 %type <node> lambda brace_body do_body
@@ -4600,18 +4600,19 @@ primary		: inline_primary
                 /*% ripper: for!($:for_var, $:expr_value, $:compstmt) %*/
                 }
             | k_for[k_for] for_var[for_var] keyword_in[keyword_in]
-              for_cond_push arg_value[expr_value] {COND_POP();}
+              for_cond_push arg_value[expr_value] {COND_POP();} for_guard[for_guard]
               for_gens[for_gens] keyword_then
               compstmt(stmts)[compstmt]
               k_end[k_end]
                 {
                     /*
                      *  Scala-style comprehension. Each generator but the last
-                     *  becomes flat_map, the last becomes map:
+                     *  becomes flat_map, the last becomes map; a `when` guard
+                     *  becomes a filter:
                      *
-                     *  for x in xs, y in ys then f(x, y) end
+                     *  for x in xs when x.even?, y in ys then f(x, y) end
                      *  #=>
-                     *  xs.flat_map {|x| ys.map {|y| f(x, y) } }
+                     *  xs.filter {|x| x.even? }.flat_map {|x| ys.map {|y| f(x, y) } }
                      *
                      *  The generator source is arg_value (not the legacy
                      *  expr_value) so the generator-separating comma cannot be
@@ -4619,9 +4620,9 @@ primary		: inline_primary
                      *  list; a command-call source must be parenthesized.
                      */
                     restore_block_exit(p, $k_for);
-                    $$ = new_for_comprehension(p, $for_var, $expr_value, $for_gens, $compstmt, &@$);
+                    $$ = new_for_comprehension(p, $for_var, $expr_value, $for_guard, $for_gens, $compstmt, &@$);
                     fixpos($$, $for_var);
-                /*% ripper: [$:for_var, $:expr_value, $:for_gens, $:compstmt] %*/
+                /*% ripper: [$:for_var, $:expr_value, $:for_guard, $:for_gens, $:compstmt] %*/
                 }
             | k_class cpath superclass
                 {
@@ -4953,17 +4954,36 @@ for_var		: lhs
 for_cond_push	: {COND_PUSH(1);}
                 ;
 
-/* Zero or more extra ", var in expr" generators of a comprehension, collected
- * as a flat list [var2, expr2, var3, expr3, ...]. */
+/* Optional `when` guard on a comprehension generator (desugars to a filter).
+ * `when` is used rather than `if`: an `if` here is hopelessly ambiguous with
+ * statement modifier-if (`if` would enter FOLLOW(arg_value), conflicting
+ * wherever arg_value is used, e.g. `break x if c`), whereas `when` cannot
+ * currently follow an expression and so is conflict-free. */
+for_guard	: /* none */
+                    {
+                        $$ = 0;
+                    /*% ripper: Qnil %*/
+                    }
+                | keyword_when arg_value[guard]
+                    {
+                        $$ = $guard;
+                    /*% ripper: $:guard %*/
+                    }
+                ;
+
+/* Zero or more extra ", var in expr [when guard]" generators of a comprehension,
+ * collected as a list of [var, expr] / [var, expr, guard] sublists. */
 for_gens	: /* none */
                     {
                         $$ = 0;
                     /*% ripper: rb_ary_new %*/
                     }
-                | for_gens[gens] ',' for_var[var] keyword_in arg_value[expr]
+                | for_gens[gens] ',' for_var[var] keyword_in arg_value[expr] for_guard[guard]
                     {
-                        $$ = list_append(p, list_append(p, $gens, $var), $expr);
-                    /*% ripper: rb_ary_push($:gens, rb_ary_new_from_args(2, $:var, $:expr)) %*/
+                        NODE *g = list_append(p, NEW_LIST($var, &@var), $expr);
+                        if ($guard) g = list_append(p, g, $guard);
+                        $$ = list_append(p, $gens, g);
+                    /*% ripper: rb_ary_push($:gens, rb_ary_new_from_args(3, $:var, $:expr, $:guard)) %*/
                     }
                 ;
 
@@ -11397,29 +11417,93 @@ new_for_comp_gen(struct parser_params *p, NODE *var, NODE *recv, NODE *body, ID 
     return method_add_block(p, call, (NODE *)iter, loc);
 }
 
-/* Fold one generator (var in recv) plus the remaining generators (gens, a flat
- * list [var2, expr2, ...]) and the result body into nested flat_map/map calls.
- * The last generator becomes map; every earlier one becomes flat_map. */
+/* Build a fresh copy of a `for` loop variable (an assignment node), so the same
+ * variable can be bound in two synthesized blocks (a guard's filter block and
+ * the flat_map/map block).  A single node cannot be shared because node_assign /
+ * set_nd_value mutates the assignment's value per use. */
 static NODE *
-for_comp_fold(struct parser_params *p, NODE *var, NODE *recv, NODE *gens, NODE *result, const YYLTYPE *loc)
+dup_for_var(struct parser_params *p, NODE *var, const YYLTYPE *loc)
 {
-    if (gens == 0) {
-        return new_for_comp_gen(p, var, recv, result, rb_intern("map"), loc);
+    switch (nd_type(var)) {
+      case NODE_LASGN:  return assignable(p, RNODE_LASGN(var)->nd_vid, 0, loc);
+      case NODE_DASGN:  return assignable(p, RNODE_DASGN(var)->nd_vid, 0, loc);
+      case NODE_IASGN:  return assignable(p, RNODE_IASGN(var)->nd_vid, 0, loc);
+      case NODE_GASGN:  return assignable(p, RNODE_GASGN(var)->nd_vid, 0, loc);
+      case NODE_CVASGN: return assignable(p, RNODE_CVASGN(var)->nd_vid, 0, loc);
+      case NODE_CDECL:  return assignable(p, RNODE_CDECL(var)->nd_vid, 0, loc);
+      case NODE_MASGN: {
+        rb_node_masgn_t *m = RNODE_MASGN(var);
+        NODE *head = 0, *n, *args = m->nd_args;
+        for (n = m->nd_head; n; n = RNODE_LIST(n)->nd_next) {
+            head = list_append(p, head, dup_for_var(p, RNODE_LIST(n)->nd_head, loc));
+        }
+        if (args && args != NODE_SPECIAL_NO_NAME_REST && nd_type_p(args, NODE_POSTARG)) {
+            NODE *rest = RNODE_POSTARG(args)->nd_1st;
+            NODE *post = 0, *q;
+            if (rest && rest != NODE_SPECIAL_NO_NAME_REST) rest = dup_for_var(p, rest, loc);
+            for (q = RNODE_POSTARG(args)->nd_2nd; q; q = RNODE_LIST(q)->nd_next) {
+                post = list_append(p, post, dup_for_var(p, RNODE_LIST(q)->nd_head, loc));
+            }
+            args = NEW_POSTARG(rest, post, loc);
+        }
+        else if (args && args != NODE_SPECIAL_NO_NAME_REST) {
+            args = dup_for_var(p, args, loc);
+        }
+        return (NODE *)NEW_MASGN(head, args, loc);
+      }
+      default:
+        /* exotic for-var target (e.g. obj.attr=, ary[i]=) combined with a
+         * guard is vanishingly rare; reuse the node. */
+        return var;
+    }
+}
+
+/* Build one comprehension generator with an optional guard:
+ *
+ *   recv[.filter {|var| guard}].<flat_map|map> {|var| body }
+ *
+ * A guard filters recv before the flat_map/map.  The last generator uses map,
+ * every earlier one uses flat_map. */
+static NODE *
+build_for_gen(struct parser_params *p, NODE *var, NODE *recv, NODE *guard, NODE *body, int is_last, const YYLTYPE *loc)
+{
+    if (guard) {
+        recv = new_for_comp_gen(p, dup_for_var(p, var, loc), recv, guard, rb_intern("filter"), loc);
+    }
+    return new_for_comp_gen(p, var, recv, body, is_last ? rb_intern("map") : rb_intern("flat_map"), loc);
+}
+
+/* Fold a list of generators (gens: a list of [var, expr] or [var, expr, guard]
+ * sublists) plus the result body into nested flat_map/map (and filter) calls. */
+static NODE *
+for_comp_fold(struct parser_params *p, NODE *gens, NODE *result, const YYLTYPE *loc)
+{
+    NODE *sub = RNODE_LIST(gens)->nd_head;
+    NODE *rest = RNODE_LIST(gens)->nd_next;
+    NODE *var = RNODE_LIST(sub)->nd_head;
+    NODE *enode = RNODE_LIST(sub)->nd_next;
+    NODE *expr = RNODE_LIST(enode)->nd_head;
+    NODE *gnode = RNODE_LIST(enode)->nd_next;
+    NODE *guard = gnode ? RNODE_LIST(gnode)->nd_head : 0;
+
+    if (rest == 0) {
+        return build_for_gen(p, var, expr, guard, result, TRUE, loc);
     }
     else {
-        NODE *next_var = RNODE_LIST(gens)->nd_head;
-        NODE *after_var = RNODE_LIST(gens)->nd_next;
-        NODE *next_expr = RNODE_LIST(after_var)->nd_head;
-        NODE *rest = RNODE_LIST(after_var)->nd_next;
-        NODE *inner = for_comp_fold(p, next_var, next_expr, rest, result, loc);
-        return new_for_comp_gen(p, var, recv, inner, rb_intern("flat_map"), loc);
+        NODE *inner = for_comp_fold(p, rest, result, loc);
+        return build_for_gen(p, var, expr, guard, inner, FALSE, loc);
     }
 }
 
 static NODE *
-new_for_comprehension(struct parser_params *p, NODE *first_var, NODE *first_expr, NODE *gens, NODE *result, const YYLTYPE *loc)
+new_for_comprehension(struct parser_params *p, NODE *first_var, NODE *first_expr, NODE *first_guard, NODE *gens, NODE *result, const YYLTYPE *loc)
 {
-    return for_comp_fold(p, first_var, first_expr, gens, result, loc);
+    NODE *first = list_append(p, NEW_LIST(first_var, loc), first_expr);
+    NODE *all;
+    if (first_guard) first = list_append(p, first, first_guard);
+    all = NEW_LIST(first, loc);
+    if (gens) all = list_concat(all, gens);
+    return for_comp_fold(p, all, result, loc);
 }
 
 static rb_node_retry_t *

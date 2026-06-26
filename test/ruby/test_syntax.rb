@@ -1404,6 +1404,29 @@ eom
     assert_equal([1, 2], eval("def self.id(x) = x; for x in id([1, 2]) then x end"))
   end
 
+  def test_for_comprehension_when_guard
+    # a `when` guard filters the generator's source (desugars to filter)
+    omit if ParserSupport.prism_enabled?
+
+    # single generator with a guard
+    assert_equal([20, 40], eval("for x in [1, 2, 3, 4] when x.even? then x * 10 end"))
+    # guard on the first of several generators
+    assert_equal([[1, 10], [1, 20], [3, 10], [3, 20]],
+                 eval("for x in [1, 2, 3] when x.odd?, y in [10, 20] then [x, y] end"))
+    # a later generator's guard may reference earlier variables
+    assert_equal([[1, 2], [1, 3], [2, 3]],
+                 eval("for x in [1, 2, 3], y in [1, 2, 3] when x < y then [x, y] end"))
+    # guards on every generator
+    assert_equal([[2, 1], [2, 3], [4, 1], [4, 3]],
+                 eval("for x in [1,2,3,4] when x.even?, y in [1,2,3,4] when y.odd? then [x, y] end"))
+    # guard with a destructuring loop variable
+    assert_equal([3], eval("for (a, b) in [[1, 2], [3, 3], [4, 1]] when a < b then a + b end"))
+    # a guard may filter everything out
+    assert_equal([], eval("for x in [1, 3, 5] when x.even? then x end"))
+    # case/when is unaffected
+    assert_equal("one", eval("for x in [1] do break(case x when 1 then 'one' end) end"))
+  end
+
   def test_for_comprehension_does_not_break_for_loop
     omit if ParserSupport.prism_enabled?
 
