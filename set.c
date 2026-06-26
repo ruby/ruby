@@ -1802,11 +1802,32 @@ set_i_disjoint(VALUE set, VALUE other)
 
 /*
  *  call-seq:
- *    set <=> other -> -1, 0, 1, or nil
+ *    self <=> object -> -1, 0, 1, or nil
  *
- *  Returns 0 if the set are equal, -1 / 1 if the set is a
- *  proper subset / superset of the given set, or nil if
- *  they both have unique elements.
+ *  Compares +self+ and +object+.
+ *
+ *  If +object+ is another set, returns:
+ *
+ *  - +-1+, if +self+ is a proper subset of +object+.
+ *  - +0+, if +self+ and +object+ have the same elements.
+ *  - +1+, if +self+ is a proper superset of +object+.
+ *  - +nil+, if none of the above;
+ *    that is, if +self+ and +object+ each have one or more elements
+ *    not included in the other.
+ *
+ *  Examples:
+ *
+ *    set = Set[0, 1, 2]
+ *    set <=> Set[3, 2, 1, 0] # => -1
+ *    set <=> Set[2, 1, 0]    # => 0
+ *    set <=> Set[1, 0]       # => 1
+ *    set <=> Set[1, 0, 3]    # => nil
+ *
+ *  Returns +nil+ if +object+ is not a set:
+ *
+ *    set <=> [2, 1, 0] # => nil  # Array, not Set.
+ *
+ *  Related: see {Methods for Comparing}[rdoc-ref:Set@Methods+for+Comparing].
  */
 static VALUE
 set_i_compare(VALUE set, VALUE other)
