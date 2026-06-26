@@ -536,12 +536,6 @@ rb_gc_impl_init(void)
     // Stub implementation
 }
 
-size_t *
-rb_gc_impl_heap_sizes(void *objspace_ptr)
-{
-    return heap_sizes;
-}
-
 // Shutdown
 void
 rb_gc_impl_shutdown_free_objects(void *objspace_ptr)

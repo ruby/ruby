@@ -871,7 +871,6 @@ ruby_modular_gc_init(void)
 # define rb_gc_impl_ractor_cache_alloc rb_gc_functions.ractor_cache_alloc
 # define rb_gc_impl_set_params rb_gc_functions.set_params
 # define rb_gc_impl_init rb_gc_functions.init
-# define rb_gc_impl_heap_sizes rb_gc_functions.heap_sizes
 // Shutdown
 # define rb_gc_impl_shutdown_free_objects rb_gc_functions.shutdown_free_objects
 # define rb_gc_impl_objspace_free rb_gc_functions.objspace_free
@@ -4714,12 +4713,6 @@ void
 rb_gc_initial_stress_set(VALUE flag)
 {
     initial_stress = flag;
-}
-
-size_t *
-rb_gc_heap_sizes(void)
-{
-    return rb_gc_impl_heap_sizes(rb_gc_get_objspace());
 }
 
 VALUE

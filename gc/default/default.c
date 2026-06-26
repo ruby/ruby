@@ -2611,21 +2611,6 @@ rb_gc_impl_heap_id_for_size(void *objspace_ptr, size_t size)
     return heap_idx_for_size(size);
 }
 
-
-static size_t heap_sizes[HEAP_COUNT + 1] = { 0 };
-
-size_t *
-rb_gc_impl_heap_sizes(void *objspace_ptr)
-{
-    if (heap_sizes[0] == 0) {
-        for (unsigned char i = 0; i < HEAP_COUNT; i++) {
-            heap_sizes[i] = heap_slot_size(i);
-        }
-    }
-
-    return heap_sizes;
-}
-
 NOINLINE(static VALUE newobj_cache_miss(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t heap_idx, bool vm_locked));
 
 static VALUE

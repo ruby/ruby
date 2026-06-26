@@ -687,12 +687,6 @@ rb_gc_impl_init(void)
     rb_define_singleton_method(rb_mGC, "verify_compaction_references", rb_f_notimplement, -1);
 }
 
-size_t *
-rb_gc_impl_heap_sizes(void *objspace_ptr)
-{
-    return heap_sizes;
-}
-
 int
 rb_mmtk_obj_free_iter_wrapper(VALUE obj, void *data)
 {
