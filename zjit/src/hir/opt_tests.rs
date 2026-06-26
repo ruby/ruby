@@ -2512,6 +2512,41 @@ mod hir_opt_tests {
         assert!(!insns.contains(&dead_const));
     }
 
+    // A GuardType whose value type is disjoint from the guard type can never pass, so every
+    // execution side-exits there. fold_constants should replace the guard with an unconditional
+    // SideExit and drop the now-unreachable instructions that follow.
+    #[test]
+    fn test_fold_guard_type_that_can_never_pass_into_side_exit() {
+        let mut function = Function::new(std::ptr::null());
+        let entry = function.entry_block;
+
+        let state = function.push_insn(entry, Insn::Snapshot { state: FrameState::new(std::ptr::null()) });
+        // A nil constant is a NilClass, which is disjoint from Fixnum, so the guard below can
+        // never pass and the optimizer infers its result as Empty.
+        let nil = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
+        let guard = function.push_insn(entry, Insn::GuardType { val: nil, guard_type: types::Fixnum, state, recompile: None });
+        function.push_insn(entry, Insn::StoreField { recv: nil, id: FieldName::len, offset: 0, val: guard });
+        function.push_insn(entry, Insn::Return { val: guard });
+        function.seal_entries();
+
+        function.infer_types();
+        function.fold_constants();
+
+        let insns: Vec<Insn> = function.blocks[entry.0].insns.iter().map(|&id| function.find(id)).collect();
+        assert!(
+            insns.iter().any(|insn| matches!(insn, Insn::SideExit { .. })),
+            "expected the always-failing guard to be folded into a SideExit, got {insns:?}",
+        );
+        assert!(
+            !insns.iter().any(|insn| matches!(insn, Insn::GuardType { .. })),
+            "the always-failing GuardType should have been removed, got {insns:?}",
+        );
+        assert!(
+            !insns.iter().any(|insn| matches!(insn, Insn::StoreField { .. } | Insn::Return { .. })),
+            "instructions after the unconditional SideExit are unreachable and should have been dropped, got {insns:?}",
+        );
+    }
+
     #[test]
     fn test_eliminate_new_array() {
         eval("
