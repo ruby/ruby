@@ -188,7 +188,7 @@ perf script --fields +pid > /tmp/test.perf
 
 #### ZJIT HIR
 
-You can also profile the number of cycles consumed by code generated from each ZJIT HIR instruction.
+You can also profile the number of cycles consumed by code generated from each kind of HIR instruction.
 
 ```bash
 # Install perf
