@@ -276,7 +276,7 @@ pub fn gen_iseq_call(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result<(), 
 }
 
 /// Write an entry to the perf map in /tmp
-fn register_with_perf(symbol_name: String, start_ptr: usize, code_size: usize) {
+pub(crate) fn register_with_perf(symbol_name: String, start_ptr: usize, code_size: usize) {
     use std::io::Write;
     let perf_map = format!("/tmp/perf-{}.map", std::process::id());
     let Ok(file) = std::fs::OpenOptions::new().create(true).append(true).open(&perf_map) else {
