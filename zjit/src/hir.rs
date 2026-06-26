@@ -8088,7 +8088,8 @@ fn add_iseq_to_hir(
                     // mirroring the interpreter's opt_string_new fast path.
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let dst = get_arg(pc, 1).as_i64();
-                    let capa_loc = get_arg(pc, 2).as_u64() as usize;
+                    // TOPN offset of the capacity: argument, or -1 when none was given.
+                    let capa_loc = get_arg(pc, 2).as_i64();
 
                     let argc = crate::profile::num_arguments_on_stack(cd);
                     let ci = unsafe { get_call_data_ci(cd) };
@@ -8140,16 +8141,19 @@ fn add_iseq_to_hir(
                         state: exit_id,
                     });
 
-                    let str = if argc == 0 {
-                        // Bare String.new: rb_str_buf_new(0) yields an embedded empty string,
-                        // skipping the encoding/coderange setup rb_str_new would do.
+                    let str = if capa_loc == -1 {
+                        // No capacity given: rb_str_buf_new(0) yields an embedded empty string,
+                        // skipping the encoding/coderange setup rb_str_new would do. A trailing
+                        // initialize send (e.g. String.new(encoding:)) applies the rest.
                         let capa = fun.push_insn(block, Insn::Const { val: Const::CInt64(0) });
                         fun.push_insn(block, Insn::StringNew { capa, cfunc: rb_str_buf_new as *const u8, state: exit_id })
                     } else {
-                        // String.new(capacity: n): only the Fixnum case is handled here; anything
-                        // else side-exits and the interpreter re-runs opt_string_new (which jumps
-                        // to the generic path for a non-Fixnum capacity).
-                        let capa_val = state.stack_topn(capa_loc)?;
+                        // The capacity is at TOPN(capa_loc), not necessarily the top of the stack
+                        // (with String.new(capacity:, encoding:) the encoding sits above it). Only
+                        // the Fixnum case is handled here; anything else side-exits and the
+                        // interpreter re-runs opt_string_new (which jumps to the generic path for
+                        // a non-Fixnum capacity).
+                        let capa_val = state.stack_topn(capa_loc as usize)?;
                         let capa_fix = fun.push_insn(block, Insn::GuardType { val: capa_val, guard_type: types::Fixnum, state: exit_id, recompile: None });
                         let capa = fun.push_insn(block, Insn::UnboxFixnum { val: capa_fix });
                         fun.push_insn(block, Insn::StringNew { capa, cfunc: rb_str_new_capa_for_init as *const u8, state: exit_id })

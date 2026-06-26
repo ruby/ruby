@@ -4963,7 +4963,8 @@ fn gen_opt_string_new(
 ) -> Option<CodegenStatus> {
     let cd = jit.get_arg(0).as_ptr();
     let jump_offset = jit.get_arg(1).as_i32();
-    let capa_loc = jit.get_arg(2).as_i32();
+    // TOPN offset of the capacity: argument, or -1 when none was given.
+    let capa_loc = jit.get_arg(2).as_i64();
 
     if !jit.at_compile_target() {
         return jit.defer_compilation(asm);
@@ -5004,22 +5005,26 @@ fn gen_opt_string_new(
     if jit.assume_expected_cfunc(asm, comptime_recv_klass, mid, rb_class_new_instance_pass_kw as _)
         && assume_method_basic_definition(jit, asm, comptime_recv_klass, ID!(initialize)) {
 
-        let str = if argc == 0 {
-            // bare String.new: an empty (embedded) string. rb_str_buf_new skips
-            // the encoding/coderange setup that rb_str_new would do.
+        let str = if capa_loc == -1 {
+            // No capacity given: an empty (embedded) string. rb_str_buf_new skips
+            // the encoding/coderange setup that rb_str_new would do. When a
+            // trailing initialize send follows (e.g. String.new(encoding:)) it
+            // applies the remaining arguments.
             jit_prepare_non_leaf_call(jit, asm);
             asm.ccall(rb_str_buf_new as *const u8, vec![Opnd::Imm(0)])
         } else {
-            // String.new(capacity: n): only fixnum capacities take the fast path.
-            // A non-fixnum side-exits so the interpreter takes the generic path.
-            let capa = asm.stack_opnd(capa_loc);
+            // The capacity is at TOPN(capa_loc) (not necessarily the top of the
+            // stack: with String.new(capacity:, encoding:) the encoding sits
+            // above it). Only fixnum capacities take the fast path; a non-fixnum
+            // side-exits so the interpreter takes the generic path.
+            let capa = asm.stack_opnd(capa_loc as i32);
             guard_object_is_fixnum(jit, asm, capa, capa.into());
 
             jit_prepare_non_leaf_call(jit, asm);
 
             // FIX2LONG; rb_str_new_capa_for_init floors anything below the
             // minimum buffer size (including negatives) so no clamping needed.
-            let capa = asm.load(asm.stack_opnd(capa_loc));
+            let capa = asm.load(asm.stack_opnd(capa_loc as i32));
             let capa = asm.rshift(capa, Opnd::UImm(1));
             asm.ccall(rb_str_new_capa_for_init as *const u8, vec![capa])
         };

@@ -86,6 +86,46 @@ class TestString < Test::Unit::TestCase
     end
   end
 
+  def test_initialize_keyword_encoding
+    # These go through the opt_string_new "hybrid" path (allocate via the
+    # String-specific allocator, then run #initialize for the encoding).
+    s = String.new(encoding: "UTF-8")
+    assert_equal(Encoding::UTF_8, s.encoding)
+    assert_equal("", s)
+    assert_not_predicate(s, :frozen?)
+    s << "abc"
+    assert_equal("abc", s)
+
+    s = String.new(capacity: 100, encoding: "UTF-8")
+    assert_equal(Encoding::UTF_8, s.encoding)
+    assert_equal("", s)
+    s << "abc"
+    assert_equal("abc", s)
+
+    # Reversed keyword order (capacity is the top of the stack).
+    s = String.new(encoding: "UTF-8", capacity: 100)
+    assert_equal(Encoding::UTF_8, s.encoding)
+    assert_equal("", s)
+
+    s = String.new(encoding: Encoding::US_ASCII)
+    assert_equal(Encoding::US_ASCII, s.encoding)
+  end
+
+  def test_initialize_keyword_redefined
+    assert_separately([], <<-'RUBY')
+      EnvUtil.suppress_warning do
+        class String
+          def initialize(*args, **kw)
+            @marked = true
+          end
+        end
+      end
+      assert_equal(true, String.new(encoding: "UTF-8").instance_variable_get(:@marked))
+      assert_equal(true, String.new(capacity: 100, encoding: "UTF-8").instance_variable_get(:@marked))
+      assert_equal(true, String.new.instance_variable_get(:@marked))
+    RUBY
+  end
+
   def test_initialize_shared
     S(str = "mystring" * 10).__send__(:initialize, capacity: str.bytesize)
     assert_equal("mystring", str[0, 8])

@@ -225,6 +225,36 @@ class TestZJIT < Test::Unit::TestCase
     }, insns: [:opt_string_new], call_threshold: 2
   end
 
+  def test_opt_string_new_with_encoding
+    # Hybrid: opt_string_new allocates, then a trailing #initialize applies the encoding.
+    assert_compiles '["UTF-8", true]', %q{
+      def test = String.new(encoding: "UTF-8")
+      test; test
+      s = test
+      [s.encoding.name, s.empty?]
+    }, insns: [:opt_string_new], call_threshold: 2
+  end
+
+  def test_opt_string_new_with_capacity_and_encoding
+    # Hybrid with a pre-sized buffer; capacity is below encoding on the stack.
+    assert_compiles '["UTF-8", "abc"]', %q{
+      def test = String.new(capacity: 100, encoding: "UTF-8")
+      test; test
+      s = test
+      s << "abc"
+      [s.encoding.name, s]
+    }, insns: [:opt_string_new], call_threshold: 2
+  end
+
+  def test_opt_string_new_with_encoding_then_capacity
+    # Keyword order reversed: capacity is the top of the stack (capa_loc 0).
+    assert_compiles '"UTF-8"', %q{
+      def test = String.new(encoding: "UTF-8", capacity: 100)
+      test; test
+      test.encoding.name
+    }, insns: [:opt_string_new], call_threshold: 2
+  end
+
   def test_uncached_getconstant_path
     assert_compiles RUBY_COPYRIGHT.dump, %q{
       def test = RUBY_COPYRIGHT
