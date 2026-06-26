@@ -1846,9 +1846,9 @@ set_recursive_eql(VALUE set, VALUE dt, int recur)
  *  Returns whether +object+ is a set, and has the same elements as +self+:
  *
  *    set = Set[0, 1, 2]
- *    set == Set[1, 2, 0] # => true
- *    set == Set[1, 2, 3] # => false
- *    set == [1, 2, 3]    # => false
+ *    set == Set[1, 2, 0]   # => true
+ *    set == [1, 2, 3]      # => false
+ *    set == Set[1, 2, '3'] # => false
  *
  *  Related: see {Methods for Comparing}[rdoc-ref:Set@Methods+for+Comparing].
  */
