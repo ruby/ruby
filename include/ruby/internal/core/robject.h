@@ -48,34 +48,6 @@
 #define ROBJECT_FIELDS              ROBJECT_FIELDS
 /** @endcond */
 
-/**
- * @private
- *
- * Bits that you can set to ::RBasic::flags.
- */
-enum ruby_robject_flags {
-    /**
-     * This flag marks that the object's instance variables are stored in an
-     * external heap buffer.
-     * Normally, instance variable references are stored inside the object slot,
-     * but if it overflow, Ruby may have to allocate a separate buffer and spills
-     * the instance variables there.
-     * This flag denotes that situation.
-     *
-     * @warning  This  bit has  to be  considered read-only.   Setting/clearing
-     *           this  bit without  corresponding fix  up must  cause immediate
-     *           SEGV.   Also,   internal  structures   of  an   object  change
-     *           dynamically  and  transparently  throughout of  its  lifetime.
-     *           Don't assume it being persistent.
-     *
-     * @internal
-     *
-     * 3rd parties must  not be aware that  there even is more than  one way to
-     * store instance variables.  Might better be hidden.
-     */
-    ROBJECT_HEAP = RUBY_FL_USER4
-};
-
 struct st_table;
 
 /**

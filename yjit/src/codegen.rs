@@ -3187,7 +3187,7 @@ fn gen_set_ivar(
         let current_shape_id = comptime_receiver.shape_id_of();
         // We don't need to check about imemo_fields here because we're definitely looking at a T_OBJECT.
         let klass = unsafe { rb_obj_class(comptime_receiver) };
-        let next_shape_id = unsafe { rb_shape_transition_add_ivar_no_warnings(current_shape_id, ivar_name, klass) };
+        let mut next_shape_id = unsafe { rb_shape_transition_add_ivar_no_warnings(current_shape_id, ivar_name, klass) };
 
         // If the VM ran out of shapes, or this class generated too many leaf,
         // it may be de-optimized into OBJ_COMPLEX_SHAPE (hash-table).
@@ -3201,6 +3201,9 @@ fn gen_set_ivar(
             // If the new shape has a different capacity, or is COMPLEX, we'll have to
             // reallocate it.
             let needs_extension = next_capacity != current_capacity;
+            if needs_extension {
+                next_shape_id |= ROBJECT_HEAP as u32;
+            }
 
             // We can write to the object, but we need to transition the shape
             let ivar_index = unsafe { rb_yjit_shape_index(next_shape_id) } as usize;

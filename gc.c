@@ -1356,7 +1356,7 @@ rb_gc_imemo_needs_cleanup_p(VALUE obj)
         return ((rb_imemo_tmpbuf_t *)obj)->ptr != NULL;
 
       case imemo_fields:
-        return FL_TEST_RAW(obj, OBJ_FIELD_HEAP) || (id2ref_tbl && rb_obj_shape_has_id(obj));
+        return rb_obj_shape_heap_p(obj) || (id2ref_tbl && rb_obj_shape_has_id(obj));
     }
     UNREACHABLE_RETURN(true);
 }
@@ -1412,7 +1412,7 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
 
     switch (flags & RUBY_T_MASK) {
       case T_OBJECT:
-        if (flags & ROBJECT_HEAP) return true;
+        if (rb_obj_shape_heap_p(obj)) return true;
         return false;
 
       case T_DATA:
@@ -1557,7 +1557,7 @@ rb_gc_obj_free(void *objspace, VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
+        if (rb_obj_shape_heap_p(obj)) {
             if (rb_obj_shape_complex_p(obj)) {
                 RB_DEBUG_COUNTER_INC(obj_obj_complex);
                 st_free_table(ROBJECT_FIELDS_HASH(obj));
@@ -2198,7 +2198,7 @@ object_id0(VALUE obj)
     id = generate_next_object_id();
     rb_obj_field_set(obj, object_id_shape_id, 0, id);
 
-    RUBY_ASSERT(RBASIC_SHAPE_ID(obj) == object_id_shape_id);
+    RUBY_ASSERT(RBASIC_SHAPE_ID(obj) == object_id_shape_id || RBASIC_SHAPE_ID(obj) == rb_shape_transition_heap(object_id_shape_id));
     RUBY_ASSERT(rb_obj_shape_has_id(obj));
 
     if (RB_UNLIKELY(id2ref_tbl)) {
@@ -2604,7 +2604,7 @@ rb_obj_memsize_of(VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
+        if (rb_obj_shape_heap_p(obj)) {
             if (rb_obj_shape_complex_p(obj)) {
                 size += rb_st_memsize(ROBJECT_FIELDS_HASH(obj));
             }
@@ -3882,7 +3882,7 @@ gc_ref_update_object(void *objspace, VALUE v)
 {
     VALUE *ptr = ROBJECT_FIELDS(v);
 
-    if (FL_TEST_RAW(v, ROBJECT_HEAP)) {
+    if (rb_obj_shape_heap_p(v)) {
         if (rb_obj_shape_complex_p(v)) {
             gc_ref_update_table_values_only(ROBJECT_FIELDS_HASH(v));
             return;
@@ -3894,7 +3894,7 @@ gc_ref_update_object(void *objspace, VALUE v)
             // Object can be re-embedded
             memcpy(ROBJECT(v)->as.ary, ptr, sizeof(VALUE) * ROBJECT_FIELDS_COUNT(v));
             SIZED_FREE_N(ptr, ROBJECT_FIELDS_CAPACITY(v));
-            FL_UNSET_RAW(v, ROBJECT_HEAP);
+            RBASIC_SET_SHAPE_ID(v, rb_obj_shape_transition_embedded(v));
             ptr = ROBJECT(v)->as.ary;
         }
     }
@@ -5087,7 +5087,7 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
             }
           case T_OBJECT:
             {
-                if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
+                if (rb_obj_shape_heap_p(obj)) {
                     if (rb_obj_shape_complex_p(obj)) {
                         size_t hash_len = rb_st_table_size(ROBJECT_FIELDS_HASH(obj));
                         APPEND_F("(complex) len:%zu", hash_len);

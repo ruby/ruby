@@ -1,7 +1,7 @@
 #ifndef RUBY_SHAPE_H
 #define RUBY_SHAPE_H
 
-#include "internal/gc.h"
+#include "internal/static_assert.h"
 #include "internal/struct.h"
 
 typedef uint8_t attr_index_t;
@@ -14,23 +14,21 @@ STATIC_ASSERT(shape_id_num_bits, SHAPE_ID_NUM_BITS == sizeof(shape_id_t) * CHAR_
 #define SHAPE_BUFFER_SIZE (1 << SHAPE_ID_OFFSET_NUM_BITS)
 #define SHAPE_ID_OFFSET_MASK (SHAPE_BUFFER_SIZE - 1)
 
-#define SHAPE_ID_HEAP_INDEX_BITS 4
-#define SHAPE_ID_HEAP_INDEX_MAX (((attr_index_t)1 << SHAPE_ID_HEAP_INDEX_BITS) - 1)
-
 #define SHAPE_ID_HEAP_INDEX_OFFSET SHAPE_ID_OFFSET_NUM_BITS
-#define SHAPE_ID_FL_USHIFT (SHAPE_ID_OFFSET_NUM_BITS + SHAPE_ID_HEAP_INDEX_BITS)
+#define SHAPE_ID_FL_USHIFT (SHAPE_ID_OFFSET_NUM_BITS)
 
 // shape_id_t bits:
 //      0-18 SHAPE_ID_OFFSET_MASK
 //              index in rb_shape_tree.shape_list. Allow to access `rb_shape_t *`.
 //              This is the part that describe how fields are laid out in memory.
-//      19-22 SHAPE_ID_HEAP_INDEX_MASK
-//              Unused. Formerly encoded an index into a table of GC heap sizes.
-//      23 SHAPE_ID_FL_COMPLEX
+//      19 ROBJECT_HEAP
+//              Only used for T_OBJECT. Signals that the object is on the heap rather
+//              than embedded.
+//      20 SHAPE_ID_FL_COMPLEX
 //              The object is backed by a `st_table`.
-//      24 SHAPE_ID_FL_FROZEN
+//      21 SHAPE_ID_FL_FROZEN
 //              Whether the object is frozen or not.
-//      25 SHAPE_ID_FL_HAS_OBJECT_ID
+//      22 SHAPE_ID_FL_HAS_OBJECT_ID
 //              Whether the object has an `SHAPE_OBJ_ID` transition.
 //      26-27 SHAPE_ID_LAYOUT_MASK
 //              The object's physical field layout.
@@ -38,11 +36,10 @@ STATIC_ASSERT(shape_id_num_bits, SHAPE_ID_NUM_BITS == sizeof(shape_id_t) * CHAR_
 enum shape_id_fl_type {
 #define RBIMPL_SHAPE_ID_FL(n) (1<<(SHAPE_ID_FL_USHIFT+n))
 
-    SHAPE_ID_HEAP_INDEX_MASK = ((1 << SHAPE_ID_HEAP_INDEX_BITS) - 1) << SHAPE_ID_HEAP_INDEX_OFFSET,
-
-    SHAPE_ID_FL_COMPLEX = RBIMPL_SHAPE_ID_FL(0),
-    SHAPE_ID_FL_FROZEN = RBIMPL_SHAPE_ID_FL(1),
-    SHAPE_ID_FL_HAS_OBJECT_ID = RBIMPL_SHAPE_ID_FL(2),
+    ROBJECT_HEAP = RBIMPL_SHAPE_ID_FL(0),
+    SHAPE_ID_FL_COMPLEX = RBIMPL_SHAPE_ID_FL(1),
+    SHAPE_ID_FL_FROZEN = RBIMPL_SHAPE_ID_FL(2),
+    SHAPE_ID_FL_HAS_OBJECT_ID = RBIMPL_SHAPE_ID_FL(3),
 
     // Means IVs are found at an offset from the object's addr, or in a
     // malloc allocated side table
@@ -50,11 +47,11 @@ enum shape_id_fl_type {
 
     // Means this object is a class/module that is NOT RCLASS_BOXABLE, and IV's
     // are found in the fields_obj found on the rclass struct
-    SHAPE_ID_LAYOUT_RCLASS = RBIMPL_SHAPE_ID_FL(3),
+    SHAPE_ID_LAYOUT_RCLASS = RBIMPL_SHAPE_ID_FL(4),
 
     // Means this object is an RData or RTypedData and IVs are found in the
     // fields_obj found on the RData/RTypedData struct
-    SHAPE_ID_LAYOUT_RDATA = RBIMPL_SHAPE_ID_FL(4),
+    SHAPE_ID_LAYOUT_RDATA = RBIMPL_SHAPE_ID_FL(5),
 
     // Means this is a complicated object: boxable classes, structs, objects
     // that store IVs on the geniv table
@@ -63,7 +60,7 @@ enum shape_id_fl_type {
     SHAPE_ID_LAYOUT_MASK = SHAPE_ID_LAYOUT_OTHER,
 
     SHAPE_ID_FL_NON_CANONICAL_MASK = SHAPE_ID_FL_FROZEN | SHAPE_ID_FL_HAS_OBJECT_ID,
-    SHAPE_ID_FLAGS_MASK = SHAPE_ID_HEAP_INDEX_MASK | SHAPE_ID_FL_NON_CANONICAL_MASK | SHAPE_ID_FL_COMPLEX | SHAPE_ID_LAYOUT_MASK,
+    SHAPE_ID_FLAGS_MASK = ROBJECT_HEAP | SHAPE_ID_FL_NON_CANONICAL_MASK | SHAPE_ID_FL_COMPLEX | SHAPE_ID_LAYOUT_MASK,
 
 #undef RBIMPL_SHAPE_ID_FL
 };
@@ -77,9 +74,10 @@ enum shape_id_mask {
 // has its own checks for physical field layout when reading ivars.
 // So we normalize shape_id by clearing these bits to improve cache hits.
 // JITs however might care about some of it.
-#define SHAPE_ID_READ_ONLY_MASK (~(SHAPE_ID_FL_FROZEN | SHAPE_ID_HEAP_INDEX_MASK | SHAPE_ID_FL_HAS_OBJECT_ID | SHAPE_ID_LAYOUT_MASK))
+#define SHAPE_ID_READ_ONLY_MASK (~(SHAPE_ID_FL_FROZEN | SHAPE_ID_FL_HAS_OBJECT_ID | SHAPE_ID_LAYOUT_MASK))
 // For write it's the same idea, but here we do care about frozen status.
-#define SHAPE_ID_WRITE_MASK (~(SHAPE_ID_HEAP_INDEX_MASK | SHAPE_ID_FL_HAS_OBJECT_ID | SHAPE_ID_LAYOUT_MASK))
+#define SHAPE_ID_WRITE_MASK (~(SHAPE_ID_FL_HAS_OBJECT_ID | SHAPE_ID_LAYOUT_MASK))
+#define SHAPE_ID_READ_ONLY_CACHE_MASK (SHAPE_ID_OFFSET_MASK | ROBJECT_HEAP | SHAPE_ID_FL_COMPLEX)
 
 typedef uint32_t redblack_id_t;
 
@@ -139,7 +137,6 @@ static inline shape_id_t
 RBASIC_SHAPE_ID(VALUE obj)
 {
     RUBY_ASSERT(!RB_SPECIAL_CONST_P(obj));
-    RUBY_ASSERT(!RB_TYPE_P(obj, T_IMEMO) || IMEMO_TYPE_P(obj, imemo_fields));
 #if RBASIC_SHAPE_ID_FIELD
     return (shape_id_t)((RBASIC(obj)->shape_id));
 #else
@@ -181,8 +178,6 @@ static inline void
 RBASIC_SET_SHAPE_ID(VALUE obj, shape_id_t shape_id)
 {
     RUBY_ASSERT(!RB_SPECIAL_CONST_P(obj));
-    RUBY_ASSERT(!RB_TYPE_P(obj, T_IMEMO) || IMEMO_TYPE_P(obj, imemo_fields));
-    RUBY_ASSERT(!IMEMO_TYPE_P(obj, imemo_fields) || rb_shape_layout(shape_id) == SHAPE_ID_LAYOUT_ROBJECT);
 
     RBASIC_SET_SHAPE_ID_NO_CHECKS(obj, shape_id);
 
@@ -221,8 +216,8 @@ typedef int rb_shape_foreach_transition_callback(shape_id_t shape_id, void *data
 bool rb_shape_foreach_field(shape_id_t shape_id, rb_shape_foreach_transition_callback func, void *data);
 
 shape_id_t rb_shape_transition_add_ivar_no_warnings(shape_id_t shape_id, ID id, VALUE klass);
-shape_id_t rb_shape_root_from_capacity(attr_index_t capacity);
-shape_id_t rb_shape_transition_root(shape_id_t shape_id, attr_index_t capacity);
+shape_id_t rb_shape_root_from_capacity(size_t capacity);
+shape_id_t rb_shape_transition_root(shape_id_t shape_id, size_t capacity);
 
 shape_id_t rb_shape_object_id(shape_id_t original_shape_id);
 shape_id_t rb_shape_rebuild(shape_id_t initial_shape_id, shape_id_t dest_shape_id);
@@ -254,6 +249,18 @@ rb_shape_has_object_id(shape_id_t shape_id)
 }
 
 static inline bool
+rb_shape_heap_p(shape_id_t shape_id)
+{
+    return shape_id & ROBJECT_HEAP;
+}
+
+static inline bool
+rb_obj_shape_heap_p(VALUE obj)
+{
+    return !RB_SPECIAL_CONST_P(obj) && rb_shape_heap_p(RBASIC_SHAPE_ID(obj));
+}
+
+static inline bool
 rb_shape_canonical_p(shape_id_t shape_id)
 {
     return !(shape_id & SHAPE_ID_FL_NON_CANONICAL_MASK);
@@ -263,12 +270,6 @@ static inline shape_id_t
 rb_shape_id_with_robject_layout(shape_id_t shape_id)
 {
     return (shape_id & ~SHAPE_ID_LAYOUT_MASK) | SHAPE_ID_LAYOUT_ROBJECT;
-}
-
-static inline uint8_t
-rb_shape_heap_index(shape_id_t shape_id)
-{
-    return (uint8_t)((shape_id & SHAPE_ID_HEAP_INDEX_MASK) >> SHAPE_ID_HEAP_INDEX_OFFSET);
 }
 
 static inline shape_id_t
@@ -335,7 +336,7 @@ ROBJECT_FIELDS_HASH(VALUE obj)
 {
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
     RUBY_ASSERT(rb_obj_shape_complex_p(obj));
-    RUBY_ASSERT(FL_TEST_RAW(obj, ROBJECT_HEAP));
+    RUBY_ASSERT(rb_obj_shape_heap_p(obj));
 
     return ROBJECT(obj)->as.hash;
 }
@@ -345,7 +346,7 @@ ROBJECT_SET_FIELDS_HASH(VALUE obj, st_table *tbl)
 {
     RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
     RUBY_ASSERT(rb_obj_shape_complex_p(obj));
-    RUBY_ASSERT(FL_TEST_RAW(obj, ROBJECT_HEAP));
+    RUBY_ASSERT(rb_obj_shape_heap_p(obj));
 
     ROBJECT(obj)->as.hash = tbl;
 }
@@ -464,12 +465,28 @@ rb_shape_transition_frozen(shape_id_t shape_id)
 }
 
 static inline shape_id_t
+rb_shape_transition_heap(shape_id_t shape_id)
+{
+    return shape_id | ROBJECT_HEAP;
+}
+
+static inline shape_id_t
+rb_shape_transition_embedded(shape_id_t shape_id)
+{
+    return shape_id & ~ROBJECT_HEAP;
+}
+
+static inline shape_id_t
 rb_shape_transition_complex(shape_id_t shape_id)
 {
     shape_id_t next_shape_id = rb_shape_layout(shape_id) | ROOT_COMPLEX_SHAPE_ID;
 
     if (rb_shape_has_object_id(shape_id)) {
         next_shape_id = rb_shape_layout(shape_id) | ROOT_COMPLEX_WITH_OBJ_ID;
+    }
+
+    if (rb_shape_heap_p(shape_id)) {
+        next_shape_id |= ROBJECT_HEAP;
     }
 
     RUBY_ASSERT(rb_shape_has_object_id(shape_id) == rb_shape_has_object_id(next_shape_id));
@@ -495,13 +512,29 @@ rb_obj_shape_transition_frozen(VALUE obj)
 }
 
 static inline shape_id_t
-rb_obj_shape_transition_complex(VALUE obj)
+rb_obj_shape_transition_heap(VALUE obj)
 {
-    return rb_shape_transition_complex(RBASIC_SHAPE_ID(obj));
+    return rb_shape_transition_heap(RBASIC_SHAPE_ID(obj));
 }
 
 static inline shape_id_t
-rb_obj_shape_transition_root(VALUE obj, attr_index_t capacity)
+rb_obj_shape_transition_embedded(VALUE obj)
+{
+    return rb_shape_transition_embedded(RBASIC_SHAPE_ID(obj));
+}
+
+static inline shape_id_t
+rb_obj_shape_transition_complex(VALUE obj)
+{
+    shape_id_t shape_id = rb_shape_transition_complex(RBASIC_SHAPE_ID(obj));
+    if (RB_TYPE_P(obj, T_OBJECT)) {
+        shape_id = rb_shape_transition_heap(shape_id);
+    }
+    return shape_id;
+}
+
+static inline shape_id_t
+rb_obj_shape_transition_root(VALUE obj, size_t capacity)
 {
     return rb_shape_transition_root(RBASIC_SHAPE_ID(obj), capacity);
 }
@@ -549,19 +582,24 @@ rb_getivar_cache_unpack(uint64_t packed)
 
     // Because caches may initialized with all bits set (IVAR_CACHE_INIT), and `shape_offset` if 32bits,
     // we need to remove any potential extra bits set in the "padding".
-    cache.unpack.shape_offset &= SHAPE_ID_OFFSET_MASK;
+    if (RSHAPE_OFFSET(cache.unpack.shape_offset) == INVALID_SHAPE_ID) {
+        cache.unpack.shape_offset = INVALID_SHAPE_ID;
+    }
+    else {
+        cache.unpack.shape_offset &= SHAPE_ID_READ_ONLY_CACHE_MASK;
+    }
     return cache.unpack;
 }
 
 static inline uint64_t
-rb_getivar_cache_pack(shape_id_t shape_offset, attr_index_t index)
+rb_getivar_cache_pack(shape_id_t shape_id, attr_index_t index)
 {
-    RUBY_ASSERT(shape_offset == RSHAPE_OFFSET(shape_offset));
-    RUBY_ASSERT(shape_offset != INVALID_SHAPE_ID);
+    RUBY_ASSERT(shape_id == (shape_id & SHAPE_ID_READ_ONLY_CACHE_MASK));
+    RUBY_ASSERT(RSHAPE_OFFSET(shape_id) != INVALID_SHAPE_ID);
 
     union rb_getivar_cache cache = {
         .unpack = {
-            .shape_offset = shape_offset,
+            .shape_offset = shape_id,
             .index = index,
         },
     };
@@ -607,11 +645,11 @@ rb_setivar_cache_revalidate(shape_id_t shape_id, rb_setivar_cache cache)
     RUBY_ASSERT(cache.dest_shape_offset == INVALID_SHAPE_ID || cache.dest_shape_offset == RSHAPE_OFFSET(cache.dest_shape_offset));
 
     shape_id_t normalized_shape_id = shape_id & SHAPE_ID_WRITE_MASK;
-    if (UNLIKELY(normalized_shape_id != cache.source_shape_offset)) {
+    if (RB_UNLIKELY(normalized_shape_id != cache.source_shape_offset)) {
         return INVALID_SHAPE_ID;
     }
 
-    if (UNLIKELY(cache.index >= RSHAPE_CAPACITY(shape_id))) {
+    if (RB_UNLIKELY(cache.index >= RSHAPE_CAPACITY(shape_id))) {
         // That's still a hit in term of layout, but the object will need to be resized,
         // so unfortunately we'll have to go through the slow path regardless...
         return INVALID_SHAPE_ID;

@@ -14,6 +14,8 @@
 #include "ruby/internal/stdbool.h"     /* for bool */
 #include "ruby/ruby.h"          /* for VALUE */
 #include "shape.h"              /* for shape_id_t */
+#include "box.h"
+#include "internal/gc.h"
 
 /* variable.c */
 void rb_gc_mark_global_tbl(void);

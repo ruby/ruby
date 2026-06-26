@@ -141,7 +141,7 @@ rb_imemo_fields_new(VALUE owner, shape_id_t shape_id, bool shareable)
     // layout in the shape describes the layout of the thing on which it is set.
     // Imemo fields have the same layout as robject, therefore the layout
     // should reflect that fact.
-    RBASIC_SET_SHAPE_ID(fields, rb_shape_id_with_robject_layout(shape_id));
+    RBASIC_SET_SHAPE_ID(fields, rb_shape_id_with_robject_layout(rb_shape_transition_embedded(shape_id)));
     RUBY_ASSERT(IMEMO_TYPE_P(fields, imemo_fields));
     return fields;
 }
@@ -151,12 +151,11 @@ rb_imemo_fields_new_complex(VALUE owner, shape_id_t shape_id, size_t capa, bool 
 {
     VALUE fields = rb_imemo_new(imemo_fields, owner, sizeof(struct rb_fields), shareable);
     IMEMO_OBJ_FIELDS(fields)->as.complex.table = st_init_numtable_with_size(capa);
-    FL_SET_RAW(fields, OBJ_FIELD_HEAP);
     // imemo fields objects should always have "RObject" layout.  The
     // layout in the shape describes the layout of the thing on which it is set.
     // Imemo fields have the same layout as robject, therefore the layout
     // should reflect that fact.
-    RBASIC_SET_SHAPE_ID(fields, rb_shape_id_with_robject_layout(shape_id));
+    RBASIC_SET_SHAPE_ID(fields, rb_shape_id_with_robject_layout(rb_shape_transition_heap(shape_id)));
     return fields;
 }
 
@@ -180,12 +179,11 @@ rb_imemo_fields_new_complex_tbl(VALUE owner, shape_id_t shape_id, st_table *tbl,
 {
     VALUE fields = rb_imemo_new(imemo_fields, owner, sizeof(struct rb_fields), shareable);
     IMEMO_OBJ_FIELDS(fields)->as.complex.table = tbl;
-    FL_SET_RAW(fields, OBJ_FIELD_HEAP);
     // imemo fields objects should always have "RObject" layout.  The
     // layout in the shape describes the layout of the thing on which it is set.
     // Imemo fields have the same layout as robject, therefore the layout
     // should reflect that fact.
-    RBASIC_SET_SHAPE_ID(fields, rb_shape_id_with_robject_layout(shape_id));
+    RBASIC_SET_SHAPE_ID(fields, rb_shape_id_with_robject_layout(rb_shape_transition_heap(shape_id)));
     st_foreach(tbl, imemo_fields_trigger_wb_i, (st_data_t)fields);
     return fields;
 }
@@ -628,7 +626,7 @@ rb_free_const_table(struct rb_id_table *tbl)
 static inline void
 imemo_fields_free(struct rb_fields *fields)
 {
-    if (FL_TEST_RAW((VALUE)fields, OBJ_FIELD_HEAP)) {
+    if (rb_obj_shape_heap_p((VALUE)fields)) {
         RUBY_ASSERT(rb_shape_complex_p(RBASIC_SHAPE_ID((VALUE)fields)));
         st_free_table(fields->as.complex.table);
     }

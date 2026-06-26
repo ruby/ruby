@@ -492,7 +492,7 @@ rb_shape_alloc(ID edge_name, rb_shape_t *parent, enum shape_type type)
 }
 
 shape_id_t
-rb_shape_root_from_capacity(attr_index_t capacity)
+rb_shape_root_from_capacity(size_t capacity)
 {
     if (capacity == 0) {
         return ROOT_SHAPE_ID;
@@ -500,8 +500,9 @@ rb_shape_root_from_capacity(attr_index_t capacity)
     if (capacity > SHAPE_MAX_CAPACITY) {
         capacity = SHAPE_MAX_CAPACITY;
     }
+    attr_index_t root_capacity = (attr_index_t)capacity;
 
-    shape_id_t root_shape_id = (shape_id_t)RUBY_ATOMIC_LOAD(root_shape_ids[capacity]);
+    shape_id_t root_shape_id = (shape_id_t)RUBY_ATOMIC_LOAD(root_shape_ids[root_capacity]);
     if (root_shape_id) {
         return root_shape_id;
     }
@@ -511,11 +512,11 @@ rb_shape_root_from_capacity(attr_index_t capacity)
         return ROOT_SHAPE_ID;
     }
 
-    root->capacity = capacity;
+    root->capacity = root_capacity;
     root->type = SHAPE_ROOT;
 
     root_shape_id = SHAPE_OFFSET(root);
-    shape_id_t existing_root_shape_id = (shape_id_t)RUBY_ATOMIC_CAS(root_shape_ids[capacity], 0, root_shape_id);
+    shape_id_t existing_root_shape_id = (shape_id_t)RUBY_ATOMIC_CAS(root_shape_ids[root_capacity], 0, root_shape_id);
     if (existing_root_shape_id) {
         return existing_root_shape_id;
     }
@@ -738,7 +739,7 @@ get_next_shape_internal(rb_shape_t *shape, ID id, enum shape_type shape_type, bo
 }
 
 shape_id_t
-rb_shape_transition_root(shape_id_t original_shape_id, attr_index_t capacity)
+rb_shape_transition_root(shape_id_t original_shape_id, size_t capacity)
 {
     if (rb_shape_complex_p(original_shape_id)) {
         return original_shape_id;
@@ -1037,13 +1038,13 @@ rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value,
         if (shape_hint == shape) {
             // We've found a common ancestor so use the index hint
             *value = index_hint;
-            *shape_id_hint = SHAPE_OFFSET(shape);
+            *shape_id_hint = SHAPE_ID(shape, shape_id);
             return true;
         }
         if (shape->edge_name == id) {
             // We found the matching id before a common ancestor
             *value = shape->next_field_index - 1;
-            *shape_id_hint = SHAPE_OFFSET(shape);
+            *shape_id_hint = SHAPE_ID(shape, shape_id);
             return true;
         }
 
@@ -1366,7 +1367,7 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
     if (rb_shape_complex_p(shape_id)) {
         // Ensure complex object don't appear as embedded
         if (RB_TYPE_P(obj, T_OBJECT) || IMEMO_TYPE_P(obj, imemo_fields)) {
-            RUBY_ASSERT(FL_TEST_RAW(obj, ROBJECT_HEAP));
+            RUBY_ASSERT(rb_obj_shape_heap_p(obj));
         }
     }
     else {
@@ -1380,11 +1381,6 @@ rb_shape_verify_consistency(VALUE obj, shape_id_t shape_id)
         else {
             RUBY_ASSERT(!rb_shape_has_ivars(shape_id));
         }
-    }
-
-    uint8_t flags_heap_index = rb_shape_heap_index(shape_id);
-    if (flags_heap_index) {
-        rb_bug("shape_id uses obsolete heap index flags: shape_id=%u obj=%s", shape_id, rb_obj_info(obj));
     }
 
     if (RB_TYPE_P(obj, T_OBJECT) && !rb_shape_complex_p(shape_id)) {
@@ -1470,7 +1466,6 @@ shape_id_t_to_rb_cShape(shape_id_t shape_id)
             INT2NUM(shape->parent_offset),
             rb_shape_edge_name(shape),
             INT2NUM(shape->next_field_index),
-            INT2NUM(rb_shape_heap_index(shape_id)),
             INT2NUM(shape->type),
             INT2NUM(RSHAPE_CAPACITY(shape_id)));
     rb_obj_freeze(obj);
@@ -1713,7 +1708,6 @@ Init_shape(void)
             "parent_offset",
             "edge_name",
             "next_field_index",
-            "heap_index",
             "type",
             "capacity",
             NULL);

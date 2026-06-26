@@ -364,6 +364,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     RUBY_ASSERT(src_num_ivs <= dest_capa);
     if (initial_capa < dest_capa) {
         rb_ensure_iv_list_size(dest, 0, dest_capa);
+        dest_shape_id = rb_shape_transition_heap(dest_shape_id);
         dest_buf = ROBJECT_FIELDS(dest);
     }
 

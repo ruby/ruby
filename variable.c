@@ -1578,16 +1578,14 @@ obj_transition_complex(VALUE obj, st_table *table)
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
         {
+            shape_id = rb_shape_transition_heap(shape_id);
             VALUE *old_fields = NULL;
             uint32_t old_fields_len = 0;
-            if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
+            if (rb_obj_shape_heap_p(obj)) {
                 old_fields = ROBJECT_FIELDS(obj);
                 old_fields_len = ROBJECT_FIELDS_CAPACITY(obj);
             }
-            else {
-                FL_SET_RAW(obj, ROBJECT_HEAP);
-            }
-            RBASIC_SET_SHAPE_ID(obj, shape_id);
+            RBASIC_SET_SHAPE_ID(obj, rb_shape_transition_heap(shape_id));
             ROBJECT_SET_FIELDS_HASH(obj, table);
             if (old_fields) {
                 SIZED_FREE_N(old_fields, old_fields_len);
@@ -1682,7 +1680,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
     if (UNLIKELY(rb_shape_complex_p(next_shape_id))) {
         if (UNLIKELY(!rb_shape_complex_p(old_shape_id))) {
             if (type == T_OBJECT) {
-                rb_evict_fields_to_hash(obj);
+                next_shape_id = rb_evict_fields_to_hash(obj);
             }
             else {
                 fields_obj = imemo_fields_complex_from_obj(obj, fields_obj, next_shape_id);
@@ -1713,12 +1711,13 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
             RUBY_ASSERT(rb_shape_layout(next_shape_id) == SHAPE_ID_LAYOUT_ROBJECT);
             RBASIC_SET_SHAPE_ID(fields_obj, next_shape_id);
 
-            if (FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP)) {
+            if (rb_shape_heap_p(old_shape_id)) {
                 if (rb_obj_embedded_size(new_fields_count) <= rb_gc_obj_slot_size(fields_obj)) {
                     // Re-embed objects when instances become small enough
                     // This is necessary because YJIT assumes that objects with the same shape
                     // have the same embeddedness for efficiency (avoid extra checks)
-                    FL_UNSET_RAW(fields_obj, ROBJECT_HEAP);
+                    next_shape_id = rb_shape_transition_embedded(next_shape_id);
+                    RBASIC_SET_SHAPE_ID(fields_obj, next_shape_id);
                     MEMCPY(rb_imemo_fields_ptr(fields_obj), fields, VALUE, new_fields_count);
                     SIZED_FREE_N(fields, RSHAPE_CAPACITY(old_shape_id));
                 }
@@ -1826,6 +1825,8 @@ imemo_fields_set(VALUE owner, VALUE fields_obj, shape_id_t target_shape_id, ID f
     shape_id_t current_shape_id = fields_obj ? RBASIC_SHAPE_ID(fields_obj) : ROOT_SHAPE_ID;
 
     if (UNLIKELY(rb_shape_complex_p(target_shape_id))) {
+        shape_id_t heap_target_shape_id = rb_shape_transition_heap(target_shape_id);
+
         if (rb_shape_complex_p(current_shape_id)) {
             if (concurrent) {
                 // In multi-ractor case, we must always work on a copy because
@@ -1835,8 +1836,8 @@ imemo_fields_set(VALUE owner, VALUE fields_obj, shape_id_t target_shape_id, ID f
             }
         }
         else {
-            fields_obj = imemo_fields_complex_from_obj(owner, original_fields_obj, target_shape_id);
-            current_shape_id = target_shape_id;
+            fields_obj = imemo_fields_complex_from_obj(owner, original_fields_obj, heap_target_shape_id);
+            current_shape_id = heap_target_shape_id;
         }
 
         st_table *table = rb_imemo_fields_complex_tbl(fields_obj);
@@ -1844,7 +1845,7 @@ imemo_fields_set(VALUE owner, VALUE fields_obj, shape_id_t target_shape_id, ID f
         RUBY_ASSERT(field_name);
         st_insert(table, (st_data_t)field_name, (st_data_t)val);
         RB_OBJ_WRITTEN(fields_obj, Qundef, val);
-        RBASIC_SET_SHAPE_ID(fields_obj, rb_shape_id_with_robject_layout(target_shape_id));
+        RBASIC_SET_SHAPE_ID(fields_obj, rb_shape_id_with_robject_layout(heap_target_shape_id));
     }
     else {
         attr_index_t index = RSHAPE_INDEX(target_shape_id);
@@ -1909,15 +1910,15 @@ rb_ensure_iv_list_size(VALUE obj, uint32_t current_len, uint32_t new_capacity)
 {
     RUBY_ASSERT(!rb_obj_shape_complex_p(obj));
 
-    if (FL_TEST_RAW(obj, ROBJECT_HEAP)) {
+    if (rb_obj_shape_heap_p(obj)) {
         SIZED_REALLOC_N(ROBJECT(obj)->as.heap.fields, VALUE, new_capacity, current_len);
     }
     else {
         VALUE *ptr = ROBJECT_FIELDS(obj);
         VALUE *newptr = ALLOC_N(VALUE, new_capacity);
         MEMCPY(newptr, ptr, VALUE, current_len);
-        FL_SET_RAW(obj, ROBJECT_HEAP);
         ROBJECT(obj)->as.heap.fields = newptr;
+        RBASIC_SET_SHAPE_ID(obj, rb_obj_shape_transition_heap(obj));
     }
 }
 
@@ -1948,11 +1949,14 @@ obj_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE val)
     shape_id_t current_shape_id = RBASIC_SHAPE_ID(obj);
 
     if (UNLIKELY(rb_shape_complex_p(target_shape_id))) {
+        target_shape_id = rb_shape_transition_heap(target_shape_id);
+
         if (UNLIKELY(!rb_shape_complex_p(current_shape_id))) {
             current_shape_id = rb_evict_fields_to_hash(obj);
         }
 
         if (RSHAPE_LEN(target_shape_id) > RSHAPE_LEN(current_shape_id)) {
+            target_shape_id = rb_shape_transition_heap(target_shape_id);
             RBASIC_SET_SHAPE_ID(obj, target_shape_id);
         }
 
@@ -1972,6 +1976,10 @@ obj_field_set(VALUE obj, shape_id_t target_shape_id, ID field_name, VALUE val)
         if (index >= RSHAPE_LEN(current_shape_id)) {
             if (UNLIKELY(index >= RSHAPE_CAPACITY(current_shape_id))) {
                 rb_ensure_iv_list_size(obj, RSHAPE_CAPACITY(current_shape_id), RSHAPE_CAPACITY(target_shape_id));
+                target_shape_id = rb_shape_transition_heap(target_shape_id);
+            }
+            else if (rb_shape_heap_p(current_shape_id)) {
+                target_shape_id = rb_shape_transition_heap(target_shape_id);
             }
             RBASIC_SET_SHAPE_ID(obj, target_shape_id);
         }
@@ -4649,6 +4657,8 @@ class_fields_ivar_set(VALUE klass, VALUE fields_obj, ID id, VALUE val, bool conc
 
 complex:
     {
+        next_shape_id = rb_shape_transition_heap(next_shape_id);
+
         if (concurrent && fields_obj == original_fields_obj) {
             // In multi-ractor case, we must always work on a copy because
             // even if the field already exist, inserting in a st_table may

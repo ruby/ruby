@@ -10,6 +10,7 @@
  */
 #include "ruby/internal/config.h"
 #include <stddef.h>             /* for size_t */
+#include "shape.h"
 #include "id_table.h"
 #include "internal/array.h"     /* for rb_ary_hidden_new_fill */
 #include "ruby/internal/stdbool.h"     /* for bool */
@@ -171,7 +172,7 @@ imemo_type(VALUE imemo)
 static inline int
 imemo_type_p(VALUE imemo, enum imemo_type imemo_type)
 {
-    if (LIKELY(!RB_SPECIAL_CONST_P(imemo))) {
+    if (RB_LIKELY(!RB_SPECIAL_CONST_P(imemo))) {
         /* fixed at compile time if imemo_type is given. */
         const VALUE mask = (IMEMO_MASK << FL_USHIFT) | RUBY_T_MASK;
         const VALUE expected_type = (imemo_type << FL_USHIFT) | T_IMEMO;
@@ -258,7 +259,6 @@ struct rb_fields {
 // IMEMO/fields and T_OBJECT have exactly the same layout.
 // This is useful for JIT and common codepaths.
 #define OBJ_FIELD_HEAP ROBJECT_HEAP
-STATIC_ASSERT(imemo_fields_flags, OBJ_FIELD_HEAP == IMEMO_FL_USER0);
 STATIC_ASSERT(imemo_fields_embed_offset, offsetof(struct RObject, as.ary) == offsetof(struct rb_fields, as.embed.fields));
 STATIC_ASSERT(imemo_fields_external_offset, offsetof(struct RObject, as.heap.fields) == offsetof(struct rb_fields, as.external.ptr));
 STATIC_ASSERT(imemo_fields_complex_offset, offsetof(struct RObject, as.heap.fields) == offsetof(struct rb_fields, as.complex.table));
@@ -308,7 +308,7 @@ rb_imemo_fields_ptr(VALUE fields_obj)
 
     RUBY_ASSERT(IMEMO_TYPE_P(fields_obj, imemo_fields) || RB_TYPE_P(fields_obj, T_OBJECT));
 
-    if (UNLIKELY(FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP))) {
+    if (RB_UNLIKELY(rb_obj_shape_heap_p(fields_obj))) {
         return IMEMO_OBJ_FIELDS(fields_obj)->as.external.ptr;
     }
     else {
@@ -324,7 +324,7 @@ rb_imemo_fields_complex_tbl(VALUE fields_obj)
     }
 
     RUBY_ASSERT(IMEMO_TYPE_P(fields_obj, imemo_fields) || RB_TYPE_P(fields_obj, T_OBJECT));
-    RUBY_ASSERT(FL_TEST_RAW(fields_obj, OBJ_FIELD_HEAP));
+    RUBY_ASSERT(rb_obj_shape_heap_p(fields_obj));
 
     // Some codepaths unconditionally access the fields_ptr, and assume it can be used as st_table if the
     // shape is complex.

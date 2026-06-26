@@ -91,6 +91,7 @@ fn main() {
         .allowlist_function("rb_yjit_shape_capacity")
         .allowlist_function("rb_yjit_shape_index")
         .allowlist_var("SHAPE_ID_NUM_BITS")
+        .allowlist_type("shape_id_fl_type")
         .allowlist_type("shape_id_mask")
         .allowlist_function("rb_funcall")
         .allowlist_function("rb_obj_is_kind_of")

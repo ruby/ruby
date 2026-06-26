@@ -9,6 +9,7 @@
  * @brief      Internal header for Object.
  */
 #include "ruby/ruby.h"          /* for VALUE */
+#include "shape.h"
 
 /* object.c */
 
@@ -68,7 +69,7 @@ ROBJECT_FIELDS(VALUE obj)
 
     struct RObject *const ptr = ROBJECT(obj);
 
-    if (RB_UNLIKELY(RB_FL_ANY_RAW(obj, ROBJECT_HEAP))) {
+    if (RB_UNLIKELY(rb_obj_shape_heap_p(obj))) {
         return ptr->as.heap.fields;
     }
     else {

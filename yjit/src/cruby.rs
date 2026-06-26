@@ -453,9 +453,7 @@ impl VALUE {
     }
 
     pub fn embedded_p(self) -> bool {
-        unsafe {
-            FL_TEST_RAW(self, VALUE(ROBJECT_HEAP as usize)) == VALUE(0)
-        }
+        (self.shape_id_of() & ROBJECT_HEAP as u32) == 0
     }
 
     pub fn as_isize(self) -> isize {
