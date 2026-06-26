@@ -547,7 +547,6 @@ pub enum SideExitReason {
     GuardSuperMethodEntry,
     PatchPoint(Invariant),
     CalleeSideExit,
-    ObjToStringFallback,
     Interrupt,
     BlockParamProxyNotIseqOrIfunc,
     BlockParamProxyNotNil,
@@ -1204,8 +1203,6 @@ pub enum Insn {
     /// Float#to_i: truncate float to integer via rb_jit_flo_to_i
     FloatToInt { recv: InsnId, state: InsnId },
 
-    // Distinct from `Send` with `mid:to_s` because does not have a patch point for String to_s being redefined
-    ObjToString { val: InsnId, cd: *const rb_call_data, state: InsnId },
     AnyToString { val: InsnId, str: InsnId, state: InsnId },
 
     /// Refine the known type information of with additional type information.
@@ -1528,10 +1525,6 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(val);
                 $visit_one!(state);
             }
-            Insn::ObjToString { val, state, .. } => {
-                $visit_one!(val);
-                $visit_one!(state);
-            }
             Insn::AnyToString { val, str, state, .. } => {
                 $visit_one!(val);
                 $visit_one!(str);
@@ -1798,7 +1791,6 @@ impl Insn {
             Insn::IntOr { .. } => effects::Empty,
             Insn::FixnumLShift { .. } => effects::Empty,
             Insn::FixnumRShift { .. } => effects::Empty,
-            Insn::ObjToString { .. } => effects::Any,
             Insn::AnyToString { .. } => effects::Any,
             Insn::GuardType { guard_type, .. }
                 => Effect::read_write(
@@ -2295,7 +2287,6 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ToNewArray { val, .. } => write!(f, "ToNewArray {val}"),
             Insn::ArrayExtend { left, right, .. } => write!(f, "ArrayExtend {left}, {right}"),
             Insn::ArrayPush { array, val, .. } => write!(f, "ArrayPush {array}, {val}"),
-            Insn::ObjToString { val, .. } => { write!(f, "ObjToString {val}") },
             Insn::StringIntern { val, .. } => { write!(f, "StringIntern {val}") },
             Insn::AnyToString { val, str, .. } => { write!(f, "AnyToString {val}, str: {str}") },
             Insn::SideExit { reason, recompile, .. } => {
@@ -3141,7 +3132,6 @@ impl Function {
             Insn::GetClassVar { .. } => types::BasicObject,
             Insn::ToNewArray { .. } => types::ArrayExact,
             Insn::ToArray { .. } => types::ArrayExact,
-            Insn::ObjToString { .. } => types::BasicObject,
             Insn::AnyToString { .. } => types::String,
             Insn::IsBlockParamModified { .. } => types::CBool,
             Insn::GetBlockParam { .. } => types::BasicObject,
@@ -4079,28 +4069,6 @@ impl Function {
                             let reason = if has_block { SendNotOptimizedMethodType(MethodType::from(def_type)) } else { SendWithoutBlockNotOptimizedMethodType(MethodType::from(def_type)) };
                             self.set_dynamic_send_reason(insn_id, reason);
                             self.push_insn_id(block, insn_id); continue;
-                        }
-                    }
-                    Insn::ObjToString { val, cd, state, .. } => {
-                        if self.is_a(val, types::String) {
-                            // behaves differently from `Send` with `mid:to_s` because ObjToString should not have a patch point for String to_s being redefined
-                            self.make_equal_to(insn_id, val); continue;
-                        }
-
-                        let Some(recv_type) = self.profiled_type_of_at(val, state) else {
-                            self.push_insn_id(block, insn_id); continue
-                        };
-
-                        if recv_type.is_string() {
-                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_type.class() }, state });
-                            let guard = self.push_insn(block, Insn::GuardType { val, guard_type: types::String, state, recompile: None });
-                            // Infer type so AnyToString can fold off this
-                            self.insn_types[guard.0] = self.infer_type(guard);
-                            self.make_equal_to(insn_id, guard);
-                        } else {
-                            let recv = self.push_insn(block, Insn::GuardType { val, guard_type: Type::from_profiled_type(recv_type), state, recompile: None });
-                            let send_to_s = self.push_insn(block, Insn::Send { recv, cd, block: None, args: vec![], state, reason: ObjToStringNotString });
-                            self.make_equal_to(insn_id, send_to_s);
                         }
                     }
                     Insn::AnyToString { str, .. } => {
@@ -6479,7 +6447,6 @@ impl Function {
             | Insn::SetClassVar { val, .. }
             | Insn::Return { val }
             | Insn::Throw { val, .. }
-            | Insn::ObjToString { val, .. }
             | Insn::GuardType { val, .. }
             | Insn::ToArray { val, .. }
             | Insn::ToNewArray { val, .. }
@@ -9168,10 +9135,39 @@ fn add_iseq_to_hir(
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let argc = crate::profile::num_arguments_on_stack(cd);
                     assert_eq!(0, argc, "objtostring should not have args");
-
                     let recv = state.stack_pop()?;
-                    let objtostring = fun.push_insn(block, Insn::ObjToString { val: recv, cd, state: exit_id });
-                    state.stack_push(objtostring)
+                    // TODO(max): Handle polymorphic profiles
+                    let result = if let Some(profiled_type) = fun.monomorphic_summary(&profiles, recv, exit_id) {
+                        if profiled_type.is_string() {
+                            // TODO(max): Do we need PatchPoint? We are checking T_STRING-ness.
+                            fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: profiled_type.class() }, state: exit_id });
+                            fun.push_insn(block, Insn::GuardType { val: recv, guard_type: types::String, state: exit_id, recompile: None })
+                        } else {
+                            let recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state: exit_id, recompile: None });
+                            fun.push_insn(block, Insn::Send { recv, cd, block: None, args: vec![], state: exit_id, reason: ObjToStringNotString })
+                        }
+                    } else {
+                        let has_type = fun.push_insn(block, Insn::HasType { val: recv, expected: types::String });
+                        let iftrue_block = fun.new_block(insn_idx);
+                        let iffalse_block = fun.new_block(insn_idx);
+                        let join_block = fun.new_block(insn_idx);
+                        fun.push_insn(block, Insn::CondBranch {
+                            val: has_type,
+                            if_true: BranchEdge { target: iftrue_block, args: vec![] },
+                            if_false: BranchEdge { target: iffalse_block, args: vec![] }
+                        });
+                        // true block
+                        let refined = fun.push_insn(iftrue_block, Insn::RefineType { val: recv, new_type: types::String });
+                        fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![refined] }));
+                        // false block
+                        let refined = fun.push_insn(iffalse_block, Insn::RefineType { val: recv, new_type: types::NotString });
+                        let send = fun.push_insn(iffalse_block, Insn::Send { recv: refined, cd, block: None, args: vec![], state: exit_id, reason: ObjToStringNotString });
+                        fun.push_insn(iffalse_block, Insn::Jump(BranchEdge { target: join_block, args: vec![send] }));
+                        // join block
+                        block = join_block;
+                        fun.push_insn(join_block, Insn::Param)
+                    };
+                    state.stack_push(result);
                 }
                 YARVINSN_anytostring => {
                     let str = state.stack_pop()?;

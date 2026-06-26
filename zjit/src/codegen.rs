@@ -742,7 +742,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GetSpecialNumber { nth, state } => gen_getspecial_number(asm, *nth, &function.frame_state(*state)),
         &Insn::IncrCounter(counter) => no_output!(gen_incr_counter(asm, counter)),
         Insn::IncrCounterPtr { counter_ptr } => no_output!(gen_incr_counter_ptr(asm, *counter_ptr)),
-        Insn::ObjToString { val, cd, state, .. } => gen_objtostring(jit, asm, opnd!(val), *cd, &function.frame_state(*state)),
         &Insn::CheckInterrupts { state } => no_output!(gen_check_interrupts(jit, asm, &function.frame_state(state))),
         Insn::BreakPoint => no_output!(asm.breakpoint()),
         Insn::Unreachable => no_output!(asm.abort()),
@@ -800,21 +799,6 @@ fn gen_get_ep(asm: &mut Assembler, level: u32) -> Opnd {
     }
 
     ep_opnd
-}
-
-fn gen_objtostring(jit: &mut JITState, asm: &mut Assembler, val: Opnd, cd: *const rb_call_data, state: &FrameState) -> Opnd {
-    gen_prepare_non_leaf_call(jit, asm, state);
-    // TODO: Specialize for immediate types
-    // Call rb_vm_objtostring(cfp, recv, cd)
-    let ret = asm_ccall!(asm, rb_vm_objtostring, CFP, val, Opnd::const_ptr(cd));
-
-    // TODO: Call `to_s` on the receiver if rb_vm_objtostring returns Qundef
-    // Need to replicate what CALL_SIMPLE_METHOD does
-    asm_comment!(asm, "side-exit if rb_vm_objtostring returns Qundef");
-    asm.cmp(ret, Qundef.into());
-    asm.je(jit, side_exit(jit, state, ObjToStringFallback));
-
-    ret
 }
 
 fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, obj: VALUE, pushval: VALUE, tested_value: Opnd, lep_level: u32, state: &FrameState) -> Opnd {
@@ -2645,6 +2629,46 @@ fn gen_has_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, val_typ
         // Heap object -> check klass field
         let klass = asm.load(Opnd::mem(64, val, RUBY_OFFSET_RBASIC_KLASS));
         asm.cmp(klass, Opnd::Value(expected_class));
+        let result = asm.csel_e(Opnd::UImm(1), Opnd::Imm(0));
+        asm.jmp(result_edge(result));
+
+        // Result block -- receives the value via block parameter (phi node)
+        asm.set_current_block(result_block);
+        let label = jit.get_label(asm, result_block, hir_block_id);
+        asm.write_label(label);
+        let param = asm.new_block_param(VALUE_BITS);
+        asm.current_block().add_parameter(param);
+        param
+    } else if let Some(builtin_type) = ty.builtin_type_equivalent() {
+        let hir_block_id = asm.current_block().hir_block_id;
+        let rpo_idx = asm.current_block().rpo_index;
+
+        // Create a result block that all paths converge to
+        let result_block = asm.new_block(hir_block_id, false, rpo_idx);
+        let result_edge = |v| Target::Block(lir::BranchEdge {
+            target: result_block,
+            args: vec![v],
+        });
+
+        // If val isn't in a register, load it to use it as the base of Opnd::mem later.
+        let val = asm.load_mem(val);
+
+        let is_known_heap_basic_object = val_type.is_subtype(types::HeapBasicObject);
+        if !is_known_heap_basic_object {
+            // Immediate -> definitely not the class
+            asm.test(val, (RUBY_IMMEDIATE_MASK as u64).into());
+            asm.jnz(jit, result_edge(Opnd::Imm(0)));
+
+            // Qfalse -> definitely not the class
+            asm.cmp(val, Qfalse.into());
+            asm.je(jit, result_edge(Opnd::Imm(0)));
+        }
+
+        // Heap object
+        // Mask and check the builtin type
+        let flags = asm.load(Opnd::mem(VALUE_BITS, val, RUBY_OFFSET_RBASIC_FLAGS));
+        let tag   = asm.and(flags, Opnd::UImm(RUBY_T_MASK as u64));
+        asm.cmp(tag, Opnd::UImm(builtin_type as u64));
         let result = asm.csel_e(Opnd::UImm(1), Opnd::Imm(0));
         asm.jmp(result_edge(result));
 
