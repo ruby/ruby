@@ -723,14 +723,15 @@ set_i_join(int argc, VALUE *argv, VALUE set)
 
 /*
  *  call-seq:
- *    add(obj) -> self
+ *    add(object) -> self
  *
- *  Adds the given object to the set and returns self. Use Set#merge to
- *  add many elements at once.
+ *  Adds the given +object+ to +self+, returns +self+:
  *
- *    Set[1, 2].add(3)                    #=> Set[1, 2, 3]
- *    Set[1, 2].add([3, 4])               #=> Set[1, 2, [3, 4]]
- *    Set[1, 2].add(2)                    #=> Set[1, 2]
+ *    set = Set[0, 1, 2]
+ *    set.add(%w[a b c]) # => Set[0, 1, 2, ["a", "b", "c"]]
+ *    set.add(0)         # => Set[0, 1, 2, ["a", "b", "c"]]
+ *
+ *  Related: see {Methods for Assigning}[rdoc-ref:Set@Methods+for+Assigning].
  */
 static VALUE
 set_i_add(VALUE set, VALUE item)
