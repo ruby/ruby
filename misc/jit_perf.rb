@@ -63,6 +63,12 @@ class JITPerf
   private
 
   def parse_line(line)
+    # Example:
+    # ruby 78207 3482.848465: 1212775 cpu_core/cycles:P/: 5c0333f682e1 [JIT] getlocal_WC_0+0x0 (/tmp/perf-78207.map)
+    #
+    # Split into command, pid, timestamp, period, event, ip, and the remaining
+    # "symbol (dso)" text. The final field is kept intact because symbols can
+    # contain spaces.
     fields = line.split(nil, 7)
     raise ArgumentError, "unexpected perf script line: #{line.chomp}" if fields.length < 7
 
@@ -72,6 +78,8 @@ class JITPerf
       raise ArgumentError, "unexpected sample period in perf script line: #{line.chomp}"
     end
 
+    # Parse the trailing "symbol (dso)" text from the right, then drop the
+    # instruction offset after "+" from the symbol name.
     dso_start = fields[6].rindex(" (")
     raise ArgumentError, "missing dso in perf script line: #{line.chomp}" unless dso_start
 
