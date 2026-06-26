@@ -4852,21 +4852,21 @@ pub(crate) mod hir_build_tests {
           v35:CPtr = GetEP 0
           v36:CUInt64 = LoadField v35, :VM_ENV_DATA_INDEX_FLAGS@0x1004
           v37:CBool = IsBlockParamModified v36
-          CondBranch v37, bb5(), bb6()
-        bb5():
-          v39:BasicObject = LoadField v35, :block@0x1005
-          Jump bb7(v39, v39)
+          CondBranch v37, bb6(), bb7()
         bb6():
+          v39:BasicObject = LoadField v35, :block@0x1005
+          Jump bb8(v39, v39)
+        bb7():
           v41:CInt64 = LoadField v35, :VM_ENV_DATA_INDEX_SPECVAL@0x1006
           v42:CInt64 = GuardAnyBitSet v41, CUInt64(1) recompile
           v43:ObjectSubclass[BlockParamProxy] = Const Value(VALUE(0x1008))
-          Jump bb7(v43, v22)
-        bb7(v33:BasicObject, v34:BasicObject):
+          Jump bb8(v43, v22)
+        bb8(v33:BasicObject, v34:BasicObject):
           CheckInterrupts
           v47:CBool = Test v33
           v48:Falsy = RefineType v33, Falsy
-          CondBranch v47, bb8(), bb4(v18, v19, v20, v21, v34, v27)
-        bb8():
+          CondBranch v47, bb9(), bb4(v18, v19, v20, v21, v34, v27)
+        bb9():
           v50:Truthy = RefineType v33, Truthy
           v54:BasicObject = InvokeBlock v27 # SendFallbackReason: InvokeBlock: not yet specialized
           v57:BasicObject = InvokeBuiltin dir_s_close, v18, v27
@@ -5614,21 +5614,27 @@ pub(crate) mod hir_build_tests {
           v35:Fixnum[0] = Const Value(0)
           Jump bb8(v30, v35)
         bb8(v48:BasicObject, v49:Fixnum):
-          v52:BoolExact = InvokeBuiltin rb_jit_ary_at_end, v48, v49
-          v54:CBool = Test v52
-          v55:FalseClass = RefineType v52, Falsy
-          CondBranch v54, bb10(), bb7(v48, v49)
-        bb10():
-          v57:TrueClass = RefineType v52, Truthy
-          v59:NilClass = Const Value(nil)
+          v52:Array = RefineType v48, Array
+          v53:CInt64 = ArrayLength v52
+          v54:Fixnum = BoxFixnum v53
+          v55:BoolExact = FixnumGe v49, v54
+          v57:CBool = Test v55
+          v58:FalseClass = RefineType v55, Falsy
+          CondBranch v57, bb11(), bb7(v48, v49)
+        bb11():
+          v60:TrueClass = RefineType v55, Truthy
+          v62:NilClass = Const Value(nil)
           CheckInterrupts
           Return v48
-        bb7(v67:BasicObject, v68:Fixnum):
-          v72:BasicObject = InvokeBuiltin rb_jit_ary_at, v67, v68
-          v74:BasicObject = InvokeBlock v72 # SendFallbackReason: InvokeBlock: not yet specialized
-          v78:Fixnum = InvokeBuiltin rb_jit_fixnum_inc, v67, v68
+        bb7(v70:BasicObject, v71:Fixnum):
+          v75:Array = RefineType v70, Array
+          v76:CInt64 = UnboxFixnum v71
+          v77:BasicObject = ArrayAref v75, v76
+          v79:BasicObject = InvokeBlock v77 # SendFallbackReason: InvokeBlock: not yet specialized
+          v83:Fixnum[1] = Const Value(1)
+          v84:Fixnum = FixnumAdd v71, v83
           PatchPoint NoEPEscape(each)
-          Jump bb8(v67, v78)
+          Jump bb8(v70, v84)
         bb4(v23:BasicObject, v24:NilClass):
           v28:BasicObject = InvokeBuiltin <inline_expr>, v23
           Jump bb5(v23, v24, v28)
