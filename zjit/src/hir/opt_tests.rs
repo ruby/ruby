@@ -16891,6 +16891,74 @@ mod hir_opt_tests {
     }
 
     #[test]
+    fn test_recompile_no_profile_send_with_blockarg() {
+        // Test that no-profile send recompilation profiles explicit blockargs.
+        // The call remains a Send fallback because &block is still complex, but
+        // it should no longer be a NoProfileSend side exit after recompilation.
+        eval("
+            def passthrough_recompile_blockarg(x, &block)
+              block.call(x)
+            end
+
+            def test(flag, block)
+              if flag
+                passthrough_recompile_blockarg(42, &block)
+              else
+                'hello'
+              end
+            end
+        ");
+
+        // With call_threshold=2, num_profiles=1, the send is not profiled
+        // during initial profiling because flag=false skips that branch.
+        eval("
+            block = proc { |x| x }
+            test(false, block)
+            test(false, block)
+        ");
+
+        // This hits the NoProfileSend side exit, profiles the send including
+        // its explicit blockarg, and invalidates the ISEQ for recompilation.
+        eval("
+            block = proc { |x| x }
+            test(true, block)
+        ");
+
+        assert_snapshot!(hir_string("test"), @r"
+        fn test@<compiled>:7:
+        bb1():
+          EntryPoint interpreter
+          v1:BasicObject = LoadSelf
+          v2:CPtr = LoadSP
+          v3:BasicObject = LoadField v2, :flag@0x1000
+          v4:BasicObject = LoadField v2, :block@0x1001
+          Jump bb3(v1, v3, v4)
+        bb2():
+          EntryPoint JIT(0)
+          v7:BasicObject = LoadArg :self@0
+          v8:BasicObject = LoadArg :flag@1
+          v9:BasicObject = LoadArg :block@2
+          Jump bb3(v7, v8, v9)
+        bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
+          CheckInterrupts
+          v19:CBool = Test v12
+          v20:Falsy = RefineType v12, Falsy
+          CondBranch v19, bb5(), bb4(v11, v20, v13)
+        bb5():
+          v22:Truthy = RefineType v12, Truthy
+          v26:Fixnum[42] = Const Value(42)
+          v29:BasicObject = Send v11, &block, :passthrough_recompile_blockarg, v26, v13 # SendFallbackReason: Complex argument passing
+          CheckInterrupts
+          Return v29
+        bb4(v34:BasicObject, v35:Falsy, v36:BasicObject):
+          v40:StringExact[VALUE(0x1008)] = Const Value(VALUE(0x1008))
+          v41:StringExact = StringCopy v40
+          CheckInterrupts
+          Return v41
+        ");
+    }
+
+    #[test]
     fn test_no_profile_send_on_final_version() {
         // On the final ISEQ version (MAX_ISEQ_VERSIONS reached), no-profile sends should
         // remain as Send fallbacks instead of being converted to SideExits, since recompilation
