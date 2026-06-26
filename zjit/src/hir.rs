@@ -3557,6 +3557,12 @@ impl Function {
         self.push_insn(block, Insn::GuardType { val, guard_type, state, recompile: None })
     }
 
+    pub fn guard_type_recompile(&mut self, block: BlockId, val: InsnId, guard_type: Type, state: InsnId, recompile: Recompile) -> InsnId {
+        let result = self.push_insn(block, Insn::GuardType { val, guard_type, state, recompile: Some(recompile) });
+        self.insn_types[result.0] = self.infer_type(result);
+        result
+    }
+
     fn count_complex_call_features(&mut self, block: BlockId, ci_flags: c_uint) {
         use Counter::*;
         if 0 != ci_flags & VM_CALL_ARGS_SPLAT     { self.count(block, complex_arg_pass_caller_splat);      }
@@ -3922,8 +3928,7 @@ impl Function {
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
 
                             if let Some(profiled_type) = profiled_type {
-                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
-                                self.insn_types[recv.0] = self.infer_type(recv);
+                                recv = self.guard_type_recompile(block, recv, Type::from_profiled_type(profiled_type), state, Recompile);
                             }
 
                             let replacement = self.try_inline_send_direct(block, Insn::SendDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, block: None });
@@ -3945,8 +3950,7 @@ impl Function {
 
                             let id = unsafe { get_cme_def_body_attr_id(cme) };
                             if let Some(profiled_type) = profiled_type {
-                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
-                                self.insn_types[recv.0] = self.infer_type(recv);
+                                recv = self.guard_type_recompile(block, recv, Type::from_profiled_type(profiled_type), state, Recompile);
 
                                 let replacement = self.try_emit_optimized_getivar(block, recv, id, profiled_type, state).unwrap_or_else(|counter| {
                                     self.count(block, counter);
@@ -3975,9 +3979,8 @@ impl Function {
                                 // TODO: attr_writer SetIvar has a null inline cache and may target a receiver
                                 // operand other than CFP self. Support it with a reprofile strategy that
                                 // profiles the receiver operand even after the send insn has finished profiling.
+                                recv = self.guard_type_recompile(block, recv, Type::from_profiled_type(profiled_type), state, Recompile);
                                 let recompile = None;
-                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
-                                self.insn_types[recv.0] = self.infer_type(recv);
                                 self.try_emit_optimized_setivar(block, recv, id, val, profiled_type, state, recompile).unwrap_or_else(|counter| {
                                     self.count(block, counter);
                                     self.push_insn(block, Insn::SetIvar { self_val: recv, id, ic: std::ptr::null(), val, state });
@@ -4003,8 +4006,7 @@ impl Function {
                                     }
                                     self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
                                     if let Some(profiled_type) = profiled_type {
-                                        recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
-                                        self.insn_types[recv.0] = self.infer_type(recv);
+                                        recv = self.guard_type_recompile(block, recv, Type::from_profiled_type(profiled_type), state, Recompile);
                                     }
                                     let kw_splat = flags & VM_CALL_KW_SPLAT != 0;
                                     let invoke_proc = self.push_insn(block, Insn::InvokeProc { recv, args: args.clone(), state, kw_splat });
@@ -4042,8 +4044,7 @@ impl Function {
                                     }
                                     self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
                                     if let Some(profiled_type) = profiled_type {
-                                        recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
-                                        self.insn_types[recv.0] = self.infer_type(recv);
+                                        recv = self.guard_type_recompile(block, recv, Type::from_profiled_type(profiled_type), state, Recompile);
                                     }
                                     // All structs from the same Struct class should have the same
                                     // length. So if our recv is embedded all runtime
@@ -4161,8 +4162,7 @@ impl Function {
 
                                         if let Some(profiled_type) = profiled_type {
                                             // Guard receiver class
-                                            recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
-                                            fun.insn_types[recv.0] = fun.infer_type(recv);
+                                            recv = fun.guard_type_recompile(block, recv, Type::from_profiled_type(profiled_type), state, Recompile);
                                         }
 
                                         // Try inlining the cfunc into HIR. Only inline if we don't have a block argument
@@ -4229,8 +4229,7 @@ impl Function {
 
                                         if let Some(profiled_type) = profiled_type {
                                             // Guard receiver class
-                                            recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
-                                            fun.insn_types[recv.0] = fun.infer_type(recv);
+                                            recv = fun.guard_type_recompile(block, recv, Type::from_profiled_type(profiled_type), state, Recompile);
                                         }
 
                                         // Try inlining the cfunc into HIR. Only inline if we don't have a block argument
