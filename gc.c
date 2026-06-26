@@ -1077,7 +1077,7 @@ rb_ec_newobj_of(rb_execution_context_t *ec, VALUE klass, VALUE flags, size_t siz
     return rb_newobj(ec, klass, flags, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER, true, size);
 }
 
-VALUE
+static VALUE
 rb_newobj_of_with_shape(VALUE klass, VALUE flags, shape_id_t shape_id, size_t size)
 {
     return rb_newobj(GET_EC(), klass, flags, shape_id, true, size);
