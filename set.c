@@ -504,7 +504,7 @@ set_initialize_with_block(RB_BLOCK_CALL_FUNC_ARGLIST(i, set))
  *   Set.new                          # => Set[]
  *   Set.new { fail 'Cannot happen' } # => Set[]  # Block not called.
  *
- * With no block given and argument +object+ given as an \Enumerable,
+ * With no block given and argument +object+ given,
  * populates the new set with the elements of +object+:
  *
  *   Set.new(%w[ a b c ])      # => Set["a", "b", "c"]
@@ -515,7 +515,7 @@ set_initialize_with_block(RB_BLOCK_CALL_FUNC_ARGLIST(i, set))
  *   Set.new(File.new('doc/NEWS/NEWS-4.0.0.md')).take(3)
  *   # => ["# NEWS for Ruby 4.0.0\n", "\n", "This document is a list of user-visible feature changes\n"]
  *
- * With a block given and argument +object+ given as an \Enumerable,
+ * With a block given and argument +object+ given,
  * calls the block with each element of +object+;
  * adds the block's return value to the new set:
  *
