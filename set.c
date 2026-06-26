@@ -1328,7 +1328,7 @@ set_i_xor(VALUE set, VALUE other)
  *    self | enumerable -> new_set
  *
  *  Returns a new \Set object containing the elements of both +self+
- *  and the given +enumerable+, omitting duplicate elements:
+ *  and the given +enumerable+.
  *
  *    set = Set[0, 1, 2]
  *    set | Set[2, 1, 'a'] # => Set[0, 1, 2, "a"]
