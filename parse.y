@@ -1458,6 +1458,8 @@ static NODE *attrset(struct parser_params*,NODE*,ID,ID,const YYLTYPE*);
 static VALUE rb_backref_error(struct parser_params*,NODE*);
 static NODE *node_assign(struct parser_params*,NODE*,NODE*,struct lex_context,const YYLTYPE*);
 
+static NODE *new_for_comprehension(struct parser_params *p, NODE *first_var, NODE *first_expr, NODE *gens, NODE *result, const YYLTYPE *loc);
+
 static NODE *new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, struct lex_context, const YYLTYPE *loc);
 static NODE *new_ary_op_assign(struct parser_params *p, NODE *ary, NODE *args, ID op, NODE *rhs, const YYLTYPE *args_loc, const YYLTYPE *loc, const YYLTYPE *call_operator_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc, const YYLTYPE *binary_operator_loc);
 static NODE *new_attr_op_assign(struct parser_params *p, NODE *lhs, ID atype, ID attr, ID op, NODE *rhs, const YYLTYPE *loc, const YYLTYPE *call_operator_loc, const YYLTYPE *message_loc, const YYLTYPE *binary_operator_loc);
@@ -2784,7 +2786,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node_args_aux> f_arg f_arg_item
 %type <node> f_marg f_rest_marg
 %type <node_masgn> f_margs
-%type <node> assoc_list assocs assoc undef_list backref string_dvar for_var
+%type <node> assoc_list assocs assoc undef_list backref string_dvar for_var for_gens
 %type <node_args> block_param opt_block_param_def block_param_def opt_block_param
 %type <id> do bv_decls opt_bv_decl bvar
 %type <node> lambda brace_body do_body
@@ -4553,7 +4555,7 @@ primary		: inline_primary
                 /*% ripper: case!($:expr, $:body) %*/
                 }
             | k_for[k_for] for_var[for_var] keyword_in[keyword_in]
-              {COND_PUSH(1);} expr_value[expr_value] do[do] {COND_POP();}
+              for_cond_push expr_value[expr_value] do[do] {COND_POP();}
               compstmt(stmts)[compstmt]
               k_end[k_end]
                 {
@@ -4596,6 +4598,30 @@ primary		: inline_primary
                     RNODE_SCOPE(scope)->nd_parent = $$;
                     fixpos($$, $for_var);
                 /*% ripper: for!($:for_var, $:expr_value, $:compstmt) %*/
+                }
+            | k_for[k_for] for_var[for_var] keyword_in[keyword_in]
+              for_cond_push arg_value[expr_value] {COND_POP();}
+              for_gens[for_gens] keyword_then
+              compstmt(stmts)[compstmt]
+              k_end[k_end]
+                {
+                    /*
+                     *  Scala-style comprehension. Each generator but the last
+                     *  becomes flat_map, the last becomes map:
+                     *
+                     *  for x in xs, y in ys then f(x, y) end
+                     *  #=>
+                     *  xs.flat_map {|x| ys.map {|y| f(x, y) } }
+                     *
+                     *  The generator source is arg_value (not the legacy
+                     *  expr_value) so the generator-separating comma cannot be
+                     *  swallowed by an unparenthesized command call's argument
+                     *  list; a command-call source must be parenthesized.
+                     */
+                    restore_block_exit(p, $k_for);
+                    $$ = new_for_comprehension(p, $for_var, $expr_value, $for_gens, $compstmt, &@$);
+                    fixpos($$, $for_var);
+                /*% ripper: [$:for_var, $:expr_value, $:for_gens, $:compstmt] %*/
                 }
             | k_class cpath superclass
                 {
@@ -4919,6 +4945,26 @@ opt_else	: none
 
 for_var		: lhs
                 | mlhs
+                ;
+
+/* Shared (named) empty action so the legacy `for` loop and the `for`
+ * comprehension can share a common prefix without a reduce/reduce conflict
+ * (an inline {COND_PUSH(1);} duplicated across both productions would conflict). */
+for_cond_push	: {COND_PUSH(1);}
+                ;
+
+/* Zero or more extra ", var in expr" generators of a comprehension, collected
+ * as a flat list [var2, expr2, var3, expr3, ...]. */
+for_gens	: /* none */
+                    {
+                        $$ = 0;
+                    /*% ripper: rb_ary_new %*/
+                    }
+                | for_gens[gens] ',' for_var[var] keyword_in arg_value[expr]
+                    {
+                        $$ = list_append(p, list_append(p, $gens, $var), $expr);
+                    /*% ripper: rb_ary_push($:gens, rb_ary_new_from_args(2, $:var, $:expr)) %*/
+                    }
                 ;
 
 f_marg		: f_norm_arg
@@ -11299,6 +11345,81 @@ rb_node_for_masgn_new(struct parser_params *p, NODE *nd_var, const YYLTYPE *loc)
     n->nd_var = nd_var;
 
     return n;
+}
+
+/* Desugar a single comprehension generator into a flat_map/map call:
+ *
+ *   recv.<mid> {|internal| var = internal; body }
+ *
+ * This mirrors the legacy `for` desugaring (see the k_for rule), but emits a
+ * flat_map/map send instead of NODE_FOR/each.  Like the legacy `for`, the block
+ * is built with an explicit one-entry id table via NEW_SCOPE2 (NOT NEW_ITER):
+ * the surrounding `for` frame is flat (no dyna scope), so letting local_tbl()
+ * run would slurp the surrounding locals into the block and break closures.
+ * The loop variable is therefore left to leak into the surrounding scope,
+ * exactly as the legacy `for` loop does. */
+static NODE *
+new_for_comp_gen(struct parser_params *p, NODE *var, NODE *recv, NODE *body, ID mid, const YYLTYPE *loc)
+{
+    ID id = internal_id(p);
+    rb_node_args_aux_t *m = NEW_ARGS_AUX(0, 0, &NULL_LOC);
+    rb_node_args_t *args;
+    rb_node_iter_t *iter;
+    NODE *scope, *call, *internal_var = NEW_DVAR(id, loc);
+    rb_ast_id_table_t *tbl = rb_ast_new_local_table(p->ast, 1);
+    tbl->ids[0] = id; /* internal id */
+
+    switch (nd_type(var)) {
+      case NODE_LASGN:
+      case NODE_DASGN: /* {|internal_var| var = internal_var; body } */
+        set_nd_value(p, var, internal_var);
+        id = 0;
+        m->nd_plen = 1;
+        m->nd_next = var;
+        break;
+      case NODE_MASGN: /* {|*internal_var| a, b, c = internal_var; body } */
+        m->nd_next = node_assign(p, var, NEW_FOR_MASGN(internal_var, loc), NO_LEX_CTXT, loc);
+        break;
+      default: /* {|*internal_var| @a, B, c[1], d.attr = internal_var; body } */
+        m->nd_next = node_assign(p, (NODE *)NEW_MASGN(NEW_LIST(var, loc), 0, loc), internal_var, NO_LEX_CTXT, loc);
+    }
+    args = new_args(p, m, 0, id, 0, new_empty_args_tail(p, loc), loc);
+    scope = NEW_SCOPE2(tbl, args, body, NULL, loc);
+
+    /* Wrap the hand-built SCOPE in NODE_ITER without going through NEW_ITER
+     * (which calls local_tbl() on the current, surrounding frame). */
+    iter = NODE_NEWNODE(NODE_ITER, rb_node_iter_t, loc);
+    RNODE_SCOPE(scope)->nd_parent = (NODE *)iter;
+    iter->nd_body = scope;
+    iter->nd_iter = 0;
+
+    call = NEW_CALL(recv, mid, 0, loc);
+    return method_add_block(p, call, (NODE *)iter, loc);
+}
+
+/* Fold one generator (var in recv) plus the remaining generators (gens, a flat
+ * list [var2, expr2, ...]) and the result body into nested flat_map/map calls.
+ * The last generator becomes map; every earlier one becomes flat_map. */
+static NODE *
+for_comp_fold(struct parser_params *p, NODE *var, NODE *recv, NODE *gens, NODE *result, const YYLTYPE *loc)
+{
+    if (gens == 0) {
+        return new_for_comp_gen(p, var, recv, result, rb_intern("map"), loc);
+    }
+    else {
+        NODE *next_var = RNODE_LIST(gens)->nd_head;
+        NODE *after_var = RNODE_LIST(gens)->nd_next;
+        NODE *next_expr = RNODE_LIST(after_var)->nd_head;
+        NODE *rest = RNODE_LIST(after_var)->nd_next;
+        NODE *inner = for_comp_fold(p, next_var, next_expr, rest, result, loc);
+        return new_for_comp_gen(p, var, recv, inner, rb_intern("flat_map"), loc);
+    }
+}
+
+static NODE *
+new_for_comprehension(struct parser_params *p, NODE *first_var, NODE *first_expr, NODE *gens, NODE *result, const YYLTYPE *loc)
+{
+    return for_comp_fold(p, first_var, first_expr, gens, result, loc);
 }
 
 static rb_node_retry_t *

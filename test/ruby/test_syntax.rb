@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+require_relative '../lib/parser_support'
 
 class TestSyntax < Test::Unit::TestCase
   using Module.new {
@@ -1375,6 +1376,48 @@ eom
       for foo&.bar in [1]; end
       assert_equal(1, foo.bar)
     end;
+  end
+
+  def test_for_comprehension
+    # Scala-style `for ... then` comprehension desugars nested flat_map/map.
+    # Only implemented in the parse.y parser.
+    omit if ParserSupport.prism_enabled?
+
+    # single generator => map
+    assert_equal([2, 4, 6], eval("for x in [1, 2, 3] then x * 2 end"))
+    # multiple generators => flat_map (all but last) + map (last)
+    assert_equal([[1, 10], [1, 20], [2, 10], [2, 20]],
+                 eval("for x in [1, 2], y in [10, 20] then [x, y] end"))
+    assert_equal([[1, 3, 4], [1, 3, 5], [2, 3, 4], [2, 3, 5]],
+                 eval("for x in [1, 2], y in [3], z in [4, 5] then [x, y, z] end"))
+    # a later generator may reference an earlier loop variable
+    assert_equal([11, 22, 33],
+                 eval("for x in [1, 2, 3], y in [x * 10] then x + y end"))
+    # destructuring loop variables (same as legacy `for`)
+    assert_equal([3, 7], eval("for (a, b) in [[1, 2], [3, 4]] then a + b end"))
+    assert_equal([3, 7], eval("for a, b in [[1, 2], [3, 4]] then a + b end"))
+    # multi-statement body: value of the last expression is the element
+    assert_equal([2, 5, 10], eval("for x in [1, 2, 3] then z = x * x; z + 1 end"))
+    # empty source
+    assert_equal([], eval("for x in [] then x end"))
+    # a parenthesized command-call source is allowed
+    assert_equal([1, 2], eval("def self.id(x) = x; for x in id([1, 2]) then x end"))
+  end
+
+  def test_for_comprehension_does_not_break_for_loop
+    omit if ParserSupport.prism_enabled?
+
+    # the legacy `for` loop is unchanged: it iterates and returns the collection
+    a = [1, 2, 3]
+    seen = []
+    assert_same(a, eval("for x in a do seen << x end", binding))
+    assert_equal([1, 2, 3], seen)
+    # an unparenthesized command-call source still works for the legacy loop
+    assert_nothing_raised(SyntaxError) do
+      assert_valid_syntax("def f(x) = x; for i in f [1] do end")
+    end
+    # the loop variable leaks, like the legacy `for` loop
+    assert_equal("local-variable", eval("for x in [1, 2, 3] then x end; defined?(x)"))
   end
 
   def test_no_warning_logop_literal
