@@ -864,21 +864,28 @@ set_classify_i(st_data_t key, st_data_t tmp)
 
 /*
  *  call-seq:
- *    classify { |o| ... } -> hash
- *    classify -> enumerator
+ *    classify {|element| ... } -> hash
+ *    classify -> new_enumerator
  *
- *  Classifies the set by the return value of the given block and
- *  returns a hash of {value => set of elements} pairs.  The block is
- *  called once for each element of the set, passing the element as
- *  parameter.
+ *  With a block given, calls the block with each element of +self+;
+ *  returns a hash whose keys are the block's return values;
+ *  the value for each key is a set containing the elements
+ *  for which the block returned that key.
  *
- *    files = Set.new(Dir.glob("*.rb"))
- *    hash = files.classify { |f| File.mtime(f).year }
- *    hash       #=> {2000 => Set["a.rb", "b.rb"],
- *               #    2001 => Set["c.rb", "d.rb", "e.rb"],
- *               #    2002 => Set["f.rb"]}
+ *  This example classifies elements by their classes:
  *
- *  Returns an enumerator if no block is given.
+ *    set = Set[*%w[foo bar], *('a'..'c'), *(0..2), {foo: 0, bar: 1}, *%i[bah bam], *(3..5), *('d'..'f')]
+ *    # => Set["foo", "bar", "a", "b", "c", 0, 1, 2, {foo: 0, bar: 1}, :bah, :bam, 3, 4, 5, "d", "e", "f"]
+ *    set.classify {|element| element.class }
+ *    # =>
+ *    {String => Set["foo", "bar", "a", "b", "c", "d", "e", "f"],
+ *     Integer => Set[0, 1, 2, 3, 4, 5],
+ *     Hash => Set[{foo: 0, bar: 1}],
+ *     Symbol => Set[:bah, :bam]}
+ *
+ *  With no block given, returns a new Enumerator.
+ *
+ *  Related: see {Methods for Converting}[rdoc-ref:Set@Methods+for+Converting].
  */
 static VALUE
 set_i_classify(VALUE set)
