@@ -1340,13 +1340,16 @@ set_i_xor(VALUE set, VALUE other)
 
 /*
  *  call-seq:
- *    set | enum -> new_set
+ *    self | enumerable -> new_set
  *
- *  Returns a new set built by merging the set and the elements of the
- *  given enumerable object.
+ *  Returns a new \Set object containing the elements of both +self+
+ *  and the given +enumerable+.
  *
- *    Set[1, 2, 3] | Set[2, 4, 5]         #=> Set[1, 2, 3, 4, 5]
- *    Set[1, 5, 'z'] | (1..6)             #=> Set[1, 5, "z", 2, 3, 4, 6]
+ *    set = Set[0, 1, 2]
+ *    set | Set[2, 1, 'a'] # => Set[0, 1, 2, "a"]
+ *    set | set            # => Set[0, 1, 2]
+ *
+ *  Related: see {Methods for Set Operations}[rdoc-ref:Set@Methods+for+Set+Operations].
  */
 static VALUE
 set_i_union(VALUE set, VALUE other)
