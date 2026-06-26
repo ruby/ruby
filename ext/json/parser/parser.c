@@ -1133,6 +1133,13 @@ static inline VALUE json_decode_float(JSON_ParserConfig *config, uint64_t mantis
     }
 
     if (RB_UNLIKELY(mantissa_digits > 18 || mantissa_digits + exponent < -307)) {
+        // If the value is so small that it definitely underflows to 0.0, return early
+        // to avoid triggering a "Float out of range" warning from rb_cstr_to_dbl.
+        // When mantissa_digits + exponent < -324, value < 10^(-324) < DBL_TRUE_MIN/2,
+        // so it rounds to 0 in IEEE 754 round-to-nearest.
+        if (RB_UNLIKELY(mantissa_digits + exponent < -324)) {
+            return rb_float_new(negative ? -0.0 : 0.0);
+        }
         return json_decode_large_float(start, end - start);
     }
 
