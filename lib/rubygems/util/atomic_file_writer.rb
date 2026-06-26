@@ -26,6 +26,16 @@ module Gem
       basename = File.basename(file_name)
       tmp_path = File.join(dirname, ".#{basename.byteslice(0, 254 - tmp_suffix.bytesize)}#{tmp_suffix}")
 
+      # The temporary name is longer than the final one, so on Windows a
+      # writable destination can still map to a path beyond the 260-character
+      # MAX_PATH limit. Only in that case, trim the random suffix just enough to
+      # fit, keeping at least 8 hex characters to avoid collisions.
+      if tmp_path.length >= 260 && Gem.win_platform?
+        keep = [tmp_suffix.bytesize - (tmp_path.length - 259), ".tmp.".bytesize + 8].max
+        tmp_suffix = tmp_suffix.byteslice(0, keep)
+        tmp_path = File.join(dirname, ".#{basename.byteslice(0, 254 - tmp_suffix.bytesize)}#{tmp_suffix}")
+      end
+
       flags = File::RDWR | File::CREAT | File::EXCL | File::BINARY
       flags |= File::SHARE_DELETE if defined?(File::SHARE_DELETE)
 
