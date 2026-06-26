@@ -504,7 +504,7 @@ set_initialize_with_block(RB_BLOCK_CALL_FUNC_ARGLIST(i, set))
  *   Set.new                          # => Set[]
  *   Set.new { fail 'Cannot happen' } # => Set[]  # Block not called.
  *
- * With no block given and argument +object+ given,
+ * With no block given and enumerable argument +object+ given,
  * populates the new set with the elements of +object+:
  *
  *   Set.new(%w[ a b c ])      # => Set["a", "b", "c"]
