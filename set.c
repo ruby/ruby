@@ -1395,7 +1395,6 @@ set_i_subtract(VALUE set, VALUE other)
  *    set = Set[*(0..6), *%w[ a b c]] # => Set[0, 1, 2, 3, 4, 5, 6, "a", "b", "c"]
  *    set - ['b', 6, 4, 1]            # => Set[0, 2, 3, 5, "a", "c"]
  *    set - ['d', 7, 9]               # => Set[0, 1, 2, 3, 4, 5, 6, "a", "b", "c"]
- *    set - {}                        # => Set[0, 1, 2, 3, 4, 5, 6, "a", "b", "c"]
  *
  *  Related: see {Methods for Set Operations}[rdoc-ref:Set@Methods+for+Set+Operations].
  */
