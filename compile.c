@@ -4357,7 +4357,8 @@ iseq_specialized_instruction(rb_iseq_t *iseq, INSN *iobj)
         INSN *niobj = (INSN *)iobj->link.next;
         if ((IS_INSN_ID(niobj, getlocal) ||
              IS_INSN_ID(niobj, getinstancevariable) ||
-             IS_INSN_ID(niobj, putself)) &&
+             IS_INSN_ID(niobj, putself) ||
+             IS_INSN_ID(niobj, putobject)) &&
             IS_NEXT_INSN_ID(&niobj->link, send)) {
 
             LINK_ELEMENT *sendobj = &(niobj->link); // Below we call ->next;
