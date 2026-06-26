@@ -290,6 +290,16 @@ fn register_with_perf(symbol_name: String, start_ptr: usize, code_size: usize) {
     };
 }
 
+/// Register the code emitted from `start` through the current write pointer
+/// under `symbol_name` in the perf map, if perf output is enabled.
+fn register_current_code_range_with_perf(cb: &CodeBlock, symbol_name: &str, start: CodePtr) {
+    if get_option!(perf).is_some() {
+        let start_ptr = start.raw_addr(cb);
+        let end_ptr = cb.get_write_ptr().raw_addr(cb);
+        register_with_perf(symbol_name.to_string(), start_ptr, end_ptr - start_ptr);
+    }
+}
+
 /// Compile a shared JIT entry trampoline
 pub fn gen_entry_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> {
     // Set up registers for CFP, EC, SP, and basic block arguments
@@ -309,12 +319,7 @@ pub fn gen_entry_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError>
 
     let (code_ptr, gc_offsets) = asm.compile(cb)?;
     assert!(gc_offsets.is_empty());
-    if get_option!(perf).is_some() {
-        let start_ptr = code_ptr.raw_addr(cb);
-        let end_ptr = cb.get_write_ptr().raw_addr(cb);
-        let code_size = end_ptr - start_ptr;
-        register_with_perf("entry trampoline".into(), start_ptr, code_size);
-    }
+    register_current_code_range_with_perf(cb, "entry trampoline", code_ptr);
     Ok(code_ptr)
 }
 
@@ -3578,6 +3583,7 @@ pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, C
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
         assert_eq!(gc_offsets.len(), 0);
+        register_current_code_range_with_perf(cb, "function_stub_hit trampoline", code_ptr);
         code_ptr
     })
 }
@@ -3593,6 +3599,7 @@ pub fn gen_exit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> 
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
         assert_eq!(gc_offsets.len(), 0);
+        register_current_code_range_with_perf(cb, "exit trampoline", code_ptr);
         code_ptr
     })
 }
@@ -3615,6 +3622,7 @@ pub fn gen_materialize_exit_trampoline(cb: &mut CodeBlock, exit_trampoline: Code
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
         assert_eq!(gc_offsets.len(), 0);
+        register_current_code_range_with_perf(cb, "materialize_exit trampoline", code_ptr);
         code_ptr
     })
 }
@@ -3630,6 +3638,7 @@ pub fn gen_materialize_exit_trampoline_with_counter(cb: &mut CodeBlock, material
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
         assert_eq!(gc_offsets.len(), 0);
+        register_current_code_range_with_perf(cb, "materialize_exit_with_counter trampoline", code_ptr);
         code_ptr
     })
 }
