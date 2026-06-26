@@ -1705,6 +1705,9 @@ impl Assembler
             symbol_name: &str,
             push_insns: impl FnOnce(&mut Vec<Insn>),
         ) {
+            // ISEQ perf symbols cover the whole compiled ISEQ, including this
+            // padding. HIR perf needs a separate symbol because the padding
+            // doesn't belong to any HIR instruction.
             if get_option!(perf) != Some(PerfMap::HIR) {
                 push_insns(insns);
                 return;
