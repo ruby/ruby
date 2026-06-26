@@ -3719,6 +3719,51 @@ impl Function {
         })
     }
 
+    /// Try trivially inlining the method. If we can't, emit a SendDirect instruction instead and
+    /// leave it to the general-purpose inliner to handle.
+    fn try_inline_send_direct(&mut self, block: BlockId, insn: Insn) -> InsnId {
+        let Insn::SendDirect { recv, iseq, cd, ref args, state, .. } = insn else {
+            panic!("try_inline_send_direct called with non-SendDirect instruction");
+        };
+        // The trivial inliner runs first to handle simple cases (constant returns,
+        // parameter returns, etc.) without frame push/pop overhead. The general
+        // inliner then handles more complex methods that require full inlining.
+        let call_info = unsafe { (*cd).ci };
+        let ci_flags = unsafe { vm_ci_flag(call_info) };
+        // .send call is not currently supported for builtins
+        if ci_flags & VM_CALL_OPT_SEND != 0 {
+            return self.push_insn(block, insn);
+        }
+        let Some(value) = iseq_get_return_value(iseq, None, ci_flags) else {
+            return self.push_insn(block, insn);
+        };
+        match value {
+            IseqReturn::LocalVariable(idx) => {
+                self.count(block, Counter::inline_iseq_optimized_send_count);
+                args[idx as usize]
+            }
+            IseqReturn::Value(value) => {
+                self.count(block, Counter::inline_iseq_optimized_send_count);
+                self.push_insn(block, Insn::Const { val: Const::Value(value) })
+            }
+            IseqReturn::Receiver => {
+                self.count(block, Counter::inline_iseq_optimized_send_count);
+                recv
+            }
+            IseqReturn::InvokeLeafBuiltin(bf, return_type) => {
+                self.count(block, Counter::inline_iseq_optimized_send_count);
+                self.push_insn(block, Insn::InvokeBuiltin {
+                    bf,
+                    recv,
+                    args: vec![recv],
+                    state,
+                    leaf: true,
+                    return_type,
+                })
+            }
+        }
+    }
+
     /// Rewrite eligible Send opcodes into SendDirect
     /// opcodes if we know the target ISEQ statically. This removes run-time method lookups and
     /// opens the door for inlining.
@@ -3834,8 +3879,8 @@ impl Function {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile::ProfileSend { argc }) });
                             }
 
-                            let send_direct = self.push_insn(block, Insn::SendDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, block: send_block });
-                            self.make_equal_to(insn_id, send_direct);
+                            let replacement = self.try_inline_send_direct(block, Insn::SendDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, block: send_block });
+                            self.make_equal_to(insn_id, replacement);
                         } else if !has_block && def_type == VM_METHOD_TYPE_BMETHOD {
                             let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
                             let proc = unsafe { rb_jit_get_proc_ptr(procv) };
@@ -3878,8 +3923,8 @@ impl Function {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile::ProfileSend{ argc }) });
                             }
 
-                            let send_direct = self.push_insn(block, Insn::SendDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, block: None });
-                            self.make_equal_to(insn_id, send_direct);
+                            let replacement = self.try_inline_send_direct(block, Insn::SendDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, block: None });
+                            self.make_equal_to(insn_id, replacement);
                         } else if !has_block && def_type == VM_METHOD_TYPE_IVAR && args.is_empty() {
                             // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
                             // We omit gen_prepare_non_leaf_call on gen_getivar, so it's unsafe to raise for multi-ractor mode.
@@ -4233,7 +4278,7 @@ impl Function {
                             emit_super_call_guards(self, block, super_cme, current_cme, mid, state, frame_state.iseq);
 
                             // Use SendDirect with the super method's CME and ISEQ.
-                            let send_direct = self.push_insn(block, Insn::SendDirect {
+                            let replacement = self.try_inline_send_direct(block, Insn::SendDirect {
                                 recv,
                                 cd,
                                 cme: super_cme,
@@ -4243,7 +4288,7 @@ impl Function {
                                 state: send_state,
                                 block: None,
                             });
-                            self.make_equal_to(insn_id, send_direct);
+                            self.make_equal_to(insn_id, replacement);
 
                         } else if def_type == VM_METHOD_TYPE_CFUNC {
                             let cfunc = unsafe { get_cme_def_body_cfunc(super_cme) };
@@ -4749,60 +4794,6 @@ impl Function {
         }
 
         did_inline
-    }
-
-    fn inline_trivial(&mut self) {
-        for block in self.reverse_post_order() {
-            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
-            assert!(self.blocks[block.0].insns.is_empty());
-            for insn_id in old_insns {
-                match self.find(insn_id) {
-                    // We can inline SendDirect with blockiseq because we are prohibiting `yield`
-                    // and `.call`, which would trigger autosplat. We only inline constants and
-                    // variables and builtin calls.
-                    Insn::SendDirect { recv, iseq, cd, args, state, .. } => {
-                        let call_info = unsafe { (*cd).ci };
-                        let ci_flags = unsafe { vm_ci_flag(call_info) };
-                        // .send call is not currently supported for builtins
-                        if ci_flags & VM_CALL_OPT_SEND != 0 {
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        let Some(value) = iseq_get_return_value(iseq, None, ci_flags) else {
-                            self.push_insn_id(block, insn_id); continue;
-                        };
-                        match value {
-                            IseqReturn::LocalVariable(idx) => {
-                                self.count(block, Counter::inline_iseq_optimized_send_count);
-                                self.make_equal_to(insn_id, args[idx as usize]);
-                            }
-                            IseqReturn::Value(value) => {
-                                self.count(block, Counter::inline_iseq_optimized_send_count);
-                                let replacement = self.push_insn(block, Insn::Const { val: Const::Value(value) });
-                                self.make_equal_to(insn_id, replacement);
-                            }
-                            IseqReturn::Receiver => {
-                                self.count(block, Counter::inline_iseq_optimized_send_count);
-                                self.make_equal_to(insn_id, recv);
-                            }
-                            IseqReturn::InvokeLeafBuiltin(bf, return_type) => {
-                                self.count(block, Counter::inline_iseq_optimized_send_count);
-                                let replacement = self.push_insn(block, Insn::InvokeBuiltin {
-                                    bf,
-                                    recv,
-                                    args: vec![recv],
-                                    state,
-                                    leaf: true,
-                                    return_type,
-                                });
-                                self.make_equal_to(insn_id, replacement);
-                            }
-                        }
-                    }
-                    _ => { self.push_insn_id(block, insn_id); }
-                }
-            }
-        }
-        crate::stats::trace_compile_phase("infer_types", || self.infer_types());
     }
 
     fn load_shape(&mut self, block: BlockId, recv: InsnId) -> InsnId {
@@ -6184,7 +6175,6 @@ impl Function {
         macro_rules! counter_for {
             // Bucket all strength reduction together
             (type_specialize) => { Counter::compile_hir_strength_reduce_time_ns };
-            (inline_trivial) => { Counter::compile_hir_strength_reduce_time_ns };
             (optimize_c_calls) => { Counter::compile_hir_strength_reduce_time_ns };
             (convert_no_profile_sends) => { Counter::compile_hir_strength_reduce_time_ns };
             // End strength reduction bucket
@@ -6231,10 +6221,6 @@ impl Function {
         for iteration in 0..=inline_max_iterations {
             // Function is assumed to have types inferred already
             run_pass!(type_specialize);
-            // The trivial inliner runs first to handle simple cases (constant returns,
-            // parameter returns, etc.) without frame push/pop overhead. The general
-            // inliner then handles more complex methods that require full inlining.
-            run_pass!(inline_trivial);
             // Cap inlining at inline_max_iterations passes; the trailing iteration (see above)
             // runs the rest of the pipeline with inlining off.
             let did_inline = if iteration < inline_max_iterations {
