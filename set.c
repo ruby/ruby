@@ -1066,13 +1066,19 @@ set_intersection_block(RB_BLOCK_CALL_FUNC_ARGLIST(i, data))
 
 /*
  *  call-seq:
- *    set & enum -> new_set
+ *    self & enumerable -> new_set
  *
- *  Returns a new set containing elements common to the set and the given
- *  enumerable object.
+ *  Returns a new set containing the {intersection}[https://en.wikipedia.org/wiki/Intersection_(set_theory)]
+ *  of +self+ and +enumerable+;
+ *  that is, containing all elements common to both, with no duplicates.
+ *  Argument +enumerable+ must be an Enumerable object:
  *
- *    Set[1, 3, 5] & Set[3, 2, 1]             #=> Set[3, 1]
- *    Set['a', 'b', 'z'] & ['a', 'b', 'c']    #=> Set["a", "b"]
+ *    set = Set[*(0..6), *%w[ a b c]] # => Set[0, 1, 2, 3, 4, 5, 6, "a", "b", "c"]
+ *    set & ['c', 6, 1, 4]            # => Set["c", 6, 1, 4]
+ *    set & [:foo, :bar]              # => Set[]  # No elements in common.
+ *    set & {}                        # => Set[]  # No elements in enumerable.
+ *
+ *  Related: see {Methods for Set Operations}[rdoc-ref:Set@Methods+for+Set+Operations].
  */
 static VALUE
 set_i_intersection(VALUE set, VALUE other)
