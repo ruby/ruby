@@ -593,6 +593,9 @@ impl Type {
     }
 
     pub fn num_bytes(&self) -> u8 {
+        assert!(!self.bit_equal(types::Empty),
+                "a value of type Empty is unreachable and should have been eliminated before codegen");
+
         if self.is_subtype(types::CUInt8) || self.is_subtype(types::CInt8) { return 1; }
         if self.is_subtype(types::CUInt16) || self.is_subtype(types::CInt16) { return 2; }
         if self.is_subtype(types::CUInt32) || self.is_subtype(types::CInt32) { return 4; }
