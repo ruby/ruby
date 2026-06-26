@@ -60,14 +60,8 @@ static const char endstr[] = "sSiIlLqQjJ";
 static int
 is_bigendian(void)
 {
-    static int init = 0;
-    static int endian_value;
-    const char *p;
-
-    if (init) return endian_value;
-    init = 1;
-    p = (char*)&init;
-    return endian_value = p[0]?0:1;
+    static const union {int i; char b[1];} endian_value = {1};
+    return !endian_value.b[0];
 }
 # define BIGENDIAN_P() (is_bigendian())
 #elif defined(WORDS_BIGENDIAN)
