@@ -2,12 +2,15 @@
 
 class JITPerf
   INTERPRETER_SYMBOLS = [
+    # rb_* entry points
     "rb_call0",
+    "rb_funcallv_scope",
+    "rb_yield",
+
+    # VM helpers without rb_vm_/vm_ prefixes
     "callable_method_entry_or_negative",
     "invoke_block_from_c_bh",
-    "rb_funcallv_scope",
     "setup_parameters_complex",
-    "rb_yield",
   ].freeze
 
   def initialize
