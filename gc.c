@@ -379,7 +379,9 @@ rb_gc_obj_changed_pool(VALUE obj, size_t heap_id)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, T_OBJECT));
 
-    RBASIC_SET_SHAPE_ID(obj, rb_obj_shape_transition_heap(obj, heap_id));
+    size_t capacity = (rb_gc_obj_slot_size(obj) - offsetof(struct RObject, as.heap.fields)) / sizeof(VALUE);
+
+    RBASIC_SET_SHAPE_ID(obj, rb_obj_shape_transition_root(obj, capacity));
 }
 
 void rb_vm_update_references(void *ptr);
@@ -604,7 +606,6 @@ typedef struct gc_function_map {
     void *(*ractor_cache_alloc)(void *objspace_ptr, void *ractor);
     void (*set_params)(void *objspace_ptr);
     void (*init)(void);
-    size_t *(*heap_sizes)(void *objspace_ptr);
     // Shutdown
     void (*shutdown_free_objects)(void *objspace_ptr);
     void (*objspace_free)(void *objspace_ptr);
@@ -783,7 +784,6 @@ ruby_modular_gc_init(void)
     load_modular_gc_func(ractor_cache_alloc);
     load_modular_gc_func(set_params);
     load_modular_gc_func(init);
-    load_modular_gc_func(heap_sizes);
     // Shutdown
     load_modular_gc_func(shutdown_free_objects);
     load_modular_gc_func(objspace_free);
@@ -1028,14 +1028,10 @@ gc_newobj_hook(VALUE obj)
     RB_GC_VM_UNLOCK_NO_BARRIER(lev);
 }
 
-VALUE
-rb_newobj(rb_execution_context_t *ec, VALUE klass, VALUE flags, shape_id_t shape_id, bool wb_protected, size_t size)
+static void
+rb_newobj_post_alloc(VALUE obj, shape_id_t shape_id)
 {
-    GC_ASSERT((flags & FL_WB_PROTECTED) == 0);
-    rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
-    VALUE obj = rb_gc_impl_new_obj(rb_gc_get_objspace(), cr->newobj_cache, klass, flags, wb_protected, size);
-
-#if RACTOR_CHECK_MODE
+    #if RACTOR_CHECK_MODE
     void rb_ractor_setup_belonging(VALUE obj);
     rb_ractor_setup_belonging(obj);
 #endif
@@ -1059,6 +1055,16 @@ rb_newobj(rb_execution_context_t *ec, VALUE klass, VALUE flags, shape_id_t shape
         rb_gc_obj_slot_size(obj) - sizeof(struct RBasic)
     );
 #endif
+}
+
+VALUE
+rb_newobj(rb_execution_context_t *ec, VALUE klass, VALUE flags, shape_id_t shape_id, bool wb_protected, size_t size)
+{
+    GC_ASSERT((flags & FL_WB_PROTECTED) == 0);
+    rb_ractor_t *cr = rb_ec_ractor_ptr(ec);
+    VALUE obj = rb_gc_impl_new_obj(rb_gc_get_objspace(), cr->newobj_cache, klass, flags, wb_protected, size);
+
+    rb_newobj_post_alloc(obj, shape_id);
 
     return obj;
 }
@@ -1077,23 +1083,30 @@ rb_ec_newobj_of(rb_execution_context_t *ec, VALUE klass, VALUE flags, size_t siz
     return rb_newobj(ec, klass, flags, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER, true, size);
 }
 
-static VALUE
-rb_newobj_of_with_shape(VALUE klass, VALUE flags, shape_id_t shape_id, size_t size)
-{
-    return rb_newobj(GET_EC(), klass, flags, shape_id, true, size);
-}
-
 VALUE
 rb_newobj_of(VALUE klass, VALUE flags, size_t size)
 {
     return rb_newobj(GET_EC(), klass, flags, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER, true, size);
 }
 
+static VALUE
+t_object_newobj(VALUE klass, size_t size)
+{
+    rb_ractor_t *cr = rb_ec_ractor_ptr(GET_EC());
+    VALUE obj = rb_gc_impl_new_obj(rb_gc_get_objspace(), cr->newobj_cache, klass, T_OBJECT, true, size);
+
+    size_t capacity = (rb_gc_obj_slot_size(obj) - offsetof(struct RObject, as.heap.fields)) / sizeof(VALUE);
+    shape_id_t shape_id = rb_shape_id_with_robject_layout(rb_shape_root_from_capacity(capacity));
+
+    rb_newobj_post_alloc(obj, shape_id);
+
+    return obj;
+}
+
 static
 VALUE class_allocate_complex_instance(VALUE klass, uint32_t capacity)
 {
-    shape_id_t initial_shape_id = rb_shape_id_with_robject_layout(rb_shape_root(rb_gc_heap_id_for_size(sizeof(struct RObject))));
-    VALUE obj = rb_newobj_of_with_shape(klass, T_OBJECT, initial_shape_id, sizeof(struct RObject));
+    VALUE obj = t_object_newobj(klass, sizeof(struct RObject));
     rb_obj_init_complex(obj, rb_st_init_numtable_with_size(capacity));
     return obj;
 }
@@ -1105,8 +1118,7 @@ rb_class_allocate_instance(VALUE klass)
     VALUE obj;
 
     // Directly start as COMPLEX if we know we're over the limit.
-    RUBY_ASSERT(rb_shape_tree.max_capacity > 0);
-    if (RB_UNLIKELY(index_tbl_num_entries > rb_shape_tree.max_capacity)) {
+    if (RB_UNLIKELY(index_tbl_num_entries > SHAPE_MAX_CAPACITY)) {
         obj = class_allocate_complex_instance(klass, index_tbl_num_entries);
     }
     else {
@@ -1117,7 +1129,7 @@ rb_class_allocate_instance(VALUE klass)
 
         // There might be a NEWOBJ tracepoint callback, and it may set fields.
         // So the shape must be passed to `NEWOBJ_OF`.
-        obj = rb_newobj_of_with_shape(klass, T_OBJECT, rb_shape_id_with_robject_layout(rb_shape_root(rb_gc_heap_id_for_size(size))), size);
+        obj = t_object_newobj(klass, size);
 
         #if RUBY_DEBUG
             VALUE *ptr = ROBJECT_FIELDS(obj);
