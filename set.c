@@ -1399,13 +1399,19 @@ set_i_subtract(VALUE set, VALUE other)
 
 /*
  *  call-seq:
- *    set - enum -> new_set
+ *    self - enumerable -> new_set
  *
- *  Returns a new set built by duplicating the set, removing every
- *  element that appears in the given enumerable object.
+ *  Returns a new set containing the
+ *  {difference}[https://en.wikipedia.org/wiki/Complement_(set_theory)#Relative_complement]
+ *  of +self+ and argument +enumerable+;
+ *  that is, containing all elements in +self+ that are not in +enumerable+.
  *
- *    Set[1, 3, 5] - Set[1, 5]                #=> Set[3]
- *    Set['a', 'b', 'z'] - ['a', 'c']         #=> Set["b", "z"]
+ *
+ *    set = Set[*(0..6), *%w[ a b c]] # => Set[0, 1, 2, 3, 4, 5, 6, "a", "b", "c"]
+ *    set - ['b', 6, 4, 1]            # => Set[0, 2, 3, 5, "a", "c"]
+ *    set - ['d', 7, 9]               # => Set[0, 1, 2, 3, 4, 5, 6, "a", "b", "c"]
+ *
+ *  Related: see {Methods for Set Operations}[rdoc-ref:Set@Methods+for+Set+Operations].
  */
 static VALUE
 set_i_difference(VALUE set, VALUE other)
