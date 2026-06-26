@@ -1887,9 +1887,16 @@ set_recursive_eql(VALUE set, VALUE dt, int recur)
 
 /*
  *  call-seq:
- *    set == other -> true or false
+ *    self == object -> true or false
  *
- *  Returns true if two sets are equal.
+ *  Returns whether +object+ is a set, and has the same elements as +self+:
+ *
+ *    set = Set[0, 1, 2]
+ *    set == Set[1, 2, 0]   # => true
+ *    set == [1, 2, 3]      # => false
+ *    set == Set[1, 2, '3'] # => false
+ *
+ *  Related: see {Methods for Comparing}[rdoc-ref:Set@Methods+for+Comparing].
  */
 static VALUE
 set_i_eq(VALUE set, VALUE other)
