@@ -416,7 +416,7 @@ set_s_alloc(VALUE klass)
  *  call-seq:
  *    Set[*objects] -> new_set
  *
- *  Returns a new \Set object populated with the given `objects`:
+ *  Returns a new \Set object populated with the given +objects+:
  *
  *    Set[1, 'one', :one, 1.0, %w[a b c], {foo: 0, bar: 1}]
  *    # => Set[1, "one", :one, 1.0, ["a", "b", "c"], {foo: 0, bar: 1}]
