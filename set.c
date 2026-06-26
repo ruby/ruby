@@ -1074,7 +1074,7 @@ set_intersection_block(RB_BLOCK_CALL_FUNC_ARGLIST(i, data))
  *  Argument +enumerable+ must be an Enumerable object:
  *
  *    set = Set[*(0..6), *%w[ a b c]] # => Set[0, 1, 2, 3, 4, 5, 6, "a", "b", "c"]
- *    set & ['c', 6, 1, 4]            # => Set["c", 6, 1, 4]
+ *    set & ['c', 6, 8, 4]            # => Set["c", 6, 4]
  *    set & [:foo, :bar]              # => Set[]  # No elements in common.
  *    set & {}                        # => Set[]  # No elements in enumerable.
  *
