@@ -715,8 +715,7 @@ set_i_join(int argc, VALUE *argv, VALUE set)
  *  call-seq:
  *    add(object) -> self
  *
- *  Adds the given +object+ to +self+, if it is not already an element of +self+;
- *  returns +self+:
+ *  Adds the given +object+ to +self+, returns +self+:
  *
  *    set = Set[0, 1, 2]
  *    set.add(%w[a b c]) # => Set[0, 1, 2, ["a", "b", "c"]]
