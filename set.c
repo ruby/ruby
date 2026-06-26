@@ -739,14 +739,22 @@ set_i_add(VALUE set, VALUE item)
 
 /*
  *  call-seq:
- *    add?(obj) -> self or nil
+ *    add?(object) -> self or nil
  *
- *  Adds the given object to the set and returns self. If the object is
- *  already in the set, returns nil.
+ *  When +object+ is not an elements of +self+, adds it to +self+;
+ *  returns +self+:
  *
- *    Set[1, 2].add?(3)                    #=> Set[1, 2, 3]
- *    Set[1, 2].add?([3, 4])               #=> Set[1, 2, [3, 4]]
- *    Set[1, 2].add?(2)                    #=> nil
+ *    set = Set[0, 1, 2]
+ *    set.add?(:foo)   # => Set[0, 1, 2, :foo]
+ *    set.add?((0..9)) # => Set[0, 1, 2, :foo, 0..9]
+ *
+ *  When +object+ is an element of +self+, makes no change;
+ *  returns +nil+:
+ *
+ *    set.add?(2) # => nil
+ *    set         # => Set[0, 1, 2, :foo, 0..9]
+ *
+ *  Related: see {Methods for Assigning}[rdoc-ref:Set@Methods+for+Assigning].
  */
 static VALUE
 set_i_add_p(VALUE set, VALUE item)
