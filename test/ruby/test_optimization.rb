@@ -1121,6 +1121,7 @@ class TestRubyOptimization < Test::Unit::TestCase
       '[:a, :b].include?(self) == false',
       "[:a, :b].include?(:a)",
       "[true, false].include?(false)",
+      "[1, nil].include?(nil)",
       "# frozen_string_literal: true\n['a', 'b'].include?('a')",
       "# frozen_string_literal: true\n['a', 'b'].include?('c') == false",
       "# frozen_string_literal: true\n['a', 'b'].include?(2) == false",
