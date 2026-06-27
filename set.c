@@ -801,10 +801,15 @@ set_i_delete(VALUE set, VALUE item)
 
 /*
  *  call-seq:
- *    delete?(obj) -> self or nil
+ *    delete?(object) -> self or nil
  *
- *  Deletes the given object from the set and returns self.  If the
- *  object is not in the set, returns nil.
+ *  Like #delete, but returns +nil+ if the object is not in +self+:
+ *
+ *    set = Set[0, 'zero', :zero]
+ *    set.delete?(0) # => Set["zero", :zero]
+ *    set.delete?(0) # => nil
+ *
+ *  Related: see {Methods for Deleting}[rdoc-ref:Set@Methods+for+Deleting].
  */
 static VALUE
 set_i_delete_p(VALUE set, VALUE item)
