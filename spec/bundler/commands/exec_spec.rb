@@ -72,6 +72,7 @@ RSpec.describe "bundle exec" do
   end
 
   it "works when exec'ing to rubygems" do
+    skip "https://github.com/ruby/rubygems/issues/3351" if Gem.win_platform?
     install_gemfile "source \"https://gem.repo1\"; gem \"myrack\""
     bundle "exec #{gem_cmd} --version"
     expect(out).to eq(Gem::VERSION)
@@ -204,6 +205,7 @@ RSpec.describe "bundle exec" do
       end
 
       it "uses version provided by ruby" do
+        skip "https://github.com/ruby/rubygems/issues/3351" if Gem.win_platform?
         bundle "exec erb --version"
 
         expect(stdboth).to eq(default_erb_version)
@@ -632,6 +634,7 @@ RSpec.describe "bundle exec" do
 
   describe "with gems bundled via :path with invalid gemspecs" do
     it "outputs the gemspec validation errors" do
+      skip "https://github.com/ruby/rubygems/issues/3351" if Gem.win_platform?
       build_lib "foo"
 
       gemspec = lib_path("foo-1.0").join("foo.gemspec").to_s
@@ -692,6 +695,7 @@ RSpec.describe "bundle exec" do
     end
 
     it "works" do
+      skip "https://github.com/ruby/rubygems/issues/3351" if Gem.win_platform?
       bundle "exec #{gem_cmd} uninstall foo"
       expect(out).to eq("Successfully uninstalled foo-1.0")
     end
@@ -713,6 +717,7 @@ RSpec.describe "bundle exec" do
     end
 
     it "does not load plugins outside of the bundle" do
+      skip "https://github.com/ruby/rubygems/issues/3351" if Gem.win_platform?
       bundle "exec #{gem_cmd} -v"
       expect(out).not_to include("FAIL")
     end
