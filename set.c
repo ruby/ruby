@@ -1765,7 +1765,7 @@ set_i_intersect(VALUE set, VALUE other)
  *  call-seq:
  *    disjoint?(enumerable) -> true or false
  *
- *  Returns whether +self+ and the given +enumerable+ have no common elements:
+ *  Returns whether no element of +enumerable+ is present in +self+:
  *
  *    set = Set[0, 'zero', :zero]
  *    set.disjoint?([1, 2, 3])    # => true
