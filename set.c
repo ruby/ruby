@@ -868,8 +868,8 @@ set_classify_i(st_data_t key, st_data_t tmp)
  *    classify -> enumerator
  *
  *  With a block given, calls the block with each element of +self+;
- *  returns a hash whose keys are the block's return values;
- *  the value for each key is a set containing the elements
+ *  returns a hash whose keys are the block's return values.
+ *  The value for each key is a set containing the elements
  *  for which the block returned that key.
  *
  *  This example classifies elements by their classes:
