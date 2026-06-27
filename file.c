@@ -3467,25 +3467,12 @@ rb_file_s_link(VALUE klass, VALUE from, VALUE to)
  *
  *  ```ruby
  *  # Create paths.
- *  file_path = 'doc/t.tmp'                  # => "doc/t.tmp"
- *  target_path = File.join('..', file_path) # => "../doc/t.tmp"
- *  link_path = 'lib/u.tmp'                  # => "lib/u.tmp"
- *  # Create target file.
- *  File.write(file_path, 'foo')
- *  # Check state.
- *  File.exist?(link_path)   # => false
- *  File.symlink?(link_path) # => false
- *  File.read(link_path)     # Raises Errno::ENOENT, No such file or directory.
- *  File.readlink(link_path) # Raises Errno::ENOENT, No such file or directory.
- *  # Make symlink and check state.
+ *  file_path = 'doc/extension.rdoc'             # => "doc/extension.rdoc"
+ *  target_path = File.join('..', file_path)     # => "../doc/extension.rdoc"
+ *  link_path = 'lib/u.tmp'                      # => "lib/u.tmp"
  *  File.symlink(target_path, link_path)
- *  File.exist?(link_path)   # => true
- *  File.symlink?(link_path) # => true
- *  File.read(link_path)     # => "foo"
- *  File.readlink(link_path) # => "../doc/t.tmp"
- *  # Clean up.
- *  File.delete(file_path)
- *  File.delete(link_path)
+ *  File.read(file_path) == File.read(link_path) # => true
+ *  File.delete(link_path)                       # Clean up.
  *  ```
  *
  *  See also: ::read, ::readlink, ::symlink?.
