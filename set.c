@@ -784,7 +784,7 @@ set_i_delete(VALUE set, VALUE item)
  *  call-seq:
  *    delete?(object) -> self or nil
  *
- *  Like #delete, but returns +nil+ if the object is not deleted:
+ *  Like #delete, but returns +nil+ if the object is not in +self+:
  *
  *    set = Set[0, 'zero', :zero]
  *    set.delete?(0) # => Set["zero", :zero]
