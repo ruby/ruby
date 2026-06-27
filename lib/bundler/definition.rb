@@ -711,9 +711,10 @@ module Bundler
             "available locally before rerunning Bundler."
           else
             "Your bundle is locked to #{locked_gem} from #{locked_gem.source}, but that version can " \
-            "no longer be found in that source. That means the author of #{locked_gem} has removed it. " \
-            "You'll need to update your bundle to a version other than #{locked_gem} that hasn't been " \
-            "removed in order to install."
+            "no longer be found in that source. That means either the author of #{locked_gem} has removed it, " \
+            "or you no longer have access to that source. You'll need to update your bundle to a version other " \
+            "than #{locked_gem} that hasn't been removed, or check your credentials and access rights for " \
+            "#{locked_gem.source}, in order to install."
           end
 
           raise GemNotFound, message

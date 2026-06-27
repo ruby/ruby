@@ -63,6 +63,16 @@ inputs:
     description: >-
       If set to true, clean build directory.
 
+  bundled-gems-src-cache:
+    required: false
+    type: boolean
+    default: ''
+    description: >-
+      If set to true, cache the cloned bundled gem sources (gems/src).
+      Enable only on jobs that clone every bundled gem (test-bundled-gems),
+      so the cache shared by the os/arch is always saved with the complete
+      set of gems instead of the partial set that `make up` leaves behind.
+
 outputs: {} # nothing?
 
 runs:
@@ -98,7 +108,7 @@ runs:
         git config --global init.defaultBranch garbage
 
     - if: inputs.checkout
-      uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
         path: ${{ inputs.srcdir }}
         fetch-depth: ${{ inputs.fetch-depth }}
@@ -108,6 +118,21 @@ runs:
       with:
         path: ${{ inputs.srcdir }}/.downloaded-cache
         key: ${{ runner.os }}-${{ runner.arch }}-downloaded-cache
+
+    # Cache cloned bundled gem sources so a transient DNS/network failure
+    # while cloning from github.com (e.g. "Could not resolve host") does not
+    # abort the build. The key is invalidated when gems/bundled_gems changes,
+    # and restore-keys falls back to the latest cache so only bumped gems are
+    # re-fetched. Only test-bundled-gems jobs opt in (bundled-gems-src-cache),
+    # because they are the ones that clone the complete set into gems/src; other
+    # jobs would otherwise save a partial gems/src and poison the shared key.
+    - if: inputs.bundled-gems-src-cache == 'true'
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      with:
+        path: ${{ inputs.srcdir }}/gems/src
+        key: ${{ runner.os }}-${{ runner.arch }}-bundled-gems-src-${{ hashFiles(format('{0}/gems/bundled_gems', inputs.srcdir)) }}
+        restore-keys: |
+          ${{ runner.os }}-${{ runner.arch }}-bundled-gems-src-
 
     - if: steps.which.outputs.autoreconf
       shell: bash

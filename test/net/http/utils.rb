@@ -26,14 +26,14 @@ module TestNetHTTPUtils
     def start
       @thread = Thread.new do
         loop do
-          socket = (@ssl_server || @server).accept
+          socket = server.accept
           run(socket)
         rescue
         ensure
           socket&.close
         end
       ensure
-        (@ssl_server || @server).close
+        server.close
       end
     end
 
@@ -44,6 +44,7 @@ module TestNetHTTPUtils
     def shutdown
       @thread&.kill
       @thread&.join
+      server&.close
     end
 
     def mount(path, proc)
@@ -92,6 +93,10 @@ module TestNetHTTPUtils
 
     def port
       @port
+    end
+
+    private def server
+      @ssl_server || @server
     end
 
     class Request

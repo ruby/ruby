@@ -129,9 +129,6 @@ class << RubyVM::ZJIT
       :send_count,
       :dynamic_send_count,
       :optimized_send_count,
-      :dynamic_setivar_count,
-      :dynamic_getivar_count,
-      :dynamic_definedivar_count,
       :iseq_optimized_send_count,
       :inline_cfunc_optimized_send_count,
       :inline_iseq_optimized_send_count,
@@ -140,6 +137,10 @@ class << RubyVM::ZJIT
       :variadic_cfunc_optimized_send_count,
     ], buf:, stats:, right_align: true, base: :send_count)
     print_counters([
+      :dynamic_setivar_count,
+      :dynamic_getivar_count,
+      :dynamic_definedivar_count,
+
       :compiled_iseq_count,
       :compiled_side_exit_count,
       :failed_iseq_count,

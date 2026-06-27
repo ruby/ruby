@@ -52,6 +52,7 @@ mod bits {
   pub const ModuleSubclass: u64 = 1u64 << 30;
   pub const NilClass: u64 = 1u64 << 31;
   pub const NotNil: u64 = BasicObject & !NilClass;
+  pub const NotString: u64 = BasicObject & !String;
   pub const Numeric: u64 = Float | Integer | NumericExact | NumericSubclass;
   pub const NumericExact: u64 = 1u64 << 32;
   pub const NumericSubclass: u64 = 1u64 << 33;
@@ -77,7 +78,7 @@ mod bits {
   pub const TrueClass: u64 = 1u64 << 45;
   pub const Truthy: u64 = BasicObject & !Falsy;
   pub const Undef: u64 = 1u64 << 46;
-  pub const AllBitPatterns: [(&str, u64); 77] = [
+  pub const AllBitPatterns: [(&str, u64); 78] = [
     ("Any", Any),
     ("RubyValue", RubyValue),
     ("Immediate", Immediate),
@@ -87,6 +88,7 @@ mod bits {
     ("NotNil", NotNil),
     ("Truthy", Truthy),
     ("BuiltinExact", BuiltinExact),
+    ("NotString", NotString),
     ("BoolExact", BoolExact),
     ("TrueClass", TrueClass),
     ("HeapBasicObject", HeapBasicObject),
@@ -212,6 +214,7 @@ pub mod types {
   pub const ModuleSubclass: Type = Type::from_bits(bits::ModuleSubclass);
   pub const NilClass: Type = Type::from_bits(bits::NilClass);
   pub const NotNil: Type = Type::from_bits(bits::NotNil);
+  pub const NotString: Type = Type::from_bits(bits::NotString);
   pub const Numeric: Type = Type::from_bits(bits::Numeric);
   pub const NumericExact: Type = Type::from_bits(bits::NumericExact);
   pub const NumericSubclass: Type = Type::from_bits(bits::NumericSubclass);

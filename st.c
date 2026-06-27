@@ -184,18 +184,33 @@ static const struct st_hash_type type_strcasehash = {
 #define free_fixed_ptr(v) free(v)
 #endif
 
-#define EQUAL(tab,x,y) ((x) == (y) || (*(tab)->type->compare)((x),(y)) == 0)
-#define PTR_EQUAL(tab, ptr, hash_val, key_) \
-    ((ptr)->hash == (hash_val) && EQUAL((tab), (key_), (ptr)->key))
+/* Compare an entry's hash and key against given hash_val and key.
+   Entry fields must be read into locals by the caller before passing
+   them here, to avoid re-reading from potentially-freed memory after
+   #eql? triggers a table rebuild. */
+static inline int
+entry_equal(const struct st_hash_type *type,
+            st_hash_t entry_hash, st_data_t entry_key,
+            st_hash_t hash_val, st_data_t key)
+{
+    return (entry_hash == hash_val) &&
+            ((entry_key == key) || (*type->compare)(key, entry_key) == 0);
+}
 
-/* As PTR_EQUAL only its result is returned in RES.  REBUILT_P is set
-   up to TRUE if the table is rebuilt during the comparison.  */
+/* As entry_equal, but also checks whether the table was rebuilt
+   during the comparison (i.e. #eql? mutated it). */
+static inline void
+ptr_equal_check(const st_table *tab, const st_table_entry *entry,
+                st_hash_t hash_val, st_data_t key,
+                int *res, int *rebuilt_p)
+{
+    unsigned int old_rebuilds_num = tab->rebuilds_num;
+    *res = entry_equal(tab->type, entry->hash, entry->key, hash_val, key);
+    *rebuilt_p = old_rebuilds_num != tab->rebuilds_num;
+}
+
 #define DO_PTR_EQUAL_CHECK(tab, ptr, hash_val, key, res, rebuilt_p) \
-    do {							    \
-        unsigned int _old_rebuilds_num = (tab)->rebuilds_num;       \
-        res = PTR_EQUAL(tab, ptr, hash_val, key);		    \
-        rebuilt_p = _old_rebuilds_num != (tab)->rebuilds_num;	    \
-    } while (FALSE)
+    ptr_equal_check((tab), (ptr), (hash_val), (key), &(res), &(rebuilt_p))
 
 /* Features of a table.  */
 struct st_features {
@@ -2387,6 +2402,19 @@ struct set_table_entry {
     st_data_t key;
 };
 
+static inline void
+set_ptr_equal_check(const set_table *tab, const set_table_entry *entry,
+                    st_hash_t hash_val, st_data_t key,
+                    int *res, int *rebuilt_p)
+{
+    unsigned int old_rebuilds_num = tab->rebuilds_num;
+    *res = entry_equal(tab->type, entry->hash, entry->key, hash_val, key);
+    *rebuilt_p = old_rebuilds_num != tab->rebuilds_num;
+}
+
+#define SET_DO_PTR_EQUAL_CHECK(tab, ptr, hash_val, key, res, rebuilt_p) \
+    set_ptr_equal_check((tab), (ptr), (hash_val), (key), &(res), &(rebuilt_p))
+
 /* Return hash value of KEY for table TAB.  */
 static inline st_hash_t
 set_do_hash(st_data_t key, set_table *tab)
@@ -2729,7 +2757,7 @@ set_find_entry(set_table *tab, st_hash_t hash_value, st_data_t key)
     bound = tab->entries_bound;
     entries = tab->entries;
     for (i = tab->entries_start; i < bound; i++) {
-        DO_PTR_EQUAL_CHECK(tab, &entries[i], hash_value, key, eq_p, rebuilt_p);
+        SET_DO_PTR_EQUAL_CHECK(tab, &entries[i], hash_value, key, eq_p, rebuilt_p);
         if (EXPECT(rebuilt_p, 0))
             return REBUILT_TABLE_ENTRY_IND;
         if (eq_p)
@@ -2768,7 +2796,7 @@ set_find_table_entry_ind(set_table *tab, st_hash_t hash_value, st_data_t key)
     for (;;) {
         bin = get_bin(set_bins_ptr(tab), set_get_size_ind(tab), ind);
         if (! EMPTY_OR_DELETED_BIN_P(bin)) {
-            DO_PTR_EQUAL_CHECK(tab, &entries[bin - ENTRY_BASE], hash_value, key, eq_p, rebuilt_p);
+            SET_DO_PTR_EQUAL_CHECK(tab, &entries[bin - ENTRY_BASE], hash_value, key, eq_p, rebuilt_p);
             if (EXPECT(rebuilt_p, 0))
                 return REBUILT_TABLE_ENTRY_IND;
             if (eq_p)
@@ -2812,7 +2840,7 @@ set_find_table_bin_ind(set_table *tab, st_hash_t hash_value, st_data_t key)
     for (;;) {
         bin = get_bin(set_bins_ptr(tab), set_get_size_ind(tab), ind);
         if (! EMPTY_OR_DELETED_BIN_P(bin)) {
-            DO_PTR_EQUAL_CHECK(tab, &entries[bin - ENTRY_BASE], hash_value, key, eq_p, rebuilt_p);
+            SET_DO_PTR_EQUAL_CHECK(tab, &entries[bin - ENTRY_BASE], hash_value, key, eq_p, rebuilt_p);
             if (EXPECT(rebuilt_p, 0))
                 return REBUILT_TABLE_BIN_IND;
             if (eq_p)
@@ -2913,7 +2941,7 @@ set_find_table_bin_ptr_and_reserve(set_table *tab, st_hash_t *hash_value,
             break;
         }
         else if (! DELETED_BIN_P(entry_index)) {
-            DO_PTR_EQUAL_CHECK(tab, &entries[entry_index - ENTRY_BASE], curr_hash_value, key, eq_p, rebuilt_p);
+            SET_DO_PTR_EQUAL_CHECK(tab, &entries[entry_index - ENTRY_BASE], curr_hash_value, key, eq_p, rebuilt_p);
             if (EXPECT(rebuilt_p, 0))
                 return REBUILT_TABLE_ENTRY_IND;
             if (eq_p)

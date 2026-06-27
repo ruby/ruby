@@ -7,7 +7,7 @@
 #![allow(clippy::match_like_matches_macro)]
 use crate::{
     backend::lir::C_ARG_OPNDS,
-    cast::IntoUsize, codegen::{local_idx_to_ep_offset, max_iseq_versions}, cruby::*, invariants::{self}, payload::get_or_create_iseq_payload, options::{debug, get_option, DumpHIR, InlineDepth}, state::ZJITState, json::Json,
+    cast::IntoUsize, codegen::{local_idx_to_ep_offset, max_iseq_versions}, cruby::*, invariants::{self, iseq_seen_ep_escape}, payload::get_or_create_iseq_payload, options::{debug, get_option, DumpHIR, InlineDepth}, state::ZJITState, json::Json,
     state,
 };
 use std::{
@@ -43,6 +43,7 @@ macro_rules! hir_comment {
 
 #[allow(unused_imports)]
 pub(crate) use hir_comment;
+use crate::options::INLINE_BUDGET_UNLIMITED;
 
 /// An index of an [`Insn`] in a [`Function`]. This is a popular
 /// type since this effectively acts as a pointer to an [`Insn`].
@@ -531,6 +532,7 @@ pub enum SideExitReason {
     UnhandledCallType(CallType),
     UnhandledBlockArg,
     TooManyKeywordParameters,
+    TooManyArgsForLir,
     FixnumAddOverflow,
     FixnumSubOverflow,
     FixnumMultOverflow,
@@ -545,7 +547,6 @@ pub enum SideExitReason {
     GuardSuperMethodEntry,
     PatchPoint(Invariant),
     CalleeSideExit,
-    ObjToStringFallback,
     Interrupt,
     BlockParamProxyNotIseqOrIfunc,
     BlockParamProxyNotNil,
@@ -566,14 +567,9 @@ pub enum SideExitReason {
     InvokeBlockNotIfunc,
 }
 
-/// Controls how a side exit triggers recompilation.
+/// Marks a side exit as triggering profiling and recompilation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Recompile {
-    /// Profile receiver + arguments from the stack (for sends without profile data).
-    ProfileSend { argc: i32 },
-    /// Profile self from the CFP (for shape guard failures).
-    ProfileSelf,
-}
+pub struct Recompile;
 
 #[derive(Debug, Clone, Copy)]
 pub enum MethodType {
@@ -1175,8 +1171,6 @@ pub enum Insn {
     /// Float#to_i: truncate float to integer via rb_jit_flo_to_i
     FloatToInt { recv: InsnId, state: InsnId },
 
-    // Distinct from `Send` with `mid:to_s` because does not have a patch point for String to_s being redefined
-    ObjToString { val: InsnId, cd: *const rb_call_data, state: InsnId },
     AnyToString { val: InsnId, str: InsnId, state: InsnId },
 
     /// Refine the known type information of with additional type information.
@@ -1190,7 +1184,7 @@ pub enum Insn {
     /// Side-exit if val is not the expected Const.
     GuardBitEquals { val: InsnId, expected: Const, reason: SideExitReason, state: InsnId, recompile: Option<Recompile> },
     /// Side-exit if (val & mask) == 0
-    GuardAnyBitSet { val: InsnId, mask: Const, mask_name: Option<ID>, reason: SideExitReason, state: InsnId },
+    GuardAnyBitSet { val: InsnId, mask: Const, mask_name: Option<ID>, reason: SideExitReason, state: InsnId, recompile: Option<Recompile> },
     /// Side-exit if (val & mask) != 0
     GuardNoBitsSet { val: InsnId, mask: Const, mask_name: Option<ID>, reason: SideExitReason, state: InsnId },
     /// Side-exit if left is not greater than or equal to right (both operands are C long).
@@ -1499,10 +1493,6 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(val);
                 $visit_one!(state);
             }
-            Insn::ObjToString { val, state, .. } => {
-                $visit_one!(val);
-                $visit_one!(state);
-            }
             Insn::AnyToString { val, str, state, .. } => {
                 $visit_one!(val);
                 $visit_one!(str);
@@ -1769,7 +1759,6 @@ impl Insn {
             Insn::IntOr { .. } => effects::Empty,
             Insn::FixnumLShift { .. } => effects::Empty,
             Insn::FixnumRShift { .. } => effects::Empty,
-            Insn::ObjToString { .. } => effects::Any,
             Insn::AnyToString { .. } => effects::Any,
             Insn::GuardType { guard_type, .. }
                 => Effect::read_write(
@@ -1884,6 +1873,17 @@ static REGEXP_FLAGS: &[(u32, &str)] = &[
 
 impl<'a> std::fmt::Display for InsnPrinter<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        macro_rules! write_separated {
+            ($f:expr, $start:expr, $sep: expr, $vec:expr) => {
+                {
+                    let mut sep = $start;
+                    for item in $vec {
+                        write!($f, "{sep}{item}")?;
+                        sep = $sep;
+                    }
+                }
+            };
+        }
         match &self.inner {
             Insn::Comment { message } => write!(f, "# {message}"),
             Insn::Const { val } => { write!(f, "Const {}", val.print(self.ptr_map)) }
@@ -1891,20 +1891,12 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::LoadArg { idx, id, .. } => { write!(f, "LoadArg :{id}@{idx}") }
             Insn::Entries { targets } => {
                 write!(f, "Entries")?;
-                let mut prefix = " ";
-                for target in targets {
-                    write!(f, "{prefix}{target}")?;
-                    prefix = ", ";
-                }
+                write_separated!(f, " ", ", ", targets);
                 Ok(())
             }
             Insn::NewArray { elements, .. } => {
                 write!(f, "NewArray")?;
-                let mut prefix = " ";
-                for element in elements {
-                    write!(f, "{prefix}{element}")?;
-                    prefix = ", ";
-                }
+                write_separated!(f, " ", ", ", elements);
                 Ok(())
             }
             Insn::ArrayAref { array, index, .. } => {
@@ -1941,38 +1933,22 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::ArrayMax { elements, .. } => {
                 write!(f, "ArrayMax")?;
-                let mut prefix = " ";
-                for element in elements {
-                    write!(f, "{prefix}{element}")?;
-                    prefix = ", ";
-                }
+                write_separated!(f, " ", ", ", elements);
                 Ok(())
             }
             Insn::ArrayMin { elements, .. } => {
                 write!(f, "ArrayMin")?;
-                let mut prefix = " ";
-                for element in elements {
-                    write!(f, "{prefix}{element}")?;
-                    prefix = ", ";
-                }
+                write_separated!(f, " ", ", ", elements);
                 Ok(())
             }
             Insn::ArrayHash { elements, .. } => {
                 write!(f, "ArrayHash")?;
-                let mut prefix = " ";
-                for element in elements {
-                    write!(f, "{prefix}{element}")?;
-                    prefix = ", ";
-                }
+                write_separated!(f, " ", ", ", elements);
                 Ok(())
             }
             Insn::ArrayInclude { elements, target, .. } => {
                 write!(f, "ArrayInclude")?;
-                let mut prefix = " ";
-                for element in elements {
-                    write!(f, "{prefix}{element}")?;
-                    prefix = ", ";
-                }
+                write_separated!(f, " ", ", ", elements);
                 write!(f, " | {target}")
             }
             Insn::ArrayPackBuffer { elements, fmt, buffer, .. } => {
@@ -2001,12 +1977,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::StringCopy { val, .. } => { write!(f, "StringCopy {val}") }
             Insn::StringConcat { strings, .. } => {
                 write!(f, "StringConcat")?;
-                let mut prefix = " ";
-                for string in strings {
-                    write!(f, "{prefix}{string}")?;
-                    prefix = ", ";
-                }
-
+                write_separated!(f, " ", ", ", strings);
                 Ok(())
             }
             Insn::StringGetbyte { string, index, .. } => {
@@ -2026,11 +1997,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::ToRegexp { values, opt, .. } => {
                 write!(f, "ToRegexp")?;
-                let mut prefix = " ";
-                for value in values {
-                    write!(f, "{prefix}{value}")?;
-                    prefix = ", ";
-                }
+                write_separated!(f, " ", ", ", values);
 
                 let opt = *opt as u32;
                 if opt != 0 {
@@ -2060,16 +2027,12 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 let blockiseq = block.map(|bh| match bh { BlockHandler::BlockIseq(iseq) => iseq, BlockHandler::BlockArg => unreachable!() });
                 let method_name = unsafe { (**cme).called_id };
                 write!(f, "SendDirect {recv}, {:p}, :{} ({:?})", self.ptr_map.map_ptr(&blockiseq), method_name, self.ptr_map.map_ptr(iseq))?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
+                write_separated!(f, ", ", ", ", args);
                 Ok(())
             }
             Insn::PushInlineFrame { recv, iseq, args, .. } => {
                 write!(f, "PushInlineFrame {recv} ({:?})", self.ptr_map.map_ptr(iseq))?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
+                write_separated!(f, ", ", ", ", args);
                 Ok(())
             }
             Insn::PopInlineFrame { .. } => {
@@ -2087,56 +2050,42 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                     None =>
                         write!(f, "Send {recv}, :{}", ruby_call_method_name(*cd))?,
                 }
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
+                write_separated!(f, ", ", ", ", args);
                 write!(f, " # SendFallbackReason: {reason}")?;
                 Ok(())
             }
             Insn::SendForward { recv, cd, args, blockiseq, reason, .. } => {
                 write!(f, "SendForward {recv}, {:p}, :{}", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd))?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
+                write_separated!(f, ", ", ", ", args);
                 write!(f, " # SendFallbackReason: {reason}")?;
                 Ok(())
             }
             Insn::InvokeSuper { recv, blockiseq, args, reason, .. } => {
                 write!(f, "InvokeSuper {recv}, {:p}", self.ptr_map.map_ptr(blockiseq))?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
+                write_separated!(f, ", ", ", ", args);
                 write!(f, " # SendFallbackReason: {reason}")?;
                 Ok(())
             }
             Insn::InvokeSuperForward { recv, blockiseq, args, reason, .. } => {
                 write!(f, "InvokeSuperForward {recv}, {:p}", self.ptr_map.map_ptr(blockiseq))?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
+                write_separated!(f, ", ", ", ", args);
                 write!(f, " # SendFallbackReason: {reason}")?;
                 Ok(())
             }
             Insn::InvokeBlock { args, reason, .. } => {
                 write!(f, "InvokeBlock")?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
+                write_separated!(f, " ", ", ", args);
                 write!(f, " # SendFallbackReason: {reason}")?;
                 Ok(())
             }
             Insn::InvokeBlockIfunc { block_handler, args, .. } => {
                 write!(f, "InvokeBlockIfunc {block_handler}")?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
+                write_separated!(f, ", ", ", ", args);
                 Ok(())
             }
             Insn::InvokeProc { recv, args, kw_splat, .. } => {
                 write!(f, "InvokeProc {recv}")?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
+                write_separated!(f, ", ", ", ", args);
                 if *kw_splat {
                     write!(f, ", kw_splat")?;
                 }
@@ -2148,9 +2097,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                            if *leaf { " leaf" } else { "" },
                            // e.g. Code that use `Primitive.cexpr!`. From BUILTIN_INLINE_PREFIX.
                            if bf_name.starts_with("_bi") { "<inline_expr>" } else { bf_name })?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
+                write_separated!(f, ", ", ", ", args);
                 Ok(())
             }
             &Insn::EntryPoint { jit_entry_idx: Some(idx) } => write!(f, "EntryPoint JIT({idx})"),
@@ -2195,8 +2142,15 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 return Ok(())
             },
-            Insn::GuardAnyBitSet { val, mask, mask_name: Some(name), .. } => { write!(f, "GuardAnyBitSet {val}, {name}={}", mask.print(self.ptr_map)) },
-            Insn::GuardAnyBitSet { val, mask, .. } => { write!(f, "GuardAnyBitSet {val}, {}", mask.print(self.ptr_map)) },
+            Insn::GuardAnyBitSet { val, mask, mask_name, recompile, .. } => {
+                let mask = mask.print(self.ptr_map);
+                let recompile = if recompile.is_some() { " recompile" } else { "" };
+                if let Some(name) = mask_name {
+                    write!(f, "GuardAnyBitSet {val}, {name}={mask}{recompile}")
+                } else {
+                    write!(f, "GuardAnyBitSet {val}, {mask}{recompile}")
+                }
+            },
             Insn::GuardNoBitsSet { val, mask, mask_name: Some(name), .. } => { write!(f, "GuardNoBitsSet {val}, {name}={}", mask.print(self.ptr_map)) },
             Insn::GuardNoBitsSet { val, mask, .. } => { write!(f, "GuardNoBitsSet {val}, {}", mask.print(self.ptr_map)) },
             Insn::GuardLess { left, right, .. } => write!(f, "GuardLess {left}, {right}"),
@@ -2216,16 +2170,12 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::CCall { cfunc, recv, args, name, owner, return_type: _, elidable: _ } => {
                 let display_name = if *owner == Qnil { name.contents_lossy().to_string() } else { qualified_method_name(*owner, *name) };
                 write!(f, "CCall {recv}, :{}@{:p}", display_name, self.ptr_map.map_ptr(cfunc))?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
+                write_separated!(f, ", ", ", ", args);
                 Ok(())
             },
             Insn::CCallWithFrame { cfunc, recv, args, name, cme, block, .. } => {
                 write!(f, "CCallWithFrame {recv}, :{}@{:p}", qualified_method_name(unsafe { (**cme).owner }, *name), self.ptr_map.map_ptr(cfunc))?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
+                write_separated!(f, ", ", ", ", args);
                 match block {
                     Some(BlockHandler::BlockIseq(blockiseq)) =>
                         write!(f, ", block={:p}", self.ptr_map.map_ptr(blockiseq))?,
@@ -2237,9 +2187,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             },
             Insn::CCallVariadic { cfunc, recv, args, name, cme, .. } => {
                 write!(f, "CCallVariadic {recv}, :{}@{:p}", qualified_method_name(unsafe { (**cme).owner }, *name), self.ptr_map.map_ptr(cfunc))?;
-                for arg in args {
-                    write!(f, ", {arg}")?;
-                }
+                write_separated!(f, ", ", ", ", args);
                 Ok(())
             },
             Insn::IncrCounterPtr { .. } => write!(f, "IncrCounterPtr"),
@@ -2307,7 +2255,6 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::ToNewArray { val, .. } => write!(f, "ToNewArray {val}"),
             Insn::ArrayExtend { left, right, .. } => write!(f, "ArrayExtend {left}, {right}"),
             Insn::ArrayPush { array, val, .. } => write!(f, "ArrayPush {array}, {val}"),
-            Insn::ObjToString { val, .. } => { write!(f, "ObjToString {val}") },
             Insn::StringIntern { val, .. } => { write!(f, "StringIntern {val}") },
             Insn::AnyToString { val, str, .. } => { write!(f, "AnyToString {val}, str: {str}") },
             Insn::SideExit { reason, recompile, .. } => {
@@ -2578,6 +2525,7 @@ fn can_direct_send(function: &mut Function, block: BlockId, iseq: *const rb_iseq
     // See: https://github.com/ruby/ruby/pull/15911#discussion_r2710544982
     let block_arg = if 0 != params.flags.has_block() { 1 } else { 0 };
     let final_argc = caller_positional + kw_total_num as usize + block_arg;
+    // TODO: Support passing arguments on the stack in C calls
     if final_argc + 1 > C_ARG_OPNDS.len() { // +1 for self
         function.set_dynamic_send_reason(send_insn, TooManyArgsForLir);
         return false;
@@ -3152,7 +3100,6 @@ impl Function {
             Insn::GetClassVar { .. } => types::BasicObject,
             Insn::ToNewArray { .. } => types::ArrayExact,
             Insn::ToArray { .. } => types::ArrayExact,
-            Insn::ObjToString { .. } => types::BasicObject,
             Insn::AnyToString { .. } => types::String,
             Insn::IsBlockParamModified { .. } => types::CBool,
             Insn::GetBlockParam { .. } => types::BasicObject,
@@ -3502,6 +3449,22 @@ impl Function {
         None
     }
 
+    fn monomorphic_summary(&self, profiles: &ProfileOracle, recv: InsnId, state: InsnId) -> Option<ProfiledType> {
+        let Some(entries) = profiles.get(state) else {
+            return None;
+        };
+        let recv = self.chase_insn(recv);
+        for (entry_insn, entry_type_summary) in entries {
+            if self.chase_insn(*entry_insn) == recv {
+                if entry_type_summary.is_monomorphic() {
+                    return Some(entry_type_summary.bucket(0));
+                }
+                return None;
+            }
+        }
+        None
+    }
+
     /// Resolve the receiver type for method dispatch optimization from profile data.
     ///
     /// Returns:
@@ -3714,6 +3677,51 @@ impl Function {
         })
     }
 
+    /// Try trivially inlining the method. If we can't, emit a SendDirect instruction instead and
+    /// leave it to the general-purpose inliner to handle.
+    fn try_inline_send_direct(&mut self, block: BlockId, insn: Insn) -> InsnId {
+        let Insn::SendDirect { recv, iseq, cd, ref args, state, .. } = insn else {
+            panic!("try_inline_send_direct called with non-SendDirect instruction");
+        };
+        // The trivial inliner runs first to handle simple cases (constant returns,
+        // parameter returns, etc.) without frame push/pop overhead. The general
+        // inliner then handles more complex methods that require full inlining.
+        let call_info = unsafe { (*cd).ci };
+        let ci_flags = unsafe { vm_ci_flag(call_info) };
+        // .send call is not currently supported for builtins
+        if ci_flags & VM_CALL_OPT_SEND != 0 {
+            return self.push_insn(block, insn);
+        }
+        let Some(value) = iseq_get_return_value(iseq, None, ci_flags) else {
+            return self.push_insn(block, insn);
+        };
+        match value {
+            IseqReturn::LocalVariable(idx) => {
+                self.count(block, Counter::inline_iseq_optimized_send_count);
+                args[idx as usize]
+            }
+            IseqReturn::Value(value) => {
+                self.count(block, Counter::inline_iseq_optimized_send_count);
+                self.push_insn(block, Insn::Const { val: Const::Value(value) })
+            }
+            IseqReturn::Receiver => {
+                self.count(block, Counter::inline_iseq_optimized_send_count);
+                recv
+            }
+            IseqReturn::InvokeLeafBuiltin(bf, return_type) => {
+                self.count(block, Counter::inline_iseq_optimized_send_count);
+                self.push_insn(block, Insn::InvokeBuiltin {
+                    bf,
+                    recv,
+                    args: vec![recv],
+                    state,
+                    leaf: true,
+                    return_type,
+                })
+            }
+        }
+    }
+
     /// Rewrite eligible Send opcodes into SendDirect
     /// opcodes if we know the target ISEQ statically. This removes run-time method lookups and
     /// opens the door for inlining.
@@ -3825,12 +3833,11 @@ impl Function {
 
                             // Add GuardType for profiled receiver
                             if let Some(profiled_type) = profiled_type {
-                                let argc = unsafe { vm_ci_argc(ci) } as i32;
-                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile::ProfileSend { argc }) });
+                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
                             }
 
-                            let send_direct = self.push_insn(block, Insn::SendDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, block: send_block });
-                            self.make_equal_to(insn_id, send_direct);
+                            let replacement = self.try_inline_send_direct(block, Insn::SendDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, block: send_block });
+                            self.make_equal_to(insn_id, replacement);
                         } else if !has_block && def_type == VM_METHOD_TYPE_BMETHOD {
                             let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
                             let proc = unsafe { rb_jit_get_proc_ptr(procv) };
@@ -3869,12 +3876,11 @@ impl Function {
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
 
                             if let Some(profiled_type) = profiled_type {
-                                let argc = unsafe { vm_ci_argc(ci) } as i32;
-                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile::ProfileSend{ argc }) });
+                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
                             }
 
-                            let send_direct = self.push_insn(block, Insn::SendDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, block: None });
-                            self.make_equal_to(insn_id, send_direct);
+                            let replacement = self.try_inline_send_direct(block, Insn::SendDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, block: None });
+                            self.make_equal_to(insn_id, replacement);
                         } else if !has_block && def_type == VM_METHOD_TYPE_IVAR && args.is_empty() {
                             // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
                             // We omit gen_prepare_non_leaf_call on gen_getivar, so it's unsafe to raise for multi-ractor mode.
@@ -3889,14 +3895,24 @@ impl Function {
                             }
 
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
-                            if let Some(profiled_type) = profiled_type {
-                                let argc = unsafe { vm_ci_argc(ci) } as i32;
-                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile::ProfileSend{ argc }) });
-                            }
-                            let id = unsafe { get_cme_def_body_attr_id(cme) };
 
-                            let getivar = self.push_insn(block, Insn::GetIvar { self_val: recv, id, ic: std::ptr::null(), state });
-                            self.make_equal_to(insn_id, getivar);
+                            let id = unsafe { get_cme_def_body_attr_id(cme) };
+                            if let Some(profiled_type) = profiled_type {
+                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
+
+                                let replacement = self.try_emit_optimized_getivar(block, recv, id, profiled_type, state).unwrap_or_else(|counter| {
+                                    self.count(block, counter);
+                                    self.push_insn(block, Insn::GetIvar { self_val: recv, id, ic: std::ptr::null(), state })
+                                });
+                                self.make_equal_to(insn_id, replacement);
+                            } else {
+                                // No shape information, just static class information
+                                let resolution = self.resolve_receiver_type_from_profile(recv, state);
+                                let counter = Self::getivar_fallback_reason(resolution, std::ptr::null());
+                                self.count(block, counter);
+                                let getivar = self.push_insn(block, Insn::GetIvar { self_val: recv, id, ic: std::ptr::null(), state });
+                                self.make_equal_to(insn_id, getivar);
+                            }
                         } else if let (false, VM_METHOD_TYPE_ATTRSET, &[val]) = (has_block, def_type, args.as_slice()) {
                             // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
                             // We omit gen_prepare_non_leaf_call on gen_getivar, so it's unsafe to raise for multi-ractor mode.
@@ -3906,13 +3922,21 @@ impl Function {
                             }
 
                             self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
-                            if let Some(profiled_type) = profiled_type {
-                                let argc = unsafe { vm_ci_argc(ci) } as i32;
-                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile::ProfileSend{ argc }) });
-                            }
                             let id = unsafe { get_cme_def_body_attr_id(cme) };
-
-                            self.push_insn(block, Insn::SetIvar { self_val: recv, id, ic: std::ptr::null(), val, state });
+                            if let Some(profiled_type) = profiled_type {
+                                // TODO: attr_writer SetIvar has a null inline cache and may target a receiver
+                                // operand other than CFP self. Support it with a reprofile strategy that
+                                // profiles the receiver operand even after the send insn has finished profiling.
+                                let recompile = None;
+                                recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
+                                self.try_emit_optimized_setivar(block, recv, id, val, profiled_type, state, recompile).unwrap_or_else(|counter| {
+                                    self.count(block, counter);
+                                    self.push_insn(block, Insn::SetIvar { self_val: recv, id, ic: std::ptr::null(), val, state });
+                                });
+                            } else {
+                                // No shape information, just static class information
+                                self.push_insn(block, Insn::SetIvar { self_val: recv, id, ic: std::ptr::null(), val, state });
+                            }
                             self.make_equal_to(insn_id, val);
                         } else if !has_block && def_type == VM_METHOD_TYPE_OPTIMIZED {
                             let opt_type: OptimizedMethodType = unsafe { get_cme_def_body_optimized_type(cme) }.into();
@@ -3930,8 +3954,7 @@ impl Function {
                                     }
                                     self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
                                     if let Some(profiled_type) = profiled_type {
-                                        let argc = unsafe { vm_ci_argc(ci) } as i32;
-                                        recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile::ProfileSend{ argc }) });
+                                        recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
                                     }
                                     let kw_splat = flags & VM_CALL_KW_SPLAT != 0;
                                     let invoke_proc = self.push_insn(block, Insn::InvokeProc { recv, args: args.clone(), state, kw_splat });
@@ -3969,8 +3992,7 @@ impl Function {
                                     }
                                     self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass, method: mid, cme }, state });
                                     if let Some(profiled_type) = profiled_type {
-                                        let argc = unsafe { vm_ci_argc(ci) } as i32;
-                                        recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile::ProfileSend{ argc }) });
+                                        recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
                                     }
                                     // All structs from the same Struct class should have the same
                                     // length. So if our recv is embedded all runtime
@@ -4009,45 +4031,6 @@ impl Function {
                             let reason = if has_block { SendNotOptimizedMethodType(MethodType::from(def_type)) } else { SendWithoutBlockNotOptimizedMethodType(MethodType::from(def_type)) };
                             self.set_dynamic_send_reason(insn_id, reason);
                             self.push_insn_id(block, insn_id); continue;
-                        }
-                    }
-                    Insn::GetConstantPath { ic, state, .. } => {
-                        let idlist: *const ID = unsafe { (*ic).segments };
-                        let ice = unsafe { (*ic).entry };
-                        if ice.is_null() {
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        let cref_sensitive = !unsafe { (*ice).ic_cref }.is_null();
-                        if cref_sensitive || !self.assume_single_ractor_mode(block, state) {
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        // Invalidate output code on any constant writes associated with constants
-                        // referenced after the PatchPoint.
-                        self.push_insn(block, Insn::PatchPoint { invariant: Invariant::StableConstantNames { idlist }, state });
-                        let replacement = self.push_insn(block, Insn::Const { val: Const::Value(unsafe { (*ice).value }) });
-                        self.insn_types[replacement.0] = self.infer_type(replacement);
-                        self.make_equal_to(insn_id, replacement);
-                    }
-                    Insn::ObjToString { val, cd, state, .. } => {
-                        if self.is_a(val, types::String) {
-                            // behaves differently from `Send` with `mid:to_s` because ObjToString should not have a patch point for String to_s being redefined
-                            self.make_equal_to(insn_id, val); continue;
-                        }
-
-                        let Some(recv_type) = self.profiled_type_of_at(val, state) else {
-                            self.push_insn_id(block, insn_id); continue
-                        };
-
-                        if recv_type.is_string() {
-                            self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: recv_type.class() }, state });
-                            let guard = self.push_insn(block, Insn::GuardType { val, guard_type: types::String, state, recompile: None });
-                            // Infer type so AnyToString can fold off this
-                            self.insn_types[guard.0] = self.infer_type(guard);
-                            self.make_equal_to(insn_id, guard);
-                        } else {
-                            let recv = self.push_insn(block, Insn::GuardType { val, guard_type: Type::from_profiled_type(recv_type), state, recompile: None });
-                            let send_to_s = self.push_insn(block, Insn::Send { recv, cd, block: None, args: vec![], state, reason: ObjToStringNotString });
-                            self.make_equal_to(insn_id, send_to_s);
                         }
                     }
                     Insn::AnyToString { str, .. } => {
@@ -4225,7 +4208,7 @@ impl Function {
                             emit_super_call_guards(self, block, super_cme, current_cme, mid, state, frame_state.iseq);
 
                             // Use SendDirect with the super method's CME and ISEQ.
-                            let send_direct = self.push_insn(block, Insn::SendDirect {
+                            let replacement = self.try_inline_send_direct(block, Insn::SendDirect {
                                 recv,
                                 cd,
                                 cme: super_cme,
@@ -4235,7 +4218,7 @@ impl Function {
                                 state: send_state,
                                 block: None,
                             });
-                            self.make_equal_to(insn_id, send_direct);
+                            self.make_equal_to(insn_id, replacement);
 
                         } else if def_type == VM_METHOD_TYPE_CFUNC {
                             let cfunc = unsafe { get_cme_def_body_cfunc(super_cme) };
@@ -4255,6 +4238,13 @@ impl Function {
                                     if args.len() != cfunc_argc as usize {
                                         self.push_insn_id(block, insn_id);
                                         self.set_dynamic_send_reason(insn_id, ArgcParamMismatch);
+                                        continue;
+                                    }
+                                    // TODO: Support passing arguments on the stack in C calls
+                                    // +1 for self
+                                    if args.len()+1 > C_ARG_OPNDS.len() {
+                                        self.push_insn_id(block, insn_id);
+                                        self.set_dynamic_send_reason(insn_id, TooManyArgsForLir);
                                         continue;
                                     }
 
@@ -4379,13 +4369,12 @@ impl Function {
 
     /// Check whether a callee ISEQ can be inlined.
     fn can_inline(callee_iseq: IseqPtr) -> bool {
-        // Inline callees with required, optional, post-required positional, and keyword
-        // parameters. Rest params, double-splat (kwrest), and forwardable params are rejected
-        // because `can_direct_send` rejects them -- we only inline direct sends.
-        // TODO (nirvdrum 2026-06-12) Block params should be supported by the inliner.
+        // Inline callees with required, optional, post-required positional, keyword, and
+        // block parameters, including callees that dispatch to a passed block with `yield`.
+        // Rest params, double-splat (kwrest), and forwardable params are rejected because
+        // `can_direct_send` rejects them -- we only inline direct sends.
         let params = unsafe { callee_iseq.params() };
         if params.flags.has_rest() != 0
-            || params.flags.has_block() != 0
             || params.flags.forwardable() != 0
             || params.flags.has_kwrest() != 0
         {
@@ -4395,35 +4384,9 @@ impl Function {
 
         // Reject callees whose environment pointer can escape (e.g., via binding).
         // TODO (nirvdrum 2026-04-15) The interaction between inlined frames and EP escape hasn't been verified.
-        if iseq_escapes_ep(callee_iseq) || crate::invariants::iseq_escapes_ep(callee_iseq) {
+        if iseq_ep_starts_escaped(callee_iseq) || iseq_seen_ep_escape(callee_iseq) {
             incr_counter!(inline_reject_ep_escapes);
             return false;
-        }
-
-        // Reject callees that use yield/invokeblock (block inlining is future work).
-        // TODO (nirvdrum 2026-06-12) Work through this list, adding support for each rejected instruction.
-        let callee_encoded_size = unsafe { get_iseq_encoded_size(callee_iseq) };
-        let mut pc_idx: u32 = 0;
-        while pc_idx < callee_encoded_size {
-            let pc = unsafe { rb_iseq_pc_at_idx(callee_iseq, pc_idx) };
-            let opcode: u32 = unsafe { rb_iseq_bare_opcode_at_pc(callee_iseq, pc) }
-                .try_into()
-                .unwrap();
-            if opcode == YARVINSN_invokeblock {
-                incr_counter!(inline_reject_invokeblock);
-                return false;
-            }
-
-            // Reject callees that use block params. The codegen for getblockparam
-            // and getblockparamproxy uses jit.iseq to compute the block param level,
-            // which would be wrong for inlined code.
-            if opcode == YARVINSN_getblockparam || opcode == YARVINSN_getblockparamproxy {
-                incr_counter!(inline_reject_blockparam);
-                return false;
-            }
-
-            let insn_len = insn_len(opcode as usize);
-            pc_idx += insn_len;
         }
 
         true
@@ -4442,9 +4405,9 @@ impl Function {
         // allocated for this function — not the final compiled size. Once that count
         // crosses the budget, every further callee is rejected and the optimization
         // fixed-point loop reaches its terminal iteration. See `Options::inline_budget`
-        // for the full unit/semantics caveat. Budget == 0 disables this cap.
+        // for the full unit/semantics caveat.
         let budget = get_option!(inline_budget);
-        if budget != 0 && self.insns.len() > budget {
+        if budget != INLINE_BUDGET_UNLIMITED && self.insns.len() > budget {
             incr_counter!(inline_reject_budget_exceeded);
             return false;
         }
@@ -4482,6 +4445,19 @@ impl Function {
     /// Inline method calls by replacing eligible SendDirect instructions with the
     /// callee's HIR body. Returns true if any inlining occurred.
     fn inline_methods(&mut self) -> bool {
+        // Bail early if inlining is disabled.
+        if get_option!(inline_threshold) == 0 {
+            return false;
+        }
+
+        // Fail fast if inlining is enabled but we've exhausted our inlining budget.
+        // Otherwise, `can_inline` and `should_inline` will make local inlining decisions.
+        let budget = get_option!(inline_budget);
+        if budget != INLINE_BUDGET_UNLIMITED && self.insns.len() > budget {
+            incr_counter!(inline_reject_budget_exceeded);
+            return false;
+        }
+
         let mut did_inline = false;
 
         // Worklist of blocks left to scan for inlinable SendDirects. Seeded with
@@ -4750,60 +4726,6 @@ impl Function {
         did_inline
     }
 
-    fn inline_trivial(&mut self) {
-        for block in self.reverse_post_order() {
-            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
-            assert!(self.blocks[block.0].insns.is_empty());
-            for insn_id in old_insns {
-                match self.find(insn_id) {
-                    // We can inline SendDirect with blockiseq because we are prohibiting `yield`
-                    // and `.call`, which would trigger autosplat. We only inline constants and
-                    // variables and builtin calls.
-                    Insn::SendDirect { recv, iseq, cd, args, state, .. } => {
-                        let call_info = unsafe { (*cd).ci };
-                        let ci_flags = unsafe { vm_ci_flag(call_info) };
-                        // .send call is not currently supported for builtins
-                        if ci_flags & VM_CALL_OPT_SEND != 0 {
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        let Some(value) = iseq_get_return_value(iseq, None, ci_flags) else {
-                            self.push_insn_id(block, insn_id); continue;
-                        };
-                        match value {
-                            IseqReturn::LocalVariable(idx) => {
-                                self.count(block, Counter::inline_iseq_optimized_send_count);
-                                self.make_equal_to(insn_id, args[idx as usize]);
-                            }
-                            IseqReturn::Value(value) => {
-                                self.count(block, Counter::inline_iseq_optimized_send_count);
-                                let replacement = self.push_insn(block, Insn::Const { val: Const::Value(value) });
-                                self.make_equal_to(insn_id, replacement);
-                            }
-                            IseqReturn::Receiver => {
-                                self.count(block, Counter::inline_iseq_optimized_send_count);
-                                self.make_equal_to(insn_id, recv);
-                            }
-                            IseqReturn::InvokeLeafBuiltin(bf, return_type) => {
-                                self.count(block, Counter::inline_iseq_optimized_send_count);
-                                let replacement = self.push_insn(block, Insn::InvokeBuiltin {
-                                    bf,
-                                    recv,
-                                    args: vec![recv],
-                                    state,
-                                    leaf: true,
-                                    return_type,
-                                });
-                                self.make_equal_to(insn_id, replacement);
-                            }
-                        }
-                    }
-                    _ => { self.push_insn_id(block, insn_id); }
-                }
-            }
-        }
-        crate::stats::trace_compile_phase("infer_types", || self.infer_types());
-    }
-
     fn load_shape(&mut self, block: BlockId, recv: InsnId) -> InsnId {
         self.push_insn(block, Insn::LoadField {
             recv,
@@ -4841,7 +4763,7 @@ impl Function {
         // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
         let ptr = self.push_insn(block, Insn::LoadField {
             recv, id: FieldName::as_heap,
-            offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32,
+            offset: ROBJECT_OFFSET_AS_HEAP_FIELDS,
             return_type: types::CPtr,
         });
         let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
@@ -4853,7 +4775,7 @@ impl Function {
 
     fn load_ivar_embedded(&mut self, block: BlockId, recv: InsnId, id: ID, ivar_index: attr_index_t) -> InsnId {
         // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
-        let offset = ROBJECT_OFFSET_AS_ARY as i32
+        let offset = ROBJECT_OFFSET_AS_ARY
             + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
         self.push_insn(block, Insn::LoadField {
             recv, id: id.into(), offset,
@@ -4883,9 +4805,9 @@ impl Function {
         match layout {
             ShapeLayout::RClass | ShapeLayout::RData => {
                 let offset = if layout == ShapeLayout::RClass {
-                    RCLASS_OFFSET_PRIME_FIELDS_OBJ as i32
+                    RCLASS_OFFSET_PRIME_FIELDS_OBJ
                 } else {
-                    TDATA_OFFSET_FIELDS_OBJ as i32
+                    TDATA_OFFSET_FIELDS_OBJ
                 };
 
                 let fields_obj = self.push_insn(block, Insn::LoadField {
@@ -4912,176 +4834,116 @@ impl Function {
         }
     }
 
-    fn optimize_getivar(&mut self) {
-        for block in self.reverse_post_order() {
-            let old_insns = std::mem::take(&mut self.blocks[block.0].insns);
-            assert!(self.blocks[block.0].insns.is_empty());
-            for insn_id in old_insns {
-                match self.find(insn_id) {
-                    Insn::GetIvar { self_val, id, ic: _, state } => {
-                        let Some(recv_type) = self.profiled_type_of_at(self_val, state) else {
-                            // No (monomorphic/skewed polymorphic) profile info
-                            self.count(block, Counter::getivar_fallback_not_monomorphic);
-                            self.push_insn_id(block, insn_id); continue;
-                        };
-                        if recv_type.flags().is_immediate() {
-                            // Instance variable lookups on immediate values are always nil
-                            self.count(block, Counter::getivar_fallback_immediate);
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        assert!(recv_type.shape().is_valid());
-                        if recv_type.shape().is_complex() {
-                            // too-complex shapes can't use index access
-                            self.count(block, Counter::getivar_fallback_complex);
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        if self.policy.no_side_exits {
-                            // On the final version, skip GetIvar shape specialization.
-                            // iseq_to_hir already generates polymorphic branches with a
-                            // GetIvar C call fallback for getinstancevariable, so we don't
-                            // need to wrap it again here.
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        let self_val = self.guard_heap(block, self_val, state);
-                        let shape = self.load_shape(block, self_val);
-                        self.guard_shape(block, shape, recv_type.shape(), state, Some(Recompile::ProfileSelf));
-                        let replacement = self.load_ivar(block, self_val, recv_type, id);
-                        self.make_equal_to(insn_id, replacement);
-                    }
-                    Insn::DefinedIvar { self_val, id, pushval, state } => {
-                        let Some(recv_type) = self.profiled_type_of_at(self_val, state) else {
-                            // No (monomorphic/skewed polymorphic) profile info
-                            self.count(block, Counter::definedivar_fallback_not_monomorphic);
-                            self.push_insn_id(block, insn_id); continue;
-                        };
-                        if recv_type.flags().is_immediate() {
-                            // Instance variable lookups on immediate values are always nil
-                            self.count(block, Counter::definedivar_fallback_immediate);
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        assert!(recv_type.shape().is_valid());
-                        if !recv_type.flags().is_t_object() {
-                            // Check if the receiver is a T_OBJECT
-                            self.count(block, Counter::definedivar_fallback_not_t_object);
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        if recv_type.shape().is_complex() {
-                            // too-complex shapes can't use index access
-                            self.count(block, Counter::definedivar_fallback_complex);
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        if self.policy.no_side_exits {
-                            // On the final version, keep the DefinedIvar fallback instead of another shape guard.
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        let self_val = self.guard_heap(block, self_val, state);
-                        let shape = self.load_shape(block, self_val);
-                        self.guard_shape(block, shape, recv_type.shape(), state, Some(Recompile::ProfileSelf));
-                        let mut ivar_index: attr_index_t = 0;
-                        let replacement = if unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
-                            self.push_insn(block, Insn::Const { val: Const::Value(pushval) })
-                        } else {
-                            // If there is no IVAR index, then the ivar was undefined when we
-                            // entered the compiler.  That means we can just return nil for this
-                            // shape + iv name
-                            self.push_insn(block, Insn::Const { val: Const::Value(Qnil) })
-                        };
-                        self.make_equal_to(insn_id, replacement);
-                    }
-                    Insn::SetIvar { self_val, id, val, state, ic } => {
-                        let Some(recv_type) = self.profiled_type_of_at(self_val, state) else {
-                            // No (monomorphic/skewed polymorphic) profile info
-                            self.count(block, Counter::setivar_fallback_not_monomorphic);
-                            self.push_insn_id(block, insn_id); continue;
-                        };
-                        if recv_type.flags().is_immediate() {
-                            // Instance variable lookups on immediate values are always nil
-                            self.count(block, Counter::setivar_fallback_immediate);
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        assert!(recv_type.shape().is_valid());
-                        if !recv_type.flags().is_t_object() {
-                            // Check if the receiver is a T_OBJECT
-                            self.count(block, Counter::setivar_fallback_not_t_object);
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        if recv_type.shape().is_complex() {
-                            // too-complex shapes can't use index access
-                            self.count(block, Counter::setivar_fallback_complex);
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        if recv_type.shape().is_frozen() {
-                            // Can't set ivars on frozen objects
-                            self.count(block, Counter::setivar_fallback_frozen);
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        if self.policy.no_side_exits {
-                            // TODO: Support polymorphic SetIvar shape-specialized paths.
-                            // https://github.com/Shopify/ruby/issues/927
-                            // On the final version, keep the SetIvar fallback instead of another shape guard.
-                            self.push_insn_id(block, insn_id); continue;
-                        }
-                        let mut ivar_index: attr_index_t = 0;
-                        let mut next_shape_id = recv_type.shape();
-                        if !unsafe { rb_shape_get_iv_index(recv_type.shape().0, id, &mut ivar_index) } {
-                            // Current shape does not contain this ivar; do a shape transition.
-                            let current_shape_id = recv_type.shape();
-                            let class = recv_type.class();
-                            // We're only looking at T_OBJECT so ignore all of the imemo stuff.
-                            assert!(recv_type.flags().is_t_object());
-                            next_shape_id = ShapeId(unsafe { rb_shape_transition_add_ivar_no_warnings(current_shape_id.0, id, class) });
-                            // If the VM ran out of shapes, or this class generated too many leaf,
-                            // it may be de-optimized into OBJ_COMPLEX_SHAPE (hash-table).
-                            let new_shape_complex = unsafe { rb_jit_shape_complex_p(next_shape_id.0) };
-                            // TODO(max): Is it OK to bail out here after making a shape transition?
-                            if new_shape_complex {
-                                self.count(block, Counter::setivar_fallback_new_shape_complex);
-                                self.push_insn_id(block, insn_id); continue;
-                            }
-                            let ivar_result = unsafe { rb_shape_get_iv_index(next_shape_id.0, id, &mut ivar_index) };
-                            assert!(ivar_result, "New shape must have the ivar index");
-                            let current_capacity = unsafe { rb_jit_shape_capacity(current_shape_id.0) };
-                            let next_capacity = unsafe { rb_jit_shape_capacity(next_shape_id.0) };
-                            // If the new shape has a different capacity, or is COMPLEX, we'll have to
-                            // reallocate it.
-                            let needs_extension = next_capacity != current_capacity;
-                            if needs_extension {
-                                self.count(block, Counter::setivar_fallback_new_shape_needs_extension);
-                                self.push_insn_id(block, insn_id); continue;
-                            }
-                            // Fall through to emitting the ivar write
-                        }
-                        let self_val = self.guard_heap(block, self_val, state);
-                        let shape = self.load_shape(block, self_val);
-                        // TODO: attr_writer SetIvar has a null inline cache and may target a receiver
-                        // operand other than CFP self. Support it with a reprofile strategy that
-                        // profiles the receiver operand even after the send insn has finished profiling.
-                        let recompile = if ic.is_null() { None } else { Some(Recompile::ProfileSelf) };
-                        self.guard_shape(block, shape, recv_type.shape(), state, recompile);
-                        // Current shape contains this ivar
-                        let (ivar_storage, offset) = if recv_type.flags().is_embedded() {
-                            // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
-                            let offset = ROBJECT_OFFSET_AS_ARY as i32 + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
-                            (self_val, offset)
-                        } else {
-                            let as_heap = self.push_insn(block, Insn::LoadField { recv: self_val, id: FieldName::as_heap, offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32, return_type: types::CPtr });
-                            let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
-                            (as_heap, offset)
-                        };
-                        self.push_insn(block, Insn::StoreField { recv: ivar_storage, id: id.into(), offset, val });
-                        self.push_insn(block, Insn::WriteBarrier { recv: self_val, val });
-                        if next_shape_id != recv_type.shape() {
-                            // Write the new shape ID
-                            let shape_id = self.push_insn(block, Insn::Const { val: Const::CShape(next_shape_id) });
-                            let shape_id_offset = unsafe { rb_shape_id_offset() };
-                            self.push_insn(block, Insn::StoreField { recv: self_val, id: FieldName::shape_id, offset: shape_id_offset, val: shape_id });
-                        }
-                    }
-                    _ => { self.push_insn_id(block, insn_id); }
-                }
-            }
+    fn getivar_fallback_reason(resolution: ReceiverTypeResolution, ic: *const iseq_inline_iv_cache_entry) -> Counter {
+        match resolution {
+            ReceiverTypeResolution::Megamorphic => Counter::getivar_fallback_megamorphic,
+            ReceiverTypeResolution::SkewedMegamorphic { .. } => Counter::getivar_fallback_skewed_megamorphic,
+            ReceiverTypeResolution::Polymorphic => Counter::getivar_fallback_polymorphic,
+            ReceiverTypeResolution::NoProfile if ic.is_null() => Counter::getivar_fallback_no_profile_missing_ic,
+            ReceiverTypeResolution::NoProfile => Counter::getivar_fallback_no_profile,
+            _ => Counter::getivar_fallback_not_monomorphic,
         }
-        crate::stats::trace_compile_phase("infer_types", || self.infer_types());
+    }
+
+    fn try_emit_optimized_getivar(&mut self, block: BlockId, self_val: InsnId, id: ID, profiled_type: ProfiledType, state: InsnId) -> Result<InsnId, Counter> {
+        if profiled_type.flags().is_immediate() {
+            // Instance variable lookups on immediate values are always nil
+            return Err(Counter::getivar_fallback_immediate);
+        }
+        assert!(profiled_type.shape().is_valid());
+        if profiled_type.shape().is_complex() {
+            // too-complex shapes can't use index access
+            return Err(Counter::getivar_fallback_complex);
+        }
+        if self.policy.no_side_exits {
+            // On the final version, skip GetIvar shape specialization.
+            // iseq_to_hir already generates polymorphic branches with a
+            // GetIvar C call fallback for getinstancevariable, so we don't
+            // need to wrap it again here.
+            return Err(Counter::getivar_fallback_no_side_exits);
+        }
+        let self_val = self.guard_heap(block, self_val, state);
+        let shape = self.load_shape(block, self_val);
+        self.guard_shape(block, shape, profiled_type.shape(), state, Some(Recompile));
+        Ok(self.load_ivar(block, self_val, profiled_type, id))
+    }
+
+    fn try_emit_optimized_setivar(&mut self, block: BlockId, self_val: InsnId, id: ID, val: InsnId, profiled_type: ProfiledType, state: InsnId, recompile: Option<Recompile>) -> Result<(), Counter> {
+        if profiled_type.flags().is_immediate() {
+            // Instance variable lookups on immediate values are always nil
+            return Err(Counter::setivar_fallback_immediate);
+        }
+        if !profiled_type.flags().is_t_object() {
+            // Check if the receiver is a T_OBJECT
+            return Err(Counter::setivar_fallback_not_t_object);
+        }
+        assert!(profiled_type.shape().is_valid());
+        if profiled_type.shape().is_frozen() {
+            // Can't set ivars on frozen objects
+            return Err(Counter::setivar_fallback_frozen);
+        }
+        if profiled_type.shape().is_complex() {
+            // too-complex shapes can't use index access
+            return Err(Counter::setivar_fallback_complex);
+        }
+        if self.policy.no_side_exits {
+            // On the final version, skip GetIvar shape specialization.
+            // iseq_to_hir already generates polymorphic branches with a
+            // GetIvar C call fallback for getinstancevariable, so we don't
+            // need to wrap it again here.
+            return Err(Counter::setivar_fallback_no_side_exits);
+        }
+
+        let mut ivar_index: attr_index_t = 0;
+        let mut next_shape_id = profiled_type.shape();
+        if !unsafe { rb_shape_get_iv_index(profiled_type.shape().0, id, &mut ivar_index) } {
+            // Current shape does not contain this ivar; do a shape transition.
+            let current_shape_id = profiled_type.shape();
+            let class = profiled_type.class();
+            // We're only looking at T_OBJECT so ignore all of the imemo stuff.
+            assert!(profiled_type.flags().is_t_object());
+            next_shape_id = ShapeId(unsafe { rb_shape_transition_add_ivar_no_warnings(current_shape_id.0, id, class) });
+            // If the VM ran out of shapes, or this class generated too many leaf,
+            // it may be de-optimized into OBJ_COMPLEX_SHAPE (hash-table).
+            let new_shape_complex = unsafe { rb_jit_shape_complex_p(next_shape_id.0) };
+            // TODO(max): Is it OK to bail out here after making a shape transition?
+            if new_shape_complex {
+                return Err(Counter::setivar_fallback_new_shape_complex);
+            }
+            let ivar_result = unsafe { rb_shape_get_iv_index(next_shape_id.0, id, &mut ivar_index) };
+            assert!(ivar_result, "New shape must have the ivar index");
+            let current_capacity = unsafe { rb_jit_shape_capacity(current_shape_id.0) };
+            let next_capacity = unsafe { rb_jit_shape_capacity(next_shape_id.0) };
+            // If the new shape has a different capacity, or is COMPLEX, we'll have to
+            // reallocate it.
+            let needs_extension = next_capacity != current_capacity;
+            if needs_extension {
+                return Err(Counter::setivar_fallback_new_shape_needs_extension);
+            }
+            // Fall through to emitting the ivar write
+        }
+        let self_val = self.guard_heap(block, self_val, state);
+        let shape = self.load_shape(block, self_val);
+        self.guard_shape(block, shape, profiled_type.shape(), state, recompile);
+        // Current shape contains this ivar
+        let (ivar_storage, offset) = if profiled_type.flags().is_embedded() {
+            // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
+            let offset = ROBJECT_OFFSET_AS_ARY + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
+            (self_val, offset)
+        } else {
+            let as_heap = self.push_insn(block, Insn::LoadField { recv: self_val, id: FieldName::as_heap, offset: ROBJECT_OFFSET_AS_HEAP_FIELDS, return_type: types::CPtr });
+            let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
+            (as_heap, offset)
+        };
+        self.push_insn(block, Insn::StoreField { recv: ivar_storage, id: id.into(), offset, val });
+        self.push_insn(block, Insn::WriteBarrier { recv: self_val, val });
+        if next_shape_id != profiled_type.shape() {
+            // Write the new shape ID
+            let shape_id = self.push_insn(block, Insn::Const { val: Const::CShape(next_shape_id) });
+            let shape_id_offset = unsafe { rb_shape_id_offset() };
+            self.push_insn(block, Insn::StoreField { recv: self_val, id: FieldName::shape_id, offset: shape_id_offset, val: shape_id });
+        }
+        Ok(())
     }
 
     fn gen_patch_points_for_optimized_ccall(&mut self, block: BlockId, recv_class: VALUE, method_id: ID, cme: *const rb_callable_method_entry_struct, state: InsnId) {
@@ -5236,6 +5098,13 @@ impl Function {
                         return Err(());
                     }
 
+                    // TODO: Support passing arguments on the stack in C calls
+                    // +1 for self
+                    if (argc as usize)+1 > C_ARG_OPNDS.len() {
+                        fun.set_dynamic_send_reason(send_insn_id, TooManyArgsForLir);
+                        return Err(());
+                    }
+
                     // Check singleton class assumption first, before emitting other patchpoints
                     if !fun.assume_no_singleton_classes(block, recv_class, state) {
                         fun.set_dynamic_send_reason(send_insn_id, SingletonClassSeen);
@@ -5247,8 +5116,7 @@ impl Function {
 
                     if let Some(profiled_type) = profiled_type {
                         // Guard receiver class
-                        let argc = unsafe { vm_ci_argc(call_info) } as i32;
-                        recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile::ProfileSend { argc }) });
+                        recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
                         fun.insn_types[recv.0] = fun.infer_type(recv);
                     }
 
@@ -5314,8 +5182,7 @@ impl Function {
 
                     if let Some(profiled_type) = profiled_type {
                         // Guard receiver class
-                        let argc = unsafe { vm_ci_argc(call_info) } as i32;
-                        recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile::ProfileSend { argc }) });
+                        recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
                         fun.insn_types[recv.0] = fun.infer_type(recv);
                     }
 
@@ -5433,9 +5300,8 @@ impl Function {
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
                 match self.find(insn_id) {
-                    Insn::Send { cd, state, reason: SendFallbackReason::SendWithoutBlockNoProfiles | SendFallbackReason::SendNoProfiles, .. } => {
-                        let argc = unsafe { vm_ci_argc((*cd).ci) } as i32;
-                        self.push_insn(block, Insn::SideExit { state, reason: SideExitReason::NoProfileSend, recompile: Some(Recompile::ProfileSend { argc }) });
+                    Insn::Send { state, reason: SendFallbackReason::SendWithoutBlockNoProfiles | SendFallbackReason::SendNoProfiles, .. } => {
+                        self.push_insn(block, Insn::SideExit { state, reason: SideExitReason::NoProfileSend, recompile: Some(Recompile) });
                         // SideExit is a terminator; don't add remaining instructions
                         break;
                     }
@@ -5602,6 +5468,19 @@ impl Function {
             let mut new_insns = vec![];
             for insn_id in old_insns {
                 let replacement_id = match self.find(insn_id) {
+                    // TODO (nirvdrum 2026-06-26): Folding the guard to a SideExit is a workaround,
+                    // not a proper fix. It relies on constant folding to keep an Empty-typed value
+                    // (see below) from reaching codegen; disabling this pass would let that value
+                    // through and the program would fail to compile on x86-64. Compilation correctness
+                    // should not depend on an optimization pass, so this should be replaced by a
+                    // comprehensive fix.
+                    Insn::GuardType { val, guard_type, state, recompile } if !self.type_of(val).could_be(guard_type) => {
+                        // The value's type is disjoint from the guard type, so the guard can never
+                        // pass. Every execution would side-exit here, so we replace the guard with an
+                        // unconditional exit. The terminator handling below then drops the rest of
+                        // the block, which is now unreachable.
+                        self.new_insn(Insn::SideExit { state, reason: SideExitReason::GuardType(guard_type), recompile })
+                    }
                     Insn::GuardType { val, guard_type, .. } if self.is_a(val, guard_type) => {
                         self.make_equal_to(insn_id, val);
                         // Don't bother re-inferring the type of val; we already know it.
@@ -6236,8 +6115,6 @@ impl Function {
         macro_rules! counter_for {
             // Bucket all strength reduction together
             (type_specialize) => { Counter::compile_hir_strength_reduce_time_ns };
-            (inline_trivial) => { Counter::compile_hir_strength_reduce_time_ns };
-            (optimize_getivar) => { Counter::compile_hir_strength_reduce_time_ns };
             (optimize_c_calls) => { Counter::compile_hir_strength_reduce_time_ns };
             (convert_no_profile_sends) => { Counter::compile_hir_strength_reduce_time_ns };
             // End strength reduction bucket
@@ -6274,20 +6151,23 @@ impl Function {
         }
 
         // The optimization pipeline runs in a fixed-point loop so that inlining and
-        // type specialization can feed each other: the first iteration inlines direct
-        // calls and specializes the inlined code, and subsequent iterations can inline
-        // calls that only became monomorphic after the previous round of specialization.
-        // Termination is guaranteed because each iteration either inlines at least one
-        // call (growing the function toward the inlining budget) or reaches a fixed point.
-        for _ in 0..get_option!(inline_max_iterations) {
+        // type specialization can feed each other: an iteration inlines direct calls and
+        // the next one specializes the freshly inlined code, which in turn can expose
+        // calls that only became monomorphic after that specialization. Inlining naturally
+        // stops when it reaches a fixed point, while inline_max_iterations sets an upper bound
+        // on inlining passes. If we reach the max, we run the loop one more time with inlining
+        // disabled in order to optimize the results of the last inlining operation.
+        let inline_max_iterations = get_option!(inline_max_iterations);
+        for iteration in 0..=inline_max_iterations {
             // Function is assumed to have types inferred already
             run_pass!(type_specialize);
-            // The trivial inliner runs first to handle simple cases (constant returns,
-            // parameter returns, etc.) without frame push/pop overhead. The general
-            // inliner then handles more complex methods that require full inlining.
-            run_pass!(inline_trivial);
-            let did_inline = run_pass!(inline_methods);
-            run_pass!(optimize_getivar);
+            // Cap inlining at inline_max_iterations passes; the trailing iteration (see above)
+            // runs the rest of the pipeline with inlining off.
+            let did_inline = if iteration < inline_max_iterations {
+                run_pass!(inline_methods)
+            } else {
+                false
+            };
             run_pass!(optimize_c_calls);
             run_pass!(convert_no_profile_sends);
             run_pass!(optimize_load_store);
@@ -6539,7 +6419,6 @@ impl Function {
             | Insn::SetClassVar { val, .. }
             | Insn::Return { val }
             | Insn::Throw { val, .. }
-            | Insn::ObjToString { val, .. }
             | Insn::GuardType { val, .. }
             | Insn::ToArray { val, .. }
             | Insn::ToNewArray { val, .. }
@@ -7375,7 +7254,8 @@ pub fn iseq_to_hir(iseq: *const rb_iseq_t) -> Result<Function, ParseError> {
 /// (the method inliner).
 ///
 /// When `mode` is `AddIseqMode::Standalone`, generate the interpreter entry
-/// block and a JIT entry block for each opt-table entry, push the JIT entry
+/// block and, for ISEQs that can be entered by JIT-to-JIT calls, a JIT entry
+/// block for each opt-table entry, push the JIT entry
 /// blocks onto `fun.jit_entry_blocks`, and run the post-translation passes
 /// (`seal_entries`, `set_param_types`, `infer_types`) before returning. When
 /// `mode` is `AddIseqMode::Inlined`, only the body blocks are produced and the
@@ -7411,13 +7291,15 @@ fn add_iseq_to_hir(
     let jit_entry_insns = unsafe { iseq.params() }.opt_table_slice().iter().copied().map(VALUE::as_u32).collect::<Vec<_>>();
     let BytecodeInfo { jump_targets } = compute_bytecode_info(iseq, &jit_entry_insns);
 
+    let compile_jit_entries = matches!(mode, AddIseqMode::Standalone) && iseq_supports_jit_entry(iseq);
+
     // Make all empty basic blocks. The ordering of the BBs matters for getting fallthrough jumps
     // in good places, but it's not necessary for correctness. TODO: Higher quality scheduling during lowering.
     let mut insn_idx_to_block = HashMap::new();
     let mut body_entry_blocks = Vec::with_capacity(jit_entry_insns.len());
     // Make blocks for optionals first, and put them right next to their JIT entrypoint
     for insn_idx in jit_entry_insns.iter().copied() {
-        if matches!(mode, AddIseqMode::Standalone) {
+        if compile_jit_entries {
             let jit_entry_block = fun.new_block(insn_idx);
             fun.jit_entry_blocks.push(jit_entry_block);
         }
@@ -7435,23 +7317,25 @@ fn add_iseq_to_hir(
         // Compile an entry_block for the interpreter
         compile_entry_block(fun, jit_entry_insns.as_slice(), &insn_idx_to_block);
 
-        // Compile all JIT-to-JIT entry blocks
-        for (jit_entry_idx, insn_idx) in jit_entry_insns.iter().enumerate() {
-            let target_block = insn_idx_to_block.get(insn_idx)
-                .copied()
-                .expect("we make a block for each jump target and \
-                         each entry in the ISEQ opt_table is a jump target");
-            compile_jit_entry_block(fun, jit_entry_idx, target_block);
+        if compile_jit_entries {
+            // Compile all JIT-to-JIT entry blocks
+            for (jit_entry_idx, insn_idx) in jit_entry_insns.iter().enumerate() {
+                let target_block = insn_idx_to_block.get(insn_idx)
+                    .copied()
+                    .expect("we make a block for each jump target and \
+                             each entry in the ISEQ opt_table is a jump target");
+                compile_jit_entry_block(fun, jit_entry_idx, target_block);
+            }
         }
     }
 
     // Check if the EP is escaped for the ISEQ from the beginning. We give up
     // optimizing locals in that case because they're shared with other frames.
-    let ep_starts_escaped = iseq_escapes_ep(iseq);
+    let ep_starts_escaped = iseq_ep_starts_escaped(iseq);
     // Check if the EP has been escaped at some point in the ISEQ. If it has, then we assume that
     // its EP is shared with other frames.
-    let ep_has_been_escaped = crate::invariants::iseq_escapes_ep(iseq);
-    let ep_escaped = ep_starts_escaped || ep_has_been_escaped;
+    let seen_ep_escape = iseq_seen_ep_escape(iseq);
+    let ep_escaped = ep_starts_escaped || seen_ep_escape;
 
     // Iteratively fill out basic blocks using a queue.
     // TODO(max): Basic block arguments at edges
@@ -7626,6 +7510,7 @@ fn add_iseq_to_hir(
                 }
                 YARVINSN_concatstrings => {
                     let count = get_arg(pc, 0).as_u32();
+                    debug_assert!(count > 0, "concatstrings should have arguments");
                     let strings = state.stack_pop_n(count as usize)?;
                     let insn_id = fun.push_insn(block, Insn::StringConcat { strings, state: exit_id });
                     state.stack_push(insn_id);
@@ -7826,6 +7711,21 @@ fn add_iseq_to_hir(
                     // (ID id, IVC ic, VALUE pushval)
                     let id = ID(get_arg(pc, 0).as_u64());
                     let pushval = get_arg(pc, 2);
+                    fn can_optimize(profiled_type: ProfiledType) -> Option<ShapeId> {
+                        // Runtime immediates cannot pass the HeapBasicObject guard, so don't
+                        // generate unreachable shape branches for profiled immediate buckets.
+                        if profiled_type.flags().is_immediate() { return None; }
+                        // Class/module/T_DATA ivars use different storage rules.
+                        // Let the fallthrough DefinedIvar handle these.
+                        if !profiled_type.flags().is_t_object() { return None; }
+                        let profiled_shape = profiled_type.shape();
+                        assert!(profiled_shape.is_valid());
+                        // Too-complex shapes use hash tables for ivars;
+                        // rb_shape_get_iv_index doesn't work for them.
+                        // Let the fallthrough DefinedIvar handle these.
+                        if profiled_shape.is_complex() { return None; }
+                        Some(profiled_shape)
+                    }
                     if let Some(summary) = fun.polymorphic_summary(&profiles, self_param, exit_id) {
                         self_param = fun.push_insn(block, Insn::GuardType { val: self_param, guard_type: types::HeapBasicObject, state: exit_id, recompile: None });
                         let join_block = fun.new_block(insn_idx);
@@ -7836,18 +7736,7 @@ fn add_iseq_to_hir(
                         for &profiled_type in summary.buckets() {
                             // End of the buckets
                             if profiled_type.is_empty() { break; }
-                            // Runtime immediates cannot pass the HeapBasicObject guard, so don't
-                            // generate unreachable shape branches for profiled immediate buckets.
-                            if profiled_type.flags().is_immediate() { continue; }
-                            // Class/module/T_DATA ivars use different storage rules.
-                            // Let the fallthrough DefinedIvar handle these.
-                            if !profiled_type.flags().is_t_object() { continue; }
-                            let profiled_shape = profiled_type.shape();
-                            assert!(profiled_shape.is_valid());
-                            // Too-complex shapes use hash tables for ivars;
-                            // rb_shape_get_iv_index doesn't work for them.
-                            // Let the fallthrough DefinedIvar handle these.
-                            if profiled_shape.is_complex() { continue; }
+                            let Some(profiled_shape) = can_optimize(profiled_type) else { continue };
                             if seen_shape.contains(&profiled_shape) { continue; }
                             seen_shape.push(profiled_shape);
                             let actual_shape = fun.load_shape(block, self_param);
@@ -7879,10 +7768,25 @@ fn add_iseq_to_hir(
                         state.stack_push(join_param);
                         block = join_block;
                     } else {
-                        // TODO: Handle monomorphic definedivar specialization here too, including the
-                        // no_side_exits policy, so optimize_getivar doesn't need a separate DefinedIvar
-                        // path. Unlike GetIvar, DefinedIvar isn't emitted by later lowering passes.
-                        state.stack_push(fun.push_insn(block, Insn::DefinedIvar { self_val: self_param, id, pushval, state: exit_id }));
+                        if let Some(profiled_shape) = (if fun.policy.no_side_exits { None } else { Some(true) })
+                            .and_then(|_| fun.monomorphic_summary(&profiles, self_param, exit_id))
+                            .and_then(can_optimize) {
+                            self_param = fun.guard_heap(block, self_param, exit_id);
+                            let shape = fun.load_shape(block, self_param);
+                            fun.guard_shape(block, shape, profiled_shape, exit_id, Some(Recompile));
+                            let mut ivar_index: attr_index_t = 0;
+                            let result = if unsafe { rb_shape_get_iv_index(profiled_shape.0, id, &mut ivar_index) } {
+                                fun.push_insn(block, Insn::Const { val: Const::Value(pushval) })
+                            } else {
+                                // If there is no IVAR index, then the ivar was undefined when we
+                                // entered the compiler.  That means we can just return nil for this
+                                // shape + iv name
+                                fun.push_insn(block, Insn::Const { val: Const::Value(Qnil) })
+                            };
+                            state.stack_push(result);
+                        } else {
+                            state.stack_push(fun.push_insn(block, Insn::DefinedIvar { self_val: self_param, id, pushval, state: exit_id }));
+                        }
                     }
                 }
                 YARVINSN_checkkeyword => {
@@ -7925,9 +7829,18 @@ fn add_iseq_to_hir(
                     state.stack_push(result);
                 }
                 YARVINSN_opt_getconstant_path => {
-                    let ic = get_arg(pc, 0).as_ptr();
-                    let get_const_path = fun.push_insn(block, Insn::GetConstantPath { ic, state: exit_id });
-                    state.stack_push(get_const_path);
+                    let ic: *const iseq_inline_constant_cache = get_arg(pc, 0).as_ptr();
+                    let idlist: *const ID = unsafe { (*ic).segments };
+                    let ice = unsafe { (*ic).entry };
+                    let result = if !ice.is_null() && (unsafe { (*ice).ic_cref }.is_null() && fun.assume_single_ractor_mode(block, exit_id)) {
+                        // Invalidate output code on any constant writes associated with constants
+                        // referenced after the PatchPoint.
+                        fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::StableConstantNames { idlist }, state: exit_id });
+                        fun.push_insn(block, Insn::Const { val: Const::Value(unsafe { (*ice).value }) })
+                    } else {
+                        fun.push_insn(block, Insn::GetConstantPath { ic, state: exit_id })
+                    };
+                    state.stack_push(result);
 
                     // Check for `::RubyVM::ZJIT` for directives
                     unsafe {
@@ -7947,7 +7860,7 @@ fn add_iseq_to_hir(
                                 let zjit_module = VALUE(state::ZJIT_MODULE.load(Ordering::Relaxed));
                                 let lookedup_module = rb_const_lookup(rb_cRubyVM, ID!(ZJIT));
                                 if !lookedup_module.is_null() && (*lookedup_module).value == zjit_module {
-                                    fun.insn_types[get_const_path.0] = Type::from_value(zjit_module);
+                                    fun.insn_types[result.0] = Type::from_value(zjit_module);
                                 }
                             }
                         }
@@ -8278,7 +8191,7 @@ fn add_iseq_to_hir(
                             // So to check for either of those cases we can use: val & 0x1 == 0x1
 
                             // Bail out if the block handler is neither ISEQ nor ifunc
-                            fun.push_insn(unmodified_block, Insn::GuardAnyBitSet { val: block_handler, mask: Const::CUInt64(0x1), mask_name: None, reason: SideExitReason::BlockParamProxyFallbackMiss, state: exit_id });
+                            fun.push_insn(unmodified_block, Insn::GuardAnyBitSet { val: block_handler, mask: Const::CUInt64(0x1), mask_name: None, reason: SideExitReason::BlockParamProxyFallbackMiss, state: exit_id, recompile: Some(Recompile) });
                             // TODO(Shopify/ruby#753): GC root, so we should be able to avoid unnecessary GC tracing
                             let proxy_val = fun.push_insn(unmodified_block, Insn::Const { val: Const::Value(unsafe { rb_block_param_proxy }) });
                             let mut args = vec![proxy_val];
@@ -8291,7 +8204,7 @@ fn add_iseq_to_hir(
                         [profiled_handler] => match profiled_handler {
                             ProfiledBlockHandlerFamily::Nil => {
                                 let block_handler = fun.load_ep_env_field(unmodified_block, ep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, VM_ENV_DATA_INDEX_SPECVAL, types::CInt64);
-                                fun.push_insn(unmodified_block, Insn::GuardBitEquals { val: block_handler, expected: Const::CInt64(VM_BLOCK_HANDLER_NONE.into()), reason: SideExitReason::BlockParamProxyNotNil, state: exit_id, recompile: None });
+                                fun.push_insn(unmodified_block, Insn::GuardBitEquals { val: block_handler, expected: Const::CInt64(VM_BLOCK_HANDLER_NONE.into()), reason: SideExitReason::BlockParamProxyNotNil, state: exit_id, recompile: Some(Recompile) });
                                 let nil_val = fun.push_insn(unmodified_block, Insn::Const { val: Const::Value(Qnil) });
                                 let mut args = vec![nil_val];
                                 if let Some(local) = original_local {
@@ -8308,7 +8221,7 @@ fn add_iseq_to_hir(
                                 // So to check for either of those cases we can use: val & 0x1 == 0x1
 
                                 // Bail out if the block handler is neither ISEQ nor ifunc
-                                fun.push_insn(unmodified_block, Insn::GuardAnyBitSet { val: block_handler, mask: Const::CUInt64(0x1), mask_name: None, reason: SideExitReason::BlockParamProxyNotIseqOrIfunc, state: exit_id });
+                                fun.push_insn(unmodified_block, Insn::GuardAnyBitSet { val: block_handler, mask: Const::CUInt64(0x1), mask_name: None, reason: SideExitReason::BlockParamProxyNotIseqOrIfunc, state: exit_id, recompile: Some(Recompile) });
                                 // TODO(Shopify/ruby#753): GC root, so we should be able to avoid unnecessary GC tracing
                                 let proxy_val = fun.push_insn(unmodified_block, Insn::Const { val: Const::Value(unsafe { rb_block_param_proxy }) });
                                 let mut args = vec![proxy_val];
@@ -8328,7 +8241,7 @@ fn add_iseq_to_hir(
                                     return_type: types::BasicObject,
                                     elidable: true,
                                 });
-                                fun.push_insn(unmodified_block, Insn::GuardBitEquals { val: is_proc, expected: Const::Value(Qtrue), reason: SideExitReason::BlockParamProxyNotProc, state: exit_id, recompile: None });
+                                fun.push_insn(unmodified_block, Insn::GuardBitEquals { val: is_proc, expected: Const::Value(Qtrue), reason: SideExitReason::BlockParamProxyNotProc, state: exit_id, recompile: Some(Recompile) });
                                 let mut args = vec![proc_val];
                                 if let Some(local) = original_local {
                                     args.push(local);
@@ -8664,87 +8577,52 @@ fn add_iseq_to_hir(
                         break;
                     }
 
-                    {
-                        fn new_branch_block(
-                            fun: &mut Function,
-                            cd: *const rb_call_data,
-                            argc: usize,
-                            opcode: u32,
-                            new_type: Type,
-                            insn_idx: u32,
-                            exit_state: &FrameState,
-                            locals_count: usize,
-                            stack_count: usize,
-                            join_block: BlockId,
-                        ) -> BlockId {
-                            let block = fun.new_block(insn_idx);
-                            let self_param = fun.push_insn(block, Insn::Param);
-                            let mut state = exit_state.clone();
-                            state.locals.clear();
-                            state.stack.clear();
-                            state.locals.extend((0..locals_count).map(|_| fun.push_insn(block, Insn::Param)));
-                            state.stack.extend((0..stack_count).map(|_| fun.push_insn(block, Insn::Param)));
-                            let snapshot = fun.push_insn(block, Insn::Snapshot { state: state.clone() });
-                            let args = state.stack_pop_n(argc).unwrap();
-                            let recv = state.stack_pop().unwrap();
-                            let refined_recv = fun.push_insn(block, Insn::RefineType { val: recv, new_type });
-                            state.replace(recv, refined_recv);
-                            let send = fun.push_insn(block, Insn::Send { recv: refined_recv, cd, block: None, args, state: snapshot, reason: Uncategorized(opcode) });
-                            state.stack_push(send);
-                            fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: state.as_args(self_param) }));
-                            block
-                        }
-                        let branch_insn_idx = exit_state.insn_idx as u32;
-                        let locals_count = state.locals.len();
-                        let stack_count = state.stack.len();
-                        let recv = state.stack_topn(argc as usize)?;  // args are on top
-                        let entry_args = state.as_args(self_param);
-                        if let Some(summary) = fun.polymorphic_summary(&profiles, recv, exit_id) {
-                            let join_block = fun.new_block(insn_idx);
-                            // Dedup by expected type so immediate/heap variants
-                            // under the same Ruby class can still get separate branches.
-                            let mut seen_types = Vec::with_capacity(summary.buckets().len());
-                            for &profiled_type in summary.buckets() {
-                                if profiled_type.is_empty() { break; }
-                                let expected = Type::from_profiled_type(profiled_type);
-                                if seen_types.iter().any(|ty: &Type| ty.bit_equal(expected)) {
-                                    continue;
-                                }
-                                seen_types.push(expected);
-                                let has_type = fun.push_insn(block, Insn::HasType { val: recv, expected });
-                                let iftrue_block =
-                                    new_branch_block(fun, cd, argc as usize, opcode, expected, branch_insn_idx, &exit_state, locals_count, stack_count, join_block);
-                                let target = BranchEdge { target: iftrue_block, args: entry_args.clone() };
-                                let fall_through = fun.new_block(insn_idx);
-                                fun.push_insn(block, Insn::CondBranch {
-                                    val: has_type,
-                                    if_true: target,
-                                    if_false: BranchEdge { target: fall_through, args: vec![] }
-                                });
-                                block = fall_through;
-                            }
-                            // Continue compilation from the join block at the next instruction.
-                            // Make a copy of the current state without the args (pop the receiver
-                            // and push the result) because we just use the locals/stack sizes to
-                            // make the right number of Params
-                            let mut join_state = state.clone();
-                            join_state.stack_pop_n(argc as usize)?;
-                            queue.push_back((join_state, join_block, insn_idx, local_inval));
-                            // In the fallthrough case, do a generic interpreter send and then join.
-                            let args = state.stack_pop_n(argc as usize)?;
-                            let recv = state.stack_pop()?;
-                            let reason = SendWithoutBlockPolymorphicFallback;
-                            let send = fun.push_insn(block, Insn::Send { recv, cd, block: None, args, state: exit_id, reason });
-                            state.stack_push(send);
-                            fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: state.as_args(self_param) }));
-                            break;  // End the block
-                        }
-                    }
-
                     let args = state.stack_pop_n(argc as usize)?;
                     let recv = state.stack_pop()?;
-                    let send = fun.push_insn(block, Insn::Send { recv, cd, block: None, args, state: exit_id, reason: Uncategorized(opcode) });
-                    state.stack_push(send);
+
+                    if let Some(summary) = fun.polymorphic_summary(&profiles, recv, exit_id) {
+                        let join_block = fun.new_block(insn_idx);
+                        let join_param = fun.push_insn(join_block, Insn::Param);
+                        // Dedup by expected type so immediate/heap variants
+                        // under the same Ruby class can still get separate branches.
+                        let mut seen_types = Vec::with_capacity(summary.buckets().len());
+                        for &profiled_type in summary.buckets() {
+                            if profiled_type.is_empty() { break; }
+                            let expected = Type::from_profiled_type(profiled_type);
+                            if seen_types.iter().any(|ty: &Type| ty.bit_equal(expected)) {
+                                continue;
+                            }
+                            seen_types.push(expected);
+                            let has_type = fun.push_insn(block, Insn::HasType { val: recv, expected });
+                            let iftrue_block = fun.new_block(insn_idx);
+                            let fall_through = fun.new_block(insn_idx);
+                            fun.push_insn(block, Insn::CondBranch {
+                                val: has_type,
+                                if_true: BranchEdge { target: iftrue_block, args: vec![] },
+                                if_false: BranchEdge { target: fall_through, args: vec![] }
+                            });
+                            block = fall_through;
+                            // Take a fresh Snapshot rather than
+                            // reusing exit_id so type specialization resolves the receiver from
+                            // its refined, exact type instead of the polymorphic profile that is
+                            // keyed at exit_id.
+                            let snapshot = fun.push_insn(iftrue_block, Insn::Snapshot { state: exit_state.clone() });
+                            let refined_recv = fun.push_insn(iftrue_block, Insn::RefineType { val: recv, new_type: expected });
+                            let send = fun.push_insn(iftrue_block, Insn::Send { recv: refined_recv, cd, block: None, args: args.clone(), state: snapshot, reason: Uncategorized(opcode) });
+                            fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![send] }));
+                        }
+                        // In the fallthrough case, do a generic interpreter send and then join.
+                        let reason = SendWithoutBlockPolymorphicFallback;
+                        let send = fun.push_insn(block, Insn::Send { recv, cd, block: None, args, state: exit_id, reason });
+                        fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: vec![send] }));
+                        state.stack_push(join_param);
+                        // Continue compilation from the join block at the next instruction.
+                        block = join_block;
+                    } else {
+                        // Maybe monomorphic; handled in type_specialize
+                        let send = fun.push_insn(block, Insn::Send { recv, cd, block: None, args, state: exit_id, reason: Uncategorized(opcode) });
+                        state.stack_push(send);
+                    }
                 }
                 YARVINSN_send => {
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
@@ -8963,8 +8841,10 @@ fn add_iseq_to_hir(
                         });
 
                     let result = if is_ifunc {
-                        // Load the block handler from LEP
-                        let level = get_lvar_level(fun.iseq);
+                        // Load the block handler from the current frame's LEP. In inlined
+                        // code, the function ISEQ is the caller while `exit_state.iseq` is the
+                        // callee containing this `invokeblock`.
+                        let level = get_lvar_level(exit_state.iseq);
                         let lep = fun.push_insn(block, Insn::GetEP { level });
                         let block_handler = fun.push_insn(block, Insn::LoadField {
                             recv: lep,
@@ -9084,14 +8964,24 @@ fn add_iseq_to_hir(
                         // make the right number of Params
                         block = join_block;
                     } else {
-                        // Possibly monomorphic case; handled in optimize_getivar
-                        let result = fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id });
-                        state.stack_push(result);
+                        if let Some(profiled_type) = fun.monomorphic_summary(&profiles, self_param, exit_id) {
+                            let result = fun.try_emit_optimized_getivar(block, self_param, id, profiled_type, exit_id).unwrap_or_else(|counter| {
+                                fun.count(block, counter);
+                                fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic: std::ptr::null(), state: exit_id })
+                            });
+                            state.stack_push(result);
+                        } else {
+                            let resolution = fun.resolve_receiver_type_from_profile(self_param, exit_id);
+                            let counter = Function::getivar_fallback_reason(resolution, ic);
+                            fun.count(block, counter);
+                            let result = fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id });
+                            state.stack_push(result);
+                        }
                     }
                 }
                 YARVINSN_setinstancevariable => {
                     let id = ID(get_arg(pc, 0).as_u64());
-                    let ic = get_arg(pc, 1).as_ptr();
+                    let ic: *const iseq_inline_iv_cache_entry = get_arg(pc, 1).as_ptr();
                     // Assume single-Ractor mode to omit gen_prepare_non_leaf_call on gen_setivar
                     // TODO: We only really need this if self_val is a class/module
                     if !fun.assume_single_ractor_mode(block, exit_id) {
@@ -9100,7 +8990,16 @@ fn add_iseq_to_hir(
                         break;  // End the block
                     }
                     let val = state.stack_pop()?;
-                    fun.push_insn(block, Insn::SetIvar { self_val: self_param, id, ic, val, state: exit_id });
+                    if let Some(profiled_type) = fun.monomorphic_summary(&profiles, self_param, exit_id) {
+                        // TODO(max): Assert ic is never null
+                        let recompile = (!ic.is_null()).then_some(Recompile);
+                        fun.try_emit_optimized_setivar(block, self_param, id, val, profiled_type, exit_id, recompile).unwrap_or_else(|counter| {
+                            fun.count(block, counter);
+                            fun.push_insn(block, Insn::SetIvar { self_val: self_param, id, ic, val, state: exit_id });
+                        });
+                    } else {
+                        fun.push_insn(block, Insn::SetIvar { self_val: self_param, id, ic, val, state: exit_id });
+                    }
                     // SetIvar will raise if self is an immediate. If it raises, we will have
                     // exited JIT code. So upgrade the type within JIT code to a heap object.
                     self_param = fun.push_insn(block, Insn::RefineType { val: self_param, new_type: types::HeapBasicObject });
@@ -9136,6 +9035,12 @@ fn add_iseq_to_hir(
                 }
                 YARVINSN_invokebuiltin => {
                     let bf: rb_builtin_function = unsafe { *get_arg(pc, 0).as_ptr() };
+                    // TODO: Support passing arguments on the stack in C calls
+                    // +2 for ec, self
+                    if (bf.argc + 2) as usize > C_ARG_OPNDS.len() {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::TooManyArgsForLir, recompile: None });
+                        break; // End the block
+                    }
 
                     let mut args = vec![];
                     for _ in 0..bf.argc {
@@ -9165,6 +9070,13 @@ fn add_iseq_to_hir(
                 YARVINSN_opt_invokebuiltin_delegate |
                 YARVINSN_opt_invokebuiltin_delegate_leave => {
                     let bf: rb_builtin_function = unsafe { *get_arg(pc, 0).as_ptr() };
+                    // TODO: Support passing arguments on the stack in C calls
+                    // +2 for ec, self
+                    if (bf.argc + 2) as usize > C_ARG_OPNDS.len() {
+                        fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::TooManyArgsForLir, recompile: None });
+                        break; // End the block
+                    }
+
                     let index = get_arg(pc, 1).as_usize();
                     let argc = bf.argc as usize;
 
@@ -9195,10 +9107,39 @@ fn add_iseq_to_hir(
                     let cd: *const rb_call_data = get_arg(pc, 0).as_ptr();
                     let argc = crate::profile::num_arguments_on_stack(cd);
                     assert_eq!(0, argc, "objtostring should not have args");
-
                     let recv = state.stack_pop()?;
-                    let objtostring = fun.push_insn(block, Insn::ObjToString { val: recv, cd, state: exit_id });
-                    state.stack_push(objtostring)
+                    // TODO(max): Handle polymorphic profiles
+                    let result = if let Some(profiled_type) = fun.monomorphic_summary(&profiles, recv, exit_id) {
+                        if profiled_type.is_string() {
+                            // TODO(max): Do we need PatchPoint? We are checking T_STRING-ness.
+                            fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoSingletonClass { klass: profiled_type.class() }, state: exit_id });
+                            fun.push_insn(block, Insn::GuardType { val: recv, guard_type: types::String, state: exit_id, recompile: None })
+                        } else {
+                            let recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state: exit_id, recompile: None });
+                            fun.push_insn(block, Insn::Send { recv, cd, block: None, args: vec![], state: exit_id, reason: ObjToStringNotString })
+                        }
+                    } else {
+                        let has_type = fun.push_insn(block, Insn::HasType { val: recv, expected: types::String });
+                        let iftrue_block = fun.new_block(insn_idx);
+                        let iffalse_block = fun.new_block(insn_idx);
+                        let join_block = fun.new_block(insn_idx);
+                        fun.push_insn(block, Insn::CondBranch {
+                            val: has_type,
+                            if_true: BranchEdge { target: iftrue_block, args: vec![] },
+                            if_false: BranchEdge { target: iffalse_block, args: vec![] }
+                        });
+                        // true block
+                        let refined = fun.push_insn(iftrue_block, Insn::RefineType { val: recv, new_type: types::String });
+                        fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![refined] }));
+                        // false block
+                        let refined = fun.push_insn(iffalse_block, Insn::RefineType { val: recv, new_type: types::NotString });
+                        let send = fun.push_insn(iffalse_block, Insn::Send { recv: refined, cd, block: None, args: vec![], state: exit_id, reason: ObjToStringNotString });
+                        fun.push_insn(iffalse_block, Insn::Jump(BranchEdge { target: join_block, args: vec![send] }));
+                        // join block
+                        block = join_block;
+                        fun.push_insn(join_block, Insn::Param)
+                    };
+                    state.stack_push(result);
                 }
                 YARVINSN_anytostring => {
                     let str = state.stack_pop()?;
@@ -9344,7 +9285,7 @@ fn compile_entry_state(fun: &mut Function) -> (InsnId, FrameState) {
     // If the ISEQ does not escape EP, we can assume EP + 1 == SP
     // TODO: This should maybe also consider if the EP has historically been escaped in this iseq.
     // (see: https://github.com/Shopify/ruby/issues/774)
-    let use_sp = !iseq_escapes_ep(iseq);
+    let use_sp = !iseq_ep_starts_escaped(iseq);
     let mut base: Option<InsnId> = None;
     for local_idx in 0..num_locals(iseq) {
         if local_idx < param_size {
@@ -9396,6 +9337,9 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
     let opt_num: usize = params.opt_num.try_into().expect("iseq param opt_num >= 0");
     let lead_num: usize = params.lead_num.try_into().expect("iseq param lead_num >= 0");
     let passed_opt_num = jit_entry_idx;
+    // We don't need to check iseq_ep_starts_escaped() because we
+    // don't compile JIT entries for ISEQ_TYPE_MAIN/ISEQ_TYPE_EVAL.
+    let seen_ep_escape = iseq_seen_ep_escape(iseq);
 
     // If the iseq has keyword parameters, the keyword bits local will be appended to the local table.
     let kw_bits_idx: Option<usize> = if unsafe { rb_get_iseq_flags_has_kw(iseq) } {
@@ -9418,9 +9362,9 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
     let mut entry_state = FrameState::new(iseq);
     let mut ep: Option<InsnId> = None;
     for local_idx in 0..num_locals(iseq) {
-        if (lead_num + passed_opt_num..lead_num + opt_num).contains(&local_idx) {
+        let local = if (lead_num + passed_opt_num..lead_num + opt_num).contains(&local_idx) {
             // Omitted optionals are locals, so they start as nils before their code run
-            entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Const { val: Const::Value(Qnil) }));
+            fun.push_insn(jit_entry_block, Insn::Const { val: Const::Value(Qnil) })
         } else if Some(local_idx) == kw_bits_idx {
             // Read the kw_bits value written by the caller to the callee frame.
             // This tells us which optional keywords were NOT provided and need their defaults evaluated.
@@ -9430,20 +9374,37 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
             let ep_offset_u32 = u32::try_from(ep_offset)
                 .unwrap_or_else(|_| panic!("Could not convert ep_offset {ep_offset} to u32"));
             let ep = *ep.get_or_insert_with(|| fun.push_insn(jit_entry_block, Insn::GetEP { level: 0 }));
-            entry_state.locals.push(fun.get_local_from_ep(
+            fun.get_local_from_ep(
                 jit_entry_block,
                 iseq,
                 ep,
                 ep_offset_u32,
                 0,
                 types::BasicObject,
-            ));
+            )
         } else if local_idx < param_size {
             let id = unsafe { rb_zjit_local_id(iseq, local_idx.try_into().unwrap()) };
-            entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::LoadArg { idx: arg_idx, id: id.into(), val_type: types::BasicObject }));
+            let local = fun.push_insn(jit_entry_block, Insn::LoadArg { idx: arg_idx, id: id.into(), val_type: types::BasicObject });
             arg_idx += 1;
+            local
         } else {
-            entry_state.locals.push(fun.push_insn(jit_entry_block, Insn::Const { val: Const::Value(Qnil) }));
+            fun.push_insn(jit_entry_block, Insn::Const { val: Const::Value(Qnil) })
+        };
+        entry_state.locals.push(local);
+
+        // Once an ISEQ has escaped EP, HIR getlocal may need to read from the
+        // VM frame instead of FrameState. Direct JIT-to-JIT entry passes locals
+        // as C arguments, so initialize the frame slots here before such reads.
+        if seen_ep_escape {
+            let ep_offset = local_idx_to_ep_offset(iseq, local_idx);
+            let local_id = unsafe { rb_zjit_local_id(iseq, local_idx.try_into().unwrap()) };
+            let ep = *ep.get_or_insert_with(|| fun.push_insn(jit_entry_block, Insn::GetEP { level: 0 }));
+            fun.push_insn(jit_entry_block, Insn::StoreField {
+                recv: ep,
+                id: local_id.into(),
+                offset: -(SIZEOF_VALUE_I32 * ep_offset),
+                val: local,
+            });
         }
     }
     (self_param, entry_state)
@@ -10040,13 +10001,13 @@ mod validation_tests {
         function.push_insn(entry, Insn::LoadField {
             recv,
             id: FieldName::as_heap,
-            offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32,
+            offset: ROBJECT_OFFSET_AS_HEAP_FIELDS,
             return_type: types::CPtr,
         });
         let ivar = function.push_insn(entry, Insn::LoadField {
             recv,
             id: FieldName::Id(ID(1)),
-            offset: ROBJECT_OFFSET_AS_ARY as i32,
+            offset: ROBJECT_OFFSET_AS_ARY,
             return_type: types::BasicObject,
         });
         function.push_insn(entry, Insn::Return { val: ivar });
@@ -10073,13 +10034,13 @@ mod validation_tests {
         function.push_insn(entry, Insn::LoadField {
             recv,
             id: FieldName::as_heap,
-            offset: ROBJECT_OFFSET_AS_HEAP_FIELDS as i32,
+            offset: ROBJECT_OFFSET_AS_HEAP_FIELDS,
             return_type: types::BasicObject,
         });
         let ivar = function.push_insn(entry, Insn::LoadField {
             recv,
             id: FieldName::Id(ID(1)),
-            offset: ROBJECT_OFFSET_AS_ARY as i32,
+            offset: ROBJECT_OFFSET_AS_ARY,
             return_type: types::Array,
         });
         function.push_insn(entry, Insn::Return { val: ivar });

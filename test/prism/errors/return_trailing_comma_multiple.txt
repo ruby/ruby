@@ -1,0 +1,3 @@
+return a, b,
+           ^ unexpected end-of-input; expected an argument
+

@@ -548,7 +548,7 @@ static const rb_data_type_t stat_data_type = {
         RUBY_TYPED_DEFAULT_FREE,
         NULL, // No external memory to report
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 struct rb_stat {
@@ -3374,14 +3374,55 @@ rb_file_s_utime(int argc, VALUE *argv, VALUE _)
 #if defined(HAVE_UTIMES) && (defined(HAVE_LUTIMES) || (defined(HAVE_UTIMENSAT) && defined(AT_SYMLINK_NOFOLLOW)))
 
 /*
- * call-seq:
- *  File.lutime(atime, mtime, file_name, ...)   ->  integer
+ * :markup: markdown
  *
- * Sets the access and modification times of each named file to the
- * first two arguments. If a file is a symlink, this method acts upon
- * the link itself as opposed to its referent; for the inverse
- * behavior, see File.utime. Returns the number of file
- * names in the argument list.
+ * call-seq:
+ *   File.lutime(atime, mtime, *paths) -> path_count
+ *
+ * Like File#utime, but does not follow symbolic links,
+ * and therefore changes the times of the entries given by `paths`,
+ * regardless of whether they are symbolic links;
+ * returns the number of `paths` given:
+ *
+ * ```ruby
+ * # Create a file and a link to it.
+ * file_path = 't.tmp'
+ * File.write(file_path, '')
+ * link_path = 'link'
+ * File.symlink(file_path, link_path)
+ * # Take snapshots of both.
+ * file_stat = File.stat(file_path)
+ * link_stat = File.lstat(link_path)
+ * # Fetch access times and modification times of both.
+ * file_stat.atime # => 2026-06-15 10:45:11.376753268 -0500
+ * file_stat.mtime # => 2026-06-15 10:44:47.335854904 -0500
+ * link_stat.atime # => 2026-06-15 10:44:59.788801128 -0500
+ * link_stat.mtime # => 2026-06-15 10:44:49.367845961 -0500
+ * # Update access time and modification time of the link.
+ * time = Time.now # => 2026-06-15 10:48:57.847422496 -0500
+ * File.lutime(time, time, link_path)
+ * # Take fresh snapshots of both.
+ * file_stat = File.stat(file_path)
+ * link_stat = File.lstat(link_path)
+ * # Fetch access time and modification time of file (not changed).
+ * file_stat.atime # => 2026-06-15 10:45:11.376753268 -0500
+ * file_stat.mtime # => 2026-06-15 10:44:47.335854904 -0500
+ * # Fetch access time and modification time of link (changed).
+ * link_stat.atime # => 2026-06-15 10:49:27.119146136 -0500
+ * link_stat.mtime # => 2026-06-15 10:48:57.847422496 -0500
+ * # Clean up.
+ * File.delete(file_path)
+ * File.delete(link_path)
+ * ```
+ *
+ * Arguments `atime` and `mtime` may be Time objects (as above).
+ *
+ * Either or both may be integers;
+ * when an integer `i` is passed, `Time.new(i)` is used.
+ *
+ * Either or both may be `nil`, in which case `Time.now` is used.
+ *
+ * See {File System Timestamps}[rdoc-ref:file/timestamps.md].
  */
 
 static VALUE
@@ -3427,15 +3468,28 @@ syserr_fail2_in(const char *func, int e, VALUE s1, VALUE s2)
 
 #ifdef HAVE_LINK
 /*
+ * :markup: markdown
+
  *  call-seq:
- *     File.link(old_name, new_name)    -> 0
+ *    File.link(path, new_path) -> 0
  *
- *  Creates a new name for an existing file using a hard link. Will not
- *  overwrite <i>new_name</i> if it already exists (raising a subclass
- *  of SystemCallError). Not available on all platforms.
+ *  Not available on some systems.
  *
- *     File.link("testfile", ".testfile")   #=> 0
- *     IO.readlines(".testfile")[0]         #=> "This is line one\n"
+ *  Creates a new entry at `new_path` for the existing entry at `path`
+ *  using a [hard link](https://en.wikipedia.org/wiki/Hard_link):
+ *
+ *  ```ruby
+ *  File.write('doc/t.tmp', 'foo')
+ *  File.link('doc/t.tmp', 'lib/u.tmp')
+ *  File.read('lib/u.tmp') # => "foo"
+ *  File.write('lib/u.tmp', 'bar')
+ *  File.read('doc/t.tmp') # => "bar"
+ *  File.delete('doc/t.tmp')
+ *  File.read('lib/u.tmp') # => "bar"
+ *  File.delete('lib/u.tmp')
+ *  ```
+ *
+ *  Raises an exception if the entry at `new_path` exists.
  */
 
 static VALUE
@@ -3990,10 +4044,12 @@ ntfs_tail(const char *path, const char *end, rb_encoding *enc)
     }\
 } while (0)
 
-#define BUFINIT() (\
-    p = buf = RSTRING_PTR(result),\
-    buflen = RSTRING_LEN(result),\
-    pend = p + buflen)
+#define BUFINIT(result, buf, p, pend) do {\
+    if (!result) { result = rb_usascii_str_new(0, 1); } \
+    p = buf = RSTRING_PTR(result); \
+    buflen = RSTRING_LEN(result); \
+    pend = p + buflen; \
+} while (0)
 
 #ifdef __APPLE__
 # define SKIPPATHSEP(p) ((*(p)) ? 1 : 0)
@@ -4190,9 +4246,9 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
         mb_enc = enc_mbclen_needed(rb_str_enc_get(dname));
     }
 
-    BUFINIT();
-
     if (s < fend && s[0] == '~' && abs_mode == 0) {      /* execute only if NOT absolute_path() */
+        BUFINIT(result, buf, p, pend); // TOOD: right size the buffer
+
         long userlen = 0;
         if (s + 1 == fend || isdirsep(s[1])) {
             buf = 0;
@@ -4223,12 +4279,14 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
                 rb_raise(rb_eArgError, "non-absolute home");
             }
         }
-        BUFINIT();
+        BUFINIT(result, buf, p, pend);
         p = pend;
     }
 #ifdef DOSISH_DRIVE_LETTER
     /* skip drive letter */
     else if (s + 1 < fend && has_drive_letter(s)) {
+        BUFINIT(result, buf, p, pend); // TOOD: right size the buffer
+
         if (s + 2 < fend && isdirsep(s[2])) {
             /* specified drive letter, and full path */
             /* skip drive letter */
@@ -4243,7 +4301,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
             int same = 0;
             if (!NIL_P(dname) && !not_same_drive(dname, s[0])) {
                 rb_file_expand_path_internal(dname, Qnil, abs_mode, long_name, result);
-                BUFINIT();
+                BUFINIT(result, buf, p, pend);
                 if (has_drive_letter(p) && TOLOWER(p[0]) == TOLOWER(s[0])) {
                     /* ok, same drive */
                     same = 1;
@@ -4251,7 +4309,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
             }
             if (!same) {
                 char *e = append_fspath(result, fname, getcwdofdrv(*s), &enc, fsenc);
-                BUFINIT();
+                BUFINIT(result, buf, p, pend);
                 p = e;
             }
             else {
@@ -4264,15 +4322,35 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
     }
 #endif /* DOSISH_DRIVE_LETTER */
     else if (s == fend || !rb_is_absolute_path(s)) {
+
         if (!NIL_P(dname)) {
-            rb_file_expand_path_internal(dname, Qnil, abs_mode, long_name, result);
+            if (result) {
+                rb_file_expand_path_internal(dname, Qnil, abs_mode, long_name, result);
+            }
+            else {
+                result = rb_usascii_str_new(0, RSTRING_LEN(dname) + RSTRING_LEN(fname) + 1);
+                rb_file_expand_path_internal(dname, Qnil, abs_mode, long_name, result);
+
+                if (RB_UNLIKELY(RSTRING_LEN(result) > RSTRING_LEN(dname))) {
+                    VALUE resized_result = rb_usascii_str_new(0, RSTRING_LEN(result) + RSTRING_LEN(fname) + 1);
+                    rb_str_set_len(resized_result, 0);
+                    rb_str_buf_append(resized_result, result);
+                    rb_str_set_len(result, 0);
+                    result = resized_result;
+                }
+            }
+
             rb_enc_associate(result, fs_enc_check(result, fname));
-            BUFINIT();
+            BUFINIT(result, buf, p, pend);
             p = pend;
         }
         else {
+            VALUE cwd = rb_dir_getwd_ospath();
+            if (!result) {
+                result = rb_usascii_str_new(0, RSTRING_LEN(cwd) + RSTRING_LEN(fname) + 1);
+            }
             char *e = append_fspath(result, fname, rb_dir_getwd_ospath(), &enc, fsenc);
-            BUFINIT();
+            BUFINIT(result, buf, p, pend);
             p = e;
         }
 #if defined DOSISH_DRIVE_LETTER || defined DOSISH_UNC
@@ -4286,6 +4364,8 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
             p = chompdirsep(skiproot(buf, p), p, mb_enc, enc);
     }
     else {
+        BUFINIT(result, buf, p, pend);
+
         size_t len;
         b = s;
         do s++; while (s < fend && isdirsep(*s));
@@ -4510,7 +4590,7 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
                 WideCharToMultiByte(CP_UTF8, 0, wfd.cFileName, wlen, RSTRING_PTR(tmp), len + 1, NULL, NULL);
                 rb_str_cat_conv_enc_opts(result, bdiff, RSTRING_PTR(tmp), len,
                                          rb_utf8_encoding(), 0, Qnil);
-                BUFINIT();
+                BUFINIT(result, buf, p, pend);
                 rb_str_resize(tmp, 0);
             }
             p += len;
@@ -4530,8 +4610,6 @@ rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_na
 }
 #endif /* !_WIN32 (this ifdef started above rb_default_home_dir) */
 
-#define EXPAND_PATH_BUFFER() rb_usascii_str_new(0, 1)
-
 static VALUE
 str_shrink(VALUE str)
 {
@@ -4547,22 +4625,23 @@ str_shrink(VALUE str)
      (void)(NIL_P(dname) ? (dname) : ((dname) = rb_get_path(dname))))
 
 static VALUE
-file_expand_path_1(VALUE fname)
+file_expand_path_1(VALUE fname, long extra_capa)
 {
-    return rb_file_expand_path_internal(fname, Qnil, 0, 0, EXPAND_PATH_BUFFER());
+    VALUE buffer = rb_usascii_str_new(0, RSTRING_LEN(fname) + extra_capa);
+    return rb_file_expand_path_internal(fname, Qnil, 0, 0, buffer);
 }
 
 VALUE
 rb_file_expand_path(VALUE fname, VALUE dname)
 {
     check_expand_path_args(fname, dname);
-    return expand_path(fname, dname, 0, 1, EXPAND_PATH_BUFFER());
+    return expand_path(fname, dname, 0, 1, Qfalse);
 }
 
 VALUE
 rb_file_expand_path_fast(VALUE fname, VALUE dname)
 {
-    return expand_path(fname, dname, 0, 0, EXPAND_PATH_BUFFER());
+    return expand_path(fname, dname, 0, 0, Qfalse);
 }
 
 VALUE
@@ -4622,7 +4701,7 @@ VALUE
 rb_file_absolute_path(VALUE fname, VALUE dname)
 {
     check_expand_path_args(fname, dname);
-    return expand_path(fname, dname, 1, 1, EXPAND_PATH_BUFFER());
+    return expand_path(fname, dname, 1, 1, Qfalse);
 }
 
 VALUE
@@ -6998,25 +7077,81 @@ copy_path_class(VALUE path, VALUE orig)
     return path;
 }
 
+static bool
+nav_component_p(const char *s, const char *send)
+{
+    if ((send - s) >= 2 && s[0] == '.') {
+        return s[1] == '.' || isdirsep(s[1]);
+    }
+    return false;
+}
+
+static bool
+fname_need_expansion_p(VALUE fname)
+{
+    const char *s = RSTRING_PTR(fname);
+    const long len = RSTRING_LEN(fname);
+    const char *send = s + len;
+
+    if (nav_component_p(s, send)) {
+        return true;
+    }
+
+    rb_encoding *enc = rb_str_enc_get(fname);
+    bool mbenc = enc_mbclen_needed(enc);
+
+    s = enc_path_next(s, send, mbenc, enc);
+    while (s < send) {
+        if (nav_component_p(s, send)) {
+            return true;
+        }
+        s++;
+        s = enc_path_next(s, send, mbenc, enc);
+    }
+    return false;
+}
+
+static bool
+expand_feature(VALUE fname, VALUE dname, VALUE buffer, bool need_expansion)
+{
+    long dname_len = RSTRING_LEN(dname);
+    const char *dname_ptr = RSTRING_PTR(dname);
+
+    RUBY_ASSERT(dname_len > 0);
+
+    if (need_expansion || dname_ptr[0] == '~') {
+        rb_file_expand_path_internal(fname, dname, 0, 0, buffer);
+    }
+    else {
+        rb_str_set_len(buffer, 0);
+        rb_str_append(buffer, dname);
+        if (!isdirsep(dname_ptr[dname_len])) {
+            rb_str_cat(buffer, "/", 1);
+        }
+        rb_str_append(buffer, fname);
+    }
+    return true;
+}
+
 int
 rb_find_file_ext(VALUE *filep, const char *const *ext)
 {
     const char *f = StringValueCStr(*filep);
-    VALUE fname = *filep, load_path, tmp;
+    VALUE fname = *filep;
     long i, j, fnlen;
     int expanded = 0;
 
     if (!ext[0]) return 0;
 
     if (f[0] == '~') {
-        fname = file_expand_path_1(fname);
+        fname = file_expand_path_1(fname, DLEXT_MAXLEN);
         f = RSTRING_PTR(fname);
         *filep = fname;
         expanded = 1;
     }
 
     if (expanded || rb_is_absolute_path(f) || is_explicit_relative(f)) {
-        if (!expanded) fname = file_expand_path_1(fname);
+        if (!expanded) fname = file_expand_path_1(fname, DLEXT_MAXLEN);
         fnlen = RSTRING_LEN(fname);
         for (i=0; ext[i]; i++) {
             rb_str_cat2(fname, ext[i]);
@@ -7029,22 +7164,25 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
         return 0;
     }
 
-    RB_GC_GUARD(load_path) = rb_get_expanded_load_path();
+    long expanded_load_path_maxlen;
+    VALUE load_path = rb_get_expanded_load_path(&expanded_load_path_maxlen);
     if (!load_path) return 0;
 
     fname = rb_str_dup(*filep);
     RBASIC_CLEAR_CLASS(fname);
     fnlen = RSTRING_LEN(fname);
-    tmp = rb_str_tmp_new(MAXPATHLEN + 2);
+    bool need_expansion = fname_need_expansion_p(fname);
+
+    VALUE tmp = rb_str_tmp_new(expanded_load_path_maxlen + fnlen + 2);
     rb_enc_associate_index(tmp, rb_usascii_encindex());
+
     for (j=0; ext[j]; j++) {
         rb_str_cat2(fname, ext[j]);
         for (i = 0; i < RARRAY_LEN(load_path); i++) {
-            VALUE str = RARRAY_AREF(load_path, i);
+            VALUE dname = rb_get_path(RARRAY_AREF(load_path, i));
+            if (!RSTRING_LEN(dname)) continue;
+            expand_feature(fname, dname, tmp, need_expansion);
 
-            RB_GC_GUARD(str) = rb_get_path(str);
-            if (RSTRING_LEN(str) == 0) continue;
-            rb_file_expand_path_internal(fname, str, 0, 0, tmp);
             if (rb_file_load_ok(RSTRING_PTR(tmp))) {
                 *filep = copy_path_class(tmp, *filep);
                 return (int)(j+1);
@@ -7054,19 +7192,18 @@ rb_find_file_ext(VALUE *filep, const char *const *ext)
     }
     rb_str_resize(tmp, 0);
     RB_GC_GUARD(load_path);
+    RB_GC_GUARD(tmp);
     return 0;
 }
 
 VALUE
 rb_find_file(VALUE path)
 {
-    VALUE tmp, load_path;
     const char *f = StringValueCStr(path);
     int expanded = 0;
 
     if (f[0] == '~') {
-        tmp = file_expand_path_1(path);
-        path = copy_path_class(tmp, path);
+        path = copy_path_class(file_expand_path_1(path, 0), path);
         f = RSTRING_PTR(path);
         expanded = 1;
     }
@@ -7074,34 +7211,32 @@ rb_find_file(VALUE path)
     if (expanded || rb_is_absolute_path(f) || is_explicit_relative(f)) {
         if (!rb_file_load_ok(f)) return 0;
         if (!expanded)
-            path = copy_path_class(file_expand_path_1(path), path);
+            path = copy_path_class(file_expand_path_1(path, 0), path);
         return path;
     }
 
-    RB_GC_GUARD(load_path) = rb_get_expanded_load_path();
-    if (load_path) {
-        long i;
+    long expanded_load_path_maxlen;
+    VALUE load_path = rb_get_expanded_load_path(&expanded_load_path_maxlen);
 
-        tmp = rb_str_tmp_new(MAXPATHLEN + 2);
+    if (load_path) {
+        bool need_expansion = fname_need_expansion_p(path);
+        VALUE tmp = rb_str_tmp_new(expanded_load_path_maxlen + RSTRING_LEN(path) + 2);
         rb_enc_associate_index(tmp, rb_usascii_encindex());
-        for (i = 0; i < RARRAY_LEN(load_path); i++) {
-            VALUE str = RARRAY_AREF(load_path, i);
-            RB_GC_GUARD(str) = rb_get_path(str);
-            if (RSTRING_LEN(str) > 0) {
-                rb_file_expand_path_internal(path, str, 0, 0, tmp);
-                f = RSTRING_PTR(tmp);
-                if (rb_file_load_ok(f)) goto found;
+        for (long i = 0; i < RARRAY_LEN(load_path); i++) {
+            VALUE dname = rb_get_path(RARRAY_AREF(load_path, i));
+            if (!RSTRING_LEN(dname)) continue;
+            expand_feature(path, dname, tmp, need_expansion);
+
+            if (rb_file_load_ok(RSTRING_PTR(tmp))) {
+                return copy_path_class(tmp, path);
             }
         }
         rb_str_resize(tmp, 0);
-        return 0;
-    }
-    else {
-        return 0;		/* no path, no load */
     }
 
-  found:
-    return copy_path_class(tmp, path);
+    RB_GC_GUARD(load_path);
+
+    return Qfalse; /* no path, no load */
 }
 
 #define define_filetest_function(name, func, argc) do {        \

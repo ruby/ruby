@@ -80,11 +80,13 @@ fn main() {
         .allowlist_type("ruby_preserved_encindex")
         .allowlist_function("rb_class2name")
 
+        // Coderange constants (ENC_CODERANGE_*) for inlining String predicates
+        .allowlist_type("ruby_coderange_type")
+
         // This struct is public to Ruby C extensions
         .allowlist_type("RBasic")
 
         .allowlist_type("ruby_rstring_flags")
-        .allowlist_type("rbimpl_typeddata_flags")
 
         // This function prints info about a value and is useful for debugging
         .allowlist_function("rb_raw_obj_info")
@@ -316,6 +318,8 @@ fn main() {
         .allowlist_function("rb_zjit_insn_leaf")
         .allowlist_type("jit_bindgen_constants")
         .allowlist_type("zjit_struct_offsets")
+        .allowlist_var("ZJIT_STACK_MAP_SHIFT")
+        .allowlist_var("ZJIT_STACK_MAP_VREG_TAG")
         .allowlist_var("ZJIT_JIT_RETURN_C_FRAME")
         .allowlist_function("rb_assert_holding_vm_lock")
         .allowlist_function("rb_jit_shape_complex_p")
@@ -458,12 +462,25 @@ fn main() {
         // Unwrap the Result and panic on failure.
         .expect("Unable to generate bindings");
 
+    // Write to a Vec for post-processing
+    let mut bindings_string = Vec::new();
+    bindings.write(Box::new(&mut bindings_string)).expect("Couldn't write bindings!");
+
+    // Use i32 for this type since that's what the assembler APIs expect
+    const JIT_CONSTANTS_NEEDLE: &[u8]      = b"pub type jit_bindgen_constants = u32;";
+    const JIT_CONSTANTS_REPLACEMENT: &[u8] = b"pub type jit_bindgen_constants = i32;";
+    // Yes, this search-and-replace could be faster, but it's a small file.
+    for line in bindings_string.as_mut_slice().split_mut(|&byte| byte == b'\n') {
+        if line == JIT_CONSTANTS_NEEDLE {
+            line.copy_from_slice(JIT_CONSTANTS_REPLACEMENT);
+            break;
+        }
+    }
+
+    // Write out to file
     let mut out_path: PathBuf = src_root;
     out_path.push(jit_name);
     out_path.push("src");
     out_path.push("cruby_bindings.inc.rs");
-
-    bindings
-        .write_to_file(out_path)
-        .expect("Couldn't write bindings!");
+    std::fs::write(out_path, bindings_string).expect("file output failed");
 }

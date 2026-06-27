@@ -77,7 +77,7 @@ module Bundler
         gemfile_specs + dependency_specs
       end
 
-      specs.sort_by(&:name).uniq(&:name).each do |current_spec|
+      specs_for_outdated_check(specs).each do |current_spec|
         next unless gems.empty? || gems.include?(current_spec.name)
 
         active_spec = retrieve_active_spec(definition, current_spec)
@@ -150,6 +150,12 @@ module Bundler
       else
         "Bundle up to date!\n"
       end
+    end
+
+    def specs_for_outdated_check(specs)
+      specs.group_by(&:name).values.filter_map do |matching_specs|
+        MatchPlatform.select_best_platform_match(matching_specs, Bundler.local_platform).first || matching_specs.first
+      end.sort_by(&:name)
     end
 
     def retrieve_active_spec(definition, current_spec)

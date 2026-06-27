@@ -305,10 +305,14 @@ module Bundler
           next groups if package.force_ruby_platform?
         end
 
-        platform_group = Resolver::SpecGroup.new(platform_specs.flatten.uniq)
+        platform_specs = platform_specs.flatten.uniq
+        platform_group = Resolver::SpecGroup.new((platform_specs + ruby_specs).uniq)
         next groups if platform_group == ruby_group
 
         groups << Resolver::Candidate.new(version, group: platform_group, priority: 1)
+
+        platform_only_group = Resolver::SpecGroup.new(platform_specs)
+        groups << Resolver::Candidate.new(version, group: platform_only_group, priority: 0) unless platform_only_group == platform_group
 
         groups
       end

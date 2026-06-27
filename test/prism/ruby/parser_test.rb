@@ -132,7 +132,6 @@ module Prism
       "whitequark/lbrace_arg_after_command_args.txt",
       "whitequark/multiple_pattern_matches.txt",
       "whitequark/newline_in_hash_argument.txt",
-      "whitequark/pattern_matching_expr_in_paren.txt",
       "whitequark/pattern_matching_hash.txt",
       "whitequark/ruby_bug_14690.txt",
       "whitequark/ruby_bug_9669.txt",

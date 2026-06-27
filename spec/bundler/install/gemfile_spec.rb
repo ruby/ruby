@@ -135,7 +135,7 @@ RSpec.describe "bundle install" do
     it "shows culprit file and line" do
       skip "ruby-core test setup has always \"lib\" in $LOAD_PATH so `require \"bundler\"` always activates the local version rather than using RubyGems gem activation stuff, causing conflicts" if ruby_core?
 
-      install_gemfile "source 'https://gem.repo1'", requires: [bundler_bug], artifice: nil, raise_on_error: false
+      install_gemfile "source 'https://gem.repo1'", requires: [bundler_bug], artifice: nil, raise_on_error: false, bundle_bin: dev_binstub
       expect(err).to include("bundler_bug.rb:6")
     end
   end

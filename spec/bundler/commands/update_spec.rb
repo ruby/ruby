@@ -1582,8 +1582,11 @@ RSpec.describe "bundle update --bundler" do
         999.0.0
     L
 
-    expect(the_bundle).to include_gems "bundler 999.0.0"
-    expect(the_bundle).to include_gems "myrack 1.0"
+    bundle "--version"
+    expect(out).to include("999.0.0")
+
+    bundle "list"
+    expect(out).to include("myrack (1.0)")
   end
 
   it "does not claim to update to Bundler version to a wrong version when cached gems are present" do
@@ -1665,8 +1668,11 @@ RSpec.describe "bundle update --bundler" do
         9.9.9
     L
 
-    expect(the_bundle).to include_gems "bundler 9.9.9"
-    expect(the_bundle).to include_gems "myrack 1.0"
+    bundle "--version"
+    expect(out).to include("9.9.9")
+
+    bundle "list"
+    expect(out).to include("myrack (1.0)")
   end
 
   it "errors if the explicit target version does not exist" do

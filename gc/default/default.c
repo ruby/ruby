@@ -34,6 +34,43 @@
 #include "gc/gc.h"
 #include "gc/gc_impl.h"
 
+#ifdef BUILDING_MODULAR_GC
+/* hrtime.h transitively includes internal/time.h -> internal/bits.h, which are
+ * not available to out-of-tree modular GC builds.  We only use a monotonic
+ * clock plus saturating add/sub, so provide that subset locally with the same
+ * semantics as hrtime.h. */
+# include <time.h>
+typedef uint64_t rb_hrtime_t;
+# define RB_HRTIME_PER_SEC ((rb_hrtime_t)1000000000)
+
+static inline rb_hrtime_t
+rb_hrtime_now(void)
+{
+# if defined(HAVE_CLOCK_GETTIME) && defined(CLOCK_MONOTONIC)
+    struct timespec ts;
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
+        return (rb_hrtime_t)ts.tv_sec * RB_HRTIME_PER_SEC + (rb_hrtime_t)ts.tv_nsec;
+    }
+# endif
+    return 0;
+}
+
+static inline rb_hrtime_t
+rb_hrtime_add(rb_hrtime_t a, rb_hrtime_t b)
+{
+    rb_hrtime_t c = a + b;
+    return c < a ? UINT64_MAX : c; /* saturate on overflow */
+}
+
+static inline rb_hrtime_t
+rb_hrtime_sub(rb_hrtime_t a, rb_hrtime_t b)
+{
+    return a < b ? 0 : a - b;
+}
+#else
+# include "hrtime.h"
+#endif
+
 #include "probes.h"
 
 #ifdef BUILDING_MODULAR_GC
@@ -377,6 +414,14 @@ typedef struct gc_profile_record {
 
     double gc_time;
     double gc_invoke_time;
+    rb_hrtime_t gc_wall_time;
+    rb_hrtime_t gc_invoke_wall_time;
+    rb_hrtime_t gc_pause_time;
+    rb_hrtime_t gc_stop_time;
+    rb_hrtime_t gc_stw_time;
+    rb_hrtime_t gc_mark_wall_time;
+    rb_hrtime_t gc_sweep_wall_time;
+    rb_hrtime_t gc_compact_wall_time;
 
     size_t heap_total_objects;
     size_t heap_use_size;
@@ -590,6 +635,7 @@ typedef struct rb_objspace {
         double prepare_time;
 #endif
         double invoke_time;
+        rb_hrtime_t invoke_wall_time;
 
         size_t minor_gc_count;
         size_t major_gc_count;
@@ -615,6 +661,14 @@ typedef struct rb_objspace {
 
         /* temporary profiling space */
         double gc_sweep_start_time;
+        rb_hrtime_t gc_wall_start_time;
+        rb_hrtime_t gc_sweep_wall_start_time;
+        rb_hrtime_t gc_sweep_excluded_wall_time;
+        rb_hrtime_t gc_pause_start_time;
+        rb_hrtime_t gc_stw_start_time;
+        rb_hrtime_t gc_stop_time;
+        rb_hrtime_t gc_mark_phase_wall_start_time;
+        rb_hrtime_t gc_sweep_phase_wall_start_time;
         size_t total_allocated_objects_at_gc_start;
         size_t heap_used_at_gc_start;
         size_t heap_total_slots_at_gc_start;
@@ -1047,27 +1101,15 @@ gc_malloc_counters_increase_unsigned(rb_objspace_t *objspace, const struct gc_ma
     return (size_t)inc;
 }
 
-static inline int64_t
+static inline void
 gc_malloc_counters_snapshot(rb_objspace_t *objspace, struct gc_malloc_bytes *c)
 {
     MALLOC_COUNTERS_LOCK(objspace);
     gc_counter_t malloc_now = gc_counter_load_relaxed(&c->malloc);
     gc_counter_t free_now   = gc_counter_load_relaxed(&c->free);
-    gc_counter_t malloc_at  = gc_counter_load_relaxed(&c->malloc_at_last_gc);
-    gc_counter_t free_at    = gc_counter_load_relaxed(&c->free_at_last_gc);
     gc_counter_store_release(&c->malloc_at_last_gc, malloc_now);
     gc_counter_store_release(&c->free_at_last_gc,   free_now);
     MALLOC_COUNTERS_UNLOCK(objspace);
-
-    gc_counter_t malloc_delta = malloc_now - malloc_at;
-    gc_counter_t free_delta   = free_now   - free_at;
-
-    if (malloc_delta >= free_delta) {
-        return (int64_t)(malloc_delta - free_delta);
-    }
-    else {
-        return -(int64_t)(free_delta - malloc_delta);
-    }
 }
 
 #define heap_pages_lomem	objspace->heap_pages.range[0]
@@ -1265,6 +1307,7 @@ NO_SANITIZE("memory", static inline bool is_pointer_to_heap(rb_objspace_t *objsp
 static void gc_verify_internal_consistency(void *objspace_ptr);
 
 static double getrusage_time(void);
+static inline rb_hrtime_t elapsed_hrtime_from(rb_hrtime_t start);
 static inline void gc_prof_setup_new_record(rb_objspace_t *objspace, unsigned int reason);
 static inline void gc_prof_timer_start(rb_objspace_t *);
 static inline void gc_prof_timer_stop(rb_objspace_t *);
@@ -1750,21 +1793,16 @@ rb_gc_impl_garbage_object_p(void *objspace_ptr, VALUE ptr)
 {
     rb_objspace_t *objspace = objspace_ptr;
 
-    bool dead = false;
-
+    /* Asking whether a freed (T_NONE), moved (T_MOVED), or finalized (T_ZOMBIE)
+     * object is garbage gives an unreliable answer: the slot may since have been
+     * reused for an unrelated object. A reference to one of these is stale and a
+     * bug in the caller. */
     asan_unpoisoning_object(ptr) {
-        switch (BUILTIN_TYPE(ptr)) {
-          case T_NONE:
-          case T_MOVED:
-          case T_ZOMBIE:
-            dead = true;
-            break;
-          default:
-            break;
-        }
+        GC_ASSERT(BUILTIN_TYPE(ptr) != T_NONE);
+        GC_ASSERT(BUILTIN_TYPE(ptr) != T_MOVED);
+        GC_ASSERT(BUILTIN_TYPE(ptr) != T_ZOMBIE);
     }
 
-    if (dead) return true;
     return is_lazy_sweeping(objspace) && GET_HEAP_PAGE(ptr)->flags.before_sweep &&
         !RVALUE_MARKED(objspace, ptr);
 }
@@ -2802,9 +2840,29 @@ is_pointer_to_heap(rb_objspace_t *objspace, const void *ptr)
 }
 
 bool
-rb_gc_impl_pointer_to_heap_p(void *objspace_ptr, const void *ptr)
+rb_gc_impl_live_object_p(void *objspace_ptr, const void *ptr)
 {
-    return is_pointer_to_heap(objspace_ptr, ptr);
+    rb_objspace_t *objspace = objspace_ptr;
+
+    /* Whether ptr refers to a live object. is_pointer_to_heap is the
+     * address-only check; T_NONE, T_MOVED, and T_ZOMBIE slots are valid heap
+     * addresses but not live objects. */
+    if (!is_pointer_to_heap(objspace, ptr)) return false;
+
+    VALUE obj = (VALUE)ptr;
+    bool live = false;
+    asan_unpoisoning_object(obj) {
+        switch (BUILTIN_TYPE(obj)) {
+          case T_NONE:
+          case T_MOVED:
+          case T_ZOMBIE:
+            break;
+          default:
+            live = true;
+            break;
+        }
+    }
+    return live;
 }
 
 #define ZOMBIE_OBJ_KEPT_FLAGS (FL_FINALIZE)
@@ -4209,13 +4267,6 @@ gc_sweep_finish(rb_objspace_t *objspace)
         }
     }
 
-    (void)gc_malloc_counters_snapshot(objspace, &objspace->malloc_counters.counters);
-#if RGENGC_ESTIMATE_OLDMALLOC
-    if (objspace->profile.latest_gc_info & GPR_FLAG_MAJOR_MASK) {
-        (void)gc_malloc_counters_snapshot(objspace, &objspace->malloc_counters.oldcounters);
-    }
-#endif
-
     rb_gc_event_hook(0, RUBY_INTERNAL_EVENT_GC_END_SWEEP);
     gc_mode_transition(objspace, gc_mode_none);
 
@@ -4364,10 +4415,32 @@ gc_sweep_continue(rb_objspace_t *objspace, rb_heap_t *sweep_heap)
     gc_sweeping_exit(objspace);
 }
 
+static void
+gc_sweep_step_for_malloc(rb_objspace_t *objspace)
+{
+    GC_ASSERT(is_lazy_sweeping(objspace));
+
+    unsigned int lock_lev;
+    gc_enter(objspace, gc_enter_event_continue, &lock_lev);
+
+    gc_sweeping_enter(objspace);
+
+    for (int i = 0; i < HEAP_COUNT; i++) {
+        rb_heap_t *heap = &heaps[i];
+        gc_sweep_step(objspace, heap);
+    }
+
+    gc_sweeping_exit(objspace);
+
+    gc_exit(objspace, gc_enter_event_continue, &lock_lev);
+}
+
 VALUE
 rb_gc_impl_location(void *objspace_ptr, VALUE value)
 {
     VALUE destination;
+
+    GC_ASSERT(is_pointer_to_heap(objspace_ptr, (void *)value));
 
     asan_unpoisoning_object(value) {
         if (BUILTIN_TYPE(value) == T_MOVED) {
@@ -4487,7 +4560,17 @@ gc_sweep(rb_objspace_t *objspace)
 
     gc_sweep_start(objspace);
     if (objspace->flags.during_compacting) {
+        rb_hrtime_t compact_start_time = gc_prof_enabled(objspace) ? rb_hrtime_now() : 0;
         gc_sweep_compact(objspace);
+        if (gc_prof_enabled(objspace)) {
+            rb_hrtime_t compact_wall_time = elapsed_hrtime_from(compact_start_time);
+            gc_profile_record *record = gc_prof_record(objspace);
+            record->gc_compact_wall_time = rb_hrtime_add(record->gc_compact_wall_time,
+                    compact_wall_time);
+            objspace->profile.gc_sweep_excluded_wall_time = rb_hrtime_add(
+                    objspace->profile.gc_sweep_excluded_wall_time,
+                    compact_wall_time);
+        }
     }
 
     if (immediate_sweep) {
@@ -5347,6 +5430,22 @@ check_children_i(const VALUE child, void *ptr)
     }
 }
 
+/* Whether a heap slot currently holds a live object. Returns false for empty
+ * (T_NONE), moved (T_MOVED), and zombie (T_ZOMBIE) slots, and for garbage
+ * objects about to be swept. */
+static bool
+gc_slot_live_object_p(rb_objspace_t *objspace, VALUE obj)
+{
+    switch (BUILTIN_TYPE(obj)) {
+      case T_NONE:
+      case T_MOVED:
+      case T_ZOMBIE:
+        return false;
+      default:
+        return !rb_gc_impl_garbage_object_p(objspace, obj);
+    }
+}
+
 static int
 verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
                               struct verify_internal_consistency_struct *data)
@@ -5356,7 +5455,7 @@ verify_internal_consistency_i(void *page_start, void *page_end, size_t stride,
 
     for (obj = (VALUE)page_start; obj != (VALUE)page_end; obj += stride) {
         asan_unpoisoning_object(obj) {
-            if (!rb_gc_impl_garbage_object_p(objspace, obj)) {
+            if (gc_slot_live_object_p(objspace, obj)) {
                 /* count objects */
                 data->live_object_count++;
                 data->parent = obj;
@@ -6648,6 +6747,7 @@ gc_reset_malloc_info(rb_objspace_t *objspace, bool full_mark)
     gc_prof_set_malloc_info(objspace);
     {
         int64_t inc = gc_malloc_counters_increase(objspace, &objspace->malloc_counters.counters);
+        gc_malloc_counters_snapshot(objspace, &objspace->malloc_counters.counters);
         size_t old_limit = malloc_limit;
 
         /* A net-negative `inc` (more freed than malloc'd since last GC) is
@@ -6703,6 +6803,8 @@ gc_reset_malloc_info(rb_objspace_t *objspace, bool full_mark)
                        gc_params.oldmalloc_limit_max);
     }
     else {
+        gc_malloc_counters_snapshot(objspace, &objspace->malloc_counters.oldcounters);
+
         if ((objspace->profile.latest_gc_info & GPR_FLAG_MAJOR_BY_OLDMALLOC) == 0) {
             objspace->rgengc.oldmalloc_increase_limit =
               (size_t)(objspace->rgengc.oldmalloc_increase_limit / ((gc_params.oldmalloc_limit_growth_factor - 1)/10 + 1));
@@ -7021,6 +7123,18 @@ gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_
 {
     *lock_lev = RB_GC_VM_LOCK();
 
+    if (objspace->profile.run) {
+        switch (event) {
+          case gc_enter_event_start:
+          case gc_enter_event_continue:
+          case gc_enter_event_rest:
+            objspace->profile.gc_pause_start_time = rb_hrtime_now();
+            break;
+          case gc_enter_event_finalizer:
+            break;
+        }
+    }
+
     switch (event) {
       case gc_enter_event_rest:
       case gc_enter_event_start:
@@ -7030,6 +7144,13 @@ gc_enter(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_
         break;
       default:
         break;
+    }
+
+    if (objspace->profile.gc_pause_start_time) {
+        objspace->profile.gc_stw_start_time = rb_hrtime_now();
+        objspace->profile.gc_stop_time = rb_hrtime_sub(
+                objspace->profile.gc_stw_start_time,
+                objspace->profile.gc_pause_start_time);
     }
 
     gc_enter_count(event);
@@ -7051,6 +7172,22 @@ gc_exit(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_l
 
     rb_gc_event_hook(0, RUBY_INTERNAL_EVENT_GC_EXIT);
 
+    if (objspace->profile.gc_pause_start_time) {
+        if (gc_prof_enabled(objspace)) {
+            rb_hrtime_t now = rb_hrtime_now();
+            gc_profile_record *record = gc_prof_record(objspace);
+            record->gc_pause_time = rb_hrtime_add(record->gc_pause_time,
+                    rb_hrtime_sub(now, objspace->profile.gc_pause_start_time));
+            record->gc_stop_time = rb_hrtime_add(record->gc_stop_time,
+                    objspace->profile.gc_stop_time);
+            record->gc_stw_time = rb_hrtime_add(record->gc_stw_time,
+                    rb_hrtime_sub(now, objspace->profile.gc_stw_start_time));
+        }
+        objspace->profile.gc_pause_start_time = 0;
+        objspace->profile.gc_stw_start_time = 0;
+        objspace->profile.gc_stop_time = 0;
+    }
+
     gc_record(objspace, 1, gc_enter_event_cstr(event));
     RUBY_DEBUG_LOG("%s (%s)", gc_enter_event_cstr(event), gc_current_status(objspace));
     gc_report(1, objspace, "gc_exit: %s [%s]\n", gc_enter_event_cstr(event), gc_current_status(objspace));
@@ -7070,6 +7207,10 @@ gc_marking_enter(rb_objspace_t *objspace)
 
     gc_prof_mark_timer_start(objspace);
 
+    if (gc_prof_enabled(objspace)) {
+        objspace->profile.gc_mark_phase_wall_start_time = rb_hrtime_now();
+    }
+
     if (MEASURE_GC) {
         gc_clock_start(&objspace->profile.marking_start_time);
     }
@@ -7086,6 +7227,12 @@ gc_marking_exit(rb_objspace_t *objspace)
         objspace->profile.marking_time_ns += gc_clock_end(&objspace->profile.marking_start_time);
     }
 
+    if (gc_prof_enabled(objspace)) {
+        gc_profile_record *record = gc_prof_record(objspace);
+        record->gc_mark_wall_time = rb_hrtime_add(record->gc_mark_wall_time,
+                elapsed_hrtime_from(objspace->profile.gc_mark_phase_wall_start_time));
+    }
+
     gc_prof_mark_timer_stop(objspace);
 }
 
@@ -7093,6 +7240,11 @@ static void
 gc_sweeping_enter(rb_objspace_t *objspace)
 {
     GC_ASSERT(during_gc != 0);
+
+    if (gc_prof_enabled(objspace)) {
+        objspace->profile.gc_sweep_phase_wall_start_time = rb_hrtime_now();
+        objspace->profile.gc_sweep_excluded_wall_time = 0;
+    }
 
     if (MEASURE_GC) {
         gc_clock_start(&objspace->profile.sweeping_start_time);
@@ -7106,6 +7258,16 @@ gc_sweeping_exit(rb_objspace_t *objspace)
 
     if (MEASURE_GC) {
         objspace->profile.sweeping_time_ns += gc_clock_end(&objspace->profile.sweeping_start_time);
+    }
+
+    if (gc_prof_enabled(objspace)) {
+        rb_hrtime_t sweep_wall_time = elapsed_hrtime_from(objspace->profile.gc_sweep_phase_wall_start_time);
+        gc_profile_record *record = gc_prof_record(objspace);
+        sweep_wall_time = rb_hrtime_sub(sweep_wall_time,
+                objspace->profile.gc_sweep_excluded_wall_time);
+        record->gc_sweep_wall_time = rb_hrtime_add(record->gc_sweep_wall_time,
+                sweep_wall_time);
+        objspace->profile.gc_sweep_excluded_wall_time = 0;
     }
 }
 
@@ -8486,7 +8648,7 @@ objspace_malloc_increase_body(rb_objspace_t *objspace, void *mem, size_t new_siz
       retry:
         if (malloc_increase > malloc_limit && ruby_native_thread_p() && !dont_gc_val()) {
             if (ruby_thread_has_gvl_p() && is_lazy_sweeping(objspace)) {
-                gc_rest(objspace); /* gc_rest can reduce malloc_increase */
+                gc_sweep_step_for_malloc(objspace); /* sweeping frees may reduce malloc_increase */
                 goto retry;
             }
             garbage_collect_with_gvl(objspace, GPR_FLAG_MALLOC);
@@ -8862,6 +9024,18 @@ getrusage_time(void)
     }
 }
 
+static inline double
+hrtime_to_sec(rb_hrtime_t time)
+{
+    return (double)time / (double)RB_HRTIME_PER_SEC;
+}
+
+static inline rb_hrtime_t
+elapsed_hrtime_from(rb_hrtime_t start)
+{
+    return rb_hrtime_sub(rb_hrtime_now(), start);
+}
+
 
 static inline void
 gc_prof_setup_new_record(rb_objspace_t *objspace, unsigned int reason)
@@ -8892,6 +9066,8 @@ gc_prof_setup_new_record(rb_objspace_t *objspace, unsigned int reason)
 
         /* setup before-GC parameter */
         record->flags = reason | (ruby_gc_stressful ? GPR_FLAG_STRESS : 0);
+        record->gc_invoke_wall_time = rb_hrtime_sub(rb_hrtime_now(),
+                objspace->profile.invoke_wall_time);
 #if MALLOC_ALLOCATED_SIZE
         record->allocated_size = malloc_allocated_size;
 #endif
@@ -8920,6 +9096,7 @@ gc_prof_timer_start(rb_objspace_t *objspace)
 #endif
         record->gc_time = 0;
         record->gc_invoke_time = getrusage_time();
+        objspace->profile.gc_wall_start_time = rb_hrtime_now();
     }
 }
 
@@ -8942,6 +9119,7 @@ gc_prof_timer_stop(rb_objspace_t *objspace)
         gc_profile_record *record = gc_prof_record(objspace);
         record->gc_time = elapsed_time_from(record->gc_invoke_time);
         record->gc_invoke_time -= objspace->profile.invoke_time;
+        record->gc_wall_time = elapsed_hrtime_from(objspace->profile.gc_wall_start_time);
     }
 }
 
@@ -8980,6 +9158,7 @@ gc_prof_sweep_timer_start(rb_objspace_t *objspace)
 
         if (record->gc_time > 0 || GC_PROFILE_MORE_DETAIL) {
             objspace->profile.gc_sweep_start_time = getrusage_time();
+            objspace->profile.gc_sweep_wall_start_time = rb_hrtime_now();
         }
     }
 }
@@ -8997,6 +9176,8 @@ gc_prof_sweep_timer_stop(rb_objspace_t *objspace)
             sweep_time = elapsed_time_from(objspace->profile.gc_sweep_start_time);
             /* need to accumulate GC time for lazy sweep after gc() */
             record->gc_time += sweep_time;
+            record->gc_wall_time = rb_hrtime_add(record->gc_wall_time,
+                    elapsed_hrtime_from(objspace->profile.gc_sweep_wall_start_time));
         }
         else if (GC_PROFILE_MORE_DETAIL) {
             sweep_time = elapsed_time_from(objspace->profile.gc_sweep_start_time);
@@ -9087,6 +9268,14 @@ gc_profile_clear(VALUE _)
  *	{
  *	   :GC_TIME=>1.3000000000000858e-05,
  *	   :GC_INVOKE_TIME=>0.010634999999999999,
+ *	   :GC_WALL_TIME=>1.4000000000000001e-05,
+ *	   :GC_INVOKE_WALL_TIME=>0.010640000000000000,
+ *	   :GC_PAUSE_TIME=>1.5000000000000000e-05,
+ *	   :GC_STOP_TIME=>1.0000000000000000e-06,
+ *	   :GC_STW_TIME=>1.4000000000000001e-05,
+ *	   :GC_MARK_WALL_TIME=>9.0000000000000002e-06,
+ *	   :GC_SWEEP_WALL_TIME=>5.0000000000000004e-06,
+ *	   :GC_COMPACT_WALL_TIME=>0.0000000000000000e+00,
  *	   :HEAP_USE_SIZE=>289640,
  *	   :HEAP_TOTAL_SIZE=>588960,
  *	   :HEAP_TOTAL_OBJECTS=>14724,
@@ -9098,9 +9287,39 @@ gc_profile_clear(VALUE _)
  *  The keys mean:
  *
  *  +:GC_TIME+::
- *	Time elapsed in seconds for this GC run
+ *	CPU time elapsed in seconds for this GC run.  This is process CPU time,
+ *	not elapsed wall-clock time.
  *  +:GC_INVOKE_TIME+::
- *	Time elapsed in seconds from startup to when the GC was invoked
+ *	CPU time elapsed in seconds from startup to when the GC was invoked.
+ *  +:GC_WALL_TIME+::
+ *	Monotonic wall-clock counterpart to +:GC_TIME+ for this GC record.
+ *	This does not include time spent stopping other ractors before the VM
+ *	enters GC.  Use the phase wall-clock fields below for mark, sweep, and
+ *	compaction attribution.
+ *  +:GC_INVOKE_WALL_TIME+::
+ *	Monotonic wall-clock time elapsed in seconds from startup to when the GC
+ *	was invoked.
+ *  +:GC_PAUSE_TIME+::
+ *	Monotonic wall-clock time elapsed in seconds while user execution was
+ *	blocked by this GC entry, including time to stop other ractors.  This
+ *	may include time from incremental marking or lazy sweeping continuation
+ *	charged to this record.
+ *  +:GC_STOP_TIME+::
+ *	Monotonic wall-clock time elapsed in seconds stopping other ractors.
+ *  +:GC_STW_TIME+::
+ *	Monotonic wall-clock time elapsed in seconds after other ractors have
+ *	stopped and before the VM exits GC.
+ *  +:GC_MARK_WALL_TIME+::
+ *	Monotonic wall-clock time elapsed in seconds spent marking for this GC
+ *	record, accumulated across incremental marking continuations.
+ *  +:GC_SWEEP_WALL_TIME+::
+ *	Monotonic wall-clock time elapsed in seconds spent sweeping for this GC
+ *	record, accumulated across lazy sweeping continuations.  This does not
+ *	include compaction time, which is reported separately as
+ *	+:GC_COMPACT_WALL_TIME+.
+ *  +:GC_COMPACT_WALL_TIME+::
+ *	Monotonic wall-clock time elapsed in seconds spent compacting for this GC
+ *	record, or +0.0+ if this GC did not compact.
  *  +:HEAP_USE_SIZE+::
  *	Total bytes of heap used
  *  +:HEAP_TOTAL_SIZE+::
@@ -9109,6 +9328,18 @@ gc_profile_clear(VALUE _)
  *	Total number of objects
  *  +:GC_IS_MARKED+::
  *	Returns +true+ if the GC is in mark phase
+ *
+ *  The wall-clock timing fields relate to each other as follows:
+ *
+ *    GC_PAUSE_TIME == GC_STOP_TIME + GC_STW_TIME
+ *
+ *  +:GC_MARK_WALL_TIME+, +:GC_SWEEP_WALL_TIME+, and +:GC_COMPACT_WALL_TIME+
+ *  report separate phase timings and must not be added to +:GC_WALL_TIME+.
+ *
+ *  +:GC_WALL_TIME+ is the wall-clock counterpart to +:GC_TIME+ and is nested
+ *  inside +:GC_STW_TIME+, so it must not be added to +:GC_STW_TIME+.  The difference
+ *  +GC_STW_TIME - GC_WALL_TIME+ is VM overhead inside the stopped interval
+ *  (GC event hooks, bookkeeping, consistency checks, and continuation work).
  *
  *  If ruby was built with +GC_PROFILE_MORE_DETAIL+, you will also have access
  *  to the following hash keys:
@@ -9143,6 +9374,22 @@ gc_profile_record_get(VALUE _)
         rb_hash_aset(prof, ID2SYM(rb_intern("GC_FLAGS")), gc_info_decode(objspace, rb_hash_new(), record->flags));
         rb_hash_aset(prof, ID2SYM(rb_intern("GC_TIME")), DBL2NUM(record->gc_time));
         rb_hash_aset(prof, ID2SYM(rb_intern("GC_INVOKE_TIME")), DBL2NUM(record->gc_invoke_time));
+        rb_hash_aset(prof, ID2SYM(rb_intern("GC_WALL_TIME")),
+                DBL2NUM(hrtime_to_sec(record->gc_wall_time)));
+        rb_hash_aset(prof, ID2SYM(rb_intern("GC_INVOKE_WALL_TIME")),
+                DBL2NUM(hrtime_to_sec(record->gc_invoke_wall_time)));
+        rb_hash_aset(prof, ID2SYM(rb_intern("GC_PAUSE_TIME")),
+                DBL2NUM(hrtime_to_sec(record->gc_pause_time)));
+        rb_hash_aset(prof, ID2SYM(rb_intern("GC_STOP_TIME")),
+                DBL2NUM(hrtime_to_sec(record->gc_stop_time)));
+        rb_hash_aset(prof, ID2SYM(rb_intern("GC_STW_TIME")),
+                DBL2NUM(hrtime_to_sec(record->gc_stw_time)));
+        rb_hash_aset(prof, ID2SYM(rb_intern("GC_MARK_WALL_TIME")),
+                DBL2NUM(hrtime_to_sec(record->gc_mark_wall_time)));
+        rb_hash_aset(prof, ID2SYM(rb_intern("GC_SWEEP_WALL_TIME")),
+                DBL2NUM(hrtime_to_sec(record->gc_sweep_wall_time)));
+        rb_hash_aset(prof, ID2SYM(rb_intern("GC_COMPACT_WALL_TIME")),
+                DBL2NUM(hrtime_to_sec(record->gc_compact_wall_time)));
         rb_hash_aset(prof, ID2SYM(rb_intern("HEAP_USE_SIZE")), SIZET2NUM(record->heap_use_size));
         rb_hash_aset(prof, ID2SYM(rb_intern("HEAP_TOTAL_SIZE")), SIZET2NUM(record->heap_total_size));
         rb_hash_aset(prof, ID2SYM(rb_intern("HEAP_TOTAL_OBJECTS")), SIZET2NUM(record->heap_total_objects));
@@ -9928,6 +10175,7 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
     init_mark_stack(&objspace->mark_stack);
 
     objspace->profile.invoke_time = getrusage_time();
+    objspace->profile.invoke_wall_time = rb_hrtime_now();
     finalizer_table = st_init_numtable();
 }
 
@@ -9984,6 +10232,31 @@ rb_gc_impl_init(void)
     rb_define_singleton_method(rb_mGC, "malloc_allocations", gc_malloc_allocations, 0);
 #endif
 
+    /*  Document-class: GC::Profiler
+     *
+     *  The GC profiler provides access to information on GC runs including time,
+     *  length and object space size.
+     *
+     *  Example:
+     *
+     *    GC::Profiler.enable
+     *
+     *    require 'rdoc/rdoc'
+     *
+     *    GC::Profiler.report
+     *
+     *    pp GC::Profiler.raw_data
+     *
+     *    GC::Profiler.disable
+     *
+     *  GC::Profiler.raw_data returns one Hash per GC run, including CPU time
+     *  fields such as +:GC_TIME+ and wall-clock fields such as +:GC_WALL_TIME+,
+     *  +:GC_PAUSE_TIME+, +:GC_STOP_TIME+, and +:GC_STW_TIME+.  +:GC_WALL_TIME+
+     *  is the wall-clock counterpart to +:GC_TIME+, while +:GC_PAUSE_TIME+
+     *  measures how long user execution was blocked by the GC entry.
+     *
+     *  See also GC.count, GC.malloc_allocated_size and GC.malloc_allocations
+     */
     VALUE rb_mProfiler = rb_define_module_under(rb_mGC, "Profiler");
     rb_define_singleton_method(rb_mProfiler, "enabled?", gc_profile_enable_get, 0);
     rb_define_singleton_method(rb_mProfiler, "enable", gc_profile_enable, 0);

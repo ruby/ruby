@@ -1324,6 +1324,7 @@ RSpec.describe "the lockfile format" do
       G
 
       checksums = checksums_section_when_enabled do |c|
+        c.checksum gem_repo2, "platform_specific", "1.0"
         c.checksum gem_repo2, "platform_specific", "1.0", "universal-java-16"
       end
 
@@ -1331,6 +1332,7 @@ RSpec.describe "the lockfile format" do
         GEM
           remote: https://gem.repo2/
           specs:
+            platform_specific (1.0)
             platform_specific (1.0-universal-java-16)
 
         PLATFORMS

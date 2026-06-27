@@ -2540,7 +2540,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         const ID id_initial_load_path_mark = INITIAL_LOAD_PATH_MARK;
         int modifiable = FALSE;
 
-        rb_get_expanded_load_path();
+        rb_get_expanded_load_path(NULL);
         for (i = 0; i < RARRAY_LEN(load_path); ++i) {
             VALUE path = RARRAY_AREF(load_path, i);
             int mark = rb_attr_get(path, id_initial_load_path_mark) == path;

@@ -125,7 +125,7 @@ class LeakChecker
             fd_index, node_index = columns.index('FD'), columns.index('NODE')
             open_list.reject! do |of|
               of = of.chomp.split(' ', node_index + 2)
-              if of[node_index] == 'TCP' and of.last.end_with?('(CLOSE_WAIT)')
+              if of[node_index] == 'TCP' and of.last.end_with?('(CLOSE_WAIT)', '(CLOSED)')
                 fd = of[fd_index].to_i
                 inspect.delete(fd)
                 h.delete(fd)

@@ -1402,37 +1402,18 @@ rb_class_inherited(VALUE super, VALUE klass)
     return rb_funcall(super, inherited, 1, klass);
 }
 
+#ifdef rb_define_class
+#undef rb_define_class
+#endif
 VALUE
 rb_define_class(const char *name, VALUE super)
 {
-    VALUE klass;
-    ID id = rb_intern(name);
-
-    if (rb_const_defined(rb_cObject, id)) {
-        klass = rb_const_get(rb_cObject, id);
-        if (!RB_TYPE_P(klass, T_CLASS)) {
-            rb_raise(rb_eTypeError, "%s is not a class (%"PRIsVALUE")",
-                     name, rb_obj_class(klass));
-        }
-        if (rb_class_real(RCLASS_SUPER(klass)) != super) {
-            rb_raise(rb_eTypeError, "superclass mismatch for class %s", name);
-        }
-
-        /* Class may have been defined in Ruby and not pin-rooted */
-        rb_vm_register_global_object(klass);
-        return klass;
-    }
-    if (!super) {
-        rb_raise(rb_eArgError, "no super class for '%s'", name);
-    }
-    klass = rb_define_class_id(id, super);
-    rb_vm_register_global_object(klass);
-    rb_const_set(rb_cObject, id, klass);
-    rb_class_inherited(super, klass);
-
-    return klass;
+    return rb_define_class_under(rb_cObject, name, super);
 }
 
+#ifdef rb_define_class_under
+#undef rb_define_class_under
+#endif
 VALUE
 rb_define_class_under(VALUE outer, const char *name, VALUE super)
 {
@@ -1447,22 +1428,38 @@ rb_define_class_id_under_no_pin(VALUE outer, ID id, VALUE super)
     if (rb_const_defined_at(outer, id)) {
         klass = rb_const_get_at(outer, id);
         if (!RB_TYPE_P(klass, T_CLASS)) {
-            rb_raise(rb_eTypeError, "%"PRIsVALUE"::%"PRIsVALUE" is not a class"
-                     " (%"PRIsVALUE")",
-                     outer, rb_id2str(id), rb_obj_class(klass));
+            if (outer == rb_cObject) {
+                rb_raise(rb_eTypeError, "%s is not a class (%"PRIsVALUE")",
+                         rb_id2name(id), rb_obj_class(klass));
+            }
+            else {
+                rb_raise(rb_eTypeError, "%"PRIsVALUE"::%"PRIsVALUE" is not a class"
+                         " (%"PRIsVALUE")",
+                         outer, rb_id2str(id), rb_obj_class(klass));
+            }
         }
         if (rb_class_real(RCLASS_SUPER(klass)) != super) {
-            rb_raise(rb_eTypeError, "superclass mismatch for class "
-                     "%"PRIsVALUE"::%"PRIsVALUE""
-                     " (%"PRIsVALUE" is given but was %"PRIsVALUE")",
-                     outer, rb_id2str(id), RCLASS_SUPER(klass), super);
+            if (outer == rb_cObject) {
+                rb_raise(rb_eTypeError, "superclass mismatch for class %s", rb_id2name(id));
+            }
+            else {
+                rb_raise(rb_eTypeError, "superclass mismatch for class "
+                         "%"PRIsVALUE"::%"PRIsVALUE""
+                         " (%"PRIsVALUE" is given but was %"PRIsVALUE")",
+                         outer, rb_id2str(id), RCLASS_SUPER(klass), super);
+            }
         }
 
         return klass;
     }
     if (!super) {
-        rb_raise(rb_eArgError, "no super class for '%"PRIsVALUE"::%"PRIsVALUE"'",
+        if (outer == rb_cObject) {
+            rb_raise(rb_eArgError, "no super class for '%"PRIsVALUE"'", rb_id2str(id));
+        }
+        else {
+            rb_raise(rb_eArgError, "no super class for '%"PRIsVALUE"::%"PRIsVALUE"'",
                  rb_class_path(outer), rb_id2str(id));
+        }
     }
     klass = rb_define_class_id(id, super);
     rb_set_class_path_string(klass, outer, rb_id2str(id));
@@ -1515,29 +1512,18 @@ rb_define_module_id(ID id)
     return rb_module_new();
 }
 
+#ifdef rb_define_module
+#undef rb_define_module
+#endif
 VALUE
 rb_define_module(const char *name)
 {
-    VALUE module;
-    ID id = rb_intern(name);
-
-    if (rb_const_defined(rb_cObject, id)) {
-        module = rb_const_get(rb_cObject, id);
-        if (!RB_TYPE_P(module, T_MODULE)) {
-            rb_raise(rb_eTypeError, "%s is not a module (%"PRIsVALUE")",
-                     name, rb_obj_class(module));
-        }
-        /* Module may have been defined in Ruby and not pin-rooted */
-        rb_vm_register_global_object(module);
-        return module;
-    }
-    module = rb_module_new();
-    rb_vm_register_global_object(module);
-    rb_const_set(rb_cObject, id, module);
-
-    return module;
+    return rb_define_module_id_under(rb_cObject, rb_intern(name));
 }
 
+#ifdef rb_define_module_under
+#undef rb_define_module_under
+#endif
 VALUE
 rb_define_module_under(VALUE outer, const char *name)
 {
@@ -1552,9 +1538,15 @@ rb_define_module_id_under(VALUE outer, ID id)
     if (rb_const_defined_at(outer, id)) {
         module = rb_const_get_at(outer, id);
         if (!RB_TYPE_P(module, T_MODULE)) {
-            rb_raise(rb_eTypeError, "%"PRIsVALUE"::%"PRIsVALUE" is not a module"
-                     " (%"PRIsVALUE")",
-                     outer, rb_id2str(id), rb_obj_class(module));
+            if (outer == rb_cObject) {
+                rb_raise(rb_eTypeError, "%s is not a module (%"PRIsVALUE")",
+                         rb_id2name(id), rb_obj_class(module));
+            }
+            else {
+                rb_raise(rb_eTypeError, "%"PRIsVALUE"::%"PRIsVALUE" is not a module"
+                         " (%"PRIsVALUE")",
+                         outer, rb_id2str(id), rb_obj_class(module));
+            }
         }
         /* Module may have been defined in Ruby and not pin-rooted */
         rb_vm_register_global_object(module);

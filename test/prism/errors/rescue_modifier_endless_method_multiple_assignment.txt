@@ -1,0 +1,4 @@
+def m = foo bar rescue a, b = 1
+                        ^ unexpected ',', expecting end-of-input
+                        ^ unexpected ',', ignoring it
+

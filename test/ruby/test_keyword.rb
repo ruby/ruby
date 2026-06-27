@@ -615,7 +615,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     sc = Class.new
     c = sc.new
     def c.m(*args, **kw)
-      super(*args, **kw)
+      super
     end
     sc.class_eval do
       def m(*args)

@@ -293,10 +293,25 @@ class Pathname
     "#<#{self.class}:#{@path}>"
   end
 
-  # Creates a full path, including any intermediate directories that don't yet
-  # exist.
+  # :markup: markdown
   #
-  # See FileUtils.mkpath and FileUtils.mkdir_p
+  # call-seq:
+  #   mkpath(permissions = 0775) -> self
+  #
+  # Creates a directory at the path in `self`;
+  # creates intermediate directories as needed:
+  #
+  # ```ruby
+  # pn = Pathname('foo/bar/baz')
+  # pn.directory? # => false
+  # pn.mkpath     # Creates directories 'foo', 'foo/bar', 'foo/bar/baz'.
+  # pn.directory? # => true
+  # pn.rmtree     # Clean up.
+  # ```
+  #
+  # Directories are created with the given permissions;
+  # see {File Permissions}[rdoc-ref:File@File+Permissions].
+  # The permissions for already-existing directories are not changed.
   def mkpath(mode: nil)
     path = @path == '/' ? @path : @path.chomp('/')
 
@@ -533,7 +548,19 @@ class Pathname
     self + '..'
   end
 
-  # Returns +true+ if +self+ points to a mountpoint.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   mountpoint? -> true or false
+  #
+  # Returns whether the path in `self` points to a mountpoint:
+  #
+  # ```ruby
+  # Pathname('/').mountpoint?      # => true
+  # Pathname('/etc').mountpoint?   # => false
+  # Pathname('nosuch').mountpoint? # => false
+  # ```
+  #
   def mountpoint?
     begin
       stat1 = self.lstat
@@ -1060,48 +1087,39 @@ class Pathname    # * File *
   # with ASCII-8BIT encoding.
   def binwrite(...) File.binwrite(@path, ...) end
 
+  # :markup: markdown
+  #
   # call-seq:
   #   atime -> new_time
   #
-  # Returns a new Time object containing the time of the most recent
-  # access (read or write) to the entry represented by `self`;
-  # see {File System Timestamps}[rdoc-ref:file/timestamps.md]:
+  # Returns a Time object containing the access time
+  # of the entry represented by `self`, as reported by the filesystem;
+  # see {File System Access Time}[rdoc-ref:file/timestamps.md@Access+Time]:
   #
-  #   # Work in a temporary directory.
-  #   require 'tmpdir'
-  #   Dir.mktmpdir do |tmpdirpath|
-  #     # A subdirectory therein, and its Pathname.
-  #     dirpath = File.join(tmpdirpath, 'subdir')
-  #     Dir.mkdir(dirpath)
-  #     dir_pn = Pathname(dirpath)
-  #     puts "Create directory; establishes atime for directory."
-  #     puts "  Directory atime: #{dir_pn.atime}"
-  #     sleep(1)
-  #
-  #     # A file in the subdirectory, and its Pathname.
-  #     filepath = File.join(dirpath, 't.txt')
-  #     puts "Create file; establishes atime for file, updates atime for directory."
-  #     File.write(filepath, 'foo')
-  #     file_pn = Pathname(filepath)
-  #     puts "  File atime:      #{file_pn.atime}"
-  #     puts "  Directory atime: #{dir_pn.atime}"
-  #     sleep(1)
-  #     puts "Write file; updates atimes for file and directory."
-  #     File.write(filepath, 'bar')
-  #     puts "  File atime:      #{file_pn.atime}"
-  #     puts "  Directory atime: #{dir_pn.atime}"
-  #   end
-  #
-  # Output:
-  #
-  #   Create directory; establishes atime for directory.
-  #     Directory atime: 2026-05-14 14:36:43 +0100
-  #   Create file; establishes atime for file, updates atime for directory.
-  #     File atime:      2026-05-14 14:36:44 +0100
-  #     Directory atime: 2026-05-14 14:36:44 +0100
-  #   Write file; updates atimes for file and directory.
-  #     File atime:      2026-05-14 14:36:45 +0100
-  #     Directory atime: 2026-05-14 14:36:45 +0100
+  # ```ruby
+  # # Pathname for a (non-existent) directory.
+  # dir_pn = Pathname('doc/foo')   # => #<Pathname:doc/foo>
+  # # Create directory; establishes atime for directory.
+  # dir_pn.mkdir
+  # dir_pn.atime                   # => 2026-06-17 10:10:20.801115774 -0500
+  # # Pathname for a (non-existent) file in the directory.
+  # file_pn = dir_pn.join('t.tmp') # => #<Pathname:doc/foo/t.tmp>
+  # # Create file; establishes atime for file, updates atime for directory.
+  # file_pn.write('foo')
+  # file_pn.atime                  # => 2026-06-17 10:11:40.987171568 -0500
+  # dir_pn.atime                   # => 2026-06-17 10:11:40.96617277 -0500
+  # # Write file; updates atime for file,but not directory.
+  # file_pn.write('bar')
+  # file_pn.atime                  # => 2026-06-17 10:13:22.062904563 -0500
+  # dir_pn.atime                   # => 2026-06-17 10:11:40.96617277 -0500
+  # # Read file; may update atime for file, but not directory.
+  # file_pn.read
+  # file_pn.atime                  # => 2026-06-17 10:13:22.062904563 -0500
+  # dir_pn.atime                   # => 2026-06-17 10:11:40.96617277 -0500
+  # # Clean up.
+  # file_pn.delete
+  # dir_pn.rmdir
+  # ```
   #
   def atime() File.atime(@path) end
 
@@ -1115,42 +1133,25 @@ class Pathname    # * File *
   # see [File System Timestamps](rdoc-ref:file/timestamps.md):
   #
   # ```ruby
-  # # Work in a temporary directory.
-  # Pathname.mktmpdir do |tmpdirpath|
-  #   # A subdirectory therein, and its Pathname.
-  #   dirpath = File.join(tmpdirpath, 'subdir')
-  #   dir_pn = Pathname(dirpath)
-  #   puts "Create directory; directory birthtime established."
-  #   dir_pn.mkdir
-  #   puts "  Directory birthtime: #{dir_pn.birthtime}"
-  #   sleep(1)
-  #
-  #   # A file in the subdirectory, and its Pathname.
-  #   filepath = File.join(dirpath, 't.txt')
-  #   file_pn = Pathname(filepath)
-  #   puts "Create file; file birthtime established; directory birthtime not updated."
-  #   file_pn.write('foo')
-  #   puts "  File birthtime:      #{file_pn.birthtime}"
-  #   puts "  Directory birthtime: #{dir_pn.birthtime}"
-  #   sleep(1)
-  #   puts "Write file; neither birthtime updated."
-  #   file_pn.write('bar')
-  #   puts "  File birthtime:      #{file_pn.birthtime}"
-  #   puts "  Directory birthtime: #{dir_pn.birthtime}"
-  # end
-  # ```
-  #
-  # Output:
-  #
-  # ```text
-  # Create directory; directory birthtime established.
-  #   Directory birthtime: 2026-05-14 23:41:12 +0100
-  # Create file; file birthtime established; directory birthtime not updated.
-  #   File birthtime:      2026-05-14 23:41:13 +0100
-  #   Directory birthtime: 2026-05-14 23:41:12 +0100
-  # Write file; neither birthtime updated.
-  #   File birthtime:      2026-05-14 23:41:13 +0100
-  #   Directory birthtime: 2026-05-14 23:41:12 +0100
+  # # A directory and its Pathname.
+  # dir_path = 'doc/foo'
+  # dir_pn = Pathname(dir_path)
+  # # Create directory; directory birthtime established.
+  # dir_pn.mkdir
+  # dir_pn.birthtime  # => 2026-06-16 17:06:10.779192552 -0500
+  # # A file therein and its Pathname.
+  # file_path = dir_pn.join('t.tmp')
+  # file_pn = Pathname(file_path)
+  # # Create file; file birthtime established; directory birthtime not updated.
+  # file_pn.write('foo')
+  # dir_pn.birthtime  # => 2026-06-16 17:06:10.779192552 -0500
+  # file_pn.birthtime # => 2026-06-16 17:07:59.339330622 -0500
+  # # Modify file; neither birthtime updated.
+  # file_pn.write('bar')
+  # dir_pn.birthtime  # => 2026-06-16 17:06:10.779192552 -0500
+  # file_pn.birthtime # => 2026-06-16 17:07:59.339330622 -0500
+  # # Clean up.
+  # dir_pn.rmtree
   # ```
   #
   def birthtime() File.birthtime(@path) end
@@ -1168,50 +1169,29 @@ class Pathname    # * File *
   # see {File System Timestamps}[rdoc-ref:file/timestamps.md]:
   #
   # ```ruby
-  # # Work in a temporary directory.
-  # Pathname.mktmpdir do |tmpdirpath|
-  #   # A subdirectory therein, and its Pathname.
-  #   dirpath = File.join(tmpdirpath, 'subdir')
-  #   dir_pn = Pathname(dirpath)
-  #   puts "Create directory; directory ctime established."
-  #   dir_pn.mkdir
-  #   puts "  Directory ctime: #{dir_pn.ctime}"
-  #   sleep(1)
-  #
-  #   # A file in the subdirectory, and its Pathname.
-  #   filepath = File.join(dirpath, 't.txt')
-  #   file_pn = Pathname(filepath)
-  #   puts "Create file; file ctime established; directory ctime updated."
-  #   file_pn.write('foo')
-  #   puts "  File ctime:      #{file_pn.ctime}"
-  #   puts "  Directory ctime: #{dir_pn.ctime}"
-  #   sleep(1)
-  #   puts "Write file; file ctime updated; directory ctime not updated."
-  #   file_pn.write('bar')
-  #   puts "  File ctime:      #{file_pn.ctime}"
-  #   puts "  Directory ctime: #{dir_pn.ctime}"
-  #   sleep(1)
-  #   puts "Read file; neither ctime not updated."
-  #   file_pn.read
-  #   puts "  File ctime:      #{file_pn.ctime}"
-  #   puts "  Directory ctime: #{dir_pn.ctime}"
-  # end
-  # ```
-  #
-  # Output:
-  #
-  # ```text
-  # Create directory; directory ctime established.
-  #   Directory ctime: 2026-05-20 14:05:05 -0500
-  # Create file; file ctime established; directory ctime updated.
-  #   File ctime:      2026-05-20 14:05:06 -0500
-  #   Directory ctime: 2026-05-20 14:05:06 -0500
-  # Write file; file ctime updated; directory ctime not updated.
-  #   File ctime:      2026-05-20 14:05:07 -0500
-  #   Directory ctime: 2026-05-20 14:05:06 -0500
-  # Read file; neither ctime not updated.
-  #   File ctime:      2026-05-20 14:05:07 -0500
-  #   Directory ctime: 2026-05-20 14:05:06 -0500
+  # # A directory and its Pathname.
+  # dir_path = 'doc/foo'
+  # dir_pn = Pathname(dir_path)
+  # # Create directory; directory ctime established.
+  # dir_pn.mkdir
+  # dir_pn.ctime  # => 2026-06-16 16:44:15.86720572 -0500
+  # # A file therein and its Pathname.
+  # file_path = dir_pn.join('t.tmp')
+  # file_pn = Pathname(file_path)
+  # # Create file; file ctime established; directory ctime updated.
+  # file_pn.write('foo')
+  # file_pn.ctime # => 2026-06-16 16:46:00.734974872 -0500
+  # dir_pn.ctime  # => 2026-06-16 16:46:00.734974872 -0500
+  # # Write file; file ctime updated; directory ctime not updated.
+  # file_pn.write('bar')
+  # file_pn.ctime # => 2026-06-16 16:49:11.421204188 -0500
+  # dir_pn.ctime  # => 2026-06-16 16:46:00.734974872 -0500
+  # # Read file; neither ctime updated.
+  # file_pn.read
+  # file_pn.ctime # => 2026-06-16 16:49:11.421204188 -0500
+  # dir_pn.ctime  # => 2026-06-16 16:46:00.734974872 -0500
+  # # Clean up.
+  # dir_pn.rmtree
   # ```
   #
   def ctime() File.ctime(@path) end
@@ -1226,45 +1206,30 @@ class Pathname    # * File *
   #   chmod(mode) -> 1
   #
   # Changes the mode (i.e., permissions) of the entry represented by `self`;
-  # see {File Permissions}[rdoc-ref:File@File+Permissions];
-  # returns `1`:
+  # see {File Permissions}[rdoc-ref:File@File+Permissions]:
   #
   # ```ruby
-  # # A helper method to make an integer mode display as octal.
-  # def pretty(mode); '0' + (mode & 0777).to_s(8); end
+  # # Pathname for a (non-existent) directory.
+  # dir_pn = Pathname('doc/foo') # => #<Pathname:doc/foo>
+  # # Create the directory and fetch its mode.
+  # dir_pn.mkdir
+  # dir_pn.stat.mode.to_s(8) # => "40775"
+  # # Change the directory mode and fetch the new mode.
+  # dir_pn.chmod(0777)
+  # dir_pn.stat.mode.to_s(8) # => "40777"
   #
-  # # Work in a temporary directory.
-  # Pathname.mktmpdir do |tmpdirpath|
-  #   # A subdirectory therein, and its Pathname.
-  #   dirpath = File.join(tmpdirpath, 'subdir')
-  #   dir_pn = Pathname(dirpath)
-  #   dir_pn.mkdir
-  #   # The directory mode.
-  #   puts "Original directory mode: #{pretty(dir_pn.stat.mode)}"
-  #   # Change the directory mode.
-  #   dir_pn.chmod(0777)
-  #   puts "New directory mode:      #{pretty(dir_pn.stat.mode)}"
+  # # Pathname for a (non-existent) file in the directory.
+  # file_pn = dir_pn.join('t.tmp') # => #<Pathname:doc/foo/t.tmp>
+  # # Create the file and fetch its mode.
+  # file_pn.write('foo')
+  # file_pn.stat.mode.to_s(8) # => "100664"
+  # # Change the file mode and fetch its new mode.
+  # file_pn.chmod(0777)
+  # file_pn.stat.mode.to_s(8) # => "100777"
   #
-  #   # A file in the subdirectory, and its Pathname.
-  #   filepath = File.join(dirpath, 't.txt')
-  #   file_pn = Pathname(filepath)
-  #   # Create the file.
-  #   file_pn.write('foo')
-  #   # The file mode.
-  #   puts "Original file mode:      #{pretty(file_pn.stat.mode)}"
-  #   # Change the file modes.
-  #   file_pn.chmod(0777)
-  #   puts "New file mode:           #{pretty(file_pn.stat.mode)}"
-  # end
-  # ```
-  #
-  # Output:
-  #
-  # ```text
-  # Original directory mode: 0775
-  # New directory mode:      0777
-  # Original file mode:      0664
-  # New file mode:           0777
+  # # Clean up.
+  # file_pn.delete
+  # dir_pn.rmdir
   # ```
   #
   def chmod(mode) File.chmod(mode, @path) end
@@ -1301,47 +1266,38 @@ class Pathname    # * File *
   # Changes the owner and group of an entry (directory or file):
   #
   # ```ruby
-  # # Work in a temporary directory.
-  # Pathname.mktmpdir do |tmpdirpath|
-  #   # A subdirectory therein, and its Pathname.
-  #   dirpath = File.join(tmpdirpath, 'subdir')
-  #   dir_pn = Pathname(dirpath)
-  #   dir_pn.mkdir
-  #   dir_stat = File.stat(dirpath)
-  #   puts "Original directory owner: #{dir_stat.uid}"
-  #   puts "Original directory group: #{dir_stat.gid}"
-  #   dir_pn.chown(1000, 1000)
-  #   dir_stat = File.stat(dirpath)
-  #   puts "New directory owner:      #{dir_stat.uid}"
-  #   puts "New directory group:      #{dir_stat.gid}"
+  # # Super user; all privileges.
+  # Process.uid                    # => 0
+  # Process.gid                    # => 0
   #
-  #   # A file in the subdirectory, and its Pathname.
-  #   filepath = File.join(dirpath, 't.txt')
-  #   file_pn = Pathname(filepath)
-  #   # Create the file.
-  #   file_pn.write('foo')
-  #   file_stat = File.stat(filepath)
-  #   puts "Original file owner:      #{file_stat.uid}"
-  #   puts "Original file group:      #{file_stat.gid}"
-  #   file_pn = Pathname(dirpath)
-  #   file_pn.chown(1000, 1000)
-  #   file_stat = File.stat(dirpath)
-  #   puts "New file owner:           #{file_stat.uid}"
-  #   puts "New file group:           #{file_stat.gid}"
-  # end
-  # ```
+  # # Pathname for a (non-existent) directory.
+  # dir_pn = Pathname('doc/foo')   # => #<Pathname:doc/foo>
+  # # Create the directory; fetch original owner and group.
+  # dir_pn.mkdir
+  # dir_stat = dir_pn.stat
+  # dir_stat.uid                   # => 0
+  # dir_stat.gid                   # => 0
+  # # Change owner; fetch current owner and group.
+  # dir_pn.chown(1000, 1000)
+  # dir_stat = dir_pn.stat
+  # dir_stat.uid                   # => 1000
+  # dir_stat.gid                   # => 1000
   #
-  # Output:
-  #
-  # ```text
-  # Original directory owner: 0
-  # Original directory group: 0
-  # New directory owner:      1000
-  # New directory group:      1000
-  # Original file owner:      0
-  # Original file group:      0
-  # New file owner:           1000
-  # New file group:           1000
+  # Pathname for a (non-existent) file in the directory.
+  # file_pn = dir_pn.join('t.tmp') # => #<Pathname:doc/foo/t.tmp>
+  # # Create the directory; fetch original owner and group.
+  # file_pn.write('foo')
+  # file_stat = file_pn.stat
+  # file_stat.uid                  # => 0
+  # file_stat.gid                  # => 0
+  # # Change owner; fetch current owner and group.
+  # file_pn.chown(1000, 1000)
+  # file_stat = file_pn.stat
+  # file_stat.uid                  # => 1000
+  # file_stat.gid                  # => 1000
+  # # Clean up.
+  # file_pn.delete
+  # dir_pn.rmdir
   # ```
   #
   # Notes:
@@ -1436,7 +1392,28 @@ class Pathname    # * File *
   #  Returns <tt>'unknown'</tt> if the type cannot be determined.
   def ftype() File.ftype(@path) end
 
-  # See <tt>File.link</tt>.  Creates a hard link.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   make_link(path) -> 0
+  #
+  #  Not available on some systems.
+  #
+  # Creates a new entry at the path in `self` for the existing entry at `path`
+  # using a [hard link](https://en.wikipedia.org/wiki/Hard_link):
+  #
+  # ```ruby
+  # File.write('doc/t.tmp', 'foo')
+  # Pathname('lib/u.tmp').make_link('doc/t.tmp')
+  # File.read('lib/u.tmp') # => "foo"
+  # File.write('lib/u.tmp', 'bar')
+  # File.read('doc/t.tmp') # => "bar"
+  # File.delete('doc/t.tmp')
+  # File.read('lib/u.tmp') # => "bar"
+  # File.delete('lib/u.tmp')
+  # ```
+  #
+  # Raises an exception if the entry at the path in `self` exists.
   def make_link(old) File.link(old, @path) end
 
   # See <tt>File.open</tt>.  Opens the file for reading or writing.
@@ -1489,11 +1466,56 @@ class Pathname    # * File *
   # See <tt>File.utime</tt>.  Update the access and modification times.
   def utime(atime, mtime) File.utime(atime, mtime, @path) end
 
-  # Update the access and modification times of the file.
+  # :markup: markdown
   #
-  # Same as Pathname#utime, but does not follow symbolic links.
+  # call-seq:
+  #   lutime(atime, mtime) -> 1
   #
-  # See File.lutime.
+  # Like Pathname#utime, but does not follow symbolic links,
+  # and therefore changes the times of the entry in `self`,
+  # regardless of whether it is a symbolic link:
+  #
+  # ```ruby
+  # # Create a file and a link to it.
+  # file_path = 't.tmp'
+  # link_path = 'link'
+  # File.write(file_path, '')
+  # File.symlink(file_path, link_path)
+  # # Take snapshots of both.
+  # file_stat = File.stat(file_path)
+  # link_stat = File.lstat(link_path)
+  # # Fetch access times and modification times of both.
+  # file_stat.atime # => 2026-06-15 11:03:29.600373255 -0500
+  # file_stat.mtime # => 2026-06-15 11:03:22.247352211 -0500
+  # link_stat.atime # => 2026-06-15 11:03:29.251372254 -0500
+  # link_stat.mtime # => 2026-06-15 11:03:26.66436484 -0500
+  # # Update access time and modification time of the link.
+  # pn = Pathname(link_path)
+  # time = Time.now # => 2026-06-15 11:08:07.384287523 -0500
+  # pn.lutime(time, time)
+  # # Take fresh snapshots of both.
+  # file_stat = File.stat(file_path)
+  # link_stat = File.lstat(link_path)
+  # # Fetch access time and modification time of file (not changed).
+  # file_stat.atime # => 2026-06-15 11:03:29.600373255 -0500
+  # file_stat.mtime # => 2026-06-15 11:03:22.247352211 -0500
+  # # Fetch access time and modification time of link (changed).
+  # link_stat.atime # => 2026-06-15 11:08:29.847301399 -0500
+  # link_stat.mtime # => 2026-06-15 11:08:07.384287523 -0500
+  # # Clean up.
+  # File.delete(file_path)
+  # File.delete(link_path)
+  # ```
+  #
+  # Arguments `atime` and `mtime` may be Time objects (as above).
+  #
+  # Either or both may be integers;
+  # when an integer `i` is passed, `Time.new(i)` is used.
+  #
+  # Either or both may be `nil`, in which case `Time.now` is used.
+  #
+  # See {File System Timestamps}[rdoc-ref:file/timestamps.md].
+  #
   def lutime(atime, mtime) File.lutime(atime, mtime, @path) end
 
   # call-seq:

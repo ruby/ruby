@@ -201,7 +201,7 @@ static const rb_data_type_t set_data_type = {
         .dsize = set_size,
         .dcompact = set_update_references,
     },
-    .flags = RUBY_TYPED_EMBEDDABLE | RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FROZEN_SHAREABLE
+    .flags = RUBY_TYPED_EMBEDDABLE | RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FROZEN_SHAREABLE
 };
 
 static inline set_table *
@@ -416,8 +416,16 @@ set_s_alloc(VALUE klass)
  *  call-seq:
  *    Set[*objects] -> new_set
  *
- *  Returns a new Set object populated with the given objects,
- *  See Set::new.
+ *  Returns a new \Set object populated with the given +objects+:
+ *
+ *    Set[1, 'one', :one, 1.0, %w[a b c], {foo: 0, bar: 1}]
+ *    # => Set[1, "one", :one, 1.0, ["a", "b", "c"], {foo: 0, bar: 1}]
+ *    Set[Set[0, 1, 2], Set[%w[a b c]]]
+ *    # => Set[Set[0, 1, 2], Set[["a", "b", "c"]]]
+ *    Set[] # => Set[]
+ *
+ *  Related: see {Methods for Creating a Set}[rdoc-ref:Set@Methods+for+Creating+a+Set].
+ *
  */
 static VALUE
 set_s_create(int argc, VALUE *argv, VALUE klass)
@@ -504,22 +512,24 @@ set_initialize_with_block(RB_BLOCK_CALL_FUNC_ARGLIST(i, set))
  *   Set.new                          # => Set[]
  *   Set.new { fail 'Cannot happen' } # => Set[]  # Block not called.
  *
- * With no block given and +object+ given as an Enumerable,
+ * With no block given and enumerable argument +object+ given,
  * populates the new set with the elements of +object+:
  *
- *   Set.new(%w[ a b c ])     # => Set["a", "b", "c"]
- *   Set.new({foo: 0, bar: 1})     # => Set[[:foo, 0], [:bar, 1]]
- *   Set.new(4..10)     # => Set[4, 5, 6, 7, 8, 9, 10]
+ *   Set.new(%w[ a b c ])      # => Set["a", "b", "c"]
+ *   Set.new({foo: 0, bar: 1}) # => Set[[:foo, 0], [:bar, 1]]
+ *   Set.new(4..10)            # => Set[4, 5, 6, 7, 8, 9, 10]
  *   Set.new(Dir.new('lib')).take(5)
  *   # => [".", "..", "bundled_gems.rb", "bundler", "bundler.rb"]
  *   Set.new(File.new('doc/NEWS/NEWS-4.0.0.md')).take(3)
  *   # => ["# NEWS for Ruby 4.0.0\n", "\n", "This document is a list of user-visible feature changes\n"]
  *
- * With a block given and +object+ given as an Enumerable,
+ * With a block given and enumerable argument +object+ given,
  * calls the block with each element of +object+;
  * adds the block's return value to the new set:
  *
  *   Set.new(4..10) {|i| i * 2 } # => Set[8, 10, 12, 14, 16, 18, 20]
+ *
+ * Related: see {Methods for Creating a Set}[rdoc-ref:Set@Methods+for+Creating+a+Set].
  *
  */
 static VALUE
@@ -713,14 +723,15 @@ set_i_join(int argc, VALUE *argv, VALUE set)
 
 /*
  *  call-seq:
- *    add(obj) -> self
+ *    add(object) -> self
  *
- *  Adds the given object to the set and returns self. Use Set#merge to
- *  add many elements at once.
+ *  Adds the given +object+ to +self+, returns +self+:
  *
- *    Set[1, 2].add(3)                    #=> Set[1, 2, 3]
- *    Set[1, 2].add([3, 4])               #=> Set[1, 2, [3, 4]]
- *    Set[1, 2].add(2)                    #=> Set[1, 2]
+ *    set = Set[0, 1, 2]
+ *    set.add(%w[a b c]) # => Set[0, 1, 2, ["a", "b", "c"]]
+ *    set.add(0)         # => Set[0, 1, 2, ["a", "b", "c"]]
+ *
+ *  Related: see {Methods for Assigning}[rdoc-ref:Set@Methods+for+Assigning].
  */
 static VALUE
 set_i_add(VALUE set, VALUE item)
@@ -1056,13 +1067,18 @@ set_intersection_block(RB_BLOCK_CALL_FUNC_ARGLIST(i, data))
 
 /*
  *  call-seq:
- *    set & enum -> new_set
+ *    self & enumerable -> new_set
  *
- *  Returns a new set containing elements common to the set and the given
- *  enumerable object.
+ *  Returns a new set containing the {intersection}[https://en.wikipedia.org/wiki/Intersection_(set_theory)]
+ *  of +self+ and +enumerable+;
+ *  that is, containing all elements common to both, with no duplicates.
+ *  Argument +enumerable+ must be an Enumerable object:
  *
- *    Set[1, 3, 5] & Set[3, 2, 1]             #=> Set[3, 1]
- *    Set['a', 'b', 'z'] & ['a', 'b', 'c']    #=> Set["a", "b"]
+ *    set = Set[*(0..6), *%w[ a b c]] # => Set[0, 1, 2, 3, 4, 5, 6, "a", "b", "c"]
+ *    set & ['c', 6, 8, 4]            # => Set["c", 6, 4]
+ *    set & [:foo, :bar]              # => Set[]  # No elements in common.
+ *
+ *  Related: see {Methods for Set Operations}[rdoc-ref:Set@Methods+for+Set+Operations].
  */
 static VALUE
 set_i_intersection(VALUE set, VALUE other)
@@ -1389,13 +1405,19 @@ set_i_subtract(VALUE set, VALUE other)
 
 /*
  *  call-seq:
- *    set - enum -> new_set
+ *    self - enumerable -> new_set
  *
- *  Returns a new set built by duplicating the set, removing every
- *  element that appears in the given enumerable object.
+ *  Returns a new set containing the
+ *  {difference}[https://en.wikipedia.org/wiki/Complement_(set_theory)#Relative_complement]
+ *  of +self+ and argument +enumerable+;
+ *  that is, containing all elements in +self+ that are not in +enumerable+.
  *
- *    Set[1, 3, 5] - Set[1, 5]                #=> Set[3]
- *    Set['a', 'b', 'z'] - ['a', 'c']         #=> Set["b", "z"]
+ *
+ *    set = Set[*(0..6), *%w[ a b c]] # => Set[0, 1, 2, 3, 4, 5, 6, "a", "b", "c"]
+ *    set - ['b', 6, 4, 1]            # => Set[0, 2, 3, 5, "a", "c"]
+ *    set - ['d', 7, 9]               # => Set[0, 1, 2, 3, 4, 5, 6, "a", "b", "c"]
+ *
+ *  Related: see {Methods for Set Operations}[rdoc-ref:Set@Methods+for+Set+Operations].
  */
 static VALUE
 set_i_difference(VALUE set, VALUE other)
@@ -1786,11 +1808,32 @@ set_i_disjoint(VALUE set, VALUE other)
 
 /*
  *  call-seq:
- *    set <=> other -> -1, 0, 1, or nil
+ *    self <=> object -> -1, 0, 1, or nil
  *
- *  Returns 0 if the set are equal, -1 / 1 if the set is a
- *  proper subset / superset of the given set, or nil if
- *  they both have unique elements.
+ *  Compares +self+ and +object+.
+ *
+ *  If +object+ is another set, returns:
+ *
+ *  - +-1+, if +self+ is a proper subset of +object+.
+ *  - +0+, if +self+ and +object+ have the same elements.
+ *  - +1+, if +self+ is a proper superset of +object+.
+ *  - +nil+, if none of the above;
+ *    that is, if +self+ and +object+ each have one or more elements
+ *    not included in the other.
+ *
+ *  Examples:
+ *
+ *    set = Set[0, 1, 2]
+ *    set <=> Set[3, 2, 1, 0] # => -1
+ *    set <=> Set[2, 1, 0]    # => 0
+ *    set <=> Set[1, 0]       # => 1
+ *    set <=> Set[1, 0, 3]    # => nil
+ *
+ *  Returns +nil+ if +object+ is not a set:
+ *
+ *    set <=> [2, 1, 0] # => nil  # Array, not Set.
+ *
+ *  Related: see {Methods for Comparing}[rdoc-ref:Set@Methods+for+Comparing].
  */
 static VALUE
 set_i_compare(VALUE set, VALUE other)
@@ -1846,9 +1889,16 @@ set_recursive_eql(VALUE set, VALUE dt, int recur)
 
 /*
  *  call-seq:
- *    set == other -> true or false
+ *    self == object -> true or false
  *
- *  Returns true if two sets are equal.
+ *  Returns whether +object+ is a set, and has the same elements as +self+:
+ *
+ *    set = Set[0, 1, 2]
+ *    set == Set[1, 2, 0]   # => true
+ *    set == [1, 2, 3]      # => false
+ *    set == Set[1, 2, '3'] # => false
+ *
+ *  Related: see {Methods for Comparing}[rdoc-ref:Set@Methods+for+Comparing].
  */
 static VALUE
 set_i_eq(VALUE set, VALUE other)
