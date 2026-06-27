@@ -865,7 +865,7 @@ set_classify_i(st_data_t key, st_data_t tmp)
 /*
  *  call-seq:
  *    classify {|element| ... } -> hash
- *    classify -> new_enumerator
+ *    classify -> enumerator
  *
  *  With a block given, calls the block with each element of +self+;
  *  returns a hash whose keys are the block's return values;
@@ -878,7 +878,7 @@ set_classify_i(st_data_t key, st_data_t tmp)
  *    set.classify {|element| element.class }
  *    # => {Integer => Set[5, 6, 7], String => Set["foo", "bar"]}
  *
- *  With no block given, returns a new Enumerator.
+ *  With no block given, returns an Enumerator.
  *
  *  Related: see {Methods for Converting}[rdoc-ref:Set@Methods+for+Converting].
  */
