@@ -745,7 +745,7 @@ set_i_add(VALUE set, VALUE item)
  *
  *    set = Set[0, 1, 2]
  *    set.add?(:foo)   # => Set[0, 1, 2, :foo]
- *    set.add?((0..9)) # => Set[0, 1, 2, :foo, 0..9]
+ *    set.add?(0..9) # => Set[0, 1, 2, :foo, 0..9]
  *    set.add?(2) # => nil
  *
  *  Related: see {Methods for Assigning}[rdoc-ref:Set@Methods+for+Assigning].
