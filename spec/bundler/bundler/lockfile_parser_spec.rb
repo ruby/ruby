@@ -118,7 +118,7 @@ RSpec.describe Bundler::LockfileParser do
     let(:platforms) { [Gem::Platform::RUBY] }
     let(:bundler_version) { Gem::Version.new("1.12.0.rc.2") }
     let(:ruby_version) { "ruby 2.1.3p242" }
-    let(:lockfile_path) { Bundler.default_lockfile.relative_path_from(Dir.pwd) }
+    let(:lockfile_path) { Bundler::SharedHelpers.relative_lockfile_path }
     let(:rake_sha256_checksum) do
       Bundler::Checksum.from_lock(
         "sha256=814828c34f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e8",
