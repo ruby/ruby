@@ -1431,11 +1431,18 @@ set_collect_i(st_data_t key, st_data_t data)
 
 /*
  *  call-seq:
- *    collect! { |o| ... } -> self
+ *    collect! {|element| ... } -> self
  *    collect! -> enumerator
  *
- *  Replaces the elements with ones returned by +collect+.
- *  Returns an enumerator if no block is given.
+ *  With a block given, calls the block with each element in +self+;
+ *  replaces the element with the block's return value:
+ *
+ *    Set[1, :one, 'one', 1.0].collect! {|element| element.class }
+ *    # => Set[Integer, Symbol, String, Float]
+ *
+ *  With no block given, returns an Enumerator.
+ *
+ *  Related: see {Methods for Converting}[rdoc-ref:Set@Methods+for+Converting].
  */
 static VALUE
 set_i_collect(VALUE set)
