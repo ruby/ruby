@@ -1833,15 +1833,15 @@ set_i_intersect(VALUE set, VALUE other)
 
 /*
  *  call-seq:
- *    disjoint?(set) -> true or false
+ *    disjoint?(enumerable) -> true or false
  *
- *  Returns true if the set and the given enumerable have no
- *  element in common.  This method is the opposite of +intersect?+.
+ *  Returns whether no element of +enumerable+ is present in +self+:
  *
- *    Set[1, 2, 3].disjoint? Set[3, 4]   #=> false
- *    Set[1, 2, 3].disjoint? Set[4, 5]   #=> true
- *    Set[1, 2, 3].disjoint? [3, 4]      #=> false
- *    Set[1, 2, 3].disjoint? 4..5        #=> true
+ *    set = Set[0, 'zero', :zero]
+ *    set.disjoint?([1, 2, 3])    # => true
+ *    set.disjoint?([0, 1, 2, 3]) # => false
+ *
+ *  Related: see {Methods for Querying}[rdoc-ref:Set@Methods+for+Querying].
  */
 static VALUE
 set_i_disjoint(VALUE set, VALUE other)
