@@ -1343,8 +1343,10 @@ set_i_xor(VALUE set, VALUE other)
  *  call-seq:
  *    self | enumerable -> new_set
  *
- *  Returns a new \Set object containing the elements of both +self+
- *  and the given +enumerable+.
+ *  Returns a new \Set object containing
+ *  the {union}[https://en.wikipedia.org/wiki/Union_(set_theory)]
+ *  of +self+ and the given +enumerable+;
+ *  that is, containing the elements of both +self+ and +enumerable+.
  *
  *    set = Set[0, 1, 2]
  *    set | Set[2, 1, 'a'] # => Set[0, 1, 2, "a"]
