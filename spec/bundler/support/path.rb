@@ -127,6 +127,15 @@ module Spec
       end
     end
 
+    # On Windows there is no relative path between different drives, and much of
+    # the spec setup (temp home, bundled app, caches) lives under the temp dir.
+    # When the temp dir is on a different drive than the source tree, examples
+    # that compare or look up paths across the two cannot be set up correctly.
+    def tmp_and_source_on_different_drives?
+      drive = ->(path) { path.to_s[%r{\A[a-zA-Z]:}]&.upcase }
+      drive[tmp_root] != drive[source_root]
+    end
+
     # Bump this version whenever you make a breaking change to the spec setup
     # that requires regenerating tmp/.
 
