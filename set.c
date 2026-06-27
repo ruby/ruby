@@ -1311,6 +1311,12 @@ set_xor_i(st_data_t key, st_data_t data)
  *    set ^ Set[2, *('a'..'c')] # => Set[0, 1, "a", "b", "c"]
  *    set ^ Set[2, 1, 0]        # => Set[]
  *
+ *  For \Set +set+ and \Enumerable +enumerable+, these expressions are equivalent:
+ *
+ *    set ^ enumerable
+ *    ((set | enumerable) - (set & enumerable))
+
+ *
  *  Related: see {Methods for Set Operations}[rdoc-ref:Set@Methods+for+Set+Operations].
  */
 static VALUE
