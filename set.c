@@ -1024,11 +1024,11 @@ set_clear_i(st_data_t key, st_data_t dummy)
  *  call-seq:
  *    clear -> self
  *
- *  Removes all elements and returns self.
+ *  Returns +self+ with all elements removed:
  *
- *    set = Set[1, 'c', :s]             #=> Set[1, "c", :s]
- *    set.clear                         #=> Set[]
- *    set                               #=> Set[]
+ *    Set[1, :one, 'one', 1.0].clear # => Set[]
+ *
+ *  Related: see {Methods for Deleting}[rdoc-ref:Set@Methods+for+Deleting].
  */
 static VALUE
 set_i_clear(VALUE set)
