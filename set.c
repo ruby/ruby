@@ -883,7 +883,7 @@ set_classify_i(st_data_t key, st_data_t tmp)
  *     Hash => Set[{foo: 0, bar: 1}],
  *     Symbol => Set[:bah, :bam]}
  *
- *  With no block given, returns a new Enumerator.
+ *  With no block given, returns an Enumerator.
  *
  *  Related: see {Methods for Converting}[rdoc-ref:Set@Methods+for+Converting].
  */
