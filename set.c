@@ -865,7 +865,7 @@ set_classify_i(st_data_t key, st_data_t tmp)
 /*
  *  call-seq:
  *    classify {|element| ... } -> hash
- *    classify -> new_enumerator
+ *    classify -> enumerator
  *
  *  With a block given, calls the block with each element of +self+;
  *  returns a hash whose keys are the block's return values;
