@@ -874,14 +874,9 @@ set_classify_i(st_data_t key, st_data_t tmp)
  *
  *  This example classifies elements by their classes:
  *
- *    set = Set[*%w[foo bar], *('a'..'c'), *(0..2), {foo: 0, bar: 1}, *%i[bah bam], *(3..5), *('d'..'f')]
- *    # => Set["foo", "bar", "a", "b", "c", 0, 1, 2, {foo: 0, bar: 1}, :bah, :bam, 3, 4, 5, "d", "e", "f"]
+ *    set = Set[*(5..7), *%w[foo bar]] # => Set[5, 6, 7, "foo", "bar"]
  *    set.classify {|element| element.class }
- *    # =>
- *    {String => Set["foo", "bar", "a", "b", "c", "d", "e", "f"],
- *     Integer => Set[0, 1, 2, 3, 4, 5],
- *     Hash => Set[{foo: 0, bar: 1}],
- *     Symbol => Set[:bah, :bam]}
+ *    # => {Integer => Set[5, 6, 7], String => Set["foo", "bar"]}
  *
  *  With no block given, returns a new Enumerator.
  *
