@@ -237,6 +237,7 @@ RSpec.describe "bundle executable" do
     context "when the latest version is greater than the current version" do
       let(:latest_version) { "222.0" }
       it "prints the version warning" do
+        skip "temp dir is on a different drive than the source tree" if tmp_and_source_on_different_drives?
         bundle "fail", env: { "BUNDLER_VERSION" => bundler_version }, raise_on_error: false
         expect(err).to start_with(<<-EOS.strip)
 The latest bundler is #{latest_version}, but you are currently running #{bundler_version}.
@@ -264,6 +265,7 @@ To update to the most recent version, run `bundle update --bundler`
       context "and is a pre-release" do
         let(:latest_version) { "222.0.0.pre.4" }
         it "prints the version warning" do
+          skip "temp dir is on a different drive than the source tree" if tmp_and_source_on_different_drives?
           bundle "fail", env: { "BUNDLER_VERSION" => bundler_version }, raise_on_error: false
           expect(err).to start_with(<<-EOS.strip)
 The latest bundler is #{latest_version}, but you are currently running #{bundler_version}.

@@ -68,6 +68,7 @@ RSpec.describe Bundler::SharedHelpers do
   describe "#default_bundle_dir" do
     context ".bundle does not exist" do
       it "returns nil" do
+        skip "temp dir is on a different drive than the source tree" if tmp_and_source_on_different_drives?
         expect(subject.default_bundle_dir).to be_nil
       end
     end
