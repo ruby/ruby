@@ -806,11 +806,20 @@ set_delete_if_i(st_data_t key, st_data_t dummy)
 
 /*
  *  call-seq:
- *    delete_if { |o| ... } -> self
+ *    delete_if {|element| ... } -> self
  *    delete_if -> enumerator
  *
- *  Deletes every element of the set for which block evaluates to
- *  true, and returns self. Returns an enumerator if no block is given.
+ *  With a block given, calls the block with each element in +self+;
+ *  removes the element if the block returns a truthy value:
+ *
+ *    set = Set[*0..9]
+ *    # => Set[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+ *    set.delete_if {|element| element.even? }
+ *    # => Set[1, 3, 5, 7, 9]
+ *
+ *  With no block given, returns an Enumerator.
+ *
+ *  Related: {Methods for Deleting}[rdoc-ref:Set@Methods+for+Deleting].
  */
 static VALUE
 set_i_delete_if(VALUE set)
