@@ -985,7 +985,9 @@ static void set_merge_enum_into(VALUE set, VALUE arg);
  *    Set[0].divide {|ele| true } # => Set[Set[0]]
  *    Set[0].divide {|ele| false } # => Set[Set[0]]
  *    # For an empty set, the block is not called.
- *    Set[].divide {|ele| fail 'Cannot happen' }      # => Set[]
+ *
+ *    Set[0].divide {|ele| anything } # => Set[Set[0]]
+ *    Set[].divide {|ele| not called } # => Set[]
  *
  *  For a block that accepts two arguments,
  *  calls the block with some or all of the 2-element permutations
