@@ -1232,7 +1232,7 @@ set_reset_table_with_type(VALUE set, const struct st_hash_type *type)
  *  call-seq:
  *    compare_by_identity -> self
  *
- *  Sets +self+ to compare by object identifier
+ *  Sets +self+ to compare by object identity
  *  (rather than by object content, which is the initial setting);
  *  returns +self+:
  *
