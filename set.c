@@ -2258,7 +2258,7 @@ rb_set_size(VALUE set)
  * === Other Methods
  *
  * - #compare_by_identity:
- *   Sets +self+ to compare by object identifier (rather than by object content).
+ *   Sets +self+ to compare by object identity (rather than by object content).
  * - #reset:
  *   Resets the internal state; useful if an object
  *   has been modified while an element in the set.
