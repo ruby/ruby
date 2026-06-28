@@ -1315,7 +1315,12 @@ set_i_size(VALUE set)
  *  call-seq:
  *    empty? -> true or false
  *
- *  Returns true if the set contains no elements.
+ *  Returns whether +self+ contains no elements:
+ *
+ *    Set[].empty?  # => true
+ *    Set[0].empty? # => false
+ *
+ *  Related: see {Methods for Querying}[rdoc-ref:Set@Methods+for+Querying].
  */
 static VALUE
 set_i_empty(VALUE set)
