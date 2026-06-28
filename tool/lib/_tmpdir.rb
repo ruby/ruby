@@ -32,6 +32,7 @@ pid = $$
 END {
   if pid == $$
     begin
+      Dir.rmdir(File.join(tmpdir, "tmp"))
       Dir.rmdir(tmpdir)
     rescue Errno::ENOENT
     rescue Errno::ENOTEMPTY
