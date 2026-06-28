@@ -1100,27 +1100,29 @@ set_i_intersection(VALUE set, VALUE other)
 
 /*
  *  call-seq:
- *    include?(item) -> true or false
+ *    include?(object) -> true or false
  *
- *  Returns true if the set contains the given object:
+ *  Returns whether the given +object+ is an element of +self+:
  *
- *    Set[1, 2, 3].include? 2   #=> true
- *    Set[1, 2, 3].include? 4   #=> false
+ *    set = [0, :zero, '0']
+ *    set.include?('0')    # => true
+ *    set.include?('zero') # => false
  *
- *  Note that <code>include?</code> and <code>member?</code> do not test member
- *  equality using <code>==</code> as do other Enumerables.
+ *  Does not test equality using #== (as do other Enumerable classes).
  *
- *  This is aliased to #===, so it is usable in +case+ expressions:
+ *  Aliased as #===, which means that sets may be used in +case+ expressions:
  *
  *    case :apple
  *    when Set[:potato, :carrot]
- *      "vegetable"
+ *      'vegetable'
  *    when Set[:apple, :banana]
- *      "fruit"
+ *      'fruit'
+ *    else
+ *      'unknown'
  *    end
  *    # => "fruit"
  *
- *  See also Enumerable#include?
+ *  Related: see {Methods for Querying}[rdoc-ref:Set@Methods+for+Querying].
  */
 static VALUE
 set_i_include(VALUE set, VALUE item)
