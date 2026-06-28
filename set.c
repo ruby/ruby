@@ -969,39 +969,41 @@ static void set_merge_enum_into(VALUE set, VALUE arg);
  *
  *  With a block given, returns a set of sets.
  *
- *  <b>Block of Arity 1</b>
-
- *  A block of arity 1 accepts one argument.
- *
- *  For a 1-element set, calls the block, but does not use its return value;
- *  returns a 1-element set whose single element is equal to +self+:
- *
- *    Set[0].divide {|ele| true } # => Set[Set[0]]
- *    Set[0].divide {|ele| false } # => Set[Set[0]]
- *
- *  For a larger set, calls the block with each element;
+ *  For a block that accepts one argument,
+ *  calls the block with each element;
  *  creates a set for each distinct block return value:
  *
  *    set = Set[*0..9]
  *    # => Set[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+ *    # Divide into mod 3 sets.
  *    set.divide {|ele| ele % 3 }
  *    # => Set[Set[0, 3, 6, 9], Set[1, 4, 7], Set[2, 5, 8]]
+ *    # Divide into mod 5 sets.
  *    set.divide {|ele| ele % 5 }
  *    # => Set[Set[0, 5], Set[1, 6], Set[2, 7], Set[3, 8], Set[4, 9]]
+ *    # For a 1-element set, the block's return value is not used.
+ *    Set[0].divide {|ele| true } # => Set[Set[0]]
+ *    Set[0].divide {|ele| false } # => Set[Set[0]]
+ *    # For an empty set, the block is not called.
+ *    Set[].divide {|ele| fail 'Cannot happen' }      # => Set[]
  *
- *  <b>Block of Arity 2</b>
- *
- *  A block of arity 2 accepts two arguments.
- *
- *  For a larger set, calls the block with some or all of the 2-element permutations
+ *  For a block that accepts two arguments,
+ *  calls the block with some or all of the 2-element permutations
  *  of the elements of +self+:
  *
  *    set = Set[*0..9]
  *    # => Set[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
- *    set.divide { |i, j| (i - j) % 2 == 0 }
+ *    # Divide into mod 2 sets.
+ *    set.divide {|i, j| (i - j) % 2 == 0 }
  *    # => Set[Set[0, 2, 4, 6, 8], Set[1, 3, 5, 7, 9]]
- *    set.divide { |i, j| (i - j) % 3 == 0 }
+ *    # Divide into mod 3 sets.
+ *    set.divide {|i, j| (i - j) % 3 == 0 }
  *    # => Set[Set[0, 3, 6, 9], Set[1, 4, 7], Set[2, 5, 8]]
+ *    # For a 1-element set, the block's return value is not used.
+ *    Set[0].divide {|i, j| true }      # => Set[Set[0]]
+ *    Set[0].divide {|i, j| false }      # => Set[Set[0]]
+ *    # For an empty set, the block is not called.
+ *    Set[].divide {|i, j| fail 'Cannot happen' }      # => Set[]
  *
  *  With no block given, returns an Enumerator.
  *
