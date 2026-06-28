@@ -1722,15 +1722,16 @@ set_intersect_i(st_data_t key, st_data_t arg)
 
 /*
  *  call-seq:
- *    intersect?(set) -> true or false
+ *    intersect?(enumerable) -> true or false
  *
- *  Returns true if the set and the given enumerable have at least one
- *  element in common.
+ *  Returns whether +self+ and +enumerable+ have any elements in common:
  *
- *    Set[1, 2, 3].intersect? Set[4, 5]   #=> false
- *    Set[1, 2, 3].intersect? Set[3, 4]   #=> true
- *    Set[1, 2, 3].intersect? 4..5        #=> false
- *    Set[1, 2, 3].intersect? [3, 4]      #=> true
+ *    set = Set[0, 'zero', :zero]
+ *    set.intersect?([0, 1, 2])        # => true
+ *    set.intersect?(%w[zero one two]) # => true
+ *    set.intersect?(Set[3])           # => false
+ *
+ *  Related: see {Methods for Querying}[rdoc-ref:Set@Methods+for+Querying].
  */
 static VALUE
 set_i_intersect(VALUE set, VALUE other)
