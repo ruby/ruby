@@ -5284,8 +5284,33 @@ w32_symlink(UINT cp, const char *src, const char *link)
     MultiByteToWideChar(cp, 0, src, -1, wsrc, len1);
     MultiByteToWideChar(cp, 0, link, -1, wlink, len2);
     translate_wchar(wsrc, L'/', L'\\');
+    translate_wchar(wlink, L'/', L'\\');
 
-    atts = GetFileAttributesW(wsrc);
+    /* A relative target is interpreted relative to the directory of the link,
+       not the current directory.  Resolve it there to decide whether to create
+       a directory symlink; otherwise a relative target pointing at a directory
+       would wrongly become a file symlink when the current directory differs
+       from the link's directory. */
+    {
+        WCHAR *sep;
+        int absolute =
+            (((wsrc[0] >= L'A' && wsrc[0] <= L'Z') ||
+              (wsrc[0] >= L'a' && wsrc[0] <= L'z')) && wsrc[1] == L':') ||
+            (wsrc[0] == L'\\' && wsrc[1] == L'\\');
+        if (!absolute && (sep = wcsrchr(wlink, L'\\')) != NULL) {
+            VALUE buf2;
+            size_t dirlen = sep - wlink + 1;
+            size_t srclen = wcslen(wsrc) + 1;
+            WCHAR *fullsrc = ALLOCV_N(WCHAR, buf2, dirlen + srclen);
+            memcpy(fullsrc, wlink, dirlen * sizeof(WCHAR));
+            memcpy(fullsrc + dirlen, wsrc, srclen * sizeof(WCHAR));
+            atts = GetFileAttributesW(fullsrc);
+            ALLOCV_END(buf2);
+        }
+        else {
+            atts = GetFileAttributesW(wsrc);
+        }
+    }
     if (atts != -1 && atts & FILE_ATTRIBUTE_DIRECTORY)
         flag = SYMBOLIC_LINK_FLAG_DIRECTORY;
     ret = CreateSymbolicLinkW(wlink, wsrc, flag |= create_flag);
