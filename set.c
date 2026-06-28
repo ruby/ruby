@@ -686,23 +686,28 @@ set_i_to_set(VALUE set)
 
 /*
  *  call-seq:
- *    join(separator = $,) -> new_string
+ *    join(separator = $,) -> string
  *
- *  Returns the new string formed by joining the string-converted elements of +self+
+ *  Returns the string formed by joining the string-converted elements of +self+
  *  with the given +separator+ (defaults to <tt>$,</tt>):
  *
- *    $,                       # => nil
- *    Set[].join               # => ""
- *    Set[%w[foo]].join        # => "foo"
- *    s = Set[%w[foo bar baz]] # => Set[["foo", "bar", "baz"]]
- *    s.join                   # => "foobarbaz"
- *    s.join('|')              # => "foo|bar|baz"
- *    s.join(' :|: ')          # => "foo :|: bar :|: baz"
+ *    $, # => nil
+ *    Set[*%w[foo bar baz]].join
+ *    # => "foobarbaz"
+ *    Set[*%w[foo bar baz]].join(' ,')
+ *    # => "foo ,bar ,baz"
  *
- *  Flattens and joins nested arrays:
+ *  Flattens nested arrays:
  *
- *    Set[[:foo, [:bar, [:baz, :bat]]]].join0 # => "foobarbazbat"
+ *    Set[[:foo, [:bar, [:baz, :bat]]]].join
+ *    # => "foobarbazbat"
  *
+ *  Does not flatten nested sets:
+ *
+ *    Set[Set[:foo, Set[:bar, Set[:baz, :bat]]]].join
+ *    # => "Set[:foo, Set[:bar, Set[:baz, :bat]]]"
+ *
+ *  Related: see {Methods for Converting}[rdoc-ref:Set@Methods+for+Converting].
  */
 static VALUE
 set_i_join(int argc, VALUE *argv, VALUE set)
