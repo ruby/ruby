@@ -16,6 +16,15 @@ DEFAULT_ALLOWED_FAILURES = RUBY_PLATFORM =~ /mswin|mingw/ ? [
   'irb',
   'csv',
 ] : []
+
+# minitest's assertion tests compare against unified diff output produced by
+# the `diff` command, so they fail spuriously when it is not available.
+diff_available = ENV["PATH"].to_s.split(File::PATH_SEPARATOR).any? do |dir|
+  next false if dir.empty?
+  exe = File.join(dir, "diff")
+  File.executable?(exe) || (/mswin|mingw/ =~ RUBY_PLATFORM && File.file?("#{exe}.exe"))
+end
+DEFAULT_ALLOWED_FAILURES << 'minitest' unless diff_available
 allowed_failures = ENV['TEST_BUNDLED_GEMS_ALLOW_FAILURES'] || ''
 allowed_failures = allowed_failures.split(',').concat(DEFAULT_ALLOWED_FAILURES).uniq.reject(&:empty?)
 
