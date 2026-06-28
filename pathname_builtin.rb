@@ -1495,24 +1495,12 @@ class Pathname    # * File *
   #
   # ```ruby
   # # Create Pathnames.
-  # file_pn = Pathname('doc/t.tmp')          # => #<Pathname:doc/t.tmp>
-  # target_pn = Pathname('..').join(file_pn) # => #<Pathname:../doc/t.tmp>
+  # file_pn = Pathname('doc/extension.rdoc') # => #<Pathname:doc/extension.rdoc>
+  # target_pn = Pathname('..').join(file_pn) # => #<Pathname:../doc/extension.rdoc>
   # link_pn = Pathname('lib/u.tmp')          # => #<Pathname:lib/u.tmp>
-  # # Create target file.
-  # file_pn.write('foo')
-  # # Check state.
-  # link_pn.exist?   # => false
-  # link_pn.symlink? # => false
-  # link_pn.read     # Raises Errno::ENOENT, No such file or directory.
-  # link_pn.readlink # Raises Errno::ENOENT, No such file or directory.
-  # # Make symlink and check state.
+  # # Create link and verify.
   # link_pn.make_symlink(target_pn)
-  # link_pn.exist?   # => true
-  # link_pn.symlink? # => true
-  # link_pn.read     # => "foo"
-  # link_pn.readlink # => #<Pathname:../doc/t.tmp>
-  # # Clean up.
-  # file_pn.delete
+  # file_pn.read == link_pn.read             # => true
   # link_pn.delete
   # ```
   #

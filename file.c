@@ -3470,6 +3470,7 @@ rb_file_s_link(VALUE klass, VALUE from, VALUE to)
  *  file_path = 'doc/extension.rdoc'             # => "doc/extension.rdoc"
  *  target_path = File.join('..', file_path)     # => "../doc/extension.rdoc"
  *  link_path = 'lib/u.tmp'                      # => "lib/u.tmp"
+ *  # Create link and verify.
  *  File.symlink(target_path, link_path)
  *  File.read(file_path) == File.read(link_path) # => true
  *  File.delete(link_path)                       # Clean up.
