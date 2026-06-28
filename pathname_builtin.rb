@@ -1449,8 +1449,18 @@ class Pathname    # * File *
   # call-seq:
   #   readlink -> new_pathname
   #
-  # Returns a new pathname containing the string path to the entry referenced by `self`;
-  # see #make_symlink.
+  # Returns a new pathname containing the string path to the entry referenced by `self`:
+  #
+  # ```ruby
+  # # Create Pathnames.
+  # file_pn = Pathname('doc/extension.rdoc') # => #<Pathname:doc/extension.rdoc>
+  # target_pn = Pathname('..').join(file_pn) # => #<Pathname:../doc/extension.rdoc>
+  # link_pn = Pathname('lib/u.tmp')          # => #<Pathname:lib/u.tmp>
+  # link_pn.make_symlink(target_pn)
+  # link_pn.readlink                         # => #<Pathname:../doc/extension.rdoc>
+  # link_pn.delete
+  # ```
+  #
   def readlink() self.class.new(File.readlink(@path)) end
 
   # See <tt>File.rename</tt>.  Rename the file.
@@ -1501,7 +1511,7 @@ class Pathname    # * File *
   # # Create link and verify.
   # link_pn.make_symlink(target_pn)
   # file_pn.read == link_pn.read             # => true
-  # link_pn.delete
+  # link_pn.delete                           # Clean up.
   # ```
   #
   # See also: #read, #readlink, #symlink?.
@@ -1854,8 +1864,20 @@ class Pathname    # * FileTest *
   # call-seq:
   #   symlink? -> true or false
   #
-  # Returns whether the entry at the path in `self` is a symbolic link;
-  # see #make_symlink.
+  # Returns whether the entry at the path in `self` is a symbolic link:
+  #
+  # ```ruby
+  # # Create Pathnames.
+  # file_pn = Pathname('doc/extension.rdoc') # => #<Pathname:doc/extension.rdoc>
+  # target_pn = Pathname('..').join(file_pn) # => #<Pathname:../doc/extension.rdoc>
+  # link_pn = Pathname('lib/u.tmp')          # => #<Pathname:lib/u.tmp>
+  # link_pn.symlink?                         # => false
+  # # Create link.
+  # link_pn.make_symlink(target_pn)
+  # link_pn.symlink?                         # => true
+  # link_pn.delete                           # Clean up.
+  # ```
+  #
   def symlink?() FileTest.symlink?(@path) end
 
   # See <tt>FileTest.writable?</tt>.

@@ -1842,8 +1842,19 @@ rb_file_pipe_p(VALUE obj, VALUE fname)
  * call-seq:
  *   File.symlink?(path) -> true or false
  *
- * Returns whether the entry at `path` is a symbolic link;
- * see ::symlink.
+ * Returns whether the entry at `path` is a symbolic link:
+ *
+ * ```ruby
+ * # Create paths.
+ * file_path = 'doc/extension.rdoc'         # => "doc/extension.rdoc"
+ * target_path = File.join('..', file_path) # => "../doc/extension.rdoc"
+ * link_path = 'lib/u.tmp'                  # => "lib/u.tmp"
+ * File.symlink?(link_path)                 # => false
+ * # Create link and verify.
+ * File.symlink(target_path, link_path)
+ * File.symlink?(link_path)                 # => true
+ * File.delete(link_path)                   # Clean up.
+ * ```
  *
  */
 
@@ -3503,8 +3514,18 @@ rb_file_s_symlink(VALUE klass, VALUE from, VALUE to)
  *  call-seq:
  *     File.readlink(link_path) -> path
  *
- *  Returns the string path to the entry referenced by the given `link_path`;
- *  see ::symlink.
+ *  Returns the string path to the entry referenced by the given `link_path`:
+ *
+ *  ```ruby
+ *  # Create paths.
+ *  file_path = 'doc/extension.rdoc'         # => "doc/extension.rdoc"
+ *  target_path = File.join('..', file_path) # => "../doc/extension.rdoc"
+ *  link_path = 'lib/u.tmp'                  # => "lib/u.tmp"
+ *  File.symlink(target_path, link_path)
+ *  File.readlink(link_path)                 # => "../doc/extension.rdoc"
+ *  File.delete(link_path)                   # Clean up.
+ *  ```
+ *
  */
 
 static VALUE
