@@ -1273,7 +1273,7 @@ set_i_compare_by_identity(VALUE set)
  *  call-seq:
  *    compare_by_identity? -> true or false
  *
- *  Returns whether +self+ compares elements by object identifiers
+ *  Returns whether +self+ compares elements by object identity
  *  (rather than by content):
  *
  *    set = Set[]
