@@ -611,16 +611,12 @@ set_inspect(VALUE set, VALUE dummy, int recur)
 
 /*
  *  call-seq:
- *    inspect -> new_string
+ *    inspect -> string
  *
- *  Returns a new string containing the set entries:
+ *  Returns a string representation of +self+:
  *
- *    s = Set.new
- *    s.inspect # => "Set[]"
- *    s.add(1)
- *    s.inspect # => "Set[1]"
- *    s.add(2)
- *    s.inspect # => "Set[1, 2]"
+ *    Set[*%w[foo bar], {foo: 0, bar: 1}].inspect
+ *    # => "Set[\"foo\", \"bar\", {foo: 0, bar: 1}]"
  *
  *  Related: see {Methods for Converting}[rdoc-ref:Set@Methods+for+Converting].
  */
