@@ -990,7 +990,6 @@ static void set_merge_enum_into(VALUE set, VALUE arg);
  *    Set[].divide {|ele| not called } # => Set[]
  *
  *  For a block that accepts two arguments,
- *  calls the block with some or all of the 2-element permutations
  *  divides +self+ into connected components based on the binary
  *  relation defined by the block, calling the block with each 2-element
  *  permutation of the elements of +self+:
