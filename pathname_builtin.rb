@@ -1216,7 +1216,37 @@ class Pathname    # * File *
   #
   def ctime() File.ctime(@path) end
 
-  # See <tt>File.mtime</tt>.  Returns last modification time.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   mtime -> time
+  #
+  # Returns a Time object containing the time of the most recent
+  # modification to the entry represented by `self`;
+  # see {File System Timestamps}[rdoc-ref:file/timestamps.md]:
+  #
+  # ```ruby
+  # # A directory and its Pathname.
+  # dir_path = 'doc/foo'
+  # dir_pn = Pathname(dir_path)
+  # # Create directory; directory mtime established.
+  # dir_pn.mkdir
+  # dir_pn.mtime  # => 2026-06-28 16:38:02.675780521 -0500
+  # # A file therein and its Pathname.
+  # file_path = dir_pn.join('t.tmp')
+  # file_pn = Pathname(file_path)
+  # # Create file; file mtime established; directory mtime updated.
+  # file_pn.write('foo')
+  # dir_pn.mtime  # => 2026-06-28 16:41:23.107750483 -0500
+  # file_pn.mtime # => 2026-06-28 16:41:23.107750483 -0500
+  # # Modify file; file mtime updated; directory mtime unchanged.
+  # file_pn.write('bar')
+  # dir_pn.mtime  # => 2026-06-28 16:41:23.107750483 -0500
+  # file_pn.mtime # => 2026-06-28 16:42:48.869163049 -0500
+  # # Clean up.
+  # dir_pn.rmtree
+  # ```
+  #
   def mtime() File.mtime(@path) end
 
 
