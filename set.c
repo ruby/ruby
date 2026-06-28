@@ -1108,7 +1108,7 @@ set_i_intersection(VALUE set, VALUE other)
  *    set.include?('0')    # => true
  *    set.include?('zero') # => false
  *
- *  Does not test equality using #== (as do other Enumerable classes).
+ *  Tests equality using `hash` and `eql?`.
  *
  *  Aliased as #===, which means that sets may be used in +case+ expressions:
  *
