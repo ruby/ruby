@@ -1588,10 +1588,23 @@ set_flatten_merge(VALUE set, VALUE from, VALUE hash)
 
 /*
  *  call-seq:
- *    flatten -> set
+ *    flatten -> new_set
  *
- *  Returns a new set that is a copy of the set, flattening each
- *  containing set recursively.
+ *  Returns a new set that is a copy of +self+,
+ *  but with +self+ and its nested sets flattened;
+ *  that is, their elements become elements of +self+:
+ *
+ *    Set[Set[0, 1], Set[2, 3]].flatten
+ *    # => Set[0, 1, 2, 3]
+ *    Set[Set[0, 1], Set[Set[2, 3], Set[3, 4]]].flatten
+ *    # => Set[0, 1, 2, 3, 4]
+ *
+ *  Does not flatten nested arrays or hashes:
+ *
+ *    Set[%w[foo bar]].flatten      # => Set[["foo", "bar"]]
+ *    Set[{foo: 0, bar: 1}].flatten # => Set[{foo: 0, bar: 1}]
+ *
+ *  Related: see {Methods for Converting}[rdoc-ref:Set@Methods+for+Converting].
  */
 static VALUE
 set_i_flatten(VALUE set)
