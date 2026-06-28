@@ -694,8 +694,8 @@ set_i_to_set(VALUE set)
  *    $, # => nil
  *    Set[*%w[foo bar baz]].join
  *    # => "foobarbaz"
- *    Set[*%w[foo bar baz]].join(' ,')
- *    # => "foo ,bar ,baz"
+ *    Set[*%w[foo bar baz]].join(', ')
+ *    # => "foo, bar, baz"
  *
  *  Flattens nested arrays:
  *
