@@ -1003,11 +1003,9 @@ static void set_merge_enum_into(VALUE set, VALUE arg);
  *    # Divide into mod 3 sets.
  *    set.divide {|i, j| (i - j) % 3 == 0 }
  *    # => Set[Set[0, 3, 6, 9], Set[1, 4, 7], Set[2, 5, 8]]
- *    # For a 1-element set, the block's return value is not used.
- *    Set[0].divide {|i, j| true }      # => Set[Set[0]]
- *    Set[0].divide {|i, j| false }      # => Set[Set[0]]
- *    # For an empty set, the block is not called.
- *    Set[].divide {|i, j| fail 'Cannot happen' }      # => Set[]
+ *
+ *    Set[0].divide {|i, j| not called } # => Set[Set[0]]
+ *    Set[].divide {|i, j| not called } # => Set[]
  *
  *  With no block given, returns an Enumerator.
  *
