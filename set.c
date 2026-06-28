@@ -1407,12 +1407,19 @@ set_each_i(st_data_t key, st_data_t dummy)
 
 /*
  *  call-seq:
- *    each { |o| ... } -> self
+ *    each {|element| ... } -> self
  *    each -> enumerator
  *
- *  Calls the given block once for each element in the set, passing
- *  the element as parameter.  Returns an enumerator if no block is
- *  given.
+ *  With a block given, calls the block once for each element in the set,
+ *  passing the element as a parameter;
+ *  returns +self+:
+ *
+ *    sum = 0
+ *    Set[*(0..9)].each {|i| sum += i }
+ *    # => Set[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+ *    sum # => 45
+ *
+ *  With no block given, returns an Enumerator.
  */
 static VALUE
 set_i_each(VALUE set)
