@@ -1007,10 +1007,6 @@ static void set_merge_enum_into(VALUE set, VALUE arg);
  *    set.divide { |i, j| (i - j) % 3 == 0 }
  *    # => Set[Set[0, 3, 6, 9], Set[1, 4, 7], Set[2, 5, 8]]
  *
- *  For an empty set, does not call the block; returns another empty set:
- *
- *    Set[].divide {|i, j| fail 'Cannot happen' } # => Set[]
- *
  *  With no block given, returns an Enumerator.
  *
  *  Related: see {Methods for Converting}[rdoc-ref:Set@Methods+for+Converting].
