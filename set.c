@@ -989,10 +989,6 @@ static void set_merge_enum_into(VALUE set, VALUE arg);
  *    set.divide {|ele| ele % 5 }
  *    # => Set[Set[0, 5], Set[1, 6], Set[2, 7], Set[3, 8], Set[4, 9]]
  *
- *  For an empty set, does not call the block; returns another empty set:
- *
- *    Set[].divide {|ele| fail 'Cannot happen' } # => Set[]
- *
  *  <b>Block of Arity 2</b>
  *
  *  A block of arity 2 accepts two arguments.
