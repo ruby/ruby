@@ -1415,9 +1415,8 @@ set_each_i(st_data_t key, st_data_t dummy)
  *  returns +self+:
  *
  *    sum = 0
- *    Set[*(0..9)].each {|i| sum += i }
- *    # => Set[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
- *    sum # => 45
+ *    Set[1, 2, 3].each {|i| sum += i }
+ *    sum => 6
  *
  *  With no block given, returns an Enumerator.
  */
