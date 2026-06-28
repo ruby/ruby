@@ -1245,7 +1245,8 @@ set_reset_table_with_type(VALUE set, const struct st_hash_type *type)
  *    set0.compare_by_identity
  *    set0 == set1              # => false
  *
- *  Affects both +self+ and the compared object:
+ *  Also affects the inverse comparison <tt>set1 == set0</tt>
+ *  (but does not modify +set1+):
  *
  *    set1.compare_by_identity? # => false
  *    set1 == set0              # => false
