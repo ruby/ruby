@@ -997,12 +997,6 @@ static void set_merge_enum_into(VALUE set, VALUE arg);
  *
  *  A block of arity 2 accepts two arguments.
  *
- *  For a 1-element set, calls the block, but does not use its return value;
- *  returns a 1-element set whose single element is equal to +self+:
- *
- *    Set[0].divide {|i, j| true }  # => Set[Set[0]]
- *    Set[0].divide {|i, j| false } # => Set[Set[0]]
- *
  *  For a larger set, calls the block with some or all of the 2-element permutations
  *  of the elements of +self+:
  *
