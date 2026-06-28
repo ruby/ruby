@@ -1613,10 +1613,21 @@ set_contains_set_i(st_data_t item, st_data_t arg)
 
 /*
  *  call-seq:
- *    flatten! -> self
+ *    flatten! -> self or nil
  *
- *  Equivalent to Set#flatten, but replaces the receiver with the
- *  result in place.  Returns nil if no modifications were made.
+ *  Like #flatten, but if any changes were made
+ *  replaces +self+ with the result and returns +self+:
+ *
+ *    Set[Set[0, 1], Set[2, 3]].flatten!
+ *    # => Set[0, 1, 2, 3]
+ *    Set[Set[0, 1], Set[Set[2, 3], Set[3, 4]]].flatten!
+ *    # => Set[0, 1, 2, 3, 4]
+ *
+ *  Returns +nil+ if no changes were made:
+ *
+ *    Set[0, 1, 2].flatten! # => nil
+ *
+ *  Related: see {Methods for Assigning}[rdoc-ref:Set@Methods+for+Assigning].
  */
 static VALUE
 set_i_flatten_bang(VALUE set)
