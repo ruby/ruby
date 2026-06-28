@@ -1878,7 +1878,15 @@ set_hash_i(st_data_t item, st_data_t(arg))
  *  call-seq:
  *    hash -> integer
  *
- *  Returns hash code for set.
+ *  Returns the integer hash value for +self+.
+ *
+ *  Two sets with the same content have the same hash value
+ *  (and will compare using #eql?):
+ *
+ *    Set[0, 1].hash == Set[1, 0].hash # => true
+ *    Set[0, 1].hash == Set[0].hash    # => false
+ *
+ *  Related: {Methods for Querying}[rdoc-ref:Set@Methods+for+Querying].
  */
 static VALUE
 set_i_hash(VALUE set)
@@ -2138,6 +2146,8 @@ rb_set_size(VALUE set)
  *
  * === Methods for Querying
  *
+ * - #hash:
+ *   Returns the integer hash value for the set.
  * - #length (aliased as #size):
  *   Returns the count of elements.
  * - #empty?:
