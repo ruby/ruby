@@ -989,7 +989,9 @@ static void set_merge_enum_into(VALUE set, VALUE arg);
  *
  *  For a block that accepts two arguments,
  *  calls the block with some or all of the 2-element permutations
- *  of the elements of +self+:
+ *  divides +self+ into connected components based on the binary
+ *  relation defined by the block, calling the block with each 2-element
+ *  permutation of the elements of +self+:
  *
  *    set = Set[*0..9]
  *    # => Set[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
