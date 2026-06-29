@@ -5293,11 +5293,11 @@ w32_symlink(UINT cp, const char *src, const char *link)
        from the link's directory. */
     {
         WCHAR *sep;
-        int absolute =
+        int independent =
             (((wsrc[0] >= L'A' && wsrc[0] <= L'Z') ||
               (wsrc[0] >= L'a' && wsrc[0] <= L'z')) && wsrc[1] == L':') ||
             wsrc[0] == L'\\';
-        if (!absolute && (sep = wcsrchr(wlink, L'\\')) != NULL) {
+        if (!independent && (sep = wcsrchr(wlink, L'\\')) != NULL) {
             VALUE buf2;
             size_t dirlen = sep - wlink + 1;
             size_t srclen = wcslen(wsrc) + 1;
