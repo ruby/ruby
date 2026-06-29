@@ -1837,14 +1837,24 @@ rb_file_pipe_p(VALUE obj, VALUE fname)
 }
 
 /*
+ * :markup: markdown
+ *
  * call-seq:
- *   File.symlink?(filepath) -> true or false
+ *   File.symlink?(path) -> true or false
  *
- * Returns +true+ if +filepath+ points to a symbolic link, +false+ otherwise:
+ * Returns whether the entry at `path` is a symbolic link:
  *
- *   symlink = File.symlink('t.txt', 'symlink')
- *   File.symlink?('symlink') # => true
- *   File.symlink?('t.txt')   # => false
+ * ```ruby
+ * # Create paths.
+ * file_path = 'doc/extension.rdoc'         # => "doc/extension.rdoc"
+ * target_path = File.join('..', file_path) # => "../doc/extension.rdoc"
+ * link_path = 'lib/u.tmp'                  # => "lib/u.tmp"
+ * File.symlink?(link_path)                 # => false
+ * # Create link and verify.
+ * File.symlink(target_path, link_path)
+ * File.symlink?(link_path)                 # => true
+ * File.delete(link_path)                   # Clean up.
+ * ```
  *
  */
 
@@ -3511,15 +3521,27 @@ rb_file_s_link(VALUE klass, VALUE from, VALUE to)
 
 #ifdef HAVE_SYMLINK
 /*
+ * :markup: markdown
+ *
  *  call-seq:
- *     File.symlink(old_name, new_name)   -> 0
+ *    File.symlink(path, link_path) -> 0
  *
- *  Creates a symbolic link called <i>new_name</i> for the existing file
- *  <i>old_name</i>. Raises a NotImplemented exception on
- *  platforms that do not support symbolic links.
+ *  Not supported on some platforms.
  *
- *     File.symlink("testfile", "link2test")   #=> 0
+ *  Creates a symbolic link at `link_path` to the entry at `path`:
  *
+ *  ```ruby
+ *  # Create paths.
+ *  file_path = 'doc/extension.rdoc'             # => "doc/extension.rdoc"
+ *  target_path = File.join('..', file_path)     # => "../doc/extension.rdoc"
+ *  link_path = 'lib/u.tmp'                      # => "lib/u.tmp"
+ *  # Create link and verify.
+ *  File.symlink(target_path, link_path)
+ *  File.read(file_path) == File.read(link_path) # => true
+ *  File.delete(link_path)                       # Clean up.
+ *  ```
+ *
+ *  See also: ::read, ::readlink, ::symlink?.
  */
 
 static VALUE
@@ -3541,14 +3563,23 @@ rb_file_s_symlink(VALUE klass, VALUE from, VALUE to)
 
 #ifdef HAVE_READLINK
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     File.readlink(link_name)  ->  file_name
+ *     File.readlink(link_path) -> path
  *
- *  Returns the name of the file referenced by the given link.
- *  Not available on all platforms.
+ *  Returns the string path to the entry referenced by the given `link_path`:
  *
- *     File.symlink("testfile", "link2test")   #=> 0
- *     File.readlink("link2test")              #=> "testfile"
+ *  ```ruby
+ *  # Create paths.
+ *  file_path = 'doc/extension.rdoc'         # => "doc/extension.rdoc"
+ *  target_path = File.join('..', file_path) # => "../doc/extension.rdoc"
+ *  link_path = 'lib/u.tmp'                  # => "lib/u.tmp"
+ *  File.symlink(target_path, link_path)
+ *  File.readlink(link_path)                 # => "../doc/extension.rdoc"
+ *  File.delete(link_path)                   # Clean up.
+ *  ```
+ *
  */
 
 static VALUE
@@ -6415,18 +6446,24 @@ rb_stat_p(VALUE obj)
 }
 
 /*
+ *  :markup: markdown
+ *
  *  call-seq:
- *     stat.symlink?    -> true or false
+ *    symlink? -> true or false
  *
- *  Returns <code>true</code> if <i>stat</i> is a symbolic link,
- *  <code>false</code> if it isn't or if the operating system doesn't
- *  support this feature. As File::stat automatically follows symbolic
- *  links, #symlink? will always be <code>false</code> for an object
- *  returned by File::stat.
+ *  Returns whether the entry in `self` is a symbolic link:
  *
- *     File.symlink("testfile", "alink")   #=> 0
- *     File.stat("alink").symlink?         #=> false
- *     File.lstat("alink").symlink?        #=> true
+ *  ```ruby
+ *  path = 'doc/t.tmp'
+ *  link_path = 'lib/u.tmp'
+ *  File.write(path, 'foo')
+ *  File.symlink(path, link_path)
+ *  File.stat(path).symlink?       # => false
+ *  File.stat(link_path).symlink?  # Raises Errno::ENOENT; entry is not a file.
+ *  File.lstat(link_path).symlink? # => true
+ *  File.delete(path)
+ *  File.delete(link_path)
+ *  ```
  *
  */
 
