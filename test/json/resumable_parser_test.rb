@@ -247,6 +247,17 @@ class JSONResumageParserTest < Test::Unit::TestCase
     assert_partial_value([1, { "a" => 1, "b" => { "c" => nil } }], '[1, { "a": 1, "b": { "c"')
   end
 
+  def test_partial_value_collapses_nested_incomplete_containers
+    # partial_value rebuilds the open containers on a scratch value stack; folding
+    # an empty inner container pushes a value, so that stack must hold more than its
+    # live size or the push reallocates the scratch buffer.
+    assert_partial_value({ "abc" => {} }, '{"abc":{"d')
+    assert_partial_value({ "a" => { "b" => { "c" => {} } } }, '{"a":{"b":{"c":{"e')
+    assert_partial_value([1, { "a" => {} }], '[1,{"a":{"d')
+    assert_partial_value({ "a" => [1, { "b" => [2, { "c" => nil }] }] }, '{"a":[1,{"b":[2,{"c"')
+    assert_partial_value([1, [2, [3, { "x" => nil }]]], '[1,[2,[3,{"x":[')
+  end
+
   def test_partial_value_issue_1005
     data = <<~JSON
       [

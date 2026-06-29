@@ -2625,11 +2625,16 @@ static VALUE cResumableParser_partial_value_body(VALUE self)
         missing_object_value = 1;
     }
 
-    // Copy the value stack as we need to mutate it.
+    // Copy the value stack as we need to mutate it. The collapse loop folds each
+    // open container by popping its entries and pushing the single result, so a
+    // parent always reclaims its child's slot; head exceeds its live size by at
+    // most one, either for the missing-value placeholder pushed below or for the
+    // result of folding an empty innermost container. That one spare slot keeps
+    // rvalue_stack_push from growing (reallocating) this ALLOCV buffer.
     long capa = parser.value_stack.head;
-    parser.value_stack.capa = (capa + missing_object_value);
-    VALUE tmpbuf, *value_stack_buffer = ALLOCV_N(VALUE, tmpbuf, capa + missing_object_value);
-    MEMCPY(value_stack_buffer, parser.value_stack.ptr, VALUE, parser.value_stack.capa);
+    parser.value_stack.capa = capa + 1;
+    VALUE tmpbuf, *value_stack_buffer = ALLOCV_N(VALUE, tmpbuf, parser.value_stack.capa);
+    MEMCPY(value_stack_buffer, parser.value_stack.ptr, VALUE, capa);
     parser.value_stack.ptr = value_stack_buffer;
 
     JSON_ParserState *state = &parser.state;
