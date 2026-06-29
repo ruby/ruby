@@ -2,6 +2,21 @@
 use super::*;
 
 #[cfg(test)]
+mod size_tests {
+    use super::*;
+
+    #[test]
+    fn test_size_of_insn() {
+        assert_eq!(std::mem::size_of::<Insn>(), 120);
+    }
+
+    #[test]
+    fn test_size_of_type() {
+        assert_eq!(std::mem::size_of::<Type>(), 24);
+    }
+}
+
+#[cfg(test)]
 mod snapshot_tests {
     use super::*;
     use insta::assert_snapshot;
