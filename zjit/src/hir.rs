@@ -1145,7 +1145,7 @@ pub enum Insn {
         args: Vec<InsnId>,
         state: InsnId,
         leaf: bool,
-        return_type: Option<Type>,  // None for unannotated builtins
+        return_type: Type,  // BasicObject for unannotated builtins
     },
 
     /// Set up frame. Remember the address as the JIT entry for the insn_idx in `jit_entry_insns()[jit_entry_idx]`.
@@ -2637,8 +2637,8 @@ enum IseqReturn {
     Value(VALUE),
     LocalVariable(u32),
     Receiver,
-    // Builtin descriptor and return type (if known)
-    InvokeLeafBuiltin(*const rb_builtin_function, Option<Type>),
+    // Builtin descriptor and return type
+    InvokeLeafBuiltin(*const rb_builtin_function, Type),
 }
 
 unsafe extern "C" {
@@ -2708,8 +2708,7 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<InsnId>, ci_flags:
             if !leaf { return None; }
             // Check if this builtin is annotated
             let return_type = ZJITState::get_method_annotations()
-                .get_builtin_properties(bf)
-                .map(|props| props.return_type);
+                .get_builtin_return_type(bf);
             Some(IseqReturn::InvokeLeafBuiltin(bf, return_type))
         }
         _ => None,
@@ -3130,7 +3129,7 @@ impl Function {
             Insn::InvokeBlock { .. } => types::BasicObject,
             Insn::InvokeBlockIfunc { .. } => types::BasicObject,
             Insn::InvokeProc { .. } => types::BasicObject,
-            Insn::InvokeBuiltin { return_type, .. } => return_type.unwrap_or(types::BasicObject),
+            Insn::InvokeBuiltin { return_type, .. } => *return_type,
             Insn::Defined { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
             Insn::DefinedIvar { pushval, .. } => Type::from_value(*pushval).union(types::NilClass),
             Insn::GetConstant { .. } => types::BasicObject,
@@ -9040,8 +9039,7 @@ fn add_iseq_to_hir(
 
                     // Check if this builtin is annotated
                     let return_type = ZJITState::get_method_annotations()
-                        .get_builtin_properties(bf)
-                        .map(|props| props.return_type);
+                        .get_builtin_return_type(bf);
 
                     let builtin_attrs = unsafe { rb_jit_iseq_builtin_attrs(iseq) };
                     let leaf = builtin_attrs & BUILTIN_ATTR_LEAF != 0;
@@ -9076,8 +9074,7 @@ fn add_iseq_to_hir(
 
                     // Check if this builtin is annotated
                     let return_type = ZJITState::get_method_annotations()
-                        .get_builtin_properties(bf)
-                        .map(|props| props.return_type);
+                        .get_builtin_return_type(bf);
 
                     let builtin_attrs = unsafe { rb_jit_iseq_builtin_attrs(iseq) };
                     let leaf = builtin_attrs & BUILTIN_ATTR_LEAF != 0;
