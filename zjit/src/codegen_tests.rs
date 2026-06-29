@@ -566,7 +566,7 @@ fn test_setblockparam() {
         test { 1 }
     ");
     assert_contains_opcode("test", YARVINSN_setblockparam);
-    assert_snapshot!(assert_compiles("test { 1 }"), @"3");
+    assert_snapshot!(assert_compiles_allowing_exits("test { 1 }"), @"3");
 }
 
 #[test]
@@ -581,7 +581,7 @@ fn test_setblockparam_nested_block() {
         end
         test { 1 }
     ");
-    assert_snapshot!(assert_compiles("test { 1 }"), @"3");
+    assert_snapshot!(assert_compiles_allowing_exits("test { 1 }"), @"3");
 }
 
 #[test]
@@ -594,7 +594,7 @@ fn test_getblockparamproxy_after_setblockparam() {
         test { 1 }
     ");
     assert_contains_opcode("test", YARVINSN_setblockparam);
-    assert_snapshot!(assert_compiles("test { 1 }"), @"3");
+    assert_snapshot!(assert_compiles_allowing_exits("test { 1 }"), @"3");
 }
 
 #[test]
@@ -6328,6 +6328,26 @@ fn test_getlocal_level_zero_after_setlocal_wc_0() {
           [v].pack("C*", buffer: b)
           b.size
         end
+        test
+    "#), @"2");
+}
+
+// Regression test for losing track of where locals are with --zjit-disable-hir-opt due
+// to lack of NoEPEscape patchpoint. Reduced from ruby-spec
+// https://github.com/Shopify/ruby/issues/970
+#[test]
+fn test_eval_with_hir_opt_disable() {
+    set_call_threshold(1);
+    crate::options::disable_hir_opt();
+    assert_snapshot!(inspect(r#"
+        def test
+          ofor = nil
+          n = 0
+          eval("n = 2")
+          raise unless ofor.nil? # commenting out this line dodges the bug
+          n
+        end
+        test
         test
     "#), @"2");
 }

@@ -4951,8 +4951,12 @@ impl Function {
         self.push_insn(block, Insn::PatchPoint { invariant: Invariant::MethodRedefined { klass: recv_class, method: method_id, cme }, state });
     }
 
-    /// Side exit back to the state after a block-backed send.
-    /// Using the pre-send snapshot would re-execute the send in the interpreter.
+    /// Side exit back to the state after a send. Using the pre-send snapshot would re-execute the
+    /// send in the interpreter.
+    ///
+    /// Any send could cause the caller's environment to escape, and this patchpoint scopes our
+    /// analysis to the cases where the environment remains not escaped across the send. The
+    /// patchpoint also protects against local modifications through `Kernel#eval` and friends.
     fn gen_post_send_no_ep_escape_patch_point(&mut self, block: BlockId, state: &FrameState, insn_idx: u32) {
         let iseq = state.iseq;
         let mut reload_state = state.clone();
@@ -8616,12 +8620,18 @@ fn add_iseq_to_hir(
                         let send = fun.push_insn(block, Insn::Send { recv, cd, block: None, args, state: exit_id, reason });
                         fun.push_insn(block, Insn::Jump(BranchEdge { target: join_block, args: vec![send] }));
                         state.stack_push(join_param);
+                        if !state.locals.is_empty() {
+                            fun.gen_post_send_no_ep_escape_patch_point(join_block, &state, insn_idx);
+                        }
                         // Continue compilation from the join block at the next instruction.
                         block = join_block;
                     } else {
                         // Maybe monomorphic; handled in type_specialize
                         let send = fun.push_insn(block, Insn::Send { recv, cd, block: None, args, state: exit_id, reason: Uncategorized(opcode) });
                         state.stack_push(send);
+                        if !state.locals.is_empty() {
+                            fun.gen_post_send_no_ep_escape_patch_point(block, &state, insn_idx);
+                        }
                     }
                 }
                 YARVINSN_send => {
@@ -8652,14 +8662,14 @@ fn add_iseq_to_hir(
                     };
                     let send = fun.push_insn(block, Insn::Send { recv, cd, block: block_handler, args, state: exit_id, reason: Uncategorized(opcode) });
                     state.stack_push(send);
+                    if !state.locals.is_empty() {
+                        fun.gen_post_send_no_ep_escape_patch_point(block, &state, insn_idx);
+                    }
 
                     if let Some(BlockHandler::BlockIseq(_)) = block_handler {
                         // Reload locals that may have been modified by the blockiseq.
                         // TODO: Avoid reloading locals that are not referenced by the blockiseq
                         // or not used after this. Max thinks we could eventually DCE them.
-                        if !ep_escaped && !state.locals.is_empty() {
-                            fun.gen_post_send_no_ep_escape_patch_point(block, &state, insn_idx);
-                        }
                         let mut base: Option<InsnId> = None;
                         for local_idx in 0..state.locals.len() {
                             let ep_offset = local_idx_to_ep_offset(iseq, local_idx);
@@ -8700,12 +8710,12 @@ fn add_iseq_to_hir(
                     let recv = state.stack_pop()?;
                     let send_forward = fun.push_insn(block, Insn::SendForward { recv, cd, blockiseq, args, state: exit_id, reason: SendForwardNotSpecialized });
                     state.stack_push(send_forward);
+                    if !state.locals.is_empty() {
+                        fun.gen_post_send_no_ep_escape_patch_point(block, &state, insn_idx);
+                    }
 
                     if !blockiseq.is_null() {
                         // Reload locals that may have been modified by the blockiseq.
-                        if !ep_escaped && !state.locals.is_empty() {
-                            fun.gen_post_send_no_ep_escape_patch_point(block, &state, insn_idx);
-                        }
                         let mut base: Option<InsnId> = None;
                         for local_idx in 0..state.locals.len() {
                             let ep_offset = local_idx_to_ep_offset(iseq, local_idx);
@@ -8743,14 +8753,14 @@ fn add_iseq_to_hir(
                     let blockiseq: IseqPtr = get_arg(pc, 1).as_ptr();
                     let result = fun.push_insn(block, Insn::InvokeSuper { recv, cd, blockiseq, args, state: exit_id, reason: Uncategorized(opcode) });
                     state.stack_push(result);
+                    if !state.locals.is_empty() {
+                        fun.gen_post_send_no_ep_escape_patch_point(block, &state, insn_idx);
+                    }
 
                     if !blockiseq.is_null() {
                         // Reload locals that may have been modified by the blockiseq.
                         // TODO: Avoid reloading locals that are not referenced by the blockiseq
                         // or not used after this. Max thinks we could eventually DCE them.
-                        if !ep_escaped && !state.locals.is_empty() {
-                            fun.gen_post_send_no_ep_escape_patch_point(block, &state, insn_idx);
-                        }
                         let mut base: Option<InsnId> = None;
                         for local_idx in 0..state.locals.len() {
                             let ep_offset = local_idx_to_ep_offset(iseq, local_idx);
@@ -8790,14 +8800,14 @@ fn add_iseq_to_hir(
                     let recv = state.stack_pop()?;
                     let result = fun.push_insn(block, Insn::InvokeSuperForward { recv, cd, blockiseq, args, state: exit_id, reason: InvokeSuperForwardNotSpecialized });
                     state.stack_push(result);
+                    if !state.locals.is_empty() {
+                        fun.gen_post_send_no_ep_escape_patch_point(block, &state, insn_idx);
+                    }
 
                     if !blockiseq.is_null() {
                         // Reload locals that may have been modified by the blockiseq.
                         // TODO: Avoid reloading locals that are not referenced by the blockiseq
                         // or not used after this. Max thinks we could eventually DCE them.
-                        if !ep_escaped && !state.locals.is_empty() {
-                            fun.gen_post_send_no_ep_escape_patch_point(block, &state, insn_idx);
-                        }
                         let mut base: Option<InsnId> = None;
                         for local_idx in 0..state.locals.len() {
                             let ep_offset = local_idx_to_ep_offset(iseq, local_idx);
