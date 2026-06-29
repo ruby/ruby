@@ -7,7 +7,7 @@ mod size_tests {
 
     #[test]
     fn test_size_of_insn() {
-        assert_eq!(std::mem::size_of::<Insn>(), 96);
+        assert_eq!(std::mem::size_of::<Insn>(), 88);
     }
 
     #[test]

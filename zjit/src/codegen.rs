@@ -661,7 +661,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::InvokeBlock { cd, state, reason, .. } => gen_invokeblock(jit, asm, cd, &function.frame_state(state), reason),
         Insn::InvokeBlockIfunc { cd, block_handler, args, state, .. } => gen_invokeblock_ifunc(jit, asm, *cd, opnd!(block_handler), opnds!(args), &function.frame_state(*state)),
         Insn::InvokeProc { recv, args, state, kw_splat } => gen_invokeproc(jit, asm, opnd!(recv), opnds!(args), *kw_splat, &function.frame_state(*state)),
-        Insn::InvokeBuiltin { bf, leaf, args, state, .. } => gen_invokebuiltin(jit, asm, &function.frame_state(*state), bf, *leaf, opnds!(args)),
+        Insn::InvokeBuiltin { bf, leaf, args, state, .. } => gen_invokebuiltin(jit, asm, &function.frame_state(*state), unsafe { &**bf }, *leaf, opnds!(args)),
         &Insn::EntryPoint { jit_entry_idx } => no_output!(gen_entry_point(jit, asm, jit_entry_idx)),
         Insn::Return { val } => no_output!(gen_return(asm, opnd!(val))),
         Insn::FixnumAdd { left, right, state } => gen_fixnum_add(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state)),
