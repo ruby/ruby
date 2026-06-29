@@ -2258,6 +2258,7 @@ int rb_signal_buff_size(void);
 int rb_signal_exec(rb_thread_t *th, int sig);
 void rb_threadptr_check_signal(rb_thread_t *mth);
 void rb_threadptr_signal_raise(rb_thread_t *th, int sig);
+void rb_threadptr_interrupt_raise(rb_thread_t *th);
 void rb_threadptr_signal_exit(rb_thread_t *th);
 int rb_threadptr_execute_interrupts(rb_thread_t *, int);
 void rb_threadptr_interrupt(rb_thread_t *th);
