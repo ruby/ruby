@@ -729,18 +729,6 @@ rb_shape_object_id(shape_id_t original_shape_id)
     return SHAPE_ID(shape, original_shape_id) | SHAPE_ID_FL_HAS_OBJECT_ID;
 }
 
-/*
- * This function is used for assertions where we don't want to increment
- * max_iv_count
- */
-static inline rb_shape_t *
-shape_get_next_iv_shape(rb_shape_t *shape, ID id)
-{
-    RUBY_ASSERT(!is_instance_id(id) || RTEST(rb_sym2str(ID2SYM(id))));
-    bool dont_care;
-    return get_next_shape_internal(shape, id, SHAPE_IVAR, &dont_care, true);
-}
-
 static bool
 shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
 {
@@ -1088,9 +1076,11 @@ shape_rebuild(rb_shape_t *initial_shape, rb_shape_t *dest_shape)
     }
 
     switch ((enum shape_type)dest_shape->type) {
-      case SHAPE_IVAR:
-        midway_shape = shape_get_next_iv_shape(midway_shape, dest_shape->edge_name);
+      case SHAPE_IVAR: {
+        bool dont_care;
+        midway_shape = get_next_shape_internal(midway_shape, dest_shape->edge_name, SHAPE_IVAR, &dont_care, true);
         break;
+      }
       case SHAPE_OBJ_ID:
       case SHAPE_ROOT:
         break;
