@@ -2520,7 +2520,7 @@ mod hir_opt_tests {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
 
-        let state = function.push_insn(entry, Insn::Snapshot { state: FrameState::new(std::ptr::null()) });
+        let state = function.push_insn(entry, Insn::Snapshot { state: Box::new(FrameState::new(std::ptr::null())) });
         // A nil constant is a NilClass, which is disjoint from Fixnum, so the guard below can
         // never pass and the optimizer infers its result as Empty.
         let nil = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
