@@ -468,10 +468,11 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
             // Compile all instructions
             for (insn_idx, &insn_id) in block.insns().enumerate() {
                 let insn = function.find(insn_id);
+                let perf_symbol = hir_perf_symbol_range_start(&mut asm, &insn);
 
-                match insn {
+                let result = match &insn {
                     Insn::CondBranch { val, if_true, if_false } => {
-                        let val_opnd = jit.get_opnd(val);
+                        let val_opnd = jit.get_opnd(*val);
                         let true_target = hir_to_lir[if_true.target.0].unwrap();
                         let false_target = hir_to_lir[if_false.target.0].unwrap();
 
@@ -490,6 +491,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                         asm.jmp(Target::Block(Box::new(false_branch)));
 
                         assert!(asm.current_block().insns.last().unwrap().is_terminator());
+                        Ok(())
                     }
                     Insn::Jump(target) => {
                         let lir_target = hir_to_lir[target.target.0].unwrap();
@@ -502,40 +504,38 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
 
                         // Jump should always be the last instruction in an HIR block
                         assert!(insn_idx == block.insns().len() - 1, "Jump must be the last instruction in HIR block");
+                        Ok(())
                     },
                     _ => {
-                        // Start a new perf range for the HIR instruction. For now, we do this only for
-                        // non-terminator instructions because LIR blocks must end with a terminator instruction.
-                        let perf_symbol = if get_option!(perf) == Some(PerfMap::HIR) && !insn.is_terminator() {
-                            let insn_name = format!("{insn}").split_whitespace().next().unwrap().to_string();
-                            Some(perf_symbol_range_start(&mut asm, &insn_name))
-                        } else {
-                            None
-                        };
+                        gen_insn(cb, &mut jit, &mut asm, function, insn_id, &insn)
+                    }
+                };
 
-                        let result = gen_insn(cb, &mut jit, &mut asm, function, insn_id, &insn);
-
-                        // Close the current perf range for the HIR instruction.
-                        if let Some(perf_symbol) = &perf_symbol {
-                            perf_symbol_range_end(&mut asm, perf_symbol);
-                        }
-
-                        if let Err(last_snapshot) = result {
-                            debug!("ZJIT: gen_function: Failed to compile insn: {insn_id} {insn}. Generating side-exit.");
-                            gen_incr_counter(&mut asm, exit_counter_for_unhandled_hir_insn(&insn));
-                            let reason = match insn {
-                                Insn::Throw { .. }         => SideExitReason::UnhandledHIRThrow,
-                                Insn::InvokeBuiltin { .. } => SideExitReason::UnhandledHIRInvokeBuiltin,
-                                _                          => SideExitReason::UnhandledHIRUnknown(insn_id),
-                            };
-                            gen_side_exit(&mut jit, &mut asm, &reason, None, &function.frame_state(last_snapshot));
-                            // Don't bother generating code after a side-exit. We won't run it.
-                            // TODO(max): Generate ud2 or equivalent.
-                            break;
-                        };
-                        // It's fine; we generated the instruction
+                // Close the current perf range for the HIR instruction.
+                if let Some(perf_symbol) = &perf_symbol {
+                    let current_block_ends_with_terminator =
+                        asm.current_block().insns.last().is_some_and(|insn| insn.is_terminator());
+                    if result.is_ok() && insn.is_terminator() && current_block_ends_with_terminator {
+                        perf_symbol_range_end_at_block_end(&mut asm, perf_symbol);
+                    } else {
+                        perf_symbol_range_end(&mut asm, perf_symbol);
                     }
                 }
+
+                if let Err(last_snapshot) = result {
+                    debug!("ZJIT: gen_function: Failed to compile insn: {insn_id} {insn}. Generating side-exit.");
+                    gen_incr_counter(&mut asm, exit_counter_for_unhandled_hir_insn(&insn));
+                    let reason = match insn {
+                        Insn::Throw { .. }         => SideExitReason::UnhandledHIRThrow,
+                        Insn::InvokeBuiltin { .. } => SideExitReason::UnhandledHIRInvokeBuiltin,
+                        _                          => SideExitReason::UnhandledHIRUnknown(insn_id),
+                    };
+                    gen_side_exit(&mut jit, &mut asm, &reason, None, &function.frame_state(last_snapshot));
+                    // Don't bother generating code after a side-exit. We won't run it.
+                    // TODO(max): Generate ud2 or equivalent.
+                    break;
+                };
+                // It's fine; we generated the instruction
             }
             // Blocks should always end with control flow
             assert!(asm.current_block().insns.last().unwrap().is_terminator());
@@ -3824,6 +3824,16 @@ impl IseqCall {
 
 type PerfSymbol = Rc<RefCell<Option<(CodePtr, String)>>>;
 
+/// Start a HIR perf symbol range when --zjit-perf=hir is enabled.
+fn hir_perf_symbol_range_start(asm: &mut Assembler, insn: &Insn) -> Option<PerfSymbol> {
+    if get_option!(perf) == Some(PerfMap::HIR) {
+        let insn_name = format!("{insn}").split_whitespace().next().unwrap().to_string();
+        Some(perf_symbol_range_start(asm, &insn_name))
+    } else {
+        None
+    }
+}
+
 /// Mark the start of a perf symbol range via pos_marker.
 /// Returns a handle to pass to perf_symbol_range_end.
 pub fn perf_symbol_range_start(asm: &mut Assembler, symbol_name: &str) -> PerfSymbol {
@@ -3846,6 +3856,20 @@ pub fn perf_symbol_range_end(asm: &mut Assembler, perf_symbol: &PerfSymbol) {
             let start_addr = start.raw_addr(cb);
             let code_size = end.raw_addr(cb) - start_addr;
             register_with_perf(name, start_addr, code_size);
+        }
+    });
+}
+
+/// Mark the end of a perf symbol range at the end of the current LIR block.
+pub fn perf_symbol_range_end_at_block_end(asm: &mut Assembler, perf_symbol: &PerfSymbol) {
+    let current = perf_symbol.clone();
+    asm.pos_marker_at_block_end(move |end, cb| {
+        if let Some((start, name)) = current.borrow_mut().take() {
+            let start_addr = start.raw_addr(cb);
+            let end_addr = end.raw_addr(cb);
+            if start_addr < end_addr {
+                register_with_perf(name, start_addr, end_addr - start_addr);
+            }
         }
     });
 }
