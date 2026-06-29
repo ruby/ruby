@@ -827,10 +827,11 @@ class TestFileExhaustive < Test::Unit::TestCase
     def test_realpath_mount_point
       vol = IO.popen(["mountvol", DRIVE, "/l"], &:read).strip
       Dir.mkdir(mnt = File.join(@dir, mntpnt = "mntpnt"))
-      system("mountvol", mntpnt, vol, chdir: @dir)
+      err = IO.popen(%W"mountvol #{mntpnt} #{vol}", chdir: @dir, err: %i[child out], &:read)
+      omit err unless $?.success?
       assert_equal(mnt, File.realpath(mnt))
     ensure
-      system("mountvol", mntpnt, "/d", chdir: @dir)
+      system("mountvol", mntpnt, "/d", chdir: @dir, out: IO::NULL, err: IO::NULL)
     end
   end
 
