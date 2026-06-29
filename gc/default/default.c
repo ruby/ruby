@@ -308,8 +308,12 @@ static ruby_gc_params_t gc_params = {
 #define RGENGC_DEBUG       0
 #endif
 #endif
-#if RGENGC_DEBUG < 0 && !defined(_MSC_VER)
+#if RGENGC_DEBUG < 0
+# if !defined(_MSC_VER)
 # define RGENGC_DEBUG_ENABLED(level) (-(RGENGC_DEBUG) >= (level) && ruby_rgengc_debug >= (level))
+# else
+# define RGENGC_DEBUG_ENABLED(level) (ruby_rgengc_debug >= (level))
+# endif
 #elif defined(HAVE_VA_ARGS_MACRO)
 # define RGENGC_DEBUG_ENABLED(level) ((RGENGC_DEBUG) >= (level))
 #else
