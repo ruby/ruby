@@ -16968,6 +16968,7 @@ mod hir_opt_tests {
         // the HIR. The auto-compile creates version 1, and hir_string() creates version 2
         // (= MAX_ISEQ_VERSIONS), so this is the final version.
         set_call_threshold(3);
+        set_max_versions(2);
         eval("
             def greet_final(x) = x.to_s
             def test_final_version(flag)
@@ -17833,6 +17834,7 @@ mod hir_opt_tests {
 
     #[test]
     fn test_trigger_guard_type_recompilation() {
+        set_max_versions(2);
         eval("
             class C
               def f(x)

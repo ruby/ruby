@@ -15,6 +15,9 @@ pub enum PerfMap {
     HIR,
 }
 
+/// Default maximum number of compiled versions per ISEQ.
+pub const DEFAULT_MAX_VERSIONS: usize = 4;
+
 /// Default --zjit-num-profiles
 const DEFAULT_NUM_PROFILES: NumProfiles = 5;
 pub type NumProfiles = u16;
@@ -212,7 +215,7 @@ impl Default for Options {
             perf: None,
             allowed_iseqs: None,
             log_compiled_iseqs: None,
-            max_versions: 2,
+            max_versions: DEFAULT_MAX_VERSIONS,
             inline_threshold: DEFAULT_INLINE_THRESHOLD,
             inline_budget: DEFAULT_INLINE_BUDGET as InlineBudget,
             inline_deny: HashSet::new(),
@@ -632,6 +635,13 @@ pub fn set_call_threshold(call_threshold: CallThreshold) {
     unsafe { rb_zjit_call_threshold = call_threshold; }
     rb_zjit_prepare_options();
     update_profile_threshold();
+}
+
+/// Update --zjit-max-versions for testing
+#[cfg(test)]
+pub fn set_max_versions(max_versions: usize) {
+    rb_zjit_prepare_options();
+    unsafe { OPTIONS.as_mut().unwrap().max_versions = max_versions; }
 }
 
 /// Update --zjit-inline-threshold for testing
