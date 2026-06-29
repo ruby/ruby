@@ -856,6 +856,19 @@ pub struct CCallWithFrameData {
     pub block: Option<BlockHandler>,
 }
 
+/// Payload of [`Insn::SendDirect`]. Boxed in the enum to keep `Insn` small.
+#[derive(Debug, Clone)]
+pub struct SendDirectData {
+    pub recv: InsnId,
+    pub cd: *const rb_call_data,
+    pub cme: *const rb_callable_method_entry_t,
+    pub iseq: IseqPtr,
+    pub args: Vec<InsnId>,
+    pub kw_bits: u32,
+    pub block: Option<BlockHandler>,
+    pub state: InsnId,
+}
+
 /// Payload of [`Insn::CCallVariadic`]. Boxed in the enum to keep `Insn` small.
 #[derive(Debug, Clone)]
 pub struct CCallVariadicData {
@@ -1106,16 +1119,7 @@ pub enum Insn {
     },
 
     /// Optimized ISEQ call
-    SendDirect {
-        recv: InsnId,
-        cd: *const rb_call_data,
-        cme: *const rb_callable_method_entry_t,
-        iseq: IseqPtr,
-        args: Vec<InsnId>,
-        kw_bits: u32,
-        block: Option<BlockHandler>,
-        state: InsnId,
-    },
+    SendDirect(Box<SendDirectData>),
 
     /// Push a lighter weight frame used for inlined methods.
     PushInlineFrame {
@@ -1448,7 +1452,6 @@ macro_rules! for_each_operand_impl {
             }
             Insn::Send { recv, args, state, .. }
             | Insn::SendForward { recv, args, state, .. }
-            | Insn::SendDirect { recv, args, state, .. }
             | Insn::PushInlineFrame { recv, args, state, .. }
             | Insn::InvokeBuiltin { recv, args, state, .. }
             | Insn::InvokeSuper { recv, args, state, .. }
@@ -1458,9 +1461,14 @@ macro_rules! for_each_operand_impl {
                 $visit_many!(args);
                 $visit_one!(*state);
             }
-            // CCallWithFrame/CCallVariadic carry their operands behind a Box, which
-            // stable Rust can't destructure in a pattern. visit_one takes a place, so
+            // SendDirect/CCallWithFrame/CCallVariadic carry their operands behind a Box,
+            // which stable Rust can't destructure in a pattern. visit_one takes a place, so
             // a box field works the same as the deref'd bindings used by other arms.
+            Insn::SendDirect(insn) => {
+                $visit_one!(insn.recv);
+                $visit_many!(insn.args);
+                $visit_one!(insn.state);
+            }
             Insn::CCallWithFrame(insn) => {
                 $visit_one!(insn.recv);
                 $visit_many!(insn.args);
@@ -1727,7 +1735,7 @@ impl Insn {
             Insn::InvokeSuperForward { .. } => effects::Any,
             Insn::InvokeBlock { .. } => effects::Any,
             Insn::InvokeBlockIfunc { .. } => effects::Any,
-            Insn::SendDirect { .. } => effects::Any,
+            Insn::SendDirect(_) => effects::Any,
             // TODO (nirvdrum 2026-05-28): Revisit when PushInlineFrame is
             // actually lightweight. The frame writes here pay for the spill
             // ceremony in the current full frame-push codegen. A lightweight
@@ -2042,7 +2050,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::FixnumAref { recv, index } => write!(f, "FixnumAref {recv}, {index}"),
             Insn::Jump(target) => { write!(f, "Jump {target}") }
             Insn::CondBranch { val, if_true, if_false } => { write!(f, "CondBranch {val}, {if_true}, {if_false}") },
-            Insn::SendDirect { recv, cme, iseq, args, block, .. } => {
+            Insn::SendDirect(insn) => {
+                let SendDirectData { recv, cme, iseq, args, block, .. } = &**insn;
                 let blockiseq = block.map(|bh| match bh { BlockHandler::BlockIseq(iseq) => iseq, BlockHandler::BlockArg => unreachable!() });
                 let method_name = unsafe { (**cme).called_id };
                 write!(f, "SendDirect {recv}, {:p}, :{} ({:?})", self.ptr_map.map_ptr(&blockiseq), method_name, self.ptr_map.map_ptr(iseq))?;
@@ -3087,7 +3096,7 @@ impl Function {
             Insn::FixnumLShift { .. } => types::Fixnum,
             Insn::FixnumRShift { .. } => types::Fixnum,
             Insn::PutSpecialObject { .. } => types::BasicObject,
-            Insn::SendDirect { .. } => types::BasicObject,
+            Insn::SendDirect(_) => types::BasicObject,
             Insn::Send { .. } => types::BasicObject,
             Insn::SendForward { .. } => types::BasicObject,
             Insn::InvokeSuper { .. } => types::BasicObject,
@@ -3701,9 +3710,14 @@ impl Function {
     /// Try trivially inlining the method. If we can't, emit a SendDirect instruction instead and
     /// leave it to the general-purpose inliner to handle.
     fn try_inline_send_direct(&mut self, block: BlockId, insn: Insn) -> InsnId {
-        let Insn::SendDirect { recv, iseq, cd, ref args, state, .. } = insn else {
+        let Insn::SendDirect(data) = &insn else {
             panic!("try_inline_send_direct called with non-SendDirect instruction");
         };
+        let recv = data.recv;
+        let iseq = data.iseq;
+        let cd = data.cd;
+        let state = data.state;
+        let args = &data.args;
         // The trivial inliner runs first to handle simple cases (constant returns,
         // parameter returns, etc.) without frame push/pop overhead. The general
         // inliner then handles more complex methods that require full inlining.
@@ -3857,7 +3871,7 @@ impl Function {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
                             }
 
-                            let replacement = self.try_inline_send_direct(block, Insn::SendDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, block: send_block });
+                            let replacement = self.try_inline_send_direct(block, Insn::SendDirect(Box::new(SendDirectData { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, block: send_block })));
                             self.make_equal_to(insn_id, replacement);
                         } else if !has_block && def_type == VM_METHOD_TYPE_BMETHOD {
                             let procv = unsafe { rb_get_def_bmethod_proc((*cme).def) };
@@ -3900,7 +3914,7 @@ impl Function {
                                 recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
                             }
 
-                            let replacement = self.try_inline_send_direct(block, Insn::SendDirect { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, block: None });
+                            let replacement = self.try_inline_send_direct(block, Insn::SendDirect(Box::new(SendDirectData { recv, cd, cme, iseq, args: processed_args, kw_bits, state: send_state, block: None })));
                             self.make_equal_to(insn_id, replacement);
                         } else if !has_block && def_type == VM_METHOD_TYPE_IVAR && args.is_empty() {
                             // Check if we're accessing ivars of a Class or Module object as they require single-ractor mode.
@@ -4229,7 +4243,7 @@ impl Function {
                             emit_super_call_guards(self, block, super_cme, current_cme, mid, state, frame_state.iseq);
 
                             // Use SendDirect with the super method's CME and ISEQ.
-                            let replacement = self.try_inline_send_direct(block, Insn::SendDirect {
+                            let replacement = self.try_inline_send_direct(block, Insn::SendDirect(Box::new(SendDirectData {
                                 recv,
                                 cd,
                                 cme: super_cme,
@@ -4238,7 +4252,7 @@ impl Function {
                                 kw_bits,
                                 state: send_state,
                                 block: None,
-                            });
+                            })));
                             self.make_equal_to(insn_id, replacement);
 
                         } else if def_type == VM_METHOD_TYPE_CFUNC {
@@ -4508,18 +4522,18 @@ impl Function {
             let mut search_start = 0;
             loop {
                 let Some(offset) = self.blocks[block.0].insns[search_start..].iter()
-                    .position(|&id| matches!(self.find(id), Insn::SendDirect { .. }))
+                    .position(|&id| matches!(self.find(id), Insn::SendDirect(..)))
                 else {
                     break;
                 };
                 let send_pos = search_start + offset;
 
                 let send_insn_id = self.blocks[block.0].insns[send_pos];
-                let Insn::SendDirect { recv, cd: _, cme, iseq, args, kw_bits, block: call_block, state }
-                    = self.find(send_insn_id)
+                let Insn::SendDirect(data) = self.find(send_insn_id)
                 else {
                     unreachable!("position {send_insn_id} is not a SendDirect");
                 };
+                let SendDirectData { recv, cme, iseq, args, kw_bits, block: call_block, state, .. } = *data;
                 // SendDirect invariant: block is either None or BlockIseq.
                 // BlockArg is rejected upstream during type specialization.
                 let blockiseq: Option<IseqPtr> = call_block.map(|bh| match bh {
@@ -4591,7 +4605,7 @@ impl Function {
                 // pre-Send body, before the PushLightweightFrame and Jump we add
                 // last).
                 let tail = self.blocks[block.0].insns.split_off(send_pos);
-                debug_assert!(matches!(self.find(tail[0]), Insn::SendDirect { .. }));
+                debug_assert!(matches!(self.find(tail[0]), Insn::SendDirect(..)));
 
                 // Pick the callee body entry block matching how many optional
                 // parameters the caller actually filled. add_iseq_to_hir returns one
@@ -6466,8 +6480,7 @@ impl Function {
                 self.assert_subtype(insn_id, allow_nil, types::BoolExact)
             }
             // Instructions with recv and a Vec of Ruby objects
-            Insn::SendDirect { recv, ref args, .. }
-            | Insn::PushInlineFrame { recv, ref args, .. }
+            Insn::PushInlineFrame { recv, ref args, .. }
             | Insn::Send { recv, ref args, .. }
             | Insn::SendForward { recv, ref args, .. }
             | Insn::InvokeSuper { recv, ref args, .. }
@@ -6477,6 +6490,13 @@ impl Function {
             | Insn::ArrayInclude { target: recv, elements: ref args, .. } => {
                 self.assert_subtype(insn_id, recv, types::BasicObject)?;
                 for &arg in args {
+                    self.assert_subtype(insn_id, arg, types::BasicObject)?;
+                }
+                Ok(())
+            }
+            Insn::SendDirect(insn) => {
+                self.assert_subtype(insn_id, insn.recv, types::BasicObject)?;
+                for &arg in &insn.args {
                     self.assert_subtype(insn_id, arg, types::BasicObject)?;
                 }
                 Ok(())
