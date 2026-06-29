@@ -5842,8 +5842,8 @@ pub(crate) mod hir_build_tests {
  mod control_flow_info_tests {
      use super::*;
 
-     fn edge(target: BlockId) -> BranchEdge {
-         BranchEdge { target, args: vec![] }
+     fn edge(target: BlockId) -> Box<BranchEdge> {
+         Box::new(BranchEdge { target, args: vec![] })
      }
 
      #[test]
@@ -5925,8 +5925,8 @@ pub(crate) mod hir_build_tests {
      use super::*;
      use insta::assert_snapshot;
 
-     fn edge(target: BlockId) -> BranchEdge {
-         BranchEdge { target, args: vec![] }
+     fn edge(target: BlockId) -> Box<BranchEdge> {
+         Box::new(BranchEdge { target, args: vec![] })
      }
 
      fn assert_dominators_contains_self(function: &Function, dominators: &Dominators) {
@@ -6191,8 +6191,8 @@ mod loop_info_tests {
     use super::*;
     use insta::assert_snapshot;
 
-    fn edge(target: BlockId) -> BranchEdge {
-        BranchEdge { target, args: vec![] }
+    fn edge(target: BlockId) -> Box<BranchEdge> {
+        Box::new(BranchEdge { target, args: vec![] })
     }
 
     #[test]
@@ -6570,8 +6570,8 @@ mod iongraph_tests {
     use super::*;
     use insta::assert_snapshot;
 
-    fn edge(target: BlockId) -> BranchEdge {
-        BranchEdge { target, args: vec![] }
+    fn edge(target: BlockId) -> Box<BranchEdge> {
+        Box::new(BranchEdge { target, args: vec![] })
     }
 
     #[test]
