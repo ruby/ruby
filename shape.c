@@ -741,17 +741,6 @@ shape_get_next_iv_shape(rb_shape_t *shape, ID id)
     return get_next_shape_internal(shape, id, SHAPE_IVAR, &dont_care, true);
 }
 
-shape_id_t
-rb_shape_get_next_iv_shape(shape_id_t shape_id, ID id)
-{
-    rb_shape_t *shape = RSHAPE(shape_id);
-    rb_shape_t *next_shape = shape_get_next_iv_shape(shape, id);
-    if (!next_shape) {
-        return INVALID_SHAPE_ID;
-    }
-    return SHAPE_OFFSET(next_shape);
-}
-
 static bool
 shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
 {
