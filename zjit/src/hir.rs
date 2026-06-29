@@ -841,6 +841,35 @@ impl From<ID> for FieldName {
     }
 }
 
+/// Payload of [`Insn::CCallWithFrame`]. Boxed in the enum to keep `Insn` small.
+#[derive(Debug, Clone)]
+pub struct CCallWithFrameData {
+    pub cd: *const rb_call_data, // cd for falling back to Send
+    pub cfunc: *const u8,
+    pub recv: InsnId,
+    pub args: Vec<InsnId>,
+    pub cme: *const rb_callable_method_entry_t,
+    pub name: ID,
+    pub state: InsnId,
+    pub return_type: Type,
+    pub elidable: bool,
+    pub block: Option<BlockHandler>,
+}
+
+/// Payload of [`Insn::CCallVariadic`]. Boxed in the enum to keep `Insn` small.
+#[derive(Debug, Clone)]
+pub struct CCallVariadicData {
+    pub cfunc: *const u8,
+    pub recv: InsnId,
+    pub args: Vec<InsnId>,
+    pub cme: *const rb_callable_method_entry_t,
+    pub name: ID,
+    pub state: InsnId,
+    pub return_type: Type,
+    pub elidable: bool,
+    pub block: Option<BlockHandler>,
+}
+
 /// An instruction in the SSA IR. The output of an instruction is referred to by the index of
 /// the instruction ([`InsnId`]). SSA form enables this, and [`UnionFind`] ([`Function::find`])
 /// helps with editing.
@@ -1014,32 +1043,11 @@ pub enum Insn {
     CCall { cfunc: *const u8, recv: InsnId, args: Vec<InsnId>, name: ID, owner: VALUE, return_type: Type, elidable: bool },
 
     /// Call a C function that pushes a frame
-    CCallWithFrame {
-        cd: *const rb_call_data, // cd for falling back to Send
-        cfunc: *const u8,
-        recv: InsnId,
-        args: Vec<InsnId>,
-        cme: *const rb_callable_method_entry_t,
-        name: ID,
-        state: InsnId,
-        return_type: Type,
-        elidable: bool,
-        block: Option<BlockHandler>,
-    },
+    CCallWithFrame(Box<CCallWithFrameData>),
 
     /// Call a variadic C function with signature: func(int argc, VALUE *argv, VALUE recv)
     /// This handles frame setup, argv creation, and frame teardown all in one
-    CCallVariadic {
-        cfunc: *const u8,
-        recv: InsnId,
-        args: Vec<InsnId>,
-        cme: *const rb_callable_method_entry_t,
-        name: ID,
-        state: InsnId,
-        return_type: Type,
-        elidable: bool,
-        block: Option<BlockHandler>,
-    },
+    CCallVariadic(Box<CCallVariadicData>),
 
     /// Un-optimized fallback implementation (dynamic dispatch) for send-ish instructions
     /// Ignoring keyword arguments etc for now
@@ -1241,25 +1249,25 @@ macro_rules! for_each_operand_impl {
             | Insn::IncrCounterPtr { .. } => {}
 
             Insn::IsBlockGiven { lep } => {
-                $visit_one!(lep);
+                $visit_one!(*lep);
             }
             Insn::IsBlockParamModified { flags } => {
-                $visit_one!(flags);
+                $visit_one!(*flags);
             }
             Insn::CheckMatch { target, pattern, state, .. } => {
-                $visit_one!(target);
-                $visit_one!(pattern);
-                $visit_one!(state);
+                $visit_one!(*target);
+                $visit_one!(*pattern);
+                $visit_one!(*state);
             }
             Insn::PatchPoint { state, .. }
             | Insn::CheckInterrupts { state }
             | Insn::PutSpecialObject { state, .. }
             | Insn::GetBlockParam { state, .. }
             | Insn::GetConstantPath { state, .. } => {
-                $visit_one!(state);
+                $visit_one!(*state);
             }
             Insn::FixnumBitCheck { val, .. } => {
-                $visit_one!(val);
+                $visit_one!(*val);
             }
             Insn::ArrayMax { elements, state, .. }
             | Insn::ArrayMin { elements, state, .. }
@@ -1267,57 +1275,57 @@ macro_rules! for_each_operand_impl {
             | Insn::NewHash { elements, state, .. }
             | Insn::NewArray { elements, state, .. } => {
                 $visit_many!(elements);
-                $visit_one!(state);
+                $visit_one!(*state);
             }
             Insn::ArrayInclude { elements, target, state, .. } => {
                 $visit_many!(elements);
-                $visit_one!(target);
-                $visit_one!(state);
+                $visit_one!(*target);
+                $visit_one!(*state);
             }
             Insn::ArrayPackBuffer { elements, fmt, buffer, state, .. } => {
                 $visit_many!(elements);
-                $visit_one!(fmt);
+                $visit_one!(*fmt);
                 if let Some(buffer) = buffer {
-                    $visit_one!(buffer);
+                    $visit_one!(*buffer);
                 }
-                $visit_one!(state);
+                $visit_one!(*state);
             }
             Insn::DupArrayInclude { target, state, .. } => {
-                $visit_one!(target);
-                $visit_one!(state);
+                $visit_one!(*target);
+                $visit_one!(*state);
             }
             Insn::NewRange { low, high, state, .. }
             | Insn::NewRangeFixnum { low, high, state, .. } => {
-                $visit_one!(low);
-                $visit_one!(high);
-                $visit_one!(state);
+                $visit_one!(*low);
+                $visit_one!(*high);
+                $visit_one!(*state);
             }
             Insn::StringConcat { strings, state, .. } => {
                 $visit_many!(strings);
-                $visit_one!(state);
+                $visit_one!(*state);
             }
             Insn::StringGetbyte { string, index } => {
-                $visit_one!(string);
-                $visit_one!(index);
+                $visit_one!(*string);
+                $visit_one!(*index);
             }
             Insn::StringSetbyteFixnum { string, index, value } => {
-                $visit_one!(string);
-                $visit_one!(index);
-                $visit_one!(value);
+                $visit_one!(*string);
+                $visit_one!(*index);
+                $visit_one!(*value);
             }
             Insn::StringAppend { recv, other, state }
             | Insn::StringAppendCodepoint { recv, other, state } => {
-                $visit_one!(recv);
-                $visit_one!(other);
-                $visit_one!(state);
+                $visit_one!(*recv);
+                $visit_one!(*other);
+                $visit_one!(*state);
             }
             Insn::StringEqual { left, right } => {
-                $visit_one!(left);
-                $visit_one!(right);
+                $visit_one!(*left);
+                $visit_one!(*right);
             }
             Insn::ToRegexp { values, state, .. } => {
                 $visit_many!(values);
-                $visit_one!(state);
+                $visit_one!(*state);
             }
             Insn::RefineType { val, .. }
             | Insn::HasType { val, .. }
@@ -1325,7 +1333,7 @@ macro_rules! for_each_operand_impl {
             | Insn::Test { val }
             | Insn::SetLocal { val, .. }
             | Insn::BoxBool { val } => {
-                $visit_one!(val);
+                $visit_one!(*val);
             }
             Insn::SetGlobal { val, state, .. }
             | Insn::Defined { v: val, state, .. }
@@ -1340,14 +1348,14 @@ macro_rules! for_each_operand_impl {
             | Insn::IsMethodCfunc { val, state, .. }
             | Insn::ToNewArray { val, state }
             | Insn::BoxFixnum { val, state } => {
-                $visit_one!(val);
-                $visit_one!(state);
+                $visit_one!(*val);
+                $visit_one!(*state);
             }
             Insn::GuardGreaterEq { left, right, state, .. }
             | Insn::GuardLess { left, right, state, .. } => {
-                $visit_one!(left);
-                $visit_one!(right);
-                $visit_one!(state);
+                $visit_one!(*left);
+                $visit_one!(*right);
+                $visit_one!(*state);
             }
             Insn::Snapshot { state } => {
                 $visit_many!(state.stack);
@@ -1360,21 +1368,21 @@ macro_rules! for_each_operand_impl {
             | Insn::FixnumMod { left, right, state }
             | Insn::ArrayExtend { left, right, state }
             | Insn::FixnumLShift { left, right, state } => {
-                $visit_one!(left);
-                $visit_one!(right);
-                $visit_one!(state);
+                $visit_one!(*left);
+                $visit_one!(*right);
+                $visit_one!(*state);
             }
             Insn::FloatAdd { recv, other, state }
             | Insn::FloatSub { recv, other, state }
             | Insn::FloatMul { recv, other, state }
             | Insn::FloatDiv { recv, other, state } => {
-                $visit_one!(recv);
-                $visit_one!(other);
-                $visit_one!(state);
+                $visit_one!(*recv);
+                $visit_one!(*other);
+                $visit_one!(*state);
             }
             Insn::FloatToInt { recv, state } => {
-                $visit_one!(recv);
-                $visit_one!(state);
+                $visit_one!(*recv);
+                $visit_one!(*state);
             }
             Insn::FixnumLt { left, right }
             | Insn::FixnumLe { left, right }
@@ -1390,139 +1398,150 @@ macro_rules! for_each_operand_impl {
             | Insn::FixnumRShift { left, right }
             | Insn::IsBitEqual { left, right }
             | Insn::IsBitNotEqual { left, right } => {
-                $visit_one!(left);
-                $visit_one!(right);
+                $visit_one!(*left);
+                $visit_one!(*right);
             }
             Insn::Jump(BranchEdge { args, .. }) => {
                 $visit_many!(args);
             }
             Insn::CondBranch { val, if_true: BranchEdge { args: true_args, .. }, if_false: BranchEdge { args: false_args, .. } } => {
-                $visit_one!(val);
+                $visit_one!(*val);
                 $visit_many!(true_args);
                 $visit_many!(false_args);
             }
             Insn::ArrayDup { val, state }
             | Insn::Throw { val, state, .. }
             | Insn::HashDup { val, state } => {
-                $visit_one!(val);
-                $visit_one!(state);
+                $visit_one!(*val);
+                $visit_one!(*state);
             }
             Insn::ArrayAref { array, index } => {
-                $visit_one!(array);
-                $visit_one!(index);
+                $visit_one!(*array);
+                $visit_one!(*index);
             }
             Insn::ArrayAset { array, index, val } => {
-                $visit_one!(array);
-                $visit_one!(index);
-                $visit_one!(val);
+                $visit_one!(*array);
+                $visit_one!(*index);
+                $visit_one!(*val);
             }
             Insn::ArrayPop { array, state } => {
-                $visit_one!(array);
-                $visit_one!(state);
+                $visit_one!(*array);
+                $visit_one!(*state);
             }
             Insn::ArrayLength { array } => {
-                $visit_one!(array);
+                $visit_one!(*array);
             }
             Insn::AdjustBounds { index, length } => {
-                $visit_one!(index);
-                $visit_one!(length);
+                $visit_one!(*index);
+                $visit_one!(*length);
             }
             Insn::HashAref { hash, key, state } => {
-                $visit_one!(hash);
-                $visit_one!(key);
-                $visit_one!(state);
+                $visit_one!(*hash);
+                $visit_one!(*key);
+                $visit_one!(*state);
             }
             Insn::HashAset { hash, key, val, state } => {
-                $visit_one!(hash);
-                $visit_one!(key);
-                $visit_one!(val);
-                $visit_one!(state);
+                $visit_one!(*hash);
+                $visit_one!(*key);
+                $visit_one!(*val);
+                $visit_one!(*state);
             }
             Insn::Send { recv, args, state, .. }
             | Insn::SendForward { recv, args, state, .. }
-            | Insn::CCallVariadic { recv, args, state, .. }
-            | Insn::CCallWithFrame { recv, args, state, .. }
             | Insn::SendDirect { recv, args, state, .. }
             | Insn::PushInlineFrame { recv, args, state, .. }
             | Insn::InvokeBuiltin { recv, args, state, .. }
             | Insn::InvokeSuper { recv, args, state, .. }
             | Insn::InvokeSuperForward { recv, args, state, .. }
             | Insn::InvokeProc { recv, args, state, .. } => {
-                $visit_one!(recv);
+                $visit_one!(*recv);
                 $visit_many!(args);
-                $visit_one!(state);
+                $visit_one!(*state);
+            }
+            // CCallWithFrame/CCallVariadic carry their operands behind a Box, which
+            // stable Rust can't destructure in a pattern. visit_one takes a place, so
+            // a box field works the same as the deref'd bindings used by other arms.
+            Insn::CCallWithFrame(insn) => {
+                $visit_one!(insn.recv);
+                $visit_many!(insn.args);
+                $visit_one!(insn.state);
+            }
+            Insn::CCallVariadic(insn) => {
+                $visit_one!(insn.recv);
+                $visit_many!(insn.args);
+                $visit_one!(insn.state);
             }
             Insn::InvokeBlock { args, state, .. } => {
                 $visit_many!(args);
-                $visit_one!(state);
+                $visit_one!(*state);
             }
             Insn::InvokeBlockIfunc { block_handler, args, state, .. } => {
-                $visit_one!(block_handler);
+                $visit_one!(*block_handler);
                 $visit_many!(args);
-                $visit_one!(state);
+                $visit_one!(*state);
             }
             Insn::CCall { recv, args, .. } => {
-                $visit_one!(recv);
+                $visit_one!(*recv);
                 $visit_many!(args);
             }
             Insn::GetIvar { self_val, state, .. }
             | Insn::DefinedIvar { self_val, state, .. } => {
-                $visit_one!(self_val);
-                $visit_one!(state);
+                $visit_one!(*self_val);
+                $visit_one!(*state);
             }
             Insn::GetConstant { klass, allow_nil, state, .. } => {
-                $visit_one!(klass);
-                $visit_one!(allow_nil);
-                $visit_one!(state);
+                $visit_one!(*klass);
+                $visit_one!(*allow_nil);
+                $visit_one!(*state);
             }
             Insn::SetIvar { self_val, val, state, .. } => {
-                $visit_one!(self_val);
-                $visit_one!(val);
-                $visit_one!(state);
+                $visit_one!(*self_val);
+                $visit_one!(*val);
+                $visit_one!(*state);
             }
             Insn::GetClassVar { state, .. }
             | Insn::PopInlineFrame { state, .. } => {
-                $visit_one!(state);
+                $visit_one!(*state);
             }
             Insn::SetClassVar { val, state, .. } => {
-                $visit_one!(val);
-                $visit_one!(state);
+                $visit_one!(*val);
+                $visit_one!(*state);
             }
             Insn::ArrayPush { array, val, state } => {
-                $visit_one!(array);
-                $visit_one!(val);
-                $visit_one!(state);
+                $visit_one!(*array);
+                $visit_one!(*val);
+                $visit_one!(*state);
             }
             Insn::AnyToString { val, str, state, .. } => {
-                $visit_one!(val);
-                $visit_one!(str);
-                $visit_one!(state);
+                $visit_one!(*val);
+                $visit_one!(*str);
+                $visit_one!(*state);
             }
             Insn::LoadField { recv, .. } => {
-                $visit_one!(recv);
+                $visit_one!(*recv);
             }
             Insn::StoreField { recv, val, .. }
             | Insn::WriteBarrier { recv, val } => {
-                $visit_one!(recv);
-                $visit_one!(val);
+                $visit_one!(*recv);
+                $visit_one!(*val);
             }
             Insn::GetGlobal { state, .. }
             | Insn::GetSpecialSymbol { state, .. }
             | Insn::GetSpecialNumber { state, .. }
             | Insn::ObjectAllocClass { state, .. }
             | Insn::SideExit { state, .. } => {
-                $visit_one!(state);
+                $visit_one!(*state);
             }
             Insn::UnboxFixnum { val } => {
-                $visit_one!(val);
+                $visit_one!(*val);
             }
             Insn::FixnumAref { recv, index } => {
-                $visit_one!(recv);
-                $visit_one!(index);
+                $visit_one!(*recv);
+                $visit_one!(*index);
             }
             Insn::IsA { val, class } => {
-                $visit_one!(val);
-                $visit_one!(class);
+                $visit_one!(*val);
+                $visit_one!(*class);
             }
         }
     };
@@ -1565,21 +1584,21 @@ impl Insn {
 
     /// Call `f` on each operand (InsnId) of this instruction.
     pub fn for_each_operand(&self, mut f: impl FnMut(InsnId)) {
-        macro_rules! visit_one { ($id:expr) => { f(*$id) }; }
+        macro_rules! visit_one { ($p:expr) => { f($p) }; }
         macro_rules! visit_many { ($s:expr) => { for id in ($s).iter() { f(*id) } }; }
         for_each_operand_impl!(self, visit_one, visit_many);
     }
 
     /// Call `f` on a mutable reference to each operand (InsnId) of this instruction.
     pub fn for_each_operand_mut(&mut self, mut f: impl FnMut(&mut InsnId)) {
-        macro_rules! visit_one { ($id:expr) => { f($id) }; }
+        macro_rules! visit_one { ($p:expr) => { f(&mut $p) }; }
         macro_rules! visit_many { ($s:expr) => { for id in ($s).iter_mut() { f(id) } }; }
         for_each_operand_impl!(self, visit_one, visit_many);
     }
 
     /// Call `f` on each operand, short-circuiting on the first error.
     pub fn try_for_each_operand<E>(&self, mut f: impl FnMut(InsnId) -> Result<(), E>) -> Result<(), E> {
-        macro_rules! visit_one { ($id:expr) => { f(*$id)? }; }
+        macro_rules! visit_one { ($p:expr) => { f($p)? }; }
         macro_rules! visit_many { ($s:expr) => { for id in ($s).iter() { f(*id)? } }; }
         for_each_operand_impl!(self, visit_one, visit_many);
         Ok(())
@@ -1693,15 +1712,15 @@ impl Insn {
                     effects::Any
                 }
             },
-            Insn::CCallWithFrame { elidable, .. } => {
-                if *elidable {
+            Insn::CCallWithFrame(insn) => {
+                if insn.elidable {
                     Effect::write(abstract_heaps::Allocator)
                 }
                 else {
                     effects::Any
                 }
             },
-            Insn::CCallVariadic { .. } => effects::Any,
+            Insn::CCallVariadic(_) => effects::Any,
             Insn::Send { .. } => effects::Any,
             Insn::SendForward { .. } => effects::Any,
             Insn::InvokeSuper { .. } => effects::Any,
@@ -2173,7 +2192,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write_separated!(f, ", ", ", ", args);
                 Ok(())
             },
-            Insn::CCallWithFrame { cfunc, recv, args, name, cme, block, .. } => {
+            Insn::CCallWithFrame(insn) => {
+                let CCallWithFrameData { cfunc, recv, args, name, cme, block, .. } = &**insn;
                 write!(f, "CCallWithFrame {recv}, :{}@{:p}", qualified_method_name(unsafe { (**cme).owner }, *name), self.ptr_map.map_ptr(cfunc))?;
                 write_separated!(f, ", ", ", ", args);
                 match block {
@@ -2185,7 +2205,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 }
                 Ok(())
             },
-            Insn::CCallVariadic { cfunc, recv, args, name, cme, .. } => {
+            Insn::CCallVariadic(insn) => {
+                let CCallVariadicData { cfunc, recv, args, name, cme, .. } = &**insn;
                 write!(f, "CCallVariadic {recv}, :{}@{:p}", qualified_method_name(unsafe { (**cme).owner }, *name), self.ptr_map.map_ptr(cfunc))?;
                 write_separated!(f, ", ", ", ", args);
                 Ok(())
@@ -3026,9 +3047,9 @@ impl Function {
             Insn::NewRangeFixnum { .. } => types::RangeExact,
             Insn::ObjectAlloc { .. } => types::HeapBasicObject,
             Insn::ObjectAllocClass { class, .. } => Type::from_class(*class),
-            &Insn::CCallWithFrame { return_type, .. } => return_type,
+            Insn::CCallWithFrame(insn) => insn.return_type,
             Insn::CCall { return_type, .. } => *return_type,
-            &Insn::CCallVariadic { return_type, .. } => return_type,
+            Insn::CCallVariadic(insn) => insn.return_type,
             Insn::CheckMatch { .. } => types::BasicObject,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
             Insn::RefineType { val, new_type, .. } => self.type_of(*val).intersection(*new_type),
@@ -4280,7 +4301,7 @@ impl Function {
                                         if get_option!(stats) {
                                             self.count_not_inlined_cfunc(block, super_cme);
                                         }
-                                        self.push_insn(block, Insn::CCallWithFrame {
+                                        self.push_insn(block, Insn::CCallWithFrame(Box::new(CCallWithFrameData {
                                             cd,
                                             cfunc: cfunc_ptr,
                                             recv,
@@ -4291,7 +4312,7 @@ impl Function {
                                             return_type,
                                             elidable,
                                             block: None,
-                                        })
+                                        })))
                                     };
                                     self.make_equal_to(insn_id, ccall);
                                 }
@@ -4330,7 +4351,7 @@ impl Function {
                                         if get_option!(stats) {
                                             self.count_not_inlined_cfunc(block, super_cme);
                                         }
-                                        self.push_insn(block, Insn::CCallVariadic {
+                                        self.push_insn(block, Insn::CCallVariadic(Box::new(CCallVariadicData {
                                             cfunc: cfunc_ptr,
                                             recv,
                                             args: args.clone(),
@@ -4340,7 +4361,7 @@ impl Function {
                                             return_type,
                                             elidable,
                                             block: None,
-                                        })
+                                        })))
                                     };
                                     self.make_equal_to(insn_id, ccall);
                                 }
@@ -5152,7 +5173,7 @@ impl Function {
                     if get_option!(stats) {
                         fun.count_not_inlined_cfunc(block, cme);
                     }
-                    let ccall = fun.push_insn(block, Insn::CCallWithFrame {
+                    let ccall = fun.push_insn(block, Insn::CCallWithFrame(Box::new(CCallWithFrameData {
                         cd,
                         cfunc: cfunc_ptr,
                         recv,
@@ -5163,7 +5184,7 @@ impl Function {
                         return_type,
                         elidable,
                         block: blockiseq.map(BlockHandler::BlockIseq),
-                    });
+                    })));
                     fun.make_equal_to(send_insn_id, ccall);
                     Ok(())
                 }
@@ -5219,7 +5240,7 @@ impl Function {
                         fun.count_not_inlined_cfunc(block, cme);
                     }
 
-                    let ccall = fun.push_insn(block, Insn::CCallVariadic {
+                    let ccall = fun.push_insn(block, Insn::CCallVariadic(Box::new(CCallVariadicData {
                         cfunc: cfunc_ptr,
                         recv,
                         args,
@@ -5229,7 +5250,7 @@ impl Function {
                         return_type,
                         elidable,
                         block: blockiseq.map(BlockHandler::BlockIseq),
-                    });
+                    })));
 
                     fun.make_equal_to(send_insn_id, ccall);
                     Ok(())
@@ -6451,13 +6472,25 @@ impl Function {
             | Insn::SendForward { recv, ref args, .. }
             | Insn::InvokeSuper { recv, ref args, .. }
             | Insn::InvokeSuperForward { recv, ref args, .. }
-            | Insn::CCallWithFrame { recv, ref args, .. }
-            | Insn::CCallVariadic { recv, ref args, .. }
             | Insn::InvokeBuiltin { recv, ref args, .. }
             | Insn::InvokeProc { recv, ref args, .. }
             | Insn::ArrayInclude { target: recv, elements: ref args, .. } => {
                 self.assert_subtype(insn_id, recv, types::BasicObject)?;
                 for &arg in args {
+                    self.assert_subtype(insn_id, arg, types::BasicObject)?;
+                }
+                Ok(())
+            }
+            Insn::CCallWithFrame(insn) => {
+                self.assert_subtype(insn_id, insn.recv, types::BasicObject)?;
+                for &arg in &insn.args {
+                    self.assert_subtype(insn_id, arg, types::BasicObject)?;
+                }
+                Ok(())
+            }
+            Insn::CCallVariadic(insn) => {
+                self.assert_subtype(insn_id, insn.recv, types::BasicObject)?;
+                for &arg in &insn.args {
                     self.assert_subtype(insn_id, arg, types::BasicObject)?;
                 }
                 Ok(())
