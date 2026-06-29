@@ -33,7 +33,9 @@ static VALUE rb_eRactorMovedError;
 static VALUE rb_eRactorClosedError;
 static VALUE rb_cRactorMovedObject;
 
+#if RACTOR_TRACK_BLOCKING
 static void vm_ractor_blocking_cnt_inc(rb_vm_t *vm, rb_ractor_t *r, const char *file, int line);
+#endif
 
 
 #if RACTOR_CHECK_MODE > 0
@@ -175,7 +177,7 @@ ractor_status_set(rb_ractor_t *r, enum ractor_status status)
     // check2: transition check. assume it will be vanished on non-debug build.
     switch (r->status_) {
       case ractor_created:
-        VM_ASSERT(status == ractor_blocking);
+        VM_ASSERT(status == (RACTOR_TRACK_BLOCKING ? ractor_blocking : ractor_running));
         break;
       case ractor_running:
         VM_ASSERT(status == ractor_blocking||
@@ -409,7 +411,11 @@ vm_insert_ractor(rb_vm_t *vm, rb_ractor_t *r)
         RB_VM_LOCK();
         {
             vm_insert_ractor0(vm, r, false);
+#if RACTOR_TRACK_BLOCKING
             vm_ractor_blocking_cnt_inc(vm, r, __FILE__, __LINE__);
+#else
+            ractor_status_set(r, ractor_running);
+#endif
         }
         RB_VM_UNLOCK();
     }
@@ -417,13 +423,19 @@ vm_insert_ractor(rb_vm_t *vm, rb_ractor_t *r)
         if (vm->ractor.cnt == 0) {
             // main ractor
             vm_insert_ractor0(vm, r, true);
+#if RACTOR_TRACK_BLOCKING
             ractor_status_set(r, ractor_blocking);
+#endif
             ractor_status_set(r, ractor_running);
         }
         else {
             cancel_single_ractor_mode();
             vm_insert_ractor0(vm, r, true);
+#if RACTOR_TRACK_BLOCKING
             vm_ractor_blocking_cnt_inc(vm, r, __FILE__, __LINE__);
+#else
+            ractor_status_set(r, ractor_running);
+#endif
         }
     }
 }
@@ -495,14 +507,18 @@ rb_ractor_atfork(rb_vm_t *vm, rb_thread_t *th)
 {
     // initialize as a main ractor
     vm->ractor.cnt = 0;
+#if RACTOR_TRACK_BLOCKING
     vm->ractor.blocking_cnt = 0;
+#endif
     ruby_single_main_ractor = th->ractor;
     th->ractor->status_ = ractor_created;
 
     rb_ractor_living_threads_init(th->ractor);
     rb_ractor_living_threads_insert(th->ractor, th);
 
+#if RACTOR_TRACK_BLOCKING
     VM_ASSERT(vm->ractor.blocking_cnt == 0);
+#endif
     VM_ASSERT(vm->ractor.cnt == 1);
 }
 
@@ -523,7 +539,9 @@ rb_ractor_living_threads_init(rb_ractor_t *r)
 {
     ccan_list_head_init(&r->threads.set);
     r->threads.cnt = 0;
+#if RACTOR_TRACK_BLOCKING
     r->threads.blocking_cnt = 0;
+#endif
 }
 
 static void
@@ -702,6 +720,7 @@ rb_ractor_living_threads_insert(rb_ractor_t *r, rb_thread_t *th)
     }
 }
 
+#if RACTOR_TRACK_BLOCKING
 static void
 vm_ractor_blocking_cnt_inc(rb_vm_t *vm, rb_ractor_t *r, const char *file, int line)
 {
@@ -711,18 +730,22 @@ vm_ractor_blocking_cnt_inc(rb_vm_t *vm, rb_ractor_t *r, const char *file, int li
     vm->ractor.blocking_cnt++;
     VM_ASSERT(vm->ractor.blocking_cnt <= vm->ractor.cnt);
 }
+#endif
 
 void
 rb_vm_ractor_blocking_cnt_inc(rb_vm_t *vm, rb_ractor_t *cr, const char *file, int line)
 {
+#if RACTOR_TRACK_BLOCKING
     ASSERT_vm_locking();
     VM_ASSERT(GET_RACTOR() == cr);
     vm_ractor_blocking_cnt_inc(vm, cr, file, line);
+#endif
 }
 
 void
 rb_vm_ractor_blocking_cnt_dec(rb_vm_t *vm, rb_ractor_t *cr, const char *file, int line)
 {
+#if RACTOR_TRACK_BLOCKING
     ASSERT_vm_locking();
     VM_ASSERT(GET_RACTOR() == cr);
 
@@ -731,8 +754,10 @@ rb_vm_ractor_blocking_cnt_dec(rb_vm_t *vm, rb_ractor_t *cr, const char *file, in
     vm->ractor.blocking_cnt--;
 
     ractor_status_set(cr, ractor_running);
+#endif
 }
 
+#if RACTOR_TRACK_BLOCKING
 static void
 ractor_check_blocking(rb_ractor_t *cr, unsigned int remained_thread_cnt, const char *file, int line)
 {
@@ -756,6 +781,7 @@ ractor_check_blocking(rb_ractor_t *cr, unsigned int remained_thread_cnt, const c
         }
     }
 }
+#endif
 
 void rb_threadptr_remove(rb_thread_t *th);
 
@@ -764,7 +790,9 @@ rb_ractor_living_threads_remove(rb_ractor_t *cr, rb_thread_t *th)
 {
     VM_ASSERT(cr == GET_RACTOR());
     RUBY_DEBUG_LOG("r->threads.cnt:%d--", cr->threads.cnt);
+#if RACTOR_TRACK_BLOCKING
     ractor_check_blocking(cr, cr->threads.cnt - 1, __FILE__, __LINE__);
+#endif
 
     rb_threadptr_remove(th);
 
@@ -784,6 +812,7 @@ rb_ractor_living_threads_remove(rb_ractor_t *cr, rb_thread_t *th)
 void
 rb_ractor_blocking_threads_inc(rb_ractor_t *cr, const char *file, int line)
 {
+#if RACTOR_TRACK_BLOCKING
     RUBY_DEBUG_LOG2(file, line, "cr->threads.blocking_cnt:%d++", cr->threads.blocking_cnt);
 
     VM_ASSERT(cr->threads.cnt > 0);
@@ -791,11 +820,13 @@ rb_ractor_blocking_threads_inc(rb_ractor_t *cr, const char *file, int line)
 
     ractor_check_blocking(cr, cr->threads.cnt, __FILE__, __LINE__);
     cr->threads.blocking_cnt++;
+#endif
 }
 
 void
 rb_ractor_blocking_threads_dec(rb_ractor_t *cr, const char *file, int line)
 {
+#if RACTOR_TRACK_BLOCKING
     RUBY_DEBUG_LOG2(file, line,
                     "r->threads.blocking_cnt:%d--, r->threads.cnt:%u",
                     cr->threads.blocking_cnt, cr->threads.cnt);
@@ -811,6 +842,7 @@ rb_ractor_blocking_threads_dec(rb_ractor_t *cr, const char *file, int line)
     }
 
     cr->threads.blocking_cnt--;
+#endif
 }
 
 void
