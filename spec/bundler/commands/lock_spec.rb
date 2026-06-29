@@ -1286,7 +1286,6 @@ RSpec.describe "bundle lock" do
   end
 
   it "does not conflict on ruby requirements when adding new platforms" do
-    skip "the raygun-apm fixture has no x64-mswin64 variant for the current platform" if RUBY_PLATFORM.include?("mswin")
     build_repo4 do
       build_gem "raygun-apm", "1.0.78" do |s|
         s.platform = "x86_64-linux"
@@ -1300,6 +1299,11 @@ RSpec.describe "bundle lock" do
 
       build_gem "raygun-apm", "1.0.78" do |s|
         s.platform = "x64-mingw-ucrt"
+        s.required_ruby_version = "< #{next_ruby_minor}.dev"
+      end
+
+      build_gem "raygun-apm", "1.0.78" do |s|
+        s.platform = "x64-mswin64"
         s.required_ruby_version = "< #{next_ruby_minor}.dev"
       end
     end
