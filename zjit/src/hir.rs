@@ -8967,7 +8967,7 @@ fn add_iseq_to_hir(
                         if let Some(profiled_type) = fun.monomorphic_summary(&profiles, self_param, exit_id) {
                             let result = fun.try_emit_optimized_getivar(block, self_param, id, profiled_type, exit_id).unwrap_or_else(|counter| {
                                 fun.count(block, counter);
-                                fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic: std::ptr::null(), state: exit_id })
+                                fun.push_insn(block, Insn::GetIvar { self_val: self_param, id, ic, state: exit_id })
                             });
                             state.stack_push(result);
                         } else {
