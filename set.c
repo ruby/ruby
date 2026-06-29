@@ -981,10 +981,6 @@ static void set_merge_enum_into(VALUE set, VALUE arg);
  *    # Divide into mod 5 sets.
  *    set.divide {|ele| ele % 5 }
  *    # => Set[Set[0, 5], Set[1, 6], Set[2, 7], Set[3, 8], Set[4, 9]]
- *    # For a 1-element set, the block's return value is not used.
- *    Set[0].divide {|ele| true } # => Set[Set[0]]
- *    Set[0].divide {|ele| false } # => Set[Set[0]]
- *    # For an empty set, the block is not called.
  *
  *    Set[0].divide {|ele| anything } # => Set[Set[0]]
  *    Set[].divide {|ele| not called } # => Set[]
