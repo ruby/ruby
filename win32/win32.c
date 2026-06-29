@@ -5302,8 +5302,8 @@ w32_symlink(UINT cp, const char *src, const char *link)
             size_t dirlen = sep - wlink + 1;
             size_t srclen = wcslen(wsrc) + 1;
             WCHAR *fullsrc = ALLOCV_N(WCHAR, buf2, dirlen + srclen);
-            memcpy(fullsrc, wlink, dirlen * sizeof(WCHAR));
-            memcpy(fullsrc + dirlen, wsrc, srclen * sizeof(WCHAR));
+            MEMCPY(fullsrc, wlink, WCHAR, dirlen);
+            MEMCPY(fullsrc + dirlen, wsrc, WCHAR, srclen);
             atts = GetFileAttributesW(fullsrc);
             ALLOCV_END(buf2);
         }
