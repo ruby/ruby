@@ -715,10 +715,10 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
             let val_type = function.type_of(val);
             gen_guard_type(jit, asm, opnd!(val), val_type, guard_type, recompile, &function.frame_state(state))
         }
-        &Insn::GuardBitEquals { val, expected, reason, state, recompile } => gen_guard_bit_equals(jit, asm, opnd!(val), expected, reason, recompile, &function.frame_state(state)),
-        &Insn::GuardAnyBitSet { val, mask, reason, state, recompile, .. } => gen_guard_any_bit_set(jit, asm, opnd!(val), mask, reason, recompile, &function.frame_state(state)),
-        &Insn::GuardNoBitsSet { val, mask, reason, state, .. } => gen_guard_no_bits_set(jit, asm, opnd!(val), mask, reason, &function.frame_state(state)),
-        &Insn::GuardLess { left, right, reason, state } => gen_guard_less(jit, asm, opnd!(left), opnd!(right), reason, &function.frame_state(state)),
+        &Insn::GuardBitEquals { val, expected, ref reason, state, recompile } => gen_guard_bit_equals(jit, asm, opnd!(val), expected, **reason, recompile, &function.frame_state(state)),
+        &Insn::GuardAnyBitSet { val, mask, ref reason, state, recompile, .. } => gen_guard_any_bit_set(jit, asm, opnd!(val), mask, **reason, recompile, &function.frame_state(state)),
+        &Insn::GuardNoBitsSet { val, mask, ref reason, state, .. } => gen_guard_no_bits_set(jit, asm, opnd!(val), mask, **reason, &function.frame_state(state)),
+        &Insn::GuardLess { left, right, ref reason, state } => gen_guard_less(jit, asm, opnd!(left), opnd!(right), **reason, &function.frame_state(state)),
         &Insn::GuardGreaterEq { left, right, state, .. } => gen_guard_greater_eq(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, invariant, &function.frame_state(*state))),
         Insn::CCall { cfunc, recv, args, name, owner: _, return_type: _, elidable: _ } => gen_ccall(asm, *cfunc, *name, opnd!(recv), opnds!(args)),
