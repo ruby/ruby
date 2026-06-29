@@ -2145,8 +2145,6 @@ rb_set_size(VALUE set)
  *
  * === Methods for Querying
  *
- * - #hash:
- *   Returns the integer hash value for the set.
  * - #length (aliased as #size):
  *   Returns the count of elements.
  * - #empty?:
