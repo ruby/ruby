@@ -192,4 +192,20 @@ describe "C-API Thread function" do
       end
     end
   end
+
+  ruby_version_is "4.1" do
+    describe "rb_thread_pending_interrupt_p" do
+      it "returns whether the current thread has pending interrupts" do
+        @t.rb_thread_pending_interrupt_p.should == false
+
+        begin
+          Thread.handle_interrupt(RuntimeError => :never) do
+            Thread.current.raise(RuntimeError)
+            @t.rb_thread_pending_interrupt_p.should == true
+          end
+        rescue RuntimeError
+        end
+      end
+    end
+  end
 end

@@ -172,6 +172,12 @@ static VALUE thread_spec_ruby_thread_has_gvl_p(VALUE self) {
 }
 #endif
 
+#ifdef RUBY_VERSION_IS_4_1
+static VALUE thread_spec_rb_thread_pending_interrupt_p(VALUE self) {
+  return rb_thread_pending_interrupt_p() ? Qtrue : Qfalse;
+}
+#endif
+
 void Init_thread_spec(void) {
   VALUE cls = rb_define_class("CApiThreadSpecs", rb_cObject);
   rb_define_method(cls, "rb_thread_alone", thread_spec_rb_thread_alone, 0);
@@ -187,6 +193,9 @@ void Init_thread_spec(void) {
   rb_define_method(cls,  "ruby_native_thread_p_new_thread", thread_spec_ruby_native_thread_p_new_thread, 0);
 #ifdef RUBY_VERSION_IS_4_0
   rb_define_method(cls,  "ruby_thread_has_gvl_p", thread_spec_ruby_thread_has_gvl_p, 0);
+#endif
+#ifdef RUBY_VERSION_IS_4_1
+  rb_define_method(cls,  "rb_thread_pending_interrupt_p", thread_spec_rb_thread_pending_interrupt_p, 0);
 #endif
 }
 

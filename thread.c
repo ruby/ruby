@@ -2493,15 +2493,31 @@ rb_thread_s_handle_interrupt(VALUE self, VALUE mask_arg)
  *
  * See ::pending_interrupt? for more information.
  */
+static int
+thread_pending_interrupt_p(rb_thread_t *target_th)
+{
+    if (!target_th->pending_interrupt_queue) {
+        return FALSE;
+    }
+    if (rb_threadptr_pending_interrupt_empty_p(target_th)) {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+int
+rb_thread_pending_interrupt_p(void)
+{
+    return thread_pending_interrupt_p(GET_THREAD());
+}
+
 static VALUE
-rb_thread_pending_interrupt_p(int argc, VALUE *argv, VALUE target_thread)
+thread_pending_interrupt_m(int argc, VALUE *argv, VALUE target_thread)
 {
     rb_thread_t *target_th = rb_thread_ptr(target_thread);
 
-    if (!target_th->pending_interrupt_queue) {
-        return Qfalse;
-    }
-    if (rb_threadptr_pending_interrupt_empty_p(target_th)) {
+    if (!thread_pending_interrupt_p(target_th)) {
         return Qfalse;
     }
     if (rb_check_arity(argc, 0, 1)) {
@@ -2576,7 +2592,7 @@ rb_thread_pending_interrupt_p(int argc, VALUE *argv, VALUE target_thread)
 static VALUE
 rb_thread_s_pending_interrupt_p(int argc, VALUE *argv, VALUE self)
 {
-    return rb_thread_pending_interrupt_p(argc, argv, GET_THREAD()->self);
+    return thread_pending_interrupt_m(argc, argv, GET_THREAD()->self);
 }
 
 NORETURN(static void rb_threadptr_to_kill(rb_thread_t *th));
@@ -5718,7 +5734,7 @@ Init_Thread(void)
     rb_define_singleton_method(rb_cThread, "ignore_deadlock=", rb_thread_s_ignore_deadlock_set, 1);
     rb_define_singleton_method(rb_cThread, "handle_interrupt", rb_thread_s_handle_interrupt, 1);
     rb_define_singleton_method(rb_cThread, "pending_interrupt?", rb_thread_s_pending_interrupt_p, -1);
-    rb_define_method(rb_cThread, "pending_interrupt?", rb_thread_pending_interrupt_p, -1);
+    rb_define_method(rb_cThread, "pending_interrupt?", thread_pending_interrupt_m, -1);
 
     rb_define_method(rb_cThread, "initialize", thread_initialize, -2);
     rb_define_method(rb_cThread, "raise", thread_raise_m, -1);
@@ -6322,4 +6338,3 @@ rb_ractor_interrupt_exec(struct rb_ractor_struct *target_r,
     rb_thread_t *main_th = target_r->threads.main;
     rb_threadptr_interrupt_exec(main_th, func, data, flags | rb_interrupt_exec_flag_new_thread);
 }
-

@@ -149,6 +149,8 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 
 ## C API updates
 
+* `rb_thread_pending_interrupt_p()` has been added to check whether the current thread has pending interrupts.
+
 ### Embedded TypedData
 
 * The `RUBY_TYPED_EMBEDDABLE` flag is now public and documented and can be used by C extensions.

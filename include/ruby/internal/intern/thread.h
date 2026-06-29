@@ -375,6 +375,16 @@ void rb_thread_check_ints(void);
 int rb_thread_interrupted(VALUE thval);
 
 /**
+ * Checks whether the current thread has pending interrupts.
+ *
+ * This is equivalent to `Thread.pending_interrupt?`.
+ *
+ * @retval     0          The current thread has no pending interrupts.
+ * @retval     otherwise  The current thread has pending interrupts.
+ */
+int rb_thread_pending_interrupt_p(void);
+
+/**
  * A special  UBF for blocking IO  operations.  You need deep  understanding of
  * what this  actually do before using.   Basically you should not  use it from
  * extension libraries.  It is too easy to mess up.
