@@ -35,6 +35,16 @@ if /mswin|mingw/ =~ RUBY_PLATFORM && RbConfig::CONFIG["rubylibprefix"] !~ /\A[a-
   DEFAULT_ALLOWED_FAILURES << 'rake'
 end
 
+# rbs's stdlib Resolv tests need to resolve "localhost"; allow its failures on
+# hosts where the Resolv library cannot resolve it.
+begin
+  require 'resolv'
+  Resolv.getaddress('localhost')
+rescue LoadError
+rescue Resolv::ResolvError
+  DEFAULT_ALLOWED_FAILURES << 'rbs'
+end
+
 allowed_failures = ENV['TEST_BUNDLED_GEMS_ALLOW_FAILURES'] || ''
 allowed_failures = allowed_failures.split(',').concat(DEFAULT_ALLOWED_FAILURES).uniq.reject(&:empty?)
 
