@@ -1998,7 +1998,7 @@ gc/distclean gc/realclean::
 	-$(Q) $(RM) gc/Makefile
 
 modular-gc-precheck:
-modular-gc: probes.h gc/Makefile
+modular-gc: probes.h gc/Makefile $(PROGRAM) $(RBCONFIG)
 	$(Q) DTRACE='$(DTRACE)' DTRACE_EXT='$(DTRACE_EXT)' \
 		DTRACE_OBJ='$(DTRACE_OBJ)' DTRACE_REBUILD='$(DTRACE_REBUILD)' \
 		$(RUNRUBY) $(srcdir)/ext/extmk.rb \
