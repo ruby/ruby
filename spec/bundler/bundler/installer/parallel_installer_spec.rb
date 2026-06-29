@@ -86,7 +86,7 @@ RSpec.describe Bundler::ParallelInstaller do
       # The make jobserver is a GNU make feature. On Windows extensions are built
       # with nmake, which has no `-j` jobserver, so the per-gem slot count never
       # appears in the build output.
-      skip "The make jobserver is not available on Windows (nmake)" if /mswin/.match?(RUBY_PLATFORM)
+      skip "The make jobserver is not available on Windows (nmake)" if RUBY_PLATFORM.include?("mswin")
 
       # When run under a parent make that already passes `-j` (e.g. ruby/ruby's
       # `make test-bundler-parallel`), RubyGems' extension builder sees the

@@ -133,7 +133,7 @@ module Spec
     # that compare or look up paths across the two cannot be set up correctly.
     def tmp_and_source_on_different_drives?
       return false unless Gem.win_platform?
-      drive = ->(path) { path.to_s[%r{\A[a-zA-Z]:}]&.upcase }
+      drive = ->(path) { path.to_s[/\A[a-zA-Z]:/]&.upcase }
       drive[tmp_root] != drive[source_root]
     end
 

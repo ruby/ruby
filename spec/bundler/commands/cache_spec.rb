@@ -208,7 +208,7 @@ RSpec.describe "bundle cache" do
     end
 
     it "prints a warn when using legacy windows rubies" do
-      skip "the legacy windows platform gem is not cached for the current mswin platform" if /mswin/.match?(RUBY_PLATFORM)
+      skip "the legacy windows platform gem is not cached for the current mswin platform" if RUBY_PLATFORM.include?("mswin")
       gemfile <<-D
         source "https://gem.repo1"
         gem 'myrack', :platforms => [:ruby_20, :x64_mingw_20]
