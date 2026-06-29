@@ -9,6 +9,7 @@ RSpec.describe Bundler::ParallelInstaller do
   describe "priority queue" do
     before do
       require "support/artifice/compact_index"
+      Artifice.activate_with(CompactIndexAPI)
 
       @previous_client = Gem::Request::ConnectionPools.client
       Gem::Request::ConnectionPools.client = Gem::Net::HTTP
@@ -98,6 +99,7 @@ RSpec.describe Bundler::ParallelInstaller do
       end
 
       require "support/artifice/compact_index"
+      Artifice.activate_with(CompactIndexAPI)
 
       @previous_client = Gem::Request::ConnectionPools.client
       Gem::Request::ConnectionPools.client = Gem::Net::HTTP
