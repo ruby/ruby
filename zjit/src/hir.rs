@@ -1136,7 +1136,7 @@ pub enum Insn {
 
     // Invoke a builtin function
     InvokeBuiltin {
-        bf: rb_builtin_function,
+        bf: *const rb_builtin_function,
         recv: InsnId,
         args: Vec<InsnId>,
         state: InsnId,
@@ -2111,7 +2111,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 Ok(())
             }
             Insn::InvokeBuiltin { bf, args, leaf, .. } => {
-                let bf_name = unsafe { CStr::from_ptr(bf.name) }.to_str().unwrap();
+                let bf_name = unsafe { CStr::from_ptr((**bf).name) }.to_str().unwrap();
                 write!(f, "InvokeBuiltin{} {}",
                            if *leaf { " leaf" } else { "" },
                            // e.g. Code that use `Primitive.cexpr!`. From BUILTIN_INLINE_PREFIX.
@@ -2627,7 +2627,7 @@ enum IseqReturn {
     LocalVariable(u32),
     Receiver,
     // Builtin descriptor and return type (if known)
-    InvokeLeafBuiltin(rb_builtin_function, Option<Type>),
+    InvokeLeafBuiltin(*const rb_builtin_function, Option<Type>),
 }
 
 unsafe extern "C" {
@@ -2689,15 +2689,15 @@ fn iseq_get_return_value(iseq: IseqPtr, captured_opnd: Option<InsnId>, ci_flags:
         YARVINSN_putself if captured_opnd.is_none() => Some(IseqReturn::Receiver),
         YARVINSN_opt_invokebuiltin_delegate_leave => {
             let pc = unsafe { rb_iseq_pc_at_idx(iseq, 0) };
-            let bf: rb_builtin_function = unsafe { *get_arg(pc, 0).as_ptr() };
-            let argc = bf.argc as usize;
+            let bf: *const rb_builtin_function = get_arg(pc, 0).as_ptr();
+            let argc = unsafe { (*bf).argc } as usize;
             if argc != 0 { return None; }
             let builtin_attrs = unsafe { rb_jit_iseq_builtin_attrs(iseq) };
             let leaf = builtin_attrs & BUILTIN_ATTR_LEAF != 0;
             if !leaf { return None; }
             // Check if this builtin is annotated
             let return_type = ZJITState::get_method_annotations()
-                .get_builtin_properties(&bf)
+                .get_builtin_properties(bf)
                 .map(|props| props.return_type);
             Some(IseqReturn::InvokeLeafBuiltin(bf, return_type))
         }
@@ -5277,7 +5277,7 @@ impl Function {
                         }
                     }
                     Insn::InvokeBuiltin { bf, recv, args, state, .. } => {
-                        let props = ZJITState::get_method_annotations().get_builtin_properties(&bf).unwrap_or_default();
+                        let props = ZJITState::get_method_annotations().get_builtin_properties(bf).unwrap_or_default();
                         // Try inlining the cfunc into HIR
                         let tmp_block = self.new_block(u32::MAX);
                         if let Some(replacement) = (props.inline)(self, tmp_block, recv, &args, state) {
@@ -9067,16 +9067,16 @@ fn add_iseq_to_hir(
                     state.stack_push(insn_id);
                 }
                 YARVINSN_invokebuiltin => {
-                    let bf: rb_builtin_function = unsafe { *get_arg(pc, 0).as_ptr() };
+                    let bf: *const rb_builtin_function = get_arg(pc, 0).as_ptr();
                     // TODO: Support passing arguments on the stack in C calls
                     // +2 for ec, self
-                    if (bf.argc + 2) as usize > C_ARG_OPNDS.len() {
+                    if (unsafe { (*bf).argc } + 2) as usize > C_ARG_OPNDS.len() {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::TooManyArgsForLir, recompile: None });
                         break; // End the block
                     }
 
                     let mut args = vec![];
-                    for _ in 0..bf.argc {
+                    for _ in 0..unsafe { (*bf).argc } {
                         args.push(state.stack_pop()?);
                     }
                     args.push(self_param);
@@ -9084,7 +9084,7 @@ fn add_iseq_to_hir(
 
                     // Check if this builtin is annotated
                     let return_type = ZJITState::get_method_annotations()
-                        .get_builtin_properties(&bf)
+                        .get_builtin_properties(bf)
                         .map(|props| props.return_type);
 
                     let builtin_attrs = unsafe { rb_jit_iseq_builtin_attrs(iseq) };
@@ -9102,16 +9102,16 @@ fn add_iseq_to_hir(
                 }
                 YARVINSN_opt_invokebuiltin_delegate |
                 YARVINSN_opt_invokebuiltin_delegate_leave => {
-                    let bf: rb_builtin_function = unsafe { *get_arg(pc, 0).as_ptr() };
+                    let bf: *const rb_builtin_function = get_arg(pc, 0).as_ptr();
                     // TODO: Support passing arguments on the stack in C calls
                     // +2 for ec, self
-                    if (bf.argc + 2) as usize > C_ARG_OPNDS.len() {
+                    let argc = unsafe { (*bf).argc } as usize;
+                    if argc + 2 > C_ARG_OPNDS.len() {
                         fun.push_insn(block, Insn::SideExit { state: exit_id, reason: SideExitReason::TooManyArgsForLir, recompile: None });
                         break; // End the block
                     }
 
                     let index = get_arg(pc, 1).as_usize();
-                    let argc = bf.argc as usize;
 
                     let mut args = vec![self_param];
                     for &local in state.locals().skip(index).take(argc) {
@@ -9120,7 +9120,7 @@ fn add_iseq_to_hir(
 
                     // Check if this builtin is annotated
                     let return_type = ZJITState::get_method_annotations()
-                        .get_builtin_properties(&bf)
+                        .get_builtin_properties(bf)
                         .map(|props| props.return_type);
 
                     let builtin_attrs = unsafe { rb_jit_iseq_builtin_attrs(iseq) };
