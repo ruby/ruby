@@ -5257,9 +5257,18 @@ vm_callee_setup_block_arg(rb_execution_context_t *ec, struct rb_calling_info *ca
     }
 }
 
+NO_STACK_PROTECTOR
 static int
 vm_yield_setup_args(rb_execution_context_t *ec, const rb_iseq_t *iseq, const int argc, VALUE *argv, int flags, VALUE block_handler, enum arg_setup_type arg_setup_type)
 {
+    if (LIKELY(rb_simple_iseq_p(iseq) &&
+               !(flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KWARG | VM_CALL_KW_SPLAT)) &&
+               argc == ISEQ_BODY(iseq)->param.lead_num &&
+               (arg_setup_type == arg_setup_method ||
+                argc != 1 || ISEQ_BODY(iseq)->param.flags.ambiguous_param0))) {
+        return 0;
+    }
+
     struct rb_calling_info calling_entry, *calling;
 
     calling = &calling_entry;
@@ -5276,6 +5285,7 @@ vm_yield_setup_args(rb_execution_context_t *ec, const rb_iseq_t *iseq, const int
 
 /* ruby iseq -> ruby block */
 
+NO_STACK_PROTECTOR
 static VALUE
 vm_invoke_iseq_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
                      struct rb_calling_info *calling, const struct rb_callinfo *ci,
@@ -5286,7 +5296,17 @@ vm_invoke_iseq_block(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
     const int arg_size = ISEQ_BODY(iseq)->param.size;
     VALUE * const rsp = GET_SP() - calling->argc;
     VALUE * const argv = rsp;
-    int opt_pc = vm_callee_setup_block_arg(ec, calling, ci, iseq, argv, is_lambda ? arg_setup_method : arg_setup_block);
+    int opt_pc;
+    if (LIKELY(rb_simple_iseq_p(iseq) &&
+               !(vm_ci_flag(ci) & (VM_CALL_ARGS_SPLAT | VM_CALL_KWARG | VM_CALL_KW_SPLAT)) &&
+               calling->argc == ISEQ_BODY(iseq)->param.lead_num &&
+               (is_lambda ||
+                calling->argc != 1 || ISEQ_BODY(iseq)->param.flags.ambiguous_param0))) {
+        opt_pc = 0;
+    }
+    else {
+        opt_pc = vm_callee_setup_block_arg(ec, calling, ci, iseq, argv, is_lambda ? arg_setup_method : arg_setup_block);
+    }
     int frame_flag = VM_FRAME_MAGIC_BLOCK | (is_lambda ? VM_FRAME_FLAG_LAMBDA : 0);
 
     SET_SP(rsp);
@@ -6012,6 +6032,7 @@ enum method_explorer_type {
     mexp_search_super,
 };
 
+NO_STACK_PROTECTOR
 static inline VALUE
 vm_sendish(
     struct rb_execution_context_struct *ec,

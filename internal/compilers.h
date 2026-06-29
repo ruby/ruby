@@ -63,6 +63,15 @@
 # define WARN_UNUSED_RESULT(x) x
 #endif
 
+/* Opt a function out of -fstack-protector*; only safe when it has no stack
+ * buffers / alloca / address-exposed locals.  Expands to nothing (canary kept)
+ * where unsupported, e.g. GCC < 11. */
+#if __has_attribute(no_stack_protector)
+# define NO_STACK_PROTECTOR __attribute__((__no_stack_protector__))
+#else
+# define NO_STACK_PROTECTOR /* void */
+#endif
+
 #define RB_OBJ_BUILTIN_TYPE(obj) rb_obj_builtin_type(obj)
 #define OBJ_BUILTIN_TYPE(obj) RB_OBJ_BUILTIN_TYPE(obj)
 #ifdef __GNUC__
