@@ -1030,7 +1030,7 @@ pub enum Insn {
     /// Own a FrameState so that instructions can look up their dominating FrameState when
     /// generating deopt side-exits and frame reconstruction metadata. Does not directly generate
     /// any code.
-    Snapshot { state: FrameState },
+    Snapshot { state: Box<FrameState> },
 
     /// Unconditional jump
     Jump(BranchEdge),
@@ -2783,7 +2783,7 @@ impl Function {
     /// Return a FrameState at the given instruction index.
     pub fn frame_state(&self, insn_id: InsnId) -> FrameState {
         match self.find(insn_id) {
-            Insn::Snapshot { state } => state,
+            Insn::Snapshot { state } => *state,
             insn => panic!("Unexpected non-Snapshot {insn} when looking up FrameState"),
         }
     }
@@ -3295,7 +3295,7 @@ impl Function {
         // If args were reordered or synthesized, create a new snapshot with the updated stack
         let send_state = if processed_args != args {
             let new_state = self.frame_state(state).with_replaced_args(&processed_args, caller_argc);
-            self.push_insn(block, Insn::Snapshot { state: new_state })
+            self.push_insn(block, Insn::Snapshot { state: Box::new(new_state) })
         } else {
             state
         };
@@ -4979,7 +4979,7 @@ impl Function {
         let mut reload_state = state.clone();
         reload_state.insn_idx = insn_idx as usize;
         reload_state.pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
-        let reload_exit_id = self.push_insn(block, Insn::Snapshot { state: reload_state.without_locals() });
+        let reload_exit_id = self.push_insn(block, Insn::Snapshot { state: Box::new(reload_state.without_locals()) });
         self.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: reload_exit_id });
     }
 
@@ -7402,7 +7402,7 @@ fn add_iseq_to_hir(
         // Start the block off with a Snapshot so that if we need to insert a new Guard later on
         // and we don't have a Snapshot handy, we can just iterate backward (at the earliest, to
         // the beginning of the block).
-        fun.push_insn(block, Insn::Snapshot { state: state.clone() });
+        fun.push_insn(block, Insn::Snapshot { state: Box::new(state.clone()) });
         while insn_idx < iseq_size {
             state.insn_idx = insn_idx as usize;
             // Get the current pc and opcode
@@ -7422,7 +7422,7 @@ fn add_iseq_to_hir(
             unsafe extern "C" {
                 fn rb_iseq_event_flags(iseq: IseqPtr, pos: usize) -> rb_event_flag_t;
             }
-            let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.clone() });
+            let exit_id = fun.push_insn(block, Insn::Snapshot { state: Box::new(exit_state.clone()) });
 
             // If TracePoint has been enabled after we have collected profiles, we'll see
             // trace_getinstancevariable in the ISEQ. We have to treat it like getinstancevariable
@@ -7840,7 +7840,7 @@ fn add_iseq_to_hir(
                         let ep = fun.push_insn(block, Insn::GetEP { level: 0 });
                         fun.get_local_from_ep(block, iseq, ep, ep_offset, 0, types::BasicObject)
                     } else {
-                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.without_locals() });
+                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: Box::new(exit_state.without_locals()) });
                         fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
                         local_inval = false;
                         state.getlocal(ep_offset)
@@ -8050,7 +8050,7 @@ fn add_iseq_to_hir(
                         assert!(local_inval); // if check above
                         // There has been some non-leaf call since JIT entry or the last patch point,
                         // so add a patch point to make sure locals have not been escaped.
-                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.without_locals() }); // skip spilling locals
+                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: Box::new(exit_state.without_locals()) }); // skip spilling locals
                         fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
                         local_inval = false;
 
@@ -8068,7 +8068,7 @@ fn add_iseq_to_hir(
                     } else if local_inval {
                         // If there has been any non-leaf call since JIT entry or the last patch point,
                         // add a patch point to make sure locals have not been escaped.
-                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: exit_state.without_locals() }); // skip spilling locals
+                        let exit_id = fun.push_insn(block, Insn::Snapshot { state: Box::new(exit_state.without_locals()) }); // skip spilling locals
                         fun.push_insn(block, Insn::PatchPoint { invariant: Invariant::NoEPEscape(iseq), state: exit_id });
                         local_inval = false;
                     }
@@ -8639,7 +8639,7 @@ fn add_iseq_to_hir(
                             // reusing exit_id so type specialization resolves the receiver from
                             // its refined, exact type instead of the polymorphic profile that is
                             // keyed at exit_id.
-                            let snapshot = fun.push_insn(iftrue_block, Insn::Snapshot { state: exit_state.clone() });
+                            let snapshot = fun.push_insn(iftrue_block, Insn::Snapshot { state: Box::new(exit_state.clone()) });
                             let refined_recv = fun.push_insn(iftrue_block, Insn::RefineType { val: recv, new_type: expected });
                             let send = fun.push_insn(iftrue_block, Insn::Send { recv: refined_recv, cd, block: None, args: args.clone(), state: snapshot, reason: Uncategorized(opcode) });
                             fun.push_insn(iftrue_block, Insn::Jump(BranchEdge { target: join_block, args: vec![send] }));
