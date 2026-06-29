@@ -71,6 +71,10 @@ impl Annotations {
         let func_ptr = unsafe { (*bf).func_ptr as *mut c_void };
         self.builtin_funcs.get(&func_ptr).copied()
     }
+
+    pub fn get_builtin_return_type(&self, bf: *const rb_builtin_function) -> Type {
+        self.get_builtin_properties(bf).map(|p| p.return_type).unwrap_or(types::BasicObject)
+    }
 }
 
 fn annotate_c_method(props_map: &mut HashMap<*mut c_void, FnProperties>, class: VALUE, method_name: &'static str, props: FnProperties) {
