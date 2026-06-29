@@ -1251,10 +1251,7 @@ set_reset_table_with_type(VALUE set, const struct st_hash_type *type)
  *    set1.compare_by_identity? # => false
  *    set1 == set0              # => false
  *
- *  The setting is not reverted by #reset:
- *
- *    set0.reset
- *    set0.compare_by_identity? # => true
+ *  Once set, the compare-by-identity property may not be unset.
  *
  *  Related: #compare_by_identity?.
  */
@@ -2167,7 +2164,6 @@ rb_set_size(VALUE set)
  *
  * === Methods for Querying
  *
- * - #compare_by_identity?:
  *   Returns whether the set considers only identity
  *   when comparing elements.
  * - #length (aliased as #size):
