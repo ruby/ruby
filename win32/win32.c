@@ -5296,7 +5296,7 @@ w32_symlink(UINT cp, const char *src, const char *link)
         int absolute =
             (((wsrc[0] >= L'A' && wsrc[0] <= L'Z') ||
               (wsrc[0] >= L'a' && wsrc[0] <= L'z')) && wsrc[1] == L':') ||
-            (wsrc[0] == L'\\' && wsrc[1] == L'\\');
+            wsrc[0] == L'\\';
         if (!absolute && (sep = wcsrchr(wlink, L'\\')) != NULL) {
             VALUE buf2;
             size_t dirlen = sep - wlink + 1;
