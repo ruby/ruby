@@ -232,7 +232,7 @@ RSpec.describe "bundle pristine" do
     # This just verifies that the generated Makefile from the c_ext gem makes
     # use of the build_args from the bundle config
     it "applies the config when installing the gem" do
-      skip "the generated Makefile uses MSVC `-libpath:` syntax instead of `-L` on Windows" if RUBY_PLATFORM.include?("mswin")
+      skip "the generated Makefile uses MSVC `-libpath:` syntax instead of `-L` on Windows" if mswin?
       bundle "pristine"
 
       makefile_contents = File.read(c_ext_dir.join("Makefile").to_s)
@@ -250,7 +250,7 @@ RSpec.describe "bundle pristine" do
     # This just verifies that the generated Makefile from the c_ext gem makes
     # use of the build_args from the bundle config
     it "applies the config when installing the gem" do
-      skip "the generated Makefile uses MSVC `-libpath:` syntax instead of `-L` on Windows" if RUBY_PLATFORM.include?("mswin")
+      skip "the generated Makefile uses MSVC `-libpath:` syntax instead of `-L` on Windows" if mswin?
       bundle "pristine"
 
       makefile_contents = File.read(c_ext_dir.join("Makefile").to_s)
