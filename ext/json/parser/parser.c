@@ -5,7 +5,10 @@
 static VALUE mJSON, eNestingError, eParserError, Encoding_UTF_8;
 static VALUE CNaN, CInfinity, CMinusInfinity, JSON_empty_string;
 
-static ID i_new, i_try_convert, i_uminus, i_encode, i_at_line, i_at_column;
+static ID i_new, i_try_convert, i_encode, i_at_line, i_at_column;
+#ifndef HAVE_RB_STR_TO_INTERNED_STR
+static ID i_uminus;
+#endif
 
 static VALUE sym_max_nesting, sym_allow_nan, sym_allow_trailing_comma, sym_allow_comments,
              sym_allow_control_characters, sym_allow_invalid_escape, sym_symbolize_names,
@@ -314,7 +317,7 @@ static const rb_data_type_t JSON_Parser_rvalue_stack_type = {
     },
     // We deliberately don't declare rvalue_stack as RUBY_TYPED_WB_PROTECTED
     // because it churns a lot of values so trigering write barriers every time is very costly.
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_EMBEDDABLE,
 };
 
 static rvalue_stack *rvalue_stack_spill(rvalue_stack *old_stack, VALUE *handle, rvalue_stack **stack_ref)
@@ -511,7 +514,7 @@ static const rb_data_type_t JSON_Parser_frame_stack_type = {
         .dfree = json_frame_stack_free,
         .dsize = json_frame_stack_memsize,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
 };
 
 static json_frame_stack *json_frame_stack_spill(json_frame_stack *old_stack, VALUE *handle, json_frame_stack **stack_ref)
@@ -1130,6 +1133,13 @@ static inline VALUE json_decode_float(JSON_ParserConfig *config, uint64_t mantis
     }
 
     if (RB_UNLIKELY(mantissa_digits > 18 || mantissa_digits + exponent < -307)) {
+        // If the value is so small that it definitely underflows to 0.0, return early
+        // to avoid triggering a "Float out of range" warning from rb_cstr_to_dbl.
+        // When mantissa_digits + exponent < -324, value < 10^(-324) < DBL_TRUE_MIN/2,
+        // so it rounds to 0 in IEEE 754 round-to-nearest.
+        if (RB_UNLIKELY(mantissa_digits + exponent < -324)) {
+            return rb_float_new(negative ? -0.0 : 0.0);
+        }
         return json_decode_large_float(start, end - start);
     }
 
@@ -2180,7 +2190,7 @@ static const rb_data_type_t JSON_ParserConfig_type = {
         .dsize = JSON_ParserConfig_memsize,
         .dcompact = JSON_ParserConfig_compact,
     },
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_EMBEDDABLE,
 };
 
 static VALUE cJSON_parser_s_allocate(VALUE klass)
@@ -2265,7 +2275,7 @@ static const rb_data_type_t JSON_ResumableParser_type = {
     // RUBY_TYPED_WB_PROTECTED is deliberately not declared because
     // this is a superset of JSON_Parser_rvalue_stack_type, so we'd need
     // to trigger a lot of write barriers.
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_EMBEDDABLE,
 };
 
 static VALUE cResumableParser_allocate(VALUE klass)
@@ -2712,7 +2722,7 @@ static VALUE cResumableParser_rest(VALUE self)
 }
 
 /*
- * call-seq: value? -> true or false
+ * call-seq: eos? -> true or false
  *
  * Returns whether the internal buffer has been entirely consumed.
  */
@@ -2812,7 +2822,9 @@ void Init_parser(void)
 
     i_new = rb_intern("new");
     i_try_convert = rb_intern("try_convert");
+#ifndef HAVE_RB_STR_TO_INTERNED_STR
     i_uminus = rb_intern("-@");
+#endif
     i_encode = rb_intern("encode");
     i_at_line = rb_intern("@line");
     i_at_column = rb_intern("@column");

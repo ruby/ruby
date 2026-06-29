@@ -178,9 +178,12 @@ pub struct Options {
     /// Upper bound on how many times the `optimize` fixed-point loop will iterate
     /// before giving up. Each iteration runs `type_specialize` → `inline` →
     /// `inline_methods` → the rest of the HIR pipeline; in steady state the loop
-    /// terminates as soon as an iteration fails to inline anything new. The cap
-    /// exists to bound compile time when something pathological prevents the loop
-    /// from reaching a fixed point.
+    /// terminates as soon as an iteration fails to inline anything new. If the
+    /// cap is hit while inlining is still ongoing, the optimizer runs one final
+    /// specialization/cleanup round without `inline_methods`, so the callee HIR
+    /// inserted by the last iteration does not keep unspecialized `Send`s. The
+    /// cap exists to bound compile time when something pathological prevents the
+    /// loop from reaching a fixed point.
     pub inline_max_iterations: InlineDepth,
 }
 

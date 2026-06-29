@@ -352,7 +352,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
      2:   events << [event, lineno, mid, klass] if file == name
      3: })
      4: [1,2,3].any? {|n| n}
-     8: set_trace_func(nil)
+     5: set_trace_func(nil)
     EOF
 
     [["c-return", 1, :set_trace_func, Kernel],

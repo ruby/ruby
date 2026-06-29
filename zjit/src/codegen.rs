@@ -276,7 +276,7 @@ pub fn gen_iseq_call(cb: &mut CodeBlock, iseq_call: &IseqCallRef) -> Result<(), 
 }
 
 /// Write an entry to the perf map in /tmp
-fn register_with_perf(symbol_name: String, start_ptr: usize, code_size: usize) {
+pub(crate) fn register_with_perf(symbol_name: String, start_ptr: usize, code_size: usize) {
     use std::io::Write;
     let perf_map = format!("/tmp/perf-{}.map", std::process::id());
     let Ok(file) = std::fs::OpenOptions::new().create(true).append(true).open(&perf_map) else {
@@ -288,6 +288,16 @@ fn register_with_perf(symbol_name: String, start_ptr: usize, code_size: usize) {
         debug!("Failed to write {symbol_name} to perf map file: {perf_map}");
         return;
     };
+}
+
+/// Register the code emitted from `start` through the current write pointer
+/// under `symbol_name` in the perf map, if perf output is enabled.
+fn register_current_code_range_with_perf(cb: &CodeBlock, symbol_name: &str, start: CodePtr) {
+    if get_option!(perf).is_some() {
+        let start_ptr = start.raw_addr(cb);
+        let end_ptr = cb.get_write_ptr().raw_addr(cb);
+        register_with_perf(symbol_name.to_string(), start_ptr, end_ptr - start_ptr);
+    }
 }
 
 /// Compile a shared JIT entry trampoline
@@ -309,12 +319,7 @@ pub fn gen_entry_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError>
 
     let (code_ptr, gc_offsets) = asm.compile(cb)?;
     assert!(gc_offsets.is_empty());
-    if get_option!(perf).is_some() {
-        let start_ptr = code_ptr.raw_addr(cb);
-        let end_ptr = cb.get_write_ptr().raw_addr(cb);
-        let code_size = end_ptr - start_ptr;
-        register_with_perf("entry trampoline".into(), start_ptr, code_size);
-    }
+    register_current_code_range_with_perf(cb, "entry trampoline", code_ptr);
     Ok(code_ptr)
 }
 
@@ -742,7 +747,6 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GetSpecialNumber { nth, state } => gen_getspecial_number(asm, *nth, &function.frame_state(*state)),
         &Insn::IncrCounter(counter) => no_output!(gen_incr_counter(asm, counter)),
         Insn::IncrCounterPtr { counter_ptr } => no_output!(gen_incr_counter_ptr(asm, *counter_ptr)),
-        Insn::ObjToString { val, cd, state, .. } => gen_objtostring(jit, asm, opnd!(val), *cd, &function.frame_state(*state)),
         &Insn::CheckInterrupts { state } => no_output!(gen_check_interrupts(jit, asm, &function.frame_state(state))),
         Insn::BreakPoint => no_output!(asm.breakpoint()),
         Insn::Unreachable => no_output!(asm.abort()),
@@ -800,21 +804,6 @@ fn gen_get_ep(asm: &mut Assembler, level: u32) -> Opnd {
     }
 
     ep_opnd
-}
-
-fn gen_objtostring(jit: &mut JITState, asm: &mut Assembler, val: Opnd, cd: *const rb_call_data, state: &FrameState) -> Opnd {
-    gen_prepare_non_leaf_call(jit, asm, state);
-    // TODO: Specialize for immediate types
-    // Call rb_vm_objtostring(cfp, recv, cd)
-    let ret = asm_ccall!(asm, rb_vm_objtostring, CFP, val, Opnd::const_ptr(cd));
-
-    // TODO: Call `to_s` on the receiver if rb_vm_objtostring returns Qundef
-    // Need to replicate what CALL_SIMPLE_METHOD does
-    asm_comment!(asm, "side-exit if rb_vm_objtostring returns Qundef");
-    asm.cmp(ret, Qundef.into());
-    asm.je(jit, side_exit(jit, state, ObjToStringFallback));
-
-    ret
 }
 
 fn gen_defined(jit: &JITState, asm: &mut Assembler, op_type: usize, obj: VALUE, pushval: VALUE, tested_value: Opnd, lep_level: u32, state: &FrameState) -> Opnd {
@@ -2655,6 +2644,46 @@ fn gen_has_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, val_typ
         let param = asm.new_block_param(VALUE_BITS);
         asm.current_block().add_parameter(param);
         param
+    } else if let Some(builtin_type) = ty.builtin_type_equivalent() {
+        let hir_block_id = asm.current_block().hir_block_id;
+        let rpo_idx = asm.current_block().rpo_index;
+
+        // Create a result block that all paths converge to
+        let result_block = asm.new_block(hir_block_id, false, rpo_idx);
+        let result_edge = |v| Target::Block(lir::BranchEdge {
+            target: result_block,
+            args: vec![v],
+        });
+
+        // If val isn't in a register, load it to use it as the base of Opnd::mem later.
+        let val = asm.load_mem(val);
+
+        let is_known_heap_basic_object = val_type.is_subtype(types::HeapBasicObject);
+        if !is_known_heap_basic_object {
+            // Immediate -> definitely not the class
+            asm.test(val, (RUBY_IMMEDIATE_MASK as u64).into());
+            asm.jnz(jit, result_edge(Opnd::Imm(0)));
+
+            // Qfalse -> definitely not the class
+            asm.cmp(val, Qfalse.into());
+            asm.je(jit, result_edge(Opnd::Imm(0)));
+        }
+
+        // Heap object
+        // Mask and check the builtin type
+        let flags = asm.load(Opnd::mem(VALUE_BITS, val, RUBY_OFFSET_RBASIC_FLAGS));
+        let tag   = asm.and(flags, Opnd::UImm(RUBY_T_MASK as u64));
+        asm.cmp(tag, Opnd::UImm(builtin_type as u64));
+        let result = asm.csel_e(Opnd::UImm(1), Opnd::Imm(0));
+        asm.jmp(result_edge(result));
+
+        // Result block -- receives the value via block parameter (phi node)
+        asm.set_current_block(result_block);
+        let label = jit.get_label(asm, result_block, hir_block_id);
+        asm.write_label(label);
+        let param = asm.new_block_param(VALUE_BITS);
+        asm.current_block().add_parameter(param);
+        param
     } else {
         unimplemented!("unsupported type: {ty}");
     }
@@ -3153,11 +3182,9 @@ fn side_exit(jit: &JITState, state: &FrameState, reason: SideExitReason) -> Targ
 /// Build a Target::SideExit that optionally triggers exit_recompile on the exit path.
 fn side_exit_with_recompile(jit: &JITState, state: &FrameState, reason: SideExitReason, recompile: Option<Recompile>) -> Target {
     let mut exit = build_side_exit(jit, state);
-    exit.recompile = recompile.map(|strategy| SideExitRecompile {
-        frame_iseq: Opnd::Value(VALUE::from(state.iseq)),
+    exit.recompile = recompile.map(|_| SideExitRecompile {
         compiled_iseq: Opnd::Value(VALUE::from(jit.iseq())),
         insn_idx: state.insn_idx() as u32,
-        strategy,
     });
     Target::SideExit { exit, reason }
 }
@@ -3204,19 +3231,13 @@ pub(crate) use c_callable;
 
 c_callable! {
     /// Called from JIT side-exit code to profile operands and trigger recompilation.
-    /// `profile_kind` selects what to profile; `profile_payload` carries kind-specific data.
     /// Once enough profiles are gathered, invalidates the compiled unit for recompilation.
     ///
-    /// Two iseqs are passed because they diverge for inlined code. `frame_iseq_raw` is
-    /// the frame's own iseq, where the runtime profile is recorded; for an exit out of
-    /// an inlined callee this is the callee, which typically has no compiled version of
-    /// its own. `compiled_iseq_raw` is the function that was actually compiled (the
-    /// inliner folds the callee's body into it), so its version is the one holding the
-    /// failing guard and the one we must invalidate to force a recompile. For
-    /// non-inlined code the two are identical.
-    pub(crate) fn exit_recompile(ec: EcPtr, frame_iseq_raw: VALUE, compiled_iseq_raw: VALUE, insn_idx: u32, profile_kind: i32, profile_payload: i32) {
-        let recompile = Recompile::from_c_args(profile_kind, profile_payload);
-
+    /// `compiled_iseq_raw` is the ISEQ that was actually compiled. For an exit out
+    /// of inlined code, the inliner folds the callee's body into the outer ISEQ, so
+    /// the outer ISEQ's version holds the failing guard and must be invalidated to
+    /// force a recompile. For non-inlined code, it is the same as the frame ISEQ.
+    pub(crate) fn exit_recompile(ec: EcPtr, compiled_iseq_raw: VALUE) {
         // Fast check before taking the VM lock: skip if the compiled unit is already
         // invalidated or at the version limit. This avoids expensive lock acquisition
         // on every shape guard exit after the recompile has already been triggered.
@@ -3233,37 +3254,10 @@ c_callable! {
         }
 
         with_vm_lock(src_loc!(), || {
-            let frame_iseq: IseqPtr = frame_iseq_raw.as_iseq();
             let compiled_iseq: IseqPtr = compiled_iseq_raw.as_iseq();
 
-            // For no-profile sends, skip if already profiled at this insn_idx.
-            // For shape guard exits, always re-profile because the
-            // original YARV profiles were monomorphic but runtime showed new shapes.
-            if matches!(recompile, Recompile::ProfileSend { .. }) &&
-                get_or_create_iseq_payload(frame_iseq).profile.done_profiling_at(insn_idx as usize) {
-                return;
-            }
-
             let should_recompile = with_time_stat(Counter::profile_time_ns, || {
-                let cfp = unsafe { get_ec_cfp(ec) };
-                let payload = get_or_create_iseq_payload(frame_iseq);
-
-                match recompile {
-                    Recompile::ProfileSend { argc } => {
-                        let sp = unsafe { get_cfp_sp(cfp) };
-                        // Profile the receiver and arguments for this send instruction
-                        payload.profile.profile_send_at(frame_iseq, insn_idx as usize, sp, argc as usize)
-                    }
-                    Recompile::ProfileSelf => {
-                        // Profile self for shape guard exits
-                        let self_val = unsafe { get_cfp_self(cfp) };
-                        payload.profile.profile_self_at(frame_iseq, insn_idx as usize, self_val)
-                    }
-                    Recompile::ProfileBlockHandler => {
-                        // Profile the block handler for this getblockparamproxy instruction
-                        payload.profile.profile_getblockparamproxy_at(frame_iseq, insn_idx as usize, cfp)
-                    }
-                }
+                crate::profile::profile_recompile_insn(ec)
             });
 
             // Once we have enough profiles, invalidate the compiled unit so it
@@ -3554,6 +3548,7 @@ pub fn gen_function_stub_hit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, C
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
         assert_eq!(gc_offsets.len(), 0);
+        register_current_code_range_with_perf(cb, "function_stub_hit trampoline", code_ptr);
         code_ptr
     })
 }
@@ -3569,6 +3564,7 @@ pub fn gen_exit_trampoline(cb: &mut CodeBlock) -> Result<CodePtr, CompileError> 
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
         assert_eq!(gc_offsets.len(), 0);
+        register_current_code_range_with_perf(cb, "exit trampoline", code_ptr);
         code_ptr
     })
 }
@@ -3591,6 +3587,7 @@ pub fn gen_materialize_exit_trampoline(cb: &mut CodeBlock, exit_trampoline: Code
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
         assert_eq!(gc_offsets.len(), 0);
+        register_current_code_range_with_perf(cb, "materialize_exit trampoline", code_ptr);
         code_ptr
     })
 }
@@ -3606,6 +3603,7 @@ pub fn gen_materialize_exit_trampoline_with_counter(cb: &mut CodeBlock, material
 
     asm.compile(cb).map(|(code_ptr, gc_offsets)| {
         assert_eq!(gc_offsets.len(), 0);
+        register_current_code_range_with_perf(cb, "materialize_exit_with_counter trampoline", code_ptr);
         code_ptr
     })
 }

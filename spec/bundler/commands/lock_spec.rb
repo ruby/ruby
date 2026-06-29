@@ -1301,6 +1301,11 @@ RSpec.describe "bundle lock" do
         s.platform = "x64-mingw-ucrt"
         s.required_ruby_version = "< #{next_ruby_minor}.dev"
       end
+
+      build_gem "raygun-apm", "1.0.78" do |s|
+        s.platform = "x64-mswin64"
+        s.required_ruby_version = "< #{next_ruby_minor}.dev"
+      end
     end
 
     gemfile <<-G

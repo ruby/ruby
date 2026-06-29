@@ -5965,6 +5965,7 @@ gc.$(OBJEXT): $(top_srcdir)/internal/string.h
 gc.$(OBJEXT): $(top_srcdir)/internal/struct.h
 gc.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 gc.$(OBJEXT): $(top_srcdir)/internal/thread.h
+gc.$(OBJEXT): $(top_srcdir)/internal/time.h
 gc.$(OBJEXT): $(top_srcdir)/internal/variable.h
 gc.$(OBJEXT): $(top_srcdir)/internal/vm.h
 gc.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -6026,6 +6027,7 @@ gc.$(OBJEXT): {$(VPATH)}encoding.h
 gc.$(OBJEXT): {$(VPATH)}eval_intern.h
 gc.$(OBJEXT): {$(VPATH)}gc.c
 gc.$(OBJEXT): {$(VPATH)}gc.rbinc
+gc.$(OBJEXT): {$(VPATH)}hrtime.h
 gc.$(OBJEXT): {$(VPATH)}id.h
 gc.$(OBJEXT): {$(VPATH)}id_table.h
 gc.$(OBJEXT): {$(VPATH)}intern.h
@@ -7354,6 +7356,7 @@ io_buffer.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/gc.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/io.h
+io_buffer.$(OBJEXT): $(top_srcdir)/internal/io_buffer.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/serial.h
@@ -17718,6 +17721,7 @@ string.$(OBJEXT): {$(VPATH)}backward/2/limits.h
 string.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 string.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 string.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+string.$(OBJEXT): {$(VPATH)}builtin.h
 string.$(OBJEXT): {$(VPATH)}config.h
 string.$(OBJEXT): {$(VPATH)}constant.h
 string.$(OBJEXT): {$(VPATH)}debug_counter.h
@@ -17896,6 +17900,7 @@ string.$(OBJEXT): {$(VPATH)}rubyparser.h
 string.$(OBJEXT): {$(VPATH)}shape.h
 string.$(OBJEXT): {$(VPATH)}st.h
 string.$(OBJEXT): {$(VPATH)}string.c
+string.$(OBJEXT): {$(VPATH)}string.rbinc
 string.$(OBJEXT): {$(VPATH)}subst.h
 string.$(OBJEXT): {$(VPATH)}thread.h
 string.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h

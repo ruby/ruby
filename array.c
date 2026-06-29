@@ -1740,7 +1740,7 @@ rb_ary_entry(VALUE ary, long offset)
     return rb_ary_entry_internal(ary, offset);
 }
 
-VALUE
+static VALUE
 rb_ary_subseq_step(VALUE ary, long beg, long len, long step)
 {
     VALUE klass;

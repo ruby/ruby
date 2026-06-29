@@ -344,9 +344,10 @@ module SyncDefaultGems
     changed |= src.gsub!(%r[\[\Khttps://docs\.ruby-lang\.org/en/master(?:/doc)?/(([A-Z]\w+(?:/[A-Z]\w+)*)|\w+_rdoc)\.html(\#\S+)?(?=\])]) do
       name, mod, label = $1, $2, $3
       mod &&= mod.gsub('/', '::')
-      if label && (m = label.match(/\A\#(?:method-([ci])|(?:(?:class|module)-#{mod}-)?label)-([-+\w]+)\z/))
+      if label && (m = label.match(/\A\#(?:(?:method|attribute)-([ci])|(?:(?:class|module)-#{mod}-)?label)-(.+)\z/))
         scope, label = m[1], m[2]
         scope = scope ? scope.tr('ci', '.#') : '@'
+        label.gsub!(/-(\h\h)/) {$1.to_i(16).chr(Encoding::ASCII_8BIT)}
       end
       "rdoc-ref:#{mod || name.chomp("_rdoc") + ".rdoc"}#{scope}#{label}"
     end

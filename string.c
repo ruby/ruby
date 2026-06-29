@@ -11736,14 +11736,7 @@ rb_str_b(VALUE str)
     return str2;
 }
 
-/*
- *  call-seq:
- *    valid_encoding? -> true or false
- *
- *  :include: doc/string/valid_encoding_p.rdoc
- *
- */
-
+/* Defined as a leaf builtin in string.rb, so this must never raise or call into Ruby. */
 static VALUE
 rb_str_valid_encoding_p(VALUE str)
 {
@@ -11752,18 +11745,7 @@ rb_str_valid_encoding_p(VALUE str)
     return RBOOL(cr != ENC_CODERANGE_BROKEN);
 }
 
-/*
- *  call-seq:
- *    ascii_only? -> true or false
- *
- *  Returns whether +self+ contains only ASCII characters:
- *
- *    'abc'.ascii_only?         # => true
- *    "abc\u{6666}".ascii_only? # => false
- *
- *  Related: see {Querying}[rdoc-ref:String@Querying].
- */
-
+/* Defined as a leaf builtin in string.rb, so this must never raise or call into Ruby. */
 static VALUE
 rb_str_is_ascii_only_p(VALUE str)
 {
@@ -13053,8 +13035,6 @@ Init_String(void)
     rb_define_method(rb_cString, "encoding", rb_obj_encoding, 0); /* in encoding.c */
     rb_define_method(rb_cString, "force_encoding", rb_str_force_encoding, 1);
     rb_define_method(rb_cString, "b", rb_str_b, 0);
-    rb_define_method(rb_cString, "valid_encoding?", rb_str_valid_encoding_p, 0);
-    rb_define_method(rb_cString, "ascii_only?", rb_str_is_ascii_only_p, 0);
 
     /* define UnicodeNormalize module here so that we don't have to look it up */
     mUnicodeNormalize          = rb_define_module("UnicodeNormalize");
@@ -13107,3 +13087,4 @@ Init_String(void)
     rb_define_method(rb_cSymbol, "encoding", sym_encoding, 0);
 }
 
+#include "string.rbinc"

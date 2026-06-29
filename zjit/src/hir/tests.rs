@@ -2037,12 +2037,21 @@ pub(crate) mod hir_build_tests {
         bb3(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v12:Fixnum[123] = Const Value(123)
-          v15:BasicObject = ObjToString v12
-          v17:String = AnyToString v12, str: v15
-          v19:StringExact = StringConcat v10, v17
-          v21:Symbol = StringIntern v19
+          v15:CBool[false] = HasType v12, String
+          CondBranch v15, bb4(), bb5()
+        bb4():
+          v17 = RefineType v12, String
+          Jump bb6(v17)
+        bb5():
+          v19:Fixnum[123] = RefineType v12, NotString
+          v20:BasicObject = Send v19, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb6(v20)
+        bb6(v22:BasicObject):
+          v24:String = AnyToString v12, str: v22
+          v26:StringExact = StringConcat v10, v24
+          v28:Symbol = StringIntern v26
           CheckInterrupts
-          Return v21
+          Return v28
         ");
     }
 
@@ -3232,9 +3241,12 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           PatchPoint SingleRactorMode
-          v11:BasicObject = GetIvar v6, :@foo
+          v11:HeapBasicObject = GuardType v6, HeapBasicObject
+          v12:CShape = LoadField v11, :shape_id@0x1000
+          v13:CShape[0x1001] = GuardBitEquals v12, CShape(0x1001) recompile
+          v14:NilClass = Const Value(nil)
           CheckInterrupts
-          Return v11
+          Return v14
         ");
     }
 
@@ -3258,8 +3270,14 @@ pub(crate) mod hir_build_tests {
         bb3(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
           PatchPoint SingleRactorMode
-          SetIvar v6, :@foo, v10
-          v15:HeapBasicObject = RefineType v6, HeapBasicObject
+          v14:HeapBasicObject = GuardType v6, HeapBasicObject
+          v15:CShape = LoadField v14, :shape_id@0x1000
+          v16:CShape[0x1001] = GuardBitEquals v15, CShape(0x1001) recompile
+          StoreField v14, :@foo@0x1002, v10
+          WriteBarrier v14, v10
+          v19:CShape[0x1003] = Const CShape(0x1003)
+          StoreField v14, :shape_id@0x1000, v19
+          v21:HeapBasicObject = RefineType v6, HeapBasicObject
           CheckInterrupts
           Return v10
         ");
@@ -4829,7 +4847,7 @@ pub(crate) mod hir_build_tests {
           CondBranch v47, bb8(), bb4(v18, v19, v20, v21, v34, v27)
         bb8():
           v50:Truthy = RefineType v33, Truthy
-          v54:BasicObject = InvokeBlock, v27 # SendFallbackReason: InvokeBlock: not yet specialized
+          v54:BasicObject = InvokeBlock v27 # SendFallbackReason: InvokeBlock: not yet specialized
           v57:BasicObject = InvokeBuiltin dir_s_close, v18, v27
           CheckInterrupts
           Return v54
@@ -5001,11 +5019,20 @@ pub(crate) mod hir_build_tests {
         bb3(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v12:Fixnum[1] = Const Value(1)
-          v15:BasicObject = ObjToString v12
-          v17:String = AnyToString v12, str: v15
-          v19:StringExact = StringConcat v10, v17
+          v15:CBool[false] = HasType v12, String
+          CondBranch v15, bb4(), bb5()
+        bb4():
+          v17 = RefineType v12, String
+          Jump bb6(v17)
+        bb5():
+          v19:Fixnum[1] = RefineType v12, NotString
+          v20:BasicObject = Send v19, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb6(v20)
+        bb6(v22:BasicObject):
+          v24:String = AnyToString v12, str: v22
+          v26:StringExact = StringConcat v10, v24
           CheckInterrupts
-          Return v19
+          Return v26
         ");
     }
 
@@ -5027,17 +5054,44 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
-          v13:BasicObject = ObjToString v10
-          v15:String = AnyToString v10, str: v13
-          v17:Fixnum[2] = Const Value(2)
-          v20:BasicObject = ObjToString v17
-          v22:String = AnyToString v17, str: v20
-          v24:Fixnum[3] = Const Value(3)
-          v27:BasicObject = ObjToString v24
-          v29:String = AnyToString v24, str: v27
-          v31:StringExact = StringConcat v15, v22, v29
+          v13:CBool[false] = HasType v10, String
+          CondBranch v13, bb4(), bb5()
+        bb4():
+          v15 = RefineType v10, String
+          Jump bb6(v15)
+        bb5():
+          v17:Fixnum[1] = RefineType v10, NotString
+          v18:BasicObject = Send v17, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb6(v18)
+        bb6(v20:BasicObject):
+          v22:String = AnyToString v10, str: v20
+          v24:Fixnum[2] = Const Value(2)
+          v27:CBool[false] = HasType v24, String
+          CondBranch v27, bb7(), bb8()
+        bb7():
+          v29 = RefineType v24, String
+          Jump bb9(v29)
+        bb8():
+          v31:Fixnum[2] = RefineType v24, NotString
+          v32:BasicObject = Send v31, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb9(v32)
+        bb9(v34:BasicObject):
+          v36:String = AnyToString v24, str: v34
+          v38:Fixnum[3] = Const Value(3)
+          v41:CBool[false] = HasType v38, String
+          CondBranch v41, bb10(), bb11()
+        bb10():
+          v43 = RefineType v38, String
+          Jump bb12(v43)
+        bb11():
+          v45:Fixnum[3] = RefineType v38, NotString
+          v46:BasicObject = Send v45, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb12(v46)
+        bb12(v48:BasicObject):
+          v50:String = AnyToString v38, str: v48
+          v52:StringExact = StringConcat v22, v36, v50
           CheckInterrupts
-          Return v31
+          Return v52
         ");
     }
 
@@ -5060,11 +5114,20 @@ pub(crate) mod hir_build_tests {
         bb3(v6:BasicObject):
           v10:StringExact[VALUE(0x1000)] = Const Value(VALUE(0x1000))
           v12:NilClass = Const Value(nil)
-          v15:BasicObject = ObjToString v12
-          v17:String = AnyToString v12, str: v15
-          v19:StringExact = StringConcat v10, v17
+          v15:CBool[false] = HasType v12, String
+          CondBranch v15, bb4(), bb5()
+        bb4():
+          v17 = RefineType v12, String
+          Jump bb6(v17)
+        bb5():
+          v19:NilClass = RefineType v12, NotString
+          v20:BasicObject = Send v19, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb6(v20)
+        bb6(v22:BasicObject):
+          v24:String = AnyToString v12, str: v22
+          v26:StringExact = StringConcat v10, v24
           CheckInterrupts
-          Return v19
+          Return v26
         ");
     }
 
@@ -5086,17 +5149,44 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
-          v13:BasicObject = ObjToString v10
-          v15:String = AnyToString v10, str: v13
-          v17:Fixnum[2] = Const Value(2)
-          v20:BasicObject = ObjToString v17
-          v22:String = AnyToString v17, str: v20
-          v24:Fixnum[3] = Const Value(3)
-          v27:BasicObject = ObjToString v24
-          v29:String = AnyToString v24, str: v27
-          v31:RegexpExact = ToRegexp v15, v22, v29
+          v13:CBool[false] = HasType v10, String
+          CondBranch v13, bb4(), bb5()
+        bb4():
+          v15 = RefineType v10, String
+          Jump bb6(v15)
+        bb5():
+          v17:Fixnum[1] = RefineType v10, NotString
+          v18:BasicObject = Send v17, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb6(v18)
+        bb6(v20:BasicObject):
+          v22:String = AnyToString v10, str: v20
+          v24:Fixnum[2] = Const Value(2)
+          v27:CBool[false] = HasType v24, String
+          CondBranch v27, bb7(), bb8()
+        bb7():
+          v29 = RefineType v24, String
+          Jump bb9(v29)
+        bb8():
+          v31:Fixnum[2] = RefineType v24, NotString
+          v32:BasicObject = Send v31, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb9(v32)
+        bb9(v34:BasicObject):
+          v36:String = AnyToString v24, str: v34
+          v38:Fixnum[3] = Const Value(3)
+          v41:CBool[false] = HasType v38, String
+          CondBranch v41, bb10(), bb11()
+        bb10():
+          v43 = RefineType v38, String
+          Jump bb12(v43)
+        bb11():
+          v45:Fixnum[3] = RefineType v38, NotString
+          v46:BasicObject = Send v45, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb12(v46)
+        bb12(v48:BasicObject):
+          v50:String = AnyToString v38, str: v48
+          v52:RegexpExact = ToRegexp v22, v36, v50
           CheckInterrupts
-          Return v31
+          Return v52
         ");
     }
 
@@ -5118,14 +5208,32 @@ pub(crate) mod hir_build_tests {
           Jump bb3(v4)
         bb3(v6:BasicObject):
           v10:Fixnum[1] = Const Value(1)
-          v13:BasicObject = ObjToString v10
-          v15:String = AnyToString v10, str: v13
-          v17:Fixnum[2] = Const Value(2)
-          v20:BasicObject = ObjToString v17
-          v22:String = AnyToString v17, str: v20
-          v24:RegexpExact = ToRegexp v15, v22, MULTILINE|IGNORECASE|EXTENDED|NOENCODING
+          v13:CBool[false] = HasType v10, String
+          CondBranch v13, bb4(), bb5()
+        bb4():
+          v15 = RefineType v10, String
+          Jump bb6(v15)
+        bb5():
+          v17:Fixnum[1] = RefineType v10, NotString
+          v18:BasicObject = Send v17, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb6(v18)
+        bb6(v20:BasicObject):
+          v22:String = AnyToString v10, str: v20
+          v24:Fixnum[2] = Const Value(2)
+          v27:CBool[false] = HasType v24, String
+          CondBranch v27, bb7(), bb8()
+        bb7():
+          v29 = RefineType v24, String
+          Jump bb9(v29)
+        bb8():
+          v31:Fixnum[2] = RefineType v24, NotString
+          v32:BasicObject = Send v31, :to_s # SendFallbackReason: ObjToString: result is not a string
+          Jump bb9(v32)
+        bb9(v34:BasicObject):
+          v36:String = AnyToString v24, str: v34
+          v38:RegexpExact = ToRegexp v22, v36, MULTILINE|IGNORECASE|EXTENDED|NOENCODING
           CheckInterrupts
-          Return v24
+          Return v38
         ");
     }
 
@@ -5213,7 +5321,7 @@ pub(crate) mod hir_build_tests {
           v9:BasicObject = LoadArg :y@2
           Jump bb3(v7, v8, v9)
         bb3(v11:BasicObject, v12:BasicObject, v13:BasicObject):
-          v19:BasicObject = InvokeBlock, v12, v13 # SendFallbackReason: InvokeBlock: not yet specialized
+          v19:BasicObject = InvokeBlock v12, v13 # SendFallbackReason: InvokeBlock: not yet specialized
           CheckInterrupts
           Return v19
         ");
@@ -5496,7 +5604,7 @@ pub(crate) mod hir_build_tests {
           Return v48
         bb7(v67:BasicObject, v68:Fixnum):
           v72:BasicObject = InvokeBuiltin rb_jit_ary_at, v67, v68
-          v74:BasicObject = InvokeBlock, v72 # SendFallbackReason: InvokeBlock: not yet specialized
+          v74:BasicObject = InvokeBlock v72 # SendFallbackReason: InvokeBlock: not yet specialized
           v78:Fixnum = InvokeBuiltin rb_jit_fixnum_inc, v67, v68
           PatchPoint NoEPEscape(each)
           Jump bb8(v67, v78)

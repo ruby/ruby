@@ -117,6 +117,7 @@ RSpec.describe Bundler::Env do
       let(:output) { described_class.report(print_gemfile: true) }
 
       it "prints the config with redacted values" do
+        skip "temp dir is on a different drive than the source tree" if tmp_and_source_on_different_drives?
         expect(output).to include("https://localgemserver.test")
         expect(output).to include("user:[REDACTED]")
         expect(output).to_not include("user:pass")
@@ -131,6 +132,7 @@ RSpec.describe Bundler::Env do
       let(:output) { described_class.report(print_gemfile: true) }
 
       it "prints the config with redacted values" do
+        skip "temp dir is on a different drive than the source tree" if tmp_and_source_on_different_drives?
         expect(output).to include("https://localgemserver.test")
         expect(output).to include("[REDACTED]:x-oauth-basic")
         expect(output).to_not include("api_token:x-oauth-basic")

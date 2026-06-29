@@ -83,6 +83,11 @@ RSpec.describe Bundler::ParallelInstaller do
         skip "This example is runnable when RubyGems::Installer implements `build_jobs`"
       end
 
+      # The make jobserver is a GNU make feature. On Windows extensions are built
+      # with nmake, which has no `-j` jobserver, so the per-gem slot count never
+      # appears in the build output.
+      skip "The make jobserver is not available on Windows (nmake)" if mswin?
+
       # When run under a parent make that already passes `-j` (e.g. ruby/ruby's
       # `make test-bundler-parallel`), RubyGems' extension builder sees the
       # inherited MAKEFLAGS as "jobs already requested" and skips appending its

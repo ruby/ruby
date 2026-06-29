@@ -127,6 +127,16 @@ module Spec
       end
     end
 
+    # On Windows there is no relative path between different drives, and much of
+    # the spec setup (temp home, bundled app, caches) lives under the temp dir.
+    # When the temp dir is on a different drive than the source tree, examples
+    # that compare or look up paths across the two cannot be set up correctly.
+    def tmp_and_source_on_different_drives?
+      return false unless Gem.win_platform?
+      drive = ->(path) { path.to_s[/\A[a-zA-Z]:/]&.upcase }
+      drive[tmp_root] != drive[source_root]
+    end
+
     # Bump this version whenever you make a breaking change to the spec setup
     # that requires regenerating tmp/.
 
@@ -345,7 +355,7 @@ module Spec
     end
 
     def tracked_files_glob
-      ruby_core? ? "libexec/bundle* lib/bundler lib/bundler.rb spec/bundler man/bundle*" : "exe/bundle exe/bundler lib/bundler lib/bundler.rb bundler.gemspec CHANGELOG-bundler.md LICENSE-bundler.md README-bundler.md"
+      ruby_core? ? "libexec/bundle* lib/bundler lib/bundler.rb lib/rubygems/vendor/uri lib/rubygems/vendor/securerandom spec/bundler man/bundle*" : "exe/bundle exe/bundler lib/bundler lib/bundler.rb lib/rubygems/vendor/uri lib/rubygems/vendor/securerandom bundler.gemspec CHANGELOG-bundler.md LICENSE-bundler.md README-bundler.md"
     end
 
     def lib_tracked_files_glob

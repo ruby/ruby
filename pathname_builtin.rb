@@ -293,10 +293,25 @@ class Pathname
     "#<#{self.class}:#{@path}>"
   end
 
-  # Creates a full path, including any intermediate directories that don't yet
-  # exist.
+  # :markup: markdown
   #
-  # See FileUtils.mkpath and FileUtils.mkdir_p
+  # call-seq:
+  #   mkpath(permissions = 0775) -> self
+  #
+  # Creates a directory at the path in `self`;
+  # creates intermediate directories as needed:
+  #
+  # ```ruby
+  # pn = Pathname('foo/bar/baz')
+  # pn.directory? # => false
+  # pn.mkpath     # Creates directories 'foo', 'foo/bar', 'foo/bar/baz'.
+  # pn.directory? # => true
+  # pn.rmtree     # Clean up.
+  # ```
+  #
+  # Directories are created with the given permissions;
+  # see {File Permissions}[rdoc-ref:File@File+Permissions].
+  # The permissions for already-existing directories are not changed.
   def mkpath(mode: nil)
     path = @path == '/' ? @path : @path.chomp('/')
 
@@ -1118,42 +1133,25 @@ class Pathname    # * File *
   # see [File System Timestamps](rdoc-ref:file/timestamps.md):
   #
   # ```ruby
-  # # Work in a temporary directory.
-  # Pathname.mktmpdir do |tmpdirpath|
-  #   # A subdirectory therein, and its Pathname.
-  #   dirpath = File.join(tmpdirpath, 'subdir')
-  #   dir_pn = Pathname(dirpath)
-  #   puts "Create directory; directory birthtime established."
-  #   dir_pn.mkdir
-  #   puts "  Directory birthtime: #{dir_pn.birthtime}"
-  #   sleep(1)
-  #
-  #   # A file in the subdirectory, and its Pathname.
-  #   filepath = File.join(dirpath, 't.txt')
-  #   file_pn = Pathname(filepath)
-  #   puts "Create file; file birthtime established; directory birthtime not updated."
-  #   file_pn.write('foo')
-  #   puts "  File birthtime:      #{file_pn.birthtime}"
-  #   puts "  Directory birthtime: #{dir_pn.birthtime}"
-  #   sleep(1)
-  #   puts "Write file; neither birthtime updated."
-  #   file_pn.write('bar')
-  #   puts "  File birthtime:      #{file_pn.birthtime}"
-  #   puts "  Directory birthtime: #{dir_pn.birthtime}"
-  # end
-  # ```
-  #
-  # Output:
-  #
-  # ```text
-  # Create directory; directory birthtime established.
-  #   Directory birthtime: 2026-05-14 23:41:12 +0100
-  # Create file; file birthtime established; directory birthtime not updated.
-  #   File birthtime:      2026-05-14 23:41:13 +0100
-  #   Directory birthtime: 2026-05-14 23:41:12 +0100
-  # Write file; neither birthtime updated.
-  #   File birthtime:      2026-05-14 23:41:13 +0100
-  #   Directory birthtime: 2026-05-14 23:41:12 +0100
+  # # A directory and its Pathname.
+  # dir_path = 'doc/foo'
+  # dir_pn = Pathname(dir_path)
+  # # Create directory; directory birthtime established.
+  # dir_pn.mkdir
+  # dir_pn.birthtime  # => 2026-06-16 17:06:10.779192552 -0500
+  # # A file therein and its Pathname.
+  # file_path = dir_pn.join('t.tmp')
+  # file_pn = Pathname(file_path)
+  # # Create file; file birthtime established; directory birthtime not updated.
+  # file_pn.write('foo')
+  # dir_pn.birthtime  # => 2026-06-16 17:06:10.779192552 -0500
+  # file_pn.birthtime # => 2026-06-16 17:07:59.339330622 -0500
+  # # Modify file; neither birthtime updated.
+  # file_pn.write('bar')
+  # dir_pn.birthtime  # => 2026-06-16 17:06:10.779192552 -0500
+  # file_pn.birthtime # => 2026-06-16 17:07:59.339330622 -0500
+  # # Clean up.
+  # dir_pn.rmtree
   # ```
   #
   def birthtime() File.birthtime(@path) end
@@ -1171,55 +1169,64 @@ class Pathname    # * File *
   # see {File System Timestamps}[rdoc-ref:file/timestamps.md]:
   #
   # ```ruby
-  # # Work in a temporary directory.
-  # Pathname.mktmpdir do |tmpdirpath|
-  #   # A subdirectory therein, and its Pathname.
-  #   dirpath = File.join(tmpdirpath, 'subdir')
-  #   dir_pn = Pathname(dirpath)
-  #   puts "Create directory; directory ctime established."
-  #   dir_pn.mkdir
-  #   puts "  Directory ctime: #{dir_pn.ctime}"
-  #   sleep(1)
-  #
-  #   # A file in the subdirectory, and its Pathname.
-  #   filepath = File.join(dirpath, 't.txt')
-  #   file_pn = Pathname(filepath)
-  #   puts "Create file; file ctime established; directory ctime updated."
-  #   file_pn.write('foo')
-  #   puts "  File ctime:      #{file_pn.ctime}"
-  #   puts "  Directory ctime: #{dir_pn.ctime}"
-  #   sleep(1)
-  #   puts "Write file; file ctime updated; directory ctime not updated."
-  #   file_pn.write('bar')
-  #   puts "  File ctime:      #{file_pn.ctime}"
-  #   puts "  Directory ctime: #{dir_pn.ctime}"
-  #   sleep(1)
-  #   puts "Read file; neither ctime not updated."
-  #   file_pn.read
-  #   puts "  File ctime:      #{file_pn.ctime}"
-  #   puts "  Directory ctime: #{dir_pn.ctime}"
-  # end
-  # ```
-  #
-  # Output:
-  #
-  # ```text
-  # Create directory; directory ctime established.
-  #   Directory ctime: 2026-05-20 14:05:05 -0500
-  # Create file; file ctime established; directory ctime updated.
-  #   File ctime:      2026-05-20 14:05:06 -0500
-  #   Directory ctime: 2026-05-20 14:05:06 -0500
-  # Write file; file ctime updated; directory ctime not updated.
-  #   File ctime:      2026-05-20 14:05:07 -0500
-  #   Directory ctime: 2026-05-20 14:05:06 -0500
-  # Read file; neither ctime not updated.
-  #   File ctime:      2026-05-20 14:05:07 -0500
-  #   Directory ctime: 2026-05-20 14:05:06 -0500
+  # # A directory and its Pathname.
+  # dir_path = 'doc/foo'
+  # dir_pn = Pathname(dir_path)
+  # # Create directory; directory ctime established.
+  # dir_pn.mkdir
+  # dir_pn.ctime  # => 2026-06-16 16:44:15.86720572 -0500
+  # # A file therein and its Pathname.
+  # file_path = dir_pn.join('t.tmp')
+  # file_pn = Pathname(file_path)
+  # # Create file; file ctime established; directory ctime updated.
+  # file_pn.write('foo')
+  # file_pn.ctime # => 2026-06-16 16:46:00.734974872 -0500
+  # dir_pn.ctime  # => 2026-06-16 16:46:00.734974872 -0500
+  # # Write file; file ctime updated; directory ctime not updated.
+  # file_pn.write('bar')
+  # file_pn.ctime # => 2026-06-16 16:49:11.421204188 -0500
+  # dir_pn.ctime  # => 2026-06-16 16:46:00.734974872 -0500
+  # # Read file; neither ctime updated.
+  # file_pn.read
+  # file_pn.ctime # => 2026-06-16 16:49:11.421204188 -0500
+  # dir_pn.ctime  # => 2026-06-16 16:46:00.734974872 -0500
+  # # Clean up.
+  # dir_pn.rmtree
   # ```
   #
   def ctime() File.ctime(@path) end
 
-  # See <tt>File.mtime</tt>.  Returns last modification time.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   mtime -> time
+  #
+  # Returns a Time object containing the time of the most recent
+  # modification to the entry represented by `self`;
+  # see {File System Timestamps}[rdoc-ref:file/timestamps.md]:
+  #
+  # ```ruby
+  # # A directory and its Pathname.
+  # dir_path = 'doc/foo'
+  # dir_pn = Pathname(dir_path)
+  # # Create directory; directory mtime established.
+  # dir_pn.mkdir
+  # dir_pn.mtime  # => 2026-06-28 16:38:02.675780521 -0500
+  # # A file therein and its Pathname.
+  # file_path = dir_pn.join('t.tmp')
+  # file_pn = Pathname(file_path)
+  # # Create file; file mtime established; directory mtime updated.
+  # file_pn.write('foo')
+  # dir_pn.mtime  # => 2026-06-28 16:41:23.107750483 -0500
+  # file_pn.mtime # => 2026-06-28 16:41:23.107750483 -0500
+  # # Modify file; file mtime updated; directory mtime unchanged.
+  # file_pn.write('bar')
+  # dir_pn.mtime  # => 2026-06-28 16:41:23.107750483 -0500
+  # file_pn.mtime # => 2026-06-28 16:42:48.869163049 -0500
+  # # Clean up.
+  # dir_pn.rmtree
+  # ```
+  #
   def mtime() File.mtime(@path) end
 
 
@@ -1444,7 +1451,23 @@ class Pathname    # * File *
     File.open(@path, ...)
   end
 
-  # See <tt>File.readlink</tt>.  Read symbolic link.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   readlink -> new_pathname
+  #
+  # Returns a new pathname containing the string path to the entry referenced by `self`:
+  #
+  # ```ruby
+  # # Create Pathnames.
+  # file_pn = Pathname('doc/extension.rdoc') # => #<Pathname:doc/extension.rdoc>
+  # target_pn = Pathname('..').join(file_pn) # => #<Pathname:../doc/extension.rdoc>
+  # link_pn = Pathname('lib/u.tmp')          # => #<Pathname:lib/u.tmp>
+  # link_pn.make_symlink(target_pn)
+  # link_pn.readlink                         # => #<Pathname:../doc/extension.rdoc>
+  # link_pn.delete
+  # ```
+  #
   def readlink() self.class.new(File.readlink(@path)) end
 
   # See <tt>File.rename</tt>.  Rename the file.
@@ -1480,7 +1503,25 @@ class Pathname    # * File *
   #
   def lstat() File.lstat(@path) end
 
-  # See <tt>File.symlink</tt>.  Creates a symbolic link.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   make_symlink(path) -> 0
+  #
+  # Creates a symbolic link at the path in `self` to the entry at `path`:
+  #
+  # ```ruby
+  # # Create Pathnames.
+  # file_pn = Pathname('doc/extension.rdoc') # => #<Pathname:doc/extension.rdoc>
+  # target_pn = Pathname('..').join(file_pn) # => #<Pathname:../doc/extension.rdoc>
+  # link_pn = Pathname('lib/u.tmp')          # => #<Pathname:lib/u.tmp>
+  # # Create link and verify.
+  # link_pn.make_symlink(target_pn)
+  # file_pn.read == link_pn.read             # => true
+  # link_pn.delete                           # Clean up.
+  # ```
+  #
+  # See also: #read, #readlink, #symlink?.
   def make_symlink(old) File.symlink(old, @path) end
 
   # See <tt>File.truncate</tt>.  Truncate the file to +length+ bytes.
@@ -1867,11 +1908,28 @@ class Pathname    # * FileTest *
 
   # See <tt>FileTest.size?</tt>.
   def size?() FileTest.size?(@path) end
-
   # See <tt>FileTest.sticky?</tt>.
   def sticky?() FileTest.sticky?(@path) end
 
-  # See <tt>FileTest.symlink?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   symlink? -> true or false
+  #
+  # Returns whether the entry at the path in `self` is a symbolic link:
+  #
+  # ```ruby
+  # # Create Pathnames.
+  # file_pn = Pathname('doc/extension.rdoc') # => #<Pathname:doc/extension.rdoc>
+  # target_pn = Pathname('..').join(file_pn) # => #<Pathname:../doc/extension.rdoc>
+  # link_pn = Pathname('lib/u.tmp')          # => #<Pathname:lib/u.tmp>
+  # link_pn.symlink?                         # => false
+  # # Create link.
+  # link_pn.make_symlink(target_pn)
+  # link_pn.symlink?                         # => true
+  # link_pn.delete                           # Clean up.
+  # ```
+  #
   def symlink?() FileTest.symlink?(@path) end
 
   # See <tt>FileTest.writable?</tt>.

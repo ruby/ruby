@@ -580,6 +580,64 @@ class TestGc < Test::Unit::TestCase
     GC::Profiler.disable
   end
 
+  def test_profiler_raw_data_includes_wall_time
+    auto_compact = GC.auto_compact if GC.respond_to?(:auto_compact)
+    GC.auto_compact = false if GC.respond_to?(:auto_compact=)
+
+    GC::Profiler.enable
+    GC::Profiler.clear
+
+    GC.start
+    record = GC::Profiler.raw_data.last
+
+    assert_kind_of Float, record[:GC_WALL_TIME]
+    assert_kind_of Float, record[:GC_INVOKE_WALL_TIME]
+    assert_kind_of Float, record[:GC_PAUSE_TIME]
+    assert_kind_of Float, record[:GC_STOP_TIME]
+    assert_kind_of Float, record[:GC_STW_TIME]
+    assert_kind_of Float, record[:GC_MARK_WALL_TIME]
+    assert_kind_of Float, record[:GC_SWEEP_WALL_TIME]
+    assert_kind_of Float, record[:GC_COMPACT_WALL_TIME]
+
+    assert_operator record[:GC_WALL_TIME], :>=, 0.0
+    assert_operator record[:GC_INVOKE_WALL_TIME], :>=, 0.0
+    assert_operator record[:GC_PAUSE_TIME], :>=, 0.0
+    assert_operator record[:GC_STOP_TIME], :>=, 0.0
+    assert_operator record[:GC_STW_TIME], :>=, 0.0
+    assert_operator record[:GC_MARK_WALL_TIME], :>=, 0.0
+    assert_operator record[:GC_SWEEP_WALL_TIME], :>=, 0.0
+    assert_operator record[:GC_COMPACT_WALL_TIME], :>=, 0.0
+    assert_in_delta record[:GC_PAUSE_TIME], record[:GC_STOP_TIME] + record[:GC_STW_TIME], 0.001
+    assert_operator record[:GC_MARK_WALL_TIME] + record[:GC_SWEEP_WALL_TIME], :<=, record[:GC_PAUSE_TIME] + 0.001
+    assert_equal 0.0, record[:GC_COMPACT_WALL_TIME]
+  ensure
+    GC::Profiler.disable
+    GC::Profiler.clear
+    GC.auto_compact = auto_compact if GC.respond_to?(:auto_compact=) && defined?(auto_compact)
+  end
+
+  def test_profiler_raw_data_reports_compaction_separately_from_sweep_wall_time
+    omit "compaction not supported" unless GC.respond_to?(:compact)
+
+    GC::Profiler.enable
+    GC::Profiler.clear
+
+    objects = 10_000.times.map { Object.new }
+    GC.compact
+    record = GC::Profiler.raw_data.last
+
+    assert_kind_of Float, record[:GC_COMPACT_WALL_TIME]
+    assert_operator record[:GC_COMPACT_WALL_TIME], :>, 0.0
+    phase_wall_time = record[:GC_MARK_WALL_TIME] + record[:GC_SWEEP_WALL_TIME] + record[:GC_COMPACT_WALL_TIME]
+    assert_operator phase_wall_time, :<=, record[:GC_PAUSE_TIME] + 0.001
+    objects.clear
+  rescue NotImplementedError
+    omit "compaction not supported"
+  ensure
+    GC::Profiler.disable
+    GC::Profiler.clear
+  end
+
   def test_profiler_total_time
     GC::Profiler.enable
     GC::Profiler.clear

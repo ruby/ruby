@@ -1,9 +1,10 @@
+use std::cell::RefCell;
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::fmt;
 use std::mem::take;
 use std::rc::Rc;
 use crate::bitset::BitSet;
-use crate::codegen::{local_size_and_idx_to_ep_offset, perf_symbol_range_start, perf_symbol_range_end};
+use crate::codegen::{local_size_and_idx_to_ep_offset, perf_symbol_range_start, perf_symbol_range_end, register_with_perf};
 use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, YarvInsnIdx, zjit_jit_frame};
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
@@ -549,22 +550,18 @@ pub struct SideExit {
     pub stack: Vec<Opnd>,
     pub locals: Vec<Opnd>,
     pub iseq: IseqPtr,
-    /// If set, the side exit will call the recompile function with these arguments
-    /// to profile the send and invalidate the ISEQ for recompilation.
+    /// If set, the side exit will profile the current instruction and invalidate
+    /// the compiled ISEQ for recompilation.
     pub recompile: Option<SideExitRecompile>,
 }
 
-/// Arguments for the recompile callback on side exit.
+/// Metadata for the recompile callback on side exit.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct SideExitRecompile {
-    /// The frame's own iseq, where the runtime profile is recorded at `insn_idx`.
-    /// For an exit out of inlined code this is the inlined callee.
-    pub frame_iseq: Opnd,
     /// The compiled unit whose version must be invalidated to force a recompile. For inlined
     /// methods, this will be the outer function it was inlined into.
     pub compiled_iseq: Opnd,
     pub insn_idx: u32,
-    pub strategy: hir::Recompile,
 }
 
 /// Branch target (something that we can jump to)
@@ -1697,6 +1694,43 @@ impl Assembler
     }
 
     pub fn linearize_instructions(&self) -> Vec<Insn> {
+        // Wrap instructions emitted by `push_insns` with PosMarkers and record
+        // the emitted byte range under `symbol_name` in the perf map.
+        fn push_insns_with_perf_symbol(
+            insns: &mut Vec<Insn>,
+            symbol_name: &str,
+            push_insns: impl FnOnce(&mut Vec<Insn>),
+        ) {
+            // ISEQ perf symbols cover the whole compiled ISEQ, including this
+            // padding. HIR perf needs a separate symbol because the padding
+            // doesn't belong to any HIR instruction.
+            if get_option!(perf) != Some(PerfMap::HIR) {
+                push_insns(insns);
+                return;
+            }
+
+            let symbol_name = symbol_name.to_string();
+            let start = Rc::new(RefCell::new(None));
+            let current = start.clone();
+            insns.push(Insn::PosMarker(Rc::new(move |code_ptr, _| {
+                let mut current = current.borrow_mut();
+                assert!(current.is_none(), "perf symbol range already open");
+                *current = Some(code_ptr);
+            })));
+
+            push_insns(insns);
+
+            insns.push(Insn::PosMarker(Rc::new(move |end, cb| {
+                if let Some(start) = start.borrow_mut().take() {
+                    let start_addr = start.raw_addr(cb);
+                    let end_addr = end.raw_addr(cb);
+                    if start_addr < end_addr {
+                        register_with_perf(symbol_name.clone(), start_addr, end_addr - start_addr);
+                    }
+                }
+            })));
+        }
+
         // Emit instructions with labels, expanding branch parameters
         let mut insns = Vec::with_capacity(ASSEMBLER_INSNS_CAPACITY);
 
@@ -1708,7 +1742,9 @@ impl Assembler
             // Entry blocks shouldn't ever be preceded by something that can
             // stomp on this block.
             if !block.is_entry {
-                insns.push(Insn::PadPatchPoint);
+                push_insns_with_perf_symbol(&mut insns, "PadPatchPoint", |insns| {
+                    insns.push(Insn::PadPatchPoint);
+                });
             }
 
             // Process each instruction, expanding branch params if needed
@@ -1730,7 +1766,9 @@ impl Assembler
 
             // Make sure we don't stomp on the next function
             if block_id.0 == num_blocks - 1 {
-                insns.push(Insn::PadPatchPoint);
+                push_insns_with_perf_symbol(&mut insns, "PadPatchPoint", |insns| {
+                    insns.push(Insn::PadPatchPoint);
+                });
             }
         }
         insns
@@ -2588,15 +2626,10 @@ impl Assembler
                 let payload = get_or_create_iseq_payload(exit.iseq);
                 payload.reset_profiles_remaining(recompile.insn_idx as YarvInsnIdx);
                 use crate::codegen::exit_recompile;
-                let (profile_kind, profile_payload) = recompile.strategy.to_c_args();
                 asm_comment!(asm, "profile and maybe recompile");
                 asm_ccall!(asm, exit_recompile,
                     EC,
-                    recompile.frame_iseq,
-                    recompile.compiled_iseq,
-                    recompile.insn_idx.into(),
-                    profile_kind.into(),
-                    profile_payload.into()
+                    recompile.compiled_iseq
                 );
             }
         }

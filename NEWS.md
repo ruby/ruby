@@ -75,15 +75,16 @@ releases.
 ### The following default gems are updated.
 
 * RubyGems 4.1.0.dev
-  * 4.0.3 to [v4.0.4][RubyGems-v4.0.4], [v4.0.5][RubyGems-v4.0.5], [v4.0.6][RubyGems-v4.0.6], [v4.0.7][RubyGems-v4.0.7], [v4.0.8][RubyGems-v4.0.8], [v4.0.9][RubyGems-v4.0.9], [v4.0.10][RubyGems-v4.0.10], [v4.0.11][RubyGems-v4.0.11], [v4.0.12][RubyGems-v4.0.12], [v4.0.13][RubyGems-v4.0.13], [v4.0.14][RubyGems-v4.0.14]
+  * 4.0.3 to [v4.0.4][RubyGems-v4.0.4], [v4.0.5][RubyGems-v4.0.5], [v4.0.6][RubyGems-v4.0.6], [v4.0.7][RubyGems-v4.0.7], [v4.0.8][RubyGems-v4.0.8], [v4.0.9][RubyGems-v4.0.9], [v4.0.10][RubyGems-v4.0.10], [v4.0.11][RubyGems-v4.0.11], [v4.0.12][RubyGems-v4.0.12], [v4.0.13][RubyGems-v4.0.13], [v4.0.14][RubyGems-v4.0.14], [v4.0.15][RubyGems-v4.0.15]
 * bundler 4.1.0.dev
-  * 4.0.3 to [v4.0.4][bundler-v4.0.4], [v4.0.5][bundler-v4.0.5], [v4.0.6][bundler-v4.0.6], [v4.0.7][bundler-v4.0.7], [v4.0.8][bundler-v4.0.8], [v4.0.9][bundler-v4.0.9], [v4.0.10][bundler-v4.0.10], [v4.0.11][bundler-v4.0.11], [v4.0.12][bundler-v4.0.12], [v4.0.13][bundler-v4.0.13], [v4.0.14][bundler-v4.0.14]
+  * 4.0.3 to [v4.0.4][bundler-v4.0.4], [v4.0.5][bundler-v4.0.5], [v4.0.6][bundler-v4.0.6], [v4.0.7][bundler-v4.0.7], [v4.0.8][bundler-v4.0.8], [v4.0.9][bundler-v4.0.9], [v4.0.10][bundler-v4.0.10], [v4.0.11][bundler-v4.0.11], [v4.0.12][bundler-v4.0.12], [v4.0.13][bundler-v4.0.13], [v4.0.14][bundler-v4.0.14], [v4.0.15][bundler-v4.0.15]
 * erb 6.0.4
   * 6.0.1 to [v6.0.1.1][erb-v6.0.1.1], [v6.0.2][erb-v6.0.2], [v6.0.3][erb-v6.0.3], [v6.0.4][erb-v6.0.4]
+* error_highlight 0.7.2
 * ipaddr 1.2.9
   * 1.2.8 to [v1.2.9][ipaddr-v1.2.9]
 * json 2.20.0
-  * 2.18.0 to [v2.18.1][json-v2.18.1], [v2.19.0][json-v2.19.0], [v2.19.1][json-v2.19.1], [v2.19.2][json-v2.19.2], [v2.19.3][json-v2.19.3], [v2.19.4][json-v2.19.4], [v2.19.5][json-v2.19.5], [v2.19.6][json-v2.19.6], [v2.19.7][json-v2.19.7], [v2.19.8][json-v2.19.8], [v2.19.9][json-v2.19.9]
+  * 2.18.0 to [v2.18.1][json-v2.18.1], [v2.19.0][json-v2.19.0], [v2.19.1][json-v2.19.1], [v2.19.2][json-v2.19.2], [v2.19.3][json-v2.19.3], [v2.19.4][json-v2.19.4], [v2.19.5][json-v2.19.5], [v2.19.6][json-v2.19.6], [v2.19.7][json-v2.19.7], [v2.19.8][json-v2.19.8], [v2.19.9][json-v2.19.9], [v2.20.0][json-v2.20.0]
 * openssl 4.0.2
   * 4.0.0 to [v4.0.1][openssl-v4.0.1], [v4.0.2][openssl-v4.0.2]
 * pp 0.6.4
@@ -114,7 +115,7 @@ releases.
 * net-imap 0.6.4.1
   * 0.6.2 to [v0.6.3][net-imap-v0.6.3], [v0.6.4][net-imap-v0.6.4], [v0.6.4.1][net-imap-v0.6.4.1]
 * rbs 4.0.3
-  * 3.10.0 to [v3.10.1][rbs-v3.10.1], [v3.10.2][rbs-v3.10.2], [v3.10.3][rbs-v3.10.3], [v3.10.4][rbs-v3.10.4], [v4.0.0.dev.5][rbs-v4.0.0.dev.5], [v4.0.0][rbs-v4.0.0], [v4.0.2][rbs-v4.0.2]
+  * 3.10.0 to [v3.10.1][rbs-v3.10.1], [v3.10.2][rbs-v3.10.2], [v3.10.3][rbs-v3.10.3], [v3.10.4][rbs-v3.10.4], [v4.0.0.dev.5][rbs-v4.0.0.dev.5], [v4.0.0][rbs-v4.0.0], [v4.0.2][rbs-v4.0.2], [v4.0.3][rbs-v4.0.3]
 * typeprof 0.32.0
 * mutex_m 0.3.0
 * bigdecimal 4.1.2
@@ -129,7 +130,7 @@ releases.
   * 0.1.12 to [v0.1.13][repl_type_completor-v0.1.13], [v0.1.14][repl_type_completor-v0.1.14], [v0.1.15][repl_type_completor-v0.1.15]
 * pstore 0.2.1
   * 0.2.0 to [v0.2.1][pstore-v0.2.1]
-* rdoc 7.2.0
+* rdoc 8.0.0
   * 7.0.3 to [v7.0.4][rdoc-v7.0.4], [v7.1.0][rdoc-v7.1.0], [v7.2.0][rdoc-v7.2.0]
 * win32ole 1.9.3
   * 1.9.2 to [v1.9.3][win32ole-v1.9.3]
@@ -213,6 +214,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [RubyGems-v4.0.12]: https://github.com/rubygems/rubygems/releases/tag/v4.0.12
 [RubyGems-v4.0.13]: https://github.com/rubygems/rubygems/releases/tag/v4.0.13
 [RubyGems-v4.0.14]: https://github.com/rubygems/rubygems/releases/tag/v4.0.14
+[RubyGems-v4.0.15]: https://github.com/rubygems/rubygems/releases/tag/v4.0.15
 [bundler-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.4
 [bundler-v4.0.5]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.5
 [bundler-v4.0.6]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.6
@@ -224,6 +226,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [bundler-v4.0.12]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.12
 [bundler-v4.0.13]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.13
 [bundler-v4.0.14]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.14
+[bundler-v4.0.15]: https://github.com/rubygems/rubygems/releases/tag/bundler-v4.0.15
 [erb-v6.0.1.1]: https://github.com/ruby/erb/releases/tag/v6.0.1.1
 [erb-v6.0.2]: https://github.com/ruby/erb/releases/tag/v6.0.2
 [erb-v6.0.3]: https://github.com/ruby/erb/releases/tag/v6.0.3
@@ -240,6 +243,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [json-v2.19.7]: https://github.com/ruby/json/releases/tag/v2.19.7
 [json-v2.19.8]: https://github.com/ruby/json/releases/tag/v2.19.8
 [json-v2.19.9]: https://github.com/ruby/json/releases/tag/v2.19.9
+[json-v2.20.0]: https://github.com/ruby/json/releases/tag/v2.20.0
 [openssl-v4.0.1]: https://github.com/ruby/openssl/releases/tag/v4.0.1
 [openssl-v4.0.2]: https://github.com/ruby/openssl/releases/tag/v4.0.2
 [pp-v0.6.4]: https://github.com/ruby/pp/releases/tag/v0.6.4
@@ -268,6 +272,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [rbs-v4.0.0.dev.5]: https://github.com/ruby/rbs/releases/tag/v4.0.0.dev.5
 [rbs-v4.0.0]: https://github.com/ruby/rbs/releases/tag/v4.0.0
 [rbs-v4.0.2]: https://github.com/ruby/rbs/releases/tag/v4.0.2
+[rbs-v4.0.3]: https://github.com/ruby/rbs/releases/tag/v4.0.3
 [bigdecimal-v4.1.0]: https://github.com/ruby/bigdecimal/releases/tag/v4.1.0
 [bigdecimal-v4.1.1]: https://github.com/ruby/bigdecimal/releases/tag/v4.1.1
 [bigdecimal-v4.1.2]: https://github.com/ruby/bigdecimal/releases/tag/v4.1.2

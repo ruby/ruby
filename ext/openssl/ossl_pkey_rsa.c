@@ -26,7 +26,7 @@
 } while (0)
 
 static inline int
-RSA_HAS_PRIVATE(OSSL_3_const RSA *rsa)
+RSA_HAS_PRIVATE(const RSA *rsa)
 {
     const BIGNUM *e, *d;
 
@@ -35,7 +35,7 @@ RSA_HAS_PRIVATE(OSSL_3_const RSA *rsa)
 }
 
 static inline int
-RSA_PRIVATE(VALUE obj, OSSL_3_const RSA *rsa)
+RSA_PRIVATE(VALUE obj, const RSA *rsa)
 {
     return RSA_HAS_PRIVATE(rsa) || OSSL_PKEY_IS_PRIVATE(obj);
 }
@@ -148,7 +148,7 @@ static VALUE
 ossl_rsa_initialize_copy(VALUE self, VALUE other)
 {
     EVP_PKEY *pkey;
-    OSSL_3_const RSA *rsa;
+    const RSA *rsa;
     RSA *rsa_new;
 
     TypedData_Get_Struct(self, EVP_PKEY, &ossl_evp_pkey_type, pkey);
@@ -183,7 +183,7 @@ ossl_rsa_initialize_copy(VALUE self, VALUE other)
 static VALUE
 ossl_rsa_is_public(VALUE self)
 {
-    OSSL_3_const RSA *rsa;
+    const RSA *rsa;
 
     GetRSA(self, rsa);
     /*
@@ -202,7 +202,7 @@ ossl_rsa_is_public(VALUE self)
 static VALUE
 ossl_rsa_is_private(VALUE self)
 {
-    OSSL_3_const RSA *rsa;
+    const RSA *rsa;
 
     GetRSA(self, rsa);
 
@@ -212,7 +212,7 @@ ossl_rsa_is_private(VALUE self)
 static int
 can_export_rsaprivatekey(VALUE self)
 {
-    OSSL_3_const RSA *rsa;
+    const RSA *rsa;
     const BIGNUM *n, *e, *d, *p, *q, *dmp1, *dmq1, *iqmp;
 
     GetRSA(self, rsa);

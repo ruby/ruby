@@ -193,8 +193,10 @@ VALUE rb_mWaitWritable;
 
 static VALUE rb_eEAGAINWaitReadable;
 static VALUE rb_eEAGAINWaitWritable;
+#if EAGAIN != EWOULDBLOCK
 static VALUE rb_eEWOULDBLOCKWaitReadable;
 static VALUE rb_eEWOULDBLOCKWaitWritable;
+#endif
 static VALUE rb_eEINPROGRESSWaitWritable;
 static VALUE rb_eEINPROGRESSWaitReadable;
 
@@ -208,7 +210,7 @@ VALUE rb_default_rs;
 
 static VALUE argf;
 
-static ID id_write, id_read, id_getc, id_flush, id_readpartial, id_set_encoding, id_fileno;
+static ID id_write, id_read, id_flush, id_readpartial, id_set_encoding, id_fileno;
 static VALUE sym_mode, sym_perm, sym_flags, sym_extenc, sym_intenc, sym_encoding, sym_open_args;
 static VALUE sym_textmode, sym_binmode, sym_autoclose;
 static VALUE sym_SET, sym_CUR, sym_END;
@@ -15698,7 +15700,6 @@ Init_IO(void)
 
     id_write = rb_intern_const("write");
     id_read = rb_intern_const("read");
-    id_getc = rb_intern_const("getc");
     id_flush = rb_intern_const("flush");
     id_readpartial = rb_intern_const("readpartial");
     id_set_encoding = rb_intern_const("set_encoding");
@@ -15746,10 +15747,8 @@ Init_IO(void)
     rb_eEAGAINWaitWritable = rb_define_class_under(rb_cIO, "EAGAINWaitWritable", rb_eEAGAIN);
     rb_include_module(rb_eEAGAINWaitWritable, rb_mWaitWritable);
 #if EAGAIN == EWOULDBLOCK
-    rb_eEWOULDBLOCKWaitReadable = rb_eEAGAINWaitReadable;
     /* same as IO::EAGAINWaitReadable */
     rb_define_const(rb_cIO, "EWOULDBLOCKWaitReadable", rb_eEAGAINWaitReadable);
-    rb_eEWOULDBLOCKWaitWritable = rb_eEAGAINWaitWritable;
     /* same as IO::EAGAINWaitWritable */
     rb_define_const(rb_cIO, "EWOULDBLOCKWaitWritable", rb_eEAGAINWaitWritable);
 #else

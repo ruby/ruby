@@ -1349,6 +1349,11 @@ RSpec.describe "bundle install with gem sources" do
         skip "This example is runnable when RubyGems::Installer implements `build_jobs`"
       end
 
+      # The make jobserver is a GNU make feature. On Windows extensions are built
+      # with nmake, which has no `-j` jobserver (and an inherited `-j` MAKEFLAGS
+      # even breaks nmake), so the slot count these examples assert never appears.
+      skip "The make jobserver is not available on Windows (nmake)" if mswin?
+
       @old_makeflags = ENV["MAKEFLAGS"]
       @gemspec = nil
 

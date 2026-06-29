@@ -53,8 +53,7 @@ RBIMPL_WARNING_POP()
 
 VALUE rb_cRational;
 
-static ID id_abs, id_integer_p,
-    id_i_num, id_i_den;
+static ID id_abs, id_i_num, id_i_den;
 
 #define id_idiv idDiv
 #define id_to_i idTo_i
@@ -2769,7 +2768,6 @@ Init_Rational(void)
 {
     VALUE compat;
     id_abs = rb_intern_const("abs");
-    id_integer_p = rb_intern_const("integer?");
     id_i_num = rb_intern_const("@numerator");
     id_i_den = rb_intern_const("@denominator");
 

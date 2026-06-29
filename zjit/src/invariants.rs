@@ -374,10 +374,10 @@ pub extern "C" fn rb_zjit_constant_state_changed(id: ID) {
         let invariants = ZJITState::get_invariants();
         if let Some(patch_points) = invariants.constant_state_patch_points.remove(&id) {
             let cb = ZJITState::get_code_block();
-            debug!("Constant state changed: {:?}", id);
+            debug!("Constant state changed: {id:?}: {}", id.contents_lossy());
 
             // Invalidate all patch points for this constant ID
-            compile_patch_points!(cb, patch_points, Const, "Constant state changed: {:?}", id);
+            compile_patch_points!(cb, patch_points, Const, "Constant state changed: {id:?}: {}", id.contents_lossy());
 
             cb.mark_all_executable();
         }

@@ -30,7 +30,9 @@ static ID id_unblock;
 
 static ID id_yield;
 
+#ifdef FIBER_SCHEDULER_CALL_TIMEOUT_AFTER
 static ID id_timeout_after;
+#endif
 static ID id_kernel_sleep;
 static ID id_process_wait;
 
@@ -314,7 +316,9 @@ Init_Fiber_Scheduler(void)
     id_unblock = rb_intern_const("unblock");
     id_yield = rb_intern_const("yield");
 
+#ifdef FIBER_SCHEDULER_CALL_TIMEOUT_AFTER
     id_timeout_after = rb_intern_const("timeout_after");
+#endif
     id_kernel_sleep = rb_intern_const("kernel_sleep");
     id_process_wait = rb_intern_const("process_wait");
 
@@ -555,7 +559,7 @@ rb_fiber_scheduler_yield(VALUE scheduler)
     return rb_fiber_scheduler_kernel_sleep(scheduler, RB_INT2NUM(0));
 }
 
-#if 0
+#ifdef FIBER_SCHEDULER_CALL_TIMEOUT_AFTER
 /*
  *  Document-method: Fiber::Scheduler#timeout_after
  *  call-seq: timeout_after(duration, exception_class, *exception_arguments, &block) -> result of block
