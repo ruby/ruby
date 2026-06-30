@@ -985,7 +985,7 @@ pub enum Insn {
     ToNewArray { val: InsnId, state: InsnId },
     NewArray { elements: InsnIdList, state: InsnId },
     /// NewHash contains a vec of (key, value) pairs
-    NewHash { elements: Vec<InsnId>, state: InsnId },
+    NewHash { elements: InsnIdList, state: InsnId },
     NewRange { low: InsnId, high: InsnId, flag: RangeType, state: InsnId },
     NewRangeFixnum { low: InsnId, high: InsnId, flag: RangeType, state: InsnId },
     ArrayDup { val: InsnId, state: InsnId },
@@ -1336,9 +1336,12 @@ macro_rules! for_each_operand_impl {
             }
             Insn::ArrayMax { elements, state, .. }
             | Insn::ArrayMin { elements, state, .. }
-            | Insn::ArrayHash { elements, state, .. }
-            | Insn::NewHash { elements, state, .. } => {
+            | Insn::ArrayHash { elements, state, .. } => {
                 $visit_many!(elements);
+                $visit_one!(*state);
+            }
+            Insn::NewHash { elements, state, .. } => {
+                $visit_list!(*elements);
                 $visit_one!(*state);
             }
             Insn::NewArray { elements, state, .. } => {
@@ -2017,6 +2020,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write!(f, "AdjustBounds {index}, {length}")
             }
             Insn::NewHash { elements, .. } => {
+                let elements = self.pool.map_or(&[][..], |pool| pool.get(*elements));
                 write!(f, "NewHash")?;
                 let mut prefix = " ";
                 for chunk in elements.chunks(2) {
@@ -6676,11 +6680,12 @@ impl Function {
                 }
                 Ok(())
             }
-            Insn::NewHash { ref elements, .. } => {
+            Insn::NewHash { elements, .. } => {
+                let elements = self.operands(elements).to_vec();
                 if elements.len() % 2 != 0 {
                     return Err(ValidationError::MiscValidationError(insn_id, "NewHash elements length is not even".to_string()));
                 }
-                for &element in elements {
+                for &element in elements.iter() {
                     self.assert_subtype(insn_id, element, types::BasicObject)?;
                 }
                 Ok(())
@@ -7801,7 +7806,7 @@ fn add_iseq_to_hir(
                         elements.push(key);
                     }
                     elements.reverse();
-                    state.stack_push(fun.push_insn(block, Insn::NewHash { elements, state: exit_id }));
+                    state.stack_push(fun.push_insn(block, Insn::NewHash { elements: fun.push_operands(&elements), state: exit_id }));
                 }
                 YARVINSN_duphash => {
                     let val = fun.push_insn(block, Insn::Const { val: Const::Value(get_arg(pc, 0)) });
