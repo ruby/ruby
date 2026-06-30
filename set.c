@@ -1501,14 +1501,15 @@ set_i_select(VALUE set)
 
 /*
  *  call-seq:
- *    replace(enum) -> self
+ *    replace(enumerable) -> self
  *
- *  Replaces the contents of the set with the contents of the given
- *  enumerable object and returns self.
+ *  Replaces the contents +self+ with the contents of the given +enumerable+:
+ *  returns +self+:
  *
- *    set = Set[1, 'c', :s]             #=> Set[1, "c", :s]
- *    set.replace([1, 2])               #=> Set[1, 2]
- *    set                               #=> Set[1, 2]
+ *    set = Set[1, 'c', :s] # => Set[1, "c", :s]
+ *    set.replace([1, 2])   # => Set[1, 2]
+ *
+ *  Related: see {Methods for Assigning}[rdoc-ref:Set@Methods+for+Assigning].
  */
 static VALUE
 set_i_replace(VALUE set, VALUE other)
