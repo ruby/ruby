@@ -991,7 +991,7 @@ pub enum Insn {
     ArrayDup { val: InsnId, state: InsnId },
     ArrayHash { elements: InsnIdList, state: InsnId },
     ArrayMax { elements: InsnIdList, state: InsnId },
-    ArrayMin { elements: Vec<InsnId>, state: InsnId },
+    ArrayMin { elements: InsnIdList, state: InsnId },
     ArrayInclude { elements: Vec<InsnId>, target: InsnId, state: InsnId },
     ArrayPackBuffer { elements: InsnIdList, fmt: InsnId, buffer: Option<InsnId>, state: InsnId },
     DupArrayInclude { ary: VALUE, target: InsnId, state: InsnId },
@@ -1335,7 +1335,7 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(*val);
             }
             Insn::ArrayMin { elements, state, .. } => {
-                $visit_many!(elements);
+                $visit_list!(*elements);
                 $visit_one!(*state);
             }
             Insn::ArrayMax { elements, state, .. } => {
@@ -2050,6 +2050,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 Ok(())
             }
             Insn::ArrayMin { elements, .. } => {
+                let elements = self.pool.map_or(&[][..], |pool| pool.get(*elements));
                 write!(f, "ArrayMin")?;
                 write_separated!(f, " ", ", ", elements);
                 Ok(())
@@ -6691,9 +6692,8 @@ impl Function {
                 }
                 Ok(())
             }
-            // Instructions with a Vec of Ruby objects
-            Insn::ArrayMin { elements: ref args, .. } => {
-                for &arg in args {
+            Insn::ArrayMin { elements, .. } => {
+                for &arg in self.operands(elements).to_vec().iter() {
                     self.assert_subtype(insn_id, arg, types::BasicObject)?;
                 }
                 Ok(())
@@ -7753,7 +7753,7 @@ fn add_iseq_to_hir(
                         }
                         VM_OPT_NEWARRAY_SEND_MIN => {
                             let elements = state.stack_pop_n(count)?;
-                            (BOP_MIN, Insn::ArrayMin { elements, state: exit_id })
+                            (BOP_MIN, Insn::ArrayMin { elements: fun.push_operands(&elements), state: exit_id })
                         }
                         VM_OPT_NEWARRAY_SEND_HASH => {
                             let elements = state.stack_pop_n(count)?;
