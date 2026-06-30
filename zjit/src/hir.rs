@@ -983,7 +983,7 @@ pub enum Insn {
     /// Call `to_a` on `val` if the method is defined, or make a new array `[val]` otherwise. If we
     /// called `to_a`, duplicate the returned array.
     ToNewArray { val: InsnId, state: InsnId },
-    NewArray { elements: Vec<InsnId>, state: InsnId },
+    NewArray { elements: InsnIdList, state: InsnId },
     /// NewHash contains a vec of (key, value) pairs
     NewHash { elements: Vec<InsnId>, state: InsnId },
     NewRange { low: InsnId, high: InsnId, flag: RangeType, state: InsnId },
@@ -1337,9 +1337,12 @@ macro_rules! for_each_operand_impl {
             Insn::ArrayMax { elements, state, .. }
             | Insn::ArrayMin { elements, state, .. }
             | Insn::ArrayHash { elements, state, .. }
-            | Insn::NewHash { elements, state, .. }
-            | Insn::NewArray { elements, state, .. } => {
+            | Insn::NewHash { elements, state, .. } => {
                 $visit_many!(elements);
+                $visit_one!(*state);
+            }
+            Insn::NewArray { elements, state, .. } => {
+                $visit_list!(*elements);
                 $visit_one!(*state);
             }
             Insn::ArrayInclude { elements, target, state, .. } => {
@@ -1993,6 +1996,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 Ok(())
             }
             Insn::NewArray { elements, .. } => {
+                let elements = self.pool.map_or(&[][..], |pool| pool.get(*elements));
                 write!(f, "NewArray")?;
                 write_separated!(f, " ", ", ", elements);
                 Ok(())
@@ -6657,9 +6661,14 @@ impl Function {
                 }
                 Ok(())
             }
+            Insn::NewArray { elements, .. } => {
+                for &arg in self.operands(elements).to_vec().iter() {
+                    self.assert_subtype(insn_id, arg, types::BasicObject)?;
+                }
+                Ok(())
+            }
             // Instructions with a Vec of Ruby objects
-            Insn::NewArray { elements: ref args, .. }
-            | Insn::ArrayHash { elements: ref args, .. }
+            Insn::ArrayHash { elements: ref args, .. }
             | Insn::ArrayMin { elements: ref args, .. }
             | Insn::ArrayMax { elements: ref args, .. } => {
                 for &arg in args {
@@ -7709,7 +7718,7 @@ fn add_iseq_to_hir(
                 YARVINSN_newarray => {
                     let count = get_arg(pc, 0).as_usize();
                     let elements = state.stack_pop_n(count)?;
-                    state.stack_push(fun.push_insn(block, Insn::NewArray { elements, state: exit_id }));
+                    state.stack_push(fun.push_insn(block, Insn::NewArray { elements: fun.push_operands(&elements), state: exit_id }));
                 }
                 YARVINSN_opt_newarray_send => {
                     let count = get_arg(pc, 0).as_usize();
@@ -10303,7 +10312,7 @@ mod infer_tests {
     fn newarray() {
         let mut function = Function::new(std::ptr::null());
         // Fake FrameState index of 0usize
-        let val = function.push_insn(function.entry_block, Insn::NewArray { elements: vec![], state: InsnId(0usize) });
+        let val = function.push_insn(function.entry_block, Insn::NewArray { elements: InsnIdList::EMPTY, state: InsnId(0usize) });
         assert_bit_equal(function.infer_type(val), types::ArrayExact);
     }
 
@@ -10311,7 +10320,7 @@ mod infer_tests {
     fn arraydup() {
         let mut function = Function::new(std::ptr::null());
         // Fake FrameState index of 0usize
-        let arr = function.push_insn(function.entry_block, Insn::NewArray { elements: vec![], state: InsnId(0usize) });
+        let arr = function.push_insn(function.entry_block, Insn::NewArray { elements: InsnIdList::EMPTY, state: InsnId(0usize) });
         let val = function.push_insn(function.entry_block, Insn::ArrayDup { val: arr, state: InsnId(0usize) });
         assert_bit_equal(function.infer_type(val), types::ArrayExact);
     }
