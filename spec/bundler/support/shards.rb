@@ -52,6 +52,8 @@ module Spec
         "spec/bundler/ui_spec.rb",
         "spec/bundler/plugin/source_list_spec.rb",
         "spec/bundler/source/path_spec.rb",
+        "spec/lock/lockfile_spec.rb",
+        "spec/runtime/inline_spec.rb",
       ],
       shard_b: [
         "spec/install/gemfile/git_spec.rb",
@@ -64,7 +66,6 @@ module Spec
         "spec/plugins/install_spec.rb",
         "spec/commands/binstubs_spec.rb",
         "spec/install/gems/flex_spec.rb",
-        "spec/runtime/inline_spec.rb",
         "spec/commands/post_bundle_message_spec.rb",
         "spec/runtime/executable_spec.rb",
         "spec/lock/git_spec.rb",
@@ -107,7 +108,6 @@ module Spec
         "spec/commands/cache_spec.rb",
         "spec/commands/check_spec.rb",
         "spec/commands/list_spec.rb",
-        "spec/install/path_spec.rb",
         "spec/bundler/cli_spec.rb",
         "spec/install/bundler_spec.rb",
         "spec/install/git_spec.rb",
@@ -148,7 +148,6 @@ module Spec
         "spec/install/cooldown_spec.rb",
         "spec/commands/outdated_spec.rb",
         "spec/commands/update_spec.rb",
-        "spec/lock/lockfile_spec.rb",
         "spec/install/deploy_spec.rb",
         "spec/install/gemfile/sources_spec.rb",
         "spec/runtime/self_management_spec.rb",
@@ -194,6 +193,7 @@ module Spec
         "spec/install/gems/no_install_plugin_spec.rb",
         "spec/bundler/override_spec.rb",
         "spec/install/gemfile/override_spec.rb",
+        "spec/install/path_spec.rb",
       ],
     }.freeze
   end
