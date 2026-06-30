@@ -1173,10 +1173,17 @@ set_merge_enum_into(VALUE set, VALUE arg)
 
 /*
  *  call-seq:
- *    merge(*enums, **nil) -> self
+ *    merge(*enumerables) -> self
  *
- *  Merges the elements of the given enumerable objects to the set and
- *  returns self.
+ *  Adds each element of each of the given +enumerables+ to +self+;
+ *  returns +self+:
+ *
+ *    set = Set[*0..2]                 # => Set[0, 1, 2]
+ *    set.merge('a'..'c', %w[foo bar]) # => Set[0, 1, 2, "a", "b", "c", "foo", "bar"]
+ *    set.merge('a'..'c', %w[foo bar]) # => Set[0, 1, 2, "a", "b", "c", "foo", "bar"]
+ *
+ *  Related: see {Methods for Assigning}[rdoc-ref:Set@Methods+for+Assigning].
+ *
  */
 static VALUE
 set_i_merge(int argc, VALUE *argv, VALUE set)
