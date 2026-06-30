@@ -1286,6 +1286,7 @@ pub mod test_utils {
     }
 
     /// Like inspect, but also asserts that all compilations triggered by this program succeed.
+    #[track_caller]
     pub fn assert_compiles_allowing_exits(program: &str) -> String {
         use crate::state::ZJITState;
         ZJITState::enable_assert_compiles();
@@ -1296,6 +1297,7 @@ pub mod test_utils {
 
     /// Like inspect, but also asserts that all compilations triggered by this program succeed and
     /// no side exits occurr during the program.
+    #[track_caller]
     pub fn assert_compiles(program: &str) -> String {
         use crate::state::ZJITState;
         let exits_before = crate::stats::total_exit_count();
