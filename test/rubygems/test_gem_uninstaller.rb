@@ -419,6 +419,39 @@ create_makefile '#{@spec.name}'
     assert_path_not_exist @spec.extension_dir
   end
 
+  def test_uninstall_removes_build_info_logs
+    @spec.extensions << "extconf.rb"
+    write_file File.join(@tempdir, "extconf.rb") do |io|
+      io.write <<-RUBY
+require 'mkmf'
+create_makefile '#{@spec.name}'
+      RUBY
+    end
+
+    @spec.files += %w[extconf.rb]
+
+    use_ui @ui do
+      path = Gem::Package.build @spec
+
+      installer = Gem::Installer.at path, force: true
+      installer.install
+    end
+
+    # Build logs left behind in build_info by a previous failed build.
+    FileUtils.mkdir_p @spec.build_info_dir
+    mkmf_log = File.join @spec.build_info_dir, "#{@spec.full_name}.mkmf.log"
+    gem_make_out = File.join @spec.build_info_dir, "#{@spec.full_name}.gem_make.out"
+    FileUtils.touch mkmf_log
+    FileUtils.touch gem_make_out
+
+    uninstaller = Gem::Uninstaller.new @spec.name, executables: true
+    uninstaller.uninstall
+
+    assert_path_not_exist @spec.extension_dir
+    assert_path_not_exist mkmf_log
+    assert_path_not_exist gem_make_out
+  end
+
   def test_uninstall_nonexistent
     uninstaller = Gem::Uninstaller.new "bogus", executables: true
 

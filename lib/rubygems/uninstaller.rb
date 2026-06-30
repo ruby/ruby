@@ -272,6 +272,8 @@ class Gem::Uninstaller
 
     safe_delete { rm_r full_gem_path, exclusions: exclusions }
     safe_delete { FileUtils.rm_r spec.extension_dir }
+    safe_delete { FileUtils.rm_f File.join(spec.build_info_dir, "#{spec.full_name}.mkmf.log") }
+    safe_delete { FileUtils.rm_f File.join(spec.build_info_dir, "#{spec.full_name}.gem_make.out") }
 
     old_platform_name = spec.original_name
 
