@@ -1689,7 +1689,7 @@ set_i_subset(VALUE set, VALUE other)
  *  a {proper superset}[https://en.wikipedia.org/wiki/Subset]
  *  of the given +other_set+:
  *
- *    set = Set[*'a'..'f']                 # => Set["a", "b", "c", "d", "e", "f"]
+ *    set = Set[*'a'..'f']
  *    set.proper_superset?(set)            # => false
  *    set.proper_superset?(Set[*'b'..'e']) # => true
  *
