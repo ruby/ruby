@@ -1461,11 +1461,21 @@ set_keep_if_i(st_data_t key, st_data_t into)
 
 /*
  *  call-seq:
- *    keep_if { |o| ... } -> self
+ *    keep_if {|element| ... } -> self
  *    keep_if -> enumerator
  *
- *  Deletes every element of the set for which block evaluates to false, and
- *  returns self. Returns an enumerator if no block is given.
+ *  With a block given,
+ *  calls the block with each element in +self+,
+ *  deleting the element if the block returns +false+ or +nil+;
+ *  returns +self+:
+ *
+ *    set = Set[*0..9]           # => Set[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+ *    set.keep_if {|i| i.even? } # => Set[0, 2, 4, 6, 8]
+ *    set.keep_if {|i| i.odd? }  # => Set[]
+ *
+ *  With no block given, returns an Enumerator.
+ *
+ *  Related: see {Methods for Deleting}[rdoc-ref:Set@Methods+for+Deleting].
  */
 static VALUE
 set_i_keep_if(VALUE set)
