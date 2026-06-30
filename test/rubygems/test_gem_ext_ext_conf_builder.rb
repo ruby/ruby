@@ -110,10 +110,12 @@ class TestGemExtExtConfBuilder < Gem::TestCase
     assert_equal "extconf failed, exit code 1", error.message
 
     assert_match(/^#{Regexp.quote(Gem.ruby)}.* extconf.rb/, output[1])
-    assert_match(File.join(@dest_path, "mkmf.log"), output[4])
-    assert_includes(output, "To see why this extension failed to compile, please check the mkmf.log which can be found here:\n")
+    refute_includes(output, "To see why this extension failed to compile, please check the mkmf.log which can be found here:\n")
 
-    assert_path_exist File.join @dest_path, "mkmf.log"
+    # mkmf.log is left in the extension directory; deciding where it ends up is
+    # left to Gem::Ext::Builder#build_extension.
+    assert_path_exist File.join @ext, "mkmf.log"
+    assert_path_not_exist File.join @dest_path, "mkmf.log"
   end
 
   def test_class_build_extconf_success_without_warning
@@ -133,7 +135,10 @@ class TestGemExtExtConfBuilder < Gem::TestCase
 
     refute_includes(output, "To see why this extension failed to compile, please check the mkmf.log which can be found here:\n")
 
-    assert_path_exist File.join @dest_path, "mkmf.log"
+    # On a successful build, mkmf.log is cleaned up by "make clean" and is never
+    # copied into the install destination.
+    assert_path_not_exist File.join @ext, "mkmf.log"
+    assert_path_not_exist File.join @dest_path, "mkmf.log"
   end
 
   def test_class_build_unconventional

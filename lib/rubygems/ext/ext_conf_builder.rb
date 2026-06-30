@@ -27,17 +27,10 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
       cmd << "--target-rbconfig=#{target_rbconfig.path}" if target_rbconfig.path
       cmd.push(*args)
 
-      run(cmd, results, class_name, extension_dir) do |s, r|
-        mkmf_log = File.join(extension_dir, "mkmf.log")
-        if File.exist? mkmf_log
-          unless s.success?
-            r << "To see why this extension failed to compile, please check" \
-              " the mkmf.log which can be found here:\n"
-            r << "  " + File.join(dest_path, "mkmf.log") + "\n"
-          end
-          FileUtils.mv mkmf_log, dest_path
-        end
-      end
+      # Leave mkmf.log in the extension directory. The final placement (dropped
+      # on success, moved to build_info on failure) is decided by
+      # Gem::Ext::Builder#build_extension.
+      run(cmd, results, class_name, extension_dir)
 
       ENV["DESTDIR"] = nil
 

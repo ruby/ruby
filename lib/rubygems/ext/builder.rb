@@ -243,9 +243,25 @@ EOF
 
       verbose { results.join("\n") }
 
-      write_gem_make_out results.join "\n"
+      # mkmf.log is a noisy, non-reproducible build artifact that is not meant
+      # to be installed. Drop the one left behind by a successful build instead
+      # of leaving it in the installation tree.
+      FileUtils.rm_f File.join(extension_dir, "mkmf.log")
     rescue StandardError => e
       results << e.message
+
+      # On failure keep the mkmf.log for inspection, but move it out of the
+      # installation tree into the build_info directory.
+      mkmf_log = File.join extension_dir, "mkmf.log"
+      if File.exist?(mkmf_log)
+        mkmf_log_dest = File.join @spec.build_info_dir, "#{@spec.full_name}.mkmf.log"
+        FileUtils.mkdir_p @spec.build_info_dir
+        FileUtils.mv mkmf_log, mkmf_log_dest
+
+        results << "To see why this extension failed to compile, please check the mkmf.log which can be found here:"
+        results << "  #{mkmf_log_dest}"
+      end
+
       build_error(results.join("\n"), $@)
     end
   end
@@ -277,12 +293,14 @@ EOF
   end
 
   ##
-  # Writes +output+ to gem_make.out in the extension install directory.
+  # Writes +output+ to gem_make.out in the build_info directory. Only called
+  # on failure (via #build_error), to keep build logs out of the installation
+  # tree.
 
   def write_gem_make_out(output) # :nodoc:
-    destination = File.join @spec.extension_dir, "gem_make.out"
+    destination = File.join @spec.build_info_dir, "#{@spec.full_name}.gem_make.out"
 
-    FileUtils.mkdir_p @spec.extension_dir
+    FileUtils.mkdir_p @spec.build_info_dir
 
     File.open destination, "wb" do |io|
       io.puts output

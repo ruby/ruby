@@ -1562,8 +1562,9 @@ dependencies: []
 
     @ext.build_extensions
 
+    # A successful build no longer leaves gem_make.out in the install tree.
     gem_make_out = File.join @ext.extension_dir, "gem_make.out"
-    assert_path_exist gem_make_out
+    assert_path_not_exist gem_make_out
   end
 
   def test_contains_requirable_file_eh
