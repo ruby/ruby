@@ -1799,7 +1799,26 @@ class Pathname    # * FileTest *
   # See <tt>FileTest.socket?</tt>.
   def socket?() FileTest.socket?(@path) end
 
-  # See <tt>FileTest.owned?</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   owned? -> true or false
+  #
+  # Returns whether the entry at the path represented by `self`
+  # exists and is owned by the current process:
+  #
+  # ```ruby
+  # pn = Pathname('doc/t.tmp')
+  # pn.write('foo')
+  # pn.owned?               # => true
+  # pn.delete
+  # pn = Pathname('doc/tmp')
+  # pn.mkdir
+  # pn.owned?               # => true
+  # pn.rmdir
+  # Pathname('/etc').owned? # => false
+  # ```
+  # 
   def owned?() FileTest.owned?(@path) end
 
   # See <tt>FileTest.readable?</tt>.
