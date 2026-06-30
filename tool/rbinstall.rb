@@ -681,14 +681,19 @@ module RbInstall
         # extension itself is installed separately into extensions_dir, so
         # dropping the in-tree shared library here does not affect loading.
         # This matches by base name, so a source file that happens to share
-        # one of these names would be excluded too.
+        # one of these names would be excluded too. The extensions cover
+        # Unix/macOS (.o/.so/.bundle/.dylib) and Windows/MSVC, which also
+        # leaves an import library (.lib), export files (.exp/.def), debug
+        # databases (.pdb, including vc*.pdb), and .ilk/.pch/.res/.manifest
+        # beside the built DLL. No bundled gem ships a .lib or .def of its own
+        # in its published .gem, so excluding those two by extension is safe.
         def build_artifact?(name)
           case name
           when "mkmf.log", "gem_make.out", "Makefile"
             true
           else
             /\Aconftest(?:\.|\z)/.match?(name) ||
-              /\.(?:o|obj|so|bundle|dll|dylib|time)\z/.match?(name)
+              /\.(?:o|obj|so|bundle|dll|dylib|time|lib|exp|def|pdb|ilk|pch|res|manifest)\z/.match?(name)
           end
         end
       end
