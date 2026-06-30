@@ -21,7 +21,7 @@ use crate::stats::{counter_ptr, with_time_stat, trace_compile_phase, Counter, Co
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
 use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_BASE_PTR, Opnd, SP, SideExit, SideExitRecompile, Target, asm_ccall, asm_comment};
 use crate::hir::{iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
-use crate::hir::{BlockHandler, CCallData, CCallVariadicData, CCallWithFrameData, Const, FieldName, FrameState, Function, Insn, InsnId, Recompile, SendDirectData, SendFallbackReason};
+use crate::hir::{BlockHandler, CCallData, CCallVariadicData, CCallWithFrameData, Const, FieldName, FrameState, Function, Insn, InsnId, Recompile, SendData, SendDirectData, SendFallbackReason};
 use crate::hir_type::{types, Type};
 use crate::options::{get_option, InlineDepth, PerfMap};
 use crate::cast::IntoUsize;
@@ -662,9 +662,15 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::Param => unreachable!("block.insns should not have Insn::Param"),
         Insn::LoadArg { .. } => return Ok(()), // compiled in the LoadArg pre-pass above
         Insn::Snapshot { .. } => return Ok(()), // we don't need to do anything for this instruction at the moment
-        &Insn::Send { cd, block: None, state, reason, .. } => gen_send_without_block(jit, asm, cd, &function.frame_state(state), reason),
-        &Insn::Send { cd, block: Some(BlockHandler::BlockIseq(blockiseq)), state, reason, .. } => gen_send(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
-        &Insn::Send { cd, block: Some(BlockHandler::BlockArg), state, reason, .. } => gen_send(jit, asm, cd, std::ptr::null(), &function.frame_state(state), reason),
+        Insn::Send { state, data, .. } => {
+            let SendData { cd, block, reason } = &**data;
+            let frame_state = function.frame_state(*state);
+            match block {
+                None => gen_send_without_block(jit, asm, *cd, &frame_state, *reason),
+                Some(BlockHandler::BlockIseq(blockiseq)) => gen_send(jit, asm, *cd, *blockiseq, &frame_state, *reason),
+                Some(BlockHandler::BlockArg) => gen_send(jit, asm, *cd, std::ptr::null(), &frame_state, *reason),
+            }
+        }
         &Insn::SendForward { cd, blockiseq, state, reason, .. } => gen_send_forward(jit, asm, cd, blockiseq, &function.frame_state(state), reason),
         Insn::SendDirect(insn) => {
             let SendDirectData { cme, iseq, recv, args, kw_bits, block, state, .. } = &**insn;

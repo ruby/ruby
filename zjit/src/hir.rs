@@ -954,6 +954,15 @@ pub struct CCallData {
     pub elidable: bool,
 }
 
+/// Cold metadata of [`Insn::Send`]. Boxed in the enum to keep `Insn` small;
+/// the operands (`recv`, `args`) and `state` stay inline for fast traversal.
+#[derive(Debug, Clone)]
+pub struct SendData {
+    pub cd: *const rb_call_data,
+    pub block: Option<BlockHandler>,
+    pub reason: SendFallbackReason,
+}
+
 /// An instruction in the SSA IR. The output of an instruction is referred to by the index of
 /// the instruction ([`InsnId`]). SSA form enables this, and [`UnionFind`] ([`Function::find`])
 /// helps with editing.
@@ -1137,11 +1146,9 @@ pub enum Insn {
     /// Ignoring keyword arguments etc for now
     Send {
         recv: InsnId,
-        cd: *const rb_call_data,
-        block: Option<BlockHandler>,
         args: InsnIdList,
         state: InsnId,
-        reason: SendFallbackReason,
+        data: Box<SendData>,
     },
     SendForward {
         recv: InsnId,
@@ -2170,7 +2177,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::PopInlineFrame { .. } => {
                 write!(f, "PopInlineFrame")
             }
-            Insn::Send { recv, cd, args, block, reason, .. } => {
+            Insn::Send { recv, args, data, .. } => {
+                let SendData { cd, block, reason } = &**data;
                 // For tests, we want to check HIR snippets textually. Addresses change
                 // between runs, making tests fail. Instead, pick an arbitrary hex value to
                 // use as a "pointer" so we can check the rest of the HIR.
@@ -3099,8 +3107,8 @@ impl Function {
         // Always set the reason: convert_no_profile_sends depends on it to identify
         // sends that should be converted to side exits for exit-based recompilation.
         match self.insns.get_mut(insn_id.0).unwrap() {
-            Send { reason, .. }
-            | SendForward { reason, .. }
+            Send { data, .. } => data.reason = dynamic_send_reason,
+            SendForward { reason, .. }
             | InvokeSuper { reason, .. }
             | InvokeSuperForward { reason, .. }
             | InvokeBlock { reason, .. }
@@ -3906,11 +3914,12 @@ impl Function {
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
                 match self.find(insn_id) {
-                    Insn::Send { recv, block: None, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(freeze) && args.is_empty() =>
+                    Insn::Send { recv, args, state, data } if data.block.is_none() && ruby_call_method_id(data.cd) == ID!(freeze) && args.is_empty() =>
                         self.try_rewrite_freeze(block, insn_id, recv, state),
-                    Insn::Send { recv, block: None, args, state, cd, .. } if ruby_call_method_id(cd) == ID!(minusat) && args.is_empty() =>
+                    Insn::Send { recv, args, state, data } if data.block.is_none() && ruby_call_method_id(data.cd) == ID!(minusat) && args.is_empty() =>
                         self.try_rewrite_uminus(block, insn_id, recv, state),
-                    Insn::Send { mut recv, cd, state, block: send_block, args, .. } => {
+                    Insn::Send { mut recv, args, state, data } => {
+                        let SendData { cd, block: send_block, reason: _ } = *data;
                         let args = self.operands(args).to_vec();
                         let has_block = send_block.is_some();
                         let (klass, profiled_type) = match self.resolve_receiver_type(recv, self.type_of(recv), state) {
@@ -5185,9 +5194,10 @@ impl Function {
             send: Insn,
             send_insn_id: InsnId,
         ) -> Result<(), ()> {
-            let Insn::Send { mut recv, cd, block: send_block, args, state, .. } = send else {
+            let Insn::Send { mut recv, args, state, data } = send else {
                 return Err(());
             };
+            let SendData { cd, block: send_block, reason: _ } = *data;
             let args = fun.operands(args).to_vec();
 
             let call_info = unsafe { (*cd).ci };
@@ -5479,7 +5489,7 @@ impl Function {
             assert!(self.blocks[block.0].insns.is_empty());
             for insn_id in old_insns {
                 match self.find(insn_id) {
-                    Insn::Send { state, reason: SendFallbackReason::SendWithoutBlockNoProfiles | SendFallbackReason::SendNoProfiles, .. } => {
+                    Insn::Send { state, data, .. } if matches!(data.reason, SendFallbackReason::SendWithoutBlockNoProfiles | SendFallbackReason::SendNoProfiles) => {
                         self.push_insn(block, Insn::SideExit { state, reason: Box::new(SideExitReason::NoProfileSend), recompile: Some(Recompile) });
                         // SideExit is a terminator; don't add remaining instructions
                         break;
@@ -8687,7 +8697,7 @@ fn add_iseq_to_hir(
                     }
                     let args = state.stack_pop_n(argc as usize)?;
                     let recv = state.stack_pop()?;
-                    let send = fun.push_insn(block, Insn::Send { recv, cd, block: None, args: fun.push_operands(&args), state: exit_id, reason: Uncategorized(opcode) });
+                    let send = fun.push_insn(block, Insn::Send { recv, args: fun.push_operands(&args), state: exit_id, data: Box::new(SendData { cd, block: None, reason: Uncategorized(opcode) }) });
                     state.stack_push(send);
                 }
                 YARVINSN_opt_hash_freeze => {
@@ -8844,19 +8854,19 @@ fn add_iseq_to_hir(
                             // keyed at exit_id.
                             let snapshot = fun.push_insn(iftrue_block, Insn::Snapshot { state: Box::new(exit_state.clone()) });
                             let refined_recv = fun.push_insn(iftrue_block, Insn::RefineType { val: recv, new_type: expected });
-                            let send = fun.push_insn(iftrue_block, Insn::Send { recv: refined_recv, cd, block: None, args: fun.push_operands(&args), state: snapshot, reason: Uncategorized(opcode) });
+                            let send = fun.push_insn(iftrue_block, Insn::Send { recv: refined_recv, args: fun.push_operands(&args), state: snapshot, data: Box::new(SendData { cd, block: None, reason: Uncategorized(opcode) }) });
                             fun.push_insn(iftrue_block, Insn::Jump(Box::new(BranchEdge { target: join_block, args: vec![send] })));
                         }
                         // In the fallthrough case, do a generic interpreter send and then join.
                         let reason = SendWithoutBlockPolymorphicFallback;
-                        let send = fun.push_insn(block, Insn::Send { recv, cd, block: None, args: fun.push_operands(&args), state: exit_id, reason });
+                        let send = fun.push_insn(block, Insn::Send { recv, args: fun.push_operands(&args), state: exit_id, data: Box::new(SendData { cd, block: None, reason }) });
                         fun.push_insn(block, Insn::Jump(Box::new(BranchEdge { target: join_block, args: vec![send] })));
                         state.stack_push(join_param);
                         // Continue compilation from the join block at the next instruction.
                         block = join_block;
                     } else {
                         // Maybe monomorphic; handled in type_specialize
-                        let send = fun.push_insn(block, Insn::Send { recv, cd, block: None, args: fun.push_operands(&args), state: exit_id, reason: Uncategorized(opcode) });
+                        let send = fun.push_insn(block, Insn::Send { recv, args: fun.push_operands(&args), state: exit_id, data: Box::new(SendData { cd, block: None, reason: Uncategorized(opcode) }) });
                         state.stack_push(send);
                     }
                 }
@@ -8886,7 +8896,7 @@ fn add_iseq_to_hir(
                     } else {
                         None
                     };
-                    let send = fun.push_insn(block, Insn::Send { recv, cd, block: block_handler, args: fun.push_operands(&args), state: exit_id, reason: Uncategorized(opcode) });
+                    let send = fun.push_insn(block, Insn::Send { recv, args: fun.push_operands(&args), state: exit_id, data: Box::new(SendData { cd, block: block_handler, reason: Uncategorized(opcode) }) });
                     state.stack_push(send);
 
                     if let Some(BlockHandler::BlockIseq(_)) = block_handler {
@@ -9350,7 +9360,7 @@ fn add_iseq_to_hir(
                             fun.push_insn(block, Insn::GuardType { val: recv, guard_type: types::String, state: exit_id, recompile: None })
                         } else {
                             let recv = fun.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state: exit_id, recompile: None });
-                            fun.push_insn(block, Insn::Send { recv, cd, block: None, args: InsnIdList::EMPTY, state: exit_id, reason: ObjToStringNotString })
+                            fun.push_insn(block, Insn::Send { recv, args: InsnIdList::EMPTY, state: exit_id, data: Box::new(SendData { cd, block: None, reason: ObjToStringNotString }) })
                         }
                     } else {
                         let has_type = fun.push_insn(block, Insn::HasType { val: recv, expected: types::String });
@@ -9367,7 +9377,7 @@ fn add_iseq_to_hir(
                         fun.push_insn(iftrue_block, Insn::Jump(Box::new(BranchEdge { target: join_block, args: vec![refined] })));
                         // false block
                         let refined = fun.push_insn(iffalse_block, Insn::RefineType { val: recv, new_type: types::NotString });
-                        let send = fun.push_insn(iffalse_block, Insn::Send { recv: refined, cd, block: None, args: InsnIdList::EMPTY, state: exit_id, reason: ObjToStringNotString });
+                        let send = fun.push_insn(iffalse_block, Insn::Send { recv: refined, args: InsnIdList::EMPTY, state: exit_id, data: Box::new(SendData { cd, block: None, reason: ObjToStringNotString }) });
                         fun.push_insn(iffalse_block, Insn::Jump(Box::new(BranchEdge { target: join_block, args: vec![send] })));
                         // join block
                         block = join_block;
