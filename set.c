@@ -999,26 +999,48 @@ static void set_merge_enum_into(VALUE set, VALUE arg);
 
 /*
  *  call-seq:
- *    divide { |o1, o2| ... } -> set
- *    divide { |o| ... } -> set
+ *    divide {|ele| ... } -> new_set
+ *    divide {|ele0, ele1| ... } -> new_set
  *    divide -> enumerator
  *
- *  Divides the set into a set of subsets according to the commonality
- *  defined by the given block.
+ *  With a block given, returns a set of sets.
  *
- *  If the arity of the block is 2, elements o1 and o2 are in common
- *  if both block.call(o1, o2) and block.call(o2, o1) are true.
- *  Otherwise, elements o1 and o2 are in common if
- *  block.call(o1) == block.call(o2).
+ *  For a block that accepts one argument,
+ *  calls the block with each element;
+ *  creates a set for each distinct block return value:
  *
- *    numbers = Set[1, 3, 4, 6, 9, 10, 11]
- *    set = numbers.divide { |i,j| (i - j).abs == 1 }
- *    set        #=> Set[Set[1],
- *               #       Set[3, 4],
- *               #       Set[6],
- *               #       Set[9, 10, 11]]
+ *    set = Set[*0..9]
+ *    # => Set[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+ *    # Divide into mod 3 sets.
+ *    set.divide {|ele| ele % 3 }
+ *    # => Set[Set[0, 3, 6, 9], Set[1, 4, 7], Set[2, 5, 8]]
+ *    # Divide into mod 5 sets.
+ *    set.divide {|ele| ele % 5 }
+ *    # => Set[Set[0, 5], Set[1, 6], Set[2, 7], Set[3, 8], Set[4, 9]]
  *
- *  Returns an enumerator if no block is given.
+ *    Set[0].divide {|ele| anything } # => Set[Set[0]]
+ *    Set[].divide {|ele| not called } # => Set[]
+ *
+ *  For a block that accepts two arguments,
+ *  divides +self+ into connected components based on the binary
+ *  relation defined by the block, calling the block with each 2-element
+ *  permutation of the elements of +self+:
+ *
+ *    set = Set[*0..9]
+ *    # => Set[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+ *    # Divide into mod 2 sets.
+ *    set.divide {|i, j| (i - j) % 2 == 0 }
+ *    # => Set[Set[0, 2, 4, 6, 8], Set[1, 3, 5, 7, 9]]
+ *    # Divide into mod 3 sets.
+ *    set.divide {|i, j| (i - j) % 3 == 0 }
+ *    # => Set[Set[0, 3, 6, 9], Set[1, 4, 7], Set[2, 5, 8]]
+ *
+ *    Set[0].divide {|i, j| not called } # => Set[Set[0]]
+ *    Set[].divide {|i, j| not called } # => Set[]
+ *
+ *  With no block given, returns an Enumerator.
+ *
+ *  Related: see {Methods for Converting}[rdoc-ref:Set@Methods+for+Converting].
  */
 static VALUE
 set_i_divide(VALUE set)
@@ -2334,15 +2356,13 @@ rb_set_size(VALUE set)
  * === Methods for Converting
  *
  * - #classify:
- *   Returns a hash that classifies the elements,
+ *   Returns a hash that partitions the elements,
  *   as determined by the given block.
  * - #collect! (aliased as #map!):
  *   Replaces each element with a block return-value.
  * - #divide:
- *   Returns a hash that classifies the elements,
- *   as determined by the given block;
- *   differs from #classify in that the block may accept
- *   either one or two arguments.
+ *   Returns a set of sets that partition the elements,
+ *   as determined by the given block.
  * - #flatten:
  *   Returns a new set that is a recursive flattening of +self+.
  * - #flatten!:
