@@ -43,6 +43,14 @@ typedef struct {
     size_t mark_index;
 } psych_fy_parser_t;
 
+static const struct fy_parse_cfg psych_parse_cfg = {
+    /* Keep libfyaml's strict YAML 1.2 flow-indentation checks.  This backend
+     * exists to follow the 1.2 spec, so we reject malformed flow indentation
+     * (e.g. wrongly indented flow sequences) rather than relaxing to libyaml's
+     * 1.1-era leniency with FYPCF_SLOPPY_FLOW_INDENTATION. */
+    .flags = FYPCF_QUIET | FYPCF_DEFAULT_VERSION_AUTO,
+};
+
 static ssize_t io_reader(void *user, void *buf, size_t count)
 {
     VALUE io = (VALUE)user;
@@ -84,30 +92,40 @@ static VALUE allocate(VALUE klass)
     psych_fy_parser_t *parser;
     VALUE obj = TypedData_Make_Struct(klass, psych_fy_parser_t, &psych_parser_type, parser);
 
-    static const struct fy_parse_cfg cfg = {
-        .flags = FYPCF_QUIET | FYPCF_COLLECT_DIAG | FYPCF_DEFAULT_VERSION_AUTO,
-    };
-    parser->fyp = fy_parser_create(&cfg);
-    if (!parser->fyp) {
-        rb_raise(rb_eNoMemError, "could not create libfyaml parser");
-    }
+    parser->fyp = NULL;
 
     return obj;
 }
 
-/* TODO: libfyaml's diagnostics are collected via fy_diag; reconstructing the
- * libyaml-style problem/context/offset is left for a later pass.  For now we
- * raise a Psych::SyntaxError with the best-effort mark we tracked. */
+/* Reconstruct a Psych::SyntaxError from libfyaml's collected diagnostics.  The
+ * parser is created with FYPCF_COLLECT_DIAG, so the first collected error gives
+ * us the message and position. */
 static VALUE make_exception(psych_fy_parser_t *parser, VALUE path)
 {
     VALUE ePsychSyntaxError = rb_const_get(mPsych, rb_intern("SyntaxError"));
+    VALUE problem = Qnil;
+    size_t line = parser->mark_line;
+    size_t column = parser->mark_column;
+
+    struct fy_diag *diag = fy_parser_get_diag(parser->fyp);
+    if (diag) {
+        void *iter = NULL;
+        struct fy_diag_error *err = fy_diag_errors_iterate(diag, &iter);
+        if (err) {
+            if (err->msg) problem = rb_usascii_str_new2(err->msg);
+            if (err->line >= 0) line = (size_t)err->line;
+            if (err->column >= 0) column = (size_t)err->column;
+        }
+        fy_diag_unref(diag);
+    }
+    if (NIL_P(problem)) problem = rb_usascii_str_new2("could not parse YAML");
 
     return rb_funcall(ePsychSyntaxError, rb_intern("new"), 6,
             path,
-            SIZET2NUM(parser->mark_line + 1),
-            SIZET2NUM(parser->mark_column + 1),
+            SIZET2NUM(line),
+            SIZET2NUM(column),
             SIZET2NUM(parser->mark_index),
-            rb_usascii_str_new2("could not parse YAML"),
+            problem,
             Qnil);
 }
 
@@ -245,8 +263,30 @@ static VALUE parse(VALUE self, VALUE handler, VALUE yaml, VALUE path)
 
     TypedData_Get_Struct(self, psych_fy_parser_t, &psych_parser_type, parser);
 
-    fy_parser_reset(parser->fyp);
+    /* Use a pristine parser for each parse, like fy-tool does.  Reusing a
+     * parser across documents via fy_parser_reset() left the default tag
+     * handles unset for bare (no "---") tag-led documents. */
+    if (parser->fyp) {
+        fy_parser_destroy(parser->fyp);
+        parser->fyp = NULL;
+    }
+    parser->fyp = fy_parser_create(&psych_parse_cfg);
+    if (!parser->fyp) {
+        rb_raise(rb_eNoMemError, "could not create libfyaml parser");
+    }
     parser->mark_line = parser->mark_column = parser->mark_index = 0;
+
+    /* Make the parser's own diagnostic object collect errors instead of
+     * printing them to stderr, so make_exception() can recover the message.
+     * Replacing the diag with a freshly created one crashes libfyaml 0.9.6,
+     * so mutate the existing default diag in place. */
+    {
+        struct fy_diag *diag = fy_parser_get_diag(parser->fyp);
+        if (diag) {
+            fy_diag_set_collect_errors(diag, true);
+            fy_diag_unref(diag);
+        }
+    }
 
     if (rb_respond_to(yaml, id_read)) {
         if (fy_parser_set_input_callback(parser->fyp, (void *)yaml, io_reader) != 0) {
@@ -315,8 +355,12 @@ static VALUE parse(VALUE self, VALUE handler, VALUE yaml, VALUE path)
                     void *iter = NULL;
                     const struct fy_tag *tag;
                     while ((tag = fy_document_state_tag_directive_iterate(ds, &iter)) != NULL) {
-                        /* skip the implicit defaults ("!" and "!!") */
-                        if (tag->handle && tag->prefix) {
+                        /* skip the implicit defaults ("!", "!!" and the empty
+                         * primary handle libfyaml reports) */
+                        if (!tag->handle || tag->handle[0] == '\0') {
+                            continue;
+                        }
+                        if (tag->prefix) {
                             if ((strcmp(tag->handle, "!") == 0 && strcmp(tag->prefix, "!") == 0) ||
                                 (strcmp(tag->handle, "!!") == 0 &&
                                  strcmp(tag->prefix, "tag:yaml.org,2002:") == 0)) {
