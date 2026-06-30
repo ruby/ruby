@@ -1167,7 +1167,7 @@ pub enum Insn {
     InvokeBlockIfunc {
         cd: *const rb_call_data,
         block_handler: InsnId,
-        args: Vec<InsnId>,
+        args: InsnIdList,
         state: InsnId,
     },
     /// Call Proc#call optimized method type.
@@ -1550,7 +1550,7 @@ macro_rules! for_each_operand_impl {
             }
             Insn::InvokeBlockIfunc { block_handler, args, state, .. } => {
                 $visit_one!(*block_handler);
-                $visit_many!(args);
+                $visit_list!(*args);
                 $visit_one!(*state);
             }
             Insn::CCall { recv, args, .. } => {
@@ -2185,6 +2185,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 Ok(())
             }
             Insn::InvokeBlockIfunc { block_handler, args, .. } => {
+                let args = self.pool.map_or(&[][..], |pool| pool.get(*args));
                 write!(f, "InvokeBlockIfunc {block_handler}")?;
                 write_separated!(f, ", ", ", ", args);
                 Ok(())
@@ -6640,15 +6641,15 @@ impl Function {
                 Ok(())
             }
             // Instructions whose operands live in the pool.
-            Insn::InvokeBlock { args, .. } => {
+            Insn::InvokeBlock { args, .. }
+            | Insn::InvokeBlockIfunc { args, .. } => {
                 for &arg in self.operands(args).to_vec().iter() {
                     self.assert_subtype(insn_id, arg, types::BasicObject)?;
                 }
                 Ok(())
             }
             // Instructions with a Vec of Ruby objects
-            Insn::InvokeBlockIfunc { ref args, .. }
-            | Insn::NewArray { elements: ref args, .. }
+            Insn::NewArray { elements: ref args, .. }
             | Insn::ArrayHash { elements: ref args, .. }
             | Insn::ArrayMin { elements: ref args, .. }
             | Insn::ArrayMax { elements: ref args, .. } => {
@@ -9049,7 +9050,7 @@ fn add_iseq_to_hir(
                         let ifunc_result = fun.push_insn(ifunc_block, Insn::InvokeBlockIfunc {
                             cd,
                             block_handler,
-                            args: args.clone(),
+                            args: fun.push_operands(&args),
                             state: exit_id,
                         });
                         fun.push_insn(ifunc_block, Insn::Jump(Box::new(BranchEdge { target: join_block, args: vec![ifunc_result] })));
