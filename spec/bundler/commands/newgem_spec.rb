@@ -43,9 +43,16 @@ RSpec.describe "bundle gem" do
   let(:gem_name) { "mygem" }
 
   before do
-    git("config --global user.name 'Bundler User'")
-    git("config --global user.email user@example.com")
-    git("config --global github.user bundleuser")
+    # Write the global git config directly instead of shelling out to `git
+    # config --global` three times per example: this `before` runs for every
+    # example in the file, and each `git` call is a separate subprocess.
+    File.write(home(".gitconfig"), <<~GITCONFIG)
+      [user]
+      name = Bundler User
+      email = user@example.com
+      [github]
+      user = bundleuser
+    GITCONFIG
 
     bundle_config_global "gem.mit false"
     bundle_config_global "gem.test false"
