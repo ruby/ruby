@@ -122,6 +122,61 @@ impl<'a> std::fmt::Display for VALUEPrinter<'a> {
     }
 }
 
+/// Compact 4-byte handle to a slice of [`InsnId`]s stored in a [`Function`]'s
+/// operand pool, replacing an inline `Vec<InsnId>` (24 bytes) in large `Insn`
+/// variants. The list is length-prefixed in the pool: the slot at `start` holds
+/// the length N, followed by the N operands.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct InsnIdList(u32);
+
+impl InsnIdList {
+    /// Handle to the canonical empty list (pool slot 0 always holds length 0).
+    pub const EMPTY: InsnIdList = InsnIdList(0);
+}
+
+/// Dense arena of operand lists referenced by [`InsnIdList`] handles. Operand
+/// lists are appended contiguously, each length-prefixed, so a handle is a
+/// single `u32` offset into `data`.
+#[derive(Debug, Clone)]
+pub struct OperandPool {
+    data: Vec<InsnId>,
+}
+
+impl OperandPool {
+    /// Slot 0 is reserved for the canonical empty list ([`InsnIdList::EMPTY`]).
+    fn new() -> Self { OperandPool { data: vec![InsnId(0)] } }
+
+    /// Append `operands` to the pool and return a compact handle to them.
+    pub fn push(&mut self, operands: &[InsnId]) -> InsnIdList {
+        if operands.is_empty() {
+            return InsnIdList::EMPTY;
+        }
+        let start = self.data.len();
+        assert!(start <= u32::MAX as usize, "operand pool overflow");
+        self.data.push(InsnId(operands.len()));
+        self.data.extend_from_slice(operands);
+        InsnIdList(start as u32)
+    }
+
+    /// Resolve a handle to its operand slice. Returns an empty slice for handles
+    /// that point past the end (e.g. standalone `Insn` Display with no pool).
+    pub fn get(&self, list: InsnIdList) -> &[InsnId] {
+        let start = list.0 as usize;
+        if start >= self.data.len() {
+            return &[];
+        }
+        let len = self.data[start].0;
+        &self.data[start + 1 .. start + 1 + len]
+    }
+
+    /// Resolve a handle to a mutable operand slice (for in-place operand rewrites).
+    pub fn get_mut(&mut self, list: InsnIdList) -> &mut [InsnId] {
+        let start = list.0 as usize;
+        let len = self.data[start].0;
+        &mut self.data[start + 1 .. start + 1 + len]
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct BranchEdge {
     pub target: BlockId,
@@ -1053,7 +1108,7 @@ pub enum Insn {
 
     /// Call a C function without pushing a frame
     /// `name` and `owner` are for printing purposes only
-    CCall { cfunc: *const u8, recv: InsnId, args: Vec<InsnId>, name: ID, owner: VALUE, return_type: Type, elidable: bool },
+    CCall { cfunc: *const u8, recv: InsnId, args: InsnIdList, name: ID, owner: VALUE, return_type: Type, elidable: bool },
 
     /// Call a C function that pushes a frame
     CCallWithFrame(Box<CCallWithFrameData>),
@@ -1232,10 +1287,11 @@ pub enum Insn {
 }
 
 /// Macro that enumerates all operands of an Insn, dispatching to caller-provided
-/// `$visit_one` macro for a single InsnId field and `$visit_many` macro for a
-/// slice/Vec of InsnIds. Used by both `for_each_operand` and `for_each_operand_mut`.
+/// `$visit_one` macro for a single InsnId field, `$visit_many` macro for a
+/// `Vec<InsnId>`, and `$visit_list` macro for an [`InsnIdList`] handle (resolved
+/// through the operand pool). Used by `for_each_operand` and friends.
 macro_rules! for_each_operand_impl {
-    ($self:expr, $visit_one:ident, $visit_many:ident) => {
+    ($self:expr, $visit_one:ident, $visit_many:ident, $visit_list:ident) => {
         match $self {
             Insn::Comment { .. }
             | Insn::Const { .. }
@@ -1490,7 +1546,7 @@ macro_rules! for_each_operand_impl {
             }
             Insn::CCall { recv, args, .. } => {
                 $visit_one!(*recv);
-                $visit_many!(args);
+                $visit_list!(*args);
             }
             Insn::GetIvar { self_val, state, .. }
             | Insn::DefinedIvar { self_val, state, .. } => {
@@ -1591,29 +1647,32 @@ impl Insn {
     }
 
     /// Call `f` on each operand (InsnId) of this instruction.
-    pub fn for_each_operand(&self, mut f: impl FnMut(InsnId)) {
+    pub fn for_each_operand(&self, pool: &OperandPool, mut f: impl FnMut(InsnId)) {
         macro_rules! visit_one { ($p:expr) => { f($p) }; }
         macro_rules! visit_many { ($s:expr) => { for id in ($s).iter() { f(*id) } }; }
-        for_each_operand_impl!(self, visit_one, visit_many);
+        macro_rules! visit_list { ($s:expr) => { for id in pool.get($s) { f(*id) } }; }
+        for_each_operand_impl!(self, visit_one, visit_many, visit_list);
     }
 
     /// Call `f` on a mutable reference to each operand (InsnId) of this instruction.
-    pub fn for_each_operand_mut(&mut self, mut f: impl FnMut(&mut InsnId)) {
+    pub fn for_each_operand_mut(&mut self, pool: &mut OperandPool, mut f: impl FnMut(&mut InsnId)) {
         macro_rules! visit_one { ($p:expr) => { f(&mut $p) }; }
         macro_rules! visit_many { ($s:expr) => { for id in ($s).iter_mut() { f(id) } }; }
-        for_each_operand_impl!(self, visit_one, visit_many);
+        macro_rules! visit_list { ($s:expr) => { for id in pool.get_mut($s).iter_mut() { f(id) } }; }
+        for_each_operand_impl!(self, visit_one, visit_many, visit_list);
     }
 
     /// Call `f` on each operand, short-circuiting on the first error.
-    pub fn try_for_each_operand<E>(&self, mut f: impl FnMut(InsnId) -> Result<(), E>) -> Result<(), E> {
+    pub fn try_for_each_operand<E>(&self, pool: &OperandPool, mut f: impl FnMut(InsnId) -> Result<(), E>) -> Result<(), E> {
         macro_rules! visit_one { ($p:expr) => { f($p)? }; }
         macro_rules! visit_many { ($s:expr) => { for id in ($s).iter() { f(*id)? } }; }
-        for_each_operand_impl!(self, visit_one, visit_many);
+        macro_rules! visit_list { ($s:expr) => { for id in pool.get($s) { f(*id)? } }; }
+        for_each_operand_impl!(self, visit_one, visit_many, visit_list);
         Ok(())
     }
 
-    pub fn print<'a>(&self, ptr_map: &'a PtrPrintMap, iseq: Option<IseqPtr>) -> InsnPrinter<'a> {
-        InsnPrinter { inner: self.clone(), ptr_map, iseq }
+    pub fn print<'a>(&self, ptr_map: &'a PtrPrintMap, iseq: Option<IseqPtr>, pool: Option<&'a OperandPool>) -> InsnPrinter<'a> {
+        InsnPrinter { inner: self.clone(), ptr_map, iseq, pool }
     }
 
     // TODO(Jacob): Model SP. ie, all allocations modify stack size but using the effect for stack modification feels excessive
@@ -1842,6 +1901,9 @@ pub struct InsnPrinter<'a> {
     inner: Insn,
     ptr_map: &'a PtrPrintMap,
     iseq: Option<IseqPtr>,
+    /// Operand pool for resolving [`InsnIdList`] handles (e.g. `CCall` args).
+    /// `None` for standalone `Insn` Display, where pooled operands render empty.
+    pool: Option<&'a OperandPool>,
 }
 
 fn get_local_var_id(iseq: IseqPtr, level: u32, ep_offset: u32) -> ID {
@@ -2198,6 +2260,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::CCall { cfunc, recv, args, name, owner, return_type: _, elidable: _ } => {
                 let display_name = if *owner == Qnil { name.contents_lossy().to_string() } else { qualified_method_name(*owner, *name) };
                 write!(f, "CCall {recv}, :{}@{:p}", display_name, self.ptr_map.map_ptr(cfunc))?;
+                let args = self.pool.map_or(&[][..], |pool| pool.get(*args));
                 write_separated!(f, ", ", ", ", args);
                 Ok(())
             },
@@ -2325,7 +2388,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
 
 impl std::fmt::Display for Insn {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        self.print(&PtrPrintMap::identity(), None).fmt(f)
+        self.print(&PtrPrintMap::identity(), None, None).fmt(f)
     }
 }
 
@@ -2618,6 +2681,10 @@ pub struct Function {
 
     insns: Vec<Insn>,
     union_find: std::cell::RefCell<UnionFind<InsnId>>,
+    /// Arena backing the compact [`InsnIdList`] operand handles stored in large
+    /// `Insn` variants (e.g. `CCall`). Wrapped in `RefCell` because `find` and
+    /// Display read/append lists through `&self`.
+    operand_pool: std::cell::RefCell<OperandPool>,
     insn_types: Vec<Type>,
     blocks: Vec<Block>,
     /// Superblock that targets all entry blocks. The sole root for RPO/dominator computation.
@@ -2723,6 +2790,7 @@ impl Function {
             insns: vec![],
             insn_types: vec![],
             union_find: UnionFind::new().into(),
+            operand_pool: std::cell::RefCell::new(OperandPool::new()),
             blocks: vec![Block::default(), Block::default()],
             entries_block: BlockId(0),
             entry_block: BlockId(1),
@@ -2773,6 +2841,17 @@ impl Function {
     /// Return the number of instructions
     pub fn num_insns(&self) -> usize {
         self.insns.len()
+    }
+
+    /// Intern a slice of operands into the operand pool, returning a compact
+    /// [`InsnIdList`] handle for storage inside a large `Insn` variant.
+    pub fn push_operands(&self, operands: &[InsnId]) -> InsnIdList {
+        self.operand_pool.borrow_mut().push(operands)
+    }
+
+    /// Resolve an [`InsnIdList`] handle to its operand slice.
+    pub fn operands(&self, list: InsnIdList) -> std::cell::Ref<'_, [InsnId]> {
+        std::cell::Ref::map(self.operand_pool.borrow(), |pool| pool.get(list))
     }
 
     /// Return the deepest inlining nesting present in this function's frames.
@@ -2949,7 +3028,15 @@ impl Function {
         }
         let insn_id = find!(insn_id);
         let mut result = self.insns[insn_id.0].clone();
-        result.for_each_operand_mut(&mut |operand: &mut InsnId| {
+        // Operands stored in the operand pool (e.g. CCall args) are shared by
+        // handle with the original insn. Duplicate the list so remapping below
+        // doesn't mutate the canonical entry.
+        if let Insn::CCall { args, .. } = &mut result {
+            let dup = self.operand_pool.borrow().get(*args).to_vec();
+            *args = self.operand_pool.borrow_mut().push(&dup);
+        }
+        let mut pool = self.operand_pool.borrow_mut();
+        result.for_each_operand_mut(&mut pool, &mut |operand: &mut InsnId| {
             *operand = find!(*operand);
         });
         result
@@ -4310,7 +4397,7 @@ impl Function {
                                     // Filter for a leaf and GC free function
                                     let ccall = if props.leaf && props.no_gc {
                                         self.count(block, Counter::inline_cfunc_optimized_send_count);
-                                        self.push_insn(block, Insn::CCall { cfunc: cfunc_ptr, recv, args, name, owner, return_type, elidable })
+                                        self.push_insn(block, Insn::CCall { cfunc: cfunc_ptr, recv, args: self.push_operands(&args), name, owner, return_type, elidable })
                                     } else {
                                         if get_option!(stats) {
                                             self.count_not_inlined_cfunc(block, super_cme);
@@ -4360,7 +4447,7 @@ impl Function {
                                     // Filter for a leaf and GC free function
                                     let ccall = if props.leaf && props.no_gc {
                                         self.count(block, Counter::inline_cfunc_optimized_send_count);
-                                        self.push_insn(block, Insn::CCall { cfunc: cfunc_ptr, recv, args, name, owner, return_type, elidable })
+                                        self.push_insn(block, Insn::CCall { cfunc: cfunc_ptr, recv, args: self.push_operands(&args), name, owner, return_type, elidable })
                                     } else {
                                         if get_option!(stats) {
                                             self.count_not_inlined_cfunc(block, super_cme);
@@ -4787,7 +4874,7 @@ impl Function {
         self.push_insn(block, Insn::CCall {
             cfunc: rb_ivar_get_at_no_ractor_check as *const u8,
             recv,
-            args: vec![ivar_index_insn],
+            args: self.push_operands(&[ivar_index_insn]),
             name: ID!(rb_ivar_get_at_no_ractor_check),
             owner: Qnil,
             return_type: types::BasicObject,
@@ -5177,7 +5264,7 @@ impl Function {
                         if props.leaf && props.no_gc {
                             fun.count(block, Counter::inline_cfunc_optimized_send_count);
                             let owner = unsafe { (*cme).owner };
-                            let ccall = fun.push_insn(block, Insn::CCall { cfunc: cfunc_ptr, recv, args, name, owner, return_type, elidable });
+                            let ccall = fun.push_insn(block, Insn::CCall { cfunc: cfunc_ptr, recv, args: fun.push_operands(&args), name, owner, return_type, elidable });
                             fun.make_equal_to(send_insn_id, ccall);
                             return Ok(());
                         }
@@ -5243,7 +5330,7 @@ impl Function {
                         if props.leaf && props.no_gc {
                             fun.count(block, Counter::inline_cfunc_optimized_send_count);
                             let owner = unsafe { (*cme).owner };
-                            let ccall = fun.push_insn(block, Insn::CCall { cfunc: cfunc_ptr, recv, args, name, owner, return_type, elidable });
+                            let ccall = fun.push_insn(block, Insn::CCall { cfunc: cfunc_ptr, recv, args: fun.push_operands(&args), name, owner, return_type, elidable });
                             fun.make_equal_to(send_insn_id, ccall);
                             return Ok(());
                         }
@@ -5464,10 +5551,12 @@ impl Function {
                 let canonical_id = self.union_find.borrow().find_const(insn_id);
 
                 let union_find = &self.union_find;
-                self.insns[canonical_id.0].for_each_operand_mut(|operand| {
+                let mut pool = self.operand_pool.borrow_mut();
+                self.insns[canonical_id.0].for_each_operand_mut(&mut pool, |operand| {
                     let canon = union_find.borrow().find_const(*operand);
                     *operand = rewrite_map.get(&canon).copied().unwrap_or(canon);
                 });
+                drop(pool);
 
                 // For the binary guards only `left` is registered because their infer_type is
                 // type_of(left).
@@ -5840,7 +5929,8 @@ impl Function {
             if necessary.get(insn_id) { continue; }
             necessary.insert(insn_id);
             let insn_id = self.union_find.borrow().find_const(insn_id);
-            self.insns[insn_id.0].for_each_operand(|operand| {
+            let pool = self.operand_pool.borrow();
+            self.insns[insn_id.0].for_each_operand(&pool, |operand| {
                 worklist.push_back(self.union_find.borrow().find_const(operand));
             });
         }
@@ -6104,11 +6194,12 @@ impl Function {
                 };
 
 
-                let opcode = insn.print(&ptr_map, Some(self.iseq)).to_string();
+                let pool = self.operand_pool.borrow();
+                let opcode = insn.print(&ptr_map, Some(self.iseq), Some(&*pool)).to_string();
 
                 // Collect inputs for a given instruction.
                 let mut inputs = Vec::new();
-                insn.for_each_operand(|id| inputs.push(id.0.into()));
+                insn.for_each_operand(&pool, |id| inputs.push(id.0.into()));
                 let inputs: Vec<Json> = inputs;
 
                 instructions.push(
@@ -6374,7 +6465,8 @@ impl Function {
             }
             for &insn_id in &self.blocks[block.0].insns {
                 let insn_id = self.union_find.borrow().find_const(insn_id);
-                self.insns[insn_id.0].try_for_each_operand(|operand| {
+                let pool = self.operand_pool.borrow();
+                self.insns[insn_id.0].try_for_each_operand(&pool, |operand| {
                     let operand = self.union_find.borrow().find_const(operand);
                     if !assigned.get(operand) {
                         return Err(ValidationError::OperandNotDefined(block, insn_id, operand));
@@ -6818,7 +6910,7 @@ impl<'a> std::fmt::Display for FunctionPrinter<'a> {
                         write!(f, "{insn_id}:{} = ", insn_type.print(&self.ptr_map))?;
                     }
                 }
-                writeln!(f, "{}", insn.print(&self.ptr_map, Some(fun.iseq)))?;
+                writeln!(f, "{}", insn.print(&self.ptr_map, Some(fun.iseq), Some(&*fun.operand_pool.borrow())))?;
             }
         }
         Ok(())
@@ -8289,7 +8381,7 @@ fn add_iseq_to_hir(
                                 let is_proc = fun.push_insn(unmodified_block, Insn::CCall {
                                     cfunc: rb_obj_is_proc as *const u8,
                                     recv: proc_val,
-                                    args: vec![],
+                                    args: InsnIdList::EMPTY,
                                     name: ID!(rb_obj_is_proc),
                                     owner: Qnil,
                                     return_type: types::BasicObject,
@@ -8377,7 +8469,7 @@ fn add_iseq_to_hir(
                                         let proc_result = fun.push_insn(proc_check_block, Insn::CCall {
                                             cfunc: rb_obj_is_proc as *const u8,
                                             recv: proc_val,
-                                            args: vec![],
+                                            args: InsnIdList::EMPTY,
                                             name: ID!(rb_obj_is_proc),
                                             owner: Qnil,
                                             return_type: types::BasicObject,
