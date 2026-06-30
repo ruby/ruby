@@ -1158,7 +1158,7 @@ pub enum Insn {
     },
     InvokeBlock {
         cd: *const rb_call_data,
-        args: Vec<InsnId>,
+        args: InsnIdList,
         state: InsnId,
         reason: SendFallbackReason,
     },
@@ -1545,7 +1545,7 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(insn.state);
             }
             Insn::InvokeBlock { args, state, .. } => {
-                $visit_many!(args);
+                $visit_list!(*args);
                 $visit_one!(*state);
             }
             Insn::InvokeBlockIfunc { block_handler, args, state, .. } => {
@@ -2178,6 +2178,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 Ok(())
             }
             Insn::InvokeBlock { args, reason, .. } => {
+                let args = self.pool.map_or(&[][..], |pool| pool.get(*args));
                 write!(f, "InvokeBlock")?;
                 write_separated!(f, " ", ", ", args);
                 write!(f, " # SendFallbackReason: {reason}")?;
@@ -6638,9 +6639,15 @@ impl Function {
                 }
                 Ok(())
             }
+            // Instructions whose operands live in the pool.
+            Insn::InvokeBlock { args, .. } => {
+                for &arg in self.operands(args).to_vec().iter() {
+                    self.assert_subtype(insn_id, arg, types::BasicObject)?;
+                }
+                Ok(())
+            }
             // Instructions with a Vec of Ruby objects
-            Insn::InvokeBlock { ref args, .. }
-            | Insn::InvokeBlockIfunc { ref args, .. }
+            Insn::InvokeBlockIfunc { ref args, .. }
             | Insn::NewArray { elements: ref args, .. }
             | Insn::ArrayHash { elements: ref args, .. }
             | Insn::ArrayMin { elements: ref args, .. }
@@ -9049,7 +9056,7 @@ fn add_iseq_to_hir(
 
                         // In the fallthrough case, use generic rb_vm_invokeblock and join
                         let fallback_result = fun.push_insn(block, Insn::InvokeBlock {
-                            cd, args, state: exit_id, reason: InvokeBlockNotSpecialized,
+                            cd, args: fun.push_operands(&args), state: exit_id, reason: InvokeBlockNotSpecialized,
                         });
                         fun.push_insn(block, Insn::Jump(Box::new(BranchEdge { target: join_block, args: vec![fallback_result] })));
 
@@ -9057,7 +9064,7 @@ fn add_iseq_to_hir(
                         block = join_block;
                         join_param
                     } else {
-                        fun.push_insn(block, Insn::InvokeBlock { cd, args, state: exit_id, reason: InvokeBlockNotSpecialized })
+                        fun.push_insn(block, Insn::InvokeBlock { cd, args: fun.push_operands(&args), state: exit_id, reason: InvokeBlockNotSpecialized })
                     };
                     state.stack_push(result);
                 }
