@@ -687,12 +687,6 @@ rb_gc_impl_init(void)
     rb_define_singleton_method(rb_mGC, "verify_compaction_references", rb_f_notimplement, -1);
 }
 
-size_t *
-rb_gc_impl_heap_sizes(void *objspace_ptr)
-{
-    return heap_sizes;
-}
-
 int
 rb_mmtk_obj_free_iter_wrapper(VALUE obj, void *data)
 {
@@ -902,7 +896,7 @@ mmtk_post_alloc_fast_immix(struct objspace *objspace, struct MMTk_ractor_cache *
 }
 
 VALUE
-rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size)
+rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size, size_t *actual_alloc_size)
 {
 #define MMTK_ALLOCATION_SEMANTICS_DEFAULT 0
     struct objspace *objspace = objspace_ptr;
@@ -916,6 +910,7 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
             break;
         }
     }
+    *actual_alloc_size = alloc_size;
 
     if (objspace->gc_stress) {
         mmtk_handle_user_collection_request(ractor_cache, false, false);
@@ -962,10 +957,10 @@ rb_gc_impl_obj_slot_size(VALUE obj)
 }
 
 size_t
-rb_gc_impl_heap_id_for_size(void *objspace_ptr, size_t size)
+rb_gc_impl_size_slot_size(void *objspace_ptr, size_t size)
 {
     for (int i = 0; i < MMTK_HEAP_COUNT; i++) {
-        if (size <= heap_sizes[i]) return i;
+        if (size <= heap_sizes[i]) return heap_sizes[i];
     }
 
     rb_bug("size too big");

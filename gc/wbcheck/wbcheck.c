@@ -536,12 +536,6 @@ rb_gc_impl_init(void)
     // Stub implementation
 }
 
-size_t *
-rb_gc_impl_heap_sizes(void *objspace_ptr)
-{
-    return heap_sizes;
-}
-
 // Shutdown
 void
 rb_gc_impl_shutdown_free_objects(void *objspace_ptr)
@@ -1075,7 +1069,7 @@ lock_and_maybe_gc(void *objspace_ptr)
 }
 
 VALUE
-rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size)
+rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size, size_t *actual_alloc_size)
 {
     unsigned int lev = RB_GC_VM_LOCK();
     rb_gc_vm_barrier();
@@ -1084,11 +1078,13 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
     maybe_gc(objspace_ptr);
 
     // Ensure minimum allocation size of BASE_SLOT_SIZE
-    alloc_size = heap_sizes[rb_gc_impl_heap_id_for_size(objspace_ptr, alloc_size)];
+    alloc_size = rb_gc_impl_size_slot_size(objspace_ptr, alloc_size);
 
     // Allocate memory for the object
     VALUE *mem = malloc(alloc_size);
     if (!mem) rb_bug("FIXME: malloc failed");
+
+    *actual_alloc_size = alloc_size;
 
     // Initialize the object
     VALUE obj = (VALUE)mem;
@@ -1119,10 +1115,10 @@ rb_gc_impl_obj_slot_size(VALUE obj)
 }
 
 size_t
-rb_gc_impl_heap_id_for_size(void *objspace_ptr, size_t size)
+rb_gc_impl_size_slot_size(void *objspace_ptr, size_t size)
 {
     for (int i = 0; i < HEAP_COUNT; i++) {
-        if (size <= heap_sizes[i]) return i;
+        if (size <= heap_sizes[i]) return heap_sizes[i];
     }
     rb_bug("size too big");
 }
@@ -1952,4 +1948,3 @@ rb_gc_impl_copy_attributes(void *objspace_ptr, VALUE dest, VALUE obj)
     }
     rb_gc_impl_copy_finalizer(objspace_ptr, dest, obj);
 }
-
