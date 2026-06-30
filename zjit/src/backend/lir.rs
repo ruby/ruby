@@ -672,11 +672,16 @@ impl From<CodePtr> for Target {
 
 type PosMarkerFn = Rc<dyn Fn(CodePtr, &CodeBlock)>;
 
-/// Cold fields of `Insn::CCall`, boxed to keep `Insn` small. The operand-bearing
-/// fields (`opnds`, `stack_map`) stay inline on the variant so the operand
-/// iteration macros can reach them by reference.
+/// All fields of `Insn::CCall`, boxed to keep `Insn` small. The operand-bearing
+/// fields (`opnds`, `stack_map`) are reached through the box by the operand
+/// iteration macros -- `opnds` directly (via `.iter()`/`.iter_mut()`) and
+/// `stack_map` via a per-iterator reborrow, the same idea as `PatchPointData`.
 #[derive(Clone)]
 pub struct CCallData {
+    /// The arguments to the C call.
+    pub opnds: Vec<Opnd>,
+    /// VM stack contents to materialize a JIT frame if the call side-exits.
+    pub stack_map: Option<StackMap>,
     /// The function pointer to be called. This should be Opnd::const_ptr
     /// (Opnd::UImm) in most cases. gen_entry_trampoline() uses Opnd::Reg.
     pub fptr: Opnd,
@@ -751,10 +756,8 @@ pub enum Insn {
     CPushPair(Opnd, Opnd),
 
     // C function call with N arguments (variadic)
+    // All fields are boxed (see `CCallData`) to keep `Insn` small.
     CCall {
-        opnds: Vec<Opnd>,
-        stack_map: Option<StackMap>,
-        /// Cold fields (fptr, markers, out), boxed to keep `Insn` small.
         data: Box<CCallData>,
     },
 
@@ -1003,9 +1006,12 @@ macro_rules! for_each_operand_impl {
                 visit_one!(opnd0);
                 visit_one!(opnd1);
             }
-            Insn::CCall { opnds, stack_map, .. } => {
-                visit_many!(opnds);
-                if let Some(StackMap { stack, .. }) = stack_map {
+            Insn::CCall { data } => {
+                visit_many!(data.opnds);
+                // `data` is behind a Box. `$reborrow` turns the box field into a `&`/`&mut
+                // Option<StackMap>` matching the iterator, so the same operand-walk works for
+                // both.
+                if let Some(StackMap { stack, .. }) = $reborrow!(data.stack_map) {
                     visit_many!(stack);
                 }
             }
@@ -2352,8 +2358,8 @@ impl Assembler
             let mut new_ids = Vec::with_capacity(old_ids.len());
 
             for (insn, insn_id) in old_insns.into_iter().zip(old_ids.into_iter()) {
-                if let Insn::CCall { opnds, stack_map, data } = insn {
-                    let CCallData { out, start_marker, end_marker, fptr } = *data;
+                if let Insn::CCall { data } = insn {
+                    let CCallData { opnds, stack_map, out, start_marker, end_marker, fptr } = *data;
                     let insn_number = insn_id.map(|id| id.0).unwrap_or(0);
                     // Do we have a case where a ccall is emitted, but nobody
                     // uses the result?
@@ -2478,10 +2484,10 @@ impl Assembler
 
                     // The CCall itself
                     new_insns.push(Insn::CCall {
-                        opnds: vec![],  // We've moved everything in to ccall regs, so this should
-                                        // be empty now
-                        stack_map: None,
                         data: Box::new(CCallData {
+                            opnds: vec![],  // We've moved everything in to ccall regs, so this should
+                                            // be empty now
+                            stack_map: None,
                             out: C_RET_OPND,
                             start_marker: None,
                             end_marker: None,
@@ -3511,7 +3517,7 @@ impl Assembler {
         let out = self.new_vreg(Opnd::match_num_bits(&opnds));
         let fptr = Opnd::const_ptr(fptr);
         let stack_map = self.stack_map.take();
-        self.push_insn(Insn::CCall { opnds, stack_map, data: Box::new(CCallData { fptr, start_marker: None, end_marker: None, out }) });
+        self.push_insn(Insn::CCall { data: Box::new(CCallData { opnds, stack_map, fptr, start_marker: None, end_marker: None, out }) });
         self.clear_stack_canary(canary_opnd);
         out
     }
@@ -3521,7 +3527,7 @@ impl Assembler {
     pub fn ccall_into(&mut self, out: Opnd, fptr: *const u8, opnds: Vec<Opnd>) {
         let fptr = Opnd::const_ptr(fptr);
         let stack_map = self.stack_map.take();
-        self.push_insn(Insn::CCall { opnds, stack_map, data: Box::new(CCallData { fptr, start_marker: None, end_marker: None, out }) });
+        self.push_insn(Insn::CCall { data: Box::new(CCallData { opnds, stack_map, fptr, start_marker: None, end_marker: None, out }) });
     }
 
     /// Call a C function stored in a register
@@ -3529,7 +3535,7 @@ impl Assembler {
         assert!(matches!(fptr, Opnd::Reg(_)), "ccall_reg must be called with Opnd::Reg: {fptr:?}");
         let out = self.new_vreg(num_bits);
         let stack_map = self.stack_map.take();
-        self.push_insn(Insn::CCall { opnds: vec![], stack_map, data: Box::new(CCallData { fptr, start_marker: None, end_marker: None, out }) });
+        self.push_insn(Insn::CCall { data: Box::new(CCallData { opnds: vec![], stack_map, fptr, start_marker: None, end_marker: None, out }) });
         out
     }
 
@@ -3545,9 +3551,9 @@ impl Assembler {
         let out = self.new_vreg(Opnd::match_num_bits(&opnds));
         let stack_map = self.stack_map.take();
         self.push_insn(Insn::CCall {
-            opnds,
-            stack_map,
             data: Box::new(CCallData {
+                opnds,
+                stack_map,
                 fptr: Opnd::const_ptr(fptr),
                 start_marker: Some(Rc::new(start_marker)),
                 end_marker: Some(Rc::new(end_marker)),
@@ -3912,9 +3918,9 @@ mod tests {
 
     #[test]
     fn test_size_of_insn() {
-        // PatchPoint's cold fields are boxed (see `PatchPointData`), so it no longer
-        // dominates the enum size.
-        assert_eq!(std::mem::size_of::<Insn>(), 72);
+        // PatchPoint (see `PatchPointData`) and CCall (see `CCallData`) box their
+        // fields, so neither dominates the enum size any longer.
+        assert_eq!(std::mem::size_of::<Insn>(), 64);
     }
 
     #[test]
@@ -4714,9 +4720,9 @@ mod tests {
         // v3 = CCall { fptr: UImm(0xF00), opnds: [v2] }
         let v3 = asm.new_vreg(64);
         asm.basic_blocks[b1.0].push_insn(Insn::CCall {
-            opnds: vec![v2],
-            stack_map: None,
             data: Box::new(CCallData {
+                opnds: vec![v2],
+                stack_map: None,
                 fptr: Opnd::UImm(0xF00),
                 start_marker: None,
                 end_marker: None,
@@ -4778,8 +4784,8 @@ mod tests {
 
         // The CCall should have empty opnds and out = C_RET_OPND (rewritten to regs[0])
         let ccall = insns.iter().find(|i| matches!(i, Insn::CCall { .. })).unwrap();
-        if let Insn::CCall { opnds, .. } = ccall {
-            assert!(opnds.is_empty(), "CCall opnds should be empty after handle_caller_saved_regs");
+        if let Insn::CCall { data } = ccall {
+            assert!(data.opnds.is_empty(), "CCall opnds should be empty after handle_caller_saved_regs");
         }
 
         // v0 should be rewritten to a Stack operand

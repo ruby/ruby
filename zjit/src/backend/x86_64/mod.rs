@@ -298,8 +298,8 @@ impl Assembler {
                     };
                     asm.push_insn(insn);
                 },
-                Insn::CCall { opnds, .. } => {
-                    assert!(opnds.len() <= C_ARG_OPNDS.len());
+                Insn::CCall { data } => {
+                    assert!(data.opnds.len() <= C_ARG_OPNDS.len());
                     // CCall argument setup is handled by handle_caller_saved_regs.
                     asm.push_insn(insn);
                 },
@@ -553,11 +553,11 @@ impl Assembler {
                     asm.push_insn(insn);
                 }
                 // For compile_exits, support splitting simple C arguments here
-                Insn::CCall { opnds, .. } if !opnds.is_empty() => {
-                    for (i, opnd) in opnds.iter().enumerate() {
+                Insn::CCall { data } if !data.opnds.is_empty() => {
+                    for (i, opnd) in data.opnds.iter().enumerate() {
                         asm.load_into(C_ARG_OPNDS[i], *opnd);
                     }
-                    *opnds = vec![];
+                    data.opnds = vec![];
                     asm.push_insn(insn);
                 }
                 Insn::CSelZ { truthy: left, falsy: right, out } |
