@@ -1537,8 +1537,26 @@ set_i_replace(VALUE set, VALUE other)
  *  call-seq:
  *    reset -> self
  *
- *  Resets the internal state after modification to existing elements
- *  and returns self. Elements will be reindexed and deduplicated.
+ *  Resets the internal state of +self+; return +self+.
+ *
+ *  A set relies on the #hash and #eql? behaviors of each of its elements;
+ *  modifying an element in a way that disturbs those behaviors
+ *  may put the set into an unreliable state:
+ *
+ *    class Person
+ *      attr_accessor :name
+ *      def initialize(name) = @name = name
+ *      def hash = @name.hash
+ *      def eql?(other) = other.is_a?(Person) && @name == other.name
+ *    end
+ *    alice = Person.new("Alice")
+ *    set = Set.new([alice])
+ *    set.include?(alice)             # => true
+ *    alice.name = "Bob"              # Puts set in unreliable state.
+ *    set.include?(Person.new("Bob")) # => false
+ *    set.reset                       # Restores set to reliable state.
+ *    set.include?(Person.new("Bob")) # => true
+ *
  */
 static VALUE
 set_i_reset(VALUE set)
@@ -2230,7 +2248,7 @@ rb_set_size(VALUE set)
  * === Other Methods
  *
  * - #reset:
- *   Resets the internal state; useful if an object
+ *   Resets the internal state; useful if an element
  *   has been modified while an element in the set.
  *
  */
