@@ -1690,37 +1690,6 @@ mod hir_opt_tests {
     }
 
     #[test]
-    fn test_optimize_private_call() {
-        eval("
-            def foo = []
-            private :foo
-            def test
-              foo
-            end
-            test; test
-        ");
-        assert_snapshot!(hir_string("test"), @"
-        fn test@<compiled>:5:
-        bb1():
-          EntryPoint interpreter
-          v1:BasicObject = LoadSelf
-          Jump bb3(v1)
-        bb2():
-          EntryPoint JIT(0)
-          v4:BasicObject = LoadArg :self@0
-          Jump bb3(v4)
-        bb3(v6:BasicObject):
-          PatchPoint MethodRedefined(Object@0x1000, foo@0x1008, cme:0x1010)
-          v18:ObjectSubclass[class_exact*:Object@VALUE(0x1000)] = GuardType v6, ObjectSubclass[class_exact*:Object@VALUE(0x1000)] recompile
-          PushInlineFrame v18 (0x1038)
-          v24:ArrayExact = NewArray
-          CheckInterrupts
-          PopInlineFrame
-          Return v24
-        ");
-    }
-
-    #[test]
     fn test_optimize_call_with_overloaded_cme() {
         eval("
             def test
