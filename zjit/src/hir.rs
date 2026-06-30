@@ -973,7 +973,7 @@ pub enum Insn {
     StringEqual { left: InsnId, right: InsnId },
 
     /// Combine count stack values into a regexp
-    ToRegexp { opt: usize, values: Vec<InsnId>, state: InsnId },
+    ToRegexp { opt: usize, values: InsnIdList, state: InsnId },
 
     /// Put special object (VMCORE, CBASE, etc.) based on value_type
     PutSpecialObject { value_type: SpecialObjectType, state: InsnId },
@@ -1389,7 +1389,7 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(*right);
             }
             Insn::ToRegexp { values, state, .. } => {
-                $visit_many!(values);
+                $visit_list!(*values);
                 $visit_one!(*state);
             }
             Insn::RefineType { val, .. }
@@ -2095,6 +2095,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write!(f, "StringEqual {left}, {right}")
             }
             Insn::ToRegexp { values, opt, .. } => {
+                let values = self.pool.map_or(&[][..], |pool| pool.get(*values));
                 write!(f, "ToRegexp")?;
                 write_separated!(f, " ", ", ", values);
 
@@ -6667,8 +6668,13 @@ impl Function {
                 }
                 Ok(())
             }
-            Insn::StringConcat { ref strings, .. }
-            | Insn::ToRegexp { values: ref strings, .. } => {
+            Insn::ToRegexp { values, .. } => {
+                for &string in self.operands(values).to_vec().iter() {
+                    self.assert_subtype(insn_id, string, types::String)?;
+                }
+                Ok(())
+            }
+            Insn::StringConcat { ref strings, .. } => {
                 for &string in strings {
                     self.assert_subtype(insn_id, string, types::String)?;
                 }
@@ -7694,7 +7700,7 @@ fn add_iseq_to_hir(
                     let opt = get_arg(pc, 0).as_usize();
                     let count = get_arg(pc, 1).as_usize();
                     let values = state.stack_pop_n(count)?;
-                    let insn_id = fun.push_insn(block, Insn::ToRegexp { opt, values, state: exit_id });
+                    let insn_id = fun.push_insn(block, Insn::ToRegexp { opt, values: fun.push_operands(&values), state: exit_id });
                     state.stack_push(insn_id);
                 }
                 YARVINSN_newarray => {
