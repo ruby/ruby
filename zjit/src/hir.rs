@@ -1186,7 +1186,7 @@ pub enum Insn {
         iseq: IseqPtr,
         cme: *const rb_callable_method_entry_t,
         recv: InsnId,
-        args: Vec<InsnId>,
+        args: InsnIdList,
         blockiseq: Option<IseqPtr>,
         state: InsnId,
     },
@@ -1511,13 +1511,13 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(*val);
                 $visit_one!(*state);
             }
-            Insn::Send { recv, args, state, .. } => {
+            Insn::Send { recv, args, state, .. }
+            | Insn::PushInlineFrame { recv, args, state, .. } => {
                 $visit_one!(*recv);
                 $visit_list!(*args);
                 $visit_one!(*state);
             }
             Insn::SendForward { recv, args, state, .. }
-            | Insn::PushInlineFrame { recv, args, state, .. }
             | Insn::InvokeBuiltin { recv, args, state, .. }
             | Insn::InvokeSuper { recv, args, state, .. }
             | Insn::InvokeSuperForward { recv, args, state, .. }
@@ -2131,6 +2131,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::PushInlineFrame { recv, iseq, args, .. } => {
                 write!(f, "PushInlineFrame {recv} ({:?})", self.ptr_map.map_ptr(iseq))?;
+                let args = self.pool.map_or(&[][..], |pool| pool.get(*args));
                 write_separated!(f, ", ", ", ", args);
                 Ok(())
             }
@@ -3038,10 +3039,10 @@ impl Function {
         }
         let insn_id = find!(insn_id);
         let mut result = self.insns[insn_id.0].clone();
-        // Operands stored in the operand pool (e.g. CCall/Send args) are shared
-        // by handle with the original insn. Duplicate the list so remapping below
-        // doesn't mutate the canonical entry.
-        if let Insn::CCall { args, .. } | Insn::Send { args, .. } = &mut result {
+        // Operands stored in the operand pool (e.g. CCall/Send/PushInlineFrame
+        // args) are shared by handle with the original insn. Duplicate the list
+        // so remapping below doesn't mutate the canonical entry.
+        if let Insn::CCall { args, .. } | Insn::Send { args, .. } | Insn::PushInlineFrame { args, .. } = &mut result {
             let dup = self.operand_pool.borrow().get(*args).to_vec();
             *args = self.operand_pool.borrow_mut().push(&dup);
         }
@@ -4825,7 +4826,7 @@ impl Function {
 
                 // Insert PushLightweightFrame and jump to callee body entry.
                 self.push_insn(block, Insn::PushInlineFrame {
-                    iseq, cme, recv, args: args.clone(), blockiseq, state,
+                    iseq, cme, recv, args: self.push_operands(&args), blockiseq, state,
                 });
                 self.count(block, Counter::inline_iseq_optimized_send_count);
                 self.push_insn(block, Insn::Jump(Box::new(BranchEdge {
@@ -6584,8 +6585,9 @@ impl Function {
                 self.assert_subtype(insn_id, klass, types::BasicObject)?;
                 self.assert_subtype(insn_id, allow_nil, types::BoolExact)
             }
-            // Send keeps its operands in the pool; resolve before checking.
-            Insn::Send { recv, args, .. } => {
+            // Send and PushInlineFrame keep their operands in the pool; resolve before checking.
+            Insn::Send { recv, args, .. }
+            | Insn::PushInlineFrame { recv, args, .. } => {
                 self.assert_subtype(insn_id, recv, types::BasicObject)?;
                 for &arg in self.operands(args).to_vec().iter() {
                     self.assert_subtype(insn_id, arg, types::BasicObject)?;
@@ -6593,8 +6595,7 @@ impl Function {
                 Ok(())
             }
             // Instructions with recv and a Vec of Ruby objects
-            Insn::PushInlineFrame { recv, ref args, .. }
-            | Insn::SendForward { recv, ref args, .. }
+            Insn::SendForward { recv, ref args, .. }
             | Insn::InvokeSuper { recv, ref args, .. }
             | Insn::InvokeSuperForward { recv, ref args, .. }
             | Insn::InvokeBuiltin { recv, ref args, .. }

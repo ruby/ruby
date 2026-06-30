@@ -654,6 +654,9 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
             )
         }
         Insn::PushInlineFrame { cme, iseq, recv, args, blockiseq, state, .. } => {
+            // Resolve to an owned Vec so the pool borrow is released before
+            // frame_state(), which calls find() and re-borrows the pool.
+            let args = function.operands(*args).to_vec();
             no_output!(gen_push_inline_frame(jit, asm, *cme, *iseq, opnd!(recv), opnds!(args), &function.frame_state(*state), *blockiseq))
         },
         Insn::PopInlineFrame { iseq, argc, state } => {
