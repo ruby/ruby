@@ -67,18 +67,20 @@ describe "String#%" do
     end
   end
 
-  it "raises an ArgumentError for unused arguments when $DEBUG is true" do
-    begin
-      old_debug = $DEBUG
-      $DEBUG = true
-      s = $stderr
-      $stderr = IOStub.new
+  ruby_version_is ""..."4.1" do
+    it "raises an ArgumentError for unused arguments when $DEBUG is true" do
+      begin
+        old_debug = $DEBUG
+        $DEBUG = true
+        s = $stderr
+        $stderr = IOStub.new
 
-      -> { "" % [1, 2, 3]   }.should.raise(ArgumentError)
-      -> { "%s" % [1, 2, 3] }.should.raise(ArgumentError)
-    ensure
-      $DEBUG = old_debug
-      $stderr = s
+        -> { "" % [1, 2, 3]   }.should.raise(ArgumentError)
+        -> { "%s" % [1, 2, 3] }.should.raise(ArgumentError)
+      ensure
+        $DEBUG = old_debug
+        $stderr = s
+      end
     end
   end
 
