@@ -1144,7 +1144,7 @@ pub enum Insn {
         recv: InsnId,
         cd: *const rb_call_data,
         blockiseq: IseqPtr,
-        args: Vec<InsnId>,
+        args: InsnIdList,
         state: InsnId,
         reason: SendFallbackReason,
     },
@@ -1513,13 +1513,13 @@ macro_rules! for_each_operand_impl {
             }
             Insn::Send { recv, args, state, .. }
             | Insn::PushInlineFrame { recv, args, state, .. }
-            | Insn::SendForward { recv, args, state, .. } => {
+            | Insn::SendForward { recv, args, state, .. }
+            | Insn::InvokeSuper { recv, args, state, .. } => {
                 $visit_one!(*recv);
                 $visit_list!(*args);
                 $visit_one!(*state);
             }
             Insn::InvokeBuiltin { recv, args, state, .. }
-            | Insn::InvokeSuper { recv, args, state, .. }
             | Insn::InvokeSuperForward { recv, args, state, .. }
             | Insn::InvokeProc { recv, args, state, .. } => {
                 $visit_one!(*recv);
@@ -2164,6 +2164,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::InvokeSuper { recv, blockiseq, args, reason, .. } => {
                 write!(f, "InvokeSuper {recv}, {:p}", self.ptr_map.map_ptr(blockiseq))?;
+                let args = self.pool.map_or(&[][..], |pool| pool.get(*args));
                 write_separated!(f, ", ", ", ", args);
                 write!(f, " # SendFallbackReason: {reason}")?;
                 Ok(())
@@ -3041,9 +3042,9 @@ impl Function {
         let insn_id = find!(insn_id);
         let mut result = self.insns[insn_id.0].clone();
         // Operands stored in the operand pool (e.g. CCall/Send/PushInlineFrame/
-        // SendForward args) are shared by handle with the original insn. Duplicate
-        // the list so remapping below doesn't mutate the canonical entry.
-        if let Insn::CCall { args, .. } | Insn::Send { args, .. } | Insn::PushInlineFrame { args, .. } | Insn::SendForward { args, .. } = &mut result {
+        // SendForward/InvokeSuper args) are shared by handle with the original
+        // insn. Duplicate the list so remapping below doesn't mutate the canonical entry.
+        if let Insn::CCall { args, .. } | Insn::Send { args, .. } | Insn::PushInlineFrame { args, .. } | Insn::SendForward { args, .. } | Insn::InvokeSuper { args, .. } = &mut result {
             let dup = self.operand_pool.borrow().get(*args).to_vec();
             *args = self.operand_pool.borrow_mut().push(&dup);
         }
@@ -4208,6 +4209,7 @@ impl Function {
                         };
                     }
                     Insn::InvokeSuper { recv, cd, blockiseq, args, state, .. } => {
+                        let args = self.operands(args).to_vec();
                         // Helper to emit common guards for super call optimization.
                         fn emit_super_call_guards(
                             fun: &mut Function,
@@ -6586,10 +6588,11 @@ impl Function {
                 self.assert_subtype(insn_id, klass, types::BasicObject)?;
                 self.assert_subtype(insn_id, allow_nil, types::BoolExact)
             }
-            // Send/PushInlineFrame/SendForward keep their operands in the pool; resolve before checking.
+            // Send/PushInlineFrame/SendForward/InvokeSuper keep their operands in the pool; resolve before checking.
             Insn::Send { recv, args, .. }
             | Insn::PushInlineFrame { recv, args, .. }
-            | Insn::SendForward { recv, args, .. } => {
+            | Insn::SendForward { recv, args, .. }
+            | Insn::InvokeSuper { recv, args, .. } => {
                 self.assert_subtype(insn_id, recv, types::BasicObject)?;
                 for &arg in self.operands(args).to_vec().iter() {
                     self.assert_subtype(insn_id, arg, types::BasicObject)?;
@@ -6597,8 +6600,7 @@ impl Function {
                 Ok(())
             }
             // Instructions with recv and a Vec of Ruby objects
-            Insn::InvokeSuper { recv, ref args, .. }
-            | Insn::InvokeSuperForward { recv, ref args, .. }
+            Insn::InvokeSuperForward { recv, ref args, .. }
             | Insn::InvokeBuiltin { recv, ref args, .. }
             | Insn::InvokeProc { recv, ref args, .. }
             | Insn::ArrayInclude { target: recv, elements: ref args, .. } => {
@@ -8908,7 +8910,7 @@ fn add_iseq_to_hir(
                     let args = state.stack_pop_n(crate::profile::num_arguments_on_stack(cd))?;
                     let recv = state.stack_pop()?;
                     let blockiseq: IseqPtr = get_arg(pc, 1).as_ptr();
-                    let result = fun.push_insn(block, Insn::InvokeSuper { recv, cd, blockiseq, args, state: exit_id, reason: Uncategorized(opcode) });
+                    let result = fun.push_insn(block, Insn::InvokeSuper { recv, cd, blockiseq, args: fun.push_operands(&args), state: exit_id, reason: Uncategorized(opcode) });
                     state.stack_push(result);
 
                     if !blockiseq.is_null() {
