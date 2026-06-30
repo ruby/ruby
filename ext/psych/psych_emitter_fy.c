@@ -224,7 +224,7 @@ static VALUE end_document(VALUE self, VALUE imp)
     return self;
 }
 
-static enum fy_scalar_style psych_to_fyss(int style, int quoted)
+static enum fy_scalar_style psych_to_fyss(int style, int plain, int quoted)
 {
     switch (style) {
         case 1: return FYSS_PLAIN;
@@ -233,9 +233,13 @@ static enum fy_scalar_style psych_to_fyss(int style, int quoted)
         case 4: return FYSS_LITERAL;
         case 5: return FYSS_FOLDED;
         default:
-            /* style ANY: honour psych's quoted hint so number-like strings are
-             * not silently re-typed on reload. */
-            return quoted ? FYSS_DOUBLE_QUOTED : FYSS_ANY;
+            /* style ANY: honour psych's plain/quoted hints.  Forcing a plain
+             * scalar plain keeps libfyaml from tagging empty scalars (nil) as
+             * explicit nulls; the quoted hint keeps number-like strings from
+             * being re-typed on reload. */
+            if (quoted) return FYSS_DOUBLE_QUOTED;
+            if (plain)  return FYSS_PLAIN;
+            return FYSS_ANY;
     }
 }
 
@@ -258,16 +262,22 @@ static VALUE scalar(VALUE self, VALUE value, VALUE anchor, VALUE tag,
     Check_Type(value, T_STRING);
 
     value = rb_str_export_to_enc(value, encoding);
-    if (!NIL_P(anchor)) anchor = rb_str_export_to_enc(anchor, encoding);
-    if (!NIL_P(tag))    tag    = rb_str_export_to_enc(tag, encoding);
+    if (!NIL_P(anchor)) { Check_Type(anchor, T_STRING); anchor = rb_str_export_to_enc(anchor, encoding); }
+    if (!NIL_P(tag))    { Check_Type(tag, T_STRING);    tag    = rb_str_export_to_enc(tag, encoding); }
 
-    enum fy_scalar_style fyss = psych_to_fyss(NUM2INT(style), RTEST(quoted));
+    enum fy_scalar_style fyss = psych_to_fyss(NUM2INT(style), RTEST(plain), RTEST(quoted));
+
+    /* libyaml omits the tag when plain_implicit (or quoted_implicit) is set,
+     * since the value resolves to that tag on reload.  fy_emit_event_create()
+     * has no implicit flag and would always print the tag (e.g. nil as
+     * "!<tag:yaml.org,2002:null>"), so drop it here to match. */
+    int emit_tag = !NIL_P(tag) && !RTEST(plain) && !RTEST(quoted);
 
     struct fy_event *event = fy_emit_event_create(e->emit, FYET_SCALAR,
             fyss,
             RSTRING_PTR(value), (size_t)RSTRING_LEN(value),
             NIL_P(anchor) ? NULL : StringValueCStr(anchor),
-            NIL_P(tag) ? NULL : StringValueCStr(tag));
+            emit_tag ? StringValueCStr(tag) : NULL);
 
     do_emit(e, event);
     RB_GC_GUARD(value);
@@ -282,8 +292,8 @@ static VALUE start_sequence(VALUE self, VALUE anchor, VALUE tag,
 
     TypedData_Get_Struct(self, psych_fy_emitter_t, &psych_emitter_type, e);
 
-    if (!NIL_P(anchor)) anchor = rb_str_export_to_enc(anchor, encoding);
-    if (!NIL_P(tag))    tag    = rb_str_export_to_enc(tag, encoding);
+    if (!NIL_P(anchor)) { Check_Type(anchor, T_STRING); anchor = rb_str_export_to_enc(anchor, encoding); }
+    if (!NIL_P(tag))    { Check_Type(tag, T_STRING);    tag    = rb_str_export_to_enc(tag, encoding); }
 
     struct fy_event *event = fy_emit_event_create(e->emit, FYET_SEQUENCE_START,
             psych_to_fyns(NUM2INT(style)),
@@ -311,8 +321,8 @@ static VALUE start_mapping(VALUE self, VALUE anchor, VALUE tag,
 
     TypedData_Get_Struct(self, psych_fy_emitter_t, &psych_emitter_type, e);
 
-    if (!NIL_P(anchor)) anchor = rb_str_export_to_enc(anchor, encoding);
-    if (!NIL_P(tag))    tag    = rb_str_export_to_enc(tag, encoding);
+    if (!NIL_P(anchor)) { Check_Type(anchor, T_STRING); anchor = rb_str_export_to_enc(anchor, encoding); }
+    if (!NIL_P(tag))    { Check_Type(tag, T_STRING);    tag    = rb_str_export_to_enc(tag, encoding); }
 
     struct fy_event *event = fy_emit_event_create(e->emit, FYET_MAPPING_START,
             psych_to_fyns(NUM2INT(style)),
@@ -337,7 +347,7 @@ static VALUE alias(VALUE self, VALUE anchor)
     psych_fy_emitter_t *e;
     TypedData_Get_Struct(self, psych_fy_emitter_t, &psych_emitter_type, e);
 
-    if (!NIL_P(anchor)) anchor = rb_str_export_to_enc(anchor, rb_utf8_encoding());
+    if (!NIL_P(anchor)) { Check_Type(anchor, T_STRING); anchor = rb_str_export_to_enc(anchor, rb_utf8_encoding()); }
 
     do_emit(e, fy_emit_event_create(e->emit, FYET_ALIAS,
             NIL_P(anchor) ? NULL : StringValueCStr(anchor)));
