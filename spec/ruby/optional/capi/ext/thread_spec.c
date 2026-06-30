@@ -172,6 +172,30 @@ static VALUE thread_spec_ruby_thread_has_gvl_p(VALUE self) {
 }
 #endif
 
+struct nogvl_intr_fail_data {
+  int called;
+};
+
+static void *nogvl_intr_fail_func(void *ptr) {
+  struct nogvl_intr_fail_data *data = ptr;
+
+  data->called = 1;
+
+  return (void *)Qtrue;
+}
+
+static VALUE thread_spec_rb_nogvl_intr_fail(VALUE self) {
+  struct nogvl_intr_fail_data data = {0};
+  void *ret;
+  int saved_errno;
+
+  errno = 0;
+  ret = rb_nogvl(nogvl_intr_fail_func, &data, RUBY_UBF_IO, 0, RB_NOGVL_INTR_FAIL);
+  saved_errno = errno;
+
+  return rb_ary_new_from_args(3, data.called ? Qtrue : Qfalse, (VALUE)ret, INT2FIX(saved_errno));
+}
+
 void Init_thread_spec(void) {
   VALUE cls = rb_define_class("CApiThreadSpecs", rb_cObject);
   rb_define_method(cls, "rb_thread_alone", thread_spec_rb_thread_alone, 0);
@@ -188,6 +212,7 @@ void Init_thread_spec(void) {
 #ifdef RUBY_VERSION_IS_4_0
   rb_define_method(cls,  "ruby_thread_has_gvl_p", thread_spec_ruby_thread_has_gvl_p, 0);
 #endif
+  rb_define_method(cls,  "rb_nogvl_intr_fail", thread_spec_rb_nogvl_intr_fail, 0);
 }
 
 #ifdef __cplusplus

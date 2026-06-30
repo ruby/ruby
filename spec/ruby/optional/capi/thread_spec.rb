@@ -185,6 +185,26 @@ describe "C-API Thread function" do
     end
   end
 
+  ruby_version_is "4.1" do
+    describe "rb_nogvl with RB_NOGVL_INTR_FAIL" do
+      it "sets errno to EINTR when an interrupt prevents the blocking region from running" do
+        interrupted = false
+
+        begin
+          Thread.handle_interrupt(Interrupt => :never) do
+            Thread.current.raise(Interrupt)
+
+            @t.rb_nogvl_intr_fail.should == [false, nil, Errno::EINTR::Errno]
+          end
+        rescue Interrupt
+          interrupted = true
+        end
+
+        interrupted.should == true
+      end
+    end
+  end
+
   ruby_version_is "4.0" do
     describe "ruby_thread_has_gvl_p" do
       it "returns true if the current thread has the GVL" do
