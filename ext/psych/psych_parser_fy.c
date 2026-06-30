@@ -289,7 +289,25 @@ static VALUE parse(VALUE self, VALUE handler, VALUE yaml, VALUE path)
     }
 
     if (rb_respond_to(yaml, id_read)) {
-        if (fy_parser_set_input_callback(parser->fyp, (void *)yaml, io_reader) != 0) {
+        VALUE ext_enc = rb_funcall(yaml, rb_intern("external_encoding"), 0);
+        int ext_idx = NIL_P(ext_enc) ? -1 : rb_to_encoding_index(ext_enc);
+
+        if (ext_idx == rb_enc_find_index("UTF-16LE") ||
+            ext_idx == rb_enc_find_index("UTF-16BE")) {
+            /* libfyaml only consumes UTF-8.  A UTF-16 stream cannot be fed
+             * through the chunked reader because a 2-byte unit may straddle a
+             * read boundary, so slurp the whole stream and transcode it.  Any
+             * other non-UTF-8 external encoding is left raw and libfyaml will
+             * reject it, matching psych's "UTF-8/UTF-16 only" IO contract. */
+            VALUE content = rb_funcall(yaml, id_read, 0);
+            if (NIL_P(content)) content = rb_str_new("", 0);
+            StringValue(content);
+            yaml = transcode_string(content);
+            if (fy_parser_set_string(parser->fyp,
+                        RSTRING_PTR(yaml), (size_t)RSTRING_LEN(yaml)) != 0) {
+                rb_raise(rb_eRuntimeError, "could not set libfyaml input");
+            }
+        } else if (fy_parser_set_input_callback(parser->fyp, (void *)yaml, io_reader) != 0) {
             rb_raise(rb_eRuntimeError, "could not set libfyaml input");
         }
     } else {
