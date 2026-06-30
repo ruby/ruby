@@ -1173,7 +1173,7 @@ set_merge_enum_into(VALUE set, VALUE arg)
 
 /*
  *  call-seq:
- *    merge(*enumerables) -> self
+ *    merge(*enumerables, **nil) -> self
  *
  *  Adds each element of each of the given +enumerables+ to +self+;
  *  returns +self+:
