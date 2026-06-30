@@ -317,7 +317,7 @@ rb_shape_tree_t rb_shape_tree = { 0 };
 // Should be on its own cache line
 static RUBY_ALIGNAS(128) rb_atomic_t shape_next_id;
 
-rb_shape_t *
+static rb_shape_t *
 rb_shape_get_root_shape(void)
 {
     return rb_shape_tree.shape_list;
