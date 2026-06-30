@@ -1539,9 +1539,9 @@ set_i_replace(VALUE set, VALUE other)
  *
  *  Resets the internal state of +self+; return +self+.
  *
- *  A set relies on the #hash and #eql? behaviors of each of its elements;
- *  modifying an element in a way that disturbs those behaviors
- *  may put the set into an unreliable state:
+ *  A set relies on the #hash results of each element being consistent.
+ *  Modifying an element in a way that changes the results of #hash
+ *  may allow duplicate elements in the set:
  *
  *    class Person
  *      attr_accessor :name
