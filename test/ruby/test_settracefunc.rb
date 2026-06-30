@@ -2978,6 +2978,10 @@ CODE
     assert_kind_of(Thread, target_thread)
   end
 
+  private def finalized(done)
+    proc {done[0] = true}
+  end
+
   def test_tracepoint_garbage_collected_when_disable
     before_count_stat = 0
     before_count_objspace = 0
@@ -2992,18 +2996,17 @@ CODE
     tp.enable
     Class.inspect # c_call, c_return invoked
     tp.disable
-    tp_id = tp.object_id
+    done = [false]
+    ObjectSpace.define_finalizer(tp, finalized(done))
     tp = nil
 
     gc_times = 0
     gc_max_retries = 10
-    EnvUtil.suppress_warning do
-      until (ObjectSpace._id2ref(tp_id) rescue nil).nil?
-        GC.start
-        gc_times += 1
-        if gc_times == gc_max_retries
-          break
-        end
+    until done[0]
+      GC.start
+      gc_times += 1
+      if gc_times == gc_max_retries
+        break
       end
     end
     return if gc_times == gc_max_retries
@@ -3012,12 +3015,12 @@ CODE
     TracePoint.stat.each do |v|
       after_count_stat += 1
     end
-    assert after_count_stat <= before_count_stat
+    assert_operator after_count_stat, :<=, before_count_stat
     after_count_objspace = 0
     ObjectSpace.each_object(TracePoint) do
       after_count_objspace += 1
     end
-    assert after_count_objspace <= before_count_objspace
+    assert_operator after_count_objspace, :<=, before_count_objspace
   end
 
   def test_tp_ractor_local_untargeted
@@ -3111,7 +3114,9 @@ CODE
   def test_tracepoints_not_disabled_by_ractor_gc
     assert_ractor("#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
-    $-w = nil # uses ObjectSpace._id2ref
+    def finalized(done)
+      proc {done[0] = true}
+    end
     def hi = "hi"
     greetings = 0
     tp_target = TracePoint.new(:call) do |tp|
@@ -3127,12 +3132,13 @@ CODE
 
     r = Ractor.new { 10 }
     r.join
-    ractor_id = r.object_id
+    done = [false]
+    ObjectSpace.define_finalizer(r, finalized(done))
     r = nil # allow gc for ractor
     gc_max_retries = 15
     gc_times = 0
     # force GC of ractor (or try, because we have a conservative GC)
-    until (ObjectSpace._id2ref(ractor_id) rescue nil).nil?
+    until done[0]
       GC.start
       gc_times += 1
       if gc_times == gc_max_retries
@@ -3150,11 +3156,7 @@ CODE
     tp_target.disable
     tp_global.disable
     assert_equal 5, greetings
-    if gc_times == gc_max_retries # _id2ref never raised
-      assert_equal 6, raises
-    else
-      assert_equal 7, raises
-    end
+    assert_equal 6, raises
     end;
   end
 
