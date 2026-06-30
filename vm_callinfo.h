@@ -614,11 +614,19 @@ struct rb_class_cc_entries {
     int len;
     const struct rb_callable_method_entry_struct *cme;
     struct rb_class_cc_entries_entry {
-        unsigned int argc;
-        unsigned int flag;
         const struct rb_callcache *cc;
+        unsigned int argc;
+        unsigned short flag;
+        unsigned short kw_len;
     } entries[FLEX_ARY_LEN];
 };
+
+/* entries[].flag is an unsigned short, so every VM_CALL flag bit must fit in 16 bits. */
+STATIC_ASSERT(cc_entries_flag_fits_in_short, VM_CALL__END <= 16);
+
+/* entries[].kw_len is an unsigned short, so a call site cannot carry, nor a method
+   declare, more keyword arguments than this.  Enforced at compile time. */
+#define VM_CALL_KW_LEN_MAX UINT16_MAX
 
 static inline size_t
 vm_ccs_alloc_size(size_t capa)
