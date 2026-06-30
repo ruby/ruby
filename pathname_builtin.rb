@@ -526,9 +526,19 @@ class Pathname
   end
   private :cleanpath_conservative
 
-  # Returns the parent directory.
+  # :markup: markdown
   #
-  # This is same as <code>self + '..'</code>.
+  # call-seq:
+  #   parent -> new_pathname
+  #
+  # Returns a new pathname representing the parent directory
+  # of the entry represented by `self`:
+  #
+  # ```ruby
+  # pn = Pathname('/etc/passwd') # => #<Pathname:/etc/passwd>
+  # pn.parent                    # => #<Pathname:/etc>
+  # ```
+  #
   def parent
     self + '..'
   end
