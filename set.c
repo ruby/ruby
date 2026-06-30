@@ -858,11 +858,19 @@ set_i_delete_if(VALUE set)
 
 /*
  *  call-seq:
- *    reject! { |o| ... } -> self
+ *    reject! {|element| ... } -> self or nil
  *    reject! -> enumerator
  *
- *  Equivalent to Set#delete_if, but returns nil if no changes were made.
- *  Returns an enumerator if no block is given.
+ *  With a block given, like #delete_if, but returns +nil+ if no changes were made:
+ *
+ *    set = Set[*0..9]                       # => Set[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+ *    set.reject! {|element| element.even? } # => Set[1, 3, 5, 7, 9]
+ *    set.reject! {|element| element.even? } # => nil
+ *    set.reject! {|element| element.odd? }  # => Set[]
+ *
+ *  With no block given, returns an Enumerator.
+ *
+ *  Related: see {Methods for Deleting}[rdoc-ref:Set@Methods+for+Deleting].
  */
 static VALUE
 set_i_reject(VALUE set)
