@@ -1655,9 +1655,17 @@ set_le(VALUE set, VALUE other)
 
 /*
  *  call-seq:
- *    proper_subset?(set) -> true or false
+ *    proper_subset?(other_set) -> true or false
  *
- *  Returns true if the set is a proper subset of the given set.
+ *  Returns whether +self+ is
+ *  a {proper subset}[https://en.wikipedia.org/wiki/Subset]
+ *  of the given +other_set+:
+ *
+ *    set = Set[*'b'..'e']               # => Set["b", "c", "d", "e"]
+ *    set.proper_subset?(set)            # => false
+ *    set.proper_subset?(Set[*'a'..'f']) # => true
+ *
+ *  Related: {Methods for Querying}[rdoc-ref:Set@Methods+for+Querying].
  */
 static VALUE
 set_i_proper_subset(VALUE set, VALUE other)
