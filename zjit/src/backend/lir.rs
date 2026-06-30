@@ -691,6 +691,21 @@ pub struct CCallData {
     pub out: Opnd,
 }
 
+/// Cold fields of `Insn::PatchPoint`, boxed to keep `Insn` small. `target` is
+/// operand-bearing (it's a `Target::SideExit` until `compile_exits` lowers it to
+/// a `Target::Label`), so the operand-iteration macros reach it through the box
+/// via a per-iterator reborrow -- the same idea as `CCallData` and the HIR
+/// `CCallWithFrame` pattern.
+#[derive(Clone)]
+pub struct PatchPointData {
+    /// Patch point target. Rewritten to a jump to a side exit on invalidation.
+    pub target: Target,
+    /// The invariant whose violation triggers invalidation of this patch point.
+    pub invariant: Invariant,
+    /// ISEQ version invalidated to force a recompile when the invariant breaks.
+    pub version: IseqVersionRef,
+}
+
 /// ZJIT Low-level IR instruction
 #[derive(Clone)]
 pub enum Insn {
@@ -861,7 +876,8 @@ pub enum Insn {
     Or { left: Opnd, right: Opnd, out: Opnd },
 
     /// Patch point that will be rewritten to a jump to a side exit on invalidation.
-    PatchPoint { target: Target, invariant: Invariant, version: IseqVersionRef },
+    /// Cold fields are boxed (see `PatchPointData`) to keep `Insn` small.
+    PatchPoint(Box<PatchPointData>),
 
     /// Make sure the last PatchPoint has enough space to insert a jump.
     /// We insert this instruction at the end of each block so that the jump
@@ -913,7 +929,7 @@ macro_rules! target_for_each_operand_impl {
 /// macro for a single `Opnd` field and `$visit_many` macro for a slice/`Vec` of `Opnd`s. Used by
 /// both `for_each_operand` and `for_each_operand_mut`.
 macro_rules! for_each_operand_impl {
-    ($self:expr, $visit_one:ident, $visit_many:ident $(, $const:expr)?) => {
+    ($self:expr, $visit_one:ident, $visit_many:ident, $reborrow:ident $(, $const:expr)?) => {
         match $self {
             Insn::Jbe(target) |
             Insn::Jb(target) |
@@ -928,9 +944,13 @@ macro_rules! for_each_operand_impl {
             Insn::JoMul(target) |
             Insn::Jz(target) |
             Insn::Label(target) |
-            Insn::LeaJumpTarget { target, .. } |
-            Insn::PatchPoint { target, .. } => {
+            Insn::LeaJumpTarget { target, .. } => {
                 target_for_each_operand_impl!(target, $visit_many);
+            }
+            // `target` is behind a Box. `$reborrow` turns the box field into a `&`/`&mut Target`
+            // matching the iterator, so the same operand-walk works for both.
+            Insn::PatchPoint(data) => {
+                target_for_each_operand_impl!($reborrow!(data.target), $visit_many);
             }
             Insn::Joz(opnd, target) |
             Insn::Jonz(opnd, target) => {
@@ -1013,23 +1033,26 @@ impl Insn {
     pub fn for_each_operand(&self, mut f: impl FnMut(Opnd)) {
         macro_rules! visit_one { ($id:expr) => { f(*$id) }; }
         macro_rules! visit_many { ($s:expr) => { for id in ($s).iter() { f(*id) } }; }
+        macro_rules! reborrow { ($e:expr) => { & $e }; }
         // Extra () is a throw-away parameter to avoid iterating over FrameSetup/FrameTeardown
         // preserved in the mutable iterator.
-        for_each_operand_impl!(self, visit_one, visit_many, ());
+        for_each_operand_impl!(self, visit_one, visit_many, reborrow, ());
     }
 
     /// Call `f` on a mutable reference to each operand (Opnd) of this instruction.
     pub fn for_each_operand_mut(&mut self, mut f: impl FnMut(&mut Opnd)) {
         macro_rules! visit_one { ($id:expr) => { f($id) }; }
         macro_rules! visit_many { ($s:expr) => { for id in ($s).iter_mut() { f(id) } }; }
-        for_each_operand_impl!(self, visit_one, visit_many);
+        macro_rules! reborrow { ($e:expr) => { &mut $e }; }
+        for_each_operand_impl!(self, visit_one, visit_many, reborrow);
     }
 
     /// Call `f` on each operand, short-circuiting on the first error.
     pub fn try_for_each_operand<E>(&self, mut f: impl FnMut(Opnd) -> Result<(), E>) -> Result<(), E> {
         macro_rules! visit_one { ($id:expr) => { f(*$id)? }; }
         macro_rules! visit_many { ($s:expr) => { for id in ($s).iter() { f(*id)? } }; }
-        for_each_operand_impl!(self, visit_one, visit_many, ());
+        macro_rules! reborrow { ($e:expr) => { & $e }; }
+        for_each_operand_impl!(self, visit_one, visit_many, reborrow, ());
         Ok(())
     }
 
@@ -1051,10 +1074,10 @@ impl Insn {
             Insn::Joz(_, target) |
             Insn::Jonz(_, target) |
             Insn::Label(target) |
-            Insn::LeaJumpTarget { target, .. } |
-            Insn::PatchPoint { target, .. } => {
+            Insn::LeaJumpTarget { target, .. } => {
                 Some(target)
             }
+            Insn::PatchPoint(data) => Some(&mut data.target),
             _ => None,
         }
     }
@@ -1113,7 +1136,7 @@ impl Insn {
             Insn::Mov { .. } => "Mov",
             Insn::Not { .. } => "Not",
             Insn::Or { .. } => "Or",
-            Insn::PatchPoint { .. } => "PatchPoint",
+            Insn::PatchPoint(..) => "PatchPoint",
             Insn::PadPatchPoint => "PadPatchPoint",
             Insn::PosMarker(_) => "PosMarker",
             Insn::RShift { .. } => "RShift",
@@ -1208,8 +1231,8 @@ impl Insn {
             Insn::Joz(_, target) |
             Insn::Jonz(_, target) |
             Insn::Label(target) |
-            Insn::LeaJumpTarget { target, .. } |
-            Insn::PatchPoint { target, .. } => Some(target),
+            Insn::LeaJumpTarget { target, .. } => Some(target),
+            Insn::PatchPoint(data) => Some(&data.target),
             _ => None
         }
     }
@@ -3740,7 +3763,7 @@ impl Assembler {
     }
 
     pub fn patch_point(&mut self, target: Target, invariant: Invariant, version: IseqVersionRef) {
-        self.push_insn(Insn::PatchPoint { target, invariant, version });
+        self.push_insn(Insn::PatchPoint(Box::new(PatchPointData { target, invariant, version })));
     }
 
     pub fn pad_patch_point(&mut self) {
@@ -3889,7 +3912,9 @@ mod tests {
 
     #[test]
     fn test_size_of_insn() {
-        assert_eq!(std::mem::size_of::<Insn>(), 80);
+        // PatchPoint's cold fields are boxed (see `PatchPointData`), so it no longer
+        // dominates the enum size.
+        assert_eq!(std::mem::size_of::<Insn>(), 72);
     }
 
     #[test]
