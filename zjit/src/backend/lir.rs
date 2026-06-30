@@ -577,8 +577,9 @@ pub enum Target
     Block(BranchEdge),
     /// Side exit to the interpreter
     SideExit {
-        /// Context used for compiling the side exit
-        exit: SideExit,
+        /// Context used for compiling the side exit. Boxed to keep `Target`
+        /// (and every `Insn` variant that embeds it) small.
+        exit: Box<SideExit>,
         /// We use this to increment exit counters
         reason: SideExitReason,
     },
@@ -851,9 +852,9 @@ pub enum Insn {
 macro_rules! target_for_each_operand_impl {
     ($self:expr, $visit_many:ident) => {
         match $self {
-            Target::SideExit { exit: SideExit { stack, locals, .. }, .. } => {
-                visit_many!(stack);
-                visit_many!(locals);
+            Target::SideExit { exit, .. } => {
+                visit_many!(exit.stack);
+                visit_many!(exit.locals);
             }
             Target::Block(edge) => {
                 visit_many!(edge.args);
@@ -2711,7 +2712,7 @@ impl Assembler
         for ((block_id, idx), target) in targets {
             // Compile a side exit. Note that this is past register assignment,
             // so you can't use an instruction that returns a VReg.
-            if let Target::SideExit { exit: exit @ SideExit { pc, .. }, reason } = target {
+            if let Target::SideExit { exit, reason } = target {
                 // Only record the exit if `trace_side_exits` is defined and the counter is either the one specified
                 let should_record_exit = get_option!(trace_side_exits).map(|trace| match trace {
                     TraceExits::All => true,
@@ -2755,9 +2756,9 @@ impl Assembler
                 } else {
                     let new_exit = self.new_label("side_exit");
                     self.write_label(new_exit.clone());
-                    asm_comment!(self, "Exit: {pc}");
+                    asm_comment!(self, "Exit: {}", exit.pc);
                     compile_exit(self, &exit, None);
-                    compiled_exits.insert(exit, new_exit.unwrap_label());
+                    compiled_exits.insert(*exit, new_exit.unwrap_label());
                     new_exit
                 };
 
@@ -3838,7 +3839,7 @@ mod tests {
 
     #[test]
     fn test_size_of_insn() {
-        assert_eq!(std::mem::size_of::<Insn>(), 184);
+        assert_eq!(std::mem::size_of::<Insn>(), 144);
     }
 
     #[test]

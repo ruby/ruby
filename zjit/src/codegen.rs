@@ -968,7 +968,7 @@ fn gen_patch_point(jit: &mut JITState, asm: &mut Assembler, invariant: &Invarian
     let exit = build_side_exit(jit, state);
 
     // Let compile_exits compile a side exit. Let scratch_split lower it with split_patch_point.
-    asm.patch_point(Target::SideExit { exit, reason: PatchPoint(invariant) }, invariant, jit.version);
+    asm.patch_point(Target::SideExit { exit: Box::new(exit), reason: PatchPoint(invariant) }, invariant, jit.version);
 }
 
 /// This is used by scratch_split to lower PatchPoint into PadPatchPoint and PosMarker.
@@ -3179,7 +3179,7 @@ fn compile_iseq(iseq: IseqPtr) -> Result<Function, CompileError> {
 /// Build a Target::SideExit
 fn side_exit(jit: &JITState, state: &FrameState, reason: SideExitReason) -> Target {
     let exit = build_side_exit(jit, state);
-    Target::SideExit { exit, reason }
+    Target::SideExit { exit: Box::new(exit), reason }
 }
 
 /// Build a Target::SideExit that optionally triggers exit_recompile on the exit path.
@@ -3189,7 +3189,7 @@ fn side_exit_with_recompile(jit: &JITState, state: &FrameState, reason: SideExit
         compiled_iseq: Opnd::Value(VALUE::from(jit.iseq())),
         insn_idx: state.insn_idx() as u32,
     });
-    Target::SideExit { exit, reason }
+    Target::SideExit { exit: Box::new(exit), reason }
 }
 
 /// Build a side-exit context
