@@ -676,7 +676,12 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
             let args = function.operands(*args).to_vec();
             gen_invokeblock_ifunc(jit, asm, *cd, opnd!(block_handler), opnds!(args), &function.frame_state(*state))
         },
-        Insn::InvokeProc { recv, args, state, kw_splat } => gen_invokeproc(jit, asm, opnd!(recv), opnds!(args), *kw_splat, &function.frame_state(*state)),
+        Insn::InvokeProc { recv, args, state, kw_splat } => {
+            // Resolve to an owned Vec so the pool borrow is released before
+            // frame_state(), which calls find() and re-borrows the pool.
+            let args = function.operands(*args).to_vec();
+            gen_invokeproc(jit, asm, opnd!(recv), opnds!(args), *kw_splat, &function.frame_state(*state))
+        },
         Insn::InvokeBuiltin { bf, leaf, args, state, .. } => {
             // Resolve to an owned Vec so the pool borrow is released before
             // frame_state(), which calls find() and re-borrows the pool.

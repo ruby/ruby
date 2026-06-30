@@ -1173,7 +1173,7 @@ pub enum Insn {
     /// Call Proc#call optimized method type.
     InvokeProc {
         recv: InsnId,
-        args: Vec<InsnId>,
+        args: InsnIdList,
         state: InsnId,
         kw_splat: bool,
     },
@@ -1523,7 +1523,7 @@ macro_rules! for_each_operand_impl {
             }
             Insn::InvokeProc { recv, args, state, .. } => {
                 $visit_one!(*recv);
-                $visit_many!(args);
+                $visit_list!(*args);
                 $visit_one!(*state);
             }
             // SendDirect/CCallWithFrame/CCallVariadic carry their operands behind a Box,
@@ -2192,6 +2192,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 Ok(())
             }
             Insn::InvokeProc { recv, args, kw_splat, .. } => {
+                let args = self.pool.map_or(&[][..], |pool| pool.get(*args));
                 write!(f, "InvokeProc {recv}")?;
                 write_separated!(f, ", ", ", ", args);
                 if *kw_splat {
@@ -4092,7 +4093,7 @@ impl Function {
                                         recv = self.push_insn(block, Insn::GuardType { val: recv, guard_type: Type::from_profiled_type(profiled_type), state, recompile: Some(Recompile) });
                                     }
                                     let kw_splat = flags & VM_CALL_KW_SPLAT != 0;
-                                    let invoke_proc = self.push_insn(block, Insn::InvokeProc { recv, args: args.clone(), state, kw_splat });
+                                    let invoke_proc = self.push_insn(block, Insn::InvokeProc { recv, args: self.push_operands(&args), state, kw_splat });
                                     self.make_equal_to(insn_id, invoke_proc);
                                 }
                                 (OptimizedMethodType::StructAref, &[]) | (OptimizedMethodType::StructAset, &[_]) => {
@@ -6601,9 +6602,15 @@ impl Function {
                 }
                 Ok(())
             }
+            Insn::InvokeProc { recv, args, .. } => {
+                self.assert_subtype(insn_id, recv, types::BasicObject)?;
+                for &arg in self.operands(args).to_vec().iter() {
+                    self.assert_subtype(insn_id, arg, types::BasicObject)?;
+                }
+                Ok(())
+            }
             // Instructions with recv and a Vec of Ruby objects
-            Insn::InvokeProc { recv, ref args, .. }
-            | Insn::ArrayInclude { target: recv, elements: ref args, .. } => {
+            Insn::ArrayInclude { target: recv, elements: ref args, .. } => {
                 self.assert_subtype(insn_id, recv, types::BasicObject)?;
                 for &arg in args {
                     self.assert_subtype(insn_id, arg, types::BasicObject)?;
