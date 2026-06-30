@@ -3837,6 +3837,11 @@ mod tests {
     }
 
     #[test]
+    fn test_size_of_insn() {
+        assert_eq!(std::mem::size_of::<Insn>(), 184);
+    }
+
+    #[test]
     fn test_for_each_operand() {
         let insn = Insn::Add { left: Opnd::None, right: Opnd::None, out: Opnd::None };
 
