@@ -1431,7 +1431,8 @@ impl Assembler {
                     // First operand is popped from the lower stack address
                     ldp_post(cb, first_pop, second_pop, A64Opnd::new_mem(64, C_SP_REG, C_SP_STEP));
                 },
-                Insn::CCall { fptr, .. } => {
+                Insn::CCall { data, .. } => {
+                    let fptr = &data.fptr;
                     match fptr {
                         Opnd::UImm(fptr) => {
                             // The offset to the call target in bytes

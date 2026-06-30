@@ -917,7 +917,8 @@ impl Assembler {
                 },
 
                 // C function call
-                Insn::CCall { fptr, .. } => {
+                Insn::CCall { data, .. } => {
+                    let fptr = &data.fptr;
                     match fptr {
                         Opnd::UImm(fptr) => {
                             call_ptr(cb, RAX, *fptr as *const u8);
