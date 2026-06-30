@@ -586,7 +586,7 @@ rb_gc_guarded_ptr_val(volatile VALUE *ptr, VALUE val)
 #endif
 
 static const char *obj_type_name(VALUE obj);
-static st_table *id2ref_tbl;
+
 #include "gc/default/default.c"
 
 #if USE_MODULAR_GC && !defined(HAVE_DLOPEN)
@@ -1353,7 +1353,7 @@ rb_gc_imemo_needs_cleanup_p(VALUE obj)
         return ((rb_imemo_tmpbuf_t *)obj)->ptr != NULL;
 
       case imemo_fields:
-        return FL_TEST_RAW(obj, OBJ_FIELD_HEAP) || (id2ref_tbl && rb_obj_shape_has_id(obj));
+        return FL_TEST_RAW(obj, OBJ_FIELD_HEAP);
     }
     UNREACHABLE_RETURN(true);
 }
@@ -1365,7 +1365,6 @@ rb_gc_imemo_needs_cleanup_p(VALUE obj)
  * Objects that return false are:
  * - Simple embedded objects without external allocations
  * - Objects without finalizers
- * - Objects without object IDs registered in id2ref
  * - Objects without generic instance variables
  *
  * This is used by the GC sweep fast path to avoid function call overhead
@@ -1405,7 +1404,6 @@ rb_gc_obj_needs_cleanup_p(VALUE obj)
     }
 
     shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
-    if (id2ref_tbl && rb_shape_has_object_id(shape_id)) return true;
 
     switch (flags & RUBY_T_MASK) {
       case T_OBJECT:
@@ -2054,7 +2052,6 @@ rb_objspace_garbage_object_p(VALUE obj)
 
 #define OBJ_ID_INCREMENT (RUBY_IMMEDIATE_MASK + 1)
 #define LAST_OBJECT_ID() (object_id_counter * OBJ_ID_INCREMENT)
-static VALUE id2ref_value = 0;
 
 #if SIZEOF_SIZE_T == SIZEOF_LONG_LONG
 static size_t object_id_counter = 1;
@@ -2076,75 +2073,7 @@ generate_next_object_id(void)
 #endif
 }
 
-void
-rb_gc_obj_id_moved(VALUE obj)
-{
-    if (UNLIKELY(id2ref_tbl)) {
-        st_insert(id2ref_tbl, (st_data_t)rb_obj_id(obj), (st_data_t)obj);
-    }
-}
-
-static int
-object_id_cmp(st_data_t x, st_data_t y)
-{
-    if (RB_TYPE_P(x, T_BIGNUM)) {
-        return !rb_big_eql(x, y);
-    }
-    else {
-        return x != y;
-    }
-}
-
-static st_index_t
-object_id_hash(st_data_t n)
-{
-    return FIX2LONG(rb_hash((VALUE)n));
-}
-
-static const struct st_hash_type object_id_hash_type = {
-    object_id_cmp,
-    object_id_hash,
-};
-
 static void gc_mark_tbl_no_pin(st_table *table);
-
-static void
-id2ref_tbl_mark(void *data)
-{
-    st_table *table = (st_table *)data;
-    if (UNLIKELY(!RB_POSFIXABLE(LAST_OBJECT_ID()))) {
-        // It's very unlikely, but if enough object ids were generated, keys may be T_BIGNUM
-        rb_mark_set(table);
-    }
-    // We purposely don't mark values, as they are weak references.
-    // rb_gc_obj_free_vm_weak_references takes care of cleaning them up.
-}
-
-static size_t
-id2ref_tbl_memsize(const void *data)
-{
-    return rb_st_memsize(data);
-}
-
-static void
-id2ref_tbl_free(void *data)
-{
-    id2ref_tbl = NULL; // clear global ref
-    st_table *table = (st_table *)data;
-    st_free_table(table);
-}
-
-static const rb_data_type_t id2ref_tbl_type = {
-    .wrap_struct_name = "VM/_id2ref_table",
-    .function = {
-        .dmark = id2ref_tbl_mark,
-        .dfree = id2ref_tbl_free,
-        .dsize = id2ref_tbl_memsize,
-        // dcompact function not required because the table is reference updated
-        // in rb_gc_vm_weak_table_foreach
-    },
-    .flags = RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
-};
 
 static VALUE
 class_object_id(VALUE klass)
@@ -2156,9 +2085,6 @@ class_object_id(VALUE klass)
         VALUE existing_id = RUBY_ATOMIC_VALUE_CAS(RCLASS(klass)->object_id, 0, id);
         if (existing_id) {
             id = existing_id;
-        }
-        else if (RB_UNLIKELY(id2ref_tbl)) {
-            st_insert(id2ref_tbl, id, klass);
         }
         RB_GC_VM_UNLOCK(lock_lev);
     }
@@ -2203,11 +2129,6 @@ object_id0(VALUE obj)
 
     RUBY_ASSERT(rb_obj_shape_has_id(obj));
 
-    if (RB_UNLIKELY(id2ref_tbl)) {
-        RB_VM_LOCKING() {
-            st_insert(id2ref_tbl, (st_data_t)id, (st_data_t)obj);
-        }
-    }
     return id;
 }
 
@@ -2238,123 +2159,9 @@ object_id(VALUE obj)
     return object_id0(obj);
 }
 
-static void
-build_id2ref_i(VALUE obj, void *data)
-{
-    st_table *id2ref_tbl = (st_table *)data;
-
-    switch (BUILTIN_TYPE(obj)) {
-      case T_CLASS:
-      case T_MODULE:
-        RUBY_ASSERT(!rb_objspace_garbage_object_p(obj));
-        if (RCLASS(obj)->object_id) {
-            st_insert(id2ref_tbl, RCLASS(obj)->object_id, obj);
-        }
-        break;
-      case T_IMEMO:
-        RUBY_ASSERT(!rb_objspace_garbage_object_p(obj));
-        if (IMEMO_TYPE_P(obj, imemo_fields) && rb_obj_shape_has_id(obj)) {
-            st_insert(id2ref_tbl, rb_obj_id(obj), rb_imemo_fields_owner(obj));
-        }
-        break;
-      case T_OBJECT:
-        RUBY_ASSERT(!rb_objspace_garbage_object_p(obj));
-        if (rb_obj_shape_has_id(obj)) {
-            st_insert(id2ref_tbl, rb_obj_id(obj), obj);
-        }
-        break;
-      default:
-        // For generic_fields, the T_IMEMO/fields is responsible for populating the entry.
-        break;
-    }
-}
-
-static VALUE
-object_id_to_ref(void *objspace_ptr, VALUE object_id)
-{
-    rb_objspace_t *objspace = objspace_ptr;
-
-    unsigned int lev = RB_GC_VM_LOCK();
-
-    if (!id2ref_tbl) {
-        rb_gc_vm_barrier(); // stop other ractors
-
-        // GC Must not trigger while we build the table, otherwise if we end
-        // up freeing an object that had an ID, we might try to delete it from
-        // the table even though it wasn't inserted yet.
-        st_table *tmp_id2ref_tbl = st_init_table(&object_id_hash_type);
-        VALUE tmp_id2ref_value = TypedData_Wrap_Struct(0, &id2ref_tbl_type, tmp_id2ref_tbl);
-
-        // build_id2ref_i will most certainly malloc, which could trigger GC and sweep
-        // objects we just added to the table.
-        // By calling rb_gc_disable() we also save having to handle potentially garbage objects.
-        bool gc_disabled = RTEST(rb_gc_disable());
-        {
-            id2ref_tbl = tmp_id2ref_tbl;
-            id2ref_value = tmp_id2ref_value;
-
-            rb_gc_impl_each_object(objspace, build_id2ref_i, (void *)id2ref_tbl);
-        }
-        if (!gc_disabled) rb_gc_enable();
-    }
-
-    VALUE obj;
-    bool found = st_lookup(id2ref_tbl, object_id, &obj) && !rb_gc_impl_garbage_object_p(objspace, obj);
-
-    RB_GC_VM_UNLOCK(lev);
-
-    if (found) {
-        return obj;
-    }
-
-    if (rb_funcall(object_id, rb_intern(">="), 1, ULL2NUM(LAST_OBJECT_ID()))) {
-        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is not an id value", rb_funcall(object_id, rb_intern("to_s"), 1, INT2FIX(10)));
-    }
-    else {
-        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is a recycled object", rb_funcall(object_id, rb_intern("to_s"), 1, INT2FIX(10)));
-    }
-}
-
 static inline void
 obj_free_object_id(VALUE obj)
 {
-    VALUE obj_id = 0;
-    if (RB_UNLIKELY(id2ref_tbl)) {
-        switch (BUILTIN_TYPE(obj)) {
-          case T_CLASS:
-          case T_MODULE:
-            obj_id = RCLASS(obj)->object_id;
-            break;
-          case T_IMEMO:
-            if (!IMEMO_TYPE_P(obj, imemo_fields)) {
-                return;
-            }
-            // fallthrough
-          case T_OBJECT:
-            {
-            shape_id_t shape_id = RBASIC_SHAPE_ID(obj);
-            if (rb_shape_has_object_id(shape_id)) {
-                obj_id = object_id_get(obj, shape_id);
-            }
-            break;
-          }
-          default:
-            // For generic_fields, the T_IMEMO/fields is responsible for freeing the id.
-            return;
-        }
-
-        if (RB_UNLIKELY(obj_id)) {
-            RUBY_ASSERT(FIXNUM_P(obj_id) || RB_TYPE_P(obj_id, T_BIGNUM));
-
-            if (!st_delete(id2ref_tbl, (st_data_t *)&obj_id, NULL)) {
-                // The the object is a T_IMEMO/fields, then it's possible the actual object
-                // has been garbage collected already.
-                if (!RB_TYPE_P(obj, T_IMEMO)) {
-                    rb_bug("Object ID seen, but not in _id2ref table: object_id=%llu object=%s", NUM2ULL(obj_id), rb_obj_info(obj));
-                }
-            }
-        }
-    }
 }
 
 void
@@ -2391,67 +2198,6 @@ rb_gc_obj_free_vm_weak_references(VALUE obj)
       default:
         break;
     }
-}
-
-/*
- *  call-seq:
- *     ObjectSpace._id2ref(object_id) -> an_object
- *
- *  Converts an object id to a reference to the object. May not be
- *  called on an object id passed as a parameter to a finalizer.
- *
- *     s = "I am a string"                    #=> "I am a string"
- *     r = ObjectSpace._id2ref(s.object_id)   #=> "I am a string"
- *     r == s                                 #=> true
- *
- *  On multi-ractor mode, if the object is not shareable, it raises
- *  RangeError.
- *
- *  This method is deprecated and should no longer be used.
- */
-
-static VALUE
-id2ref(VALUE objid)
-{
-    objid = rb_to_int(objid);
-    if (FIXNUM_P(objid) || rb_big_size(objid) <= SIZEOF_VOIDP) {
-        VALUE ptr = (VALUE)NUM2PTR(objid);
-        if (SPECIAL_CONST_P(ptr)) {
-            if (ptr == Qtrue) return Qtrue;
-            if (ptr == Qfalse) return Qfalse;
-            if (NIL_P(ptr)) return Qnil;
-            if (FIXNUM_P(ptr)) return ptr;
-            if (FLONUM_P(ptr)) return ptr;
-
-            if (SYMBOL_P(ptr)) {
-                // Check that the symbol is valid
-                if (rb_static_id_valid_p(SYM2ID(ptr))) {
-                    return ptr;
-                }
-                else {
-                    rb_raise(rb_eRangeError, "%p is not a symbol id value", (void *)ptr);
-                }
-            }
-
-            rb_raise(rb_eRangeError, "%+"PRIsVALUE" is not an id value", rb_int2str(objid, 10));
-        }
-    }
-
-    VALUE obj = object_id_to_ref(rb_gc_get_objspace(), objid);
-    if (!rb_multi_ractor_p() || rb_ractor_shareable_p(obj)) {
-        return obj;
-    }
-    else {
-        rb_raise(rb_eRangeError, "%+"PRIsVALUE" is the id of an unshareable object on multi-ractor", rb_int2str(objid, 10));
-    }
-}
-
-/* :nodoc: */
-static VALUE
-os_id2ref(VALUE os, VALUE objid)
-{
-    rb_category_warn(RB_WARN_CATEGORY_DEPRECATED, "ObjectSpace._id2ref is deprecated");
-    return id2ref(objid);
 }
 
 static VALUE
@@ -4209,33 +3955,6 @@ vm_weak_table_sym_set_foreach(VALUE *sym_ptr, void *data)
 struct st_table *rb_generic_fields_tbl_get(void);
 
 static int
-vm_weak_table_id2ref_foreach(st_data_t key, st_data_t value, st_data_t data, int error)
-{
-    struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
-
-    if (!iter_data->weak_only && !FIXNUM_P((VALUE)key)) {
-        int ret = iter_data->callback((VALUE)key, iter_data->data);
-        if (ret != ST_CONTINUE) return ret;
-    }
-
-    return iter_data->callback((VALUE)value, iter_data->data);
-}
-
-static int
-vm_weak_table_id2ref_foreach_update(st_data_t *key, st_data_t *value, st_data_t data, int existing)
-{
-    struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
-
-    iter_data->update_callback((VALUE *)value, iter_data->data);
-
-    if (!iter_data->weak_only && !FIXNUM_P((VALUE)*key)) {
-        iter_data->update_callback((VALUE *)key, iter_data->data);
-    }
-
-    return ST_CONTINUE;
-}
-
-static int
 vm_weak_table_gen_fields_foreach(st_data_t key, st_data_t value, st_data_t data)
 {
     struct global_vm_table_foreach_data *iter_data = (struct global_vm_table_foreach_data *)data;
@@ -4354,17 +4073,6 @@ rb_gc_vm_weak_table_foreach(vm_table_foreach_callback_func callback,
             vm_weak_table_sym_set_foreach,
             &foreach_data
         );
-        break;
-      }
-      case RB_GC_VM_ID2REF_TABLE: {
-        if (id2ref_tbl) {
-            st_foreach_with_replace(
-                id2ref_tbl,
-                vm_weak_table_id2ref_foreach,
-                vm_weak_table_id2ref_foreach_update,
-                (st_data_t)&foreach_data
-            );
-        }
         break;
       }
       case RB_GC_VM_GENERIC_FIELDS_TABLE: {
@@ -5870,8 +5578,6 @@ Init_GC(void)
 #endif
 
 #undef rb_intern
-    rb_gc_register_address(&id2ref_value);
-
     malloc_offset = gc_compute_malloc_offset();
 
     rb_mGC = rb_define_module("GC");
@@ -5882,8 +5588,6 @@ Init_GC(void)
 
     rb_define_module_function(rb_mObjSpace, "define_finalizer", define_final, -1);
     rb_define_module_function(rb_mObjSpace, "undefine_finalizer", undefine_final, 1);
-
-    rb_define_module_function(rb_mObjSpace, "_id2ref", os_id2ref, 1);
 
     rb_vm_register_special_exception(ruby_error_nomemory, rb_eNoMemError, "failed to allocate memory");
 

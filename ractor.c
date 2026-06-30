@@ -2059,8 +2059,6 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
         rb_replace_generic_ivar(data->replacement, obj);
     }
 
-    rb_gc_obj_id_moved(data->replacement);
-
     VALUE flags = T_OBJECT | FL_FREEZE | (RBASIC(obj)->flags & FL_PROMOTED);
 
     // Avoid mutations using bind_call, etc.

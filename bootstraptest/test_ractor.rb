@@ -1256,37 +1256,6 @@ assert_equal '0', %q{
   }.value
 }
 
-# ObjectSpace._id2ref can not handle unshareable objects with Ractors
-assert_equal 'ok', <<~'RUBY', frozen_string_literal: false
-  s = 'hello'
-
-  Ractor.new s.object_id do |id ;s|
-    begin
-      s = ObjectSpace._id2ref(id)
-    rescue => e
-      :ok
-    end
-  end.value
-RUBY
-
-# Inserting into the id2ref table should be Ractor-safe
-assert_equal 'ok', <<~'RUBY'
-  # Force all calls to Kernel#object_id to insert into the id2ref table
-  obj = Object.new
-  ObjectSpace._id2ref(obj.object_id) rescue nil
-
-  10.times.map do
-    Ractor.new do
-      10_000.times do
-        a = Object.new
-        a.object_id
-      end
-    end
-  end.map(&:value)
-
-  :ok
-RUBY
-
 # Ractor.make_shareable(obj)
 assert_equal 'true', <<~'RUBY', frozen_string_literal: false
   class C
@@ -2173,19 +2142,6 @@ assert_equal 'ok', %q{
   ractor.send(obj, move: true)
   roundtripped_obj = ractor.value
   roundtripped_obj.instance_variable_get(:@array1) == [1] ? :ok : roundtripped_obj
-}
-
-# move object with generic ivars and existing id2ref table
-# [Bug #21664]
-assert_equal 'ok', %q{
-  obj = [1]
-  obj.instance_variable_set("@field", :ok)
-  ObjectSpace._id2ref(obj.object_id) # build id2ref table
-
-  ractor = Ractor.new { Ractor.receive }
-  ractor.send(obj, move: true)
-  obj = ractor.value
-  obj.instance_variable_get("@field")
 }
 
 # copy object with complex generic ivars

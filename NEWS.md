@@ -43,6 +43,10 @@ Note: We're only listing outstanding class updates.
     * `MatchData#integer_at` is added.  It converts the matched substring to
       integer and return the result.  [[Feature #21932]]
 
+* ObjectSpace
+
+    *  `ObjectSpace._id2ref` was removed.  [[Feature #22135]]
+
 * Regexp
 
     * All instances of `Regexp` are now frozen, not just literals.

@@ -1,6 +1,6 @@
 require_relative '../../spec_helper'
 
-ruby_version_is "4.0" do
+ruby_version_is "4.0"..."4.1" do
   describe "ObjectSpace._id2ref" do
     it "is deprecated" do
       id = nil.object_id
