@@ -675,15 +675,19 @@ module RbInstall
 
         private
 
-        # Files left behind by building C extensions in-place under
+        # Files left behind by building a C extension in place under
         # .bundle/gems. They are non-reproducible and unused at run time, so
-        # they must not be packed into the installed gem directory.
+        # they must not be packed into the installed gem directory. The built
+        # extension itself is installed separately into extensions_dir, so
+        # dropping the in-tree shared library here does not affect loading.
+        # This matches by base name, so a source file that happens to share
+        # one of these names would be excluded too.
         def build_artifact?(name)
           case name
           when "mkmf.log", "gem_make.out", "Makefile"
             true
           else
-            /\Aconftest\b/.match?(name) ||
+            /\Aconftest(?:\.|\z)/.match?(name) ||
               /\.(?:o|obj|so|bundle|dll|dylib|time)\z/.match?(name)
           end
         end
@@ -1297,6 +1301,9 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
     ins = RbInstall::UnpackedInstaller.new(package, options)
     puts "#{INDENT}#{spec.name} #{spec.version}"
     ins.install
+    # This installs the built extension, so the shared library and other
+    # products must stay. Only the build logs are noise here, unlike collect
+    # which strips the in-tree build leftovers from the gem directory.
     install_recursive("#{build_dir}/#{gem_name}", "#{extensions_dir}/#{gem_name}", no_install: %w[mkmf.log gem_make.out]) do |src, dest|
       # puts "#{INDENT}    #{dest[extensions_dir.size+gem_name.size+2..-1]}"
       install src, dest, :mode => (File.executable?(src) ? $prog_mode : $data_mode)
