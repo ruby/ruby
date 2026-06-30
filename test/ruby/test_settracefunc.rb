@@ -26,6 +26,19 @@ class TestSetTraceFunc < Test::Unit::TestCase
     Thread.current == @target_thread
   end
 
+  # Reject trace events from other code interrupting this thread, such as
+  # finalizers of objects left by other tests (e.g. Tempfile's), whose
+  # frames are pushed on top of the interrupted frame of this file. An
+  # event is ours iff the innermost frame, ignoring core methods written
+  # in Ruby (<internal:*> such as Kernel#tap), belongs to this file.
+  #
+  # +locations+ must be the caller_locations captured directly in the
+  # trace handler; capturing it here would add this method's own frame.
+  def event_from_this_file?(locations)
+    innermost = locations.drop_while{|loc| loc.path.start_with?("<internal:")}.first
+    innermost&.path == __FILE__
+  end
+
   def test_c_call
     events = []
     name = "#{self.class}\##{__method__}"
@@ -1577,6 +1590,7 @@ CODE
     obj = C11492.new
     TracePoint.new(:call, :return){|tp|
       next unless target_thread?
+      next unless event_from_this_file?(caller_locations)
       events << [tp.event, tp.method_id]
     }.enable{
       obj.foo_return
@@ -1588,6 +1602,7 @@ CODE
     obj = C11492.new
     TracePoint.new(:call, :return){|tp|
       next unless target_thread?
+      next unless event_from_this_file?(caller_locations)
       events << [tp.event, tp.method_id]
     }.enable{
       obj.foo_break
@@ -1600,6 +1615,7 @@ CODE
     begin
       set_trace_func(lambda{|event, file, lineno, mid, binding, klass|
         next unless target_thread?
+        next unless event_from_this_file?(caller_locations)
         case event
         when 'call', 'return'
           events << [event, mid]
@@ -1617,6 +1633,7 @@ CODE
     begin
       set_trace_func(lambda{|event, file, lineno, mid, binding, klass|
         next unless target_thread?
+        next unless event_from_this_file?(caller_locations)
         case event
         when 'call', 'return'
           events << [event, mid]
@@ -1904,14 +1921,7 @@ CODE
     events = []
     capture_events = Proc.new{|tp|
       next unless target_thread?
-      # Skip events from other code interrupting this thread, such as
-      # finalizers of objects left by other tests (e.g. Tempfile's),
-      # whose frames are pushed on top of the interrupted frame of this
-      # file. The event is ours iff the innermost frame, ignoring core
-      # methods written in Ruby (e.g. Kernel#tap in <internal:kernel>),
-      # belongs to this file.
-      innermost = caller_locations.drop_while{|loc| loc.path.start_with?("<internal:")}.first
-      next unless innermost&.path == __FILE__
+      next unless event_from_this_file?(caller_locations)
       events << [tp.event, tp.method_id, tp.callee_id]
     }
 
