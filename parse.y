@@ -1459,6 +1459,8 @@ static VALUE rb_backref_error(struct parser_params*,NODE*);
 static NODE *node_assign(struct parser_params*,NODE*,NODE*,struct lex_context,const YYLTYPE*);
 
 static NODE *new_for_comprehension(struct parser_params *p, NODE *first_var, NODE *first_expr, NODE *first_guard, NODE *gens, NODE *result, const YYLTYPE *loc);
+static int for_comp_var_base(struct parser_params *p);
+static void for_comp_relocate(struct parser_params *p, NODE *var, int base);
 
 static NODE *new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, struct lex_context, const YYLTYPE *loc);
 static NODE *new_ary_op_assign(struct parser_params *p, NODE *ary, NODE *args, ID op, NODE *rhs, const YYLTYPE *args_loc, const YYLTYPE *loc, const YYLTYPE *call_operator_loc, const YYLTYPE *opening_loc, const YYLTYPE *closing_loc, const YYLTYPE *binary_operator_loc);
@@ -2808,7 +2810,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <ctxt> lex_ctxt begin_defined k_class k_module k_END k_rescue k_ensure after_rescue
 %type <ctxt> p_in_kwarg
 %type <tbl>  p_lparen p_lbracket p_pktbl p_pvtbl
-%type <num>  max_numparam
+%type <num>  max_numparam for_var_base
 %type <node> numparam
 %type <id>   it_id
 %token END_OF_INPUT 0	"end-of-input"
@@ -4554,7 +4556,7 @@ primary		: inline_primary
                     $$ = NEW_CASE3($expr, $body, &@$, &@k_case, &@k_end);
                 /*% ripper: case!($:expr, $:body) %*/
                 }
-            | k_for[k_for] for_var[for_var] keyword_in[keyword_in]
+            | k_for[k_for] for_var_base for_var[for_var] keyword_in[keyword_in]
               for_cond_push expr_value[expr_value] do[do] {COND_POP();}
               compstmt(stmts)[compstmt]
               k_end[k_end]
@@ -4599,8 +4601,19 @@ primary		: inline_primary
                     fixpos($$, $for_var);
                 /*% ripper: for!($:for_var, $:expr_value, $:compstmt) %*/
                 }
-            | k_for[k_for] for_var[for_var] keyword_in[keyword_in]
-              for_cond_push arg_value[expr_value] {COND_POP();} for_guard[for_guard]
+            | k_for[k_for] for_var_base[for_var_base] for_var[for_var] keyword_in[keyword_in]
+              for_cond_push arg_value[expr_value] {COND_POP();}
+                {
+                    /* Commit to the comprehension: open a dynamic-variable scope
+                     * and relocate the first generator's loop variable(s) into it
+                     * (see for_comp_relocate).  This must happen before the guard,
+                     * later generators and the body are parsed, so that references
+                     * to the loop variable resolve as block-local dynamic
+                     * variables (DVAR) rather than leaking method-frame locals. */
+                    $<vars>$ = dyna_push(p);
+                    for_comp_relocate(p, $for_var, $for_var_base);
+                }[dyna]<vars>
+              for_guard[for_guard]
               for_gens[for_gens] keyword_then
               compstmt(stmts)[compstmt]
               k_end[k_end]
@@ -4618,9 +4631,13 @@ primary		: inline_primary
                      *  expr_value) so the generator-separating comma cannot be
                      *  swallowed by an unparenthesized command call's argument
                      *  list; a command-call source must be parenthesized.
+                     *
+                     *  The loop variables are scoped to the synthesized blocks
+                     *  (they do not leak), unlike the legacy `for` loop.
                      */
                     restore_block_exit(p, $k_for);
                     $$ = new_for_comprehension(p, $for_var, $expr_value, $for_guard, $for_gens, $compstmt, &@$);
+                    dyna_pop(p, $dyna);
                     fixpos($$, $for_var);
                 /*% ripper: [$:for_var, $:expr_value, $:for_guard, $:for_gens, $:compstmt] %*/
                 }
@@ -4952,6 +4969,17 @@ for_var		: lhs
  * comprehension can share a common prefix without a reduce/reduce conflict
  * (an inline {COND_PUSH(1);} duplicated across both productions would conflict). */
 for_cond_push	: {COND_PUSH(1);}
+                ;
+
+/* Records the size of the enclosing frame's local-variable table before the
+ * loop variable is parsed, so the comprehension can tell which loop-variable
+ * names were freshly introduced by `for` (and must not leak) from names that
+ * already existed in the enclosing scope (which it must leave untouched).
+ * Shared by both `for` productions so they keep a common prefix. */
+for_var_base	: /* none */
+                    {
+                        $$ = for_comp_var_base(p);
+                    }
                 ;
 
 /* Optional `when` guard on a comprehension generator (desugars to a filter).
@@ -11367,27 +11395,141 @@ rb_node_for_masgn_new(struct parser_params *p, NODE *nd_var, const YYLTYPE *loc)
     return n;
 }
 
+/* The size of the enclosing frame's local-variable table, recorded by the
+ * `for_var_base` grammar marker before the first loop variable is parsed. */
+static int
+for_comp_var_base(struct parser_params *p)
+{
+    return vtable_size(p->lvtbl->vars);
+}
+
+/* Visit every local-variable assignment leaf (NODE_LASGN/NODE_DASGN) of a
+ * `for` loop variable, recursing through destructuring (NODE_MASGN).  Non-local
+ * targets (ivars, gvars, cvars, constants, attribute/index assignments) are
+ * skipped: they are not loop-local names and do not need block scoping. */
+typedef void (*for_var_leaf_fn)(struct parser_params *p, NODE *leaf, void *arg);
+
+static void
+for_var_each_local(struct parser_params *p, NODE *var, for_var_leaf_fn fn, void *arg)
+{
+    if (!var) return;
+    switch (nd_type(var)) {
+      case NODE_LASGN:
+      case NODE_DASGN:
+        fn(p, var, arg);
+        break;
+      case NODE_MASGN: {
+        rb_node_masgn_t *m = RNODE_MASGN(var);
+        NODE *n, *margs = m->nd_args;
+        for (n = m->nd_head; n; n = RNODE_LIST(n)->nd_next) {
+            for_var_each_local(p, RNODE_LIST(n)->nd_head, fn, arg);
+        }
+        if (margs && margs != NODE_SPECIAL_NO_NAME_REST && nd_type_p(margs, NODE_POSTARG)) {
+            NODE *rest = RNODE_POSTARG(margs)->nd_1st;
+            NODE *q;
+            if (rest && rest != NODE_SPECIAL_NO_NAME_REST) for_var_each_local(p, rest, fn, arg);
+            for (q = RNODE_POSTARG(margs)->nd_2nd; q; q = RNODE_LIST(q)->nd_next) {
+                for_var_each_local(p, RNODE_LIST(q)->nd_head, fn, arg);
+            }
+        }
+        else if (margs && margs != NODE_SPECIAL_NO_NAME_REST) {
+            for_var_each_local(p, margs, fn, arg);
+        }
+        break;
+      }
+      default:
+        break;
+    }
+}
+
+struct for_var_count_arg { int n; };
+static void
+for_var_count_cb(struct parser_params *p, NODE *leaf, void *arg)
+{
+    ((struct for_var_count_arg *)arg)->n++;
+}
+
+static int
+for_var_count_ids(struct parser_params *p, NODE *var)
+{
+    struct for_var_count_arg a = {0};
+    for_var_each_local(p, var, for_var_count_cb, &a);
+    return a.n;
+}
+
+struct for_var_collect_arg { ID *ids; int pos; };
+static void
+for_var_collect_cb(struct parser_params *p, NODE *leaf, void *arg)
+{
+    struct for_var_collect_arg *a = arg;
+    a->ids[a->pos++] = RNODE_DASGN(leaf)->nd_vid; /* LASGN/DASGN share layout */
+}
+
+/* Relocate the first generator's loop variable(s) into the comprehension's
+ * just-pushed dynamic-variable scope (see the k_for comprehension rule).
+ *
+ * The first loop variable is parsed in the shared `for` prefix, before we know
+ * the construct is a comprehension, so it is registered in the enclosing frame
+ * (as a method-frame local, like the legacy `for`).  For each freshly introduced
+ * name we (a) rename the now-stale enclosing slot to an internal id so the name
+ * does not leak, (b) register the name as a dynamic var in the new scope so that
+ * later references resolve as DVAR, and (c) flip the assignment node to DASGN so
+ * the binding writes the block-local copy.  Names that already existed in the
+ * enclosing scope (index <= base) are left alone: the comprehension shadows them
+ * without disturbing the outer variable. */
+static void
+for_comp_relocate_cb(struct parser_params *p, NODE *leaf, void *arg)
+{
+    int base = *(int *)arg;
+    ID vid = RNODE_DASGN(leaf)->nd_vid; /* LASGN/DASGN share layout */
+    struct vtable *enc = p->lvtbl->vars->prev; /* enclosing frame, below the new scope */
+    int idx = vtable_included(enc, vid);
+    if (idx > base) {
+        enc->tbl[idx-1] = internal_id(p);
+    }
+    local_var(p, vid);
+    nd_set_type(leaf, NODE_DASGN);
+}
+
+static void
+for_comp_relocate(struct parser_params *p, NODE *var, int base)
+{
+    for_var_each_local(p, var, for_comp_relocate_cb, &base);
+}
+
 /* Desugar a single comprehension generator into a flat_map/map call:
  *
  *   recv.<mid> {|internal| var = internal; body }
  *
  * This mirrors the legacy `for` desugaring (see the k_for rule), but emits a
- * flat_map/map send instead of NODE_FOR/each.  Like the legacy `for`, the block
- * is built with an explicit one-entry id table via NEW_SCOPE2 (NOT NEW_ITER):
- * the surrounding `for` frame is flat (no dyna scope), so letting local_tbl()
- * run would slurp the surrounding locals into the block and break closures.
- * The loop variable is therefore left to leak into the surrounding scope,
- * exactly as the legacy `for` loop does. */
+ * flat_map/map send instead of NODE_FOR/each.  The block is built with an
+ * explicit id table via NEW_SCOPE2 (NOT NEW_ITER): the comprehension parses its
+ * loop variables in a single dynamic-variable scope, so letting local_tbl() run
+ * would put every generator's variable (and the body's temporaries) into one
+ * flat block table.  Instead each block's table holds only its own internal
+ * parameter plus the loop variable(s) bound here; `extra_ids` carries the body's
+ * own temporaries, placed in the innermost (map) block.  Because the loop
+ * variables are dynamic vars (DASGN/DVAR), references from inner blocks resolve
+ * outward to the binding block and the names do not leak. */
 static NODE *
-new_for_comp_gen(struct parser_params *p, NODE *var, NODE *recv, NODE *body, ID mid, const YYLTYPE *loc)
+new_for_comp_gen(struct parser_params *p, NODE *var, NODE *recv, NODE *body, ID mid,
+                 ID *extra_ids, int extra_cnt, const YYLTYPE *loc)
 {
     ID id = internal_id(p);
+    ID internal = id;
     rb_node_args_aux_t *m = NEW_ARGS_AUX(0, 0, &NULL_LOC);
     rb_node_args_t *args;
     rb_node_iter_t *iter;
     NODE *scope, *call, *internal_var = NEW_DVAR(id, loc);
-    rb_ast_id_table_t *tbl = rb_ast_new_local_table(p->ast, 1);
-    tbl->ids[0] = id; /* internal id */
+    int nloop = for_var_count_ids(p, var);
+    struct for_var_collect_arg ca;
+    int i;
+    rb_ast_id_table_t *tbl = rb_ast_new_local_table(p->ast, 1 + nloop + extra_cnt);
+    tbl->ids[0] = internal; /* internal block parameter */
+    ca.ids = tbl->ids;
+    ca.pos = 1;
+    for_var_each_local(p, var, for_var_collect_cb, &ca); /* this block's loop vars */
+    for (i = 0; i < extra_cnt; i++) tbl->ids[ca.pos++] = extra_ids[i];
 
     switch (nd_type(var)) {
       case NODE_LASGN:
@@ -11407,7 +11549,7 @@ new_for_comp_gen(struct parser_params *p, NODE *var, NODE *recv, NODE *body, ID 
     scope = NEW_SCOPE2(tbl, args, body, NULL, loc);
 
     /* Wrap the hand-built SCOPE in NODE_ITER without going through NEW_ITER
-     * (which calls local_tbl() on the current, surrounding frame). */
+     * (which calls local_tbl() on the current, surrounding scope). */
     iter = NODE_NEWNODE(NODE_ITER, rb_node_iter_t, loc);
     RNODE_SCOPE(scope)->nd_parent = (NODE *)iter;
     iter->nd_body = scope;
@@ -11463,20 +11605,24 @@ dup_for_var(struct parser_params *p, NODE *var, const YYLTYPE *loc)
  *   recv[.filter {|var| guard}].<flat_map|map> {|var| body }
  *
  * A guard filters recv before the flat_map/map.  The last generator uses map,
- * every earlier one uses flat_map. */
+ * every earlier one uses flat_map.  `extra_ids` (the body's own temporaries) is
+ * only meaningful for the last generator's map block. */
 static NODE *
-build_for_gen(struct parser_params *p, NODE *var, NODE *recv, NODE *guard, NODE *body, int is_last, const YYLTYPE *loc)
+build_for_gen(struct parser_params *p, NODE *var, NODE *recv, NODE *guard, NODE *body,
+              int is_last, ID *extra_ids, int extra_cnt, const YYLTYPE *loc)
 {
     if (guard) {
-        recv = new_for_comp_gen(p, dup_for_var(p, var, loc), recv, guard, rb_intern("filter"), loc);
+        recv = new_for_comp_gen(p, dup_for_var(p, var, loc), recv, guard, rb_intern("filter"), 0, 0, loc);
     }
-    return new_for_comp_gen(p, var, recv, body, is_last ? rb_intern("map") : rb_intern("flat_map"), loc);
+    return new_for_comp_gen(p, var, recv, body, is_last ? rb_intern("map") : rb_intern("flat_map"),
+                            is_last ? extra_ids : 0, is_last ? extra_cnt : 0, loc);
 }
 
 /* Fold a list of generators (gens: a list of [var, expr] or [var, expr, guard]
- * sublists) plus the result body into nested flat_map/map (and filter) calls. */
+ * sublists) plus the result body into nested flat_map/map (and filter) calls.
+ * The innermost (last) generator's map block gets the body temporaries. */
 static NODE *
-for_comp_fold(struct parser_params *p, NODE *gens, NODE *result, const YYLTYPE *loc)
+for_comp_fold(struct parser_params *p, NODE *gens, NODE *result, ID *extra_ids, int extra_cnt, const YYLTYPE *loc)
 {
     NODE *sub = RNODE_LIST(gens)->nd_head;
     NODE *rest = RNODE_LIST(gens)->nd_next;
@@ -11487,23 +11633,62 @@ for_comp_fold(struct parser_params *p, NODE *gens, NODE *result, const YYLTYPE *
     NODE *guard = gnode ? RNODE_LIST(gnode)->nd_head : 0;
 
     if (rest == 0) {
-        return build_for_gen(p, var, expr, guard, result, TRUE, loc);
+        return build_for_gen(p, var, expr, guard, result, TRUE, extra_ids, extra_cnt, loc);
     }
     else {
-        NODE *inner = for_comp_fold(p, rest, result, loc);
-        return build_for_gen(p, var, expr, guard, inner, FALSE, loc);
+        NODE *inner = for_comp_fold(p, rest, result, extra_ids, extra_cnt, loc);
+        return build_for_gen(p, var, expr, guard, inner, FALSE, 0, 0, loc);
     }
+}
+
+/* Collect every comprehension loop-variable id (across all generators) into
+ * `ids` (sized to the dyna scope), returning the count. */
+static int
+for_comp_collect_loop_ids(struct parser_params *p, NODE *all, ID *ids)
+{
+    struct for_var_collect_arg ca;
+    NODE *n;
+    ca.ids = ids;
+    ca.pos = 0;
+    for (n = all; n; n = RNODE_LIST(n)->nd_next) {
+        NODE *sub = RNODE_LIST(n)->nd_head;
+        NODE *var = RNODE_LIST(sub)->nd_head;
+        for_var_each_local(p, var, for_var_collect_cb, &ca);
+    }
+    return ca.pos;
 }
 
 static NODE *
 new_for_comprehension(struct parser_params *p, NODE *first_var, NODE *first_expr, NODE *first_guard, NODE *gens, NODE *result, const YYLTYPE *loc)
 {
     NODE *first = list_append(p, NEW_LIST(first_var, loc), first_expr);
-    NODE *all;
+    NODE *all, *tree;
+    struct vtable *dv = p->lvtbl->vars; /* the comprehension's dyna scope */
+    int dn = vtable_size(dv);
+    ID *loop_ids = ALLOC_N(ID, dn ? dn : 1);
+    ID *body_ids = ALLOC_N(ID, dn ? dn : 1);
+    int n_loop, body_cnt = 0, i, j;
+
     if (first_guard) first = list_append(p, first, first_guard);
     all = NEW_LIST(first, loc);
     if (gens) all = list_concat(all, gens);
-    return for_comp_fold(p, all, result, loc);
+
+    /* The dyna scope holds every loop variable plus the body's temporaries.
+     * Whatever is not a loop variable is a body temporary, and belongs in the
+     * innermost (map) block so it does not leak. */
+    n_loop = for_comp_collect_loop_ids(p, all, loop_ids);
+    for (i = 0; i < dn; i++) {
+        ID vid = dv->tbl[i];
+        int seen = 0;
+        for (j = 0; j < n_loop; j++) if (loop_ids[j] == vid) { seen = 1; break; }
+        for (j = 0; !seen && j < body_cnt; j++) if (body_ids[j] == vid) { seen = 1; break; }
+        if (!seen) body_ids[body_cnt++] = vid;
+    }
+
+    tree = for_comp_fold(p, all, result, body_ids, body_cnt, loc);
+    xfree(loop_ids);
+    xfree(body_ids);
+    return tree;
 }
 
 static rb_node_retry_t *

@@ -1439,8 +1439,26 @@ eom
     assert_nothing_raised(SyntaxError) do
       assert_valid_syntax("def f(x) = x; for i in f [1] do end")
     end
-    # the loop variable leaks, like the legacy `for` loop
-    assert_equal("local-variable", eval("for x in [1, 2, 3] then x end; defined?(x)"))
+    # the legacy `for` loop variable still leaks
+    assert_equal("local-variable", eval("for x in [1, 2, 3] do end; defined?(x)"))
+  end
+
+  def test_for_comprehension_scopes_loop_variables
+    # unlike the legacy `for` loop, comprehension loop variables are scoped to
+    # the synthesized blocks and do not leak into the surrounding scope.
+    omit if ParserSupport.prism_enabled?
+
+    assert_nil(eval("for x in [1, 2, 3] then x end; defined?(x)"))
+    # every generator's variable is scoped
+    assert_nil(eval("for a in [1], b in [2] then [a, b] end; defined?(a) || defined?(b)"))
+    # body temporaries are scoped too
+    assert_nil(eval("for x in [1] then z = x; z end; defined?(z)"))
+    # destructuring loop variables are scoped
+    assert_nil(eval("for (a, b) in [[1, 2]] then a + b end; defined?(a) || defined?(b)"))
+    # a same-named outer variable is shadowed, not modified
+    assert_equal([100, [2, 4, 6]], eval("x = 100; r = for x in [1, 2, 3] then x * 2 end; [x, r]"))
+    # each iteration binds a fresh variable (captured distinctly by closures)
+    assert_equal([1, 2, 3], eval("for x in [1, 2, 3] then -> { x } end.map(&:call)"))
   end
 
   def test_no_warning_logop_literal
