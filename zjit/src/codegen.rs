@@ -829,7 +829,12 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
             gen_opt_newarray_hash(jit, asm, opnds!(elements), &function.frame_state(*state))
         },
         &Insn::IsA { val, class } => gen_is_a(jit, asm, opnd!(val), opnd!(class)),
-        &Insn::ArrayMax { ref elements, state } => gen_array_max(jit, asm, opnds!(elements), &function.frame_state(state)),
+        Insn::ArrayMax { elements, state } => {
+            // Resolve to an owned Vec so the pool borrow is released before
+            // frame_state(), which calls find() and re-borrows the pool.
+            let elements = function.operands(*elements).to_vec();
+            gen_array_max(jit, asm, opnds!(elements), &function.frame_state(*state))
+        },
         &Insn::ArrayMin { ref elements, state } => gen_array_min(jit, asm, opnds!(elements), &function.frame_state(state)),
         &Insn::Throw { state, .. } => return Err(state),
         &Insn::CondBranch { .. }
