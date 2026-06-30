@@ -1136,7 +1136,7 @@ pub enum Insn {
         recv: InsnId,
         cd: *const rb_call_data,
         blockiseq: IseqPtr,
-        args: Vec<InsnId>,
+        args: InsnIdList,
         state: InsnId,
         reason: SendFallbackReason,
     },
@@ -1512,13 +1512,13 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(*state);
             }
             Insn::Send { recv, args, state, .. }
-            | Insn::PushInlineFrame { recv, args, state, .. } => {
+            | Insn::PushInlineFrame { recv, args, state, .. }
+            | Insn::SendForward { recv, args, state, .. } => {
                 $visit_one!(*recv);
                 $visit_list!(*args);
                 $visit_one!(*state);
             }
-            Insn::SendForward { recv, args, state, .. }
-            | Insn::InvokeBuiltin { recv, args, state, .. }
+            Insn::InvokeBuiltin { recv, args, state, .. }
             | Insn::InvokeSuper { recv, args, state, .. }
             | Insn::InvokeSuperForward { recv, args, state, .. }
             | Insn::InvokeProc { recv, args, state, .. } => {
@@ -2157,6 +2157,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::SendForward { recv, cd, args, blockiseq, reason, .. } => {
                 write!(f, "SendForward {recv}, {:p}, :{}", self.ptr_map.map_ptr(blockiseq), ruby_call_method_name(*cd))?;
+                let args = self.pool.map_or(&[][..], |pool| pool.get(*args));
                 write_separated!(f, ", ", ", ", args);
                 write!(f, " # SendFallbackReason: {reason}")?;
                 Ok(())
@@ -3039,10 +3040,10 @@ impl Function {
         }
         let insn_id = find!(insn_id);
         let mut result = self.insns[insn_id.0].clone();
-        // Operands stored in the operand pool (e.g. CCall/Send/PushInlineFrame
-        // args) are shared by handle with the original insn. Duplicate the list
-        // so remapping below doesn't mutate the canonical entry.
-        if let Insn::CCall { args, .. } | Insn::Send { args, .. } | Insn::PushInlineFrame { args, .. } = &mut result {
+        // Operands stored in the operand pool (e.g. CCall/Send/PushInlineFrame/
+        // SendForward args) are shared by handle with the original insn. Duplicate
+        // the list so remapping below doesn't mutate the canonical entry.
+        if let Insn::CCall { args, .. } | Insn::Send { args, .. } | Insn::PushInlineFrame { args, .. } | Insn::SendForward { args, .. } = &mut result {
             let dup = self.operand_pool.borrow().get(*args).to_vec();
             *args = self.operand_pool.borrow_mut().push(&dup);
         }
@@ -6585,9 +6586,10 @@ impl Function {
                 self.assert_subtype(insn_id, klass, types::BasicObject)?;
                 self.assert_subtype(insn_id, allow_nil, types::BoolExact)
             }
-            // Send and PushInlineFrame keep their operands in the pool; resolve before checking.
+            // Send/PushInlineFrame/SendForward keep their operands in the pool; resolve before checking.
             Insn::Send { recv, args, .. }
-            | Insn::PushInlineFrame { recv, args, .. } => {
+            | Insn::PushInlineFrame { recv, args, .. }
+            | Insn::SendForward { recv, args, .. } => {
                 self.assert_subtype(insn_id, recv, types::BasicObject)?;
                 for &arg in self.operands(args).to_vec().iter() {
                     self.assert_subtype(insn_id, arg, types::BasicObject)?;
@@ -6595,8 +6597,7 @@ impl Function {
                 Ok(())
             }
             // Instructions with recv and a Vec of Ruby objects
-            Insn::SendForward { recv, ref args, .. }
-            | Insn::InvokeSuper { recv, ref args, .. }
+            Insn::InvokeSuper { recv, ref args, .. }
             | Insn::InvokeSuperForward { recv, ref args, .. }
             | Insn::InvokeBuiltin { recv, ref args, .. }
             | Insn::InvokeProc { recv, ref args, .. }
@@ -8864,7 +8865,7 @@ fn add_iseq_to_hir(
 
                     let args = state.stack_pop_n(argc as usize + usize::from(forwarding))?;
                     let recv = state.stack_pop()?;
-                    let send_forward = fun.push_insn(block, Insn::SendForward { recv, cd, blockiseq, args, state: exit_id, reason: SendForwardNotSpecialized });
+                    let send_forward = fun.push_insn(block, Insn::SendForward { recv, cd, blockiseq, args: fun.push_operands(&args), state: exit_id, reason: SendForwardNotSpecialized });
                     state.stack_push(send_forward);
 
                     if !blockiseq.is_null() {
