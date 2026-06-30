@@ -964,7 +964,7 @@ pub enum Insn {
 
     StringCopy { val: InsnId, chilled: bool, state: InsnId },
     StringIntern { val: InsnId, state: InsnId },
-    StringConcat { strings: Vec<InsnId>, state: InsnId },
+    StringConcat { strings: InsnIdList, state: InsnId },
     /// Call rb_str_getbyte with known-Fixnum index
     StringGetbyte { string: InsnId, index: InsnId },
     StringSetbyteFixnum { string: InsnId, index: InsnId, value: InsnId },
@@ -1366,7 +1366,7 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(*state);
             }
             Insn::StringConcat { strings, state, .. } => {
-                $visit_many!(strings);
+                $visit_list!(*strings);
                 $visit_one!(*state);
             }
             Insn::StringGetbyte { string, index } => {
@@ -2075,6 +2075,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             }
             Insn::StringCopy { val, .. } => { write!(f, "StringCopy {val}") }
             Insn::StringConcat { strings, .. } => {
+                let strings = self.pool.map_or(&[][..], |pool| pool.get(*strings));
                 write!(f, "StringConcat")?;
                 write_separated!(f, " ", ", ", strings);
                 Ok(())
@@ -6675,14 +6676,9 @@ impl Function {
                 }
                 Ok(())
             }
-            Insn::ToRegexp { values, .. } => {
-                for &string in self.operands(values).to_vec().iter() {
-                    self.assert_subtype(insn_id, string, types::String)?;
-                }
-                Ok(())
-            }
-            Insn::StringConcat { ref strings, .. } => {
-                for &string in strings {
+            Insn::ToRegexp { values: strings, .. }
+            | Insn::StringConcat { strings, .. } => {
+                for &string in self.operands(strings).to_vec().iter() {
                     self.assert_subtype(insn_id, string, types::String)?;
                 }
                 Ok(())
@@ -7699,7 +7695,7 @@ fn add_iseq_to_hir(
                     let count = get_arg(pc, 0).as_u32();
                     debug_assert!(count > 0, "concatstrings should have arguments");
                     let strings = state.stack_pop_n(count as usize)?;
-                    let insn_id = fun.push_insn(block, Insn::StringConcat { strings, state: exit_id });
+                    let insn_id = fun.push_insn(block, Insn::StringConcat { strings: fun.push_operands(&strings), state: exit_id });
                     state.stack_push(insn_id);
                 }
                 YARVINSN_toregexp => {
