@@ -848,6 +848,14 @@ impl From<VALUE> for u16 {
 }
 
 impl ID {
+    /// Sentinel meaning "no ID". CRuby reserves `0` as a non-ID.
+    pub const NONE: ID = ID(0);
+
+    /// Whether this is the [`ID::NONE`] sentinel rather than a real interned ID.
+    pub fn is_none(self) -> bool {
+        self == Self::NONE
+    }
+
     // Get a debug representation of the contents of the ID. Since `str` is UTF-8
     // and IDs have encodings that are not, this is a lossy representation.
     pub fn contents_lossy(&self) -> std::borrow::Cow<'_, str> {
