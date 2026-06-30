@@ -1256,9 +1256,9 @@ pub enum Insn {
     /// Side-exit if val is not the expected Const.
     GuardBitEquals { val: InsnId, expected: Const, reason: Box<SideExitReason>, state: InsnId, recompile: Option<Recompile> },
     /// Side-exit if (val & mask) == 0
-    GuardAnyBitSet { val: InsnId, mask: Const, mask_name: ID, reason: Box<SideExitReason>, state: InsnId, recompile: Option<Recompile> },
+    GuardAnyBitSet { val: InsnId, mask: u64, mask_name: ID, reason: Box<SideExitReason>, state: InsnId, recompile: Option<Recompile> },
     /// Side-exit if (val & mask) != 0
-    GuardNoBitsSet { val: InsnId, mask: Const, mask_name: ID, reason: Box<SideExitReason>, state: InsnId },
+    GuardNoBitsSet { val: InsnId, mask: u64, mask_name: ID, reason: Box<SideExitReason>, state: InsnId },
     /// Side-exit if left is not greater than or equal to right (both operands are C long).
     GuardGreaterEq { left: InsnId, right: InsnId, reason: Box<SideExitReason>, state: InsnId },
     /// Side-exit if left is not less than right (both operands are C long).
@@ -2272,7 +2272,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 return Ok(())
             },
             Insn::GuardAnyBitSet { val, mask, mask_name, recompile, .. } => {
-                let mask = mask.print(self.ptr_map);
+                let mask_const = Const::CUInt64(*mask);
+                let mask = mask_const.print(self.ptr_map);
                 let recompile = if recompile.is_some() { " recompile" } else { "" };
                 if !mask_name.is_none() {
                     write!(f, "GuardAnyBitSet {val}, {mask_name}={mask}{recompile}")
@@ -2280,8 +2281,14 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                     write!(f, "GuardAnyBitSet {val}, {mask}{recompile}")
                 }
             },
-            Insn::GuardNoBitsSet { val, mask, mask_name, .. } if !mask_name.is_none() => { write!(f, "GuardNoBitsSet {val}, {mask_name}={}", mask.print(self.ptr_map)) },
-            Insn::GuardNoBitsSet { val, mask, .. } => { write!(f, "GuardNoBitsSet {val}, {}", mask.print(self.ptr_map)) },
+            Insn::GuardNoBitsSet { val, mask, mask_name, .. } if !mask_name.is_none() => {
+                let mask_const = Const::CUInt64(*mask);
+                write!(f, "GuardNoBitsSet {val}, {mask_name}={}", mask_const.print(self.ptr_map))
+            },
+            Insn::GuardNoBitsSet { val, mask, .. } => {
+                let mask_const = Const::CUInt64(*mask);
+                write!(f, "GuardNoBitsSet {val}, {}", mask_const.print(self.ptr_map))
+            },
             Insn::GuardLess { left, right, .. } => write!(f, "GuardLess {left}, {right}"),
             Insn::GuardGreaterEq { left, right, .. } => write!(f, "GuardGreaterEq {left}, {right}"),
             &Insn::GetBlockParam { level, ep_offset, .. } => {
@@ -3766,12 +3773,12 @@ impl Function {
 
     pub fn guard_not_frozen(&mut self, block: BlockId, recv: InsnId, state: InsnId) {
         let flags = self.load_rbasic_flags(block, recv);
-        self.push_insn(block, Insn::GuardNoBitsSet { val: flags, mask: Const::CUInt64(RUBY_FL_FREEZE as u64), mask_name: ID!(RUBY_FL_FREEZE), reason: Box::new(SideExitReason::GuardNotFrozen), state });
+        self.push_insn(block, Insn::GuardNoBitsSet { val: flags, mask: RUBY_FL_FREEZE as u64, mask_name: ID!(RUBY_FL_FREEZE), reason: Box::new(SideExitReason::GuardNotFrozen), state });
     }
 
     pub fn guard_not_shared(&mut self, block: BlockId, recv: InsnId, state: InsnId) {
         let flags = self.load_rbasic_flags(block, recv);
-        self.push_insn(block, Insn::GuardNoBitsSet { val: flags, mask: Const::CUInt64(RUBY_ELTS_SHARED as u64), mask_name: ID!(RUBY_ELTS_SHARED), reason: Box::new(SideExitReason::GuardNotShared), state });
+        self.push_insn(block, Insn::GuardNoBitsSet { val: flags, mask: RUBY_ELTS_SHARED as u64, mask_name: ID!(RUBY_ELTS_SHARED), reason: Box::new(SideExitReason::GuardNotShared), state });
     }
 
     /// `iseq` is the ISEQ that `ep_offset` is relative to, which is the ISEQ that
@@ -6868,16 +6875,12 @@ impl Function {
                     Const::CPtr(_) => self.assert_subtype(insn_id, val, types::CPtr),
                 }
             }
-            Insn::GuardAnyBitSet { val, mask, .. }
-            | Insn::GuardNoBitsSet { val, mask, .. } => {
-                match mask {
-                    Const::CUInt8(_) | Const::CUInt16(_) | Const::CUInt32(_) | Const::CUInt64(_)
-                        if self.is_a(val, types::CInt) || self.is_a(val, types::RubyValue) => {
-                        Ok(())
-                    }
-                    _ => {
-                        Err(ValidationError::MiscValidationError(insn_id, "GuardAnyBitSet/GuardNoBitsSet can only compare RubyValue/CUInt or CInt/CUInt".to_string()))
-                    }
+            Insn::GuardAnyBitSet { val, .. }
+            | Insn::GuardNoBitsSet { val, .. } => {
+                if self.is_a(val, types::CInt) || self.is_a(val, types::RubyValue) {
+                    Ok(())
+                } else {
+                    Err(ValidationError::MiscValidationError(insn_id, "GuardAnyBitSet/GuardNoBitsSet can only compare RubyValue or CInt".to_string()))
                 }
             }
             Insn::GuardLess { left, right, .. }
@@ -8406,7 +8409,7 @@ fn add_iseq_to_hir(
                             // So to check for either of those cases we can use: val & 0x1 == 0x1
 
                             // Bail out if the block handler is neither ISEQ nor ifunc
-                            fun.push_insn(unmodified_block, Insn::GuardAnyBitSet { val: block_handler, mask: Const::CUInt64(0x1), mask_name: ID::NONE, reason: Box::new(SideExitReason::BlockParamProxyFallbackMiss), state: exit_id, recompile: Some(Recompile) });
+                            fun.push_insn(unmodified_block, Insn::GuardAnyBitSet { val: block_handler, mask: 0x1, mask_name: ID::NONE, reason: Box::new(SideExitReason::BlockParamProxyFallbackMiss), state: exit_id, recompile: Some(Recompile) });
                             // TODO(Shopify/ruby#753): GC root, so we should be able to avoid unnecessary GC tracing
                             let proxy_val = fun.push_insn(unmodified_block, Insn::Const { val: Const::Value(unsafe { rb_block_param_proxy }) });
                             let mut args = vec![proxy_val];
@@ -8436,7 +8439,7 @@ fn add_iseq_to_hir(
                                 // So to check for either of those cases we can use: val & 0x1 == 0x1
 
                                 // Bail out if the block handler is neither ISEQ nor ifunc
-                                fun.push_insn(unmodified_block, Insn::GuardAnyBitSet { val: block_handler, mask: Const::CUInt64(0x1), mask_name: ID::NONE, reason: Box::new(SideExitReason::BlockParamProxyNotIseqOrIfunc), state: exit_id, recompile: Some(Recompile) });
+                                fun.push_insn(unmodified_block, Insn::GuardAnyBitSet { val: block_handler, mask: 0x1, mask_name: ID::NONE, reason: Box::new(SideExitReason::BlockParamProxyNotIseqOrIfunc), state: exit_id, recompile: Some(Recompile) });
                                 // TODO(Shopify/ruby#753): GC root, so we should be able to avoid unnecessary GC tracing
                                 let proxy_val = fun.push_insn(unmodified_block, Insn::Const { val: Const::Value(unsafe { rb_block_param_proxy }) });
                                 let mut args = vec![proxy_val];

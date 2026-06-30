@@ -2862,28 +2862,16 @@ fn gen_guard_bit_equals(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd,
     val
 }
 
-fn mask_to_opnd(mask: crate::hir::Const) -> Option<Opnd> {
-    match mask {
-        crate::hir::Const::CUInt8(v) => Some(Opnd::UImm(v as u64)),
-        crate::hir::Const::CUInt16(v) => Some(Opnd::UImm(v as u64)),
-        crate::hir::Const::CUInt32(v) => Some(Opnd::UImm(v as u64)),
-        crate::hir::Const::CUInt64(v) => Some(Opnd::UImm(v)),
-        _ => None
-    }
-}
-
 /// Compile a bitmask check with a side exit if none of the masked bits are not set
-fn gen_guard_any_bit_set(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, mask: crate::hir::Const, reason: SideExitReason, recompile: Option<Recompile>, state: &FrameState) -> lir::Opnd {
-    let mask_opnd = mask_to_opnd(mask).unwrap_or_else(|| panic!("gen_guard_any_bit_set: unexpected hir::Const {mask:?}"));
-    asm.test(val, mask_opnd);
+fn gen_guard_any_bit_set(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, mask: u64, reason: SideExitReason, recompile: Option<Recompile>, state: &FrameState) -> lir::Opnd {
+    asm.test(val, Opnd::UImm(mask));
     asm.jz(jit, side_exit_with_recompile(jit, state, reason, recompile));
     val
 }
 
 /// Compile a bitmask check with a side exit if any of the masked bits are set
-fn gen_guard_no_bits_set(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, mask: crate::hir::Const, reason: SideExitReason, state: &FrameState) -> lir::Opnd {
-    let mask_opnd = mask_to_opnd(mask).unwrap_or_else(|| panic!("gen_guard_no_bits_set: unexpected hir::Const {mask:?}"));
-    asm.test(val, mask_opnd);
+fn gen_guard_no_bits_set(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, mask: u64, reason: SideExitReason, state: &FrameState) -> lir::Opnd {
+    asm.test(val, Opnd::UImm(mask));
     asm.jnz(jit, side_exit(jit, state, reason));
     val
 }
