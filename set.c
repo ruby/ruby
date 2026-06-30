@@ -1661,7 +1661,7 @@ set_le(VALUE set, VALUE other)
  *  a {proper subset}[https://en.wikipedia.org/wiki/Subset]
  *  of the given +other_set+:
  *
- *    set = Set[*'b'..'e']               # => Set["b", "c", "d", "e"]
+ *    set = Set[*'b'..'e']
  *    set.proper_subset?(set)            # => false
  *    set.proper_subset?(Set[*'a'..'f']) # => true
  *
