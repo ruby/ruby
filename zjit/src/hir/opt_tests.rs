@@ -3977,10 +3977,8 @@ mod hir_opt_tests {
           v22:CPtr = GetEP 0
           v23:BasicObject = LoadField v22, :a@0x1000
           PatchPoint MethodRedefined(Object@0x1008, foo@0x1050, cme:0x1058)
-          v34:CPtr = GetEP 0
-          v35:BasicObject = LoadField v34, :a@0x1000
           CheckInterrupts
-          Return v35
+          Return v23
         ");
     }
 
@@ -5590,9 +5588,9 @@ mod hir_opt_tests {
           v14:NilClass = Const Value(nil)
           SetLocal :block, l0, EP@3, v14
           v18:CPtr = GetEP 0
-          v19:CInt64 = LoadField v18, :VM_ENV_DATA_INDEX_FLAGS@0x1001
-          v20:CInt64[512] = Const CInt64(512)
-          v21:CInt64 = IntOr v19, v20
+          v19:CUInt64 = LoadField v18, :VM_ENV_DATA_INDEX_FLAGS@0x1001
+          v20:CUInt64[512] = Const CUInt64(512)
+          v21:CUInt64 = IntOr v19, v20
           StoreField v18, :VM_ENV_DATA_INDEX_FLAGS@0x1001, v21
           CheckInterrupts
           Return v14
@@ -5622,9 +5620,9 @@ mod hir_opt_tests {
           v10:NilClass = Const Value(nil)
           SetLocal :block, l1, EP@3, v10
           v14:CPtr = GetEP 1
-          v15:CInt64 = LoadField v14, :VM_ENV_DATA_INDEX_FLAGS@0x1000
-          v16:CInt64[512] = Const CInt64(512)
-          v17:CInt64 = IntOr v15, v16
+          v15:CUInt64 = LoadField v14, :VM_ENV_DATA_INDEX_FLAGS@0x1000
+          v16:CUInt64[512] = Const CUInt64(512)
+          v17:CUInt64 = IntOr v15, v16
           StoreField v14, :VM_ENV_DATA_INDEX_FLAGS@0x1000, v17
           CheckInterrupts
           Return v10
@@ -16584,8 +16582,7 @@ mod hir_opt_tests {
           SetLocal :kwsplat, l0, EP@3, v108
           v113:CPtr = GetEP 0
           v114:BasicObject = LoadField v113, :list@0x1001
-          v116:CPtr = GetEP 0
-          v117:BasicObject = LoadField v116, :iter_method@0x1005
+          v117:BasicObject = LoadField v113, :iter_method@0x1005
           v119:BasicObject = Send v114, 0x1068, :__send__, v117 # SendFallbackReason: Send: unsupported method type Optimized
           v120:CPtr = GetEP 0
           v121:BasicObject = LoadField v120, :list@0x1001
