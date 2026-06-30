@@ -1202,7 +1202,7 @@ pub enum Insn {
     InvokeBuiltin {
         bf: *const rb_builtin_function,
         recv: InsnId,
-        args: Vec<InsnId>,
+        args: InsnIdList,
         state: InsnId,
         leaf: bool,
         return_type: Type,  // BasicObject for unannotated builtins
@@ -1515,13 +1515,13 @@ macro_rules! for_each_operand_impl {
             | Insn::PushInlineFrame { recv, args, state, .. }
             | Insn::SendForward { recv, args, state, .. }
             | Insn::InvokeSuper { recv, args, state, .. }
-            | Insn::InvokeSuperForward { recv, args, state, .. } => {
+            | Insn::InvokeSuperForward { recv, args, state, .. }
+            | Insn::InvokeBuiltin { recv, args, state, .. } => {
                 $visit_one!(*recv);
                 $visit_list!(*args);
                 $visit_one!(*state);
             }
-            Insn::InvokeBuiltin { recv, args, state, .. }
-            | Insn::InvokeProc { recv, args, state, .. } => {
+            Insn::InvokeProc { recv, args, state, .. } => {
                 $visit_one!(*recv);
                 $visit_many!(args);
                 $visit_one!(*state);
@@ -2196,6 +2196,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 Ok(())
             }
             Insn::InvokeBuiltin { bf, args, leaf, .. } => {
+                let args = self.pool.map_or(&[][..], |pool| pool.get(*args));
                 let bf_name = unsafe { CStr::from_ptr((**bf).name) }.to_str().unwrap();
                 write!(f, "InvokeBuiltin{} {}",
                            if *leaf { " leaf" } else { "" },
@@ -3045,7 +3046,7 @@ impl Function {
         // Operands stored in the operand pool (e.g. CCall/Send/PushInlineFrame/
         // SendForward/InvokeSuper/InvokeSuperForward args) are shared by handle with
         // the original insn. Duplicate the list so remapping below doesn't mutate the canonical entry.
-        if let Insn::CCall { args, .. } | Insn::Send { args, .. } | Insn::PushInlineFrame { args, .. } | Insn::SendForward { args, .. } | Insn::InvokeSuper { args, .. } | Insn::InvokeSuperForward { args, .. } = &mut result {
+        if let Insn::CCall { args, .. } | Insn::Send { args, .. } | Insn::PushInlineFrame { args, .. } | Insn::SendForward { args, .. } | Insn::InvokeSuper { args, .. } | Insn::InvokeSuperForward { args, .. } | Insn::InvokeBuiltin { args, .. } = &mut result {
             let dup = self.operand_pool.borrow().get(*args).to_vec();
             *args = self.operand_pool.borrow_mut().push(&dup);
         }
@@ -3849,7 +3850,7 @@ impl Function {
                 self.push_insn(block, Insn::InvokeBuiltin {
                     bf,
                     recv,
-                    args: vec![recv],
+                    args: self.push_operands(&[recv]),
                     state,
                     leaf: true,
                     return_type,
@@ -5395,6 +5396,7 @@ impl Function {
                         }
                     }
                     Insn::InvokeBuiltin { bf, recv, args, state, .. } => {
+                        let args = self.operands(args).to_vec();
                         let props = ZJITState::get_method_annotations().get_builtin_properties(bf).unwrap_or_default();
                         // Try inlining the cfunc into HIR
                         let tmp_block = self.new_block(u32::MAX);
@@ -6594,7 +6596,8 @@ impl Function {
             | Insn::PushInlineFrame { recv, args, .. }
             | Insn::SendForward { recv, args, .. }
             | Insn::InvokeSuper { recv, args, .. }
-            | Insn::InvokeSuperForward { recv, args, .. } => {
+            | Insn::InvokeSuperForward { recv, args, .. }
+            | Insn::InvokeBuiltin { recv, args, .. } => {
                 self.assert_subtype(insn_id, recv, types::BasicObject)?;
                 for &arg in self.operands(args).to_vec().iter() {
                     self.assert_subtype(insn_id, arg, types::BasicObject)?;
@@ -6602,8 +6605,7 @@ impl Function {
                 Ok(())
             }
             // Instructions with recv and a Vec of Ruby objects
-            Insn::InvokeBuiltin { recv, ref args, .. }
-            | Insn::InvokeProc { recv, ref args, .. }
+            Insn::InvokeProc { recv, ref args, .. }
             | Insn::ArrayInclude { target: recv, elements: ref args, .. } => {
                 self.assert_subtype(insn_id, recv, types::BasicObject)?;
                 for &arg in args {
@@ -9229,7 +9231,7 @@ fn add_iseq_to_hir(
                     let insn_id = fun.push_insn(block, Insn::InvokeBuiltin {
                         bf,
                         recv: self_param,
-                        args,
+                        args: fun.push_operands(&args),
                         state: exit_id,
                         leaf,
                         return_type,
@@ -9264,7 +9266,7 @@ fn add_iseq_to_hir(
                     let insn_id = fun.push_insn(block, Insn::InvokeBuiltin {
                         bf,
                         recv: self_param,
-                        args,
+                        args: fun.push_operands(&args),
                         state: exit_id,
                         leaf,
                         return_type,
