@@ -963,6 +963,16 @@ pub struct SendData {
     pub reason: SendFallbackReason,
 }
 
+/// Cold metadata of [`Insn::PushInlineFrame`]. Boxed in the enum to keep
+/// `Insn` small; the operands (`recv`, `args`) and `state` stay inline for
+/// fast traversal.
+#[derive(Debug, Clone)]
+pub struct PushInlineFrameData {
+    pub iseq: IseqPtr,
+    pub cme: *const rb_callable_method_entry_t,
+    pub blockiseq: Option<IseqPtr>,
+}
+
 /// An instruction in the SSA IR. The output of an instruction is referred to by the index of
 /// the instruction ([`InsnId`]). SSA form enables this, and [`UnionFind`] ([`Function::find`])
 /// helps with editing.
@@ -1201,12 +1211,10 @@ pub enum Insn {
 
     /// Push a lighter weight frame used for inlined methods.
     PushInlineFrame {
-        iseq: IseqPtr,
-        cme: *const rb_callable_method_entry_t,
         recv: InsnId,
         args: InsnIdList,
-        blockiseq: Option<IseqPtr>,
         state: InsnId,
+        data: Box<PushInlineFrameData>,
     },
 
     /// Pop a lighter weight frame used for inlined methods.
@@ -2168,8 +2176,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write_separated!(f, ", ", ", ", args);
                 Ok(())
             }
-            Insn::PushInlineFrame { recv, iseq, args, .. } => {
-                write!(f, "PushInlineFrame {recv} ({:?})", self.ptr_map.map_ptr(iseq))?;
+            Insn::PushInlineFrame { recv, args, data, .. } => {
+                write!(f, "PushInlineFrame {recv} ({:?})", self.ptr_map.map_ptr(&data.iseq))?;
                 let args = self.pool.map_or(&[][..], |pool| pool.get(*args));
                 write_separated!(f, ", ", ", ", args);
                 Ok(())
@@ -4876,7 +4884,8 @@ impl Function {
 
                 // Insert PushLightweightFrame and jump to callee body entry.
                 self.push_insn(block, Insn::PushInlineFrame {
-                    iseq, cme, recv, args: self.push_operands(&args), blockiseq, state,
+                    recv, args: self.push_operands(&args), state,
+                    data: Box::new(PushInlineFrameData { iseq, cme, blockiseq }),
                 });
                 self.count(block, Counter::inline_iseq_optimized_send_count);
                 self.push_insn(block, Insn::Jump(Box::new(BranchEdge {
