@@ -1543,19 +1543,15 @@ set_i_replace(VALUE set, VALUE other)
  *  Modifying an element in a way that changes the results of #hash
  *  may allow duplicate elements in the set:
  *
- *    class Person
- *      attr_accessor :name
- *      def initialize(name) = @name = name
- *      def hash = @name.hash
- *      def eql?(other) = other.is_a?(Person) && @name == other.name
- *    end
- *    alice = Person.new("Alice")
- *    set = Set.new([alice])
- *    set.include?(alice)             # => true
- *    alice.name = "Bob"              # Puts set in unreliable state.
- *    set.include?(Person.new("Bob")) # => false
- *    set.reset                       # Restores set to reliable state.
- *    set.include?(Person.new("Bob")) # => true
+ *    array = [1]
+ *    set = Set[array]  # => Set[[1]]
+ *    array << 2
+ *    set.add(array)    # => Set[[1, 2], [1, 2]]
+ *
+ *  Calling #reset will recalculate all of the hash values and remove
+ *  duplicate elements:
+ *
+ *    set.reset         # => Set[[1, 2]]
  *
  */
 static VALUE
