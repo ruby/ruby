@@ -814,7 +814,12 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::StoreField { recv, id, offset, val } => no_output!(gen_store_field(asm, opnd!(recv), id, offset, opnd!(val), function.type_of(val))),
         &Insn::WriteBarrier { recv, val } => no_output!(gen_write_barrier(jit, asm, opnd!(recv), opnd!(val), function.type_of(val))),
         &Insn::IsBlockGiven { lep } => gen_is_block_given(asm, opnd!(lep)),
-        Insn::ArrayInclude { elements, target, state } => gen_array_include(jit, asm, opnds!(elements), opnd!(target), &function.frame_state(*state)),
+        Insn::ArrayInclude { elements, target, state } => {
+            // Resolve to an owned Vec so the pool borrow is released before
+            // frame_state(), which calls find() and re-borrows the pool.
+            let elements = function.operands(*elements).to_vec();
+            gen_array_include(jit, asm, opnds!(elements), opnd!(target), &function.frame_state(*state))
+        },
         Insn::ArrayPackBuffer { elements, fmt, buffer, state } => {
             // Resolve to an owned Vec so the pool borrow is released before
             // frame_state(), which calls find() and re-borrows the pool.

@@ -992,7 +992,7 @@ pub enum Insn {
     ArrayHash { elements: InsnIdList, state: InsnId },
     ArrayMax { elements: InsnIdList, state: InsnId },
     ArrayMin { elements: InsnIdList, state: InsnId },
-    ArrayInclude { elements: Vec<InsnId>, target: InsnId, state: InsnId },
+    ArrayInclude { elements: InsnIdList, target: InsnId, state: InsnId },
     ArrayPackBuffer { elements: InsnIdList, fmt: InsnId, buffer: Option<InsnId>, state: InsnId },
     DupArrayInclude { ary: VALUE, target: InsnId, state: InsnId },
     /// Extend `left` with the elements from `right`. `left` and `right` must both be `Array`.
@@ -1355,7 +1355,7 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(*state);
             }
             Insn::ArrayInclude { elements, target, state, .. } => {
-                $visit_many!(elements);
+                $visit_list!(*elements);
                 $visit_one!(*target);
                 $visit_one!(*state);
             }
@@ -2062,6 +2062,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 Ok(())
             }
             Insn::ArrayInclude { elements, target, .. } => {
+                let elements = self.pool.map_or(&[][..], |pool| pool.get(*elements));
                 write!(f, "ArrayInclude")?;
                 write_separated!(f, " ", ", ", elements);
                 write!(f, " | {target}")
@@ -6627,10 +6628,9 @@ impl Function {
                 }
                 Ok(())
             }
-            // Instructions with recv and a Vec of Ruby objects
-            Insn::ArrayInclude { target: recv, elements: ref args, .. } => {
+            Insn::ArrayInclude { target: recv, elements, .. } => {
                 self.assert_subtype(insn_id, recv, types::BasicObject)?;
-                for &arg in args {
+                for &arg in self.operands(elements).to_vec().iter() {
                     self.assert_subtype(insn_id, arg, types::BasicObject)?;
                 }
                 Ok(())
@@ -7762,7 +7762,7 @@ fn add_iseq_to_hir(
                         VM_OPT_NEWARRAY_SEND_INCLUDE_P => {
                             let target = state.stack_pop()?;
                             let elements = state.stack_pop_n(count - 1)?;
-                            (BOP_INCLUDE_P, Insn::ArrayInclude { elements, target, state: exit_id })
+                            (BOP_INCLUDE_P, Insn::ArrayInclude { elements: fun.push_operands(&elements), target, state: exit_id })
                         }
                         VM_OPT_NEWARRAY_SEND_PACK => {
                             let fmt = state.stack_pop()?;
