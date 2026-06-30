@@ -3044,13 +3044,6 @@ impl Function {
         }
         let insn_id = find!(insn_id);
         let mut result = self.insns[insn_id.0].clone();
-        // Operands stored in the operand pool (e.g. CCall/Send/PushInlineFrame/
-        // SendForward/InvokeSuper/InvokeSuperForward args) are shared by handle with
-        // the original insn. Duplicate the list so remapping below doesn't mutate the canonical entry.
-        if let Insn::CCall { args, .. } | Insn::Send { args, .. } | Insn::PushInlineFrame { args, .. } | Insn::SendForward { args, .. } | Insn::InvokeSuper { args, .. } | Insn::InvokeSuperForward { args, .. } | Insn::InvokeBuiltin { args, .. } | Insn::ArrayPackBuffer { elements: args, .. } = &mut result {
-            let dup = self.operand_pool.borrow().get(*args).to_vec();
-            *args = self.operand_pool.borrow_mut().push(&dup);
-        }
         let mut pool = self.operand_pool.borrow_mut();
         result.for_each_operand_mut(&mut pool, &mut |operand: &mut InsnId| {
             *operand = find!(*operand);
