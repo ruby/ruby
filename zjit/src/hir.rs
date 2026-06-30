@@ -943,6 +943,17 @@ pub struct CCallVariadicData {
     pub block: Option<BlockHandler>,
 }
 
+/// Cold metadata of [`Insn::CCall`]. Boxed in the enum to keep `Insn` small;
+/// the operands (`recv`, `args`) stay inline for fast traversal.
+#[derive(Debug, Clone)]
+pub struct CCallData {
+    pub cfunc: *const u8,
+    pub name: ID,
+    pub owner: VALUE,
+    pub return_type: Type,
+    pub elidable: bool,
+}
+
 /// An instruction in the SSA IR. The output of an instruction is referred to by the index of
 /// the instruction ([`InsnId`]). SSA form enables this, and [`UnionFind`] ([`Function::find`])
 /// helps with editing.
@@ -1113,7 +1124,7 @@ pub enum Insn {
 
     /// Call a C function without pushing a frame
     /// `name` and `owner` are for printing purposes only
-    CCall { cfunc: *const u8, recv: InsnId, args: InsnIdList, name: ID, owner: VALUE, return_type: Type, elidable: bool },
+    CCall { recv: InsnId, args: InsnIdList, data: Box<CCallData> },
 
     /// Call a C function that pushes a frame
     CCallWithFrame(Box<CCallWithFrameData>),
@@ -1792,8 +1803,8 @@ impl Insn {
             Insn::Snapshot { .. } => effects::Empty,
             Insn::Jump(_) => effects::Any,
             Insn::CondBranch { .. } => effects::Any,
-            Insn::CCall { elidable, .. } => {
-                if *elidable {
+            Insn::CCall { data, .. } => {
+                if data.elidable {
                     Effect::write(abstract_heaps::Allocator)
                 }
                 else {
@@ -2303,7 +2314,8 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
             Insn::GetConstantPath { ic, .. } => { write!(f, "GetConstantPath {:p}", self.ptr_map.map_ptr(ic)) },
             Insn::IsBlockGiven { lep } => { write!(f, "IsBlockGiven {lep}") },
             Insn::FixnumBitCheck {val, index} => { write!(f, "FixnumBitCheck {val}, {index}") },
-            Insn::CCall { cfunc, recv, args, name, owner, return_type: _, elidable: _ } => {
+            Insn::CCall { recv, args, data } => {
+                let CCallData { cfunc, name, owner, .. } = &**data;
                 let display_name = if *owner == Qnil { name.contents_lossy().to_string() } else { qualified_method_name(*owner, *name) };
                 write!(f, "CCall {recv}, :{}@{:p}", display_name, self.ptr_map.map_ptr(cfunc))?;
                 let args = self.pool.map_or(&[][..], |pool| pool.get(*args));
@@ -3182,7 +3194,7 @@ impl Function {
             Insn::ObjectAlloc { .. } => types::HeapBasicObject,
             Insn::ObjectAllocClass { class, .. } => Type::from_class(*class),
             Insn::CCallWithFrame(insn) => insn.return_type,
-            Insn::CCall { return_type, .. } => *return_type,
+            Insn::CCall { data, .. } => data.return_type,
             Insn::CCallVariadic(insn) => insn.return_type,
             Insn::CheckMatch { .. } => types::BasicObject,
             Insn::GuardType { val, guard_type, .. } => self.type_of(*val).intersection(*guard_type),
@@ -4438,7 +4450,7 @@ impl Function {
                                     // Filter for a leaf and GC free function
                                     let ccall = if props.leaf && props.no_gc {
                                         self.count(block, Counter::inline_cfunc_optimized_send_count);
-                                        self.push_insn(block, Insn::CCall { cfunc: cfunc_ptr, recv, args: self.push_operands(&args), name, owner, return_type, elidable })
+                                        self.push_insn(block, Insn::CCall { recv, args: self.push_operands(&args), data: Box::new(CCallData { cfunc: cfunc_ptr, name, owner, return_type, elidable }) })
                                     } else {
                                         if get_option!(stats) {
                                             self.count_not_inlined_cfunc(block, super_cme);
@@ -4488,7 +4500,7 @@ impl Function {
                                     // Filter for a leaf and GC free function
                                     let ccall = if props.leaf && props.no_gc {
                                         self.count(block, Counter::inline_cfunc_optimized_send_count);
-                                        self.push_insn(block, Insn::CCall { cfunc: cfunc_ptr, recv, args: self.push_operands(&args), name, owner, return_type, elidable })
+                                        self.push_insn(block, Insn::CCall { recv, args: self.push_operands(&args), data: Box::new(CCallData { cfunc: cfunc_ptr, name, owner, return_type, elidable }) })
                                     } else {
                                         if get_option!(stats) {
                                             self.count_not_inlined_cfunc(block, super_cme);
@@ -4913,13 +4925,15 @@ impl Function {
         // getinstancevariable does assume_single_ractor_mode()
         let ivar_index_insn = self.push_insn(block, Insn::Const { val: Const::CAttrIndex(ivar_index) });
         self.push_insn(block, Insn::CCall {
-            cfunc: rb_ivar_get_at_no_ractor_check as *const u8,
             recv,
             args: self.push_operands(&[ivar_index_insn]),
-            name: ID!(rb_ivar_get_at_no_ractor_check),
-            owner: Qnil,
-            return_type: types::BasicObject,
-            elidable: true })
+            data: Box::new(CCallData {
+                cfunc: rb_ivar_get_at_no_ractor_check as *const u8,
+                name: ID!(rb_ivar_get_at_no_ractor_check),
+                owner: Qnil,
+                return_type: types::BasicObject,
+                elidable: true,
+            }) })
     }
 
     fn load_ivar_heap(&mut self, block: BlockId,  recv: InsnId, id: ID, ivar_index: attr_index_t) -> InsnId {
@@ -5306,7 +5320,7 @@ impl Function {
                         if props.leaf && props.no_gc {
                             fun.count(block, Counter::inline_cfunc_optimized_send_count);
                             let owner = unsafe { (*cme).owner };
-                            let ccall = fun.push_insn(block, Insn::CCall { cfunc: cfunc_ptr, recv, args: fun.push_operands(&args), name, owner, return_type, elidable });
+                            let ccall = fun.push_insn(block, Insn::CCall { recv, args: fun.push_operands(&args), data: Box::new(CCallData { cfunc: cfunc_ptr, name, owner, return_type, elidable }) });
                             fun.make_equal_to(send_insn_id, ccall);
                             return Ok(());
                         }
@@ -5372,7 +5386,7 @@ impl Function {
                         if props.leaf && props.no_gc {
                             fun.count(block, Counter::inline_cfunc_optimized_send_count);
                             let owner = unsafe { (*cme).owner };
-                            let ccall = fun.push_insn(block, Insn::CCall { cfunc: cfunc_ptr, recv, args: fun.push_operands(&args), name, owner, return_type, elidable });
+                            let ccall = fun.push_insn(block, Insn::CCall { recv, args: fun.push_operands(&args), data: Box::new(CCallData { cfunc: cfunc_ptr, name, owner, return_type, elidable }) });
                             fun.make_equal_to(send_insn_id, ccall);
                             return Ok(());
                         }
@@ -8451,13 +8465,15 @@ fn add_iseq_to_hir(
                             ProfiledBlockHandlerFamily::Proc => {
                                 let proc_val = fun.load_ep_env_field(unmodified_block, ep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, VM_ENV_DATA_INDEX_SPECVAL, types::BasicObject);
                                 let is_proc = fun.push_insn(unmodified_block, Insn::CCall {
-                                    cfunc: rb_obj_is_proc as *const u8,
                                     recv: proc_val,
                                     args: InsnIdList::EMPTY,
-                                    name: ID!(rb_obj_is_proc),
-                                    owner: Qnil,
-                                    return_type: types::BasicObject,
-                                    elidable: true,
+                                    data: Box::new(CCallData {
+                                        cfunc: rb_obj_is_proc as *const u8,
+                                        name: ID!(rb_obj_is_proc),
+                                        owner: Qnil,
+                                        return_type: types::BasicObject,
+                                        elidable: true,
+                                    }),
                                 });
                                 fun.push_insn(unmodified_block, Insn::GuardBitEquals { val: is_proc, expected: Const::Value(Qtrue), reason: Box::new(SideExitReason::BlockParamProxyNotProc), state: exit_id, recompile: Some(Recompile) });
                                 let mut args = vec![proc_val];
@@ -8539,13 +8555,15 @@ fn add_iseq_to_hir(
 
                                         let proc_val = fun.load_ep_env_field(proc_check_block, ep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, VM_ENV_DATA_INDEX_SPECVAL, types::BasicObject);
                                         let proc_result = fun.push_insn(proc_check_block, Insn::CCall {
-                                            cfunc: rb_obj_is_proc as *const u8,
                                             recv: proc_val,
                                             args: InsnIdList::EMPTY,
-                                            name: ID!(rb_obj_is_proc),
-                                            owner: Qnil,
-                                            return_type: types::BasicObject,
-                                            elidable: true,
+                                            data: Box::new(CCallData {
+                                                cfunc: rb_obj_is_proc as *const u8,
+                                                name: ID!(rb_obj_is_proc),
+                                                owner: Qnil,
+                                                return_type: types::BasicObject,
+                                                elidable: true,
+                                            }),
                                         });
                                         let true_val = fun.push_insn(proc_check_block, Insn::Const { val: Const::Value(Qtrue) });
                                         let is_proc = fun.push_insn(proc_check_block, Insn::IsBitEqual { left: proc_result, right: true_val });
