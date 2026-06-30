@@ -16,6 +16,15 @@ Note that each entry is kept to a minimum, see links for details.
 
 Note: We're only listing outstanding class updates.
 
+* C API
+
+    * `RB_NOGVL_PENDING_INTR_FAIL` is added as a flag for `rb_nogvl`.
+      `rb_nogvl` does not enter the blocking region (and does not call the
+      given function), returning `0`, if the current thread has pending
+      interrupts, including interrupts masked by `Thread.handle_interrupt`.
+      As with the existing skip path, `errno` is `0` because the function was
+      never called.
+
 * Array
 
     * `Array#pack` accepts a new format `R` and `r` for unpacking unsigned
