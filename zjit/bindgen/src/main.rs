@@ -421,7 +421,6 @@ fn main() {
         .allowlist_function("rb_get_iseq_body_param_opt_table")
         .allowlist_function("rb_get_cikw_keyword_len")
         .allowlist_function("rb_get_cikw_keywords_idx")
-        .allowlist_function("rb_get_call_data_ci")
         .allowlist_function("rb_yarv_str_eql_internal")
         .allowlist_function("rb_str_neq_internal")
         .allowlist_function("rb_yarv_ary_entry_internal")

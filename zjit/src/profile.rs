@@ -157,7 +157,7 @@ pub fn profile_recompile_insn(ec: EcPtr) -> bool {
 /// Return the argc as stated in the calldata plus:
 /// * 1 if there is an explicit blockarg, since that will be passed on the stack
 pub fn num_arguments_on_stack(cd: *const rb_call_data) -> usize {
-    let ci = unsafe { rb_get_call_data_ci(cd) };
+    let ci = unsafe { (*cd).ci };
     let flags = unsafe { rb_vm_ci_flag(ci) };
     let has_blockarg = (flags & VM_CALL_ARGS_BLOCKARG) != 0;
     (unsafe { vm_ci_argc(ci) }) as usize + has_blockarg as usize

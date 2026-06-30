@@ -193,7 +193,6 @@ pub use rb_get_iseq_body_type as get_iseq_body_type;
 pub use rb_get_iseq_body_local_table_size as get_iseq_body_local_table_size;
 pub use rb_get_cikw_keyword_len as get_cikw_keyword_len;
 pub use rb_get_cikw_keywords_idx as get_cikw_keywords_idx;
-pub use rb_get_call_data_ci as get_call_data_ci;
 pub use rb_FL_TEST_RAW as FL_TEST_RAW;
 pub use rb_RB_TYPE_P as RB_TYPE_P;
 pub use rb_vm_ci_argc as vm_ci_argc;
@@ -952,7 +951,7 @@ pub fn ruby_sym_to_rust_string(v: VALUE) -> String {
 }
 
 pub fn ruby_call_method_id(cd: *const rb_call_data) -> ID {
-    let call_info = unsafe { rb_get_call_data_ci(cd) };
+    let call_info = unsafe { (*cd).ci };
     unsafe { rb_vm_ci_mid(call_info) }
 }
 
