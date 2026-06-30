@@ -989,7 +989,7 @@ pub enum Insn {
     NewRange { low: InsnId, high: InsnId, flag: RangeType, state: InsnId },
     NewRangeFixnum { low: InsnId, high: InsnId, flag: RangeType, state: InsnId },
     ArrayDup { val: InsnId, state: InsnId },
-    ArrayHash { elements: Vec<InsnId>, state: InsnId },
+    ArrayHash { elements: InsnIdList, state: InsnId },
     ArrayMax { elements: Vec<InsnId>, state: InsnId },
     ArrayMin { elements: Vec<InsnId>, state: InsnId },
     ArrayInclude { elements: Vec<InsnId>, target: InsnId, state: InsnId },
@@ -1335,9 +1335,12 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(*val);
             }
             Insn::ArrayMax { elements, state, .. }
-            | Insn::ArrayMin { elements, state, .. }
-            | Insn::ArrayHash { elements, state, .. } => {
+            | Insn::ArrayMin { elements, state, .. } => {
                 $visit_many!(elements);
+                $visit_one!(*state);
+            }
+            Insn::ArrayHash { elements, state, .. } => {
+                $visit_list!(*elements);
                 $visit_one!(*state);
             }
             Insn::NewHash { elements, state, .. } => {
@@ -2048,6 +2051,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 Ok(())
             }
             Insn::ArrayHash { elements, .. } => {
+                let elements = self.pool.map_or(&[][..], |pool| pool.get(*elements));
                 write!(f, "ArrayHash")?;
                 write_separated!(f, " ", ", ", elements);
                 Ok(())
@@ -6671,9 +6675,14 @@ impl Function {
                 }
                 Ok(())
             }
+            Insn::ArrayHash { elements, .. } => {
+                for &arg in self.operands(elements).to_vec().iter() {
+                    self.assert_subtype(insn_id, arg, types::BasicObject)?;
+                }
+                Ok(())
+            }
             // Instructions with a Vec of Ruby objects
-            Insn::ArrayHash { elements: ref args, .. }
-            | Insn::ArrayMin { elements: ref args, .. }
+            Insn::ArrayMin { elements: ref args, .. }
             | Insn::ArrayMax { elements: ref args, .. } => {
                 for &arg in args {
                     self.assert_subtype(insn_id, arg, types::BasicObject)?;
@@ -7739,7 +7748,7 @@ fn add_iseq_to_hir(
                         }
                         VM_OPT_NEWARRAY_SEND_HASH => {
                             let elements = state.stack_pop_n(count)?;
-                            (BOP_HASH, Insn::ArrayHash { elements, state: exit_id })
+                            (BOP_HASH, Insn::ArrayHash { elements: fun.push_operands(&elements), state: exit_id })
                         }
                         VM_OPT_NEWARRAY_SEND_INCLUDE_P => {
                             let target = state.stack_pop()?;
