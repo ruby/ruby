@@ -668,7 +668,23 @@ module RbInstall
           Dir.glob("**/*", File::FNM_DOTMATCH, base: base).select do |n|
             next if n == "."
             next if File.fnmatch?("*.gemspec", n, File::FNM_DOTMATCH|File::FNM_PATHNAME)
+            next if build_artifact?(File.basename(n))
             !File.directory?(File.join(base, n))
+          end
+        end
+
+        private
+
+        # Files left behind by building C extensions in-place under
+        # .bundle/gems. They are non-reproducible and unused at run time, so
+        # they must not be packed into the installed gem directory.
+        def build_artifact?(name)
+          case name
+          when "mkmf.log", "gem_make.out", "Makefile"
+            true
+          else
+            /\Aconftest\b/.match?(name) ||
+              /\.(?:o|obj|so|bundle|dll|dylib|time)\z/.match?(name)
           end
         end
       end
@@ -1281,7 +1297,7 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
     ins = RbInstall::UnpackedInstaller.new(package, options)
     puts "#{INDENT}#{spec.name} #{spec.version}"
     ins.install
-    install_recursive("#{build_dir}/#{gem_name}", "#{extensions_dir}/#{gem_name}") do |src, dest|
+    install_recursive("#{build_dir}/#{gem_name}", "#{extensions_dir}/#{gem_name}", no_install: %w[mkmf.log gem_make.out]) do |src, dest|
       # puts "#{INDENT}    #{dest[extensions_dir.size+gem_name.size+2..-1]}"
       install src, dest, :mode => (File.executable?(src) ? $prog_mode : $data_mode)
     end
