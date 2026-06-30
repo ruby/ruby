@@ -14,14 +14,32 @@ use crate::stats::{exit_counter_ptr, exit_counter_ptr_for_opcode, side_exit_coun
 use crate::virtualmem::CodePtr;
 use crate::asm::{CodeBlock, Label};
 use crate::state::{ZJITState, rb_zjit_record_exit_stack};
+use crate::cast::IntoUsize;
 
 /// LIR Block ID. Unique ID for each block, and also defined in LIR so
 /// we can differentiate it from HIR block ids.
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, PartialOrd, Ord)]
 pub struct BlockId(pub usize);
 
+/// Underlying integer width of a virtual-register id. Narrow to keep `Opnd`/`Mem` small.
+pub type VRegIdBase = u32;
+/// Width of a stack-slot index inside `MemBase`. Separate id space from `VRegId`.
+pub type StackIdx = u32;
+
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, PartialOrd, Ord)]
-pub struct VRegId(pub usize);
+pub struct VRegId(pub VRegIdBase);
+
+impl IntoUsize for VRegId {
+    fn to_usize(self) -> usize {
+        self.0.to_usize()
+    }
+}
+
+impl From<usize> for VRegId {
+    fn from(val: usize) -> Self {
+        VRegId(val.try_into().unwrap())
+    }
+}
 
 impl From<BlockId> for usize {
     fn from(val: BlockId) -> Self {
@@ -29,10 +47,23 @@ impl From<BlockId> for usize {
     }
 }
 
-impl From<VRegId> for usize {
-    fn from(val: VRegId) -> Self {
-        val.0
-    }
+impl<T> std::ops::Index<VRegId> for [T] {
+    type Output = T;
+    #[inline]
+    fn index(&self, i: VRegId) -> &T { &self[i.to_usize()] }
+}
+impl<T> std::ops::IndexMut<VRegId> for [T] {
+    #[inline]
+    fn index_mut(&mut self, i: VRegId) -> &mut T { &mut self[i.to_usize()] }
+}
+impl<T> std::ops::Index<VRegId> for Vec<T> {
+    type Output = T;
+    #[inline]
+    fn index(&self, i: VRegId) -> &T { &self[i.to_usize()] }
+}
+impl<T> std::ops::IndexMut<VRegId> for Vec<T> {
+    #[inline]
+    fn index_mut(&mut self, i: VRegId) -> &mut T { &mut self[i.to_usize()] }
 }
 
 impl std::fmt::Display for BlockId {
@@ -220,13 +251,13 @@ pub enum MemBase
     /// Stack slot: a direct stack access. `stack_membase_to_mem()` turns this
     /// into `[NATIVE_BASE_PTR + disp]`, so scratch splitting can use it as a
     /// normal memory operand without first loading a pointer from the stack.
-    Stack { stack_idx: usize, num_bits: u8 },
+    Stack { stack_idx: StackIdx, num_bits: u8 },
     /// A pointer stored in a stack slot, used as a memory base.
     /// Unlike Stack, this first loads the pointer value from the stack slot
     /// into a scratch register, then uses that register as the base for the
     /// memory access with the Mem's displacement.
     /// Created when a VReg used as MemBase is spilled to the stack.
-    StackIndirect { stack_idx: usize },
+    StackIndirect { stack_idx: StackIdx },
 }
 
 // Memory location
@@ -422,6 +453,11 @@ impl Opnd
         }
     }
 
+    /// Unwrap the index of a VReg as a `usize`, for raw-`usize` APIs (bitsets, etc.).
+    pub fn vreg_idx_usize(&self) -> usize {
+        self.vreg_idx().to_usize()
+    }
+
     /// Extract VReg indices from this operand, including memory base VRegs.
     /// Returns an iterator over all VRegIds referenced by this operand.
     pub fn vreg_ids(&self) -> impl Iterator<Item = VRegId> {
@@ -466,10 +502,10 @@ impl Opnd
     pub fn map_index(self, indices: &[usize]) -> Opnd {
         match self {
             Opnd::VReg { idx, num_bits } => {
-                Opnd::VReg { idx: VRegId(indices[idx.0]), num_bits }
+                Opnd::VReg { idx: indices[idx].into(), num_bits }
             }
             Opnd::Mem(Mem { base: MemBase::VReg(idx), disp, num_bits }) => {
-                Opnd::Mem(Mem { base: MemBase::VReg(VRegId(indices[idx.0])), disp, num_bits })
+                Opnd::Mem(Mem { base: MemBase::VReg(indices[idx].into()), disp, num_bits })
             },
             _ => self
         }
@@ -1272,12 +1308,12 @@ impl LiveRange {
 #[derive(Clone)]
 pub struct Interval {
     pub range: LiveRange,
-    pub id: usize,
+    pub id: VRegId,
 }
 
 impl Interval {
     /// Create a new Interval with no range
-    pub fn new(i: usize) -> Self {
+    pub fn new(i: VRegId) -> Self {
         Self {
             range: LiveRange {
                 start: None,
@@ -1480,8 +1516,8 @@ impl StackState {
     }
 
     /// Convert a stack index to the `disp` of the stack slot
-    fn stack_idx_to_disp(&self, stack_idx: usize) -> i32 {
-        (self.stack_base_idx + stack_idx + 1) as i32 * -SIZEOF_VALUE_I32
+    fn stack_idx_to_disp(&self, stack_idx: StackIdx) -> i32 {
+        (self.stack_base_idx + stack_idx.to_usize() + 1) as i32 * -SIZEOF_VALUE_I32
     }
 
     /// Convert MemBase::Stack to Mem
@@ -1850,7 +1886,7 @@ impl Assembler
 
     /// Build an Opnd::VReg
     pub fn new_vreg(&mut self, num_bits: u8) -> Opnd {
-        let vreg = Opnd::VReg { idx: VRegId(self.num_vregs), num_bits };
+        let vreg = Opnd::VReg { idx: self.num_vregs.into(), num_bits };
         self.num_vregs += 1;
         vreg
     }
@@ -1953,10 +1989,10 @@ impl Assembler
                     {
                         if let Some(Opnd::VReg { idx: out_idx, .. }) = prev.out_opnd() {
                             if out_idx == idx
-                                && intervals[idx.0].born_at(prev_id.0)
-                                && intervals[idx.0].dies_at(insn_id.0)
+                                && intervals[*idx].born_at(prev_id.0)
+                                && intervals[*idx].dies_at(insn_id.0)
                             {
-                                preferred[idx.0].get_or_insert(*dest_reg);
+                                preferred[*idx].get_or_insert(*dest_reg);
                             }
                         }
                     }
@@ -2127,7 +2163,7 @@ impl Assembler
                 let reg_copies: Vec<parcopy::RegisterCopy<Opnd>> = edge.args
                     .iter()
                     .zip(params.iter())
-                    .filter(|(_arg, param)| assignments[param.vreg_idx().0].is_some() )
+                    .filter(|(_arg, param)| assignments[param.vreg_idx()].is_some() )
                     .map(|(arg, param)| parcopy::RegisterCopy::<Opnd> {
                         destination: Self::rewritten_opnd(*param, assignments),
                         source: Self::rewritten_opnd(*arg, assignments),
@@ -2299,15 +2335,15 @@ impl Assembler
                     // Do we have a case where a ccall is emitted, but nobody
                     // uses the result?
                     let call_result_live = out.is_vreg()
-                        && intervals[out.vreg_idx().0]
+                        && intervals[out.vreg_idx()]
                             .range
                             .end
                             .is_some_and(|end| end > insn_number);
 
                     // Build a set of VRegIds that can be referenced by JITFrame for materializing the VM stack
-                    let stack_vreg_ids: HashSet<usize> = if let Some(StackMap { stack, .. }) = &stack_map {
+                    let stack_vreg_ids: HashSet<VRegId> = if let Some(StackMap { stack, .. }) = &stack_map {
                         stack.iter().filter_map(|opnd| match opnd {
-                            Opnd::VReg { idx: VRegId(vreg_id), .. } => Some(*vreg_id),
+                            Opnd::VReg { idx, .. } => Some(*idx),
                             _ => None,
                         }).collect()
                     } else {
@@ -2318,7 +2354,7 @@ impl Assembler
                     // We need to preserve the "surviving" registers past the ccall,
                     // so we're going to push them all on the stack, then pop
                     // after we make the ccall
-                    let survivors: Vec<usize> = intervals.iter()
+                    let survivors: Vec<VRegId> = intervals.iter()
                         .filter(|interval| {
                             // We need to spill register intervals on this CCall in two cases:
                             // 1) The VReg is referenced in an instruction after the CCall
@@ -2359,10 +2395,10 @@ impl Assembler
                                     assert!(value.special_const_p(), "StackMap should only materialize immediate VALUEs, but got: {value:?}");
                                     value
                                 }
-                                Opnd::VReg { idx: VRegId(vreg_id), .. } => {
-                                    let vreg_stack_index = match assignments[*vreg_id].expect("StackMap VReg should have an allocation") {
+                                Opnd::VReg { idx: vreg, .. } => {
+                                    let vreg_stack_index = match assignments[*vreg].expect("StackMap VReg should have an allocation") {
                                         Allocation::Reg(_) | Allocation::Fixed(_) => {
-                                            let caller_saved_reg_idx = survivors.iter().position(|&survivor_id| survivor_id == *vreg_id).unwrap();
+                                            let caller_saved_reg_idx = survivors.iter().position(|&survivor_id| survivor_id == *vreg).unwrap();
                                             let stack_idx = self.stack_state.stack_idx_for_caller_saved_reg(caller_saved_reg_idx);
                                             self.stack_state.stack_map_index_for_spill(stack_idx, frame_depth)
                                         }
@@ -2507,7 +2543,7 @@ impl Assembler
 
         match opnd {
             Opnd::VReg { idx, num_bits } => {
-                if let Some(assignment) = assignments[idx.0] {
+                if let Some(assignment) = assignments[*idx] {
                     match assignment {
                         Allocation::Reg(n) => {
                             let mut reg = regs[n];
@@ -2521,7 +2557,7 @@ impl Assembler
                         Allocation::Stack(n) => {
                             let num_bits = *num_bits;
                             *opnd = Opnd::Mem(Mem {
-                                base: MemBase::Stack { stack_idx: n, num_bits },
+                                base: MemBase::Stack { stack_idx: n.try_into().unwrap(), num_bits },
                                 disp: 0,
                                 num_bits,
                             });
@@ -2532,7 +2568,7 @@ impl Assembler
                 }
             }
             Opnd::Mem(Mem { base: MemBase::VReg(idx), .. }) => {
-                match assignments[idx.0].unwrap() {
+                match assignments[*idx].unwrap() {
                     Allocation::Reg(n) => {
                         if let Opnd::Mem(mem) = opnd {
                             mem.base = MemBase::Reg(regs[n].reg_no);
@@ -2548,7 +2584,7 @@ impl Assembler
                         // Mark it as StackIndirect so arm64_scratch_split can load
                         // the pointer from the stack into a scratch register.
                         if let Opnd::Mem(mem) = opnd {
-                            mem.base = MemBase::StackIndirect { stack_idx: n };
+                            mem.base = MemBase::StackIndirect { stack_idx: n.try_into().unwrap() };
                         }
                     }
                 }
@@ -2896,15 +2932,15 @@ impl Assembler
                 // If the instruction has an output that is a VReg, add to kill set
                 if let Some(out) = insn.out_opnd() {
                     if let Opnd::VReg { idx, .. } = out {
-                        kill_set.insert(idx.0);
+                        kill_set.insert(idx.to_usize());
                     }
                 }
 
                 // For all input operands that are VRegs (including memory base VRegs), add to gen set
                 insn.for_each_operand(|opnd| {
                     for idx in opnd.vreg_ids() {
-                        assert!(!kill_set.get(idx.0));
-                        gen_set.insert(idx.0);
+                        assert!(!kill_set.get(idx.to_usize()));
+                        gen_set.insert(idx.to_usize());
                     }
                 });
             }
@@ -2912,7 +2948,7 @@ impl Assembler
             // Add block parameters to kill set
             for param in &block.parameters {
                 if let Opnd::VReg { idx, .. } = param {
-                    kill_set.insert(idx.0);
+                    kill_set.insert(idx.to_usize());
                 }
             }
 
@@ -2929,7 +2965,7 @@ impl Assembler
     pub fn build_intervals(&self, live_in: Vec<BitSet<usize>>) -> Vec<Interval> {
         let num_vregs = self.num_vregs;
         let mut intervals: Vec<Interval> = (0..num_vregs)
-            .map(|i| Interval::new(i))
+            .map(|i| Interval::new(i.into()))
             .collect();
 
         let blocks = self.block_order();
@@ -2945,7 +2981,7 @@ impl Assembler
 
             // Add out_vregs to live set
             for idx in block.out_vregs() {
-                live.insert(idx.0);
+                live.insert(idx.to_usize());
             }
 
             // For each live vreg, add entire block range
@@ -2961,14 +2997,14 @@ impl Assembler
                 // If instruction has VReg output, set_from
                 if let Some(out) = insn.out_opnd() {
                     if let Opnd::VReg { idx, .. } = out {
-                        intervals[idx.0].set_from(insn_id.0);
+                        intervals[*idx].set_from(insn_id.0);
                     }
                 }
 
                 // For each VReg input (including memory base VRegs), add_range from block start to insn
                 insn.for_each_operand(|opnd| {
                     for idx in opnd.vreg_ids() {
-                        intervals[idx.0].add_range(block.from.0, insn_id.0);
+                        intervals[idx].add_range(block.from.0, insn_id.0);
                     }
                 });
             }
@@ -3857,6 +3893,14 @@ mod tests {
     }
 
     #[test]
+    fn test_size_of_opnd() {
+        assert_eq!(std::mem::size_of::<VRegId>(), 4);
+        assert_eq!(std::mem::size_of::<MemBase>(), 8);
+        assert_eq!(std::mem::size_of::<Mem>(), 16);
+        assert_eq!(std::mem::size_of::<Opnd>(), 16);
+    }
+
+    #[test]
     fn test_for_each_operand() {
         let insn = Insn::Add { left: Opnd::None, right: Opnd::None, out: Opnd::None };
 
@@ -4075,18 +4119,18 @@ mod tests {
         assert_eq!(bitset_to_vreg_indices(&live_in[b1.0], num_vregs), vec![]);
 
         // b2: [r10] - r10 is live-in (used in b4 which is reachable)
-        assert_eq!(bitset_to_vreg_indices(&live_in[b2.0], num_vregs), vec![r10.vreg_idx().0]);
+        assert_eq!(bitset_to_vreg_indices(&live_in[b2.0], num_vregs), vec![r10.vreg_idx_usize()]);
 
         // b3: [r10, r12, r13] - all are live-in
         assert_eq!(
             bitset_to_vreg_indices(&live_in[b3.0], num_vregs),
-            vec![r10.vreg_idx().0, r12.vreg_idx().0, r13.vreg_idx().0]
+            vec![r10.vreg_idx_usize(), r12.vreg_idx_usize(), r13.vreg_idx_usize()]
         );
 
         // b4: [r10, r12] - both are live-in
         assert_eq!(
             bitset_to_vreg_indices(&live_in[b4.0], num_vregs),
-            vec![r10.vreg_idx().0, r12.vreg_idx().0]
+            vec![r10.vreg_idx_usize(), r12.vreg_idx_usize()]
         );
     }
 
@@ -4161,7 +4205,7 @@ mod tests {
 
     #[test]
     fn test_interval_add_range() {
-        let mut interval = Interval::new(1);
+        let mut interval = Interval::new(VRegId(1));
 
         // Add range to empty interval
         interval.add_range(5, 10);
@@ -4181,7 +4225,7 @@ mod tests {
 
     #[test]
     fn test_interval_survives() {
-        let mut interval = Interval::new(1);
+        let mut interval = Interval::new(VRegId(1));
         interval.add_range(3, 10);
 
         assert!(!interval.survives(2));  // Before range
@@ -4193,7 +4237,7 @@ mod tests {
 
     #[test]
     fn test_interval_set_from() {
-        let mut interval = Interval::new(1);
+        let mut interval = Interval::new(VRegId(1));
 
         // With no range, sets both start and end
         interval.set_from(10);
@@ -4210,14 +4254,14 @@ mod tests {
     #[test]
     #[should_panic(expected = "Invalid range")]
     fn test_interval_add_range_invalid() {
-        let mut interval = Interval::new(1);
+        let mut interval = Interval::new(VRegId(1));
         interval.add_range(10, 5);
     }
 
     #[test]
     #[should_panic(expected = "survives called on interval with no range")]
     fn test_interval_survives_panics_without_range() {
-        let interval = Interval::new(1);
+        let interval = Interval::new(VRegId(1));
         interval.survives(5);
     }
 
@@ -4244,23 +4288,23 @@ mod tests {
 
         // Assert expected ranges
         // Note: Rust CFG differs from Ruby due to conditional branches requiring two instructions (Jl + Jmp)
-        assert_eq!(intervals[r10_idx.0].range.start, Some(16));
-        assert_eq!(intervals[r10_idx.0].range.end, Some(38));
+        assert_eq!(intervals[r10_idx].range.start, Some(16));
+        assert_eq!(intervals[r10_idx].range.end, Some(38));
 
-        assert_eq!(intervals[r11_idx.0].range.start, Some(16));
-        assert_eq!(intervals[r11_idx.0].range.end, Some(20));
+        assert_eq!(intervals[r11_idx].range.start, Some(16));
+        assert_eq!(intervals[r11_idx].range.end, Some(20));
 
-        assert_eq!(intervals[r12_idx.0].range.start, Some(20));
-        assert_eq!(intervals[r12_idx.0].range.end, Some(38));
+        assert_eq!(intervals[r12_idx].range.start, Some(20));
+        assert_eq!(intervals[r12_idx].range.end, Some(38));
 
-        assert_eq!(intervals[r13_idx.0].range.start, Some(20));
-        assert_eq!(intervals[r13_idx.0].range.end, Some(32));
+        assert_eq!(intervals[r13_idx].range.start, Some(20));
+        assert_eq!(intervals[r13_idx].range.end, Some(32));
 
-        assert_eq!(intervals[r14_idx.0].range.start, Some(30));
-        assert_eq!(intervals[r14_idx.0].range.end, Some(36));
+        assert_eq!(intervals[r14_idx].range.start, Some(30));
+        assert_eq!(intervals[r14_idx].range.end, Some(36));
 
-        assert_eq!(intervals[r15_idx.0].range.start, Some(32));
-        assert_eq!(intervals[r15_idx.0].range.end, Some(36));
+        assert_eq!(intervals[r15_idx].range.start, Some(32));
+        assert_eq!(intervals[r15_idx].range.end, Some(36));
     }
 
     #[test]
@@ -4299,12 +4343,12 @@ mod tests {
         // r13: [20,38) gets Reg(2)
         // r14: [36,42) gets Reg(1) (r12 expired, reuses its register)
         // r15: [38,42) gets Reg(2) (r13 expired, reuses its register)
-        assert_eq!(assignments[r10_idx.0], Some(Allocation::Reg(0)));
-        assert_eq!(assignments[r11_idx.0], Some(Allocation::Reg(1)));
-        assert_eq!(assignments[r12_idx.0], Some(Allocation::Reg(1)));
-        assert_eq!(assignments[r13_idx.0], Some(Allocation::Reg(2)));
-        assert_eq!(assignments[r14_idx.0], Some(Allocation::Reg(3)));
-        assert_eq!(assignments[r15_idx.0], Some(Allocation::Reg(2)));
+        assert_eq!(assignments[r10_idx], Some(Allocation::Reg(0)));
+        assert_eq!(assignments[r11_idx], Some(Allocation::Reg(1)));
+        assert_eq!(assignments[r12_idx], Some(Allocation::Reg(1)));
+        assert_eq!(assignments[r13_idx], Some(Allocation::Reg(2)));
+        assert_eq!(assignments[r14_idx], Some(Allocation::Reg(3)));
+        assert_eq!(assignments[r15_idx], Some(Allocation::Reg(2)));
     }
 
     #[test]
@@ -4327,12 +4371,12 @@ mod tests {
         let r15_idx = if let Opnd::VReg { idx, .. } = r15 { idx } else { panic!() };
 
         assert_eq!(num_stack_slots, 1);
-        assert_eq!(assignments[r10_idx.0], Some(Allocation::Stack(0)));
-        assert_eq!(assignments[r11_idx.0], Some(Allocation::Reg(1)));
-        assert_eq!(assignments[r12_idx.0], Some(Allocation::Reg(1)));
-        assert_eq!(assignments[r13_idx.0], Some(Allocation::Reg(2)));
-        assert_eq!(assignments[r14_idx.0], Some(Allocation::Reg(0)));
-        assert_eq!(assignments[r15_idx.0], Some(Allocation::Reg(2)));
+        assert_eq!(assignments[r10_idx], Some(Allocation::Stack(0)));
+        assert_eq!(assignments[r11_idx], Some(Allocation::Reg(1)));
+        assert_eq!(assignments[r12_idx], Some(Allocation::Reg(1)));
+        assert_eq!(assignments[r13_idx], Some(Allocation::Reg(2)));
+        assert_eq!(assignments[r14_idx], Some(Allocation::Reg(0)));
+        assert_eq!(assignments[r15_idx], Some(Allocation::Reg(2)));
     }
 
     #[test]
@@ -4355,12 +4399,12 @@ mod tests {
         let r15_idx = if let Opnd::VReg { idx, .. } = r15 { idx } else { panic!() };
 
         assert_eq!(num_stack_slots, 3);
-        assert_eq!(assignments[r10_idx.0], Some(Allocation::Stack(0)));
-        assert_eq!(assignments[r11_idx.0], Some(Allocation::Reg(0)));
-        assert_eq!(assignments[r12_idx.0], Some(Allocation::Stack(1)));
-        assert_eq!(assignments[r13_idx.0], Some(Allocation::Reg(0)));
-        assert_eq!(assignments[r14_idx.0], Some(Allocation::Stack(2)));
-        assert_eq!(assignments[r15_idx.0], Some(Allocation::Reg(0)));
+        assert_eq!(assignments[r10_idx], Some(Allocation::Stack(0)));
+        assert_eq!(assignments[r11_idx], Some(Allocation::Reg(0)));
+        assert_eq!(assignments[r12_idx], Some(Allocation::Stack(1)));
+        assert_eq!(assignments[r13_idx], Some(Allocation::Reg(0)));
+        assert_eq!(assignments[r14_idx], Some(Allocation::Stack(2)));
+        assert_eq!(assignments[r15_idx], Some(Allocation::Reg(0)));
     }
 
     #[test]
@@ -4382,11 +4426,11 @@ mod tests {
         let preferred_registers = asm.preferred_register_assignments(&intervals);
 
         let vreg_idx = new_sp.vreg_idx();
-        assert_eq!(preferred_registers[vreg_idx.0], Some(sp.unwrap_reg()));
+        assert_eq!(preferred_registers[vreg_idx], Some(sp.unwrap_reg()));
 
         let (assignments, num_stack_slots) = asm.linear_scan(intervals, 0, &preferred_registers);
         assert_eq!(num_stack_slots, 0);
-        assert_eq!(assignments[vreg_idx.0], Some(Allocation::Fixed(sp.unwrap_reg())));
+        assert_eq!(assignments[vreg_idx], Some(Allocation::Fixed(sp.unwrap_reg())));
     }
 
     #[test]
@@ -4573,8 +4617,8 @@ mod tests {
         assert_eq!(asm.basic_blocks.len(), 3);
 
         // Verify v1 and v4 have different allocations (so moves are needed)
-        let v1_alloc = assignments[v1.vreg_idx().0].unwrap();
-        let v4_alloc = assignments[v4.vreg_idx().0].unwrap();
+        let v1_alloc = assignments[v1.vreg_idx()].unwrap();
+        let v4_alloc = assignments[v4.vreg_idx()].unwrap();
         assert_ne!(v1_alloc, v4_alloc, "Test setup: v1 and v4 should have different allocations");
 
         asm.resolve_ssa(&intervals, &assignments);
@@ -4609,7 +4653,7 @@ mod tests {
         assert!(has_mov, "Expected Mov in split block for v1->v4");
 
         // b2->b3 is not a critical edge (b2 has single succ), so moves go before Jmp in b2
-        let v3_alloc = assignments[v3.vreg_idx().0].unwrap();
+        let v3_alloc = assignments[v3.vreg_idx()].unwrap();
         let b2_insns = &asm.basic_blocks[b2.0].insns;
         if v3_alloc != v4_alloc {
             // Check that a Mov was inserted before the Jmp in b2
@@ -4678,10 +4722,10 @@ mod tests {
         let regs = &ALLOC_REGS[..num_regs];
 
         // v0 should be spilled (long-lived, only 2 regs)
-        assert!(matches!(assignments[v0.vreg_idx().0], Some(Allocation::Stack(_))),
+        assert!(matches!(assignments[v0.vreg_idx()], Some(Allocation::Stack(_))),
             "v0 should be spilled to stack");
         // v1 should be in a register
-        assert!(matches!(assignments[v1.vreg_idx().0], Some(Allocation::Reg(_))),
+        assert!(matches!(assignments[v1.vreg_idx()], Some(Allocation::Reg(_))),
             "v1 should be in a register");
 
         // Run the pipeline: handle_caller_saved_regs then resolve_ssa
@@ -4697,7 +4741,7 @@ mod tests {
         assert!(!pushes.is_empty(), "Expected at least one saved register across CCall");
 
         // The survivor register should match v1's allocation
-        let v1_reg = match assignments[v1.vreg_idx().0].unwrap() {
+        let v1_reg = match assignments[v1.vreg_idx()].unwrap() {
             Allocation::Reg(n) => Opnd::Reg(regs[n]),
             Allocation::Fixed(reg) => Opnd::Reg(reg),
             _ => unreachable!(),

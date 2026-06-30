@@ -1260,7 +1260,7 @@ mod tests {
         (asm, CodeBlock::new_dummy())
     }
 
-    fn stack_mem(stack_idx: usize) -> Opnd {
+    fn stack_mem(stack_idx: StackIdx) -> Opnd {
         Opnd::Mem(Mem {
             base: MemBase::Stack { stack_idx, num_bits: 64 },
             disp: 0,
@@ -1268,7 +1268,7 @@ mod tests {
         })
     }
 
-    fn stack_indirect_mem(stack_idx: usize) -> Opnd {
+    fn stack_indirect_mem(stack_idx: StackIdx) -> Opnd {
         Opnd::Mem(Mem {
             base: MemBase::StackIndirect { stack_idx },
             disp: 0,
