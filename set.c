@@ -1503,7 +1503,7 @@ set_i_select(VALUE set)
  *  call-seq:
  *    replace(enumerable) -> self
  *
- *  Replaces the contents +self+ with the contents of the given +enumerable+:
+ *  Replaces the contents +self+ with the contents of the given +enumerable+;
  *  returns +self+:
  *
  *    set = Set[1, 'c', :s] # => Set[1, "c", :s]
