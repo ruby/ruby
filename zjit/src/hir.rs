@@ -993,7 +993,7 @@ pub enum Insn {
     ArrayMax { elements: Vec<InsnId>, state: InsnId },
     ArrayMin { elements: Vec<InsnId>, state: InsnId },
     ArrayInclude { elements: Vec<InsnId>, target: InsnId, state: InsnId },
-    ArrayPackBuffer { elements: Vec<InsnId>, fmt: InsnId, buffer: Option<InsnId>, state: InsnId },
+    ArrayPackBuffer { elements: InsnIdList, fmt: InsnId, buffer: Option<InsnId>, state: InsnId },
     DupArrayInclude { ary: VALUE, target: InsnId, state: InsnId },
     /// Extend `left` with the elements from `right`. `left` and `right` must both be `Array`.
     ArrayExtend { left: InsnId, right: InsnId, state: InsnId },
@@ -1348,7 +1348,7 @@ macro_rules! for_each_operand_impl {
                 $visit_one!(*state);
             }
             Insn::ArrayPackBuffer { elements, fmt, buffer, state, .. } => {
-                $visit_many!(elements);
+                $visit_list!(*elements);
                 $visit_one!(*fmt);
                 if let Some(buffer) = buffer {
                     $visit_one!(*buffer);
@@ -2050,6 +2050,7 @@ impl<'a> std::fmt::Display for InsnPrinter<'a> {
                 write!(f, " | {target}")
             }
             Insn::ArrayPackBuffer { elements, fmt, buffer, .. } => {
+                let elements = self.pool.map_or(&[][..], |pool| pool.get(*elements));
                 write!(f, "ArrayPackBuffer ")?;
                 for element in elements {
                     write!(f, "{element}, ")?;
@@ -3046,7 +3047,7 @@ impl Function {
         // Operands stored in the operand pool (e.g. CCall/Send/PushInlineFrame/
         // SendForward/InvokeSuper/InvokeSuperForward args) are shared by handle with
         // the original insn. Duplicate the list so remapping below doesn't mutate the canonical entry.
-        if let Insn::CCall { args, .. } | Insn::Send { args, .. } | Insn::PushInlineFrame { args, .. } | Insn::SendForward { args, .. } | Insn::InvokeSuper { args, .. } | Insn::InvokeSuperForward { args, .. } | Insn::InvokeBuiltin { args, .. } = &mut result {
+        if let Insn::CCall { args, .. } | Insn::Send { args, .. } | Insn::PushInlineFrame { args, .. } | Insn::SendForward { args, .. } | Insn::InvokeSuper { args, .. } | Insn::InvokeSuperForward { args, .. } | Insn::InvokeBuiltin { args, .. } | Insn::ArrayPackBuffer { elements: args, .. } = &mut result {
             let dup = self.operand_pool.borrow().get(*args).to_vec();
             *args = self.operand_pool.borrow_mut().push(&dup);
         }
@@ -6634,12 +6635,12 @@ impl Function {
                 }
                 Ok(())
             }
-            Insn::ArrayPackBuffer { ref elements, fmt, buffer, .. } => {
+            Insn::ArrayPackBuffer { elements, fmt, buffer, .. } => {
                 self.assert_subtype(insn_id, fmt, types::BasicObject)?;
                 if let Some(buffer) = buffer {
                     self.assert_subtype(insn_id, buffer, types::BasicObject)?;
                 }
-                for &element in elements {
+                for &element in self.operands(elements).to_vec().iter() {
                     self.assert_subtype(insn_id, element, types::BasicObject)?;
                 }
                 Ok(())
@@ -7724,13 +7725,13 @@ fn add_iseq_to_hir(
                         VM_OPT_NEWARRAY_SEND_PACK => {
                             let fmt = state.stack_pop()?;
                             let elements = state.stack_pop_n(count - 1)?;
-                            (BOP_PACK, Insn::ArrayPackBuffer { elements, fmt, buffer: None, state: exit_id })
+                            (BOP_PACK, Insn::ArrayPackBuffer { elements: fun.push_operands(&elements), fmt, buffer: None, state: exit_id })
                         }
                         VM_OPT_NEWARRAY_SEND_PACK_BUFFER => {
                             let buffer = state.stack_pop()?;
                             let fmt = state.stack_pop()?;
                             let elements = state.stack_pop_n(count - 2)?;
-                            (BOP_PACK, Insn::ArrayPackBuffer { elements, fmt, buffer: Some(buffer), state: exit_id })
+                            (BOP_PACK, Insn::ArrayPackBuffer { elements: fun.push_operands(&elements), fmt, buffer: Some(buffer), state: exit_id })
                         }
                         _ => {
                             // Unknown opcode; side-exit into the interpreter
