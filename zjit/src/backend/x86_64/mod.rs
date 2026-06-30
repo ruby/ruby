@@ -959,7 +959,7 @@ impl Assembler {
                         Target::CodePtr(code_ptr) => jmp_ptr(cb, code_ptr),
                         Target::Label(label) => jmp_label(cb, label),
                         Target::Block(ref edge) => jmp_label(cb, self.block_label(edge.target)),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
+                        Target::SideExit(..) => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 }
 
@@ -968,7 +968,7 @@ impl Assembler {
                         Target::CodePtr(code_ptr) => je_ptr(cb, code_ptr),
                         Target::Label(label) => je_label(cb, label),
                         Target::Block(ref edge) => je_label(cb, self.block_label(edge.target)),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
+                        Target::SideExit(..) => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 }
 
@@ -977,7 +977,7 @@ impl Assembler {
                         Target::CodePtr(code_ptr) => jne_ptr(cb, code_ptr),
                         Target::Label(label) => jne_label(cb, label),
                         Target::Block(ref edge) => jne_label(cb, self.block_label(edge.target)),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
+                        Target::SideExit(..) => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 }
 
@@ -986,7 +986,7 @@ impl Assembler {
                         Target::CodePtr(code_ptr) => jl_ptr(cb, code_ptr),
                         Target::Label(label) => jl_label(cb, label),
                         Target::Block(ref edge) => jl_label(cb, self.block_label(edge.target)),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
+                        Target::SideExit(..) => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 },
 
@@ -995,7 +995,7 @@ impl Assembler {
                         Target::CodePtr(code_ptr) => jg_ptr(cb, code_ptr),
                         Target::Label(label) => jg_label(cb, label),
                         Target::Block(ref edge) => jg_label(cb, self.block_label(edge.target)),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
+                        Target::SideExit(..) => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 },
 
@@ -1004,7 +1004,7 @@ impl Assembler {
                         Target::CodePtr(code_ptr) => jge_ptr(cb, code_ptr),
                         Target::Label(label) => jge_label(cb, label),
                         Target::Block(ref edge) => jge_label(cb, self.block_label(edge.target)),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
+                        Target::SideExit(..) => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 },
 
@@ -1013,7 +1013,7 @@ impl Assembler {
                         Target::CodePtr(code_ptr) => jbe_ptr(cb, code_ptr),
                         Target::Label(label) => jbe_label(cb, label),
                         Target::Block(ref edge) => jbe_label(cb, self.block_label(edge.target)),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
+                        Target::SideExit(..) => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 },
 
@@ -1022,7 +1022,7 @@ impl Assembler {
                         Target::CodePtr(code_ptr) => jb_ptr(cb, code_ptr),
                         Target::Label(label) => jb_label(cb, label),
                         Target::Block(ref edge) => jb_label(cb, self.block_label(edge.target)),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
+                        Target::SideExit(..) => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 },
 
@@ -1031,7 +1031,7 @@ impl Assembler {
                         Target::CodePtr(code_ptr) => jz_ptr(cb, code_ptr),
                         Target::Label(label) => jz_label(cb, label),
                         Target::Block(ref edge) => jz_label(cb, self.block_label(edge.target)),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
+                        Target::SideExit(..) => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 }
 
@@ -1040,7 +1040,7 @@ impl Assembler {
                         Target::CodePtr(code_ptr) => jnz_ptr(cb, code_ptr),
                         Target::Label(label) => jnz_label(cb, label),
                         Target::Block(ref edge) => jnz_label(cb, self.block_label(edge.target)),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
+                        Target::SideExit(..) => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 }
 
@@ -1050,7 +1050,7 @@ impl Assembler {
                         Target::CodePtr(code_ptr) => jo_ptr(cb, code_ptr),
                         Target::Label(label) => jo_label(cb, label),
                         Target::Block(ref edge) => jo_label(cb, self.block_label(edge.target)),
-                        Target::SideExit { .. } => unreachable!("Target::SideExit should have been compiled by compile_exits"),
+                        Target::SideExit(..) => unreachable!("Target::SideExit should have been compiled by compile_exits"),
                     }
                 }
 
@@ -1388,7 +1388,7 @@ mod tests {
 
         let val64 = asm.add(CFP, Opnd::UImm(64));
         asm.store(Opnd::mem(64, SP, 0x10), val64);
-        let side_exit = Target::SideExit { reason: SideExitReason::Interrupt, exit: Box::new(SideExit { pc: 0.into(), iseq: std::ptr::null(), stack: vec![], locals: vec![], recompile: None }) };
+        let side_exit = Target::SideExit(Box::new(SideExitTarget { reason: SideExitReason::Interrupt, exit: SideExit { pc: 0.into(), iseq: std::ptr::null(), stack: vec![], locals: vec![], recompile: None } }));
         asm.push_insn(Insn::Joz(val64, side_exit));
         asm.mov(C_ARG_OPNDS[0], C_RET_OPND.with_num_bits(32));
         asm.mov(C_ARG_OPNDS[1], Opnd::mem(64, SP, -8));

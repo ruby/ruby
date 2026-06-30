@@ -171,7 +171,7 @@ impl BasicBlock {
         assert!(self.insns.last().unwrap().is_terminator());
         let extract_edge = |insn: &Insn| -> Option<BranchEdge> {
             if let Some(Target::Block(edge)) = insn.target() {
-                Some(edge.clone())
+                Some((**edge).clone())
             } else {
                 None
             }
@@ -600,6 +600,16 @@ pub struct SideExitRecompile {
     pub insn_idx: u32,
 }
 
+/// Payload of `Target::SideExit`, boxed to keep `Target` (and every `Insn`
+/// variant that embeds it) small.
+#[derive(Clone)]
+pub struct SideExitTarget {
+    /// Context used for compiling the side exit.
+    pub exit: SideExit,
+    /// We use this to increment exit counters.
+    pub reason: SideExitReason,
+}
+
 /// Branch target (something that we can jump to)
 /// for branch instructions
 #[derive(Clone)]
@@ -609,16 +619,10 @@ pub enum Target
     CodePtr(CodePtr),
     /// A label within the generated code
     Label(Label),
-    /// An LIR branch edge
-    Block(BranchEdge),
-    /// Side exit to the interpreter
-    SideExit {
-        /// Context used for compiling the side exit. Boxed to keep `Target`
-        /// (and every `Insn` variant that embeds it) small.
-        exit: Box<SideExit>,
-        /// We use this to increment exit counters
-        reason: SideExitReason,
-    },
+    /// An LIR branch edge. Boxed to keep `Target` small.
+    Block(Box<BranchEdge>),
+    /// Side exit to the interpreter. Boxed (see `SideExitTarget`) to keep `Target` small.
+    SideExit(Box<SideExitTarget>),
 }
 
 impl fmt::Debug for Target {
@@ -640,8 +644,8 @@ impl fmt::Debug for Target {
                     write!(f, "))")
                 }
             }
-            Target::SideExit { exit, reason } => {
-                write!(f, "SideExit {{ exit: {:?}, reason: {:?} }}", exit, reason)
+            Target::SideExit(data) => {
+                write!(f, "SideExit {{ exit: {:?}, reason: {:?} }}", data.exit, data.reason)
             }
         }
     }
@@ -916,9 +920,9 @@ pub enum Insn {
 macro_rules! target_for_each_operand_impl {
     ($self:expr, $visit_many:ident) => {
         match $self {
-            Target::SideExit { exit, .. } => {
-                visit_many!(exit.stack);
-                visit_many!(exit.locals);
+            Target::SideExit(data) => {
+                visit_many!(data.exit.stack);
+                visit_many!(data.exit.locals);
             }
             Target::Block(edge) => {
                 visit_many!(edge.args);
@@ -2227,10 +2231,10 @@ impl Assembler
                     for mov in moves {
                         self.basic_blocks[new_block_id.0].push_insn(mov);
                     }
-                    self.basic_blocks[new_block_id.0].push_insn(Insn::Jmp(Target::Block(BranchEdge {
+                    self.basic_blocks[new_block_id.0].push_insn(Insn::Jmp(Target::Block(Box::new(BranchEdge {
                         target: successor,
                         args: vec![],
-                    })));
+                    }))));
 
                     // Redirect predecessor's branch to the new block
                     let pred_insns = &mut self.basic_blocks[pred_id.0].insns;
@@ -2751,7 +2755,7 @@ impl Assembler
         for block_id in self.block_order() {
             let block = &self.basic_blocks[block_id.0];
             for (idx, insn) in block.insns.iter().enumerate() {
-                if let Some(target @ Target::SideExit { .. }) = insn.target() {
+                if let Some(target @ Target::SideExit(..)) = insn.target() {
                     targets.insert((block_id.0, idx), target.clone());
                 }
             }
@@ -2789,7 +2793,8 @@ impl Assembler
         for ((block_id, idx), target) in targets {
             // Compile a side exit. Note that this is past register assignment,
             // so you can't use an instruction that returns a VReg.
-            if let Target::SideExit { exit, reason } = target {
+            if let Target::SideExit(data) = target {
+                let SideExitTarget { exit, reason } = *data;
                 // Only record the exit if `trace_side_exits` is defined and the counter is either the one specified
                 let should_record_exit = get_option!(trace_side_exits).map(|trace| match trace {
                     TraceExits::All => true,
@@ -2835,7 +2840,7 @@ impl Assembler
                     self.write_label(new_exit.clone());
                     asm_comment!(self, "Exit: {}", exit.pc);
                     compile_exit(self, &exit, None);
-                    compiled_exits.insert(*exit, new_exit.unwrap_label());
+                    compiled_exits.insert(exit, new_exit.unwrap_label());
                     new_exit
                 };
 
@@ -3217,7 +3222,7 @@ fn format_insn_compact(asm: &Assembler, insn: &Insn) -> String {
         match target {
             Target::CodePtr(code_ptr) => output.push_str(&format!(" {code_ptr:?}")),
             Target::Label(Label(label_idx)) => output.push_str(&format!(" {}", asm.label_names[*label_idx])),
-            Target::SideExit { reason, .. } => output.push_str(&format!(" Exit({reason})")),
+            Target::SideExit(data) => output.push_str(&format!(" Exit({})", data.reason)),
             Target::Block(edge) => {
                 let label = asm.block_label(edge.target);
                 let name = &asm.label_names[label.0];
@@ -3238,7 +3243,7 @@ fn format_insn_compact(asm: &Assembler, insn: &Insn) -> String {
     }
 
     // Print operands (but skip branch args since they're already printed with target)
-    if let Some(Target::SideExit { .. }) = insn.target() {
+    if let Some(Target::SideExit(..)) = insn.target() {
         match insn {
             Insn::Joz(opnd, _) |
             Insn::Jonz(opnd, _) |
@@ -3342,7 +3347,7 @@ impl fmt::Display for Assembler {
                             match target {
                                 Target::CodePtr(code_ptr) => write!(f, " {code_ptr:?}")?,
                                 Target::Label(Label(label_idx)) => write!(f, " {}", label_name(self, *label_idx, &label_counts))?,
-                                Target::SideExit { reason, .. } => write!(f, " Exit({reason})")?,
+                                Target::SideExit(data) => write!(f, " Exit({})", data.reason)?,
                                 Target::Block(edge) => {
                                     let label = self.block_label(edge.target);
                                     let name = label_name(self, label.0, &label_counts);
@@ -3363,7 +3368,7 @@ impl fmt::Display for Assembler {
                         }
 
                         // Print list of operands
-                        if let Some(Target::SideExit { .. }) = insn.target() {
+                        if let Some(Target::SideExit(..)) = insn.target() {
                             // If the instruction has a SideExit, avoid using opnd_iter(), which has stack/locals.
                             // Here, only handle instructions that have both Opnd and Target.
                             match insn {
@@ -3918,9 +3923,11 @@ mod tests {
 
     #[test]
     fn test_size_of_insn() {
-        // PatchPoint (see `PatchPointData`) and CCall (see `CCallData`) box their
-        // fields, so neither dominates the enum size any longer.
-        assert_eq!(std::mem::size_of::<Insn>(), 64);
+        // PatchPoint (PatchPointData), CCall (CCallData), and Target (Block/SideExit
+        // payloads) are all boxed, so none dominates the enum. The floor is now the
+        // 3-operand arithmetic/CSel variants: 3 * Opnd (48) + 8 discriminant (Opnd has
+        // no niche to absorb it) = 56. Going lower means boxing the hottest insns.
+        assert_eq!(std::mem::size_of::<Insn>(), 56);
     }
 
     #[test]
@@ -3929,6 +3936,7 @@ mod tests {
         assert_eq!(std::mem::size_of::<MemBase>(), 8);
         assert_eq!(std::mem::size_of::<Mem>(), 16);
         assert_eq!(std::mem::size_of::<Opnd>(), 16);
+        assert_eq!(std::mem::size_of::<Target>(), 16);
     }
 
     #[test]
@@ -4100,10 +4108,10 @@ mod tests {
         asm.write_label(label_b1);
         asm.basic_blocks[b1.0].add_parameter(r10);
         asm.basic_blocks[b1.0].add_parameter(r11);
-        asm.basic_blocks[b1.0].push_insn(Insn::Jmp(Target::Block(BranchEdge {
+        asm.basic_blocks[b1.0].push_insn(Insn::Jmp(Target::Block(Box::new(BranchEdge {
             target: b2,
             args: vec![Opnd::UImm(1), r11],
-        })));
+        }))));
 
         // Build b2: define(r12, r13) { cmp(r13, imm(1)); blt(...) }
         asm.set_current_block(b2);
@@ -4112,8 +4120,8 @@ mod tests {
         asm.basic_blocks[b2.0].add_parameter(r12);
         asm.basic_blocks[b2.0].add_parameter(r13);
         asm.basic_blocks[b2.0].push_insn(Insn::Cmp { left: r13, right: Opnd::UImm(1) });
-        asm.basic_blocks[b2.0].push_insn(Insn::Jl(Target::Block(BranchEdge { target: b4, args: vec![] })));
-        asm.basic_blocks[b2.0].push_insn(Insn::Jmp(Target::Block(BranchEdge { target: b3, args: vec![] })));
+        asm.basic_blocks[b2.0].push_insn(Insn::Jl(Target::Block(Box::new(BranchEdge { target: b4, args: vec![] }))));
+        asm.basic_blocks[b2.0].push_insn(Insn::Jmp(Target::Block(Box::new(BranchEdge { target: b3, args: vec![] }))));
 
         // Build b3: r14 = mul(r12, r13); r15 = sub(r13, imm(1)); jump(edge(b2, [r14, r15]))
         asm.set_current_block(b3);
@@ -4123,10 +4131,10 @@ mod tests {
         let r15 = asm.new_vreg(64);
         asm.basic_blocks[b3.0].push_insn(Insn::Mul { left: r12, right: r13, out: r14 });
         asm.basic_blocks[b3.0].push_insn(Insn::Sub { left: r13, right: Opnd::UImm(1), out: r15 });
-        asm.basic_blocks[b3.0].push_insn(Insn::Jmp(Target::Block(BranchEdge {
+        asm.basic_blocks[b3.0].push_insn(Insn::Jmp(Target::Block(Box::new(BranchEdge {
             target: b2,
             args: vec![r14, r15],
-        })));
+        }))));
 
         // Build b4: out = add(r10, r12); ret out
         asm.set_current_block(b4);
@@ -4225,10 +4233,10 @@ mod tests {
         asm.set_current_block(b1);
         let label_b1 = asm.new_label("bb0");
         asm.write_label(label_b1);
-        asm.basic_blocks[b1.0].push_insn(Insn::Jmp(Target::Block(BranchEdge {
+        asm.basic_blocks[b1.0].push_insn(Insn::Jmp(Target::Block(Box::new(BranchEdge {
             target: b2,
             args: vec![Opnd::mem(64, base, 8)],
-        })));
+        }))));
 
         let out_vregs = asm.basic_blocks[b1.0].out_vregs();
         assert_eq!(out_vregs, vec![base.vreg_idx()]);
@@ -4610,8 +4618,8 @@ mod tests {
         asm.basic_blocks[b1.0].push_insn(Insn::Add { left: Opnd::UImm(123), right: Opnd::UImm(0), out: v0 });
         asm.basic_blocks[b1.0].push_insn(Insn::Add { left: v0, right: Opnd::UImm(456), out: v1 });
         asm.basic_blocks[b1.0].push_insn(Insn::Cmp { left: v1, right: Opnd::UImm(0) });
-        asm.basic_blocks[b1.0].push_insn(Insn::Jl(Target::Block(BranchEdge { target: b2, args: vec![v0] })));
-        asm.basic_blocks[b1.0].push_insn(Insn::Jmp(Target::Block(BranchEdge { target: b3, args: vec![v1] })));
+        asm.basic_blocks[b1.0].push_insn(Insn::Jl(Target::Block(Box::new(BranchEdge { target: b2, args: vec![v0] }))));
+        asm.basic_blocks[b1.0].push_insn(Insn::Jmp(Target::Block(Box::new(BranchEdge { target: b3, args: vec![v1] }))));
 
         // b2(v2): v3 = Add(v2, 789), Jmp(b3, [v3])
         asm.set_current_block(b2);
@@ -4621,7 +4629,7 @@ mod tests {
         asm.basic_blocks[b2.0].add_parameter(v2);
         let v3 = asm.new_vreg(64);
         asm.basic_blocks[b2.0].push_insn(Insn::Add { left: v2, right: Opnd::UImm(789), out: v3 });
-        asm.basic_blocks[b2.0].push_insn(Insn::Jmp(Target::Block(BranchEdge { target: b3, args: vec![v3] })));
+        asm.basic_blocks[b2.0].push_insn(Insn::Jmp(Target::Block(Box::new(BranchEdge { target: b3, args: vec![v3] }))));
 
         // b3(v4): CRet(v4)
         asm.set_current_block(b3);
