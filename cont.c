@@ -2755,32 +2755,42 @@ return_fiber(bool terminate)
     rb_fiber_t *fiber = fiber_current();
     rb_fiber_t *prev = fiber->prev;
 
-    if (prev && (!terminate || !FIBER_TERMINATED_P(prev))) {
+    if (!terminate) {
+        // Yield: only a live resume back-pointer is a valid target.
+        // `prev->resuming_fiber == fiber` identifies a genuine resume; a transfer
+        // fallback (set in fiber_switch for termination) is *not* resumable via
+        // yield, so we leave it intact and raise, as if `prev` were not set.
+        if (prev && prev->resuming_fiber == fiber) {
+            fiber->prev = NULL;
+            prev->resuming_fiber = NULL;
+            return prev;
+        }
+
+        rb_raise(rb_eFiberError, "attempt to yield on a not resumed fiber");
+    }
+
+    // Terminate: return to the fiber that resumed or (most recently) transferred
+    // into us, provided it is still alive:
+    if (prev && !FIBER_TERMINATED_P(prev)) {
         fiber->prev = NULL;
         prev->resuming_fiber = NULL;
         return prev;
     }
-    else {
-        if (!terminate) {
-            rb_raise(rb_eFiberError, "attempt to yield on a not resumed fiber");
-        }
 
-        // A transfer fallback (see fiber_switch) may point at an
-        // already-terminated fiber; drop it and fall back to the root fiber's
-        // resuming chain below.
-        fiber->prev = NULL;
+    // Otherwise (no prev, or a transfer fallback pointing at an already-terminated
+    // fiber), fall back to the root fiber's resuming chain:
+    fiber->prev = NULL;
 
-        rb_thread_t *th = GET_THREAD();
-        rb_fiber_t *root_fiber = th->root_fiber;
+    rb_thread_t *th = GET_THREAD();
+    rb_fiber_t *root_fiber = th->root_fiber;
 
-        VM_ASSERT(root_fiber != NULL);
+    VM_ASSERT(root_fiber != NULL);
 
-        // search resuming fiber
-        for (fiber = root_fiber; fiber->resuming_fiber; fiber = fiber->resuming_fiber) {
-        }
-
-        return fiber;
+    // search resuming fiber
+    for (fiber = root_fiber; fiber->resuming_fiber; fiber = fiber->resuming_fiber) {
     }
+
+    return fiber;
 }
 
 VALUE
