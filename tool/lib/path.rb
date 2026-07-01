@@ -86,13 +86,13 @@ module Path
   end
 
   private def ln_target_directory(dest, target_directory)
-    if target_directory
-      dest
+    if target_directory and File.directory?(dest)
+      parent = dest
     else
       parent = File.dirname(dest)
-      File.directory?(parent) or mkdir_p(parent)
-      parent
     end
+    File.directory?(parent) or mkdir_p(parent)
+    parent
   end
 
   case (CROSS_COMPILING || RUBY_PLATFORM)
