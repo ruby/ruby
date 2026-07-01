@@ -2163,6 +2163,7 @@ rb_set_size(VALUE set)
  *
  * === Methods for Querying
  *
+ * - #compare_by_identity?:
  *   Returns whether the set considers only identity
  *   when comparing elements.
  * - #length (aliased as #size):
