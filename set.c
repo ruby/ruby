@@ -1480,11 +1480,19 @@ set_i_keep_if(VALUE set)
 
 /*
  *  call-seq:
- *    select! { |o| ... } -> self
+ *    select! {|element| ... } -> self or nil
  *    select! -> enumerator
  *
- *  Equivalent to Set#keep_if, but returns nil if no changes were made.
- *  Returns an enumerator if no block is given.
+ *  With a block given, like #keep_if, but returns +nil+ if no changes were made:
+ *
+ *    set = Set[*0..9]           # => Set[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+ *    set.select! {|i| i.even? } # => Set[0, 2, 4, 6, 8]
+ *    set.select! {|i| i.even? } # => nil
+ *    set.select! {|i| i.odd? }  # => Set[]
+ *
+ *  With no block given, returns an Enumerator.
+ *
+ *  Related: see {Methods for Deleting}[rdoc-ref:Set@Methods+for+Deleting].
  */
 static VALUE
 set_i_select(VALUE set)
