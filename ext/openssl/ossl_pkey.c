@@ -771,6 +771,96 @@ ossl_pkey_inspect(VALUE self)
     return str;
 }
 
+#ifdef HAVE_EVP_PKEY_GET_PARAMS
+/*
+ * call-seq:
+ *    pkey.get_param(key) -> String or OpenSSL::BN
+ *
+ * Gets a parameter from the key. This is a low-level interface to OpenSSL's
+ * EVP_PKEY_get_params() function, available in OpenSSL 3.0 or later.
+ *
+ * Check the relevant EVP_PKEY-* man page, or the documentation for the OpenSSL
+ * provider in use, for the supported parameter keys and their return types.
+ *
+ * See the man page EVP_PKEY_get_params(3) for details.
+ */
+static VALUE
+ossl_pkey_get_param(VALUE self, VALUE keyv)
+{
+    EVP_PKEY *pkey;
+    const OSSL_PARAM *gettable_params, *p;
+    OSSL_PARAM params[] = {
+        { NULL, 0, NULL, 0, OSSL_PARAM_UNMODIFIED },
+        OSSL_PARAM_END,
+    };
+    VALUE ret, tmp = 0;
+
+    GetPKey(self, pkey);
+    gettable_params = EVP_PKEY_gettable_params(pkey);
+    if (!gettable_params)
+        ossl_raise(ePKeyError, "EVP_PKEY_gettable_params");
+    p = OSSL_PARAM_locate_const(gettable_params, StringValueCStr(keyv));
+    if (!p)
+        ossl_raise(ePKeyError, "unrecognized OSSL_PARAM key: %"PRIsVALUE, keyv);
+
+    params[0].key = p->key;
+    params[0].data_type = p->data_type;
+    if (!EVP_PKEY_get_params(pkey, params))
+        ossl_raise(ePKeyError, "EVP_PKEY_get_params");
+    if (!OSSL_PARAM_modified(&params[0]))
+        ossl_raise(ePKeyError, "OSSL_PARAM_modified");
+
+    switch (p->data_type) {
+      case OSSL_PARAM_INTEGER:
+      case OSSL_PARAM_UNSIGNED_INTEGER:
+        ret = ossl_bn_new(BN_value_one());
+        params[0].data_size =
+            params[0].return_size > 0 ? params[0].return_size : 1;
+        params[0].data = ALLOCV(tmp, params[0].data_size);
+        break;
+      case OSSL_PARAM_UTF8_STRING:
+      case OSSL_PARAM_OCTET_STRING:
+        ret = rb_str_new(NULL, params[0].return_size);
+        if (p->data_type == OSSL_PARAM_UTF8_STRING)
+            rb_enc_associate_index(ret, rb_utf8_encindex());
+        params[0].data_size = params[0].return_size;
+        params[0].data = RSTRING_PTR(ret);
+        break;
+      default:
+        /*
+         * As of OpenSSL 4.0, the following data types are defined, but are
+         * not actually used in EVP_PKEY_gettable_params(). So leave them
+         * unimplemented for now:
+         *   - OSSL_PARAM_REAL (double)
+         *   - OSSL_PARAM_UTF8_PTR (C string)
+         *   - OSSL_PARAM_OCTET_PTR (arbitrary pointer?)
+         */
+        ossl_raise(ePKeyError, "unsupported OSSL_PARAM data type %d for key %s",
+                   p->data_type, p->key);
+    }
+    if (!EVP_PKEY_get_params(pkey, params))
+        ossl_raise(ePKeyError, "EVP_PKEY_get_params");
+
+    switch (p->data_type) {
+      case OSSL_PARAM_INTEGER:
+      case OSSL_PARAM_UNSIGNED_INTEGER: {
+        BIGNUM *bn = GetBNPtr(ret);
+        if (!OSSL_PARAM_get_BN(&params[0], &bn))
+            ossl_raise(eOSSLError, "OSSL_PARAM_get_BN");
+        break;
+      }
+      case OSSL_PARAM_UTF8_STRING:
+      case OSSL_PARAM_OCTET_STRING:
+        rb_str_set_len(ret, params[0].return_size);
+        break;
+    }
+    ALLOCV_END(tmp);
+    return ret;
+}
+#else
+#define ossl_pkey_get_param rb_f_notimplement
+#endif
+
 /*
  * call-seq:
  *    pkey.to_text -> string
@@ -1868,6 +1958,7 @@ Init_ossl_pkey(void)
 #endif
     rb_define_method(cPKey, "oid", ossl_pkey_oid, 0);
     rb_define_method(cPKey, "inspect", ossl_pkey_inspect, 0);
+    rb_define_method(cPKey, "get_param", ossl_pkey_get_param, 1);
     rb_define_method(cPKey, "to_text", ossl_pkey_to_text, 0);
     rb_define_method(cPKey, "private_to_der", ossl_pkey_private_to_der, -1);
     rb_define_method(cPKey, "private_to_pem", ossl_pkey_private_to_pem, -1);
