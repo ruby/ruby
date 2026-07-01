@@ -77,6 +77,10 @@ module Prism
         parts[10]
       end
 
+      def catch_table
+        parts[12]
+      end
+
       def instructions
         parts[13]
       end
@@ -96,6 +100,20 @@ module Prism
 
             yield ISeq.new(opnd)
           end
+        end
+
+        # The handler for a rescue clause is compiled into its own iseq that is
+        # reachable only through the catch table. Its local table only ever
+        # holds the implicit `$!` error variable (rescue clauses do not
+        # introduce user locals of their own -- `rescue => e` puts `e` in the
+        # enclosing scope), and prism does not model it as a scope, so we treat
+        # it as transparent and descend straight into any iseqs nested within
+        # it (e.g. a block or an `END {}` inside a rescue clause). Only
+        # `:rescue` entries are followed: `:break`/`:next`/`:redo`/`:retry`
+        # entries either have no iseq or reference one already reachable through
+        # the instructions, and `:ensure` bodies are compiled inline.
+        catch_table.each do |entry|
+          ISeq.new(entry[1]).each_child { |child| yield child } if entry[0] == :rescue && entry[1].is_a?(Array)
         end
       end
     end

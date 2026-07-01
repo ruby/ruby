@@ -1364,8 +1364,7 @@ rb_check_type(VALUE x, int t)
         rb_bug(UNDEF_LEAKED);
     }
 
-    xt = TYPE(x);
-    if (xt != t || (xt == T_DATA && rbimpl_rtypeddata_p(x))) {
+    if (t == T_DATA) {
         /*
          * Typed data is not simple `T_DATA`, but in a sense an
          * extension of `struct RVALUE`, which are incompatible with
@@ -1374,6 +1373,10 @@ rb_check_type(VALUE x, int t)
          * So it is not enough to just check `T_DATA`, it must be
          * identified by its `type` using `Check_TypedStruct` instead.
          */
+        rb_unexpected_object_type(x, builtin_types[t]);
+    }
+    xt = TYPE(x);
+    if (xt != t) {
         unexpected_type(x, xt, t);
     }
 }
@@ -1533,7 +1536,7 @@ exc_initialize(int argc, VALUE *argv, VALUE exc)
  *
  *    x0 = StandardError.new('Boom') # => #<StandardError: Boom>
  *    x1 = x0.exception              # => #<StandardError: Boom>
- *    x0.__id__ == x1.__id__         # => true
+ *    x0.equal?(x1)                  # => true
  *
  *  With {string-convertible object}[rdoc-ref:implicit_conversion.rdoc@String-Convertible+Objects]
  *  +message+ (even the same as the original message),
@@ -1541,7 +1544,7 @@ exc_initialize(int argc, VALUE *argv, VALUE exc)
  *  and whose message is the given +message+:
  *
  *    x1 = x0.exception('Boom') # => #<StandardError: Boom>
- *    x0..equal?(x1)            # => false
+ *    x0.equal?(x1)             # => false
  *
  */
 
@@ -2530,7 +2533,7 @@ static const rb_data_type_t name_err_mesg_data_type = {
         NULL, // No external memory to report,
         name_err_mesg_mark_and_move,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 /* :nodoc: */

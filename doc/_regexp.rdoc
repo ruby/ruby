@@ -1128,6 +1128,13 @@ Regexp in extended mode:
   re = /#{pattern}/x
   re.match('MCMXLIII') # => #<MatchData "MCMXLIII" 1:"CM" 2:"XL" 3:"III">
 
+Comments in regexp literals cannot include unescaped terminator
+characters:
+
+  /
+    foo # the following slash \/ must be escaped
+  /x
+
 === Interpolation Mode
 
 Modifier +o+ means that the first time a literal regexp with interpolations

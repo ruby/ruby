@@ -26,29 +26,38 @@ jobs:
       matrix:
         include:
           - test_task: check
-            os: macos-14
+            os: macos-26
           - test_task: check
-            os: macos-14
+            os: macos-15
             configure_args: '--with-gcc=gcc-14'
           - test_task: check
-            os: macos-14
+            os: macos-26
             configure_args: '--with-jemalloc --with-opt-dir=$(brew --prefix jemalloc)'
           - test_task: check
-            os: macos-14
+            os: macos-26
             configure_args: '--with-gmp'
           - test_task: test-all
             test_opts: --repeat-count=2
-            os: macos-14
+            os: macos-26
           - test_task: test-bundler-parallel
-            os: macos-14
+            os: macos-26
           - test_task: test-bundled-gems
-            os: macos-14
+            os: macos-26
           - test_task: check
             os: macos-15
+          - test_task: check
+            os: macos-15-intel
+          - test_task: check
+            os: macos-14
       fail-fast: false
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
+      # The macos-15-intel runner image ships a pre-installed Ruby under
+      # /usr/local whose default-gem dir collides with the build's on the
+      # 3.3.0 ABI path. Build under an isolated prefix so Gem.default_dir does
+      # not scan that stale bundler default-gem stub during rake autoload.
+      PREFIX: ${{ matrix.os == 'macos-15-intel' && '/tmp/ruby-prefix' || '' }}
 
     runs-on: ${{ matrix.os }}
 
@@ -61,7 +70,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -77,6 +86,7 @@ jobs:
           makeup: true
           clean: true
           dummy-files: ${{ matrix.test_task == 'check' }}
+          bundled-gems-src-cache: ${{ matrix.test_task == 'test-bundled-gems' }}
           # Set fetch-depth: 0 so that Launchable can receive commits information.
           fetch-depth: 10
 
@@ -95,7 +105,7 @@ jobs:
         continue-on-error: true
 
       - name: Run configure
-        run: ../src/configure -C --disable-install-doc ${ruby_configure_args} ${{ matrix.configure_args }}
+        run: ../src/configure -C --disable-install-doc ${PREFIX:+--prefix="$PREFIX"} ${ruby_configure_args} ${{ matrix.configure_args }}
 
       - run: make prepare-gems
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
@@ -132,6 +142,10 @@ jobs:
           echo "TESTS=$TESTS ${{ matrix.test_opts }}" >> $GITHUB_ENV
           echo "RUBY_TEST_TIMEOUT_SCALE=10" >> $GITHUB_ENV # With --repeat-count=2, flaky test by timeout occurs frequently for some reason
         if: matrix.test_opts
+
+      - name: Set timeout scale
+        run: echo "RUBY_TEST_TIMEOUT_SCALE=10" >> $GITHUB_ENV # subprocess assertion timeouts flake on slower/contended macOS runners
+        if: ${{ matrix.test_task == 'check' }}
 
       - name: make ${{ matrix.test_task }}
         run: |

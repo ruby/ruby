@@ -1,0 +1,73 @@
+name: Setup directories etc.
+description: >-
+  Build baseruby for cross-compiling
+
+inputs:
+  srcdir:
+    required: true
+    default: ${{ github.workspace }}
+    description: >-
+      Directory of source codes.
+
+  builddir:
+    required: false
+    default: ${{ github.workspace }}/baseruby
+    description: >-
+      Where baseruby will be built.
+
+  installdir:
+    required: false
+    default: install
+    description: >-
+      The path where the baseruby will be installed to.
+      This is relative from the workspace.
+
+outputs:
+  ruby:
+    value: ${{ steps.build.outputs.installdir }}/bin/ruby
+    description: >-
+      The path of the executable baseruby.
+  dump_ast:
+    value: ${{ steps.build.outputs.installdir }}/bin/dump_ast
+    description: >-
+      The path of the executable dump_ast.
+
+runs:
+  using: composite
+
+  steps:
+    - name: Build baseruby
+      shell: bash
+      id: build
+      run: |
+        case "$installdir" in /*) ;; *) installdir="$PWD/$installdir";; esac
+        mkdir "$builddir"
+        ln -sr "$srcdir" "$builddir/.src"
+        pushd "$builddir"
+        .src/configure "--prefix=${installdir}" --disable-install-doc
+        CONFIGURE_ARGS=--with-out-ext=-test- make install
+        install dump_ast "${installdir}/bin"
+        {
+          echo "${installdir}/bin/dump_ast"
+          echo "${installdir}/.installed.list"
+          echo "${installdir}/"
+        } >> .installed.list
+        cp .installed.list "${installdir}/"
+        make distclean
+        rm .src
+        popd
+        rmdir "$builddir"
+        {
+          echo "installdir=${installdir}"
+        } | tee -a "$GITHUB_OUTPUT"
+      env:
+        srcdir: ${{ inputs.srcdir }}
+        builddir: ${{ inputs.builddir }}
+        installdir: ${{ inputs.installdir }}
+
+    - name: clean
+      uses: gacts/run-and-post-run@598d7a875d5620e0457490555b5e18e46082aa47 # v1.4.4
+      with:
+        working-directory: ${{ inputs.srcdir }}
+        post: |
+          ruby tool/rbuninstall.rb "${{ steps.build.outputs.installdir }}/.installed.list" > /dev/null

@@ -15,7 +15,7 @@ describe "Literal Regexps" do
   end
 
   it "yields a Regexp" do
-    /Hello/.should be_kind_of(Regexp)
+    /Hello/.should.is_a?(Regexp)
   end
 
   it "is frozen" do
@@ -27,11 +27,11 @@ describe "Literal Regexps" do
     2.times do |i|
       rs << /foo/
     end
-    rs[0].should equal(rs[1])
+    rs[0].should.equal?(rs[1])
   end
 
   it "throws SyntaxError for malformed literals" do
-    -> { eval('/(/') }.should raise_error(SyntaxError)
+    -> { eval('/(/') }.should.raise(SyntaxError)
   end
 
   #############################################################################
@@ -58,7 +58,7 @@ describe "Literal Regexps" do
 
   it "disallows first part of paired delimiters to be used as non-paired delimiters" do
     LanguageSpecs.paired_delimiters.each do |p0, p1|
-      -> { eval("%r#{p0} foo #{p0}") }.should raise_error(SyntaxError)
+      -> { eval("%r#{p0} foo #{p0}") }.should.raise(SyntaxError)
     end
   end
 
@@ -69,11 +69,11 @@ describe "Literal Regexps" do
   end
 
   it "disallows alphabets as non-paired delimiter with %r" do
-    -> { eval('%ra foo a') }.should raise_error(SyntaxError)
+    -> { eval('%ra foo a') }.should.raise(SyntaxError)
   end
 
   it "disallows spaces after %r and delimiter" do
-    -> { eval('%r !foo!') }.should raise_error(SyntaxError)
+    -> { eval('%r !foo!') }.should.raise(SyntaxError)
   end
 
   it "allows unescaped / to be used with %r" do
@@ -89,8 +89,8 @@ describe "Literal Regexps" do
     # Basic matching
     /./.match("foo").to_a.should == ["f"]
     # Basic non-matching
-    /./.match("").should be_nil
-    /./.match("\n").should be_nil
+    /./.match("").should == nil
+    /./.match("\n").should == nil
     /./.match("\0").to_a.should == ["\0"]
   end
 
@@ -100,7 +100,7 @@ describe "Literal Regexps" do
 
   it "supports (?> ) (embedded subexpression)" do
     /(?>foo)(?>bar)/.match("foobar").to_a.should == ["foobar"]
-    /(?>foo*)obar/.match("foooooooobar").should be_nil # it is possessive
+    /(?>foo*)obar/.match("foooooooobar").should == nil # it is possessive
   end
 
   it "supports (?# )" do
@@ -135,9 +135,9 @@ describe "Literal Regexps" do
   it "supports possessive quantifiers" do
     /fooA++bar/.match("fooAAAbar").to_a.should == ["fooAAAbar"]
 
-    /fooA++Abar/.match("fooAAAbar").should be_nil
-    /fooA?+Abar/.match("fooAAAbar").should be_nil
-    /fooA*+Abar/.match("fooAAAbar").should be_nil
+    /fooA++Abar/.match("fooAAAbar").should == nil
+    /fooA?+Abar/.match("fooAAAbar").should == nil
+    /fooA*+Abar/.match("fooAAAbar").should == nil
   end
 
   it "supports conditional regular expressions with positional capture groups" do

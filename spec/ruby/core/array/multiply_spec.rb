@@ -17,7 +17,7 @@ describe "Array#*" do
 
   it "raises a TypeError if the argument can neither be converted to a string nor an integer" do
     obj = mock('not a string or integer')
-    ->{ [1,2] * obj }.should raise_error(TypeError)
+    ->{ [1,2] * obj }.should.raise(TypeError)
   end
 
   it "converts the passed argument to a String rather than an Integer" do
@@ -28,15 +28,15 @@ describe "Array#*" do
   end
 
   it "raises a TypeError is the passed argument is nil" do
-    ->{ [1,2] * nil }.should raise_error(TypeError)
+    ->{ [1,2] * nil }.should.raise(TypeError)
   end
 
   it "raises an ArgumentError when passed 2 or more arguments" do
-    ->{ [1,2].send(:*, 1, 2) }.should raise_error(ArgumentError)
+    ->{ [1,2].send(:*, 1, 2) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError when passed no arguments" do
-    ->{ [1,2].send(:*) }.should raise_error(ArgumentError)
+    ->{ [1,2].send(:*) }.should.raise(ArgumentError)
   end
 end
 
@@ -50,7 +50,7 @@ describe "Array#* with an integer" do
 
   it "does not return self even if the passed integer is 1" do
     ary = [1, 2, 3]
-    (ary * 1).should_not equal(ary)
+    (ary * 1).should_not.equal?(ary)
   end
 
   it "properly handles recursive arrays" do
@@ -65,8 +65,8 @@ describe "Array#* with an integer" do
   end
 
   it "raises an ArgumentError when passed a negative integer" do
-    -> { [ 1, 2, 3 ] * -1 }.should raise_error(ArgumentError)
-    -> { [] * -1 }.should raise_error(ArgumentError)
+    -> { [ 1, 2, 3 ] * -1 }.should.raise(ArgumentError)
+    -> { [] * -1 }.should.raise(ArgumentError)
   end
 
   describe "with a subclass of Array" do
@@ -77,14 +77,14 @@ describe "Array#* with an integer" do
     end
 
     it "returns an Array instance" do
-      (@array * 0).should be_an_instance_of(Array)
-      (@array * 1).should be_an_instance_of(Array)
-      (@array * 2).should be_an_instance_of(Array)
+      (@array * 0).should.instance_of?(Array)
+      (@array * 1).should.instance_of?(Array)
+      (@array * 2).should.instance_of?(Array)
     end
 
     it "does not call #initialize on the subclass instance" do
       (@array * 2).should == [1, 2, 3, 4, 5, 1, 2, 3, 4, 5]
-      ScratchPad.recorded.should be_nil
+      ScratchPad.recorded.should == nil
     end
   end
 end

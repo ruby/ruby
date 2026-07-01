@@ -279,38 +279,67 @@ module FileUtils
   end
   private_module_function :remove_trailing_slash
 
+  # :markup: markdown
   #
-  # Creates directories at the paths in the given +list+
-  # (a single path or an array of paths);
-  # returns +list+ if it is an array, <tt>[list]</tt> otherwise.
+  # call-seq:
+  #   FileUtils.mkdir(*paths, mode: 0775, noop: nil, verbose: nil) -> array_of_paths or nil
   #
-  # Argument +list+ or its elements
-  # should be {interpretable as paths}[rdoc-ref:FileUtils@Path+Arguments].
+  # Argument `paths` may be one path or an array of paths;
+  # each must be {interpretable as a path}[rdoc-ref:FileUtils@Path+Arguments].
   #
-  # With no keyword arguments, creates a directory at each +path+ in +list+
-  # by calling: <tt>Dir.mkdir(path, mode)</tt>;
-  # see {Dir.mkdir}[rdoc-ref:Dir.mkdir]:
+  # By default, creates a directory entry at each of the given `paths`;
+  # each directory has permissions `0775`;
+  # returns an array of the paths:
   #
-  #   FileUtils.mkdir(%w[tmp0 tmp1]) # => ["tmp0", "tmp1"]
-  #   FileUtils.mkdir('tmp4')        # => ["tmp4"]
+  # ```ruby
+  # FileUtils.mkdir('foo')                 # => ["foo"]
+  # FileUtils.mkdir(%w[bar baz])           # => ["bar", "baz"]
+  # File.stat(Dir.new('foo')).mode.to_s(8) # => "40775"
+  # File.stat(Dir.new('bar')).mode.to_s(8) # => "40775"
+  # File.stat(Dir.new('baz')).mode.to_s(8) # => "40775"
+  # FileUtils.rmdir(%w[foo bar baz])       # => ["foo", "bar", "baz"]
+  # ```
   #
-  # Keyword arguments:
+  # Raises an exception if for any reason a directory cannot be created;
+  # a common reason is that the directory already exists.
   #
-  # - <tt>mode: <i>mode</i></tt> - also calls <tt>File.chmod(mode, path)</tt>;
-  #   see {File.chmod}[rdoc-ref:File.chmod].
-  # - <tt>noop: true</tt> - does not create directories.
-  # - <tt>verbose: true</tt> - prints an equivalent command:
+  # With keyword argument `mode` given,
+  # creates directories with the given permissions:
   #
-  #     FileUtils.mkdir(%w[tmp0 tmp1], verbose: true)
-  #     FileUtils.mkdir(%w[tmp2 tmp3], mode: 0700, verbose: true)
+  # ```ruby
+  # FileUtils.mkdir('bar', mode: 0664)
+  # File.stat(Dir.new('bar')).mode.to_s(8) # => "40664"
+  # FileUtils.rmdir('bar')
+  # ```
   #
-  #   Output:
+  # With keyword argument `noop` given as `true`,
+  # does not create directories;
+  # returns `nil`
   #
-  #     mkdir tmp0 tmp1
-  #     mkdir -m 700 tmp2 tmp3
+  # ```ruby
+  # FileUtils.mkdir('foo', noop: true) # => nil
+  # Dir.exist?('foo')                  # => false
+  # ```
   #
-  # Raises an exception if any path points to an existing
-  # file or directory, or if for any reason a directory cannot be created.
+  # With keyword argument `verbose` given as `true`,
+  # prints a shell command:
+  #
+  # ```ruby
+  # FileUtils.mkdir('foo', verbose: true)
+  # FileUtils.mkdir(%w[bar baz], mode: 0644, verbose: true)
+  # FileUtils.mkdir(%w[bar baz], mode: 0644, verbose: true, noop: true)
+  # ```
+  #
+  # Output:
+  #
+  # ```text
+  # mkdir foo
+  # mkdir -m 644 bar baz
+  # mkdir -m 644 bar baz
+  # ```
+  #
+  # Note that in the last call above (containing `noop: true`)
+  # the existence of the directory is not checked.
   #
   # Related: FileUtils.mkdir_p.
   #

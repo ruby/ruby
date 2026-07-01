@@ -22,7 +22,7 @@ module Bundler
     GITHUB_PULL_REQUEST_URL = %r{\Ahttps://github\.com/([A-Za-z0-9_\-\.]+/[A-Za-z0-9_\-\.]+)/pull/(\d+)\z}
     GITLAB_MERGE_REQUEST_URL = %r{\Ahttps://gitlab\.com/([A-Za-z0-9_\-\./]+)/-/merge_requests/(\d+)\z}
 
-    attr_reader :gemspecs, :gemfile
+    attr_reader :gemspecs, :gemfile, :overrides
     attr_accessor :dependencies
 
     def initialize
@@ -40,6 +40,7 @@ module Bundler
       @gemfile              = nil
       @gemfiles             = []
       @lockfile             = nil
+      @overrides            = []
       add_git_sources
     end
 
@@ -116,11 +117,21 @@ module Bundler
       options = args.last.is_a?(Hash) ? args.pop.dup : {}
       options = normalize_hash(options)
       source = normalize_source(source)
+      cooldown = options["cooldown"]
+      if cooldown && !(cooldown.is_a?(Integer) && cooldown >= 0)
+        raise InvalidOption, "Expected `cooldown` to be a non-negative integer, got #{cooldown.inspect}"
+      end
 
       if options.key?("type")
         options["type"] = options["type"].to_s
-        unless Plugin.source?(options["type"])
+        unless (source_plugin = Plugin.source_plugin(options["type"]))
           raise InvalidOption, "No plugin sources available for #{options["type"]}"
+        end
+        # Implicitly add a dependency on source plugins who are named bundler-source-<type>,
+        # and aren't already mentioned in the Gemfile.
+        # See also Plugin::DSL#source
+        if source_plugin.start_with?("bundler-source-") && !@dependencies.any? {|d| d.name == source_plugin }
+          plugin(source_plugin)
         end
 
         unless block_given?
@@ -130,9 +141,9 @@ module Bundler
         source_opts = options.merge("uri" => source)
         with_source(@sources.add_plugin_source(options["type"], source_opts), &blk)
       elsif block_given?
-        with_source(@sources.add_rubygems_source("remotes" => source), &blk)
+        with_source(@sources.add_rubygems_source("remotes" => source, "cooldown" => cooldown), &blk)
       else
-        @sources.add_global_rubygems_remote(source)
+        @sources.add_global_rubygems_remote(source, cooldown: cooldown)
       end
     end
 
@@ -184,10 +195,32 @@ module Bundler
       with_source(git_source) { yield }
     end
 
+    SUPPORTED_OVERRIDE_FIELDS = [:version, :required_ruby_version, :required_rubygems_version].freeze
+    SUPPORTED_OVERRIDE_SYMBOL_OPERATIONS = [:ignore_upper].freeze
+
+    def override(target, **operations)
+      validate_override_target!(target)
+
+      if target == :all && operations.key?(:version)
+        raise ArgumentError, "`override :all, version:` is not allowed; version requirements are per-gem"
+      end
+
+      operations.each do |field, operation|
+        validate_override_field!(field)
+        validate_override_operation!(operation)
+        validate_override_uniqueness!(target, field)
+      end
+
+      source_location = caller_locations(1, 1)&.first
+      operations.each do |field, operation|
+        @overrides << Override.new(target, field, operation, source_location: source_location)
+      end
+    end
+
     def to_definition(lockfile, unlock)
       check_primary_source_safety
       lockfile = @lockfile unless @lockfile.nil?
-      Definition.new(lockfile, @dependencies, @sources, unlock, @ruby_version, @optional_groups, @gemfiles)
+      Definition.new(lockfile, @dependencies, @sources, unlock, @ruby_version, @optional_groups, @gemfiles, @overrides)
     end
 
     def group(*args, &blk)
@@ -229,8 +262,15 @@ module Bundler
       @env = old
     end
 
-    def plugin(*args)
-      # Pass on
+    def plugin(name, *args)
+      options = args.last.is_a?(Hash) ? args.pop.dup : {}
+      version = args || [">= 0"]
+
+      normalize_options(name, version, options)
+      options["plugin"] = true
+      options["require"] = false
+
+      add_dependency(name, version, options)
     end
 
     def method_missing(name, *args)
@@ -243,6 +283,39 @@ module Bundler
     end
 
     private
+
+    def validate_override_target!(target)
+      return if target == :all
+      return if target.is_a?(String)
+      raise ArgumentError, "override target must be :all or a gem name string, got #{target.inspect}"
+    end
+
+    def validate_override_field!(field)
+      return if SUPPORTED_OVERRIDE_FIELDS.include?(field)
+      supported = SUPPORTED_OVERRIDE_FIELDS.map {|f| "`#{f}:`" }.join(", ")
+      raise ArgumentError, "unsupported override field `#{field}:`; supported fields: #{supported}"
+    end
+
+    def validate_override_operation!(operation)
+      case operation
+      when String
+        Gem::Requirement.new(operation)
+      when nil
+        # ok
+      when Symbol
+        return if SUPPORTED_OVERRIDE_SYMBOL_OPERATIONS.include?(operation)
+        raise ArgumentError, "unsupported override operation: #{operation.inspect}"
+      else
+        raise ArgumentError, "override operation must be a String, Symbol, or nil, got #{operation.inspect}"
+      end
+    rescue Gem::Requirement::BadRequirementError => e
+      raise ArgumentError, "invalid override version requirement #{operation.inspect}: #{e.message}"
+    end
+
+    def validate_override_uniqueness!(target, field)
+      return unless @overrides.any? {|o| o.target == target && o.field == field }
+      raise ArgumentError, "duplicate override for #{target.inspect} `#{field}:`"
+    end
 
     def add_dependency(name, version = nil, options = {})
       options["gemfile"] = @gemfile

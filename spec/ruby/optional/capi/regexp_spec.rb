@@ -104,7 +104,7 @@ describe "C-API Regexp function" do
       end
 
       Thread.pass while thr.status and !running
-      $~.should be_nil
+      $~.should == nil
 
       thr.join
     end

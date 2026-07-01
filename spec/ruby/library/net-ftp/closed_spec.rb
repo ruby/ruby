@@ -13,12 +13,12 @@ ruby_version_is ""..."4.1" do
 
     it "returns true when the socket is closed" do
       @socket.should_receive(:closed?).and_return(true)
-      @ftp.closed?.should be_true
+      @ftp.closed?.should == true
     end
 
     it "returns true when the socket is nil" do
       @ftp.instance_variable_set(:@sock, nil)
-      @ftp.closed?.should be_true
+      @ftp.closed?.should == true
     end
   end
 end

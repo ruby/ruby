@@ -1427,6 +1427,7 @@ static NODE *call_uni_op(struct parser_params*,NODE*,ID,const YYLTYPE*,const YYL
 static NODE *new_qcall(struct parser_params* p, ID atype, NODE *recv, ID mid, NODE *args, const YYLTYPE *op_loc, const YYLTYPE *loc);
 static NODE *new_command_qcall(struct parser_params* p, ID atype, NODE *recv, ID mid, NODE *args, NODE *block, const YYLTYPE *op_loc, const YYLTYPE *loc);
 static NODE *method_add_block(struct parser_params*p, NODE *m, NODE *b, const YYLTYPE *loc) {RNODE_ITER(b)->nd_iter = m; b->nd_loc = *loc; return b;}
+static NODE *command_add_block(struct parser_params*p, NODE *m, NODE *b, const YYLTYPE *loc);
 
 static bool args_info_empty_p(struct rb_args_info *args);
 static rb_node_args_t *new_args(struct parser_params*,rb_node_args_aux_t*,rb_node_opt_arg_t*,ID,rb_node_args_aux_t*,rb_node_args_t*,const YYLTYPE*);
@@ -1442,7 +1443,7 @@ static NODE *new_hash_pattern_tail(struct parser_params *p, NODE *kw_args, ID kw
 static rb_node_kw_arg_t *new_kw_arg(struct parser_params *p, NODE *k, const YYLTYPE *loc);
 static rb_node_args_t *args_with_numbered(struct parser_params*,rb_node_args_t*,int,ID);
 
-static NODE* negate_lit(struct parser_params*, NODE*);
+static NODE* negate_lit(struct parser_params*, NODE*,const YYLTYPE*);
 static void no_blockarg(struct parser_params*,NODE*);
 static NODE *ret_args(struct parser_params*,NODE*);
 static NODE *arg_blk_pass(NODE*,rb_node_block_pass_t*);
@@ -3296,6 +3297,9 @@ allow_exits	: {$$ = allow_block_exit(p);};
 
 k_END		: keyword_END lex_ctxt
                     {
+                        if (p->ctxt.in_def) {
+                            rb_warn0("END in method; use at_exit");
+                        }
                         $$ = $2;
                         p->ctxt.in_rescue = before_rescue;
                     /*% ripper: $:2 %*/
@@ -3360,7 +3364,7 @@ stmt		: keyword_alias[kw] fitem[new] {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fit
                     }
                 | stmt[body] modifier_until[mod] expr_value[cond_expr]
                     {
-                        clear_block_exit(p, false);
+                        clear_block_exit(p, 0);
                         if ($body && nd_type_p($body, NODE_BEGIN)) {
                             $$ = NEW_UNTIL(cond(p, $cond_expr, &@cond_expr), RNODE_BEGIN($body)->nd_body, 0, &@$, &@mod, &NULL_LOC);
                         }
@@ -3378,12 +3382,10 @@ stmt		: keyword_alias[kw] fitem[new] {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fit
                         $$ = NEW_RESCUE(remove_begin($body), resq, 0, &@$);
                     /*% ripper: rescue_mod!($:body, $:resbody) %*/
                     }
-                | k_END[k_end] allow_exits[allow] '{'[lbrace] compstmt(stmts)[body] '}'[rbrace]
+                | k_END[k_end] block_open[lbrace] compstmt(stmts)[body] '}'[rbrace]
                     {
-                        if (p->ctxt.in_def) {
-                            rb_warn0("END in method; use at_exit");
-                        }
-                        restore_block_exit(p, $allow);
+                        clear_block_exit(p, true);
+                        restore_block_exit(p, $block_open);
                         p->ctxt = $k_end;
                         {
                             NODE *scope = NEW_SCOPE2(0 /* tbl */, 0 /* args */, $body /* body */, NULL /* parent */, &@$);
@@ -5152,13 +5154,7 @@ do_block	: k_do_block do_body k_end
 
 block_call	: command do_block
                     {
-                        if (nd_type_p($1, NODE_YIELD)) {
-                            compile_error(p, "block given to yield");
-                        }
-                        else {
-                            block_dup_check(p, get_nd_args(p, $1), $2);
-                        }
-                        $$ = method_add_block(p, $1, $2, &@$);
+                        $$ = command_add_block(p, $1, $2, &@$);
                         fixpos($$, $1);
                     /*% ripper: method_add_block!($:1, $:2) %*/
                     }
@@ -6133,7 +6129,7 @@ numeric 	: simple_numeric
                 | tUMINUS_NUM simple_numeric   %prec tLOWEST
                     {
                         $$ = $2;
-                        negate_lit(p, $$);
+                        negate_lit(p, $$, &@$);
                     /*% ripper: unary!(ID2VAL(idUMinus), $:2) %*/
                     }
                 ;
@@ -8927,7 +8923,6 @@ number_literal_suffix(struct parser_params *p, int mask)
         }
         if (!ISASCII(c) || ISALPHA(c) || c == '_') {
             p->lex.pcur = lastp;
-            literal_flush(p, p->lex.pcur);
             return 0;
         }
         pushback(p, c);
@@ -12832,6 +12827,39 @@ new_locations_lambda_body(struct parser_params* p, NODE *node, const YYLTYPE *lo
     return body;
 }
 
+static NODE *
+command_add_block(struct parser_params*p, NODE *m, NODE *b, const YYLTYPE *loc)
+{
+    NODE **body;
+    enum node_type type = nd_type(m);
+    switch (type) {
+      case NODE_YIELD:
+        compile_error(p, "block given to yield");
+        return m;
+      case NODE_RETURN:
+        body = &RNODE_RETURN(m)->nd_stts;
+        break;
+      case NODE_BREAK:
+      case NODE_NEXT:
+        body = &RNODE_EXITS(m)->nd_stts;
+        break;
+      case NODE_REDO:           /* `redo` has no argument */
+        compile_error(p, "command_add_block: unexpected node: NODE_REDO");
+        return m;
+      case NODE_RETRY:          /* `retry` has no argument */
+        compile_error(p, "command_add_block: unexpected node: NODE_RETRY");
+        return m;
+      default:
+        block_dup_check(p, get_nd_args(p, m), b);
+        return method_add_block(p, m, b, loc);
+    }
+    RUBY_ASSERT(*body, "no argument %s with do_block", parser_node_name(type));
+    YYLTYPE b_loc = code_loc_gen(&(*body)->nd_loc, loc);
+    *body = command_add_block(p, *body, b, &b_loc);
+    m->nd_loc.end_pos = loc->end_pos;
+    return m;
+}
+
 #define nd_once_body(node) (nd_type_p((node), NODE_ONCE) ? RNODE_ONCE(node)->nd_body : node)
 
 static NODE*
@@ -14358,7 +14386,7 @@ ret_args(struct parser_params *p, NODE *node)
 }
 
 static NODE*
-negate_lit(struct parser_params *p, NODE* node)
+negate_lit(struct parser_params *p, NODE* node, const YYLTYPE *loc)
 {
     switch (nd_type(node)) {
       case NODE_INTEGER:
@@ -14374,6 +14402,7 @@ negate_lit(struct parser_params *p, NODE* node)
         RNODE_IMAGINARY(node)->minus = TRUE;
         break;
     }
+    node->nd_loc = *loc;
     return node;
 }
 

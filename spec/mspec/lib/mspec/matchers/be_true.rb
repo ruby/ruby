@@ -15,6 +15,7 @@ end
 
 module MSpecMatchers
   private def be_true
+    MSpec.deprecate __method__, '.should == true'
     BeTrueMatcher.new
   end
 end

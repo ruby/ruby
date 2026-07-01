@@ -12,8 +12,8 @@ describe :cgi_query_extension_has_key_p, shared: true do
   end
 
   it "returns true when the passed key exists in the HTTP Query" do
-    @cgi.send(@method, "one").should be_true
-    @cgi.send(@method, "two").should be_true
-    @cgi.send(@method, "three").should be_false
+    @cgi.send(@method, "one").should == true
+    @cgi.send(@method, "two").should == true
+    @cgi.send(@method, "three").should == false
   end
 end

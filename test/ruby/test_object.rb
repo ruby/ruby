@@ -358,38 +358,40 @@ class TestObject < Test::Unit::TestCase
   def test_remove_instance_variable_re_embed
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
-      c = Class.new do
-        attr_reader :a, :b, :c
+      # Determine the RVALUE pool's embed capacity from GC constants.
+      rvalue_size = GC::INTERNAL_CONSTANTS[:RVALUE_SIZE]
+      rbasic_size = GC::INTERNAL_CONSTANTS[:RBASIC_SIZE]
+      embed_cap = (rvalue_size - rbasic_size) / RbConfig::SIZEOF["void*"]
 
-        def initialize
-          @a = nil
-          @b = nil
-          @c = nil
-        end
-      end
+      # Build a class whose initialize sets embed_cap ivars so objects
+      # are allocated in the RVALUE pool with embedded storage.
+      init_body = embed_cap.times.map { |i| "@v#{i} = nil" }.join("; ")
+      c = Class.new { class_eval("def initialize; #{init_body}; end") }
 
       o1 = c.new
       o2 = c.new
 
-      o1.instance_variable_set(:@foo, 5)
-      o1.instance_variable_set(:@a, 0)
-      o1.instance_variable_set(:@b, 1)
-      o1.instance_variable_set(:@c, 2)
-      refute_includes ObjectSpace.dump(o1), '"embedded":true'
-      o1.remove_instance_variable(:@foo)
+      # All embed_cap ivars fit - should be embedded
+      embed_cap.times { |i| o1.instance_variable_set(:"@v#{i}", i) }
       assert_includes ObjectSpace.dump(o1), '"embedded":true'
 
-      o2.instance_variable_set(:@a, 0)
-      o2.instance_variable_set(:@b, 1)
-      o2.instance_variable_set(:@c, 2)
+      # One more ivar overflows embed capacity
+      o1.instance_variable_set(:@overflow, 99)
+      refute_includes ObjectSpace.dump(o1), '"embedded":true'
+
+      # Remove the overflow ivar - should re-embed
+      o1.remove_instance_variable(:@overflow)
+      assert_includes ObjectSpace.dump(o1), '"embedded":true'
+
+      # An object that never overflowed is also embedded
+      embed_cap.times { |i| o2.instance_variable_set(:"@v#{i}", i) }
       assert_includes ObjectSpace.dump(o2), '"embedded":true'
 
-      assert_equal(0, o1.a)
-      assert_equal(1, o1.b)
-      assert_equal(2, o1.c)
-      assert_equal(0, o2.a)
-      assert_equal(1, o2.b)
-      assert_equal(2, o2.c)
+      # Verify values survived re-embedding
+      embed_cap.times do |i|
+        assert_equal(i, o1.instance_variable_get(:"@v#{i}"))
+        assert_equal(i, o2.instance_variable_get(:"@v#{i}"))
+      end
     end;
   end
 
@@ -966,6 +968,69 @@ class TestObject < Test::Unit::TestCase
     assert_include(s, "@host=\"localhost\"")
     assert_include(s, "@user=\"root\"")
     assert_not_include(s, "@password=")
+  end
+
+  def test_inspect_mutating_ivar
+    obj = Object.new
+    evil = Object.new
+    evil.define_singleton_method(:inspect) do
+      obj.instance_variables.each { |v| obj.remove_instance_variable(v) }
+      "evil"
+    end
+    obj.instance_variable_set(:@evil, evil)
+    10.times { |i| obj.instance_variable_set(:"@v#{i}", 0) }
+    # Buffered iteration: inspect sees a snapshot of the original ivars
+    result = obj.inspect
+    assert_include result, "@evil=evil"
+    10.times { |i| assert_include result, "@v#{i}=0" }
+  end
+
+  def test_inspect_mutating_ivar_complex
+    # Force complex by creating many shape variations on the same class
+    c = Class.new
+    50.times do |i|
+      o = c.new
+      o.instance_variable_set(:"@unique_#{i}", 0)
+    end
+
+    obj = c.new
+    evil = Object.new
+    evil.define_singleton_method(:inspect) do
+      obj.instance_variables.each { |v| obj.remove_instance_variable(v) }
+      ""
+    end
+    obj.instance_variable_set(:@evil, evil)
+    10.times { |i| obj.instance_variable_set(:"@v#{i}", 0) }
+    # complex objects use st_foreach which handles mutation gracefully
+    obj.inspect
+  end
+
+  def test_inspect_complex
+    kernel_inspect = Kernel.instance_method(:inspect)
+
+    klasses = [
+      Class.new,
+      Class.new(String),
+      Class.new(Array),
+      Class.new(Hash),
+      Struct.new(:x),
+      Class.new(Thread::Mutex),
+      # It's very difficult to get a complex T_CLASS, so that isn't tested here
+    ]
+
+    klasses.each_with_index do |klass, idx|
+      8.times do |i|
+        klass.new.instance_variable_set(:"@sib_#{rand(999999)}", 1)
+      end
+
+      obj = klass.new
+      obj.instance_variable_set(:@a, 1)
+      obj.instance_variable_set(:@b, 2)
+
+      s = kernel_inspect.bind_call(obj)
+      assert_include(s, "@a=1")
+      assert_include(s, "@b=2")
+    end
   end
 
   def test_singleton_methods

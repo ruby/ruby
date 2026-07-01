@@ -1,7 +1,8 @@
 require_relative '../../spec_helper'
 require 'getoptlong'
-require_relative 'shared/each'
 
 describe "GetoptLong#each" do
-  it_behaves_like :getoptlong_each, :each
+  it "is an alias of GetoptLong#each_option" do
+    GetoptLong.instance_method(:each).should == GetoptLong.instance_method(:each_option)
+  end
 end

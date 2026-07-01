@@ -144,6 +144,12 @@ module Bundler
                 FileUtils.rm_rf(p)
               end
               git "clone", "--no-checkout", "--quiet", path.to_s, destination.to_s
+              # The copy is cloned from the local bare cache, which holds no Git LFS
+              # objects, so point origin back at the real remote and let git-lfs derive
+              # its endpoint from there when checking out. Use the credential-filtered
+              # URI to avoid persisting secrets in the copy's .git/config; auth is left
+              # to git's credential helper.
+              git "remote", "set-url", "origin", credential_filtered_uri, dir: destination
               File.chmod((File.stat(destination).mode | 0o777) & ~File.umask, destination)
             rescue Errno::EEXIST => e
               file_path = e.message[%r{.*?((?:[a-zA-Z]:)?/.*)}, 1]
@@ -432,9 +438,14 @@ module Bundler
         end
 
         def capture3_args_for(cmd, dir)
-          return ["git", *cmd] unless dir
+          # Disable automatic maintenance so a background commit-graph write in
+          # the source repo can't race the hardlinking local clone and fail with
+          # "hardlink different from source".
+          opts = ["-c", "gc.auto=0", "-c", "maintenance.auto=false"]
 
-          ["git", "-C", dir.to_s, *cmd]
+          return ["git", *opts, *cmd] unless dir
+
+          ["git", "-C", dir.to_s, *opts, *cmd]
         end
 
         def extra_clone_args

@@ -17,10 +17,10 @@ describe "Set#<=>" do
   end
 
   it "returns nil if the set has unique elements" do
-    (Set[1, 2, 3] <=> Set[:a, :b, :c]).should be_nil
+    (Set[1, 2, 3] <=> Set[:a, :b, :c]).should == nil
   end
 
   it "returns nil when the argument is not set-like" do
-    (Set[] <=> false).should be_nil
+    (Set[] <=> false).should == nil
   end
 end

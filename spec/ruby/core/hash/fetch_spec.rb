@@ -12,7 +12,7 @@ describe "Hash#fetch" do
     it "formats the object with #inspect in the KeyError message" do
       -> {
         {}.fetch('foo')
-      }.should raise_error(KeyError, 'key not found: "foo"')
+      }.should.raise(KeyError, 'key not found: "foo"')
     end
   end
 
@@ -38,7 +38,7 @@ describe "Hash#fetch" do
   end
 
   it "raises an ArgumentError when not passed one or two arguments" do
-    -> { {}.fetch()        }.should raise_error(ArgumentError)
-    -> { {}.fetch(1, 2, 3) }.should raise_error(ArgumentError)
+    -> { {}.fetch()        }.should.raise(ArgumentError)
+    -> { {}.fetch(1, 2, 3) }.should.raise(ArgumentError)
   end
 end

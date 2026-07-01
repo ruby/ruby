@@ -601,6 +601,8 @@ class JSONGeneratorTest < Test::Unit::TestCase
     assert_equal too_deep, ok
     ok = generate too_deep_ary, :max_nesting => 0
     assert_equal too_deep, ok
+
+    assert_raise(TypeError) { generate too_deep_ary, max_nesting: "garbage" }
   end
 
   def test_backslash
@@ -1078,6 +1080,17 @@ class JSONGeneratorTest < Test::Unit::TestCase
     end
     assert_raise(ArgumentError) do
       JSON.state.new(depth: -1)
+    end
+  end
+
+  def test_large_depth_raises
+    assert_raise(RangeError, ArgumentError) do
+      JSON.generate([[1]],
+        indent:      " " * 5,
+        array_nl:    "\n",
+        depth:       3_689_348_814_741_910_324,
+        max_nesting: 0
+      )
     end
   end
 

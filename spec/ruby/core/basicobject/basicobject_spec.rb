@@ -8,23 +8,23 @@ describe "BasicObject" do
   end
 
   it "raises NameError when referencing built-in constants" do
-    -> { class BasicObjectSpecs::BOSubclass; Kernel; end }.should raise_error(NameError)
+    -> { class BasicObjectSpecs::BOSubclass; Kernel; end }.should.raise(NameError)
   end
 
   it "does not define built-in constants (according to const_defined?)" do
-    BasicObject.const_defined?(:Kernel).should be_false
+    BasicObject.const_defined?(:Kernel).should == false
   end
 
   it "does not define built-in constants (according to defined?)" do
-    BasicObjectSpecs::BOSubclass.kernel_defined?.should be_nil
+    BasicObjectSpecs::BOSubclass.kernel_defined?.should == nil
   end
 
   it "is included in Object's list of constants" do
-    Object.constants(false).should include(:BasicObject)
+    Object.constants(false).should.include?(:BasicObject)
   end
 
   it "includes itself in its list of constants" do
-    BasicObject.constants(false).should include(:BasicObject)
+    BasicObject.constants(false).should.include?(:BasicObject)
   end
 end
 
@@ -34,11 +34,11 @@ describe "BasicObject metaclass" do
   end
 
   it "is an instance of Class" do
-    @meta.should be_an_instance_of(Class)
+    @meta.should.instance_of?(Class)
   end
 
   it "has Class as superclass" do
-    @meta.superclass.should equal(Class)
+    @meta.superclass.should.equal?(Class)
   end
 
   it "contains methods for the BasicObject class" do
@@ -57,11 +57,11 @@ describe "BasicObject instance metaclass" do
   end
 
   it "is an instance of Class" do
-    @meta.should be_an_instance_of(Class)
+    @meta.should.instance_of?(Class)
   end
 
   it "has BasicObject as superclass" do
-    @meta.superclass.should equal(BasicObject)
+    @meta.superclass.should.equal?(BasicObject)
   end
 
   it "contains methods defined for the BasicObject instance" do
@@ -85,7 +85,7 @@ describe "BasicObject subclass" do
 
   describe "BasicObject references" do
     it "can refer to BasicObject from within itself" do
-      -> { BasicObject::BasicObject }.should_not raise_error
+      -> { BasicObject::BasicObject }.should_not.raise
     end
   end
 end

@@ -22,7 +22,7 @@ describe "Invoking a method" do
     it "raises ArgumentError if the method has a positive arity" do
       -> {
         specs.fooM1
-      }.should raise_error(ArgumentError)
+      }.should.raise(ArgumentError)
     end
   end
 
@@ -38,7 +38,7 @@ describe "Invoking a method" do
     it "raises ArgumentError if the methods arity doesn't match" do
       -> {
         specs.fooM1(1,2)
-      }.should raise_error(ArgumentError)
+      }.should.raise(ArgumentError)
     end
   end
 
@@ -54,7 +54,7 @@ describe "Invoking a method" do
     it "raises ArgumentError if extra arguments are passed" do
       -> {
         specs.fooM0O1(2,3)
-      }.should raise_error(ArgumentError)
+      }.should.raise(ArgumentError)
     end
   end
 
@@ -66,13 +66,13 @@ describe "Invoking a method" do
     it "raises an ArgumentError if there are no values for the mandatory args" do
       -> {
         specs.fooM1O1
-      }.should raise_error(ArgumentError)
+      }.should.raise(ArgumentError)
     end
 
     it "raises an ArgumentError if too many values are passed" do
       -> {
         specs.fooM1O1(1,2,3)
-      }.should raise_error(ArgumentError)
+      }.should.raise(ArgumentError)
     end
   end
 
@@ -94,7 +94,7 @@ describe "Invoking a method" do
 
   it "with a block converts the block to a Proc" do
     prc = specs.makeproc { "hello" }
-    prc.should be_kind_of(Proc)
+    prc.should.is_a?(Proc)
     prc.call.should == "hello"
   end
 
@@ -120,14 +120,14 @@ describe "Invoking a method" do
 
       -> {
         specs.makeproc(&o)
-      }.should raise_error(TypeError, "no implicit conversion of Object into Proc")
+      }.should.raise(TypeError, "no implicit conversion of Object into Proc")
     end
   end
 
   it "raises a SyntaxError with both a literal block and an object as block" do
     -> {
       eval "specs.oneb(10, &l){ 42 }"
-    }.should raise_error(SyntaxError)
+    }.should.raise(SyntaxError)
   end
 
   it "with same names as existing variables is ok" do
@@ -212,21 +212,42 @@ describe "Invoking a method" do
       o.args.should == [1,2]
     end
 
-    it "raises NameError if invoked as a vcall" do
-      -> { no_such_method }.should raise_error NameError
+    describe "if invoked as a vcall" do
+      it "raises NameError" do
+        -> { no_such_method }.should.raise NameError
+      end
+
+      it "raises NameError with $! as a cause" do
+        begin
+          raise RuntimeError.new
+        rescue => cause
+          -> { no_such_method }.should.raise(NameError, cause:)
+        end
+      end
     end
 
     it "should omit the method_missing call from the backtrace for NameError" do
-      -> { no_such_method }.should raise_error { |e| e.backtrace.first.should_not include("method_missing") }
+      -> { no_such_method }.should.raise { |e| e.backtrace.first.should_not.include?("method_missing") }
     end
 
-    it "raises NoMethodError if invoked as an unambiguous method call" do
-      -> { no_such_method() }.should raise_error NoMethodError
-      -> { no_such_method(1,2,3) }.should raise_error NoMethodError
+    describe "if invoked as an unambiguous method call" do
+      it "raises NoMethodError" do
+        -> { no_such_method() }.should.raise NoMethodError
+        -> { no_such_method(1,2,3) }.should.raise NoMethodError
+      end
+
+      it "raises NoMethodError with $! as a cause" do
+        begin
+          raise
+        rescue => cause
+          -> { no_such_method() }.should.raise(NoMethodError, cause:)
+          -> { no_such_method(1,2,3) }.should.raise(NoMethodError, cause:)
+        end
+      end
     end
 
     it "should omit the method_missing call from the backtrace for NoMethodError" do
-      -> { no_such_method() }.should raise_error { |e| e.backtrace.first.should_not include("method_missing") }
+      -> { no_such_method() }.should.raise { |e| e.backtrace.first.should_not.include?("method_missing") }
     end
   end
 
@@ -355,7 +376,7 @@ describe "Invoking a method" do
 
   it "with splat operator * and non-Array value uses value unchanged if it does not respond_to?(:to_ary)" do
     obj = Object.new
-    obj.should_not respond_to(:to_a)
+    obj.should_not.respond_to?(:to_a)
 
     specs.fooM0R(*obj).should == [obj]
     specs.fooM1R(1,*obj).should == [1, [obj]]

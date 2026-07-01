@@ -498,7 +498,8 @@ rb_gccct_clear_table(void)
 {
     rb_vm_t *vm = GET_VM();
     if (vm->global_cc_cache_table_used) {
-        MEMZERO(vm->global_cc_cache_table, struct rb_callcache *, VM_GLOBAL_CC_CACHE_TABLE_SIZE);
+        const struct rb_callcache **const table = vm->global_cc_cache_table;
+        MEMZERO(table, struct rb_callcache *, VM_GLOBAL_CC_CACHE_TABLE_SIZE);
         vm->global_cc_cache_table_used = false;
     }
     return Qnil;
@@ -2391,29 +2392,66 @@ rb_obj_instance_exec(int argc, const VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     mod.class_eval(string [, filename [, lineno]])  -> obj
- *     mod.class_eval {|mod| block }                   -> obj
- *     mod.module_eval(string [, filename [, lineno]]) -> obj
- *     mod.module_eval {|mod| block }                  -> obj
+ *     class_eval(string, filename = nil, lineno = 1) -> obj
+ *     class_eval { |mod| ... } -> obj
+ *     module_eval(string, filename = nil, lineno = 1) -> obj
+ *     module_eval { |mod| ... } -> obj
  *
- *  Evaluates the string or block in the context of _mod_, except that when
- *  a block is given, constant/class variable lookup is not affected. This
- *  can be used to add methods to a class. <code>module_eval</code> returns
- *  the result of evaluating its argument. The optional _filename_ and
- *  _lineno_ parameters set the text for error messages.
+ *  Evaluates the +string+ or block in the context of +self+.
+ *  Returns the result of the last expression.
  *
- *     class Thing
- *     end
- *     a = %q{def hello() "Hello there!" end}
- *     Thing.module_eval(a)
- *     puts Thing.new.hello()
- *     Thing.module_eval("invalid code", "dummy", 123)
+ *  When +string+ is given, evaluates the given string in the
+ *  context of +self+:
  *
- *  <em>produces:</em>
+ *      class Foo; end
  *
- *     Hello there!
- *     dummy:123:in `module_eval': undefined local variable
- *         or method `code' for Thing:Class
+ *      Foo.module_eval("def greeting = puts 'hello'")
+ *
+ *      Foo.new.greeting # => "hello"
+ *
+ *  If the optional +filename+ is given, it will be used as the
+ *  filename of the evaluation (for <tt>__FILE__</tt> and errors).
+ *  Otherwise, it will default to <tt>(eval at __FILE__:__LINE__)</tt>
+ *  where <tt>__FILE__</tt> and <tt>__LINE__</tt> are the filename and
+ *  line number of the caller, respectively:
+ *
+ *      class Foo; end
+ *
+ *      Foo.module_eval("puts __FILE__") # => "(eval at ../test.rb:3)"
+ *      Foo.module_eval("puts __FILE__", "foobar.rb") # => "foobar.rb"
+ *
+ *  If the optional +lineno+ is given, it will be used as the
+ *  line number of the evaluation (for <tt>__LINE__</tt> and errors).
+ *  Otherwise, it will default to 1:
+ *
+ *      class Foo; end
+ *
+ *      Foo.module_eval("puts __LINE__") # => 1
+ *      Foo.module_eval("puts __FILE__", nil, 10) # => 10
+ *
+ *  When a block is given, evaluates the block in the context
+ *  of +self+:
+ *
+ *      class Foo; end
+ *
+ *      Foo.module_eval do
+ *        def greeting = puts "hello"
+ *      end
+ *
+ *      Foo.new.greeting
+ *
+ *  However, constant and class variable lookup differs between
+ *  +string+ and block. When +string+ is given, contant and class
+ *  variables are looked up in the context of +self+. When a block
+ *  is given, the context of the lookup is not changed:
+ *
+ *      class Foo
+ *        GREETING = "hello"
+ *      end
+ *
+ *      Foo.module_eval("puts GREETING") # => "hello"
+ *
+ *      Foo.module_eval { puts GREETING } # => NameError: uninitialized constant GREETING
  */
 
 static VALUE

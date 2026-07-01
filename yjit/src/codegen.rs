@@ -2764,7 +2764,7 @@ fn gen_newhash(
     Some(KeepCompiling)
 }
 
-fn gen_putstring(
+fn gen_dupstring(
     jit: &mut JITState,
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
@@ -2784,7 +2784,7 @@ fn gen_putstring(
     Some(KeepCompiling)
 }
 
-fn gen_putchilledstring(
+fn gen_dupchilledstring(
     jit: &mut JITState,
     asm: &mut Assembler,
 ) -> Option<CodegenStatus> {
@@ -2950,7 +2950,7 @@ fn gen_get_ivar(
 
     // NOTE: This assumes T_OBJECT can't ever have the same shape_id as any other type.
     // too-complex shapes can't use index access, so we use rb_ivar_get for them too.
-    if !comptime_receiver.heap_object_p() || comptime_receiver.shape_too_complex() || megamorphic {
+    if !comptime_receiver.heap_object_p() || comptime_receiver.shape_complex() || megamorphic {
         // General case. Call rb_ivar_get().
         // VALUE rb_ivar_get(VALUE obj, ID id)
         asm_comment!(asm, "call rb_ivar_get()");
@@ -2975,7 +2975,7 @@ fn gen_get_ivar(
 
     let ivar_index = unsafe {
         let shape_id = comptime_receiver.shape_id_of();
-        let mut ivar_index: u16 = 0;
+        let mut ivar_index: attr_index_t = 0;
         if rb_shape_get_iv_index(shape_id, ivar_name, &mut ivar_index) {
             Some(ivar_index as usize)
         } else {
@@ -3168,10 +3168,10 @@ fn gen_set_ivar(
     }
 
     // Get the iv index
-    let shape_too_complex = comptime_receiver.shape_too_complex();
-    let ivar_index = if !comptime_receiver.special_const_p() && !shape_too_complex {
+    let shape_complex = comptime_receiver.shape_complex();
+    let ivar_index = if !comptime_receiver.special_const_p() && !shape_complex {
         let shape_id = comptime_receiver.shape_id_of();
-        let mut ivar_index: u16 = 0;
+        let mut ivar_index: attr_index_t = 0;
         if unsafe { rb_shape_get_iv_index(shape_id, ivar_name, &mut ivar_index) } {
             Some(ivar_index as usize)
         } else {
@@ -3182,23 +3182,23 @@ fn gen_set_ivar(
     };
 
     // The current shape doesn't contain this iv, we need to transition to another shape.
-    let mut new_shape_too_complex = false;
-    let new_shape = if !shape_too_complex && receiver_t_object && ivar_index.is_none() {
+    let mut new_shape_complex = false;
+    let new_shape = if !shape_complex && receiver_t_object && ivar_index.is_none() {
         let current_shape_id = comptime_receiver.shape_id_of();
         // We don't need to check about imemo_fields here because we're definitely looking at a T_OBJECT.
         let klass = unsafe { rb_obj_class(comptime_receiver) };
-        let next_shape_id = unsafe { rb_shape_transition_add_ivar_no_warnings(klass, current_shape_id, ivar_name) };
+        let next_shape_id = unsafe { rb_shape_transition_add_ivar_no_warnings(current_shape_id, ivar_name, klass) };
 
         // If the VM ran out of shapes, or this class generated too many leaf,
-        // it may be de-optimized into OBJ_TOO_COMPLEX_SHAPE (hash-table).
-        new_shape_too_complex = unsafe { rb_jit_shape_too_complex_p(next_shape_id) };
-        if new_shape_too_complex {
+        // it may be de-optimized into OBJ_COMPLEX_SHAPE (hash-table).
+        new_shape_complex = unsafe { rb_jit_shape_complex_p(next_shape_id) };
+        if new_shape_complex {
             Some((next_shape_id, None, 0_usize))
         } else {
             let current_capacity = unsafe { rb_yjit_shape_capacity(current_shape_id) };
             let next_capacity = unsafe { rb_yjit_shape_capacity(next_shape_id) };
 
-            // If the new shape has a different capacity, or is TOO_COMPLEX, we'll have to
+            // If the new shape has a different capacity, or is COMPLEX, we'll have to
             // reallocate it.
             let needs_extension = next_capacity != current_capacity;
 
@@ -3218,7 +3218,7 @@ fn gen_set_ivar(
 
     // If the receiver isn't a T_OBJECT, then just write out the IV write as a function call.
     // too-complex shapes can't use index access, so we use rb_ivar_get for them too.
-    if !receiver_t_object || shape_too_complex || new_shape_too_complex || megamorphic {
+    if !receiver_t_object || shape_complex || new_shape_complex || megamorphic {
         // The function could raise FrozenError.
         // Note that this modifies REG_SP, which is why we do it first
         jit_prepare_non_leaf_call(jit, asm);
@@ -3435,7 +3435,7 @@ fn gen_definedivar(
     // Specialize base on compile time values
     let comptime_receiver = jit.peek_at_self();
 
-    if comptime_receiver.special_const_p() || comptime_receiver.shape_too_complex() || asm.ctx.get_chain_depth() >= GET_IVAR_MAX_DEPTH {
+    if comptime_receiver.special_const_p() || comptime_receiver.shape_complex() || asm.ctx.get_chain_depth() >= GET_IVAR_MAX_DEPTH {
         // Fall back to calling rb_ivar_defined
 
         // Save the PC and SP because the callee may allocate
@@ -3461,7 +3461,7 @@ fn gen_definedivar(
 
     let shape_id = comptime_receiver.shape_id_of();
     let ivar_exists = unsafe {
-        let mut ivar_index: u16 = 0;
+        let mut ivar_index: attr_index_t = 0;
         rb_shape_get_iv_index(shape_id, ivar_name, &mut ivar_index)
     };
 
@@ -4651,21 +4651,8 @@ fn gen_opt_case_dispatch(
 
     // Check that all cases are fixnums to avoid having to register BOP assumptions on
     // all the types that case hashes support. This spends compile time to save memory.
-    fn case_hash_all_fixnum_p(hash: VALUE) -> bool {
-        let mut all_fixnum = true;
-        unsafe {
-            unsafe extern "C" fn per_case(key: st_data_t, _value: st_data_t, data: st_data_t) -> c_int {
-                (if VALUE(key as usize).fixnum_p() {
-                    ST_CONTINUE
-                } else {
-                    (data as *mut bool).write(false);
-                    ST_STOP
-                }) as c_int
-            }
-            rb_hash_stlike_foreach(hash, Some(per_case), (&mut all_fixnum) as *mut _ as st_data_t);
-        }
-
-        all_fixnum
+    fn case_hash_all_fixnum_p(cdhash: VALUE) -> bool {
+        unsafe { rb_yjit_cdhash_all_fixnum_p(cdhash) }
     }
 
     // If megamorphic, fallback to compiling branch instructions after opt_case_dispatch
@@ -4692,12 +4679,11 @@ fn gen_opt_case_dispatch(
 
         // Get the offset for the compile-time key
         let mut offset = 0;
-        unsafe { rb_hash_stlike_lookup(case_hash, comptime_key.0 as _, &mut offset) };
-        let jump_offset = if offset == 0 {
+        let jump_offset = if unsafe { rb_yjit_cdhash_lookup(case_hash, comptime_key.0 as _, &mut offset) } == 0 {
             // NOTE: If we hit the else branch with various values, it could negatively impact the performance.
             else_offset
         } else {
-            (offset as u32) >> 1 // FIX2LONG
+            offset as u32
         };
 
         // Jump to the offset of case or else
@@ -6819,8 +6805,8 @@ enum SpecVal {
 pub enum BlockHandler {
     // send, invokesuper: blockiseq operand
     BlockISeq(IseqPtr),
-    // invokesuper: GET_BLOCK_HANDLER() (GET_LEP()[VM_ENV_DATA_INDEX_SPECVAL])
-    LEPSpecVal,
+    // For invokesuper; equivalent to GET_BLOCK_HANDLER()
+    FindFromCurrentFrame,
     // part of the allocate-free block forwarding scheme
     BlockParamProxy,
     // To avoid holding the block arg (e.g. proc and symbol) across C calls,
@@ -6884,9 +6870,20 @@ fn gen_push_frame(
                     let cfp_self = asm.lea(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF));
                     asm.or(cfp_self, Opnd::Imm(1))
                 }
-                BlockHandler::LEPSpecVal => {
-                    let lep_opnd = gen_get_lep(jit, asm);
-                    asm.load(Opnd::mem(64, lep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL))
+                BlockHandler::FindFromCurrentFrame => {
+                    // Find the calling frame's block handler. Similar shape to implementation for
+                    // defined?(yield). See also: vm_caller_setup_arg_block() with is_super, which
+                    // ends up in VM_CF_BLOCK_HANDLER().
+                    //
+                    // When the calling ISEQ is rooted in a ISEQ_TYPE_METHOD, the block handler is
+                    // at local_ep[VM_ENV_DATA_INDEX_SPECVAL]. Otherwise, the frame has no block
+                    // handler.
+                    if ISEQ_TYPE_METHOD == unsafe { rb_get_iseq_body_type(rb_get_iseq_body_local_iseq(jit.iseq)) } {
+                        let lep_opnd = gen_get_lep(jit, asm);
+                        asm.load(Opnd::mem(64, lep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL))
+                    } else {
+                        VM_BLOCK_HANDLER_NONE.into()
+                    }
                 }
                 BlockHandler::BlockParamProxy => {
                     let ep_opnd = gen_get_lep(jit, asm);
@@ -8987,9 +8984,9 @@ fn gen_struct_aref(
         handle_opt_send_shift_stack(asm, argc);
     }
 
-    // All structs from the same Struct class should have the same
+    // All structs from the same Struct class and shape_id should have the same
     // length. So if our comptime_recv is embedded all runtime
-    // structs of the same class should be as well, and the same is
+    // structs of the same class and shape_id should be as well, and the same is
     // true of the converse.
     let embedded = unsafe { FL_TEST_RAW(comptime_recv, VALUE(RSTRUCT_EMBED_LEN_MASK)) };
 
@@ -9894,7 +9891,7 @@ fn gen_invokesuper_specialized(
     let block = if let Some(iseq) = jit.get_arg(1).as_optional_ptr() {
         BlockHandler::BlockISeq(iseq)
     } else {
-        BlockHandler::LEPSpecVal
+        BlockHandler::FindFromCurrentFrame
     };
 
     // Fallback to dynamic dispatch if this callsite is megamorphic
@@ -10194,45 +10191,18 @@ fn gen_toregexp(
     let opt = jit.get_arg(0).as_i64();
     let cnt = jit.get_arg(1).as_usize();
 
-    // Save the PC and SP because this allocates an object and could
-    // raise an exception.
+    // Allocates objects and could raise an exception.
     jit_prepare_non_leaf_call(jit, asm);
 
     let values_ptr = asm.lea(asm.ctx.sp_opnd(-(cnt as i32)));
 
-    let ary = asm.ccall(
-        rb_ary_tmp_new_from_values as *const u8,
-        vec![
-            Opnd::Imm(0),
-            cnt.into(),
-            values_ptr,
-        ]
+    let regexp = asm.ccall(
+        rb_reg_new_from_values as _,
+        vec![cnt.into(), values_ptr, opt.into()],
     );
     asm.stack_pop(cnt); // Let ccall spill them
-
-    // Save the array so we can clear it later
-    asm.cpush(ary);
-    asm.cpush(ary); // Alignment
-
-    let val = asm.ccall(
-        rb_reg_new_ary as *const u8,
-        vec![
-            ary,
-            Opnd::Imm(opt),
-        ]
-    );
-
-    // The actual regex is in RAX now.  Pop the temp array from
-    // rb_ary_tmp_new_from_values into C arg regs so we can clear it
-    let ary = asm.cpop(); // Alignment
-    asm.cpop_into(ary);
-
-    // The value we want to push on the stack is in RAX right now
     let stack_ret = asm.stack_push(Type::UnknownHeap);
-    asm.mov(stack_ret, val);
-
-    // Clear the temp array.
-    asm.ccall(rb_ary_clear as *const u8, vec![ary]);
+    asm.mov(stack_ret, regexp);
 
     Some(KeepCompiling)
 }
@@ -10814,8 +10784,8 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_concattoarray => Some(gen_concattoarray),
         YARVINSN_pushtoarray => Some(gen_pushtoarray),
         YARVINSN_newrange => Some(gen_newrange),
-        YARVINSN_putstring => Some(gen_putstring),
-        YARVINSN_putchilledstring => Some(gen_putchilledstring),
+        YARVINSN_dupstring => Some(gen_dupstring),
+        YARVINSN_dupchilledstring => Some(gen_dupchilledstring),
         YARVINSN_expandarray => Some(gen_expandarray),
         YARVINSN_defined => Some(gen_defined),
         YARVINSN_definedivar => Some(gen_definedivar),

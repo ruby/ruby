@@ -173,6 +173,9 @@ to the same gem path as user-installed gems.
   rescue Gem::InstallError => e
     alert_error "Error installing #{gem_name}:\n\t#{e.message}"
     terminate_interaction 1
+  rescue Gem::DependencyResolutionError => e
+    alert_error "Error installing #{gem_name}:\n\t#{e.message}"
+    terminate_interaction 2
   rescue Gem::GemNotFoundException => e
     show_lookup_failure e.name, e.version, e.errors, false
 

@@ -1,10 +1,7 @@
 require_relative '../../spec_helper'
 
 describe "Struct#deconstruct" do
-  it "returns an array of attribute values" do
-    struct = Struct.new(:x, :y)
-    s = struct.new(1, 2)
-
-    s.deconstruct.should == [1, 2]
+  it "is an alias of Struct#to_a" do
+    Struct.instance_method(:deconstruct).should == Struct.instance_method(:to_a)
   end
 end

@@ -8,13 +8,13 @@ describe "Enumerable#chunk" do
 
   it "returns an Enumerator if called without a block" do
     chunk = EnumerableSpecs::Numerous.new(1, 2, 3, 1, 2).chunk
-    chunk.should be_an_instance_of(Enumerator)
+    chunk.should.instance_of?(Enumerator)
     result = chunk.with_index {|elt, i| elt - i }.to_a
     result.should == [[1, [1, 2, 3]], [-2, [1, 2]]]
   end
 
   it "returns an Enumerator if given a block" do
-    EnumerableSpecs::Numerous.new.chunk {}.should be_an_instance_of(Enumerator)
+    EnumerableSpecs::Numerous.new.chunk {}.should.instance_of?(Enumerator)
   end
 
   it "yields the current element and the current chunk to the block" do
@@ -59,14 +59,14 @@ describe "Enumerable#chunk" do
 
   it "raises a RuntimeError if the block returns a Symbol starting with an underscore other than :_alone or :_separator" do
     e = EnumerableSpecs::Numerous.new(1, 2, 3, 2, 1)
-    -> { e.chunk { |x| :_arbitrary }.to_a }.should raise_error(RuntimeError)
+    -> { e.chunk { |x| :_arbitrary }.to_a }.should.raise(RuntimeError)
   end
 
   it "does not accept arguments" do
     e = EnumerableSpecs::Numerous.new(1, 2, 3)
     -> {
       e.chunk(1) {}
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it 'returned Enumerator size returns nil' do

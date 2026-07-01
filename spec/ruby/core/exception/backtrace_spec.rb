@@ -7,15 +7,15 @@ describe "Exception#backtrace" do
   end
 
   it "returns nil if no backtrace was set" do
-    Exception.new.backtrace.should be_nil
+    Exception.new.backtrace.should == nil
   end
 
   it "returns an Array" do
-    @backtrace.should be_an_instance_of(Array)
+    @backtrace.should.instance_of?(Array)
   end
 
   it "sets each element to a String" do
-    @backtrace.each {|l| l.should be_an_instance_of(String)}
+    @backtrace.each {|l| l.should.instance_of?(String)}
   end
 
   it "includes the filename of the location where self raised in the first element" do
@@ -94,13 +94,13 @@ describe "Exception#backtrace" do
       raise
     rescue RuntimeError => err
       bt = err.backtrace
-      err.dup.backtrace.should equal(bt)
+      err.dup.backtrace.should.equal?(bt)
 
       new_bt = ['hi']
       err.set_backtrace new_bt
 
       err.backtrace.should == new_bt
-      err.dup.backtrace.should equal(new_bt)
+      err.dup.backtrace.should.equal?(new_bt)
     end
   end
 end

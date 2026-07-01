@@ -628,7 +628,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *    PositionalOnly.new(0, 1)
  *    # => #<struct PositionalOnly foo=0, bar=1>
  *    PositionalOnly.new(bar: 1, foo: 0)
- *    # => #<struct PositionalOnly foo={:foo=>1, :bar=>2}, bar=nil>
+ *    # => #<struct PositionalOnly foo={foo: 1, bar: 2}, bar=nil>
  *    # Note that no error is raised, but arguments treated as one hash value
  *
  *    # Same as not providing keyword_init:
@@ -827,7 +827,7 @@ struct_alloc(VALUE klass)
         embedded_size += sizeof(VALUE);
     }
 
-    VALUE flags = T_STRUCT | (RGENGC_WB_PROTECTED_STRUCT ? FL_WB_PROTECTED : 0);
+    VALUE flags = T_STRUCT;
 
     if (n > 0 && rb_gc_size_allocatable_p(embedded_size)) {
         flags |= n << RSTRUCT_EMBED_LEN_SHIFT;
@@ -837,9 +837,9 @@ struct_alloc(VALUE klass)
             flags |= RSTRUCT_GEN_FIELDS;
         }
 
-        NEWOBJ_OF(st, struct RStruct, klass, flags, embedded_size, 0);
+        NEWOBJ_OF(st, struct RStruct, klass, flags, embedded_size);
         if (RCLASS_MAX_IV_COUNT(klass) == 0) {
-            if (!rb_shape_obj_has_fields((VALUE)st)
+            if (!rb_obj_shape_has_fields((VALUE)st)
                     && embedded_size < rb_gc_obj_slot_size((VALUE)st)) {
                 FL_UNSET_RAW((VALUE)st, RSTRUCT_GEN_FIELDS);
                 RSTRUCT_SET_FIELDS_OBJ((VALUE)st, 0);
@@ -854,7 +854,7 @@ struct_alloc(VALUE klass)
         return (VALUE)st;
     }
     else {
-        NEWOBJ_OF(st, struct RStruct, klass, flags, sizeof(struct RStruct), 0);
+        NEWOBJ_OF(st, struct RStruct, klass, flags, sizeof(struct RStruct));
 
         st->as.heap.ptr = NULL;
         st->as.heap.fields_obj = 0;
@@ -1016,7 +1016,7 @@ inspect_struct(VALUE s, VALUE prefix, int recur)
         slot = RARRAY_AREF(members, i);
         id = SYM2ID(slot);
         if (rb_is_local_id(id) || rb_is_const_id(id)) {
-            rb_str_append(str, rb_id2str(id));
+            rb_str_append(str, rb_sym2str(slot));
         }
         else {
             rb_str_append(str, rb_inspect(slot));
@@ -1076,14 +1076,14 @@ rb_struct_to_a(VALUE s)
  *    Customer = Struct.new(:name, :address, :zip)
  *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
  *    h = joe.to_h
- *    h # => {:name=>"Joe Smith", :address=>"123 Maple, Anytown NC", :zip=>12345}
+ *    h # => {name: "Joe Smith", address: "123 Maple, Anytown NC", zip: 12345}
  *
  *  If a block is given, it is called with each name/value pair;
  *  the block should return a 2-element array whose elements will become
  *  a key/value pair in the returned hash:
  *
  *    h = joe.to_h{|name, value| [name.upcase, value.to_s.upcase]}
- *    h # => {:NAME=>"JOE SMITH", :ADDRESS=>"123 MAPLE, ANYTOWN NC", :ZIP=>"12345"}
+ *    h # => {NAME: "JOE SMITH", ADDRESS: "123 MAPLE, ANYTOWN NC", ZIP: "12345"}
  *
  *  Raises ArgumentError if the block returns an inappropriate value.
  *
@@ -1116,12 +1116,12 @@ rb_struct_to_h(VALUE s)
  *    Customer = Struct.new(:name, :address, :zip)
  *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
  *    h = joe.deconstruct_keys([:zip, :address])
- *    h # => {:zip=>12345, :address=>"123 Maple, Anytown NC"}
+ *    h # => {zip: 12345, address: "123 Maple, Anytown NC"}
  *
  *  Returns all names and values if +array_of_names+ is +nil+:
  *
  *    h = joe.deconstruct_keys(nil)
- *    h # => {:name=>"Joseph Smith, Jr.", :address=>"123 Maple, Anytown NC", :zip=>12345}
+ *    h # => {name: "Joseph Smith, Jr.", address: "123 Maple, Anytown NC", zip: 12345}
  *
  */
 static VALUE
@@ -1565,8 +1565,8 @@ rb_struct_size(VALUE s)
  *
  *   Foo = Struct.new(:a)
  *   f = Foo.new(Foo.new({b: [1, 2, 3]}))
- *   f.dig(:a) # => #<struct Foo a={:b=>[1, 2, 3]}>
- *   f.dig(:a, :a) # => {:b=>[1, 2, 3]}
+ *   f.dig(:a) # => #<struct Foo a={b: [1, 2, 3]}>
+ *   f.dig(:a, :a) # => {b: [1, 2, 3]}
  *   f.dig(:a, :a, :b) # => [1, 2, 3]
  *   f.dig(:a, :a, :b, 0) # => 1
  *   f.dig(:b, 0) # => nil
@@ -1574,8 +1574,8 @@ rb_struct_size(VALUE s)
  *  Given integer argument +n+,
  *  returns the object that is specified by +n+ and +identifiers+:
  *
- *   f.dig(0) # => #<struct Foo a={:b=>[1, 2, 3]}>
- *   f.dig(0, 0) # => {:b=>[1, 2, 3]}
+ *   f.dig(0) # => #<struct Foo a={b: [1, 2, 3]}>
+ *   f.dig(0, 0) # => {b: [1, 2, 3]}
  *   f.dig(0, 0, :b) # => [1, 2, 3]
  *   f.dig(0, 0, :b, 0) # => 1
  *   f.dig(:b, 0) # => nil
@@ -2034,7 +2034,7 @@ rb_data_inspect(VALUE s)
  *    distance = Measure[10, 'km']
  *
  *    distance.to_h
- *    #=> {:amount=>10, :unit=>"km"}
+ *    #=> {amount: 10, unit: "km"}
  *
  *  Like Enumerable#to_h, if the block is provided, it is expected to
  *  produce key-value pairs to construct a hash:
@@ -2108,8 +2108,8 @@ rb_data_inspect(VALUE s)
  *    Measure = Data.define(:amount, :unit)
  *
  *    distance = Measure[10, 'km']
- *    distance.deconstruct_keys(nil) #=> {:amount=>10, :unit=>"km"}
- *    distance.deconstruct_keys([:amount]) #=> {:amount=>10}
+ *    distance.deconstruct_keys(nil) #=> {amount: 10, unit: "km"}
+ *    distance.deconstruct_keys([:amount]) #=> {amount: 10}
  *
  *    # usage
  *    case distance

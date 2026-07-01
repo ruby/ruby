@@ -465,10 +465,10 @@ class TestHash < Test::Unit::TestCase
   def test_each_value
     res = []
     @cls[].each_value { |v| res << v }
-    assert_equal(0, [].length)
+    assert_equal(0, res.length)
 
     @h.each_value { |v| res << v }
-    assert_equal(0, [].length)
+    assert_equal(@h.size, res.length)
 
     expected = []
     @h.each { |k, v| expected << v }
@@ -2430,5 +2430,34 @@ class TestHashOnly < Test::Unit::TestCase
       hash[klass.new(val)] = val
     end
     assert_equal values, hash.values, "[ruby-core:121239] [Bug #21170]"
+  end
+
+  def test_ar_find_entry_hint_eql_mutates_hash
+    # ar_find_entry_hint caches bound and hints, then calls #eql? which
+    # can mutate the hash. If #eql? triggers AR->ST conversion the loop
+    # would read st_table memory as ar_table pairs.
+    key_class = Class.new do
+      attr_reader :v
+      def initialize(v, h = nil)
+        @v = v
+        @h = h
+      end
+      def hash; 0; end
+      def eql?(other)
+        if @h
+          # Trigger AR->ST conversion
+          @h[42] = 42
+        end
+        other.is_a?(self.class) && @v == other.v
+      end
+    end
+
+    h = {}
+    8.times { |i| h[key_class.new(i)] = i }
+
+    # Not in the hash, so ar_find_entry_hint checks every entry.
+    lookup_key = key_class.new(-1, h)
+
+    assert_equal nil, h[lookup_key]
   end
 end

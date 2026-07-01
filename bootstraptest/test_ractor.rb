@@ -2163,7 +2163,7 @@ assert_equal 'ok', %q{
 
 # move object with complex generic ivars
 assert_equal 'ok', %q{
-  # Make Array too_complex
+  # Make Array complex
   30.times { |i| [].instance_variable_set(:"@complex#{i}", 1) }
 
   ractor = Ractor.new { Ractor.receive }
@@ -2190,7 +2190,7 @@ assert_equal 'ok', %q{
 
 # copy object with complex generic ivars
 assert_equal 'ok', %q{
-  # Make Array too_complex
+  # Make Array complex
   30.times { |i| [].instance_variable_set(:"@complex#{i}", 1) }
 
   ractor = Ractor.new { Ractor.receive }
@@ -2643,3 +2643,24 @@ rescue ThreadError => e
   end
 end
 RUBY
+
+# Concurrent super calls with keyword arguments must not race on the
+# callinfo kwarg reference count. [Bug #22075]
+assert_equal 'ok', %q{
+  class Base
+    def foo(a:, b:, c:) = a
+  end
+
+  class Sub < Base
+    def foo(a:, b:, c:) = super(a: a, b: b, c: c)
+  end
+
+  4.times.map do
+    Ractor.new do
+      obj = Sub.new
+      100_000.times { obj.foo(a: 1, b: 2, c: 3) }
+    end
+  end.each(&:join)
+
+  :ok
+}

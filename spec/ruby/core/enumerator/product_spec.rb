@@ -51,7 +51,7 @@ describe "Enumerator.product" do
   it "reject keyword arguments" do
     -> {
       Enumerator.product(1..3, foo: 1, bar: 2)
-    }.should raise_error(ArgumentError, "unknown keywords: :foo, :bar")
+    }.should.raise(ArgumentError, "unknown keywords: :foo, :bar")
   end
 
   it "calls only #each_entry method on arguments" do
@@ -68,11 +68,11 @@ describe "Enumerator.product" do
   it "raises NoMethodError when argument doesn't respond to #each_entry" do
     -> {
       Enumerator.product(Object.new).to_a
-    }.should raise_error(NoMethodError, /undefined method [`']each_entry' for/)
+    }.should.raise(NoMethodError, /undefined method [`']each_entry' for/)
   end
 
   it "calls #each_entry lazily" do
-    Enumerator.product(Object.new).should be_kind_of(Enumerator)
+    Enumerator.product(Object.new).should.is_a?(Enumerator)
   end
 
   it "iterates through consuming enumerator elements only once" do

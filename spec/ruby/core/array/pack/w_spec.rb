@@ -27,7 +27,7 @@ describe "Array#pack with format 'w'" do
   it "raise ArgumentError for NULL bytes between directives" do
     -> {
       [1, 2, 3].pack("w\x00w")
-    }.should raise_error(ArgumentError, /unknown pack directive/)
+    }.should.raise(ArgumentError, /unknown pack directive/)
   end
 
   it "ignores spaces between directives" do
@@ -35,7 +35,7 @@ describe "Array#pack with format 'w'" do
   end
 
   it "raises an ArgumentError when passed a negative value" do
-    -> { [-1].pack("w") }.should raise_error(ArgumentError)
+    -> { [-1].pack("w") }.should.raise(ArgumentError)
   end
 
   it "returns a binary string" do

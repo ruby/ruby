@@ -12,6 +12,6 @@ describe "Enumerator::ArithmeticSequence#each" do
   end
 
   it "returns self" do
-    @seq.each { |item| }.should equal(@seq)
+    @seq.each { |item| }.should.equal?(@seq)
   end
 end

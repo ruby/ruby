@@ -4,32 +4,32 @@ require_relative '../fixtures/classes'
 
 describe :string_eql_value, shared: true do
   it "returns true if self <=> string returns 0" do
-    'hello'.send(@method, 'hello').should be_true
+    'hello'.send(@method, 'hello').should == true
   end
 
   it "returns false if self <=> string does not return 0" do
-    "more".send(@method, "MORE").should be_false
-    "less".send(@method, "greater").should be_false
+    "more".send(@method, "MORE").should == false
+    "less".send(@method, "greater").should == false
   end
 
   it "ignores encoding difference of compatible string" do
-    "hello".dup.force_encoding("utf-8").send(@method, "hello".dup.force_encoding("iso-8859-1")).should be_true
+    "hello".dup.force_encoding("utf-8").send(@method, "hello".dup.force_encoding("iso-8859-1")).should == true
   end
 
   it "considers encoding difference of incompatible string" do
-    "\xff".dup.force_encoding("utf-8").send(@method, "\xff".dup.force_encoding("iso-8859-1")).should be_false
+    "\xff".dup.force_encoding("utf-8").send(@method, "\xff".dup.force_encoding("iso-8859-1")).should == false
   end
 
   it "considers encoding compatibility" do
-    "abcd".dup.force_encoding("utf-8").send(@method, "abcd".dup.force_encoding("utf-32le")).should be_false
+    "abcd".dup.force_encoding("utf-8").send(@method, "abcd".dup.force_encoding("utf-32le")).should == false
   end
 
   it "ignores subclass differences" do
     a = "hello"
     b = StringSpecs::MyString.new("hello")
 
-    a.send(@method, b).should be_true
-    b.send(@method, a).should be_true
+    a.send(@method, b).should == true
+    b.send(@method, a).should == true
   end
 
   it "returns true when comparing 2 empty strings but one is not ASCII-compatible" do

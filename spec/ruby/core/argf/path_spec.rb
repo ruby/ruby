@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/filename'
 
 describe "ARGF.path" do
-  it_behaves_like :argf_filename, :path
+  it "is an alias of ARGF.filename" do
+    ARGF.method(:path).should == ARGF.method(:filename)
+  end
 end

@@ -38,7 +38,7 @@ module Bundler
 
       Bundler::Fetcher.disable_endpoint = options["full-index"]
 
-      Plugin.gemfile_install(Bundler.default_gemfile) if Bundler.settings[:plugins]
+      Plugin.gemfile_install(Bundler.default_gemfile, Bundler.default_lockfile) if Bundler.settings[:plugins]
 
       # For install we want to enable strict validation
       # (rather than some optimizations we perform at app runtime).
@@ -111,6 +111,9 @@ module Bundler
       Bundler.settings.set_command_option_if_given :shebang, options["shebang"]
 
       Bundler.settings.set_command_option_if_given :jobs, options["jobs"]
+
+      Bundler::CLI::Common.validate_cooldown!(options["cooldown"])
+      Bundler.settings.set_command_option_if_given :cooldown, options["cooldown"]
 
       Bundler.settings.set_command_option_if_given :no_prune, options["no-prune"]
 

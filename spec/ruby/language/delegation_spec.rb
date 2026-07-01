@@ -59,6 +59,20 @@ describe "delegation with def(...)" do
 
     a.new.delegate(1, b: 2).should == Range.new([[], {}, nil], nil, true)
   end
+
+  it "passes non-keyword trailing hash through without modification" do
+    a = Class.new(DelegationSpecs::Target)
+    a.class_eval(<<-RUBY)
+      def delegate(...)
+        target_single(...)
+      end
+    RUBY
+
+    h = {a:1}
+    h.freeze
+    h2 = a.new.delegate(h)
+    h2.should.equal?(h)
+  end
 end
 
 describe "delegation with def(x, ...)" do
@@ -113,7 +127,7 @@ describe "delegation with def(*)" do
     it "does not allow delegating rest" do
       -> {
         eval "def m(*); proc { |*| n(*) } end"
-      }.should raise_error(SyntaxError, /anonymous rest parameter is also used within block/)
+      }.should.raise(SyntaxError, /anonymous rest parameter is also used within block/)
     end
   end
 end
@@ -134,7 +148,7 @@ describe "delegation with def(**)" do
     it "does not allow delegating kwargs" do
       -> {
         eval "def m(**); proc { |**| n(**) } end"
-      }.should raise_error(SyntaxError, /anonymous keyword rest parameter is also used within block/)
+      }.should.raise(SyntaxError, /anonymous keyword rest parameter is also used within block/)
     end
   end
 end
@@ -156,7 +170,7 @@ describe "delegation with def(&)" do
     it "does not allow delegating a block" do
       -> {
         eval "def m(&); proc { |&| n(&) } end"
-      }.should raise_error(SyntaxError, /anonymous block parameter is also used within block/)
+      }.should.raise(SyntaxError, /anonymous block parameter is also used within block/)
     end
   end
 end

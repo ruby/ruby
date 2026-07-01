@@ -7,18 +7,18 @@ describe "OpenStruct#method_missing when called with a method name ending in '='
   end
 
   it "raises an ArgumentError when not passed any additional arguments" do
-    -> { @os.send(:test=) }.should raise_error(ArgumentError)
+    -> { @os.send(:test=) }.should.raise(ArgumentError)
   end
 end
 
 describe "OpenStruct#method_missing when passed additional arguments" do
   it "raises a NoMethodError when the key does not exist" do
     os = OpenStruct.new
-    -> { os.test(1, 2, 3) }.should raise_error(NoMethodError)
+    -> { os.test(1, 2, 3) }.should.raise(NoMethodError)
   end
 
   it "raises an ArgumentError when the key exists" do
     os = OpenStruct.new(test: 20)
-    -> { os.test(1, 2, 3) }.should raise_error(ArgumentError)
+    -> { os.test(1, 2, 3) }.should.raise(ArgumentError)
   end
 end

@@ -20,7 +20,7 @@ ruby_version_is ""..."4.0" do
 
     it "sets self to a non-secure cookie" do
       @cookie.send(:initialize, "test")
-      @cookie.secure.should be_false
+      @cookie.secure.should == false
     end
 
     it "does set self's path to an empty String when ENV[\"SCRIPT_NAME\"] is not set" do
@@ -49,11 +49,11 @@ ruby_version_is ""..."4.0" do
     end
 
     it "does not set self's expiration date" do
-      @cookie.expires.should be_nil
+      @cookie.expires.should == nil
     end
 
     it "does not set self's domain" do
-      @cookie.domain.should be_nil
+      @cookie.domain.should == nil
     end
   end
 
@@ -76,7 +76,7 @@ ruby_version_is ""..."4.0" do
       @cookie.path.should == "some/path/"
       @cookie.domain.should == "example.com"
       @cookie.expires.should == Time.at(1196524602)
-      @cookie.secure.should be_true
+      @cookie.secure.should == true
     end
 
     it "does set self's path based on ENV[\"SCRIPT_NAME\"] when the Hash has no 'path' entry" do
@@ -122,8 +122,8 @@ ruby_version_is ""..."4.0" do
     end
 
     it "raises a ArgumentError when the passed Hash has no 'name' entry" do
-      -> { @cookie.send(:initialize, {}) }.should raise_error(ArgumentError)
-      -> { @cookie.send(:initialize, "value" => "test") }.should raise_error(ArgumentError)
+      -> { @cookie.send(:initialize, {}) }.should.raise(ArgumentError)
+      -> { @cookie.send(:initialize, "value" => "test") }.should.raise(ArgumentError)
     end
   end
 
@@ -144,7 +144,7 @@ ruby_version_is ""..."4.0" do
 
     it "sets self to a non-secure cookie" do
       @cookie.send(:initialize, "test", "one", "two", "three")
-      @cookie.secure.should be_false
+      @cookie.secure.should == false
     end
   end
 end

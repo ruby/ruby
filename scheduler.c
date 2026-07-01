@@ -30,7 +30,9 @@ static ID id_unblock;
 
 static ID id_yield;
 
+#ifdef FIBER_SCHEDULER_CALL_TIMEOUT_AFTER
 static ID id_timeout_after;
+#endif
 static ID id_kernel_sleep;
 static ID id_process_wait;
 
@@ -90,7 +92,7 @@ static const rb_data_type_t blocking_operation_data_type = {
         RUBY_DEFAULT_FREE,
         blocking_operation_memsize,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 /*
@@ -314,7 +316,9 @@ Init_Fiber_Scheduler(void)
     id_unblock = rb_intern_const("unblock");
     id_yield = rb_intern_const("yield");
 
+#ifdef FIBER_SCHEDULER_CALL_TIMEOUT_AFTER
     id_timeout_after = rb_intern_const("timeout_after");
+#endif
     id_kernel_sleep = rb_intern_const("kernel_sleep");
     id_process_wait = rb_intern_const("process_wait");
 
@@ -555,7 +559,7 @@ rb_fiber_scheduler_yield(VALUE scheduler)
     return rb_fiber_scheduler_kernel_sleep(scheduler, RB_INT2NUM(0));
 }
 
-#if 0
+#ifdef FIBER_SCHEDULER_CALL_TIMEOUT_AFTER
 /*
  *  Document-method: Fiber::Scheduler#timeout_after
  *  call-seq: timeout_after(duration, exception_class, *exception_arguments, &block) -> result of block
@@ -680,9 +684,13 @@ rb_fiber_scheduler_unblock(VALUE scheduler, VALUE blocker, VALUE fiber)
     int saved_interrupt_mask = ec->interrupt_mask;
     ec->interrupt_mask |= PENDING_INTERRUPT_MASK;
 
+    rb_control_frame_t *volatile cfp = ec->cfp;
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         result = rb_funcall(scheduler, id_unblock, 2, blocker, fiber);
+    }
+    else {
+        rb_vm_rewind_cfp(ec, cfp);
     }
     EC_POP_TAG();
 
@@ -1111,6 +1119,9 @@ VALUE rb_fiber_scheduler_blocking_operation_wait(VALUE scheduler, void* (*functi
     operation->data2 = NULL;
     operation->unblock_function = NULL;
 
+    // Ensure that the blocking operation remains visible until this point:
+    RB_GC_GUARD(blocking_operation);
+
     // If the blocking operation was never executed, return Qundef to signal the caller to use rb_nogvl instead
     if (current_status == RB_FIBER_SCHEDULER_BLOCKING_OPERATION_STATUS_QUEUED) {
         return Qundef;
@@ -1142,9 +1153,13 @@ VALUE rb_fiber_scheduler_fiber_interrupt(VALUE scheduler, VALUE fiber, VALUE exc
     int saved_interrupt_mask = ec->interrupt_mask;
     ec->interrupt_mask |= PENDING_INTERRUPT_MASK;
 
+    rb_control_frame_t *volatile cfp = ec->cfp;
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         result = rb_check_funcall(scheduler, id_fiber_interrupt, 2, arguments);
+    }
+    else {
+        rb_vm_rewind_cfp(ec, cfp);
     }
     EC_POP_TAG();
 

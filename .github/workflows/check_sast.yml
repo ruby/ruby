@@ -40,12 +40,12 @@ jobs:
       security-events: write
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
 
       - name: Run zizmor
-        uses: zizmorcore/zizmor-action@71321a20a9ded102f6e9ce5718a2fcec2c4f70d8 # v0.5.2
+        uses: zizmorcore/zizmor-action@192e21d79ab29983730a13d1382995c2307fbcaa # v0.5.7
         continue-on-error: true
 
   analyze:
@@ -73,26 +73,26 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
+        uses: github/codeql-action/init@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2
         with:
           languages: ${{ matrix.language }}
           build-mode: none
           config-file: .github/codeql/codeql-config.yml
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
+        uses: github/codeql-action/analyze@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2
         with:
           category: '/language:${{ matrix.language }}'
           upload: False
           output: sarif-results
 
       - name: filter-sarif
-        uses: advanced-security/filter-sarif@2da736ff05ef065cb2894ac6892e47b5eac2c3c0 # v1.1.0.1.1
+        uses: advanced-security/filter-sarif@2da736ff05ef065cb2894ac6892e47b5eac2c3c0 # v1.1
         with:
           patterns: |
             +**/*.rb
@@ -100,6 +100,7 @@ jobs:
             -lib/uri/rfc3986_parser.rb:rb/overly-large-range
             -lib/bundler/vendor/uri/lib/uri/mailto.rb:rb/overly-large-range
             -lib/bundler/vendor/uri/lib/uri/rfc3986_parser.rb:rb/overly-large-range
+            -spec/ruby/core/regexp/timeout_spec.rb:rb/redos
             -test/ruby/test_io.rb:rb/non-constant-kernel-open
             -test/open-uri/test_open-uri.rb:rb/non-constant-kernel-open
             -test/open-uri/test_ssl.rb:rb/non-constant-kernel-open
@@ -115,7 +116,7 @@ jobs:
         continue-on-error: true
 
       - name: filter-sarif
-        uses: advanced-security/filter-sarif@2da736ff05ef065cb2894ac6892e47b5eac2c3c0 # v1.1.0.1.1
+        uses: advanced-security/filter-sarif@2da736ff05ef065cb2894ac6892e47b5eac2c3c0 # v1.1
         with:
           patterns: |
             +**/*.c
@@ -126,7 +127,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload SARIF
-        uses: github/codeql-action/upload-sarif@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
+        uses: github/codeql-action/upload-sarif@8aad20d150bbac5944a9f9d289da16a4b0d87c1e # v4.36.2
         with:
           sarif_file: sarif-results/${{ matrix.language }}.sarif
         continue-on-error: true

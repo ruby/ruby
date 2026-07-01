@@ -24,7 +24,23 @@ module Gem
       tmp_suffix = ".tmp.#{SecureRandom.hex}"
       dirname = File.dirname(file_name)
       basename = File.basename(file_name)
-      tmp_path = File.join(dirname, ".#{basename.byteslice(0, 254 - tmp_suffix.bytesize)}#{tmp_suffix}")
+      base_slice = basename.byteslice(0, 254 - tmp_suffix.bytesize)
+      tmp_path = File.join(dirname, ".#{base_slice}#{tmp_suffix}")
+
+      # The temporary name is longer than the final one, so on Windows a
+      # writable destination can still map to a path beyond the 260-character
+      # MAX_PATH limit. Trim the random suffix first, keeping at least 8 hex
+      # characters to avoid collisions, then shorten the basename if that is not
+      # enough. Recomputing the basename from the trimmed suffix would just let
+      # it grow back, so trim the already-sliced basename instead.
+      if tmp_path.length >= 260 && Gem.win_platform?
+        overflow = tmp_path.length - 259
+        trim = [tmp_suffix.bytesize - (".tmp.".bytesize + 8), overflow].min
+        tmp_suffix = tmp_suffix.byteslice(0, tmp_suffix.bytesize - trim)
+        overflow -= trim
+        base_slice = base_slice.byteslice(0, [base_slice.bytesize - overflow, 0].max) if overflow > 0
+        tmp_path = File.join(dirname, ".#{base_slice}#{tmp_suffix}")
+      end
 
       flags = File::RDWR | File::CREAT | File::EXCL | File::BINARY
       flags |= File::SHARE_DELETE if defined?(File::SHARE_DELETE)

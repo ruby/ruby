@@ -43,7 +43,7 @@ END
     input = "<%=h '<>' %>"
     -> {
       ERB.new(input).result()
-    }.should raise_error(NameError)
+    }.should.raise(NameError)
   end
 
 
@@ -81,6 +81,6 @@ END
 
     -> {
       myerb2.new.main2()
-    }.should raise_error(NameError)
+    }.should.raise(NameError)
   end
 end

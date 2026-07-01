@@ -18,7 +18,7 @@ describe "Fiber.yield" do
 
   it "returns nil to the caller if given no arguments" do
     fiber = Fiber.new { true; Fiber.yield; true }
-    fiber.resume.should be_nil
+    fiber.resume.should == nil
     fiber.resume
   end
 
@@ -44,6 +44,6 @@ describe "Fiber.yield" do
   end
 
   it "raises a FiberError if called from the root Fiber" do
-    ->{ Fiber.yield }.should raise_error(FiberError)
+    ->{ Fiber.yield }.should.raise(FiberError)
   end
 end

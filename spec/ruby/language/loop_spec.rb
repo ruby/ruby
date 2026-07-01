@@ -15,7 +15,7 @@ describe "The loop expression" do
       inner_loop = 123
       break
     end
-    -> { inner_loop }.should raise_error(NameError)
+    -> { inner_loop }.should.raise(NameError)
   end
 
   it "returns the value passed to break if interrupted by break" do

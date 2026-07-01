@@ -29,14 +29,14 @@ describe "Complex#to_r" do
 
   describe "when the imaginary part is non-zero" do
     it "raises RangeError" do
-      -> { Complex(0, 1).to_r }.should raise_error(RangeError)
+      -> { Complex(0, 1).to_r }.should.raise(RangeError)
     end
   end
 
   describe "when the imaginary part is Float 0.0" do
     ruby_version_is ''...'3.4' do
       it "raises RangeError" do
-        -> { Complex(0, 0.0).to_r }.should raise_error(RangeError)
+        -> { Complex(0, 0.0).to_r }.should.raise(RangeError)
       end
     end
 

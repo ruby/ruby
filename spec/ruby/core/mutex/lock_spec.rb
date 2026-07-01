@@ -25,7 +25,7 @@ describe "Mutex#lock" do
     m.lock
     -> {
       m.lock
-    }.should raise_error(ThreadError, /deadlock/)
+    }.should.raise(ThreadError, /deadlock/)
   end
 
   it "raises a deadlock ThreadError when multiple fibers from the same thread try to lock" do
@@ -35,7 +35,7 @@ describe "Mutex#lock" do
     f0 = Fiber.new do
       m.lock
     end
-    -> { f0.resume }.should raise_error(ThreadError, /deadlock/)
+    -> { f0.resume }.should.raise(ThreadError, /deadlock/)
 
     m.unlock
     f1 = Fiber.new do
@@ -46,7 +46,7 @@ describe "Mutex#lock" do
       m.lock
     end
     f1.resume
-    -> { f2.resume }.should raise_error(ThreadError, /deadlock/)
+    -> { f2.resume }.should.raise(ThreadError, /deadlock/)
   end
 
   it "does not raise deadlock if a fiber's attempt to lock was interrupted" do
@@ -75,7 +75,7 @@ describe "Mutex#lock" do
         Fiber.new do
           -> do
             lock.synchronize {}
-          end.should_not raise_error(ThreadError)
+          end.should_not.raise(ThreadError)
         end.resume
       rescue RuntimeError
         retry

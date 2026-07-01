@@ -817,7 +817,7 @@ dependencies: []
       write_file full_path do |io|
         io.write @a2.to_ruby_for_cache
       end
-    rescue Errno::EINVAL
+    rescue Errno::EINVAL, Errno::EACCES
       pend "cannot create '#{full_path}' on this platform"
     end
 
@@ -836,7 +836,7 @@ dependencies: []
       write_file full_path do |io|
         io.write @a2.to_ruby_for_cache
       end
-    rescue Errno::EINVAL
+    rescue Errno::EINVAL, Errno::EACCES
       pend "cannot create '#{full_path}' on this platform"
     end
 
@@ -855,7 +855,7 @@ dependencies: []
       write_file full_path do |io|
         io.write @a2.to_ruby_for_cache
       end
-    rescue Errno::EINVAL
+    rescue Errno::EINVAL, Errno::EACCES
       pend "cannot create '#{full_path}' on this platform"
     end
 
@@ -3159,14 +3159,14 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
   end
 
   def test_validate_files
-    pend "test_validate_files skipped on MS Windows (symlink)" if Gem.win_platform?
+    pend "Symlinks not supported or not enabled" unless symlink_supported?
     util_setup_validate
 
     @a1.files += ["lib", "lib2"]
     @a1.extensions << "ext/a/extconf.rb"
 
     Dir.chdir @tempdir do
-      FileUtils.ln_s "lib/code.rb", "lib2" unless vc_windows?
+      FileUtils.ln_s "lib/code.rb", "lib2"
 
       use_ui @ui do
         @a1.validate

@@ -22,10 +22,10 @@ describe "Digest.hexencode" do
   end
 
   it "raises a TypeError when passed nil" do
-    -> { Digest.hexencode(nil) }.should raise_error(TypeError)
+    -> { Digest.hexencode(nil) }.should.raise(TypeError)
   end
 
   it "raises a TypeError when passed an Integer" do
-    -> { Digest.hexencode(9001) }.should raise_error(TypeError)
+    -> { Digest.hexencode(9001) }.should.raise(TypeError)
   end
 end

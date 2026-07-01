@@ -9,7 +9,7 @@ describe "SignalException.new" do
   end
 
   it "raises an exception with an invalid signal number" do
-    -> { SignalException.new(100000) }.should raise_error(ArgumentError)
+    -> { SignalException.new(100000) }.should.raise(ArgumentError)
   end
 
   it "takes a signal name without SIG prefix as the first argument" do
@@ -27,11 +27,11 @@ describe "SignalException.new" do
   end
 
   it "raises an exception with an invalid signal name" do
-    -> { SignalException.new("NONEXISTENT") }.should raise_error(ArgumentError)
+    -> { SignalException.new("NONEXISTENT") }.should.raise(ArgumentError)
   end
 
   it "raises an exception with an invalid first argument type" do
-    -> { SignalException.new(Object.new) }.should raise_error(ArgumentError)
+    -> { SignalException.new(Object.new) }.should.raise(ArgumentError)
   end
 
   it "takes a signal symbol without SIG prefix as the first argument" do
@@ -49,7 +49,7 @@ describe "SignalException.new" do
   end
 
   it "raises an exception with an invalid signal name" do
-    -> { SignalException.new(:NONEXISTENT) }.should raise_error(ArgumentError)
+    -> { SignalException.new(:NONEXISTENT) }.should.raise(ArgumentError)
   end
 
   it "takes an optional message argument with a signal number" do
@@ -60,7 +60,7 @@ describe "SignalException.new" do
   end
 
   it "raises an exception for an optional argument with a signal name" do
-    -> { SignalException.new("INT","name") }.should raise_error(ArgumentError)
+    -> { SignalException.new("INT","name") }.should.raise(ArgumentError)
   end
 end
 

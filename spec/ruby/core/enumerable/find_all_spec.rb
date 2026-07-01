@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
-require_relative 'shared/find_all'
 
 describe "Enumerable#find_all" do
-  it_behaves_like :enumerable_find_all, :find_all
+  it "is an alias of Enumerable#select" do
+    Enumerable.instance_method(:find_all).should == Enumerable.instance_method(:select)
+  end
 end

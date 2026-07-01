@@ -724,7 +724,11 @@ static void State_compact(void *ptr)
 
 static size_t State_memsize(const void *ptr)
 {
+#ifdef HAVE_RUBY_TYPED_EMBEDDABLE
+    return 0;
+#else
     return sizeof(JSON_Generator_State);
+#endif
 }
 
 static const rb_data_type_t JSON_Generator_State_type = {
@@ -735,7 +739,7 @@ static const rb_data_type_t JSON_Generator_State_type = {
         .dsize = State_memsize,
         .dcompact = State_compact,
     },
-    .flags = RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_EMBEDDABLE,
+    .flags = RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_EMBEDDABLE,
 };
 
 static void state_init(JSON_Generator_State *state)
@@ -819,9 +823,17 @@ static VALUE encode_json_string_rescue(VALUE str, VALUE exception)
     return Qundef;
 }
 
+static inline int json_str_coderange(VALUE str) {
+    int coderange = RB_ENC_CODERANGE(str);
+    if (coderange == RUBY_ENC_CODERANGE_UNKNOWN) {
+        coderange = rb_enc_str_coderange(str);
+    }
+    return coderange;
+}
+
 static inline bool valid_json_string_p(VALUE str)
 {
-    int coderange = rb_enc_str_coderange(str);
+    int coderange = json_str_coderange(str);
 
     if (RB_LIKELY(coderange == ENC_CODERANGE_7BIT)) {
         return true;
@@ -834,12 +846,8 @@ static inline bool valid_json_string_p(VALUE str)
     return false;
 }
 
-static inline VALUE ensure_valid_encoding(struct generate_json_data *data, VALUE str, bool as_json_called, bool is_key)
+NOINLINE(static) VALUE convert_invalid_encoding(struct generate_json_data *data, VALUE str, bool as_json_called, bool is_key)
 {
-    if (RB_LIKELY(valid_json_string_p(str))) {
-        return str;
-    }
-
     if (!as_json_called && data->state->strict && RTEST(data->state->as_json)) {
         VALUE coerced_str = json_call_as_json(data->state, str, Qfalse);
         if (coerced_str != str) {
@@ -875,6 +883,16 @@ static inline VALUE ensure_valid_encoding(struct generate_json_data *data, VALUE
     return rb_rescue(encode_json_string_try, str, encode_json_string_rescue, str);
 }
 
+ALWAYS_INLINE(static) VALUE ensure_valid_encoding(struct generate_json_data *data, VALUE str, bool as_json_called, bool is_key)
+{
+    if (RB_LIKELY(valid_json_string_p(str))) {
+        return str;
+    }
+    else {
+        return convert_invalid_encoding(data, str, as_json_called, is_key);
+    }
+}
+
 static void raw_generate_json_string(FBuffer *buffer, struct generate_json_data *data, VALUE obj)
 {
     fbuffer_append_char(buffer, '"');
@@ -893,7 +911,7 @@ static void raw_generate_json_string(FBuffer *buffer, struct generate_json_data 
     search.chunk_end = NULL;
 #endif /* HAVE_SIMD */
 
-    switch (rb_enc_str_coderange(obj)) {
+    switch (json_str_coderange(obj)) {
         case ENC_CODERANGE_7BIT:
         case ENC_CODERANGE_VALID:
             if (RB_UNLIKELY(data->state->ascii_only)) {
@@ -1290,10 +1308,8 @@ static inline VALUE cState_partial_generate(VALUE self, VALUE obj, generator_fun
     GET_STATE(self);
 
     char stack_buffer[FBUFFER_STACK_SIZE];
-    FBuffer buffer = {
-        .io = RTEST(io) ? io : Qfalse,
-    };
-    fbuffer_stack_init(&buffer, state->buffer_initial_length, stack_buffer, FBUFFER_STACK_SIZE);
+    FBuffer buffer = { 0 };
+    fbuffer_init(&buffer, state->buffer_initial_length, io, stack_buffer, FBUFFER_STACK_SIZE);
 
     struct generate_json_data data = {
         .buffer = &buffer,
@@ -1353,12 +1369,14 @@ static VALUE cState_init_copy(VALUE obj, VALUE orig)
     if (!objState) rb_raise(rb_eArgError, "unallocated JSON::State");
 
     MEMCPY(objState, origState, JSON_Generator_State, 1);
-    objState->indent = origState->indent;
-    objState->space = origState->space;
-    objState->space_before = origState->space_before;
-    objState->object_nl = origState->object_nl;
-    objState->array_nl = origState->array_nl;
-    objState->as_json = origState->as_json;
+
+    RB_OBJ_WRITTEN(obj, Qundef, objState->indent);
+    RB_OBJ_WRITTEN(obj, Qundef, objState->space);
+    RB_OBJ_WRITTEN(obj, Qundef, objState->space_before);
+    RB_OBJ_WRITTEN(obj, Qundef, objState->object_nl);
+    RB_OBJ_WRITTEN(obj, Qundef, objState->array_nl);
+    RB_OBJ_WRITTEN(obj, Qundef, objState->as_json);
+
     return obj;
 }
 
@@ -1565,7 +1583,7 @@ static VALUE cState_max_nesting(VALUE self)
 
 static long long_config(VALUE num)
 {
-    return RTEST(num) ? FIX2LONG(num) : 0;
+    return RTEST(num) ? NUM2LONG(num) : 0;
 }
 
 // depth must never be negative; reject early with a clear error.
@@ -1575,6 +1593,9 @@ static long depth_config(VALUE num)
     long d = NUM2LONG(num);
     if (RB_UNLIKELY(d < 0)) {
         rb_raise(rb_eArgError, "depth must be >= 0 (got %ld)", d);
+    }
+    if (RB_UNLIKELY(d > INT_MAX)) {
+        rb_raise(rb_eArgError, "depth is too large (got %ld)", d);
     }
     return d;
 }
@@ -1847,10 +1868,8 @@ static VALUE cState_m_do_generate(VALUE klass, VALUE obj, VALUE opts, VALUE io, 
     configure_state(&state, Qfalse, opts);
 
     char stack_buffer[FBUFFER_STACK_SIZE];
-    FBuffer buffer = {
-        .io = RTEST(io) ? io : Qfalse,
-    };
-    fbuffer_stack_init(&buffer, state.buffer_initial_length, stack_buffer, FBUFFER_STACK_SIZE);
+    FBuffer buffer = { 0 };
+    fbuffer_init(&buffer, state.buffer_initial_length, io, stack_buffer, FBUFFER_STACK_SIZE);
 
     struct generate_json_data data = {
         .buffer = &buffer,

@@ -5,13 +5,13 @@ describe "IO::Buffer#free" do
     it "frees internal memory and nullifies the buffer" do
       buffer = IO::Buffer.new(4)
       buffer.free
-      buffer.null?.should be_true
+      buffer.null?.should == true
     end
 
     it "frees mapped memory and nullifies the buffer" do
       buffer = IO::Buffer.new(4, IO::Buffer::MAPPED)
       buffer.free
-      buffer.null?.should be_true
+      buffer.null?.should == true
     end
   end
 
@@ -20,7 +20,7 @@ describe "IO::Buffer#free" do
       File.open(__FILE__, "r") do |file|
         buffer = IO::Buffer.map(file, nil, 0, IO::Buffer::READONLY)
         buffer.free
-        buffer.null?.should be_true
+        buffer.null?.should == true
       end
     end
   end
@@ -32,7 +32,7 @@ describe "IO::Buffer#free" do
         buffer = IO::Buffer.for(string)
         # Read-only buffer, can't modify the string.
         buffer.free
-        buffer.null?.should be_true
+        buffer.null?.should == true
       end
     end
 
@@ -42,7 +42,7 @@ describe "IO::Buffer#free" do
         IO::Buffer.for(string) do |buffer|
           buffer.set_string("meat")
           buffer.free
-          buffer.null?.should be_true
+          buffer.null?.should == true
         end
         string.should == "meat"
       end
@@ -55,7 +55,7 @@ describe "IO::Buffer#free" do
         IO::Buffer.string(4) do |buffer|
           buffer.set_string("meat")
           buffer.free
-          buffer.null?.should be_true
+          buffer.null?.should == true
         end
       string.should == "meat"
     end
@@ -64,18 +64,18 @@ describe "IO::Buffer#free" do
   it "can be called repeatedly without an error" do
     buffer = IO::Buffer.new(4)
     buffer.free
-    buffer.null?.should be_true
+    buffer.null?.should == true
     buffer.free
-    buffer.null?.should be_true
+    buffer.null?.should == true
   end
 
   it "is disallowed while locked, raising IO::Buffer::LockedError" do
     buffer = IO::Buffer.new(4)
     buffer.locked do
-      -> { buffer.free }.should raise_error(IO::Buffer::LockedError, "Buffer is locked!")
+      -> { buffer.free }.should.raise(IO::Buffer::LockedError, "Buffer is locked!")
     end
     buffer.free
-    buffer.null?.should be_true
+    buffer.null?.should == true
   end
 
   context "with a slice of a buffer" do
@@ -84,8 +84,8 @@ describe "IO::Buffer#free" do
       slice = buffer.slice(0, 2)
 
       slice.free
-      slice.null?.should be_true
-      buffer.null?.should be_false
+      slice.null?.should == true
+      buffer.null?.should == false
 
       buffer.free
     end
@@ -95,8 +95,8 @@ describe "IO::Buffer#free" do
       slice = buffer.slice(0, 2)
 
       buffer.free
-      slice.null?.should be_false
-      slice.valid?.should be_false
+      slice.null?.should == false
+      slice.valid?.should == false
     end
   end
 end

@@ -5,6 +5,6 @@ describe "Fiddle::Handle#initialize" do
   it "raises Fiddle::DLError if the library cannot be found" do
     -> {
       Fiddle::Handle.new("doesnotexist.doesnotexist")
-    }.should raise_error(Fiddle::DLError)
+    }.should.raise(Fiddle::DLError)
   end
 end

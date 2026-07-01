@@ -21,7 +21,7 @@ describe "Range#first" do
   end
 
   it "raises an ArgumentError when count is negative" do
-    -> { (0..2).first(-1) }.should raise_error(ArgumentError)
+    -> { (0..2).first(-1) }.should.raise(ArgumentError)
   end
 
   it "calls #to_int to convert the argument" do
@@ -32,7 +32,7 @@ describe "Range#first" do
   it "raises a TypeError if #to_int does not return an Integer" do
     obj = mock("to_int")
     obj.should_receive(:to_int).and_return("1")
-    -> { (2..3).first(obj) }.should raise_error(TypeError)
+    -> { (2..3).first(obj) }.should.raise(TypeError)
   end
 
   it "truncates the value when passed a Float" do
@@ -40,14 +40,14 @@ describe "Range#first" do
   end
 
   it "raises a TypeError when passed nil" do
-    -> { (2..3).first(nil) }.should raise_error(TypeError)
+    -> { (2..3).first(nil) }.should.raise(TypeError)
   end
 
   it "raises a TypeError when passed a String" do
-    -> { (2..3).first("1") }.should raise_error(TypeError)
+    -> { (2..3).first("1") }.should.raise(TypeError)
   end
 
   it "raises a RangeError when called on an beginless range" do
-    -> { (..1).first }.should raise_error(RangeError)
+    -> { (..1).first }.should.raise(RangeError)
   end
 end

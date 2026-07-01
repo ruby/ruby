@@ -24,7 +24,7 @@ module Bundler
         def post_install
           run_hooks(:pre_install)
 
-          unless @disable_extensions
+          unless @disable_extensions || Bundler.settings[:no_build_extension]
             build_extensions
             run_hooks(:post_build)
           end

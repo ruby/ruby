@@ -41,8 +41,14 @@ module TestStruct
     end
   end
 
+  MAX_EMBEDDED_MEMBERS = (
+    GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE] -
+    GC::INTERNAL_CONSTANTS[:RBASIC_SIZE] -
+    GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]
+  ) / RbConfig::SIZEOF["void*"]
+
   def test_larger_than_largest_pool
-    count = (GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE] / RbConfig::SIZEOF["void*"]) + 1
+    count = MAX_EMBEDDED_MEMBERS + 1
     list = Array(0..count)
     klass = @Struct.new(*list.map { |i| :"a_#{i}"})
     struct = klass.new(*list)

@@ -13,12 +13,12 @@ describe 'Addrinfo#listen' do
   it 'returns a Socket when no block is given' do
     @socket = @addr.listen
 
-    @socket.should be_an_instance_of(Socket)
+    @socket.should.instance_of?(Socket)
   end
 
   it 'yields the Socket if a block is given' do
     @addr.listen do |socket|
-      socket.should be_an_instance_of(Socket)
+      socket.should.instance_of?(Socket)
     end
   end
 

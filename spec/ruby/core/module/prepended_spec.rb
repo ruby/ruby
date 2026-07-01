@@ -8,7 +8,7 @@ describe "Module#prepended" do
   end
 
   it "is a private method" do
-    Module.should have_private_instance_method(:prepended, true)
+    Module.private_instance_methods(false).should.include?(:prepended)
   end
 
   it "is invoked when self is prepended to another module or class" do

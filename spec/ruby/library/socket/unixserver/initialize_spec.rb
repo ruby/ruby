@@ -13,14 +13,14 @@ describe 'UNIXServer#initialize' do
   end
 
   it 'returns a new UNIXServer' do
-    @server.should be_an_instance_of(UNIXServer)
+    @server.should.instance_of?(UNIXServer)
   end
 
   it 'sets the socket to binmode' do
-    @server.binmode?.should be_true
+    @server.binmode?.should == true
   end
 
   it 'raises Errno::EADDRINUSE when the socket is already in use' do
-    -> { UNIXServer.new(@path) }.should raise_error(Errno::EADDRINUSE)
+    -> { UNIXServer.new(@path) }.should.raise(Errno::EADDRINUSE)
   end
 end
