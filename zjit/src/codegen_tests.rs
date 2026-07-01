@@ -6253,6 +6253,23 @@ fn test_inlined_method_with_invokeblock() {
 }
 
 #[test]
+fn test_inlined_method_with_invokeblock_raise_materializes_stack() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines_allowing_exits("
+            def callee = [1, 2, yield]
+            def test
+              callee { raise }
+            rescue
+              :rescued
+            end
+
+            test
+            test
+        "), @":rescued");
+    });
+}
+
+#[test]
 fn test_inlined_method_with_block_param() {
     with_inlining(|| {
         assert_snapshot!(assert_inlines("
@@ -6267,6 +6284,24 @@ fn test_inlined_method_with_block_param() {
             test(10)
             test(10)
         "), @"12");
+    });
+}
+
+#[test]
+fn test_inlined_method_that_forwards_block_arg_raise_materializes_stack() {
+    with_inlining(|| {
+        assert_snapshot!(assert_inlines_allowing_exits("
+            def inner = yield
+            def callee(&block) = [1, 2, inner(&block)]
+            def test
+              callee { raise }
+            rescue
+              :rescued
+            end
+
+            test
+            test
+        "), @":rescued");
     });
 }
 

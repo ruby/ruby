@@ -9,10 +9,12 @@
 # define ZJIT_STATS (USE_ZJIT && RUBY_DEBUG)
 #endif
 
-// Stack map entries are either immediate Ruby VALUEs or tagged native-stack
-// locations. Stack maps never contain heap VALUEs, so 0x08 is available: it is
-// not Qfalse (0), and its low 3 bits are zero, so RB_SPECIAL_CONST_P is false.
+// Stack map entries are either immediate Ruby VALUEs, tagged native-stack
+// locations, or tagged skip counts. Stack maps never contain heap VALUEs, so
+// these tags are available: they are not Qfalse (0), and their low 3 bits are
+// zero, so RB_SPECIAL_CONST_P is false.
 #define ZJIT_STACK_MAP_VREG_TAG 0x08
+#define ZJIT_STACK_MAP_SKIP_TAG 0x10
 #define ZJIT_STACK_MAP_TAG_MASK 0xff
 #define ZJIT_STACK_MAP_SHIFT 8
 
@@ -24,6 +26,18 @@ ZJIT_STACK_MAP_VREG_P(VALUE entry)
 
 static inline size_t
 ZJIT_STACK_MAP_VREG_INDEX(VALUE entry)
+{
+    return entry >> ZJIT_STACK_MAP_SHIFT;
+}
+
+static inline bool
+ZJIT_STACK_MAP_SKIP_P(VALUE entry)
+{
+    return (entry & ZJIT_STACK_MAP_TAG_MASK) == ZJIT_STACK_MAP_SKIP_TAG;
+}
+
+static inline size_t
+ZJIT_STACK_MAP_SKIP_SIZE(VALUE entry)
 {
     return entry >> ZJIT_STACK_MAP_SHIFT;
 }
@@ -43,12 +57,11 @@ typedef struct zjit_jit_frame {
     // Always false for C frames.
     bool materialize_block_code;
 
-    // Number of Ruby stack slots described by stack[].
-    // rb_zjit_materialize_frames() copies them to cfp->sp - stack_size.
+    // Number of stack map entries in stack[].
     uint32_t stack_size;
     // Flexible array of stack map entries. Each entry is either an immediate
-    // VALUE or a tagged native-stack index from cfp->jit_return for a value
-    // kept by the JIT.
+    // VALUE, a tagged native-stack index from cfp->jit_return for a value
+    // kept by the JIT, or a tagged count of VM stack slots to skip.
     VALUE stack[];
 } zjit_jit_frame_t;
 

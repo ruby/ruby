@@ -5,7 +5,7 @@ use std::mem::take;
 use std::rc::Rc;
 use crate::bitset::BitSet;
 use crate::codegen::{perf_symbol_range_start, perf_symbol_range_end, register_with_perf};
-use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, YarvInsnIdx, zjit_jit_frame, local_size_and_idx_to_ep_offset};
+use crate::cruby::{IseqPtr, RUBY_OFFSET_CFP_ISEQ, RUBY_OFFSET_CFP_JIT_RETURN, RUBY_OFFSET_CFP_PC, RUBY_OFFSET_CFP_SP, SIZEOF_VALUE_I32, VALUE, ZJIT_STACK_MAP_SHIFT, ZJIT_STACK_MAP_SKIP_TAG, ZJIT_STACK_MAP_VREG_TAG, vm_stack_canary, YarvInsnIdx, zjit_jit_frame, local_size_and_idx_to_ep_offset};
 use crate::hir::{Invariant, SideExitReason};
 use crate::hir;
 use crate::options::{TraceExits, PerfMap, get_option};
@@ -586,6 +586,10 @@ pub struct SideExit {
     pub stack: Vec<Opnd>,
     pub locals: Vec<Opnd>,
     pub iseq: IseqPtr,
+    /// Stack map for older inlined frames that are not written directly by this
+    /// side exit. The current frame's stack and locals are still handled by
+    /// `stack` and `locals` above.
+    pub stack_map: Option<StackMap>,
     /// If set, the side exit will profile the current instruction and invalidate
     /// the compiled ISEQ for recompilation.
     pub recompile: Option<SideExitRecompile>,
@@ -922,11 +926,18 @@ pub enum Insn {
 }
 
 macro_rules! target_for_each_operand_impl {
-    ($self:expr, $visit_many:ident) => {
+    ($self:expr, $visit_one:ident, $visit_many:ident, $reborrow:ident) => {
         match $self {
             Target::SideExit(data) => {
                 visit_many!(data.exit.stack);
                 visit_many!(data.exit.locals);
+                if let Some(StackMap { stack, .. }) = $reborrow!(data.exit.stack_map) {
+                    for entry in stack {
+                        if let StackMapEntry::Opnd(opnd) = entry {
+                            visit_one!(opnd);
+                        }
+                    }
+                }
             }
             Target::Block(edge) => {
                 visit_many!(edge.args);
@@ -956,17 +967,17 @@ macro_rules! for_each_operand_impl {
             Insn::Jz(target) |
             Insn::Label(target) |
             Insn::LeaJumpTarget { target, .. } => {
-                target_for_each_operand_impl!(target, $visit_many);
+                target_for_each_operand_impl!(target, $visit_one, $visit_many, $reborrow);
             }
             // `target` is behind a Box. `$reborrow` turns the box field into a `&`/`&mut Target`
             // matching the iterator, so the same operand-walk works for both.
             Insn::PatchPoint(data) => {
-                target_for_each_operand_impl!($reborrow!(data.target), $visit_many);
+                target_for_each_operand_impl!($reborrow!(data.target), $visit_one, $visit_many, $reborrow);
             }
             Insn::Joz(opnd, target) |
             Insn::Jonz(opnd, target) => {
                 visit_one!(opnd);
-                target_for_each_operand_impl!(target, $visit_many);
+                target_for_each_operand_impl!(target, $visit_one, $visit_many, $reborrow);
             }
 
             Insn::BakeString(_) |
@@ -1021,7 +1032,11 @@ macro_rules! for_each_operand_impl {
                 // Option<StackMap>` matching the iterator, so the same operand-walk works for
                 // both.
                 if let Some(StackMap { stack, .. }) = $reborrow!(data.stack_map) {
-                    visit_many!(stack);
+                    for entry in stack {
+                        if let StackMapEntry::Opnd(opnd) = entry {
+                            visit_one!(opnd);
+                        }
+                    }
                 }
             }
             // only iterate over preserved in the const iterator
@@ -1484,15 +1499,18 @@ const JIT_FRAME_OFFSET_FROM_JIT_RETURN: usize = 1;
 ///                                | +-------------------------+ |
 ///                                v | opnds.first()           | v
 ///                                  +-------------------------+
-///                                ^ | register spill slot 0   | ^
+///                                ^ | allocator spill slot 0  | ^
 ///                                | +-------------------------+ |
 ///                                | |          ...            | | stack_idx for "slot N" in StackState::stack_map_index_for_spill
+///                num_spill_slots | +-------------------------+ |
+///                                v | allocator spill slot X  | |
+///                                  +-------------------------+ |
+///                                ^ | side-exit stack-map     | |
+///                                | | capture slot 0          | |
 ///                                | +-------------------------+ |
-///                num_spill_slots | | register spill slot N   | v
-///                                | +-------------------------+
-///                                | |          ...            |
-///                                | +-------------------------+
-///                                v | register spill slot X   |
+/// num_side_exit_stack_map_slots  | |          ...            | |
+///                                | +-------------------------+ |
+///                                v | capture slot X          | v
 ///                                  +-------------------------+
 ///                                  | FrameSetup align slot   | if needed
 ///                                  +-------------------------+
@@ -1505,17 +1523,21 @@ pub struct StackState {
 
     /// The number of stack slots needed by register allocator spills.
     pub(crate) num_spill_slots: usize,
+
+    /// The maximum number of stack slots needed to capture side-exit stack-map
+    /// operands that cannot be encoded directly.
+    pub(crate) num_side_exit_stack_map_slots: usize,
 }
 
 impl StackState {
     /// Initialize an empty stack state.
     fn new() -> Self {
-        StackState { stack_base_idx: 0, num_spill_slots: 0 }
+        StackState { stack_base_idx: 0, num_spill_slots: 0, num_side_exit_stack_map_slots: 0 }
     }
 
     /// Initialize a stack state with a fixed number of reserved stack slots.
     fn new_with_stack_slots(stack_base_idx: usize) -> Self {
-        StackState { stack_base_idx, num_spill_slots: 0 }
+        StackState { stack_base_idx, num_spill_slots: 0, num_side_exit_stack_map_slots: 0 }
     }
 
     /// Reserve native stack slots for JITFrame storage and stack-allocated operands.
@@ -1527,9 +1549,9 @@ impl StackState {
     }
 
     /// Return the total number of native stack slots used for the frame's
-    /// reserved data and register allocator spills.
+    /// reserved data, register allocator spills, and side-exit captures.
     pub(crate) fn stack_slot_count(&self) -> usize {
-        self.stack_base_idx + self.num_spill_slots
+        self.stack_base_idx + self.num_spill_slots + self.num_side_exit_stack_map_slots
     }
 
     /// Return the stack-map index for a VReg stored below StackState-managed
@@ -1551,7 +1573,13 @@ impl StackState {
     /// Return a stack index for a register saved by handle_caller_saved_regs().
     fn stack_idx_for_caller_saved_reg(&self, caller_saved_reg_idx: usize) -> usize {
         let frame_alignment_slots = self.stack_slot_count() % 2;
-        self.num_spill_slots + frame_alignment_slots + caller_saved_reg_idx
+        self.num_spill_slots + self.num_side_exit_stack_map_slots + frame_alignment_slots + caller_saved_reg_idx
+    }
+
+    /// Return a stack index reserved for side-exit stack-map register capture.
+    fn stack_idx_for_side_exit_stack_map(&self, slot_idx: usize) -> usize {
+        assert!(slot_idx < self.num_side_exit_stack_map_slots);
+        self.num_spill_slots + slot_idx
     }
 
     /// Convert a stack index to the `disp` of the stack slot
@@ -1572,18 +1600,31 @@ impl StackState {
 }
 
 /// Stack map to materialize Ruby stack slots from JIT-kept values.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct StackMap {
     /// Ruby stack slots to reconstruct if this frame is materialized.
-    /// Each operand must be either an immediate Ruby VALUE or a VReg whose
-    /// final register/spill location will be encoded after register allocation.
-    stack: Vec<Opnd>,
+    stack: Vec<StackMapEntry>,
     /// Heap-allocated JITFrame whose trailing stack map storage receives the
     /// encoded entries once this CCall's register allocation is known.
     jit_frame: *const zjit_jit_frame,
     /// Inlining depth of the frame whose stack is described by this map.
     /// Stack-map indexes are decoded from that frame's cfp->jit_return.
     frame_depth: usize,
+}
+
+impl StackMap {
+    pub fn new(stack: Vec<StackMapEntry>, jit_frame: *const zjit_jit_frame, frame_depth: usize) -> Self {
+        Self { stack, jit_frame, frame_depth }
+    }
+}
+
+/// Entry in a JITFrame stack map.
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum StackMapEntry {
+    /// Immediate Ruby VALUE or VReg to materialize.
+    Opnd(Opnd),
+    /// Number of VM stack slots to skip when materializing across inlined frames.
+    Skip(usize),
 }
 
 /// Initial capacity for asm.insns vector
@@ -2392,8 +2433,8 @@ impl Assembler
 
                     // Build a set of VRegIds that can be referenced by JITFrame for materializing the VM stack
                     let stack_vreg_ids: HashSet<VRegId> = if let Some(StackMap { stack, .. }) = &stack_map {
-                        stack.iter().filter_map(|opnd| match opnd {
-                            Opnd::VReg { idx, .. } => Some(*idx),
+                        stack.iter().filter_map(|entry| match entry {
+                            StackMapEntry::Opnd(Opnd::VReg { idx, .. }) => Some(*idx),
                             _ => None,
                         }).collect()
                     } else {
@@ -2437,18 +2478,28 @@ impl Assembler
 
                     if let Some(StackMap { stack, jit_frame, frame_depth }) = stack_map {
                         assert_eq!(unsafe { (*jit_frame).stack_size } as usize, stack.len());
-                        for (idx, stack_opnd) in stack.iter().enumerate() {
-                            let entry = match stack_opnd {
-                                Opnd::UImm(value) => {
-                                    let value = VALUE(*value as usize);
+                        for (idx, stack_entry) in stack.iter().enumerate() {
+                            let entry = match *stack_entry {
+                                StackMapEntry::Opnd(Opnd::Value(value)) => {
                                     // TODO: Investigate using a constant pool to track any value reference in the stack map
                                     assert!(value.special_const_p(), "StackMap should only materialize immediate VALUEs, but got: {value:?}");
                                     value
                                 }
-                                Opnd::VReg { idx: vreg, .. } => {
-                                    let vreg_stack_index = match assignments[*vreg].expect("StackMap VReg should have an allocation") {
+                                StackMapEntry::Opnd(Opnd::UImm(value)) => {
+                                    let value = VALUE(value as usize);
+                                    // TODO: Investigate using a constant pool to track any value reference in the stack map
+                                    assert!(value.special_const_p(), "StackMap should only materialize immediate VALUEs, but got: {value:?}");
+                                    value
+                                }
+                                StackMapEntry::Skip(size) => {
+                                    let encoded = (size << ZJIT_STACK_MAP_SHIFT) | ZJIT_STACK_MAP_SKIP_TAG as usize;
+                                    debug_assert!(!VALUE(encoded).special_const_p(), "encoded StackMap skip should not look like an immediate VALUE");
+                                    VALUE(encoded)
+                                }
+                                StackMapEntry::Opnd(Opnd::VReg { idx: vreg, .. }) => {
+                                    let vreg_stack_index = match assignments[vreg].expect("StackMap VReg should have an allocation") {
                                         Allocation::Reg(_) | Allocation::Fixed(_) => {
-                                            let caller_saved_reg_idx = survivors.iter().position(|&survivor_id| survivor_id == *vreg).unwrap();
+                                            let caller_saved_reg_idx = survivors.iter().position(|&survivor_id| survivor_id == vreg).unwrap();
                                             let stack_idx = self.stack_state.stack_idx_for_caller_saved_reg(caller_saved_reg_idx);
                                             self.stack_state.stack_map_index_for_spill(stack_idx, frame_depth)
                                         }
@@ -2462,7 +2513,7 @@ impl Assembler
                                     debug_assert!(!VALUE(encoded).special_const_p(), "encoded StackMap VReg should not look like an immediate VALUE");
                                     VALUE(encoded)
                                 }
-                                _ => unreachable!("unexpected operand in StackMap: {stack_opnd:?}"),
+                                _ => unreachable!("unexpected entry in StackMap: {stack_entry:?}"),
                             };
                             unsafe { (*jit_frame.cast_mut()).stack.as_mut_ptr().add(idx).write(entry); }
                         }
@@ -2565,6 +2616,40 @@ impl Assembler
             block.insns = new_insns;
             block.insn_ids = new_ids;
         }
+    }
+
+    /// Return the maximum number of stack-map entries that any side exit needs
+    /// to copy into reserved native stack slots.
+    pub fn side_exit_stack_map_slots(&self, assignments: &[Option<Allocation>]) -> usize {
+        self.block_order().into_iter().fold(0, |max_slots, block_id| {
+            let block = &self.basic_blocks[block_id.0];
+            block.insns.iter().fold(max_slots, |max_slots, insn| {
+                let slots = insn.target().map(|target| Self::side_exit_target_stack_map_slots(target, assignments)).unwrap_or(0);
+                max_slots.max(slots)
+            })
+        })
+    }
+
+    fn side_exit_target_stack_map_slots(target: &Target, assignments: &[Option<Allocation>]) -> usize {
+        let Target::SideExit(data) = target else {
+            return 0;
+        };
+        let Some(StackMap { stack, .. }) = &data.exit.stack_map else {
+            return 0;
+        };
+
+        stack.iter().filter(|entry| match entry {
+            StackMapEntry::Opnd(Opnd::Value(value)) => !value.special_const_p(),
+            StackMapEntry::Opnd(Opnd::UImm(value)) => !VALUE(*value as usize).special_const_p(),
+            StackMapEntry::Opnd(Opnd::VReg { idx, .. }) => {
+                matches!(
+                    assignments[idx.to_usize()].expect("StackMap VReg should have an allocation"),
+                    Allocation::Reg(_) | Allocation::Fixed(_)
+                )
+            }
+            StackMapEntry::Opnd(Opnd::Reg(_)) => true,
+            _ => false,
+        }).count()
     }
 
     /// Walk every instruction and replace VReg operands with the physical
@@ -2679,9 +2764,75 @@ impl Assembler
     /// Returns the exit code as a list of instructions to be appended after the main
     /// code is linearized and split.
     pub fn compile_exits(&mut self) -> Vec<Insn> {
+        fn immediate_stack_map_value(opnd: Opnd) -> Option<VALUE> {
+            let value = match opnd {
+                Opnd::Value(value) => value,
+                Opnd::UImm(value) => VALUE(value as usize),
+                _ => unreachable!("unexpected immediate StackMap operand: {opnd:?}"),
+            };
+            value.special_const_p().then_some(value)
+        }
+
+        fn encode_stack_map_index(asm: &Assembler, stack_idx: usize, frame_depth: usize) -> VALUE {
+            let vreg_stack_index = asm.stack_state.stack_map_index_for_spill(stack_idx, frame_depth);
+            let encoded = (vreg_stack_index << ZJIT_STACK_MAP_SHIFT) | ZJIT_STACK_MAP_VREG_TAG as usize;
+            debug_assert!(!VALUE(encoded).special_const_p(), "encoded StackMap VReg should not look like an immediate VALUE");
+            VALUE(encoded)
+        }
+
+        fn capture_stack_map_opnd(asm: &mut Assembler, opnd: Opnd, capture_idx: &mut usize, frame_depth: usize) -> VALUE {
+            let stack_idx = asm.stack_state.stack_idx_for_side_exit_stack_map(*capture_idx);
+            *capture_idx += 1;
+            let capture_slot = Opnd::Mem(Mem {
+                base: MemBase::Stack { stack_idx: stack_idx.try_into().unwrap(), num_bits: 64 },
+                disp: 0,
+                num_bits: 64,
+            });
+            let opnd = if matches!(opnd, Opnd::Reg(_)) { opnd.with_num_bits(64) } else { opnd };
+            asm.store(capture_slot, opnd);
+            encode_stack_map_index(asm, stack_idx, frame_depth)
+        }
+
+        fn compile_exit_stack_map(asm: &mut Assembler, stack_map: &StackMap) {
+            let StackMap { stack, jit_frame, frame_depth } = stack_map;
+            let jit_frame = *jit_frame;
+            assert_eq!(unsafe { (*jit_frame).stack_size } as usize, stack.len());
+
+            let mut capture_idx = 0;
+            for (idx, stack_entry) in stack.iter().enumerate() {
+                let entry = match *stack_entry {
+                    StackMapEntry::Opnd(Opnd::Value(_) | Opnd::UImm(_)) => {
+                        let StackMapEntry::Opnd(opnd) = *stack_entry else { unreachable!() };
+                        immediate_stack_map_value(opnd)
+                            .unwrap_or_else(|| capture_stack_map_opnd(asm, opnd, &mut capture_idx, *frame_depth))
+                    }
+                    StackMapEntry::Skip(size) => {
+                        let encoded = (size << ZJIT_STACK_MAP_SHIFT) | ZJIT_STACK_MAP_SKIP_TAG as usize;
+                        debug_assert!(!VALUE(encoded).special_const_p(), "encoded StackMap skip should not look like an immediate VALUE");
+                        VALUE(encoded)
+                    }
+                    StackMapEntry::Opnd(Opnd::Mem(Mem { base: MemBase::Stack { stack_idx, .. }, disp, .. })) => {
+                        assert_eq!(disp, 0, "StackMap stack slot should not have a displacement");
+                        encode_stack_map_index(asm, stack_idx.to_usize(), *frame_depth)
+                    }
+                    StackMapEntry::Opnd(Opnd::Reg(_)) => {
+                        let StackMapEntry::Opnd(opnd) = *stack_entry else { unreachable!() };
+                        capture_stack_map_opnd(asm, opnd, &mut capture_idx, *frame_depth)
+                    }
+                    _ => unreachable!("unexpected entry in SideExit StackMap: {stack_entry:?}"),
+                };
+                unsafe { (*jit_frame.cast_mut()).stack.as_mut_ptr().add(idx).write(entry); }
+            }
+
+            assert!(capture_idx <= asm.stack_state.num_side_exit_stack_map_slots);
+            asm_comment!(asm, "install side-exit JITFrame for caller depth {}", frame_depth);
+            let jit_frame_slot = Opnd::mem(64, NATIVE_BASE_PTR, -((*frame_depth as i32 + 1) * SIZEOF_VALUE_I32));
+            asm.store(jit_frame_slot, Opnd::const_ptr(jit_frame));
+        }
+
         /// Restore VM state (cfp->pc, cfp->sp, stack, locals) for the side exit.
         fn compile_exit_save_state(asm: &mut Assembler, exit: &SideExit) {
-            let SideExit { pc, stack, locals, iseq, .. } = exit;
+            let SideExit { pc, stack, locals, iseq, stack_map, .. } = exit;
 
             // Side exit blocks are not part of the CFG at the moment,
             // so we need to manually ensure that patchpoints get padded
@@ -2711,6 +2862,10 @@ impl Assembler
                 for (idx, &opnd) in locals.iter().enumerate() {
                     asm.store(Opnd::mem(64, SP, (-local_size_and_idx_to_ep_offset(locals.len(), idx) - 1) * SIZEOF_VALUE_I32), opnd);
                 }
+            }
+
+            if let Some(stack_map) = stack_map {
+                compile_exit_stack_map(asm, stack_map);
             }
         }
 
@@ -3846,9 +4001,9 @@ impl Assembler {
     /// HIR function currently reserves multiple native JITFrame slots, one per
     /// inlining depth, stack-map indexes must be encoded relative to the target
     /// frame's own cfp->jit_return.
-    pub fn stack_map(&mut self, stack: Vec<Opnd>, jit_frame: *const zjit_jit_frame, frame_depth: usize) {
+    pub fn stack_map(&mut self, stack: Vec<StackMapEntry>, jit_frame: *const zjit_jit_frame, frame_depth: usize) {
         assert!(self.stack_map.is_none());
-        self.stack_map = Some(StackMap { stack, jit_frame, frame_depth });
+        self.stack_map = Some(StackMap::new(stack, jit_frame, frame_depth));
     }
 
     pub fn store(&mut self, dest: Opnd, src: Opnd) {
