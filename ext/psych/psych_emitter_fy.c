@@ -313,6 +313,8 @@ static VALUE scalar(VALUE self, VALUE value, VALUE anchor, VALUE tag,
 
     do_emit(e, event);
     RB_GC_GUARD(value);
+    RB_GC_GUARD(anchor);
+    RB_GC_GUARD(tag);
     return self;
 }
 
@@ -333,6 +335,8 @@ static VALUE start_sequence(VALUE self, VALUE anchor, VALUE tag,
             NIL_P(tag) ? NULL : StringValueCStr(tag));
 
     do_emit(e, event);
+    RB_GC_GUARD(anchor);
+    RB_GC_GUARD(tag);
     return self;
 }
 
@@ -362,6 +366,8 @@ static VALUE start_mapping(VALUE self, VALUE anchor, VALUE tag,
             NIL_P(tag) ? NULL : StringValueCStr(tag));
 
     do_emit(e, event);
+    RB_GC_GUARD(anchor);
+    RB_GC_GUARD(tag);
     return self;
 }
 
@@ -383,6 +389,7 @@ static VALUE alias(VALUE self, VALUE anchor)
 
     do_emit(e, fy_emit_event_create(e->emit, FYET_ALIAS,
             NIL_P(anchor) ? NULL : StringValueCStr(anchor)));
+    RB_GC_GUARD(anchor);
     return self;
 }
 

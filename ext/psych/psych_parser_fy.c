@@ -112,7 +112,11 @@ static VALUE make_exception(psych_fy_parser_t *parser, VALUE path)
         void *iter = NULL;
         struct fy_diag_error *err = fy_diag_errors_iterate(diag, &iter);
         if (err) {
-            if (err->msg) problem = rb_usascii_str_new2(err->msg);
+            /* The message may embed a snippet of the (possibly multibyte)
+             * input, so mark it UTF-8 rather than US-ASCII. */
+            if (err->msg) {
+                problem = rb_enc_str_new_cstr(err->msg, rb_utf8_encoding());
+            }
             if (err->line >= 0) line = (size_t)err->line;
             if (err->column >= 0) column = (size_t)err->column;
         }
