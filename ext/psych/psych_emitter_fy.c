@@ -122,7 +122,12 @@ static VALUE initialize(int argc, VALUE *argv, VALUE self)
     if (rb_scan_args(argc, argv, "11", &io, &options) == 2) {
         e->width     = NUM2INT(rb_funcall(options, id_line_width, 0));
         e->indent    = NUM2INT(rb_funcall(options, id_indentation, 0));
-        e->canonical = (Qtrue == rb_funcall(options, id_canonical, 0)) ? 1 : 0;
+        /* libfyaml has no canonical emit mode, so fail fast instead of
+         * silently producing non-canonical output. */
+        if (RTEST(rb_funcall(options, id_canonical, 0))) {
+            rb_raise(rb_eNotImpError,
+                     "canonical output is not supported by the libfyaml backend");
+        }
     }
 
     rb_ivar_set(self, id_io, io);
@@ -329,10 +334,14 @@ static VALUE start_sequence(VALUE self, VALUE anchor, VALUE tag,
     if (!NIL_P(anchor)) { Check_Type(anchor, T_STRING); anchor = rb_str_export_to_enc(anchor, encoding); }
     if (!NIL_P(tag))    { Check_Type(tag, T_STRING);    tag    = rb_str_export_to_enc(tag, encoding); }
 
+    /* An implicit tag can be omitted, matching libyaml; emitting it anyway
+     * would print a redundant (often verbose) tag. */
+    int emit_tag = !NIL_P(tag) && !RTEST(implicit);
+
     struct fy_event *event = fy_emit_event_create(e->emit, FYET_SEQUENCE_START,
             psych_to_fyns(NUM2INT(style)),
             NIL_P(anchor) ? NULL : StringValueCStr(anchor),
-            NIL_P(tag) ? NULL : StringValueCStr(tag));
+            emit_tag ? StringValueCStr(tag) : NULL);
 
     do_emit(e, event);
     RB_GC_GUARD(anchor);
@@ -360,10 +369,14 @@ static VALUE start_mapping(VALUE self, VALUE anchor, VALUE tag,
     if (!NIL_P(anchor)) { Check_Type(anchor, T_STRING); anchor = rb_str_export_to_enc(anchor, encoding); }
     if (!NIL_P(tag))    { Check_Type(tag, T_STRING);    tag    = rb_str_export_to_enc(tag, encoding); }
 
+    /* An implicit tag can be omitted, matching libyaml; emitting it anyway
+     * would print a redundant (often verbose) tag. */
+    int emit_tag = !NIL_P(tag) && !RTEST(implicit);
+
     struct fy_event *event = fy_emit_event_create(e->emit, FYET_MAPPING_START,
             psych_to_fyns(NUM2INT(style)),
             NIL_P(anchor) ? NULL : StringValueCStr(anchor),
-            NIL_P(tag) ? NULL : StringValueCStr(tag));
+            emit_tag ? StringValueCStr(tag) : NULL);
 
     do_emit(e, event);
     RB_GC_GUARD(anchor);
@@ -397,8 +410,12 @@ static VALUE set_canonical(VALUE self, VALUE style)
 {
     psych_fy_emitter_t *e;
     TypedData_Get_Struct(self, psych_fy_emitter_t, &psych_emitter_type, e);
-    e->canonical = (Qtrue == style) ? 1 : 0;
-    rebuild_emitter(self, e);
+    /* libfyaml has no canonical emit mode, so reject enabling it rather than
+     * pretending to honor the request. */
+    if (RTEST(style)) {
+        rb_raise(rb_eNotImpError,
+                 "canonical output is not supported by the libfyaml backend");
+    }
     return style;
 }
 

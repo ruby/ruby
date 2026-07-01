@@ -2,7 +2,9 @@
 
 /* call-seq: Psych.libyaml_version
  *
- * Returns the version of libyaml being used
+ * Returns the version of the underlying YAML library as a three-element
+ * array. This is libyaml by default. On the experimental libfyaml backend,
+ * where libyaml is not linked, it reports the libfyaml version instead.
  */
 static VALUE libyaml_version(VALUE module)
 {
@@ -30,7 +32,9 @@ static VALUE libyaml_version(VALUE module)
 #ifdef PSYCH_USE_LIBFYAML
 /* call-seq: Psych.libfyaml_version
  *
- * Returns the libfyaml version string, or nil when not built with libfyaml.
+ * Returns the libfyaml version string. This method is only defined when
+ * psych was built with the experimental libfyaml backend
+ * (+--enable-libfyaml+).
  */
 static VALUE libfyaml_version(VALUE module)
 {

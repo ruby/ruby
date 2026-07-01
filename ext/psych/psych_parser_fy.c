@@ -98,8 +98,8 @@ static VALUE allocate(VALUE klass)
 }
 
 /* Reconstruct a Psych::SyntaxError from libfyaml's collected diagnostics.  The
- * parser is created with FYPCF_COLLECT_DIAG, so the first collected error gives
- * us the message and position. */
+ * parser's diag was switched to collect mode with fy_diag_set_collect_errors()
+ * in parse(), so the first collected error gives us the message and position. */
 static VALUE make_exception(psych_fy_parser_t *parser, VALUE path)
 {
     VALUE ePsychSyntaxError = rb_const_get(mPsych, rb_intern("SyntaxError"));
