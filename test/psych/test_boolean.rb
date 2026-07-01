@@ -48,5 +48,15 @@ module Psych
       assert_equal "n", Psych.load("--- n")
       assert_equal "N", Psych.load("--- N")
     end
+
+    ###
+    # The "Norway problem": under YAML 1.2 (the libfyaml backend) yes/no/on/off
+    # are plain strings in every context, so the country code "no" no longer
+    # becomes false.
+    def test_norway_problem
+      omit 'libfyaml (YAML 1.2) backend only' unless libfyaml?
+      assert_equal({ 'country' => 'no' }, Psych.load("country: no"))
+      assert_equal %w[yes no on off], Psych.load("- yes\n- no\n- on\n- off\n")
+    end
   end
 end

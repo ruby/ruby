@@ -33,6 +33,14 @@ module Psych
       end
     end
 
+    def test_yaml_1_1_booleans_are_not_quoted_on_libfyaml
+      omit 'YAML 1.1 booleans are plain strings on the libfyaml backend' unless libfyaml?
+      %w[yes no on off].each do |boolean|
+        assert_equal "--- #{boolean}\n", Psych.dump(boolean)
+        assert_equal boolean, Psych.load(Psych.dump(boolean))
+      end
+    end
+
     def test_string_with_newline
       assert_equal "1\n2", Psych.load("--- ! '1\n\n  2'\n")
     end

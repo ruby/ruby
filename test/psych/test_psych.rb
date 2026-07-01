@@ -118,6 +118,23 @@ class TestPsych < Psych::TestCase
     assert_equal Psych.libyaml_version.join('.'), Psych::LIBYAML_VERSION
   end
 
+  def test_backend
+    omit 'Psych::BACKEND is not defined on this backend' unless defined?(Psych::BACKEND)
+    assert_includes %w[libyaml libfyaml], Psych::BACKEND
+    assert_equal 'libfyaml', Psych::BACKEND if libfyaml?
+  end
+
+  def test_libfyaml_version
+    omit 'libfyaml backend only' unless libfyaml?
+    assert_kind_of String, Psych.libfyaml_version
+    assert_match(/\A\d+\.\d+/, Psych.libfyaml_version)
+  end
+
+  def test_libfyaml_version_absent_without_libfyaml
+    omit 'libfyaml backend defines libfyaml_version' if libfyaml?
+    refute_respond_to Psych, :libfyaml_version
+  end
+
   def test_load_stream
     docs = Psych.load_stream("--- foo\n...\n--- bar\n...")
     assert_equal %w{ foo bar }, docs
