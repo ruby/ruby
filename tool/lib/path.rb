@@ -70,21 +70,29 @@ module Path
   alias ln_dir_safe ln_safe
   alias ln_exe ln_safe
 
-  def ln_relative(src, dest, executable = false)
+  def ln_relative(src, dest, executable = false, target_directory: true)
     return if File.identical?(src, dest)
-    parent = File.dirname(dest)
-    File.directory?(parent) or mkdir_p(parent)
+    parent = ln_target_directory(dest, target_directory)
     if executable
       return (ln_exe(relative(src, parent), dest, src) if File.exist?(src))
     end
     clean_link(relative(src, parent), dest) {|s, d| ln_safe(s, d, src)}
   end
 
-  def ln_dir_relative(src, dest)
+  def ln_dir_relative(src, dest, target_directory: true)
     return if File.identical?(src, dest)
-    parent = File.dirname(dest)
-    File.directory?(parent) or mkdir_p(parent)
+    parent = ln_target_directory(dest, target_directory)
     clean_link(relative(src, parent), dest) {|s, d| ln_dir_safe(s, d, src)}
+  end
+
+  private def ln_target_directory(dest, target_directory)
+    if target_directory
+      dest
+    else
+      parent = File.dirname(dest)
+      File.directory?(parent) or mkdir_p(parent)
+      parent
+    end
   end
 
   case (CROSS_COMPILING || RUBY_PLATFORM)
