@@ -529,13 +529,6 @@ do_mutex_unlock_safe(VALUE args)
     return Qnil;
 }
 
-/*
- * call-seq:
- *    mutex.unlock    -> self
- *
- * Releases the lock.
- * Raises +ThreadError+ if +mutex+ wasn't locked by the current thread.
- */
 VALUE
 rb_mutex_unlock(VALUE self)
 {
