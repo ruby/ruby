@@ -18,6 +18,10 @@ module RubyTimelineTool
       value = raw_value.to_i
       @ihash[value]
     end
+
+    def [](key)
+      @hash[key]
+    end
   end
 
   class FlagsConverter < Converter
@@ -32,6 +36,10 @@ module RubyTimelineTool
       @hash.transform_values do |bit_value|
         (value & bit_value) != 0
       end
+    end
+
+    def [](key)
+      @hash[key]
     end
   end
 

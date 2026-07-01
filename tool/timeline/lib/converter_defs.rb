@@ -42,6 +42,9 @@ module RubyTimelineTool
     RUBY_T_MOVED:     0x1e, # /**< @see struct ::RMoved */
   })
 
+  # Keep in sync with `enum ruby_value_type` in `include/ruby/internal/value_type.h`.
+  RUBY_T_MASK = 0x1f
+
   # Keep in sync with `enum ruby_fl_type` in `include/ruby/internal/fl_type.h`.
   RubyFlType = FlagsConverter.new({
     RUBY_FL_PROMOTED:       (1 << 5),
@@ -53,16 +56,78 @@ module RubyTimelineTool
     RUBY_FL_FREEZE:         (1 << 11),
   })
 
-  RUBY_T_MASK = 0x1f
+  # Keep in sync with `enum ruby_fl_ushift` in `include/ruby/internal/fl_type.h`.
+  RUBY_FL_USHIFT = 12
+
+  # Keep in sync with `include/ruby/internal/fl_type.h`
+  def self.FL_USER_N(n)
+    1 << (RUBY_FL_USHIFT + n)
+  end
+
+  # Keep in sync with `enum imemo_type` in `internal/imemo.h`.
+  ImemoType = EnumConverter.new({
+    imemo_env:           0,
+    imemo_cref:          1, # /*!< class reference */
+    imemo_svar:          2, # /*!< special variable */
+    imemo_throw_data:    3,
+    imemo_ifunc:         4, # /*!< iterator function */
+    imemo_memo:          5,
+    imemo_ment:          6,
+    imemo_iseq:          7,
+    imemo_tmpbuf:        8,
+    imemo_cvar_entry:    9,
+    imemo_callinfo:     10,
+    imemo_callcache:    11,
+    imemo_constcache:   12,
+    imemo_fields:       13,
+    imemo_subclasses:   14,
+    imemo_cdhash:       15,
+  })
+
+  # Keep in sync with `IMEMO_MASK` in `internal/imemo.h`.
+  IMEMO_MASK = 0x0f
+
+  # Keep in sync with both `internal/string.h` and `include/ruby/internal/core/rstring.h`.
+  StringFlags = FlagsConverter.new({
+    STR_SHARED:               FL_USER_N(0),
+    RSTRING_NOEMBED:          FL_USER_N(1),
+    STR_CHILLED_LITERAL:      FL_USER_N(2),
+    STR_CHILLED_SYMBOL_TO_S:  FL_USER_N(3),
+    RSTRING_FSTR:             FL_USER_N(17),
+  })
+
+  # Keep in sync with both `internal/array.h` and `include/ruby/internal/core/rarray.h`.
+  ArrayFlags = FlagsConverter.new({
+    RARRAY_SHARED_FLAG:       FL_USER_N(0),
+    RARRAY_EMBED_FLAG:        FL_USER_N(1),
+    RARRAY_SHARED_ROOT_FLAG:  FL_USER_N(12),
+    RARRAY_PTR_IN_USE_FLAG:   FL_USER_N(14),
+  })
 
   RubyFlags = proc do |raw_value|
     value = raw_value.to_i
     builtin_type = RubyBuiltinType.convert_arg(value & RUBY_T_MASK)
-    flags = RubyFlType.convert_arg(value)
-    {
+    result = {
       raw_value: value,
+      raw_value_binary: value.to_s(2),
       builtin_type:,
-      flags:,
     }
+
+    if builtin_type == :RUBY_T_IMEMO
+      result[:imemo_type] = ImemoType.convert_arg((value >> RUBY_FL_USHIFT) & IMEMO_MASK)
+    end
+
+    result[:flags] = RubyFlType.convert_arg(value)
+
+    case builtin_type
+    when :RUBY_T_STRING
+      result[:string_args] = StringFlags.convert_arg(value)
+    when :RUBY_T_ARRAY
+      result[:array_args] = ArrayFlags.convert_arg(value)
+
+      # TODO: Decode the flags for more types of interest.
+    end
+
+    result
   end
 end
