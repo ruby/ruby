@@ -145,6 +145,10 @@ Ruby 4.0 bundled RubyGems and Bundler version 4. see the following links for det
 
 ## Compatibility issues
 
+* `Kernel#at_exit` and `END {}` now raise `Ractor::IsolationError` when called
+  in a non-main Ractor.  Previously the registered handler ran in the main
+  Ractor at process exit, which was confusing. [[Feature #22139]]
+
 ## Stdlib compatibility issues
 
 ## C API updates
@@ -202,6 +206,7 @@ A lot of work has gone into making Ractors more stable, performant, and usable. 
 [Feature #21861]: https://bugs.ruby-lang.org/issues/21861
 [Feature #21932]: https://bugs.ruby-lang.org/issues/21932
 [Feature #21981]: https://bugs.ruby-lang.org/issues/21981
+[Feature #22139]: https://bugs.ruby-lang.org/issues/22139
 [PR #17201]: https://github.com/ruby/ruby/pull/17201
 [RubyGems-v4.0.4]: https://github.com/rubygems/rubygems/releases/tag/v4.0.4
 [RubyGems-v4.0.5]: https://github.com/rubygems/rubygems/releases/tag/v4.0.5

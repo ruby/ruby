@@ -24,6 +24,7 @@
 #include "internal/missing.h"
 #include "internal/object.h"
 #include "internal/proc.h"
+#include "internal/ractor.h"
 #include "internal/re.h"
 #include "internal/ruby_parser.h"
 #include "internal/st.h"
@@ -4096,6 +4097,7 @@ m_core_undef_method(VALUE self, VALUE cbase, VALUE sym)
 static VALUE
 m_core_set_postexe(VALUE self)
 {
+    rb_ractor_ensure_main_ractor("can not use END{} in non-main Ractors");
     rb_set_end_proc(rb_call_end_proc, rb_block_proc());
     return Qnil;
 }
