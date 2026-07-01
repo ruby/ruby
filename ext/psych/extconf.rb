@@ -12,6 +12,12 @@ if enable_config("libfyaml", false)
   unless pkg_config('libfyaml')
     abort "libfyaml was requested with --enable-libfyaml but was not found via pkg-config"
   end
+  # libfyaml 0.8 and earlier crash psych's emitter, so require a known-good
+  # version rather than building something that segfaults at runtime.
+  pkgconfig = ENV["PKG_CONFIG"] || "pkg-config"
+  unless system(pkgconfig, "--atleast-version=0.9", "libfyaml")
+    abort "The libfyaml backend requires libfyaml 0.9 or newer"
+  end
   $defs << "-DPSYCH_USE_LIBFYAML"
 
   create_makefile 'psych'

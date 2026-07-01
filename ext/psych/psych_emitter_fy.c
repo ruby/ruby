@@ -408,8 +408,6 @@ static VALUE alias(VALUE self, VALUE anchor)
 
 static VALUE set_canonical(VALUE self, VALUE style)
 {
-    psych_fy_emitter_t *e;
-    TypedData_Get_Struct(self, psych_fy_emitter_t, &psych_emitter_type, e);
     /* libfyaml has no canonical emit mode, so reject enabling it rather than
      * pretending to honor the request. */
     if (RTEST(style)) {
