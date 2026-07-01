@@ -150,17 +150,27 @@ static VALUE end_stream(VALUE self)
     return self;
 }
 
-static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
+struct start_document_data {
+    VALUE self;
+    VALUE version;
+    VALUE tags;
+    VALUE imp;
+    struct fy_tag *tag_storage;
+    const struct fy_tag **tag_ptrs;
+};
+
+static VALUE start_document_try(VALUE d)
 {
+    struct start_document_data *data = (struct start_document_data *)d;
+    VALUE version = data->version;
+    VALUE tags = data->tags;
     psych_fy_emitter_t *e;
     struct fy_version ver;
     const struct fy_version *verp = NULL;
-    struct fy_tag *tag_storage = NULL;
-    const struct fy_tag **tag_ptrs = NULL;
-    VALUE *exported = NULL;
-    long len = 0;
+    VALUE guard = Qnil;
+    struct fy_event *event;
 
-    TypedData_Get_Struct(self, psych_fy_emitter_t, &psych_emitter_type, e);
+    TypedData_Get_Struct(data->self, psych_fy_emitter_t, &psych_emitter_type, e);
     Check_Type(version, T_ARRAY);
 
     if (RARRAY_LEN(version) >= 2) {
@@ -171,19 +181,20 @@ static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
 
     if (RTEST(tags)) {
         rb_encoding *encoding = rb_utf8_encoding();
+        long i, len;
         Check_Type(tags, T_ARRAY);
         len = RARRAY_LEN(tags);
         if (len > 0) {
-            long i;
-            tag_storage = xcalloc((size_t)len, sizeof(struct fy_tag));
-            tag_ptrs = xcalloc((size_t)len + 1, sizeof(struct fy_tag *));
-            exported = xcalloc((size_t)len * 2, sizeof(VALUE));
+            /* Ruby array keeps the exported strings reachable for the GC while
+             * their C pointers live in tag_storage. */
+            guard = rb_ary_new_capa(len * 2);
+            data->tag_storage = xcalloc((size_t)len, sizeof(struct fy_tag));
+            data->tag_ptrs = xcalloc((size_t)len + 1, sizeof(struct fy_tag *));
             for (i = 0; i < len; i++) {
                 VALUE tuple = RARRAY_AREF(tags, i);
                 VALUE name, value;
                 Check_Type(tuple, T_ARRAY);
                 if (RARRAY_LEN(tuple) < 2) {
-                    xfree(tag_storage); xfree(tag_ptrs); xfree(exported);
                     rb_raise(rb_eRuntimeError, "tag tuple must be of length 2");
                 }
                 name  = RARRAY_AREF(tuple, 0);
@@ -192,27 +203,48 @@ static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
                 StringValue(value);
                 name  = rb_str_export_to_enc(name, encoding);
                 value = rb_str_export_to_enc(value, encoding);
-                exported[i * 2]     = name;
-                exported[i * 2 + 1] = value;
-                tag_storage[i].handle = StringValueCStr(name);
-                tag_storage[i].prefix = StringValueCStr(value);
-                tag_ptrs[i] = &tag_storage[i];
+                rb_ary_push(guard, name);
+                rb_ary_push(guard, value);
+                data->tag_storage[i].handle = StringValueCStr(name);
+                data->tag_storage[i].prefix = StringValueCStr(value);
+                data->tag_ptrs[i] = &data->tag_storage[i];
             }
-            tag_ptrs[len] = NULL;
+            data->tag_ptrs[len] = NULL;
         }
     }
 
-    struct fy_event *event = fy_emit_event_create(e->emit, FYET_DOCUMENT_START,
-            imp ? 1 : 0, verp, tag_ptrs);
+    event = fy_emit_event_create(e->emit, FYET_DOCUMENT_START,
+            data->imp ? 1 : 0, verp, data->tag_ptrs);
 
-    if (exported) { (void)exported[0]; }
     do_emit(e, event);
+    RB_GC_GUARD(guard);
 
-    if (tag_storage) xfree(tag_storage);
-    if (tag_ptrs)    xfree(tag_ptrs);
-    if (exported)    xfree(exported);
+    return data->self;
+}
 
-    return self;
+static VALUE start_document_ensure(VALUE d)
+{
+    struct start_document_data *data = (struct start_document_data *)d;
+
+    xfree(data->tag_storage);
+    xfree(data->tag_ptrs);
+
+    return Qnil;
+}
+
+static VALUE start_document(VALUE self, VALUE version, VALUE tags, VALUE imp)
+{
+    struct start_document_data data = {
+        .self = self,
+        .version = version,
+        .tags = tags,
+        .imp = imp,
+        .tag_storage = NULL,
+        .tag_ptrs = NULL,
+    };
+
+    return rb_ensure(start_document_try, (VALUE)&data,
+                     start_document_ensure, (VALUE)&data);
 }
 
 static VALUE end_document(VALUE self, VALUE imp)
