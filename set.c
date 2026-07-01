@@ -1236,16 +1236,19 @@ set_reset_table_with_type(VALUE set, const struct st_hash_type *type)
  *  (rather than by object content, which is the initial setting);
  *  returns +self+:
  *
- *    s0 = 'foo'
- *    set0 = Set[s0]
- *    s1 = s0.dup
- *    set1 = Set[s1]
- *    set0.compare_by_identity? # => false
- *    set0 == set1              # => true
- *    set0.compare_by_identity
- *    set0 == set1              # => false
- *    set1.compare_by_identity? # => false
- *    set1 == set0              # => false
+ *    set = Set.new
+ *    set.compare_by_identity
+ *    str = +"foo"
+ *    set.add(str)
+ *    # =>  Set["foo"]
+ *    set.include?(str)
+ *    # => true
+ *    set.add(str)
+ *    # => Set["foo"])
+ *    set.include?(+"foo")
+ *    # => false
+ *    set.add(+"foo")
+ *    # => Set["foo", "foo"])
  *
  *  Once set, the compare-by-identity property may not be unset.
  *
