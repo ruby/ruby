@@ -1669,8 +1669,22 @@ set_i_replace(VALUE set, VALUE other)
  *  call-seq:
  *    reset -> self
  *
- *  Resets the internal state after modification to existing elements
- *  and returns self. Elements will be reindexed and deduplicated.
+ *  Resets the internal state of +self+; return +self+.
+ *
+ *  A set relies on the #hash results of each element being consistent.
+ *  Modifying an element in a way that changes the results of #hash
+ *  may allow duplicate elements in the set:
+ *
+ *    array = [1]
+ *    set = Set[array]  # => Set[[1]]
+ *    array << 2
+ *    set.add(array)    # => Set[[1, 2], [1, 2]]
+ *
+ *  Calling #reset will recalculate all of the hash values and remove
+ *  duplicate elements:
+ *
+ *    set.reset         # => Set[[1, 2]]
+ *
  */
 static VALUE
 set_i_reset(VALUE set)
@@ -2434,7 +2448,7 @@ rb_set_size(VALUE set)
  * === Other Methods
  *
  * - #reset:
- *   Resets the internal state; useful if an object
+ *   Resets the internal state; useful if an element
  *   has been modified while an element in the set.
  *
  */
