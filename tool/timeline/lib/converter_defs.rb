@@ -44,7 +44,7 @@ module RubyTimelineTool
 
   # Keep in sync with `enum ruby_fl_type` in `include/ruby/internal/fl_type.h`.
   RubyFlType = FlagsConverter.new({
-    RUBY_FL_WB_PROTECTED:   (1 << 5),
+    RUBY_FL_PROMOTED:       (1 << 5),
     RUBY_FL_UNUSED6:        (1 << 6),
     RUBY_FL_FINALIZE:       (1 << 7),
     RUBY_FL_SHAREABLE:      (1 << 8),
