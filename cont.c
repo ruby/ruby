@@ -2755,7 +2755,7 @@ return_fiber(bool terminate)
     rb_fiber_t *fiber = fiber_current();
     rb_fiber_t *prev = fiber->prev;
 
-    if (prev) {
+    if (prev && (!terminate || !FIBER_TERMINATED_P(prev))) {
         fiber->prev = NULL;
         prev->resuming_fiber = NULL;
         return prev;
@@ -2764,6 +2764,11 @@ return_fiber(bool terminate)
         if (!terminate) {
             rb_raise(rb_eFiberError, "attempt to yield on a not resumed fiber");
         }
+
+        // A transfer fallback (see fiber_switch) may point at an
+        // already-terminated fiber; drop it and fall back to the root fiber's
+        // resuming chain below.
+        fiber->prev = NULL;
 
         rb_thread_t *th = GET_THREAD();
         rb_fiber_t *root_fiber = th->root_fiber;
@@ -2872,6 +2877,24 @@ fiber_switch(rb_fiber_t *fiber, int argc, const VALUE *argv, int kw_splat, rb_fi
         current_fiber->resuming_fiber = resuming_fiber;
         fiber->prev = fiber_current();
         fiber->yielding = 0;
+    }
+    else if (!yielding && !FIBER_TERMINATED_P(current_fiber) && fiber != th->root_fiber) {
+        // Transfer: record the transferring fiber as a fallback return target,
+        // so that a transferred fiber which terminates without an explicit
+        // transfer returns to whoever transferred into it, rather than the
+        // thread's root fiber. [Bug #20081]
+        //
+        // `prev->resuming_fiber == fiber` identifies a live resume back-pointer,
+        // which `Fiber.yield` relies on and must never be overwritten. Any other
+        // `prev` is a stale transfer fallback and is replaced, so that
+        // termination unwinds to the most-recent transferring fiber.
+        //
+        // The root fiber is never given a fallback: it does not terminate via
+        // return_fiber (so the fallback would leak), and it is already the
+        // terminal target of the resuming-chain search below.
+        if (!fiber->prev || fiber->prev->resuming_fiber != fiber) {
+            fiber->prev = current_fiber;
+        }
     }
 
     VM_ASSERT(!current_fiber->yielding);
