@@ -2335,7 +2335,7 @@ RSpec.describe "the lockfile format" do
         expect(the_bundle).to include_gems "myrack 1.2"
       end
 
-      it "preserves Gemfile.lock \\n\\r line endings" do
+      it "preserves Gemfile.lock \\r\\n line endings" do
         update_repo2 do
           build_gem "myrack", "1.2" do |s|
             s.executables = "myrackup"
@@ -2363,7 +2363,7 @@ RSpec.describe "the lockfile format" do
         end.not_to change { File.mtime(bundled_app_lock) }
       end
 
-      it "preserves Gemfile.lock \\n\\r line endings" do
+      it "preserves Gemfile.lock \\r\\n line endings" do
         win_lock = File.read(bundled_app_lock).gsub(/\n/, "\r\n")
         File.open(bundled_app_lock, "wb") {|f| f.puts(win_lock) }
         set_lockfile_mtime_to_known_value

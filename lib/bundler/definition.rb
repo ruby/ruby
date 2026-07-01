@@ -427,7 +427,9 @@ module Bundler
       # `git config core.autocrlf=true`. Detect from the bytes on disk because
       # reading in text mode strips carriage returns on Windows, which would
       # otherwise defeat this check and rewrite a `\r\n` lockfile with `\n`.
-      contents.gsub!(/\n/, "\r\n") if File.exist?(file) && File.binread(file).include?("\r\n")
+      if File.exist?(file) && SharedHelpers.filesystem_access(file, :read) {|p| File.binread(p).include?("\r\n") }
+        contents.gsub!(/\n/, "\r\n")
+      end
 
       begin
         SharedHelpers.filesystem_access(file) do |p|
