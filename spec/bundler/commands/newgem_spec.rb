@@ -88,8 +88,6 @@ RSpec.describe "bundle gem" do
       end
 
       it "properly initializes git repo" do
-        skip "path with spaces needs special handling on Windows" if Gem.win_platform?
-
         bundle "gem #{gem_name}", dir: bundled_app("path with spaces")
         expect(bundled_app("path with spaces/#{gem_name}/.git")).to exist
       end
