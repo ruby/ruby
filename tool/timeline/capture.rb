@@ -73,7 +73,7 @@ $stderr.puts "Selected groups: #{selected_groups.join(',')}"
 
 usdts = RubyTimelineTool::USDT_DEFS.values_at(*selected_groups).flatten
 
-ScriptUsdtEntry = Struct.new("ScriptUsdtEntry", :file, :probe_name, :vis_name, :vis_ph, :nargs)
+ScriptUsdtEntry = Struct.new("ScriptUsdtEntry", :file, :probe_name, :nargs)
 
 usdt_entries = []
 
@@ -93,7 +93,7 @@ usdts.each do |t|
 
   nargs = t.args.length
 
-  usdt_entries << ScriptUsdtEntry.new(file, t.probe_name, t.vis_name, t.vis_ph, nargs)
+  usdt_entries << ScriptUsdtEntry.new(file, t.probe_name, nargs)
 end
 
 content = template.result_with_hash({

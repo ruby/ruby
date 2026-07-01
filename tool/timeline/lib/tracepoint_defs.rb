@@ -34,24 +34,26 @@ module RubyTimelineTool
   #     For more information about the Trace Event Format, see:
   #     https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/edit?usp=sharing
   #
-  # `tp(...)` also has an optional keyword argument `args`.  It is used by the `capture.rb` script
-  # to set up the arguments of the USDT probes, and used by `visualize.rb` to convert the argument
-  # values from string (read from the log) to JSON values.  It has the form:
+  # `tp(...)` also has some optional keyword argument.
   #
-  # ```ruby
-  # args: {arg1: converter1, arg2: converter2, ...}
-  # ```
+  # -   `args`: It is used by the `capture.rb` script to set up the arguments of the USDT probes,
+  #     and used by `visualize.rb` to convert the argument values from string (read from the log) to
+  #     JSON values.  It has the form:
   #
-  # The order of the key-value pairs must match the order of the arguments of the USDT trace points
-  # (as defined in `probes.d`).
+  #     ```ruby
+  #     args: {arg1: converter1, arg2: converter2, ...}
+  #     ```
   #
-  # Each converter can be one of the following
+  #     The order of the key-value pairs must match the order of the arguments of the USDT trace
+  #     points (as defined in `probes.d`).
   #
-  # -   An instance of `Converter`.
-  # -   A symbol, such as `:to_i`, to be sent to the argument string.
-  # -   An object that responds to `call`.
+  #     Each converter can be one of the following
   #
-  # There are some converters defined in `converter_defs.rb`.
+  #     -   An instance of `Converter`.
+  #     -   A symbol, such as `:to_i`, to be sent to the argument string.
+  #     -   An object that responds to `call`.
+  #
+  #     There are some converters defined in `converter_defs.rb`.
   USDT_DEFS = {
     'default' => [
       tp('gc__mark__begin',   "default",  'gc_mark',          'B'),

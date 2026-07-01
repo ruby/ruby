@@ -10,7 +10,7 @@ require_relative 'lib/tracepoint_defs.rb'
 require_relative 'lib/converter_defs.rb'
 require_relative 'lib/converter.rb'
 
-VIS_NAME_TO_USDT = RubyTimelineTool::USDT_DEFS.values.flatten.to_h {|t| [t.vis_name, t]}
+PROBE_NAME_TO_USDT = RubyTimelineTool::USDT_DEFS.values.flatten.to_h {|t| [t.probe_name, t]}
 
 module FetchStore
   refine Hash do
@@ -66,18 +66,22 @@ class LogProcessor
 
   def process_log_line(line)
     parts = line.split(',')
-    name, ph, tid, ts = parts[...4]
+    probe_name, pid, tid, ts = parts[...4]
+    pid = pid.to_i
     tid = tid.to_i
     ts = resolve_time(ts.to_i)
     raw_args = parts[4...]
 
-    puts "name: #{name}, ph: #{ph}, tid: #{tid}, ts: #{ts}, raw_args: #{raw_args}" if @verbose
+    puts "probe_name: #{probe_name}, pid: #{pid}, tid: #{tid}, ts: #{ts}, raw_args: #{raw_args}" if @verbose
 
     if @start_time.nil?
       @start_time = ts
     end
 
-    usdt_def = VIS_NAME_TO_USDT[name]
+    usdt_def = PROBE_NAME_TO_USDT[probe_name]
+
+    ph = usdt_def.ph
+    vis_name = usdt_def.vis_name
 
     args = {}
     usdt_def.args.each_pair.zip(raw_args) do |arg_def, arg_val|
@@ -93,7 +97,7 @@ class LogProcessor
       args[arg_name] = converted_val
     end
 
-    result = { name:, ph:, tid:, ts:, args: }
+    result = { name: vis_name, ph:, pid:, tid:, ts:, args: }
 
     if ph == 'B' || ph == 'E'
       # Register the current block so that other events can "enrich" it.
@@ -101,7 +105,7 @@ class LogProcessor
     end
 
     # Some results need special treatment.
-    case name
+    case vis_name
     when 'gc_mark_stacked_objects'
       enrich([:global, 'GCEnterExit'], [tid, 'gc_mark']) do |old_result|
         old_result[:args].fetch_store(:gc_mark_stacked_objects){
