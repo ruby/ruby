@@ -4,7 +4,7 @@ require_relative 'fixtures/classes'
 describe "String.new" do
   it "returns an instance of String" do
     str = String.new
-    str.should be_an_instance_of(String)
+    str.should.instance_of?(String)
   end
 
   it "accepts an encoding argument" do
@@ -28,7 +28,7 @@ describe "String.new" do
   it "returns a new string given a string argument" do
     str1 = "test"
     str = String.new(str1)
-    str.should be_an_instance_of(String)
+    str.should.instance_of?(String)
     str.should == str1
     str << "more"
     str.should == "testmore"
@@ -36,7 +36,7 @@ describe "String.new" do
 
   it "returns an instance of a subclass" do
     a = StringSpecs::MyString.new("blah")
-    a.should be_an_instance_of(StringSpecs::MyString)
+    a.should.instance_of?(StringSpecs::MyString)
     a.should == "blah"
   end
 
@@ -51,8 +51,8 @@ describe "String.new" do
   end
 
   it "raises TypeError on inconvertible object" do
-    -> { String.new 5 }.should raise_error(TypeError)
-    -> { String.new nil }.should raise_error(TypeError)
+    -> { String.new 5 }.should.raise(TypeError)
+    -> { String.new nil }.should.raise(TypeError)
   end
 
   it "returns a binary String" do

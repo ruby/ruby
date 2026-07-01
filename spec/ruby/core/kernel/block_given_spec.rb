@@ -30,7 +30,7 @@ describe "Kernel#block_given?" do
   end
 
   it "is a private method" do
-    Kernel.should have_private_instance_method(:block_given?)
+    Kernel.private_instance_methods(false).should.include?(:block_given?)
   end
 end
 

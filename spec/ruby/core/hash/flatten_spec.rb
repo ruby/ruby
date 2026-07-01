@@ -9,7 +9,7 @@ describe "Hash#flatten" do
   end
 
   it "returns an Array" do
-    {}.flatten.should be_an_instance_of(Array)
+    {}.flatten.should.instance_of?(Array)
   end
 
   it "returns an empty Array for an empty Hash" do
@@ -57,6 +57,6 @@ describe "Hash#flatten" do
   it "raises a TypeError if given a non-Integer argument" do
     -> do
       @h.flatten(Object.new)
-    end.should raise_error(TypeError)
+    end.should.raise(TypeError)
   end
 end

@@ -13,7 +13,7 @@ describe "Find.find" do
 
   describe "when called without a block" do
     it "returns an Enumerator" do
-      Find.find(FindDirSpecs.mock_dir).should be_an_instance_of(Enumerator)
+      Find.find(FindDirSpecs.mock_dir).should.instance_of?(Enumerator)
       Find.find(FindDirSpecs.mock_dir).to_a.sort.should == FindDirSpecs.expected_paths
     end
   end

@@ -4,7 +4,7 @@ require_relative '../../shared/io/putc'
 
 describe "Kernel#putc" do
   it "is a private instance method" do
-    Kernel.should have_private_instance_method(:putc)
+    Kernel.private_instance_methods(false).should.include?(:putc)
   end
 end
 

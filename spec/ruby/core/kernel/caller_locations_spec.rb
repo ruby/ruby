@@ -3,7 +3,7 @@ require_relative 'fixtures/caller_locations'
 
 describe 'Kernel#caller_locations' do
   it 'is a private method' do
-    Kernel.should have_private_instance_method(:caller_locations)
+    Kernel.private_instance_methods(false).should.include?(:caller_locations)
   end
 
   it 'returns an Array of caller locations' do
@@ -103,7 +103,10 @@ describe 'Kernel#caller_locations' do
         loc = nil
         tap { loc = caller_locations(1, 1)[0] }
         loc.label.should == "Kernel#tap"
-        loc.path.should == __FILE__
+        # CRuby hides the file which defines the method: https://bugs.ruby-lang.org/issues/20968
+        unless loc.path == __FILE__
+          loc.path.should.start_with? "<internal:"
+        end
       end
     end
   end

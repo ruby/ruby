@@ -12,11 +12,11 @@ platform_is :windows do
     end
 
     it "raises ArgumentError if any argument is give" do
-      -> { WIN32OLE::Type.typelibs(1) }.should raise_error ArgumentError
+      -> { WIN32OLE::Type.typelibs(1) }.should.raise ArgumentError
     end
 
     it "returns array of type libraries" do
-      WIN32OLE::Type.typelibs().include?("Microsoft Shell Controls And Automation").should be_true
+      WIN32OLE::Type.typelibs().include?("Microsoft Shell Controls And Automation").should == true
     end
 
   end

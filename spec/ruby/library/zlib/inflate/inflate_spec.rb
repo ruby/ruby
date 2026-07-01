@@ -84,7 +84,7 @@ describe "Zlib::Inflate.inflate" do
     # add bytes, one by one, but not all
     result = +""
     data.each_byte { |d| result << z.inflate(d.chr)}
-    -> { result << z.finish }.should raise_error(Zlib::BufError)
+    -> { result << z.finish }.should.raise(Zlib::BufError)
   end
 
   it "properly handles excessive data, byte-by-byte" do
@@ -138,7 +138,7 @@ describe "Zlib::Inflate#inflate" do
     end
 
     it "properly handles chunked data" do
-      @chunks.all? { |chunk| chunk =~ /\A0+\z/ }.should be_true
+      @chunks.all? { |chunk| chunk =~ /\A0+\z/ }.should == true
     end
   end
 

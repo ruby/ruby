@@ -89,7 +89,7 @@ describe "String#unpack with format 'B'" do
   it "raise ArgumentError for NULL bytes between directives" do
     -> {
       "\x80\x00".unpack("B\x00B")
-    }.should raise_error(ArgumentError, /unknown unpack directive/)
+    }.should.raise(ArgumentError, /unknown unpack directive/)
   end
 
   it "ignores spaces between directives" do
@@ -187,7 +187,7 @@ describe "String#unpack with format 'b'" do
   it "raise ArgumentError for NULL bytes between directives" do
     -> {
       "\x01\x00".unpack("b\x00b")
-    }.should raise_error(ArgumentError, /unknown unpack directive/)
+    }.should.raise(ArgumentError, /unknown unpack directive/)
   end
 
   it "ignores spaces between directives" do

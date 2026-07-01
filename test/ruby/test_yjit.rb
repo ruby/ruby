@@ -151,7 +151,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_yjit_enable_with_invalid_runtime_call_threshold_option
-    assert_in_out_err(['--yjit-disable', '-e', 'RubyVM::YJIT.enable(mem_size: 0)']) do |stdout, stderr, status|
+    assert_in_out_err(['--yjit-disable', '-e', 'RubyVM::YJIT.enable(call_threshold: 0)']) do |stdout, stderr, status|
       assert_not_empty stderr
       assert_match(/ArgumentError/, stderr.join)
       assert_equal 1, status.exitstatus
@@ -644,6 +644,40 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  STRUCT_MAX_EMBEDDED_MEMBERS = (
+    GC::INTERNAL_CONSTANTS[:RVARGC_MAX_ALLOCATE_SIZE] -
+    GC::INTERNAL_CONSTANTS[:RBASIC_SIZE] -
+    GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD]
+  ) / RbConfig::SIZEOF["void*"]
+
+  def test_spilled_struct_aref
+    omit("FIXME: https://github.com/Shopify/ruby/issues/977")
+    assert_compiles(<<~RUBY)
+      LargeStruct = Struct.new(:foo, :bar, *(#{STRUCT_MAX_EMBEDDED_MEMBERS} - 2).times.map { :"m_\#{it}" })
+
+      def foo(obj)
+        foo = obj.foo
+        raise "Expected 1, got: \#{foo}" unless foo == 1
+        bar = obj.bar
+        raise "Expected 2, got: \#{bar}" unless bar == 2
+      end
+
+      embedded_struct = LargeStruct.new(1, 2)
+      # Bump RCLASS_MAX_IV_COUNT for LargeStruct
+      embedded_struct.instance_variable_set(:@test, 1)
+
+      # Next allocation reserves space for the imemo/fields reference.
+      heap_struct = LargeStruct.new(1, 2)
+
+      RubyVM::YJIT.reset_stats!
+
+      foo(embedded_struct)
+      foo(embedded_struct)
+      foo(heap_struct)
+      foo(heap_struct)
+    RUBY
+  end
+
   def test_struct_aset
     assert_compiles(<<~RUBY)
       def foo(obj)
@@ -1004,6 +1038,55 @@ class TestYJIT < Test::Unit::TestCase
       obj = Target.new
       obj.foo
       obj.foo
+    RUBY
+  end
+
+  def test_bmethod_super_block_forwarding
+    # super() in a block method forwards the block handler of environment
+    # it is in. In this test, the block is in a class, which never has
+    # a block handler, so Parent#foo gets no block.
+    assert_compiles(<<~RUBY, result: nil)
+      class Parent
+        def foo = defined?(yield)
+      end
+
+      class BmethodSuper < Parent
+        define_method(:foo) { super() }
+      end
+
+      BmethodSuper.new.foo {}
+    RUBY
+
+    # For contrast, the super() here forwards the block passed to add_then_override
+    # because block with super() is rooted in add_then_override, a "def" method.
+    assert_compiles(<<~RUBY, result: [1, 2])
+      def add_then_override(object)
+        object.define_singleton_method(:then) { super() }
+      end
+
+      add_then_override(one = Object.new) { 1 }
+      add_then_override(two = Object.new) { 2 }
+      [one.then {}, two.then {}]
+    RUBY
+  end
+
+  def test_bug_22116
+    # Regression test from report which used to crash during environment escape
+    # to pass block to Hash.new
+    assert_compiles(<<~RUBY, call_threshold: 1)
+      class C
+        def foo
+          Hash.new {|h, k| h[k] = [] }
+        end
+      end
+
+      class D < C
+        define_method(:foo) do
+          super()
+        end
+      end
+
+      D.new.foo
     RUBY
   end
 

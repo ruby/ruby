@@ -1,8 +1,5 @@
 require_relative '../../spec_helper'
-require_relative 'shared/scheduler'
-
-require "fiber"
 
 describe "Fiber.scheduler" do
-  it_behaves_like :scheduler, :scheduler
+  it "is already tested in Fiber.set_scheduler"
 end

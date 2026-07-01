@@ -1,9 +1,8 @@
 require_relative '../../spec_helper'
-require_relative 'shared/valid_civil'
 require 'date'
 
-describe "Date#valid_civil?" do
-
-  it_behaves_like :date_valid_civil?, :valid_civil?
-
+describe "Date.valid_civil?" do
+  it "is an alias of Date.valid_date?" do
+    Date.method(:valid_civil?).should == Date.method(:valid_date?)
+  end
 end

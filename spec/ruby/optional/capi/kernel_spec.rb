@@ -28,7 +28,7 @@ describe "C-API Kernel function" do
 
   describe "rb_need_block" do
     it "raises a LocalJumpError if no block is given" do
-      -> { @s.rb_need_block }.should raise_error(LocalJumpError)
+      -> { @s.rb_need_block }.should.raise(LocalJumpError)
     end
 
     it "does not raise a LocalJumpError if a block is given" do
@@ -53,7 +53,7 @@ describe "C-API Kernel function" do
 
     it "calls the method with no function callback and no block" do
       ary = [1, 3, 5]
-      @s.rb_block_call_no_func(ary).should be_kind_of(Enumerator)
+      @s.rb_block_call_no_func(ary).should.is_a?(Enumerator)
     end
 
     it "calls the method with no function callback and a block" do
@@ -65,7 +65,7 @@ describe "C-API Kernel function" do
 
     it "can pass extra data to the function" do
       ary = [3]
-      @s.rb_block_call_extra_data(ary).should equal(ary)
+      @s.rb_block_call_extra_data(ary).should.equal?(ary)
     end
   end
 
@@ -78,12 +78,12 @@ describe "C-API Kernel function" do
 
   describe "rb_raise" do
     it "raises an exception" do
-      -> { @s.rb_raise({}) }.should raise_error(TypeError)
+      -> { @s.rb_raise({}) }.should.raise(TypeError)
     end
 
     it "terminates the function at the point it was called" do
       h = {}
-      -> { @s.rb_raise(h) }.should raise_error(TypeError)
+      -> { @s.rb_raise(h) }.should.raise(TypeError)
       h[:stage].should == :before
     end
 
@@ -100,7 +100,7 @@ describe "C-API Kernel function" do
           # should raise StandardError "aaa"
           raise
         end
-      end.should raise_error(StandardError, "aaa")
+      end.should.raise(StandardError, "aaa")
     end
   end
 
@@ -125,7 +125,7 @@ describe "C-API Kernel function" do
     end
 
     it "raises an ArgumentError if there is no catch block for the symbol" do
-      -> { @s.rb_throw(nil) }.should raise_error(ArgumentError)
+      -> { @s.rb_throw(nil) }.should.raise(ArgumentError)
     end
   end
 
@@ -151,7 +151,7 @@ describe "C-API Kernel function" do
     end
 
     it "raises an ArgumentError if there is no catch block for the symbol" do
-      -> { @s.rb_throw(nil) }.should raise_error(ArgumentError)
+      -> { @s.rb_throw(nil) }.should.raise(ArgumentError)
     end
   end
 
@@ -173,13 +173,13 @@ describe "C-API Kernel function" do
     it "raises an exception from the value of errno" do
       -> do
         @s.rb_sys_fail("additional info")
-      end.should raise_error(SystemCallError, /additional info/)
+      end.should.raise(SystemCallError, /additional info/)
     end
 
     it "can take a NULL message" do
       -> do
         @s.rb_sys_fail(nil)
-      end.should raise_error(Errno::EPERM)
+      end.should.raise(Errno::EPERM)
     end
   end
 
@@ -187,17 +187,17 @@ describe "C-API Kernel function" do
     it "raises an exception from the given error" do
       -> do
         @s.rb_syserr_fail(Errno::EINVAL::Errno, "additional info")
-      end.should raise_error(Errno::EINVAL, "Invalid argument - additional info")
+      end.should.raise(Errno::EINVAL, "Invalid argument - additional info")
     end
 
     it "can take a NULL message" do
       -> do
         @s.rb_syserr_fail(Errno::EINVAL::Errno, nil)
-      end.should raise_error(Errno::EINVAL, "Invalid argument")
+      end.should.raise(Errno::EINVAL, "Invalid argument")
     end
 
     it "uses some kind of string as message when errno is unknown" do
-      -> { @s.rb_syserr_fail(-10, nil) }.should raise_error(SystemCallError, /[[:graph:]]+/)
+      -> { @s.rb_syserr_fail(-10, nil) }.should.raise(SystemCallError, /[[:graph:]]+/)
     end
   end
 
@@ -205,17 +205,17 @@ describe "C-API Kernel function" do
     it "raises an exception from the given error" do
       -> do
         @s.rb_syserr_fail_str(Errno::EINVAL::Errno, "additional info")
-      end.should raise_error(Errno::EINVAL, "Invalid argument - additional info")
+      end.should.raise(Errno::EINVAL, "Invalid argument - additional info")
     end
 
     it "can take nil as a message" do
       -> do
         @s.rb_syserr_fail_str(Errno::EINVAL::Errno, nil)
-      end.should raise_error(Errno::EINVAL, "Invalid argument")
+      end.should.raise(Errno::EINVAL, "Invalid argument")
     end
 
     it "uses some kind of string as message when errno is unknown" do
-      -> { @s.rb_syserr_fail_str(-10, nil) }.should raise_error(SystemCallError, /[[:graph:]]+/)
+      -> { @s.rb_syserr_fail_str(-10, nil) }.should.raise(SystemCallError, /[[:graph:]]+/)
     end
   end
 
@@ -231,7 +231,7 @@ describe "C-API Kernel function" do
     end
 
     it "raises LocalJumpError when no block is given" do
-      -> { @s.rb_yield(1) }.should raise_error(LocalJumpError)
+      -> { @s.rb_yield(1) }.should.raise(LocalJumpError)
     end
 
     it "rb_yield to a block that breaks does not raise an error" do
@@ -269,7 +269,7 @@ describe "C-API Kernel function" do
     end
 
     it "raises LocalJumpError when no block is given" do
-      -> { @s.rb_yield_splat([1, 2]) }.should raise_error(LocalJumpError)
+      -> { @s.rb_yield_splat([1, 2]) }.should.raise(LocalJumpError)
     end
   end
 
@@ -301,7 +301,7 @@ describe "C-API Kernel function" do
     end
 
     it "raises LocalJumpError when no block is given" do
-      -> { @s.rb_yield_splat([1, 2]) }.should raise_error(LocalJumpError)
+      -> { @s.rb_yield_splat([1, 2]) }.should.raise(LocalJumpError)
     end
   end
 
@@ -330,7 +330,7 @@ describe "C-API Kernel function" do
       proof = [] # Hold proof of work performed after the yield.
       -> do
         @s.rb_protect_yield(77, proof) { |x| raise NameError }
-      end.should raise_error(NameError)
+      end.should.raise(NameError)
       proof[0].should == 23
     end
 
@@ -338,7 +338,7 @@ describe "C-API Kernel function" do
       proof = [] # Hold proof of work performed after the yield.
       -> do
         @s.rb_protect_yield(77, proof) { |x| raise NameError }
-      end.should raise_error(NameError)
+      end.should.raise(NameError)
       proof[0].should == 23
       proof[1].should == nil
     end
@@ -375,7 +375,7 @@ describe "C-API Kernel function" do
       proof = []
       -> do
         @s.rb_eval_string_protect('raise RuntimeError', proof)
-      end.should raise_error(RuntimeError)
+      end.should.raise(RuntimeError)
       proof.should == [23, nil]
     end
   end
@@ -416,11 +416,11 @@ describe "C-API Kernel function" do
     end
 
     it "raises an exception if passed function raises an exception other than StandardError" do
-      -> { @s.rb_rescue(@exc_error_proc, nil, @rescue_proc_returns_arg, nil) }.should raise_error(Exception)
+      -> { @s.rb_rescue(@exc_error_proc, nil, @rescue_proc_returns_arg, nil) }.should.raise(Exception)
     end
 
     it "raises an exception if any exception is raised inside the 'rescue function'" do
-      -> { @s.rb_rescue(@std_error_proc, nil, @std_error_proc, nil) }.should raise_error(StandardError)
+      -> { @s.rb_rescue(@std_error_proc, nil, @std_error_proc, nil) }.should.raise(StandardError)
     end
 
     it "sets $! and rb_errinfo() during the 'rescue function' execution" do
@@ -463,13 +463,13 @@ describe "C-API Kernel function" do
       @s.rb_rescue2(run_error_proc, :no_exc, proc, :exc, ArgumentError, RuntimeError).should == :exc
       -> {
         @s.rb_rescue2(type_error_proc, :no_exc, proc, :exc, ArgumentError, RuntimeError)
-      }.should raise_error(Exception, 'custom error')
+      }.should.raise(Exception, 'custom error')
     end
 
     it "raises TypeError if one of the passed exceptions is not a Module" do
       -> {
         @s.rb_rescue2(-> *_ { raise RuntimeError, "foo" }, :no_exc, -> x { x }, :exc, Object.new, 42)
-      }.should raise_error(TypeError, /class or module required/)
+      }.should.raise(TypeError, /class or module required/)
     end
 
     it "sets $! and rb_errinfo() during the 'rescue function' execution" do
@@ -505,12 +505,12 @@ describe "C-API Kernel function" do
         throw :thrown_value
         ScratchPad << :after_throw
       end
-      @s.rb_catch("thrown_value", proc).should be_nil
+      @s.rb_catch("thrown_value", proc).should == nil
       ScratchPad.recorded.should == [:before_throw]
     end
 
     it "raises an ArgumentError if the throw symbol isn't caught" do
-      -> { @s.rb_catch("foo", -> { throw :bar }) }.should raise_error(ArgumentError)
+      -> { @s.rb_catch("foo", -> { throw :bar }) }.should.raise(ArgumentError)
     end
   end
 
@@ -531,12 +531,12 @@ describe "C-API Kernel function" do
         throw @tag
         ScratchPad << :after_throw
       end
-      @s.rb_catch_obj(@tag, proc).should be_nil
+      @s.rb_catch_obj(@tag, proc).should == nil
       ScratchPad.recorded.should == [:before_throw]
     end
 
     it "raises an ArgumentError if the throw symbol isn't caught" do
-      -> { @s.rb_catch("foo", -> { throw :bar }) }.should raise_error(ArgumentError)
+      -> { @s.rb_catch("foo", -> { throw :bar }) }.should.raise(ArgumentError)
     end
   end
 
@@ -594,7 +594,7 @@ describe "C-API Kernel function" do
       ensure_proc = -> x { foo = x }
       -> {
         @s.rb_ensure(raise_proc, nil, ensure_proc, :foo)
-      }.should raise_error(exception_class)
+      }.should.raise(exception_class)
       foo.should == :foo
     end
 
@@ -604,14 +604,14 @@ describe "C-API Kernel function" do
           $!.should.is_a?(exception_class)
           @s.rb_errinfo.should.is_a?(exception_class)
         }, nil)
-      }.should raise_error(exception_class)
+      }.should.raise(exception_class)
 
       -> {
         @s.rb_ensure(-> _ { @s.rb_raise({}) }, nil, -> _ {
           $!.should.is_a?(TypeError)
           @s.rb_errinfo.should.is_a?(TypeError)
         }, nil)
-      }.should raise_error(TypeError)
+      }.should.raise(TypeError)
 
       $!.should == nil
       @s.rb_errinfo.should == nil
@@ -620,7 +620,7 @@ describe "C-API Kernel function" do
     it "raises the same exception raised inside passed function" do
       raise_proc = -> *_ { raise RuntimeError, 'foo' }
       proc = -> *_ { }
-      -> { @s.rb_ensure(raise_proc, nil, proc, nil) }.should raise_error(RuntimeError, 'foo')
+      -> { @s.rb_ensure(raise_proc, nil, proc, nil) }.should.raise(RuntimeError, 'foo')
     end
   end
 
@@ -659,7 +659,7 @@ describe "C-API Kernel function" do
   describe "rb_block_proc" do
     it "converts the implicit block into a proc" do
       proc = @s.rb_block_proc { 1+1 }
-      proc.should be_kind_of(Proc)
+      proc.should.is_a?(Proc)
       proc.call.should == 2
       proc.should_not.lambda?
     end
@@ -667,7 +667,7 @@ describe "C-API Kernel function" do
     it "passes through an existing lambda and does not convert to a proc" do
       b = -> { 1+1 }
       proc = @s.rb_block_proc(&b)
-      proc.should equal(b)
+      proc.should.equal?(b)
       proc.call.should == 2
       proc.should.lambda?
     end
@@ -676,7 +676,7 @@ describe "C-API Kernel function" do
   describe "rb_block_lambda" do
     it "converts the implicit block into a lambda" do
       proc = @s.rb_block_lambda { 1+1 }
-      proc.should be_kind_of(Proc)
+      proc.should.is_a?(Proc)
       proc.call.should == 2
       proc.should.lambda?
     end
@@ -684,7 +684,7 @@ describe "C-API Kernel function" do
     it "passes through an existing Proc and does not convert to a lambda" do
       b = proc { 1+1 }
       proc = @s.rb_block_lambda(&b)
-      proc.should equal(b)
+      proc.should.equal?(b)
       proc.call.should == 2
       proc.should_not.lambda?
     end
@@ -719,7 +719,7 @@ describe "C-API Kernel function" do
     it "returns a caller backtrace" do
       backtrace = @s.rb_make_backtrace
       lines = backtrace.select {|l| l =~ /#{__FILE__}/ }
-      lines.should_not be_empty
+      lines.should_not.empty?
     end
   end
 
@@ -777,7 +777,7 @@ describe "C-API Kernel function" do
 
       -> {
         @s.rb_funcallv_kw(self, :m, [42])
-      }.should raise_error(TypeError, 'no implicit conversion of Integer into Hash')
+      }.should.raise(TypeError, 'no implicit conversion of Integer into Hash')
     end
   end
 
@@ -813,7 +813,7 @@ describe "C-API Kernel function" do
     end
 
     it "does not call a private method" do
-      -> { @s.rb_funcallv_public(@obj, :method_private) }.should raise_error(NoMethodError, /private/)
+      -> { @s.rb_funcallv_public(@obj, :method_private) }.should.raise(NoMethodError, /private/)
     end
   end
 
@@ -847,7 +847,7 @@ describe "C-API Kernel function" do
 
       -> {
         @s.rb_funcall_with_block(object, :private_method, [], proc { })
-      }.should raise_error(NoMethodError, /private/)
+      }.should.raise(NoMethodError, /private/)
     end
 
     it "does not call a protected method" do
@@ -855,7 +855,7 @@ describe "C-API Kernel function" do
 
       -> {
         @s.rb_funcall_with_block(object, :protected_method, [], proc { })
-      }.should raise_error(NoMethodError, /protected/)
+      }.should.raise(NoMethodError, /protected/)
     end
   end
 
@@ -874,7 +874,7 @@ describe "C-API Kernel function" do
 
       -> {
         @s.rb_funcall_with_block_kw(object, :private_method, [{}], proc { })
-      }.should raise_error(NoMethodError, /private/)
+      }.should.raise(NoMethodError, /private/)
     end
 
     it "does not call a protected method" do
@@ -882,7 +882,7 @@ describe "C-API Kernel function" do
 
       -> {
         @s.rb_funcall_with_block_kw(object, :protected_method, [{}], proc { })
-      }.should raise_error(NoMethodError, /protected/)
+      }.should.raise(NoMethodError, /protected/)
     end
   end
 

@@ -37,13 +37,17 @@ static void fbuffer_append_long(FBuffer *fb, long number);
 static inline void fbuffer_append_char(FBuffer *fb, char newchr);
 static VALUE fbuffer_finalize(FBuffer *fb);
 
-static void fbuffer_stack_init(FBuffer *fb, size_t initial_length, char *stack_buffer, size_t stack_buffer_size)
+static void fbuffer_init(FBuffer *fb, size_t initial_length, VALUE io, char *stack_buffer, size_t stack_buffer_size)
 {
-    fb->initial_length = (initial_length > 0) ? initial_length : FBUFFER_INITIAL_LENGTH_DEFAULT;
-    if (stack_buffer) {
+    if (RTEST(io)) {
+        JSON_ASSERT(fb->type == FBUFFER_HEAP_ALLOCATED);
+        fb->io = io;
+        fb->initial_length = (initial_length > 0) ? initial_length : FBUFFER_IO_BUFFER_SIZE;
+    } else {
         fb->type = FBUFFER_STACK_ALLOCATED;
         fb->ptr = stack_buffer;
         fb->capa = stack_buffer_size;
+        fb->initial_length = (initial_length > 0) ? initial_length : FBUFFER_INITIAL_LENGTH_DEFAULT;
     }
 #if JSON_DEBUG
     fb->requested = 0;
@@ -64,7 +68,7 @@ static inline void fbuffer_consumed(FBuffer *fb, size_t consumed)
 static void fbuffer_free(FBuffer *fb)
 {
     if (fb->ptr && fb->type == FBUFFER_HEAP_ALLOCATED) {
-        ruby_xfree(fb->ptr);
+        JSON_SIZED_FREE_N(fb->ptr, fb->capa);
     }
 }
 
@@ -79,45 +83,40 @@ static void fbuffer_flush(FBuffer *fb)
     fbuffer_clear(fb);
 }
 
-static void fbuffer_realloc(FBuffer *fb, size_t required)
+static void fbuffer_realloc(FBuffer *fb, size_t new_capa)
 {
-    if (required > fb->capa) {
+    if (new_capa > fb->capa) {
         if (fb->type == FBUFFER_STACK_ALLOCATED) {
             const char *old_buffer = fb->ptr;
-            fb->ptr = ALLOC_N(char, required);
+            fb->ptr = ALLOC_N(char, new_capa);
             fb->type = FBUFFER_HEAP_ALLOCATED;
             MEMCPY(fb->ptr, old_buffer, char, fb->len);
         } else {
-            REALLOC_N(fb->ptr, char, required);
+            JSON_SIZED_REALLOC_N(fb->ptr, char, new_capa, fb->capa);
         }
-        fb->capa = required;
+        fb->capa = new_capa;
     }
 }
 
 static void fbuffer_do_inc_capa(FBuffer *fb, size_t requested)
 {
     if (RB_UNLIKELY(fb->io)) {
-        if (fb->capa < FBUFFER_IO_BUFFER_SIZE) {
-            fbuffer_realloc(fb, FBUFFER_IO_BUFFER_SIZE);
-        } else {
+        if (fb->capa != 0) {
             fbuffer_flush(fb);
-        }
-
-        if (RB_LIKELY(requested < fb->capa)) {
-            return;
+            if (RB_LIKELY(requested < fb->capa)) {
+                return;
+            }
         }
     }
 
-    size_t required;
+    size_t new_capa = fb->capa ? fb->capa : fb->initial_length;
+    size_t needed_capa = requested + fb->len;
 
-    if (RB_UNLIKELY(!fb->ptr)) {
-        fb->ptr = ALLOC_N(char, fb->initial_length);
-        fb->capa = fb->initial_length;
+    while (new_capa < needed_capa) {
+        new_capa *= 2;
     }
 
-    for (required = fb->capa; requested > required - fb->len; required <<= 1);
-
-    fbuffer_realloc(fb, required);
+    fbuffer_realloc(fb, new_capa);
 }
 
 static inline void fbuffer_inc_capa(FBuffer *fb, size_t requested)
@@ -129,6 +128,15 @@ static inline void fbuffer_inc_capa(FBuffer *fb, size_t requested)
     if (RB_UNLIKELY(requested > fb->capa - fb->len)) {
         fbuffer_do_inc_capa(fb, requested);
     }
+}
+
+static inline size_t fbuffer_size_mul_or_raise(size_t a, size_t b)
+{
+    size_t result = a * b;
+    if (RB_UNLIKELY(a != 0 && (result / a) != b)) {
+        rb_raise(rb_eArgError, "Buffer overflow, the resulting document is too large to be generated");
+    }
+    return result;
 }
 
 static inline void fbuffer_append_reserved(FBuffer *fb, const char *newstr, size_t len)
@@ -175,7 +183,7 @@ static void fbuffer_append_str_repeat(FBuffer *fb, VALUE str, size_t repeat)
     size_t len;
     RSTRING_GETMEM(str, ptr, len);
 
-    fbuffer_inc_capa(fb, repeat * len);
+    fbuffer_inc_capa(fb, fbuffer_size_mul_or_raise(repeat, len));
     while (repeat) {
 #if JSON_DEBUG
         fb->requested = len;

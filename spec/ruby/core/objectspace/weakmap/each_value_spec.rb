@@ -6,6 +6,6 @@ describe "ObjectSpace::WeakMap#each_value" do
   it_behaves_like :weakmap_members, -> map { a = []; map.each_value{ |k| a << k }; a }, %w[x y]
 end
 
-describe "ObjectSpace::WeakMap#each_key" do
+describe "ObjectSpace::WeakMap#each_value" do
   it_behaves_like :weakmap_each, :each_value
 end

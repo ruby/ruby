@@ -545,7 +545,7 @@ static const rb_data_type_t dir_data_type = {
         dir_free,
         NULL, // Nothing allocated externally, so don't need a memsize function
     },
-    0, NULL, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_DECL_MARKING | RUBY_TYPED_EMBEDDABLE
+    0, NULL, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_DECL_MARKING | RUBY_TYPED_EMBEDDABLE
 };
 
 static VALUE dir_close(VALUE);
@@ -1585,6 +1585,8 @@ dir_chdir(VALUE dir)
 #endif
 }
 
+static VALUE last_cwd;
+
 #ifndef _WIN32
 static VALUE
 getcwd_to_str(VALUE arg)
@@ -1604,11 +1606,34 @@ getcwd_xfree(VALUE arg)
     return Qnil;
 }
 
-VALUE
-rb_dir_getwd_ospath(void)
+static VALUE
+rb_dir_getwd_ospath_slowpath(void)
 {
     char *path = ruby_getcwd();
     return rb_ensure(getcwd_to_str, (VALUE)path, getcwd_xfree, (VALUE)path);
+}
+
+VALUE
+rb_dir_getwd_ospath(void)
+{
+    char buf[PATH_MAX];
+    char *path = getcwd(buf, PATH_MAX);
+    if (!path) {
+        return rb_dir_getwd_ospath_slowpath();
+    }
+
+    VALUE cached_cwd = RUBY_ATOMIC_VALUE_LOAD(last_cwd);
+
+    if (!cached_cwd || strcmp(RSTRING_PTR(cached_cwd), path) != 0) {
+#ifdef __APPLE__
+        cached_cwd = rb_str_normalize_ospath(path, strlen(path));
+#else
+        cached_cwd = rb_str_new2(path);
+#endif
+        rb_str_freeze(cached_cwd);
+        RUBY_ATOMIC_VALUE_SET(last_cwd, cached_cwd);
+    }
+    return cached_cwd;
 }
 #endif
 
@@ -1617,7 +1642,7 @@ rb_dir_getwd(void)
 {
     rb_encoding *fs = rb_filesystem_encoding();
     int fsenc = rb_enc_to_index(fs);
-    VALUE cwd = rb_dir_getwd_ospath();
+    VALUE cwd = rb_str_new_shared(rb_dir_getwd_ospath());
 
     switch (fsenc) {
       case ENCINDEX_US_ASCII:
@@ -1719,15 +1744,16 @@ nogvl_mkdir(void *ptr)
  *
  * Creates a directory in the underlying file system
  * at +dirpath+ with the given +permissions+;
- * returns zero:
+ * see {File Permissions}[rdoc-ref:File@File+Permissions]:
  *
  *   Dir.mkdir('foo')
- *   File.stat(Dir.new('foo')).mode.to_s(8)[1..4] # => "0755"
+ *   File.stat(Dir.new('foo')).mode.to_s(8) # => "40775"
  *   Dir.mkdir('bar', 0644)
- *   File.stat(Dir.new('bar')).mode.to_s(8)[1..4] # => "0644"
+ *   File.stat(Dir.new('bar')).mode.to_s(8) # => "40644"
+ *   Dir.rmdir('foo')
+ *   Dir.rmdir('bar')
  *
- * See {File Permissions}[rdoc-ref:File@File+Permissions].
- * Note that argument +permissions+ is ignored on Windows.
+ * Argument +permissions+ is ignored on Windows.
  */
 static VALUE
 dir_s_mkdir(int argc, VALUE *argv, VALUE obj)
@@ -2778,8 +2804,10 @@ glob_opendir(ruby_glob_entries_t *ent, DIR *dirp, int flags, rb_encoding *enc)
             }
             if (count >= capacity) {
                 capacity += 256;
-                if (!(newp = GLOB_REALLOC_N(ent->sort.entries, capacity)))
+                if (!(newp = GLOB_REALLOC_N(ent->sort.entries, capacity))) {
+                    GLOB_FREE(rdp);
                     goto nomem;
+                }
                 ent->sort.entries = newp;
             }
             ent->sort.entries[count++] = rdp;
@@ -4008,6 +4036,7 @@ Init_Dir(void)
 
     rb_gc_register_address(&chdir_lock.path);
     rb_gc_register_address(&chdir_lock.thread);
+    rb_gc_register_address(&last_cwd);
 
     rb_cDir = rb_define_class("Dir", rb_cObject);
 

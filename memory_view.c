@@ -65,7 +65,7 @@ const rb_data_type_t rb_memory_view_exported_object_registry_data_type = {
         exported_object_registry_free,
         0,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 static int
@@ -101,6 +101,7 @@ register_exported_object(VALUE obj)
 {
     RB_VM_LOCKING() {
         st_update(exported_object_table, (st_data_t)obj, exported_object_add_ref, 0);
+        RB_OBJ_WRITTEN(rb_memory_view_exported_object_registry, Qundef, obj);
     }
 }
 
@@ -124,7 +125,7 @@ static const rb_data_type_t memory_view_entry_data_type = {
         0,
         0,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE
 };
 
 /* Register memory view functions for the given class */

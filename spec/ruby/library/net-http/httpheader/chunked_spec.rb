@@ -8,15 +8,15 @@ describe "Net::HTTPHeader#chunked?" do
   end
 
   it "returns true if the 'Transfer-Encoding' header entry is set to chunked" do
-    @headers.chunked?.should be_false
+    @headers.chunked?.should == false
 
     @headers["Transfer-Encoding"] = "bla"
-    @headers.chunked?.should be_false
+    @headers.chunked?.should == false
 
     @headers["Transfer-Encoding"] = "blachunkedbla"
-    @headers.chunked?.should be_false
+    @headers.chunked?.should == false
 
     @headers["Transfer-Encoding"] = "chunked"
-    @headers.chunked?.should be_true
+    @headers.chunked?.should == true
   end
 end

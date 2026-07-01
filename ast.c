@@ -45,7 +45,7 @@ static const rb_data_type_t rb_node_type = {
     "AST/node",
     {node_gc_mark, RUBY_TYPED_DEFAULT_FREE, node_memsize,},
     0, 0,
-    RUBY_TYPED_FREE_IMMEDIATELY,
+    RUBY_TYPED_THREAD_SAFE_FREE,
 };
 
 struct ASTLocationData {
@@ -70,7 +70,7 @@ static const rb_data_type_t rb_location_type = {
     "AST/location",
     {location_gc_mark, RUBY_TYPED_DEFAULT_FREE, location_memsize,},
     0, 0,
-    RUBY_TYPED_FREE_IMMEDIATELY,
+    RUBY_TYPED_THREAD_SAFE_FREE,
 };
 
 
@@ -698,7 +698,7 @@ node_children(VALUE ast_value, const NODE *node)
                                             : var_name(ainfo->rest_arg)),
                                         (ainfo->no_kwarg ? Qfalse : NEW_CHILD(ast_value, (NODE *)ainfo->kw_args)),
                                         (ainfo->no_kwarg ? Qfalse : NEW_CHILD(ast_value, ainfo->kw_rest_arg)),
-                                        var_name(ainfo->block_arg));
+                                        (ainfo->no_blockarg ? Qfalse : var_name(ainfo->block_arg)));
         }
       case NODE_SCOPE:
         {

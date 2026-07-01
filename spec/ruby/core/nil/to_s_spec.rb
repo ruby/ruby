@@ -10,6 +10,6 @@ describe "NilClass#to_s" do
   end
 
   it "always returns the same string" do
-    nil.to_s.should equal(nil.to_s)
+    nil.to_s.should.equal?(nil.to_s)
   end
 end

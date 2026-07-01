@@ -1,6 +1,7 @@
 require_relative 'spec_helper'
-require_relative 'shared/each'
 
 describe "ENV.each" do
-  it_behaves_like :env_each, :each
+  it "is an alias of ENV.each_pair" do
+    ENV.method(:each).should == ENV.method(:each_pair)
+  end
 end

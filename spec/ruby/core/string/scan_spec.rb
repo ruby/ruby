@@ -58,11 +58,11 @@ describe "String#scan" do
   end
 
   it "raises a TypeError if pattern isn't a Regexp and can't be converted to a String" do
-    -> { "cruel world".scan(5)         }.should raise_error(TypeError)
+    -> { "cruel world".scan(5)         }.should.raise(TypeError)
     not_supported_on :opal do
-      -> { "cruel world".scan(:test)   }.should raise_error(TypeError)
+      -> { "cruel world".scan(:test)   }.should.raise(TypeError)
     end
-    -> { "cruel world".scan(mock('x')) }.should raise_error(TypeError)
+    -> { "cruel world".scan(mock('x')) }.should.raise(TypeError)
   end
 
   # jruby/jruby#5513
@@ -80,8 +80,8 @@ end
 describe "String#scan with pattern and block" do
   it "returns self" do
     s = "foo"
-    s.scan(/./) {}.should equal(s)
-    s.scan(/roar/) {}.should equal(s)
+    s.scan(/./) {}.should.equal?(s)
+    s.scan(/roar/) {}.should.equal?(s)
   end
 
   it "passes each match to the block as one argument: an array" do

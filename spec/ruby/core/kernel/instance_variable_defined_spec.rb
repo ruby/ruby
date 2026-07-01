@@ -8,21 +8,21 @@ describe "Kernel#instance_variable_defined?" do
 
   describe "when passed a String" do
     it "returns false if the instance variable is not defined" do
-      @instance.instance_variable_defined?("@goodbye").should be_false
+      @instance.instance_variable_defined?("@goodbye").should == false
     end
 
     it "returns true if the instance variable is defined" do
-      @instance.instance_variable_defined?("@greeting").should be_true
+      @instance.instance_variable_defined?("@greeting").should == true
     end
   end
 
   describe "when passed a Symbol" do
     it "returns false if the instance variable is not defined" do
-      @instance.instance_variable_defined?(:@goodbye).should be_false
+      @instance.instance_variable_defined?(:@goodbye).should == false
     end
 
     it "returns true if the instance variable is defined" do
-      @instance.instance_variable_defined?(:@greeting).should be_true
+      @instance.instance_variable_defined?(:@greeting).should == true
     end
   end
 
@@ -30,12 +30,12 @@ describe "Kernel#instance_variable_defined?" do
     -> do
       obj = mock("kernel instance_variable_defined?")
       @instance.instance_variable_defined? obj
-    end.should raise_error(TypeError)
+    end.should.raise(TypeError)
   end
 
   it "returns false if the instance variable is not defined for different types" do
     [nil, false, true, 1, 2.0, :test, "test"].each do |obj|
-      obj.instance_variable_defined?("@goodbye").should be_false
+      obj.instance_variable_defined?("@goodbye").should == false
     end
   end
 end

@@ -23,6 +23,7 @@
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/rational.h"
+#include "internal/string.h"
 #include "internal/vm.h"
 #include "probes.h"
 #include "ruby/encoding.h"
@@ -30,6 +31,7 @@
 #include "ruby/thread.h"
 #include "ruby/util.h"
 #include "ruby/ractor.h"
+#include "shape.h"
 #include "vm_core.h"
 #include "builtin.h"
 
@@ -636,17 +638,8 @@ ary_ensure_room_for_push(VALUE ary, long add_len)
  *  call-seq:
  *    freeze -> self
  *
- *  Freezes +self+ (if not already frozen); returns +self+:
- *
- *    a = []
- *    a.frozen? # => false
- *    a.freeze
- *    a.frozen? # => true
- *
- *  No further changes may be made to +self+;
- *  raises FrozenError if a change is attempted.
- *
- *  Related: Kernel#frozen?.
+ *  Freezes +self+, preventing further modifications;
+ *  see {Frozen Objects}[rdoc-ref:frozen_objects.md].
  */
 
 VALUE
@@ -687,22 +680,17 @@ ary_alloc_embed(VALUE klass, long capa)
 {
     size_t size = ary_embed_size(capa);
     RUBY_ASSERT(rb_gc_size_allocatable_p(size));
-    NEWOBJ_OF(ary, struct RArray, klass,
-                     T_ARRAY | RARRAY_EMBED_FLAG | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
-                     size, 0);
-    /* Created array is:
-     *   FL_SET_EMBED((VALUE)ary);
-     *   ARY_SET_EMBED_LEN((VALUE)ary, 0);
-     */
-    return (VALUE)ary;
+   /* Created array is:
+    *   FL_SET_EMBED((VALUE)ary);
+    *   ARY_SET_EMBED_LEN((VALUE)ary, 0);
+    */
+    return rb_newobj_of(klass, T_ARRAY | RARRAY_EMBED_FLAG, size);
 }
 
 static VALUE
 ary_alloc_heap(VALUE klass)
 {
-    NEWOBJ_OF(ary, struct RArray, klass,
-                     T_ARRAY | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
-                     sizeof(struct RArray), 0);
+    NEWOBJ_OF(ary, struct RArray, klass, T_ARRAY, sizeof(struct RArray));
 
     ary->as.heap.len = 0;
     ary->as.heap.aux.capa = 0;
@@ -805,28 +793,21 @@ ec_ary_alloc_embed(rb_execution_context_t *ec, VALUE klass, long capa)
 {
     size_t size = ary_embed_size(capa);
     RUBY_ASSERT(rb_gc_size_allocatable_p(size));
-    NEWOBJ_OF(ary, struct RArray, klass,
-            T_ARRAY | RARRAY_EMBED_FLAG | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
-            size, ec);
-    /* Created array is:
-     *   FL_SET_EMBED((VALUE)ary);
-     *   ARY_SET_EMBED_LEN((VALUE)ary, 0);
-     */
-    return (VALUE)ary;
+   /* Created array is:
+    *   FL_SET_EMBED((VALUE)ary);
+    *   ARY_SET_EMBED_LEN((VALUE)ary, 0);
+    */
+    return rb_ec_newobj_of(ec, klass, T_ARRAY | RARRAY_EMBED_FLAG, size);
 }
 
 static VALUE
 ec_ary_alloc_heap(rb_execution_context_t *ec, VALUE klass)
 {
-    NEWOBJ_OF(ary, struct RArray, klass,
-            T_ARRAY | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
-            sizeof(struct RArray), ec);
-
-    ary->as.heap.len = 0;
-    ary->as.heap.aux.capa = 0;
-    ary->as.heap.ptr = NULL;
-
-    return (VALUE)ary;
+    VALUE ary = rb_ec_newobj_of(ec, klass, T_ARRAY, sizeof(struct RArray));
+    RARRAY(ary)->as.heap.len = 0;
+    RARRAY(ary)->as.heap.aux.capa = 0;
+    RARRAY(ary)->as.heap.ptr = NULL;
+    return ary;
 }
 
 static VALUE
@@ -921,6 +902,7 @@ init_fake_ary_flags(void)
     struct RArray fake_ary = {0};
     fake_ary.basic.flags = T_ARRAY;
     VALUE ary = (VALUE)&fake_ary;
+    RBASIC_SET_SHAPE_ID(ary, ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER);
     rb_ary_freeze(ary);
     return fake_ary.basic.flags;
 }
@@ -1758,7 +1740,7 @@ rb_ary_entry(VALUE ary, long offset)
     return rb_ary_entry_internal(ary, offset);
 }
 
-VALUE
+static VALUE
 rb_ary_subseq_step(VALUE ary, long beg, long len, long step)
 {
     VALUE klass;
@@ -2694,6 +2676,12 @@ ary_enum_length(VALUE ary, VALUE args, VALUE eobj)
     return rb_ary_length(ary);
 }
 
+// These array primitives enable tight compatibility with the C implementation
+// in terms of what method calls happen. They can use unchecked utilities such as
+// FIX2LONG since unlike userland Ruby code, these methods cannot be traced with
+// TracePoint (or ruby/debug.h APIs) and have their local variables changed from
+// underneath them.
+
 // Return true if the index is at or past the end of the array.
 VALUE
 rb_jit_ary_at_end(rb_execution_context_t *ec, VALUE self, VALUE index)
@@ -3006,6 +2994,67 @@ ary_join_1(VALUE obj, VALUE ary, VALUE sep, long i, VALUE result, int *first)
     }
 }
 
+/* Fast path for Array#join: when every element is a String in one fast-path encoding
+ * (UTF-8 / US-ASCII / ASCII-8BIT) and the separator is byte-compatible, the result can
+ * be produced with a single memcpy pass instead of appending each element through
+ * rb_str_buf_append. Returns the joined String, or Qundef when any of those invariants
+ * does not hold -- the caller then uses the general path. No user code runs here, so
+ * the array cannot be mutated underneath us. */
+static VALUE
+ary_join_fast(VALUE ary, VALUE sep)
+{
+    long n = RARRAY_LEN(ary);
+    if (n == 0) return Qundef;
+
+    VALUE first = RARRAY_AREF(ary, 0);
+    if (!RB_TYPE_P(first, T_STRING)) return Qundef;
+    int encidx = ENCODING_GET(first);
+    if (!rb_str_encindex_fastpath(encidx)) return Qundef;
+
+    /* cr accumulates the result code range exactly as rb_str_buf_append would. */
+    enum ruby_coderange_type cr = ENC_CODERANGE_7BIT;
+    long sep_len = 0;
+    const char *sep_ptr = NULL;
+    if (!NIL_P(sep)) {
+        int sep_cr = rb_enc_str_coderange(sep);
+        /* The separator must share the element encoding, or be 7-bit (encidx is
+           ASCII-compatible, so a 7-bit separator concatenates without negotiation). */
+        if (ENCODING_GET(sep) != encidx && sep_cr != ENC_CODERANGE_7BIT) return Qundef;
+        sep_ptr = RSTRING_PTR(sep);
+        sep_len = RSTRING_LEN(sep);
+        if (n > 1) cr = ENC_CODERANGE_AND(cr, sep_cr);
+    }
+
+    /* One pass: confirm the shared encoding, measure the length, merge code ranges. */
+    long len = 1 + sep_len * (n - 1);
+    for (long i = 0; i < n; i++) {
+        VALUE s = RARRAY_AREF(ary, i);
+        if (!RB_TYPE_P(s, T_STRING) || ENCODING_GET(s) != encidx) return Qundef;
+        len += RSTRING_LEN(s);
+        cr = ENC_CODERANGE_AND(cr, rb_enc_str_coderange(s));
+    }
+
+    VALUE result = rb_str_buf_new(len);
+    rb_enc_associate_index(result, encidx);
+    char *const buf = RSTRING_PTR(result);
+    char *p = buf;
+    for (long i = 0; i < n; i++) {
+        VALUE s = RARRAY_AREF(ary, i);
+        long slen = RSTRING_LEN(s);
+        if (i > 0 && sep_len) {
+            memcpy(p, sep_ptr, sep_len);
+            p += sep_len;
+        }
+        memcpy(p, RSTRING_PTR(s), slen);
+        p += slen;
+    }
+
+    ENC_CODERANGE_CLEAR(result);  /* keep rb_str_set_len from rescanning the bytes */
+    rb_str_set_len(result, p - buf);
+    ENC_CODERANGE_SET(result, cr);
+    return result;
+}
+
 VALUE
 rb_ary_join(VALUE ary, VALUE sep)
 {
@@ -3014,8 +3063,12 @@ rb_ary_join(VALUE ary, VALUE sep)
 
     if (RARRAY_LEN(ary) == 0) return rb_usascii_str_new(0, 0);
 
+    if (!NIL_P(sep)) StringValue(sep);
+
+    result = ary_join_fast(ary, sep);
+    if (!UNDEF_P(result)) return result;
+
     if (!NIL_P(sep)) {
-        StringValue(sep);
         len += RSTRING_LEN(sep) * (RARRAY_LEN(ary) - 1);
     }
     long len_memo = RARRAY_LEN(ary);
@@ -3054,28 +3107,20 @@ rb_ary_join(VALUE ary, VALUE sep)
  *  call-seq:
  *    join(separator = $,) -> new_string
  *
- *  Returns the new string formed by joining the converted elements of +self+;
- *  for each element +element+:
+ *  Returns the new string formed by joining the string-converted elements of +self+
+ *  with the given +separator+ (defaults to <tt>$,</tt>):
  *
- *  - Converts recursively using <tt>element.join(separator)</tt>
- *    if +element+ is a <tt>kind_of?(Array)</tt>.
- *  - Otherwise, converts using <tt>element.to_s</tt>.
+ *    $,                  # => nil
+ *    %w[].join           # => ""
+ *    %w[foo].join        # => "foo"
+ *    a = %w[foo bar baz] # => ["foo", "bar", "baz"]
+ *    a.join              # => "foobarbaz"
+ *    a.join('|')         # => "foo|bar|baz"
+ *    a.join(' :|: ')     # => "foo :|: bar :|: baz"
  *
- *  With no argument given, joins using the output field separator, <tt>$,</tt>:
+ *  Flattens and joins nested arrays:
  *
- *    a = [:foo, 'bar', 2]
- *    $, # => nil
- *    a.join # => "foobar2"
- *
- *  With string argument +separator+ given, joins using that separator:
- *
- *    a = [:foo, 'bar', 2]
- *    a.join("\n") # => "foo\nbar\n2"
- *
- *  Joins recursively for nested arrays:
- *
- *   a = [:foo, [:bar, [:baz, :bat]]]
- *   a.join # => "foobarbazbat"
+ *    [:foo, [:bar, [:baz, :bat]]].join # => "foobarbazbat"
  *
  *  Related: see {Methods for Converting}[rdoc-ref:Array@Methods+for+Converting].
  */
@@ -5895,7 +5940,7 @@ rb_ary_union_hash(VALUE hash, VALUE ary2)
  *
  *  Returns the union of +self+ and +other_array+;
  *  duplicates are removed; order is preserved;
- *  items are compared using <tt>eql?</tt>:
+ *  items are compared using <tt>eql?</tt> and <tt>hash</tt>:
  *
  *    [0, 1] | [2, 3] # => [0, 1, 2, 3]
  *    [0, 1, 1] | [2, 2, 3] # => [0, 1, 2, 3]
@@ -5929,7 +5974,7 @@ rb_ary_or(VALUE ary1, VALUE ary2)
  *
  *  Returns a new array that is the union of the elements of +self+
  *  and all given arrays +other_arrays+;
- *  items are compared using <tt>eql?</tt>:
+ *  items are compared using <tt>eql?</tt> and <tt>hash</tt>:
  *
  *    [0, 1, 2, 3].union([4, 5], [6, 7]) # => [0, 1, 2, 3, 4, 5, 6, 7]
  *
@@ -6429,7 +6474,7 @@ push_value(st_data_t key, st_data_t val, st_data_t ary)
  *  returns +self+ if any elements removed, +nil+ otherwise.
  *
  *  With no block given, identifies and removes elements using method <tt>eql?</tt>
- *  to compare elements:
+ *  and <tt>hash</tt> to compare elements:
  *
  *    a = [0, 0, 1, 1, 2, 2]
  *    a.uniq! # => [0, 1, 2]
@@ -6437,7 +6482,7 @@ push_value(st_data_t key, st_data_t val, st_data_t ary)
  *
  *  With a block given, calls the block for each element;
  *  identifies and omits "duplicate" elements using method <tt>eql?</tt>
- *  to compare <i>block return values</i>;
+ *  and <tt>hash</tt> to compare <i>block return values</i>;
  *  that is, an element is a duplicate if its block return value
  *  is the same as that of a previous element:
  *
@@ -6486,14 +6531,14 @@ rb_ary_uniq_bang(VALUE ary)
  *  the first occurrence always being retained.
  *
  *  With no block given, identifies and omits duplicate elements using method <tt>eql?</tt>
- *  to compare elements:
+ *  and <tt>hash</tt> to compare elements:
  *
  *    a = [0, 0, 1, 1, 2, 2]
  *    a.uniq # => [0, 1, 2]
  *
  *  With a block given, calls the block for each element;
  *  identifies and omits "duplicate" elements using method <tt>eql?</tt>
- *  to compare <i>block return values</i>;
+ *  and <tt>hash</tt> to compare <i>block return values</i>;
  *  that is, an element is a duplicate if its block return value
  *  is the same as that of a previous element:
  *
@@ -6875,7 +6920,7 @@ static const rb_data_type_t ary_sample_memo_type = {
     .function = {
         .dfree = (RUBY_DATA_FUNC)st_free_table,
     },
-    .flags = RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY
+    .flags = RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_THREAD_SAFE_FREE
 };
 
 static VALUE
@@ -8259,7 +8304,11 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
     n = 0;
     r = Qundef;
 
-    if (!FIXNUM_P(v) && !RB_BIGNUM_TYPE_P(v) && !RB_TYPE_P(v, T_RATIONAL)) {
+    bool init_is_float = RB_FLOAT_TYPE_P(v);
+    if (init_is_float) {
+        v = LONG2FIX(0);
+    }
+    else if (!RB_INTEGER_TYPE_P(v) && !RB_TYPE_P(v, T_RATIONAL)) {
         i = 0;
         goto init_is_a_value;
     }
@@ -8287,12 +8336,13 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
             goto not_exact;
     }
     v = finish_exact_sum(n, r, v, argc!=0);
+    if (init_is_float) v = rb_float_plus(argv[0], v);
     return v;
 
   not_exact:
     v = finish_exact_sum(n, r, v, i!=0);
 
-    if (RB_FLOAT_TYPE_P(e)) {
+    if (init_is_float ? (--i, e = argv[0], true) : RB_FLOAT_TYPE_P(e)) {
         /*
          * Kahan-Babuska balancing compensated summation algorithm
          * See https://link.springer.com/article/10.1007/s00607-005-0139-x

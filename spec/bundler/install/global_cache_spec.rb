@@ -63,6 +63,7 @@ RSpec.describe "global gem caching" do
     end
 
     it "uses a shorter path for the cache to not hit filesystem limits" do
+      skip "Windows without long path support cannot create the long cache path" if Gem.win_platform?
       install_gemfile <<-G, artifice: "compact_index", verbose: true
         source "http://#{"a" * 255}.test"
         gem "myrack"
@@ -82,17 +83,19 @@ RSpec.describe "global gem caching" do
       # the more verbose and explicit approach. This whole ensure block can be
       # removed once/if https://bugs.ruby-lang.org/issues/21177 is fixed, and
       # once the fix propagates to all supported rubies.
-      File.delete cached_gem
-      Dir.rmdir source_cache
+      if cached_gem
+        File.delete cached_gem
+        Dir.rmdir source_cache
 
-      File.delete compact_index_cache_path.join(source_segment, "info", "myrack")
-      Dir.rmdir compact_index_cache_path.join(source_segment, "info")
-      File.delete compact_index_cache_path.join(source_segment, "info-etags", "myrack-92f3313ce5721296f14445c3a6b9c073")
-      Dir.rmdir compact_index_cache_path.join(source_segment, "info-etags")
-      Dir.rmdir compact_index_cache_path.join(source_segment, "info-special-characters")
-      File.delete compact_index_cache_path.join(source_segment, "versions")
-      File.delete compact_index_cache_path.join(source_segment, "versions.etag")
-      Dir.rmdir compact_index_cache_path.join(source_segment)
+        File.delete compact_index_cache_path.join(source_segment, "info", "myrack")
+        Dir.rmdir compact_index_cache_path.join(source_segment, "info")
+        File.delete compact_index_cache_path.join(source_segment, "info-etags", "myrack-92f3313ce5721296f14445c3a6b9c073")
+        Dir.rmdir compact_index_cache_path.join(source_segment, "info-etags")
+        Dir.rmdir compact_index_cache_path.join(source_segment, "info-special-characters")
+        File.delete compact_index_cache_path.join(source_segment, "versions")
+        File.delete compact_index_cache_path.join(source_segment, "versions.etag")
+        Dir.rmdir compact_index_cache_path.join(source_segment)
+      end
     end
 
     describe "when the same gem from different sources is installed" do

@@ -26,6 +26,7 @@ mod sbfm;
 mod shift_imm;
 mod sys_reg;
 mod test_bit;
+mod udf;
 
 pub use atomic::Atomic;
 pub use branch::Branch;
@@ -52,3 +53,4 @@ pub use sbfm::SBFM;
 pub use shift_imm::ShiftImm;
 pub use sys_reg::SysReg;
 pub use test_bit::TestBit;
+pub use udf::Udf;

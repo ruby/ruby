@@ -82,6 +82,70 @@ class TestCoverage < Test::Unit::TestCase
     }
   end
 
+  def test_coverage_snapshot_iseq_compile
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        File.open("test.rb", "w") do |f|
+          f.puts <<-EOS
+            def coverage_test_snapshot
+              :ok
+            end
+          EOS
+        end
+
+        assert_in_out_err(ARGV, <<-"end;", ["[1, 0, nil]", "[1, 1, nil]", "[1, 1, nil]"], [])
+          class RubyVM::InstructionSequence
+            def self.load_iseq(path)
+              compile(File.read(path), path, path)
+            end
+          end
+
+          Coverage.start
+          tmp = Dir.pwd
+          require tmp + "/test.rb"
+          cov = Coverage.peek_result[tmp + "/test.rb"]
+          coverage_test_snapshot
+          cov2 = Coverage.peek_result[tmp + "/test.rb"]
+          p cov
+          p cov2
+          p Coverage.result[tmp + "/test.rb"]
+        end;
+      }
+    }
+  end
+
+  def test_coverage_snapshot_iseq_compile_file
+    Dir.mktmpdir {|tmp|
+      Dir.chdir(tmp) {
+        File.open("test.rb", "w") do |f|
+          f.puts <<-EOS
+            def coverage_test_snapshot
+              :ok
+            end
+          EOS
+        end
+
+        assert_in_out_err(ARGV, <<-"end;", ["[1, 0, nil]", "[1, 1, nil]", "[1, 1, nil]"], [])
+          class RubyVM::InstructionSequence
+            def self.load_iseq(path)
+              compile_file(path)
+            end
+          end
+
+          Coverage.start
+          tmp = Dir.pwd
+          require tmp + "/test.rb"
+          cov = Coverage.peek_result[tmp + "/test.rb"]
+          coverage_test_snapshot
+          cov2 = Coverage.peek_result[tmp + "/test.rb"]
+          p cov
+          p cov2
+          p Coverage.result[tmp + "/test.rb"]
+        end;
+      }
+    }
+  end
+
   def test_restarting_coverage
     Dir.mktmpdir {|tmp|
       Dir.chdir(tmp) {

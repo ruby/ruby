@@ -21,7 +21,7 @@ describe "Range#overlap?" do
   it "raises TypeError when called with non-Range argument" do
     -> {
       (0..2).overlap?(1)
-    }.should raise_error(TypeError, "wrong argument type Integer (expected Range)")
+    }.should.raise(TypeError, "wrong argument type Integer (expected Range)")
   end
 
   it "returns true when beginningless and endless Ranges overlap" do

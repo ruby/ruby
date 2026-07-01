@@ -2,4 +2,6 @@
 
 # This writes the prism ripper translation into the Ripper constant so that
 # users can transparently use Ripper without any changes.
-Ripper = Prism::Translation::Ripper # :nodoc:
+# :stopdoc:
+Ripper = Prism::Translation::Ripper
+# :startdoc:

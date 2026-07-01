@@ -39,7 +39,7 @@ rsock_raise_user_specified_timeout(struct addrinfo *ai, VALUE host, VALUE port)
         message = rb_sprintf("user specified timeout for %" PRIsVALUE " port %" PRIsVALUE, host, port);
     }
 
-    rb_raise(rb_eIOTimeoutError, "%" PRIsVALUE, message);
+    rb_exc_raise(rb_exc_new_str(rb_eIOTimeoutError, message));
 }
 
 static VALUE
@@ -1448,7 +1448,7 @@ rsock_revlookup_flag(VALUE revlookup, int *norevlookup)
         id = SYM2ID(revlookup);
         if (id == id_numeric) return_norevlookup(1);
         if (id == id_hostname) return_norevlookup(0);
-        rb_raise(rb_eArgError, "invalid reverse_lookup flag: :%s", rb_id2name(id));
+        rb_raise(rb_eArgError, "invalid reverse_lookup flag: :%"PRIsVALUE, rb_sym2str(revlookup));
     }
     return 0;
 #undef return_norevlookup

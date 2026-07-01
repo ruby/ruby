@@ -16,11 +16,11 @@ describe "Enumerator::Lazy#initialize" do
   end
 
   it "is a private method" do
-    Enumerator::Lazy.should have_private_instance_method(:initialize, false)
+    Enumerator::Lazy.private_instance_methods(false).should.include?(:initialize)
   end
 
   it "returns self" do
-    @uninitialized.send(:initialize, @receiver) {}.should equal(@uninitialized)
+    @uninitialized.send(:initialize, @receiver) {}.should.equal?(@uninitialized)
   end
 
   describe "when the returned lazy enumerator is evaluated by Enumerable#first" do
@@ -32,15 +32,15 @@ describe "Enumerator::Lazy#initialize" do
   end
 
   it "sets #size to nil if not given a size" do
-    @uninitialized.send(:initialize, @receiver) {}.size.should be_nil
+    @uninitialized.send(:initialize, @receiver) {}.size.should == nil
   end
 
   it "sets #size to nil if given size is nil" do
-    @uninitialized.send(:initialize, @receiver, nil) {}.size.should be_nil
+    @uninitialized.send(:initialize, @receiver, nil) {}.size.should == nil
   end
 
   it "sets given size to own size if the given size is Float::INFINITY" do
-    @uninitialized.send(:initialize, @receiver, Float::INFINITY) {}.size.should equal(Float::INFINITY)
+    @uninitialized.send(:initialize, @receiver, Float::INFINITY) {}.size.should.equal?(Float::INFINITY)
   end
 
   it "sets given size to own size if the given size is an Integer" do
@@ -52,12 +52,12 @@ describe "Enumerator::Lazy#initialize" do
   end
 
   it "raises an ArgumentError when block is not given" do
-    -> {  @uninitialized.send :initialize, @receiver }.should raise_error(ArgumentError)
+    -> {  @uninitialized.send :initialize, @receiver }.should.raise(ArgumentError)
   end
 
   describe "on frozen instance" do
     it "raises a FrozenError" do
-      -> {  @uninitialized.freeze.send(:initialize, @receiver) {} }.should raise_error(FrozenError)
+      -> {  @uninitialized.freeze.send(:initialize, @receiver) {} }.should.raise(FrozenError)
     end
   end
 end

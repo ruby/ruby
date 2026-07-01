@@ -63,6 +63,11 @@ module Bundler
       Bundler.create_bundle_path
 
       ProcessLock.lock do
+        # Invalidate any stale gem specification cache from before we acquired the lock.
+        # Another process may have installed gems while we were waiting.
+        Gem::Specification.reset
+        @definition.sources.clear_cache
+
         @definition.ensure_equivalent_gemfile_and_lockfile(options[:deployment])
 
         if @definition.dependencies.empty?
@@ -190,7 +195,13 @@ module Bundler
       force = options[:force]
       local = options[:local] || options[:"prefer-local"]
       jobs = Bundler.settings.installation_parallelization
-      spec_installations = ParallelInstaller.call(self, @definition.specs, jobs, standalone, force, local: local)
+      specs = @definition.specs
+      # Installing default gems may need the remote index again to cache
+      # their .gem files, so keep resolution memory around in that case.
+      # The bundler spec itself is excluded because it comes from the
+      # metadata source and never goes through that path.
+      @definition.release_resolution_memory! if specs.none? {|s| s.default_gem? && s.source.is_a?(Source::Rubygems) }
+      spec_installations = ParallelInstaller.call(self, specs, jobs, standalone, force, local: local)
       spec_installations.each do |installation|
         post_install_messages[installation.name] = installation.post_install_message if installation.has_post_install_message?
       end
@@ -211,16 +222,30 @@ module Bundler
     end
 
     def ensure_specs_are_compatible!
+      overrides = @definition.overrides
       @definition.specs.each do |spec|
-        unless spec.matches_current_ruby?
-          raise InstallError, "#{spec.full_name} requires ruby version #{spec.required_ruby_version}, " \
-            "which is incompatible with the current version, #{Gem.ruby_version}"
+        unless spec.matches_current_ruby_with_overrides?(overrides)
+          raise InstallError, incompatibility_message(spec, "requires ruby version #{spec.required_ruby_version}, " \
+            "which is incompatible with the current version, #{Gem.ruby_version}")
         end
-        unless spec.matches_current_rubygems?
-          raise InstallError, "#{spec.full_name} requires rubygems version #{spec.required_rubygems_version}, " \
-            "which is incompatible with the current version, #{Gem.rubygems_version}"
+        unless spec.matches_current_rubygems_with_overrides?(overrides)
+          raise InstallError, incompatibility_message(spec, "requires rubygems version #{spec.required_rubygems_version}, " \
+            "which is incompatible with the current version, #{Gem.rubygems_version}")
         end
       end
+    end
+
+    # Build the error raised when a locked spec can't run on the current Ruby or
+    # RubyGems. When the offending spec is a platform-specific variant locked in
+    # frozen mode, point users at the fix: re-resolving outside frozen mode adds
+    # the Ruby (non platform-specific) fallback variant to the lockfile.
+    def incompatibility_message(spec, reason)
+      message = "#{spec.full_name} #{reason}"
+      return message unless Bundler.frozen_bundle? && spec.platform != Gem::Platform::RUBY
+
+      message + "\n\nThe lockfile only includes the #{spec.platform} variant of #{spec.name}. " \
+        "If a compatible Ruby variant is available, run `bundle install` outside of frozen/deployment mode " \
+        "to add it to the lockfile as a fallback, then commit the updated #{SharedHelpers.relative_lockfile_path}."
     end
 
     def lock

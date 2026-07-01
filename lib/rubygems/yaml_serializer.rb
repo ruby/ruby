@@ -29,8 +29,27 @@ module Gem
     AliasRef = Struct.new(:name, keyword_init: true)
 
     class Parser
-      MAPPING_KEY_RE = /^((?:[^#:]|:[^ ])+):(?:[ ]+(.*))?$/
+      # A plain (unquoted) mapping key followed by ":". "#" inside a key is
+      # literal unless preceded by a space (which would start a comment).
+      MAPPING_KEY_RE = /^((?:[^#:\s]|:[^ ])(?:[^#:]|:[^ ]|(?<=[^ ])#)*):(?:[ ]+(.*))?$/
+      # A quoted mapping key followed by ":". A whole-line quoted scalar
+      # cannot match because its closing quote is at the end of the line.
+      QUOTED_KEY_RE = /^("(?:[^"\\]|\\.)*"|'(?:[^']|'')*'):(?:[ ]+(.*))?$/
       MAX_NESTING_DEPTH = 1_000
+
+      STRING_UNESCAPES = {
+        "\\\\" => "\\",
+        "\\\"" => "\"",
+        "\\0" => "\0",
+        "\\a" => "\a",
+        "\\b" => "\b",
+        "\\t" => "\t",
+        "\\n" => "\n",
+        "\\v" => "\v",
+        "\\f" => "\f",
+        "\\r" => "\r",
+        "\\e" => "\e",
+      }.freeze
 
       def initialize(source)
         @lines = source.split("\n")
@@ -72,9 +91,7 @@ module Gem
 
       def parse_node(base_indent)
         @depth += 1
-        if @depth > MAX_NESTING_DEPTH
-          raise Psych::SyntaxError, "exceeded maximum nesting depth (#{MAX_NESTING_DEPTH})"
-        end
+        raise_max_nesting! if @depth > MAX_NESTING_DEPTH
 
         skip_blank_and_comments
         return nil if @lines.empty?
@@ -95,6 +112,14 @@ module Gem
 
         if stripped.start_with?("- ") || stripped == "-"
           parse_sequence(indent, anchor)
+        elsif QUOTED_KEY_RE.match?(stripped)
+          # A mapping whose key is quoted, e.g. '"have: colon": value'.
+          parse_mapping(indent, anchor)
+        elsif (stripped.start_with?("\"") && stripped.end_with?("\"")) ||
+              (stripped.start_with?("'") && stripped.end_with?("'"))
+          # A whole-line quoted scalar, e.g. '"system: foo: bar"'. It may
+          # contain ": ", so it must be checked before MAPPING_KEY_RE.
+          parse_plain_scalar(indent, anchor)
         elsif stripped =~ MAPPING_KEY_RE && !stripped.start_with?("!ruby/object:")
           parse_mapping(indent, anchor)
         elsif stripped.start_with?("!ruby/object:")
@@ -137,7 +162,8 @@ module Gem
         elsif content.start_with?("-")
           @lines.unshift("#{" " * (indent + 2)}#{content}")
           parse_node(indent)
-        elsif content =~ MAPPING_KEY_RE && !content.start_with?("!ruby/object:")
+        elsif QUOTED_KEY_RE.match?(content) ||
+              (content =~ MAPPING_KEY_RE && !content.start_with?("!ruby/object:"))
           @lines.unshift("#{" " * (indent + 2)}#{content}")
           parse_node(indent)
         elsif content.start_with?("|")
@@ -152,13 +178,18 @@ module Gem
         while @lines.any?
           line = @lines[0]
           stripped = line.lstrip
-          break unless line.size - stripped.size == indent &&
-                       stripped =~ MAPPING_KEY_RE && !stripped.start_with?("!ruby/object:")
-          key = $1.strip
-          @lines.shift
-          val = strip_comment($2.to_s.strip)
+          break unless line.size - stripped.size == indent
 
-          key = decode_binary_tag(key) if key.start_with?("!binary ")
+          if (match = QUOTED_KEY_RE.match(stripped))
+            key = coerce(match[1])
+          elsif (match = MAPPING_KEY_RE.match(stripped)) && !stripped.start_with?("!ruby/object:")
+            key = match[1].strip
+            key = decode_binary_tag(key) if key.start_with?("!binary ")
+          else
+            break
+          end
+          @lines.shift
+          val = strip_comment(match[2].to_s.strip)
 
           val_anchor, val = consume_value_anchor(val)
           value = parse_mapping_value(val, indent)
@@ -266,18 +297,14 @@ module Gem
         Scalar.new(value: result)
       end
 
-      def coerce(val)
+      def coerce(val, depth = 0)
+        raise_max_nesting! if depth > MAX_NESTING_DEPTH
+
         val = val.sub(/^! /, "") if val.start_with?("! ")
 
         if val =~ /^"(.*)"$/
-          $1.gsub(/\\["nrt\\]/) do |m|
-            case m
-            when '\\"' then '"'
-            when "\\n" then "\n"
-            when "\\r" then "\r"
-            when "\\t" then "\t"
-            when "\\\\" then "\\"
-            end
+          $1.gsub(/\\(?:["\\0abtnvfre]|x\h{2})/) do |m|
+            STRING_UNESCAPES[m] || m[2..].to_i(16).chr(Encoding::UTF_8)
           end
         elsif val =~ /^'(.*)'$/
           $1.gsub(/''/, "'")
@@ -292,7 +319,7 @@ module Gem
         elsif val =~ /^\[(.*)\]$/
           inner = $1.strip
           return Sequence.new if inner.empty?
-          items = inner.split(/\s*,\s*/).reject(&:empty?).map {|e| Scalar.new(value: coerce(e)) }
+          items = inner.split(/\s*,\s*/).reject(&:empty?).map {|e| Scalar.new(value: coerce(e, depth + 1)) }
           Sequence.new(items: items)
         elsif /\A\d{4}-\d{2}-\d{2}([ T]\d{2}:\d{2}:\d{2})?/.match?(val)
           begin
@@ -373,6 +400,15 @@ module Gem
         node
       end
 
+      def raise_max_nesting!
+        message = "exceeded maximum nesting depth (#{MAX_NESTING_DEPTH})"
+        if defined?(Psych::VERSION)
+          raise Psych::SyntaxError.new(nil, 0, 0, 0, message, nil)
+        else
+          raise Psych::SyntaxError, message
+        end
+      end
+
       def skip_blank_and_comments
         while @lines.any?
           line = @lines[0]
@@ -384,7 +420,7 @@ module Gem
 
       def strip_comment(val)
         return val unless val.include?("#")
-        return val if val.lstrip.start_with?("#")
+        return "" if val.lstrip.start_with?("#")
 
         in_single = false
         in_double = false
@@ -408,7 +444,9 @@ module Gem
             case ch
             when "'" then in_single = true
             when '"' then in_double = true
-            when "#" then return val[0...i].rstrip
+            when "#"
+              # A "#" starts a comment only when preceded by whitespace.
+              return val[0...i].rstrip if [" ", "\t"].include?(val[i - 1])
             end
           end
         end
@@ -435,9 +473,7 @@ module Gem
 
         result = build_node(node)
 
-        if result.is_a?(Hash) &&
-           (result[:tag] == "!ruby/object:Gem::Specification" ||
-            result["tag"] == "!ruby/object:Gem::Specification")
+        if result.is_a?(Hash) && result[:tag] == "!ruby/object:Gem::Specification"
           build_specification(result)
         else
           result
@@ -463,7 +499,11 @@ module Gem
         if @alias_count > MAX_ALIAS_RESOLUTIONS
           raise Psych::BadAlias, "exceeded maximum alias resolutions (#{MAX_ALIAS_RESOLUTIONS})"
         end
-        @anchor_values.fetch(node.name, nil)
+        unless @anchor_values.key?(node.name)
+          klass = defined?(Psych::AnchorNotDefined) ? Psych::AnchorNotDefined : Psych::BadAlias
+          raise klass, "An alias referenced an unknown anchor: #{node.name}"
+        end
+        @anchor_values.fetch(node.name)
       end
 
       def store_anchor(name, value)
@@ -472,7 +512,6 @@ module Gem
       end
 
       def build_mapping(node)
-        check_anchor!(node)
         validate_tag!(node.tag) if node.tag
 
         result = case node.tag
@@ -573,9 +612,14 @@ module Gem
 
         d.instance_variable_set(:@requirement, hash["requirement"] || hash["version_requirements"])
 
-        type = hash["type"]
-        type = type ? type.to_s.sub(/^:/, "").to_sym : :runtime
-        validate_symbol!(type)
+        raw_type = hash["type"]
+        if raw_type
+          name = raw_type.to_s.sub(/^:/, "")
+          validate_symbol!(name)
+          type = name.to_sym
+        else
+          type = :runtime
+        end
         d.instance_variable_set(:@type, type)
 
         d.instance_variable_set(:@prerelease, ["true", true].include?(hash["prerelease"]))
@@ -615,19 +659,14 @@ module Gem
         end
       end
 
-      def validate_symbol!(sym)
-        if @permitted_symbols.any? && !@permitted_symbols.include?(sym.to_s)
-          if defined?(Psych::VERSION)
-            raise Psych::DisallowedClass.new("load", sym.inspect)
-          else
-            raise Psych::DisallowedClass, "Tried to load unspecified class: #{sym.inspect}"
-          end
-        end
-      end
+      def validate_symbol!(name)
+        return if @permitted_symbols.empty? || @permitted_symbols.include?(name)
 
-      def check_anchor!(node)
-        if node.anchor
-          raise Psych::AliasesNotEnabled unless @aliases
+        label = ":#{name}"
+        if defined?(Psych::VERSION)
+          raise Psych::DisallowedClass.new("load", label)
+        else
+          raise Psych::DisallowedClass, "Tried to load unspecified class: #{label}"
         end
       end
 
@@ -655,6 +694,20 @@ module Gem
     end
 
     class Emitter
+      STRING_ESCAPES = {
+        "\\" => "\\\\",
+        "\"" => "\\\"",
+        "\0" => "\\0",
+        "\a" => "\\a",
+        "\b" => "\\b",
+        "\t" => "\\t",
+        "\n" => "\\n",
+        "\v" => "\\v",
+        "\f" => "\\f",
+        "\r" => "\\r",
+        "\e" => "\\e",
+      }.freeze
+
       def emit(obj)
         "---#{emit_node(obj, 0)}"
       end
@@ -677,7 +730,7 @@ module Gem
         when Numeric, Symbol, TrueClass, FalseClass
           " #{obj.inspect}\n"
         else
-          " #{obj.to_s.inspect}\n"
+          " #{quote_string(obj.to_s)}\n"
         end
       end
 
@@ -738,6 +791,7 @@ module Gem
           hash.each do |k, v|
             is_symbol = k.is_a?(Symbol) || (k.is_a?(String) && k.start_with?(":"))
             key_str = k.is_a?(Symbol) ? k.inspect : k.to_s
+            key_str = quote_string(key_str) if !is_symbol && needs_quoting?(key_str)
             parts << "#{pad(indent)}#{key_str}:#{emit_node(v, indent + 2, quote: is_symbol)}"
           end
           parts.join
@@ -764,7 +818,7 @@ module Gem
         if str.include?("\n")
           emit_block_scalar(str, indent)
         elsif needs_quoting?(str, quote)
-          " #{str.to_s.inspect}\n"
+          " #{quote_string(str)}\n"
         else
           " #{str}\n"
         end
@@ -780,12 +834,16 @@ module Gem
         res
       end
 
-      def needs_quoting?(str, quote)
-        quote || str.empty? ||
-          str =~ /^[!*&:@%$]/ || str =~ /^-?\d+(\.\d+)?$/ || str =~ /^[<>=-]/ ||
-          str == "true" || str == "false" || str == "nil" ||
+      def needs_quoting?(str, quote = false)
+        quote || str.empty? || str != str.strip || str =~ /[[:cntrl:]]/ ||
+          str =~ /^[!*&:@%$"'|`]/ || str =~ /^-?\d+(\.\d+)?$/ || str =~ /^[<>=-]/ ||
+          str == "true" || str == "false" || str == "nil" || str == "null" || str == "~" ||
           str.include?(":") || str.include?("#") || str.include?("[") || str.include?("]") ||
           str.include?("{") || str.include?("}") || str.include?(",")
+      end
+
+      def quote_string(str)
+        %("#{str.gsub(/[\\"]|[[:cntrl:]]/) {|c| STRING_ESCAPES[c] || format("\\x%02X", c.ord) }}")
       end
 
       def pad(indent)

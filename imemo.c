@@ -29,7 +29,10 @@ rb_imemo_name(enum imemo_type type)
         IMEMO_NAME(svar);
         IMEMO_NAME(throw_data);
         IMEMO_NAME(tmpbuf);
+        IMEMO_NAME(cvar_entry);
         IMEMO_NAME(fields);
+        IMEMO_NAME(subclasses);
+        IMEMO_NAME(cdhash);
 #undef IMEMO_NAME
     }
     rb_bug("unreachable");
@@ -42,20 +45,19 @@ rb_imemo_name(enum imemo_type type)
 VALUE
 rb_imemo_new(enum imemo_type type, VALUE v0, size_t size, bool is_shareable)
 {
-    VALUE flags = T_IMEMO | FL_WB_PROTECTED | (type << FL_USHIFT) | (is_shareable ? FL_SHAREABLE : 0);
-    NEWOBJ_OF(obj, void, v0, flags, size, 0);
-
-    return (VALUE)obj;
+    VALUE flags = T_IMEMO | (type << FL_USHIFT) | (is_shareable ? FL_SHAREABLE : 0);
+    return rb_newobj_of(v0, flags, size);
 }
 
 VALUE
 rb_imemo_tmpbuf_new(void)
 {
     VALUE flags = T_IMEMO | (imemo_tmpbuf << FL_USHIFT);
-    NEWOBJ_OF(obj, rb_imemo_tmpbuf_t, 0, flags, sizeof(rb_imemo_tmpbuf_t), NULL);
+    UNPROTECTED_NEWOBJ_OF(obj, rb_imemo_tmpbuf_t, 0, flags, sizeof(rb_imemo_tmpbuf_t));
 
     rb_gc_register_pinning_obj((VALUE)obj);
 
+    obj->marked = false;
     obj->ptr = NULL;
     obj->size = 0;
 
@@ -63,7 +65,7 @@ rb_imemo_tmpbuf_new(void)
 }
 
 void *
-rb_alloc_tmp_buffer(volatile VALUE *store, long len)
+rb_alloc_tmp_buffer(volatile VALUE *store, long len, bool marked)
 {
     if (len < 0) {
         rb_raise(rb_eArgError, "negative buffer size (or size too big)");
@@ -74,21 +76,17 @@ rb_alloc_tmp_buffer(volatile VALUE *store, long len)
     rb_imemo_tmpbuf_t *tmpbuf = (rb_imemo_tmpbuf_t *)rb_imemo_tmpbuf_new();
     *store = (VALUE)tmpbuf;
     void *ptr = ruby_xmalloc(len);
+    tmpbuf->marked = marked;
     tmpbuf->ptr = ptr;
     tmpbuf->size = len;
 
     return ptr;
 }
 
-void *
-rb_alloc_tmp_buffer_with_count(volatile VALUE *store, size_t size, size_t cnt)
-{
-    return rb_alloc_tmp_buffer(store, (long)size);
-}
-
 void
 rb_free_tmp_buffer(volatile VALUE *store)
 {
+    if (!*store) return;
     rb_imemo_tmpbuf_t *s = (rb_imemo_tmpbuf_t*)ATOMIC_VALUE_EXCHANGE(*store, 0);
     if (s) {
         void *ptr = ATOMIC_PTR_EXCHANGE(s->ptr, 0);
@@ -99,55 +97,67 @@ rb_free_tmp_buffer(volatile VALUE *store)
 }
 
 struct MEMO *
-rb_imemo_memo_new(VALUE a, VALUE b, VALUE c)
+rb_imemo_memo_new(VALUE a, VALUE b, long c)
 {
     struct MEMO *memo = IMEMO_NEW(struct MEMO, imemo_memo, 0);
 
-    rb_gc_register_pinning_obj((VALUE)memo);
-
     *((VALUE *)&memo->v1) = a;
     *((VALUE *)&memo->v2) = b;
-    *((VALUE *)&memo->u3.value) = c;
+    memo->u3.cnt = c;
 
     return memo;
 }
 
-static VALUE
-imemo_fields_new(VALUE owner, size_t capa, bool shareable)
+struct MEMO *
+rb_imemo_memo_new_value(VALUE a, VALUE b, VALUE c)
 {
-    size_t embedded_size = offsetof(struct rb_fields, as.embed) + capa * sizeof(VALUE);
-    if (rb_gc_size_allocatable_p(embedded_size)) {
-        VALUE fields = rb_imemo_new(imemo_fields, owner, embedded_size, shareable);
-        RUBY_ASSERT(IMEMO_TYPE_P(fields, imemo_fields));
-        return fields;
-    }
-    else {
-        VALUE fields = rb_imemo_new(imemo_fields, owner, sizeof(struct rb_fields), shareable);
-        IMEMO_OBJ_FIELDS(fields)->as.external.ptr = ALLOC_N(VALUE, capa);
-        FL_SET_RAW(fields, OBJ_FIELD_HEAP);
-        return fields;
-    }
+    struct MEMO *memo = IMEMO_NEW(struct MEMO, imemo_memo, 0);
+
+    *((VALUE *)&memo->v1) = a;
+    *((VALUE *)&memo->v2) = b;
+    *((VALUE *)&memo->u3.value) = c;
+    memo->flags |= MEMO_U3_IS_VALUE;
+
+    return memo;
 }
 
 VALUE
-rb_imemo_fields_new(VALUE owner, size_t capa, bool shareable)
+rb_imemo_cdhash_new(size_t size, const struct st_hash_type *type)
 {
-    return imemo_fields_new(owner, capa, shareable);
+    struct rb_imemo_cdhash *memo = IMEMO_NEW(struct rb_imemo_cdhash, imemo_cdhash, 0);
+    memo->tbl.num_entries = 0;
+    st_init_existing_table_with_size(&memo->tbl, type, size);
+    return (VALUE)memo;
 }
 
-static VALUE
-imemo_fields_new_complex(VALUE owner, size_t capa, bool shareable)
+VALUE
+rb_imemo_fields_new(VALUE owner, shape_id_t shape_id, bool shareable)
 {
-    VALUE fields = rb_imemo_new(imemo_fields, owner, sizeof(struct rb_fields), shareable);
-    IMEMO_OBJ_FIELDS(fields)->as.complex.table = st_init_numtable_with_size(capa);
-    FL_SET_RAW(fields, OBJ_FIELD_HEAP);
+    size_t capa = RSHAPE_CAPACITY(shape_id);
+    size_t embedded_size = offsetof(struct rb_fields, as.embed) + capa * sizeof(VALUE);
+    RUBY_ASSERT(rb_gc_size_allocatable_p(embedded_size));
+    VALUE fields = rb_imemo_new(imemo_fields, owner, embedded_size, shareable);
+    // imemo fields objects should always have "RObject" layout.  The
+    // layout in the shape describes the layout of the thing on which it is set.
+    // Imemo fields have the same layout as robject, therefore the layout
+    // should reflect that fact.
+    RBASIC_SET_SHAPE_ID(fields, rb_shape_id_with_robject_layout(shape_id));
+    RUBY_ASSERT(IMEMO_TYPE_P(fields, imemo_fields));
     return fields;
 }
 
 VALUE
-rb_imemo_fields_new_complex(VALUE owner, size_t capa, bool shareable)
+rb_imemo_fields_new_complex(VALUE owner, shape_id_t shape_id, size_t capa, bool shareable)
 {
-    return imemo_fields_new_complex(owner, capa, shareable);
+    VALUE fields = rb_imemo_new(imemo_fields, owner, sizeof(struct rb_fields), shareable);
+    IMEMO_OBJ_FIELDS(fields)->as.complex.table = st_init_numtable_with_size(capa);
+    FL_SET_RAW(fields, OBJ_FIELD_HEAP);
+    // imemo fields objects should always have "RObject" layout.  The
+    // layout in the shape describes the layout of the thing on which it is set.
+    // Imemo fields have the same layout as robject, therefore the layout
+    // should reflect that fact.
+    RBASIC_SET_SHAPE_ID(fields, rb_shape_id_with_robject_layout(shape_id));
+    return fields;
 }
 
 static int
@@ -166,11 +176,16 @@ imemo_fields_complex_wb_i(st_data_t key, st_data_t value, st_data_t arg)
 }
 
 VALUE
-rb_imemo_fields_new_complex_tbl(VALUE owner, st_table *tbl, bool shareable)
+rb_imemo_fields_new_complex_tbl(VALUE owner, shape_id_t shape_id, st_table *tbl, bool shareable)
 {
     VALUE fields = rb_imemo_new(imemo_fields, owner, sizeof(struct rb_fields), shareable);
     IMEMO_OBJ_FIELDS(fields)->as.complex.table = tbl;
     FL_SET_RAW(fields, OBJ_FIELD_HEAP);
+    // imemo fields objects should always have "RObject" layout.  The
+    // layout in the shape describes the layout of the thing on which it is set.
+    // Imemo fields have the same layout as robject, therefore the layout
+    // should reflect that fact.
+    RBASIC_SET_SHAPE_ID(fields, rb_shape_id_with_robject_layout(shape_id));
     st_foreach(tbl, imemo_fields_trigger_wb_i, (st_data_t)fields);
     return fields;
 }
@@ -181,20 +196,18 @@ rb_imemo_fields_clone(VALUE fields_obj)
     shape_id_t shape_id = RBASIC_SHAPE_ID(fields_obj);
     VALUE clone;
 
-    if (rb_shape_too_complex_p(shape_id)) {
+    if (rb_shape_complex_p(shape_id)) {
         st_table *src_table = rb_imemo_fields_complex_tbl(fields_obj);
 
         st_table *dest_table = xcalloc(1, sizeof(st_table));
-        clone = rb_imemo_fields_new_complex_tbl(rb_imemo_fields_owner(fields_obj), dest_table, false /* TODO: check */);
+        clone = rb_imemo_fields_new_complex_tbl(rb_imemo_fields_owner(fields_obj), shape_id, dest_table, false /* TODO: check */);
 
         st_replace(dest_table, src_table);
-        RBASIC_SET_SHAPE_ID(clone, shape_id);
 
         st_foreach(dest_table, imemo_fields_complex_wb_i, (st_data_t)clone);
     }
     else {
-        clone = imemo_fields_new(rb_imemo_fields_owner(fields_obj), RSHAPE_CAPACITY(shape_id), false /* TODO: check */);
-        RBASIC_SET_SHAPE_ID(clone, shape_id);
+        clone = rb_imemo_fields_new(rb_imemo_fields_owner(fields_obj), shape_id, false /* TODO: check */);
         VALUE *fields = rb_imemo_fields_ptr(clone);
         attr_index_t fields_count = RSHAPE_LEN(shape_id);
         MEMCPY(fields, rb_imemo_fields_ptr(fields_obj), VALUE, fields_count);
@@ -211,14 +224,40 @@ rb_imemo_fields_clear(VALUE fields_obj)
 {
     // When replacing an imemo/fields by another one, we must clear
     // its shape so that gc.c:obj_free_object_id won't be called.
-    if (rb_shape_obj_too_complex_p(fields_obj)) {
-        RBASIC_SET_SHAPE_ID(fields_obj, ROOT_TOO_COMPLEX_SHAPE_ID);
+    if (rb_obj_shape_complex_p(fields_obj)) {
+        RBASIC_SET_SHAPE_ID(fields_obj, ROOT_COMPLEX_SHAPE_ID);
     }
     else {
         RBASIC_SET_SHAPE_ID(fields_obj, ROOT_SHAPE_ID);
     }
     // Invalidate the ec->gen_fields_cache.
     RBASIC_CLEAR_CLASS(fields_obj);
+}
+
+VALUE
+rb_imemo_subclasses_new(uint32_t capacity)
+{
+    size_t embed_size = offsetof(struct rb_subclasses, as) + capacity * sizeof(VALUE);
+    struct rb_subclasses *subs;
+
+    if (rb_gc_size_allocatable_p(embed_size)) {
+        subs = (struct rb_subclasses *)rb_imemo_new(imemo_subclasses, 0, embed_size, true);
+        subs->count = 0;
+        subs->capacity = capacity;
+        memset(subs->as.embed, 0, capacity * sizeof(VALUE));
+        rb_gc_declare_weak_references((VALUE)subs);
+    }
+    else {
+        subs = (struct rb_subclasses *)rb_imemo_new(imemo_subclasses, 0, sizeof(struct rb_subclasses), true);
+        subs->as.external = NULL;
+        subs->count = 0;
+        subs->capacity = 0;
+        FL_SET_RAW((VALUE)subs, IMEMO_SUBCLASSES_HEAP);
+        rb_gc_declare_weak_references((VALUE)subs);
+        subs->as.external = ZALLOC_N(VALUE, capacity);
+        subs->capacity = capacity;
+    }
+    return (VALUE)subs;
 }
 
 /* =========================================================================
@@ -262,15 +301,25 @@ rb_imemo_memsize(VALUE obj)
         size += ((rb_imemo_tmpbuf_t *)obj)->size;
 
         break;
+      case imemo_cvar_entry:
+        break;
       case imemo_fields:
-        if (FL_TEST_RAW(obj, OBJ_FIELD_HEAP)) {
-            if (rb_shape_obj_too_complex_p(obj)) {
-                size += st_memsize(IMEMO_OBJ_FIELDS(obj)->as.complex.table);
-            }
-            else {
-                size += RSHAPE_CAPACITY(RBASIC_SHAPE_ID(obj)) * sizeof(VALUE);
-            }
+        if (rb_obj_shape_complex_p(obj)) {
+            size += st_memsize(IMEMO_OBJ_FIELDS(obj)->as.complex.table);
         }
+
+        break;
+      case imemo_subclasses: {
+        if (FL_TEST_RAW(obj, IMEMO_SUBCLASSES_HEAP)) {
+            struct rb_subclasses *subs = (struct rb_subclasses *)obj;
+            size += subs->capacity * sizeof(VALUE);
+        }
+
+        break;
+      }
+      case imemo_cdhash:
+        size += st_memsize(rb_imemo_cdhash_tbl(obj)) - sizeof(st_table);
+
         break;
       default:
         rb_bug("unreachable");
@@ -282,12 +331,6 @@ rb_imemo_memsize(VALUE obj)
 /* =========================================================================
  * mark
  * ========================================================================= */
-
-static bool
-moved_or_living_object_strictly_p(VALUE obj)
-{
-    return !SPECIAL_CONST_P(obj) && (!rb_objspace_garbage_object_p(obj) || BUILTIN_TYPE(obj) == T_MOVED);
-}
 
 static void
 mark_and_move_method_entry(rb_method_entry_t *ment, bool reference_updating)
@@ -371,17 +414,12 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
              */
         }
         else if (reference_updating) {
-            if (moved_or_living_object_strictly_p((VALUE)cc->cme_)) {
-                *((VALUE *)&cc->klass) = rb_gc_location(cc->klass);
-                *((struct rb_callable_method_entry_struct **)&cc->cme_) =
-                    (struct rb_callable_method_entry_struct *)rb_gc_location((VALUE)cc->cme_);
+            *((VALUE *)&cc->klass) = rb_gc_location(cc->klass);
+            *((struct rb_callable_method_entry_struct **)&cc->cme_) =
+                (struct rb_callable_method_entry_struct *)rb_gc_location((VALUE)cc->cme_);
 
-                RUBY_ASSERT(RB_TYPE_P(cc->klass, T_CLASS) || RB_TYPE_P(cc->klass, T_ICLASS));
-                RUBY_ASSERT(IMEMO_TYPE_P((VALUE)cc->cme_, imemo_ment));
-            }
-            else {
-                vm_cc_invalidate(cc);
-            }
+            RUBY_ASSERT(RB_TYPE_P(cc->klass, T_CLASS) || RB_TYPE_P(cc->klass, T_ICLASS));
+            RUBY_ASSERT(IMEMO_TYPE_P((VALUE)cc->cme_, imemo_ment));
         }
         else {
             RUBY_ASSERT(RB_TYPE_P(cc->klass, T_CLASS) || RB_TYPE_P(cc->klass, T_ICLASS));
@@ -474,8 +512,8 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
 
         rb_gc_mark_and_move((VALUE *)&memo->v1);
         rb_gc_mark_and_move((VALUE *)&memo->v2);
-        if (!reference_updating) {
-            rb_gc_mark_maybe(memo->u3.value);
+        if (FL_TEST_RAW(obj, MEMO_U3_IS_VALUE)) {
+            rb_gc_mark_and_move((VALUE *)&memo->u3.value);
         }
 
         break;
@@ -503,10 +541,28 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
       case imemo_tmpbuf: {
         const rb_imemo_tmpbuf_t *m = (const rb_imemo_tmpbuf_t *)obj;
 
-        if (!reference_updating) {
+        if (m->marked && !reference_updating) {
             rb_gc_mark_locations(m->ptr, m->ptr + (m->size / sizeof(VALUE)));
         }
 
+        break;
+      }
+      case imemo_cvar_entry: {
+          struct rb_cvar_class_tbl_entry *ent = (struct rb_cvar_class_tbl_entry *)obj;
+          rb_gc_mark_and_move(&ent->class_value);
+          rb_gc_mark_and_move((VALUE *)&ent->cref);
+          break;
+      }
+      case imemo_subclasses: {
+        if (reference_updating) {
+            struct rb_subclasses *subs = (struct rb_subclasses *)obj;
+            VALUE *entries = rb_imemo_subclasses_entries(obj);
+            for (uint32_t i = 0; i < subs->count; i++) {
+                if (entries[i]) {
+                    entries[i] = rb_gc_location(entries[i]);
+                }
+            }
+        }
         break;
       }
       case imemo_fields: {
@@ -516,7 +572,7 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
             // imemo_fields can refer unshareable objects
             // even if the imemo_fields is shareable.
 
-            if (rb_shape_obj_too_complex_p(obj)) {
+            if (rb_obj_shape_complex_p(obj)) {
                 st_table *tbl = rb_imemo_fields_complex_tbl(obj);
                 if (reference_updating) {
                     rb_gc_ref_update_table_values_only(tbl);
@@ -532,6 +588,16 @@ rb_imemo_mark_and_move(VALUE obj, bool reference_updating)
                     rb_gc_mark_and_move(&fields[i]);
                 }
             }
+        }
+        break;
+      }
+      case imemo_cdhash: {
+        st_table *tbl = rb_imemo_cdhash_tbl(obj);
+        if (reference_updating) {
+            rb_gc_update_set_refs(tbl);
+        }
+        else {
+            rb_gc_mark_set_no_pin(tbl);
         }
         break;
       }
@@ -563,13 +629,8 @@ static inline void
 imemo_fields_free(struct rb_fields *fields)
 {
     if (FL_TEST_RAW((VALUE)fields, OBJ_FIELD_HEAP)) {
-        shape_id_t shape_id = RBASIC_SHAPE_ID((VALUE)fields);
-        if (rb_shape_too_complex_p(shape_id)) {
-            st_free_table(fields->as.complex.table);
-        }
-        else {
-            SIZED_FREE_N(fields->as.external.ptr, RSHAPE_CAPACITY(shape_id));
-        }
+        RUBY_ASSERT(rb_shape_complex_p(RBASIC_SHAPE_ID((VALUE)fields)));
+        st_free_table(fields->as.complex.table);
     }
 }
 
@@ -584,12 +645,7 @@ rb_imemo_free(VALUE obj)
       case imemo_callinfo:{
         const struct rb_callinfo *ci = ((const struct rb_callinfo *)obj);
 
-        if (ci->kwarg) {
-            ((struct rb_callinfo_kwarg *)ci->kwarg)->references--;
-            if (ci->kwarg->references == 0) {
-                ruby_xfree_sized((void *)ci->kwarg, rb_callinfo_kwarg_bytes(ci->kwarg->keyword_len));
-            }
-        }
+        rb_callinfo_kwarg_release((struct rb_callinfo_kwarg *)ci->kwarg);
         RB_DEBUG_COUNTER_INC(obj_imemo_callinfo);
 
         break;
@@ -641,9 +697,27 @@ rb_imemo_free(VALUE obj)
         RB_DEBUG_COUNTER_INC(obj_imemo_tmpbuf);
 
         break;
+      case imemo_cvar_entry:
+        RB_DEBUG_COUNTER_INC(obj_imemo_cvar_entry);
+
+        break;
       case imemo_fields:
         imemo_fields_free(IMEMO_OBJ_FIELDS(obj));
         RB_DEBUG_COUNTER_INC(obj_imemo_fields);
+
+        break;
+      case imemo_subclasses: {
+        if (FL_TEST_RAW(obj, IMEMO_SUBCLASSES_HEAP)) {
+            struct rb_subclasses *subs = (struct rb_subclasses *)obj;
+            SIZED_FREE_N(subs->as.external, subs->capacity);
+        }
+        RB_DEBUG_COUNTER_INC(obj_imemo_subclasses);
+        break;
+      }
+      case imemo_cdhash:
+        st_free_embedded_table(rb_imemo_cdhash_tbl(obj));
+        RB_DEBUG_COUNTER_INC(obj_imemo_cdhash);
+
         break;
       default:
         rb_bug("unreachable");

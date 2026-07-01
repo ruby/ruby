@@ -10,12 +10,6 @@ describe "Kernel#dup" do
     @obj = KernelSpecs::Duplicate.new 1, :a
   end
 
-  it "calls #initialize_copy on the new instance" do
-    dup = @obj.dup
-    ScratchPad.recorded.should_not == @obj.object_id
-    ScratchPad.recorded.should == dup.object_id
-  end
-
   it "uses the internal allocator and does not call #allocate" do
     klass = Class.new
     instance = klass.new
@@ -25,7 +19,7 @@ describe "Kernel#dup" do
     end
 
     dup = instance.dup
-    dup.class.should equal klass
+    dup.class.should.equal? klass
   end
 
   it "does not copy frozen state from the original" do
@@ -44,7 +38,7 @@ describe "Kernel#dup" do
   it "does not copy singleton methods" do
     def @obj.special() :the_one end
     dup = @obj.dup
-    -> { dup.special }.should raise_error(NameError)
+    -> { dup.special }.should.raise(NameError)
   end
 
   it "does not copy modules included in the singleton class" do
@@ -53,7 +47,7 @@ describe "Kernel#dup" do
     end
 
     dup = @obj.dup
-    -> { dup.repr }.should raise_error(NameError)
+    -> { dup.repr }.should.raise(NameError)
   end
 
   it "does not copy constants defined in the singleton class" do
@@ -62,6 +56,6 @@ describe "Kernel#dup" do
     end
 
     dup = @obj.dup
-    -> { class << dup; CLONE; end }.should raise_error(NameError)
+    -> { class << dup; CLONE; end }.should.raise(NameError)
   end
 end

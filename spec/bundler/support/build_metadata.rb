@@ -44,7 +44,7 @@ module Spec
     end
 
     def release_date_for(version, dir:)
-      changelog = File.expand_path("CHANGELOG.md", dir)
+      changelog = File.expand_path("CHANGELOG-bundler.md", dir)
       File.readlines(changelog)[2].scan(/^## #{Regexp.escape(version)} \((.*)\)/).first&.first if File.exist?(changelog)
     end
 

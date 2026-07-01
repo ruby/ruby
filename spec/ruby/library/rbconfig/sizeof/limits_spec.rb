@@ -3,13 +3,13 @@ require 'rbconfig/sizeof'
 
 describe "RbConfig::LIMITS" do
   it "is a Hash" do
-    RbConfig::LIMITS.should be_kind_of(Hash)
+    RbConfig::LIMITS.should.is_a?(Hash)
   end
 
   it "has string keys and numeric values" do
     RbConfig::LIMITS.each do |key, value|
-      key.should be_kind_of String
-      value.should be_kind_of Numeric
+      key.should.is_a? String
+      value.should.is_a? Numeric
     end
   end
 

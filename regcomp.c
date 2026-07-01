@@ -394,6 +394,7 @@ compile_tree_empty_check(Node* node, regex_t* reg, int empty_info)
     r = add_mem_num(reg, reg->num_null_check); /* NULL CHECK ID */
     if (r) return r;
     reg->num_null_check++;
+    if ((MemNumType)reg->num_null_check <= 0) return ONIGERR_TOO_MANY_NULL_CHECK;
   }
 
   r = compile_tree(node, reg);
@@ -703,6 +704,7 @@ compile_range_repeat_node(QtfrNode* qn, int target_len, int empty_info,
   if (r) return r;
   r = add_mem_num(reg, num_repeat); /* OP_REPEAT ID */
   reg->num_repeat++;
+  if ((MemNumType)reg->num_repeat <= 0) return ONIGERR_TOO_MANY_RANGE_REPEAT;
   if (r) return r;
   r = add_rel_addr(reg, target_len + SIZE_OP_REPEAT_INC);
   if (r) return r;

@@ -158,6 +158,16 @@ class TestPsych < Psych::TestCase
     assert_equal(%w[foo bar], docs.children.map(&:transform))
   end
 
+  # https://github.com/ruby/psych/issues/331
+  def test_load_with_leading_bom
+    assert_equal({ "a" => "b", "c" => "d" }, Psych.load("\uFEFFa: b\nc: d"))
+  end
+
+  def test_parse_stream_with_leading_bom
+    docs = Psych.parse_stream("\uFEFFa: b\nc: d")
+    assert_equal [{ "a" => "b", "c" => "d" }], docs.children.map(&:to_ruby)
+  end
+
   def test_parse_stream_with_block
     docs = []
     Psych.parse_stream("--- foo\n...\n--- bar\n...") do |node|

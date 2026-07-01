@@ -189,6 +189,8 @@ module Prism
     #--
     #: (Integer byte_offset, Encoding encoding) -> Integer
     def code_units_offset(byte_offset, encoding)
+      return byte_offset if encoding == Encoding::UTF_8
+
       byteslice = (source.byteslice(0, byte_offset) or raise).encode(encoding, invalid: :replace, undef: :replace)
 
       if encoding == Encoding::UTF_16LE || encoding == Encoding::UTF_16BE
@@ -223,9 +225,7 @@ module Prism
       freeze
     end
 
-    private
-
-    # Binary search through the offsets to find the line number for the given
+    # Binary search through the offsets to find the index for the given
     # byte offset.
     #--
     #: (Integer byte_offset) -> Integer
@@ -250,6 +250,14 @@ module Prism
   #   has not yet been implemented.
   #
   class CodeUnitsCache
+    # Counter used for UTF-8, where one code unit equals one byte.
+    class UTF8Counter # :nodoc:
+      #: (Integer byte_offset, Integer byte_length) -> Integer
+      def count(byte_offset, byte_length)
+        byte_length
+      end
+    end
+
     class UTF16Counter # :nodoc:
       # @rbs @source: String
       # @rbs @encoding: Encoding
@@ -266,7 +274,10 @@ module Prism
       end
     end
 
-    class LengthCounter # :nodoc:
+    # Counter used for UTF-32, where one code unit equals one code point and
+    # matches String#length. Also used as a best-effort fallback for any other
+    # encoding that does not have a dedicated counter.
+    class UTF32Counter # :nodoc:
       # @rbs @source: String
       # @rbs @encoding: Encoding
 
@@ -282,10 +293,10 @@ module Prism
       end
     end
 
-    private_constant :UTF16Counter, :LengthCounter
+    private_constant :UTF8Counter, :UTF16Counter, :UTF32Counter
 
     # @rbs @source: String
-    # @rbs @counter: UTF16Counter | LengthCounter
+    # @rbs @counter: UTF8Counter | UTF16Counter | UTF32Counter
     # @rbs @cache: Hash[Integer, Integer]
     # @rbs @offsets: Array[Integer]
 
@@ -295,10 +306,13 @@ module Prism
     def initialize(source, encoding)
       @source = source
       @counter =
-        if encoding == Encoding::UTF_16LE || encoding == Encoding::UTF_16BE
+        case encoding
+        when Encoding::UTF_8
+          UTF8Counter.new
+        when Encoding::UTF_16LE, Encoding::UTF_16BE
           UTF16Counter.new(source, encoding)
         else
-          LengthCounter.new(source, encoding)
+          UTF32Counter.new(source, encoding)
         end
 
       @cache = {} #: Hash[Integer, Integer]

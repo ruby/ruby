@@ -12,11 +12,11 @@ describe "Array#rassoc" do
 
   it "properly handles recursive arrays" do
     empty = ArraySpecs.empty_recursive_array
-    empty.rassoc([]).should be_nil
+    empty.rassoc([]).should == nil
     [[empty, empty]].rassoc(empty).should == [empty, empty]
 
     array = ArraySpecs.recursive_array
-    array.rassoc(array).should be_nil
+    array.rassoc(array).should == nil
     [[empty, array]].rassoc(array).should == [empty, array]
   end
 
@@ -42,9 +42,9 @@ describe "Array#rassoc" do
     a = [s1, s2]
 
     s1.should_not_receive(:to_ary)
-    a.rassoc(2).should equal(s1)
+    a.rassoc(2).should.equal?(s1)
 
     a.rassoc(3).should == [2, 3]
-    s2.called.should equal(:to_ary)
+    s2.called.should.equal?(:to_ary)
   end
 end

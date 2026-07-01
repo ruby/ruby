@@ -63,11 +63,11 @@ describe :cgi_http_header, shared: true do
       header.should == "Content-Type: text/plain; charset=UTF-8\r\n\r\n"
 
       header = @cgi.send(@method, "nph" => true)
-      header.should include("HTTP/1.0 200 OK\r\n")
-      header.should include("Date: ")
-      header.should include("Server: ")
-      header.should include("Connection: close\r\n")
-      header.should include("Content-Type: text/html\r\n")
+      header.should.include?("HTTP/1.0 200 OK\r\n")
+      header.should.include?("Date: ")
+      header.should.include?("Server: ")
+      header.should.include?("Connection: close\r\n")
+      header.should.include?("Content-Type: text/html\r\n")
 
       header = @cgi.send(@method, "status" => "OK")
       header.should == "Status: 200 OK\r\nContent-Type: text/html\r\n\r\n"

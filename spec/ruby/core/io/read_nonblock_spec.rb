@@ -12,12 +12,12 @@ describe "IO#read_nonblock" do
   end
 
   it "raises an exception extending IO::WaitReadable when there is no data" do
-    -> { @read.read_nonblock(5) }.should raise_error(IO::WaitReadable) { |e|
+    -> { @read.read_nonblock(5) }.should.raise(IO::WaitReadable) { |e|
       platform_is_not :windows do
-        e.should be_kind_of(Errno::EAGAIN)
+        e.should.is_a?(Errno::EAGAIN)
       end
       platform_is :windows do
-        e.should be_kind_of(Errno::EWOULDBLOCK)
+        e.should.is_a?(Errno::EWOULDBLOCK)
       end
     }
   end
@@ -36,7 +36,7 @@ describe "IO#read_nonblock" do
 
         @read.read_nonblock(5)
 
-        @read.read_nonblock(5, exception: false).should be_nil
+        @read.read_nonblock(5, exception: false).should == nil
       end
     end
   end
@@ -73,7 +73,7 @@ describe "IO#read_nonblock" do
     )
     c = @read.getc
     @read.ungetc(c)
-    -> { @read.read_nonblock(3).should == "foo" }.should raise_error(IOError)
+    -> { @read.read_nonblock(3).should == "foo" }.should.raise(IOError)
   end
 
   it "returns less data if that is all that is available" do
@@ -92,7 +92,7 @@ describe "IO#read_nonblock" do
   end
 
   it "raises ArgumentError when length is less than 0" do
-    -> { @read.read_nonblock(-1) }.should raise_error(ArgumentError)
+    -> { @read.read_nonblock(-1) }.should.raise(ArgumentError)
   end
 
   it "reads into the passed buffer" do
@@ -106,7 +106,7 @@ describe "IO#read_nonblock" do
     buffer = +""
     @write.write("1")
     output = @read.read_nonblock(1, buffer)
-    output.should equal(buffer)
+    output.should.equal?(buffer)
   end
 
   it "discards the existing buffer content upon successful read" do
@@ -120,12 +120,12 @@ describe "IO#read_nonblock" do
   it "discards the existing buffer content upon error" do
     buffer = +"existing content"
     @write.close
-    -> { @read.read_nonblock(1, buffer) }.should raise_error(EOFError)
-    buffer.should be_empty
+    -> { @read.read_nonblock(1, buffer) }.should.raise(EOFError)
+    buffer.should.empty?
   end
 
   it "raises IOError on closed stream" do
-    -> { IOSpecs.closed_io.read_nonblock(5) }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.read_nonblock(5) }.should.raise(IOError)
   end
 
   it "raises EOFError when the end is reached" do
@@ -134,7 +134,7 @@ describe "IO#read_nonblock" do
 
     @read.read_nonblock(5)
 
-    -> { @read.read_nonblock(5) }.should raise_error(EOFError)
+    -> { @read.read_nonblock(5) }.should.raise(EOFError)
   end
 
   it "preserves the encoding of the given buffer" do

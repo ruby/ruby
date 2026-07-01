@@ -16,12 +16,12 @@ describe "Matrix#each_with_index" do
 
   it "returns an Enumerator when called without a block" do
     enum = @m.each_with_index
-    enum.should be_an_instance_of(Enumerator)
+    enum.should.instance_of?(Enumerator)
     enum.to_a.should == @result
   end
 
   it "returns self" do
-    @m.each_with_index{}.should equal(@m)
+    @m.each_with_index{}.should.equal?(@m)
   end
 
   it "yields the elements starting with the those of the first row" do
@@ -40,13 +40,13 @@ describe "Matrix#each_with_index with an argument" do
   it "raises an ArgumentError for unrecognized argument" do
     -> {
       @m.each_with_index("all"){}
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
     -> {
       @m.each_with_index(nil){}
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
     -> {
       @m.each_with_index(:left){}
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 
   it "yields the rights elements when passed :diagonal" do

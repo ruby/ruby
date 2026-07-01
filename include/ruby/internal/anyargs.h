@@ -281,14 +281,14 @@ RBIMPL_ANYARGS_DECL(rb_define_method, VALUE, const char *)
 /** @endcond */
 
 /**
- * @brief  Defines klass\#mid.
- * @see    ::rb_define_method
- * @param  klass  Where the method lives.
- * @param  mid    Name of the defining method.
- * @param  func   Implementation of klass\#mid.
- * @param  arity  Arity of klass\#mid.
- */
-#define rb_define_method(klass, mid, func, arity)           RBIMPL_ANYARGS_DISPATCH_rb_define_method((arity), (func))((klass), (mid), (func), (arity))
+* @brief  Defines klass\#mid.
+* @see    ::rb_define_method
+* @param  klass  Where the method lives.
+* @param  mid    Name of the defining method.
+* @param  func   Implementation of klass\#mid.
+* @param  arity  Arity of klass\#mid.
+*/
+#define rb_define_method(klass, mid, func, arity)           RBIMPL_ANYARGS_DISPATCH_rb_define_method_id((arity), (func))((klass), rb_intern_const(mid), (func), (arity))
 
 /**
  * @brief  Defines klass\#mid.

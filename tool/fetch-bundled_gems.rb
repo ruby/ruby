@@ -28,7 +28,15 @@ unless File.exist?("#{n}/.git")
   system(*%W"git clone --depth=1 --no-tags #{u} #{n}") or abort
 end
 
-c = (r ? [r] : ["v#{v}", v]).find do |c|
+candidates = r ? [r] : ["v#{v}", v]
+
+# Skip fetching from the remote when the target ref already exists locally
+# (e.g. restored from cache), so a transient network failure does not abort.
+c = candidates.find do |c|
+  system("git", "rev-parse", "-q", "--verify", "#{c}^{commit}", out: File::NULL, err: File::NULL, chdir: n)
+end
+
+c ||= candidates.find do |c|
   puts "fetching #{n} #{color.notice(c)} ..."
   system("git", "fetch", "origin", r || "refs/tags/#{c}:refs/tags/#{c}", chdir: n)
 end or abort

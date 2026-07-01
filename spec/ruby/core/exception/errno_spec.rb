@@ -4,21 +4,21 @@ require_relative 'fixtures/common'
 describe "Errno::EINVAL.new" do
   it "can be called with no arguments" do
     exc = Errno::EINVAL.new
-    exc.should be_an_instance_of(Errno::EINVAL)
+    exc.should.instance_of?(Errno::EINVAL)
     exc.errno.should == Errno::EINVAL::Errno
     exc.message.should == "Invalid argument"
   end
 
   it "accepts an optional custom message" do
     exc = Errno::EINVAL.new('custom message')
-    exc.should be_an_instance_of(Errno::EINVAL)
+    exc.should.instance_of?(Errno::EINVAL)
     exc.errno.should == Errno::EINVAL::Errno
     exc.message.should == "Invalid argument - custom message"
   end
 
   it "accepts an optional custom message and location" do
     exc = Errno::EINVAL.new('custom message', 'location')
-    exc.should be_an_instance_of(Errno::EINVAL)
+    exc.should.instance_of?(Errno::EINVAL)
     exc.errno.should == Errno::EINVAL::Errno
     exc.message.should == "Invalid argument @ location - custom message"
   end
@@ -28,7 +28,7 @@ describe "Errno::EMFILE" do
   it "can be subclassed" do
     ExceptionSpecs::EMFILESub = Class.new(Errno::EMFILE)
     exc = ExceptionSpecs::EMFILESub.new
-    exc.should be_an_instance_of(ExceptionSpecs::EMFILESub)
+    exc.should.instance_of?(ExceptionSpecs::EMFILESub)
   ensure
     ExceptionSpecs.send(:remove_const, :EMFILESub)
   end
@@ -47,7 +47,7 @@ end
 
 describe "Errno::ENOTSUP" do
   it "is defined" do
-    Errno.should have_constant(:ENOTSUP)
+    Errno.should.const_defined?(:ENOTSUP, false)
   end
 
   it "is the same class as Errno::EOPNOTSUPP if they represent the same errno value" do

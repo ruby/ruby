@@ -1911,6 +1911,24 @@ eom
     assert_valid_syntax('while class Foo a = tap do end; end; break; end')
   end
 
+  def test_while_until_conditional_bug_22002
+    @foo = 123 until defined?(@foo)
+    assert_equal(123, @foo)
+
+    @bar = 456 while @bar==nil..true
+    assert_equal(456, @bar)
+
+    while false and @baz
+      @baz = 789
+    end
+    assert_equal(nil, @baz)
+
+    until true || @baz
+      @baz = 789
+    end
+    assert_equal(nil, @baz)
+  end
+
   def test_command_with_cmd_brace_block
     assert_valid_syntax('obj.foo (1) {}')
     assert_valid_syntax('obj::foo (1) {}')

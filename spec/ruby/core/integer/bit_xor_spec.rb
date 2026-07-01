@@ -34,14 +34,14 @@ describe "Integer#^" do
     end
 
     it "raises a TypeError when passed a Float" do
-      -> { (3 ^ 3.4) }.should raise_error(TypeError)
+      -> { (3 ^ 3.4) }.should.raise(TypeError)
     end
 
     it "raises a TypeError and does not call #to_int when defined on an object" do
       obj = mock("integer bit xor")
       obj.should_not_receive(:to_int)
 
-      -> { 3 ^ obj }.should raise_error(TypeError)
+      -> { 3 ^ obj }.should.raise(TypeError)
     end
   end
 
@@ -78,16 +78,16 @@ describe "Integer#^" do
       not_supported_on :opal do
         -> {
           bignum_value ^ bignum_value(0xffff).to_f
-        }.should raise_error(TypeError)
+        }.should.raise(TypeError)
       end
-      -> { @bignum ^ 14.5 }.should raise_error(TypeError)
+      -> { @bignum ^ 14.5 }.should.raise(TypeError)
     end
 
     it "raises a TypeError and does not call #to_int when defined on an object" do
       obj = mock("bignum bit xor")
       obj.should_not_receive(:to_int)
 
-      -> { @bignum ^ obj }.should raise_error(TypeError)
+      -> { @bignum ^ obj }.should.raise(TypeError)
     end
   end
 end

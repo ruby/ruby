@@ -64,7 +64,7 @@ describe "Socket.getnameinfo" do
   it "raises ResolutionError when fails to resolve address" do
     -> {
       Socket.getnameinfo(["AF_UNIX", 80, "0.0.0.0"])
-    }.should raise_error(Socket::ResolutionError) { |e|
+    }.should.raise(Socket::ResolutionError) { |e|
       [Socket::EAI_FAMILY, Socket::EAI_FAIL].should.include?(e.error_code)
     }
   end
@@ -77,7 +77,7 @@ describe 'Socket.getnameinfo' do
     end
 
     it 'raises SocketError or TypeError when using an invalid String' do
-      -> { Socket.getnameinfo('cats') }.should raise_error(Exception) { |e|
+      -> { Socket.getnameinfo('cats') }.should.raise(Exception) { |e|
         (e.is_a?(SocketError) || e.is_a?(TypeError)).should == true
       }
     end
@@ -110,7 +110,7 @@ describe 'Socket.getnameinfo' do
       end
 
       it 'raises ArgumentError when using an invalid Array' do
-        -> { Socket.getnameinfo([family_name]) }.should raise_error(ArgumentError)
+        -> { Socket.getnameinfo([family_name]) }.should.raise(ArgumentError)
       end
 
       platform_is_not :windows do
@@ -130,7 +130,7 @@ describe 'Socket.getnameinfo' do
       describe 'without custom flags' do
         it 'returns an Array containing the hostname and service name' do
           array = Socket.getnameinfo(@addr)
-          array.should be_an_instance_of(Array)
+          array.should.instance_of?(Array)
           array[0].should == @hostname
           array[1].should == 'ftp'
         end
@@ -139,7 +139,7 @@ describe 'Socket.getnameinfo' do
           addr = [family_name, 21, ip_address, nil]
 
           array = Socket.getnameinfo(addr)
-          array.should be_an_instance_of(Array)
+          array.should.instance_of?(Array)
           array[0].should == @hostname
           array[1].should == 'ftp'
         end

@@ -881,6 +881,19 @@ EXPECTED
     assert_equal "\xDE\xAD\xBE\xEF\xBA\xBE\xF0\x0D\0\0\xBA\xAD\xFA\xCE", buf
 
     assert_equal addr, [buf].pack('p')
+
+    assert_packing_buffer_fail("b*")
+    assert_packing_buffer_fail("B*")
+    assert_packing_buffer_fail("h*")
+    assert_packing_buffer_fail("H*")
+    assert_packing_buffer_fail("u", 16384)
+    assert_packing_buffer_fail("m", 16384)
+    assert_packing_buffer_fail("M", 16384)
+  end
+
+  def assert_packing_buffer_fail(fmt, size = 8192)
+    s = "\x01".b * size
+    assert_raise(ArgumentError) {[s].pack(fmt, buffer: s)}
   end
 
   def test_unpack_with_block
@@ -900,26 +913,28 @@ EXPECTED
 
   def test_unpack1_offset
     assert_equal 65, "ZA".unpack1("C", offset: 1)
+    assert_equal 65, "ZA".unpack1("C", offset: -1)
     assert_equal "01000001", "YZA".unpack1("B*", offset: 2)
     assert_nil "abc".unpack1("C", offset: 3)
-    assert_raise_with_message(ArgumentError, /offset can't be negative/) {
-      "a".unpack1("C", offset: -1)
-    }
     assert_raise_with_message(ArgumentError, /offset outside of string/) {
       "a".unpack1("C", offset: 2)
+    }
+    assert_raise_with_message(ArgumentError, /offset outside of string/) {
+      "a".unpack1("C", offset: -2)
     }
     assert_nil "a".unpack1("C", offset: 1)
   end
 
   def test_unpack_offset
     assert_equal [65], "ZA".unpack("C", offset: 1)
+    assert_equal [65], "ZA".unpack("C", offset: -1)
     assert_equal ["01000001"], "YZA".unpack("B*", offset: 2)
     assert_equal [nil, nil, nil], "abc".unpack("CCC", offset: 3)
-    assert_raise_with_message(ArgumentError, /offset can't be negative/) {
-      "a".unpack("C", offset: -1)
-    }
     assert_raise_with_message(ArgumentError, /offset outside of string/) {
       "a".unpack("C", offset: 2)
+    }
+    assert_raise_with_message(ArgumentError, /offset outside of string/) {
+      "a".unpack("C", offset: -2)
     }
     assert_equal [nil], "a".unpack("C", offset: 1)
   end

@@ -14,7 +14,7 @@ describe "Set#divide" do
 
   it "returns an enumerator when not passed a block" do
     ret = Set[1, 2, 3, 4].divide
-    ret.should be_kind_of(Enumerator)
+    ret.should.is_a?(Enumerator)
     ret.each(&:even?).should == Set[Set[1, 3], Set[2, 4]]
   end
 end
@@ -43,7 +43,7 @@ describe "Set#divide when passed a block with an arity of 2" do
 
   it "returns an enumerator when not passed a block" do
     ret = Set[1, 2, 3, 4].divide
-    ret.should be_kind_of(Enumerator)
+    ret.should.is_a?(Enumerator)
     ret.each { |a, b| (a + b).even? }.should == Set[Set[1, 3], Set[2, 4]]
   end
 end
@@ -51,8 +51,8 @@ end
 describe "Set#divide when passed a block with an arity of > 2" do
   it "only uses the first element if the arity > 2" do
     set = Set["one", "two", "three", "four", "five"].divide do |x, y, z|
-      y.should be_nil
-      z.should be_nil
+      y.should == nil
+      z.should == nil
       x.length
     end
     set.map { |x| x.to_a.sort }.sort.should == [["five", "four"], ["one", "two"], ["three"]]

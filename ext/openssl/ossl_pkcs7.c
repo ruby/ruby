@@ -453,7 +453,7 @@ ossl_pkcs7_sym2typeid(VALUE sym)
         if(i == numberof(p7_type_tab))
             ossl_raise(ePKCS7Error, "unknown type \"%"PRIsVALUE"\"", sym);
         if(strlen(p7_type_tab[i].name) != l) continue;
-        if(strcmp(p7_type_tab[i].name, s) == 0){
+        if(memcmp(p7_type_tab[i].name, s, l) == 0){
             ret = p7_type_tab[i].nid;
             break;
         }
@@ -979,7 +979,7 @@ ossl_pkcs7si_initialize(VALUE self, VALUE cert, VALUE key, VALUE digest)
     x509 = GetX509CertPtr(cert); /* NO NEED TO DUP */
     md = ossl_evp_md_fetch(digest, &md_holder);
     GetPKCS7si(self, p7si);
-    if (!(PKCS7_SIGNER_INFO_set(p7si, x509, pkey, md)))
+    if (PKCS7_SIGNER_INFO_set(p7si, x509, pkey, md) <= 0)
         ossl_raise(ePKCS7Error, "PKCS7_SIGNER_INFO_set");
     rb_ivar_set(self, id_md_holder, md_holder);
 
@@ -1055,7 +1055,7 @@ ossl_pkcs7ri_initialize(VALUE self, VALUE cert)
 
     x509 = GetX509CertPtr(cert); /* NO NEED TO DUP */
     GetPKCS7ri(self, p7ri);
-    if (!PKCS7_RECIP_INFO_set(p7ri, x509)) {
+    if (PKCS7_RECIP_INFO_set(p7ri, x509) <= 0) {
         ossl_raise(ePKCS7Error, NULL);
     }
 

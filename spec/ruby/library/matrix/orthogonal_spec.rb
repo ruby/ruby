@@ -20,7 +20,7 @@ describe "Matrix.orthogonal?" do
     ].each do |rectangular_matrix|
       -> {
         rectangular_matrix.orthogonal?
-      }.should raise_error(Matrix::ErrDimensionMismatch)
+      }.should.raise(Matrix::ErrDimensionMismatch)
     end
   end
 end

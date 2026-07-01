@@ -2,7 +2,8 @@
 
 module Gem::BundlerVersionFinder
   def self.bundler_version
-    return if bundle_config_version == "system"
+    bcv = bundle_config_version
+    return if bcv == "system"
 
     v = ENV["BUNDLER_VERSION"]
     v = nil if v&.empty?
@@ -10,7 +11,7 @@ module Gem::BundlerVersionFinder
     v ||= bundle_update_bundler_version
     return if v == true
 
-    v ||= bundle_config_version
+    v ||= bcv unless bcv == "lockfile"
 
     v ||= lockfile_version
     return unless v
@@ -70,6 +71,9 @@ module Gem::BundlerVersionFinder
   private_class_method :lockfile_contents
 
   def self.bundle_config_version
+    env_version = ENV["BUNDLE_VERSION"]
+    return env_version if env_version && !env_version.empty?
+
     version = nil
 
     [bundler_local_config_file, bundler_global_config_file].each do |config_file|

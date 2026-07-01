@@ -760,6 +760,20 @@ class TestSuper < Test::Unit::TestCase
     assert_equal 2, inherited.test # it may read index=1 while it should be index=2
   end
 
+  def test_define_initialize_in_basic_object
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      class ::BasicObject
+        alias_method :initialize, :initialize
+        def initialize
+          @bug = "[Bug #21992]"
+        end
+      end
+
+      assert_not_nil Object.new
+    end;
+  end
+
   def test_super_in_basic_object
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;

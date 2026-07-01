@@ -11,14 +11,14 @@ describe "File.mtime" do
   end
 
   it "returns the modification Time of the file" do
-    File.mtime(@filename).should be_kind_of(Time)
+    File.mtime(@filename).should.is_a?(Time)
     File.mtime(@filename).should be_close(@mtime, TIME_TOLERANCE)
   end
 
   platform_is :linux, :windows do
     unless ENV.key?('TRAVIS') # https://bugs.ruby-lang.org/issues/17926
       it "returns the modification Time of the file with microseconds" do
-        supports_subseconds = Integer(`stat -c%y '#{__FILE__}'`[/\.(\d{1,6})/, 1], 10)
+        supports_subseconds = Integer(`stat -c%y #{__FILE__}`[/\.(\d{1,6})/, 1], 10)
         if supports_subseconds != 0
           expected_time = Time.at(Time.now.to_i + 0.123456)
           File.utime 0, expected_time, @filename
@@ -34,7 +34,7 @@ describe "File.mtime" do
   end
 
   it "raises an Errno::ENOENT exception if the file is not found" do
-    -> { File.mtime('bogus') }.should raise_error(Errno::ENOENT)
+    -> { File.mtime('bogus') }.should.raise(Errno::ENOENT)
   end
 end
 
@@ -50,7 +50,7 @@ describe "File#mtime" do
   end
 
   it "returns the modification Time of the file" do
-    @f.mtime.should be_kind_of(Time)
+    @f.mtime.should.is_a?(Time)
   end
 
 end

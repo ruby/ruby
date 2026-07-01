@@ -113,24 +113,36 @@ class LeakChecker
       }
       unless fd_leaked.empty?
         unless @@try_lsof == false
-          open_list = IO.popen(%W[lsof -w -a -d #{fd_leaked.minmax.uniq.join("-")} -p #$$], &:readlines)
-          if @@try_lsof |= $?.success?
-            columns = (header = open_list.shift).split
-            fd_index, node_index = columns.index('FD'), columns.index('NODE')
+          begin
+            open_list = IO.popen(%W[lsof -w -a -d #{fd_leaked.minmax.uniq.join("-")} -p #$$], &:readlines)
+          rescue
+            @@try_lsof = false
+          else
+            @@try_lsof |= $?.success?
+          end
+          if header = open_list&.shift
+            columns = header.split
+            fd_index, type_index, node_index = %w'FD TYPE NODE'.map {|n| columns.index(n)}
             open_list.reject! do |of|
               of = of.chomp.split(' ', node_index + 2)
-              if of[node_index] == 'TCP' and of.last.end_with?('(CLOSE_WAIT)')
+              if of[node_index] == 'TCP' and of.last.end_with?('(CLOSE_WAIT)', '(CLOSED)')
+                # Sometimes TCP sockets still live in the kernel space
+                # but have been closed in the user space.
+                skip = true
+              elsif of[type_index] == 'systm'
+                # AF_SYSTEM on macOS is kept alive
+                skip = true
+              end
+              if skip
                 fd = of[fd_index].to_i
                 inspect.delete(fd)
                 h.delete(fd)
                 live2.delete(fd)
-                true
-              else
-                false
               end
+              skip
             end
+            puts(header, open_list) unless open_list.empty?
           end
-          puts(header, open_list) unless open_list.empty?
         end
       end
       inspect.each {|fd, (str, pos)|

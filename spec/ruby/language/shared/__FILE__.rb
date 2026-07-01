@@ -9,14 +9,14 @@ describe :language___FILE__, shared: true do
   end
 
   it "equals the absolute path of a file loaded by an absolute path" do
-    @object.send(@method, @path).should be_true
+    @object.send(@method, @path).should == true
     ScratchPad.recorded.should == [@path]
   end
 
   it "equals the absolute path of a file loaded by a relative path" do
     $LOAD_PATH << "."
     Dir.chdir CODE_LOADING_DIR do
-      @object.send(@method, "file_fixture.rb").should be_true
+      @object.send(@method, "file_fixture.rb").should == true
     end
     ScratchPad.recorded.should == [@path]
   end

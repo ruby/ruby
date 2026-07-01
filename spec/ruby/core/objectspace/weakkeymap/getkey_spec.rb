@@ -6,7 +6,7 @@ describe "ObjectSpace::WeakKeyMap#getkey" do
     key1, key2 = %w[a a].map(&:upcase)
 
     map[key1] = true
-    map.getkey(key2).should equal(key1)
+    map.getkey(key2).should.equal?(key1)
     map.getkey("X").should == nil
 
     key1.should == "A" # keep the key alive until here to keep the map entry

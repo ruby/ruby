@@ -2,6 +2,12 @@
 
 module Bundler
   module CLI::Common
+    def self.validate_cooldown!(value)
+      return if value.nil?
+      return if value.is_a?(Integer) && value >= 0
+      raise InvalidOption, "Expected `--cooldown` to be a non-negative integer, got #{value.inspect}"
+    end
+
     def self.output_post_install_messages(messages)
       return if Bundler.settings["ignore_messages"]
       messages.to_a.each do |name, msg|

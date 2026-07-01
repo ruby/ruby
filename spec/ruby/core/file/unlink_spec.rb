@@ -1,6 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'shared/unlink'
 
 describe "File.unlink" do
-  it_behaves_like :file_unlink, :unlink
+  it "is an alias of File.delete" do
+    File.method(:unlink).should == File.method(:delete)
+  end
 end

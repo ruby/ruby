@@ -5,7 +5,7 @@ describe :openssl_random_bytes, shared: true do
   it "generates a random binary string of specified length" do
     (1..64).each do |idx|
       bytes = OpenSSL::Random.send(@method, idx)
-      bytes.should be_kind_of(String)
+      bytes.should.is_a?(String)
       bytes.length.should == idx
     end
   end
@@ -24,6 +24,6 @@ describe :openssl_random_bytes, shared: true do
   it "raises ArgumentError on negative arguments" do
     -> {
       OpenSSL::Random.send(@method, -1)
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 end

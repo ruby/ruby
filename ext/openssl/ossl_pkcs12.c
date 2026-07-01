@@ -191,6 +191,7 @@ ossl_x509_sk2ary_i(VALUE arg)
 static VALUE
 ossl_pkcs12_initialize(int argc, VALUE *argv, VALUE self)
 {
+    PKCS12 *p12, *p12_orig = DATA_PTR(self);
     BIO *in;
     VALUE arg, pass, pkey, cert, ca;
     char *passphrase;
@@ -198,17 +199,19 @@ ossl_pkcs12_initialize(int argc, VALUE *argv, VALUE self)
     X509 *x509;
     STACK_OF(X509) *x509s = NULL;
     int st = 0;
-    PKCS12 *pkcs = DATA_PTR(self);
 
     if(rb_scan_args(argc, argv, "02", &arg, &pass) == 0) return self;
     passphrase = NIL_P(pass) ? NULL : StringValueCStr(pass);
     in = ossl_obj2bio(&arg);
-    d2i_PKCS12_bio(in, &pkcs);
-    DATA_PTR(self) = pkcs;
+    p12 = d2i_PKCS12_bio(in, NULL);
     BIO_free(in);
+    if (!p12)
+        ossl_raise(ePKCS12Error, "d2i_PKCS12_bio");
+    PKCS12_free(p12_orig);
+    RTYPEDDATA_DATA(self) = p12;
 
     pkey = cert = ca = Qnil;
-    if(!PKCS12_parse(pkcs, passphrase, &key, &x509, &x509s))
+    if (!PKCS12_parse(p12, passphrase, &key, &x509, &x509s))
         ossl_raise(ePKCS12Error, "PKCS12_parse");
     if (key) {
         pkey = rb_protect(ossl_pkey_wrap_i, (VALUE)key, &st);

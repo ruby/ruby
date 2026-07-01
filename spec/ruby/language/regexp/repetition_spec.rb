@@ -15,7 +15,7 @@ describe "Regexps with repetition" do
 
   it "supports + (1 or more of previous subexpression)" do
     /a+/.match("aaa").to_a.should == ["aaa"]
-    /a+/.match("bbb").should be_nil
+    /a+/.match("bbb").should == nil
     /<.+>/.match("<a>foo</a>").to_a.should == ["<a>foo</a>"] # it is greedy
   end
 

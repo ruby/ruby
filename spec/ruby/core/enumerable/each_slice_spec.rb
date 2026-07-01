@@ -15,14 +15,14 @@ describe "Enumerable#each_slice" do
   end
 
   it "raises an ArgumentError if there is not a single parameter > 0" do
-    ->{ @enum.each_slice(0){}    }.should raise_error(ArgumentError)
-    ->{ @enum.each_slice(-2){}   }.should raise_error(ArgumentError)
-    ->{ @enum.each_slice{}       }.should raise_error(ArgumentError)
-    ->{ @enum.each_slice(2,2){}  }.should raise_error(ArgumentError)
-    ->{ @enum.each_slice(0)      }.should raise_error(ArgumentError)
-    ->{ @enum.each_slice(-2)     }.should raise_error(ArgumentError)
-    ->{ @enum.each_slice         }.should raise_error(ArgumentError)
-    ->{ @enum.each_slice(2,2)    }.should raise_error(ArgumentError)
+    ->{ @enum.each_slice(0){}    }.should.raise(ArgumentError)
+    ->{ @enum.each_slice(-2){}   }.should.raise(ArgumentError)
+    ->{ @enum.each_slice{}       }.should.raise(ArgumentError)
+    ->{ @enum.each_slice(2,2){}  }.should.raise(ArgumentError)
+    ->{ @enum.each_slice(0)      }.should.raise(ArgumentError)
+    ->{ @enum.each_slice(-2)     }.should.raise(ArgumentError)
+    ->{ @enum.each_slice         }.should.raise(ArgumentError)
+    ->{ @enum.each_slice(2,2)    }.should.raise(ArgumentError)
   end
 
   it "tries to convert n to an Integer using #to_int" do
@@ -53,7 +53,7 @@ describe "Enumerable#each_slice" do
 
   it "returns an enumerator if no block" do
     e = @enum.each_slice(3)
-    e.should be_an_instance_of(Enumerator)
+    e.should.instance_of?(Enumerator)
     e.to_a.should == @sliced
   end
 
@@ -69,7 +69,7 @@ describe "Enumerable#each_slice" do
   describe "when no block is given" do
     it "returns an enumerator" do
       e = @enum.each_slice(3)
-      e.should be_an_instance_of(Enumerator)
+      e.should.instance_of?(Enumerator)
       e.to_a.should == @sliced
     end
 

@@ -10,9 +10,9 @@ describe "Matrix::LUPDecomposition#to_a" do
   end
 
   it "returns an array of three matrices" do
-    @to_a.should be_kind_of(Array)
+    @to_a.should.is_a?(Array)
     @to_a.length.should == 3
-    @to_a.each{|m| m.should be_kind_of(Matrix)}
+    @to_a.each{|m| m.should.is_a?(Matrix)}
   end
 
   it "returns [l, u, p] such that l*u == a*p" do

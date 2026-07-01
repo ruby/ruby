@@ -7,7 +7,7 @@ describe "StringScanner#inspect" do
   end
 
   it "returns a String object" do
-    @s.inspect.should be_kind_of(String)
+    @s.inspect.should.is_a?(String)
   end
 
   it "returns a string that represents the StringScanner object" do

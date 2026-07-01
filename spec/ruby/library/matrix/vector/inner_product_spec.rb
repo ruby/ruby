@@ -13,7 +13,7 @@ describe "Vector#inner_product" do
   it "raises an error for mismatched vectors" do
     -> {
       Vector[1, 2, 3].inner_product(Vector[0, -4])
-    }.should raise_error(Vector::ErrDimensionMismatch)
+    }.should.raise(Vector::ErrDimensionMismatch)
   end
 
   it "uses the conjugate of its argument" do

@@ -11,7 +11,7 @@ describe "StringIO#readline" do
       @io = StringIO.new("this>is>an>example")
 
       @io.pos = 36
-      -> { @io.readline(">") }.should raise_error(IOError)
+      -> { @io.readline(">") }.should.raise(IOError)
     end
   end
 
@@ -22,7 +22,7 @@ describe "StringIO#readline" do
       @io = StringIO.new("this>is>an>example")
 
       @io.pos = 36
-      -> { @io.readline(3) }.should raise_error(IOError)
+      -> { @io.readline(3) }.should.raise(IOError)
     end
   end
 
@@ -33,7 +33,7 @@ describe "StringIO#readline" do
       @io = StringIO.new("this>is>an>example")
 
       @io.pos = 36
-      -> { @io.readline(">", 3) }.should raise_error(IOError)
+      -> { @io.readline(">", 3) }.should.raise(IOError)
     end
   end
 
@@ -44,7 +44,7 @@ describe "StringIO#readline" do
       @io = StringIO.new("this>is>an>example")
 
       @io.pos = 36
-      -> { @io.readline }.should raise_error(IOError)
+      -> { @io.readline }.should.raise(IOError)
     end
   end
 

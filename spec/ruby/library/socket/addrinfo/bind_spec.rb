@@ -13,16 +13,16 @@ describe "Addrinfo#bind" do
 
   it "returns a bound socket when no block is given" do
     @socket = @addrinfo.bind
-    @socket.should be_kind_of(Socket)
-    @socket.closed?.should be_false
+    @socket.should.is_a?(Socket)
+    @socket.closed?.should == false
   end
 
   it "yields the socket if a block is given" do
     @addrinfo.bind do |sock|
       @socket = sock
-      sock.should be_kind_of(Socket)
+      sock.should.is_a?(Socket)
     end
-    @socket.closed?.should be_true
+    @socket.closed?.should == true
   end
 
 end

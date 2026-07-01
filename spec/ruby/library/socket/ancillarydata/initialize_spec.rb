@@ -115,25 +115,25 @@ with_feature :ancillary_data do
       it 'raises TypeError when using a numeric string as the type argument' do
         -> {
           Socket::AncillaryData.new(:INET, :IGMP, Socket::SCM_RIGHTS.to_s, '')
-        }.should raise_error(TypeError)
+        }.should.raise(TypeError)
       end
 
       it 'raises SocketError when using :RECVTTL as the type argument' do
         -> {
           Socket::AncillaryData.new(:INET, :SOCKET, :RECVTTL, '')
-        }.should raise_error(SocketError)
+        }.should.raise(SocketError)
       end
 
       it 'raises SocketError when using :MOO as the type argument' do
         -> {
           Socket::AncillaryData.new(:INET, :SOCKET, :MOO, '')
-        }.should raise_error(SocketError)
+        }.should.raise(SocketError)
       end
 
       it 'raises SocketError when using :IP_RECVTTL as the type argument' do
         -> {
           Socket::AncillaryData.new(:INET, :SOCKET, :IP_RECVTTL, '')
-        }.should raise_error(SocketError)
+        }.should.raise(SocketError)
       end
     end
 
@@ -157,13 +157,13 @@ with_feature :ancillary_data do
       it 'raises SocketError when using :RIGHTS as the type argument' do
         -> {
           Socket::AncillaryData.new(:INET, :IP, :RIGHTS, '')
-        }.should raise_error(SocketError)
+        }.should.raise(SocketError)
       end
 
       it 'raises SocketError when using :MOO as the type argument' do
         -> {
           Socket::AncillaryData.new(:INET, :IP, :MOO, '')
-        }.should raise_error(SocketError)
+        }.should.raise(SocketError)
       end
     end
 
@@ -181,13 +181,13 @@ with_feature :ancillary_data do
       it 'raises SocketError when using :RIGHTS as the type argument' do
         -> {
           Socket::AncillaryData.new(:INET, :IPV6, :RIGHTS, '')
-        }.should raise_error(SocketError)
+        }.should.raise(SocketError)
       end
 
       it 'raises SocketError when using :MOO as the type argument' do
         -> {
           Socket::AncillaryData.new(:INET, :IPV6, :MOO, '')
-        }.should raise_error(SocketError)
+        }.should.raise(SocketError)
       end
     end
 
@@ -207,13 +207,13 @@ with_feature :ancillary_data do
       it 'raises SocketError when using :RIGHTS as the type argument' do
         -> {
           Socket::AncillaryData.new(:INET, :TCP, :RIGHTS, '')
-        }.should raise_error(SocketError)
+        }.should.raise(SocketError)
       end
 
       it 'raises SocketError when using :MOO as the type argument' do
         -> {
           Socket::AncillaryData.new(:INET, :TCP, :MOO, '')
-        }.should raise_error(SocketError)
+        }.should.raise(SocketError)
       end
     end
 
@@ -227,13 +227,13 @@ with_feature :ancillary_data do
       it 'raises SocketError when using :RIGHTS as the type argument' do
         -> {
           Socket::AncillaryData.new(:INET, :UDP, :RIGHTS, '')
-        }.should raise_error(SocketError)
+        }.should.raise(SocketError)
       end
 
       it 'raises SocketError when using :MOO as the type argument' do
         -> {
           Socket::AncillaryData.new(:INET, :UDP, :MOO, '')
-        }.should raise_error(SocketError)
+        }.should.raise(SocketError)
       end
     end
 
@@ -245,7 +245,7 @@ with_feature :ancillary_data do
       it 'raises SocketError when using :CORK sa the type argument' do
         -> {
           Socket::AncillaryData.new(:UNIX, :SOCKET, :CORK, '')
-        }.should raise_error(SocketError)
+        }.should.raise(SocketError)
       end
     end
 
@@ -253,7 +253,7 @@ with_feature :ancillary_data do
       it 'raises SocketError' do
         -> {
           Socket::AncillaryData.new(:UNIX, :IP, :RECVTTL, '')
-        }.should raise_error(SocketError)
+        }.should.raise(SocketError)
       end
     end
 
@@ -261,7 +261,7 @@ with_feature :ancillary_data do
       it 'raises SocketError' do
         -> {
           Socket::AncillaryData.new(:UNIX, :IPV6, :NEXTHOP, '')
-        }.should raise_error(SocketError)
+        }.should.raise(SocketError)
       end
     end
 
@@ -269,7 +269,7 @@ with_feature :ancillary_data do
       it 'raises SocketError' do
         -> {
           Socket::AncillaryData.new(:UNIX, :TCP, :CORK, '')
-        }.should raise_error(SocketError)
+        }.should.raise(SocketError)
       end
     end
 
@@ -277,7 +277,7 @@ with_feature :ancillary_data do
       it 'raises SocketError' do
         -> {
           Socket::AncillaryData.new(:UNIX, :UDP, :CORK, '')
-        }.should raise_error(SocketError)
+        }.should.raise(SocketError)
       end
     end
   end

@@ -1,0 +1,7 @@
+prelude: |
+  ascii = "hello world"
+  utf8 = "héllo wörld 晦"
+benchmark:
+  ascii_only_true: ascii.ascii_only?
+  ascii_only_false: utf8.ascii_only?
+loop_count: 20000000

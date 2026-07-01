@@ -22,14 +22,14 @@ describe 'Socket.unix_server_socket' do
     it 'returns a Socket' do
       @socket = Socket.unix_server_socket(@path)
 
-      @socket.should be_an_instance_of(Socket)
+      @socket.should.instance_of?(Socket)
     end
   end
 
   describe 'when a block is given' do
     it 'yields a Socket' do
       Socket.unix_server_socket(@path) do |sock|
-        sock.should be_an_instance_of(Socket)
+        sock.should.instance_of?(Socket)
       end
     end
 
@@ -40,7 +40,7 @@ describe 'Socket.unix_server_socket' do
         socket = sock
       end
 
-      socket.should be_an_instance_of(Socket)
+      socket.should.instance_of?(Socket)
     end
   end
 end

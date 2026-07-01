@@ -64,16 +64,16 @@ end
 
 describe "Symbol#casecmp" do
   it "returns nil if other is a String" do
-    :abc.casecmp("abc").should be_nil
+    :abc.casecmp("abc").should == nil
   end
 
   it "returns nil if other is an Integer" do
-    :abc.casecmp(1).should be_nil
+    :abc.casecmp(1).should == nil
   end
 
   it "returns nil if other is an object" do
     obj = mock("string <=>")
-    :abc.casecmp(obj).should be_nil
+    :abc.casecmp(obj).should == nil
   end
 end
 

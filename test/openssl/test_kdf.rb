@@ -5,63 +5,30 @@ if defined?(OpenSSL)
 
 class OpenSSL::TestKDF < OpenSSL::TestCase
   def test_pkcs5_pbkdf2_hmac_compatibility
-    expected = OpenSSL::KDF.pbkdf2_hmac("password", salt: "salt", iterations: 1, length: 20, hash: "sha1")
-    assert_equal(expected, OpenSSL::PKCS5.pbkdf2_hmac("password", "salt", 1, 20, "sha1"))
-    assert_equal(expected, OpenSSL::PKCS5.pbkdf2_hmac_sha1("password", "salt", 1, 20))
+    # PBKDF2 salt >= 16 bytes (128 bits) and iterations >= 1000 are required in
+    # FIPS.
+    # SP 800-132.
+    # https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-132.pdf
+    # * 5.1 The Salt (S)
+    # * 5.2 The Iteration Count (C)
+    # https://github.com/openssl/openssl/blob/71943544885ff364a10bcc5ffc62d0e651c9a021/providers/implementations/kdfs/pbkdf2.c#L235-L240
+    # https://github.com/openssl/openssl/blob/71943544885ff364a10bcc5ffc62d0e651c9a021/providers/implementations/kdfs/pbkdf2.c#L247-L252
+    # Use the same parameters with test_pbkdf2_hmac_sha1_rfc6070_c_4096_len_25.
+    expected = OpenSSL::KDF.pbkdf2_hmac("passwordPASSWORDpassword",
+                                        salt: "saltSALTsaltSALTsaltSALTsaltSALTsalt",
+                                        iterations: 4096,
+                                        length: 25,
+                                        hash: "sha1")
+    assert_equal(expected, OpenSSL::PKCS5.pbkdf2_hmac("passwordPASSWORDpassword",
+                                                      "saltSALTsaltSALTsaltSALTsaltSALTsalt",
+                                                      4096,
+                                                      25,
+                                                      "sha1"))
+    assert_equal(expected, OpenSSL::PKCS5.pbkdf2_hmac_sha1("passwordPASSWORDpassword",
+                                                           "saltSALTsaltSALTsaltSALTsaltSALTsalt",
+                                                           4096,
+                                                           25))
   end
-
-  def test_pbkdf2_hmac_sha1_rfc6070_c_1_len_20
-    p ="password"
-    s = "salt"
-    c = 1
-    dk_len = 20
-    raw = %w{ 0c 60 c8 0f 96 1f 0e 71
-              f3 a9 b5 24 af 60 12 06
-              2f e0 37 a6 }
-    expected = [raw.join('')].pack('H*')
-    value = OpenSSL::KDF.pbkdf2_hmac(p, salt: s, iterations: c, length: dk_len, hash: "sha1")
-    assert_equal(expected, value)
-  end
-
-  def test_pbkdf2_hmac_sha1_rfc6070_c_2_len_20
-    p ="password"
-    s = "salt"
-    c = 2
-    dk_len = 20
-    raw = %w{ ea 6c 01 4d c7 2d 6f 8c
-              cd 1e d9 2a ce 1d 41 f0
-              d8 de 89 57 }
-    expected = [raw.join('')].pack('H*')
-    value = OpenSSL::KDF.pbkdf2_hmac(p, salt: s, iterations: c, length: dk_len, hash: "sha1")
-    assert_equal(expected, value)
-  end
-
-  def test_pbkdf2_hmac_sha1_rfc6070_c_4096_len_20
-    p ="password"
-    s = "salt"
-    c = 4096
-    dk_len = 20
-    raw = %w{ 4b 00 79 01 b7 65 48 9a
-              be ad 49 d9 26 f7 21 d0
-              65 a4 29 c1 }
-    expected = [raw.join('')].pack('H*')
-    value = OpenSSL::KDF.pbkdf2_hmac(p, salt: s, iterations: c, length: dk_len, hash: "sha1")
-    assert_equal(expected, value)
-  end
-
-# takes too long!
-#  def test_pbkdf2_hmac_sha1_rfc6070_c_16777216_len_20
-#    p ="password"
-#    s = "salt"
-#    c = 16777216
-#    dk_len = 20
-#    raw = %w{ ee fe 3d 61 cd 4d a4 e4
-#              e9 94 5b 3d 6b a2 15 8c
-#              26 34 e9 84 }
-#    expected = [raw.join('')].pack('H*')
-#    value = OpenSSL::KDF.pbkdf2_hmac(p, salt: s, iterations: c, length: dk_len, hash: "sha1")
-#    assert_equal(expected, value)
-#  end
 
   def test_pbkdf2_hmac_sha1_rfc6070_c_4096_len_25
     p ="passwordPASSWORDpassword"
@@ -73,18 +40,6 @@ class OpenSSL::TestKDF < OpenSSL::TestCase
               80 c8 d8 36 62 c0 e4 4a
               8b 29 1a 96 4c f2 f0 70
               38 }
-    expected = [raw.join('')].pack('H*')
-    value = OpenSSL::KDF.pbkdf2_hmac(p, salt: s, iterations: c, length: dk_len, hash: "sha1")
-    assert_equal(expected, value)
-  end
-
-  def test_pbkdf2_hmac_sha1_rfc6070_c_4096_len_16
-    p ="pass\0word"
-    s = "sa\0lt"
-    c = 4096
-    dk_len = 16
-    raw = %w{ 56 fa 6a a7 55 48 09 9d
-              cc 37 d7 f0 34 25 e0 c3 }
     expected = [raw.join('')].pack('H*')
     value = OpenSSL::KDF.pbkdf2_hmac(p, salt: s, iterations: c, length: dk_len, hash: "sha1")
     assert_equal(expected, value)
@@ -103,6 +58,11 @@ class OpenSSL::TestKDF < OpenSSL::TestCase
 
   def test_scrypt_rfc7914_first
     pend "scrypt is not implemented" unless OpenSSL::KDF.respond_to?(:scrypt) # OpenSSL >= 1.1.0
+    # scrypt is not available in FIPS.
+    # EVP_KDF_fetch(ctx, OSSL_KDF_NAME_SCRYPT, propq) returns NULL in FIPS.
+    # https://github.com/openssl/openssl/blob/71943544885ff364a10bcc5ffc62d0e651c9a021/crypto/evp/pbe_scrypt.c#L67-L71
+    omit_on_fips
+
     pass = ""
     salt = ""
     n = 16
@@ -118,6 +78,9 @@ class OpenSSL::TestKDF < OpenSSL::TestCase
 
   def test_scrypt_rfc7914_second
     pend "scrypt is not implemented" unless OpenSSL::KDF.respond_to?(:scrypt) # OpenSSL >= 1.1.0
+    # scrypt is not available in FIPS.
+    omit_on_fips
+
     pass = "password"
     salt = "NaCl"
     n = 1024
@@ -131,6 +94,7 @@ class OpenSSL::TestKDF < OpenSSL::TestCase
     assert_equal(expected, OpenSSL::KDF.scrypt(pass, salt: salt, N: n, r: r, p: p, length: dklen))
   end
 
+  # https://www.rfc-editor.org/rfc/rfc5869#appendix-A.1
   def test_hkdf_rfc5869_test_case_1
     hash = "sha256"
     ikm = B("0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b")
@@ -144,6 +108,7 @@ class OpenSSL::TestKDF < OpenSSL::TestCase
     assert_equal(okm, OpenSSL::KDF.hkdf(ikm, salt: salt, info: info, length: l, hash: hash))
   end
 
+  # https://www.rfc-editor.org/rfc/rfc5869#appendix-A.3
   def test_hkdf_rfc5869_test_case_3
     hash = "sha256"
     ikm = B("0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b")
@@ -157,16 +122,32 @@ class OpenSSL::TestKDF < OpenSSL::TestCase
     assert_equal(okm, OpenSSL::KDF.hkdf(ikm, salt: salt, info: info, length: l, hash: hash))
   end
 
-  def test_hkdf_rfc5869_test_case_4
+  # https://www.rfc-editor.org/rfc/rfc5869#appendix-A.5
+  def test_hkdf_rfc5869_test_case_5
     hash = "sha1"
-    ikm = B("0b0b0b0b0b0b0b0b0b0b0b")
-    salt = B("000102030405060708090a0b0c")
-    info = B("f0f1f2f3f4f5f6f7f8f9")
-    l = 42
+    ikm = B("000102030405060708090a0b0c0d0e0f" \
+            "101112131415161718191a1b1c1d1e1f" \
+            "202122232425262728292a2b2c2d2e2f" \
+            "303132333435363738393a3b3c3d3e3f" \
+            "404142434445464748494a4b4c4d4e4f")
+    salt = B("606162636465666768696a6b6c6d6e6f" \
+             "707172737475767778797a7b7c7d7e7f" \
+             "808182838485868788898a8b8c8d8e8f" \
+             "909192939495969798999a9b9c9d9e9f" \
+             "a0a1a2a3a4a5a6a7a8a9aaabacadaeaf")
+    info = B("b0b1b2b3b4b5b6b7b8b9babbbcbdbebf" \
+             "c0c1c2c3c4c5c6c7c8c9cacbcccdcecf" \
+             "d0d1d2d3d4d5d6d7d8d9dadbdcdddedf" \
+             "e0e1e2e3e4e5e6e7e8e9eaebecedeeef" \
+             "f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff")
+    l = 82
 
-    okm = B("085a01ea1b10f36933068b56efa5ad81" \
-            "a4f14b822f5b091568a9cdd4f155fda2" \
-            "c22e422478d305f3f896")
+    okm = B("0bd770a74d1160f7c9f12cd5912a06eb" \
+            "ff6adcae899d92191fe4305673ba2ffe" \
+            "8fa3f1a4e5ad79f3f334b3b202b2173c" \
+            "486ea37ce3d397ed034c7f9dfeb15c5e" \
+            "927336d0441f4c4300e2cff0d0900b52" \
+            "d3b4")
     assert_equal(okm, OpenSSL::KDF.hkdf(ikm, salt: salt, info: info, length: l, hash: hash))
   end
 

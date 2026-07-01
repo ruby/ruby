@@ -2,7 +2,7 @@ require_relative '../../spec_helper'
 
 describe "Rational#marshal_dump" do
   it "is a private method" do
-    Rational.should have_private_instance_method(:marshal_dump, false)
+    Rational.private_instance_methods(false).should.include?(:marshal_dump)
   end
 
   it "dumps numerator and denominator" do

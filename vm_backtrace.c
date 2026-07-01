@@ -158,7 +158,7 @@ static const rb_data_type_t location_data_type = {
         NULL, // No external memory to report,
         location_ref_update,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 int
@@ -568,7 +568,7 @@ static const rb_data_type_t backtrace_data_type = {
     /* Cannot set the RUBY_TYPED_EMBEDDABLE flag because the loc of frame_info
      * points elements in the backtrace array. This can cause the loc to become
      * incorrect if this backtrace object is moved by compaction. */
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED
 };
 
 int
@@ -751,7 +751,7 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
                 bt_backpatch_loc(backpatch_counter, loc, CFP_ISEQ(cfp), CFP_PC(cfp));
                 RB_OBJ_WRITTEN(btobj, Qundef, CFP_ISEQ(cfp));
                 if (do_yield) {
-                    bt_yield_loc(loc - backpatch_counter, backpatch_counter, btobj);
+                    bt_yield_loc(loc - backpatch_counter + 1, backpatch_counter, btobj);
                 }
                 break;
             }
@@ -991,6 +991,7 @@ backtrace_initialize_copy(VALUE self, VALUE original)
 
     bt->backtrace_size = original_bt->backtrace_size;
     MEMCPY(bt->backtrace, original_bt->backtrace, rb_backtrace_location_t, original_bt->backtrace_size);
+    rb_gc_writebarrier_remember(self);
 
     return Qnil;
 }
