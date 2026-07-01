@@ -2336,8 +2336,6 @@ RSpec.describe "the lockfile format" do
       end
 
       it "preserves Gemfile.lock \\n\\r line endings" do
-        skip "needs to be adapted" if Gem.win_platform?
-
         update_repo2 do
           build_gem "myrack", "1.2" do |s|
             s.executables = "myrackup"
@@ -2349,7 +2347,7 @@ RSpec.describe "the lockfile format" do
         set_lockfile_mtime_to_known_value
 
         expect { bundle "update", all: true }.to change { File.mtime(bundled_app_lock) }
-        expect(File.read(bundled_app_lock)).to match("\r\n")
+        expect(File.binread(bundled_app_lock)).to match("\r\n")
 
         expect(the_bundle).to include_gems "myrack 1.2"
       end
