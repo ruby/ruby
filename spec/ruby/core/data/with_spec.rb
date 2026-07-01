@@ -28,7 +28,7 @@ describe "Data#with" do
 
     -> {
       data.with(4, "m")
-    }.should raise_error(ArgumentError, "wrong number of arguments (given 2, expected 0)")
+    }.should.raise(ArgumentError, "wrong number of arguments (given 2, expected 0)")
   end
 
   it "does not depend on the Data.new method" do

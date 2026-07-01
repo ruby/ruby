@@ -33,7 +33,7 @@ describe "Enumerator::Product#each" do
   it "raises a NoMethodError if the object doesn't respond to #each_entry" do
     -> {
       Enumerator::Product.new(Object.new).each {}
-    }.should raise_error(NoMethodError, /undefined method [`']each_entry' for/)
+    }.should.raise(NoMethodError, /undefined method [`']each_entry' for/)
   end
 
   it "returns enumerator if not given a block" do
@@ -67,5 +67,19 @@ describe "Enumerator::Product#each" do
     acc = []
     enum.each { |x, y, z| acc << z }
     acc.should == [nil, nil, nil, nil]
+  end
+
+  it "yields no element when any enumerable is empty" do
+    enum = Enumerator::Product.new([], [1])
+
+    acc = []
+    enum.each { |x| acc << x }
+    acc.should == []
+
+    enum = Enumerator::Product.new([1], [])
+
+    acc = []
+    enum.each { |x| acc << x }
+    acc.should == []
   end
 end

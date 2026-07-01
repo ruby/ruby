@@ -60,11 +60,11 @@ describe "Array#sum" do
   end
 
   it 'raises TypeError if any element are not numeric' do
-    -> { ["a"].sum }.should raise_error(TypeError)
+    -> { ["a"].sum }.should.raise(TypeError)
   end
 
   it 'raises TypeError if any element cannot be added to init value' do
-    -> { [1].sum([]) }.should raise_error(TypeError)
+    -> { [1].sum([]) }.should.raise(TypeError)
   end
 
   it "calls + to sum the elements" do

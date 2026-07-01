@@ -23,6 +23,12 @@ module Prism
   #            def self.[]: (Integer value) -> State
   #          end
   #        end
+  #
+  #        class LineAndColumnCache
+  #          def initialize: (Source source) -> void
+  #
+  #          def line_and_column: (Integer byte_offset) -> [Integer, Integer]
+  #        end
   #      end
   #    end
 
@@ -837,6 +843,8 @@ module Prism
       prev_token_state = Translation::Ripper::Lexer::State[Translation::Ripper::EXPR_BEG]
       prev_token_end = bom ? 3 : 0
 
+      cache = Translation::Ripper::LineAndColumnCache.new(source)
+
       tokens.each do |token|
         # Skip missing heredoc ends.
         next if token[1] == :on_heredoc_end && token[2] == ""
@@ -851,8 +859,7 @@ module Prism
 
         if start_offset > prev_token_end
           sp_value = source.slice(prev_token_end, start_offset - prev_token_end)
-          sp_line = source.line(prev_token_end)
-          sp_column = source.column(prev_token_end)
+          sp_line, sp_column = cache.line_and_column(prev_token_end)
           # Ripper reports columns on line 1 without counting the BOM
           sp_column -= 3 if sp_line == 1 && bom
           continuation_index = sp_value.byteindex("\\")

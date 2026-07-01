@@ -3,7 +3,7 @@ require 'date'
 
 describe "DateTime.now" do
   it "creates an instance of DateTime" do
-    DateTime.now.should be_an_instance_of(DateTime)
+    DateTime.now.should.instance_of?(DateTime)
   end
 
   it "sets the current date" do

@@ -3,7 +3,7 @@ require_relative 'fixtures/classes'
 
 describe "Kernel#print" do
   it "is a private method" do
-    Kernel.should have_private_instance_method(:print)
+    Kernel.private_instance_methods(false).should.include?(:print)
   end
 
   it "delegates to $stdout" do

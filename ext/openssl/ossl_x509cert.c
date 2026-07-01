@@ -311,7 +311,9 @@ ossl_x509_set_serial(VALUE self, VALUE num)
     X509 *x509;
 
     GetX509(self, x509);
-    X509_set_serialNumber(x509, num_to_asn1integer(num, X509_get_serialNumber(x509)));
+    if (!X509_set_serialNumber(x509, num_to_asn1integer(num, X509_get_serialNumber(x509)))) {
+        ossl_raise(eX509CertError, NULL);
+    }
 
     return num;
 }

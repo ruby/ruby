@@ -170,7 +170,9 @@ make_counters! {
         compile_hir_time_ns,
         compile_hir_build_time_ns,
         compile_hir_strength_reduce_time_ns,
+        compile_hir_inline_methods_time_ns,
         compile_hir_optimize_load_store_time_ns,
+        compile_hir_canonicalize_time_ns,
         compile_hir_fold_constants_time_ns,
         compile_hir_clean_cfg_time_ns,
         compile_hir_remove_redundant_patch_points_time_ns,
@@ -204,7 +206,6 @@ make_counters! {
         exit_fixnum_div_by_zero,
         exit_box_fixnum_overflow,
         exit_guard_type_failure,
-        exit_guard_type_not_failure,
         exit_guard_bit_equals_failure,
         exit_guard_int_equals_failure,
         exit_guard_shape_failure,
@@ -223,15 +224,16 @@ make_counters! {
         exit_patchpoint_no_singleton_class,
         exit_patchpoint_root_box_only,
         exit_callee_side_exit,
-        exit_obj_to_string_fallback,
         exit_interrupt,
         exit_stackoverflow,
         exit_block_param_proxy_not_iseq_or_ifunc,
         exit_block_param_proxy_not_nil,
+        exit_block_param_proxy_not_proc,
         exit_block_param_proxy_fallback_miss,
         exit_block_param_proxy_profile_not_covered,
         exit_block_param_wb_required,
         exit_too_many_keyword_parameters,
+        exit_too_many_args_for_lir,
         exit_no_profile_send,
         exit_splatkw_not_nil_or_hash,
         exit_splatkw_polymorphic,
@@ -310,20 +312,27 @@ make_counters! {
         setivar_fallback_not_monomorphic,
         setivar_fallback_immediate,
         setivar_fallback_not_t_object,
-        setivar_fallback_too_complex,
+        setivar_fallback_complex,
         setivar_fallback_frozen,
         setivar_fallback_shape_transition,
-        setivar_fallback_new_shape_too_complex,
+        setivar_fallback_new_shape_complex,
         setivar_fallback_new_shape_needs_extension,
+        setivar_fallback_no_side_exits,
     }
 
     // Ivar fallback counters that are summed as dynamic_getivar_count
     dynamic_getivar {
         // getivar_fallback_: Fallback reasons for dynamic getivar instructions
         getivar_fallback_not_monomorphic,
+        getivar_fallback_megamorphic,
+        getivar_fallback_skewed_megamorphic,
+        getivar_fallback_polymorphic,
+        getivar_fallback_no_profile_missing_ic,
+        getivar_fallback_no_profile,
         getivar_fallback_immediate,
         getivar_fallback_not_t_object,
-        getivar_fallback_too_complex,
+        getivar_fallback_complex,
+        getivar_fallback_no_side_exits,
     }
 
     // Ivar fallback counters that are summed as dynamic_definedivar_count
@@ -332,7 +341,7 @@ make_counters! {
         definedivar_fallback_not_monomorphic,
         definedivar_fallback_immediate,
         definedivar_fallback_not_t_object,
-        definedivar_fallback_too_complex,
+        definedivar_fallback_complex,
     }
 
     // compile_error_: Compile error reasons
@@ -440,7 +449,7 @@ make_counters! {
     complex_arg_pass_caller_forwarding,
 
     // Writes to the VM frame
-    vm_write_pc_count,
+    vm_write_jit_frame_count,
     vm_write_sp_count,
     vm_write_locals_count,
     vm_write_stack_count,
@@ -461,6 +470,19 @@ make_counters! {
     invokeblock_handler_polymorphic,
     invokeblock_handler_megamorphic,
     invokeblock_handler_no_profiles,
+
+    // HIR-level method inliner counters. Most rejection counters are incremented
+    // once per SendDirect the inliner considers. inline_reject_budget_exceeded may
+    // be incremented only once, rather than once per SendDirect, if the caller
+    // already exceeds the budget before scanning for its SendDirects.
+    inline_method_count,
+    inline_reject_too_large,
+    inline_reject_complex_params,
+    inline_reject_ep_escapes,
+    inline_reject_denied,
+    inline_reject_compile_failure,
+    inline_reject_no_returns,
+    inline_reject_budget_exceeded,
 
     getblockparamproxy_handler_iseq,
     getblockparamproxy_handler_ifunc,
@@ -584,8 +606,6 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         UnhandledCallType(Splat)      => exit_unhandled_splat,
         UnhandledCallType(Kwarg)      => exit_unhandled_kwarg,
         UnknownSpecialVariable(_)     => exit_unknown_special_variable,
-        UnhandledHIRArrayMax          => exit_unhandled_hir_insn,
-        UnhandledHIRFixnumDiv         => exit_unhandled_hir_insn,
         UnhandledHIRThrow             => exit_unhandled_hir_insn,
         UnhandledHIRInvokeBuiltin     => exit_unhandled_hir_insn,
         UnhandledHIRUnknown(_)        => exit_unhandled_hir_insn,
@@ -599,7 +619,6 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         FixnumDivByZero               => exit_fixnum_div_by_zero,
         BoxFixnumOverflow             => exit_box_fixnum_overflow,
         GuardType(_)                  => exit_guard_type_failure,
-        GuardTypeNot(_)               => exit_guard_type_not_failure,
         GuardShape(_)                 => exit_guard_shape_failure,
         ExpandArray                   => exit_expandarray_failure,
         GuardNotFrozen                => exit_guard_not_frozen_failure,
@@ -608,15 +627,16 @@ pub fn side_exit_counter(reason: crate::hir::SideExitReason) -> Counter {
         GuardGreaterEq                => exit_guard_greater_eq_failure,
         GuardSuperMethodEntry         => exit_guard_super_method_entry,
         CalleeSideExit                => exit_callee_side_exit,
-        ObjToStringFallback           => exit_obj_to_string_fallback,
         Interrupt                     => exit_interrupt,
         StackOverflow                 => exit_stackoverflow,
         BlockParamProxyNotIseqOrIfunc => exit_block_param_proxy_not_iseq_or_ifunc,
         BlockParamProxyNotNil         => exit_block_param_proxy_not_nil,
+        BlockParamProxyNotProc       => exit_block_param_proxy_not_proc,
         BlockParamProxyFallbackMiss => exit_block_param_proxy_fallback_miss,
         BlockParamProxyProfileNotCovered => exit_block_param_proxy_profile_not_covered,
         BlockParamWbRequired          => exit_block_param_wb_required,
         TooManyKeywordParameters      => exit_too_many_keyword_parameters,
+        TooManyArgsForLir             => exit_too_many_args_for_lir,
         SplatKwNotNilOrHash           => exit_splatkw_not_nil_or_hash,
         SplatKwPolymorphic            => exit_splatkw_polymorphic,
         SplatKwNotProfiled            => exit_splatkw_not_profiled,

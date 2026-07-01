@@ -299,6 +299,33 @@ module DefinedSpecs
       super
     end
   end
+
+  class ProtectedBase
+    def m; end
+    protected :m
+    def defined_on(o)
+      defined?(o.m)
+    end
+  end
+
+  class ProtectedSubclass < ProtectedBase
+  end
+
+  module ProtectedInModule
+    def m; end
+    protected :m
+    def defined_on(o)
+      defined?(o.m)
+    end
+  end
+
+  class ProtectedIncluderA
+    include ProtectedInModule
+  end
+
+  class ProtectedIncluderB
+    include ProtectedInModule
+  end
 end
 
 class Object

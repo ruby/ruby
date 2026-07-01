@@ -22,7 +22,7 @@ describe "StringScanner#unscan" do
   end
 
   it "raises a StringScanner::Error when the previous match had failed" do
-    -> { @s.unscan }.should raise_error(StringScanner::Error)
-    -> { @s.scan(/\d/); @s.unscan }.should raise_error(StringScanner::Error)
+    -> { @s.unscan }.should.raise(StringScanner::Error)
+    -> { @s.scan(/\d/); @s.unscan }.should.raise(StringScanner::Error)
   end
 end

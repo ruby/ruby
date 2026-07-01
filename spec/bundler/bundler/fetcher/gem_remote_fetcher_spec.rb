@@ -6,6 +6,36 @@ require_relative "../../support/artifice/helpers/artifice"
 require "bundler/vendored_persistent.rb"
 
 RSpec.describe Bundler::Fetcher::GemRemoteFetcher do
+  describe "#initialize" do
+    context "when ssl_ca_cert setting is not set" do
+      before do
+        allow(Bundler.settings).to receive(:[]).and_call_original
+        allow(Bundler.settings).to receive(:[]).with(:ssl_ca_cert).and_return(nil)
+      end
+
+      it "does not append the setting to @cert_files" do
+        cert_files = subject.instance_variable_get(:@cert_files)
+        gem_cert_files = Gem::Request.get_cert_files
+        expect(cert_files).to eq(gem_cert_files)
+      end
+    end
+
+    context "when ssl_ca_cert setting is set" do
+      let(:ca_cert_path) { "/path/to/ca_cert" }
+
+      before do
+        allow(Bundler.settings).to receive(:[]).and_call_original
+        allow(Bundler.settings).to receive(:[]).with(:ssl_ca_cert).and_return(ca_cert_path)
+      end
+
+      it "appends the setting to @cert_files" do
+        cert_files = subject.instance_variable_get(:@cert_files)
+        gem_cert_files = Gem::Request.get_cert_files
+        expect(cert_files).to eq(gem_cert_files + [ca_cert_path])
+      end
+    end
+  end
+
   describe "Parallel download" do
     it "download using multiple connections from the pool" do
       unless Bundler.rubygems.provides?(">= 4.0.0.dev")

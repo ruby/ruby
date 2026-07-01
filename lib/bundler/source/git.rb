@@ -191,8 +191,13 @@ module Bundler
         set_cache_path!(app_cache_path) if use_app_cache?
 
         if requires_checkout? && !@copied
-          fetch unless use_app_cache?
-          checkout
+          Plugin.hook(Plugin::Events::GIT_BEFORE_FETCH, self)
+          begin
+            fetch unless use_app_cache?
+            checkout
+          ensure
+            Plugin.hook(Plugin::Events::GIT_AFTER_FETCH, self)
+          end
         end
 
         local_specs

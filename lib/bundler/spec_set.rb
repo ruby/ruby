@@ -5,7 +5,7 @@ require_relative "vendored_tsort"
 module Bundler
   class SpecSet
     include Enumerable
-    include TSort
+    include Gem::TSort
 
     def initialize(specs)
       @specs = specs
@@ -274,13 +274,25 @@ module Bundler
 
       valid_platform = lookup.all? do |_, specs|
         spec = specs.first
+        # The matching candidates returned by source.specs.search are remote
+        # specs that do not carry the override list themselves. Borrow it from
+        # the LazySpec we are validating so platform-variant validation honors
+        # the same overrides the install/resolve path already applies.
+        overrides = spec.is_a?(LazySpecification) ? Array(spec.overrides) : []
         matching_specs = spec.source.specs.search([spec.name, spec.version])
         platform_spec = MatchPlatform.select_best_platform_match(matching_specs, platform).find do |s|
-          valid?(s)
+          s.matches_current_metadata_with_overrides?(overrides) && valid_dependencies?(s)
         end
 
         if platform_spec
-          new_specs << LazySpecification.from_spec(platform_spec) unless specs.include?(platform_spec)
+          unless specs.include?(platform_spec)
+            new_lazy = LazySpecification.from_spec(platform_spec)
+            # Carry the overrides forward so a follow-up complete_platform
+            # call that picks this synthesized variant as its exemplar still
+            # honors the user's override list.
+            new_lazy.overrides = overrides if overrides.any?
+            new_specs << new_lazy
+          end
           true
         else
           false
@@ -315,7 +327,7 @@ module Bundler
 
     def sorted
       @sorted ||= ([lookup["rake"]&.first] + tsort).compact.uniq
-    rescue TSort::Cyclic => error
+    rescue Gem::TSort::Cyclic => error
       cgems = extract_circular_gems(error)
       raise CyclicDependencyError, "Your bundle requires gems that depend" \
         " on each other, creating an infinite loop. Please remove either" \

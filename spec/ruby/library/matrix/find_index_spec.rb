@@ -8,12 +8,12 @@ describe "Matrix#find_index without any argument" do
 
   it "returns an Enumerator when called without a block" do
     enum = @m.find_index
-    enum.should be_an_instance_of(Enumerator)
+    enum.should.instance_of?(Enumerator)
     enum.to_a.should == [1, 2, 3, 4, 5, 6, 7, 8]
   end
 
   it "returns nil if the block is always false" do
-    @m.find_index{false}.should be_nil
+    @m.find_index{false}.should == nil
   end
 
   it "returns the first index for which the block is true" do
@@ -48,7 +48,7 @@ describe "Matrix#find_index with a subselection argument" do
     it "returns an Enumerator when called without a block" do
       @tests.each do |matrix, h|
         h.each do |selector, result|
-          matrix.find_index(selector).should be_an_instance_of(Enumerator)
+          matrix.find_index(selector).should.instance_of?(Enumerator)
         end
       end
     end
@@ -116,7 +116,7 @@ describe "Matrix#find_index with only a generic argument" do
   end
 
   it "returns nil if the value is not found" do
-    @m.find_index(42).should be_nil
+    @m.find_index(42).should == nil
   end
 
   it "returns the first index for of the requested value" do
@@ -132,15 +132,15 @@ describe "Matrix#find_index with two arguments" do
   it "raises an ArgumentError for an unrecognized last argument" do
     -> {
       @m.find_index(1, "all"){}
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
     -> {
       @m.find_index(1, nil){}
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
     -> {
       @m.find_index(1, :left){}
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
     -> {
       @m.find_index(:diagonal, 1){}
-    }.should raise_error(ArgumentError)
+    }.should.raise(ArgumentError)
   end
 end

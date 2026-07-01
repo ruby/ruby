@@ -774,9 +774,9 @@ pm_interpolated_node_compile(rb_iseq_t *iseq, const pm_node_list_t *parts, const
                 if (frozen_result) {
                     PUSH_INSN1(ret, current_location, putobject, current_string);
                 } else if (mutable_result || interpolated) {
-                    PUSH_INSN1(ret, current_location, putstring, current_string);
+                    PUSH_INSN1(ret, current_location, dupstring, current_string);
                 } else {
-                    PUSH_INSN1(ret, current_location, putchilledstring, current_string);
+                    PUSH_INSN1(ret, current_location, dupchilledstring, current_string);
                 }
             } else {
                 PUSH_INSN1(ret, current_location, putobject, current_string);
@@ -3887,6 +3887,8 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
             ELEM_INSERT_NEXT(opt_new_prelude, &new_insn_body(iseq, location.line, location.node_id, BIN(putnil), 0)->link);
         }
 
+        rb_callinfo_kwarg_retain(kw_arg);
+
         // Jump unless the receiver uses the "basic" implementation of "new"
         VALUE ci;
         if (flags & VM_CALL_FORWARDING) {
@@ -3909,6 +3911,8 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
 
         PUSH_LABEL(ret, not_basic_new_finish);
         PUSH_INSN(ret, location, pop);
+
+        rb_callinfo_kwarg_release(kw_arg);
     }
     else {
         PUSH_SEND_R(ret, location, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
@@ -7606,9 +7610,7 @@ pm_compile_case_node_dispatch(rb_iseq_t *iseq, VALUE dispatch, const pm_node_t *
         return Qundef;
     }
 
-    if (NIL_P(rb_hash_lookup(dispatch, key))) {
-        rb_hash_aset(dispatch, key, ((VALUE) label) | 1);
-    }
+    cdhash_aset_if_missing(dispatch, key, (VALUE)label);
     return dispatch;
 }
 
@@ -7747,8 +7749,7 @@ pm_compile_case_node(rb_iseq_t *iseq, const pm_case_node_t *cast, const pm_node_
         // lookup to jump directly to the correct when clause body.
         VALUE dispatch = Qundef;
         if (ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
-            dispatch = rb_hash_new();
-            RHASH_TBL_RAW(dispatch)->type = &cdhash_type;
+            dispatch = cdhash_new(0);
         }
 
         // We're going to loop through each of the conditions in the case
@@ -9677,10 +9678,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     PUSH_INSN1(ret, location, putobject, string);
                 }
                 else if (PM_NODE_FLAG_P(node, PM_INTERPOLATED_STRING_NODE_FLAGS_MUTABLE)) {
-                    PUSH_INSN1(ret, location, putstring, string);
+                    PUSH_INSN1(ret, location, dupstring, string);
                 }
                 else {
-                    PUSH_INSN1(ret, location, putchilledstring, string);
+                    PUSH_INSN1(ret, location, dupchilledstring, string);
                 }
             }
         }
@@ -10395,10 +10396,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 PUSH_INSN1(ret, location, putobject, string);
             }
             else if (PM_NODE_FLAG_P(cast, PM_STRING_FLAGS_MUTABLE)) {
-                PUSH_INSN1(ret, location, putstring, string);
+                PUSH_INSN1(ret, location, dupstring, string);
             }
             else {
-                PUSH_INSN1(ret, location, putchilledstring, string);
+                PUSH_INSN1(ret, location, dupchilledstring, string);
             }
         }
         return;
@@ -10452,10 +10453,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 PUSH_INSN1(ret, location, putobject, value);
             }
             else if (PM_NODE_FLAG_P(node, PM_STRING_FLAGS_MUTABLE)) {
-                PUSH_INSN1(ret, location, putstring, value);
+                PUSH_INSN1(ret, location, dupstring, value);
             }
             else {
-                PUSH_INSN1(ret, location, putchilledstring, value);
+                PUSH_INSN1(ret, location, dupchilledstring, value);
             }
         }
         return;
@@ -11625,14 +11626,17 @@ pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath, VALUE *
 
     result->node.filepath_encoding = rb_enc_get(filepath);
     pm_options_filepath_set(result->options, RSTRING_PTR(filepath));
-    RB_GC_GUARD(filepath);
 
     pm_options_version_for_current_ruby_set(result->options);
 
     result->parser = pm_parser_new(result->arena, pm_source_source(result->source), pm_source_length(result->source), result->options);
     pm_node_t *node = pm_parse(result->parser);
 
-    return pm_parse_process(result, node, script_lines);
+    VALUE error = pm_parse_process(result, node, script_lines);
+
+    RB_GC_GUARD(source);
+    RB_GC_GUARD(filepath);
+    return error;
 }
 
 struct rb_stdin_wrapper {

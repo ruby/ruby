@@ -19,8 +19,8 @@ describe "Array#pack with format 'B'" do
   end
 
   it "will not implicitly convert a number to a string" do
-    -> { [0].pack('B') }.should raise_error(TypeError)
-    -> { [0].pack('b') }.should raise_error(TypeError)
+    -> { [0].pack('B') }.should.raise(TypeError)
+    -> { [0].pack('b') }.should.raise(TypeError)
   end
 
   it "encodes one bit for each character starting with the most significant bit" do

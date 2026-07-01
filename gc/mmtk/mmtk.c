@@ -39,6 +39,8 @@ struct objspace {
     pthread_cond_t cond_world_started;
     size_t start_the_world_count;
 
+    pthread_mutex_t event_hook_mutex;
+
     struct {
         bool gc_thread_crashed;
         char crash_msg[256];
@@ -47,6 +49,9 @@ struct objspace {
     struct rb_gc_vm_context vm_context;
 
     unsigned int fork_hook_vm_lock_lev;
+
+    uintptr_t vo_bit_log_region_size;
+    uintptr_t vo_bit_base_addr;
 };
 
 #define OBJ_FREE_BUF_CAPACITY 128
@@ -253,11 +258,7 @@ rb_mmtk_scan_gc_roots(void)
 {
     struct objspace *objspace = rb_gc_get_objspace();
 
-    // FIXME: Make `rb_gc_mark_roots` aware that the current thread may not have EC.
-    // See: https://github.com/ruby/mmtk/issues/22
-    rb_gc_worker_thread_set_vm_context(&objspace->vm_context);
     rb_gc_mark_roots(objspace, NULL);
-    rb_gc_worker_thread_unset_vm_context(&objspace->vm_context);
 }
 
 static int
@@ -342,12 +343,14 @@ rb_mmtk_call_obj_free(MMTk_ObjectReference object)
     struct objspace *objspace = rb_gc_get_objspace();
 
     if (RB_UNLIKELY(rb_gc_event_hook_required_p(RUBY_INTERNAL_EVENT_FREEOBJ))) {
-        rb_gc_worker_thread_set_vm_context(&objspace->vm_context);
+        pthread_mutex_lock(&objspace->event_hook_mutex);
         rb_gc_event_hook(obj, RUBY_INTERNAL_EVENT_FREEOBJ);
-        rb_gc_worker_thread_unset_vm_context(&objspace->vm_context);
+        pthread_mutex_unlock(&objspace->event_hook_mutex);
     }
 
-    rb_gc_obj_free(objspace, obj);
+    if (RB_UNLIKELY(rb_gc_obj_needs_cleanup_p(obj))) {
+        rb_gc_obj_free(objspace, obj);
+    }
 
 #ifdef MMTK_DEBUG
     memset((void *)obj, 0, rb_gc_impl_obj_slot_size(obj));
@@ -477,6 +480,7 @@ rb_mmtk_special_const_p(MMTk_ObjectReference object)
 }
 
 RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 1, 2)
+RBIMPL_ATTR_NORETURN()
 static void
 rb_mmtk_gc_thread_bug(const char *msg, ...)
 {
@@ -501,12 +505,14 @@ rb_mmtk_gc_thread_bug(const char *msg, ...)
     rb_bug("rb_mmtk_gc_thread_bug");
 }
 
+RBIMPL_ATTR_NORETURN()
 static void
 rb_mmtk_gc_thread_panic_handler(void)
 {
     rb_mmtk_gc_thread_bug("MMTk GC thread panicked");
 }
 
+RBIMPL_ATTR_NORETURN()
 static void
 rb_mmtk_mutator_thread_panic_handler(void)
 {
@@ -561,7 +567,10 @@ void *
 rb_gc_impl_objspace_alloc(void)
 {
     MMTk_Builder *builder = rb_mmtk_builder_init();
-    mmtk_init_binding(builder, NULL, &ruby_upcalls);
+    MMTk_RubyBindingOptions binding_options = {
+        .suffix_size = RB_GC_OBJ_SUFFIX_SIZE,
+    };
+    mmtk_init_binding(builder, &binding_options, &ruby_upcalls);
 
     return calloc(1, sizeof(struct objspace));
 }
@@ -583,6 +592,11 @@ rb_gc_impl_objspace_init(void *objspace_ptr)
     objspace->mutex = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
     objspace->cond_world_stopped = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
     objspace->cond_world_started = (pthread_cond_t)PTHREAD_COND_INITIALIZER;
+
+    objspace->event_hook_mutex = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
+
+    objspace->vo_bit_log_region_size = mmtk_get_vo_bit_log_region_size();
+    objspace->vo_bit_base_addr = mmtk_get_vo_bit_base_addr();
 }
 
 void
@@ -784,22 +798,36 @@ rb_gc_impl_config_set(void *objspace_ptr, VALUE hash)
     // TODO
 }
 
+struct rb_gc_vm_context *
+rb_gc_impl_get_vm_context(void *objspace_ptr)
+{
+    struct objspace *objspace = objspace_ptr;
+
+    return &objspace->vm_context;
+}
+
 // Object allocation
 
 static VALUE
-rb_mmtk_alloc_fast_path(struct objspace *objspace, struct MMTk_ractor_cache *ractor_cache, size_t size)
+rb_mmtk_alloc_fast_path(struct objspace *objspace, struct MMTk_ractor_cache *ractor_cache, size_t size, size_t align)
 {
     MMTk_BumpPointer *bump_pointer = ractor_cache->bump_pointer;
     if (bump_pointer == NULL) return 0;
 
-    uintptr_t new_cursor = bump_pointer->cursor + size;
+    uintptr_t cursor = bump_pointer->cursor;
 
-    if (new_cursor > bump_pointer->limit) {
+    // Ensure cursor is aligned
+    size_t mask = align - 1;
+    cursor = (cursor + mask) & ~mask;
+
+    cursor += size;
+
+    if (cursor > bump_pointer->limit) {
         return 0;
     }
     else {
-        VALUE obj = (VALUE)bump_pointer->cursor;
-        bump_pointer->cursor = new_cursor;
+        VALUE obj = cursor - size;
+        bump_pointer->cursor = cursor;
         return obj;
     }
 }
@@ -861,6 +889,18 @@ mmtk_buffer_obj_free_candidate(struct MMTk_ractor_cache *cache, VALUE obj)
     }
 }
 
+static void
+mmtk_post_alloc_fast_immix(struct objspace *objspace, struct MMTk_ractor_cache *ractor_cache, uintptr_t obj)
+{
+    uintptr_t region_offset = obj >> objspace->vo_bit_log_region_size;
+    uintptr_t byte_offset = region_offset / 8;
+    uintptr_t bit_offset = region_offset % 8;
+    uintptr_t meta_byte_address = objspace->vo_bit_base_addr + byte_offset;
+    uint8_t byte = 1 << bit_offset;
+    uint8_t *meta_byte_ptr = (uint8_t*)meta_byte_address;
+    *meta_byte_ptr |= byte;
+}
+
 VALUE
 rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags, bool wb_protected, size_t alloc_size)
 {
@@ -881,20 +921,31 @@ rb_gc_impl_new_obj(void *objspace_ptr, void *cache_ptr, VALUE klass, VALUE flags
         mmtk_handle_user_collection_request(ractor_cache, false, false);
     }
 
-    alloc_size += sizeof(VALUE);
+    // Layout: [hidden size header (sizeof(VALUE))][payload (alloc_size)][suffix (RB_GC_OBJ_SUFFIX_SIZE)]
+    alloc_size += sizeof(VALUE) + RB_GC_OBJ_SUFFIX_SIZE;
 
-    VALUE *alloc_obj = (VALUE *)rb_mmtk_alloc_fast_path(objspace, ractor_cache, alloc_size);
+    VALUE *alloc_obj = (VALUE *)rb_mmtk_alloc_fast_path(objspace, ractor_cache, alloc_size, MMTk_MIN_OBJ_ALIGN);
     if (!alloc_obj) {
         alloc_obj = mmtk_alloc(ractor_cache->mutator, alloc_size, MMTk_MIN_OBJ_ALIGN, 0, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
+
+        // On heap exhaustion raise NoMemoryError.
+        if (RB_UNLIKELY(alloc_obj == NULL)) {
+            rb_memerror();
+        }
     }
 
     alloc_obj++;
-    alloc_obj[-1] = alloc_size - sizeof(VALUE);
+    alloc_obj[-1] = alloc_size - sizeof(VALUE) - RB_GC_OBJ_SUFFIX_SIZE;
     alloc_obj[0] = flags;
     alloc_obj[1] = klass;
 
-    // TODO: implement fast path for mmtk_post_alloc
-    mmtk_post_alloc(ractor_cache->mutator, (void*)alloc_obj, alloc_size, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
+    if (ractor_cache->bump_pointer == NULL) {
+        mmtk_post_alloc(ractor_cache->mutator, (void*)alloc_obj, alloc_size, MMTK_ALLOCATION_SEMANTICS_DEFAULT);
+    }
+    else {
+        // We can use the post alloc fast path if we're using Immix bump pointer allocator
+        mmtk_post_alloc_fast_immix(objspace, ractor_cache, (uintptr_t)alloc_obj);
+    }
 
     // TODO: only add when object needs obj_free to be called
     mmtk_buffer_obj_free_candidate(ractor_cache, (VALUE)alloc_obj);
@@ -914,8 +965,7 @@ size_t
 rb_gc_impl_heap_id_for_size(void *objspace_ptr, size_t size)
 {
     for (int i = 0; i < MMTK_HEAP_COUNT; i++) {
-        if (size == heap_sizes[i]) return i;
-        if (size < heap_sizes[i])  return i;
+        if (size <= heap_sizes[i]) return i;
     }
 
     rb_bug("size too big");
@@ -963,7 +1013,7 @@ static inline VALUE
 rb_mmtk_call_object_closure(VALUE obj, bool pin)
 {
     if (RB_UNLIKELY(RB_BUILTIN_TYPE(obj) == T_NONE)) {
-        const size_t info_size = 256;
+        enum { info_size = 256 };
         char obj_info_buf[info_size];
         rb_raw_obj_info(obj_info_buf, info_size, obj);
 
@@ -1011,7 +1061,7 @@ rb_gc_impl_mark_and_pin(void *objspace_ptr, VALUE obj)
 void
 rb_gc_impl_mark_maybe(void *objspace_ptr, VALUE obj)
 {
-    if (rb_gc_impl_pointer_to_heap_p(objspace_ptr, (const void *)obj)) {
+    if (rb_gc_impl_live_object_p(objspace_ptr, (const void *)obj)) {
         rb_gc_impl_mark_and_pin(objspace_ptr, obj);
     }
 }
@@ -1057,12 +1107,12 @@ rb_gc_impl_writebarrier(void *objspace_ptr, VALUE a, VALUE b)
     if (SPECIAL_CONST_P(b)) return;
 
 #ifdef MMTK_DEBUG
-    if (!rb_gc_impl_pointer_to_heap_p(objspace_ptr, (void *)a)) {
+    if (!rb_gc_impl_live_object_p(objspace_ptr, (void *)a)) {
         char buff[256];
         rb_bug("a: %s is not an object", rb_raw_obj_info(buff, 256, a));
     }
 
-    if (!rb_gc_impl_pointer_to_heap_p(objspace_ptr, (void *)b)) {
+    if (!rb_gc_impl_live_object_p(objspace_ptr, (void *)b)) {
         char buff[256];
         rb_bug("b: %s is not an object", rb_raw_obj_info(buff, 256, b));
     }
@@ -1601,7 +1651,7 @@ rb_gc_impl_object_metadata(void *objspace_ptr, VALUE obj)
 }
 
 bool
-rb_gc_impl_pointer_to_heap_p(void *objspace_ptr, const void *ptr)
+rb_gc_impl_live_object_p(void *objspace_ptr, const void *ptr)
 {
     if (ptr == NULL) return false;
     if ((uintptr_t)ptr % sizeof(void*) != 0) return false;

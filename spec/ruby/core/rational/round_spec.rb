@@ -7,9 +7,9 @@ describe "Rational#round" do
 
   describe "with no arguments (precision = 0)" do
     it "returns an integer" do
-      @rational.round.should be_kind_of(Integer)
-      Rational(0, 1).round(0).should be_kind_of(Integer)
-      Rational(124, 1).round(0).should be_kind_of(Integer)
+      @rational.round.should.is_a?(Integer)
+      Rational(0, 1).round(0).should.is_a?(Integer)
+      Rational(124, 1).round(0).should.is_a?(Integer)
     end
 
     it "returns the truncated value toward the nearest integer" do
@@ -30,10 +30,10 @@ describe "Rational#round" do
 
   describe "with a precision < 0" do
     it "returns an integer" do
-      @rational.round(-2).should be_kind_of(Integer)
-      @rational.round(-1).should be_kind_of(Integer)
-      Rational(0, 1).round(-1).should be_kind_of(Integer)
-      Rational(2, 1).round(-1).should be_kind_of(Integer)
+      @rational.round(-2).should.is_a?(Integer)
+      @rational.round(-1).should.is_a?(Integer)
+      Rational(0, 1).round(-1).should.is_a?(Integer)
+      Rational(2, 1).round(-1).should.is_a?(Integer)
     end
 
     it "moves the truncation point n decimal places left" do
@@ -45,12 +45,12 @@ describe "Rational#round" do
 
   describe "with a precision > 0" do
     it "returns a Rational" do
-      @rational.round(1).should be_kind_of(Rational)
-      @rational.round(2).should be_kind_of(Rational)
+      @rational.round(1).should.is_a?(Rational)
+      @rational.round(2).should.is_a?(Rational)
       # Guard against the Mathn library
       guard -> { !defined?(Math.rsqrt) } do
-        Rational(0, 1).round(1).should be_kind_of(Rational)
-        Rational(2, 1).round(1).should be_kind_of(Rational)
+        Rational(0, 1).round(1).should.is_a?(Rational)
+        Rational(2, 1).round(1).should.is_a?(Rational)
       end
     end
 
@@ -100,7 +100,7 @@ describe "Rational#round" do
     end
 
     it "raise for a non-existent round mode" do
-      -> { Rational(10, 4).round(half: :nonsense) }.should raise_error(ArgumentError, "invalid rounding mode: nonsense")
+      -> { Rational(10, 4).round(half: :nonsense) }.should.raise(ArgumentError, "invalid rounding mode: nonsense")
     end
   end
 end

@@ -7,24 +7,34 @@ ECHO = $(ECHO1:0=@echo)
 
 <%
 srcdir = miniruby = script_args = nil
+with_exts = []
+without_exts = []
 opt = OptionParser.new do |o|
   o.on('--srcdir=SRCDIR') {|v| srcdir = v}
   o.on('--miniruby=MINIRUBY') {|v| miniruby = v}
   o.on('--script-args=MINIRUBY') {|v| script_args = v}
+  o.on('--with-ext=ext[,...]', Array) {|v| with_exts.concat(v)}
+  o.on('--without-ext=ext[,...]', Array) {|v| without_exts.concat(v)}
   o.order!(ARGV)
 end
 srcdir ||= File.dirname(File.dirname(__FILE__))
+script_args ||= ""
+
+filter = proc do |ext|
+  next false unless with_exts.empty? or !with_exts.any? {|w| File.fnmatch?(w, ext)}
+  without_exts.empty? or !without_exts.any? {|w| File.fnmatch?(w, ext)}
+end
 exts = {
   exts: [
     "--extstatic $(EXTSTATIC)",
-    Dir.glob("ext/**/extconf.rb", base: srcdir).map do |d|
-      d[%r[\Aext/[^/]+]]
+    Dir.glob("ext/**/extconf.rb", base: srcdir).filter_map do |d|
+      d if filter[File.basename(d = d[%r[\Aext/[^/]+]])]
     end.uniq
   ],
   gems: [
     "--no-extstatic",
-    Dir.glob(".bundle/gems/**/extconf.rb", base: srcdir).grep_v(/test/) do |d|
-      d[%r[\A\.bundle/gems/[^/]+]]
+    Dir.glob(".bundle/gems/**/extconf.rb", base: srcdir).grep_v(/test/).filter_map do |d|
+      d if filter[File.basename(d = d[%r[\A\.bundle/gems/[^/]+]])]
     end.uniq
   ],
 }
@@ -32,7 +42,14 @@ exts = {
 MINIRUBY = <%=miniruby%>
 SCRIPT_ARGS = <%=script_args.gsub("#", "\\#").gsub(/\A|[\s"']\K--jobserver-auth=[^\s'"]*/, "")%>
 EXTMK_ARGS = $(SCRIPT_ARGS) --gnumake=$(gnumake) --extflags="$(EXTLDFLAGS)" \
-	   --make-flags="MINIRUBY='$(MINIRUBY)'"
+	   --make-flags="MINIRUBY='$(MINIRUBY)'" \
+<% unless with_exts.empty? -%>
+	   --with-ext=<%= with_exts.join(',') %> \
+<% end -%>
+<% unless without_exts.empty? -%>
+	   --without-ext=<%= without_exts.join(',') %> \
+<% end -%>
+	# EXTMK_ARGS
 
 all: exts gems
 exts:

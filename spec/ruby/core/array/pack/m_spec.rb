@@ -155,7 +155,7 @@ describe "Array#pack with format 'M'" do
 
   it "encodes a recursive array" do
     empty = ArraySpecs.empty_recursive_array
-    empty.pack('M').should be_an_instance_of(String)
+    empty.pack('M').should.instance_of?(String)
 
     array = ArraySpecs.recursive_array
     array.pack('M').should == "1=\n"
@@ -172,7 +172,7 @@ describe "Array#pack with format 'M'" do
     obj = mock("pack M non-string")
     obj.should_receive(:to_s).and_return(2)
 
-    [obj].pack("M").should be_an_instance_of(String)
+    [obj].pack("M").should.instance_of?(String)
   end
 
   it "encodes a Symbol as a String" do
@@ -293,16 +293,16 @@ describe "Array#pack with format 'm'" do
 
   it "raises a TypeError if #to_str does not return a String" do
     obj = mock("pack m non-string")
-    -> { [obj].pack("m") }.should raise_error(TypeError)
+    -> { [obj].pack("m") }.should.raise(TypeError)
   end
 
   it "raises a TypeError if passed nil" do
-    -> { [nil].pack("m") }.should raise_error(TypeError)
+    -> { [nil].pack("m") }.should.raise(TypeError)
   end
 
   it "raises a TypeError if passed an Integer" do
-    -> { [0].pack("m") }.should raise_error(TypeError)
-    -> { [bignum_value].pack("m") }.should raise_error(TypeError)
+    -> { [0].pack("m") }.should.raise(TypeError)
+    -> { [bignum_value].pack("m") }.should.raise(TypeError)
   end
 
   it "does not emit a newline if passed zero as the count modifier" do

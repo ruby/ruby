@@ -1,7 +1,7 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
-require_relative 'shared/length'
 
 describe "Array#length" do
-  it_behaves_like :array_length, :length
+  it "is an alias of Array#size" do
+    Array.instance_method(:length).should == Array.instance_method(:size)
+  end
 end

@@ -209,7 +209,7 @@ static const rb_data_type_t sym_id_entry_list_type = {
         sym_id_entry_list_memsize,
         sym_id_entry_list_compact,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED
 };
 
 static int
@@ -303,7 +303,7 @@ sym_set_create(VALUE sym, void *data)
     VALUE str = dup_string_for_create(static_sym_entry->str);
 
     if (create_dynamic_symbol) {
-        NEWOBJ_OF(obj, struct RSymbol, rb_cSymbol, T_SYMBOL | FL_WB_PROTECTED, sizeof(struct RSymbol), 0);
+        NEWOBJ_OF(obj, struct RSymbol, rb_cSymbol, T_SYMBOL, sizeof(struct RSymbol));
 
         rb_encoding *enc = rb_enc_get(str);
         rb_enc_set_index((VALUE)obj, rb_enc_to_index(enc));

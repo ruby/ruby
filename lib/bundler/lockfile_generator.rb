@@ -103,7 +103,7 @@ module Bundler
     end
 
     def bundler_checksum
-      return [] if Bundler.gem_version.to_s.end_with?(".dev")
+      return [] if Bundler.gem_version.to_s.end_with?(".dev") || ENV["SKIP_BUNDLER_CHECKSUM"]
 
       bundler_spec = definition.sources.metadata_source.specs.search(["bundler", Bundler.gem_version]).last
       return [] unless File.exist?(bundler_spec.cache_file)

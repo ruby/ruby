@@ -108,12 +108,6 @@ module SyncDefaultGems
     ]),
     "open-uri": lib("ruby/open-uri"),
     English: lib("ruby/English"),
-    cgi: repo("ruby/cgi", [
-      ["ext/cgi", "ext/cgi"],
-      ["lib/cgi/escape.rb", "lib/cgi/escape.rb"],
-      ["test/cgi/test_cgi_escape.rb", "test/cgi/test_cgi_escape.rb"],
-      ["test/cgi/update_env.rb", "test/cgi/update_env.rb"],
-    ]),
     date: repo("ruby/date", [
       ["doc/date", "doc/date"],
       ["ext/date", "ext/date"],
@@ -202,12 +196,6 @@ module SyncDefaultGems
     optparse: lib("ruby/optparse", gemspec_in_subdir: true).tap {
       it.mappings << ["doc/optparse", "doc/optparse"]
     },
-    pathname: repo("ruby/pathname", [
-      ["ext/pathname/pathname.c", "pathname.c"],
-      ["lib/pathname_builtin.rb", "pathname_builtin.rb"],
-      ["lib/pathname.rb", "lib/pathname.rb"],
-      ["test/pathname", "test/pathname"],
-    ]),
     pp: lib("ruby/pp"),
     prettyprint: lib("ruby/prettyprint"),
     prism: repo(["ruby/prism", "main"], [
@@ -253,11 +241,11 @@ module SyncDefaultGems
       ["lib/rubygems.rb", "lib/rubygems.rb"],
       ["lib/rubygems", "lib/rubygems"],
       ["test/rubygems", "test/rubygems"],
-      ["bundler/lib/bundler.rb", "lib/bundler.rb"],
-      ["bundler/lib/bundler", "lib/bundler"],
-      ["bundler/exe/bundle", "libexec/bundle"],
-      ["bundler/exe/bundler", "libexec/bundler"],
-      ["bundler/bundler.gemspec", "lib/bundler/bundler.gemspec"],
+      ["lib/bundler.rb", "lib/bundler.rb"],
+      ["lib/bundler", "lib/bundler"],
+      ["exe/bundle", "libexec/bundle"],
+      ["exe/bundler", "libexec/bundler"],
+      ["bundler.gemspec", "lib/bundler/bundler.gemspec"],
       ["spec", "spec/bundler"],
       *["bundle", "parallel_rspec", "rspec"].map {|binstub|
         ["bin/#{binstub}", "spec/bin/#{binstub}"]
@@ -317,6 +305,10 @@ module SyncDefaultGems
     ]),
   }.transform_keys(&:to_s)
 
+  def REPOSITORIES.[](gem)
+    fetch(gem) {raise "unknown repository - #{gem}"}
+  end
+
   class << Repository
     def find_upstream(file)
       return if NO_UPSTREAM.any? {|dst| file.start_with?(dst) }
@@ -352,9 +344,10 @@ module SyncDefaultGems
     changed |= src.gsub!(%r[\[\Khttps://docs\.ruby-lang\.org/en/master(?:/doc)?/(([A-Z]\w+(?:/[A-Z]\w+)*)|\w+_rdoc)\.html(\#\S+)?(?=\])]) do
       name, mod, label = $1, $2, $3
       mod &&= mod.gsub('/', '::')
-      if label && (m = label.match(/\A\#(?:method-([ci])|(?:(?:class|module)-#{mod}-)?label)-([-+\w]+)\z/))
+      if label && (m = label.match(/\A\#(?:(?:method|attribute)-([ci])|(?:(?:class|module)-#{mod}-)?label)-(.+)\z/))
         scope, label = m[1], m[2]
         scope = scope ? scope.tr('ci', '.#') : '@'
+        label.gsub!(/-(\h\h)/) {$1.to_i(16).chr(Encoding::ASCII_8BIT)}
       end
       "rdoc-ref:#{mod || name.chomp("_rdoc") + ".rdoc"}#{scope}#{label}"
     end
@@ -377,12 +370,15 @@ module SyncDefaultGems
   end
 
   def rubygems_do_fixup
-    gemspec_content = File.readlines("lib/bundler/bundler.gemspec").map do |line|
-      next if line =~ /LICENSE\.md/
+    gemspec = "lib/bundler/bundler.gemspec"
+    if File.exist?(gemspec)
+      gemspec_content = File.readlines(gemspec).map do |line|
+        next if line =~ /LICENSE\.md/
 
-      line.gsub("bundler.gemspec", "lib/bundler/bundler.gemspec")
-    end.compact.join
-    File.write("lib/bundler/bundler.gemspec", gemspec_content)
+        line.gsub("bundler.gemspec", "lib/bundler/bundler.gemspec")
+      end.compact.join
+      File.write(gemspec, gemspec_content)
+    end
 
     ["bundle", "parallel_rspec", "rspec"].each do |binstub|
       path = "spec/bin/#{binstub}"
@@ -445,7 +441,7 @@ module SyncDefaultGems
   end
 
   def check_prerelease_version(gem)
-    return if ["rubygems", "mmtk", "cgi", "pathname", "Onigmo"].include?(gem)
+    return if ["rubygems", "mmtk", "Onigmo"].include?(gem)
 
     require "net/https"
     require "json"

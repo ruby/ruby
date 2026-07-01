@@ -101,6 +101,7 @@ module Prism
       "seattlerb/messy_op_asgn_lineno.txt",
       "seattlerb/op_asgn_primary_colon_const_command_call.txt",
       "seattlerb/parse_pattern_076.txt",
+      "seattlerb/pct_w_heredoc_interp_nested.txt",
       "tilde_heredocs.txt",
       "unparser/corpus/literal/assignment.txt",
       "unparser/corpus/literal/pattern.txt",
@@ -138,11 +139,11 @@ module Prism
       end
     end
 
-    UNSUPPORTED_EVENTS = %i[comma ignored_nl label_end nl semicolon sp words_sep ignored_sp]
+    UNSUPPORTED_EVENTS = %i[comma ignored_nl nl semicolon sp ignored_sp]
     # Events that are currently not emitted
     SUPPORTED_EVENTS = Translation::Ripper::EVENTS - UNSUPPORTED_EVENTS
     # Events that assert against their line/column
-    CHECK_LOCATION_EVENTS = %i[kw op lbrace rbrace lbracket rbracket lparen rparen]
+    CHECK_LOCATION_EVENTS = %i[kw op lbrace rbrace lbracket rbracket lparen rparen words_sep label_end]
 
     module Events
       attr_reader :events
@@ -221,6 +222,34 @@ module Prism
     def test_tokenize
       source = "foo;1;BAZ"
       assert_equal(Ripper.tokenize(source), Translation::Ripper.tokenize(source))
+    end
+
+    def test_encoding
+      source = '"わたし"'.encode(Encoding::Windows_31J)
+      assert_equal(Ripper.tokenize(source), Translation::Ripper.tokenize(source))
+      assert_equal(Ripper.sexp(source), Translation::Ripper.sexp(source))
+    end
+
+    def test_encoding_method
+      source = "foo"
+      assert_equal(Ripper.new(source).tap(&:parse).encoding, Prism::Translation::Ripper.new(source).tap(&:parse).encoding)
+
+      source = "foo".b
+      assert_equal(Ripper.new(source).tap(&:parse).encoding, Prism::Translation::Ripper.new(source).tap(&:parse).encoding)
+
+      source = "# encoding: shift_jis"
+      assert_equal(Ripper.new(source).tap(&:parse).encoding, Prism::Translation::Ripper.new(source).tap(&:parse).encoding)
+
+      source = "# encoding: shift_jis".b
+      assert_equal(Ripper.new(source).tap(&:parse).encoding, Prism::Translation::Ripper.new(source).tap(&:parse).encoding)
+    end
+
+    def test_end_seen
+      source = ""
+      assert_equal(Ripper.new(source).tap(&:parse).end_seen?, Prism::Translation::Ripper.new(source).tap(&:parse).end_seen?)
+
+      source = "__END__"
+      assert_equal(Ripper.new(source).tap(&:parse).end_seen?, Prism::Translation::Ripper.new(source).tap(&:parse).end_seen?)
     end
 
     def test_sexp_coercion

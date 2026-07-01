@@ -366,11 +366,17 @@ static int
 ossl_x509name_cmp0(VALUE self, VALUE other)
 {
     X509_NAME *name1, *name2;
+    int result;
 
     GetX509Name(self, name1);
     GetX509Name(other, name2);
 
-    return X509_NAME_cmp(name1, name2);
+    result = X509_NAME_cmp(name1, name2);
+    if (result == -2) {
+        ossl_raise(eX509NameError, NULL);
+    }
+
+    return result;
 }
 
 /*

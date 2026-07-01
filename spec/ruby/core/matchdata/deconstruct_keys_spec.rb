@@ -18,16 +18,16 @@ describe "MatchData#deconstruct_keys" do
 
     -> {
       m.deconstruct_keys
-    }.should raise_error(ArgumentError, "wrong number of arguments (given 0, expected 1)")
+    }.should.raise(ArgumentError, "wrong number of arguments (given 0, expected 1)")
   end
 
   it "it raises error when argument is neither nil nor array" do
     m = /(?<f>foo)(?<b>bar)/.match("foobar")
 
-    -> { m.deconstruct_keys(1) }.should raise_error(TypeError, "wrong argument type Integer (expected Array)")
-    -> { m.deconstruct_keys("asd") }.should raise_error(TypeError, "wrong argument type String (expected Array)")
-    -> { m.deconstruct_keys(:x) }.should raise_error(TypeError, "wrong argument type Symbol (expected Array)")
-    -> { m.deconstruct_keys({}) }.should raise_error(TypeError, "wrong argument type Hash (expected Array)")
+    -> { m.deconstruct_keys(1) }.should.raise(TypeError, "wrong argument type Integer (expected Array)")
+    -> { m.deconstruct_keys("asd") }.should.raise(TypeError, "wrong argument type String (expected Array)")
+    -> { m.deconstruct_keys(:x) }.should.raise(TypeError, "wrong argument type Symbol (expected Array)")
+    -> { m.deconstruct_keys({}) }.should.raise(TypeError, "wrong argument type Hash (expected Array)")
   end
 
   it "returns {} when passed []" do
@@ -41,7 +41,7 @@ describe "MatchData#deconstruct_keys" do
 
     -> {
       m.deconstruct_keys(['year', :foo])
-    }.should raise_error(TypeError, "wrong argument type String (expected Symbol)")
+    }.should.raise(TypeError, "wrong argument type String (expected Symbol)")
   end
 
   it "process keys till the first non-existing one" do

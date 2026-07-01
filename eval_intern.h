@@ -3,6 +3,7 @@
 
 #include "ruby/ruby.h"
 #include "vm_core.h"
+#include "zjit.h"
 
 static inline void
 vm_passed_block_handler_set(rb_execution_context_t *ec, VALUE block_handler)
@@ -102,7 +103,17 @@ extern int select_large_fdset(int, fd_set *, fd_set *, fd_set *, struct timeval 
   _tag.tag = Qundef; \
   _tag.prev = _ec->tag; \
   _tag.lock_rec = rb_ec_vm_lock_rec(_ec); \
+  EC_SAVE_TAG_CFP(_tag, _ec); \
   rb_vm_tag_jmpbuf_init(&_tag.buf); \
+
+// Remember the CFP as of EC_PUSH_TAG so that ZJIT can materialize frames
+// only up to longjmp's target CFP. When a C method does longjmp inside it,
+// the target CFP may not be equal to the VM_FRAME_FLAG_FINISH frame.
+#if USE_ZJIT
+# define EC_SAVE_TAG_CFP(_tag, _ec) _tag.cfp = _ec->cfp
+#else
+# define EC_SAVE_TAG_CFP(_tag, _ec)
+#endif
 
 #define EC_POP_TAG() \
   _ec->tag = _tag.prev; \
@@ -155,6 +166,9 @@ static inline void
 rb_ec_tag_jump(const rb_execution_context_t *ec, enum ruby_tag_type st)
 {
     RUBY_ASSERT(st > TAG_NONE && st <= TAG_FATAL, ": Invalid tag jump: %d", (int)st);
+#if USE_ZJIT
+    rb_zjit_materialize_frames(ec, ec->cfp);
+#endif
     ec->tag->state = st;
     ruby_longjmp(RB_VM_TAG_JMPBUF_GET(ec->tag->buf), 1);
 }

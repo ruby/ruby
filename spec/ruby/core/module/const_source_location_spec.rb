@@ -142,19 +142,19 @@ describe "Module#const_source_location" do
   end
 
   it "raises a NameError if the name does not start with a capital letter" do
-    -> { ConstantSpecs.const_source_location "name" }.should raise_error(NameError)
+    -> { ConstantSpecs.const_source_location "name" }.should.raise(NameError)
   end
 
   it "raises a NameError if the name starts with a non-alphabetic character" do
-    -> { ConstantSpecs.const_source_location "__CONSTX__" }.should raise_error(NameError)
-    -> { ConstantSpecs.const_source_location "@CS_CONST1" }.should raise_error(NameError)
-    -> { ConstantSpecs.const_source_location "!CS_CONST1" }.should raise_error(NameError)
+    -> { ConstantSpecs.const_source_location "__CONSTX__" }.should.raise(NameError)
+    -> { ConstantSpecs.const_source_location "@CS_CONST1" }.should.raise(NameError)
+    -> { ConstantSpecs.const_source_location "!CS_CONST1" }.should.raise(NameError)
   end
 
   it "raises a NameError if the name contains non-alphabetic characters except '_'" do
     Object.const_source_location("CS_CONST1").should == [@constants_fixture_path, CS_CONST1_LINE]
-    -> { ConstantSpecs.const_source_location "CS_CONST1=" }.should raise_error(NameError)
-    -> { ConstantSpecs.const_source_location "CS_CONST1?" }.should raise_error(NameError)
+    -> { ConstantSpecs.const_source_location "CS_CONST1=" }.should.raise(NameError)
+    -> { ConstantSpecs.const_source_location "CS_CONST1?" }.should.raise(NameError)
   end
 
   it "calls #to_str to convert the given name to a String" do
@@ -165,10 +165,10 @@ describe "Module#const_source_location" do
 
   it "raises a TypeError if conversion to a String by calling #to_str fails" do
     name = mock('123')
-    -> { ConstantSpecs.const_source_location(name) }.should raise_error(TypeError)
+    -> { ConstantSpecs.const_source_location(name) }.should.raise(TypeError)
 
     name.should_receive(:to_str).and_return(123)
-    -> { ConstantSpecs.const_source_location(name) }.should raise_error(TypeError)
+    -> { ConstantSpecs.const_source_location(name) }.should.raise(TypeError)
   end
 
   it "does not search the singleton class of a Class or Module" do
@@ -213,19 +213,19 @@ describe "Module#const_source_location" do
   end
 
   it "raises a NameError if the name includes two successive scope separators" do
-    -> { ConstantSpecs.const_source_location("ClassA::::CS_CONST10") }.should raise_error(NameError)
+    -> { ConstantSpecs.const_source_location("ClassA::::CS_CONST10") }.should.raise(NameError)
   end
 
   it "raises a NameError if only '::' is passed" do
-    -> { ConstantSpecs.const_source_location("::") }.should raise_error(NameError)
+    -> { ConstantSpecs.const_source_location("::") }.should.raise(NameError)
   end
 
   it "raises a NameError if a Symbol has a toplevel scope qualifier" do
-    -> { ConstantSpecs.const_source_location(:'::CS_CONST1') }.should raise_error(NameError)
+    -> { ConstantSpecs.const_source_location(:'::CS_CONST1') }.should.raise(NameError)
   end
 
   it "raises a NameError if a Symbol is a scoped constant name" do
-    -> { ConstantSpecs.const_source_location(:'ClassA::CS_CONST10') }.should raise_error(NameError)
+    -> { ConstantSpecs.const_source_location(:'ClassA::CS_CONST10') }.should.raise(NameError)
   end
 
   it "does search private constants path" do

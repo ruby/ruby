@@ -113,11 +113,11 @@ impl VirtualMem {
 
         // Memory protection syscalls need page-aligned addresses, so check it here. Assuming
         // `virt_block` is page-aligned, `second_half` should be page-aligned as long as the
-        // page size in bytes is a power of two 2¹⁹ or smaller. This is because the user
-        // requested size is half of mem_option × 2²⁰ as it's in MiB.
+        // page size in bytes is a power of two 2^19 or smaller. This is because the user
+        // requested size is half of mem_option * 2^20 as it's in MiB.
         //
         // Basically, we don't support x86-64 2MiB and 1GiB pages. ARMv8 can do up to 64KiB
-        // (2¹⁶ bytes) pages, which should be fine. 4KiB pages seem to be the most popular though.
+        // (2^16 bytes) pages, which should be fine. 4KiB pages seem to be the most popular though.
         let page_size = unsafe { rb_jit_get_page_size() };
         assert_eq!(
             virt_block as usize % page_size as usize, 0,

@@ -46,14 +46,36 @@ describe :string_each_line, shared: true do
     a.should == ["one\ntwo\r\nthree"]
   end
 
-  it "yields paragraphs (broken by 2 or more successive newlines) when passed '' and replaces multiple newlines with only two ones" do
-    a = []
-    "hello\nworld\n\n\nand\nuniverse\n\n\n\n\n".send(@method, '') { |s| a << s }
-    a.should == ["hello\nworld\n\n", "and\nuniverse\n\n"]
+  context "when passed '' (paragraph mode, broken by 2 or more successive newlines)" do
+    it "replaces multiple newlines with only two ones" do
+      a = []
+      "hello\nworld\n\n\nand\nuniverse\n\n\n\n\n".send(@method, '') { |s| a << s }
+      a.should == ["hello\nworld\n\n", "and\nuniverse\n\n"]
 
-    a = []
-    "hello\nworld\n\n\nand\nuniverse\n\n\n\n\ndog".send(@method, '') { |s| a << s }
-    a.should == ["hello\nworld\n\n", "and\nuniverse\n\n", "dog"]
+      a = []
+      "hello\nworld\n\n\nand\nuniverse\n\n\n\n\ndog".send(@method, '') { |s| a << s }
+      a.should == ["hello\nworld\n\n", "and\nuniverse\n\n", "dog"]
+    end
+
+    it 'handles \r\n-style newlines' do
+      a = []
+      "hello\nworld\r\n\r\n\nand\nuniverse\n\r\n\n\n\n".send(@method, '') { |s| a << s }
+      a.should == ["hello\nworld\r\n\r\n", "and\nuniverse\n\r\n"]
+
+      a = []
+      "hello\r\nworld\n\n\nand\nuniverse\n\n\n\r\n\r\ndog".send(@method, '') { |s| a << s }
+      a.should == ["hello\r\nworld\n\n", "and\nuniverse\n\n", "dog"]
+    end
+
+    it "removes trailing newlines with `chomp: true`" do
+      a = []
+      "hello\nworld\n\n\nand\nuniverse\n\n\n\n\n".send(@method, '', chomp: true) { |s| a << s }
+      a.should == ["hello\nworld", "and\nuniverse"]
+
+      a = []
+      "hello\nworld\n\n\nand\nuniverse\n\n\n\n\ndog".send(@method, '', chomp: true) { |s| a << s }
+      a.should == ["hello\nworld", "and\nuniverse", "dog"]
+    end
   end
 
   describe "uses $/" do
@@ -93,7 +115,7 @@ describe :string_each_line, shared: true do
 
   it "returns self" do
     s = "hello\nworld"
-    (s.send(@method) {}).should equal(s)
+    (s.send(@method) {}).should.equal?(s)
   end
 
   it "tries to convert the separator to a string using to_str" do
@@ -119,8 +141,8 @@ describe :string_each_line, shared: true do
   end
 
   it "raises a TypeError when the separator can't be converted to a string" do
-    -> { "hello world".send(@method, false) {}     }.should raise_error(TypeError)
-    -> { "hello world".send(@method, mock('x')) {} }.should raise_error(TypeError)
+    -> { "hello world".send(@method, false) {}     }.should.raise(TypeError)
+    -> { "hello world".send(@method, mock('x')) {} }.should.raise(TypeError)
   end
 
   it "accepts a string separator" do
@@ -128,7 +150,7 @@ describe :string_each_line, shared: true do
   end
 
   it "raises a TypeError when the separator is a symbol" do
-    -> { "hello world".send(@method, :o).to_a }.should raise_error(TypeError)
+    -> { "hello world".send(@method, :o).to_a }.should.raise(TypeError)
   end
 
   context "when `chomp` keyword argument is passed" do
@@ -171,6 +193,6 @@ describe :string_each_line, shared: true do
 
   it "raises Encoding::ConverterNotFoundError for dummy UTF-7" do
     str = "a\nb".dup.force_encoding(Encoding::UTF_7)
-    -> { str.lines }.should raise_error(Encoding::ConverterNotFoundError)
+    -> { str.lines }.should.raise(Encoding::ConverterNotFoundError)
   end
 end

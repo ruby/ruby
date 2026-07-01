@@ -25,17 +25,17 @@ ruby_version_is ""..."4.1" do
     end
 
     it "returns nil" do
-      @ftp.noop.should be_nil
+      @ftp.noop.should == nil
     end
 
     it "raises a Net::FTPPermError when the response code is 500" do
       @server.should_receive(:noop).and_respond("500 Syntax error, command unrecognized.")
-      -> { @ftp.noop }.should raise_error(Net::FTPPermError)
+      -> { @ftp.noop }.should.raise(Net::FTPPermError)
     end
 
     it "raises a Net::FTPTempError when the response code is 421" do
       @server.should_receive(:noop).and_respond("421 Service not available, closing control connection.")
-      -> { @ftp.noop }.should raise_error(Net::FTPTempError)
+      -> { @ftp.noop }.should.raise(Net::FTPTempError)
     end
   end
 end

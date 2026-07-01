@@ -22,7 +22,6 @@ module Prism
     # - on_comma
     # - on_ignored_nl
     # - on_ignored_sp
-    # - on_label_end
     # - on_nl
     # - on_operator_ambiguous
     # - on_semicolon
@@ -58,7 +57,8 @@ module Prism
       #          [[1, 13], :on_kw,     "end", END      ]]
       #
       def self.lex(src, filename = "-", lineno = 1, raise_errors: false)
-        result = Prism.lex_compat(coerce_source(src), filepath: filename, line: lineno, version: "current")
+        coerced = coerce_source(src)
+        result = Prism.lex_compat(coerced, filepath: filename, line: lineno, version: "current", encoding: coerced.encoding)
 
         if result.failure? && raise_errors
           raise SyntaxError, result.errors.first.message
@@ -347,7 +347,7 @@ module Prism
         "__ENCODING__",
         "__FILE__",
         "__LINE__"
-      ]
+      ].to_set
 
       # A list of all of the Ruby binary operators.
       BINARY_OPERATORS = [
@@ -372,7 +372,7 @@ module Prism
         :/,
         :*,
         :**
-      ]
+      ].to_set
 
       private_constant :KEYWORDS, :BINARY_OPERATORS
 
@@ -446,6 +446,64 @@ module Prism
       autoload :SexpBuilder, "prism/translation/ripper/sexp"
       autoload :SexpBuilderPP, "prism/translation/ripper/sexp"
 
+      # Provides optimized access to line and column information.
+      # Ripper bounds are mostly accessed in a linear fashion, so
+      # we can try a linear scan first and fall back to binary search.
+      class LineAndColumnCache # :nodoc:
+        # How many should it look ahead/behind before falling back to binary searching.
+        WINDOW = 8
+        private_constant :WINDOW
+
+        #: (Source source) -> void
+        def initialize(source)
+          @source = source
+          @offsets = source.offsets
+          @hint = 0
+        end
+
+        #: (Integer byte_offset) -> [Integer, Integer]
+        def line_and_column(byte_offset)
+          @hint = new_hint(byte_offset) || @source.find_line(byte_offset)
+          return [@hint + @source.start_line, byte_offset - @offsets[@hint]]
+        end
+
+        private
+
+        def new_hint(byte_offset)
+          if @offsets[@hint] <= byte_offset
+            # Same line?
+            if (@hint + 1 >= @offsets.size || @offsets[@hint + 1] > byte_offset)
+              return @hint
+            end
+
+            # Scan forwards
+            limit = [@hint + WINDOW + 1, @offsets.size].min
+            idx = @hint + 1
+            while idx < limit
+              if @offsets[idx] > byte_offset
+                return idx - 1
+              end
+              if @offsets[idx] == byte_offset
+                return idx
+              end
+              idx += 1
+            end
+          else
+            # Scan backwards
+            limit = @hint > WINDOW ? @hint - WINDOW : 0
+            idx = @hint
+            while idx >= limit + 1
+              if @offsets[idx - 1] <= byte_offset
+                return idx - 1
+              end
+              idx -= 1
+            end
+          end
+
+          nil
+        end
+      end
+
       # :stopdoc:
       # This is not part of the public API but used by some gems.
 
@@ -489,6 +547,7 @@ module Prism
         @lineno = lineno
         @column = 0
         @result = nil
+        @line_and_column_cache = nil
       end
 
       ##########################################################################
@@ -587,6 +646,16 @@ module Prism
         else
           result.value.accept(self)
         end
+      end
+
+      # Return encoding of the source.
+      def encoding
+        result.source.encoding
+      end
+
+      # Return true if parsed source ended by `__END__`.
+      def end_seen?
+        !!result.data_loc
       end
 
       ##########################################################################
@@ -704,6 +773,8 @@ module Prism
             previous = element
           end
 
+          visit_words_sep(opening_loc, node.elements.last, node.closing_loc)
+
           bounds(node.closing_loc)
           on_tstring_end(node.closing)
         when /^%i/
@@ -722,6 +793,8 @@ module Prism
 
             previous = element
           end
+
+          visit_words_sep(opening_loc, node.elements.last, node.closing_loc)
 
           bounds(node.closing_loc)
           on_tstring_end(node.closing)
@@ -760,6 +833,8 @@ module Prism
             previous = element
           end
 
+          visit_words_sep(opening_loc, node.elements.last, node.closing_loc)
+
           bounds(node.closing_loc)
           on_tstring_end(node.closing)
         when /^%I/
@@ -797,6 +872,8 @@ module Prism
             previous = element
           end
 
+          visit_words_sep(opening_loc, node.elements.last, node.closing_loc)
+
           bounds(node.closing_loc)
           on_tstring_end(node.closing)
         else
@@ -813,15 +890,21 @@ module Prism
         on_array(elements)
       end
 
-      # Dispatch a words_sep event that contains the space between the elements
+      # Dispatch words_sep events that contains the whitespace between the elements
       # of list literals.
       private def visit_words_sep(opening_loc, previous, current)
-        end_offset = (previous.nil? ? opening_loc : previous.location).end_offset
-        start_offset = current.location.start_offset
+        start_offset = (previous.nil? ? opening_loc : previous.location).end_offset
+        end_offset = current.start_offset
+        length = end_offset - start_offset
 
-        if end_offset != start_offset
-          bounds(current.location.copy(start_offset: end_offset))
-          on_words_sep(source.byteslice(end_offset...start_offset))
+        if length > 0
+          whitespace = source.byteslice(start_offset, length)
+          current_offset = start_offset
+          whitespace.each_line do |part|
+            bounds(opening_loc.copy(start_offset: current_offset, length: part.bytesize))
+            on_words_sep(part)
+            current_offset += part.bytesize
+          end
         end
       end
 
@@ -948,7 +1031,7 @@ module Prism
             on_stmts_add(on_stmts_new, on_void_stmt)
           else
             body = node.statements.body
-            body.unshift(nil) if void_stmt?(location, node.statements.body[0].location, allow_newline)
+            body = [nil, *body] if void_stmt?(location, node.statements.body[0].location, allow_newline)
 
             bounds(node.statements.location)
             visit_statements_node_body(body)
@@ -965,7 +1048,7 @@ module Prism
                 [nil]
               else
                 body = else_clause_node.statements.body
-                body.unshift(nil) if void_stmt?(else_clause_node.else_keyword_loc, else_clause_node.statements.body[0].location, allow_newline)
+                body = [nil, *body] if void_stmt?(else_clause_node.else_keyword_loc, else_clause_node.statements.body[0].location, allow_newline)
                 body
               end
 
@@ -987,7 +1070,7 @@ module Prism
           on_bodystmt(visit_statements_node_body([nil]), nil, nil, nil)
         when StatementsNode
           body = [*node.body]
-          body.unshift(nil) if void_stmt?(location, body[0].location, allow_newline)
+          body = [nil, *body] if void_stmt?(location, body[0].location, allow_newline)
           stmts = visit_statements_node_body(body)
 
           bounds(node.body.first.location)
@@ -1036,7 +1119,7 @@ module Prism
             braces ? stmts : on_bodystmt(stmts, nil, nil, nil)
           when StatementsNode
             stmts = node.body.body
-            stmts.unshift(nil) if void_stmt?(node.parameters&.location || node.opening_loc, node.body.location, false)
+            stmts = [nil, *stmts] if void_stmt?(node.parameters&.location || node.opening_loc, node.body.location, false)
             stmts = visit_statements_node_body(stmts)
 
             bounds(node.body.location)
@@ -1075,7 +1158,7 @@ module Prism
           on_blockarg(nil)
         else
           bounds(node.name_loc)
-          name = visit_token(node.name.to_s)
+          name = on_ident(node.name.to_s)
 
           bounds(node.location)
           on_blockarg(name)
@@ -1236,7 +1319,7 @@ module Prism
               bounds(node.location)
               on_unary(:!, receiver)
             end
-          when *BINARY_OPERATORS
+          when BINARY_OPERATORS
             receiver = visit(node.receiver)
 
             bounds(node.message_loc)
@@ -1290,7 +1373,7 @@ module Prism
           receiver = visit(node.receiver)
 
           bounds(node.call_operator_loc)
-          call_operator = visit_token(node.call_operator)
+          call_operator = visit_call_operator(node.call_operator)
 
           message =
             if node.message_loc.nil?
@@ -1401,7 +1484,7 @@ module Prism
         receiver = visit(node.receiver)
 
         bounds(node.call_operator_loc)
-        call_operator = visit_token(node.call_operator)
+        call_operator = visit_call_operator(node.call_operator)
 
         bounds(node.message_loc)
         message = visit_token(node.message)
@@ -1423,7 +1506,7 @@ module Prism
         receiver = visit(node.receiver)
 
         bounds(node.call_operator_loc)
-        call_operator = visit_token(node.call_operator)
+        call_operator = visit_call_operator(node.call_operator)
 
         bounds(node.message_loc)
         message = visit_token(node.message)
@@ -1445,7 +1528,7 @@ module Prism
         receiver = visit(node.receiver)
 
         bounds(node.call_operator_loc)
-        call_operator = visit_token(node.call_operator)
+        call_operator = visit_call_operator(node.call_operator)
 
         bounds(node.message_loc)
         message = visit_token(node.message)
@@ -1479,7 +1562,7 @@ module Prism
           receiver = visit(node.receiver)
 
           bounds(node.call_operator_loc)
-          call_operator = visit_token(node.call_operator)
+          call_operator = visit_call_operator(node.call_operator)
 
           bounds(node.message_loc)
           message = visit_token(node.message)
@@ -1591,9 +1674,6 @@ module Prism
 
       # @@foo = 1
       # ^^^^^^^^^
-      #
-      # @@foo, @@bar = 1
-      # ^^^^^  ^^^^^
       def visit_class_variable_write_node(node)
         bounds(node.name_loc)
         target = on_var_field(on_cvar(node.name.to_s))
@@ -1665,9 +1745,6 @@ module Prism
 
       # Foo = 1
       # ^^^^^^^
-      #
-      # Foo, Bar = 1
-      # ^^^  ^^^
       def visit_constant_write_node(node)
         bounds(node.name_loc)
         target = on_var_field(on_const(node.name.to_s))
@@ -1760,9 +1837,6 @@ module Prism
 
       # Foo::Bar = 1
       # ^^^^^^^^^^^^
-      #
-      # Foo::Foo, Bar::Bar = 1
-      # ^^^^^^^^  ^^^^^^^^
       def visit_constant_path_write_node(node)
         target = visit_constant_path_write_node_target(node.target)
 
@@ -1860,7 +1934,7 @@ module Prism
         operator =
           if !node.operator_loc.nil?
             bounds(node.operator_loc)
-            visit_token(node.operator)
+            node.operator == "." ? on_period(".") : on_op("::")
           end
 
         bounds(node.name_loc)
@@ -1963,7 +2037,7 @@ module Prism
             [nil]
           else
             body = node.statements.body
-            body.unshift(nil) if void_stmt?(node.else_keyword_loc, node.statements.body[0].location, false)
+            body = [nil, *body] if void_stmt?(node.else_keyword_loc, node.statements.body[0].location, false)
             body
           end
 
@@ -2018,7 +2092,7 @@ module Prism
             [nil]
           else
             body = node.statements.body
-            body.unshift(nil) if void_stmt?(node.ensure_keyword_loc, body[0].location, false)
+            body = [nil, *body] if void_stmt?(node.ensure_keyword_loc, body[0].location, false)
             body
           end
 
@@ -2175,9 +2249,6 @@ module Prism
 
       # $foo = 1
       # ^^^^^^^^
-      #
-      # $foo, $bar = 1
-      # ^^^^  ^^^^
       def visit_global_variable_write_node(node)
         bounds(node.name_loc)
         target = on_var_field(on_gvar(node.name.to_s))
@@ -2801,7 +2872,7 @@ module Prism
             braces ? stmts : on_bodystmt(stmts, nil, nil, nil)
           when StatementsNode
             stmts = node.body.body
-            stmts.unshift(nil) if void_stmt?(node.parameters&.location || node.opening_loc, node.body.location, false)
+            stmts = [nil, *stmts] if void_stmt?(node.parameters&.location || node.opening_loc, node.body.location, false)
             stmts = visit_statements_node_body(stmts)
 
             bounds(node.body.location)
@@ -3139,7 +3210,7 @@ module Prism
       #         ^^^^^^^
       def visit_optional_parameter_node(node)
         bounds(node.name_loc)
-        name = visit_token(node.name.to_s)
+        name = on_ident(node.name.to_s)
 
         bounds(node.operator_loc)
         on_op("=")
@@ -3295,7 +3366,7 @@ module Prism
       # The top-level program node.
       def visit_program_node(node)
         body = node.statements.body
-        body << nil if body.empty?
+        body = [nil] if body.empty?
         statements = visit_statements_node_body(body)
 
         bounds(node.location)
@@ -3460,7 +3531,7 @@ module Prism
           on_rest_param(nil)
         else
           bounds(node.name_loc)
-          on_rest_param(visit_token(node.name.to_s))
+          on_rest_param(on_ident(node.name.to_s))
         end
       end
 
@@ -3619,7 +3690,13 @@ module Prism
         end
 
         result = yield
-        return result if assoc
+        if assoc
+          if node.closing != ":"
+            bounds(node.closing_loc)
+            on_label_end(node.closing)
+          end
+          return result
+        end
 
         if is_heredoc
           bounds(node.closing_loc)
@@ -4011,7 +4088,11 @@ module Prism
 
       # Lazily initialize the parse result.
       def result
-        @result ||= Prism.parse(source, partial_script: true, version: "current")
+        @result ||= Prism.parse(source, partial_script: true, version: "current", freeze: true, encoding: source.encoding)
+      end
+
+      def line_and_column_cache
+        @line_and_column_cache ||= LineAndColumnCache.new(result.source)
       end
 
       ##########################################################################
@@ -4032,28 +4113,32 @@ module Prism
       # Visit the string content of a particular node. This method is used to
       # split into the various token types.
       def visit_token(token, allow_keywords = true)
-        case token
-        when "."
+        if token == "."
           on_period(token)
-        when "`"
+        elsif token == "`"
           on_backtick(token)
-        when *(allow_keywords ? KEYWORDS : [])
+        elsif allow_keywords && KEYWORDS.include?(token)
           on_kw(token)
-        when /^_/
+        elsif token.start_with?("_")
           on_ident(token)
-        when /^[[:upper:]]\w*$/
+        elsif token.match?(/^[[:upper:]]\w*$/)
           on_const(token)
-        when /^@@/
+        elsif token.start_with?("@@")
           on_cvar(token)
-        when /^@/
+        elsif token.start_with?("@")
           on_ivar(token)
-        when /^\$/
+        elsif token.start_with?("$")
           on_gvar(token)
-        when /^[[:punct:]]/
+        elsif token.match?(/^[[:punct:]]/)
           on_op(token)
         else
           on_ident(token)
         end
+      end
+
+      # Visit either `.`, `&.`, or `::`.
+      def visit_call_operator(token)
+        token == "." ? on_period(token) : on_op(token)
       end
 
       # Visit a node that represents a number. We need to explicitly handle the
@@ -4114,12 +4199,8 @@ module Prism
 
       # This method is responsible for updating lineno and column information
       # to reflect the current node.
-      #
-      # This method could be drastically improved with some caching on the start
-      # of every line, but for now it's good enough.
       def bounds(location)
-        @lineno = location.start_line
-        @column = location.start_column
+        @lineno, @column = line_and_column_cache.line_and_column(location.start_offset)
       end
 
       # :startdoc:

@@ -328,8 +328,8 @@ rb_obj_singleton_class(VALUE obj)
 void
 rb_obj_copy_ivar(VALUE dest, VALUE obj)
 {
-    RUBY_ASSERT(!RB_TYPE_P(obj, T_CLASS) && !RB_TYPE_P(obj, T_MODULE));
-    RUBY_ASSERT(BUILTIN_TYPE(dest) == BUILTIN_TYPE(obj));
+    RUBY_ASSERT(RB_TYPE_P(obj, T_OBJECT));
+    RUBY_ASSERT(RB_TYPE_P(dest, T_OBJECT));
 
     unsigned long src_num_ivs = rb_ivar_count(obj);
     if (!src_num_ivs) {
@@ -338,7 +338,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
 
     shape_id_t src_shape_id = RBASIC_SHAPE_ID(obj);
 
-    if (rb_shape_too_complex_p(src_shape_id)) {
+    if (rb_shape_complex_p(src_shape_id)) {
         rb_shape_copy_complex_ivars(dest, obj, src_shape_id, ROBJECT_FIELDS_HASH(obj));
         return;
     }
@@ -347,10 +347,10 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     RUBY_ASSERT(RSHAPE_TYPE_P(initial_shape_id, SHAPE_ROOT));
 
     shape_id_t dest_shape_id = rb_shape_rebuild(initial_shape_id, src_shape_id);
-    if (UNLIKELY(rb_shape_too_complex_p(dest_shape_id))) {
+    if (UNLIKELY(rb_shape_complex_p(dest_shape_id))) {
         st_table *table = rb_st_init_numtable_with_size(src_num_ivs);
         rb_obj_copy_ivs_to_hash_table(obj, table);
-        rb_obj_init_too_complex(dest, table);
+        rb_obj_init_complex(dest, table);
 
         return;
     }
@@ -501,7 +501,7 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
         }
 
         if (RB_OBJ_FROZEN(obj)) {
-            shape_id_t next_shape_id = rb_shape_transition_frozen(clone);
+            shape_id_t next_shape_id = rb_obj_shape_transition_frozen(clone);
             RBASIC_SET_SHAPE_ID(clone, next_shape_id);
         }
         break;
@@ -769,7 +769,7 @@ inspect_obj(VALUE obj, VALUE a, int recur)
         rb_str_cat2(str, " ...");
     }
     else {
-        rb_ivar_foreach(obj, inspect_i, a);
+        rb_ivar_foreach_buffered(obj, inspect_i, a);
     }
     rb_str_cat2(str, ">");
     RSTRING_PTR(str)[0] = '#';
@@ -1350,26 +1350,10 @@ rb_obj_dummy1(VALUE _x, VALUE _y)
 
 /*
  *  call-seq:
- *     obj.freeze    -> obj
+ *     obj.freeze -> self
  *
- *  Prevents further modifications to <i>obj</i>. A
- *  FrozenError will be raised if modification is attempted.
- *  There is no way to unfreeze a frozen object. See also
- *  Object#frozen?.
- *
- *  This method returns self.
- *
- *     a = [ "a", "b", "c" ]
- *     a.freeze
- *     a << "z"
- *
- *  <em>produces:</em>
- *
- *     prog.rb:3:in `<<': can't modify frozen Array (FrozenError)
- *     	from prog.rb:3
- *
- *  Objects of the following classes are always frozen: Integer,
- *  Float, Symbol.
+ *  Freezes +self+, preventing further modifications;
+ *  see {Frozen Objects}[rdoc-ref:frozen_objects.md].
  */
 
 VALUE
@@ -1555,10 +1539,10 @@ rb_true_to_s(VALUE obj)
 
 
 /*
- *  call-seq:
- *    true & object -> true or false
+ * call-seq:
+ *   true & object -> true or false
  *
- *  Returns +false+ if +object+ is +false+ or +nil+, +true+ otherwise:
+ * Returns +false+ if +object+ is +false+ or +nil+, +true+ otherwise:
  *
  *  true & Object.new # => true
  *  true & false      # => false
@@ -2224,6 +2208,7 @@ rb_class_initialize(int argc, VALUE *argv, VALUE klass)
         }
     }
     rb_class_set_super(klass, super);
+    RCLASS_SET_MAX_IV_COUNT(klass, RCLASS_MAX_IV_COUNT(super));
     RCLASS_SET_ALLOCATOR(klass, RCLASS_ALLOCATOR(super));
     rb_make_metaclass(klass, RBASIC(super)->klass);
     rb_class_inherited(super, klass);
@@ -4070,7 +4055,7 @@ rb_Hash(VALUE val)
  *
  *  Examples:
  *
- *    Hash({foo: 0, bar: 1}) # => {:foo=>0, :bar=>1}
+ *    Hash({foo: 0, bar: 1}) # => {foo: 0, bar: 1}
  *    Hash(nil)              # => {}
  *    Hash([])               # => {}
  *

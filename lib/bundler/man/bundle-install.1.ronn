@@ -3,7 +3,8 @@ bundle-install(1) -- Install the dependencies specified in your Gemfile
 
 ## SYNOPSIS
 
-`bundle install` [--force]
+`bundle install` [--cooldown=NUMBER]
+                 [--force]
                  [--full-index]
                  [--gemfile=GEMFILE]
                  [--jobs=NUMBER]
@@ -36,6 +37,13 @@ gems that you did update. You can find more information about this
 update process below under [CONSERVATIVE UPDATING][].
 
 ## OPTIONS
+
+* `--cooldown=<number>`:
+  Only consider gem versions published at least <number> days ago when
+  resolving. Pass `0` to disable cooldown for this run, overriding any
+  per-source or global configuration. See `cooldown` in bundle-config(1)
+  for details on the precedence between the CLI flag, Bundler config,
+  and Gemfile per-source settings.
 
 * `--force`, `--redownload`:
   Force reinstalling every gem, even if already installed.

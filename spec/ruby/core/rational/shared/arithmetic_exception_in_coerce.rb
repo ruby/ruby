@@ -6,6 +6,6 @@ describe :rational_arithmetic_exception_in_coerce, shared: true do
     b.should_receive(:coerce).and_raise(RationalSpecs::CoerceError)
 
     # e.g. Rational(3, 4) + b
-    -> { Rational(3, 4).send(@method, b) }.should raise_error(RationalSpecs::CoerceError)
+    -> { Rational(3, 4).send(@method, b) }.should.raise(RationalSpecs::CoerceError)
   end
 end

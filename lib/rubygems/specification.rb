@@ -532,7 +532,7 @@ class Gem::Specification < Gem::BasicSpecification
   #
   # Usage:
   #
-  #   spec.add_development_dependency 'example', '~> 1.1', '>= 1.1.4'
+  #   spec.add_development_dependency 'example', '>= 1.1.4', '< 2'
   #
   # Development dependencies aren't installed by default and aren't
   # activated when a gem is required.
@@ -546,7 +546,7 @@ class Gem::Specification < Gem::BasicSpecification
   #
   # Usage:
   #
-  #   spec.add_dependency 'example', '~> 1.1', '>= 1.1.4'
+  #   spec.add_dependency 'example', '>= 1.1.4', '< 2'
 
   def add_dependency(gem, *requirements)
     if requirements.uniq.size != requirements.size

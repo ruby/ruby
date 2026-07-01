@@ -405,6 +405,9 @@ CODE
     assert_equal(S("   hello   "), S("hello").center(11))
     assert_equal(S("ababaababa"), S("").center(10, "ab"), Bug2463)
     assert_equal(S("ababaababab"), S("").center(11, "ab"), Bug2463)
+    r = S("").force_encoding(Encoding::UTF_16BE).center(1000, "a")
+    assert_equal(Encoding::UTF_8, r.encoding)
+    assert_equal("a" * 1000, r.b)
   end
 
   def test_chomp
@@ -851,7 +854,6 @@ CODE
     assert_equal(S("\u{AB}"), S('"\\u00AB"').undump)
     assert_equal(S("\u{ABC}"), S('"\\u0ABC"').undump)
     assert_equal(S("\uABCD"), S('"\\uABCD"').undump)
-    assert_equal(S("\uABCD"), S('"\\uABCD"').undump)
     assert_equal(S("\u{ABCDE}"), S('"\\u{ABCDE}"').undump)
     assert_equal(S("\u{10ABCD}"), S('"\\u{10ABCD}"').undump)
     assert_equal(S("\u{ABCDE 10ABCD}"), S('"\\u{ABCDE 10ABCD}"').undump)
@@ -996,6 +998,32 @@ CODE
     res = []
     assert_same s, s.bytes {|x| res << x }
     assert_equal [65, 66, 67], res
+  end
+
+  def test_getbyte
+    s = S('foo')
+    assert_equal(102, s.getbyte(0))
+    assert_equal(111, s.getbyte(2))
+    assert_equal(102, s.getbyte(-3))
+    assert_nil(s.getbyte(3))
+    assert_nil(s.getbyte(-4))
+    assert_nil(S('').getbyte(0))
+    assert_nil(S('').getbyte(-1))
+  end
+
+  def test_setbyte
+    s = S('xyzzy')
+    assert_equal(129, s.setbyte(2, 129))
+    assert_equal(S("xy\x81zy").force_encoding(s.encoding), s)
+
+    s = S('foo')
+    s.setbyte(-3, 98)
+    assert_equal(S('boo').force_encoding(s.encoding), s)
+
+    assert_raise(IndexError) { S('foo').setbyte(3, 0) }
+    assert_raise(IndexError) { S('foo').setbyte(-4, 0) }
+
+    assert_raise(FrozenError) { S('foo').freeze.setbyte(0, 0x61) }
   end
 
   def test_each_codepoint
@@ -1473,6 +1501,9 @@ CODE
     assert_equal(S("hello      "), S("hello").ljust(11))
     assert_equal(S("ababababab"), S("").ljust(10, "ab"), Bug2463)
     assert_equal(S("abababababa"), S("").ljust(11, "ab"), Bug2463)
+    r = S("").force_encoding(Encoding::UTF_16BE).ljust(1000, "a")
+    assert_equal(Encoding::UTF_8, r.encoding)
+    assert_equal("a" * 1000, r.b)
   end
 
   def test_next
@@ -1650,6 +1681,9 @@ CODE
     assert_equal(S("      hello"), S("hello").rjust(11))
     assert_equal(S("ababababab"), S("").rjust(10, "ab"), Bug2463)
     assert_equal(S("abababababa"), S("").rjust(11, "ab"), Bug2463)
+    r = S("").force_encoding(Encoding::UTF_16BE).rjust(1000, "a")
+    assert_equal(Encoding::UTF_8, r.encoding)
+    assert_equal("a" * 1000, r.b)
   end
 
   def test_scan
@@ -2603,7 +2637,7 @@ CODE
   end
 
   def test_upcase
-    assert_equal(S("HELLO"), S("hello").upcase)
+    assert_equal(S("HELLO"), S("helLO").upcase)
     assert_equal(S("HELLO"), S("hello").upcase)
     assert_equal(S("HELLO"), S("HELLO").upcase)
     assert_equal(S("ABC HELLO 123"), S("abc HELLO 123").upcase)

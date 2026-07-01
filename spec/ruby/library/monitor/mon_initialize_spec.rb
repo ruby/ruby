@@ -26,6 +26,6 @@ describe "MonitorMixin#mon_initialize" do
 
     instance = cls.new(1, 2, 3)
     copy = instance.dup
-    copy.should_not equal(instance)
+    copy.should_not.equal?(instance)
   end
 end

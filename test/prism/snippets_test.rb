@@ -7,6 +7,7 @@ module Prism
     except = [
       "encoding_binary.txt",
       "newline_terminated.txt",
+      "percent_array_newline_delimiter.txt",
       "seattlerb/begin_rescue_else_ensure_no_bodies.txt",
       "seattlerb/case_in.txt",
       "seattlerb/parse_line_defn_no_parens.txt",

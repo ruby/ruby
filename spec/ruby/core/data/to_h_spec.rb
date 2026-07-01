@@ -28,18 +28,18 @@ describe "Data#to_h" do
       data = DataSpecs::Measure.new(amount: 42, unit: 'km')
       -> do
         data.to_h { |k, v| [k.to_s, v*v, 1] }
-      end.should raise_error(ArgumentError, /element has wrong array length/)
+      end.should.raise(ArgumentError, /element has wrong array length/)
 
       -> do
         data.to_h { |k, v| [k] }
-      end.should raise_error(ArgumentError, /element has wrong array length/)
+      end.should.raise(ArgumentError, /element has wrong array length/)
     end
 
     it "raises TypeError if block returns something other than Array" do
       data = DataSpecs::Measure.new(amount: 42, unit: 'km')
       -> do
         data.to_h { |k, v| "not-array" }
-      end.should raise_error(TypeError, /wrong element type String/)
+      end.should.raise(TypeError, /wrong element type String/)
     end
 
     it "coerces returned pair to Array with #to_ary" do
@@ -57,7 +57,7 @@ describe "Data#to_h" do
 
       -> do
         data.to_h { |k| x }
-      end.should raise_error(TypeError, /wrong element type MockObject/)
+      end.should.raise(TypeError, /wrong element type MockObject/)
     end
   end
 end

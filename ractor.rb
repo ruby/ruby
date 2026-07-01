@@ -615,13 +615,17 @@ class Ractor
 
   #
   # call-seq:
-  #    ractor.monitor(port) -> self
+  #    ractor.monitor(port) -> true or false
   #
   # Registers the port as a monitoring port for this ractor. When the ractor terminates,
   # the port receives a Symbol object.
   #
   # * +:exited+ is sent if the ractor terminates without an unhandled exception.
   # * +:aborted+ is sent if the ractor terminates by an unhandled exception.
+  #
+  # Returns +true+ if the monitor was registered (the ractor is still running).
+  # Returns +false+ if the ractor had already terminated; in that case the
+  # termination message (+:exited+ or +:aborted+) is sent to the port immediately.
   #
   #     r = Ractor.new{ some_task() }
   #     r.monitor(port = Ractor::Port.new)

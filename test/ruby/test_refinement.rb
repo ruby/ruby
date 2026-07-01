@@ -1035,6 +1035,43 @@ class TestRefinement < Test::Unit::TestCase
     RUBY
   end
 
+  def test_prohibit_super_in_refined_module_method
+    assert_separately([], <<-"end;")
+      bug22071 = '[ruby-core:125511] [Bug #22071]'
+      class BasicObject
+        def a; "B" end
+      end
+
+      module G
+        def a; "G" + super end
+      end
+
+      module F
+        include G
+        def a; "F" + super end
+      end
+
+      class A
+        def a; "A" + super end
+      end
+
+      class B < A
+        include F
+      end
+
+      module R
+       refine F do
+         def a; "R"+super end
+       end
+      end
+      using R
+
+      msg = "super in a method in a module that has been refined and that is called via super" +
+        " from a refinement method is not supported."
+      assert_raise(NoMethodError, msg, bug22071) { B.new.a }
+    end;
+  end
+
   def test_refine_after_using
     assert_separately([], <<-"end;")
       bug8880 = '[ruby-core:57079] [Bug #8880]'
@@ -1055,6 +1092,613 @@ class TestRefinement < Test::Unit::TestCase
         end
       end
       assert_equal('Refinements are fine!', t, bug8880)
+    end;
+  end
+
+  {
+    zsuper: "public :a",
+    super: "def a = super"
+  }.each do |desc, method_def|
+    define_method :"test_modify_#{desc}_refinement_method_in_superclass" do
+      assert_separately([], <<-"end;")
+        class A
+          private def a = :a
+          alias a a
+        end
+
+        class B < A
+        end
+
+        module R
+          refine B do
+            #{method_def}
+          end
+        end
+        using R
+        assert_equal(:a, B.new.a)
+
+        class A
+          def a = :b
+        end
+        assert_equal(:b, B.new.a)
+      end;
+    end
+
+    define_method :"test_modify_#{desc}_refinement_method_in_module_prepended_to_superclass" do
+      assert_separately([], <<-"end;")
+        module M
+          private def a = :a
+          alias a a
+        end
+
+        class A
+          prepend M
+        end
+
+        class B < A
+        end
+
+        module R
+          refine B do
+            #{method_def}
+          end
+        end
+        using R
+        assert_equal(:a, B.new.a)
+
+        module M
+          def a = :b
+        end
+        assert_equal(:b, B.new.a)
+      end;
+    end
+
+    define_method :"test_modify_#{desc}_refinement_method_in_module_included_in_superclass" do
+      assert_separately([], <<-"end;")
+        module M
+          private def a = :a
+          alias a a
+        end
+
+        class A
+          include M
+        end
+
+        class B < A
+        end
+
+        module R
+          refine B do
+            #{method_def}
+          end
+        end
+        using R
+        assert_equal(:a, B.new.a)
+
+        module M
+          def a = :b
+        end
+        assert_equal(:b, B.new.a)
+      end;
+    end
+
+    define_method :"test_remove_#{desc}_refinement_method_from_superclass" do
+      assert_separately([], <<-"end;")
+        class A
+          private def a = :a
+        end
+
+        class B < A
+          private def a = :b
+        end
+
+        class C < B
+        end
+
+        module R
+          refine C do
+            #{method_def}
+          end
+        end
+        using R
+        assert_equal(:b, C.new.a)
+
+        class B
+          remove_method(:a)
+        end
+        assert_equal(:a, C.new.a)
+      end;
+    end
+
+    define_method :"test_remove_#{desc}_refinement_method_from_module_prepended_to_superclass" do
+      assert_separately([], <<-"end;")
+        module M
+          private def a = :b
+        end
+
+        class A
+          prepend M
+          private def a = :a
+        end
+
+        class B < A
+        end
+
+        module R
+          refine B do
+            #{method_def}
+          end
+        end
+        using R
+        assert_equal(:b, B.new.a)
+
+        module M
+          remove_method(:a)
+        end
+        assert_equal(:a, B.new.a)
+      end;
+    end
+
+    define_method :"test_remove_#{desc}_refinement_method_from_module_prepended_to_class" do
+      assert_separately([], <<-"end;")
+        module M
+          private def a = :b
+        end
+
+        class A
+          prepend M
+          private def a = :a
+        end
+
+        module R
+          refine A do
+            #{method_def}
+          end
+        end
+        using R
+        assert_equal(:b, A.new.a)
+
+        module M
+          remove_method(:a)
+        end
+        assert_equal(:a, A.new.a)
+      end;
+    end
+
+    define_method :"test_remove_#{desc}_refinement_method_from_module_included_in_superclass" do
+      assert_separately([], <<-"end;")
+        module M
+          private def a = :b
+        end
+
+        class A
+          private def a = :a
+        end
+
+        class B < A
+          include M
+        end
+
+        class C < B
+        end
+
+        module R
+          refine C do
+            #{method_def}
+          end
+        end
+        using R
+        assert_equal(:b, C.new.a)
+
+        module M
+          remove_method(:a)
+        end
+        assert_equal(:a, C.new.a)
+      end;
+    end
+
+    define_method :"test_remove_#{desc}_refinement_method_from_module_included_in_class" do
+      assert_separately([], <<-"end;")
+        module M
+          private def a = :b
+        end
+
+        class A
+          private def a = :a
+        end
+
+        class B < A
+          include M
+        end
+
+        module R
+          refine B do
+            #{method_def}
+          end
+        end
+        using R
+        assert_equal(:b, B.new.a)
+
+        module M
+          remove_method(:a)
+        end
+        assert_equal(:a, B.new.a)
+      end;
+    end
+
+    define_method :"test_undef_#{desc}_refinement_method_in_superclass" do
+      assert_separately([], <<-"end;")
+        class A
+          private def a = :a
+        end
+
+        class B < A
+          private def a = :b
+        end
+
+        class C < B
+        end
+
+        module R
+          refine C do
+            #{method_def}
+          end
+        end
+        using R
+        assert_equal(:b, C.new.a)
+
+        class B
+          undef_method(:a)
+        end
+        assert_raise(NoMethodError) { C.new.a }
+      end;
+    end
+
+    define_method :"test_undef_#{desc}_refinement_method_in_module_prepended_to_superclass" do
+      assert_separately([], <<-"end;")
+        module M
+          private def a = :b
+        end
+
+        class A
+          prepend M
+          private def a = :a
+        end
+
+        class B < A
+        end
+
+        module R
+          refine B do
+            #{method_def}
+          end
+        end
+        using R
+        assert_equal(:b, B.new.a)
+
+        module M
+          undef_method(:a)
+        end
+        assert_raise(NoMethodError) { B.new.a }
+      end;
+    end
+
+    define_method :"test_undef_#{desc}_refinement_method_in_module_prepended_to_class" do
+      assert_separately([], <<-"end;")
+        module M
+          private def a = :b
+        end
+
+        class A
+          prepend M
+          private def a = :a
+        end
+
+        module R
+          refine A do
+            #{method_def}
+          end
+        end
+        using R
+        assert_equal(:b, A.new.a)
+
+        module M
+          undef_method(:a)
+        end
+        assert_raise(NoMethodError) { A.new.a }
+      end;
+    end
+
+    define_method :"test_undef_#{desc}_refinement_method_in_module_included_in_superclass" do
+      assert_separately([], <<-"end;")
+        module M
+          private def a = :b
+        end
+
+        class A
+          private def a = :a
+        end
+
+        class B < A
+          include M
+        end
+
+        class C < B
+        end
+
+        module R
+          refine C do
+            #{method_def}
+          end
+        end
+        using R
+        assert_equal(:b, C.new.a)
+
+        module M
+          undef_method(:a)
+        end
+        assert_raise(NoMethodError) { C.new.a }
+      end;
+    end
+
+    define_method :"test_undef_#{desc}_refinement_method_in_module_included_in_class" do
+      assert_separately([], <<-"end;")
+        module M
+          private def a = :b
+        end
+
+        class A
+          private def a = :a
+        end
+
+        class B < A
+          include M
+        end
+
+        module R
+          refine B do
+            #{method_def}
+          end
+        end
+        using R
+        assert_equal(:b, B.new.a)
+
+        module M
+          undef_method(:a)
+        end
+        assert_raise(NoMethodError) { B.new.a }
+      end;
+    end
+
+    define_method :"test_override_#{desc}_refinement_method_by_prepending_to_class" do
+      assert_separately([], <<-"end;")
+        class A
+          private def a = :a
+        end
+
+        module R
+          refine A do
+            #{method_def}
+          end
+        end
+        using R
+        assert_equal(:a, A.new.a)
+
+        module M
+          def a = :b
+        end
+        A.prepend M
+        assert_equal(:b, A.new.a)
+      end;
+    end
+
+    define_method :"test_override_#{desc}_refinement_method_by_prepending_to_superclass" do
+      assert_separately([], <<-"end;")
+        class A
+          private def a = :a
+        end
+
+        class B < A
+        end
+
+        module R
+          refine B do
+            #{method_def}
+          end
+        end
+        using R
+        assert_equal(:a, B.new.a)
+
+        module M
+          def a = :b
+        end
+        A.prepend M
+        assert_equal(:b, B.new.a)
+      end;
+    end
+
+    define_method :"test_override_#{desc}_refinement_method_by_including_in_class" do
+      assert_separately([], <<-"end;")
+        class A
+          private def a = :a
+        end
+
+        class B < A
+        end
+
+        module R
+          refine B do
+            #{method_def}
+          end
+        end
+        using R
+        assert_equal(:a, B.new.a)
+
+        module M
+          def a = :b
+        end
+        B.include M
+        assert_equal(:b, B.new.a)
+      end;
+    end
+
+    define_method :"test_override_#{desc}_refinement_method_by_including_in_superclass" do
+      assert_separately([], <<-"end;")
+        class A
+          private def a = :a
+        end
+
+        class B < A
+        end
+
+        class C < B
+        end
+
+        module R
+          refine C do
+            #{method_def}
+          end
+        end
+        using R
+        assert_equal(:a, C.new.a)
+
+        module M
+          def a = :b
+        end
+        B.include M
+        assert_equal(:b, C.new.a)
+      end;
+    end
+
+    define_method :"test_override_#{desc}_refinement_method_by_prepending_undef_to_class" do
+      assert_separately([], <<-"end;")
+        class A
+          private def a = :a
+        end
+
+        module R
+          refine A do
+            #{method_def}
+          end
+        end
+        using R
+        assert_equal(:a, A.new.a)
+
+        module M
+          def a = :b
+          undef_method :a
+        end
+        A.prepend M
+        assert_raise(NoMethodError) { A.new.a }
+      end;
+    end
+
+    define_method :"test_override_#{desc}_refinement_method_by_prepending_undef_to_superclass" do
+      assert_separately([], <<-"end;")
+        class A
+          private def a = :a
+        end
+
+        class B < A
+        end
+
+        module R
+          refine B do
+            #{method_def}
+          end
+        end
+        using R
+        assert_equal(:a, B.new.a)
+
+        module M
+          def a = :b
+          undef_method :a
+        end
+        A.prepend M
+        assert_raise(NoMethodError) { B.new.a }
+      end;
+    end
+
+    define_method :"test_override_#{desc}_refinement_method_by_including_undef_in_class" do
+      assert_separately([], <<-"end;")
+        class A
+          private def a = :a
+        end
+
+        class B < A
+        end
+
+        module R
+          refine B do
+            #{method_def}
+          end
+        end
+        using R
+        assert_equal(:a, B.new.a)
+
+        module M
+          def a = :b
+          undef_method :a
+        end
+        B.include M
+        assert_raise(NoMethodError) { B.new.a }
+      end;
+    end
+
+    define_method :"test_override_#{desc}_refinement_method_by_including_undef_in_superclass" do
+      assert_separately([], <<-"end;")
+        class A
+          private def a = :a
+        end
+
+        class B < A
+        end
+
+        class C < B
+        end
+
+        module R
+          refine C do
+            #{method_def}
+          end
+        end
+        using R
+        assert_equal(:a, C.new.a)
+
+        module M
+          def a = :b
+          undef_method :a
+        end
+        B.include M
+        assert_raise(NoMethodError) { C.new.a }
+      end;
+    end
+  end
+
+  def test_zsuper_refinement_method_arity_and_parameters
+    assert_separately([], <<-"end;")
+      class A
+        private def a(b) = b
+      end
+
+      class B < A
+        public :a
+      end
+
+      module R
+        refine A do
+          public :a
+        end
+      end
+      using R
+
+      m = B.instance_method(:a)
+      assert_equal(1, m.arity)
+      assert_equal([[:req, :b]], m.parameters)
+
+      m = A.instance_method(:a)
+      assert_equal(1, m.arity)
+      assert_equal([[:req, :b]], m.parameters)
     end;
   end
 
@@ -2756,6 +3400,263 @@ class TestRefinement < Test::Unit::TestCase
       end
 
       assert_equal(1, RefinedScope::ITSELF[1], "[Bug #21265]")
+    RUBY
+  end
+
+  def test_method_super_method_single_refinements
+    assert_separately([], <<~RUBY)
+      class A
+        def b = "A"
+      end
+      module M
+        R = refine(A) { def b; "M" + super; end }
+      end
+      using M
+      a = A.new
+      m = a.method(:b)
+      assert_equal("MA", a.b)
+      assert_equal("MA", m.call)
+      assert_equal(M::R, m.owner)
+      assert_equal(A, m.owner.target)
+
+      m = m.super_method
+      assert_equal(A, m.owner)
+      assert_nil(m.super_method)
+    RUBY
+  end
+
+  def test_method_super_method_multiple_refinements_with_activated_refinements_during_super
+    assert_separately([], <<~RUBY)
+      class A
+        def b = "A"
+      end
+      module M
+        R = refine(A) { def b; "M" + super; end }
+      end
+      module N
+        using M
+        R = refine(A) { def b; "N" + super; end }
+      end
+      using M
+      using N
+      a = A.new
+      m = a.method(:b)
+      assert_equal("NMA", a.b)
+      assert_equal("NMA", m.call)
+      assert_equal(N::R, m.owner)
+      assert_equal(A, m.owner.target)
+
+      m = m.super_method
+      assert_equal(M::R, m.owner)
+      assert_equal(A, m.owner.target)
+
+      m = m.super_method
+      assert_equal(A, m.owner)
+      assert_nil(m.super_method)
+    RUBY
+  end
+
+  def test_method_super_method_multiple_refinements_without_activated_refinements_during_super
+    assert_separately([], <<~RUBY)
+      class A
+        def b = "A"
+      end
+      module M
+        R = refine(A) { def b; "M" + super; end }
+      end
+      module N
+        R = refine(A) { def b; "N" + super; end }
+      end
+      using M
+      using N
+      a = A.new
+      m = a.method(:b)
+      assert_equal("NA", a.b)
+      assert_equal("NA", m.call)
+      assert_equal(N::R, m.owner)
+      assert_equal(A, m.owner.target)
+
+      m = m.super_method
+      assert_equal(A, m.owner)
+      assert_nil(m.super_method)
+    RUBY
+  end
+
+  def test_unbound_method_super_method_single_refinements
+    assert_separately([], <<~RUBY)
+      class A
+        def b = "A"
+      end
+      module M
+        R = refine(A) { def b; "M" + super; end }
+      end
+      using M
+      m = A.instance_method(:b)
+      assert_equal(M::R, m.owner)
+      assert_equal(A, m.owner.target)
+
+      m = m.super_method
+      assert_equal(A, m.owner)
+      assert_nil(m.super_method)
+    RUBY
+  end
+
+  def test_method_super_method_nonrefined_finds_refined_super
+    assert_separately([], <<~RUBY)
+      class A
+        def b = "A"
+      end
+      module M
+        R = refine(A) { def b; "M" + super; end }
+      end
+      using M
+      class B < A
+        def b = "B" + super
+      end
+      b = B.new
+      m = b.method(:b)
+      assert_equal("BMA", b.b)
+      assert_equal("BMA", m.call)
+      assert_equal(B, m.owner)
+      m = m.super_method
+      assert_equal(M::R, m.owner)
+      assert_equal(A, m.owner.target)
+
+      m = m.super_method
+      assert_equal(A, m.owner)
+      assert_nil(m.super_method)
+    RUBY
+  end
+
+  def test_method_super_method_refined_finds_refined_method_in_superclass
+    assert_separately([], <<~RUBY)
+      class A
+        def b = "A"
+      end
+      class B < A
+      end
+      module M
+        R = refine(A) { def b; "M" + super; end }
+      end
+      using M
+      module N
+        R = refine(B) { def b; "N" + super; end }
+      end
+      using N
+
+      b = B.new
+      m = b.method(:b)
+      assert_equal("NMA", b.b)
+      assert_equal("NMA", m.call)
+      assert_equal(N::R, m.owner)
+      assert_equal(B, m.owner.target)
+
+      m = m.super_method
+      assert_equal(M::R, m.owner)
+      assert_equal(A, m.owner.target)
+
+      m = m.super_method
+      assert_equal(A, m.owner)
+      assert_nil(m.super_method)
+    RUBY
+  end
+
+  def test_method_super_method_uses_cref_of_method_not_cref_of_caller
+    assert_separately([], <<~RUBY)
+      class A
+        def b = "A"
+      end
+      class B < A
+      end
+      module M
+        R = refine(A) { def b; "M" + super; end }
+      end
+      module N
+        R = refine(B) do
+          using M
+          def b; "N" + super; end
+        end
+      end
+      using N
+
+      b = B.new
+      m = b.method(:b)
+      assert_equal("NMA", b.b)
+      assert_equal("NMA", m.call)
+      assert_equal(N::R, m.owner)
+      assert_equal(B, m.owner.target)
+
+      m = m.super_method
+      assert_equal(M::R, m.owner)
+      assert_equal(A, m.owner.target)
+
+      m = m.super_method
+      assert_equal(A, m.owner)
+      assert_nil(m.super_method)
+    RUBY
+  end
+
+  def test_method_super_method_only_considers_activated_refinements
+    assert_separately([], <<~RUBY)
+      class A
+        def b = "A"
+      end
+      class B < A
+        def b = "B" + super
+      end
+      module M
+        R = refine(A){def b = "M" + super}
+      end
+      module N
+        R = refine(B){def b = "N" + super}
+      end
+
+      module O
+        using M
+        using N
+
+        b = B.new
+        m = b.method(:b)
+        assert_equal("NBA", b.b)
+        assert_equal("NBA", m.call)
+        assert_equal(N::R, m.owner)
+        assert_equal(B, m.owner.target)
+
+        m = m.super_method
+        assert_equal(B, m.owner)
+        m = m.super_method
+        assert_equal(A, m.owner)
+        assert_nil(m.super_method)
+      end
+    RUBY
+  end
+
+  def test_method_super_method_bmethod_finds_refinements
+    assert_separately([], <<~RUBY)
+      class A
+        def b = "A"
+      end
+      module M
+        R = refine(A) { def b; "M" + super; end }
+      end
+      using M
+      class B < A
+        define_method(:b) { "B" + super() }
+      end
+
+      b = B.new
+      m = b.method(:b)
+      assert_equal("BMA", b.b)
+      assert_equal("BMA", m.call)
+      assert_equal(B, m.owner)
+
+      m = m.super_method
+      assert_equal(M::R, m.owner)
+      assert_equal(A, m.owner.target)
+
+      m = m.super_method
+      assert_equal(A, m.owner)
+      assert_nil(m.super_method)
     RUBY
   end
 

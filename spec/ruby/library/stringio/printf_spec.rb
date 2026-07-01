@@ -8,7 +8,7 @@ describe "StringIO#printf" do
   end
 
   it "returns nil" do
-    @io.printf("%d %04x", 123, 123).should be_nil
+    @io.printf("%d %04x", 123, 123).should == nil
   end
 
   it "pads self with \\000 when the current position is after the end" do
@@ -24,10 +24,10 @@ describe "StringIO#printf" do
 
   it "updates the current position" do
     @io.printf("%d %04x", 123, 123)
-    @io.pos.should eql(8)
+    @io.pos.should.eql?(8)
 
     @io.printf("%d %04x", 123, 123)
-    @io.pos.should eql(16)
+    @io.pos.should.eql?(16)
   end
 
   describe "formatting" do
@@ -56,7 +56,7 @@ describe "StringIO#printf when in read-write mode" do
 
   it "correctly updates self's position" do
     @io.printf("%s", "abc")
-    @io.pos.should eql(3)
+    @io.pos.should.eql?(3)
   end
 end
 
@@ -75,17 +75,17 @@ describe "StringIO#printf when in append mode" do
 
   it "correctly updates self's position" do
     @io.printf("%d %04x", 123, 123)
-    @io.pos.should eql(15)
+    @io.pos.should.eql?(15)
   end
 end
 
 describe "StringIO#printf when self is not writable" do
   it "raises an IOError" do
     io = StringIO.new(+"test", "r")
-    -> { io.printf("test") }.should raise_error(IOError)
+    -> { io.printf("test") }.should.raise(IOError)
 
     io = StringIO.new(+"test")
     io.close_write
-    -> { io.printf("test") }.should raise_error(IOError)
+    -> { io.printf("test") }.should.raise(IOError)
   end
 end

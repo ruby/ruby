@@ -19,7 +19,7 @@ describe "Enumerable#first" do
 
   it "raises a RangeError when passed a Bignum" do
     enum = EnumerableSpecs::Empty.new
-    -> { enum.first(bignum_value) }.should raise_error(RangeError)
+    -> { enum.first(bignum_value) }.should.raise(RangeError)
   end
 
   describe "when passed an argument" do

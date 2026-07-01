@@ -1,0 +1,3 @@
+x, y = 1 rescue a, b = 1
+x, y = a rescue b, c = 1
+x, y = a rescue b = c d

@@ -6,10 +6,10 @@ ruby_version_is ""..."4.1" do
   describe "Net::FTP#binary" do
     it "returns true when self is in binary mode" do
       ftp = Net::FTP.new
-      ftp.binary.should be_true
+      ftp.binary.should == true
 
       ftp.binary = false
-      ftp.binary.should be_false
+      ftp.binary.should == false
     end
   end
 
@@ -18,10 +18,10 @@ ruby_version_is ""..."4.1" do
       ftp = Net::FTP.new
 
       ftp.binary = true
-      ftp.binary.should be_true
+      ftp.binary.should == true
 
       ftp.binary = false
-      ftp.binary.should be_false
+      ftp.binary.should == false
     end
   end
 end

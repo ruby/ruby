@@ -8,7 +8,7 @@ describe "Matrix.diagonal" do
   end
 
   it "returns an object of type Matrix" do
-    @m.should be_kind_of(Matrix)
+    @m.should.is_a?(Matrix)
   end
 
   it "returns a square Matrix of the right size" do
@@ -34,27 +34,27 @@ describe "Matrix.diagonal" do
 
   describe "for a subclass of Matrix" do
     it "returns an instance of that subclass" do
-      MatrixSub.diagonal(1).should be_an_instance_of(MatrixSub)
+      MatrixSub.diagonal(1).should.instance_of?(MatrixSub)
     end
   end
 end
 
 describe "Matrix.diagonal?" do
   it "returns true for a diagonal Matrix" do
-    Matrix.diagonal([1, 2, 3]).diagonal?.should be_true
+    Matrix.diagonal([1, 2, 3]).diagonal?.should == true
   end
 
   it "returns true for a zero square Matrix" do
-    Matrix.zero(3).diagonal?.should be_true
+    Matrix.zero(3).diagonal?.should == true
   end
 
   it "returns false for a non diagonal square Matrix" do
-    Matrix[[0, 1], [0, 0]].diagonal?.should be_false
-    Matrix[[1, 2, 3], [1, 2, 3], [1, 2, 3]].diagonal?.should be_false
+    Matrix[[0, 1], [0, 0]].diagonal?.should == false
+    Matrix[[1, 2, 3], [1, 2, 3], [1, 2, 3]].diagonal?.should == false
   end
 
   it "returns true for an empty 0x0 matrix" do
-    Matrix.empty(0,0).diagonal?.should be_true
+    Matrix.empty(0,0).diagonal?.should == true
   end
 
   it "raises an error for rectangular matrices" do
@@ -66,7 +66,7 @@ describe "Matrix.diagonal?" do
     ].each do |rectangular_matrix|
       -> {
         rectangular_matrix.diagonal?
-      }.should raise_error(Matrix::ErrDimensionMismatch)
+      }.should.raise(Matrix::ErrDimensionMismatch)
     end
   end
 end

@@ -1,7 +1,6 @@
 require_relative '../../../spec_helper'
 require 'net/http'
 require_relative 'fixtures/classes'
-require_relative 'shared/set_content_type'
 
 describe "Net::HTTPHeader#content_type" do
   before :each do
@@ -17,10 +16,13 @@ describe "Net::HTTPHeader#content_type" do
   end
 
   it "returns nil if the 'Content-Type' header entry does not exist" do
-    @headers.content_type.should be_nil
+    @headers.content_type.should == nil
   end
 end
 
 describe "Net::HTTPHeader#content_type=" do
-  it_behaves_like :net_httpheader_set_content_type, :content_type=
+  it "is an alias of Net::HTTPHeader#set_content_type" do
+    Net::HTTPHeader.instance_method(:content_type=).should ==
+      Net::HTTPHeader.instance_method(:set_content_type)
+  end
 end

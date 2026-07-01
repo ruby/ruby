@@ -16,9 +16,9 @@ describe "Set#compare_by_identity" do
     elt = [1]
     set = Set.new
     set << elt
-    set.member?(elt.dup).should be_true
+    set.member?(elt.dup).should == true
     set.compare_by_identity
-    set.member?(elt.dup).should be_false
+    set.member?(elt.dup).should == false
   end
 
   it "rehashes internally so that old members can be looked up" do
@@ -28,19 +28,19 @@ describe "Set#compare_by_identity" do
     def o.hash; 123; end
     set << o
     set.compare_by_identity
-    set.member?(o).should be_true
+    set.member?(o).should == true
   end
 
   it "returns self" do
     set = Set.new
     result = set.compare_by_identity
-    result.should equal(set)
+    result.should.equal?(set)
   end
 
   it "is idempotent and has no effect on an already compare_by_identity set" do
     set = Set.new.compare_by_identity
     set << :foo
-    set.compare_by_identity.should equal(set)
+    set.compare_by_identity.should.equal?(set)
     set.should.compare_by_identity?
     set.to_a.should == [:foo]
   end
@@ -69,7 +69,7 @@ describe "Set#compare_by_identity" do
     elt.should_not_receive(:hash)
     set = Set.new.compare_by_identity
     set << elt
-    set.member?(elt).should be_true
+    set.member?(elt).should == true
   end
 
   it "regards #dup'd objects as having different identities" do
@@ -95,7 +95,7 @@ describe "Set#compare_by_identity" do
       set = Set.new.freeze
       -> {
         set.compare_by_identity
-      }.should raise_error(FrozenError, /can't modify frozen Set: (#<)?Set(\[|: {)[\]}]>?/)
+      }.should.raise(FrozenError, /can't modify frozen Set: (#<)?Set(\[|: {)[\]}]>?/)
     end
   end
 
@@ -104,7 +104,7 @@ describe "Set#compare_by_identity" do
       set = Set.new.freeze
       -> {
         set.compare_by_identity
-      }.should raise_error(FrozenError, /frozen Hash/)
+      }.should.raise(FrozenError, /frozen Hash/)
     end
   end
 

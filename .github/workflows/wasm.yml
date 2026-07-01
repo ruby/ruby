@@ -59,11 +59,16 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
           persist-credentials: false
+
+      - uses: ruby/setup-ruby@0dafeac902942906541bc140009cdbf32665b601 # v1.315.0
+        with:
+          ruby-version: '3.1'
+          bundler: none
 
       - uses: ./.github/actions/setup/directories
         with:
@@ -99,19 +104,10 @@ jobs:
         run: |
           echo "WASI_SDK_PATH=/opt/wasi-sdk" >> $GITHUB_ENV
 
-      - uses: ruby/setup-ruby@7372622e62b60b3cb750dcd2b9e32c247ffec26a # v1.302.0
+      - uses: ./.github/actions/setup/baseruby
+        id: baseruby
         with:
-          ruby-version: '3.1'
-          bundler: none
-
-      - name: Build baseruby
-        run: |
-          set -ex
-          mkdir ../baseruby
-          pushd ../baseruby
-          ../src/configure --prefix=$PWD/install
-          make
-          make install
+          srcdir: src
 
       - name: Download config.guess with wasi version
         run: |
@@ -120,20 +116,38 @@ jobs:
         working-directory: src
 
       - name: Run configure
-        run: |
-          ../src/configure \
-            --host wasm32-unknown-wasi \
-            --with-baseruby=$PWD/../baseruby/install/bin/ruby \
-            --with-dump-ast=$PWD/../baseruby/dump_ast \
-            --with-static-linked-ext \
-            --with-ext=cgi/escape,continuation,coverage,date,digest/bubblebabble,digest,digest/md5,digest/rmd160,digest/sha1,digest/sha2,etc,fcntl,json,json/generator,json/parser,objspace,pathname,rbconfig/sizeof,ripper,stringio,strscan,monitor \
-            LDFLAGS=" \
-              -Xlinker --stack-first \
-              -Xlinker -z -Xlinker stack-size=16777216 \
-            " \
-            optflags="${{ matrix.entry.optflags }}" \
-            debugflags="${{ matrix.entry.debugflags }}" \
-            wasmoptflags="${{ matrix.entry.wasmoptflags }} ${{ matrix.entry.debugflags }}"
+        run: >-
+          ../src/configure
+          --host wasm32-unknown-wasi
+          --with-baseruby="${{ steps.baseruby.outputs.ruby }}"
+          --with-dump-ast="${{ steps.baseruby.outputs.dump_ast }}"
+          --with-static-linked-ext
+          --with-ext=${EXTS// /,}
+          LDFLAGS="
+          -Xlinker --stack-first
+          -Xlinker -z -Xlinker stack-size=16777216
+          "
+          optflags="${{ matrix.entry.optflags }}"
+          debugflags="${{ matrix.entry.debugflags }}"
+          wasmoptflags="${{ matrix.entry.wasmoptflags }} ${{ matrix.entry.debugflags }}"
+        env:
+          EXTS:
+            cgi/escape
+            continuation
+            coverage
+            date
+            digest
+            digest/*
+            erb/escape
+            etc
+            fcntl
+            json
+            json/*
+            objspace
+            rbconfig/sizeof
+            ripper
+            stringio
+            strscan
 
       # miniruby may not be built when cross-compling
       - run: make mini ruby

@@ -20,6 +20,11 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  # Work around transient crates.io download failures (curl HTTP/2 framing / partial transfer)
+  CARGO_NET_RETRY: 10
+  CARGO_HTTP_MULTIPLEXING: false
+
 jobs:
   make:
     strategy:
@@ -40,6 +45,10 @@ jobs:
           - test_task: check
             os: ubuntu-24.04
             extra_checks: [capi]
+          - test_task: check
+            os: ubuntu-24.04
+            configure: 'CC=clang-18 cflags=-fsanitize=address cppflags=-DUSE_MN_THREADS=0'
+            timeout: 60
           # ubuntu-24.04-arm jobs don't start on ruby/ruby as of 2025-10-29
           #- test_task: check
           #  os: ubuntu-24.04-arm
@@ -60,7 +69,7 @@ jobs:
       )}}
 
     steps: &make-steps
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
@@ -70,7 +79,7 @@ jobs:
         with:
           arch: ${{ matrix.arch }}
 
-      - uses: ruby/setup-ruby@7372622e62b60b3cb750dcd2b9e32c247ffec26a # v1.302.0
+      - uses: ruby/setup-ruby@0dafeac902942906541bc140009cdbf32665b601 # v1.315.0
         with:
           ruby-version: '3.1'
           bundler: none
@@ -85,6 +94,7 @@ jobs:
           makeup: true
           clean: true
           dummy-files: ${{ matrix.test_task == 'check' }}
+          bundled-gems-src-cache: ${{ matrix.test_task == 'test-bundled-gems' }}
           # Set fetch-depth: 10 so that Launchable can receive commits information.
           fetch-depth: 10
 
@@ -93,7 +103,7 @@ jobs:
           arch: ${{ matrix.arch }}
           configure: ${{ matrix.configure }}
         run: >-
-          $SETARCH ../src/configure -C --disable-install-doc ${configure:-cppflags=-DRUBY_DEBUG}
+          $SETARCH ../src/configure -C --disable-install-doc ${configure:- --enable-debug-env cppflags=-DRUBY_DEBUG}
           ${arch:+--target=$arch-$OSTYPE --host=$arch-$OSTYPE}
 
       - run: $SETARCH make prepare-gems
@@ -132,6 +142,17 @@ jobs:
       - name: Disable DFLTCC
         run: echo "DFLTCC=0" >> $GITHUB_ENV
         if: ${{ endsWith(matrix.os, 's390x') }}
+
+      # Emulated ppc64le/s390x runners are slow enough that subprocess
+      # assertion timeouts (e.g. assert_separately) flake. Scale them up, as
+      # macos.yml does for slower/contended runners. SYNTAX_SUGGEST_TIMEOUT
+      # covers syntax_suggest's own internal search timeout, which
+      # RUBY_TEST_TIMEOUT_SCALE does not affect.
+      - name: Set timeout scale for emulated runners
+        run: |
+          echo "RUBY_TEST_TIMEOUT_SCALE=10" >> $GITHUB_ENV
+          echo "SYNTAX_SUGGEST_TIMEOUT=10" >> $GITHUB_ENV
+        if: ${{ endsWith(matrix.os, 'ppc64le') || endsWith(matrix.os, 's390x') }}
 
       - name: make ${{ matrix.test_task }}
         run: |
@@ -222,7 +243,7 @@ jobs:
       )}}
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
 
@@ -240,7 +261,7 @@ jobs:
       - run: make install
 
       - name: Checkout ruby-bench
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           repository: ruby/ruby-bench
           persist-credentials: false
@@ -251,6 +272,8 @@ jobs:
       - name: Run ruby-bench
         run: ruby run_benchmarks.rb -e "ruby::../build/install/bin/ruby" ${{ matrix.bench_opts }}
         working-directory: ruby-bench
+        env:
+          BUNDLER_VERSION: 0
 
       - uses: ./.github/actions/slack
         with:

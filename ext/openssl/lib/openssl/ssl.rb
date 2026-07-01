@@ -486,7 +486,7 @@ module OpenSSL
       def initialize(svr, ctx)
         @svr = svr
         @ctx = ctx
-        unless ctx.session_id_context
+        if !ctx.frozen? && !ctx.session_id_context
           # see #6137 - session id may not exceed 32 bytes
           prng = ::Random.new($0.hash)
           session_id = prng.bytes(16).unpack1('H*')

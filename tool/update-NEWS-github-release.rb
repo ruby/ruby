@@ -339,8 +339,16 @@ def update_news_md(results)
     i += 1
   end
 
-  # All footnote definitions we can emit from this run, indexed by ref name
+  # All footnote definitions we can emit, indexed by ref name. Seed from existing
+  # release-tag defs in the file so gems skipped this run (e.g. transient API
+  # failures) keep their URLs, then overlay freshly fetched URLs.
+  release_ref_pattern = %r{^\[([^\]]+)\]:\s+(https://github\.com/[^/]+/[^/]+/releases/tag/.*)}
   available_footnotes = {}
+  new_lines.each do |line|
+    if (m = line.match(release_ref_pattern))
+      available_footnotes[m[1]] = "[#{m[1]}]: #{m[2]}"
+    end
+  end
   results.each do |r|
     r[:footnote_links].each do |fl|
       available_footnotes[fl[:ref]] = "[#{fl[:ref]}]: #{fl[:url]}"
@@ -349,18 +357,10 @@ def update_news_md(results)
 
   # Refs the regenerated body actually uses (e.g. `][gem-vX.Y.Z]`)
   used_refs = new_lines.join.scan(/\]\[([^\]]+)\]/).flatten.uniq
-  used_set = used_refs.to_set
 
-  # Drop existing GitHub release-tag link defs that are either orphaned (no
-  # body reference) or about to be re-emitted from this run's results. Defs
-  # still referenced by gems we couldn't refresh are preserved in place.
-  release_ref_pattern = %r{^\[([^\]]+)\]:\s+https://github\.com/[^/]+/[^/]+/releases/tag/}
-  new_lines.reject! do |line|
-    if (m = line.match(release_ref_pattern))
-      ref = m[1]
-      !used_set.include?(ref) || available_footnotes.key?(ref)
-    end
-  end
+  # Drop all existing GitHub release-tag link defs; the used subset is
+  # re-emitted below in body-ref order so the footer is deterministic.
+  new_lines.reject! { |line| line.match?(release_ref_pattern) }
 
   # Trim trailing blank lines so the appended footer block is clean
   new_lines.pop while new_lines.last == "\n"

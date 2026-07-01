@@ -207,7 +207,7 @@ module ThreadSpecs
 
   def self.join_dying_thread_with_outer_ensure(kill_method_name=:kill)
     t = dying_thread_with_outer_ensure(kill_method_name) { yield }
-    -> { t.join }.should raise_error(RuntimeError, "In dying thread")
+    -> { t.join }.should.raise(RuntimeError, "In dying thread")
     return t
   end
 

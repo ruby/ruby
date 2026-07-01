@@ -26,17 +26,16 @@ jobs:
       matrix:
         include:
           - os: 2022
-            vc: 2022
             test_task: check
-          - os: 2025
-            vc: 2022
+          - os: 2022
+            test_task: test-bundled-gems
+          - os: 2025-vs2026
             test_task: check
+          - os: 2025-vs2026
+            test_task: test-bundled-gems
           - os: 11-arm
             test_task: 'btest test-basic test-tool' # check and test-spec are broken yet.
             target: arm64
-          - os: 2025
-            vc: 2022
-            test_task: test-bundled-gems
       fail-fast: false
 
     runs-on: windows-${{ matrix.os }}
@@ -49,7 +48,7 @@ jobs:
       || (github.event.pull_request.user.login == 'dependabot[bot]' && !startsWith(github.head_ref, 'dependabot/vcpkg'))
       )}}
 
-    name: Windows ${{ matrix.os }}/Visual C++ ${{ matrix.vc }} (${{ matrix.test_task }})
+    name: Windows ${{ matrix.os }} (${{ matrix.test_task }})
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
@@ -59,14 +58,14 @@ jobs:
       - run: md build
         working-directory:
 
-      - uses: ruby/setup-ruby@7372622e62b60b3cb750dcd2b9e32c247ffec26a # v1.302.0
+      - uses: ruby/setup-ruby@0dafeac902942906541bc140009cdbf32665b601 # v1.315.0
         with:
           # windows-11-arm has only 3.4.1, 3.4.2, 3.4.3, head
           ruby-version: ${{ !endsWith(matrix.os, 'arm') && '3.1' || '3.4' }}
           bundler: none
           windows-toolchain: none
 
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
           sparse-checkout-cone-mode: false
@@ -78,48 +77,51 @@ jobs:
           builddir: build
           make-command: nmake
           clean: true
+          bundled-gems-src-cache: ${{ matrix.test_task == 'test-bundled-gems' }}
 
       - name: Install tools with scoop
         run: |
+          if ((vcpkg.exe help install) -match "manifest") { exit }
           Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
           iwr -useb get.scoop.sh | iex
           Join-Path (Resolve-Path ~).Path "scoop\shims" >> $Env:GITHUB_PATH
           scoop install vcpkg
-          scoop install uutils-coreutils@0.5.0
         shell: pwsh
 
       - name: Restore vcpkg artifact
         id: restore-vcpkg
-        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: src\vcpkg_installed
           key: windows-${{ matrix.os }}-vcpkg-${{ hashFiles('src/vcpkg.json') }}
 
       - name: Install libraries with vcpkg
+        id: build-vcpkg
         run: |
-          vcpkg install --vcpkg-root=%USERPROFILE%\scoop\apps\vcpkg\current
+          git -C "%VCPKG_INSTALLATION_ROOT%" pull --quiet
+          vcpkg install
         working-directory: src
         if: ${{ ! steps.restore-vcpkg.outputs.cache-hit }}
 
       - name: Save vcpkg artifact
-        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: src\vcpkg_installed
           key: windows-${{ matrix.os }}-vcpkg-${{ hashFiles('src/vcpkg.json') }}
-        if: ${{ ! steps.restore-vcpkg.outputs.cache-hit && (github.ref_name == 'master' || startsWith(github.ref_name, 'ruby_')) }}
+        if: >-
+          steps.build-vcpkg.outcome == 'success' &&
+          (  github.ref_name == 'master'
+          || startsWith(github.ref_name, 'ruby_')
+          || ( github.event.pull_request.user.login == 'dependabot[bot]'
+          &&   startsWith(github.head_ref || github.ref_name, 'dependabot/vcpkg'))
+          )
 
       - name: setup env
         # Available Ruby versions: https://github.com/actions/runner-images/blob/main/images/windows/Windows2019-Readme.md#ruby
         # %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
         # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
         run: |
-          ::- Set up VC ${{ matrix.vc }}
-
-          ::- Using sort.exe located in the same directory as comm.exe
-          ::- should probably work just fine.
-          for %%I in (comm.exe) do set "sort=%%~dp$PATH:I\sort.exe"
-
-          set | "%sort%" > old.env
+          set > old.env
           call ..\src\win32\vssetup.cmd ^
             -arch=${{ matrix.target || 'amd64' }} ^
             ${{ matrix.vcvars && '-vcvars_ver=' || '' }}${{ matrix.vcvars }}
@@ -129,9 +131,17 @@ jobs:
           set MAKEFLAGS=l
           set /a TEST_JOBS=(15 * %NUMBER_OF_PROCESSORS% / 10) > nul
           set RUBY_OPT_DIR=%GITHUB_WORKSPACE:\=/%/src/vcpkg_installed/%VCPKG_DEFAULT_TRIPLET%
-          set | "%sort%" > new.env
-          comm -13 old.env new.env >> %GITHUB_ENV%
+          set > new.env
+
+      - name: update env
+        shell: pwsh
+        run: |
+          $old = (Get-Content old.env); $new = (Get-Content new.env)
           del *.env
+          Compare-Object $old $new |
+            Where-Object { $_.SideIndicator -eq '=>' } |
+            Select-Object -ExpandProperty InputObject |
+            Add-Content -Path $env:GITHUB_ENV
 
       - name: baseruby version
         run: ruby -v
@@ -188,14 +198,14 @@ jobs:
 
       - uses: ./.github/actions/slack
         with:
-          label: Windows ${{ matrix.os }} / VC ${{ matrix.vc }} / ${{ matrix.test_task || 'check' }}
+          label: Windows ${{ matrix.os }} / ${{ matrix.test_task || 'check' }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
 
   result:
     if: ${{ always() }}
     name: ${{ github.workflow }} result
-    runs-on: windows-latest
+    runs-on: windows-2025-vs2026
     needs: [make]
     steps:
       - run: exit 1

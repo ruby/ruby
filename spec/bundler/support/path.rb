@@ -10,7 +10,7 @@ module Spec
     include Spec::Env
 
     def source_root
-      @source_root ||= Pathname.new(ruby_core? ? "../../.." : "../../bundler").expand_path(__dir__)
+      @source_root ||= Pathname.new(ruby_core? ? "../../.." : "../..").expand_path(__dir__)
     end
 
     def root
@@ -50,7 +50,7 @@ module Spec
     end
 
     def bindir
-      @bindir ||= source_root.join(ruby_core? ? "spec/bin" : "../bin")
+      @bindir ||= source_root.join(ruby_core? ? "spec/bin" : "bin")
     end
 
     def exedir
@@ -76,7 +76,7 @@ module Spec
     end
 
     def spec_dir
-      @spec_dir ||= source_root.join(ruby_core? ? "spec/bundler" : "../spec")
+      @spec_dir ||= source_root.join(ruby_core? ? "spec/bundler" : "spec")
     end
 
     def man_dir
@@ -123,8 +123,18 @@ module Spec
         end
         Pathname(real)
       else
-        (ruby_core? ? source_root : source_root.parent).join("tmp")
+        source_root.join("tmp")
       end
+    end
+
+    # On Windows there is no relative path between different drives, and much of
+    # the spec setup (temp home, bundled app, caches) lives under the temp dir.
+    # When the temp dir is on a different drive than the source tree, examples
+    # that compare or look up paths across the two cannot be set up correctly.
+    def tmp_and_source_on_different_drives?
+      return false unless Gem.win_platform?
+      drive = ->(path) { path.to_s[/\A[a-zA-Z]:/]&.upcase }
+      drive[tmp_root] != drive[source_root]
     end
 
     # Bump this version whenever you make a breaking change to the spec setup
@@ -291,14 +301,14 @@ module Spec
     end
 
     def replace_changelog(version, dir:)
-      changelog = File.expand_path("CHANGELOG.md", dir)
+      changelog = File.expand_path("CHANGELOG-bundler.md", dir)
       contents = File.readlines(changelog)
       contents = [contents[0], contents[1], "## #{version} (2100-01-01)\n", *contents[3..-1]].join
       File.open(changelog, "w") {|f| f << contents }
     end
 
     def git_root
-      ruby_core? ? source_root : source_root.parent
+      source_root
     end
 
     def rake_path
@@ -345,11 +355,11 @@ module Spec
     end
 
     def tracked_files_glob
-      ruby_core? ? "libexec/bundle* lib/bundler lib/bundler.rb spec/bundler man/bundle*" : "lib exe CHANGELOG.md LICENSE.md README.md bundler.gemspec"
+      ruby_core? ? "libexec/bundle* lib/bundler lib/bundler.rb lib/rubygems/vendor/uri lib/rubygems/vendor/securerandom spec/bundler man/bundle*" : "exe/bundle exe/bundler lib/bundler lib/bundler.rb lib/rubygems/vendor/uri lib/rubygems/vendor/securerandom bundler.gemspec CHANGELOG-bundler.md LICENSE-bundler.md README-bundler.md"
     end
 
     def lib_tracked_files_glob
-      ruby_core? ? "lib/bundler lib/bundler.rb" : "lib"
+      "lib/bundler lib/bundler.rb"
     end
 
     def man_tracked_files_glob
@@ -357,7 +367,9 @@ module Spec
     end
 
     def ruby_core_tarball?
-      !git_root.join(".git").directory?
+      # A tarball checkout has no `.git` entry at all. Note that `.git` may be
+      # a file rather than a directory in linked git worktrees.
+      !git_root.join(".git").exist?
     end
 
     def rubocop_gemfile_basename
@@ -369,7 +381,7 @@ module Spec
     end
 
     def tool_dir
-      ruby_core? ? source_root.join("tool/bundler") : source_root.join("../tool/bundler")
+      source_root.join("tool/bundler")
     end
 
     def templates_dir

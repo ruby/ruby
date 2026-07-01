@@ -6,36 +6,36 @@ describe "Range#initialize" do
   end
 
   it "is private" do
-    Range.should have_private_instance_method("initialize")
+    Range.private_instance_methods(false).should.include?(:initialize)
   end
 
   it "initializes correctly the Range object when given 2 arguments" do
-    -> { @range.send(:initialize, 0, 1) }.should_not raise_error
+    -> { @range.send(:initialize, 0, 1) }.should_not.raise
   end
 
   it "initializes correctly the Range object when given 3 arguments" do
-    -> { @range.send(:initialize, 0, 1, true) }.should_not raise_error
+    -> { @range.send(:initialize, 0, 1, true) }.should_not.raise
   end
 
   it "raises an ArgumentError if passed without or with only one argument" do
-    -> { @range.send(:initialize) }.should raise_error(ArgumentError)
-    -> { @range.send(:initialize, 1) }.should raise_error(ArgumentError)
+    -> { @range.send(:initialize) }.should.raise(ArgumentError)
+    -> { @range.send(:initialize, 1) }.should.raise(ArgumentError)
   end
 
   it "raises an ArgumentError if passed with four or more arguments" do
-    -> { @range.send(:initialize, 1, 3, 5, 7) }.should raise_error(ArgumentError)
-    -> { @range.send(:initialize, 1, 3, 5, 7, 9) }.should raise_error(ArgumentError)
+    -> { @range.send(:initialize, 1, 3, 5, 7) }.should.raise(ArgumentError)
+    -> { @range.send(:initialize, 1, 3, 5, 7, 9) }.should.raise(ArgumentError)
   end
 
   it "raises a FrozenError if called on an already initialized Range" do
-    -> { (0..1).send(:initialize, 1, 3) }.should raise_error(FrozenError)
-    -> { (0..1).send(:initialize, 1, 3, true) }.should raise_error(FrozenError)
+    -> { (0..1).send(:initialize, 1, 3) }.should.raise(FrozenError)
+    -> { (0..1).send(:initialize, 1, 3, true) }.should.raise(FrozenError)
   end
 
   it "raises an ArgumentError if arguments don't respond to <=>" do
     o1 = Object.new
     o2 = Object.new
 
-    -> { @range.send(:initialize, o1, o2) }.should raise_error(ArgumentError)
+    -> { @range.send(:initialize, o1, o2) }.should.raise(ArgumentError)
   end
 end

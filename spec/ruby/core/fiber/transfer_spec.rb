@@ -37,12 +37,12 @@ describe "Fiber#transfer" do
     fiber1 = Fiber.new { states << :fiber1 }
     fiber2 = Fiber.new { states << :fiber2_start; Fiber.yield fiber1.transfer; states << :fiber2_end}
     fiber2.resume.should == [:fiber2_start, :fiber1]
-    -> { fiber2.transfer }.should raise_error(FiberError)
+    -> { fiber2.transfer }.should.raise(FiberError)
   end
 
   it "raises a FiberError when transferring to a Fiber which resumes itself" do
     fiber = Fiber.new { fiber.resume }
-    -> { fiber.transfer }.should raise_error(FiberError)
+    -> { fiber.transfer }.should.raise(FiberError)
   end
 
   it "works if Fibers in different Threads each transfer to a Fiber in the same Thread" do
@@ -58,7 +58,7 @@ describe "Fiber#transfer" do
         end
         io_fiber.transfer(Fiber.current)
         value = Object.new
-        io_fiber.transfer(value).should equal value
+        io_fiber.transfer(value).should.equal? value
       end.join
     end
   end

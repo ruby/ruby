@@ -17,19 +17,19 @@ describe 'Range#minmax' do
 
       range = (@x..)
 
-      -> { range.minmax }.should raise_error(RangeError, 'cannot get the maximum of endless range')
+      -> { range.minmax }.should.raise(RangeError, 'cannot get the maximum of endless range')
     end
 
     it 'raises RangeError or ArgumentError on a beginless range' do
       range = (..@x)
 
-      -> { range.minmax }.should raise_error(StandardError) { |e|
+      -> { range.minmax }.should.raise(StandardError) { |e|
         if RangeError === e
           # error from #min
-          -> { raise e }.should raise_error(RangeError, 'cannot get the minimum of beginless range')
+          -> { raise e }.should.raise(RangeError, 'cannot get the minimum of beginless range')
         else
           # error from #max
-          -> { raise e }.should raise_error(ArgumentError, 'comparison of NilClass with MockObject failed')
+          -> { raise e }.should.raise(ArgumentError, 'comparison of NilClass with MockObject failed')
         end
       }
     end
@@ -76,13 +76,13 @@ describe 'Range#minmax' do
       @x.should_not_receive(:succ)
       range = (@x...)
 
-      -> { range.minmax }.should raise_error(RangeError, 'cannot get the maximum of endless range')
+      -> { range.minmax }.should.raise(RangeError, 'cannot get the maximum of endless range')
     end
 
     it 'should raise RangeError on a beginless range' do
       range = (...@x)
 
-      -> { range.minmax }.should raise_error(RangeError,
+      -> { range.minmax }.should.raise(RangeError,
         /cannot get the maximum of beginless range with custom comparison method|cannot get the minimum of beginless range/)
     end
 
@@ -118,7 +118,7 @@ describe 'Range#minmax' do
 
     it 'raises TypeError if the end value is not an integer' do
       range = (0...Float::INFINITY)
-      -> { range.minmax }.should raise_error(TypeError, 'cannot exclude non Integer end value')
+      -> { range.minmax }.should.raise(TypeError, 'cannot exclude non Integer end value')
     end
 
     it 'should return the minimum and maximum values according to the provided block by iterating the range' do

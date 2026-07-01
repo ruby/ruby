@@ -13,7 +13,7 @@ end
 
 describe "Kernel" do
   it "has private instance method Hash()" do
-    Kernel.should have_private_instance_method(:Hash)
+    Kernel.private_instance_methods(false).should.include?(:Hash)
   end
 end
 
@@ -43,14 +43,14 @@ describe :kernel_Hash, shared: true do
   end
 
   it "raises a TypeError if it doesn't respond to #to_hash" do
-    -> { @object.send(@method, mock("")) }.should raise_error(TypeError)
+    -> { @object.send(@method, mock("")) }.should.raise(TypeError)
   end
 
   it "raises a TypeError if #to_hash does not return an Hash" do
     obj = mock("Hash() string")
     obj.should_receive(:to_hash).and_return("string")
 
-    -> { @object.send(@method, obj) }.should raise_error(TypeError)
+    -> { @object.send(@method, obj) }.should.raise(TypeError)
   end
 end
 

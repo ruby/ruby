@@ -48,6 +48,7 @@ VALUE rb_mod_name(VALUE mod);
  */
 VALUE rb_class_path(VALUE mod);
 
+RBIMPL_ATTR_DEPRECATED(("rb_mod_name"))
 /**
  * @alias{rb_mod_name}
  *

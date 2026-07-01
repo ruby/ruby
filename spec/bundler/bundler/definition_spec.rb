@@ -3,6 +3,24 @@
 require "bundler/definition"
 
 RSpec.describe Bundler::Definition do
+  describe "#overrides" do
+    before do
+      allow(Bundler::SharedHelpers).to receive(:find_gemfile) { bundled_app_gemfile }
+    end
+
+    subject { Bundler::Definition.new(bundled_app_lock, [], Bundler::SourceList.new, {}) }
+
+    it "defaults to an empty array" do
+      expect(subject.overrides).to eq([])
+    end
+
+    it "is writable" do
+      override = Bundler::Override.new("rails", :version, ">= 8.0")
+      subject.overrides = [override]
+      expect(subject.overrides).to eq([override])
+    end
+  end
+
   describe "#lock" do
     before do
       allow(Bundler::SharedHelpers).to receive(:find_gemfile) { bundled_app_gemfile }

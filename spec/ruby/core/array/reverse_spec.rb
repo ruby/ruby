@@ -16,14 +16,14 @@ describe "Array#reverse" do
   end
 
   it "does not return subclass instance on Array subclasses" do
-    ArraySpecs::MyArray[1, 2, 3].reverse.should be_an_instance_of(Array)
+    ArraySpecs::MyArray[1, 2, 3].reverse.should.instance_of?(Array)
   end
 end
 
 describe "Array#reverse!" do
   it "reverses the elements in place" do
     a = [6, 3, 4, 2, 1]
-    a.reverse!.should equal(a)
+    a.reverse!.should.equal?(a)
     a.should == [1, 2, 4, 3, 6]
     [].reverse!.should == []
   end
@@ -37,6 +37,6 @@ describe "Array#reverse!" do
   end
 
   it "raises a FrozenError on a frozen array" do
-    -> { ArraySpecs.frozen_array.reverse! }.should raise_error(FrozenError)
+    -> { ArraySpecs.frozen_array.reverse! }.should.raise(FrozenError)
   end
 end

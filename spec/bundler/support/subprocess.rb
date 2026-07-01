@@ -38,7 +38,7 @@ module Spec
       dir = options[:dir]
       env = options[:env] || {}
 
-      command_execution = CommandExecution.new(cmd.to_s, timeout: options[:timeout] || 60)
+      command_execution = CommandExecution.new(cmd.to_s, timeout: options[:timeout] || (Gem.win_platform? ? 120 : 60))
 
       open3_opts = {}
       open3_opts[:chdir] = dir if dir

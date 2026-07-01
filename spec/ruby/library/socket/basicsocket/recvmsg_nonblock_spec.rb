@@ -17,7 +17,7 @@ describe 'BasicSocket#recvmsg_nonblock' do
       platform_is_not :windows do
         describe 'using an unbound socket' do
           it 'raises an exception extending IO::WaitReadable' do
-            -> { @server.recvmsg_nonblock }.should raise_error(IO::WaitReadable)
+            -> { @server.recvmsg_nonblock }.should.raise(IO::WaitReadable)
           end
         end
       end
@@ -29,7 +29,7 @@ describe 'BasicSocket#recvmsg_nonblock' do
 
         describe 'without any data available' do
           it 'raises an exception extending IO::WaitReadable' do
-            -> { @server.recvmsg_nonblock }.should raise_error(IO::WaitReadable)
+            -> { @server.recvmsg_nonblock }.should.raise(IO::WaitReadable)
           end
 
           it 'returns :wait_readable with exception: false' do
@@ -47,7 +47,7 @@ describe 'BasicSocket#recvmsg_nonblock' do
           end
 
           it 'returns an Array containing the data, an Addrinfo and the flags' do
-            @server.recvmsg_nonblock.should be_an_instance_of(Array)
+            @server.recvmsg_nonblock.should.instance_of?(Array)
           end
 
           describe 'without a maximum message length' do
@@ -74,12 +74,12 @@ describe 'BasicSocket#recvmsg_nonblock' do
             end
 
             it 'stores an Addrinfo at index 1' do
-              @array[1].should be_an_instance_of(Addrinfo)
+              @array[1].should.instance_of?(Addrinfo)
             end
 
             platform_is_not :windows do
               it 'stores the flags at index 2' do
-                @array[2].should be_kind_of(Integer)
+                @array[2].should.is_a?(Integer)
               end
             end
 
@@ -124,8 +124,8 @@ describe 'BasicSocket#recvmsg_nonblock' do
         end
 
         it "raises Errno::ENOTCONN" do
-          -> { @server.recvmsg_nonblock }.should raise_error(Errno::ENOTCONN)
-          -> { @server.recvmsg_nonblock(exception: false) }.should raise_error(Errno::ENOTCONN)
+          -> { @server.recvmsg_nonblock }.should.raise(Errno::ENOTCONN)
+          -> { @server.recvmsg_nonblock(exception: false) }.should.raise(Errno::ENOTCONN)
         end
       end
 
@@ -154,7 +154,7 @@ describe 'BasicSocket#recvmsg_nonblock' do
               ensure
                 socket.close
               end
-            }.should raise_error(IO::WaitReadable)
+            }.should.raise(IO::WaitReadable)
           end
         end
 
@@ -171,7 +171,7 @@ describe 'BasicSocket#recvmsg_nonblock' do
           end
 
           it 'returns an Array containing the data, an Addrinfo and the flags' do
-            @socket.recvmsg_nonblock.should be_an_instance_of(Array)
+            @socket.recvmsg_nonblock.should.instance_of?(Array)
           end
 
           describe 'the returned Array' do
@@ -184,11 +184,11 @@ describe 'BasicSocket#recvmsg_nonblock' do
             end
 
             it 'stores an Addrinfo at index 1' do
-              @array[1].should be_an_instance_of(Addrinfo)
+              @array[1].should.instance_of?(Addrinfo)
             end
 
             it 'stores the flags at index 2' do
-              @array[2].should be_kind_of(Integer)
+              @array[2].should.is_a?(Integer)
             end
 
             describe 'the returned Addrinfo' do
@@ -197,7 +197,7 @@ describe 'BasicSocket#recvmsg_nonblock' do
               end
 
               it 'raises when receiving the ip_address message' do
-                -> { @addr.ip_address }.should raise_error(SocketError)
+                -> { @addr.ip_address }.should.raise(SocketError)
               end
 
               it 'uses the correct address family' do
@@ -213,7 +213,7 @@ describe 'BasicSocket#recvmsg_nonblock' do
               end
 
               it 'raises when receiving the ip_port message' do
-                -> { @addr.ip_port }.should raise_error(SocketError)
+                -> { @addr.ip_port }.should.raise(SocketError)
               end
             end
           end
@@ -253,13 +253,13 @@ describe 'BasicSocket#recvmsg_nonblock' do
           end
 
           Thread.pass while t.status and t.status != "sleep"
-          t.status.should_not be_nil
+          t.status.should_not == nil
 
           socket = TCPSocket.new('127.0.0.1', @port)
           socket.close
           ready = true
 
-          t.value.should be_nil
+          t.value.should == nil
         end
       end
     end

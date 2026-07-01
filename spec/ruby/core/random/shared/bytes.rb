@@ -1,6 +1,6 @@
 describe :random_bytes, shared: true do
   it "returns a String" do
-    @object.send(@method, 1).should be_an_instance_of(String)
+    @object.send(@method, 1).should.instance_of?(String)
   end
 
   it "returns a String of the length given as argument" do

@@ -44,7 +44,7 @@ version_is StringScanner::Version, "3.1.1" do # ruby_version_is "3.4"
 
       -> {
         s.scan_integer
-      }.should raise_error(Encoding::CompatibilityError, /ASCII incompatible encoding: UTF-16BE|incompatible encoding regexp match/)
+      }.should.raise(Encoding::CompatibilityError, /ASCII incompatible encoding: UTF-16BE|incompatible encoding regexp match/)
     end
 
     context "given base" do
@@ -65,7 +65,7 @@ version_is StringScanner::Version, "3.1.1" do # ruby_version_is "3.4"
       it "raises ArgumentError when passed not supported base" do
         -> {
           StringScanner.new("42").scan_integer(base: 5)
-        }.should raise_error(ArgumentError, "Unsupported integer base: 5, expected 10 or 16")
+        }.should.raise(ArgumentError, "Unsupported integer base: 5, expected 10 or 16")
       end
 
       version_is StringScanner::Version, "3.1.1"..."3.1.3" do # ruby_version_is "3.4.0"..."3.4.3"
@@ -107,7 +107,7 @@ version_is StringScanner::Version, "3.1.1" do # ruby_version_is "3.4"
         s = StringScanner.new("42")
         s.scan_integer
         s.should.matched?
-        -> { s[:a] }.should raise_error(IndexError)
+        -> { s[:a] }.should.raise(IndexError)
       end
     end
 
@@ -115,7 +115,7 @@ version_is StringScanner::Version, "3.1.1" do # ruby_version_is "3.4"
       s = StringScanner.new("a42")
       s.scan_integer
       s.should_not.matched?
-      s[:a].should be_nil
+      s[:a].should == nil
     end
 
     version_is StringScanner::Version, "3.1.3" do # ruby_version_is "3.4"
@@ -150,7 +150,7 @@ version_is StringScanner::Version, "3.1.1" do # ruby_version_is "3.4"
 
         s.scan_integer
         s.should.matched?
-        -> { s[:a] }.should raise_error(IndexError)
+        -> { s[:a] }.should.raise(IndexError)
       end
     end
   end

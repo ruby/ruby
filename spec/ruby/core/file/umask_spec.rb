@@ -13,7 +13,7 @@ describe "File.umask" do
   end
 
   it "returns an Integer" do
-    File.umask.should be_kind_of(Integer)
+    File.umask.should.is_a?(Integer)
   end
 
   platform_is_not :windows do
@@ -47,11 +47,11 @@ describe "File.umask" do
   end
 
   it "raises RangeError with too large values" do
-    -> { File.umask(2**64) }.should raise_error(RangeError)
-    -> { File.umask(-2**63 - 1) }.should raise_error(RangeError)
+    -> { File.umask(2**64) }.should.raise(RangeError)
+    -> { File.umask(-2**63 - 1) }.should.raise(RangeError)
   end
 
   it "raises ArgumentError when more than one argument is provided" do
-    -> { File.umask(022, 022) }.should raise_error(ArgumentError)
+    -> { File.umask(022, 022) }.should.raise(ArgumentError)
   end
 end

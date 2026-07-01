@@ -275,6 +275,10 @@ rb_default_home_dir(VALUE result)
 VALUE
 rb_file_expand_path_internal(VALUE fname, VALUE dname, int abs_mode, int long_name, VALUE result)
 {
+    if (!result) {
+        result = rb_usascii_str_new(0, 1);
+    }
+
     size_t size = 0, whome_len = 0;
     size_t buffer_len = 0;
     long wpath_len = 0, wdir_len = 0;
