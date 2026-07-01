@@ -74,7 +74,7 @@ module Bundler
           puts definition.to_lock
         else
           file = options[:lockfile]
-          file = file ? Pathname.new(file).expand_path : Bundler.default_lockfile
+          file = file ? Pathname.new(file).expand_path : definition.lockfile
 
           puts "Writing lockfile to #{file}"
           definition.write_lock(file, false)
