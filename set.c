@@ -2055,7 +2055,12 @@ set_hash_i(st_data_t item, st_data_t(arg))
  *  call-seq:
  *    hash -> integer
  *
- *  Returns hash code for set.
+ *  Returns the integer hash value for +self+.
+ *
+ *  Two sets with the same content have the same hash value.
+ *
+ *    Set[0, 1].hash == Set[1, 0].hash # => true
+ *    Set[0, 1].hash == Set[0].hash    # => false
  */
 static VALUE
 set_i_hash(VALUE set)
