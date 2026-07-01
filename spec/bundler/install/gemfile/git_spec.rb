@@ -427,8 +427,6 @@ RSpec.describe "bundle install with git sources" do
     context "when the branch starts with a `#`" do
       let(:branch) { "#149/redirect-url-fragment" }
       it "works" do
-        skip "git does not accept this" if Gem.win_platform?
-
         update_git("foo", path: repo, branch: branch)
 
         install_gemfile <<-G
@@ -481,8 +479,6 @@ RSpec.describe "bundle install with git sources" do
     context "when the tag starts with a `#`" do
       let(:tag) { "#149/redirect-url-fragment" }
       it "works" do
-        skip "git does not accept this" if Gem.win_platform?
-
         update_git("foo", path: repo, tag: tag)
 
         install_gemfile <<-G
