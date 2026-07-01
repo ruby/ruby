@@ -6,11 +6,11 @@ require 'optparse'
 require 'pathname'
 require 'zlib'
 
-require_relative 'lib/tracepoint_defs.rb'
-require_relative 'lib/converter_defs.rb'
-require_relative 'lib/converter.rb'
+require_relative 'lib/tracepoint_defs'
+require_relative 'lib/converter_defs'
+require_relative 'lib/converter'
 
-PROBE_NAME_TO_USDT = RubyTimelineTool::USDT_DEFS.values.flatten.to_h {|t| [t.probe_name, t]}
+PROBE_NAME_TO_USDT = RubyTimelineTool::USDT_DEFS.values.flatten.to_h { |t| [t.probe_name, t] }
 
 module FetchStore
   refine Hash do
@@ -32,7 +32,7 @@ class LogProcessor
     @type_id_name = {}
     @start_time = nil
     @results = []
-    @current = Hash.new {|hash, key| hash[key] = {}}
+    @current = Hash.new { |hash, key| hash[key] = {} }
     @started = false
   end
 
@@ -40,7 +40,7 @@ class LogProcessor
 
   def process_line(line)
     if !@started
-      if line == "====RUBY_TRACING_LOG_START===="
+      if line == '====RUBY_TRACING_LOG_START===='
         @started = true
       end
       return
@@ -49,9 +49,7 @@ class LogProcessor
     if line.include?(',')
       process_log_line(line)
     else
-      if @verbose
-        puts "Discarded line '#{line}'"
-      end
+      puts "Discarded line '#{line}'" if @verbose
     end
   end
 
@@ -87,7 +85,7 @@ class LogProcessor
     usdt_def.args.each_pair.zip(raw_args) do |arg_def, arg_val|
       arg_name, arg_converter = arg_def
       begin
-        converted_val = RubyTimelineTool::convert_arg(arg_val, arg_converter)
+        converted_val = RubyTimelineTool.convert_arg(arg_val, arg_converter)
       rescue
         puts "error converting argument #{arg_name}, value: [#{arg_val}]"
         puts "line: #{line}"
@@ -108,9 +106,9 @@ class LogProcessor
     case vis_name
     when 'gc_mark_stacked_objects'
       enrich([:global, 'GCEnterExit'], [tid, 'gc_mark']) do |old_result|
-        old_result[:args].fetch_store(:gc_mark_stacked_objects){
-          {popped_count: 0}
-        }[:popped_count] += args[:popped_count]
+        old_result[:args].fetch_store(:gc_mark_stacked_objects) do
+          { popped_count: 0 }
+        end[:popped_count] += args[:popped_count]
       end
     when 'rts_set_running'
       sched = args[0].to_i
@@ -120,14 +118,14 @@ class LogProcessor
         result[:name] = 'RTS'
         result[:ph] = 'B'
         result[:args].update({
-          sched: sched,
+          sched:,
           thread: new_thread,
         })
       elsif new_thread == 0
         result[:name] = 'RTS'
         result[:ph] = 'E'
         result[:args].update({
-          sched: sched,
+          sched:,
           thread: old_thread,
         })
       else
@@ -188,7 +186,7 @@ class LogProcessor
   end
 end
 
-def main()
+def main
   options = {}
 
   OptionParser.new do |parser|
@@ -198,7 +196,7 @@ def main()
 
   input = ARGV[0]
   if input.nil?
-    raise "Need positional argument"
+    raise 'Need positional argument'
   end
 
   input_path = Pathname.new(input)
@@ -206,7 +204,7 @@ def main()
     raise "File #{input_path} does not exist"
   end
 
-  output_path = input_path.dirname / (input_path.basename.to_s + '.json.gz')
+  output_path = input_path.dirname / "#{input_path.basename}.json.gz"
 
   log_processor = LogProcessor.new(verbose: options[:verbose])
 
@@ -222,4 +220,4 @@ def main()
   end
 end
 
-main()
+main
