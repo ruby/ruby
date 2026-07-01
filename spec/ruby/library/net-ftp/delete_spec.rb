@@ -26,37 +26,37 @@ ruby_version_is ""..."4.1" do
 
     it "raises a Net::FTPTempError when the response code is 450" do
       @server.should_receive(:dele).and_respond("450 Requested file action not taken.")
-      -> { @ftp.delete("test.file") }.should raise_error(Net::FTPTempError)
+      -> { @ftp.delete("test.file") }.should.raise(Net::FTPTempError)
     end
 
     it "raises a Net::FTPPermError when the response code is 550" do
       @server.should_receive(:dele).and_respond("550 Requested action not taken.")
-      -> { @ftp.delete("test.file") }.should raise_error(Net::FTPPermError)
+      -> { @ftp.delete("test.file") }.should.raise(Net::FTPPermError)
     end
 
     it "raises a Net::FTPPermError when the response code is 500" do
       @server.should_receive(:dele).and_respond("500 Syntax error, command unrecognized.")
-      -> { @ftp.delete("test.file") }.should raise_error(Net::FTPPermError)
+      -> { @ftp.delete("test.file") }.should.raise(Net::FTPPermError)
     end
 
     it "raises a Net::FTPPermError when the response code is 501" do
       @server.should_receive(:dele).and_respond("501 Syntax error in parameters or arguments.")
-      -> { @ftp.delete("test.file") }.should raise_error(Net::FTPPermError)
+      -> { @ftp.delete("test.file") }.should.raise(Net::FTPPermError)
     end
 
     it "raises a Net::FTPPermError when the response code is 502" do
       @server.should_receive(:dele).and_respond("502 Command not implemented.")
-      -> { @ftp.delete("test.file") }.should raise_error(Net::FTPPermError)
+      -> { @ftp.delete("test.file") }.should.raise(Net::FTPPermError)
     end
 
     it "raises a Net::FTPTempError when the response code is 421" do
       @server.should_receive(:dele).and_respond("421 Service not available, closing control connection.")
-      -> { @ftp.delete("test.file") }.should raise_error(Net::FTPTempError)
+      -> { @ftp.delete("test.file") }.should.raise(Net::FTPTempError)
     end
 
     it "raises a Net::FTPPermError when the response code is 530" do
       @server.should_receive(:dele).and_respond("530 Not logged in.")
-      -> { @ftp.delete("test.file") }.should raise_error(Net::FTPPermError)
+      -> { @ftp.delete("test.file") }.should.raise(Net::FTPPermError)
     end
   end
 end

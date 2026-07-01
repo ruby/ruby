@@ -7,23 +7,18 @@ require_relative '../lib/parser_support'
 class RubyVM
   module AbstractSyntaxTree
     class Node
-      class CodePosition
+      CodePosition = Data.define(:lineno, :column) do
         include Comparable
-        attr_reader :lineno, :column
-        def initialize(lineno, column)
-          @lineno = lineno
-          @column = column
-        end
 
         def <=>(other)
-          case
-          when lineno < other.lineno
-            -1
-          when lineno == other.lineno
-            column <=> other.column
-          when lineno > other.lineno
-            1
-          end
+          (lineno <=> other.lineno).nonzero? || column <=> other.column
+        end
+        def to_s
+          "@#{lineno}:#{column}"
+        end
+        alias inspect to_s
+        def pretty_print(q)
+          q.text to_s
         end
       end
 
@@ -255,7 +250,8 @@ class TestAst < Test::Unit::TestCase
       assert_invalid_parse(msg, "#{code}")
       assert_invalid_parse(msg, "def m; #{code}; end")
       assert_invalid_parse(msg, "begin; #{code}; end")
-      assert_parse("END {#{code}}")
+      assert_invalid_parse(msg, "BEGIN {#{code}}")
+      assert_invalid_parse(msg, "END {#{code}}")
 
       assert_parse("!defined?(#{code})")
       assert_parse("def m; defined?(#{code}); end")
@@ -720,6 +716,7 @@ class TestAst < Test::Unit::TestCase
     assert_equal(nil, block_arg.call(''))
     assert_equal(:block, block_arg.call('&block'))
     assert_equal(:&, block_arg.call('&'))
+    assert_equal(false, block_arg.call('&nil'))
   end
 
   def test_keyword_rest
@@ -1745,6 +1742,19 @@ dummy
       assert_locations(node.children[-1].children[-1].children[-1].locations, [[1, 9, 1, 20], [1, 9, 1, 14], [1, 14, 1, 15], [1, 19, 1, 20]])
     end
 
+    def test_negative_numeric_locations
+      node = ast_parse("-1")
+      assert_locations(node.children.last.locations, [[1, 0, 1, 2]])
+    end
+
+    def test_numeric_location_with_nonsuffix
+      node = ast_parse("1if true")
+      assert_locations(node.children.last.children[1].locations, [[1, 0, 1, 1]])
+
+      node = ast_parse("1q", error_tolerant: true)
+      assert_locations(node.children.last.locations, [[1, 0, 1, 1]])
+    end
+
     private
     def ast_parse(src, **options)
       begin
@@ -1758,7 +1768,7 @@ dummy
     def assert_locations(locations, expected)
       ary = locations.map {|loc| loc && [loc.first_lineno, loc.first_column, loc.last_lineno, loc.last_column] }
 
-      assert_equal(ary, expected)
+      assert_equal(expected, ary)
     end
   end
 end

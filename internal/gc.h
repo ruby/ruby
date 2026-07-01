@@ -120,12 +120,11 @@ const char *rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
 struct rb_execution_context_struct; /* in vm_core.h */
 struct rb_objspace; /* in vm_core.h */
 
-#define NEWOBJ_OF_WITH_SHAPE(var, T, c, f, shape_id, s, ec) \
-    T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
-            rb_wb_protected_newobj_of((ec ? ec : GET_EC()), (c), (f) & ~FL_WB_PROTECTED, shape_id, s) : \
-            rb_wb_unprotected_newobj_of((c), (f), shape_id, s))
-
-#define NEWOBJ_OF(var, T, c, f, s, ec) NEWOBJ_OF_WITH_SHAPE(var, T, c, f, 0 /* ROOT_SHAPE_ID */, s, ec)
+#define EC_NEWOBJ_OF(var, T, c, f, s, ec)  \
+    T *(var) = (T *)rb_ec_newobj_of((ec), (c), (f), s)
+#define NEWOBJ_OF(var, T, c, f, s) EC_NEWOBJ_OF(var, T, c, f, s, GET_EC())
+#define UNPROTECTED_NEWOBJ_OF(var, T, c, f, s) \
+    T *(var) = (T *)rb_newobj((GET_EC()), (c), (f), ROOT_SHAPE_ID | SHAPE_ID_LAYOUT_OTHER, false, s)
 
 #ifndef RB_GC_OBJECT_METADATA_ENTRY_DEFINED
 # define RB_GC_OBJECT_METADATA_ENTRY_DEFINED
@@ -200,6 +199,7 @@ RUBY_ATTR_MALLOC void *rb_xmalloc_mul_add_mul(size_t, size_t, size_t, size_t);
 RUBY_ATTR_MALLOC void *rb_xcalloc_mul_add_mul(size_t, size_t, size_t, size_t);
 void rb_gc_obj_id_moved(VALUE obj);
 void rb_gc_register_pinning_obj(VALUE obj);
+rb_execution_context_t *rb_gc_get_ec(void);
 
 void *rb_gc_ractor_cache_alloc(rb_ractor_t *ractor);
 void rb_gc_ractor_cache_free(void *cache);
@@ -209,9 +209,6 @@ size_t *rb_gc_heap_sizes(void);
 size_t rb_gc_heap_id_for_size(size_t size);
 
 void rb_gc_mark_and_move(VALUE *ptr);
-
-void rb_gc_declare_weak_references(VALUE obj);
-bool rb_gc_handle_weak_references_alive_p(VALUE obj);
 
 void rb_gc_ref_update_table_values_only(st_table *tbl);
 
@@ -232,7 +229,8 @@ void rb_objspace_reachable_objects_from(VALUE obj, void (func)(VALUE, void *), v
 void rb_objspace_reachable_objects_from_root(void (func)(const char *category, VALUE, void *), void *data);
 int rb_objspace_internal_object_p(VALUE obj);
 int rb_objspace_garbage_object_p(VALUE obj);
-bool rb_gc_pointer_to_heap_p(VALUE obj);
+void rb_gc_declare_weak_references(VALUE obj);
+bool rb_gc_handle_weak_references_alive_p(VALUE obj);
 
 void rb_objspace_each_objects(
     int (*callback)(void *start, void *end, size_t stride, void *data),
@@ -246,16 +244,21 @@ VALUE rb_gc_disable_no_rest(void);
 
 /* gc.c (export) */
 const char *rb_objspace_data_type_name(VALUE obj);
-VALUE rb_wb_protected_newobj_of(struct rb_execution_context_struct *, VALUE, VALUE, uint32_t /* shape_id_t */, size_t);
-VALUE rb_wb_unprotected_newobj_of(VALUE, VALUE, uint32_t /* shape_id_t */, size_t);
+VALUE rb_newobj(struct rb_execution_context_struct *, VALUE, VALUE, uint32_t /* shape_id_t */, bool, size_t);
+VALUE rb_newobj_of(VALUE, VALUE, size_t);
+VALUE rb_ec_newobj_of(struct rb_execution_context_struct *, VALUE, VALUE, size_t);
 size_t rb_obj_memsize_of(VALUE);
 struct rb_gc_object_metadata_entry *rb_gc_object_metadata(VALUE obj);
 void rb_gc_mark_values(long n, const VALUE *values);
 void rb_gc_mark_vm_stack_values(long n, const VALUE *values);
 void rb_gc_update_values(long n, VALUE *values);
+void rb_gc_mark_set_no_pin(st_table *);
+void rb_gc_update_set_refs(st_table *);
 
+#if USE_MODULAR_GC
 const char *rb_gc_active_gc_name(void);
 int rb_gc_modular_gc_loaded_p(void);
+#endif
 
 RUBY_SYMBOL_EXPORT_END
 

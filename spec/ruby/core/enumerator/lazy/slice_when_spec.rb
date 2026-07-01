@@ -9,6 +9,6 @@ describe "Enumerator::Lazy#slice_when" do
 
   it "should return a lazy enumerator" do
     s = 0..Float::INFINITY
-    s.lazy.slice_when { |a, b| true }.should be_kind_of(Enumerator::Lazy)
+    s.lazy.slice_when { |a, b| true }.should.is_a?(Enumerator::Lazy)
   end
 end

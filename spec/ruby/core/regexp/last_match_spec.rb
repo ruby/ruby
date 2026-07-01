@@ -4,7 +4,7 @@ describe "Regexp.last_match" do
   it "returns MatchData instance when not passed arguments" do
     /c(.)t/ =~ 'cat'
 
-    Regexp.last_match.should be_kind_of(MatchData)
+    Regexp.last_match.should.is_a?(MatchData)
   end
 
   it "returns the nth field in this MatchData when passed an Integer" do
@@ -28,7 +28,7 @@ describe "Regexp.last_match" do
 
     it "raises an IndexError when given a missing name" do
       /(?<test>[A-Z]+.*)/ =~ "TEST123"
-      -> { Regexp.last_match(:missing) }.should raise_error(IndexError)
+      -> { Regexp.last_match(:missing) }.should.raise(IndexError)
     end
   end
 
@@ -50,7 +50,7 @@ describe "Regexp.last_match" do
     it "raises a TypeError when unable to coerce" do
       obj = Object.new
       /(?<test>[A-Z]+.*)/ =~ "TEST123"
-      -> { Regexp.last_match(obj) }.should raise_error(TypeError)
+      -> { Regexp.last_match(obj) }.should.raise(TypeError)
     end
   end
 end

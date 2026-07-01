@@ -9,6 +9,6 @@ describe "Vector#cross_product" do
   it "raises an error unless both vectors have dimension 3" do
     -> {
       Vector[1, 2, 3].cross_product(Vector[0, -4])
-    }.should raise_error(Vector::ErrDimensionMismatch)
+    }.should.raise(Vector::ErrDimensionMismatch)
   end
 end

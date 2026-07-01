@@ -8,6 +8,6 @@ describe "UDPSocket.open" do
 
   it "allows calls to open without arguments" do
     @socket = UDPSocket.open
-    @socket.should be_kind_of(UDPSocket)
+    @socket.should.is_a?(UDPSocket)
   end
 end

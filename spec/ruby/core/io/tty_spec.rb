@@ -1,6 +1,25 @@
 require_relative '../../spec_helper'
-require_relative 'shared/tty'
+require_relative 'fixtures/classes'
 
 describe "IO#tty?" do
-  it_behaves_like :io_tty, :tty?
+  platform_is_not :windows do
+    it "returns true if this stream is a terminal device (TTY)" do
+      begin
+        # check to enabled tty
+        File.open('/dev/tty') {}
+      rescue Errno::ENXIO
+        skip "workaround for not configured environment like OS X"
+      else
+        File.open('/dev/tty') { |f| f.tty? }.should == true
+      end
+    end
+  end
+
+  it "returns false if this stream is not a terminal device (TTY)" do
+    File.open(__FILE__) { |f| f.tty? }.should == false
+  end
+
+  it "raises IOError on closed stream" do
+    -> { IOSpecs.closed_io.tty? }.should.raise(IOError)
+  end
 end

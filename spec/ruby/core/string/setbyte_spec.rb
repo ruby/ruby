@@ -4,7 +4,7 @@ require_relative '../../spec_helper'
 
 describe "String#setbyte" do
   it "returns an Integer" do
-    "a".setbyte(0,1).should be_kind_of(Integer)
+    "a".setbyte(0,1).should.is_a?(Integer)
   end
 
   it "modifies the receiver" do
@@ -34,9 +34,9 @@ describe "String#setbyte" do
 
   it "can invalidate a String's encoding" do
     str = "glark"
-    str.valid_encoding?.should be_true
+    str.valid_encoding?.should == true
     str.setbyte(2,253)
-    str.valid_encoding?.should be_false
+    str.valid_encoding?.should == false
 
     str = "ABC"
     str.setbyte(0, 0x20) # ' '
@@ -58,11 +58,11 @@ describe "String#setbyte" do
   end
 
   it "raises an IndexError if the index is greater than the String bytesize" do
-    -> { "?".setbyte(1, 97) }.should raise_error(IndexError)
+    -> { "?".setbyte(1, 97) }.should.raise(IndexError)
   end
 
   it "raises an IndexError if the negative index is greater magnitude than the String bytesize" do
-    -> { "???".setbyte(-5, 97) }.should raise_error(IndexError)
+    -> { "???".setbyte(-5, 97) }.should.raise(IndexError)
   end
 
   it "sets a byte at an index greater than String size" do
@@ -84,12 +84,12 @@ describe "String#setbyte" do
 
   it "raises a FrozenError if self is frozen" do
     str = "cold".freeze
-    str.frozen?.should be_true
-    -> { str.setbyte(3,96) }.should raise_error(FrozenError)
+    str.frozen?.should == true
+    -> { str.setbyte(3,96) }.should.raise(FrozenError)
   end
 
   it "raises a TypeError unless the second argument is an Integer" do
-    -> { "a".setbyte(0,'a') }.should raise_error(TypeError)
+    -> { "a".setbyte(0,'a') }.should.raise(TypeError)
   end
 
   it "calls #to_int to convert the index" do

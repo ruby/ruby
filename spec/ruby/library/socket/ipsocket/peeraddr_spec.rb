@@ -18,7 +18,7 @@ describe "Socket::IPSocket#peeraddr" do
   it "raises error if socket is not connected" do
     -> {
       @server.peeraddr
-    }.should raise_error(Errno::ENOTCONN)
+    }.should.raise(Errno::ENOTCONN)
   end
 
   it "returns an array of information on the peer" do
@@ -92,7 +92,7 @@ describe 'Socket::IPSocket#peeraddr' do
 
       describe 'using :cats as the argument' do
         it 'raises ArgumentError' do
-          -> { @client.peeraddr(:cats) }.should raise_error(ArgumentError)
+          -> { @client.peeraddr(:cats) }.should.raise(ArgumentError)
         end
       end
     end

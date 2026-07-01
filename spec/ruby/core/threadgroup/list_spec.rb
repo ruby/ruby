@@ -7,13 +7,13 @@ describe "ThreadGroup#list" do
     q.pop.should == :go
     tg = ThreadGroup.new
     tg.add(th1)
-    tg.list.should include(th1)
+    tg.list.should.include?(th1)
 
     th2 = Thread.new { q << :go; sleep }
     q.pop.should == :go
 
     tg.add(th2)
-    (tg.list & [th1, th2]).should include(th1, th2)
+    (tg.list & [th1, th2]).to_set.should == Set[th1, th2]
 
     Thread.pass while th1.status and th1.status != 'sleep'
     Thread.pass while th2.status and th2.status != 'sleep'

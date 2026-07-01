@@ -866,6 +866,13 @@ thread_sched_wait_running_turn(struct rb_thread_sched *sched, rb_thread_t *th, b
             thread_sched_set_running(sched, th);
             rb_ractor_thread_switch(th->ractor, th, false);
         }
+        else if (th == sched->runnable_hot_th) {
+            // The hot thread cannot steal the control (e.g. the running thread
+            // is an MN thread). It is going to sleep, so it is no longer spinning;
+            // drop the hint so that other threads don't yield the lock to it.
+            sched->runnable_hot_th = NULL;
+            sched->runnable_hot_th_waiting = 0;
+        }
 
         // already deleted from running threads
         // VM_ASSERT(!ractor_sched_running_threads_contain_p(th->vm, th)); // need locking
@@ -1724,9 +1731,15 @@ ruby_thread_set_native(rb_thread_t *th)
 static void native_thread_setup(struct rb_native_thread *nt);
 static void native_thread_setup_on_thread(struct rb_native_thread *nt);
 
+// Internal cache of page size:
+static size_t RB_THREAD_PAGE_SIZE;
+
 void
 Init_native_thread(rb_thread_t *main_th)
 {
+    // Get the system page size for later use in stack allocation and stack overflow checks:
+    RB_THREAD_PAGE_SIZE = sysconf(_SC_PAGESIZE);
+
 #if defined(HAVE_PTHREAD_CONDATTR_SETCLOCK)
     if (condattr_monotonic) {
         int r = pthread_condattr_init(condattr_monotonic);
@@ -1799,7 +1812,12 @@ ruby_mn_threads_params(void)
     main_ractor->threads.sched.enable_mn_threads = enable_mn_threads;
 
     const char *max_cpu_cstr = getenv("RUBY_MAX_CPU");
-    const int default_max_cpu = 8; // TODO: CPU num?
+#if defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_ONLN)
+    long nprocessors = sysconf(_SC_NPROCESSORS_ONLN);
+    const int default_max_cpu = (nprocessors > 0) ? (int)nprocessors : 8;
+#else
+    const int default_max_cpu = 8;
+#endif
     int max_cpu = default_max_cpu;
 
     if (USE_MN_THREADS && max_cpu_cstr)  {
@@ -1957,7 +1975,7 @@ get_stack(void **addr, size_t *size)
 # ifdef HAVE_PTHREAD_ATTR_GETGUARDSIZE
     CHECK_ERR(pthread_attr_getguardsize(&attr, &guard));
 # else
-    guard = getpagesize();
+    guard = RB_THREAD_PAGE_SIZE;
 # endif
     *size -= guard;
     pthread_attr_destroy(&attr);
@@ -2025,23 +2043,6 @@ static struct {
 extern void *STACK_END_ADDRESS;
 #endif
 
-enum {
-    RUBY_STACK_SPACE_LIMIT = 1024 * 1024, /* 1024KB */
-    RUBY_STACK_SPACE_RATIO = 5
-};
-
-static size_t
-space_size(size_t stack_size)
-{
-    size_t space_size = stack_size / RUBY_STACK_SPACE_RATIO;
-    if (space_size > RUBY_STACK_SPACE_LIMIT) {
-        return RUBY_STACK_SPACE_LIMIT;
-    }
-    else {
-        return space_size;
-    }
-}
-
 static void
 native_thread_init_main_thread_stack(void *addr)
 {
@@ -2075,15 +2076,11 @@ native_thread_init_main_thread_stack(void *addr)
     {
 #if defined(HAVE_GETRLIMIT)
 #if defined(PTHREAD_STACK_DEFAULT)
-# if PTHREAD_STACK_DEFAULT < RUBY_STACK_SPACE*5
-#  error "PTHREAD_STACK_DEFAULT is too small"
-# endif
         size_t size = PTHREAD_STACK_DEFAULT;
 #else
         size_t size = RUBY_VM_THREAD_VM_STACK_SIZE;
 #endif
         size_t space;
-        int pagesize = getpagesize();
         struct rlimit rlim;
         STACK_GROW_DIR_DETECTION;
         if (getrlimit(RLIMIT_STACK, &rlim) == 0) {
@@ -2091,10 +2088,10 @@ native_thread_init_main_thread_stack(void *addr)
         }
         addr = native_main_thread.stack_start;
         if (IS_STACK_DIR_UPPER()) {
-            space = ((size_t)((char *)addr + size) / pagesize) * pagesize - (size_t)addr;
+            space = ((size_t)((char *)addr + size) / RB_THREAD_PAGE_SIZE) * RB_THREAD_PAGE_SIZE - (size_t)addr;
         }
         else {
-            space = (size_t)addr - ((size_t)((char *)addr - size) / pagesize + 1) * pagesize;
+            space = (size_t)addr - ((size_t)((char *)addr - size) / RB_THREAD_PAGE_SIZE + 1) * RB_THREAD_PAGE_SIZE;
         }
         native_main_thread.stack_maxsize = space;
 #endif
@@ -2183,9 +2180,6 @@ native_thread_create0(struct rb_native_thread *nt)
     pthread_attr_t attr;
 
     const size_t stack_size = nt->vm->default_params.thread_machine_stack_size;
-    const size_t space = space_size(stack_size);
-
-    nt->machine_stack_maxsize = stack_size - space;
 
 #ifdef USE_SIGALTSTACK
     nt->altstack = rb_allocate_sigaltstack();
@@ -3257,7 +3251,7 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
 {
     void *base;
     size_t size;
-    const size_t water_mark = 1024 * 1024;
+    const size_t water_mark = RB_THREAD_PAGE_SIZE;
     STACK_GROW_DIR_DETECTION;
 
     if (th) {
@@ -3281,7 +3275,6 @@ ruby_stack_overflowed_p(const rb_thread_t *th, const void *addr)
         return 0;
     }
 
-    size /= RUBY_STACK_SPACE_RATIO;
     if (size > water_mark) size = water_mark;
     if (IS_STACK_DIR_UPPER()) {
         if (size > ~(size_t)base+1) size = ~(size_t)base+1;

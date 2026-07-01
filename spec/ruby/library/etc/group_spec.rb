@@ -9,7 +9,7 @@ describe "Etc.group" do
     it "returns a Etc::Group struct" do
       group = Etc.group
       begin
-        group.should be_an_instance_of(Etc::Group)
+        group.should.instance_of?(Etc::Group)
       ensure
         Etc.endgrent
       end
@@ -21,7 +21,7 @@ describe "Etc.group" do
           Etc.group do | group2 |
           end
         end
-      }.should raise_error(RuntimeError)
+      }.should.raise(RuntimeError)
     end
   end
 end

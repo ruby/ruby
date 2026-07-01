@@ -890,22 +890,23 @@ typedef struct rb_tp_struct {
 } rb_tp_t;
 
 static void
-tp_mark(void *ptr)
+tp_mark_and_move(void *ptr)
 {
     rb_tp_t *tp = ptr;
-    rb_gc_mark(tp->proc);
-    rb_gc_mark(tp->local_target_set);
-    if (tp->target_th) rb_gc_mark(tp->target_th->self);
+    rb_gc_mark_and_move(&tp->proc);
+    rb_gc_mark_and_move(&tp->local_target_set);
+    if (tp->target_th) rb_gc_mark_and_move(&tp->target_th->self);
 }
 
 static const rb_data_type_t tp_data_type = {
     "tracepoint",
     {
-        tp_mark,
+        tp_mark_and_move,
         RUBY_TYPED_DEFAULT_FREE,
         NULL, // Nothing allocated externally, so don't need a memsize function
+        tp_mark_and_move,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 static VALUE
@@ -1920,33 +1921,6 @@ rb_postponed_job_trigger(rb_postponed_job_handle_t h)
     RUBY_ATOMIC_OR(pjq->triggered_bitset, (((rb_atomic_t)1UL) << h));
     RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(get_valid_ec(GET_VM()));
 }
-
-
-static int
-pjob_register_legacy_impl(unsigned int flags, rb_postponed_job_func_t func, void *data)
-{
-    /* We _know_ calling preregister from a signal handler like this is racy; what is
-     * and is not promised is very exhaustively documented in debug.h */
-    rb_postponed_job_handle_t h = rb_postponed_job_preregister(0, func, data);
-    if (h == POSTPONED_JOB_HANDLE_INVALID) {
-        return 0;
-    }
-    rb_postponed_job_trigger(h);
-    return 1;
-}
-
-int
-rb_postponed_job_register(unsigned int flags, rb_postponed_job_func_t func, void *data)
-{
-    return pjob_register_legacy_impl(flags, func, data);
-}
-
-int
-rb_postponed_job_register_one(unsigned int flags, rb_postponed_job_func_t func, void *data)
-{
-    return pjob_register_legacy_impl(flags, func, data);
-}
-
 
 void
 rb_postponed_job_flush(rb_vm_t *vm)

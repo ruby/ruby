@@ -52,29 +52,29 @@ describe "The break statement in a captured block" do
 
   describe "when the invocation of the scope creating the block is still active" do
     it "raises a LocalJumpError when invoking the block from the scope creating the block" do
-      -> { @program.break_in_method }.should raise_error(LocalJumpError)
+      -> { @program.break_in_method }.should.raise(LocalJumpError)
       ScratchPad.recorded.should == [:a, :xa, :d, :b]
     end
 
     it "raises a LocalJumpError when invoking the block from a method" do
-      -> { @program.break_in_nested_method }.should raise_error(LocalJumpError)
+      -> { @program.break_in_nested_method }.should.raise(LocalJumpError)
       ScratchPad.recorded.should == [:a, :xa, :cc, :aa, :b]
     end
 
     it "raises a LocalJumpError when yielding to the block" do
-      -> { @program.break_in_yielding_method }.should raise_error(LocalJumpError)
+      -> { @program.break_in_yielding_method }.should.raise(LocalJumpError)
       ScratchPad.recorded.should == [:a, :xa, :cc, :aa, :b]
     end
   end
 
   describe "from a scope that has returned" do
     it "raises a LocalJumpError when calling the block from a method" do
-      -> { @program.break_in_method_captured }.should raise_error(LocalJumpError)
+      -> { @program.break_in_method_captured }.should.raise(LocalJumpError)
       ScratchPad.recorded.should == [:a, :za, :xa, :zd, :zb]
     end
 
     it "raises a LocalJumpError when yielding to the block" do
-      -> { @program.break_in_yield_captured }.should raise_error(LocalJumpError)
+      -> { @program.break_in_yield_captured }.should.raise(LocalJumpError)
       ScratchPad.recorded.should == [:a, :za, :xa, :zd, :aa, :zb]
     end
   end
@@ -88,7 +88,7 @@ describe "The break statement in a captured block" do
           e
         end
       end
-      thread_with_break.value.should be_an_instance_of(LocalJumpError)
+      thread_with_break.value.should.instance_of?(LocalJumpError)
     end
   end
 end
@@ -256,7 +256,7 @@ describe "The break statement in a method" do
   it "is invalid and raises a SyntaxError" do
     -> {
       eval("def m; break; end")
-    }.should raise_error(SyntaxError)
+    }.should.raise(SyntaxError)
   end
 end
 
@@ -268,7 +268,7 @@ describe "The break statement in a module literal" do
       end
     RUBY
 
-    -> { eval(code) }.should raise_error(SyntaxError)
+    -> { eval(code) }.should.raise(SyntaxError)
   end
 end
 
@@ -388,7 +388,7 @@ describe "Executing break from within a block" do
 
     -> do
       cls2.new.foo.should == 1
-    end.should_not raise_error
+    end.should_not.raise
   end
 
   it "raises LocalJumpError when converted into a proc during a super call" do
@@ -397,6 +397,6 @@ describe "Executing break from within a block" do
 
     -> do
       cls2.new.foo
-    end.should raise_error(LocalJumpError)
+    end.should.raise(LocalJumpError)
   end
 end

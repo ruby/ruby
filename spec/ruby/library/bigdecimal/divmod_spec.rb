@@ -40,9 +40,9 @@ describe "BigDecimal#mod_part_of_divmod" do
   it "raises ZeroDivisionError if other is zero" do
     bd5667 = BigDecimal("5667.19")
     zero = BigDecimal("0")
-    -> { bd5667.mod_part_of_divmod(0) }.should raise_error(ZeroDivisionError)
-    -> { bd5667.mod_part_of_divmod(BigDecimal("0")) }.should raise_error(ZeroDivisionError)
-    -> { zero.mod_part_of_divmod(zero) }.should raise_error(ZeroDivisionError)
+    -> { bd5667.mod_part_of_divmod(0) }.should.raise(ZeroDivisionError)
+    -> { bd5667.mod_part_of_divmod(BigDecimal("0")) }.should.raise(ZeroDivisionError)
+    -> { zero.mod_part_of_divmod(zero) }.should.raise(ZeroDivisionError)
   end
 end
 
@@ -145,8 +145,8 @@ describe "BigDecimal#divmod" do
   version_is BigDecimal::VERSION, "4.0.0" do
     it "raise FloatDomainError error if NaN is involved" do
       (@special_vals + @regular_vals + @zeroes).each do |val|
-        -> { val.divmod(@nan) }.should raise_error(FloatDomainError)
-        -> { @nan.divmod(val) }.should raise_error(FloatDomainError)
+        -> { val.divmod(@nan) }.should.raise(FloatDomainError)
+        -> { @nan.divmod(val) }.should.raise(FloatDomainError)
       end
     end
   end
@@ -163,7 +163,7 @@ describe "BigDecimal#divmod" do
   it "raises ZeroDivisionError if the divisor is zero" do
     (@special_vals + @regular_vals + @zeroes - [@nan]).each do |val|
       @zeroes.each do |zero|
-        -> { val.divmod(zero) }.should raise_error(ZeroDivisionError)
+        -> { val.divmod(zero) }.should.raise(ZeroDivisionError)
       end
     end
   end
@@ -206,7 +206,7 @@ describe "BigDecimal#divmod" do
   it "raises TypeError if the argument cannot be coerced to BigDecimal" do
     -> {
       @one.divmod('1')
-    }.should raise_error(TypeError)
+    }.should.raise(TypeError)
   end
 
 end

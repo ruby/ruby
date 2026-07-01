@@ -15,39 +15,39 @@ describe "A singleton class" do
   end
 
   it "raises a TypeError for Integer's" do
-    -> { 1.singleton_class }.should raise_error(TypeError)
+    -> { 1.singleton_class }.should.raise(TypeError)
   end
 
   it "raises a TypeError for symbols" do
-    -> { :symbol.singleton_class }.should raise_error(TypeError)
+    -> { :symbol.singleton_class }.should.raise(TypeError)
   end
 
   it "is a singleton Class instance" do
     o = mock('x')
-    o.singleton_class.should be_kind_of(Class)
-    o.singleton_class.should_not equal(Object)
-    o.should be_kind_of(o.singleton_class)
+    o.singleton_class.should.is_a?(Class)
+    o.singleton_class.should_not.equal?(Object)
+    o.should.is_a?(o.singleton_class)
   end
 
   it "is a Class for classes" do
-    ClassSpecs::A.singleton_class.should be_kind_of(Class)
+    ClassSpecs::A.singleton_class.should.is_a?(Class)
   end
 
   it "inherits from Class for classes" do
-    Class.should be_ancestor_of(Object.singleton_class)
+    Object.singleton_class.ancestors.should.include?(Class)
   end
 
   it "is a subclass of Class's singleton class" do
     ec = ClassSpecs::A.singleton_class
-    ec.should be_kind_of(Class.singleton_class)
+    ec.should.is_a?(Class.singleton_class)
   end
 
   it "is a subclass of the same level of Class's singleton class" do
     ecec = ClassSpecs::A.singleton_class.singleton_class
     class_ec = Class.singleton_class
 
-    ecec.should be_kind_of(class_ec.singleton_class)
-    ecec.should be_kind_of(class_ec)
+    ecec.should.is_a?(class_ec.singleton_class)
+    ecec.should.is_a?(class_ec)
   end
 
   it "is a subclass of a superclass's singleton class" do
@@ -74,7 +74,7 @@ describe "A singleton class" do
   end
 
   it "doesn't have singleton class" do
-    -> { bignum_value.singleton_class }.should raise_error(TypeError)
+    -> { bignum_value.singleton_class }.should.raise(TypeError)
   end
 end
 
@@ -105,20 +105,20 @@ describe "A constant on a singleton class" do
   end
 
   it "is not defined on the object's class" do
-    @object.class.const_defined?(:CONST).should be_false
+    @object.class.const_defined?(:CONST).should == false
   end
 
   it "is not defined in the singleton class opener's scope" do
     class << @object
       CONST
     end
-    -> { CONST }.should raise_error(NameError)
+    -> { CONST }.should.raise(NameError)
   end
 
   it "cannot be accessed via object::CONST" do
     -> do
       @object::CONST
-    end.should raise_error(TypeError)
+    end.should.raise(TypeError)
   end
 
   it "raises a NameError for anonymous_module::CONST" do
@@ -129,15 +129,15 @@ describe "A constant on a singleton class" do
 
     -> do
       @object::CONST
-    end.should raise_error(NameError)
+    end.should.raise(NameError)
   end
 
   it "appears in the singleton class constant list" do
-    @object.singleton_class.should have_constant(:CONST)
+    @object.singleton_class.should.const_defined?(:CONST, false)
   end
 
   it "does not appear in the object's class constant list" do
-    @object.class.should_not have_constant(:CONST)
+    @object.class.should_not.const_defined?(:CONST)
   end
 
   it "is not preserved when the object is duped" do
@@ -145,14 +145,14 @@ describe "A constant on a singleton class" do
 
     -> do
       class << @object; CONST; end
-    end.should raise_error(NameError)
+    end.should.raise(NameError)
   end
 
   it "is preserved when the object is cloned" do
     @object = @object.clone
 
     class << @object
-      CONST.should_not be_nil
+      CONST.should_not == nil
     end
   end
 end
@@ -168,7 +168,7 @@ describe "Defining instance methods on a singleton class" do
   end
 
   it "defines public methods" do
-    @k_sc.should have_public_instance_method(:singleton_method)
+    @k_sc.public_instance_methods(false).should.include?(:singleton_method)
   end
 end
 
@@ -181,46 +181,46 @@ describe "Instance methods of a singleton class" do
   end
 
   it "include ones of the object's class" do
-    @k_sc.should have_instance_method(:example_instance_method)
+    @k_sc.should.method_defined?(:example_instance_method, true)
   end
 
   it "does not include class methods of the object's class" do
-    @k_sc.should_not have_instance_method(:example_class_method)
+    @k_sc.should_not.method_defined?(:example_class_method)
   end
 
   it "include instance methods of Object" do
-    @a_sc.should have_instance_method(:example_instance_method_of_object)
+    @a_sc.should.method_defined?(:example_instance_method_of_object, true)
   end
 
   it "does not include class methods of Object" do
-    @a_sc.should_not have_instance_method(:example_class_method_of_object)
+    @a_sc.should_not.method_defined?(:example_class_method_of_object)
   end
 
   describe "for a class" do
     it "include instance methods of Class" do
-      @a_c_sc.should have_instance_method(:example_instance_method_of_class)
+      @a_c_sc.should.method_defined?(:example_instance_method_of_class, true)
     end
 
     it "does not include class methods of Class" do
-      @a_c_sc.should_not have_instance_method(:example_class_method_of_class)
+      @a_c_sc.should_not.method_defined?(:example_class_method_of_class)
     end
 
     it "does not include instance methods of the singleton class of Class" do
-      @a_c_sc.should_not have_instance_method(:example_instance_method_of_singleton_class)
+      @a_c_sc.should_not.method_defined?(:example_instance_method_of_singleton_class)
     end
 
     it "does not include class methods of the singleton class of Class" do
-      @a_c_sc.should_not have_instance_method(:example_class_method_of_singleton_class)
+      @a_c_sc.should_not.method_defined?(:example_class_method_of_singleton_class)
     end
   end
 
   describe "for a singleton class" do
     it "includes instance methods of the singleton class of Class" do
-      @a_c_sc.singleton_class.should have_instance_method(:example_instance_method_of_singleton_class)
+      @a_c_sc.singleton_class.should.method_defined?(:example_instance_method_of_singleton_class, true)
     end
 
     it "does not include class methods of the singleton class of Class" do
-      @a_c_sc.singleton_class.should_not have_instance_method(:example_class_method_of_singleton_class)
+      @a_c_sc.singleton_class.should_not.method_defined?(:example_class_method_of_singleton_class)
     end
   end
 end
@@ -234,46 +234,46 @@ describe "Class methods of a singleton class" do
   end
 
   it "include ones of the object's class" do
-    @k_sc.should have_method(:example_class_method)
+    @k_sc.should.respond_to?(:example_class_method)
   end
 
   it "does not include instance methods of the object's class" do
-    @k_sc.should_not have_method(:example_instance_method)
+    @k_sc.should_not.respond_to?(:example_instance_method)
   end
 
   it "include instance methods of Class" do
-    @a_sc.should have_method(:example_instance_method_of_class)
+    @a_sc.should.respond_to?(:example_instance_method_of_class)
   end
 
   it "does not include class methods of Class" do
-    @a_sc.should_not have_method(:example_class_method_of_class)
+    @a_sc.should_not.respond_to?(:example_class_method_of_class)
   end
 
   describe "for a class" do
     it "include instance methods of Class" do
-      @a_c_sc.should have_method(:example_instance_method_of_class)
+      @a_c_sc.should.respond_to?(:example_instance_method_of_class)
     end
 
     it "include class methods of Class" do
-      @a_c_sc.should have_method(:example_class_method_of_class)
+      @a_c_sc.should.respond_to?(:example_class_method_of_class)
     end
 
     it "include instance methods of the singleton class of Class" do
-      @a_c_sc.should have_method(:example_instance_method_of_singleton_class)
+      @a_c_sc.should.respond_to?(:example_instance_method_of_singleton_class)
     end
 
     it "does not include class methods of the singleton class of Class" do
-      @a_c_sc.should_not have_method(:example_class_method_of_singleton_class)
+      @a_c_sc.should_not.respond_to?(:example_class_method_of_singleton_class)
     end
   end
 
   describe "for a singleton class" do
     it "include instance methods of the singleton class of Class" do
-      @a_c_sc.singleton_class.should have_method(:example_instance_method_of_singleton_class)
+      @a_c_sc.singleton_class.should.respond_to?(:example_instance_method_of_singleton_class)
     end
 
     it "include class methods of the singleton class of Class" do
-      @a_c_sc.singleton_class.should have_method(:example_class_method_of_singleton_class)
+      @a_c_sc.singleton_class.should.respond_to?(:example_class_method_of_singleton_class)
     end
   end
 end
@@ -282,13 +282,13 @@ describe "Instantiating a singleton class" do
   it "raises a TypeError when new is called" do
     -> {
       Object.new.singleton_class.new
-    }.should raise_error(TypeError)
+    }.should.raise(TypeError)
   end
 
   it "raises a TypeError when allocate is called" do
     -> {
       Object.new.singleton_class.allocate
-    }.should raise_error(TypeError)
+    }.should.raise(TypeError)
   end
 end
 

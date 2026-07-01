@@ -69,49 +69,49 @@ ruby_version_is "4.1" do
       encoding = Encoding.find("filesystem")
       encoding = Encoding::BINARY if encoding == Encoding::US_ASCII
       platform_is_not :windows do
-        children.should include(["こんにちは.txt".dup.force_encoding(encoding), :file])
+        children.should.include?(["こんにちは.txt".dup.force_encoding(encoding), :file])
       end
-      children.first.first.encoding.should equal(Encoding.find("filesystem"))
+      children.first.first.encoding.should.equal?(Encoding.find("filesystem"))
     end
 
     it "returns children names encoded with the specified encoding" do
       dir = File.join(DirSpecs.mock_dir, 'special')
       children = Dir.scan(dir, encoding: "euc-jp").sort
-      children.first.first.encoding.should equal(Encoding::EUC_JP)
+      children.first.first.encoding.should.equal?(Encoding::EUC_JP)
     end
 
     it "returns children names transcoded to the default internal encoding" do
       Encoding.default_internal = Encoding::EUC_KR
       children = Dir.scan(File.join(DirSpecs.mock_dir, 'special')).sort
-      children.first.first.encoding.should equal(Encoding::EUC_KR)
+      children.first.first.encoding.should.equal?(Encoding::EUC_KR)
     end
 
     it "raises a SystemCallError if called with a nonexistent directory" do
-      -> { Dir.scan DirSpecs.nonexistent }.should raise_error(SystemCallError)
+      -> { Dir.scan DirSpecs.nonexistent }.should.raise(SystemCallError)
     end
 
     it "handles symlink" do
       FileSpecs.symlink do |path|
-        Dir.scan(File.dirname(path)).map(&:last).should include(:link)
+        Dir.scan(File.dirname(path)).map(&:last).should.include?(:link)
       end
     end
 
     platform_is_not :windows do
       it "handles socket" do
         FileSpecs.socket do |path|
-          Dir.scan(File.dirname(path)).map(&:last).should include(:socket)
+          Dir.scan(File.dirname(path)).map(&:last).should.include?(:socket)
         end
       end
 
       it "handles FIFO" do
         FileSpecs.fifo do |path|
-          Dir.scan(File.dirname(path)).map(&:last).should include(:fifo)
+          Dir.scan(File.dirname(path)).map(&:last).should.include?(:fifo)
         end
       end
 
       it "handles character devices" do
         FileSpecs.character_device do |path|
-          Dir.scan(File.dirname(path)).map(&:last).should include(:characterSpecial)
+          Dir.scan(File.dirname(path)).map(&:last).should.include?(:characterSpecial)
         end
       end
     end
@@ -120,7 +120,7 @@ ruby_version_is "4.1" do
       with_block_device do
         it "handles block devices" do
           FileSpecs.block_device do |path|
-            Dir.scan(File.dirname(path)).map(&:last).should include(:blockSpecial)
+            Dir.scan(File.dirname(path)).map(&:last).should.include?(:blockSpecial)
           end
         end
       end
@@ -189,23 +189,23 @@ ruby_version_is "4.1" do
       encoding = Encoding.find("filesystem")
       encoding = Encoding::BINARY if encoding == Encoding::US_ASCII
       platform_is_not :windows do
-        children.should include(["こんにちは.txt".dup.force_encoding(encoding), :file])
+        children.should.include?(["こんにちは.txt".dup.force_encoding(encoding), :file])
       end
-      children.first.first.encoding.should equal(Encoding.find("filesystem"))
+      children.first.first.encoding.should.equal?(Encoding.find("filesystem"))
     end
 
     it "returns children names encoded with the specified encoding" do
       path = File.join(DirSpecs.mock_dir, 'special')
       @dir = Dir.new(path, encoding: "euc-jp")
       children = @dir.children.sort
-      children.first.encoding.should equal(Encoding::EUC_JP)
+      children.first.encoding.should.equal?(Encoding::EUC_JP)
     end
 
     it "returns children names transcoded to the default internal encoding" do
       Encoding.default_internal = Encoding::EUC_KR
       @dir = Dir.new(File.join(DirSpecs.mock_dir, 'special'))
       children = @dir.scan.sort
-      children.first.first.encoding.should equal(Encoding::EUC_KR)
+      children.first.first.encoding.should.equal?(Encoding::EUC_KR)
     end
 
     it "returns the same result when called repeatedly" do

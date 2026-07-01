@@ -12,12 +12,12 @@ describe "Set#each" do
   end
 
   it "returns self" do
-    @set.each { |x| x }.should equal(@set)
+    @set.each { |x| x }.should.equal?(@set)
   end
 
   it "returns an Enumerator when not passed a block" do
     enum = @set.each
-    enum.should be_an_instance_of(Enumerator)
+    enum.should.instance_of?(Enumerator)
 
     ret = []
     enum.each { |x| ret << x }

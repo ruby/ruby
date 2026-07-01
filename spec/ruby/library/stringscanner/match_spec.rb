@@ -45,7 +45,7 @@ describe "StringScanner#match?" do
     it "returns nil when matching failed" do
       @s.match?(/(?<a>2008)/)
       @s.should_not.matched?
-      @s[:a].should be_nil
+      @s[:a].should == nil
     end
   end
 end

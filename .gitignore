@@ -58,6 +58,7 @@ lcov*.info
 /*-fake.rb
 /*.dll
 /*.exe
+/*.ilk
 /*.res
 /*.pc
 /*.rc
@@ -97,6 +98,7 @@ lcov*.info
 /enc.mk
 /encdb.h
 /exts.mk
+/gc/*/exts.mk
 /goruby
 /id.[ch]
 /largefile.h

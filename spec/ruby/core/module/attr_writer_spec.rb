@@ -30,7 +30,7 @@ describe "Module#attr_writer" do
       attr_writer :spec_attr_writer
     end
 
-    -> { true.spec_attr_writer = "a" }.should raise_error(FrozenError)
+    -> { true.spec_attr_writer = "a" }.should.raise(FrozenError)
   end
 
   it "raises FrozenError if the receiver if frozen" do
@@ -40,7 +40,7 @@ describe "Module#attr_writer" do
     obj = c.new
     obj.freeze
 
-    -> { obj.foo = 42 }.should raise_error(FrozenError)
+    -> { obj.foo = 42 }.should.raise(FrozenError)
   end
 
   it "converts non string/symbol names to strings using to_str" do
@@ -55,9 +55,9 @@ describe "Module#attr_writer" do
 
   it "raises a TypeError when the given names can't be converted to strings using to_str" do
     o = mock('test1')
-    -> { Class.new { attr_writer o } }.should raise_error(TypeError)
+    -> { Class.new { attr_writer o } }.should.raise(TypeError)
     (o = mock('123')).should_receive(:to_str).and_return(123)
-    -> { Class.new { attr_writer o } }.should raise_error(TypeError)
+    -> { Class.new { attr_writer o } }.should.raise(TypeError)
   end
 
   it "applies current visibility to methods created" do
@@ -66,11 +66,11 @@ describe "Module#attr_writer" do
       attr_writer :foo
     end
 
-    -> { c.new.foo=1 }.should raise_error(NoMethodError)
+    -> { c.new.foo=1 }.should.raise(NoMethodError)
   end
 
   it "is a public method" do
-    Module.should have_public_instance_method(:attr_writer, false)
+    Module.public_instance_methods(false).should.include?(:attr_writer)
   end
 
   it "returns an array of defined method names as symbols" do

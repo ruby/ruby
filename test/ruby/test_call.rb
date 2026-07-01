@@ -180,7 +180,6 @@ class TestCall < Test::Unit::TestCase
     assert_syntax_error(%q{h[0, *a, **kw] += 1}, message)
     assert_syntax_error(%q{h[kw: 5] += 1}, message)
     assert_syntax_error(%q{h[kw: 5, a: 2] += 1}, message)
-    assert_syntax_error(%q{h[kw: 5, a: 2] += 1}, message)
     assert_syntax_error(%q{h[0, kw: 5, a: 2] += 1}, message)
     assert_syntax_error(%q{h[0, *a, kw: 5, a: 2, nil: 3] += 1}, message)
 
@@ -199,7 +198,6 @@ class TestCall < Test::Unit::TestCase
     assert_syntax_error(%q{h[0, **kw] += 1; nil}, message)
     assert_syntax_error(%q{h[0, *a, **kw] += 1; nil}, message)
     assert_syntax_error(%q{h[kw: 5] += 1; nil}, message)
-    assert_syntax_error(%q{h[kw: 5, a: 2] += 1; nil}, message)
     assert_syntax_error(%q{h[kw: 5, a: 2] += 1; nil}, message)
     assert_syntax_error(%q{h[0, kw: 5, a: 2] += 1; nil}, message)
     assert_syntax_error(%q{h[0, *a, kw: 5, a: 2, nil: 3] += 1; nil}, message)
@@ -220,7 +218,6 @@ class TestCall < Test::Unit::TestCase
     assert_syntax_error(%q{h[0, *a, **kw] &&= 1}, message)
     assert_syntax_error(%q{h[kw: 5] &&= 1}, message)
     assert_syntax_error(%q{h[kw: 5, a: 2] &&= 1}, message)
-    assert_syntax_error(%q{h[kw: 5, a: 2] &&= 1}, message)
     assert_syntax_error(%q{h[0, kw: 5, a: 2] &&= 1}, message)
     assert_syntax_error(%q{h[0, *a, kw: 5, a: 2, nil: 3] &&= 1}, message)
 
@@ -239,7 +236,6 @@ class TestCall < Test::Unit::TestCase
     assert_syntax_error(%q{h[0, **kw] &&= 1; nil}, message)
     assert_syntax_error(%q{h[0, *a, **kw] &&= 1; nil}, message)
     assert_syntax_error(%q{h[kw: 5] &&= 1; nil}, message)
-    assert_syntax_error(%q{h[kw: 5, a: 2] &&= 1; nil}, message)
     assert_syntax_error(%q{h[kw: 5, a: 2] &&= 1; nil}, message)
     assert_syntax_error(%q{h[0, kw: 5, a: 2] &&= 1; nil}, message)
     assert_syntax_error(%q{h[0, *a, kw: 5, a: 2, nil: 3] &&= 1; nil}, message)
@@ -260,7 +256,6 @@ class TestCall < Test::Unit::TestCase
     assert_syntax_error(%q{h[0, *a, **kw] ||= 1}, message)
     assert_syntax_error(%q{h[kw: 5] ||= 1}, message)
     assert_syntax_error(%q{h[kw: 5, a: 2] ||= 1}, message)
-    assert_syntax_error(%q{h[kw: 5, a: 2] ||= 1}, message)
     assert_syntax_error(%q{h[0, kw: 5, a: 2] ||= 1}, message)
     assert_syntax_error(%q{h[0, *a, kw: 5, a: 2, nil: 3] ||= 1}, message)
 
@@ -279,7 +274,6 @@ class TestCall < Test::Unit::TestCase
     assert_syntax_error(%q{h[0, **kw] ||= 1; nil}, message)
     assert_syntax_error(%q{h[0, *a, **kw] ||= 1; nil}, message)
     assert_syntax_error(%q{h[kw: 5] ||= 1; nil}, message)
-    assert_syntax_error(%q{h[kw: 5, a: 2] ||= 1; nil}, message)
     assert_syntax_error(%q{h[kw: 5, a: 2] ||= 1; nil}, message)
     assert_syntax_error(%q{h[0, kw: 5, a: 2] ||= 1; nil}, message)
     assert_syntax_error(%q{h[0, *a, kw: 5, a: 2, nil: 3] ||= 1; nil}, message)

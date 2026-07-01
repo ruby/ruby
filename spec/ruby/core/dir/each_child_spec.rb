@@ -36,12 +36,12 @@ describe "Dir.each_child" do
   end
 
   it "raises a SystemCallError if passed a nonexistent directory" do
-    -> { Dir.each_child(DirSpecs.nonexistent) {} }.should raise_error(SystemCallError)
+    -> { Dir.each_child(DirSpecs.nonexistent) {} }.should.raise(SystemCallError)
   end
 
   describe "when no block is given" do
     it "returns an Enumerator" do
-      Dir.each_child(DirSpecs.mock_dir).should be_an_instance_of(Enumerator)
+      Dir.each_child(DirSpecs.mock_dir).should.instance_of?(Enumerator)
       Dir.each_child(DirSpecs.mock_dir).to_a.sort.should == DirSpecs.expected_paths - %w[. ..]
     end
 
@@ -103,7 +103,7 @@ describe "Dir#each_child" do
     it "returns an Enumerator" do
       @dir = Dir.new(DirSpecs.mock_dir)
 
-      @dir.each_child.should be_an_instance_of(Enumerator)
+      @dir.each_child.should.instance_of?(Enumerator)
       @dir.each_child.to_a.sort.should == DirSpecs.expected_paths - %w|. ..|
     end
 

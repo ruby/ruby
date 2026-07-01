@@ -16,7 +16,7 @@ describe "ObjectSpace.reachable_objects_from" do
   end
 
   it "enumerates objects directly reachable from a given object" do
-    ObjectSpace.reachable_objects_from(['a', 'b', 'c']).should include(Array, 'a', 'b', 'c')
+    ObjectSpace.reachable_objects_from(['a', 'b', 'c']).to_set.should >= Set[Array, 'a', 'b', 'c']
     ObjectSpace.reachable_objects_from(Object.new).should == [Object]
   end
 
@@ -24,7 +24,7 @@ describe "ObjectSpace.reachable_objects_from" do
     obj = Object.new
     ary = [obj]
     reachable = ObjectSpace.reachable_objects_from(ary)
-    reachable.should include(obj)
+    reachable.should.include?(obj)
   end
 
   it "finds an object stored in a copy-on-write Array" do
@@ -33,8 +33,8 @@ describe "ObjectSpace.reachable_objects_from" do
     ary = [removed, obj]
     ary.shift
     reachable = ObjectSpace.reachable_objects_from(ary)
-    reachable.should include(obj)
-    reachable.should_not include(removed)
+    reachable.should.include?(obj)
+    reachable.should_not.include?(removed)
   end
 
   it "finds an object stored in a Queue" do
@@ -44,7 +44,7 @@ describe "ObjectSpace.reachable_objects_from" do
 
     reachable = ObjectSpace.reachable_objects_from(q)
     reachable = reachable + reachable.flat_map { |r| ObjectSpace.reachable_objects_from(r) }
-    reachable.should include(o)
+    reachable.should.include?(o)
   end
 
   it "finds an object stored in a SizedQueue" do
@@ -54,6 +54,6 @@ describe "ObjectSpace.reachable_objects_from" do
 
     reachable = ObjectSpace.reachable_objects_from(q)
     reachable = reachable + reachable.flat_map { |r| ObjectSpace.reachable_objects_from(r) }
-    reachable.should include(o)
+    reachable.should.include?(o)
   end
 end

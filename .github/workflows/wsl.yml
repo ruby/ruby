@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   wsl:
-    runs-on: windows-2025
+    runs-on: windows-2025-vs2026
 
     if: >-
       ${{!(false

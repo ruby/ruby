@@ -19,15 +19,15 @@ describe "Fiber.new(storage:)" do
   end
 
   it "cannot create a fiber with non-hash storage" do
-    -> { Fiber.new(storage: 42) {} }.should raise_error(TypeError)
+    -> { Fiber.new(storage: 42) {} }.should.raise(TypeError)
   end
 
   it "cannot create a fiber with a frozen hash as storage" do
-    -> { Fiber.new(storage: {life: 43}.freeze) {} }.should raise_error(FrozenError)
+    -> { Fiber.new(storage: {life: 43}.freeze) {} }.should.raise(FrozenError)
   end
 
   it "cannot create a fiber with a storage hash with non-symbol keys" do
-    -> { Fiber.new(storage: {life: 43, Object.new => 44}) {} }.should raise_error(TypeError)
+    -> { Fiber.new(storage: {life: 43, Object.new => 44}) {} }.should.raise(TypeError)
   end
 end
 
@@ -36,7 +36,7 @@ describe "Fiber#storage" do
     f = Fiber.new(storage: {life: 42}) { nil }
     -> {
       f.storage
-    }.should raise_error(ArgumentError, /Fiber storage can only be accessed from the Fiber it belongs to/)
+    }.should.raise(ArgumentError, /Fiber storage can only be accessed from the Fiber it belongs to/)
   end
 end
 
@@ -59,15 +59,15 @@ describe "Fiber#storage=" do
   end
 
   it "can't set the storage of the fiber to non-hash" do
-    -> { Fiber.current.storage = 42 }.should raise_error(TypeError)
+    -> { Fiber.current.storage = 42 }.should.raise(TypeError)
   end
 
   it "can't set the storage of the fiber to a frozen hash" do
-    -> { Fiber.current.storage = {life: 43}.freeze }.should raise_error(FrozenError)
+    -> { Fiber.current.storage = {life: 43}.freeze }.should.raise(FrozenError)
   end
 
   it "can't set the storage of the fiber to a hash with non-symbol keys" do
-    -> { Fiber.current.storage = {life: 43, Object.new => 44} }.should raise_error(TypeError)
+    -> { Fiber.current.storage = {life: 43, Object.new => 44} }.should.raise(TypeError)
   end
 end
 
@@ -77,11 +77,11 @@ describe "Fiber.[]" do
   end
 
   it "returns nil if the key is not present in the storage of the current fiber" do
-    Fiber.new(storage: {life: 42}) { Fiber[:death] }.resume.should be_nil
+    Fiber.new(storage: {life: 42}) { Fiber[:death] }.resume.should == nil
   end
 
   it "returns nil if the current fiber has no storage" do
-    Fiber.new { Fiber[:life] }.resume.should be_nil
+    Fiber.new { Fiber[:life] }.resume.should == nil
   end
 
   it "can use dynamically defined keys" do
@@ -92,7 +92,7 @@ describe "Fiber.[]" do
   it "can't use invalid keys" do
     invalid_keys = [Object.new, 12]
     invalid_keys.each do |key|
-      -> { Fiber[key] }.should raise_error(TypeError)
+      -> { Fiber[key] }.should.raise(TypeError)
     end
   end
 
@@ -118,7 +118,7 @@ describe "Fiber.[]" do
   it "does not call #to_sym on the key" do
     key = mock("key")
     key.should_not_receive(:to_sym)
-    -> { Fiber[key] }.should raise_error(TypeError)
+    -> { Fiber[key] }.should.raise(TypeError)
   end
 
   it "can access the storage of the parent fiber" do
@@ -129,7 +129,7 @@ describe "Fiber.[]" do
   end
 
   it "can't access the storage of the fiber with non-symbol keys" do
-    -> { Fiber[Object.new] }.should raise_error(TypeError)
+    -> { Fiber[Object.new] }.should.raise(TypeError)
   end
 end
 
@@ -156,7 +156,7 @@ describe "Fiber.[]=" do
   end
 
   it "can't access the storage of the fiber with non-symbol keys" do
-    -> { Fiber[Object.new] = 44 }.should raise_error(TypeError)
+    -> { Fiber[Object.new] = 44 }.should.raise(TypeError)
   end
 
   it "deletes the fiber storage key when assigning nil" do

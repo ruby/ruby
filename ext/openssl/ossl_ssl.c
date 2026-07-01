@@ -91,7 +91,8 @@ ossl_sslctx_s_alloc(VALUE klass)
     SSL_CTX_set_mode(ctx, mode);
     SSL_CTX_set_dh_auto(ctx, 1);
     RTYPEDDATA_DATA(obj) = ctx;
-    SSL_CTX_set_ex_data(ctx, ossl_sslctx_ex_ptr_idx, (void *)obj);
+    if (!SSL_CTX_set_ex_data(ctx, ossl_sslctx_ex_ptr_idx, (void *)obj))
+        ossl_raise(eSSLError, "SSL_CTX_set_ex_data");
 
     return obj;
 }
@@ -1672,7 +1673,8 @@ ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)
         ossl_raise(eSSLError, NULL);
     RTYPEDDATA_DATA(self) = ssl;
 
-    SSL_set_ex_data(ssl, ossl_ssl_ex_ptr_idx, (void *)self);
+    if (!SSL_set_ex_data(ssl, ossl_ssl_ex_ptr_idx, (void *)self))
+        ossl_raise(eSSLError, "SSL_set_ex_data");
     SSL_set_info_callback(ssl, ssl_info_cb);
 
     rb_call_super(0, NULL);
@@ -2194,9 +2196,12 @@ ossl_ssl_write(VALUE self, VALUE str)
 /*
  * call-seq:
  *    ssl.syswrite_nonblock(string) => Integer
+ *    ssl.syswrite_nonblock(string, opts) => Integer
  *
  * Writes _string_ to the SSL connection in a non-blocking manner.  Raises an
- * SSLError if writing would block.
+ * SSLError if writing would block.  If "exception: false" is passed, this
+ * method returns a symbol of :wait_readable or :wait_writable, rather than
+ * raising an exception.
  */
 static VALUE
 ossl_ssl_write_nonblock(int argc, VALUE *argv, VALUE self)
@@ -2480,16 +2485,15 @@ ossl_ssl_get_verify_result(VALUE self)
 
 /*
  * call-seq:
- *    ssl.finished_message => "finished message"
+ *    ssl.finished_message -> string or nil
  *
- * Returns the last *Finished* message sent
- *
+ * Returns the contents of the last +Finished+ message sent to the peer.
  */
 static VALUE
 ossl_ssl_get_finished(VALUE self)
 {
     SSL *ssl;
-    char sizer[1], *buf;
+    char sizer[1];
     size_t len;
 
     GetSSL(self, ssl);
@@ -2498,23 +2502,23 @@ ossl_ssl_get_finished(VALUE self)
     if (len == 0)
         return Qnil;
 
-    buf = ALLOCA_N(char, len);
-    SSL_get_finished(ssl, buf, len);
-    return rb_str_new(buf, len);
+    VALUE str = rb_str_new(NULL, len);
+    SSL_get_finished(ssl, RSTRING_PTR(str), len);
+    return str;
 }
 
 /*
  * call-seq:
- *    ssl.peer_finished_message => "peer finished message"
+ *    ssl.peer_finished_message -> string or nil
  *
- * Returns the last *Finished* message received
- *
+ * Returns the contents of the last +Finished+ message expected to be sent
+ * by the peer.
  */
 static VALUE
 ossl_ssl_get_peer_finished(VALUE self)
 {
     SSL *ssl;
-    char sizer[1], *buf;
+    char sizer[1];
     size_t len;
 
     GetSSL(self, ssl);
@@ -2523,9 +2527,9 @@ ossl_ssl_get_peer_finished(VALUE self)
     if (len == 0)
         return Qnil;
 
-    buf = ALLOCA_N(char, len);
-    SSL_get_peer_finished(ssl, buf, len);
-    return rb_str_new(buf, len);
+    VALUE str = rb_str_new(NULL, len);
+    SSL_get_peer_finished(ssl, RSTRING_PTR(str), len);
+    return str;
 }
 
 /*

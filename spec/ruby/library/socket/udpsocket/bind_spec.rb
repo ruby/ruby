@@ -12,7 +12,7 @@ describe "UDPSocket#bind" do
 
   it "binds the socket to a port" do
     @socket.bind(SocketSpecs.hostname, 0)
-    @socket.addr[1].should be_kind_of(Integer)
+    @socket.addr[1].should.is_a?(Integer)
   end
 
   it "raises Errno::EINVAL when already bound" do
@@ -20,7 +20,7 @@ describe "UDPSocket#bind" do
 
     -> {
       @socket.bind(SocketSpecs.hostname, @socket.addr[1])
-    }.should raise_error(Errno::EINVAL)
+    }.should.raise(Errno::EINVAL)
   end
 
   it "receives a hostname and a port" do

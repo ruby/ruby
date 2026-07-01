@@ -60,9 +60,9 @@ describe :array_binary_union, shared: true do
   end
 
   it "does not return subclass instances for Array subclasses" do
-    ArraySpecs::MyArray[1, 2, 3].send(@method, []).should be_an_instance_of(Array)
-    ArraySpecs::MyArray[1, 2, 3].send(@method, ArraySpecs::MyArray[1, 2, 3]).should be_an_instance_of(Array)
-    [].send(@method, ArraySpecs::MyArray[1, 2, 3]).should be_an_instance_of(Array)
+    ArraySpecs::MyArray[1, 2, 3].send(@method, []).should.instance_of?(Array)
+    ArraySpecs::MyArray[1, 2, 3].send(@method, ArraySpecs::MyArray[1, 2, 3]).should.instance_of?(Array)
+    [].send(@method, ArraySpecs::MyArray[1, 2, 3]).should.instance_of?(Array)
   end
 
   it "does not call to_ary on array subclasses" do

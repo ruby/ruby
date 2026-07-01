@@ -11,7 +11,9 @@ files:
   'defs/jit.mk': [team:jit]
   'tool/zjit_bisect.rb': [team:jit]
   'doc/jit/*': [team:jit]
-  # Skip github workflow files because the team don't necessarily need to review dependabot updates for GitHub Actions. It's noisy in notifications, and they're auto-merged anyway.
+  # Skip files updated by dependabot. It's noisy in notifications, and they're auto-merged anyway.
+  'yjit/Cargo.lock': []
+  'zjit/Cargo.lock': []
   '.github/workflows/yjit-*.yml': []
   '.github/workflows/zjit-*.yml': []
 options:

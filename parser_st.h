@@ -88,13 +88,12 @@ struct parser_st_table {
     const struct parser_st_hash_type *type;
     /* Number of entries currently in the table.  */
     parser_st_index_t num_entries;
-    /* Array of bins used for access by keys.  */
-    parser_st_index_t *bins;
     /* Start and bound index of entries in array entries.
        entries_starts and entries_bound are in interval
        [0,allocated_entries].  */
     parser_st_index_t entries_start, entries_bound;
-    /* Array of size 2^entry_power.  */
+    /* Array of size 2^entry_power.
+       Optionnally followed by an array of bins used for access by keys.  */
     parser_st_table_entry *entries;
 };
 

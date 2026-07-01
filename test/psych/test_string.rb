@@ -60,6 +60,17 @@ module Psych
       RUBY
     end
 
+    def test_datetime_string_with_tab_separator
+      str = "2023-12-31\t12:00:00"
+      assert_cycle str
+    end
+
+    def test_datetime_string_with_whitespace_separators
+      ["\v", "\r", "\f", " \t", "\t "].each do |sep|
+        assert_cycle "2023-12-31#{sep}12:00:00"
+      end
+    end
+
     def test_plain_when_shorten_than_line_width_and_no_final_line_break
       str = "Lorem ipsum"
       yaml = Psych.dump str, line_width: 12
@@ -180,6 +191,18 @@ string: &70121654388580 !ruby/string
       y = Psych.unsafe_load Psych.dump Y.new.tap {|o| o.val = 1}
       assert_equal Y, y.class
       assert_equal 1, y.val
+    end
+
+    class NotAString
+    end
+
+    def test_string_tag_rejects_non_string_class
+      assert_raise(ArgumentError) do
+        Psych.unsafe_load "--- !ruby/string:#{NotAString} foo\n"
+      end
+      assert_raise(ArgumentError) do
+        Psych.unsafe_load "--- !ruby/string:#{NotAString}\nstr: foo\n"
+      end
     end
 
     def test_string_with_base_60

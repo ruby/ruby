@@ -2822,7 +2822,7 @@ class TestModule < Test::Unit::TestCase
 
     b = a.dup
     b.new.a = 'B'
-    assert_equal 'A', a.new.a, '[ruby-core:17019]'
+    assert_equal 'B', a.new.a, '[ruby-core:17019] behaviour changed: cvar resolves through original CREF'
   end
 
   Bug6891 = '[ruby-core:47241]'
@@ -3265,15 +3265,18 @@ class TestModule < Test::Unit::TestCase
   end
 
   module CloneTestM0
+    TEST = :M0
     def foo; TEST; end
   end
 
   CloneTestM1 = CloneTestM0.clone
   CloneTestM2 = CloneTestM0.clone
   module CloneTestM1
+    remove_const :TEST
     TEST = :M1
   end
   module CloneTestM2
+    remove_const :TEST
     TEST = :M2
   end
   class CloneTestC1
@@ -3288,8 +3291,8 @@ class TestModule < Test::Unit::TestCase
     assert_equal 1, m::C, '[ruby-core:47834]'
     assert_equal 1, m.m, '[ruby-core:47834]'
 
-    assert_equal :M1, CloneTestC1.new.foo, '[Bug #15877]'
-    assert_equal :M2, CloneTestC2.new.foo, '[Bug #15877]'
+    assert_equal :M0, CloneTestC1.new.foo, 'originally [Bug #15877], but behaviour changed'
+    assert_equal :M0, CloneTestC2.new.foo, 'originally [Bug #15877], but behaviour changed'
   end
 
   def test_clone_freeze

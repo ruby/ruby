@@ -17,13 +17,13 @@ describe "Net::HTTP#finish" do
     it "closes the tcp connection" do
       @http.start
       @http.finish
-      @http.started?.should be_false
+      @http.started?.should == false
     end
   end
 
   describe "when self has not been started yet" do
     it "raises an IOError" do
-      -> { @http.finish }.should raise_error(IOError)
+      -> { @http.finish }.should.raise(IOError)
     end
   end
 end

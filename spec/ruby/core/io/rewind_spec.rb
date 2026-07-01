@@ -48,6 +48,6 @@ describe "IO#rewind" do
   end
 
   it "raises IOError on closed stream" do
-    -> { IOSpecs.closed_io.rewind }.should raise_error(IOError)
+    -> { IOSpecs.closed_io.rewind }.should.raise(IOError)
   end
 end

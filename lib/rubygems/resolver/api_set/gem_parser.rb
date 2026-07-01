@@ -13,7 +13,7 @@ class Gem::Resolver::APISet::GemParser
   private
 
   def parse_dependency(string)
-    dependency = string.split(":")
+    dependency = string.split(":", 2)
     dependency[-1] = dependency[-1].split("&") if dependency.size > 1
     dependency[0] = -dependency[0]
     dependency

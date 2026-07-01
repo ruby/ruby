@@ -45,22 +45,22 @@ describe "Hash.[]" do
   it "raises for elements that are not arrays" do
     -> {
       Hash[[:a]]
-    }.should raise_error(ArgumentError, "wrong element type Symbol at 0 (expected array)")
+    }.should.raise(ArgumentError, "wrong element type Symbol at 0 (expected array)")
     -> {
       Hash[[nil]]
-    }.should raise_error(ArgumentError, "wrong element type nil at 0 (expected array)")
+    }.should.raise(ArgumentError, "wrong element type nil at 0 (expected array)")
   end
 
   it "raises an ArgumentError for arrays of more than 2 elements" do
     ->{
       Hash[[[:a, :b, :c]]]
-    }.should raise_error(ArgumentError, "invalid number of elements (3 for 1..2)")
+    }.should.raise(ArgumentError, "invalid number of elements (3 for 1..2)")
   end
 
   it "raises an ArgumentError when passed a list of value-invalid-pairs in an array" do
     -> {
       Hash[[[:a, 1], [:b], 42, [:d, 2], [:e, 2, 3], []]]
-    }.should raise_error(ArgumentError, "wrong element type Integer at 2 (expected array)")
+    }.should.raise(ArgumentError, "wrong element type Integer at 2 (expected array)")
   end
 
   describe "passed a single argument which responds to #to_hash" do
@@ -71,13 +71,13 @@ describe "Hash.[]" do
 
       result = Hash[to_hash]
       result.should == h
-      result.should_not equal(h)
+      result.should_not.equal?(h)
     end
   end
 
   it "raises an ArgumentError when passed an odd number of arguments" do
-    -> { Hash[1, 2, 3] }.should raise_error(ArgumentError)
-    -> { Hash[1, 2, { 3 => 4 }] }.should raise_error(ArgumentError)
+    -> { Hash[1, 2, 3] }.should.raise(ArgumentError)
+    -> { Hash[1, 2, { 3 => 4 }] }.should.raise(ArgumentError)
   end
 
   it "calls to_hash" do
@@ -87,34 +87,34 @@ describe "Hash.[]" do
   end
 
   it "returns an instance of a subclass when passed an Array" do
-    HashSpecs::MyHash[1,2,3,4].should be_an_instance_of(HashSpecs::MyHash)
+    HashSpecs::MyHash[1,2,3,4].should.instance_of?(HashSpecs::MyHash)
   end
 
   it "returns instances of subclasses" do
-    HashSpecs::MyHash[].should be_an_instance_of(HashSpecs::MyHash)
+    HashSpecs::MyHash[].should.instance_of?(HashSpecs::MyHash)
   end
 
   it "returns an instance of the class it's called on" do
     Hash[HashSpecs::MyHash[1, 2]].class.should == Hash
-    HashSpecs::MyHash[Hash[1, 2]].should be_an_instance_of(HashSpecs::MyHash)
+    HashSpecs::MyHash[Hash[1, 2]].should.instance_of?(HashSpecs::MyHash)
   end
 
   it "does not call #initialize on the subclass instance" do
-    HashSpecs::MyInitializerHash[Hash[1, 2]].should be_an_instance_of(HashSpecs::MyInitializerHash)
+    HashSpecs::MyInitializerHash[Hash[1, 2]].should.instance_of?(HashSpecs::MyInitializerHash)
   end
 
   it "does not retain the default value" do
     hash = Hash.new(1)
-    Hash[hash].default.should be_nil
+    Hash[hash].default.should == nil
     hash[:a] = 1
-    Hash[hash].default.should be_nil
+    Hash[hash].default.should == nil
   end
 
   it "does not retain the default_proc" do
     hash = Hash.new { |h, k| h[k] = [] }
-    Hash[hash].default_proc.should be_nil
+    Hash[hash].default_proc.should == nil
     hash[:a] = 1
-    Hash[hash].default_proc.should be_nil
+    Hash[hash].default_proc.should == nil
   end
 
   it "does not retain compare_by_identity flag" do

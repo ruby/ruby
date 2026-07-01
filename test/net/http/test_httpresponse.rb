@@ -18,6 +18,30 @@ EOS
     assert_equal('close', res['connection'])
   end
 
+  def test_response_header_too_large
+    big_value = 'a' * (Net::HTTPHeader::MAX_FIELD_LENGTH - 100)
+    count = (Net::HTTPResponse::MAX_RESPONSE_HEADER_LENGTH / big_value.bytesize) + 2
+    headers = +"HTTP/1.1 200 OK\n"
+    count.times { |i| headers << "X-Pad-#{i}: #{big_value}\n" }
+    headers << "\nhello\n"
+    io = dummy_io(headers)
+    assert_raise(Net::HTTPBadResponse) do
+      Net::HTTPResponse.read_new(io)
+    end
+  end
+
+  def test_response_header_within_limit
+    big_value = 'a' * (Net::HTTPHeader::MAX_FIELD_LENGTH - 100)
+    count = (Net::HTTPResponse::MAX_RESPONSE_HEADER_LENGTH / big_value.bytesize) - 1
+    headers = +"HTTP/1.1 200 OK\n"
+    count.times { |i| headers << "X-Pad-#{i}: #{big_value}\n" }
+    headers << "\nhello\n"
+    io = dummy_io(headers)
+    assert_nothing_raised do
+      Net::HTTPResponse.read_new(io)
+    end
+  end
+
   def test_multiline_header
     io = dummy_io(<<EOS)
 HTTP/1.1 200 OK

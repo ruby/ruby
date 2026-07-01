@@ -16,7 +16,7 @@ describe "IO#<<" do
 
   it "raises an error if the stream is closed" do
     io = IOSpecs.closed_io
-    -> { io << "test" }.should raise_error(IOError)
+    -> { io << "test" }.should.raise(IOError)
   end
 
   it "returns self" do

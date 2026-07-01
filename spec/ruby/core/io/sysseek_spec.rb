@@ -23,7 +23,7 @@ describe "IO#sysseek" do
 
   it "raises an error when called after buffered reads" do
     @io.readline
-    -> { @io.sysseek(-5, IO::SEEK_CUR) }.should raise_error(IOError)
+    -> { @io.sysseek(-5, IO::SEEK_CUR) }.should.raise(IOError)
   end
 
   it "seeks normally even when called immediately after a buffered IO#read" do
@@ -41,7 +41,7 @@ describe "IO#sysseek" do
 
     # this is the safest way of checking the EOF when
     # sys-* methods are invoked
-    -> { @io.sysread(1) }.should raise_error(EOFError)
+    -> { @io.sysread(1) }.should.raise(EOFError)
 
     @io.sysseek(-25, IO::SEEK_END)
     @io.sysread(7).should == "cinco.\n"

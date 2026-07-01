@@ -8,11 +8,11 @@ describe "Enumerator#initialize" do
   end
 
   it "is a private method" do
-    Enumerator.should have_private_instance_method(:initialize, false)
+    Enumerator.private_instance_methods(false).should.include?(:initialize)
   end
 
   it "returns self when given a block" do
-    @uninitialized.send(:initialize) {}.should equal(@uninitialized)
+    @uninitialized.send(:initialize) {}.should.equal?(@uninitialized)
   end
 
   # Maybe spec should be broken up?
@@ -21,22 +21,22 @@ describe "Enumerator#initialize" do
       r = yielder.yield 3
       yielder << r << 2 << 1
     end
-    @uninitialized.should be_an_instance_of(Enumerator)
+    @uninitialized.should.instance_of?(Enumerator)
     r = []
     @uninitialized.each{|x| r << x; x * 2}
     r.should == [3, 6, 2, 1]
   end
 
   it "sets size to nil if size is not given" do
-    @uninitialized.send(:initialize) {}.size.should be_nil
+    @uninitialized.send(:initialize) {}.size.should == nil
   end
 
   it "sets size to nil if the given size is nil" do
-    @uninitialized.send(:initialize, nil) {}.size.should be_nil
+    @uninitialized.send(:initialize, nil) {}.size.should == nil
   end
 
   it "sets size to the given size if the given size is Float::INFINITY" do
-    @uninitialized.send(:initialize, Float::INFINITY) {}.size.should equal(Float::INFINITY)
+    @uninitialized.send(:initialize, Float::INFINITY) {}.size.should.equal?(Float::INFINITY)
   end
 
   it "sets size to the given size if the given size is an Integer" do
@@ -51,7 +51,7 @@ describe "Enumerator#initialize" do
     it "raises a FrozenError" do
       -> {
         @uninitialized.freeze.send(:initialize) {}
-      }.should raise_error(FrozenError)
+      }.should.raise(FrozenError)
     end
   end
 end

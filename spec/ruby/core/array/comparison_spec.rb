@@ -92,6 +92,6 @@ describe "Array#<=>" do
   end
 
   it "returns nil when the argument is not array-like" do
-    ([] <=> false).should be_nil
+    ([] <=> false).should == nil
   end
 end

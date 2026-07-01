@@ -166,9 +166,9 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
   end if ENV["OSSL_TEST_ALL"] == "1" && Process.respond_to?(:setsid)
 
   def test_hmac_sign_verify
-    pkey = OpenSSL::PKey.generate_key("HMAC", { "key" => "abcd" })
+    pkey = OpenSSL::PKey.generate_key("HMAC", { "key" => "a"*32 })
 
-    hmac = OpenSSL::HMAC.new("abcd", "SHA256").update("data").digest
+    hmac = OpenSSL::HMAC.new("a"*32, "SHA256").update("data").digest
     assert_equal hmac, pkey.sign("SHA256", "data")
 
     # EVP_PKEY_HMAC does not support verify
@@ -283,6 +283,74 @@ class OpenSSL::TestPKey < OpenSSL::PKeyTestCase
     assert_equal(1312, raw_public_key.bytesize)
     pub3 = OpenSSL::PKey.new_raw_public_key("ML-DSA-44", raw_public_key)
     assert_equal(true, pub3.verify(nil, sig, "data"))
+  end
+
+  def test_ml_kem
+    # EVP_PKEY KEM APIs were added in OpenSSL 3.0.
+    omit "ML-KEM is not supported" unless openssl?(3, 5, 0)
+
+    pkey = OpenSSL::PKey.generate_key("ML-KEM-768")
+    raw_public_key = pkey.raw_public_key
+    raw_private_key = pkey.raw_private_key
+
+    assert_match(/type_name=ML-KEM-768/, pkey.inspect)
+    assert_equal(1184, raw_public_key.bytesize)
+    assert_equal(2400, raw_private_key.bytesize)
+
+    pubkey = OpenSSL::PKey.new_raw_public_key("ML-KEM-768", raw_public_key)
+    ciphertext, shared_secret = pubkey.encapsulate
+    assert_equal(1088, ciphertext.bytesize)
+    assert_equal(32, shared_secret.bytesize)
+    assert_equal(shared_secret, pkey.decapsulate(ciphertext))
+
+    privkey = OpenSSL::PKey.new_raw_private_key("ML-KEM-768", raw_private_key)
+    assert_equal(shared_secret, privkey.decapsulate(ciphertext))
+  end
+
+  def test_dhkem_x25519
+    # DHKEM (RFC 9180) and the X25519/X448 curves are not FIPS-approved; the
+    # KEM is built into the default provider only, not the FIPS module.
+    omit_on_fips
+    # EVP_KEM-X25519 / EVP_KEM-X448 were added in OpenSSL 3.2, but the DHKEM
+    # operation defaults correctly (without an explicit OSSL_KEM_PARAM_OPERATION)
+    # only since OpenSSL 3.5.
+    omit "DHKEM is not supported" unless openssl?(3, 5, 0)
+
+    pkey = OpenSSL::PKey.generate_key("X25519")
+    raw_public_key = pkey.raw_public_key
+    raw_private_key = pkey.raw_private_key
+
+    assert_match(/type_name=X25519/, pkey.inspect)
+    assert_equal(32, raw_public_key.bytesize)  # Npk
+    assert_equal(32, raw_private_key.bytesize) # Nsk
+
+    pubkey = OpenSSL::PKey.new_raw_public_key("X25519", raw_public_key)
+    ciphertext, shared_secret = pubkey.encapsulate
+    assert_equal(32, ciphertext.bytesize)    # Nenc
+    assert_equal(32, shared_secret.bytesize) # Nsecret
+    assert_equal(shared_secret, pkey.decapsulate(ciphertext))
+
+    privkey = OpenSSL::PKey.new_raw_private_key("X25519", raw_private_key)
+    assert_equal(shared_secret, privkey.decapsulate(ciphertext))
+  end
+
+  def test_dhkem_ec
+    # DHKEM (RFC 9180) is built into the default provider only, not the FIPS
+    # module.
+    omit_on_fips
+    # EVP_KEM-EC (RFC 9180 DHKEM over NIST curves) was added in OpenSSL 3.2, but
+    # the DHKEM operation defaults correctly (without an explicit
+    # OSSL_KEM_PARAM_OPERATION) only since OpenSSL 3.5.
+    omit "DHKEM is not supported" unless openssl?(3, 5, 0)
+
+    pkey = OpenSSL::PKey::EC.generate("prime256v1")
+    assert_match(/type_name=EC/, pkey.inspect)
+
+    pubkey = OpenSSL::PKey.read(pkey.public_to_der)
+    ciphertext, shared_secret = pubkey.encapsulate
+    assert_equal(65, ciphertext.bytesize)    # Nenc
+    assert_equal(32, shared_secret.bytesize) # Nsecret
+    assert_equal(shared_secret, pkey.decapsulate(ciphertext))
   end
 
   def test_raw_initialize_errors

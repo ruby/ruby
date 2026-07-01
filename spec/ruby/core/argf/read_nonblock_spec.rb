@@ -66,7 +66,7 @@ platform_is_not :windows do
         argf ['-'] do
           -> {
             @argf.read_nonblock(4)
-          }.should raise_error(IO::EAGAINWaitReadable)
+          }.should.raise(IO::EAGAINWaitReadable)
         end
       end
 

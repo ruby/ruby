@@ -83,7 +83,7 @@ END
 
     -> {
       ERBSpecs.new_erb(input, trim_mode: '-').result
-    }.should raise_error(SyntaxError)
+    }.should.raise(SyntaxError)
   end
 
   it "regards lines starting with '%' as '<% ... %>' when trim_mode is '%'" do
@@ -136,7 +136,7 @@ END
 
   it "forget local variables defined previous one" do
     ERB.new(@eruby_str).result
-    ->{ ERB.new("<%= list %>").result }.should raise_error(NameError)
+    ->{ ERB.new("<%= list %>").result }.should.raise(NameError)
   end
 
   version_is ERB.const_get(:VERSION, false), ""..."6.0.0" do

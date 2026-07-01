@@ -3,7 +3,7 @@ require_relative 'fixtures/caller'
 
 describe 'Kernel#caller' do
   it 'is a private method' do
-    Kernel.should have_private_instance_method(:caller)
+    Kernel.private_instance_methods(false).should.include?(:caller)
   end
 
   it 'returns an Array of caller locations' do
@@ -32,7 +32,7 @@ describe 'Kernel#caller' do
     locations = KernelSpecs::CallerTest.locations
     line      = __LINE__ - 1
 
-    locations[0].should include("#{__FILE__}:#{line}:in")
+    locations[0].should.include?("#{__FILE__}:#{line}:in")
   end
 
   it "returns an Array with the block given to #at_exit at the base of the stack" do
@@ -107,13 +107,14 @@ describe 'Kernel#caller' do
     end
 
     ruby_version_is "4.0" do
-      it "includes core library methods defined in Ruby" do
+      it "does not include core library methods defined in Ruby" do
         file, line = Kernel.instance_method(:tap).source_location
         file.should.start_with?('<internal:')
 
         loc = nil
         tap { loc = caller(1, 1)[0] }
-        loc.should =~ /\A#{__FILE__}:.*in 'Kernel#tap'\z/
+        # CRuby hides the file which defines the method: https://bugs.ruby-lang.org/issues/20968
+        loc.should =~ /\A(<internal:|#{__FILE__}:).*in 'Kernel#tap'\z/
       end
     end
   end

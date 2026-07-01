@@ -15,15 +15,15 @@ class TestGemCommandsSetupCommand < Gem::TestCase
       lib/rubygems.rb
       lib/rubygems/requirement.rb
       lib/rubygems/ssl_certs/rubygems.org/foo.pem
-      bundler/exe/bundle
-      bundler/exe/bundler
-      bundler/lib/bundler.rb
-      bundler/lib/bundler/b.rb
-      bundler/bin/bundler/man/bundle-b.1
-      bundler/lib/bundler/man/bundle-b.1.ronn
-      bundler/lib/bundler/man/gemfile.5
-      bundler/lib/bundler/man/gemfile.5.ronn
-      bundler/lib/bundler/templates/.circleci/config.yml
+      exe/bundle
+      exe/bundler
+      lib/bundler.rb
+      lib/bundler/b.rb
+      lib/bundler/man/bundle-b.1
+      lib/bundler/man/bundle-b.1.ronn
+      lib/bundler/man/gemfile.5
+      lib/bundler/man/gemfile.5.ronn
+      lib/bundler/templates/.circleci/config.yml
     ]
 
     create_dummy_files(filelist)
@@ -34,7 +34,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
       s.files = ["lib/bundler.rb"]
     end
 
-    File.open "bundler/bundler.gemspec", "w" do |io|
+    File.open "bundler.gemspec", "w" do |io|
       io.puts gemspec.to_ruby
     end
 
@@ -171,8 +171,18 @@ class TestGemCommandsSetupCommand < Gem::TestCase
   end
 
   def test_files_in
-    assert_equal %w[rubygems.rb rubygems/requirement.rb rubygems/ssl_certs/rubygems.org/foo.pem],
-                 @cmd.files_in("lib").sort
+    assert_equal %w[
+      bundler.rb
+      bundler/b.rb
+      bundler/man/bundle-b.1
+      bundler/man/bundle-b.1.ronn
+      bundler/man/gemfile.5
+      bundler/man/gemfile.5.ronn
+      bundler/templates/.circleci/config.yml
+      rubygems.rb
+      rubygems/requirement.rb
+      rubygems/ssl_certs/rubygems.org/foo.pem
+    ], @cmd.files_in("lib").sort
   end
 
   def test_install_lib
@@ -475,7 +485,7 @@ class TestGemCommandsSetupCommand < Gem::TestCase
   end
 
   def bundler_spec
-    Gem::Specification.load("bundler/bundler.gemspec")
+    Gem::Specification.load("bundler.gemspec")
   end
 
   def bundler_version

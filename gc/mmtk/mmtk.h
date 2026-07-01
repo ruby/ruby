@@ -33,7 +33,6 @@ typedef struct MMTk_BumpPointer {
 #define MMTk_GC_THREAD_KIND_WORKER 1
 
 typedef struct MMTk_RubyBindingOptions {
-    bool ractor_check_mode;
     size_t suffix_size;
 } MMTk_RubyBindingOptions;
 
@@ -95,8 +94,12 @@ bool mmtk_is_reachable(MMTk_ObjectReference object);
 MMTk_Builder *mmtk_builder_default(void);
 
 void mmtk_init_binding(MMTk_Builder *builder,
-                       const struct MMTk_RubyBindingOptions *_binding_options,
+                       const struct MMTk_RubyBindingOptions *binding_options,
                        const struct MMTk_RubyUpcalls *upcalls);
+
+size_t mmtk_get_vo_bit_log_region_size(void);
+
+size_t mmtk_get_vo_bit_base_addr(void);
 
 void mmtk_initialize_collection(MMTk_VMThread tls);
 

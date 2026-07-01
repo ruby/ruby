@@ -26,8 +26,8 @@ describe "Net::HTTPHeader#get_fields when passed key" do
   end
 
   it "returns nil for non-existing header entries" do
-    @headers.get_fields("My-Header").should be_nil
-    @headers.get_fields("My-Other-header").should be_nil
+    @headers.get_fields("My-Header").should == nil
+    @headers.get_fields("My-Other-header").should == nil
   end
 
   it "is case-insensitive" do

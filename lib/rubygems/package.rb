@@ -161,7 +161,7 @@ class Gem::Package
     return super unless gem.start
     return super unless gem.start.include? "MD5SUM ="
 
-    Gem::Package::Old.new gem
+    Gem::Package::Old.new gem, security_policy
   end
 
   ##
@@ -453,6 +453,11 @@ EOM
           directories << mkdir
         end
 
+        real_mkdir = File.realpath(mkdir)
+        unless real_mkdir == destination_dir || normalize_path(real_mkdir).start_with?(normalize_path(destination_dir + "/"))
+          raise Gem::Package::PathError.new(real_mkdir, destination_dir)
+        end
+
         if entry.file?
           File.open(destination, "wb") do |out|
             copy_stream(tar.io, out, entry.size)
@@ -503,24 +508,6 @@ EOM
     yield gz_io
   ensure
     gz_io.close
-  end
-
-  ##
-  # Returns the full path for installing +filename+.
-  #
-  # If +filename+ is not inside +destination_dir+ an exception is raised.
-
-  def install_location(filename, destination_dir) # :nodoc:
-    raise Gem::Package::PathError.new(filename, destination_dir) if
-      filename.start_with? "/"
-
-    destination_dir = File.realpath(destination_dir)
-    destination = File.expand_path(filename, destination_dir)
-
-    raise Gem::Package::PathError.new(destination, destination_dir) unless
-      normalize_path(destination).start_with? normalize_path(destination_dir + "/")
-
-    destination
   end
 
   if Gem.win_platform?
@@ -658,6 +645,24 @@ EOM
   private
 
   ##
+  # Returns the full path for installing +filename+ into +destination_dir+,
+  # which must already be resolved with File.realpath by the caller.
+  #
+  # If +filename+ is not inside +destination_dir+ an exception is raised.
+
+  def install_location(filename, destination_dir) # :nodoc:
+    raise Gem::Package::PathError.new(filename, destination_dir) if
+      filename.start_with? "/"
+
+    destination = File.expand_path(filename, destination_dir)
+
+    raise Gem::Package::PathError.new(destination, destination_dir) unless
+      normalize_path(destination).start_with? normalize_path(destination_dir + "/")
+
+    destination
+  end
+
+  ##
   # Verifies the +checksums+ against the +digests+.  This check is not
   # cryptographically secure.  Missing checksums are ignored.
 
@@ -738,9 +743,11 @@ EOM
   if Gem.win_platform?
     # Create a symlink and fallback to copy the file or directory on Windows,
     # where symlink creation needs special privileges in form of the Developer Mode.
+    # JRuby on Windows raises TypeError from the wincode path-conversion helper
+    # when it cannot create the symlink, so fall back to copy in that case too.
     def create_symlink(old_name, new_name)
       File.symlink(old_name, new_name)
-    rescue Errno::EACCES
+    rescue Errno::EACCES, TypeError
       from = File.expand_path(old_name, File.dirname(new_name))
       FileUtils.cp_r(from, new_name)
     end

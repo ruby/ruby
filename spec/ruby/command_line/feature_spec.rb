@@ -62,10 +62,10 @@ describe "The --enable and --disable flags" do
   end
 
   it "prints a warning for unknown features" do
-    ruby_exe("p 14", options: "--enable=ruby-spec-feature-does-not-exist 2>&1").chomp.should include('warning: unknown argument for --enable')
-    ruby_exe("p 14", options: "--disable=ruby-spec-feature-does-not-exist 2>&1").chomp.should include('warning: unknown argument for --disable')
-    ruby_exe("p 14", options: "--enable-ruby-spec-feature-does-not-exist 2>&1").chomp.should include('warning: unknown argument for --enable')
-    ruby_exe("p 14", options: "--disable-ruby-spec-feature-does-not-exist 2>&1").chomp.should include('warning: unknown argument for --disable')
+    ruby_exe("p 14", options: "--enable=ruby-spec-feature-does-not-exist 2>&1").chomp.should.include?('warning: unknown argument for --enable')
+    ruby_exe("p 14", options: "--disable=ruby-spec-feature-does-not-exist 2>&1").chomp.should.include?('warning: unknown argument for --disable')
+    ruby_exe("p 14", options: "--enable-ruby-spec-feature-does-not-exist 2>&1").chomp.should.include?('warning: unknown argument for --enable')
+    ruby_exe("p 14", options: "--disable-ruby-spec-feature-does-not-exist 2>&1").chomp.should.include?('warning: unknown argument for --disable')
   end
 
 end

@@ -5,8 +5,8 @@ describe 'Addrinfo.getaddrinfo' do
   it 'returns an Array of Addrinfo instances' do
     array = Addrinfo.getaddrinfo('127.0.0.1', 80)
 
-    array.should be_an_instance_of(Array)
-    array[0].should be_an_instance_of(Addrinfo)
+    array.should.instance_of?(Array)
+    array[0].should.instance_of?(Addrinfo)
   end
 
   SocketSpecs.each_ip_protocol do |family, ip_address|
@@ -54,7 +54,7 @@ describe 'Addrinfo.getaddrinfo' do
       array    = Addrinfo.getaddrinfo('127.0.0.1', 80)
       possible = [Socket::SOCK_STREAM, Socket::SOCK_DGRAM]
 
-      possible.should include(array[0].socktype)
+      possible.should.include?(array[0].socktype)
     end
   end
 
@@ -69,7 +69,7 @@ describe 'Addrinfo.getaddrinfo' do
       array    = Addrinfo.getaddrinfo('127.0.0.1', 80)
       possible = [Socket::IPPROTO_TCP, Socket::IPPROTO_UDP]
 
-      possible.should include(array[0].protocol)
+      possible.should.include?(array[0].protocol)
     end
   end
 
@@ -82,6 +82,6 @@ describe 'Addrinfo.getaddrinfo' do
   it 'sets the canonical name when AI_CANONNAME is given as a flag' do
     array = Addrinfo.getaddrinfo('localhost', 80, nil, nil, nil, Socket::AI_CANONNAME)
 
-    array[0].canonname.should be_an_instance_of(String)
+    array[0].canonname.should.instance_of?(String)
   end
 end

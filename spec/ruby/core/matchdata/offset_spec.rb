@@ -73,11 +73,11 @@ describe "MatchData#offset" do
 
     -> {
       m.offset("y")
-    }.should raise_error(IndexError, "undefined group name reference: y")
+    }.should.raise(IndexError, "undefined group name reference: y")
 
     -> {
       m.offset(:y)
-    }.should raise_error(IndexError, "undefined group name reference: y")
+    }.should.raise(IndexError, "undefined group name reference: y")
   end
 
   it "raises IndexError if index is out of bounds" do
@@ -85,11 +85,11 @@ describe "MatchData#offset" do
 
     -> {
       m.offset(-1)
-    }.should raise_error(IndexError, "index -1 out of matches")
+    }.should.raise(IndexError, "index -1 out of matches")
 
     -> {
       m.offset(3)
-    }.should raise_error(IndexError, "index 3 out of matches")
+    }.should.raise(IndexError, "index 3 out of matches")
   end
 
   it "raises TypeError if can't convert argument into Integer" do
@@ -97,6 +97,6 @@ describe "MatchData#offset" do
 
     -> {
       m.offset([])
-    }.should raise_error(TypeError, "no implicit conversion of Array into Integer")
+    }.should.raise(TypeError, "no implicit conversion of Array into Integer")
   end
 end

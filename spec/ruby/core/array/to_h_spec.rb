@@ -25,19 +25,19 @@ describe "Array#to_h" do
   end
 
   it "raises TypeError if an element is not an array" do
-    -> { [:x].to_h }.should raise_error(TypeError)
+    -> { [:x].to_h }.should.raise(TypeError)
   end
 
   it "raises ArgumentError if an element is not a [key, value] pair" do
-    -> { [[:x]].to_h }.should raise_error(ArgumentError)
+    -> { [[:x]].to_h }.should.raise(ArgumentError)
   end
 
   it "does not accept arguments" do
-    -> { [].to_h(:a, :b) }.should raise_error(ArgumentError)
+    -> { [].to_h(:a, :b) }.should.raise(ArgumentError)
   end
 
   it "produces a hash that returns nil for a missing element" do
-    [[:a, 1], [:b, 2]].to_h[:c].should be_nil
+    [[:a, 1], [:b, 2]].to_h[:c].should == nil
   end
 
   context "with block" do
@@ -54,17 +54,17 @@ describe "Array#to_h" do
     it "raises ArgumentError if block returns longer or shorter array" do
       -> do
         [:a, :b].to_h { |k| [k, k.to_s, 1] }
-      end.should raise_error(ArgumentError, /wrong array length at 0/)
+      end.should.raise(ArgumentError, /wrong array length at 0/)
 
       -> do
         [:a, :b].to_h { |k| [k] }
-      end.should raise_error(ArgumentError, /wrong array length at 0/)
+      end.should.raise(ArgumentError, /wrong array length at 0/)
     end
 
     it "raises TypeError if block returns something other than Array" do
       -> do
         [:a, :b].to_h { |k| "not-array" }
-      end.should raise_error(TypeError, /wrong element type String at 0/)
+      end.should.raise(TypeError, /wrong element type String at 0/)
     end
 
     it "coerces returned pair to Array with #to_ary" do
@@ -80,7 +80,7 @@ describe "Array#to_h" do
 
       -> do
         [:a].to_h { |k| x }
-      end.should raise_error(TypeError, /wrong element type MockObject at 0/)
+      end.should.raise(TypeError, /wrong element type MockObject at 0/)
     end
   end
 end

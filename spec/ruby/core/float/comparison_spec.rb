@@ -29,10 +29,10 @@ describe "Float#<=>" do
   end
 
   it "returns nil when the given argument is not a Float" do
-    (1.0 <=> "1").should be_nil
-    (1.0 <=> "1".freeze).should be_nil
-    (1.0 <=> :one).should be_nil
-    (1.0 <=> true).should be_nil
+    (1.0 <=> "1").should == nil
+    (1.0 <=> "1".freeze).should == nil
+    (1.0 <=> :one).should == nil
+    (1.0 <=> true).should == nil
   end
 
   it "compares using #coerce when argument is not a Float" do
@@ -62,7 +62,7 @@ describe "Float#<=>" do
     bad_coercible = klass.new
     -> {
       4.2 <=> bad_coercible
-    }.should raise_error(TypeError, "coerce must return [x, y]")
+    }.should.raise(TypeError, "coerce must return [x, y]")
   end
 
   it "returns the correct result when one side is infinite" do

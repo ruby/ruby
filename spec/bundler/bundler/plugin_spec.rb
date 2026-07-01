@@ -115,6 +115,7 @@ RSpec.describe Bundler::Plugin do
     let(:gemfile) { bundled_app_gemfile }
 
     before do
+      allow(Bundler).to receive(:configure)
       allow(Plugin::DSL).to receive(:new) { builder }
       allow(builder).to receive(:eval_gemfile).with(gemfile)
       allow(builder).to receive(:check_primary_source_safety)
@@ -123,7 +124,7 @@ RSpec.describe Bundler::Plugin do
     end
 
     it "doesn't calls installer without any plugins" do
-      allow(definition).to receive(:dependencies) { [] }
+      allow(builder).to receive(:dependencies) { [] }
       allow(installer).to receive(:install_definition).never
 
       subject.gemfile_install(gemfile)
@@ -139,7 +140,7 @@ RSpec.describe Bundler::Plugin do
 
       before do
         allow(index).to receive(:up_to_date?) { nil }
-        allow(definition).to receive(:dependencies) { [Bundler::Dependency.new("new-plugin", ">=0"), Bundler::Dependency.new("another-plugin", ">=0")] }
+        allow(builder).to receive(:dependencies) { [Bundler::Dependency.new("new-plugin", ">=0", "plugin" => true), Bundler::Dependency.new("another-plugin", ">=0", "plugin" => true)] }
         allow(installer).to receive(:install_definition) { plugin_specs }
       end
 
@@ -187,18 +188,16 @@ RSpec.describe Bundler::Plugin do
     end
   end
 
-  describe "#source?" do
-    it "returns true value for sources in index" do
+  describe "#source_plugin" do
+    it "returns the plugin for sources in index" do
       allow(index).
-        to receive(:command_plugin).with("foo-source") { "my-plugin" }
-      result = subject.command? "foo-source"
-      expect(result).to be_truthy
+        to receive(:source_plugin).with("foo-source") { "my-plugin" }
+      expect(subject.source_plugin("foo-source")).to eql "my-plugin"
     end
 
-    it "returns false value for source not in index" do
-      allow(index).to receive(:command_plugin).with("foo-source") { nil }
-      result = subject.command? "foo-source"
-      expect(result).to be_falsy
+    it "returns nil value for source not in index" do
+      allow(index).to receive(:source_plugin).with("foo-source") { nil }
+      expect(subject.source_plugin("foo-source")).to be_nil
     end
   end
 
@@ -237,6 +236,15 @@ RSpec.describe Bundler::Plugin do
       expect(SClass).to receive(:new).
         with(hash_including("type" => "l_source", "uri" => "xyz", "other" => "random")) { s_instance }
       expect(subject.from_lock(opts)).to be(s_instance)
+    end
+
+    it "returns an UnloadedSource when the plugin handling the source is not installed" do
+      opts = { "type" => "missing_source", "remote" => "https://example.com/private" }
+      allow(index).to receive(:source_plugin).with("missing_source") { nil }
+
+      source = subject.from_lock(opts)
+      expect(source).to be_a(Plugin::UnloadedSource)
+      expect(source.uri).to eq("https://example.com/private")
     end
   end
 

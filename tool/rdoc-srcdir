@@ -1,9 +1,6 @@
 #!ruby -W0
 
-%w[tsort rdoc].each do |lib|
-  path = Dir.glob("#{File.dirname(__dir__)}/.bundle/gems/#{lib}-*").first
-  $LOAD_PATH.unshift("#{path}/lib")
-end
+require 'rubygems'
 require 'rdoc/rdoc'
 
 # Make only the output directory relative to the invoked directory.

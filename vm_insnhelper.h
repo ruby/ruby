@@ -116,7 +116,7 @@ enum vm_regan_acttype {
 // instruction sequence C struct
 // Uses cfp->_iseq directly because the interpreter always has a valid _iseq
 // field (it's written on exit from JIT code). Code in vm_insnhelper.c that
-// may be called as a ZJIT fallback should use rb_cfp_iseq() instead.
+// may be called as a ZJIT fallback should use CFP_ISEQ() instead.
 #define GET_ISEQ() (GET_CFP()->_iseq)
 
 /**********************************************************/

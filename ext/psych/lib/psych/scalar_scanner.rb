@@ -115,7 +115,7 @@ module Psych
     def parse_time string
       klass = class_loader.load 'Time'
 
-      date, time = *(string.split(/[ tT]/, 2))
+      date, time = *(string.split(/[Tt]|\s+/, 2))
       (yy, m, dd) = date.match(/^(-?\d{4})-(\d{1,2})-(\d{1,2})/).captures.map { |x| x.to_i }
       md = time.match(/(\d+:\d+:\d+)(?:\.(\d*))?\s*(Z|[-+]\d+(:\d\d)?)?/)
 

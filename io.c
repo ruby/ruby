@@ -193,8 +193,10 @@ VALUE rb_mWaitWritable;
 
 static VALUE rb_eEAGAINWaitReadable;
 static VALUE rb_eEAGAINWaitWritable;
+#if EAGAIN != EWOULDBLOCK
 static VALUE rb_eEWOULDBLOCKWaitReadable;
 static VALUE rb_eEWOULDBLOCKWaitWritable;
+#endif
 static VALUE rb_eEINPROGRESSWaitWritable;
 static VALUE rb_eEINPROGRESSWaitReadable;
 
@@ -208,7 +210,7 @@ VALUE rb_default_rs;
 
 static VALUE argf;
 
-static ID id_write, id_read, id_getc, id_flush, id_readpartial, id_set_encoding, id_fileno;
+static ID id_write, id_read, id_flush, id_readpartial, id_set_encoding, id_fileno;
 static VALUE sym_mode, sym_perm, sym_flags, sym_extenc, sym_intenc, sym_encoding, sym_open_args;
 static VALUE sym_textmode, sym_binmode, sym_autoclose;
 static VALUE sym_SET, sym_CUR, sym_END;
@@ -500,6 +502,7 @@ rb_cloexec_fcntl_dupfd(int fd, int minfd)
 
 #define argf_of(obj) (*(struct argf *)DATA_PTR(obj))
 #define ARGF argf_of(argf)
+#define ARGF_SET(field, value) RB_OBJ_WRITE(argf, &ARGF.field, value)
 
 #define GetWriteIO(io) rb_io_get_write_io(io)
 
@@ -1110,7 +1113,7 @@ ruby_dup(int orig)
 static VALUE
 io_alloc(VALUE klass)
 {
-    NEWOBJ_OF(io, struct RFile, klass, T_FILE, sizeof(struct RFile), 0);
+    UNPROTECTED_NEWOBJ_OF(io, struct RFile, klass, T_FILE, sizeof(struct RFile));
 
     io->fptr = 0;
 
@@ -2535,7 +2538,7 @@ interpret_seek_whence(VALUE vwhence)
  *      f.tell            # => 12
  *      f.close
  *
- *  - +:SET+ or <tt>IO:SEEK_SET</tt>:
+ *  - +:SET+ or <tt>IO::SEEK_SET</tt>:
  *    Repositions the stream to the given +offset+:
  *
  *      f = File.open('t.txt')
@@ -3410,7 +3413,16 @@ read_all(rb_io_t *fptr, long siz, VALUE str)
     enc = io_read_encoding(fptr);
     cr = 0;
 
-    if (siz == 0) siz = BUFSIZ;
+    if (siz == 0) {
+        siz = BUFSIZ;
+    }
+    else {
+        // If `siz` is set, we got it from `stat(2)`.
+        // We attempt to read one extra byte because:
+        //  - If the file was appended to since then, we'll continue reading.
+        //  - If the file is still the same length, we won't issue a second `io_fread`.
+        siz++;
+    }
     shrinkable = io_setstrbuf(&str, siz);
     for (;;) {
         READ_CHECK(fptr);
@@ -5704,6 +5716,15 @@ rb_io_fptr_finalize(struct rb_io *io)
     free(io);
 
     return 1;
+}
+
+bool
+rb_io_fptr_finalize_closed(struct rb_io *io)
+{
+    if (!io) return true;
+    if (io->fd >= 0) return false;
+    rb_io_fptr_finalize(io);
+    return true;
 }
 
 size_t
@@ -8788,14 +8809,14 @@ rb_io_print(int argc, const VALUE *argv, VALUE out)
  *
  *  Writes the given objects to <tt>$stdout</tt>; returns +nil+.
  *  Appends the output record separator <tt>$OUTPUT_RECORD_SEPARATOR</tt>
- *  <tt>$\\</tt>), if it is not +nil+.
+ *  (<tt>$\\</tt>), if it is not +nil+.
  *
  *  With argument +objects+ given, for each object:
  *
  *  - Converts via its method +to_s+ if not a string.
  *  - Writes to <tt>stdout</tt>.
  *  - If not the last object, writes the output field separator
- *    <tt>$OUTPUT_FIELD_SEPARATOR</tt> (<tt>$,</tt> if it is not +nil+.
+ *    <tt>$OUTPUT_FIELD_SEPARATOR</tt> (<tt>$,</tt>) if it is not +nil+.
  *
  *  With default separators:
  *
@@ -10017,16 +10038,16 @@ argf_memsize(const void *ptr)
 static const rb_data_type_t argf_type = {
     "ARGF",
     {argf_mark_and_move, RUBY_TYPED_DEFAULT_FREE, argf_memsize, argf_mark_and_move},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_THREAD_SAFE_FREE | RUBY_TYPED_WB_PROTECTED
 };
 
 static inline void
-argf_init(struct argf *p, VALUE v)
+argf_init(VALUE argf, struct argf *p, VALUE v)
 {
     p->filename = Qnil;
     p->current_file = Qnil;
     p->lineno = 0;
-    p->argv = v;
+    RB_OBJ_WRITE(argf, &p->argv, v);
 }
 
 static VALUE
@@ -10035,7 +10056,7 @@ argf_alloc(VALUE klass)
     struct argf *p;
     VALUE argf = TypedData_Make_Struct(klass, struct argf, &argf_type, p);
 
-    argf_init(p, Qnil);
+    argf_init(argf, p, Qnil);
     return argf;
 }
 
@@ -10046,7 +10067,7 @@ static VALUE
 argf_initialize(VALUE argf, VALUE argv)
 {
     memset(&ARGF, 0, sizeof(ARGF));
-    argf_init(&ARGF, argv);
+    argf_init(argf, &ARGF, argv);
 
     return argf;
 }
@@ -10057,7 +10078,8 @@ argf_initialize_copy(VALUE argf, VALUE orig)
 {
     if (!OBJ_INIT_COPY(argf, orig)) return argf;
     ARGF = argf_of(orig);
-    ARGF.argv = rb_obj_dup(ARGF.argv);
+    rb_gc_writebarrier_remember(argf);
+    ARGF_SET(argv, rb_obj_dup(ARGF.argv));
     return argf;
 }
 
@@ -10176,11 +10198,11 @@ argf_next_argv(VALUE argf)
         if (RARRAY_LEN(ARGF.argv) > 0) {
             VALUE filename = rb_ary_shift(ARGF.argv);
             FilePathValue(filename);
-            ARGF.filename = filename;
+            ARGF_SET(filename, filename);
             filename = rb_str_encode_ospath(filename);
             fn = StringValueCStr(filename);
             if (RSTRING_LEN(filename) == 1 && fn[0] == '-') {
-                ARGF.current_file = rb_stdin;
+                ARGF_SET(current_file, rb_stdin);
                 if (ARGF.inplace) {
                     rb_warn("Can't do inplace edit for stdio; skipping");
                     goto retry;
@@ -10275,7 +10297,7 @@ argf_next_argv(VALUE argf)
                 if (!ARGF.binmode) {
                     fmode |= DEFAULT_TEXTMODE;
                 }
-                ARGF.current_file = prep_io(fr, fmode, rb_cFile, fn);
+                ARGF_SET(current_file, prep_io(fr, fmode, rb_cFile, fn));
                 if (!NIL_P(write_io)) {
                     rb_io_set_write_io(ARGF.current_file, write_io);
                 }
@@ -10304,8 +10326,8 @@ argf_next_argv(VALUE argf)
         }
     }
     else if (ARGF.next_p == -1) {
-        ARGF.current_file = rb_stdin;
-        ARGF.filename = rb_str_new2("-");
+        ARGF_SET(current_file, rb_stdin);
+        ARGF_SET(filename, rb_str_new2("-"));
         if (ARGF.inplace) {
             rb_warn("Can't do inplace edit for stdio");
             rb_ractor_stdout_set(orig_stdout);
@@ -12248,8 +12270,12 @@ seek_before_access(VALUE argp)
  *  With only argument +path+ given, reads in text mode and returns the entire content
  *  of the file at the given path:
  *
- *    IO.read('t.txt')
- *    # => "First line\nSecond line\n\nThird line\nFourth line\n"
+ *    File.read('t.txt')
+ *    # => "First line\nSecond line\n\nFourth line\nFifth line\n"
+ *    File.read('t.ja')
+ *    # => "こんにちは"
+ *    File.read('t.dat')
+ *    # => "\xFE\xFF\x99\x90\x99\x91\x99\x92\x99\x93\x99\x94"
  *
  *  On Windows, text mode can terminate reading and leave bytes in the file
  *  unread when encountering certain special bytes. Consider using
@@ -12257,15 +12283,36 @@ seek_before_access(VALUE argp)
  *
  *  With argument +length+, returns +length+ bytes if available:
  *
- *    IO.read('t.txt', 7) # => "First l"
- *    IO.read('t.txt', 700)
+ *    File.read('t.txt', 7)
+ *    # => "First l"
+ *    File.read('t.ja', 7)
+ *    # => "\xE3\x81\x93\xE3\x82\x93\xE3"
+ *    File.read('t.dat', 7)
+ *    # => "\xFE\xFF\x99\x90\x99\x91\x99"
+ *
+ *  Returns all bytes if +length+ is larger than the files size:
+ *
+ *    File.read('t.txt', 700)
  *    # => "First line\r\nSecond line\r\n\r\nFourth line\r\nFifth line\r\n"
+ *    File.read('t.ja', 700)
+ *    # => "\xE3\x81\x93\xE3\x82\x93\xE3\x81\xAB\xE3\x81\xA1\xE3\x81\xAF"
+ *    File.read('t.dat', 700)
+ *    # => "\xFE\xFF\x99\x90\x99\x91\x99\x92\x99\x93\x99\x94"
  *
  *  With arguments +length+ and +offset+, returns +length+ bytes
  *  if available, beginning at the given +offset+:
  *
- *    IO.read('t.txt', 10, 2)   # => "rst line\nS"
- *    IO.read('t.txt', 10, 200) # => nil
+ *    File.read('t.txt', 10, 2)
+ *    # => "rst line\r\n"
+ *    File.read('t.ja', 10, 2)
+ *    # => "\x93\xE3\x82\x93\xE3\x81\xAB\xE3\x81\xA1"
+ *    File.read('t.dat', 10, 2)
+ *    # => "\x99\x90\x99\x91\x99\x92\x99\x93\x99\x94"
+ *
+ *  Returns +nil+ if +offset+ is past the end of the stream:
+ *
+ *    File.read('t.txt', 10, 200)
+ *    # => nil
  *
  *  Optional keyword arguments +opts+ specify:
  *
@@ -12405,36 +12452,50 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
 
 /*
  *  call-seq:
- *    IO.write(path, data, offset = 0, **opts)    -> integer
+ *    IO.write(path, data, offset = 0, **opts) -> nonnegative_integer
  *
  *  Opens the stream, writes the given +data+ to it,
  *  and closes the stream; returns the number of bytes written.
  *
  *  The first argument must be a string that is the path to a file.
  *
- *  With only argument +path+ given, writes the given +data+ to the file at that path:
+ *  With only arguments +path+ and +data+ given,
+ *  writes the given data to the file at that path:
  *
- *    IO.write('t.tmp', 'abc')    # => 3
- *    File.read('t.tmp')          # => "abc"
+ *    path = 't.tmp'
+ *    File.write(path, "First line\nSecond line\n\nFourth line\nFifth line\n") # => 47
+ *    File.write(path, 'こんにちは')                                             # => 15
+ *    File.write(path, "\xFE\xFF\x99\x90\x99\x91\x99\x92\x99\x93\x99\x94")     # => 12
  *
- *  If +offset+ is zero (the default), the file is overwritten:
+ *  When +offset+ is zero (the default), the entire file content is overwritten:
  *
- *    IO.write('t.tmp', 'A')      # => 1
- *    File.read('t.tmp')          # => "A"
+ *    File.read(path) # => "\xFE\xFF\x99\x90\x99\x91\x99\x92\x99\x93\x99\x94"
+ *    File.write(path, 'foo')
+ *    File.read(path) # => "foo"
  *
- *  If +offset+ in within the file content, the file is partly overwritten:
+ *  When +offset+ in within the file content, the file content is partly overwritten,
+ *  beginning at byte +offset+:
  *
- *    IO.write('t.tmp', 'abcdef') # => 3
- *    File.read('t.tmp')          # => "abcdef"
- *    # Offset within content.
- *    IO.write('t.tmp', '012', 2) # => 3
- *    File.read('t.tmp')          # => "ab012f"
+ *    File.write(path, "First line\nSecond line\n\nFourth line\nFifth line\n")
+ *    File.write(path, 'LINE', 6)
+ *    File.read(path) # => "First LINE\nSecond line\n\nFourth line\nFifth line\n"
+ *
+ *  When the file contains multi-byte characters,
+ *  the effect of writing may disturb some characters:
+ *
+ *    File.write(path, "こんにちは")
+ *    File.write(path, 'FOO', 3)  # Replace one 3-byte character.
+ *    File.read(path) # => "こFOOにちは"
+ *    File.write(path, 'BAR', 7)  # Replace bytes in two different 3-byte characters.
+ *    File.read(path) # => "こFOO\xE3BAR\x81\xA1は"
  *
  *  If +offset+ is outside the file content,
  *  the file is padded with null characters <tt>"\u0000"</tt>:
  *
- *    IO.write('t.tmp', 'xyz', 10) # => 3
- *    File.read('t.tmp')           # => "ab012f\u0000\u0000\u0000\u0000xyz"
+ *    File.write(path, "First line\nSecond line\n\nFourth line\nFifth line\n")
+ *    File.write(path, 'FOO', 55)
+ *    File.read(path)
+ *    # => "First line\nSecond line\n\nFourth line\nFifth line\n\u0000\u0000\u0000FOO"
  *
  *  Optional keyword arguments +opts+ specify:
  *
@@ -12451,7 +12512,7 @@ rb_io_s_write(int argc, VALUE *argv, VALUE io)
 
 /*
  *  call-seq:
- *    IO.binwrite(path, string, offset = 0)    -> integer
+ *    IO.binwrite(path, string, offset = 0, **opts)    -> integer
  *
  *  Behaves like IO.write, except that the stream is opened in binary mode
  *  with ASCII-8BIT encoding.
@@ -13674,6 +13735,7 @@ argf_set_encoding(int argc, VALUE *argv, VALUE argf)
     rb_io_set_encoding(argc, argv, ARGF.current_file);
     GetOpenFile(ARGF.current_file, fptr);
     ARGF.encs = fptr->encs;
+    RB_OBJ_WRITTEN(argf, Qundef, ARGF.encs.ecopts);
     return argf;
 }
 
@@ -14606,7 +14668,7 @@ argf_inplace_mode_set(VALUE argf, VALUE val)
         ARGF.inplace = Qnil;
     }
     else {
-        ARGF.inplace = rb_str_new_frozen(val);
+        ARGF_SET(inplace, rb_str_new_frozen(val));
     }
     return argf;
 }
@@ -14620,7 +14682,7 @@ opt_i_set(VALUE val, ID id, VALUE *var)
 void
 ruby_set_inplace_mode(const char *suffix)
 {
-    ARGF.inplace = !suffix ? Qfalse : !*suffix ? Qnil : rb_str_new(suffix, strlen(suffix));
+    ARGF_SET(inplace, !suffix ? Qfalse : !*suffix ? Qnil : rb_str_new(suffix, strlen(suffix)));
 }
 
 /*
@@ -15638,7 +15700,6 @@ Init_IO(void)
 
     id_write = rb_intern_const("write");
     id_read = rb_intern_const("read");
-    id_getc = rb_intern_const("getc");
     id_flush = rb_intern_const("flush");
     id_readpartial = rb_intern_const("readpartial");
     id_set_encoding = rb_intern_const("set_encoding");
@@ -15686,10 +15747,8 @@ Init_IO(void)
     rb_eEAGAINWaitWritable = rb_define_class_under(rb_cIO, "EAGAINWaitWritable", rb_eEAGAIN);
     rb_include_module(rb_eEAGAINWaitWritable, rb_mWaitWritable);
 #if EAGAIN == EWOULDBLOCK
-    rb_eEWOULDBLOCKWaitReadable = rb_eEAGAINWaitReadable;
     /* same as IO::EAGAINWaitReadable */
     rb_define_const(rb_cIO, "EWOULDBLOCKWaitReadable", rb_eEAGAINWaitReadable);
-    rb_eEWOULDBLOCKWaitWritable = rb_eEAGAINWaitWritable;
     /* same as IO::EAGAINWaitWritable */
     rb_define_const(rb_cIO, "EWOULDBLOCKWaitWritable", rb_eEAGAINWaitWritable);
 #else
@@ -15746,6 +15805,7 @@ Init_IO(void)
 
     rb_define_virtual_variable("$_", get_LAST_READ_LINE, set_LAST_READ_LINE);
     rb_gvar_ractor_local("$_");
+    rb_gvar_box_dynamic("$_");
 
     rb_define_method(rb_cIO, "initialize_copy", rb_io_init_copy, 1);
     rb_define_method(rb_cIO, "reopen", rb_io_reopen, -1);
@@ -15967,7 +16027,7 @@ Init_IO(void)
 
     rb_define_hooked_variable("$.", &argf, argf_lineno_getter, argf_lineno_setter);
     rb_define_hooked_variable("$FILENAME", &argf, argf_filename_getter, rb_gvar_readonly_setter);
-    ARGF.filename = rb_str_new2("-");
+    ARGF_SET(filename, rb_str_new2("-"));
 
     rb_define_hooked_variable("$-i", &argf, opt_i_get, opt_i_set);
     rb_gvar_ractor_local("$-i");

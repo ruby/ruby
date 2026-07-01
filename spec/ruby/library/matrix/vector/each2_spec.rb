@@ -8,8 +8,8 @@ describe "Vector.each2" do
   end
 
   it "requires one argument" do
-    -> { @v.each2(@v2, @v2){} }.should raise_error(ArgumentError)
-    -> { @v.each2(){} }.should raise_error(ArgumentError)
+    -> { @v.each2(@v2, @v2){} }.should.raise(ArgumentError)
+    -> { @v.each2(){} }.should.raise(ArgumentError)
   end
 
   describe "given one argument" do
@@ -20,8 +20,8 @@ describe "Vector.each2" do
     end
 
     it "raises a DimensionMismatch error if the Vector size is different" do
-      -> { @v.each2(Vector[1,2]){}     }.should raise_error(Vector::ErrDimensionMismatch)
-      -> { @v.each2(Vector[1,2,3,4]){} }.should raise_error(Vector::ErrDimensionMismatch)
+      -> { @v.each2(Vector[1,2]){}     }.should.raise(Vector::ErrDimensionMismatch)
+      -> { @v.each2(Vector[1,2,3,4]){} }.should.raise(Vector::ErrDimensionMismatch)
     end
 
     it "yields arguments in sequence" do
@@ -37,12 +37,12 @@ describe "Vector.each2" do
     end
 
     it "returns self when given a block" do
-      @v.each2(@v2){}.should equal(@v)
+      @v.each2(@v2){}.should.equal?(@v)
     end
 
     it "returns an enumerator if no block given" do
       enum = @v.each2(@v2)
-      enum.should be_an_instance_of(Enumerator)
+      enum.should.instance_of?(Enumerator)
       enum.to_a.should == [[1, 4], [2, 5], [3, 6]]
     end
   end

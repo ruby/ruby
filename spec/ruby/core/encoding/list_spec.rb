@@ -2,12 +2,12 @@ require_relative '../../spec_helper'
 
 describe "Encoding.list" do
   it "returns an Array" do
-    Encoding.list.should be_an_instance_of(Array)
+    Encoding.list.should.instance_of?(Array)
   end
 
   it "returns an Array of Encoding objects" do
     Encoding.list.each do |enc|
-      enc.should be_an_instance_of(Encoding)
+      enc.should.instance_of?(Encoding)
     end
   end
 
@@ -17,18 +17,18 @@ describe "Encoding.list" do
   end
 
   it "includes the default external encoding" do
-    Encoding.list.include?(Encoding.default_external).should be_true
+    Encoding.list.include?(Encoding.default_external).should == true
   end
 
   it "does not include any alias names" do
     Encoding.aliases.keys.each do |enc_alias|
-      Encoding.list.include?(enc_alias).should be_false
+      Encoding.list.include?(enc_alias).should == false
     end
   end
 
   it "includes all aliased encodings" do
     Encoding.aliases.values.each do |enc_alias|
-      Encoding.list.include?(Encoding.find(enc_alias)).should be_true
+      Encoding.list.include?(Encoding.find(enc_alias)).should == true
     end
   end
 

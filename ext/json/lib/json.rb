@@ -145,11 +145,11 @@ require 'json/common'
 #   # warning: detected duplicate keys in JSON object.
 #   # This will raise an error in json 3.0 unless enabled via `allow_duplicate_key: true`
 #
-# When set to `+true+`
+# When set to +true+:
 #   # The last value is used.
 #   JSON.parse('{"a": 1, "a":2}') => {"a" => 2}
 #
-# When set to `+false+`, the future default:
+# When set to +false+, the future default:
 #   JSON.parse('{"a": 1, "a":2}') => duplicate key at line 1 column 1 (JSON::ParserError)
 #
 # ---
@@ -181,6 +181,20 @@ require 'json/common'
 #
 # When enabled:
 #   JSON.parse('[1,]', allow_trailing_comma: true) # => [1]
+#
+# ---
+#
+# Option +allow_comments+ (boolean) specifies whether to allow
+# JavaScript style comments (either <tt>// comment</tt> or <tt>/* comment */</tt>);
+# defaults to +false+.
+#
+# When not specified, a deprecation warning is emitted if a comment is encountered.
+#
+# When set to +true+, comments are ignored:
+#   JSON.parse('/* comment */ {"a": 1, "a":2}') # => {"a" => 2}
+#
+# When set to +false+, the future default:
+#   JSON.parse('/* comment */ {"a": 1, "a":2}') # unexpected character: '/' at line 1 column 1 (JSON::ParserError)
 #
 # ---
 #
@@ -335,8 +349,8 @@ require 'json/common'
 #   JSON.generate(JSON::MinusInfinity)
 #
 # Allow:
-#   ruby = [Float::NaN, Float::Infinity, Float::MinusInfinity]
-#   JSON.generate(ruby, allow_nan: true) # => '[NaN,Infinity,-Infinity]'
+#   ruby = [Float::NAN, Float::INFINITY, JSON::NaN, JSON::Infinity, JSON::MinusInfinity]
+#   JSON.generate(ruby, allow_nan: true) # => '[NaN,Infinity,NaN,Infinity,-Infinity]'
 #
 # ---
 #

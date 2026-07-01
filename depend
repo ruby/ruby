@@ -80,6 +80,8 @@ array.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 array.$(OBJEXT): $(top_srcdir)/internal/serial.h
 array.$(OBJEXT): $(top_srcdir)/internal/set_table.h
 array.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+array.$(OBJEXT): $(top_srcdir)/internal/string.h
+array.$(OBJEXT): $(top_srcdir)/internal/struct.h
 array.$(OBJEXT): $(top_srcdir)/internal/variable.h
 array.$(OBJEXT): $(top_srcdir)/internal/vm.h
 array.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -101,6 +103,7 @@ array.$(OBJEXT): {$(VPATH)}config.h
 array.$(OBJEXT): {$(VPATH)}constant.h
 array.$(OBJEXT): {$(VPATH)}debug_counter.h
 array.$(OBJEXT): {$(VPATH)}defines.h
+array.$(OBJEXT): {$(VPATH)}encindex.h
 array.$(OBJEXT): {$(VPATH)}encoding.h
 array.$(OBJEXT): {$(VPATH)}id.h
 array.$(OBJEXT): {$(VPATH)}id_table.h
@@ -821,6 +824,7 @@ box.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 box.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 box.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 box.$(OBJEXT): {$(VPATH)}box.c
+box.$(OBJEXT): {$(VPATH)}builtin.h
 box.$(OBJEXT): {$(VPATH)}config.h
 box.$(OBJEXT): {$(VPATH)}constant.h
 box.$(OBJEXT): {$(VPATH)}darray.h
@@ -2838,6 +2842,7 @@ debug.$(OBJEXT): {$(VPATH)}vm_core.h
 debug.$(OBJEXT): {$(VPATH)}vm_debug.h
 debug.$(OBJEXT): {$(VPATH)}vm_opts.h
 debug.$(OBJEXT): {$(VPATH)}vm_sync.h
+debug.$(OBJEXT): {$(VPATH)}zjit.h
 debug_counter.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 debug_counter.$(OBJEXT): {$(VPATH)}assert.h
 debug_counter.$(OBJEXT): {$(VPATH)}backward/2/assume.h
@@ -4878,6 +4883,7 @@ enum.$(OBJEXT): {$(VPATH)}internal/core/rclass.h
 enum.$(OBJEXT): {$(VPATH)}internal/core/rdata.h
 enum.$(OBJEXT): {$(VPATH)}internal/core/rfile.h
 enum.$(OBJEXT): {$(VPATH)}internal/core/rhash.h
+enum.$(OBJEXT): {$(VPATH)}internal/core/rmatch.h
 enum.$(OBJEXT): {$(VPATH)}internal/core/robject.h
 enum.$(OBJEXT): {$(VPATH)}internal/core/rregexp.h
 enum.$(OBJEXT): {$(VPATH)}internal/core/rstring.h
@@ -4968,6 +4974,8 @@ enum.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 enum.$(OBJEXT): {$(VPATH)}missing.h
 enum.$(OBJEXT): {$(VPATH)}onigmo.h
 enum.$(OBJEXT): {$(VPATH)}oniguruma.h
+enum.$(OBJEXT): {$(VPATH)}re.h
+enum.$(OBJEXT): {$(VPATH)}regex.h
 enum.$(OBJEXT): {$(VPATH)}ruby_assert.h
 enum.$(OBJEXT): {$(VPATH)}shape.h
 enum.$(OBJEXT): {$(VPATH)}st.h
@@ -5948,6 +5956,7 @@ gc.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 gc.$(OBJEXT): $(top_srcdir)/internal/object.h
 gc.$(OBJEXT): $(top_srcdir)/internal/proc.h
 gc.$(OBJEXT): $(top_srcdir)/internal/rational.h
+gc.$(OBJEXT): $(top_srcdir)/internal/re.h
 gc.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 gc.$(OBJEXT): $(top_srcdir)/internal/serial.h
 gc.$(OBJEXT): $(top_srcdir)/internal/set_table.h
@@ -5956,6 +5965,7 @@ gc.$(OBJEXT): $(top_srcdir)/internal/string.h
 gc.$(OBJEXT): $(top_srcdir)/internal/struct.h
 gc.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 gc.$(OBJEXT): $(top_srcdir)/internal/thread.h
+gc.$(OBJEXT): $(top_srcdir)/internal/time.h
 gc.$(OBJEXT): $(top_srcdir)/internal/variable.h
 gc.$(OBJEXT): $(top_srcdir)/internal/vm.h
 gc.$(OBJEXT): $(top_srcdir)/internal/warnings.h
@@ -6017,6 +6027,7 @@ gc.$(OBJEXT): {$(VPATH)}encoding.h
 gc.$(OBJEXT): {$(VPATH)}eval_intern.h
 gc.$(OBJEXT): {$(VPATH)}gc.c
 gc.$(OBJEXT): {$(VPATH)}gc.rbinc
+gc.$(OBJEXT): {$(VPATH)}hrtime.h
 gc.$(OBJEXT): {$(VPATH)}id.h
 gc.$(OBJEXT): {$(VPATH)}id_table.h
 gc.$(OBJEXT): {$(VPATH)}intern.h
@@ -7345,6 +7356,7 @@ io_buffer.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/gc.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/io.h
+io_buffer.$(OBJEXT): $(top_srcdir)/internal/io_buffer.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/serial.h
@@ -8347,6 +8359,7 @@ load.$(OBJEXT): {$(VPATH)}util.h
 load.$(OBJEXT): {$(VPATH)}vm_core.h
 load.$(OBJEXT): {$(VPATH)}vm_debug.h
 load.$(OBJEXT): {$(VPATH)}vm_opts.h
+load.$(OBJEXT): {$(VPATH)}zjit.h
 loadpath.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 loadpath.$(OBJEXT): $(hdrdir)/ruby/version.h
 loadpath.$(OBJEXT): $(top_srcdir)/version.h
@@ -8965,6 +8978,7 @@ marshal.$(OBJEXT): {$(VPATH)}internal/core/rclass.h
 marshal.$(OBJEXT): {$(VPATH)}internal/core/rdata.h
 marshal.$(OBJEXT): {$(VPATH)}internal/core/rfile.h
 marshal.$(OBJEXT): {$(VPATH)}internal/core/rhash.h
+marshal.$(OBJEXT): {$(VPATH)}internal/core/rmatch.h
 marshal.$(OBJEXT): {$(VPATH)}internal/core/robject.h
 marshal.$(OBJEXT): {$(VPATH)}internal/core/rregexp.h
 marshal.$(OBJEXT): {$(VPATH)}internal/core/rstring.h
@@ -9060,6 +9074,8 @@ marshal.$(OBJEXT): {$(VPATH)}missing.h
 marshal.$(OBJEXT): {$(VPATH)}node.h
 marshal.$(OBJEXT): {$(VPATH)}onigmo.h
 marshal.$(OBJEXT): {$(VPATH)}oniguruma.h
+marshal.$(OBJEXT): {$(VPATH)}re.h
+marshal.$(OBJEXT): {$(VPATH)}regex.h
 marshal.$(OBJEXT): {$(VPATH)}ruby_assert.h
 marshal.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 marshal.$(OBJEXT): {$(VPATH)}rubyparser.h
@@ -10952,6 +10968,7 @@ parse.$(OBJEXT): {$(VPATH)}internal/core/rclass.h
 parse.$(OBJEXT): {$(VPATH)}internal/core/rdata.h
 parse.$(OBJEXT): {$(VPATH)}internal/core/rfile.h
 parse.$(OBJEXT): {$(VPATH)}internal/core/rhash.h
+parse.$(OBJEXT): {$(VPATH)}internal/core/rmatch.h
 parse.$(OBJEXT): {$(VPATH)}internal/core/robject.h
 parse.$(OBJEXT): {$(VPATH)}internal/core/rregexp.h
 parse.$(OBJEXT): {$(VPATH)}internal/core/rstring.h
@@ -11054,6 +11071,7 @@ parse.$(OBJEXT): {$(VPATH)}parser_st.h
 parse.$(OBJEXT): {$(VPATH)}probes.dmyh
 parse.$(OBJEXT): {$(VPATH)}probes.h
 parse.$(OBJEXT): {$(VPATH)}ractor.h
+parse.$(OBJEXT): {$(VPATH)}re.h
 parse.$(OBJEXT): {$(VPATH)}regenc.h
 parse.$(OBJEXT): {$(VPATH)}regex.h
 parse.$(OBJEXT): {$(VPATH)}ruby_assert.h
@@ -11134,6 +11152,11 @@ parser_st.$(OBJEXT): {$(VPATH)}st.c
 pathname.$(OBJEXT): $(hdrdir)/ruby.h
 pathname.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 pathname.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+pathname.$(OBJEXT): $(top_srcdir)/internal/file.h
+pathname.$(OBJEXT): $(top_srcdir)/internal/serial.h
+pathname.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+pathname.$(OBJEXT): $(top_srcdir)/internal/string.h
+pathname.$(OBJEXT): $(top_srcdir)/internal/vm.h
 pathname.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 pathname.$(OBJEXT): {$(VPATH)}assert.h
 pathname.$(OBJEXT): {$(VPATH)}backward.h
@@ -11149,8 +11172,10 @@ pathname.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 pathname.$(OBJEXT): {$(VPATH)}builtin.h
 pathname.$(OBJEXT): {$(VPATH)}config.h
 pathname.$(OBJEXT): {$(VPATH)}defines.h
+pathname.$(OBJEXT): {$(VPATH)}encindex.h
 pathname.$(OBJEXT): {$(VPATH)}encoding.h
 pathname.$(OBJEXT): {$(VPATH)}intern.h
+pathname.$(OBJEXT): {$(VPATH)}internal.h
 pathname.$(OBJEXT): {$(VPATH)}internal/abi.h
 pathname.$(OBJEXT): {$(VPATH)}internal/anyargs.h
 pathname.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
@@ -12009,6 +12034,7 @@ prism/json.$(OBJEXT): $(top_srcdir)/prism/internal/list.h
 prism/json.$(OBJEXT): $(top_srcdir)/prism/internal/options.h
 prism/json.$(OBJEXT): $(top_srcdir)/prism/internal/parser.h
 prism/json.$(OBJEXT): $(top_srcdir)/prism/internal/static_literals.h
+prism/json.$(OBJEXT): $(top_srcdir)/prism/internal/strpbrk.h
 prism/json.$(OBJEXT): $(top_srcdir)/prism/json.c
 prism/json.$(OBJEXT): $(top_srcdir)/prism/json.h
 prism/json.$(OBJEXT): $(top_srcdir)/prism/line_offset_list.h
@@ -12229,6 +12255,7 @@ prism/parser.$(OBJEXT): $(top_srcdir)/prism/internal/magic_comments.h
 prism/parser.$(OBJEXT): $(top_srcdir)/prism/internal/options.h
 prism/parser.$(OBJEXT): $(top_srcdir)/prism/internal/parser.h
 prism/parser.$(OBJEXT): $(top_srcdir)/prism/internal/static_literals.h
+prism/parser.$(OBJEXT): $(top_srcdir)/prism/internal/strpbrk.h
 prism/parser.$(OBJEXT): $(top_srcdir)/prism/line_offset_list.h
 prism/parser.$(OBJEXT): $(top_srcdir)/prism/magic_comments.h
 prism/parser.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -12287,6 +12314,7 @@ prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/internal/options.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/internal/parser.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/internal/static_literals.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/internal/strncasecmp.h
+prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/internal/strpbrk.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/line_offset_list.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/magic_comments.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -12432,6 +12460,7 @@ prism/regexp.$(OBJEXT): $(top_srcdir)/prism/internal/regexp.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/internal/static_literals.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/internal/stringy.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/internal/strncasecmp.h
+prism/regexp.$(OBJEXT): $(top_srcdir)/prism/internal/strpbrk.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/line_offset_list.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/magic_comments.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/options.h
@@ -13254,6 +13283,7 @@ proc.$(OBJEXT): {$(VPATH)}vm_debug.h
 proc.$(OBJEXT): {$(VPATH)}vm_opts.h
 proc.$(OBJEXT): {$(VPATH)}vm_sync.h
 proc.$(OBJEXT): {$(VPATH)}yjit.h
+proc.$(OBJEXT): {$(VPATH)}zjit.h
 process.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 process.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 process.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -15843,6 +15873,7 @@ ruby.$(OBJEXT): {$(VPATH)}util.h
 ruby.$(OBJEXT): {$(VPATH)}vm_core.h
 ruby.$(OBJEXT): {$(VPATH)}vm_opts.h
 ruby.$(OBJEXT): {$(VPATH)}yjit.h
+ruby.$(OBJEXT): {$(VPATH)}zjit.h
 ruby_parser.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 ruby_parser.$(OBJEXT): $(top_srcdir)/internal/array.h
 ruby_parser.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
@@ -15942,6 +15973,7 @@ ruby_parser.$(OBJEXT): {$(VPATH)}internal/core/rclass.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/core/rdata.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/core/rfile.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/core/rhash.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/core/rmatch.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/core/robject.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/core/rregexp.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/core/rstring.h
@@ -16033,6 +16065,8 @@ ruby_parser.$(OBJEXT): {$(VPATH)}missing.h
 ruby_parser.$(OBJEXT): {$(VPATH)}node.h
 ruby_parser.$(OBJEXT): {$(VPATH)}onigmo.h
 ruby_parser.$(OBJEXT): {$(VPATH)}oniguruma.h
+ruby_parser.$(OBJEXT): {$(VPATH)}re.h
+ruby_parser.$(OBJEXT): {$(VPATH)}regex.h
 ruby_parser.$(OBJEXT): {$(VPATH)}ruby_assert.h
 ruby_parser.$(OBJEXT): {$(VPATH)}ruby_parser.c
 ruby_parser.$(OBJEXT): {$(VPATH)}rubyparser.h
@@ -16247,6 +16281,7 @@ scheduler.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 scheduler.$(OBJEXT): {$(VPATH)}thread_native.h
 scheduler.$(OBJEXT): {$(VPATH)}vm_core.h
 scheduler.$(OBJEXT): {$(VPATH)}vm_opts.h
+scheduler.$(OBJEXT): {$(VPATH)}zjit.h
 set.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 set.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 set.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -17051,6 +17086,7 @@ signal.$(OBJEXT): {$(VPATH)}thread_native.h
 signal.$(OBJEXT): {$(VPATH)}vm_core.h
 signal.$(OBJEXT): {$(VPATH)}vm_debug.h
 signal.$(OBJEXT): {$(VPATH)}vm_opts.h
+signal.$(OBJEXT): {$(VPATH)}zjit.h
 sprintf.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 sprintf.$(OBJEXT): $(hdrdir)/ruby/version.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
@@ -17685,6 +17721,7 @@ string.$(OBJEXT): {$(VPATH)}backward/2/limits.h
 string.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 string.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 string.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+string.$(OBJEXT): {$(VPATH)}builtin.h
 string.$(OBJEXT): {$(VPATH)}config.h
 string.$(OBJEXT): {$(VPATH)}constant.h
 string.$(OBJEXT): {$(VPATH)}debug_counter.h
@@ -17863,6 +17900,7 @@ string.$(OBJEXT): {$(VPATH)}rubyparser.h
 string.$(OBJEXT): {$(VPATH)}shape.h
 string.$(OBJEXT): {$(VPATH)}st.h
 string.$(OBJEXT): {$(VPATH)}string.c
+string.$(OBJEXT): {$(VPATH)}string.rbinc
 string.$(OBJEXT): {$(VPATH)}subst.h
 string.$(OBJEXT): {$(VPATH)}thread.h
 string.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
@@ -19341,6 +19379,7 @@ variable.$(OBJEXT): {$(VPATH)}internal/core/rclass.h
 variable.$(OBJEXT): {$(VPATH)}internal/core/rdata.h
 variable.$(OBJEXT): {$(VPATH)}internal/core/rfile.h
 variable.$(OBJEXT): {$(VPATH)}internal/core/rhash.h
+variable.$(OBJEXT): {$(VPATH)}internal/core/rmatch.h
 variable.$(OBJEXT): {$(VPATH)}internal/core/robject.h
 variable.$(OBJEXT): {$(VPATH)}internal/core/rregexp.h
 variable.$(OBJEXT): {$(VPATH)}internal/core/rstring.h
@@ -19435,6 +19474,8 @@ variable.$(OBJEXT): {$(VPATH)}onigmo.h
 variable.$(OBJEXT): {$(VPATH)}oniguruma.h
 variable.$(OBJEXT): {$(VPATH)}ractor.h
 variable.$(OBJEXT): {$(VPATH)}ractor_core.h
+variable.$(OBJEXT): {$(VPATH)}re.h
+variable.$(OBJEXT): {$(VPATH)}regex.h
 variable.$(OBJEXT): {$(VPATH)}ruby_assert.h
 variable.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 variable.$(OBJEXT): {$(VPATH)}rubyparser.h
@@ -19835,6 +19876,7 @@ vm.$(OBJEXT): {$(VPATH)}internal/core/rclass.h
 vm.$(OBJEXT): {$(VPATH)}internal/core/rdata.h
 vm.$(OBJEXT): {$(VPATH)}internal/core/rfile.h
 vm.$(OBJEXT): {$(VPATH)}internal/core/rhash.h
+vm.$(OBJEXT): {$(VPATH)}internal/core/rmatch.h
 vm.$(OBJEXT): {$(VPATH)}internal/core/robject.h
 vm.$(OBJEXT): {$(VPATH)}internal/core/rregexp.h
 vm.$(OBJEXT): {$(VPATH)}internal/core/rstring.h
@@ -19937,6 +19979,8 @@ vm.$(OBJEXT): {$(VPATH)}probes.h
 vm.$(OBJEXT): {$(VPATH)}probes_helper.h
 vm.$(OBJEXT): {$(VPATH)}ractor.h
 vm.$(OBJEXT): {$(VPATH)}ractor_core.h
+vm.$(OBJEXT): {$(VPATH)}re.h
+vm.$(OBJEXT): {$(VPATH)}regex.h
 vm.$(OBJEXT): {$(VPATH)}ruby_assert.h
 vm.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 vm.$(OBJEXT): {$(VPATH)}rubyparser.h

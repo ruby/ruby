@@ -1,5 +1,10 @@
-use crate::cruby::{IseqPtr, VALUE, rb_gc_mark_movable, rb_gc_location};
+use std::alloc::{alloc, handle_alloc_error, Layout};
+use std::mem::{align_of, size_of};
+use std::ptr;
+
+use crate::cruby::{__IncompleteArrayField, IseqPtr, VALUE, rb_gc_mark_movable, rb_gc_location};
 use crate::cruby::zjit_jit_frame;
+use crate::codegen::iseq_may_write_block_code;
 use crate::state::ZJITState;
 
 /// JITFrame struct is defined in zjit.h (the single source of truth) and
@@ -7,22 +12,43 @@ use crate::state::ZJITState;
 pub type JITFrame = zjit_jit_frame;
 
 impl JITFrame {
-    /// Allocate a JITFrame on the heap, register it with ZJITState, and return
-    /// a raw pointer that remains valid for the lifetime of the process.
-    fn alloc(jit_frame: JITFrame) -> *const Self {
-        let raw_ptr = Box::into_raw(Box::new(jit_frame));
+    /// Allocate a JITFrame and its trailing stack map on the heap, register it
+    /// with ZJITState, and return a raw pointer that remains valid for the
+    /// lifetime of the process.
+    fn alloc(
+        pc: *const VALUE,
+        iseq: IseqPtr,
+        materialize_block_code: bool,
+        stack_size: usize,
+    ) -> *const Self {
+        // JITFrame ends with a flexible stack[] array, so allocate enough
+        // space for the fixed fields plus the requested stack map entries.
+        let frame_size = size_of::<JITFrame>()
+            .checked_add(stack_size.checked_mul(size_of::<VALUE>()).unwrap())
+            .unwrap();
+        let layout = Layout::from_size_align(frame_size, align_of::<JITFrame>()).unwrap();
+        let raw_ptr = unsafe { alloc(layout) as *mut JITFrame };
+        if raw_ptr.is_null() {
+            handle_alloc_error(layout);
+        }
+
+        unsafe {
+            ptr::write(raw_ptr, JITFrame {
+                pc,
+                iseq,
+                materialize_block_code,
+                stack_size: stack_size.try_into().unwrap(),
+                stack: __IncompleteArrayField::new(),
+            });
+        }
         ZJITState::get_jit_frames().push(raw_ptr);
         raw_ptr as *const _
     }
 
     /// Create a JITFrame for an ISEQ frame.
-    pub fn new_iseq(pc: *const VALUE, iseq: IseqPtr, materialize_block_code: bool) -> *const Self {
-        Self::alloc(JITFrame { pc, iseq, materialize_block_code })
-    }
-
-    /// Create a JITFrame for a C frame (no PC, no ISEQ).
-    pub fn new_cfunc() -> *const Self {
-        Self::alloc(JITFrame { pc: std::ptr::null(), iseq: std::ptr::null(), materialize_block_code: false })
+    pub fn new_iseq(pc: *const VALUE, iseq: IseqPtr, stack_size: usize) -> *const Self {
+        let materialize_block_code = !iseq_may_write_block_code(iseq);
+        Self::alloc(pc, iseq, materialize_block_code, stack_size)
     }
 
     /// Mark the iseq pointer for GC. Called from rb_zjit_root_mark.
@@ -85,7 +111,7 @@ mod tests {
 
     #[test]
     fn test_materialize_two_frames() { // materialize caller frames on raise
-        // At the point of `resuce`, there are two lightweight frames on stack and both need to be
+        // At the point of `rescue`, there are two inline frames on stack and both need to be
         // materialized before passing control to interpreter.
         assert_snapshot!(inspect("
             def jit_entry = raise_and_rescue
@@ -95,6 +121,29 @@ mod tests {
             jit_entry
             jit_entry
         "), @"1");
+    }
+
+    // Direct JIT-to-JIT entry passes callee locals as native arguments. If the
+    // callee ISEQ has already escaped EP, later getlocal reads use EP memory,
+    // so JIT entry must materialize those locals into the callee frame.
+    #[test]
+    fn test_jit_entry_materializes_ep_escaped_locals() {
+        assert_snapshot!(inspect("
+            def poison(*) = nil
+
+            def victim(a, b, c)
+              lambda { a }
+              a
+            end
+
+            def jit_entry
+              poison([], [], [], [])
+              victim(:expected, 1, 2)
+            end
+
+            jit_entry
+            Array.new(100) { jit_entry }.uniq
+        "), @"[:expected]");
     }
 
     // Materialize frames on side exit: a type guard triggers a side exit with
@@ -126,11 +175,10 @@ mod tests {
         "#), @"100");
     }
 
-    // Side exit at the very start of a method, before any jit_return has been
-    // written by gen_save_pc_for_gc. The jit_return field should be 0 (from
-    // vm_push_frame), so materialization should be a no-op for that frame.
+    // Side exit at the very start of a method, before gen_save_pc_for_gc has
+    // updated the entry JITFrame.
     #[test]
-    fn test_side_exit_before_jit_return_write() {
+    fn test_side_exit_before_jit_frame_update() {
         assert_snapshot!(inspect("
             def entry(n) = n + 1
             entry(1)

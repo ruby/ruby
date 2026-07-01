@@ -79,7 +79,7 @@ describe "Matrix#minor" do
 
   describe "for a subclass of Matrix" do
     it "returns an instance of that subclass" do
-      MatrixSub.ins.minor(0, 1, 0, 1).should be_an_instance_of(MatrixSub)
+      MatrixSub.ins.minor(0, 1, 0, 1).should.instance_of?(MatrixSub)
     end
   end
 end

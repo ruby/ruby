@@ -61,9 +61,27 @@ RBASIC_SET_CLASS(VALUE obj, VALUE klass)
     RB_OBJ_WRITTEN(obj, oldv, klass);
 }
 
+static inline VALUE *
+ROBJECT_FIELDS(VALUE obj)
+{
+    RBIMPL_ASSERT_TYPE(obj, RUBY_T_OBJECT);
+
+    struct RObject *const ptr = ROBJECT(obj);
+
+    if (RB_UNLIKELY(RB_FL_ANY_RAW(obj, ROBJECT_HEAP))) {
+        return ptr->as.heap.fields;
+    }
+    else {
+        return ptr->as.ary;
+    }
+}
+
 static inline size_t
 rb_obj_embedded_size(uint32_t fields_count)
 {
-    return offsetof(struct RObject, as.ary) + (sizeof(VALUE) * fields_count);
+    size_t size = offsetof(struct RObject, as.ary) + (sizeof(VALUE) * fields_count);
+    // Ensure enough room for the heap pointer if this expands
+    if (size < sizeof(struct RObject)) size = sizeof(struct RObject);
+    return size;
 }
 #endif /* INTERNAL_OBJECT_H */

@@ -71,7 +71,7 @@ RSpec.describe "Resolving platform craziness" do
     should_resolve_as %w[foo-1.0.0]
   end
 
-  it "prefers the platform specific gem to the ruby version" do
+  it "prefers the platform specific gem to the ruby version, but keeps the ruby fallback" do
     @index = build_index do
       gem "foo", "1.0.0"
       gem "foo", "1.0.0", "x64-mingw-ucrt"
@@ -79,7 +79,7 @@ RSpec.describe "Resolving platform craziness" do
     dep "foo"
     platforms "x64-mingw-ucrt"
 
-    should_resolve_as %w[foo-1.0.0-x64-mingw-ucrt]
+    should_resolve_as %w[foo-1.0.0 foo-1.0.0-x64-mingw-ucrt]
   end
 
   describe "on a linux platform" do
@@ -88,7 +88,7 @@ RSpec.describe "Resolving platform craziness" do
     # Gem's platform is *-linux => gem is glibc + maybe musl compatible
     # Gem's platform is *-linux-musl => gem is musl compatible but not glibc
 
-    it "favors the platform version-specific gem on a version-specifying linux platform" do
+    it "favors the platform version-specific gem on a version-specifying linux platform, but keeps the ruby fallback" do
       @index = build_index do
         gem "foo", "1.0.0"
         gem "foo", "1.0.0", "x86_64-linux"
@@ -97,10 +97,10 @@ RSpec.describe "Resolving platform craziness" do
       dep "foo"
       platforms "x86_64-linux-musl"
 
-      should_resolve_as %w[foo-1.0.0-x86_64-linux-musl]
+      should_resolve_as %w[foo-1.0.0 foo-1.0.0-x86_64-linux-musl]
     end
 
-    it "favors the version-less gem over the version-specific gem on a gnu linux platform" do
+    it "favors the version-less gem over the version-specific gem on a gnu linux platform, but keeps the ruby fallback" do
       @index = build_index do
         gem "foo", "1.0.0"
         gem "foo", "1.0.0", "x86_64-linux"
@@ -109,7 +109,7 @@ RSpec.describe "Resolving platform craziness" do
       dep "foo"
       platforms "x86_64-linux"
 
-      should_resolve_as %w[foo-1.0.0-x86_64-linux]
+      should_resolve_as %w[foo-1.0.0 foo-1.0.0-x86_64-linux]
     end
 
     it "ignores the platform version-specific gem on a gnu linux platform" do
@@ -122,7 +122,7 @@ RSpec.describe "Resolving platform craziness" do
       should_not_resolve
     end
 
-    it "falls back to the platform version-less gem on a linux platform with a version" do
+    it "falls back to the platform version-less gem on a linux platform with a version, but keeps the ruby fallback" do
       @index = build_index do
         gem "foo", "1.0.0"
         gem "foo", "1.0.0", "x86_64-linux"
@@ -130,7 +130,7 @@ RSpec.describe "Resolving platform craziness" do
       dep "foo"
       platforms "x86_64-linux-musl"
 
-      should_resolve_as %w[foo-1.0.0-x86_64-linux]
+      should_resolve_as %w[foo-1.0.0 foo-1.0.0-x86_64-linux]
     end
 
     it "falls back to the ruby platform gem on a gnu linux platform when only a version-specifying gem is available" do

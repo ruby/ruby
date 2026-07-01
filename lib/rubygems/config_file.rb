@@ -26,9 +26,22 @@ require "rbconfig"
 # RubyGems options use symbol keys.  Valid options are:
 #
 # +:backtrace+:: See #backtrace
-# +:sources+:: Sets Gem::sources
+# +:bulk_threshold+:: See #bulk_threshold
 # +:verbose+:: See #verbose
+# +:update_sources+:: See #update_sources
 # +:concurrent_downloads+:: See #concurrent_downloads
+# +:cert_expiration_length_days+:: See #cert_expiration_length_days
+# +:install_extension_in_lib+:: See #install_extension_in_lib
+# +:ipv4_fallback_enabled+:: See #ipv4_fallback_enabled
+# +:global_gem_cache+:: See #global_gem_cache
+# +:use_psych+:: See #use_psych
+# +:gemhome+:: See #home
+# +:gempath+:: See #path
+# +:sources+:: Sets Gem::sources
+# +:disable_default_gem_server+:: See #disable_default_gem_server
+# +:ssl_verify_mode+:: See #ssl_verify_mode
+# +:ssl_ca_cert+:: See #ssl_ca_cert
+# +:ssl_client_cert+:: See #ssl_client_cert
 #
 # gemrc files may exist in various locations and are read and merged in
 # the following order:

@@ -2,7 +2,7 @@ require_relative '../spec_helper'
 
 describe "Safe navigator" do
   it "requires a method name to be provided" do
-    -> { eval("obj&. {}") }.should raise_error(SyntaxError)
+    -> { eval("obj&. {}") }.should.raise(SyntaxError)
   end
 
   context "when context is nil" do
@@ -26,7 +26,7 @@ describe "Safe navigator" do
     it "calls the method" do
       false&.to_s.should == "false"
 
-      -> { false&.unknown }.should raise_error(NoMethodError)
+      -> { false&.unknown }.should.raise(NoMethodError)
     end
   end
 
@@ -34,7 +34,7 @@ describe "Safe navigator" do
     it "calls the method" do
       1&.to_s.should == "1"
 
-      -> { 1&.unknown }.should raise_error(NoMethodError)
+      -> { 1&.unknown }.should.raise(NoMethodError)
     end
   end
 
@@ -140,7 +140,7 @@ describe "Safe navigator" do
 
     -> {
       obj&.foo += 3
-    }.should raise_error(NoMethodError) { |e|
+    }.should.raise(NoMethodError) { |e|
       e.name.should == :+
     }
   end

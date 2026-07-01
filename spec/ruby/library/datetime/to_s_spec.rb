@@ -4,7 +4,7 @@ require 'date'
 describe "DateTime#to_s" do
   it "returns a new String object" do
     dt = DateTime.new(2012, 12, 24, 1, 2, 3, "+03:00")
-    dt.to_s.should be_kind_of(String)
+    dt.to_s.should.is_a?(String)
   end
 
   it "maintains timezone regardless of local time" do
