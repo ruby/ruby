@@ -2539,7 +2539,7 @@ match_named_captures(int argc, VALUE *argv, VALUE match)
     VALUE opt;
     int symbolize_names = 0;
 
-    rb_scan_args(argc, argv, "0:", &opt);
+    rb_scan_args(argc, argv, "0:^", &opt);
 
     if (!NIL_P(opt)) {
         static ID keyword_ids[1];
@@ -2549,7 +2549,7 @@ match_named_captures(int argc, VALUE *argv, VALUE match)
         if (!keyword_ids[0]) {
             keyword_ids[0] = rb_intern_const("symbolize_names");
         }
-        rb_get_kwargs(opt, keyword_ids, 0, 1, &symbolize_names_val);
+        rb_get_kwargs_const(opt, keyword_ids, 0, 1, &symbolize_names_val);
         if (!UNDEF_P(symbolize_names_val) && RTEST(symbolize_names_val)) {
             symbolize_names = 1;
         }
@@ -4216,7 +4216,7 @@ reg_extract_args(int argc, VALUE *argv, struct reg_init_args *args)
     VALUE str, src, opts = Qundef, kwargs;
     VALUE re = Qnil;
 
-    rb_scan_args(argc, argv, "11:", &src, &opts, &kwargs);
+    rb_scan_args(argc, argv, "11:^", &src, &opts, &kwargs);
 
     args->timeout = Qnil;
     if (!NIL_P(kwargs)) {
@@ -4224,7 +4224,7 @@ reg_extract_args(int argc, VALUE *argv, struct reg_init_args *args)
         if (!keywords[0]) {
             keywords[0] = rb_intern_const("timeout");
         }
-        rb_get_kwargs(kwargs, keywords, 0, 1, &args->timeout);
+        rb_get_kwargs_const(kwargs, keywords, 0, 1, &args->timeout);
     }
 
     if (RB_TYPE_P(src, T_REGEXP)) {

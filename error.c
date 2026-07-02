@@ -291,8 +291,8 @@ rb_warning_s_warn(int argc, VALUE *argv, VALUE mod)
     VALUE opt;
     VALUE category = Qnil;
 
-    rb_scan_args(argc, argv, "1:", &str, &opt);
-    if (!NIL_P(opt)) rb_get_kwargs(opt, &id_category, 0, 1, &category);
+    rb_scan_args(argc, argv, "1:^", &str, &opt);
+    if (!NIL_P(opt)) rb_get_kwargs_const(opt, &id_category, 0, 1, &category);
 
     Check_Type(str, T_STRING);
     rb_must_asciicompat(str);
@@ -1810,7 +1810,7 @@ exc_detailed_message(int argc, VALUE *argv, VALUE exc)
 {
     VALUE opt;
 
-    rb_scan_args(argc, argv, "0:", &opt);
+    rb_scan_args(argc, argv, "0:^", &opt);
 
     VALUE highlight = check_highlight_keyword(opt, 0);
 
@@ -2322,9 +2322,9 @@ frozen_err_initialize(int argc, VALUE *argv, VALUE self)
     ID keywords[1];
     VALUE values[numberof(keywords)], options;
 
-    argc = rb_scan_args(argc, argv, "*:", NULL, &options);
+    argc = rb_scan_args(argc, argv, "*:^", NULL, &options);
     keywords[0] = id_receiver;
-    rb_get_kwargs(options, keywords, 0, numberof(values), values);
+    rb_get_kwargs_const(options, keywords, 0, numberof(values), values);
     rb_call_super(argc, argv);
     err_init_recv(self, values[0]);
     return self;
@@ -2403,9 +2403,9 @@ name_err_initialize(int argc, VALUE *argv, VALUE self)
     ID keywords[1];
     VALUE values[numberof(keywords)], name, options;
 
-    argc = rb_scan_args(argc, argv, "*:", NULL, &options);
+    argc = rb_scan_args(argc, argv, "*:^", NULL, &options);
     keywords[0] = id_receiver;
-    rb_get_kwargs(options, keywords, 0, numberof(values), values);
+    rb_get_kwargs_const(options, keywords, 0, numberof(values), values);
     name = (argc > 1) ? argv[--argc] : Qnil;
     rb_call_super(argc, argv);
     name_err_init_attr(self, values[0], name);
@@ -2494,7 +2494,7 @@ nometh_err_initialize(int argc, VALUE *argv, VALUE self)
 {
     int priv;
     VALUE args, options;
-    argc = rb_scan_args(argc, argv, "*:", NULL, &options);
+    argc = rb_scan_args(argc, argv, "*:^", NULL, &options);
     priv = (argc > 3) && (--argc, RTEST(argv[argc]));
     args = (argc > 2) ? argv[--argc] : Qnil;
     if (!NIL_P(options)) argv[argc++] = options;
@@ -2898,7 +2898,7 @@ key_err_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE options;
 
-    rb_call_super(rb_scan_args(argc, argv, "01:", NULL, &options), argv);
+    rb_call_super(rb_scan_args(argc, argv, "01:^", NULL, &options), argv);
 
     if (!NIL_P(options)) {
         ID keywords[2];
@@ -2906,7 +2906,7 @@ key_err_initialize(int argc, VALUE *argv, VALUE self)
         int i;
         keywords[0] = id_receiver;
         keywords[1] = id_key;
-        rb_get_kwargs(options, keywords, 0, numberof(values), values);
+        rb_get_kwargs_const(options, keywords, 0, numberof(values), values);
         for (i = 0; i < numberof(values); ++i) {
             if (!UNDEF_P(values[i])) {
                 rb_ivar_set(self, keywords[i], values[i]);
@@ -2964,7 +2964,7 @@ no_matching_pattern_key_err_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE options;
 
-    rb_call_super(rb_scan_args(argc, argv, "01:", NULL, &options), argv);
+    rb_call_super(rb_scan_args(argc, argv, "01:^", NULL, &options), argv);
 
     if (!NIL_P(options)) {
         ID keywords[2];
@@ -2972,7 +2972,7 @@ no_matching_pattern_key_err_initialize(int argc, VALUE *argv, VALUE self)
         int i;
         keywords[0] = id_matchee;
         keywords[1] = id_key;
-        rb_get_kwargs(options, keywords, 0, numberof(values), values);
+        rb_get_kwargs_const(options, keywords, 0, numberof(values), values);
         for (i = 0; i < numberof(values); ++i) {
             if (!UNDEF_P(values[i])) {
                 rb_ivar_set(self, keywords[i], values[i]);

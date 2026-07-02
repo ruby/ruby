@@ -6916,10 +6916,8 @@ static VALUE
 env_clone(int argc, VALUE *argv, VALUE obj)
 {
     if (argc) {
-        VALUE opt;
-        if (rb_scan_args(argc, argv, "0:", &opt) < argc) {
-            rb_get_freeze_opt(1, &opt);
-        }
+        /* Validate args (raises on bad positional/keyword) before the TypeError. */
+        rb_get_freeze_opt(argc, argv);
     }
 
     rb_raise(rb_eTypeError, "Cannot clone ENV, use ENV.to_h to get a copy of ENV as a hash");

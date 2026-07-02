@@ -4119,7 +4119,7 @@ extract_getline_opts(VALUE opts, struct getline_arg *args)
         if (!kwds[0]) {
             kwds[0] = rb_intern_const("chomp");
         }
-        rb_get_kwargs(opts, kwds, 0, -2, &vchomp);
+        rb_get_kwargs_const(opts, kwds, 0, -2, &vchomp);
         chomp = (!UNDEF_P(vchomp)) && RTEST(vchomp);
     }
     args->chomp = chomp;
@@ -4182,7 +4182,7 @@ static void
 prepare_getline_args(int argc, VALUE *argv, struct getline_arg *args, VALUE io)
 {
     VALUE opts;
-    argc = rb_scan_args(argc, argv, "02:", NULL, NULL, &opts);
+    argc = rb_scan_args(argc, argv, "02:^", NULL, NULL, &opts);
     extract_getline_args(argc, argv, args);
     extract_getline_opts(opts, args);
     check_getline_args(&args->rs, &args->limit, io);
@@ -8497,7 +8497,7 @@ rb_io_reopen(int argc, VALUE *argv, VALUE file)
     int oflags;
     rb_io_t *fptr;
 
-    if (rb_scan_args(argc, argv, "11:", &fname, &nmode, &opt) == 1) {
+    if (rb_scan_args(argc, argv, "11:^", &fname, &nmode, &opt) == 1) {
         VALUE tmp = rb_io_check_io(fname);
         if (!NIL_P(tmp)) {
             return io_reopen(file, tmp);
@@ -9549,7 +9549,7 @@ rb_io_initialize(int argc, VALUE *argv, VALUE io)
     VALUE fnum, vmode;
     VALUE opt;
 
-    rb_scan_args(argc, argv, "11:", &fnum, &vmode, &opt);
+    rb_scan_args(argc, argv, "11:^", &fnum, &vmode, &opt);
     return io_initialize(io, fnum, vmode, opt);
 }
 
@@ -9719,7 +9719,7 @@ rb_file_initialize(int argc, VALUE *argv, VALUE io)
         rb_raise(rb_eRuntimeError, "reinitializing File");
     }
     VALUE fname, vmode, vperm, opt;
-    int posargc = rb_scan_args(argc, argv, "12:", &fname, &vmode, &vperm, &opt);
+    int posargc = rb_scan_args(argc, argv, "12:^", &fname, &vmode, &vperm, &opt);
     if (posargc < 3) {          /* perm is File only */
         VALUE fd = rb_check_to_int(fname);
 
@@ -11949,7 +11949,7 @@ rb_io_s_pipe(int argc, VALUE *argv, VALUE klass)
     enum rb_io_mode fmode = 0;
     VALUE ret;
 
-    argc = rb_scan_args(argc, argv, "02:", &v1, &v2, &opt);
+    argc = rb_scan_args(argc, argv, "02:^", &v1, &v2, &opt);
     if (rb_pipe(pipes) < 0)
         rb_sys_fail(0);
 
@@ -12155,7 +12155,7 @@ rb_io_s_foreach(int argc, VALUE *argv, VALUE self)
     struct foreach_arg arg;
     struct getline_arg garg;
 
-    argc = rb_scan_args(argc, argv, "12:", NULL, NULL, NULL, &opt);
+    argc = rb_scan_args(argc, argv, "12:^", NULL, NULL, NULL, &opt);
     RETURN_ENUMERATOR(self, orig_argc, argv);
     extract_getline_args(argc-1, argv+1, &garg);
     open_key_args(self, argc, argv, opt, &arg);
@@ -12228,7 +12228,7 @@ rb_io_s_readlines(int argc, VALUE *argv, VALUE io)
     struct foreach_arg arg;
     struct getline_arg garg;
 
-    argc = rb_scan_args(argc, argv, "12:", NULL, NULL, NULL, &opt);
+    argc = rb_scan_args(argc, argv, "12:^", NULL, NULL, NULL, &opt);
     extract_getline_args(argc-1, argv+1, &garg);
     open_key_args(io, argc, argv, opt, &arg);
     if (NIL_P(arg.io)) return Qnil;
@@ -12328,7 +12328,7 @@ rb_io_s_read(int argc, VALUE *argv, VALUE io)
     long off;
     struct foreach_arg arg;
 
-    argc = rb_scan_args(argc, argv, "13:", NULL, NULL, &offset, NULL, &opt);
+    argc = rb_scan_args(argc, argv, "13:^", NULL, NULL, &offset, NULL, &opt);
     if (!NIL_P(offset) && (off = NUM2LONG(offset)) < 0) {
         rb_raise(rb_eArgError, "negative offset %ld given", off);
     }
@@ -12409,7 +12409,7 @@ io_s_write(int argc, VALUE *argv, VALUE klass, int binary)
     struct foreach_arg arg;
     struct write_arg warg;
 
-    rb_scan_args(argc, argv, "21:", NULL, &string, &offset, &opt);
+    rb_scan_args(argc, argv, "21:^", NULL, &string, &offset, &opt);
 
     if (NIL_P(opt)) opt = rb_hash_new();
     else opt = rb_hash_dup(opt);
@@ -13607,7 +13607,7 @@ rb_io_set_encoding(int argc, VALUE *argv, VALUE io)
         return forward(io, id_set_encoding, argc, argv);
     }
 
-    argc = rb_scan_args(argc, argv, "11:", &v1, &v2, &opt);
+    argc = rb_scan_args(argc, argv, "11:^", &v1, &v2, &opt);
     GetOpenFile(io, fptr);
     io_encoding_set(fptr, v1, v2, opt);
     return io;
@@ -14051,7 +14051,7 @@ argf_read_nonblock(int argc, VALUE *argv, VALUE argf)
 {
     VALUE opts;
 
-    rb_scan_args(argc, argv, "11:", NULL, NULL, &opts);
+    rb_scan_args(argc, argv, "11:^", NULL, NULL, &opts);
 
     if (!NIL_P(opts))
         argc--;

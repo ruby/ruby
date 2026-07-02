@@ -454,19 +454,14 @@ VALUE
 rb_get_freeze_opt(int argc, VALUE *argv)
 {
     static ID keyword_ids[1];
-    VALUE opt;
-    VALUE kwfreeze = Qnil;
+    VALUE opt, kwfreeze = Qnil;
 
     if (!keyword_ids[0]) {
         CONST_ID(keyword_ids[0], "freeze");
     }
-    rb_scan_args(argc, argv, "0:", &opt);
-    if (!NIL_P(opt)) {
-        rb_get_kwargs(opt, keyword_ids, 0, 1, &kwfreeze);
-        if (!UNDEF_P(kwfreeze))
-            kwfreeze = obj_freeze_opt(kwfreeze);
-    }
-    return kwfreeze;
+    rb_scan_args(argc, argv, "0:^", &opt);
+    rb_get_kwargs_const(opt, keyword_ids, 0, 1, &kwfreeze);
+    return UNDEF_P(kwfreeze) ? Qnil : obj_freeze_opt(kwfreeze);
 }
 
 static VALUE
@@ -687,7 +682,7 @@ static VALUE
 rb_obj_init_clone(int argc, VALUE *argv, VALUE obj)
 {
     VALUE orig, opts;
-    if (rb_scan_args(argc, argv, "1:", &orig, &opts) < argc) {
+    if (rb_scan_args(argc, argv, "1:^", &orig, &opts) < argc) {
         /* Ignore a freeze keyword */
         rb_get_freeze_opt(1, &opts);
     }
@@ -2152,7 +2147,7 @@ static VALUE
 rb_mod_initialize_clone(int argc, VALUE* argv, VALUE clone)
 {
     VALUE ret, orig, opts;
-    rb_scan_args(argc, argv, "1:", &orig, &opts);
+    rb_scan_args(argc, argv, "1:^", &orig, &opts);
     ret = rb_obj_init_clone(argc, argv, clone);
     if (OBJ_FROZEN(orig))
         rb_class_name(clone);
@@ -3518,7 +3513,7 @@ rb_opts_exception_p(VALUE opts, int default_value)
 {
     static const ID kwds[1] = {idException};
     VALUE exception;
-    if (rb_get_kwargs(opts, kwds, 0, 1, &exception))
+    if (rb_get_kwargs_const(opts, kwds, 0, 1, &exception))
         return rb_bool_expected(exception, "exception", TRUE);
     return default_value;
 }

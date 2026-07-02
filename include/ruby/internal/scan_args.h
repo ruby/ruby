@@ -88,6 +88,22 @@
  */
 #define HAVE_RB_SCAN_ARGS_OPTIONAL_HASH 1
 
+/**
+ * This macro is defined when rb_scan_args() understands the `:^` "borrowed
+ * keyword hash" format flag (see the description of the format string below).
+ * An extension that wants to use it while still compiling against Ruby versions
+ * that predate the feature can guard its use behind this macro:
+ *
+ * ```CXX
+ * #ifdef HAVE_RB_SCAN_ARGS_BORROW_KEYWORDS
+ *     rb_scan_args(argc, argv, "01:^", &x, &opts);
+ * #else
+ *     rb_scan_args(argc, argv, "01:",  &x, &opts);
+ * #endif
+ * ```
+ */
+#define HAVE_RB_SCAN_ARGS_BORROW_KEYWORDS 1
+
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 RBIMPL_ATTR_NONNULL((2, 3))
 /**
@@ -105,7 +121,7 @@ RBIMPL_ATTR_NONNULL((2, 3))
  *                          [num-of-trailing-mandatory-args]
  * pre-opt-post-arg-spec := num-of-leading-mandatory-args num-of-optional-args
  *                          num-of-trailing-mandatory-args
- * keyword-arg-spec      := sym-for-keyword-arg
+ * keyword-arg-spec      := sym-for-keyword-arg [sym-for-borrowed-keyword-arg]
  * block-arg-spec        := sym-for-block-arg
  *
  * num-of-leading-mandatory-args  := DIGIT ; The number of leading mandatory
@@ -120,6 +136,25 @@ RBIMPL_ATTR_NONNULL((2, 3))
  *                                         ; captured as a hash.
  *                                         ; If keyword arguments are not
  *                                         ; provided, returns nil.
+ * sym-for-borrowed-keyword-arg   := "^"   ; Only valid right after ":".  The
+ *                                         ; captured keyword hash is the
+ *                                         ; VM-owned hash built for this call,
+ *                                         ; borrowed without the usual
+ *                                         ; defensive copy.  Saves one hash
+ *                                         ; allocation per call, but only takes
+ *                                         ; effect in the default
+ *                                         ; (PASS_CALLED) keyword mode where
+ *                                         ; the hash is guaranteed private to
+ *                                         ; the callee; otherwise it falls back
+ *                                         ; to copying.  The callee may read it
+ *                                         ; freely but must not retain it after
+ *                                         ; mutating it (e.g. rb_get_kwargs
+ *                                         ; deletes matched keys -- use
+ *                                         ; rb_get_kwargs_const to read without
+ *                                         ; mutating).  Extensions can
+ *                                         ; feature-detect this flag with the
+ *                                         ; HAVE_RB_SCAN_ARGS_BORROW_KEYWORDS
+ *                                         ; macro.
  * sym-for-block-arg              := "&"   ; Indicates that an iterator block
  *                                         ; should be captured if given
  * ```
@@ -205,7 +240,9 @@ RBIMPL_SYMBOL_EXPORT_END()
 #define rb_scan_args_count_hash(fmt, ofs, vari) \
     ((fmt)[ofs]!=':' ? \
      rb_scan_args_count_block(fmt, ofs, vari) : \
-     rb_scan_args_count_block(fmt, (ofs)+1, (vari)+1))
+     (fmt)[(ofs)+1]!='^' ? \
+     rb_scan_args_count_block(fmt, (ofs)+1, (vari)+1) : \
+     rb_scan_args_count_block(fmt, (ofs)+2, (vari)+1))
 
 #define rb_scan_args_count_trail(fmt, ofs, vari) \
     (!rb_scan_args_isdigit((fmt)[ofs]) ? \
@@ -262,6 +299,15 @@ rb_scan_args_keyword_p(int kw_flag, VALUE last)
       default:
         return false;
     }
+}
+
+static inline VALUE
+rb_scan_args_borrow_hash(int kw_flag, bool f_hash_borrow, VALUE last)
+{
+    if (f_hash_borrow && kw_flag == RB_SCAN_ARGS_PASS_CALLED_KEYWORDS) {
+        return last;
+    }
+    return rb_hash_dup(last);
 }
 
 RBIMPL_ATTR_FORCEINLINE()
@@ -338,11 +384,20 @@ rb_scan_args_f_hash(const char *fmt)
 }
 
 RBIMPL_ATTR_FORCEINLINE()
+static bool
+rb_scan_args_f_hash_borrow(const char *fmt)
+{
+    const int idx = rb_scan_args_hash_idx(fmt);
+    return (fmt[idx]==':' && fmt[idx+1]=='^');
+}
+
+RBIMPL_ATTR_FORCEINLINE()
 static int
 rb_scan_args_block_idx(const char *fmt)
 {
     const int idx = rb_scan_args_hash_idx(fmt);
-    return idx+(fmt[idx]==':');
+    const int colon = (fmt[idx]==':');
+    return idx + colon + (colon && fmt[idx+1]=='^');
 }
 
 RBIMPL_ATTR_FORCEINLINE()
@@ -371,6 +426,7 @@ rb_scan_args_end_idx(const char *fmt)
                      rb_scan_args_n_trail(fmt), \
                      rb_scan_args_f_var(fmt), \
                      rb_scan_args_f_hash(fmt), \
+                     rb_scan_args_f_hash_borrow(fmt), \
                      rb_scan_args_f_block(fmt), \
                      (rb_scan_args_verify(fmt, varc), vars), (char *)fmt, varc)
 # define rb_scan_args_kw0(kw_flag, argc, argv, fmt, varc, vars) \
@@ -380,6 +436,7 @@ rb_scan_args_end_idx(const char *fmt)
                      rb_scan_args_n_trail(fmt), \
                      rb_scan_args_f_var(fmt), \
                      rb_scan_args_f_hash(fmt), \
+                     rb_scan_args_f_hash_borrow(fmt), \
                      rb_scan_args_f_block(fmt), \
                      (rb_scan_args_verify(fmt, varc), vars), (char *)fmt, varc)
 
@@ -387,7 +444,7 @@ RBIMPL_ATTR_FORCEINLINE()
 static int
 rb_scan_args_set(int kw_flag, int argc, const VALUE *argv,
                  int n_lead, int n_opt, int n_trail,
-                 bool f_var, bool f_hash, bool f_block,
+                 bool f_var, bool f_hash, bool f_hash_borrow, bool f_block,
                  VALUE *vars[], RB_UNUSED_VAR(const char *fmt), RB_UNUSED_VAR(int varc))
     RBIMPL_ATTR_DIAGNOSE_IF(rb_scan_args_count(fmt) <  0,    "bad scan arg format",                    "error")
     RBIMPL_ATTR_DIAGNOSE_IF(rb_scan_args_count(fmt) != varc, "variable argument length doesn't match", "error")
@@ -401,7 +458,7 @@ rb_scan_args_set(int kw_flag, int argc, const VALUE *argv,
     if (f_hash && argc > 0) {
         VALUE last = argv[argc - 1];
         if (rb_scan_args_keyword_p(kw_flag, last)) {
-            hash = rb_hash_dup(last);
+            hash = rb_scan_args_borrow_hash(kw_flag, f_hash_borrow, last);
             argc--;
         }
     }

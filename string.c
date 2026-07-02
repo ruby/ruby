@@ -2079,9 +2079,9 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
         CONST_ID(keyword_ids[1], "capacity");
     }
 
-    n = rb_scan_args(argc, argv, "01:", &orig, &opt);
+    n = rb_scan_args(argc, argv, "01:^", &orig, &opt);
     if (!NIL_P(opt)) {
-        rb_get_kwargs(opt, keyword_ids, 0, 2, kwargs);
+        rb_get_kwargs_const(opt, keyword_ids, 0, 2, kwargs);
         venc = kwargs[0];
         vcapa = kwargs[1];
         if (!UNDEF_P(venc) && !NIL_P(venc)) {
@@ -2155,14 +2155,14 @@ rb_str_s_new(int argc, VALUE *argv, VALUE klass)
     VALUE kwargs[2];
     rb_encoding *enc = NULL;
 
-    int n = rb_scan_args(argc, argv, "01:", &orig, &opt);
+    int n = rb_scan_args(argc, argv, "01:^", &orig, &opt);
     if (NIL_P(opt)) {
         return rb_class_new_instance_pass_kw(argc, argv, klass);
     }
 
     keyword_ids[0] = rb_id_encoding();
     CONST_ID(keyword_ids[1], "capacity");
-    rb_get_kwargs(opt, keyword_ids, 0, 2, kwargs);
+    rb_get_kwargs_const(opt, keyword_ids, 0, 2, kwargs);
     encoding = kwargs[0];
     capacity = kwargs[1];
 
@@ -9512,14 +9512,14 @@ rb_str_enumerate_lines(int argc, VALUE *argv, VALUE str, VALUE ary)
     long pos, rslen;
     int rsnewline = 0;
 
-    if (rb_scan_args(argc, argv, "01:", &rs, &opts) == 0)
+    if (rb_scan_args(argc, argv, "01:^", &rs, &opts) == 0)
         rs = rb_rs;
     if (!NIL_P(opts)) {
         static ID keywords[1];
         if (!keywords[0]) {
             keywords[0] = rb_intern_const("chomp");
         }
-        rb_get_kwargs(opts, keywords, 0, 1, &chomp);
+        rb_get_kwargs_const(opts, keywords, 0, 1, &chomp);
         chomp = (!UNDEF_P(chomp) && RTEST(chomp));
     }
 

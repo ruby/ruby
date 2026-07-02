@@ -2848,8 +2848,8 @@ rb_extract_keywords(VALUE *orighash)
     return parthash[0];
 }
 
-int
-rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, VALUE *values)
+static int
+get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, VALUE *values, bool remove)
 {
     int i = 0, j;
     int rest = 0;
@@ -2858,10 +2858,14 @@ rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, V
 
 #define extract_kwarg(keyword, val) \
     (key = (st_data_t)(keyword), values ? \
-     (rb_hash_stlike_delete(keyword_hash, &key, &(val)) || ((val) = Qundef, 0)) : \
+     (remove ? \
+      (rb_hash_stlike_delete(keyword_hash, &key, &(val)) || ((val) = Qundef, 0)) : \
+      (rb_hash_stlike_lookup(keyword_hash, key, &(val)) || ((val) = Qundef, 0))) : \
      rb_hash_stlike_lookup(keyword_hash, key, NULL))
 
     if (NIL_P(keyword_hash)) keyword_hash = 0;
+
+    RUBY_ASSERT(!(remove && values) || !keyword_hash || !RB_OBJ_FROZEN((VALUE)keyword_hash));
 
     if (optional < 0) {
         rest = 1;
@@ -2891,7 +2895,7 @@ rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, V
         }
     }
     if (!rest && keyword_hash) {
-        if (RHASH_SIZE(keyword_hash) > (unsigned int)(values ? 0 : j)) {
+        if (RHASH_SIZE(keyword_hash) > (unsigned int)((values && remove) ? 0 : j)) {
             unknown_keyword_error(keyword_hash, table, required+optional);
         }
     }
@@ -2904,6 +2908,18 @@ rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, V
 #undef extract_kwarg
 }
 
+int
+rb_get_kwargs(VALUE keyword_hash, const ID *table, int required, int optional, VALUE *values)
+{
+    return get_kwargs(keyword_hash, table, required, optional, values, true);
+}
+
+int
+rb_get_kwargs_const(VALUE keyword_hash, const ID *table, int required, int optional, VALUE *values)
+{
+    return get_kwargs(keyword_hash, table, required, optional, values, false);
+}
+
 struct rb_scan_args_t {
     int kw_flag;
     int n_lead;
@@ -2911,6 +2927,7 @@ struct rb_scan_args_t {
     int n_trail;
     bool f_var;
     bool f_hash;
+    bool f_hash_borrow;
     bool f_block;
 };
 
@@ -2941,6 +2958,10 @@ rb_scan_args_parse(int kw_flag, const char *fmt, struct rb_scan_args_t *arg)
     if (*p == ':') {
         arg->f_hash = 1;
         p++;
+        if (*p == '^') {
+            arg->f_hash_borrow = 1;
+            p++;
+        }
     }
     if (*p == '&') {
         arg->f_block = 1;
@@ -2964,13 +2985,14 @@ rb_scan_args_assign(const struct rb_scan_args_t *arg, int argc, const VALUE *con
     const int n_mand = n_lead + n_trail;
     const bool f_var = arg->f_var;
     const bool f_hash = arg->f_hash;
+    const bool f_hash_borrow = arg->f_hash_borrow;
     const bool f_block = arg->f_block;
 
     /* capture an option hash - phase 1: pop from the argv */
     if (f_hash && argc > 0) {
         VALUE last = argv[argc - 1];
         if (rb_scan_args_keyword_p(kw_flag, last)) {
-            hash = rb_hash_dup(last);
+            hash = rb_scan_args_borrow_hash(kw_flag, f_hash_borrow, last);
             argc--;
         }
     }

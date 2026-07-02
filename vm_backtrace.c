@@ -1232,10 +1232,10 @@ ec_backtrace_range(const rb_execution_context_t *ec, int argc, const VALUE *argv
     VALUE level, vn, opts;
     long lev, n;
 
-    rb_scan_args(argc, argv, "02:", &level, &vn, &opts);
+    rb_scan_args(argc, argv, "02:^", &level, &vn, &opts);
 
     if (!NIL_P(opts)) {
-        rb_get_kwargs(opts, (ID []){0}, 0, 0, NULL);
+        rb_get_kwargs_const(opts, (ID []){0}, 0, 0, NULL);
     }
     if (argc == 2 && NIL_P(vn)) argc--;
 
