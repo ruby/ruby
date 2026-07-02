@@ -3812,6 +3812,11 @@ impl Assembler {
             "pos_marker_at_block_end requires the current block to end with a terminator"
         );
 
+        // A block may end with two terminators, such as a conditional jump
+        // followed by an unconditional jump. Keep the pseudo-instruction before
+        // the whole terminator suffix so the LIR block itself still ends with
+        // terminators; linearize_instructions emits the real PosMarker after the
+        // block's instructions.
         let insert_pos = if block.insns.get(len - 2).is_some_and(Insn::is_terminator) {
             len - 2
         } else {
