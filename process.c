@@ -642,7 +642,7 @@ proc_s_last_status(VALUE mod)
 }
 
 VALUE
-rb_process_status_new(rb_pid_t pid, int status, int error)
+rb_process_status_for(rb_pid_t pid, int status, int error)
 {
     VALUE last_status = rb_process_status_allocate(rb_cProcessStatus);
     struct rb_process_status *data = RTYPEDDATA_GET_DATA(last_status);
@@ -681,7 +681,7 @@ process_status_load(VALUE real_obj, VALUE load_obj)
 void
 rb_last_status_set(int status, rb_pid_t pid)
 {
-    GET_THREAD()->last_status = rb_process_status_new(pid, status, 0);
+    GET_THREAD()->last_status = rb_process_status_for(pid, status, 0);
 }
 
 static void
@@ -1112,7 +1112,7 @@ rb_process_status_wait(rb_pid_t pid, int flags)
 
     if (waitpid_state.ret == 0) return Qnil;
 
-    return rb_process_status_new(waitpid_state.ret, waitpid_state.status, waitpid_state.errnum);
+    return rb_process_status_for(waitpid_state.ret, waitpid_state.status, waitpid_state.errnum);
 }
 
 /*

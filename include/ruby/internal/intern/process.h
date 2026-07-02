@@ -38,7 +38,7 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
  * @param[in] error Error code (if waitpid(2) returned -1).
  * @return VALUE An instance of Process::Status.
  */
-VALUE rb_process_status_new(rb_pid_t pid, int status, int error);
+VALUE rb_process_status_for(rb_pid_t pid, int status, int error);
 
 /**
  * Wait for the specified process to terminate, reap it, and return its status.
