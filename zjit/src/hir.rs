@@ -4250,7 +4250,7 @@ impl Function {
                                                 return Ok(());
                                             }
 
-                                            // Only allow leaf calls if we don't have a block argument
+                                            // Only allow inline calls if they are leaf, don't allocate, and don't have a block argument
                                             if props.leaf && props.no_gc {
                                                 fun.count(block, Counter::inline_cfunc_optimized_send_count);
                                                 let owner = unsafe { (*cme).owner };
