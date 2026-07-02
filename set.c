@@ -682,8 +682,8 @@ set_i_to_a(VALUE set)
  *  With no block given, when +self+ is an instance of +Set+,
  *  returns +self+:
  *
- *    set = Set[*0..9]                # => Set[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
- *    set.to_set                      # => Set[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+ *    set = Set[*0..9]
+ *    set.to_set
  *    set.to_set.__id__ == set.__id__ # => true
  *
  *  With no block given, when +self+ is an instance of a subclass of +Set+,
