@@ -7486,7 +7486,7 @@ fn gen_send_bmethod(
     }
 
     let frame_type = VM_FRAME_MAGIC_BLOCK | VM_FRAME_FLAG_BMETHOD | VM_FRAME_FLAG_LAMBDA;
-    perf_call! { gen_send_iseq(jit, asm, iseq, ci, frame_type, Some(capture.ep), cme, block, flags, argc, None) }
+    perf_call! { gen_send_iseq(jit, asm, iseq, ci, frame_type, Some(capture.ep), cme, block, flags, argc, None, false) }
 }
 
 /// The kind of a value an ISEQ returns
@@ -7582,6 +7582,10 @@ fn gen_send_iseq(
     flags: u32,
     argc: i32,
     captured_opnd: Option<Opnd>,
+    // The block param proxy receiver is on the stack below the args. self/EP come from
+    // the captured block (as for invokeblock); the proxy is shifted off after the
+    // overflow check so the rest of the frame setup is a plain invokeblock.
+    proxy_recv: bool,
 ) -> Option<CodegenStatus> {
     // Argument count. We will change this as we gather values from
     // sources to satisfy the callee's parameters. To help make sense
@@ -7747,6 +7751,13 @@ fn gen_send_iseq(
                 && !get_iseq_flags_ambiguous_param0(iseq)
         };
     if block_arg0_splat {
+        // The block param proxy removes its receiver from the stack only after the
+        // overflow check (see proxy_recv below). arg0 auto-splat needs a side exit past
+        // that point, which can't reconstruct the proxy at the opt_send_without_block PC.
+        if proxy_recv {
+            gen_counter_incr(jit, asm, Counter::send_bpp_arg0_splat);
+            return None;
+        }
         // If block_arg0_splat, we still need side exits after splat, but
         // the splat modifies the stack which breaks side exits. So bail out.
         if splat_call {
@@ -7876,7 +7887,7 @@ fn gen_send_iseq(
             }
             IseqReturn::Value(value) => {
                 // Pop receiver and arguments
-                asm.stack_pop(argc as usize + if captured_opnd.is_some() { 0 } else { 1 });
+                asm.stack_pop(argc as usize + if captured_opnd.is_some() && !proxy_recv { 0 } else { 1 });
 
                 // Push the return value
                 let stack_ret = asm.stack_push(Type::from(value));
@@ -7902,6 +7913,11 @@ fn gen_send_iseq(
     let stack_limit = asm.lea(asm.ctx.sp_opnd(locals_offs));
     asm.cmp(CFP, stack_limit);
     asm.jbe(Target::side_exit(Counter::guard_send_se_cf_overflow));
+
+    // Remove the block param proxy receiver from the stack, mirroring vm_invoke_block_opt_call
+    if proxy_recv {
+        handle_opt_send_shift_stack(asm, argc);
+    }
 
     if iseq_has_rest && splat_call {
         // Insert length guard for a call to copy_splat_args_for_rest_callee()
@@ -9155,9 +9171,11 @@ fn gen_send_general(
 
     // Don't compile calls through singleton classes to avoid retaining the receiver.
     // Make an exception for class methods since classes tend to be retained anyways.
-    // Also compile calls on top_self to help tests.
+    // Also compile calls on top_self to help tests. The block param proxy is an
+    // immortal global root, so retaining it is a non-issue.
     if VALUE(0) != unsafe { FL_TEST(comptime_recv_klass, VALUE(RUBY_FL_SINGLETON as usize)) }
         && comptime_recv != unsafe { rb_vm_top_self() }
+        && comptime_recv != unsafe { rb_block_param_proxy }
         && !unsafe { RB_TYPE_P(comptime_recv, RUBY_T_CLASS) }
         && !unsafe { RB_TYPE_P(comptime_recv, RUBY_T_MODULE) } {
         gen_counter_incr(jit, asm, Counter::send_singleton_class);
@@ -9244,7 +9262,7 @@ fn gen_send_general(
             VM_METHOD_TYPE_ISEQ => {
                 let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
                 let frame_type = VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL;
-                return perf_call! { gen_send_iseq(jit, asm, iseq, ci, frame_type, None, cme, block, flags, argc, None) };
+                return perf_call! { gen_send_iseq(jit, asm, iseq, ci, frame_type, None, cme, block, flags, argc, None, false) };
             }
             VM_METHOD_TYPE_CFUNC => {
                 return perf_call! { gen_send_cfunc(
@@ -9489,8 +9507,7 @@ fn gen_send_general(
                         return jump_to_next_insn(jit, asm);
                     }
                     OPTIMIZED_METHOD_TYPE_BLOCK_CALL => {
-                        gen_counter_incr(jit, asm, Counter::send_optimized_method_block_call);
-                        return None;
+                        return gen_send_block_param_proxy(jit, asm, ci, block, flags, argc);
                     }
                     OPTIMIZED_METHOD_TYPE_STRUCT_AREF => {
                         if flags & VM_CALL_ARGS_SPLAT != 0 {
@@ -9770,7 +9787,7 @@ fn gen_invokeblock_specialized(
             Counter::guard_invokeblock_iseq_block_changed,
         );
 
-        perf_call! { gen_send_iseq(jit, asm, comptime_iseq, ci, VM_FRAME_MAGIC_BLOCK, None, 0 as _, None, flags, argc, Some(captured_opnd)) }
+        perf_call! { gen_send_iseq(jit, asm, comptime_iseq, ci, VM_FRAME_MAGIC_BLOCK, None, 0 as _, None, flags, argc, Some(captured_opnd), false) }
     } else if comptime_handler.0 & 0x3 == 0x3 { // VM_BH_IFUNC_P
         // We aren't handling CALLER_SETUP_ARG and CALLER_REMOVE_EMPTY_KW_SPLAT yet.
         if flags & VM_CALL_ARGS_SPLAT != 0 {
@@ -9829,6 +9846,87 @@ fn gen_invokeblock_specialized(
         gen_counter_incr(jit, asm, Counter::invokeblock_proc);
         None
     }
+}
+
+// blk.call where blk is the block param proxy. Inline the block invocation the way invokeblock does
+// instead of dispatching through the proxy's singleton method. The receiver's singleton class was already
+// guarded by the caller, which is enough to prove the receiver is the (unique) block param proxy.
+fn gen_send_block_param_proxy(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    ci: *const rb_callinfo,
+    block: Option<BlockHandler>,
+    flags: u32,
+    argc: i32,
+) -> Option<CodegenStatus> {
+    // Anything fancier than a plain call falls back to dynamic dispatch, which
+    // materializes a Proc and dispatches normally (also handling redefinition).
+    if block.is_some() {
+        gen_counter_incr(jit, asm, Counter::send_bpp_not_simple);
+        return None;
+    }
+    if flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KWARG | VM_CALL_KW_SPLAT | VM_CALL_ARGS_BLOCKARG | VM_CALL_OPT_SEND) != 0 {
+        gen_counter_incr(jit, asm, Counter::send_bpp_not_simple);
+        return None;
+    }
+
+    // Fall back to dynamic dispatch if this callsite is megamorphic
+    if asm.ctx.get_chain_depth() >= SEND_MAX_DEPTH {
+        gen_counter_incr(jit, asm, Counter::send_bpp_megamorphic);
+        return None;
+    }
+
+    // The block handler lives in the local EP: the same source both the interpreter's
+    // vm_call_opt_block_call and the getblockparamproxy instruction read from.
+    let cfp = jit.get_cfp();
+    let lep = unsafe { rb_vm_ep_local_ep(get_cfp_ep(cfp)) };
+    let comptime_handler = unsafe { *lep.offset(VM_ENV_DATA_INDEX_SPECVAL as isize) };
+
+    // Only specialize an ISEQ block; other block handler types fall back to dynamic dispatch.
+    if comptime_handler.0 & 0x3 != 0x1 { // VM_BH_ISEQ_BLOCK_P
+        gen_counter_incr(jit, asm, Counter::send_bpp_not_iseq_block);
+        return None;
+    }
+
+    if !assume_bop_not_redefined(jit, asm, PROC_REDEFINED_OP_FLAG, BOP_CALL) {
+        return None;
+    }
+
+    gen_counter_incr(jit, asm, Counter::send_bpp_dispatch);
+
+    asm_comment!(asm, "get local EP");
+    let ep_opnd = gen_get_lep(jit, asm);
+    let block_handler_opnd = asm.load(
+        Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL)
+    );
+
+    asm_comment!(asm, "guard block_handler type");
+    let tag_opnd = asm.and(block_handler_opnd, 0x3.into());
+    asm.cmp(tag_opnd, 0x1.into()); // VM_BH_ISEQ_BLOCK_P
+    jit_chain_guard(
+        JCC_JNE,
+        jit,
+        asm,
+        SEND_MAX_DEPTH,
+        Counter::guard_invokeblock_tag_changed,
+    );
+
+    let comptime_captured = unsafe { ((comptime_handler.0 & !0x3) as *const rb_captured_block).as_ref().unwrap() };
+    let comptime_iseq = unsafe { *comptime_captured.code.iseq.as_ref() };
+
+    asm_comment!(asm, "guard known ISEQ");
+    let captured_opnd = asm.and(block_handler_opnd, Opnd::Imm(!0x3));
+    let iseq_opnd = asm.load(Opnd::mem(64, captured_opnd, SIZEOF_VALUE_I32 * 2));
+    asm.cmp(iseq_opnd, VALUE::from(comptime_iseq).into());
+    jit_chain_guard(
+        JCC_JNE,
+        jit,
+        asm,
+        SEND_MAX_DEPTH,
+        Counter::guard_invokeblock_iseq_block_changed,
+    );
+
+    perf_call! { gen_send_iseq(jit, asm, comptime_iseq, ci, VM_FRAME_MAGIC_BLOCK, None, 0 as _, None, flags, argc, Some(captured_opnd), true) }
 }
 
 fn gen_invokesuper(
@@ -10000,7 +10098,7 @@ fn gen_invokesuper_specialized(
         VM_METHOD_TYPE_ISEQ => {
             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
             let frame_type = VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL;
-            perf_call! { gen_send_iseq(jit, asm, iseq, ci, frame_type, None, cme, Some(block), ci_flags, argc, None) }
+            perf_call! { gen_send_iseq(jit, asm, iseq, ci, frame_type, None, cme, Some(block), ci_flags, argc, None, false) }
         }
         VM_METHOD_TYPE_CFUNC => {
             perf_call! { gen_send_cfunc(jit, asm, ci, cme, Some(block), None, ci_flags, argc) }
