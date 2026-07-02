@@ -1967,7 +1967,8 @@ class Pathname
   # :markup: markdown
   #
   # call-seq:
-  #   opendir {|dir| ... }
+  #   opendir {|dir| ... } -> object
+  #   opendir -> dir
   #
   # Creates a Dir object `dir` for the directory at the path represented by `self`;
   # opens `dir`.
