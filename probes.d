@@ -243,6 +243,16 @@ provider ruby {
   probe gc__mark_stacked_objects(int popped_count);
 
   /*
+     ruby:::gc-sweep_page(slot_size, final_slots, freed_slots, empty_slots);
+
+     Fired for every page swept in `gc_sweep_step` in default.c.
+
+     * `slot_size` is the slot size of the page.
+     * Other arguments are from the `gc_sweep_context` struct.
+  */
+  probe gc__sweep_page(int slot_size, int final_slots, int freed_slots, int empty_slots);
+
+  /*
      ruby:::gc-obj_new();
 
      Fired when an object is allocated

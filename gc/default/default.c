@@ -4309,6 +4309,8 @@ gc_sweep_step(rb_objspace_t *objspace, rb_heap_t *heap)
         gc_sweep_page(objspace, heap, &ctx);
         int free_slots = ctx.freed_slots + ctx.empty_slots;
 
+        RUBY_DTRACE_GC_HOOK(SWEEP_PAGE, ctx.page->slot_size, ctx.final_slots, ctx.freed_slots, ctx.empty_slots);
+
         heap->sweeping_page = ccan_list_next(&heap->pages, sweep_page, page_node);
 
         if (free_slots == sweep_page->total_slots) {

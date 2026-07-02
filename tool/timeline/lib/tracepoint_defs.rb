@@ -65,6 +65,9 @@ module RubyTimelineTool
     'mark_details' => [
       tp('gc__mark_stacked_objects', 'default', 'gc_mark_stacked_objects', 'meta', args: {popped_count: :to_i}),
     ].freeze,
+    'sweep_details' => [
+      tp('gc__sweep_page',    'default',  'gc_sweep_page',    'i', args: {slot_size: :to_i, final_slots: :to_i, freed_slots: :to_i, empty_slots: :to_i}),
+    ].freeze,
     'obj_new' => [
       tp('gc__obj_new',       'ruby',     'gc_obj_new',       'i', args: {obj: :to_i, flags: RubyFlags}), # TODO: flags converter
     ].freeze,

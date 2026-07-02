@@ -114,6 +114,17 @@ class LogProcessor
           { popped_count: 0 }
         end[:popped_count] += args[:popped_count]
       end
+    when 'gc_sweep_page'
+      args[:free_slots] = args[:freed_slots] + args[:empty_slots]
+      enrich([pid, :global, 'GCEnterExit'], [pid, tid, 'gc_sweep']) do |old_result|
+        old_dict = old_result[:args].fetch_store(:gc_sweep_page) do
+          { final_slots: 0, freed_slots: 0, empty_slots: 0, free_slots: 0 }
+        end
+        old_dict[:final_slots] += args[:final_slots]
+        old_dict[:freed_slots] += args[:freed_slots]
+        old_dict[:empty_slots] += args[:empty_slots]
+        old_dict[:free_slots] += args[:free_slots]
+      end
     when 'rts_set_running'
       sched = args[:sched]
       sched_hex = sched.to_s(16)
