@@ -9,7 +9,6 @@
 ************************************************/
 
 #include "rubysocket.h"
-#include "ruby/fiber/scheduler.h"
 
 /*
  * call-seq:
@@ -155,7 +154,7 @@ udp_send_internal(VALUE v)
 
     rb_io_check_closed(fptr = arg->fptr);
 
-#ifdef RSOCK_HAVE_FIBER_SCHEDULER_SOCKET_SEND
+#if defined(RSOCK_HAVE_FIBER_SCHEDULER_SOCKET_SEND) && defined(HAVE_RB_FIBER_SCHEDULER_SOCKET_ADDRESS_PACK)
     VALUE scheduler = rb_fiber_scheduler_current();
 #ifdef MSG_DONTWAIT
     int use_scheduler = (scheduler != Qnil) && !(arg->sarg.flags & MSG_DONTWAIT);
@@ -165,9 +164,9 @@ udp_send_internal(VALUE v)
 #endif
 
     for (res = arg->res->ai; res; res = res->ai_next) {
-#ifdef RSOCK_HAVE_FIBER_SCHEDULER_SOCKET_SEND
+#if defined(RSOCK_HAVE_FIBER_SCHEDULER_SOCKET_SEND) && defined(HAVE_RB_FIBER_SCHEDULER_SOCKET_ADDRESS_PACK)
         if (use_scheduler) {
-            VALUE destination = rb_str_new((char*)res->ai_addr, res->ai_addrlen);
+            VALUE destination = rb_fiber_scheduler_socket_address_pack(res->ai_addr, res->ai_addrlen);
             struct rsock_scheduler_socket_send_arguments arguments = {
                 .scheduler = scheduler,
                 .socket = fptr->self,
