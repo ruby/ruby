@@ -1499,10 +1499,16 @@ set_remove_enum_from(VALUE set, VALUE arg)
 
 /*
  *  call-seq:
- *    subtract(enum) -> self
+ *    subtract(enumerable) -> self
  *
- *  Deletes every element that appears in the given enumerable object
- *  and returns self.
+ *  Deletes from +self+ every element found in the given +enumerable+;
+ *  returns +self+:
+ *
+ *    set = Set[*0..9]        # => Set[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+ *    set.subtract(5..14)     # => Set[0, 1, 2, 3, 4]
+ *    set.subtract(Set[6, 2]) # => Set[0, 1, 3, 4]
+ *
+ *  Related: see {Methods for Deleting}[rdoc-ref:Set@Methods+for+Deleting].
  */
 static VALUE
 set_i_subtract(VALUE set, VALUE other)
