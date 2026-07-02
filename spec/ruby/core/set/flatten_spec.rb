@@ -16,6 +16,13 @@ describe "Set#flatten" do
     -> { set.flatten }.should raise_error(ArgumentError)
   end
 
+  ruby_version_is "4.0" do
+    it "retains compare_by_identity flag" do
+      set = Set[1, 2, Set[3, 4]].compare_by_identity
+      set.flatten.compare_by_identity?.should == true
+    end
+  end
+
   ruby_version_is ""..."4.0" do
     context "when Set contains a Set-like object" do
       it "returns a copy of self with each included Set-like object flattened" do
@@ -54,6 +61,14 @@ describe "Set#flatten!" do
           Set[SetSpecs::SetLike.new([1])].flatten!.should == Set[1]
         end
       end
+    end
+  end
+
+  ruby_version_is "4.0" do
+    it "retains compare_by_identity flag when flattening elements" do
+      set = Set[1, 2, Set[3, 4]].compare_by_identity
+      set.flatten!
+      set.compare_by_identity?.should == true
     end
   end
 end
