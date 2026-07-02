@@ -3812,7 +3812,7 @@ impl Assembler {
             "pos_marker_at_block_end requires the current block to end with a terminator"
         );
 
-        let insert_pos = if len >= 2 && block.insns[len - 2].is_terminator() {
+        let insert_pos = if block.insns.get(len - 2).is_some_and(Insn::is_terminator) {
             len - 2
         } else {
             len - 1
