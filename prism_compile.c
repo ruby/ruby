@@ -2945,7 +2945,21 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
         LABEL *type_error_label = NEW_LABEL(location.line);
         VALUE keys = Qnil;
 
+        bool all_symbol_keys = true;
         if (has_keys && !has_rest) {
+            for (size_t index = 0; index < cast->elements.size; index++) {
+                const pm_node_t *element = cast->elements.nodes[index];
+                RUBY_ASSERT(PM_NODE_TYPE_P(element, PM_ASSOC_NODE));
+
+                const pm_node_t *key = ((const pm_assoc_node_t *) element)->key;
+                if (!PM_NODE_TYPE_P(key, PM_SYMBOL_NODE)) {
+                    all_symbol_keys = false;
+                    break;
+                }
+            }
+        }
+
+        if (has_keys && !has_rest && all_symbol_keys) {
             keys = rb_ary_new_capa(cast->elements.size);
 
             for (size_t index = 0; index < cast->elements.size; index++) {
@@ -3005,41 +3019,58 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
 
                 const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) element;
                 const pm_node_t *key = assoc->key;
-                RUBY_ASSERT(PM_NODE_TYPE_P(key, PM_SYMBOL_NODE));
 
-                VALUE symbol = ID2SYM(parse_string_symbol(scope_node, (const pm_symbol_node_t *) key));
-                PUSH_INSN(ret, location, dup);
-                PUSH_INSN1(ret, location, putobject, symbol);
-                PUSH_SEND(ret, location, rb_intern("key?"), INT2FIX(1));
-
-                if (in_single_pattern) {
-                    LABEL *match_succeeded_label = NEW_LABEL(location.line);
-
+                if (PM_NODE_TYPE_P(key, PM_SYMBOL_NODE)) {
+                    VALUE symbol = ID2SYM(parse_string_symbol(scope_node, (const pm_symbol_node_t *) key));
                     PUSH_INSN(ret, location, dup);
-                    PUSH_INSNL(ret, location, branchif, match_succeeded_label);
+                    PUSH_INSN1(ret, location, putobject, symbol);
+                    PUSH_SEND(ret, location, rb_intern("key?"), INT2FIX(1));
 
-                    {
-                        VALUE operand = rb_str_freeze(rb_sprintf("key not found: %+"PRIsVALUE, symbol));
-                        RB_OBJ_SET_SHAREABLE(operand);
-                        PUSH_INSN1(ret, location, putobject, operand);
+                    if (in_single_pattern) {
+                        LABEL *match_succeeded_label = NEW_LABEL(location.line);
+
+                        PUSH_INSN(ret, location, dup);
+                        PUSH_INSNL(ret, location, branchif, match_succeeded_label);
+
+                        {
+                            VALUE operand = rb_str_freeze(rb_sprintf("key not found: %+"PRIsVALUE, symbol));
+                            RB_OBJ_SET_SHAREABLE(operand);
+                            PUSH_INSN1(ret, location, putobject, operand);
+                        }
+
+                        PUSH_INSN1(ret, location, setn, INT2FIX(base_index + PM_PATTERN_BASE_INDEX_OFFSET_ERROR_STRING + 2));
+                        PUSH_INSN1(ret, location, putobject, Qtrue);
+                        PUSH_INSN1(ret, location, setn, INT2FIX(base_index + PM_PATTERN_BASE_INDEX_OFFSET_KEY_ERROR_P + 3));
+                        PUSH_INSN1(ret, location, topn, INT2FIX(3));
+                        PUSH_INSN1(ret, location, setn, INT2FIX(base_index + PM_PATTERN_BASE_INDEX_OFFSET_KEY_ERROR_MATCHEE + 4));
+                        PUSH_INSN1(ret, location, putobject, symbol);
+                        PUSH_INSN1(ret, location, setn, INT2FIX(base_index + PM_PATTERN_BASE_INDEX_OFFSET_KEY_ERROR_KEY + 5));
+
+                        PUSH_INSN1(ret, location, adjuststack, INT2FIX(4));
+                        PUSH_LABEL(ret, match_succeeded_label);
                     }
 
-                    PUSH_INSN1(ret, location, setn, INT2FIX(base_index + PM_PATTERN_BASE_INDEX_OFFSET_ERROR_STRING + 2));
-                    PUSH_INSN1(ret, location, putobject, Qtrue);
-                    PUSH_INSN1(ret, location, setn, INT2FIX(base_index + PM_PATTERN_BASE_INDEX_OFFSET_KEY_ERROR_P + 3));
-                    PUSH_INSN1(ret, location, topn, INT2FIX(3));
-                    PUSH_INSN1(ret, location, setn, INT2FIX(base_index + PM_PATTERN_BASE_INDEX_OFFSET_KEY_ERROR_MATCHEE + 4));
-                    PUSH_INSN1(ret, location, putobject, symbol);
-                    PUSH_INSN1(ret, location, setn, INT2FIX(base_index + PM_PATTERN_BASE_INDEX_OFFSET_KEY_ERROR_KEY + 5));
-
-                    PUSH_INSN1(ret, location, adjuststack, INT2FIX(4));
-                    PUSH_LABEL(ret, match_succeeded_label);
+                    PUSH_INSNL(ret, location, branchunless, match_failed_label);
+                    PUSH_INSN(match_values, location, dup);
+                    PUSH_INSN1(match_values, location, putobject, symbol);
+                    PUSH_SEND(match_values, location, has_rest ? rb_intern("delete") : idAREF, INT2FIX(1));
                 }
-
-                PUSH_INSNL(ret, location, branchunless, match_failed_label);
-                PUSH_INSN(match_values, location, dup);
-                PUSH_INSN1(match_values, location, putobject, symbol);
-                PUSH_SEND(match_values, location, has_rest ? rb_intern("delete") : idAREF, INT2FIX(1));
+                else {
+                    PUSH_INSN(ret, location, dup);
+                    pm_compile_node(iseq, key, ret, false, scope_node);
+                    PUSH_SEND(ret, location, rb_intern("key?"), INT2FIX(1));
+                    if (in_single_pattern) {
+                        LABEL *match_succeeded_label = NEW_LABEL(location.line);
+                        PUSH_INSN(ret, location, dup);
+                        PUSH_INSNL(ret, location, branchif, match_succeeded_label);
+                        CHECK(pm_compile_pattern_generic_error(iseq, scope_node, node, ret, rb_fstring_lit("key not found"), base_index + 2));
+                        PUSH_LABEL(ret, match_succeeded_label);
+                    }
+                    PUSH_INSNL(ret, location, branchunless, match_failed_label);
+                    PUSH_INSN(match_values, location, dup);
+                    pm_compile_node(iseq, key, match_values, false, scope_node);
+                    PUSH_SEND(match_values, location, has_rest ? rb_intern("delete") : idAREF, INT2FIX(1));
+                }
 
                 const pm_node_t *value = assoc->value;
                 if (PM_NODE_TYPE_P(value, PM_IMPLICIT_NODE)) {

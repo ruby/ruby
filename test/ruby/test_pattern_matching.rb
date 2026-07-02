@@ -1302,6 +1302,114 @@ END
     }, /symbol literal with interpolation is not allowed/)
   end
 
+  def test_hash_colon_key_pattern
+    assert_block do
+      case {"a" => 0, "b" => "x"}
+      in {"a" : Integer, "b" : String}
+        true
+      end
+    end
+
+    assert_block do
+      case {"a" => 0, "b" => "x"}
+      in {"a" : Integer => a, "b" : /x/}
+        a == 0
+      end
+    end
+
+    assert_block do
+      case {"a" => 0, "b" => 1}
+      in {"a" : Integer => a, **rest}
+        a == 0 && rest == {"b" => 1}
+      end
+    end
+
+    assert_block do
+      case {a: 0, "b" => 1}
+      in {a: Integer, "b" : Integer}
+        true
+      end
+    end
+
+    assert_raise_with_message(NoMatchingPatternKeyError, %[{"x" => 1}: ]) do
+      case {"x" => 1}
+      in {"y" : Integer}
+        true
+      end
+    end
+
+    assert_syntax_error(%q{
+      case 0
+      in {"a" :}
+      end
+    }, /unexpected '}'/)
+  end
+
+  def test_hash_colon_key_pattern_all_types
+    key3 = "key3"
+    def key12 = "key12"
+    key13 = -> { "key13" }
+
+    hash = {
+      key1:                %[key1:                symbolic],
+      "key-2":             %["key-2":             quoted label],
+      key3 :               %[key3 :               expression],
+      "key4" :             %["key4" :             String],
+      (5+0):               %[(5+0):               hash capsule],
+      6:                   %[6:                   Integer],
+      7.001:               %[7.001:               Float],
+      "key" + "8":         %["key" + "8":         String expr],
+      9+0:                 %[9+0:                 Integer expr],
+      [10, 0]:             %[[10, 0]:             Array],
+      true ? 11 : 0 :      %[true ? 11 : 0 :      ternary],
+      key12():             %[key12():             method],
+      key13[]:             %[key13[]:             lambda[]],
+      -> { "key14" }.call: %[-> { "key14" }.call: lambda.call],
+    }
+
+    hash.each do |expected_key, expected_value|
+      h = { expected_key : hash[expected_key] }
+
+      matched_braced = case h
+      in {key1:     value} then value == %[key1:                symbolic]
+      in {"key-2":  value} then value == %["key-2":             quoted label]
+      in {"key3" :  value} then value == %[key3 :               expression]
+      in {"key4" :  value} then value == %["key4" :             String]
+      in {5:        value} then value == %[(5+0):               hash capsule]
+      in {6:        value} then value == %[6:                   Integer]
+      in {7.001:    value} then value == %[7.001:               Float]
+      in {"key8" :  value} then value == %["key" + "8":         String expr]
+      in {9:        value} then value == %[9+0:                 Integer expr]
+      in {[10, 0]:  value} then value == %[[10, 0]:             Array]
+      in {11:       value} then value == %[true ? 11 : 0 :      ternary]
+      in {"key12" : value} then value == %[key12():             method]
+      in {"key13" : value} then value == %[key13[]:             lambda[]]
+      in {"key14" : value} then value == %[-> { "key14" }.call: lambda.call]
+      else false
+      end
+
+      matched_bare = case h
+      in key1:     value then value == %[key1:                symbolic]
+      in "key-2":  value then value == %["key-2":             quoted label]
+      in "key3" :  value then value == %[key3 :               expression]
+      in "key4" :  value then value == %["key4" :             String]
+      in 5:        value then value == %[(5+0):               hash capsule]
+      in 6:        value then value == %[6:                   Integer]
+      in 7.001:    value then value == %[7.001:               Float]
+      in "key8" :  value then value == %["key" + "8":         String expr]
+      in 9:        value then value == %[9+0:                 Integer expr]
+      in [10, 0]:  value then value == %[[10, 0]:             Array]
+      in 11:       value then value == %[true ? 11 : 0 :      ternary]
+      in "key12" : value then value == %[key12():             method]
+      in "key13" : value then value == %[key13[]:             lambda[]]
+      in "key14" : value then value == %[-> { "key14" }.call: lambda.call]
+      else false
+      end
+
+      assert_block { matched_braced && matched_bare }
+    end
+  end
+
   def test_paren
     assert_block do
       case 0
@@ -1332,13 +1440,13 @@ END
       case 0
       in {a}
       end
-    }, /unexpected/)
+    }, /expecting ':'/)
 
     assert_syntax_error(%q{
       case 0
       in {0 => a}
       end
-    }, /unexpected/)
+    }, /expecting ':'/)
   end
 
   ################################################################
