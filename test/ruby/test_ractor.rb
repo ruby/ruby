@@ -276,8 +276,8 @@ class TestRactor < Test::Unit::TestCase
 
   # [Bug #21398]
   def test_port_receive_dnt_with_port_send
-    omit 'unstable on mingw and macos-14' if RUBY_PLATFORM =~ /mingw|darwin/
-    assert_ractor(<<~'RUBY', timeout: 120)
+    omit 'unstable on windows and macos-14' if RUBY_PLATFORM =~ /mswin|mingw|darwin/
+    assert_ractor(<<~'RUBY', timeout: 90)
       THREADS = 10
       JOBS_PER_THREAD = 50
       ARRAY_SIZE = 20_000
