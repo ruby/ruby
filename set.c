@@ -670,7 +670,7 @@ set_i_to_a(VALUE set)
 /*
  *  call-seq:
  *    to_set {|element| ... } -> new_set
- *    to_set -> new_set
+ *    to_set -> self or new_set
  *
  *  With a block given, creates and returns a new set;
  *  calls the block with each element of +self+,
