@@ -110,4 +110,5 @@ END {
   end
 }
 
-ENV["TMPDIR"] = ENV["SPEC_TEMP_DIR"] = ENV["GEM_TEST_TMPDIR"] = tmpdir
+ENV["TMPDIR"] = ENV["GEM_TEST_TMPDIR"] = tmpdir
+ENV["SPEC_TEMP_DIR"] = File.join(tmpdir, "spec")

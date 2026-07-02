@@ -15290,6 +15290,12 @@ parse_block(pm_parser_t *parser, uint16_t depth) {
             statements = UP(parse_statements(parser, PM_CONTEXT_BLOCK_BRACES, (uint16_t) (depth + 1)));
         }
 
+        /* Pop before consuming the closing `}` so the following token (e.g. a
+         * `do`) is lexed in the enclosing context rather than as a block
+         * belonging to this block's interior. Otherwise a `do` block would
+         * wrongly bind to a command whose argument ends in a brace block, as in
+         * `foo(m a { } do end)`. */
+        pm_accepts_block_stack_pop(parser);
         expect1_opening(parser, PM_TOKEN_BRACE_RIGHT, PM_ERR_BLOCK_TERM_BRACE, &opening);
     } else {
         if (!match1(parser, PM_TOKEN_KEYWORD_END)) {
@@ -15305,6 +15311,8 @@ parse_block(pm_parser_t *parser, uint16_t depth) {
             }
         }
 
+        /* As with the brace case above, pop before consuming `end`. */
+        pm_accepts_block_stack_pop(parser);
         expect1_opening(parser, PM_TOKEN_KEYWORD_END, PM_ERR_BLOCK_TERM_END, &opening);
     }
 
@@ -15313,7 +15321,6 @@ parse_block(pm_parser_t *parser, uint16_t depth) {
     pm_node_t *parameters = parse_blocklike_parameters(parser, UP(block_parameters), &opening, &parser->previous);
 
     pm_parser_scope_pop(parser);
-    pm_accepts_block_stack_pop(parser);
 
     return pm_block_node_create(parser, &locals, &opening, parameters, statements, &parser->previous);
 }

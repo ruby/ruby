@@ -123,13 +123,12 @@ class TestGemCompactIndexClientCacheFile < Gem::TestCase
   end
 
   def test_write_preserves_permissions
-    pend "chmod is unreliable on Windows" if Gem.win_platform?
-
     @path.binwrite "old"
-    @path.chmod 0o600
+    @path.chmod 0o400
 
     CacheFile.write(@path, "new")
 
-    assert_equal 0o600, @path.stat.mode & 0o777
+    assert_equal "new", @path.binread
+    assert_equal 0, @path.stat.mode & 0o200, "expected CacheFile.write to preserve the original read-only permission"
   end
 end

@@ -19,9 +19,9 @@ use crate::state::ZJITState;
 use crate::stats::{CompileError, exit_counter_for_compile_error, exit_counter_for_unhandled_hir_insn, incr_counter, incr_counter_by, send_fallback_counter, send_fallback_counter_for_method_type, send_fallback_counter_for_super_method_type, send_fallback_counter_ptr_for_opcode, send_without_block_fallback_counter_for_method_type, send_without_block_fallback_counter_for_optimized_method_type};
 use crate::stats::{counter_ptr, with_time_stat, trace_compile_phase, Counter, Counter::{compile_time_ns, exit_compile_error}};
 use crate::{asm::CodeBlock, cruby::*, options::debug, virtualmem::CodePtr};
-use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_BASE_PTR, Opnd, SP, SideExit, SideExitRecompile, Target, asm_ccall, asm_comment};
+use crate::backend::lir::{self, Assembler, C_ARG_OPNDS, C_RET_OPND, CFP, EC, NATIVE_BASE_PTR, Opnd, SP, SideExit, SideExitRecompile, SideExitTarget, Target, asm_ccall, asm_comment};
 use crate::hir::{iseq_to_hir, BlockId, Invariant, RangeType, SideExitReason::{self, *}, SpecialBackrefSymbol, SpecialObjectType};
-use crate::hir::{BlockHandler, Const, FieldName, FrameState, Function, Insn, InsnId, Recompile, SendFallbackReason};
+use crate::hir::{BlockHandler, CCallVariadicData, CCallWithFrameData, Const, FieldName, FrameState, Function, Insn, InsnId, Recompile, SendFallbackReason};
 use crate::hir_type::{types, Type};
 use crate::options::{get_option, InlineDepth, PerfMap};
 use crate::cast::IntoUsize;
@@ -122,7 +122,7 @@ impl Assembler {
             args: vec![],
         };
         emit(self, target);
-        self.jmp(Target::Block(fall_through_edge));
+        self.jmp(Target::Block(Box::new(fall_through_edge)));
 
         self.set_current_block(fall_through_target);
 
@@ -486,8 +486,8 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                         };
 
                         asm.test(val_opnd, val_opnd);
-                        asm.push_insn(lir::Insn::Jnz(Target::Block(true_branch)));
-                        asm.jmp(Target::Block(false_branch));
+                        asm.push_insn(lir::Insn::Jnz(Target::Block(Box::new(true_branch))));
+                        asm.jmp(Target::Block(Box::new(false_branch)));
 
                         assert!(asm.current_block().insns.last().unwrap().is_terminator());
                     }
@@ -497,7 +497,7 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
                             target: lir_target,
                             args: target.args.iter().map(|insn_id| jit.get_opnd(*insn_id)).collect()
                         };
-                        asm.jmp(Target::Block(branch_edge));
+                        asm.jmp(Target::Block(Box::new(branch_edge)));
                         assert!(asm.current_block().insns.last().unwrap().is_terminator());
 
                         // Jump should always be the last instruction in an HIR block
@@ -661,7 +661,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::InvokeBlock { cd, state, reason, .. } => gen_invokeblock(jit, asm, cd, &function.frame_state(state), reason),
         Insn::InvokeBlockIfunc { cd, block_handler, args, state, .. } => gen_invokeblock_ifunc(jit, asm, *cd, opnd!(block_handler), opnds!(args), &function.frame_state(*state)),
         Insn::InvokeProc { recv, args, state, kw_splat } => gen_invokeproc(jit, asm, opnd!(recv), opnds!(args), *kw_splat, &function.frame_state(*state)),
-        Insn::InvokeBuiltin { bf, leaf, args, state, .. } => gen_invokebuiltin(jit, asm, &function.frame_state(*state), bf, *leaf, opnds!(args)),
+        Insn::InvokeBuiltin { bf, leaf, args, state, .. } => gen_invokebuiltin(jit, asm, &function.frame_state(*state), unsafe { &**bf }, *leaf, opnds!(args)),
         &Insn::EntryPoint { jit_entry_idx } => no_output!(gen_entry_point(jit, asm, jit_entry_idx)),
         Insn::Return { val } => no_output!(gen_return(asm, opnd!(val))),
         Insn::FixnumAdd { left, right, state } => gen_fixnum_add(jit, asm, opnd!(left), opnd!(right), &function.frame_state(*state)),
@@ -721,9 +721,12 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         &Insn::GuardGreaterEq { left, right, state, .. } => gen_guard_greater_eq(jit, asm, opnd!(left), opnd!(right), &function.frame_state(state)),
         Insn::PatchPoint { invariant, state } => no_output!(gen_patch_point(jit, asm, invariant, &function.frame_state(*state))),
         Insn::CCall { cfunc, recv, args, name, owner: _, return_type: _, elidable: _ } => gen_ccall(asm, *cfunc, *name, opnd!(recv), opnds!(args)),
-        Insn::CCallWithFrame { cfunc, recv, name, args, cme, state, block, .. } =>
-            gen_ccall_with_frame(jit, asm, *cfunc, *name, opnd!(recv), opnds!(args), *cme, *block, &function.frame_state(*state)),
-        Insn::CCallVariadic { cfunc, recv, name, args, cme, state, block, return_type: _, elidable: _ } => {
+        Insn::CCallWithFrame(insn) => {
+            let CCallWithFrameData { cfunc, recv, name, args, cme, state, block, .. } = &**insn;
+            gen_ccall_with_frame(jit, asm, *cfunc, *name, opnd!(recv), opnds!(args), *cme, *block, &function.frame_state(*state))
+        }
+        Insn::CCallVariadic(insn) => {
+            let CCallVariadicData { cfunc, recv, name, args, cme, state, block, .. } = &**insn;
             gen_ccall_variadic(jit, asm, *cfunc, *name, opnd!(recv), opnds!(args), *cme, *block, &function.frame_state(*state))
         }
         Insn::GetIvar { self_val, id, ic, state } => gen_getivar(asm, opnd!(self_val), *id, *ic, &function.frame_state(*state)),
@@ -731,7 +734,7 @@ fn gen_insn(cb: &mut CodeBlock, jit: &mut JITState, asm: &mut Assembler, functio
         Insn::GetGlobal { id, state } => gen_getglobal(jit, asm, *id, &function.frame_state(*state)),
         &Insn::IsBlockParamModified { flags } => gen_is_block_param_modified(asm, opnd!(flags)),
         &Insn::GetBlockParam { ep_offset, level, state } => gen_getblockparam(jit, asm, ep_offset, level, &function.frame_state(state)),
-        &Insn::SetLocal { val, ep_offset, level } => no_output!(gen_setlocal(asm, opnd!(val), function.type_of(val), ep_offset, level)),
+        &Insn::SetLocal { val, ep_offset, level, .. } => no_output!(gen_setlocal(asm, opnd!(val), function.type_of(val), ep_offset, level)),
         Insn::GetConstant { klass, id, allow_nil, state } => gen_getconstant(jit, asm, opnd!(klass), *id, opnd!(allow_nil), &function.frame_state(*state)),
         Insn::GetConstantPath { ic, state } => gen_get_constant_path(jit, asm, *ic, &function.frame_state(*state)),
         Insn::GetClassVar { id, ic, state } => gen_getclassvar(jit, asm, *id, *ic, &function.frame_state(*state)),
@@ -965,7 +968,7 @@ fn gen_patch_point(jit: &mut JITState, asm: &mut Assembler, invariant: &Invarian
     let exit = build_side_exit(jit, state);
 
     // Let compile_exits compile a side exit. Let scratch_split lower it with split_patch_point.
-    asm.patch_point(Target::SideExit { exit, reason: PatchPoint(invariant) }, invariant, jit.version);
+    asm.patch_point(Target::SideExit(Box::new(SideExitTarget { exit, reason: PatchPoint(invariant) })), invariant, jit.version);
 }
 
 /// This is used by scratch_split to lower PatchPoint into PadPatchPoint and PosMarker.
@@ -1388,7 +1391,7 @@ fn gen_write_barrier(jit: &mut JITState, asm: &mut Assembler, recv: Opnd, val: O
         let hir_block_id = asm.current_block().hir_block_id;
         let rpo_idx = asm.current_block().rpo_index;
         let result_block = asm.new_block(hir_block_id, false, rpo_idx);
-        let result_edge = Target::Block(lir::BranchEdge { target: result_block, args: vec![] });
+        let result_edge = Target::Block(Box::new(lir::BranchEdge { target: result_block, args: vec![] }));
 
         // If non-false immediate, don't fire write barrier
         asm.test(val, Opnd::UImm(RUBY_IMMEDIATE_MASK as u64));
@@ -2215,10 +2218,10 @@ fn gen_is_a(jit: &mut JITState, asm: &mut Assembler, obj: Opnd, class: Opnd) -> 
 
         // Create a result block that all paths converge to
         let result_block = asm.new_block(hir_block_id, false, rpo_idx);
-        let result_edge = |v| Target::Block(lir::BranchEdge {
+        let result_edge = |v| Target::Block(Box::new(lir::BranchEdge {
             target: result_block,
             args: vec![v],
-        });
+        }));
 
         let val = asm.load_mem(obj);
 
@@ -2611,10 +2614,10 @@ fn gen_has_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, val_typ
 
         // Create a result block that all paths converge to
         let result_block = asm.new_block(hir_block_id, false, rpo_idx);
-        let result_edge = |v| Target::Block(lir::BranchEdge {
+        let result_edge = |v| Target::Block(Box::new(lir::BranchEdge {
             target: result_block,
             args: vec![v],
-        });
+        }));
 
         // If val isn't in a register, load it to use it as the base of Opnd::mem later.
         // TODO: Max thinks codegen should not care about the shapes of the operands except to create them. (Shopify/ruby#685)
@@ -2650,10 +2653,10 @@ fn gen_has_type(jit: &mut JITState, asm: &mut Assembler, val: lir::Opnd, val_typ
 
         // Create a result block that all paths converge to
         let result_block = asm.new_block(hir_block_id, false, rpo_idx);
-        let result_edge = |v| Target::Block(lir::BranchEdge {
+        let result_edge = |v| Target::Block(Box::new(lir::BranchEdge {
             target: result_block,
             args: vec![v],
-        });
+        }));
 
         // If val isn't in a register, load it to use it as the base of Opnd::mem later.
         let val = asm.load_mem(val);
@@ -3176,7 +3179,7 @@ fn compile_iseq(iseq: IseqPtr) -> Result<Function, CompileError> {
 /// Build a Target::SideExit
 fn side_exit(jit: &JITState, state: &FrameState, reason: SideExitReason) -> Target {
     let exit = build_side_exit(jit, state);
-    Target::SideExit { exit, reason }
+    Target::SideExit(Box::new(SideExitTarget { exit, reason }))
 }
 
 /// Build a Target::SideExit that optionally triggers exit_recompile on the exit path.
@@ -3186,7 +3189,7 @@ fn side_exit_with_recompile(jit: &JITState, state: &FrameState, reason: SideExit
         compiled_iseq: Opnd::Value(VALUE::from(jit.iseq())),
         insn_idx: state.insn_idx() as u32,
     });
-    Target::SideExit { exit, reason }
+    Target::SideExit(Box::new(SideExitTarget { exit, reason }))
 }
 
 /// Build a side-exit context

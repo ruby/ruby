@@ -40,8 +40,6 @@ RSpec.describe "bundle install" do
     end
 
     it "displays the ref of the gem repository when using branch~num as a ref" do
-      skip "maybe branch~num notation doesn't work on Windows' git" if Gem.win_platform?
-
       build_git "foo", "1.0", path: lib_path("foo")
       rev = revision_for(lib_path("foo"))[0..6]
       update_git "foo", "2.0", path: lib_path("foo"), gemspec: true
