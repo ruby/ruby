@@ -69,10 +69,10 @@ module RubyTimelineTool
       tp('gc__sweep_page',    'default',  'gc_sweep_page',    'i', args: {slot_size: :to_i, final_slots: :to_i, freed_slots: :to_i, empty_slots: :to_i}),
     ].freeze,
     'obj_new' => [
-      tp('gc__obj_new',       'ruby',     'gc_obj_new',       'i', args: {obj: :to_i, flags: RubyFlags}), # TODO: flags converter
+      tp('gc__obj_new',       'ruby',     'gc_obj_new',       'i', args: {obj: :to_i, flags: RubyFlags}),
     ].freeze,
     'obj_free' => [
-      tp('gc__obj_free',      'ruby',     'gc_obj_free',      'i', args: {obj: :to_i, flags: RubyFlags}), # TODO: flags converter
+      tp('gc__obj_free',      'ruby',     'gc_obj_free',      'i', args: {obj: :to_i, flags: RubyFlags}),
     ].freeze,
     'xmalloc' => [
       tp('gc__xmalloc',       'ruby',     'gc_xmalloc',       'i', args: {n: :to_i, size: :to_i}),
