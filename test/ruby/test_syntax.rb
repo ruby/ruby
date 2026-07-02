@@ -1383,14 +1383,14 @@ eom
     # Only implemented in the parse.y parser.
     omit if ParserSupport.prism_enabled?
 
-    # single generator => map
+    # single iterator => map
     assert_equal([2, 4, 6], eval("for x in [1, 2, 3] then x * 2 end"))
-    # multiple generators => flat_map (all but last) + map (last)
+    # multiple iterators => flat_map (all but last) + map (last)
     assert_equal([[1, 10], [1, 20], [2, 10], [2, 20]],
                  eval("for x in [1, 2], y in [10, 20] then [x, y] end"))
     assert_equal([[1, 3, 4], [1, 3, 5], [2, 3, 4], [2, 3, 5]],
                  eval("for x in [1, 2], y in [3], z in [4, 5] then [x, y, z] end"))
-    # a later generator may reference an earlier loop variable
+    # a later iterator may reference an earlier loop variable
     assert_equal([11, 22, 33],
                  eval("for x in [1, 2, 3], y in [x * 10] then x + y end"))
     # destructuring loop variables (same as legacy `for`)
@@ -1405,18 +1405,18 @@ eom
   end
 
   def test_for_comprehension_when_guard
-    # a `when` guard filters the generator's source (desugars to filter)
+    # a `when` guard filters the iterator's expression (desugars to filter)
     omit if ParserSupport.prism_enabled?
 
-    # single generator with a guard
+    # single iterator with a guard
     assert_equal([20, 40], eval("for x in [1, 2, 3, 4] when x.even? then x * 10 end"))
-    # guard on the first of several generators
+    # guard on the first of several iterators
     assert_equal([[1, 10], [1, 20], [3, 10], [3, 20]],
                  eval("for x in [1, 2, 3] when x.odd?, y in [10, 20] then [x, y] end"))
-    # a later generator's guard may reference earlier variables
+    # a later iterator's guard may reference earlier variables
     assert_equal([[1, 2], [1, 3], [2, 3]],
                  eval("for x in [1, 2, 3], y in [1, 2, 3] when x < y then [x, y] end"))
-    # guards on every generator
+    # guards on every iterator
     assert_equal([[2, 1], [2, 3], [4, 1], [4, 3]],
                  eval("for x in [1,2,3,4] when x.even?, y in [1,2,3,4] when y.odd? then [x, y] end"))
     # guard with a destructuring loop variable
@@ -1449,7 +1449,7 @@ eom
     omit if ParserSupport.prism_enabled?
 
     assert_nil(eval("for x in [1, 2, 3] then x end; defined?(x)"))
-    # every generator's variable is scoped
+    # every iterator's variable is scoped
     assert_nil(eval("for a in [1], b in [2] then [a, b] end; defined?(a) || defined?(b)"))
     # body temporaries are scoped too
     assert_nil(eval("for x in [1] then z = x; z end; defined?(z)"))
@@ -1459,6 +1459,39 @@ eom
     assert_equal([100, [2, 4, 6]], eval("x = 100; r = for x in [1, 2, 3] then x * 2 end; [x, r]"))
     # each iteration binds a fresh variable (captured distinctly by closures)
     assert_equal([1, 2, 3], eval("for x in [1, 2, 3] then -> { x } end.map(&:call)"))
+  end
+
+  def test_for_comprehension_circular_reference
+    omit if ParserSupport.prism_enabled?
+
+    # a freshly introduced loop variable cannot be referenced in its own
+    # iterator expression: it is not bound yet and never denotes a value
+    circular = /circular reference of loop variable - x/
+    assert_in_out_err(%w[--parser=parse.y -e] + ["for x in [x] then x end"], "", [], circular)
+    assert_in_out_err(%w[--parser=parse.y -e] + ["for x in [x, 2] then x end"], "", [], circular)
+    assert_in_out_err(%w[--parser=parse.y -e] + ["for x in ([x] rescue [2]) then x end"], "", [], circular)
+    assert_in_out_err(%w[--parser=parse.y -e] + ['for x in ["#{x}"] then x end'], "", [], circular)
+    assert_in_out_err(%w[--parser=parse.y -e] + ["for (a, b) in [[a, b]] then 0 end"], "", [],
+                      /circular reference of loop variable - a/)
+    # in an eval scope the reference is a dynamic variable and the specific
+    # message is not available, but it is still a SyntaxError
+    assert_raise(SyntaxError) { eval("for x in [x] then x end") }
+    # a same-named outer variable in the iterator expression is not circular
+    assert_equal([[6], 5], eval("x = 5; r = for x in [x + 1] then x end; [r, x]"))
+    # nor is a nested block's own same-named variable
+    assert_equal([20], eval("for x in [1].map {|x| x + 1 } then x * 10 end"))
+  end
+
+  def test_for_comprehension_no_bogus_unused_warning
+    omit if ParserSupport.prism_enabled?
+
+    # the relocated first-iterator variable must not trigger a spurious
+    # "assigned but unused variable" warning for its renamed internal slot
+    assert_warning("") do
+      eval("def _fcw1; for x in [1, 2] then x end; end", nil, __FILE__, __LINE__)
+    end
+  ensure
+    self.class.remove_method(:_fcw1) if self.class.method_defined?(:_fcw1)
   end
 
   def test_no_warning_logop_literal
