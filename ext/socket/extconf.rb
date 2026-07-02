@@ -714,6 +714,7 @@ SRC
   have_func('rb_fiber_scheduler_socket_connect', 'ruby/fiber/scheduler.h')
   have_func('rb_fiber_scheduler_socket_accept', 'ruby/fiber/scheduler.h')
   have_func('rb_fiber_scheduler_socket_shutdown', 'ruby/fiber/scheduler.h')
+  have_func('rb_fiber_scheduler_socket_address_pack', 'ruby/fiber/scheduler.h')
   have_func('rb_fiber_scheduler_socket_address_unpack', 'ruby/fiber/scheduler.h')
 
   have_header('internal/io_buffer.h')
