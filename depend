@@ -2353,6 +2353,7 @@ concurrent_set.$(OBJEXT): {$(VPATH)}missing.h
 concurrent_set.$(OBJEXT): {$(VPATH)}node.h
 concurrent_set.$(OBJEXT): {$(VPATH)}onigmo.h
 concurrent_set.$(OBJEXT): {$(VPATH)}oniguruma.h
+concurrent_set.$(OBJEXT): {$(VPATH)}ractor.h
 concurrent_set.$(OBJEXT): {$(VPATH)}ruby_assert.h
 concurrent_set.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 concurrent_set.$(OBJEXT): {$(VPATH)}rubyparser.h
