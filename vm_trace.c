@@ -1950,8 +1950,10 @@ rb_postponed_job_flush(rb_vm_t *vm)
             while (triggered_bits) {
                 unsigned int i = bit_length(triggered_bits) - 1;
                 triggered_bits ^= ((1UL) << i); /* toggle ith bit off */
-                rb_postponed_job_func_t func = pjq->table[i].func;
-                void *data = pjq->table[i].data;
+                /* Read atomically to pair with the atomic CAS/EXCHANGE stores in
+                 * rb_postponed_job_preregister, which can run on another thread. */
+                rb_postponed_job_func_t func = (rb_postponed_job_func_t)(uintptr_t)RUBY_ATOMIC_PTR_LOAD(pjq->table[i].func);
+                void *data = RUBY_ATOMIC_PTR_LOAD(pjq->table[i].data);
                 (func)(data);
             }
 
