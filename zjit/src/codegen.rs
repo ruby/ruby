@@ -513,9 +513,8 @@ fn gen_function(cb: &mut CodeBlock, iseq: IseqPtr, version: IseqVersionRef, func
 
                 // Close the current perf range for the HIR instruction.
                 if let Some(perf_symbol) = &perf_symbol {
-                    let current_block_ends_with_terminator =
-                        asm.current_block().insns.last().is_some_and(|insn| insn.is_terminator());
-                    if result.is_ok() && insn.is_terminator() && current_block_ends_with_terminator {
+                    if result.is_ok() && insn.is_terminator() {
+                        assert!(asm.current_block().insns.last().is_some_and(|insn| insn.is_terminator()));
                         perf_symbol_range_end_at_block_end(&mut asm, perf_symbol);
                     } else {
                         perf_symbol_range_end(&mut asm, perf_symbol);
