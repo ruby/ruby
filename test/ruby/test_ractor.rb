@@ -372,6 +372,13 @@ class TestRactor < Test::Unit::TestCase
     end
   end
 
+  def test_ractor_does_not_inherit_fiber_storage
+    assert_ractor(<<~'RUBY')
+      Fiber[:key] = "creator"
+      assert_nil Ractor.new { Fiber[:key] }.value
+    RUBY
+  end
+
   def assert_make_shareable(obj)
     refute Ractor.shareable?(obj), "object was already shareable"
     Ractor.make_shareable(obj)
