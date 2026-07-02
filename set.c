@@ -1883,9 +1883,17 @@ set_i_proper_subset(VALUE set, VALUE other)
 
 /*
  *  call-seq:
- *    subset?(set) -> true or false
+ *    subset?(other_set) -> true or false
  *
- *  Returns true if the set is a subset of the given set.
+ *  Returns whether +self+ is a {subset}[https://en.wikipedia.org/wiki/Subset]
+ *  of the given +other_set+:
+ *
+ *    set = Set[*'b'..'e']
+ *    set.subset?(set)            # => true
+ *    set.subset?(Set[*'a'..'f']) # => true
+ *    set.subset?(Set[*'c'..'e']) # => false
+ *
+ *  Related: {Methods for Querying}[rdoc-ref:Set@Methods+for+Querying].
  */
 static VALUE
 set_i_subset(VALUE set, VALUE other)
