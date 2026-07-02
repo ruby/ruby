@@ -1548,4 +1548,70 @@ class TestRange < Test::Unit::TestCase
     assert_not_operator((1...3), :overlap?, (3..4))
     assert_not_operator((...3), :overlap?, (3..))
   end
+
+  def test_clamp
+    # Clamp begin and end to min and max.
+    assert_equal(3..7, (1..10).clamp(3, 7))
+    assert_equal(3..7, (..10).clamp(3, 7))
+
+    # Clamp begin and end to a range.
+    assert_equal(3..7, (1..10).clamp(3..7))
+    assert_equal(3..5, (1..5).clamp(3...7))
+    assert_equal(3...7, (1..10).clamp(DuckRange.new(3, 7, true)))
+
+    # Treat min and max like an inclusive range.
+    assert_equal((1...10).clamp(3..7), (1...10).clamp(3, 7))
+    assert_equal((1...10).clamp(3..10), (1...10).clamp(3, 10))
+
+    # Exclude the end when the returned end is excluded by self or the
+    # argument range.
+    assert_equal(3...10, (1...10).clamp(3, 10))
+    assert_equal(3...10, (1...10).clamp(3..10))
+    assert_equal(3...10, (1..10).clamp(3...10))
+    assert_equal(3...10, (..10).clamp(3...10))
+
+    # Include the end when the returned end is not an excluded end.
+    assert_equal(3..7, (1...10).clamp(3, 7))
+    assert_equal(0..10, (0...).clamp(0, 10))
+    assert_equal(3..5, (1..5).clamp(3...7))
+    assert_equal(3..5, (..5).clamp(3...7))
+    assert_equal(3..10, (1..10).clamp(3...))
+
+    # Handle beginless and endless argument ranges.
+    assert_equal(1..7, (1..10).clamp(..7))
+    assert_equal(1...7, (1..10).clamp(...7))
+    assert_equal(1..5, (1..5).clamp(...7))
+
+    assert_equal(3..10, (1..10).clamp(3..))
+    assert_equal(3.., (1..).clamp(3..))
+    assert_equal(3..., (1...).clamp(3...))
+
+    # Return an inclusive point range when begin and end are clamped to
+    # different equal bounds.
+    assert_equal(3..3, (1..10).clamp(3, 3))
+    assert_equal(3..3, (1..10).clamp(3..3))
+
+    # Return an empty range when begin and end are clamped to the same side.
+    assert_equal(20...20, (1..10).clamp(20, 30))
+    assert_equal(0...0, (1..10).clamp(-10, 0))
+    assert_equal(20...20, (..10).clamp(20, 30))
+    assert_equal(20...20, (1..10).clamp(20..30))
+    assert_equal(0...0, (1..10).clamp(-10..0))
+    assert_equal(20...20, (..10).clamp(20..30))
+    assert_equal(3...3, (1..2).clamp(3, 3))
+    assert_equal(3...3, (4..10).clamp(3, 3))
+    assert_equal(0...0, (1..).clamp(nil, 0))
+    assert_equal(0...0, (1..).clamp(..0))
+
+    # Return a Range instance, not an instance of a subclass.
+    subclass = Class.new(Range)
+    assert_instance_of(Range, subclass.new(1, 10).clamp(3, 7))
+
+    # Raise for invalid bounds or argument types.
+    assert_raise(ArgumentError) {(1..3).clamp(1, "z")}
+    assert_raise(ArgumentError) {(1..3).clamp("a", "z")}
+    assert_raise(ArgumentError) {(1..3).clamp(2, 1)}
+    assert_raise(ArgumentError) {(1..3).clamp(2..1)}
+    assert_raise(TypeError) {(1..3).clamp(1)}
+  end
 end
