@@ -1282,6 +1282,20 @@ obj_traverse_reachable_i(VALUE obj, void *ptr)
     }
 }
 
+// Traverse obj's children via its GC mark function. Returns 1 to stop.
+static int
+obj_traverse_reachable(VALUE obj, struct obj_traverse_data *data)
+{
+    struct obj_traverse_callback_data d = {
+        .stop = false,
+        .data = data,
+    };
+    RB_VM_LOCKING_NO_BARRIER() {
+        rb_objspace_reachable_objects_from(obj, obj_traverse_reachable_i, &d);
+    }
+    return d.stop;
+}
+
 static struct st_table *
 obj_traverse_rec(struct obj_traverse_data *data)
 {
@@ -1393,17 +1407,29 @@ obj_traverse_i(VALUE obj, struct obj_traverse_data *data)
         break;
 
       case T_DATA:
-      case T_IMEMO:
         {
-            struct obj_traverse_callback_data d = {
-                .stop = false,
-                .data = data,
-            };
-            RB_VM_LOCKING_NO_BARRIER() {
-                rb_objspace_reachable_objects_from(obj, obj_traverse_reachable_i, &d);
+            void *const ptr = RTYPEDDATA_GET_DATA(obj);
+            const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
+
+            if (!ptr || !type->function.dmark) {
+                // no references (the class and ivars are handled elsewhere)
             }
-            if (d.stop) return 1;
+            else if (type->flags & RUBY_TYPED_DECL_MARKING) {
+                const size_t *offsets = (const size_t *)(uintptr_t)type->function.dmark;
+                for (; *offsets != RUBY_REF_END; offsets++) {
+                    VALUE ref = *(VALUE *)((char *)ptr + *offsets);
+                    if (obj_traverse_i(ref, data)) return 1;
+                }
+            }
+            else {
+                if (obj_traverse_reachable(obj, data)) return 1;
+            }
         }
+        break;
+
+      case T_IMEMO:
+        // TODO: Not sure this can actually happen; traverse rather than crash.
+        if (obj_traverse_reachable(obj, data)) return 1;
         break;
 
       // unreachable
