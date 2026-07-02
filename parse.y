@@ -1667,6 +1667,7 @@ static rb_node_exits_t *init_block_exit(struct parser_params *p);
 static rb_node_exits_t *allow_block_exit(struct parser_params *p);
 static void restore_block_exit(struct parser_params *p, rb_node_exits_t *exits);
 static void clear_block_exit(struct parser_params *p, bool error);
+static void reject_comprehension_break(struct parser_params *p);
 
 static void
 next_rescue_context(struct lex_context *next, const struct lex_context *outer, enum rescue_context def)
@@ -1866,6 +1867,29 @@ clear_block_exit(struct parser_params *p, bool error)
     }
     exits->nd_stts = RNODE(exits);
     exits->nd_chain = 0;
+}
+
+/* Report a syntax error for each `break` collected in the current block-exit
+ * chain.  Used by the `for ... then` comprehension, where a bare `break` would
+ * desugar into one of the synthesized flat_map/map blocks and only escape that
+ * innermost block (a surprising, non-obvious partial exit).  `next` and `redo`
+ * are left untouched: they keep ordinary block semantics (next supplies the
+ * mapped element, redo re-runs the block for the current element).  Breaks
+ * inside a nested block or loop in the body are not collected here (that
+ * construct's allow_exits cleared p->exits around them), so they stay valid. */
+static void
+reject_comprehension_break(struct parser_params *p)
+{
+    rb_node_exits_t *exits = p->exits;
+    if (!exits) return;
+    for (NODE *e = RNODE(exits); (e = RNODE_EXITS(e)->nd_chain) != 0; ) {
+        if (nd_type_p(e, NODE_BREAK)) {
+            yyerror1(&e->nd_loc, "Invalid break in for-comprehension");
+        }
+        else if (!nd_type_p(e, NODE_NEXT) && !nd_type_p(e, NODE_REDO)) {
+            break; /* not a break/next/redo: end of a well-formed chain */
+        }
+    }
 }
 
 #define WARN_EOL(tok) \
@@ -4606,6 +4630,11 @@ primary		: inline_primary
                      * variables (DVAR) rather than leaking method-frame locals. */
                     $<vars>$ = dyna_push(p);
                     for_comp_relocate(p, $for_var, $for_var_base, &$mark);
+                    /* Collect block exits appearing directly in the guard, later
+                     * iterators and body so a bare `break` can be rejected (see
+                     * reject_comprehension_break); k_for's allow_exits had set
+                     * p->exits = 0 for the shared `for` prefix. */
+                    init_block_exit(p);
                 }[dyna]<vars>
               for_guard[for_guard]
               for_iters[for_iters] keyword_then
@@ -4628,7 +4657,11 @@ primary		: inline_primary
                      *
                      *  The loop variables are scoped to the synthesized blocks
                      *  (they do not leak), unlike the legacy `for` loop.
+                     *
+                     *  `break` is rejected: in the desugaring it would escape
+                     *  only one synthesized block, not the whole comprehension.
                      */
+                    reject_comprehension_break(p);
                     restore_block_exit(p, $k_for);
                     $$ = new_for_comprehension(p, $for_var, $expr_value, $for_guard, $for_iters, $compstmt, &@$);
                     dyna_pop(p, $dyna);

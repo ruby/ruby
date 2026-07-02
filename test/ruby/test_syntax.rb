@@ -1482,6 +1482,33 @@ eom
     assert_equal([20], eval("for x in [1].map {|x| x + 1 } then x * 10 end"))
   end
 
+  def test_for_comprehension_break_not_allowed
+    omit if ParserSupport.prism_enabled?
+
+    # a bare `break` would desugar into one synthesized flat_map/map block and
+    # escape only that innermost block, so it is rejected
+    msg = /Invalid break in for-comprehension/
+    assert_in_out_err(%w[--parser=parse.y -e] + ["for x in [1, 2] then break end"], "", [], msg)
+    assert_raise(SyntaxError) { eval("for x in [1, 2] then break end") }
+    assert_raise(SyntaxError) { eval("for x in [1, 2] then break 9 if x == 1; x end") }
+    # break in a `when` guard is rejected too
+    assert_raise(SyntaxError) { eval("for x in [1, 2] when (break; true) then x end") }
+    # break in a later iterator's source is rejected
+    assert_raise(SyntaxError) { eval("for x in [1, 2], y in [break] then [x, y] end") }
+
+    # break inside a nested block or loop in the body remains valid: it belongs
+    # to that construct, not the comprehension
+    assert_equal([1, 2], eval("for x in [1, 2] then [3, 4].each { |y| break if y == 4 }; x end"))
+    assert_equal([1, 2], eval("for x in [1, 2] then while true; break; end; x end"))
+
+    # next and redo keep ordinary block semantics and are still allowed
+    assert_equal([10, 0, 30], eval("for x in [1, 2, 3] then next 0 if x == 2; x * 10 end"))
+    assert_equal([3], eval("n = 0; for x in [1] then n += 1; redo if n < 3; x * n end"))
+
+    # the legacy `for` loop still supports break
+    assert_equal(99, eval("for x in [1, 2, 3] do break 99 if x == 2 end"))
+  end
+
   def test_for_comprehension_no_bogus_unused_warning
     omit if ParserSupport.prism_enabled?
 
