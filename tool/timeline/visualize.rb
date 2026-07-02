@@ -111,28 +111,34 @@ class LogProcessor
         end[:popped_count] += args[:popped_count]
       end
     when 'rts_set_running'
-      sched = args[0].to_i
-      old_thread = args[1].to_i
-      new_thread = args[2].to_i
-      if old_thread == 0
-        result[:name] = 'RTS'
-        result[:ph] = 'B'
-        result[:args].update({
-          sched:,
-          thread: new_thread,
+      sched = args[:sched]
+      sched_hex = sched.to_s(16)
+      sched_id = "sched-0x#{sched_hex}"
+      prev = get_current(sched_id, 'RTS')
+      if !prev.nil?
+        block_end = result.dup.update({
+          name: 'RTS',
+          ph: 'E',
+          tid: sched_id,
+          args: {}
         })
-      elsif new_thread == 0
-        result[:name] = 'RTS'
-        result[:ph] = 'E'
-        result[:args].update({
-          sched:,
-          thread: old_thread,
+        @results << block_end
+        clear_current(sched_id, 'RTS')
+      end
+
+      if args[:new_thread] != 0
+        block_begin = result.dup.update({
+          name: 'RTS',
+          ph: 'B',
+          tid: sched_id,
+          args: {
+            sched:,
+            sched_hex:,
+            thread: args[:new_thread],
+          }
         })
-      else
-        result[:args].update({
-          old_thread:,
-          new_thread:,
-        })
+        @results << block_begin
+        set_current(sched_id, 'RTS', block_begin)
       end
     end
 
