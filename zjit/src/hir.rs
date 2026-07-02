@@ -2758,6 +2758,30 @@ impl Function {
         self.push_insn(block, Insn::Comment { message })
     }
 
+    pub fn load_pc(&mut self, block: BlockId) -> InsnId {
+        self.push_insn(block, Insn::LoadPC)
+    }
+
+    pub fn load_ec(&mut self, block: BlockId) -> InsnId {
+        self.push_insn(block, Insn::LoadEC)
+    }
+
+    pub fn load_sp(&mut self, block: BlockId) -> InsnId {
+        self.push_insn(block, Insn::LoadSP)
+    }
+
+    pub fn load_self(&mut self, block: BlockId) -> InsnId {
+        self.push_insn(block, Insn::LoadSelf)
+    }
+
+    pub fn get_ep(&mut self, block: BlockId, level: u32) -> InsnId {
+        self.push_insn(block, Insn::GetEP { level })
+    }
+
+    pub fn load_field(&mut self, block: BlockId, recv: InsnId, id: FieldName, offset: i32, return_type: Type) -> InsnId {
+        self.push_insn(block, Insn::LoadField { recv, id, offset, return_type })
+    }
+
     // Add an instruction to an SSA block
     fn push_insn_id(&mut self, block: BlockId, insn_id: InsnId) -> InsnId {
         self.blocks[block.0].insns.push(insn_id);
@@ -3633,7 +3657,7 @@ impl Function {
         // a (u32, u32) inside a u64 at RUBY_OFFSET_RBASIC_FLAGS (offset 0). It's fine to load the
         // shape alongside the flags, but make sure not to *store* the shape accidentally by
         // writing a u64.
-        self.push_insn(block, Insn::LoadField { recv, id: FieldName::RBASIC_FLAGS, offset: RUBY_OFFSET_RBASIC_FLAGS, return_type: types::CUInt64 })
+        self.load_field(block, recv, FieldName::RBASIC_FLAGS, RUBY_OFFSET_RBASIC_FLAGS, types::CUInt64)
     }
 
     fn load_ep_flags(&mut self, block: BlockId, ep: InsnId) -> InsnId {
@@ -3641,7 +3665,7 @@ impl Function {
     }
 
     fn load_ep_env_field(&mut self, block: BlockId, ep: InsnId, id: FieldName, index: i32, return_type: Type) -> InsnId {
-        self.push_insn(block, Insn::LoadField { recv: ep, id, offset: SIZEOF_VALUE_I32 * index, return_type })
+        self.load_field(block, ep, id, SIZEOF_VALUE_I32 * index, return_type)
     }
 
     pub fn guard_not_frozen(&mut self, block: BlockId, recv: InsnId, state: InsnId) {
@@ -3675,12 +3699,7 @@ impl Function {
             .unwrap_or_else(|_| panic!("Could not convert ep_offset {ep_offset} to i32"));
         let offset = -(SIZEOF_VALUE_I32 * ep_offset);
 
-        self.push_insn(block, Insn::LoadField {
-            recv: ep,
-            id: local_id.into(),
-            offset,
-            return_type,
-        })
+        self.load_field(block, ep, local_id.into(), offset, return_type)
     }
 
     /// See `get_local_from_ep` for why `iseq` is threaded through explicitly rather
@@ -3698,12 +3717,7 @@ impl Function {
             .unwrap_or_else(|_| panic!("Could not convert ep_offset {ep_offset} to i32"));
         let offset = -(SIZEOF_VALUE_I32 * (ep_offset + 1));
 
-        self.push_insn(block, Insn::LoadField {
-            recv: sp,
-            id: local_id.into(),
-            offset,
-            return_type,
-        })
+        self.load_field(block, sp, local_id.into(), offset, return_type)
     }
 
     fn try_inline_invoke_builtin(&mut self, block: BlockId, insn: Insn) -> InsnId {
@@ -4060,7 +4074,7 @@ impl Function {
                                         let offset = RUBY_OFFSET_RSTRUCT_AS_ARY + (SIZEOF_VALUE_I32 * index);
                                         (recv, offset)
                                     } else {
-                                        let as_heap = self.push_insn(block, Insn::LoadField { recv, id: FieldName::as_heap, offset: RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR, return_type: types::CPtr });
+                                        let as_heap = self.load_field(block, recv, FieldName::as_heap, RUBY_OFFSET_RSTRUCT_AS_HEAP_PTR, types::CPtr);
                                         let offset = SIZEOF_VALUE_I32 * index;
                                         (as_heap, offset)
                                     };
@@ -4070,7 +4084,7 @@ impl Function {
                                         self.push_insn(block, Insn::WriteBarrier { recv, val });
                                         val
                                     } else { // StructAref
-                                        self.push_insn(block, Insn::LoadField { recv: target, id: mid.into(), offset, return_type: types::BasicObject })
+                                        self.load_field(block, target, mid.into(), offset, types::BasicObject)
                                     };
                                     self.make_equal_to(insn_id, replacement);
                                 },
@@ -4365,13 +4379,13 @@ impl Function {
                             // outer compilation's, so that an inlined super call walks from the
                             // callee's CFP rather than the caller's.
                             let level = get_lvar_level(local_iseq);
-                            let lep = fun.push_insn(block, Insn::GetEP { level });
+                            let lep = fun.get_ep(block, level);
                             // Load ep[VM_ENV_DATA_INDEX_ME_CREF]
-                            let method_entry = fun.push_insn(block, Insn::LoadField { recv: lep, id: FieldName::VM_ENV_DATA_INDEX_ME_CREF, offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_ME_CREF, return_type: types::RubyValue });
+                            let method_entry = fun.load_field(block, lep, FieldName::VM_ENV_DATA_INDEX_ME_CREF, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_ME_CREF, types::RubyValue);
                             // Guard that it matches the expected CME
                             fun.push_insn(block, Insn::GuardBitEquals { val: method_entry, expected: Const::Value(current_cme.into()), reason: SideExitReason::GuardSuperMethodEntry, state, recompile: None });
 
-                            let block_handler = fun.push_insn(block, Insn::LoadField { recv: lep, id: FieldName::VM_ENV_DATA_INDEX_SPECVAL, offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, return_type: types::RubyValue });
+                            let block_handler = fun.load_field(block, lep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, types::RubyValue);
                             fun.push_insn(block, Insn::GuardBitEquals {
                                 val: block_handler,
                                 expected: Const::Value(VALUE(VM_BLOCK_HANDLER_NONE as usize)),
@@ -4995,12 +5009,7 @@ impl Function {
     }
 
     fn load_shape(&mut self, block: BlockId, recv: InsnId) -> InsnId {
-        self.push_insn(block, Insn::LoadField {
-            recv,
-            id: FieldName::shape_id,
-            offset: unsafe { rb_shape_id_offset() } as i32,
-            return_type: types::CShape
-        })
+        self.load_field(block, recv, FieldName::shape_id, unsafe { rb_shape_id_offset() } as i32, types::CShape)
     }
 
     fn guard_shape(&mut self, block: BlockId, val: InsnId, expected: ShapeId, state: InsnId, recompile: Option<Recompile>) -> InsnId {
@@ -5029,26 +5038,16 @@ impl Function {
 
     fn load_ivar_heap(&mut self, block: BlockId,  recv: InsnId, id: ID, ivar_index: attr_index_t) -> InsnId {
         // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
-        let ptr = self.push_insn(block, Insn::LoadField {
-            recv, id: FieldName::as_heap,
-            offset: ROBJECT_OFFSET_AS_HEAP_FIELDS,
-            return_type: types::CPtr,
-        });
+        let ptr = self.load_field(block, recv, FieldName::as_heap, ROBJECT_OFFSET_AS_HEAP_FIELDS, types::CPtr);
         let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
-        self.push_insn(block, Insn::LoadField {
-            recv: ptr, id: id.into(), offset,
-            return_type: types::BasicObject,
-        })
+        self.load_field(block, ptr, id.into(), offset, types::BasicObject)
     }
 
     fn load_ivar_embedded(&mut self, block: BlockId, recv: InsnId, id: ID, ivar_index: attr_index_t) -> InsnId {
         // See ROBJECT_FIELDS() from include/ruby/internal/core/robject.h
         let offset = ROBJECT_OFFSET_AS_ARY
             + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
-        self.push_insn(block, Insn::LoadField {
-            recv, id: id.into(), offset,
-            return_type: types::BasicObject,
-        })
+        self.load_field(block, recv, id.into(), offset, types::BasicObject)
     }
 
     /// Guard that `recv` is a heap allocated object
@@ -5078,11 +5077,7 @@ impl Function {
                     TDATA_OFFSET_FIELDS_OBJ
                 };
 
-                let fields_obj = self.push_insn(block, Insn::LoadField {
-                    recv: self_val, id: FieldName::fields_obj,
-                    offset,
-                    return_type: types::RubyValue,
-                });
+                let fields_obj = self.load_field(block, self_val, FieldName::fields_obj, offset, types::RubyValue);
                 // All fields objects are embedded
                 self.load_ivar_embedded(block, fields_obj, id, ivar_index)
             },
@@ -5199,7 +5194,7 @@ impl Function {
             let offset = ROBJECT_OFFSET_AS_ARY + (SIZEOF_VALUE * ivar_index.to_usize()) as i32;
             (self_val, offset)
         } else {
-            let as_heap = self.push_insn(block, Insn::LoadField { recv: self_val, id: FieldName::as_heap, offset: ROBJECT_OFFSET_AS_HEAP_FIELDS, return_type: types::CPtr });
+            let as_heap = self.load_field(block, self_val, FieldName::as_heap, ROBJECT_OFFSET_AS_HEAP_FIELDS, types::CPtr);
             let offset = SIZEOF_VALUE_I32 * ivar_index as i32;
             (as_heap, offset)
         };
@@ -7793,7 +7788,7 @@ fn add_iseq_to_hir(
                     let val = if !local_inval {
                         state.getlocal(ep_offset)
                     } else if ep_escaped {
-                        let ep = fun.push_insn(block, Insn::GetEP { level: 0 });
+                        let ep = fun.get_ep(block, 0);
                         fun.get_local_from_ep(block, iseq, ep, ep_offset, 0, types::BasicObject)
                     } else {
                         let exit_id = fun.push_insn(block, Insn::Snapshot { state: Box::new(exit_state.without_locals()) });
@@ -7998,7 +7993,7 @@ fn add_iseq_to_hir(
                         state.stack_push(val);
                     } else if ep_escaped {
                         // Read the local using EP
-                        let ep = fun.push_insn(block, Insn::GetEP { level: 0 });
+                        let ep = fun.get_ep(block, 0);
                         let val = fun.get_local_from_ep(block, iseq, ep, ep_offset, 0, types::BasicObject);
                         state.setlocal(ep_offset, val); // remember the result to spill on side-exits
                         state.stack_push(val);
@@ -8033,7 +8028,7 @@ fn add_iseq_to_hir(
                 }
                 YARVINSN_getlocal_WC_1 => {
                     let ep_offset = get_arg(pc, 0).as_u32();
-                    let ep = fun.push_insn(block, Insn::GetEP { level: 1 });
+                    let ep = fun.get_ep(block, 1);
                     state.stack_push(fun.get_local_from_ep(block, iseq, ep, ep_offset, 1, types::BasicObject));
                 }
                 YARVINSN_setlocal_WC_1 => {
@@ -8048,7 +8043,7 @@ fn add_iseq_to_hir(
                         let val = state.getlocal(ep_offset);
                         state.stack_push(val);
                     } else {
-                        let ep = fun.push_insn(block, Insn::GetEP { level });
+                        let ep = fun.get_ep(block, level);
                         let val = fun.get_local_from_ep(block, iseq, ep, ep_offset, level, types::BasicObject);
                         if level == 0 {
                             state.setlocal(ep_offset, val);
@@ -8069,13 +8064,8 @@ fn add_iseq_to_hir(
                     if level == 0 {
                         state.setlocal(ep_offset, val);
                     }
-                    let ep = fun.push_insn(block, Insn::GetEP { level });
-                    let flags = fun.push_insn(block, Insn::LoadField {
-                        recv: ep,
-                        id: FieldName::VM_ENV_DATA_INDEX_FLAGS,
-                        offset: SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32),
-                        return_type: types::CInt64,
-                    });
+                    let ep = fun.get_ep(block, level);
+                    let flags = fun.load_field(block, ep, FieldName::VM_ENV_DATA_INDEX_FLAGS, SIZEOF_VALUE_I32 * (VM_ENV_DATA_INDEX_FLAGS as i32), types::CInt64);
                     let modified_flag = fun.push_insn(block, Insn::Const {
                         val: Const::CInt64(VM_FRAME_FLAG_MODIFIED_BLOCK_PARAM.into()),
                     });
@@ -8125,7 +8115,7 @@ fn add_iseq_to_hir(
                     let join_result = fun.push_insn(join_block, Insn::Param);
                     let join_local = if level == 0 { Some(fun.push_insn(join_block, Insn::Param)) } else { None };
 
-                    let ep = fun.push_insn(block, Insn::GetEP { level });
+                    let ep = fun.get_ep(block, level);
                     let flags = fun.load_ep_flags(block, ep);
                     let is_modified = fun.push_insn(block, Insn::IsBlockParamModified { flags });
 
@@ -8358,7 +8348,7 @@ fn add_iseq_to_hir(
                     let join_block = fun.new_block(insn_idx);
                     let join_param = fun.push_insn(join_block, Insn::Param);
 
-                    let ep = fun.push_insn(block, Insn::GetEP { level });
+                    let ep = fun.get_ep(block, level);
                     let flags = fun.load_ep_flags(block, ep);
                     let is_modified = fun.push_insn(block, Insn::IsBlockParamModified { flags });
 
@@ -8655,8 +8645,7 @@ fn add_iseq_to_hir(
                             let ep_offset_u32 = u32::try_from(ep_offset)
                                 .unwrap_or_else(|_| panic!("Could not convert ep_offset {ep_offset} to u32"));
                             let recv = *base.get_or_insert_with(|| {
-                                let base_insn = if !ep_escaped { Insn::LoadSP } else { Insn::GetEP { level: 0 } };
-                                fun.push_insn(block, base_insn)
+                                if !ep_escaped { fun.load_sp(block) } else { fun.get_ep(block, 0) }
                             });
                             let val = if !ep_escaped {
                                 fun.get_local_from_sp(block, iseq, recv, ep_offset_u32, types::BasicObject)
@@ -8701,8 +8690,7 @@ fn add_iseq_to_hir(
                             let ep_offset_u32 = u32::try_from(ep_offset)
                                 .unwrap_or_else(|_| panic!("Could not convert ep_offset {ep_offset} to u32"));
                             let recv = *base.get_or_insert_with(|| {
-                                let base_insn = if !ep_escaped { Insn::LoadSP } else { Insn::GetEP { level: 0 } };
-                                fun.push_insn(block, base_insn)
+                                if !ep_escaped { fun.load_sp(block) } else { fun.get_ep(block, 0) }
                             });
                             let val = if !ep_escaped {
                                 fun.get_local_from_sp(block, iseq, recv, ep_offset_u32, types::BasicObject)
@@ -8746,8 +8734,7 @@ fn add_iseq_to_hir(
                             let ep_offset_u32 = u32::try_from(ep_offset)
                                 .unwrap_or_else(|_| panic!("Could not convert ep_offset {ep_offset} to u32"));
                             let recv = *base.get_or_insert_with(|| {
-                                let base_insn = if !ep_escaped { Insn::LoadSP } else { Insn::GetEP { level: 0 } };
-                                fun.push_insn(block, base_insn)
+                                if !ep_escaped { fun.load_sp(block) } else { fun.get_ep(block, 0) }
                             });
                             let val = if !ep_escaped {
                                 fun.get_local_from_sp(block, iseq, recv, ep_offset_u32, types::BasicObject)
@@ -8793,8 +8780,7 @@ fn add_iseq_to_hir(
                             let ep_offset_u32 = u32::try_from(ep_offset)
                                 .unwrap_or_else(|_| panic!("Could not convert ep_offset {ep_offset} to u32"));
                             let recv = *base.get_or_insert_with(|| {
-                                let base_insn = if !ep_escaped { Insn::LoadSP } else { Insn::GetEP { level: 0 } };
-                                fun.push_insn(block, base_insn)
+                                if !ep_escaped { fun.load_sp(block) } else { fun.get_ep(block, 0) }
                             });
                             let val = if !ep_escaped {
                                 fun.get_local_from_sp(block, iseq, recv, ep_offset_u32, types::BasicObject)
@@ -8834,13 +8820,8 @@ fn add_iseq_to_hir(
                         // code, the function ISEQ is the caller while `exit_state.iseq` is the
                         // callee containing this `invokeblock`.
                         let level = get_lvar_level(exit_state.iseq);
-                        let lep = fun.push_insn(block, Insn::GetEP { level });
-                        let block_handler = fun.push_insn(block, Insn::LoadField {
-                            recv: lep,
-                            id: FieldName::VM_ENV_DATA_INDEX_SPECVAL,
-                            offset: SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL,
-                            return_type: types::CInt64,
-                        });
+                        let lep = fun.get_ep(block, level);
+                        let block_handler = fun.load_field(block, lep, FieldName::VM_ENV_DATA_INDEX_SPECVAL, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL, types::CInt64);
 
                         // Check IFUNC tag: (block_handler & 0x3) == 0x3
                         let tag_mask = fun.push_insn(block, Insn::Const { val: Const::CInt64(0x3) });
@@ -9234,7 +9215,7 @@ fn compile_entry_block(fun: &mut Function, jit_entry_insns: &[u32], insn_idx_to_
             .expect("we make a block for each jump target and \
                      each entry in the ISEQ opt_table is a jump target");
         // Load PC once at the start of the block, shared among all cases
-        let pc = *pc.get_or_insert_with(|| fun.push_insn(entry_block, Insn::LoadPC));
+        let pc = *pc.get_or_insert_with(|| fun.load_pc(entry_block));
         let expected_pc = fun.push_insn(entry_block, Insn::Const {
             val: Const::CPtr(unsafe { rb_iseq_pc_at_idx(fun.iseq, jit_entry_insn) } as *const u8),
         });
@@ -9269,7 +9250,7 @@ fn compile_entry_state(fun: &mut Function) -> (InsnId, FrameState) {
     let param_size = params.size.to_usize();
     let rest_param_idx = iseq_rest_param_idx(params);
 
-    let self_param = fun.push_insn(entry_block, Insn::LoadSelf);
+    let self_param = fun.load_self(entry_block);
     let mut entry_state = FrameState::new(iseq);
     // If the ISEQ does not escape EP, we can assume EP + 1 == SP
     // TODO: This should maybe also consider if the EP has historically been escaped in this iseq.
@@ -9287,8 +9268,7 @@ fn compile_entry_state(fun: &mut Function) -> (InsnId, FrameState) {
                 types::BasicObject
             };
             let recv = *base.get_or_insert_with(|| {
-                let base_insn = if use_sp { Insn::LoadSP } else { Insn::GetEP { level: 0 } };
-                fun.push_insn(entry_block, base_insn)
+                if use_sp { fun.load_sp(entry_block) } else { fun.get_ep(entry_block, 0) }
             });
             let val = if use_sp {
                 fun.get_local_from_sp(entry_block, iseq, recv, ep_offset_u32, return_type)
@@ -9362,7 +9342,7 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
             let ep_offset = local_idx_to_ep_offset(iseq, local_idx);
             let ep_offset_u32 = u32::try_from(ep_offset)
                 .unwrap_or_else(|_| panic!("Could not convert ep_offset {ep_offset} to u32"));
-            let ep = *ep.get_or_insert_with(|| fun.push_insn(jit_entry_block, Insn::GetEP { level: 0 }));
+            let ep = *ep.get_or_insert_with(|| fun.get_ep(jit_entry_block, 0));
             fun.get_local_from_ep(
                 jit_entry_block,
                 iseq,
@@ -9387,7 +9367,7 @@ fn compile_jit_entry_state(fun: &mut Function, jit_entry_block: BlockId, jit_ent
         if seen_ep_escape {
             let ep_offset = local_idx_to_ep_offset(iseq, local_idx);
             let local_id = unsafe { rb_zjit_local_id(iseq, local_idx.try_into().unwrap()) };
-            let ep = *ep.get_or_insert_with(|| fun.push_insn(jit_entry_block, Insn::GetEP { level: 0 }));
+            let ep = *ep.get_or_insert_with(|| fun.get_ep(jit_entry_block, 0));
             fun.push_insn(jit_entry_block, Insn::StoreField {
                 recv: ep,
                 id: local_id.into(),
@@ -9987,18 +9967,8 @@ mod validation_tests {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
         let recv = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
-        function.push_insn(entry, Insn::LoadField {
-            recv,
-            id: FieldName::as_heap,
-            offset: ROBJECT_OFFSET_AS_HEAP_FIELDS,
-            return_type: types::CPtr,
-        });
-        let ivar = function.push_insn(entry, Insn::LoadField {
-            recv,
-            id: FieldName::Id(ID(1)),
-            offset: ROBJECT_OFFSET_AS_ARY,
-            return_type: types::BasicObject,
-        });
+        function.load_field(entry, recv, FieldName::as_heap, ROBJECT_OFFSET_AS_HEAP_FIELDS, types::CPtr);
+        let ivar = function.load_field(entry, recv, FieldName::Id(ID(1)), ROBJECT_OFFSET_AS_ARY, types::BasicObject);
         function.push_insn(entry, Insn::Return { val: ivar });
         function.seal_entries();
 
@@ -10020,18 +9990,8 @@ mod validation_tests {
         let mut function = Function::new(std::ptr::null());
         let entry = function.entry_block;
         let recv = function.push_insn(entry, Insn::Const { val: Const::Value(Qnil) });
-        function.push_insn(entry, Insn::LoadField {
-            recv,
-            id: FieldName::as_heap,
-            offset: ROBJECT_OFFSET_AS_HEAP_FIELDS,
-            return_type: types::BasicObject,
-        });
-        let ivar = function.push_insn(entry, Insn::LoadField {
-            recv,
-            id: FieldName::Id(ID(1)),
-            offset: ROBJECT_OFFSET_AS_ARY,
-            return_type: types::Array,
-        });
+        function.load_field(entry, recv, FieldName::as_heap, ROBJECT_OFFSET_AS_HEAP_FIELDS, types::BasicObject);
+        let ivar = function.load_field(entry, recv, FieldName::Id(ID(1)), ROBJECT_OFFSET_AS_ARY, types::Array);
         function.push_insn(entry, Insn::Return { val: ivar });
         function.seal_entries();
 

@@ -84,6 +84,7 @@ module Psych
     end
 
     def test_line_numbers
+      omit 'libfyaml reports event marks differently from libyaml' if libfyaml?
       assert_equal 0, @parser.mark.line
       pend "Failing on JRuby" if RUBY_PLATFORM =~ /java/
 
@@ -111,6 +112,7 @@ module Psych
     end
 
     def test_column_numbers
+      omit 'libfyaml reports event marks differently from libyaml' if libfyaml?
       assert_equal 0, @parser.mark.column
       pend "Failing on JRuby" if RUBY_PLATFORM =~ /java/
 
@@ -138,6 +140,7 @@ module Psych
     end
 
     def test_index_numbers
+      omit 'libfyaml reports event marks differently from libyaml' if libfyaml?
       assert_equal 0, @parser.mark.index
       pend "Failing on JRuby" if RUBY_PLATFORM =~ /java/
 

@@ -224,6 +224,9 @@ description:
 
       # http://yaml.org/type/bool.html
       def test_boolean_true
+        # yes/on are booleans only under YAML 1.1; test_boolean covers the
+        # 1.2 behavior of the libfyaml backend.
+        omit 'yes/on are strings on the YAML 1.2 libfyaml backend' if libfyaml?
         %w{ yes Yes YES true True TRUE on On ON }.each do |t|
           i = Nodes::Scalar.new(t, nil, 'tag:yaml.org,2002:bool')
           assert_equal true, i.to_ruby
@@ -233,6 +236,9 @@ description:
 
       # http://yaml.org/type/bool.html
       def test_boolean_false
+        # no/off are booleans only under YAML 1.1; test_boolean covers the
+        # 1.2 behavior of the libfyaml backend.
+        omit 'no/off are strings on the YAML 1.2 libfyaml backend' if libfyaml?
         %w{ no No NO false False FALSE off Off OFF }.each do |t|
           i = Nodes::Scalar.new(t, nil, 'tag:yaml.org,2002:bool')
           assert_equal false, i.to_ruby

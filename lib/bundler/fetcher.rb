@@ -318,7 +318,7 @@ module Bundler
         if ssl_client_cert
           pem = File.read(ssl_client_cert)
           con.cert = OpenSSL::X509::Certificate.new(pem)
-          con.key  = OpenSSL::PKey::RSA.new(pem)
+          con.key  = OpenSSL::PKey.read(pem)
         end
 
         con.read_timeout = Fetcher.api_timeout

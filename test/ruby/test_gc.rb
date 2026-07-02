@@ -194,8 +194,14 @@ class TestGc < Test::Unit::TestCase
   def test_stat_single
     omit 'stress' if GC.stress
 
-    stat = GC.stat
-    assert_equal stat[:count], GC.stat(:count)
+    # GC.stat and GC.stat(:count) are two separate reads of :count. If a GC
+    # runs between them (e.g. triggered by an allocation on another thread),
+    # :count changes and the two reads disagree. Disable GC so both reads
+    # observe the same :count.
+    EnvUtil.without_gc do
+      stat = GC.stat
+      assert_equal stat[:count], GC.stat(:count)
+    end
     assert_raise(ArgumentError){ GC.stat(:invalid) }
   end
 

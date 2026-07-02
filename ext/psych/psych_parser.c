@@ -1,5 +1,7 @@
 #include <psych.h>
 
+#ifndef PSYCH_USE_LIBFYAML
+
 VALUE cPsychParser;
 
 static ID id_read;
@@ -571,3 +573,5 @@ void Init_psych_parser(void)
     id_end_mapping     = rb_intern("end_mapping");
     id_event_location  = rb_intern("event_location");
 }
+
+#endif /* PSYCH_USE_LIBFYAML */
