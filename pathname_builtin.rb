@@ -1817,7 +1817,7 @@ class Pathname    # * FileTest *
   # pn.rmdir
   # Pathname('/etc').owned? # => false
   # ```
-  # 
+  #
   def owned?() FileTest.owned?(@path) end
 
   # See <tt>FileTest.readable?</tt>.
