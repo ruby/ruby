@@ -2077,7 +2077,32 @@ class Pathname
   # See <tt>Dir.rmdir</tt>.  Remove the referenced directory.
   def rmdir() Dir.rmdir(@path) end
 
-  # See <tt>Dir.open</tt>.
+  # :markup: markdown
+  #
+  # call-seq:
+  #   opendir {|dir| ... } -> object
+  #   opendir -> dir
+  #
+  # Creates a Dir object `dir` for the directory at the path represented by `self`;
+  # opens `dir`.
+  #
+  # With a block given, calls the block with `dir`;
+  # on block exit, closes `dir` and returns the block's return value:
+  #
+  # ```ruby
+  # pn = Pathname('.')
+  # pn.opendir {|dir| dir.entries.take(3) }
+  # # => ["README.md", "html", ".git"]
+  # ```
+  #
+  # With no block given, returns the open directory `dir`:
+  #
+  # ```ruby
+  # dir = pn.opendir    # => #<Dir:.>
+  # dir.entries.take(3) # => ["README.md", "html", ".git"]
+  # dir.close
+  # ```
+  #
   def opendir(&block) # :yield: dir
     Dir.open(@path, &block)
   end
