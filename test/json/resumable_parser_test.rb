@@ -199,6 +199,48 @@ class JSONResumageParserTest < Test::Unit::TestCase
     assert_incomplete "{\"a\":1,"
   end
 
+  def test_line_comment_spanning_feed_boundary_is_not_terminated_early
+    # A `//` line comment is only terminated by a newline. When the newline
+    # has not arrived yet, the comment must stay incomplete rather than being
+    # treated as consumed -- otherwise its body, delivered in a later chunk,
+    # leaks out as parsed values.
+    values = []
+    parser = new_parser(allow_comments: true)
+    parser << '[1] //'
+    values << parser.value while parser.parse
+
+    parser << "[2]\n[3]" # [2] belongs to the comment, [3] is a real document
+    values << parser.value while parser.parse
+
+    assert_equal [[1], [3]], values
+  end
+
+  def test_line_comment_terminated_by_newline_across_feeds
+    values = []
+    parser = new_parser(allow_comments: true)
+    parser << '[1] //co'
+    values << parser.value while parser.parse
+
+    parser << "mment\n[2]"
+    values << parser.value while parser.parse
+
+    assert_equal [[1], [2]], values
+  end
+
+  def test_block_comment_spanning_feed_boundary_is_not_terminated_early
+    # A `/* */` block comment whose closing `*/` has not arrived yet must stay
+    # incomplete, mirroring the line-comment behaviour above.
+    values = []
+    parser = new_parser(allow_comments: true)
+    parser << '[1] /*'
+    values << parser.value while parser.parse
+
+    parser << '[2]*/[3]' # [2] belongs to the comment, [3] is a real document
+    values << parser.value while parser.parse
+
+    assert_equal [[1], [3]], values
+  end
+
   def test_rest
     @parser << '[1, 2, 3, "unterminated string'
     refute @parser.parse

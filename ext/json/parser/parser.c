@@ -779,11 +779,18 @@ json_eat_comments(JSON_ParserState *state, JSON_ParserConfig *config)
 
     switch (peek(state)) {
         case '/': {
-            state->cursor = memchr(state->cursor, '\n', state->end - state->cursor);
-            if (!state->cursor) {
+            const char *newline = memchr(state->cursor, '\n', state->end - state->cursor);
+            if (!newline) {
+                // state->parser marks resumable mode, where the buffer end is only a
+                // chunk boundary: the terminating newline may still arrive, so leave
+                // the comment unterminated instead of consuming to end as a one-shot
+                // parse would.
+                if (state->parser) {
+                    raise_eos_error_at("unterminated comment, expected end of line", state, start);
+                }
                 state->cursor = state->end;
             } else {
-                state->cursor++;
+                state->cursor = newline + 1;
             }
             break;
         }
