@@ -2797,7 +2797,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
 %type <node> p_expr p_as p_alt p_expr_basic p_find
 %type <node> p_args p_args_head p_args_tail p_args_post p_arg p_rest
 %type <node> p_value p_primitive p_variable p_var_ref p_expr_ref p_const
-%type <node> p_kwargs p_kwarg p_kw
+%type <node> p_kwargs p_kwarg p_kw p_kw_expr_key
 %type <id>   keyword_variable user_variable sym operation2 operation3
 %type <id>   cname fname op f_rest_arg f_block_arg opt_comma f_norm_arg f_bad_arg
 %type <id>   f_kwrest f_label f_arg_asgn call_op call_op2 reswords relop dot_or_colon
@@ -2875,6 +2875,7 @@ rb_parser_ary_free(rb_parser_t *p, rb_parser_ary_t *ary)
  */
 
 %nonassoc tLOWEST
+%nonassoc tASSOC
 %nonassoc tLBRACE_ARG
 
 %nonassoc  modifier_if modifier_unless modifier_while modifier_until keyword_in
@@ -5686,6 +5687,17 @@ p_kw		: p_kw_label p_expr
                         error_duplicate_pattern_variable(p, $1, &@1);
                         $$ = list_append(p, NEW_LIST(NEW_SYM(rb_id2str($1), &@$), &@$), assignable(p, $1, 0, &@$));
                     /*% ripper: [$:1, Qnil] %*/
+                    }
+                | p_kw_expr_key ':' p_expr %prec tLOWEST
+                    {
+                        $$ = list_append(p, NEW_LIST($1, &@$), $3);
+                    /*% ripper: [$:1, $:3] %*/
+                    }
+                ;
+
+p_kw_expr_key	: p_expr
+                    {
+                        $$ = $1;
                     }
                 ;
 
