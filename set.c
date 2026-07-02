@@ -684,7 +684,7 @@ set_i_to_a(VALUE set)
  *
  *    set = Set[*0..9]
  *    set.to_set
- *    set.to_set.__id__ == set.__id__ # => true
+ *    set.to_set.equal?(set) # => true
  *
  *  With no block given, when +self+ is an instance of a subclass of +Set+,
  *  returns a \Set object containing the elements of +self+:
