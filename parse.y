@@ -11478,6 +11478,46 @@ for_var_each_local(struct parser_params *p, NODE *var, for_var_leaf_fn fn, void 
     }
 }
 
+/* Reject a comprehension loop variable that is not a local variable.  Assigning
+ * to an instance/global/class variable, a constant, or an attribute or index
+ * setter (`for x.foo in ...` / `for x[i] in ...`, which call `x.foo=` / `x.[]=`)
+ * on each iteration is a side effect with no role in the comprehension's mapped
+ * result, and such targets receive none of the scoped, non-leaking per-iteration
+ * binding that local variables get.  Recurses through destructuring like
+ * for_var_each_local, but reports every non-local leaf rather than skipping it. */
+static void
+for_comp_reject_nonlocal_var(struct parser_params *p, NODE *var)
+{
+    if (!var) return;
+    switch (nd_type(var)) {
+      case NODE_LASGN:
+      case NODE_DASGN:
+        break; /* a local variable: allowed */
+      case NODE_MASGN: {
+        rb_node_masgn_t *m = RNODE_MASGN(var);
+        NODE *n, *margs = m->nd_args;
+        for (n = m->nd_head; n; n = RNODE_LIST(n)->nd_next) {
+            for_comp_reject_nonlocal_var(p, RNODE_LIST(n)->nd_head);
+        }
+        if (margs && margs != NODE_SPECIAL_NO_NAME_REST && nd_type_p(margs, NODE_POSTARG)) {
+            NODE *rest = RNODE_POSTARG(margs)->nd_1st;
+            NODE *q;
+            if (rest && rest != NODE_SPECIAL_NO_NAME_REST) for_comp_reject_nonlocal_var(p, rest);
+            for (q = RNODE_POSTARG(margs)->nd_2nd; q; q = RNODE_LIST(q)->nd_next) {
+                for_comp_reject_nonlocal_var(p, RNODE_LIST(q)->nd_head);
+            }
+        }
+        else if (margs && margs != NODE_SPECIAL_NO_NAME_REST) {
+            for_comp_reject_nonlocal_var(p, margs);
+        }
+        break;
+      }
+      default:
+        yyerror1(&var->nd_loc, "for-comprehension loop variable must be a local variable");
+        break;
+    }
+}
+
 struct for_var_count_arg { int n; };
 static void
 for_var_count_cb(struct parser_params *p, NODE *leaf, void *arg)
@@ -11773,6 +11813,12 @@ new_for_comprehension(struct parser_params *p, NODE *first_var, NODE *first_expr
     if (first_guard) first = list_append(p, first, first_guard);
     all = NEW_LIST(first, loc);
     if (iters) all = list_concat(all, iters);
+
+    /* Every iterator's loop variable must be a local variable. */
+    for (NODE *n = all; n; n = RNODE_LIST(n)->nd_next) {
+        NODE *sub = RNODE_LIST(n)->nd_head;
+        for_comp_reject_nonlocal_var(p, RNODE_LIST(sub)->nd_head);
+    }
 
     /* The dyna scope holds every loop variable plus the body's temporaries.
      * Whatever is not a loop variable is a body temporary, and belongs in the

@@ -1509,6 +1509,32 @@ eom
     assert_equal(99, eval("for x in [1, 2, 3] do break 99 if x == 2 end"))
   end
 
+  def test_for_comprehension_loop_variable_must_be_local
+    omit if ParserSupport.prism_enabled?
+
+    # a comprehension loop variable must be a local variable: assigning to an
+    # ivar/gvar/cvar/constant or an attribute/index setter on each iteration is
+    # a side effect with no role in the mapped result
+    msg = /for-comprehension loop variable must be a local variable/
+    assert_in_out_err(%w[--parser=parse.y -e] + ["for @x in [1] then @x end"], "", [], msg)
+    assert_raise(SyntaxError) { eval("for @x in [1, 2] then @x end") }
+    assert_raise(SyntaxError) { eval("for $g in [1, 2] then $g end") }
+    assert_raise(SyntaxError) { eval("for K in [1, 2] then K end") }
+    assert_raise(SyntaxError) { eval("o = Object.new; for o.foo in [1, 2] then 0 end") }
+    assert_raise(SyntaxError) { eval("a = []; for a[0] in [1, 2] then 0 end") }
+    # also rejected inside destructuring and in a later iterator
+    assert_raise(SyntaxError) { eval("for (a, @b) in [[1, 2]] then 0 end") }
+    assert_raise(SyntaxError) { eval("for x in [1], @y in [2] then 0 end") }
+
+    # local variables (including destructuring and splats) remain fine
+    assert_equal([2, 4], eval("for x in [1, 2] then x * 2 end"))
+    assert_equal([3, 7], eval("for (a, b) in [[1, 2], [3, 4]] then a + b end"))
+    assert_equal([[1, [2, 3]]], eval("for (a, *b) in [[1, 2, 3]] then [a, b] end"))
+
+    # the legacy `for` loop still allows non-local targets
+    assert_equal(3, eval("for @z in [1, 2, 3] do end; @z"))
+  end
+
   def test_for_comprehension_no_bogus_unused_warning
     omit if ParserSupport.prism_enabled?
 
