@@ -1804,6 +1804,7 @@ class Pathname    # * FileTest *
   # call-seq:
   #   owned? -> true or false
   #
+  # Returns whether the entry at the path represented by `self`
   # exists and is owned by the user of the current process:
   #
   # ```ruby
